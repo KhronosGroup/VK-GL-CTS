@@ -110,6 +110,35 @@ void beginRenderPass (const DeviceInterface&	vk,
 void endRenderPass (const DeviceInterface&	vk,
 					const VkCommandBuffer	commandBuffer);
 
+void beginRendering (const DeviceInterface&		vk,
+					 const VkCommandBuffer		commandBuffer,
+					 const VkImageView			colorImageView,
+					 const VkRect2D&			renderArea,
+					 const VkClearValue&		clearValue,
+					 const VkImageLayout		imageLayout = VK_IMAGE_LAYOUT_GENERAL,
+					 const VkAttachmentLoadOp	loadOperation = VK_ATTACHMENT_LOAD_OP_LOAD,
+					 VkRenderingFlagsKHR		renderingFlags = 0,
+					 const deUint32				layerCount = 1u,
+					 const deUint32				viewMask = 0u);
+
+void beginRendering (const DeviceInterface&		vk,
+					 const VkCommandBuffer		commandBuffer,
+					 const VkImageView			colorImageView,
+					 const VkImageView			depthStencilImageView,
+					 const bool					useStencilAttachment,
+					 const VkRect2D&			renderArea,
+					 const VkClearValue&		clearColorValue,
+					 const VkClearValue&		clearDepthValue,
+					 const VkImageLayout		colorImageLayout = VK_IMAGE_LAYOUT_GENERAL,
+					 const VkImageLayout		depthImageLayout = VK_IMAGE_LAYOUT_GENERAL,
+					 const VkAttachmentLoadOp	loadOperation = VK_ATTACHMENT_LOAD_OP_LOAD,
+					 VkRenderingFlagsKHR		renderingFlags = 0,
+					 const deUint32				layerCount = 1u,
+					 const deUint32				viewMask = 0u);
+
+void endRendering (const DeviceInterface&		vk,
+				   const VkCommandBuffer		commandBuffer);
+
 void submitCommandsAndWait	(const DeviceInterface&			vk,
 							 const VkDevice					device,
 							 const VkQueue					queue,

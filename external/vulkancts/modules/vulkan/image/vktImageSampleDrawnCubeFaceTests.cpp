@@ -252,7 +252,7 @@ tcu::TestStatus SampleDrawnCubeFaceTestInstance::iterate (void)
 	const deUint32					layerCount				= 6;
 	const deUint32					levelCount				= 1;
 
-	const IVec3						imageSize				= {m_size.x(), m_size.y(), deInt32(layerCount)};
+	const IVec3						imageSize				= {m_size.x(), m_size.y(), (deInt32)layerCount};
 	const VkExtent2D				renderSize				= {deUint32(m_size.x()), deUint32(m_size.y())};
 	const VkRect2D					renderArea				= makeRect2D(makeExtent3D(m_size.x(), m_size.y(), 1u));
 	const vector<VkRect2D>			scissors				(1u, renderArea);
@@ -298,7 +298,7 @@ tcu::TestStatus SampleDrawnCubeFaceTestInstance::iterate (void)
 	de::MovePtr<Allocation>			uvBufferAlloc			= bindBuffer(vk, device, allocator, *uvBuffer, MemoryRequirement::HostVisible);
 	const VkDeviceSize				uvBufferOffset			= 0ull;
 
-	deMemcpy(uvBufferAlloc->getHostPtr(), &uvCoordinates[0], static_cast<size_t>(bufferSize));
+	deMemcpy(uvBufferAlloc->getHostPtr(), &uvCoordinates[0], uvCoordinates.size() * sizeof (Vertex));
 	flushAlloc(vk, device, *uvBufferAlloc);
 
 	// Sampled values will be written to this image.

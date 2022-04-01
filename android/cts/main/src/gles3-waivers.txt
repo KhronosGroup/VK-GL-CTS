@@ -1,0 +1,13 @@
+
+# Unlike Khronos waivers, Android waivers simply REMOVE the tests for all
+# vendors.
+
+# Vendor: Samsung* and Google*
+# Description: ANGLE is unable to capture individual array elements in transform
+# feedback using VK_EXT_transform_feedback revision 1.
+# https://gerrit.khronos.org/c/vk-gl-cts/+/6190
+# https://gerrit.khronos.org/c/vk-gl-cts/+/8460
+# https://gitlab.khronos.org/Tracker/vk-gl-cts/-/issues/2237
+# https://gitlab.khronos.org/Tracker/vk-gl-cts/-/issues/3255
+dEQP-GLES3.functional.transform_feedback.array_element.*
+dEQP-GLES3.functional.transform_feedback.random.*

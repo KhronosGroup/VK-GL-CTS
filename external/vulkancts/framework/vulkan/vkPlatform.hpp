@@ -108,31 +108,6 @@ namespace wsi
 class Display;
 } // wsi
 
-struct PlatformMemoryLimits
-{
-	// System memory properties
-	size_t			totalSystemMemory;					//!< #bytes of system memory (heap + HOST_LOCAL) tests must not exceed
-
-	// Device memory properties
-	VkDeviceSize	totalDeviceLocalMemory;				//!< #bytes of total DEVICE_LOCAL memory tests must not exceed or 0 if DEVICE_LOCAL counts against system memory
-	VkDeviceSize	deviceMemoryAllocationGranularity;	//!< VkDeviceMemory allocation granularity (typically page size)
-
-	// Device memory page table geometry
-	// \todo [2016-03-23 pyry] This becomes obsolete if Vulkan API adds a way for driver to expose internal device memory allocations
-	VkDeviceSize	devicePageSize;						//!< Page size on device (must be rounded up to nearest POT)
-	VkDeviceSize	devicePageTableEntrySize;			//!< Number of bytes per page table size
-	size_t			devicePageTableHierarchyLevels;		//!< Number of levels in device page table hierarchy
-
-	PlatformMemoryLimits (void)
-		: totalSystemMemory					(0)
-		, totalDeviceLocalMemory			(0)
-		, deviceMemoryAllocationGranularity	(0)
-		, devicePageSize					(0)
-		, devicePageTableEntrySize			(0)
-		, devicePageTableHierarchyLevels	(0)
-	{}
-};
-
 /*--------------------------------------------------------------------*//*!
  * \brief Vulkan platform interface
  *//*--------------------------------------------------------------------*/
@@ -143,20 +118,10 @@ public:
 							~Platform			(void) {}
 
 	virtual Library*		createLibrary		(void) const = 0;
-
 	virtual wsi::Display*	createWsiDisplay	(wsi::Type wsiType) const;
-	virtual bool			hasDisplay	(wsi::Type wsiType) const;
-
-	virtual void			getMemoryLimits		(PlatformMemoryLimits& limits) const = 0;
+	virtual bool			hasDisplay			(wsi::Type wsiType) const;
 	virtual void			describePlatform	(std::ostream& dst) const;
 };
-
-inline PlatformMemoryLimits getMemoryLimits (const Platform& platform)
-{
-	PlatformMemoryLimits limits;
-	platform.getMemoryLimits(limits);
-	return limits;
-}
 
 } // vk
 

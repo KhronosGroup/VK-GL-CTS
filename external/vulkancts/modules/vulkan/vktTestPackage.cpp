@@ -104,6 +104,7 @@
 #include "vktPostmortemTests.hpp"
 #include "vktFragmentShadingRateTests.hpp"
 #include "vktReconvergenceTests.hpp"
+#include "vktMeshShaderTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -254,6 +255,9 @@ TestCaseExecutor::~TestCaseExecutor (void)
 
 void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePath)
 {
+	if (m_waiverMechanism.isOnWaiverList(casePath))
+		throw tcu::TestException("Waived test", QP_TEST_RESULT_WAIVER);
+
 	TestCase*					vktCase						= dynamic_cast<TestCase*>(testCase);
 	tcu::TestLog&				log							= m_context.getTestContext().getLog();
 	const deUint32				usedVulkanVersion			= m_context.getUsedApiVersion();
@@ -267,9 +271,6 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 
 	if (!vktCase)
 		TCU_THROW(InternalError, "Test node not an instance of vkt::TestCase");
-
-	if (m_waiverMechanism.isOnWaiverList(casePath))
-		throw tcu::TestException("Waived test", QP_TEST_RESULT_WAIVER);
 
 	vktCase->checkSupport(m_context);
 
@@ -498,6 +499,7 @@ void createGlslTests (tcu::TestCaseGroup* glslTests)
 
 	// Amber GLSL tests.
 	glslTests->addChild(cts_amber::createCombinedOperationsGroup		(testCtx));
+	glslTests->addChild(cts_amber::createCrashTestGroup					(testCtx));
 }
 
 // TestPackage
@@ -545,6 +547,7 @@ void TestPackage::init (void)
 	addChild(createTestGroup					(m_testCtx, "glsl", "GLSL shader execution tests", createGlslTests));
 	addChild(createRenderPassTests				(m_testCtx));
 	addChild(createRenderPass2Tests				(m_testCtx));
+	addChild(createDynamicRenderingTests		(m_testCtx));
 	addChild(ubo::createTests					(m_testCtx));
 	addChild(DynamicState::createTests			(m_testCtx));
 	addChild(ssbo::createTests					(m_testCtx));
@@ -580,6 +583,7 @@ void TestPackage::init (void)
 	addChild(RayQuery::createTests				(m_testCtx));
 	addChild(FragmentShadingRate::createTests	(m_testCtx));
 	addChild(Reconvergence::createTests			(m_testCtx, false));
+	addChild(MeshShader::createTests			(m_testCtx));
 }
 
 void ExperimentalTestPackage::init (void)

@@ -7880,7 +7880,6 @@ public:
 									TestBase*				testPtr);
 	~RayTracingMiscTestInstance (	void);
 
-	bool			init	(void);
 	tcu::TestStatus	iterate	(void);
 
 protected:
@@ -7897,26 +7896,24 @@ private:
 RayTracingMiscTestInstance::RayTracingMiscTestInstance (Context&					context,
 														const CaseDef&				data,
 														TestBase*					testPtr)
-	: vkt::TestInstance	(context)
-	, m_data			(data)
-	, m_testPtr			(testPtr)
+	: vkt::TestInstance			(context)
+	, m_data					(data)
+	, m_rayTracingPropsPtr		(makeRayTracingProperties(context.getInstanceInterface(),
+														  context.getPhysicalDevice()))
+	, m_testPtr					(testPtr)
 {
-}
+	m_testPtr->init(m_context, m_rayTracingPropsPtr.get());
+ }
 
 RayTracingMiscTestInstance::~RayTracingMiscTestInstance(void)
 {
 	/* Stub */
 }
 
-bool RayTracingMiscTestInstance::init()
+void RayTracingMiscTestInstance::checkSupport(void) const
 {
-	const auto& instanceInterface = m_context.getInstanceInterface();
-	const auto& physicalDeviceVk  = m_context.getPhysicalDevice   ();
-
-	m_rayTracingPropsPtr = makeRayTracingProperties(instanceInterface,
-													physicalDeviceVk);
-
-	return true;
+	if (m_testPtr->getResultBufferSize() > m_context.getDeviceVulkan11Properties().maxMemoryAllocationSize)
+		TCU_THROW(NotSupportedError, "VkPhysicalDeviceVulkan11Properties::maxMemoryAllocationSize too small, allocation might fail");
 }
 
 de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
@@ -7929,10 +7926,6 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 	Allocator&				allocator			= m_context.getDefaultAllocator			();
 
 	de::MovePtr<BufferWithMemory>					resultBufferPtr;
-	auto											rtPropertiesPtr		= makeRayTracingProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice() );
-
-	m_testPtr->init(m_context,
-					rtPropertiesPtr.get() );
 
 	// Determine group indices
 	const auto ahitCollectionShaderNameVec			= m_testPtr->getAHitShaderCollectionShaderNames			();
@@ -8267,11 +8260,7 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 					resultBufferDataVec.data(),
 					resultBufferDataVec.size() );
 
-			flushMappedMemoryRange(	deviceInterface,
-									deviceVk,
-									resultBufferPtr->getAllocation().getMemory(),
-									resultBufferPtr->getAllocation().getOffset(),
-									resultBufferSize);
+			flushAlloc(deviceInterface, deviceVk, resultBufferPtr->getAllocation());
 		}
 
 	}
@@ -8281,7 +8270,7 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 						0u /* flags */);
 	{
 		m_testPtr->initAS(	m_context,
-							rtPropertiesPtr.get(),
+							m_rayTracingPropsPtr.get(),
 							*cmdBufferPtr);
 
 		std::vector<TopLevelAccelerationStructure*> tlasPtrVec = m_testPtr->getTLASPtrVecToBind();
@@ -8368,18 +8357,22 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 
 		{
 			const auto	nTraceRaysInvocationsNeeded			= m_testPtr->getNTraceRayInvocationsNeeded();
+			const auto	handleSize							= m_rayTracingPropsPtr->getShaderGroupHandleSize();
+			const auto	missStride							= de::roundUp(handleSize + m_testPtr->getShaderRecordSize(ShaderGroups::MISS_GROUP), handleSize);
+			const auto	hitStride							= de::roundUp(handleSize + m_testPtr->getShaderRecordSize(ShaderGroups::HIT_GROUP), handleSize);
+			const auto	callStride							= de::roundUp(handleSize + m_testPtr->getShaderRecordSize(ShaderGroups::FIRST_CALLABLE_GROUP), handleSize);
 			const auto	raygenShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(	deviceInterface,
 																														deviceVk,
 																														raygenShaderBindingTablePtr->get(),
 																														0 /* offset */),
-																								m_rayTracingPropsPtr->getShaderGroupHandleSize(),
-																								m_rayTracingPropsPtr->getShaderGroupHandleSize() );
+																								handleSize,
+																								handleSize);
 			const auto	missShaderBindingTableRegion		= ((nMissGroups > 0u)	?	makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(	deviceInterface,
 																																					deviceVk,
 																																					missShaderBindingTablePtr->get(),
 																																					0 /* offset */),
-																															m_rayTracingPropsPtr->getShaderGroupHandleSize() + m_testPtr->getShaderRecordSize(ShaderGroups::MISS_GROUP),
-																															m_rayTracingPropsPtr->getShaderGroupHandleSize())
+																															missStride,
+																															missStride * nMissGroups)
 																					:	makeStridedDeviceAddressRegionKHR(DE_NULL,
 																														  0, /* stride */
 																														  0  /* size   */));
@@ -8387,8 +8380,8 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 																																					deviceVk,
 																																					hitShaderBindingTablePtr->get(),
 																																					0 /* offset */),
-																															m_rayTracingPropsPtr->getShaderGroupHandleSize() + m_testPtr->getShaderRecordSize(ShaderGroups::HIT_GROUP),
-																															m_rayTracingPropsPtr->getShaderGroupHandleSize() )
+																															hitStride,
+																															hitStride * nHitGroups)
 																					:	makeStridedDeviceAddressRegionKHR(DE_NULL,
 																														  0, /* stride */
 																														  0  /* size   */));
@@ -8397,8 +8390,8 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 																																										deviceVk,
 																																										callableShaderBindingTablePtr->get(),
 																																										0 /* offset */),
-																																				m_rayTracingPropsPtr->getShaderGroupHandleSize(), /* stride */
-																																				(m_rayTracingPropsPtr->getShaderGroupHandleSize() + m_testPtr->getShaderRecordSize(ShaderGroups::FIRST_CALLABLE_GROUP) ) * static_cast<deUint32>(callableShaderCollectionNames.size() ) )
+																																				callStride, /* stride */
+																																				callStride * static_cast<deUint32>(callableShaderCollectionNames.size() ) )
 																											: makeStridedDeviceAddressRegionKHR(DE_NULL,
 																																				0, /* stride */
 																																				0  /* size   */);
@@ -8460,6 +8453,8 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 
 tcu::TestStatus RayTracingMiscTestInstance::iterate (void)
 {
+	checkSupport();
+
 	const de::MovePtr<BufferWithMemory>	bufferGPUPtr		= runTest();
 	const deUint32*						bufferGPUDataPtr	= (deUint32*) bufferGPUPtr->getAllocation().getHostPtr();
 	const bool							result				= m_testPtr->verifyResultBuffer(bufferGPUDataPtr);
@@ -9225,8 +9220,6 @@ TestInstance* RayTracingTestCase::createInstance (Context& context) const
 	auto newTestInstancePtr = new RayTracingMiscTestInstance(	context,
 																m_data,
 																m_testPtr.get		() );
-
-	newTestInstancePtr->init();
 
 	return newTestInstancePtr;
 }

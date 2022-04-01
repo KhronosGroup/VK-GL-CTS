@@ -93,7 +93,7 @@ protected:
 	deUint32						getHostPointerMemoryTypeBits				(void* hostPointer);
 	Move<VkDeviceMemory>			allocateMemoryFromHostPointer				(deUint32 memoryTypeIndex);
 	void							logMemoryTypeIndexPropertyFlags				(deUint32 index);
-	bool							findCompatibleMemoryTypeIndexToTest			(deUint32 resourceMemoryTypeBits, deUint32 hostPointerMemoryTypeBits, deUint32* outMemoryTypeIndexToTest);
+	bool							findCompatibleMemoryTypeIndexToTest			(deUint32 resourceMemoryTypeBits, deUint32 hostPointerMemoryTypeBits, deUint32 memoryPropertyFlagBits, deUint32* outMemoryTypeIndexToTest);
 	bool							findMemoryTypeIndexToTest					(deUint32 hostPointerMemoryTypeBits, deUint32* outMemoryTypeIndexToTest);
 
 	const InstanceInterface&						m_vki;
@@ -263,11 +263,12 @@ void ExternalMemoryHostBaseTestInstance::logMemoryTypeIndexPropertyFlags (deUint
 	m_log << tcu::TestLog::Message << getMemoryPropertyFlagsStr(m_memoryProps.memoryTypes[index].propertyFlags) << tcu::TestLog::EndMessage;
 }
 
-bool ExternalMemoryHostBaseTestInstance::findCompatibleMemoryTypeIndexToTest (deUint32 resourceMemoryTypeBits, deUint32 hostPointerMemoryTypeBits, deUint32* outMemoryTypeIndexToTest)
+bool ExternalMemoryHostBaseTestInstance::findCompatibleMemoryTypeIndexToTest (deUint32 resourceMemoryTypeBits, deUint32 hostPointerMemoryTypeBits, deUint32 memoryPropertyFlagBits, deUint32* outMemoryTypeIndexToTest)
 {
 	for (deUint32 bitMaskPosition = 0; bitMaskPosition < VK_MAX_MEMORY_TYPES; bitMaskPosition++)
 	{
-		if (isBitSet(resourceMemoryTypeBits & hostPointerMemoryTypeBits, bitMaskPosition))
+		if (isBitSet(resourceMemoryTypeBits & hostPointerMemoryTypeBits, bitMaskPosition) &&
+			(m_memoryProps.memoryTypes[bitMaskPosition].propertyFlags & memoryPropertyFlagBits) == memoryPropertyFlagBits)
 		{
 			logMemoryTypeIndexPropertyFlags(bitMaskPosition);
 			*outMemoryTypeIndexToTest = bitMaskPosition;
@@ -279,7 +280,7 @@ bool ExternalMemoryHostBaseTestInstance::findCompatibleMemoryTypeIndexToTest (de
 
 bool ExternalMemoryHostBaseTestInstance::findMemoryTypeIndexToTest (deUint32 hostPointerMemoryTypeBits, deUint32* outMemoryTypeIndexToTest)
 {
-	return findCompatibleMemoryTypeIndexToTest(~0u, hostPointerMemoryTypeBits, outMemoryTypeIndexToTest);
+	return findCompatibleMemoryTypeIndexToTest(~0u, hostPointerMemoryTypeBits, 0u, outMemoryTypeIndexToTest);
 }
 
 tcu::TestStatus ExternalMemoryHostBaseTestInstance::iterate (void)
@@ -355,7 +356,7 @@ tcu::TestStatus ExternalMemoryHostRenderImageTestInstance::iterate ()
 	// Find the usable memory type index.
 	const auto hostPointerMemoryTypeBits = getHostPointerMemoryTypeBits(m_hostMemoryAlloc);
 
-	if (findCompatibleMemoryTypeIndexToTest(imageMemoryRequirements.memoryTypeBits, hostPointerMemoryTypeBits, &memoryTypeIndexToTest))
+	if (findCompatibleMemoryTypeIndexToTest(imageMemoryRequirements.memoryTypeBits, hostPointerMemoryTypeBits, 0u, &memoryTypeIndexToTest))
 		m_deviceMemoryAllocatedFromHostPointer = allocateMemoryFromHostPointer(memoryTypeIndexToTest);
 	else
 		TCU_THROW(NotSupportedError, "Compatible memory type not found");
@@ -820,8 +821,11 @@ tcu::TestStatus ExternalMemoryHostSynchronizationTestInstance::iterate ()
 
 	//find the usable memory type index
 	hostPointerMemoryTypeBits				= getHostPointerMemoryTypeBits(m_hostMemoryAlloc);
-	if (findCompatibleMemoryTypeIndexToTest(bufferMemoryRequirements.memoryTypeBits, hostPointerMemoryTypeBits, &memoryTypeIndexToTest))
+	if (findCompatibleMemoryTypeIndexToTest(bufferMemoryRequirements.memoryTypeBits, hostPointerMemoryTypeBits,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, &memoryTypeIndexToTest))
+	{
 		m_deviceMemoryAllocatedFromHostPointer = allocateMemoryFromHostPointer(memoryTypeIndexToTest);
+	}
 	else
 		TCU_THROW(NotSupportedError, "Compatible memory type not found");
 

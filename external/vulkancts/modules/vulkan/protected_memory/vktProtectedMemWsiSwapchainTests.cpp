@@ -160,7 +160,7 @@ struct NativeObjects
 	NativeObjects (Context&							context,
 				   const Extensions&				supportedExtensions,
 				   vk::wsi::Type					wsiType,
-				   const tcu::Maybe<tcu::UVec2>&	initialWindowSize = tcu::nothing<tcu::UVec2>())
+				   const tcu::Maybe<tcu::UVec2>&	initialWindowSize = tcu::Nothing)
 		: display				(createDisplay(context.getTestContext().getPlatform().getVulkanPlatform(), supportedExtensions, wsiType))
 		, window				(createWindow(*display, initialWindowSize))
 	{}

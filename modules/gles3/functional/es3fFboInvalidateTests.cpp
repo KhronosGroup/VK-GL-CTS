@@ -1255,18 +1255,18 @@ protected:
 		// Bound FBO to test target and default to other
 		if (m_boundTarget != GL_FRAMEBUFFER)
 		{
-			// Dummy fbo is used as complemeting target (read when discarding draw for example).
+			// Unused fbo is used as complemeting target (read when discarding draw for example).
 			// \note Framework takes care of deleting objects at the end of test case.
-			const deUint32	dummyTarget		= m_boundTarget == GL_DRAW_FRAMEBUFFER ?  GL_READ_FRAMEBUFFER : GL_DRAW_FRAMEBUFFER;
-			deUint32		dummyFbo		= 0;
-			deUint32		dummyColorRbo	= 0;
+			const deUint32	unusedTarget	= m_boundTarget == GL_DRAW_FRAMEBUFFER ?  GL_READ_FRAMEBUFFER : GL_DRAW_FRAMEBUFFER;
+			deUint32		unusedFbo		= 0;
+			deUint32		unusedColorRbo	= 0;
 
-			glGenRenderbuffers			(1, &dummyColorRbo);
-			glBindRenderbuffer			(GL_RENDERBUFFER, dummyColorRbo);
+			glGenRenderbuffers			(1, &unusedColorRbo);
+			glBindRenderbuffer			(GL_RENDERBUFFER, unusedColorRbo);
 			glRenderbufferStorage		(GL_RENDERBUFFER, GL_RGBA8, 64, 64);
-			glGenFramebuffers			(1, &dummyFbo);
-			glBindFramebuffer			(dummyTarget, dummyFbo);
-			glFramebufferRenderbuffer	(dummyTarget, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, dummyColorRbo);
+			glGenFramebuffers			(1, &unusedFbo);
+			glBindFramebuffer			(unusedTarget, unusedFbo);
+			glFramebufferRenderbuffer	(unusedTarget, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, unusedColorRbo);
 
 			glBindFramebuffer			(m_boundTarget, fbo);
 		}

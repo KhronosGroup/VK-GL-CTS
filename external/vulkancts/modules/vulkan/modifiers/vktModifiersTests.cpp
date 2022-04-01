@@ -165,6 +165,9 @@ std::vector<deUint64> getExportImportCompatibleModifiers (Context& context, VkFo
 
 	for (const auto& modifierProps : drmFormatModifiers)
 	{
+		if (modifierProps.drmFormatModifierTilingFeatures == 0)
+			TCU_FAIL(de::toString(format) + " does not support any DRM modifier tiling features");
+
 		if ((modifierProps.drmFormatModifierTilingFeatures & testFeatures) != testFeatures)
 			continue;
 
@@ -275,6 +278,9 @@ tcu::TestStatus listModifiersCase (Context& context, VkFormat format)
 																							  &format, 1u, VK_IMAGE_TYPE_2D,
 																							  (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT),
 																							  drmFormatModifiers[m].drmFormatModifier, imageProperties);
+
+		if (drmFormatModifiers[m].drmFormatModifierTilingFeatures == 0)
+			TCU_FAIL(de::toString(format) + " does not support any DRM modifier tiling features");
 
 		if (!isCompatible)
 			continue;
@@ -405,6 +411,8 @@ tcu::TestStatus createImageListModifiersCase (Context& context, const VkFormat f
 																								  modProps.drmFormatModifier, imgFormatProperties);
 		if (isCompatible)
 			modifiers.push_back(modProps.drmFormatModifier);
+		if (modProps.drmFormatModifierTilingFeatures == 0)
+			TCU_FAIL(de::toString(format) + " does not support any DRM modifier tiling features");
 	}
 
 	if (modifiers.empty())
@@ -605,10 +613,10 @@ bool exportImportMemoryExplicitModifiersCase (Context& context, const VkFormat f
 
 	VkMemoryRequirements importedSrcImageMemoryReq = getImageMemoryRequirements(vkd, device, *importedSrcImage);
 
-	Move<VkDeviceMemory>						importedMemory (vkt::ExternalMemoryUtil::importMemory(vkd, device,
-																									importedSrcImageMemoryReq,
-																									VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT,
-																									~0u, inputImageMemFd));
+	Move<VkDeviceMemory>						importedMemory (vkt::ExternalMemoryUtil::importDedicatedMemory(vkd, device, *importedSrcImage,
+                                                                                                               importedSrcImageMemoryReq,
+                                                                                                               VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT,
+                                                                                                               ~0u, inputImageMemFd));
 	VK_CHECK(vkd.bindImageMemory(device, *importedSrcImage, *importedMemory, 0));
 
 	Move<VkImage>						outImage		(createImageNoModifiers(vkd, device,

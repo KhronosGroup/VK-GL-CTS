@@ -74,28 +74,50 @@ VK_EXT_scalar_block_layout					DEVICE 1_2_0
 VK_KHR_buffer_device_address				DEVICE 1_2_0
 VK_EXT_host_query_reset						DEVICE 1_2_0
 VK_KHR_separate_depth_stencil_layouts		DEVICE 1_2_0
-VK_KHR_timeline_semaphore 		 		 	DEVICE 1_2_0
-VK_KHR_spirv_1_4 		 		 	 		DEVICE 1_2_0
-VK_EXT_separate_stencil_usage 		 		DEVICE 1_2_0
-VK_KHR_pipeline_executable_properties 		DEVICE
+VK_KHR_timeline_semaphore					DEVICE 1_2_0
+VK_KHR_spirv_1_4							DEVICE 1_2_0
+VK_EXT_separate_stencil_usage				DEVICE 1_2_0
+VK_KHR_pipeline_executable_properties		DEVICE
 VK_KHR_shader_clock							DEVICE
 VK_KHR_performance_query					DEVICE
-VK_KHR_shader_non_semantic_info				DEVICE
-VK_KHR_copy_commands2						DEVICE
-VK_KHR_shader_terminate_invocation			DEVICE
+VK_KHR_shader_non_semantic_info				DEVICE 1_3_0
+VK_KHR_copy_commands2						DEVICE 1_3_0
+VK_KHR_shader_terminate_invocation			DEVICE 1_3_0
 VK_KHR_ray_tracing_pipeline					DEVICE
 VK_KHR_ray_query							DEVICE
 VK_KHR_acceleration_structure				DEVICE
 VK_KHR_pipeline_library						DEVICE
 VK_KHR_deferred_host_operations				DEVICE
 VK_KHR_fragment_shading_rate				DEVICE
-VK_KHR_zero_initialize_workgroup_memory		DEVICE
+VK_KHR_zero_initialize_workgroup_memory		DEVICE 1_3_0
 VK_KHR_workgroup_memory_explicit_layout		DEVICE
-VK_KHR_synchronization2						DEVICE
+VK_KHR_synchronization2						DEVICE 1_3_0
 VK_EXT_color_write_enable					DEVICE
 VK_VALVE_mutable_descriptor_type			DEVICE
 VK_EXT_multi_draw							DEVICE
 VK_KHR_shader_subgroup_uniform_control_flow	DEVICE
 VK_KHR_present_id							DEVICE
 VK_KHR_present_wait							DEVICE
-VK_KHR_shader_integer_dot_product			DEVICE
+VK_KHR_format_feature_flags2				DEVICE 1_3_0
+VK_KHR_maintenance4							DEVICE 1_3_0
+VK_KHR_dynamic_rendering					DEVICE 1_3_0
+VK_EXT_extended_dynamic_state				DEVICE 1_3_0
+VK_EXT_extended_dynamic_state2				DEVICE
+VK_EXT_4444_formats							DEVICE 1_3_0
+VK_KHR_shader_integer_dot_product			DEVICE 1_3_0
+VK_EXT_image_robustness						DEVICE 1_3_0
+VK_EXT_inline_uniform_block					DEVICE 1_3_0
+VK_EXT_pipeline_creation_cache_control		DEVICE 1_3_0
+VK_EXT_pipeline_creation_feedback			DEVICE 1_3_0
+VK_EXT_private_data							DEVICE 1_3_0
+VK_EXT_shader_demote_to_helper_invocation	DEVICE 1_3_0
+VK_EXT_subgroup_size_control				DEVICE 1_3_0
+VK_EXT_texel_buffer_alignment				DEVICE 1_3_0
+VK_EXT_texture_compression_astc_hdr			DEVICE 1_3_0
+VK_EXT_tooling_info							DEVICE 1_3_0
+VK_EXT_ycbcr_2plane_444_formats				DEVICE
+VK_EXT_border_color_swizzle					DEVICE
+VK_KHR_global_priority		        		DEVICE
+VK_NV_mesh_shader							DEVICE
+VK_KHR_portability_subset					DEVICE
+VK_EXT_pageable_device_local_memory			DEVICE

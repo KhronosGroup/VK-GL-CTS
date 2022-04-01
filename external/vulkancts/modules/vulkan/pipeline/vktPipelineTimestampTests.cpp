@@ -139,6 +139,7 @@ enum TransferMethod
 	TRANSFER_METHOD_CLEAR_DEPTH_STENCIL_IMAGE,
 	TRANSFER_METHOD_RESOLVE_IMAGE,
 	TRANSFER_METHOD_COPY_QUERY_POOL_RESULTS,
+	TRANSFER_METHOD_COPY_QUERY_POOL_RESULTS_STRIDE_ZERO,
 	TRANSFER_METHOD_LAST
 };
 
@@ -167,6 +168,7 @@ std::string getTransferMethodStr (const TransferMethod	method,
 	  METHOD_CASE(CLEAR_DEPTH_STENCIL_IMAGE)
 	  METHOD_CASE(RESOLVE_IMAGE)
 	  METHOD_CASE(COPY_QUERY_POOL_RESULTS)
+	  METHOD_CASE(COPY_QUERY_POOL_RESULTS_STRIDE_ZERO)
 #undef METHOD_CASE
 	  default:
 		desc << "unknown method!";
@@ -1865,7 +1867,7 @@ void AdvGraphicsTest::initPrograms (SourceCollections& programCollection) const
 {
 	BasicGraphicsTest::initPrograms(programCollection);
 
-	programCollection.glslSources.add("dummy_geo") << glu::GeometrySource(
+	programCollection.glslSources.add("unused_geo") << glu::GeometrySource(
 		"#version 310 es\n"
 		"#extension GL_EXT_geometry_shader : enable\n"
 		"layout(triangles) in;\n"
@@ -1970,7 +1972,7 @@ AdvGraphicsTestInstance::AdvGraphicsTestInstance (Context&					context,
 
 	if(m_features.geometryShader == VK_TRUE)
 	{
-		m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_GEOMETRY_BIT, "dummy_geo");
+		m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_GEOMETRY_BIT, "unused_geo");
 	}
 
 	if(m_features.tessellationShader == VK_TRUE)
@@ -2591,9 +2593,11 @@ void TransferTestInstance::configCommandBuffer (void)
 				break;
 			}
 		case TRANSFER_METHOD_COPY_QUERY_POOL_RESULTS:
+		case TRANSFER_METHOD_COPY_QUERY_POOL_RESULTS_STRIDE_ZERO:
 			{
 				vk.cmdWriteTimestamp(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, *m_queryPool, 0u);
-				vk.cmdCopyQueryPoolResults(*m_cmdBuffer, *m_queryPool, 0u, 1u, *m_dstBuffer, 0u, 8u, VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+				VkDeviceSize copyStride = m_method == TRANSFER_METHOD_COPY_QUERY_POOL_RESULTS_STRIDE_ZERO ? 0u : 8u;
+				vk.cmdCopyQueryPoolResults(*m_cmdBuffer, *m_queryPool, 0u, 1u, *m_dstBuffer, 0u, copyStride, VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
 
 				const vk::VkBufferMemoryBarrier bufferBarrier =
 				{

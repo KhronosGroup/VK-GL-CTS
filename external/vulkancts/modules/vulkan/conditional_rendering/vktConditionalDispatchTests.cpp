@@ -220,7 +220,7 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 
 	const vk::Unique<vk::VkShaderModule>	shaderModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0u));
 	const vk::Unique<vk::VkPipelineLayout>	pipelineLayout		(makePipelineLayout(vk, device, *descriptorSetLayout));
-	const vk::Unique<vk::VkPipeline>		pipeline			(compute::makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
+	const vk::Unique<vk::VkPipeline>		pipeline			(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
 
 	const vk::Unique<vk::VkCommandPool>		cmdPool				(makeCommandPool(vk, device, queueFamilyIndex));
 	const vk::Unique<vk::VkCommandBuffer>	cmdBuffer			(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
@@ -284,7 +284,7 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 	vk.cmdBindPipeline(targetCmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
 	vk.cmdBindDescriptorSets(targetCmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 
-	de::SharedPtr<Draw::Buffer> conditionalBuffer = createConditionalRenderingBuffer(m_context, m_conditionalData);
+	de::SharedPtr<Draw::Buffer> conditionalBuffer = createConditionalRenderingBuffer(m_context, m_conditionalData, *cmdPool);
 
 	if (m_conditionalData.conditionInSecondaryCommandBuffer)
 	{

@@ -30,16 +30,14 @@ from build.common import DEQP_DIR
 from khr_util.format import writeInlFile
 
 VULKAN_H	= [
-	os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codecs_common.h"),
-	os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h264std.h"),
-	os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h264std_encode.h"),
-	os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h265std.h"),
-	os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h264std_decode.h"),
-	os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h265std_decode.h"),
-	os.path.join(os.path.dirname(__file__), "src", "vulkan_core.h"),
+	os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include", "vk_video", "vulkan_video_codecs_common.h"),
+	os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include", "vk_video", "vulkan_video_codec_h264std.h"),
+	os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include", "vk_video", "vulkan_video_codec_h264std_encode.h"),
+	os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include", "vk_video", "vulkan_video_codec_h265std.h"),
+	os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include", "vk_video", "vulkan_video_codec_h264std_decode.h"),
+	os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include", "vk_video", "vulkan_video_codec_h265std_decode.h"),
+	os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include", "vulkan", "vulkan_core.h"),
 	]
-#VULKAN_H	= os.path.join(os.path.dirname(__file__), "src", "vulkan_core.h")
-VULKAN_DIR	= os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan")
 
 INL_HEADER = """\
 /* WARNING: This is auto-generated file. Do not modify, since changes will
@@ -74,8 +72,14 @@ def writeVulkanCHeader (src, filename):
 	writeInlFile(filename, INL_HEADER, gen())
 
 if __name__ == "__main__":
+
+	outputPath = os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan")
+	# if argument was specified it is interpreted as a path to which .inl files will be written
+	if len(sys.argv) > 1:
+		outputPath = str(sys.argv[1])
+
 	src = ""
 	for file in VULKAN_H:
 		src += readFile(file)
 
-	writeVulkanCHeader				(src, os.path.join(VULKAN_DIR, "vkVulkan_c.inl"))
+	writeVulkanCHeader				(src, os.path.join(outputPath, "vkVulkan_c.inl"))

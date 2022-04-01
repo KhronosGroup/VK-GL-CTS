@@ -30,6 +30,7 @@
 #include "vkTypeUtil.hpp"
 #include "vktDrawBaseClass.hpp"
 #include "vktTestGroupUtil.hpp"
+#include "tcuVectorUtil.hpp"
 
 namespace vkt
 {
@@ -56,6 +57,8 @@ struct DrawParams
 	// From the SPIR-V point of view, structured test variants will allow us to test interpolation decorations on struct members
 	// instead of plain ids.
 	bool						useStructure;
+	bool						includeSampleDecoration;
+	bool						useDynamicRendering;
 };
 
 template<typename T>
@@ -151,64 +154,68 @@ void DrawTestCase::initPrograms (vk::SourceCollections& programCollection) const
 		std::pair<std::string, std::string>{"indent"			, (m_params.useStructure ? "    " : "")},
 	};
 
-	const tcu::StringTemplate vertShaderMulti
-	{
-		"#version 430\n"
-		"${extensions}"
-		"\n"
-		"layout(location = 0) in vec4 in_position;\n"
-		"layout(location = 1) in vec4 in_color;\n"
-		"\n"
-		"${blockOpeningOut}"
-		"${indent}layout(location = 0) ${outQual}vec4 out_color_smooth;\n"
-		"${indent}layout(location = 1) ${outQual}flat vec4 out_color_flat;\n"
-		"${indent}layout(location = 2) ${outQual}noperspective vec4 out_color_noperspective;\n"
-		"${indent}layout(location = 3) ${outQual}centroid vec4 out_color_centroid;\n"
-		"${indent}layout(location = 4) ${outQual}sample vec4 out_color_sample;\n"
-		"${blockClosure}"
-		"\n"
-		"void main()\n"
-		"{\n"
-		"    ${accessPrefix}out_color_smooth = in_color;\n"
-		"    ${accessPrefix}out_color_flat = in_color;\n"
-		"    ${accessPrefix}out_color_noperspective = in_color;\n"
-		"    ${accessPrefix}out_color_centroid = in_color;\n"
-		"    ${accessPrefix}out_color_sample = in_color;\n"
-		"    gl_Position = in_position;\n"
-		"}\n"
-	};
+	std::ostringstream vertShaderMultiStream;
+	vertShaderMultiStream
+		<< "#version 430\n"
+		<< "${extensions}"
+		<< "\n"
+		<< "layout(location = 0) in vec4 in_position;\n"
+		<< "layout(location = 1) in vec4 in_color;\n"
+		<< "\n"
+		<< "${blockOpeningOut}"
+		<< "${indent}layout(location = 0) ${outQual}vec4 out_color_smooth;\n"
+		<< "${indent}layout(location = 1) ${outQual}flat vec4 out_color_flat;\n"
+		<< "${indent}layout(location = 2) ${outQual}noperspective vec4 out_color_noperspective;\n"
+		<< "${indent}layout(location = 3) ${outQual}centroid vec4 out_color_centroid;\n"
+		<< (m_params.includeSampleDecoration ? "${indent}layout(location = 4) ${outQual}sample vec4 out_color_sample;\n" : "")
+		<< "${blockClosure}"
+		<< "\n"
+		<< "void main()\n"
+		<< "{\n"
+		<< "    ${accessPrefix}out_color_smooth = in_color;\n"
+		<< "    ${accessPrefix}out_color_flat = in_color;\n"
+		<< "    ${accessPrefix}out_color_noperspective = in_color;\n"
+		<< "    ${accessPrefix}out_color_centroid = in_color;\n"
+		<< (m_params.includeSampleDecoration ? "    ${accessPrefix}out_color_sample = in_color;\n" : "")
+		<< "    gl_Position = in_position;\n"
+		<< "}\n"
+		;
+	const tcu::StringTemplate vertShaderMulti(vertShaderMultiStream.str());
 
-	const tcu::StringTemplate fragShaderMulti
-	{
-		"#version 430\n"
-		"${extensions}"
-		"\n"
-		"${blockOpeningIn}"
-		"${indent}layout(location = 0) ${inQual}vec4 in_color_smooth;\n"
-		"${indent}layout(location = 1) ${inQual}flat vec4 in_color_flat;\n"
-		"${indent}layout(location = 2) ${inQual}noperspective vec4 in_color_noperspective;\n"
-		"${indent}layout(location = 3) ${inQual}centroid vec4 in_color_centroid;\n"
-		"${indent}layout(location = 4) ${inQual}sample vec4 in_color_sample;\n"
-		"${blockClosure}"
-		"\n"
-		"layout(push_constant, std430) uniform PushConstants {\n"
-		"    uint interpolationIndex;\n"
-		"} pc;\n"
-		"\n"
-		"layout(location=0) out vec4 out_color;\n"
-		"\n"
-		"void main()\n"
-		"{\n"
-		"    const vec4 in_colors[" + de::toString(COUNT) + "] = vec4[](\n"
-		"        ${accessPrefix}in_color_smooth,\n"
-		"        ${accessPrefix}in_color_flat,\n"
-		"        ${accessPrefix}in_color_noperspective,\n"
-		"        ${accessPrefix}in_color_centroid,\n"
-		"        ${accessPrefix}in_color_sample\n"
-		"    );\n"
-		"    out_color = in_colors[pc.interpolationIndex];\n"
-		"}\n"
-	};
+	const auto colorCount = (m_params.includeSampleDecoration ? COUNT : (COUNT - 1));
+
+	std::ostringstream fragShaderMultiStream;
+	fragShaderMultiStream
+		<< "#version 430\n"
+		<< "${extensions}"
+		<< "\n"
+		<< "${blockOpeningIn}"
+		<< "${indent}layout(location = 0) ${inQual}vec4 in_color_smooth;\n"
+		<< "${indent}layout(location = 1) ${inQual}flat vec4 in_color_flat;\n"
+		<< "${indent}layout(location = 2) ${inQual}noperspective vec4 in_color_noperspective;\n"
+		<< "${indent}layout(location = 3) ${inQual}centroid vec4 in_color_centroid;\n"
+		<< (m_params.includeSampleDecoration ? "${indent}layout(location = 4) ${inQual}sample vec4 in_color_sample;\n" : "")
+		<< "${blockClosure}"
+		<< "\n"
+		<< "layout(push_constant, std430) uniform PushConstants {\n"
+		<< "    uint interpolationIndex;\n"
+		<< "} pc;\n"
+		<< "\n"
+		<< "layout(location=0) out vec4 out_color;\n"
+		<< "\n"
+		<< "void main()\n"
+		<< "{\n"
+		<< "    const vec4 in_colors[" + de::toString(colorCount) + "] = vec4[](\n"
+		<< "        ${accessPrefix}in_color_smooth,\n"
+		<< "        ${accessPrefix}in_color_flat,\n"
+		<< "        ${accessPrefix}in_color_noperspective,\n"
+		<< "        ${accessPrefix}in_color_centroid" << (m_params.includeSampleDecoration ? "," : "") << "\n"
+		<< (m_params.includeSampleDecoration ? "        ${accessPrefix}in_color_sample\n" : "")
+		<< "    );\n"
+		<< "    out_color = in_colors[pc.interpolationIndex];\n"
+		<< "}\n"
+		;
+	const tcu::StringTemplate fragShaderMulti(fragShaderMultiStream.str());
 
 	const tcu::StringTemplate vertShaderSingle
 	{
@@ -267,14 +274,24 @@ void DrawTestCase::initPrograms (vk::SourceCollections& programCollection) const
 	programCollection.glslSources.add("frag_noperspective")	<< glu::FragmentSource(fragShaderSingle.specialize(noperspective));
 	programCollection.glslSources.add("vert_centroid")		<< glu::VertexSource(vertShaderSingle.specialize(centroid));
 	programCollection.glslSources.add("frag_centroid")		<< glu::FragmentSource(fragShaderSingle.specialize(centroid));
-	programCollection.glslSources.add("vert_sample")		<< glu::VertexSource(vertShaderSingle.specialize(sample));
-	programCollection.glslSources.add("frag_sample")		<< glu::FragmentSource(fragShaderSingle.specialize(sample));
+
+	if (m_params.includeSampleDecoration)
+	{
+		programCollection.glslSources.add("vert_sample")		<< glu::VertexSource(vertShaderSingle.specialize(sample));
+		programCollection.glslSources.add("frag_sample")		<< glu::FragmentSource(fragShaderSingle.specialize(sample));
+	}
 }
 
 void DrawTestCase::checkSupport (Context& context) const
 {
 	if (!(m_params.samples & context.getDeviceProperties().limits.framebufferColorSampleCounts))
-		throw tcu::NotSupportedError("Multisampling with " + de::toString(m_params.samples) + " samples not supported");
+		TCU_THROW(NotSupportedError, "Multisampling with " + de::toString(m_params.samples) + " samples not supported");
+
+	if (m_params.includeSampleDecoration && !context.getDeviceFeatures().sampleRateShading)
+		TCU_THROW(NotSupportedError, "Sample rate shading not supported");
+
+	if (m_params.useDynamicRendering)
+		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 }
 
 TestInstance* DrawTestCase::createInstance (Context& context) const
@@ -343,7 +360,25 @@ void DrawTestInstance::render (de::SharedPtr<Image>& colorTargetImage,
 		}
 	}
 
+	{
+		const ImageViewCreateInfo colorTargetViewInfo(colorTargetImage->object(),
+													  vk::VK_IMAGE_VIEW_TYPE_2D,
+													  m_params.format);
+
+		colorTargetViews.push_back(makeSharedPtr(createImageView(vk, device, &colorTargetViewInfo)));
+
+		if (useMultisampling)
+		{
+			const ImageViewCreateInfo multisamplingTargetViewInfo(multisampleImage->object(),
+																  vk::VK_IMAGE_VIEW_TYPE_2D,
+																  m_params.format);
+
+			multisampleViews.push_back(makeSharedPtr(createImageView(vk, device, &multisamplingTargetViewInfo)));
+		}
+	}
+
 	// Create render pass and framebuffer
+	if (!m_params.useDynamicRendering)
 	{
 		RenderPassCreateInfo					renderPassCreateInfo;
 		std::vector<vk::VkImageView>			attachments;
@@ -352,17 +387,12 @@ void DrawTestInstance::render (de::SharedPtr<Image>& colorTargetImage,
 		deUint32								attachmentNdx				= 0;
 
 		{
-			const ImageViewCreateInfo		colorTargetViewInfo			(colorTargetImage->object(),
-																		 vk::VK_IMAGE_VIEW_TYPE_2D,
-																		 m_params.format);
-
 			const vk::VkAttachmentReference	colorAttachmentReference	=
 			{
 				attachmentNdx++,
 				vk::VK_IMAGE_LAYOUT_GENERAL
 			};
 
-			colorTargetViews.push_back(makeSharedPtr(createImageView(vk, device, &colorTargetViewInfo)));
 			colorAttachmentRefs.push_back(colorAttachmentReference);
 
 			renderPassCreateInfo.addAttachment(AttachmentDescription(m_params.format,
@@ -376,17 +406,12 @@ void DrawTestInstance::render (de::SharedPtr<Image>& colorTargetImage,
 
 			if (useMultisampling)
 			{
-				const ImageViewCreateInfo		multisamplingTargetViewInfo		(multisampleImage->object(),
-																				 vk::VK_IMAGE_VIEW_TYPE_2D,
-																				 m_params.format);
-
 				const vk::VkAttachmentReference	multiSampleAttachmentReference	=
 				{
 					attachmentNdx++,
 					vk::VK_IMAGE_LAYOUT_GENERAL
 				};
 
-				multisampleViews.push_back(makeSharedPtr(createImageView(vk, device, &multisamplingTargetViewInfo)));
 				multisampleAttachmentRefs.push_back(multiSampleAttachmentReference);
 
 				renderPassCreateInfo.addAttachment(AttachmentDescription(m_params.format,
@@ -511,6 +536,21 @@ void DrawTestInstance::render (de::SharedPtr<Image>& colorTargetImage,
 		pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
 		pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState(m_params.samples, sampleShadingEnable, 1.0f));
 
+		std::vector<vk::VkFormat> colorAttachmentFormats(colorTargetViews.size(), m_params.format);
+		vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo
+		{
+			vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+			DE_NULL,
+			0u,
+			static_cast<deUint32>(colorAttachmentFormats.size()),
+			colorAttachmentFormats.data(),
+			vk::VK_FORMAT_UNDEFINED,
+			vk::VK_FORMAT_UNDEFINED
+		};
+
+		if (m_params.useDynamicRendering)
+			pipelineCreateInfo.pNext = &renderingCreateInfo;
+
 		pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 	}
 
@@ -522,19 +562,80 @@ void DrawTestInstance::render (de::SharedPtr<Image>& colorTargetImage,
 		const vk::VkBuffer				buffer				= vertexBuffer->object();
 		const vk::VkOffset3D			zeroOffset			= { 0, 0, 0 };
 		const auto						clearValueColor		= vk::makeClearValueColor(tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
-		std::vector<vk::VkClearValue>	clearValues;
-
-		clearValues.push_back(clearValueColor);
-		if (useMultisampling)
-			clearValues.push_back(clearValueColor);
+		std::vector<vk::VkClearValue>	clearValues			(2, clearValueColor);
 
 		beginCommandBuffer(vk, *cmdBuffer, 0u);
-		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea, (deUint32)clearValues.size(), &clearValues[0]);
+
+		if (m_params.useDynamicRendering)
+		{
+			const deUint32 imagesCount = static_cast<deUint32>(colorTargetViews.size());
+			std::vector<vk::VkRenderingAttachmentInfoKHR> colorAttachments(imagesCount,
+			{
+				vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,	// VkStructureType						sType;
+				DE_NULL,												// const void*							pNext;
+				DE_NULL,												// VkImageView							imageView;
+				vk::VK_IMAGE_LAYOUT_GENERAL,							// VkImageLayout						imageLayout;
+				vk::VK_RESOLVE_MODE_NONE,								// VkResolveModeFlagBits				resolveMode;
+				DE_NULL,												// VkImageView							resolveImageView;
+				vk::VK_IMAGE_LAYOUT_GENERAL,							// VkImageLayout						resolveImageLayout;
+				vk::VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp					loadOp;
+				vk::VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp					storeOp;
+				clearValueColor											// VkClearValue							clearValue;
+			});
+
+			for (deUint32 i = 0; i < imagesCount; ++i)
+			{
+				if (useMultisampling)
+				{
+					colorAttachments[i].imageView			= **multisampleViews[i];
+					colorAttachments[i].resolveMode			= vk::VK_RESOLVE_MODE_AVERAGE_BIT;
+					colorAttachments[i].resolveImageView	= **colorTargetViews[i];
+				}
+				else
+					colorAttachments[i].imageView = **colorTargetViews[i];
+			}
+
+			vk::VkRenderingInfoKHR renderingInfo
+			{
+				vk::VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+				DE_NULL,
+				0,														// VkRenderingFlagsKHR					flags;
+				renderArea,												// VkRect2D								renderArea;
+				1u,														// deUint32								layerCount;
+				0u,														// deUint32								viewMask;
+				imagesCount,											// deUint32								colorAttachmentCount;
+				colorAttachments.data(),								// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
+				DE_NULL,												// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
+				DE_NULL,												// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
+			};
+
+			// Transition Images
+			initialTransitionColor2DImage(vk, *cmdBuffer, colorTargetImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL,
+				vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+			if (useMultisampling)
+			{
+				initialTransitionColor2DImage(vk, *cmdBuffer, multisampleImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL,
+					vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+			}
+
+			vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
+		}
+		else
+		{
+			const deUint32 imagesCount = static_cast<deUint32>(colorTargetViews.size() + multisampleViews.size());
+			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea, imagesCount, &clearValues[0]);
+		}
+
 		vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &buffer, &vertexBufferOffset);
 		vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 		vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, vk::VK_SHADER_STAGE_FRAGMENT_BIT, 0u, pcDataSize, &pcData);
 		vk.cmdDraw(*cmdBuffer, 3u, 1u, 0u, 0u);
-		endRenderPass(vk, *cmdBuffer);
+
+		if (m_params.useDynamicRendering)
+			endRendering(vk, *cmdBuffer);
+		else
+			endRenderPass(vk, *cmdBuffer);
 
 		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
@@ -553,10 +654,22 @@ bool DrawTestInstance::compare (const tcu::ConstPixelBufferAccess& result, const
 {
 	DE_ASSERT(result.getSize() == reference.getSize());
 
-	const size_t	size	= result.getWidth() * result.getHeight() * vk::mapVkFormat(m_params.format).getPixelSize();
-	const int		res		= deMemCmp(result.getDataPtr(), reference.getDataPtr(), size);
+	const tcu::IVec4	threshold	(1u, 1u, 1u, 1u);
 
-	return (res == 0);
+	for (int y = 0; y < result.getHeight(); y++)
+	{
+		for (int x = 0; x < result.getWidth(); x++)
+		{
+			tcu::IVec4	refPix	= reference.getPixelInt(x, y);
+			tcu::IVec4	cmpPix	= result.getPixelInt(x, y);
+			tcu::IVec4	diff	= tcu::abs(refPix - cmpPix);
+
+			if (!tcu::boolAll(tcu::lessThanEqual(diff, threshold)))
+				return false;
+		}
+	}
+
+	return true;
 }
 
 tcu::TestStatus DrawTestInstance::iterate (void)
@@ -575,15 +688,20 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 	tcu::ConstPixelBufferAccess			refSRSFrames[frameCount]; // Using sample rate shading.
 
 	for (int interpolationType = 0; interpolationType < COUNT; ++interpolationType)
-		render(resImages[interpolationType], &resFrames[interpolationType], "vert_multi", "frag_multi", static_cast<Interpolation>(interpolationType), false);
+	{
+		// Avoid generating a result image for the sample decoration if we're not using it.
+		if (!m_params.includeSampleDecoration && interpolationType == Interpolation::SAMPLE)
+			continue;
 
-	const auto&	features					= m_context.getDeviceFeatures();
-	const bool	sampleRateShadingSupport	= features.sampleRateShading;
+		render(resImages[interpolationType], &resFrames[interpolationType], "vert_multi", "frag_multi", static_cast<Interpolation>(interpolationType), false);
+	}
 
 	for (int i = 0; i < 2; ++i)
 	{
 		const bool useSampleRateShading = (i > 0);
-		if (useSampleRateShading && !sampleRateShadingSupport)
+
+		// Sample rate shading is an alternative good result for cases using the sample decoration.
+		if (useSampleRateShading && !m_params.includeSampleDecoration)
 			continue;
 
 		tcu::ConstPixelBufferAccess *framesArray = (useSampleRateShading ? refSRSFrames : refFrames);
@@ -592,27 +710,36 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 		render(flatImage[i],			&framesArray[FLAT],				"vert_flat",			"frag_flat",			FLAT,			useSampleRateShading);
 		render(noperspectiveImage[i],	&framesArray[NOPERSPECTIVE],	"vert_noperspective",	"frag_noperspective",	NOPERSPECTIVE,	useSampleRateShading);
 		render(centroidImage[i],		&framesArray[CENTROID],			"vert_centroid",		"frag_centroid",		CENTROID,		useSampleRateShading);
-		render(sampleImage[i],			&framesArray[SAMPLE],			"vert_sample",			"frag_sample",			SAMPLE,			useSampleRateShading);
+
+		// Avoid generating a reference image for the sample interpolation if we're not using it.
+		if (m_params.includeSampleDecoration)
+			render(sampleImage[i],		&framesArray[SAMPLE],			"vert_sample",			"frag_sample",			SAMPLE,			useSampleRateShading);
 	}
 
 	for (deUint32 resNdx = 0; resNdx < frameCount; resNdx++)
 	{
+		if (!m_params.includeSampleDecoration && resNdx == SAMPLE)
+			continue;
+
 		const std::string resName = interpolationToString((Interpolation)resNdx);
 
 		log	<< tcu::TestLog::ImageSet(resName, resName)
 			<< tcu::TestLog::Image("Result", "Result", resFrames[resNdx])
 			<< tcu::TestLog::Image("Reference", "Reference", refFrames[resNdx]);
-		if (sampleRateShadingSupport)
+		if (m_params.includeSampleDecoration)
 			log << tcu::TestLog::Image("ReferenceSRS", "Reference with sample shading", refSRSFrames[resNdx]);
 		log	<< tcu::TestLog::EndImageSet;
 
 		for (deUint32 refNdx = 0; refNdx < frameCount; refNdx++)
 		{
+			if (!m_params.includeSampleDecoration && refNdx == SAMPLE)
+				continue;
+
 			const std::string refName = interpolationToString((Interpolation)refNdx);
 
 			if (resNdx == refNdx)
 			{
-				if (!compare(resFrames[resNdx], refFrames[refNdx]) && (!sampleRateShadingSupport || !compare(resFrames[resNdx], refSRSFrames[refNdx])))
+				if (!compare(resFrames[resNdx], refFrames[refNdx]) && (!m_params.includeSampleDecoration || !compare(resFrames[resNdx], refSRSFrames[refNdx])))
 					return tcu::TestStatus::fail(resName + " produced different results");
 			}
 			else if (!useMultisampling &&
@@ -648,7 +775,7 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 	return tcu::TestStatus::pass("Results differ and references match");
 }
 
-void createTests (tcu::TestCaseGroup* testGroup)
+void createTests (tcu::TestCaseGroup* testGroup, bool useDynamicRendering)
 {
 	tcu::TestContext&	testCtx	= testGroup->getTestContext();
 	const vk::VkFormat	format	= vk::VK_FORMAT_R8G8B8A8_UNORM;
@@ -684,14 +811,31 @@ void createTests (tcu::TestCaseGroup* testGroup)
 		{ true,		"structured"	},
 	};
 
+	const struct
+	{
+		const bool			includeSampleDecoration;
+		const std::string	groupName;
+	} sampleVariants[] =
+	{
+		{ false,	"no_sample_decoration"		},
+		{ true,		"with_sample_decoration"	},
+	};
+
 	for (const auto& grpVariant : groupVariants)
 	{
 		de::MovePtr<tcu::TestCaseGroup> group {new tcu::TestCaseGroup{testCtx, grpVariant.groupName.c_str(), ""}};
 
-		for (const auto& testVariant : testVariants)
+		for (const auto& sampleVariant : sampleVariants)
 		{
-			const DrawParams params {format, size, testVariant.samples, grpVariant.useStructure};
-			group->addChild(new DrawTestCase(testCtx, testVariant.name, testVariant.desc, params));
+			de::MovePtr<tcu::TestCaseGroup> sampleGroup {new tcu::TestCaseGroup{testCtx, sampleVariant.groupName.c_str(), ""}};
+
+			for (const auto& testVariant : testVariants)
+			{
+				const DrawParams params {format, size, testVariant.samples, grpVariant.useStructure, sampleVariant.includeSampleDecoration, useDynamicRendering};
+				sampleGroup->addChild(new DrawTestCase(testCtx, testVariant.name, testVariant.desc, params));
+			}
+
+			group->addChild(sampleGroup.release());
 		}
 
 		testGroup->addChild(group.release());
@@ -700,12 +844,13 @@ void createTests (tcu::TestCaseGroup* testGroup)
 
 }	// anonymous
 
-tcu::TestCaseGroup* createMultipleInterpolationTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createMultipleInterpolationTests (tcu::TestContext& testCtx, bool useDynamicRendering)
 {
 	return createTestGroup(testCtx,
 						   "multiple_interpolation",
 						   "Tests for multiple interpolation decorations in a shader stage.",
-						   createTests);
+						   createTests,
+						   useDynamicRendering);
 }
 
 }	// Draw

@@ -32,7 +32,7 @@
 namespace tcu
 {
 
-static inline float sRGBChannelToLinear (float cs)
+float sRGBChannelToLinear (float cs)
 {
 	if (cs <= 0.04045)
 		return cs / 12.92f;
@@ -53,7 +53,7 @@ static inline float sRGB8ChannelToLinear (deUint32 cs)
 	return ((const float*)s_srgb8Lut)[cs];
 }
 
-static inline float linearChannelToSRGB (float cl)
+float linearChannelToSRGB (float cl)
 {
 	if (cl <= 0.0f)
 		return 0.0f;
@@ -1545,7 +1545,7 @@ ViewType getEffectiveTView (const ViewType& src, std::vector<tcu::ConstPixelBuff
 {
 	storage.resize(src.getNumLevels());
 
-	ViewType view = ViewType(src.getNumLevels(), &storage[0], src.isES2());
+	ViewType view = ViewType(src.getNumLevels(), &storage[0], src.isES2(), src.getImageViewMinLodParams());
 
 	for (int levelNdx = 0; levelNdx < src.getNumLevels(); ++levelNdx)
 		storage[levelNdx] = tcu::getEffectiveDepthStencilAccess(src.getLevel(levelNdx), sampler.depthStencilMode);
@@ -1567,7 +1567,7 @@ tcu::TextureCubeView getEffectiveTView (const tcu::TextureCubeView& src, std::ve
 		&storage[5 * src.getNumLevels()],
 	};
 
-	tcu::TextureCubeView view = tcu::TextureCubeView(src.getNumLevels(), storagePtrs, false);
+	tcu::TextureCubeView view = tcu::TextureCubeView(src.getNumLevels(), storagePtrs, false, src.getImageViewMinLodParams());
 
 	for (int faceNdx = 0; faceNdx < tcu::CUBEFACE_LAST; ++faceNdx)
 	for (int levelNdx = 0; levelNdx < src.getNumLevels(); ++levelNdx)

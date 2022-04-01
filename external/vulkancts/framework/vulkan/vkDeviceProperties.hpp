@@ -48,6 +48,7 @@ struct AllPropertiesBlobs
 {
 	VkPhysicalDeviceVulkan11Properties& vk11;
 	VkPhysicalDeviceVulkan12Properties& vk12;
+	VkPhysicalDeviceVulkan13Properties& vk13;
 	// add blobs from future vulkan versions here
 };
 
@@ -105,6 +106,7 @@ public:
 	const VkPhysicalDeviceProperties2&			getCoreProperties2			(void) const { return m_coreProperties2; }
 	const VkPhysicalDeviceVulkan11Properties&	getVulkan11Properties		(void) const { return m_vulkan11Properties; }
 	const VkPhysicalDeviceVulkan12Properties&	getVulkan12Properties		(void) const { return m_vulkan12Properties; }
+	const VkPhysicalDeviceVulkan13Properties&	getVulkan13Properties		(void) const { return m_vulkan13Properties; }
 
 	bool										contains					(const std::string& property, bool throwIfNotExists = false) const;
 
@@ -120,6 +122,7 @@ private:
 	mutable std::vector<PropertyStructWrapperBase*>	m_properties;
 	VkPhysicalDeviceVulkan11Properties				m_vulkan11Properties;
 	VkPhysicalDeviceVulkan12Properties				m_vulkan12Properties;
+	VkPhysicalDeviceVulkan13Properties				m_vulkan13Properties;
 };
 
 template<class PropertyType>

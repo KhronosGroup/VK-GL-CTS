@@ -577,6 +577,8 @@ void DualSourceBlendTest::initPrograms (SourceCollections& sourceCollections) co
 		"{\n"
 		"	fragColor0 = vtxColor0;\n"
 		"	fragColor1 = vtxColor1;\n"
+		"   if (int(gl_FragCoord.x) == 2 || int(gl_FragCoord.y) == 3)\n"
+		"      discard;\n"
 		"}\n";
 
 	sourceCollections.glslSources.add("color_frag") << glu::FragmentSource(fragmentSource.str());
@@ -907,6 +909,10 @@ tcu::Vec4 getFormatThreshold (const tcu::TextureFormat& format)
 			threshold = Vec4(getNormChannelThreshold(format, 5), getNormChannelThreshold(format, 5), getNormChannelThreshold(format, 5), 0.1f);
 			break;
 
+		case TextureFormat::UNORM_SHORT_10:
+			threshold = Vec4(getNormChannelThreshold(format, 10));
+			break;
+
 		case TextureFormat::UNORM_INT_1010102_REV:
 		case TextureFormat::SNORM_INT_1010102_REV:
 			threshold = Vec4(getNormChannelThreshold(format, 10), getNormChannelThreshold(format, 10), getNormChannelThreshold(format, 10), 0.34f);
@@ -971,6 +977,7 @@ bool isLegalExpandableFormat (tcu::TextureFormat::ChannelType channeltype)
 		case TextureFormat::UNORM_SHORT_4444:
 		case TextureFormat::UNORM_SHORT_5551:
 		case TextureFormat::UNORM_SHORT_1555:
+		case TextureFormat::UNORM_SHORT_10:
 		case TextureFormat::UNORM_INT_101010:
 		case TextureFormat::SNORM_INT_1010102_REV:
 		case TextureFormat::UNORM_INT_1010102_REV:
@@ -1045,6 +1052,7 @@ bool isSmallerThan8BitFormat (tcu::TextureFormat::ChannelType channeltype)
 		case TextureFormat::UNSIGNED_INT_24_8_REV:
 		case TextureFormat::UNSIGNED_INT24:
 		case TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
+		case TextureFormat::UNORM_SHORT_10:
 			return false;
 
 		default:
@@ -1470,9 +1478,17 @@ tcu::TestStatus DualSourceBlendTestInstance::verifyImage (void)
 	ReferenceRenderer					refRenderer64		(m_renderSize.x(), m_renderSize.y(), 1, tcuColorFormat64, tcuDepthFormat, &program);
 	ReferenceRenderer					refRenderer8		(m_renderSize.x(), m_renderSize.y(), 1, tcuColorFormat8, tcuDepthFormat, &program);
 	bool								compareOk			= false;
+	tcu::PixelBufferAccess				access				= refRenderer.getAccess();
+	tcu::PixelBufferAccess				access8				= refRenderer8.getAccess();
+	tcu::PixelBufferAccess				access64			= refRenderer64.getAccess();
 
 	// Render reference image
 	{
+		// read clear color
+		tcu::Vec4 discardColor		= access.getPixel(0, 0);
+		tcu::Vec4 discardColor8		= access8.getPixel(0, 0);
+		tcu::Vec4 discardColor64	= access64.getPixel(0, 0);
+
 		for (int quadNdx = 0; quadNdx < BlendTest::QUAD_COUNT; quadNdx++)
 		{
 			const VkPipelineColorBlendAttachmentState& blendState = m_blendStates[quadNdx];
@@ -1508,6 +1524,37 @@ tcu::TestStatus DualSourceBlendTestInstance::verifyImage (void)
 									  m_vertices.begin() + (quadNdx + 1) * 6));
 			}
 		}
+
+		// re-request the pixel access; copies various formats to accessable ones
+		// (if we don't do this, the above draws don't matter)
+		access = refRenderer.getAccess();
+		access8 = refRenderer8.getAccess();
+		access64 = refRenderer64.getAccess();
+
+		// Paint back the discarded pixels with the clear color. The reference
+		// renderer doesn't actually run the shader, and doesn't know about discard,
+		// so this is a way to get to the images we wanted.
+		for (int i = 0; i < access.getWidth(); i++)
+		{
+			access.setPixel(discardColor, i, 3);
+			if (isLegalExpandableFormat(tcuColorFormat.type))
+			{
+				access64.setPixel(discardColor64, i, 3);
+				if (isSmallerThan8BitFormat(tcuColorFormat.type))
+					access8.setPixel(discardColor8, i, 3);
+			}
+		}
+
+		for (int i = 0; i < access.getHeight(); i++)
+		{
+			access.setPixel(discardColor, 2, i);
+			if (isLegalExpandableFormat(tcuColorFormat.type))
+			{
+				access64.setPixel(discardColor64, 2, i);
+				if (isSmallerThan8BitFormat(tcuColorFormat.type))
+					access8.setPixel(discardColor8, 2, i);
+			}
+		}
 	}
 
 	// Compare result with reference image
@@ -1533,7 +1580,7 @@ tcu::TestStatus DualSourceBlendTestInstance::verifyImage (void)
 		compareOk = tcu::floatThresholdCompare(m_context.getTestContext().getLog(),
 											   "FloatImageCompare",
 											   "Image comparison",
-											   refRenderer.getAccess(),
+											   access,
 											   result->getAccess(),
 											   threshold,
 											   tcu::COMPARE_LOG_RESULT);
@@ -1543,7 +1590,7 @@ tcu::TestStatus DualSourceBlendTestInstance::verifyImage (void)
 			if (!compareOk && isSmallerThan8BitFormat(tcuColorFormat.type))
 			{
 				// Convert to target format
-				tcu::copy(refLevel.getAccess(), refRenderer8.getAccess());
+				tcu::copy(refLevel.getAccess(), access8);
 
 				compareOk = tcu::floatThresholdCompare(m_context.getTestContext().getLog(),
 													   "FloatImageCompare",
@@ -1557,7 +1604,7 @@ tcu::TestStatus DualSourceBlendTestInstance::verifyImage (void)
 			if (!compareOk)
 			{
 				// Convert to target format
-				tcu::copy(refLevel.getAccess(), refRenderer64.getAccess());
+				tcu::copy(refLevel.getAccess(), access64);
 
 				compareOk = tcu::floatThresholdCompare(m_context.getTestContext().getLog(),
 													   "FloatImageCompare",
@@ -2071,6 +2118,7 @@ tcu::TestCaseGroup* createBlendTests (tcu::TestContext& testCtx)
 		VK_FORMAT_B5G5R5A1_UNORM_PACK16,
 		VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT,
 		VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT,
+		VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16,
 	};
 
 	de::MovePtr<tcu::TestCaseGroup>				blendTests				(new tcu::TestCaseGroup(testCtx, "blend", "Blend tests"));

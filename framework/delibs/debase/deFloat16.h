@@ -75,7 +75,7 @@ static const deFloat16 deFloat16QuietNaN = 0x7e01;
 
 DE_INLINE deBool deHalfIsIEEENaN(deFloat16 x)
 {
-	deUint16 e = (x & 0x7c00u) >> 10;
+	deUint16 e = (deUint16)((x & 0x7c00u) >> 10);
 	deUint16 m = (x & 0x03ffu);
 	return e == 0x1f && m != 0;
 }

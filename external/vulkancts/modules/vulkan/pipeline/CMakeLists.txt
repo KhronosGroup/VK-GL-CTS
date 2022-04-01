@@ -57,18 +57,24 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineMultisampleImageTests.hpp
 	vktPipelineMultisampleMixedAttachmentSamplesTests.cpp
 	vktPipelineMultisampleMixedAttachmentSamplesTests.hpp
+	vktPipelineMultisampleResolveRenderAreaTests.cpp
+	vktPipelineMultisampleResolveRenderAreaTests.hpp
 	vktPipelineMultisampleSampleLocationsExtTests.cpp
 	vktPipelineMultisampleSampleLocationsExtTests.hpp
 	vktPipelineMultisampleShaderFragmentMaskTests.cpp
 	vktPipelineMultisampleShaderFragmentMaskTests.hpp
 	vktPipelineInputAssemblyTests.cpp
 	vktPipelineInputAssemblyTests.hpp
+	vktPipelineInterfaceMatchingTests.cpp
+	vktPipelineInterfaceMatchingTests.hpp
 	vktPipelineReferenceRenderer.cpp
 	vktPipelineReferenceRenderer.hpp
 	vktPipelineRenderToImageTests.cpp
 	vktPipelineRenderToImageTests.hpp
 	vktPipelineFramebufferAttachmentTests.cpp
 	vktPipelineFramebufferAttachmentTests.hpp
+	vktPipelineSamplerBorderSwizzleTests.cpp
+	vktPipelineSamplerBorderSwizzleTests.hpp
 	vktPipelineSamplerTests.cpp
 	vktPipelineSamplerTests.hpp
 	vktPipelineStencilExportTests.cpp
@@ -125,4 +131,5 @@ target_include_directories(deqp-vk-pipeline
 		../../../../amber/src/include
 		../amber
 		../util
+		${DEQP_INL_DIR}
 )

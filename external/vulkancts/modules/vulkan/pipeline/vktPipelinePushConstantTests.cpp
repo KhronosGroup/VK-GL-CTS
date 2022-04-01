@@ -133,6 +133,14 @@ enum IndexType
 	INDEX_TYPE_LAST
 };
 
+enum ComputeTestType
+{
+	CTT_SIMPLE = 0,
+	CTT_UNINITIALIZED,
+
+	CTT_LAST
+};
+
 std::string getShaderStageNameStr (VkShaderStageFlags stageFlags)
 {
 	const VkShaderStageFlags	shaderStages[]		=
@@ -1144,8 +1152,8 @@ void PushConstantGraphicsDisjointTest::initPrograms (SourceCollections& sourceCo
 									  << "} matInst;\n";
 							break;
 						case SIZE_CASE_48:
-							vertexSrc << "int dummy1;\n"
-									  << "vec4 dummy2;\n"
+							vertexSrc << "int unused1;\n"
+									  << "vec4 unused2;\n"
 									  << "vec4 color;\n"
 									  << "} matInst;\n";
 							break;
@@ -1474,8 +1482,8 @@ std::string PushConstantGraphicsOverlapTest::getPushConstantDeclarationStr (VkSh
 					src << "    layout(offset = " << m_pushConstantRange[rangeNdx].range.offset << ") vec4 color[2];\n";
 					break;
 				case SIZE_CASE_36:
-					src << "    layout(offset = " << m_pushConstantRange[rangeNdx].range.offset << ") int dummy1;\n"
-						<< "    layout(offset = " << (m_pushConstantRange[rangeNdx].range.offset + 4) << ") vec4 dummy2;\n"
+					src << "    layout(offset = " << m_pushConstantRange[rangeNdx].range.offset << ") int unused1;\n"
+						<< "    layout(offset = " << (m_pushConstantRange[rangeNdx].range.offset + 4) << ") vec4 unused2;\n"
 						<< "    layout(offset = " << (m_pushConstantRange[rangeNdx].range.offset + 20) << ") vec4 color;\n";
 					break;
 				case SIZE_CASE_128:
@@ -1667,12 +1675,15 @@ public:
 							PushConstantComputeTest		(tcu::TestContext&		testContext,
 														 const std::string&		name,
 														 const std::string&		description,
+														 const ComputeTestType	testType,
 														 const PushConstantData	pushConstantRange);
 	virtual					~PushConstantComputeTest	(void);
 	virtual void			initPrograms				(SourceCollections& sourceCollections) const;
 	virtual TestInstance*	createInstance				(Context& context) const;
+	virtual void			checkSupport				(Context& context) const;
 
 private:
+	const ComputeTestType	m_testType;
 	const PushConstantData	m_pushConstantRange;
 };
 
@@ -1680,11 +1691,13 @@ class PushConstantComputeTestInstance : public vkt::TestInstance
 {
 public:
 							PushConstantComputeTestInstance		(Context&				context,
+																 const ComputeTestType	testType,
 																 const PushConstantData	pushConstantRange);
 	virtual					~PushConstantComputeTestInstance	(void);
 	virtual tcu::TestStatus	iterate								(void);
 
 private:
+	const ComputeTestType			m_testType;
 	const PushConstantData			m_pushConstantRange;
 
 	Move<VkBuffer>					m_outBuffer;
@@ -1705,8 +1718,10 @@ private:
 PushConstantComputeTest::PushConstantComputeTest (tcu::TestContext&			testContext,
 												  const std::string&		name,
 												  const std::string&		description,
+												  const ComputeTestType		testType,
 												  const PushConstantData	pushConstantRange)
 	: vkt::TestCase			(testContext, name, description)
+	, m_testType			(testType)
 	, m_pushConstantRange	(pushConstantRange)
 {
 }
@@ -1717,7 +1732,13 @@ PushConstantComputeTest::~PushConstantComputeTest (void)
 
 TestInstance* PushConstantComputeTest::createInstance (Context& context) const
 {
-	return new PushConstantComputeTestInstance(context, m_pushConstantRange);
+	return new PushConstantComputeTestInstance(context, m_testType, m_pushConstantRange);
+}
+
+void PushConstantComputeTest::checkSupport(Context& context) const
+{
+	if (CTT_UNINITIALIZED == m_testType)
+		context.requireDeviceFunctionality("VK_KHR_maintenance4");
 }
 
 void PushConstantComputeTest::initPrograms (SourceCollections& sourceCollections) const
@@ -1741,8 +1762,10 @@ void PushConstantComputeTest::initPrograms (SourceCollections& sourceCollections
 }
 
 PushConstantComputeTestInstance::PushConstantComputeTestInstance (Context&					context,
+																  const ComputeTestType		testType,
 																  const PushConstantData	pushConstantRange)
 	: vkt::TestInstance		(context)
+	, m_testType			(testType)
 	, m_pushConstantRange	(pushConstantRange)
 {
 	const DeviceInterface&		vk					= context.getDeviceInterface();
@@ -1856,8 +1879,11 @@ PushConstantComputeTestInstance::PushConstantComputeTestInstance (Context&					c
 		vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0, 1, &(*m_descriptorSet), 0, DE_NULL);
 
 		// update push constant
-		tcu::Vec4	value	= tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f);
-		vk.cmdPushConstants(*m_cmdBuffer, *m_pipelineLayout, m_pushConstantRange.range.shaderStage, m_pushConstantRange.range.offset, m_pushConstantRange.range.size, &value);
+		if (CTT_UNINITIALIZED != m_testType)
+		{
+			tcu::Vec4	value	= tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f);
+			vk.cmdPushConstants(*m_cmdBuffer, *m_pipelineLayout, m_pushConstantRange.range.shaderStage, m_pushConstantRange.range.offset, m_pushConstantRange.range.size, &value);
+		}
 
 		vk.cmdDispatch(*m_cmdBuffer, 8, 1, 1);
 
@@ -1891,6 +1917,11 @@ tcu::TestStatus PushConstantComputeTestInstance::iterate (void)
 	const VkQueue				queue		= m_context.getUniversalQueue();
 
 	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
+
+	// The test should run without crashing when reading that undefined value.
+	// The actual value is not important, test just shouldn't crash.
+	if (CTT_UNINITIALIZED == m_testType)
+		return tcu::TestStatus::pass("pass");
 
 	invalidateAlloc(vk, vkDevice, *m_outBufferAlloc);
 
@@ -2684,9 +2715,9 @@ void OverwriteTestCase::initPrograms (vk::SourceCollections& programCollection) 
 			<< "\n"
 			<< "void main()\n"
 			<< "{\n"
-			// Full-screen clockwise triangle fan with 4 vertices.
-			<< "    const float x = (-1.0+2.0*(((gl_VertexIndex+1)&2)>>1));\n"
-			<< "    const float y = (-1.0+2.0*(( gl_VertexIndex   &2)>>1));\n"
+			// Full-screen clockwise triangle strip with 4 vertices.
+			<< "	const float x = (-1.0+2.0*((gl_VertexIndex & 2)>>1));\n"
+			<< "	const float y = ( 1.0-2.0* (gl_VertexIndex % 2));\n"
 			<< "	gl_Position = vec4(x, y, 0.0, 1.0);\n"
 			<< "}\n"
 			;
@@ -2818,7 +2849,7 @@ tcu::TestStatus OverwriteTestInstance::iterate (void)
 		framebuffer	= makeFramebuffer(vkd, device, renderPass.get(), 0u, nullptr, imageExtent.width, imageExtent.height);
 		pipeline	= makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
 			vertModule.get(), DE_NULL, DE_NULL, DE_NULL, fragModule.get(), renderPass.get(),
-			viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN, 0u, 0u, &inputState);
+			viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u, 0u, &inputState);
 	}
 
 	// Offsets and sizes.
@@ -3118,12 +3149,20 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx)
 	{
 		const char*			name;
 		const char*			description;
+		ComputeTestType		type;
 		PushConstantData	range;
 	} computeParams[] =
 	{
 		{
 			"simple_test",
 			"test compute pipeline",
+			CTT_SIMPLE,
+			{ { VK_SHADER_STAGE_COMPUTE_BIT, 0, 16 }, { 0, 16 } },
+		},
+		{
+			"uninitialized",
+			"test push constant that is dynamically unused",
+			CTT_UNINITIALIZED,
 			{ { VK_SHADER_STAGE_COMPUTE_BIT, 0, 16 }, { 0, 16 } },
 		},
 	};
@@ -3286,7 +3325,10 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx)
 	pushConstantTests->addChild(graphicsTests.release());
 
 	de::MovePtr<tcu::TestCaseGroup>	computeTests	(new tcu::TestCaseGroup(testCtx, "compute_pipeline", "compute pipeline"));
-	computeTests->addChild(new PushConstantComputeTest(testCtx, computeParams[0].name, computeParams[0].description, computeParams[0].range));
+	for (const auto& params : computeParams)
+	{
+		computeTests->addChild(new PushConstantComputeTest(testCtx, params.name, params.description, params.type, params.range));
+	}
 	addOverwriteCase(computeTests.get(), testCtx, VK_PIPELINE_BIND_POINT_COMPUTE);
 	pushConstantTests->addChild(computeTests.release());
 

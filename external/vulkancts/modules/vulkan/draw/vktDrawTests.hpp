@@ -33,7 +33,7 @@ namespace Draw
 {
 
 tcu::TestCaseGroup*		createTests (tcu::TestContext& testCtx);
-
+tcu::TestCaseGroup*		createDynamicRenderingTests (tcu::TestContext& testCtx);
 } // Draw
 } // vkt
 

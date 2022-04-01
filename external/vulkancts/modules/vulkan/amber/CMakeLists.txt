@@ -31,6 +31,8 @@ elseif (DE_COMPILER_IS_MSC)
 endif ()
 
 include_directories("../../../../amber/src/include")
+include_directories(${DEQP_INL_DIR})
+
 add_library(deqp-vk-amber STATIC ${DEQP_VK_AMBER_SRCS})
 target_link_libraries(deqp-vk-amber ${DEQP_VK_AMBER_LIBS})
 

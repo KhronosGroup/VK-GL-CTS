@@ -510,28 +510,11 @@ deUint32 RayTracingBuildLargeTestInstance::iterateNoWorkers (void)
 
 deUint32 RayTracingBuildLargeTestInstance::iterateWithWorkers (void)
 {
-	const deUint64					singleThreadTimeStart	= deGetMicroseconds();
 	de::MovePtr<BufferWithMemory>	singleThreadBuffer		= runTest(0);
 	const deUint32					singleThreadFailures	= validateBuffer(singleThreadBuffer);
-	const deUint64					singleThreadTime		= deGetMicroseconds() - singleThreadTimeStart;
-
-	deUint64						multiThreadTimeStart	= deGetMicroseconds();
 	de::MovePtr<BufferWithMemory>	multiThreadBuffer		= runTest(m_data.workerThreadsCount);
 	const deUint32					multiThreadFailures		= validateBuffer(multiThreadBuffer);
-	deUint64						multiThreadTime			= deGetMicroseconds() - multiThreadTimeStart;
-	const deUint64					multiThreadTimeOut		= 10 * singleThreadTime;
-
 	const deUint32					failures				= singleThreadFailures + multiThreadFailures;
-
-	DE_ASSERT(multiThreadTimeOut > singleThreadTime);
-
-	if (multiThreadTime > multiThreadTimeOut)
-	{
-		string failMsg	= "Time of multithreaded test execution " + de::toString(multiThreadTime) +
-						  " that is longer than expected execution time " + de::toString(multiThreadTimeOut);
-
-		TCU_FAIL(failMsg);
-	}
 
 	return failures;
 }

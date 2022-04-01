@@ -398,7 +398,7 @@ OperationManager::ComparisonError OperationManager::compareResults (void* refere
 		resultsBytes += m_operandSize;
 	}
 
-	return tcu::nothing<OperationComponent>();
+	return tcu::Nothing;
 }
 
 class TrinaryMinMaxCase : public vkt::TestCase

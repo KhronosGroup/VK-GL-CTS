@@ -92,7 +92,7 @@ struct PositionColor
 	}
 };
 
-//! Make a dummy sampler.
+//! Make a (unused) sampler.
 Move<VkSampler> makeSampler (const DeviceInterface& vk, const VkDevice device)
 {
 	const VkSamplerCreateInfo samplerParams =
@@ -444,7 +444,7 @@ struct WorkingData
 	Move<VkBuffer>					colorBuffer;				//!< Buffer used to copy image data
 	MovePtr<Allocation>				colorBufferAlloc;
 	VkDeviceSize					colorBufferSize;
-	Move<VkSampler>					defaultSampler;				//!< Dummy sampler, we are using texel fetches
+	Move<VkSampler>					defaultSampler;				//!< Unused sampler, we are using texel fetches
 
 	WorkingData (void)
 		: numVertices		()
@@ -1092,7 +1092,7 @@ void dispatchSampleImage (Context& context, const TestParams& params, WorkingDat
 
 	const Unique<VkShaderModule>	shaderModule	(createShaderModule(vk, device, context.getBinaryCollection().get(shaderName), 0u));
 	const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout(vk, device, *descriptorSetLayout));
-	const Unique<VkPipeline>		pipeline		(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule, DE_NULL));
+	const Unique<VkPipeline>		pipeline		(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
 
 	const Unique<VkCommandPool>		cmdPool		(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, context.getUniversalQueueFamilyIndex()));
 	const Unique<VkCommandBuffer>	cmdBuffer	(makeCommandBuffer(vk, device, *cmdPool));

@@ -284,16 +284,6 @@ void VulkanPlatform::describePlatform (std::ostream& dst) const
 	dst << "\n";
 }
 
-void VulkanPlatform::getMemoryLimits (vk::PlatformMemoryLimits& limits) const
-{
-	limits.totalSystemMemory					= 256*1024*1024;
-	limits.totalDeviceLocalMemory				= 128*1024*1024;
-	limits.deviceMemoryAllocationGranularity	= 64*1024;
-	limits.devicePageSize						= 4096;
-	limits.devicePageTableEntrySize				= 8;
-	limits.devicePageTableHierarchyLevels		= 3;
-}
-
 vk::wsi::Display* VulkanPlatform::createWsiDisplay (vk::wsi::Type wsiType) const
 {
 	if (wsiType != vk::wsi::TYPE_WIN32)

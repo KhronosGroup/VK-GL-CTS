@@ -54,11 +54,18 @@ void createChildren (tcu::TestCaseGroup* group)
 	group->addChild(new DynamicStateInheritanceTests(testCtx));
 }
 
+static void cleanupGroup(tcu::TestCaseGroup* group)
+{
+	DE_UNREF(group);
+	// Destroy singleton objects.
+	cleanupDevice();
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "dynamic_state", "Dynamic State Tests", createChildren);
+	return createTestGroup(testCtx, "dynamic_state", "Dynamic State Tests", createChildren, cleanupGroup);
 }
 
 } // DynamicState

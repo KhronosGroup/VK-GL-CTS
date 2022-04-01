@@ -205,6 +205,13 @@ bool verifyTexCompareResult (tcu::TestContext&						testCtx,
 	return numFailedPixels == 0;
 }
 
+void checkTextureSupport (Context& context, const Texture2DShadowTestCaseParameters& testParameters)
+{
+	const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
+	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
+		TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
+}
+
 class Texture2DShadowTestInstance : public TestInstance
 {
 public:
@@ -409,6 +416,14 @@ tcu::TestStatus Texture2DShadowTestInstance::iterate (void)
 struct TextureCubeShadowTestCaseParameters : public TextureShadowCommonTestCaseParameters, public TextureCubeTestCaseParameters
 {
 };
+
+void checkTextureSupport (Context& context, const TextureCubeShadowTestCaseParameters& testParameters)
+{
+	const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
+	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
+		TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
+}
+
 
 class TextureCubeShadowTestInstance : public TestInstance
 {
@@ -628,6 +643,13 @@ struct Texture2DArrayShadowTestCaseParameters : public TextureShadowCommonTestCa
 {
 };
 
+void checkTextureSupport (Context& context, const Texture2DArrayShadowTestCaseParameters& testParameters)
+{
+	const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
+	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
+		TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
+}
+
 class Texture2DArrayShadowTestInstance : public TestInstance
 {
 public:
@@ -839,6 +861,13 @@ struct Texture1DShadowTestCaseParameters : public Texture1DTestCaseParameters, p
 {
 };
 
+void checkTextureSupport (Context& context, const Texture1DShadowTestCaseParameters& testParameters)
+{
+	const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
+	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
+		TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
+}
+
 class Texture1DShadowTestInstance : public TestInstance
 {
 public:
@@ -1042,6 +1071,13 @@ tcu::TestStatus Texture1DShadowTestInstance::iterate (void)
 struct Texture1DArrayShadowTestCaseParameters : public TextureShadowCommonTestCaseParameters, public Texture1DArrayTestCaseParameters
 {
 };
+
+void checkTextureSupport (Context& context, const Texture1DArrayShadowTestCaseParameters& testParameters)
+{
+	const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
+	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
+		TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
+}
 
 class Texture1DArrayShadowTestInstance : public TestInstance
 {
@@ -1250,6 +1286,13 @@ tcu::TestStatus Texture1DArrayShadowTestInstance::iterate (void)
 struct TextureCubeArrayShadowTestCaseParameters : public TextureShadowCommonTestCaseParameters, public TextureCubeArrayTestCaseParameters
 {
 };
+
+void checkTextureSupport (Context& context, const TextureCubeArrayShadowTestCaseParameters& testParameters)
+{
+	const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
+	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
+		TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
+}
 
 class TextureCubeArrayShadowTestInstance : public TestInstance
 {
@@ -1481,14 +1524,17 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 	{
 		const char*								name;
 		const VkFormat							format;
+		const VkImageAspectFlags				aspect;
 	} formats[] =
 	{
-		{ "d16_unorm",				VK_FORMAT_D16_UNORM				},
-		{ "x8_d24_unorm_pack32",	VK_FORMAT_X8_D24_UNORM_PACK32	},
-		{ "d32_sfloat",				VK_FORMAT_D32_SFLOAT			},
-		{ "d16_unorm_s8_uint",		VK_FORMAT_D16_UNORM_S8_UINT		},
-		{ "d24_unorm_s8_uint",		VK_FORMAT_D24_UNORM_S8_UINT		},
-		{ "d32_sfloat_s8_uint",		VK_FORMAT_D32_SFLOAT_S8_UINT	}
+		{ "d16_unorm",				VK_FORMAT_D16_UNORM,			VK_IMAGE_ASPECT_DEPTH_BIT	},
+		{ "x8_d24_unorm_pack32",	VK_FORMAT_X8_D24_UNORM_PACK32,	VK_IMAGE_ASPECT_DEPTH_BIT	},
+		{ "d32_sfloat",				VK_FORMAT_D32_SFLOAT,			VK_IMAGE_ASPECT_DEPTH_BIT	},
+		{ "d16_unorm_s8_uint",		VK_FORMAT_D16_UNORM_S8_UINT,	VK_IMAGE_ASPECT_DEPTH_BIT	},
+		{ "d24_unorm_s8_uint",		VK_FORMAT_D24_UNORM_S8_UINT,	VK_IMAGE_ASPECT_DEPTH_BIT	},
+		{ "d32_sfloat_s8_uint",		VK_FORMAT_D32_SFLOAT_S8_UINT,	VK_IMAGE_ASPECT_DEPTH_BIT	},
+		{ "r16_unorm",				VK_FORMAT_R16_UNORM,			VK_IMAGE_ASPECT_COLOR_BIT	},
+		{ "r32_sfloat",				VK_FORMAT_R32_SFLOAT,			VK_IMAGE_ASPECT_COLOR_BIT	}
 	};
 
 	static const struct
@@ -1548,7 +1594,7 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 						testParameters.wrapT		= Sampler::REPEAT_GL;
 						testParameters.width		= 32;
 						testParameters.height		= 64;
-						testParameters.aspectMask	= VK_IMAGE_ASPECT_DEPTH_BIT;
+						testParameters.aspectMask	= formats[formatNdx].aspect;
 						testParameters.programs.push_back(PROGRAM_2D_SHADOW);
 
 						filterGroup->addChild(new TextureTestCase<Texture2DShadowTestInstance>(testCtx, name.c_str(), "", testParameters));
@@ -1587,7 +1633,7 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 						testParameters.wrapS		= Sampler::REPEAT_GL;
 						testParameters.wrapT		= Sampler::REPEAT_GL;
 						testParameters.size			= 32;
-						testParameters.aspectMask	= VK_IMAGE_ASPECT_DEPTH_BIT;
+						testParameters.aspectMask	= formats[formatNdx].aspect;
 
 						testParameters.programs.push_back(PROGRAM_CUBE_SHADOW);
 
@@ -1629,7 +1675,7 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 						testParameters.width		= 32;
 						testParameters.height		= 64;
 						testParameters.numLayers	= 8;
-						testParameters.aspectMask	= VK_IMAGE_ASPECT_DEPTH_BIT;
+						testParameters.aspectMask	= formats[formatNdx].aspect;
 
 						testParameters.programs.push_back(PROGRAM_2D_ARRAY_SHADOW);
 
@@ -1668,7 +1714,7 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 						testParameters.compareOp	= compareOp[compareNdx].op;
 						testParameters.wrapS		= Sampler::REPEAT_GL;
 						testParameters.width		= 32;
-						testParameters.aspectMask	= VK_IMAGE_ASPECT_DEPTH_BIT;
+						testParameters.aspectMask	= formats[formatNdx].aspect;
 						testParameters.programs.push_back(PROGRAM_1D_SHADOW);
 
 						filterGroup->addChild(new TextureTestCase<Texture1DShadowTestInstance>(testCtx, name.c_str(), "", testParameters));
@@ -1707,7 +1753,7 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 						testParameters.wrapS		= Sampler::REPEAT_GL;
 						testParameters.width		= 32;
 						testParameters.numLayers	= 8;
-						testParameters.aspectMask	= VK_IMAGE_ASPECT_DEPTH_BIT;
+						testParameters.aspectMask	= formats[formatNdx].aspect;
 
 						testParameters.programs.push_back(PROGRAM_1D_ARRAY_SHADOW);
 
@@ -1748,7 +1794,7 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 						testParameters.wrapT		= Sampler::REPEAT_GL;
 						testParameters.size			= 32;
 						testParameters.numLayers	= 4 * 6;
-						testParameters.aspectMask	= VK_IMAGE_ASPECT_DEPTH_BIT;
+						testParameters.aspectMask	= formats[formatNdx].aspect;
 
 						testParameters.programs.push_back(PROGRAM_CUBE_ARRAY_SHADOW);
 

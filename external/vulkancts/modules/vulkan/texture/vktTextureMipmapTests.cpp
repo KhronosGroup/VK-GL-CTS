@@ -54,6 +54,7 @@ using tcu::TestLog;
 using tcu::Vec2;
 using tcu::Vec3;
 using tcu::Vec4;
+using tcu::IVec3;
 using tcu::IVec4;
 using tcu::Sampler;
 using tcu::TextureFormat;
@@ -127,8 +128,8 @@ struct TextureMipmapCommonTestCaseParameters
 };
 
 TextureMipmapCommonTestCaseParameters::TextureMipmapCommonTestCaseParameters (void)
-	: coordType				(COORDTYPE_BASIC)
-	, minFilterName			(NULL)
+	: coordType						(COORDTYPE_BASIC)
+	, minFilterName					(NULL)
 {
 }
 
@@ -230,6 +231,11 @@ static void getBasicTexCoord2D (std::vector<float>& dst, int cellNdx)
 	const Vec2& topRight	= s_basicCoords[cellNdx].topRight;
 
 	computeQuadTexCoord2D(dst, bottomLeft, topRight);
+}
+
+static void getBasicTexCoord2DImageViewMinLodIntTexCoord (std::vector<float>& dst)
+{
+	computeQuadTexCoord2D(dst, Vec2(0.0f), Vec2(1.0f));
 }
 
 static void getAffineTexCoord2D (std::vector<float>& dst, int cellNdx)
@@ -744,6 +750,23 @@ static void getBasicTexCoord3D (std::vector<float>& dst, int cellNdx)
 	dst[9] = sBias+sScale;	dst[10] = tBias+tScale;		dst[11] = rBias+rScale;
 }
 
+static void getBasicTexCoord3DImageViewMinlodIntTexCoord (std::vector<float>& dst)
+{
+	const float sScale	= 1.0f;
+	const float sBias	= 0.0f;
+	const float tScale	= 1.0f;
+	const float tBias	= 0.0f;
+	const float rScale	= 1.0f;
+	const float rBias	= 0.0f;
+
+	dst.resize(3*4);
+
+	dst[0] = sBias;			dst[ 1] = tBias;			dst[ 2] = rBias;
+	dst[3] = sBias;			dst[ 4] = tBias+tScale;		dst[ 5] = rBias+rScale*0.5f;
+	dst[6] = sBias+sScale;	dst[ 7] = tBias;			dst[ 8] = rBias+rScale*0.5f;
+	dst[9] = sBias+sScale;	dst[10] = tBias+tScale;		dst[11] = rBias+rScale;
+}
+
 static void getAffineTexCoord3D (std::vector<float>& dst, int cellNdx)
 {
 	// Use basic coords as base.
@@ -952,7 +975,7 @@ Texture2DLodControlTestInstance::Texture2DLodControlTestInstance (Context& conte
 	, m_testParameters	(testParameters)
 	, m_minFilter		(testParameters.minFilter)
 	, m_texture			(DE_NULL)
-	, m_renderer		(context, testParameters.sampleCount, m_texWidth*4, m_texHeight*4)
+	, m_renderer		(context, testParameters.sampleCount, m_texWidth*4, m_texHeight*4, vk::makeComponentMappingRGBA(), testParameters.testType > util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD)
 {
 	const VkFormat	format		= VK_FORMAT_R8G8B8A8_UNORM;
 	const int		numLevels	= deLog2Floor32(de::max(m_texWidth, m_texHeight))+1;
@@ -1014,12 +1037,13 @@ tcu::TestStatus Texture2DLodControlTestInstance::iterate (void)
 			const int	curH		= gridY+1 == gridHeight ? (viewportHeight-curY) : cellHeight;
 			const int	cellNdx		= gridY*gridWidth + gridX;
 
+			getReferenceParams(refParams,cellNdx);
+
 			// Compute texcoord.
 			getBasicTexCoord2D(texCoord, cellNdx);
 			// Render
-			getReferenceParams(refParams,cellNdx);
 			m_renderer.setViewport((float)curX, (float)curY, (float)curW, (float)curH);
-			m_renderer.getTextureBinding(0)->updateTextureViewMipLevels(refParams.baseLevel, refParams.maxLevel);
+			m_renderer.getTextureBinding(0)->updateTextureViewMipLevels(refParams.baseLevel, refParams.maxLevel, refParams.imageViewMinLod);
 			m_renderer.renderQuad(renderedFrame, 0, &texCoord[0], refParams);
 		}
 	}
@@ -1029,11 +1053,8 @@ tcu::TestStatus Texture2DLodControlTestInstance::iterate (void)
 		const tcu::IVec4		formatBitDepth	= getTextureFormatBitDepth(vk::mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM));
 		const tcu::PixelFormat	pixelFormat		(formatBitDepth[0], formatBitDepth[1], formatBitDepth[2], formatBitDepth[3]);
 		const bool				isTrilinear		= m_minFilter == Sampler::NEAREST_MIPMAP_LINEAR || m_minFilter == Sampler::LINEAR_MIPMAP_LINEAR;
-		tcu::Surface			referenceFrame	(viewportWidth, viewportHeight);
-		tcu::Surface			errorMask		(viewportWidth, viewportHeight);
 		tcu::LookupPrecision	lookupPrec;
 		tcu::LodPrecision		lodPrec;
-		int						numFailedPixels	= 0;
 
 		lookupPrec.coordBits		= tcu::IVec3(20, 20, 0);
 		lookupPrec.uvwBits			= tcu::IVec3(16, 16, 0); // Doesn't really matter since pixels are unicolored.
@@ -1042,45 +1063,67 @@ tcu::TestStatus Texture2DLodControlTestInstance::iterate (void)
 		lodPrec.derivateBits		= 10;
 		lodPrec.lodBits				= 8;
 
-		for (int gridY = 0; gridY < gridHeight; gridY++)
+		auto compareAndLogImages = [&] (tcu::ImageViewMinLodMode imageViewLodMode = tcu::IMAGEVIEWMINLODMODE_PREFERRED)
 		{
-			for (int gridX = 0; gridX < gridWidth; gridX++)
+			tcu::Surface			referenceFrame	(viewportWidth, viewportHeight);
+			tcu::Surface			errorMask		(viewportWidth, viewportHeight);
+
+			int						numFailedPixels = 0;
+
+			for (int gridY = 0; gridY < gridHeight; gridY++)
 			{
-				const int	curX		= cellWidth*gridX;
-				const int	curY		= cellHeight*gridY;
-				const int	curW		= gridX+1 == gridWidth ? (viewportWidth-curX) : cellWidth;
-				const int	curH		= gridY+1 == gridHeight ? (viewportHeight-curY) : cellHeight;
-				const int	cellNdx		= gridY*gridWidth + gridX;
+				for (int gridX = 0; gridX < gridWidth; gridX++)
+				{
+					const int	curX		= cellWidth*gridX;
+					const int	curY		= cellHeight*gridY;
+					const int	curW		= gridX+1 == gridWidth ? (viewportWidth-curX) : cellWidth;
+					const int	curH		= gridY+1 == gridHeight ? (viewportHeight-curY) : cellHeight;
+					const int	cellNdx		= gridY*gridWidth + gridX;
 
-				getBasicTexCoord2D(texCoord, cellNdx);
-				getReferenceParams(refParams, cellNdx);
+					getReferenceParams(refParams,cellNdx);
 
-				// Render ideal result
-				sampleTexture(tcu::SurfaceAccess(referenceFrame, pixelFormat, curX, curY, curW, curH),
-							  refTexture, &texCoord[0], refParams);
+					refParams.imageViewMinLodMode = imageViewLodMode;
 
-				// Compare this cell
-				numFailedPixels += computeTextureLookupDiff(tcu::getSubregion(renderedFrame.getAccess(), curX, curY, curW, curH),
-															tcu::getSubregion(referenceFrame.getAccess(), curX, curY, curW, curH),
-															tcu::getSubregion(errorMask.getAccess(), curX, curY, curW, curH),
-															m_texture->getTexture(), &texCoord[0], refParams,
-															lookupPrec, lodPrec, m_context.getTestContext().getWatchDog());
+					// Compute texcoord.
+					if (refParams.samplerType == glu::TextureTestUtil::SAMPLERTYPE_FETCH_FLOAT)
+						getBasicTexCoord2DImageViewMinLodIntTexCoord(texCoord);
+					else
+						getBasicTexCoord2D(texCoord, cellNdx);
+
+					// Render ideal result
+					sampleTexture(tcu::SurfaceAccess(referenceFrame, pixelFormat, curX, curY, curW, curH),
+								  refTexture, &texCoord[0], refParams);
+
+					// Compare this cell
+					numFailedPixels += computeTextureLookupDiff(tcu::getSubregion(renderedFrame.getAccess(), curX, curY, curW, curH),
+																tcu::getSubregion(referenceFrame.getAccess(), curX, curY, curW, curH),
+																tcu::getSubregion(errorMask.getAccess(), curX, curY, curW, curH),
+																m_texture->getTexture(), &texCoord[0], refParams,
+																lookupPrec, lodPrec, m_context.getTestContext().getWatchDog());
+				}
 			}
-		}
 
-		if (numFailedPixels > 0)
-			m_context.getTestContext().getLog() << TestLog::Message << "ERROR: Image verification failed, found " << numFailedPixels << " invalid pixels!" << TestLog::EndMessage;
+			if (numFailedPixels > 0)
+			{
+				m_context.getTestContext().getLog() << TestLog::Image("Reference", "Ideal reference", referenceFrame)
+													<< TestLog::Image("ErrorMask", "Error mask", errorMask);
+			}
+			return numFailedPixels;
+		};
 
 		m_context.getTestContext().getLog() << TestLog::ImageSet("Result", "Verification result")
 											<< TestLog::Image("Rendered", "Rendered image", renderedFrame);
 
-		if (numFailedPixels > 0)
-		{
-			m_context.getTestContext().getLog() << TestLog::Image("Reference", "Ideal reference", referenceFrame)
-												<< TestLog::Image("ErrorMask", "Error mask", errorMask);
-		}
+		int numFailedPixels = compareAndLogImages();
 
+		if (numFailedPixels > 0 && refParams.imageViewMinLod > 0.0f)
+		{
+			numFailedPixels = compareAndLogImages(tcu::IMAGEVIEWMINLODMODE_ALTERNATIVE);
+		}
 		m_context.getTestContext().getLog() << TestLog::EndImageSet;
+
+		if (numFailedPixels > 0)
+			m_context.getTestContext().getLog() << TestLog::Message << "ERROR: Image verification failed, found " << numFailedPixels << " invalid pixels!" << TestLog::EndMessage;
 
 		{
 			const bool isOk = numFailedPixels == 0;
@@ -1203,6 +1246,7 @@ TextureCubeLodControlTestInstance::TextureCubeLodControlTestInstance (Context& c
 	, m_testParameters	(testParameters)
 	, m_minFilter		(testParameters.minFilter)
 	, m_texture			(DE_NULL)
+
 	, m_renderer		(context, testParameters.sampleCount, m_texSize*2, m_texSize*2)
 {
 	const VkFormat	format		= VK_FORMAT_R8G8B8A8_UNORM;
@@ -1277,7 +1321,7 @@ tcu::TestStatus TextureCubeLodControlTestInstance::iterate (void)
 
 		// Render with GL.
 		m_renderer.setViewport((float)curX, (float)curY, (float)curW, (float)curH);
-		m_renderer.getTextureBinding(0)->updateTextureViewMipLevels(refParams.baseLevel, refParams.maxLevel);
+		m_renderer.getTextureBinding(0)->updateTextureViewMipLevels(refParams.baseLevel, refParams.maxLevel, refParams.imageViewMinLod);
 		m_renderer.renderQuad(renderedFrame, 0, &texCoord[0], refParams);
 	}
 
@@ -1285,9 +1329,6 @@ tcu::TestStatus TextureCubeLodControlTestInstance::iterate (void)
 	{
 		const tcu::IVec4		formatBitDepth		= getTextureFormatBitDepth(mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM));
 		const tcu::PixelFormat	pixelFormat			(formatBitDepth[0], formatBitDepth[1], formatBitDepth[2], formatBitDepth[3]);
-		tcu::Surface			referenceFrame		(viewportWidth, viewportHeight);
-		tcu::Surface			errorMask			(viewportWidth, viewportHeight);
-		int						numFailedPixels		= 0;
 		tcu::LookupPrecision	lookupPrec;
 		tcu::LodPrecision		lodPrec;
 
@@ -1304,44 +1345,59 @@ tcu::TestStatus TextureCubeLodControlTestInstance::iterate (void)
 		lodPrec.derivateBits				= 10;
 		lodPrec.lodBits						= 6;
 
-		for (int cellNdx = 0; cellNdx < (int)gridLayout.size(); cellNdx++)
+		auto compareAndLogImages = [&](tcu::ImageViewMinLodMode imageViewLodMode = tcu::IMAGEVIEWMINLODMODE_PREFERRED)
 		{
-			const int				curX		= gridLayout[cellNdx].x();
-			const int				curY		= gridLayout[cellNdx].y();
-			const int				curW		= gridLayout[cellNdx].z();
-			const int				curH		= gridLayout[cellNdx].w();
-			const tcu::CubeFace		cubeFace	= (tcu::CubeFace)(cellNdx % tcu::CUBEFACE_LAST);
+			tcu::Surface			referenceFrame(viewportWidth, viewportHeight);
+			tcu::Surface			errorMask(viewportWidth, viewportHeight);
+			int						numFailedPixels = 0;
 
-			computeQuadTexCoordCube(texCoord, cubeFace);
-			getReferenceParams(refParams, cellNdx);
-
-			// Render ideal reference.
+			for (int cellNdx = 0; cellNdx < (int)gridLayout.size(); cellNdx++)
 			{
-				tcu::SurfaceAccess idealDst(referenceFrame, pixelFormat, curX, curY, curW, curH);
-				sampleTexture(idealDst, refTexture, &texCoord[0], refParams);
+				const int				curX		= gridLayout[cellNdx].x();
+				const int				curY		= gridLayout[cellNdx].y();
+				const int				curW		= gridLayout[cellNdx].z();
+				const int				curH		= gridLayout[cellNdx].w();
+				const tcu::CubeFace		cubeFace	= (tcu::CubeFace)(cellNdx % tcu::CUBEFACE_LAST);
+
+				computeQuadTexCoordCube(texCoord, cubeFace);
+				getReferenceParams(refParams, cellNdx);
+
+				refParams.imageViewMinLodMode = imageViewLodMode;
+
+				// Render ideal reference.
+				{
+					tcu::SurfaceAccess idealDst(referenceFrame, pixelFormat, curX, curY, curW, curH);
+					sampleTexture(idealDst, refTexture, &texCoord[0], refParams);
+				}
+
+				// Compare this cell
+				numFailedPixels += computeTextureLookupDiff(tcu::getSubregion(renderedFrame.getAccess(), curX, curY, curW, curH),
+															tcu::getSubregion(referenceFrame.getAccess(), curX, curY, curW, curH),
+															tcu::getSubregion(errorMask.getAccess(), curX, curY, curW, curH),
+															m_texture->getTexture(), &texCoord[0], refParams,
+															lookupPrec, lodPrec,  m_context.getTestContext().getWatchDog());
 			}
+			if (numFailedPixels > 0)
+			{
+				m_context.getTestContext().getLog() << TestLog::Image("Reference", "Ideal reference", referenceFrame)
+													<< TestLog::Image("ErrorMask", "Error mask", errorMask);
+			}
+			return numFailedPixels;
+		};
 
-			// Compare this cell
-			numFailedPixels += computeTextureLookupDiff(tcu::getSubregion(renderedFrame.getAccess(), curX, curY, curW, curH),
-														tcu::getSubregion(referenceFrame.getAccess(), curX, curY, curW, curH),
-														tcu::getSubregion(errorMask.getAccess(), curX, curY, curW, curH),
-														m_texture->getTexture(), &texCoord[0], refParams,
-														lookupPrec, lodPrec,  m_context.getTestContext().getWatchDog());
-		}
+		m_context.getTestContext().getLog() << TestLog::ImageSet("Result", "Verification result")
+											<< TestLog::Image("Rendered", "Rendered image", renderedFrame);
 
-		if (numFailedPixels > 0)
-			 m_context.getTestContext().getLog() << TestLog::Message << "ERROR: Image verification failed, found " << numFailedPixels << " invalid pixels!" << TestLog::EndMessage;
+		int numFailedPixels = compareAndLogImages();
 
-		 m_context.getTestContext().getLog() << TestLog::ImageSet("Result", "Verification result")
-											 << TestLog::Image("Rendered", "Rendered image", renderedFrame);
-
-		if (numFailedPixels > 0)
+		if (numFailedPixels > 0 && refParams.imageViewMinLod > 0.0f)
 		{
-			 m_context.getTestContext().getLog() << TestLog::Image("Reference", "Ideal reference", referenceFrame)
-												 << TestLog::Image("ErrorMask", "Error mask", errorMask);
+			numFailedPixels = compareAndLogImages(tcu::IMAGEVIEWMINLODMODE_ALTERNATIVE);
 		}
+		m_context.getTestContext().getLog() << TestLog::EndImageSet;
 
-		 m_context.getTestContext().getLog() << TestLog::EndImageSet;
+		if (numFailedPixels > 0)
+			m_context.getTestContext().getLog() << TestLog::Message << "ERROR: Image verification failed, found " << numFailedPixels << " invalid pixels!" << TestLog::EndMessage;
 
 		{
 			const bool isOk = numFailedPixels == 0;
@@ -1467,7 +1523,7 @@ Texture3DLodControlTestInstance::Texture3DLodControlTestInstance (Context& conte
 	, m_testParameters	(testParameters)
 	, m_minFilter		(testParameters.minFilter)
 	, m_texture			(DE_NULL)
-	, m_renderer		(context, testParameters.sampleCount, m_texWidth*4, m_texHeight*4)
+	, m_renderer		(context, testParameters.sampleCount, m_texWidth*4, m_texHeight*4, vk::makeComponentMappingRGBA(), testParameters.testType > util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD)
 {
 	const VkFormat			format		= VK_FORMAT_R8G8B8A8_UNORM;
 	tcu::TextureFormatInfo	fmtInfo		= tcu::getTextureFormatInfo(mapVkFormat(format));
@@ -1544,7 +1600,7 @@ tcu::TestStatus Texture3DLodControlTestInstance::iterate (void)
 			getReferenceParams(refParams,cellNdx);
 			//Render
 			m_renderer.setViewport((float)curX, (float)curY, (float)curW, (float)curH);
-			m_renderer.getTextureBinding(0)->updateTextureViewMipLevels(refParams.baseLevel, refParams.maxLevel);
+			m_renderer.getTextureBinding(0)->updateTextureViewMipLevels(refParams.baseLevel, refParams.maxLevel, refParams.imageViewMinLod);
 			m_renderer.renderQuad(renderedFrame, 0, &texCoord[0], refParams);
 		}
 	}
@@ -1554,11 +1610,8 @@ tcu::TestStatus Texture3DLodControlTestInstance::iterate (void)
 		const tcu::IVec4		formatBitDepth	= getTextureFormatBitDepth(mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM));
 		const tcu::PixelFormat	pixelFormat		(formatBitDepth[0], formatBitDepth[1], formatBitDepth[2], formatBitDepth[3]);
 		const bool				isTrilinear		= m_minFilter == Sampler::NEAREST_MIPMAP_LINEAR || m_minFilter == Sampler::LINEAR_MIPMAP_LINEAR;
-		tcu::Surface			referenceFrame	(viewportWidth, viewportHeight);
-		tcu::Surface			errorMask		(viewportWidth, viewportHeight);
 		tcu::LookupPrecision	lookupPrec;
 		tcu::LodPrecision		lodPrec;
-		int						numFailedPixels	= 0;
 
 		lookupPrec.coordBits		= tcu::IVec3(20, 20, 20);
 		lookupPrec.uvwBits			= tcu::IVec3(16, 16, 16); // Doesn't really matter since pixels are unicolored.
@@ -1567,47 +1620,66 @@ tcu::TestStatus Texture3DLodControlTestInstance::iterate (void)
 		lodPrec.derivateBits		= 10;
 		lodPrec.lodBits				= 8;
 
-		for (int gridY = 0; gridY < gridHeight; gridY++)
+		auto compareAndLogImages = [&](tcu::ImageViewMinLodMode imageViewLodMode = tcu::IMAGEVIEWMINLODMODE_PREFERRED)
 		{
-			for (int gridX = 0; gridX < gridWidth; gridX++)
+			tcu::Surface			referenceFrame	(viewportWidth, viewportHeight);
+			tcu::Surface			errorMask		(viewportWidth, viewportHeight);
+			int						numFailedPixels = 0;
+
+			for (int gridY = 0; gridY < gridHeight; gridY++)
 			{
-				const int	curX		= cellWidth*gridX;
-				const int	curY		= cellHeight*gridY;
-				const int	curW		= gridX+1 == gridWidth ? (viewportWidth-curX) : cellWidth;
-				const int	curH		= gridY+1 == gridHeight ? (viewportHeight-curY) : cellHeight;
-				const int	cellNdx		= gridY*gridWidth + gridX;
+				for (int gridX = 0; gridX < gridWidth; gridX++)
+				{
+					const int	curX		= cellWidth*gridX;
+					const int	curY		= cellHeight*gridY;
+					const int	curW		= gridX+1 == gridWidth ? (viewportWidth-curX) : cellWidth;
+					const int	curH		= gridY+1 == gridHeight ? (viewportHeight-curY) : cellHeight;
+					const int	cellNdx		= gridY*gridWidth + gridX;
 
-				getBasicTexCoord3D(texCoord, cellNdx);
-				getReferenceParams(refParams, cellNdx);
+					getReferenceParams(refParams, cellNdx);
 
-				// Render ideal result
-				sampleTexture(tcu::SurfaceAccess(referenceFrame, pixelFormat, curX, curY, curW, curH),
-							  refTexture, &texCoord[0], refParams);
+					refParams.imageViewMinLodMode = imageViewLodMode;
 
-				// Compare this cell
-				numFailedPixels += computeTextureLookupDiff(tcu::getSubregion(renderedFrame.getAccess(), curX, curY, curW, curH),
-															tcu::getSubregion(referenceFrame.getAccess(), curX, curY, curW, curH),
-															tcu::getSubregion(errorMask.getAccess(), curX, curY, curW, curH),
-															m_texture->getTexture(), &texCoord[0], refParams,
-															lookupPrec, lodPrec, m_context.getTestContext().getWatchDog());
+					// Compute texcoord.
+					if (refParams.samplerType == glu::TextureTestUtil::SAMPLERTYPE_FETCH_FLOAT)
+						getBasicTexCoord3DImageViewMinlodIntTexCoord(texCoord);
+					else
+						getBasicTexCoord3D(texCoord, cellNdx);
+
+					// Render ideal result
+					sampleTexture(tcu::SurfaceAccess(referenceFrame, pixelFormat, curX, curY, curW, curH),
+								  refTexture, &texCoord[0], refParams);
+
+					// Compare this cell
+					numFailedPixels += computeTextureLookupDiff(tcu::getSubregion(renderedFrame.getAccess(), curX, curY, curW, curH),
+																tcu::getSubregion(referenceFrame.getAccess(), curX, curY, curW, curH),
+																tcu::getSubregion(errorMask.getAccess(), curX, curY, curW, curH),
+																m_texture->getTexture(), &texCoord[0], refParams,
+																lookupPrec, lodPrec, m_context.getTestContext().getWatchDog());
+				}
 			}
-		}
+			if (numFailedPixels > 0)
+			{
+				m_context.getTestContext().getLog() << TestLog::Image("Reference", "Ideal reference", referenceFrame)
+													<< TestLog::Image("ErrorMask", "Error mask", errorMask);
+			}
 
-		if (numFailedPixels > 0)
-		{
-			m_context.getTestContext().getLog() << TestLog::Message << "ERROR: Image verification failed, found " << numFailedPixels << " invalid pixels!" << TestLog::EndMessage;
-		}
+			return numFailedPixels;
+		};
 
 		m_context.getTestContext().getLog() << TestLog::ImageSet("Result", "Verification result")
 											<< TestLog::Image("Rendered", "Rendered image", renderedFrame);
 
-		if (numFailedPixels > 0)
-		{
-			m_context.getTestContext().getLog() << TestLog::Image("Reference", "Ideal reference", referenceFrame)
-												<< TestLog::Image("ErrorMask", "Error mask", errorMask);
-		}
+		int numFailedPixels = compareAndLogImages();
 
+		if (numFailedPixels > 0 && refParams.imageViewMinLod > 0.0f)
+		{
+			numFailedPixels = compareAndLogImages(tcu::IMAGEVIEWMINLODMODE_ALTERNATIVE);
+		}
 		m_context.getTestContext().getLog() << TestLog::EndImageSet;
+
+		if (numFailedPixels > 0)
+			m_context.getTestContext().getLog() << TestLog::Message << "ERROR: Image verification failed, found " << numFailedPixels << " invalid pixels!" << TestLog::EndMessage;
 
 		{
 			const bool isOk = numFailedPixels == 0;
@@ -1698,7 +1770,616 @@ protected:
 	}
 };
 
+class Texture2DImageViewMinLodTestInstance : public Texture2DLodControlTestInstance
+{
+public:
+	Texture2DImageViewMinLodTestInstance (Context& context, const Texture2DMipmapTestCaseParameters& testParameters)
+		: Texture2DLodControlTestInstance(context, testParameters)
+	{
+	}
+
+protected:
+
+	float getImageViewMinLod (int cellNdx, int baseLevel, int maxLevel) const
+	{
+		de::Random rnd(cellNdx + 1);
+
+		// baselevel + 1.0 as minimum, to test that minLod is working. If we go over the maximum, use that instead.
+		float minBaseLevel = de::min((float)baseLevel + 1.0f, (float)maxLevel);
+		return rnd.getFloat(minBaseLevel, (float)maxLevel);
+	}
+
+	void getReferenceParams (ReferenceParams& params, int cellNdx)
+	{
+		params.minLod = getMinLodForCell(cellNdx);
+		params.imageViewMinLod = getImageViewMinLod(cellNdx, params.baseLevel, params.maxLevel);
+	}
+};
+
+class Texture2DImageViewMinLodBaseLevelTestInstance : public Texture2DLodControlTestInstance
+{
+public:
+	Texture2DImageViewMinLodBaseLevelTestInstance (Context& context, const Texture2DMipmapTestCaseParameters& testParameters)
+		: Texture2DLodControlTestInstance(context, testParameters)
+		, m_testParam (testParameters)
+	{
+	}
+
+protected:
+	const Texture2DMipmapTestCaseParameters m_testParam;
+
+	int getBaseLevel (int cellNdx) const
+	{
+		const int	numLevels	= deLog2Floor32(de::max(m_texWidth, m_texHeight))+1;
+		const int	baseLevel	= (deInt32Hash(cellNdx) ^ deStringHash(m_testParam.minFilterName) ^ 0xac2f274a) % numLevels;
+
+		return baseLevel;
+	}
+
+	float getImageViewMinLod (int cellNdx, int baseLevel, int maxLevel) const
+	{
+		de::Random rnd(cellNdx + 1);
+
+		// baselevel + 1.0 as minimum, to test that minLod is working. If we go over the maximum, use that instead.
+		float minValue = de::min((float)baseLevel + 1.0f, (float)maxLevel);
+		return rnd.getFloat(minValue, (float)maxLevel);
+	}
+
+	void getReferenceParams (ReferenceParams& params, int cellNdx)
+	{
+		params.baseLevel = getBaseLevel(cellNdx);
+		params.imageViewMinLod = getImageViewMinLod(cellNdx, params.baseLevel, params.maxLevel);
+	}
+};
+
+class Texture3DImageViewMinLodTestInstance : public Texture3DLodControlTestInstance
+{
+public:
+	Texture3DImageViewMinLodTestInstance (Context& context, const Texture3DMipmapTestCaseParameters& testParameters)
+		: Texture3DLodControlTestInstance(context, testParameters)
+	{
+	}
+
+protected:
+	float getImageViewMinLod (int cellNdx, int baseLevel, int maxLevel) const
+	{
+		de::Random rnd(cellNdx + 1);
+
+		// baselevel + 1.0 as minimum, to test that minLod is working. If we go over the maximum, use that instead.
+		float minValue = de::min((float)baseLevel + 1.0f, (float)maxLevel);
+		return rnd.getFloat(minValue, (float)maxLevel);
+	}
+
+	void getReferenceParams (ReferenceParams& params, int cellNdx)
+	{
+		params.minLod = getMinLodForCell(cellNdx);
+		params.imageViewMinLod = getImageViewMinLod(cellNdx, params.baseLevel, params.maxLevel);
+	}
+};
+
+class Texture3DImageViewMinLodBaseLevelTestInstance : public Texture3DLodControlTestInstance
+{
+public:
+	Texture3DImageViewMinLodBaseLevelTestInstance (Context& context, const Texture3DMipmapTestCaseParameters& testParameters)
+		: Texture3DLodControlTestInstance(context, testParameters)
+		, m_testParam (testParameters)
+	{
+	}
+
+protected:
+	const Texture3DMipmapTestCaseParameters m_testParam;
+
+	int getBaseLevel (int cellNdx) const
+	{
+		const int	numLevels	= deLog2Floor32(de::max(m_texWidth, de::max(m_texHeight, m_texDepth)))+1;
+		const int	baseLevel	= (deInt32Hash(cellNdx) ^ deStringHash(m_testParam.minFilterName) ^ 0x7347e9) % numLevels;
+
+		return baseLevel;
+	}
+
+	float getImageViewMinLod (int cellNdx, int baseLevel, int maxLevel) const
+	{
+		de::Random rnd(cellNdx + 1);
+
+		// baselevel + 1.0 as minimum, to test that minLod is working. If we go over the maximum, use that instead.
+		float minValue = de::min((float)baseLevel + 1.0f, (float)maxLevel);
+		return rnd.getFloat(minValue, (float)maxLevel);
+	}
+
+	void getReferenceParams (ReferenceParams& params, int cellNdx)
+	{
+		params.baseLevel = getBaseLevel(cellNdx);
+		params.imageViewMinLod = getImageViewMinLod(cellNdx, params.baseLevel, params.maxLevel);
+
+	}
+};
+
+class TextureCubeImageViewMinLodTestInstance : public TextureCubeLodControlTestInstance
+{
+public:
+	TextureCubeImageViewMinLodTestInstance (Context& context, const TextureCubeMipmapTestCaseParameters& testParameters)
+		: TextureCubeLodControlTestInstance(context, testParameters)
+	{
+	}
+
+protected:
+	float getImageViewMinLod (int cellNdx, int baseLevel, int maxLevel) const
+	{
+		de::Random rnd(cellNdx + 1);
+
+		// baselevel + 1.0 as minimum, to test that minLod is working. If we go over the maximum, use that instead.
+		float minValue = de::min((float)baseLevel + 1.0f, (float)maxLevel);
+		return rnd.getFloat(minValue, (float)maxLevel);
+	}
+
+	void getReferenceParams (ReferenceParams& params, int cellNdx)
+	{
+		params.minLod = getMinLodForCell(cellNdx);
+		params.imageViewMinLod = getImageViewMinLod(cellNdx, params.baseLevel, params.maxLevel);
+	}
+};
+
+class TextureCubeImageViewMinLodBaseLevelTestInstance : public TextureCubeLodControlTestInstance
+{
+public:
+	TextureCubeImageViewMinLodBaseLevelTestInstance (Context& context, const TextureCubeMipmapTestCaseParameters& testParameters)
+		: TextureCubeLodControlTestInstance(context, testParameters)
+		, m_testParam (testParameters)
+	{
+	}
+
+protected:
+	const TextureCubeMipmapTestCaseParameters m_testParam;
+
+	int getBaseLevel (int cellNdx) const
+	{
+		const int	numLevels	= deLog2Floor32(m_texSize)+1;
+		const int	baseLevel	= (deInt32Hash(cellNdx) ^ deStringHash(m_testParam.minFilterName) ^ 0x23fae13) % numLevels;
+
+		return baseLevel;
+	}
+
+	float getImageViewMinLod (int cellNdx, int baseLevel, int maxLevel) const
+	{
+		de::Random rnd(cellNdx + 1);
+
+		// baselevel + 1.0 as minimum, to test that minLod is working. If we go over the maximum, use that instead.
+		float minValue = de::min((float)baseLevel + 1.0f, (float)maxLevel);
+		return rnd.getFloat(minValue, (float)maxLevel);
+	}
+
+	void getReferenceParams (ReferenceParams& params, int cellNdx)
+	{
+		params.baseLevel = getBaseLevel(cellNdx);
+		params.imageViewMinLod = getImageViewMinLod(cellNdx, params.baseLevel, params.maxLevel);
+	}
+};
+
+class Texture2DImageViewMinLodIntTexCoordTestInstance : public Texture2DLodControlTestInstance
+{
+public:
+	Texture2DImageViewMinLodIntTexCoordTestInstance (Context& context, const Texture2DMipmapTestCaseParameters& testParameters)
+		: Texture2DLodControlTestInstance(context, testParameters)
+		, m_testParam (testParameters)
+	{
+	}
+
+protected:
+	const Texture2DMipmapTestCaseParameters m_testParam;
+
+	float getImageViewMinLod (int cellNdx, int baseLevel, int maxLevel) const
+	{
+		de::Random rnd(cellNdx + 1);
+
+		// baselevel + 1.0 as minimum, to test that minLod is working. If we go over the maximum, use that instead.
+		float minValue = de::min((float)baseLevel + 1.0f, (float)maxLevel);
+		return rnd.getFloat(minValue, (float)maxLevel);
+	}
+
+	int getLodTexelFetch (int cellNdx, int baseLevel, int maxLevel) const
+	{
+		de::Random rnd(cellNdx + 1);
+		return rnd.getInt(baseLevel, maxLevel) - baseLevel;
+	}
+
+	void getReferenceParams (ReferenceParams& params, int cellNdx)
+	{
+		params.imageViewMinLod = getImageViewMinLod(cellNdx, params.baseLevel, params.maxLevel);
+		params.samplerType = glu::TextureTestUtil::SAMPLERTYPE_FETCH_FLOAT;
+		params.lodTexelFetch = getLodTexelFetch(cellNdx, params.baseLevel, params.maxLevel);
+	}
+};
+
+class Texture2DImageViewMinLodBaseLevelIntTexCoordTestInstance : public Texture2DLodControlTestInstance
+{
+public:
+	Texture2DImageViewMinLodBaseLevelIntTexCoordTestInstance (Context& context, const Texture2DMipmapTestCaseParameters& testParameters)
+		: Texture2DLodControlTestInstance(context, testParameters)
+		, m_testParam (testParameters)
+	{
+	}
+
+protected:
+	const Texture2DMipmapTestCaseParameters m_testParam;
+
+	int getBaseLevel (int cellNdx) const
+	{
+		const int	numLevels	= deLog2Floor32(de::max(m_texWidth, m_texHeight))+1;
+		const int	baseLevel	= (deInt32Hash(cellNdx) ^ deStringHash(m_testParam.minFilterName) ^ 0xac2f274a) % numLevels;
+
+		return baseLevel;
+	}
+
+	float getImageViewMinLod (int cellNdx, int baseLevel, int maxLevel) const
+	{
+		de::Random rnd(cellNdx + 1);
+
+		// baselevel + 1.0 as minimum, to test that minLod is working. If we go over the maximum, use that instead.
+		float minValue = de::min((float)baseLevel + 1.0f, (float)maxLevel);
+		return rnd.getFloat(minValue, (float)maxLevel);
+	}
+
+	int getLodTexelFetch (int cellNdx, int baseLevel, int maxLevel) const
+	{
+		de::Random rnd(cellNdx + 1);
+		return rnd.getInt(baseLevel, maxLevel) - baseLevel;
+	}
+
+	void getReferenceParams (ReferenceParams& params, int cellNdx)
+	{
+		params.baseLevel = getBaseLevel(cellNdx);
+		params.imageViewMinLod = getImageViewMinLod(cellNdx, params.baseLevel, params.maxLevel);
+		params.samplerType = glu::TextureTestUtil::SAMPLERTYPE_FETCH_FLOAT;
+		params.lodTexelFetch = getLodTexelFetch(cellNdx, params.baseLevel, params.maxLevel);
+	}
+};
+
+class Texture2DImageViewMinLodIntTexCoordTest : public vkt::TestCase
+{
+public:
+	Texture2DImageViewMinLodIntTexCoordTest						(tcu::TestContext&							testContext,
+																 const string&								name,
+																 const string&								description,
+																 const Texture2DMipmapTestCaseParameters&	params);
+	~Texture2DImageViewMinLodIntTexCoordTest					(void);
+	void						initPrograms					(SourceCollections& sourceCollections) const;
+	TestInstance*				createInstance					(Context& context) const;
+	void						checkSupport					(Context& context) const;
+
+protected:
+	const Texture2DMipmapTestCaseParameters	m_params;
+};
+
+Texture2DImageViewMinLodIntTexCoordTest::Texture2DImageViewMinLodIntTexCoordTest (tcu::TestContext&							testContext,
+																				  const string&								name,
+																				  const string&								description,
+																				  const Texture2DMipmapTestCaseParameters&	params)
+	: vkt::TestCase	(testContext, name, description)
+	, m_params		(params)
+{
+}
+
+Texture2DImageViewMinLodIntTexCoordTest::~Texture2DImageViewMinLodIntTexCoordTest (void)
+{
+}
+
+void Texture2DImageViewMinLodIntTexCoordTest::initPrograms(SourceCollections& sourceCollections) const
+{
+	static const char* vertShader =
+		"#version 450\n"
+		"layout(location = 0) in vec4 a_position;\n"
+		"layout(location = 1) in vec2 a_texCoord;\n"
+		"out gl_PerVertex { vec4 gl_Position; };\n"
+		"\n"
+		"void main (void)\n"
+		"{\n"
+		"	gl_Position = a_position;\n"
+		"}\n";
+
+	static const char* fragShader =
+		"#version 450\n"
+		"layout(location = 0) out vec4 outColor;\n"
+		"layout (set=0, binding=0, std140) uniform Block \n"
+		"{\n"
+		"  float u_bias;\n"
+		"  float u_ref;\n"
+		"  vec4 u_colorScale;\n"
+		"  vec4 u_colorBias;\n"
+		"  int u_lod;\n"
+		"};\n\n"
+		"layout (set=1, binding=0) uniform sampler2D u_sampler;\n"
+		"void main (void)\n"
+		"{\n"
+		"  ivec2 texCoord = ivec2(0,0);\n" // Sampling always from the same coord, we are only interested on the lod.
+		"  outColor = texelFetch(u_sampler, texCoord, u_lod) * u_colorScale + u_colorBias;\n"
+		"}\n";
+	sourceCollections.glslSources.add("vertex_2D_FETCH_LOD") << glu::VertexSource(vertShader);
+	sourceCollections.glslSources.add("fragment_2D_FETCH_LOD") << glu::FragmentSource(fragShader);
+}
+
+void Texture2DImageViewMinLodIntTexCoordTest::checkSupport(Context& context) const
+{
+	DE_ASSERT(m_params.testType > util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD);
+
+	context.requireDeviceFunctionality("VK_EXT_image_view_min_lod");
+	context.requireDeviceFunctionality("VK_EXT_robustness2");
+	vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT imageViewMinLodFeatures;
+	imageViewMinLodFeatures.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT;
+	imageViewMinLodFeatures.pNext = DE_NULL;
+
+	VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features;
+	robustness2Features.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT;
+	robustness2Features.pNext = &imageViewMinLodFeatures;
+	vk::VkPhysicalDeviceFeatures2 features2;
+
+	features2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+	features2.pNext = &robustness2Features;
+
+	context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+
+	if (imageViewMinLodFeatures.minLod == DE_FALSE)
+		TCU_THROW(NotSupportedError, "VK_EXT_image_view_min_lod minLod feature not supported");
+
+	if (robustness2Features.robustImageAccess2 == DE_FALSE)
+		TCU_THROW(NotSupportedError, "VK_EXT_robustness2 robustImageAccess2 feature not supported");
+}
+
+TestInstance* Texture2DImageViewMinLodIntTexCoordTest::createInstance(Context& context) const
+{
+	if (m_params.testType == util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD_INT_TEX_COORD)
+		return new Texture2DImageViewMinLodIntTexCoordTestInstance(context, m_params);
+	else
+	   return new Texture2DImageViewMinLodBaseLevelIntTexCoordTestInstance(context, m_params);
+}
+
+class Texture3DImageViewMinLodIntTexCoordTestInstance : public Texture3DLodControlTestInstance
+{
+public:
+	Texture3DImageViewMinLodIntTexCoordTestInstance (Context& context, const Texture3DMipmapTestCaseParameters& testParameters)
+		: Texture3DLodControlTestInstance(context, testParameters)
+		, m_testParam (testParameters)
+	{
+	}
+
+protected:
+	const Texture3DMipmapTestCaseParameters m_testParam;
+
+	float getImageViewMinLod (int cellNdx, int baseLevel, int maxLevel) const
+	{
+		de::Random rnd(cellNdx + 1);
+
+		// baselevel + 1.0 as minimum, to test that minLod is working. If we go over the maximum, use that instead.
+		float minValue = de::min((float)baseLevel + 1.0f, (float)maxLevel);
+		return rnd.getFloat(minValue, (float)maxLevel);
+	}
+
+	int getLodTexelFetch (int cellNdx, int baseLevel, int maxLevel) const
+	{
+		de::Random rnd(cellNdx + 1);
+		return rnd.getInt(baseLevel, maxLevel) - baseLevel;
+	}
+
+	void getReferenceParams (ReferenceParams& params, int cellNdx)
+	{
+		params.imageViewMinLod = getImageViewMinLod(cellNdx, params.baseLevel, params.maxLevel);
+		params.samplerType = glu::TextureTestUtil::SAMPLERTYPE_FETCH_FLOAT;
+		params.lodTexelFetch = getLodTexelFetch(cellNdx, params.baseLevel, params.maxLevel);
+	}
+};
+
+class Texture3DImageViewMinLodBaseLevelIntTexCoordTestInstance : public Texture3DLodControlTestInstance
+{
+public:
+	Texture3DImageViewMinLodBaseLevelIntTexCoordTestInstance (Context& context, const Texture3DMipmapTestCaseParameters& testParameters)
+		: Texture3DLodControlTestInstance(context, testParameters)
+		, m_testParam (testParameters)
+	{
+	}
+
+protected:
+	const Texture3DMipmapTestCaseParameters m_testParam;
+
+	int getBaseLevel (int cellNdx) const
+	{
+		const int	numLevels	= deLog2Floor32(de::max(m_texWidth, de::max(m_texHeight, m_texDepth)))+1;
+		const int	baseLevel	= (deInt32Hash(cellNdx) ^ deStringHash(m_testParam.minFilterName) ^ 0x7347e9) % numLevels;
+
+		return baseLevel;
+	}
+
+	float getImageViewMinLod (int cellNdx, int baseLevel, int maxLevel) const
+	{
+		de::Random rnd(cellNdx + 1);
+
+		// baselevel + 1.0 as minimum, to test that minLod is working. If we go over the maximum, use that instead.
+		float minValue = de::min((float)baseLevel + 1.0f, (float)maxLevel);
+		return rnd.getFloat(minValue, (float)maxLevel);
+	}
+
+	int getLodTexelFetch (int cellNdx, int baseLevel, int maxLevel) const
+	{
+		de::Random rnd(cellNdx + 1);
+		return rnd.getInt(baseLevel, maxLevel) - baseLevel;
+	}
+
+	void getReferenceParams (ReferenceParams& params, int cellNdx)
+	{
+		params.baseLevel = getBaseLevel(cellNdx);
+		params.imageViewMinLod = getImageViewMinLod(cellNdx, params.baseLevel, params.maxLevel);
+		params.samplerType = glu::TextureTestUtil::SAMPLERTYPE_FETCH_FLOAT;
+		params.lodTexelFetch = getLodTexelFetch(cellNdx, params.baseLevel, params.maxLevel);
+	}
+};
+
+class Texture3DImageViewMinLodIntTexCoordTest : public vkt::TestCase
+{
+public:
+	Texture3DImageViewMinLodIntTexCoordTest						(tcu::TestContext&							testContext,
+																 const string&								name,
+																 const string&								description,
+																 const Texture3DMipmapTestCaseParameters&	params);
+	~Texture3DImageViewMinLodIntTexCoordTest					(void);
+	void						initPrograms					(SourceCollections& sourceCollections) const;
+	TestInstance*				createInstance					(Context& context) const;
+	void						checkSupport					(Context& context) const;
+
+protected:
+	const Texture3DMipmapTestCaseParameters	m_params;
+};
+
+Texture3DImageViewMinLodIntTexCoordTest::Texture3DImageViewMinLodIntTexCoordTest (tcu::TestContext&							testContext,
+																				  const string&								name,
+																				  const string&								description,
+																				  const Texture3DMipmapTestCaseParameters&	params)
+	: vkt::TestCase	(testContext, name, description)
+	, m_params		(params)
+{
+}
+
+Texture3DImageViewMinLodIntTexCoordTest::~Texture3DImageViewMinLodIntTexCoordTest (void)
+{
+}
+
+void Texture3DImageViewMinLodIntTexCoordTest::initPrograms(SourceCollections& sourceCollections) const
+{
+	static const char* vertShader =
+		"#version 450\n"
+		"layout(location = 0) in vec4 a_position;\n"
+		"layout(location = 1) in vec3 a_texCoord;\n"
+		"out gl_PerVertex { vec4 gl_Position; };\n"
+		"\n"
+		"void main (void)\n"
+		"{\n"
+		"	gl_Position = a_position;\n"
+		"}\n";
+
+	static const char* fragShader =
+		"#version 450\n"
+		"layout(location = 0) out vec4 outColor;\n"
+		"layout (set=0, binding=0, std140) uniform Block \n"
+		"{\n"
+		"  float u_bias;\n"
+		"  float u_ref;\n"
+		"  vec4 u_colorScale;\n"
+		"  vec4 u_colorBias;\n"
+		"  int u_lod;\n"
+		"};\n\n"
+		"layout (set=1, binding=0) uniform sampler3D u_sampler;\n"
+		"void main (void)\n"
+		"{\n"
+		"  ivec3 texCoord = ivec3(0,0,0);\n" // Sampling always from the same coord, we are only interested on the lod.
+		"  outColor = texelFetch(u_sampler, texCoord, u_lod) * u_colorScale + u_colorBias;\n"
+		"}\n";
+	sourceCollections.glslSources.add("vertex_3D_FETCH_LOD") << glu::VertexSource(vertShader);
+	sourceCollections.glslSources.add("fragment_3D_FETCH_LOD") << glu::FragmentSource(fragShader);
+}
+
+void Texture3DImageViewMinLodIntTexCoordTest::checkSupport(Context& context) const
+{
+	DE_ASSERT(m_params.testType > util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD);
+
+	context.requireDeviceFunctionality("VK_EXT_image_view_min_lod");
+	context.requireDeviceFunctionality("VK_EXT_robustness2");
+	vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT imageViewMinLodFeatures;
+	imageViewMinLodFeatures.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT;
+	imageViewMinLodFeatures.pNext = DE_NULL;
+
+	VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features;
+	robustness2Features.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT;
+	robustness2Features.pNext = &imageViewMinLodFeatures;
+	vk::VkPhysicalDeviceFeatures2 features2;
+
+	features2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+	features2.pNext = &robustness2Features;
+
+	context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+
+	if (imageViewMinLodFeatures.minLod == DE_FALSE)
+		TCU_THROW(NotSupportedError, "VK_EXT_image_view_min_lod minLod feature not supported");
+
+	if (robustness2Features.robustImageAccess2 == DE_FALSE)
+		TCU_THROW(NotSupportedError, "VK_EXT_robustness2 robustImageAccess2 feature not supported");
+}
+
+TestInstance* Texture3DImageViewMinLodIntTexCoordTest::createInstance(Context& context) const
+{
+	if (m_params.testType == util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD_INT_TEX_COORD)
+		return new Texture3DImageViewMinLodIntTexCoordTestInstance(context, m_params);
+	else
+	   return new Texture3DImageViewMinLodBaseLevelIntTexCoordTestInstance(context, m_params);
+}
+
 } // anonymous
+
+namespace util {
+
+template <>
+void checkTextureSupport (Context& context, const Texture2DMipmapTestCaseParameters& testParameters)
+{
+	if (testParameters.testType != TextureCommonTestCaseParameters::TEST_NORMAL)
+	{
+		context.requireDeviceFunctionality("VK_EXT_image_view_min_lod");
+		vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT imageViewMinLodFeatures;
+		imageViewMinLodFeatures.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT;
+		imageViewMinLodFeatures.pNext = DE_NULL;
+
+		vk::VkPhysicalDeviceFeatures2 features2;
+
+		features2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		features2.pNext = &imageViewMinLodFeatures;
+
+		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+
+		if (imageViewMinLodFeatures.minLod == DE_FALSE)
+			TCU_THROW(NotSupportedError, "VK_EXT_image_view_min_lod minLod feature not supported");
+	}
+}
+
+template <>
+void checkTextureSupport (Context& context, const TextureCubeMipmapTestCaseParameters& testParameters)
+{
+	if (testParameters.testType != TextureCommonTestCaseParameters::TEST_NORMAL)
+	{
+		context.requireDeviceFunctionality("VK_EXT_image_view_min_lod");
+		vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT imageViewMinLodFeatures;
+		imageViewMinLodFeatures.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT;
+		imageViewMinLodFeatures.pNext = DE_NULL;
+
+		vk::VkPhysicalDeviceFeatures2 features2;
+
+		features2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		features2.pNext = &imageViewMinLodFeatures;
+
+		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+
+		if (imageViewMinLodFeatures.minLod == DE_FALSE)
+			TCU_THROW(NotSupportedError, "VK_EXT_image_view_min_lod minLod feature not supported");
+	}
+}
+
+template <>
+void checkTextureSupport (Context& context, const Texture3DMipmapTestCaseParameters& testParameters)
+{
+	if (testParameters.testType != TextureCommonTestCaseParameters::TEST_NORMAL)
+	{
+		context.requireDeviceFunctionality("VK_EXT_image_view_min_lod");
+		vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT imageViewMinLodFeatures;
+		imageViewMinLodFeatures.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT;
+		imageViewMinLodFeatures.pNext = DE_NULL;
+
+		vk::VkPhysicalDeviceFeatures2 features2;
+
+		features2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		features2.pNext = &imageViewMinLodFeatures;
+
+		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+
+		if (imageViewMinLodFeatures.minLod == DE_FALSE)
+			TCU_THROW(NotSupportedError, "VK_EXT_image_view_min_lod minLod feature not supported");
+	}
+}
+
+} // util
 
 void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 {
@@ -1797,6 +2478,10 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 		de::MovePtr<tcu::TestCaseGroup>	maxLodGroup2D		(new tcu::TestCaseGroup(testCtx, "max_lod", "Lod control: max lod"));
 		de::MovePtr<tcu::TestCaseGroup>	baseLevelGroup2D	(new tcu::TestCaseGroup(testCtx, "base_level", "Base level"));
 		de::MovePtr<tcu::TestCaseGroup>	maxLevelGroup2D		(new tcu::TestCaseGroup(testCtx, "max_level", "Max level"));
+
+		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodExtGroup2D	(new tcu::TestCaseGroup(testCtx, "image_view_min_lod", "VK_EXT_image_view_min_lod tests"));
+		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodGroup2D	(new tcu::TestCaseGroup(testCtx, "min_lod", "ImageView's minLod"));
+		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodBaseLevelGroup2D	(new tcu::TestCaseGroup(testCtx, "base_level", "ImageView's minLod with base level different than one"));
 
 		for (int coordType = 0; coordType < DE_LENGTH_OF_ARRAY(coordTypes); coordType++)
 		{
@@ -1913,11 +2598,53 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 			}
 		}
 
+		// 2D VK_EXT_image_view_min_lod.
+		{
+			// MIN_LOD
+			for (int minFilter = 0; minFilter < DE_LENGTH_OF_ARRAY(minFilterModes); minFilter++)
+			{
+				Texture2DMipmapTestCaseParameters	testParameters;
+				testParameters.minFilter			= minFilterModes[minFilter].mode;
+				testParameters.aspectMask			= VK_IMAGE_ASPECT_COLOR_BIT;
+				testParameters.programs.push_back(PROGRAM_2D_FLOAT);
+				testParameters.testType				= util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD;
+
+				imageViewMinLodGroup2D->addChild(new TextureTestCase<Texture2DImageViewMinLodTestInstance>(testCtx, minFilterModes[minFilter].name, "", testParameters));
+
+				std::ostringstream name;
+				name << minFilterModes[minFilter].name << "_integer_texel_coord";
+				testParameters.testType				= util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD_INT_TEX_COORD;
+				imageViewMinLodGroup2D->addChild(new Texture2DImageViewMinLodIntTexCoordTest(testCtx, name.str().c_str(), "", testParameters));
+			}
+
+			// BASE_LEVEL
+			for (int minFilter = 0; minFilter < DE_LENGTH_OF_ARRAY(minFilterModes); minFilter++)
+			{
+				Texture2DMipmapTestCaseParameters	testParameters;
+				testParameters.minFilter			= minFilterModes[minFilter].mode;
+				testParameters.minFilterName		= minFilterModes[minFilter].name;
+				testParameters.aspectMask			= VK_IMAGE_ASPECT_COLOR_BIT;
+				testParameters.programs.push_back(PROGRAM_2D_FLOAT);
+				testParameters.testType				= util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD;
+
+				imageViewMinLodBaseLevelGroup2D->addChild(new TextureTestCase<Texture2DImageViewMinLodBaseLevelTestInstance>(testCtx, minFilterModes[minFilter].name, "", testParameters));
+
+				std::ostringstream name;
+				name << minFilterModes[minFilter].name << "_integer_texel_coord";
+				testParameters.testType				= util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD_INT_TEX_COORD_BASELEVEL;
+				imageViewMinLodBaseLevelGroup2D->addChild(new Texture2DImageViewMinLodIntTexCoordTest(testCtx, name.str().c_str(), "", testParameters));
+			}
+
+			imageViewMinLodExtGroup2D->addChild(imageViewMinLodGroup2D.release());
+			imageViewMinLodExtGroup2D->addChild(imageViewMinLodBaseLevelGroup2D.release());
+		}
+
 		group2D->addChild(biasGroup2D.release());
 		group2D->addChild(minLodGroup2D.release());
 		group2D->addChild(maxLodGroup2D.release());
 		group2D->addChild(baseLevelGroup2D.release());
 		group2D->addChild(maxLevelGroup2D.release());
+		group2D->addChild(imageViewMinLodExtGroup2D.release());
 
 		textureMipmappingTests->addChild(group2D.release());
 	}
@@ -1930,6 +2657,10 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 		de::MovePtr<tcu::TestCaseGroup>	maxLodGroupCube		(new tcu::TestCaseGroup(testCtx, "max_lod", "Lod control: max lod"));
 		de::MovePtr<tcu::TestCaseGroup>	baseLevelGroupCube	(new tcu::TestCaseGroup(testCtx, "base_level", "Base level"));
 		de::MovePtr<tcu::TestCaseGroup>	maxLevelGroupCube	(new tcu::TestCaseGroup(testCtx, "max_level", "Max level"));
+
+		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodExtGroupCube	(new tcu::TestCaseGroup(testCtx, "image_view_min_lod", "VK_EXT_image_view_min_lod tests"));
+		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodGroupCube	(new tcu::TestCaseGroup(testCtx, "min_lod", "ImageView's minLod"));
+		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodBaseLevelGroupCube	(new tcu::TestCaseGroup(testCtx, "base_level", "ImageView's minLod with base level different than one"));
 
 		for (int coordType = 0; coordType < DE_LENGTH_OF_ARRAY(cubeCoordTypes); coordType++)
 		{
@@ -2022,10 +2753,42 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 			}
 		}
 
+		// Cube VK_EXT_image_view_min_lod.
+		{
+			// MIN_LOD
+			for (int minFilter = 0; minFilter < DE_LENGTH_OF_ARRAY(minFilterModes); minFilter++)
+			{
+				TextureCubeMipmapTestCaseParameters	testParameters;
+				testParameters.minFilter			= minFilterModes[minFilter].mode;
+				testParameters.aspectMask			= VK_IMAGE_ASPECT_COLOR_BIT;
+				testParameters.programs.push_back(PROGRAM_CUBE_FLOAT);
+				testParameters.testType				= util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD;
+
+				imageViewMinLodGroupCube->addChild(new TextureTestCase<TextureCubeImageViewMinLodTestInstance>(testCtx, minFilterModes[minFilter].name, "", testParameters));
+			}
+
+			// BASE_LEVEL
+			for (int minFilter = 0; minFilter < DE_LENGTH_OF_ARRAY(minFilterModes); minFilter++)
+			{
+				TextureCubeMipmapTestCaseParameters	testParameters;
+				testParameters.minFilter			= minFilterModes[minFilter].mode;
+				testParameters.minFilterName		= minFilterModes[minFilter].name;
+				testParameters.aspectMask			= VK_IMAGE_ASPECT_COLOR_BIT;
+				testParameters.programs.push_back(PROGRAM_CUBE_FLOAT);
+				testParameters.testType				= util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD;
+
+				imageViewMinLodBaseLevelGroupCube->addChild(new TextureTestCase<TextureCubeImageViewMinLodBaseLevelTestInstance>(testCtx, minFilterModes[minFilter].name, "", testParameters));
+			}
+
+			imageViewMinLodExtGroupCube->addChild(imageViewMinLodGroupCube.release());
+			imageViewMinLodExtGroupCube->addChild(imageViewMinLodBaseLevelGroupCube.release());
+		}
+
 		groupCube->addChild(minLodGroupCube.release());
 		groupCube->addChild(maxLodGroupCube.release());
 		groupCube->addChild(baseLevelGroupCube.release());
 		groupCube->addChild(maxLevelGroupCube.release());
+		groupCube->addChild(imageViewMinLodExtGroupCube.release());
 
 		textureMipmappingTests->addChild(groupCube.release());
 	}
@@ -2039,6 +2802,10 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 		de::MovePtr<tcu::TestCaseGroup>	maxLodGroup3D		(new tcu::TestCaseGroup(testCtx, "max_lod", "Lod control: max lod"));
 		de::MovePtr<tcu::TestCaseGroup>	baseLevelGroup3D	(new tcu::TestCaseGroup(testCtx, "base_level", "Base level"));
 		de::MovePtr<tcu::TestCaseGroup>	maxLevelGroup3D		(new tcu::TestCaseGroup(testCtx, "max_level", "Max level"));
+
+		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodExtGroup3D	(new tcu::TestCaseGroup(testCtx, "image_view_min_lod", "VK_EXT_image_view_min_lod tests"));
+		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodGroup3D	(new tcu::TestCaseGroup(testCtx, "min_lod", "ImageView's minLod"));
+		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodBaseLevelGroup3D	(new tcu::TestCaseGroup(testCtx, "base_level", "ImageView's minLod with base level different than one"));
 
 		for (int coordType = 0; coordType < DE_LENGTH_OF_ARRAY(coordTypes); coordType++)
 		{
@@ -2156,11 +2923,54 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 			}
 		}
 
+		// 3D VK_EXT_image_view_min_lod.
+		{
+			// MIN_LOD
+			for (int minFilter = 0; minFilter < DE_LENGTH_OF_ARRAY(minFilterModes); minFilter++)
+			{
+				Texture3DMipmapTestCaseParameters	testParameters;
+				testParameters.minFilter				= minFilterModes[minFilter].mode;
+				testParameters.aspectMask				= VK_IMAGE_ASPECT_COLOR_BIT;
+				testParameters.programs.push_back(PROGRAM_3D_FLOAT);
+				testParameters.testType				= util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD;
+
+				imageViewMinLodGroup3D->addChild(new TextureTestCase<Texture3DImageViewMinLodTestInstance>(testCtx, minFilterModes[minFilter].name, "", testParameters));
+
+				std::ostringstream name;
+				name << minFilterModes[minFilter].name << "_integer_texel_coord";
+				testParameters.testType				= util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD_INT_TEX_COORD;
+				imageViewMinLodGroup3D->addChild(new Texture3DImageViewMinLodIntTexCoordTest(testCtx, name.str().c_str(), "", testParameters));
+			}
+
+			// BASE_LEVEL
+			for (int minFilter = 0; minFilter < DE_LENGTH_OF_ARRAY(minFilterModes); minFilter++)
+			{
+				Texture3DMipmapTestCaseParameters	testParameters;
+				testParameters.minFilter				= minFilterModes[minFilter].mode;
+				testParameters.minFilterName			= minFilterModes[minFilter].name;
+				testParameters.aspectMask				= VK_IMAGE_ASPECT_COLOR_BIT;
+				testParameters.programs.push_back(PROGRAM_3D_FLOAT);
+				testParameters.testType				= util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD;
+
+
+				imageViewMinLodBaseLevelGroup3D->addChild(new TextureTestCase<Texture3DImageViewMinLodBaseLevelTestInstance>(testCtx, minFilterModes[minFilter].name, "", testParameters));
+
+				std::ostringstream name;
+				name << minFilterModes[minFilter].name << "_integer_texel_coord";
+				testParameters.testType				= util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD_INT_TEX_COORD_BASELEVEL;
+				imageViewMinLodBaseLevelGroup3D->addChild(new Texture3DImageViewMinLodIntTexCoordTest(testCtx, name.str().c_str(), "", testParameters));
+			}
+
+			imageViewMinLodExtGroup3D->addChild(imageViewMinLodGroup3D.release());
+			imageViewMinLodExtGroup3D->addChild(imageViewMinLodBaseLevelGroup3D.release());
+		}
+
 		group3D->addChild(biasGroup3D.release());
 		group3D->addChild(minLodGroup3D.release());
 		group3D->addChild(maxLodGroup3D.release());
 		group3D->addChild(baseLevelGroup3D.release());
 		group3D->addChild(maxLevelGroup3D.release());
+		group3D->addChild(imageViewMinLodExtGroup3D.release());
 
 		textureMipmappingTests->addChild(group3D.release());
 	}

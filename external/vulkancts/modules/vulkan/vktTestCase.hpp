@@ -77,6 +77,7 @@ public:
 	const vk::VkPhysicalDeviceFeatures2&			getDeviceFeatures2					(void) const;
 	const vk::VkPhysicalDeviceVulkan11Features&		getDeviceVulkan11Features			(void) const;
 	const vk::VkPhysicalDeviceVulkan12Features&		getDeviceVulkan12Features			(void) const;
+	const vk::VkPhysicalDeviceVulkan13Features&		getDeviceVulkan13Features			(void) const;
 
 	bool											isInstanceFunctionalitySupported	(const std::string& extension) const;
 	bool											isDeviceFunctionalitySupported		(const std::string& extension) const;
@@ -88,6 +89,7 @@ public:
 	const vk::VkPhysicalDeviceProperties2&			getDeviceProperties2				(void) const;
 	const vk::VkPhysicalDeviceVulkan11Properties&	getDeviceVulkan11Properties			(void) const;
 	const vk::VkPhysicalDeviceVulkan12Properties&	getDeviceVulkan12Properties			(void) const;
+	const vk::VkPhysicalDeviceVulkan13Properties&	getDeviceVulkan13Properties			(void) const;
 
 #include "vkDevicePropertiesForContextDecl.inl"
 
@@ -106,6 +108,10 @@ public:
 	bool											requireDeviceFunctionality			(const std::string& required) const;
 	bool											requireInstanceFunctionality		(const std::string& required) const;
 	bool											requireDeviceCoreFeature			(const DeviceCoreFeature requiredDeviceCoreFeature);
+
+
+	vk::VkFormatProperties3						getFormatProperties					(const vk::VkFormat&	format)	const;
+	vk::VkFormatProperties3						getRequiredFormatProperties			(const vk::VkFormat&	format)	const;
 
 	void*											getInstanceProcAddr					();
 

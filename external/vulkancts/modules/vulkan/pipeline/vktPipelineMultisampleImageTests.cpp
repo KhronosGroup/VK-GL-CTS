@@ -1293,7 +1293,7 @@ void renderAndResolve (Context& context, const CaseDef& caseDef, const VkBuffer 
 
 		const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout	(vk, device, *descriptorSetLayout));
 		const Unique<VkShaderModule>	shaderModule	(createShaderModule	(vk, device, context.getBinaryCollection().get("comp"), 0));
-		const Unique<VkPipeline>		pipeline		(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule, DE_NULL));
+		const Unique<VkPipeline>		pipeline		(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
 
 		beginCommandBuffer(vk, *cmdBuffer);
 

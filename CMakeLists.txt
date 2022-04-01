@@ -66,6 +66,13 @@ if (NOT ZLIB_INCLUDE_PATH OR NOT ZLIB_LIBRARY)
 	# \note ZLIB_LIBRARY and ZLIB_INCLUDE_PATH are promoted from external/zlib/CMakeLists.txt
 endif ()
 
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/renderdoc/src/renderdoc_app.h")
+	message(STATUS "Renderdoc header found, integration enabled")
+	set(DEQP_HAVE_RENDERDOC_HEADER 1)
+else ()
+	message(STATUS "Renderdoc header not found, integration will not work")
+endif ()
+
 include_directories(${ZLIB_INCLUDE_PATH})
 
 # libpng
@@ -324,6 +331,7 @@ add_subdirectory(external/openglcts)
 # Single-binary targets
 if (DE_OS_IS_ANDROID)
 	include_directories(executor)
+	include_directories(${PROJECT_BINARY_DIR}/external/vulkancts/framework/vulkan)
 
 	set(DEQP_SRCS
 		framework/platform/android/tcuAndroidMain.cpp
