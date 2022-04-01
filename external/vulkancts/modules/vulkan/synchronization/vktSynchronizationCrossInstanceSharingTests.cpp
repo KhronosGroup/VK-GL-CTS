@@ -794,6 +794,7 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 			DE_NULL,
 			(vk::VkExternalMemoryHandleTypeFlags)externalType
 		};
+		const vk::VkImageTiling				tiling					= chooseTiling(externalType);
 		const vk::VkImageCreateInfo			createInfo				=
 		{
 			vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -806,7 +807,7 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 			1u,
 			1u,
 			resourceDesc.imageSamples,
-			chooseTiling(externalType),
+			tiling,
 			readOp.getInResourceUsageFlags() | writeOp.getOutResourceUsageFlags(),
 			vk::VK_SHARING_MODE_EXCLUSIVE,
 
@@ -818,7 +819,7 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 		vk::Move<vk::VkImage>			image		= vk::createImage(vkd, device, &createInfo);
 		de::MovePtr<vk::Allocation>		allocation	= importAndBindMemory(vkd, device, *image, nativeHandle, externalType, exportedMemoryTypeIndex, dedicated);
 
-		return de::MovePtr<Resource>(new Resource(image, allocation, extent, resourceDesc.imageType, resourceDesc.imageFormat, subresourceRange, subresourceLayers));
+		return de::MovePtr<Resource>(new Resource(image, allocation, extent, resourceDesc.imageType, resourceDesc.imageFormat, subresourceRange, subresourceLayers, tiling));
 	}
 	else
 	{
@@ -1079,6 +1080,7 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 
 			vk::Move<vk::VkImage>			image					= createImage(m_vkdA, *m_deviceA, resourceDesc, extent, m_queueFamilyIndicesA,
 																				  *m_supportReadOp, *m_supportWriteOp, m_memoryHandleType);
+			const vk::VkImageTiling			tiling					= chooseTiling(m_memoryHandleType);
 			const vk::VkMemoryRequirements	requirements			= getMemoryRequirements(m_vkdA, *m_deviceA, *image, m_config.dedicated, m_getMemReq2Supported);
 											exportedMemoryTypeIndex = chooseMemoryType(requirements.memoryTypeBits);
 			vk::Move<vk::VkDeviceMemory>	memory					= allocateExportableMemory(m_vkdA, *m_deviceA, requirements.size, exportedMemoryTypeIndex, m_memoryHandleType, m_config.dedicated ? *image : (vk::VkImage)0);
@@ -1086,7 +1088,7 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 			VK_CHECK(m_vkdA.bindImageMemory(*m_deviceA, *image, *memory, 0u));
 
 			de::MovePtr<vk::Allocation> allocation = de::MovePtr<vk::Allocation>(new SimpleAllocation(m_vkdA, *m_deviceA, memory.disown()));
-			resourceA = de::MovePtr<Resource>(new Resource(image, allocation, extent, resourceDesc.imageType, resourceDesc.imageFormat, subresourceRange, subresourceLayers));
+			resourceA = de::MovePtr<Resource>(new Resource(image, allocation, extent, resourceDesc.imageType, resourceDesc.imageFormat, subresourceRange, subresourceLayers, tiling));
 		}
 		else
 		{
