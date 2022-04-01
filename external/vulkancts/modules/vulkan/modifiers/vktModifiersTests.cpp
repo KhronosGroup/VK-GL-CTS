@@ -613,10 +613,10 @@ bool exportImportMemoryExplicitModifiersCase (Context& context, const VkFormat f
 
 	VkMemoryRequirements importedSrcImageMemoryReq = getImageMemoryRequirements(vkd, device, *importedSrcImage);
 
-	Move<VkDeviceMemory>						importedMemory (vkt::ExternalMemoryUtil::importMemory(vkd, device,
-																									importedSrcImageMemoryReq,
-																									VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT,
-																									~0u, inputImageMemFd));
+	Move<VkDeviceMemory>						importedMemory (vkt::ExternalMemoryUtil::importDedicatedMemory(vkd, device, *importedSrcImage,
+                                                                                                               importedSrcImageMemoryReq,
+                                                                                                               VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT,
+                                                                                                               ~0u, inputImageMemFd));
 	VK_CHECK(vkd.bindImageMemory(device, *importedSrcImage, *importedMemory, 0));
 
 	Move<VkImage>						outImage		(createImageNoModifiers(vkd, device,
