@@ -666,35 +666,35 @@ SampleDrawnTextureTest::SampleDrawnTextureTest (tcu::TestContext&	testCtx,
 void SampleDrawnTextureTest::checkSupport(Context& context) const
 {
 	const auto&				vki					= context.getInstanceInterface();
-	const auto				physicalDevice		= context.getPhysicalDevice();
 	const auto				usageFlags			= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT
-												  | VK_IMAGE_USAGE_SAMPLED_BIT;
-	const bool				haveMaintenance2	= context.isDeviceFunctionalitySupported("VK_KHR_maintenance2");
+												  | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+	auto					creationFlags		= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT
+												  | VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT;
+	if (m_cubemap)
+		creationFlags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 
 	// Check that:
-	// - An image can be created with usage flags that are not supported by the image format
-	//   but are supported by an image view created for the image.
 	// - VkImageViewUsageCreateInfo can be used to override implicit usage flags derived from the image.
-	if (!haveMaintenance2)
+	// - A compressed image can be created with usage flags that are not supported for the format but are
+	//   supported by an image view that is using uncompressed format where each texel corresponds to
+	//   a compressed texel block of the image.
+
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_maintenance2"))
 		TCU_THROW(NotSupportedError, "Device does not support extended image usage flags nor overriding implicit usage flags");
 
 	VkImageFormatProperties	imageFormatProperties;
 
-	if (vki.getPhysicalDeviceImageFormatProperties(physicalDevice, VK_FORMAT_BC1_RGB_UNORM_BLOCK, VK_IMAGE_TYPE_2D,
-												   VK_IMAGE_TILING_OPTIMAL, usageFlags, (VkImageCreateFlags)0,
-												   &imageFormatProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
-		TCU_THROW(NotSupportedError, "BC1 compressed texture formats not supported.");
+	if (vki.getPhysicalDeviceImageFormatProperties(context.getPhysicalDevice(), m_imageFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
+												   usageFlags, creationFlags, &imageFormatProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
+	{
+		std::string	algorithmName	= (m_imageFormat == vk::VK_FORMAT_BC3_UNORM_BLOCK) ?  "BC3" : "BC1";
+		std::string	errorMsg		= algorithmName;
 
-	if (vki.getPhysicalDeviceImageFormatProperties(physicalDevice, VK_FORMAT_BC3_UNORM_BLOCK, VK_IMAGE_TYPE_2D,
-												   VK_IMAGE_TILING_OPTIMAL, usageFlags, (VkImageCreateFlags)0,
-												   &imageFormatProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
-		TCU_THROW(NotSupportedError, "BC3 compressed texture formats not supported.");
-
-	if (m_cubemap && vki.getPhysicalDeviceImageFormatProperties(context.getPhysicalDevice(), m_imageFormat,
-																VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
-																usageFlags, VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
-																&imageFormatProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
-		TCU_THROW(NotSupportedError, "Compressed images cannot be created with the VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT flag");
+		errorMsg += m_cubemap ? " compressed cubemap images" : " compressed images";
+		errorMsg += " created with VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT, VK_IMAGE_CREATE_EXTENDED_USAGE_BIT";
+		errorMsg += " and VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT flags not supported.";
+		TCU_THROW(NotSupportedError, errorMsg);
+	}
 }
 
 void SampleDrawnTextureTest::initPrograms (SourceCollections& programCollection) const

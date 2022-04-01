@@ -777,7 +777,7 @@ void MultisampleRenderPassTestInstance::submit (void)
 				DE_NULL,												// const void*							pNext;
 				DE_NULL,												// VkImageView							imageView;
 				vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout						imageLayout;
-				vk::VK_RESOLVE_MODE_AVERAGE_BIT,						// VkResolveModeFlagBits				resolveMode;
+				vk::VK_RESOLVE_MODE_NONE,								// VkResolveModeFlagBits				resolveMode;
 				DE_NULL,												// VkImageView							resolveImageView;
 				vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout						resolveImageLayout;
 				vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp					loadOp;
@@ -789,6 +789,10 @@ void MultisampleRenderPassTestInstance::submit (void)
 		{
 			colorAttachments[i].imageView = **m_multisampleImageViews[i];
 			colorAttachments[i].resolveImageView = **m_singlesampleImageViews[i];
+			if (isIntFormat(m_format) || isUintFormat(m_format))
+				colorAttachments[i].resolveMode = vk::VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
+			else
+				colorAttachments[i].resolveMode = vk::VK_RESOLVE_MODE_AVERAGE_BIT;
 		}
 
 		vk::VkRenderingInfoKHR renderingInfo
@@ -867,7 +871,7 @@ void MultisampleRenderPassTestInstance::submit (void)
 				**m_singlesampleImages[dstNdx],
 				{
 					VK_IMAGE_ASPECT_COLOR_BIT,
-					0u,
+					m_renderLevel,
 					1u,
 					0u,
 					m_layerCount

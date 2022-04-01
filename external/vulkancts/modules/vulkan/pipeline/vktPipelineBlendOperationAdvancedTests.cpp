@@ -1244,7 +1244,7 @@ BlendOperationAdvancedTestInstance::BlendOperationAdvancedTestInstance	(Context&
 	: TestInstance			(context)
 	, m_param				(param)
 	, m_renderSize			(tcu::UVec2(widthArea, heightArea))
-	, m_colorFormat			(VK_FORMAT_R16G16B16A16_SFLOAT)
+	, m_colorFormat			(param.format)
 	, m_pipeline			(m_context.getDeviceInterface(), m_context.getDevice(), param.pipelineConstructionType)
 {
 	const DeviceInterface&		vk				 = m_context.getDeviceInterface();

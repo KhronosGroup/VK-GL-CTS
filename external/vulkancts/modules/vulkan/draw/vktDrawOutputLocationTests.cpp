@@ -37,6 +37,16 @@ namespace Draw
 namespace
 {
 
+void checkSupport (Context& context, std::string testName)
+{
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset")
+		&& context.getPortabilitySubsetProperties().minVertexInputBindingStrideAlignment == 4
+		&& (testName.find("r8g8") != std::string::npos || testName.find("inputs-outputs-mod") != std::string::npos))
+	{
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Stride is not a multiple of minVertexInputBindingStrideAlignment");
+	}
+}
+
 void createTests (tcu::TestCaseGroup* testGroup)
 {
 	tcu::TestContext& testCtx = testGroup->getTestContext();
@@ -85,6 +95,7 @@ void createTests (tcu::TestCaseGroup* testGroup)
 			const std::string			fileName	= cases[i] + ".amber";
 			cts_amber::AmberTestCase*	testCase	= cts_amber::createAmberTestCase(testCtx, cases[i].c_str(), "", dataDir, fileName);
 
+			testCase->setCheckSupportCallback(checkSupport);
 			array->addChild(testCase);
 		}
 	}

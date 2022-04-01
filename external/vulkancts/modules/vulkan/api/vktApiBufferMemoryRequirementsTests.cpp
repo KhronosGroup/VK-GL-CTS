@@ -303,12 +303,12 @@ struct Info
 	friend std::ostringstream& operator<<(std::ostringstream& str, const Info& info) {
 		switch (info.m_type) {
 		case Create:
-			str << "  Info (Create buffer with " << info.m_str.str() << " not supported by device at "
-				<< de::FilePath(info.m_file).getBaseName() << ":" << info.m_line << ")";
+			str << "Create buffer with " << info.m_str.str() << " not supported by device at "
+				<< de::FilePath(info.m_file).getBaseName() << ":" << info.m_line;
 			break;
 		case Usage:
-			str << "  Info (Create buffer with " << info.m_str.str() << " not supported by device at "
-				<< de::FilePath(info.m_file).getBaseName() << ":" << info.m_line << ")";
+			str << info.m_str.str() << " at "
+				<< de::FilePath(info.m_file).getBaseName() << ":" << info.m_line;
 			break;
 		}
 		return str;
@@ -369,6 +369,7 @@ void MemoryRequirementsTest::checkSupport (Context& context) const
 {
 	const InstanceInterface&						intf				= context.getInstanceInterface();
 	const VkPhysicalDevice							physDevice			= context.getPhysicalDevice();
+	auto&											log					= context.getTestContext().getLog();
 
 	if (m_testConfig.useMethod2)
 		context.requireDeviceFunctionality(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
@@ -421,8 +422,8 @@ void MemoryRequirementsTest::checkSupport (Context& context) const
 		}
 		if (notSupported)
 		{
-			std::cout << str.str() << std::endl;
-			TCU_THROW(NotSupportedError, "One or more create buffer flags not supported by device");
+			log << tcu::TestLog::Message << str.str() << tcu::TestLog::EndMessage;
+			TCU_THROW(NotSupportedError, "One or more create buffer flags not supported by device (check log for details)");
 		}
 	}
 
@@ -551,14 +552,14 @@ void MemoryRequirementsTest::checkSupport (Context& context) const
 
 		if (usageFlags.empty())
 		{
-			std::cout << str.str() << std::endl;
-			TCU_THROW(NotSupportedError, "One or more buffer usage flags not supported by device");
+			log << tcu::TestLog::Message << str.str() << tcu::TestLog::EndMessage;
+			TCU_THROW(NotSupportedError, "One or more buffer usage flags not supported by device (check log for details)");
 		}
 		else
 		{
 			if (entryCount > 0)
 			{
-				std::cout << str.str() << std::endl;
+				log << tcu::TestLog::Message << str.str() << tcu::TestLog::EndMessage;
 			}
 			DE_ASSERT(m_instConfig.usageFlags.get());
 			m_instConfig.usageFlags->resize(usageFlags.size());

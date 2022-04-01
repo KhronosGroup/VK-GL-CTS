@@ -335,6 +335,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_portability_enumeration")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_maintenance4")
 	{
 		return;
@@ -966,6 +970,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_primitives_generated_query")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_global_priority_query")
 	{
 		return;
@@ -987,6 +995,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_EXT_pageable_device_local_memory")
+	{
+		return;
+	}
+	if (extName == "VK_VALVE_descriptor_set_host_mapping")
 	{
 		return;
 	}
@@ -1534,6 +1546,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_KHR_format_feature_flags2")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_portability_enumeration")
 	{
 		return;
 	}
@@ -2269,6 +2285,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdSetColorWriteEnableEXT");
 		return;
 	}
+	if (extName == "VK_EXT_primitives_generated_query")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_global_priority_query")
 	{
 		return;
@@ -2294,6 +2314,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	if (extName == "VK_EXT_pageable_device_local_memory")
 	{
 		functions.push_back("vkSetDeviceMemoryPriorityEXT");
+		return;
+	}
+	if (extName == "VK_VALVE_descriptor_set_host_mapping")
+	{
+		functions.push_back("vkGetDescriptorSetLayoutHostMappingInfoVALVE");
+		functions.push_back("vkGetDescriptorSetHostMappingVALVE");
 		return;
 	}
 	if (extName == "VK_QCOM_fragment_density_map_offset")
@@ -2613,6 +2639,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_color_write_enable",
 	"VK_EXT_multi_draw",
 	"VK_EXT_pageable_device_local_memory",
+	"VK_VALVE_descriptor_set_host_mapping",
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_ray_tracing_pipeline",
 	"VK_ANDROID_external_memory_android_hardware_buffer",

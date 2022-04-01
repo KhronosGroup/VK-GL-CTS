@@ -279,7 +279,7 @@ tcu::Vec4 getMiddleValue(VkFormat imageFormat)
 	return val;
 }
 
-tcu::TextureLevel generateReferenceImage (const tcu::IVec3& imageSize, const VkFormat imageFormat, const VkFormat readFormat, bool constantValue)
+tcu::TextureLevel generateReferenceImage (const tcu::IVec3& imageSize, const VkFormat imageFormat, const VkFormat readFormat, bool constantValue = false)
 {
 	// Generate a reference image data using the storage format
 

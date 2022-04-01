@@ -36,6 +36,7 @@
 #include "tcuVectorUtil.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuTexLookupVerifier.hpp"
+#include "tcuCommandLine.hpp"
 
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
@@ -53,6 +54,7 @@
 #include "vkBarrierUtil.hpp"
 
 #include "pipeline/vktPipelineImageUtil.hpp"		// required for compressed image blit
+#include "vktCustomInstancesDevices.hpp"
 
 #include <set>
 #include <array>
@@ -461,18 +463,18 @@ public:
 protected:
 	const TestParams					m_params;
 
+	VkDevice							m_device;
+	VkQueue								m_queue;
+	Allocator*							m_allocator;
 	Move<VkCommandPool>					m_cmdPool;
 	Move<VkCommandBuffer>				m_cmdBuffer;
-	Move<VkFence>						m_fence;
 	de::MovePtr<tcu::TextureLevel>		m_sourceTextureLevel;
 	de::MovePtr<tcu::TextureLevel>		m_destinationTextureLevel;
 	de::MovePtr<tcu::TextureLevel>		m_expectedTextureLevel[16];
 
-	VkCommandBufferBeginInfo			m_cmdBufferBeginInfo;
-
 	void								generateBuffer						(tcu::PixelBufferAccess buffer, int width, int height, int depth = 1, FillMode = FILL_MODE_GRADIENT);
 	virtual void						generateExpectedResult				(void);
-	void								uploadBuffer						(tcu::ConstPixelBufferAccess bufferAccess, const Allocation& bufferAlloc);
+	void								uploadBuffer						(const tcu::ConstPixelBufferAccess& bufferAccess, const Allocation& bufferAlloc);
 	void								uploadImage							(const tcu::ConstPixelBufferAccess& src, VkImage dst, const ImageParms& parms, const deUint32 mipLevels = 1u);
 	virtual tcu::TestStatus				checkTestResult						(tcu::ConstPixelBufferAccess result);
 	virtual void						copyRegionToTextureLevel			(tcu::ConstPixelBufferAccess src, tcu::PixelBufferAccess dst, CopyRegion region, deUint32 mipLevel = 0u) = 0;
@@ -500,18 +502,18 @@ CopiesAndBlittingTestInstance::CopiesAndBlittingTestInstance (Context& context, 
 	: vkt::TestInstance	(context)
 	, m_params			(testParams)
 {
+	// Store default device, queue and allocator. Some tests override these with custom device and queue.
+	m_device		= context.getDevice();
+	m_queue			= context.getUniversalQueue();
+	m_allocator		= &context.getDefaultAllocator();
 	const DeviceInterface&		vk					= context.getDeviceInterface();
-	const VkDevice				vkDevice			= context.getDevice();
 	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 
 	// Create command pool
-	m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
+	m_cmdPool = createCommandPool(vk, m_device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
 
 	// Create command buffer
-	m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-
-	// Create fence
-	m_fence = createFence(vk, vkDevice);
+	m_cmdBuffer = allocateCommandBuffer(vk, m_device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 }
 
 void CopiesAndBlittingTestInstance::generateBuffer (tcu::PixelBufferAccess buffer, int width, int height, int depth, FillMode mode)
@@ -628,15 +630,14 @@ void CopiesAndBlittingTestInstance::generateBuffer (tcu::PixelBufferAccess buffe
 	}
 }
 
-void CopiesAndBlittingTestInstance::uploadBuffer (tcu::ConstPixelBufferAccess bufferAccess, const Allocation& bufferAlloc)
+void CopiesAndBlittingTestInstance::uploadBuffer (const tcu::ConstPixelBufferAccess& bufferAccess, const Allocation& bufferAlloc)
 {
 	const DeviceInterface&		vk			= m_context.getDeviceInterface();
-	const VkDevice				vkDevice	= m_context.getDevice();
 	const deUint32				bufferSize	= calculateSize(bufferAccess);
 
 	// Write buffer data
 	deMemcpy(bufferAlloc.getHostPtr(), bufferAccess.getDataPtr(), bufferSize);
-	flushAlloc(vk, vkDevice, bufferAlloc);
+	flushAlloc(vk, m_device, bufferAlloc);
 }
 
 void CopiesAndBlittingTestInstance::uploadImageAspect (const tcu::ConstPixelBufferAccess& imageAccess, const VkImage& image, const ImageParms& parms, const deUint32 mipLevels)
@@ -644,10 +645,9 @@ void CopiesAndBlittingTestInstance::uploadImageAspect (const tcu::ConstPixelBuff
 	const InstanceInterface&		vki					= m_context.getInstanceInterface();
 	const DeviceInterface&			vk					= m_context.getDeviceInterface();
 	const VkPhysicalDevice			vkPhysDevice		= m_context.getPhysicalDevice();
-	const VkDevice					vkDevice			= m_context.getDevice();
-	const VkQueue					queue				= m_context.getUniversalQueue();
-	const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-	Allocator&						memAlloc			= m_context.getDefaultAllocator();
+	const VkDevice					vkDevice			= m_device;
+	const VkQueue					queue				= m_queue;
+	Allocator&						memAlloc			= *m_allocator;
 	Move<VkBuffer>					buffer;
 	const deUint32					bufferSize			= calculateSize(imageAccess);
 	de::MovePtr<Allocation>			bufferAlloc;
@@ -665,8 +665,8 @@ void CopiesAndBlittingTestInstance::uploadImageAspect (const tcu::ConstPixelBuff
 			bufferSize,									// VkDeviceSize			size;
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,			// VkBufferUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
-			1u,											// deUint32				queueFamilyIndexCount;
-			&queueFamilyIndex,							// const deUint32*		pQueueFamilyIndices;
+			0u,											// deUint32				queueFamilyIndexCount;
+			(const deUint32*)DE_NULL,					// const deUint32*		pQueueFamilyIndices;
 		};
 
 		buffer		= createBuffer(vk, vkDevice, &bufferParams);
@@ -842,18 +842,6 @@ void CopiesAndBlittingTestInstance::generateExpectedResult (void)
 		copyRegionToTextureLevel(src, m_expectedTextureLevel[0]->getAccess(), m_params.regions[i]);
 }
 
-class CopiesAndBlittingTestCase : public vkt::TestCase
-{
-public:
-							CopiesAndBlittingTestCase	(tcu::TestContext&			testCtx,
-														 const std::string&			name,
-														 const std::string&			description)
-								: vkt::TestCase	(testCtx, name, description)
-							{}
-
-	virtual TestInstance*	createInstance				(Context&					context) const = 0;
-};
-
 void CopiesAndBlittingTestInstance::readImageAspect (vk::VkImage					image,
 													 const tcu::PixelBufferAccess&	dst,
 													 const ImageParms&				imageParms,
@@ -862,13 +850,12 @@ void CopiesAndBlittingTestInstance::readImageAspect (vk::VkImage					image,
 	const InstanceInterface&	vki					= m_context.getInstanceInterface();
 	const DeviceInterface&		vk					= m_context.getDeviceInterface();
 	const VkPhysicalDevice		physDevice			= m_context.getPhysicalDevice();
-	const VkDevice				device				= m_context.getDevice();
-	const VkQueue				queue				= m_context.getUniversalQueue();
-	Allocator&					allocator			= m_context.getDefaultAllocator();
+	const VkDevice				device				= m_device;
+	const VkQueue				queue				= m_queue;
+	Allocator&					allocator			= *m_allocator;
 
 	Move<VkBuffer>				buffer;
 	de::MovePtr<Allocation>		bufferAlloc;
-	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 	const VkDeviceSize			pixelDataSize		= calculateSize(dst);
 	const VkExtent3D			imageExtent			= getExtent3D(imageParms, mipLevel);
 
@@ -882,8 +869,8 @@ void CopiesAndBlittingTestInstance::readImageAspect (vk::VkImage					image,
 			pixelDataSize,								// VkDeviceSize			size;
 			VK_BUFFER_USAGE_TRANSFER_DST_BIT,			// VkBufferUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
-			1u,											// deUint32				queueFamilyIndexCount;
-			&queueFamilyIndex,							// const deUint32*		pQueueFamilyIndices;
+			0u,											// deUint32				queueFamilyIndexCount;
+			(const deUint32*)DE_NULL,					// const deUint32*		pQueueFamilyIndices;
 		};
 
 		buffer		= createBuffer(vk, device, &bufferParams);
@@ -1043,8 +1030,7 @@ CopyImageToImage::CopyImageToImage (Context& context, TestParams params)
 	const InstanceInterface&	vki					= context.getInstanceInterface();
 	const DeviceInterface&		vk					= context.getDeviceInterface();
 	const VkPhysicalDevice		vkPhysDevice		= context.getPhysicalDevice();
-	const VkDevice				vkDevice			= context.getDevice();
-	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	const VkDevice				vkDevice			= m_device;
 	Allocator&					memAlloc			= context.getDefaultAllocator();
 
 	// Create source image
@@ -1064,8 +1050,8 @@ CopyImageToImage::CopyImageToImage (Context& context, TestParams params)
 			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
 				VK_IMAGE_USAGE_TRANSFER_DST_BIT,	// VkImageUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
-			1u,										// deUint32				queueFamilyCount;
-			&queueFamilyIndex,						// const deUint32*		pQueueFamilyIndices;
+			0u,										// deUint32				queueFamilyIndexCount;
+			(const deUint32*)DE_NULL,				// const deUint32*		pQueueFamilyIndices;
 			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout		initialLayout;
 		};
 
@@ -1091,8 +1077,8 @@ CopyImageToImage::CopyImageToImage (Context& context, TestParams params)
 			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
 				VK_IMAGE_USAGE_TRANSFER_DST_BIT,	// VkImageUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
-			1u,										// deUint32				queueFamilyCount;
-			&queueFamilyIndex,						// const deUint32*		pQueueFamilyIndices;
+			0u,										// deUint32				queueFamilyIndexCount;
+			(const deUint32*)DE_NULL,				// const deUint32*		pQueueFamilyIndices;
 			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout		initialLayout;
 		};
 
@@ -1126,8 +1112,8 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 	uploadImage(m_destinationTextureLevel->getAccess(), m_destination.get(), m_params.dst.image);
 
 	const DeviceInterface&		vk					= m_context.getDeviceInterface();
-	const VkDevice				vkDevice			= m_context.getDevice();
-	const VkQueue				queue				= m_context.getUniversalQueue();
+	const VkDevice				vkDevice			= m_device;
+	const VkQueue				queue				= m_queue;
 
 	std::vector<VkImageCopy>		imageCopies;
 	std::vector<VkImageCopy2KHR>	imageCopies2KHR;
@@ -1502,8 +1488,7 @@ CopyImageToImageMipmap::CopyImageToImageMipmap (Context& context, TestParams par
 	const InstanceInterface&	vki					= context.getInstanceInterface();
 	const DeviceInterface&		vk					= context.getDeviceInterface();
 	const VkPhysicalDevice		vkPhysDevice		= context.getPhysicalDevice();
-	const VkDevice				vkDevice			= context.getDevice();
-	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	const VkDevice				vkDevice			= m_device;
 	Allocator&					memAlloc			= context.getDefaultAllocator();
 
 	// Create source image
@@ -1523,8 +1508,8 @@ CopyImageToImageMipmap::CopyImageToImageMipmap (Context& context, TestParams par
 			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
 				VK_IMAGE_USAGE_TRANSFER_DST_BIT,	// VkImageUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
-			1u,										// deUint32				queueFamilyCount;
-			&queueFamilyIndex,						// const deUint32*		pQueueFamilyIndices;
+			0u,										// deUint32				queueFamilyIndexCount;
+			(const deUint32*)DE_NULL,				// const deUint32*		pQueueFamilyIndices;
 			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout		initialLayout;
 		};
 
@@ -1550,8 +1535,8 @@ CopyImageToImageMipmap::CopyImageToImageMipmap (Context& context, TestParams par
 			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
 				VK_IMAGE_USAGE_TRANSFER_DST_BIT,	// VkImageUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
-			1u,										// deUint32				queueFamilyCount;
-			&queueFamilyIndex,						// const deUint32*		pQueueFamilyIndices;
+			0u,										// deUint32				queueFamilyIndexCount;
+			(const deUint32*)DE_NULL,				// const deUint32*		pQueueFamilyIndices;
 			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout		initialLayout;
 		};
 
@@ -1584,8 +1569,8 @@ tcu::TestStatus CopyImageToImageMipmap::iterate (void)
 	uploadImage(m_destinationTextureLevel->getAccess(), m_destination.get(), m_params.dst.image, m_params.mipLevels);
 
 	const DeviceInterface&		vk					= m_context.getDeviceInterface();
-	const VkDevice				vkDevice			= m_context.getDevice();
-	const VkQueue				queue				= m_context.getUniversalQueue();
+	const VkDevice				vkDevice			= m_device;
+	const VkQueue				queue				= m_queue;
 
 	std::vector<VkImageCopy>		imageCopies;
 	std::vector<VkImageCopy2KHR>	imageCopies2KHR;
@@ -1974,8 +1959,7 @@ CopyBufferToBuffer::CopyBufferToBuffer (Context& context, TestParams params)
 	const InstanceInterface&	vki					= context.getInstanceInterface();
 	const DeviceInterface&		vk					= context.getDeviceInterface();
 	const VkPhysicalDevice		vkPhysDevice		= context.getPhysicalDevice();
-	const VkDevice				vkDevice			= context.getDevice();
-	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	const VkDevice				vkDevice			= m_device;
 	Allocator&					memAlloc			= context.getDefaultAllocator();
 
 	// Create source buffer
@@ -1988,8 +1972,8 @@ CopyBufferToBuffer::CopyBufferToBuffer (Context& context, TestParams params)
 			m_params.src.buffer.size,					// VkDeviceSize			size;
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,			// VkBufferUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
-			1u,											// deUint32				queueFamilyIndexCount;
-			&queueFamilyIndex,							// const deUint32*		pQueueFamilyIndices;
+			0u,											// deUint32				queueFamilyIndexCount;
+			(const deUint32*)DE_NULL,					// const deUint32*		pQueueFamilyIndices;
 		};
 
 		m_source				= createBuffer(vk, vkDevice, &sourceBufferParams);
@@ -2007,8 +1991,8 @@ CopyBufferToBuffer::CopyBufferToBuffer (Context& context, TestParams params)
 			m_params.dst.buffer.size,					// VkDeviceSize			size;
 			VK_BUFFER_USAGE_TRANSFER_DST_BIT,			// VkBufferUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
-			1u,											// deUint32				queueFamilyIndexCount;
-			&queueFamilyIndex,							// const deUint32*		pQueueFamilyIndices;
+			0u,											// deUint32				queueFamilyIndexCount;
+			(const deUint32*)DE_NULL,					// const deUint32*		pQueueFamilyIndices;
 		};
 
 		m_destination				= createBuffer(vk, vkDevice, &destinationBufferParams);
@@ -2033,8 +2017,8 @@ tcu::TestStatus CopyBufferToBuffer::iterate (void)
 	uploadBuffer(m_destinationTextureLevel->getAccess(), *m_destinationBufferAlloc);
 
 	const DeviceInterface&		vk			= m_context.getDeviceInterface();
-	const VkDevice				vkDevice	= m_context.getDevice();
-	const VkQueue				queue		= m_context.getUniversalQueue();
+	const VkDevice				vkDevice	= m_device;
+	const VkQueue				queue		= m_queue;
 
 	const VkBufferMemoryBarrier		srcBufferBarrier	=
 	{
@@ -2180,8 +2164,7 @@ CopyImageToBuffer::CopyImageToBuffer (Context& context, TestParams testParams)
 	const InstanceInterface&	vki					= context.getInstanceInterface();
 	const DeviceInterface&		vk					= context.getDeviceInterface();
 	const VkPhysicalDevice		vkPhysDevice		= context.getPhysicalDevice();
-	const VkDevice				vkDevice			= context.getDevice();
-	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	const VkDevice				vkDevice			= m_device;
 	Allocator&					memAlloc			= context.getDefaultAllocator();
 
 	// Create source image
@@ -2201,8 +2184,8 @@ CopyImageToBuffer::CopyImageToBuffer (Context& context, TestParams testParams)
 			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
 				VK_IMAGE_USAGE_TRANSFER_DST_BIT,	// VkImageUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
-			1u,										// deUint32				queueFamilyCount;
-			&queueFamilyIndex,						// const deUint32*		pQueueFamilyIndices;
+			0u,										// deUint32				queueFamilyIndexCount;
+			(const deUint32*)DE_NULL,				// const deUint32*		pQueueFamilyIndices;
 			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout		initialLayout;
 		};
 
@@ -2221,8 +2204,8 @@ CopyImageToBuffer::CopyImageToBuffer (Context& context, TestParams testParams)
 			m_bufferSize,								// VkDeviceSize			size;
 			VK_BUFFER_USAGE_TRANSFER_DST_BIT,			// VkBufferUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
-			1u,											// deUint32				queueFamilyIndexCount;
-			&queueFamilyIndex,							// const deUint32*		pQueueFamilyIndices;
+			0u,											// deUint32				queueFamilyIndexCount;
+			(const deUint32*)DE_NULL,					// const deUint32*		pQueueFamilyIndices;
 		};
 
 		m_destination				= createBuffer(vk, vkDevice, &destinationBufferParams);
@@ -2247,8 +2230,8 @@ tcu::TestStatus CopyImageToBuffer::iterate (void)
 	uploadBuffer(m_destinationTextureLevel->getAccess(), *m_destinationBufferAlloc);
 
 	const DeviceInterface&		vk			= m_context.getDeviceInterface();
-	const VkDevice				vkDevice	= m_context.getDevice();
-	const VkQueue				queue		= m_context.getUniversalQueue();
+	const VkDevice				vkDevice	= m_device;
+	const VkQueue				queue		= m_queue;
 
 	// Barriers for copying image to buffer
 	const VkImageMemoryBarrier		imageBarrier		=
@@ -2426,8 +2409,7 @@ CopyBufferToImage::CopyBufferToImage (Context& context, TestParams testParams)
 	const InstanceInterface&	vki					= context.getInstanceInterface();
 	const DeviceInterface&		vk					= context.getDeviceInterface();
 	const VkPhysicalDevice		vkPhysDevice		= context.getPhysicalDevice();
-	const VkDevice				vkDevice			= context.getDevice();
-	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	const VkDevice				vkDevice			= m_device;
 	Allocator&					memAlloc			= context.getDefaultAllocator();
 
 	// Create source buffer
@@ -2440,8 +2422,8 @@ CopyBufferToImage::CopyBufferToImage (Context& context, TestParams testParams)
 			m_bufferSize,								// VkDeviceSize			size;
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,			// VkBufferUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
-			1u,											// deUint32				queueFamilyIndexCount;
-			&queueFamilyIndex,							// const deUint32*		pQueueFamilyIndices;
+			0u,											// deUint32				queueFamilyIndexCount;
+			(const deUint32*)DE_NULL,					// const deUint32*		pQueueFamilyIndices;
 		};
 
 		m_source				= createBuffer(vk, vkDevice, &sourceBufferParams);
@@ -2466,8 +2448,8 @@ CopyBufferToImage::CopyBufferToImage (Context& context, TestParams testParams)
 			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
 				VK_IMAGE_USAGE_TRANSFER_DST_BIT,	// VkImageUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
-			1u,										// deUint32				queueFamilyCount;
-			&queueFamilyIndex,						// const deUint32*		pQueueFamilyIndices;
+			0u,										// deUint32				queueFamilyIndexCount;
+			(const deUint32*)DE_NULL,				// const deUint32*		pQueueFamilyIndices;
 			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout		initialLayout;
 		};
 
@@ -2494,8 +2476,8 @@ tcu::TestStatus CopyBufferToImage::iterate (void)
 	uploadImage(m_destinationTextureLevel->getAccess(), *m_destination, m_params.dst.image);
 
 	const DeviceInterface&		vk			= m_context.getDeviceInterface();
-	const VkDevice				vkDevice	= m_context.getDevice();
-	const VkQueue				queue		= m_context.getUniversalQueue();
+	const VkDevice				vkDevice	= m_device;
+	const VkQueue				queue		= m_queue;
 
 	const VkImageMemoryBarrier	imageBarrier	=
 	{
@@ -2701,8 +2683,7 @@ CopyBufferToDepthStencil::CopyBufferToDepthStencil(Context& context, TestParams 
 	const InstanceInterface&	vki					= context.getInstanceInterface();
 	const DeviceInterface&		vk					= context.getDeviceInterface();
 	const VkPhysicalDevice		vkPhysDevice		= context.getPhysicalDevice();
-	const VkDevice				vkDevice			= context.getDevice();
-	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	const VkDevice				vkDevice			= m_device;
 	Allocator&					memAlloc			= context.getDefaultAllocator();
 	const bool					hasDepth			= tcu::hasDepthComponent(mapVkFormat(m_params.dst.image.format).order);
 	const bool					hasStencil			= tcu::hasStencilComponent(mapVkFormat(m_params.dst.image.format).order);
@@ -2739,8 +2720,8 @@ CopyBufferToDepthStencil::CopyBufferToDepthStencil(Context& context, TestParams 
 			m_bufferSize,								// VkDeviceSize			size;
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,			// VkBufferUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
-			1u,											// deUint32				queueFamilyIndexCount;
-			&queueFamilyIndex,							// const deUint32*		pQueueFamilyIndices;
+			0u,											// deUint32				queueFamilyIndexCount;
+			(const deUint32*)DE_NULL,					// const deUint32*		pQueueFamilyIndices;
 		};
 
 		m_source				= createBuffer(vk, vkDevice, &sourceBufferParams);
@@ -2765,8 +2746,8 @@ CopyBufferToDepthStencil::CopyBufferToDepthStencil(Context& context, TestParams 
 			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
 				VK_IMAGE_USAGE_TRANSFER_DST_BIT,	// VkImageUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
-			1u,										// deUint32				queueFamilyCount;
-			&queueFamilyIndex,						// const deUint32*		pQueueFamilyIndices;
+			0u,										// deUint32				queueFamilyIndexCount;
+			(const deUint32*)DE_NULL,				// const deUint32*		pQueueFamilyIndices;
 			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout		initialLayout;
 		};
 
@@ -2802,9 +2783,9 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
 	std::vector<VkBufferImageCopy>		bufferImageCopies;
 	std::vector<VkBufferImageCopy2KHR>	bufferImageCopies2KHR;
 	VkDeviceSize					bufferOffset	= 0;
-	const VkDevice					vkDevice		= m_context.getDevice();
+	const VkDevice					vkDevice		= m_device;
 	const DeviceInterface&			vk				= m_context.getDeviceInterface();
-	const VkQueue					queue			= m_context.getUniversalQueue();
+	const VkQueue					queue			= m_queue;
 	char*							dstPtr			= reinterpret_cast<char*>(m_sourceBufferAlloc->getHostPtr());
 	bool							depthLoaded		= DE_FALSE;
 	bool							stencilLoaded	= DE_FALSE;
@@ -3018,7 +2999,7 @@ private:
 class CompressedTextureForBlit
 {
 public:
-	CompressedTextureForBlit(const tcu::CompressedTexFormat& srcFormat, int width, int height, int depth, VkFormat dstFormat);
+	CompressedTextureForBlit(const tcu::CompressedTexFormat& srcFormat, int width, int height, int depth);
 
 	tcu::PixelBufferAccess			getDecompressedAccess() const;
 	const tcu::CompressedTexture&	getCompressedTexture() const;
@@ -3030,7 +3011,7 @@ protected:
 	tcu::PixelBufferAccess		m_decompressedAccess;
 };
 
-CompressedTextureForBlit::CompressedTextureForBlit(const tcu::CompressedTexFormat& srcFormat, int width, int height, int depth, VkFormat dstFormat)
+CompressedTextureForBlit::CompressedTextureForBlit(const tcu::CompressedTexFormat& srcFormat, int width, int height, int depth)
 	: m_compressedTexture(srcFormat, width, height, depth)
 {
 	de::Random			random					(123);
@@ -3048,11 +3029,10 @@ CompressedTextureForBlit::CompressedTextureForBlit(const tcu::CompressedTexForma
 		tcu::astc::generateRandomValidBlocks(compressedData, compressedDataSize / tcu::astc::BLOCK_SIZE_BYTES,
 											 srcFormat, tcu::TexDecompressionParams::ASTCMODE_LDR, random.getUint32());
 	}
-	else if ((dstFormat == VK_FORMAT_E5B9G9R9_UFLOAT_PACK32) &&
-			((srcFormat == tcu::COMPRESSEDTEXFORMAT_BC6H_UFLOAT_BLOCK) ||
-			 (srcFormat == tcu::COMPRESSEDTEXFORMAT_BC6H_SFLOAT_BLOCK)))
+	else if ((srcFormat == tcu::COMPRESSEDTEXFORMAT_BC6H_UFLOAT_BLOCK) ||
+			 (srcFormat == tcu::COMPRESSEDTEXFORMAT_BC6H_SFLOAT_BLOCK))
 	{
-		// special case - when we are blitting compressed image to RGB999E5 image we can't have both big and small values
+		// special case - when we are blitting compressed floating-point image we can't have both big and small values
 		// in compressed image; to resolve this we are constructing source texture out of set of predefined compressed
 		// blocks that after decompression will have components in proper range
 
@@ -3181,8 +3161,7 @@ BlittingImages::BlittingImages (Context& context, TestParams params)
 	const InstanceInterface&	vki					= context.getInstanceInterface();
 	const DeviceInterface&		vk					= context.getDeviceInterface();
 	const VkPhysicalDevice		vkPhysDevice		= context.getPhysicalDevice();
-	const VkDevice				vkDevice			= context.getDevice();
-	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	const VkDevice				vkDevice			= m_device;
 	Allocator&					memAlloc			= context.getDefaultAllocator();
 
 	// Create source image
@@ -3202,8 +3181,8 @@ BlittingImages::BlittingImages (Context& context, TestParams params)
 			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
 				VK_IMAGE_USAGE_TRANSFER_DST_BIT,	// VkImageUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
-			1u,										// deUint32				queueFamilyCount;
-			&queueFamilyIndex,						// const deUint32*		pQueueFamilyIndices;
+			0u,										// deUint32				queueFamilyIndexCount;
+			(const deUint32*)DE_NULL,				// const deUint32*		pQueueFamilyIndices;
 			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout		initialLayout;
 		};
 
@@ -3229,8 +3208,8 @@ BlittingImages::BlittingImages (Context& context, TestParams params)
 			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
 				VK_IMAGE_USAGE_TRANSFER_DST_BIT,	// VkImageUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
-			1u,										// deUint32				queueFamilyCount;
-			&queueFamilyIndex,						// const deUint32*		pQueueFamilyIndices;
+			0u,										// deUint32				queueFamilyIndexCount;
+			(const deUint32*)DE_NULL,				// const deUint32*		pQueueFamilyIndices;
 			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout		initialLayout;
 		};
 
@@ -3243,8 +3222,8 @@ BlittingImages::BlittingImages (Context& context, TestParams params)
 tcu::TestStatus BlittingImages::iterate (void)
 {
 	const DeviceInterface&		vk				= m_context.getDeviceInterface();
-	const VkDevice				vkDevice		= m_context.getDevice();
-	const VkQueue				queue			= m_context.getUniversalQueue();
+	const VkDevice				vkDevice		= m_device;
+	const VkQueue				queue			= m_queue;
 
 	const ImageParms&			srcImageParams	= m_params.src.image;
 	const int					srcWidth		= static_cast<int>(srcImageParams.extent.width);
@@ -3278,7 +3257,7 @@ tcu::TestStatus BlittingImages::iterate (void)
 	{
 		// for compressed images srcImageParams.fillMode is not used - we are using random data
 		tcu::CompressedTexFormat compressedFormat = mapVkCompressedFormat(srcImageParams.format);
-		m_sourceCompressedTexture = CompressedTextureForBlitSp(new CompressedTextureForBlit(compressedFormat, srcWidth, srcHeight, srcDepth, dstImageParams.format));
+		m_sourceCompressedTexture = CompressedTextureForBlitSp(new CompressedTextureForBlit(compressedFormat, srcWidth, srcHeight, srcDepth));
 		uploadCompressedImage(m_source.get(), srcImageParams);
 	}
 	else
@@ -3295,7 +3274,7 @@ tcu::TestStatus BlittingImages::iterate (void)
 	{
 		// compressed images are filled with random data
 		tcu::CompressedTexFormat compressedFormat = mapVkCompressedFormat(dstImageParams.format);
-		m_destinationCompressedTexture = CompressedTextureForBlitSp(new CompressedTextureForBlit(compressedFormat, srcWidth, srcHeight, srcDepth, VK_FORMAT_UNDEFINED));
+		m_destinationCompressedTexture = CompressedTextureForBlitSp(new CompressedTextureForBlit(compressedFormat, srcWidth, srcHeight, srcDepth));
 		uploadCompressedImage(m_destination.get(), dstImageParams);
 	}
 	else
@@ -4444,10 +4423,9 @@ void BlittingImages::uploadCompressedImage (const VkImage& image, const ImagePar
 	const InstanceInterface&		vki					= m_context.getInstanceInterface();
 	const DeviceInterface&			vk					= m_context.getDeviceInterface();
 	const VkPhysicalDevice			vkPhysDevice		= m_context.getPhysicalDevice();
-	const VkDevice					vkDevice			= m_context.getDevice();
-	const VkQueue					queue				= m_context.getUniversalQueue();
-	const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-	Allocator&						memAlloc			= m_context.getDefaultAllocator();
+	const VkDevice					vkDevice			= m_device;
+	const VkQueue					queue				= m_queue;
+	Allocator&						memAlloc			= *m_allocator;
 	Move<VkBuffer>					buffer;
 	const deUint32					bufferSize			= m_sourceCompressedTexture->getCompressedTexture().getDataSize();
 	de::MovePtr<Allocation>			bufferAlloc;
@@ -4469,8 +4447,8 @@ void BlittingImages::uploadCompressedImage (const VkImage& image, const ImagePar
 			bufferSize,									// VkDeviceSize			size;
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,			// VkBufferUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
-			1u,											// deUint32				queueFamilyIndexCount;
-			&queueFamilyIndex,							// const deUint32*		pQueueFamilyIndices;
+			0u,											// deUint32				queueFamilyIndexCount;
+			(const deUint32*)DE_NULL,					// const deUint32*		pQueueFamilyIndices;
 		};
 
 		buffer		= createBuffer(vk, vkDevice, &bufferParams);
@@ -4682,8 +4660,7 @@ BlittingMipmaps::BlittingMipmaps (Context& context, TestParams params)
 	const InstanceInterface&	vki					= context.getInstanceInterface();
 	const DeviceInterface&		vk					= context.getDeviceInterface();
 	const VkPhysicalDevice		vkPhysDevice		= context.getPhysicalDevice();
-	const VkDevice				vkDevice			= context.getDevice();
-	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	const VkDevice				vkDevice			= m_device;
 	Allocator&					memAlloc			= context.getDefaultAllocator();
 
 	// Create source image
@@ -4703,8 +4680,8 @@ BlittingMipmaps::BlittingMipmaps (Context& context, TestParams params)
 			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
 				VK_IMAGE_USAGE_TRANSFER_DST_BIT,	// VkImageUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
-			1u,										// deUint32				queueFamilyCount;
-			&queueFamilyIndex,						// const deUint32*		pQueueFamilyIndices;
+			0u,										// deUint32				queueFamilyIndexCount;
+			(const deUint32*)DE_NULL,				// const deUint32*		pQueueFamilyIndices;
 			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout		initialLayout;
 		};
 
@@ -4730,8 +4707,8 @@ BlittingMipmaps::BlittingMipmaps (Context& context, TestParams params)
 			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
 				VK_IMAGE_USAGE_TRANSFER_DST_BIT,	// VkImageUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
-			1u,										// deUint32				queueFamilyCount;
-			&queueFamilyIndex,						// const deUint32*		pQueueFamilyIndices;
+			0u,										// deUint32				queueFamilyIndexCount;
+			(const deUint32*)DE_NULL,				// const deUint32*		pQueueFamilyIndices;
 			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout		initialLayout;
 		};
 
@@ -4762,8 +4739,8 @@ tcu::TestStatus BlittingMipmaps::iterate (void)
 	uploadImage(m_destinationTextureLevel->getAccess(), m_destination.get(), m_params.dst.image, m_params.mipLevels);
 
 	const DeviceInterface&		vk					= m_context.getDeviceInterface();
-	const VkDevice				vkDevice			= m_context.getDevice();
-	const VkQueue				queue				= m_context.getUniversalQueue();
+	const VkDevice				vkDevice			= m_device;
+	const VkQueue				queue				= m_queue;
 
 	std::vector<VkImageBlit>		regions;
 	std::vector<VkImageBlit2KHR>	regions2KHR;
@@ -5414,29 +5391,141 @@ private:
 
 // Resolve image to image.
 
-enum ResolveImageToImageOptions{NO_OPTIONAL_OPERATION,
+enum ResolveImageToImageOptions{NO_OPTIONAL_OPERATION = 0,
 								COPY_MS_IMAGE_TO_MS_IMAGE,
 								COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE,
 								COPY_MS_IMAGE_LAYER_TO_MS_IMAGE,
 								COPY_MS_IMAGE_TO_MS_IMAGE_MULTIREGION,
-								COPY_MS_IMAGE_TO_MS_IMAGE_NO_CAB};
+								COPY_MS_IMAGE_TO_MS_IMAGE_NO_CAB,
+								COPY_MS_IMAGE_TO_MS_IMAGE_COMPUTE,
+								COPY_MS_IMAGE_TO_MS_IMAGE_TRANSFER};
+
+std::vector<std::string> removeExtensions (const std::vector<std::string>& a, const std::vector<const char*>& b)
+{
+	std::vector<std::string>	res;
+	std::set<std::string>		removeExts	(b.begin(), b.end());
+
+	for (const auto & aIter : a)
+	{
+		if (!de::contains(removeExts, aIter))
+			res.push_back(aIter);
+	}
+
+	return res;
+}
+
+// Creates a device that has queues for graphics/compute capabilities and compute or transfer capabilities without graphics.
+Move<VkDevice> createCustomDevice (Context&								context,
+								   const ResolveImageToImageOptions		imageCreateOptions,
+								   uint32_t&							queueFamilyIndex)
+{
+	// This function can only be used to create a device with compute only or transfer only queue.
+	DE_ASSERT(imageCreateOptions == COPY_MS_IMAGE_TO_MS_IMAGE_COMPUTE || imageCreateOptions == COPY_MS_IMAGE_TO_MS_IMAGE_TRANSFER);
+
+	// When testing with compute or transfer queue, find a queue family that supports compute or transfer queue, but does NOT support graphics queue.
+	const std::vector<VkQueueFamilyProperties>	queueFamilies = getPhysicalDeviceQueueFamilyProperties(context.getInstanceInterface(), context.getPhysicalDevice());
+
+	queueFamilyIndex = 0;
+	for (const auto &queueFamily: queueFamilies)
+	{
+		if (imageCreateOptions == COPY_MS_IMAGE_TO_MS_IMAGE_COMPUTE)
+		{
+			if (queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT && !(queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT))
+				break;
+			else
+				queueFamilyIndex++;
+		}
+		else if (imageCreateOptions == COPY_MS_IMAGE_TO_MS_IMAGE_TRANSFER)
+		{
+			if (queueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT && !(queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT) && !(queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT))
+				break;
+			else
+				queueFamilyIndex++;
+		}
+	}
+
+	// One should be found, because this is checked in "checkSupport" function.
+	DE_ASSERT(queueFamilyIndex < queueFamilies.size());
+
+	const float queuePriority = 1.0f;
+	const VkDeviceQueueCreateInfo deviceQueueCreateInfos[] = {
+		{
+			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,		// VkStructureType				sType;
+			DE_NULL,										// const void*					pNext;
+			(VkDeviceQueueCreateFlags)0u,					// VkDeviceQueueCreateFlags		flags;
+			context.getUniversalQueueFamilyIndex(),			// uint32_t						queueFamilyIndex;
+			1u,												// uint32_t						queueCount;
+			&queuePriority,									// const float*					pQueuePriorities;
+		},
+		{
+			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,		// VkStructureType				sType;
+			DE_NULL,										// const void*					pNext;
+			(VkDeviceQueueCreateFlags)0u,					// VkDeviceQueueCreateFlags		flags;
+			queueFamilyIndex,								// uint32_t						queueFamilyIndex;
+			1u,												// uint32_t						queueCount;
+			&queuePriority,									// const float*					pQueuePriorities;
+		}
+	};
+
+	// context.getDeviceExtensions() returns supported device extension including extensions that have been promoted to
+	// Vulkan core. The core extensions must be removed from the list.
+	std::vector<const char*>	coreExtensions;
+	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
+	std::vector<std::string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
+
+	std::vector<const char*>	extensionNames;
+	extensionNames.reserve(nonCoreExtensions.size());
+	for (const std::string& extension : nonCoreExtensions)
+		extensionNames.push_back(extension.c_str());
+
+	const auto& deviceFeatures2 = context.getDeviceFeatures2();
+
+	const VkDeviceCreateInfo	deviceCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,			// VkStructureType					sType;
+		&deviceFeatures2,								// const void*						pNext;
+		(VkDeviceCreateFlags)0u,						// VkDeviceCreateFlags				flags;
+		DE_LENGTH_OF_ARRAY(deviceQueueCreateInfos),		// uint32_t							queueCreateInfoCount;
+		deviceQueueCreateInfos,							// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
+		0u,												// uint32_t							enabledLayerCount;
+		DE_NULL,										// const char* const*				ppEnabledLayerNames;
+		static_cast<uint32_t>(extensionNames.size()),	// uint32_t							enabledExtensionCount;
+		extensionNames.data(),							// const char* const*				ppEnabledExtensionNames;
+		DE_NULL,										// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+	};
+
+	return vkt::createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(), context.getPhysicalDevice(), &deviceCreateInfo);
+}
 
 class ResolveImageToImage : public CopiesAndBlittingTestInstance
 {
 public:
-												ResolveImageToImage				(Context&							context,
-																				 TestParams							params,
-																				 const ResolveImageToImageOptions	options);
+												ResolveImageToImage				(Context&						context,
+																				 TestParams						params,
+																				 ResolveImageToImageOptions		options);
 	virtual tcu::TestStatus						iterate							(void);
 	static inline bool							shouldVerifyIntermediateResults	(ResolveImageToImageOptions option)
 	{
-		return option == COPY_MS_IMAGE_TO_MS_IMAGE || option == COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE || option == COPY_MS_IMAGE_LAYER_TO_MS_IMAGE;
+		return option == COPY_MS_IMAGE_TO_MS_IMAGE || option == COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE || option == COPY_MS_IMAGE_LAYER_TO_MS_IMAGE || option == COPY_MS_IMAGE_TO_MS_IMAGE_COMPUTE || option == COPY_MS_IMAGE_TO_MS_IMAGE_TRANSFER;
 	}
+												~ResolveImageToImage()
+												{
+													// Destroy the command pool (and free the related command buffer).
+													// This must be done before the m_customDevice is destroyed.
+													m_cmdBuffer.disown();
+													m_cmdPool = Move<VkCommandPool>();
+												}
 protected:
 	virtual tcu::TestStatus						checkTestResult					(tcu::ConstPixelBufferAccess result);
 	void										copyMSImageToMSImage			(deUint32 copyArraySize);
 	tcu::TestStatus								checkIntermediateCopy			(void);
 private:
+	Move<VkDevice>								m_customDevice;
+	Move<VkCommandPool>							m_alternativeCmdPool;
+	Move<VkCommandBuffer>						m_alternativeCmdBuffer;
+	VkQueue										m_alternativeQueue;
+	uint32_t									m_alternativeQueueFamilyIndex;
+	de::MovePtr<vk::Allocator>					m_alternativeAllocator;
 	Move<VkImage>								m_multisampledImage;
 	de::MovePtr<Allocation>						m_multisampledImageAlloc;
 
@@ -5462,11 +5551,35 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 {
 	const InstanceInterface&	vki						= m_context.getInstanceInterface();
 	const DeviceInterface&		vk						= m_context.getDeviceInterface();
-	const VkPhysicalDevice		vkPhysDevice			= m_context.getPhysicalDevice();
-	const VkDevice				vkDevice				= m_context.getDevice();
-	const deUint32				queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
-	Allocator&					memAlloc				= m_context.getDefaultAllocator();
 
+	// Create custom device for compute and transfer only queue tests.
+	if (m_options == COPY_MS_IMAGE_TO_MS_IMAGE_COMPUTE || m_options == COPY_MS_IMAGE_TO_MS_IMAGE_TRANSFER)
+	{
+		// 'queueFamilyIndex' will be updated in 'createCustomDevice()' to match the requested queue type.
+		uint32_t queueFamilyIndex		= 0;
+		m_customDevice					= createCustomDevice(context, m_options, queueFamilyIndex);
+		m_device						= m_customDevice.get();
+		m_queue							= getDeviceQueue(m_context.getDeviceInterface(), m_device, context.getUniversalQueueFamilyIndex(), 0u);
+		m_alternativeQueue				= getDeviceQueue(m_context.getDeviceInterface(), m_device, queueFamilyIndex, 0u);
+		m_alternativeQueueFamilyIndex	= queueFamilyIndex;
+		m_alternativeAllocator			= de::MovePtr<Allocator>(new SimpleAllocator(vk, m_device, getPhysicalDeviceMemoryProperties(vki, context.getPhysicalDevice())));
+		m_allocator						= m_alternativeAllocator.get();
+
+		// Release the command buffer. It will be freed when the related command pool gets destroyed (at the next line).
+		m_cmdBuffer.disown();
+
+		// Create a new command pool and allocate a command buffer with universal queue family index and destroy the old one.
+		m_cmdPool						= createCommandPool(vk, m_device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, context.getUniversalQueueFamilyIndex());
+		m_cmdBuffer						= allocateCommandBuffer(vk, m_device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+		// Create a command pool and allocate a command buffer from the queue family supporting compute / transfer capabilities.
+		m_alternativeCmdPool			= createCommandPool(vk, m_device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
+		m_alternativeCmdBuffer			= allocateCommandBuffer(vk, m_device, *m_alternativeCmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	}
+
+	Allocator&					memAlloc				= *m_allocator;
+	const VkPhysicalDevice		vkPhysDevice			= m_context.getPhysicalDevice();
+	const VkDevice				vkDevice				= m_device;
 	const VkComponentMapping	componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 	Move<VkRenderPass>			renderPass;
 
@@ -5501,8 +5614,8 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 				| VK_IMAGE_USAGE_TRANSFER_DST_BIT
 				| VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
 			VK_SHARING_MODE_EXCLUSIVE,												// VkSharingMode			sharingMode;
-			1u,																		// deUint32					queueFamilyIndexCount;
-			&queueFamilyIndex,														// const deUint32*			pQueueFamilyIndices;
+			0u,																		// deUint32					queueFamilyIndexCount;
+			(const deUint32*)DE_NULL,												// const deUint32*			pQueueFamilyIndices;
 			VK_IMAGE_LAYOUT_UNDEFINED,												// VkImageLayout			initialLayout;
 		};
 
@@ -5515,6 +5628,8 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 		switch (m_options)
 		{
 			case COPY_MS_IMAGE_TO_MS_IMAGE_MULTIREGION:
+			case COPY_MS_IMAGE_TO_MS_IMAGE_COMPUTE:
+			case COPY_MS_IMAGE_TO_MS_IMAGE_TRANSFER:
 			case COPY_MS_IMAGE_TO_MS_IMAGE:
 			{
 				colorImageParams.usage			= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
@@ -5571,8 +5686,8 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
 				VK_IMAGE_USAGE_TRANSFER_DST_BIT,	// VkImageUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
-			1u,										// deUint32				queueFamilyCount;
-			&queueFamilyIndex,						// const deUint32*		pQueueFamilyIndices;
+			0u,										// deUint32				queueFamilyIndexCount;
+			(const deUint32*)DE_NULL,				// const deUint32*		pQueueFamilyIndices;
 			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout		initialLayout;
 		};
 
@@ -5589,7 +5704,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
 		DE_NULL,									// const void*				pNext;
 		0u,											// VkAccessFlags			srcAccessMask;
-		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		// VkAccessFlags			dstAccessMask;
+		VK_ACCESS_MEMORY_WRITE_BIT,					// VkAccessFlags			dstAccessMask;
 		VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout			oldLayout;
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			newLayout;
 		VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
@@ -5608,7 +5723,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
 		DE_NULL,									// const void*				pNext;
 		0u,											// VkAccessFlags			srcAccessMask;
-		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		// VkAccessFlags			dstAccessMask;
+		VK_ACCESS_MEMORY_WRITE_BIT,					// VkAccessFlags			dstAccessMask;
 		VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout			oldLayout;
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			newLayout;
 		VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
@@ -5658,19 +5773,17 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 
 	// Create render pass.
 	{
-		const VkAttachmentDescription	attachmentDescriptions[1]	=
+		const VkAttachmentDescription	attachmentDescription		=
 		{
-			{
-				0u,											// VkAttachmentDescriptionFlags		flags;
-				m_params.src.image.format,					// VkFormat							format;
-				rasterizationSamples,						// VkSampleCountFlagBits			samples;
-				VK_ATTACHMENT_LOAD_OP_CLEAR,				// VkAttachmentLoadOp				loadOp;
-				VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp				storeOp;
-				VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp				stencilLoadOp;
-				VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp				stencilStoreOp;
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout					initialLayout;
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL		// VkImageLayout					finalLayout;
-			},
+			0u,											// VkAttachmentDescriptionFlags		flags;
+			m_params.src.image.format,					// VkFormat							format;
+			rasterizationSamples,						// VkSampleCountFlagBits			samples;
+			VK_ATTACHMENT_LOAD_OP_CLEAR,				// VkAttachmentLoadOp				loadOp;
+			VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp				storeOp;
+			VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp				stencilLoadOp;
+			VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp				stencilStoreOp;
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout					initialLayout;
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL		// VkImageLayout					finalLayout;
 		};
 
 		const VkAttachmentReference		colorAttachmentReference	=
@@ -5693,17 +5806,30 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 			DE_NULL								// const VkAttachmentReference*	pPreserveAttachments;
 		};
 
+		// Subpass dependency is used to synchronize the memory access of the image clear and color attachment write in some test cases.
+		const VkSubpassDependency		subpassDependency			=
+		{
+			VK_SUBPASS_EXTERNAL,							//uint32_t				srcSubpass;
+			0u,												//uint32_t				dstSubpass;
+			VK_PIPELINE_STAGE_TRANSFER_BIT,					//VkPipelineStageFlags	srcStageMask;
+			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,	//VkPipelineStageFlags	dstStageMask;
+			VK_ACCESS_TRANSFER_WRITE_BIT,					//VkAccessFlags			srcAccessMask;
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			//VkAccessFlags			dstAccessMask;
+			0u												//VkDependencyFlags		dependencyFlags;
+		};
+
+		const deBool					useSubpassDependency		= m_options == COPY_MS_IMAGE_LAYER_TO_MS_IMAGE || m_options == COPY_MS_IMAGE_TO_MS_IMAGE_MULTIREGION;
 		const VkRenderPassCreateInfo	renderPassParams			=
 		{
 			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	// VkStructureType					sType;
 			DE_NULL,									// const void*						pNext;
 			0u,											// VkRenderPassCreateFlags			flags;
 			1u,											// deUint32							attachmentCount;
-			attachmentDescriptions,						// const VkAttachmentDescription*	pAttachments;
+			&attachmentDescription,						// const VkAttachmentDescription*	pAttachments;
 			1u,											// deUint32							subpassCount;
 			&subpassDescription,						// const VkSubpassDescription*		pSubpasses;
-			0u,											// deUint32							dependencyCount;
-			DE_NULL										// const VkSubpassDependency*		pDependencies;
+			useSubpassDependency ? 1u : 0u,				// deUint32							dependencyCount;
+			&subpassDependency							// const VkSubpassDependency*		pDependencies;
 		};
 
 		renderPass	= createRenderPass(vk, vkDevice, &renderPassParams);
@@ -5747,8 +5873,8 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 			vertexDataSize,								// VkDeviceSize			size;
 			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,			// VkBufferUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
-			1u,											// deUint32				queueFamilyIndexCount;
-			&queueFamilyIndex							// const deUint32*		pQueueFamilyIndices;
+			0u,											// deUint32				queueFamilyIndexCount;
+			(const deUint32*)DE_NULL,					// const deUint32*		pQueueFamilyIndices;
 		};
 
 		vertexBuffer		= createBuffer(vk, vkDevice, &vertexBufferParams);
@@ -5784,11 +5910,6 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 
 		// Create framebuffer
 		{
-			const VkImageView				attachments[1]		=
-			{
-					*sourceAttachmentView,
-			};
-
 			const VkFramebufferCreateInfo	framebufferParams	=
 			{
 					VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,			// VkStructureType				sType;
@@ -5796,13 +5917,13 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 					0u,													// VkFramebufferCreateFlags		flags;
 					*renderPass,										// VkRenderPass					renderPass;
 					1u,													// deUint32						attachmentCount;
-					attachments,										// const VkImageView*			pAttachments;
+					&sourceAttachmentView.get(),						// const VkImageView*			pAttachments;
 					m_params.src.image.extent.width,					// deUint32						width;
 					m_params.src.image.extent.height,					// deUint32						height;
 					1u													// deUint32						layers;
 			};
 
-			framebuffer	= createFramebuffer(vk, vkDevice, &framebufferParams);
+			framebuffer = createFramebuffer(vk, vkDevice, &framebufferParams);
 		}
 
 		// Create pipeline
@@ -5846,11 +5967,11 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 		{
 			beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
-			// Change the image layouts.
-			vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, uint32_t(srcImageBarriers.size()), srcImageBarriers.data());
-
 			if (m_options == COPY_MS_IMAGE_LAYER_TO_MS_IMAGE || m_options == COPY_MS_IMAGE_TO_MS_IMAGE_MULTIREGION)
 			{
+				// Change the image layouts.
+				vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, (uint32_t)srcImageBarriers.size(), srcImageBarriers.data());
+
 				// Clear the 'm_multisampledImage'.
 				{
 					const VkClearColorValue clearValue = {{0.0f, 0.0f, 0.0f, 1.0f}};
@@ -5863,15 +5984,17 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 					const VkClearColorValue clearValue = {{1.0f, 1.0f, 1.0f, 1.0f}};
 					const auto clearRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, m_params.src.image.extent.depth);
 					vk.cmdClearColorImage(*m_cmdBuffer, m_multisampledCopyImage.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue, 1u, &clearRange);
-
-					const auto postClearMemoryBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT);
-					vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 1u, &postClearMemoryBarrier, 0, (const VkBufferMemoryBarrier*)DE_NULL, 0u, (const VkImageMemoryBarrier*)DE_NULL);
 				}
+			}
+			else
+			{
+				// Change the image layouts.
+				vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, (uint32_t)srcImageBarriers.size(), srcImageBarriers.data());
 			}
 
 			beginRenderPass(vk, *m_cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, m_params.src.image.extent.width, m_params.src.image.extent.height), tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
 
-			const VkDeviceSize	vertexBufferOffset	= 0u;
+			const VkDeviceSize vertexBufferOffset = 0u;
 
 			vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
 			vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer.get(), &vertexBufferOffset);
@@ -5883,8 +6006,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 
 		// Queue submit.
 		{
-			const VkQueue	queue	= m_context.getUniversalQueue();
-			submitCommandsAndWait (vk, vkDevice, queue, *m_cmdBuffer);
+			submitCommandsAndWait (vk, vkDevice, m_queue, *m_cmdBuffer);
 		}
 	}
 }
@@ -5921,6 +6043,8 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 			sourceArraySize	= getArraySize(m_params.dst.image); // fall through
 		case COPY_MS_IMAGE_TO_MS_IMAGE_MULTIREGION:
 		case COPY_MS_IMAGE_TO_MS_IMAGE_NO_CAB:
+		case COPY_MS_IMAGE_TO_MS_IMAGE_COMPUTE:
+		case COPY_MS_IMAGE_TO_MS_IMAGE_TRANSFER:
 		case COPY_MS_IMAGE_TO_MS_IMAGE:
 			copyMSImageToMSImage(sourceArraySize);
 			sourceImage	= m_multisampledCopyImage.get();
@@ -5930,8 +6054,8 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 	}
 
 	const DeviceInterface&			vk					= m_context.getDeviceInterface();
-	const VkDevice					vkDevice			= m_context.getDevice();
-	const VkQueue					queue				= m_context.getUniversalQueue();
+	const VkDevice					vkDevice			= m_device;
+	const VkQueue					queue				= m_queue;
 
 	std::vector<VkImageResolve>		imageResolves;
 	std::vector<VkImageResolve2KHR>	imageResolves2KHR;
@@ -6142,10 +6266,10 @@ void ResolveImageToImage::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess s
 tcu::TestStatus ResolveImageToImage::checkIntermediateCopy (void)
 {
 	const		auto&	vkd					= m_context.getDeviceInterface();
-	const		auto	device				= m_context.getDevice();
-	const		auto	queue				= m_context.getUniversalQueue();
+	const		auto	device				= m_device;
+	const		auto	queue				= m_queue;
 	const		auto	queueIndex			= m_context.getUniversalQueueFamilyIndex();
-				auto&	alloc				= m_context.getDefaultAllocator();
+				auto&	alloc				= *m_allocator;
 	const		auto	currentLayout		= m_params.src.image.operationLayout;
 	const		auto	numDstLayers		= getArraySize(m_params.dst.image);
 	const		auto	numInputAttachments	= m_options == COPY_MS_IMAGE_LAYER_TO_MS_IMAGE ? 2u : numDstLayers + 1u; // For the source image.
@@ -6438,9 +6562,11 @@ tcu::TestStatus ResolveImageToImage::checkIntermediateCopy (void)
 
 void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 {
+	const bool						useTwoQueues		= m_options == COPY_MS_IMAGE_TO_MS_IMAGE_COMPUTE || m_options == COPY_MS_IMAGE_TO_MS_IMAGE_TRANSFER;
 	const DeviceInterface&			vk					= m_context.getDeviceInterface();
-	const VkDevice					vkDevice			= m_context.getDevice();
-	const VkQueue					queue				= m_context.getUniversalQueue();
+	const VkDevice					vkDevice			= m_device;
+	const VkQueue					queue				= useTwoQueues ? m_alternativeQueue : m_queue;
+	const VkCommandBuffer			commandBuffer		= useTwoQueues ? m_alternativeCmdBuffer.get() : m_cmdBuffer.get();
 	const tcu::TextureFormat		srcTcuFormat		= mapVkFormat(m_params.src.image.format);
 	std::vector<VkImageCopy>		imageCopies;
 	std::vector<VkImageCopy2KHR>	imageCopies2KHR;
@@ -6551,7 +6677,13 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 		}
 	}
 
-	std::vector<VkImageMemoryBarrier> imageBarriers;
+	VkImageSubresourceRange subresourceRange = {
+			getAspectFlags(srcTcuFormat),	// VkImageAspectFlags	aspectMask
+			0u,								// deUint32				baseMipLevel
+			1u,								// deUint32				mipLevels
+			0u,								// deUint32				baseArraySlice
+			copyArraySize					// deUint32				arraySize
+	};
 
 	// m_multisampledImage
 	const VkImageMemoryBarrier m_multisampledImageBarrier =
@@ -6574,7 +6706,7 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 		}
 	};
 	// m_multisampledCopyImage
-	const VkImageMemoryBarrier m_multisampledCopyImageBarrier =
+	VkImageMemoryBarrier m_multisampledCopyImageBarrier =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
 		DE_NULL,									// const void*				pNext;
@@ -6585,16 +6717,11 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 		VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
 		VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
 		m_multisampledCopyImage.get(),				// VkImage					image;
-		{											// VkImageSubresourceRange	subresourceRange;
-			getAspectFlags(srcTcuFormat),			// VkImageAspectFlags	aspectMask;
-			0u,										// deUint32				baseMipLevel;
-			1u,										// deUint32				mipLevels;
-			0u,										// deUint32				baseArraySlice;
-			copyArraySize							// deUint32				arraySize;
-		}
+		subresourceRange							// VkImageSubresourceRange	subresourceRange;
 	};
+
 	// m_multisampledCopyNoCabImage (no USAGE_COLOR_ATTACHMENT_BIT)
-	const VkImageMemoryBarrier m_multisampledCopyNoCabImageBarrier =
+	const VkImageMemoryBarrier		m_multisampledCopyNoCabImageBarrier	=
 	{
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
 		DE_NULL,									// const void*				pNext;
@@ -6605,89 +6732,128 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 		VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
 		VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
 		m_multisampledCopyNoCabImage.get(),			// VkImage					image;
-		{											// VkImageSubresourceRange	subresourceRange;
-			getAspectFlags(srcTcuFormat),			// VkImageAspectFlags	aspectMask;
-			0u,										// deUint32				baseMipLevel;
-			1u,										// deUint32				mipLevels;
-			0u,										// deUint32				baseArraySlice;
-			copyArraySize							// deUint32				arraySize;
-		}
+		subresourceRange							// VkImageSubresourceRange	subresourceRange;
 	};
 
-	// Only use one barrier if no options have been given.
-	if (m_options != DE_NULL)
+	// destination image
+	const VkImageMemoryBarrier		multisampledCopyImagePostBarrier	=
 	{
-		imageBarriers.push_back(m_multisampledImageBarrier);
-		imageBarriers.push_back(m_multisampledCopyImageBarrier);
-		// Add the third barrier if option is as below.
-		if (m_options == COPY_MS_IMAGE_TO_MS_IMAGE_NO_CAB)
-			imageBarriers.push_back(m_multisampledCopyNoCabImageBarrier);
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
+		DE_NULL,									// const void*				pNext;
+		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
+		VK_ACCESS_MEMORY_READ_BIT,					// VkAccessFlags			dstAccessMask;
+		m_params.dst.image.operationLayout,			// VkImageLayout			oldLayout;
+		m_params.src.image.operationLayout,			// VkImageLayout			newLayout;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
+		m_multisampledCopyImage.get(),				// VkImage					image;
+		subresourceRange							// VkImageSubresourceRange	subresourceRange;
+	};
+
+	// destination image (no USAGE_COLOR_ATTACHMENT_BIT)
+	const VkImageMemoryBarrier		betweenCopyImageBarrier				=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
+		DE_NULL,									// const void*				pNext;
+		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
+		VK_ACCESS_TRANSFER_READ_BIT,				// VkAccessFlags			dstAccessMask;
+		m_params.dst.image.operationLayout,			// VkImageLayout			oldLayout;
+		m_params.src.image.operationLayout,			// VkImageLayout			newLayout;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
+		m_multisampledCopyNoCabImage.get(),			// VkImage					image;
+		subresourceRange							// VkImageSubresourceRange	subresourceRange;
+	};
+
+	// Queue family ownership transfer. Move ownership of the m_multisampledImage and m_multisampledImageCopy to the compute/transfer queue.
+	if (useTwoQueues)
+	{
+		// Release ownership from graphics queue.
+		{
+			std::vector<VkImageMemoryBarrier> barriers;
+			barriers.reserve(2);
+
+			// Barrier for m_multisampledImage
+			VkImageMemoryBarrier releaseBarrier = m_multisampledImageBarrier;
+			releaseBarrier.dstAccessMask = 0u; // dstAccessMask is ignored in ownership release operation.
+			releaseBarrier.srcQueueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+			releaseBarrier.dstQueueFamilyIndex = m_alternativeQueueFamilyIndex;
+			barriers.push_back(releaseBarrier);
+
+			// Barrier for m_multisampledCopyImage
+			releaseBarrier = m_multisampledCopyImageBarrier;
+			releaseBarrier.dstAccessMask = 0u; // dstAccessMask is ignored in ownership release operation.
+			releaseBarrier.srcQueueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+			releaseBarrier.dstQueueFamilyIndex = m_alternativeQueueFamilyIndex;
+			barriers.push_back(releaseBarrier);
+
+			beginCommandBuffer(vk, m_cmdBuffer.get());
+			vk.cmdPipelineBarrier(m_cmdBuffer.get(), VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, (uint32_t)barriers.size(), barriers.data());
+			endCommandBuffer(vk, m_cmdBuffer.get());
+			submitCommandsAndWait(vk, vkDevice, m_queue, m_cmdBuffer.get());
+		}
+
+		// Acquire ownership to compute / transfer queue.
+		{
+			std::vector<VkImageMemoryBarrier> barriers;
+			barriers.reserve(2);
+
+			// Barrier for m_multisampledImage
+			VkImageMemoryBarrier acquireBarrier = m_multisampledImageBarrier;
+			acquireBarrier.srcAccessMask = 0u; // srcAccessMask is ignored in ownership acquire operation.
+			acquireBarrier.srcQueueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+			acquireBarrier.dstQueueFamilyIndex = m_alternativeQueueFamilyIndex;
+			barriers.push_back(acquireBarrier);
+
+			// Barrier for m_multisampledImage
+			acquireBarrier = m_multisampledCopyImageBarrier;
+			acquireBarrier.srcAccessMask = 0u; // srcAccessMask is ignored in ownership acquire operation.
+			acquireBarrier.srcQueueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+			acquireBarrier.dstQueueFamilyIndex = m_alternativeQueueFamilyIndex;
+			barriers.push_back(acquireBarrier);
+
+			beginCommandBuffer(vk, commandBuffer);
+			vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, (uint32_t)barriers.size(), barriers.data());
+			endCommandBuffer(vk, commandBuffer);
+			submitCommandsAndWait(vk, vkDevice, queue, commandBuffer);
+		}
+
+		beginCommandBuffer(vk, commandBuffer);
 	}
 	else
 	{
+		std::vector<VkImageMemoryBarrier> imageBarriers;
+
 		imageBarriers.push_back(m_multisampledImageBarrier);
+		// Only use one barrier if no options have been given.
+		if (m_options != NO_OPTIONAL_OPERATION)
+		{
+			imageBarriers.push_back(m_multisampledCopyImageBarrier);
+			// Add the third barrier if option is as below.
+			if (m_options == COPY_MS_IMAGE_TO_MS_IMAGE_NO_CAB)
+				imageBarriers.push_back(m_multisampledCopyNoCabImageBarrier);
+		}
+
+		beginCommandBuffer(vk, commandBuffer);
+		vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, (uint32_t)imageBarriers.size(), imageBarriers.data());
 	}
-
-	const VkImageMemoryBarrier	postImageBarriers		=
-	// destination image
-	{
-		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
-		DE_NULL,									// const void*				pNext;
-		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
-		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		// VkAccessFlags			dstAccessMask;
-		m_params.dst.image.operationLayout,			// VkImageLayout			oldLayout;
-		m_params.src.image.operationLayout,			// VkImageLayout			newLayout;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
-		m_multisampledCopyImage.get(),				// VkImage					image;
-		{											// VkImageSubresourceRange	subresourceRange;
-			getAspectFlags(srcTcuFormat),		// VkImageAspectFlags	aspectMask;
-			0u,									// deUint32				baseMipLevel;
-			1u,									// deUint32				mipLevels;
-			0u,									// deUint32				baseArraySlice;
-			copyArraySize						// deUint32				arraySize;
-		}
-	};
-	const VkImageMemoryBarrier	betweenCopyImageBarrier		=
-	// destination image (no USAGE_COLOR_ATTACHMENT_BIT)
-	{
-		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
-		DE_NULL,									// const void*				pNext;
-		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
-		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		// VkAccessFlags			dstAccessMask;
-		m_params.dst.image.operationLayout,			// VkImageLayout			oldLayout;
-		m_params.src.image.operationLayout,			// VkImageLayout			newLayout;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
-		m_multisampledCopyNoCabImage.get(),			// VkImage					image;
-		{											// VkImageSubresourceRange	subresourceRange;
-			getAspectFlags(srcTcuFormat),		// VkImageAspectFlags	aspectMask;
-			0u,									// deUint32				baseMipLevel;
-			1u,									// deUint32				mipLevels;
-			0u,									// deUint32				baseArraySlice;
-			copyArraySize						// deUint32				arraySize;
-		}
-	};
-
-	beginCommandBuffer(vk, *m_cmdBuffer);
-	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, uint32_t(imageBarriers.size()), imageBarriers.data());
 
 	if (m_params.extensionUse == EXTENSION_USE_NONE)
 	{
-		if(m_options == COPY_MS_IMAGE_TO_MS_IMAGE_NO_CAB)
+		if (m_options == COPY_MS_IMAGE_TO_MS_IMAGE_NO_CAB)
 		{
-			vk.cmdCopyImage(*m_cmdBuffer, m_multisampledImage.get(), m_params.src.image.operationLayout, m_multisampledCopyNoCabImage.get(), m_params.dst.image.operationLayout, (deUint32)imageCopies.size(), imageCopies.data());
-			vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &betweenCopyImageBarrier);
-			vk.cmdCopyImage(*m_cmdBuffer, m_multisampledCopyNoCabImage.get(), m_params.src.image.operationLayout, m_multisampledCopyImage.get(), m_params.dst.image.operationLayout, (deUint32)imageCopies.size(), imageCopies.data());
+			vk.cmdCopyImage(commandBuffer, m_multisampledImage.get(), m_params.src.image.operationLayout, m_multisampledCopyNoCabImage.get(), m_params.dst.image.operationLayout, (deUint32)imageCopies.size(), imageCopies.data());
+			vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &betweenCopyImageBarrier);
+			vk.cmdCopyImage(commandBuffer, m_multisampledCopyNoCabImage.get(), m_params.src.image.operationLayout, m_multisampledCopyImage.get(), m_params.dst.image.operationLayout, (deUint32)imageCopies.size(), imageCopies.data());
 		}
 		else
 		{
-			vk.cmdCopyImage(*m_cmdBuffer, m_multisampledImage.get(), m_params.src.image.operationLayout, m_multisampledCopyImage.get(), m_params.dst.image.operationLayout, (deUint32)imageCopies.size(), imageCopies.data());
+			vk.cmdCopyImage(commandBuffer, m_multisampledImage.get(), m_params.src.image.operationLayout, m_multisampledCopyImage.get(), m_params.dst.image.operationLayout, (deUint32)imageCopies.size(), imageCopies.data());
 		}
 	}
 	else
 	{
-		if(m_options == COPY_MS_IMAGE_TO_MS_IMAGE_NO_CAB)
+		if (m_options == COPY_MS_IMAGE_TO_MS_IMAGE_NO_CAB)
 		{
 			DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
 			const VkCopyImageInfo2KHR copyImageInfo2KHR =
@@ -6713,9 +6879,9 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 				imageCopies2KHR.data()						// const VkImageCopy2KHR*	pRegions;
 			};
 
-			vk.cmdCopyImage2(*m_cmdBuffer, &copyImageInfo2KHR);
-			vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &betweenCopyImageBarrier);
-			vk.cmdCopyImage2(*m_cmdBuffer, &copyImageInfo2KHRCopy);
+			vk.cmdCopyImage2(commandBuffer, &copyImageInfo2KHR);
+			vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &betweenCopyImageBarrier);
+			vk.cmdCopyImage2(commandBuffer, &copyImageInfo2KHRCopy);
 		}
 		else
 		{
@@ -6731,15 +6897,74 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 				(deUint32)imageCopies2KHR.size(),			// uint32_t					regionCount;
 				imageCopies2KHR.data()						// const VkImageCopy2KHR*	pRegions;
 			};
-
-			vk.cmdCopyImage2(*m_cmdBuffer, &copyImageInfo2KHR);
+			vk.cmdCopyImage2(commandBuffer, &copyImageInfo2KHR);
 		}
 	}
 
-	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &postImageBarriers);
-	endCommandBuffer(vk, *m_cmdBuffer);
+	if (useTwoQueues)
+	{
+		endCommandBuffer(vk, commandBuffer);
+		submitCommandsAndWait(vk, vkDevice, queue, commandBuffer);
 
-	submitCommandsAndWait (vk, vkDevice, queue, *m_cmdBuffer);
+		VkImageMemoryBarrier srcImageBarrier = makeImageMemoryBarrier(
+				0u,
+				0u,
+				m_params.src.image.operationLayout,
+				m_params.src.image.operationLayout,
+				m_multisampledImage.get(),
+				m_multisampledImageBarrier.subresourceRange,
+				m_alternativeQueueFamilyIndex,
+				m_context.getUniversalQueueFamilyIndex());
+		// Release ownership from compute / transfer queue.
+		{
+			std::vector<VkImageMemoryBarrier> barriers;
+			barriers.reserve(2);
+
+			VkImageMemoryBarrier releaseBarrier = multisampledCopyImagePostBarrier;
+			releaseBarrier.dstAccessMask = 0u; // dstAccessMask is ignored in ownership release operation.
+			releaseBarrier.srcQueueFamilyIndex = m_alternativeQueueFamilyIndex;
+			releaseBarrier.dstQueueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+			barriers.push_back(releaseBarrier);
+
+			releaseBarrier = srcImageBarrier;
+			releaseBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+			releaseBarrier.dstAccessMask = 0u; // dstAccessMask is ignored in ownership release operation.
+			barriers.push_back(releaseBarrier);
+
+			beginCommandBuffer(vk, commandBuffer);
+			vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, (uint32_t)barriers.size(), barriers.data());
+			endCommandBuffer(vk, commandBuffer);
+			submitCommandsAndWait(vk, vkDevice, queue, commandBuffer);
+		}
+
+		// Acquire ownership to graphics queue.
+		{
+			std::vector<VkImageMemoryBarrier> barriers;
+			barriers.reserve(2);
+
+			VkImageMemoryBarrier acquireBarrier = multisampledCopyImagePostBarrier;
+			acquireBarrier.srcAccessMask = 0u; // srcAccessMask is ignored in ownership acquire operation.
+			acquireBarrier.srcQueueFamilyIndex = m_alternativeQueueFamilyIndex;
+			acquireBarrier.dstQueueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+			barriers.push_back(acquireBarrier);
+
+			acquireBarrier = srcImageBarrier;
+			acquireBarrier.srcAccessMask = 0u; // srcAccessMask is ignored in ownership acquire operation.
+			acquireBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+			barriers.push_back(acquireBarrier);
+
+			beginCommandBuffer(vk, m_cmdBuffer.get());
+			vk.cmdPipelineBarrier(m_cmdBuffer.get(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0,  0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, (uint32_t)barriers.size(), barriers.data());
+			endCommandBuffer(vk, m_cmdBuffer.get());
+			submitCommandsAndWait(vk, vkDevice, m_queue, m_cmdBuffer.get());
+		}
+	}
+	else
+	{
+		vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &multisampledCopyImagePostBarrier);
+		endCommandBuffer(vk, commandBuffer);
+		submitCommandsAndWait (vk, vkDevice, queue, commandBuffer);
+	}
 }
 
 class ResolveImageToImageTestCase : public vkt::TestCase
@@ -6797,6 +7022,40 @@ public:
 		{
 			TCU_THROW(NotSupportedError, "VK_KHR_copy_commands2 is not supported");
 		}
+
+		// Find at least one queue family that supports compute queue but does NOT support graphics queue.
+		if (m_options == COPY_MS_IMAGE_TO_MS_IMAGE_COMPUTE)
+		{
+			bool foundQueue = false;
+			const std::vector<VkQueueFamilyProperties> queueFamilies = getPhysicalDeviceQueueFamilyProperties(context.getInstanceInterface(), context.getPhysicalDevice());
+			for (const auto& queueFamily : queueFamilies)
+			{
+				if (queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT && !(queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT))
+				{
+					foundQueue = true;
+					break;
+				}
+			}
+			if (!foundQueue)
+				TCU_THROW(NotSupportedError, "No queue family found that only supports compute queue.");
+		}
+
+		// Find at least one queue family that supports transfer queue but does NOT support graphics and compute queue.
+		if (m_options == COPY_MS_IMAGE_TO_MS_IMAGE_TRANSFER)
+		{
+			bool foundQueue = false;
+			const std::vector<VkQueueFamilyProperties> queueFamilies = getPhysicalDeviceQueueFamilyProperties(context.getInstanceInterface(), context.getPhysicalDevice());
+			for (const auto& queueFamily : queueFamilies)
+			{
+				if (queueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT && !(queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT) && !(queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT))
+				{
+					foundQueue = true;
+					break;
+				}
+			}
+			if (!foundQueue)
+				TCU_THROW(NotSupportedError, "No queue family found that only supports transfer queue.");
+		}
 	}
 
 private:
@@ -6823,7 +7082,7 @@ void ResolveImageToImageTestCase::initPrograms (SourceCollections& programCollec
 		"	o_color = vec4(0.0, 1.0, 0.0, 1.0);\n"
 		"}\n");
 
-	if (m_options == COPY_MS_IMAGE_TO_MS_IMAGE || m_options == COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE || m_options == COPY_MS_IMAGE_LAYER_TO_MS_IMAGE || m_options == COPY_MS_IMAGE_TO_MS_IMAGE_MULTIREGION)
+	if (m_options == COPY_MS_IMAGE_TO_MS_IMAGE || m_options == COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE || m_options == COPY_MS_IMAGE_LAYER_TO_MS_IMAGE || m_options == COPY_MS_IMAGE_TO_MS_IMAGE_MULTIREGION || m_options == COPY_MS_IMAGE_TO_MS_IMAGE_COMPUTE || m_options == COPY_MS_IMAGE_TO_MS_IMAGE_TRANSFER)
 	{
 		// The shader verifies all layers in the copied image are the same as the source image.
 		// This needs an image view per layer in the copied image.
@@ -13391,6 +13650,60 @@ void addResolveImageWholeCopyBeforeResolvingTests (tcu::TestCaseGroup* group, Al
 	}
 }
 
+void addComputeAndTransferQueueTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
+{
+	de::MovePtr<tcu::TestCaseGroup>		computeGroup	(new tcu::TestCaseGroup(group->getTestContext(), "whole_copy_before_resolving_compute", "Resolve from image to image using compute queue (whole copy before resolving)"));
+	de::MovePtr<tcu::TestCaseGroup>		transferGroup	(new tcu::TestCaseGroup(group->getTestContext(), "whole_copy_before_resolving_transfer", "Resolve from image to image using compute queue (whole copy before resolving)"));
+
+	TestParams	params;
+	params.src.image.imageType			= VK_IMAGE_TYPE_2D;
+	params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
+	params.src.image.extent				= defaultExtent;
+	params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+	params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+	params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
+	params.dst.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
+	params.dst.image.extent				= defaultExtent;
+	params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+	params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	params.allocationKind				= allocationKind;
+	params.extensionUse					= extensionUse;
+
+	{
+		const VkImageSubresourceLayers	sourceLayer	=
+		{
+			VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+			0u,							// deUint32				mipLevel;
+			0u,							// deUint32				baseArrayLayer;
+			1u							// deUint32				layerCount;
+		};
+
+		const VkImageResolve			testResolve	=
+		{
+			sourceLayer,		// VkImageSubresourceLayers	srcSubresource;
+			{0, 0, 0},			// VkOffset3D				srcOffset;
+			sourceLayer,		// VkImageSubresourceLayers	dstSubresource;
+			{0, 0, 0},			// VkOffset3D				dstOffset;
+			defaultExtent,		// VkExtent3D				extent;
+		};
+
+		CopyRegion	imageResolve;
+		imageResolve.imageResolve	= testResolve;
+		params.regions.push_back(imageResolve);
+	}
+
+	for (const auto& sample : samples)
+	{
+		params.samples					= sample;
+		const std::string description	= "With " + getSampleCountCaseName(sample);
+		computeGroup->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(sample), description, params, COPY_MS_IMAGE_TO_MS_IMAGE_COMPUTE));
+		transferGroup->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(sample), description, params, COPY_MS_IMAGE_TO_MS_IMAGE_TRANSFER));
+	}
+
+	group->addChild(computeGroup.release());
+	group->addChild(transferGroup.release());
+}
+
 void addResolveImageWholeCopyWithoutCabBeforeResolvingTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
 	TestParams	params;
@@ -13909,6 +14222,7 @@ void addResolveImageTests (tcu::TestCaseGroup* group, AllocationKind allocationK
 	addTestGroup(group, "with_regions", "Resolve from image to image (with regions)", addResolveImageWithRegionsTests, allocationKind, extensionUse);
 	addTestGroup(group, "whole_copy_before_resolving", "Resolve from image to image (whole copy before resolving)", addResolveImageWholeCopyBeforeResolvingTests, allocationKind, extensionUse);
 	addTestGroup(group, "whole_copy_before_resolving_no_cab", "Resolve from image to image without using USAGE_COLOR_ATTACHMENT_BIT (whole copy before resolving)", addResolveImageWholeCopyWithoutCabBeforeResolvingTests, allocationKind, extensionUse);
+	addComputeAndTransferQueueTests(group, allocationKind, extensionUse);
 	addTestGroup(group, "diff_layout_copy_before_resolving", "Resolve from image to image (whole copy before resolving with different layouts)", addResolveImageWholeCopyDiffLayoutsBeforeResolvingTests, allocationKind, extensionUse);
 	addTestGroup(group, "layer_copy_before_resolving", "Resolve from image to image (layer copy before resolving)", addResolveImageLayerCopyBeforeResolvingTests, allocationKind, extensionUse);
 	addTestGroup(group, "copy_with_regions_before_resolving", "Resolve from image to image (region copy before resolving)", addResolveCopyImageWithRegionsTests, allocationKind, extensionUse);

@@ -748,7 +748,7 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 	const string	r64			= formatIsR64(format) ? "64" : "";
 	const string	i64Type		= formatIsR64(format) ? "64_t" : "";
 	const string	vecType		= formatIsFloat(format) ? "vec4" : (formatIsSignedInt(format) ? ("i" + r64 + "vec4") : ("u" + r64 + "vec4"));
-	const string	qLevelType	= vecType == "vec4" ? "float" : ((vecType == "ivec4") | (vecType == "i64vec4")) ? ("int" + i64Type) : ("uint" + i64Type);
+	const string	qLevelType	= vecType == "vec4" ? "float" : ((vecType == "ivec4") || (vecType == "i64vec4")) ? ("int" + i64Type) : ("uint" + i64Type);
 
 	decls << "uvec4 abs(uvec4 x) { return x; }\n";
 	if (formatIsR64(format))
@@ -1362,13 +1362,41 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 		checks << "  temp_ql = " << qLevelType << "(textureQueryLevels(texture0_1));\n";
 		checks << "  temp = " << vecType << "(temp_ql);\n";
 		checks << "  accum += abs(temp);\n";
+
+		if (m_data.stage == STAGE_FRAGMENT)
+		{
+			// as here we only want to check that textureQueryLod returns 0 when
+			// texture0_1 is null, we don't need to use the actual texture coordinates
+			// (and modify the vertex shader below to do so). Any coordinates are fine.
+			// gl_FragCoord has been selected "randomly", instead of selecting 0 for example.
+			std::string lod_str = (numNormalizedCoords == 1) ? ");" : (numNormalizedCoords == 2) ? "y);" : "yz);";
+			checks << "  vec2 lod = textureQueryLod(texture0_1, gl_FragCoord.x" << lod_str << "\n";
+			checks << "  temp_ql = " << qLevelType << "(ceil(abs(lod.x) + abs(lod.y)));\n";
+			checks << "  temp = " << vecType << "(temp_ql);\n";
+			checks << "  accum += abs(temp);\n";
+		}
 	}
 
+
 	const bool is64BitFormat = formatIsR64(m_data.format);
-	std::string SupportR64 = (is64BitFormat ?
-							std::string("#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require\n"
-							"#extension GL_EXT_shader_image_int64 : require\n") :
-							std::string());
+	std::string support =	"#version 460 core\n"
+							"#extension GL_EXT_nonuniform_qualifier : enable\n"
+							"#extension GL_EXT_scalar_block_layout : enable\n"
+							"#extension GL_EXT_samplerless_texture_functions : enable\n"
+							"#extension GL_EXT_control_flow_attributes : enable\n"
+							"#extension GL_EXT_shader_image_load_formatted : enable\n";
+	std::string SupportR64 =	"#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require\n"
+								"#extension GL_EXT_shader_image_int64 : require\n";
+	if (is64BitFormat)
+		support += SupportR64;
+	if (m_data.stage == STAGE_RAYGEN)
+		support += "#extension GL_NV_ray_tracing : require\n";
+
+	std::string code =	"  " + vecType + " accum = " + vecType + "(0);\n"
+						"  " + vecType + " temp;\n"
+						"  " + qLevelType + " temp_ql;\n" +
+						checks.str() +
+						"  " + vecType + " color = (accum != " + vecType + "(0)) ? " + vecType + "(0,0,0,0) : " + vecType + "(1,0,0,1);\n";
 
 	switch (m_data.stage)
 	{
@@ -1376,23 +1404,12 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 	case STAGE_COMPUTE:
 		{
 			std::stringstream css;
-			css <<
-				"#version 450 core\n"
-				"#extension GL_EXT_nonuniform_qualifier : enable\n"
-				"#extension GL_EXT_scalar_block_layout : enable\n"
-				"#extension GL_EXT_samplerless_texture_functions : enable\n"
-				"#extension GL_EXT_control_flow_attributes : enable\n"
-				"#extension GL_EXT_shader_image_load_formatted : enable\n"
-				<< SupportR64
+			css << support
 				<< decls.str() <<
 				"layout(local_size_x = 1, local_size_y = 1) in;\n"
 				"void main()\n"
 				"{\n"
-				"  " << vecType << " accum = " << vecType << "(0);\n"
-				"  " << vecType << " temp;\n"
-				"  " << qLevelType << " temp_ql;\n"
-				<< checks.str() <<
-				"  " << vecType << " color = (accum != " << vecType << "(0)) ? " << vecType << "(0,0,0,0) : " << vecType << "(1,0,0,1);\n"
+				<< code <<
 				"  imageStore(image0_0, ivec2(gl_GlobalInvocationID.xy), color);\n"
 				"}\n";
 
@@ -1401,51 +1418,28 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 			break;
 		}
 	case STAGE_RAYGEN:
-	{
-		std::stringstream css;
-		css <<
-			"#version 460 core\n"
-			"#extension GL_EXT_samplerless_texture_functions : enable\n"
-			"#extension GL_EXT_scalar_block_layout : enable\n"
-			"#extension GL_EXT_nonuniform_qualifier : enable\n"
-			"#extension GL_EXT_control_flow_attributes : enable\n"
-			"#extension GL_NV_ray_tracing : require\n"
-			"#extension GL_EXT_shader_image_load_formatted : enable\n"
-			<< SupportR64
-			<< decls.str() <<
-			"void main()\n"
-			"{\n"
-			"  " << vecType << " accum = " << vecType << "(0);\n"
-			"  " << vecType << " temp;\n"
-			"  " << qLevelType << " temp_ql;\n"
-			<< checks.str() <<
-			"  " << vecType << " color = (accum != " << vecType << "(0)) ? " << vecType << "(0,0,0,0) : " << vecType << "(1,0,0,1);\n"
-			"  imageStore(image0_0, ivec2(gl_LaunchIDNV.xy), color);\n"
-			"}\n";
-
-		programCollection.glslSources.add("test") << glu::RaygenSource(css.str())
-			<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_0, vk::ShaderBuildOptions::FLAG_ALLOW_SCALAR_OFFSETS);
-		break;
-	}
-	case STAGE_VERTEX:
 		{
-			std::stringstream vss;
-			vss <<
-				"#version 450 core\n"
-				"#extension GL_EXT_samplerless_texture_functions : enable\n"
-				"#extension GL_EXT_scalar_block_layout : enable\n"
-				"#extension GL_EXT_nonuniform_qualifier : enable\n"
-				"#extension GL_EXT_control_flow_attributes : enable\n"
-				"#extension GL_EXT_shader_image_load_formatted : enable\n"
-				<< SupportR64
+			std::stringstream css;
+			css << support
 				<< decls.str() <<
 				"void main()\n"
 				"{\n"
-				"  " << vecType << " accum = " << vecType << "(0);\n"
-				"  " << vecType << " temp;\n"
-				"  " << qLevelType << " temp_ql;\n"
-				<< checks.str() <<
-				"  " << vecType << " color = (accum != " << vecType << "(0)) ? " << vecType << "(0,0,0,0) : " << vecType << "(1,0,0,1);\n"
+				<< code <<
+				"  imageStore(image0_0, ivec2(gl_LaunchIDNV.xy), color);\n"
+				"}\n";
+
+			programCollection.glslSources.add("test") << glu::RaygenSource(css.str())
+				<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_0, vk::ShaderBuildOptions::FLAG_ALLOW_SCALAR_OFFSETS);
+			break;
+		}
+	case STAGE_VERTEX:
+		{
+			std::stringstream vss;
+			vss << support
+				<< decls.str() <<
+				"void main()\n"
+				"{\n"
+				<< code <<
 				"  imageStore(image0_0, ivec2(gl_VertexIndex % " << DIM << ", gl_VertexIndex / " << DIM << "), color);\n"
 				"  gl_PointSize = 1.0f;\n"
 				"  gl_Position = vec4(0.0f, 0.0f, 0.0f, 1.0f);\n"
@@ -1457,22 +1451,6 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 		}
 	case STAGE_FRAGMENT:
 		{
-			if (m_data.nullDescriptor &&
-				m_data.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER &&
-				m_data.samples == VK_SAMPLE_COUNT_1_BIT)
-			{
-				// as here we only want to check that textureQueryLod returns 0 when
-				// texture0_1 is null, we don't need to use the actual texture coordinates
-				// (and modify the vertex shader below to do so). Any coordinates are fine.
-				// gl_FragCoord has been selected "randomly", instead of selecting 0 for example.
-				std::string lod_str = (numNormalizedCoords == 1) ? ");" : (numNormalizedCoords == 2) ? "y);" : "yz);";
-				checks << "  vec2 lod = textureQueryLod(texture0_1, gl_FragCoord.x" << lod_str << "\n";
-				checks << "  temp_ql = " << qLevelType <<
-"(ceil(abs(lod.x) + abs(lod.y)));\n";
-				checks << "  temp = " << vecType << "(temp_ql);\n";
-				checks << "  accum += abs(temp);\n";
-			}
-
 			std::stringstream vss;
 			vss <<
 				"#version 450 core\n"
@@ -1486,22 +1464,11 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 				<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_0, vk::ShaderBuildOptions::FLAG_ALLOW_SCALAR_OFFSETS);
 
 			std::stringstream fss;
-			fss <<
-				"#version 450 core\n"
-				"#extension GL_EXT_samplerless_texture_functions : enable\n"
-				"#extension GL_EXT_scalar_block_layout : enable\n"
-				"#extension GL_EXT_nonuniform_qualifier : enable\n"
-				"#extension GL_EXT_control_flow_attributes : enable\n"
-				"#extension GL_EXT_shader_image_load_formatted : enable\n"
-				<< SupportR64
+			fss << support
 				<< decls.str() <<
 				"void main()\n"
 				"{\n"
-				"  " << vecType << " accum = " << vecType << "(0);\n"
-				"  " << vecType << " temp;\n"
-				"  " << qLevelType << " temp_ql;\n"
-				<< checks.str() <<
-				"  " << vecType << " color = (accum != " << vecType << "(0)) ? " << vecType << "(0,0,0,0) : " << vecType << "(1,0,0,1);\n"
+				<< code <<
 				"  imageStore(image0_0, ivec2(gl_FragCoord.x, gl_FragCoord.y), color);\n"
 				"}\n";
 

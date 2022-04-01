@@ -23,6 +23,7 @@ const vk::VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV&	Context::g
 const vk::VkPhysicalDeviceDepthClipControlFeaturesEXT&					Context::getDepthClipControlFeaturesEXT					(void) const { return m_device->getDepthClipControlFeaturesEXT();				}
 const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&					Context::getDepthClipEnableFeaturesEXT					(void) const { return m_device->getDepthClipEnableFeaturesEXT();				}
 const vk::VkPhysicalDeviceDescriptorIndexingFeatures&					Context::getDescriptorIndexingFeatures					(void) const { return m_device->getDescriptorIndexingFeatures();				}
+const vk::VkPhysicalDeviceDescriptorSetHostMappingFeaturesVALVE&		Context::getDescriptorSetHostMappingFeaturesVALVE		(void) const { return m_device->getDescriptorSetHostMappingFeaturesVALVE();		}
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV&			Context::getDeviceGeneratedCommandsFeatures				(void) const { return m_device->getDeviceGeneratedCommandsFeatures();			}
 const vk::VkPhysicalDeviceDeviceMemoryReportFeaturesEXT&				Context::getDeviceMemoryReportFeaturesEXT				(void) const { return m_device->getDeviceMemoryReportFeaturesEXT();				}
 const vk::VkPhysicalDeviceDiagnosticsConfigFeaturesNV&					Context::getDiagnosticsConfigFeatures					(void) const { return m_device->getDiagnosticsConfigFeatures();					}
@@ -63,6 +64,7 @@ const vk::VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR&		Context::get
 const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR&					Context::getPortabilitySubsetFeatures					(void) const { return m_device->getPortabilitySubsetFeatures();					}
 const vk::VkPhysicalDevicePresentIdFeaturesKHR&							Context::getPresentIdFeatures							(void) const { return m_device->getPresentIdFeatures();							}
 const vk::VkPhysicalDevicePresentWaitFeaturesKHR&						Context::getPresentWaitFeatures							(void) const { return m_device->getPresentWaitFeatures();						}
+const vk::VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT&			Context::getPrimitivesGeneratedQueryFeaturesEXT			(void) const { return m_device->getPrimitivesGeneratedQueryFeaturesEXT();		}
 const vk::VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT&		Context::getPrimitiveTopologyListRestartFeaturesEXT		(void) const { return m_device->getPrimitiveTopologyListRestartFeaturesEXT();	}
 const vk::VkPhysicalDevicePrivateDataFeatures&							Context::getPrivateDataFeatures							(void) const { return m_device->getPrivateDataFeatures();						}
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&						Context::getProtectedMemoryFeatures						(void) const { return m_device->getProtectedMemoryFeatures();					}

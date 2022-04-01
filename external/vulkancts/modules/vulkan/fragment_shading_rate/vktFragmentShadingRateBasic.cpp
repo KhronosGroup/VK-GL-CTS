@@ -234,8 +234,6 @@ void FSRTestCase::checkSupport(Context& context) const
 {
 	context.requireDeviceFunctionality("VK_KHR_fragment_shading_rate");
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_data.pipelineConstructionType);
-
 	if (m_data.useDynamicRendering)
 		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
@@ -1744,7 +1742,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 			VkPipelineFragmentShadingRateStateCreateInfoKHR shadingRateStateCreateInfo
 			{
 				VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_STATE_CREATE_INFO_KHR,	// VkStructureType						sType;
-				DE_NULL,																// const void*							pNext;
+				m_data.useDynamicRendering ? &renderingCreateInfo : DE_NULL,			// const void*							pNext;
 				{ fragSizeWH, fragSizeWH },												// VkExtent2D							fragmentSize;
 				{ m_data.combinerOp[0], m_data.combinerOp[1] },							// VkFragmentShadingRateCombinerOpKHR	combinerOps[2];
 			};

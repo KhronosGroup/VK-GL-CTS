@@ -892,7 +892,7 @@ tcu::TestStatus BorderSwizzleInstance::iterate (void)
 	deMemset(&colorBlendAttachmentState, 0, sizeof(colorBlendAttachmentState));
 	colorBlendAttachmentState.colorWriteMask = (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
 
-	const VkPipelineColorBlendStateCreateInfo colorBlendInfo =
+	const VkPipelineColorBlendStateCreateInfo colorBlendInfo
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	//	VkStructureType								sType;
 		nullptr,													//	const void*									pNext;

@@ -299,9 +299,9 @@ def postExtractLibpng (path):
 
 PACKAGES = [
 	SourcePackage(
-		"http://zlib.net/zlib-1.2.11.tar.gz",
-		"zlib-1.2.11.tar.gz",
-		"c3e5e9fdd5004dcb542feda5ee4f0ff0744628baf8ed2dd5d66f8ca1197cb1a1",
+		"http://zlib.net/zlib-1.2.12.tar.gz",
+		"zlib-1.2.12.tar.gz",
+		"91844808532e5ce316b3c010929493c0244f3d37593afd6de04f71821d5136d9",
 		"zlib"),
 	SourcePackage(
 		"http://prdownloads.sourceforge.net/libpng/libpng-1.6.27.tar.gz",
@@ -322,7 +322,7 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
 		None,
-		"c34bb3b6c55f6ab084124ad964be95a699700d34",
+		"43d585d8636ebf765e567cef197b4580af8518fb",
 		"glslang",
 		removeTags = ["master-tot"]),
 	GitRepo(
@@ -331,9 +331,9 @@ PACKAGES = [
 		"b42ba6d92faf6b4938e6f22ddd186dbdacc98d78",
 		"spirv-headers"),
 	GitRepo(
-		"https://gitlab.khronos.org/vulkan/vulkan.git",
-		"git@gitlab.khronos.org:vulkan/vulkan.git",
-		"577edd4f6850d7e13826ab2cf2f14db9e701caf9",
+		"https://github.com/KhronosGroup/Vulkan-Docs.git",
+		None,
+		"45af5eb1f66898c9f382edc5afd691aeb32c10c0",
 		"vulkan-docs"),
 	GitRepo(
 		"https://github.com/google/amber.git",

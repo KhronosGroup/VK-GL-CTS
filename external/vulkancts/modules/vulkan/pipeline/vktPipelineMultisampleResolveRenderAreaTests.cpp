@@ -440,6 +440,7 @@ public:
 	virtual void		checkSupport				(Context&			context) const;
 
 private:
+
 	const PipelineConstructionType	m_pipelineConstructionType;
 	const deUint32					m_sampleCount;
 	const tcu::IVec2				m_framebufferSize;

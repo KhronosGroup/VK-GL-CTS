@@ -163,6 +163,12 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 			if (fragmentDensityMapFeatures)
 				fragmentDensityMapFeatures->fragmentDensityMap = false;
 		}
+
+		// Disable pageableDeviceLocalMemory by default since it may modify the behavior
+		// of device-local, and even host-local, memory allocations for all tests.
+		// pageableDeviceLocalMemory will use targetted testing on a custom device.
+		if (pageableDeviceLocalMemoryFeatures)
+			pageableDeviceLocalMemoryFeatures->pageableDeviceLocalMemory = false;
 	}
 
 	// Disable pageableDeviceLocalMemory by default since it may modify the behavior

@@ -391,7 +391,8 @@ tcu::TestCaseGroup* createShaderInvarianceTests (tcu::TestContext& testCtx)
 		{ glu::PRECISION_LOWP,		"lowp",		"0.9",		"1.1",		"1.1",		"1.15",		"0.87",		6,	2,	0,	"2.0",		"1.1",	"1.0"	},
 	};
 
-	static const std::string invariantDeclaration[]	= { "invariant gl_Position;", "layout(location = 1) invariant highp out vec4 v_value;" };
+	// gl_Position must always be invariant for comparisons on gl_Position to be valid.
+	static const std::string invariantDeclaration[]	= { "invariant gl_Position;", "invariant gl_Position;\nlayout(location = 1) invariant highp out vec4 v_value;" };
 	static const std::string invariantAssignment0[]	= { "gl_Position", "v_value" };
 	static const std::string invariantAssignment1[]	= { "", "gl_Position = v_value;" };
 	static const std::string fragDeclaration[]		= { "", "layout(location = 1) highp in vec4 v_value;" };

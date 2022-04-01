@@ -23,6 +23,7 @@ const vk::VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV&	getDedicat
 const vk::VkPhysicalDeviceDepthClipControlFeaturesEXT&					getDepthClipControlFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&					getDepthClipEnableFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceDescriptorIndexingFeatures&					getDescriptorIndexingFeatures				(void) const;
+const vk::VkPhysicalDeviceDescriptorSetHostMappingFeaturesVALVE&		getDescriptorSetHostMappingFeaturesVALVE	(void) const;
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV&			getDeviceGeneratedCommandsFeatures			(void) const;
 const vk::VkPhysicalDeviceDeviceMemoryReportFeaturesEXT&				getDeviceMemoryReportFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceDiagnosticsConfigFeaturesNV&					getDiagnosticsConfigFeatures				(void) const;
@@ -63,6 +64,7 @@ const vk::VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR&		getPipelineE
 const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR&					getPortabilitySubsetFeatures				(void) const;
 const vk::VkPhysicalDevicePresentIdFeaturesKHR&							getPresentIdFeatures						(void) const;
 const vk::VkPhysicalDevicePresentWaitFeaturesKHR&						getPresentWaitFeatures						(void) const;
+const vk::VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT&			getPrimitivesGeneratedQueryFeaturesEXT		(void) const;
 const vk::VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT&		getPrimitiveTopologyListRestartFeaturesEXT	(void) const;
 const vk::VkPhysicalDevicePrivateDataFeatures&							getPrivateDataFeatures						(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&						getProtectedMemoryFeatures					(void) const;

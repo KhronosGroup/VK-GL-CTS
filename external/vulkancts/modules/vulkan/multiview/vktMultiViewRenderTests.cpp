@@ -710,10 +710,17 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 		&queuePriorities											//const float*				pQueuePriorities;
 	};
 
+	VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures	=
+	{
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES,	// VkStructureType			sType;
+		DE_NULL,														// void*					pNext;
+		DE_FALSE,														// VkBool32					dynamicRendering
+	};
+
 	VkPhysicalDeviceMultiviewFeatures		multiviewFeatures		=
 	{
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES_KHR,	// VkStructureType			sType;
-		DE_NULL,													// void*					pNext;
+		&dynamicRenderingFeatures,									// void*					pNext;
 		DE_FALSE,													// VkBool32					multiview;
 		DE_FALSE,													// VkBool32					multiviewGeometryShader;
 		DE_FALSE,													// VkBool32					multiviewTessellationShader;

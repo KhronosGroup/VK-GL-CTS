@@ -25,6 +25,7 @@
 #include "vktMemoryModelTests.hpp"
 #include "vktMemoryModelPadding.hpp"
 #include "vktMemoryModelSharedLayout.hpp"
+#include "vktAmberTestCase.hpp"
 
 #include "vkBufferWithMemory.hpp"
 #include "vkImageWithMemory.hpp"
@@ -1768,6 +1769,46 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 	return tcu::TestStatus(res, qpGetTestResultName(res));
 }
 
+void checkPermutedIndexTestSupport (Context& context, std::string testName)
+{
+	DE_UNREF(testName);
+
+	const auto		maxComputeWorkGroupCount		= context.getDeviceProperties().limits.maxComputeWorkGroupCount;
+	const auto		maxComputeWorkGroupSize			= context.getDeviceProperties().limits.maxComputeWorkGroupSize;
+	const auto		maxComputeWorkGroupInvocations	= context.getDeviceProperties().limits.maxComputeWorkGroupInvocations;
+
+	if (maxComputeWorkGroupCount[0] < 256u)
+		TCU_THROW(NotSupportedError, "Minimum of 256 required for maxComputeWorkGroupCount.x");
+
+	if (maxComputeWorkGroupSize[0] < 256u)
+		TCU_THROW(NotSupportedError, "Minimum of 256 required for maxComputeWorkGroupSize.x");
+
+	if (maxComputeWorkGroupInvocations < 256u)
+		TCU_THROW(NotSupportedError, "Minimum of 256 required for maxComputeWorkGroupInvocations");
+}
+
+tcu::TestCaseGroup* createPermutedIndexTests (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> permutedIndex (new tcu::TestCaseGroup(testCtx, "permuted_index", "Permuted index"));
+	static const char			dataDir[]	= "memory_model/message_passing/permuted_index";
+	static const std::string	cases[]		=
+	{
+		"barrier",
+		"release_acquire",
+		"release_acquire_atomic_payload"
+	};
+
+	for (const auto& test : cases)
+	{
+		cts_amber::AmberTestCase* testCase = cts_amber::createAmberTestCase(testCtx, test.c_str(), "", dataDir, (test + ".amber").c_str());
+		testCase->setCheckSupportCallback(checkPermutedIndexTestSupport);
+
+		permutedIndex->addChild(testCase);
+	}
+
+	return permutedIndex.release();
+}
+
 }	// anonymous
 
 tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
@@ -1871,6 +1912,11 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	for (int ttNdx = 0; ttNdx < DE_LENGTH_OF_ARRAY(ttCases); ttNdx++)
 	{
 		de::MovePtr<tcu::TestCaseGroup> ttGroup(new tcu::TestCaseGroup(testCtx, ttCases[ttNdx].name, ttCases[ttNdx].description));
+
+		// Permuted index tests for message passing.
+		if (ttCases[ttNdx].value == TT_MP)
+			ttGroup->addChild(createPermutedIndexTests(testCtx));
+
 		for (int core11Ndx = 0; core11Ndx < DE_LENGTH_OF_ARRAY(core11Cases); core11Ndx++)
 		{
 			de::MovePtr<tcu::TestCaseGroup> core11Group(new tcu::TestCaseGroup(testCtx, core11Cases[core11Ndx].name, core11Cases[core11Ndx].description));

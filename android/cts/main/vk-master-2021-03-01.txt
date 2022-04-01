@@ -5,9 +5,7 @@ vk-master-2021-03-01/conditional-rendering.txt
 vk-master-2021-03-01/descriptor-indexing.txt
 vk-master-2021-03-01/draw.txt
 vk-master-2021-03-01/drm-format-modifiers.txt
-vk-master-2021-03-01/dynamic-rendering.txt
 vk-master-2021-03-01/dynamic-state.txt
-vk-master-2021-03-01/fragment-operations.txt
 vk-master-2021-03-01/fragment-shading-rate.txt
 vk-master-2021-03-01/geometry.txt
 vk-master-2021-03-01/glsl.txt
@@ -15,7 +13,6 @@ vk-master-2021-03-01/graphicsfuzz.txt
 vk-master-2021-03-01/image.txt
 vk-master-2021-03-01/memory-model.txt
 vk-master-2021-03-01/memory.txt
-vk-master-2021-03-01/mesh-shader.txt
 vk-master-2021-03-01/multiview.txt
 vk-master-2021-03-01/pipeline.txt
 vk-master-2021-03-01/protected-memory.txt
@@ -23,7 +20,6 @@ vk-master-2021-03-01/query-pool.txt
 vk-master-2021-03-01/rasterization.txt
 vk-master-2021-03-01/ray-query.txt
 vk-master-2021-03-01/ray-tracing-pipeline.txt
-vk-master-2021-03-01/reconvergence.txt
 vk-master-2021-03-01/renderpass.txt
 vk-master-2021-03-01/renderpass2.txt
 vk-master-2021-03-01/robustness.txt

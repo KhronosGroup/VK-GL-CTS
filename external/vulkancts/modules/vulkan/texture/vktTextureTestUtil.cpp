@@ -468,7 +468,7 @@ void TextureBinding::updateTextureViewMipLevels (deUint32 baseLevel, deUint32 ma
 	const vk::VkImageViewCreateInfo				viewParams				=
 	{
 		vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,						// VkStructureType			sType;
-		imageViewMinLod >= 0.0f ? &imageViewMinLodCreateInfo : DE_NULL,		// const void*				pNext;
+		imageViewMinLod > 0.0f ? &imageViewMinLodCreateInfo : DE_NULL,		// const void*				pNext;
 		0u,																	// VkImageViewCreateFlags	flags;
 		*m_textureImage,													// VkImage					image;
 		imageViewType,														// VkImageViewType			viewType;

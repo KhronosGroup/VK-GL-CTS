@@ -72,6 +72,8 @@ struct TestParams
 	deUint32				attribDivisor;
 
 	deBool					testMultiview;
+
+	deBool					dynamicState;
 };
 
 struct VertexPositionAndColor
@@ -89,6 +91,10 @@ struct VertexPositionAndColor
 std::ostream & operator<<(std::ostream & str, TestParams const & v)
 {
 	std::ostringstream string;
+
+	if (v.dynamicState)
+		string << "dynamic_state_";
+
 	switch (v.function)
 	{
 		case TestParams::FUNCTION_DRAW:
@@ -289,6 +295,12 @@ public:
 
 	virtual void	checkSupport	(Context& context) const
 	{
+		if (m_params.dynamicState)
+		{
+			const auto physicalVertexInputDynamicState = context.getVertexInputDynamicStateFeaturesEXT();
+			if (!physicalVertexInputDynamicState.vertexInputDynamicState)
+				TCU_THROW(NotSupportedError, "Implementation does not support vertexInputDynamicState");
+		}
 		if (m_params.testAttribDivisor)
 		{
 			context.requireDeviceFunctionality("VK_EXT_vertex_attribute_divisor");
@@ -481,6 +493,7 @@ InstancedDrawInstance::InstancedDrawInstance(Context &context, TestParams params
 		1u,
 		m_params.attribDivisor,
 	};
+
 	if (m_params.testAttribDivisor)
 		m_vertexInputState.addDivisors(1, &vertexInputBindingDivisorDescription);
 
@@ -500,13 +513,34 @@ InstancedDrawInstance::InstancedDrawInstance(Context &context, TestParams params
 	PipelineCreateInfo pipelineCreateInfo(*m_pipelineLayout, *m_renderPass, 0, 0);
 	pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", vk::VK_SHADER_STAGE_VERTEX_BIT));
 	pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, "main", vk::VK_SHADER_STAGE_FRAGMENT_BIT));
-	pipelineCreateInfo.addState(PipelineCreateInfo::VertexInputState(m_vertexInputState));
 	pipelineCreateInfo.addState(PipelineCreateInfo::InputAssemblerState(m_params.topology));
 	pipelineCreateInfo.addState(PipelineCreateInfo::ColorBlendState(1, &vkCbAttachmentState));
 	pipelineCreateInfo.addState(PipelineCreateInfo::ViewportState(1, std::vector<vk::VkViewport>(1, viewport), std::vector<vk::VkRect2D>(1, scissor)));
 	pipelineCreateInfo.addState(PipelineCreateInfo::DepthStencilState());
 	pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
 	pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState());
+
+	if (m_params.dynamicState)
+	{
+		vk::VkDynamicState dynStates[] =
+		{
+			vk::VK_DYNAMIC_STATE_VERTEX_INPUT_EXT
+		};
+
+		vk::VkPipelineDynamicStateCreateInfo dynamicState
+		{
+			vk::VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+			DE_NULL,
+			0,
+			1,
+			dynStates
+		};
+		pipelineCreateInfo.addState(dynamicState);
+	}
+	else
+	{
+		pipelineCreateInfo.addState(PipelineCreateInfo::VertexInputState(m_vertexInputState));
+	}
 
 	vk::VkPipelineRenderingCreateInfoKHR renderingFormatCreateInfo
 	{
@@ -639,6 +673,59 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 			m_vk.cmdPushConstants(*m_cmdBuffer, *m_pipelineLayout, vk::VK_SHADER_STAGE_VERTEX_BIT, 0u, (deUint32)sizeof(pushConstants), pushConstants);
 
 			m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+
+			if (m_params.dynamicState)
+			{
+				vk::VkVertexInputBindingDescription2EXT vertexBindingDescription[2] =
+				{
+					{
+						vk::VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT,
+						0,
+						0u,
+						(deUint32)sizeof(VertexPositionAndColor),
+						vk::VK_VERTEX_INPUT_RATE_VERTEX,
+						1
+					},
+					{
+						vk::VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT,
+						0,
+						1u,
+						(deUint32)sizeof(tcu::Vec4),
+						vk::VK_VERTEX_INPUT_RATE_INSTANCE,
+						m_params.attribDivisor
+					},
+
+				};
+				vk::VkVertexInputAttributeDescription2EXT vertexAttributeDescription[3] =
+				{
+					{
+						vk::VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT,
+						0,
+						0u,
+						0u,
+						vk::VK_FORMAT_R32G32B32A32_SFLOAT,
+						0u
+					},
+					{
+						vk::VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT,
+						0,
+						1u,
+						0u,
+						vk::VK_FORMAT_R32G32B32A32_SFLOAT,
+						(deUint32)sizeof(tcu::Vec4),
+					},
+					{
+						vk::VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT,
+						0,
+						2u,
+						1u,
+						vk::VK_FORMAT_R32G32B32A32_SFLOAT,
+						0,
+					}
+				};
+
+				m_vk.cmdSetVertexInputEXT(*m_cmdBuffer, 2, vertexBindingDescription, 3, vertexAttributeDescription);
+			}
 
 			switch (m_params.function)
 			{
@@ -875,36 +962,39 @@ InstancedTests::InstancedTests(tcu::TestContext& testCtx, bool useDynamicRenderi
 	static const deBool multiviews[] = { DE_FALSE, DE_TRUE };
 
 	static const deUint32 divisors[] = { 0, 1, 2, 4, 20 };
-
-	for (int topologyNdx = 0; topologyNdx < DE_LENGTH_OF_ARRAY(topologies); topologyNdx++)
+	for (int dynState = 0; dynState < 2; dynState++)
 	{
-		for (int functionNdx = 0; functionNdx < DE_LENGTH_OF_ARRAY(functions); functionNdx++)
+		for (int topologyNdx = 0; topologyNdx < DE_LENGTH_OF_ARRAY(topologies); topologyNdx++)
 		{
-			for (int testAttribDivisor = 0; testAttribDivisor < 2; testAttribDivisor++)
+			for (int functionNdx = 0; functionNdx < DE_LENGTH_OF_ARRAY(functions); functionNdx++)
 			{
-				for (int divisorNdx = 0; divisorNdx < DE_LENGTH_OF_ARRAY(divisors); divisorNdx++)
+				for (int testAttribDivisor = 0; testAttribDivisor < 2; testAttribDivisor++)
 				{
-					for (int multiviewNdx = 0; multiviewNdx < DE_LENGTH_OF_ARRAY(multiviews); multiviewNdx++)
+					for (int divisorNdx = 0; divisorNdx < DE_LENGTH_OF_ARRAY(divisors); divisorNdx++)
 					{
-						// If we don't have VK_EXT_vertex_attribute_divisor, we only get a divisor or 1.
-						if (!testAttribDivisor && divisors[divisorNdx] != 1)
-							continue;
+						for (int multiviewNdx = 0; multiviewNdx < DE_LENGTH_OF_ARRAY(multiviews); multiviewNdx++)
+						{
+							// If we don't have VK_EXT_vertex_attribute_divisor, we only get a divisor or 1.
+							if (!testAttribDivisor && divisors[divisorNdx] != 1)
+								continue;
 
-						TestParams param;
-						param.function = functions[functionNdx];
-						param.topology = topologies[topologyNdx];
-						param.useDynamicRendering = useDynamicRendering;
-						param.testAttribDivisor = testAttribDivisor ? DE_TRUE : DE_FALSE;
-						param.attribDivisor = divisors[divisorNdx];
-						param.testMultiview = multiviews[multiviewNdx];
+							TestParams param;
+							param.function = functions[functionNdx];
+							param.topology = topologies[topologyNdx];
+							param.useDynamicRendering = useDynamicRendering;
+							param.testAttribDivisor = testAttribDivisor ? DE_TRUE : DE_FALSE;
+							param.attribDivisor = divisors[divisorNdx];
+							param.testMultiview = multiviews[multiviewNdx];
+							param.dynamicState = dynState == 0 ? false : true;
 
-						// Add multiview tests only when vertex attribute divisor is enabled.
-						if (param.testMultiview && !testAttribDivisor)
-							continue;
+							// Add multiview tests only when vertex attribute divisor is enabled.
+							if (param.testMultiview && !testAttribDivisor)
+								continue;
 
-						std::string testName = de::toString(param);
+							std::string testName = de::toString(param);
 
-						addChild(new InstancedDrawCase(m_testCtx, de::toLower(testName), "Instanced drawing test", param));
+							addChild(new InstancedDrawCase(m_testCtx, de::toLower(testName), "Instanced drawing test", param));
+						}
 					}
 				}
 			}
