@@ -780,7 +780,7 @@ protected:
 													 const BufferWithMemory&	callSbt) const;
 	void				initBottomAccellStructures	(VkCommandBuffer			cmdBuffer,
 													 BottomLevelAccelerationStructurePool&	pool,
-													 const size_t&							batchStructCount) const;
+													 const deUint32&			batchStructCount) const;
 private:
 	TestParams2			m_params;
 	const VkExtent3D	m_imageExtent;
@@ -1040,7 +1040,7 @@ void TraceRaysIndirect2Instance::makeIndirectStructAndFlush	(BufferWithMemory&		
 
 void TraceRaysIndirect2Instance::initBottomAccellStructures (VkCommandBuffer						cmdBuffer,
 															 BottomLevelAccelerationStructurePool&	pool,
-															 const size_t&							batchStructCount) const
+															 const deUint32&						batchStructCount) const
 {
 	const DeviceInterface&											vkd			= m_context.getDeviceInterface();
 	const VkDevice													device		= m_context.getDevice();
