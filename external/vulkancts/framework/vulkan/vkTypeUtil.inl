@@ -700,6 +700,23 @@ inline VkTraceRaysIndirectCommandKHR makeTraceRaysIndirectCommandKHR (uint32_t w
 	return res;
 }
 
+inline StdVideoEncodeH264WeightTableFlags makeStdVideoEncodeH264WeightTableFlags (uint32_t luma_weight_l0_flag, uint32_t chroma_weight_l0_flag, uint32_t luma_weight_l1_flag, uint32_t chroma_weight_l1_flag)
+{
+	StdVideoEncodeH264WeightTableFlags res;
+	res.luma_weight_l0_flag		= luma_weight_l0_flag;
+	res.chroma_weight_l0_flag	= chroma_weight_l0_flag;
+	res.luma_weight_l1_flag		= luma_weight_l1_flag;
+	res.chroma_weight_l1_flag	= chroma_weight_l1_flag;
+	return res;
+}
+
+inline StdVideoEncodeH264ReferenceInfoFlags makeStdVideoEncodeH264ReferenceInfoFlags (uint32_t used_for_long_term_reference)
+{
+	StdVideoEncodeH264ReferenceInfoFlags res;
+	res.used_for_long_term_reference	= used_for_long_term_reference;
+	return res;
+}
+
 inline StdVideoEncodeH264RefListModEntry makeStdVideoEncodeH264RefListModEntry (StdVideoH264ModificationOfPicNumsIdc modification_of_pic_nums_idc, uint16_t abs_diff_pic_num_minus1, uint16_t long_term_pic_num)
 {
 	StdVideoEncodeH264RefListModEntry res;
@@ -738,6 +755,36 @@ inline VkVideoEncodeH264FrameSizeEXT makeVideoEncodeH264FrameSizeEXT (uint32_t f
 	return res;
 }
 
+inline StdVideoEncodeH265WeightTableFlags makeStdVideoEncodeH265WeightTableFlags (uint16_t luma_weight_l0_flag, uint16_t chroma_weight_l0_flag, uint16_t luma_weight_l1_flag, uint16_t chroma_weight_l1_flag)
+{
+	StdVideoEncodeH265WeightTableFlags res;
+	res.luma_weight_l0_flag		= luma_weight_l0_flag;
+	res.chroma_weight_l0_flag	= chroma_weight_l0_flag;
+	res.luma_weight_l1_flag		= luma_weight_l1_flag;
+	res.chroma_weight_l1_flag	= chroma_weight_l1_flag;
+	return res;
+}
+
+inline StdVideoEncodeH265SliceSegmentHeaderFlags makeStdVideoEncodeH265SliceSegmentHeaderFlags (uint32_t first_slice_segment_in_pic_flag, uint32_t no_output_of_prior_pics_flag, uint32_t dependent_slice_segment_flag, uint32_t pic_output_flag, uint32_t short_term_ref_pic_set_sps_flag, uint32_t slice_temporal_mvp_enable_flag, uint32_t slice_sao_luma_flag, uint32_t slice_sao_chroma_flag, uint32_t num_ref_idx_active_override_flag, uint32_t mvd_l1_zero_flag, uint32_t cabac_init_flag, uint32_t slice_deblocking_filter_disable_flag, uint32_t collocated_from_l0_flag, uint32_t slice_loop_filter_across_slices_enabled_flag)
+{
+	StdVideoEncodeH265SliceSegmentHeaderFlags res;
+	res.first_slice_segment_in_pic_flag					= first_slice_segment_in_pic_flag;
+	res.no_output_of_prior_pics_flag					= no_output_of_prior_pics_flag;
+	res.dependent_slice_segment_flag					= dependent_slice_segment_flag;
+	res.pic_output_flag									= pic_output_flag;
+	res.short_term_ref_pic_set_sps_flag					= short_term_ref_pic_set_sps_flag;
+	res.slice_temporal_mvp_enable_flag					= slice_temporal_mvp_enable_flag;
+	res.slice_sao_luma_flag								= slice_sao_luma_flag;
+	res.slice_sao_chroma_flag							= slice_sao_chroma_flag;
+	res.num_ref_idx_active_override_flag				= num_ref_idx_active_override_flag;
+	res.mvd_l1_zero_flag								= mvd_l1_zero_flag;
+	res.cabac_init_flag									= cabac_init_flag;
+	res.slice_deblocking_filter_disable_flag			= slice_deblocking_filter_disable_flag;
+	res.collocated_from_l0_flag							= collocated_from_l0_flag;
+	res.slice_loop_filter_across_slices_enabled_flag	= slice_loop_filter_across_slices_enabled_flag;
+	return res;
+}
+
 inline VkVideoEncodeH265QpEXT makeVideoEncodeH265QpEXT (int32_t qpI, int32_t qpP, int32_t qpB)
 {
 	VkVideoEncodeH265QpEXT res;
@@ -756,7 +803,7 @@ inline VkVideoEncodeH265FrameSizeEXT makeVideoEncodeH265FrameSizeEXT (uint32_t f
 	return res;
 }
 
-inline StdVideoDecodeH264Mvc makeStdVideoDecodeH264Mvc (uint32_t viewId0, uint32_t mvcElementCount, StdVideoDecodeH264MvcElement* pMvcElements)
+inline StdVideoDecodeH264Mvc makeStdVideoDecodeH264Mvc (uint32_t viewId0, uint32_t mvcElementCount, const StdVideoDecodeH264MvcElement* pMvcElements)
 {
 	StdVideoDecodeH264Mvc res;
 	res.viewId0			= viewId0;
