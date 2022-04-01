@@ -720,7 +720,7 @@ Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType					sType;
 		DE_NULL,											// const void*						pNext;
-		0u,													// VkPipelineLayoutCreateFlags		flags;
+		VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT,	// VkPipelineLayoutCreateFlags		flags;
 		setLayoutCount,										// deUint32							setLayoutCount;
 		descriptorSetLayout,								// const VkDescriptorSetLayout*		pSetLayouts;
 		0u,													// deUint32							pushConstantRangeCount;
@@ -741,7 +741,7 @@ Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType					sType;
 		DE_NULL,											// const void*						pNext;
-		0u,													// VkPipelineLayoutCreateFlags		flags;
+		VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT,	// VkPipelineLayoutCreateFlags		flags;
 		setLayoutCount,										// deUint32							setLayoutCount;
 		descriptorSetLayout,								// const VkDescriptorSetLayout*		pSetLayouts;
 		pushConstantRangeCount,								// deUint32							pushConstantRangeCount;

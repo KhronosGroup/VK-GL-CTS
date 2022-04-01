@@ -103,5 +103,6 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_NV_mesh_shader",
 	"VK_KHR_portability_subset",
 	"VK_EXT_pageable_device_local_memory",
+	"VK_EXT_graphics_pipeline_library",
 };
 

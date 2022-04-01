@@ -121,3 +121,7 @@ VK_KHR_global_priority		        		DEVICE
 VK_NV_mesh_shader							DEVICE
 VK_KHR_portability_subset					DEVICE
 VK_EXT_pageable_device_local_memory			DEVICE
+<<<<<<< HEAD
+VK_EXT_graphics_pipeline_library			DEVICE
+=======
+>>>>>>> khronos/main

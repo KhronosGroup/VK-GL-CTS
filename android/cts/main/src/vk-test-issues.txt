@@ -1,5 +1,7 @@
 # Issue 340: Cube map corner texel selection
-dEQP-VK.pipeline.sampler.view_type.cube.format.r5g6b5_unorm_pack16.mag_filter.linear
+dEQP-VK.pipeline.monolithic.sampler.view_type.cube.format.r5g6b5_unorm_pack16.mag_filter.linear
+dEQP-VK.pipeline.pipeline_library.sampler.view_type.cube.format.r5g6b5_unorm_pack16.mag_filter.linear
+dEQP-VK.pipeline.fast_linked_library.sampler.view_type.cube.format.r5g6b5_unorm_pack16.mag_filter.linear
 
 # b/112540895: Compile time is still unreasonable on low-end parts, revisit for Q
 dEQP-VK.ubo.random.all_shared_buffer.48

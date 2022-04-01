@@ -24,6 +24,7 @@
 #include "vktTransformFeedbackTests.hpp"
 #include "vktTransformFeedbackSimpleTests.hpp"
 #include "vktTransformFeedbackFuzzLayoutTests.hpp"
+#include "vktPrimitivesGeneratedQueryTests.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktTestCase.hpp"
 
@@ -39,6 +40,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 
 	transformFeedbackGroup->addChild(createTransformFeedbackSimpleTests(testCtx));
 	transformFeedbackGroup->addChild(createTransformFeedbackFuzzLayoutTests(testCtx));
+	transformFeedbackGroup->addChild(createPrimitivesGeneratedQueryTests(testCtx));
 
 	return transformFeedbackGroup.release();
 }

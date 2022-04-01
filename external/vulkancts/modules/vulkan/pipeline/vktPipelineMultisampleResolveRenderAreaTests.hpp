@@ -27,13 +27,14 @@
 
 #include "tcuDefs.hpp"
 #include "vktTestCase.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 
 namespace vkt
 {
 namespace pipeline
 {
 
-	tcu::TestCaseGroup* createMultisampleResolveRenderpassRenderAreaTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createMultisampleResolveRenderpassRenderAreaTests(tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
 
 } // pipeline
 } // vkt

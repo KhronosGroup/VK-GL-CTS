@@ -47,8 +47,8 @@ namespace
 class ViewportStateBaseCase : public DynamicStateBaseClass
 {
 public:
-	ViewportStateBaseCase (Context& context, const char* vertexShaderName, const char* fragmentShaderName)
-		: DynamicStateBaseClass	(context, vertexShaderName, fragmentShaderName)
+	ViewportStateBaseCase (Context& context, vk::PipelineConstructionType pipelineConstructionType, const char* vertexShaderName, const char* fragmentShaderName)
+		: DynamicStateBaseClass	(context, pipelineConstructionType, vertexShaderName, fragmentShaderName)
 	{}
 
 	void initialize(void)
@@ -85,7 +85,7 @@ public:
 		// set states here
 		setDynamicStates();
 
-		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.getPipeline());
 
 		const vk::VkDeviceSize vertexBufferOffset = 0;
 		const vk::VkBuffer vertexBuffer = m_vertexBuffer->object();
@@ -121,8 +121,8 @@ public:
 class ViewportParamTestInstance : public ViewportStateBaseCase
 {
 public:
-	ViewportParamTestInstance (Context& context, ShaderMap shaders)
-		: ViewportStateBaseCase (context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
+	ViewportParamTestInstance (Context& context, vk::PipelineConstructionType pipelineConstructionType, ShaderMap shaders)
+		: ViewportStateBaseCase (context, pipelineConstructionType, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
 	{
 		ViewportStateBaseCase::initialize();
 	}
@@ -168,8 +168,8 @@ public:
 class ScissorParamTestInstance : public ViewportStateBaseCase
 {
 public:
-	ScissorParamTestInstance (Context& context, ShaderMap shaders)
-		: ViewportStateBaseCase (context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
+	ScissorParamTestInstance (Context& context, vk::PipelineConstructionType pipelineConstructionType, ShaderMap shaders)
+		: ViewportStateBaseCase (context, pipelineConstructionType, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
 	{
 		ViewportStateBaseCase::initialize();
 	}
@@ -219,8 +219,8 @@ protected:
 
 public:
 
-	ViewportArrayTestInstance (Context& context, ShaderMap shaders)
-		: DynamicStateBaseClass	(context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
+	ViewportArrayTestInstance (Context& context, vk::PipelineConstructionType pipelineConstructionType, ShaderMap shaders)
+		: DynamicStateBaseClass	(context, pipelineConstructionType, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
 		, m_geometryShaderName	(shaders[glu::SHADERTYPE_GEOMETRY])
 	{
 		for (int i = 0; i < 4; i++)
@@ -236,26 +236,35 @@ public:
 
 	virtual void initPipeline (const vk::VkDevice device)
 	{
-		const vk::Unique<vk::VkShaderModule> vs(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_vertexShaderName), 0));
-		const vk::Unique<vk::VkShaderModule> gs(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_geometryShaderName), 0));
-		const vk::Unique<vk::VkShaderModule> fs(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0));
+		const vk::Unique<vk::VkShaderModule>	vs			(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_vertexShaderName), 0));
+		const vk::Unique<vk::VkShaderModule>	gs			(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_geometryShaderName), 0));
+		const vk::Unique<vk::VkShaderModule>	fs			(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0));
+		std::vector<vk::VkViewport>				viewports	(4u, { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f });
+		std::vector<vk::VkRect2D>				scissors	(4u, { { 0u, 0u }, { 0u, 0u } });
 
-		const PipelineCreateInfo::ColorBlendState::Attachment vkCbAttachmentState;
+		const PipelineCreateInfo::ColorBlendState::Attachment	attachmentState;
+		const PipelineCreateInfo::ColorBlendState				colorBlendState(1u, static_cast<const vk::VkPipelineColorBlendAttachmentState*>(&attachmentState));
+		const PipelineCreateInfo::RasterizerState				rasterizerState;
+		const PipelineCreateInfo::DepthStencilState				depthStencilState;
+		PipelineCreateInfo::DynamicState						dynamicState;
 
-		PipelineCreateInfo pipelineCreateInfo(*m_pipelineLayout, *m_renderPass, 0, 0);
-		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", vk::VK_SHADER_STAGE_VERTEX_BIT));
-		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*gs, "main", vk::VK_SHADER_STAGE_GEOMETRY_BIT));
-		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, "main", vk::VK_SHADER_STAGE_FRAGMENT_BIT));
-		pipelineCreateInfo.addState(PipelineCreateInfo::VertexInputState(m_vertexInputState));
-		pipelineCreateInfo.addState(PipelineCreateInfo::InputAssemblerState(m_topology));
-		pipelineCreateInfo.addState(PipelineCreateInfo::ColorBlendState(1, &vkCbAttachmentState));
-		pipelineCreateInfo.addState(PipelineCreateInfo::ViewportState(4));
-		pipelineCreateInfo.addState(PipelineCreateInfo::DepthStencilState());
-		pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
-		pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState());
-		pipelineCreateInfo.addState(PipelineCreateInfo::DynamicState());
-
-		m_pipeline = vk::createGraphicsPipeline(m_vk, device, DE_NULL, &pipelineCreateInfo);
+		m_pipeline.setDefaultTopology(m_topology)
+				  .setDynamicState(static_cast<const vk::VkPipelineDynamicStateCreateInfo*>(&dynamicState))
+				  .setDefaultMultisampleState()
+				  .setupVertexInputStete(&m_vertexInputState)
+				  .setupPreRasterizationShaderState(viewports,
+													scissors,
+													*m_pipelineLayout,
+													*m_renderPass,
+													0u,
+													*vs,
+													static_cast<const vk::VkPipelineRasterizationStateCreateInfo*>(&rasterizerState),
+													DE_NULL,
+													DE_NULL,
+													*gs)
+				  .setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fs, static_cast<const vk::VkPipelineDepthStencilStateCreateInfo*>(&depthStencilState))
+				  .setupFragmentOutputState(*m_renderPass, 0u, static_cast<const vk::VkPipelineColorBlendStateCreateInfo*>(&colorBlendState))
+				  .buildPipeline();
 	}
 
 	virtual tcu::TestStatus iterate (void)
@@ -293,7 +302,7 @@ public:
 		setDynamicBlendState();
 		setDynamicDepthStencilState();
 
-		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.getPipeline());
 
 		const vk::VkDeviceSize vertexBufferOffset = 0;
 		const vk::VkBuffer vertexBuffer = m_vertexBuffer->object();
@@ -353,8 +362,9 @@ void checkGeometryAndMultiViewportSupport (Context& context)
 
 } //anonymous
 
-DynamicStateVPTests::DynamicStateVPTests (tcu::TestContext& testCtx)
-	: TestCaseGroup (testCtx, "vp_state", "Tests for viewport state")
+DynamicStateVPTests::DynamicStateVPTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
+	: TestCaseGroup					(testCtx, "vp_state", "Tests for viewport state")
+	, m_pipelineConstructionType	(pipelineConstructionType)
 {
 	/* Left blank on purpose */
 }
@@ -369,11 +379,11 @@ void DynamicStateVPTests::init (void)
 	shaderPaths[glu::SHADERTYPE_VERTEX] = "vulkan/dynamic_state/VertexFetch.vert";
 	shaderPaths[glu::SHADERTYPE_FRAGMENT] = "vulkan/dynamic_state/VertexFetch.frag";
 
-	addChild(new InstanceFactory<ViewportParamTestInstance>(m_testCtx, "viewport", "Set viewport which is twice bigger than screen size", shaderPaths));
-	addChild(new InstanceFactory<ScissorParamTestInstance>(m_testCtx, "scissor", "Perform a scissor test on 1/4 bottom-left part of the surface", shaderPaths));
+	addChild(new InstanceFactory<ViewportParamTestInstance>(m_testCtx, "viewport", "Set viewport which is twice bigger than screen size", m_pipelineConstructionType, shaderPaths));
+	addChild(new InstanceFactory<ScissorParamTestInstance>(m_testCtx, "scissor", "Perform a scissor test on 1/4 bottom-left part of the surface", m_pipelineConstructionType, shaderPaths));
 
 	shaderPaths[glu::SHADERTYPE_GEOMETRY] = "vulkan/dynamic_state/ViewportArray.geom";
-	addChild(new InstanceFactory<ViewportArrayTestInstance, FunctionSupport0>(m_testCtx, "viewport_array", "Multiple viewports and scissors", shaderPaths, checkGeometryAndMultiViewportSupport));
+	addChild(new InstanceFactory<ViewportArrayTestInstance, FunctionSupport0>(m_testCtx, "viewport_array", "Multiple viewports and scissors", m_pipelineConstructionType, shaderPaths, checkGeometryAndMultiViewportSupport));
 }
 
 } // DynamicState
