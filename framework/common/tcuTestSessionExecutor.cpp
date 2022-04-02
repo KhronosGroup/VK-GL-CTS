@@ -197,6 +197,10 @@ bool TestSessionExecutor::enterTestCase (TestCase* testCase, const std::string& 
 
 	print("\nTest case '%s'..\n", casePath.c_str());
 
+#if (DE_OS == DE_OS_WIN32)
+	fflush(stdout);
+#endif
+
 	m_testCtx.setTestResult(QP_TEST_RESULT_LAST, "");
 	m_testCtx.setTerminateAfter(false);
 	log.startCase(casePath.c_str(), caseType);
@@ -267,6 +271,10 @@ void TestSessionExecutor::leaveTestCase (TestCase* testCase)
 
 		// Update statistics.
 		print("  %s (%s)\n", qpGetTestResultName(testResult), testResultDesc);
+
+#if (DE_OS == DE_OS_WIN32)
+		fflush(stdout);
+#endif
 
 		m_status.numExecuted += 1;
 		switch (testResult)
