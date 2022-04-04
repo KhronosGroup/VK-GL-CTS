@@ -1117,13 +1117,15 @@ SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
                OpFunctionEnd
 END
 
+# uniforms for variant
+
 
 BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
 
 PIPELINE graphics variant_pipeline
   ATTACH variant_vertex_shader
   ATTACH variant_fragment_shader
-  FRAMEBUFFER_SIZE 256 256
+  FRAMEBUFFER_SIZE 16 16
   BIND BUFFER variant_framebuffer AS color LOCATION 0
 END
 CLEAR_COLOR variant_pipeline 0 0 0 255
