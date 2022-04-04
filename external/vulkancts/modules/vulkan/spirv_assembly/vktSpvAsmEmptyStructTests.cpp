@@ -126,8 +126,24 @@ void addCopyingComputeGroup(tcu::TestCaseGroup* group)
 		std::vector<int>		expectedOutput;
 		std::string				spirvVariables;
 		std::string				spirvCopyObject;
+
+		BufferType (const std::string&				name_,
+					VkDescriptorType				descriptorType_,
+					const std::vector<uint32_t>&	offsets_,
+					const std::vector<int>&			input_,
+					const std::vector<int>&			expectedOutput_,
+					const std::string&				spirvVariables_,
+					const std::string&				spirvCopyObject_)
+			: name				(name_)
+			, descriptorType	(descriptorType_)
+			, offsets			(offsets_)
+			, input				(input_)
+			, expectedOutput	(expectedOutput_)
+			, spirvVariables	(spirvVariables_)
+			, spirvCopyObject	(spirvCopyObject_)
+			{}
 	};
-	std::vector<BufferType> bufferTypes
+	const std::vector<BufferType> bufferTypes
 	{
 		{
 			"ubo",
@@ -163,8 +179,13 @@ void addCopyingComputeGroup(tcu::TestCaseGroup* group)
 	{
 		std::string name;
 		std::string spirvCopyCode;
+
+		CopyingMethod (const std::string& name_, const std::string& spirvCopyCode_)
+			: name			(name_)
+			, spirvCopyCode	(spirvCopyCode_)
+			{}
 	};
-	std::vector<CopyingMethod> copyingMethods
+	const std::vector<CopyingMethod> copyingMethods
 	{
 		{
 			"copy_object",

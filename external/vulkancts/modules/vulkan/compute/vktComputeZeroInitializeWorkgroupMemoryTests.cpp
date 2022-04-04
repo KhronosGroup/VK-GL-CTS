@@ -568,6 +568,14 @@ struct CompositeCaseDef
 	std::string				assignment;
 	deUint32				elements;
 	std::vector<deUint32>	specValues;
+
+	CompositeCaseDef (uint32_t index_, const std::string& typeDefinition_, const std::string& assignment_, uint32_t elements_, const std::vector<uint32_t>& specValues_)
+		: index				(index_)
+		, typeDefinition	(typeDefinition_)
+		, assignment		(assignment_)
+		, elements			(elements_)
+		, specValues		(specValues_)
+		{}
 };
 
 class CompositeTestInstance : public vkt::TestInstance
@@ -669,7 +677,7 @@ tcu::TestStatus CompositeTestInstance::iterate(void)
 
 void AddCompositeTests(tcu::TestCaseGroup* group)
 {
-	std::vector<CompositeCaseDef> cases =
+	const std::vector<CompositeCaseDef> cases
 	{
 		{0,
 		"shared uint wg_mem[specId0] = {};\n",

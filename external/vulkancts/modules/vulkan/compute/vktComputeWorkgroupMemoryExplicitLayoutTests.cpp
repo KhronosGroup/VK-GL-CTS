@@ -314,6 +314,30 @@ public:
 		Synchronization sync;
 		Requirements requirements;
 
+		CaseDef (const std::string&	extraTypes_,
+				 const std::string&	writeDesc_,
+				 const std::string&	writeType_,
+				 const std::string&	writeValue_,
+				 const std::string&	readDesc_,
+				 const std::string&	readType_,
+				 const std::string&	readValue_,
+				 LayoutFlags		layout_,
+				 Function			func_,
+				 Synchronization	sync_,
+				 Requirements		requirements_)
+			: extraTypes	(extraTypes_)
+			, writeDesc		(writeDesc_)
+			, writeType		(writeType_)
+			, writeValue	(writeValue_)
+			, readDesc		(readDesc_)
+			, readType		(readType_)
+			, readValue		(readValue_)
+			, layout		(layout_)
+			, func			(func_)
+			, sync			(sync_)
+			, requirements	(requirements_)
+			{}
+
 		std::string testName() const
 		{
 			std::string name = writeDesc + "_to_" + readDesc;
@@ -565,7 +589,7 @@ void AddAliasTests(tcu::TestCaseGroup* group)
 #define CASE(L, R, D1, T1, V1, D2, T2, V2)				CASE_EXTRA(L, R, "", D1, T1, V1, D2, T2, V2)
 
 
-	std::vector<AliasTest::CaseDef> cases =
+	const std::vector<AliasTest::CaseDef> cases
 	{
 		CASE_SAME_TYPE(0,		"bool_true",	"bool v",		"true"),
 		CASE_SAME_TYPE(0,		"bool_false",	"bool v",		"false"),
