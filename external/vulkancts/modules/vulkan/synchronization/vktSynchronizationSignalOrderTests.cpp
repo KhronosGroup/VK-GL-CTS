@@ -389,6 +389,7 @@ de::MovePtr<Resource> importResource (const DeviceInterface&				vkd,
 			DE_NULL,
 			(VkExternalMemoryHandleTypeFlags)externalType
 		};
+		const VkImageTiling				tiling					= VK_IMAGE_TILING_OPTIMAL;
 		const VkImageCreateInfo			createInfo				=
 		{
 			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -401,7 +402,7 @@ de::MovePtr<Resource> importResource (const DeviceInterface&				vkd,
 			1u,
 			1u,
 			resourceDesc.imageSamples,
-			VK_IMAGE_TILING_OPTIMAL,
+			tiling,
 			readOp.getInResourceUsageFlags() | writeOp.getOutResourceUsageFlags(),
 			VK_SHARING_MODE_EXCLUSIVE,
 
@@ -413,7 +414,7 @@ de::MovePtr<Resource> importResource (const DeviceInterface&				vkd,
 		Move<VkImage>			image		= createImage(vkd, device, &createInfo);
 		MovePtr<Allocation>		allocation	= importAndBindMemory(vkd, device, *image, nativeHandle, externalType, exportedMemoryTypeIndex);
 
-		return MovePtr<Resource>(new Resource(image, allocation, extent, resourceDesc.imageType, resourceDesc.imageFormat, subresourceRange, subresourceLayers));
+		return MovePtr<Resource>(new Resource(image, allocation, extent, resourceDesc.imageType, resourceDesc.imageFormat, subresourceRange, subresourceLayers, tiling));
 	}
 	else
 	{
@@ -537,7 +538,8 @@ public:
 	Move<VkImage> createImage (const vk::DeviceInterface&	vkd,
 							   vk::VkDevice					device,
 							   const vk::VkExtent3D&		extent,
-							   deUint32						queueFamilyIndex)
+							   deUint32						queueFamilyIndex,
+							   vk::VkImageTiling			tiling)
 	{
 		const VkExternalMemoryImageCreateInfo externalInfo =
 		{
@@ -557,7 +559,7 @@ public:
 			1u,
 			1u,
 			m_resourceDesc.imageSamples,
-			VK_IMAGE_TILING_OPTIMAL,
+			tiling,
 			m_readOpSupport->getInResourceUsageFlags() | m_writeOpSupport->getOutResourceUsageFlags(),
 			VK_SHARING_MODE_EXCLUSIVE,
 
@@ -661,7 +663,8 @@ public:
 					1u
 				};
 
-				Move<VkImage>							image			= createImage(vkA, deviceA, extent, universalQueueFamilyIndex);
+				const vk::VkImageTiling					tiling			= VK_IMAGE_TILING_OPTIMAL;
+				Move<VkImage>							image			= createImage(vkA, deviceA, extent, universalQueueFamilyIndex, tiling);
 				const vk::VkMemoryRequirements			requirements	= getMemoryRequirements(vkA, deviceA, *image);
 														memoryTypeIndex = chooseMemoryType(requirements.memoryTypeBits);
 				vk::Move<vk::VkDeviceMemory>			memory			= allocateExportableMemory(vkA, deviceA, requirements.size, memoryTypeIndex, m_memoryHandleType, *image);
@@ -669,7 +672,7 @@ public:
 				VK_CHECK(vkA.bindImageMemory(deviceA, *image, *memory, 0u));
 
 				MovePtr<Allocation> allocation(new SimpleAllocation(vkA, deviceA, memory.disown()));
-				iter.resourceA = makeSharedPtr(new Resource(image, allocation, extent, m_resourceDesc.imageType, m_resourceDesc.imageFormat, subresourceRange, subresourceLayers));
+				iter.resourceA = makeSharedPtr(new Resource(image, allocation, extent, m_resourceDesc.imageType, m_resourceDesc.imageFormat, subresourceRange, subresourceLayers, tiling));
 			}
 			else
 			{

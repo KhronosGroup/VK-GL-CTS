@@ -35,11 +35,8 @@
 #include "vkTypeUtil.hpp"
 #include "vkBufferWithMemory.hpp"
 #include "vkBarrierUtil.hpp"
-
 #include "vktTestCaseUtil.hpp"
-
 #include "tcuTestLog.hpp"
-
 #include <sstream>
 
 using namespace vk;

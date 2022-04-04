@@ -55,6 +55,7 @@ public:
 								ImageViewTest					(tcu::TestContext&				testContext,
 																 const char*					name,
 																 const char*					description,
+																 PipelineConstructionType		pipelineConstructionType,
 																 VkImageViewType				imageViewType,
 																 VkFormat						imageFormat,
 																 float							samplerLod,
@@ -80,6 +81,7 @@ public:
 	static tcu::Vec4			swizzle							(tcu::Vec4						inputData,
 																 VkComponentMapping				componentMapping);
 private:
+	PipelineConstructionType	m_pipelineConstructionType;
 	VkImageViewType				m_imageViewType;
 	VkFormat					m_imageFormat;
 	float						m_samplerLod;
@@ -90,18 +92,20 @@ private:
 ImageViewTest::ImageViewTest (tcu::TestContext&					testContext,
 							  const char*						name,
 							  const char*						description,
+							  PipelineConstructionType			pipelineConstructionType,
 							  VkImageViewType					imageViewType,
 							  VkFormat							imageFormat,
 							  float								samplerLod,
 							  const VkComponentMapping&			componentMapping,
 							  const VkImageSubresourceRange&	subresourceRange)
 
-	: vkt::TestCase			(testContext, name, description)
-	, m_imageViewType		(imageViewType)
-	, m_imageFormat			(imageFormat)
-	, m_samplerLod			(samplerLod)
-	, m_componentMapping	(componentMapping)
-	, m_subresourceRange	(subresourceRange)
+	: vkt::TestCase					(testContext, name, description)
+	, m_pipelineConstructionType	(pipelineConstructionType)
+	, m_imageViewType				(imageViewType)
+	, m_imageFormat					(imageFormat)
+	, m_samplerLod					(samplerLod)
+	, m_componentMapping			(componentMapping)
+	, m_subresourceRange			(subresourceRange)
 {
 }
 
@@ -138,11 +142,12 @@ ImageSamplingInstanceParams ImageViewTest::getImageSamplingInstanceParams (VkIma
 		false																// VkBool32					unnormalizedCoordinates;
 	};
 
-	return ImageSamplingInstanceParams(renderSize, imageViewType, imageFormat, imageSize, arraySize, componentMapping, subresourceRange, samplerParams, samplerLod, vertices);
+	return ImageSamplingInstanceParams(m_pipelineConstructionType, renderSize, imageViewType, imageFormat, imageSize, arraySize, componentMapping, subresourceRange, samplerParams, samplerLod, vertices);
 }
 
 void ImageViewTest::checkSupport (Context& context) const
 {
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 	checkSupportImageSamplingInstance(context, getImageSamplingInstanceParams(m_imageViewType, m_imageFormat, m_samplerLod, m_componentMapping, m_subresourceRange));
 }
 
@@ -350,7 +355,7 @@ static std::string getFormatCaseName (const VkFormat format)
 	return de::toLower(fullName.substr(10));
 }
 
-static de::MovePtr<tcu::TestCaseGroup> createSubresourceRangeTests(tcu::TestContext& testCtx, VkImageViewType viewType, VkFormat imageFormat)
+static de::MovePtr<tcu::TestCaseGroup> createSubresourceRangeTests(tcu::TestContext& testCtx, PipelineConstructionType	pipelineConstructionType, VkImageViewType viewType, VkFormat imageFormat)
 {
 	struct TestCaseConfig
 	{
@@ -373,8 +378,9 @@ static de::MovePtr<tcu::TestCaseGroup> createSubresourceRangeTests(tcu::TestCont
 			std::ostringstream		desc;																\
 			const TestCaseConfig	config	= (TEST_CASES)[configNdx];									\
 			desc << "Samples level " << config.samplerLod << " with :\n" << config.subresourceRange;	\
-			rangeTests->addChild(new ImageViewTest(testCtx, config.name, desc.str().c_str(), viewType,	\
-												   imageFormat, config.samplerLod, componentMapping,	\
+			rangeTests->addChild(new ImageViewTest(testCtx, config.name, desc.str().c_str(),			\
+												   pipelineConstructionType,viewType, imageFormat,		\
+												   config.samplerLod, componentMapping,					\
 												   config.subresourceRange));							\
 		}																								\
 	} while (deGetFalse())
@@ -618,7 +624,7 @@ static std::string getComponentMappingCaseName (const VkComponentMapping& compon
 	return name.str();
 }
 
-static de::MovePtr<tcu::TestCaseGroup> createComponentSwizzleTests (tcu::TestContext& testCtx, VkImageViewType viewType, VkFormat imageFormat)
+static de::MovePtr<tcu::TestCaseGroup> createComponentSwizzleTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType, VkImageViewType viewType, VkFormat imageFormat)
 {
 	deUint32 arraySize = 0;
 
@@ -662,6 +668,7 @@ static de::MovePtr<tcu::TestCaseGroup> createComponentSwizzleTests (tcu::TestCon
 		swizzleTests->addChild(new ImageViewTest(testCtx,
 												 getComponentMappingCaseName(componentMappings[mappingNdx]).c_str(),
 												 "",
+												 pipelineConstructionType,
 												 viewType,
 												 imageFormat,
 												 0.0f,
@@ -674,7 +681,7 @@ static de::MovePtr<tcu::TestCaseGroup> createComponentSwizzleTests (tcu::TestCon
 
 } // anonymous
 
-tcu::TestCaseGroup* createImageViewTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createImageViewTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
 	const struct
 	{
@@ -856,8 +863,8 @@ tcu::TestCaseGroup* createImageViewTests (tcu::TestContext& testCtx)
 																				getFormatCaseName(format).c_str(),
 																				(std::string("Samples a texture of format ") + getFormatName(format)).c_str()));
 
-			de::MovePtr<tcu::TestCaseGroup>	subresourceRangeTests	= createSubresourceRangeTests(testCtx, viewType, format);
-			de::MovePtr<tcu::TestCaseGroup>	componentSwizzleTests	= createComponentSwizzleTests(testCtx, viewType, format);
+			de::MovePtr<tcu::TestCaseGroup>	subresourceRangeTests	= createSubresourceRangeTests(testCtx, pipelineConstructionType, viewType, format);
+			de::MovePtr<tcu::TestCaseGroup>	componentSwizzleTests	= createComponentSwizzleTests(testCtx, pipelineConstructionType, viewType, format);
 
 			formatGroup->addChild(componentSwizzleTests.release());
 			formatGroup->addChild(subresourceRangeTests.release());

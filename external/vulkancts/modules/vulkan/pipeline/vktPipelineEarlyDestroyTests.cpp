@@ -47,9 +47,20 @@ using namespace vk;
 namespace
 {
 
-void initPrograms (SourceCollections& programCollection, bool usePipelineCache)
+struct TestParams
 {
-	DE_UNREF(usePipelineCache);
+	PipelineConstructionType	pipelineConstructionType;
+	bool						usePipelineCache;
+};
+
+void checkSupport(Context& context, TestParams testParams)
+{
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), testParams.pipelineConstructionType);
+}
+
+void initPrograms (SourceCollections& programCollection, TestParams testParams)
+{
+	DE_UNREF(testParams.usePipelineCache);
 
 	programCollection.glslSources.add("color_vert") << glu::VertexSource(
 		"#version 450\n"
@@ -74,9 +85,9 @@ void initPrograms (SourceCollections& programCollection, bool usePipelineCache)
 		"}\n");
 }
 
-tcu::TestStatus testEarlyDestroy (Context& context, bool usePipelineCache, bool destroyLayout)
+tcu::TestStatus testEarlyDestroy (Context& context, const TestParams& params, bool destroyLayout)
 {
-	const DeviceInterface&								vk							    = context.getDeviceInterface();
+	const DeviceInterface&								vk								= context.getDeviceInterface();
 	const VkDevice										vkDevice						= context.getDevice();
 	const Unique<VkShaderModule>						vertexShaderModule				(createShaderModule(vk, vkDevice, context.getBinaryCollection().get("color_vert"), 0));
 	const Unique<VkShaderModule>						fragmentShaderModule			(createShaderModule(vk, vkDevice, context.getBinaryCollection().get("color_frag"), 0));
@@ -101,27 +112,6 @@ tcu::TestStatus testEarlyDestroy (Context& context, bool usePipelineCache, bool 
 	{
 		Move<VkPipelineLayout>							pipelineLayout					(createPipelineLayout(vk, vkDevice, &pipelineLayoutCreateInfo, DE_NULL));
 		const Unique<VkRenderPass>						renderPass						(makeRenderPass(vk, vkDevice, VK_FORMAT_R8G8B8A8_UNORM));
-		const VkPipelineShaderStageCreateInfo			stages[]						=
-		{
-			{
-				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,					// VkStructureType					sType;
-				DE_NULL,																// const void*						pNext;
-				0u,																		// VkPipelineShaderStageCreateFlags	flags;
-				VK_SHADER_STAGE_VERTEX_BIT,												// VkShaderStageFlagBits			stage;
-				*vertexShaderModule,													// VkShaderModule					module;
-				"main",																	// const char*						pName;
-				DE_NULL																	// const VkSpecializationInfo*		pSpecializationInfo;
-			},
-			{
-				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,					// VkStructureType					sType;
-				DE_NULL,																// const void*						pNext;
-				0u,																		// VkPipelineShaderStageCreateFlags	flags;
-				VK_SHADER_STAGE_FRAGMENT_BIT,											// VkShaderStageFlagBits			stage;
-				*fragmentShaderModule,													// VkShaderModule					module;
-				"main",																	// const char*						pName;
-				DE_NULL																	// const VkSpecializationInfo*		pSpecializationInfo;
-			}
-		};
 		const VkPipelineVertexInputStateCreateInfo		vertexInputStateCreateInfo		=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,					// VkStructureType							sType;
@@ -187,29 +177,25 @@ tcu::TestStatus testEarlyDestroy (Context& context, bool usePipelineCache, bool 
 			DE_NULL																		// const void*					pInitialData;
 		};
 		const Unique<VkPipelineCache>					pipelineCache					(createPipelineCache(vk, vkDevice, &pipelineCacheCreateInfo));
-		const VkGraphicsPipelineCreateInfo				graphicsPipelineCreateInfo		=
-		{
-			VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,							// VkStructureType									sType;
-			DE_NULL,																	// const void*										pNext;
-			VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT,								// VkPipelineCreateFlags							flags;
-			2u,																			// deUint32											stageCount;
-			stages,																		// const VkPipelineShaderStageCreateInfo*			pStages;
-			&vertexInputStateCreateInfo,												// const VkPipelineVertexInputStateCreateInfo*		pVertexInputState;
-			&inputAssemblyStateCreateInfo,												// const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState;
-			DE_NULL,																	// const VkPipelineTessellationStateCreateInfo*		pTessellationState;
-			DE_NULL,																	// const VkPipelineViewportStateCreateInfo*			pViewportState;
-			&rasterizationStateCreateInfo,												// const VkPipelineRasterizationStateCreateInfo*	pRasterizationState;
-			DE_NULL,																	// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
-			DE_NULL,																	// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
-			&colorBlendStateCreateInfo,													// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
-			DE_NULL,																	// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
-			*pipelineLayout,															// VkPipelineLayout									layout;
-			*renderPass,																// VkRenderPass										renderPass;
-			0u,																			// deUint32											subpass;
-			DE_NULL,																	// VkPipeline										basePipelineHandle;
-			0																			// int												basePipelineIndex;
-		};
-		createGraphicsPipeline(vk, vkDevice, usePipelineCache ? *pipelineCache : DE_NULL, &graphicsPipelineCreateInfo);
+
+		const std::vector<VkViewport>					viewports						{};
+		const std::vector<VkRect2D>						scissors						{};
+		GraphicsPipelineWrapper							graphicsPipeline				(vk, vkDevice, params.pipelineConstructionType, VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT);
+
+		graphicsPipeline.disableViewportState()
+						.setDefaultMultisampleState()
+						.setDefaultDepthStencilState()
+						.setupVertexInputStete(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
+						.setupPreRasterizationShaderState(viewports,
+														  scissors,
+														  *pipelineLayout,
+														  *renderPass,
+														  0u,
+														  *vertexShaderModule,
+														  &rasterizationStateCreateInfo)
+						.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragmentShaderModule)
+						.setupFragmentOutputState(*renderPass, 0u, &colorBlendStateCreateInfo)
+						.buildPipeline(params.usePipelineCache ? *pipelineCache : DE_NULL);
 
 		const deUint32 framebufferWidth													= 32;
 		const deUint32 framebufferHeight												= 32;
@@ -281,7 +267,7 @@ tcu::TestStatus testEarlyDestroy (Context& context, bool usePipelineCache, bool 
 				0u,																		// uint32_t						baseArrayLayer
 				1u																		// uint32_t						layerCount
 			};
-			const VkRenderPassBeginInfo				    renderPassBeginInfo				=
+			const VkRenderPassBeginInfo					renderPassBeginInfo				=
 			{
 				VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,								// VkStructureType				sType;
 				DE_NULL,																// const void*					pNext;
@@ -322,29 +308,38 @@ tcu::TestStatus testEarlyDestroy (Context& context, bool usePipelineCache, bool 
 	return tcu::TestStatus::pass("Pass");
 }
 
-tcu::TestStatus testEarlyDestroyKeepLayout (Context& context, bool useCache)
+tcu::TestStatus testEarlyDestroyKeepLayout (Context& context, TestParams params)
 {
-	return testEarlyDestroy (context, useCache, false);
+	return testEarlyDestroy (context, params, false);
 }
 
-tcu::TestStatus testEarlyDestroyDestroyLayout (Context& context, bool useCache)
+tcu::TestStatus testEarlyDestroyDestroyLayout (Context& context, TestParams params)
 {
-	return testEarlyDestroy (context, useCache, true);
+	return testEarlyDestroy (context, params, true);
 }
 
-void addEarlyDestroyTestCasesWithFunctions (tcu::TestCaseGroup* group)
+void addEarlyDestroyTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineConstructionType pipelineConstructionType)
 {
-	addFunctionCaseWithPrograms(group, "cache", "", initPrograms, testEarlyDestroyKeepLayout, true);
-	addFunctionCaseWithPrograms(group, "no_cache", "", initPrograms, testEarlyDestroyKeepLayout, false);
-	addFunctionCaseWithPrograms(group, "cache_destroy_layout", "", initPrograms, testEarlyDestroyDestroyLayout, true);
-	addFunctionCaseWithPrograms(group, "no_cache_destroy_layout", "", initPrograms, testEarlyDestroyDestroyLayout, false);
+	TestParams params
+	{
+		pipelineConstructionType,
+		true
+	};
+
+	addFunctionCaseWithPrograms(group, "cache", "", checkSupport, initPrograms, testEarlyDestroyKeepLayout, params);
+	params.usePipelineCache = false;
+	addFunctionCaseWithPrograms(group, "no_cache", "", checkSupport, initPrograms, testEarlyDestroyKeepLayout, params);
+	params.usePipelineCache = true;
+	addFunctionCaseWithPrograms(group, "cache_destroy_layout", "", checkSupport, initPrograms, testEarlyDestroyDestroyLayout, params);
+	params.usePipelineCache = false;
+	addFunctionCaseWithPrograms(group, "no_cache_destroy_layout", "", checkSupport, initPrograms, testEarlyDestroyDestroyLayout, params);
 }
 
 } // anonymous
 
-tcu::TestCaseGroup* createEarlyDestroyTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createEarlyDestroyTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	return createTestGroup(testCtx, "early_destroy", "Tests where pipeline is destroyed early", addEarlyDestroyTestCasesWithFunctions);
+	return createTestGroup(testCtx, "early_destroy", "Tests where pipeline is destroyed early", addEarlyDestroyTestCasesWithFunctions, pipelineConstructionType);
 }
 
 } // pipeline

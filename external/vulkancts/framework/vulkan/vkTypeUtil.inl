@@ -700,6 +700,16 @@ inline VkTraceRaysIndirectCommandKHR makeTraceRaysIndirectCommandKHR (uint32_t w
 	return res;
 }
 
+inline StdVideoEncodeH264WeightTableFlags makeStdVideoEncodeH264WeightTableFlags (uint32_t luma_weight_l0_flag, uint32_t chroma_weight_l0_flag, uint32_t luma_weight_l1_flag, uint32_t chroma_weight_l1_flag)
+{
+	StdVideoEncodeH264WeightTableFlags res;
+	res.luma_weight_l0_flag		= luma_weight_l0_flag;
+	res.chroma_weight_l0_flag	= chroma_weight_l0_flag;
+	res.luma_weight_l1_flag		= luma_weight_l1_flag;
+	res.chroma_weight_l1_flag	= chroma_weight_l1_flag;
+	return res;
+}
+
 inline StdVideoEncodeH264RefListModEntry makeStdVideoEncodeH264RefListModEntry (StdVideoH264ModificationOfPicNumsIdc modification_of_pic_nums_idc, uint16_t abs_diff_pic_num_minus1, uint16_t long_term_pic_num)
 {
 	StdVideoEncodeH264RefListModEntry res;
@@ -738,6 +748,16 @@ inline VkVideoEncodeH264FrameSizeEXT makeVideoEncodeH264FrameSizeEXT (uint32_t f
 	return res;
 }
 
+inline StdVideoEncodeH265WeightTableFlags makeStdVideoEncodeH265WeightTableFlags (uint16_t luma_weight_l0_flag, uint16_t chroma_weight_l0_flag, uint16_t luma_weight_l1_flag, uint16_t chroma_weight_l1_flag)
+{
+	StdVideoEncodeH265WeightTableFlags res;
+	res.luma_weight_l0_flag		= luma_weight_l0_flag;
+	res.chroma_weight_l0_flag	= chroma_weight_l0_flag;
+	res.luma_weight_l1_flag		= luma_weight_l1_flag;
+	res.chroma_weight_l1_flag	= chroma_weight_l1_flag;
+	return res;
+}
+
 inline VkVideoEncodeH265QpEXT makeVideoEncodeH265QpEXT (int32_t qpI, int32_t qpP, int32_t qpB)
 {
 	VkVideoEncodeH265QpEXT res;
@@ -756,7 +776,7 @@ inline VkVideoEncodeH265FrameSizeEXT makeVideoEncodeH265FrameSizeEXT (uint32_t f
 	return res;
 }
 
-inline StdVideoDecodeH264Mvc makeStdVideoDecodeH264Mvc (uint32_t viewId0, uint32_t mvcElementCount, StdVideoDecodeH264MvcElement* pMvcElements)
+inline StdVideoDecodeH264Mvc makeStdVideoDecodeH264Mvc (uint32_t viewId0, uint32_t mvcElementCount, const StdVideoDecodeH264MvcElement* pMvcElements)
 {
 	StdVideoDecodeH264Mvc res;
 	res.viewId0			= viewId0;

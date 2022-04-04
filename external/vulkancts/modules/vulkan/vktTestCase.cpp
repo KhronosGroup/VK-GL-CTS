@@ -82,6 +82,7 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 		"VK_NV_clip_space_w_scaling",
 		"VK_NV_scissor_exclusive",
 		"VK_NV_shading_rate_image",
+		"VK_ARM_rasterization_order_attachment_access",
 	};
 
 	for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
@@ -96,10 +97,6 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 	for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
 	{
 		const auto& extName = extensions[extNdx].extensionName;
-
-		// Skip enabling VK_KHR_pipeline_library unless needed.
-		if (deStringEqual(extName, "VK_KHR_pipeline_library"))
-			continue;
 
 		// VK_EXT_buffer_device_address is deprecated and must not be enabled if VK_KHR_buffer_device_address is enabled
 		if (khrBufferDeviceAddress && deStringEqual(extName, "VK_EXT_buffer_device_address"))
@@ -486,7 +483,10 @@ const vk::VkPhysicalDeviceVulkan13Features&		Context::getDeviceVulkan13Features	
 
 bool Context::isDeviceFunctionalitySupported (const std::string& extension) const
 {
-	// check if extension was promoted to core
+	// If extension was promoted to core then check using the core mechanism. This is required so that
+	// all core implementations have the functionality tested, even if they don't support the extension.
+	// (It also means that core-optional extensions will not be reported as supported unless the
+	// features are really supported if the CTS code adds all core extensions to the extension list).
 	deUint32 apiVersion = getUsedApiVersion();
 	if (isCoreDeviceExtension(apiVersion, extension))
 	{
@@ -564,25 +564,9 @@ bool Context::isDeviceFunctionalitySupported (const std::string& extension) cons
 		return true;
 	}
 
-	// check if extension is on the list of extensions for current device
+	// If this is not a core extension then just return whether the implementation says it's supported.
 	const auto& extensions = getDeviceExtensions();
-	if (de::contains(extensions.begin(), extensions.end(), extension))
-	{
-		if (extension == "VK_KHR_timeline_semaphore")
-			return !!getTimelineSemaphoreFeatures().timelineSemaphore;
-		if (extension == "VK_KHR_synchronization2")
-			return !!getSynchronization2Features().synchronization2;
-		if (extension == "VK_EXT_extended_dynamic_state")
-			return !!getExtendedDynamicStateFeaturesEXT().extendedDynamicState;
-		if (extension == "VK_EXT_shader_demote_to_helper_invocation")
-			return !!getShaderDemoteToHelperInvocationFeatures().shaderDemoteToHelperInvocation;
-		if (extension == "VK_KHR_workgroup_memory_explicit_layout")
-			return !!getWorkgroupMemoryExplicitLayoutFeatures().workgroupMemoryExplicitLayout;
-
-		return true;
-	}
-
-	return false;
+	return de::contains(extensions.begin(), extensions.end(), extension);
 }
 
 bool Context::isInstanceFunctionalitySupported(const std::string& extension) const

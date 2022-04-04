@@ -416,7 +416,7 @@ tcu::TestStatus ConditionalDraw::iterate (void)
 
 	m_vk.cmdBindPipeline(targetCmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 
-	m_conditionalBuffer = createConditionalRenderingBuffer(m_context, m_conditionalData);
+	m_conditionalBuffer = createConditionalRenderingBuffer(m_context, m_conditionalData, *m_cmdPool);
 
 	if (m_conditionalData.conditionInSecondaryCommandBuffer)
 	{

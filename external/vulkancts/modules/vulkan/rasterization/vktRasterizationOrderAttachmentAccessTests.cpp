@@ -23,7 +23,6 @@
  *//*--------------------------------------------------------------------*/
 
 #include "deDefs.hpp"
-#include "deSharedPtr.hpp"
 #include "deUniquePtr.hpp"
 #include "tcuCommandLine.hpp"
 #include "tcuImageCompare.hpp"
@@ -52,9 +51,7 @@
 using namespace vk;
 using namespace std;
 using namespace vkt;
-using de::UniquePtr;
 using de::MovePtr;
-using de::SharedPtr;
 
 namespace vkt
 {
@@ -104,9 +101,37 @@ public:
 	{
 		return m_integerFormat ? VK_FORMAT_R32G32_UINT : VK_FORMAT_R32G32_SFLOAT;
 	}
-	VkFormat getDSFormat() const
+
+	VkFormat checkAndGetDSFormat (Context& context) const;
+
+	static VkImageType getColorImageType ()
 	{
-		return VK_FORMAT_D32_SFLOAT_S8_UINT;
+		return VK_IMAGE_TYPE_2D;
+	}
+
+	static VkImageTiling getColorImageTiling ()
+	{
+		return VK_IMAGE_TILING_OPTIMAL;
+	}
+
+	static VkImageUsageFlags getColorImageUsageFlags ()
+	{
+		return
+			(	VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT
+			|	VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+			|	VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+			|	VK_IMAGE_USAGE_TRANSFER_DST_BIT
+			);
+	}
+
+	static VkImageUsageFlags getDSImageUsageFlags ()
+	{
+		return
+			(	VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT
+			|	VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
+			|	VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+			|	VK_IMAGE_USAGE_TRANSFER_DST_BIT
+			);
 	}
 
 	VkPipelineColorBlendStateCreateFlags getBlendStateFlags() const
@@ -464,7 +489,7 @@ void AttachmentAccessOrderDepthTestCase::addShadersInternal(SourceCollections& p
 	std::stringstream vertShader;
 	vertShader	<< "#version 460\n"
 				<< "layout(location = 0) in highp vec2 v_position;\n"
-				<< "layout(location = 1) flat out uint instance_index;"
+				<< "layout(location = 1) flat out uint instance_index;\n"
 				<< "layout( push_constant ) uniform ConstBlock\n"
 				<< "{\n"
 				<< "	uint drawCur;\n"
@@ -730,57 +755,112 @@ TestInstance* AttachmentAccessOrderTestCase::createInstance (Context& context) c
 	return new AttachmentAccessOrderTestInstance(context, this);
 }
 
+VkFormat AttachmentAccessOrderTestCase::checkAndGetDSFormat (Context& context) const
+{
+	const auto&	vki				= context.getInstanceInterface();
+	const auto	physicalDevice	= context.getPhysicalDevice();
+	const auto	imageType		= getColorImageType();
+	const auto	imageTiling		= getColorImageTiling();
+	const auto	imageUsage		= getDSImageUsageFlags();
+
+	const std::vector<VkFormat>	dsFormats		{ VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT };
+	VkFormat					supportedFormat	= VK_FORMAT_UNDEFINED;
+	VkImageFormatProperties		formatProperties;
+
+	for (const auto& dsFormat : dsFormats)
+	{
+		const auto result = vki.getPhysicalDeviceImageFormatProperties(physicalDevice, dsFormat, imageType, imageTiling, imageUsage, 0u, &formatProperties);
+
+		if (result == VK_SUCCESS)
+		{
+			if ((formatProperties.sampleCounts & m_sampleCount) != 0)
+			{
+				supportedFormat = dsFormat;
+				break;
+			}
+		}
+		else if (result != VK_ERROR_FORMAT_NOT_SUPPORTED)
+			TCU_FAIL("vkGetPhysicalDeviceImageFormatProperties returned unexpected error");
+	}
+
+	return supportedFormat;
+}
+
 void AttachmentAccessOrderTestCase::checkSupport (Context& context) const
 {
-	context.requireDeviceFunctionality("VK_ARM_rasterization_order_attachment_access");
+	context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
 
-	VkPhysicalDeviceVulkan12Properties vulkan12Properties = {};
-	vulkan12Properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_PROPERTIES;
+	// When explicit synchronization is used, there's no need for the extension.
+	if (!m_explicitSync)
+		context.requireDeviceFunctionality("VK_ARM_rasterization_order_attachment_access");
 
-	VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM rasterizationAccess = {};
-	rasterizationAccess.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_FEATURES_ARM;
-	rasterizationAccess.pNext = &vulkan12Properties;
+	const auto&	vki				= context.getInstanceInterface();
+	const auto	physicalDevice	= context.getPhysicalDevice();
 
-	VkPhysicalDeviceProperties2 properties = {};
-	properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-	properties.pNext = &rasterizationAccess;
+	VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM	rasterizationAccess	= initVulkanStructure();
+	VkPhysicalDeviceFeatures2										features2			= initVulkanStructure(&rasterizationAccess);
 
-	VkPhysicalDeviceFeatures features = {};
+	vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
 
-	context.getInstanceInterface().getPhysicalDeviceProperties2(context.getPhysicalDevice(), &properties);
-	context.getInstanceInterface().getPhysicalDeviceFeatures(context.getPhysicalDevice(), &features);
+	VkPhysicalDeviceProperties2 properties2 = initVulkanStructure();
 
-	if ( m_integerFormat )
+	vki.getPhysicalDeviceProperties2(physicalDevice, &properties2);
+
+	if (m_integerFormat)
 	{
-		if ((vulkan12Properties.framebufferIntegerColorSampleCounts & m_sampleCount) == 0 ||
-			(properties.properties.limits.sampledImageIntegerSampleCounts & m_sampleCount) == 0)
+		const auto format		= getColorFormat();
+		const auto imageType	= getColorImageType();
+		const auto imageTiling	= getColorImageTiling();
+		const auto imageUsage	= getColorImageUsageFlags();
+
+		VkImageFormatProperties formatProperties;
+
+		const auto result = vki.getPhysicalDeviceImageFormatProperties(physicalDevice, format, imageType, imageTiling, imageUsage, 0u, &formatProperties);
+		if (result != VK_SUCCESS)
+		{
+			if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
+				TCU_THROW(NotSupportedError, "Error: format " + de::toString(format) + " does not support the required features");
+			else
+				TCU_FAIL("vkGetPhysicalDeviceImageFormatProperties returned unexpected error");
+		}
+
+		if ((formatProperties.sampleCounts & m_sampleCount) == 0 ||
+			(properties2.properties.limits.sampledImageIntegerSampleCounts & m_sampleCount) == 0)
 		{
 			TCU_THROW(NotSupportedError, "Sample count not supported");
 		}
 	}
 	else
 	{
-		if ((properties.properties.limits.framebufferColorSampleCounts & m_sampleCount) == 0 ||
-			(properties.properties.limits.sampledImageColorSampleCounts & m_sampleCount) == 0)
+		if ((properties2.properties.limits.framebufferColorSampleCounts & m_sampleCount) == 0 ||
+			(properties2.properties.limits.sampledImageColorSampleCounts & m_sampleCount) == 0)
 		{
 			TCU_THROW(NotSupportedError , "Sample count not supported");
 		}
 	}
 
+	// Check depth/stencil format support if needed.
+	if (getInputAttachmentNum() > getColorAttachmentNum())
+	{
+		const auto format = checkAndGetDSFormat(context);
+		if (format == VK_FORMAT_UNDEFINED)
+			TCU_THROW(NotSupportedError, "No support for any of the required depth/stencil formats");
+	}
+
 	/* sampleRateShading must be enabled to call fragment shader for all the samples in multisampling */
-	if ( (m_sampleCount != VK_SAMPLE_COUNT_1_BIT && !features.sampleRateShading) )
+	if (m_sampleCount != VK_SAMPLE_COUNT_1_BIT && !features2.features.sampleRateShading)
 	{
 		TCU_THROW(NotSupportedError , "sampleRateShading feature not supported");
 	}
 
 	/* Needed for gl_PrimitiveID */
-	if ( !features.geometryShader )
+	if (!features2.features.geometryShader)
 	{
 		TCU_THROW(NotSupportedError , "geometryShader feature not supported");
 	}
 
-	if (properties.properties.limits.maxFragmentOutputAttachments < m_inputAttachmentNum ||
-		properties.properties.limits.maxPerStageDescriptorInputAttachments < m_inputAttachmentNum)
+	if (properties2.properties.limits.maxFragmentOutputAttachments < m_inputAttachmentNum ||
+		properties2.properties.limits.maxPerStageDescriptorInputAttachments < m_inputAttachmentNum)
 	{
 		TCU_THROW(NotSupportedError , "Feedback attachment number not supported");
 	}
@@ -851,22 +931,23 @@ void AttachmentAccessOrderTestInstance::RenderSubpass::createAttachments(	int su
 	VkFormat attFormat = m_testCase->getColorFormat();
 
 	/* Same create info for all the color attachments */
+	const auto imageType	= AttachmentAccessOrderTestCase::getColorImageType();
+	const auto imageTiling	= AttachmentAccessOrderTestCase::getColorImageTiling();
+	const auto imageUsage	= AttachmentAccessOrderTestCase::getColorImageUsageFlags();
+
 	VkImageCreateInfo colorImageCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,			// VkStructureType			sType;
 		DE_NULL,										// const void*				pNext;
 		0u,												// VkImageCreateFlags		flags;
-		VK_IMAGE_TYPE_2D,								// VkImageType				imageType;
+		imageType,										// VkImageType				imageType;
 		attFormat,										// VkFormat					format;
 		{ WIDTH,	HEIGHT, 1u },						// VkExtent3D				extent;
 		1u,												// deUint32					mipLevels;
 		1u,												// deUint32					arrayLayers;
 		sampleCount,									// VkSampleCountFlagBits	samples;
-		VK_IMAGE_TILING_OPTIMAL,						// VkImageTiling			tiling;
-		VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT |
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-			VK_IMAGE_USAGE_TRANSFER_DST_BIT,			// VkImageUsageFlags		usage;
+		imageTiling,									// VkImageTiling			tiling;
+		imageUsage,										// VkImageUsageFlags		usage;
 		VK_SHARING_MODE_EXCLUSIVE,						// VkSharingMode			sharingMode;
 		1u,												// deUint32					queueFamilyIndexCount;
 		&queueFamilyIndex,								// const deUint32*			pQueueFamilyIndices;
@@ -880,10 +961,10 @@ void AttachmentAccessOrderTestInstance::RenderSubpass::createAttachments(	int su
 		/* Image for the DS attachment */
 		if (i >= colorAttachmentNum)
 		{
-			attFormat = m_testCase->getDSFormat();
+			attFormat = m_testCase->checkAndGetDSFormat(context);
+			DE_ASSERT(attFormat != VK_FORMAT_UNDEFINED);
 			colorImageCreateInfo.format = attFormat;
-			colorImageCreateInfo.usage &= ~VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-			colorImageCreateInfo.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+			colorImageCreateInfo.usage = AttachmentAccessOrderTestCase::getDSImageUsageFlags();
 			aspect = m_testCase->getDSAspect();
 		}
 
@@ -1141,7 +1222,7 @@ void AttachmentAccessOrderTestInstance::addDependency(	vector<VkSubpassDependenc
 		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,			//VkPipelineStageFlags		dstStageMask;
 		accessFlags,									//VkAccessFlags				srcAccessMask;
 		VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,			//VkAccessFlags				dstAccessMask;
-		0,												//VkDependencyFlags			dependencyFlags;
+		VK_DEPENDENCY_BY_REGION_BIT,					//VkDependencyFlags			dependencyFlags;
 	});
 }
 Move<VkRenderPass> AttachmentAccessOrderTestInstance::createRenderPass(VkFormat attFormat)
@@ -1155,7 +1236,8 @@ Move<VkRenderPass> AttachmentAccessOrderTestInstance::createRenderPass(VkFormat 
 			VkFormat format = attFormat;
 			if (i >= m_subpasses[subpass].getColorAttachmentNum())
 			{
-				format = m_testCase->getDSFormat();
+				format = m_testCase->checkAndGetDSFormat(m_context);
+				DE_ASSERT(format != VK_FORMAT_UNDEFINED);
 			}
 			attachmentDescs.push_back({
 				0,											// VkAttachmentDescriptionFlags		flags;
@@ -1194,7 +1276,8 @@ Move<VkRenderPass> AttachmentAccessOrderTestInstance::createRenderPass(VkFormat 
 		addDependency(dependencies, 0, 0, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
 		if (m_testCase->hasDepthStencil())
 		{
-			addDependency(dependencies, 0, 0, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
+			const auto fragTests = (VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+			addDependency(dependencies, 0, 0, fragTests, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
 		}
 	}
 	else
@@ -1365,8 +1448,8 @@ void AttachmentAccessOrderTestInstance::addPipelineBarrier(	VkCommandBuffer			cm
 		},											// VkImageSubresourceRange	subresourceRange;
 	};
 
-	m_vk.cmdPipelineBarrier(cmdBuffer, srcStageMask, dstStageMask, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL,
-							0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &barrier);
+	m_vk.cmdPipelineBarrier(cmdBuffer, srcStageMask, dstStageMask, VK_DEPENDENCY_BY_REGION_BIT,
+							0, nullptr, 0, nullptr, 1, &barrier);
 }
 void AttachmentAccessOrderTestInstance::addClearColor(VkCommandBuffer cmdBuffer, VkImage image)
 {
@@ -1473,10 +1556,11 @@ tcu::TestStatus AttachmentAccessOrderTestInstance::iterate (void)
 		}
 		for (deUint32 j = m_subpasses[0].getColorAttachmentNum(); m_testCase->m_explicitSync && i != 0 && j < m_subpasses[0].getInputAttachmentNum(); j++)
 		{
+			const auto fragTests = (VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
 			addPipelineBarrier(	*m_cmdBuffer, *m_subpasses[0].m_inputAtt[j], VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
 								VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
 								VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
-								VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+								fragTests, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 								VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT);
 		}
 		m_vk.cmdDraw(*m_cmdBuffer, numPrimitives * 3, numInstances, 0, 0);

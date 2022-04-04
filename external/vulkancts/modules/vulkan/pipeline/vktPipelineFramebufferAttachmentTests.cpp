@@ -69,15 +69,15 @@ using std::vector;
 static const VkFormat COLOR_FORMAT	=		VK_FORMAT_R8G8B8A8_UNORM;
 
 typedef SharedPtr<Unique<VkImageView> >	SharedPtrVkImageView;
-typedef SharedPtr<Unique<VkPipeline> >	SharedPtrVkPipeline;
 
 struct CaseDef
 {
-	VkImageViewType	imageType;
-	IVec3			renderSize;
-	IVec3			attachmentSize;
-	deUint32		numLayers;
-	bool			multisample;
+	PipelineConstructionType	pipelineConstructionType;
+	VkImageViewType				imageType;
+	IVec3						renderSize;
+	IVec3						attachmentSize;
+	deUint32					numLayers;
+	bool						multisample;
 };
 
 template<typename T>
@@ -186,29 +186,28 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface& vk,
 	return createRenderPass(vk, device, &renderPassInfo);
 }
 
-Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
-									   const VkDevice				device,
-									   const VkPipelineLayout		pipelineLayout,
-									   const VkRenderPass			renderPass,
-									   const VkShaderModule			vertexModule,
-									   const VkShaderModule			fragmentModule,
-									   const IVec3					renderSize,
-									   const VkPrimitiveTopology	topology,
-									   const deUint32				subpass,
-									   const deUint32				numAttachments,
-									   const bool					multisample)
+void preparePipelineWrapper(GraphicsPipelineWrapper&	gpw,
+							const VkPipelineLayout		pipelineLayout,
+							const VkRenderPass			renderPass,
+							const VkShaderModule		vertexModule,
+							const VkShaderModule		fragmentModule,
+							const IVec3					renderSize,
+							const VkPrimitiveTopology	topology,
+							const deUint32				subpass,
+							const deUint32				numAttachments,
+							const bool					multisample)
 {
-	const std::vector<VkViewport>				viewports							(1, makeViewport(renderSize));
-	const std::vector<VkRect2D>					scissors							(1, makeRect2D(renderSize));
+	const std::vector<VkViewport>				viewports							{ makeViewport(renderSize) };
+	const std::vector<VkRect2D>					scissors							{ makeRect2D(renderSize) };
 
 	const VkColorComponentFlags					colorComponentsAll					= VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 
-	const VkPipelineMultisampleStateCreateInfo	pipelineMultisampleStateInfo		=
+	const VkPipelineMultisampleStateCreateInfo	pipelineMultisampleStateInfo
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,		// VkStructureType                          sType;
 		DE_NULL,														// const void*                              pNext;
 		(VkPipelineMultisampleStateCreateFlags)0,						// VkPipelineMultisampleStateCreateFlags    flags;
-		!multisample ? VK_SAMPLE_COUNT_1_BIT : VK_SAMPLE_COUNT_4_BIT,	// VkSampleCountFlagBits                    rasterizationSamples;
+		multisample ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT,	// VkSampleCountFlagBits                    rasterizationSamples;
 		VK_FALSE,														// VkBool32                                 sampleShadingEnable;
 		1.0f,															// float                                    minSampleShading;
 		DE_NULL,														// const VkSampleMask*                      pSampleMask;
@@ -216,7 +215,7 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 		VK_FALSE														// VkBool32                                 alphaToOneEnable;
 	};
 
-	const VkPipelineColorBlendAttachmentState	pipelineColorBlendAttachmentState	=
+	const VkPipelineColorBlendAttachmentState	pipelineColorBlendAttachmentState
 	{
 		VK_FALSE,				// VkBool32                 blendEnable;
 		VK_BLEND_FACTOR_ONE,	// VkBlendFactor            srcColorBlendFactor;
@@ -232,7 +231,7 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 	for (deUint32 attachmentIdx = 0; attachmentIdx < numAttachments; attachmentIdx++)
 		colorBlendAttachmentStates.push_back(pipelineColorBlendAttachmentState);
 
-	const VkPipelineColorBlendStateCreateInfo	pipelineColorBlendStateInfo			=
+	const VkPipelineColorBlendStateCreateInfo	pipelineColorBlendStateInfo
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,		// VkStructureType                              sType;
 		DE_NULL,														// const void*                                  pNext;
@@ -244,25 +243,19 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 		{ 0.0f, 0.0f, 0.0f, 0.0f }										// float                                        blendConstants[4];
 	};
 
-	return vk::makeGraphicsPipeline(vk,								// const DeviceInterface&                        vk
-									device,							// const VkDevice                                device
-									pipelineLayout,					// const VkPipelineLayout                        pipelineLayout
-									vertexModule,					// const VkShaderModule                          vertexShaderModule
-									DE_NULL,						// const VkShaderModule                          tessellationControlModule
-									DE_NULL,						// const VkShaderModule                          tessellationEvalModule
-									DE_NULL,						// const VkShaderModule                          geometryShaderModule
-									fragmentModule,					// const VkShaderModule                          fragmentShaderModule
-									renderPass,						// const VkRenderPass                            renderPass
-									viewports,						// const std::vector<VkViewport>&                viewports
-									scissors,						// const std::vector<VkRect2D>&                  scissors
-									topology,						// const VkPrimitiveTopology                     topology
-									subpass,						// const deUint32                                subpass
-									0u,								// const deUint32                                patchControlPoints
-									DE_NULL,						// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-									DE_NULL,						// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
-									&pipelineMultisampleStateInfo,	// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
-									DE_NULL,						// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
-									&pipelineColorBlendStateInfo);	// const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
+	gpw.setDefaultTopology(topology)
+	   .setDefaultRasterizationState()
+	   .setDefaultDepthStencilState()
+	   .setupVertexInputStete()
+	   .setupPreRasterizationShaderState(viewports,
+										 scissors,
+										 pipelineLayout,
+										 renderPass,
+										 subpass,
+										 vertexModule)
+	   .setupFragmentShaderState(pipelineLayout, renderPass, subpass, fragmentModule, DE_NULL, &pipelineMultisampleStateInfo)
+	   .setupFragmentOutputState(renderPass, subpass, &pipelineColorBlendStateInfo, &pipelineMultisampleStateInfo)
+	   .buildPipeline();
 }
 
 Move<VkImage> makeImage (const DeviceInterface&		vk,
@@ -310,10 +303,8 @@ vector<tcu::Vec4> genFullQuadVertices (const int subpassCount)
 	return vectorData;
 }
 
-void initColorPrograms (SourceCollections& programCollection, const CaseDef caseDef)
+void initColorPrograms (SourceCollections& programCollection, const CaseDef)
 {
-	(void)caseDef;
-
 	// Vertex shader
 	{
 		std::ostringstream src;
@@ -410,7 +401,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 	vector<VkImageView>				attachmentHandles;
 
 	const Unique<VkPipelineLayout>	pipelineLayout		(makePipelineLayout(vk, device));
-	vector<SharedPtrVkPipeline>		pipeline;
+	vector<GraphicsPipelineWrapper>	pipeline;
 	const Unique<VkRenderPass>		renderPass			(makeRenderPass(vk, device, COLOR_FORMAT, caseDef.numLayers, caseDef.multisample));
 	Move<VkFramebuffer>				framebuffer;
 
@@ -454,14 +445,16 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 	}
 
 	// create attachmentHandles and pipelines (one for each layer). We use the renderSize for viewport and scissor
+	pipeline.reserve(caseDef.numLayers);
 	for (deUint32 layerNdx = 0; layerNdx < caseDef.numLayers; ++layerNdx)
 	{
 		colorAttachments.push_back(makeSharedPtr(makeImageView(vk, device, ! caseDef.multisample ? *colorImage : *msColorImage,
 			imageViewType, COLOR_FORMAT, makeColorSubresourceRange(layerNdx, 1))));
 		attachmentHandles.push_back(**colorAttachments.back());
 
-		pipeline.push_back(makeSharedPtr(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
-			caseDef.renderSize, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, layerNdx, 1u, caseDef.multisample)));
+		pipeline.emplace_back(vk, device, caseDef.pipelineConstructionType);
+		preparePipelineWrapper(pipeline.back(), *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
+							   caseDef.renderSize, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, layerNdx, 1u, caseDef.multisample);
 	}
 
 	// create framebuffer
@@ -494,8 +487,8 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 
 			const VkImageSubresourceRange	ranges		= makeColorSubresourceRange(0, caseDef.numLayers);
 			const VkClearColorValue			clearColor	=
-	        {
-                {0.0f, 0.0f, 0.0f, 1.0f}
+			{
+				{0.0f, 0.0f, 0.0f, 1.0f}
 			};
 			vk.cmdClearColorImage(*cmdBuffer, caseDef.multisample ? *msColorImage : *colorImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1u, &ranges);
 
@@ -531,7 +524,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 					if (layerNdx != 0)
 						vk.cmdNextSubpass(*cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
-					vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipeline[layerNdx]);
+					vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline[layerNdx].getPipeline());
 					vk.cmdDraw(*cmdBuffer, 4u, 1u, layerNdx*4u, 0u);
 				}
 			}
@@ -657,7 +650,13 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 	return tcu::TestStatus::pass("Pass");
 }
 
-void initImagePrograms (SourceCollections& programCollection, const bool multisample)
+struct NoAttCaseDef
+{
+	PipelineConstructionType	pipelineConstructionType;
+	bool						multisample;
+};
+
+void initImagePrograms (SourceCollections& programCollection, const NoAttCaseDef caseDef)
 {
 	// Vertex shader
 	{
@@ -689,7 +688,7 @@ void initImagePrograms (SourceCollections& programCollection, const bool multisa
 			<< "\n"
 			<< "void main(void)\n"
 			<< "{\n";
-			if (!multisample)
+			if (!caseDef.multisample)
 				src << "    imageStore(image, ivec2(gl_PrimitiveID % 4, 0), vec4(1.0, 0.5, 0.25, 1.0));\n";
 			else
 				src << "    imageStore(image, ivec2(gl_PrimitiveID % 4, gl_SampleID % 4), vec4(1.0, 0.5, 0.25, 1.0));\n";
@@ -769,7 +768,7 @@ vector<tcu::Vec4> genPointVertices (void)
 // configuration we use a 4x1 image to record the output and for the
 // multi-sampled case we use a 4x4 image to record all 16 samples produced by
 // 4-sample multi-sampling
-tcu::TestStatus testNoAtt (Context& context, const bool multisample)
+tcu::TestStatus testNoAtt (Context& context, const NoAttCaseDef caseDef)
 {
 	const DeviceInterface&				vk						= context.getDeviceInterface();
 	const VkDevice						device					= context.getDevice();
@@ -786,7 +785,7 @@ tcu::TestStatus testNoAtt (Context& context, const bool multisample)
 
 	// Create image where we will record the writes. For single-sampled cases this is a 4x1 image
 	// and for multi-sampled cases this is a 4x<num_samples> image.
-	const deUint8						numSamples				= multisample ? 4 : 1;
+	const deUint8						numSamples				= caseDef.multisample ? 4 : 1;
 	const deUint8						imageWidth				= 4;
 	const deUint8						imageHeight				= numSamples;
 	const deUint8						imageDepth				= 1;
@@ -819,7 +818,7 @@ tcu::TestStatus testNoAtt (Context& context, const bool multisample)
 		.update(vk, device);
 
 	const Unique<VkPipelineLayout>		pipelineLayout			(makePipelineLayout (vk, device, *descriptorSetLayout));
-	vector<SharedPtrVkPipeline>			pipeline;
+	GraphicsPipelineWrapper				pipeline				(vk, device, caseDef.pipelineConstructionType);
 	const Unique<VkRenderPass>			renderPass				(makeRenderPassNoAtt (vk, device));
 	Move<VkFramebuffer>					framebuffer;
 
@@ -837,9 +836,9 @@ tcu::TestStatus testNoAtt (Context& context, const bool multisample)
 		flushAlloc(vk, device, *vertexBufferAlloc);
 	}
 
-	// Create render pass and pipeline
-	pipeline.push_back(makeSharedPtr(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
-		renderSize, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0, 0u, multisample)));
+	// Create pipeline
+	preparePipelineWrapper(pipeline, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
+						   renderSize, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0, 0u, caseDef.multisample);
 	framebuffer = makeFramebuffer(vk, device, *renderPass, 0, DE_NULL, renderSize.x(), renderSize.y());
 
 	// Record command buffer
@@ -862,7 +861,7 @@ tcu::TestStatus testNoAtt (Context& context, const bool multisample)
 
 			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()));
 
-			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipeline[0]);
+			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getPipeline());
 			vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 			vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 			vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
@@ -1049,7 +1048,7 @@ tcu::TestStatus testDifferentAttachmentSizes (Context& context, const CaseDef ca
 	vector<VkImageView>				attachmentHandles;
 
 	const Unique<VkPipelineLayout>	pipelineLayout		(makePipelineLayout(vk, device));
-	Move<VkPipeline>				pipeline;
+	GraphicsPipelineWrapper			pipeline			(vk, device, caseDef.pipelineConstructionType);
 	const Unique<VkRenderPass>		renderPass			(makeRenderPassDifferentAttachmentSizes(vk, device, COLOR_FORMAT, numRenderTargets, caseDef.multisample));
 	Move<VkFramebuffer>				framebuffer;
 
@@ -1112,7 +1111,7 @@ tcu::TestStatus testDifferentAttachmentSizes (Context& context, const CaseDef ca
 		attachmentHandles.push_back(**colorAttachments.back());
 	}
 
-	pipeline = makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule, caseDef.renderSize, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, numRenderTargets, caseDef.multisample);
+	preparePipelineWrapper(pipeline, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule, caseDef.renderSize, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, numRenderTargets, caseDef.multisample);
 
 	// create framebuffer
 	framebuffer = makeFramebuffer(vk, device, *renderPass, numRenderTargets, &attachmentHandles[0], static_cast<deUint32>(caseDef.renderSize.x()), static_cast<deUint32>(caseDef.renderSize.y()));
@@ -1172,7 +1171,7 @@ tcu::TestStatus testDifferentAttachmentSizes (Context& context, const CaseDef ca
 		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, caseDef.renderSize.x(), caseDef.renderSize.y()));
 		{
 			vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
-			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getPipeline());
 			vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
 		}
 		endRenderPass(vk, *cmdBuffer);
@@ -1470,7 +1469,7 @@ tcu::TestStatus testInputResolveSameAttachment(Context &context, const CaseDef c
 	const Move<VkDescriptorSet>			descriptorSet			= makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
 
 	const Unique<VkPipelineLayout>		pipelineLayout			(makePipelineLayout (vk, device, *descriptorSetLayout));
-	Move<VkPipeline>					pipeline;
+	GraphicsPipelineWrapper				pipeline				(vk, device, caseDef.pipelineConstructionType);
 	const Unique<VkRenderPass>			renderPass				(makeRenderPassInputResolveSameAttachment(vk, device, COLOR_FORMAT));
 	Move<VkFramebuffer>					framebuffer;
 
@@ -1524,7 +1523,7 @@ tcu::TestStatus testInputResolveSameAttachment(Context &context, const CaseDef c
 		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &descriptorImageInfo)
 		.update(vk, device);
 
-	pipeline = makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule, caseDef.renderSize, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, 1u, true);
+	preparePipelineWrapper(pipeline, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule, caseDef.renderSize, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, 1u, true);
 
 	// create framebuffer
 	framebuffer = makeFramebuffer(vk, device, *renderPass, 2u, &attachmentHandles[0], static_cast<deUint32>(caseDef.renderSize.x()), static_cast<deUint32>(caseDef.renderSize.y()));
@@ -1608,7 +1607,7 @@ tcu::TestStatus testInputResolveSameAttachment(Context &context, const CaseDef c
 		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, caseDef.renderSize.x(), caseDef.renderSize.y()));
 		{
 			vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
-			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getPipeline());
 			vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 			vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
 		}
@@ -1839,7 +1838,12 @@ std::string getTestCaseString (const CaseDef& caseDef)
 	return str.str();
 }
 
-void checkSupport (Context& context, const bool multisample)
+void checkSupport (Context& context, const CaseDef caseDef)
+{
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.pipelineConstructionType);
+}
+
+void checkSupportNoAtt (Context& context, const NoAttCaseDef caseDef)
 {
 	const VkPhysicalDeviceFeatures features = context.getDeviceFeatures();
 
@@ -1848,102 +1852,106 @@ void checkSupport (Context& context, const bool multisample)
 	if (!features.geometryShader && !features.tessellationShader) // Shader uses gl_PrimitiveID
 		throw tcu::NotSupportedError("geometryShader or tessellationShader feature not supported");
 
-	if (multisample)
+	if (caseDef.multisample)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING); // MS shader uses gl_SampleID
+
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.pipelineConstructionType);
 }
 
-void addAttachmentTestCasesWithFunctions (tcu::TestCaseGroup* group)
+void addAttachmentTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineConstructionType pipelineConstructionType)
 {
-
 	// Add test cases for attachment strictly sizes larger than the framebuffer
 	const CaseDef	caseDef[]	=
 	{
 		// Single-sample test cases
-		{ VK_IMAGE_VIEW_TYPE_1D,			IVec3(32, 1, 1),	IVec3(64, 1, 1),	1,		false },
-		{ VK_IMAGE_VIEW_TYPE_1D,			IVec3(32, 1, 1),	IVec3(48, 1, 1),	1,		false },
-		{ VK_IMAGE_VIEW_TYPE_1D,			IVec3(32, 1, 1),	IVec3(39, 1, 1),	1,		false },
-		{ VK_IMAGE_VIEW_TYPE_1D,			IVec3(19, 1, 1),	IVec3(32, 1, 1),	1,		false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D,			IVec3(32, 1, 1),	IVec3(64, 1, 1),	1,		false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D,			IVec3(32, 1, 1),	IVec3(48, 1, 1),	1,		false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D,			IVec3(32, 1, 1),	IVec3(39, 1, 1),	1,		false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D,			IVec3(19, 1, 1),	IVec3(32, 1, 1),	1,		false },
 
-		{ VK_IMAGE_VIEW_TYPE_1D_ARRAY,		IVec3(32, 1, 1),	IVec3(64, 1, 1),	4,		false },
-		{ VK_IMAGE_VIEW_TYPE_1D_ARRAY,		IVec3(32, 1, 1),	IVec3(48, 1, 1),	4,		false },
-		{ VK_IMAGE_VIEW_TYPE_1D_ARRAY,		IVec3(32, 1, 1),	IVec3(39, 1, 1),	4,		false },
-		{ VK_IMAGE_VIEW_TYPE_1D_ARRAY,		IVec3(19, 1, 1),	IVec3(32, 1, 1),	4,		false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D_ARRAY,	IVec3(32, 1, 1),	IVec3(64, 1, 1),	4,		false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D_ARRAY,	IVec3(32, 1, 1),	IVec3(48, 1, 1),	4,		false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D_ARRAY,	IVec3(32, 1, 1),	IVec3(39, 1, 1),	4,		false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D_ARRAY,	IVec3(19, 1, 1),	IVec3(32, 1, 1),	4,		false },
 
-		{ VK_IMAGE_VIEW_TYPE_2D,			IVec3(32, 32, 1),	IVec3(64, 64, 1),	1,		false },
-		{ VK_IMAGE_VIEW_TYPE_2D,			IVec3(32, 32, 1),	IVec3(48, 48, 1),	1,		false },
-		{ VK_IMAGE_VIEW_TYPE_2D,			IVec3(32, 32, 1),	IVec3(39, 41, 1),	1,		false },
-		{ VK_IMAGE_VIEW_TYPE_2D,			IVec3(19, 27, 1),	IVec3(32, 32, 1),	1,		false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,			IVec3(32, 32, 1),	IVec3(64, 64, 1),	1,		false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,			IVec3(32, 32, 1),	IVec3(48, 48, 1),	1,		false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,			IVec3(32, 32, 1),	IVec3(39, 41, 1),	1,		false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,			IVec3(19, 27, 1),	IVec3(32, 32, 1),	1,		false },
 
-		{ VK_IMAGE_VIEW_TYPE_2D_ARRAY,		IVec3(32, 32, 1),	IVec3(64, 64, 1),	4,		false },
-		{ VK_IMAGE_VIEW_TYPE_2D_ARRAY,		IVec3(32, 32, 1),	IVec3(48, 48, 1),	4,		false },
-		{ VK_IMAGE_VIEW_TYPE_2D_ARRAY,		IVec3(32, 32, 1),	IVec3(39, 41, 1),	4,		false },
-		{ VK_IMAGE_VIEW_TYPE_2D_ARRAY,		IVec3(19, 27, 1),	IVec3(32, 32, 1),	4,		false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D_ARRAY,	IVec3(32, 32, 1),	IVec3(64, 64, 1),	4,		false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D_ARRAY,	IVec3(32, 32, 1),	IVec3(48, 48, 1),	4,		false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D_ARRAY,	IVec3(32, 32, 1),	IVec3(39, 41, 1),	4,		false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D_ARRAY,	IVec3(19, 27, 1),	IVec3(32, 32, 1),	4,		false },
 
-		{ VK_IMAGE_VIEW_TYPE_CUBE,			IVec3(32, 32, 1),	IVec3(64, 64, 1),	6,		false },
-		{ VK_IMAGE_VIEW_TYPE_CUBE,			IVec3(32, 32, 1),	IVec3(48, 48, 1),	6,		false },
-		{ VK_IMAGE_VIEW_TYPE_CUBE,			IVec3(32, 32, 1),	IVec3(39, 41, 1),	6,		false },
-		{ VK_IMAGE_VIEW_TYPE_CUBE,			IVec3(19, 27, 1),	IVec3(32, 32, 1),	6,		false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_CUBE,		IVec3(32, 32, 1),	IVec3(64, 64, 1),	6,		false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_CUBE,		IVec3(32, 32, 1),	IVec3(48, 48, 1),	6,		false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_CUBE,		IVec3(32, 32, 1),	IVec3(39, 41, 1),	6,		false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_CUBE,		IVec3(19, 27, 1),	IVec3(32, 32, 1),	6,		false },
 
-		{ VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	IVec3(32, 32, 1),	IVec3(64, 64, 1),	6*2,	false },
-		{ VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	IVec3(32, 32, 1),	IVec3(48, 48, 1),	6*2,	false },
-		{ VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	IVec3(32, 32, 1),	IVec3(39, 41, 1),	6*2,	false },
-		{ VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	IVec3(19, 27, 1),	IVec3(32, 32, 1),	6*2,	false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	IVec3(32, 32, 1),	IVec3(64, 64, 1),	6*2,	false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	IVec3(32, 32, 1),	IVec3(48, 48, 1),	6*2,	false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	IVec3(32, 32, 1),	IVec3(39, 41, 1),	6*2,	false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	IVec3(19, 27, 1),	IVec3(32, 32, 1),	6*2,	false },
 
 		// Multi-sample test cases
-		{ VK_IMAGE_VIEW_TYPE_2D,			IVec3(32, 32, 1),	IVec3(64, 64, 1),	1,		true },
-		{ VK_IMAGE_VIEW_TYPE_2D,			IVec3(32, 32, 1),	IVec3(48, 48, 1),	1,		true },
-		{ VK_IMAGE_VIEW_TYPE_2D,			IVec3(32, 32, 1),	IVec3(39, 41, 1),	1,		true },
-		{ VK_IMAGE_VIEW_TYPE_2D,			IVec3(19, 27, 1),	IVec3(32, 32, 1),	1,		true },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,			IVec3(32, 32, 1),	IVec3(64, 64, 1),	1,		true },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,			IVec3(32, 32, 1),	IVec3(48, 48, 1),	1,		true },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,			IVec3(32, 32, 1),	IVec3(39, 41, 1),	1,		true },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,			IVec3(19, 27, 1),	IVec3(32, 32, 1),	1,		true },
 
-		{ VK_IMAGE_VIEW_TYPE_2D_ARRAY,		IVec3(32, 32, 1),	IVec3(64, 64, 1),	4,		true },
-		{ VK_IMAGE_VIEW_TYPE_2D_ARRAY,		IVec3(32, 32, 1),	IVec3(48, 48, 1),	4,		true },
-		{ VK_IMAGE_VIEW_TYPE_2D_ARRAY,		IVec3(32, 32, 1),	IVec3(39, 41, 1),	4,		true },
-		{ VK_IMAGE_VIEW_TYPE_2D_ARRAY,		IVec3(19, 27, 1),	IVec3(32, 32, 1),	4,		true },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D_ARRAY,	IVec3(32, 32, 1),	IVec3(64, 64, 1),	4,		true },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D_ARRAY,	IVec3(32, 32, 1),	IVec3(48, 48, 1),	4,		true },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D_ARRAY,	IVec3(32, 32, 1),	IVec3(39, 41, 1),	4,		true },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D_ARRAY,	IVec3(19, 27, 1),	IVec3(32, 32, 1),	4,		true },
 	};
 
 	for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(caseDef); ++sizeNdx)
-		addFunctionCaseWithPrograms(group, getTestCaseString(caseDef[sizeNdx]).c_str(), "", initColorPrograms, test, caseDef[sizeNdx]);
+		addFunctionCaseWithPrograms(group, getTestCaseString(caseDef[sizeNdx]).c_str(), "", checkSupport, initColorPrograms, test, caseDef[sizeNdx]);
 
 	// Add tests for the case where there are no color attachments but the
 	// fragment shader writes to an image via imageStore().
-	addFunctionCaseWithPrograms(group, "no_attachments", "", checkSupport, initImagePrograms, testNoAtt, false);
-	addFunctionCaseWithPrograms(group, "no_attachments_ms", "", checkSupport, initImagePrograms, testNoAtt, true);
+	NoAttCaseDef noAttCaseDef { pipelineConstructionType, false };
+	addFunctionCaseWithPrograms(group, "no_attachments",    "", checkSupportNoAtt, initImagePrograms, testNoAtt, noAttCaseDef);
+	noAttCaseDef.multisample = true;
+	addFunctionCaseWithPrograms(group, "no_attachments_ms", "", checkSupportNoAtt, initImagePrograms, testNoAtt, noAttCaseDef);
 
 	// Test render pass with attachment set as unused.
-	addFunctionCase(group, "unused_attachment", "", testUnusedAtt);
+	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+		addFunctionCase(group, "unused_attachment", "", testUnusedAtt);
 
 	const CaseDef	differentAttachmentSizesCaseDef[]	=
 	{
 		// Single-sample test cases
-		{ VK_IMAGE_VIEW_TYPE_1D,	IVec3(32, 1, 1),	IVec3(64, 1, 1),	1,	false },
-		{ VK_IMAGE_VIEW_TYPE_1D,	IVec3(32, 1, 1),	IVec3(48, 1, 1),	1,	false },
-		{ VK_IMAGE_VIEW_TYPE_1D,	IVec3(32, 1, 1),	IVec3(39, 1, 1),	1,	false },
-		{ VK_IMAGE_VIEW_TYPE_1D,	IVec3(19, 1, 1),	IVec3(32, 1, 1),	1,	false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D,	IVec3(32, 1, 1),	IVec3(64, 1, 1),	1,	false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D,	IVec3(32, 1, 1),	IVec3(48, 1, 1),	1,	false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D,	IVec3(32, 1, 1),	IVec3(39, 1, 1),	1,	false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D,	IVec3(19, 1, 1),	IVec3(32, 1, 1),	1,	false },
 
-		{ VK_IMAGE_VIEW_TYPE_2D,	IVec3(32, 32, 1),	IVec3(64, 64, 1),	1,	false },
-		{ VK_IMAGE_VIEW_TYPE_2D,	IVec3(32, 32, 1),	IVec3(48, 48, 1),	1,	false },
-		{ VK_IMAGE_VIEW_TYPE_2D,	IVec3(32, 32, 1),	IVec3(39, 41, 1),	1,	false },
-		{ VK_IMAGE_VIEW_TYPE_2D,	IVec3(19, 27, 1),	IVec3(32, 32, 1),	1,	false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,	IVec3(32, 32, 1),	IVec3(64, 64, 1),	1,	false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,	IVec3(32, 32, 1),	IVec3(48, 48, 1),	1,	false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,	IVec3(32, 32, 1),	IVec3(39, 41, 1),	1,	false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,	IVec3(19, 27, 1),	IVec3(32, 32, 1),	1,	false },
 
 		// Multi-sample test cases
-		{ VK_IMAGE_VIEW_TYPE_2D,	IVec3(32, 32, 1),	IVec3(64, 64, 1),	1,	true },
-		{ VK_IMAGE_VIEW_TYPE_2D,	IVec3(32, 32, 1),	IVec3(48, 48, 1),	1,	true },
-		{ VK_IMAGE_VIEW_TYPE_2D,	IVec3(32, 32, 1),	IVec3(39, 41, 1),	1,	true },
-		{ VK_IMAGE_VIEW_TYPE_2D,	IVec3(19, 27, 1),	IVec3(32, 32, 1),	1,	true }
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,	IVec3(32, 32, 1),	IVec3(64, 64, 1),	1,	true },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,	IVec3(32, 32, 1),	IVec3(48, 48, 1),	1,	true },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,	IVec3(32, 32, 1),	IVec3(39, 41, 1),	1,	true },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,	IVec3(19, 27, 1),	IVec3(32, 32, 1),	1,	true }
 	};
 
 	for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(differentAttachmentSizesCaseDef); ++sizeNdx)
-		addFunctionCaseWithPrograms(group, (std::string("diff_attachments_") + getTestCaseString(differentAttachmentSizesCaseDef[sizeNdx])).c_str(), "", initDifferentAttachmentSizesPrograms, testDifferentAttachmentSizes, differentAttachmentSizesCaseDef[sizeNdx]);
+		addFunctionCaseWithPrograms(group, (std::string("diff_attachments_") + getTestCaseString(differentAttachmentSizesCaseDef[sizeNdx])).c_str(), "", checkSupport, initDifferentAttachmentSizesPrograms, testDifferentAttachmentSizes, differentAttachmentSizesCaseDef[sizeNdx]);
 
-	const CaseDef resolveInputSameAttachmentCaseDef = { VK_IMAGE_VIEW_TYPE_2D,	IVec3(64, 64, 1),	IVec3(64, 64, 1),	1,	true };
-	addFunctionCaseWithPrograms(group, "resolve_input_same_attachment" , "", initInputResolveSameAttachmentPrograms, testInputResolveSameAttachment, resolveInputSameAttachmentCaseDef);
+	const CaseDef resolveInputSameAttachmentCaseDef = { pipelineConstructionType,	VK_IMAGE_VIEW_TYPE_2D,	IVec3(64, 64, 1),	IVec3(64, 64, 1),	1,	true };
+	addFunctionCaseWithPrograms(group, "resolve_input_same_attachment" , "", checkSupport, initInputResolveSameAttachmentPrograms, testInputResolveSameAttachment, resolveInputSameAttachmentCaseDef);
 }
 
 } // anonymous ns
 
-tcu::TestCaseGroup* createFramebufferAttachmentTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createFramebufferAttachmentTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	return createTestGroup(testCtx, "framebuffer_attachment", "Framebuffer attachment tests", addAttachmentTestCasesWithFunctions);
+	return createTestGroup(testCtx, "framebuffer_attachment", "Framebuffer attachment tests", addAttachmentTestCasesWithFunctions, pipelineConstructionType);
 }
 
 } // pipeline

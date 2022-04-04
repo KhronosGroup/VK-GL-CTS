@@ -23,6 +23,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktPipelineTests.hpp"
+#include "vktPipelineImageUtil.hpp"
 #include "vktPipelineStencilTests.hpp"
 #include "vktPipelineBlendTests.hpp"
 #include "vktPipelineDepthTests.hpp"
@@ -59,6 +60,7 @@
 #include "vktPipelineNoPositionTests.hpp"
 #include "vktPipelineBindPointTests.hpp"
 #include "vktPipelineColorWriteEnableTests.hpp"
+#include "vktPipelineLibraryTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt
@@ -66,57 +68,83 @@ namespace vkt
 namespace pipeline
 {
 
+using namespace vk;
+
 namespace
 {
 
-void createChildren (tcu::TestCaseGroup* pipelineTests)
+void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelineConstructionType)
 {
-	tcu::TestContext&	testCtx	= pipelineTests->getTestContext();
+	tcu::TestContext& testCtx = group->getTestContext();
 
-	pipelineTests->addChild(createStencilTests					(testCtx));
-	pipelineTests->addChild(createBlendTests					(testCtx));
-	pipelineTests->addChild(createDepthTests					(testCtx));
-	pipelineTests->addChild(createDynamicOffsetTests			(testCtx));
-	pipelineTests->addChild(createEarlyDestroyTests				(testCtx));
-	pipelineTests->addChild(createImageTests					(testCtx));
-	pipelineTests->addChild(createSamplerTests					(testCtx));
-	pipelineTests->addChild(createImageViewTests				(testCtx));
-	pipelineTests->addChild(createLogicOpTests					(testCtx));
-	pipelineTests->addChild(createPushConstantTests				(testCtx));
-	pipelineTests->addChild(createPushDescriptorTests			(testCtx));
-	pipelineTests->addChild(createSpecConstantTests				(testCtx));
-	pipelineTests->addChild(createMatchedAttachmentsTests		(testCtx));
-	pipelineTests->addChild(createMultisampleTests				(testCtx, false));
-	pipelineTests->addChild(createMultisampleTests				(testCtx, true));
-	pipelineTests->addChild(createMultisampleInterpolationTests	(testCtx));
-	pipelineTests->addChild(createMultisampleShaderBuiltInTests	(testCtx));
-	pipelineTests->addChild(createTestGroup						(testCtx,	"vertex_input", "", createVertexInputTests));
-	pipelineTests->addChild(createInputAssemblyTests			(testCtx));
-	pipelineTests->addChild(createInterfaceMatchingTests		(testCtx));
-	pipelineTests->addChild(createTimestampTests				(testCtx));
-	pipelineTests->addChild(createCacheTests					(testCtx));
-	pipelineTests->addChild(createRenderToImageTests			(testCtx));
-	pipelineTests->addChild(createFramebufferAttachmentTests	(testCtx));
-	pipelineTests->addChild(createStencilExportTests			(testCtx));
-	pipelineTests->addChild(createDerivativeTests				(testCtx));
-	pipelineTests->addChild(createCreationFeedbackTests			(testCtx));
-	pipelineTests->addChild(createDepthRangeUnrestrictedTests	(testCtx));
-	pipelineTests->addChild(createExecutablePropertiesTests		(testCtx));
-	pipelineTests->addChild(createMiscTests						(testCtx));
-	pipelineTests->addChild(createMaxVaryingsTests				(testCtx));
-	pipelineTests->addChild(createBlendOperationAdvancedTests	(testCtx));
-	pipelineTests->addChild(createExtendedDynamicStateTests		(testCtx));
-	pipelineTests->addChild(createCacheControlTests				(testCtx));
-	pipelineTests->addChild(createNoPositionTests				(testCtx));
-	pipelineTests->addChild(createBindPointTests				(testCtx));
-	pipelineTests->addChild(createColorWriteEnableTests			(testCtx));
+	group->addChild(createStencilTests					(testCtx, pipelineConstructionType));
+	group->addChild(createBlendTests					(testCtx, pipelineConstructionType));
+	group->addChild(createDepthTests					(testCtx, pipelineConstructionType));
+	group->addChild(createDynamicOffsetTests			(testCtx, pipelineConstructionType));
+	group->addChild(createEarlyDestroyTests				(testCtx, pipelineConstructionType));
+	group->addChild(createImageTests					(testCtx, pipelineConstructionType));
+	group->addChild(createSamplerTests					(testCtx, pipelineConstructionType));
+	group->addChild(createImageViewTests				(testCtx, pipelineConstructionType));
+	group->addChild(createLogicOpTests					(testCtx, pipelineConstructionType));
+	group->addChild(createPushConstantTests				(testCtx, pipelineConstructionType));
+	group->addChild(createPushDescriptorTests			(testCtx, pipelineConstructionType));
+	group->addChild(createSpecConstantTests				(testCtx, pipelineConstructionType));
+	group->addChild(createMatchedAttachmentsTests		(testCtx, pipelineConstructionType));
+	group->addChild(createMultisampleTests				(testCtx, pipelineConstructionType, false));
+	group->addChild(createMultisampleTests				(testCtx, pipelineConstructionType, true));
+	group->addChild(createMultisampleInterpolationTests	(testCtx, pipelineConstructionType));
+	group->addChild(createMultisampleShaderBuiltInTests	(testCtx, pipelineConstructionType));
+	group->addChild(createTestGroup						(testCtx, "vertex_input", "", createVertexInputTests, pipelineConstructionType));
+	group->addChild(createInputAssemblyTests			(testCtx, pipelineConstructionType));
+	group->addChild(createInterfaceMatchingTests		(testCtx, pipelineConstructionType));
+	group->addChild(createTimestampTests				(testCtx, pipelineConstructionType));
+	group->addChild(createCacheTests					(testCtx, pipelineConstructionType));
+	group->addChild(createRenderToImageTests			(testCtx, pipelineConstructionType));
+	group->addChild(createFramebufferAttachmentTests	(testCtx, pipelineConstructionType));
+	group->addChild(createStencilExportTests			(testCtx, pipelineConstructionType));
+	group->addChild(createCreationFeedbackTests			(testCtx, pipelineConstructionType));
+	group->addChild(createDepthRangeUnrestrictedTests	(testCtx, pipelineConstructionType));
+	group->addChild(createExecutablePropertiesTests		(testCtx, pipelineConstructionType));
+	group->addChild(createMaxVaryingsTests				(testCtx, pipelineConstructionType));
+	group->addChild(createBlendOperationAdvancedTests	(testCtx, pipelineConstructionType));
+	group->addChild(createExtendedDynamicStateTests		(testCtx, pipelineConstructionType));
+	group->addChild(createNoPositionTests				(testCtx, pipelineConstructionType));
+	group->addChild(createBindPointTests				(testCtx, pipelineConstructionType));
+	group->addChild(createColorWriteEnableTests			(testCtx, pipelineConstructionType));
+
+	// NOTE: all new pipeline tests should use GraphicsPipelineWrapper for pipeline creation
+
+	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+	{
+		// there is no support for pipelineConstructionType in amber
+		group->addChild(createMiscTests					(testCtx));
+
+		// compute pipeline tests should not be repeated basing on pipelineConstructionType
+		group->addChild(createDerivativeTests			(testCtx));
+
+		// dont repeat tests requiring timing execution of vkCreate*Pipelines
+		group->addChild(createCacheControlTests			(testCtx));
+	}
+	else if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
+	{
+		// execute pipeline library specific tests only once
+		group->addChild(createPipelineLibraryTests		(testCtx));
+	}
 }
 
 } // anonymous
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "pipeline", "Pipeline Tests", createChildren);
+	de::MovePtr<tcu::TestCaseGroup> monolithicGroup			(createTestGroup(testCtx, "monolithic",				"Monolithic pipeline tests",					createChildren, PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC));
+	de::MovePtr<tcu::TestCaseGroup> pipelineLibraryGroup	(createTestGroup(testCtx, "pipeline_library",		"Graphics pipeline library tests",				createChildren, PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY));
+	de::MovePtr<tcu::TestCaseGroup> fastLinkedLibraryGroup	(createTestGroup(testCtx, "fast_linked_library",	"Fast linked graphics pipeline library tests",	createChildren, PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY));
+
+	de::MovePtr<tcu::TestCaseGroup> mainGroup(new tcu::TestCaseGroup(testCtx, "pipeline", "Pipeline Tests"));
+	mainGroup->addChild(monolithicGroup.release());
+	mainGroup->addChild(pipelineLibraryGroup.release());
+	mainGroup->addChild(fastLinkedLibraryGroup.release());
+	return mainGroup.release();
 }
 
 } // pipeline

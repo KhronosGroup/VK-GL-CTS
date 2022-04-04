@@ -5702,6 +5702,12 @@ dEQP-VK.draw.renderpass.multi_draw.overlapping.indexed_packed.max_draws.stride_e
 dEQP-VK.draw.renderpass.multi_draw.overlapping.indexed_packed.max_draws.stride_extra_12.1_instance.tess_geom.single_view.offset_6
 dEQP-VK.draw.renderpass.multi_draw.overlapping.indexed_packed.max_draws.stride_extra_12.1_instance.tess_geom.multiview.no_offset
 dEQP-VK.draw.renderpass.multi_draw.overlapping.indexed_packed.max_draws.stride_extra_12.1_instance.tess_geom.multiview.offset_6
+dEQP-VK.draw.renderpass.depth_bias.depth_bias_triangle_list_fill
+dEQP-VK.draw.renderpass.depth_bias.depth_bias_triangle_list_line
+dEQP-VK.draw.renderpass.depth_bias.depth_bias_triangle_list_point
+dEQP-VK.draw.renderpass.depth_bias.depth_bias_patch_list_tri_fill
+dEQP-VK.draw.renderpass.depth_bias.depth_bias_patch_list_tri_line
+dEQP-VK.draw.renderpass.depth_bias.depth_bias_patch_list_tri_point
 dEQP-VK.draw.dynamic_rendering.concurrent.compute_and_triangle_list
 dEQP-VK.draw.dynamic_rendering.simple_draw.simple_draw_triangle_list
 dEQP-VK.draw.dynamic_rendering.simple_draw.simple_draw_triangle_strip

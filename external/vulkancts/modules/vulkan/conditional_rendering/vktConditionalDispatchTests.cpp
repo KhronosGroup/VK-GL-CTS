@@ -284,7 +284,7 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 	vk.cmdBindPipeline(targetCmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
 	vk.cmdBindDescriptorSets(targetCmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 
-	de::SharedPtr<Draw::Buffer> conditionalBuffer = createConditionalRenderingBuffer(m_context, m_conditionalData);
+	de::SharedPtr<Draw::Buffer> conditionalBuffer = createConditionalRenderingBuffer(m_context, m_conditionalData, *cmdPool);
 
 	if (m_conditionalData.conditionInSecondaryCommandBuffer)
 	{

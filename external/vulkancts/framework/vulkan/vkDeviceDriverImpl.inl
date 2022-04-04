@@ -1598,6 +1598,16 @@ void DeviceDriver::setDeviceMemoryPriorityEXT (VkDevice device, VkDeviceMemory m
 	m_vk.setDeviceMemoryPriorityEXT(device, memory, priority);
 }
 
+void DeviceDriver::getDescriptorSetLayoutHostMappingInfoVALVE (VkDevice device, const VkDescriptorSetBindingReferenceVALVE* pBindingReference, VkDescriptorSetLayoutHostMappingInfoVALVE* pHostMapping) const
+{
+	m_vk.getDescriptorSetLayoutHostMappingInfoVALVE(device, pBindingReference, pHostMapping);
+}
+
+void DeviceDriver::getDescriptorSetHostMappingVALVE (VkDevice device, VkDescriptorSet descriptorSet, void** ppData) const
+{
+	m_vk.getDescriptorSetHostMappingVALVE(device, descriptorSet, ppData);
+}
+
 VkResult DeviceDriver::createAccelerationStructureKHR (VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure) const
 {
 	return m_vk.createAccelerationStructureKHR(device, pCreateInfo, pAllocator, pAccelerationStructure);
