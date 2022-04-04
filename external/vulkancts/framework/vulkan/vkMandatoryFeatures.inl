@@ -2010,15 +2010,6 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
-	if ( context.contextSupports(vk::ApiVersion(1, 3, 0)) )
-	{
-		if ( physicalDeviceVulkan13Features.descriptorBindingInlineUniformBlockUpdateAfterBind == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature descriptorBindingInlineUniformBlockUpdateAfterBind not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
 	if ( context.contextSupports(vk::ApiVersion(1, 3, 0)) && physicalDeviceVulkan12Features.descriptorIndexing )
 	{
 		if ( physicalDeviceVulkan13Features.descriptorBindingInlineUniformBlockUpdateAfterBind == VK_FALSE )
@@ -2123,15 +2114,6 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceVulkan13Features.maintenance4 == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature maintenance4 not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_pageable_device_local_memory")) )
-	{
-		if ( physicalDevicePageableDeviceLocalMemoryFeaturesEXT.pageableDeviceLocalMemory == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature pageableDeviceLocalMemory not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

@@ -28,18 +28,6 @@ void main (void)
 }
 END
 BUFFER position DATA_TYPE vec4<float> DATA
-<<<<<<< HEAD
--1.0 -1.0 0.0 1.0
- 1.0 -1.0 0.0 1.0
- 1.0  1.0 0.0 1.0
--1.0  1.0 0.0 1.0
-END
-BUFFER position_screen DATA_TYPE float DATA
- 0.0
-64.0
-64.0
- 0.0
-=======
  1.0 -1.0 0.0 1.0
  1.0  1.0 0.0 1.0
 -1.0 -1.0 0.0 1.0
@@ -50,7 +38,6 @@ BUFFER position_screen DATA_TYPE float DATA
 64.0
  0.0
  0.0
->>>>>>> khronos/main
 END
 BUFFER framebuffer FORMAT B8G8R8A8_UNORM
 PIPELINE graphics pipeline
@@ -61,9 +48,5 @@ PIPELINE graphics pipeline
   BIND BUFFER framebuffer AS color LOCATION 0
   FRAMEBUFFER_SIZE 64 64
 END
-<<<<<<< HEAD
-RUN pipeline DRAW_ARRAY AS TRIANGLE_FAN START_IDX 0 COUNT 4
-=======
 RUN pipeline DRAW_ARRAY AS TRIANGLE_STRIP START_IDX 0 COUNT 4
->>>>>>> khronos/main
 EXPECT framebuffer IDX 0 0 SIZE 64 64 EQ_RGBA 0 255 0 255
