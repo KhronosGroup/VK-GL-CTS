@@ -836,9 +836,9 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 	VkDescriptorSetLayout vecLayoutFrag[2] = { *descriptorSetLayoutBlank, *descriptorSetLayoutFrag };
 	VkDescriptorSetLayout vecLayoutBoth[2] = { *descriptorSetLayoutVert, *descriptorSetLayoutFrag };
 
-	const Move<VkPipelineLayout>			pipelineLayoutVert		= makePipelineLayout(vk, device, 2, vecLayoutVert);
-	const Move<VkPipelineLayout>			pipelineLayoutFrag		= makePipelineLayout(vk, device, 2, vecLayoutFrag);
-	const Move<VkPipelineLayout>			pipelineLayoutSame		= makePipelineLayout(vk, device, 2, vecLayoutBoth);
+	const Move<VkPipelineLayout>			pipelineLayoutVert		= makePipelineLayout(vk, device, 2, vecLayoutVert, VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT);
+	const Move<VkPipelineLayout>			pipelineLayoutFrag		= makePipelineLayout(vk, device, 2, vecLayoutFrag, VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT);
+	const Move<VkPipelineLayout>			pipelineLayoutSame		= makePipelineLayout(vk, device, 2, vecLayoutBoth, VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT);
 	const Move<VkCommandPool>				cmdPool					= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
 	const Move<VkCommandBuffer>				cmdBuffer				= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 	Move<VkPipeline>						rootPipeline;
