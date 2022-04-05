@@ -202,6 +202,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceImageCompressionControlFeaturesEXT.pNext;
 	}
 
+	vk::VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT physicalDeviceImageCompressionControlSwapchainFeaturesEXT;
+	deMemset(&physicalDeviceImageCompressionControlSwapchainFeaturesEXT, 0, sizeof(physicalDeviceImageCompressionControlSwapchainFeaturesEXT));
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_image_compression_control")) )
+	{
+		physicalDeviceImageCompressionControlSwapchainFeaturesEXT.sType = getStructureType<VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT>();
+		*nextPtr = &physicalDeviceImageCompressionControlSwapchainFeaturesEXT;
+		nextPtr  = &physicalDeviceImageCompressionControlSwapchainFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDeviceImagelessFramebufferFeatures physicalDeviceImagelessFramebufferFeatures;
 	deMemset(&physicalDeviceImagelessFramebufferFeatures, 0, sizeof(physicalDeviceImagelessFramebufferFeatures));
 
@@ -1113,6 +1123,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceImageCompressionControlFeaturesEXT.imageCompressionControl == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature imageCompressionControl not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_image_compression_control")) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_image_compression_control_swapchain")) )
+	{
+		if ( physicalDeviceImageCompressionControlSwapchainFeaturesEXT.imageCompressionControlSwapchain == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature imageCompressionControlSwapchain not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

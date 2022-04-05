@@ -43,11 +43,13 @@
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
+#include "wsi/vktNativeObjectsUtil.hpp"
 
 #include "vkDeviceUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
+#include "vkWsiUtil.hpp"
 
 #include "deString.h"
 #include "deStringUtil.hpp"
@@ -56,7 +58,10 @@
 #include <vector>
 
 using namespace vk;
+using namespace vk::wsi;
 using namespace std;
+
+typedef vector<VkExtensionProperties> Extensions;
 
 namespace vkt
 {
@@ -69,29 +74,33 @@ struct TestParams
 	VkFormat					 format;
 	bool						 useExtension;
 	VkImageCompressionControlEXT control;
+	Type						 wsiType;
 };
 
-static void checkImageCompressionControlSupport(Context& context)
+static void checkImageCompressionControlSupport(Context& context, bool swapchain = false)
 {
 	context.requireDeviceFunctionality("VK_EXT_image_compression_control");
-	vk::VkPhysicalDeviceImageCompressionControlFeaturesEXT imageCompressionControlFeatures{};
-	imageCompressionControlFeatures.sType =
-		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_FEATURES_EXT;
-	imageCompressionControlFeatures.pNext = DE_NULL;
-
-	vk::VkPhysicalDeviceFeatures2 features2{};
-	features2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-	features2.pNext = &imageCompressionControlFeatures;
+	vk::VkPhysicalDeviceImageCompressionControlFeaturesEXT imageCompressionControlFeatures	  = initVulkanStructure();
+	vk::VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT imageCompressionSwapchain = initVulkanStructure();
+	vk::VkPhysicalDeviceFeatures2 features2 = initVulkanStructure(&imageCompressionControlFeatures);
+	if (swapchain)
+	{
+		context.requireDeviceFunctionality("VK_EXT_image_compression_control_swapchain");
+		imageCompressionControlFeatures.pNext = &imageCompressionSwapchain;
+	}
 
 	context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
 
 	if (!imageCompressionControlFeatures.imageCompressionControl)
 		TCU_THROW(NotSupportedError, "VK_EXT_image_compression_control Image "
 									 "compression control feature not supported.");
+	if (swapchain && !imageCompressionSwapchain.imageCompressionControlSwapchain)
+		TCU_THROW(NotSupportedError, "VK_EXT_image_compression_control_swapchain Image "
+									 "compression control feature for swapchains not supported.");
 }
 
-static void validate(Context& context, tcu::ResultCollector& results, VkDevice device, TestParams& testParams,
-					 VkImage image)
+static void validate(const InstanceInterface& vki, const DeviceInterface& vkd, tcu::ResultCollector& results,
+					 VkPhysicalDevice physicalDevice, VkDevice device, TestParams& testParams, VkImage image)
 {
 
 	for (unsigned planeIndex = 0; planeIndex < testParams.control.compressionControlPlaneCount; planeIndex++)
@@ -105,18 +114,19 @@ static void validate(Context& context, tcu::ResultCollector& results, VkDevice d
 		}
 
 		VkImageCompressionPropertiesEXT compressionProperties = initVulkanStructure();
-		VkImageSubresource2EXT subresource = initVulkanStructure();
-		subresource.imageSubresource.aspectMask = aspect;
-		VkSubresourceLayout2EXT subresourceLayout = initVulkanStructure(&compressionProperties);
-		context.getDeviceInterface().getImageSubresourceLayout2EXT(device, image, &subresource, &subresourceLayout);
+		VkImageSubresource2EXT			subresource			  = initVulkanStructure();
+		subresource.imageSubresource.aspectMask				  = aspect;
+		VkSubresourceLayout2EXT subresourceLayout			  = initVulkanStructure(&compressionProperties);
+		vkd.getImageSubresourceLayout2EXT(device, image, &subresource, &subresourceLayout);
 
-
-		VkImageCompressionControlEXT compressionEnabled = initVulkanStructure();
-		compressionEnabled.compressionControlPlaneCount = testParams.control.compressionControlPlaneCount;
-		compressionEnabled.flags = testParams.control.flags;
-		VkImageCompressionFixedRateFlagsEXT fixedRateFlags[3] = { VK_IMAGE_COMPRESSION_FIXED_RATE_FLAG_BITS_MAX_ENUM_EXT,
-													VK_IMAGE_COMPRESSION_FIXED_RATE_FLAG_BITS_MAX_ENUM_EXT,
-													VK_IMAGE_COMPRESSION_FIXED_RATE_FLAG_BITS_MAX_ENUM_EXT };
+		VkImageCompressionControlEXT compressionEnabled		  = initVulkanStructure();
+		compressionEnabled.compressionControlPlaneCount		  = testParams.control.compressionControlPlaneCount;
+		compressionEnabled.flags							  = testParams.control.flags;
+		VkImageCompressionFixedRateFlagsEXT fixedRateFlags[3] = {
+			VK_IMAGE_COMPRESSION_FIXED_RATE_FLAG_BITS_MAX_ENUM_EXT,
+			VK_IMAGE_COMPRESSION_FIXED_RATE_FLAG_BITS_MAX_ENUM_EXT,
+			VK_IMAGE_COMPRESSION_FIXED_RATE_FLAG_BITS_MAX_ENUM_EXT
+		};
 		compressionEnabled.pFixedRateFlags = fixedRateFlags;
 
 		VkPhysicalDeviceImageFormatInfo2 formatInfo = initVulkanStructure(&compressionEnabled);
@@ -128,8 +138,7 @@ static void validate(Context& context, tcu::ResultCollector& results, VkDevice d
 		VkImageCompressionPropertiesEXT compressionPropertiesSupported = initVulkanStructure();
 		VkImageFormatProperties2		properties2 = initVulkanStructure(&compressionPropertiesSupported);
 
-		context.getInstanceInterface().getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &formatInfo,
-																			   &properties2);
+		vki.getPhysicalDeviceImageFormatProperties2(physicalDevice, &formatInfo, &properties2);
 
 		if (testParams.useExtension)
 		{
@@ -263,7 +272,8 @@ static tcu::TestStatus ahbImageCreateTest(Context& context, TestParams testParam
 			VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID, image.get());
 
 		VK_CHECK(vkd.bindImageMemory(device, image.get(), memory.get(), 0u));
-		validate(context, results, context.getDevice(), testParams, image.get());
+		validate(context.getInstanceInterface(), context.getDeviceInterface(), results, context.getPhysicalDevice(),
+				 context.getDevice(), testParams, image.get());
 	}
 	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
@@ -317,7 +327,8 @@ static tcu::TestStatus imageCreateTest(Context& context, TestParams testParams)
 
 		Move<VkImage> image = createImage(context.getDeviceInterface(), device, &imageCreateInfo);
 
-		validate(context, results, context.getDevice(), testParams, image.get());
+		validate(context.getInstanceInterface(), context.getDeviceInterface(), results, context.getPhysicalDevice(),
+				 context.getDevice(), testParams, image.get());
 	}
 	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
@@ -356,6 +367,215 @@ void addImageCompressionControlTests(tcu::TestCaseGroup* group, TestParams testP
 			addFunctionCase(group, caseName, enumName, imageCreateTest, testParams);
 		}
 	}
+}
+
+CustomInstance createInstanceWithWsi(Context& context, Type wsiType, const vector<string> extraExtensions,
+									 const VkAllocationCallbacks* pAllocator = DE_NULL)
+{
+	const deUint32 version	  = context.getUsedApiVersion();
+	vector<string> extensions = extraExtensions;
+
+	extensions.push_back("VK_KHR_surface");
+	extensions.push_back(getExtensionName(wsiType));
+
+	vector<string> instanceExtensions;
+	for (const auto& ext : extensions)
+	{
+		if (!context.isInstanceFunctionalitySupported(ext))
+			TCU_THROW(NotSupportedError, (ext + " is not supported").c_str());
+
+		if (!isCoreInstanceExtension(version, ext))
+			instanceExtensions.push_back(ext);
+	}
+
+	return vkt::createCustomInstanceWithExtensions(context, instanceExtensions, pAllocator);
+}
+struct InstanceHelper
+{
+	const vector<VkExtensionProperties> supportedExtensions;
+	CustomInstance						instance;
+	const InstanceDriver&				vki;
+
+	InstanceHelper(Context& context, Type wsiType, const VkAllocationCallbacks* pAllocator = DE_NULL)
+		: supportedExtensions(enumerateInstanceExtensionProperties(context.getPlatformInterface(), DE_NULL))
+		, instance(createInstanceWithWsi(context, wsiType, vector<string>(), pAllocator))
+		, vki(instance.getDriver())
+	{
+	}
+
+	InstanceHelper(Context& context, Type wsiType, const vector<string>& extensions,
+				   const VkAllocationCallbacks* pAllocator = DE_NULL)
+		: supportedExtensions(enumerateInstanceExtensionProperties(context.getPlatformInterface(), DE_NULL))
+		, instance(createInstanceWithWsi(context, wsiType, extensions, pAllocator))
+		, vki(instance.getDriver())
+	{
+	}
+};
+
+Move<VkDevice> createDeviceWithWsi(const PlatformInterface& vkp, deUint32 apiVersion, VkInstance instance,
+								   const InstanceInterface& vki, VkPhysicalDevice physicalDevice,
+								   const Extensions& supportedExtensions, const vector<string>& additionalExtensions,
+								   deUint32 queueFamilyIndex, bool validationEnabled,
+								   const VkAllocationCallbacks* pAllocator = DE_NULL)
+{
+	const float					  queuePriorities[] = { 1.0f };
+	const VkDeviceQueueCreateInfo queueInfo			= {
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+		nullptr,
+		(VkDeviceQueueCreateFlags)0,
+		queueFamilyIndex,
+		DE_LENGTH_OF_ARRAY(queuePriorities),
+		&queuePriorities[0],
+	};
+
+	vector<string> extensions;
+	extensions.push_back("VK_KHR_swapchain");
+	extensions.push_back("VK_EXT_image_compression_control");
+	extensions.push_back("VK_EXT_image_compression_control_swapchain");
+	extensions.insert(end(extensions), begin(additionalExtensions), end(additionalExtensions));
+
+	for (const auto& extName : extensions)
+	{
+		if (!isCoreDeviceExtension(apiVersion, extName) &&
+			!isExtensionStructSupported(supportedExtensions, RequiredExtension(extName)))
+			TCU_THROW(NotSupportedError, extName + " is not supported");
+	}
+
+	const void*					   pNext	= nullptr;
+	const VkPhysicalDeviceFeatures features = {};
+
+	// Convert from std::vector<std::string> to std::vector<const char*>.
+	std::vector<const char*> extensionsChar;
+	extensionsChar.reserve(extensions.size());
+	std::transform(begin(extensions), end(extensions), std::back_inserter(extensionsChar),
+				   [](const std::string& s) { return s.c_str(); });
+
+	const VkDeviceCreateInfo deviceParams = { VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+											  pNext,
+											  (VkDeviceCreateFlags)0,
+											  1u,
+											  &queueInfo,
+											  0u,											// enabledLayerCount
+											  nullptr,										// ppEnabledLayerNames
+											  static_cast<deUint32>(extensionsChar.size()), // enabledExtensionCount
+											  extensionsChar.data(),						// ppEnabledExtensionNames
+											  &features };
+
+	return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
+}
+
+struct DeviceHelper
+{
+	const VkPhysicalDevice physicalDevice;
+	const deUint32		   queueFamilyIndex;
+	const Unique<VkDevice> device;
+	const DeviceDriver	   vkd;
+	const VkQueue		   queue;
+
+	DeviceHelper(Context& context, const InstanceInterface& vki, VkInstance instance,
+				 const vector<VkSurfaceKHR>& surface, const vector<string>& additionalExtensions = vector<string>(),
+				 const VkAllocationCallbacks* pAllocator = DE_NULL)
+		: physicalDevice(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
+		, queueFamilyIndex(chooseQueueFamilyIndex(vki, physicalDevice, surface))
+		, device(createDeviceWithWsi(context.getPlatformInterface(), context.getUsedApiVersion(), instance, vki,
+									 physicalDevice, enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL),
+									 additionalExtensions, queueFamilyIndex,
+									 context.getTestContext().getCommandLine().isValidationEnabled(), pAllocator))
+		, vkd(context.getPlatformInterface(), instance, *device)
+		, queue(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
+	{
+	}
+
+	// Single-surface shortcut.
+	DeviceHelper(Context& context, const InstanceInterface& vki, VkInstance instance, VkSurfaceKHR surface,
+				 const vector<string>&		  additionalExtensions = vector<string>(),
+				 const VkAllocationCallbacks* pAllocator		   = DE_NULL)
+		: DeviceHelper(context, vki, instance, vector<VkSurfaceKHR>(1u, surface), additionalExtensions, pAllocator)
+	{
+	}
+};
+static tcu::TestStatus swapchainCreateTest(Context& context, TestParams testParams)
+{
+	checkImageCompressionControlSupport(context, true);
+
+	tcu::TestLog&		 log = context.getTestContext().getLog();
+	tcu::ResultCollector results(log);
+
+	const InstanceHelper	 instHelper(context, testParams.wsiType);
+	const wsi::NativeObjects native(context, instHelper.supportedExtensions, testParams.wsiType);
+
+	VkExtent2D							extent2d = { 16, 16 };
+	VkImageCompressionFixedRateFlagsEXT planeFlags[3]{};
+
+	for (unsigned i{}; i < (testParams.control.flags == VK_IMAGE_COMPRESSION_FIXED_RATE_EXPLICIT_EXT ? 24 : 1); i++)
+	{
+		planeFlags[0] ^= 3 << i;
+		if (testParams.control.flags == VK_IMAGE_COMPRESSION_FIXED_RATE_EXPLICIT_EXT)
+		{
+			testParams.control.pFixedRateFlags = planeFlags;
+		}
+
+		const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType,
+														 native.getDisplay(), native.getWindow()));
+
+		const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, vector<string>());
+
+		VkPhysicalDeviceSurfaceInfo2KHR surfaceInfo = initVulkanStructure();
+		VkSurfaceCapabilities2KHR		caps		= initVulkanStructure();
+		surfaceInfo.surface							= surface.get();
+
+		instHelper.vki.getPhysicalDeviceSurfaceCapabilities2KHR(devHelper.physicalDevice, &surfaceInfo, &caps);
+
+		deUint32 numFormats;
+		instHelper.vki.getPhysicalDeviceSurfaceFormats2KHR(devHelper.physicalDevice, &surfaceInfo, &numFormats,
+														   nullptr);
+
+		vector<VkSurfaceFormat2KHR> formats(numFormats);
+		for (auto& surfaceFormat : formats)
+		{
+			surfaceFormat = initVulkanStructure();
+		}
+
+		instHelper.vki.getPhysicalDeviceSurfaceFormats2KHR(devHelper.physicalDevice, &surfaceInfo, &numFormats,
+														   formats.data());
+
+		deUint32 queueFamilyIndex = devHelper.queueFamilyIndex;
+
+		for (auto& format : formats)
+		{
+			testParams.format = format.surfaceFormat.format;
+
+			VkSwapchainCreateInfoKHR swapchainInfo = initVulkanStructure();
+			swapchainInfo.surface				   = surface.get();
+			swapchainInfo.minImageCount			   = caps.surfaceCapabilities.minImageCount;
+			swapchainInfo.imageFormat			   = format.surfaceFormat.format;
+			swapchainInfo.imageColorSpace		   = format.surfaceFormat.colorSpace;
+			swapchainInfo.imageExtent			   = extent2d;
+			swapchainInfo.imageArrayLayers		   = 1;
+			swapchainInfo.imageUsage			   = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+			swapchainInfo.imageSharingMode		   = VK_SHARING_MODE_EXCLUSIVE;
+			swapchainInfo.queueFamilyIndexCount	   = 1;
+			swapchainInfo.pQueueFamilyIndices	   = &queueFamilyIndex;
+			swapchainInfo.preTransform			   = caps.surfaceCapabilities.currentTransform;
+			swapchainInfo.compositeAlpha		   = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
+			swapchainInfo.presentMode			   = VK_PRESENT_MODE_FIFO_KHR;
+			swapchainInfo.clipped				   = VK_TRUE;
+
+			swapchainInfo.pNext = &testParams.control;
+
+			Move<VkSwapchainKHR> swapchain = createSwapchainKHR(devHelper.vkd, devHelper.device.get(), &swapchainInfo);
+
+			deUint32 imageCount = 0;
+			devHelper.vkd.getSwapchainImagesKHR(devHelper.device.get(), swapchain.get(), &imageCount, nullptr);
+			vector<VkImage> images(imageCount);
+			devHelper.vkd.getSwapchainImagesKHR(devHelper.device.get(), swapchain.get(), &imageCount, images.data());
+
+			validate(instHelper.vki, devHelper.vkd, results, devHelper.physicalDevice, devHelper.device.get(),
+					 testParams, images[0]);
+		}
+	}
+
+	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
 tcu::TestCaseGroup* createImageCompressionControlTests(tcu::TestContext& testCtx)
@@ -403,6 +623,23 @@ tcu::TestCaseGroup* createImageCompressionControlTests(tcu::TestContext& testCtx
 	{
 		testParams.control.flags = flag.flag;
 		addFunctionCase(subgroup, flag.name, flag.name, ahbImageCreateTest, testParams);
+	}
+	group->addChild(subgroup);
+
+	subgroup = new tcu::TestCaseGroup(testCtx, "swapchain", "swapchain");
+	for (int typeNdx = 0; typeNdx < vk::wsi::TYPE_LAST; ++typeNdx)
+	{
+		const vk::wsi::Type wsiType = (vk::wsi::Type)typeNdx;
+		testParams.wsiType			= wsiType;
+
+		tcu::TestCaseGroup* wsi_subgroup(new tcu::TestCaseGroup(testCtx, getName(wsiType), "Swapchain tests"));
+
+		for (auto& flag : compression_flags)
+		{
+			testParams.control.flags = flag.flag;
+			addFunctionCase(wsi_subgroup, flag.name, flag.name, swapchainCreateTest, testParams);
+		}
+		subgroup->addChild(wsi_subgroup);
 	}
 	group->addChild(subgroup);
 
