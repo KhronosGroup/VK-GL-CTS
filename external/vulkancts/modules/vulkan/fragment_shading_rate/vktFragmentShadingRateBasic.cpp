@@ -252,9 +252,12 @@ void FSRTestCase::checkSupport(Context& context) const
 		m_data.combinerOp[1] != VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR)
 		TCU_THROW(NotSupportedError, "attachmentFragmentShadingRate not supported");
 
+	const auto&	vki				= context.getInstanceInterface();
+	const auto	physicalDevice	= context.getPhysicalDevice();
+
 	VkImageFormatProperties imageProperties;
-	VkResult result = context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(context.getPhysicalDevice(), VK_FORMAT_R32G32B32A32_UINT, VK_IMAGE_TYPE_2D,
-																							VK_IMAGE_TILING_OPTIMAL, cbUsage, 0, &imageProperties);
+	VkResult result = vki.getPhysicalDeviceImageFormatProperties(physicalDevice, VK_FORMAT_R32G32B32A32_UINT, VK_IMAGE_TYPE_2D,
+																 VK_IMAGE_TILING_OPTIMAL, cbUsage, 0, &imageProperties);
 
 	if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
 		TCU_THROW(NotSupportedError, "VK_FORMAT_R32G32B32A32_UINT not supported");
@@ -313,6 +316,8 @@ void FSRTestCase::checkSupport(Context& context) const
 
 	if (m_data.sampleMaskTest && !context.getFragmentShadingRateProperties().fragmentShadingRateWithSampleMask)
 		TCU_THROW(NotSupportedError, "fragmentShadingRateWithSampleMask not supported");
+
+	checkPipelineLibraryRequirements(vki, physicalDevice, m_data.pipelineConstructionType);
 }
 
 // Error codes writted by the fragment shader
