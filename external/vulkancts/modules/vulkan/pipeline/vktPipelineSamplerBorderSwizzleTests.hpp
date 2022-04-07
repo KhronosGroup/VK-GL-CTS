@@ -24,13 +24,14 @@
  * \brief Border color swizzle tests
  *//*--------------------------------------------------------------------*/
 #include "vktTestCase.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 
 namespace vkt
 {
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createSamplerBorderSwizzleTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createSamplerBorderSwizzleTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
 
 } // pipeline
 } // vkt

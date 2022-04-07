@@ -2630,7 +2630,7 @@ bool ErrorsTest::TestErrorsOfClearNamedBufferData()
 
 	/* Common variables. */
 	glw::GLuint buffer	 = 0;
-	glw::GLbyte dummy_data = 0;
+	glw::GLbyte unused_data = 0;
 
 	try
 	{
@@ -2638,7 +2638,7 @@ bool ErrorsTest::TestErrorsOfClearNamedBufferData()
 		gl.createBuffers(1, &buffer);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateBuffers failed.");
 
-		m_pNamedBufferStorage(buffer, sizeof(dummy_data), &dummy_data,
+		m_pNamedBufferStorage(buffer, sizeof(unused_data), &unused_data,
 							  GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glNamedBufferStorage failed.");
 
@@ -2651,7 +2651,7 @@ bool ErrorsTest::TestErrorsOfClearNamedBufferData()
 				;
 
 			/* Test. */
-			m_pClearNamedBufferData(not_a_buffer_name, GL_R8, GL_RED, GL_UNSIGNED_BYTE, &dummy_data);
+			m_pClearNamedBufferData(not_a_buffer_name, GL_R8, GL_RED, GL_UNSIGNED_BYTE, &unused_data);
 
 			is_ok &= ErrorCheckAndLog("glClearNamedBufferData", GL_INVALID_OPERATION,
 									  " if buffer is not the name of an existing buffer object.");
@@ -2678,7 +2678,7 @@ bool ErrorsTest::TestErrorsOfClearNamedBufferData()
 				;
 
 			/* Test. */
-			m_pClearNamedBufferData(buffer, invalid_internal_format, GL_RED, GL_UNSIGNED_BYTE, &dummy_data);
+			m_pClearNamedBufferData(buffer, invalid_internal_format, GL_RED, GL_UNSIGNED_BYTE, &unused_data);
 
 			is_ok &= ErrorCheckAndLog("glClearNamedBufferData", GL_INVALID_ENUM,
 									  " if internal format is not one of the valid sized internal formats "
@@ -2694,7 +2694,7 @@ bool ErrorsTest::TestErrorsOfClearNamedBufferData()
 			(void)(glw::GLbyte*) m_pMapNamedBuffer(buffer, GL_READ_ONLY);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glMapNamedBuffer failed.");
 
-			m_pClearNamedBufferData(buffer, GL_R8, GL_RED, GL_UNSIGNED_BYTE, &dummy_data);
+			m_pClearNamedBufferData(buffer, GL_R8, GL_RED, GL_UNSIGNED_BYTE, &unused_data);
 
 			is_ok &= ErrorCheckAndLog("glClearNamedBufferData", GL_INVALID_OPERATION,
 									  " if any part of the specified range of the buffer"
@@ -2707,10 +2707,10 @@ bool ErrorsTest::TestErrorsOfClearNamedBufferData()
 
 		/* Test of mapped buffer clear error behavior verification (glMapNamedBufferRange version). */
 		{
-			(void)(glw::GLbyte*) m_pMapNamedBufferRange(buffer, 0, sizeof(dummy_data), GL_MAP_READ_BIT);
+			(void)(glw::GLbyte*) m_pMapNamedBufferRange(buffer, 0, sizeof(unused_data), GL_MAP_READ_BIT);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glMapNamedBuffer failed.");
 
-			m_pClearNamedBufferData(buffer, GL_R8, GL_RED, GL_UNSIGNED_BYTE, &dummy_data);
+			m_pClearNamedBufferData(buffer, GL_R8, GL_RED, GL_UNSIGNED_BYTE, &unused_data);
 
 			is_ok &= ErrorCheckAndLog("glClearNamedBufferData", GL_INVALID_OPERATION,
 									  " if any part of the specified range of the buffer"
@@ -2724,10 +2724,10 @@ bool ErrorsTest::TestErrorsOfClearNamedBufferData()
 		/* Test of persistently mapped buffer clear error with behavior verification (glMapNamedBufferRange version). */
 		{
 			(void)(glw::GLbyte*)
-				m_pMapNamedBufferRange(buffer, 0, sizeof(dummy_data), GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT);
+				m_pMapNamedBufferRange(buffer, 0, sizeof(unused_data), GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glMapNamedBuffer failed.");
 
-			m_pClearNamedBufferData(buffer, GL_R8, GL_RED, GL_UNSIGNED_BYTE, &dummy_data);
+			m_pClearNamedBufferData(buffer, GL_R8, GL_RED, GL_UNSIGNED_BYTE, &unused_data);
 
 			is_ok &= ErrorCheckAndLog("glClearNamedBufferData", GL_NO_ERROR,
 									  " if any part of the specified range of the buffer"
@@ -2758,7 +2758,7 @@ bool ErrorsTest::TestErrorsOfClearNamedBufferData()
 				;
 
 			/* Test. */
-			m_pClearNamedBufferData(buffer, GL_R8, invalid_format, GL_UNSIGNED_BYTE, &dummy_data);
+			m_pClearNamedBufferData(buffer, GL_R8, invalid_format, GL_UNSIGNED_BYTE, &unused_data);
 
 			is_ok &= ErrorCheckAndLog(
 				"glClearNamedBufferData", GL_INVALID_VALUE,
@@ -2788,7 +2788,7 @@ bool ErrorsTest::TestErrorsOfClearNamedBufferData()
 				;
 
 			/* Test. */
-			m_pClearNamedBufferData(buffer, GL_R8, GL_RED, invalid_type, &dummy_data);
+			m_pClearNamedBufferData(buffer, GL_R8, GL_RED, invalid_type, &unused_data);
 
 			is_ok &= ErrorCheckAndLog(
 				"glClearNamedBufferData", GL_INVALID_VALUE,
@@ -2863,7 +2863,7 @@ bool ErrorsTest::TestErrorsOfClearNamedBufferSubData()
 
 	/* Common variables. */
 	glw::GLuint  buffer		   = 0;
-	glw::GLubyte dummy_data[4] = {};
+	glw::GLubyte unused_data[4] = {};
 
 	try
 	{
@@ -2871,7 +2871,7 @@ bool ErrorsTest::TestErrorsOfClearNamedBufferSubData()
 		gl.createBuffers(1, &buffer);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateBuffers failed.");
 
-		m_pNamedBufferStorage(buffer, sizeof(dummy_data), &dummy_data,
+		m_pNamedBufferStorage(buffer, sizeof(unused_data), &unused_data,
 							  GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glNamedBuffeStorage failed.");
 
@@ -2884,8 +2884,8 @@ bool ErrorsTest::TestErrorsOfClearNamedBufferSubData()
 				;
 
 			/* Test. */
-			m_pClearNamedBufferSubData(not_a_buffer_name, GL_R8, 0, sizeof(dummy_data), GL_RGBA, GL_UNSIGNED_BYTE,
-									   &dummy_data);
+			m_pClearNamedBufferSubData(not_a_buffer_name, GL_R8, 0, sizeof(unused_data), GL_RGBA, GL_UNSIGNED_BYTE,
+									   &unused_data);
 
 			is_ok &= ErrorCheckAndLog("glClearNamedBufferSubData", GL_INVALID_OPERATION,
 									  " if buffer is not the name of an existing buffer object.");
@@ -2912,7 +2912,7 @@ bool ErrorsTest::TestErrorsOfClearNamedBufferSubData()
 				;
 
 			/* Test. */
-			m_pClearNamedBufferData(buffer, invalid_internal_format, GL_RGBA, GL_UNSIGNED_BYTE, &dummy_data);
+			m_pClearNamedBufferData(buffer, invalid_internal_format, GL_RGBA, GL_UNSIGNED_BYTE, &unused_data);
 
 			is_ok &= ErrorCheckAndLog("glClearNamedBufferSubData", GL_INVALID_ENUM,
 									  " if internal format is not one of the valid sized internal formats "
@@ -2926,8 +2926,8 @@ bool ErrorsTest::TestErrorsOfClearNamedBufferSubData()
 		/* Test incorrect offset alignment error behavior. */
 		{
 			/* Test. */
-			m_pClearNamedBufferSubData(buffer, GL_RGBA8, sizeof(dummy_data[0]), sizeof(dummy_data), GL_RGBA,
-									   GL_UNSIGNED_BYTE, &dummy_data);
+			m_pClearNamedBufferSubData(buffer, GL_RGBA8, sizeof(unused_data[0]), sizeof(unused_data), GL_RGBA,
+									   GL_UNSIGNED_BYTE, &unused_data);
 
 			is_ok &= ErrorCheckAndLog("glClearNamedBufferSubData", GL_INVALID_VALUE,
 									  "if offset is not multiples of the number of basic machine units (GLubyte)"
@@ -2936,8 +2936,8 @@ bool ErrorsTest::TestErrorsOfClearNamedBufferSubData()
 
 		/* Test incorrect range alignment error behavior. */
 		{
-			m_pClearNamedBufferSubData(buffer, GL_RGBA8, 0, sizeof(dummy_data) - sizeof(dummy_data[0]), GL_RGBA,
-									   GL_UNSIGNED_BYTE, &dummy_data);
+			m_pClearNamedBufferSubData(buffer, GL_RGBA8, 0, sizeof(unused_data) - sizeof(unused_data[0]), GL_RGBA,
+									   GL_UNSIGNED_BYTE, &unused_data);
 
 			is_ok &= ErrorCheckAndLog("glClearNamedBufferSubData", GL_INVALID_VALUE,
 									  "if range is not multiples of the number of basic machine units (GLubyte)"
@@ -2947,7 +2947,7 @@ bool ErrorsTest::TestErrorsOfClearNamedBufferSubData()
 		/* Test negative offset error behavior. */
 		{
 			/* Test. */
-			m_pClearNamedBufferSubData(buffer, GL_R8, -1, sizeof(dummy_data), GL_RGBA, GL_UNSIGNED_BYTE, &dummy_data);
+			m_pClearNamedBufferSubData(buffer, GL_R8, -1, sizeof(unused_data), GL_RGBA, GL_UNSIGNED_BYTE, &unused_data);
 
 			is_ok &= ErrorCheckAndLog("glClearNamedBufferSubData", GL_INVALID_VALUE, " if offset or size is negative.");
 		}
@@ -2955,8 +2955,8 @@ bool ErrorsTest::TestErrorsOfClearNamedBufferSubData()
 		/* Test negative size error behavior. */
 		{
 			/* Test. */
-			m_pClearNamedBufferSubData(buffer, GL_R8, 0, -((glw::GLsizei)sizeof(dummy_data)), GL_RGBA, GL_UNSIGNED_BYTE,
-									   &dummy_data);
+			m_pClearNamedBufferSubData(buffer, GL_R8, 0, -((glw::GLsizei)sizeof(unused_data)), GL_RGBA, GL_UNSIGNED_BYTE,
+									   &unused_data);
 
 			is_ok &= ErrorCheckAndLog("glClearNamedBufferSubData", GL_INVALID_VALUE, " if offset or size is negative.");
 		}
@@ -2964,8 +2964,8 @@ bool ErrorsTest::TestErrorsOfClearNamedBufferSubData()
 		/* Test size overflow error behavior. */
 		{
 			/* Test. */
-			m_pClearNamedBufferSubData(buffer, GL_R8, 0, 2 * sizeof(dummy_data), GL_RGBA, GL_UNSIGNED_BYTE,
-									   &dummy_data);
+			m_pClearNamedBufferSubData(buffer, GL_R8, 0, 2 * sizeof(unused_data), GL_RGBA, GL_UNSIGNED_BYTE,
+									   &unused_data);
 
 			is_ok &= ErrorCheckAndLog(
 				"glClearNamedBufferSubData", GL_INVALID_VALUE,
@@ -2977,7 +2977,7 @@ bool ErrorsTest::TestErrorsOfClearNamedBufferSubData()
 			(void)(glw::GLbyte*) m_pMapNamedBuffer(buffer, GL_READ_ONLY);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glMapNamedBuffer failed.");
 
-			m_pClearNamedBufferSubData(buffer, GL_R8, 0, sizeof(dummy_data), GL_RGBA, GL_UNSIGNED_BYTE, &dummy_data);
+			m_pClearNamedBufferSubData(buffer, GL_R8, 0, sizeof(unused_data), GL_RGBA, GL_UNSIGNED_BYTE, &unused_data);
 
 			is_ok &= ErrorCheckAndLog("glClearNamedBufferSubData", GL_INVALID_OPERATION,
 									  " if any part of the specified range of the buffer"
@@ -2990,10 +2990,10 @@ bool ErrorsTest::TestErrorsOfClearNamedBufferSubData()
 
 		/* Test of mapped buffer clear error behavior verification (glMapNamedBufferRange version). */
 		{
-			(void)(glw::GLbyte*) m_pMapNamedBufferRange(buffer, 0, sizeof(dummy_data), GL_MAP_READ_BIT);
+			(void)(glw::GLbyte*) m_pMapNamedBufferRange(buffer, 0, sizeof(unused_data), GL_MAP_READ_BIT);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glMapNamedBuffer failed.");
 
-			m_pClearNamedBufferSubData(buffer, GL_R8, 0, sizeof(dummy_data), GL_RGBA, GL_UNSIGNED_BYTE, &dummy_data);
+			m_pClearNamedBufferSubData(buffer, GL_R8, 0, sizeof(unused_data), GL_RGBA, GL_UNSIGNED_BYTE, &unused_data);
 
 			is_ok &= ErrorCheckAndLog("glClearNamedBufferSubData", GL_INVALID_OPERATION,
 									  " if any part of the specified range of the buffer"
@@ -3007,10 +3007,10 @@ bool ErrorsTest::TestErrorsOfClearNamedBufferSubData()
 		/* Test of persistently mapped buffer clear error with behavior verification (glMapNamedBufferRange version). */
 		{
 			(void)(glw::GLbyte*)
-				m_pMapNamedBufferRange(buffer, 0, sizeof(dummy_data), GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT);
+				m_pMapNamedBufferRange(buffer, 0, sizeof(unused_data), GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glMapNamedBuffer failed.");
 
-			m_pClearNamedBufferSubData(buffer, GL_R8, 0, sizeof(dummy_data), GL_RGBA, GL_UNSIGNED_BYTE, &dummy_data);
+			m_pClearNamedBufferSubData(buffer, GL_R8, 0, sizeof(unused_data), GL_RGBA, GL_UNSIGNED_BYTE, &unused_data);
 
 			is_ok &= ErrorCheckAndLog("glClearNamedBufferSubData", GL_NO_ERROR,
 									  " if any part of the specified range of the buffer"
@@ -3041,8 +3041,8 @@ bool ErrorsTest::TestErrorsOfClearNamedBufferSubData()
 				;
 
 			/* Test. */
-			m_pClearNamedBufferSubData(buffer, GL_R8, 0, sizeof(dummy_data), invalid_format, GL_UNSIGNED_BYTE,
-									   &dummy_data);
+			m_pClearNamedBufferSubData(buffer, GL_R8, 0, sizeof(unused_data), invalid_format, GL_UNSIGNED_BYTE,
+									   &unused_data);
 
 			is_ok &= ErrorCheckAndLog(
 				"glClearNamedBufferSubData", GL_INVALID_VALUE,
@@ -3072,7 +3072,7 @@ bool ErrorsTest::TestErrorsOfClearNamedBufferSubData()
 				;
 
 			/* Test. */
-			m_pClearNamedBufferSubData(buffer, GL_R8, 0, sizeof(dummy_data), GL_RGBA, invalid_type, &dummy_data);
+			m_pClearNamedBufferSubData(buffer, GL_R8, 0, sizeof(unused_data), GL_RGBA, invalid_type, &unused_data);
 
 			is_ok &= ErrorCheckAndLog(
 				"glClearNamedBufferSubData", GL_INVALID_VALUE,
@@ -3140,7 +3140,7 @@ bool ErrorsTest::TestErrorsOfCopyNamedBufferSubData()
 	/* Common variables. */
 	glw::GLuint  buffer_r	  = 0;
 	glw::GLuint  buffer_w	  = 0;
-	glw::GLubyte dummy_data[4] = {};
+	glw::GLubyte unused_data[4] = {};
 
 	try
 	{
@@ -3148,14 +3148,14 @@ bool ErrorsTest::TestErrorsOfCopyNamedBufferSubData()
 		gl.createBuffers(1, &buffer_r);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateBuffers failed.");
 
-		m_pNamedBufferStorage(buffer_r, sizeof(dummy_data), &dummy_data,
+		m_pNamedBufferStorage(buffer_r, sizeof(unused_data), &unused_data,
 							  GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glNamedBuffeStorage failed.");
 
 		gl.createBuffers(1, &buffer_w);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateBuffers failed.");
 
-		m_pNamedBufferStorage(buffer_w, sizeof(dummy_data), &dummy_data,
+		m_pNamedBufferStorage(buffer_w, sizeof(unused_data), &unused_data,
 							  GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glNamedBuffeStorage failed.");
 
@@ -3168,12 +3168,12 @@ bool ErrorsTest::TestErrorsOfCopyNamedBufferSubData()
 				;
 
 			/* Test. */
-			m_pCopyNamedBufferSubData(not_a_buffer_name, buffer_w, 0, 0, sizeof(dummy_data));
+			m_pCopyNamedBufferSubData(not_a_buffer_name, buffer_w, 0, 0, sizeof(unused_data));
 
 			is_ok &= ErrorCheckAndLog("glCopyNamedBufferSubData", GL_INVALID_OPERATION,
 									  " if readBuffer is not the name of an existing buffer object.");
 
-			m_pCopyNamedBufferSubData(buffer_r, not_a_buffer_name, 0, 0, sizeof(dummy_data));
+			m_pCopyNamedBufferSubData(buffer_r, not_a_buffer_name, 0, 0, sizeof(unused_data));
 
 			is_ok &= ErrorCheckAndLog("glCopyNamedBufferSubData", GL_INVALID_OPERATION,
 									  " if writeBuffer is not the name of an existing buffer object.");
@@ -3182,7 +3182,7 @@ bool ErrorsTest::TestErrorsOfCopyNamedBufferSubData()
 		/* Test negative read offset error behavior. */
 		{
 			/* Test. */
-			m_pCopyNamedBufferSubData(buffer_r, buffer_w, -1, 0, sizeof(dummy_data));
+			m_pCopyNamedBufferSubData(buffer_r, buffer_w, -1, 0, sizeof(unused_data));
 
 			is_ok &= ErrorCheckAndLog("glCopyNamedBufferSubData", GL_INVALID_VALUE, "if readOffset is negative.");
 		}
@@ -3190,7 +3190,7 @@ bool ErrorsTest::TestErrorsOfCopyNamedBufferSubData()
 		/* Test negative write offset error behavior. */
 		{
 			/* Test. */
-			m_pCopyNamedBufferSubData(buffer_r, buffer_w, 0, -1, sizeof(dummy_data));
+			m_pCopyNamedBufferSubData(buffer_r, buffer_w, 0, -1, sizeof(unused_data));
 
 			is_ok &= ErrorCheckAndLog("glCopyNamedBufferSubData", GL_INVALID_VALUE, "if writeOffset is negative.");
 		}
@@ -3206,7 +3206,7 @@ bool ErrorsTest::TestErrorsOfCopyNamedBufferSubData()
 		/* Test overflow size error behavior. */
 		{
 			/* Test. */
-			m_pCopyNamedBufferSubData(buffer_r, buffer_w, 0, 0, 2 * sizeof(dummy_data));
+			m_pCopyNamedBufferSubData(buffer_r, buffer_w, 0, 0, 2 * sizeof(unused_data));
 
 			is_ok &= ErrorCheckAndLog("glCopyNamedBufferSubData", GL_INVALID_VALUE,
 									  " if size is greater than the size of the source buffer object.");
@@ -3215,7 +3215,7 @@ bool ErrorsTest::TestErrorsOfCopyNamedBufferSubData()
 		/* Test overflow read offset and size error behavior. */
 		{
 			/* Test. */
-			m_pCopyNamedBufferSubData(buffer_r, buffer_w, sizeof(dummy_data) / 2, 0, sizeof(dummy_data));
+			m_pCopyNamedBufferSubData(buffer_r, buffer_w, sizeof(unused_data) / 2, 0, sizeof(unused_data));
 
 			is_ok &= ErrorCheckAndLog("glCopyNamedBufferSubData", GL_INVALID_VALUE,
 									  " if readOffset+size is greater than the size of the source buffer object.");
@@ -3224,7 +3224,7 @@ bool ErrorsTest::TestErrorsOfCopyNamedBufferSubData()
 		/* Test overflow write offset and size error behavior. */
 		{
 			/* Test. */
-			m_pCopyNamedBufferSubData(buffer_r, buffer_w, 0, sizeof(dummy_data) / 2, sizeof(dummy_data));
+			m_pCopyNamedBufferSubData(buffer_r, buffer_w, 0, sizeof(unused_data) / 2, sizeof(unused_data));
 
 			is_ok &= ErrorCheckAndLog("glCopyNamedBufferSubData", GL_INVALID_VALUE,
 									  " if writeOffset+size is greater than the size of the source buffer object.");
@@ -3233,7 +3233,7 @@ bool ErrorsTest::TestErrorsOfCopyNamedBufferSubData()
 		/* Test same buffer overlapping error behavior. */
 		{
 			/* Test. */
-			m_pCopyNamedBufferSubData(buffer_w, buffer_w, 0, 0, sizeof(dummy_data));
+			m_pCopyNamedBufferSubData(buffer_w, buffer_w, 0, 0, sizeof(unused_data));
 
 			is_ok &= ErrorCheckAndLog("glCopyNamedBufferSubData", GL_INVALID_VALUE,
 									  " if the source and destination are the same buffer object, and the ranges"
@@ -3245,7 +3245,7 @@ bool ErrorsTest::TestErrorsOfCopyNamedBufferSubData()
 			(void)(glw::GLbyte*) m_pMapNamedBuffer(buffer_r, GL_READ_ONLY);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glMapNamedBuffer failed.");
 
-			m_pCopyNamedBufferSubData(buffer_r, buffer_w, 0, 0, sizeof(dummy_data));
+			m_pCopyNamedBufferSubData(buffer_r, buffer_w, 0, 0, sizeof(unused_data));
 
 			is_ok &= ErrorCheckAndLog("glCopyNamedBufferSubData", GL_INVALID_OPERATION,
 									  " if the source buffer object is mapped with MapBuffer.");
@@ -3259,7 +3259,7 @@ bool ErrorsTest::TestErrorsOfCopyNamedBufferSubData()
 			(void)(glw::GLbyte*) m_pMapNamedBuffer(buffer_w, GL_READ_ONLY);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glMapNamedBuffer failed.");
 
-			m_pCopyNamedBufferSubData(buffer_r, buffer_w, 0, 0, sizeof(dummy_data));
+			m_pCopyNamedBufferSubData(buffer_r, buffer_w, 0, 0, sizeof(unused_data));
 
 			is_ok &= ErrorCheckAndLog("glCopyNamedBufferSubData", GL_INVALID_OPERATION,
 									  " if the destination buffer object is mapped with MapBuffer.");
@@ -3270,10 +3270,10 @@ bool ErrorsTest::TestErrorsOfCopyNamedBufferSubData()
 
 		/* Test of mapped read buffer copy error behavior verification (glMapNamedBufferRange version). */
 		{
-			(void)(glw::GLbyte*) m_pMapNamedBufferRange(buffer_r, 0, sizeof(dummy_data), GL_MAP_READ_BIT);
+			(void)(glw::GLbyte*) m_pMapNamedBufferRange(buffer_r, 0, sizeof(unused_data), GL_MAP_READ_BIT);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glMapNamedBuffer failed.");
 
-			m_pCopyNamedBufferSubData(buffer_r, buffer_w, 0, 0, sizeof(dummy_data));
+			m_pCopyNamedBufferSubData(buffer_r, buffer_w, 0, 0, sizeof(unused_data));
 
 			is_ok &= ErrorCheckAndLog("glCopyNamedBufferSubData", GL_INVALID_OPERATION,
 									  " if the source buffer object is mapped with MapBuffer.");
@@ -3284,10 +3284,10 @@ bool ErrorsTest::TestErrorsOfCopyNamedBufferSubData()
 
 		/* Test of mapped write buffer copy error behavior verification (glMapNamedBufferRange version). */
 		{
-			(void)(glw::GLbyte*) m_pMapNamedBufferRange(buffer_w, 0, sizeof(dummy_data), GL_MAP_READ_BIT);
+			(void)(glw::GLbyte*) m_pMapNamedBufferRange(buffer_w, 0, sizeof(unused_data), GL_MAP_READ_BIT);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glMapNamedBuffer failed.");
 
-			m_pCopyNamedBufferSubData(buffer_r, buffer_w, 0, 0, sizeof(dummy_data));
+			m_pCopyNamedBufferSubData(buffer_r, buffer_w, 0, 0, sizeof(unused_data));
 
 			is_ok &= ErrorCheckAndLog("glCopyNamedBufferSubData", GL_INVALID_OPERATION,
 									  " if the destination buffer object is mapped with MapBuffer.");
@@ -3299,10 +3299,10 @@ bool ErrorsTest::TestErrorsOfCopyNamedBufferSubData()
 		/* Test of persistently mapped read buffer copy error with behavior verification. */
 		{
 			(void)(glw::GLbyte*)
-				m_pMapNamedBufferRange(buffer_r, 0, sizeof(dummy_data), GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT);
+				m_pMapNamedBufferRange(buffer_r, 0, sizeof(unused_data), GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glMapNamedBuffer failed.");
 
-			m_pCopyNamedBufferSubData(buffer_r, buffer_w, 0, 0, sizeof(dummy_data));
+			m_pCopyNamedBufferSubData(buffer_r, buffer_w, 0, 0, sizeof(unused_data));
 
 			is_ok &= ErrorCheckAndLog("glCopyNamedBufferSubData", GL_NO_ERROR,
 									  " if the source buffer object is mapped using "
@@ -3316,10 +3316,10 @@ bool ErrorsTest::TestErrorsOfCopyNamedBufferSubData()
 		/* Test of persistently mapped write buffer copy error with behavior verification. */
 		{
 			(void)(glw::GLbyte*)
-				m_pMapNamedBufferRange(buffer_w, 0, sizeof(dummy_data), GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT);
+				m_pMapNamedBufferRange(buffer_w, 0, sizeof(unused_data), GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glMapNamedBuffer failed.");
 
-			m_pCopyNamedBufferSubData(buffer_r, buffer_w, 0, 0, sizeof(dummy_data));
+			m_pCopyNamedBufferSubData(buffer_r, buffer_w, 0, 0, sizeof(unused_data));
 
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glMapNamedBuffer failed.");
 			is_ok &= ErrorCheckAndLog("glCopyNamedBufferSubData", GL_NO_ERROR,
@@ -3419,7 +3419,7 @@ bool ErrorsTest::TestErrorsOfFlushMappedNamedBufferRange()
 
 	/* Common variables. */
 	glw::GLuint  buffer		   = 0;
-	glw::GLubyte dummy_data[4] = {};
+	glw::GLubyte unused_data[4] = {};
 
 	try
 	{
@@ -3427,7 +3427,7 @@ bool ErrorsTest::TestErrorsOfFlushMappedNamedBufferRange()
 		gl.createBuffers(1, &buffer);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateBuffers failed.");
 
-		m_pNamedBufferStorage(buffer, sizeof(dummy_data), &dummy_data, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
+		m_pNamedBufferStorage(buffer, sizeof(unused_data), &unused_data, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glNamedBuffeStorage failed.");
 
 		/* Test invalid buffer name flush error behavior. */
@@ -3448,7 +3448,7 @@ bool ErrorsTest::TestErrorsOfFlushMappedNamedBufferRange()
 		/* Test negative offset flush error behavior. */
 		{
 			(void)(glw::GLbyte*)
-				m_pMapNamedBufferRange(buffer, 0, sizeof(dummy_data), GL_MAP_WRITE_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
+				m_pMapNamedBufferRange(buffer, 0, sizeof(unused_data), GL_MAP_WRITE_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glMapNamedBuffer failed.");
 
 			m_pFlushMappedNamedBufferRange(buffer, -1, 1);
@@ -3462,7 +3462,7 @@ bool ErrorsTest::TestErrorsOfFlushMappedNamedBufferRange()
 		/* Test negative length flush error behavior. */
 		{
 			(void)(glw::GLbyte*)
-				m_pMapNamedBufferRange(buffer, 0, sizeof(dummy_data), GL_MAP_WRITE_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
+				m_pMapNamedBufferRange(buffer, 0, sizeof(unused_data), GL_MAP_WRITE_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glMapNamedBuffer failed.");
 
 			m_pFlushMappedNamedBufferRange(buffer, 0, -1);
@@ -3475,11 +3475,11 @@ bool ErrorsTest::TestErrorsOfFlushMappedNamedBufferRange()
 
 		/* Test length exceeds the mapping size flush error behavior. */
 		{
-			(void)(glw::GLbyte*)
-				m_pMapNamedBufferRange(buffer, 0, sizeof(dummy_data) / 2, GL_MAP_WRITE_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
+			(void)(glw::GLbyte*) m_pMapNamedBufferRange(buffer, 0, sizeof(unused_data) / 2,
+														GL_MAP_WRITE_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glMapNamedBuffer failed.");
 
-			m_pFlushMappedNamedBufferRange(buffer, 0, sizeof(dummy_data));
+			m_pFlushMappedNamedBufferRange(buffer, 0, sizeof(unused_data));
 
 			is_ok &= ErrorCheckAndLog("glFlushMappedNamedBufferRange", GL_INVALID_VALUE,
 									  " if length exceeds the size of the mapping.");
@@ -3491,10 +3491,10 @@ bool ErrorsTest::TestErrorsOfFlushMappedNamedBufferRange()
 		/* Test offset + length exceeds the mapping size flush error behavior. */
 		{
 			(void)(glw::GLbyte*)
-				m_pMapNamedBufferRange(buffer, 0, sizeof(dummy_data), GL_MAP_WRITE_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
+				m_pMapNamedBufferRange(buffer, 0, sizeof(unused_data), GL_MAP_WRITE_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glMapNamedBuffer failed.");
 
-			m_pFlushMappedNamedBufferRange(buffer, 1, sizeof(dummy_data));
+			m_pFlushMappedNamedBufferRange(buffer, 1, sizeof(unused_data));
 
 			is_ok &= ErrorCheckAndLog("glFlushMappedNamedBufferRange", GL_INVALID_VALUE,
 									  " if offset + length exceeds the size of the mapping.");
@@ -3505,7 +3505,7 @@ bool ErrorsTest::TestErrorsOfFlushMappedNamedBufferRange()
 
 		/* Test not mapped buffer flush error behavior. */
 		{
-			m_pFlushMappedNamedBufferRange(buffer, 0, sizeof(dummy_data));
+			m_pFlushMappedNamedBufferRange(buffer, 0, sizeof(unused_data));
 
 			is_ok &= ErrorCheckAndLog("glFlushMappedNamedBufferRange", GL_INVALID_OPERATION,
 									  " if the buffer object is not mapped.");
@@ -3513,10 +3513,10 @@ bool ErrorsTest::TestErrorsOfFlushMappedNamedBufferRange()
 
 		/* Test buffer flush without the MAP_FLUSH_EXPLICIT_BIT error behavior. */
 		{
-			(void)(glw::GLbyte*) m_pMapNamedBufferRange(buffer, 0, sizeof(dummy_data), GL_MAP_WRITE_BIT);
+			(void)(glw::GLbyte*) m_pMapNamedBufferRange(buffer, 0, sizeof(unused_data), GL_MAP_WRITE_BIT);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glMapNamedBuffer failed.");
 
-			m_pFlushMappedNamedBufferRange(buffer, 0, sizeof(dummy_data));
+			m_pFlushMappedNamedBufferRange(buffer, 0, sizeof(unused_data));
 
 			is_ok &= ErrorCheckAndLog("glFlushMappedNamedBufferRange", GL_INVALID_OPERATION,
 									  " if the buffer is mapped without the MAP_FLUSH_EXPLICIT_BIT flag.");
@@ -3571,7 +3571,7 @@ bool ErrorsTest::TestErrorsOfGetNamedBufferParameter()
 
 	/* Common variables. */
 	glw::GLuint  buffer		   = 0;
-	glw::GLubyte dummy_data[4] = {};
+	glw::GLubyte unused_data[4] = {};
 
 	try
 	{
@@ -3579,7 +3579,7 @@ bool ErrorsTest::TestErrorsOfGetNamedBufferParameter()
 		gl.createBuffers(1, &buffer);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateBuffers failed.");
 
-		m_pNamedBufferStorage(buffer, sizeof(dummy_data), &dummy_data, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
+		m_pNamedBufferStorage(buffer, sizeof(unused_data), &unused_data, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glNamedBuffeStorage failed.");
 
 		/* Test invalid buffer name in GetNamedBufferParameteriv function error behavior. */
@@ -3713,7 +3713,7 @@ bool ErrorsTest::TestErrorsOfGetNamedBufferPointerv()
 
 	/* Common variables. */
 	glw::GLuint  buffer		   = 0;
-	glw::GLubyte dummy_data[4] = {};
+	glw::GLubyte unused_data[4] = {};
 
 	try
 	{
@@ -3721,7 +3721,7 @@ bool ErrorsTest::TestErrorsOfGetNamedBufferPointerv()
 		gl.createBuffers(1, &buffer);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateBuffers failed.");
 
-		m_pNamedBufferStorage(buffer, sizeof(dummy_data), &dummy_data, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
+		m_pNamedBufferStorage(buffer, sizeof(unused_data), &unused_data, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glNamedBuffeStorage failed.");
 
 		/* Test invalid buffer name in GetNamedBufferPointerv function error behavior. */
@@ -3789,7 +3789,7 @@ bool ErrorsTest::TestErrorsOfGetNamedBufferSubData()
 
 	/* Common variables. */
 	glw::GLuint  buffer		   = 0;
-	glw::GLubyte dummy_data[4] = {};
+	glw::GLubyte unused_data[4] = {};
 
 	try
 	{
@@ -3797,7 +3797,7 @@ bool ErrorsTest::TestErrorsOfGetNamedBufferSubData()
 		gl.createBuffers(1, &buffer);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateBuffers failed.");
 
-		m_pNamedBufferStorage(buffer, sizeof(dummy_data), &dummy_data, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
+		m_pNamedBufferStorage(buffer, sizeof(unused_data), &unused_data, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glNamedBuffeStorage failed.");
 
 		/* Test invalid buffer name in pGetNamedBufferSubData function error behavior. */
@@ -3809,10 +3809,10 @@ bool ErrorsTest::TestErrorsOfGetNamedBufferSubData()
 				;
 
 			/* Query storage. */
-			glw::GLubyte dummy_data_query[sizeof(dummy_data) / sizeof(dummy_data[0])] = {};
+			glw::GLubyte unused_data_query[sizeof(unused_data) / sizeof(unused_data[0])] = {};
 
 			/* Test. */
-			m_pGetNamedBufferSubData(not_a_buffer_name, 0, sizeof(dummy_data_query), dummy_data_query);
+			m_pGetNamedBufferSubData(not_a_buffer_name, 0, sizeof(unused_data_query), unused_data_query);
 
 			is_ok &= ErrorCheckAndLog("glGetNamedBufferSubData", GL_INVALID_OPERATION,
 									  " if buffer is not the name of an existing buffer object.");
@@ -3821,10 +3821,10 @@ bool ErrorsTest::TestErrorsOfGetNamedBufferSubData()
 		/* Test negative offset error behavior. */
 		{
 			/* Query storage. */
-			glw::GLubyte dummy_data_query[sizeof(dummy_data) / sizeof(dummy_data[0])] = {};
+			glw::GLubyte unused_data_query[sizeof(unused_data) / sizeof(unused_data[0])] = {};
 
 			/* Test. */
-			m_pGetNamedBufferSubData(buffer, -1, sizeof(dummy_data_query), dummy_data_query);
+			m_pGetNamedBufferSubData(buffer, -1, sizeof(unused_data_query), unused_data_query);
 
 			is_ok &= ErrorCheckAndLog("glGetNamedBufferSubData", GL_INVALID_VALUE, " if offset is negative.");
 		}
@@ -3832,10 +3832,10 @@ bool ErrorsTest::TestErrorsOfGetNamedBufferSubData()
 		/* Test negative size error behavior. */
 		{
 			/* Query storage. */
-			glw::GLubyte dummy_data_query[sizeof(dummy_data) / sizeof(dummy_data[0])] = {};
+			glw::GLubyte unused_data_query[sizeof(unused_data) / sizeof(unused_data[0])] = {};
 
 			/* Test. */
-			m_pGetNamedBufferSubData(buffer, 0, -1, dummy_data_query);
+			m_pGetNamedBufferSubData(buffer, 0, -1, unused_data_query);
 
 			is_ok &= ErrorCheckAndLog("glGetNamedBufferSubData", GL_INVALID_VALUE, " if size is negative.");
 		}
@@ -3843,10 +3843,10 @@ bool ErrorsTest::TestErrorsOfGetNamedBufferSubData()
 		/* Test size overflow error behavior. */
 		{
 			/* Query storage. */
-			glw::GLubyte dummy_data_query[sizeof(dummy_data) / sizeof(dummy_data[0])] = {};
+			glw::GLubyte unused_data_query[sizeof(unused_data) / sizeof(unused_data[0])] = {};
 
 			/* Test. */
-			m_pGetNamedBufferSubData(buffer, 0, 2 * sizeof(dummy_data_query), dummy_data_query);
+			m_pGetNamedBufferSubData(buffer, 0, 2 * sizeof(unused_data_query), unused_data_query);
 
 			is_ok &= ErrorCheckAndLog("glGetNamedBufferSubData", GL_INVALID_VALUE,
 									  " if size is greater than the value of BUFFER_SIZE for the buffer object.");
@@ -3855,10 +3855,11 @@ bool ErrorsTest::TestErrorsOfGetNamedBufferSubData()
 		/* Test offset+size overflow error behavior. */
 		{
 			/* Query storage. */
-			glw::GLubyte dummy_data_query[sizeof(dummy_data) / sizeof(dummy_data[0])] = {};
+			glw::GLubyte unused_data_query[sizeof(unused_data) / sizeof(unused_data[0])] = {};
 
 			/* Test. */
-			m_pGetNamedBufferSubData(buffer, sizeof(dummy_data_query) / 2, sizeof(dummy_data_query), dummy_data_query);
+			m_pGetNamedBufferSubData(buffer, sizeof(unused_data_query) / 2, sizeof(unused_data_query),
+									 unused_data_query);
 
 			is_ok &=
 				ErrorCheckAndLog("glGetNamedBufferSubData", GL_INVALID_VALUE,
@@ -3868,10 +3869,10 @@ bool ErrorsTest::TestErrorsOfGetNamedBufferSubData()
 		/* Test offset overflow error behavior. */
 		{
 			/* Query storage. */
-			glw::GLubyte dummy_data_query[sizeof(dummy_data) / sizeof(dummy_data[0])] = {};
+			glw::GLubyte unused_data_query[sizeof(unused_data) / sizeof(unused_data[0])] = {};
 
 			/* Test. */
-			m_pGetNamedBufferSubData(buffer, sizeof(dummy_data_query) + 1, 0, dummy_data_query);
+			m_pGetNamedBufferSubData(buffer, sizeof(unused_data_query) + 1, 0, unused_data_query);
 
 			is_ok &= ErrorCheckAndLog("glGetNamedBufferSubData", GL_INVALID_VALUE,
 									  " if offset is greater than the value of BUFFER_SIZE for the buffer object.");
@@ -3880,13 +3881,13 @@ bool ErrorsTest::TestErrorsOfGetNamedBufferSubData()
 		/* Test mapped buffer query error behavior. */
 		{
 			/* Query storage. */
-			glw::GLubyte dummy_data_query[sizeof(dummy_data) / sizeof(dummy_data[0])] = {};
+			glw::GLubyte unused_data_query[sizeof(unused_data) / sizeof(unused_data[0])] = {};
 
 			/* Test. */
 			(void)(glw::GLbyte*) m_pMapNamedBuffer(buffer, GL_WRITE_ONLY);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glMapNamedBuffer failed.");
 
-			m_pGetNamedBufferSubData(buffer, 0, sizeof(dummy_data_query), dummy_data_query);
+			m_pGetNamedBufferSubData(buffer, 0, sizeof(unused_data_query), unused_data_query);
 
 			is_ok &= ErrorCheckAndLog("glGetNamedBufferSubData", GL_INVALID_OPERATION,
 									  " if the buffer object is mapped with MapBufferRange.");
@@ -3898,13 +3899,13 @@ bool ErrorsTest::TestErrorsOfGetNamedBufferSubData()
 		/* Test mapped buffer query error behavior. */
 		{
 			/* Query storage. */
-			glw::GLubyte dummy_data_query[sizeof(dummy_data) / sizeof(dummy_data[0])] = {};
+			glw::GLubyte unused_data_query[sizeof(unused_data) / sizeof(unused_data[0])] = {};
 
 			/* Test. */
-			(void)(glw::GLbyte*) m_pMapNamedBufferRange(buffer, 0, sizeof(dummy_data), GL_MAP_WRITE_BIT);
+			(void)(glw::GLbyte*) m_pMapNamedBufferRange(buffer, 0, sizeof(unused_data), GL_MAP_WRITE_BIT);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glMapNamedBuffer failed.");
 
-			m_pGetNamedBufferSubData(buffer, 0, sizeof(dummy_data_query), dummy_data_query);
+			m_pGetNamedBufferSubData(buffer, 0, sizeof(unused_data_query), unused_data_query);
 
 			is_ok &= ErrorCheckAndLog("glGetNamedBufferSubData", GL_INVALID_OPERATION,
 									  " if the buffer object is mapped with MapBufferRange.");
@@ -3916,14 +3917,14 @@ bool ErrorsTest::TestErrorsOfGetNamedBufferSubData()
 		/* Test persistently mapped buffer query behavior. */
 		{
 			/* Query storage. */
-			glw::GLubyte dummy_data_query[sizeof(dummy_data) / sizeof(dummy_data[0])] = {};
+			glw::GLubyte unused_data_query[sizeof(unused_data) / sizeof(unused_data[0])] = {};
 
 			/* Test. */
 			(void)(glw::GLbyte*)
-				m_pMapNamedBufferRange(buffer, 0, sizeof(dummy_data), GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
+				m_pMapNamedBufferRange(buffer, 0, sizeof(unused_data), GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glMapNamedBuffer failed.");
 
-			m_pGetNamedBufferSubData(buffer, 0, sizeof(dummy_data_query), dummy_data_query);
+			m_pGetNamedBufferSubData(buffer, 0, sizeof(unused_data_query), unused_data_query);
 
 			is_ok &= ErrorCheckAndLog(
 				"glGetNamedBufferSubData", GL_NO_ERROR,
@@ -3978,7 +3979,7 @@ bool ErrorsTest::TestErrorsOfMapNamedBuffer()
 
 	/* Common variables. */
 	glw::GLuint  buffer		   = 0;
-	glw::GLubyte dummy_data[4] = {};
+	glw::GLubyte unused_data[4] = {};
 
 	try
 	{
@@ -3986,7 +3987,7 @@ bool ErrorsTest::TestErrorsOfMapNamedBuffer()
 		gl.createBuffers(1, &buffer);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateBuffers failed.");
 
-		m_pNamedBufferStorage(buffer, sizeof(dummy_data), &dummy_data, GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT);
+		m_pNamedBufferStorage(buffer, sizeof(unused_data), &unused_data, GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glNamedBuffeStorage failed.");
 
 		/* Test invalid buffer name error behavior. */
@@ -4115,7 +4116,7 @@ bool ErrorsTest::TestErrorsOfMapNamedBufferRange()
 	/* Common variables. */
 	glw::GLuint  buffer				  = 0;
 	glw::GLuint  buffer_special_flags = 0;
-	glw::GLubyte dummy_data[4]		  = {};
+	glw::GLubyte unused_data[4]		  = {};
 
 	try
 	{
@@ -4123,7 +4124,7 @@ bool ErrorsTest::TestErrorsOfMapNamedBufferRange()
 		gl.createBuffers(1, &buffer);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateBuffers failed.");
 
-		m_pNamedBufferStorage(buffer, sizeof(dummy_data), &dummy_data,
+		m_pNamedBufferStorage(buffer, sizeof(unused_data), &unused_data,
 							  GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glNamedBuffeStorage failed.");
 
@@ -4136,7 +4137,7 @@ bool ErrorsTest::TestErrorsOfMapNamedBufferRange()
 				;
 
 			/* Test. */
-			m_pMapNamedBufferRange(not_a_buffer_name, 0, sizeof(dummy_data), GL_MAP_READ_BIT);
+			m_pMapNamedBufferRange(not_a_buffer_name, 0, sizeof(unused_data), GL_MAP_READ_BIT);
 
 			is_ok &= ErrorCheckAndLog("glMapNamedBufferRange", GL_INVALID_OPERATION,
 									  " if buffer is not the name of an existing buffer object.");
@@ -4144,7 +4145,7 @@ bool ErrorsTest::TestErrorsOfMapNamedBufferRange()
 
 		/* Test negative offset error behavior. */
 		{
-			glw::GLvoid* mapped_data = m_pMapNamedBufferRange(buffer, -1, sizeof(dummy_data), GL_MAP_READ_BIT);
+			glw::GLvoid* mapped_data = m_pMapNamedBufferRange(buffer, -1, sizeof(unused_data), GL_MAP_READ_BIT);
 
 			is_ok &= ErrorCheckAndLog("glMapNamedBufferRange", GL_INVALID_VALUE, " if offset is negative.");
 
@@ -4174,7 +4175,7 @@ bool ErrorsTest::TestErrorsOfMapNamedBufferRange()
 
 		/* Test length overflow error behavior. */
 		{
-			glw::GLvoid* mapped_data = m_pMapNamedBufferRange(buffer, 0, sizeof(dummy_data) * 2, GL_MAP_READ_BIT);
+			glw::GLvoid* mapped_data = m_pMapNamedBufferRange(buffer, 0, sizeof(unused_data) * 2, GL_MAP_READ_BIT);
 
 			is_ok &= ErrorCheckAndLog("glMapNamedBufferRange", GL_INVALID_VALUE,
 									  " if length is greater than the value of BUFFER_SIZE"
@@ -4193,7 +4194,7 @@ bool ErrorsTest::TestErrorsOfMapNamedBufferRange()
 		/* Test (offset+length) overflow error behavior. */
 		{
 			glw::GLvoid* mapped_data =
-				m_pMapNamedBufferRange(buffer, sizeof(dummy_data) / 2, sizeof(dummy_data), GL_MAP_READ_BIT);
+				m_pMapNamedBufferRange(buffer, sizeof(unused_data) / 2, sizeof(unused_data), GL_MAP_READ_BIT);
 
 			is_ok &= ErrorCheckAndLog("glMapNamedBufferRange", GL_INVALID_VALUE,
 									  " if offset+length is greater than the value of BUFFER_SIZE"
@@ -4226,11 +4227,11 @@ bool ErrorsTest::TestErrorsOfMapNamedBufferRange()
 
 		/* Test mapping of mapped buffer error behavior. */
 		{
-			m_pMapNamedBufferRange(buffer, 0, sizeof(dummy_data), GL_MAP_READ_BIT);
+			m_pMapNamedBufferRange(buffer, 0, sizeof(unused_data), GL_MAP_READ_BIT);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glMapNamedBuffer.");
 
 			glw::GLvoid* subsequent_mapped_data =
-				m_pMapNamedBufferRange(buffer, 0, sizeof(dummy_data), GL_MAP_READ_BIT);
+				m_pMapNamedBufferRange(buffer, 0, sizeof(unused_data), GL_MAP_READ_BIT);
 
 			is_ok &= ErrorCheckAndLog("glMapNamedBufferRange", GL_INVALID_OPERATION,
 									  " if the buffer object is in a mapped state.");
@@ -4253,7 +4254,7 @@ bool ErrorsTest::TestErrorsOfMapNamedBufferRange()
 
 		/* Test access flag read and write bits are not set error behavior. */
 		{
-			glw::GLvoid* mapped_data = m_pMapNamedBufferRange(buffer, 0, sizeof(dummy_data), 0);
+			glw::GLvoid* mapped_data = m_pMapNamedBufferRange(buffer, 0, sizeof(unused_data), 0);
 
 			is_ok &= ErrorCheckAndLog("glMapNamedBufferRange", GL_INVALID_OPERATION,
 									  " if neither MAP_READ_BIT nor MAP_WRITE_BIT is set.");
@@ -4281,7 +4282,7 @@ bool ErrorsTest::TestErrorsOfMapNamedBufferRange()
 
 			for (glw::GLuint i = 0; i < read_access_invalid_flags_count; ++i)
 			{
-				glw::GLvoid* mapped_data = m_pMapNamedBufferRange(buffer, 0, sizeof(dummy_data),
+				glw::GLvoid* mapped_data = m_pMapNamedBufferRange(buffer, 0, sizeof(unused_data),
 																  GL_MAP_READ_BIT | read_access_invalid_flags[i]);
 
 				is_ok &=
@@ -4300,7 +4301,7 @@ bool ErrorsTest::TestErrorsOfMapNamedBufferRange()
 		/* Test access flush bit without write bit error behavior. */
 		{
 			glw::GLvoid* mapped_data =
-				m_pMapNamedBufferRange(buffer, 0, sizeof(dummy_data), GL_MAP_READ_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
+				m_pMapNamedBufferRange(buffer, 0, sizeof(unused_data), GL_MAP_READ_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
 
 			is_ok &= ErrorCheckAndLog("glMapNamedBufferRange", GL_INVALID_OPERATION,
 									  " if MAP_FLUSH_EXPLICIT_BIT is set and MAP_WRITE_BIT is not set.");
@@ -4334,12 +4335,12 @@ bool ErrorsTest::TestErrorsOfMapNamedBufferRange()
 				gl.createBuffers(1, &buffer_special_flags);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateBuffers failed.");
 
-				m_pNamedBufferStorage(buffer_special_flags, sizeof(dummy_data), &dummy_data, buffer_flags[i]);
+				m_pNamedBufferStorage(buffer_special_flags, sizeof(unused_data), &unused_data, buffer_flags[i]);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glNamedBuffeStorage failed.");
 
 				/* Test mapping. */
 				glw::GLvoid* mapped_data =
-					m_pMapNamedBufferRange(buffer_special_flags, 0, sizeof(dummy_data), mapping_flags[i]);
+					m_pMapNamedBufferRange(buffer_special_flags, 0, sizeof(unused_data), mapping_flags[i]);
 
 				is_ok &= ErrorCheckAndLog("glMapNamedBufferRange", GL_INVALID_OPERATION, mapping_flags_log[i]);
 
@@ -4418,7 +4419,7 @@ bool ErrorsTest::TestErrorsOfNamedBufferData()
 	/* Common variables. */
 	glw::GLuint				buffer			 = 0;
 	glw::GLuint				immutable_buffer = 0;
-	glw::GLubyte			dummy_data[4]	= {};
+	glw::GLubyte			unused_data[4]	 = {};
 	std::stack<glw::GLuint> too_much_buffers;
 
 	try
@@ -4430,7 +4431,7 @@ bool ErrorsTest::TestErrorsOfNamedBufferData()
 		gl.createBuffers(1, &immutable_buffer);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateBuffers failed.");
 
-		m_pNamedBufferStorage(immutable_buffer, sizeof(dummy_data), &dummy_data, GL_MAP_READ_BIT);
+		m_pNamedBufferStorage(immutable_buffer, sizeof(unused_data), &unused_data, GL_MAP_READ_BIT);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glNamedBuffeStorage failed.");
 
 		/* Test invalid buffer name error behavior. */
@@ -4442,7 +4443,7 @@ bool ErrorsTest::TestErrorsOfNamedBufferData()
 				;
 
 			/* Test. */
-			m_pNamedBufferData(not_a_buffer_name, sizeof(dummy_data), dummy_data, GL_DYNAMIC_COPY);
+			m_pNamedBufferData(not_a_buffer_name, sizeof(unused_data), unused_data, GL_DYNAMIC_COPY);
 
 			is_ok &= ErrorCheckAndLog("glNamedBufferData", GL_INVALID_OPERATION,
 									  " if buffer is not the name of an existing buffer object.");
@@ -4464,7 +4465,7 @@ bool ErrorsTest::TestErrorsOfNamedBufferData()
 				;
 
 			/* Test. */
-			m_pNamedBufferData(buffer, sizeof(dummy_data), dummy_data, invalid_usage);
+			m_pNamedBufferData(buffer, sizeof(unused_data), unused_data, invalid_usage);
 
 			is_ok &=
 				ErrorCheckAndLog("glNamedBufferData", GL_INVALID_ENUM,
@@ -4474,14 +4475,14 @@ bool ErrorsTest::TestErrorsOfNamedBufferData()
 
 		/* Test negative size error behavior. */
 		{
-			m_pNamedBufferData(buffer, -1, dummy_data, GL_DYNAMIC_COPY);
+			m_pNamedBufferData(buffer, -1, unused_data, GL_DYNAMIC_COPY);
 
 			is_ok &= ErrorCheckAndLog("glNamedBufferData", GL_INVALID_VALUE, " if size is negative.");
 		}
 
 		/* Test immutable buffer error behavior. */
 		{
-			m_pNamedBufferData(immutable_buffer, sizeof(dummy_data) / 2, dummy_data, GL_DYNAMIC_COPY);
+			m_pNamedBufferData(immutable_buffer, sizeof(unused_data) / 2, unused_data, GL_DYNAMIC_COPY);
 
 			is_ok &= ErrorCheckAndLog("glNamedBufferData", GL_INVALID_OPERATION,
 									  " if the BUFFER_IMMUTABLE_STORAGE flag of the buffer object is TRUE.");
@@ -4560,7 +4561,7 @@ bool ErrorsTest::TestErrorsOfNamedBufferStorage()
 
 	/* Common variables. */
 	glw::GLuint				buffer		  = 0;
-	glw::GLubyte			dummy_data[4] = {};
+	glw::GLubyte			unused_data[4] = {};
 	std::stack<glw::GLuint> too_much_buffers;
 
 	try
@@ -4574,7 +4575,7 @@ bool ErrorsTest::TestErrorsOfNamedBufferStorage()
 				;
 
 			/* Test. */
-			m_pNamedBufferStorage(not_a_buffer_name, sizeof(dummy_data), dummy_data, GL_MAP_WRITE_BIT);
+			m_pNamedBufferStorage(not_a_buffer_name, sizeof(unused_data), unused_data, GL_MAP_WRITE_BIT);
 
 			is_ok &= ErrorCheckAndLog("glNamedBufferStorage", GL_INVALID_OPERATION,
 									  " if buffer is not the name of an existing buffer object.");
@@ -4587,12 +4588,12 @@ bool ErrorsTest::TestErrorsOfNamedBufferStorage()
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateBuffers failed.");
 
 			/* Test negative size. */
-			m_pNamedBufferStorage(buffer, -1, dummy_data, GL_DYNAMIC_COPY);
+			m_pNamedBufferStorage(buffer, -1, unused_data, GL_DYNAMIC_COPY);
 
 			is_ok &= ErrorCheckAndLog("glNamedBufferStorage", GL_INVALID_VALUE, " if size is negative.");
 
 			/* Test zero size. */
-			m_pNamedBufferStorage(buffer, 0, dummy_data, GL_DYNAMIC_COPY);
+			m_pNamedBufferStorage(buffer, 0, unused_data, GL_DYNAMIC_COPY);
 
 			is_ok &= ErrorCheckAndLog("glNamedBufferStorage", GL_INVALID_VALUE, " if size zero.");
 
@@ -4642,7 +4643,7 @@ bool ErrorsTest::TestErrorsOfNamedBufferStorage()
 					GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateBuffers failed.");
 
 					/* Test invalid bit. */
-					m_pNamedBufferStorage(buffer, sizeof(dummy_data), dummy_data, possibly_invalid_bit);
+					m_pNamedBufferStorage(buffer, sizeof(unused_data), unused_data, possibly_invalid_bit);
 
 					is_ok &=
 						ErrorCheckAndLog("glNamedBufferStorage", GL_INVALID_VALUE,
@@ -4666,7 +4667,7 @@ bool ErrorsTest::TestErrorsOfNamedBufferStorage()
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateBuffers failed.");
 
 			/* Test. */
-			m_pNamedBufferStorage(buffer, sizeof(dummy_data), dummy_data, GL_MAP_PERSISTENT_BIT);
+			m_pNamedBufferStorage(buffer, sizeof(unused_data), unused_data, GL_MAP_PERSISTENT_BIT);
 
 			is_ok &= ErrorCheckAndLog("glNamedBufferStorage", GL_INVALID_VALUE, " if flags contains MAP_PERSISTENT_BIT "
 																				"but does not contain at least one of "
@@ -4687,7 +4688,7 @@ bool ErrorsTest::TestErrorsOfNamedBufferStorage()
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateBuffers failed.");
 
 			/* Test. */
-			m_pNamedBufferStorage(buffer, sizeof(dummy_data), dummy_data,
+			m_pNamedBufferStorage(buffer, sizeof(unused_data), unused_data,
 								  GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_COHERENT_BIT);
 
 			is_ok &=
@@ -4768,7 +4769,7 @@ bool ErrorsTest::TestErrorsOfNamedBufferSubData()
 	/* Common variables. */
 	glw::GLuint  buffer					  = 0;
 	glw::GLuint  immutable_storage_buffer = 0;
-	glw::GLubyte dummy_data[4]			  = {};
+	glw::GLubyte unused_data[4]			  = {};
 
 	try
 	{
@@ -4776,14 +4777,14 @@ bool ErrorsTest::TestErrorsOfNamedBufferSubData()
 		gl.createBuffers(1, &buffer);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateBuffers failed.");
 
-		m_pNamedBufferStorage(buffer, sizeof(dummy_data), &dummy_data,
+		m_pNamedBufferStorage(buffer, sizeof(unused_data), &unused_data,
 							  GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT | GL_MAP_PERSISTENT_BIT);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glNamedBuffeStorage failed.");
 
 		gl.createBuffers(1, &immutable_storage_buffer);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateBuffers failed.");
 
-		m_pNamedBufferStorage(immutable_storage_buffer, sizeof(dummy_data), &dummy_data, GL_MAP_READ_BIT);
+		m_pNamedBufferStorage(immutable_storage_buffer, sizeof(unused_data), &unused_data, GL_MAP_READ_BIT);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glNamedBuffeStorage failed.");
 
 		/* Test invalid buffer name error behavior. */
@@ -4795,7 +4796,7 @@ bool ErrorsTest::TestErrorsOfNamedBufferSubData()
 				;
 
 			/* Test. */
-			m_pNamedBufferSubData(not_a_buffer_name, 0, sizeof(dummy_data), &dummy_data);
+			m_pNamedBufferSubData(not_a_buffer_name, 0, sizeof(unused_data), &unused_data);
 
 			is_ok &= ErrorCheckAndLog("glNamedBufferSubData", GL_INVALID_OPERATION,
 									  " if buffer is not the name of an existing buffer object.");
@@ -4804,7 +4805,7 @@ bool ErrorsTest::TestErrorsOfNamedBufferSubData()
 		/* Test negative offset error behavior. */
 		{
 			/* Test. */
-			m_pNamedBufferSubData(buffer, -1, sizeof(dummy_data), &dummy_data);
+			m_pNamedBufferSubData(buffer, -1, sizeof(unused_data), &unused_data);
 
 			is_ok &= ErrorCheckAndLog("glNamedBufferSubData", GL_INVALID_VALUE, " if offset or size is negative.");
 		}
@@ -4812,7 +4813,7 @@ bool ErrorsTest::TestErrorsOfNamedBufferSubData()
 		/* Test negative size error behavior. */
 		{
 			/* Test. */
-			m_pNamedBufferSubData(buffer, 0, -1, &dummy_data);
+			m_pNamedBufferSubData(buffer, 0, -1, &unused_data);
 
 			is_ok &= ErrorCheckAndLog("glNamedBufferSubData", GL_INVALID_VALUE, " if offset or size is negative.");
 		}
@@ -4820,7 +4821,7 @@ bool ErrorsTest::TestErrorsOfNamedBufferSubData()
 		/* Test size overflow error behavior. */
 		{
 			/* Test. */
-			m_pNamedBufferSubData(buffer, 0, sizeof(dummy_data) * 2, &dummy_data);
+			m_pNamedBufferSubData(buffer, 0, sizeof(unused_data) * 2, &unused_data);
 
 			is_ok &= ErrorCheckAndLog(
 				"glNamedBufferSubData", GL_INVALID_VALUE,
@@ -4830,7 +4831,7 @@ bool ErrorsTest::TestErrorsOfNamedBufferSubData()
 		/* Test offset+size overflow error behavior. */
 		{
 			/* Test. */
-			m_pNamedBufferSubData(buffer, sizeof(dummy_data) / 2, sizeof(dummy_data), &dummy_data);
+			m_pNamedBufferSubData(buffer, sizeof(unused_data) / 2, sizeof(unused_data), &unused_data);
 
 			is_ok &= ErrorCheckAndLog(
 				"glNamedBufferSubData", GL_INVALID_VALUE,
@@ -4842,7 +4843,7 @@ bool ErrorsTest::TestErrorsOfNamedBufferSubData()
 			(void)(glw::GLbyte*) m_pMapNamedBuffer(buffer, GL_READ_ONLY);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glMapNamedBuffer failed.");
 
-			m_pNamedBufferSubData(buffer, 0, sizeof(dummy_data), &dummy_data);
+			m_pNamedBufferSubData(buffer, 0, sizeof(unused_data), &unused_data);
 
 			is_ok &= ErrorCheckAndLog("glNamedBufferSubData", GL_INVALID_OPERATION,
 									  " if any part of the specified range of the buffer"
@@ -4855,10 +4856,10 @@ bool ErrorsTest::TestErrorsOfNamedBufferSubData()
 
 		/* Test of mapped buffer subdata error behavior verification (with glMapBufferRange). */
 		{
-			(void)(glw::GLbyte*) m_pMapNamedBufferRange(buffer, 0, sizeof(dummy_data), GL_MAP_READ_BIT);
+			(void)(glw::GLbyte*) m_pMapNamedBufferRange(buffer, 0, sizeof(unused_data), GL_MAP_READ_BIT);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glMapNamedBuffer failed.");
 
-			m_pNamedBufferSubData(buffer, 0, sizeof(dummy_data), &dummy_data);
+			m_pNamedBufferSubData(buffer, 0, sizeof(unused_data), &unused_data);
 
 			is_ok &= ErrorCheckAndLog("glNamedBufferSubData", GL_INVALID_OPERATION,
 									  " if any part of the specified range of the buffer"
@@ -4872,10 +4873,10 @@ bool ErrorsTest::TestErrorsOfNamedBufferSubData()
 		/* Test of persistently mapped buffer clear error with behavior verification. */
 		{
 			(void)(glw::GLbyte*)
-				m_pMapNamedBufferRange(buffer, 0, sizeof(dummy_data), GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT);
+				m_pMapNamedBufferRange(buffer, 0, sizeof(unused_data), GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glMapNamedBuffer failed.");
 
-			m_pNamedBufferSubData(buffer, 0, sizeof(dummy_data), &dummy_data);
+			m_pNamedBufferSubData(buffer, 0, sizeof(unused_data), &unused_data);
 
 			is_ok &= ErrorCheckAndLog("glNamedBufferSubData", GL_NO_ERROR,
 									  " if any part of the specified range of the buffer"
@@ -4889,7 +4890,7 @@ bool ErrorsTest::TestErrorsOfNamedBufferSubData()
 		/* Test DYNAMIC_STORAGE_BIT bit off immutable buffer not set error behavior. */
 		{
 			/* Test. */
-			m_pNamedBufferSubData(immutable_storage_buffer, 0, sizeof(dummy_data), &dummy_data);
+			m_pNamedBufferSubData(immutable_storage_buffer, 0, sizeof(unused_data), &unused_data);
 
 			is_ok &= ErrorCheckAndLog("glNamedBufferSubData", GL_INVALID_OPERATION,
 									  " if the value of the BUFFER_IMMUTABLE_STORAGE flag of the buffer object is TRUE"
@@ -4900,7 +4901,7 @@ bool ErrorsTest::TestErrorsOfNamedBufferSubData()
 		/* Test DYNAMIC_STORAGE_BIT bit off immutable buffer set no error behavior. */
 		{
 			/* Test. */
-			m_pNamedBufferSubData(buffer, 0, sizeof(dummy_data), &dummy_data);
+			m_pNamedBufferSubData(buffer, 0, sizeof(unused_data), &unused_data);
 
 			is_ok &= ErrorCheckAndLog("glNamedBufferSubData", GL_NO_ERROR,
 									  " if the value of the BUFFER_IMMUTABLE_STORAGE flag of the buffer object is TRUE"
@@ -4957,7 +4958,7 @@ bool ErrorsTest::TestErrorsOfUnmapNamedBuffer()
 
 	/* Common variables. */
 	glw::GLuint  buffer		   = 0;
-	glw::GLubyte dummy_data[4] = {};
+	glw::GLubyte unused_data[4] = {};
 
 	try
 	{
@@ -4965,7 +4966,7 @@ bool ErrorsTest::TestErrorsOfUnmapNamedBuffer()
 		gl.createBuffers(1, &buffer);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateBuffers failed.");
 
-		m_pNamedBufferStorage(buffer, sizeof(dummy_data), &dummy_data,
+		m_pNamedBufferStorage(buffer, sizeof(unused_data), &unused_data,
 							  GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT | GL_MAP_PERSISTENT_BIT);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glNamedBuffeStorage failed.");
 

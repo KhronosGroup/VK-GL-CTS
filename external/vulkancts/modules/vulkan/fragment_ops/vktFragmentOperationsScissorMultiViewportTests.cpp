@@ -24,7 +24,6 @@
 
 #include "vktFragmentOperationsScissorMultiViewportTests.hpp"
 #include "vktTestCaseUtil.hpp"
-#include "vktFragmentOperationsMakeUtil.hpp"
 
 #include "vkDefs.hpp"
 #include "vkRefUtil.hpp"

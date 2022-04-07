@@ -255,6 +255,9 @@ TestCaseExecutor::~TestCaseExecutor (void)
 
 void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePath)
 {
+	if (m_waiverMechanism.isOnWaiverList(casePath))
+		throw tcu::TestException("Waived test", QP_TEST_RESULT_WAIVER);
+
 	TestCase*					vktCase						= dynamic_cast<TestCase*>(testCase);
 	tcu::TestLog&				log							= m_context.getTestContext().getLog();
 	const deUint32				usedVulkanVersion			= m_context.getUsedApiVersion();
@@ -268,9 +271,6 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 
 	if (!vktCase)
 		TCU_THROW(InternalError, "Test node not an instance of vkt::TestCase");
-
-	if (m_waiverMechanism.isOnWaiverList(casePath))
-		throw tcu::TestException("Waived test", QP_TEST_RESULT_WAIVER);
 
 	vktCase->checkSupport(m_context);
 
@@ -499,6 +499,7 @@ void createGlslTests (tcu::TestCaseGroup* glslTests)
 
 	// Amber GLSL tests.
 	glslTests->addChild(cts_amber::createCombinedOperationsGroup		(testCtx));
+	glslTests->addChild(cts_amber::createCrashTestGroup					(testCtx));
 }
 
 // TestPackage

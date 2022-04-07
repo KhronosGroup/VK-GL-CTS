@@ -610,7 +610,7 @@ struct MeshParams
 	float		scaleY;
 	float		offsetX;
 	float		offsetY;
-	float		fanScale;
+	float		stripScale;
 
 	MeshParams (const tcu::Vec4&	color_		= kDefaultTriangleColor,
 				float				depth_		= 0.0f,
@@ -619,15 +619,15 @@ struct MeshParams
 				float				scaleY_		= 1.0f,
 				float				offsetX_	= 0.0f,
 				float				offsetY_	= 0.0f,
-				float				fanScale_	= 0.0f)
-		: color		(color_)
-		, depth		(depth_)
-		, reversed	(reversed_)
-		, scaleX	(scaleX_)
-		, scaleY	(scaleY_)
-		, offsetX	(offsetX_)
-		, offsetY	(offsetY_)
-		, fanScale	(fanScale_)
+				float				stripScale_	= 0.0f)
+		: color			(color_)
+		, depth			(depth_)
+		, reversed		(reversed_)
+		, scaleX		(scaleX_)
+		, scaleY		(scaleY_)
+		, offsetX		(offsetX_)
+		, offsetY		(offsetY_)
+		, stripScale	(stripScale_)
 	{}
 };
 
@@ -802,62 +802,66 @@ TopologyClass getTopologyClass (vk::VkPrimitiveTopology topology)
 
 struct TestConfig
 {
+	// Should we use pipeline_library to construct pipeline.
+	vk::PipelineConstructionType	pipelineConstructionType;
+
 	// Main sequence ordering.
-	SequenceOrdering			sequenceOrdering;
+	SequenceOrdering				sequenceOrdering;
 
 	// Drawing parameters: tests will draw one or more flat meshes of triangles covering the whole "screen".
-	std::vector<MeshParams>		meshParams;			// Mesh parameters for each full-screen layer of geometry.
-	deUint32					referenceStencil;	// Reference stencil value.
+	std::vector<MeshParams>			meshParams;			// Mesh parameters for each full-screen layer of geometry.
+	deUint32						referenceStencil;	// Reference stencil value.
 
 	// Clearing parameters for the framebuffer.
-	vk::VkClearValue			clearColorValue;
-	float						clearDepthValue;
-	deUint32					clearStencilValue;
+	vk::VkClearValue				clearColorValue;
+	float							clearDepthValue;
+	deUint32						clearStencilValue;
 
 	// Expected output in the attachments.
-	ReferenceColorGenerator		referenceColor;
-	float						expectedDepth;
-	deUint32					expectedStencil;
+	ReferenceColorGenerator			referenceColor;
+	float							expectedDepth;
+	deUint32						expectedStencil;
 
 	// Depth bounds parameters for the pipeline.
-	float						minDepthBounds;
-	float						maxDepthBounds;
+	float							minDepthBounds;
+	float							maxDepthBounds;
 
 	// Force inclusion of passthrough geometry shader or not.
-	bool						forceGeometryShader;
+	bool							forceGeometryShader;
 
 	// Force single vertex in the VBO.
-	bool						singleVertex;
-	deUint32					singleVertexDrawCount;
+	bool							singleVertex;
+	deUint32						singleVertexDrawCount;
 
 	// Offset and extra room after the vertex buffer data.
-	vk::VkDeviceSize			vertexDataOffset;
-	vk::VkDeviceSize			vertexDataExtraBytes;
+	vk::VkDeviceSize				vertexDataOffset;
+	vk::VkDeviceSize				vertexDataExtraBytes;
 
 	// Static and dynamic pipeline configuration.
-	VertexGeneratorConfig		vertexGenerator;
-	CullModeConfig				cullModeConfig;
-	FrontFaceConfig				frontFaceConfig;
-	TopologyConfig				topologyConfig;
-	ViewportConfig				viewportConfig;
-	ScissorConfig				scissorConfig;
-	StrideConfig				strideConfig;
-	DepthTestEnableConfig		depthTestEnableConfig;
-	DepthWriteEnableConfig		depthWriteEnableConfig;
-	DepthCompareOpConfig		depthCompareOpConfig;
-	DepthBoundsTestEnableConfig	depthBoundsTestEnableConfig;
-	StencilTestEnableConfig		stencilTestEnableConfig;
-	StencilOpConfig				stencilOpConfig;
-	DepthBiasEnableConfig		depthBiasEnableConfig;
-	RastDiscardEnableConfig		rastDiscardEnableConfig;
-	PrimRestartEnableConfig		primRestartEnableConfig;
-	LogicOpConfig				logicOpConfig;
-	PatchControlPointsConfig	patchControlPointsConfig;
-	DepthBiasConfig				depthBiasConfig;
+	VertexGeneratorConfig			vertexGenerator;
+	CullModeConfig					cullModeConfig;
+	FrontFaceConfig					frontFaceConfig;
+	TopologyConfig					topologyConfig;
+	ViewportConfig					viewportConfig;
+	ScissorConfig					scissorConfig;
+	StrideConfig					strideConfig;
+	DepthTestEnableConfig			depthTestEnableConfig;
+	DepthWriteEnableConfig			depthWriteEnableConfig;
+	DepthCompareOpConfig			depthCompareOpConfig;
+	DepthBoundsTestEnableConfig		depthBoundsTestEnableConfig;
+	StencilTestEnableConfig			stencilTestEnableConfig;
+	StencilOpConfig					stencilOpConfig;
+	DepthBiasEnableConfig			depthBiasEnableConfig;
+	RastDiscardEnableConfig			rastDiscardEnableConfig;
+	PrimRestartEnableConfig			primRestartEnableConfig;
+	LogicOpConfig					logicOpConfig;
+	PatchControlPointsConfig		patchControlPointsConfig;
+	DepthBiasConfig					depthBiasConfig;
 
 	// Sane defaults.
-	TestConfig (SequenceOrdering ordering, const VertexGenerator* staticVertexGenerator = nullptr, const VertexGenerator* dynamicVertexGenerator = nullptr)
-		: sequenceOrdering				(ordering)
+	TestConfig (vk::PipelineConstructionType pipelineType, SequenceOrdering ordering, const VertexGenerator* staticVertexGenerator = nullptr, const VertexGenerator* dynamicVertexGenerator = nullptr)
+		: pipelineConstructionType		(pipelineType)
+		, sequenceOrdering				(ordering)
 		, meshParams					(1u, MeshParams())
 		, referenceStencil				(0u)
 		, clearColorValue				(vk::makeClearValueColor(kDefaultClearColor))
@@ -1125,7 +1129,7 @@ struct PushConstants
 	float		scaleY;
 	float		offsetX;
 	float		offsetY;
-	float		fanScale;
+	float		stripScale;
 };
 
 void copy(vk::VkStencilOpState& dst, const StencilOpParams& src)
@@ -1251,6 +1255,8 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 
 	if ((colorProperties.optimalTilingFeatures & kColorFeatures) != kColorFeatures)
 		TCU_THROW(NotSupportedError, "Required color image features not supported");
+
+	checkPipelineLibraryRequirements(vki, physicalDevice, m_testConfig.pipelineConstructionType);
 }
 
 void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programCollection) const
@@ -1271,7 +1277,7 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 		<< "    float scaleY;\n"
 		<< "    float offsetX;\n"
 		<< "    float offsetY;\n"
-		<< "    float fanScale;\n"
+		<< "    float stripScale;\n"
 		<< "} pushConstants;\n"
 		;
 	const auto pushConstants = pushSource.str();
@@ -1314,17 +1320,17 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 		<< "void main() {\n"
 		<< "${CALCULATIONS}"
 		<< "    gl_Position = vec4(vertexCoords.x * pushConstants.scaleX + pushConstants.offsetX, vertexCoords.y * pushConstants.scaleY + pushConstants.offsetY, pushConstants.depthValue, 1.0);\n"
-		<< "    vec2 fanOffset;\n"
+		<< "    vec2 stripOffset;\n"
 		<< "    switch (gl_VertexIndex) {\n"
-		<< "    case 0: fanOffset = vec2(0.0, 0.0); break;\n"
-		<< "    case 1: fanOffset = vec2(1.0, 0.0); break;\n"
-		<< "    case 2: fanOffset = vec2(1.0, -1.0); break;\n"
-		<< "    case 3: fanOffset = vec2(0.0, -1.0); break;\n"
-		<< "    case 4: fanOffset = vec2(-1.0, -1.0); break;\n"
-		<< "    case 5: fanOffset = vec2(-1.0, 0.0); break;\n"
-		<< "    default: fanOffset = vec2(-1000.0); break;\n"
+		<< "    case 0: stripOffset = vec2(0.0, 0.0); break;\n"
+		<< "    case 1: stripOffset = vec2(0.0, 1.0); break;\n"
+		<< "    case 2: stripOffset = vec2(1.0, 0.0); break;\n"
+		<< "    case 3: stripOffset = vec2(1.0, 1.0); break;\n"
+		<< "    case 4: stripOffset = vec2(2.0, 0.0); break;\n"
+		<< "    case 5: stripOffset = vec2(2.0, 1.0); break;\n"
+		<< "    default: stripOffset = vec2(-1000.0); break;\n"
 		<< "    }\n"
-		<< "    gl_Position.xy += pushConstants.fanScale * fanOffset;\n"
+		<< "    gl_Position.xy += pushConstants.stripScale * stripOffset;\n"
 		<< "}\n"
 		;
 
@@ -1498,43 +1504,43 @@ void copyAndFlush(const vk::DeviceInterface& vkd, vk::VkDevice device, vk::Buffe
 void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& vkd, vk::VkCommandBuffer cmdBuffer)
 {
 	if (testConfig.cullModeConfig.dynamicValue)
-		vkd.cmdSetCullModeEXT(cmdBuffer, testConfig.cullModeConfig.dynamicValue.get());
+		vkd.cmdSetCullMode(cmdBuffer, testConfig.cullModeConfig.dynamicValue.get());
 
 	if (testConfig.frontFaceConfig.dynamicValue)
-		vkd.cmdSetFrontFaceEXT(cmdBuffer, testConfig.frontFaceConfig.dynamicValue.get());
+		vkd.cmdSetFrontFace(cmdBuffer, testConfig.frontFaceConfig.dynamicValue.get());
 
 	if (testConfig.topologyConfig.dynamicValue)
-		vkd.cmdSetPrimitiveTopologyEXT(cmdBuffer, testConfig.topologyConfig.dynamicValue.get());
+		vkd.cmdSetPrimitiveTopology(cmdBuffer, testConfig.topologyConfig.dynamicValue.get());
 
 	if (testConfig.viewportConfig.dynamicValue)
 	{
 		const auto& viewports = testConfig.viewportConfig.dynamicValue.get();
-		vkd.cmdSetViewportWithCountEXT(cmdBuffer, static_cast<deUint32>(viewports.size()), viewports.data());
+		vkd.cmdSetViewportWithCount(cmdBuffer, static_cast<deUint32>(viewports.size()), viewports.data());
 	}
 
 	if (testConfig.scissorConfig.dynamicValue)
 	{
 		const auto& scissors = testConfig.scissorConfig.dynamicValue.get();
-		vkd.cmdSetScissorWithCountEXT(cmdBuffer, static_cast<deUint32>(scissors.size()), scissors.data());
+		vkd.cmdSetScissorWithCount(cmdBuffer, static_cast<deUint32>(scissors.size()), scissors.data());
 	}
 
 	if (testConfig.depthTestEnableConfig.dynamicValue)
-		vkd.cmdSetDepthTestEnableEXT(cmdBuffer, makeVkBool32(testConfig.depthTestEnableConfig.dynamicValue.get()));
+		vkd.cmdSetDepthTestEnable(cmdBuffer, makeVkBool32(testConfig.depthTestEnableConfig.dynamicValue.get()));
 
 	if (testConfig.depthWriteEnableConfig.dynamicValue)
-		vkd.cmdSetDepthWriteEnableEXT(cmdBuffer, makeVkBool32(testConfig.depthWriteEnableConfig.dynamicValue.get()));
+		vkd.cmdSetDepthWriteEnable(cmdBuffer, makeVkBool32(testConfig.depthWriteEnableConfig.dynamicValue.get()));
 
 	if (testConfig.depthCompareOpConfig.dynamicValue)
-		vkd.cmdSetDepthCompareOpEXT(cmdBuffer, testConfig.depthCompareOpConfig.dynamicValue.get());
+		vkd.cmdSetDepthCompareOp(cmdBuffer, testConfig.depthCompareOpConfig.dynamicValue.get());
 
 	if (testConfig.depthBoundsTestEnableConfig.dynamicValue)
-		vkd.cmdSetDepthBoundsTestEnableEXT(cmdBuffer, makeVkBool32(testConfig.depthBoundsTestEnableConfig.dynamicValue.get()));
+		vkd.cmdSetDepthBoundsTestEnable(cmdBuffer, makeVkBool32(testConfig.depthBoundsTestEnableConfig.dynamicValue.get()));
 
 	if (testConfig.stencilTestEnableConfig.dynamicValue)
-		vkd.cmdSetStencilTestEnableEXT(cmdBuffer, makeVkBool32(testConfig.stencilTestEnableConfig.dynamicValue.get()));
+		vkd.cmdSetStencilTestEnable(cmdBuffer, makeVkBool32(testConfig.stencilTestEnableConfig.dynamicValue.get()));
 
 	if (testConfig.depthBiasEnableConfig.dynamicValue)
-		vkd.cmdSetDepthBiasEnableEXT(cmdBuffer, makeVkBool32(testConfig.depthBiasEnableConfig.dynamicValue.get()));
+		vkd.cmdSetDepthBiasEnable(cmdBuffer, makeVkBool32(testConfig.depthBiasEnableConfig.dynamicValue.get()));
 
 	if (testConfig.depthBiasConfig.dynamicValue)
 	{
@@ -1543,10 +1549,10 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 	}
 
 	if (testConfig.rastDiscardEnableConfig.dynamicValue)
-		vkd.cmdSetRasterizerDiscardEnableEXT(cmdBuffer, makeVkBool32(testConfig.rastDiscardEnableConfig.dynamicValue.get()));
+		vkd.cmdSetRasterizerDiscardEnable(cmdBuffer, makeVkBool32(testConfig.rastDiscardEnableConfig.dynamicValue.get()));
 
 	if (testConfig.primRestartEnableConfig.dynamicValue)
-		vkd.cmdSetPrimitiveRestartEnableEXT(cmdBuffer, makeVkBool32(testConfig.primRestartEnableConfig.dynamicValue.get()));
+		vkd.cmdSetPrimitiveRestartEnable(cmdBuffer, makeVkBool32(testConfig.primRestartEnableConfig.dynamicValue.get()));
 
 	if (testConfig.logicOpConfig.dynamicValue)
 		vkd.cmdSetLogicOpEXT(cmdBuffer, testConfig.logicOpConfig.dynamicValue.get());
@@ -1557,7 +1563,7 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 	if (testConfig.stencilOpConfig.dynamicValue)
 	{
 		for (const auto& params : testConfig.stencilOpConfig.dynamicValue.get())
-			vkd.cmdSetStencilOpEXT(cmdBuffer, params.faceMask, params.failOp, params.passOp, params.depthFailOp, params.compareOp);
+			vkd.cmdSetStencilOp(cmdBuffer, params.faceMask, params.failOp, params.passOp, params.depthFailOp, params.compareOp);
 	}
 
 	if (testConfig.vertexGenerator.dynamicValue)
@@ -1608,7 +1614,7 @@ bool maybeBindVertexBufferDynStride(const TestConfig& testConfig, const vk::Devi
 		sizes.push_back		(vertBuffer.dataSize);
 	}
 
-	vkd.cmdBindVertexBuffers2EXT(cmdBuffer, 0u, static_cast<deUint32>(chosenBuffers.size()), buffers.data(), offsets.data(), sizes.data(), strides.data());
+	vkd.cmdBindVertexBuffers2(cmdBuffer, 0u, static_cast<deUint32>(chosenBuffers.size()), buffers.data(), offsets.data(), sizes.data(), strides.data());
 
 	return true;
 }
@@ -1630,7 +1636,6 @@ void bindVertexBuffers (const vk::DeviceInterface& vkd, vk::VkCommandBuffer cmdB
 
 	vkd.cmdBindVertexBuffers(cmdBuffer, 0u, static_cast<deUint32>(vertexBuffers.size()), buffers.data(), offsets.data());
 }
-
 
 // Create a vector of VertexBufferInfo elements using the given vertex generator and set of vertices.
 void prepareVertexBuffers (	std::vector<VertexBufferInfo>&	buffers,
@@ -1837,13 +1842,18 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	if (topologyClass == TopologyClass::TRIANGLE)
 	{
 		DE_ASSERT(!vertices.empty());
-		rvertices.reserve(6u);
-                rvertices.push_back(vertices[1]);
-                rvertices.push_back(vertices[0]);
-                rvertices.push_back(vertices[3]);
-                rvertices.push_back(vertices[2]);
-                rvertices.push_back(vertices[5]);
-                rvertices.push_back(vertices[4]);
+		if (m_testConfig.singleVertex)
+			rvertices.push_back(vertices[0]);
+		else
+		{
+			rvertices.reserve(6u);
+			rvertices.push_back(vertices[1]);
+			rvertices.push_back(vertices[0]);
+			rvertices.push_back(vertices[3]);
+			rvertices.push_back(vertices[2]);
+			rvertices.push_back(vertices[5]);
+			rvertices.push_back(vertices[4]);
+		}
 	}
 
 	if (topologyClass != TopologyClass::TRIANGLE)
@@ -2014,51 +2024,6 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		teseModule = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("tese"), 0u);
 	}
 
-	// Shader stages.
-	std::vector<vk::VkPipelineShaderStageCreateInfo> shaderStages;
-	std::vector<vk::VkPipelineShaderStageCreateInfo> shaderStaticStages;
-
-	vk::VkPipelineShaderStageCreateInfo shaderStageCreateInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	//	VkStructureType						sType;
-		nullptr,													//	const void*							pNext;
-		0u,															//	VkPipelineShaderStageCreateFlags	flags;
-		vk::VK_SHADER_STAGE_FRAGMENT_BIT,							//	VkShaderStageFlagBits				stage;
-		fragModule.get(),											//	VkShaderModule						module;
-		"main",														//	const char*							pName;
-		nullptr,													//	const VkSpecializationInfo*			pSpecializationInfo;
-	};
-
-	shaderStages.push_back(shaderStageCreateInfo);
-
-	if (m_testConfig.needsGeometryShader())
-	{
-		shaderStageCreateInfo.stage = vk::VK_SHADER_STAGE_GEOMETRY_BIT;
-		shaderStageCreateInfo.module = geomModule.get();
-		shaderStages.push_back(shaderStageCreateInfo);
-	}
-
-	if (m_testConfig.needsTessellation())
-	{
-		shaderStageCreateInfo.stage = vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
-		shaderStageCreateInfo.module = tescModule.get();
-		shaderStages.push_back(shaderStageCreateInfo);
-
-		shaderStageCreateInfo.stage = vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
-		shaderStageCreateInfo.module = teseModule.get();
-		shaderStages.push_back(shaderStageCreateInfo);
-	}
-
-	// Both vectors are the same up to here. Then, they differ in the vertex stage.
-	shaderStaticStages = shaderStages;
-	shaderStageCreateInfo.stage = vk::VK_SHADER_STAGE_VERTEX_BIT;
-
-	shaderStageCreateInfo.module = dynamicVertModule.get();
-	shaderStages.push_back(shaderStageCreateInfo);
-
-	shaderStageCreateInfo.module = staticVertModule.get();
-	shaderStaticStages.push_back(shaderStageCreateInfo);
-
 	// Input state.
 	const auto vertexBindings	= m_testConfig.vertexGenerator.staticValue->getBindingDescriptions(m_testConfig.strideConfig.staticValue);
 	const auto vertexAttributes	= m_testConfig.vertexGenerator.staticValue->getAttributeDescriptions();
@@ -2095,46 +2060,8 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	else
 		DE_ASSERT(m_testConfig.scissorConfig.staticValue.size() > 0u);
 
-	// The viewport and scissor counts must match in the static part, which will be used by the static pipeline.
-	const auto minStaticCount = static_cast<deUint32>(std::min(m_testConfig.viewportConfig.staticValue.size(), m_testConfig.scissorConfig.staticValue.size()));
-
-	// For the static pipeline.
-	const vk::VkPipelineViewportStateCreateInfo staticViewportStateCreateInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,					//	VkStructureType						sType;
-		nullptr,																	//	const void*							pNext;
-		0u,																			//	VkPipelineViewportStateCreateFlags	flags;
-		minStaticCount,																//	deUint32							viewportCount;
-		m_testConfig.viewportConfig.staticValue.data(),								//	const VkViewport*					pViewports;
-		minStaticCount,																//	deUint32							scissorCount;
-		m_testConfig.scissorConfig.staticValue.data(),								//	const VkRect2D*						pScissors;
-	};
-
-	// For the dynamic pipeline.
-	const auto finalDynamicViewportCount = (m_testConfig.viewportConfig.dynamicValue
-		? m_testConfig.viewportConfig.dynamicValue.get().size()
-		: m_testConfig.viewportConfig.staticValue.size());
-
-	const auto finalDynamicScissorCount = (m_testConfig.scissorConfig.dynamicValue
-		? m_testConfig.scissorConfig.dynamicValue.get().size()
-		: m_testConfig.scissorConfig.staticValue.size());
-
-	const auto minDynamicCount = static_cast<deUint32>(std::min(finalDynamicScissorCount, finalDynamicViewportCount));
-
-	// The viewport and scissor counts must be zero when a dynamic value will be provided, as per the spec.
-	const vk::VkPipelineViewportStateCreateInfo dynamicViewportStateCreateInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,					//	VkStructureType						sType;
-		nullptr,																	//	const void*							pNext;
-		0u,																			//	VkPipelineViewportStateCreateFlags	flags;
-		(m_testConfig.viewportConfig.dynamicValue ? 0u : minDynamicCount),			//	deUint32							viewportCount;
-		m_testConfig.viewportConfig.staticValue.data(),								//	const VkViewport*					pViewports;
-		(m_testConfig.scissorConfig.dynamicValue ? 0u : minDynamicCount),			//	deUint32							scissorCount;
-		m_testConfig.scissorConfig.staticValue.data(),								//	const VkRect2D*						pScissors;
-	};
-
 	// Rasterization state.
-	vk::VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo =
+	vk::VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	//	VkStructureType							sType;
 		nullptr,														//	const void*								pNext;
@@ -2152,7 +2079,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	};
 
 	// Multisample state.
-	const vk::VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo =
+	const vk::VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	//	VkStructureType							sType;
 		nullptr,														//	const void*								pNext;
@@ -2252,40 +2179,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		{ 0.0f, 0.0f, 0.0f, 0.0f }										// float                                         blendConstants[4]
 	};
 
-	const vk::VkPipelineTessellationStateCreateInfo pipelineTessellationStateCreateInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,	// VkStructureType                               sType
-		nullptr,														// const void*                                   pNext
-		0u,																// VkPipelineTessellationStateCreateFlags        flags
-		m_testConfig.patchControlPointsConfig.staticValue,				// uint32_t										 patchControlPoints
-	};
-
-	const auto pTessellationState = (m_testConfig.needsTessellation() ? &pipelineTessellationStateCreateInfo : nullptr);
-
-	const vk::VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfoTemplate =
-	{
-		vk::VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	//	VkStructureType									sType;
-		nullptr,												//	const void*										pNext;
-		0u,														//	VkPipelineCreateFlags							flags;
-		static_cast<deUint32>(shaderStages.size()),				//	deUint32										stageCount;
-		shaderStages.data(),									//	const VkPipelineShaderStageCreateInfo*			pStages;
-		&vertexInputStateCreateInfo,							//	const VkPipelineVertexInputStateCreateInfo*		pVertexInputState;
-		&inputAssemblyStateCreateInfo,							//	const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState;
-		pTessellationState,										//	const VkPipelineTessellationStateCreateInfo*		pTessellationState;
-		nullptr,												//	const VkPipelineViewportStateCreateInfo *	pViewportState;
-		&rasterizationStateCreateInfo,							//	const VkPipelineRasterizationStateCreateInfo*	pRasterizationState;
-		&multisampleStateCreateInfo,							//	const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
-		&depthStencilStateCreateInfo,							//	const VkPipelineDepthStencilStateCreateInfo*	pDepthStencilState;
-		&colorBlendStateCreateInfo,								//	const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
-		nullptr,												//	const VkPipelineDynamicStateCreateInfo*			pDynamicState;
-		pipelineLayout.get(),									//	VkPipelineLayout								layout;
-		renderPass.get(),										//	VkRenderPass									renderPass;
-		0u,														//	deUint32										subpass;
-		DE_NULL,												//	VkPipeline										basePipelineHandle;
-		0,														//	deInt32											basePipelineIndex;
-	};
-
-	vk::Move<vk::VkPipeline>	staticPipeline;
+	vk::GraphicsPipelineWrapper	staticPipeline		(vkd, device, m_testConfig.pipelineConstructionType);
 	const bool					bindStaticFirst		= (kSequenceOrdering == SequenceOrdering::BETWEEN_PIPELINES	||
 													   kSequenceOrdering == SequenceOrdering::AFTER_PIPELINES	||
 													   kSequenceOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC);
@@ -2294,19 +2188,82 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	// Create static pipeline when needed.
 	if (useStaticPipeline)
 	{
-		auto staticPipelineCreateInfo			= graphicsPipelineCreateInfoTemplate;
-		staticPipelineCreateInfo.pViewportState	= &staticViewportStateCreateInfo;
-		staticPipelineCreateInfo.pStages		= shaderStaticStages.data();
-		staticPipeline							= vk::createGraphicsPipeline(vkd, device, DE_NULL, &staticPipelineCreateInfo);
+		auto viewports	= m_testConfig.viewportConfig.staticValue;
+		auto scisors	= m_testConfig.scissorConfig.staticValue;
+
+		// The viewport and scissor counts must match in the static part, which will be used by the static pipeline.
+		const auto minStaticCount = static_cast<deUint32>(std::min(m_testConfig.viewportConfig.staticValue.size(), m_testConfig.scissorConfig.staticValue.size()));
+		viewports.resize(minStaticCount);
+		scisors.resize(minStaticCount);
+
+		staticPipeline.setDefaultPatchControlPoints(m_testConfig.patchControlPointsConfig.staticValue)
+					  .setupVertexInputStete(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
+					  .setupPreRasterizationShaderState(
+											viewports,
+											scisors,
+											*pipelineLayout,
+											*renderPass,
+											0u,
+											*staticVertModule,
+											&rasterizationStateCreateInfo,
+											*tescModule,
+											*teseModule,
+											*geomModule)
+					  .setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragModule, &depthStencilStateCreateInfo, &multisampleStateCreateInfo)
+					  .setupFragmentOutputState(*renderPass, 0u, &colorBlendStateCreateInfo, &multisampleStateCreateInfo)
+					  .buildPipeline();
 	}
 
 	// Create dynamic pipeline.
-	vk::Move<vk::VkPipeline> graphicsPipeline;
+	vk::GraphicsPipelineWrapper graphicsPipeline(vkd, device, m_testConfig.pipelineConstructionType);
 	{
-		auto dynamicPipelineCreateInfo				= graphicsPipelineCreateInfoTemplate;
-		dynamicPipelineCreateInfo.pDynamicState		= &dynamicStateCreateInfo;
-		dynamicPipelineCreateInfo.pViewportState	= &dynamicViewportStateCreateInfo;
-		graphicsPipeline							= vk::createGraphicsPipeline(vkd, device, DE_NULL, &dynamicPipelineCreateInfo);
+		auto viewports	= m_testConfig.viewportConfig.staticValue;
+		auto scisors	= m_testConfig.scissorConfig.staticValue;
+
+		const auto finalDynamicViewportCount = (m_testConfig.viewportConfig.dynamicValue
+			? m_testConfig.viewportConfig.dynamicValue.get().size()
+			: m_testConfig.viewportConfig.staticValue.size());
+
+		const auto finalDynamicScissorCount = (m_testConfig.scissorConfig.dynamicValue
+			? m_testConfig.scissorConfig.dynamicValue.get().size()
+			: m_testConfig.scissorConfig.staticValue.size());
+
+		const auto minDynamicCount = static_cast<deUint32>(std::min(finalDynamicScissorCount, finalDynamicViewportCount));
+
+		// The viewport and scissor counts must be zero when a dynamic value will be provided, as per the spec.
+		if (m_testConfig.viewportConfig.dynamicValue)
+		{
+			graphicsPipeline.setDefaultViewportsCount();
+			viewports = std::vector<vk::VkViewport>();
+		}
+		else
+			viewports.resize(minDynamicCount);
+
+		if (m_testConfig.scissorConfig.dynamicValue)
+		{
+			graphicsPipeline.setDefaultScissorsCount();
+			scisors = std::vector<vk::VkRect2D>();
+		}
+		else
+			scisors.resize(minDynamicCount);
+
+		graphicsPipeline.setDynamicState(&dynamicStateCreateInfo)
+						.setDefaultPatchControlPoints(m_testConfig.patchControlPointsConfig.staticValue)
+						.setupVertexInputStete(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
+						.setupPreRasterizationShaderState(
+											viewports,
+											scisors,
+											*pipelineLayout,
+											*renderPass,
+											0u,
+											*dynamicVertModule,
+											&rasterizationStateCreateInfo,
+											*tescModule,
+											*teseModule,
+											*geomModule)
+						.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragModule, &depthStencilStateCreateInfo, &multisampleStateCreateInfo)
+						.setupFragmentOutputState(*renderPass, 0u, &colorBlendStateCreateInfo, &multisampleStateCreateInfo)
+						.buildPipeline();
 	}
 
 	// Command buffer.
@@ -2339,7 +2296,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 
 			// Bind a static pipeline first if needed.
 			if (bindStaticFirst && iteration == 0u)
-				vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, staticPipeline.get());
+				vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, staticPipeline.getPipeline());
 
 			// Maybe set extended dynamic state here.
 			if (kSequenceOrdering == SequenceOrdering::BETWEEN_PIPELINES)
@@ -2354,7 +2311,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 				(kSequenceOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC && iteration > 0u) ||
 				(kSequenceOrdering == SequenceOrdering::TWO_DRAWS_STATIC && iteration == 0u))
 			{
-				vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.get());
+				vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.getPipeline());
 			}
 
 			if (kSequenceOrdering == SequenceOrdering::BEFORE_GOOD_STATIC ||
@@ -2369,7 +2326,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 			if (kSequenceOrdering == SequenceOrdering::BEFORE_GOOD_STATIC ||
 				(kSequenceOrdering == SequenceOrdering::TWO_DRAWS_STATIC && iteration > 0u))
 			{
-				vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, staticPipeline.get());
+				vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, staticPipeline.getPipeline());
 			}
 
 			const auto& viewportVec = m_testConfig.getActiveViewportVec();
@@ -2380,14 +2337,14 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 					// Push constants.
 					PushConstants pushConstants =
 					{
-						m_testConfig.meshParams[meshIdx].color,		//	tcu::Vec4	triangleColor;
-						m_testConfig.meshParams[meshIdx].depth,		//	float		meshDepth;
-						static_cast<deInt32>(viewportIdx),			//	deInt32		viewPortIndex;
-						m_testConfig.meshParams[meshIdx].scaleX,	//	float		scaleX;
-						m_testConfig.meshParams[meshIdx].scaleY,	//	float		scaleY;
-						m_testConfig.meshParams[meshIdx].offsetX,	//	float		offsetX;
-						m_testConfig.meshParams[meshIdx].offsetY,	//	float		offsetY;
-						m_testConfig.meshParams[meshIdx].fanScale,	//	float		fanScale;
+						m_testConfig.meshParams[meshIdx].color,			//	tcu::Vec4	triangleColor;
+						m_testConfig.meshParams[meshIdx].depth,			//	float		meshDepth;
+						static_cast<deInt32>(viewportIdx),				//	deInt32		viewPortIndex;
+						m_testConfig.meshParams[meshIdx].scaleX,		//	float		scaleX;
+						m_testConfig.meshParams[meshIdx].scaleY,		//	float		scaleY;
+						m_testConfig.meshParams[meshIdx].offsetX,		//	float		offsetX;
+						m_testConfig.meshParams[meshIdx].offsetY,		//	float		offsetY;
+						m_testConfig.meshParams[meshIdx].stripScale,	//	float		stripScale;
 					};
 					vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), pushConstantStageFlags, 0u, static_cast<deUint32>(sizeof(pushConstants)), &pushConstants);
 
@@ -2568,7 +2525,7 @@ deUint8 stencilResult(vk::VkStencilOp op, deUint8 storedValue, deUint8 reference
 
 } // anonymous namespace
 
-tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
 {
 	de::MovePtr<tcu::TestCaseGroup> extendedDynamicStateGroup(new tcu::TestCaseGroup(testCtx, "extended_dynamic_state", "Tests for VK_EXT_extended_dynamic_state"));
 
@@ -2602,19 +2559,19 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 
 		// Cull modes.
 		{
-			TestConfig config(kOrdering);
+			TestConfig config(pipelineConstructionType, kOrdering);
 			config.cullModeConfig.staticValue	= vk::VK_CULL_MODE_FRONT_BIT;
 			config.cullModeConfig.dynamicValue	= tcu::just<vk::VkCullModeFlags>(vk::VK_CULL_MODE_NONE);
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "cull_none", "Dynamically set cull mode to none", config));
 		}
 		{
-			TestConfig config(kOrdering);
+			TestConfig config(pipelineConstructionType, kOrdering);
 			config.cullModeConfig.staticValue	= vk::VK_CULL_MODE_FRONT_AND_BACK;
 			config.cullModeConfig.dynamicValue	= tcu::just<vk::VkCullModeFlags>(vk::VK_CULL_MODE_BACK_BIT);
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "cull_back", "Dynamically set cull mode to back", config));
 		}
 		{
-			TestConfig config(kOrdering);
+			TestConfig config(pipelineConstructionType, kOrdering);
 			// Make triangles look back.
 			config.meshParams[0].reversed		= true;
 			config.cullModeConfig.staticValue	= vk::VK_CULL_MODE_BACK_BIT;
@@ -2622,7 +2579,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "cull_front", "Dynamically set cull mode to front", config));
 		}
 		{
-			TestConfig config(kOrdering);
+			TestConfig config(pipelineConstructionType, kOrdering);
 			config.cullModeConfig.staticValue	= vk::VK_CULL_MODE_NONE;
 			config.cullModeConfig.dynamicValue	= tcu::just<vk::VkCullModeFlags>(vk::VK_CULL_MODE_FRONT_AND_BACK);
 			config.referenceColor				= SingleColorGenerator(kDefaultClearColor);
@@ -2631,14 +2588,14 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 
 		// Front face.
 		{
-			TestConfig config(kOrdering);
+			TestConfig config(pipelineConstructionType, kOrdering);
 			config.cullModeConfig.staticValue	= vk::VK_CULL_MODE_BACK_BIT;
 			config.frontFaceConfig.staticValue	= vk::VK_FRONT_FACE_CLOCKWISE;
 			config.frontFaceConfig.dynamicValue	= tcu::just<vk::VkFrontFace>(vk::VK_FRONT_FACE_COUNTER_CLOCKWISE);
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "front_face_cw", "Dynamically set front face to clockwise", config));
 		}
 		{
-			TestConfig config(kOrdering);
+			TestConfig config(pipelineConstructionType, kOrdering);
 			// Pass triangles in clockwise order.
 			config.meshParams[0].reversed		= true;
 			config.cullModeConfig.staticValue	= vk::VK_CULL_MODE_BACK_BIT;
@@ -2647,7 +2604,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "front_face_ccw", "Dynamically set front face to counter-clockwise", config));
 		}
 		{
-			TestConfig config(kOrdering);
+			TestConfig config(pipelineConstructionType, kOrdering);
 			config.cullModeConfig.staticValue	= vk::VK_CULL_MODE_BACK_BIT;
 			config.frontFaceConfig.staticValue	= vk::VK_FRONT_FACE_COUNTER_CLOCKWISE;
 			config.frontFaceConfig.dynamicValue	= tcu::just<vk::VkFrontFace>(vk::VK_FRONT_FACE_CLOCKWISE);
@@ -2655,7 +2612,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "front_face_cw_reversed", "Dynamically set front face to clockwise with a counter-clockwise mesh", config));
 		}
 		{
-			TestConfig config(kOrdering);
+			TestConfig config(pipelineConstructionType, kOrdering);
 			// Pass triangles in clockwise order.
 			config.meshParams[0].reversed		= true;
 			config.cullModeConfig.staticValue	= vk::VK_CULL_MODE_BACK_BIT;
@@ -2667,14 +2624,14 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 
 		// Rasterizer discard
 		{
-			TestConfig config(kOrdering);
+			TestConfig config(pipelineConstructionType, kOrdering);
 			config.rastDiscardEnableConfig.staticValue = false;
 			config.rastDiscardEnableConfig.dynamicValue = tcu::just(true);
 			config.referenceColor = SingleColorGenerator(kDefaultClearColor);
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "disable_raster", "Dynamically disable rasterizer", config));
 		}
 		{
-			TestConfig config(kOrdering);
+			TestConfig config(pipelineConstructionType, kOrdering);
 			config.rastDiscardEnableConfig.staticValue = true;
 			config.rastDiscardEnableConfig.dynamicValue = tcu::just(false);
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "enable_raster", "Dynamically enable rasterizer", config));
@@ -2682,7 +2639,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 
 		// Logic op
 		{
-			TestConfig config(kOrdering);
+			TestConfig config(pipelineConstructionType, kOrdering);
 			config.logicOpConfig.staticValue = vk::VK_LOGIC_OP_CLEAR;
 			config.logicOpConfig.dynamicValue = tcu::just<vk::VkLogicOp>(vk::VK_LOGIC_OP_OR);
 			// Clear to green, paint in blue, expect cyan due to logic op.
@@ -2694,7 +2651,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 
 		// Dynamically enable primitive restart
 		{
-			TestConfig config(kOrdering);
+			TestConfig config(pipelineConstructionType, kOrdering);
 			config.primRestartEnableConfig.staticValue = false;
 			config.primRestartEnableConfig.dynamicValue = tcu::just(true);
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "prim_restart_enable", "Dynamically enable primitiveRestart", config));
@@ -2702,7 +2659,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 
 		// Dynamically change the number of primitive control points
 		{
-			TestConfig config(kOrdering);
+			TestConfig config(pipelineConstructionType, kOrdering);
 			config.topologyConfig.staticValue = vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
 			config.patchControlPointsConfig.staticValue = 1;
 			config.patchControlPointsConfig.dynamicValue = 3;
@@ -2711,7 +2668,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 
 		// Dynamic topology.
 		{
-			TestConfig baseConfig(kOrdering);
+			TestConfig baseConfig(pipelineConstructionType, kOrdering);
 
 			for (int i = 0; i < 2; ++i)
 			{
@@ -2746,7 +2703,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 
 		// Viewport.
 		{
-			TestConfig config(kOrdering);
+			TestConfig config(pipelineConstructionType, kOrdering);
 			// 2 scissors, bad static single viewport.
 			config.scissorConfig.staticValue	= ScissorVec{vk::makeRect2D(0, 0, kHalfWidthU, kFramebufferHeight), vk::makeRect2D(kHalfWidthI, 0, kHalfWidthU, kFramebufferHeight)};
 			config.viewportConfig.staticValue	= ViewportVec(1u, vk::makeViewport(kHalfWidthU, kFramebufferHeight));
@@ -2757,14 +2714,14 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "2_viewports", "Dynamically set 2 viewports", config));
 		}
 		{
-			TestConfig config(kOrdering);
+			TestConfig config(pipelineConstructionType, kOrdering);
 			// Bad static reduced viewport.
 			config.viewportConfig.staticValue	= ViewportVec(1u, vk::makeViewport(kHalfWidthU, kFramebufferHeight));
 			config.viewportConfig.staticValue	= ViewportVec(1u, vk::makeViewport(kFramebufferWidth, kFramebufferHeight));
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "1_full_viewport", "Dynamically set viewport to cover full framebuffer", config));
 		}
 		{
-			TestConfig config(kOrdering);
+			TestConfig config(pipelineConstructionType, kOrdering);
 			// 2 scissors (left half, right half), 2 reversed static viewports that need fixing (right, left).
 			config.scissorConfig.staticValue	= ScissorVec{vk::makeRect2D(0, 0, kHalfWidthU, kFramebufferHeight), vk::makeRect2D(kHalfWidthI, 0, kHalfWidthU, kFramebufferHeight)};
 			config.viewportConfig.staticValue	= ViewportVec{
@@ -2775,7 +2732,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "2_viewports_switch", "Dynamically switch the order with 2 viewports", config));
 		}
 		{
-			TestConfig config(kOrdering);
+			TestConfig config(pipelineConstructionType, kOrdering);
 			// 2 scissors, reversed dynamic viewports that should result in no drawing taking place.
 			config.scissorConfig.staticValue	= ScissorVec{vk::makeRect2D(0, 0, kHalfWidthU, kFramebufferHeight), vk::makeRect2D(kHalfWidthI, 0, kHalfWidthU, kFramebufferHeight)};
 			config.viewportConfig.staticValue	= ViewportVec{
@@ -2789,7 +2746,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 
 		// Scissor.
 		{
-			TestConfig config(kOrdering);
+			TestConfig config(pipelineConstructionType, kOrdering);
 			// 2 viewports, bad static single scissor.
 			config.viewportConfig.staticValue	= ViewportVec{
 				vk::makeViewport(0.0f, 0.0f, kHalfWidthF, kHeightF, 0.0f, 1.0f),
@@ -2803,14 +2760,14 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "2_scissors", "Dynamically set 2 scissors", config));
 		}
 		{
-			TestConfig config(kOrdering);
+			TestConfig config(pipelineConstructionType, kOrdering);
 			// 1 viewport, bad static single scissor.
 			config.scissorConfig.staticValue	= ScissorVec(1u, vk::makeRect2D(kHalfWidthI, 0, kHalfWidthU, kFramebufferHeight));
 			config.scissorConfig.dynamicValue	= ScissorVec(1u, vk::makeRect2D(kFramebufferWidth, kFramebufferHeight));
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "1_full_scissor", "Dynamically set scissor to cover full framebuffer", config));
 		}
 		{
-			TestConfig config(kOrdering);
+			TestConfig config(pipelineConstructionType, kOrdering);
 			// 2 viewports, 2 reversed scissors that need fixing.
 			config.viewportConfig.staticValue	= ViewportVec{
 				vk::makeViewport(0.0f, 0.0f, kHalfWidthF, kHeightF, 0.0f, 1.0f),
@@ -2824,7 +2781,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "2_scissors_switch", "Dynamically switch the order with 2 scissors", config));
 		}
 		{
-			TestConfig config(kOrdering);
+			TestConfig config(pipelineConstructionType, kOrdering);
 			// 2 viewports, 2 scissors switched to prevent drawing.
 			config.viewportConfig.staticValue	= ViewportVec{
 				vk::makeViewport(0.0f, 0.0f, kHalfWidthF, kHeightF, 0.0f, 1.0f),
@@ -2870,20 +2827,20 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 				}
 
 				{
-					TestConfig config(kOrdering, factory);
+					TestConfig config(pipelineConstructionType, kOrdering, factory);
 					config.strideConfig.staticValue		= halfStrides;
 					config.strideConfig.dynamicValue	= vertexStrides;
 					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, prefix, "Dynamically set stride", config));
 				}
 				{
-					TestConfig config(kOrdering, factory);
+					TestConfig config(pipelineConstructionType, kOrdering, factory);
 					config.strideConfig.staticValue		= halfStrides;
 					config.strideConfig.dynamicValue	= vertexStrides;
 					config.vertexDataOffset				= vertexStrides[0];
 					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, prefix + "_with_offset", "Dynamically set stride using a nonzero vertex data offset", config));
 				}
 				{
-					TestConfig config(kOrdering, factory);
+					TestConfig config(pipelineConstructionType, kOrdering, factory);
 					config.strideConfig.staticValue		= halfStrides;
 					config.strideConfig.dynamicValue	= vertexStrides;
 					config.vertexDataOffset				= vertexStrides[0];
@@ -2899,13 +2856,17 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 			}
 
 			// Dynamic stride of 0
+			//
+			// The "two_draws" variants are invalid because the non-zero vertex stride will cause out-of-bounds access
+			// when drawing more than one vertex.
+			if (kOrdering != SequenceOrdering::TWO_DRAWS_STATIC && kOrdering != SequenceOrdering::TWO_DRAWS_DYNAMIC)
 			{
-				TestConfig config(kOrdering, getVertexWithExtraAttributesGenerator());
+				TestConfig config(pipelineConstructionType, kOrdering, getVertexWithExtraAttributesGenerator());
 				config.strideConfig.staticValue		= config.getActiveVertexGenerator()->getVertexDataStrides();
 				config.strideConfig.dynamicValue	= { 0 };
 				config.vertexDataOffset				= 4;
-				config.singleVertex                 = true;
-				config.singleVertexDrawCount        = 6;
+				config.singleVertex					= true;
+				config.singleVertexDrawCount		= 6;
 
 				// Make the mesh cover the top half only. If the implementation reads data outside the vertex data it should read the
 				// offscreen vertex and draw something in the bottom half.
@@ -2913,8 +2874,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 				config.meshParams[0].scaleY		= 0.5f;
 				config.meshParams[0].offsetY	= -0.5f;
 
-				// Use fan scale to synthesize a fan from a vertex attribute which remains constant over the draw call.
-				config.meshParams[0].fanScale = 1.0f;
+				// Use strip scale to synthesize a strip from a vertex attribute which remains constant over the draw call.
+				config.meshParams[0].stripScale = 1.0f;
 
 				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "zero_stride_with_offset", "Dynamically set zero stride using a nonzero vertex data offset", config));
 			}
@@ -2922,7 +2883,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 
 		// Depth test enable.
 		{
-			TestConfig config(kOrdering);
+			TestConfig config(pipelineConstructionType, kOrdering);
 			config.depthTestEnableConfig.staticValue	= false;
 			config.depthTestEnableConfig.dynamicValue	= tcu::just(true);
 			// By default, the depth test never passes when enabled.
@@ -2930,7 +2891,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_test_enable", "Dynamically enable depth test", config));
 		}
 		{
-			TestConfig config(kOrdering);
+			TestConfig config(pipelineConstructionType, kOrdering);
 			config.depthTestEnableConfig.staticValue	= true;
 			config.depthTestEnableConfig.dynamicValue	= tcu::just(false);
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_test_disable", "Dynamically disable depth test", config));
@@ -2938,7 +2899,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 
 		// Depth write enable.
 		{
-			TestConfig config(kOrdering);
+			TestConfig config(pipelineConstructionType, kOrdering);
 
 			// Enable depth test and set values so it passes.
 			config.depthTestEnableConfig.staticValue	= true;
@@ -2954,7 +2915,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_write_enable", "Dynamically enable writes to the depth buffer", config));
 		}
 		{
-			TestConfig config(kOrdering);
+			TestConfig config(pipelineConstructionType, kOrdering);
 
 			// Enable depth test and set values so it passes.
 			config.depthTestEnableConfig.staticValue	= true;
@@ -2979,7 +2940,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 				const bool useDynamicBias = (dynamicBiasIter > 0);
 
 				{
-					TestConfig config(kOrdering);
+					TestConfig config(pipelineConstructionType, kOrdering);
 
 					// Enable depth test and write 1.0f
 					config.depthTestEnableConfig.staticValue = true;
@@ -3017,7 +2978,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, caseName, caseDesc, config));
 				}
 				{
-					TestConfig config(kOrdering);
+					TestConfig config(pipelineConstructionType, kOrdering);
 
 					// Enable depth test and write 1.0f
 					config.depthTestEnableConfig.staticValue = true;
@@ -3059,7 +3020,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 
 		// Depth compare op.
 		{
-			TestConfig baseConfig(kOrdering);
+			TestConfig baseConfig(pipelineConstructionType, kOrdering);
 			const tcu::Vec4 kAlternativeColor				(0.0f, 0.0f, 0.5f, 1.0f);
 			baseConfig.depthTestEnableConfig.staticValue	= true;
 			baseConfig.depthWriteEnableConfig.staticValue	= true;
@@ -3183,7 +3144,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 
 		// Depth bounds test.
 		{
-			TestConfig baseConfig(kOrdering);
+			TestConfig baseConfig(pipelineConstructionType, kOrdering);
 			baseConfig.minDepthBounds							= 0.25f;
 			baseConfig.maxDepthBounds							= 0.75f;
 			baseConfig.meshParams[0].depth						= 0.0f;
@@ -3205,7 +3166,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 
 		// Stencil test enable.
 		{
-			TestConfig config(kOrdering);
+			TestConfig config(pipelineConstructionType, kOrdering);
 			config.stencilTestEnableConfig.staticValue				= false;
 			config.stencilTestEnableConfig.dynamicValue				= tcu::just(true);
 			config.stencilOpConfig.staticValue.front().compareOp	= vk::VK_COMPARE_OP_NEVER;
@@ -3213,7 +3174,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "stencil_test_enable", "Dynamically enable the stencil test", config));
 		}
 		{
-			TestConfig config(kOrdering);
+			TestConfig config(pipelineConstructionType, kOrdering);
 			config.stencilTestEnableConfig.staticValue				= true;
 			config.stencilTestEnableConfig.dynamicValue				= tcu::just(false);
 			config.stencilOpConfig.staticValue.front().compareOp	= vk::VK_COMPARE_OP_NEVER;
@@ -3304,7 +3265,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 							const bool globalPass	= (wouldPass && !depthFail);	// Global result of the stencil+depth test.
 
 							// Start tuning test parameters.
-							TestConfig config(kOrdering);
+							TestConfig config(pipelineConstructionType, kOrdering);
 
 							// No face culling is applied by default, so both the front and back operations could apply depending on the mesh.
 							if (face.face == vk::VK_STENCIL_FACE_FRONT_BIT)
@@ -3450,7 +3411,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 				for (const auto& stride : goodStrides)
 					badStrides.push_back(stride / 2u);
 
-				TestConfig config(kOrdering, staticGen, dynamicGen);
+				TestConfig config(pipelineConstructionType, kOrdering, staticGen, dynamicGen);
 				config.strideConfig.staticValue			= badStrides;
 				config.strideConfig.dynamicValue		= goodStrides;
 				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "vertex_input", "Dynamically set vertex input", config));
@@ -3458,13 +3419,13 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 
 			{
 				// Variant without mixing in the stride config.
-				TestConfig config(kOrdering, getVertexWithPaddingGenerator(), getVertexWithExtraAttributesGenerator());
+				TestConfig config(pipelineConstructionType, kOrdering, getVertexWithPaddingGenerator(), getVertexWithExtraAttributesGenerator());
 				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "vertex_input_no_dyn_stride", "Dynamically set vertex input without using dynamic strides", config));
 			}
 
 			{
 				// Variant using multiple bindings.
-				TestConfig config(kOrdering, getVertexWithExtraAttributesGenerator(), getVertexWithMultipleBindingsGenerator());
+				TestConfig config(pipelineConstructionType, kOrdering, getVertexWithExtraAttributesGenerator(), getVertexWithMultipleBindingsGenerator());
 				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "vertex_input_multiple_bindings", "Dynamically set vertex input with multiple bindings", config));
 			}
 		}

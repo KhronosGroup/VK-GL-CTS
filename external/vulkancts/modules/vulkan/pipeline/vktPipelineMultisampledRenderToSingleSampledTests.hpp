@@ -24,14 +24,15 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktTestCase.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 
 namespace vkt
 {
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createMultisampledRenderToSingleSampledTests (tcu::TestContext& testCtx);
-tcu::TestCaseGroup* createMultisampledMiscTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createMultisampledRenderToSingleSampledTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
+tcu::TestCaseGroup* createMultisampledMiscTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
 
 } // pipeline
 } // vkt

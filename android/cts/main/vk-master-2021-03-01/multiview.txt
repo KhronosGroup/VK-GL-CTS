@@ -1,0 +1,16 @@
+dEQP-VK.multiview.non_precise_queries.15
+dEQP-VK.multiview.non_precise_queries.8
+dEQP-VK.multiview.non_precise_queries.1_2_4_8
+dEQP-VK.multiview.non_precise_queries.15_15_15_15
+dEQP-VK.multiview.non_precise_queries.8_1_1_8
+dEQP-VK.multiview.non_precise_queries.5_10_5_10
+dEQP-VK.multiview.non_precise_queries.1_2_4_8_16_32
+dEQP-VK.multiview.non_precise_queries.max_multi_view_view_count
+dEQP-VK.multiview.renderpass2.non_precise_queries.15
+dEQP-VK.multiview.renderpass2.non_precise_queries.8
+dEQP-VK.multiview.renderpass2.non_precise_queries.1_2_4_8
+dEQP-VK.multiview.renderpass2.non_precise_queries.15_15_15_15
+dEQP-VK.multiview.renderpass2.non_precise_queries.8_1_1_8
+dEQP-VK.multiview.renderpass2.non_precise_queries.5_10_5_10
+dEQP-VK.multiview.renderpass2.non_precise_queries.1_2_4_8_16_32
+dEQP-VK.multiview.renderpass2.non_precise_queries.max_multi_view_view_count

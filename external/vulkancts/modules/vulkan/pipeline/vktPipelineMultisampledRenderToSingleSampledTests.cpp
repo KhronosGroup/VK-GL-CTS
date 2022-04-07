@@ -37,6 +37,7 @@
 #include "vkBuilderUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkImageUtil.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"
@@ -206,6 +207,8 @@ struct TestParams
 	// Used to carry forward the rng seed from test generation to test run.
 	deUint32 rngSeed;
 
+	PipelineConstructionType pipelineConstructionType;
+
 	TestParams ()
 		: numFloatColor1Samples		{}
 		, numFloatColor2Samples		{}
@@ -337,13 +340,14 @@ public:
 	void									beginCommandBuffer();
 	void									submitCommandsAndWait();
 
-	const Unique<VkCommandPool>				cmdPool;
-	const Unique<VkCommandBuffer>			cmdBuffer;
-	std::vector<PipelineSp>					pipelines;
-	std::vector<Move<VkDescriptorPool>>		descriptorPools;
-	std::vector<Move<VkDescriptorSet>>		descriptorSets;
-	std::vector<Move<VkRenderPass>>			renderPasses;
-	std::vector<Move<VkFramebuffer>>		framebuffers;
+	const Unique<VkCommandPool>							cmdPool;
+	const Unique<VkCommandBuffer>						cmdBuffer;
+	std::vector<PipelineSp>								computePipelines;
+	std::vector<MovePtr<GraphicsPipelineWrapper>>		graphicsPipelines;
+	std::vector<Move<VkDescriptorPool>>					descriptorPools;
+	std::vector<Move<VkDescriptorSet>>					descriptorSets;
+	std::vector<Move<VkRenderPass>>						renderPasses;
+	std::vector<Move<VkFramebuffer>>					framebuffers;
 
 private:
 	Context&								context;
@@ -411,21 +415,22 @@ Move<VkImageView> Image::makeView(const DeviceInterface&	vk,
 }
 
 //! Create a test-specific MSAA pipeline
-Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&					vk,
-									   const VkDevice							device,
-									   const VkPipelineLayout					pipelineLayout,
-									   const VkRenderPass						renderPass,
-									   const VkShaderModule						vertexModule,
-									   const VkShaderModule						fragmentModule,
-									   const bool								enableBlend,
-									   const bool								enableDepthStencilWrite,
-									   const bool								enableDepthTest,
-									   const deUint32							intWriteMask,
-									   const deUint32							subpassNdx,
-									   const deInt32							integerAttachmentLocation,
-									   const UVec4&								viewportIn,
-									   const UVec4&								scissorIn,
-									   const VkSampleCountFlagBits				numSamples)
+MovePtr<GraphicsPipelineWrapper> makeGraphicsPipeline (const DeviceInterface&					vk,
+													   const VkDevice							device,
+													   const PipelineConstructionType			pipelineConstructionType,
+													   const VkPipelineLayout					pipelineLayout,
+													   const VkRenderPass						renderPass,
+													   const VkShaderModule						vertexModule,
+													   const VkShaderModule						fragmentModule,
+													   const bool								enableBlend,
+													   const bool								enableDepthStencilWrite,
+													   const bool								enableDepthTest,
+													   const deUint32							intWriteMask,
+													   const deUint32							subpassNdx,
+													   const deInt32							integerAttachmentLocation,
+													   const UVec4&								viewportIn,
+													   const UVec4&								scissorIn,
+													   const VkSampleCountFlagBits				numSamples)
 {
 	std::vector<VkVertexInputBindingDescription>	vertexInputBindingDescriptions;
 	std::vector<VkVertexInputAttributeDescription>	vertexInputAttributeDescriptions;
@@ -454,29 +459,18 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&					vk,
 		VK_FALSE,														// VkBool32									primitiveRestartEnable;
 	};
 
-	const VkViewport viewport =
-	{
+	const std::vector<VkViewport> viewports
+	{{
 		static_cast<float>(viewportIn.x()), static_cast<float>(viewportIn.y()),		// x, y
-		static_cast<float>(viewportIn.z()), static_cast<float>(viewportIn.w()),		// widht, height
+		static_cast<float>(viewportIn.z()), static_cast<float>(viewportIn.w()),		// width, height
 		0.0f, 1.0f																	// minDepth, maxDepth
-	};
+	}};
 
-	const VkRect2D scissor =
-	{
+	const std::vector<VkRect2D> scissors =
+	{{
 		makeOffset2D(scissorIn.x(), scissorIn.y()),
 		makeExtent2D(scissorIn.z(), scissorIn.w()),
-	};
-
-	const VkPipelineViewportStateCreateInfo pipelineViewportStateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,			// VkStructureType						sType;
-		DE_NULL,														// const void*							pNext;
-		(VkPipelineViewportStateCreateFlags)0,							// VkPipelineViewportStateCreateFlags	flags;
-		1u,																// uint32_t								viewportCount;
-		&viewport,														// const VkViewport*					pViewports;
-		1u,																// uint32_t								scissorCount;
-		&scissor,														// const VkRect2D*						pScissors;
-	};
+	}};
 
 	const VkPipelineRasterizationStateCreateInfo pipelineRasterizationStateInfo =
 	{
@@ -584,52 +578,30 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&					vk,
 		{ 0.0f, 0.0f, 0.0f, 0.0f },									// float										blendConstants[4];
 	};
 
-	const VkPipelineShaderStageCreateInfo pShaderStages[] =
-	{
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
-			DE_NULL,												// const void*							pNext;
-			(VkPipelineShaderStageCreateFlags)0,					// VkPipelineShaderStageCreateFlags		flags;
-			VK_SHADER_STAGE_VERTEX_BIT,								// VkShaderStageFlagBits				stage;
-			vertexModule,											// VkShaderModule						module;
-			"main",													// const char*							pName;
-			DE_NULL,												// const VkSpecializationInfo*			pSpecializationInfo;
-		},
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
-			DE_NULL,												// const void*							pNext;
-			(VkPipelineShaderStageCreateFlags)0,					// VkPipelineShaderStageCreateFlags		flags;
-			VK_SHADER_STAGE_FRAGMENT_BIT,							// VkShaderStageFlagBits				stage;
-			fragmentModule,											// VkShaderModule						module;
-			"main",													// const char*							pName;
-			DE_NULL,												// const VkSpecializationInfo*			pSpecializationInfo;
-		}
-	};
+	MovePtr<GraphicsPipelineWrapper> graphicsPipeline = MovePtr<GraphicsPipelineWrapper>(new GraphicsPipelineWrapper(vk, device, pipelineConstructionType, 0u));
+	graphicsPipeline.get()->setMonolithicPipelineLayout(pipelineLayout)
+			.setupVertexInputStete(&vertexInputStateInfo,
+								   &pipelineInputAssemblyStateInfo)
+			.setupPreRasterizationShaderState(viewports,
+											  scissors,
+											  pipelineLayout,
+											  renderPass,
+											  subpassNdx,
+											  vertexModule,
+											  &pipelineRasterizationStateInfo)
+			.setupFragmentShaderState(pipelineLayout,
+									  renderPass,
+									  subpassNdx,
+									  fragmentModule,
+									  &pipelineDepthStencilStateInfo,
+									  &pipelineMultisampleStateInfo)
+			.setupFragmentOutputState(renderPass,
+									  subpassNdx,
+									  &pipelineColorBlendStateInfo,
+									  &pipelineMultisampleStateInfo)
+			.buildPipeline();
 
-	const VkGraphicsPipelineCreateInfo graphicsPipelineInfo =
-	{
-		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType									sType;
-		DE_NULL,											// const void*										pNext;
-		(VkPipelineCreateFlags)0,							// VkPipelineCreateFlags							flags;
-		DE_LENGTH_OF_ARRAY(pShaderStages),					// deUint32											stageCount;
-		pShaderStages,										// const VkPipelineShaderStageCreateInfo*			pStages;
-		&vertexInputStateInfo,								// const VkPipelineVertexInputStateCreateInfo*		pVertexInputState;
-		&pipelineInputAssemblyStateInfo,					// const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState;
-		DE_NULL,											// const VkPipelineTessellationStateCreateInfo*		pTessellationState;
-		&pipelineViewportStateInfo,							// const VkPipelineViewportStateCreateInfo*			pViewportState;
-		&pipelineRasterizationStateInfo,					// const VkPipelineRasterizationStateCreateInfo*	pRasterizationState;
-		&pipelineMultisampleStateInfo,						// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
-		&pipelineDepthStencilStateInfo,						// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
-		&pipelineColorBlendStateInfo,						// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
-		DE_NULL,											// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
-		pipelineLayout,										// VkPipelineLayout									layout;
-		renderPass,											// VkRenderPass										renderPass;
-		subpassNdx,											// deUint32											subpass;
-		DE_NULL,											// VkPipeline										basePipelineHandle;
-		-1,													// deInt32											basePipelineIndex;
-	};
-
-	return createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineInfo);
+	return graphicsPipeline;
 }
 
 void logTestImages(Context&						context,
@@ -1258,10 +1230,10 @@ void addSubpassDescription(const TestParams&										params,
 
 	// Append MSRTSS to subpass desc
 	msrtss = VkMultisampledRenderToSingleSampledInfoEXT{
-		VK_STRUCTURE_TYPE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_INFO_EXT,	// VkStructureType sType;
-		subpassDescription.pNext,											// const void *pNext;
-		VK_TRUE,															// VkBool32 multisampledRenderToSingleSampledEnable;
-		perPass.numSamples,													// VkSampleCountFlagBits rasterizationSamples;
+		VK_STRUCTURE_TYPE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_INFO_EXT,	// VkStructureType			sType
+		subpassDescription.pNext,											// const void*				pNext
+		VK_TRUE,															// VkBool32					multisampledRenderToSingleSampledEnable
+		perPass.numSamples,													// VkSampleCountFlagBits	rasterizationSamples
 		perPass.depthStencilResolveMode,									// VkResolveModeFlagBits depthResolveMode;
 		perPass.depthStencilResolveMode,									// VkResolveModeFlagBits stencilResolveMode;
 	};
@@ -1417,6 +1389,8 @@ void checkRequirements (Context& context, TestParams params)
 {
 	const VkPhysicalDevice			physicalDevice		= context.getPhysicalDevice();
 	const vk::InstanceInterface&	instanceInterface	= context.getInstanceInterface();
+
+	checkPipelineLibraryRequirements(instanceInterface, physicalDevice, params.pipelineConstructionType);
 
 	context.requireDeviceFunctionality("VK_KHR_depth_stencil_resolve");
 	context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
@@ -1707,9 +1681,9 @@ void setupVerifyDescriptorSetAndPipeline(Context& context, const TestParams& par
 
 	verifyPipelineLayout	= makePipelineLayout(vk, device, 1, &*descriptorSetLayout, 1, pushConstantRange);
 
-	testObjects.pipelines.push_back(PipelineSp(new Unique<VkPipeline>(makeComputePipeline(vk, device, *verifyPipelineLayout, *verifyModule, DE_NULL))));
+	testObjects.computePipelines.push_back(PipelineSp(new Unique<VkPipeline>(makeComputePipeline(vk, device, *verifyPipelineLayout, *verifyModule))));
 
-	vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, **testObjects.pipelines.back());
+	vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, **testObjects.computePipelines.back());
 	vk.cmdBindDescriptorSets(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *verifyPipelineLayout, 0u, 1u, &testObjects.descriptorSets.back().get(), 0u, DE_NULL);
 }
 
@@ -1787,9 +1761,9 @@ void dispatchVerifyConstantColor(Context&					context,
 	const Unique<VkShaderModule>	verifyModule			(createShaderModule(vk, device, context.getBinaryCollection().get(shaderName), 0u));
 	const Unique<VkPipelineLayout>	verifyPipelineLayout	(makePipelineLayout(vk, device, 1, &*descriptorSetLayout, 1, &verifyPushConstantRange));
 
-	testObjects.pipelines.push_back(PipelineSp(new Unique<VkPipeline>(makeComputePipeline(vk, device, *verifyPipelineLayout, *verifyModule, DE_NULL))));
+	testObjects.computePipelines.push_back(PipelineSp(new Unique<VkPipeline>(makeComputePipeline(vk, device, *verifyPipelineLayout, *verifyModule))));
 
-	vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, **testObjects.pipelines.back());
+	vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, **testObjects.computePipelines.back());
 	vk.cmdBindDescriptorSets(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *verifyPipelineLayout, 0u, 1u, &testObjects.descriptorSets.back().get(), 0u, DE_NULL);
 
 	const VkMemoryBarrier preVerifyBarrier =
@@ -2603,9 +2577,9 @@ void drawBasic (Context& context, const TestParams& params, WorkingData& wd, Tes
 		const Unique<VkShaderModule>	fragmentModule	(createShaderModule(vk, device, context.getBinaryCollection().get("frag"), 0u));
 		const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout(vk, device, 0, DE_NULL, 1, &pushConstantRange));
 
-		testObjects.pipelines.push_back(PipelineSp(new Unique<VkPipeline>(
-			makeGraphicsPipeline(vk, device, *pipelineLayout, *testObjects.renderPasses.back(), *vertexModule, *fragmentModule, false, true, false, 0, 0,
-								 params.perPass[0].intColorLocation, wd.renderArea, wd.renderArea, params.perPass[0].numSamples))));
+		testObjects.graphicsPipelines.push_back(
+			makeGraphicsPipeline(vk, device, params.pipelineConstructionType, *pipelineLayout, *testObjects.renderPasses.back(), *vertexModule, *fragmentModule, false, true, false, 0, 0,
+								 params.perPass[0].intColorLocation, wd.renderArea, wd.renderArea, params.perPass[0].numSamples));
 
 		startRenderPass(context, wd, testObjects, DE_LENGTH_OF_ARRAY(params.clearValues), params.clearValues);
 
@@ -2613,7 +2587,7 @@ void drawBasic (Context& context, const TestParams& params, WorkingData& wd, Tes
 		vk.cmdBindVertexBuffers(*testObjects.cmdBuffer, 0u, 1u, &wd.vertexBuffer.get(), &vertexBufferOffset);
 
 		vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4), &wd.renderArea);
-		vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **testObjects.pipelines.back());
+		vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (*testObjects.graphicsPipelines.back()).getPipeline());
 		vk.cmdDraw(*testObjects.cmdBuffer, 3, 1u, 0u, 0u);
 
 		vk.cmdEndRenderPass(*testObjects.cmdBuffer);
@@ -2855,15 +2829,15 @@ void drawClearAttachments (Context& context, const TestParams& params, WorkingDa
 		startRenderPass(context, wd, testObjects, DE_LENGTH_OF_ARRAY(params.clearValues), params.clearValues);
 
 		// Draw to region[0]
-		testObjects.pipelines.push_back(PipelineSp(new Unique<VkPipeline>(
-			makeGraphicsPipeline(vk, device, *pipelineLayout, *testObjects.renderPasses.back(), *vertexModule, *fragmentModule, false, true, false, 0, 0,
-								 params.perPass[0].intColorLocation, regions[0], regions[0], params.perPass[0].numSamples))));
+		testObjects.graphicsPipelines.push_back(
+			makeGraphicsPipeline(vk, device, params.pipelineConstructionType, *pipelineLayout, *testObjects.renderPasses.back(), *vertexModule, *fragmentModule, false, true, false, 0, 0,
+								 params.perPass[0].intColorLocation, regions[0], regions[0], params.perPass[0].numSamples));
 
 		const VkDeviceSize vertexBufferOffset = 0;
 		vk.cmdBindVertexBuffers(*testObjects.cmdBuffer, 0u, 1u, &wd.vertexBuffer.get(), &vertexBufferOffset);
 
 		vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4), &regions[0]);
-		vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **testObjects.pipelines.back());
+		vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (*testObjects.graphicsPipelines.back()).getPipeline());
 		vk.cmdDraw(*testObjects.cmdBuffer, 3, 1u, 0u, 0u);
 
 		// Clear all regions except region 0
@@ -2890,12 +2864,12 @@ void drawClearAttachments (Context& context, const TestParams& params, WorkingDa
 		}
 
 		// Draw to region[1], overriding the clear value
-		testObjects.pipelines.push_back(PipelineSp(new Unique<VkPipeline>(
-			makeGraphicsPipeline(vk, device, *pipelineLayout, *testObjects.renderPasses.back(), *vertexModule, *fragmentModule, false, true, false, 0, 0,
-								 params.perPass[0].intColorLocation, regions[1], regions[1], params.perPass[0].numSamples))));
+		testObjects.graphicsPipelines.push_back(
+			makeGraphicsPipeline(vk, device, params.pipelineConstructionType, *pipelineLayout, *testObjects.renderPasses.back(), *vertexModule, *fragmentModule, false, true, false, 0, 0,
+								 params.perPass[0].intColorLocation, regions[1], regions[1], params.perPass[0].numSamples));
 
 		vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4), &regions[1]);
-		vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **testObjects.pipelines.back());
+		vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (*testObjects.graphicsPipelines.back()).getPipeline());
 		vk.cmdDraw(*testObjects.cmdBuffer, 3, 1u, 0u, 0u);
 
 		vk.cmdEndRenderPass(*testObjects.cmdBuffer);
@@ -2953,24 +2927,24 @@ void drawOnePass(Context& context, const TestParams& params, WorkingData& wd, Te
 
 	for (deUint32 regionNdx = 0; regionNdx < RegionCount; ++regionNdx)
 	{
-		testObjects.pipelines.push_back(PipelineSp(new Unique<VkPipeline>(
-			makeGraphicsPipeline(vk, device, *pipelineLayout, *testObjects.renderPasses.back(), *vertexModule, *fragmentModule, true, true, false, 1 << passNdx, subpassNdx,
-								 perPass.intColorLocation, regions[regionNdx], regions[regionNdx], perPass.numSamples))));
+		testObjects.graphicsPipelines.push_back(
+			makeGraphicsPipeline(vk, device, params.pipelineConstructionType, *pipelineLayout, *testObjects.renderPasses.back(), *vertexModule, *fragmentModule, true, true, false, 1 << passNdx, subpassNdx,
+								 perPass.intColorLocation, regions[regionNdx], regions[regionNdx], perPass.numSamples));
 
 		vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4), &regions[regionNdx]);
 		vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(UVec4), sizeof(perPass.drawConstantsWithDepthWrite[regionNdx]), &perPass.drawConstantsWithDepthWrite[regionNdx]);
-		vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **testObjects.pipelines.back());
+		vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (*testObjects.graphicsPipelines.back()).getPipeline());
 		vk.cmdDraw(*testObjects.cmdBuffer, 3, 1u, 0u, 0u);
 
 		if (perPass.hasDepthStencil)
 		{
-			testObjects.pipelines.push_back(PipelineSp(new Unique<VkPipeline>(
-				makeGraphicsPipeline(vk, device, *pipelineLayout, *testObjects.renderPasses.back(), *vertexModule, *fragmentModule, true, false, true, 1 << passNdx, subpassNdx,
-									 perPass.intColorLocation, regions[regionNdx], regions[regionNdx], perPass.numSamples))));
+			testObjects.graphicsPipelines.push_back(
+				makeGraphicsPipeline(vk, device, params.pipelineConstructionType, *pipelineLayout, *testObjects.renderPasses.back(), *vertexModule, *fragmentModule, true, false, true, 1 << passNdx, subpassNdx,
+									 perPass.intColorLocation, regions[regionNdx], regions[regionNdx], perPass.numSamples));
 
 			vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4), &regions[regionNdx]);
 			vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(UVec4), sizeof(perPass.drawConstantsWithDepthTest[regionNdx]), &perPass.drawConstantsWithDepthTest[regionNdx]);
-			vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **testObjects.pipelines.back());
+			vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (*testObjects.graphicsPipelines.back()).getPipeline());
 			vk.cmdDraw(*testObjects.cmdBuffer, 3, 1u, 0u, 0u);
 		}
 	}
@@ -3926,13 +3900,13 @@ void drawInputAttachments (Context& context, const TestParams& params, WorkingDa
 		// First draw call outputs to color attachment 1 and depth/stencil.  It doesn't blend with clear for simplicity of the verification code.
 		for (deUint32 regionNdx = 0; regionNdx < RegionCount; ++regionNdx)
 		{
-			testObjects.pipelines.push_back(PipelineSp(new Unique<VkPipeline>(
-				makeGraphicsPipeline(vk, device, *pipelineLayout, *testObjects.renderPasses.back(), *vertexModule, *fragmentModule0, false, true, false, 0, 0,
-									 params.perPass[0].intColorLocation, regions[regionNdx], regions[regionNdx], params.perPass[0].numSamples))));
+			testObjects.graphicsPipelines.push_back(
+				makeGraphicsPipeline(vk, device, params.pipelineConstructionType, *pipelineLayout, *testObjects.renderPasses.back(), *vertexModule, *fragmentModule0, false, true, false, 0, 0,
+									 params.perPass[0].intColorLocation, regions[regionNdx], regions[regionNdx], params.perPass[0].numSamples));
 
 			vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4), &regions[regionNdx]);
 			vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(UVec4), sizeof(params.perPass[0].drawConstantsWithDepthWrite[regionNdx]), &params.perPass[0].drawConstantsWithDepthWrite[regionNdx]);
-			vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **testObjects.pipelines.back());
+			vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (*testObjects.graphicsPipelines.back()).getPipeline());
 			vk.cmdDraw(*testObjects.cmdBuffer, 3, 1u, 0u, 0u);
 		}
 
@@ -3941,25 +3915,25 @@ void drawInputAttachments (Context& context, const TestParams& params, WorkingDa
 
 		for (deUint32 regionNdx = 0; regionNdx < RegionCount; ++regionNdx)
 		{
-			testObjects.pipelines.push_back(PipelineSp(new Unique<VkPipeline>(
-				makeGraphicsPipeline(vk, device, *inputPipelineLayout, *testObjects.renderPasses.back(), *vertexModule, *fragmentModuleIn, false, false, false, 0, 1,
-									 params.perPass[1].intColorLocation, regions[regionNdx], regions[regionNdx], params.perPass[1].numSamples))));
+			testObjects.graphicsPipelines.push_back(
+				makeGraphicsPipeline(vk, device, params.pipelineConstructionType, *inputPipelineLayout, *testObjects.renderPasses.back(), *vertexModule, *fragmentModuleIn, false, false, false, 0, 1,
+									 params.perPass[1].intColorLocation, regions[regionNdx], regions[regionNdx], params.perPass[1].numSamples));
 
 			vk.cmdPushConstants(*testObjects.cmdBuffer, *inputPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4), &regions[regionNdx]);
-			vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **testObjects.pipelines.back());
+			vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (*testObjects.graphicsPipelines.back()).getPipeline());
 			vk.cmdBindDescriptorSets(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *inputPipelineLayout, 0u, 1u, &testObjects.descriptorSets.back().get(), 0u, DE_NULL);
 			vk.cmdDraw(*testObjects.cmdBuffer, 3, 1u, 0u, 0u);
 		}
 
 		for (deUint32 regionNdx = 0; regionNdx < RegionCount; ++regionNdx)
 		{
-			testObjects.pipelines.push_back(PipelineSp(new Unique<VkPipeline>(
-				makeGraphicsPipeline(vk, device, *pipelineLayout, *testObjects.renderPasses.back(), *vertexModule, *fragmentModule1, true, false, false, 0xC, 1,
-									 params.perPass[1].intColorLocation, regions[regionNdx], regions[regionNdx], params.perPass[1].numSamples))));
+			testObjects.graphicsPipelines.push_back(
+				makeGraphicsPipeline(vk, device, params.pipelineConstructionType, *pipelineLayout, *testObjects.renderPasses.back(), *vertexModule, *fragmentModule1, true, false, false, 0xC, 1,
+									 params.perPass[1].intColorLocation, regions[regionNdx], regions[regionNdx], params.perPass[1].numSamples));
 
 			vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4), &regions[regionNdx]);
 			vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(UVec4), sizeof(params.perPass[1].drawConstantsWithDepthWrite[regionNdx]), &params.perPass[1].drawConstantsWithDepthWrite[regionNdx]);
-			vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **testObjects.pipelines.back());
+			vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (*testObjects.graphicsPipelines.back()).getPipeline());
 			vk.cmdDraw(*testObjects.cmdBuffer, 3, 1u, 0u, 0u);
 		}
 	}
@@ -4195,28 +4169,28 @@ void initInputAttachmentsPrograms (SourceCollections& programCollection, const T
 	}
 }
 
-//! Verify that subpass resolve perf hint query works.
+//! Verify that subpass resolve perf query works.
 tcu::TestStatus testPerfQuery (Context& context, VkFormat format)
 {
 	const InstanceInterface&			vki					= context.getInstanceInterface();
 	const VkPhysicalDevice				physicalDevice		= context.getPhysicalDevice();
 	VkFormatProperties2					formatProperties	= {};
-	VkSubpassResolvePerformanceHintEXT	perfHint			= {};
+	VkSubpassResolvePerformanceQueryEXT	perfQuery			= {};
 
-	perfHint.sType = VK_STRUCTURE_TYPE_SUBPASS_RESOLVE_PERFORMANCE_HINT_EXT;
-	perfHint.optimal = 0xDEADBEEF;
+	perfQuery.sType = VK_STRUCTURE_TYPE_SUBPASS_RESOLVE_PERFORMANCE_QUERY_EXT;
+	perfQuery.optimal = 0xDEADBEEF;
 
 	formatProperties.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2;
-	formatProperties.pNext = &perfHint;
+	formatProperties.pNext = &perfQuery;
 
 	vki.getPhysicalDeviceFormatProperties2(physicalDevice, format, &formatProperties);
 
 	// There is actually nothing to verify other than that the above query was successful.
 	// Regardless of optimal resolve or not, the operations must succeed.  We'll just make sure
 	// the driver did produce a valid response.
-	if (perfHint.optimal != VK_FALSE && perfHint.optimal != VK_TRUE)
+	if (perfQuery.optimal != VK_FALSE && perfQuery.optimal != VK_TRUE)
 	{
-		std::string errorMsg = "VkSubpassResolvePerformanceHintEXT::optimal is not populated after query";
+		std::string errorMsg = "VkSubpassResolvePerformanceQueryEXT::optimal is not populated after query";
 		return tcu::TestStatus::fail(errorMsg);
 	}
 
@@ -4261,7 +4235,9 @@ std::string getResolveModeCaseName (const VkResolveModeFlagBits resolveMode)
 	return str.str();
 }
 
-void createMultisampledTestsInGroup (tcu::TestCaseGroup* rootGroup, const bool isMultisampledRenderToSingleSampled)
+void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
+									 const bool					isMultisampledRenderToSingleSampled,
+									 PipelineConstructionType	pipelineConstructionType)
 {
 	// Color 1 is a float format
 	const VkFormat	color1FormatRange[] =
@@ -4339,6 +4315,7 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup* rootGroup, const bool i
 					{
 						TestParams testParams;
 
+						testParams.pipelineConstructionType				= pipelineConstructionType;
 						testParams.isMultisampledRenderToSingleSampled	= isMultisampledRenderToSingleSampled;
 						testParams.floatColor1Format					= color1Format;
 						testParams.floatColor2Format					= color2Format;
@@ -4394,6 +4371,7 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup* rootGroup, const bool i
 					{
 						TestParams testParams;
 
+						testParams.pipelineConstructionType				= pipelineConstructionType;
 						testParams.isMultisampledRenderToSingleSampled	= isMultisampledRenderToSingleSampled;
 						testParams.floatColor1Format					= color1Format;
 						testParams.floatColor2Format					= color2Format;
@@ -4450,6 +4428,7 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup* rootGroup, const bool i
 			const deUint32 color3FormatNdx = iteration % color3FormatCount;
 			const deUint32 depthStencilFormatNdx = iteration % depthStencilFormatCount;
 
+			testParams.pipelineConstructionType				= pipelineConstructionType;
 			testParams.isMultisampledRenderToSingleSampled	= isMultisampledRenderToSingleSampled;
 			testParams.floatColor1Format					= color1FormatRange[color1FormatNdx];
 			testParams.floatColor2Format					= color2FormatRange[color2FormatNdx];
@@ -4511,6 +4490,7 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup* rootGroup, const bool i
 			const deUint32 color3FormatNdx = iteration % color3FormatCount;
 			const deUint32 depthStencilFormatNdx = iteration % depthStencilFormatCount;
 
+			testParams.pipelineConstructionType				= pipelineConstructionType;
 			testParams.isMultisampledRenderToSingleSampled	= isMultisampledRenderToSingleSampled;
 			testParams.floatColor1Format					= color1FormatRange[color1FormatNdx];
 			testParams.floatColor2Format					= color2FormatRange[color2FormatNdx];
@@ -4571,6 +4551,7 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup* rootGroup, const bool i
 					{
 						TestParams testParams;
 
+						testParams.pipelineConstructionType				= pipelineConstructionType;
 						testParams.isMultisampledRenderToSingleSampled	= isMultisampledRenderToSingleSampled;
 						testParams.floatColor1Format					= color1Format;
 						testParams.floatColor2Format					= color2Format;
@@ -4598,10 +4579,11 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup* rootGroup, const bool i
 		rootGroup->addChild(group.release());
 	}
 
-	// Test 6: Tests subpass resolve efficiency query
-	if (isMultisampledRenderToSingleSampled)
+	// Test 6: Tests subpass resolve efficiency query.
+	// Efficiency query tests don't need to be tested with different pipeline construction types.
+	if (isMultisampledRenderToSingleSampled && pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
-		MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(rootGroup->getTestContext(), "subpass_resolve_efficiency_query", "Tests that subpass resolve efficiency performance hint query works"));
+		MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(rootGroup->getTestContext(), "subpass_resolve_efficiency_query", "Tests that subpass resolve efficiency performance query works"));
 
 		for (const VkFormat format		: color1FormatRange)
 		{
@@ -4651,26 +4633,26 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup* rootGroup, const bool i
 	}
 }
 
-void createMultisampledRenderToSingleSampledTestsInGroup (tcu::TestCaseGroup* rootGroup)
+void createMultisampledRenderToSingleSampledTestsInGroup (tcu::TestCaseGroup* rootGroup, PipelineConstructionType pipelineConstructionType)
 {
-	createMultisampledTestsInGroup(rootGroup, true);
+	createMultisampledTestsInGroup(rootGroup, true, pipelineConstructionType);
 }
 
-void createMultisampledMiscTestsInGroup (tcu::TestCaseGroup* rootGroup)
+void createMultisampledMiscTestsInGroup (tcu::TestCaseGroup* rootGroup, PipelineConstructionType pipelineConstructionType)
 {
-	createMultisampledTestsInGroup(rootGroup, false);
+	createMultisampledTestsInGroup(rootGroup, false, pipelineConstructionType);
 }
 
 } // anonymous ns
 
-tcu::TestCaseGroup* createMultisampledRenderToSingleSampledTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createMultisampledRenderToSingleSampledTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
 {
-	return createTestGroup(testCtx, "multisampled_render_to_single_sampled", "Test multisampled rendering to single-sampled framebuffer attachments", createMultisampledRenderToSingleSampledTestsInGroup);
+	return createTestGroup(testCtx, "multisampled_render_to_single_sampled", "Test multisampled rendering to single-sampled framebuffer attachments", createMultisampledRenderToSingleSampledTestsInGroup, pipelineConstructionType);
 }
 
-tcu::TestCaseGroup* createMultisampledMiscTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createMultisampledMiscTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
 {
-	return createTestGroup(testCtx, "misc", "Miscellaneous multisampled rendering tests", createMultisampledMiscTestsInGroup);
+	return createTestGroup(testCtx, "misc", "Miscellaneous multisampled rendering tests", createMultisampledMiscTestsInGroup, pipelineConstructionType);
 }
 
 } // pipeline

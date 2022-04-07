@@ -331,6 +331,7 @@ tcu::TestStatus ConditionalDraw::iterate (void)
 	const vk::VkQueue	queue	= m_context.getUniversalQueue();
 	const vk::VkDevice	device	= m_context.getDevice();
 
+	beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
 	const bool useSecondaryCmdBuffer = m_conditionalData.conditionInherited || m_conditionalData.conditionInSecondaryCommandBuffer;
 	beginRender(useSecondaryCmdBuffer ? vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS : vk::VK_SUBPASS_CONTENTS_INLINE);
 
@@ -415,7 +416,7 @@ tcu::TestStatus ConditionalDraw::iterate (void)
 
 	m_vk.cmdBindPipeline(targetCmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 
-	m_conditionalBuffer = createConditionalRenderingBuffer(m_context, m_conditionalData);
+	m_conditionalBuffer = createConditionalRenderingBuffer(m_context, m_conditionalData, *m_cmdPool);
 
 	if (m_conditionalData.conditionInSecondaryCommandBuffer)
 	{

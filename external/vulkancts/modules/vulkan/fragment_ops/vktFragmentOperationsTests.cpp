@@ -26,6 +26,7 @@
 #include "vktFragmentOperationsOcclusionQueryTests.hpp"
 #include "vktFragmentOperationsScissorTests.hpp"
 #include "vktFragmentOperationsEarlyFragmentTests.hpp"
+#include "vktFragmentOperationsTransientAttachmentTests.hpp"
 
 namespace vkt
 {
@@ -38,9 +39,10 @@ void addFragmentOperationsTests (tcu::TestCaseGroup* fragmentOperationsTestsGrou
 {
 	tcu::TestContext& testCtx = fragmentOperationsTestsGroup->getTestContext();
 
-	fragmentOperationsTestsGroup->addChild(createScissorTests		(testCtx));
-	fragmentOperationsTestsGroup->addChild(createEarlyFragmentTests	(testCtx));
-	fragmentOperationsTestsGroup->addChild(createOcclusionQueryTests(testCtx));
+	fragmentOperationsTestsGroup->addChild(createScissorTests				(testCtx));
+	fragmentOperationsTestsGroup->addChild(createEarlyFragmentTests			(testCtx));
+	fragmentOperationsTestsGroup->addChild(createOcclusionQueryTests		(testCtx));
+	fragmentOperationsTestsGroup->addChild(createTransientAttachmentTests	(testCtx));
 }
 
 } // anonymous

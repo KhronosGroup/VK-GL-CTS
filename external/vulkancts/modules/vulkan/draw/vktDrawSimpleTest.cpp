@@ -113,6 +113,7 @@ tcu::TestStatus SimpleDraw::iterate (void)
 	const vk::VkQueue		queue				= m_context.getUniversalQueue();
 	const vk::VkDevice		device				= m_context.getDevice();
 
+	beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
 	beginRender();
 
 	const vk::VkDeviceSize	vertexBufferOffset	= 0;
@@ -204,6 +205,7 @@ tcu::TestStatus SimpleDrawInstanced::iterate (void)
 	const vk::VkQueue	queue					= m_context.getUniversalQueue();
 	const vk::VkDevice	device					= m_context.getDevice();
 
+	beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
 	beginRender();
 
 	const vk::VkDeviceSize	vertexBufferOffset	= 0;

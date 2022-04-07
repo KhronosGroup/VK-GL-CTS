@@ -453,7 +453,7 @@ private:
 	Result				m_result;
 	MemObjectConfig		m_config;
 	deUint32			m_glError;
-	vector<deUint8>		m_dummyData;
+	vector<deUint8>		m_unusedData;
 	BufferRenderer		m_bufferRenderer;
 	TextureRenderer		m_textureRenderer;
 };
@@ -471,13 +471,13 @@ MemObjectAllocator::MemObjectAllocator (tcu::TestLog& log, glu::RenderContext& r
 {
 	DE_UNREF(renderContext);
 
-	if (m_config.useDummyData)
+	if (m_config.useUnusedData)
 	{
-		int dummySize = deMax32(m_config.maxBufferSize, m_config.maxTextureSize*m_config.maxTextureSize*4);
-		m_dummyData = vector<deUint8>(dummySize);
+		int unusedSize = deMax32(m_config.maxBufferSize, m_config.maxTextureSize*m_config.maxTextureSize*4);
+		m_unusedData = vector<deUint8>(unusedSize);
 	}
 	else if (m_config.write)
-		m_dummyData = vector<deUint8>(128);
+		m_unusedData = vector<deUint8>(128);
 }
 
 MemObjectAllocator::~MemObjectAllocator (void)
@@ -601,10 +601,10 @@ void MemObjectAllocator::allocateTexture (de::Random& rnd)
 		return;
 	}
 
-	if (m_config.useDummyData)
+	if (m_config.useUnusedData)
 	{
-		DE_ASSERT((int)m_dummyData.size() >= width*height*4);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, &(m_dummyData[0]));
+		DE_ASSERT((int)m_unusedData.size() >= width*height*4);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, &(m_unusedData[0]));
 	}
 	else
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
@@ -618,7 +618,7 @@ void MemObjectAllocator::allocateTexture (de::Random& rnd)
 	}
 
 	if (m_config.write)
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &(m_dummyData[0]));
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &(m_unusedData[0]));
 
 	error = glGetError();
 	if (error != 0)
@@ -691,10 +691,10 @@ void MemObjectAllocator::allocateBuffer (de::Random& rnd)
 
 	m_buffers.push_back(buffer);
 
-	if (m_config.useDummyData)
+	if (m_config.useUnusedData)
 	{
-		DE_ASSERT((int)m_dummyData.size() >= size);
-		glBufferData(GL_ARRAY_BUFFER, size, &(m_dummyData[0]), GL_DYNAMIC_DRAW);
+		DE_ASSERT((int)m_unusedData.size() >= size);
+		glBufferData(GL_ARRAY_BUFFER, size, &(m_unusedData[0]), GL_DYNAMIC_DRAW);
 	}
 	else
 		glBufferData(GL_ARRAY_BUFFER, size, NULL, GL_DYNAMIC_DRAW);
@@ -708,7 +708,7 @@ void MemObjectAllocator::allocateBuffer (de::Random& rnd)
 	}
 
 	if (m_config.write)
-		glBufferSubData(GL_ARRAY_BUFFER, 0, 1, &(m_dummyData[0]));
+		glBufferSubData(GL_ARRAY_BUFFER, 0, 1, &(m_unusedData[0]));
 
 	error = glGetError();
 	if (error != 0)
@@ -797,7 +797,7 @@ const char* MemObjectAllocator::resultToString (Result result)
 	}
 }
 
-MemoryStressCase::MemoryStressCase (tcu::TestContext& ctx, glu::RenderContext& renderContext, deUint32 objectTypes, int minTextureSize, int maxTextureSize, int minBufferSize, int maxBufferSize, bool write, bool use, bool useDummyData, bool clearAfterOOM, const char* name, const char* desc)
+MemoryStressCase::MemoryStressCase (tcu::TestContext& ctx, glu::RenderContext& renderContext, deUint32 objectTypes, int minTextureSize, int maxTextureSize, int minBufferSize, int maxBufferSize, bool write, bool use, bool useUnusedData, bool clearAfterOOM, const char* name, const char* desc)
 	: tcu::TestCase					(ctx, name, desc)
 	, m_iteration					(0)
 	, m_iterationCount				(5)
@@ -811,7 +811,7 @@ MemoryStressCase::MemoryStressCase (tcu::TestContext& ctx, glu::RenderContext& r
 	m_config.minTextureSize = minTextureSize;
 	m_config.maxBufferSize	= maxBufferSize;
 	m_config.minBufferSize	= minBufferSize;
-	m_config.useDummyData	= useDummyData;
+	m_config.useUnusedData	= useUnusedData;
 	m_config.write			= write;
 	m_config.use			= use;
 }

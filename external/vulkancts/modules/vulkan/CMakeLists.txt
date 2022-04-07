@@ -1,5 +1,7 @@
 # dEQP-VK
 
+set(DEQP_INL_DIR ${PROJECT_BINARY_DIR}/external/vulkancts/framework/vulkan)
+
 add_subdirectory(api)
 add_subdirectory(pipeline)
 add_subdirectory(binding_model)
@@ -93,6 +95,7 @@ include_directories(
 	postmortem
 	reconvergence
 	mesh_shader
+	${DEQP_INL_DIR}
 	)
 
 set(DEQP_VK_SRCS
@@ -173,7 +176,7 @@ add_deqp_module(deqp-vk "${DEQP_VK_SRCS}" "${DEQP_VK_LIBS}" vktTestPackageEntry.
 
 
 add_data_dir(deqp-vk ../../data/vulkan vulkan)
-add_data_dir(deqp-vk ../../mustpass/master/vk-default vk-default)
+add_data_dir(deqp-vk ../../mustpass/main/vk-default vk-default)
 
 # add all directories containing android mustpass
 file(GLOB PATHS_MATCHING_PATTERN ${CMAKE_SOURCE_DIR}/android/cts/master/vk-*/)

@@ -91,6 +91,8 @@ static bool isFeatureSupported(const vkt::Context& ctx, const std::string& featu
 		return ctx.getDeviceFeatures().shaderInt64;
 	if (feature == "Features.tessellationShader")
 		return ctx.getDeviceFeatures().tessellationShader;
+	if (feature == "Features.shaderTessellationAndGeometryPointSize")
+		return ctx.getDeviceFeatures().shaderTessellationAndGeometryPointSize;
 	if (feature == "Features.geometryShader")
 		return ctx.getDeviceFeatures().geometryShader;
 	if (feature == "Features.fragmentStoresAndAtomics")
@@ -111,6 +113,8 @@ static bool isFeatureSupported(const vkt::Context& ctx, const std::string& featu
 		return (ctx.getSubgroupProperties().supportedStages & vk::VK_SHADER_STAGE_FRAGMENT_BIT) != 0;
 	if (feature == "SubgroupSupportedOperations.vote")
 		return (ctx.getSubgroupProperties().supportedOperations & vk::VK_SUBGROUP_FEATURE_VOTE_BIT) != 0;
+	if (feature == "SubgroupSupportedOperations.basic")
+		return (ctx.getSubgroupProperties().supportedOperations & vk::VK_SUBGROUP_FEATURE_BASIC_BIT) != 0;
 	if (feature == "SubgroupSupportedOperations.ballot")
 		return (ctx.getSubgroupProperties().supportedOperations & vk::VK_SUBGROUP_FEATURE_BALLOT_BIT) != 0;
 	if (feature == "Storage16BitFeatures.storageBuffer16BitAccess")
@@ -196,32 +200,8 @@ void AmberTestCase::checkSupport(Context& ctx) const
 		}
 	}
 
-	// when checkSupport is called script is not yet parsed so we need to determine
-	// unsupported tests by name ; in AmberTestCase we do not have access to actual
-	// m_recipe implementation - we can't scan it to see if test can be executed;
-	// alternatively portability extension and its features could be checked in amber.cc
-	if (ctx.isDeviceFunctionalitySupported("VK_KHR_portability_subset"))
-	{
-		if (m_name == "triangle_fan" && !ctx.getPortabilitySubsetFeatures().triangleFans)
-			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
-
-		if (ctx.getPortabilitySubsetProperties().minVertexInputBindingStrideAlignment == 4)
-		{
-			const std::set<std::string> casesToSkip
-			{
-				"line-strip",
-				"polygon-mode-lines",
-				"r8g8-uint-highp",
-				"r8g8-uint-highp-output-uint",
-				"r8g8-uint-mediump",
-				"r8g8-uint-mediump-output-uint",
-				"inputs-outputs-mod",
-			};
-
-			if (casesToSkip.count(m_name))
-				TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Stride is not multiply of minVertexInputBindingStrideAlignment");
-		}
-	}
+	if (m_checkSupportCallback)
+		(m_checkSupportCallback)(ctx, m_name);
 }
 
 class Delegate : public amber::Delegate
@@ -332,8 +312,10 @@ void AmberTestCase::initPrograms (vk::SourceCollections& programCollection) cons
 		const amber::ShaderInfo& shader = shaders[i];
 
 		vk::SpirvVersion spirvVersion = vk::SPIRV_VERSION_1_0;
-		DE_STATIC_ASSERT(vk::SPIRV_VERSION_LAST == vk::SPIRV_VERSION_1_5 + 1);
-		if (shader.target_env == "spv1.5")
+		DE_STATIC_ASSERT(vk::SPIRV_VERSION_LAST == vk::SPIRV_VERSION_1_6 + 1);
+		if (shader.target_env == "spv1.6")
+			spirvVersion = vk::SPIRV_VERSION_1_6;
+		else if (shader.target_env == "spv1.5")
 			spirvVersion = vk::SPIRV_VERSION_1_5;
 		else if (shader.target_env == "spv1.4")
 			spirvVersion = vk::SPIRV_VERSION_1_4;

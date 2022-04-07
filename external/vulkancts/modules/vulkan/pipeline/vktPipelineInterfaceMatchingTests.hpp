@@ -24,13 +24,14 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktTestCase.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 
 namespace vkt
 {
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createInterfaceMatchingTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createInterfaceMatchingTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
 
 } // pipeline
 } // vkt

@@ -23,7 +23,6 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktFragmentOperationsOcclusionQueryTests.hpp"
-#include "vktFragmentOperationsMakeUtil.hpp"
 #include "vktTestCaseUtil.hpp"
 
 #include "vkDefs.hpp"
@@ -404,18 +403,6 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate (void)
 		pVertices[5]	= tcu::Vec4( 1.0f, -1.0f, 1.0f, 1.0f);
 
 		flushAlloc(vk, device, *vertexBufferAlloc);
-	}
-
-	// Result buffer
-	const VkDeviceSize				resultBufferSizeBytes	= sizeof(deUint32);
-	const Unique<VkBuffer>			resultBuffer			(makeBuffer(vk, device, resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT));
-	const UniquePtr<Allocation>		resultBufferAlloc		(bindBuffer(vk, device, allocator, *resultBuffer, MemoryRequirement::HostVisible));
-
-	{
-		deUint32* const pData = static_cast<deUint32*>(resultBufferAlloc->getHostPtr());
-
-		*pData = 0;
-		flushAlloc(vk, device, *resultBufferAlloc);
 	}
 
 	// Render result buffer (to retrieve color attachment contents)

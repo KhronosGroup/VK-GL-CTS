@@ -588,7 +588,9 @@ private:
 	void											render						(void);
 };
 
-std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs (vk::VkSurfaceKHR						surface,
+std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs (const vk::InstanceDriver&				vki,
+																	const vk::VkPhysicalDevice				physicalDevice,
+																	vk::VkSurfaceKHR						surface,
 																	deUint32								queueFamilyIndex,
 																	Scaling									scaling,
 																	const vk::VkSurfaceCapabilitiesKHR&		properties,
@@ -670,6 +672,17 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs (vk::VkSurfac
 			(vk::VkSwapchainKHR)0
 		};
 
+		{
+			vk::VkImageFormatProperties			imageFormatProperties;
+
+			deMemset(&imageFormatProperties, 0, sizeof(imageFormatProperties));
+
+			vk::VkResult result = vki.getPhysicalDeviceImageFormatProperties(physicalDevice, imageFormat, vk::VK_IMAGE_TYPE_2D, vk::VK_IMAGE_TILING_OPTIMAL, imageUsage, 0, &imageFormatProperties);
+
+			if (result == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+				continue;
+		}
+
 		createInfos.push_back(createInfo);
 	}
 
@@ -734,7 +747,7 @@ SharedPresentableImageTestInstance::SharedPresentableImageTestInstance (Context&
 	, m_surfaceFormats			(vk::wsi::getPhysicalDeviceSurfaceFormats(m_vki, m_physicalDevice, *m_surface))
 	, m_presentModes			(vk::wsi::getPhysicalDeviceSurfacePresentModes(m_vki, m_physicalDevice, *m_surface))
 
-	, m_swapchainConfigs		(generateSwapchainConfigs(*m_surface, m_queueFamilyIndex, testConfig.scaling, m_surfaceProperties, m_surfaceFormats, m_presentModes, testConfig.presentMode, m_supportedUsageFlags, testConfig.transform, testConfig.alpha))
+	, m_swapchainConfigs		(generateSwapchainConfigs(m_vki, m_physicalDevice, *m_surface, m_queueFamilyIndex, testConfig.scaling, m_surfaceProperties, m_surfaceFormats, m_presentModes, testConfig.presentMode, m_supportedUsageFlags, testConfig.transform, testConfig.alpha))
 	, m_swapchainConfigNdx		(0u)
 
 	, m_frameCount				(60u * 5u)
@@ -968,7 +981,7 @@ tcu::TestStatus SharedPresentableImageTestInstance::iterate (void)
 	{
 		if (error.getError() == vk::VK_ERROR_OUT_OF_DATE_KHR)
 		{
-			m_swapchainConfigs = generateSwapchainConfigs(*m_surface, m_queueFamilyIndex, m_testConfig.scaling, m_surfaceProperties, m_surfaceFormats, m_presentModes, m_testConfig.presentMode, m_supportedUsageFlags, m_testConfig.transform, m_testConfig.alpha);
+			m_swapchainConfigs = generateSwapchainConfigs(m_vki, m_physicalDevice, *m_surface, m_queueFamilyIndex, m_testConfig.scaling, m_surfaceProperties, m_surfaceFormats, m_presentModes, m_testConfig.presentMode, m_supportedUsageFlags, m_testConfig.transform, m_testConfig.alpha);
 
 			if (m_outOfDateCount < m_maxOutOfDateCount)
 			{

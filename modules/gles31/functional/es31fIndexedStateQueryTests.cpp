@@ -859,90 +859,6 @@ ImageBindingFormatCase::IterateResult ImageBindingFormatCase::iterate (void)
 	return STOP;
 }
 
-class EnableBlendCase : public TestCase
-{
-public:
-						EnableBlendCase	(Context& context, const char* name, const char* desc, QueryType verifierType);
-
-	void				init			(void);
-private:
-	IterateResult		iterate			(void);
-
-	const QueryType		m_verifierType;
-};
-
-EnableBlendCase::EnableBlendCase (Context& context, const char* name, const char* desc, QueryType verifierType)
-	: TestCase			(context, name, desc)
-	, m_verifierType	(verifierType)
-{
-}
-
-void EnableBlendCase::init (void)
-{
-	isExtensionSupported(m_context, "GL_EXT_draw_buffers_indexed");
-}
-
-EnableBlendCase::IterateResult EnableBlendCase::iterate (void)
-{
-	glu::CallLogWrapper		gl				(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
-	tcu::ResultCollector	result			(m_testCtx.getLog(), " // ERROR: ");
-	deInt32					maxDrawBuffers = 0;
-
-	gl.enableLogging(true);
-
-	gl.glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
-	GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetIntegerv");
-
-	{
-		const tcu::ScopedLogSection section(m_testCtx.getLog(), "Initial", "Initial value");
-
-		for (int ndx = 0; ndx < maxDrawBuffers; ++ndx)
-			verifyStateIndexedBoolean(result, gl, GL_BLEND, ndx, false, m_verifierType);
-	}
-	{
-		const tcu::ScopedLogSection	superSection	(m_testCtx.getLog(), "AfterSettingCommon", "After setting common");
-
-		gl.glEnable(GL_BLEND);
-
-		for (int ndx = 0; ndx < maxDrawBuffers; ++ndx)
-			verifyStateIndexedBoolean(result, gl, GL_BLEND, ndx, true, m_verifierType);
-
-	}
-	{
-		const tcu::ScopedLogSection	superSection	(m_testCtx.getLog(), "AfterSettingIndexed", "After setting indexed");
-
-		for (int ndx = 0; ndx < maxDrawBuffers; ++ndx)
-		{
-			if (ndx % 2 == 0)
-				gl.glEnablei(GL_BLEND, ndx);
-			else
-				gl.glDisablei(GL_BLEND, ndx);
-		}
-
-		for (int ndx = 0; ndx < maxDrawBuffers; ++ndx)
-			verifyStateIndexedBoolean(result, gl, GL_BLEND, ndx, (ndx % 2 == 0), m_verifierType);
-	}
-	{
-		const tcu::ScopedLogSection	superSection	(m_testCtx.getLog(), "AfterResettingIndexedWithCommon", "After resetting indexed with common");
-
-		for (int ndx = 0; ndx < maxDrawBuffers; ++ndx)
-		{
-			if (ndx % 2 == 0)
-				gl.glEnablei(GL_BLEND, ndx);
-			else
-				gl.glDisablei(GL_BLEND, ndx);
-		}
-
-		gl.glEnable(GL_BLEND);
-
-		for (int ndx = 0; ndx < maxDrawBuffers; ++ndx)
-			verifyStateIndexedBoolean(result, gl, GL_BLEND, ndx, true, m_verifierType);
-	}
-
-	result.setTestContextResult(m_testCtx);
-	return STOP;
-}
-
 class ColorMaskCase : public TestCase
 {
 public:
@@ -1472,7 +1388,6 @@ IndexedStateQueryTests::~IndexedStateQueryTests (void)
 void IndexedStateQueryTests::init (void)
 {
 	static const QueryType verifiers[] = { QUERY_INDEXED_BOOLEAN, QUERY_INDEXED_INTEGER, QUERY_INDEXED_INTEGER64 };
-	static const QueryType vec4Verifiers[] = { QUERY_INDEXED_BOOLEAN_VEC4, QUERY_INDEXED_INTEGER_VEC4, QUERY_INDEXED_INTEGER64_VEC4 };
 
 #define FOR_EACH_VERIFIER(X) \
 	for (int verifierNdx = 0; verifierNdx < DE_LENGTH_OF_ARRAY(verifiers); ++verifierNdx)	\
@@ -1480,14 +1395,6 @@ void IndexedStateQueryTests::init (void)
 		const QueryType verifier = verifiers[verifierNdx];									\
 		const char* verifierSuffix = getVerifierSuffix(verifier);							\
 		this->addChild(X);																	\
-	}
-
-#define FOR_EACH_VEC4_VERIFIER(X) \
-	for (int verifierNdx = 0; verifierNdx < DE_LENGTH_OF_ARRAY(vec4Verifiers); ++verifierNdx)	\
-	{																							\
-		const QueryType verifier = vec4Verifiers[verifierNdx];									\
-		const char* verifierSuffix = getVerifierSuffix(verifier);								\
-		this->addChild(X);																		\
 	}
 
 	FOR_EACH_VERIFIER(new SampleMaskCase			(m_context, (std::string() + "sample_mask_value_" + verifierSuffix).c_str(),				"Test SAMPLE_MASK_VALUE", verifier))
@@ -1510,15 +1417,11 @@ void IndexedStateQueryTests::init (void)
 	FOR_EACH_VERIFIER(new ImageBindingAccessCase	(m_context, (std::string() + "image_binding_access_" + verifierSuffix).c_str(),				"Test IMAGE_BINDING_ACCESS",			verifier))
 	FOR_EACH_VERIFIER(new ImageBindingFormatCase	(m_context, (std::string() + "image_binding_format_" + verifierSuffix).c_str(),				"Test IMAGE_BINDING_FORMAT",			verifier))
 
-	{
-		const QueryType verifier = QUERY_INDEXED_ISENABLED;
-		const char* verifierSuffix = getVerifierSuffix(verifier);
-		this->addChild(new EnableBlendCase			(m_context, (std::string() + "blend_" + verifierSuffix).c_str(),							"BLEND",								verifier));
-	}
-	FOR_EACH_VEC4_VERIFIER(new ColorMaskCase		(m_context, (std::string() + "color_mask_" + verifierSuffix).c_str(),						"COLOR_WRITEMASK",						verifier))
-	FOR_EACH_VERIFIER(new BlendFuncCase				(m_context, (std::string() + "blend_func_" + verifierSuffix).c_str(),						"BLEND_SRC and BLEND_DST",				verifier))
-	FOR_EACH_VERIFIER(new BlendEquationCase			(m_context, (std::string() + "blend_equation_" + verifierSuffix).c_str(),					"BLEND_EQUATION_RGB and BLEND_DST",		verifier))
-	FOR_EACH_VERIFIER(new BlendEquationAdvancedCase	(m_context, (std::string() + "blend_equation_advanced_" + verifierSuffix).c_str(),			"BLEND_EQUATION_RGB and BLEND_DST",		verifier))
+	// All non-boolean verifiers are tested in ES3 test module.
+	addChild(new ColorMaskCase(m_context, "color_mask_getbooleani_v", "COLOR_WRITEMASK", QUERY_INDEXED_BOOLEAN_VEC4));
+	addChild(new BlendFuncCase(m_context, "blend_func_getbooleani_v", "BLEND_SRC and BLEND_DST", QUERY_INDEXED_BOOLEAN));
+	addChild(new BlendEquationCase(m_context, "blend_equation_getbooleani_v", "BLEND_EQUATION_RGB and BLEND_DST", QUERY_INDEXED_BOOLEAN));
+	addChild(new BlendEquationAdvancedCase(m_context, "blend_equation_advanced_getbooleani_v", "BLEND_EQUATION_RGB and BLEND_DST", QUERY_INDEXED_BOOLEAN));
 
 #undef FOR_EACH_VEC4_VERIFIER
 #undef FOR_EACH_VERIFIER

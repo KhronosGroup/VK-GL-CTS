@@ -1,4 +1,8 @@
-include_directories(..)
+include_directories(
+	..
+    ../amber
+	${DEQP_INL_DIR}
+)
 
 set(DEQP_VK_DEVICE_GROUP_SRCS
 	vktMemoryModelTests.hpp

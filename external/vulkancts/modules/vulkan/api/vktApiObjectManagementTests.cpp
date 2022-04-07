@@ -331,7 +331,7 @@ inline bool hasDeviceExtension (Context& context, const string name)
 	return context.isDeviceFunctionalitySupported(name);
 }
 
-VkDeviceSize getPageTableSize (const PlatformMemoryLimits& limits, VkDeviceSize allocationSize)
+VkDeviceSize getPageTableSize (const tcu::PlatformMemoryLimits& limits, VkDeviceSize allocationSize)
 {
 	VkDeviceSize	totalSize	= 0;
 
@@ -383,9 +383,9 @@ size_t computeSystemMemoryUsage (Context& context, const typename Object::Parame
 	}
 }
 
-size_t getSafeObjectCount (const PlatformMemoryLimits&	memoryLimits,
-						   size_t						objectSystemMemoryUsage,
-						   VkDeviceSize					objectDeviceMemoryUsage = 0)
+size_t getSafeObjectCount (const tcu::PlatformMemoryLimits&	memoryLimits,
+						   size_t							objectSystemMemoryUsage,
+						   VkDeviceSize						objectDeviceMemoryUsage = 0)
 {
 	const VkDeviceSize	roundedUpDeviceMemory	= roundUpToNextMultiple(objectDeviceMemoryUsage, memoryLimits.deviceMemoryAllocationGranularity);
 
@@ -409,11 +409,11 @@ size_t getSafeObjectCount (const PlatformMemoryLimits&	memoryLimits,
 	}
 }
 
-PlatformMemoryLimits getPlatformMemoryLimits (Context& context)
+tcu::PlatformMemoryLimits getPlatformMemoryLimits (Context& context)
 {
-	PlatformMemoryLimits	memoryLimits;
+	tcu::PlatformMemoryLimits	memoryLimits;
 
-	context.getTestContext().getPlatform().getVulkanPlatform().getMemoryLimits(memoryLimits);
+	context.getTestContext().getPlatform().getMemoryLimits(memoryLimits);
 
 	return memoryLimits;
 }
@@ -2456,7 +2456,7 @@ template<typename T> static deUint64 HandleToInt(T *t) { return (deUint64)(deUin
 template<typename Object>
 tcu::TestStatus createPrivateDataTest (Context& context, typename Object::Parameters params)
 {
-	if (!context.getPrivateDataFeaturesEXT().privateData)
+	if (!context.getPrivateDataFeatures().privateData)
 		TCU_THROW(NotSupportedError, "privateData not supported");
 
 	for (int d = 0; d < SingletonDevice::NUM_DEVICES; ++d)
@@ -2485,14 +2485,14 @@ tcu::TestStatus createPrivateDataTest (Context& context, typename Object::Parame
 
 		const int numSlots = 100;
 
-		typedef Unique<VkPrivateDataSlotEXT>				PrivateDataSlotUp;
+		typedef Unique<VkPrivateDataSlot>					PrivateDataSlotUp;
 		typedef SharedPtr<PrivateDataSlotUp>				PrivateDataSlotSp;
 		vector<PrivateDataSlotSp> slots;
 
 		// interleave allocating objects and slots
 		for (int i = 0; i < numSlots / 2; ++i)
 		{
-			Move<VkPrivateDataSlotEXT> s = createPrivateDataSlotEXT(env.vkd, *device, &createInfo, DE_NULL);
+			Move<VkPrivateDataSlot> s = createPrivateDataSlot(env.vkd, *device, &createInfo, DE_NULL);
 			slots.push_back(PrivateDataSlotSp(new PrivateDataSlotUp(s)));
 		}
 
@@ -2501,7 +2501,7 @@ tcu::TestStatus createPrivateDataTest (Context& context, typename Object::Parame
 
 		for (int i = numSlots / 2; i < numSlots; ++i)
 		{
-			Move<VkPrivateDataSlotEXT> s = createPrivateDataSlotEXT(env.vkd, *device, &createInfo, DE_NULL);
+			Move<VkPrivateDataSlot> s = createPrivateDataSlot(env.vkd, *device, &createInfo, DE_NULL);
 			slots.push_back(PrivateDataSlotSp(new PrivateDataSlotUp(s)));
 		}
 
@@ -2521,7 +2521,7 @@ tcu::TestStatus createPrivateDataTest (Context& context, typename Object::Parame
 				for (int i = 0; i < numSlots; ++i)
 				{
 					data = 1234;
-					env.vkd.getPrivateDataEXT(*device, getObjectType<typename Object::Type>(), HandleToInt(obj.get()), **slots[i], &data);
+					env.vkd.getPrivateData(*device, getObjectType<typename Object::Type>(), HandleToInt(obj.get()), **slots[i], &data);
 					if (data != 0)
 						return tcu::TestStatus::fail("Expected initial value of zero");
 				}
@@ -2530,7 +2530,7 @@ tcu::TestStatus createPrivateDataTest (Context& context, typename Object::Parame
 			{
 				auto &obj = *objs[o];
 				for (int i = 0; i < numSlots; ++i)
-					VK_CHECK(env.vkd.setPrivateDataEXT(*device, getObjectType<typename Object::Type>(), HandleToInt(obj.get()), **slots[i], i*i*i + o*o + 1));
+					VK_CHECK(env.vkd.setPrivateData(*device, getObjectType<typename Object::Type>(), HandleToInt(obj.get()), **slots[i], i*i*i + o*o + 1));
 			}
 			for (int o = 0; o < 4; ++o)
 			{
@@ -2538,7 +2538,7 @@ tcu::TestStatus createPrivateDataTest (Context& context, typename Object::Parame
 				for (int i = 0; i < numSlots; ++i)
 				{
 					data = 1234;
-					env.vkd.getPrivateDataEXT(*device, getObjectType<typename Object::Type>(), HandleToInt(obj.get()), **slots[i], &data);
+					env.vkd.getPrivateData(*device, getObjectType<typename Object::Type>(), HandleToInt(obj.get()), **slots[i], &data);
 					if (data != (deUint64)(i*i*i + o*o + 1))
 						return tcu::TestStatus::fail("Didn't read back set value");
 				}
@@ -2552,7 +2552,7 @@ tcu::TestStatus createPrivateDataTest (Context& context, typename Object::Parame
 				for (int i = 0; i < numSlots; ++i)
 				{
 					data = 1234;
-					env.vkd.getPrivateDataEXT(*device, VK_OBJECT_TYPE_PRIVATE_DATA_SLOT_EXT, HandleToInt<VkPrivateDataSlotEXT>(obj), **slots[i], &data);
+					env.vkd.getPrivateData(*device, VK_OBJECT_TYPE_PRIVATE_DATA_SLOT_EXT, HandleToInt<VkPrivateDataSlotEXT>(obj), **slots[i], &data);
 					if (data != 0)
 						return tcu::TestStatus::fail("Expected initial value of zero");
 				}
@@ -2561,7 +2561,7 @@ tcu::TestStatus createPrivateDataTest (Context& context, typename Object::Parame
 			{
 				auto &obj = **slots[o];
 				for (int i = 0; i < numSlots; ++i)
-					VK_CHECK(env.vkd.setPrivateDataEXT(*device, VK_OBJECT_TYPE_PRIVATE_DATA_SLOT_EXT, HandleToInt<VkPrivateDataSlotEXT>(obj), **slots[i], i*i*i + o*o + 1));
+					VK_CHECK(env.vkd.setPrivateData(*device, VK_OBJECT_TYPE_PRIVATE_DATA_SLOT_EXT, HandleToInt<VkPrivateDataSlotEXT>(obj), **slots[i], i*i*i + o*o + 1));
 			}
 			for (int o = 0; o < numSlots; ++o)
 			{
@@ -2569,7 +2569,7 @@ tcu::TestStatus createPrivateDataTest (Context& context, typename Object::Parame
 				for (int i = 0; i < numSlots; ++i)
 				{
 					data = 1234;
-					env.vkd.getPrivateDataEXT(*device, VK_OBJECT_TYPE_PRIVATE_DATA_SLOT_EXT, HandleToInt<VkPrivateDataSlotEXT>(obj), **slots[i], &data);
+					env.vkd.getPrivateData(*device, VK_OBJECT_TYPE_PRIVATE_DATA_SLOT_EXT, HandleToInt<VkPrivateDataSlotEXT>(obj), **slots[i], &data);
 					if (data != (deUint64)(i*i*i + o*o + 1))
 						return tcu::TestStatus::fail("Didn't read back set value");
 				}
@@ -2579,16 +2579,16 @@ tcu::TestStatus createPrivateDataTest (Context& context, typename Object::Parame
 			for (int i = 0; i < numSlots; ++i)
 			{
 				data = 1234;
-				env.vkd.getPrivateDataEXT(*device, VK_OBJECT_TYPE_DEVICE, (deUint64)(deUintptr)(*device), **slots[i], &data);
+				env.vkd.getPrivateData(*device, VK_OBJECT_TYPE_DEVICE, (deUint64)(deUintptr)(*device), **slots[i], &data);
 				if (data != 0)
 					return tcu::TestStatus::fail("Expected initial value of zero for device");
 			}
 			for (int i = 0; i < numSlots; ++i)
-				VK_CHECK(env.vkd.setPrivateDataEXT(*device, VK_OBJECT_TYPE_DEVICE, (deUint64)(deUintptr)(*device), **slots[i], i*i*i + r*r + 1));
+				VK_CHECK(env.vkd.setPrivateData(*device, VK_OBJECT_TYPE_DEVICE, (deUint64)(deUintptr)(*device), **slots[i], i*i*i + r*r + 1));
 			for (int i = 0; i < numSlots; ++i)
 			{
 				data = 1234;
-				env.vkd.getPrivateDataEXT(*device, VK_OBJECT_TYPE_DEVICE, (deUint64)(deUintptr)(*device), **slots[i], &data);
+				env.vkd.getPrivateData(*device, VK_OBJECT_TYPE_DEVICE, (deUint64)(deUintptr)(*device), **slots[i], &data);
 				if (data != (deUint64)(i*i*i + r*r + 1))
 					return tcu::TestStatus::fail("Didn't read back set value from device");
 			}
@@ -2597,7 +2597,7 @@ tcu::TestStatus createPrivateDataTest (Context& context, typename Object::Parame
 			slots.clear();
 			for (int i = 0; i < numSlots; ++i)
 			{
-				Move<VkPrivateDataSlotEXT> s = createPrivateDataSlotEXT(env.vkd, *device, &createInfo, DE_NULL);
+				Move<VkPrivateDataSlotEXT> s = createPrivateDataSlot(env.vkd, *device, &createInfo, DE_NULL);
 				slots.push_back(PrivateDataSlotSp(new PrivateDataSlotUp(s)));
 			}
 		}

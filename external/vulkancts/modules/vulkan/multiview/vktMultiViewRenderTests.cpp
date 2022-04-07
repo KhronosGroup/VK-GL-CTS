@@ -296,6 +296,7 @@ protected:
 	void									fillTriangle			(const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& color, const int layerNdx, const deUint32 quarter) const;
 	void									fillLayer				(const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& color, const int layerNdx) const;
 	void									fillQuarter				(const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& color, const int layerNdx, const deUint32 quarter, const deUint32 subpassNdx) const;
+	void                                    addRenderingSubpassDependencyIfRequired (deUint32 currentSubpassNdx);
 
 	const TestParameters			m_parameters;
 	const bool						m_useDynamicRendering;
@@ -436,6 +437,41 @@ void MultiViewRenderTestInstance::afterDraw (void)
 		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 }
 
+void MultiViewRenderTestInstance::addRenderingSubpassDependencyIfRequired (deUint32 currentSubpassNdx)
+{
+	// Get the combined view mask since the last pipeline barrier.
+	deUint32 viewMask = 0;
+
+	for (deUint32 subpassNdx = 0; subpassNdx < currentSubpassNdx; ++subpassNdx)
+	{
+		if ((viewMask & m_parameters.viewMasks[subpassNdx]) != 0)
+		{
+			viewMask = 0; // This subpass should have a pipeline barrier so reset the view mask.
+		}
+
+		viewMask |= m_parameters.viewMasks[subpassNdx];
+	}
+
+	// Add a pipeline barrier if the view mask for this subpass contains bits used in previous subpasses
+	// since the last pipeline barrier.
+	if ((viewMask & m_parameters.viewMasks[currentSubpassNdx]) != 0)
+	{
+		const VkImageSubresourceRange	subresourceRange		=
+		{
+			VK_IMAGE_ASPECT_COLOR_BIT,	//VkImageAspectFlags	aspectMask;
+			0u,							//deUint32				baseMipLevel;
+			1u,							//deUint32				levelCount;
+			0u,							//deUint32				baseArrayLayer;
+			m_parameters.extent.depth,	//deUint32				layerCount;
+		};
+
+		imageBarrier(*m_device, *m_cmdBuffer, m_colorAttachment->getImage(), subresourceRange,
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+	}
+}
+
 void MultiViewRenderTestInstance::draw (const deUint32 subpassCount, VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
 {
 	const VkRect2D					renderArea				= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
@@ -472,6 +508,8 @@ void MultiViewRenderTestInstance::draw (const deUint32 subpassCount, VkRenderPas
 	{
 		if (m_useDynamicRendering)
 		{
+			addRenderingSubpassDependencyIfRequired(subpassNdx);
+
 			beginRendering(
 				*m_device,
 				*m_cmdBuffer,
@@ -672,10 +710,17 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 		&queuePriorities											//const float*				pQueuePriorities;
 	};
 
+	VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures	=
+	{
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES,	// VkStructureType			sType;
+		DE_NULL,														// void*					pNext;
+		DE_FALSE,														// VkBool32					dynamicRendering
+	};
+
 	VkPhysicalDeviceMultiviewFeatures		multiviewFeatures		=
 	{
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES_KHR,	// VkStructureType			sType;
-		DE_NULL,													// void*					pNext;
+		&dynamicRenderingFeatures,									// void*					pNext;
 		DE_FALSE,													// VkBool32					multiview;
 		DE_FALSE,													// VkBool32					multiviewGeometryShader;
 		DE_FALSE,													// VkBool32					multiviewTessellationShader;
@@ -1478,26 +1523,26 @@ MovePtr<tcu::Texture2DArray> MultiViewRenderTestInstance::imageData (void) const
 				if (TEST_TYPE_POINT_SIZE == m_parameters.viewIndex)
 				{
 					const deUint32	vertexPerPrimitive	= 1u;
-					const deUint32	dummyQuarterNdx		= 0u;
+					const deUint32	unusedQuarterNdx	= 0u;
 					const int		pointSize			= static_cast<int>(layerNdx == 0u ? TEST_POINT_SIZE_WIDE : TEST_POINT_SIZE_SMALL);
 
 					if (subpassCount == 1)
 						for (deUint32 drawNdx = 0u; drawNdx < m_squareCount; ++drawNdx)
-							setPoint(referenceFrame->getLevel(0), getQuarterRefColor(dummyQuarterNdx, vertexPerPrimitive * drawNdx, layerNdx, false), pointSize, layerNdx, drawNdx);
+							setPoint(referenceFrame->getLevel(0), getQuarterRefColor(unusedQuarterNdx, vertexPerPrimitive * drawNdx, layerNdx, false), pointSize, layerNdx, drawNdx);
 					else
-						setPoint(referenceFrame->getLevel(0), getQuarterRefColor(dummyQuarterNdx, vertexPerPrimitive * subpassQuarterNdx, layerNdx, false), pointSize, layerNdx, subpassQuarterNdx);
+						setPoint(referenceFrame->getLevel(0), getQuarterRefColor(unusedQuarterNdx, vertexPerPrimitive * subpassQuarterNdx, layerNdx, false), pointSize, layerNdx, subpassQuarterNdx);
 				}
 
 				if (TEST_TYPE_MULTISAMPLE == m_parameters.viewIndex)
 				{
 					const deUint32	vertexPerPrimitive	= 3u;
-					const deUint32	dummyQuarterNdx		= 0u;
+					const deUint32	unusedQuarterNdx	= 0u;
 
 					if (subpassCount == 1)
 						for (deUint32 drawNdx = 0u; drawNdx < m_squareCount; ++drawNdx)
-							fillTriangle(referenceFrame->getLevel(0), getQuarterRefColor(dummyQuarterNdx, vertexPerPrimitive * drawNdx, layerNdx, false), layerNdx, drawNdx);
+							fillTriangle(referenceFrame->getLevel(0), getQuarterRefColor(unusedQuarterNdx, vertexPerPrimitive * drawNdx, layerNdx, false), layerNdx, drawNdx);
 					else
-						fillTriangle(referenceFrame->getLevel(0), getQuarterRefColor(dummyQuarterNdx, vertexPerPrimitive * subpassQuarterNdx, layerNdx, false), layerNdx, subpassQuarterNdx);
+						fillTriangle(referenceFrame->getLevel(0), getQuarterRefColor(unusedQuarterNdx, vertexPerPrimitive * subpassQuarterNdx, layerNdx, false), layerNdx, subpassQuarterNdx);
 				}
 			}
 
@@ -1815,6 +1860,8 @@ void MultiViewInstancedTestInstance::draw (const deUint32 subpassCount, VkRender
 	{
 		if (m_useDynamicRendering)
 		{
+			addRenderingSubpassDependencyIfRequired(subpassNdx);
+
 			beginRendering(
 				*m_device,
 				*m_cmdBuffer,
@@ -1906,6 +1953,8 @@ void MultiViewInputRateInstanceTestInstance::draw (const deUint32 subpassCount, 
 	{
 		if (m_useDynamicRendering)
 		{
+			addRenderingSubpassDependencyIfRequired(subpassNdx);
+
 			beginRendering(
 				*m_device,
 				*m_cmdBuffer,
@@ -2058,6 +2107,8 @@ void MultiViewDrawIndirectTestInstance::draw (const deUint32 subpassCount, VkRen
 	{
 		if (m_useDynamicRendering)
 		{
+			addRenderingSubpassDependencyIfRequired(subpassNdx);
+
 			beginRendering(
 				*m_device,
 				*m_cmdBuffer,
@@ -2187,6 +2238,8 @@ void MultiViewClearAttachmentsTestInstance::draw (const deUint32 subpassCount, V
 
 		if (m_useDynamicRendering)
 		{
+			addRenderingSubpassDependencyIfRequired(subpassNdx);
+
 			beginRendering(
 				*m_device,
 				*m_cmdBuffer,
@@ -2325,6 +2378,8 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 
 		if (m_useDynamicRendering)
 		{
+			addRenderingSubpassDependencyIfRequired(subpassNdx);
+
 			beginRendering(
 				*m_device,
 				*m_cmdBuffer,
@@ -2447,6 +2502,8 @@ void MultiViewPointSizeTestInstance::draw (const deUint32 subpassCount, VkRender
 
 		if (m_useDynamicRendering)
 		{
+			addRenderingSubpassDependencyIfRequired(subpassNdx);
+
 			beginRendering(
 				*m_device,
 				*m_cmdBuffer,
@@ -2625,6 +2682,8 @@ void MultiViewMultsampleTestInstance::draw (const deUint32 subpassCount, VkRende
 
 		if (m_useDynamicRendering)
 		{
+			addRenderingSubpassDependencyIfRequired(subpassNdx);
+
 			beginRendering(
 				*m_device,
 				*m_cmdBuffer,
@@ -2935,6 +2994,8 @@ void MultiViewQueriesTestInstance::draw (const deUint32 subpassCount, VkRenderPa
 
 		if (m_useDynamicRendering)
 		{
+			addRenderingSubpassDependencyIfRequired(subpassNdx);
+
 			beginRendering(
 				*m_device,
 				*m_cmdBuffer,
@@ -3072,7 +3133,7 @@ tcu::TestStatus MultiViewReadbackTestInstance::iterate (void)
 		const VkAttachmentLoadOp					loadOp			= (!fullClearPass) ? VK_ATTACHMENT_LOAD_OP_LOAD :
 																	  (m_parameters.viewIndex == TEST_TYPE_READBACK_WITH_IMPLICIT_CLEAR) ? VK_ATTACHMENT_LOAD_OP_CLEAR :
 																	  (m_parameters.viewIndex == TEST_TYPE_READBACK_WITH_EXPLICIT_CLEAR) ? VK_ATTACHMENT_LOAD_OP_DONT_CARE :
-																	  VK_ATTACHMENT_LOAD_OP_MAX_ENUM;
+																	  VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		Move<VkRenderPass>							renderPass;
 		Move<VkFramebuffer>							frameBuffer;
 		Unique<VkPipelineLayout>					pipelineLayout	(makePipelineLayout(*m_device, *m_logicalDevice));
@@ -3141,6 +3202,8 @@ void MultiViewReadbackTestInstance::drawClears (const deUint32 subpassCount, VkR
 
 		if (m_useDynamicRendering)
 		{
+			addRenderingSubpassDependencyIfRequired(subpassNdx);
+
 			VkAttachmentLoadOp loadOperation = VK_ATTACHMENT_LOAD_OP_LOAD;
 			if (clearPass)
 			{
@@ -3472,6 +3535,12 @@ tcu::TestStatus MultiViewDepthStencilTestInstance::iterate (void)
 		frameBuffer	= makeFramebuffer(*m_device, *m_logicalDevice, *renderPass, static_cast<deUint32>(attachments.size()), attachments.data(), m_parameters.extent.width, m_parameters.extent.height, 1u);
 	}
 
+	if (m_parameters.renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
+	{
+		renderPass	= makeRenderPassWithDepth(*m_device, *m_logicalDevice, m_parameters.colorFormat, m_parameters.viewMasks, m_dsFormat, m_parameters.renderingType);
+		frameBuffer	= makeFramebuffer(*m_device, *m_logicalDevice, *renderPass, static_cast<deUint32>(attachments.size()), attachments.data(), m_parameters.extent.width, m_parameters.extent.height, 1u);
+	}
+
 	{
 		vector<VkPipelineShaderStageCreateInfo>	shaderStageParams;
 		madeShaderModule(shaderModule, shaderStageParams);
@@ -3675,6 +3744,8 @@ void MultiViewDepthStencilTestInstance::draw (const deUint32 subpassCount, VkRen
 
 		if (m_useDynamicRendering)
 		{
+			addRenderingSubpassDependencyIfRequired(subpassNdx);
+
 			VkRenderingAttachmentInfoKHR colorAttachment
 			{
 				vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,	// VkStructureType						sType;
@@ -3717,7 +3788,7 @@ void MultiViewDepthStencilTestInstance::draw (const deUint32 subpassCount, VkRen
 				(m_stencilTest ? &dsAttachment : DE_NULL),				// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
 			};
 
-			m_device->cmdBeginRenderingKHR(*m_cmdBuffer, &renderingInfo);
+			m_device->cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
 		}
 
 		for (deUint32 drawNdx = 0u; drawNdx < drawCountPerSubpass; ++drawNdx)
@@ -4230,8 +4301,8 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 				// maxMultiviewViewCount case
 				{
 					const VkExtent3D		incompleteExtent3D	= { 16u, 16u, 0u };
-					const vector<deUint32>	dummyMasks;
-					const TestParameters	parameters			= { incompleteExtent3D, dummyMasks, testType, sampleCountFlags, colorFormat, renderPassType };
+					const vector<deUint32>	unusedMasks;
+					const TestParameters	parameters			= { incompleteExtent3D, unusedMasks, testType, sampleCountFlags, colorFormat, renderPassType };
 
 					groupShader->addChild(new MultiViewRenderTestsCase(testCtx, "max_multi_view_view_count", "", parameters));
 				}

@@ -79,18 +79,6 @@ private:
 	Image&							operator=		(const Image&);
 };
 
-vk::Move<vk::VkPipeline>		makeComputePipeline				(const vk::DeviceInterface&					vk,
-																 const vk::VkDevice							device,
-																 const vk::VkPipelineLayout					pipelineLayout,
-																 const vk::VkShaderModule					shaderModule);
-
-vk::Move<vk::VkPipeline>		makeComputePipeline				(const vk::DeviceInterface&					vk,
-																 const vk::VkDevice							device,
-																 const vk::VkPipelineLayout					pipelineLayout,
-																 const vk::VkPipelineCreateFlags			pipelineFlags,
-																 const vk::VkShaderModule					shaderModule,
-																 const vk::VkPipelineShaderStageCreateFlags	shaderFlags);
-
 vk::VkBufferImageCopy			makeBufferImageCopy				(const vk::VkExtent3D						extent,
 																 const deUint32								arraySize);
 

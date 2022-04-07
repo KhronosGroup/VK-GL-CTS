@@ -28,6 +28,7 @@
 #include "vktAttachmentRateTests.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktTestCaseUtil.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 #include "tcuTestLog.hpp"
 #include <limits>
 
@@ -424,19 +425,24 @@ void createMiscTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGroup)
 	parentGroup->addChild(group.release());
 }
 
-void createChildren (tcu::TestContext& testCtx, tcu::TestCaseGroup* group, bool useDynamicRendering)
+void createChildren (tcu::TestCaseGroup* group, vk::PipelineConstructionType pipelineConstructionType, bool useDynamicRendering)
 {
-	createBasicTests(testCtx, group, useDynamicRendering);
+	tcu::TestContext&	testCtx		= group->getTestContext();
+	createBasicTests(testCtx, group, pipelineConstructionType, useDynamicRendering);
 
-	if (!useDynamicRendering)
+	// only selected tests are repeated for graphics_pipeline_library
+	if (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
-		// there is no point in duplicating those tests for dynamic rendering
-		createMiscTests(testCtx, group);
+		createAttachmentRateTests(testCtx, group, useDynamicRendering);
 
-		// subpasses can't be translated to dynamic rendering
-		createPixelConsistencyTests(testCtx, group);
+		if (!useDynamicRendering)
+		{
+			// there is no point in duplicating those tests for dynamic rendering
+			createMiscTests(testCtx, group);
 
-		createAttachmentRateTests(testCtx, group);
+			// subpasses can't be translated to dynamic rendering
+			createPixelConsistencyTests(testCtx, group);
+		}
 	}
 }
 
@@ -445,17 +451,25 @@ void createChildren (tcu::TestContext& testCtx, tcu::TestCaseGroup* group, bool 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> mainGroup				(new tcu::TestCaseGroup(testCtx, "fragment_shading_rate", "Fragment shading rate tests"));
-	de::MovePtr<tcu::TestCaseGroup> renderpass2Group		(new tcu::TestCaseGroup(testCtx, "renderpass2", "Draw using render pass object"));
-	de::MovePtr<tcu::TestCaseGroup> dynamicRenderingGroup	(new tcu::TestCaseGroup(testCtx, "dynamic_rendering", "Draw using VK_KHR_dynamic_rendering"));
+	de::MovePtr<tcu::TestCaseGroup> renderingTypeGroup[]
+	{
+		de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "renderpass2",			"Draw using render pass object")),
+		de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "dynamic_rendering",	"Draw using VK_KHR_dynamic_rendering"))
+	};
 
-	createChildren(testCtx, renderpass2Group.get(), false);
-	createChildren(testCtx, dynamicRenderingGroup.get(), true);
+	for (deUint32 renderingTypeIndex = 0u; renderingTypeIndex < 2u; ++renderingTypeIndex)
+	{
+		bool useDynamicRendering = !!renderingTypeIndex;
+		renderingTypeGroup[renderingTypeIndex]->addChild(createTestGroup(testCtx, "monolithic",				"Monolithic pipeline tests",					createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC,					useDynamicRendering));
+		renderingTypeGroup[renderingTypeIndex]->addChild(createTestGroup(testCtx, "pipeline_library",		"Graphics pipeline library tests",				createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY,	useDynamicRendering));
+		renderingTypeGroup[renderingTypeIndex]->addChild(createTestGroup(testCtx, "fast_linked_library",	"Fast linked graphics pipeline library tests",	createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY,			useDynamicRendering));
 
-	mainGroup->addChild(renderpass2Group.release());
-	mainGroup->addChild(dynamicRenderingGroup.release());
+		mainGroup->addChild(renderingTypeGroup[renderingTypeIndex].release());
+	}
 
 	return mainGroup.release();
 }
 
 } // FragmentShadingRate
 } // vkt
+

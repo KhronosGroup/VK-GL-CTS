@@ -53,6 +53,7 @@ tcu::TestCaseGroup*	createTests	(tcu::TestContext& testCtx)
 	nvGroup->addChild(createMeshShaderPropertyTests(testCtx));
 	nvGroup->addChild(createMeshShaderBuiltinTests(testCtx));
 	nvGroup->addChild(createMeshShaderMiscTests(testCtx));
+	nvGroup->addChild(createMeshShaderInOutTests(testCtx));
 
 	mainGroup->addChild(nvGroup.release());
 	return mainGroup.release();

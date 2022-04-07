@@ -31,6 +31,7 @@
 
 #include "gluShaderUtil.hpp"
 #include "vkPrograms.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -58,24 +59,28 @@ class InstanceFactory : public TestCase
 {
 public:
 	InstanceFactory (tcu::TestContext& testCtx, const std::string& name, const std::string& desc,
+		const vk::PipelineConstructionType pipelineConstructionType,
 		const std::map<glu::ShaderType, const char*> shaderPaths)
-		: TestCase		(testCtx, name, desc)
-		, m_shaderPaths (shaderPaths)
-		, m_support		()
+		: TestCase						(testCtx, name, desc)
+		, m_pipelineConstructionType	(pipelineConstructionType)
+		, m_shaderPaths					(shaderPaths)
+		, m_support						()
 	{
 	}
 
 	InstanceFactory (tcu::TestContext& testCtx, const std::string& name, const std::string& desc,
+		const vk::PipelineConstructionType pipelineConstructionType,
 		const std::map<glu::ShaderType, const char*> shaderPaths, const Support& support)
-		: TestCase		(testCtx, name, desc)
-		, m_shaderPaths (shaderPaths)
-		, m_support		(support)
+		: TestCase							(testCtx, name, desc)
+		, m_pipelineConstructionType		(pipelineConstructionType)
+		, m_shaderPaths						(shaderPaths)
+		, m_support							(support)
 	{
 	}
 
 	TestInstance*	createInstance	(Context& context) const
 	{
-		return new Instance(context, m_shaderPaths);
+		return new Instance(context, m_pipelineConstructionType, m_shaderPaths);
 	}
 
 	virtual void	initPrograms	(vk::SourceCollections& programCollection) const
@@ -89,12 +94,15 @@ public:
 
 	virtual void	checkSupport	(Context& context) const
 	{
+		checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+
 		m_support.checkSupport(context);
 	}
 
 private:
-	const ShaderMap	m_shaderPaths;
-	const Support	m_support;
+	const vk::PipelineConstructionType	m_pipelineConstructionType;
+	const ShaderMap						m_shaderPaths;
+	const Support						m_support;
 };
 
 } // DynamicState

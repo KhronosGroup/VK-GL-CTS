@@ -538,7 +538,7 @@ tcu::ConstPixelBufferAccess DepthClampTestInstance::draw ()
 			DE_NULL,																		// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
 		};
 
-		vk.cmdBeginRenderingKHR(*cmdBuffer, &renderingInfo);
+		vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
 	}
 	else
 		beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT));

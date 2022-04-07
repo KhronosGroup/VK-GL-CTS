@@ -248,7 +248,8 @@ class SpecConstantTest : public TestCase
 {
 public:
 								SpecConstantTest	(tcu::TestContext&				testCtx,
-													 const VkShaderStageFlagBits	stage,		//!< which shader stage is tested
+													 const PipelineConstructionType pipelineType,	//!< how pipeline is constructed
+													 const VkShaderStageFlagBits	stage,			//!< which shader stage is tested
 													 const CaseDefinition&			caseDef);
 
 	void						initPrograms		(SourceCollections&		programCollection) const;
@@ -256,16 +257,19 @@ public:
 	virtual void				checkSupport		(Context&				context) const;
 
 private:
-	const VkShaderStageFlagBits	m_stage;
-	const CaseDefinition		m_caseDef;
+	const PipelineConstructionType	m_pipelineConstructionType;
+	const VkShaderStageFlagBits		m_stage;
+	const CaseDefinition			m_caseDef;
 };
 
-SpecConstantTest::SpecConstantTest (tcu::TestContext&			testCtx,
-									const VkShaderStageFlagBits	stage,
-									const CaseDefinition&		caseDef)
-	: TestCase	(testCtx, caseDef.name, "")
-	, m_stage	(stage)
-	, m_caseDef	(caseDef)
+SpecConstantTest::SpecConstantTest (tcu::TestContext&				testCtx,
+									const PipelineConstructionType	pipelineType,
+									const VkShaderStageFlagBits		stage,
+									const CaseDefinition&			caseDef)
+	: TestCase						(testCtx, caseDef.name, "")
+	, m_pipelineConstructionType	(pipelineType)
+	, m_stage						(stage)
+	, m_caseDef						(caseDef)
 {
 }
 
@@ -544,7 +548,7 @@ tcu::TestStatus ComputeTestInstance::iterate (void)
 
 	const Unique<VkShaderModule>   shaderModule  (createShaderModule (vk, device, m_context.getBinaryCollection().get("comp"), 0));
 	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout (vk, device, *descriptorSetLayout));
-	const Unique<VkPipeline>       pipeline      (makeComputePipeline(vk, device, *pipelineLayout, *shaderModule, pSpecInfo));
+	const Unique<VkPipeline>       pipeline      (makeComputePipeline(vk, device, *pipelineLayout, (VkPipelineCreateFlags) 0u, *shaderModule, (VkPipelineShaderStageCreateFlags) 0u, pSpecInfo));
 	const Unique<VkCommandPool>    cmdPool       (createCommandPool  (vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>  cmdBuffer     (makeCommandBuffer  (vk, device, *cmdPool));
 
@@ -581,6 +585,7 @@ class GraphicsTestInstance : public TestInstance
 {
 public:
 									GraphicsTestInstance (Context&							context,
+														  const PipelineConstructionType	pipelineConstructionType,
 														  const VkDeviceSize				ssboSize,
 														  const std::vector<SpecConstant>&	specConstants,
 														  const std::vector<OffsetValue>&	expectedValues,
@@ -590,6 +595,7 @@ public:
 	tcu::TestStatus					iterate				 (void);
 
 private:
+	const PipelineConstructionType	m_pipelineConstructionType;
 	const VkDeviceSize				m_ssboSize;
 	const std::vector<SpecConstant>	m_specConstants;
 	const std::vector<OffsetValue>	m_expectedValues;
@@ -598,17 +604,19 @@ private:
 };
 
 GraphicsTestInstance::GraphicsTestInstance (Context&							context,
+											const PipelineConstructionType		pipelineConstructionType,
 											const VkDeviceSize					ssboSize,
 											const std::vector<SpecConstant>&	specConstants,
 											const std::vector<OffsetValue>&		expectedValues,
 											const VkShaderStageFlagBits			stage,
 											bool								packData)
-	: TestInstance		(context)
-	, m_ssboSize		(ssboSize)
-	, m_specConstants	(specConstants)
-	, m_expectedValues	(expectedValues)
-	, m_stage			(stage)
-	, m_packData		(packData)
+	: TestInstance					(context)
+	, m_pipelineConstructionType	(pipelineConstructionType)
+	, m_ssboSize					(ssboSize)
+	, m_specConstants				(specConstants)
+	, m_expectedValues				(expectedValues)
+	, m_stage						(stage)
+	, m_packData					(packData)
 {
 }
 
@@ -671,28 +679,53 @@ tcu::TestStatus GraphicsTestInstance::iterate (void)
 
 	// Pipeline
 
-	const Unique<VkRenderPass>     renderPass    (makeRenderPass    (vk, device, imageFormat));
-	const Unique<VkFramebuffer>    framebuffer   (makeFramebuffer	(vk, device, *renderPass, colorImageView.get(), static_cast<deUint32>(renderSize.x()), static_cast<deUint32>(renderSize.y())));
-	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
-	const Unique<VkCommandPool>    cmdPool       (createCommandPool (vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
-	const Unique<VkCommandBuffer>  cmdBuffer     (makeCommandBuffer (vk, device, *cmdPool));
+	const Unique<VkRenderPass>		renderPass		(makeRenderPass    (vk, device, imageFormat));
+	const Unique<VkFramebuffer>		framebuffer		(makeFramebuffer	(vk, device, *renderPass, colorImageView.get(), static_cast<deUint32>(renderSize.x()), static_cast<deUint32>(renderSize.y())));
+	const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout(vk, device, *descriptorSetLayout));
+	const Unique<VkCommandPool>		cmdPool			(createCommandPool (vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandBuffer>	cmdBuffer		(makeCommandBuffer (vk, device, *cmdPool));
 
-	GraphicsPipelineBuilder pipelineBuilder;
-	pipelineBuilder
-		.setRenderSize(renderSize)
-		.setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT,   m_context.getBinaryCollection().get("vert"), pSpecInfo)
-		.setShader(vk, device, VK_SHADER_STAGE_FRAGMENT_BIT, m_context.getBinaryCollection().get("frag"), pSpecInfo);
+	vk::BinaryCollection&			binaryCollection(m_context.getBinaryCollection());
+	VkPrimitiveTopology				topology		(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+	const std::vector<VkViewport>	viewport		{ makeViewport(renderSize) };
+	const std::vector<VkRect2D>		scissor			{ makeRect2D(renderSize) };
+
+	Move<VkShaderModule> vertShaderModule	= createShaderModule(vk, device, binaryCollection.get("vert"), 0u);
+	Move<VkShaderModule> tescShaderModule;
+	Move<VkShaderModule> teseShaderModule;
+	Move<VkShaderModule> geomShaderModule;
+	Move<VkShaderModule> fragShaderModule	= createShaderModule(vk, device, binaryCollection.get("frag"), 0u);
 
 	if ((m_stage == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT) || (m_stage == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT))
-		pipelineBuilder
-			.setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,    m_context.getBinaryCollection().get("tesc"), pSpecInfo)
-			.setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, m_context.getBinaryCollection().get("tese"), pSpecInfo);
-
+	{
+		tescShaderModule	= createShaderModule(vk, device, binaryCollection.get("tesc"), 0u);
+		teseShaderModule	= createShaderModule(vk, device, binaryCollection.get("tese"), 0u);
+		topology			= VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
+	}
 	if (m_stage == VK_SHADER_STAGE_GEOMETRY_BIT)
-		pipelineBuilder
-			.setShader(vk, device, VK_SHADER_STAGE_GEOMETRY_BIT, m_context.getBinaryCollection().get("geom"), pSpecInfo);
+		geomShaderModule = createShaderModule(vk, device, binaryCollection.get("geom"), 0u);
 
-	const Unique<VkPipeline> pipeline (pipelineBuilder.build(vk, device, *pipelineLayout, *renderPass));
+	GraphicsPipelineWrapper graphicsPipeline(vk, device, m_pipelineConstructionType);
+	graphicsPipeline.setDefaultRasterizationState()
+					.setDefaultDepthStencilState()
+					.setDefaultMultisampleState()
+					.setDefaultColorBlendState()
+					.setDefaultTopology(topology)
+					.setupVertexInputStete()
+					.setupPreRasterizationShaderState(viewport,
+													  scissor,
+													  *pipelineLayout,
+													  *renderPass,
+													  0u,
+													  *vertShaderModule,
+													  0u,
+													  *tescShaderModule,
+													  *teseShaderModule,
+													  *geomShaderModule,
+													  pSpecInfo)
+					.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragShaderModule, DE_NULL, DE_NULL, DE_NULL, pSpecInfo)
+					.setupFragmentOutputState(*renderPass)
+					.buildPipeline();
 
 	// Draw commands
 
@@ -715,7 +748,7 @@ tcu::TestStatus GraphicsTestInstance::iterate (void)
 
 	beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea, clearColor);
 
-	vk.cmdBindPipeline      (*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+	vk.cmdBindPipeline      (*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.getPipeline());
 	vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 	vk.cmdBindVertexBuffers (*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 
@@ -769,6 +802,8 @@ FeatureFlags getShaderStageRequirements (const VkShaderStageFlags stageFlags)
 void SpecConstantTest::checkSupport (Context& context) const
 {
 	requireFeatures(context, m_caseDef.requirements | getShaderStageRequirements(m_stage));
+
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 }
 
 TestInstance* SpecConstantTest::createInstance (Context& context) const
@@ -776,11 +811,11 @@ TestInstance* SpecConstantTest::createInstance (Context& context) const
 	if (m_stage & VK_SHADER_STAGE_COMPUTE_BIT)
 		return new ComputeTestInstance(context, m_caseDef.ssboSize, m_caseDef.specConstants, m_caseDef.expectedValues, m_caseDef.packData);
 	else
-		return new GraphicsTestInstance(context, m_caseDef.ssboSize, m_caseDef.specConstants, m_caseDef.expectedValues, m_stage, m_caseDef.packData);
+		return new GraphicsTestInstance(context, m_pipelineConstructionType, m_caseDef.ssboSize, m_caseDef.specConstants, m_caseDef.expectedValues, m_stage, m_caseDef.packData);
 }
 
 //! Declare specialization constants but use them with default values.
-tcu::TestCaseGroup* createDefaultValueTests (tcu::TestContext& testCtx, const VkShaderStageFlagBits shaderStage)
+tcu::TestCaseGroup* createDefaultValueTests (tcu::TestContext& testCtx, const PipelineConstructionType pipelineType, const VkShaderStageFlagBits shaderStage)
 {
 	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "default_value", "use default constant value"));
 
@@ -970,7 +1005,7 @@ tcu::TestCaseGroup* createDefaultValueTests (tcu::TestContext& testCtx, const Vk
 			def.packData = packData;
 			if (packData)
 				def.name += "_packed";
-			testGroup->addChild(new SpecConstantTest(testCtx, shaderStage, def));
+			testGroup->addChild(new SpecConstantTest(testCtx, pipelineType, shaderStage, def));
 		}
 	}
 
@@ -978,7 +1013,7 @@ tcu::TestCaseGroup* createDefaultValueTests (tcu::TestContext& testCtx, const Vk
 }
 
 //! Declare specialization constants and specify their values through API.
-tcu::TestCaseGroup* createBasicSpecializationTests (tcu::TestContext& testCtx, const VkShaderStageFlagBits shaderStage)
+tcu::TestCaseGroup* createBasicSpecializationTests (tcu::TestContext& testCtx, const PipelineConstructionType pipelineType, const VkShaderStageFlagBits shaderStage)
 {
 	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "basic", "specialize a constant"));
 
@@ -1418,7 +1453,7 @@ tcu::TestCaseGroup* createBasicSpecializationTests (tcu::TestContext& testCtx, c
 			def.packData = packData;
 			if (packData)
 				def.name += "_packed";
-			testGroup->addChild(new SpecConstantTest(testCtx, shaderStage, def));
+			testGroup->addChild(new SpecConstantTest(testCtx, pipelineType, shaderStage, def));
 		}
 	}
 
@@ -1484,7 +1519,7 @@ tcu::TestCaseGroup* createBasicSpecializationTests (tcu::TestContext& testCtx, c
 	};
 
 	for (const auto& caseDef : defsUnusedCases)
-		testGroup->addChild(new SpecConstantTest(testCtx, shaderStage, caseDef));
+		testGroup->addChild(new SpecConstantTest(testCtx, pipelineType, shaderStage, caseDef));
 
 	return testGroup.release();
 }
@@ -1600,13 +1635,13 @@ tcu::TestCaseGroup* createWorkGroupSizeTests (tcu::TestContext& testCtx)
 	};
 
 	for (int defNdx = 0; defNdx < DE_LENGTH_OF_ARRAY(defs); ++defNdx)
-		testGroup->addChild(new SpecConstantTest(testCtx, VK_SHADER_STAGE_COMPUTE_BIT, defs[defNdx]));
+		testGroup->addChild(new SpecConstantTest(testCtx, PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC, VK_SHADER_STAGE_COMPUTE_BIT, defs[defNdx]));
 
 	return testGroup.release();
 }
 
 //! Override a built-in variable with specialization constant value.
-tcu::TestCaseGroup* createBuiltInOverrideTests (tcu::TestContext& testCtx, const VkShaderStageFlagBits shaderStage)
+tcu::TestCaseGroup* createBuiltInOverrideTests (tcu::TestContext& testCtx, const PipelineConstructionType pipelineType, const VkShaderStageFlagBits shaderStage)
 {
 	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "builtin", "built-in override"));
 
@@ -1637,13 +1672,13 @@ tcu::TestCaseGroup* createBuiltInOverrideTests (tcu::TestContext& testCtx, const
 	};
 
 	for (int defNdx = 0; defNdx < DE_LENGTH_OF_ARRAY(defs); ++defNdx)
-		testGroup->addChild(new SpecConstantTest(testCtx, shaderStage, defs[defNdx]));
+		testGroup->addChild(new SpecConstantTest(testCtx, pipelineType, shaderStage, defs[defNdx]));
 
 	return testGroup.release();
 }
 
 //! Specialization constants used in expressions.
-tcu::TestCaseGroup* createExpressionTests (tcu::TestContext& testCtx, const VkShaderStageFlagBits shaderStage)
+tcu::TestCaseGroup* createExpressionTests (tcu::TestContext& testCtx, const PipelineConstructionType pipelineType, const VkShaderStageFlagBits shaderStage)
 {
 	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "expression", "specialization constants usage in expressions"));
 
@@ -1799,7 +1834,7 @@ tcu::TestCaseGroup* createExpressionTests (tcu::TestContext& testCtx, const VkSh
 	};
 
 	for (int defNdx = 0; defNdx < DE_LENGTH_OF_ARRAY(defs); ++defNdx)
-		testGroup->addChild(new SpecConstantTest(testCtx, shaderStage, defs[defNdx]));
+		testGroup->addChild(new SpecConstantTest(testCtx, pipelineType, shaderStage, defs[defNdx]));
 
 	return testGroup.release();
 }
@@ -2128,7 +2163,7 @@ CaseDefinition makeStructCompositeCaseDefinition (const glu::DataType memberType
 }
 
 //! Specialization constants used in composites.
-tcu::TestCaseGroup* createCompositeTests (tcu::TestContext& testCtx, const VkShaderStageFlagBits shaderStage)
+tcu::TestCaseGroup* createCompositeTests (tcu::TestContext& testCtx, const PipelineConstructionType pipelineType, const VkShaderStageFlagBits shaderStage)
 {
 	de::MovePtr<tcu::TestCaseGroup> compositeTests (new tcu::TestCaseGroup(testCtx, "composite", "specialization constants usage in composite types"));
 
@@ -2159,7 +2194,7 @@ tcu::TestCaseGroup* createCompositeTests (tcu::TestContext& testCtx, const VkSha
 			glu::TYPE_UINT_VEC4,
 		};
 		for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(types); ++typeNdx)
-			group->addChild(new SpecConstantTest(testCtx, shaderStage, makeMatrixVectorCompositeCaseDefinition(types[typeNdx])));
+			group->addChild(new SpecConstantTest(testCtx, pipelineType, shaderStage, makeMatrixVectorCompositeCaseDefinition(types[typeNdx])));
 
 		compositeTests->addChild(group.release());
 	}
@@ -2191,7 +2226,7 @@ tcu::TestCaseGroup* createCompositeTests (tcu::TestContext& testCtx, const VkSha
 			glu::TYPE_DOUBLE_MAT4,
 		};
 		for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(types); ++typeNdx)
-			group->addChild(new SpecConstantTest(testCtx, shaderStage, makeMatrixVectorCompositeCaseDefinition(types[typeNdx])));
+			group->addChild(new SpecConstantTest(testCtx, pipelineType, shaderStage, makeMatrixVectorCompositeCaseDefinition(types[typeNdx])));
 
 		compositeTests->addChild(group.release());
 	}
@@ -2248,11 +2283,11 @@ tcu::TestCaseGroup* createCompositeTests (tcu::TestContext& testCtx, const VkSha
 
 		// Array of T
 		for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(allTypes); ++typeNdx)
-			group->addChild(new SpecConstantTest(testCtx, shaderStage, makeArrayCompositeCaseDefinition(allTypes[typeNdx], 3)));
+			group->addChild(new SpecConstantTest(testCtx, pipelineType, shaderStage, makeArrayCompositeCaseDefinition(allTypes[typeNdx], 3)));
 
 		// Array of array of T
 		for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(allTypes); ++typeNdx)
-			group->addChild(new SpecConstantTest(testCtx, shaderStage, makeArrayCompositeCaseDefinition(allTypes[typeNdx], 3, 2)));
+			group->addChild(new SpecConstantTest(testCtx, pipelineType, shaderStage, makeArrayCompositeCaseDefinition(allTypes[typeNdx], 3, 2)));
 
 		// Special case - array of struct
 		{
@@ -2286,7 +2321,7 @@ tcu::TestCaseGroup* createCompositeTests (tcu::TestContext& testCtx, const VkSha
 				false,
 			};
 
-			group->addChild(new SpecConstantTest(testCtx, shaderStage, def));
+			group->addChild(new SpecConstantTest(testCtx, pipelineType, shaderStage, def));
 		}
 
 		compositeTests->addChild(group.release());
@@ -2298,7 +2333,7 @@ tcu::TestCaseGroup* createCompositeTests (tcu::TestContext& testCtx, const VkSha
 
 		// Struct with one member being a specialization constant (or spec. const. composite) of a given type
 		for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(allTypes); ++typeNdx)
-			group->addChild(new SpecConstantTest(testCtx, shaderStage, makeStructCompositeCaseDefinition(allTypes[typeNdx])));
+			group->addChild(new SpecConstantTest(testCtx, pipelineType, shaderStage, makeStructCompositeCaseDefinition(allTypes[typeNdx])));
 
 		// Special case - struct with array
 		{
@@ -2333,7 +2368,7 @@ tcu::TestCaseGroup* createCompositeTests (tcu::TestContext& testCtx, const VkSha
 				false,
 			};
 
-			group->addChild(new SpecConstantTest(testCtx, shaderStage, def));
+			group->addChild(new SpecConstantTest(testCtx, pipelineType, shaderStage, def));
 		}
 
 		// Special case - struct of struct
@@ -2375,7 +2410,7 @@ tcu::TestCaseGroup* createCompositeTests (tcu::TestContext& testCtx, const VkSha
 				false,
 			};
 
-			group->addChild(new SpecConstantTest(testCtx, shaderStage, def));
+			group->addChild(new SpecConstantTest(testCtx, pipelineType, shaderStage, def));
 		}
 
 		compositeTests->addChild(group.release());
@@ -2386,7 +2421,7 @@ tcu::TestCaseGroup* createCompositeTests (tcu::TestContext& testCtx, const VkSha
 
 } // anonymous ns
 
-tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineType)
 {
 	de::MovePtr<tcu::TestCaseGroup> allTests (new tcu::TestCaseGroup(testCtx, "spec_constant", "Specialization constants tests"));
 	de::MovePtr<tcu::TestCaseGroup> graphicsGroup (new tcu::TestCaseGroup(testCtx, "graphics", ""));
@@ -2412,16 +2447,21 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 
 	for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stages); ++stageNdx)
 	{
-		const StageDef& stage = stages[stageNdx];
+		const StageDef&		stage		= stages[stageNdx];
+		const bool			isCompute	= (stage.stage == VK_SHADER_STAGE_COMPUTE_BIT);
+
+		if (isCompute && (pipelineType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC))
+			continue;
+
 		de::MovePtr<tcu::TestCaseGroup> stageGroup (new tcu::TestCaseGroup(testCtx, stage.name, ""));
 
-		stageGroup->addChild(createDefaultValueTests       (testCtx, stage.stage));
-		stageGroup->addChild(createBasicSpecializationTests(testCtx, stage.stage));
-		stageGroup->addChild(createBuiltInOverrideTests    (testCtx, stage.stage));
-		stageGroup->addChild(createExpressionTests         (testCtx, stage.stage));
-		stageGroup->addChild(createCompositeTests          (testCtx, stage.stage));
+		stageGroup->addChild(createDefaultValueTests		(testCtx, pipelineType, stage.stage));
+		stageGroup->addChild(createBasicSpecializationTests	(testCtx, pipelineType, stage.stage));
+		stageGroup->addChild(createBuiltInOverrideTests		(testCtx, pipelineType, stage.stage));
+		stageGroup->addChild(createExpressionTests			(testCtx, pipelineType, stage.stage));
+		stageGroup->addChild(createCompositeTests			(testCtx, pipelineType, stage.stage));
 
-		if (stage.stage == VK_SHADER_STAGE_COMPUTE_BIT)
+		if (isCompute)
 			stageGroup->addChild(createWorkGroupSizeTests(testCtx));
 
 		stage.parentGroup->addChild(stageGroup.release());

@@ -820,6 +820,8 @@ struct Resource
 
 struct BindingInterface
 {
+	virtual ~BindingInterface () {}
+
 	// Minimum number of iterations to test all mutable types.
 	virtual deUint32 maxTypes () const = 0;
 
@@ -2681,7 +2683,7 @@ void MutableTypesTest::checkSupport (Context& context) const
 				{
 					// Just in case we ever mix some of these in.
 					context.requireDeviceFunctionality("VK_EXT_inline_uniform_block");
-					const auto& iubFeatures = context.getInlineUniformBlockFeaturesEXT();
+					const auto& iubFeatures = context.getInlineUniformBlockFeatures();
 					if (!iubFeatures.descriptorBindingInlineUniformBlockUpdateAfterBind)
 						TCU_THROW(NotSupportedError, "Update-after-bind not supported for inline uniform blocks");
 				}

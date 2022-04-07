@@ -42,6 +42,7 @@
 #include "vktDrawDiscardRectanglesTests.hpp"
 #include "vktDrawExplicitVertexParameterTests.hpp"
 #include "vktDrawOutputLocationTests.hpp"
+#include "vktDrawDepthBiasTests.hpp"
 #include "vktDrawDepthClampTests.hpp"
 #include "vktDrawAhbTests.hpp"
 #include "vktDrawMultipleClearsWithinRenderPass.hpp"
@@ -81,6 +82,7 @@ void createChildren (tcu::TestContext& testCtx, tcu::TestCaseGroup* group, bool 
 	if (!useDynamicRendering)
 	{
 		// amber tests - no support for dynamic rendering
+		group->addChild(createDepthBiasTests				(testCtx));
 		group->addChild(createOutputLocationTests			(testCtx));
 
 		// subpasses can't be translated to dynamic rendering

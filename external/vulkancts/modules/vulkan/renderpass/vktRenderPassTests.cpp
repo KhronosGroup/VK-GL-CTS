@@ -37,6 +37,7 @@
 #include "vktRenderPassMultipleSubpassesMultipleCommandBuffersTests.hpp"
 #include "vktRenderPassLoadStoreOpNoneTests.hpp"
 #include "vktDynamicRenderingTests.hpp"
+#include "vktRenderPassDepthStencilWriteConditionsTests.hpp"
 
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -2999,7 +3000,7 @@ void pushDynamicRenderingCommands (const DeviceInterface&								vk,
 		pStencilAttachment													// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
 	};
 
-	vk.cmdBeginRenderingKHR(commandBuffer, &renderingInfo);
+	vk.cmdBeginRendering(commandBuffer, &renderingInfo);
 
 	if (render)
 	{
@@ -3012,7 +3013,7 @@ void pushDynamicRenderingCommands (const DeviceInterface&								vk,
 			subpassRenderers[0]->pushRenderCommands(vk, commandBuffer);
 	}
 
-	vk.cmdEndRenderingKHR(commandBuffer);
+	vk.cmdEndRendering(commandBuffer);
 
 	if (!imageBarriersAfterRendering.empty())
 		vk.cmdPipelineBarrier(commandBuffer,
@@ -5910,7 +5911,8 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, const TestConfigEx
 																	  | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 
 																	  VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-																	  VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
+																	  VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT
+																	  | VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
 
 																	  dependencyFlags);
 								for (SubpassDependency& dependency : deps)
@@ -5918,7 +5920,7 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, const TestConfigEx
 									if (dependency.getSrcPass() == srcPass && dependency.getDstPass() == dstPass)
 									{
 										const VkAccessFlags newSrcFlags = dependency.getSrcAccessMask() | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-										const VkAccessFlags newDstFlags = dependency.getDstAccessMask() | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+										const VkAccessFlags newDstFlags = dependency.getDstAccessMask() | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
 										dependency.setDstAccessMask(newSrcFlags);
 										dependency.setDstAccessMask(newDstFlags);
 										foundDuplicate = true;
@@ -7576,6 +7578,9 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 		suballocationTestGroup->addChild(createRenderPassSubpassDependencyTests(testCtx));
 		suballocationTestGroup->addChild(createRenderPassSampleReadTests(testCtx));
 		suballocationTestGroup->addChild(createRenderPassSparseRenderTargetTests(testCtx));
+
+		renderingTests->addChild(createRenderPassMultipleSubpassesMultipleCommandBuffersTests(testCtx));
+		renderingTests->addChild(createDepthStencilWriteConditionsTests(testCtx));
 		break;
 
 	case RENDERING_TYPE_RENDERPASS2:
@@ -7584,6 +7589,8 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 		suballocationTestGroup->addChild(createRenderPass2SubpassDependencyTests(testCtx));
 		suballocationTestGroup->addChild(createRenderPass2SampleReadTests(testCtx));
 		suballocationTestGroup->addChild(createRenderPass2SparseRenderTargetTests(testCtx));
+
+		renderingTests->addChild(createRenderPass2DepthStencilResolveTests(testCtx));
 		break;
 
 	case RENDERING_TYPE_DYNAMIC_RENDERING:
@@ -7598,10 +7605,6 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 	{
 		suballocationTestGroup->addChild(createRenderPassUnusedAttachmentTests(testCtx, renderingType));
 		suballocationTestGroup->addChild(createRenderPassUnusedAttachmentSparseFillingTests(testCtx, renderingType));
-
-		renderingTests->addChild(createRenderPassMultipleSubpassesMultipleCommandBuffersTests(testCtx));
-		renderingTests->addChild(createRenderPass2DepthStencilResolveTests(testCtx));
-		renderingTests->addChild(createFragmentDensityMapTests(testCtx));
 	}
 
 	suballocationTestGroup->addChild(createRenderPassUnusedClearAttachmentTests(testCtx, renderingType));
@@ -7609,6 +7612,7 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 
 	renderingTests->addChild(suballocationTestGroup.release());
 	renderingTests->addChild(dedicatedAllocationTestGroup.release());
+	renderingTests->addChild(createFragmentDensityMapTests(testCtx, renderingType));
 
 	return renderingTests.release();
 }

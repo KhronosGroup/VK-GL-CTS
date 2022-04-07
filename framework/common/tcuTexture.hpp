@@ -334,6 +334,8 @@ public:
 // Calculate pitches for pixel data with no padding.
 IVec3 calculatePackedPitch (const TextureFormat& format, const IVec3& size);
 
+deBool isSamplerMipmapModeLinear (tcu::Sampler::FilterMode filterMode);
+
 class TextureLevel;
 
 /*--------------------------------------------------------------------*//*!
@@ -472,13 +474,35 @@ private:
 	friend class ConstPixelBufferAccess;
 } DE_WARN_UNUSED_TYPE;
 
+/*--------------------------------------------------------------------*//*!
+ * \brief VK_EXT_image_view_min_lod
+ *//*--------------------------------------------------------------------*/
+enum ImageViewMinLodMode
+{
+	IMAGEVIEWMINLODMODE_PREFERRED,		//!< use image view min lod as-is
+	IMAGEVIEWMINLODMODE_ALTERNATIVE,	//!< use floor of image view min lod, as in 'Image Level(s) Selection' in VK spec (v 1.3.206)
+};
+
+struct ImageViewMinLod
+{
+	float				value;
+	ImageViewMinLodMode	mode;
+};
+
+struct ImageViewMinLodParams
+{
+	int				baseLevel;
+	ImageViewMinLod	minLod;
+	bool			intTexCoord;
+};
+
 Vec4	sampleLevelArray1D				(const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, int level, float lod);
-Vec4	sampleLevelArray2D				(const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, int depth, float lod, bool es2 = false);
-Vec4	sampleLevelArray3D				(const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, float r, float lod);
+Vec4	sampleLevelArray2D				(const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, int depth, float lod, bool es2 = false, ImageViewMinLodParams *minLodParams = DE_NULL);
+Vec4	sampleLevelArray3D				(const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, float r, float lod, ImageViewMinLodParams *minLodParams = DE_NULL);
 
 Vec4	sampleLevelArray1DOffset		(const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float lod, const IVec2& offset);
-Vec4	sampleLevelArray2DOffset		(const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, float lod, const IVec3& offset, bool es2 = false);
-Vec4	sampleLevelArray3DOffset		(const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, float r, float lod, const IVec3& offset);
+Vec4	sampleLevelArray2DOffset		(const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, float lod, const IVec3& offset, bool es2 = false, ImageViewMinLodParams *minLodParams = DE_NULL);
+Vec4	sampleLevelArray3DOffset		(const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, float r, float lod, const IVec3& offset, ImageViewMinLodParams *minLodParams = DE_NULL);
 
 float	sampleLevelArray1DCompare		(const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float ref, float s, float lod, const IVec2& offset);
 float	sampleLevelArray2DCompare		(const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float ref, float s, float t, float lod, const IVec3& offset);
@@ -526,7 +550,7 @@ CubeFaceIntCoords		remapCubeEdgeCoords		(const CubeFaceIntCoords& coords, int si
 class Texture2DView
 {
 public:
-									Texture2DView		(int numLevels, const ConstPixelBufferAccess* levels, bool es2 = false);
+									Texture2DView		(int numLevels, const ConstPixelBufferAccess* levels, bool es2 = false, ImageViewMinLodParams* minLodParams = DE_NULL);
 
 	int								getNumLevels		(void) const	{ return m_numLevels;										}
 	int								getWidth			(void) const	{ return m_numLevels > 0 ? m_levels[0].getWidth()	: 0;	}
@@ -543,23 +567,27 @@ public:
 	Vec4							gatherOffsets		(const Sampler& sampler, float s, float t, int componentNdx, const IVec2 (&offsets)[4]) const;
 	Vec4							gatherOffsetsCompare(const Sampler& sampler, float ref, float s, float t, const IVec2 (&offsets)[4]) const;
 
+	ImageViewMinLodParams*	getImageViewMinLodParams (void) const			{ return m_minLodParams;				}
+
 protected:
 	int								m_numLevels;
 	const ConstPixelBufferAccess*	m_levels;
-	bool								m_es2;
+	bool							m_es2;
+	struct ImageViewMinLodParams*	m_minLodParams;
 } DE_WARN_UNUSED_TYPE;
 
-inline Texture2DView::Texture2DView (int numLevels, const ConstPixelBufferAccess* levels, bool es2)
-	: m_numLevels	(numLevels)
-	, m_levels		(levels)
-	, m_es2			(es2)
+inline Texture2DView::Texture2DView (int numLevels, const ConstPixelBufferAccess* levels, bool es2, ImageViewMinLodParams* minLodParams)
+	: m_numLevels		(numLevels)
+	, m_levels			(levels)
+	, m_es2				(es2)
+	, m_minLodParams	(minLodParams)
 {
 	DE_ASSERT(m_numLevels >= 0 && ((m_numLevels == 0) == !m_levels));
 }
 
 inline Vec4 Texture2DView::sample (const Sampler& sampler, float s, float t, float lod) const
 {
-	return sampleLevelArray2D(m_levels, m_numLevels, sampler, s, t, 0 /* depth */, lod, m_es2);
+	return sampleLevelArray2D(m_levels, m_numLevels, sampler, s, t, 0 /* depth */, lod, m_es2, m_minLodParams);
 }
 
 inline Vec4 Texture2DView::sampleOffset (const Sampler& sampler, float s, float t, float lod, const IVec2& offset) const
@@ -700,7 +728,7 @@ class TextureCubeView
 {
 public:
 									TextureCubeView		(void);
-									TextureCubeView		(int numLevels, const ConstPixelBufferAccess* const (&levels)[CUBEFACE_LAST], bool es2 = false);
+									TextureCubeView		(int numLevels, const ConstPixelBufferAccess* const (&levels)[CUBEFACE_LAST], bool es2 = false, ImageViewMinLodParams* minLodParams = DE_NULL);
 
 	int								getNumLevels		(void) const	{ return m_numLevels;										}
 	bool								isES2					(void) const	{ return m_es2;												}
@@ -714,10 +742,13 @@ public:
 	Vec4							gather				(const Sampler& sampler, float s, float t, float r, int componentNdx) const;
 	Vec4							gatherCompare		(const Sampler& sampler, float ref, float s, float t, float r) const;
 
+	ImageViewMinLodParams*			getImageViewMinLodParams (void) const			{ return m_minLodParams;				}
+
 protected:
 	int								m_numLevels;
 	const ConstPixelBufferAccess*	m_levels[CUBEFACE_LAST];
-	bool								m_es2;
+	bool							m_es2;
+	ImageViewMinLodParams*			m_minLodParams;
 } DE_WARN_UNUSED_TYPE;
 
 /*--------------------------------------------------------------------*//*!
@@ -788,7 +819,7 @@ inline Vec4 TextureCube::gatherCompare (const Sampler& sampler, float ref, float
 class Texture1DView
 {
 public:
-									Texture1DView		(int numLevels, const ConstPixelBufferAccess* levels, bool es2);
+									Texture1DView		(int numLevels, const ConstPixelBufferAccess* levels, bool es2, ImageViewMinLodParams* minLodParams);
 
 	int								getNumLevels		(void) const	{ return m_numLevels;										}
 	int								getWidth			(void) const	{ return m_numLevels > 0 ? m_levels[0].getWidth()	: 0;	}
@@ -801,12 +832,14 @@ public:
 	float							sampleCompare		(const Sampler& sampler, float ref, float s, float lod) const;
 	float							sampleCompareOffset	(const Sampler& sampler, float ref, float s, float lod, deInt32 offset) const;
 
+	ImageViewMinLodParams*			getImageViewMinLodParams (void) const			{ return DE_NULL;				}
+
 protected:
 	int								m_numLevels;
 	const ConstPixelBufferAccess*	m_levels;
 } DE_WARN_UNUSED_TYPE;
 
-inline Texture1DView::Texture1DView (int numLevels, const ConstPixelBufferAccess* levels, bool es2 DE_UNUSED_ATTR = false)
+inline Texture1DView::Texture1DView (int numLevels, const ConstPixelBufferAccess* levels, bool es2 DE_UNUSED_ATTR = false, ImageViewMinLodParams* minLodParams DE_UNUSED_ATTR = DE_NULL)
 	: m_numLevels	(numLevels)
 	, m_levels		(levels)
 {
@@ -895,7 +928,7 @@ inline float Texture1D::sampleCompareOffset	(const Sampler& sampler, float ref, 
 class Texture1DArrayView
 {
 public:
-									Texture1DArrayView	(int numLevels, const ConstPixelBufferAccess* levels, bool es2 = false);
+									Texture1DArrayView	(int numLevels, const ConstPixelBufferAccess* levels, bool es2 = false, ImageViewMinLodParams* minLodParams = DE_NULL);
 
 	int								getWidth			(void) const	{ return m_numLevels > 0 ? m_levels[0].getWidth()	: 0;	}
 	int								getNumLayers		(void) const	{ return m_numLevels > 0 ? m_levels[0].getHeight()	: 0;	}
@@ -908,6 +941,8 @@ public:
 	Vec4							sampleOffset		(const Sampler& sampler, float s, float t, float lod, deInt32 offset) const;
 	float							sampleCompare		(const Sampler& sampler, float ref, float s, float t, float lod) const;
 	float							sampleCompareOffset	(const Sampler& sampler, float ref, float s, float t, float lod, deInt32 offset) const;
+
+	ImageViewMinLodParams*			getImageViewMinLodParams (void) const			{ return DE_NULL;				}
 
 protected:
 	int								selectLayer			(float r) const;
@@ -978,7 +1013,7 @@ inline float Texture1DArray::sampleCompareOffset (const Sampler& sampler, float 
 class Texture2DArrayView
 {
 public:
-									Texture2DArrayView	(int numLevels, const ConstPixelBufferAccess* levels, bool es2 = false);
+									Texture2DArrayView	(int numLevels, const ConstPixelBufferAccess* levels, bool es2 = false, ImageViewMinLodParams* minLodParams = DE_NULL);
 
 	int								getWidth			(void) const	{ return m_numLevels > 0 ? m_levels[0].getWidth()	: 0;	}
 	int								getHeight			(void) const	{ return m_numLevels > 0 ? m_levels[0].getHeight()	: 0;	}
@@ -995,6 +1030,8 @@ public:
 
 	Vec4							gatherOffsets		(const Sampler& sampler, float s, float t, float r, int componentNdx, const IVec2 (&offsets)[4]) const;
 	Vec4							gatherOffsetsCompare(const Sampler& sampler, float ref, float s, float t, float r, const IVec2 (&offsets)[4]) const;
+
+	ImageViewMinLodParams*			getImageViewMinLodParams (void) const			{ return DE_NULL;				}
 
 protected:
 	int								selectLayer			(float r) const;
@@ -1080,7 +1117,7 @@ inline Vec4 Texture2DArray::gatherOffsetsCompare (const Sampler& sampler, float 
 class Texture3DView
 {
 public:
-									Texture3DView		(int numLevels, const ConstPixelBufferAccess* levels, bool es2 = false);
+									Texture3DView		(int numLevels, const ConstPixelBufferAccess* levels, bool es2 = false, ImageViewMinLodParams* minLodParams = DE_NULL);
 
 	int								getWidth			(void) const	{ return m_numLevels > 0 ? m_levels[0].getWidth()	: 0;	}
 	int								getHeight			(void) const	{ return m_numLevels > 0 ? m_levels[0].getHeight()	: 0;	}
@@ -1088,24 +1125,29 @@ public:
 	int								getNumLevels		(void) const	{ return m_numLevels;										}
 	const ConstPixelBufferAccess&	getLevel			(int ndx) const	{ DE_ASSERT(de::inBounds(ndx, 0, m_numLevels)); return m_levels[ndx];	}
 	const ConstPixelBufferAccess*	getLevels			(void) const	{ return m_levels;											}
-	bool								isES2						(void) const	{ return false;												}
+	bool								isES2						(void) const	{ return m_es2;												}
 
 	Vec4							sample				(const Sampler& sampler, float s, float t, float r, float lod) const;
 	Vec4							sampleOffset		(const Sampler& sampler, float s, float t, float r, float lod, const IVec3& offset) const;
 
+	ImageViewMinLodParams*			getImageViewMinLodParams (void) const			{ return m_minLodParams;				}
+
 protected:
 	int								m_numLevels;
 	const ConstPixelBufferAccess*	m_levels;
+	bool							m_es2;
+	ImageViewMinLodParams*			m_minLodParams;
+
 } DE_WARN_UNUSED_TYPE;
 
 inline Vec4 Texture3DView::sample (const Sampler& sampler, float s, float t, float r, float lod) const
 {
-	return sampleLevelArray3D(m_levels, m_numLevels, sampler, s, t, r, lod);
+	return sampleLevelArray3D(m_levels, m_numLevels, sampler, s, t, r, lod, m_minLodParams);
 }
 
 inline Vec4 Texture3DView::sampleOffset (const Sampler& sampler, float s, float t, float r, float lod, const IVec3& offset) const
 {
-	return sampleLevelArray3DOffset(m_levels, m_numLevels, sampler, s, t, r, lod, offset);
+	return sampleLevelArray3DOffset(m_levels, m_numLevels, sampler, s, t, r, lod, offset, m_minLodParams);
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -1160,7 +1202,7 @@ inline Vec4 Texture3D::sampleOffset (const Sampler& sampler, float s, float t, f
 class TextureCubeArrayView
 {
 public:
-									TextureCubeArrayView	(int numLevels, const ConstPixelBufferAccess* levels, bool es2 = false);
+									TextureCubeArrayView	(int numLevels, const ConstPixelBufferAccess* levels, bool es2 = false, ImageViewMinLodParams* minLodParams = DE_NULL);
 
 	int								getSize					(void) const	{ return m_numLevels > 0 ? m_levels[0].getWidth()	: 0;	}
 	int								getDepth				(void) const	{ return m_numLevels > 0 ? m_levels[0].getDepth()	: 0;	}
@@ -1174,6 +1216,9 @@ public:
 	Vec4							sampleOffset			(const Sampler& sampler, float s, float t, float r, float q, float lod, const IVec2& offset) const;
 	float							sampleCompare			(const Sampler& sampler, float ref, float s, float t, float r, float q, float lod) const;
 	float							sampleCompareOffset		(const Sampler& sampler, float ref, float s, float t, float r, float q, float lod, const IVec2& offset) const;
+
+	ImageViewMinLodParams*			getImageViewMinLodParams (void) const			{ return DE_NULL;				}
+
 
 protected:
 	int								selectLayer				(float q) const;
