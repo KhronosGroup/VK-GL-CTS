@@ -1,0 +1,10 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceShaderAtomicFloatFeaturesEXT":
+		[
+			{ "features": ["shaderImageFloat32Atomics"],		"requirements": ["VK_EXT_shader_atomic_float", "physicalDeviceShaderAtomicFloatFeaturesEXT.sparseImageFloat32Atomics"] },
+			{ "features": ["shaderImageFloat32AtomicAdd"],		"requirements": ["VK_EXT_shader_atomic_float", "physicalDeviceShaderAtomicFloatFeaturesEXT.sparseImageFloat32AtomicAdd"] }
+		]
+	}
+}

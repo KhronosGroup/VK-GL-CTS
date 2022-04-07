@@ -1,0 +1,9 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceShaderAtomicInt64FeaturesKHR":
+		[
+			{ "features": ["shaderBufferInt64Atomics"],	"requirements": ["VK_KHR_shader_atomic_int64"] }
+		]
+	}
+}

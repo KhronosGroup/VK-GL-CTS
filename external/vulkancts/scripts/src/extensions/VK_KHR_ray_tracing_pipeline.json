@@ -1,0 +1,15 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": ""
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceRayTracingPipelineFeaturesKHR":
+		[
+			{ "features": ["rayTracingPipeline", "rayTracingPipelineTraceRaysIndirect"],	"requirements": ["VK_KHR_ray_tracing_pipeline"] },
+			{ "features": ["rayTraversalPrimitiveCulling"],									"requirements": ["VK_KHR_ray_tracing_pipeline", "VK_KHR_ray_query"] }
+		]
+	}
+}
