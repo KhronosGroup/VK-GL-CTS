@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": "1.3.0"
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR":
+		[
+			{ "features": ["shaderTerminateInvocation"],	"requirements": ["VK_KHR_shader_terminate_invocation"] }
+		]
+	}
+}

@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": ""
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT":
+		[
+			{ "features": ["pageableDeviceLocalMemory"],	"requirements": ["VK_EXT_pageable_device_local_memory"] }
+		]
+	}
+}
