@@ -299,14 +299,8 @@ m_vk.cmdSetStencilOp									= (CmdSetStencilOpFunc)									GET_PROC_ADDR("vkCm
 if (!m_vk.cmdSetStencilOp)
 	m_vk.cmdSetStencilOp								= (CmdSetStencilOpFunc)									GET_PROC_ADDR("vkCmdSetStencilOpEXT");
 m_vk.cmdSetRasterizerDiscardEnable						= (CmdSetRasterizerDiscardEnableFunc)					GET_PROC_ADDR("vkCmdSetRasterizerDiscardEnable");
-if (!m_vk.cmdSetRasterizerDiscardEnable)
-	m_vk.cmdSetRasterizerDiscardEnable					= (CmdSetRasterizerDiscardEnableFunc)					GET_PROC_ADDR("vkCmdSetRasterizerDiscardEnableEXT");
 m_vk.cmdSetDepthBiasEnable								= (CmdSetDepthBiasEnableFunc)							GET_PROC_ADDR("vkCmdSetDepthBiasEnable");
-if (!m_vk.cmdSetDepthBiasEnable)
-	m_vk.cmdSetDepthBiasEnable							= (CmdSetDepthBiasEnableFunc)							GET_PROC_ADDR("vkCmdSetDepthBiasEnableEXT");
 m_vk.cmdSetPrimitiveRestartEnable						= (CmdSetPrimitiveRestartEnableFunc)					GET_PROC_ADDR("vkCmdSetPrimitiveRestartEnable");
-if (!m_vk.cmdSetPrimitiveRestartEnable)
-	m_vk.cmdSetPrimitiveRestartEnable					= (CmdSetPrimitiveRestartEnableFunc)					GET_PROC_ADDR("vkCmdSetPrimitiveRestartEnableEXT");
 m_vk.getDeviceBufferMemoryRequirements					= (GetDeviceBufferMemoryRequirementsFunc)				GET_PROC_ADDR("vkGetDeviceBufferMemoryRequirements");
 if (!m_vk.getDeviceBufferMemoryRequirements)
 	m_vk.getDeviceBufferMemoryRequirements				= (GetDeviceBufferMemoryRequirementsFunc)				GET_PROC_ADDR("vkGetDeviceBufferMemoryRequirementsKHR");
@@ -444,7 +438,10 @@ m_vk.cmdSubpassShadingHUAWEI							= (CmdSubpassShadingHUAWEIFunc)							GET_PRO
 m_vk.cmdBindInvocationMaskHUAWEI						= (CmdBindInvocationMaskHUAWEIFunc)						GET_PROC_ADDR("vkCmdBindInvocationMaskHUAWEI");
 m_vk.getMemoryRemoteAddressNV							= (GetMemoryRemoteAddressNVFunc)						GET_PROC_ADDR("vkGetMemoryRemoteAddressNV");
 m_vk.cmdSetPatchControlPointsEXT						= (CmdSetPatchControlPointsEXTFunc)						GET_PROC_ADDR("vkCmdSetPatchControlPointsEXT");
+m_vk.cmdSetRasterizerDiscardEnableEXT					= (CmdSetRasterizerDiscardEnableEXTFunc)				GET_PROC_ADDR("vkCmdSetRasterizerDiscardEnableEXT");
+m_vk.cmdSetDepthBiasEnableEXT							= (CmdSetDepthBiasEnableEXTFunc)						GET_PROC_ADDR("vkCmdSetDepthBiasEnableEXT");
 m_vk.cmdSetLogicOpEXT									= (CmdSetLogicOpEXTFunc)								GET_PROC_ADDR("vkCmdSetLogicOpEXT");
+m_vk.cmdSetPrimitiveRestartEnableEXT					= (CmdSetPrimitiveRestartEnableEXTFunc)					GET_PROC_ADDR("vkCmdSetPrimitiveRestartEnableEXT");
 m_vk.cmdSetColorWriteEnableEXT							= (CmdSetColorWriteEnableEXTFunc)						GET_PROC_ADDR("vkCmdSetColorWriteEnableEXT");
 m_vk.cmdDrawMultiEXT									= (CmdDrawMultiEXTFunc)									GET_PROC_ADDR("vkCmdDrawMultiEXT");
 m_vk.cmdDrawMultiIndexedEXT								= (CmdDrawMultiIndexedEXTFunc)							GET_PROC_ADDR("vkCmdDrawMultiIndexedEXT");

@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": "1.3.0"
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR":
+		[
+			{ "features": ["shaderIntegerDotProduct"],	"requirements": ["VK_KHR_shader_integer_dot_product"] }
+		]
+	}
+}

@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": "1.2.0"
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceSeparateDepthStencilLayoutsFeaturesKHR":
+		[
+			{ "features": ["separateDepthStencilLayouts"],	"requirements": ["VK_KHR_separate_depth_stencil_layouts"] }
+		]
+	}
+}

@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": ""
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceRayQueryFeaturesKHR":
+		[
+			{ "features": ["rayQuery"],	"requirements": ["VK_KHR_ray_query"] }
+		]
+	}
+}
