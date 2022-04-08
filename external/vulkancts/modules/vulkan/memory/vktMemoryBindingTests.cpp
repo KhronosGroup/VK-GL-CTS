@@ -502,8 +502,8 @@ public:
 
 			m_logicalDevice		= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), instance, instanceDriver, m_context.getPhysicalDevice(), &deviceInfo);
 		}
-		m_logicalDeviceInterface = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), m_logicalDevice.get()));
-		m_logicalDeviceInterface->getDeviceQueue(m_logicalDevice.get(), m_context.getUniversalQueueFamilyIndex(), 0, &m_logicalDeviceQueue);
+		m_logicalDeviceInterface = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), getDevice()));
+		m_logicalDeviceInterface->getDeviceQueue(getDevice(), m_context.getUniversalQueueFamilyIndex(), 0, &m_logicalDeviceQueue);
 	};
 
 protected:
