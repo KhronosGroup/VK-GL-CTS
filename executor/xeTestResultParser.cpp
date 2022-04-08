@@ -467,8 +467,9 @@ void TestResultParser::handleElementStart (void)
 		m_logVersion = getTestLogVersion(version);
 		// \note Currently assumed that all known log versions are supported.
 
-		m_result->casePath	= getAttribute("CasePath");
-		m_result->caseType	= TESTCASETYPE_SELF_VALIDATE;
+		m_result->caseVersion	= version;
+		m_result->casePath		= getAttribute("CasePath");
+		m_result->caseType		= TESTCASETYPE_SELF_VALIDATE;
 
 		if (m_xmlParser.hasAttribute("CaseType"))
 			m_result->caseType = getTestCaseType(m_xmlParser.getAttribute("CaseType"));

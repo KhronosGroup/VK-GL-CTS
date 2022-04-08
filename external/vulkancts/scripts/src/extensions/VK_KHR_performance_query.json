@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": ""
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDevicePerformanceQueryFeaturesKHR":
+		[
+			{ "features": ["performanceCounterQueryPools"],	"requirements": ["VK_KHR_performance_query"] }
+		]
+	}
+}

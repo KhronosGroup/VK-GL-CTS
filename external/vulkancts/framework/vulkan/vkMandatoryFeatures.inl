@@ -230,7 +230,7 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	vk::VkPhysicalDeviceMultiviewFeatures physicalDeviceMultiviewFeatures;
 	deMemset(&physicalDeviceMultiviewFeatures, 0, sizeof(physicalDeviceMultiviewFeatures));
 
-	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) || isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_multiview")) )
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_multiview")) || context.contextSupports(vk::ApiVersion(1, 1, 0)) )
 	{
 		physicalDeviceMultiviewFeatures.sType = getStructureType<VkPhysicalDeviceMultiviewFeatures>();
 		*nextPtr = &physicalDeviceMultiviewFeatures;
@@ -255,16 +255,6 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		physicalDevicePerformanceQueryFeaturesKHR.sType = getStructureType<VkPhysicalDevicePerformanceQueryFeaturesKHR>();
 		*nextPtr = &physicalDevicePerformanceQueryFeaturesKHR;
 		nextPtr  = &physicalDevicePerformanceQueryFeaturesKHR.pNext;
-	}
-
-	vk::VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT physicalDevicePipelineCreationCacheControlFeaturesEXT;
-	deMemset(&physicalDevicePipelineCreationCacheControlFeaturesEXT, 0, sizeof(physicalDevicePipelineCreationCacheControlFeaturesEXT));
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_pipeline_creation_cache_control")) )
-	{
-		physicalDevicePipelineCreationCacheControlFeaturesEXT.sType = getStructureType<VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT>();
-		*nextPtr = &physicalDevicePipelineCreationCacheControlFeaturesEXT;
-		nextPtr  = &physicalDevicePipelineCreationCacheControlFeaturesEXT.pNext;
 	}
 
 	vk::VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR physicalDevicePipelineExecutablePropertiesFeaturesKHR;
@@ -650,73 +640,47 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &coreFeatures);
 	bool result = true;
 
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_4444_formats")) )
 	{
-		if ( coreFeatures.features.robustBufferAccess == VK_FALSE )
+		if ( physicalDevice4444FormatsFeaturesEXT.formatA4R4G4B4 == VK_FALSE )
 		{
-			log << tcu::TestLog::Message << "Mandatory feature robustBufferAccess not supported" << tcu::TestLog::EndMessage;
+			log << tcu::TestLog::Message << "Mandatory feature formatA4R4G4B4 not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
 
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_descriptor_indexing")) )
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_border_color_swizzle")) )
 	{
-		if ( coreFeatures.features.shaderSampledImageArrayDynamicIndexing == VK_FALSE )
+		if ( physicalDeviceBorderColorSwizzleFeaturesEXT.borderColorSwizzle == VK_FALSE )
 		{
-			log << tcu::TestLog::Message << "Mandatory feature shaderSampledImageArrayDynamicIndexing not supported" << tcu::TestLog::EndMessage;
+			log << tcu::TestLog::Message << "Mandatory feature borderColorSwizzle not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
 
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_descriptor_indexing")) )
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_color_write_enable")) )
 	{
-		if ( coreFeatures.features.shaderStorageBufferArrayDynamicIndexing == VK_FALSE )
+		if ( physicalDeviceColorWriteEnableFeaturesEXT.colorWriteEnable == VK_FALSE )
 		{
-			log << tcu::TestLog::Message << "Mandatory feature shaderStorageBufferArrayDynamicIndexing not supported" << tcu::TestLog::EndMessage;
+			log << tcu::TestLog::Message << "Mandatory feature colorWriteEnable not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
 
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_8bit_storage")) )
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_conditional_rendering")) )
 	{
-		if ( physicalDevice8BitStorageFeaturesKHR.storageBuffer8BitAccess == VK_FALSE )
+		if ( physicalDeviceConditionalRenderingFeaturesEXT.conditionalRendering == VK_FALSE )
 		{
-			log << tcu::TestLog::Message << "Mandatory feature storageBuffer8BitAccess not supported" << tcu::TestLog::EndMessage;
+			log << tcu::TestLog::Message << "Mandatory feature conditionalRendering not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
 
-	if ( context.contextSupports(vk::ApiVersion(1, 2, 0)) )
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_depth_clip_enable")) )
 	{
-		if ( physicalDeviceVulkan11Features.multiview == VK_FALSE )
+		if ( physicalDeviceDepthClipEnableFeaturesEXT.depthClipEnable == VK_FALSE )
 		{
-			log << tcu::TestLog::Message << "Mandatory feature multiview not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) )
-	{
-		if ( physicalDeviceMultiviewFeatures.multiview == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature multiview not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_multiview")) )
-	{
-		if ( physicalDeviceMultiviewFeatures.multiview == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature multiview not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_variable_pointers")) )
-	{
-		if ( physicalDeviceVariablePointersFeatures.variablePointersStorageBuffer == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature variablePointersStorageBuffer not supported" << tcu::TestLog::EndMessage;
+			log << tcu::TestLog::Message << "Mandatory feature depthClipEnable not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
@@ -838,6 +802,78 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_descriptor_indexing")) )
+	{
+		if ( coreFeatures.features.shaderSampledImageArrayDynamicIndexing == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderSampledImageArrayDynamicIndexing not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_descriptor_indexing")) )
+	{
+		if ( coreFeatures.features.shaderStorageBufferArrayDynamicIndexing == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderStorageBufferArrayDynamicIndexing not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_extended_dynamic_state2")) )
+	{
+		if ( physicalDeviceExtendedDynamicState2FeaturesEXT.extendedDynamicState2 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature extendedDynamicState2 not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_fragment_density_map")) )
+	{
+		if ( physicalDeviceFragmentDensityMapFeaturesEXT.fragmentDensityMap == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature fragmentDensityMap not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_fragment_shader_interlock")) )
+	{
+		if ( ( physicalDeviceFragmentShaderInterlockFeaturesEXT.fragmentShaderSampleInterlock == VK_FALSE ) && ( physicalDeviceFragmentShaderInterlockFeaturesEXT.fragmentShaderPixelInterlock == VK_FALSE ) && ( physicalDeviceFragmentShaderInterlockFeaturesEXT.fragmentShaderShadingRateInterlock == VK_FALSE ) )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature fragmentShaderSampleInterlock or fragmentShaderPixelInterlock or fragmentShaderShadingRateInterlock not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_global_priority_query")) )
+	{
+		if ( physicalDeviceGlobalPriorityQueryFeaturesEXT.globalPriorityQuery == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature globalPriorityQuery not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_host_query_reset")) )
+	{
+		if ( physicalDeviceHostQueryResetFeaturesEXT.hostQueryReset == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature hostQueryReset not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_index_type_uint8")) )
+	{
+		if ( physicalDeviceIndexTypeUint8FeaturesEXT.indexTypeUint8 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature indexTypeUint8 not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
 	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_inline_uniform_block")) )
 	{
 		if ( physicalDeviceInlineUniformBlockFeaturesEXT.inlineUniformBlock == VK_FALSE )
@@ -856,6 +892,42 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_line_rasterization")) )
+	{
+		if ( ( physicalDeviceLineRasterizationFeaturesEXT.rectangularLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesEXT.bresenhamLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesEXT.smoothLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesEXT.stippledRectangularLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesEXT.stippledBresenhamLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesEXT.stippledSmoothLines == VK_FALSE ) )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature rectangularLines or bresenhamLines or smoothLines or stippledRectangularLines or stippledBresenhamLines or stippledSmoothLines not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_memory_priority")) )
+	{
+		if ( physicalDeviceMemoryPriorityFeaturesEXT.memoryPriority == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature memoryPriority not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_multi_draw")) )
+	{
+		if ( physicalDeviceMultiDrawFeaturesEXT.multiDraw == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature multiDraw not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_primitive_topology_list_restart")) )
+	{
+		if ( physicalDevicePrimitiveTopologyListRestartFeaturesEXT.primitiveTopologyListRestart == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature primitiveTopologyListRestart not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
 	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_scalar_block_layout")) )
 	{
 		if ( physicalDeviceScalarBlockLayoutFeaturesEXT.scalarBlockLayout == VK_FALSE )
@@ -865,20 +937,65 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_uniform_buffer_standard_layout")) )
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_atomic_float")) && physicalDeviceShaderAtomicFloatFeaturesEXT.sparseImageFloat32Atomics )
 	{
-		if ( physicalDeviceUniformBufferStandardLayoutFeaturesKHR.uniformBufferStandardLayout == VK_FALSE )
+		if ( physicalDeviceShaderAtomicFloatFeaturesEXT.shaderImageFloat32Atomics == VK_FALSE )
 		{
-			log << tcu::TestLog::Message << "Mandatory feature uniformBufferStandardLayout not supported" << tcu::TestLog::EndMessage;
+			log << tcu::TestLog::Message << "Mandatory feature shaderImageFloat32Atomics not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
 
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_pipeline_executable_properties")) )
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_atomic_float")) && physicalDeviceShaderAtomicFloatFeaturesEXT.sparseImageFloat32AtomicAdd )
 	{
-		if ( physicalDevicePipelineExecutablePropertiesFeaturesKHR.pipelineExecutableInfo == VK_FALSE )
+		if ( physicalDeviceShaderAtomicFloatFeaturesEXT.shaderImageFloat32AtomicAdd == VK_FALSE )
 		{
-			log << tcu::TestLog::Message << "Mandatory feature pipelineExecutableInfo not supported" << tcu::TestLog::EndMessage;
+			log << tcu::TestLog::Message << "Mandatory feature shaderImageFloat32AtomicAdd not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_atomic_float2")) && physicalDeviceShaderAtomicFloat2FeaturesEXT.sparseImageFloat32AtomicMinMax )
+	{
+		if ( physicalDeviceShaderAtomicFloat2FeaturesEXT.shaderImageFloat32AtomicMinMax == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderImageFloat32AtomicMinMax not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_demote_to_helper_invocation")) )
+	{
+		if ( physicalDeviceShaderDemoteToHelperInvocationFeaturesEXT.shaderDemoteToHelperInvocation == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderDemoteToHelperInvocation not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_image_atomic_int64")) )
+	{
+		if ( coreFeatures.features.shaderInt64 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderInt64 not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_image_atomic_int64")) )
+	{
+		if ( physicalDeviceShaderImageAtomicInt64FeaturesEXT.shaderImageInt64Atomics == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderImageInt64Atomics not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_image_atomic_int64")) && physicalDeviceShaderImageAtomicInt64FeaturesEXT.sparseImageInt64Atomics )
+	{
+		if ( physicalDeviceShaderImageAtomicInt64FeaturesEXT.shaderImageInt64Atomics == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderImageInt64Atomics not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
@@ -901,11 +1018,245 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
-	if ( context.contextSupports(vk::ApiVersion(1, 2, 0)) )
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_texel_buffer_alignment")) )
 	{
-		if ( physicalDeviceVulkan12Features.subgroupBroadcastDynamicId == VK_FALSE )
+		if ( physicalDeviceTexelBufferAlignmentFeaturesEXT.texelBufferAlignment == VK_FALSE )
 		{
-			log << tcu::TestLog::Message << "Mandatory feature subgroupBroadcastDynamicId not supported" << tcu::TestLog::EndMessage;
+			log << tcu::TestLog::Message << "Mandatory feature texelBufferAlignment not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_texture_compression_astc_hdr")) )
+	{
+		if ( physicalDeviceTextureCompressionASTCHDRFeaturesEXT.textureCompressionASTC_HDR == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature textureCompressionASTC_HDR not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_transform_feedback")) )
+	{
+		if ( physicalDeviceTransformFeedbackFeaturesEXT.transformFeedback == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature transformFeedback not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_vertex_attribute_divisor")) )
+	{
+		if ( physicalDeviceVertexAttributeDivisorFeaturesEXT.vertexAttributeInstanceRateDivisor == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature vertexAttributeInstanceRateDivisor not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_vertex_input_dynamic_state")) )
+	{
+		if ( physicalDeviceVertexInputDynamicStateFeaturesEXT.vertexInputDynamicState == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature vertexInputDynamicState not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_ycbcr_2plane_444_formats")) )
+	{
+		if ( physicalDeviceYcbcr2Plane444FormatsFeaturesEXT.ycbcr2plane444Formats == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature ycbcr2plane444Formats not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_ycbcr_image_arrays")) )
+	{
+		if ( physicalDeviceYcbcrImageArraysFeaturesEXT.ycbcrImageArrays == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature ycbcrImageArrays not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_16bit_storage")) )
+	{
+		if ( physicalDevice16BitStorageFeaturesKHR.storageBuffer16BitAccess == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature storageBuffer16BitAccess not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_8bit_storage")) )
+	{
+		if ( physicalDevice8BitStorageFeaturesKHR.storageBuffer8BitAccess == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature storageBuffer8BitAccess not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
+	{
+		if ( physicalDeviceAccelerationStructureFeaturesKHR.accelerationStructure == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature accelerationStructure not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
+	{
+		if ( physicalDeviceAccelerationStructureFeaturesKHR.descriptorBindingAccelerationStructureUpdateAfterBind == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature descriptorBindingAccelerationStructureUpdateAfterBind not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_buffer_device_address")) )
+	{
+		if ( physicalDeviceBufferDeviceAddressFeaturesKHR.bufferDeviceAddress == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature bufferDeviceAddress not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_imageless_framebuffer")) )
+	{
+		if ( physicalDeviceImagelessFramebufferFeaturesKHR.imagelessFramebuffer == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature imagelessFramebuffer not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_multiview")) )
+	{
+		if ( physicalDeviceMultiviewFeatures.multiview == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature multiview not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_performance_query")) )
+	{
+		if ( physicalDevicePerformanceQueryFeaturesKHR.performanceCounterQueryPools == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature performanceCounterQueryPools not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_pipeline_executable_properties")) )
+	{
+		if ( physicalDevicePipelineExecutablePropertiesFeaturesKHR.pipelineExecutableInfo == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature pipelineExecutableInfo not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_present_id")) )
+	{
+		if ( physicalDevicePresentIdFeaturesKHR.presentId == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature presentId not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_present_wait")) )
+	{
+		if ( physicalDevicePresentWaitFeaturesKHR.presentWait == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature presentWait not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_ray_query")) )
+	{
+		if ( physicalDeviceRayQueryFeaturesKHR.rayQuery == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature rayQuery not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_ray_tracing_pipeline")) )
+	{
+		if ( ( physicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline == VK_FALSE ) && ( physicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipelineTraceRaysIndirect == VK_FALSE ) )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature rayTracingPipeline or rayTracingPipelineTraceRaysIndirect not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_ray_tracing_pipeline")) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_ray_query")) )
+	{
+		if ( physicalDeviceRayTracingPipelineFeaturesKHR.rayTraversalPrimitiveCulling == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature rayTraversalPrimitiveCulling not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_sampler_ycbcr_conversion")) )
+	{
+		if ( physicalDeviceSamplerYcbcrConversionFeaturesKHR.samplerYcbcrConversion == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature samplerYcbcrConversion not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_separate_depth_stencil_layouts")) )
+	{
+		if ( physicalDeviceSeparateDepthStencilLayoutsFeaturesKHR.separateDepthStencilLayouts == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature separateDepthStencilLayouts not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_atomic_int64")) )
+	{
+		if ( physicalDeviceShaderAtomicInt64FeaturesKHR.shaderBufferInt64Atomics == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderBufferInt64Atomics not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_clock")) )
+	{
+		if ( physicalDeviceShaderClockFeaturesKHR.shaderSubgroupClock == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderSubgroupClock not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_float16_int8")) )
+	{
+		if ( ( physicalDeviceShaderFloat16Int8Features.shaderFloat16 == VK_FALSE ) && ( physicalDeviceShaderFloat16Int8Features.shaderInt8 == VK_FALSE ) )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderFloat16 or shaderInt8 not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_integer_dot_product")) )
+	{
+		if ( physicalDeviceShaderIntegerDotProductFeaturesKHR.shaderIntegerDotProduct == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderIntegerDotProduct not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
@@ -919,20 +1270,334 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_subgroup_uniform_control_flow")) )
+	{
+		if ( physicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR.shaderSubgroupUniformControlFlow == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderSubgroupUniformControlFlow not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_terminate_invocation")) )
+	{
+		if ( physicalDeviceShaderTerminateInvocationFeaturesKHR.shaderTerminateInvocation == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderTerminateInvocation not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_synchronization2")) )
+	{
+		if ( physicalDeviceSynchronization2FeaturesKHR.synchronization2 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature synchronization2 not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_timeline_semaphore")) )
+	{
+		if ( physicalDeviceTimelineSemaphoreFeaturesKHR.timelineSemaphore == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature timelineSemaphore not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_uniform_buffer_standard_layout")) )
+	{
+		if ( physicalDeviceUniformBufferStandardLayoutFeaturesKHR.uniformBufferStandardLayout == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature uniformBufferStandardLayout not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_variable_pointers")) )
+	{
+		if ( physicalDeviceVariablePointersFeatures.variablePointersStorageBuffer == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature variablePointersStorageBuffer not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_vulkan_memory_model")) )
+	{
+		if ( physicalDeviceVulkanMemoryModelFeaturesKHR.vulkanMemoryModel == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature vulkanMemoryModel not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_workgroup_memory_explicit_layout")) )
+	{
+		if ( ( physicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR.workgroupMemoryExplicitLayout == VK_FALSE ) && ( physicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR.workgroupMemoryExplicitLayoutScalarBlockLayout == VK_FALSE ) && ( physicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR.workgroupMemoryExplicitLayout8BitAccess == VK_FALSE ) && ( physicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR.workgroupMemoryExplicitLayout16BitAccess == VK_FALSE ) )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature workgroupMemoryExplicitLayout or workgroupMemoryExplicitLayoutScalarBlockLayout or workgroupMemoryExplicitLayout8BitAccess or workgroupMemoryExplicitLayout16BitAccess not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_zero_initialize_workgroup_memory")) )
+	{
+		if ( physicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR.shaderZeroInitializeWorkgroupMemory == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderZeroInitializeWorkgroupMemory not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_VALVE_mutable_descriptor_type")) )
+	{
+		if ( physicalDeviceMutableDescriptorTypeFeaturesVALVE.mutableDescriptorType == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature mutableDescriptorType not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	{
+		if ( coreFeatures.features.robustBufferAccess == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature robustBufferAccess not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( physicalDeviceShaderAtomicInt64FeaturesKHR.shaderBufferInt64Atomics )
+	{
+		if ( coreFeatures.features.shaderInt64 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderInt64 not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( physicalDeviceVulkan12Features.shaderBufferInt64Atomics )
+	{
+		if ( coreFeatures.features.shaderInt64 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderInt64 not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( physicalDeviceShaderAtomicInt64FeaturesKHR.shaderSharedInt64Atomics )
+	{
+		if ( coreFeatures.features.shaderInt64 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderInt64 not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( physicalDeviceVulkan12Features.shaderSharedInt64Atomics )
+	{
+		if ( coreFeatures.features.shaderInt64 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderInt64 not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
+	{
+		if ( physicalDeviceBufferDeviceAddressFeaturesKHR.bufferDeviceAddress == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature bufferDeviceAddress not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
+	{
+		if ( physicalDeviceDescriptorIndexingFeaturesEXT.shaderUniformTexelBufferArrayDynamicIndexing == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderUniformTexelBufferArrayDynamicIndexing not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
+	{
+		if ( physicalDeviceDescriptorIndexingFeaturesEXT.shaderStorageTexelBufferArrayDynamicIndexing == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderStorageTexelBufferArrayDynamicIndexing not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
+	{
+		if ( physicalDeviceDescriptorIndexingFeaturesEXT.shaderSampledImageArrayNonUniformIndexing == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderSampledImageArrayNonUniformIndexing not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
+	{
+		if ( physicalDeviceDescriptorIndexingFeaturesEXT.shaderStorageBufferArrayNonUniformIndexing == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderStorageBufferArrayNonUniformIndexing not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
+	{
+		if ( physicalDeviceDescriptorIndexingFeaturesEXT.shaderUniformTexelBufferArrayNonUniformIndexing == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderUniformTexelBufferArrayNonUniformIndexing not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
+	{
+		if ( physicalDeviceDescriptorIndexingFeaturesEXT.descriptorBindingSampledImageUpdateAfterBind == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature descriptorBindingSampledImageUpdateAfterBind not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
+	{
+		if ( physicalDeviceDescriptorIndexingFeaturesEXT.descriptorBindingStorageImageUpdateAfterBind == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature descriptorBindingStorageImageUpdateAfterBind not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
+	{
+		if ( physicalDeviceDescriptorIndexingFeaturesEXT.descriptorBindingStorageBufferUpdateAfterBind == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature descriptorBindingStorageBufferUpdateAfterBind not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
+	{
+		if ( physicalDeviceDescriptorIndexingFeaturesEXT.descriptorBindingUniformTexelBufferUpdateAfterBind == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature descriptorBindingUniformTexelBufferUpdateAfterBind not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
+	{
+		if ( physicalDeviceDescriptorIndexingFeaturesEXT.descriptorBindingStorageTexelBufferUpdateAfterBind == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature descriptorBindingStorageTexelBufferUpdateAfterBind not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
+	{
+		if ( physicalDeviceDescriptorIndexingFeaturesEXT.descriptorBindingUpdateUnusedWhilePending == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature descriptorBindingUpdateUnusedWhilePending not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
+	{
+		if ( physicalDeviceDescriptorIndexingFeaturesEXT.descriptorBindingPartiallyBound == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature descriptorBindingPartiallyBound not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
+	{
+		if ( physicalDeviceDescriptorIndexingFeaturesEXT.runtimeDescriptorArray == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature runtimeDescriptorArray not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
+	{
+		if ( coreFeatures.features.shaderSampledImageArrayDynamicIndexing == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderSampledImageArrayDynamicIndexing not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
+	{
+		if ( coreFeatures.features.shaderStorageBufferArrayDynamicIndexing == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderStorageBufferArrayDynamicIndexing not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) )
+	{
+		if ( physicalDeviceMultiviewFeatures.multiview == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature multiview not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 2, 0)) && physicalDeviceVulkan12Features.descriptorIndexing )
+	{
+		if ( coreFeatures.features.shaderSampledImageArrayDynamicIndexing == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderSampledImageArrayDynamicIndexing not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 2, 0)) && physicalDeviceVulkan12Features.descriptorIndexing )
+	{
+		if ( coreFeatures.features.shaderStorageBufferArrayDynamicIndexing == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderStorageBufferArrayDynamicIndexing not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 2, 0)) )
+	{
+		if ( physicalDeviceVulkan11Features.multiview == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature multiview not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 2, 0)) )
+	{
+		if ( physicalDeviceVulkan12Features.subgroupBroadcastDynamicId == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature subgroupBroadcastDynamicId not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
 	if ( context.contextSupports(vk::ApiVersion(1, 2, 0)) )
 	{
 		if ( physicalDeviceVulkan12Features.shaderSubgroupExtendedTypes == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature shaderSubgroupExtendedTypes not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_imageless_framebuffer")) )
-	{
-		if ( physicalDeviceImagelessFramebufferFeaturesKHR.imagelessFramebuffer == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature imagelessFramebuffer not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
@@ -955,38 +1620,11 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_separate_depth_stencil_layouts")) )
-	{
-		if ( physicalDeviceSeparateDepthStencilLayoutsFeaturesKHR.separateDepthStencilLayouts == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature separateDepthStencilLayouts not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_pipeline_creation_cache_control")) )
-	{
-		if ( physicalDevicePipelineCreationCacheControlFeaturesEXT.pipelineCreationCacheControl == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature pipelineCreationCacheControl not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
 	if ( context.contextSupports(vk::ApiVersion(1, 2, 0)) )
 	{
 		if ( physicalDeviceVulkan12Features.separateDepthStencilLayouts == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature separateDepthStencilLayouts not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_host_query_reset")) )
-	{
-		if ( physicalDeviceHostQueryResetFeaturesEXT.hostQueryReset == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature hostQueryReset not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
@@ -1000,38 +1638,11 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_timeline_semaphore")) )
-	{
-		if ( physicalDeviceTimelineSemaphoreFeaturesKHR.timelineSemaphore == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature timelineSemaphore not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
 	if ( context.contextSupports(vk::ApiVersion(1, 2, 0)) )
 	{
 		if ( physicalDeviceVulkan12Features.timelineSemaphore == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature timelineSemaphore not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( context.contextSupports(vk::ApiVersion(1, 2, 0)) && physicalDeviceVulkan12Features.descriptorIndexing )
-	{
-		if ( coreFeatures.features.shaderSampledImageArrayDynamicIndexing == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature shaderSampledImageArrayDynamicIndexing not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( context.contextSupports(vk::ApiVersion(1, 2, 0)) && physicalDeviceVulkan12Features.descriptorIndexing )
-	{
-		if ( coreFeatures.features.shaderStorageBufferArrayDynamicIndexing == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature shaderStorageBufferArrayDynamicIndexing not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
@@ -1153,209 +1764,11 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_texture_compression_astc_hdr")) )
-	{
-		if ( physicalDeviceTextureCompressionASTCHDRFeaturesEXT.textureCompressionASTC_HDR == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature textureCompressionASTC_HDR not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_depth_clip_enable")) )
-	{
-		if ( physicalDeviceDepthClipEnableFeaturesEXT.depthClipEnable == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature depthClipEnable not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_memory_priority")) )
-	{
-		if ( physicalDeviceMemoryPriorityFeaturesEXT.memoryPriority == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature memoryPriority not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_ycbcr_image_arrays")) )
-	{
-		if ( physicalDeviceYcbcrImageArraysFeaturesEXT.ycbcrImageArrays == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature ycbcrImageArrays not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_index_type_uint8")) )
-	{
-		if ( physicalDeviceIndexTypeUint8FeaturesEXT.indexTypeUint8 == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature indexTypeUint8 not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_demote_to_helper_invocation")) )
-	{
-		if ( physicalDeviceShaderDemoteToHelperInvocationFeaturesEXT.shaderDemoteToHelperInvocation == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature shaderDemoteToHelperInvocation not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_texel_buffer_alignment")) )
-	{
-		if ( physicalDeviceTexelBufferAlignmentFeaturesEXT.texelBufferAlignment == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature texelBufferAlignment not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_vulkan_memory_model")) )
-	{
-		if ( physicalDeviceVulkanMemoryModelFeaturesKHR.vulkanMemoryModel == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature vulkanMemoryModel not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_buffer_device_address")) )
-	{
-		if ( physicalDeviceBufferDeviceAddressFeaturesKHR.bufferDeviceAddress == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature bufferDeviceAddress not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_performance_query")) )
-	{
-		if ( physicalDevicePerformanceQueryFeaturesKHR.performanceCounterQueryPools == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature performanceCounterQueryPools not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_transform_feedback")) )
-	{
-		if ( physicalDeviceTransformFeedbackFeaturesEXT.transformFeedback == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature transformFeedback not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_conditional_rendering")) )
-	{
-		if ( physicalDeviceConditionalRenderingFeaturesEXT.conditionalRendering == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature conditionalRendering not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_vertex_attribute_divisor")) )
-	{
-		if ( physicalDeviceVertexAttributeDivisorFeaturesEXT.vertexAttributeInstanceRateDivisor == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature vertexAttributeInstanceRateDivisor not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_fragment_density_map")) )
-	{
-		if ( physicalDeviceFragmentDensityMapFeaturesEXT.fragmentDensityMap == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature fragmentDensityMap not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_clock")) )
-	{
-		if ( physicalDeviceShaderClockFeaturesKHR.shaderSubgroupClock == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature shaderSubgroupClock not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_atomic_int64")) )
-	{
-		if ( physicalDeviceShaderAtomicInt64FeaturesKHR.shaderBufferInt64Atomics == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature shaderBufferInt64Atomics not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
 	if ( context.contextSupports(vk::ApiVersion(1, 2, 0)) && physicalDeviceShaderAtomicInt64FeaturesKHR.shaderBufferInt64Atomics )
 	{
 		if ( physicalDeviceVulkan12Features.shaderBufferInt64Atomics == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature shaderBufferInt64Atomics not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_16bit_storage")) )
-	{
-		if ( physicalDevice16BitStorageFeaturesKHR.storageBuffer16BitAccess == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature storageBuffer16BitAccess not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_float16_int8")) )
-	{
-		if ( ( physicalDeviceShaderFloat16Int8Features.shaderFloat16 == VK_FALSE ) && ( physicalDeviceShaderFloat16Int8Features.shaderInt8 == VK_FALSE ) )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature shaderFloat16 or shaderInt8 not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_fragment_shader_interlock")) )
-	{
-		if ( ( physicalDeviceFragmentShaderInterlockFeaturesEXT.fragmentShaderSampleInterlock == VK_FALSE ) && ( physicalDeviceFragmentShaderInterlockFeaturesEXT.fragmentShaderPixelInterlock == VK_FALSE ) && ( physicalDeviceFragmentShaderInterlockFeaturesEXT.fragmentShaderShadingRateInterlock == VK_FALSE ) )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature fragmentShaderSampleInterlock or fragmentShaderPixelInterlock or fragmentShaderShadingRateInterlock not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_line_rasterization")) )
-	{
-		if ( ( physicalDeviceLineRasterizationFeaturesEXT.rectangularLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesEXT.bresenhamLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesEXT.smoothLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesEXT.stippledRectangularLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesEXT.stippledBresenhamLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesEXT.stippledSmoothLines == VK_FALSE ) )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature rectangularLines or bresenhamLines or smoothLines or stippledRectangularLines or stippledBresenhamLines or stippledSmoothLines not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_synchronization2")) )
-	{
-		if ( physicalDeviceSynchronization2FeaturesKHR.synchronization2 == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature synchronization2 not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_sampler_ycbcr_conversion")) )
-	{
-		if ( physicalDeviceSamplerYcbcrConversionFeaturesKHR.samplerYcbcrConversion == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature samplerYcbcrConversion not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
@@ -1401,132 +1814,6 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceVulkan12Features.shaderOutputLayer == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature shaderOutputLayer not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_terminate_invocation")) )
-	{
-		if ( physicalDeviceShaderTerminateInvocationFeaturesKHR.shaderTerminateInvocation == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature shaderTerminateInvocation not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_image_atomic_int64")) )
-	{
-		if ( physicalDeviceShaderImageAtomicInt64FeaturesEXT.shaderImageInt64Atomics == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature shaderImageInt64Atomics not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_image_atomic_int64")) )
-	{
-		if ( coreFeatures.features.shaderInt64 == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature shaderInt64 not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( physicalDeviceShaderAtomicInt64FeaturesKHR.shaderBufferInt64Atomics )
-	{
-		if ( coreFeatures.features.shaderInt64 == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature shaderInt64 not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( physicalDeviceVulkan12Features.shaderBufferInt64Atomics )
-	{
-		if ( coreFeatures.features.shaderInt64 == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature shaderInt64 not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( physicalDeviceShaderAtomicInt64FeaturesKHR.shaderSharedInt64Atomics )
-	{
-		if ( coreFeatures.features.shaderInt64 == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature shaderInt64 not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( physicalDeviceVulkan12Features.shaderSharedInt64Atomics )
-	{
-		if ( coreFeatures.features.shaderInt64 == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature shaderInt64 not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_4444_formats")) )
-	{
-		if ( physicalDevice4444FormatsFeaturesEXT.formatA4R4G4B4 == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature formatA4R4G4B4 not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_zero_initialize_workgroup_memory")) )
-	{
-		if ( physicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR.shaderZeroInitializeWorkgroupMemory == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature shaderZeroInitializeWorkgroupMemory not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_workgroup_memory_explicit_layout")) )
-	{
-		if ( ( physicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR.workgroupMemoryExplicitLayout == VK_FALSE ) && ( physicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR.workgroupMemoryExplicitLayoutScalarBlockLayout == VK_FALSE ) && ( physicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR.workgroupMemoryExplicitLayout8BitAccess == VK_FALSE ) && ( physicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR.workgroupMemoryExplicitLayout16BitAccess == VK_FALSE ) )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature workgroupMemoryExplicitLayout or workgroupMemoryExplicitLayoutScalarBlockLayout or workgroupMemoryExplicitLayout8BitAccess or workgroupMemoryExplicitLayout16BitAccess not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
-	{
-		if ( physicalDeviceAccelerationStructureFeaturesKHR.accelerationStructure == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature accelerationStructure not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
-	{
-		if ( physicalDeviceAccelerationStructureFeaturesKHR.descriptorBindingAccelerationStructureUpdateAfterBind == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature descriptorBindingAccelerationStructureUpdateAfterBind not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
-	{
-		if ( coreFeatures.features.shaderSampledImageArrayDynamicIndexing == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature shaderSampledImageArrayDynamicIndexing not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
-	{
-		if ( coreFeatures.features.shaderStorageBufferArrayDynamicIndexing == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature shaderStorageBufferArrayDynamicIndexing not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
@@ -1657,308 +1944,29 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
-	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
+	if ( context.contextSupports(vk::ApiVersion(1, 3, 0)) )
 	{
-		if ( physicalDeviceBufferDeviceAddressFeaturesKHR.bufferDeviceAddress == VK_FALSE )
+		if ( physicalDeviceVulkan12Features.bufferDeviceAddress == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature bufferDeviceAddress not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
 
-	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
+	if ( context.contextSupports(vk::ApiVersion(1, 3, 0)) )
 	{
-		if ( physicalDeviceDescriptorIndexingFeaturesEXT.shaderUniformTexelBufferArrayDynamicIndexing == VK_FALSE )
+		if ( physicalDeviceVulkan12Features.vulkanMemoryModel == VK_FALSE )
 		{
-			log << tcu::TestLog::Message << "Mandatory feature shaderUniformTexelBufferArrayDynamicIndexing not supported" << tcu::TestLog::EndMessage;
+			log << tcu::TestLog::Message << "Mandatory feature vulkanMemoryModel not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
 
-	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
+	if ( context.contextSupports(vk::ApiVersion(1, 3, 0)) )
 	{
-		if ( physicalDeviceDescriptorIndexingFeaturesEXT.shaderStorageTexelBufferArrayDynamicIndexing == VK_FALSE )
+		if ( physicalDeviceVulkan12Features.vulkanMemoryModelDeviceScope == VK_FALSE )
 		{
-			log << tcu::TestLog::Message << "Mandatory feature shaderStorageTexelBufferArrayDynamicIndexing not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
-	{
-		if ( physicalDeviceDescriptorIndexingFeaturesEXT.shaderSampledImageArrayNonUniformIndexing == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature shaderSampledImageArrayNonUniformIndexing not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
-	{
-		if ( physicalDeviceDescriptorIndexingFeaturesEXT.shaderStorageBufferArrayNonUniformIndexing == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature shaderStorageBufferArrayNonUniformIndexing not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
-	{
-		if ( physicalDeviceDescriptorIndexingFeaturesEXT.shaderUniformTexelBufferArrayNonUniformIndexing == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature shaderUniformTexelBufferArrayNonUniformIndexing not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
-	{
-		if ( physicalDeviceDescriptorIndexingFeaturesEXT.descriptorBindingSampledImageUpdateAfterBind == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature descriptorBindingSampledImageUpdateAfterBind not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
-	{
-		if ( physicalDeviceDescriptorIndexingFeaturesEXT.descriptorBindingStorageImageUpdateAfterBind == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature descriptorBindingStorageImageUpdateAfterBind not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
-	{
-		if ( physicalDeviceDescriptorIndexingFeaturesEXT.descriptorBindingStorageBufferUpdateAfterBind == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature descriptorBindingStorageBufferUpdateAfterBind not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
-	{
-		if ( physicalDeviceDescriptorIndexingFeaturesEXT.descriptorBindingUniformTexelBufferUpdateAfterBind == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature descriptorBindingUniformTexelBufferUpdateAfterBind not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
-	{
-		if ( physicalDeviceDescriptorIndexingFeaturesEXT.descriptorBindingStorageTexelBufferUpdateAfterBind == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature descriptorBindingStorageTexelBufferUpdateAfterBind not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
-	{
-		if ( physicalDeviceDescriptorIndexingFeaturesEXT.descriptorBindingUpdateUnusedWhilePending == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature descriptorBindingUpdateUnusedWhilePending not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
-	{
-		if ( physicalDeviceDescriptorIndexingFeaturesEXT.descriptorBindingPartiallyBound == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature descriptorBindingPartiallyBound not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
-	{
-		if ( physicalDeviceDescriptorIndexingFeaturesEXT.runtimeDescriptorArray == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature runtimeDescriptorArray not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_ray_tracing_pipeline")) )
-	{
-		if ( ( physicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline == VK_FALSE ) && ( physicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipelineTraceRaysIndirect == VK_FALSE ) )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature rayTracingPipeline or rayTracingPipelineTraceRaysIndirect not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_ray_tracing_pipeline")) && isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_ray_query")) )
-	{
-		if ( physicalDeviceRayTracingPipelineFeaturesKHR.rayTraversalPrimitiveCulling == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature rayTraversalPrimitiveCulling not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_ray_query")) )
-	{
-		if ( physicalDeviceRayQueryFeaturesKHR.rayQuery == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature rayQuery not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_vertex_input_dynamic_state")) )
-	{
-		if ( physicalDeviceVertexInputDynamicStateFeaturesEXT.vertexInputDynamicState == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature vertexInputDynamicState not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_color_write_enable")) )
-	{
-		if ( physicalDeviceColorWriteEnableFeaturesEXT.colorWriteEnable == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature colorWriteEnable not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_ycbcr_2plane_444_formats")) )
-	{
-		if ( physicalDeviceYcbcr2Plane444FormatsFeaturesEXT.ycbcr2plane444Formats == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature ycbcr2plane444Formats not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_extended_dynamic_state2")) )
-	{
-		if ( physicalDeviceExtendedDynamicState2FeaturesEXT.extendedDynamicState2 == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature extendedDynamicState2 not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_VALVE_mutable_descriptor_type")) )
-	{
-		if ( physicalDeviceMutableDescriptorTypeFeaturesVALVE.mutableDescriptorType == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature mutableDescriptorType not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_global_priority_query")) )
-	{
-		if ( physicalDeviceGlobalPriorityQueryFeaturesEXT.globalPriorityQuery == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature globalPriorityQuery not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_image_atomic_int64")) && physicalDeviceShaderImageAtomicInt64FeaturesEXT.sparseImageInt64Atomics )
-	{
-		if ( physicalDeviceShaderImageAtomicInt64FeaturesEXT.shaderImageInt64Atomics == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature shaderImageInt64Atomics not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_atomic_float")) && physicalDeviceShaderAtomicFloatFeaturesEXT.sparseImageFloat32Atomics )
-	{
-		if ( physicalDeviceShaderAtomicFloatFeaturesEXT.shaderImageFloat32Atomics == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature shaderImageFloat32Atomics not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_atomic_float")) && physicalDeviceShaderAtomicFloatFeaturesEXT.sparseImageFloat32AtomicAdd )
-	{
-		if ( physicalDeviceShaderAtomicFloatFeaturesEXT.shaderImageFloat32AtomicAdd == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature shaderImageFloat32AtomicAdd not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_multi_draw")) )
-	{
-		if ( physicalDeviceMultiDrawFeaturesEXT.multiDraw == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature multiDraw not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_subgroup_uniform_control_flow")) )
-	{
-		if ( physicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR.shaderSubgroupUniformControlFlow == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature shaderSubgroupUniformControlFlow not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_present_id")) )
-	{
-		if ( physicalDevicePresentIdFeaturesKHR.presentId == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature presentId not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_present_wait")) )
-	{
-		if ( physicalDevicePresentWaitFeaturesKHR.presentWait == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature presentWait not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_atomic_float2")) && physicalDeviceShaderAtomicFloat2FeaturesEXT.sparseImageFloat32AtomicMinMax )
-	{
-		if ( physicalDeviceShaderAtomicFloat2FeaturesEXT.shaderImageFloat32AtomicMinMax == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature shaderImageFloat32AtomicMinMax not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_integer_dot_product")) )
-	{
-		if ( physicalDeviceShaderIntegerDotProductFeaturesKHR.shaderIntegerDotProduct == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature shaderIntegerDotProduct not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_primitive_topology_list_restart")) )
-	{
-		if ( physicalDevicePrimitiveTopologyListRestartFeaturesEXT.primitiveTopologyListRestart == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature primitiveTopologyListRestart not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_border_color_swizzle")) )
-	{
-		if ( physicalDeviceBorderColorSwizzleFeaturesEXT.borderColorSwizzle == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature borderColorSwizzle not supported" << tcu::TestLog::EndMessage;
+			log << tcu::TestLog::Message << "Mandatory feature vulkanMemoryModelDeviceScope not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
@@ -2085,33 +2093,6 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceVulkan13Features.maintenance4 == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature maintenance4 not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( context.contextSupports(vk::ApiVersion(1, 3, 0)) )
-	{
-		if ( physicalDeviceVulkan12Features.bufferDeviceAddress == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature bufferDeviceAddress not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( context.contextSupports(vk::ApiVersion(1, 3, 0)) )
-	{
-		if ( physicalDeviceVulkan12Features.vulkanMemoryModel == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature vulkanMemoryModel not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( context.contextSupports(vk::ApiVersion(1, 3, 0)) )
-	{
-		if ( physicalDeviceVulkan12Features.vulkanMemoryModelDeviceScope == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature vulkanMemoryModelDeviceScope not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
