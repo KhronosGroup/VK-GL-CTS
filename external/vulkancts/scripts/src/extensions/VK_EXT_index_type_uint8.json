@@ -1,0 +1,9 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceIndexTypeUint8FeaturesEXT":
+		[
+			{ "features": ["indexTypeUint8"],		"requirements": ["VK_EXT_index_type_uint8"] }
+		]
+	}
+}

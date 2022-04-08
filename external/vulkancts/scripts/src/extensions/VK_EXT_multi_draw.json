@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": ""
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceMultiDrawFeaturesEXT":
+		[
+			{ "features": ["multiDraw"],				"requirements": ["VK_EXT_multi_draw"] }
+		]
+	}
+}

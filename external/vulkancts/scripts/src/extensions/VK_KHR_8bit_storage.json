@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": "1.2.0"
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDevice8BitStorageFeaturesKHR":
+		[
+			{ "features": ["storageBuffer8BitAccess"],	"requirements": ["VK_KHR_8bit_storage"] }
+		]
+	}
+}

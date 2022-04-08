@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": "1.2.0"
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceHostQueryResetFeaturesEXT":
+		[
+			{ "features": ["hostQueryReset"],				"requirements": ["VK_EXT_host_query_reset"] }
+		]
+	}
+}

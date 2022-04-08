@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": "1.1.0"
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceMultiviewFeatures":
+		[
+			{ "features": ["multiview"],	"requirements": ["VK_KHR_multiview"] }
+		]
+	}
+}
