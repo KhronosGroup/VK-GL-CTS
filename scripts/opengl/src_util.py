@@ -38,8 +38,8 @@ OPENGL_INC_DIR		= os.path.join(OPENGL_DIR, "wrapper")
 GL_SOURCE			= khr_util.registry_cache.RegistrySource(
 						"https://raw.githubusercontent.com/KhronosGroup/OpenGL-Registry",
 						"xml/gl.xml",
-						"9d534f9312e56c72df763207e449c6719576fd54",
-						"245e90331c83c4c743a2b9d0dad51e27a699f2040ebd34dd5338637adf276752")
+                                                "b0643365776c260efc6317d2ff67dd8bf5078be9",
+                                                "8b4fd055e2ced6e02dd08ac644e55eaf2c0735d087b37138d831c3e000e04e62")
 
 EXTENSIONS			= [
 	'GL_KHR_texture_compression_astc_ldr',

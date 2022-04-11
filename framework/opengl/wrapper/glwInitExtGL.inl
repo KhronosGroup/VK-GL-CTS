@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 9d534f9312e56c72df763207e449c6719576fd54.
+ * Generated from Khronos GL API description (gl.xml) revision b0643365776c260efc6317d2ff67dd8bf5078be9.
  */
 
 if (de::contains(extSet, "GL_KHR_blend_equation_advanced"))
@@ -553,6 +553,16 @@ if (de::contains(extSet, "GL_EXT_direct_state_access"))
 	gl->vertexArrayVertexAttribOffsetEXT				= (glVertexArrayVertexAttribOffsetEXTFunc)					loader->get("glVertexArrayVertexAttribOffsetEXT");
 	gl->vertexArrayVertexBindingDivisorEXT				= (glVertexArrayVertexBindingDivisorEXTFunc)				loader->get("glVertexArrayVertexBindingDivisorEXT");
 	gl->vertexArrayVertexOffsetEXT						= (glVertexArrayVertexOffsetEXTFunc)						loader->get("glVertexArrayVertexOffsetEXT");
+}
+
+if (de::contains(extSet, "GL_EXT_texture_storage"))
+{
+	gl->texStorage1D		= (glTexStorage1DFunc)			loader->get("glTexStorage1DEXT");
+	gl->texStorage2D		= (glTexStorage2DFunc)			loader->get("glTexStorage2DEXT");
+	gl->texStorage3D		= (glTexStorage3DFunc)			loader->get("glTexStorage3DEXT");
+	gl->textureStorage1DEXT	= (glTextureStorage1DEXTFunc)	loader->get("glTextureStorage1DEXT");
+	gl->textureStorage2DEXT	= (glTextureStorage2DEXTFunc)	loader->get("glTextureStorage2DEXT");
+	gl->textureStorage3DEXT	= (glTextureStorage3DEXTFunc)	loader->get("glTextureStorage3DEXT");
 }
 
 if (de::contains(extSet, "GL_EXT_debug_marker"))
