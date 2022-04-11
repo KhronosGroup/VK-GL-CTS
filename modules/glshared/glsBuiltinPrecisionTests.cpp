@@ -3560,7 +3560,7 @@ protected:
 		// Khronos bug 11180 consensus: if exp2(exponent) cannot be represented,
 		// the result is undefined.
 
-		if (ret.contains(TCU_INFINITY) | ret.contains(-TCU_INFINITY))
+		if (ret.contains(TCU_INFINITY) || ret.contains(-TCU_INFINITY))
 			ret |= TCU_NAN;
 
 		return call<Mul>(ctx, iargs.a, ret);
