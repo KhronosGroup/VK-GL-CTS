@@ -193,7 +193,7 @@ tcu::TestStatus testExtendedUsageBitCompatiblity (Context& context, TestParams p
 		throw tcu::NotSupportedError(error.str().c_str());
 	}
 
-	VkResult res = func.getPhysicalDeviceImageFormatProperties(vki, context.getPhysicalDevice(), params.imageFormat, params.tiling, params.usage, VK_IMAGE_CREATE_EXTENDED_USAGE_BIT);
+	VkResult res = func.getPhysicalDeviceImageFormatProperties(vki, context.getPhysicalDevice(), params.imageFormat, params.tiling, params.usage, VK_IMAGE_CREATE_EXTENDED_USAGE_BIT | VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT);
 
 	if (res != expected)
 	{

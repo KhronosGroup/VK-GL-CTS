@@ -44,6 +44,8 @@
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
 
+#include <limits>
+#include <numeric>
 #include <vector>
 #include <set>
 
@@ -1609,100 +1611,541 @@ tcu::TestStatus createDeviceQueue2Test (Context& context)
 	return tcu::TestStatus::pass("Pass");
 }
 
-tcu::TestStatus createDeviceQueue2UnmatchedFlagsTest (Context& context)
+map<deUint32, VkQueueFamilyProperties> findQueueFamiliesWithCaps (const InstanceInterface& vkInstance, VkPhysicalDevice physicalDevice, VkQueueFlags requiredCaps)
+{
+	const vector<VkQueueFamilyProperties>	queueProps				= getPhysicalDeviceQueueFamilyProperties(vkInstance, physicalDevice);
+	map<deUint32, VkQueueFamilyProperties>	queueFamilies;
+
+	for (deUint32 queueNdx = 0; queueNdx < static_cast<deUint32>(queueProps.size()); queueNdx++)
+	{
+		const VkQueueFamilyProperties&		queueFamilyProperties	= queueProps[queueNdx];
+
+		if ((queueFamilyProperties.queueFlags & requiredCaps) == requiredCaps)
+			queueFamilies[queueNdx] = queueFamilyProperties;
+	}
+
+	if (queueFamilies.empty())
+		TCU_THROW(NotSupportedError, "No matching queue found");
+
+	return queueFamilies;
+}
+
+void checkProtectedMemorySupport (Context& context)
 {
 	if (!context.contextSupports(vk::ApiVersion(1, 1, 0)))
 		TCU_THROW(NotSupportedError, "Vulkan 1.1 is not supported");
 
-	const PlatformInterface&		platformInterface		= context.getPlatformInterface();
-	const VkInstance				instance				= context.getInstance();
-	const InstanceInterface&		instanceDriver			= context.getInstanceInterface();
-	const VkPhysicalDevice			physicalDevice			= context.getPhysicalDevice();
+	const InstanceInterface&				instanceDriver			= context.getInstanceInterface();
+	const VkPhysicalDevice					physicalDevice			= context.getPhysicalDevice();
 
-	// Check if VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT flag can be used.
+	VkPhysicalDeviceProtectedMemoryFeatures	protectedMemoryFeature	=
 	{
-		VkPhysicalDeviceProtectedMemoryFeatures		protectedFeatures;
-		protectedFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES;
-		protectedFeatures.pNext		= DE_NULL;
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES,	// VkStructureType					sType;
+		DE_NULL,														// void*							pNext;
+		VK_FALSE														// VkBool32							protectedMemory;
+	};
 
-		VkPhysicalDeviceFeatures2					deviceFeatures;
-		deviceFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-		deviceFeatures.pNext		= &protectedFeatures;
+	VkPhysicalDeviceFeatures2				features2;
+	deMemset(&features2, 0, sizeof(features2));
+	features2.sType													= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+	features2.pNext													= &protectedMemoryFeature;
 
-		instanceDriver.getPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures);
-		if (!protectedFeatures.protectedMemory)
+	instanceDriver.getPhysicalDeviceFeatures2(physicalDevice, &features2);
+	if (protectedMemoryFeature.protectedMemory == VK_FALSE)
+		TCU_THROW(NotSupportedError, "Protected memory feature is not supported");
+}
+
+Move<VkDevice> createProtectedDeviceWithQueueConfig (Context& context, const std::vector<VkDeviceQueueCreateInfo>& queueCreateInfos, bool dumpExtraInfo=false)
+{
+	const PlatformInterface&				platformInterface		= context.getPlatformInterface();
+	const VkInstance						instance				= context.getInstance();
+	const InstanceInterface&				instanceDriver			= context.getInstanceInterface();
+	const VkPhysicalDevice					physicalDevice			= context.getPhysicalDevice();
+
+	if (dumpExtraInfo)
+	{
+		tcu::TestLog&						log						= context.getTestContext().getLog();
+
+		log << tcu::TestLog::Message << "Creating VkDevice with the following Queue configuration:" << tcu::TestLog::EndMessage;
+
+		for (size_t idx = 0; idx < queueCreateInfos.size(); idx++)
 		{
-			TCU_THROW(NotSupportedError, "protectedMemory feature is not supported, no queue creation flags available");
+			const VkDeviceQueueCreateInfo&	queueCreateInfo			= queueCreateInfos[idx];
+
+			log << tcu::TestLog::Message << "QueueCreateInfo " << idx << ": "
+				<< "flags: " << queueCreateInfo.flags << " "
+				<< "family: " << queueCreateInfo.queueFamilyIndex << " "
+				<< "count: " << queueCreateInfo.queueCount
+				<< tcu::TestLog::EndMessage;
 		}
 	}
 
-	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
-	const deUint32							queueCount				= 1;
-	const deUint32							queueIndex				= 0;
-	const float								queuePriority			= 1.0f;
-	const VkDeviceQueueCreateInfo			deviceQueueCreateInfo	=
+	// Protected memory features availability should be already checked at this point.
+	VkPhysicalDeviceProtectedMemoryFeatures	protectedMemoryFeature	=
 	{
-		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,	// VkStructureType					sType;
-		DE_NULL,									// const void*						pNext;
-		(VkDeviceQueueCreateFlags)0u,				// VkDeviceQueueCreateFlags			flags;
-		queueFamilyIndex,							// deUint32							queueFamilyIndex;
-		queueCount,									// deUint32							queueCount;
-		&queuePriority,								// const float*						pQueuePriorities;
-	};
-	VkPhysicalDeviceProtectedMemoryFeatures	protectedFeatures		=
-	{
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES,	// VkStructureType				sType;
-		DE_NULL,														// void*						pNext;
-		VK_TRUE															// VkBool32						protectedMemory;
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES,	// VkStructureType					sType;
+		DE_NULL,														// void*							pNext;
+		VK_TRUE															// VkBool32							protectedMemory;
 	};
 
-	VkPhysicalDeviceFeatures				emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	const VkPhysicalDeviceFeatures2			deviceFeatures			=
-	{
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,					// VkStructureType				sType;
-		&protectedFeatures,												// void*						pNext;
-		emptyDeviceFeatures												// VkPhysicalDeviceFeatures		features;
-	};
+	VkPhysicalDeviceFeatures2				features2;
+	deMemset(&features2, 0, sizeof(features2));
+	features2.sType													= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+	features2.pNext													= &protectedMemoryFeature;
 
 	const VkDeviceCreateInfo				deviceCreateInfo		=
 	{
-		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,		// VkStructureType					sType;
-		&deviceFeatures,							// const void*						pNext;
-		(VkDeviceCreateFlags)0u,					// VkDeviceCreateFlags				flags;
-		1,											// deUint32							queueCreateInfoCount;
-		&deviceQueueCreateInfo,						// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
-		0,											// deUint32							enabledLayerCount;
-		DE_NULL,									// const char* const*				ppEnabledLayerNames;
-		0,											// deUint32							enabledExtensionCount;
-		DE_NULL,									// const char* const*				ppEnabledExtensionNames;
-		DE_NULL,									// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							// VkStructureType					sType;
+		&features2,														// const void*						pNext;
+		(VkDeviceCreateFlags)0u,										// VkDeviceCreateFlags				flags;
+		(deUint32)queueCreateInfos.size(),								// deUint32							queueCreateInfoCount;
+		queueCreateInfos.data(),										// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
+		0,																// deUint32							enabledLayerCount;
+		DE_NULL,														// const char* const*				ppEnabledLayerNames;
+		0,																// deUint32							enabledExtensionCount;
+		DE_NULL,														// const char* const*				ppEnabledExtensionNames;
+		DE_NULL,														// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 
-	const VkDeviceQueueInfo2				deviceQueueInfo2		=
+	return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo);
+}
+
+VkQueue getDeviceQueue2WithOptions (const DeviceDriver& deviceDriver, const VkDevice device, VkDeviceQueueCreateFlags flags, deUint32 queueFamilyIndex, deUint32 queueIndex)
+{
+	VkDeviceQueueInfo2						queueInfo2				=
 	{
-		VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2,		// VkStructureType					sType;
-		DE_NULL,									// const void*						pNext;
-		VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT,		// VkDeviceQueueCreateFlags			flags;
-		queueFamilyIndex,							// deUint32							queueFamilyIndex;
-		queueIndex,									// deUint32							queueIndex;
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2,							// VkStructureType					sType;
+		DE_NULL,														// const void*						pNext;
+		flags,															// VkDeviceQueueCreateFlags			flags;
+		queueFamilyIndex,												// deUint32							queueFamilyIndex;
+		queueIndex,														// deUint32							queueIndex;
 	};
 
+	return getDeviceQueue2(deviceDriver, device, &queueInfo2);
+}
+
+struct QueueCreationInfo
+{
+	deUint32						familyIndex;
+	VkDeviceQueueCreateFlags		flags;
+	deUint32						count;
+};
+
+bool runQueueCreationTestCombination (Context& context, tcu::ResultCollector& results, const std::vector<QueueCreationInfo>& testCombination, bool dumpExtraInfo=false)
+{
+	deUint32								sumQueueCount			= 0u;
+	for (const QueueCreationInfo& info : testCombination)
 	{
-		const Unique<VkDevice>		device					(createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-		const DeviceDriver			deviceDriver			(platformInterface, instance, device.get());
-		const VkQueue				queue2					= getDeviceQueue2(deviceDriver, *device, &deviceQueueInfo2);
-
-		if (queue2 != DE_NULL)
-			return tcu::TestStatus::fail("Fail, getDeviceQueue2 should return VK_NULL_HANDLE when flags in VkDeviceQueueCreateInfo and VkDeviceQueueInfo2 are different.");
-
-		const VkQueue				queue					= getDeviceQueue(deviceDriver, *device,  queueFamilyIndex, queueIndex);
-
-		VK_CHECK(deviceDriver.queueWaitIdle(queue));
+		sumQueueCount += info.count;
 	}
 
-	return tcu::TestStatus::pass("Pass");
+	// Have an array of queue priorities which can be used when creating the queues (it is always greater or equal to the number of queues for a given VkDeviceQueueCreateInfo).
+	const vector<float>						queuePriorities			(sumQueueCount, 1.0f);
+	vector<VkDeviceQueueCreateInfo>			queueCreateInfo;
+
+	for (const QueueCreationInfo& info : testCombination)
+	{
+		const VkDeviceQueueCreateInfo		queueInfo				=
+		{
+			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,						// VkStructureType					sType;
+			DE_NULL,														// const void*						pNext;
+			info.flags,														// VkDeviceQueueCreateFlags			flags;
+			info.familyIndex,												// deUint32							queueFamilyIndex;
+			info.count,														// deUint32							queueCount;
+			queuePriorities.data(),											// const float*						pQueuePriorities;
+		};
+		queueCreateInfo.push_back(queueInfo);
+	}
+
+	const PlatformInterface&				platformInterface		= context.getPlatformInterface();
+	const VkInstance						instance				= context.getInstance();
+
+	const Unique<VkDevice>					device					(createProtectedDeviceWithQueueConfig(context, queueCreateInfo, dumpExtraInfo));
+	const DeviceDriver						deviceDriver			(platformInterface, instance, *device);
+
+	for (const QueueCreationInfo& info : testCombination)
+	{
+		// Query Queues (based on the test configuration)
+		for (deUint32 queueIdx = 0; queueIdx < info.count; queueIdx++)
+		{
+			const string					message					= "(queueFamilyIndex: " + de::toString(info.familyIndex) + ", flags: " + de::toString(info.flags) + ", queue Index: " + de::toString(queueIdx) + ")";
+			const VkQueue					queue					= getDeviceQueue2WithOptions(deviceDriver, *device, info.flags, info.familyIndex, queueIdx);
+
+			if (queue != DE_NULL)
+			{
+				VK_CHECK(deviceDriver.queueWaitIdle(queue));
+				results.addResult(QP_TEST_RESULT_PASS, "Found Queue. " + message);
+			} else
+				results.fail("Unable to access the Queue. " + message);
+		}
+	}
+
+	return results.getResult() == QP_TEST_RESULT_PASS;
+}
+
+tcu::TestStatus createDeviceQueue2WithTwoQueuesSmokeTest (Context& context)
+{
+	const bool								dumpExtraInfo			= true;
+
+	const InstanceInterface&				instanceDriver			= context.getInstanceInterface();
+	const VkPhysicalDevice					physicalDevice			= context.getPhysicalDevice();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+
+	vector<VkQueueFamilyProperties>			queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
+
+	// Find the first protected-capabale queue with a queueCount >= 2 and use it for testing (smoke test)
+	constexpr deUint32						MAX_DEUINT32			= std::numeric_limits<deUint32>::max();
+	deUint32								queueFamilyIndex		= MAX_DEUINT32;
+	const VkQueueFlags						requiredCaps			= VK_QUEUE_PROTECTED_BIT;
+	const deUint32							requiredQueueCount		= 2;
+
+	for (deUint32 queueNdx = 0; queueNdx < queueFamilyProperties.size(); queueNdx++)
+	{
+		if ((queueFamilyProperties[queueNdx].queueFlags & requiredCaps) == requiredCaps && queueFamilyProperties[queueNdx].queueCount >= requiredQueueCount)
+		{
+			queueFamilyIndex = queueNdx;
+			break;
+		}
+	}
+
+	if (queueFamilyIndex == MAX_DEUINT32)
+		TCU_THROW(NotSupportedError, "Unable to find a queue family that is protected-capable and supports more than one queue.");
+
+	if (dumpExtraInfo)
+		log << tcu::TestLog::Message << "Selected VkQueueFamilyProperties index: " << queueFamilyIndex << tcu::TestLog::EndMessage;
+
+	// Use the previously selected queue family index to create 1 protected-capable and 1 unprotected queue.
+	const QueueCreationInfo					protectedQueueConfig	= { queueFamilyIndex, VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT, 1 };
+	const QueueCreationInfo					unprotectedQueueConfig	= { queueFamilyIndex, (VkDeviceQueueCreateFlags)0u, 1 };
+
+	tcu::ResultCollector					results					(log);
+	const std::vector<QueueCreationInfo>	testCombination			= { protectedQueueConfig, unprotectedQueueConfig };
+	bool									success					= runQueueCreationTestCombination(context, results, testCombination, dumpExtraInfo);
+
+	if (success)
+		return tcu::TestStatus::pass("All Queues were queried correctly.");
+
+	return tcu::TestStatus(results.getResult(), results.getMessage());
+}
+
+tcu::TestStatus createDeviceQueue2WithAllProtectedQueues (Context& context)
+{
+	const bool								dumpExtraInfo			= true;
+
+	const InstanceInterface&				instanceDriver			= context.getInstanceInterface();
+	const VkPhysicalDevice					physicalDevice			= context.getPhysicalDevice();
+
+	// Select only protected-capable queue families
+	map<deUint32, VkQueueFamilyProperties>	queueFamilyProperties	= findQueueFamiliesWithCaps(instanceDriver, physicalDevice, VK_QUEUE_PROTECTED_BIT);
+
+	bool									success					= true;
+	tcu::ResultCollector					results					(context.getTestContext().getLog());
+
+	// For each protected-capable queue family, create a device with the max number of queues available and all queues created as protected-capable.
+	for (const pair<deUint32, VkQueueFamilyProperties> queueFamilyProperty : queueFamilyProperties)
+	{
+		const deUint32						queueFamilyIndex		= queueFamilyProperty.first;
+		const deUint32						queueCount				= queueFamilyProperty.second.queueCount;
+
+		const QueueCreationInfo				protectedQueueConfig	= { queueFamilyIndex, VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT, queueCount };
+		const vector<QueueCreationInfo>		testCombination			= { protectedQueueConfig };
+
+		// Run current confugurations.
+		success = success && runQueueCreationTestCombination(context, results, testCombination, dumpExtraInfo);
+	}
+
+	if (success)
+		return tcu::TestStatus::pass("All queues were queried correctly.");
+
+	return tcu::TestStatus(results.getResult(), results.getMessage());
+}
+
+tcu::TestStatus createDeviceQueue2WithAllUnprotectedQueues (Context& context)
+{
+	const bool								dumpExtraInfo			= true;
+
+	const InstanceInterface&				instanceDriver			= context.getInstanceInterface();
+	const VkPhysicalDevice					physicalDevice			= context.getPhysicalDevice();
+
+	// Select all queue families with or without protected bit
+	map<deUint32, VkQueueFamilyProperties>	queueFamilyProperties	= findQueueFamiliesWithCaps(instanceDriver, physicalDevice, 0);
+
+	bool									success					= true;
+	tcu::ResultCollector					results					(context.getTestContext().getLog());
+
+	// For each Queue Family create the max number of unprotected Queues.
+	for (const pair<deUint32, VkQueueFamilyProperties> queueFamilyProperty : queueFamilyProperties)
+	{
+		const deUint32						queueFamilyIndex		= queueFamilyProperty.first;
+		const deUint32						queueCount				= queueFamilyProperty.second.queueCount;
+
+		const QueueCreationInfo				unprotectedQueueConfig	= { queueFamilyIndex, (VkDeviceQueueCreateFlags)0u, queueCount };
+		const vector<QueueCreationInfo>		testCombination			= { unprotectedQueueConfig };
+
+		// Run current confugurations.
+		success = success && runQueueCreationTestCombination(context, results, testCombination, dumpExtraInfo);
+	}
+
+	if (success)
+		return tcu::TestStatus::pass("All Queues were queried correctly.");
+
+	return tcu::TestStatus(results.getResult(), results.getMessage());
+}
+
+typedef vector<QueueCreationInfo>					DeviceQueueConfig;
+typedef map<deUint32, vector<DeviceQueueConfig> >	QueueFamilyConfigurations;
+
+QueueFamilyConfigurations buildQueueConfigurations (const map<deUint32, VkQueueFamilyProperties>& queueFamilyProperties)
+{
+	QueueFamilyConfigurations				queuesPerFamily;
+
+	// Build up the queue creation combinations (N protected and M unprotected queues where N+M == queueFamily.queueCount)
+	// on each protected-capable queue family
+	for (const pair<deUint32, VkQueueFamilyProperties> queueFamily : queueFamilyProperties)
+	{
+		const deUint32						queueFamilyIndex		= queueFamily.first;
+		const VkQueueFamilyProperties		queueFamilyProperty		= queueFamily.second;
+		const deUint32						allowedQueueCount		= queueFamilyProperty.queueCount;
+
+		for (deUint32 splitCount = 0; splitCount <= allowedQueueCount; splitCount++)
+		{
+			const deUint32					protectedQueuesCount	= allowedQueueCount - splitCount;
+			const deUint32					unprotectedQueuesCount	= splitCount;
+
+			vector<QueueCreationInfo>		testCombination			= { };
+
+			if (protectedQueuesCount)
+				testCombination.push_back({ queueFamilyIndex, VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT, protectedQueuesCount });
+
+			if (unprotectedQueuesCount)
+				testCombination.push_back({ queueFamilyIndex, (VkDeviceQueueCreateFlags)0u, unprotectedQueuesCount });
+
+			queuesPerFamily[queueFamilyIndex].push_back(testCombination);
+		}
+	}
+
+	return queuesPerFamily;
+}
+
+tcu::TestStatus createDeviceQueue2WithNProtectedAndMUnprotectedQueues (Context& context)
+{
+	const bool								dumpExtraInfo			= true;
+
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	const InstanceInterface&				instanceDriver			= context.getInstanceInterface();
+	const VkPhysicalDevice					physicalDevice			= context.getPhysicalDevice();
+
+	// Select only protected-capable queue families
+	map<deUint32, VkQueueFamilyProperties>	queueFamilyProperties	= findQueueFamiliesWithCaps(instanceDriver, physicalDevice, VK_QUEUE_PROTECTED_BIT);
+
+	// Build all protected-unprotected splits per queue family.
+	QueueFamilyConfigurations				queuesPerFamily			= buildQueueConfigurations(queueFamilyProperties);
+	vector<DeviceQueueConfig>				queueCreateCombinations;
+
+	// Transform configurations to a simple vector
+	for (const auto& item : queuesPerFamily)
+	{
+		const vector<DeviceQueueConfig>&	queueConfigs			= item.second;
+
+		std::copy(queueConfigs.begin(), queueConfigs.end(), std::back_inserter(queueCreateCombinations));
+	}
+
+	if (dumpExtraInfo)
+	{
+		for (const vector<QueueCreationInfo>& testCombination : queueCreateCombinations)
+		{
+			ostringstream				queuesInfo;
+			for (const QueueCreationInfo& queueInfo : testCombination)
+			{
+				queuesInfo << "(Queue family: " << queueInfo.familyIndex << ", flags: " << queueInfo.flags << ", count: " << queueInfo.count << ")";
+			}
+
+			log << tcu::TestLog::Message << "Test Combination: " << queuesInfo.str() << tcu::TestLog::EndMessage;
+		}
+	}
+
+	bool									success					= true;
+	tcu::ResultCollector					results					(log);
+
+	// Based on the protected-unprotected queue combinations, run each test case.
+	for (const vector<QueueCreationInfo>& testCombination : queueCreateCombinations)
+	{
+		success = success && runQueueCreationTestCombination(context, results, testCombination, dumpExtraInfo);
+	}
+
+	// Run the test cases also in reverse order (so the unprotected queue creation info is at the start of the VkDeviceQueueCreateInfo vector).
+	for (vector<QueueCreationInfo>& testCombination : queueCreateCombinations)
+	{
+		std::reverse(testCombination.begin(), testCombination.end());
+
+		success = success && runQueueCreationTestCombination(context, results, testCombination, dumpExtraInfo);
+	}
+
+	if (success)
+		return tcu::TestStatus::pass("All Queues were queried correctly.");
+
+	return tcu::TestStatus(results.getResult(), results.getMessage());
+}
+
+tcu::TestStatus createDeviceQueue2WithMultipleQueueCombinations (Context& context)
+{
+	const bool								dumpExtraInfo			= true;
+
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	const InstanceInterface&				instanceDriver			= context.getInstanceInterface();
+	const VkPhysicalDevice					physicalDevice			= context.getPhysicalDevice();
+
+	// Select only protected-capable queue families.
+	map<deUint32, VkQueueFamilyProperties>	queueFamilyProperties	= findQueueFamiliesWithCaps(instanceDriver, physicalDevice, VK_QUEUE_PROTECTED_BIT);
+
+	// Build all protected-unprotected splits per queue family.
+	QueueFamilyConfigurations				queuesPerFamily			= buildQueueConfigurations(queueFamilyProperties);
+
+	// Build up all combinations of queue families from the previous mapping.
+	vector<DeviceQueueConfig>				queueCreateCombinations;
+	{
+		vector<deUint32>					itemIndices				(queuesPerFamily.size(), 0u);
+
+		// Calculate the max number of combinations.
+		auto								multiplyConfigCounts	= [](deUint32& count, const typename QueueFamilyConfigurations::value_type& item) { return count * item.second.size(); };
+		const deUint32						itemCount				= accumulate(queuesPerFamily.begin(), queuesPerFamily.end(), 1u, multiplyConfigCounts);
+
+		for (deUint32 count = 0u; count < itemCount; count++)
+		{
+			DeviceQueueConfig				testCombination;
+
+			// Select queue configurations from each family
+			for (deUint32 ndx = 0u; ndx < static_cast<deUint32>(itemIndices.size()); ndx++)
+			{
+				const auto&					familyConfigurations	= queuesPerFamily[ndx];
+				const DeviceQueueConfig&	targetQueueConfig		= familyConfigurations[ itemIndices[ndx] ];
+
+				std::copy(targetQueueConfig.begin(), targetQueueConfig.end(), std::back_inserter(testCombination));
+			}
+
+			queueCreateCombinations.push_back(testCombination);
+
+			// Increment the indices.
+			for (deUint32 ndx = 0u; ndx < static_cast<deUint32>(itemIndices.size()); ndx++)
+			{
+				itemIndices[ndx]++;
+				if (itemIndices[ndx] < queuesPerFamily[ndx].size())
+				{
+					break;
+				}
+
+				// "overflow" happened in the given index, restart from zero and increment the next item index (restart loop).
+				itemIndices[ndx] = 0;
+			}
+		}
+	}
+
+	if (dumpExtraInfo)
+	{
+		for (const vector<QueueCreationInfo>& testCombination : queueCreateCombinations)
+		{
+			ostringstream					queuesInfo;
+			for (const QueueCreationInfo& queueInfo : testCombination)
+			{
+				queuesInfo << "(Queue family: " << queueInfo.familyIndex << ", flags: " << queueInfo.flags << ", count: " << queueInfo.count << ")";
+			}
+
+			log << tcu::TestLog::Message << "Test Combination: " << queuesInfo.str() << tcu::TestLog::EndMessage;
+		}
+	}
+
+	bool									success					= true;
+	tcu::ResultCollector					results					(log);
+
+	// Based on the protected-unprotected queue combinations above run each test case.
+	for (const DeviceQueueConfig& testCombination : queueCreateCombinations)
+	{
+		success = success && runQueueCreationTestCombination(context, results, testCombination, dumpExtraInfo);
+	}
+
+	// Run the test cases also in reverse queue order (so the unprotected queue creation info is at the start of the VkDeviceQueueCreateInfo vector).
+	for (DeviceQueueConfig& testCombination : queueCreateCombinations)
+	{
+		std::reverse(testCombination.begin(), testCombination.end());
+
+		success = success && runQueueCreationTestCombination(context, results, testCombination, dumpExtraInfo);
+	}
+
+	if (success)
+		return tcu::TestStatus::pass("All Queues were queried correctly.");
+
+	return tcu::TestStatus(results.getResult(), results.getMessage());
+}
+
+tcu::TestStatus createDeviceQueue2WithAllFamilies (Context& context)
+{
+	const bool								dumpExtraInfo			= true;
+
+	const InstanceInterface&				instanceDriver			= context.getInstanceInterface();
+	const VkPhysicalDevice					physicalDevice			= context.getPhysicalDevice();
+
+	// Get all queue families
+	map<deUint32, VkQueueFamilyProperties>	queueFamilyProperties	= findQueueFamiliesWithCaps(instanceDriver, physicalDevice, (VkDeviceQueueCreateFlags)0u);
+
+	// Create test configuration where for each queue family the maximum number of queues are created.
+	vector<QueueCreationInfo>				queueConfigurations;
+	for (const pair<deUint32, VkQueueFamilyProperties> queueFamilyProperty : queueFamilyProperties)
+	{
+		const deUint32						queueFamilyIndex		= queueFamilyProperty.first;
+		const deUint32						queueCount				= queueFamilyProperty.second.queueCount;
+
+		const QueueCreationInfo				queueConfig				= { queueFamilyIndex, (VkDeviceQueueCreateFlags)0u, queueCount };
+
+		queueConfigurations.push_back(queueConfig);
+	}
+
+	tcu::ResultCollector					results					(context.getTestContext().getLog());
+
+	// Execute test to see if it possible to have all queue families created at the same time.
+	bool									success					= runQueueCreationTestCombination(context, results, queueConfigurations, dumpExtraInfo);
+
+	if (success)
+		return tcu::TestStatus::pass("All Queues were queried correctly.");
+
+	return tcu::TestStatus(results.getResult(), results.getMessage());
+}
+
+tcu::TestStatus createDeviceQueue2WithAllFamiliesProtected (Context& context)
+{
+	const bool								dumpExtraInfo			= true;
+
+	const InstanceInterface&				instanceDriver			= context.getInstanceInterface();
+	const VkPhysicalDevice					physicalDevice			= context.getPhysicalDevice();
+
+	// Get all queue families
+	map<deUint32, VkQueueFamilyProperties>	queueFamilyProperties	= findQueueFamiliesWithCaps(instanceDriver, physicalDevice, (VkDeviceQueueCreateFlags)0u);
+
+	// Create test configuration where for each queue family the maximum number of queues are created.
+	// If a queue supports protected memory then create a protected-capable queue.
+	vector<QueueCreationInfo>				queueConfigurations;
+	for (const pair<deUint32, VkQueueFamilyProperties> queueFamilyProperty : queueFamilyProperties)
+	{
+		const deUint32						queueFamilyIndex		= queueFamilyProperty.first;
+		const deUint32						queueCount				= queueFamilyProperty.second.queueCount;
+
+		VkDeviceQueueCreateFlags			useFlags				= (VkDeviceQueueCreateFlags)0u;
+		if ((queueFamilyProperty.second.queueFlags & VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT) == VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT)
+			useFlags |= VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT;
+
+		const QueueCreationInfo				queueConfig				= { queueFamilyIndex, useFlags, queueCount };
+
+		queueConfigurations.push_back(queueConfig);
+	}
+
+	tcu::ResultCollector					results					(context.getTestContext().getLog());
+
+	// Execute test to see if it possible to have all queue families created at the same time.
+	bool									success					= runQueueCreationTestCombination(context, results, queueConfigurations, dumpExtraInfo);
+
+	if (success)
+		return tcu::TestStatus::pass("All Queues were queried correctly.");
+
+	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
 // Allocation tracking utilities
@@ -2087,8 +2530,18 @@ tcu::TestCaseGroup* createDeviceInitializationTests (tcu::TestContext& testCtx)
 	addFunctionCase(deviceInitializationTests.get(), "create_device_features2",							"", createDeviceFeatures2Test);
 	addFunctionCase(deviceInitializationTests.get(), "create_device_unsupported_features",				"", createDeviceWithUnsupportedFeaturesTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_device_queue2",							"", createDeviceQueue2Test);
-	addFunctionCase(deviceInitializationTests.get(), "create_device_queue2_unmatched_flags",			"", createDeviceQueue2UnmatchedFlagsTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_instance_device_intentional_alloc_fail",	"", createInstanceDeviceIntentionalAllocFail);
+
+	// Tests using a single Queue Family when creating a device.
+	addFunctionCase(deviceInitializationTests.get(), "create_device_queue2_two_queues",					"", checkProtectedMemorySupport, createDeviceQueue2WithTwoQueuesSmokeTest);
+	addFunctionCase(deviceInitializationTests.get(), "create_device_queue2_all_protected",				"", checkProtectedMemorySupport, createDeviceQueue2WithAllProtectedQueues);
+	addFunctionCase(deviceInitializationTests.get(), "create_device_queue2_all_unprotected",			"", checkProtectedMemorySupport, createDeviceQueue2WithAllUnprotectedQueues);
+	addFunctionCase(deviceInitializationTests.get(), "create_device_queue2_split",						"", checkProtectedMemorySupport, createDeviceQueue2WithNProtectedAndMUnprotectedQueues);
+
+	// Tests using multiple Queue Families when creating a device.
+	addFunctionCase(deviceInitializationTests.get(), "create_device_queue2_all_families",				"", checkProtectedMemorySupport, createDeviceQueue2WithAllFamilies);
+	addFunctionCase(deviceInitializationTests.get(), "create_device_queue2_all_families_protected",		"", checkProtectedMemorySupport, createDeviceQueue2WithAllFamiliesProtected);
+	addFunctionCase(deviceInitializationTests.get(), "create_device_queue2_all_combinations",			"", checkProtectedMemorySupport, createDeviceQueue2WithMultipleQueueCombinations);
 
 	return deviceInitializationTests.release();
 }

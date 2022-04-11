@@ -1,0 +1,9 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT":
+		[
+			{ "features": ["globalPriorityQuery"],	"requirements": ["VK_EXT_global_priority_query"] }
+		]
+	}
+}

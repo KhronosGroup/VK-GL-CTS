@@ -284,7 +284,7 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 	vk.cmdBindPipeline(targetCmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
 	vk.cmdBindDescriptorSets(targetCmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 
-	de::SharedPtr<Draw::Buffer> conditionalBuffer = createConditionalRenderingBuffer(m_context, m_conditionalData, *cmdPool);
+	de::SharedPtr<Draw::Buffer> conditionalBuffer = createConditionalRenderingBuffer(m_context, m_conditionalData);
 
 	if (m_conditionalData.conditionInSecondaryCommandBuffer)
 	{
@@ -389,6 +389,14 @@ void ConditionalDispatchTests::init (void)
 		addChild(conditionalDrawRootGroup.release());
 	}
 
+	enum class ConditionLocation
+	{
+		PRIMARY_FLAT = 0,
+		PRIMARY_WITH_SECONDARY,
+		SECONDARY_NORMAL,
+		SECONDARY_INHERITED,
+	};
+
 	// Tests verifying the condition is interpreted as a 32-bit value.
 	{
 		de::MovePtr<tcu::TestCaseGroup> conditionSizeGroup(new tcu::TestCaseGroup(m_testCtx, "condition_size", "Tests verifying the condition is being read as a 32-bit value"));
@@ -410,58 +418,50 @@ void ConditionalDispatchTests::init (void)
 			{	0u,				true,	false,	"padded_zero"	},
 		};
 
-		enum class ConditionSizeSubcaseType
+		struct ConditionLocationSubcase
 		{
-			PRIMARY_FLAT = 0,
-			PRIMARY_WITH_SECONDARY,
-			SECONDARY_NORMAL,
-			SECONDARY_INHERITED,
+			ConditionLocation	location;
+			const char*			name;
 		};
 
-		struct ConditionSizeSubcase
+		const ConditionLocationSubcase kConditionLocationSubcase[] =
 		{
-			ConditionSizeSubcaseType	type;
-			const char*					name;
+			{ ConditionLocation::PRIMARY_FLAT,				"primary"				},
+			{ ConditionLocation::PRIMARY_WITH_SECONDARY,	"inherited"				},
+			{ ConditionLocation::SECONDARY_NORMAL,			"secondary"				},
+			{ ConditionLocation::SECONDARY_INHERITED,		"secondary_inherited"	},
 		};
 
-		const ConditionSizeSubcase kConditionSizeSubcase[] =
+		for (int subcaseNdx = 0; subcaseNdx < DE_LENGTH_OF_ARRAY(kConditionLocationSubcase); ++subcaseNdx)
 		{
-			{ ConditionSizeSubcaseType::PRIMARY_FLAT,				"primary"				},
-			{ ConditionSizeSubcaseType::PRIMARY_WITH_SECONDARY,		"inherited"				},
-			{ ConditionSizeSubcaseType::SECONDARY_NORMAL,			"secondary"				},
-			{ ConditionSizeSubcaseType::SECONDARY_INHERITED,		"secondary_inherited"	},
-		};
-
-		for (int subcaseNdx = 0; subcaseNdx < DE_LENGTH_OF_ARRAY(kConditionSizeSubcase); ++subcaseNdx)
-		{
-			const auto& subcase = kConditionSizeSubcase[subcaseNdx];
+			const auto& subcase = kConditionLocationSubcase[subcaseNdx];
 
 			de::MovePtr<tcu::TestCaseGroup> subcaseGroup(new tcu::TestCaseGroup(m_testCtx, subcase.name, ""));
 
 			ConditionalData conditionalData		= {};
 			conditionalData.conditionInverted	= false;
 
-			switch (subcase.type)
+			switch (subcase.location)
 			{
-				case ConditionSizeSubcaseType::PRIMARY_FLAT:
+				case ConditionLocation::PRIMARY_FLAT:
 					conditionalData.conditionInPrimaryCommandBuffer		= true;
 					conditionalData.conditionInSecondaryCommandBuffer	= false;
 					conditionalData.conditionInherited					= false;
 					break;
 
-				case ConditionSizeSubcaseType::PRIMARY_WITH_SECONDARY:
+				case ConditionLocation::PRIMARY_WITH_SECONDARY:
 					conditionalData.conditionInPrimaryCommandBuffer		= true;
 					conditionalData.conditionInSecondaryCommandBuffer	= false;
 					conditionalData.conditionInherited					= true;
 					break;
 
-				case ConditionSizeSubcaseType::SECONDARY_NORMAL:
+				case ConditionLocation::SECONDARY_NORMAL:
 					conditionalData.conditionInPrimaryCommandBuffer		= false;
 					conditionalData.conditionInSecondaryCommandBuffer	= true;
 					conditionalData.conditionInherited					= false;
 					break;
 
-				case ConditionSizeSubcaseType::SECONDARY_INHERITED:
+				case ConditionLocation::SECONDARY_INHERITED:
 					conditionalData.conditionInPrimaryCommandBuffer		= false;
 					conditionalData.conditionInSecondaryCommandBuffer	= true;
 					conditionalData.conditionInherited					= true;
@@ -492,6 +492,118 @@ void ConditionalDispatchTests::init (void)
 		}
 
 		addChild(conditionSizeGroup.release());
+	}
+
+	// Tests checking the buffer allocation offset is applied correctly when reading the condition.
+	{
+		de::MovePtr<tcu::TestCaseGroup> allocOffsetGroup(new tcu::TestCaseGroup(m_testCtx, "alloc_offset", "Tests verifying the buffer allocation offset is applied correctly"));
+
+		const struct
+		{
+			ConditionLocation	location;
+			const char*			name;
+		} kLocationCases[] =
+		{
+			{ ConditionLocation::PRIMARY_FLAT,				"primary"				},
+			{ ConditionLocation::PRIMARY_WITH_SECONDARY,	"inherited"				},
+			{ ConditionLocation::SECONDARY_NORMAL,			"secondary"				},
+			{ ConditionLocation::SECONDARY_INHERITED,		"secondary_inherited"	},
+		};
+
+		const struct
+		{
+			bool		active;
+			const char*	name;
+		} kActiveCases[] =
+		{
+			{ false,	"zero"		},
+			{ true,		"nonzero"	},
+		};
+
+		const struct
+		{
+			ConditionalBufferMemory		memoryType;
+			const char*					name;
+		} kMemoryTypeCases[] =
+		{
+			{ LOCAL,	"device_local"	},
+			{ HOST,		"host_visible"	},
+		};
+
+		for (const auto& locationCase : kLocationCases)
+		{
+			de::MovePtr<tcu::TestCaseGroup> locationSubGroup(new tcu::TestCaseGroup(m_testCtx, locationCase.name, ""));
+
+			for (const auto& activeCase : kActiveCases)
+			{
+				de::MovePtr<tcu::TestCaseGroup> activeSubGroup(new tcu::TestCaseGroup(m_testCtx, activeCase.name, ""));
+
+				for (const auto& memoryTypeCase : kMemoryTypeCases)
+				{
+					ConditionalData conditionalData =
+					{
+						false,						//	bool					conditionInPrimaryCommandBuffer;
+						false,						//	bool					conditionInSecondaryCommandBuffer;
+						false,						//	bool					conditionInverted;
+						false,						//	bool					conditionInherited;
+						0u,							//	deUint32				conditionValue;
+						false,						//	bool					padConditionValue;
+						true,						//	bool					allocationOffset;
+						false,						//	bool					expectCommandExecution;
+						memoryTypeCase.memoryType,	//	ConditionalBufferMemory	memoryType;
+					};
+
+					switch (locationCase.location)
+					{
+						case ConditionLocation::PRIMARY_FLAT:
+							conditionalData.conditionInPrimaryCommandBuffer		= true;
+							conditionalData.conditionInSecondaryCommandBuffer	= false;
+							conditionalData.conditionInherited					= false;
+							break;
+
+						case ConditionLocation::PRIMARY_WITH_SECONDARY:
+							conditionalData.conditionInPrimaryCommandBuffer		= true;
+							conditionalData.conditionInSecondaryCommandBuffer	= false;
+							conditionalData.conditionInherited					= true;
+							break;
+
+						case ConditionLocation::SECONDARY_NORMAL:
+							conditionalData.conditionInPrimaryCommandBuffer		= false;
+							conditionalData.conditionInSecondaryCommandBuffer	= true;
+							conditionalData.conditionInherited					= false;
+							break;
+
+						case ConditionLocation::SECONDARY_INHERITED:
+							conditionalData.conditionInPrimaryCommandBuffer		= false;
+							conditionalData.conditionInSecondaryCommandBuffer	= true;
+							conditionalData.conditionInherited					= true;
+							break;
+
+						default:
+							DE_ASSERT(false);
+							break;
+					}
+
+					conditionalData.conditionValue			= (activeCase.active ? 1u : 0u);
+					conditionalData.expectCommandExecution	= activeCase.active;
+
+					const ConditionalTestSpec spec =
+					{
+						DISPATCH_COMMAND_TYPE_DISPATCH,	//	DispatchCommandType	command;
+						1,								//	int					numCalls;
+						conditionalData,				//	ConditionalData		conditionalData;
+					};
+
+					activeSubGroup->addChild(new ConditionalDispatchTest(m_testCtx, memoryTypeCase.name, "", spec));
+				}
+
+				locationSubGroup->addChild(activeSubGroup.release());
+			}
+
+			allocOffsetGroup->addChild(locationSubGroup.release());
+		}
+
+		addChild(allocOffsetGroup.release());
 	}
 }
 

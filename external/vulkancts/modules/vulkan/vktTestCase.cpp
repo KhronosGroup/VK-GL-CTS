@@ -83,6 +83,7 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 		"VK_NV_scissor_exclusive",
 		"VK_NV_shading_rate_image",
 		"VK_ARM_rasterization_order_attachment_access",
+		"VK_GOOGLE_surfaceless_query",
 	};
 
 	for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)

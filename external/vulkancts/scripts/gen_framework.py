@@ -24,6 +24,8 @@ import os
 import re
 import sys
 import copy
+import glob
+import json
 from itertools import chain
 from collections import OrderedDict
 
@@ -400,16 +402,17 @@ class Extension:
 		return 'EXT:\n%s ->\nENUMS:\n%s\nCOMPOS:\n%s\nFUNCS:\n%s\nBITF:\n%s\nHAND:\n%s\nDEFS:\n%s\n' % (self.name, self.enums, self.compositeTypes, self.functions, self.bitfields, self.handles, self.definitions, self.versionInCore)
 
 class API:
-	def __init__ (self, versions, definitions, handles, enums, bitfields, bitfields64, compositeTypes, functions, extensions):
-		self.versions		= versions
-		self.definitions	= definitions
-		self.handles		= handles
-		self.enums			= enums
-		self.bitfields		= bitfields
-		self.bitfields64	= bitfields64
-		self.compositeTypes	= compositeTypes
-		self.functions		= functions # \note contains extension functions as well
-		self.extensions		= extensions
+	def __init__ (self, versions, definitions, handles, enums, bitfields, bitfields64, compositeTypes, functions, extensions, additionalExtensionData):
+		self.versions					= versions
+		self.definitions				= definitions
+		self.handles					= handles
+		self.enums						= enums
+		self.bitfields					= bitfields
+		self.bitfields64				= bitfields64
+		self.compositeTypes				= compositeTypes
+		self.functions					= functions					# \note contains extension functions as well
+		self.extensions					= extensions
+		self.additionalExtensionData	= additionalExtensionData	# \note contains mandatory features and information about promotion
 
 def readFile (filename):
 	with open(filename, 'rt') as f:
@@ -665,23 +668,20 @@ def parseTypedefs (src):
 
 	return [Definition(None, match[0], match[1]) for match in matches]
 
-def parseExtensions (src, versions, allFunctions, allCompositeTypes, allEnums, allBitfields, allHandles, allDefinitions):
+def parseExtensions (src, versions, allFunctions, allCompositeTypes, allEnums, allBitfields, allHandles, allDefinitions, additionalExtensionData):
 
-	def getExtensionDataDict():
-		ptrn = r'(VK_\S+)\s+(DEVICE|INSTANCE)\s+([0-9_]*)?'
-		extensionsDataFile	= readFile(os.path.join(VULKAN_SRC_DIR, "extensions_data.txt"))
-		extensionList		= re.findall(ptrn, extensionsDataFile)
-		extensionDict = {}
-		# dictionary value is list containing DEVICE or INSTANCE string followed
-		# by optional vulkan version in which this extension is core
-		for item in extensionList:
-			versionList = []
-			if len(item[2]):
-				versionList = [int(number) for number in item[2].split('_')[:3]]
-			extensionDict[item[0]] = [item[1]] + versionList
-		return extensionDict
+	# note promotedExtensionDict is also executed for vulkan 1.0 source for which extension name is None
+	promotedExtensionDict = {None: None}
+	for extensionName, data in additionalExtensionData:
+		# make sure that this extension was registered
+		if 'register_extension' not in data.keys():
+			continue
+		match = re.match("(\d).(\d).(\d)", data['register_extension']['core'])
+		if match == None:
+			continue
+		# save array containing 'device' or 'instance' string followed by the vulkan version in which this extension is core
+		promotedExtensionDict[extensionName] = [data['register_extension']['type'], int(match.group(1)), int(match.group(2)), int(match.group(3))]
 
-	extensionsDataDict		= getExtensionDataDict()
 	splitSrc				= splitByExtension(src)
 	extensions				= []
 	functionsByName			= {function.name: function for function in allFunctions}
@@ -705,7 +705,7 @@ def parseExtensions (src, versions, allFunctions, allCompositeTypes, allEnums, a
 		enumBitfieldNames	= [getBitEnumNameForBitfield(name) for name in bitfieldNames]
 		enums				= [enum for enum in rawEnums if enum.name not in enumBitfieldNames]
 
-		extCoreVersion		= None
+		extCoreVersion		= promotedExtensionDict.get(extensionName, None)
 		extFunctions		= [functionsByName[function.name] for function in functions]
 		extCompositeTypes	= [compositeTypesByName[compositeType.name] for compositeType in compositeTypes]
 		extEnums			= [enumsByName[enum.name] for enum in enums]
@@ -713,16 +713,12 @@ def parseExtensions (src, versions, allFunctions, allCompositeTypes, allEnums, a
 		extHandles			= [handlesByName[handle.name] for handle in handles]
 		extDefinitions		= [definitionsByName[definition.name] for definition in definitions]
 
-		extData = extensionsDataDict.get(extensionName)
-		if extData != None:
+		if extCoreVersion != None:
 			populateExtensionAliases(functionsByName, extFunctions)
 			populateExtensionAliases(handlesByName, extHandles)
 			populateExtensionAliases(enumsByName, extEnums)
 			populateExtensionAliases(bitfieldsByName, extBitfields)
 			populateExtensionAliases(compositeTypesByName, extCompositeTypes)
-			if len(extData) > 1:
-				extCoreVersion = extData
-
 		extensions.append(Extension(extensionName, extHandles, extEnums, extBitfields, extCompositeTypes, extFunctions, extDefinitions, additionalDefinitions, typedefs, extCoreVersion))
 	return extensions
 
@@ -754,16 +750,28 @@ def parseAPI (src):
 	definitions		= [Definition("uint32_t", v.getInHex(), parsePreprocDefinedValue(src, v.getInHex())) for v in versions] +\
 					  [Definition(type, name, parsePreprocDefinedValue(src, name)) for name, type in DEFINITIONS]
 
-	handles				= parseHandles(src)
-	rawEnums			= parseEnums(src)
-	bitfieldNames		= parse32bitBitfieldNames(src)
-	bitfieldEnums		= set([getBitEnumNameForBitfield(n) for n in bitfieldNames if getBitEnumNameForBitfield(n) in [enum.name for enum in rawEnums]])
-	bitfield64Names		= parse64bitBitfieldNames(src)
-	bitfields64			= parse64bitBitfieldValues(src, bitfield64Names)
-	enums				= []
-	bitfields			= []
-	compositeTypes		= parseCompositeTypesByVersion(src, versionsData)
-	allFunctions		= parseFunctionsByVersion(src, versionsData)
+	handles						= parseHandles(src)
+	rawEnums					= parseEnums(src)
+	bitfieldNames				= parse32bitBitfieldNames(src)
+	bitfieldEnums				= set([getBitEnumNameForBitfield(n) for n in bitfieldNames if getBitEnumNameForBitfield(n) in [enum.name for enum in rawEnums]])
+	bitfield64Names				= parse64bitBitfieldNames(src)
+	bitfields64					= parse64bitBitfieldValues(src, bitfield64Names)
+	enums						= []
+	bitfields					= []
+	compositeTypes				= parseCompositeTypesByVersion(src, versionsData)
+	allFunctions				= parseFunctionsByVersion(src, versionsData)
+	additionalExtensionData		= {}
+
+	# read all files from extensions directory
+	for fileName in glob.glob(os.path.join(VULKAN_SRC_DIR, "extensions", "*.json")):
+		extensionName	= os.path.basename(fileName)[:-5]
+		fileContent		= readFile(fileName)
+		try:
+			additionalExtensionData[extensionName] = json.loads(fileContent)
+		except ValueError as err:
+			print("Error in %s: %s" % (os.path.basename(fileName), str(err)))
+			sys.exit(-1)
+	additionalExtensionData = sorted(additionalExtensionData.items(), key=lambda e: e[0])
 
 	for enum in rawEnums:
 		if enum.name in bitfieldEnums:
@@ -776,7 +784,7 @@ def parseAPI (src):
 			# Add empty bitfield
 			bitfields.append(Bitfield(bitfieldName, []))
 
-	extensions = parseExtensions(src, versions, allFunctions, compositeTypes, enums, bitfields, handles, definitions)
+	extensions = parseExtensions(src, versions, allFunctions, compositeTypes, enums, bitfields, handles, definitions, additionalExtensionData)
 
 	# Populate alias fields
 	populateAliasesWithTypedefs(compositeTypes, src)
@@ -799,16 +807,18 @@ def parseAPI (src):
 			handle.alias = None
 		if handle.name == 'VkAccelerationStructureNV':
 			handle.isAlias = False
+
 	return API(
-		versions		= versions,
-		definitions		= definitions,
-		handles			= handles,
-		enums			= enums,
-		bitfields		= bitfields,
-		bitfields64		= bitfields64,
-		compositeTypes	= compositeTypes,
-		functions		= allFunctions,
-		extensions		= extensions)
+		versions				= versions,
+		definitions				= definitions,
+		handles					= handles,
+		enums					= enums,
+		bitfields				= bitfields,
+		bitfields64				= bitfields64,
+		compositeTypes			= compositeTypes,
+		functions				= allFunctions,
+		extensions				= extensions,
+		additionalExtensionData	= additionalExtensionData)
 
 def splitUniqueAndDuplicatedEntries (handles):
 	listOfUniqueHandles = []
@@ -1613,7 +1623,7 @@ def writeSupportedExtenions(api, filename):
 
 	for ext in api.extensions:
 		if ext.versionInCore != None:
-			if ext.versionInCore[0] == 'INSTANCE':
+			if ext.versionInCore[0] == 'instance':
 				list = instanceMap.get(Version(ext.versionInCore[1:]))
 				instanceMap[Version(ext.versionInCore[1:])] = list + [ext] if list else [ext]
 			else:
@@ -2409,29 +2419,30 @@ def writeDevicePropertiesContextDefs(dfDefs, filename):
 	pattern = "const vk::{0}&\tContext::get{1}\t(void) const {{ return m_device->get{1}();\t}}"
 	genericDevicePropertiesWriter(dfDefs, pattern, filename)
 
-def splitWithQuotation(line):
-	result = []
-	splitted = re.findall(r'[^"\s]\S*|".+?"', line)
-	for s in splitted:
-		result.append(s.replace('"', ''))
-	return result
-
-def writeMandatoryFeatures(filename):
+def writeMandatoryFeatures(api, filename):
 	stream = []
-	pattern = r'\s*([\w]+)\s+FEATURES\s+\((.*)\)\s+REQUIREMENTS\s+\((.*)\)'
-	mandatoryFeatures = readFile(os.path.join(VULKAN_SRC_DIR, "mandatory_features.txt"))
-	matches = re.findall(pattern, mandatoryFeatures)
+
 	dictStructs = {}
 	dictData = []
-	for m in matches:
-		allRequirements = splitWithQuotation(m[2])
-		dictData.append( [ m[0], m[1].strip(), allRequirements ] )
-		if m[0] != 'VkPhysicalDeviceFeatures' :
-			if (m[0] not in dictStructs):
-				dictStructs[m[0]] = [m[0][2:3].lower() + m[0][3:]]
-			if (allRequirements[0]):
-				if (allRequirements[0] not in dictStructs[m[0]][1:]):
-					dictStructs[m[0]].append(allRequirements[0])
+	for _, data in api.additionalExtensionData:
+		if 'mandatory_features' not in data.keys():
+			continue
+		# sort to have same results for py2 and py3
+		listStructFeatures = sorted(data['mandatory_features'].items(), key=lambda tup: tup[0])
+		for structure, featuresList in listStructFeatures:
+			for featureData in featuresList:
+				assert('features' in featureData.keys())
+				assert('requirements' in featureData.keys())
+				requirements = featureData['requirements']
+				dictData.append( [ structure, featureData['features'], requirements ])
+				if structure == 'VkPhysicalDeviceFeatures':
+					continue
+				# if structure is not in dict construct name of variable and add is as a first item
+				if (structure not in dictStructs):
+					dictStructs[structure] = [structure[2:3].lower() + structure[3:]]
+				# add first requirement if it is unique
+				if requirements and (requirements[0] not in dictStructs[structure]):
+					dictStructs[structure].append(requirements[0])
 
 	stream.extend(['bool checkMandatoryFeatures(const vkt::Context& context)\n{',
 				   '\tif (!context.isInstanceFunctionalitySupported("VK_KHR_get_physical_device_properties2"))',
@@ -2499,17 +2510,17 @@ def writeMandatoryFeatures(filename):
 			stream.append('\t' + condition)
 		stream.append('\t{')
 		# Don't need to support an AND case since that would just be another line in the .txt
-		if len(v[1].split(" ")) == 1:
-			stream.append('\t\tif ( ' + structName + '.' + v[1] + ' == VK_FALSE )')
+		if len(v[1]) == 1:
+			stream.append('\t\tif ( ' + structName + '.' + v[1][0] + ' == VK_FALSE )')
 		else:
 			condition = 'if ( '
-			for i, feature in enumerate(v[1].split(" ")):
+			for i, feature in enumerate(v[1]):
 				if i != 0:
 					condition = condition + ' && '
 				condition = condition + '( ' + structName + '.' + feature + ' == VK_FALSE )'
 			condition = condition + ' )'
 			stream.append('\t\t' + condition)
-		featureSet = v[1].replace(" ", " or ")
+		featureSet = " or ".join(v[1])
 		stream.extend(['\t\t{',
 					   '\t\t\tlog << tcu::TestLog::Message << "Mandatory feature ' + featureSet + ' not supported" << tcu::TestLog::EndMessage;',
 					   '\t\t\tresult = false;',
@@ -2520,14 +2531,24 @@ def writeMandatoryFeatures(filename):
 	stream.append('}\n')
 	writeInlFile(filename, INL_HEADER, stream)
 
-def writeExtensionList(filename, patternPart):
+def writeExtensionList(api, filename, extensionType):
+	extensionList = []
+	for extensionName, data in api.additionalExtensionData:
+		# make sure extension name starts with VK_KHR
+		if not extensionName.startswith('VK_KHR'):
+			continue
+		# make sure that this extension was registered
+		if 'register_extension' not in data.keys():
+			continue
+		# make sure extension has proper type
+		if extensionType == data['register_extension']['type']:
+			extensionList.append(extensionName)
+	extensionList.sort()
+	# write list of all found extensions
 	stream = []
-	stream.append('static const char* s_allowed{0}KhrExtensions[] =\n{{'.format(patternPart.title()))
-	extensionsData = readFile(os.path.join(VULKAN_SRC_DIR, "extensions_data.txt"))
-	pattern = r'\s*([^\s]+)\s+{0}\s*[0-9_]*'.format(patternPart)
-	matches	= re.findall(pattern, extensionsData)
-	for m in matches:
-		stream.append('\t"' + m + '",')
+	stream.append('static const char* s_allowed{0}KhrExtensions[] =\n{{'.format(extensionType.title()))
+	for n in extensionList:
+		stream.append('\t"' + n + '",')
 	stream.append('};\n')
 	writeInlFile(filename, INL_HEADER, stream)
 
@@ -2656,9 +2677,9 @@ if __name__ == "__main__":
 	writeCoreFunctionalities				(api, os.path.join(outputPath, "vkCoreFunctionalities.inl"))
 	writeExtensionFunctions					(api, os.path.join(outputPath, "vkExtensionFunctions.inl"))
 	writeDeviceFeatures2					(api, os.path.join(outputPath, "vkDeviceFeatures2.inl"))
-	writeMandatoryFeatures					(     os.path.join(outputPath, "vkMandatoryFeatures.inl"))
-	writeExtensionList						(     os.path.join(outputPath, "vkInstanceExtensions.inl"),				'INSTANCE')
-	writeExtensionList						(     os.path.join(outputPath, "vkDeviceExtensions.inl"),				'DEVICE')
+	writeMandatoryFeatures					(api, os.path.join(outputPath, "vkMandatoryFeatures.inl"))
+	writeExtensionList						(api, os.path.join(outputPath, "vkInstanceExtensions.inl"),				'instance')
+	writeExtensionList						(api, os.path.join(outputPath, "vkDeviceExtensions.inl"),				'device')
 	writeDriverIds							(     os.path.join(outputPath, "vkKnownDriverIds.inl"))
 	writeObjTypeImpl						(api, os.path.join(outputPath, "vkObjTypeImpl.inl"))
 	# NOTE: when new files are generated then they should also be added to the
