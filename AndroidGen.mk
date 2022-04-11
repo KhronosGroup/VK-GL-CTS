@@ -497,6 +497,8 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsTests.cpp \
 	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsTestsUtils.cpp \
 	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsVoteTests.cpp \
+	external/vulkancts/modules/vulkan/synchronization/vktGlobalPriorityQueueTests.cpp \
+	external/vulkancts/modules/vulkan/synchronization/vktGlobalPriorityQueueUtils.cpp \
 	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationBasicEventTests.cpp \
 	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationBasicFenceTests.cpp \
 	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationBasicSemaphoreTests.cpp \
