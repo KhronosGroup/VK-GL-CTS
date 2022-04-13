@@ -2068,7 +2068,7 @@ public class DeqpTestRunnerTest extends TestCase {
         EasyMock.expectLastCall().andReturn(true).once();
 
         String command = String.format(
-                "am instrument %s -w -e deqpLogFileName \"%s\" -e deqpCmdLine \"%s\" "
+                "am instrument %s -w -e deqpLogFilename \"%s\" -e deqpCmdLine \"%s\" "
                     + "-e deqpLogData \"%s\" %s",
                 AbiUtils.createAbiFlag(ABI.getName()), LOG_FILE_NAME, cmd, false,
                 INSTRUMENTATION_NAME);
