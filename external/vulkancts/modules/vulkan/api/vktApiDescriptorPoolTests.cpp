@@ -293,6 +293,58 @@ tcu::TestStatus outOfPoolMemoryTest (Context& context)
 		return tcu::TestStatus::pass("Pass");
 }
 
+tcu::TestStatus zeroPoolSizeCount(Context& context)
+{
+	const DeviceInterface&	vkd = context.getDeviceInterface();
+	const VkDevice			device = context.getDevice();
+
+	const VkDescriptorPoolCreateInfo			descriptorPoolCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,				// VkStructureType                sType;
+		DE_NULL,													// const void*                    pNext;
+		(VkDescriptorPoolCreateFlags)0,								// VkDescriptorPoolCreateFlags    flags;
+		1u,															// uint32_t                       maxSets;
+		0u,															// uint32_t                       poolSizeCount;
+		DE_NULL,													// const VkDescriptorPoolSize*    pPoolSizes;
+	};
+
+	// Test a pool can be created for empty descriptor sets.
+	const Unique<VkDescriptorPool>				descriptorPool(createDescriptorPool(vkd, device, &descriptorPoolCreateInfo));
+
+	const VkDescriptorSetLayoutCreateInfo		descriptorSetLayoutInfo =
+	{
+		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,		// VkStructureType                        sType;
+		DE_NULL,													// const void*                            pNext;
+		(VkDescriptorSetLayoutCreateFlags)0,						// VkDescriptorSetLayoutCreateFlags       flags;
+		0u,															// uint32_t                               bindingCount;
+		DE_NULL,													// const VkDescriptorSetLayoutBinding*    pBindings;
+	};
+
+	const Unique<VkDescriptorSetLayout>			descriptorSetLayout(createDescriptorSetLayout(vkd, device, &descriptorSetLayoutInfo));
+
+	const VkDescriptorSetAllocateInfo			descriptorSetAllocateInfo =
+	{
+		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,				// VkStructureType                 sType;
+		DE_NULL,													// const void*                     pNext;
+		*descriptorPool,											// VkDescriptorPool                descriptorPool;
+		1u,															// uint32_t                        descriptorSetCount;
+		&descriptorSetLayout.get(),									// const VkDescriptorSetLayout*    pSetLayouts;
+	};
+
+	// Create an empty descriptor set from the pool.
+	VkDescriptorSet descriptorSet;
+	VkResult result = vkd.allocateDescriptorSets(device, &descriptorSetAllocateInfo, &descriptorSet);
+	if (result != VK_SUCCESS)
+		return tcu::TestStatus::fail("Expected vkAllocateDescriptorSets to return VK_SUCCESS but got " + string(getResultName(result)) + " instead");
+
+	// Free the empty descriptor set back to the pool.
+	result = vkd.freeDescriptorSets(device, *descriptorPool, 1, &descriptorSet);
+	if (result != VK_SUCCESS)
+		return tcu::TestStatus::fail("Expected vkFreeDescriptorSets to return VK_SUCCESS but got " + string(getResultName(result)) + " instead");
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createDescriptorPoolTests (tcu::TestContext& testCtx)
@@ -326,6 +378,10 @@ tcu::TestCaseGroup* createDescriptorPoolTests (tcu::TestContext& testCtx)
 					"out_of_pool_memory",
 					"Test that when we run out of descriptors a correct error code is returned",
 					outOfPoolMemoryTest);
+	addFunctionCase(descriptorPoolTests.get(),
+					"zero_pool_size_count",
+					"Test a descriptor pool object can be created with zero pools without error or crash",
+					zeroPoolSizeCount);
 
 	return descriptorPoolTests.release();
 }
