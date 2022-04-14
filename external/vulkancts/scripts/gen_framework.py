@@ -670,17 +670,19 @@ def parseTypedefs (src):
 
 def parseExtensions (src, versions, allFunctions, allCompositeTypes, allEnums, allBitfields, allHandles, allDefinitions, additionalExtensionData):
 
-	# note promotedExtensionDict is also executed for vulkan 1.0 source for which extension name is None
-	promotedExtensionDict = {None: None}
+	# note registeredExtensionDict is also executed for vulkan 1.0 source for which extension name is None
+	registeredExtensionDict = {None: None}
 	for extensionName, data in additionalExtensionData:
 		# make sure that this extension was registered
 		if 'register_extension' not in data.keys():
 			continue
+		# save array containing 'device' or 'instance' string followed by the optional vulkan version in which this extension is core;
+		# note that register_extension section is also required for partialy promoted extensions like VK_EXT_extended_dynamic_state2
+		# but those extensions should not fill 'core' tag
+		registeredExtensionDict[extensionName] = [ data['register_extension']['type'] ]
 		match = re.match("(\d).(\d).(\d)", data['register_extension']['core'])
-		if match == None:
-			continue
-		# save array containing 'device' or 'instance' string followed by the vulkan version in which this extension is core
-		promotedExtensionDict[extensionName] = [data['register_extension']['type'], int(match.group(1)), int(match.group(2)), int(match.group(3))]
+		if match != None:
+			registeredExtensionDict[extensionName].extend( [ int(match.group(1)), int(match.group(2)), int(match.group(3)) ] )
 
 	splitSrc				= splitByExtension(src)
 	extensions				= []
@@ -705,7 +707,8 @@ def parseExtensions (src, versions, allFunctions, allCompositeTypes, allEnums, a
 		enumBitfieldNames	= [getBitEnumNameForBitfield(name) for name in bitfieldNames]
 		enums				= [enum for enum in rawEnums if enum.name not in enumBitfieldNames]
 
-		extCoreVersion		= promotedExtensionDict.get(extensionName, None)
+		extCoreVersion		= None
+		extData				= registeredExtensionDict.get(extensionName, None)
 		extFunctions		= [functionsByName[function.name] for function in functions]
 		extCompositeTypes	= [compositeTypesByName[compositeType.name] for compositeType in compositeTypes]
 		extEnums			= [enumsByName[enum.name] for enum in enums]
@@ -713,12 +716,15 @@ def parseExtensions (src, versions, allFunctions, allCompositeTypes, allEnums, a
 		extHandles			= [handlesByName[handle.name] for handle in handles]
 		extDefinitions		= [definitionsByName[definition.name] for definition in definitions]
 
-		if extCoreVersion != None:
+		if extData != None:
 			populateExtensionAliases(functionsByName, extFunctions)
 			populateExtensionAliases(handlesByName, extHandles)
 			populateExtensionAliases(enumsByName, extEnums)
 			populateExtensionAliases(bitfieldsByName, extBitfields)
 			populateExtensionAliases(compositeTypesByName, extCompositeTypes)
+			if len(extData) > 1:
+				extCoreVersion = extData
+
 		extensions.append(Extension(extensionName, extHandles, extEnums, extBitfields, extCompositeTypes, extFunctions, extDefinitions, additionalDefinitions, typedefs, extCoreVersion))
 	return extensions
 

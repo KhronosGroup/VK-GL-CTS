@@ -12349,32 +12349,45 @@ template <int Size>
 static tcu::Matrix<glw::GLdouble, Size - 1, Size - 1> eliminate(const tcu::Matrix<glw::GLdouble, Size, Size>& matrix,
 																glw::GLuint column, glw::GLuint row)
 {
+	// GCC sometimes diagnoses an incorrect out of bounds write here. The code has been verified to be correct.
+#if (DE_COMPILER == DE_COMPILER_GCC)
+#	pragma GCC diagnostic push
+#	pragma GCC diagnostic ignored "-Warray-bounds"
+#endif
+
+	const glw::GLint eCol = static_cast<glw::GLint>(column);
+	const glw::GLint eRow = static_cast<glw::GLint>(row);
+
 	tcu::Matrix<glw::GLdouble, Size - 1, Size - 1> result;
 
-	for (glw::GLuint c = 0; c < Size; ++c)
+	for (glw::GLint c = 0; c < Size; ++c)
 	{
 		/* Skip eliminated column */
-		if (column == c)
+		if (eCol == c)
 		{
 			continue;
 		}
 
-		for (glw::GLuint r = 0; r < Size; ++r)
+		for (glw::GLint r = 0; r < Size; ++r)
 		{
 			/* Skip eliminated row */
-			if (row == r)
+			if (eRow == r)
 			{
 				continue;
 			}
 
-			const glw::GLint r_offset = (r > row) ? -1 : 0;
-			const glw::GLint c_offset = (c > column) ? -1 : 0;
+			const glw::GLint r_offset = (r > eRow) ? -1 : 0;
+			const glw::GLint c_offset = (c > eCol) ? -1 : 0;
 
 			result(r + r_offset, c + c_offset) = matrix(r, c);
 		}
 	}
 
 	return result;
+
+#if (DE_COMPILER == DE_COMPILER_GCC)
+#	pragma GCC diagnostic pop
+#endif
 }
 
 template <int Size>

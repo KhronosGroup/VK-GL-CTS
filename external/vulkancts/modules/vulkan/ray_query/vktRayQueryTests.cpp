@@ -58,6 +58,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	group->addChild(createInsideAABBsTests(testCtx));
 	group->addChild(createBarycentricCoordinatesTests(testCtx));
 	group->addChild(createNonUniformArgsTests(testCtx));
+	group->addChild(addHelperInvocationsTests(testCtx));
 
 	return group.release();
 }

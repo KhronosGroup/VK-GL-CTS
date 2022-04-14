@@ -1543,6 +1543,33 @@ tcu::TestStatus validateLimitsExtLineRasterization (Context& context)
 		return tcu::TestStatus::fail("fail");
 }
 
+void checkSupportRobustness2 (Context& context)
+{
+	context.requireDeviceFunctionality("VK_EXT_robustness2");
+}
+
+tcu::TestStatus validateLimitsRobustness2 (Context& context)
+{
+	const InstanceInterface&						vki							= context.getInstanceInterface();
+	const VkPhysicalDevice							physicalDevice				= context.getPhysicalDevice();
+	const VkPhysicalDeviceRobustness2PropertiesEXT&	robustness2PropertiesEXT	= context.getRobustness2PropertiesEXT();
+	VkPhysicalDeviceRobustness2FeaturesEXT			robustness2Features			= initVulkanStructure();
+	VkPhysicalDeviceFeatures2						features2					= initVulkanStructure(&robustness2Features);
+
+	vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
+
+	if (robustness2Features.robustBufferAccess2 && !features2.features.robustBufferAccess)
+		return tcu::TestStatus::fail("If robustBufferAccess2 is enabled then robustBufferAccess must also be enabled");
+
+	if (robustness2PropertiesEXT.robustStorageBufferAccessSizeAlignment != 1 && robustness2PropertiesEXT.robustStorageBufferAccessSizeAlignment != 4)
+		return tcu::TestStatus::fail("robustness2PropertiesEXT.robustStorageBufferAccessSizeAlignment value must be either 1 or 4.");
+
+	if (!de::inRange(robustness2PropertiesEXT.robustUniformBufferAccessSizeAlignment, (VkDeviceSize)1u, (VkDeviceSize)256u) || !deIsPowerOfTwo64(robustness2PropertiesEXT.robustUniformBufferAccessSizeAlignment))
+		return tcu::TestStatus::fail("robustness2PropertiesEXT.robustUniformBufferAccessSizeAlignment must be a power of two in the range [1, 256]");
+
+	return tcu::TestStatus::pass("pass");
+}
+
 tcu::TestStatus validateLimitsMaxInlineUniformTotalSize (Context& context)
 {
 	const VkBool32								checkAlways			= VK_TRUE;
@@ -6636,6 +6663,7 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 		addFunctionCase(limitsValidationTests.get(), "nv_ray_tracing",					"VK_NV_ray_tracing limit validation",					checkSupportNvRayTracing,					validateLimitsNvRayTracing);
 		addFunctionCase(limitsValidationTests.get(), "timeline_semaphore",				"VK_KHR_timeline_semaphore limit validation",			checkSupportKhrTimelineSemaphore,			validateLimitsKhrTimelineSemaphore);
 		addFunctionCase(limitsValidationTests.get(), "ext_line_rasterization",			"VK_EXT_line_rasterization limit validation",			checkSupportExtLineRasterization,			validateLimitsExtLineRasterization);
+		addFunctionCase(limitsValidationTests.get(), "robustness2",						"VK_EXT_robustness2 limit validation",					checkSupportRobustness2,					validateLimitsRobustness2);
 
 		infoTests->addChild(limitsValidationTests.release());
 	}
