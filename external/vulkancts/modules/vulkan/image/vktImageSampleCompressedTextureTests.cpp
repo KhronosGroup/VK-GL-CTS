@@ -2,7 +2,7 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2021 Google LLC.
+ * Copyright (c) 2021-2022 Google LLC.
  *
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,6 +32,7 @@
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
 
+#include "tcuCompressedTexture.hpp"
 #include "tcuVectorType.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuImageCompare.hpp"
@@ -700,15 +701,20 @@ void SampleDrawnTextureTest::checkSupport(Context& context) const
 void SampleDrawnTextureTest::initPrograms (SourceCollections& programCollection) const
 {
 	// Pure red, green, and blue compressed with the BC1 and BC3 algorithms.
-	std::string			bc1_red		= "uvec4(4160813056u, 0u, 4160813056u, 0u);\n";
-	std::string			bc1_blue	= "uvec4(2031647, 0u, 2031647, 0u);\n";
-	std::string			bc3_red		= "uvec4(4294967295u, 4294967295u, 4160813056u, 0u);\n";
-	std::string			bc3_blue	= "uvec4(4294967295u, 4294967295u, 2031647, 0u);\n";
+	std::string					bc1_red				= "uvec4(4160813056u, 0u, 4160813056u, 0u);\n";
+	std::string					bc1_blue			= "uvec4(2031647, 0u, 2031647, 0u);\n";
+	std::string					bc3_red				= "uvec4(4294967295u, 4294967295u, 4160813056u, 0u);\n";
+	std::string					bc3_blue			= "uvec4(4294967295u, 4294967295u, 2031647, 0u);\n";
 
-	std::string			red			= (m_imageFormat == VK_FORMAT_BC1_RGB_UNORM_BLOCK) ? bc1_red : bc3_red;
-	std::string			blue		= (m_imageFormat == VK_FORMAT_BC1_RGB_UNORM_BLOCK) ? bc1_blue : bc3_blue;
+	std::string					red					= (m_imageFormat == VK_FORMAT_BC1_RGB_UNORM_BLOCK) ? bc1_red : bc3_red;
+	std::string					blue				= (m_imageFormat == VK_FORMAT_BC1_RGB_UNORM_BLOCK) ? bc1_blue : bc3_blue;
 
-	std::ostringstream	computeSrc;
+	tcu::CompressedTexFormat	compressedFormat	(mapVkCompressedFormat(m_imageFormat));
+	IVec3						blockSize			= tcu::getBlockPixelSize(compressedFormat);
+
+	DE_ASSERT(blockSize.z() == 1);
+
+	std::ostringstream			computeSrc;
 
 	// Generate the compute shader.
 	computeSrc << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n";
@@ -735,13 +741,13 @@ void SampleDrawnTextureTest::initPrograms (SourceCollections& programCollection)
 	}
 
 	computeSrc
-	<< "    for (int x = 0; x < " << WIDTH << "; x++)\n"
-	<< "        for (int y = 0; y < " << HEIGHT << "; y++)\n"
+	<< "    for (int x = 0; x < " << WIDTH / blockSize.x() << "; x++)\n"
+	<< "        for (int y = 0; y < " << HEIGHT / blockSize.y() << "; y++)\n"
 	<< "            imageStore(img, ivec2(x, y), color);\n"
 	<< "}\n";
 
 	// Generate the vertex shader.
-	std::ostringstream vertexSrc;
+	std::ostringstream			vertexSrc;
 	vertexSrc
 		<< glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
 		<< "layout(location = 0) in highp vec4 a_position;\n"
@@ -753,7 +759,7 @@ void SampleDrawnTextureTest::initPrograms (SourceCollections& programCollection)
 		<< "}\n";
 
 	// Generate the fragment shader.
-	std::ostringstream fragmentSrc;
+	std::ostringstream			fragmentSrc;
 	fragmentSrc
 		<< glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
 		<< "layout(location = 0) out vec4 outColor;\n"
