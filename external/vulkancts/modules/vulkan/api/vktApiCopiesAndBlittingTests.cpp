@@ -320,6 +320,7 @@ struct TestParams
 	deUint32		barrierCount;
 	deBool			separateDepthStencilLayouts;
 	deBool			clearDestination;
+	deBool			imageOffset;
 
 	TestParams (void)
 	{
@@ -335,6 +336,7 @@ struct TestParams
 		dst.image.fillMode			= FILL_MODE_WHITE;
 		clearDestination			= DE_FALSE;
 		samples						= VK_SAMPLE_COUNT_1_BIT;
+		imageOffset					= false;
 	}
 };
 
@@ -375,20 +377,33 @@ de::MovePtr<Allocation> allocateImage (const InstanceInterface&		vki,
 									   const VkImage&				image,
 									   const MemoryRequirement		requirement,
 									   Allocator&					allocator,
-									   AllocationKind				allocationKind)
+									   AllocationKind				allocationKind,
+									   const deUint32				offset)
 {
 	switch (allocationKind)
 	{
 		case ALLOCATION_KIND_SUBALLOCATED:
 		{
-			const VkMemoryRequirements memoryRequirements = getImageMemoryRequirements(vkd, device, image);
+			VkMemoryRequirements memoryRequirements	= getImageMemoryRequirements(vkd, device, image);
+			memoryRequirements.size += offset;
 
 			return allocator.allocate(memoryRequirements, requirement);
 		}
 
 		case ALLOCATION_KIND_DEDICATED:
 		{
-			return allocateDedicated(vki, vkd, physDevice, device, image, requirement);
+			VkMemoryRequirements					memoryRequirements		= getImageMemoryRequirements(vkd, device, image);
+			memoryRequirements.size += offset;
+
+			const VkMemoryDedicatedAllocateInfo		dedicatedAllocationInfo	=
+			{
+				VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,				// VkStructureType		sType
+				DE_NULL,														// const void*			pNext
+				image,															// VkImage				image
+				DE_NULL															// VkBuffer				buffer
+			};
+
+			return allocateExtended(vki, vkd, physDevice, device, memoryRequirements, requirement, &dedicatedAllocationInfo);
 		}
 
 		default:
@@ -1056,7 +1071,7 @@ CopyImageToImage::CopyImageToImage (Context& context, TestParams params)
 		};
 
 		m_source				= createImage(vk, vkDevice, &sourceImageParams);
-		m_sourceImageAlloc		= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_source, MemoryRequirement::Any, memAlloc, m_params.allocationKind);
+		m_sourceImageAlloc		= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_source, MemoryRequirement::Any, memAlloc, m_params.allocationKind, 0u);
 		VK_CHECK(vk.bindImageMemory(vkDevice, *m_source, m_sourceImageAlloc->getMemory(), m_sourceImageAlloc->getOffset()));
 	}
 
@@ -1083,7 +1098,7 @@ CopyImageToImage::CopyImageToImage (Context& context, TestParams params)
 		};
 
 		m_destination			= createImage(vk, vkDevice, &destinationImageParams);
-		m_destinationImageAlloc	= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_destination, MemoryRequirement::Any, memAlloc, m_params.allocationKind);
+		m_destinationImageAlloc	= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_destination, MemoryRequirement::Any, memAlloc, m_params.allocationKind, 0u);
 		VK_CHECK(vk.bindImageMemory(vkDevice, *m_destination, m_destinationImageAlloc->getMemory(), m_destinationImageAlloc->getOffset()));
 	}
 }
@@ -1514,7 +1529,7 @@ CopyImageToImageMipmap::CopyImageToImageMipmap (Context& context, TestParams par
 		};
 
 		m_source				= createImage(vk, vkDevice, &sourceImageParams);
-		m_sourceImageAlloc		= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_source, MemoryRequirement::Any, memAlloc, m_params.allocationKind);
+		m_sourceImageAlloc		= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_source, MemoryRequirement::Any, memAlloc, m_params.allocationKind, 0u);
 		VK_CHECK(vk.bindImageMemory(vkDevice, *m_source, m_sourceImageAlloc->getMemory(), m_sourceImageAlloc->getOffset()));
 	}
 
@@ -1541,7 +1556,7 @@ CopyImageToImageMipmap::CopyImageToImageMipmap (Context& context, TestParams par
 		};
 
 		m_destination			= createImage(vk, vkDevice, &destinationImageParams);
-		m_destinationImageAlloc	= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_destination, MemoryRequirement::Any, memAlloc, m_params.allocationKind);
+		m_destinationImageAlloc	= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_destination, MemoryRequirement::Any, memAlloc, m_params.allocationKind, 0u);
 		VK_CHECK(vk.bindImageMemory(vkDevice, *m_destination, m_destinationImageAlloc->getMemory(), m_destinationImageAlloc->getOffset()));
 	}
 }
@@ -2190,7 +2205,7 @@ CopyImageToBuffer::CopyImageToBuffer (Context& context, TestParams testParams)
 		};
 
 		m_source			= createImage(vk, vkDevice, &sourceImageParams);
-		m_sourceImageAlloc	= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_source, MemoryRequirement::Any, memAlloc, m_params.allocationKind);
+		m_sourceImageAlloc	= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_source, MemoryRequirement::Any, memAlloc, m_params.allocationKind, 0u);
 		VK_CHECK(vk.bindImageMemory(vkDevice, *m_source, m_sourceImageAlloc->getMemory(), m_sourceImageAlloc->getOffset()));
 	}
 
@@ -2454,7 +2469,7 @@ CopyBufferToImage::CopyBufferToImage (Context& context, TestParams testParams)
 		};
 
 		m_destination			= createImage(vk, vkDevice, &destinationImageParams);
-		m_destinationImageAlloc	= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_destination, MemoryRequirement::Any, memAlloc, m_params.allocationKind);
+		m_destinationImageAlloc	= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_destination, MemoryRequirement::Any, memAlloc, m_params.allocationKind, 0u);
 		VK_CHECK(vk.bindImageMemory(vkDevice, *m_destination, m_destinationImageAlloc->getMemory(), m_destinationImageAlloc->getOffset()));
 	}
 }
@@ -2752,7 +2767,7 @@ CopyBufferToDepthStencil::CopyBufferToDepthStencil(Context& context, TestParams 
 		};
 
 		m_destination				= createImage(vk, vkDevice, &destinationImageParams);
-		m_destinationImageAlloc		= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_destination, MemoryRequirement::Any, memAlloc, m_params.allocationKind);
+		m_destinationImageAlloc		= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_destination, MemoryRequirement::Any, memAlloc, m_params.allocationKind, 0u);
 		VK_CHECK(vk.bindImageMemory(vkDevice, *m_destination, m_destinationImageAlloc->getMemory(), m_destinationImageAlloc->getOffset()));
 	}
 }
@@ -3187,7 +3202,7 @@ BlittingImages::BlittingImages (Context& context, TestParams params)
 		};
 
 		m_source = createImage(vk, vkDevice, &sourceImageParams);
-		m_sourceImageAlloc = allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_source, MemoryRequirement::Any, memAlloc, m_params.allocationKind);
+		m_sourceImageAlloc = allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_source, MemoryRequirement::Any, memAlloc, m_params.allocationKind, 0u);
 		VK_CHECK(vk.bindImageMemory(vkDevice, *m_source, m_sourceImageAlloc->getMemory(), m_sourceImageAlloc->getOffset()));
 	}
 
@@ -3214,7 +3229,7 @@ BlittingImages::BlittingImages (Context& context, TestParams params)
 		};
 
 		m_destination = createImage(vk, vkDevice, &destinationImageParams);
-		m_destinationImageAlloc = allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_destination, MemoryRequirement::Any, memAlloc, m_params.allocationKind);
+		m_destinationImageAlloc = allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_destination, MemoryRequirement::Any, memAlloc, m_params.allocationKind, 0u);
 		VK_CHECK(vk.bindImageMemory(vkDevice, *m_destination, m_destinationImageAlloc->getMemory(), m_destinationImageAlloc->getOffset()));
 	}
 }
@@ -4686,7 +4701,7 @@ BlittingMipmaps::BlittingMipmaps (Context& context, TestParams params)
 		};
 
 		m_source = createImage(vk, vkDevice, &sourceImageParams);
-		m_sourceImageAlloc = allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_source, MemoryRequirement::Any, memAlloc, m_params.allocationKind);
+		m_sourceImageAlloc = allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_source, MemoryRequirement::Any, memAlloc, m_params.allocationKind, 0u);
 		VK_CHECK(vk.bindImageMemory(vkDevice, *m_source, m_sourceImageAlloc->getMemory(), m_sourceImageAlloc->getOffset()));
 	}
 
@@ -4713,7 +4728,7 @@ BlittingMipmaps::BlittingMipmaps (Context& context, TestParams params)
 		};
 
 		m_destination = createImage(vk, vkDevice, &destinationImageParams);
-		m_destinationImageAlloc = allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_destination, MemoryRequirement::Any, memAlloc, m_params.allocationKind);
+		m_destinationImageAlloc = allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_destination, MemoryRequirement::Any, memAlloc, m_params.allocationKind, 0u);
 		VK_CHECK(vk.bindImageMemory(vkDevice, *m_destination, m_destinationImageAlloc->getMemory(), m_destinationImageAlloc->getOffset()));
 	}
 }
@@ -5597,7 +5612,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 
 	// Create color image.
 	{
-		VkImageCreateInfo	colorImageParams	=
+		VkImageCreateInfo		colorImageParams	=
 		{
 			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,									// VkStructureType			sType;
 			DE_NULL,																// const void*				pNext;
@@ -5620,10 +5635,14 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 		};
 
 		m_multisampledImage						= createImage(vk, vkDevice, &colorImageParams);
+		VkMemoryRequirements	req				= getImageMemoryRequirements(vk, vkDevice, *m_multisampledImage);
 
 		// Allocate and bind color image memory.
-		m_multisampledImageAlloc				= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_multisampledImage, MemoryRequirement::Any, memAlloc, m_params.allocationKind);
-		VK_CHECK(vk.bindImageMemory(vkDevice, *m_multisampledImage, m_multisampledImageAlloc->getMemory(), m_multisampledImageAlloc->getOffset()));
+		deUint32				offset			= m_params.imageOffset ? static_cast<deUint32>(req.alignment) : 0u;
+		m_multisampledImageAlloc				= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_multisampledImage, MemoryRequirement::Any,
+																memAlloc, m_params.allocationKind, offset);
+
+		VK_CHECK(vk.bindImageMemory(vkDevice, *m_multisampledImage, m_multisampledImageAlloc->getMemory(), offset));
 
 		switch (m_options)
 		{
@@ -5635,7 +5654,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 				colorImageParams.usage			= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
 				m_multisampledCopyImage			= createImage(vk, vkDevice, &colorImageParams);
 				// Allocate and bind color image memory.
-				m_multisampledCopyImageAlloc	= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_multisampledCopyImage, MemoryRequirement::Any, memAlloc, m_params.allocationKind);
+				m_multisampledCopyImageAlloc	= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_multisampledCopyImage, MemoryRequirement::Any, memAlloc, m_params.allocationKind, 0u);
 				VK_CHECK(vk.bindImageMemory(vkDevice, *m_multisampledCopyImage, m_multisampledCopyImageAlloc->getMemory(), m_multisampledCopyImageAlloc->getOffset()));
 				break;
 			}
@@ -5646,7 +5665,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 				colorImageParams.arrayLayers	= getArraySize(m_params.dst.image);
 				m_multisampledCopyImage			= createImage(vk, vkDevice, &colorImageParams);
 				// Allocate and bind color image memory.
-				m_multisampledCopyImageAlloc	= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_multisampledCopyImage, MemoryRequirement::Any, memAlloc, m_params.allocationKind);
+				m_multisampledCopyImageAlloc	= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_multisampledCopyImage, MemoryRequirement::Any, memAlloc, m_params.allocationKind, 0u);
 				VK_CHECK(vk.bindImageMemory(vkDevice, *m_multisampledCopyImage, m_multisampledCopyImageAlloc->getMemory(), m_multisampledCopyImageAlloc->getOffset()));
 				break;
 			}
@@ -5657,9 +5676,9 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 				m_multisampledCopyImage				= createImage(vk, vkDevice, &colorImageParams);
 				m_multisampledCopyNoCabImage		= createImage(vk, vkDevice, &colorImageParams);
 				// Allocate and bind color image memory.
-				m_multisampledCopyImageAlloc			= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_multisampledCopyImage, MemoryRequirement::Any, memAlloc, m_params.allocationKind);
+				m_multisampledCopyImageAlloc			= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_multisampledCopyImage, MemoryRequirement::Any, memAlloc, m_params.allocationKind, 0u);
 				VK_CHECK(vk.bindImageMemory(vkDevice, *m_multisampledCopyImage, m_multisampledCopyImageAlloc->getMemory(), m_multisampledCopyImageAlloc->getOffset()));
-				m_multisampledCopyImageNoCabAlloc		= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_multisampledCopyNoCabImage, MemoryRequirement::Any, memAlloc, m_params.allocationKind);
+				m_multisampledCopyImageNoCabAlloc		= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_multisampledCopyNoCabImage, MemoryRequirement::Any, memAlloc, m_params.allocationKind, 0u);
 				VK_CHECK(vk.bindImageMemory(vkDevice, *m_multisampledCopyNoCabImage, m_multisampledCopyImageNoCabAlloc->getMemory(), m_multisampledCopyImageNoCabAlloc->getOffset()));
 				break;
 			}
@@ -5692,7 +5711,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 		};
 
 		m_destination			= createImage(vk, vkDevice, &destinationImageParams);
-		m_destinationImageAlloc	= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_destination, MemoryRequirement::Any, memAlloc, m_params.allocationKind);
+		m_destinationImageAlloc	= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_destination, MemoryRequirement::Any, memAlloc, m_params.allocationKind, 0u);
 		VK_CHECK(vk.bindImageMemory(vkDevice, *m_destination, m_destinationImageAlloc->getMemory(), m_destinationImageAlloc->getOffset()));
 	}
 
@@ -7179,6 +7198,7 @@ public:
 		VkImageLayout				dstImageLayout;
 		VkFormat					imageFormat;
 		VkImageAspectFlags			copyAspect;
+		deBool						imageOffset;
 	};
 
 									DepthStencilMSAA			(Context&			context,
@@ -7390,11 +7410,16 @@ tcu::TestStatus DepthStencilMSAA::iterate (void)
 			};
 
 			srcImage		= createImage(vk, vkDevice, &multiSampledImageParams);
-			srcImageAlloc	= allocateImage(vki, vk, vkPhysDevice, vkDevice, srcImage.get(), MemoryRequirement::Any, memAlloc, m_params.allocationKind);
-			VK_CHECK(vk.bindImageMemory(vkDevice, srcImage.get(), srcImageAlloc->getMemory(), srcImageAlloc->getOffset()));
+
+			VkMemoryRequirements	req		= getImageMemoryRequirements(vk, vkDevice, *srcImage);
+			deUint32				offset	= m_params.imageOffset ? static_cast<deUint32>(req.alignment) : 0;
+
+			srcImageAlloc	= allocateImage(vki, vk, vkPhysDevice, vkDevice, srcImage.get(), MemoryRequirement::Any, memAlloc,
+											 m_params.allocationKind, offset);
+			VK_CHECK(vk.bindImageMemory(vkDevice, srcImage.get(), srcImageAlloc->getMemory(), srcImageAlloc->getOffset() + offset));
 
 			dstImage		= createImage(vk, vkDevice, &multiSampledImageParams);
-			dstImageAlloc	= allocateImage(vki, vk, vkPhysDevice, vkDevice, dstImage.get(), MemoryRequirement::Any, memAlloc, m_params.allocationKind);
+			dstImageAlloc	= allocateImage(vki, vk, vkPhysDevice, vkDevice, dstImage.get(), MemoryRequirement::Any, memAlloc, m_params.allocationKind, 0u);
 			VK_CHECK(vk.bindImageMemory(vkDevice, dstImage.get(), dstImageAlloc->getMemory(), dstImageAlloc->getOffset()));
 		}
 
@@ -13504,6 +13529,8 @@ void addResolveImageWholeTests (tcu::TestCaseGroup* group, AllocationKind alloca
 		params.samples					= samples[samplesIndex];
 		const std::string description	= "With " + getSampleCountCaseName(samples[samplesIndex]);
 		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params));
+		params.imageOffset = true;
+		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params));
 	}
 }
 
@@ -13549,7 +13576,10 @@ void addResolveImagePartialTests (tcu::TestCaseGroup* group, AllocationKind allo
 	{
 		params.samples					= samples[samplesIndex];
 		const std::string description	= "With " + getSampleCountCaseName(samples[samplesIndex]);
+		params.imageOffset = false;
 		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params));
+		params.imageOffset = true;
+		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params));
 	}
 }
 
@@ -13568,6 +13598,7 @@ void addResolveImageWithRegionsTests (tcu::TestCaseGroup* group, AllocationKind 
 	params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	params.allocationKind				= allocationKind;
 	params.extensionUse					= extensionUse;
+	params.imageOffset					= true;
 
 	{
 		const VkImageSubresourceLayers	sourceLayer	=
@@ -13646,7 +13677,10 @@ void addResolveImageWholeCopyBeforeResolvingTests (tcu::TestCaseGroup* group, Al
 	{
 		params.samples					= samples[samplesIndex];
 		const std::string description	= "With " + getSampleCountCaseName(samples[samplesIndex]);
+		params.imageOffset = false;
 		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params, COPY_MS_IMAGE_TO_MS_IMAGE));
+		params.imageOffset = true;
+		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_MS_IMAGE));
 	}
 }
 
@@ -13747,7 +13781,10 @@ void addResolveImageWholeCopyWithoutCabBeforeResolvingTests (tcu::TestCaseGroup*
 	{
 		params.samples					= samples[samplesIndex];
 		const std::string description	= "With " + getSampleCountCaseName(samples[samplesIndex]);
+		params.imageOffset = false;
 		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params, COPY_MS_IMAGE_TO_MS_IMAGE_NO_CAB));
+		params.imageOffset = true;
+		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_MS_IMAGE_NO_CAB));
 	}
 }
 
@@ -13813,7 +13850,10 @@ void addResolveImageWholeCopyDiffLayoutsBeforeResolvingTests (tcu::TestCaseGroup
 		params.samples						= samples[samplesIndex];
 		const std::string description	= "With " + getSampleCountCaseName(samples[samplesIndex]);
 		std::string testName = getSampleCountCaseName(samples[samplesIndex]) + "_" + imageLayouts[srcLayoutIndex].name + "_" + imageLayouts[dstLayoutIndex].name;
+		params.imageOffset = false;
 		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), testName, description, params, COPY_MS_IMAGE_TO_MS_IMAGE));
+		params.imageOffset = true;
+		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), testName + "_bind_offset", description, params, COPY_MS_IMAGE_TO_MS_IMAGE));
 	}
 }
 
@@ -13863,7 +13903,10 @@ void addResolveImageLayerCopyBeforeResolvingTests (tcu::TestCaseGroup* group, Al
 	{
 		params.samples					= samples[samplesIndex];
 		const std::string description	= "With " + getSampleCountCaseName(samples[samplesIndex]);
+		params.imageOffset = false;
 		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params, COPY_MS_IMAGE_LAYER_TO_MS_IMAGE));
+		params.imageOffset = true;
+		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_LAYER_TO_MS_IMAGE));
 	}
 }
 
@@ -13939,7 +13982,10 @@ void addResolveCopyImageWithRegionsTests (tcu::TestCaseGroup* group, AllocationK
 	{
 		params.samples					= samples[samplesIndex];
 		const std::string description	= "With " + getSampleCountCaseName(samples[samplesIndex]);
+		params.imageOffset = false;
 		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params, COPY_MS_IMAGE_TO_MS_IMAGE_MULTIREGION));
+		params.imageOffset = true;
+		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_MS_IMAGE_MULTIREGION));
 	}
 }
 
@@ -13988,7 +14034,10 @@ void addResolveImageWholeArrayImageTests (tcu::TestCaseGroup* group, AllocationK
 	{
 		params.samples					= samples[samplesIndex];
 		const std::string description	= "With " + getSampleCountCaseName(samples[samplesIndex]);
+		params.imageOffset = false;
 		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
+		params.imageOffset = true;
+		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
 	}
 }
 
@@ -14032,7 +14081,10 @@ void addResolveImageWholeArrayImageSingleRegionTests (tcu::TestCaseGroup* group,
 	{
 		params.samples					= samples[samplesIndex];
 		const std::string description	= "With " + getSampleCountCaseName(samples[samplesIndex]);
+		params.imageOffset = false;
 		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
+		params.imageOffset = true;
+		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
 	}
 }
 
@@ -14108,7 +14160,10 @@ void addResolveImageDiffImageSizeTests (tcu::TestCaseGroup* group, AllocationKin
 			std::ostringstream description;
 			description << "With " << getSampleCountCaseName(samples[samplesIndex]) << " and destination image size ("
 						<< dstImageSize.width << ", " << dstImageSize.height << ", " << dstImageSize.depth << ")";
+			params.imageOffset = false;
 			group->addChild(new ResolveImageToImageTestCase(testCtx, testName.str(), description.str(), params));
+			params.imageOffset = true;
+			group->addChild(new ResolveImageToImageTestCase(testCtx, testName.str() + "_bind_offset", description.str(), params));
 		}
 	}
 }
@@ -14161,7 +14216,10 @@ void addDepthStencilCopyMSAATest (tcu::TestCaseGroup* group, DepthStencilMSAA::T
 					{
 						testCreateParams.samples = sample;
 						std::string description = "Copy depth component with sample count: " + getSampleCountCaseName(sample);
+						testCreateParams.imageOffset = false;
 						group->addChild(new DepthStencilMSAATestCase(group->getTestContext(), testNameBase + "D_" + getSampleCountCaseName(sample), description, testCreateParams));
+						testCreateParams.imageOffset = true;
+						group->addChild(new DepthStencilMSAATestCase(group->getTestContext(), testNameBase + "D_" + getSampleCountCaseName(sample) + "_bind_offset", description, testCreateParams));
 					}
 				}
 
@@ -14172,7 +14230,10 @@ void addDepthStencilCopyMSAATest (tcu::TestCaseGroup* group, DepthStencilMSAA::T
 					{
 						testCreateParams.samples = sample;
 						std::string description = "Copy stencil component with sample count: " + getSampleCountCaseName(sample);
+						testCreateParams.imageOffset = false;
 						group->addChild(new DepthStencilMSAATestCase(group->getTestContext(), testNameBase + "S_" + getSampleCountCaseName(sample), description, testCreateParams));
+						testCreateParams.imageOffset = true;
+						group->addChild(new DepthStencilMSAATestCase(group->getTestContext(), testNameBase + "S_" + getSampleCountCaseName(sample) + "_bind_offset", description, testCreateParams));
 					}
 				}
 			}
