@@ -52,6 +52,7 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_sampler_mirror_clamp_to_edge",
 	"VK_KHR_sampler_ycbcr_conversion",
 	"VK_KHR_separate_depth_stencil_layouts",
+	"VK_KHR_shader_atomic_int64",
 	"VK_KHR_shader_clock",
 	"VK_KHR_shader_draw_parameters",
 	"VK_KHR_shader_float16_int8",
