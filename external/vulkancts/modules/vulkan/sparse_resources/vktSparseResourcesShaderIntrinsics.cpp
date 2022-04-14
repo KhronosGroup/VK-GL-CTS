@@ -35,7 +35,7 @@ tcu::TestCaseGroup* createSparseResourcesShaderIntrinsicsTests (tcu::TestContext
 {
 	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "shader_intrinsics", "Sparse Resources Shader Intrinsics"));
 
-	const std::vector<TestImageParameters> imageParameters =
+	const std::vector<TestImageParameters> imageParameters
 	{
 		{ IMAGE_TYPE_2D,			{ tcu::UVec3(512u, 256u, 1u),	tcu::UVec3(128u, 128u, 1u), tcu::UVec3(503u, 137u, 1u), tcu::UVec3(11u, 37u, 1u) },	getTestFormats(IMAGE_TYPE_2D) },
 		{ IMAGE_TYPE_2D_ARRAY,		{ tcu::UVec3(512u, 256u, 6u),	tcu::UVec3(128u, 128u, 8u),	tcu::UVec3(503u, 137u, 3u),	tcu::UVec3(11u, 37u, 3u) },	getTestFormats(IMAGE_TYPE_2D_ARRAY) },
