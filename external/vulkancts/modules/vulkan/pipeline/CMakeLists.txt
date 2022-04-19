@@ -9,6 +9,8 @@ set(DEQP_VK_VKSC_PIPELINE_SRCS
 	vktPipelineCombinationsIterator.hpp
 	vktPipelineDepthTests.cpp
 	vktPipelineDepthTests.hpp
+	vktPipelineDescriptorLimitsTests.cpp
+	vktPipelineDescriptorLimitsTests.hpp
 	vktPipelineDynamicOffsetTests.cpp
 	vktPipelineDynamicOffsetTests.hpp
 	vktPipelineEarlyDestroyTests.cpp
@@ -33,7 +35,6 @@ set(DEQP_VK_VKSC_PIPELINE_SRCS
 	vktPipelineImageUtil.hpp
 	vktPipelineImageViewTests.cpp
 	vktPipelineImageViewTests.hpp
-
 	vktPipelineMatchedAttachmentsTests.cpp
 	vktPipelineMatchedAttachmentsTests.hpp
 	vktPipelineMultisampleTestsUtil.cpp
