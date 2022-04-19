@@ -1184,6 +1184,7 @@ tcu::TestStatus testSemaphoreImportSyncFdSignaled (Context&						context,
 		const vk::Unique<vk::VkSemaphore>	semaphore	(createAndImportSemaphore(vkd, *device, config.externalType, handle, flags));
 
 		submitEmptyWait(vkd, queue, *semaphore);
+		VK_CHECK(vkd.queueWaitIdle(queue));
 
 		return tcu::TestStatus::pass("Pass");
 	}
