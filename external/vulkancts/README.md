@@ -132,7 +132,7 @@ Building Mustpass
 
 Current mustpass is checked into repository and can be found at:
 
-	external/vulkancts/mustpass/master/vk-default.txt
+	external/vulkancts/mustpass/main/vk-default.txt
 
 This file contains list of files located in vk-default subdirectory. Those files contain
 tests from top-level groups and together they contain all test cases that should pass.
@@ -147,7 +147,7 @@ Running CTS
 
 Following command line options MUST be used when running CTS:
 
-	--deqp-caselist-file=<vulkancts>/external/vulkancts/mustpass/master/vk-default.txt
+	--deqp-caselist-file=<vulkancts>/external/vulkancts/mustpass/main/vk-default.txt
 	--deqp-log-images=disable
 	--deqp-log-shader-sources=disable
 
@@ -192,7 +192,7 @@ where I denotes index of current CTS execution ( I=[0..N-1], N=[1..8] )
 When collecting results for a Conformance Submission Package the number of fractions must not exceed 8,
 and a list of mandatory information tests for each fraction must be supplied:
 
-	--deqp-fraction-mandatory-caselist-file=<vulkancts>external/vulkancts/mustpass/master/vk-fraction-mandatory-tests.txt
+	--deqp-fraction-mandatory-caselist-file=<vulkancts>external/vulkancts/mustpass/main/vk-fraction-mandatory-tests.txt
 
 To specify file containing waived tests that are omitted only by specified vendor and renderer/device
 the following command line option may be used:
@@ -230,7 +230,7 @@ Test log will be written into TestResults.qpa
 
 ### Android
 
-	adb push <vulkancts>/external/vulkancts/mustpass/master/vk-default.txt /sdcard/vk-default.txt
+	adb push <vulkancts>/external/vulkancts/mustpass/main/vk-default.txt /sdcard/vk-default.txt
 	adb shell
 
 In device shell:
