@@ -4412,63 +4412,136 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		deMemset(&subgroupSizeControlProperties[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceSubgroupSizeControlProperties			));
 		deMemset(&texelBufferAlignmentProperties[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceTexelBufferAlignmentProperties			));
 
-		idProperties[ndx].sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES;
-		idProperties[ndx].pNext						= &multiviewProperties[ndx];
+		void* prev = 0;
 
-		multiviewProperties[ndx].sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES;
-		multiviewProperties[ndx].pNext				= &protectedMemoryPropertiesKHR[ndx];
+		if (khr_external_fence_capabilities || khr_external_memory_capabilities || khr_external_semaphore_capabilities)
+		{
+			idProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES;
+			idProperties[ndx].pNext = prev;
+			prev = &idProperties[ndx];
+		}
 
-		protectedMemoryPropertiesKHR[ndx].sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_PROPERTIES;
-		protectedMemoryPropertiesKHR[ndx].pNext		= &subgroupProperties[ndx];
+		if (khr_multiview)
+		{
+			multiviewProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES;
+			multiviewProperties[ndx].pNext = prev;
+			prev = &multiviewProperties[ndx];
+		}
 
-		subgroupProperties[ndx].sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
-		subgroupProperties[ndx].pNext				= &pointClippingProperties[ndx];
+		if (khr_device_protected_memory)
+		{
+			protectedMemoryPropertiesKHR[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_PROPERTIES;
+			protectedMemoryPropertiesKHR[ndx].pNext = prev;
+			prev = &protectedMemoryPropertiesKHR[ndx];
+		}
 
-		pointClippingProperties[ndx].sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES;
-		pointClippingProperties[ndx].pNext			= &maintenance3Properties[ndx];
+		if (khr_device_subgroup)
+		{
+			subgroupProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
+			subgroupProperties[ndx].pNext = prev;
+			prev = &subgroupProperties[ndx];
+		}
 
-		maintenance3Properties[ndx].sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES;
-		maintenance3Properties[ndx].pNext			= &depthStencilResolveProperties[ndx];
+		if (khr_maintenance2)
+		{
+			pointClippingProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES;
+			pointClippingProperties[ndx].pNext = prev;
+			prev = &pointClippingProperties[ndx];
+		}
 
-		depthStencilResolveProperties[ndx].sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES;
-		depthStencilResolveProperties[ndx].pNext	= &driverProperties[ndx];
+		if (khr_maintenance3)
+		{
+			maintenance3Properties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES;
+			maintenance3Properties[ndx].pNext = prev;
+			prev = &maintenance3Properties[ndx];
+		}
 
-		driverProperties[ndx].sType					= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES;
-		driverProperties[ndx].pNext					= &floatControlsProperties[ndx];
+		if (khr_depth_stencil_resolve)
+		{
+			depthStencilResolveProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES;
+			depthStencilResolveProperties[ndx].pNext = prev;
+			prev = &depthStencilResolveProperties[ndx];
+		}
 
-		floatControlsProperties[ndx].sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR;
-		floatControlsProperties[ndx].pNext			= &descriptorIndexingProperties[ndx];
+		if (khr_driver_properties)
+		{
+			driverProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES;
+			driverProperties[ndx].pNext = prev;
+			prev = &driverProperties[ndx];
+		}
 
-		descriptorIndexingProperties[ndx].sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES;
-		descriptorIndexingProperties[ndx].pNext		= &samplerFilterMinmaxProperties[ndx];
+		if (khr_shader_float_controls)
+		{
+			floatControlsProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR;
+			floatControlsProperties[ndx].pNext = prev;
+			prev = &floatControlsProperties[ndx];
+		}
 
-		samplerFilterMinmaxProperties[ndx].sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES;
-		samplerFilterMinmaxProperties[ndx].pNext	= &integerDotProductProperties[ndx];
+		if (khr_descriptor_indexing)
+		{
+			descriptorIndexingProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES;
+			descriptorIndexingProperties[ndx].pNext = prev;
+			prev = &descriptorIndexingProperties[ndx];
+		}
 
-		integerDotProductProperties[ndx].sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES_KHR;
-		integerDotProductProperties[ndx].pNext		= &accelerationStructureProperties[ndx];
+		if (khr_sampler_filter_minmax)
+		{
+			samplerFilterMinmaxProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES;
+			samplerFilterMinmaxProperties[ndx].pNext = prev;
+			prev = &samplerFilterMinmaxProperties[ndx];
+		}
 
-		accelerationStructureProperties[ndx].sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR;
-		accelerationStructureProperties[ndx].pNext	= &inlineUniformBlockProperties[ndx];
+		if (khr_integer_dot_product)
+		{
+			integerDotProductProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES_KHR;
+			integerDotProductProperties[ndx].pNext = prev;
+			prev = &integerDotProductProperties[ndx];
+		}
 
-		inlineUniformBlockProperties[ndx].sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES;
-		inlineUniformBlockProperties[ndx].pNext		= &maintenance4Properties[ndx];
+		if (khr_acceleration_structure)
+		{
+			accelerationStructureProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR;
+			accelerationStructureProperties[ndx].pNext = prev;
+			prev = &accelerationStructureProperties[ndx];
+		}
 
-		maintenance4Properties[ndx].sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES;
-		maintenance4Properties[ndx].pNext			= &subgroupSizeControlProperties[ndx];
+		if (khr_inline_uniform_block)
+		{
+			inlineUniformBlockProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES;
+			inlineUniformBlockProperties[ndx].pNext = prev;
+			prev = &inlineUniformBlockProperties[ndx];
+		}
 
-		subgroupSizeControlProperties[ndx].sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES;
-		subgroupSizeControlProperties[ndx].pNext	= &texelBufferAlignmentProperties[ndx];
+		if (khr_maintenance4)
+		{
+			maintenance4Properties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES;
+			maintenance4Properties[ndx].pNext = prev;
+			prev = &maintenance4Properties[ndx];
+		}
 
-		texelBufferAlignmentProperties[ndx].sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES;
-		texelBufferAlignmentProperties[ndx].pNext	= DE_NULL;
+		if (khr_subgroup_size_control)
+		{
+			subgroupSizeControlProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES;
+			subgroupSizeControlProperties[ndx].pNext = prev;
+			prev = &subgroupSizeControlProperties[ndx];
+		}
 
-		extProperties.pNext							= &idProperties[ndx];
+		if (khr_texel_buffer_alignment)
+		{
+			texelBufferAlignmentProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES;
+			texelBufferAlignmentProperties[ndx].pNext = prev;
+			prev = &texelBufferAlignmentProperties[ndx];
+		}
+
+		if (prev == 0)
+			TCU_THROW(NotSupportedError, "No supported structures found");
+
+		extProperties.pNext							= prev;
 
 		vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
 	}
 
-	if ( khr_external_fence_capabilities || khr_external_memory_capabilities || khr_external_semaphore_capabilities )
+	if (khr_external_fence_capabilities || khr_external_memory_capabilities || khr_external_semaphore_capabilities)
 		log << TestLog::Message << idProperties[0]					<< TestLog::EndMessage;
 	if (khr_multiview)
 		log << TestLog::Message << multiviewProperties[0]			<< TestLog::EndMessage;
