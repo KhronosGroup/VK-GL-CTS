@@ -1123,6 +1123,641 @@ void AddSingleTestCaseDynamic(const std::string&			name,
 
 } // anonymous namespace
 
+namespace
+{
+using namespace vk;
+using namespace tcu;
+
+struct TestParams
+{
+	deUint32	width;
+	deUint32	height;
+	VkFormat	format;
+	deUint32	attachmentCount;
+	deUint32	attachmentMore;
+	bool		setCweBeforePlBind;
+	bool		colorWriteEnables;
+	PipelineConstructionType pct;
+	bool selectOptimalBlendableFormat (const InstanceInterface&, VkPhysicalDevice);
+};
+
+class ColorWriteEnable2Test : public vkt::TestCase
+{
+public:
+								ColorWriteEnable2Test	(TestContext&		testCtx,
+														 const std::string&	name,
+														 const std::string& description,
+														 const TestParams&	testParams)
+									: vkt::TestCase		(testCtx, name, description)
+									, m_params		(testParams) { }
+
+	virtual						~ColorWriteEnable2Test	() = default;
+
+	virtual void				checkSupport			(Context&			context) const override;
+	virtual void				initPrograms			(SourceCollections&	programCollection) const override;
+	virtual vkt::TestInstance*	createInstance			(Context&			context) const override;
+
+private:
+	mutable TestParams			m_params;
+
+};
+
+class ColorWriteEnable2Instance : public vkt::TestInstance
+{
+public:
+	typedef std::vector<VkBool32>	ColorWriteEnables;
+	struct Attachment
+	{
+		de::MovePtr<ImageWithMemory>	image;
+		Move<VkImageView>				view;
+		Attachment () = default;
+		DE_UNUSED_FUNCTION Attachment (Attachment&& other);
+	};
+	struct Attachments
+	{
+		std::vector<Attachment>	attachments;
+		Move<VkFramebuffer>		framebuffer;
+		Attachments () = default;
+		Attachments (Attachments&& other);
+	};
+									ColorWriteEnable2Instance	(Context&						context,
+																 const TestParams&				testParams);
+	virtual							~ColorWriteEnable2Instance	() = default;
+	de::MovePtr<BufferWithMemory>	createVerrtexBuffer			() const;
+	Attachments						createAttachments			(VkRenderPass					renderPass,
+																 deUint32						colorAttachmentCount) const;
+	Move<VkRenderPass>				createRenderPass			(deUint32						colorAttachmentCount) const;
+
+	void							setupAndBuildPipeline		(GraphicsPipelineWrapper&		owner,
+																 VkPipelineLayout				pipelineLayout,
+																 VkRenderPass					renderPass,
+																 deUint32						colorAttachmentCount,
+																 const ColorWriteEnables&		colorWriteEnables,
+																 bool							dynamic) const;
+	virtual TestStatus				iterate						() override;
+	TestStatus						testSetCWEbeforePlBind		();
+	TestStatus						testSetCWEafterPlBind		();
+	bool							verifyAttachment			(deUint32						attachmentIndex,
+																 const ConstPixelBufferAccess&	attachmentContent,
+																 const ColorWriteEnables&		colorWriteEnables,
+																 const Vec4&					background) const;
+private:
+	const TestParams			m_params;
+	const DeviceInterface&		m_vkd;
+	const VkDevice				m_device;
+	Allocator&					m_allocator;
+	const Move<VkShaderModule>	m_vertex;
+	const Move<VkShaderModule>	m_fragment;
+};
+
+ColorWriteEnable2Instance::Attachment::Attachment (Attachment&& other)
+	: image			(std::move(other.image))
+	, view			(std::move(other.view))
+{
+}
+ColorWriteEnable2Instance::Attachments::Attachments (Attachments&& other)
+	: attachments	(std::move(other.attachments))
+	, framebuffer	(std::move(other.framebuffer))
+{
+}
+
+bool TestParams::selectOptimalBlendableFormat (const InstanceInterface& vk, VkPhysicalDevice dev)
+{
+	auto doesFormatMatch = [](const VkFormat fmt) -> bool
+	{
+		const auto tcuFmt = mapVkFormat(fmt);
+		return tcuFmt.order == TextureFormat::ChannelOrder::RGBA
+				|| tcuFmt.order == TextureFormat::ChannelOrder::sRGBA;
+	};
+
+	VkFormatProperties2 props{};
+	const VkFormatFeatureFlags flags = VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
+										| VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT
+										| VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT;
+	for (int f = VK_FORMAT_R64G64B64A64_SFLOAT; f > 0; --f)
+	{
+		props.sType				= VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2;
+		props.pNext				= nullptr;
+		props.formatProperties	= {};
+		const VkFormat			fmt = static_cast<VkFormat>(f);
+		vk.getPhysicalDeviceFormatProperties2(dev, fmt, &props);
+		if (doesFormatMatch(fmt) && ((props.formatProperties.optimalTilingFeatures & flags) == flags))
+		{
+			this->format = fmt;
+			return true;
+		}
+	}
+	return false;
+}
+
+void ColorWriteEnable2Test::checkSupport (Context& context) const
+{
+	const auto&	vki				= context.getInstanceInterface();
+	const auto	physicalDevice	= context.getPhysicalDevice();
+
+	if (m_params.colorWriteEnables)
+	{
+		context.requireDeviceFunctionality("VK_EXT_color_write_enable");
+	}
+
+	DE_ASSERT(m_params.attachmentCount >= 1);
+	auto maxColorAttachments = context.getDeviceProperties().limits.maxColorAttachments;
+	if ((m_params.attachmentCount + m_params.attachmentMore) > maxColorAttachments)
+	{
+		std::stringstream ss;
+		if (m_params.attachmentMore)
+		{
+			ss << "Sum of color attachments (" << m_params.attachmentCount << " + " << m_params.attachmentMore << ")";
+		}
+		else
+		{
+			ss << "Color attachment count of " << m_params.attachmentCount;
+		}
+		ss << " exceeds maximum number of color attachments supported by device which is " << maxColorAttachments;
+		ss.flush();
+		TCU_THROW(NotSupportedError, ss.str());
+	}
+
+	if ( ! m_params.selectOptimalBlendableFormat(vki, physicalDevice))
+		TCU_THROW(NotSupportedError, "Required color image features not supported");
+
+	checkPipelineLibraryRequirements(vki, physicalDevice, m_params.pct);
+}
+
+void ColorWriteEnable2Test::initPrograms (SourceCollections& programCollection) const
+{
+	const char			nl = '\n';
+	const deUint32		ac = m_params.attachmentCount;
+	std::ostringstream	vs;
+	std::ostringstream	fs;
+
+	vs	<< "#version 450"									<<	nl
+		<< "layout(location=0) in vec4 position;"			<<	nl
+		<< "void main() {"									<<	nl
+		<< "    gl_Position = vec4(position.xy, 0.0, 1.0);"	<<	nl
+		<< "}"												<<	nl;
+	programCollection.glslSources.add("vert") << glu::VertexSource(vs.str());
+
+	fs	<< "#version 450"											<<	nl
+		<< "layout(std430, push_constant) uniform PC"				<<	nl
+		<< "{ uint attachments; } params;"							<<	nl
+		<< "layout(location = 0) out vec4 colors[" << ac << "];"	<<	nl
+		<< "void main() {"											<<	nl
+		<< "    for (uint a = 0; a < params.attachments; ++a) {"	<<	nl
+		<< "        colors[a] = vec4(pow(0.5, float(a+1)));"		<<	nl
+		<< "}}"														<<	nl;
+	programCollection.glslSources.add("frag") << glu::FragmentSource(fs.str());
+}
+
+TestInstance* ColorWriteEnable2Test::createInstance (Context& context) const
+{
+	return new ColorWriteEnable2Instance(context, m_params);
+}
+
+ColorWriteEnable2Instance::ColorWriteEnable2Instance (Context& context, const TestParams& testParams)
+	: vkt::TestInstance	(context)
+	, m_params		(testParams)
+	, m_vkd				(context.getDeviceInterface())
+	, m_device			(context.getDevice())
+	, m_allocator		(context.getDefaultAllocator())
+	, m_vertex			(createShaderModule(m_vkd, m_device, context.getBinaryCollection().get("vert")))
+	, m_fragment		(createShaderModule(m_vkd, m_device, context.getBinaryCollection().get("frag")))
+{
+}
+
+Move<VkRenderPass> ColorWriteEnable2Instance::createRenderPass (deUint32 colorAttachmentCount) const
+{
+	const std::vector<VkAttachmentDescription> attachmentDescriptions(
+		colorAttachmentCount,
+		VkAttachmentDescription
+		{
+			0u,											//	VkAttachmentDescriptionFlags	flags;
+			m_params.format,							//	VkFormat						format;
+			VK_SAMPLE_COUNT_1_BIT,						//	VkSampleCountFlagBits			samples;
+			VK_ATTACHMENT_LOAD_OP_CLEAR,				//	VkAttachmentLoadOp				loadOp;
+			VK_ATTACHMENT_STORE_OP_STORE,				//	VkAttachmentStoreOp				storeOp;
+			VK_ATTACHMENT_LOAD_OP_DONT_CARE,			//	VkAttachmentLoadOp				stencilLoadOp;
+			VK_ATTACHMENT_STORE_OP_DONT_CARE,			//	VkAttachmentStoreOp				stencilStoreOp;
+			VK_IMAGE_LAYOUT_UNDEFINED,					//	VkImageLayout					initialLayout;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	//	VkImageLayout					finalLayout;
+		}
+	);
+
+	std::vector<VkAttachmentReference> colorAttachmentReference;
+	for (deUint32 i = 0u; i < colorAttachmentCount; ++i)
+	{
+		colorAttachmentReference.push_back(VkAttachmentReference
+			{
+				i,											//	deUint32		attachment;
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	//	VkImageLayout	layout;
+			}
+		);
+	}
+
+	const VkSubpassDescription subpassDescription
+	{
+		0u,												//	VkSubpassDescriptionFlags		flags;
+		VK_PIPELINE_BIND_POINT_GRAPHICS,				//	VkPipelineBindPoint				pipelineBindPoint;
+		0u,												//	deUint32						inputAttachmentCount;
+		nullptr,										//	const VkAttachmentReference*	pInputAttachments;
+		deUint32(attachmentDescriptions.size()),		//	deUint32						colorAttachmentCount;
+		colorAttachmentReference.data(),				//	const VkAttachmentReference*	pColorAttachments;
+		nullptr,										//	const VkAttachmentReference*	pResolveAttachments;
+		nullptr,										//	const VkAttachmentReference*	pDepthStencilAttachment;
+		0u,												//	deUint32						preserveAttachmentCount;
+		nullptr,										//	const deUint32*					pPreserveAttachments;
+	};
+
+	const VkRenderPassCreateInfo renderPassCreateInfo
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,				//	VkStructureType					sType;
+		nullptr,												//	const void*						pNext;
+		0u,														//	VkRenderPassCreateFlags			flags;
+		static_cast<deUint32>(attachmentDescriptions.size()),	//	deUint32						attachmentCount;
+		attachmentDescriptions.data(),							//	const VkAttachmentDescription*	pAttachments;
+		1u,														//	deUint32						subpassCount;
+		&subpassDescription,									//	const VkSubpassDescription*		pSubpasses;
+		0u,														//	deUint32						dependencyCount;
+		nullptr,												//	const VkSubpassDependency*		pDependencies;
+	};
+
+	return vk::createRenderPass(m_vkd, m_device, &renderPassCreateInfo);
+}
+
+de::MovePtr<BufferWithMemory> ColorWriteEnable2Instance::createVerrtexBuffer () const
+{
+	const std::vector<float> quad
+	{
+		-1.0f, -1.0f, 0.0f, 0.0f,
+		+1.0f, -1.0f, 0.0f, 0.0f,
+		-1.0f, +1.0f, 0.0f, 0.0f,
+		-1.0f, +1.0f, 0.0f, 0.0f,
+		+1.0f, -1.0f, 0.0f, 0.0f,
+		+1.0f, +1.0f, 0.0f, 0.0f
+	};
+
+	const auto						vertDataSize	= quad.size() * sizeof(float);
+	const auto						vertBufferInfo	= makeBufferCreateInfo(static_cast<VkDeviceSize>(vertDataSize), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	de::MovePtr<BufferWithMemory>	vertBuffer		(new BufferWithMemory(m_vkd, m_device, m_allocator, vertBufferInfo, vk::MemoryRequirement::HostVisible));
+	auto&							alloc			= vertBuffer->getAllocation();
+
+	deMemcpy(reinterpret_cast<char*>(alloc.getHostPtr()), quad.data(), vertDataSize);
+	flushAlloc(m_vkd, m_device, alloc);
+
+	return vertBuffer;
+}
+
+ColorWriteEnable2Instance::Attachments ColorWriteEnable2Instance::createAttachments (VkRenderPass renderPass, deUint32 colorAttachmentCount) const
+{
+	const VkExtent3D			extent				{ m_params.width, m_params.height, 1u };
+	const VkImageUsageFlags		imageUsage			= (vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const auto					imageSubresource	= vk::makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	const deUint32				queueIndex			= m_context.getUniversalQueueFamilyIndex();
+	Allocator&					allocator			= m_context.getDefaultAllocator();
+
+	std::vector<Attachment>		attachments			(colorAttachmentCount);
+	std::vector<VkImageView>	views				(colorAttachmentCount);
+
+	for (deUint32 i = 0; i < colorAttachmentCount; ++i)
+	{
+		auto& attachment = attachments[i];
+
+		const VkImageCreateInfo imageCreateInfo
+		{
+			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,		//	VkStructureType			sType;
+			nullptr,									//	const void*				pNext;
+			0u,											//	VkImageCreateFlags		flags;
+			VK_IMAGE_TYPE_2D,							//	VkImageType				imageType;
+			m_params.format,							//	VkFormat				format;
+			extent,										//	VkExtent3D				extent;
+			1u,											//	deUint32				mipLevels;
+			1u,											//	deUint32				arrayLayers;
+			VK_SAMPLE_COUNT_1_BIT,						//	VkSampleCountFlagBits	samples;
+			VK_IMAGE_TILING_OPTIMAL,					//	VkImageTiling			tiling;
+			imageUsage,									//	VkImageUsageFlags		usage;
+			VK_SHARING_MODE_EXCLUSIVE,					//	VkSharingMode			sharingMode;
+			1u,											//	deUint32				queueFamilyIndexCount;
+			&queueIndex,								//	const deUint32*			pQueueFamilyIndices;
+			VK_IMAGE_LAYOUT_UNDEFINED,					//	VkImageLayout			initialLayout;
+		};
+		attachment.image = de::MovePtr<ImageWithMemory>(new ImageWithMemory(m_vkd, m_device, allocator, imageCreateInfo, MemoryRequirement::Any));
+
+		attachment.view	= makeImageView(m_vkd, m_device, **attachment.image, VK_IMAGE_VIEW_TYPE_2D, m_params.format, imageSubresource);
+
+		views[i] = *attachment.view;
+	}
+
+	const VkFramebufferCreateInfo framebufferCreateInfo
+	{
+		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,		//	VkStructureType				sType;
+		nullptr,										//	const void*					pNext;
+		0u,												//	VkFramebufferCreateFlags	flags;
+		renderPass,										//	VkRenderPass				renderPass;
+		colorAttachmentCount,							//	deUint32					attachmentCount;
+		views.data(),									//	const VkImageView*			pAttachments;
+		m_params.width,									//	deUint32					width;
+		m_params.height,								//	deUint32					height;
+		1u,												//	deUint32					layers;
+	};
+
+	Attachments result;
+	result.attachments = std::move(attachments);
+	result.framebuffer = createFramebuffer(m_vkd, m_device, &framebufferCreateInfo);
+
+	return result;
+}
+
+void ColorWriteEnable2Instance::setupAndBuildPipeline (GraphicsPipelineWrapper&		owner,
+													   VkPipelineLayout				pipelineLayout,
+													   VkRenderPass					renderPass,
+													   deUint32						colorAttachmentCount,
+													   const ColorWriteEnables&		colorWriteEnables,
+													   bool							dynamic) const
+{
+	const std::vector<VkViewport>	viewports		{ makeViewport(m_params.width, m_params.height) };
+	const std::vector<VkRect2D>		scissors		{ makeRect2D(m_params.width, m_params.height) };
+
+	const auto						vertexBinding	= makeVertexInputBindingDescription(0u, static_cast<deUint32>(4 * sizeof(float)), VK_VERTEX_INPUT_RATE_VERTEX);
+	const auto						vertexAttrib	= makeVertexInputAttributeDescription(0u, 0u, VK_FORMAT_R32G32B32A32_SFLOAT, 0u);
+
+	const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	//	VkStructureType								sType;
+		nullptr,														//	const void*									pNext;
+		0u,																//	VkPipelineVertexInputStateCreateFlags		flags;
+		1u,																//	deUint32									vertexBindingDescriptionCount;
+		&vertexBinding,													//	const VkVertexInputBindingDescription*		pVertexBindingDescriptions;
+		1u,																//	deUint32									vertexAttributeDescriptionCount;
+		&vertexAttrib													//	const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
+	};
+
+	const vk::VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	//	VkStructureType							sType;
+		nullptr,														//	const void*								pNext;
+		0u,																//	VkPipelineInputAssemblyStateCreateFlags	flags;
+		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,							//	VkPrimitiveTopology						topology;
+		VK_FALSE,														//	VkBool32								primitiveRestartEnable;
+	};
+
+	const VkDynamicState cweDynamicStates[1] { VK_DYNAMIC_STATE_COLOR_WRITE_ENABLE_EXT };
+	const VkPipelineDynamicStateCreateInfo	dynamicStateCreateInfo
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,	//	VkStructureType						sType;
+		nullptr,												//	const void*							pNext;
+		0u,														//	VkPipelineDynamicStateCreateFlags	flags;
+		1u,														//	deUint32							dynamicStateCount;
+		cweDynamicStates										//	const VkDynamicState*				pDynamicStates;
+	};
+
+	std::vector<vk::VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates(
+		colorAttachmentCount,
+		VkPipelineColorBlendAttachmentState
+		{
+			VK_TRUE,											// VkBool32                 blendEnable
+			VK_BLEND_FACTOR_CONSTANT_COLOR,						// VkBlendFactor            srcColorBlendFactor
+			VK_BLEND_FACTOR_ZERO,								// VkBlendFactor            dstColorBlendFactor
+			VK_BLEND_OP_ADD,									// VkBlendOp                colorBlendOp
+			VK_BLEND_FACTOR_CONSTANT_ALPHA,						// VkBlendFactor            srcAlphaBlendFactor
+			VK_BLEND_FACTOR_ZERO,								// VkBlendFactor            dstAlphaBlendFactor
+			VK_BLEND_OP_ADD,									// VkBlendOp                alphaBlendOp
+			VkColorComponentFlags(0)							// VkColorComponentFlags    colorWriteMask
+		}
+	);
+	for (deUint32 i = 0; i < colorAttachmentCount; ++i)
+	{
+		VkColorComponentFlags colorWriteMask(  VK_COLOR_COMPONENT_R_BIT
+											 | VK_COLOR_COMPONENT_G_BIT
+											 | VK_COLOR_COMPONENT_B_BIT
+											 | VK_COLOR_COMPONENT_A_BIT);
+		switch (i % 4)
+		{
+			case 0: colorWriteMask &= (~(VK_COLOR_COMPONENT_R_BIT)); break;
+			case 1: colorWriteMask &= (~(VK_COLOR_COMPONENT_G_BIT)); break;
+			case 2: colorWriteMask &= (~(VK_COLOR_COMPONENT_B_BIT)); break;
+			case 3: colorWriteMask &= (~(VK_COLOR_COMPONENT_A_BIT)); break;
+		}
+		colorBlendAttachmentStates[i].colorWriteMask = colorWriteMask;
+	}
+
+	const bool cweAllowed = (dynamic && m_params.colorWriteEnables);
+
+	if (cweAllowed)
+	{
+		DE_ASSERT(colorWriteEnables.size() >= colorAttachmentCount);
+	}
+
+	const VkPipelineColorWriteCreateInfoEXT colorWriteCreateInfo
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT,			// VkStructureType	sType;
+		nullptr,														// const void*		pNext;
+		colorAttachmentCount,											// deUint32			attachmentCount;
+		colorWriteEnables.data()										// const VkBool32*	pColorWriteEnables;
+	};
+
+	const float blend = 0.5f;
+
+	const VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,		// VkStructureType                               sType
+		cweAllowed ? &colorWriteCreateInfo : nullptr,					// const void*                                   pNext
+		0u,																// VkPipelineColorBlendStateCreateFlags          flags
+		VK_FALSE,														// VkBool32                                      logicOpEnable
+		VK_LOGIC_OP_CLEAR,												// VkLogicOp                                     logicOp
+		colorAttachmentCount,											// deUint32                                      attachmentCount
+		colorBlendAttachmentStates.data(),								// const VkPipelineColorBlendAttachmentState*    pAttachments
+		{ blend, blend, blend, blend }									// float                                         blendConstants[4]
+	};
+
+	owner
+		.setDefaultRasterizationState()
+		.setDefaultDepthStencilState()
+		.setDefaultMultisampleState()
+		.setDynamicState(cweAllowed ? &dynamicStateCreateInfo : nullptr)
+		.setupVertexInputStete(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
+		.setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, renderPass, 0u, *m_vertex)
+		.setupFragmentShaderState(pipelineLayout, renderPass, 0u, *m_fragment)
+		.setupFragmentOutputState(renderPass, 0u, &colorBlendStateCreateInfo)
+		.setMonolithicPipelineLayout(pipelineLayout)
+		.buildPipeline();
+}
+
+bool ColorWriteEnable2Instance::verifyAttachment (deUint32						attachmentIndex,
+												  const ConstPixelBufferAccess&	attachmentContent,
+												  const ColorWriteEnables&		colorWriteEnables,
+												  const Vec4&					background) const
+{
+	const auto	maskColor	= [&](Vec4 color) -> Vec4 {
+		color[attachmentIndex % 4] = background[attachmentIndex % 4];
+		return color;
+	};
+	const Vec4	source		(powf(0.5f, static_cast<float>(attachmentIndex + 1)));
+	const Vec4	blend		(0.5f);
+	const Vec4	expected	= m_params.colorWriteEnables
+								? (colorWriteEnables[attachmentIndex] != VK_FALSE)
+								  ? maskColor(source * blend)
+								  : background
+								 : maskColor(source * blend);
+	deUint32	failures	= 0;
+
+	for (deUint32 y = 0; y < m_params.height; ++y)
+	{
+		for (deUint32 x = 0; x < m_params.width; ++x)
+		{
+			const auto result = attachmentContent.getPixel(x, y);
+			if (result != expected) ++failures;
+		}
+	}
+
+	return (0 == failures);
+}
+
+TestStatus ColorWriteEnable2Instance::iterate (void)
+{
+	return m_params.setCweBeforePlBind
+			? testSetCWEbeforePlBind()
+			: testSetCWEafterPlBind();
+}
+
+TestStatus ColorWriteEnable2Instance::testSetCWEbeforePlBind ()
+{
+	const VkQueue							queue			= m_context.getUniversalQueue();
+	const deUint32							queueIndex		= m_context.getUniversalQueueFamilyIndex();
+	const VkRect2D							renderArea		= makeRect2D(m_params.width, m_params.height);
+	const deUint32							attachmentCount	= m_params.attachmentCount;
+
+	struct { deUint32 attachments; }		pushConstant	{ 1u };
+	const VkPushConstantRange				pcRange			= makePushConstantRange(VK_SHADER_STAGE_FRAGMENT_BIT, 0u, sizeof(pushConstant));
+
+	de::MovePtr<BufferWithMemory>			vertexBuffer	= createVerrtexBuffer();
+
+	std::vector<Move<VkRenderPass>>			renderPasses;
+	std::vector<Attachments>				attachments;
+	for (deUint32 i = 0; i < attachmentCount; ++i)
+	{
+		renderPasses.emplace_back(createRenderPass(i+1));
+		attachments.emplace_back(createAttachments(*renderPasses.back(), (i+1)));
+	}
+	const Vec4								background		(0.75f, 0.75f, 0.75f, 0.75f);
+	std::vector<VkClearValue>				clearValues		(attachmentCount, makeClearValueColor(background));
+
+	ColorWriteEnables						writeEnables	(attachmentCount + m_params.attachmentMore, VK_TRUE);
+	for (deUint32 i = 0; i < attachmentCount; ++i)	writeEnables[i] = (i % 2) ? VK_TRUE : VK_FALSE;
+
+	Move<VkPipelineLayout>					pipelineLayout	= makePipelineLayout(m_vkd, m_device, 0u, nullptr, 1u, &pcRange);
+
+	std::vector<GraphicsPipelineWrapper>	pipelines;
+	for (deUint32 i = 0; i < attachmentCount; ++i)
+	{
+		pipelines.emplace_back(m_vkd, m_device, m_params.pct);
+		setupAndBuildPipeline(pipelines.back(), *pipelineLayout, *renderPasses[i], (i+1), writeEnables, true);
+	}
+
+	Move<VkCommandPool>						cmdPool			= makeCommandPool(m_vkd, m_device, queueIndex);
+	Move<VkCommandBuffer>					cmdBuff			= allocateCommandBuffer(m_vkd, m_device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	beginCommandBuffer(m_vkd, *cmdBuff);
+		m_vkd.cmdBindVertexBuffers(*cmdBuff, 0u, 1u, &vertexBuffer->get(), &static_cast<const VkDeviceSize&>(0));
+
+		if (m_params.colorWriteEnables) // this condition always met
+		{
+			m_vkd.cmdSetColorWriteEnableEXT(*cmdBuff, static_cast<deUint32>(writeEnables.size()), writeEnables.data());
+		}
+
+		for (deUint32 a = 0; a < attachmentCount; ++a)
+		{
+			pushConstant.attachments = (a + 1);
+			m_vkd.cmdPushConstants(*cmdBuff, *pipelineLayout, pcRange.stageFlags, pcRange.offset, pcRange.size, &pushConstant);
+
+			m_vkd.cmdBindPipeline(*cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[a].getPipeline());
+			beginRenderPass(m_vkd, *cmdBuff, *renderPasses[a], *attachments[a].framebuffer, renderArea, attachmentCount, clearValues.data());
+				m_vkd.cmdDraw(*cmdBuff, 6u, 1u, 0u, 0u);
+			endRenderPass(m_vkd, *cmdBuff);
+		}
+
+	endCommandBuffer(m_vkd, *cmdBuff);
+
+	submitCommandsAndWait(m_vkd, m_device, queue, *cmdBuff);
+
+	deUint32 failureCount = 0;
+	for (deUint32 i = 0; i < attachmentCount; ++i)
+	for (deUint32 a = 0; a < (i + 1); ++a)
+	{
+		const auto	colorBuffer = readColorAttachment(m_vkd, m_device, queue, queueIndex, m_allocator,
+													  **attachments[i].attachments[a].image, m_params.format,
+													  UVec2(m_params.width, m_params.height));
+		failureCount += verifyAttachment(a, colorBuffer->getAccess(), writeEnables, background) ? 0u : 1u;
+	}
+
+	return (0u == failureCount) ? TestStatus::pass("") : TestStatus::fail("");
+}
+
+TestStatus ColorWriteEnable2Instance::testSetCWEafterPlBind ()
+{
+	const VkQueue							queue			= m_context.getUniversalQueue();
+	const deUint32							queueIndex		= m_context.getUniversalQueueFamilyIndex();
+	const VkRect2D							renderArea		= makeRect2D(m_params.width, m_params.height);
+	const deUint32							attachmentCount	= m_params.attachmentCount;
+
+	struct { deUint32 attachments; } const	pushConstant	{ attachmentCount };
+	const VkPushConstantRange				pcRange			= makePushConstantRange(VK_SHADER_STAGE_FRAGMENT_BIT, 0u, sizeof(pushConstant));
+
+	de::MovePtr<BufferWithMemory>			vertexBuffer	= createVerrtexBuffer();
+	Move<VkRenderPass>						renderPass		= createRenderPass(attachmentCount);
+	Attachments								attachments		= createAttachments(*renderPass, attachmentCount);
+	const Vec4								background		(0.75f, 0.75f, 0.75f, 0.75f);
+	std::vector<VkClearValue>				clearValues		(attachmentCount, makeClearValueColor(background));
+
+	ColorWriteEnables						writeEnables	(attachmentCount + m_params.attachmentMore, VK_TRUE);
+	for (deUint32 i = 0; i < attachmentCount; ++i)	writeEnables[i] = (i % 2) ? VK_TRUE : VK_FALSE;
+
+	Move<VkPipelineLayout>					pipelineLayout	= makePipelineLayout(m_vkd, m_device, 0u, nullptr, 1u, &pcRange);
+
+	std::vector<GraphicsPipelineWrapper>	pipelines;
+	for (deUint32 i = 0; i < attachmentCount; ++i)
+	{
+		pipelines.emplace_back(m_vkd, m_device, m_params.pct);
+		setupAndBuildPipeline(pipelines.back(), *pipelineLayout, *renderPass, (i+1), writeEnables, ((attachmentCount-i) % 2));
+	}
+
+	Move<VkCommandPool>						cmdPool			= makeCommandPool(m_vkd, m_device, queueIndex);
+	Move<VkCommandBuffer>					cmdBuff			= allocateCommandBuffer(m_vkd, m_device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	beginCommandBuffer(m_vkd, *cmdBuff);
+		m_vkd.cmdBindVertexBuffers(*cmdBuff, 0u, 1u, &vertexBuffer->get(), &static_cast<const VkDeviceSize&>(0));
+		m_vkd.cmdPushConstants(*cmdBuff, *pipelineLayout, pcRange.stageFlags, pcRange.offset, pcRange.size, &pushConstant);
+
+		for (deUint32 i = 0; i < attachmentCount; ++i)
+		{
+			m_vkd.cmdBindPipeline(*cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[i].getPipeline());
+		}
+
+		if (m_params.colorWriteEnables) // this condition always met
+		{
+			m_vkd.cmdSetColorWriteEnableEXT(*cmdBuff, static_cast<deUint32>(writeEnables.size()), writeEnables.data());
+		}
+
+		beginRenderPass(m_vkd, *cmdBuff, *renderPass, *attachments.framebuffer, renderArea, attachmentCount, clearValues.data());
+			m_vkd.cmdDraw(*cmdBuff, 6u, 1u, 0u, 0u);
+		endRenderPass(m_vkd, *cmdBuff);
+	endCommandBuffer(m_vkd, *cmdBuff);
+
+	submitCommandsAndWait(m_vkd, m_device, queue, *cmdBuff);
+
+	deUint32 failureCount = 0;
+	for (deUint32 a = 0; a < attachmentCount; ++a)
+	{
+		const auto	colorBuffer = readColorAttachment(m_vkd, m_device, queue, queueIndex, m_allocator,
+													  **attachments.attachments[a].image, m_params.format,
+													  UVec2(m_params.width, m_params.height));
+		failureCount += verifyAttachment(a, colorBuffer->getAccess(), writeEnables, background) ? 0u : 1u;
+	}
+
+	return (0u == failureCount) ? TestStatus::pass("") : TestStatus::fail("");
+}
+
+} // unnamed namespace
+
 tcu::TestCaseGroup* createColorWriteEnableTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pct)
 {
 	de::MovePtr<tcu::TestCaseGroup> colorWriteEnableGroup(new tcu::TestCaseGroup(testCtx, "color_write_enable", "Tests for VK_EXT_color_write_enable"));
@@ -1224,6 +1859,55 @@ tcu::TestCaseGroup* createColorWriteEnableTests (tcu::TestContext& testCtx, vk::
 	}
 
 	return colorWriteEnableGroup.release();
+}
+
+tcu::TestCaseGroup* createColorWriteEnable2Tests (tcu::TestContext& testCtx, vk::PipelineConstructionType pct)
+{
+	const deUint32		attachmentCounts[]	{ 4,5,6 };
+	const deUint32		attachentMores[]	{ 0,1,3,5 };
+
+	//std::pair<bool, const char*>
+	//	static const	cweVariants[]
+	//{
+	//	{ true,		"cwe_enabled" },
+	//	{ false,	"cwe_disabled" }
+	//};
+
+	std::pair<bool, const char*>
+		static const	setCweMoments[]
+	{
+		{ true,		"cwe_before_bind" },
+		{ false,	"cwe_after_bind" }
+	};
+
+
+	tcu::TestCaseGroup* rootGroup = new tcu::TestCaseGroup(testCtx, "color_write_enable_maxa", "Tests for VK_EXT_color_write_enable");
+
+	for (const auto& setCweMoment : setCweMoments)
+	{
+		tcu::TestCaseGroup* setCweGroup = new tcu::TestCaseGroup(testCtx, setCweMoment.second, "A moment when cmdSetColorWriteEnableEXT() is called");
+
+		for (auto attachmentCount : attachmentCounts)
+		{
+			for (auto attachentMore : attachentMores)
+			{
+				const std::string title = "attachments" + std::to_string(attachmentCount) + "_more" + std::to_string(attachentMore);
+
+				TestParams p;
+				p.format				= VK_FORMAT_UNDEFINED;
+				p.width					= 32;
+				p.height				= 32;
+				p.setCweBeforePlBind	= setCweMoment.first;
+				p.colorWriteEnables		= true;
+				p.attachmentCount		= attachmentCount;
+				p.attachmentMore		= attachentMore;
+				p.pct					= pct;
+				setCweGroup->addChild(new ColorWriteEnable2Test(testCtx, title, "", p));
+			}
+		}
+		rootGroup->addChild(setCweGroup);
+	}
+	return rootGroup;
 }
 
 } // pipeline
