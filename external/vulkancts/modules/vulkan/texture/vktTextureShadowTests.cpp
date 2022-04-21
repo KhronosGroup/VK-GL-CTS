@@ -24,6 +24,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktTextureShadowTests.hpp"
+#include "vktAmberTestCase.hpp"
 
 #include "deMath.h"
 #include "deString.h"
@@ -1807,6 +1808,16 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 		}
 
 		textureShadowTests->addChild(groupCubeArray.release());
+	}
+
+	// Texel replacement tests.
+	{
+		de::MovePtr<tcu::TestCaseGroup>	groupTexelReplacement	(new tcu::TestCaseGroup(testCtx, "texel_replacement", "Texel replacement texture shadow lookup tests"));
+
+		cts_amber::AmberTestCase*		testCaseLod				= cts_amber::createAmberTestCase(testCtx, "d32_sfloat", "", "texture/shadow/texel_replacement", "d32_sfloat.amber");
+
+		groupTexelReplacement->addChild(testCaseLod);
+		textureShadowTests->addChild(groupTexelReplacement.release());
 	}
 
 }
