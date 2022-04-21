@@ -425,8 +425,14 @@ bool SparseTextureClampLookupResidencyTestCase::verifyLookupTextureData(const Fu
 					{
 						GLubyte* dataRegion	= exp_data + x + y * width;
 						GLubyte* outDataRegion = out_data + x + y * width;
-						if (dataRegion[0] != outDataRegion[0])
+						if (dataRegion[0] != outDataRegion[0]) {
+							m_testCtx.getLog() << tcu::TestLog::Message << mLog.str() <<
+								"Error detected at " << x << "," << y << "," << z <<
+								": expected [" << (unsigned)dataRegion[0] << "] got [" <<
+								(unsigned)outDataRegion[0] << "]" << tcu::TestLog::EndMessage;
 							result = false;
+							goto out;
+						}
 					}
 			}
 		}
@@ -441,7 +447,7 @@ bool SparseTextureClampLookupResidencyTestCase::verifyLookupTextureData(const Fu
 			result = false;
 		}
 	}
-
+out:
 	gl.bindFramebuffer(GL_FRAMEBUFFER, 0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindFramebuffer");
 

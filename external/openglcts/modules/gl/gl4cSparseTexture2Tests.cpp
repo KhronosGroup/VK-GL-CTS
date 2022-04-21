@@ -1330,8 +1330,14 @@ bool SparseTexture2CommitmentTestCase::verifyTextureData(const Functions& gl, GL
 						{
 							GLubyte* dataRegion	= exp_data + ((x + y * width) + z * width * height);
 							GLubyte* outDataRegion = out_data + ((x + y * width) + z * width * height);
-							if (dataRegion[0] != outDataRegion[0])
+							if (dataRegion[0] != outDataRegion[0]) {
+								m_testCtx.getLog() << tcu::TestLog::Message << mLog.str() <<
+									"Error detected at " << x << "," << y << "," << z << " for sample " << sample <<
+									": expected [" << (unsigned)dataRegion[0] << "] got [" <<
+									(unsigned)outDataRegion[0] << "]" << tcu::TestLog::EndMessage;
 								result = false;
+								goto out;
+							}
 						}
 			}
 			else
@@ -1343,7 +1349,7 @@ bool SparseTexture2CommitmentTestCase::verifyTextureData(const Functions& gl, GL
 				result = false;
 			}
 		}
-
+out:
 		Texture::Delete(gl, verifyTexture);
 	}
 
@@ -1742,15 +1748,25 @@ bool UncommittedRegionsAccessTestCase::verifyTextureDataExtended(const Functions
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::GetData");
 
 		//Verify only uncommitted region
-		for (GLint x = widthCommitted; x < width; ++x)
-			for (GLint y = 0; y < height; ++y)
-				for (GLint z = 0; z < depth; ++z)
+		for (GLint x = widthCommitted; result && x < width; ++x)
+			for (GLint y = 0; result && y < height; ++y)
+				for (GLint z = 0; result && z < depth; ++z)
 				{
 					int		 pixelSize	 = mState.format.getPixelSize();
 					GLubyte* dataRegion	= exp_data + ((x + y * width) * pixelSize);
 					GLubyte* outDataRegion = out_data + ((x + y * width) * pixelSize);
-					if (deMemCmp(dataRegion, outDataRegion, pixelSize) != 0)
+					if (deMemCmp(dataRegion, outDataRegion, pixelSize) != 0) {
+						mLog <<
+							"Error detected at " << x << "," << y << "," << z <<
+							": expected [ ";
+						for (int e = 0; e < pixelSize; e++)
+							mLog << (unsigned)dataRegion[e] << " ";
+						mLog << "] got [ ";
+						for (int e = 0; e < pixelSize; e++)
+							mLog <<(unsigned)outDataRegion[e] << " ";
+						mLog << "] ";
 						result = false;
+					}
 				}
 	}
 	// Verify texture using API glGetTexImage* (Only cube map as it has to be verified for subtargets)
@@ -1788,15 +1804,25 @@ bool UncommittedRegionsAccessTestCase::verifyTextureDataExtended(const Functions
 			GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::GetData");
 
 			//Verify only uncommitted region
-			for (GLint x = widthCommitted; x < width; ++x)
-				for (GLint y = 0; y < height; ++y)
-					for (GLint z = 0; z < depth; ++z)
+			for (GLint x = widthCommitted; result && x < width; ++x)
+				for (GLint y = 0; result && y < height; ++y)
+					for (GLint z = 0; result && z < depth; ++z)
 					{
 						int		 pixelSize	 = mState.format.getPixelSize();
 						GLubyte* dataRegion	= exp_data + ((x + y * width) * pixelSize);
 						GLubyte* outDataRegion = out_data + ((x + y * width) * pixelSize);
-						if (deMemCmp(dataRegion, outDataRegion, pixelSize) != 0)
+						if (deMemCmp(dataRegion, outDataRegion, pixelSize) != 0) {
+							mLog <<
+								"Error detected at " << x << "," << y << "," << z <<
+								": expected [ ";
+							for (int e = 0; e < pixelSize; e++)
+								mLog << (unsigned)dataRegion[e] << " ";
+							mLog << "] got [ ";
+							for (int e = 0; e < pixelSize; e++)
+								mLog <<(unsigned)outDataRegion[e] << " ";
+							mLog << "] ";
 							result = false;
+						}
 					}
 
 			if (!result)
@@ -1900,8 +1926,14 @@ bool UncommittedRegionsAccessTestCase::verifyTextureDataExtended(const Functions
 						{
 							GLubyte* dataRegion	= exp_data + ((x + y * width) + z * width * height);
 							GLubyte* outDataRegion = out_data + ((x + y * width) + z * width * height);
-							if (dataRegion[0] != outDataRegion[0])
+							if (dataRegion[0] != outDataRegion[0]) {
+								m_testCtx.getLog() << tcu::TestLog::Message << mLog.str() <<
+									"Error detected at " << x << "," << y << "," << z << " for sample " << sample <<
+									": expected [" << (unsigned)dataRegion[0] << "] got [" <<
+									(unsigned)outDataRegion[0] << "]" << tcu::TestLog::EndMessage;
 								result = false;
+								goto out;
+							}
 						}
 			}
 			else
@@ -1913,7 +1945,7 @@ bool UncommittedRegionsAccessTestCase::verifyTextureDataExtended(const Functions
 				result = false;
 			}
 		}
-
+out:
 		Texture::Delete(gl, verifyTexture);
 	}
 
@@ -2044,11 +2076,14 @@ bool UncommittedRegionsAccessTestCase::verifyAtomicOperations(const Functions& g
 					{
 						GLubyte* dataRegion	= exp_data + ((x + y * width) + z * width * height);
 						GLubyte* outDataRegion = out_data + ((x + y * width) + z * width * height);
-						if (dataRegion[0] != outDataRegion[0])
-						{
-							printf("%d:%d ", dataRegion[0], outDataRegion[0]);
-							result = false;
-						}
+							if (dataRegion[0] != outDataRegion[0]) {
+								m_testCtx.getLog() << tcu::TestLog::Message << mLog.str() <<
+									"Error detected at " << x << "," << y << "," << z << " for sample " << sample <<
+									": expected [" << (unsigned)dataRegion[0] << "] got [" <<
+									(unsigned)outDataRegion[0] << "]" << tcu::TestLog::EndMessage;
+								result = false;
+								goto out;
+							}
 					}
 		}
 		else
@@ -2060,7 +2095,7 @@ bool UncommittedRegionsAccessTestCase::verifyAtomicOperations(const Functions& g
 			result = false;
 		}
 	}
-
+out:
 	Texture::Delete(gl, verifyTexture);
 
 	return result;
@@ -2946,8 +2981,14 @@ bool SparseTexture2LookupTestCase::verifyLookupTextureData(const Functions& gl, 
 					{
 						GLubyte* dataRegion	= exp_data + x + y * width + z * width * height;
 						GLubyte* outDataRegion = out_data + x + y * width + z * width * height;
-						if (dataRegion[0] != outDataRegion[0])
+						if (dataRegion[0] != outDataRegion[0]) {
+							m_testCtx.getLog() << tcu::TestLog::Message << mLog.str() <<
+								"Error detected at " << x << "," << y << "," << z << " for sample " << sample <<
+								": expected [" << (unsigned)dataRegion[0] << "] got [" <<
+								(unsigned)outDataRegion[0] << "]" << tcu::TestLog::EndMessage;
 							result = false;
+							goto out;
+						}
 					}
 		}
 		else
@@ -2960,7 +3001,7 @@ bool SparseTexture2LookupTestCase::verifyLookupTextureData(const Functions& gl, 
 			result = false;
 		}
 	}
-
+out:
 	Texture::Delete(gl, verifyTexture);
 
 	return result;
