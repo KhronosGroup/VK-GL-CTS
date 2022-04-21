@@ -415,6 +415,26 @@ tcu::TestNode::IterateResult StandardPageSizesTestCase::iterate()
 			const PageSizePair&   format = *formIter;
 			const PageSizeStruct& page   = format.second;
 
+			if (target == GL_TEXTURE_BUFFER) {
+				/* filter out invalid texture buffer formats according to ARB_texture_buffer_object */
+				switch (format.first) {
+				case GL_RGB10_A2:
+				case GL_RGB10_A2UI:
+				case GL_R11F_G11F_B10F:
+				case GL_RGB9_E5:
+				case GL_RGB565:
+				case GL_R8_SNORM:
+				case GL_RG8_SNORM:
+				case GL_RGBA8_SNORM:
+				case GL_R16_SNORM:
+				case GL_RG16_SNORM:
+				case GL_RGBA16_SNORM:
+					continue;
+				default:
+					break;
+				}
+			}
+
 			GLint pageSizeX;
 			GLint pageSizeY;
 			GLint pageSizeZ;
