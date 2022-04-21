@@ -1834,7 +1834,7 @@ bool UncommittedRegionsAccessTestCase::verifyTextureDataExtended(const Functions
 	{
 		// Create verifying texture
 		GLint verifyTarget;
-		if (target == GL_TEXTURE_2D_MULTISAMPLE)
+		if (target == GL_TEXTURE_2D_MULTISAMPLE || target == GL_TEXTURE_2D)
 			verifyTarget = GL_TEXTURE_2D;
 		else
 			verifyTarget = GL_TEXTURE_2D_ARRAY;
