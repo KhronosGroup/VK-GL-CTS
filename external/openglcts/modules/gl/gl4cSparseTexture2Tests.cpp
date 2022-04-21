@@ -1537,6 +1537,31 @@ bool UncommittedRegionsAccessTestCase::UncommittedReads(const Functions& gl, GLi
 	if (result && level == 0 && target != GL_TEXTURE_RECTANGLE && target != GL_TEXTURE_2D_MULTISAMPLE &&
 		target != GL_TEXTURE_2D_MULTISAMPLE_ARRAY)
 	{
+		/* Khronos bugzilla #9471 states that mipmap generation with integer formats
+		 * is unsupported, so skip this test
+		 */
+		switch (format) {
+		case GL_RGB10_A2UI:
+		case GL_R8I:
+		case GL_R8UI:
+		case GL_R16I:
+		case GL_R16UI:
+		case GL_R32I:
+		case GL_R32UI:
+		case GL_RG8I:
+		case GL_RG8UI:
+		case GL_RG16I:
+		case GL_RG16UI:
+		case GL_RG32I:
+		case GL_RG32UI:
+		case GL_RGBA8I:
+		case GL_RGBA8UI:
+		case GL_RGBA16I:
+		case GL_RGBA16UI:
+		case GL_RGBA32I:
+		case GL_RGBA32UI:
+		   return result;
+		}
 		mLog << "Mipmap Generate - ";
 		Texture::Bind(gl, texture, target);
 		gl.generateMipmap(target);
