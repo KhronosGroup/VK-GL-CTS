@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision b0643365776c260efc6317d2ff67dd8bf5078be9.
+ * Generated from Khronos GL API description (gl.xml) revision d8371b44919d61c02e60f446a4b5461fda910f71.
  */
 typedef GLW_APICALL void			(GLW_APIENTRY* glActiveShaderProgramFunc)								(GLuint pipeline, GLuint program);
 typedef GLW_APICALL void			(GLW_APIENTRY* glActiveTextureFunc)										(GLenum texture);
@@ -217,6 +217,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferDrawBuffersEXTFunc)						
 typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferParameteriFunc)								(GLenum target, GLenum pname, GLint param);
 typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferReadBufferEXTFunc)							(GLuint framebuffer, GLenum mode);
 typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferRenderbufferFunc)							(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
+typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferShadingRateEXTFunc)							(GLenum target, GLenum attachment, GLuint texture, GLint baseLayer, GLsizei numLayers, GLsizei texelWidth, GLsizei texelHeight);
 typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferTextureFunc)								(GLenum target, GLenum attachment, GLuint texture, GLint level);
 typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferTexture1DFunc)								(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
 typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferTexture2DFunc)								(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
@@ -271,6 +272,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glGetFloati_vFunc)										(GLenum ta
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetFloatvFunc)											(GLenum pname, GLfloat *data);
 typedef GLW_APICALL GLint			(GLW_APIENTRY* glGetFragDataIndexFunc)									(GLuint program, const GLchar *name);
 typedef GLW_APICALL GLint			(GLW_APIENTRY* glGetFragDataLocationFunc)								(GLuint program, const GLchar *name);
+typedef GLW_APICALL void			(GLW_APIENTRY* glGetFragmentShadingRatesEXTFunc)						(GLsizei samples, GLsizei maxCount, GLsizei *count, GLenum *shadingRates);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetFramebufferAttachmentParameterivFunc)				(GLenum target, GLenum attachment, GLenum pname, GLint *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetFramebufferParameterivFunc)							(GLenum target, GLenum pname, GLint *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetFramebufferParameterivEXTFunc)						(GLuint framebuffer, GLenum pname, GLint *params);
@@ -664,6 +666,8 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glScissorIndexedvFunc)									(GLuint
 typedef GLW_APICALL void			(GLW_APIENTRY* glShaderBinaryFunc)										(GLsizei count, const GLuint *shaders, GLenum binaryFormat, const void *binary, GLsizei length);
 typedef GLW_APICALL void			(GLW_APIENTRY* glShaderSourceFunc)										(GLuint shader, GLsizei count, const GLchar *const*string, const GLint *length);
 typedef GLW_APICALL void			(GLW_APIENTRY* glShaderStorageBlockBindingFunc)							(GLuint program, GLuint storageBlockIndex, GLuint storageBlockBinding);
+typedef GLW_APICALL void			(GLW_APIENTRY* glShadingRateEXTFunc)									(GLenum rate);
+typedef GLW_APICALL void			(GLW_APIENTRY* glShadingRateCombinerOpsEXTFunc)							(GLenum combinerOp0, GLenum combinerOp1);
 typedef GLW_APICALL void			(GLW_APIENTRY* glSpecializeShaderFunc)									(GLuint shader, const GLchar *pEntryPoint, GLuint numSpecializationConstants, const GLuint *pConstantIndex, const GLuint *pConstantValue);
 typedef GLW_APICALL void			(GLW_APIENTRY* glStencilFuncFunc)										(GLenum func, GLint ref, GLuint mask);
 typedef GLW_APICALL void			(GLW_APIENTRY* glStencilFuncSeparateFunc)								(GLenum face, GLenum func, GLint ref, GLuint mask);

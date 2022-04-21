@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision b0643365776c260efc6317d2ff67dd8bf5078be9.
+ * Generated from Khronos GL API description (gl.xml) revision d8371b44919d61c02e60f446a4b5461fda910f71.
  */
 
 GLW_APICALL void GLW_APIENTRY glActiveShaderProgram (GLuint pipeline, GLuint program)
@@ -1927,6 +1927,18 @@ GLW_APICALL void GLW_APIENTRY glFramebufferRenderbuffer (GLenum target, GLenum a
 
 }
 
+GLW_APICALL void GLW_APIENTRY glFramebufferShadingRateEXT (GLenum target, GLenum attachment, GLuint texture, GLint baseLayer, GLsizei numLayers, GLsizei texelWidth, GLsizei texelHeight)
+{
+	DE_UNREF(target);
+	DE_UNREF(attachment);
+	DE_UNREF(texture);
+	DE_UNREF(baseLayer);
+	DE_UNREF(numLayers);
+	DE_UNREF(texelWidth);
+	DE_UNREF(texelHeight);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glFramebufferTexture (GLenum target, GLenum attachment, GLuint texture, GLint level)
 {
 	DE_UNREF(target);
@@ -2309,6 +2321,15 @@ GLW_APICALL GLint GLW_APIENTRY glGetFragDataLocation (GLuint program, const GLch
 	DE_UNREF(name);
 
 	return (GLint)0;
+}
+
+GLW_APICALL void GLW_APIENTRY glGetFragmentShadingRatesEXT (GLsizei samples, GLsizei maxCount, GLsizei *count, GLenum *shadingRates)
+{
+	DE_UNREF(samples);
+	DE_UNREF(maxCount);
+	DE_UNREF(count);
+	DE_UNREF(shadingRates);
+
 }
 
 GLW_APICALL void GLW_APIENTRY glGetFramebufferAttachmentParameteriv (GLenum target, GLenum attachment, GLenum pname, GLint *params)
@@ -5735,6 +5756,19 @@ GLW_APICALL void GLW_APIENTRY glShaderStorageBlockBinding (GLuint program, GLuin
 	DE_UNREF(program);
 	DE_UNREF(storageBlockIndex);
 	DE_UNREF(storageBlockBinding);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glShadingRateEXT (GLenum rate)
+{
+	DE_UNREF(rate);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glShadingRateCombinerOpsEXT (GLenum combinerOp0, GLenum combinerOp1)
+{
+	DE_UNREF(combinerOp0);
+	DE_UNREF(combinerOp1);
 
 }
 

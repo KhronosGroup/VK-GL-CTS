@@ -2600,6 +2600,7 @@ dEQP-EGL.functional.get_proc_address.extension.gl_ext_draw_elements_base_vertex
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_draw_instanced
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_draw_transform_feedback
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_external_buffer
+dEQP-EGL.functional.get_proc_address.extension.gl_ext_fragment_shading_rate
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_geometry_shader
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_instanced_arrays
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_memory_object

@@ -88,6 +88,7 @@ dEQP-EGL.functional.image.render_multiple_contexts.gles2_android_native_rgba16f_
 dEQP-EGL.functional.image.render_multiple_contexts.gles2_android_native_rgba16f_read_pixels
 dEQP-EGL.functional.image.render_multiple_contexts.gles2_android_native_s8_stencil_buffer
 dEQP-EGL.functional.sharing.gles2.texture.render_sample_mixed
+dEQP-EGL.functional.get_proc_address.extension.gl_ext_fragment_shading_rate
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_texture_storage_compression
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_timeline_semaphore
 dEQP-EGL.functional.get_proc_address.extension.gl_mesa_framebuffer_flip_y

@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision b0643365776c260efc6317d2ff67dd8bf5078be9.
+ * Generated from Khronos GL API description (gl.xml) revision d8371b44919d61c02e60f446a4b5461fda910f71.
  */
 glActiveShaderProgramFunc								activeShaderProgram;
 glActiveTextureFunc										activeTexture;
@@ -217,6 +217,7 @@ glFramebufferDrawBuffersEXTFunc							framebufferDrawBuffersEXT;
 glFramebufferParameteriFunc								framebufferParameteri;
 glFramebufferReadBufferEXTFunc							framebufferReadBufferEXT;
 glFramebufferRenderbufferFunc							framebufferRenderbuffer;
+glFramebufferShadingRateEXTFunc							framebufferShadingRateEXT;
 glFramebufferTextureFunc								framebufferTexture;
 glFramebufferTexture1DFunc								framebufferTexture1D;
 glFramebufferTexture2DFunc								framebufferTexture2D;
@@ -271,6 +272,7 @@ glGetFloati_vFunc										getFloati_v;
 glGetFloatvFunc											getFloatv;
 glGetFragDataIndexFunc									getFragDataIndex;
 glGetFragDataLocationFunc								getFragDataLocation;
+glGetFragmentShadingRatesEXTFunc						getFragmentShadingRatesEXT;
 glGetFramebufferAttachmentParameterivFunc				getFramebufferAttachmentParameteriv;
 glGetFramebufferParameterivFunc							getFramebufferParameteriv;
 glGetFramebufferParameterivEXTFunc						getFramebufferParameterivEXT;
@@ -664,6 +666,8 @@ glScissorIndexedvFunc									scissorIndexedv;
 glShaderBinaryFunc										shaderBinary;
 glShaderSourceFunc										shaderSource;
 glShaderStorageBlockBindingFunc							shaderStorageBlockBinding;
+glShadingRateEXTFunc									shadingRateEXT;
+glShadingRateCombinerOpsEXTFunc							shadingRateCombinerOpsEXT;
 glSpecializeShaderFunc									specializeShader;
 glStencilFuncFunc										stencilFunc;
 glStencilFuncSeparateFunc								stencilFuncSeparate;

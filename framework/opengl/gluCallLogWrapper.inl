@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision b0643365776c260efc6317d2ff67dd8bf5078be9.
+ * Generated from Khronos GL API description (gl.xml) revision d8371b44919d61c02e60f446a4b5461fda910f71.
  */
 
 void CallLogWrapper::glActiveShaderProgram (glw::GLuint pipeline, glw::GLuint program)
@@ -1526,6 +1526,13 @@ void CallLogWrapper::glFramebufferRenderbuffer (glw::GLenum target, glw::GLenum 
 	m_gl.framebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer);
 }
 
+void CallLogWrapper::glFramebufferShadingRateEXT (glw::GLenum target, glw::GLenum attachment, glw::GLuint texture, glw::GLint baseLayer, glw::GLsizei numLayers, glw::GLsizei texelWidth, glw::GLsizei texelHeight)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glFramebufferShadingRateEXT(" << toHex(target) << ", " << toHex(attachment) << ", " << texture << ", " << baseLayer << ", " << numLayers << ", " << texelWidth << ", " << texelHeight << ");" << TestLog::EndMessage;
+	m_gl.framebufferShadingRateEXT(target, attachment, texture, baseLayer, numLayers, texelWidth, texelHeight);
+}
+
 void CallLogWrapper::glFramebufferTexture (glw::GLenum target, glw::GLenum attachment, glw::GLuint texture, glw::GLint level)
 {
 	if (m_enableLog)
@@ -1948,6 +1955,13 @@ glw::GLint CallLogWrapper::glGetFragDataLocation (glw::GLuint program, const glw
 	if (m_enableLog)
 		m_log << TestLog::Message << "// " << returnValue << " returned" << TestLog::EndMessage;
 	return returnValue;
+}
+
+void CallLogWrapper::glGetFragmentShadingRatesEXT (glw::GLsizei samples, glw::GLsizei maxCount, glw::GLsizei *count, glw::GLenum *shadingRates)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetFragmentShadingRatesEXT(" << samples << ", " << maxCount << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(count))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(shadingRates))) << ");" << TestLog::EndMessage;
+	m_gl.getFragmentShadingRatesEXT(samples, maxCount, count, shadingRates);
 }
 
 void CallLogWrapper::glGetFramebufferAttachmentParameteriv (glw::GLenum target, glw::GLenum attachment, glw::GLenum pname, glw::GLint *params)
@@ -4864,6 +4878,20 @@ void CallLogWrapper::glShaderStorageBlockBinding (glw::GLuint program, glw::GLui
 	if (m_enableLog)
 		m_log << TestLog::Message << "glShaderStorageBlockBinding(" << program << ", " << storageBlockIndex << ", " << storageBlockBinding << ");" << TestLog::EndMessage;
 	m_gl.shaderStorageBlockBinding(program, storageBlockIndex, storageBlockBinding);
+}
+
+void CallLogWrapper::glShadingRateEXT (glw::GLenum rate)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glShadingRateEXT(" << toHex(rate) << ");" << TestLog::EndMessage;
+	m_gl.shadingRateEXT(rate);
+}
+
+void CallLogWrapper::glShadingRateCombinerOpsEXT (glw::GLenum combinerOp0, glw::GLenum combinerOp1)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glShadingRateCombinerOpsEXT(" << toHex(combinerOp0) << ", " << toHex(combinerOp1) << ");" << TestLog::EndMessage;
+	m_gl.shadingRateCombinerOpsEXT(combinerOp0, combinerOp1);
 }
 
 void CallLogWrapper::glSpecializeShader (glw::GLuint shader, const glw::GLchar *pEntryPoint, glw::GLuint numSpecializationConstants, const glw::GLuint *pConstantIndex, const glw::GLuint *pConstantValue)

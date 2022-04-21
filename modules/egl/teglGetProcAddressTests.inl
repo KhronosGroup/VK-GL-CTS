@@ -1198,6 +1198,14 @@ static const char* s_GL_EXT_external_buffer[] =
 	"glNamedBufferStorageExternalEXT",
 };
 
+static const char* s_GL_EXT_fragment_shading_rate[] =
+{
+	"glFramebufferShadingRateEXT",
+	"glGetFragmentShadingRatesEXT",
+	"glShadingRateEXT",
+	"glShadingRateCombinerOpsEXT",
+};
+
 static const char* s_GL_EXT_geometry_shader[] =
 {
 	"glFramebufferTextureEXT",
@@ -2074,6 +2082,7 @@ static const struct
 	{ "GL_EXT_draw_instanced",								DE_LENGTH_OF_ARRAY(s_GL_EXT_draw_instanced),							s_GL_EXT_draw_instanced								},
 	{ "GL_EXT_draw_transform_feedback",						DE_LENGTH_OF_ARRAY(s_GL_EXT_draw_transform_feedback),					s_GL_EXT_draw_transform_feedback					},
 	{ "GL_EXT_external_buffer",								DE_LENGTH_OF_ARRAY(s_GL_EXT_external_buffer),							s_GL_EXT_external_buffer							},
+	{ "GL_EXT_fragment_shading_rate",						DE_LENGTH_OF_ARRAY(s_GL_EXT_fragment_shading_rate),						s_GL_EXT_fragment_shading_rate						},
 	{ "GL_EXT_geometry_shader",								DE_LENGTH_OF_ARRAY(s_GL_EXT_geometry_shader),							s_GL_EXT_geometry_shader							},
 	{ "GL_EXT_instanced_arrays",							DE_LENGTH_OF_ARRAY(s_GL_EXT_instanced_arrays),							s_GL_EXT_instanced_arrays							},
 	{ "GL_EXT_memory_object",								DE_LENGTH_OF_ARRAY(s_GL_EXT_memory_object),								s_GL_EXT_memory_object								},

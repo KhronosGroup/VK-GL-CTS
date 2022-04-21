@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision b0643365776c260efc6317d2ff67dd8bf5078be9.
+ * Generated from Khronos GL API description (gl.xml) revision d8371b44919d61c02e60f446a4b5461fda910f71.
  */
 
 void glwActiveShaderProgram (GLuint pipeline, GLuint program)
@@ -1716,6 +1716,14 @@ void glwFramebufferRenderbuffer (GLenum target, GLenum attachment, GLenum render
 	gl->framebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer);
 }
 
+void glwFramebufferShadingRateEXT (GLenum target, GLenum attachment, GLuint texture, GLint baseLayer, GLsizei numLayers, GLsizei texelWidth, GLsizei texelHeight)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->framebufferShadingRateEXT(target, attachment, texture, baseLayer, numLayers, texelWidth, texelHeight);
+}
+
 void glwFramebufferTexture (GLenum target, GLenum attachment, GLuint texture, GLint level)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -2146,6 +2154,14 @@ GLint glwGetFragDataLocation (GLuint program, const GLchar *name)
 	if (!gl)
 		return (GLint)0;
 	return gl->getFragDataLocation(program, name);
+}
+
+void glwGetFragmentShadingRatesEXT (GLsizei samples, GLsizei maxCount, GLsizei *count, GLenum *shadingRates)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getFragmentShadingRatesEXT(samples, maxCount, count, shadingRates);
 }
 
 void glwGetFramebufferAttachmentParameteriv (GLenum target, GLenum attachment, GLenum pname, GLint *params)
@@ -5290,6 +5306,22 @@ void glwShaderStorageBlockBinding (GLuint program, GLuint storageBlockIndex, GLu
 	if (!gl)
 		return;
 	gl->shaderStorageBlockBinding(program, storageBlockIndex, storageBlockBinding);
+}
+
+void glwShadingRateEXT (GLenum rate)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->shadingRateEXT(rate);
+}
+
+void glwShadingRateCombinerOpsEXT (GLenum combinerOp0, GLenum combinerOp1)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->shadingRateCombinerOpsEXT(combinerOp0, combinerOp1);
 }
 
 void glwSpecializeShader (GLuint shader, const GLchar *pEntryPoint, GLuint numSpecializationConstants, const GLuint *pConstantIndex, const GLuint *pConstantValue)
