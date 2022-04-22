@@ -411,6 +411,8 @@ bool SparseTextureClampLookupResidencyTestCase::verifyLookupTextureData(const Fu
 
 				gl.bindTexture(target, texture);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture");
+				gl.texParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+				gl.texParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 				gl.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 				draw(target, z, program);
@@ -922,6 +924,8 @@ bool SparseTextureClampLookupColorTestCase::verifyLookupTextureData(const Functi
 
 				gl.bindTexture(target, texture);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture");
+				gl.texParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+				gl.texParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 				gl.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 				draw(target, z, program);
