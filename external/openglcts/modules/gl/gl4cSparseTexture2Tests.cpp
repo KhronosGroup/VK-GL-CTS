@@ -596,7 +596,7 @@ tcu::TestNode::IterateResult SparseTexture2CommitmentTestCase::iterate()
  * @return target    Structure of token strings
  */
 SparseTexture2CommitmentTestCase::TokenStrings SparseTexture2CommitmentTestCase::createShaderTokens(
-	GLint target, GLint format, GLint sample, const std::string outputBase, const std::string inputBase)
+	GLint target, GLint verifyTarget, GLint format, GLint sample, const std::string outputBase, const std::string inputBase)
 {
 	TokenStrings s;
 	std::string  prefix;
@@ -867,21 +867,18 @@ SparseTexture2CommitmentTestCase::TokenStrings SparseTexture2CommitmentTestCase:
 
 	if (target == GL_TEXTURE_1D)
 	{
-		s.outputType = "u" + outputBase + "2D";
 		s.inputType  = prefix + inputBase + "1D";
 		s.pointType  = "int";
 		s.pointDef   = "gl_WorkGroupID.x";
 	}
 	else if (target == GL_TEXTURE_1D_ARRAY)
 	{
-		s.outputType = "u" + outputBase + "2D_ARRAY";
 		s.inputType  = prefix + inputBase + "1DArray";
 		s.pointType  = "ivec2";
 		s.pointDef   = "gl_WorkGroupID.x, gl_WorkGroupID.z";
 	}
 	else if (target == GL_TEXTURE_2D_ARRAY)
 	{
-		s.outputType = "u" + outputBase + "2DArray";
 		s.inputType  = prefix + inputBase + "2DArray";
 		s.pointType  = "ivec3";
 		s.pointDef   = "gl_WorkGroupID.x, gl_WorkGroupID.y, gl_WorkGroupID.z";
@@ -895,14 +892,12 @@ SparseTexture2CommitmentTestCase::TokenStrings SparseTexture2CommitmentTestCase:
 	}
 	else if (target == GL_TEXTURE_CUBE_MAP)
 	{
-		s.outputType = "u" + outputBase + "2DArray";
 		s.inputType  = prefix + inputBase + "Cube";
 		s.pointType  = "ivec3";
 		s.pointDef   = "gl_WorkGroupID.x, gl_WorkGroupID.y, gl_WorkGroupID.z % 6";
 	}
 	else if (target == GL_TEXTURE_CUBE_MAP_ARRAY)
 	{
-		s.outputType = "u" + outputBase + "2DArray";
 		s.inputType  = prefix + inputBase + "CubeArray";
 		s.pointType  = "ivec3";
 		s.pointDef   = "gl_WorkGroupID.x, gl_WorkGroupID.y, gl_WorkGroupID.z";
@@ -918,11 +913,18 @@ SparseTexture2CommitmentTestCase::TokenStrings SparseTexture2CommitmentTestCase:
 	}
 	else if (target == GL_TEXTURE_2D_MULTISAMPLE_ARRAY)
 	{
-		s.outputType = "u" + outputBase + "2DArray";
 		s.inputType  = prefix + inputBase + "2DMSArray";
 		s.pointType  = "ivec3";
 		s.pointDef   = "gl_WorkGroupID.x, gl_WorkGroupID.y, gl_WorkGroupID.z";
 		s.sampleDef  = ", " + de::toString(sample);
+	}
+	if (verifyTarget == GL_TEXTURE_2D)
+	{
+		s.outputType = "u" + outputBase + "2D";
+	}
+	else
+	{
+		s.outputType = "u" + outputBase + "2DArray";
 	}
 
 	return s;
@@ -1083,7 +1085,12 @@ bool SparseTexture2CommitmentTestCase::writeDataToTexture(const Functions& gl, G
 				std::string shader = st2_compute_textureFill;
 
 				// Adjust shader source to texture format
-				TokenStrings s = createShaderTokens(target, format, sample);
+				GLint verifyTarget;
+				if (target == GL_TEXTURE_2D_MULTISAMPLE || target == GL_TEXTURE_2D || target == GL_TEXTURE_RECTANGLE)
+					verifyTarget = GL_TEXTURE_2D;
+				else
+					verifyTarget = GL_TEXTURE_2D_ARRAY;
+				TokenStrings s = createShaderTokens(target, verifyTarget, format, sample);
 
 				replaceToken("<INPUT_TYPE>", s.inputType.c_str(), shader);
 				replaceToken("<POINT_TYPE>", s.pointType.c_str(), shader);
@@ -1253,7 +1260,7 @@ bool SparseTexture2CommitmentTestCase::verifyTextureData(const Functions& gl, GL
 
 		// Create verifying texture
 		GLint verifyTarget;
-		if (target == GL_TEXTURE_2D_MULTISAMPLE)
+		if (target == GL_TEXTURE_2D_MULTISAMPLE || target == GL_TEXTURE_2D || target == GL_TEXTURE_RECTANGLE)
 			verifyTarget = GL_TEXTURE_2D;
 		else
 			verifyTarget = GL_TEXTURE_2D_ARRAY;
@@ -1276,7 +1283,7 @@ bool SparseTexture2CommitmentTestCase::verifyTextureData(const Functions& gl, GL
 			std::string shader = st2_compute_textureVerify;
 
 			// Adjust shader source to texture format
-			TokenStrings s = createShaderTokens(target, format, sample);
+			TokenStrings s = createShaderTokens(target, verifyTarget, format, sample);
 
 			replaceToken("<OUTPUT_TYPE>", s.outputType.c_str(), shader);
 			replaceToken("<FORMAT>", s.format.c_str(), shader);
@@ -1859,13 +1866,15 @@ bool UncommittedRegionsAccessTestCase::verifyTextureDataExtended(const Functions
 	{
 		// Create verifying texture
 		GLint verifyTarget;
-		if (target == GL_TEXTURE_2D_MULTISAMPLE || target == GL_TEXTURE_2D)
+		if (target == GL_TEXTURE_2D_MULTISAMPLE || target == GL_TEXTURE_2D || target == GL_TEXTURE_RECTANGLE)
 			verifyTarget = GL_TEXTURE_2D;
 		else
 			verifyTarget = GL_TEXTURE_2D_ARRAY;
 
 		if (target == GL_TEXTURE_CUBE_MAP)
 			depth = depth * 6;
+		if (depth == 1 && mState.samples == 1)
+			target = GL_TEXTURE_2D;
 
 		GLint texSize = width * height * depth;
 
@@ -1897,7 +1906,7 @@ bool UncommittedRegionsAccessTestCase::verifyTextureDataExtended(const Functions
 			std::string shader = st2_compute_textureVerify;
 
 			// Adjust shader source to texture format
-			TokenStrings s = createShaderTokens(target, format, sample);
+			TokenStrings s = createShaderTokens(target, verifyTarget, format, sample);
 
 			replaceToken("<OUTPUT_TYPE>", s.outputType.c_str(), shader);
 			replaceToken("<FORMAT>", s.format.c_str(), shader);
@@ -1921,14 +1930,14 @@ bool UncommittedRegionsAccessTestCase::verifyTextureDataExtended(const Functions
 				gl.bindImageTexture(0, //unit
 									verifyTexture,
 									0,		  //level
-									GL_FALSE, //layered
+									depth > 1, //layered
 									0,		  //layer
 									GL_WRITE_ONLY, GL_R8UI);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glBindImageTexture");
 				gl.bindImageTexture(1, //unit
 									texture,
 									level,	//level
-									GL_FALSE, //layered
+									depth > 1, //layered
 									0,		  //layer
 									GL_READ_ONLY, format);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glBindImageTexture");
@@ -2010,10 +2019,14 @@ bool UncommittedRegionsAccessTestCase::verifyAtomicOperations(const Functions& g
 
 	// Create verifying texture
 	GLint verifyTarget;
-	if (target == GL_TEXTURE_2D_MULTISAMPLE)
+	if (target == GL_TEXTURE_2D_MULTISAMPLE || target == GL_TEXTURE_2D || target == GL_TEXTURE_RECTANGLE)
 		verifyTarget = GL_TEXTURE_2D;
 	else
 		verifyTarget = GL_TEXTURE_2D_ARRAY;
+	if (target == GL_TEXTURE_CUBE_MAP)
+		depth = depth * 6;
+	if (depth == 1 && mState.samples == 1)
+		target = GL_TEXTURE_2D;
 
 	GLint texSize = width * height * depth;
 
@@ -2045,7 +2058,7 @@ bool UncommittedRegionsAccessTestCase::verifyAtomicOperations(const Functions& g
 		std::string shader = st2_compute_atomicVerify;
 
 		// Adjust shader source to texture format
-		TokenStrings s		  = createShaderTokens(target, format, sample);
+		TokenStrings s		  = createShaderTokens(target, verifyTarget, format, sample);
 		std::string  dataType = (s.returnType == "ivec4" ? "int" : "uint");
 
 		replaceToken("<OUTPUT_TYPE>", s.outputType.c_str(), shader);
@@ -2069,14 +2082,14 @@ bool UncommittedRegionsAccessTestCase::verifyAtomicOperations(const Functions& g
 			gl.bindImageTexture(0, //unit
 								verifyTexture,
 								0,		  //level
-								GL_FALSE, //layered
+								depth > 1, //layered
 								0,		  //layer
 								GL_WRITE_ONLY, GL_R8UI);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glBindImageTexture");
 			gl.bindImageTexture(1, //unit
 								texture,
 								level,	//level
-								GL_FALSE, //layered
+								depth > 1, //layered
 								0,		  //layer
 								GL_READ_ONLY, format);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glBindImageTexture");
@@ -2472,7 +2485,7 @@ tcu::TestNode::IterateResult SparseTexture2LookupTestCase::iterate()
  * @return Returns extended token strings structure.
  */
 SparseTexture2LookupTestCase::TokenStringsExt SparseTexture2LookupTestCase::createLookupShaderTokens(
-	GLint target, GLint format, GLint level, GLint sample, FunctionToken& funcToken)
+	GLint target, GLint verifyTarget, GLint format, GLint level, GLint sample, FunctionToken& funcToken)
 {
 	std::string funcName = funcToken.name;
 
@@ -2487,7 +2500,7 @@ SparseTexture2LookupTestCase::TokenStringsExt SparseTexture2LookupTestCase::crea
 		inputType = "sampler";
 
 	// Copy data from TokenStrings to TokenStringsExt
-	TokenStrings ss  = createShaderTokens(target, format, sample, "image", inputType);
+	TokenStrings ss  = createShaderTokens(target, verifyTarget, format, sample, "image", inputType);
 	s.epsilon		 = ss.epsilon;
 	s.format		 = ss.format;
 	s.inputType		 = ss.inputType;
@@ -2775,7 +2788,12 @@ bool SparseTexture2LookupTestCase::writeDataToTexture(const Functions& gl, GLint
 			std::string shader = st2_compute_textureFill;
 
 			// Adjust shader source to texture format
-			TokenStrings s = createShaderTokens(target, format, sample);
+			GLint verifyTarget;
+			if (target == GL_TEXTURE_2D_MULTISAMPLE || target == GL_TEXTURE_2D || target == GL_TEXTURE_RECTANGLE)
+				verifyTarget = GL_TEXTURE_2D;
+			else
+				verifyTarget = GL_TEXTURE_2D_ARRAY;
+			TokenStrings s = createShaderTokens(target, verifyTarget, format, sample);
 
 			replaceToken("<INPUT_TYPE>", s.inputType.c_str(), shader);
 			replaceToken("<POINT_TYPE>", s.pointType.c_str(), shader);
@@ -2797,7 +2815,7 @@ bool SparseTexture2LookupTestCase::writeDataToTexture(const Functions& gl, GLint
 			{
 				gl.useProgram(program.getProgram());
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram");
-				gl.bindImageTexture(0 /* unit */, texture, level /* level */, GL_FALSE /* layered */, 0 /* layer */,
+				gl.bindImageTexture(0 /* unit */, texture, level /* level */, depth > 1 /* layered */, 0 /* layer */,
 									GL_WRITE_ONLY, convFormat);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glBindImageTexture");
 				gl.uniform1i(1, 0 /* image_unit */);
@@ -2886,7 +2904,7 @@ bool SparseTexture2LookupTestCase::verifyLookupTextureData(const Functions& gl, 
 
 	// Create verifying texture
 	GLint verifyTarget;
-	if (target == GL_TEXTURE_2D_MULTISAMPLE)
+	if (target == GL_TEXTURE_2D_MULTISAMPLE || target == GL_TEXTURE_2D || target == GL_TEXTURE_RECTANGLE)
 		verifyTarget = GL_TEXTURE_2D;
 	else
 		verifyTarget = GL_TEXTURE_2D_ARRAY;
@@ -2909,7 +2927,7 @@ bool SparseTexture2LookupTestCase::verifyLookupTextureData(const Functions& gl, 
 		std::string shader = st2_compute_lookupVerify;
 
 		// Adjust shader source to texture format
-		TokenStringsExt s = createLookupShaderTokens(target, format, level, sample, f);
+		TokenStringsExt s = createLookupShaderTokens(target, verifyTarget, format, level, sample, f);
 
 		replaceToken("<FUNCTION>", f.name.c_str(), shader);
 		replaceToken("<ARGUMENTS>", f.arguments.c_str(), shader);
