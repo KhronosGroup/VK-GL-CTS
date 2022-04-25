@@ -1219,7 +1219,7 @@ tcu::TestStatus testPhysicalDeviceFeatureTexelBufferAlignmentFeaturesEXT (Contex
 	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT	deviceTexelBufferAlignmentFeaturesEXT[count];
-	const bool										isTexelBufferAlignmentFeaturesEXT = checkExtension(properties, "VK_EXT_texel_buffer_alignment") || context.contextSupports(vk::ApiVersion(0, 1, 3, 0));
+	const bool										isTexelBufferAlignmentFeaturesEXT = checkExtension(properties, "VK_EXT_texel_buffer_alignment");
 
 	for (int ndx = 0; ndx < count; ++ndx)
 	{
