@@ -741,7 +741,8 @@ TestStatus testRequireSubgroupSize (Context& context, const CaseDefinition caseD
 		};
 
 		deUint32 localSizesToTestCount = 5;
-		if (caseDef.pipelineShaderStageCreateFlags & VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT)
+		if (caseDef.pipelineShaderStageCreateFlags & VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT
+			|| caseDef.spirvVersion >= SPIRV_VERSION_1_6)
 			localSizesToTestCount = 3;
 
 		struct internalDataStruct internalData =
@@ -754,8 +755,8 @@ TestStatus testRequireSubgroupSize (Context& context, const CaseDefinition caseD
 		// Depending on the flag and SPIR-V version we need to run one verification function or another.
 		subgroups::CheckResultCompute							checkResult									= checkCompute;
 
-		if (caseDef.pipelineShaderStageCreateFlags == VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT
-			|| caseDef.spirvVersion == SPIRV_VERSION_1_6)
+		if (caseDef.pipelineShaderStageCreateFlags & VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT
+			|| caseDef.spirvVersion >= SPIRV_VERSION_1_6)
 			checkResult = checkComputeRequireFull;
 
 		return subgroups::makeComputeTestRequiredSubgroupSize(context,
