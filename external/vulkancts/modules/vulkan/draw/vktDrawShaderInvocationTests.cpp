@@ -41,6 +41,11 @@ void checkHelperInvocationTestSupport(Context& context, std::string testName)
 {
 	DE_UNREF(testName);
 
+	if ((context.getSubgroupProperties().supportedOperations & VK_SUBGROUP_FEATURE_QUAD_BIT) == 0u)
+	{
+		TCU_THROW(NotSupportedError, "Device does not support subgroup quad operations");
+	}
+
 	if (!context.isDeviceFunctionalitySupported("VK_EXT_shader_demote_to_helper_invocation"))
 	{
 		TCU_THROW(NotSupportedError, "VK_EXT_shader_demote_to_helper_invocation not supported.");
