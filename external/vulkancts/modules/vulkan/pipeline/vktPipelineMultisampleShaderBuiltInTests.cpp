@@ -1988,6 +1988,7 @@ tcu::TestStatus WriteSampleMaskTestInstance::iterate (void)
 						.setupPreRasterizationShaderState(viewport, scissor, *emptyPipelineLayout, *renderPass, 0u, *vertModule)
 						.setupFragmentShaderState(*emptyPipelineLayout, *renderPass, 0u, *writeModule, &depthStencilInfo, &multisampleInfo)
 						.setupFragmentOutputState(*renderPass, 0u, &colorBlendInfo, &multisampleInfo)
+						.setMonolithicPipelineLayout(*emptyPipelineLayout)
 						.buildPipeline();
 
 	// Pipeline for the second subpass.
@@ -1998,6 +1999,7 @@ tcu::TestStatus WriteSampleMaskTestInstance::iterate (void)
 						.setupPreRasterizationShaderState(viewport, scissor, *checkPipelineLayout, *renderPass, 1u, *vertModule)
 						.setupFragmentShaderState(*checkPipelineLayout, *renderPass, 1u, *checkModule, &depthStencilInfo, &multisampleInfo)
 						.setupFragmentOutputState(*renderPass, 1u, &colorBlendInfo, &multisampleInfo)
+						.setMonolithicPipelineLayout(*checkPipelineLayout)
 						.buildPipeline();
 
 	// Command pool and command buffer.

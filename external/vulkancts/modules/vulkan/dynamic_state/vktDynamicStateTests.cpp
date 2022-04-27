@@ -56,13 +56,6 @@ void createChildren (tcu::TestCaseGroup* group, vk::PipelineConstructionType pip
 		group->addChild(createDynamicStateComputeTests	(testCtx));
 }
 
-static void cleanupGroup(tcu::TestCaseGroup* group)
-{
-	DE_UNREF(group);
-	// Destroy singleton objects.
-	cleanupDevice();
-}
-
 } // anonymous
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)

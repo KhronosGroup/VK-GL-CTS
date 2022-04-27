@@ -1093,6 +1093,7 @@ void GraphicsExecutablePropertiesTestInstance::preparePipelineWrapper(GraphicsPi
 			geomShaderModule)
 	   .setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, fragShaderModule, &depthStencilStateParams)
 	   .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
+	   .setMonolithicPipelineLayout(*m_pipelineLayout)
 	   .buildPipeline(*m_cache);
 }
 

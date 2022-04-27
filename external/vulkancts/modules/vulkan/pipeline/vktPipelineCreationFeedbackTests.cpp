@@ -619,6 +619,12 @@ void GraphicsCacheTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&
 		pipelineCreationFeedbackCreateInfo[1].pPipelineStageCreationFeedbacks		= pipelineStageCreationFeedbacks;
 		pipelineCreationFeedbackCreateInfo[2].pipelineStageCreationFeedbackCount	= 1u;
 		pipelineCreationFeedbackCreateInfo[2].pPipelineStageCreationFeedbacks		= pipelineStageCreationFeedbacks + geometryStages;
+
+		if (m_param->getPipelineConstructionType() == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
+		{
+			pipelineCreationFeedbackCreateInfo[4].pipelineStageCreationFeedbackCount	= 1u + geometryStages;
+			pipelineCreationFeedbackCreateInfo[4].pPipelineStageCreationFeedbacks		= pipelineStageCreationFeedbacks;
+		}
 	}
 
 	gpw.setDefaultTopology((tescShaderModule == DE_NULL) ? VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST : VK_PRIMITIVE_TOPOLOGY_PATCH_LIST)
@@ -652,6 +658,7 @@ void GraphicsCacheTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&
 			*m_cache,
 			&pipelineCreationFeedbackCreateInfo[2])
 	   .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams, DE_NULL, *m_cache, &pipelineCreationFeedbackCreateInfo[3])
+	   .setMonolithicPipelineLayout(*m_pipelineLayout)
 	   .buildPipeline(*m_cache, basePipelineHandle, basePipelineHandle != DE_NULL ? -1 : 0, &pipelineCreationFeedbackCreateInfo[4]);
 }
 

@@ -811,6 +811,7 @@ tcu::TestStatus ColorWriteEnableInstance::iterate (void)
 								&depthStencilStateCreateInfo,
 								&multisampleStateCreateInfo)
 					  .setupFragmentOutputState(*renderPass, 0u, &colorBlendStateCreateInfo, &multisampleStateCreateInfo)
+					  .setMonolithicPipelineLayout(*pipelineLayout)
 					  .buildPipeline();
 	}
 
@@ -832,6 +833,7 @@ tcu::TestStatus ColorWriteEnableInstance::iterate (void)
 								&depthStencilStateCreateInfo,
 								&multisampleStateCreateInfo)
 					.setupFragmentOutputState(*renderPass, 0u, &colorBlendStateCreateInfo, &multisampleStateCreateInfo)
+					.setMonolithicPipelineLayout(*pipelineLayout)
 					.buildPipeline();
 
 	// Command buffer.

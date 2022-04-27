@@ -322,6 +322,7 @@ tcu::TestStatus InterfaceMatchingTestInstance::iterate(void)
 														*m_geomShaderModule)
 					  .setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *m_fragShaderModule)
 					  .setupFragmentOutputState(*m_renderPass)
+					  .setMonolithicPipelineLayout(*m_pipelineLayout)
 					  .buildPipeline();
 
 	// create vertex buffer

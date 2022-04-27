@@ -238,6 +238,7 @@ void MultisampleRenderAreaTestInstance::preparePipelineWrapper (GraphicsPipeline
 			DE_NULL,
 			&multisampleStateCreateInfo)
 	   .setupFragmentOutputState(renderPass, 0u, DE_NULL, &multisampleStateCreateInfo)
+	   .setMonolithicPipelineLayout(pipelineLayout)
 	   .buildPipeline();
 }
 
