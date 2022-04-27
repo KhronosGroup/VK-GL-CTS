@@ -5846,7 +5846,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 					vk.cmdClearColorImage(*m_cmdBuffer, m_multisampledCopyImage.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue, 1u, &clearRange);
 
 					const auto postClearMemoryBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT);
-					vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 1u, &postClearMemoryBarrier, 0, (const VkBufferMemoryBarrier*)DE_NULL, 0u, (const VkImageMemoryBarrier*)DE_NULL);
+					vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 1u, &postClearMemoryBarrier, 0, (const VkBufferMemoryBarrier*)DE_NULL, 0u, (const VkImageMemoryBarrier*)DE_NULL);
 				}
 			}
 
