@@ -491,6 +491,7 @@ void PushDescriptorBufferGraphicsTestInstance::init (void)
 															*m_vertexShaderModule)
 						  .setupFragmentShaderState(*m_fragmentStatePipelineLayout, *m_renderPass, 0u, *m_fragmentShaderModule)
 						  .setupFragmentOutputState(*m_renderPass)
+						  .setMonolithicPipelineLayout(*m_preRasterizationStatePipelineLayout)
 						  .buildPipeline();
 	}
 

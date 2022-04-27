@@ -622,6 +622,7 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 																		  &rasterizationStateParams)
 										.setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *m_fragmentShaderModule, &depthStencilStateParams)
 										.setupFragmentOutputState(*m_renderPass)
+										.setMonolithicPipelineLayout(*m_pipelineLayout)
 										.buildPipeline();
 		}
 	}

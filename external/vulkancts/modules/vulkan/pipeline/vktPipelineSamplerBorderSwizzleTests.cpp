@@ -925,6 +925,7 @@ tcu::TestStatus BorderSwizzleInstance::iterate (void)
 									DE_NULL,
 									&specializationInfo)
 					.setupFragmentOutputState(*renderPass, 0u, &colorBlendInfo)
+					.setMonolithicPipelineLayout(*pipelineLayout)
 					.buildPipeline();
 
 	// Framebuffer.

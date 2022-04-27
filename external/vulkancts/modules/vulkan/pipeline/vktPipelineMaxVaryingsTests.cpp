@@ -1067,6 +1067,7 @@ tcu::TestStatus test(Context& context, const MaxVaryingsParam param)
 													&pSpecInfo)
 					.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragShaderModule)
 					.setupFragmentOutputState(*renderPass)
+					.setMonolithicPipelineLayout(*pipelineLayout)
 					.buildPipeline();
 
 	// Draw commands

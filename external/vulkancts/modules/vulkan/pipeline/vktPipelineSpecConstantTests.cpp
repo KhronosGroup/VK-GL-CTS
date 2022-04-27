@@ -725,6 +725,7 @@ tcu::TestStatus GraphicsTestInstance::iterate (void)
 													  pSpecInfo)
 					.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragShaderModule, DE_NULL, DE_NULL, DE_NULL, pSpecInfo)
 					.setupFragmentOutputState(*renderPass)
+					.setMonolithicPipelineLayout(*pipelineLayout)
 					.buildPipeline();
 
 	// Draw commands

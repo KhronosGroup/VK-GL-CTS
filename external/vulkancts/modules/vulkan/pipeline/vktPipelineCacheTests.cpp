@@ -757,6 +757,7 @@ void GraphicsCacheTestInstance::preparePipelineWrapper(GraphicsPipelineWrapper&	
 										  *geomShaderModule)
 		.setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fragShaderModule, &defaultDepthStencilState)
 		.setupFragmentOutputState(*m_renderPass)
+		.setMonolithicPipelineLayout(*m_pipelineLayout)
 		.buildPipeline(cache);
 }
 

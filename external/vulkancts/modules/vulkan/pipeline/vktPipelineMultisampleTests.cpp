@@ -4148,6 +4148,7 @@ void MultisampleRenderer::initialize (Context&									context,
 																	&m_multisampleStateParams,
 																	m_useFragmentShadingRate ? &shadingRateStateCreateInfo : DE_NULL)
 										  .setupFragmentOutputState(*m_renderPass, subpassIdx, &colorBlendStateParams, &m_multisampleStateParams)
+										  .setMonolithicPipelineLayout(*m_pipelineLayout)
 										  .buildPipeline();
 			}
 	}
@@ -4205,6 +4206,7 @@ void MultisampleRenderer::initialize (Context&									context,
 																	subpassIdx,
 																	*m_copySampleFragmentShaderModule)
 											.setupFragmentOutputState(*m_renderPass, subpassIdx, &colorBlendStateParams)
+											.setMonolithicPipelineLayout(*m_copySamplePipelineLayout)
 											.buildPipeline();
 			}
 		}
@@ -4921,6 +4923,7 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 				*vertModule)
 			.setupFragmentShaderState(*pipelineLayout, *renderPassSingleSubpass, 0u, *fragModule)
 			.setupFragmentOutputState(*renderPassSingleSubpass, 0u, DE_NULL, &multisampleStateCreateInfo)
+			.setMonolithicPipelineLayout(*pipelineLayout)
 			.buildPipeline();
 	}
 
@@ -4946,6 +4949,7 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 				*vertModule)
 			.setupFragmentShaderState(*pipelineLayout, *renderPassMultiplePasses, subpass, *fragModule)
 			.setupFragmentOutputState(*renderPassMultiplePasses, subpass, DE_NULL, &multisampleStateCreateInfo)
+			.setMonolithicPipelineLayout(*pipelineLayout)
 			.buildPipeline();
 	}
 

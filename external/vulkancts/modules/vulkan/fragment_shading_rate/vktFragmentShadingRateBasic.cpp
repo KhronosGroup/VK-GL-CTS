@@ -1977,6 +1977,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 						&multisampleStateCreateInfo,
 						&shadingRateStateCreateInfo)
 					.setupFragmentOutputState(*renderPass, 0u, DE_NULL, &multisampleStateCreateInfo)
+					.setMonolithicPipelineLayout(*pipelineLayout)
 					.buildPipeline();
 				vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.back().getPipeline());
 			}
@@ -2097,6 +2098,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 							&multisampleStateCreateInfo,
 							&shadingRateStateCreateInfo)
 						.setupFragmentOutputState(*renderPass, 0u, DE_NULL, &multisampleStateCreateInfo)
+						.setMonolithicPipelineLayout(*pipelineLayout)
 						.buildPipeline();
 					vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.back().getPipeline());
 				}
