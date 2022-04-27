@@ -259,6 +259,7 @@ protected:
 													  static_cast<const vk::VkPipelineRasterizationStateCreateInfo*>(&rasterizerState))
 					.setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fs, static_cast<const vk::VkPipelineDepthStencilStateCreateInfo*>(&m_depthStencilState_1))
 					.setupFragmentOutputState(*m_renderPass, 0u, static_cast<const vk::VkPipelineColorBlendStateCreateInfo*>(&colorBlendState))
+					.setMonolithicPipelineLayout(*m_pipelineLayout)
 					.buildPipeline();
 
 		m_pipeline_2.setDefaultTopology(m_topology)
@@ -274,6 +275,7 @@ protected:
 													  static_cast<const vk::VkPipelineRasterizationStateCreateInfo*>(&rasterizerState))
 					.setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fs, static_cast<const vk::VkPipelineDepthStencilStateCreateInfo*>(&m_depthStencilState_2))
 					.setupFragmentOutputState(*m_renderPass, 0u, static_cast<const vk::VkPipelineColorBlendStateCreateInfo*>(&colorBlendState))
+					.setMonolithicPipelineLayout(*m_pipelineLayout)
 					.buildPipeline();
 
 		std::vector<vk::VkImageView> attachments(2);
@@ -643,6 +645,7 @@ void DepthBoundsTestInstance::initPipeline (const vk::VkDevice device)
 												static_cast<const vk::VkPipelineRasterizationStateCreateInfo*>(&rasterizerState))
 			  .setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fs, static_cast<const vk::VkPipelineDepthStencilStateCreateInfo*>(&depthStencilState))
 			  .setupFragmentOutputState(*m_renderPass, 0u, static_cast<const vk::VkPipelineColorBlendStateCreateInfo*>(&colorBlendState))
+			  .setMonolithicPipelineLayout(*m_pipelineLayout)
 			  .buildPipeline();
 }
 

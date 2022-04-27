@@ -1164,6 +1164,7 @@ VertexInputInstance::VertexInputInstance (Context&												context,
 										0u,
 										*m_fragmentShaderModule)
 						  .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
+						  .setMonolithicPipelineLayout(*m_pipelineLayout)
 						  .buildPipeline();
 	}
 

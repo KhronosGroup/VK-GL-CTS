@@ -1709,6 +1709,7 @@ tcu::TestStatus ExactSamplingInstance::iterate (void)
 							*vertexModule)
 			.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragModule)
 			.setupFragmentOutputState(*renderPass)
+			.setMonolithicPipelineLayout(*pipelineLayout)
 			.buildPipeline();
 
 	// Command pool and command buffer.

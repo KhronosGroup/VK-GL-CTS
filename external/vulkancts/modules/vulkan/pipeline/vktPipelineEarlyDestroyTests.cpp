@@ -195,6 +195,7 @@ tcu::TestStatus testEarlyDestroy (Context& context, const TestParams& params, bo
 														  &rasterizationStateCreateInfo)
 						.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragmentShaderModule)
 						.setupFragmentOutputState(*renderPass, 0u, &colorBlendStateCreateInfo)
+						.setMonolithicPipelineLayout(*pipelineLayout)
 						.buildPipeline(params.usePipelineCache ? *pipelineCache : DE_NULL);
 
 		const deUint32 framebufferWidth													= 32;

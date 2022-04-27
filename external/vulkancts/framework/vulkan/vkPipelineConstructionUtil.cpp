@@ -757,6 +757,7 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 
 		linkedCreateInfo.pNext	= &linkingInfo;
 		linkedCreateInfo.flags	= m_internalData->pipelineFlags;
+		linkedCreateInfo.layout	= m_internalData->monolithicPipelineCreateInfo.layout;
 		pointerToCreateInfo		= &linkedCreateInfo;
 
 		if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)

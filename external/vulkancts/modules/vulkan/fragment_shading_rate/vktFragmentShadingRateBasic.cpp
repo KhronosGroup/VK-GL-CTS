@@ -2550,6 +2550,7 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 									  multisampleState,
 									  shadingRateState)
 			.setupFragmentOutputState(renderPass, 0u, DE_NULL, multisampleState)
+			.setMonolithicPipelineLayout(pipelineLayout)
 			.buildPipeline();
 
 		vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.back().getPipeline());
@@ -2600,6 +2601,7 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 										  multisampleState,
 										  shadingRateState)
 				.setupFragmentOutputState(renderPass, 0u, DE_NULL, multisampleState)
+				.setMonolithicPipelineLayout(pipelineLayout)
 				.buildPipeline();
 
 			vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.back().getPipeline());

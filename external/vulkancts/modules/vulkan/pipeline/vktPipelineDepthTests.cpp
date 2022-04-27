@@ -673,6 +673,7 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 																	*m_fragmentShaderModule,
 																	&depthStencilStateParams)
 										.setupFragmentOutputState(*m_renderPass)
+										.setMonolithicPipelineLayout(*m_pipelineLayout)
 										.buildPipeline();
 
 			if (useAltGraphicsPipelines)
@@ -695,6 +696,7 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 																				*m_fragmentShaderModule,
 																				&depthStencilStateParams)
 											   .setupFragmentOutputState(*m_renderPass)
+											   .setMonolithicPipelineLayout(*m_pipelineLayout)
 											   .buildPipeline();
 			}
 		}
