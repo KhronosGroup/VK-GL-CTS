@@ -1,0 +1,352 @@
+#!amber
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+DEVICE_FEATURE shaderInt16
+DEVICE_FEATURE Storage16BitFeatures.storageBuffer16BitAccess
+
+# Based on the following GLSL shader with the bit size and signedness replaced.
+#
+##version 430
+#
+#layout(set = 0, binding = 0) buffer block0
+#{
+#    uvec2 inputs[];
+#};
+#
+#layout(set = 0, binding = 1) buffer block1
+#{
+#    uvec2 outputs[];
+#};
+#
+#void main()
+#{
+#    for (int i = 0; i < inputs.length(); i++)
+#    {
+#        umulExtended(inputs[i].x, inputs[i].y, outputs[i].x, outputs[i].y);
+#    }
+#}
+SHADER compute compute_shader SPIRV-ASM TARGET_ENV spv1.0
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 10
+; Bound: 50
+; Schema: 0
+               OpCapability Shader
+               OpCapability Int16
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpName %main "main"
+               OpName %i "i"
+               OpName %block0 "block0"
+               OpMemberName %block0 0 "inputs"
+               OpName %_ ""
+               OpName %block1 "block1"
+               OpMemberName %block1 0 "outputs"
+               OpName %__0 ""
+               OpName %ResType "ResType"
+               OpDecorate %_runtimearr_v2uint16 ArrayStride 4
+               OpMemberDecorate %block0 0 Offset 0
+               OpDecorate %block0 BufferBlock
+               OpDecorate %_ DescriptorSet 0
+               OpDecorate %_ Binding 0
+               OpDecorate %_runtimearr_v2uint16_0 ArrayStride 4
+               OpMemberDecorate %block1 0 Offset 0
+               OpDecorate %block1 BufferBlock
+               OpDecorate %__0 DescriptorSet 0
+               OpDecorate %__0 Binding 1
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+      %int_0 = OpConstant %int 0
+       %uint = OpTypeInt 32 0
+       %uint16 = OpTypeInt 16 0
+ %v2uint16 = OpTypeVector %uint16 2
+%_runtimearr_v2uint16 = OpTypeRuntimeArray %v2uint16
+     %block0 = OpTypeStruct %_runtimearr_v2uint16
+%_ptr_Uniform_block0 = OpTypePointer Uniform %block0
+          %_ = OpVariable %_ptr_Uniform_block0 Uniform
+       %bool = OpTypeBool
+     %uint_0 = OpConstant %uint 0
+%_ptr_Uniform_uint16 = OpTypePointer Uniform %uint16
+     %uint_1 = OpConstant %uint 1
+%_runtimearr_v2uint16_0 = OpTypeRuntimeArray %v2uint16
+     %block1 = OpTypeStruct %_runtimearr_v2uint16_0
+%_ptr_Uniform_block1 = OpTypePointer Uniform %block1
+        %__0 = OpVariable %_ptr_Uniform_block1 Uniform
+    %ResType = OpTypeStruct %uint16 %uint16
+      %int_1 = OpConstant %int 1
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+          %i = OpVariable %_ptr_Function_int Function
+               OpStore %i %int_0
+               OpBranch %10
+         %10 = OpLabel
+               OpLoopMerge %12 %13 None
+               OpBranch %14
+         %14 = OpLabel
+         %15 = OpLoad %int %i
+         %22 = OpArrayLength %uint %_ 0
+         %23 = OpBitcast %int %22
+         %25 = OpSLessThan %bool %15 %23
+               OpBranchConditional %25 %11 %12
+         %11 = OpLabel
+         %26 = OpLoad %int %i
+         %29 = OpAccessChain %_ptr_Uniform_uint16 %_ %int_0 %26 %uint_0
+         %30 = OpLoad %uint16 %29
+         %31 = OpLoad %int %i
+         %33 = OpAccessChain %_ptr_Uniform_uint16 %_ %int_0 %31 %uint_1
+         %34 = OpLoad %uint16 %33
+         %39 = OpLoad %int %i
+         %40 = OpAccessChain %_ptr_Uniform_uint16 %__0 %int_0 %39 %uint_0
+         %41 = OpLoad %int %i
+         %42 = OpAccessChain %_ptr_Uniform_uint16 %__0 %int_0 %41 %uint_1
+         %44 = OpUMulExtended %ResType %30 %34
+         %45 = OpCompositeExtract %uint16 %44 0
+               OpStore %42 %45
+         %46 = OpCompositeExtract %uint16 %44 1
+               OpStore %40 %46
+               OpBranch %13
+         %13 = OpLabel
+         %47 = OpLoad %int %i
+         %49 = OpIAdd %int %47 %int_1
+               OpStore %i %49
+               OpBranch %10
+         %12 = OpLabel
+               OpReturn
+               OpFunctionEnd
+END
+
+BUFFER input DATA_TYPE vec2<uint16> DATA
+42562 51047
+11454 34834
+54106 38314
+40502 35639
+46671 16948
+19195 17759
+34768 21323
+23670 5891
+50547 4126
+26425 10425
+31623 17511
+37010 43453
+62450 20493
+58067 59096
+1444 50652
+51678 65270
+9275 10238
+15478 39529
+46419 35448
+7821 21827
+35803 40236
+52166 25400
+52942 37349
+2307 15715
+5466 26618
+41251 50955
+3956 18204
+33994 3010
+46684 31450
+27106 1767
+19604 41877
+18094 47611
+39955 39812
+25853 22653
+28210 61922
+5789 56509
+53416 51668
+40907 58472
+26863 60301
+4496 30592
+63496 4581
+47280 16059
+25687 30146
+553 43704
+14393 29756
+20918 31852
+59296 32965
+53888 49300
+11229 56176
+7335 30275
+64041 44405
+54410 49903
+26120 42367
+56233 35088
+38328 17589
+6656 56461
+11043 18390
+46764 34653
+13902 63708
+40361 17925
+45873 61016
+62746 15250
+45598 10482
+51734 29301
+6471 37406
+44847 4814
+21998 34595
+18993 34503
+48869 24358
+9794 26021
+13113 50601
+15379 44388
+19440 19278
+61501 35868
+15384 43422
+44092 60889
+36299 35507
+2670 22960
+60182 42790
+50855 7406
+63144 50062
+37699 31232
+992 53789
+47985 62529
+62919 29018
+63308 6597
+57886 2324
+37541 42415
+52084 55964
+51123 37352
+19258 8052
+63122 40146
+49819 14529
+48576 11228
+38719 52312
+38307 35490
+11747 22912
+17931 56057
+40391 53776
+8491 20975
+END
+
+BUFFER output DATA_TYPE vec2<uint16> SIZE 100 FILL 0.0
+
+BUFFER ref DATA_TYPE vec2<uint16> DATA
+33152 12942
+6088 5468
+31631 48068
+22025 20378
+12069 26124
+5201 31269
+11312 14832
+2127 44898
+3182 21370
+4203 32817
+8449 36689
+24539 7626
+19528 842
+52360 62472
+1116 3312
+51468 16212
+1448 61322
+9335 51302
+25107 48360
+2604 53223
+21981 22692
+20218 9552
+30171 44102
+553 13097
+2220 4068
+32073 8577
+1098 56496
+1561 20244
+22403 8792
+730 55022
+12526 52772
+13145 2714
+24271 64204
+8936 18313
+26654 23076
+4991 40425
+42112 45856
+36497 46712
+24717 12451
+2098 47104
+4438 26408
+11585 34960
+11815 52462
+368 51064
+6535 348
+10166 41160
+29826 15904
+40537 45568
+9625 16304
+3388 31157
+43392 2493
+41431 214
+16885 50680
+30107 11152
+10286 47896
+5734 20992
+3098 50242
+24727 4220
+13514 15112
+11039 19021
+42709 9944
+14600 50900
+7293 4188
+23130 10254
+3693 29778
+3294 17874
+11612 16778
+9999 21015
+18163 20734
+3888 45706
+10124 44449
+10416 20076
+5718 29472
+33659 41644
+10192 61136
+40965 35548
+19666 37617
+935 27040
+39294 16196
+5746 62274
+48234 51504
+17965 60928
+814 12384
+45783 19377
+27859 16118
+6372 47484
+2052 47192
+24296 38859
+44476 49840
+29137 23864
+2366 7240
+38667 15300
+11044 40667
+8322 20736
+30906 12712
+20744 36646
+4106 56448
+15337 32435
+33143 6768
+2717 37413
+END
+
+PIPELINE compute pipeline
+  ATTACH compute_shader
+
+  BIND BUFFER input AS storage DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER output AS storage DESCRIPTOR_SET 0 BINDING 1
+END
+
+RUN pipeline 1 1 1
+
+EXPECT output EQ_BUFFER ref
