@@ -579,6 +579,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/vktTestPackageEntry.cpp \
 	external/vulkancts/modules/vulkan/vktTestPackageEntrySC.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktNativeObjectsUtil.cpp \
+	external/vulkancts/modules/vulkan/wsi/vktWsiAcquireDrmDisplayTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiColorSpaceTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiDisplayControlTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiDisplayTests.cpp \
@@ -625,6 +626,7 @@ LOCAL_SRC_FILES := \
 	framework/common/tcuImageCompare.cpp \
 	framework/common/tcuImageIO.cpp \
 	framework/common/tcuInterval.cpp \
+	framework/common/tcuLibDrm.cpp \
 	framework/common/tcuMatrix.cpp \
 	framework/common/tcuMaybe.cpp \
 	framework/common/tcuPlatform.cpp \
