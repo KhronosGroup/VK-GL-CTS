@@ -6188,7 +6188,7 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, const TestConfigEx
 															| VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 
 														 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-														 VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
+														 (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_INPUT_ATTACHMENT_READ_BIT),
 
 														 byRegion ? (VkDependencyFlags)VK_DEPENDENCY_BY_REGION_BIT : 0u));
 					}
