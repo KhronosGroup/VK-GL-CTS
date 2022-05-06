@@ -2437,6 +2437,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceMultiDrawPropertiesE
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_PROPERTIES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceImage2DViewOf3DFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceBorderColorSwizzleFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BORDER_COLOR_SWIZZLE_FEATURES_EXT;

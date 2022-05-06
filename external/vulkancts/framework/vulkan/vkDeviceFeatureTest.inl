@@ -1202,6 +1202,17 @@ if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(de
 	checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures);
 }
 
+if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceImage2DViewOf3DFeaturesEXT>()))
+{
+	static const Feature features[] =
+	{
+		FEATURE_ITEM (VkPhysicalDeviceImage2DViewOf3DFeaturesEXT, image2DViewOf3D),
+		FEATURE_ITEM (VkPhysicalDeviceImage2DViewOf3DFeaturesEXT, sampler2DViewOf3D),
+	};
+	auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceImage2DViewOf3DFeaturesEXT*>(featuresStruct);
+	checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures);
+}
+
 if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceBorderColorSwizzleFeaturesEXT>()))
 {
 	static const Feature features[] =

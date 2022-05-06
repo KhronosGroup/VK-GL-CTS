@@ -750,6 +750,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_IMAGE_VIEW_MIN_LOD_CREATE_INFO_EXT:									return "VK_STRUCTURE_TYPE_IMAGE_VIEW_MIN_LOD_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_PROPERTIES_EXT:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BORDER_COLOR_SWIZZLE_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BORDER_COLOR_SWIZZLE_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_SAMPLER_BORDER_COLOR_COMPONENT_MAPPING_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_SAMPLER_BORDER_COLOR_COMPONENT_MAPPING_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PAGEABLE_DEVICE_LOCAL_MEMORY_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PAGEABLE_DEVICE_LOCAL_MEMORY_FEATURES_EXT";
@@ -2956,6 +2957,7 @@ tcu::Format::Bitfield<32> getImageCreateFlagsStr (VkImageCreateFlags value)
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_CORNER_SAMPLED_BIT_NV,						"VK_IMAGE_CREATE_CORNER_SAMPLED_BIT_NV"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT,	"VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT,						"VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT,				"VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_QCOM,		"VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_QCOM"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR,		"VK_IMAGE_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT_KHR,				"VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT_KHR"),
@@ -4399,6 +4401,7 @@ tcu::Format::Bitfield<32> getVideoEncodeH265CapabilityFlagsEXTStr (VkVideoEncode
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_CAPABILITY_LOG2_PARALLEL_MERGE_LEVEL_MINUS2_BIT_EXT,		"VK_VIDEO_ENCODE_H265_CAPABILITY_LOG2_PARALLEL_MERGE_LEVEL_MINUS2_BIT_EXT"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_CAPABILITY_SIGN_DATA_HIDING_ENABLED_BIT_EXT,				"VK_VIDEO_ENCODE_H265_CAPABILITY_SIGN_DATA_HIDING_ENABLED_BIT_EXT"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_CAPABILITY_TRANSFORM_SKIP_ENABLED_BIT_EXT,				"VK_VIDEO_ENCODE_H265_CAPABILITY_TRANSFORM_SKIP_ENABLED_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_CAPABILITY_TRANSFORM_SKIP_DISABLED_BIT_EXT,				"VK_VIDEO_ENCODE_H265_CAPABILITY_TRANSFORM_SKIP_DISABLED_BIT_EXT"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_CAPABILITY_PPS_SLICE_CHROMA_QP_OFFSETS_PRESENT_BIT_EXT,	"VK_VIDEO_ENCODE_H265_CAPABILITY_PPS_SLICE_CHROMA_QP_OFFSETS_PRESENT_BIT_EXT"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_CAPABILITY_WEIGHTED_PRED_BIT_EXT,							"VK_VIDEO_ENCODE_H265_CAPABILITY_WEIGHTED_PRED_BIT_EXT"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_CAPABILITY_WEIGHTED_BIPRED_BIT_EXT,						"VK_VIDEO_ENCODE_H265_CAPABILITY_WEIGHTED_BIPRED_BIT_EXT"),
@@ -4413,6 +4416,7 @@ tcu::Format::Bitfield<32> getVideoEncodeH265CapabilityFlagsEXTStr (VkVideoEncode
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_CAPABILITY_ROW_UNALIGNED_SLICE_SEGMENT_BIT_EXT,			"VK_VIDEO_ENCODE_H265_CAPABILITY_ROW_UNALIGNED_SLICE_SEGMENT_BIT_EXT"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_CAPABILITY_DEPENDENT_SLICE_SEGMENT_BIT_EXT,				"VK_VIDEO_ENCODE_H265_CAPABILITY_DEPENDENT_SLICE_SEGMENT_BIT_EXT"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_CAPABILITY_DIFFERENT_SLICE_TYPE_BIT_EXT,					"VK_VIDEO_ENCODE_H265_CAPABILITY_DIFFERENT_SLICE_TYPE_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_CAPABILITY_B_FRAME_IN_L1_LIST_BIT_EXT,					"VK_VIDEO_ENCODE_H265_CAPABILITY_B_FRAME_IN_L1_LIST_BIT_EXT"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_CAPABILITY_FLAG_BITS_MAX_ENUM_EXT,						"VK_VIDEO_ENCODE_H265_CAPABILITY_FLAG_BITS_MAX_ENUM_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
@@ -12302,6 +12306,17 @@ std::ostream& operator<< (std::ostream& s, const VkMultiDrawIndexedInfoEXT& valu
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImage2DViewOf3DFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceImage2DViewOf3DFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timage2DViewOf3D = " << value.image2DViewOf3D << '\n';
+	s << "\tsampler2DViewOf3D = " << value.sampler2DViewOf3D << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceBorderColorSwizzleFeaturesEXT& value)
 {
 	s << "VkPhysicalDeviceBorderColorSwizzleFeaturesEXT = {\n";
@@ -13055,8 +13070,6 @@ std::ostream& operator<< (std::ostream& s, const VkVideoDecodeInfoKHR& value)
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tflags = " << getVideoDecodeFlagsKHRStr(value.flags) << '\n';
-	s << "\tcodedOffset = " << value.codedOffset << '\n';
-	s << "\tcodedExtent = " << value.codedExtent << '\n';
 	s << "\tsrcBuffer = " << value.srcBuffer << '\n';
 	s << "\tsrcBufferOffset = " << value.srcBufferOffset << '\n';
 	s << "\tsrcBufferRange = " << value.srcBufferRange << '\n';
@@ -13109,7 +13122,6 @@ std::ostream& operator<< (std::ostream& s, const VkVideoEncodeInfoKHR& value)
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tflags = " << getVideoEncodeFlagsKHRStr(value.flags) << '\n';
 	s << "\tqualityLevel = " << value.qualityLevel << '\n';
-	s << "\tcodedExtent = " << value.codedExtent << '\n';
 	s << "\tdstBitstreamBuffer = " << value.dstBitstreamBuffer << '\n';
 	s << "\tdstBitstreamBufferOffset = " << value.dstBitstreamBufferOffset << '\n';
 	s << "\tdstBitstreamBufferMaxRange = " << value.dstBitstreamBufferMaxRange << '\n';

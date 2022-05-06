@@ -632,20 +632,6 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 			VK_FALSE,																// VkBool32			negativeOneToOne;
 		};
 
-////		const VkPipelineViewportStateCreateInfo					viewportStateCreateInfo			=
-////		{
-////			VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,			// VkStructureType						sType;
-////			(hasDepthClipControl ? &depthClipControlCreateInfo : nullptr),	// const void*							pNext;
-////			(VkPipelineViewportStateCreateFlags)0,							// VkPipelineViewportStateCreateFlags	flags;
-////			1u,																// deUint32								viewportCount;
-////			(dynamicViewport ? &badViewport : &viewport),					// const VkViewport*					pViewports;
-////			1u,																// deUint32								scissorCount;
-////			scissors.data()													// const VkRect2D*						pScissors;
-////		};
-////
-////		VkPipelineViewportStateCreateInfo viewportStateCreateInfo01	= viewportStateCreateInfo;
-////		viewportStateCreateInfo01.pNext								= &depthClipControlCreateInfo01;
-
 		// Dynamic viewport if needed.
 		std::vector<VkDynamicState> dynamicStates;
 

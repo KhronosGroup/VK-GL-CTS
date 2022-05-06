@@ -187,6 +187,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceHostQueryResetFeaturesEXT.pNext;
 	}
 
+	vk::VkPhysicalDeviceImage2DViewOf3DFeaturesEXT physicalDeviceImage2DViewOf3DFeaturesEXT;
+	deMemset(&physicalDeviceImage2DViewOf3DFeaturesEXT, 0, sizeof(physicalDeviceImage2DViewOf3DFeaturesEXT));
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_image_2d_view_of_3d")) )
+	{
+		physicalDeviceImage2DViewOf3DFeaturesEXT.sType = getStructureType<VkPhysicalDeviceImage2DViewOf3DFeaturesEXT>();
+		*nextPtr = &physicalDeviceImage2DViewOf3DFeaturesEXT;
+		nextPtr  = &physicalDeviceImage2DViewOf3DFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDeviceImagelessFramebufferFeaturesKHR physicalDeviceImagelessFramebufferFeaturesKHR;
 	deMemset(&physicalDeviceImagelessFramebufferFeaturesKHR, 0, sizeof(physicalDeviceImagelessFramebufferFeaturesKHR));
 
@@ -900,6 +910,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceHostQueryResetFeaturesEXT.hostQueryReset == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature hostQueryReset not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_image_2d_view_of_3d")) )
+	{
+		if ( physicalDeviceImage2DViewOf3DFeaturesEXT.image2DViewOf3D == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature image2DViewOf3D not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

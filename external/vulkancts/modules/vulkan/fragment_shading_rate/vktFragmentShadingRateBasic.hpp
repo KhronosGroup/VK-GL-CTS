@@ -26,16 +26,16 @@
 
 #include "tcuDefs.hpp"
 #include "tcuTestCase.hpp"
-#include "vkPipelineConstructionUtil.hpp"
+#include "vktFragmentShadingRateGroupParams.hpp"
 
 namespace vkt
 {
 namespace FragmentShadingRate
 {
 
-void createBasicTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* group, vk::PipelineConstructionType pipelineConstructionType, bool useDynamicRendering);
+void createBasicTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* group, SharedGroupParams groupParams);
 
-} // FragmentShaderInterlock
+} // FragmentShadingRate
 } // vkt
 
 #endif // _VKTFRAGMENTSHADINGRATEBASIC_HPP

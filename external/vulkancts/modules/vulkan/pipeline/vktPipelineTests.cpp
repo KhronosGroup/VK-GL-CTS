@@ -35,6 +35,7 @@
 #include "vktPipelineInterfaceMatchingTests.hpp"
 #include "vktPipelineSamplerTests.hpp"
 #include "vktPipelineImageViewTests.hpp"
+#include "vktPipelineImage2DViewOf3DTests.hpp"
 #include "vktPipelinePushConstantTests.hpp"
 #include "vktPipelinePushDescriptorTests.hpp"
 #include "vktPipelineSpecConstantTests.hpp"
@@ -85,6 +86,7 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 	group->addChild(createImageTests					(testCtx, pipelineConstructionType));
 	group->addChild(createSamplerTests					(testCtx, pipelineConstructionType));
 	group->addChild(createImageViewTests				(testCtx, pipelineConstructionType));
+	group->addChild(createImage2DViewOf3DTests			(testCtx, pipelineConstructionType));
 	group->addChild(createLogicOpTests					(testCtx, pipelineConstructionType));
 	group->addChild(createPushConstantTests				(testCtx, pipelineConstructionType));
 	group->addChild(createPushDescriptorTests			(testCtx, pipelineConstructionType));

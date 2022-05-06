@@ -14,6 +14,7 @@ static const char* s_allowedInstanceKhrExtensions[] =
 	"VK_KHR_get_physical_device_properties2",
 	"VK_KHR_get_surface_capabilities2",
 	"VK_KHR_mir_surface",
+	"VK_KHR_portability_enumeration",
 	"VK_KHR_surface",
 	"VK_KHR_surface_protected_capabilities",
 	"VK_KHR_wayland_surface",
