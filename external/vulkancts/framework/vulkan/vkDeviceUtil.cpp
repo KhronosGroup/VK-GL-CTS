@@ -48,16 +48,26 @@ Move<VkInstance> createDefaultInstance (const PlatformInterface&		vkPlatform,
 	bool			validationEnabled	= (!enabledLayers.empty());
 	vector<string>	actualExtensions	= enabledExtensions;
 
+    // Enumerate once, pass it in to the various functions that require the list of available extensions
+	vector<vk::VkExtensionProperties> availableExtensions = enumerateInstanceExtensionProperties(vkPlatform, DE_NULL);
+
 	if (validationEnabled)
 	{
 		// Make sure the debug report extension is enabled when validation is enabled.
-		if (!isDebugReportSupported(vkPlatform))
+		if (!isExtensionSupported(availableExtensions, RequiredExtension("VK_EXT_debug_report")))
 			TCU_THROW(NotSupportedError, "VK_EXT_debug_report is not supported");
 
 		if (!de::contains(begin(actualExtensions), end(actualExtensions), "VK_EXT_debug_report"))
 			actualExtensions.push_back("VK_EXT_debug_report");
 
 		DE_ASSERT(recorder);
+	}
+
+	// Make sure portability enumeration is enabled whenever it is available
+	bool portability_enumeration_available = isExtensionSupported(availableExtensions, RequiredExtension("VK_KHR_portability_enumeration"));
+	if (portability_enumeration_available)
+	{
+		actualExtensions.push_back("VK_KHR_portability_enumeration");
 	}
 
 	vector<const char*>		layerNamePtrs		(enabledLayers.size());
