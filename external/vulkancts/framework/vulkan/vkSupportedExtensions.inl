@@ -50,7 +50,6 @@ void getCoreDeviceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char
 		dst.push_back("VK_EXT_tooling_info");
 		dst.push_back("VK_EXT_extended_dynamic_state");
 		dst.push_back("VK_EXT_shader_demote_to_helper_invocation");
-		dst.push_back("VK_EXT_texel_buffer_alignment");
 		dst.push_back("VK_EXT_private_data");
 		dst.push_back("VK_EXT_pipeline_creation_cache_control");
 		dst.push_back("VK_EXT_image_robustness");
