@@ -16575,6 +16575,14 @@ dEQP-GLES3.functional.shaders.switch.no_default_label_uniform_vertex
 dEQP-GLES3.functional.shaders.switch.no_default_label_uniform_fragment
 dEQP-GLES3.functional.shaders.switch.no_default_label_dynamic_vertex
 dEQP-GLES3.functional.shaders.switch.no_default_label_dynamic_fragment
+dEQP-GLES3.functional.shaders.switch.default_only_static_vertex
+dEQP-GLES3.functional.shaders.switch.default_only_static_fragment
+dEQP-GLES3.functional.shaders.switch.default_only_uniform_vertex
+dEQP-GLES3.functional.shaders.switch.default_only_uniform_fragment
+dEQP-GLES3.functional.shaders.switch.empty_case_default_static_vertex
+dEQP-GLES3.functional.shaders.switch.empty_case_default_static_fragment
+dEQP-GLES3.functional.shaders.switch.empty_case_default_uniform_vertex
+dEQP-GLES3.functional.shaders.switch.empty_case_default_uniform_fragment
 dEQP-GLES3.functional.shaders.switch.fall_through_static_vertex
 dEQP-GLES3.functional.shaders.switch.fall_through_static_fragment
 dEQP-GLES3.functional.shaders.switch.fall_through_uniform_vertex
