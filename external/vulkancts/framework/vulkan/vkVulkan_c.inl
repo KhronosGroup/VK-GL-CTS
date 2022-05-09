@@ -14717,8 +14717,6 @@ typedef struct VkMultisampledRenderToSingleSampledInfoEXT {
     const void*              pNext;
     VkBool32                 multisampledRenderToSingleSampledEnable;
     VkSampleCountFlagBits    rasterizationSamples;
-    VkResolveModeFlagBits    depthResolveMode;
-    VkResolveModeFlagBits    stencilResolveMode;
 } VkMultisampledRenderToSingleSampledInfoEXT;
 
 

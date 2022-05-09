@@ -1172,23 +1172,6 @@ void addSubpassDescription(const TestParams&										params,
 	{
 		preserveAttachments->push_back(attachmentNdxes[6]);
 	}
-	if (perPass.resolveDepthStencil)
-	{
-		initializeAttachmentReference(resolveAttachmentReferences.back(),
-				attachmentNdxes[7], params.depthStencilFormat, false);
-		depthStencilResolve = VkSubpassDescriptionDepthStencilResolve
-		{
-			VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE,	// VkStructureType                  sType;
-			DE_NULL,														// const void*                      pNext;
-			perPass.depthStencilResolveMode,								// VkResolveModeFlagBits            depthResolveMode;
-			perPass.depthStencilResolveMode,								// VkResolveModeFlagBits            stencilResolveMode;
-			&resolveAttachmentReferences.back(),							// const VkAttachmentReference2*    pDepthStencilResolveAttachment;
-		};
-	}
-	else if (preserveAttachments && !isInAttachmentReferences(inputAttachmentReferences, attachmentNdxes[7]))
-	{
-		preserveAttachments->push_back(attachmentNdxes[7]);
-	}
 
 	// Account for single-sampled attachments in input attachments as well.
 	if (!inputAttachmentReferences.empty())
@@ -1203,10 +1186,36 @@ void addSubpassDescription(const TestParams&										params,
 			anySingleSampledAttachmentsUsed	= anySingleSampledAttachmentsUsed || params.numDepthStencilSamples == VK_SAMPLE_COUNT_1_BIT;
 	}
 
+	const bool needsMsrtss = anySingleSampledAttachmentsUsed && perPass.numSamples != VK_SAMPLE_COUNT_1_BIT;
+	const bool needsDepthStencilResolve = perPass.resolveDepthStencil || (needsMsrtss && params.numDepthStencilSamples == VK_SAMPLE_COUNT_1_BIT && perPass.hasDepthStencil);
+
+	if (needsDepthStencilResolve)
+	{
+		if (perPass.resolveDepthStencil)
+		{
+			initializeAttachmentReference(resolveAttachmentReferences.back(),
+					attachmentNdxes[7], params.depthStencilFormat, false);
+		}
+		depthStencilResolve = VkSubpassDescriptionDepthStencilResolve
+		{
+			VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE,	// VkStructureType                  sType;
+			DE_NULL,														// const void*                      pNext;
+			perPass.depthStencilResolveMode,								// VkResolveModeFlagBits            depthResolveMode;
+			perPass.depthStencilResolveMode,								// VkResolveModeFlagBits            stencilResolveMode;
+			perPass.resolveDepthStencil
+				? &resolveAttachmentReferences.back()
+				: nullptr,													// const VkAttachmentReference2*    pDepthStencilResolveAttachment;
+		};
+	}
+	else if (preserveAttachments && !isInAttachmentReferences(inputAttachmentReferences, attachmentNdxes[7]))
+	{
+		preserveAttachments->push_back(attachmentNdxes[7]);
+	}
+
 	VkSubpassDescription2 subpassDescription =
 	{
 		VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2,					// VkStructureType                 sType;
-		perPass.resolveDepthStencil
+		needsDepthStencilResolve
 			? &depthStencilResolve
 			: DE_NULL,												// const void*                     pNext;
 		(VkSubpassDescriptionFlags)0,								// VkSubpassDescriptionFlags       flags;
@@ -1234,10 +1243,8 @@ void addSubpassDescription(const TestParams&										params,
 		subpassDescription.pNext,											// const void*				pNext
 		VK_TRUE,															// VkBool32					multisampledRenderToSingleSampledEnable
 		perPass.numSamples,													// VkSampleCountFlagBits	rasterizationSamples
-		perPass.depthStencilResolveMode,									// VkResolveModeFlagBits depthResolveMode;
-		perPass.depthStencilResolveMode,									// VkResolveModeFlagBits stencilResolveMode;
 	};
-	if (anySingleSampledAttachmentsUsed && perPass.numSamples != VK_SAMPLE_COUNT_1_BIT)
+	if (needsMsrtss)
 		subpassDescription.pNext = &msrtss;
 
 	subpasses.push_back(subpassDescription);

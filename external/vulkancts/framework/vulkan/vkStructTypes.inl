@@ -5670,8 +5670,6 @@ struct VkMultisampledRenderToSingleSampledInfoEXT
 	const void*				pNext;
 	VkBool32				multisampledRenderToSingleSampledEnable;
 	VkSampleCountFlagBits	rasterizationSamples;
-	VkResolveModeFlagBits	depthResolveMode;
-	VkResolveModeFlagBits	stencilResolveMode;
 };
 
 struct VkPhysicalDeviceExtendedDynamicState2FeaturesEXT

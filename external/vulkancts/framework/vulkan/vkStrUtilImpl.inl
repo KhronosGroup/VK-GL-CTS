@@ -12233,8 +12233,6 @@ std::ostream& operator<< (std::ostream& s, const VkMultisampledRenderToSingleSam
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmultisampledRenderToSingleSampledEnable = " << value.multisampledRenderToSingleSampledEnable << '\n';
 	s << "\trasterizationSamples = " << value.rasterizationSamples << '\n';
-	s << "\tdepthResolveMode = " << value.depthResolveMode << '\n';
-	s << "\tstencilResolveMode = " << value.stencilResolveMode << '\n';
 	s << '}';
 	return s;
 }
