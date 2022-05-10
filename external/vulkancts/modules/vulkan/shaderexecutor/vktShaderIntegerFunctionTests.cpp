@@ -57,17 +57,6 @@ using tcu::UVec4;
 namespace
 {
 
-struct HexFloat
-{
-	const float value;
-	HexFloat (const float value_) : value(value_) {}
-};
-
-std::ostream& operator<< (std::ostream& str, const HexFloat& v)
-{
-	return str << v.value << " / " << tcu::toHex(tcu::Float32(v.value).bits());
-}
-
 struct VarValue
 {
 	const glu::VarType&	type;
@@ -94,10 +83,8 @@ std::ostream& operator<< (std::ostream& str, const VarValue& varValue)
 
 		switch (scalarType)
 		{
-			case glu::TYPE_FLOAT:	str << HexFloat(((const float*)varValue.value)[compNdx]);						break;
-			case glu::TYPE_INT:		str << ((const deInt32*)varValue.value)[compNdx];								break;
-			case glu::TYPE_UINT:	str << tcu::toHex(((const deUint32*)varValue.value)[compNdx]);					break;
-			case glu::TYPE_BOOL:	str << (((const deUint32*)varValue.value)[compNdx] != 0 ? "true" : "false");	break;
+			case glu::TYPE_INT:		str << ((const deInt32*)varValue.value)[compNdx];				break;
+			case glu::TYPE_UINT:	str << tcu::toHex(((const deUint32*)varValue.value)[compNdx]);	break;
 
 			default:
 				DE_ASSERT(false);
@@ -110,10 +97,8 @@ std::ostream& operator<< (std::ostream& str, const VarValue& varValue)
 	return str;
 }
 
-inline int getShaderUintBitCount (glu::ShaderType shaderType, glu::Precision precision)
+inline int getShaderUintBitCount (glu::Precision precision)
 {
-	// \todo [2013-10-31 pyry] Query from GL for vertex and fragment shaders.
-	DE_UNREF(shaderType);
 	const int bitCounts[] = { 9, 16, 32 };
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(bitCounts) == glu::PRECISION_LAST);
 	return bitCounts[precision];
@@ -136,10 +121,10 @@ static inline deUint32 getLowBitMask (int integerLength)
 	return ((1u << ((deUint32)integerLength - 1u)) << 1u) - 1u;
 }
 
-static void generateRandomInputData (de::Random& rnd, glu::ShaderType shaderType, glu::DataType dataType, glu::Precision precision, deUint32* dst, int numValues)
+static void generateRandomInputData (de::Random& rnd, glu::DataType dataType, glu::Precision precision, deUint32* dst, int numValues)
 {
 	const int				scalarSize		= glu::getDataTypeScalarSize(dataType);
-	const deUint32			integerLength	= (deUint32)getShaderUintBitCount(shaderType, precision);
+	const deUint32			integerLength	= (deUint32)getShaderUintBitCount(precision);
 	const deUint32			integerMask		= getLowBitMask(integerLength);
 	const bool				isUnsigned		= glu::isDataTypeUintOrUVec(dataType);
 
@@ -413,7 +398,7 @@ public:
 		const glu::DataType		type			= m_spec.inputs[0].varType.getBasicType();
 		const glu::Precision	precision		= m_spec.inputs[0].varType.getPrecision();
 		const int				scalarSize		= glu::getDataTypeScalarSize(type);
-		const int				integerLength	= getShaderUintBitCount(m_shaderType, precision);
+		const int				integerLength	= getShaderUintBitCount(precision);
 		const deUint32			integerMask		= getLowBitMask(integerLength);
 		const bool				isSigned		= glu::isDataTypeIntOrIVec(type);
 		deUint32*				in0				= (deUint32*)values[0];
@@ -458,8 +443,8 @@ public:
 			}
 		}
 
-		generateRandomInputData(rnd, m_shaderType, type, precision, in0, numValues - DE_LENGTH_OF_ARRAY(easyCases));
-		generateRandomInputData(rnd, m_shaderType, type, precision, in1, numValues - DE_LENGTH_OF_ARRAY(easyCases));
+		generateRandomInputData(rnd, type, precision, in0, numValues - DE_LENGTH_OF_ARRAY(easyCases));
+		generateRandomInputData(rnd, type, precision, in1, numValues - DE_LENGTH_OF_ARRAY(easyCases));
 	}
 
 	bool compare (const void* const* inputs, const void* const* outputs)
@@ -467,7 +452,7 @@ public:
 		const glu::DataType		type			= m_spec.inputs[0].varType.getBasicType();
 		const glu::Precision	precision		= m_spec.inputs[0].varType.getPrecision();
 		const int				scalarSize		= glu::getDataTypeScalarSize(type);
-		const int				integerLength	= getShaderUintBitCount(m_shaderType, precision);
+		const int				integerLength	= getShaderUintBitCount(precision);
 		const deUint32			mask0			= getLowBitMask(integerLength);
 
 		for (int compNdx = 0; compNdx < scalarSize; compNdx++)
@@ -523,7 +508,7 @@ public:
 		const glu::DataType		type			= m_spec.inputs[0].varType.getBasicType();
 		const glu::Precision	precision		= m_spec.inputs[0].varType.getPrecision();
 		const int				scalarSize		= glu::getDataTypeScalarSize(type);
-		const int				integerLength	= getShaderUintBitCount(m_shaderType, precision);
+		const int				integerLength	= getShaderUintBitCount(precision);
 		const deUint32			integerMask		= getLowBitMask(integerLength);
 		const bool				isSigned		= glu::isDataTypeIntOrIVec(type);
 		deUint32*				in0				= (deUint32*)values[0];
@@ -566,8 +551,8 @@ public:
 			}
 		}
 
-		generateRandomInputData(rnd, m_shaderType, type, precision, in0, numValues - DE_LENGTH_OF_ARRAY(easyCases));
-		generateRandomInputData(rnd, m_shaderType, type, precision, in1, numValues - DE_LENGTH_OF_ARRAY(easyCases));
+		generateRandomInputData(rnd, type, precision, in0, numValues - DE_LENGTH_OF_ARRAY(easyCases));
+		generateRandomInputData(rnd, type, precision, in1, numValues - DE_LENGTH_OF_ARRAY(easyCases));
 	}
 
 	bool compare (const void* const* inputs, const void* const* outputs)
@@ -575,7 +560,7 @@ public:
 		const glu::DataType		type			= m_spec.inputs[0].varType.getBasicType();
 		const glu::Precision	precision		= m_spec.inputs[0].varType.getPrecision();
 		const int				scalarSize		= glu::getDataTypeScalarSize(type);
-		const int				integerLength	= getShaderUintBitCount(m_shaderType, precision);
+		const int				integerLength	= getShaderUintBitCount(precision);
 		const deUint32			mask0			= getLowBitMask(integerLength);
 
 		for (int compNdx = 0; compNdx < scalarSize; compNdx++)
@@ -840,7 +825,7 @@ public:
 		const glu::DataType		type		= m_spec.inputs[0].varType.getBasicType();
 		const glu::Precision	precision	= m_spec.inputs[0].varType.getPrecision();
 		const bool				ignoreSign	= precision != glu::PRECISION_HIGHP && glu::isDataTypeIntOrIVec(type);
-		const int				numBits		= getShaderUintBitCount(m_shaderType, precision) - (ignoreSign ? 1 : 0);
+		const int				numBits		= getShaderUintBitCount(precision) - (ignoreSign ? 1 : 0);
 		deUint32*				inValue		= (deUint32*)values[0];
 		int*					inOffset	= (int*)values[1];
 		int*					inBits		= (int*)values[2];
@@ -854,7 +839,7 @@ public:
 			inBits[valueNdx]	= bits;
 		}
 
-		generateRandomInputData(rnd, m_shaderType, type, precision, inValue, numValues);
+		generateRandomInputData(rnd, type, precision, inValue, numValues);
 	}
 
 	bool compare (const void* const* inputs, const void* const* outputs)
@@ -916,7 +901,7 @@ public:
 		de::Random				rnd			(deStringHash(m_name) ^ 0x12c2acff);
 		const glu::DataType		type		= m_spec.inputs[0].varType.getBasicType();
 		const glu::Precision	precision	= m_spec.inputs[0].varType.getPrecision();
-		const int				numBits		= getShaderUintBitCount(m_shaderType, precision);
+		const int				numBits		= getShaderUintBitCount(precision);
 		deUint32*				inBase		= (deUint32*)values[0];
 		deUint32*				inInsert	= (deUint32*)values[1];
 		int*					inOffset	= (int*)values[2];
@@ -931,8 +916,8 @@ public:
 			inBits[valueNdx]	= bits;
 		}
 
-		generateRandomInputData(rnd, m_shaderType, type, precision, inBase, numValues);
-		generateRandomInputData(rnd, m_shaderType, type, precision, inInsert, numValues);
+		generateRandomInputData(rnd, type, precision, inBase, numValues);
+		generateRandomInputData(rnd, type, precision, inInsert, numValues);
 	}
 
 	bool compare (const void* const* inputs, const void* const* outputs)
@@ -940,7 +925,7 @@ public:
 		const glu::DataType		type			= m_spec.inputs[0].varType.getBasicType();
 		const glu::Precision	precision		= m_spec.inputs[0].varType.getPrecision();
 		const int				scalarSize		= glu::getDataTypeScalarSize(type);
-		const int				integerLength	= getShaderUintBitCount(m_shaderType, precision);
+		const int				integerLength	= getShaderUintBitCount(precision);
 		const deUint32			cmpMask			= getLowBitMask(integerLength);
 		const int				offset			= *((const int*)inputs[2]);
 		const int				bits			= *((const int*)inputs[3]);
@@ -1000,14 +985,14 @@ public:
 		const glu::Precision	precision	= m_spec.inputs[0].varType.getPrecision();
 		deUint32*				inValue		= (deUint32*)values[0];
 
-		generateRandomInputData(rnd, m_shaderType, type, precision, inValue, numValues);
+		generateRandomInputData(rnd, type, precision, inValue, numValues);
 	}
 
 	bool compare (const void* const* inputs, const void* const* outputs)
 	{
 		const glu::DataType		type			= m_spec.inputs[0].varType.getBasicType();
 		const glu::Precision	precision		= m_spec.inputs[0].varType.getPrecision();
-		const int				integerLength	= getShaderUintBitCount(m_shaderType, precision);
+		const int				integerLength	= getShaderUintBitCount(precision);
 		const int				scalarSize		= glu::getDataTypeScalarSize(type);
 		const deUint32			cmpMask			= reverseBits(getLowBitMask(integerLength));
 
@@ -1060,14 +1045,14 @@ public:
 		const glu::Precision	precision	= m_spec.inputs[0].varType.getPrecision();
 		deUint32*				inValue		= (deUint32*)values[0];
 
-		generateRandomInputData(rnd, m_shaderType, type, precision, inValue, numValues);
+		generateRandomInputData(rnd, type, precision, inValue, numValues);
 	}
 
 	bool compare (const void* const* inputs, const void* const* outputs)
 	{
 		const glu::DataType		type			= m_spec.inputs[0].varType.getBasicType();
 		const glu::Precision	precision		= m_spec.inputs[0].varType.getPrecision();
-		const int				integerLength	= getShaderUintBitCount(m_shaderType, precision);
+		const int				integerLength	= getShaderUintBitCount(precision);
 		const int				scalarSize		= glu::getDataTypeScalarSize(type);
 		const deUint32			countMask		= getLowBitMask(integerLength);
 
@@ -1124,7 +1109,7 @@ public:
 		const glu::Precision	precision	= m_spec.inputs[0].varType.getPrecision();
 		deUint32*				inValue		= (deUint32*)values[0];
 
-		generateRandomInputData(rnd, m_shaderType, type, precision, inValue, numValues);
+		generateRandomInputData(rnd, type, precision, inValue, numValues);
 	}
 
 	bool compare (const void* const* inputs, const void* const* outputs)
@@ -1132,7 +1117,7 @@ public:
 		const glu::DataType		type			= m_spec.inputs[0].varType.getBasicType();
 		const glu::Precision	precision		= m_spec.inputs[0].varType.getPrecision();
 		const int				scalarSize		= glu::getDataTypeScalarSize(type);
-		const int				integerLength	= getShaderUintBitCount(m_shaderType, precision);
+		const int				integerLength	= getShaderUintBitCount(precision);
 		const deUint32			mask			= getLowBitMask(integerLength);
 
 		for (int compNdx = 0; compNdx < scalarSize; compNdx++)
@@ -1188,7 +1173,7 @@ public:
 		const glu::Precision	precision	= m_spec.inputs[0].varType.getPrecision();
 		deUint32*				inValue		= (deUint32*)values[0];
 
-		generateRandomInputData(rnd, m_shaderType, type, precision, inValue, numValues);
+		generateRandomInputData(rnd, type, precision, inValue, numValues);
 	}
 
 	bool compare (const void* const* inputs, const void* const* outputs)
@@ -1197,7 +1182,7 @@ public:
 		const glu::Precision	precision		= m_spec.inputs[0].varType.getPrecision();
 		const bool				isSigned		= glu::isDataTypeIntOrIVec(type);
 		const int				scalarSize		= glu::getDataTypeScalarSize(type);
-		const int				integerLength	= getShaderUintBitCount(m_shaderType, precision);
+		const int				integerLength	= getShaderUintBitCount(precision);
 
 		for (int compNdx = 0; compNdx < scalarSize; compNdx++)
 		{
