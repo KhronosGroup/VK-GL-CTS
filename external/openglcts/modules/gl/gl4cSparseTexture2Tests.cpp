@@ -1108,7 +1108,7 @@ bool SparseTexture2CommitmentTestCase::writeDataToTexture(const Functions& gl, G
 				{
 					gl.useProgram(program.getProgram());
 					GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram");
-					gl.bindImageTexture(0 /* unit */, texture, level /* level */, GL_FALSE /* layered */, 0 /* layer */,
+					gl.bindImageTexture(0 /* unit */, texture, level /* level */, depth > 1 /* layered */, 0 /* layer */,
 										GL_WRITE_ONLY, format);
 					GLU_EXPECT_NO_ERROR(gl.getError(), "glBindImageTexture");
 					gl.uniform1i(1, 0 /* image_unit */);
