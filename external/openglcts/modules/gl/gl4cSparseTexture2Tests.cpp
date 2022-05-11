@@ -2381,7 +2381,7 @@ void SparseTexture2LookupTestCase::init()
 	f.allowedTargets.insert(GL_TEXTURE_RECTANGLE);
 	mFunctions.push_back(f);
 
-	f = FunctionToken("sparseTextureGatherOffsetsARB", "<REFZ_DEF>, offsetsArray");
+	f = FunctionToken("sparseTextureGatherOffsetsARB", "<REFZ_DEF>, <OFFSET_TYPE><OFFSET_DIM>[4](<OFFSET_TYPE><OFFSET_DIM>(0),<OFFSET_TYPE><OFFSET_DIM>(0),<OFFSET_TYPE><OFFSET_DIM>(0),<OFFSET_TYPE><OFFSET_DIM>(0))");
 	f.allowedTargets.insert(GL_TEXTURE_2D);
 	f.allowedTargets.insert(GL_TEXTURE_2D_ARRAY);
 	f.allowedTargets.insert(GL_TEXTURE_RECTANGLE);
@@ -2590,15 +2590,6 @@ SparseTexture2LookupTestCase::TokenStringsExt SparseTexture2LookupTestCase::crea
 	// Set expected result vector, component definition and offset array definition for gather functions
 	if (funcName.find("Gather", 0) != std::string::npos)
 	{
-		if (funcName.find("GatherOffsets", 0) != std::string::npos)
-		{
-			s.offsetArrayDef = "    <OFFSET_TYPE><OFFSET_DIM> offsetsArray[4];\n"
-							   "    offsetsArray[0] = <OFFSET_TYPE><OFFSET_DIM>(0);\n"
-							   "    offsetsArray[1] = <OFFSET_TYPE><OFFSET_DIM>(0);\n"
-							   "    offsetsArray[2] = <OFFSET_TYPE><OFFSET_DIM>(0);\n"
-							   "    offsetsArray[3] = <OFFSET_TYPE><OFFSET_DIM>(0);\n";
-		}
-
 		if (format != GL_DEPTH_COMPONENT16)
 			s.componentDef = ", 0";
 		s.resultExpected   = "(1, 1, 1, 1)";
