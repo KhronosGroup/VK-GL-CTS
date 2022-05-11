@@ -59,7 +59,7 @@ VULKAN_MAIN_PKG	= Package(module = VULKAN_MODULE, configurations = [
 												   exclude("test-issues.txt"),
 												   exclude("excluded-tests.txt"),
 												   exclude("android-tests.txt")],
-						splitToMultipleFiles	= True),
+						listOfGroupsToSplit		= ["dEQP-VK", "dEQP-VK.pipeline"]),
 		  Configuration(name					= "fraction-mandatory-tests",
 						filters					= [include("fraction-mandatory-tests.txt")]),
 	 ])
@@ -69,7 +69,7 @@ VULKAN_SC_MAIN_PKG	= Package(module = VULKAN_SC_MODULE, configurations = [
 		  Configuration(name					= "default",
 						filters					= [include("master_sc.txt"),
 												   exclude("android-tests-sc.txt")],
-						splitToMultipleFiles	= True),
+						listOfGroupsToSplit		= ["dEQP-VKSC"]),
 	])
 
 MUSTPASS_LISTS		= [

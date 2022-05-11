@@ -574,7 +574,6 @@ dEQP-VKSC.memory_model.transitive.noncoherent.atomic_atomic.payload_local.physbu
 dEQP-VKSC.memory_model.transitive.noncoherent.atomic_atomic.payload_local.physbuffer.guard_local.image.transvis
 dEQP-VKSC.memory_model.transitive.noncoherent.atomic_atomic.payload_local.physbuffer.guard_local.physbuffer.nontransvis
 dEQP-VKSC.memory_model.transitive.noncoherent.atomic_atomic.payload_local.physbuffer.guard_local.physbuffer.transvis
-dEQP-VKSC.memory_model.padding.test
 dEQP-VKSC.memory_model.shared.scalar_types.0
 dEQP-VKSC.memory_model.shared.scalar_types.1
 dEQP-VKSC.memory_model.shared.scalar_types.2
@@ -785,3 +784,4 @@ dEQP-VKSC.memory_model.shared.8bit.nested_structs_arrays.6
 dEQP-VKSC.memory_model.shared.8bit.nested_structs_arrays.7
 dEQP-VKSC.memory_model.shared.8bit.nested_structs_arrays.8
 dEQP-VKSC.memory_model.shared.8bit.nested_structs_arrays.9
+dEQP-VKSC.memory_model.padding.test
