@@ -18,6 +18,7 @@ vk-master-2022-03-01/memory.txt
 vk-master-2022-03-01/mesh-shader.txt
 vk-master-2022-03-01/multiview.txt
 vk-master-2022-03-01/pipeline.txt
+vk-master-2022-03-01/protected-memory.txt
 vk-master-2022-03-01/query-pool.txt
 vk-master-2022-03-01/rasterization.txt
 vk-master-2022-03-01/ray-query.txt

@@ -616,7 +616,8 @@ static tcu::TestStatus swapchainCreateTest(Context& context, TestParams testPara
 		}
 
 		const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType,
-														 native.getDisplay(), native.getWindow()));
+														 native.getDisplay(), native.getWindow(),
+														 context.getTestContext().getCommandLine()));
 
 		const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, vector<string>());
 
