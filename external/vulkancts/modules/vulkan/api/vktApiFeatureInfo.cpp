@@ -3943,15 +3943,23 @@ VkImageCreateFlags getValidImageCreateFlags (const VkPhysicalDeviceFeatures& dev
 			flags |= VK_IMAGE_CREATE_SPARSE_BINDING_BIT|VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT;
 
 		if (deviceFeatures.sparseResidencyAliased)
-			flags |= VK_IMAGE_CREATE_SPARSE_ALIASED_BIT;
+			flags |= VK_IMAGE_CREATE_SPARSE_BINDING_BIT|VK_IMAGE_CREATE_SPARSE_ALIASED_BIT;
 	}
 
 	return flags;
 }
 
-bool isValidImageCreateFlagCombination (VkImageCreateFlags)
+bool isValidImageCreateFlagCombination (VkImageCreateFlags createFlags)
 {
-	return true;
+	bool isValid = true;
+
+	if (((createFlags & (VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT|VK_IMAGE_CREATE_SPARSE_ALIASED_BIT)) != 0) &&
+		((createFlags & VK_IMAGE_CREATE_SPARSE_BINDING_BIT) == 0))
+	{
+		isValid = false;
+	}
+
+	return isValid;
 }
 
 bool isRequiredImageParameterCombination (const VkPhysicalDeviceFeatures&	deviceFeatures,
