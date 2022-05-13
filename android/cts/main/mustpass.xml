@@ -20,7 +20,7 @@
      -->
 	<TestPackage name="dEQP-EGL">
 		<Configuration caseListFile="egl-master.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master"/>
-		<Configuration caseListFile="egl-master-2021-03-01.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master-2021-03-01"/>
+		<Configuration caseListFile="egl-master-2020-03-01.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master-2020-03-01"/>
 		<Configuration caseListFile="egl-master-2022-03-01.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master-2022-03-01"/>
 		<Configuration caseListFile="egl-master-risky.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master-risky"/>
 	</TestPackage>

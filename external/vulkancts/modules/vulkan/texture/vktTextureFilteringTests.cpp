@@ -1664,6 +1664,11 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 		// Formats.
 		for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(filterableFormatsByType); fmtNdx++)
 		{
+			// YCbCr conversion formats require that imageType is VK_IMAGE_TYPE_2D.
+			// Skip for 3D texture filtering tests.
+			if (isYCbCrConversionFormat(filterableFormatsByType[fmtNdx].format))
+				continue;
+
 			const string					filterGroupName = filterableFormatsByType[fmtNdx].name;
 			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str(), ""));
 
