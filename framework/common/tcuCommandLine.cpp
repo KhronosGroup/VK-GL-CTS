@@ -99,6 +99,7 @@ DE_DECLARE_COMMAND_LINE_OPT(ShaderCacheFilename,		std::string);
 DE_DECLARE_COMMAND_LINE_OPT(Optimization,				int);
 DE_DECLARE_COMMAND_LINE_OPT(OptimizeSpirv,				bool);
 DE_DECLARE_COMMAND_LINE_OPT(ShaderCacheTruncate,		bool);
+DE_DECLARE_COMMAND_LINE_OPT(ShaderCacheIPC,				bool);
 DE_DECLARE_COMMAND_LINE_OPT(RenderDoc,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(CaseFraction,				std::vector<int>);
 DE_DECLARE_COMMAND_LINE_OPT(CaseFractionMandatoryTests,	std::string);
@@ -226,6 +227,7 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<ShaderCache>					(DE_NULL,	"deqp-shadercache",							"Enable or disable shader cache",					s_enableNames,		"enable")
 		<< Option<ShaderCacheFilename>			(DE_NULL,	"deqp-shadercache-filename",				"Write shader cache to given file",										"shadercache.bin")
 		<< Option<ShaderCacheTruncate>			(DE_NULL,	"deqp-shadercache-truncate",				"Truncate shader cache before running tests",		s_enableNames,		"enable")
+		<< Option<ShaderCacheIPC>				(DE_NULL,	"deqp-shadercache-ipc",						"Should shader cache use inter process comms",		s_enableNames,		"disable")
 		<< Option<RenderDoc>					(DE_NULL,	"deqp-renderdoc",							"Enable RenderDoc frame markers",					s_enableNames,		"disable")
 		<< Option<CaseFraction>					(DE_NULL,	"deqp-fraction",							"Run a fraction of the test cases (e.g. N,M means run group%M==N)",	parseIntList,	"")
 		<< Option<CaseFractionMandatoryTests>	(DE_NULL,	"deqp-fraction-mandatory-caselist-file",	"Case list file that must be run for each fraction",					"")
@@ -964,6 +966,7 @@ bool					CommandLine::isOutOfMemoryTestEnabled		(void) const	{ return m_cmdLine.
 bool					CommandLine::isShadercacheEnabled			(void) const	{ return m_cmdLine.getOption<opt::ShaderCache>();							}
 const char*				CommandLine::getShaderCacheFilename			(void) const	{ return m_cmdLine.getOption<opt::ShaderCacheFilename>().c_str();			}
 bool					CommandLine::isShaderCacheTruncateEnabled	(void) const	{ return m_cmdLine.getOption<opt::ShaderCacheTruncate>();					}
+bool					CommandLine::isShaderCacheIPCEnabled		(void) const	{ return m_cmdLine.getOption<opt::ShaderCacheIPC>();						}
 int						CommandLine::getOptimizationRecipe			(void) const	{ return m_cmdLine.getOption<opt::Optimization>();							}
 bool					CommandLine::isSpirvOptimizationEnabled		(void) const	{ return m_cmdLine.getOption<opt::OptimizeSpirv>();							}
 bool					CommandLine::isRenderDocEnabled				(void) const	{ return m_cmdLine.getOption<opt::RenderDoc>();								}

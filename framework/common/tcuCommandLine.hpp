@@ -247,6 +247,9 @@ public:
 	//! Should the shader cache be truncated before run (--deqp-shadercache-truncate)
 	bool							isShaderCacheTruncateEnabled	(void) const;
 
+	//! Should the shader cache use inter process communication (IPC) (--deqp-shadercache-ipc)
+	bool							isShaderCacheIPCEnabled	(void) const;
+
 	//! Get shader optimization recipe (--deqp-optimization-recipe)
 	int								getOptimizationRecipe		(void) const;
 

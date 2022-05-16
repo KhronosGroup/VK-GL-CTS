@@ -605,6 +605,21 @@ targets.
 Do not truncate the shader cache file at startup. No shader compilation will
 occur on repeated runs of the CTS.
 
+	--deqp-shadercache-ipc=enable
+
+Enables the use of inter-process communication primitives to allow several
+instances of CTS to share a single cache file. All of the instances must
+use the same shader cache filename.
+
+Note that if one instance should crash while holding the cache file lock,
+the other instances will hang. The lock is only held while reading or
+writing to the cache, so crashes are unlikely.
+
+In case of a crash outside the cache file lock, the named shared memory
+and shared semaphore may be left behind. These will be re-used by CTS on
+subsequent runs, so additional memory leak will not occur. Shader cache
+truncate may not work in this case. On Windows, when all instances of
+CTS have terminated the shared resources get automatically cleaned up.
 
 RenderDoc
 ---------
