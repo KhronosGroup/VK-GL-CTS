@@ -416,6 +416,7 @@ void preparePipelineWrapper (GraphicsPipelineWrapper&		gpw,
 			vertexModule)
 	   .setupFragmentShaderState(pipelineLayout, renderPass, subpassNdx, fragmentModule, DE_NULL, &pipelineMultisampleStateInfo)
 	   .setupFragmentOutputState(renderPass, subpassNdx, &pipelineColorBlendStateInfo, &pipelineMultisampleStateInfo)
+	   .setMonolithicPipelineLayout(pipelineLayout)
 	   .buildPipeline();
 }
 

@@ -342,6 +342,7 @@ void preparePipelineWrapper(GraphicsPipelineWrapper&	gpw,
 										 vertexModule)
 	   .setupFragmentShaderState(pipelineLayout, renderPass, subpass, fragmentModule, &pipelineDepthStencilStateInfo)
 	   .setupFragmentOutputState(renderPass, subpass, &pipelineColorBlendStateInfo)
+	   .setMonolithicPipelineLayout(pipelineLayout)
 	   .buildPipeline();
 }
 

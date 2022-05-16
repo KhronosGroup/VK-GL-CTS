@@ -1684,6 +1684,7 @@ void BasicGraphicsTestInstance::buildPipeline(void)
 														*vertexShaderModule)
 					  .setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fragmentShaderModule, &defaultDepthStencilStateParams)
 					  .setupFragmentOutputState(*m_renderPass)
+					  .setMonolithicPipelineLayout(*m_pipelineLayout)
 					  .buildPipeline();
 }
 
@@ -1965,6 +1966,7 @@ void AdvGraphicsTestInstance::buildPipeline(void)
 														*geomShaderModule)
 					  .setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fragShaderModule, &defaultDepthStencilStateParams)
 					  .setupFragmentOutputState(*m_renderPass)
+					  .setMonolithicPipelineLayout(*m_pipelineLayout)
 					  .buildPipeline();
 }
 

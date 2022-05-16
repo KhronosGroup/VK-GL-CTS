@@ -706,6 +706,7 @@ void preparePipelineWrapper (GraphicsPipelineWrapper&			gpw,
 								&pipelineMultisampleStateInfo,
 								(useFragmentShadingRate ? &shadingRateStateCreateInfo : DE_NULL))
 	   .setupFragmentOutputState(renderPass, subpassIndex, &colorBlendStateCreateInfoDefault, &pipelineMultisampleStateInfo)
+	   .setMonolithicPipelineLayout(pipelineLayout)
 	   .buildPipeline();
 }
 

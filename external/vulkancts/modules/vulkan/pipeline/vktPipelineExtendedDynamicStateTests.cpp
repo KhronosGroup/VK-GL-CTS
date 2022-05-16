@@ -2271,6 +2271,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 											*geomModule)
 					  .setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragModule, &depthStencilStateCreateInfo, &multisampleStateCreateInfo)
 					  .setupFragmentOutputState(*renderPass, 0u, &colorBlendStateCreateInfo, &multisampleStateCreateInfo)
+					  .setMonolithicPipelineLayout(*pipelineLayout)
 					  .buildPipeline();
 	}
 
@@ -2323,6 +2324,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 											*geomModule)
 						.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragModule, &depthStencilStateCreateInfo, &multisampleStateCreateInfo)
 						.setupFragmentOutputState(*renderPass, 0u, &colorBlendStateCreateInfo, &multisampleStateCreateInfo)
+						.setMonolithicPipelineLayout(*pipelineLayout)
 						.buildPipeline();
 	}
 

@@ -136,6 +136,7 @@ struct PlanarFormatDescription
 
 bool							isYCbCrFormat					(VkFormat						format);
 bool							isYCbCrExtensionFormat			(VkFormat						format);
+bool							isYCbCrConversionFormat			(VkFormat						format);
 PlanarFormatDescription			getPlanarFormatDescription		(VkFormat						format);
 int								getPlaneCount					(VkFormat						format);
 deUint32						getMipmapCount					(VkFormat						format,

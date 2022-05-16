@@ -662,6 +662,7 @@ void DepthRangeUnrestrictedTestInstance::preparePipelineWrapper (GraphicsPipelin
 			&rasterStateParams)
 	   .setupFragmentShaderState(*m_pipelineLayout, renderpass, 0u, *m_fragModule, &depthStencilStateParams)
 	   .setupFragmentOutputState(renderpass, 0u, &colorBlendStateParams)
+	   .setMonolithicPipelineLayout(*m_pipelineLayout)
 	   .buildPipeline();
 }
 

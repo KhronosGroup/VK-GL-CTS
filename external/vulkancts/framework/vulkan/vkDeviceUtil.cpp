@@ -65,14 +65,15 @@ Move<VkInstance> createDefaultInstance (const PlatformInterface&		vkPlatform,
 
 		DE_ASSERT(recorder);
 	}
-#endif // CTS_USES_VULKANSC
 
-	// Make sure portability enumeration is enabled whenever it is available
-	bool portability_enumeration_available = isExtensionSupported(availableExtensions, RequiredExtension("VK_KHR_portability_enumeration"));
-	if (portability_enumeration_available)
-	{
-		actualExtensions.push_back("VK_KHR_portability_enumeration");
-	}
+        // Make sure portability enumeration is enabled whenever it is available
+        bool portability_enumeration_available = isExtensionSupported(availableExtensions, RequiredExtension("VK_KHR_portability_enumeration"));
+        if (portability_enumeration_available)
+        {
+                actualExtensions.push_back("VK_KHR_portability_enumeration");
+        }
+
+#endif // CTS_USES_VULKANSC
 
 	vector<const char*>		layerNamePtrs		(enabledLayers.size());
 	vector<const char*>		extensionNamePtrs	(actualExtensions.size());
@@ -103,10 +104,11 @@ Move<VkInstance> createDefaultInstance (const PlatformInterface&		vkPlatform,
 		VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
 #ifndef CTS_USES_VULKANSC
 		(validationEnabled ? &callbackInfo : nullptr),
+		(VkInstanceCreateFlags)(portability_enumeration_available ? VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR : 0),
 #else
 		nullptr,
-#endif // CTS_USES_VULKANSC
 		(VkInstanceCreateFlags)0,
+#endif // CTS_USES_VULKANSC
 		&appInfo,
 		(deUint32)layerNamePtrs.size(),
 		(validationEnabled ? layerNamePtrs.data() : nullptr),

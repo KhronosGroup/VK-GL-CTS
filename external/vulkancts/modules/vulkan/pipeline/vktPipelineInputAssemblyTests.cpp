@@ -1379,6 +1379,7 @@ InputAssemblyInstance::InputAssemblyInstance (Context&							context,
 											*m_fragmentShaderModule,
 											&depthStencilStateParams)
 						  .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
+						  .setMonolithicPipelineLayout(*m_pipelineLayout)
 						  .buildPipeline();
 	}
 

@@ -249,6 +249,7 @@ protected:
 													static_cast<const vk::VkPipelineRasterizationStateCreateInfo*>(&rasterizerState))
 				  .setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fs, static_cast<const vk::VkPipelineDepthStencilStateCreateInfo*>(&m_depthStencilState))
 				  .setupFragmentOutputState(*m_renderPass, 0u, static_cast<const vk::VkPipelineColorBlendStateCreateInfo*>(&colorBlendState))
+				  .setMonolithicPipelineLayout(*m_pipelineLayout)
 				  .buildPipeline();
 
 

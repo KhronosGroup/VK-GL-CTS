@@ -506,10 +506,14 @@ public:
 			m_logicalDevice		= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), instance, instanceDriver, m_context.getPhysicalDevice(), &deviceInfo);
 		}
 #endif // CTS_USES_VULKANSC
+		m_logicalDeviceInterface = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), getDevice()));
+		m_logicalDeviceInterface->getDeviceQueue(getDevice(), m_context.getUniversalQueueFamilyIndex(), 0, &m_logicalDeviceQueue);
 	};
 
 protected:
-	vk::VkDevice				getDevice							(void)	{ return (m_params.priorityMode == PRIORITY_MODE_DYNAMIC) ? m_logicalDevice.get() : m_context.getDevice(); }
+	vk::VkDevice				getDevice							(void)	{ return (m_params.priorityMode == PRIORITY_MODE_DYNAMIC) ? m_logicalDevice.get()			: m_context.getDevice();			}
+	const DeviceInterface&		getDeviceInterface					(void)	{ return (m_params.priorityMode == PRIORITY_MODE_DYNAMIC) ? *m_logicalDeviceInterface.get()	: m_context.getDeviceInterface();	}
+	VkQueue						getUniversalQueue					(void)	{ return (m_params.priorityMode == PRIORITY_MODE_DYNAMIC) ? m_logicalDeviceQueue			: m_context.getUniversalQueue();	}
 
 	template<typename TTarget>
 	void						createBindingTargets				(std::vector<de::SharedPtr<Move<TTarget> > >& targets);
@@ -546,6 +550,8 @@ protected:
 
 private:
 	vk::Move<vk::VkDevice>		m_logicalDevice;
+	de::MovePtr<DeviceDriver>	m_logicalDeviceInterface;
+	VkQueue						m_logicalDeviceQueue;
 };
 
 template<>
@@ -553,7 +559,7 @@ void					BaseTestInstance::createBindingTargets<VkBuffer>		(BuffersList&			targe
 {
 	const deUint32						count								= m_params.targetsCount;
 	const VkDevice						vkDevice							= getDevice();
-	const DeviceInterface&				vk									= m_context.getDeviceInterface();
+	const DeviceInterface&				vk									= getDeviceInterface();
 
 	targets.reserve(count);
 	for (deUint32 i = 0u; i < count; ++i)
@@ -568,7 +574,7 @@ void					BaseTestInstance::createBindingTargets<VkImage>		(ImagesList&			targets
 {
 	const deUint32						count								= m_params.targetsCount;
 	const VkDevice						vkDevice							= getDevice();
-	const DeviceInterface&				vk									= m_context.getDeviceInterface();
+	const DeviceInterface&				vk									= getDeviceInterface();
 
 	targets.reserve(count);
 	for (deUint32 i = 0u; i < count; ++i)
@@ -583,7 +589,7 @@ void					BaseTestInstance::createMemory<VkBuffer, DE_FALSE>	(BuffersList&			targ
 																			 MemoryRegionsList&		memory)
 {
 	const deUint32						count								= static_cast<deUint32>(targets.size());
-	const DeviceInterface&				vk									= m_context.getDeviceInterface();
+	const DeviceInterface&				vk									= getDeviceInterface();
 	const VkDevice						vkDevice							= getDevice();
 
 	memory.reserve(count);
@@ -617,7 +623,7 @@ void				BaseTestInstance::createMemory<VkImage, DE_FALSE>		(ImagesList&			target
 																			 MemoryRegionsList&		memory)
 {
 	const deUint32						count								= static_cast<deUint32>(targets.size());
-	const DeviceInterface&				vk									= m_context.getDeviceInterface();
+	const DeviceInterface&				vk									= getDeviceInterface();
 	const VkDevice						vkDevice							= getDevice();
 
 	memory.reserve(count);
@@ -651,7 +657,7 @@ void				BaseTestInstance::createMemory<VkBuffer, DE_TRUE>		(BuffersList&			targe
 																			 MemoryRegionsList&		memory)
 {
 	const deUint32						count								= static_cast<deUint32>(targets.size());
-	const DeviceInterface&				vk									= m_context.getDeviceInterface();
+	const DeviceInterface&				vk									= getDeviceInterface();
 	const VkDevice						vkDevice							= getDevice();
 
 	memory.reserve(count);
@@ -687,7 +693,7 @@ void				BaseTestInstance::createMemory<VkImage, DE_TRUE>		(ImagesList&			targets
 																			 MemoryRegionsList&		memory)
 {
 	const deUint32						count								= static_cast<deUint32>(targets.size());
-	const DeviceInterface&				vk									= m_context.getDeviceInterface();
+	const DeviceInterface&				vk									= getDeviceInterface();
 	const VkDevice						vkDevice							= getDevice();
 
 	memory.reserve(count);
@@ -724,7 +730,7 @@ void					BaseTestInstance::makeBinding<VkBuffer>				(BuffersList&			targets,
 {
 	const deUint32						count								= static_cast<deUint32>(targets.size());
 	const VkDevice						vkDevice							= getDevice();
-	const DeviceInterface&				vk									= m_context.getDeviceInterface();
+	const DeviceInterface&				vk									= getDeviceInterface();
 	BindBufferMemoryInfosList			bindMemoryInfos;
 
 	for (deUint32 i = 0; i < count; ++i)
@@ -741,7 +747,7 @@ void					BaseTestInstance::makeBinding<VkImage>				(ImagesList&			targets,
 {
 	const deUint32						count								= static_cast<deUint32>(targets.size());
 	const VkDevice						vkDevice							= getDevice();
-	const DeviceInterface&				vk									= m_context.getDeviceInterface();
+	const DeviceInterface&				vk									= getDeviceInterface();
 	BindImageMemoryInfosList			bindMemoryInfos;
 
 	for (deUint32 i = 0; i < count; ++i)
@@ -756,9 +762,9 @@ template <>
 void					BaseTestInstance::fillUpResource<VkBuffer>			(Move<VkBuffer>&		source,
 																			 Move<VkBuffer>&		target)
 {
-	const DeviceInterface&				vk									= m_context.getDeviceInterface();
+	const DeviceInterface&				vk									= getDeviceInterface();
 	const VkDevice						vkDevice							= getDevice();
-	const VkQueue						queue								= m_context.getUniversalQueue();
+	const VkQueue						queue								= getUniversalQueue();
 
 	const VkBufferMemoryBarrier			srcBufferBarrier					= makeMemoryBarrierInfo(*source, m_params.bufferSize, TransferFromResource);
 	const VkBufferMemoryBarrier			dstBufferBarrier					= makeMemoryBarrierInfo(*target, m_params.bufferSize, TransferToResource);
@@ -780,9 +786,9 @@ template <>
 void				BaseTestInstance::fillUpResource<VkImage>				(Move<VkBuffer>&		source,
 																			 Move<VkImage>&			target)
 {
-	const DeviceInterface&				vk									= m_context.getDeviceInterface();
+	const DeviceInterface&				vk									= getDeviceInterface();
 	const VkDevice						vkDevice							= getDevice();
-	const VkQueue						queue								= m_context.getUniversalQueue();
+	const VkQueue						queue								= getUniversalQueue();
 
 	const VkBufferMemoryBarrier			srcBufferBarrier					= makeMemoryBarrierInfo(*source, m_params.bufferSize, TransferFromResource);
 	const VkImageMemoryBarrier			preImageBarrier						= makeMemoryBarrierInfo(*target, 0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -826,9 +832,9 @@ template <>
 void				BaseTestInstance::readUpResource						(Move<VkImage>&			source,
 																			 Move<VkBuffer>&		target)
 {
-	const DeviceInterface&				vk									= m_context.getDeviceInterface();
+	const DeviceInterface&				vk									= getDeviceInterface();
 	const VkDevice						vkDevice							= getDevice();
-	const VkQueue						queue								= m_context.getUniversalQueue();
+	const VkQueue						queue								= getUniversalQueue();
 
 	Move<VkCommandPool>					commandPool							= createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, 0);
 	Move<VkCommandBuffer>				cmdBuffer							= createCommandBuffer(vk, vkDevice, *commandPool);
@@ -849,9 +855,9 @@ void					BaseTestInstance::layoutTransitionResource			(Move<VkBuffer>&		target)
 template <>
 void					BaseTestInstance::layoutTransitionResource<VkImage>	(Move<VkImage>&			target)
 {
-	const DeviceInterface&				vk									= m_context.getDeviceInterface();
+	const DeviceInterface&				vk									= getDeviceInterface();
 	const VkDevice						vkDevice							= getDevice();
-	const VkQueue						queue								= m_context.getUniversalQueue();
+	const VkQueue						queue								= getUniversalQueue();
 
 	const VkImageMemoryBarrier			preImageBarrier						= makeMemoryBarrierInfo(*target, 0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
@@ -869,7 +875,7 @@ void					BaseTestInstance::layoutTransitionResource<VkImage>	(Move<VkImage>&			t
 void					BaseTestInstance::createBuffer						(Move<VkBuffer>&		buffer,
 																			 Move<VkDeviceMemory>&	memory)
 {
-	const DeviceInterface&				vk									= m_context.getDeviceInterface();
+	const DeviceInterface&				vk									= getDeviceInterface();
 	const VkDevice						vkDevice							= getDevice();
 	VkBufferCreateInfo					bufferParams						= makeBufferCreateInfo(m_context, m_params);
 	VkMemoryRequirements				memReqs;
@@ -888,7 +894,7 @@ void					BaseTestInstance::createBuffer						(Move<VkBuffer>&		buffer,
 void					BaseTestInstance::pushData							(VkDeviceMemory			memory,
 																			 deUint32				dataSeed)
 {
-	const DeviceInterface&				vk									= m_context.getDeviceInterface();
+	const DeviceInterface&				vk									= getDeviceInterface();
 	const VkDevice						vkDevice							= getDevice();
 	MemoryMappingRAII					hostMemory							(vk, vkDevice, memory, 0u, m_params.bufferSize, 0u);
 	deUint8*							hostBuffer							= static_cast<deUint8*>(hostMemory.ptr());
@@ -904,7 +910,7 @@ void					BaseTestInstance::pushData							(VkDeviceMemory			memory,
 deBool					BaseTestInstance::checkData							(VkDeviceMemory			memory,
 																			 deUint32				dataSeed)
 {
-	const DeviceInterface&				vk									= m_context.getDeviceInterface();
+	const DeviceInterface&				vk									= getDeviceInterface();
 	const VkDevice						vkDevice							= getDevice();
 	MemoryMappingRAII					hostMemory							(vk, vkDevice, memory, 0u, m_params.bufferSize, 0u);
 	deUint8*							hostBuffer							= static_cast<deUint8*>(hostMemory.ptr());

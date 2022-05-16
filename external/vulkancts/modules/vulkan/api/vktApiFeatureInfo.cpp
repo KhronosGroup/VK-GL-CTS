@@ -4123,15 +4123,23 @@ VkImageCreateFlags getValidImageCreateFlags (const VkPhysicalDeviceFeatures& dev
 			flags |= VK_IMAGE_CREATE_SPARSE_BINDING_BIT|VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT;
 
 		if (deviceFeatures.sparseResidencyAliased)
-			flags |= VK_IMAGE_CREATE_SPARSE_ALIASED_BIT;
+			flags |= VK_IMAGE_CREATE_SPARSE_BINDING_BIT|VK_IMAGE_CREATE_SPARSE_ALIASED_BIT;
 	}
 
 	return flags;
 }
 
-bool isValidImageCreateFlagCombination (VkImageCreateFlags)
+bool isValidImageCreateFlagCombination (VkImageCreateFlags createFlags)
 {
-	return true;
+	bool isValid = true;
+
+	if (((createFlags & (VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT|VK_IMAGE_CREATE_SPARSE_ALIASED_BIT)) != 0) &&
+		((createFlags & VK_IMAGE_CREATE_SPARSE_BINDING_BIT) == 0))
+	{
+		isValid = false;
+	}
+
+	return isValid;
 }
 
 bool isRequiredImageParameterCombination (const VkPhysicalDeviceFeatures&	deviceFeatures,
@@ -4461,12 +4469,13 @@ bool checkExtension (vector<VkExtensionProperties>& properties, const char* exte
 	return false;
 }
 
+#include "vkDeviceFeatures2.inl"
+
 tcu::TestStatus deviceFeatures2 (Context& context)
 {
+	const VkPhysicalDevice      physicalDevice = context.getPhysicalDevice();
 	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
 	const InstanceDriver&		vki				(instance.getDriver());
-	const VkPhysicalDevice		physicalDevice	(chooseDevice(vki, instance, context.getTestContext().getCommandLine()));
-	const int					count			= 2u;
 	TestLog&					log				= context.getTestContext().getLog();
 	VkPhysicalDeviceFeatures	coreFeatures;
 	VkPhysicalDeviceFeatures2	extFeatures;
@@ -4488,10 +4497,6 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 		TCU_FAIL("Mismatch between features reported by vkGetPhysicalDeviceFeatures and vkGetPhysicalDeviceFeatures2");
 
 	log << TestLog::Message << extFeatures << TestLog::EndMessage;
-
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
-
-#include "vkDeviceFeatures2.inl"
 
 	return tcu::TestStatus::pass("Querying device features succeeded");
 }
@@ -4597,66 +4602,138 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		deMemset(&texelBufferAlignmentProperties[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceTexelBufferAlignmentProperties			));
 #endif // CTS_USES_VULKANSC
 
-		idProperties[ndx].sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES;
-		idProperties[ndx].pNext						= &multiviewProperties[ndx];
+		void* prev = 0;
 
-		multiviewProperties[ndx].sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES;
-		multiviewProperties[ndx].pNext				= &protectedMemoryPropertiesKHR[ndx];
+		if (khr_external_fence_capabilities || khr_external_memory_capabilities || khr_external_semaphore_capabilities)
+		{
+			idProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES;
+			idProperties[ndx].pNext = prev;
+			prev = &idProperties[ndx];
+		}
 
-		protectedMemoryPropertiesKHR[ndx].sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_PROPERTIES;
-		protectedMemoryPropertiesKHR[ndx].pNext		= &subgroupProperties[ndx];
+		if (khr_multiview)
+		{
+			multiviewProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES;
+			multiviewProperties[ndx].pNext = prev;
+			prev = &multiviewProperties[ndx];
+		}
 
-		subgroupProperties[ndx].sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
-		subgroupProperties[ndx].pNext				= &pointClippingProperties[ndx];
+		if (khr_device_protected_memory)
+		{
+			protectedMemoryPropertiesKHR[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_PROPERTIES;
+			protectedMemoryPropertiesKHR[ndx].pNext = prev;
+			prev = &protectedMemoryPropertiesKHR[ndx];
+		}
 
-		pointClippingProperties[ndx].sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES;
-		pointClippingProperties[ndx].pNext			= &maintenance3Properties[ndx];
+		if (khr_device_subgroup)
+		{
+			subgroupProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
+			subgroupProperties[ndx].pNext = prev;
+			prev = &subgroupProperties[ndx];
+		}
 
-		maintenance3Properties[ndx].sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES;
-		maintenance3Properties[ndx].pNext			= &depthStencilResolveProperties[ndx];
+		if (khr_maintenance2)
+		{
+			pointClippingProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES;
+			pointClippingProperties[ndx].pNext = prev;
+			prev = &pointClippingProperties[ndx];
+		}
 
-		depthStencilResolveProperties[ndx].sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES;
-		depthStencilResolveProperties[ndx].pNext	= &driverProperties[ndx];
+		if (khr_maintenance3)
+		{
+			maintenance3Properties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES;
+			maintenance3Properties[ndx].pNext = prev;
+			prev = &maintenance3Properties[ndx];
+		}
 
-		driverProperties[ndx].sType					= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES;
-		driverProperties[ndx].pNext					= &floatControlsProperties[ndx];
+		if (khr_depth_stencil_resolve)
+		{
+			depthStencilResolveProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES;
+			depthStencilResolveProperties[ndx].pNext = prev;
+			prev = &depthStencilResolveProperties[ndx];
+		}
 
-		floatControlsProperties[ndx].sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES;
-		floatControlsProperties[ndx].pNext			= &descriptorIndexingProperties[ndx];
+		if (khr_driver_properties)
+		{
+			driverProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES;
+			driverProperties[ndx].pNext = prev;
+			prev = &driverProperties[ndx];
+		}
 
-		descriptorIndexingProperties[ndx].sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES;
-		descriptorIndexingProperties[ndx].pNext		= &samplerFilterMinmaxProperties[ndx];
+		if (khr_shader_float_controls)
+		{
+			floatControlsProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES;
+			floatControlsProperties[ndx].pNext = prev;
+			prev = &floatControlsProperties[ndx];
+		}
 
-		samplerFilterMinmaxProperties[ndx].sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES;
+		if (khr_descriptor_indexing)
+		{
+			descriptorIndexingProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES;
+			descriptorIndexingProperties[ndx].pNext = prev;
+			prev = &descriptorIndexingProperties[ndx];
+		}
+
+		if (khr_sampler_filter_minmax)
+		{
+			samplerFilterMinmaxProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES;
+			samplerFilterMinmaxProperties[ndx].pNext = prev;
+			prev = &samplerFilterMinmaxProperties[ndx];
+		}
+
 #ifndef CTS_USES_VULKANSC
-		samplerFilterMinmaxProperties[ndx].pNext	= &integerDotProductProperties[ndx];
+		if (khr_integer_dot_product)
+		{
+			integerDotProductProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES_KHR;
+			integerDotProductProperties[ndx].pNext = prev;
+			prev = &integerDotProductProperties[ndx];
+		}
 
-		integerDotProductProperties[ndx].sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES_KHR;
-		integerDotProductProperties[ndx].pNext		= &accelerationStructureProperties[ndx];
-		accelerationStructureProperties[ndx].sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR;
-		accelerationStructureProperties[ndx].pNext	= &inlineUniformBlockProperties[ndx];
+		if (khr_acceleration_structure)
+		{
+			accelerationStructureProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR;
+			accelerationStructureProperties[ndx].pNext = prev;
+			prev = &accelerationStructureProperties[ndx];
+		}
 
-		inlineUniformBlockProperties[ndx].sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES;
-		inlineUniformBlockProperties[ndx].pNext		= &maintenance4Properties[ndx];
+		if (khr_inline_uniform_block)
+		{
+			inlineUniformBlockProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES;
+			inlineUniformBlockProperties[ndx].pNext = prev;
+			prev = &inlineUniformBlockProperties[ndx];
+		}
 
-		maintenance4Properties[ndx].sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES;
-		maintenance4Properties[ndx].pNext			= &subgroupSizeControlProperties[ndx];
+		if (khr_maintenance4)
+		{
+			maintenance4Properties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES;
+			maintenance4Properties[ndx].pNext = prev;
+			prev = &maintenance4Properties[ndx];
+		}
 
-		subgroupSizeControlProperties[ndx].sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES;
-		subgroupSizeControlProperties[ndx].pNext	= &texelBufferAlignmentProperties[ndx];
+		if (khr_subgroup_size_control)
+		{
+			subgroupSizeControlProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES;
+			subgroupSizeControlProperties[ndx].pNext = prev;
+			prev = &subgroupSizeControlProperties[ndx];
+		}
 
-		texelBufferAlignmentProperties[ndx].sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES;
-		texelBufferAlignmentProperties[ndx].pNext	= DE_NULL;
-#else
-		samplerFilterMinmaxProperties[ndx].pNext	= DE_NULL;
+		if (khr_texel_buffer_alignment)
+		{
+			texelBufferAlignmentProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES;
+			texelBufferAlignmentProperties[ndx].pNext = prev;
+			prev = &texelBufferAlignmentProperties[ndx];
+		}
 #endif // CTS_USES_VULKANSC
 
-		extProperties.pNext							= &idProperties[ndx];
+		if (prev == 0)
+			TCU_THROW(NotSupportedError, "No supported structures found");
+
+		extProperties.pNext							= prev;
 
 		vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
 	}
 
-	if ( khr_external_fence_capabilities || khr_external_memory_capabilities || khr_external_semaphore_capabilities )
+	if (khr_external_fence_capabilities || khr_external_memory_capabilities || khr_external_semaphore_capabilities)
 		log << TestLog::Message << idProperties[0]					<< TestLog::EndMessage;
 	if (khr_multiview)
 		log << TestLog::Message << multiviewProperties[0]			<< TestLog::EndMessage;
@@ -6733,6 +6810,18 @@ tcu::TestStatus testMandatoryExtensions (Context& context)
 
 } // anonymous
 
+static inline void addFunctionCaseInNewSubgroup (
+	tcu::TestContext&			testCtx,
+	tcu::TestCaseGroup*			group,
+	const std::string&			subgroupName,
+	const std::string&			subgroupDescription,
+	FunctionInstance0::Function	testFunc)
+{
+	de::MovePtr<tcu::TestCaseGroup>	subgroup(new tcu::TestCaseGroup(testCtx, subgroupName.c_str(), subgroupDescription.c_str()));
+	addFunctionCase(subgroup.get(), "basic", "", testFunc);
+	group->addChild(subgroup.release());
+}
+
 tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	infoTests	(new tcu::TestCaseGroup(testCtx, "info", "Platform Information Tests"));
@@ -6751,11 +6840,16 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 	{
 		de::MovePtr<tcu::TestCaseGroup> extendedPropertiesTests (new tcu::TestCaseGroup(testCtx, "get_physical_device_properties2", "VK_KHR_get_physical_device_properties2"));
 
-		addFunctionCase(extendedPropertiesTests.get(), "features",					"Extended Device Features",					deviceFeatures2);
-		addFunctionCase(extendedPropertiesTests.get(), "properties",				"Extended Device Properties",				deviceProperties2);
-		addFunctionCase(extendedPropertiesTests.get(), "format_properties",			"Extended Device Format Properties",		deviceFormatProperties2);
-		addFunctionCase(extendedPropertiesTests.get(), "queue_family_properties",	"Extended Device Queue Family Properties",	deviceQueueFamilyProperties2);
-		addFunctionCase(extendedPropertiesTests.get(), "memory_properties",			"Extended Device Memory Properties",		deviceMemoryProperties2);
+		{
+			de::MovePtr<tcu::TestCaseGroup>	subgroup(new tcu::TestCaseGroup(testCtx, "features", ""));
+			addFunctionCase(subgroup.get(), "core", "Extended Device Features", deviceFeatures2);
+			addSeparateFeatureTests(subgroup.get());
+			extendedPropertiesTests->addChild(subgroup.release());
+		}
+		addFunctionCaseInNewSubgroup(testCtx, extendedPropertiesTests.get(), "properties",				"Extended Device Properties",				deviceProperties2);
+		addFunctionCaseInNewSubgroup(testCtx, extendedPropertiesTests.get(), "format_properties",			"Extended Device Format Properties",		deviceFormatProperties2);
+		addFunctionCaseInNewSubgroup(testCtx, extendedPropertiesTests.get(), "queue_family_properties",	"Extended Device Queue Family Properties",	deviceQueueFamilyProperties2);
+		addFunctionCaseInNewSubgroup(testCtx, extendedPropertiesTests.get(), "memory_properties",			"Extended Device Memory Properties",		deviceMemoryProperties2);
 
 		infoTests->addChild(extendedPropertiesTests.release());
 	}

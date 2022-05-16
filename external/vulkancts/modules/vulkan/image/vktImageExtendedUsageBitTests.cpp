@@ -218,6 +218,27 @@ void checkSupport (Context& context, TestParams params)
 	if (params.tiling == vk::VK_IMAGE_TILING_LINEAR && formatProperties.linearTilingFeatures == 0)
 		throw tcu::NotSupportedError("Format not supported");
 
+#ifndef CTS_USES_VULKANSC
+	if (params.usage & VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR ||
+		params.usage & VK_IMAGE_USAGE_VIDEO_DECODE_SRC_BIT_KHR ||
+		params.usage & VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR)
+		context.requireDeviceFunctionality("VK_KHR_video_decode_queue");
+
+	if (params.usage & VK_IMAGE_USAGE_VIDEO_ENCODE_DST_BIT_KHR ||
+		params.usage & VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR ||
+		params.usage & VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR)
+		context.requireDeviceFunctionality("VK_KHR_video_encode_queue");
+
+	if (params.usage & VK_IMAGE_USAGE_FRAGMENT_DENSITY_MAP_BIT_EXT)
+		context.requireDeviceFunctionality("VK_EXT_fragment_density_map");
+
+	if (params.usage & VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR)
+		context.requireDeviceFunctionality("VK_KHR_fragment_shading_rate");
+
+	if (params.usage & VK_IMAGE_USAGE_INVOCATION_MASK_BIT_HUAWEI)
+		context.requireDeviceFunctionality("VK_HUAWEI_invocation_mask");
+#endif // CTS_USES_VULKANSC
+
 }
 
 } // anonymous ns

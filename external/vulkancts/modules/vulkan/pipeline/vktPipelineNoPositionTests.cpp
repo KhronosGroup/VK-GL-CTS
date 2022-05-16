@@ -572,6 +572,7 @@ tcu::TestStatus NoPositionInstance::iterate (void)
 				*geom)
 			.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *frag)
 			.setupFragmentOutputState(*renderPass)
+			.setMonolithicPipelineLayout(*pipelineLayout)
 			.buildPipeline();
 
 	// Descriptor set and output SSBO if needed.

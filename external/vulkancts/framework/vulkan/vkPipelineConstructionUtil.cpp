@@ -863,6 +863,7 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 		linkedCreateInfo.pNext	= &linkingInfo;
 #endif // CTS_USES_VULKANSC
 		linkedCreateInfo.flags	= m_internalData->pipelineFlags;
+		linkedCreateInfo.layout	= m_internalData->monolithicPipelineCreateInfo.layout;
 		pointerToCreateInfo		= &linkedCreateInfo;
 
 #ifndef CTS_USES_VULKANSC

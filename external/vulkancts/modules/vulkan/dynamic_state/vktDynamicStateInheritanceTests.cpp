@@ -655,6 +655,7 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 									  *m_fragModule,
 									  &pipelinestate::depthStencil)
 			.setupFragmentOutputState(*m_renderPass, 0u, &pipelinestate::blend)
+			.setMonolithicPipelineLayout(*m_rectanglePipelineLayout)
 			.buildPipeline();
 	}
 	const VkPipeline graphicsPipeline = m_rectanglePipelines[staticViewportCount].getPipeline();

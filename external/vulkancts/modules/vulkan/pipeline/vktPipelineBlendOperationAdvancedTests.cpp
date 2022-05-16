@@ -1134,6 +1134,7 @@ void BlendOperationAdvancedTestInstance::buildPipeline (VkBool32 srcPremultiplie
 			  .setupPreRasterizationShaderState(viewport, scissor, *m_pipelineLayout, *m_renderPass, 0u, m_shaderModules[0].get())
 			  .setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, m_shaderModules[1].get(), &depthStencilStateParams, &multisampleStateParams)
 			  .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams, &multisampleStateParams)
+			  .setMonolithicPipelineLayout(*m_pipelineLayout)
 			  .buildPipeline();
 }
 
@@ -1814,6 +1815,7 @@ void BlendOperationAdvancedTestCoherentInstance::buildPipeline ()
 		.setupPreRasterizationShaderState(viewport, scissor, *m_pipelineLayout, m_renderPasses[0].get(), 0u, m_shaderModules[0].get())
 		.setupFragmentShaderState(*m_pipelineLayout, m_renderPasses[0].get(), 0u, m_shaderModules[1].get(), &depthStencilStateParams, &multisampleStateParams)
 		.setupFragmentOutputState(m_renderPasses[0].get(), 0u, &colorBlendStateParams[0], &multisampleStateParams)
+		.setMonolithicPipelineLayout(*m_pipelineLayout)
 		.buildPipeline();
 
 	// Create second pipeline
@@ -1825,6 +1827,7 @@ void BlendOperationAdvancedTestCoherentInstance::buildPipeline ()
 		.setupPreRasterizationShaderState(viewport, scissor, *m_pipelineLayout, m_renderPasses[1].get(), 0u, m_shaderModules[0].get())
 		.setupFragmentShaderState(*m_pipelineLayout, m_renderPasses[1].get(), 0u, m_shaderModules[1].get(), &depthStencilStateParams, &multisampleStateParams)
 		.setupFragmentOutputState(m_renderPasses[1].get(), 0u, &colorBlendStateParams[1], &multisampleStateParams)
+		.setMonolithicPipelineLayout(*m_pipelineLayout)
 		.buildPipeline();
 }
 

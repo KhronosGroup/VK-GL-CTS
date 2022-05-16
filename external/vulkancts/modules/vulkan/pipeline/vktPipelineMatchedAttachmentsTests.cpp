@@ -240,6 +240,7 @@ tcu::TestStatus testMatchedAttachments (Context& context, const MatchedAttachmen
 													  *vertexShaderModule)
 					.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragmentShaderModule)
 					.setupFragmentOutputState(*renderPass, 0u)
+					.setMonolithicPipelineLayout(*pipelineLayout)
 					.buildPipeline(params.usePipelineCache ? *pipelineCache : DE_NULL);
 
 	// Passes as long as createGraphicsPipeline didn't crash.

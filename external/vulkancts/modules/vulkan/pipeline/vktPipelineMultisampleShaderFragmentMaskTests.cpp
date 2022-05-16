@@ -714,6 +714,7 @@ void drawAndSampleInputAttachment (Context& context, const TestParams& params, W
 									*vertexModuleDraw)
 					.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragmentModuleDraw, DE_NULL, &multisampleStateInfo)
 					.setupFragmentOutputState(*renderPass, 0u, &colorBlendStateInfo, &multisampleStateInfo)
+					.setMonolithicPipelineLayout(*pipelineLayout)
 					.buildPipeline();
 	}
 
@@ -742,6 +743,7 @@ void drawAndSampleInputAttachment (Context& context, const TestParams& params, W
 									*vertexModuleSample)
 					  .setupFragmentShaderState(*pipelineLayout, *renderPass, 1u, *fragmentModuleSample, DE_NULL, &multisampleStateInfo)
 					  .setupFragmentOutputState(*renderPass, 1u, &colorBlendStateInfo, &multisampleStateInfo)
+					  .setMonolithicPipelineLayout(*pipelineLayout)
 					  .buildPipeline();
 	}
 
@@ -977,6 +979,7 @@ void draw (Context& context, const TestParams& params, WorkingData& wd)
 												*vertexModuleDraw)
 						.setupFragmentShaderState(*pipelineLayout, *renderPass, layerNdx, *fragmentModuleDraw, DE_NULL, &multisampleStateInfo)
 						.setupFragmentOutputState(*renderPass, layerNdx, &colorBlendStateInfo, &multisampleStateInfo)
+						.setMonolithicPipelineLayout(*pipelineLayout)
 						.buildPipeline();
 	}
 

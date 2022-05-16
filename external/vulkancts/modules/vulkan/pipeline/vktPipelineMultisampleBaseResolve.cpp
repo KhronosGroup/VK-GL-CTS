@@ -294,6 +294,7 @@ tcu::TestStatus MSInstanceBaseResolve::iterate (void)
 						*vsModule)
 					.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fsModule, DE_NULL, &multisampleStateInfo)
 					.setupFragmentOutputState(*renderPass, 0, DE_NULL, &multisampleStateInfo)
+					.setMonolithicPipelineLayout(*pipelineLayout)
 					.buildPipeline();
 
 	// Create command buffer for compute and transfer oparations

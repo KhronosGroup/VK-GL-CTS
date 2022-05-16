@@ -604,7 +604,8 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 		const vector<VkRect2D>		scissors	{ makeRect2D(m_renderSize) };
 
 		m_graphicsPipelines.emplace_back(vk, vkDevice, m_params.pipelineConstructionType);
-		m_graphicsPipelines.back().setDefaultRasterizationState()
+		m_graphicsPipelines.back().setMonolithicPipelineLayout(*m_pipelineLayout)
+								  .setDefaultRasterizationState()
 								  .setDefaultDepthStencilState()
 								  .setDefaultColorBlendState()
 								  .setDefaultMultisampleState()

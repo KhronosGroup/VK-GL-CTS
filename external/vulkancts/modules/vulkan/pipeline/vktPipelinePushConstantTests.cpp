@@ -2374,6 +2374,7 @@ void PushConstantLifetimeTestInstance::init (void)
 															   *m_vertexShaderModule)
 							 .setupFragmentShaderState(*(m_pipelineLayout[0]), *m_renderPass, 0u, *m_fragmentShaderModule)
 							 .setupFragmentOutputState(*m_renderPass)
+							 .setMonolithicPipelineLayout(*(m_pipelineLayout[0]))
 							 .buildPipeline();
 
 		m_graphicsPipeline[1].setDefaultRasterizationState()
@@ -2390,6 +2391,7 @@ void PushConstantLifetimeTestInstance::init (void)
 															   *m_vertexShaderModule)
 							 .setupFragmentShaderState(*(m_pipelineLayout[1]), *m_renderPass, 0u, *m_fragmentShaderModule)
 							 .setupFragmentOutputState(*m_renderPass)
+							 .setMonolithicPipelineLayout(*(m_pipelineLayout[1]))
 							 .buildPipeline();
 	}
 
@@ -2930,6 +2932,7 @@ tcu::TestStatus OverwriteTestInstance::iterate (void)
 														 *vertModule)
 					   .setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragModule)
 					   .setupFragmentOutputState(*renderPass)
+					   .setMonolithicPipelineLayout(*pipelineLayout)
 					   .buildPipeline();
 	}
 

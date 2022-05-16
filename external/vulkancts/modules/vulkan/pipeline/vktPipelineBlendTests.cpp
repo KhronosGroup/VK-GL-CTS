@@ -781,6 +781,7 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 																		  *m_vertexShaderModule)
 										.setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *m_fragmentShaderModule)
 										.setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
+										.setMonolithicPipelineLayout(*m_pipelineLayout)
 										.buildPipeline();
 		}
 	}
@@ -1380,6 +1381,7 @@ DualSourceBlendTestInstance::DualSourceBlendTestInstance (Context&									conte
 																		  *m_vertexShaderModule)
 										.setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *m_fragmentShaderModule)
 										.setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
+										.setMonolithicPipelineLayout(*m_pipelineLayout)
 										.buildPipeline();
 		}
 	}
@@ -1917,6 +1919,7 @@ tcu::TestStatus ClampTestInstance::iterate (void)
 													  *vertexShaderModule)
 					.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragmentShaderModule)
 					.setupFragmentOutputState(*renderPass, 0u, &colorBlendStateParams)
+					.setMonolithicPipelineLayout(*pipelineLayout)
 					.buildPipeline();
 
 	// Vertex buffer

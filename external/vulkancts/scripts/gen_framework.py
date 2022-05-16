@@ -1803,22 +1803,6 @@ def writeSupportedExtensions(apiName, api, filename):
 				list = deviceMap.get(Version(ext.versionInCore[1:]))
 				deviceMap[Version(ext.versionInCore[1:])] = list + [ext] if list else [ext]
 			versionSet.add(Version(ext.versionInCore[1:]))
-	# add list of extensions missing in Vulkan SC specification
-	if apiName=='SC':
-		extensionsData			= readFile(os.path.join(SCRIPTS_SRC_DIR, "extensions_data.txt"))
-		for extData in re.finditer(r'(\w+)\s+(DEVICE|INSTANCE)\s+([0-9_]+)', extensionsData ):
-			currVersion = Version( [int(number) for number in extData.group(3).split('_')[:4]] )
-			currExt = Extension(extData.group(1), [], [], [], [], [], [], [], [], [])
-			# VulkanSC is based on Vulkan 1.2. Any Vulkan version greater than 1.2 should be excluded
-			if currVersion.api==0 and currVersion.major==1 and currVersion.minor>2:
-				continue
-			if extData.group(2)=='INSTANCE':
-				list = instanceMap.get(currVersion)
-				instanceMap[currVersion] = list + [currExt] if list else [currExt]
-			else:
-				list = deviceMap.get(currVersion)
-				deviceMap[currVersion] = list + [currExt] if list else [currExt]
-			versionSet.add(currVersion)
 
 	lines = addVersionDefines(versionSet) + [
 	"",
@@ -1954,6 +1938,10 @@ def writeCoreFunctionalities(api, filename):
 
 	lines = lines + ["}", ""] + removeVersionDefines(api.versions)
 	writeInlFile(filename, INL_HEADER, lines)
+
+def camelToSnake(name):
+    name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
 
 def writeDeviceFeatures2(api, filename):
 	def structInAPI(name):
@@ -2129,7 +2117,7 @@ def writeDeviceFeatures2(api, filename):
 	verifyStructures = []
 	for index, structureDetail in enumerate(testedStructureDetail):
 		# create two instances of each structure
-		nameSpacing = '\t' * int((67 - len(structureDetail.name)) / 4)
+		nameSpacing = '\t'
 		structureDefinitions.append(structureDetail.name + nameSpacing + structureDetail.instanceName + '[count];')
 		# create flags that check if proper extension or vulkan version is available
 		condition	= ''
@@ -2139,48 +2127,85 @@ def writeDeviceFeatures2(api, filename):
 			condition = ' checkExtension(properties, "' + extension + '")'
 		if major is not None:
 			if condition != '':
-				condition += '\t' * int((47 - len(extension)) / 4) + '|| '
+				condition += ' || '
 			else:
-				condition += '\t' * 19 + '   '
+				condition += ' '
 			condition += 'context.contextSupports(vk::ApiVersion(' + str(structureDetail.api) + ', ' + str(major) + ', ' + str(structureDetail.minor) + ', 0))'
+		if condition == '':
+			condition = 'true'
 		condition += ';'
-		nameSpacing = '\t' * int((48 - len(structureDetail.flagName)) / 4)
-		featureEnabledFlags.append('const bool ' + structureDetail.flagName + nameSpacing + '=' + condition)
+		nameSpacing = '\t' * int((len(structureDetail.name) - 4) / 4)
+		featureEnabledFlags.append('const bool' + nameSpacing + structureDetail.flagName + ' =' + condition)
 		# clear memory of each structure
-		nameSpacing = '\t' * int((51 - len(structureDetail.instanceName)) / 4)
-		clearStructures.append('\tdeMemset(&' + structureDetail.instanceName + '[ndx],' + nameSpacing + '0xFF * ndx, sizeof(' + structureDetail.name + '));')
+		clearStructures.append('\tdeMemset(&' + structureDetail.instanceName + '[ndx], 0xFF * ndx, sizeof(' + structureDetail.name + '));')
 		# construct structure chain
 		nextInstanceName = 'DE_NULL';
 		if index < len(testedStructureDetail)-1:
 			nextInstanceName = '&' + testedStructureDetail[index+1].instanceName + '[ndx]'
-		structureChain.append('\t' + structureDetail.instanceName + '[ndx].sType = ' + structureDetail.flagName + ' ? ' + structureDetail.sType + ' : VK_STRUCTURE_TYPE_MAX_ENUM;')
-		structureChain.append('\t' + structureDetail.instanceName + '[ndx].pNext = ' + nextInstanceName + ';\n')
+		structureChain.append([
+			'\t\t' + structureDetail.instanceName + '[ndx].sType = ' + structureDetail.flagName + ' ? ' + structureDetail.sType + ' : VK_STRUCTURE_TYPE_MAX_ENUM;',
+			'\t\t' + structureDetail.instanceName + '[ndx].pNext = DE_NULL;'])
 		# construct log section
-		logStructures.append('if (' + structureDetail.flagName + ')')
-		logStructures.append('\tlog << TestLog::Message << ' + structureDetail.instanceName + '[0] << TestLog::EndMessage;')
+		logStructures.append([
+			'\tif (' + structureDetail.flagName + ')',
+			'\t\tlog << TestLog::Message << ' + structureDetail.instanceName + '[0] << TestLog::EndMessage;'
+			])
 		#construct verification section
-		verifyStructures.append('if (' + structureDetail.flagName + ' &&')
+		verifyStructure = []
+		verifyStructure.append('\tif (' + structureDetail.flagName + ' &&')
 		for index, m in enumerate(structureDetail.members):
-			prefix = '\t(' if index == 0 else '\t '
+			prefix = '\t\t(' if index == 0 else '\t\t '
 			postfix = '))' if index == len(structureDetail.members)-1 else ' ||'
-			verifyStructures.append(prefix + structureDetail.instanceName + '[0].' + m + ' != ' + structureDetail.instanceName + '[1].' + m + postfix)
-		verifyStructures.append('{\n\t\tTCU_FAIL("Mismatch between ' + structureDetail.name + '");\n}')
+			verifyStructure.append(prefix + structureDetail.instanceName + '[0].' + m + ' != ' + structureDetail.instanceName + '[1].' + m + postfix)
+		if len(structureDetail.members) == 0:
+			verifyStructure.append('\t\tfalse)')
+		verifyStructure.append('\t{\n\t\tTCU_FAIL("Mismatch between ' + structureDetail.name + '");\n\t}')
+		verifyStructures.append(verifyStructure)
+
 	# construct file content
 	stream = []
-	stream.extend(structureDefinitions)
-	stream.append('')
-	stream.extend(featureEnabledFlags)
-	stream.append('\nfor (int ndx = 0; ndx < count; ++ndx)\n{')
-	stream.extend(clearStructures)
-	stream.append('')
-	stream.extend(structureChain)
-	stream.append('\tdeMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));\n'
-				  '\textFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;\n'
-				  '\textFeatures.pNext = &' + testedStructureDetail[0].instanceName + '[ndx];\n'
-				  '\tvki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);\n}\n')
-	stream.extend(logStructures)
-	stream.append('')
-	stream.extend(verifyStructures)
+
+	# individual test functions
+	for n, x in enumerate(testedStructureDetail):
+		stream.append("tcu::TestStatus testPhysicalDeviceFeature" + x.instanceName[len('device'):]+" (Context& context)")
+		stream.append("""{
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+	const InstanceDriver&		vki				(instance.getDriver());
+	const int					count			= 2u;
+	TestLog&					log				= context.getTestContext().getLog();
+	VkPhysicalDeviceFeatures2	extFeatures;
+	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+""")
+		stream.append("\t"+structureDefinitions[n])
+		stream.append("\t"+featureEnabledFlags[n])
+		stream.append('')
+		stream.append('\tfor (int ndx = 0; ndx < count; ++ndx)\n\t{')
+		stream.append("\t" + clearStructures[n])
+		stream.extend(structureChain[n])
+		stream.append('')
+		stream.append(
+				'\t\tdeMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));\n'
+				'\t\textFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;\n'
+				'\t\textFeatures.pNext = &' + testedStructureDetail[n].instanceName + '[ndx];\n\n'
+				'\t\tvki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);')
+		stream.append('\t}\n')
+		stream.extend(logStructures[n])
+		stream.append('')
+		stream.extend(verifyStructures[n])
+		stream.append('\treturn tcu::TestStatus::pass("Querying succeeded");')
+		stream.append("}\n")
+
+	# function to create tests
+	stream.append("""
+void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
+{
+""")
+	for x in testedStructureDetail:
+		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x.instanceName[len('device'):]) + '", "' + x.name + '", testPhysicalDeviceFeature' + x.instanceName[len('device'):] + ');')
+	stream.append('}\n')
+
+	# write out
 	writeInlFile(filename, INL_HEADER, stream)
 
 def generateDeviceFeaturesDefs(apiName, src):
