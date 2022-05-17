@@ -552,6 +552,7 @@ def parseVersions (src):
 	# 4. minor version number
 	return [(m.group()[:-2], m.start(), getApiVariantIndexByName(m.group(1)), int(m.group(2)), int(m.group(3))) for m in re.finditer('VK(SC)?_VERSION_([1-9])_([0-9]) 1', src)]
 
+
 def parseHandles (src):
 	matches	= re.findall(r'VK_DEFINE(_NON_DISPATCHABLE|)_HANDLE\((' + IDENT_PTRN + r')\)[ \t]*[\n\r]', src)
 	handles	= []
@@ -1760,17 +1761,6 @@ def writeDriverIds(apiName, filename):
 
 
 def writeSupportedExtensions(apiName, api, filename):
-	def getCoreVersion (extensionName, extensionsData):
-		# returns None when extension was not added to core for any Vulkan version
-		# returns array containing DEVICE or INSTANCE string followed by the vulkan version in which this extension is core
-		# note that this function is also called for vulkan 1.0 source for which extName is None
-		if not extensionName:
-			return None
-		ptrn		= extensionName + r'\s+(DEVICE|INSTANCE)\s+([0-9_]+)'
-		coreVersion = re.search(ptrn, extensionsData, re.I)
-		if coreVersion != None:
-			return [coreVersion.group(1)] + [int(number) for number in coreVersion.group(2).split('_')[:4]]
-		return None
 
 	def writeExtensionsForVersions(map):
 		result = []
@@ -1781,7 +1771,7 @@ def writeSupportedExtensions(apiName, api, filename):
 				result.append('		dst.push_back("' + extension.name + '");')
 			result.append("	}")
 
-		if  not map:
+		if not map:
 			result.append("	DE_UNREF(coreVersion);")
 
 		return result
@@ -1804,17 +1794,41 @@ def writeSupportedExtensions(apiName, api, filename):
 				deviceMap[Version(ext.versionInCore[1:])] = list + [ext] if list else [ext]
 			versionSet.add(Version(ext.versionInCore[1:]))
 
+	# add list of extensions missing in Vulkan SC specification
+	if apiName == 'SC':
+		for extensionName, data in api.additionalExtensionData:
+			# make sure that this extension was registered
+			if 'register_extension' not in data.keys():
+				continue
+			# save array containing 'device' or 'instance' string followed by the optional vulkan version in which this extension is core;
+			# note that register_extension section is also required for partialy promoted extensions like VK_EXT_extended_dynamic_state2
+			# but those extensions should not fill 'core' tag
+			match = re.match("(\d).(\d).(\d).(\d)", data['register_extension']['core'])
+			if match != None:
+				currVersion = Version([int(match.group(1)), int(match.group(2)), int(match.group(3)), int(match.group(4))])
+				ext = Extension(extensionName, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+				if currVersion.api==0 and currVersion.major==1 and currVersion.minor>2:
+					continue
+				if data['register_extension']['type'] == 'instance':
+					list = instanceMap.get(currVersion)
+					instanceMap[currVersion] = list + [ext] if list else [ext]
+				else:
+					list = deviceMap.get(currVersion)
+					deviceMap[currVersion] = list + [ext] if list else [ext]
+				versionSet.add(currVersion)
+
 	lines = addVersionDefines(versionSet) + [
 	"",
-	"void getCoreDeviceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char*>&%s)" % (" dst" if len(deviceMap) != 0 else ""),
+	"void getCoreDeviceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char*>&%s)" % (" dst" if len(deviceMap) != 0 or apiName == 'SC' else ""),
 	"{"] + writeExtensionsForVersions(deviceMap) + [
 	"}",
 	"",
-	"void getCoreInstanceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char*>&%s)" % (" dst" if len(instanceMap) != 0 else ""),
+	"void getCoreInstanceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char*>&%s)" % (" dst" if len(instanceMap) != 0 or apiName == 'SC' else ""),
 	"{"] + writeExtensionsForVersions(instanceMap) + [
 	"}",
 	""] + removeVersionDefines(versionSet)
 	writeInlFile(filename, INL_HEADER, lines)
+
 
 def writeExtensionFunctions (api, filename):
 
