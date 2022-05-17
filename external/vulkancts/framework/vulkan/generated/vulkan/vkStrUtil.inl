@@ -1152,6 +1152,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePageableDeviceL
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDescriptorSetHostMappingFeaturesVALVE& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDescriptorSetBindingReferenceVALVE& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDescriptorSetLayoutHostMappingInfoVALVE& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSubpassFragmentDensityMapOffsetEndInfoQCOM& value);

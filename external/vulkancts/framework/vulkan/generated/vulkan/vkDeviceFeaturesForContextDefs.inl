@@ -61,6 +61,7 @@ const vk::VkPhysicalDeviceMeshShaderFeaturesNV&							Context::getMeshShaderFeat
 const vk::VkPhysicalDeviceMultiviewFeatures&							Context::getMultiviewFeatures							(void) const { return m_device->getMultiviewFeatures();								}
 const vk::VkPhysicalDeviceMultiDrawFeaturesEXT&							Context::getMultiDrawFeaturesEXT						(void) const { return m_device->getMultiDrawFeaturesEXT();							}
 const vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE&			Context::getMutableDescriptorTypeFeaturesVALVE			(void) const { return m_device->getMutableDescriptorTypeFeaturesVALVE();			}
+const vk::VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT&				Context::getNonSeamlessCubeMapFeaturesEXT				(void) const { return m_device->getNonSeamlessCubeMapFeaturesEXT();					}
 const vk::VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT&			Context::getPageableDeviceLocalMemoryFeaturesEXT		(void) const { return m_device->getPageableDeviceLocalMemoryFeaturesEXT();			}
 const vk::VkPhysicalDevicePerformanceQueryFeaturesKHR&					Context::getPerformanceQueryFeatures					(void) const { return m_device->getPerformanceQueryFeatures();						}
 const vk::VkPhysicalDevicePipelineCreationCacheControlFeatures&			Context::getPipelineCreationCacheControlFeatures		(void) const { return m_device->getPipelineCreationCacheControlFeatures();			}

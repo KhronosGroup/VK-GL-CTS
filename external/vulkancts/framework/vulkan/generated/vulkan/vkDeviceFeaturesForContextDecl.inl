@@ -61,6 +61,7 @@ const vk::VkPhysicalDeviceMeshShaderFeaturesNV&							getMeshShaderFeatures					
 const vk::VkPhysicalDeviceMultiviewFeatures&							getMultiviewFeatures							(void) const;
 const vk::VkPhysicalDeviceMultiDrawFeaturesEXT&							getMultiDrawFeaturesEXT							(void) const;
 const vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE&			getMutableDescriptorTypeFeaturesVALVE			(void) const;
+const vk::VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT&				getNonSeamlessCubeMapFeaturesEXT				(void) const;
 const vk::VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT&			getPageableDeviceLocalMemoryFeaturesEXT			(void) const;
 const vk::VkPhysicalDevicePerformanceQueryFeaturesKHR&					getPerformanceQueryFeatures						(void) const;
 const vk::VkPhysicalDevicePipelineCreationCacheControlFeatures&			getPipelineCreationCacheControlFeatures			(void) const;
