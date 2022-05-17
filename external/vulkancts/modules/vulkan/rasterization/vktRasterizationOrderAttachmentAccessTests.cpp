@@ -798,7 +798,7 @@ void AttachmentAccessOrderTestCase::checkSupport (Context& context) const
 	const auto	physicalDevice	= context.getPhysicalDevice();
 
 	VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM	rasterizationAccess	= initVulkanStructure();
-	VkPhysicalDeviceFeatures2										features2			= initVulkanStructure(&rasterizationAccess);
+	VkPhysicalDeviceFeatures2										features2			= initVulkanStructure(m_explicitSync ? nullptr : &rasterizationAccess);
 
 	vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
 

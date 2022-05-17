@@ -79,7 +79,9 @@ public:
 	virtual void						checkSupport			(Context& context) const;
 	virtual TestInstance*				createInstance			(Context& context) const;
 	static bool							isRestartIndex			(VkIndexType indexType, deUint32 indexValue);
+#ifndef CTS_USES_VULKANSC
 	static deUint32						getRestartIndex			(VkIndexType indexType);
+#endif // CTS_USES_VULKANSC
 
 protected:
 	virtual void						createBufferData		(VkPrimitiveTopology		topology,
@@ -117,6 +119,7 @@ protected:
 private:
 };
 
+#ifndef CTS_USES_VULKANSC
 class PrimitiveRestartTest : public InputAssemblyTest
 {
 public:
@@ -151,6 +154,8 @@ private:
 
 	std::vector<deUint32>				m_restartPrimitives;
 };
+#endif // CTS_USES_VULKANSC
+
 
 class InputAssemblyInstance : public vkt::TestInstance
 {
@@ -266,12 +271,14 @@ void InputAssemblyTest::checkSupport (Context& context) const
 
 	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 
+#ifndef CTS_USES_VULKANSC
 	if (m_primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN &&
 		context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		!context.getPortabilitySubsetFeatures().triangleFans)
 	{
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
 	}
+#endif // CTS_USES_VULKANSC
 }
 
 TestInstance* InputAssemblyTest::createInstance (Context& context) const
@@ -361,6 +368,7 @@ bool InputAssemblyTest::isRestartIndex (VkIndexType indexType, deUint32 indexVal
 		return indexValue == s_restartIndex32;
 }
 
+#ifndef CTS_USES_VULKANSC
 deUint32 InputAssemblyTest::getRestartIndex (VkIndexType indexType)
 {
 	if (indexType == VK_INDEX_TYPE_UINT16)
@@ -370,7 +378,7 @@ deUint32 InputAssemblyTest::getRestartIndex (VkIndexType indexType)
 	else
 		return InputAssemblyTest::s_restartIndex32;
 }
-
+#endif // CTS_USES_VULKANSC
 
 // PrimitiveTopologyTest
 
@@ -716,7 +724,7 @@ void PrimitiveTopologyTest::createBufferData (VkPrimitiveTopology topology, int 
 	indexData	= indices;
 }
 
-
+#ifndef CTS_USES_VULKANSC
 // PrimitiveRestartTest
 
 PrimitiveRestartTest::PrimitiveRestartTest (tcu::TestContext&			testContext,
@@ -1125,7 +1133,7 @@ bool PrimitiveRestartTest::isRestartPrimitive (int primitiveIndex) const
 {
 	return std::find(m_restartPrimitives.begin(), m_restartPrimitives.end(), primitiveIndex) != m_restartPrimitives.end();
 }
-
+#endif // CTS_USES_VULKANSC
 
 // InputAssemblyInstance
 
@@ -1371,6 +1379,7 @@ InputAssemblyInstance::InputAssemblyInstance (Context&							context,
 											*m_fragmentShaderModule,
 											&depthStencilStateParams)
 						  .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
+						  .setMonolithicPipelineLayout(*m_pipelineLayout)
 						  .buildPipeline();
 	}
 
@@ -1638,6 +1647,7 @@ de::MovePtr<tcu::TestCaseGroup> createPrimitiveTopologyTests (tcu::TestContext& 
 	return primitiveTopologyTests;
 }
 
+#ifndef CTS_USES_VULKANSC
 de::MovePtr<tcu::TestCaseGroup> createPrimitiveRestartTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
 	const VkPrimitiveTopology primitiveRestartTopologies[] =
@@ -1695,6 +1705,7 @@ de::MovePtr<tcu::TestCaseGroup> createPrimitiveRestartTests (tcu::TestContext& t
 
 	return primitiveRestartTests;
 }
+#endif // CTS_USES_VULKANSC
 
 } // anonymous
 
@@ -1703,7 +1714,9 @@ tcu::TestCaseGroup* createInputAssemblyTests (tcu::TestContext& testCtx, Pipelin
 	de::MovePtr<tcu::TestCaseGroup>		inputAssemblyTests (new tcu::TestCaseGroup(testCtx, "input_assembly", "Input assembly tests"));
 
 	inputAssemblyTests->addChild(createPrimitiveTopologyTests(testCtx, pipelineConstructionType).release());
+#ifndef CTS_USES_VULKANSC
 	inputAssemblyTests->addChild(createPrimitiveRestartTests(testCtx, pipelineConstructionType).release());
+#endif // CTS_USES_VULKANSC
 
 	return inputAssemblyTests.release();
 }

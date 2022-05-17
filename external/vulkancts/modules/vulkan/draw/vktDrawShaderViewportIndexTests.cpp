@@ -344,6 +344,7 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 		0,																	// deInt32											basePipelineIndex;
 	};
 
+#ifndef CTS_USES_VULKANSC
 	VkFormat colorAttachmentFormat = VK_FORMAT_R8G8B8A8_UNORM;
 	VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 	{
@@ -359,6 +360,7 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 	// when pipeline is created without render pass we are using dynamic rendering
 	if (renderPass == DE_NULL)
 		graphicsPipelineInfo.pNext = &renderingCreateInfo;
+#endif // CTS_USES_VULKANSC
 
 	return createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineInfo);
 }
@@ -731,6 +733,7 @@ public:
 		beginCommandBuffer(vk, *m_cmdBuffer);
 
 		const VkRect2D renderArea = makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y());
+#ifndef CTS_USES_VULKANSC
 		if (m_useDynamicRendering)
 		{
 			initialTransitionColor2DImage(vk, *m_cmdBuffer, *m_colorImage, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -738,6 +741,7 @@ public:
 			beginRendering(vk, *m_cmdBuffer, *m_colorAttachment, renderArea, m_clearValue, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
 		}
 		else
+#endif // CTS_USES_VULKANSC
 			beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, renderArea, m_clearValue);
 
 		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
@@ -783,9 +787,11 @@ public:
 
 		vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_numViewports * 6), 1u, 0u, 0u);	// two triangles per viewport
 
+#ifndef CTS_USES_VULKANSC
 		if (m_useDynamicRendering)
 			endRendering(vk, *m_cmdBuffer);
 		else
+#endif // CTS_USES_VULKANSC
 			endRenderPass(vk, *m_cmdBuffer);
 
 		copyImageToBuffer(vk, *m_cmdBuffer, *m_colorImage, colorBuffer, tcu::IVec2(m_renderSize.x(), m_renderSize.y()));

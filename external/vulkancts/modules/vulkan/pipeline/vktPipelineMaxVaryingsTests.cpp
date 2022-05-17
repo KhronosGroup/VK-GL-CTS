@@ -994,6 +994,7 @@ tcu::TestStatus test(Context& context, const MaxVaryingsParam param)
 
 	deInt32		data		= 0u;
 	size_t		dataSize	= sizeof(data);
+
 	deInt32		maxOutput	= getMaxIOComponents(false, param.outputStage, properties);
 	deInt32		maxInput	= getMaxIOComponents(true, param.inputStage, properties);
 
@@ -1067,6 +1068,7 @@ tcu::TestStatus test(Context& context, const MaxVaryingsParam param)
 													&pSpecInfo)
 					.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragShaderModule)
 					.setupFragmentOutputState(*renderPass)
+					.setMonolithicPipelineLayout(*pipelineLayout)
 					.buildPipeline();
 
 	// Draw commands

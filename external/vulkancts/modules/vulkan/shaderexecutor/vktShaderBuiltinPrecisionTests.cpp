@@ -6853,6 +6853,7 @@ public:
 	const FuncBase&		getFunc			(void) const { return instance<GenF<1, T> >(); }
 };
 
+#ifndef CTS_USES_VULKANSC
 template <template <int> class GenF>
 class SquareMatrixFuncCaseFactory : public FuncCaseFactory
 {
@@ -6905,6 +6906,7 @@ public:
 
 	const FuncBase&		getFunc			(void) const { return instance<GenF<2> >(); }
 };
+#endif // CTS_USES_VULKANSC
 
 template <template <int, int, class> class GenF, typename T>
 class MatrixFuncCaseFactory : public FuncCaseFactory
@@ -7062,8 +7064,10 @@ MovePtr<const CaseFactories> createBuiltinCases ()
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<MatrixCompMult, float>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<OuterProduct, float>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<Transpose, float>()));
+#ifndef CTS_USES_VULKANSC
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Determinant>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Inverse>()));
+#endif // CTS_USES_VULKANSC
 
 	addScalarFactory<Frexp32Bit>(*funcs);
 	addScalarFactory<FrexpStruct32Bit>(*funcs);
@@ -7145,8 +7149,10 @@ MovePtr<const CaseFactories> createBuiltinDoubleCases ()
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<MatrixCompMult, double>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<OuterProduct, double>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<Transpose, double>()));
+#ifndef CTS_USES_VULKANSC
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Determinant64bit>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Inverse64bit>()));
+#endif // CTS_USES_VULKANSC
 
 	addScalarFactory<Frexp64Bit>(*funcs);
 	addScalarFactory<FrexpStruct64Bit>(*funcs);
@@ -7224,8 +7230,10 @@ MovePtr<const CaseFactories> createBuiltinCases16Bit(void)
 
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<OuterProduct, deFloat16>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<Transpose, deFloat16>()));
+#ifndef CTS_USES_VULKANSC
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Determinant16bit>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Inverse16bit>()));
+#endif // CTS_USES_VULKANSC
 
 	addScalarFactory<Frexp16Bit>(*funcs);
 	addScalarFactory<FrexpStruct16Bit>(*funcs);

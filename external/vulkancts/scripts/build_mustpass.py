@@ -47,6 +47,7 @@ COPYRIGHT_DECLARATION = """
 MUSTPASS_PATH		= os.path.join(DEQP_DIR, "external", "vulkancts", "mustpass")
 PROJECT				= Project(path = MUSTPASS_PATH, copyright = COPYRIGHT_DECLARATION)
 VULKAN_MODULE		= getModuleByName("dEQP-VK")
+VULKAN_SC_MODULE	= getModuleByName("dEQP-VKSC")
 BUILD_CONFIG		= getBuildConfig(DEFAULT_BUILD_DIR, DEFAULT_TARGET, "Debug")
 
 # main
@@ -63,8 +64,16 @@ VULKAN_MAIN_PKG	= Package(module = VULKAN_MODULE, configurations = [
 						filters					= [include("fraction-mandatory-tests.txt")]),
 	 ])
 
+VULKAN_SC_MAIN_PKG	= Package(module = VULKAN_SC_MODULE, configurations = [
+		  # Master
+		  Configuration(name					= "default",
+						filters					= [include("master_sc.txt"),
+												   exclude("android-tests-sc.txt")],
+						splitToMultipleFiles	= True),
+	])
+
 MUSTPASS_LISTS		= [
-		  Mustpass(project = PROJECT,	version = "main",	packages = [VULKAN_MAIN_PKG]),
+		  Mustpass(project = PROJECT,	version = "main",	packages = [VULKAN_MAIN_PKG, VULKAN_SC_MAIN_PKG]),
 	]
 
 if __name__ == "__main__":

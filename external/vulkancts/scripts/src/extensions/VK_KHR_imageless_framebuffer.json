@@ -2,11 +2,11 @@
 	"register_extension":
 	{
 		"type": "device",
-		"core": "1.2.0"
+		"core": "0.1.2.0"
 	},
 	"mandatory_features":
 	{
-		"VkPhysicalDeviceImagelessFramebufferFeaturesKHR":
+		"VkPhysicalDeviceImagelessFramebufferFeatures":
 		[
 			{ "features": ["imagelessFramebuffer"],	"requirements": ["VK_KHR_imageless_framebuffer"] }
 		]

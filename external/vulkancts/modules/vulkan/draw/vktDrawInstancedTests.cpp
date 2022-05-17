@@ -324,6 +324,7 @@ public:
 			}
 		}
 
+#ifndef CTS_USES_VULKANSC
 		if (m_params.useDynamicRendering)
 			context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
@@ -333,6 +334,7 @@ public:
 		{
 			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
 		}
+#endif // CTS_USES_VULKANSC
 	}
 
 	TestInstance*	createInstance	(Context& context) const
@@ -542,6 +544,7 @@ InstancedDrawInstance::InstancedDrawInstance(Context &context, TestParams params
 		pipelineCreateInfo.addState(PipelineCreateInfo::VertexInputState(m_vertexInputState));
 	}
 
+#ifndef CTS_USES_VULKANSC
 	vk::VkPipelineRenderingCreateInfoKHR renderingFormatCreateInfo
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
@@ -560,6 +563,7 @@ InstancedDrawInstance::InstancedDrawInstance(Context &context, TestParams params
 		if (m_params.testMultiview)
 			renderingFormatCreateInfo.viewMask = 3u;
 	}
+#endif // CTS_USES_VULKANSC
 
 	m_pipeline = vk::createGraphicsPipeline(m_vk, device, DE_NULL, &pipelineCreateInfo);
 }
@@ -644,9 +648,11 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 				0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
 
 			const vk::VkRect2D renderArea = vk::makeRect2D(WIDTH, HEIGHT);
+#ifndef CTS_USES_VULKANSC
 			if (m_params.useDynamicRendering)
 				beginRendering(m_vk, *m_cmdBuffer, *m_colorTargetView, renderArea, clearColor, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_LOAD, 0, (m_params.testMultiview) ? 2u : 1u, (m_params.testMultiview) ? 3u : 0u);
 			else
+#endif // CTS_USES_VULKANSC
 				beginRenderPass(m_vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, renderArea);
 
 			if (m_params.function == TestParams::FUNCTION_DRAW_INDEXED || m_params.function == TestParams::FUNCTION_DRAW_INDEXED_INDIRECT)
@@ -774,9 +780,11 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 					DE_ASSERT(false);
 			}
 
+#ifndef CTS_USES_VULKANSC
 			if (m_params.useDynamicRendering)
 				endRendering(m_vk, *m_cmdBuffer);
 			else
+#endif // CTS_USES_VULKANSC
 				endRenderPass(m_vk, *m_cmdBuffer);
 
 			endCommandBuffer(m_vk, *m_cmdBuffer);

@@ -322,6 +322,7 @@ tcu::TestStatus InterfaceMatchingTestInstance::iterate(void)
 														*m_geomShaderModule)
 					  .setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *m_fragShaderModule)
 					  .setupFragmentOutputState(*m_renderPass)
+					  .setMonolithicPipelineLayout(*m_pipelineLayout)
 					  .buildPipeline();
 
 	// create vertex buffer
@@ -880,6 +881,7 @@ void InterfaceMatchingTestCase::checkSupport(Context& context) const
 
 		// if graphicsPipelineLibraryIndependentInterpolationDecoration is VK_FALSE then interface mismatch
 		// tests involving the Flat or NoPerspective qualifiers should be skipped for pipeline library tests
+#ifndef CTS_USES_VULKANSC
 		if (!context.getGraphicsPipelineLibraryPropertiesEXT().graphicsPipelineLibraryIndependentInterpolationDecoration)
 		{
 			if ((m_params->inDeclDecoration == DecorationType::FLAT) ||
@@ -888,6 +890,7 @@ void InterfaceMatchingTestCase::checkSupport(Context& context) const
 				(m_params->outDeclDecoration == DecorationType::NO_PERSPECTIVE))
 				TCU_THROW(NotSupportedError, "graphicsPipelineLibraryIndependentInterpolationDecoration is not supported");
 		}
+#endif // CTS_USES_VULKANSC
 	}
 
 	// when outputs from earlier stage are matched with smaller

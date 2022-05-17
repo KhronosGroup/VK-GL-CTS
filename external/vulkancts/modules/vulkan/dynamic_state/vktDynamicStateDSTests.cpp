@@ -259,6 +259,7 @@ protected:
 													  static_cast<const vk::VkPipelineRasterizationStateCreateInfo*>(&rasterizerState))
 					.setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fs, static_cast<const vk::VkPipelineDepthStencilStateCreateInfo*>(&m_depthStencilState_1))
 					.setupFragmentOutputState(*m_renderPass, 0u, static_cast<const vk::VkPipelineColorBlendStateCreateInfo*>(&colorBlendState))
+					.setMonolithicPipelineLayout(*m_pipelineLayout)
 					.buildPipeline();
 
 		m_pipeline_2.setDefaultTopology(m_topology)
@@ -274,6 +275,7 @@ protected:
 													  static_cast<const vk::VkPipelineRasterizationStateCreateInfo*>(&rasterizerState))
 					.setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fs, static_cast<const vk::VkPipelineDepthStencilStateCreateInfo*>(&m_depthStencilState_2))
 					.setupFragmentOutputState(*m_renderPass, 0u, static_cast<const vk::VkPipelineColorBlendStateCreateInfo*>(&colorBlendState))
+					.setMonolithicPipelineLayout(*m_pipelineLayout)
 					.buildPipeline();
 
 		std::vector<vk::VkImageView> attachments(2);
@@ -643,6 +645,7 @@ void DepthBoundsTestInstance::initPipeline (const vk::VkDevice device)
 												static_cast<const vk::VkPipelineRasterizationStateCreateInfo*>(&rasterizerState))
 			  .setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fs, static_cast<const vk::VkPipelineDepthStencilStateCreateInfo*>(&depthStencilState))
 			  .setupFragmentOutputState(*m_renderPass, 0u, static_cast<const vk::VkPipelineColorBlendStateCreateInfo*>(&colorBlendState))
+			  .setMonolithicPipelineLayout(*m_pipelineLayout)
 			  .buildPipeline();
 }
 
@@ -1075,8 +1078,10 @@ void DynamicStateDSTests::init (void)
 
 	addChild(new InstanceFactory<DepthBoundsParamTestInstance, FunctionSupport0>(m_testCtx, "depth_bounds_1", "Perform depth bounds test 1", m_pipelineConstructionType, shaderPaths, checkDepthBoundsSupport));
 	addChild(new InstanceFactory<DepthBoundsTestInstance, FunctionSupport0>(m_testCtx, "depth_bounds_2", "Perform depth bounds test 1", m_pipelineConstructionType, shaderPaths, checkDepthBoundsSupport));
+#ifndef CTS_USES_VULKANSC
 	addChild(new StencilParamsBasicTestCase(m_testCtx, "stencil_params_basic_1", "Perform basic stencil test 1", m_pipelineConstructionType, 0x0D, 0x06, 0x05, tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f)));
 	addChild(new StencilParamsBasicTestCase(m_testCtx, "stencil_params_basic_2", "Perform basic stencil test 2", m_pipelineConstructionType, 0x06, 0x02, 0x05, tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f)));
+#endif // CTS_USES_VULKANSC
 	addChild(new InstanceFactory<StencilParamsAdvancedTestInstance>(m_testCtx, "stencil_params_advanced", "Perform advanced stencil test", m_pipelineConstructionType, shaderPaths));
 }
 

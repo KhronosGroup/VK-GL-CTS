@@ -252,7 +252,7 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&		vk,
 
 	const VkRenderPassMultiviewCreateInfo		renderPassMultiviewInfo		=
 	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO_KHR,			// VkStructureType	sType;
+		VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO,				// VkStructureType	sType;
 		DE_NULL,															// const void*		pNext;
 		subpassCount,														// uint32_t			subpassCount;
 		&viewMasks[0],														// const uint32_t*	pViewMasks;
@@ -456,7 +456,7 @@ Move<VkRenderPass> makeRenderPassWithAttachments (const DeviceInterface&	vk,
 
 	const VkRenderPassMultiviewCreateInfo		renderPassMultiviewInfo		=
 	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO_KHR,	//VkStructureType	sType;
+		VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO,		//VkStructureType	sType;
 		DE_NULL,													//const void*		pNext;
 		subpassCount,												//uint32_t			subpassCount;
 		&viewMasks[0],												//const uint32_t*	pViewMasks;

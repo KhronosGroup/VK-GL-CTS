@@ -420,7 +420,11 @@ void PushConstantGraphicsTestInstance::init (void)
 			.update(vk, vkDevice);
 
 		// create pipeline layout
+#ifndef CTS_USES_VULKANSC
 		VkPipelineLayoutCreateFlags	pipelineLayoutFlags = (m_pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC) ? 0u : deUint32(VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT);
+#else
+		VkPipelineLayoutCreateFlags	pipelineLayoutFlags = 0u;
+#endif // CTS_USES_VULKANSC
 		VkPipelineLayoutCreateInfo	pipelineLayoutParams
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// VkStructureType				sType;
@@ -2370,6 +2374,7 @@ void PushConstantLifetimeTestInstance::init (void)
 															   *m_vertexShaderModule)
 							 .setupFragmentShaderState(*(m_pipelineLayout[0]), *m_renderPass, 0u, *m_fragmentShaderModule)
 							 .setupFragmentOutputState(*m_renderPass)
+							 .setMonolithicPipelineLayout(*(m_pipelineLayout[0]))
 							 .buildPipeline();
 
 		m_graphicsPipeline[1].setDefaultRasterizationState()
@@ -2386,6 +2391,7 @@ void PushConstantLifetimeTestInstance::init (void)
 															   *m_vertexShaderModule)
 							 .setupFragmentShaderState(*(m_pipelineLayout[1]), *m_renderPass, 0u, *m_fragmentShaderModule)
 							 .setupFragmentOutputState(*m_renderPass)
+							 .setMonolithicPipelineLayout(*(m_pipelineLayout[1]))
 							 .buildPipeline();
 	}
 
@@ -2926,6 +2932,7 @@ tcu::TestStatus OverwriteTestInstance::iterate (void)
 														 *vertModule)
 					   .setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragModule)
 					   .setupFragmentOutputState(*renderPass)
+					   .setMonolithicPipelineLayout(*pipelineLayout)
 					   .buildPipeline();
 	}
 

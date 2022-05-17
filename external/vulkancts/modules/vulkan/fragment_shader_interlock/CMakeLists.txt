@@ -10,10 +10,9 @@ set(DEQP_VK_FRAGMENT_SHADER_INTERLOCK_SRCS
 	vktFragmentShaderInterlockBasic.hpp
 )
 
-set(DEQP_VK_FRAGMENT_SHADER_INTERLOCK_LIBS
-	tcutil
-	vkutil
-)
-
 add_library(deqp-vk-fragment-shader-interlock STATIC ${DEQP_VK_FRAGMENT_SHADER_INTERLOCK_SRCS})
-target_link_libraries(deqp-vk-fragment-shader-interlock ${DEQP_VK_FRAGMENT_SHADER_INTERLOCK_LIBS})
+target_link_libraries(deqp-vk-fragment-shader-interlock tcutil vkutil)
+
+add_library(deqp-vksc-fragment-shader-interlock STATIC ${DEQP_VK_FRAGMENT_SHADER_INTERLOCK_SRCS})
+target_include_directories(deqp-vksc-fragment-shader-interlock BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
+target_link_libraries(deqp-vksc-fragment-shader-interlock PUBLIC deqp-vksc-util tcutil vkscutil)

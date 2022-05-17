@@ -19,7 +19,7 @@
 				{
 					"type": "string",
 					"description": "This property specifies vulkan version to which this extension was fully promoted. Empty string is also accepted and must be used for partialy promoted extensions.",
-					"pattern": "^$|^[1-9]\\.[0-9]\\.[0-9]$"
+					"pattern": "^$|^[1-9]\\.[0-9]\\.[0-9]\\.[0-9]$"
 				}
 			},
 			"required": ["type", "core"],
@@ -59,6 +59,15 @@
 								{
 									"type": "string"
 								}
+							},
+							"mandatory_variant":
+							{
+								"type": "array",
+								"description": "When this section is present it specifies mandatory features variant.",
+								"items": {
+									"type": "string",
+									"enum": ["vulkan", "vulkansc"]
+								}
 							}
 						},
 						"required": ["features", "requirements"],
@@ -69,6 +78,7 @@
 			},
 			"additionalProperties": false
 		}
+
 	},
 	"additionalProperties": false
 }

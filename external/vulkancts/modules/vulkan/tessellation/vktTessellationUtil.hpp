@@ -372,6 +372,8 @@ static inline const char* getGeometryShaderOutputPrimitiveTypeShaderName (const 
 	}
 }
 
+#ifndef CTS_USES_VULKANSC
+
 static inline const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR* getPortability (const Context& context)
 {
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset"))
@@ -402,6 +404,8 @@ static inline void checkPointMode (const vk::VkPhysicalDevicePortabilitySubsetFe
 	if (!features.tessellationPointMode)
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Tessellation point mode is not supported by this implementation");
 }
+
+#endif // CTS_USES_VULKANSC
 
 template<typename T>
 inline std::size_t sizeInBytes (const std::vector<T>& vec)
@@ -482,29 +486,38 @@ std::vector<T> readInterleavedData (const int count, const void* memory, const i
 template <typename CaseDef, typename = bool>
 struct PointMode
 {
+#ifndef CTS_USES_VULKANSC
 	static void check(const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR&, const CaseDef)
 	{
 	}
+#endif // CTS_USES_VULKANSC
 };
 
 template <typename CaseDef>
 struct PointMode<CaseDef, decltype(CaseDef().usePointMode)>
 {
+#ifndef CTS_USES_VULKANSC
 	static void check(const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR& features, const CaseDef caseDef)
 	{
 		if (caseDef.usePointMode)
 			checkPointMode(features);
 	}
+#endif // CTS_USES_VULKANSC
 };
 
 template <typename CaseDef>
 void checkSupportCase (Context& context, const CaseDef caseDef)
 {
+#ifndef CTS_USES_VULKANSC
 	if (const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR* const features = getPortability(context))
 	{
 		PointMode<CaseDef>::check(*features, caseDef);
 		checkPrimitive(*features, caseDef.primitiveType);
-	}
+}
+#else
+	DE_UNREF(context);
+	DE_UNREF(caseDef);
+#endif // CTS_USES_VULKANSC
 }
 
 } // tessellation

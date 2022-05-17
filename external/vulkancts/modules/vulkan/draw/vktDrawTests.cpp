@@ -43,12 +43,18 @@
 #include "vktDrawMultisampleLinearInterpolationTests.hpp"
 #include "vktDrawDiscardRectanglesTests.hpp"
 #include "vktDrawExplicitVertexParameterTests.hpp"
+#ifndef CTS_USES_VULKANSC
 #include "vktDrawOutputLocationTests.hpp"
 #include "vktDrawDepthBiasTests.hpp"
+#endif // CTS_USES_VULKANSC
 #include "vktDrawDepthClampTests.hpp"
+#ifndef CTS_USES_VULKANSC
 #include "vktDrawAhbTests.hpp"
+#endif // CTS_USES_VULKANSC
 #include "vktDrawMultipleClearsWithinRenderPass.hpp"
+#ifndef CTS_USES_VULKANSC
 #include "vktDrawMultiExtTests.hpp"
+#endif // CTS_USES_VULKANSC
 
 namespace vkt
 {
@@ -80,6 +86,7 @@ void createChildren (tcu::TestContext& testCtx, tcu::TestCaseGroup* group, bool 
 	group->addChild(createExplicitVertexParameterTests			(testCtx, useDynamicRendering));
 	group->addChild(createDepthClampTests						(testCtx, useDynamicRendering));
 	group->addChild(new MultipleClearsWithinRenderPassTests		(testCtx, useDynamicRendering));
+#ifndef CTS_USES_VULKANSC
 	group->addChild(createDrawMultiExtTests						(testCtx, useDynamicRendering));
 
 	if (!useDynamicRendering)
@@ -92,6 +99,7 @@ void createChildren (tcu::TestContext& testCtx, tcu::TestCaseGroup* group, bool 
 		// subpasses can't be translated to dynamic rendering
 		group->addChild(createAhbTests						(testCtx));
 	}
+#endif // CTS_USES_VULKANSC
 }
 
 } // anonymous
@@ -100,13 +108,19 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> mainGroup				(new tcu::TestCaseGroup(testCtx, "draw", "Simple Draw tests"));
 	de::MovePtr<tcu::TestCaseGroup> renderpassGroup			(new tcu::TestCaseGroup(testCtx, "renderpass", "Draw using render pass object"));
+#ifndef CTS_USES_VULKANSC
 	de::MovePtr<tcu::TestCaseGroup> dynamicRenderingGroup	(new tcu::TestCaseGroup(testCtx, "dynamic_rendering", "Draw using VK_KHR_dynamic_rendering"));
+#endif // CTS_USES_VULKANSC
 
 	createChildren(testCtx, renderpassGroup.get(), false);
+#ifndef CTS_USES_VULKANSC
 	createChildren(testCtx, dynamicRenderingGroup.get(), true);
+#endif // CTS_USES_VULKANSC
 
 	mainGroup->addChild(renderpassGroup.release());
+#ifndef CTS_USES_VULKANSC
 	mainGroup->addChild(dynamicRenderingGroup.release());
+#endif // CTS_USES_VULKANSC
 
 	return mainGroup.release();
 }

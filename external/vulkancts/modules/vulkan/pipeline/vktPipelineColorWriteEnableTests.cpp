@@ -288,7 +288,6 @@ void ColorWriteEnableTest::checkSupport (Context& context) const
 
 	if ((colorProperties.optimalTilingFeatures & kColorFeatures) != kColorFeatures)
 		TCU_THROW(NotSupportedError, "Required color image features not supported");
-
 	checkPipelineLibraryRequirements(vki, physicalDevice, m_testConfig.pipelineConstructionType);
 }
 
@@ -811,6 +810,7 @@ tcu::TestStatus ColorWriteEnableInstance::iterate (void)
 								&depthStencilStateCreateInfo,
 								&multisampleStateCreateInfo)
 					  .setupFragmentOutputState(*renderPass, 0u, &colorBlendStateCreateInfo, &multisampleStateCreateInfo)
+					  .setMonolithicPipelineLayout(*pipelineLayout)
 					  .buildPipeline();
 	}
 
@@ -832,6 +832,7 @@ tcu::TestStatus ColorWriteEnableInstance::iterate (void)
 								&depthStencilStateCreateInfo,
 								&multisampleStateCreateInfo)
 					.setupFragmentOutputState(*renderPass, 0u, &colorBlendStateCreateInfo, &multisampleStateCreateInfo)
+					.setMonolithicPipelineLayout(*pipelineLayout)
 					.buildPipeline();
 
 	// Command buffer.

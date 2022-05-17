@@ -2,8 +2,7 @@
 	"register_extension":
 	{
 		"type": "device",
-		"core": "",
-		"note": "Partial promotion, only the properties structure was promoted to vk1.3, the feature structure was not promoted"
+		"core": "0.1.3.0"
 	},
 	"mandatory_features":
 	{

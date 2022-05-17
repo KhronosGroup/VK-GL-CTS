@@ -82,6 +82,7 @@ const char* memoryPropertyFlagBitToString(VkMemoryPropertyFlags flagBit)
 	case VK_MEMORY_PROPERTY_PROTECTED_BIT:
 		return "VK_MEMORY_PROPERTY_PROTECTED_BIT";
 
+#ifndef CTS_USES_VULKANSC
 	case VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD:
 		return "VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD";
 
@@ -90,6 +91,7 @@ const char* memoryPropertyFlagBitToString(VkMemoryPropertyFlags flagBit)
 
 	case VK_MEMORY_PROPERTY_RDMA_CAPABLE_BIT_NV:
 		return "VK_MEMORY_PROPERTY_RDMA_CAPABLE_BIT_NV";
+#endif // CTS_USES_VULKANSC
 
 	default:
 		TCU_THROW(InternalError, "Unknown memory property flag bit");

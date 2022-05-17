@@ -690,7 +690,7 @@ void TrinaryMinMaxCase::initPrograms (vk::SourceCollections& programCollection) 
 		;
 
 	const tcu::StringTemplate		shaderTemplate	{shaderStr.str()};
-	const vk::SpirVAsmBuildOptions	buildOptions	{VK_MAKE_VERSION(1, 2, 0), vk::SPIRV_VERSION_1_5};
+	const vk::SpirVAsmBuildOptions	buildOptions	{ VK_MAKE_API_VERSION(0, 1, 2, 0), vk::SPIRV_VERSION_1_5};
 
 	programCollection.spirvAsmSources.add("comp", &buildOptions) << shaderTemplate.specialize(getSpirVReplacements());
 }

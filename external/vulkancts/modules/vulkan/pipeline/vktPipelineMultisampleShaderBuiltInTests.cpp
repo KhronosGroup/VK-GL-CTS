@@ -195,12 +195,13 @@ public:
 												 const std::string&		name,
 												 const ImageMSParams&	imageMSParams);
 };
-
+#ifndef CTS_USES_VULKANSC
 template <typename CaseClassName>
 void MSCase<CaseClassName>::checkSupport(Context& context) const
 {
 	checkGraphicsPipelineLibrarySupport(context);
 }
+#endif // CTS_USES_VULKANSC
 
 template <typename CaseClassName>
 MultisampleCaseBase* MSCase<CaseClassName>::createCase (tcu::TestContext& testCtx, const std::string& name, const ImageMSParams& imageMSParams)
@@ -1988,6 +1989,7 @@ tcu::TestStatus WriteSampleMaskTestInstance::iterate (void)
 						.setupPreRasterizationShaderState(viewport, scissor, *emptyPipelineLayout, *renderPass, 0u, *vertModule)
 						.setupFragmentShaderState(*emptyPipelineLayout, *renderPass, 0u, *writeModule, &depthStencilInfo, &multisampleInfo)
 						.setupFragmentOutputState(*renderPass, 0u, &colorBlendInfo, &multisampleInfo)
+						.setMonolithicPipelineLayout(*emptyPipelineLayout)
 						.buildPipeline();
 
 	// Pipeline for the second subpass.
@@ -1998,6 +2000,7 @@ tcu::TestStatus WriteSampleMaskTestInstance::iterate (void)
 						.setupPreRasterizationShaderState(viewport, scissor, *checkPipelineLayout, *renderPass, 1u, *vertModule)
 						.setupFragmentShaderState(*checkPipelineLayout, *renderPass, 1u, *checkModule, &depthStencilInfo, &multisampleInfo)
 						.setupFragmentOutputState(*renderPass, 1u, &colorBlendInfo, &multisampleInfo)
+						.setMonolithicPipelineLayout(*checkPipelineLayout)
 						.buildPipeline();
 
 	// Command pool and command buffer.

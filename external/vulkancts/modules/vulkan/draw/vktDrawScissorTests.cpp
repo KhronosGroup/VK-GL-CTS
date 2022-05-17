@@ -494,6 +494,7 @@ TestStatus ScissorTestInstance::iterate (void)
 			pipelineCreateInfo.addState(PipelineCreateInfo::ViewportState(numScissors, vector<VkViewport>(numScissors, viewport), m_params.staticScissors));
 		}
 
+#ifndef CTS_USES_VULKANSC
 		VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
@@ -507,6 +508,7 @@ TestStatus ScissorTestInstance::iterate (void)
 
 		if (m_params.usesDynamicRendering)
 			pipelineCreateInfo.pNext = &renderingCreateInfo;
+#endif // CTS_USES_VULKANSC
 
 		pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 	}
@@ -518,7 +520,9 @@ TestStatus ScissorTestInstance::iterate (void)
 		const VkDeviceSize			vertexBufferOffset	= 0;
 		const VkOffset3D			zeroOffset			= { 0, 0, 0 };
 		const tcu::Vec4				clearColor			= { 0.0f, 0.0f, 0.0f, 1.0f };
+#ifndef CTS_USES_VULKANSC
 		const VkClearValue			clearValue			= makeClearValueColor(clearColor);
+#endif // CTS_USES_VULKANSC
 
 		clearColorImage(vk, device, m_context.getUniversalQueue(), m_context.getUniversalQueueFamilyIndex(), colorTargetImage->object(), clearColor,
 						VK_IMAGE_LAYOUT_UNDEFINED,
@@ -527,9 +531,11 @@ TestStatus ScissorTestInstance::iterate (void)
 
 		beginCommandBuffer(vk, *cmdBuffer, 0u);
 
+#ifndef CTS_USES_VULKANSC
 		if (m_params.usesDynamicRendering)
 			beginRendering(vk, *cmdBuffer, *colorTargetView, renderArea, clearValue, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
 		else
+#endif // CTS_USES_VULKANSC
 			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea, clearColor);
 
 		if (vertexBufferSize > 0)
@@ -542,9 +548,11 @@ TestStatus ScissorTestInstance::iterate (void)
 		for (size_t commandIdx = 0; commandIdx < m_params.commands.size(); commandIdx++)
 			m_params.commands[commandIdx]->addCommands(vk, *cmdBuffer);
 
+#ifndef CTS_USES_VULKANSC
 		if (m_params.usesDynamicRendering)
 			endRendering(vk, *cmdBuffer);
 		else
+#endif // CTS_USES_VULKANSC
 			endRenderPass(vk, *cmdBuffer);
 
 		transition2DImage(vk, *cmdBuffer, colorTargetImage->object(),

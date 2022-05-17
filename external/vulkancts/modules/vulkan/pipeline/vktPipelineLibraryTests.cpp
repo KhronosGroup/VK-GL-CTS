@@ -836,9 +836,9 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 	VkDescriptorSetLayout vecLayoutFrag[2] = { *descriptorSetLayoutBlank, *descriptorSetLayoutFrag };
 	VkDescriptorSetLayout vecLayoutBoth[2] = { *descriptorSetLayoutVert, *descriptorSetLayoutFrag };
 
-	const Move<VkPipelineLayout>			pipelineLayoutVert		= makePipelineLayout(vk, device, 2, vecLayoutVert);
-	const Move<VkPipelineLayout>			pipelineLayoutFrag		= makePipelineLayout(vk, device, 2, vecLayoutFrag);
-	const Move<VkPipelineLayout>			pipelineLayoutSame		= makePipelineLayout(vk, device, 2, vecLayoutBoth);
+	const Move<VkPipelineLayout>			pipelineLayoutVert		= makePipelineLayout(vk, device, 2, vecLayoutVert, VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT);
+	const Move<VkPipelineLayout>			pipelineLayoutFrag		= makePipelineLayout(vk, device, 2, vecLayoutFrag, VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT);
+	const Move<VkPipelineLayout>			pipelineLayoutSame		= makePipelineLayout(vk, device, 2, vecLayoutBoth, VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT);
 	const Move<VkCommandPool>				cmdPool					= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
 	const Move<VkCommandBuffer>				cmdBuffer				= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 	Move<VkPipeline>						rootPipeline;
@@ -881,7 +881,10 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 			appendStructurePtrToVulkanChain(&graphicsPipelineCreateInfo.pNext, &graphicsPipelineLibraryCreateInfo);
 
 		if (linkingInfo.libraryCount != 0)
+		{
 			appendStructurePtrToVulkanChain(&graphicsPipelineCreateInfo.pNext, &linkingInfo);
+			graphicsPipelineCreateInfo.layout = *pipelineLayoutSame;
+		}
 
 		node.pipeline = createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo);
 
@@ -1209,7 +1212,6 @@ enum class MiscTestMode
 {
 	INDEPENDENT_PIPELINE_LAYOUT_SETS_FAST_LINKED = 0,
 	INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_UNION_HANDLE,
-	INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_NULL_HANDLE,
 	BIND_NULL_DESCRIPTOR_SET,
 	COMPARE_LINK_TIMES
 };
@@ -1234,7 +1236,7 @@ public:
 protected:
 
 	tcu::TestStatus		runNullDescriptorSet				(void);
-	tcu::TestStatus		runIndependentPipelineLayoutSets	(bool useLinkTimeOptimization = false, bool useNullLayout = false);
+	tcu::TestStatus		runIndependentPipelineLayoutSets	(bool useLinkTimeOptimization = false);
 	tcu::TestStatus		runCompareLinkTimes					(void);
 
 	struct VerificationData
@@ -1299,8 +1301,6 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::iterate (void)
 		return runIndependentPipelineLayoutSets();
 	else if (m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_UNION_HANDLE)
 		return runIndependentPipelineLayoutSets(true);
-	else if (m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_NULL_HANDLE)
-		return runIndependentPipelineLayoutSets(true, true);
 	else if (m_testParams.mode == MiscTestMode::COMPARE_LINK_TIMES)
 		return runCompareLinkTimes();
 
@@ -1529,7 +1529,7 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runNullDescriptorSet(void)
 	return verifyResult(verificationData, colorPixelAccess);
 }
 
-tcu::TestStatus PipelineLibraryMiscTestInstance::runIndependentPipelineLayoutSets (bool useLinkTimeOptimization, bool useNullLayout)
+tcu::TestStatus PipelineLibraryMiscTestInstance::runIndependentPipelineLayoutSets (bool useLinkTimeOptimization)
 {
 	const DeviceInterface&			vk							= m_context.getDeviceInterface();
 	const VkDevice					device						= m_context.getDevice();
@@ -1573,7 +1573,7 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runIndependentPipelineLayoutSet
 
 	// for the link time opt (and when null handle is used) use total pipeline layout recreated without the INDEPENDENT SETS bit
 	deUint32 allLayoutsFlag = deUint32(VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT);
-	if (useLinkTimeOptimization && !useNullLayout)
+	if (useLinkTimeOptimization)
 		allLayoutsFlag = 0u;
 
 	// Pre-rasterization stage library has sets 0, 1, 2
@@ -1659,7 +1659,7 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runIndependentPipelineLayoutSet
 	VkGraphicsPipelineCreateInfo	finalPipelineInfo	= initVulkanStructure();
 
 	finalPipelineInfo.flags		= finalPipelineFlag;
-	finalPipelineInfo.layout	= useNullLayout ? DE_NULL : *allLayouts;
+	finalPipelineInfo.layout	= *allLayouts;
 
 	appendStructurePtrToVulkanChain(&finalPipelineInfo.pNext, &linkingInfo);
 	Move<VkPipeline> pipeline = createGraphicsPipeline(vk, device, DE_NULL, &finalPipelineInfo);
@@ -1795,6 +1795,7 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runCompareLinkTimes (void)
 
 		VkPipelineLibraryCreateInfoKHR	linkingInfo			= makePipelineLibraryCreateInfo(pipelinesToLink);
 		VkGraphicsPipelineCreateInfo	finalPipelineInfo	= initVulkanStructure();
+		finalPipelineInfo.layout = layout;
 
 		appendStructurePtrToVulkanChain(&finalPipelineInfo.pNext, &linkingInfo);
 
@@ -1958,7 +1959,6 @@ void PipelineLibraryMiscTestCase::initPrograms(SourceCollections& programCollect
 			"}\n");
 	}
 	else if ((m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_FAST_LINKED) ||
-			 (m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_NULL_HANDLE) ||
 			 (m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_UNION_HANDLE))
 	{
 		programCollection.glslSources.add("vert") << glu::VertexSource(
@@ -2182,7 +2182,6 @@ tcu::TestCaseGroup*	createPipelineLibraryTests(tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup> independentLayoutSetsTests(new tcu::TestCaseGroup(testCtx, "independent_pipeline_layout_sets", ""));
 	independentLayoutSetsTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "fast_linked", { MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_FAST_LINKED, 0u, 0u }));
 	independentLayoutSetsTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "link_opt_union_handle", { MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_UNION_HANDLE, 0u, 0u }));
-	independentLayoutSetsTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "link_opt_null_handle", { MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_NULL_HANDLE, 0u, 0u }));
 	miscTests->addChild(independentLayoutSetsTests.release());
 
 	de::MovePtr<tcu::TestCaseGroup> bindNullDescriptorCombinationsTests(new tcu::TestCaseGroup(testCtx, "bind_null_descriptor_set", ""));

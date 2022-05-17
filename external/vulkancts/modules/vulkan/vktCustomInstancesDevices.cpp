@@ -37,10 +37,14 @@ using std::vector;
 using std::string;
 using vk::Move;
 using vk::VkInstance;
+#ifndef CTS_USES_VULKANSC
 using vk::InstanceDriver;
 using vk::DebugReportRecorder;
 using vk::VkDebugReportCallbackCreateInfoEXT;
 using vk::VkDebugReportCallbackEXT;
+#else
+using vk::InstanceDriverSC;
+#endif // CTS_USES_VULKANSC
 
 namespace vkt
 {
@@ -93,21 +97,35 @@ vector<const char*> getValidationLayers (const vk::InstanceInterface& vki, vk::V
 	return getValidationLayers(enumerateDeviceLayerProperties(vki, physicalDevice));
 }
 
-CustomInstance::CustomInstance (Context& context, Move<VkInstance> instance, std::unique_ptr<vk::DebugReportRecorder>& recorder)
+#ifndef CTS_USES_VULKANSC
+CustomInstance::CustomInstance(Context& context, Move<VkInstance> instance, std::unique_ptr<vk::DebugReportRecorder>& recorder)
+#else
+CustomInstance::CustomInstance(Context& context, Move<VkInstance> instance)
+#endif // CTS_USES_VULKANSC
 	: m_context		(&context)
+#ifndef CTS_USES_VULKANSC
 	, m_recorder	(recorder.release())
+#endif // CTS_USES_VULKANSC
 	, m_instance	(instance)
+#ifndef CTS_USES_VULKANSC
 	, m_driver		(new InstanceDriver(context.getPlatformInterface(), *m_instance))
 	, m_callback	(m_recorder ? m_recorder->createCallback(*m_driver, *m_instance) : Move<VkDebugReportCallbackEXT>())
+#else
+	, m_driver		(new InstanceDriverSC(context.getPlatformInterface(), *m_instance, context.getTestContext().getCommandLine(), context.getResourceInterface()))
+#endif // CTS_USES_VULKANSC
 {
 }
 
 CustomInstance::CustomInstance ()
 	: m_context		(nullptr)
+#ifndef CTS_USES_VULKANSC
 	, m_recorder	(nullptr)
+#endif // CTS_USES_VULKANSC
 	, m_instance	()
 	, m_driver		(nullptr)
+#ifndef CTS_USES_VULKANSC
 	, m_callback	()
+#endif // CTS_USES_VULKANSC
 {
 }
 
@@ -133,10 +151,14 @@ CustomInstance&	CustomInstance::operator= (CustomInstance&& other)
 void CustomInstance::swap (CustomInstance& other)
 {
 	std::swap(m_context, other.m_context);
+#ifndef CTS_USES_VULKANSC
 	m_recorder.swap(other.m_recorder);
+#endif // CTS_USES_VULKANSC
 	Move<VkInstance> aux = m_instance; m_instance = other.m_instance; other.m_instance = aux;
 	m_driver.swap(other.m_driver);
+#ifndef CTS_USES_VULKANSC
 	Move<VkDebugReportCallbackEXT> aux2 = m_callback; m_callback = other.m_callback; other.m_callback = aux2;
+#endif // CTS_USES_VULKANSC
 }
 
 CustomInstance::operator VkInstance () const
@@ -151,38 +173,59 @@ const vk::InstanceDriver& CustomInstance::getDriver() const
 
 void CustomInstance::collectMessages ()
 {
+#ifndef CTS_USES_VULKANSC
 	if (m_recorder)
 		collectAndReportDebugMessages(*m_recorder, *m_context);
+#endif // CTS_USES_VULKANSC
 }
 
 UncheckedInstance::UncheckedInstance ()
 	: m_context		(nullptr)
+#ifndef CTS_USES_VULKANSC
 	, m_recorder	(nullptr)
+#endif // CTS_USES_VULKANSC
 	, m_allocator	(nullptr)
 	, m_instance	(DE_NULL)
 	, m_driver		(nullptr)
+#ifndef CTS_USES_VULKANSC
 	, m_callback	()
+#endif // CTS_USES_VULKANSC
 {
 }
 
+#ifndef CTS_USES_VULKANSC
 UncheckedInstance::UncheckedInstance (Context& context, vk::VkInstance instance, const vk::VkAllocationCallbacks* pAllocator, std::unique_ptr<DebugReportRecorder>& recorder)
+#else
+UncheckedInstance::UncheckedInstance(Context& context, vk::VkInstance instance, const vk::VkAllocationCallbacks* pAllocator)
+#endif // CTS_USES_VULKANSC
+
 	: m_context		(&context)
+#ifndef CTS_USES_VULKANSC
 	, m_recorder	(recorder.release())
+#endif // CTS_USES_VULKANSC
 	, m_allocator	(pAllocator)
 	, m_instance	(instance)
-	, m_driver		((m_instance != DE_NULL) ? new InstanceDriver(context.getPlatformInterface(), m_instance) : nullptr)
+#ifndef CTS_USES_VULKANSC
+	, m_driver((m_instance != DE_NULL) ? new InstanceDriver(context.getPlatformInterface(), m_instance) : nullptr)
 	, m_callback	(m_recorder ? m_recorder->createCallback(*m_driver, m_instance) : Move<VkDebugReportCallbackEXT>())
+#else
+	, m_driver((m_instance != DE_NULL) ? new InstanceDriverSC(context.getPlatformInterface(), m_instance, context.getTestContext().getCommandLine(), context.getResourceInterface()) : nullptr)
+#endif // CTS_USES_VULKANSC
 {
 }
 
 UncheckedInstance::~UncheckedInstance ()
 {
+#ifndef CTS_USES_VULKANSC
 	if (m_recorder)
 		collectAndReportDebugMessages(*m_recorder, *m_context);
+#endif // CTS_USES_VULKANSC
 
 	if (m_instance != DE_NULL)
 	{
+#ifndef CTS_USES_VULKANSC
 		m_recorder.reset(nullptr);
+#endif // CTS_USES_VULKANSC
 		m_driver->destroyInstance(m_instance, m_allocator);
 	}
 }
@@ -190,11 +233,15 @@ UncheckedInstance::~UncheckedInstance ()
 void UncheckedInstance::swap (UncheckedInstance& other)
 {
 	std::swap(m_context, other.m_context);
+#ifndef CTS_USES_VULKANSC
 	m_recorder.swap(other.m_recorder);
+#endif // CTS_USES_VULKANSC
 	std::swap(m_allocator, other.m_allocator);
 	vk::VkInstance aux = m_instance; m_instance = other.m_instance; other.m_instance = aux;
 	m_driver.swap(other.m_driver);
+#ifndef CTS_USES_VULKANSC
 	Move<VkDebugReportCallbackEXT> aux2 = m_callback; m_callback = other.m_callback; other.m_callback = aux2;
+#endif // CTS_USES_VULKANSC
 }
 
 UncheckedInstance::UncheckedInstance (UncheckedInstance&& other)
@@ -226,7 +273,9 @@ CustomInstance createCustomInstanceWithExtensions (Context& context, const std::
 	vector<string>		enabledLayersStr;
 	const auto&			cmdLine					= context.getTestContext().getCommandLine();
 	const bool			validationRequested		= (cmdLine.isValidationEnabled() && allowLayers);
+#ifndef CTS_USES_VULKANSC
 	const bool			printValidationErrors	= cmdLine.printValidationErrors();
+#endif // CTS_USES_VULKANSC
 
 	if (validationRequested)
 	{
@@ -265,14 +314,21 @@ CustomInstance createCustomInstanceWithExtensions (Context& context, const std::
 			TCU_THROW(NotSupportedError, ext + " is not supported");
 	}
 
+#ifndef CTS_USES_VULKANSC
 	std::unique_ptr<DebugReportRecorder> debugReportRecorder;
 	if (validationEnabled)
 		debugReportRecorder.reset(new DebugReportRecorder(printValidationErrors));
+#endif // CTS_USES_VULKANSC
 
 	// Create custom instance.
 	const vector<string> usedExtensionsVec(begin(usedExtensions), end(usedExtensions));
+#ifndef CTS_USES_VULKANSC
 	Move<VkInstance> instance = vk::createDefaultInstance(vkp, apiVersion, enabledLayersStr, usedExtensionsVec, debugReportRecorder.get(), pAllocator);
 	return CustomInstance(context, instance, debugReportRecorder);
+#else
+	Move<VkInstance> instance = vk::createDefaultInstance(vkp, apiVersion, enabledLayersStr, usedExtensionsVec, pAllocator);
+	return CustomInstance(context, instance);
+#endif // CTS_USES_VULKANSC
 }
 
 CustomInstance createCustomInstanceWithExtension (Context& context, const std::string& extension, const vk::VkAllocationCallbacks* pAllocator, bool allowLayers)
@@ -315,10 +371,14 @@ CustomInstance createCustomInstanceFromInfo (Context& context, const vk::VkInsta
 	vk::VkInstanceCreateInfo				createInfo				= *instanceCreateInfo;
 	const auto&								cmdLine					= context.getTestContext().getCommandLine();
 	const bool								validationEnabled		= cmdLine.isValidationEnabled();
+#ifndef CTS_USES_VULKANSC
 	const bool								printValidationErrors	= cmdLine.printValidationErrors();
+#endif // CTS_USES_VULKANSC
 	const vk::PlatformInterface&			vkp						= context.getPlatformInterface();
+#ifndef CTS_USES_VULKANSC
 	std::unique_ptr<DebugReportRecorder>	recorder;
 	VkDebugReportCallbackCreateInfoEXT		callbackInfo;
+#endif // CTS_USES_VULKANSC
 
 	if (validationEnabled && allowLayers)
 	{
@@ -335,13 +395,19 @@ CustomInstance createCustomInstanceFromInfo (Context& context, const vk::VkInsta
 		createInfo.enabledExtensionCount = static_cast<deUint32>(enabledExtensions.size());
 		createInfo.ppEnabledExtensionNames = enabledExtensions.data();
 
+#ifndef CTS_USES_VULKANSC
 		recorder.reset(new DebugReportRecorder(printValidationErrors));
 		callbackInfo		= recorder->makeCreateInfo();
 		callbackInfo.pNext	= createInfo.pNext;
 		createInfo.pNext	= &callbackInfo;
+#endif // CTS_USES_VULKANSC
 	}
 
+#ifndef CTS_USES_VULKANSC
 	return CustomInstance(context, vk::createInstance(vkp, &createInfo, pAllocator), recorder);
+#else
+	return CustomInstance(context, vk::createInstance(vkp, &createInfo, pAllocator));
+#endif // CTS_USES_VULKANSC
 }
 
 vk::VkResult createUncheckedInstance (Context& context, const vk::VkInstanceCreateInfo* instanceCreateInfo, const vk::VkAllocationCallbacks* pAllocator, UncheckedInstance* instance, bool allowLayers)
@@ -351,11 +417,15 @@ vk::VkResult createUncheckedInstance (Context& context, const vk::VkInstanceCrea
 	vk::VkInstanceCreateInfo				createInfo				= *instanceCreateInfo;
 	const auto&								cmdLine					= context.getTestContext().getCommandLine();
 	const bool								validationEnabled		= cmdLine.isValidationEnabled();
+#ifndef CTS_USES_VULKANSC
 	const bool								printValidationErrors	= cmdLine.printValidationErrors();
+#endif // CTS_USES_VULKANSC
 	const vk::PlatformInterface&			vkp						= context.getPlatformInterface();
 	const bool								addLayers				= (validationEnabled && allowLayers);
+#ifndef CTS_USES_VULKANSC
 	std::unique_ptr<DebugReportRecorder>	recorder;
 	VkDebugReportCallbackCreateInfoEXT		callbackInfo;
+#endif // CTS_USES_VULKANSC
 
 	if (addLayers)
 	{
@@ -372,17 +442,23 @@ vk::VkResult createUncheckedInstance (Context& context, const vk::VkInstanceCrea
 		createInfo.enabledExtensionCount = static_cast<deUint32>(enabledExtensions.size());
 		createInfo.ppEnabledExtensionNames = enabledExtensions.data();
 
+#ifndef CTS_USES_VULKANSC
 		// Prepare debug report recorder also for instance creation.
 		recorder.reset(new DebugReportRecorder(printValidationErrors));
 		callbackInfo		= recorder->makeCreateInfo();
 		callbackInfo.pNext	= createInfo.pNext;
 		createInfo.pNext	= &callbackInfo;
+#endif // CTS_USES_VULKANSC
 	}
 
 	vk::VkInstance	raw_instance = DE_NULL;
 	vk::VkResult	result = vkp.createInstance(&createInfo, pAllocator, &raw_instance);
 
+#ifndef CTS_USES_VULKANSC
 	*instance = UncheckedInstance(context, raw_instance, pAllocator, recorder);
+#else
+	*instance = UncheckedInstance(context, raw_instance, pAllocator);
+#endif // CTS_USES_VULKANSC
 
 	return result;
 }
@@ -416,6 +492,12 @@ vk::VkResult createUncheckedDevice (bool validationEnabled, const vk::InstanceIn
 
 	return vki.createDevice(physicalDevice, &createInfo, pAllocator, pDevice);
 }
+
+CustomInstanceWrapper::CustomInstanceWrapper (Context& context)
+	: instance(vkt::createCustomInstanceFromContext(context))
+{
+}
+
 
 
 }

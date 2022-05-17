@@ -46,6 +46,7 @@ tcu::TestStatus MSInstanceBaseResolve::iterate (void)
 {
 	// cases creating this tests are defined using templates and we do not have easy access
 	// to image type - to do this check in checkSupport bigger reffactoring would be needed
+#ifndef CTS_USES_VULKANSC
 	if (m_context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		!m_context.getPortabilitySubsetFeatures().multisampleArrayImage &&
 		(m_imageType == IMAGE_TYPE_2D_ARRAY) &&
@@ -54,6 +55,7 @@ tcu::TestStatus MSInstanceBaseResolve::iterate (void)
 	{
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Implementation does not support image array with multiple samples per texel");
 	}
+#endif // CTS_USES_VULKANSC
 
 	const InstanceInterface&		instance			= m_context.getInstanceInterface();
 	const DeviceInterface&			deviceInterface		= m_context.getDeviceInterface();
@@ -292,6 +294,7 @@ tcu::TestStatus MSInstanceBaseResolve::iterate (void)
 						*vsModule)
 					.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fsModule, DE_NULL, &multisampleStateInfo)
 					.setupFragmentOutputState(*renderPass, 0, DE_NULL, &multisampleStateInfo)
+					.setMonolithicPipelineLayout(*pipelineLayout)
 					.buildPipeline();
 
 	// Create command buffer for compute and transfer oparations

@@ -41,6 +41,8 @@
 namespace vk
 {
 
+#ifndef CTS_USES_VULKANSC
+
 struct DeferredThreadParams
 {
 	const DeviceInterface&	vk;
@@ -573,6 +575,7 @@ SerialStorage::SerialStorage (const DeviceInterface&									vk,
 							  const VkDeviceSize										storageSize)
 	: m_buildType		(buildType)
 	, m_storageSize		(storageSize)
+	, m_serialInfo		()
 {
 	const VkBufferCreateInfo	bufferCreateInfo	= makeBufferCreateInfo(storageSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
 	try
@@ -830,7 +833,6 @@ void updateVertexBuffer (const DeviceInterface&										vk,
 {
 	const Allocation&				geometryAlloc		= vertexBuffer->getAllocation();
 	deUint8*						bufferStart			= static_cast<deUint8*>(geometryAlloc.getHostPtr());
-	const VkDeviceSize				bufferSize			= getVertexBufferSize(geometriesData);
 	VkDeviceSize					bufferOffset		= geometriesOffset;
 
 	for (size_t geometryNdx = 0; geometryNdx < geometriesData.size(); ++geometryNdx)
@@ -843,7 +845,10 @@ void updateVertexBuffer (const DeviceInterface&										vk,
 		bufferOffset += deAlignSize(geometryPtrSize,8);
 	}
 
-	flushMappedMemoryRange(vk, device, geometryAlloc.getMemory(), geometryAlloc.getOffset()+geometriesOffset, bufferSize);
+	// Flush the whole allocation. We could flush only the interesting range, but we'd need to be sure both the offset and size
+	// align to VkPhysicalDeviceLimits::nonCoherentAtomSize, which we are not considering. Also note most code uses Coherent memory
+	// for the vertex and index buffers, so flushing is actually not needed.
+	flushAlloc(vk, device, geometryAlloc);
 }
 
 VkDeviceSize getIndexBufferSize (const std::vector<de::SharedPtr<RaytracedGeometryBase>>&	geometriesData)
@@ -886,7 +891,6 @@ void updateIndexBuffer (const DeviceInterface&										vk,
 {
 	const Allocation&				indexAlloc			= indexBuffer->getAllocation();
 	deUint8*						bufferStart			= static_cast<deUint8*>(indexAlloc.getHostPtr());
-	const VkDeviceSize				bufferSize			= getIndexBufferSize(geometriesData);
 	VkDeviceSize					bufferOffset		= geometriesOffset;
 
 	for (size_t geometryNdx = 0; geometryNdx < geometriesData.size(); ++geometryNdx)
@@ -902,7 +906,10 @@ void updateIndexBuffer (const DeviceInterface&										vk,
 		}
 	}
 
-	flushMappedMemoryRange(vk, device, indexAlloc.getMemory(), indexAlloc.getOffset()+geometriesOffset, bufferSize);
+	// Flush the whole allocation. We could flush only the interesting range, but we'd need to be sure both the offset and size
+	// align to VkPhysicalDeviceLimits::nonCoherentAtomSize, which we are not considering. Also note most code uses Coherent memory
+	// for the vertex and index buffers, so flushing is actually not needed.
+	flushAlloc(vk, device, indexAlloc);
 }
 
 class BottomLevelAccelerationStructureKHR : public BottomLevelAccelerationStructure
@@ -3483,5 +3490,14 @@ void cmdTraceRaysIndirect (const DeviceInterface&					vk,
 								   callableShaderBindingTableRegion,
 								   indirectDeviceAddress);
 }
+
+#else
+
+deUint32 rayTracingDefineAnything()
+{
+	return 0;
+}
+
+#endif // CTS_USES_VULKANSC
 
 } // vk

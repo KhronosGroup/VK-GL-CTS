@@ -360,9 +360,9 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate (void)
 	VkImageUsageFlags				usageFlags				= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 	VkImageViewUsageCreateInfo		imageViewUsageInfo		=
 	{
-		VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,	//VkStructureType      sType;
-		DE_NULL,											//const void*          pNext;
-		usageFlags,											//VkImageUsageFlags    usage;
+		VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,		//VkStructureType		sType;
+		DE_NULL,											//const void*			pNext;
+		usageFlags,											//VkImageUsageFlags		usage;
 	};
 
 	Move<VkImageView>				sampledImageView;

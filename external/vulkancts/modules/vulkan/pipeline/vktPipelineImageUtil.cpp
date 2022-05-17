@@ -122,7 +122,7 @@ bool isMinMaxFilteringSupported (const InstanceInterface& vki, VkPhysicalDevice 
 													? formatProperties.linearTilingFeatures
 													: formatProperties.optimalTilingFeatures;
 
-	return (formatFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT_EXT) != 0;
+	return (formatFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT) != 0;
 }
 
 VkBorderColor getFormatBorderColor (BorderColor color, VkFormat format)
@@ -475,10 +475,17 @@ bool checkSparseImageFormatSupport (const VkPhysicalDevice		physicalDevice,
 									const InstanceInterface&	instance,
 									const VkImageCreateInfo&	imageCreateInfo)
 {
+#ifndef CTS_USES_VULKANSC
 	const std::vector<VkSparseImageFormatProperties> sparseImageFormatPropVec =
 		getPhysicalDeviceSparseImageFormatProperties(instance, physicalDevice, imageCreateInfo.format, imageCreateInfo.imageType, imageCreateInfo.samples, imageCreateInfo.usage, imageCreateInfo.tiling);
 
 	return (sparseImageFormatPropVec.size() != 0);
+#else
+	DE_UNREF(physicalDevice);
+	DE_UNREF(instance);
+	DE_UNREF(imageCreateInfo);
+	return false;
+#endif // CTS_USES_VULKANSC
 }
 
 void uploadTestTextureInternalSparse (const DeviceInterface&					vk,
@@ -516,7 +523,14 @@ void uploadTestTextureInternalSparse (const DeviceInterface&					vk,
 		bufferSize		= stencilOffset + srcStencilTexture->getSize();
 	}
 
+#ifndef CTS_USES_VULKANSC
 	allocateAndBindSparseImage (vk, device, physicalDevice, instance, imageCreateInfo, imageMemoryBindSemaphore.get(), sparseQueue, allocator, allocations, format, destImage);
+#else
+	DE_UNREF(physicalDevice);
+	DE_UNREF(instance);
+	DE_UNREF(sparseQueue);
+	DE_UNREF(allocations);
+#endif // CTS_USES_VULKANSC
 
 	{
 		// Create source buffer

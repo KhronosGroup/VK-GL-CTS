@@ -36,6 +36,9 @@
 
 #include "tcuTestLog.hpp"
 #include "tcuImageCompare.hpp"
+#include "tcuCommandLine.hpp"
+
+#include <cmath>
 
 namespace vkt
 {
@@ -1131,6 +1134,7 @@ void BlendOperationAdvancedTestInstance::buildPipeline (VkBool32 srcPremultiplie
 			  .setupPreRasterizationShaderState(viewport, scissor, *m_pipelineLayout, *m_renderPass, 0u, m_shaderModules[0].get())
 			  .setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, m_shaderModules[1].get(), &depthStencilStateParams, &multisampleStateParams)
 			  .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams, &multisampleStateParams)
+			  .setMonolithicPipelineLayout(*m_pipelineLayout)
 			  .buildPipeline();
 }
 
@@ -1457,10 +1461,10 @@ deBool BlendOperationAdvancedTestInstance::verifyTestResult ()
 			}
 
 			// If pixel value is not normal (inf, nan, denorm), skip it
-			if (!isnormal(rectColor.x()) ||
-				!isnormal(rectColor.y()) ||
-				!isnormal(rectColor.z()) ||
-				!isnormal(rectColor.w()))
+			if (!std::isnormal(rectColor.x()) ||
+				!std::isnormal(rectColor.y()) ||
+				!std::isnormal(rectColor.z()) ||
+				!std::isnormal(rectColor.w()))
 				skipColor = DE_TRUE;
 		}
 
@@ -1509,8 +1513,13 @@ deBool BlendOperationAdvancedTestInstance::verifyTestResult ()
 											   clearColorVec4,
 											   m_colorFormat == VK_FORMAT_R8G8B8A8_UNORM ? Vec4(0.15f, 0.15f, 0.15f, 0.13f) : Vec4(0.01f, 0.01f, 0.01f, 0.01f),
 											   tcu::COMPARE_LOG_RESULT);
-		if (!compareOk)
-			return DE_FALSE;
+#ifdef CTS_USES_VULKANSC
+		if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
+		{
+			if (!compareOk)
+				return DE_FALSE;
+		}
 	}
 	return DE_TRUE;
 }
@@ -1609,7 +1618,6 @@ void BlendOperationAdvancedTest::checkSupport(Context& context) const
 	{
 		throw tcu::NotSupportedError("Unsupported required coherent operations");
 	}
-
 	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_param.pipelineConstructionType);
 }
 
@@ -1807,6 +1815,7 @@ void BlendOperationAdvancedTestCoherentInstance::buildPipeline ()
 		.setupPreRasterizationShaderState(viewport, scissor, *m_pipelineLayout, m_renderPasses[0].get(), 0u, m_shaderModules[0].get())
 		.setupFragmentShaderState(*m_pipelineLayout, m_renderPasses[0].get(), 0u, m_shaderModules[1].get(), &depthStencilStateParams, &multisampleStateParams)
 		.setupFragmentOutputState(m_renderPasses[0].get(), 0u, &colorBlendStateParams[0], &multisampleStateParams)
+		.setMonolithicPipelineLayout(*m_pipelineLayout)
 		.buildPipeline();
 
 	// Create second pipeline
@@ -1818,6 +1827,7 @@ void BlendOperationAdvancedTestCoherentInstance::buildPipeline ()
 		.setupPreRasterizationShaderState(viewport, scissor, *m_pipelineLayout, m_renderPasses[1].get(), 0u, m_shaderModules[0].get())
 		.setupFragmentShaderState(*m_pipelineLayout, m_renderPasses[1].get(), 0u, m_shaderModules[1].get(), &depthStencilStateParams, &multisampleStateParams)
 		.setupFragmentOutputState(m_renderPasses[1].get(), 0u, &colorBlendStateParams[1], &multisampleStateParams)
+		.setMonolithicPipelineLayout(*m_pipelineLayout)
 		.buildPipeline();
 }
 

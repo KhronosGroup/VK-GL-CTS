@@ -839,7 +839,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 													  VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
 													  VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT |
 													  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
-													  VK_PIPELINE_STAGE_SHADING_RATE_IMAGE_BIT_NV;
+													  VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
 	const VkFormat			cbFormat				= VK_FORMAT_R32G32B32A32_UINT;
 	const VkFormat			dsFormat				= m_data.useDepthStencil ? VK_FORMAT_D32_SFLOAT_S8_UINT : VK_FORMAT_UNDEFINED;
 
@@ -1783,6 +1783,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 
 			const deUint32 fragSizeWH = m_data.sampleMaskTest ? 2 : 0;
 
+#ifndef CTS_USES_VULKANSC
 			VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 			{
 				VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
@@ -1793,13 +1794,18 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				dsFormat,
 				dsFormat
 			};
+#endif // CTS_USES_VULKANSC
 
 			VkPipelineFragmentShadingRateStateCreateInfoKHR shadingRateStateCreateInfo
 			{
-				VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_STATE_CREATE_INFO_KHR,		// VkStructureType						sType;
-				m_data.groupParams->useDynamicRendering ? &renderingCreateInfo : DE_NULL,	// const void*							pNext;
-				{ fragSizeWH, fragSizeWH },													// VkExtent2D							fragmentSize;
-				{ m_data.combinerOp[0], m_data.combinerOp[1] },								// VkFragmentShadingRateCombinerOpKHR	combinerOps[2];
+				VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_STATE_CREATE_INFO_KHR,	// VkStructureType						sType;
+#ifndef CTS_USES_VULKANSC
+				m_data.groupParams->useDynamicRendering ? &renderingCreateInfo : DE_NULL,			// const void*							pNext;
+#else
+				DE_NULL,																// const void*							pNext;
+#endif // CTS_USES_VULKANSC
+				{ fragSizeWH, fragSizeWH },												// VkExtent2D							fragmentSize;
+				{ m_data.combinerOp[0], m_data.combinerOp[1] },							// VkFragmentShadingRateCombinerOpKHR	combinerOps[2];
 			};
 
 			VkDynamicState dynamicState = VK_DYNAMIC_STATE_FRAGMENT_SHADING_RATE_KHR;

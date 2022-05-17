@@ -46,6 +46,8 @@
 #include "vkBuilderUtil.hpp"
 #include "vkBarrierUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkDeviceUtil.hpp"
+#include "vkSafetyCriticalUtil.hpp"
 
 #include "deRandom.hpp"
 
@@ -104,10 +106,13 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 		deUint32	queueFamilyIndex;
 	};
 
-	const DeviceInterface&					vk				= m_context.getDeviceInterface();
 	const deUint32							numValues		= 1024;
-	const InstanceInterface&				instance		= m_context.getInstanceInterface();
-	const VkPhysicalDevice					physicalDevice	= m_context.getPhysicalDevice();
+	const CustomInstance					instance		(createCustomInstanceFromContext(m_context));
+	const InstanceDriver&					instanceDriver	(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice	= chooseDevice(instanceDriver, instance, m_context.getTestContext().getCommandLine());
+//
+//	const InstanceInterface&				instance		= m_context.getInstanceInterface();
+//	const VkPhysicalDevice					physicalDevice	= m_context.getPhysicalDevice();
 	const auto								validation		= m_context.getTestContext().getCommandLine().isValidationEnabled();
 	tcu::TestLog&							log				= m_context.getTestContext().getLog();
 	Move<VkDevice>							computeDevice;
@@ -120,7 +125,7 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 
 	// Set up compute
 
-	queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instance, physicalDevice);
+	queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 
 	for (deUint32 queueNdx = 0; queueNdx < queueFamilyProperties.size(); ++queueNdx)
 	{
@@ -147,10 +152,48 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 	queueInfos = queueInfo;
 
 	deMemset(&deviceInfo, 0, sizeof(deviceInfo));
-	instance.getPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
+	instanceDriver.getPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
+
+	void* pNext												= DE_NULL;
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= m_context.getTestContext().getCommandLine().isSubProcess() ? m_context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext								= pNext;
+	pNext													= &memReservationInfo;
+
+	VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+	sc10Features.pNext										= pNext;
+	pNext													= &sc10Features;
+
+	VkPipelineCacheCreateInfo			pcCI;
+	std::vector<VkPipelinePoolSize>		poolSizes;
+	if (m_context.getTestContext().getCommandLine().isSubProcess())
+	{
+		if (m_context.getResourceInterface()->getCacheDataSize() > 0)
+		{
+			pcCI =
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,			// VkStructureType				sType;
+				DE_NULL,												// const void*					pNext;
+				VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+					VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+				m_context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
+				m_context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
+			};
+			memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+			memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+		}
+
+		poolSizes							= m_context.getResourceInterface()->getPipelinePoolSizes();
+		if (!poolSizes.empty())
+		{
+			memReservationInfo.pipelinePoolSizeCount			= deUint32(poolSizes.size());
+			memReservationInfo.pPipelinePoolSizes				= poolSizes.data();
+		}
+	}
+#endif // CTS_USES_VULKANSC
 
 	deviceInfo.sType					= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	deviceInfo.pNext					= DE_NULL;
+	deviceInfo.pNext					= pNext;
 	deviceInfo.enabledExtensionCount	= 0u;
 	deviceInfo.ppEnabledExtensionNames	= DE_NULL;
 	deviceInfo.enabledLayerCount		= 0u;
@@ -159,12 +202,19 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 	deviceInfo.queueCreateInfoCount		= 1;
 	deviceInfo.pQueueCreateInfos		= &queueInfos;
 
-	computeDevice = createCustomDevice(validation, m_context.getPlatformInterface(), m_context.getInstance(), instance, physicalDevice, &deviceInfo);
+	computeDevice = createCustomDevice(validation, m_context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceInfo);
+
+#ifndef CTS_USES_VULKANSC
+	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<vk::DeviceDriver>(new vk::DeviceDriver(m_context.getPlatformInterface(), instance, *computeDevice));
+#else
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), instance, *computeDevice, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *computeDevice));
+#endif // CTS_USES_VULKANSC
+	vk::DeviceInterface& vk = *deviceDriver;
 
 	vk.getDeviceQueue(*computeDevice, computeQueue.queueFamilyIndex, 0, &computeQueue.queue);
 
 	// Create an input/output buffer
-	const VkPhysicalDeviceMemoryProperties memoryProperties = getPhysicalDeviceMemoryProperties(instance, physicalDevice);
+	const VkPhysicalDeviceMemoryProperties memoryProperties = getPhysicalDeviceMemoryProperties(instanceDriver, physicalDevice);
 
 	SimpleAllocator *			allocator			= new SimpleAllocator(vk, *computeDevice, memoryProperties);
 	const VkDeviceSize			bufferSizeBytes		= sizeof(deUint32) * numValues;
@@ -269,7 +319,7 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 
 	VkDeviceGroupSubmitInfo	deviceGroupSubmitInfo =
 	{
-		VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO_KHR,	//	VkStructureType		sType;
+		VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO,		//	VkStructureType		sType;
 		DE_NULL,										//	const void*			pNext;
 		0u,												//	deUint32			waitSemaphoreCount;
 		DE_NULL,										//	const deUint32*		pWaitSemaphoreDeviceIndices;
@@ -308,29 +358,39 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 
 	// Have to wait for all fences before calling fail, or some fence may be left hanging.
 
-	if (err == ERROR_WAIT_COMPUTE)
-		return tcu::TestStatus::fail("Failed waiting for compute queue fence.");
 
-	if (err == ERROR_WAIT_DRAW)
-		return tcu::TestStatus::fail("Failed waiting for draw queue fence.");
-
-	// Validation - compute
-
-	const Allocation&	bufferAllocation	= buffer.getAllocation();
-	invalidateAlloc(vk, *computeDevice, bufferAllocation);
-	const deUint32*		bufferPtr			= static_cast<deUint32*>(bufferAllocation.getHostPtr());
-
-	for (deUint32 ndx = 0; ndx < numValues; ++ndx)
+#ifdef CTS_USES_VULKANSC
+	if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 	{
-		const deUint32 res = bufferPtr[ndx];
-		const deUint32 inp = inputData[ndx];
-		const deUint32 ref = ~inp;
-
-		if (res != ref)
+		if (err == ERROR_WAIT_COMPUTE)
 		{
-			std::ostringstream msg;
-			msg << "Comparison failed (compute) for InOut.values[" << ndx << "] ref:" << ref << " res:" << res << " inp:" << inp;
-			return tcu::TestStatus::fail(msg.str());
+			return tcu::TestStatus::fail("Failed waiting for compute queue fence.");
+		}
+
+		if (err == ERROR_WAIT_DRAW)
+		{
+			return tcu::TestStatus::fail("Failed waiting for draw queue fence.");
+		}
+
+		// Validation - compute
+
+		const Allocation&	bufferAllocation	= buffer.getAllocation();
+		invalidateAlloc(vk, *computeDevice, bufferAllocation);
+		const deUint32*		bufferPtr			= static_cast<deUint32*>(bufferAllocation.getHostPtr());
+
+		for (deUint32 ndx = 0; ndx < numValues; ++ndx)
+		{
+			const deUint32 res = bufferPtr[ndx];
+			const deUint32 inp = inputData[ndx];
+			const deUint32 ref = ~inp;
+
+			if (res != ref)
+			{
+				std::ostringstream msg;
+				msg << "Comparison failed (compute) for InOut.values[" << ndx << "] ref:" << ref << " res:" << res << " inp:" << inp;
+				return tcu::TestStatus::fail(msg.str());
+			}
 		}
 	}
 
@@ -375,7 +435,6 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 	{
 		res = QP_TEST_RESULT_FAIL;
 	}
-
 	return tcu::TestStatus(res, qpGetTestResultName(res));
 }
 

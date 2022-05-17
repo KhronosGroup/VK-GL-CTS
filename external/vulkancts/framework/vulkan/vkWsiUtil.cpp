@@ -168,6 +168,17 @@ VkResult createSurface (const InstanceInterface&		vki,
 	// Update this function if you add more WSI implementations
 	DE_STATIC_ASSERT(TYPE_LAST == 7);
 
+#ifdef CTS_USES_VULKANSC
+	DE_UNREF(vki);
+	DE_UNREF(instance);
+	DE_UNREF(wsiType);
+	DE_UNREF(nativeDisplay);
+	DE_UNREF(nativeWindow);
+	DE_UNREF(pAllocator);
+	DE_UNREF(pSurface);
+
+	TCU_THROW(NotSupportedError, "Vulkan SC does not support createSurface");
+#else // CTS_USES_VULKANSC
 	switch (wsiType)
 	{
 		case TYPE_XLIB:
@@ -278,6 +289,8 @@ VkResult createSurface (const InstanceInterface&		vki,
 			DE_FATAL("Unknown WSI type");
 			return VK_ERROR_SURFACE_LOST_KHR;
 	}
+#endif // CTS_USES_VULKANSC
+	return VK_ERROR_SURFACE_LOST_KHR;
 }
 
 Move<VkSurfaceKHR> createSurface (const InstanceInterface&		vki,
@@ -310,6 +323,14 @@ VkBool32 getPhysicalDevicePresentationSupport (const InstanceInterface&	vki,
 											   Type						wsiType,
 											   const Display&			nativeDisplay)
 {
+#ifdef CTS_USES_VULKANSC
+	DE_UNREF(vki);
+	DE_UNREF(physicalDevice);
+	DE_UNREF(queueFamilyIndex);
+	DE_UNREF(wsiType);
+	DE_UNREF(nativeDisplay);
+	TCU_THROW(NotSupportedError, "Vulkan SC does not support getPhysicalDevicePresentationSupport");
+#else // CTS_USES_VULKANSC
 	switch (wsiType)
 	{
 		case TYPE_XLIB:
@@ -352,6 +373,7 @@ VkBool32 getPhysicalDevicePresentationSupport (const InstanceInterface&	vki,
 			DE_FATAL("Unknown WSI type");
 			return 0;
 	}
+#endif // CTS_USES_VULKANSC
 	return 1;
 }
 

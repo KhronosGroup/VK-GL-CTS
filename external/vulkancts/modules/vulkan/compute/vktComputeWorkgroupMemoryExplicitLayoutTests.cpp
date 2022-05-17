@@ -1356,7 +1356,7 @@ cts_amber::AmberTestCase* CreateAmberTestCase(tcu::TestContext& testCtx,
 											  const std::vector<std::string>& requirements = std::vector<std::string>(),
 											  bool zeroinit = false)
 {
-	vk::SpirVAsmBuildOptions asm_options(VK_MAKE_VERSION(1, 1, 0), vk::SPIRV_VERSION_1_4);
+	vk::SpirVAsmBuildOptions asm_options(VK_MAKE_API_VERSION(0, 1, 1, 0), vk::SPIRV_VERSION_1_4);
 	asm_options.supports_VK_KHR_spirv_1_4 = true;
 
 	cts_amber::AmberTestCase *t = cts_amber::createAmberTestCase(testCtx, name, description, "compute/workgroup_memory_explicit_layout", filename, requirements);

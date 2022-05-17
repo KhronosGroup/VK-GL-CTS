@@ -36,8 +36,10 @@
 #include "vkImageWithMemory.hpp"
 
 #include "tcuTestLog.hpp"
+#include "vktTestCase.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuFloat.hpp"
+#include "tcuCommandLine.hpp"
 
 #include "deRandom.hpp"
 
@@ -487,6 +489,11 @@ tcu::TestStatus ImageSubresourceLayoutInstance::iterateAspect (VkImageAspectFlag
 	vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u, &finalLayoutBarrier);
 	endCommandBuffer(vkd, cmdBuffer);
 	submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+#ifdef CTS_USES_VULKANSC
+	if (!m_context.getTestContext().getCommandLine().isSubProcess())
+		return tcu::TestStatus::pass("Pass");
+#endif
 
 	// Sync image memory for host access.
 	invalidateAlloc(vkd, device, imageAlloc);

@@ -4,9 +4,9 @@
 		"VkPhysicalDeviceFeatures":
 		[
 			{ "features": ["robustBufferAccess"],	"requirements": [] },
-			{ "features": ["shaderInt64"],			"requirements": ["physicalDeviceShaderAtomicInt64FeaturesKHR.shaderBufferInt64Atomics"] },
+			{ "features": ["shaderInt64"],			"requirements": ["physicalDeviceShaderAtomicInt64Features.shaderBufferInt64Atomics"] },
 			{ "features": ["shaderInt64"],			"requirements": ["physicalDeviceVulkan12Features.shaderBufferInt64Atomics"] },
-			{ "features": ["shaderInt64"],			"requirements": ["physicalDeviceShaderAtomicInt64FeaturesKHR.shaderSharedInt64Atomics"] },
+			{ "features": ["shaderInt64"],			"requirements": ["physicalDeviceShaderAtomicInt64Features.shaderSharedInt64Atomics"] },
 			{ "features": ["shaderInt64"],			"requirements": ["physicalDeviceVulkan12Features.shaderSharedInt64Atomics"] }
 		]
 	}

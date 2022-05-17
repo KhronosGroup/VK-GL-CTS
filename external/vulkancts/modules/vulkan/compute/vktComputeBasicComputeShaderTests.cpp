@@ -44,6 +44,7 @@
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
 #include "vkBufferWithMemory.hpp"
+#include "vkSafetyCriticalUtil.hpp"
 
 #include "tcuCommandLine.hpp"
 #include "tcuTestLog.hpp"
@@ -2337,6 +2338,10 @@ public:
 		createDeviceGroup();
 	}
 
+		~ComputeTestInstance	()
+	{
+	}
+
 	void							createDeviceGroup	(void);
 	const vk::DeviceInterface&		getDeviceInterface	(void)			{ return *m_deviceDriver; }
 	vk::VkInstance					getInstance			(void)			{ return m_deviceGroupInstance; }
@@ -2344,14 +2349,18 @@ public:
 	vk::VkPhysicalDevice			getPhysicalDevice	(deUint32 i = 0){ return m_physicalDevices[i]; }
 
 protected:
-	deUint32						m_numPhysDevices;
-	deUint32						m_queueFamilyIndex;
+	deUint32							m_numPhysDevices;
+	deUint32							m_queueFamilyIndex;
 
 private:
 	CustomInstance						m_deviceGroupInstance;
 	vk::Move<vk::VkDevice>				m_logicalDevice;
 	std::vector<vk::VkPhysicalDevice>	m_physicalDevices;
+#ifndef CTS_USES_VULKANSC
 	de::MovePtr<vk::DeviceDriver>		m_deviceDriver;
+#else
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	m_deviceDriver;
+#endif // CTS_USES_VULKANSC
 };
 
 void ComputeTestInstance::createDeviceGroup (void)
@@ -2371,7 +2380,7 @@ void ComputeTestInstance::createDeviceGroup (void)
 
 	VkDeviceGroupDeviceCreateInfo					deviceGroupInfo			=
 	{
-		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR,								//stype
+		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO,									//stype
 		DE_NULL,																			//pNext
 		devGroupProperties[devGroupIdx].physicalDeviceCount,								//physicalDeviceCount
 		devGroupProperties[devGroupIdx].physicalDevices										//physicalDevices
@@ -2400,10 +2409,48 @@ void ComputeTestInstance::createDeviceGroup (void)
 		&queuePriority									// const float*						pQueuePriorities;
 	};
 
+	void* pNext												= &deviceGroupInfo;
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= cmdLine.isSubProcess() ? m_context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext								= pNext;
+	pNext													= &memReservationInfo;
+
+	VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+	sc10Features.pNext										= pNext;
+	pNext													= &sc10Features;
+	VkPipelineCacheCreateInfo			pcCI;
+	std::vector<VkPipelinePoolSize>		poolSizes;
+	if (cmdLine.isSubProcess())
+	{
+		if (m_context.getResourceInterface()->getCacheDataSize() > 0)
+		{
+			pcCI =
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,			// VkStructureType				sType;
+				DE_NULL,												// const void*					pNext;
+				VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+					VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+				m_context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
+				m_context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
+			};
+			memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+			memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+		}
+
+		poolSizes							= m_context.getResourceInterface()->getPipelinePoolSizes();
+		if (!poolSizes.empty())
+		{
+			memReservationInfo.pipelinePoolSizeCount		= deUint32(poolSizes.size());
+			memReservationInfo.pPipelinePoolSizes			= poolSizes.data();
+		}
+	}
+
+#endif // CTS_USES_VULKANSC
+
 	const VkDeviceCreateInfo						deviceInfo				=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							// VkStructureType					sType;
-		&deviceGroupInfo,												// const void*						pNext;
+		pNext,															// const void*						pNext;
 		(VkDeviceCreateFlags)0,											// VkDeviceCreateFlags				flags;
 		1u	,															// uint32_t							queueCreateInfoCount;
 		&queueInfo,														// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
@@ -2415,7 +2462,11 @@ void ComputeTestInstance::createDeviceGroup (void)
 	};
 
 	m_logicalDevice		= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), m_deviceGroupInstance, instance, deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceInfo);
-	m_deviceDriver		= de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_deviceGroupInstance, *m_logicalDevice));
+#ifndef CTS_USES_VULKANSC
+	m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_deviceGroupInstance, *m_logicalDevice));
+#else
+	m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_context.getInstance(), *m_logicalDevice, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_logicalDevice));
+#endif // CTS_USES_VULKANSC
 }
 
 class DispatchBaseTest : public vkt::TestCase
@@ -2746,7 +2797,7 @@ void DeviceIndexTest::initPrograms (SourceCollections& sourceCollections) const
 		<< "} sb_inout;\n"
 
 		<< "layout(binding = 1) readonly uniform uniformInput {\n"
-		<< "    uint baseOffset[1+" << VK_MAX_DEVICE_GROUP_SIZE_KHR << "];\n"
+		<< "    uint baseOffset[1+" << VK_MAX_DEVICE_GROUP_SIZE << "];\n"
 		<< "} ubo_in;\n"
 
 		<< "void main (void) {\n"
@@ -2789,7 +2840,7 @@ tcu::TestStatus DeviceIndexTestInstance::iterate (void)
 	vk::Move<vk::VkDeviceMemory>	sboBufferMemory;
 
 	// Create an uniform and output buffer
-	const deUint32 uniformBufSize = 4 * (1 + VK_MAX_DEVICE_GROUP_SIZE_KHR);
+	const deUint32 uniformBufSize = 4 * (1 + VK_MAX_DEVICE_GROUP_SIZE);
 	const VkDeviceSize uniformBufferSizeBytes = sizeof(deUint32) * uniformBufSize;
 	const Buffer uniformBuffer(vk, device, allocator, makeBufferCreateInfo(uniformBufferSizeBytes, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT), MemoryRequirement::HostVisible);
 
@@ -2825,7 +2876,7 @@ tcu::TestStatus DeviceIndexTestInstance::iterate (void)
 
 		const VkMemoryAllocateFlagsInfo allocDeviceMaskInfo =
 		{
-			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR,	// sType
+			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,		// sType
 			DE_NULL,											// pNext
 			VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT,					// flags
 			allocDeviceMask,									// deviceMask
@@ -3034,10 +3085,11 @@ tcu::TestStatus ConcurrentComputeInstance::iterate (void)
 		deUint32	queueFamilyIndex;
 	};
 
-	const DeviceInterface&					vk							= m_context.getDeviceInterface();
+//	const DeviceInterface&					vk							= m_context.getDeviceInterface();
 	const deUint32							numValues					= 1024;
-	const InstanceInterface&				instance					= m_context.getInstanceInterface();
-	const VkPhysicalDevice					physicalDevice				= m_context.getPhysicalDevice();
+	const CustomInstance					instance					(createCustomInstanceFromContext(m_context));
+	const InstanceDriver&					instanceDriver				(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice				= chooseDevice(instanceDriver, instance, m_context.getTestContext().getCommandLine());
 	tcu::TestLog&							log							= m_context.getTestContext().getLog();
 	vk::Move<vk::VkDevice>					logicalDevice;
 	std::vector<VkQueueFamilyProperties>	queueFamilyProperties;
@@ -3051,7 +3103,7 @@ tcu::TestStatus ConcurrentComputeInstance::iterate (void)
 																			{DE_NULL, (deUint32)NO_MATCH_FOUND}
 																		};
 
-	queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instance, physicalDevice);
+	queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 
 	for (deUint32 queueNdx = 0; queueNdx < queueFamilyProperties.size(); ++queueNdx)
 	{
@@ -3088,11 +3140,50 @@ tcu::TestStatus ConcurrentComputeInstance::iterate (void)
 		if (queues[0].queueFamilyIndex == queues[1].queueFamilyIndex)
 			break;
 	}
+
+	void* pNext												= DE_NULL;
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= m_context.getTestContext().getCommandLine().isSubProcess() ? m_context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext								= pNext;
+	pNext													= &memReservationInfo;
+
+	VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+	sc10Features.pNext										= pNext;
+	pNext													= &sc10Features;
+
+	VkPipelineCacheCreateInfo			pcCI;
+	std::vector<VkPipelinePoolSize>		poolSizes;
+	if (m_context.getTestContext().getCommandLine().isSubProcess())
+	{
+		if (m_context.getResourceInterface()->getCacheDataSize() > 0)
+		{
+			pcCI =
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,			// VkStructureType				sType;
+				DE_NULL,												// const void*					pNext;
+				VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+					VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+				m_context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
+				m_context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
+			};
+			memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+			memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+		}
+
+		poolSizes							= m_context.getResourceInterface()->getPipelinePoolSizes();
+		if (!poolSizes.empty())
+		{
+			memReservationInfo.pipelinePoolSizeCount			= deUint32(poolSizes.size());
+			memReservationInfo.pPipelinePoolSizes				= poolSizes.data();
+		}
+	}
+#endif // CTS_USES_VULKANSC
+
 	deMemset(&deviceInfo, 0, sizeof(deviceInfo));
-	instance.getPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
+	instanceDriver.getPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
 
 	deviceInfo.sType					= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	deviceInfo.pNext					= DE_NULL;
+	deviceInfo.pNext					= pNext;
 	deviceInfo.enabledExtensionCount	= 0u;
 	deviceInfo.ppEnabledExtensionNames	= DE_NULL;
 	deviceInfo.enabledLayerCount		= 0u;
@@ -3101,7 +3192,14 @@ tcu::TestStatus ConcurrentComputeInstance::iterate (void)
 	deviceInfo.queueCreateInfoCount		= (queues[0].queueFamilyIndex == queues[1].queueFamilyIndex) ? 1 : 2;
 	deviceInfo.pQueueCreateInfos		= queueInfos;
 
-	logicalDevice = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), m_context.getInstance(), instance, physicalDevice, &deviceInfo);
+	logicalDevice = createCustomDevice	(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceInfo);
+
+#ifndef CTS_USES_VULKANSC
+	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), instance, *logicalDevice));
+#else
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), instance, *logicalDevice, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *logicalDevice));
+#endif // CTS_USES_VULKANSC
+	vk::DeviceInterface& vk = *deviceDriver;
 
 	for (deUint32 queueReqNdx = 0; queueReqNdx < 2; ++queueReqNdx)
 	{
@@ -3112,7 +3210,7 @@ tcu::TestStatus ConcurrentComputeInstance::iterate (void)
 	}
 
 	// Create an input/output buffers
-	const VkPhysicalDeviceMemoryProperties memoryProperties	= vk::getPhysicalDeviceMemoryProperties(instance, physicalDevice);
+	const VkPhysicalDeviceMemoryProperties memoryProperties	= vk::getPhysicalDeviceMemoryProperties(instanceDriver, physicalDevice);
 
 	SimpleAllocator *allocator								= new SimpleAllocator(vk, *logicalDevice, memoryProperties);
 	const VkDeviceSize bufferSizeBytes						= sizeof(deUint32) * numValues;
@@ -3268,7 +3366,9 @@ tcu::TestStatus ConcurrentComputeInstance::iterate (void)
 	// teardown instead of the error we want.
 
 	if (err == ERROR_WAIT)
+	{
 		return tcu::TestStatus::fail("Failed waiting for low-priority queue fence.");
+	}
 
 	// Validate the results
 
@@ -3821,7 +3921,9 @@ tcu::TestCaseGroup* createBasicComputeShaderTests (tcu::TestContext& testCtx)
 	basicComputeTests->addChild(new ImageBarrierTest(testCtx,	"image_barrier_single",		"Image barrier",	tcu::IVec2(1,1)));
 	basicComputeTests->addChild(new ImageBarrierTest(testCtx,	"image_barrier_multiple",	"Image barrier",	tcu::IVec2(64,64)));
 
+#ifndef CTS_USES_VULKANSC
 	basicComputeTests->addChild(cts_amber::createAmberTestCase(testCtx, "write_ssbo_array", "", "compute", "write_ssbo_array.amber"));
+#endif
 
 	return basicComputeTests.release();
 }

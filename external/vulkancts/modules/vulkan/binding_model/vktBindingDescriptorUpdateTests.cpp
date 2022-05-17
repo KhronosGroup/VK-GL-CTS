@@ -22,7 +22,9 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktBindingDescriptorUpdateTests.hpp"
+#ifndef CTS_USES_VULKANSC
 #include "vktBindingDescriptorUpdateASTests.hpp"
+#endif // CTS_USES_VULKANSC
 
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
@@ -1303,7 +1305,9 @@ tcu::TestCaseGroup* createDescriptorUpdateTests (tcu::TestContext& testCtx)
 	group->addChild(createEmptyDescriptorUpdateTests(testCtx));
 	group->addChild(createSamplerlessWriteTests(testCtx));
 	group->addChild(createRandomDescriptorUpdateTests(testCtx));
+#ifndef CTS_USES_VULKANSC
 	group->addChild(createDescriptorUpdateASTests(testCtx));
+#endif // CTS_USES_VULKANSC
 
 	return group.release();
 }

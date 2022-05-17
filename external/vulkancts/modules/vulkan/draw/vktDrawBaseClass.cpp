@@ -168,6 +168,7 @@ void DrawTestsBaseClass::initPipeline (const vk::VkDevice device)
 	pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
 	pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState());
 
+#ifndef CTS_USES_VULKANSC
 	vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
@@ -181,6 +182,7 @@ void DrawTestsBaseClass::initPipeline (const vk::VkDevice device)
 
 	if (m_useDynamicRendering)
 		pipelineCreateInfo.pNext = &renderingCreateInfo;
+#endif // CTS_USES_VULKANSC
 
 	m_pipeline = vk::createGraphicsPipeline(m_vk, device, DE_NULL, &pipelineCreateInfo);
 }
@@ -209,6 +211,7 @@ void DrawTestsBaseClass::beginRender (const vk::VkSubpassContents content)
 		0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
 
 	const vk::VkRect2D renderArea = vk::makeRect2D(WIDTH, HEIGHT);
+#ifndef CTS_USES_VULKANSC
 	if (m_useDynamicRendering)
 	{
 		vk::VkRenderingFlagsKHR renderingFlags = 0;
@@ -218,14 +221,17 @@ void DrawTestsBaseClass::beginRender (const vk::VkSubpassContents content)
 		vk::beginRendering(m_vk, *m_cmdBuffer, *m_colorTargetView, renderArea, clearColor, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_LOAD, renderingFlags);
 	}
 	else
+#endif // CTS_USES_VULKANSC
 		vk::beginRenderPass(m_vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, renderArea, content);
 }
 
 void DrawTestsBaseClass::endRender (void)
 {
+#ifndef CTS_USES_VULKANSC
 	if (m_useDynamicRendering)
 		vk::endRendering(m_vk, *m_cmdBuffer);
 	else
+#endif // CTS_USES_VULKANSC
 		vk::endRenderPass(m_vk, *m_cmdBuffer);
 }
 

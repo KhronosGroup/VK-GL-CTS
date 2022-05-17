@@ -52,6 +52,7 @@ GLES2_MODULE					= getModuleByName("dEQP-GLES2")
 GLES3_MODULE					= getModuleByName("dEQP-GLES3")
 GLES31_MODULE					= getModuleByName("dEQP-GLES31")
 VULKAN_MODULE					= getModuleByName("dEQP-VK")
+VULKANSC_MODULE					= getModuleByName("dEQP-VKSC")
 
 # Main
 
@@ -70,12 +71,12 @@ MAIN_EGL_PKG					= Package(module = EGL_MODULE, configurations = [
 					  filters		= MAIN_EGL_COMMON_FILTERS,
 					  runtime		= "23m",
 					  runByDefault	= False),
-		Configuration(name			= "master-2021-03-01",
+		Configuration(name			= "master-2020-03-01",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
 					  required		= True,
-					  filters		= [include("egl-master-2021-03-01.txt")],
+					  filters		= [include("egl-master-2020-03-01.txt")],
 					  runtime		= "23m"),
 		Configuration(name			= "master-2022-03-01",
 					  glconfig		= "rgba8888d24s8ms0",
@@ -344,8 +345,19 @@ MAIN_VULKAN_PKG				= Package(module = VULKAN_MODULE, configurations = [
 					  splitToMultipleFiles	= True),
 	])
 
+MAIN_VULKANSC_FILTERS			= [
+		include("vksc-master.txt"),
+	]
+MAIN_VULKANSC_PKG				= Package(module = VULKANSC_MODULE, configurations = [
+		Configuration(name					= "main",
+					  filters				= MAIN_VULKANSC_FILTERS,
+					  runtime				= "2h39m",
+					  runByDefault			= False,
+					  splitToMultipleFiles	= True),
+	])
+
 MUSTPASS_LISTS				= [
-		Mustpass(project = CTS_PROJECT, version = "main",		packages = [MAIN_EGL_PKG, MAIN_GLES2_PKG, MAIN_GLES3_PKG, MAIN_GLES31_PKG, MAIN_VULKAN_PKG])
+		Mustpass(project = CTS_PROJECT, version = "main",		packages = [MAIN_EGL_PKG, MAIN_GLES2_PKG, MAIN_GLES3_PKG, MAIN_GLES31_PKG, MAIN_VULKAN_PKG, MAIN_VULKANSC_PKG])
 	]
 
 if __name__ == "__main__":

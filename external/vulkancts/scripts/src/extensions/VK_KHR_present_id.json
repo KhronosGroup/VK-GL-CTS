@@ -8,7 +8,7 @@
 	{
 		"VkPhysicalDevicePresentIdFeaturesKHR":
 		[
-			{ "features": ["presentId"],	"requirements": ["VK_KHR_present_id"] }
+			{ "features": ["presentId"],	"requirements": ["VK_KHR_present_id"],		"mandatory_variant": ["vulkan"] }
 		]
 	}
 }

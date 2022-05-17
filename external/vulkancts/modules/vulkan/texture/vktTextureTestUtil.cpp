@@ -374,7 +374,9 @@ void TextureBinding::updateTextureData (const TestTextureSp& textureData, const 
 	if (sparse)
 	{
 		deUint32 numSparseImageProperties = 0;
+#ifndef CTS_USES_VULKANSC
 		m_context.getInstanceInterface().getPhysicalDeviceSparseImageFormatProperties(m_context.getPhysicalDevice(), format, imageType, VK_SAMPLE_COUNT_1_BIT, imageUsageFlags, imageTiling, &numSparseImageProperties, DE_NULL);
+#endif // CTS_USES_VULKANSC
 		if (numSparseImageProperties == 0)
 			TCU_THROW(NotSupportedError, (std::string("Sparse format not supported: ") + vk::getFormatName(format)).c_str());
 	}
@@ -458,17 +460,25 @@ void TextureBinding::updateTextureViewMipLevels (deUint32 baseLevel, deUint32 ma
 	const VkImageAspectFlags					aspectMask				= ( m_aspectMask != VK_IMAGE_ASPECT_FLAG_BITS_MAX_ENUM ) ? m_aspectMask : guessAspectMask(format);
 	const deUint32								layerCount				= m_textureData->getArraySize();
 
+#ifndef CTS_USES_VULKANSC
 	vk::VkImageViewMinLodCreateInfoEXT imageViewMinLodCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_VIEW_MIN_LOD_CREATE_INFO_EXT,	// VkStructureType	sType
 		DE_NULL,												// const void*		pNext
 		imageViewMinLod,										// float			minLod
 	};
+#else
+	DE_UNREF(imageViewMinLod);
+#endif // CTS_USES_VULKANSC
 
 	const vk::VkImageViewCreateInfo				viewParams				=
 	{
 		vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,						// VkStructureType			sType;
-		imageViewMinLod > 0.0f ? &imageViewMinLodCreateInfo : DE_NULL,		// const void*				pNext;
+#ifndef CTS_USES_VULKANSC
+		imageViewMinLod >= 0.0f ? &imageViewMinLodCreateInfo : DE_NULL,		// const void*				pNext;
+#else
+		DE_NULL,															// const void*				pNext;
+#endif // CTS_USES_VULKANSC
 		0u,																	// VkImageViewCreateFlags	flags;
 		*m_textureImage,													// VkImage					image;
 		imageViewType,														// VkImageViewType			viewType;
@@ -886,6 +896,42 @@ TextureRenderer::TextureRenderer (Context& context, VkSampleCountFlagBits sample
 		m_descriptorPool = descriptorPoolBuilder.build(vkd, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 2u);
 	}
 
+	// Descriptor Sets
+	{
+		m_descriptorSetLayout[0] = DescriptorSetLayoutBuilder()
+											.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
+												.build(vkd, vkDevice);
+
+		m_descriptorSetLayout[1] = DescriptorSetLayoutBuilder()
+											.addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+											.build(vkd, vkDevice);
+
+		m_descriptorSet[0] = makeDescriptorSet(*m_descriptorPool, *m_descriptorSetLayout[0]);
+		m_descriptorSet[1] = makeDescriptorSet(*m_descriptorPool, *m_descriptorSetLayout[1]);
+	}
+
+	// Pipeline Layout
+	{
+		VkDescriptorSetLayout					descriptorSetLayouts[2]		=
+		{
+			*m_descriptorSetLayout[0],
+			*m_descriptorSetLayout[1]
+		};
+
+		const VkPipelineLayoutCreateInfo		pipelineLayoutCreateInfo	=
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
+			DE_NULL,											// const void*					pNext;
+			0u,													// VkPipelineLayoutCreateFlags	flags;
+			2u,													// deUint32						descriptorSetCount;
+			descriptorSetLayouts,								// const VkDescriptorSetLayout*	pSetLayouts;
+			0u,													// deUint32						pushConstantRangeCount;
+			DE_NULL												// const VkPushConstantRange*	pPushConstantRanges;
+		};
+
+		m_pipelineLayout = createPipelineLayout(vkd, vkDevice, &pipelineLayoutCreateInfo);
+	}
+
 	// Result Buffer
 	{
 		const VkBufferCreateInfo				bufferCreateInfo		=
@@ -1299,9 +1345,6 @@ void TextureRenderer::renderQuad (const tcu::PixelBufferAccess&					result,
 	Unique<VkShaderModule>					fragmentShaderModule		(createShaderModule(vkd, vkDevice, m_context.getBinaryCollection().get("fragment_" + std::string(getProgramName(progSpec))), 0));
 
 	Move<VkSampler>							sampler;
-	Move<VkDescriptorSet>					descriptorSet[2];
-	Move<VkDescriptorSetLayout>				descriptorSetLayout[2];
-	Move<VkPipelineLayout>					pipelineLayout;
 
 	Move<VkCommandBuffer>					commandBuffer;
 	Move<VkPipeline>						graphicsPipeline;
@@ -1424,17 +1467,6 @@ void TextureRenderer::renderQuad (const tcu::PixelBufferAccess&					result,
 
 		sampler = createSampler(vkd, vkDevice, &samplerCreateInfo);
 
-		descriptorSetLayout[0] = DescriptorSetLayoutBuilder()
-											.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
-												.build(vkd, vkDevice);
-
-		descriptorSetLayout[1] = DescriptorSetLayoutBuilder()
-											.addSingleSamplerBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, &sampler.get())
-											.build(vkd, vkDevice);
-
-		descriptorSet[0] = makeDescriptorSet(*m_descriptorPool, *descriptorSetLayout[0]);
-		descriptorSet[1] = makeDescriptorSet(*m_descriptorPool, *descriptorSetLayout[1]);
-
 		{
 			const VkDescriptorBufferInfo			descriptorBufferInfo	=
 			{
@@ -1444,7 +1476,7 @@ void TextureRenderer::renderQuad (const tcu::PixelBufferAccess&					result,
 			};
 
 			DescriptorSetUpdateBuilder()
-				.writeSingle(*descriptorSet[0], DescriptorSetUpdateBuilder::Location::binding(0), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &descriptorBufferInfo)
+				.writeSingle(*m_descriptorSet[0], DescriptorSetUpdateBuilder::Location::binding(0), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &descriptorBufferInfo)
 				.update(vkd, vkDevice);
 		}
 
@@ -1457,35 +1489,13 @@ void TextureRenderer::renderQuad (const tcu::PixelBufferAccess&					result,
 			};
 
 			DescriptorSetUpdateBuilder()
-				.writeSingle(*descriptorSet[1], DescriptorSetUpdateBuilder::Location::binding(0), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &descriptorImageInfo)
+				.writeSingle(*m_descriptorSet[1], DescriptorSetUpdateBuilder::Location::binding(0), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &descriptorImageInfo)
 				.update(vkd, vkDevice);
-		}
-
-		// Pipeline Layout
-		{
-			VkDescriptorSetLayout					descriptorSetLayouts[2]		=
-			{
-				*descriptorSetLayout[0],
-				*descriptorSetLayout[1]
-			};
-
-			const VkPipelineLayoutCreateInfo		pipelineLayoutCreateInfo	=
-			{
-				VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
-				DE_NULL,											// const void*					pNext;
-				0u,													// VkPipelineLayoutCreateFlags	flags;
-				2u,													// deUint32						descriptorSetCount;
-				descriptorSetLayouts,								// const VkDescriptorSetLayout*	pSetLayouts;
-				0u,													// deUint32						pushConstantRangeCount;
-				DE_NULL												// const VkPushConstantRange*	pPushConstantRanges;
-			};
-
-			pipelineLayout = createPipelineLayout(vkd, vkDevice, &pipelineLayoutCreateInfo);
 		}
 
 		graphicsPipeline = makeGraphicsPipeline(vkd,									// const DeviceInterface&                        vk
 												vkDevice,								// const VkDevice                                device
-												*pipelineLayout,						// const VkPipelineLayout                        pipelineLayout
+												*m_pipelineLayout,						// const VkPipelineLayout                        pipelineLayout
 												*vertexShaderModule,					// const VkShaderModule                          vertexShaderModule
 												DE_NULL,								// const VkShaderModule                          tessellationControlShaderModule
 												DE_NULL,								// const VkShaderModule                          tessellationEvalShaderModule
@@ -1542,8 +1552,8 @@ void TextureRenderer::renderQuad (const tcu::PixelBufferAccess&					result,
 	beginRenderPass(vkd, *commandBuffer, *m_renderPass, *m_frameBuffer, makeRect2D(0, 0, m_renderWidth, m_renderHeight));
 
 	vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
-	vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1, &descriptorSet[0].get(), 0u, DE_NULL);
-	vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 1u, 1, &descriptorSet[1].get(), 0u, DE_NULL);
+	vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1, &m_descriptorSet[0].get(), 0u, DE_NULL);
+	vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 1u, 1, &m_descriptorSet[1].get(), 0u, DE_NULL);
 	vkd.cmdBindVertexBuffers(*commandBuffer, 0, 1, &vertexBuffer.get(), &vertexBufferOffset);
 	vkd.cmdBindVertexBuffers(*commandBuffer, 1, 1, &vertexBuffer.get(), &vertexBufferOffset);
 	vkd.cmdBindIndexBuffer(*commandBuffer, *m_vertexIndexBuffer, 0, VK_INDEX_TYPE_UINT16);

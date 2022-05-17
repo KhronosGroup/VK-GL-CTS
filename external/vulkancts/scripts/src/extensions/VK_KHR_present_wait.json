@@ -8,7 +8,7 @@
 	{
 		"VkPhysicalDevicePresentWaitFeaturesKHR":
 		[
-			{ "features": ["presentWait"],	"requirements": ["VK_KHR_present_wait"] }
+			{ "features": ["presentWait"],	"requirements": ["VK_KHR_present_wait"],		"mandatory_variant": ["vulkan"] }
 		]
 	}
 }

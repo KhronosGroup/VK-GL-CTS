@@ -2,7 +2,7 @@
 	"register_extension":
 	{
 		"type": "device",
-		"core": "1.2.0"
+		"core": "0.1.2.0"
 	},
 	"mandatory_features":
 	{
@@ -11,7 +11,7 @@
 			{ "features": ["shaderSampledImageArrayDynamicIndexing"],				"requirements": ["VK_EXT_descriptor_indexing"] },
 			{ "features": ["shaderStorageBufferArrayDynamicIndexing"],				"requirements": ["VK_EXT_descriptor_indexing"] }
 		],
-		"VkPhysicalDeviceDescriptorIndexingFeaturesEXT":
+		"VkPhysicalDeviceDescriptorIndexingFeatures":
 		[
 			{ "features": ["shaderUniformTexelBufferArrayDynamicIndexing"],			"requirements": ["VK_EXT_descriptor_indexing"] },
 			{ "features": ["shaderStorageTexelBufferArrayDynamicIndexing"],			"requirements": ["VK_EXT_descriptor_indexing"] },

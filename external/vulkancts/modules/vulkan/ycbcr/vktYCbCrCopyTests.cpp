@@ -132,6 +132,10 @@ void checkSupport (Context& context, const TestConfig config)
 	if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), string("VK_KHR_sampler_ycbcr_conversion")))
 		TCU_THROW(NotSupportedError, "Extension VK_KHR_sampler_ycbcr_conversion not supported");
 
+	const vk::VkPhysicalDeviceSamplerYcbcrConversionFeatures	features = context.getSamplerYcbcrConversionFeatures();
+	if (features.samplerYcbcrConversion == VK_FALSE)
+		TCU_THROW(NotSupportedError, "samplerYcbcrConversion feature is not supported");
+
 	checkFormatSupport(context, config.src);
 	checkFormatSupport(context, config.dst);
 }

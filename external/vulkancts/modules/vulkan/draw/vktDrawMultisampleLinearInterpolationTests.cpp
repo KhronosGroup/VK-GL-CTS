@@ -302,6 +302,7 @@ tcu::TestStatus MultisampleLinearInterpolationTestInstance::iterate (void)
 			pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
 			pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState(m_sampleCountFlagBits, false, 0.0f, sampleMask));
 
+#ifndef CTS_USES_VULKANSC
 			VkPipelineRenderingCreateInfo							renderingCreateInfo
 			{
 				VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
@@ -315,6 +316,7 @@ tcu::TestStatus MultisampleLinearInterpolationTestInstance::iterate (void)
 
 			if (m_useDynamicRendering)
 				pipelineCreateInfo.pNext = &renderingCreateInfo;
+#endif // CTS_USES_VULKANSC
 
 			pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 		}
@@ -338,6 +340,7 @@ tcu::TestStatus MultisampleLinearInterpolationTestInstance::iterate (void)
 
 			beginCommandBuffer(vk, *cmdBuffer, 0u);
 
+#ifndef CTS_USES_VULKANSC
 			if (m_useDynamicRendering)
 			{
 				const deUint32 imagesCount = static_cast<deUint32>(colorTargetViews.size());
@@ -397,6 +400,7 @@ tcu::TestStatus MultisampleLinearInterpolationTestInstance::iterate (void)
 				vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
 			}
 			else
+#endif // CTS_USES_VULKANSC
 			{
 				const deUint32 imagesCount = static_cast<deUint32>(colorTargetViews.size() + multisampleViews.size());
 				beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea, imagesCount, &clearValues[0]);
@@ -406,9 +410,11 @@ tcu::TestStatus MultisampleLinearInterpolationTestInstance::iterate (void)
 			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 			vk.cmdDraw(*cmdBuffer, 6u, 1u, 0u, 0u);
 
+#ifndef CTS_USES_VULKANSC
 			if (m_useDynamicRendering)
 				endRendering(vk, *cmdBuffer);
 			else
+#endif // CTS_USES_VULKANSC
 				endRenderPass(vk, *cmdBuffer);
 
 			endCommandBuffer(vk, *cmdBuffer);
@@ -548,7 +554,7 @@ void MultisampleLinearInterpolationTestCase::checkSupport (Context& context) con
 {
 	if (!(m_sampleCountFlagBits & context.getDeviceProperties().limits.framebufferColorSampleCounts))
 		TCU_THROW(NotSupportedError, "Multisampling with " + de::toString(m_sampleCountFlagBits) + " samples not supported");
-
+#ifndef CTS_USES_VULKANSC
 	if (m_useDynamicRendering)
 		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
@@ -557,6 +563,7 @@ void MultisampleLinearInterpolationTestCase::checkSupport (Context& context) con
 	{
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Shader sample rate interpolation functions are not supported by this implementation");
 	}
+#endif // CTS_USES_VULKANSC
 }
 
 TestInstance* MultisampleLinearInterpolationTestCase::createInstance (Context& context) const

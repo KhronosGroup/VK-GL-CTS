@@ -562,12 +562,21 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 		m_vk.cmdSetScissor(m_setStateCmdBuffer, 0, 1, &geometry.scissors[0]);
 		break;
 	case kInheritFromSecondaryWithCount:
+#ifndef CTS_USES_VULKANSC
 		m_vk.cmdSetViewportWithCount(m_setStateCmdBuffer,
 									 deUint32(geometry.viewports.size()),
 									 &geometry.viewports[0]);
 		m_vk.cmdSetScissorWithCount(m_setStateCmdBuffer,
 									deUint32(geometry.scissors.size()),
 									&geometry.scissors[0]);
+#else
+		m_vk.cmdSetViewportWithCountEXT(m_setStateCmdBuffer,
+									 deUint32(geometry.viewports.size()),
+									 &geometry.viewports[0]);
+		m_vk.cmdSetScissorWithCountEXT(m_setStateCmdBuffer,
+									deUint32(geometry.scissors.size()),
+									&geometry.scissors[0]);
+#endif // CTS_USES_VULKANSC
 		break;
 	}
 	VK_CHECK(m_vk.endCommandBuffer(m_setStateCmdBuffer));
@@ -578,6 +587,7 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 	// ************************************************************************
 	if (m_inheritanceMode != kInheritanceDisabled)
 	{
+#ifndef CTS_USES_VULKANSC
 		// Enable viewport/scissor inheritance struct.
 		VkCommandBufferInheritanceViewportScissorInfoNV inheritViewportInfo {
 			VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_VIEWPORT_SCISSOR_INFO_NV,
@@ -587,6 +597,7 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 		inheritanceInfo.pNext = &inheritViewportInfo;
 		VK_CHECK(m_vk.beginCommandBuffer(m_subpassCmdBuffer, &cmdBeginInfo));
 		inheritanceInfo.pNext = NULL;
+#endif // CTS_USES_VULKANSC
 	}
 	else
 	{
@@ -644,6 +655,7 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 									  *m_fragModule,
 									  &pipelinestate::depthStencil)
 			.setupFragmentOutputState(*m_renderPass, 0u, &pipelinestate::blend)
+			.setMonolithicPipelineLayout(*m_rectanglePipelineLayout)
 			.buildPipeline();
 	}
 	const VkPipeline graphicsPipeline = m_rectanglePipelines[staticViewportCount].getPipeline();
@@ -692,12 +704,21 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 		break;
 	case kInheritFromPrimaryWithCount:
 		// Same but with count inherited.
+#ifndef CTS_USES_VULKANSC
 		m_vk.cmdSetViewportWithCount(m_primaryCmdBuffer,
 									 deUint32(geometry.viewports.size()),
 									 &geometry.viewports[0]);
 		m_vk.cmdSetScissorWithCount(m_primaryCmdBuffer,
 									deUint32(geometry.scissors.size()),
 									&geometry.scissors[0]);
+#else
+		m_vk.cmdSetViewportWithCountEXT(m_primaryCmdBuffer,
+									 deUint32(geometry.viewports.size()),
+									 &geometry.viewports[0]);
+		m_vk.cmdSetScissorWithCountEXT(m_primaryCmdBuffer,
+									deUint32(geometry.scissors.size()),
+									&geometry.scissors[0]);
+#endif // CTS_USES_VULKANSC
 		break;
 	case kSplitInheritance:
 		// Specify the remaining viewport, scissors not set by the
@@ -1043,7 +1064,6 @@ public:
 		{
 			context.requireDeviceFunctionality("VK_EXT_extended_dynamic_state");
 		}
-
 		checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 	}
 
@@ -1072,6 +1092,7 @@ void DynamicStateInheritanceTests::init (void)
 {
 	addChild(new InheritanceTestCase(m_testCtx, m_pipelineConstructionType, kInheritanceDisabled,
 			 "baseline", "Baseline, no viewport/scissor inheritance"));
+#ifndef CTS_USES_VULKANSC
 	addChild(new InheritanceTestCase(m_testCtx, m_pipelineConstructionType, kInheritFromPrimary,
 			 "primary", "Inherit viewport/scissor from calling primary command buffer"));
 	addChild(new InheritanceTestCase(m_testCtx, m_pipelineConstructionType, kInheritFromSecondary,
@@ -1082,6 +1103,7 @@ void DynamicStateInheritanceTests::init (void)
 			 "primary_with_count", "Inherit viewport/scissor with count from calling primary command buffer"));
 	addChild(new InheritanceTestCase(m_testCtx, m_pipelineConstructionType, kInheritFromSecondaryWithCount,
 			 "secondary_with_count", "Inherit viewport/scissor with count from another secondary command buffer"));
+#endif // CTS_USES_VULKANSC
 }
 
 } // DynamicState

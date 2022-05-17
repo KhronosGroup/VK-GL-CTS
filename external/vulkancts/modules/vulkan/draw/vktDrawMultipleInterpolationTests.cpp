@@ -536,6 +536,7 @@ void DrawTestInstance::render (de::SharedPtr<Image>& colorTargetImage,
 		pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
 		pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState(m_params.samples, sampleShadingEnable, 1.0f));
 
+#ifndef CTS_USES_VULKANSC
 		std::vector<vk::VkFormat> colorAttachmentFormats(colorTargetViews.size(), m_params.format);
 		vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 		{
@@ -550,6 +551,7 @@ void DrawTestInstance::render (de::SharedPtr<Image>& colorTargetImage,
 
 		if (m_params.useDynamicRendering)
 			pipelineCreateInfo.pNext = &renderingCreateInfo;
+#endif // CTS_USES_VULKANSC
 
 		pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 	}
@@ -566,6 +568,7 @@ void DrawTestInstance::render (de::SharedPtr<Image>& colorTargetImage,
 
 		beginCommandBuffer(vk, *cmdBuffer, 0u);
 
+#ifndef CTS_USES_VULKANSC
 		if (m_params.useDynamicRendering)
 		{
 			const deUint32 imagesCount = static_cast<deUint32>(colorTargetViews.size());
@@ -622,6 +625,7 @@ void DrawTestInstance::render (de::SharedPtr<Image>& colorTargetImage,
 			vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
 		}
 		else
+#endif // CTS_USES_VULKANSC
 		{
 			const deUint32 imagesCount = static_cast<deUint32>(colorTargetViews.size() + multisampleViews.size());
 			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea, imagesCount, &clearValues[0]);
@@ -632,9 +636,11 @@ void DrawTestInstance::render (de::SharedPtr<Image>& colorTargetImage,
 		vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, vk::VK_SHADER_STAGE_FRAGMENT_BIT, 0u, pcDataSize, &pcData);
 		vk.cmdDraw(*cmdBuffer, 3u, 1u, 0u, 0u);
 
+#ifndef CTS_USES_VULKANSC
 		if (m_params.useDynamicRendering)
 			endRendering(vk, *cmdBuffer);
 		else
+#endif // CTS_USES_VULKANSC
 			endRenderPass(vk, *cmdBuffer);
 
 		endCommandBuffer(vk, *cmdBuffer);

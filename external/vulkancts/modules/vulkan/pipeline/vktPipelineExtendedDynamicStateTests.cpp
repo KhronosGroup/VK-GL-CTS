@@ -710,19 +710,19 @@ private:
 
 const VertexGenerator* getVertexWithPaddingGenerator ()
 {
-	static const VertexWithPadding vertexWithPadding;
+	static VertexWithPadding vertexWithPadding;
 	return &vertexWithPadding;
 }
 
 const VertexGenerator* getVertexWithExtraAttributesGenerator ()
 {
-	static const VertexWithExtraAttributes vertexWithExtraAttributes;
+	static VertexWithExtraAttributes vertexWithExtraAttributes;
 	return &vertexWithExtraAttributes;
 }
 
 const VertexGenerator* getVertexWithMultipleBindingsGenerator ()
 {
-	static const MultipleBindingsVertex multipleBindingsVertex;
+	static MultipleBindingsVertex multipleBindingsVertex;
 	return &multipleBindingsVertex;
 }
 
@@ -1504,43 +1504,87 @@ void copyAndFlush(const vk::DeviceInterface& vkd, vk::VkDevice device, vk::Buffe
 void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& vkd, vk::VkCommandBuffer cmdBuffer)
 {
 	if (testConfig.cullModeConfig.dynamicValue)
+#ifndef CTS_USES_VULKANSC
 		vkd.cmdSetCullMode(cmdBuffer, testConfig.cullModeConfig.dynamicValue.get());
+#else
+		vkd.cmdSetCullModeEXT(cmdBuffer, testConfig.cullModeConfig.dynamicValue.get());
+#endif // CTS_USES_VULKANSC
 
 	if (testConfig.frontFaceConfig.dynamicValue)
+#ifndef CTS_USES_VULKANSC
 		vkd.cmdSetFrontFace(cmdBuffer, testConfig.frontFaceConfig.dynamicValue.get());
+#else
+		vkd.cmdSetFrontFaceEXT(cmdBuffer, testConfig.frontFaceConfig.dynamicValue.get());
+#endif // CTS_USES_VULKANSC
 
 	if (testConfig.topologyConfig.dynamicValue)
+#ifndef CTS_USES_VULKANSC
 		vkd.cmdSetPrimitiveTopology(cmdBuffer, testConfig.topologyConfig.dynamicValue.get());
+#else
+		vkd.cmdSetPrimitiveTopologyEXT(cmdBuffer, testConfig.topologyConfig.dynamicValue.get());
+#endif // CTS_USES_VULKANSC
 
 	if (testConfig.viewportConfig.dynamicValue)
 	{
 		const auto& viewports = testConfig.viewportConfig.dynamicValue.get();
+#ifndef CTS_USES_VULKANSC
 		vkd.cmdSetViewportWithCount(cmdBuffer, static_cast<deUint32>(viewports.size()), viewports.data());
+#else
+		vkd.cmdSetViewportWithCountEXT(cmdBuffer, static_cast<deUint32>(viewports.size()), viewports.data());
+#endif // CTS_USES_VULKANSC
 	}
 
 	if (testConfig.scissorConfig.dynamicValue)
 	{
 		const auto& scissors = testConfig.scissorConfig.dynamicValue.get();
+#ifndef CTS_USES_VULKANSC
 		vkd.cmdSetScissorWithCount(cmdBuffer, static_cast<deUint32>(scissors.size()), scissors.data());
+#else
+		vkd.cmdSetScissorWithCountEXT(cmdBuffer, static_cast<deUint32>(scissors.size()), scissors.data());
+#endif // CTS_USES_VULKANSC
 	}
 
 	if (testConfig.depthTestEnableConfig.dynamicValue)
+#ifndef CTS_USES_VULKANSC
 		vkd.cmdSetDepthTestEnable(cmdBuffer, makeVkBool32(testConfig.depthTestEnableConfig.dynamicValue.get()));
+#else
+		vkd.cmdSetDepthTestEnableEXT(cmdBuffer, makeVkBool32(testConfig.depthTestEnableConfig.dynamicValue.get()));
+#endif // CTS_USES_VULKANSC
 
 	if (testConfig.depthWriteEnableConfig.dynamicValue)
+#ifndef CTS_USES_VULKANSC
 		vkd.cmdSetDepthWriteEnable(cmdBuffer, makeVkBool32(testConfig.depthWriteEnableConfig.dynamicValue.get()));
+#else
+		vkd.cmdSetDepthWriteEnableEXT(cmdBuffer, makeVkBool32(testConfig.depthWriteEnableConfig.dynamicValue.get()));
+#endif // CTS_USES_VULKANSC
 
 	if (testConfig.depthCompareOpConfig.dynamicValue)
+#ifndef CTS_USES_VULKANSC
 		vkd.cmdSetDepthCompareOp(cmdBuffer, testConfig.depthCompareOpConfig.dynamicValue.get());
+#else
+		vkd.cmdSetDepthCompareOpEXT(cmdBuffer, testConfig.depthCompareOpConfig.dynamicValue.get());
+#endif // CTS_USES_VULKANSC
 
 	if (testConfig.depthBoundsTestEnableConfig.dynamicValue)
+#ifndef CTS_USES_VULKANSC
 		vkd.cmdSetDepthBoundsTestEnable(cmdBuffer, makeVkBool32(testConfig.depthBoundsTestEnableConfig.dynamicValue.get()));
+#else
+		vkd.cmdSetDepthBoundsTestEnableEXT(cmdBuffer, makeVkBool32(testConfig.depthBoundsTestEnableConfig.dynamicValue.get()));
+#endif // CTS_USES_VULKANSC
 
 	if (testConfig.stencilTestEnableConfig.dynamicValue)
+#ifndef CTS_USES_VULKANSC
 		vkd.cmdSetStencilTestEnable(cmdBuffer, makeVkBool32(testConfig.stencilTestEnableConfig.dynamicValue.get()));
+#else
+		vkd.cmdSetStencilTestEnableEXT(cmdBuffer, makeVkBool32(testConfig.stencilTestEnableConfig.dynamicValue.get()));
+#endif // CTS_USES_VULKANSC
 
 	if (testConfig.depthBiasEnableConfig.dynamicValue)
+#ifndef CTS_USES_VULKANSC
 		vkd.cmdSetDepthBiasEnable(cmdBuffer, makeVkBool32(testConfig.depthBiasEnableConfig.dynamicValue.get()));
+#else
+		vkd.cmdSetDepthBiasEnableEXT(cmdBuffer, makeVkBool32(testConfig.depthBiasEnableConfig.dynamicValue.get()));
+#endif // CTS_USES_VULKANSC
 
 	if (testConfig.depthBiasConfig.dynamicValue)
 	{
@@ -1549,10 +1593,18 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 	}
 
 	if (testConfig.rastDiscardEnableConfig.dynamicValue)
+#ifndef CTS_USES_VULKANSC
 		vkd.cmdSetRasterizerDiscardEnable(cmdBuffer, makeVkBool32(testConfig.rastDiscardEnableConfig.dynamicValue.get()));
+#else
+		vkd.cmdSetRasterizerDiscardEnableEXT(cmdBuffer, makeVkBool32(testConfig.rastDiscardEnableConfig.dynamicValue.get()));
+#endif // CTS_USES_VULKANSC
 
 	if (testConfig.primRestartEnableConfig.dynamicValue)
+#ifndef CTS_USES_VULKANSC
 		vkd.cmdSetPrimitiveRestartEnable(cmdBuffer, makeVkBool32(testConfig.primRestartEnableConfig.dynamicValue.get()));
+#else
+		vkd.cmdSetPrimitiveRestartEnableEXT(cmdBuffer, makeVkBool32(testConfig.primRestartEnableConfig.dynamicValue.get()));
+#endif // CTS_USES_VULKANSC
 
 	if (testConfig.logicOpConfig.dynamicValue)
 		vkd.cmdSetLogicOpEXT(cmdBuffer, testConfig.logicOpConfig.dynamicValue.get());
@@ -1563,7 +1615,11 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 	if (testConfig.stencilOpConfig.dynamicValue)
 	{
 		for (const auto& params : testConfig.stencilOpConfig.dynamicValue.get())
+#ifndef CTS_USES_VULKANSC
 			vkd.cmdSetStencilOp(cmdBuffer, params.faceMask, params.failOp, params.passOp, params.depthFailOp, params.compareOp);
+#else
+			vkd.cmdSetStencilOpEXT(cmdBuffer, params.faceMask, params.failOp, params.passOp, params.depthFailOp, params.compareOp);
+#endif // CTS_USES_VULKANSC
 	}
 
 	if (testConfig.vertexGenerator.dynamicValue)
@@ -1614,7 +1670,11 @@ bool maybeBindVertexBufferDynStride(const TestConfig& testConfig, const vk::Devi
 		sizes.push_back		(vertBuffer.dataSize);
 	}
 
+#ifndef CTS_USES_VULKANSC
 	vkd.cmdBindVertexBuffers2(cmdBuffer, 0u, static_cast<deUint32>(chosenBuffers.size()), buffers.data(), offsets.data(), sizes.data(), strides.data());
+#else
+	vkd.cmdBindVertexBuffers2EXT(cmdBuffer, 0u, static_cast<deUint32>(chosenBuffers.size()), buffers.data(), offsets.data(), sizes.data(), strides.data());
+#endif // CTS_USES_VULKANSC
 
 	return true;
 }
@@ -2211,6 +2271,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 											*geomModule)
 					  .setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragModule, &depthStencilStateCreateInfo, &multisampleStateCreateInfo)
 					  .setupFragmentOutputState(*renderPass, 0u, &colorBlendStateCreateInfo, &multisampleStateCreateInfo)
+					  .setMonolithicPipelineLayout(*pipelineLayout)
 					  .buildPipeline();
 	}
 
@@ -2263,6 +2324,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 											*geomModule)
 						.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragModule, &depthStencilStateCreateInfo, &multisampleStateCreateInfo)
 						.setupFragmentOutputState(*renderPass, 0u, &colorBlendStateCreateInfo, &multisampleStateCreateInfo)
+						.setMonolithicPipelineLayout(*pipelineLayout)
 						.buildPipeline();
 	}
 
@@ -3191,7 +3253,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			{
 				{ vk::VK_STENCIL_FACE_FRONT_BIT,			"face_front"		},
 				{ vk::VK_STENCIL_FACE_BACK_BIT,				"face_back"			},
-				{ vk::VK_STENCIL_FRONT_AND_BACK,			"face_both_single"	},
+				{ vk::VK_STENCIL_FACE_FRONT_AND_BACK,		"face_both_single"	},
 				{ vk::VK_STENCIL_FACE_FLAG_BITS_MAX_ENUM,	"face_both_dual"	},	// MAX_ENUM is a placeholder.
 			};
 

@@ -528,6 +528,7 @@ tcu::TestStatus BindPointInstance::iterate (void)
 							*vertShader)
 						.setupFragmentShaderState(*graphicsPipelineLayout, *renderPass, 0u, *fragShader)
 						.setupFragmentOutputState(*renderPass, 0u)
+						.setMonolithicPipelineLayout(*graphicsPipelineLayout)
 						.buildPipeline();
 	}
 

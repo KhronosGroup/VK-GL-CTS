@@ -741,7 +741,7 @@ void LayerCase::checkSupport (Context& context) const
 {
 	MeshShaderBuiltinCase::checkSupport(context);
 
-	if (!context.contextSupports(vk::ApiVersion(1u, 2u, 0u)))
+	if (!context.contextSupports(vk::ApiVersion(0u, 1u, 2u, 0u)))
 		context.requireDeviceFunctionality("VK_EXT_shader_viewport_index_layer");
 	else
 	{
@@ -866,7 +866,7 @@ void ViewportIndexCase::checkSupport (Context& context) const
 	MeshShaderBuiltinCase::checkSupport(context);
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_MULTI_VIEWPORT);
 
-	if (!context.contextSupports(vk::ApiVersion(1u, 2u, 0u)))
+	if (!context.contextSupports(vk::ApiVersion(0u, 1u, 2u, 0u)))
 		context.requireDeviceFunctionality("VK_EXT_shader_viewport_index_layer");
 	else
 	{

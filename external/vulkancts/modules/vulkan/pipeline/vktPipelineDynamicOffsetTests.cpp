@@ -84,7 +84,7 @@ struct TestParams
 	deUint32					numNonDynamicBindings;
 	GroupingStrategy			groupingStrategy;
 };
-
+#ifndef CTS_USES_VULKANSC
 vector<Vertex4RGBA> createQuads (deUint32 numQuads, float size)
 {
 	vector<Vertex4RGBA>	vertices;
@@ -108,6 +108,7 @@ vector<Vertex4RGBA> createQuads (deUint32 numQuads, float size)
 
 	return vertices;
 }
+#endif // CTS_USES_VULKANSC
 
 static const tcu::Vec4			testColors[]	=
 {
@@ -203,7 +204,7 @@ private:
 	vector<VkCommandBufferSp>			m_cmdBuffers;
 	vector<Vertex4RGBA>					m_vertices;
 };
-
+#ifndef CTS_USES_VULKANSC
 DynamicOffsetGraphicsTestInstance::DynamicOffsetGraphicsTestInstance (Context& context, const TestParams& params)
 	: DynamicOffsetTestInstance	(context, params)
 	, m_renderSize				(32, 32)
@@ -211,6 +212,7 @@ DynamicOffsetGraphicsTestInstance::DynamicOffsetGraphicsTestInstance (Context& c
 	, m_vertices				(createQuads(m_params.numDescriptorSetBindings * m_params.numCmdBuffers, 0.25f))
 {
 }
+#endif // CTS_USES_VULKANSC
 
 void DynamicOffsetGraphicsTestInstance::init (void)
 {
@@ -602,7 +604,8 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 		const vector<VkRect2D>		scissors	{ makeRect2D(m_renderSize) };
 
 		m_graphicsPipelines.emplace_back(vk, vkDevice, m_params.pipelineConstructionType);
-		m_graphicsPipelines.back().setDefaultRasterizationState()
+		m_graphicsPipelines.back().setMonolithicPipelineLayout(*m_pipelineLayout)
+								  .setDefaultRasterizationState()
 								  .setDefaultDepthStencilState()
 								  .setDefaultColorBlendState()
 								  .setDefaultMultisampleState()
@@ -748,7 +751,7 @@ tcu::TestStatus DynamicOffsetGraphicsTestInstance::verifyImage (void)
 	else
 		return tcu::TestStatus::fail("Image mismatch");
 }
-
+#ifndef CTS_USES_VULKANSC
 class DynamicOffsetGraphicsTest : public vkt::TestCase
 {
 public:
@@ -872,7 +875,7 @@ void DynamicOffsetGraphicsTest::initPrograms (SourceCollections& sourceCollectio
 	sourceCollections.glslSources.add("vert") << glu::VertexSource(vertexSrc);
 	sourceCollections.glslSources.add("frag") << glu::FragmentSource(fragmentSrc);
 }
-
+#endif // CTS_USES_VULKANSC
 class DynamicOffsetComputeTestInstance : public DynamicOffsetTestInstance
 {
 public:
@@ -1530,7 +1533,7 @@ tcu::TestStatus DynamicOffsetMixedTestInstance::iterate (void)
 	};
 
 	const std::array<VkVertexInputAttributeDescription, 2>	vertexAttributeDescs
-	{
+	{ {
 		VkVertexInputAttributeDescription
 		{
 			0u,								// uint32_t	location;
@@ -1546,7 +1549,7 @@ tcu::TestStatus DynamicOffsetMixedTestInstance::iterate (void)
 			VK_FORMAT_R32G32B32A32_SFLOAT,	// VkFormat	format;
 			deUint32(sizeof(float)) * 4u	// uint32_t	offset;
 		}
-	};
+	} };
 
 	const VkPipelineVertexInputStateCreateInfo				vertexInputStateCreateInfo
 	{
@@ -2379,10 +2382,11 @@ tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx, Pipelin
 										numNonDynamicBindings[numNonDynamicBindingsIdx].num,
 										groupingTypes[groupingTypeIdx].strategy
 									};
-
+#ifndef CTS_USES_VULKANSC
 									if (strcmp(pipelineTypes[pipelineTypeIdx], "graphics") == 0)
 										numDynamicBindingsGroup->addChild(new DynamicOffsetGraphicsTest(testCtx, numNonDynamicBindings[numNonDynamicBindingsIdx].name, "", params));
 									else
+#endif // CTS_USES_VULKANSC
 										numDynamicBindingsGroup->addChild(new DynamicOffsetComputeTest(testCtx, numNonDynamicBindings[numNonDynamicBindingsIdx].name, "", params));
 								}
 

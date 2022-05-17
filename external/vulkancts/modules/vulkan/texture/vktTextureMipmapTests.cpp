@@ -1770,6 +1770,8 @@ protected:
 	}
 };
 
+#ifndef CTS_USES_VULKANSC
+
 class Texture2DImageViewMinLodTestInstance : public Texture2DLodControlTestInstance
 {
 public:
@@ -2309,7 +2311,11 @@ TestInstance* Texture3DImageViewMinLodIntTexCoordTest::createInstance(Context& c
 	   return new Texture3DImageViewMinLodBaseLevelIntTexCoordTestInstance(context, m_params);
 }
 
+#endif // CTS_USES_VULKANSC
+
 } // anonymous
+
+#ifndef CTS_USES_VULKANSC
 
 namespace util {
 
@@ -2380,6 +2386,8 @@ void checkTextureSupport (Context& context, const Texture3DMipmapTestCaseParamet
 }
 
 } // util
+
+#endif // CTS_USES_VULKANSC
 
 void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 {
@@ -2479,9 +2487,11 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 		de::MovePtr<tcu::TestCaseGroup>	baseLevelGroup2D	(new tcu::TestCaseGroup(testCtx, "base_level", "Base level"));
 		de::MovePtr<tcu::TestCaseGroup>	maxLevelGroup2D		(new tcu::TestCaseGroup(testCtx, "max_level", "Max level"));
 
+#ifndef CTS_USES_VULKANSC
 		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodExtGroup2D	(new tcu::TestCaseGroup(testCtx, "image_view_min_lod", "VK_EXT_image_view_min_lod tests"));
 		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodGroup2D	(new tcu::TestCaseGroup(testCtx, "min_lod", "ImageView's minLod"));
 		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodBaseLevelGroup2D	(new tcu::TestCaseGroup(testCtx, "base_level", "ImageView's minLod with base level different than one"));
+#endif // CTS_USES_VULKANSC
 
 		for (int coordType = 0; coordType < DE_LENGTH_OF_ARRAY(coordTypes); coordType++)
 		{
@@ -2599,6 +2609,7 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 		}
 
 		// 2D VK_EXT_image_view_min_lod.
+#ifndef CTS_USES_VULKANSC
 		{
 			// MIN_LOD
 			for (int minFilter = 0; minFilter < DE_LENGTH_OF_ARRAY(minFilterModes); minFilter++)
@@ -2638,13 +2649,16 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 			imageViewMinLodExtGroup2D->addChild(imageViewMinLodGroup2D.release());
 			imageViewMinLodExtGroup2D->addChild(imageViewMinLodBaseLevelGroup2D.release());
 		}
+#endif // CTS_USES_VULKANSC
 
 		group2D->addChild(biasGroup2D.release());
 		group2D->addChild(minLodGroup2D.release());
 		group2D->addChild(maxLodGroup2D.release());
 		group2D->addChild(baseLevelGroup2D.release());
 		group2D->addChild(maxLevelGroup2D.release());
+#ifndef CTS_USES_VULKANSC
 		group2D->addChild(imageViewMinLodExtGroup2D.release());
+#endif // CTS_USES_VULKANSC
 
 		textureMipmappingTests->addChild(group2D.release());
 	}
@@ -2658,9 +2672,11 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 		de::MovePtr<tcu::TestCaseGroup>	baseLevelGroupCube	(new tcu::TestCaseGroup(testCtx, "base_level", "Base level"));
 		de::MovePtr<tcu::TestCaseGroup>	maxLevelGroupCube	(new tcu::TestCaseGroup(testCtx, "max_level", "Max level"));
 
+#ifndef CTS_USES_VULKANSC
 		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodExtGroupCube	(new tcu::TestCaseGroup(testCtx, "image_view_min_lod", "VK_EXT_image_view_min_lod tests"));
 		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodGroupCube	(new tcu::TestCaseGroup(testCtx, "min_lod", "ImageView's minLod"));
 		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodBaseLevelGroupCube	(new tcu::TestCaseGroup(testCtx, "base_level", "ImageView's minLod with base level different than one"));
+#endif // CTS_USES_VULKANSC
 
 		for (int coordType = 0; coordType < DE_LENGTH_OF_ARRAY(cubeCoordTypes); coordType++)
 		{
@@ -2754,6 +2770,7 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 		}
 
 		// Cube VK_EXT_image_view_min_lod.
+#ifndef CTS_USES_VULKANSC
 		{
 			// MIN_LOD
 			for (int minFilter = 0; minFilter < DE_LENGTH_OF_ARRAY(minFilterModes); minFilter++)
@@ -2783,12 +2800,15 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 			imageViewMinLodExtGroupCube->addChild(imageViewMinLodGroupCube.release());
 			imageViewMinLodExtGroupCube->addChild(imageViewMinLodBaseLevelGroupCube.release());
 		}
+#endif // CTS_USES_VULKANSC
 
 		groupCube->addChild(minLodGroupCube.release());
 		groupCube->addChild(maxLodGroupCube.release());
 		groupCube->addChild(baseLevelGroupCube.release());
 		groupCube->addChild(maxLevelGroupCube.release());
+#ifndef CTS_USES_VULKANSC
 		groupCube->addChild(imageViewMinLodExtGroupCube.release());
+#endif // CTS_USES_VULKANSC
 
 		textureMipmappingTests->addChild(groupCube.release());
 	}
@@ -2803,9 +2823,11 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 		de::MovePtr<tcu::TestCaseGroup>	baseLevelGroup3D	(new tcu::TestCaseGroup(testCtx, "base_level", "Base level"));
 		de::MovePtr<tcu::TestCaseGroup>	maxLevelGroup3D		(new tcu::TestCaseGroup(testCtx, "max_level", "Max level"));
 
+#ifndef CTS_USES_VULKANSC
 		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodExtGroup3D	(new tcu::TestCaseGroup(testCtx, "image_view_min_lod", "VK_EXT_image_view_min_lod tests"));
 		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodGroup3D	(new tcu::TestCaseGroup(testCtx, "min_lod", "ImageView's minLod"));
 		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodBaseLevelGroup3D	(new tcu::TestCaseGroup(testCtx, "base_level", "ImageView's minLod with base level different than one"));
+#endif // CTS_USES_VULKANSC
 
 		for (int coordType = 0; coordType < DE_LENGTH_OF_ARRAY(coordTypes); coordType++)
 		{
@@ -2924,6 +2946,7 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 		}
 
 		// 3D VK_EXT_image_view_min_lod.
+#ifndef CTS_USES_VULKANSC
 		{
 			// MIN_LOD
 			for (int minFilter = 0; minFilter < DE_LENGTH_OF_ARRAY(minFilterModes); minFilter++)
@@ -2964,13 +2987,16 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 			imageViewMinLodExtGroup3D->addChild(imageViewMinLodGroup3D.release());
 			imageViewMinLodExtGroup3D->addChild(imageViewMinLodBaseLevelGroup3D.release());
 		}
+#endif // CTS_USES_VULKANSC
 
 		group3D->addChild(biasGroup3D.release());
 		group3D->addChild(minLodGroup3D.release());
 		group3D->addChild(maxLodGroup3D.release());
 		group3D->addChild(baseLevelGroup3D.release());
 		group3D->addChild(maxLevelGroup3D.release());
+#ifndef CTS_USES_VULKANSC
 		group3D->addChild(imageViewMinLodExtGroup3D.release());
+#endif // CTS_USES_VULKANSC
 
 		textureMipmappingTests->addChild(group3D.release());
 	}

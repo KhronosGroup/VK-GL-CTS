@@ -114,6 +114,7 @@ protected:
 	vk::Move<vk::VkImage>			m_image;
 };
 
+#ifndef CTS_USES_VULKANSC
 class SparseImage : public Image
 {
 public:
@@ -134,6 +135,7 @@ public:
 protected:
 	vk::Move<vk::VkSemaphore>		m_semaphore;
 };
+#endif // CTS_USES_VULKANSC
 
 tcu::UVec3				getShaderGridSize	(const ImageType imageType, const tcu::UVec3& imageSize);	//!< Size used for addresing image in a shader
 tcu::UVec3				getLayerSize		(const ImageType imageType, const tcu::UVec3& imageSize);	//!< Size of a single layer

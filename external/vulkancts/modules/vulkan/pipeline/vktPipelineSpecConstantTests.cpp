@@ -725,6 +725,7 @@ tcu::TestStatus GraphicsTestInstance::iterate (void)
 													  pSpecInfo)
 					.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragShaderModule, DE_NULL, DE_NULL, DE_NULL, pSpecInfo)
 					.setupFragmentOutputState(*renderPass)
+					.setMonolithicPipelineLayout(*pipelineLayout)
 					.buildPipeline();
 
 	// Draw commands
@@ -802,7 +803,6 @@ FeatureFlags getShaderStageRequirements (const VkShaderStageFlags stageFlags)
 void SpecConstantTest::checkSupport (Context& context) const
 {
 	requireFeatures(context, m_caseDef.requirements | getShaderStageRequirements(m_stage));
-
 	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 }
 

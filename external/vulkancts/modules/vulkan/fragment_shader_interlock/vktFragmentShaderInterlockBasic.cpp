@@ -41,6 +41,7 @@
 #include "vkBufferWithMemory.hpp"
 #include "vkImageWithMemory.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkDeviceUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkTypeUtil.hpp"
@@ -87,7 +88,6 @@ typedef enum
 	INT_SHADING_RATE_ORDERED,
 	INT_SHADING_RATE_UNORDERED,
 } Interlock;
-
 
 struct CaseDef
 {
@@ -168,6 +168,7 @@ void FSITestCase::checkSupport(Context& context) const
 		TCU_THROW(NotSupportedError, "Fragment shader pixel interlock not supported");
 	}
 
+#ifndef CTS_USES_VULKANSC
 	if ((m_data.interlock == INT_SHADING_RATE_ORDERED || m_data.interlock == INT_SHADING_RATE_UNORDERED) &&
 		!context.getFragmentShaderInterlockFeaturesEXT().fragmentShaderShadingRateInterlock)
 	{
@@ -179,6 +180,7 @@ void FSITestCase::checkSupport(Context& context) const
 	{
 		TCU_THROW(NotSupportedError, "fragment shading rate not supported");
 	}
+#endif // CTS_USES_VULKANSC
 }
 
 static int bitsPerQuad(const CaseDef &c)
@@ -328,12 +330,6 @@ tcu::TestStatus FSITestInstance::iterate (void)
 	Allocator&				allocator				= m_context.getDefaultAllocator();
 	VkFlags					allShaderStages			= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 	VkFlags					allPipelineStages		= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-
-	VkPhysicalDeviceProperties2 properties;
-	deMemset(&properties, 0, sizeof(properties));
-	properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-
-	m_context.getInstanceInterface().getPhysicalDeviceProperties2(m_context.getPhysicalDevice(), &properties);
 
 	VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
@@ -839,8 +835,10 @@ tcu::TestCaseGroup*	createBasicTests (tcu::TestContext& testCtx)
 		{ INT_PIXEL_UNORDERED,	"pixel_unordered",	"pixel_unordered"		},
 		{ INT_SAMPLE_ORDERED,	"sample_ordered",	"sample_ordered"		},
 		{ INT_SAMPLE_UNORDERED,	"sample_unordered",	"sample_unordered"		},
+#ifndef CTS_USES_VULKANSC
 		{ INT_SHADING_RATE_ORDERED,		"shading_rate_ordered",	"shading_rate_ordered"		},
 		{ INT_SHADING_RATE_UNORDERED,	"shading_rate_unordered",	"shading_rate_unordered"		},
+#endif // CTS_USES_VULKANSC
 	};
 
 	for (int killNdx = 0; killNdx < DE_LENGTH_OF_ARRAY(killCases); killNdx++)

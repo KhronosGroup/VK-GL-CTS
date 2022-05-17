@@ -436,6 +436,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 						  .setupPreRasterizationShaderState(viewports, scissors, *pipelineLayoutMSPass, *renderPass, 0u, *vsMSPassModule)
 						  .setupFragmentShaderState(*pipelineLayoutMSPass, *renderPass, 0u, *fsMSPassModule, DE_NULL, &multisampleStateInfo)
 						  .setupFragmentOutputState(*renderPass, 0u, DE_NULL, &multisampleStateInfo)
+						  .setMonolithicPipelineLayout(*pipelineLayoutMSPass)
 						  .buildPipeline();
 
 	std::vector<GraphicsPipelineWrapper> graphicsPipelinesPerSampleFetch;
@@ -486,6 +487,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 				.setupPreRasterizationShaderState(viewports, scissors, *pipelineLayoutPerSampleFetchPass, *renderPass, subpass, *vsPerSampleFetchPassModule)
 				.setupFragmentShaderState(*pipelineLayoutPerSampleFetchPass, *renderPass, subpass, *fsPerSampleFetchPassModule)
 				.setupFragmentOutputState(*renderPass, subpass)
+				.setMonolithicPipelineLayout(*pipelineLayoutPerSampleFetchPass)
 				.buildPipeline();
 		}
 	}

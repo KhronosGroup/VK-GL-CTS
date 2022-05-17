@@ -446,7 +446,7 @@ void BlendTest::checkSupport (Context& context) const
 		throw tcu::NotSupportedError(std::string("Unsupported color blending format: ") + getFormatName(m_colorFormat));
 
 	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
-
+#ifndef CTS_USES_VULKANSC
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		!context.getPortabilitySubsetFeatures().constantAlphaColorBlendFactors)
 	{
@@ -465,6 +465,7 @@ void BlendTest::checkSupport (Context& context) const
 		if (quadNdx < BlendTest::QUAD_COUNT)
 			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Constant alpha color blend factors are not supported by this implementation");
 	}
+#endif // CTS_USES_VULKANSC
 }
 
 void BlendTest::initPrograms (SourceCollections& sourceCollections) const
@@ -558,7 +559,6 @@ void DualSourceBlendTest::checkSupport (Context& context) const
 
 	if (!isSupportedBlendFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_colorFormat))
 		throw tcu::NotSupportedError(std::string("Unsupported color blending format: ") + getFormatName(m_colorFormat));
-
 	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 }
 
@@ -781,6 +781,7 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 																		  *m_vertexShaderModule)
 										.setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *m_fragmentShaderModule)
 										.setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
+										.setMonolithicPipelineLayout(*m_pipelineLayout)
 										.buildPipeline();
 		}
 	}
@@ -1380,6 +1381,7 @@ DualSourceBlendTestInstance::DualSourceBlendTestInstance (Context&									conte
 																		  *m_vertexShaderModule)
 										.setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *m_fragmentShaderModule)
 										.setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
+										.setMonolithicPipelineLayout(*m_pipelineLayout)
 										.buildPipeline();
 		}
 	}
@@ -1733,7 +1735,6 @@ void ClampTest::checkSupport (Context& context) const
 {
 	if (!isSupportedBlendFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.colorFormat))
 		throw tcu::NotSupportedError(std::string("Unsupported color blending format: ") + getFormatName(m_params.colorFormat));
-
 	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 
@@ -1918,6 +1919,7 @@ tcu::TestStatus ClampTestInstance::iterate (void)
 													  *vertexShaderModule)
 					.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragmentShaderModule)
 					.setupFragmentOutputState(*renderPass, 0u, &colorBlendStateParams)
+					.setMonolithicPipelineLayout(*pipelineLayout)
 					.buildPipeline();
 
 	// Vertex buffer
