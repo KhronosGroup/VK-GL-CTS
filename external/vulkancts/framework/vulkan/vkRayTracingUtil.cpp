@@ -30,6 +30,7 @@
 #include "vkCmdUtil.hpp"
 
 #include "deStringUtil.hpp"
+#include "deSTLUtil.hpp"
 
 #include <vector>
 #include <string>
@@ -830,7 +831,6 @@ void updateVertexBuffer (const DeviceInterface&										vk,
 {
 	const Allocation&				geometryAlloc		= vertexBuffer->getAllocation();
 	deUint8*						bufferStart			= static_cast<deUint8*>(geometryAlloc.getHostPtr());
-	const VkDeviceSize				bufferSize			= getVertexBufferSize(geometriesData);
 	VkDeviceSize					bufferOffset		= geometriesOffset;
 
 	for (size_t geometryNdx = 0; geometryNdx < geometriesData.size(); ++geometryNdx)
@@ -843,7 +843,10 @@ void updateVertexBuffer (const DeviceInterface&										vk,
 		bufferOffset += deAlignSize(geometryPtrSize,8);
 	}
 
-	flushMappedMemoryRange(vk, device, geometryAlloc.getMemory(), geometryAlloc.getOffset()+geometriesOffset, bufferSize);
+	// Flush the whole allocation. We could flush only the interesting range, but we'd need to be sure both the offset and size
+	// align to VkPhysicalDeviceLimits::nonCoherentAtomSize, which we are not considering. Also note most code uses Coherent memory
+	// for the vertex and index buffers, so flushing is actually not needed.
+	flushAlloc(vk, device, geometryAlloc);
 }
 
 VkDeviceSize getIndexBufferSize (const std::vector<de::SharedPtr<RaytracedGeometryBase>>&	geometriesData)
@@ -886,7 +889,6 @@ void updateIndexBuffer (const DeviceInterface&										vk,
 {
 	const Allocation&				indexAlloc			= indexBuffer->getAllocation();
 	deUint8*						bufferStart			= static_cast<deUint8*>(indexAlloc.getHostPtr());
-	const VkDeviceSize				bufferSize			= getIndexBufferSize(geometriesData);
 	VkDeviceSize					bufferOffset		= geometriesOffset;
 
 	for (size_t geometryNdx = 0; geometryNdx < geometriesData.size(); ++geometryNdx)
@@ -902,7 +904,10 @@ void updateIndexBuffer (const DeviceInterface&										vk,
 		}
 	}
 
-	flushMappedMemoryRange(vk, device, indexAlloc.getMemory(), indexAlloc.getOffset()+geometriesOffset, bufferSize);
+	// Flush the whole allocation. We could flush only the interesting range, but we'd need to be sure both the offset and size
+	// align to VkPhysicalDeviceLimits::nonCoherentAtomSize, which we are not considering. Also note most code uses Coherent memory
+	// for the vertex and index buffers, so flushing is actually not needed.
+	flushAlloc(vk, device, indexAlloc);
 }
 
 class BottomLevelAccelerationStructureKHR : public BottomLevelAccelerationStructure
@@ -3060,7 +3065,7 @@ void RayTracingPipeline::addShader (VkShaderStageFlagBits					shaderStage,
 }
 
 void RayTracingPipeline::addShader (VkShaderStageFlagBits					shaderStage,
-									VkShaderModule		                    shaderModule,
+									VkShaderModule							shaderModule,
 									deUint32								group,
 									const VkSpecializationInfo*				specializationInfoPtr,
 									const VkPipelineShaderStageCreateFlags	pipelineShaderStageCreateFlags,
@@ -3148,26 +3153,21 @@ void RayTracingPipeline::addLibrary (de::SharedPtr<de::MovePtr<RayTracingPipelin
 	m_pipelineLibraries.push_back(pipelineLibrary);
 }
 
-Move<VkPipeline> RayTracingPipeline::createPipelineKHR (const DeviceInterface&								vk,
-														const VkDevice										device,
-														const VkPipelineLayout								pipelineLayout,
-														const std::vector<de::SharedPtr<Move<VkPipeline>>>&	pipelineLibraries)
+Move<VkPipeline> RayTracingPipeline::createPipelineKHR (const DeviceInterface&			vk,
+														const VkDevice					device,
+														const VkPipelineLayout			pipelineLayout,
+														const std::vector<VkPipeline>&	pipelineLibraries,
+														const VkPipelineCache			pipelineCache)
 {
 	for (size_t groupNdx = 0; groupNdx < m_shadersGroupCreateInfos.size(); ++groupNdx)
 		DE_ASSERT(m_shadersGroupCreateInfos[groupNdx].sType == VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR);
 
-	DE_ASSERT(m_shaderCreateInfos.size() > 0);
-	DE_ASSERT(m_shadersGroupCreateInfos.size() > 0);
-
-	std::vector<VkPipeline>								vkPipelineLibraries;
-	for (auto it = begin(pipelineLibraries), eit = end(pipelineLibraries); it != eit; ++it)
-		vkPipelineLibraries.push_back( it->get()->get() );
 	VkPipelineLibraryCreateInfoKHR				librariesCreateInfo	=
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR,		//  VkStructureType	sType;
-		DE_NULL,												//  const void*		pNext;
-		deUint32(vkPipelineLibraries.size()),					//  deUint32		libraryCount;
-		dataOrNullPtr(vkPipelineLibraries)						//  VkPipeline*		pLibraries;
+		VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR,	//  VkStructureType	sType;
+		DE_NULL,											//  const void*		pNext;
+		de::sizeU32(pipelineLibraries),						//  deUint32		libraryCount;
+		de::dataOrNull(pipelineLibraries)					//  VkPipeline*		pLibraries;
 	};
 	const VkRayTracingPipelineInterfaceCreateInfoKHR	pipelineInterfaceCreateInfo		=
 	{
@@ -3178,7 +3178,7 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR (const DeviceInterface&		
 	};
 	const bool											addPipelineInterfaceCreateInfo	= m_maxPayloadSize != 0 || m_maxAttributeSize != 0;
 	const VkRayTracingPipelineInterfaceCreateInfoKHR*	pipelineInterfaceCreateInfoPtr	= addPipelineInterfaceCreateInfo ? &pipelineInterfaceCreateInfo : DE_NULL;
-	const VkPipelineLibraryCreateInfoKHR*				librariesCreateInfoPtr			= (vkPipelineLibraries.empty() ? nullptr : &librariesCreateInfo);
+	const VkPipelineLibraryCreateInfoKHR*				librariesCreateInfoPtr			= (pipelineLibraries.empty() ? nullptr : &librariesCreateInfo);
 
 	Move<VkDeferredOperationKHR>						deferredOperation;
 	if (m_deferredOperation)
@@ -3198,10 +3198,10 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR (const DeviceInterface&		
 		VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,	//  VkStructureType								sType;
 		DE_NULL,												//  const void*									pNext;
 		m_pipelineCreateFlags,									//  VkPipelineCreateFlags						flags;
-		(deUint32)m_shaderCreateInfos.size(),					//  deUint32									stageCount;
-		m_shaderCreateInfos.data(),								//  const VkPipelineShaderStageCreateInfo*		pStages;
-		(deUint32)m_shadersGroupCreateInfos.size(),				//  deUint32									groupCount;
-		m_shadersGroupCreateInfos.data(),						//  const VkRayTracingShaderGroupCreateInfoKHR*	pGroups;
+		de::sizeU32(m_shaderCreateInfos),						//  deUint32									stageCount;
+		de::dataOrNull(m_shaderCreateInfos),					//  const VkPipelineShaderStageCreateInfo*		pStages;
+		de::sizeU32(m_shadersGroupCreateInfos),					//  deUint32									groupCount;
+		de::dataOrNull(m_shadersGroupCreateInfos),				//  const VkRayTracingShaderGroupCreateInfoKHR*	pGroups;
 		m_maxRecursionDepth,									//  deUint32									maxRecursionDepth;
 		librariesCreateInfoPtr,									//  VkPipelineLibraryCreateInfoKHR*				pLibraryInfo;
 		pipelineInterfaceCreateInfoPtr,							//  VkRayTracingPipelineInterfaceCreateInfoKHR*	pLibraryInterface;
@@ -3211,14 +3211,17 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR (const DeviceInterface&		
 		0,														//  deInt32										basePipelineIndex;
 	};
 	VkPipeline											object							= DE_NULL;
-	VkResult											result							= vk.createRayTracingPipelinesKHR(device, deferredOperation.get(), DE_NULL, 1u, &pipelineCreateInfo, DE_NULL, &object);
+	VkResult											result							= vk.createRayTracingPipelinesKHR(device, deferredOperation.get(), pipelineCache, 1u, &pipelineCreateInfo, DE_NULL, &object);
+	const bool											allowCompileRequired			= ((m_pipelineCreateFlags & VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT_EXT) != 0);
 
 	if (m_deferredOperation)
 	{
-		DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
-
+		DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS || (allowCompileRequired && result == VK_PIPELINE_COMPILE_REQUIRED));
 		finishDeferredOperation(vk, device, deferredOperation.get(), m_workerThreadCount, result == VK_OPERATION_NOT_DEFERRED_KHR);
 	}
+
+	if (allowCompileRequired && result == VK_PIPELINE_COMPILE_REQUIRED)
+		throw CompileRequiredError("createRayTracingPipelinesKHR returned VK_PIPELINE_COMPILE_REQUIRED");
 
 	Move<VkPipeline> pipeline (check<VkPipeline>(object), Deleter<VkPipeline>(vk, device, DE_NULL));
 	return pipeline;
@@ -3230,7 +3233,21 @@ Move<VkPipeline> RayTracingPipeline::createPipeline (const DeviceInterface&					
 													 const VkPipelineLayout									pipelineLayout,
 													 const std::vector<de::SharedPtr<Move<VkPipeline>>>&	pipelineLibraries)
 {
-	return createPipelineKHR(vk, device, pipelineLayout, pipelineLibraries);
+	std::vector<VkPipeline> rawPipelines;
+	rawPipelines.reserve(pipelineLibraries.size());
+	for (const auto& lib : pipelineLibraries)
+		rawPipelines.push_back(lib.get()->get());
+
+	return createPipelineKHR(vk, device, pipelineLayout, rawPipelines);
+}
+
+Move<VkPipeline> RayTracingPipeline::createPipeline (const DeviceInterface&			vk,
+													 const VkDevice					device,
+													 const VkPipelineLayout			pipelineLayout,
+													 const std::vector<VkPipeline>&	pipelineLibraries,
+													 const VkPipelineCache			pipelineCache)
+{
+	return createPipelineKHR(vk, device, pipelineLayout, pipelineLibraries, pipelineCache);
 }
 
 std::vector<de::SharedPtr<Move<VkPipeline>>> RayTracingPipeline::createPipelineWithLibraries (const DeviceInterface&			vk,

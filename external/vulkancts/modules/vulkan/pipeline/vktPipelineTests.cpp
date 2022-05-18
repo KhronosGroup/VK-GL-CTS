@@ -62,6 +62,7 @@
 #include "vktPipelineBindPointTests.hpp"
 #include "vktPipelineColorWriteEnableTests.hpp"
 #include "vktPipelineLibraryTests.hpp"
+#include "vktPipelineShaderModuleIdentifierTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt
@@ -113,19 +114,20 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 	group->addChild(createNoPositionTests				(testCtx, pipelineConstructionType));
 	group->addChild(createBindPointTests				(testCtx, pipelineConstructionType));
 	group->addChild(createColorWriteEnableTests			(testCtx, pipelineConstructionType));
+	group->addChild(createShaderModuleIdentifierTests	(testCtx, pipelineConstructionType));
 
 	// NOTE: all new pipeline tests should use GraphicsPipelineWrapper for pipeline creation
 
 	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
 		// there is no support for pipelineConstructionType in amber
-		group->addChild(createMiscTests					(testCtx));
+		group->addChild(createMiscTests						(testCtx));
 
 		// compute pipeline tests should not be repeated basing on pipelineConstructionType
-		group->addChild(createDerivativeTests			(testCtx));
+		group->addChild(createDerivativeTests				(testCtx));
 
 		// dont repeat tests requiring timing execution of vkCreate*Pipelines
-		group->addChild(createCacheControlTests			(testCtx));
+		group->addChild(createCacheControlTests				(testCtx));
 	}
 	else if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
 	{

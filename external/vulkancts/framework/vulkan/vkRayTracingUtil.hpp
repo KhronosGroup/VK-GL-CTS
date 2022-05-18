@@ -35,6 +35,7 @@
 
 #include <vector>
 #include <limits>
+#include <stdexcept>
 
 namespace vk
 {
@@ -57,18 +58,6 @@ template<typename T>
 inline de::SharedPtr<de::MovePtr<T> > makeVkSharedPtr(de::MovePtr<T> movePtr)
 {
 	return de::SharedPtr<de::MovePtr<T> >(new de::MovePtr<T>(movePtr));
-}
-
-template<typename T>
-inline const T* dataOrNullPtr(const std::vector<T>& v)
-{
-	return (v.empty() ? DE_NULL : v.data());
-}
-
-template<typename T>
-inline T* dataOrNullPtr(std::vector<T>& v)
-{
-	return (v.empty() ? DE_NULL : v.data());
 }
 
 inline std::string updateRayTracingGLSL (const std::string& str)
@@ -841,6 +830,14 @@ bool queryAccelerationStructureSize (const DeviceInterface&							vk,
 class RayTracingPipeline
 {
 public:
+	class CompileRequiredError : public std::runtime_error
+	{
+	public:
+		CompileRequiredError (const std::string& error)
+			: std::runtime_error(error)
+			{}
+	};
+
 																RayTracingPipeline			();
 																~RayTracingPipeline			();
 
@@ -867,6 +864,11 @@ public:
 																							 const VkDevice											device,
 																							 const VkPipelineLayout									pipelineLayout,
 																							 const std::vector<de::SharedPtr<Move<VkPipeline>>>&	pipelineLibraries			= std::vector<de::SharedPtr<Move<VkPipeline>>>());
+	Move<VkPipeline>											createPipeline				(const DeviceInterface&									vk,
+																							 const VkDevice											device,
+																							 const VkPipelineLayout									pipelineLayout,
+																							 const std::vector<VkPipeline>&							pipelineLibraries,
+																							 const VkPipelineCache									pipelineCache);
 	std::vector<de::SharedPtr<Move<VkPipeline>>>				createPipelineWithLibraries	(const DeviceInterface&									vk,
 																							 const VkDevice											device,
 																							 const VkPipelineLayout									pipelineLayout);
@@ -895,10 +897,11 @@ public:
 
 
 protected:
-	Move<VkPipeline>											createPipelineKHR			(const DeviceInterface&									vk,
-																							 const VkDevice											device,
-																							 const VkPipelineLayout									pipelineLayout,
-																							 const std::vector<de::SharedPtr<Move<VkPipeline>>>&	pipelineLibraries);
+	Move<VkPipeline>											createPipelineKHR			(const DeviceInterface&			vk,
+																							 const VkDevice					device,
+																							 const VkPipelineLayout			pipelineLayout,
+																							 const std::vector<VkPipeline>&	pipelineLibraries,
+																							 const VkPipelineCache			pipelineCache = DE_NULL);
 
 	std::vector<de::SharedPtr<Move<VkShaderModule> > >			m_shadersModules;
 	std::vector<de::SharedPtr<de::MovePtr<RayTracingPipeline>>>	m_pipelineLibraries;

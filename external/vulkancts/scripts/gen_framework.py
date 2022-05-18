@@ -157,7 +157,6 @@ def prefixName (prefix, name):
 	name = name.replace("2_D", "2D_")
 	name = name.replace("3_D", "3D_")
 
-
 	return prefix + name
 
 class Version:

@@ -441,6 +441,26 @@ inline VkPresentRegionKHR makePresentRegionKHR (uint32_t rectangleCount, const V
 	return res;
 }
 
+inline VkTraceRaysIndirectCommand2KHR makeTraceRaysIndirectCommand2KHR (VkDeviceAddress raygenShaderRecordAddress, VkDeviceSize raygenShaderRecordSize, VkDeviceAddress missShaderBindingTableAddress, VkDeviceSize missShaderBindingTableSize, VkDeviceSize missShaderBindingTableStride, VkDeviceAddress hitShaderBindingTableAddress, VkDeviceSize hitShaderBindingTableSize, VkDeviceSize hitShaderBindingTableStride, VkDeviceAddress callableShaderBindingTableAddress, VkDeviceSize callableShaderBindingTableSize, VkDeviceSize callableShaderBindingTableStride, uint32_t width, uint32_t height, uint32_t depth)
+{
+	VkTraceRaysIndirectCommand2KHR res;
+	res.raygenShaderRecordAddress			= raygenShaderRecordAddress;
+	res.raygenShaderRecordSize				= raygenShaderRecordSize;
+	res.missShaderBindingTableAddress		= missShaderBindingTableAddress;
+	res.missShaderBindingTableSize			= missShaderBindingTableSize;
+	res.missShaderBindingTableStride		= missShaderBindingTableStride;
+	res.hitShaderBindingTableAddress		= hitShaderBindingTableAddress;
+	res.hitShaderBindingTableSize			= hitShaderBindingTableSize;
+	res.hitShaderBindingTableStride			= hitShaderBindingTableStride;
+	res.callableShaderBindingTableAddress	= callableShaderBindingTableAddress;
+	res.callableShaderBindingTableSize		= callableShaderBindingTableSize;
+	res.callableShaderBindingTableStride	= callableShaderBindingTableStride;
+	res.width								= width;
+	res.height								= height;
+	res.depth								= depth;
+	return res;
+}
+
 inline VkShaderResourceUsageAMD makeShaderResourceUsageAMD (uint32_t numUsedVgprs, uint32_t numUsedSgprs, uint32_t ldsSizePerLocalWorkGroup, size_t ldsUsageSizeInBytes, size_t scratchMemUsageInBytes)
 {
 	VkShaderResourceUsageAMD res;

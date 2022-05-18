@@ -3596,6 +3596,32 @@ struct VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR
 	VkBool32		workgroupMemoryExplicitLayout16BitAccess;
 };
 
+struct VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		rayTracingMaintenance1;
+	VkBool32		rayTracingPipelineTraceRaysIndirect2;
+};
+
+struct VkTraceRaysIndirectCommand2KHR
+{
+	VkDeviceAddress	raygenShaderRecordAddress;
+	VkDeviceSize	raygenShaderRecordSize;
+	VkDeviceAddress	missShaderBindingTableAddress;
+	VkDeviceSize	missShaderBindingTableSize;
+	VkDeviceSize	missShaderBindingTableStride;
+	VkDeviceAddress	hitShaderBindingTableAddress;
+	VkDeviceSize	hitShaderBindingTableSize;
+	VkDeviceSize	hitShaderBindingTableStride;
+	VkDeviceAddress	callableShaderBindingTableAddress;
+	VkDeviceSize	callableShaderBindingTableSize;
+	VkDeviceSize	callableShaderBindingTableStride;
+	uint32_t		width;
+	uint32_t		height;
+	uint32_t		depth;
+};
+
 struct VkDebugReportCallbackCreateInfoEXT
 {
 	VkStructureType					sType;
@@ -5500,6 +5526,44 @@ struct VkCopyCommandTransformInfoQCOM
 	VkSurfaceTransformFlagBitsKHR	transform;
 };
 
+struct VkPhysicalDeviceImageCompressionControlFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		imageCompressionControl;
+};
+
+struct VkImageCompressionControlEXT
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	VkImageCompressionFlagsEXT				flags;
+	uint32_t								compressionControlPlaneCount;
+	VkImageCompressionFixedRateFlagsEXT*	pFixedRateFlags;
+};
+
+struct VkSubresourceLayout2EXT
+{
+	VkStructureType		sType;
+	void*				pNext;
+	VkSubresourceLayout	subresourceLayout;
+};
+
+struct VkImageSubresource2EXT
+{
+	VkStructureType		sType;
+	void*				pNext;
+	VkImageSubresource	imageSubresource;
+};
+
+struct VkImageCompressionPropertiesEXT
+{
+	VkStructureType						sType;
+	void*								pNext;
+	VkImageCompressionFlagsEXT			imageCompressionFlags;
+	VkImageCompressionFixedRateFlagsEXT	imageCompressionFixedRateFlags;
+};
+
 struct VkPhysicalDevice4444FormatsFeaturesEXT
 {
 	VkStructureType	sType;
@@ -5648,6 +5712,20 @@ struct VkPhysicalDeviceExternalMemoryRDMAFeaturesNV
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		externalMemoryRDMA;
+};
+
+struct VkPipelinePropertiesIdentifierEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint8_t			pipelineIdentifier[VK_UUID_SIZE];
+};
+
+struct VkPhysicalDevicePipelinePropertiesFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		pipelinePropertiesIdentifier;
 };
 
 struct VkPhysicalDeviceExtendedDynamicState2FeaturesEXT
@@ -5805,6 +5883,73 @@ struct VkPhysicalDeviceLinearColorAttachmentFeaturesNV
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		linearColorAttachment;
+};
+
+struct VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		imageCompressionControlSwapchain;
+};
+
+struct VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		subpassMergeFeedback;
+};
+
+struct VkRenderPassCreationControlEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		disallowMerging;
+};
+
+struct VkRenderPassCreationFeedbackInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		postMergeSubpassCount;
+};
+
+struct VkRenderPassSubpassFeedbackInfoEXT
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkSubpassMergeStatusEXT	subpassMergeStatus;
+	char					description[VK_MAX_DESCRIPTION_SIZE];
+	uint32_t				postMergeIndex;
+};
+
+struct VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderModuleIdentifier;
+};
+
+struct VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint8_t			shaderModuleIdentifierAlgorithmUUID[VK_UUID_SIZE];
+};
+
+struct VkPipelineShaderStageModuleIdentifierCreateInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		identifierSize;
+	const uint8_t*	pIdentifier;
+};
+
+struct VkShaderModuleIdentifierEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		identifierSize;
+	uint8_t			identifier[VK_MAX_SHADER_MODULE_IDENTIFIER_SIZE_EXT];
 };
 
 union VkDeviceOrHostAddressKHR
@@ -6931,7 +7076,6 @@ struct StdVideoH265SequenceParameterSet
 	uint8_t										bit_depth_luma_minus8;
 	uint8_t										bit_depth_chroma_minus8;
 	uint8_t										log2_max_pic_order_cnt_lsb_minus4;
-	uint8_t										sps_max_dec_pic_buffering_minus1[STD_VIDEO_H265_SPS_MAX_SUB_LAYERS];
 	uint8_t										log2_min_luma_coding_block_size_minus3;
 	uint8_t										log2_diff_max_min_luma_coding_block_size;
 	uint8_t										log2_min_luma_transform_block_size_minus2;
@@ -8214,6 +8358,8 @@ typedef VkDeviceQueueGlobalPriorityCreateInfoKHR VkDeviceQueueGlobalPriorityCrea
 typedef VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT;
 
 typedef VkQueueFamilyGlobalPriorityPropertiesKHR VkQueueFamilyGlobalPriorityPropertiesEXT;
+
+typedef VkPipelineInfoKHR VkPipelineInfoEXT;
 
 typedef VkTransformMatrixKHR VkTransformMatrixNV;
 

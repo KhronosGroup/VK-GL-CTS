@@ -116,6 +116,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineNoPositionTests.hpp
 	vktPipelineLibraryTests.cpp
 	vktPipelineLibraryTests.hpp
+	vktPipelineShaderModuleIdentifierTests.cpp
+	vktPipelineShaderModuleIdentifierTests.hpp
 	)
 
 set(DEQP_VK_PIPELINE_LIBS

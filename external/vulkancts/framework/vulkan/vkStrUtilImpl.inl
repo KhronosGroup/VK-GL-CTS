@@ -117,6 +117,7 @@ const char* getResultName (VkResult value)
 		case VK_THREAD_DONE_KHR:									return "VK_THREAD_DONE_KHR";
 		case VK_OPERATION_DEFERRED_KHR:								return "VK_OPERATION_DEFERRED_KHR";
 		case VK_OPERATION_NOT_DEFERRED_KHR:							return "VK_OPERATION_NOT_DEFERRED_KHR";
+		case VK_ERROR_COMPRESSION_EXHAUSTED_EXT:					return "VK_ERROR_COMPRESSION_EXHAUSTED_EXT";
 		case VK_RESULT_MAX_ENUM:									return "VK_RESULT_MAX_ENUM";
 		default:													return DE_NULL;
 	}
@@ -707,6 +708,11 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_PROPERTIES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_COPY_COMMAND_TRANSFORM_INFO_QCOM:									return "VK_STRUCTURE_TYPE_COPY_COMMAND_TRANSFORM_INFO_QCOM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_FEATURES_KHR:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_IMAGE_COMPRESSION_CONTROL_EXT:										return "VK_STRUCTURE_TYPE_IMAGE_COMPRESSION_CONTROL_EXT";
+		case VK_STRUCTURE_TYPE_SUBRESOURCE_LAYOUT_2_EXT:											return "VK_STRUCTURE_TYPE_SUBRESOURCE_LAYOUT_2_EXT";
+		case VK_STRUCTURE_TYPE_IMAGE_SUBRESOURCE_2_EXT:												return "VK_STRUCTURE_TYPE_IMAGE_SUBRESOURCE_2_EXT";
+		case VK_STRUCTURE_TYPE_IMAGE_COMPRESSION_PROPERTIES_EXT:									return "VK_STRUCTURE_TYPE_IMAGE_COMPRESSION_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_FEATURES_ARM:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_FEATURES_ARM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RGBA10X6_FORMATS_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RGBA10X6_FORMATS_FEATURES_EXT";
@@ -741,11 +747,14 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INVOCATION_MASK_FEATURES_HUAWEI:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INVOCATION_MASK_FEATURES_HUAWEI";
 		case VK_STRUCTURE_TYPE_MEMORY_GET_REMOTE_ADDRESS_INFO_NV:									return "VK_STRUCTURE_TYPE_MEMORY_GET_REMOTE_ADDRESS_INFO_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_RDMA_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_RDMA_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_PIPELINE_PROPERTIES_IDENTIFIER_EXT:									return "VK_STRUCTURE_TYPE_PIPELINE_PROPERTIES_IDENTIFIER_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROPERTIES_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROPERTIES_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_SCREEN_SURFACE_CREATE_INFO_QNX:										return "VK_STRUCTURE_TYPE_SCREEN_SURFACE_CREATE_INFO_QNX";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COLOR_WRITE_ENABLE_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COLOR_WRITE_ENABLE_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT:								return "VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVES_GENERATED_QUERY_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVES_GENERATED_QUERY_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_IMAGE_VIEW_MIN_LOD_CREATE_INFO_EXT:									return "VK_STRUCTURE_TYPE_IMAGE_VIEW_MIN_LOD_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT";
@@ -761,6 +770,15 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_QCOM:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_QCOM";
 		case VK_STRUCTURE_TYPE_SUBPASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_QCOM:					return "VK_STRUCTURE_TYPE_SUBPASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_QCOM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINEAR_COLOR_ATTACHMENT_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINEAR_COLOR_ATTACHMENT_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN_FEATURES_EXT:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBPASS_MERGE_FEEDBACK_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBPASS_MERGE_FEEDBACK_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_RENDER_PASS_CREATION_CONTROL_EXT:									return "VK_STRUCTURE_TYPE_RENDER_PASS_CREATION_CONTROL_EXT";
+		case VK_STRUCTURE_TYPE_RENDER_PASS_CREATION_FEEDBACK_INFO_EXT:								return "VK_STRUCTURE_TYPE_RENDER_PASS_CREATION_FEEDBACK_INFO_EXT";
+		case VK_STRUCTURE_TYPE_RENDER_PASS_SUBPASS_FEEDBACK_INFO_EXT:								return "VK_STRUCTURE_TYPE_RENDER_PASS_SUBPASS_FEEDBACK_INFO_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_PROPERTIES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_MODULE_IDENTIFIER_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_MODULE_IDENTIFIER_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_SHADER_MODULE_IDENTIFIER_EXT:										return "VK_STRUCTURE_TYPE_SHADER_MODULE_IDENTIFIER_EXT";
 		case VK_STRUCTURE_TYPE_MAX_ENUM:															return "VK_STRUCTURE_TYPE_MAX_ENUM";
 		default:																					return DE_NULL;
 	}
@@ -1204,20 +1222,22 @@ const char* getQueryTypeName (VkQueryType value)
 {
 	switch (value)
 	{
-		case VK_QUERY_TYPE_OCCLUSION:										return "VK_QUERY_TYPE_OCCLUSION";
-		case VK_QUERY_TYPE_PIPELINE_STATISTICS:								return "VK_QUERY_TYPE_PIPELINE_STATISTICS";
-		case VK_QUERY_TYPE_TIMESTAMP:										return "VK_QUERY_TYPE_TIMESTAMP";
-		case VK_QUERY_TYPE_RESULT_STATUS_ONLY_KHR:							return "VK_QUERY_TYPE_RESULT_STATUS_ONLY_KHR";
-		case VK_QUERY_TYPE_TRANSFORM_FEEDBACK_STREAM_EXT:					return "VK_QUERY_TYPE_TRANSFORM_FEEDBACK_STREAM_EXT";
-		case VK_QUERY_TYPE_PERFORMANCE_QUERY_KHR:							return "VK_QUERY_TYPE_PERFORMANCE_QUERY_KHR";
-		case VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR:		return "VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR";
-		case VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_SIZE_KHR:	return "VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_SIZE_KHR";
-		case VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_NV:		return "VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_NV";
-		case VK_QUERY_TYPE_PERFORMANCE_QUERY_INTEL:							return "VK_QUERY_TYPE_PERFORMANCE_QUERY_INTEL";
-		case VK_QUERY_TYPE_VIDEO_ENCODE_BITSTREAM_BUFFER_RANGE_KHR:			return "VK_QUERY_TYPE_VIDEO_ENCODE_BITSTREAM_BUFFER_RANGE_KHR";
-		case VK_QUERY_TYPE_PRIMITIVES_GENERATED_EXT:						return "VK_QUERY_TYPE_PRIMITIVES_GENERATED_EXT";
-		case VK_QUERY_TYPE_MAX_ENUM:										return "VK_QUERY_TYPE_MAX_ENUM";
-		default:															return DE_NULL;
+		case VK_QUERY_TYPE_OCCLUSION:														return "VK_QUERY_TYPE_OCCLUSION";
+		case VK_QUERY_TYPE_PIPELINE_STATISTICS:												return "VK_QUERY_TYPE_PIPELINE_STATISTICS";
+		case VK_QUERY_TYPE_TIMESTAMP:														return "VK_QUERY_TYPE_TIMESTAMP";
+		case VK_QUERY_TYPE_RESULT_STATUS_ONLY_KHR:											return "VK_QUERY_TYPE_RESULT_STATUS_ONLY_KHR";
+		case VK_QUERY_TYPE_TRANSFORM_FEEDBACK_STREAM_EXT:									return "VK_QUERY_TYPE_TRANSFORM_FEEDBACK_STREAM_EXT";
+		case VK_QUERY_TYPE_PERFORMANCE_QUERY_KHR:											return "VK_QUERY_TYPE_PERFORMANCE_QUERY_KHR";
+		case VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR:						return "VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR";
+		case VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_SIZE_KHR:					return "VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_SIZE_KHR";
+		case VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_NV:						return "VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_NV";
+		case VK_QUERY_TYPE_PERFORMANCE_QUERY_INTEL:											return "VK_QUERY_TYPE_PERFORMANCE_QUERY_INTEL";
+		case VK_QUERY_TYPE_VIDEO_ENCODE_BITSTREAM_BUFFER_RANGE_KHR:							return "VK_QUERY_TYPE_VIDEO_ENCODE_BITSTREAM_BUFFER_RANGE_KHR";
+		case VK_QUERY_TYPE_PRIMITIVES_GENERATED_EXT:										return "VK_QUERY_TYPE_PRIMITIVES_GENERATED_EXT";
+		case VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_BOTTOM_LEVEL_POINTERS_KHR:	return "VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_BOTTOM_LEVEL_POINTERS_KHR";
+		case VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SIZE_KHR:									return "VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SIZE_KHR";
+		case VK_QUERY_TYPE_MAX_ENUM:														return "VK_QUERY_TYPE_MAX_ENUM";
+		default:																			return DE_NULL;
 	}
 }
 
@@ -2461,6 +2481,29 @@ const char* getAccelerationStructureMotionInstanceTypeNVName (VkAccelerationStru
 		case VK_ACCELERATION_STRUCTURE_MOTION_INSTANCE_TYPE_SRT_MOTION_NV:		return "VK_ACCELERATION_STRUCTURE_MOTION_INSTANCE_TYPE_SRT_MOTION_NV";
 		case VK_ACCELERATION_STRUCTURE_MOTION_INSTANCE_TYPE_MAX_ENUM_NV:		return "VK_ACCELERATION_STRUCTURE_MOTION_INSTANCE_TYPE_MAX_ENUM_NV";
 		default:																return DE_NULL;
+	}
+}
+
+const char* getSubpassMergeStatusEXTName (VkSubpassMergeStatusEXT value)
+{
+	switch (value)
+	{
+		case VK_SUBPASS_MERGE_STATUS_MERGED_EXT:									return "VK_SUBPASS_MERGE_STATUS_MERGED_EXT";
+		case VK_SUBPASS_MERGE_STATUS_DISALLOWED_EXT:								return "VK_SUBPASS_MERGE_STATUS_DISALLOWED_EXT";
+		case VK_SUBPASS_MERGE_STATUS_NOT_MERGED_SIDE_EFFECTS_EXT:					return "VK_SUBPASS_MERGE_STATUS_NOT_MERGED_SIDE_EFFECTS_EXT";
+		case VK_SUBPASS_MERGE_STATUS_NOT_MERGED_SAMPLES_MISMATCH_EXT:				return "VK_SUBPASS_MERGE_STATUS_NOT_MERGED_SAMPLES_MISMATCH_EXT";
+		case VK_SUBPASS_MERGE_STATUS_NOT_MERGED_VIEWS_MISMATCH_EXT:					return "VK_SUBPASS_MERGE_STATUS_NOT_MERGED_VIEWS_MISMATCH_EXT";
+		case VK_SUBPASS_MERGE_STATUS_NOT_MERGED_ALIASING_EXT:						return "VK_SUBPASS_MERGE_STATUS_NOT_MERGED_ALIASING_EXT";
+		case VK_SUBPASS_MERGE_STATUS_NOT_MERGED_DEPENDENCIES_EXT:					return "VK_SUBPASS_MERGE_STATUS_NOT_MERGED_DEPENDENCIES_EXT";
+		case VK_SUBPASS_MERGE_STATUS_NOT_MERGED_INCOMPATIBLE_INPUT_ATTACHMENT_EXT:	return "VK_SUBPASS_MERGE_STATUS_NOT_MERGED_INCOMPATIBLE_INPUT_ATTACHMENT_EXT";
+		case VK_SUBPASS_MERGE_STATUS_NOT_MERGED_TOO_MANY_ATTACHMENTS_EXT:			return "VK_SUBPASS_MERGE_STATUS_NOT_MERGED_TOO_MANY_ATTACHMENTS_EXT";
+		case VK_SUBPASS_MERGE_STATUS_NOT_MERGED_INSUFFICIENT_STORAGE_EXT:			return "VK_SUBPASS_MERGE_STATUS_NOT_MERGED_INSUFFICIENT_STORAGE_EXT";
+		case VK_SUBPASS_MERGE_STATUS_NOT_MERGED_DEPTH_STENCIL_COUNT_EXT:			return "VK_SUBPASS_MERGE_STATUS_NOT_MERGED_DEPTH_STENCIL_COUNT_EXT";
+		case VK_SUBPASS_MERGE_STATUS_NOT_MERGED_RESOLVE_ATTACHMENT_REUSE_EXT:		return "VK_SUBPASS_MERGE_STATUS_NOT_MERGED_RESOLVE_ATTACHMENT_REUSE_EXT";
+		case VK_SUBPASS_MERGE_STATUS_NOT_MERGED_SINGLE_SUBPASS_EXT:					return "VK_SUBPASS_MERGE_STATUS_NOT_MERGED_SINGLE_SUBPASS_EXT";
+		case VK_SUBPASS_MERGE_STATUS_NOT_MERGED_UNSPECIFIED_EXT:					return "VK_SUBPASS_MERGE_STATUS_NOT_MERGED_UNSPECIFIED_EXT";
+		case VK_SUBPASS_MERGE_STATUS_MAX_ENUM_EXT:									return "VK_SUBPASS_MERGE_STATUS_MAX_ENUM_EXT";
+		default:																	return DE_NULL;
 	}
 }
 
@@ -4154,6 +4197,53 @@ tcu::Format::Bitfield<32> getGraphicsPipelineLibraryFlagsEXTStr (VkGraphicsPipel
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+tcu::Format::Bitfield<32> getImageCompressionFlagsEXTStr (VkImageCompressionFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_DEFAULT_EXT,				"VK_IMAGE_COMPRESSION_DEFAULT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_DEFAULT_EXT,	"VK_IMAGE_COMPRESSION_FIXED_RATE_DEFAULT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_EXPLICIT_EXT,	"VK_IMAGE_COMPRESSION_FIXED_RATE_EXPLICIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_DISABLED_EXT,				"VK_IMAGE_COMPRESSION_DISABLED_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FLAG_BITS_MAX_ENUM_EXT,	"VK_IMAGE_COMPRESSION_FLAG_BITS_MAX_ENUM_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getImageCompressionFixedRateFlagsEXTStr (VkImageCompressionFixedRateFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_NONE_EXT,					"VK_IMAGE_COMPRESSION_FIXED_RATE_NONE_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_1BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_1BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_2BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_2BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_3BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_3BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_4BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_4BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_5BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_5BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_6BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_6BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_7BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_7BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_8BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_8BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_9BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_9BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_10BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_10BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_11BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_11BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_12BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_12BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_13BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_13BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_14BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_14BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_15BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_15BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_16BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_16BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_17BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_17BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_18BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_18BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_19BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_19BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_20BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_20BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_21BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_21BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_22BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_22BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_23BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_23BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_24BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_24BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_FLAG_BITS_MAX_ENUM_EXT,	"VK_IMAGE_COMPRESSION_FIXED_RATE_FLAG_BITS_MAX_ENUM_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
 tcu::Format::Bitfield<32> getAccelerationStructureCreateFlagsKHRStr (VkAccelerationStructureCreateFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -4323,7 +4413,8 @@ tcu::Format::Bitfield<32> getVideoEncodeH264CapabilityFlagsEXTStr (VkVideoEncode
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_DIRECT_8X8_INFERENCE_BIT_EXT,				"VK_VIDEO_ENCODE_H264_CAPABILITY_DIRECT_8X8_INFERENCE_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_DIRECT_8X8_INFERENCE_ENABLED_BIT_EXT,		"VK_VIDEO_ENCODE_H264_CAPABILITY_DIRECT_8X8_INFERENCE_ENABLED_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_DIRECT_8X8_INFERENCE_DISABLED_BIT_EXT,		"VK_VIDEO_ENCODE_H264_CAPABILITY_DIRECT_8X8_INFERENCE_DISABLED_BIT_EXT"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_SEPARATE_COLOUR_PLANE_BIT_EXT,				"VK_VIDEO_ENCODE_H264_CAPABILITY_SEPARATE_COLOUR_PLANE_BIT_EXT"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_QPPRIME_Y_ZERO_TRANSFORM_BYPASS_BIT_EXT,	"VK_VIDEO_ENCODE_H264_CAPABILITY_QPPRIME_Y_ZERO_TRANSFORM_BYPASS_BIT_EXT"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_SCALING_LISTS_BIT_EXT,						"VK_VIDEO_ENCODE_H264_CAPABILITY_SCALING_LISTS_BIT_EXT"),
@@ -4346,6 +4437,7 @@ tcu::Format::Bitfield<32> getVideoEncodeH264CapabilityFlagsEXTStr (VkVideoEncode
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_SLICE_MB_COUNT_BIT_EXT,					"VK_VIDEO_ENCODE_H264_CAPABILITY_SLICE_MB_COUNT_BIT_EXT"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_ROW_UNALIGNED_SLICE_BIT_EXT,				"VK_VIDEO_ENCODE_H264_CAPABILITY_ROW_UNALIGNED_SLICE_BIT_EXT"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_DIFFERENT_SLICE_TYPE_BIT_EXT,				"VK_VIDEO_ENCODE_H264_CAPABILITY_DIFFERENT_SLICE_TYPE_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_B_FRAME_IN_L1_LIST_BIT_EXT,				"VK_VIDEO_ENCODE_H264_CAPABILITY_B_FRAME_IN_L1_LIST_BIT_EXT"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_FLAG_BITS_MAX_ENUM_EXT,					"VK_VIDEO_ENCODE_H264_CAPABILITY_FLAG_BITS_MAX_ENUM_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
@@ -9434,6 +9526,38 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceWorkgroupMemory
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\trayTracingMaintenance1 = " << value.rayTracingMaintenance1 << '\n';
+	s << "\trayTracingPipelineTraceRaysIndirect2 = " << value.rayTracingPipelineTraceRaysIndirect2 << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkTraceRaysIndirectCommand2KHR& value)
+{
+	s << "VkTraceRaysIndirectCommand2KHR = {\n";
+	s << "\traygenShaderRecordAddress = " << value.raygenShaderRecordAddress << '\n';
+	s << "\traygenShaderRecordSize = " << value.raygenShaderRecordSize << '\n';
+	s << "\tmissShaderBindingTableAddress = " << value.missShaderBindingTableAddress << '\n';
+	s << "\tmissShaderBindingTableSize = " << value.missShaderBindingTableSize << '\n';
+	s << "\tmissShaderBindingTableStride = " << value.missShaderBindingTableStride << '\n';
+	s << "\thitShaderBindingTableAddress = " << value.hitShaderBindingTableAddress << '\n';
+	s << "\thitShaderBindingTableSize = " << value.hitShaderBindingTableSize << '\n';
+	s << "\thitShaderBindingTableStride = " << value.hitShaderBindingTableStride << '\n';
+	s << "\tcallableShaderBindingTableAddress = " << value.callableShaderBindingTableAddress << '\n';
+	s << "\tcallableShaderBindingTableSize = " << value.callableShaderBindingTableSize << '\n';
+	s << "\tcallableShaderBindingTableStride = " << value.callableShaderBindingTableStride << '\n';
+	s << "\twidth = " << value.width << '\n';
+	s << "\theight = " << value.height << '\n';
+	s << "\tdepth = " << value.depth << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkDebugReportCallbackCreateInfoEXT& value)
 {
 	s << "VkDebugReportCallbackCreateInfoEXT = {\n";
@@ -11995,6 +12119,59 @@ std::ostream& operator<< (std::ostream& s, const VkCopyCommandTransformInfoQCOM&
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImageCompressionControlFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceImageCompressionControlFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timageCompressionControl = " << value.imageCompressionControl << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageCompressionControlEXT& value)
+{
+	s << "VkImageCompressionControlEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getImageCompressionFlagsEXTStr(value.flags) << '\n';
+	s << "\tcompressionControlPlaneCount = " << value.compressionControlPlaneCount << '\n';
+	s << "\tpFixedRateFlags = " << value.pFixedRateFlags << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSubresourceLayout2EXT& value)
+{
+	s << "VkSubresourceLayout2EXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsubresourceLayout = " << value.subresourceLayout << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageSubresource2EXT& value)
+{
+	s << "VkImageSubresource2EXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timageSubresource = " << value.imageSubresource << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageCompressionPropertiesEXT& value)
+{
+	s << "VkImageCompressionPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timageCompressionFlags = " << getImageCompressionFlagsEXTStr(value.imageCompressionFlags) << '\n';
+	s << "\timageCompressionFixedRateFlags = " << getImageCompressionFixedRateFlagsEXTStr(value.imageCompressionFixedRateFlags) << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDevice4444FormatsFeaturesEXT& value)
 {
 	s << "VkPhysicalDevice4444FormatsFeaturesEXT = {\n";
@@ -12198,6 +12375,26 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExternalMemoryR
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\texternalMemoryRDMA = " << value.externalMemoryRDMA << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelinePropertiesIdentifierEXT& value)
+{
+	s << "VkPipelinePropertiesIdentifierEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpipelineIdentifier = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.pipelineIdentifier)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.pipelineIdentifier))) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePipelinePropertiesFeaturesEXT& value)
+{
+	s << "VkPhysicalDevicePipelinePropertiesFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpipelinePropertiesIdentifier = " << value.pipelinePropertiesIdentifier << '\n';
 	s << '}';
 	return s;
 }
@@ -12418,6 +12615,100 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLinearColorAtta
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tlinearColorAttachment = " << value.linearColorAttachment << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timageCompressionControlSwapchain = " << value.imageCompressionControlSwapchain << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsubpassMergeFeedback = " << value.subpassMergeFeedback << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRenderPassCreationControlEXT& value)
+{
+	s << "VkRenderPassCreationControlEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdisallowMerging = " << value.disallowMerging << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRenderPassCreationFeedbackInfoEXT& value)
+{
+	s << "VkRenderPassCreationFeedbackInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpostMergeSubpassCount = " << value.postMergeSubpassCount << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRenderPassSubpassFeedbackInfoEXT& value)
+{
+	s << "VkRenderPassSubpassFeedbackInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsubpassMergeStatus = " << value.subpassMergeStatus << '\n';
+	s << "\tdescription = " << (const char*)value.description << '\n';
+	s << "\tpostMergeIndex = " << value.postMergeIndex << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderModuleIdentifier = " << value.shaderModuleIdentifier << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT& value)
+{
+	s << "VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderModuleIdentifierAlgorithmUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.shaderModuleIdentifierAlgorithmUUID)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.shaderModuleIdentifierAlgorithmUUID))) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineShaderStageModuleIdentifierCreateInfoEXT& value)
+{
+	s << "VkPipelineShaderStageModuleIdentifierCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tidentifierSize = " << value.identifierSize << '\n';
+	s << "\tpIdentifier = " << value.pIdentifier << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkShaderModuleIdentifierEXT& value)
+{
+	s << "VkShaderModuleIdentifierEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tidentifierSize = " << value.identifierSize << '\n';
+	s << "\tidentifier = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.identifier)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.identifier))) << '\n';
 	s << '}';
 	return s;
 }
@@ -13856,7 +14147,6 @@ std::ostream& operator<< (std::ostream& s, const StdVideoH265SequenceParameterSe
 	s << "\tbit_depth_luma_minus8 = " << value.bit_depth_luma_minus8 << '\n';
 	s << "\tbit_depth_chroma_minus8 = " << value.bit_depth_chroma_minus8 << '\n';
 	s << "\tlog2_max_pic_order_cnt_lsb_minus4 = " << value.log2_max_pic_order_cnt_lsb_minus4 << '\n';
-	s << "\tsps_max_dec_pic_buffering_minus1 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.sps_max_dec_pic_buffering_minus1)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.sps_max_dec_pic_buffering_minus1))) << '\n';
 	s << "\tlog2_min_luma_coding_block_size_minus3 = " << value.log2_min_luma_coding_block_size_minus3 << '\n';
 	s << "\tlog2_diff_max_min_luma_coding_block_size = " << value.log2_diff_max_min_luma_coding_block_size << '\n';
 	s << "\tlog2_min_luma_transform_block_size_minus2 = " << value.log2_min_luma_transform_block_size_minus2 << '\n';

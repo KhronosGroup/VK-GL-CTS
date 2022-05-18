@@ -1392,6 +1392,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceWorkgroupMemoryExpli
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_FEATURES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkDebugReportCallbackCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
@@ -2307,6 +2312,31 @@ template<> VkStructureType getStructureType<VkCopyCommandTransformInfoQCOM> (voi
 	return VK_STRUCTURE_TYPE_COPY_COMMAND_TRANSFORM_INFO_QCOM;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceImageCompressionControlFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkImageCompressionControlEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_COMPRESSION_CONTROL_EXT;
+}
+
+template<> VkStructureType getStructureType<VkSubresourceLayout2EXT> (void)
+{
+	return VK_STRUCTURE_TYPE_SUBRESOURCE_LAYOUT_2_EXT;
+}
+
+template<> VkStructureType getStructureType<VkImageSubresource2EXT> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_SUBRESOURCE_2_EXT;
+}
+
+template<> VkStructureType getStructureType<VkImageCompressionPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_COMPRESSION_PROPERTIES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDevice4444FormatsFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT;
@@ -2395,6 +2425,16 @@ template<> VkStructureType getStructureType<VkMemoryGetRemoteAddressInfoNV> (voi
 template<> VkStructureType getStructureType<VkPhysicalDeviceExternalMemoryRDMAFeaturesNV> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_RDMA_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPipelinePropertiesIdentifierEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_PROPERTIES_IDENTIFIER_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDevicePipelinePropertiesFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROPERTIES_FEATURES_EXT;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceExtendedDynamicState2FeaturesEXT> (void)
@@ -2490,6 +2530,51 @@ template<> VkStructureType getStructureType<VkSubpassFragmentDensityMapOffsetEnd
 template<> VkStructureType getStructureType<VkPhysicalDeviceLinearColorAttachmentFeaturesNV> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINEAR_COLOR_ATTACHMENT_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBPASS_MERGE_FEEDBACK_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkRenderPassCreationControlEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_RENDER_PASS_CREATION_CONTROL_EXT;
+}
+
+template<> VkStructureType getStructureType<VkRenderPassCreationFeedbackInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_RENDER_PASS_CREATION_FEEDBACK_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkRenderPassSubpassFeedbackInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_RENDER_PASS_SUBPASS_FEEDBACK_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPipelineShaderStageModuleIdentifierCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_MODULE_IDENTIFIER_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkShaderModuleIdentifierEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_SHADER_MODULE_IDENTIFIER_EXT;
 }
 
 template<> VkStructureType getStructureType<VkAccelerationStructureGeometryTrianglesDataKHR> (void)
