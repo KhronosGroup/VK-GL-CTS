@@ -430,9 +430,7 @@ void createTests (tcu::TestCaseGroup* group, SharedGroupParams groupParams)
 {
 	tcu::TestContext& testCtx = group->getTestContext();
 
-#ifndef CTS_USES_VULKANSC
 	createBasicTests(testCtx, group, groupParams);
-#endif // CTS_USES_VULKANSC
 
 	// attachmentFragmentShadingRate feature is tested with basic tests so there is no need to
 	// duplicating those tests for secondary command buffer;

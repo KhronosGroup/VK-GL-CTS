@@ -136,10 +136,6 @@ private:
 
 protected:
 
-	void				beginSecondaryCmdBuffer			(VkCommandBuffer									cmdBuffer,
-														 VkFormat											cbFormat,
-														 VkFormat											dsFormat,
-														 VkRenderingFlagsKHR								renderingFlags = 0u) const;
 	void				preRenderCommands				(VkCommandBuffer									cmdBuffer,
 														 ImageWithMemory*									cbImage,
 														 ImageWithMemory*									dsImage,
@@ -154,18 +150,13 @@ protected:
 														 deUint32											srFillBpp,
 														 const VkClearValue&								clearColor,
 														 const VkClearValue&								clearDepthStencil);
-	void				beginRender						(VkCommandBuffer									cmdBuffer,
+	void				beginLegacyRender				(VkCommandBuffer									cmdBuffer,
 														 VkRenderPass										renderPass,
 														 VkFramebuffer										framebuffer,
 														 VkImageView										srImageView,
-														 VkImageLayout										srImageLayout,
-														 const VkExtent2D&									srTexelSize,
 														 VkImageView										cbImageView,
 														 VkImageView										dsImageView,
-														 bool												imagelessFB,
-														 const VkClearValue&								clearColor,
-														 const VkClearValue&								clearDepthStencil,
-														 VkRenderingFlagsKHR								renderingFlags = 0u) const;
+														 bool												imagelessFB) const;
 	void				drawCommands					(VkCommandBuffer									cmdBuffer,
 														 std::vector<GraphicsPipelineWrapper>&				pipelines,
 														 const std::vector<VkViewport>&						viewports,
@@ -178,13 +169,27 @@ protected:
 														 const VkPipelineDepthStencilStateCreateInfo*		depthStencilState,
 														 const VkPipelineMultisampleStateCreateInfo*		multisampleState,
 														 VkPipelineFragmentShadingRateStateCreateInfoKHR*	shadingRateState,
-														 VkPipelineRenderingCreateInfoKHR*					dynamicRendering,
+														 PipelineRenderingCreateInfoWrapper					dynamicRenderingState,
 														 const VkShaderModule								vertShader,
 														 const VkShaderModule								geomShader,
 														 const VkShaderModule								fragShader,
 														 VkDescriptorSet									descriptorSet,
 														 VkBuffer											vertexBuffer);
-	void				endRender						(VkCommandBuffer									cmdBuffer) const;
+#ifndef CTS_USES_VULKANSC
+	void				beginSecondaryCmdBuffer			(VkCommandBuffer									cmdBuffer,
+														 VkFormat											cbFormat,
+														 VkFormat											dsFormat,
+														 VkRenderingFlagsKHR								renderingFlags = 0u) const;
+	void				beginDynamicRender				(VkCommandBuffer									cmdBuffer,
+														 VkImageView										srImageView,
+														 VkImageLayout										srImageLayout,
+														 const VkExtent2D&									srTexelSize,
+														 VkImageView										cbImageView,
+														 VkImageView										dsImageView,
+														 const VkClearValue&								clearColor,
+														 const VkClearValue&								clearDepthStencil,
+														 VkRenderingFlagsKHR								renderingFlags = 0u) const;
+#endif // CTS_USES_VULKANSC
 
 	deInt32				PrimIDToPrimitiveShadingRate	(deInt32 primID);
 	deInt32				PrimIDToPipelineShadingRate		(deInt32 primID);
@@ -1783,6 +1788,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 
 			const deUint32 fragSizeWH = m_data.sampleMaskTest ? 2 : 0;
 
+			PipelineRenderingCreateInfoWrapper renderingCreateInfoWrapper;
 #ifndef CTS_USES_VULKANSC
 			VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 			{
@@ -1794,16 +1800,13 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				dsFormat,
 				dsFormat
 			};
+			renderingCreateInfoWrapper.ptr = m_data.groupParams->useDynamicRendering ? &renderingCreateInfo : DE_NULL;
 #endif // CTS_USES_VULKANSC
 
 			VkPipelineFragmentShadingRateStateCreateInfoKHR shadingRateStateCreateInfo
 			{
 				VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_STATE_CREATE_INFO_KHR,	// VkStructureType						sType;
-#ifndef CTS_USES_VULKANSC
-				m_data.groupParams->useDynamicRendering ? &renderingCreateInfo : DE_NULL,			// const void*							pNext;
-#else
-				DE_NULL,																// const void*							pNext;
-#endif // CTS_USES_VULKANSC
+				renderingCreateInfoWrapper.ptr,											// const void*							pNext;
 				{ fragSizeWH, fragSizeWH },												// VkExtent2D							fragmentSize;
 				{ m_data.combinerOp[0], m_data.combinerOp[1] },							// VkFragmentShadingRateCombinerOpKHR	combinerOps[2];
 			};
@@ -1817,10 +1820,9 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				m_data.useDynamicState ? 1u : 0u,							// uint32_t								dynamicStateCount;
 				&dynamicState,												// const VkDynamicState*				pDynamicStates;
 			};
-			vk::VkPipelineRenderingCreateInfoKHR* pDynamicRendering = (m_data.groupParams->useDynamicRendering ? &renderingCreateInfo : DE_NULL);
 
 			// Enable depth/stencil writes, always passing
-			VkPipelineDepthStencilStateCreateInfo		depthStencilStateParams				=
+			VkPipelineDepthStencilStateCreateInfo		depthStencilStateParams
 			{
 				VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType							sType;
 				DE_NULL,													// const void*								pNext;
@@ -1860,11 +1862,12 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 			Move<VkCommandBuffer>		secCmdBuffer;
 			VkClearValue				clearColor			= makeClearValueColorU32(0, 0, 0, 0);
 			VkClearValue				clearDepthStencil	= makeClearValueDepthStencil(0.0, 0);
-			const VkExtent2D			srTexelSize			{ srTexelWidth, srTexelHeight };
 
 			std::vector<GraphicsPipelineWrapper> pipelines;
 			pipelines.reserve(m_data.useDynamicState ? 1u : NUM_TRIANGLES);
 
+#ifndef CTS_USES_VULKANSC
+			const VkExtent2D srTexelSize { srTexelWidth, srTexelHeight };
 			if (m_data.groupParams->useSecondaryCmdBuffer)
 			{
 				secCmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
@@ -1873,8 +1876,8 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				if (m_data.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
 				{
 					beginSecondaryCmdBuffer(*secCmdBuffer, cbFormat, dsFormat, VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
-					beginRender(*secCmdBuffer, *renderPass, *framebuffer, *srImageView, srLayout, srTexelSize,
-								*cbImageView, *dsImageView, imagelessFB, clearColor, clearDepthStencil);
+					beginDynamicRender(*secCmdBuffer, *srImageView, srLayout, srTexelSize, *cbImageView, *dsImageView,
+									   clearColor, clearDepthStencil);
 				}
 				else
 					beginSecondaryCmdBuffer(*secCmdBuffer, cbFormat, dsFormat);
@@ -1882,10 +1885,10 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				drawCommands(*secCmdBuffer, pipelines, viewports, scissors, *pipelineLayout, *renderPass,
 							 &vertexInputStateCreateInfo, &dynamicStateCreateInfo, &rasterizationStateCreateInfo,
 							 &depthStencilStateParams, &multisampleStateCreateInfo, &shadingRateStateCreateInfo,
-							 pDynamicRendering, *vertShader, *geomShader, *fragShader, *descriptorSet, **vertexBuffer);
+							 renderingCreateInfoWrapper, *vertShader, *geomShader, *fragShader, *descriptorSet, **vertexBuffer);
 
 				if (m_data.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
-					endRender(*secCmdBuffer);
+					endRendering(vk, *secCmdBuffer);
 
 				endCommandBuffer(vk, *secCmdBuffer);
 
@@ -1895,26 +1898,39 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				preRenderCommands(*cmdBuffer, cbImage.get(), dsImage.get(), derivImage.get(), derivNumLevels, srImage.get(), srLayout,
 								  srFillBuffer.get(), numSRLayers, srWidth, srHeight, srFillBpp, clearColor, clearDepthStencil);
 				if (!m_data.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
-					beginRender(*cmdBuffer, *renderPass, *framebuffer, *srImageView, srLayout, srTexelSize,
-								*cbImageView, *dsImageView, imagelessFB, clearColor, clearDepthStencil, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+					beginDynamicRender(*cmdBuffer, *srImageView, srLayout, srTexelSize, *cbImageView, *dsImageView,
+									   clearColor, clearDepthStencil, VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR);
 
 				vk.cmdExecuteCommands(*cmdBuffer, 1u, &*secCmdBuffer);
 
 				if (!m_data.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
-					endRender(*cmdBuffer);
+					endRendering(vk, *cmdBuffer);
 			}
-			else
+			else if (m_data.groupParams->useDynamicRendering)
 			{
 				beginCommandBuffer(vk, *cmdBuffer);
 				preRenderCommands(*cmdBuffer, cbImage.get(), dsImage.get(), derivImage.get(), derivNumLevels, srImage.get(), srLayout,
 								  srFillBuffer.get(), numSRLayers, srWidth, srHeight, srFillBpp, clearColor, clearDepthStencil);
-				beginRender(*cmdBuffer, *renderPass, *framebuffer, *srImageView, srLayout, srTexelSize,
-							*cbImageView, *dsImageView, imagelessFB, clearColor, clearDepthStencil);
+				beginDynamicRender(*cmdBuffer, *srImageView, srLayout, srTexelSize, *cbImageView, *dsImageView, clearColor, clearDepthStencil);
 				drawCommands(*cmdBuffer, pipelines, viewports, scissors, *pipelineLayout, *renderPass,
 							 &vertexInputStateCreateInfo, &dynamicStateCreateInfo, &rasterizationStateCreateInfo,
 							 &depthStencilStateParams, &multisampleStateCreateInfo, &shadingRateStateCreateInfo,
-							 pDynamicRendering, *vertShader, *geomShader, *fragShader, *descriptorSet, **vertexBuffer);
-				endRender(*cmdBuffer);
+							 renderingCreateInfoWrapper, *vertShader, *geomShader, *fragShader, *descriptorSet, **vertexBuffer);
+				endRendering(vk, *cmdBuffer);
+			}
+#endif // CTS_USES_VULKANSC
+
+			if (!m_data.groupParams->useDynamicRendering)
+			{
+				beginCommandBuffer(vk, *cmdBuffer);
+				preRenderCommands(*cmdBuffer, cbImage.get(), dsImage.get(), derivImage.get(), derivNumLevels, srImage.get(), srLayout,
+								  srFillBuffer.get(), numSRLayers, srWidth, srHeight, srFillBpp, clearColor, clearDepthStencil);
+				beginLegacyRender(*cmdBuffer, *renderPass, *framebuffer, *srImageView, *cbImageView, *dsImageView, imagelessFB);
+				drawCommands(*cmdBuffer, pipelines, viewports, scissors, *pipelineLayout, *renderPass,
+							 &vertexInputStateCreateInfo, &dynamicStateCreateInfo, &rasterizationStateCreateInfo,
+							 &depthStencilStateParams, &multisampleStateCreateInfo, &shadingRateStateCreateInfo,
+							 renderingCreateInfoWrapper, *vertShader, *geomShader, *fragShader, *descriptorSet, **vertexBuffer);
+				endRenderPass(vk, *cmdBuffer);
 			}
 
 			VkMemoryBarrier memBarrier
@@ -2225,6 +2241,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 	return tcu::TestStatus(res, qpGetTestResultName(res));
 }
 
+#ifndef CTS_USES_VULKANSC
 void FSRTestInstance::beginSecondaryCmdBuffer(VkCommandBuffer cmdBuffer, VkFormat cbFormat, VkFormat dsFormat, VkRenderingFlagsKHR renderingFlags) const
 {
 	VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
@@ -2257,6 +2274,69 @@ void FSRTestInstance::beginSecondaryCmdBuffer(VkCommandBuffer cmdBuffer, VkForma
 	VK_CHECK(vk.beginCommandBuffer(cmdBuffer, &commandBufBeginParams));
 }
 
+void FSRTestInstance::beginDynamicRender(VkCommandBuffer cmdBuffer, VkImageView srImageView, VkImageLayout srImageLayout,
+										 const VkExtent2D& srTexelSize, VkImageView cbImageView, VkImageView dsImageView,
+										 const VkClearValue& clearColor, const VkClearValue& clearDepthStencil,
+										 VkRenderingFlagsKHR renderingFlags) const
+{
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	VkRect2D				renderArea	= makeRect2D(m_data.framebufferDim.width, m_data.framebufferDim.height);
+
+	VkRenderingFragmentShadingRateAttachmentInfoKHR shadingRateAttachmentInfo
+	{
+		VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR,	// VkStructureType		sType;
+		DE_NULL,																// const void*			pNext;
+		srImageView,															// VkImageView			imageView;
+		srImageLayout,															// VkImageLayout		imageLayout;
+		srTexelSize																// VkExtent2D			shadingRateAttachmentTexelSize;
+	};
+
+	VkRenderingAttachmentInfoKHR colorAttachment
+	{
+		vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,					// VkStructureType						sType;
+		DE_NULL,																// const void*							pNext;
+		cbImageView,															// VkImageView							imageView;
+		VK_IMAGE_LAYOUT_GENERAL,												// VkImageLayout						imageLayout;
+		VK_RESOLVE_MODE_NONE,													// VkResolveModeFlagBits				resolveMode;
+		DE_NULL,																// VkImageView							resolveImageView;
+		VK_IMAGE_LAYOUT_UNDEFINED,												// VkImageLayout						resolveImageLayout;
+		VK_ATTACHMENT_LOAD_OP_LOAD,												// VkAttachmentLoadOp					loadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,											// VkAttachmentStoreOp					storeOp;
+		clearColor																// VkClearValue							clearValue;
+	};
+
+	std::vector<VkRenderingAttachmentInfoKHR> depthStencilAttachments(2,
+		{
+			VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,					// VkStructureType						sType;
+			DE_NULL,															// const void*							pNext;
+			dsImageView,														// VkImageView							imageView;
+			VK_IMAGE_LAYOUT_GENERAL,											// VkImageLayout						imageLayout;
+			VK_RESOLVE_MODE_NONE,												// VkResolveModeFlagBits				resolveMode;
+			DE_NULL,															// VkImageView							resolveImageView;
+			VK_IMAGE_LAYOUT_UNDEFINED,											// VkImageLayout						resolveImageLayout;
+			VK_ATTACHMENT_LOAD_OP_LOAD,											// VkAttachmentLoadOp					loadOp;
+			VK_ATTACHMENT_STORE_OP_STORE,										// VkAttachmentStoreOp					storeOp;
+			clearDepthStencil													// VkClearValue							clearValue;
+		});
+
+	vk::VkRenderingInfoKHR renderingInfo
+	{
+		vk::VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+		m_data.useAttachment() ? &shadingRateAttachmentInfo : DE_NULL,
+		renderingFlags,															// VkRenderingFlagsKHR					flags;
+		renderArea,																// VkRect2D								renderArea;
+		m_data.multiView ? 1 : m_data.numColorLayers,							// deUint32								layerCount;
+		m_data.multiView ? 0x3 : 0u,											// deUint32								viewMask;
+		1u,																		// deUint32								colorAttachmentCount;
+		&colorAttachment,														// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
+		m_data.useDepthStencil ? &depthStencilAttachments[0] : DE_NULL,			// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
+		m_data.useDepthStencil ? &depthStencilAttachments[1] : DE_NULL,			// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
+	};
+
+	vk.cmdBeginRendering(cmdBuffer, &renderingInfo);
+}
+#endif // CTS_USES_VULKANSC
+
 void FSRTestInstance::preRenderCommands(VkCommandBuffer cmdBuffer, ImageWithMemory* cbImage, ImageWithMemory* dsImage,
 										ImageWithMemory* derivImage, deUint32 derivNumLevels,
 										ImageWithMemory* srImage, VkImageLayout srLayout, BufferWithMemory* srFillBuffer,
@@ -2272,7 +2352,7 @@ void FSRTestInstance::preRenderCommands(VkCommandBuffer cmdBuffer, ImageWithMemo
 													  VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
 													  VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT |
 													  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
-													  VK_PIPELINE_STAGE_SHADING_RATE_IMAGE_BIT_NV;
+													  VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
 
 	if (m_data.geometryShader)
 		allPipelineStages |= VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
@@ -2411,89 +2491,28 @@ void FSRTestInstance::preRenderCommands(VkCommandBuffer cmdBuffer, ImageWithMemo
 						  0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
 }
 
-void FSRTestInstance::beginRender(VkCommandBuffer cmdBuffer, VkRenderPass renderPass, VkFramebuffer framebuffer,
-								  VkImageView srImageView, VkImageLayout srImageLayout, const VkExtent2D& srTexelSize,
-								  VkImageView cbImageView, VkImageView dsImageView, bool imagelessFB,
-								  const VkClearValue& clearColor, const VkClearValue& clearDepthStencil,
-								  VkRenderingFlagsKHR renderingFlags) const
+void FSRTestInstance::beginLegacyRender(VkCommandBuffer cmdBuffer, VkRenderPass renderPass, VkFramebuffer framebuffer,
+										VkImageView srImageView, VkImageView cbImageView, VkImageView dsImageView, bool imagelessFB) const
 {
 	const DeviceInterface&	vk			= m_context.getDeviceInterface();
 	VkRect2D				renderArea	= makeRect2D(m_data.framebufferDim.width, m_data.framebufferDim.height);
 
-	if (m_data.groupParams->useDynamicRendering)
+	std::vector<VkImageView> attachments = { cbImageView };
+	if (m_data.useAttachment())
+		attachments.push_back(srImageView);
+	if (m_data.useDepthStencil)
+		attachments.push_back(dsImageView);
+
+	const VkRenderPassAttachmentBeginInfo renderPassAttachmentBeginInfo
 	{
-		VkRenderingFragmentShadingRateAttachmentInfoKHR shadingRateAttachmentInfo
-		{
-			VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR,	// VkStructureType		sType;
-			DE_NULL,																// const void*			pNext;
-			srImageView,															// VkImageView			imageView;
-			srImageLayout,															// VkImageLayout		imageLayout;
-			srTexelSize																// VkExtent2D			shadingRateAttachmentTexelSize;
-		};
+		VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO,		// VkStructureType		sType;
+		DE_NULL,													// const void*			pNext;
+		(deUint32)attachments.size(),								// deUint32				attachmentCount;
+		&attachments[0]												// const VkImageView*	pAttachments;
+	};
 
-		VkRenderingAttachmentInfoKHR colorAttachment
-		{
-			vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,					// VkStructureType						sType;
-			DE_NULL,																// const void*							pNext;
-			cbImageView,															// VkImageView							imageView;
-			VK_IMAGE_LAYOUT_GENERAL,												// VkImageLayout						imageLayout;
-			VK_RESOLVE_MODE_NONE,													// VkResolveModeFlagBits				resolveMode;
-			DE_NULL,																// VkImageView							resolveImageView;
-			VK_IMAGE_LAYOUT_UNDEFINED,												// VkImageLayout						resolveImageLayout;
-			VK_ATTACHMENT_LOAD_OP_LOAD,												// VkAttachmentLoadOp					loadOp;
-			VK_ATTACHMENT_STORE_OP_STORE,											// VkAttachmentStoreOp					storeOp;
-			clearColor																// VkClearValue							clearValue;
-		};
-
-		std::vector<VkRenderingAttachmentInfoKHR> depthStencilAttachments(2,
-			{
-				VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,					// VkStructureType						sType;
-				DE_NULL,															// const void*							pNext;
-				dsImageView,														// VkImageView							imageView;
-				VK_IMAGE_LAYOUT_GENERAL,											// VkImageLayout						imageLayout;
-				VK_RESOLVE_MODE_NONE,												// VkResolveModeFlagBits				resolveMode;
-				DE_NULL,															// VkImageView							resolveImageView;
-				VK_IMAGE_LAYOUT_UNDEFINED,											// VkImageLayout						resolveImageLayout;
-				VK_ATTACHMENT_LOAD_OP_LOAD,											// VkAttachmentLoadOp					loadOp;
-				VK_ATTACHMENT_STORE_OP_STORE,										// VkAttachmentStoreOp					storeOp;
-				clearDepthStencil													// VkClearValue							clearValue;
-			});
-
-		vk::VkRenderingInfoKHR renderingInfo
-		{
-			vk::VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
-			m_data.useAttachment() ? &shadingRateAttachmentInfo : DE_NULL,
-			renderingFlags,															// VkRenderingFlagsKHR					flags;
-			renderArea,																// VkRect2D								renderArea;
-			m_data.multiView ? 1 : m_data.numColorLayers,							// deUint32								layerCount;
-			m_data.multiView ? 0x3 : 0u,											// deUint32								viewMask;
-			1u,																		// deUint32								colorAttachmentCount;
-			&colorAttachment,														// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
-			m_data.useDepthStencil ? &depthStencilAttachments[0] : DE_NULL,			// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
-			m_data.useDepthStencil ? &depthStencilAttachments[1] : DE_NULL,			// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
-		};
-
-		vk.cmdBeginRendering(cmdBuffer, &renderingInfo);
-	}
-	else
-	{
-		std::vector<VkImageView> attachments = { cbImageView };
-		if (m_data.useAttachment())
-			attachments.push_back(srImageView);
-		if (m_data.useDepthStencil)
-			attachments.push_back(dsImageView);
-
-		const VkRenderPassAttachmentBeginInfo renderPassAttachmentBeginInfo
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO,		// VkStructureType		sType;
-			DE_NULL,													// const void*			pNext;
-			(deUint32)attachments.size(),								// deUint32				attachmentCount;
-			&attachments[0]												// const VkImageView*	pAttachments;
-		};
-
-		beginRenderPass(vk, cmdBuffer, renderPass, framebuffer, renderArea,
-						0, DE_NULL, VK_SUBPASS_CONTENTS_INLINE, imagelessFB ? &renderPassAttachmentBeginInfo : DE_NULL);
-	}
+	beginRenderPass(vk, cmdBuffer, renderPass, framebuffer, renderArea,
+					0, DE_NULL, VK_SUBPASS_CONTENTS_INLINE, imagelessFB ? &renderPassAttachmentBeginInfo : DE_NULL);
 }
 
 void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
@@ -2508,7 +2527,7 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 								   const VkPipelineDepthStencilStateCreateInfo*		depthStencilState,
 								   const VkPipelineMultisampleStateCreateInfo*		multisampleState,
 								   VkPipelineFragmentShadingRateStateCreateInfoKHR*	shadingRateState,
-								   VkPipelineRenderingCreateInfoKHR*				dynamicRendering,
+								   PipelineRenderingCreateInfoWrapper				dynamicRenderingState,
 								   const VkShaderModule								vertShader,
 								   const VkShaderModule								geomShader,
 								   const VkShaderModule								fragShader,
@@ -2523,8 +2542,11 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 		allShaderStages |= VK_SHADER_STAGE_GEOMETRY_BIT;
 
 	VkPipelineCreateFlags pipelineCreateFlags = (VkPipelineCreateFlags)0;
+
+#ifndef CTS_USES_VULKANSC
 	if (m_data.groupParams->useDynamicRendering)
 		pipelineCreateFlags |= VK_PIPELINE_CREATE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
+#endif // CTS_USES_VULKANSC
 
 	vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, DE_NULL);
 
@@ -2547,7 +2569,7 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 											  DE_NULL,
 											  geomShader,
 											  DE_NULL,
-											  dynamicRendering)
+											  dynamicRenderingState)
 			.setupFragmentShaderState(pipelineLayout,
 									  renderPass,
 									  0u,
@@ -2598,7 +2620,7 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 												  DE_NULL,
 												  geomShader,
 												  DE_NULL,
-												  dynamicRendering)
+												  dynamicRenderingState)
 				.setupFragmentShaderState(pipelineLayout,
 										  renderPass,
 										  0u,
@@ -2616,15 +2638,6 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 		// Draw one triangle, with "primitive ID" in gl_InstanceIndex
 		vk.cmdDraw(cmdBuffer, 3u, 1, 0u, i);
 	}
-}
-
-void FSRTestInstance::endRender(VkCommandBuffer cmdBuffer) const
-{
-	const DeviceInterface& vk = m_context.getDeviceInterface();
-	if (m_data.groupParams->useDynamicRendering)
-		endRendering(vk, cmdBuffer);
-	else
-		endRenderPass(vk, cmdBuffer);
 }
 
 }	// anonymous
