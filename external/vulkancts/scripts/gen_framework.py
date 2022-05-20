@@ -2703,8 +2703,9 @@ def writeMandatoryFeatures(api, filename):
 		listStructFeatures = sorted(data['mandatory_features'].items(), key=lambda tup: tup[0])
 		for structure, featuresList in listStructFeatures:
 			for featureData in featuresList:
-				assert('features' in featureData.keys())
-				assert('requirements' in featureData.keys())
+				# allow for featureless VKSC only extensions
+				if not 'features' in featureData.keys() or 'requirements' not in featureData.keys():
+					continue
 				requirements = featureData['requirements']
 
 				mandatory_variant = ''
@@ -2835,7 +2836,7 @@ def writeMandatoryFeatures(api, filename):
 	stream.append('}\n')
 	writeInlFile(filename, INL_HEADER, stream)
 
-def writeExtensionList(api, filename, extensionType):
+def writeExtensionList(apiName, api, filename, extensionType):
 	extensionList = []
 	for extensionName, data in api.additionalExtensionData:
 		# make sure extension name starts with VK_KHR
@@ -2844,6 +2845,24 @@ def writeExtensionList(api, filename, extensionType):
 		# make sure that this extension was registered
 		if 'register_extension' not in data.keys():
 			continue
+		# make sure extension is intended for the vulkan variant
+		is_sc_only = False
+
+		if apiName != 'SC':
+			if 'mandatory_features' in data.keys():
+				for structure, listStruct in data['mandatory_features'].items():
+					for featureData in listStruct:
+						mandatory_variant = ''
+						try:
+							mandatory_variant = featureData['mandatory_variant']
+						except KeyError:
+							mandatory_variant = ''
+						# VKSC only
+						if 'vulkansc' in mandatory_variant:
+							is_sc_only = True
+		if is_sc_only:
+			continue
+
 		# make sure extension has proper type
 		if extensionType == data['register_extension']['type']:
 			extensionList.append(extensionName)
@@ -3006,8 +3025,8 @@ if __name__ == "__main__":
 	writeExtensionFunctions					(api, os.path.join(outputPath, "vkExtensionFunctions.inl"))
 	writeDeviceFeatures2					(api, os.path.join(outputPath, "vkDeviceFeatures2.inl"))
 	writeMandatoryFeatures					(api, os.path.join(outputPath, "vkMandatoryFeatures.inl"))
-	writeExtensionList						(api, os.path.join(outputPath, "vkInstanceExtensions.inl"),				'instance')
-	writeExtensionList						(api, os.path.join(outputPath, "vkDeviceExtensions.inl"),				'device')
+	writeExtensionList						(args.api, api, os.path.join(outputPath, "vkInstanceExtensions.inl"),				'instance')
+	writeExtensionList						(args.api, api, os.path.join(outputPath, "vkDeviceExtensions.inl"),				'device')
 	writeDriverIds							(args.api, os.path.join(outputPath, "vkKnownDriverIds.inl"))
 	writeObjTypeImpl						(api, os.path.join(outputPath, "vkObjTypeImpl.inl"))
 	# NOTE: when new files are generated then they should also be added to the
