@@ -26,6 +26,7 @@ const vk::VkPhysicalDeviceLineRasterizationPropertiesEXT&			getLineRasterization
 const vk::VkPhysicalDeviceMaintenance3Properties&					getMaintenance3Properties					(void) const;
 const vk::VkPhysicalDeviceMaintenance4Properties&					getMaintenance4Properties					(void) const;
 const vk::VkPhysicalDeviceMeshShaderPropertiesNV&					getMeshShaderProperties						(void) const;
+const vk::VkPhysicalDeviceMeshShaderPropertiesEXT&					getMeshShaderPropertiesEXT					(void) const;
 const vk::VkPhysicalDeviceMultiviewProperties&						getMultiviewProperties						(void) const;
 const vk::VkPhysicalDeviceMultiviewPerViewAttributesPropertiesNVX&	getMultiviewPerViewAttributesPropertiesX	(void) const;
 const vk::VkPhysicalDeviceMultiDrawPropertiesEXT&					getMultiDrawPropertiesEXT					(void) const;

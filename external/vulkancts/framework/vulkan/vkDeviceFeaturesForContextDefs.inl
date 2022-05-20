@@ -52,6 +52,7 @@ const vk::VkPhysicalDeviceLineRasterizationFeaturesEXT&					Context::getLineRast
 const vk::VkPhysicalDeviceMaintenance4Features&							Context::getMaintenance4Features						(void) const { return m_device->getMaintenance4Features();						}
 const vk::VkPhysicalDeviceMemoryPriorityFeaturesEXT&					Context::getMemoryPriorityFeaturesEXT					(void) const { return m_device->getMemoryPriorityFeaturesEXT();					}
 const vk::VkPhysicalDeviceMeshShaderFeaturesNV&							Context::getMeshShaderFeatures							(void) const { return m_device->getMeshShaderFeatures();						}
+const vk::VkPhysicalDeviceMeshShaderFeaturesEXT&						Context::getMeshShaderFeaturesEXT						(void) const { return m_device->getMeshShaderFeaturesEXT();						}
 const vk::VkPhysicalDeviceMultiviewFeatures&							Context::getMultiviewFeatures							(void) const { return m_device->getMultiviewFeatures();							}
 const vk::VkPhysicalDeviceMultiDrawFeaturesEXT&							Context::getMultiDrawFeaturesEXT						(void) const { return m_device->getMultiDrawFeaturesEXT();						}
 const vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE&			Context::getMutableDescriptorTypeFeaturesVALVE			(void) const { return m_device->getMutableDescriptorTypeFeaturesVALVE();		}

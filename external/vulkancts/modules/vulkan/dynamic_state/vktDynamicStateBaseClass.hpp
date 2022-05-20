@@ -40,7 +40,7 @@ namespace DynamicState
 class DynamicStateBaseClass : public TestInstance
 {
 public:
-	DynamicStateBaseClass (Context& context, const char* vertexShaderName, const char* fragmentShaderName);
+	DynamicStateBaseClass (Context& context, const char* vertexShaderName, const char* fragmentShaderName, const char* meshShaderName = nullptr);
 
 protected:
 	void					initialize						(void);
@@ -71,7 +71,7 @@ protected:
 	void					setDynamicBlendState			(const float					const1 = 0.0f, const float const2 = 0.0f,
 															 const float					const3 = 0.0f, const float const4 = 0.0f);
 
-	void					setDynamicDepthStencilState		(const float					minDepthBounds = -1.0f,
+	void					setDynamicDepthStencilState		(const float					minDepthBounds = 0.0f,
 															 const float					maxDepthBounds = 1.0f,
 															 const deUint32					stencilFrontCompareMask = 0xffffffffu,
 															 const deUint32					stencilFrontWriteMask = 0xffffffffu,
@@ -79,6 +79,11 @@ protected:
 															 const deUint32					stencilBackCompareMask = 0xffffffffu,
 															 const deUint32					stencilBackWriteMask = 0xffffffffu,
 															 const deUint32					stencilBackReference = 0);
+
+	void					pushVertexOffset				(const uint32_t					vertexOffset,
+															 const vk::VkPipelineLayout		pipelineLayout,
+															 const vk::VkShaderStageFlags	stageFlags = vk::VK_SHADER_STAGE_MESH_BIT_EXT);
+
 	enum
 	{
 		WIDTH       = 128,
@@ -91,8 +96,11 @@ protected:
 
 	const vk::DeviceInterface&						m_vk;
 
-	vk::Move<vk::VkPipeline>						m_pipeline;
+	vk::Move<vk::VkDescriptorPool>					m_descriptorPool;
+	vk::Move<vk::VkDescriptorSetLayout>				m_setLayout;
 	vk::Move<vk::VkPipelineLayout>					m_pipelineLayout;
+	vk::Move<vk::VkDescriptorSet>					m_descriptorSet;
+	vk::Move<vk::VkPipeline>						m_pipeline;
 
 	de::SharedPtr<Draw::Image>						m_colorTargetImage;
 	vk::Move<vk::VkImageView>						m_colorTargetView;
@@ -108,7 +116,9 @@ protected:
 
 	const std::string								m_vertexShaderName;
 	const std::string								m_fragmentShaderName;
+	const std::string								m_meshShaderName;
 	std::vector<PositionColorVertex>				m_data;
+	bool											m_isMesh;
 };
 
 } // DynamicState

@@ -343,6 +343,9 @@ GetRayTracingCaptureReplayShaderGroupHandlesKHRFunc	getRayTracingCaptureReplaySh
 CmdTraceRaysIndirectKHRFunc							cmdTraceRaysIndirectKHR;
 GetRayTracingShaderGroupStackSizeKHRFunc			getRayTracingShaderGroupStackSizeKHR;
 CmdSetRayTracingPipelineStackSizeKHRFunc			cmdSetRayTracingPipelineStackSizeKHR;
+CmdDrawMeshTasksEXTFunc								cmdDrawMeshTasksEXT;
+CmdDrawMeshTasksIndirectEXTFunc						cmdDrawMeshTasksIndirectEXT;
+CmdDrawMeshTasksIndirectCountEXTFunc				cmdDrawMeshTasksIndirectCountEXT;
 GetAndroidHardwareBufferPropertiesANDROIDFunc		getAndroidHardwareBufferPropertiesANDROID;
 GetMemoryAndroidHardwareBufferANDROIDFunc			getMemoryAndroidHardwareBufferANDROID;
 CreateVideoSessionKHRFunc							createVideoSessionKHR;

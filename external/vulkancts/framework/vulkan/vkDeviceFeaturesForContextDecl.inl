@@ -52,6 +52,7 @@ const vk::VkPhysicalDeviceLineRasterizationFeaturesEXT&					getLineRasterization
 const vk::VkPhysicalDeviceMaintenance4Features&							getMaintenance4Features						(void) const;
 const vk::VkPhysicalDeviceMemoryPriorityFeaturesEXT&					getMemoryPriorityFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceMeshShaderFeaturesNV&							getMeshShaderFeatures						(void) const;
+const vk::VkPhysicalDeviceMeshShaderFeaturesEXT&						getMeshShaderFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceMultiviewFeatures&							getMultiviewFeatures						(void) const;
 const vk::VkPhysicalDeviceMultiDrawFeaturesEXT&							getMultiDrawFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE&			getMutableDescriptorTypeFeaturesVALVE		(void) const;

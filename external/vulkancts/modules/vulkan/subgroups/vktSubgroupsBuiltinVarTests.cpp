@@ -1063,6 +1063,16 @@ void initPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
 
 		programCollection.glslSources.add("comp") << glu::ComputeSource(src.str()) << buildOptions;
 	}
+	else if (isAllMeshShadingStages(caseDef.shaderStage))
+	{
+		const ShaderBuildOptions	buildOptions		(programCollection.usedVulkanVersion, SPIRV_VERSION_1_4, 0u, true);
+		const string				extHeader			= "#extension GL_KHR_shader_subgroup_basic : require\n";
+		const string				tempRes				= "  uvec4 tempRes;\n";
+		const string				testSrc				= "  tempRes = uvec4(gl_SubgroupSize, gl_SubgroupInvocationID, gl_NumSubgroups, gl_SubgroupID);\n";
+		const vector<string>		headDeclarations	= getPerStageHeadDeclarations(caseDef);
+
+		subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, VK_FORMAT_R32G32B32A32_UINT, false, extHeader, testSrc, "", headDeclarations, false, tempRes);
+	}
 	else if (isAllGraphicsStages(caseDef.shaderStage))
 	{
 		const ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, SPIRV_VERSION_1_3, 0u);
@@ -1695,6 +1705,18 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 	{
 		context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
 	}
+	else if (isAllMeshShadingStages(caseDef.shaderStage))
+	{
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
+		context.requireDeviceFunctionality("VK_EXT_mesh_shader");
+
+		if ((caseDef.shaderStage & VK_SHADER_STAGE_TASK_BIT_EXT) != 0u)
+		{
+			const auto& features = context.getMeshShaderFeaturesEXT();
+			if (!features.taskShader)
+				TCU_THROW(NotSupportedError, "Task shaders not supported");
+		}
+	}
 
 	vkt::subgroups::supportedCheckShader(context, caseDef.shaderStage);
 }
@@ -1736,7 +1758,11 @@ TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 
 TestStatus test (Context& context, const CaseDefinition caseDef)
 {
-	if (VK_SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
+	const bool isCompute	= isAllComputeStages(caseDef.shaderStage);
+	const bool isMesh		= isAllMeshShadingStages(caseDef.shaderStage);
+	DE_ASSERT(!(isCompute && isMesh));
+
+	if (isCompute || isMesh)
 	{
 		const VkPhysicalDeviceSubgroupSizeControlProperties&	subgroupSizeControlProperties	= context.getSubgroupSizeControlProperties();
 		TestLog&												log								= context.getTestContext().getLog();
@@ -1746,7 +1772,12 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 			case TEST_TYPE_SUBGROUP_SIZE:
 			{
 				if (caseDef.requiredSubgroupSize == DE_FALSE)
-					return makeComputeTest(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, DE_NULL, checkComputeSubgroupSize);
+				{
+					if (isCompute)
+						return makeComputeTest(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, DE_NULL, checkComputeSubgroupSize);
+					else
+						return makeMeshTest(context, VK_FORMAT_R32G32B32A32_UINT, nullptr, 0, nullptr, checkComputeSubgroupSize);
+				}
 
 				log << TestLog::Message << "Testing required subgroup size range [" <<  subgroupSizeControlProperties.minSubgroupSize << ", "
 					<< subgroupSizeControlProperties.maxSubgroupSize << "]" << TestLog::EndMessage;
@@ -1754,8 +1785,12 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 				// According to the spec, requiredSubgroupSize must be a power-of-two integer.
 				for (deUint32 size = subgroupSizeControlProperties.minSubgroupSize; size <= subgroupSizeControlProperties.maxSubgroupSize; size *= 2)
 				{
-					TestStatus result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL, checkComputeSubgroupSize,
-																	size, VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT);
+					TestStatus result (QP_TEST_RESULT_INTERNAL_ERROR, "Internal Error");
+
+					if (isCompute)
+						result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL, checkComputeSubgroupSize, size);
+					else
+						result = subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr, checkComputeSubgroupSize, size);
 
 					if (result.getCode() != QP_TEST_RESULT_PASS)
 					{
@@ -1771,7 +1806,12 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 			case TEST_TYPE_SUBGROUP_INVOCATION_ID:
 			{
 				if (caseDef.requiredSubgroupSize == DE_FALSE)
-					return makeComputeTest(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, DE_NULL, checkComputeSubgroupInvocationID);
+				{
+					if (isCompute)
+						return makeComputeTest(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, DE_NULL, checkComputeSubgroupInvocationID);
+					else
+						return makeMeshTest(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, DE_NULL, checkComputeSubgroupInvocationID);
+				}
 
 				log << TestLog::Message << "Testing required subgroup size range [" <<  subgroupSizeControlProperties.minSubgroupSize << ", "
 					<< subgroupSizeControlProperties.maxSubgroupSize << "]" << TestLog::EndMessage;
@@ -1779,8 +1819,12 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 				// According to the spec, requiredSubgroupSize must be a power-of-two integer.
 				for (deUint32 size = subgroupSizeControlProperties.minSubgroupSize; size <= subgroupSizeControlProperties.maxSubgroupSize; size *= 2)
 				{
-					TestStatus result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL, checkComputeSubgroupInvocationID,
-																	size, VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT);
+					TestStatus result (QP_TEST_RESULT_INTERNAL_ERROR, "Internal Error");
+
+					if (isCompute)
+						result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL, checkComputeSubgroupInvocationID, size);
+					else
+						result = subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL, checkComputeSubgroupInvocationID, size);
 
 					if (result.getCode() != QP_TEST_RESULT_PASS)
 					{
@@ -1796,7 +1840,12 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 			case TEST_TYPE_SUBGROUP_NUM_SUBGROUPS:
 			{
 				if (caseDef.requiredSubgroupSize == DE_FALSE)
-					return makeComputeTest(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, DE_NULL, checkComputeNumSubgroups);
+				{
+					if (isCompute)
+						return makeComputeTest(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, DE_NULL, checkComputeNumSubgroups);
+					else
+						return  makeMeshTest(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, DE_NULL, checkComputeNumSubgroups);
+				}
 
 				log << TestLog::Message << "Testing required subgroup size range [" <<  subgroupSizeControlProperties.minSubgroupSize << ", "
 					<< subgroupSizeControlProperties.maxSubgroupSize << "]" << TestLog::EndMessage;
@@ -1804,8 +1853,12 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 				// According to the spec, requiredSubgroupSize must be a power-of-two integer.
 				for (deUint32 size = subgroupSizeControlProperties.minSubgroupSize; size <= subgroupSizeControlProperties.maxSubgroupSize; size *= 2)
 				{
-					TestStatus result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL, checkComputeNumSubgroups,
-																	size, VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT);
+					TestStatus result (QP_TEST_RESULT_INTERNAL_ERROR, "Internal Error");
+
+					if (isCompute)
+						result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL, checkComputeNumSubgroups, size);
+					else
+						result = subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL, checkComputeNumSubgroups, size);
 
 					if (result.getCode() != QP_TEST_RESULT_PASS)
 					{
@@ -1821,7 +1874,12 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 			case TEST_TYPE_SUBGROUP_NUM_SUBGROUP_ID:
 			{
 				if (caseDef.requiredSubgroupSize == DE_FALSE)
-					return makeComputeTest(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, DE_NULL, checkComputeSubgroupID);
+				{
+					if (isCompute)
+						return makeComputeTest(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, DE_NULL, checkComputeSubgroupID);
+					else
+						return makeMeshTest(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, DE_NULL, checkComputeSubgroupID);
+				}
 
 				log << TestLog::Message << "Testing required subgroup size range [" <<  subgroupSizeControlProperties.minSubgroupSize << ", "
 					<< subgroupSizeControlProperties.maxSubgroupSize << "]" << TestLog::EndMessage;
@@ -1829,8 +1887,12 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 				// According to the spec, requiredSubgroupSize must be a power-of-two integer.
 				for (deUint32 size = subgroupSizeControlProperties.minSubgroupSize; size <= subgroupSizeControlProperties.maxSubgroupSize; size *= 2)
 				{
-					TestStatus result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL, checkComputeSubgroupID,
-																	size, VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT);
+					TestStatus result (QP_TEST_RESULT_INTERNAL_ERROR, "Internal Error");
+
+					if (isCompute)
+						result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL, checkComputeSubgroupID, size);
+					else
+						result = subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL, checkComputeSubgroupID, size);
 
 					if (result.getCode() != QP_TEST_RESULT_PASS)
 					{
@@ -1875,11 +1937,12 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 
 TestCaseGroup* createSubgroupsBuiltinVarTests (TestContext& testCtx)
 {
-	de::MovePtr<TestCaseGroup>	group						(new TestCaseGroup(testCtx, "builtin_var",		"Subgroup builtin variable tests"));
+	de::MovePtr<TestCaseGroup>	group						(new TestCaseGroup(testCtx, "builtin_var",	"Subgroup builtin variable tests"));
 	de::MovePtr<TestCaseGroup>	graphicGroup				(new TestCaseGroup(testCtx, "graphics",		"Subgroup builtin variable tests: graphics"));
-	de::MovePtr<TestCaseGroup>	computeGroup				(new TestCaseGroup(testCtx, "compute",			"Subgroup builtin variable tests: compute"));
-	de::MovePtr<TestCaseGroup>	framebufferGroup			(new TestCaseGroup(testCtx, "framebuffer",		"Subgroup builtin variable tests: framebuffer"));
-	de::MovePtr<TestCaseGroup>	raytracingGroup				(new TestCaseGroup(testCtx, "ray_tracing",		"Subgroup builtin variable tests: ray tracing"));
+	de::MovePtr<TestCaseGroup>	computeGroup				(new TestCaseGroup(testCtx, "compute",		"Subgroup builtin variable tests: compute"));
+	de::MovePtr<TestCaseGroup>	meshGroup					(new TestCaseGroup(testCtx, "mesh",			"Subgroup builtin variable tests: mesh shading"));
+	de::MovePtr<TestCaseGroup>	framebufferGroup			(new TestCaseGroup(testCtx, "framebuffer",	"Subgroup builtin variable tests: framebuffer"));
+	de::MovePtr<TestCaseGroup>	raytracingGroup				(new TestCaseGroup(testCtx, "ray_tracing",	"Subgroup builtin variable tests: ray tracing"));
 	const TestType				allStagesBuiltinVars[]		=
 	{
 		TEST_TYPE_SUBGROUP_SIZE,
@@ -1890,12 +1953,17 @@ TestCaseGroup* createSubgroupsBuiltinVarTests (TestContext& testCtx)
 		TEST_TYPE_SUBGROUP_NUM_SUBGROUPS,
 		TEST_TYPE_SUBGROUP_NUM_SUBGROUP_ID,
 	};
-	const VkShaderStageFlags	stages[]					=
+	const VkShaderStageFlags	fbStages[]					=
 	{
 		VK_SHADER_STAGE_VERTEX_BIT,
 		VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
 		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
 		VK_SHADER_STAGE_GEOMETRY_BIT,
+	};
+	const VkShaderStageFlags	meshStages[]				=
+	{
+		VK_SHADER_STAGE_MESH_BIT_EXT,
+		VK_SHADER_STAGE_TASK_BIT_EXT,
 	};
 	const deBool				boolValues[]				=
 	{
@@ -1948,12 +2016,31 @@ TestCaseGroup* createSubgroupsBuiltinVarTests (TestContext& testCtx)
 			addFunctionCaseWithPrograms(computeGroup.get(), testName, "", supportedCheck, initPrograms, test, caseDef);
 		}
 
-		for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
+		for (size_t groupSizeNdx = 0; groupSizeNdx < DE_LENGTH_OF_ARRAY(boolValues); ++groupSizeNdx)
+		{
+			for (const auto& stage : meshStages)
+			{
+				const deBool			requiredSubgroupSize	= boolValues[groupSizeNdx];
+				const string			testNameSuffix			= requiredSubgroupSize ? "_requiredsubgroupsize" : "";
+				const CaseDefinition	caseDef					=
+				{
+					testType,							//  TestType			testType;
+					stage,								//  VkShaderStageFlags	shaderStage;
+					de::SharedPtr<bool>(new bool),		//  de::SharedPtr<bool>	geometryPointSizeSupported;
+					requiredSubgroupSize				//  deBool				requiredSubgroupSize;
+				};
+				const string			testName				= varLower + "_" + getShaderStageName(caseDef.shaderStage) + testNameSuffix;
+
+				addFunctionCaseWithPrograms(meshGroup.get(), testName, "", supportedCheck, initPrograms, test, caseDef);
+			}
+		}
+
+		for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(fbStages); ++stageIndex)
 		{
 			const CaseDefinition	caseDef		=
 			{
 				testType,							//  TestType			testType;
-				stages[stageIndex],					//  VkShaderStageFlags	shaderStage;
+				fbStages[stageIndex],				//  VkShaderStageFlags	shaderStage;
 				de::SharedPtr<bool>(new bool),		//  de::SharedPtr<bool>	geometryPointSizeSupported;
 				DE_FALSE							//  deBool				requiredSubgroupSize;
 			};
@@ -1983,12 +2070,32 @@ TestCaseGroup* createSubgroupsBuiltinVarTests (TestContext& testCtx)
 
 			addFunctionCaseWithPrograms(computeGroup.get(), testName, "", supportedCheck, initPrograms, test, caseDef);
 		}
+
+		for (size_t groupSizeNdx = 0; groupSizeNdx < DE_LENGTH_OF_ARRAY(boolValues); ++groupSizeNdx)
+		{
+			for (const auto& stage : meshStages)
+			{
+				const deBool			requiredSubgroupSize	= boolValues[groupSizeNdx];
+				const string			testNameSuffix			= requiredSubgroupSize ? "_requiredsubgroupsize" : "";
+				const CaseDefinition	caseDef					=
+				{
+					testType,							//  TestType			testType;
+					stage,								//  VkShaderStageFlags	shaderStage;
+					de::SharedPtr<bool>(new bool),		//  de::SharedPtr<bool>	geometryPointSizeSupported;
+					requiredSubgroupSize				//  deBool				requiredSubgroupSize;
+				};
+				const string			testName				= varLower + testNameSuffix + "_" + getShaderStageName(stage);
+
+				addFunctionCaseWithPrograms(meshGroup.get(), testName, "", supportedCheck, initPrograms, test, caseDef);
+			}
+		}
 	}
 
 	group->addChild(graphicGroup.release());
 	group->addChild(computeGroup.release());
 	group->addChild(raytracingGroup.release());
 	group->addChild(framebufferGroup.release());
+	group->addChild(meshGroup.release());
 
 	return group.release();
 }

@@ -248,6 +248,12 @@ inline bool isAllRayTracingStages (const VkShaderStageFlags shaderStageFlags)
 	return isAllInStage(shaderStageFlags, rayTracingStageFlags);
 }
 
+inline bool isAllMeshShadingStages (const VkShaderStageFlags shaderStageFlags)
+{
+	const VkShaderStageFlags meshStages = (VK_SHADER_STAGE_MESH_BIT_EXT | VK_SHADER_STAGE_TASK_BIT_EXT);
+	return isAllInStage(shaderStageFlags, meshStages);
+}
+
 } // vk
 
 #endif // _VKTYPEUTIL_HPP

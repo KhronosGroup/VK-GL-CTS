@@ -47,8 +47,8 @@ namespace
 class BlendConstantsTestInstance : public DynamicStateBaseClass
 {
 public:
-	BlendConstantsTestInstance (Context& context, ShaderMap shaders)
-		: DynamicStateBaseClass	(context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
+	BlendConstantsTestInstance (Context& context, const ShaderMap& shaders)
+		: DynamicStateBaseClass	(context, shaders.at(glu::SHADERTYPE_VERTEX), shaders.at(glu::SHADERTYPE_FRAGMENT), shaders.at(glu::SHADERTYPE_MESH))
 	{
 		m_topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 
@@ -62,20 +62,42 @@ public:
 
 	virtual void initPipeline (const vk::VkDevice device)
 	{
-		const vk::Unique<vk::VkShaderModule> vs (createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_vertexShaderName), 0));
-		const vk::Unique<vk::VkShaderModule> fs (createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0));
+		PipelineCreateInfo pipelineCreateInfo(*m_pipelineLayout, *m_renderPass, 0, 0);
 
+		// Shader modules.
+		vk::Move<vk::VkShaderModule>	vs;
+		vk::Move<vk::VkShaderModule>	fs;
+		vk::Move<vk::VkShaderModule>	ms;
+		const auto&						binaries = m_context.getBinaryCollection();
+
+		if (m_isMesh)
+		{
+			ms = vk::createShaderModule(m_vk, device, binaries.get(m_meshShaderName));
+			pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*ms, "main", vk::VK_SHADER_STAGE_MESH_BIT_EXT));
+		}
+		else
+		{
+			vs = vk::createShaderModule(m_vk, device, binaries.get(m_vertexShaderName));
+			pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", vk::VK_SHADER_STAGE_VERTEX_BIT));
+		}
+
+		fs = vk::createShaderModule(m_vk, device, binaries.get(m_fragmentShaderName));
+		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, "main", vk::VK_SHADER_STAGE_FRAGMENT_BIT));
+
+		// Input state.
+		if (!m_isMesh)
+		{
+			pipelineCreateInfo.addState(PipelineCreateInfo::VertexInputState(m_vertexInputState));
+			pipelineCreateInfo.addState(PipelineCreateInfo::InputAssemblerState(m_topology));
+		}
+
+		// Color blend state.
 		const vk::VkPipelineColorBlendAttachmentState VkPipelineColorBlendAttachmentState =
 			PipelineCreateInfo::ColorBlendState::Attachment(VK_TRUE,
 															vk::VK_BLEND_FACTOR_SRC_ALPHA, vk::VK_BLEND_FACTOR_CONSTANT_COLOR, vk::VK_BLEND_OP_ADD,
 															vk::VK_BLEND_FACTOR_SRC_ALPHA, vk::VK_BLEND_FACTOR_CONSTANT_ALPHA, vk::VK_BLEND_OP_ADD);
-
-		PipelineCreateInfo pipelineCreateInfo(*m_pipelineLayout, *m_renderPass, 0, 0);
-		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", vk::VK_SHADER_STAGE_VERTEX_BIT));
-		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, "main", vk::VK_SHADER_STAGE_FRAGMENT_BIT));
-		pipelineCreateInfo.addState(PipelineCreateInfo::VertexInputState(m_vertexInputState));
-		pipelineCreateInfo.addState(PipelineCreateInfo::InputAssemblerState(m_topology));
 		pipelineCreateInfo.addState(PipelineCreateInfo::ColorBlendState(1, &VkPipelineColorBlendAttachmentState));
+
 		pipelineCreateInfo.addState(PipelineCreateInfo::ViewportState(1));
 		pipelineCreateInfo.addState(PipelineCreateInfo::DepthStencilState());
 		pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
@@ -102,11 +124,23 @@ public:
 		setDynamicDepthStencilState();
 		setDynamicBlendState(0.33f, 0.1f, 0.66f, 0.5f);
 
-		const vk::VkDeviceSize vertexBufferOffset = 0;
-		const vk::VkBuffer vertexBuffer = m_vertexBuffer->object();
-		m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+		if (m_isMesh)
+		{
+			const auto numVert = static_cast<uint32_t>(m_data.size());
+			DE_ASSERT(numVert >= 2u);
 
-		m_vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_data.size()), 1, 0, 0);
+			m_vk.cmdBindDescriptorSets(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout.get(), 0u, 1u, &m_descriptorSet.get(), 0u, nullptr);
+			pushVertexOffset(0u, *m_pipelineLayout);
+			m_vk.cmdDrawMeshTasksEXT(*m_cmdBuffer, numVert - 2u, 1u, 1u);
+		}
+		else
+		{
+			const vk::VkDeviceSize	vertexBufferOffset	= 0;
+			const vk::VkBuffer		vertexBuffer		= m_vertexBuffer->object();
+
+			m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+			m_vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_data.size()), 1, 0, 0);
+		}
 
 		endRenderPass(m_vk, *m_cmdBuffer);
 		endCommandBuffer(m_vk, *m_cmdBuffer);
@@ -152,6 +186,11 @@ public:
 	}
 };
 
+void checkMeshShaderSupport (Context& context)
+{
+	context.requireDeviceFunctionality("VK_EXT_mesh_shader");
+}
+
 } //anonymous
 
 DynamicStateCBTests::DynamicStateCBTests (tcu::TestContext& testCtx)
@@ -164,10 +203,21 @@ DynamicStateCBTests::~DynamicStateCBTests (void) {}
 
 void DynamicStateCBTests::init (void)
 {
-	ShaderMap shaderPaths;
-	shaderPaths[glu::SHADERTYPE_VERTEX] = "vulkan/dynamic_state/VertexFetch.vert";
-	shaderPaths[glu::SHADERTYPE_FRAGMENT] = "vulkan/dynamic_state/VertexFetch.frag";
-	addChild(new InstanceFactory<BlendConstantsTestInstance>(m_testCtx, "blend_constants", "Check if blend constants are working properly", shaderPaths));
+	ShaderMap pathsBase;
+	pathsBase[glu::SHADERTYPE_FRAGMENT] = "vulkan/dynamic_state/VertexFetch.frag";
+	pathsBase[glu::SHADERTYPE_VERTEX] = nullptr;
+	pathsBase[glu::SHADERTYPE_MESH] = nullptr;
+
+	{
+		ShaderMap shaderPaths(pathsBase);
+		shaderPaths[glu::SHADERTYPE_VERTEX] = "vulkan/dynamic_state/VertexFetch.vert";
+		addChild(new InstanceFactory<BlendConstantsTestInstance>(m_testCtx, "blend_constants", "Check if blend constants are working properly", shaderPaths));
+	}
+	{
+		ShaderMap shaderPaths(pathsBase);
+		shaderPaths[glu::SHADERTYPE_MESH] = "vulkan/dynamic_state/VertexFetch.mesh";
+		addChild(new InstanceFactory<BlendConstantsTestInstance, FunctionSupport0>(m_testCtx, "blend_constants_mesh", "Check if blend constants are working properly in mesh shaders", shaderPaths, checkMeshShaderSupport));
+	}
 }
 
 } // DynamicState

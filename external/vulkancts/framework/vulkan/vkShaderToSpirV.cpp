@@ -88,7 +88,7 @@ void prepareGlslang (void)
 
 // Fail compilation if more members are added to TLimits or TBuiltInResource
 struct LimitsSizeHelper_s			{ bool m0, m1, m2, m3, m4, m5, m6, m7, m8; };
-struct BuiltInResourceSizeHelper_s	{ int m[93]; LimitsSizeHelper_s l; };
+struct BuiltInResourceSizeHelper_s	{ int m[102]; LimitsSizeHelper_s l; };
 
 DE_STATIC_ASSERT(sizeof(TLimits)			== sizeof(LimitsSizeHelper_s));
 DE_STATIC_ASSERT(sizeof(TBuiltInResource)	== sizeof(BuiltInResourceSizeHelper_s));
@@ -193,8 +193,8 @@ void getDefaultBuiltInResources (TBuiltInResource* builtin)
 	builtin->maxCullDistances							= 8;
 	builtin->maxCombinedClipAndCullDistances			= 8;
 	builtin->maxSamples									= 4;
-	builtin->maxMeshOutputVerticesNV					= 256;
-	builtin->maxMeshOutputPrimitivesNV					= 256;
+	builtin->maxMeshOutputVerticesNV					= 2048;
+	builtin->maxMeshOutputPrimitivesNV					= 2048;
 	builtin->maxMeshWorkGroupSizeX_NV					= 256;
 	builtin->maxMeshWorkGroupSizeY_NV					= 1;
 	builtin->maxMeshWorkGroupSizeZ_NV					= 1;
@@ -202,6 +202,15 @@ void getDefaultBuiltInResources (TBuiltInResource* builtin)
 	builtin->maxTaskWorkGroupSizeY_NV					= 1;
 	builtin->maxTaskWorkGroupSizeZ_NV					= 1;
 	builtin->maxMeshViewCountNV							= 4;
+	builtin->maxMeshOutputVerticesEXT					= 2048;
+	builtin->maxMeshOutputPrimitivesEXT					= 2048;
+	builtin->maxMeshWorkGroupSizeX_EXT					= 256;
+	builtin->maxMeshWorkGroupSizeY_EXT					= 256;
+	builtin->maxMeshWorkGroupSizeZ_EXT					= 256;
+	builtin->maxTaskWorkGroupSizeX_EXT					= 256;
+	builtin->maxTaskWorkGroupSizeY_EXT					= 256;
+	builtin->maxTaskWorkGroupSizeZ_EXT					= 256;
+	builtin->maxMeshViewCountEXT						= 1;
 	builtin->maxDualSourceDrawBuffersEXT				= 1;
 };
 

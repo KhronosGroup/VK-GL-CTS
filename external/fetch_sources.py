@@ -299,9 +299,9 @@ def postExtractLibpng (path):
 
 PACKAGES = [
 	SourcePackage(
-		"http://zlib.net/zlib-1.2.11.tar.gz",
-		"zlib-1.2.11.tar.gz",
-		"c3e5e9fdd5004dcb542feda5ee4f0ff0744628baf8ed2dd5d66f8ca1197cb1a1",
+		"http://zlib.net/zlib-1.2.12.tar.gz",
+		"zlib-1.2.12.tar.gz",
+		"91844808532e5ce316b3c010929493c0244f3d37593afd6de04f71821d5136d9",
 		"zlib"),
 	SourcePackage(
 		"http://prdownloads.sourceforge.net/libpng/libpng-1.6.27.tar.gz",
@@ -315,25 +315,25 @@ PACKAGES = [
 		"e7b5f0aa5b1b0eadc63a1c624c0ca7f5af133aa857d6a4271b0ef3d0bdb6868e",
 		"renderdoc"),
 	GitRepo(
-		"https://github.com/KhronosGroup/SPIRV-Tools.git",
-		None,
-		"20b122b2e0d43fcc322a383354d1a3f4514e3757",
+		"https://gitlab.khronos.org/spirv/spirv-tools.git",
+		"git@gitlab.khronos.org:spirv/spirv-tools.git",
+		"33bd2d5347dfdb6076bf634cd8a7b25c98980b5c",
 		"spirv-tools"),
 	GitRepo(
-		"https://github.com/KhronosGroup/glslang.git",
-		None,
-		"c34bb3b6c55f6ab084124ad964be95a699700d34",
+		"https://gitlab.khronos.org/GLSL/glslang.git",
+		"git@gitlab.khronos.org:GLSL/glslang.git",
+		"98825218d5369e014cab1823ff105f6f9f2effcc",
 		"glslang",
 		removeTags = ["master-tot"]),
 	GitRepo(
-		"https://github.com/KhronosGroup/SPIRV-Headers.git",
-		None,
-		"b42ba6d92faf6b4938e6f22ddd186dbdacc98d78",
+		"https://gitlab.khronos.org/spirv/SPIRV-Headers.git",
+		"git@gitlab.khronos.org:spirv/SPIRV-Headers.git",
+		"5c37ff76bd6ddf3c78a4be08cd45a76481356b27",
 		"spirv-headers"),
 	GitRepo(
-		"https://github.com/KhronosGroup/Vulkan-Docs.git",
-		None,
-		"ee155139142a2a71b56238419bf0a6859f7b0a93",
+		"https://gitlab.khronos.org/vulkan/vulkan.git",
+		"git@gitlab.khronos.org:vulkan/vulkan.git",
+		"791ff99dff9708ab38521bb91a6bc7e8391a551d",
 		"vulkan-docs"),
 	GitRepo(
 		"https://github.com/google/amber.git",

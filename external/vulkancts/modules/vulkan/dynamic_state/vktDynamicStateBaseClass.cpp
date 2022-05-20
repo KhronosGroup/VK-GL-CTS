@@ -27,6 +27,8 @@
 #include "vkPrograms.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
+#include "vkBuilderUtil.hpp"
 
 namespace vkt
 {
@@ -35,23 +37,44 @@ namespace DynamicState
 
 using namespace Draw;
 
-DynamicStateBaseClass::DynamicStateBaseClass (Context& context, const char* vertexShaderName, const char* fragmentShaderName)
+DynamicStateBaseClass::DynamicStateBaseClass (Context& context, const char* vertexShaderName, const char* fragmentShaderName, const char* meshShaderName)
 	: TestInstance				(context)
 	, m_colorAttachmentFormat   (vk::VK_FORMAT_R8G8B8A8_UNORM)
 	, m_topology				(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
 	, m_vk						(context.getDeviceInterface())
-	, m_vertexShaderName		(vertexShaderName)
+	, m_vertexShaderName		(vertexShaderName ? vertexShaderName : "")
 	, m_fragmentShaderName		(fragmentShaderName)
+	, m_meshShaderName			(meshShaderName ? meshShaderName : "")
+	, m_isMesh					(meshShaderName != nullptr)
 {
+	// We must provide either the mesh shader or the vertex shader.
+	DE_ASSERT(static_cast<bool>(vertexShaderName) != static_cast<bool>(meshShaderName));
 }
 
 void DynamicStateBaseClass::initialize (void)
 {
-	const vk::VkDevice device		= m_context.getDevice();
-	const deUint32 queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+	const vk::VkDevice						device				= m_context.getDevice();
+	const deUint32							queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	const auto								vertDescType		= (m_isMesh ? vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER : vk::VK_DESCRIPTOR_TYPE_MAX_ENUM);
+	std::vector<vk::VkPushConstantRange>	pcRanges;
 
-	const PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
-	m_pipelineLayout = vk::createPipelineLayout(m_vk, device, &pipelineLayoutCreateInfo);
+	// The mesh shading pipeline will contain a set with vertex data.
+	if (m_isMesh)
+	{
+		vk::DescriptorSetLayoutBuilder	setLayoutBuilder;
+		vk::DescriptorPoolBuilder		poolBuilder;
+
+		setLayoutBuilder.addSingleBinding(vertDescType, vk::VK_SHADER_STAGE_MESH_BIT_EXT);
+		m_setLayout = setLayoutBuilder.build(m_vk, device);
+
+		poolBuilder.addType(vertDescType);
+		m_descriptorPool = poolBuilder.build(m_vk, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+		m_descriptorSet = vk::makeDescriptorSet(m_vk, device, m_descriptorPool.get(), m_setLayout.get());
+		pcRanges.push_back(vk::makePushConstantRange(vk::VK_SHADER_STAGE_MESH_BIT_EXT, 0u, static_cast<uint32_t>(sizeof(uint32_t))));
+	}
+
+	m_pipelineLayout = vk::makePipelineLayout(m_vk, device, m_setLayout.get(), de::dataOrNull(pcRanges));
 
 	const vk::VkExtent3D targetImageExtent = { WIDTH, HEIGHT, 1 };
 	const ImageCreateInfo targetImageCreateInfo(vk::VK_IMAGE_TYPE_2D, m_colorAttachmentFormat, targetImageExtent, 1, 1, vk::VK_SAMPLE_COUNT_1_BIT,
@@ -91,14 +114,26 @@ void DynamicStateBaseClass::initialize (void)
 		2,
 		vertexInputAttributeDescriptions);
 
-	const vk::VkDeviceSize dataSize = m_data.size() * sizeof(PositionColorVertex);
-	m_vertexBuffer = Buffer::createAndAlloc(m_vk, device, BufferCreateInfo(dataSize, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT),
+	const vk::VkDeviceSize			dataSize	= de::dataSize(m_data);
+	const vk::VkBufferUsageFlags	bufferUsage	= (m_isMesh ? vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	m_vertexBuffer = Buffer::createAndAlloc(m_vk, device, BufferCreateInfo(dataSize, bufferUsage),
 											m_context.getDefaultAllocator(), vk::MemoryRequirement::HostVisible);
 
 	deUint8* ptr = reinterpret_cast<unsigned char *>(m_vertexBuffer->getBoundMemory().getHostPtr());
 	deMemcpy(ptr, &m_data[0], (size_t)dataSize);
 
 	vk::flushAlloc(m_vk, device, m_vertexBuffer->getBoundMemory());
+
+	// Update descriptor set for mesh shaders.
+	if (m_isMesh)
+	{
+		vk::DescriptorSetUpdateBuilder	updateBuilder;
+		const auto						location		= vk::DescriptorSetUpdateBuilder::Location::binding(0u);
+		const auto						bufferInfo		= vk::makeDescriptorBufferInfo(m_vertexBuffer->object(), 0ull, dataSize);
+
+		updateBuilder.writeSingle(m_descriptorSet.get(), location, vertDescType, &bufferInfo);
+		updateBuilder.update(m_vk, device);
+	}
 
 	const CmdPoolCreateInfo cmdPoolCreateInfo(queueFamilyIndex);
 	m_cmdPool = vk::createCommandPool(m_vk, device, &cmdPoolCreateInfo);
@@ -166,17 +201,38 @@ void DynamicStateBaseClass::initFramebuffer (const vk::VkDevice device)
 
 void DynamicStateBaseClass::initPipeline (const vk::VkDevice device)
 {
-	const vk::Unique<vk::VkShaderModule> vs(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_vertexShaderName), 0));
-	const vk::Unique<vk::VkShaderModule> fs(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0));
-
-	const PipelineCreateInfo::ColorBlendState::Attachment vkCbAttachmentState;
-
 	PipelineCreateInfo pipelineCreateInfo(*m_pipelineLayout, *m_renderPass, 0, 0);
-	pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", vk::VK_SHADER_STAGE_VERTEX_BIT));
+
+	// Shader modules.
+	vk::Move<vk::VkShaderModule>	vs;
+	vk::Move<vk::VkShaderModule>	fs;
+	vk::Move<vk::VkShaderModule>	ms;
+	const auto&						binaries = m_context.getBinaryCollection();
+
+	if (m_isMesh)
+	{
+		ms = vk::createShaderModule(m_vk, device, binaries.get(m_meshShaderName));
+		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*ms, "main", vk::VK_SHADER_STAGE_MESH_BIT_EXT));
+	}
+	else
+	{
+		vs = vk::createShaderModule(m_vk, device, binaries.get(m_vertexShaderName));
+		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", vk::VK_SHADER_STAGE_VERTEX_BIT));
+	}
+
+	fs = vk::createShaderModule(m_vk, device, binaries.get(m_fragmentShaderName));
 	pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, "main", vk::VK_SHADER_STAGE_FRAGMENT_BIT));
-	pipelineCreateInfo.addState(PipelineCreateInfo::VertexInputState(m_vertexInputState));
-	pipelineCreateInfo.addState(PipelineCreateInfo::InputAssemblerState(m_topology));
+
+	if (!m_isMesh)
+	{
+		pipelineCreateInfo.addState(PipelineCreateInfo::VertexInputState(m_vertexInputState));
+		pipelineCreateInfo.addState(PipelineCreateInfo::InputAssemblerState(m_topology));
+	}
+
+	// Color blend attachment state.
+	const PipelineCreateInfo::ColorBlendState::Attachment vkCbAttachmentState;
 	pipelineCreateInfo.addState(PipelineCreateInfo::ColorBlendState(1, &vkCbAttachmentState));
+
 	pipelineCreateInfo.addState(PipelineCreateInfo::ViewportState(1));
 	pipelineCreateInfo.addState(PipelineCreateInfo::DepthStencilState());
 	pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
@@ -273,6 +329,13 @@ void DynamicStateBaseClass::setDynamicDepthStencilState (const float	minDepthBou
 	m_vk.cmdSetStencilCompareMask(*m_cmdBuffer, vk::VK_STENCIL_FACE_BACK_BIT, stencilBackCompareMask);
 	m_vk.cmdSetStencilWriteMask(*m_cmdBuffer, vk::VK_STENCIL_FACE_BACK_BIT, stencilBackWriteMask);
 	m_vk.cmdSetStencilReference(*m_cmdBuffer, vk::VK_STENCIL_FACE_BACK_BIT, stencilBackReference);
+}
+
+void DynamicStateBaseClass::pushVertexOffset (const uint32_t				vertexOffset,
+											  const vk::VkPipelineLayout	pipelineLayout,
+											  const vk::VkShaderStageFlags	stageFlags)
+{
+	m_vk.cmdPushConstants(*m_cmdBuffer, pipelineLayout, stageFlags, 0u, static_cast<uint32_t>(sizeof(uint32_t)), &vertexOffset);
 }
 
 } // DynamicState

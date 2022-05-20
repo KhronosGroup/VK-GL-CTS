@@ -23,6 +23,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktMeshShaderSyncTests.hpp"
+#include "vktMeshShaderUtil.hpp"
 #include "vktTestCase.hpp"
 
 #include "vkDefs.hpp"
@@ -481,21 +482,11 @@ protected:
 
 void MeshShaderSyncCase::checkSupport (Context& context) const
 {
-	context.requireDeviceFunctionality("VK_NV_mesh_shader");
-
-	const auto& meshFeatures = context.getMeshShaderFeatures();
-
-	if (!meshFeatures.meshShader)
-		TCU_THROW(NotSupportedError, "Mesh shaders not supported");
-
-	if (m_params.needsTask() && !meshFeatures.taskShader)
-		TCU_THROW(NotSupportedError, "Task shaders not supported");
+	checkTaskMeshShaderSupportNV(context, m_params.needsTask(), true);
 
 	if (m_params.writeAccess == WriteAccess::SHADER_WRITE)
 	{
-		const auto& features = context.getDeviceFeatures();
-		if (!features.vertexPipelineStoresAndAtomics)
-			TCU_THROW(NotSupportedError, "Vertex pipeline stores not supported");
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
 	}
 }
 

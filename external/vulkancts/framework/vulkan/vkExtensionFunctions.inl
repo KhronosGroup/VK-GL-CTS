@@ -1010,6 +1010,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_mesh_shader")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_android_surface")
 	{
 		functions.push_back("vkCreateAndroidSurfaceKHR");
@@ -2334,6 +2338,13 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_mesh_shader")
+	{
+		functions.push_back("vkCmdDrawMeshTasksEXT");
+		functions.push_back("vkCmdDrawMeshTasksIndirectEXT");
+		functions.push_back("vkCmdDrawMeshTasksIndirectCountEXT");
+		return;
+	}
 	if (extName == "VK_KHR_android_surface")
 	{
 		return;
@@ -2607,6 +2618,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_pageable_device_local_memory",
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_ray_tracing_pipeline",
+	"VK_EXT_mesh_shader",
 	"VK_ANDROID_external_memory_android_hardware_buffer",
 	"VK_KHR_video_decode_queue",
 	"VK_KHR_video_encode_queue",

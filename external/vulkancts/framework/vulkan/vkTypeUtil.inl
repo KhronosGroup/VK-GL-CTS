@@ -700,6 +700,15 @@ inline VkTraceRaysIndirectCommandKHR makeTraceRaysIndirectCommandKHR (uint32_t w
 	return res;
 }
 
+inline VkDrawMeshTasksIndirectCommandEXT makeDrawMeshTasksIndirectCommandEXT (uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+{
+	VkDrawMeshTasksIndirectCommandEXT res;
+	res.groupCountX	= groupCountX;
+	res.groupCountY	= groupCountY;
+	res.groupCountZ	= groupCountZ;
+	return res;
+}
+
 inline StdVideoEncodeH264RefListModEntry makeStdVideoEncodeH264RefListModEntry (StdVideoH264ModificationOfPicNumsIdc modification_of_pic_nums_idc, uint16_t abs_diff_pic_num_minus1, uint16_t long_term_pic_num)
 {
 	StdVideoEncodeH264RefListModEntry res;

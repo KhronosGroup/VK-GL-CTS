@@ -65,15 +65,15 @@ static bool checkVertexPipelineStages (const void*			internalData,
 	return subgroups::check(datas, width, 1);
 }
 
-static bool checkCompute (const void*			internalData,
-						  vector<const void*>	datas,
-						  const deUint32		numWorkgroups[3],
-						  const deUint32		localSize[3],
-						  deUint32)
+static bool checkComputeOrMesh (const void*			internalData,
+								vector<const void*>	datas,
+								const deUint32		numWorkgroups[3],
+								const deUint32		localSize[3],
+								deUint32)
 {
 	DE_UNREF(internalData);
 
-	return subgroups::checkCompute(datas, numWorkgroups, localSize, 1);
+	return subgroups::checkComputeOrMesh(datas, numWorkgroups, localSize, 1);
 }
 
 string getOpTypeName (OpType opType)
@@ -188,11 +188,11 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 void initPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
 {
 	const bool					spirv15required	= caseDef.opType == OPTYPE_QUAD_BROADCAST_NONCONST;
-	const bool					spirv14required	= isAllRayTracingStages(caseDef.shaderStage);
+	const bool					spirv14required	= (isAllRayTracingStages(caseDef.shaderStage) || isAllMeshShadingStages(caseDef.shaderStage));
 	const SpirvVersion			spirvVersion	= spirv15required ? SPIRV_VERSION_1_5
 												: spirv14required ? SPIRV_VERSION_1_4
 												: SPIRV_VERSION_1_3;
-	const ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, spirvVersion, 0u);
+	const ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, spirvVersion, 0u, (spirv14required && !spirv15required));
 	const string				extHeader		= getExtHeader(caseDef.format);
 	const string				testSrc			= getTestSrc(caseDef);
 
@@ -236,6 +236,18 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 	{
 		context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
 	}
+	else if (isAllMeshShadingStages(caseDef.shaderStage))
+	{
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
+		context.requireDeviceFunctionality("VK_EXT_mesh_shader");
+
+		if ((caseDef.shaderStage & VK_SHADER_STAGE_TASK_BIT_EXT) != 0u)
+		{
+			const auto& features = context.getMeshShaderFeaturesEXT();
+			if (!features.taskShader)
+				TCU_THROW(NotSupportedError, "Task shaders not supported");
+		}
+	}
 
 	subgroups::supportedCheckShader(context, caseDef.shaderStage);
 }
@@ -261,8 +273,11 @@ TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 
 TestStatus test (Context& context, const CaseDefinition caseDef)
 {
+	const bool isCompute	= isAllComputeStages(caseDef.shaderStage);
+	const bool isMesh		= isAllMeshShadingStages(caseDef.shaderStage);
+	DE_ASSERT(!(isCompute && isMesh));
 
-	if (isAllComputeStages(caseDef.shaderStage))
+	if (isCompute || isMesh)
 	{
 		const VkPhysicalDeviceSubgroupSizeControlProperties&	subgroupSizeControlProperties	= context.getSubgroupSizeControlProperties();
 		TestLog&												log								= context.getTestContext().getLog();
@@ -275,7 +290,12 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 		};
 
 		if (caseDef.requiredSubgroupSize == DE_FALSE)
-			return subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkCompute);
+		{
+			if (isCompute)
+				return subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkComputeOrMesh);
+			else
+				return subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkComputeOrMesh);
+		}
 
 		log << TestLog::Message << "Testing required subgroup size range [" <<  subgroupSizeControlProperties.minSubgroupSize << ", "
 			<< subgroupSizeControlProperties.maxSubgroupSize << "]" << TestLog::EndMessage;
@@ -283,8 +303,13 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 		// According to the spec, requiredSubgroupSize must be a power-of-two integer.
 		for (deUint32 size = subgroupSizeControlProperties.minSubgroupSize; size <= subgroupSizeControlProperties.maxSubgroupSize; size *= 2)
 		{
-			TestStatus	result	= subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkCompute,
-															size, VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT);
+			TestStatus result (QP_TEST_RESULT_INTERNAL_ERROR, "Internal Error");
+
+			if (isCompute)
+				result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkComputeOrMesh, size);
+			else
+				result = subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkComputeOrMesh, size);
+
 			if (result.getCode() != QP_TEST_RESULT_PASS)
 			{
 				log << TestLog::Message << "subgroupSize " << size << " failed" << TestLog::EndMessage;
@@ -338,14 +363,20 @@ TestCaseGroup* createSubgroupsQuadTests (TestContext& testCtx)
 	de::MovePtr<TestCaseGroup>	group				(new TestCaseGroup(testCtx, "quad", "Subgroup quad category tests"));
 	de::MovePtr<TestCaseGroup>	graphicGroup		(new TestCaseGroup(testCtx, "graphics", "Subgroup arithmetic category tests: graphics"));
 	de::MovePtr<TestCaseGroup>	computeGroup		(new TestCaseGroup(testCtx, "compute", "Subgroup arithmetic category tests: compute"));
+	de::MovePtr<TestCaseGroup>	meshGroup			(new TestCaseGroup(testCtx, "mesh", "Subgroup arithmetic category tests: mesh shading"));
 	de::MovePtr<TestCaseGroup>	framebufferGroup	(new TestCaseGroup(testCtx, "framebuffer", "Subgroup arithmetic category tests: framebuffer"));
 	de::MovePtr<TestCaseGroup>	raytracingGroup		(new TestCaseGroup(testCtx, "ray_tracing", "Subgroup arithmetic category tests: ray tracing"));
-	const VkShaderStageFlags	stages[]			=
+	const VkShaderStageFlags	fbStages[]			=
 	{
 		VK_SHADER_STAGE_VERTEX_BIT,
 		VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
 		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
 		VK_SHADER_STAGE_GEOMETRY_BIT,
+	};
+	const VkShaderStageFlags	meshStages[]		=
+	{
+		VK_SHADER_STAGE_MESH_BIT_EXT,
+		VK_SHADER_STAGE_TASK_BIT_EXT,
 	};
 	const deBool				boolValues[]		=
 	{
@@ -383,6 +414,26 @@ TestCaseGroup* createSubgroupsQuadTests (TestContext& testCtx)
 					addFunctionCaseWithPrograms(computeGroup.get(), testName, "", supportedCheck, initPrograms, test, caseDef);
 				}
 
+				for (size_t groupSizeNdx = 0; groupSizeNdx < DE_LENGTH_OF_ARRAY(boolValues); ++groupSizeNdx)
+				{
+					for (const auto& stage : meshStages)
+					{
+						const deBool			requiredSubgroupSize	= boolValues[groupSizeNdx];
+						const string			testNameSuffix			= requiredSubgroupSize ? "_requiredsubgroupsize" : "";
+						const string			testName				= name + testNameSuffix + "_" + getShaderStageName(stage);
+						const CaseDefinition	caseDef					=
+						{
+							opType,							//  OpType				opType;
+							stage,							//  VkShaderStageFlags	shaderStage;
+							format,							//  VkFormat			format;
+							de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
+							requiredSubgroupSize,			//  deBool				requiredSubgroupSize;
+						};
+
+						addFunctionCaseWithPrograms(meshGroup.get(), testName, "", supportedCheck, initPrograms, test, caseDef);
+					}
+				}
+
 				{
 					const CaseDefinition	caseDef		=
 					{
@@ -396,12 +447,12 @@ TestCaseGroup* createSubgroupsQuadTests (TestContext& testCtx)
 					addFunctionCaseWithPrograms(graphicGroup.get(), name, "", supportedCheck, initPrograms, test, caseDef);
 				}
 
-				for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
+				for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(fbStages); ++stageIndex)
 				{
 					const CaseDefinition	caseDef		=
 					{
 						opType,							//  OpType				opType;
-						stages[stageIndex],				//  VkShaderStageFlags	shaderStage;
+						fbStages[stageIndex],			//  VkShaderStageFlags	shaderStage;
 						format,							//  VkFormat			format;
 						de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
 						DE_FALSE						//  deBool				requiredSubgroupSize;
@@ -444,6 +495,7 @@ TestCaseGroup* createSubgroupsQuadTests (TestContext& testCtx)
 	group->addChild(computeGroup.release());
 	group->addChild(framebufferGroup.release());
 	group->addChild(raytracingGroup.release());
+	group->addChild(meshGroup.release());
 
 	return group.release();
 }

@@ -2557,6 +2557,16 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceRayQueryFeaturesKHR>
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceMeshShaderFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceMeshShaderPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_PROPERTIES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkAndroidSurfaceCreateInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
@@ -2702,6 +2712,11 @@ template<> VkStructureType getStructureType<VkVideoEncodeInfoKHR> (void)
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_INFO_KHR;
 }
 
+template<> VkStructureType getStructureType<VkVideoEncodeCapabilitiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_CAPABILITIES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkVideoEncodeRateControlLayerInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_LAYER_INFO_KHR;
@@ -2735,6 +2750,11 @@ template<> VkStructureType getStructureType<VkVideoEncodeH264SessionParametersCr
 template<> VkStructureType getStructureType<VkVideoEncodeH264DpbSlotInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_DPB_SLOT_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoEncodeH264ReferenceListsEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_REFERENCE_LISTS_EXT;
 }
 
 template<> VkStructureType getStructureType<VkVideoEncodeH264NaluSliceEXT> (void)
@@ -2797,9 +2817,9 @@ template<> VkStructureType getStructureType<VkVideoEncodeH265ReferenceListsEXT> 
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_REFERENCE_LISTS_EXT;
 }
 
-template<> VkStructureType getStructureType<VkVideoEncodeH265NaluSliceEXT> (void)
+template<> VkStructureType getStructureType<VkVideoEncodeH265NaluSliceSegmentEXT> (void)
 {
-	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_NALU_SLICE_EXT;
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_NALU_SLICE_SEGMENT_EXT;
 }
 
 template<> VkStructureType getStructureType<VkVideoEncodeH265VclFrameInfoEXT> (void)

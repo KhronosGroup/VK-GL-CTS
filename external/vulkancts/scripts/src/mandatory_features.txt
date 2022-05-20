@@ -171,3 +171,6 @@ VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT					FEATURES ( pageableDevi
 VkPhysicalDeviceVulkan12Features							FEATURES ( bufferDeviceAddress )								REQUIREMENTS ( "ApiVersion(1, 3, 0)" )
 VkPhysicalDeviceVulkan12Features							FEATURES ( vulkanMemoryModel )							        REQUIREMENTS ( "ApiVersion(1, 3, 0)" )
 VkPhysicalDeviceVulkan12Features							FEATURES ( vulkanMemoryModelDeviceScope )						REQUIREMENTS ( "ApiVersion(1, 3, 0)" )
+VkPhysicalDeviceMeshShaderFeaturesEXT						FEATURES ( meshShader )											REQUIREMENTS ( VK_EXT_mesh_shader )
+VkPhysicalDeviceMeshShaderFeaturesEXT						FEATURES ( taskShader )											REQUIREMENTS ( VK_EXT_mesh_shader )
+VkPhysicalDeviceFragmentShadingRateFeaturesKHR				FEATURES ( primitiveFragmentShadingRate )						REQUIREMENTS ( physicalDeviceMeshShaderFeaturesEXT.primitiveFragmentShadingRateMeshShader )
