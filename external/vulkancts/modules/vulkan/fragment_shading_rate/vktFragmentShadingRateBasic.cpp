@@ -849,6 +849,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 		fillPtr = (deUint8 *)srFillBuffer->getAllocation().getHostPtr();
 	}
 
+	const auto cbFormat = VK_FORMAT_R32G32B32A32_UINT;
 	de::MovePtr<ImageWithMemory> cbImage;
 	Move<VkImageView> cbImageView;
 	{
@@ -858,7 +859,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 			DE_NULL,								// const void*				pNext;
 			(VkImageCreateFlags)0u,					// VkImageCreateFlags		flags;
 			VK_IMAGE_TYPE_2D,						// VkImageType				imageType;
-			VK_FORMAT_R32G32B32A32_UINT,			// VkFormat					format;
+			cbFormat,								// VkFormat					format;
 			{
 				m_data.framebufferDim.width,		// deUint32	width;
 				m_data.framebufferDim.height,		// deUint32	height;
@@ -884,7 +885,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 			(VkImageViewCreateFlags)0u,					// VkImageViewCreateFlags	flags;
 			**cbImage,									// VkImage					image;
 			VK_IMAGE_VIEW_TYPE_2D_ARRAY,				// VkImageViewType			viewType;
-			VK_FORMAT_R32G32B32A32_UINT,				// VkFormat					format;
+			cbFormat,									// VkFormat					format;
 			{
 				VK_COMPONENT_SWIZZLE_R,					// VkComponentSwizzle	r;
 				VK_COMPONENT_SWIZZLE_G,					// VkComponentSwizzle	g;
@@ -902,6 +903,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 		cbImageView = createImageView(vk, device, &imageViewCreateInfo, NULL);
 	}
 
+	const auto dsFormat = VK_FORMAT_D32_SFLOAT_S8_UINT;
 	de::MovePtr<ImageWithMemory> dsImage;
 	Move<VkImageView> dsImageView, dImageView, sImageView;
 	VkImageUsageFlags dsUsage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
@@ -915,7 +917,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 			DE_NULL,								// const void*				pNext;
 			(VkImageCreateFlags)0u,					// VkImageCreateFlags		flags;
 			VK_IMAGE_TYPE_2D,						// VkImageType				imageType;
-			VK_FORMAT_D32_SFLOAT_S8_UINT,			// VkFormat					format;
+			dsFormat,								// VkFormat					format;
 			{
 				m_data.framebufferDim.width,		// deUint32	width;
 				m_data.framebufferDim.height,		// deUint32	height;
@@ -941,7 +943,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 			(VkImageViewCreateFlags)0u,					// VkImageViewCreateFlags	flags;
 			**dsImage,									// VkImage					image;
 			VK_IMAGE_VIEW_TYPE_2D_ARRAY,				// VkImageViewType			viewType;
-			VK_FORMAT_D32_SFLOAT_S8_UINT,				// VkFormat					format;
+			dsFormat,									// VkFormat					format;
 			{
 				VK_COMPONENT_SWIZZLE_R,					// VkComponentSwizzle	r;
 				VK_COMPONENT_SWIZZLE_G,					// VkComponentSwizzle	g;
@@ -1452,7 +1454,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 					VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,	// VkStructureType sType;
 					DE_NULL,									// const void* pNext;
 					(VkAttachmentDescriptionFlags)0u,			// VkAttachmentDescriptionFlags		flags;
-					VK_FORMAT_R32G32B32A32_UINT,				// VkFormat							format;
+					cbFormat,									// VkFormat							format;
 					m_data.samples,								// VkSampleCountFlagBits			samples;
 					VK_ATTACHMENT_LOAD_OP_LOAD,					// VkAttachmentLoadOp				loadOp;
 					VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp				storeOp;
@@ -1485,7 +1487,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 					VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,	// VkStructureType sType;
 					DE_NULL,									// const void* pNext;
 					(VkAttachmentDescriptionFlags)0u,			// VkAttachmentDescriptionFlags		flags;
-					VK_FORMAT_D32_SFLOAT_S8_UINT,				// VkFormat							format;
+					dsFormat,									// VkFormat							format;
 					m_data.samples,								// VkSampleCountFlagBits			samples;
 					VK_ATTACHMENT_LOAD_OP_LOAD,					// VkAttachmentLoadOp				loadOp;
 					VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp				storeOp;
@@ -1523,8 +1525,8 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 					m_data.framebufferDim.width,								//  deUint32			width;
 					m_data.framebufferDim.height,								//  deUint32			height;
 					m_data.numColorLayers,										//  deUint32			layerCount;
-					0u,															//  deUint32			viewFormatCount;
-					DE_NULL														//  const VkFormat*		pViewFormats;
+					1u,															//  deUint32			viewFormatCount;
+					&cbFormat,													//  const VkFormat*		pViewFormats;
 				}
 			);
 			if (m_data.useAttachment)
@@ -1537,8 +1539,8 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 					srWidth,													//  deUint32			width;
 					srHeight,													//  deUint32			height;
 					numSRLayers,												//  deUint32			layerCount;
-					0u,															//  deUint32			viewFormatCount;
-					DE_NULL														//  const VkFormat*		pViewFormats;
+					1u,															//  deUint32			viewFormatCount;
+					&srFormat,													//  const VkFormat*		pViewFormats;
 				}
 				);
 
@@ -1552,8 +1554,8 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 					m_data.framebufferDim.width,								//  deUint32			width;
 					m_data.framebufferDim.height,								//  deUint32			height;
 					m_data.numColorLayers,										//  deUint32			layerCount;
-					0u,															//  deUint32			viewFormatCount;
-					DE_NULL														//  const VkFormat*		pViewFormats;
+					1u,															//  deUint32			viewFormatCount;
+					&dsFormat,													//  const VkFormat*		pViewFormats;
 				}
 				);
 
