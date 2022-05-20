@@ -201,7 +201,7 @@ static void		restoreStandardOutput	()												{ qpRedirectOut(openWrite, open
 
 static MovePtr<vk::Library> createLibrary (tcu::TestContext& testCtx)
 {
-	return MovePtr<vk::Library>(testCtx.getPlatform().getVulkanPlatform().createLibrary());
+	return MovePtr<vk::Library>(testCtx.getPlatform().getVulkanPlatform().createLibrary(testCtx.getCommandLine().getVkLibraryPath()));
 }
 
 static vk::VkPhysicalDeviceProperties getPhysicalDeviceProperties(vkt::Context& context)

@@ -119,6 +119,7 @@ DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerArgs,		std::string);
 DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerOutputFile,	std::string);
 DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerLogFile,	std::string);
 DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerFilePrefix,	std::string);
+DE_DECLARE_COMMAND_LINE_OPT(VkLibraryPath,				std::string);
 
 
 static void parseIntList (const char* src, std::vector<int>* dst)
@@ -244,7 +245,8 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<PipelineCompilerArgs>			(DE_NULL,	"deqp-pipeline-args",						"Additional compiler parameters (Vulkan SC only)", "")
 		<< Option<PipelineCompilerOutputFile>	(DE_NULL,	"deqp-pipeline-file",						"Output file with pipeline cache (Vulkan SC only, do not use manually)", "")
 		<< Option<PipelineCompilerLogFile>		(DE_NULL,	"deqp-pipeline-logfile",					"Log file for pipeline compiler (Vulkan SC only, do not use manually)", "")
-		<< Option<PipelineCompilerFilePrefix>	(DE_NULL,	"deqp-pipeline-prefix",						"Prefix for input pipeline compiler files (Vulkan SC only, do not use manually)", "");
+		<< Option<PipelineCompilerFilePrefix>	(DE_NULL,	"deqp-pipeline-prefix",						"Prefix for input pipeline compiler files (Vulkan SC only, do not use manually)", "")
+		<< Option<VkLibraryPath>				(DE_NULL,	"deqp-vk-library-path",						"Path to Vulkan library (e.g. loader library vulkan-1.dll)", "");
 }
 
 void registerLegacyOptions (de::cmdline::Parser& parser)
@@ -1095,6 +1097,14 @@ const char* CommandLine::getPipelineCompilerFilePrefix(void) const
 	if (m_cmdLine.hasOption<opt::PipelineCompilerFilePrefix>())
 		return m_cmdLine.getOption<opt::PipelineCompilerFilePrefix>().c_str();
 	else
+		return DE_NULL;
+}
+
+const char* CommandLine::getVkLibraryPath(void) const
+{
+	if (m_cmdLine.hasOption<opt::VkLibraryPath>())
+		return (m_cmdLine.getOption<opt::VkLibraryPath>() != "") ? m_cmdLine.getOption<opt::VkLibraryPath>().c_str() : DE_NULL;
+    else
 		return DE_NULL;
 }
 

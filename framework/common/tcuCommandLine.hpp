@@ -316,6 +316,9 @@ public:
 	//! Prefix for offline pipeline compiler input files
 	const char*						getPipelineCompilerFilePrefix(void) const;
 
+	//! Path to Vulkan library (e.g. loader library vulkan-1.dll)
+	const char*						getVkLibraryPath			(void) const;
+
 	/*--------------------------------------------------------------------*//*!
 	 * \brief Creates case list filter
 	 * \param archive Resources

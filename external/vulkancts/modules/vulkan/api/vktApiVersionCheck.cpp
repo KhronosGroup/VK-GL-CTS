@@ -135,7 +135,7 @@ public:
 		tcu::TestLog&						log				= m_context.getTestContext().getLog();
 		const deUint32						apiVersion		= m_context.getUsedApiVersion();
 		const vk::Platform&					platform		= m_context.getTestContext().getPlatform().getVulkanPlatform();
-		de::MovePtr<vk::Library>			vkLibrary		= de::MovePtr<vk::Library>(platform.createLibrary());
+		de::MovePtr<vk::Library>			vkLibrary		= de::MovePtr<vk::Library>(platform.createLibrary(m_context.getTestContext().getCommandLine().getVkLibraryPath()));
 		const tcu::FunctionLibrary&			funcLibrary		= vkLibrary->getFunctionLibrary();
 
 		deUint32							failsQuantity	= 0u;
