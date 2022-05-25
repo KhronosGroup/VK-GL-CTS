@@ -6881,6 +6881,8 @@ public:
 				else
 				{
 					requirements.push_back("Float16Int8Features.shaderFloat16");
+					requirements.push_back("VK_KHR_16bit_storage");
+					requirements.push_back("VK_KHR_storage_buffer_storage_class");
 					fileName += "_fp16";
 
 					if (ctx.isPackFloat16b == true)
@@ -6893,9 +6895,6 @@ public:
 					}
 				}
 			}
-
-			requirements.push_back("VK_KHR_16bit_storage");
-			requirements.push_back("VK_KHR_storage_buffer_storage_class");
 
 			group->addChild(cts_amber::createAmberTestCase(ctx.testContext, "mat3", "Square matrix 3x3 precision tests", dataDir, fileName + "_mat_3x3.amber", requirements));
 			group->addChild(cts_amber::createAmberTestCase(ctx.testContext, "mat4", "Square matrix 4x4 precision tests", dataDir, fileName + "_mat_4x4.amber", requirements));
