@@ -42,6 +42,7 @@
 #include "vkMemUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkDeviceUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
@@ -55,6 +56,7 @@
 
 #include "pipeline/vktPipelineImageUtil.hpp"		// required for compressed image blit
 #include "vktCustomInstancesDevices.hpp"
+#include "vkSafetyCriticalUtil.hpp"
 
 #include <set>
 #include <array>
@@ -5447,11 +5449,23 @@ std::vector<std::string> removeExtensions (const std::vector<std::string>& a, co
 	return res;
 }
 
+
 // Creates a device that has queues for graphics/compute capabilities and compute or transfer capabilities without graphics.
 Move<VkDevice> createCustomDevice (Context&								context,
 								   const ResolveImageToImageOptions		imageCreateOptions,
+#ifdef CTS_USES_VULKANSC
+								   const CustomInstance&				customInstance,
+#endif // CTS_USES_VULKANSC
 								   uint32_t&							queueFamilyIndex)
 {
+#ifdef CTS_USES_VULKANSC
+	const InstanceInterface&	instanceDriver		= customInstance.getDriver();
+	const VkPhysicalDevice		physicalDevice		= chooseDevice(instanceDriver, customInstance, context.getTestContext().getCommandLine());
+#else
+	const InstanceInterface&	instanceDriver		= context.getInstanceInterface();
+	const VkPhysicalDevice		physicalDevice		= context.getPhysicalDevice();
+#endif // CTS_USES_VULKANSC
+
 	// This function can only be used to create a device with compute only or transfer only queue.
 	DE_ASSERT(imageCreateOptions == COPY_MS_IMAGE_TO_MS_IMAGE_COMPUTE || imageCreateOptions == COPY_MS_IMAGE_TO_MS_IMAGE_TRANSFER);
 
@@ -5513,10 +5527,43 @@ Move<VkDevice> createCustomDevice (Context&								context,
 
 	const auto& deviceFeatures2 = context.getDeviceFeatures2();
 
+	const void *pNext = &deviceFeatures2;
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo = context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext = pNext;
+	pNext = &memReservationInfo;
+
+	VkPipelineCacheCreateInfo			pcCI;
+	std::vector<VkPipelinePoolSize>		poolSizes;
+	if (context.getTestContext().getCommandLine().isSubProcess())
+	{
+		if (context.getResourceInterface()->getCacheDataSize() > 0)
+		{
+			pcCI =
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,			// VkStructureType				sType;
+				DE_NULL,												// const void*					pNext;
+				VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+					VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+				context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
+				context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
+			};
+			memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+			memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+		}
+		poolSizes							= context.getResourceInterface()->getPipelinePoolSizes();
+		if (!poolSizes.empty())
+		{
+			memReservationInfo.pipelinePoolSizeCount		= deUint32(poolSizes.size());
+			memReservationInfo.pPipelinePoolSizes			= poolSizes.data();
+		}
+	}
+#endif // CTS_USES_VULKANSC
+
 	const VkDeviceCreateInfo	deviceCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,			// VkStructureType					sType;
-		&deviceFeatures2,								// const void*						pNext;
+		pNext,											// const void*						pNext;
 		(VkDeviceCreateFlags)0u,						// VkDeviceCreateFlags				flags;
 		DE_LENGTH_OF_ARRAY(deviceQueueCreateInfos),		// uint32_t							queueCreateInfoCount;
 		deviceQueueCreateInfos,							// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
@@ -5527,7 +5574,11 @@ Move<VkDevice> createCustomDevice (Context&								context,
 		DE_NULL,										// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 
-	return vkt::createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(), context.getPhysicalDevice(), &deviceCreateInfo);
+#ifndef CTS_USES_VULKANSC
+	return vkt::createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), instanceDriver, physicalDevice, &deviceCreateInfo);
+#else
+	return vkt::createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), customInstance, instanceDriver, physicalDevice, &deviceCreateInfo);
+#endif // CTS_USES_VULKANSC
 }
 
 class ResolveImageToImage : public CopiesAndBlittingTestInstance
@@ -5553,7 +5604,15 @@ protected:
 	void										copyMSImageToMSImage			(deUint32 copyArraySize);
 	tcu::TestStatus								checkIntermediateCopy			(void);
 private:
+	const CustomInstance						m_customInstance;
 	Move<VkDevice>								m_customDevice;
+
+#ifndef CTS_USES_VULKANSC
+	de::MovePtr<vk::DeviceDriver>				m_deviceDriver;
+#else
+	de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>	m_deviceDriver;
+#endif // CTS_USES_VULKANSC
+
 	Move<VkCommandPool>							m_alternativeCmdPool;
 	Move<VkCommandBuffer>						m_alternativeCmdBuffer;
 	VkQueue										m_alternativeQueue;
@@ -5580,35 +5639,60 @@ private:
 
 ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, const ResolveImageToImageOptions options)
 	: CopiesAndBlittingTestInstance	(context, params)
+	, m_customInstance				(createCustomInstanceFromContext(context))
 	, m_options						(options)
 {
-	const InstanceInterface&	vki						= m_context.getInstanceInterface();
-	const DeviceInterface&		vk						= m_context.getDeviceInterface();
 
+
+#ifdef CTS_USES_VULKANSC
+	const InstanceInterface&	vki						= m_customInstance.getDriver();
+#else
+	const InstanceInterface&	vki						= m_context.getInstanceInterface();
+#endif // CTS_USES_VULKANSC
+
+		uint32_t queueFamilyIndex		= 0;
 	// Create custom device for compute and transfer only queue tests.
 	if (m_options == COPY_MS_IMAGE_TO_MS_IMAGE_COMPUTE || m_options == COPY_MS_IMAGE_TO_MS_IMAGE_TRANSFER)
 	{
 		// 'queueFamilyIndex' will be updated in 'createCustomDevice()' to match the requested queue type.
-		uint32_t queueFamilyIndex		= 0;
+#ifdef CTS_USES_VULKANSC
+		m_customDevice					= createCustomDevice(context, m_options, m_customInstance, queueFamilyIndex);
+#else
 		m_customDevice					= createCustomDevice(context, m_options, queueFamilyIndex);
+#endif // CTS_USES_VULKANSC
 		m_device						= m_customDevice.get();
+
+#ifndef CTS_USES_VULKANSC
+		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), m_customInstance, m_device));
+#else
+		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), m_customInstance, m_device, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), m_device));
+#endif // CTS_USES_VULKANSC
+
 		m_queue							= getDeviceQueue(m_context.getDeviceInterface(), m_device, context.getUniversalQueueFamilyIndex(), 0u);
 		m_alternativeQueue				= getDeviceQueue(m_context.getDeviceInterface(), m_device, queueFamilyIndex, 0u);
-		m_alternativeQueueFamilyIndex	= queueFamilyIndex;
-		m_alternativeAllocator			= de::MovePtr<Allocator>(new SimpleAllocator(vk, m_device, getPhysicalDeviceMemoryProperties(vki, context.getPhysicalDevice())));
-		m_allocator						= m_alternativeAllocator.get();
-
-		// Release the command buffer.
-		m_cmdBuffer = Move<VkCommandBuffer>();
-
-		// Create a new command pool and allocate a command buffer with universal queue family index and destroy the old one.
-		m_cmdPool						= createCommandPool(vk, m_device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, context.getUniversalQueueFamilyIndex());
-		m_cmdBuffer						= allocateCommandBuffer(vk, m_device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-
-		// Create a command pool and allocate a command buffer from the queue family supporting compute / transfer capabilities.
-		m_alternativeCmdPool			= createCommandPool(vk, m_device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
-		m_alternativeCmdBuffer			= allocateCommandBuffer(vk, m_device, *m_alternativeCmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 	}
+
+	m_alternativeQueueFamilyIndex	= queueFamilyIndex;
+
+#ifndef CTS_USES_VULKANSC
+	const DeviceInterface&		vk						= m_context.getDeviceInterface();
+#else
+	const DeviceInterface&		vk						= (DE_NULL != m_deviceDriver) ? *m_deviceDriver : m_context.getDeviceInterface();
+#endif // CTS_USES_VULKANSC
+
+	m_alternativeAllocator			= de::MovePtr<Allocator>(new SimpleAllocator(vk, m_device, getPhysicalDeviceMemoryProperties(vki, context.getPhysicalDevice())));
+	m_allocator						= m_alternativeAllocator.get();
+
+	// Release the command buffer.
+	m_cmdBuffer = Move<VkCommandBuffer>();
+
+	// Create a new command pool and allocate a command buffer with universal queue family index and destroy the old one.
+	m_cmdPool						= createCommandPool(vk, m_device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, context.getUniversalQueueFamilyIndex());
+	m_cmdBuffer						= allocateCommandBuffer(vk, m_device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	// Create a command pool and allocate a command buffer from the queue family supporting compute / transfer capabilities.
+	m_alternativeCmdPool			= createCommandPool(vk, m_device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
+	m_alternativeCmdBuffer			= allocateCommandBuffer(vk, m_device, *m_alternativeCmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	Allocator&					memAlloc				= *m_allocator;
 	const VkPhysicalDevice		vkPhysDevice			= m_context.getPhysicalDevice();
