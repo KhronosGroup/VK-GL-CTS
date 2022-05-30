@@ -311,7 +311,7 @@ void checkSupport (Context& context, DrawTest::TestSpec testSpec)
 	context.requireDeviceFunctionality("VK_KHR_shader_draw_parameters");
 
 	// Shader draw parameters is part of Vulkan 1.1 but is optional
-	if (context.contextSupports(vk::ApiVersion(1, 1, 0)) )
+	if (context.contextSupports(vk::ApiVersion(0, 1, 1, 0)) )
 	{
 		// Check if shader draw parameters is supported on the physical device.
 		vk::VkPhysicalDeviceShaderDrawParametersFeatures	drawParameters	=

@@ -672,6 +672,17 @@ public:
 		4,
 		5
 	};
+	// Different vertex configurations of a triangle whose parameter x is set to NaN during inactive_triangles tests
+	const bool nanConfig[7][3] =
+	{
+		{ true,		true,		true	},
+		{ true,		false,		false	},
+		{ false,	true,		false	},
+		{ false,	false,		true	},
+		{ true,		true,		false	},
+		{ false,	true,		true	},
+		{ true,		false,		true	},
+	};
 };
 
 std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > SingleTriangleConfiguration::initBottomAccelerationStructures (Context&			context,
@@ -685,29 +696,58 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > SingleTriangleConf
 	std::vector<de::SharedPtr<BottomLevelAccelerationStructure> >	result;
 
 	de::MovePtr<BottomLevelAccelerationStructure>	bottomLevelAccelerationStructure = makeBottomLevelAccelerationStructure();
-	bottomLevelAccelerationStructure->setGeometryCount(1u);
 
-	de::SharedPtr<RaytracedGeometryBase> geometry;
-	geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType);
-
-	auto customVertices(vertices);
+	unsigned int geometryCount = testParams.emptyASCase == EmptyAccelerationStructureCase::INACTIVE_TRIANGLES ? 4U : 1U;
 
 	if (testParams.emptyASCase == EmptyAccelerationStructureCase::INACTIVE_TRIANGLES)
 	{
-		const auto nanValue = tcu::Float32::nan().asFloat();
-		for (auto& vtx : customVertices)
-			vtx.x() = nanValue;
+		bottomLevelAccelerationStructure->setGeometryCount(geometryCount);
+
+		de::SharedPtr<RaytracedGeometryBase> geometry;
+		geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType);
+
+		for (unsigned int i = 0; i < geometryCount; i++)
+		{
+			auto customVertices(vertices);
+
+			const auto nanValue = tcu::Float32::nan().asFloat();
+
+			if (nanConfig[i][0])
+				customVertices[3].x() = nanValue;
+			if (nanConfig[i][1])
+				customVertices[4].x() = nanValue;
+			if (nanConfig[i][2])
+				customVertices[5].x() = nanValue;
+
+			for (auto it = begin(customVertices), eit = end(customVertices); it != eit; ++it)
+				geometry->addVertex(*it);
+
+			if (testParams.indexType != VK_INDEX_TYPE_NONE_KHR)
+			{
+				for (auto it = begin(indices), eit = end(indices); it != eit; ++it)
+					geometry->addIndex(*it);
+			}
+			bottomLevelAccelerationStructure->addGeometry(geometry);
+		}
 	}
-
-	for (auto it = begin(customVertices), eit = end(customVertices); it != eit; ++it)
-		geometry->addVertex(*it);
-
-	if (testParams.indexType != VK_INDEX_TYPE_NONE_KHR)
+	else
 	{
-		for (auto it = begin(indices), eit = end(indices); it != eit; ++it)
-			geometry->addIndex(*it);
+		bottomLevelAccelerationStructure->setGeometryCount(geometryCount);
+
+		de::SharedPtr<RaytracedGeometryBase> geometry;
+		geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType);
+
+		for (auto it = begin(vertices), eit = end(vertices); it != eit; ++it)
+			geometry->addVertex(*it);
+
+		if (testParams.indexType != VK_INDEX_TYPE_NONE_KHR)
+		{
+			for (auto it = begin(indices), eit = end(indices); it != eit; ++it)
+				geometry->addIndex(*it);
+		}
+		bottomLevelAccelerationStructure->addGeometry(geometry);
 	}
-	bottomLevelAccelerationStructure->addGeometry(geometry);
+
 	result.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release()));
 
 	return result;
@@ -3434,6 +3474,7 @@ void addEmptyAccelerationStructureTests (tcu::TestCaseGroup* group)
 
 			for (int emptyCaseIdx = 0; emptyCaseIdx < DE_LENGTH_OF_ARRAY(emptyCases); ++emptyCaseIdx)
 			{
+
 				TestParams testParams
 				{
 					buildTypes[buildTypeIdx].buildType,

@@ -31,6 +31,7 @@
 #include "vktDrawImageObjectUtil.hpp"
 #include "vktDrawBufferObjectUtil.hpp"
 #include "vktDrawCreateInfoUtil.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 
 namespace vkt
 {
@@ -40,7 +41,11 @@ namespace DynamicState
 class DynamicStateBaseClass : public TestInstance
 {
 public:
-	DynamicStateBaseClass (Context& context, const char* vertexShaderName, const char* fragmentShaderName, const char* meshShaderName = nullptr);
+	DynamicStateBaseClass (Context& context,
+						   vk::PipelineConstructionType pipelineConstructionType,
+						   const char* vertexShaderName,
+						   const char* fragmentShaderName,
+						   const char* meshShaderName = nullptr);
 
 protected:
 	void					initialize						(void);
@@ -80,9 +85,11 @@ protected:
 															 const deUint32					stencilBackWriteMask = 0xffffffffu,
 															 const deUint32					stencilBackReference = 0);
 
+#ifndef CTS_USES_VULKANSC
 	void					pushVertexOffset				(const uint32_t					vertexOffset,
 															 const vk::VkPipelineLayout		pipelineLayout,
 															 const vk::VkShaderStageFlags	stageFlags = vk::VK_SHADER_STAGE_MESH_BIT_EXT);
+#endif // CTS_USES_VULKANSC
 
 	enum
 	{
@@ -100,7 +107,7 @@ protected:
 	vk::Move<vk::VkDescriptorSetLayout>				m_setLayout;
 	vk::Move<vk::VkPipelineLayout>					m_pipelineLayout;
 	vk::Move<vk::VkDescriptorSet>					m_descriptorSet;
-	vk::Move<vk::VkPipeline>						m_pipeline;
+	vk::GraphicsPipelineWrapper						m_pipeline;
 
 	de::SharedPtr<Draw::Image>						m_colorTargetImage;
 	vk::Move<vk::VkImageView>						m_colorTargetView;

@@ -178,9 +178,15 @@ void BufferAddressTestCase::checkSupport (Context& context) const
 	if (m_data.set >= context.getDeviceProperties().limits.maxBoundDescriptorSets)
 		TCU_THROW(NotSupportedError, "descriptor set number not supported");
 
+#ifndef CTS_USES_VULKANSC
 	bool isBufferDeviceAddressWithCaptureReplaySupported =
 			(context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address") && context.getBufferDeviceAddressFeatures().bufferDeviceAddressCaptureReplay) ||
 			(context.isDeviceFunctionalitySupported("VK_EXT_buffer_device_address") && context.getBufferDeviceAddressFeaturesEXT().bufferDeviceAddressCaptureReplay);
+#else
+	bool isBufferDeviceAddressWithCaptureReplaySupported =
+			(context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address") && context.getBufferDeviceAddressFeatures().bufferDeviceAddressCaptureReplay);
+#endif
+
 	if (m_data.bufType == BT_REPLAY && !isBufferDeviceAddressWithCaptureReplaySupported)
 		TCU_THROW(NotSupportedError, "Capture/replay of physical storage buffer pointers not supported");
 
@@ -632,14 +638,22 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 	VkDescriptorPoolCreateFlags poolCreateFlags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
 	VkDescriptorSetLayoutBinding bindings[2];
-	bindings[0].binding = 0;
-	bindings[0].stageFlags = allShaderStages;
-	bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-	bindings[0].descriptorCount = 1;
-	bindings[1].binding = 1;
-	bindings[1].stageFlags = allShaderStages;
-	bindings[1].descriptorType = m_data.base == BASE_UBO ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-	bindings[1].descriptorCount = 1;
+	bindings[0] =
+	{
+		0,									// deUint32				binding;
+		VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,	// VkDescriptorType		descriptorType;
+		1,									// deUint32				descriptorCount;
+		allShaderStages,					// VkShaderStageFlags	stageFlags;
+		DE_NULL								// const VkSampler*		pImmutableSamplers;
+	};
+	bindings[1] =
+	{
+		1,									// deUint32				binding;
+		m_data.base == BASE_UBO ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,	// VkDescriptorType		descriptorType;
+		1,									// deUint32				descriptorCount;
+		allShaderStages,					// VkShaderStageFlags	stageFlags;
+		DE_NULL								// const VkSampler*		pImmutableSamplers;
+	};
 
 	// Create a layout and allocate a descriptor set for it.
 	VkDescriptorSetLayoutCreateInfo setLayoutCreateInfo =
@@ -674,12 +688,14 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 		numBindings = numBindings*3+1;
 	}
 
+#ifndef CTS_USES_VULKANSC
 	VkBufferDeviceAddressCreateInfoEXT addressCreateInfoEXT =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_CREATE_INFO_EXT,	// VkStructureType	 sType;
 		DE_NULL,													// const void*		 pNext;
 		0x000000000ULL,												// VkDeviceSize		 deviceAddress
 	};
+#endif
 
 	VkBufferOpaqueCaptureAddressCreateInfo bufferOpaqueCaptureAddressCreateInfo =
 	{
@@ -772,21 +788,31 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 		for (deUint32 i = 0; i < numBuffers; ++i)
 		{
 			bufferDeviceAddressInfo.buffer = **buffers[i];
+#ifndef CTS_USES_VULKANSC
 			if (useKHR)
 				gpuAddrs[i] = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
 			else
 				gpuAddrs[i] = vk.getBufferDeviceAddressEXT(device, &bufferDeviceAddressInfo);
+#else
+			gpuAddrs[i] = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
+#endif
 		}
 		buffers.clear();
 		buffers.resize(numBuffers);
 		allocations.clear();
 		allocations.resize(numBuffers);
 
+#ifndef CTS_USES_VULKANSC
 		bufferCreateInfo.pNext = useKHR ? (void *)&bufferOpaqueCaptureAddressCreateInfo : (void *)&addressCreateInfoEXT;
+#else
+		bufferCreateInfo.pNext = (void *)&bufferOpaqueCaptureAddressCreateInfo;
+#endif
 
 		for (deInt32 i = numBuffers-1; i >= 0; --i)
 		{
+#ifndef CTS_USES_VULKANSC
 			addressCreateInfoEXT.deviceAddress = gpuAddrs[i];
+#endif
 			bufferOpaqueCaptureAddressCreateInfo.opaqueCaptureAddress = opaqueBufferAddrs[i];
 			memoryOpaqueCaptureAddressAllocateInfo.opaqueCaptureAddress = opaqueMemoryAddrs[i];
 
@@ -796,10 +822,16 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 
 			bufferDeviceAddressInfo.buffer = **buffers[i];
 			VkDeviceSize newAddr;
+
+#ifndef CTS_USES_VULKANSC
 			if (useKHR)
 				newAddr = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
 			else
 				newAddr = vk.getBufferDeviceAddressEXT(device, &bufferDeviceAddressInfo);
+#else
+			newAddr = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
+#endif
+
 			if (newAddr != gpuAddrs[i])
 				return tcu::TestStatus(QP_TEST_RESULT_FAIL, "address mismatch");
 		}
@@ -810,10 +842,15 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 	{
 		bufferDeviceAddressInfo.buffer = **buffers[multiBuffer ? i : 0];
 
+#ifndef CTS_USES_VULKANSC
 		if (useKHR)
 			gpuAddrs[i] = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
 		else
 			gpuAddrs[i] = vk.getBufferDeviceAddressEXT(device, &bufferDeviceAddressInfo);
+#else
+		gpuAddrs[i] = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
+#endif
+
 		cpuAddrs[i] = (deUint8 *)allocations[multiBuffer ? i : 0]->getHostPtr();
 		if (!multiBuffer)
 		{
@@ -1357,9 +1394,14 @@ void CaptureReplayTestCase::checkSupport (Context& context) const
 	if (!context.isBufferDeviceAddressSupported())
 		TCU_THROW(NotSupportedError, "Physical storage buffer pointers not supported");
 
+#ifndef CTS_USES_VULKANSC
 	bool isBufferDeviceAddressWithCaptureReplaySupported =
 			(context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address") && context.getBufferDeviceAddressFeatures().bufferDeviceAddressCaptureReplay) ||
 			(context.isDeviceFunctionalitySupported("VK_EXT_buffer_device_address") && context.getBufferDeviceAddressFeaturesEXT().bufferDeviceAddressCaptureReplay);
+#else
+	bool isBufferDeviceAddressWithCaptureReplaySupported =
+			(context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address") && context.getBufferDeviceAddressFeatures().bufferDeviceAddressCaptureReplay);
+#endif
 
 	if (!isBufferDeviceAddressWithCaptureReplaySupported)
 		TCU_THROW(NotSupportedError, "Capture/replay of physical storage buffer pointers not supported");
@@ -1399,12 +1441,14 @@ tcu::TestStatus CaptureReplayTestInstance::iterate (void)
 	const bool				useKHR					= m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 	de::Random				rng(m_seed);
 
+#ifndef CTS_USES_VULKANSC
 	VkBufferDeviceAddressCreateInfoEXT addressCreateInfoEXT =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_CREATE_INFO_EXT,	// VkStructureType	 sType;
 		DE_NULL,													// const void*		 pNext;
 		0x000000000ULL,												// VkDeviceSize		 deviceAddress
 	};
+#endif
 
 	VkBufferOpaqueCaptureAddressCreateInfo bufferOpaqueCaptureAddressCreateInfo =
 	{
@@ -1497,21 +1541,31 @@ tcu::TestStatus CaptureReplayTestInstance::iterate (void)
 	for (deUint32 i = 0; i < numBuffers; ++i)
 	{
 		bufferDeviceAddressInfo.buffer = **buffers[i];
+#ifndef CTS_USES_VULKANSC
 		if (useKHR)
 			gpuAddrs[i] = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
 		else
 			gpuAddrs[i] = vk.getBufferDeviceAddressEXT(device, &bufferDeviceAddressInfo);
+#else
+			gpuAddrs[i] = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
+#endif
 	}
 	buffers.clear();
 	buffers.resize(numBuffers);
 	allocations.clear();
 	allocations.resize(numBuffers);
 
+#ifndef CTS_USES_VULKANSC
 	bufferCreateInfo.pNext = useKHR ? (void *)&bufferOpaqueCaptureAddressCreateInfo : (void *)&addressCreateInfoEXT;
+#else
+	bufferCreateInfo.pNext = (void *)&bufferOpaqueCaptureAddressCreateInfo;
+#endif
 
 	for (deInt32 i = numBuffers-1; i >= 0; --i)
 	{
+#ifndef CTS_USES_VULKANSC
 		addressCreateInfoEXT.deviceAddress = gpuAddrs[i];
+#endif
 		bufferOpaqueCaptureAddressCreateInfo.opaqueCaptureAddress = opaqueBufferAddrs[i];
 		memoryOpaqueCaptureAddressAllocateInfo.opaqueCaptureAddress = opaqueMemoryAddrs[i];
 
@@ -1522,10 +1576,16 @@ tcu::TestStatus CaptureReplayTestInstance::iterate (void)
 
 		bufferDeviceAddressInfo.buffer = **buffers[i];
 		VkDeviceSize newAddr;
+
+#ifndef CTS_USES_VULKANSC
 		if (useKHR)
 			newAddr = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
 		else
 			newAddr = vk.getBufferDeviceAddressEXT(device, &bufferDeviceAddressInfo);
+#else
+			newAddr = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
+#endif
+
 		if (newAddr != gpuAddrs[i])
 			return tcu::TestStatus(QP_TEST_RESULT_FAIL, "address mismatch");
 	}

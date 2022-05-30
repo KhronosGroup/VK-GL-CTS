@@ -28,6 +28,7 @@
 #include "vkImageWithMemory.hpp"
 #include "vkImageUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkDeviceUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkTypeUtil.hpp"
@@ -77,7 +78,7 @@ template <RobustnessFeatures FEATURES>
 class SingletonDevice
 {
 	SingletonDevice	(Context& context)
-		: m_logicalDevice ()
+		: m_context(context), m_instanceWrapper(new CustomInstanceWrapper(context)),  m_logicalDevice ()
 	{
 		// Note we are already checking the needed features are available in checkSupport().
 		VkPhysicalDeviceRobustness2FeaturesEXT				robustness2Features				= initVulkanStructure();
@@ -109,17 +110,49 @@ class SingletonDevice
 			features2.pNext = &shaderImageAtomicInt64Features;
 		}
 
-		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
-		m_logicalDevice = createRobustBufferAccessDevice(context, &features2);
+		const VkPhysicalDevice physicalDevice = chooseDevice(m_instanceWrapper->instance.getDriver(), m_instanceWrapper->instance, context.getTestContext().getCommandLine());
+		m_instanceWrapper->instance.getDriver().getPhysicalDeviceFeatures2(physicalDevice, &features2);
+		m_logicalDevice = createRobustBufferAccessDevice(context, m_instanceWrapper->instance, m_instanceWrapper->instance.getDriver(), &features2);
+
+#ifndef CTS_USES_VULKANSC
+		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), m_instanceWrapper->instance, *m_logicalDevice));
+#else
+		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), m_instanceWrapper->instance, *m_logicalDevice, context.getTestContext().getCommandLine(), context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_logicalDevice));
+#endif // CTS_USES_VULKANSC
 	}
 
 public:
+	~SingletonDevice()
+	{
+	}
+	static VkInstance getInstance(Context& context)
+	{
+		if (!m_singletonDevice)
+			m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context));
+		DE_ASSERT(m_singletonDevice);
+		return m_singletonDevice->m_instanceWrapper->instance;
+	}
+	static const InstanceInterface& getInstanceInterface(Context& context)
+	{
+		if (!m_singletonDevice)
+			m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context));
+		DE_ASSERT(m_singletonDevice);
+		return m_singletonDevice->m_instanceWrapper->instance.getDriver();
+	}
+
 	static VkDevice getDevice(Context& context)
 	{
 		if (!m_singletonDevice)
 			m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context));
 		DE_ASSERT(m_singletonDevice);
 		return m_singletonDevice->m_logicalDevice.get();
+	}
+	static const DeviceInterface& getDeviceInterface(Context& context)
+	{
+		if (!m_singletonDevice)
+			m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context));
+		DE_ASSERT(m_singletonDevice);
+		return *(m_singletonDevice->m_deviceDriver.get());
 	}
 
 	static void destroy()
@@ -128,7 +161,15 @@ public:
 	}
 
 private:
+	const Context&								m_context;
+	std::shared_ptr<CustomInstanceWrapper>		m_instanceWrapper;
 	Move<vk::VkDevice>							m_logicalDevice;
+#ifndef CTS_USES_VULKANSC
+	de::MovePtr<vk::DeviceDriver>				m_deviceDriver;
+#else
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	m_deviceDriver;
+#endif // CTS_USES_VULKANSC
+
 	static SharedPtr<SingletonDevice<FEATURES>>	m_singletonDevice;
 };
 
@@ -193,6 +234,36 @@ static bool formatIsR64(const VkFormat& f)
 }
 
 // Returns the appropriate singleton device for the given case.
+VkInstance getInstance(Context& ctx, const CaseDef& caseDef)
+{
+	if (formatIsR64(caseDef.format))
+	{
+		if (caseDef.testRobustness2)
+			return Robustness2Int64AtomicsSingleton::getInstance(ctx);
+		return ImageRobustnessInt64AtomicsSingleton::getInstance(ctx);
+	}
+
+	if (caseDef.testRobustness2)
+		return Robustness2Singleton::getInstance(ctx);
+	return ImageRobustnessSingleton::getInstance(ctx);
+}
+
+// Returns the appropriate singleton device driver for the given case.
+const InstanceInterface& getInstanceInterface(Context& ctx, const CaseDef& caseDef)
+{
+	if (formatIsR64(caseDef.format))
+	{
+		if (caseDef.testRobustness2)
+			return Robustness2Int64AtomicsSingleton::getInstanceInterface(ctx);
+		return ImageRobustnessInt64AtomicsSingleton::getInstanceInterface(ctx);
+	}
+
+	if (caseDef.testRobustness2)
+		return Robustness2Singleton::getInstanceInterface(ctx);
+	return ImageRobustnessSingleton::getInstanceInterface(ctx);
+}
+
+// Returns the appropriate singleton device for the given case.
 VkDevice getLogicalDevice (Context& ctx, const CaseDef& caseDef)
 {
 	if (formatIsR64(caseDef.format))
@@ -206,6 +277,22 @@ VkDevice getLogicalDevice (Context& ctx, const CaseDef& caseDef)
 		return Robustness2Singleton::getDevice(ctx);
 	return ImageRobustnessSingleton::getDevice(ctx);
 }
+
+// Returns the appropriate singleton device driver for the given case.
+const DeviceInterface& getDeviceInterface(Context& ctx, const CaseDef& caseDef)
+{
+	if (formatIsR64(caseDef.format))
+	{
+		if (caseDef.testRobustness2)
+			return Robustness2Int64AtomicsSingleton::getDeviceInterface(ctx);
+		return ImageRobustnessInt64AtomicsSingleton::getDeviceInterface(ctx);
+	}
+
+	if (caseDef.testRobustness2)
+		return Robustness2Singleton::getDeviceInterface(ctx);
+	return ImageRobustnessSingleton::getDeviceInterface(ctx);
+}
+
 
 class Layout
 {
@@ -309,7 +396,7 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 	VkPhysicalDeviceRobustness2FeaturesEXT				robustness2Features				= initVulkanStructure();
 	VkPhysicalDeviceImageRobustnessFeaturesEXT			imageRobustnessFeatures			= initVulkanStructure();
 	VkPhysicalDeviceScalarBlockLayoutFeatures			scalarLayoutFeatures			= initVulkanStructure();
-	VkPhysicalDeviceFeatures2KHR						features2						= initVulkanStructure();
+	VkPhysicalDeviceFeatures2							features2						= initVulkanStructure();
 
 	context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
 
@@ -335,7 +422,7 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 		context.requireDeviceFunctionality("VK_EXT_shader_image_atomic_int64");
 
 		VkFormatProperties formatProperties;
-		vki.getPhysicalDeviceFormatProperties(context.getPhysicalDevice(), m_data.format, &formatProperties);
+		vki.getPhysicalDeviceFormatProperties(physicalDevice, m_data.format, &formatProperties);
 
 		switch (m_data.descriptorType)
 		{
@@ -422,9 +509,10 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 		!features2.features.shaderStorageImageMultisample)
 		TCU_THROW(NotSupportedError, "shaderStorageImageMultisample not supported");
 
-	if ((m_data.useTemplate || formatIsR64(m_data.format)) && !context.contextSupports(vk::ApiVersion(1, 1, 0)))
+	if ((m_data.useTemplate || formatIsR64(m_data.format)) && !context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
 		TCU_THROW(NotSupportedError, "Vulkan 1.1 not supported");
 
+#ifndef CTS_USES_VULKANSC
 	if ((m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER || m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) &&
 		!m_data.formatQualifier)
 	{
@@ -434,6 +522,12 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 		if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR))
 			TCU_THROW(NotSupportedError, "Format does not support writing without format");
 	}
+#else
+	if ((m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER || m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) &&
+		!m_data.formatQualifier &&
+		(!features2.features.shaderStorageImageReadWithoutFormat || !features2.features.shaderStorageImageWriteWithoutFormat))
+		TCU_THROW(NotSupportedError, "shaderStorageImageReadWithoutFormat or shaderStorageImageWriteWithoutFormat not supported");
+#endif // CTS_USES_VULKANSC
 
 	if (m_data.pushDescriptor)
 		context.requireDeviceFunctionality("VK_KHR_push_descriptor");
@@ -706,6 +800,9 @@ string genCoord(string c, int numCoords, VkSampleCountFlagBits samples, int dim)
 // Normalized coordinates. Divide by "imageDim" and add 0.25 so we're not on a pixel boundary.
 string genCoordNorm(const CaseDef &caseDef, string c, int numCoords, int numNormalizedCoords, int dim)
 {
+	// dim can be 3 for cube_array. Reuse the number of layers in that case.
+	dim = std::min(dim, 2);
+
 	if (numCoords == 1)
 		return c + " / float(" + to_string(caseDef.imageDim[dim]) + ")";
 
@@ -1362,13 +1459,41 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 		checks << "  temp_ql = " << qLevelType << "(textureQueryLevels(texture0_1));\n";
 		checks << "  temp = " << vecType << "(temp_ql);\n";
 		checks << "  accum += abs(temp);\n";
+
+		if (m_data.stage == STAGE_FRAGMENT)
+		{
+			// as here we only want to check that textureQueryLod returns 0 when
+			// texture0_1 is null, we don't need to use the actual texture coordinates
+			// (and modify the vertex shader below to do so). Any coordinates are fine.
+			// gl_FragCoord has been selected "randomly", instead of selecting 0 for example.
+			std::string lod_str = (numNormalizedCoords == 1) ? ");" : (numNormalizedCoords == 2) ? "y);" : "yz);";
+			checks << "  vec2 lod = textureQueryLod(texture0_1, gl_FragCoord.x" << lod_str << "\n";
+			checks << "  temp_ql = " << qLevelType << "(ceil(abs(lod.x) + abs(lod.y)));\n";
+			checks << "  temp = " << vecType << "(temp_ql);\n";
+			checks << "  accum += abs(temp);\n";
+		}
 	}
 
+
 	const bool is64BitFormat = formatIsR64(m_data.format);
-	std::string SupportR64 = (is64BitFormat ?
-							std::string("#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require\n"
-							"#extension GL_EXT_shader_image_int64 : require\n") :
-							std::string());
+	std::string support =	"#version 460 core\n"
+							"#extension GL_EXT_nonuniform_qualifier : enable\n"
+							"#extension GL_EXT_scalar_block_layout : enable\n"
+							"#extension GL_EXT_samplerless_texture_functions : enable\n"
+							"#extension GL_EXT_control_flow_attributes : enable\n"
+							"#extension GL_EXT_shader_image_load_formatted : enable\n";
+	std::string SupportR64 =	"#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require\n"
+								"#extension GL_EXT_shader_image_int64 : require\n";
+	if (is64BitFormat)
+		support += SupportR64;
+	if (m_data.stage == STAGE_RAYGEN)
+		support += "#extension GL_NV_ray_tracing : require\n";
+
+	std::string code =	"  " + vecType + " accum = " + vecType + "(0);\n"
+						"  " + vecType + " temp;\n"
+						"  " + qLevelType + " temp_ql;\n" +
+						checks.str() +
+						"  " + vecType + " color = (accum != " + vecType + "(0)) ? " + vecType + "(0,0,0,0) : " + vecType + "(1,0,0,1);\n";
 
 	switch (m_data.stage)
 	{
@@ -1376,23 +1501,12 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 	case STAGE_COMPUTE:
 		{
 			std::stringstream css;
-			css <<
-				"#version 450 core\n"
-				"#extension GL_EXT_nonuniform_qualifier : enable\n"
-				"#extension GL_EXT_scalar_block_layout : enable\n"
-				"#extension GL_EXT_samplerless_texture_functions : enable\n"
-				"#extension GL_EXT_control_flow_attributes : enable\n"
-				"#extension GL_EXT_shader_image_load_formatted : enable\n"
-				<< SupportR64
+			css << support
 				<< decls.str() <<
 				"layout(local_size_x = 1, local_size_y = 1) in;\n"
 				"void main()\n"
 				"{\n"
-				"  " << vecType << " accum = " << vecType << "(0);\n"
-				"  " << vecType << " temp;\n"
-				"  " << qLevelType << " temp_ql;\n"
-				<< checks.str() <<
-				"  " << vecType << " color = (accum != " << vecType << "(0)) ? " << vecType << "(0,0,0,0) : " << vecType << "(1,0,0,1);\n"
+				<< code <<
 				"  imageStore(image0_0, ivec2(gl_GlobalInvocationID.xy), color);\n"
 				"}\n";
 
@@ -1401,51 +1515,28 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 			break;
 		}
 	case STAGE_RAYGEN:
-	{
-		std::stringstream css;
-		css <<
-			"#version 460 core\n"
-			"#extension GL_EXT_samplerless_texture_functions : enable\n"
-			"#extension GL_EXT_scalar_block_layout : enable\n"
-			"#extension GL_EXT_nonuniform_qualifier : enable\n"
-			"#extension GL_EXT_control_flow_attributes : enable\n"
-			"#extension GL_NV_ray_tracing : require\n"
-			"#extension GL_EXT_shader_image_load_formatted : enable\n"
-			<< SupportR64
-			<< decls.str() <<
-			"void main()\n"
-			"{\n"
-			"  " << vecType << " accum = " << vecType << "(0);\n"
-			"  " << vecType << " temp;\n"
-			"  " << qLevelType << " temp_ql;\n"
-			<< checks.str() <<
-			"  " << vecType << " color = (accum != " << vecType << "(0)) ? " << vecType << "(0,0,0,0) : " << vecType << "(1,0,0,1);\n"
-			"  imageStore(image0_0, ivec2(gl_LaunchIDNV.xy), color);\n"
-			"}\n";
-
-		programCollection.glslSources.add("test") << glu::RaygenSource(css.str())
-			<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_0, vk::ShaderBuildOptions::FLAG_ALLOW_SCALAR_OFFSETS);
-		break;
-	}
-	case STAGE_VERTEX:
 		{
-			std::stringstream vss;
-			vss <<
-				"#version 450 core\n"
-				"#extension GL_EXT_samplerless_texture_functions : enable\n"
-				"#extension GL_EXT_scalar_block_layout : enable\n"
-				"#extension GL_EXT_nonuniform_qualifier : enable\n"
-				"#extension GL_EXT_control_flow_attributes : enable\n"
-				"#extension GL_EXT_shader_image_load_formatted : enable\n"
-				<< SupportR64
+			std::stringstream css;
+			css << support
 				<< decls.str() <<
 				"void main()\n"
 				"{\n"
-				"  " << vecType << " accum = " << vecType << "(0);\n"
-				"  " << vecType << " temp;\n"
-				"  " << qLevelType << " temp_ql;\n"
-				<< checks.str() <<
-				"  " << vecType << " color = (accum != " << vecType << "(0)) ? " << vecType << "(0,0,0,0) : " << vecType << "(1,0,0,1);\n"
+				<< code <<
+				"  imageStore(image0_0, ivec2(gl_LaunchIDNV.xy), color);\n"
+				"}\n";
+
+			programCollection.glslSources.add("test") << glu::RaygenSource(css.str())
+				<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_0, vk::ShaderBuildOptions::FLAG_ALLOW_SCALAR_OFFSETS);
+			break;
+		}
+	case STAGE_VERTEX:
+		{
+			std::stringstream vss;
+			vss << support
+				<< decls.str() <<
+				"void main()\n"
+				"{\n"
+				<< code <<
 				"  imageStore(image0_0, ivec2(gl_VertexIndex % " << DIM << ", gl_VertexIndex / " << DIM << "), color);\n"
 				"  gl_PointSize = 1.0f;\n"
 				"  gl_Position = vec4(0.0f, 0.0f, 0.0f, 1.0f);\n"
@@ -1457,22 +1548,6 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 		}
 	case STAGE_FRAGMENT:
 		{
-			if (m_data.nullDescriptor &&
-				m_data.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER &&
-				m_data.samples == VK_SAMPLE_COUNT_1_BIT)
-			{
-				// as here we only want to check that textureQueryLod returns 0 when
-				// texture0_1 is null, we don't need to use the actual texture coordinates
-				// (and modify the vertex shader below to do so). Any coordinates are fine.
-				// gl_FragCoord has been selected "randomly", instead of selecting 0 for example.
-				std::string lod_str = (numNormalizedCoords == 1) ? ");" : (numNormalizedCoords == 2) ? "y);" : "yz);";
-				checks << "  vec2 lod = textureQueryLod(texture0_1, gl_FragCoord.x" << lod_str << "\n";
-				checks << "  temp_ql = " << qLevelType <<
-"(ceil(abs(lod.x) + abs(lod.y)));\n";
-				checks << "  temp = " << vecType << "(temp_ql);\n";
-				checks << "  accum += abs(temp);\n";
-			}
-
 			std::stringstream vss;
 			vss <<
 				"#version 450 core\n"
@@ -1486,22 +1561,11 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 				<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_0, vk::ShaderBuildOptions::FLAG_ALLOW_SCALAR_OFFSETS);
 
 			std::stringstream fss;
-			fss <<
-				"#version 450 core\n"
-				"#extension GL_EXT_samplerless_texture_functions : enable\n"
-				"#extension GL_EXT_scalar_block_layout : enable\n"
-				"#extension GL_EXT_nonuniform_qualifier : enable\n"
-				"#extension GL_EXT_control_flow_attributes : enable\n"
-				"#extension GL_EXT_shader_image_load_formatted : enable\n"
-				<< SupportR64
+			fss << support
 				<< decls.str() <<
 				"void main()\n"
 				"{\n"
-				"  " << vecType << " accum = " << vecType << "(0);\n"
-				"  " << vecType << " temp;\n"
-				"  " << qLevelType << " temp_ql;\n"
-				<< checks.str() <<
-				"  " << vecType << " color = (accum != " << vecType << "(0)) ? " << vecType << "(0,0,0,0) : " << vecType << "(1,0,0,1);\n"
+				<< code <<
 				"  imageStore(image0_0, ivec2(gl_FragCoord.x, gl_FragCoord.y), color);\n"
 				"}\n";
 
@@ -1575,10 +1639,11 @@ TestInstance* RobustnessExtsTestCase::createInstance (Context& context) const
 
 tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 {
-	const InstanceInterface&	vki					= m_context.getInstanceInterface();
+	const VkInstance			instance			= getInstance(m_context, m_data);
+	const InstanceInterface&	vki					= getInstanceInterface(m_context, m_data);
 	const VkDevice				device				= getLogicalDevice(m_context, m_data);
-	const DeviceDriver			vk					(m_context.getPlatformInterface(), m_context.getInstance(), device);
-	const VkPhysicalDevice		physicalDevice		= m_context.getPhysicalDevice();
+	const vk::DeviceInterface&	vk					= getDeviceInterface(m_context, m_data);
+	const VkPhysicalDevice		physicalDevice		= chooseDevice(vki, instance, m_context.getTestContext().getCommandLine());
 	SimpleAllocator				allocator			(vk, device, getPhysicalDeviceMemoryProperties(vki, physicalDevice));
 
 	Layout layout;
@@ -1590,19 +1655,23 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 	properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 	void** pNextTail = &properties.pNext;
 
+#ifndef CTS_USES_VULKANSC
 	VkPhysicalDeviceRayTracingPropertiesNV rayTracingProperties;
 	deMemset(&rayTracingProperties, 0, sizeof(rayTracingProperties));
 	rayTracingProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_NV;
+#endif
 
 	VkPhysicalDeviceRobustness2PropertiesEXT robustness2Properties;
 	deMemset(&robustness2Properties, 0, sizeof(robustness2Properties));
 	robustness2Properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_PROPERTIES_EXT;
 
+#ifndef CTS_USES_VULKANSC
 	if (m_context.isDeviceFunctionalitySupported("VK_NV_ray_tracing"))
 	{
 		*pNextTail = &rayTracingProperties;
 		pNextTail = &rayTracingProperties.pNext;
 	}
+#endif
 
 	if (m_context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
 	{
@@ -1631,9 +1700,11 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 	case STAGE_COMPUTE:
 		bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
 		break;
+#ifndef CTS_USES_VULKANSC
 	case STAGE_RAYGEN:
 		bindPoint = VK_PIPELINE_BIND_POINT_RAY_TRACING_NV;
 		break;
+#endif
 	default:
 		bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 		break;
@@ -1649,7 +1720,12 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 	vector<VkDescriptorSetLayoutBinding> &bindings = layout.layoutBindings;
 
 	VkDescriptorPoolCreateFlags poolCreateFlags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+
+#ifndef CTS_USES_VULKANSC
 	VkDescriptorSetLayoutCreateFlags layoutCreateFlags = m_data.pushDescriptor ? VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR : 0;
+#else
+	VkDescriptorSetLayoutCreateFlags layoutCreateFlags = 0;
+#endif
 
 	// Create a layout and allocate a descriptor set for it.
 
@@ -1804,8 +1880,8 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 	if (m_data.viewType == VK_IMAGE_VIEW_TYPE_CUBE || m_data.viewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)
 		imageCreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 
-	const bool featureSampledImage = ((getPhysicalDeviceFormatProperties(m_context.getInstanceInterface(),
-										m_context.getPhysicalDevice(),
+	const bool featureSampledImage = ((getPhysicalDeviceFormatProperties(vki,
+										physicalDevice,
 										m_data.format).optimalTilingFeatures &
 										VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) == VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
 
@@ -2208,9 +2284,11 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 		int vecIndex = 0;
 		int numDynamic = 0;
 
+#ifndef CTS_USES_VULKANSC
 		vector<VkDescriptorUpdateTemplateEntry> imgTemplateEntriesBefore,
 												bufTemplateEntriesBefore,
 												texelBufTemplateEntriesBefore;
+#endif
 
 		for (size_t b = 0; b < bindings.size(); ++b)
 		{
@@ -2259,6 +2337,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 					&bufferViewVec[vecIndex],							// pTexelBufferView
 				};
 
+#ifndef CTS_USES_VULKANSC
 				VkDescriptorUpdateTemplateEntry templateEntry =
 				{
 					(deUint32)b,				// uint32_t				dstBinding;
@@ -2290,6 +2369,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 					bufTemplateEntriesBefore.push_back(templateEntry);
 					break;
 				}
+#endif
 
 				vecIndex++;
 
@@ -2311,6 +2391,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 		// Randomly select between vkUpdateDescriptorSets and vkUpdateDescriptorSetWithTemplate
 		if (m_data.useTemplate)
 		{
+#ifndef CTS_USES_VULKANSC
 			VkDescriptorUpdateTemplateCreateInfo templateCreateInfo =
 			{
 				VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO,	// VkStructureType							sType;
@@ -2369,15 +2450,18 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 
 				vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, *pipelineLayout, 0, 1, &descriptorSet.get(), numDynamic, &zeros[0]);
 			}
+#endif
 		}
 		else
 		{
 			if (m_data.pushDescriptor)
 			{
+#ifndef CTS_USES_VULKANSC
 				if (writesBeforeBindVec.size())
 				{
 					vk.cmdPushDescriptorSetKHR(*cmdBuffer, bindPoint, *pipelineLayout, 0, (deUint32)writesBeforeBindVec.size(), &writesBeforeBindVec[0]);
 				}
+#endif
 			}
 			else
 			{
@@ -2404,6 +2488,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 		pipeline = makeComputePipeline(vk, device, *pipelineLayout, *shader);
 
 	}
+#ifndef CTS_USES_VULKANSC
 	else if (m_data.stage == STAGE_RAYGEN)
 	{
 		const Unique<VkShaderModule>	shader(createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0));
@@ -2454,6 +2539,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 
 		vk.getRayTracingShaderGroupHandlesNV(device, *pipeline, 0, 1, rayTracingProperties.shaderGroupHandleSize, ptr);
 	}
+#endif
 	else
 	{
 		const VkSubpassDescription		subpassDesc				=
@@ -2722,6 +2808,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 	{
 		vk.cmdDispatch(*cmdBuffer, DIM, DIM, 1);
 	}
+#ifndef CTS_USES_VULKANSC
 	else if (m_data.stage == STAGE_RAYGEN)
 	{
 		vk.cmdTraceRaysNV(*cmdBuffer,
@@ -2731,6 +2818,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 			DE_NULL, 0, 0,
 			DIM, DIM, 1);
 	}
+#endif
 	else
 	{
 		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer,
@@ -2918,7 +3006,9 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2)
 		{ STAGE_COMPUTE,	"comp",		"compute"	},
 		{ STAGE_FRAGMENT,	"frag",		"fragment"	},
 		{ STAGE_VERTEX,		"vert",		"vertex"	},
+#ifndef CTS_USES_VULKANSC
 		{ STAGE_RAYGEN,		"rgen",		"raygen"	},
+#endif
 	};
 
 	TestGroupCase volCases[] =
@@ -2936,13 +3026,17 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2)
 	TestGroupCase tempCases[] =
 	{
 		{ 0,			"notemplate",	""		},
+#ifndef CTS_USES_VULKANSC
 		{ 1,			"template",		""		},
+#endif
 	};
 
 	TestGroupCase pushCases[] =
 	{
 		{ 0,			"bind",			""		},
+#ifndef CTS_USES_VULKANSC
 		{ 1,			"push",			""		},
+#endif
 	};
 
 	TestGroupCase fmtQualCases[] =
@@ -3061,11 +3155,13 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2)
 													Stage currentStage = static_cast<Stage>(stageCases[stageNdx].count);
 													VkFlags allShaderStages = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 													VkFlags allPipelineStages = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+#ifndef CTS_USES_VULKANSC
 													if ((Stage)stageCases[stageNdx].count == STAGE_RAYGEN)
 													{
 														allShaderStages |= VK_SHADER_STAGE_RAYGEN_BIT_NV;
 														allPipelineStages |= VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV;
 													}
+#endif // CTS_USES_VULKANSC
 
 													if (descCases[descNdx].count == VERTEX_ATTRIBUTE_FETCH &&
 														currentStage != STAGE_VERTEX)

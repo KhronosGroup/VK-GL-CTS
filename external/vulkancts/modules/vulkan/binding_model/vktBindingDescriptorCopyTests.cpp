@@ -149,6 +149,7 @@ private:
 	vector<VkBufferView>			m_bufferViewHandles;
 };
 
+#ifndef CTS_USES_VULKANSC
 // Inline uniform block descriptor.
 class InlineUniformBlockDescriptor : public Descriptor
 {
@@ -186,6 +187,7 @@ private:
 	deUint32									m_writeStartByteOffset;
 	deUint32									m_bytesToWrite;
 };
+#endif
 
 class UniformBufferDescriptor : public BufferDescriptor
 {
@@ -435,7 +437,7 @@ class DescriptorCopyTestCase : public TestCase
 	virtual TestInstance*	createInstance			(Context& context) const;
 
 private:
-	DescriptorCommandsSp	m_commands;
+	mutable DescriptorCommandsSp	m_commands;
 };
 
 deUint32 Descriptor::s_nextId = 0xabc; // Random starting point for ID counter
@@ -663,6 +665,7 @@ vector<deUint32> BufferDescriptor::getData (void)
 	return data;
 }
 
+#ifndef CTS_USES_VULKANSC
 // Inline Uniform Block descriptor. These are similar to uniform buffers, but they can't form arrays for spec reasons.
 // The array size is reused, instead, as the size of a data array inside the uniform block.
 InlineUniformBlockDescriptor::InlineUniformBlockDescriptor (deUint32	arraySize,
@@ -745,6 +748,7 @@ string InlineUniformBlockDescriptor::getShaderVerifyCode (void) const
 
 	return ret;
 }
+#endif
 
 UniformBufferDescriptor::UniformBufferDescriptor (deUint32	arraySize,
 												  deUint32	writeStart,
@@ -1416,7 +1420,13 @@ void DescriptorCommands::addDescriptor (DescriptorSp	descriptor,
 
 	// Keep track of how many descriptors of each type is needed. Inline uniform blocks cannot form arrays. We reuse the array size
 	// as size of the data array for them, within a single descriptor.
+
+#ifndef CTS_USES_VULKANSC
 	const deUint32 count = ((type == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT) ? 1u : descriptor->getArraySize());
+#else
+	const deUint32 count = descriptor->getArraySize();
+#endif
+
 	if (m_descriptorCounts.find(type) != m_descriptorCounts.end())
 		m_descriptorCounts[type] += count;
 	else
@@ -1437,6 +1447,7 @@ void DescriptorCommands::copyDescriptor (deUint32	srcSet,
 	// For inline uniform blocks, (src|dst)ArrayElement are data array indices and descriptorCount is the number of integers to copy.
 	DescriptorCopy descriptorCopy = { srcSet, srcBinding, srcArrayElement, dstSet, dstBinding, dstArrayElement, descriptorCount };
 
+#ifndef CTS_USES_VULKANSC
 	if (m_descriptorSets[srcSet]->getBindings()[srcBinding]->getType() == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
 	{
 		// For inline uniform blocks, these members of VkCopyDescriptorSet are offsets and sizes in bytes.
@@ -1447,6 +1458,7 @@ void DescriptorCommands::copyDescriptor (deUint32	srcSet,
 		descriptorCopy.dstArrayElement *= elementSize;
 		descriptorCopy.descriptorCount *= elementSize;
 	}
+#endif
 
 	m_descriptorCopies.push_back(descriptorCopy);
 	m_descriptorSets[descriptorCopy.dstSet]->getBindings()[descriptorCopy.dstBinding]->copyValue(*m_descriptorSets[descriptorCopy.srcSet]->getBindings()[descriptorCopy.srcBinding], srcArrayElement, dstArrayElement, descriptorCount);
@@ -1543,8 +1555,10 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 	const Unique<VkCommandBuffer>			commandBuffer		(allocateCommandBuffer(vk, device, *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 	const VkShaderStageFlags				shaderStage			= m_pipelineType == PIPELINE_TYPE_COMPUTE ? VK_SHADER_STAGE_COMPUTE_BIT : VK_SHADER_STAGE_FRAGMENT_BIT;
 	const VkFormat							resultFormat		= VK_FORMAT_R8G8B8A8_UNORM;
+#ifndef CTS_USES_VULKANSC
 	deUint32								numTotalIUBs		= 0;
 	deUint32								iubTotalBytes		= 0;
+#endif // CTS_USES_VULKANSC
 	de::MovePtr<ImageWithMemory>			resultImage;
 	de::MovePtr<BufferWithMemory>			resultImageBuffer;
 	Move<VkImageView>						resultImageView;
@@ -1562,6 +1576,7 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 	if (limits.maxBoundDescriptorSets <= m_descriptorSets.size())
 		TCU_THROW(NotSupportedError, "Maximum bound descriptor sets limit exceeded.");
 
+#ifndef CTS_USES_VULKANSC
 	// Check if inline uniform blocks are supported.
 	VkPhysicalDeviceInlineUniformBlockFeaturesEXT	iubFeatures =
 	{
@@ -1591,6 +1606,7 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 			vki.getPhysicalDeviceProperties2(physicalDevice, &properties2);
 		}
 	}
+#endif
 
 	// Check physical device limits of per stage and per desriptor set descriptor count
 	{
@@ -1612,7 +1628,9 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 			deUint32					numSampledImages			= 0;
 			deUint32					numStorageImages			= 0;
 			deUint32					numInputAttachments			= 0;
+#ifndef CTS_USES_VULKANSC
 			deUint32					numIUBs						= 0;
+#endif // CTS_USES_VULKANSC
 			deUint32					numTotalResources			= m_pipelineType == PIPELINE_TYPE_GRAPHICS ? 1u : 0u; // Color buffer counts as a resource.
 
 			const vector<DescriptorSp>&	bindings					= m_descriptorSets[descriptorSetIdx]->getBindings();
@@ -1621,6 +1639,7 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 			{
 				const deUint32 arraySize = bindings[bindingIdx]->getArraySize();
 
+#ifndef CTS_USES_VULKANSC
 				// Inline uniform blocks cannot form arrays. The array size is the size of the data array in the descriptor.
 				if (bindings[bindingIdx]->getType() == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
 				{
@@ -1640,6 +1659,7 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 					++numTotalResources;
 				}
 				else
+#endif
 				{
 					numTotalResources += arraySize;
 				}
@@ -1687,9 +1707,11 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 						numSamplers += arraySize;
 						break;
 
+#ifndef CTS_USES_VULKANSC
 					case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT:
 						++numIUBs;
 						break;
+#endif
 
 					default:
 						DE_FATAL("Unexpected descriptor type");
@@ -1728,7 +1750,9 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 			numPerStageStorageImages	+= numStorageImages;
 			numPerStageInputAttachments	+= numInputAttachments;
 			numPerStageTotalResources	+= numTotalResources;
+#ifndef CTS_USES_VULKANSC
 			numTotalIUBs				+= numIUBs;
+#endif // CTS_USES_VULKANSC
 		}
 
 		if (numPerStageTotalResources > limits.maxPerStageResources)
@@ -1752,11 +1776,13 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 		if (numPerStageInputAttachments > limits.maxPerStageDescriptorInputAttachments)
 			TCU_THROW(NotSupportedError, "Maximum per stage input attachment limit exceeded.");
 
+#ifndef CTS_USES_VULKANSC
 		if (numTotalIUBs > iubProperties.maxDescriptorSetInlineUniformBlocks ||
 			numTotalIUBs > iubProperties.maxPerStageDescriptorInlineUniformBlocks)
 		{
 			TCU_THROW(NotSupportedError, "Number of per stage inline uniform blocks exceeds limits.");
 		}
+#endif
 	}
 
 	// Initialize all descriptors
@@ -1775,9 +1801,11 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 				i->second	// deUint32			descriptorCount
 			};
 
+#ifndef CTS_USES_VULKANSC
 			// Inline uniform blocks have a special meaning for descriptorCount.
 			if (poolSize.type == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
 				poolSize.descriptorCount = iubTotalBytes;
+#endif
 
 			poolSizes.push_back(poolSize);
 		}
@@ -1793,6 +1821,7 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 		};
 
 		// Include information about inline uniform blocks if needed.
+#ifndef CTS_USES_VULKANSC
 		VkDescriptorPoolInlineUniformBlockCreateInfoEXT iubPoolCreateInfo =
 		{
 			VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_INLINE_UNIFORM_BLOCK_CREATE_INFO_EXT,
@@ -1801,6 +1830,7 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 		};
 		if (numTotalIUBs > 0)
 			descriptorPoolCreateInfo.pNext = &iubPoolCreateInfo;
+#endif
 
 		descriptorPool = createDescriptorPool(vk, device, &descriptorPoolCreateInfo);
 	}
@@ -1823,13 +1853,14 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 					DE_NULL									// const VkSampler*		pImmutableSamplers
 				};
 
+#ifndef CTS_USES_VULKANSC
 				// Inline uniform blocks have a special meaning for descriptorCount.
 				if (layoutBinding.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
 				{
 					const InlineUniformBlockDescriptor* iub = static_cast<InlineUniformBlockDescriptor*>(bindings[bindingIdx].get());
 					layoutBinding.descriptorCount = iub->getSizeInBytes();
 				}
-
+#endif
 				layoutBindings.push_back(layoutBinding);
 			}
 
@@ -2329,7 +2360,9 @@ void DescriptorCopyTestCase::initPrograms (SourceCollections& programCollection)
 
 TestInstance* DescriptorCopyTestCase::createInstance (Context& context) const
 {
-	return new DescriptorCopyTestInstance(context, m_commands);
+	TestInstance* result = new DescriptorCopyTestInstance(context, m_commands);
+	m_commands.clear();
+	return result;
 }
 
 tcu::TestStatus DescriptorCopyTestInstance::iterate (void)
@@ -2847,6 +2880,7 @@ void addMixedDescriptorCopyTests (tcu::TestContext&					testCtx,
 		group->addChild(new DescriptorCopyTestCase(testCtx, "mix_2", "", commands));
 	}
 
+#ifndef CTS_USES_VULKANSC
 	if (pipelineType == PIPELINE_TYPE_GRAPHICS)
 	{
 		// Similar to the previous one, but adding inline uniform blocks to the mix.
@@ -2891,6 +2925,7 @@ void addMixedDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 		group->addChild(new DescriptorCopyTestCase(testCtx, "mix_3", "", commands));
 	}
+#endif
 
 	// Mixture of descriptors using descriptor arrays
 	{
@@ -2932,6 +2967,7 @@ void addMixedDescriptorCopyTests (tcu::TestContext&					testCtx,
 	}
 
 	// Similar to the previous one but including inline uniform blocks.
+#ifndef CTS_USES_VULKANSC
 	{
 		DescriptorCommandsSp			commands				(new DescriptorCommands(pipelineType));
 		InlineUniformBlockDescriptor*	iub0					(new InlineUniformBlockDescriptor(4u, 0u, 1u));
@@ -2978,6 +3014,7 @@ void addMixedDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 		group->addChild(new DescriptorCopyTestCase(testCtx, "mix_array1", "", commands));
 	}
+#endif
 }
 
 } // anonymous
@@ -2991,7 +3028,9 @@ tcu::TestCaseGroup*	createDescriptorCopyTests (tcu::TestContext& testCtx)
 
 	// Compute tests
 	addDescriptorCopyTests<UniformBufferDescriptor>(testCtx, computeGroup, "uniform_buffer", PIPELINE_TYPE_COMPUTE);
+#ifndef CTS_USES_VULKANSC
 	addDescriptorCopyTests<InlineUniformBlockDescriptor>(testCtx, computeGroup, "inline_uniform_block", PIPELINE_TYPE_COMPUTE);
+#endif
 	addDescriptorCopyTests<StorageBufferDescriptor>(testCtx, computeGroup, "storage_buffer", PIPELINE_TYPE_COMPUTE);
 	addDescriptorCopyTests<CombinedImageSamplerDescriptor>(testCtx, computeGroup, "combined_image_sampler", PIPELINE_TYPE_COMPUTE);
 	addDescriptorCopyTests<StorageImageDescriptor>(testCtx, computeGroup, "storage_image", PIPELINE_TYPE_COMPUTE);
@@ -3005,7 +3044,9 @@ tcu::TestCaseGroup*	createDescriptorCopyTests (tcu::TestContext& testCtx)
 
 	// Graphics tests
 	addDescriptorCopyTests<UniformBufferDescriptor>(testCtx, graphicsGroup, "uniform_buffer", PIPELINE_TYPE_GRAPHICS);
+#ifndef CTS_USES_VULKANSC
 	addDescriptorCopyTests<InlineUniformBlockDescriptor>(testCtx, graphicsGroup, "inline_uniform_block", PIPELINE_TYPE_GRAPHICS);
+#endif
 	addDescriptorCopyTests<StorageBufferDescriptor>(testCtx, graphicsGroup, "storage_buffer", PIPELINE_TYPE_GRAPHICS);
 	addDescriptorCopyTests<CombinedImageSamplerDescriptor>(testCtx, graphicsGroup, "combined_image_sampler", PIPELINE_TYPE_GRAPHICS);
 	addDescriptorCopyTests<StorageImageDescriptor>(testCtx, graphicsGroup, "storage_image", PIPELINE_TYPE_GRAPHICS);

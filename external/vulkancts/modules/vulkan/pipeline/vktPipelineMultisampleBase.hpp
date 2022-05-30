@@ -24,6 +24,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktPipelineMultisampleTestsUtil.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 #include "vktTestCase.hpp"
 #include "tcuVector.hpp"
 
@@ -64,15 +65,10 @@ struct ComponentData
 
 struct ImageMSParams
 {
-	ImageMSParams(const vk::VkSampleCountFlagBits samples, const tcu::UVec3& size, const ComponentData& data = ComponentData{})
-		: numSamples	{samples}
-		, imageSize		{size}
-		, componentData	{data}
-		{}
-
-	vk::VkSampleCountFlagBits	numSamples;
-	tcu::UVec3					imageSize;
-	ComponentData				componentData;
+	vk::PipelineConstructionType	pipelineConstructionType;
+	vk::VkSampleCountFlagBits		numSamples;
+	tcu::UVec3						imageSize;
+	ComponentData					componentData;
 };
 
 class MultisampleCaseBase : public TestCase
@@ -84,9 +80,17 @@ public:
 		: TestCase(testCtx, name, "")
 		, m_imageMSParams(imageMSParams)
 	{}
+	virtual void checkSupport (Context& context) const
+	{
+		checkGraphicsPipelineLibrarySupport(context);
+	}
 
-	virtual void checkSupport (Context&) const
-	{}
+protected:
+
+	void checkGraphicsPipelineLibrarySupport(Context& context) const
+	{
+		checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_imageMSParams.pipelineConstructionType);
+	}
 
 protected:
 	const ImageMSParams m_imageMSParams;
@@ -147,6 +151,7 @@ protected:
 template <class CaseClass>
 tcu::TestCaseGroup* makeMSGroup	(tcu::TestContext&							testCtx,
 								 const std::string							groupName,
+								 const vk::PipelineConstructionType			pipelineConstructionType,
 								 const tcu::UVec3							imageSizes[],
 								 const deUint32								imageSizesElemCount,
 								 const vk::VkSampleCountFlagBits			imageSamples[],
@@ -167,7 +172,13 @@ tcu::TestCaseGroup* makeMSGroup	(tcu::TestContext&							testCtx,
 		for (deUint32 imageSamplesNdx = 0u; imageSamplesNdx < imageSamplesElemCount; ++imageSamplesNdx)
 		{
 			const vk::VkSampleCountFlagBits		samples			= imageSamples[imageSamplesNdx];
-			const multisample::ImageMSParams	imageMSParams	= multisample::ImageMSParams(samples, imageSize, componentData);
+			const multisample::ImageMSParams	imageMSParams
+			{
+				pipelineConstructionType,
+				samples,
+				imageSize,
+				componentData
+			};
 
 			sizeGroup->addChild(CaseClass::createCase(testCtx, "samples_" + de::toString(samples), imageMSParams));
 		}

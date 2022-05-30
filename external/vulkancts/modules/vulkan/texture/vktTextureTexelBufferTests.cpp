@@ -39,7 +39,69 @@ tcu::TestCaseGroup* createUniformTexelBufferTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	uniform	 (new tcu::TestCaseGroup(testCtx, "uniform", "Test uniform texel buffer"));
 
+	// .srgb
+	{
+		tcu::TestCaseGroup* const	srgb		= new tcu::TestCaseGroup(testCtx, "srgb", "Test uniform texel buffer with srgb formats");
+		static const char			dataDir[]	= "texture/texel_buffer/uniform/srgb";
+
+		static const struct {
+			std::string	testName;
+			VkFormat	format;
+		}							cases[]		=
+		{
+			{"r8g8b8a8_srgb", VK_FORMAT_R8G8B8A8_SRGB},
+			{"b8g8r8a8_srgb", VK_FORMAT_B8G8R8A8_SRGB},
+			{"b8g8r8_srgb",   VK_FORMAT_B8G8R8_SRGB},
+			{"r8g8b8_srgb",   VK_FORMAT_R8G8B8_SRGB},
+			{"r8g8_srgb",     VK_FORMAT_R8G8_SRGB},
+			{"r8_srgb",       VK_FORMAT_R8_SRGB}
+		};
+
+		uniform->addChild(srgb);
+
+		for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
+		{
+			const std::string							fileName			= cases[i].testName + ".amber";
+			const VkImageUsageFlags						usageFlags			= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+
+			const deUint32								width				= 8;
+			const deUint32								height				= 8;
+
+			VkImageCreateInfo							imageParams			=
+			{
+				VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	//  VkStructureType         sType;
+				DE_NULL,								//  const void*             pNext;
+				DE_NULL,								//  VkImageCreateFlags      flags;
+				VK_IMAGE_TYPE_2D,						//  VkImageType             imageType;
+				cases[i].format,						//  VkFormat                format;
+				VkExtent3D({width, height, 1u}),		//  VkExtent3D              extent;
+				1u,										//  deUint32                mipLevels;
+				1u,										//  deUint32                arrayLayers;
+				VK_SAMPLE_COUNT_1_BIT,					//  VkSampleCountFlagBits   samples;
+				VK_IMAGE_TILING_OPTIMAL,				//  VkImageTiling           tiling;
+				usageFlags,								//  VkImageUsageFlags       usage;
+				VK_SHARING_MODE_EXCLUSIVE,				//  VkSharingMode           sharingMode;
+				0u,										//  deUint32                queueFamilyIndexCount;
+				DE_NULL,								//  const deUint32*         pQueueFamilyIndices;
+				VK_IMAGE_LAYOUT_UNDEFINED,				//  VkImageLayout           initialLayout;
+			};
+
+			std::vector<VkImageCreateInfo>				imageRequirements;
+			imageRequirements.push_back(imageParams);
+
+			std::vector<cts_amber::BufferRequirement>	bufferRequirements;
+			bufferRequirements.push_back({cases[i].format, VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT});
+
+			cts_amber::AmberTestCase*					testCase			=
+					cts_amber::createAmberTestCase(testCtx, cases[i].testName.c_str(), "",
+												   dataDir, fileName, std::vector<std::string>(),
+												   imageRequirements, bufferRequirements);
+			srgb->addChild(testCase);
+		}
+	}
+
 	// .packed
+#ifndef CTS_USES_VULKANSC
 	{
 		tcu::TestCaseGroup* const	packed		= new tcu::TestCaseGroup(testCtx, "packed", "Test uniform texel buffer with packed formats");
 		static const char			dataDir[]	= "texture/texel_buffer/uniform/packed";
@@ -65,8 +127,10 @@ tcu::TestCaseGroup* createUniformTexelBufferTests (tcu::TestContext& testCtx)
 			packed->addChild(testCase);
 		}
 	}
+#endif
 
 	// .snorm
+#ifndef CTS_USES_VULKANSC
 	{
 		tcu::TestCaseGroup* const	snorm		= new tcu::TestCaseGroup(testCtx, "snorm", "Test uniform texel buffer with SNORM formats");
 		static const char			dataDir[]	= "texture/texel_buffer/uniform/snorm";
@@ -108,6 +172,7 @@ tcu::TestCaseGroup* createUniformTexelBufferTests (tcu::TestContext& testCtx)
 			snorm->addChild(testCase);
 		}
 	}
+#endif
 
 	return uniform.release();
 }

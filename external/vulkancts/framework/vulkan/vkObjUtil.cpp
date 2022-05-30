@@ -390,6 +390,7 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 	return createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 }
 
+#ifndef CTS_USES_VULKANSC
 Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 									   const VkDevice									device,
 									   const VkPipelineLayout							pipelineLayout,
@@ -458,6 +459,7 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 		dynamicStateCreateInfo,
 		pNext);
 }
+#endif // CTS_USES_VULKANSC
 
 namespace
 {
@@ -767,16 +769,17 @@ Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&								vk,
 	return vk::makePipelineLayout(vk, device, static_cast<deUint32>(descriptorSetLayoutsUnWrapped.size()), descriptorSetLayoutsUnWrapped.data());
 }
 
-Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
-										   const VkDevice				device,
-										   const deUint32				setLayoutCount,
-										   const VkDescriptorSetLayout*	descriptorSetLayout)
+Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&				vk,
+										   const VkDevice						device,
+										   const deUint32						setLayoutCount,
+										   const VkDescriptorSetLayout*			descriptorSetLayout,
+										   const VkPipelineLayoutCreateFlags	flags)
 {
 	const VkPipelineLayoutCreateInfo pipelineLayoutParams =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType					sType;
 		DE_NULL,											// const void*						pNext;
-		0u,													// VkPipelineLayoutCreateFlags		flags;
+		flags,	// VkPipelineLayoutCreateFlags		flags;
 		setLayoutCount,										// deUint32							setLayoutCount;
 		descriptorSetLayout,								// const VkDescriptorSetLayout*		pSetLayouts;
 		0u,													// deUint32							pushConstantRangeCount;
@@ -786,18 +789,19 @@ Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 	return createPipelineLayout(vk, device, &pipelineLayoutParams);
 }
 
-Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
-										   const VkDevice				device,
-										   const deUint32				setLayoutCount,
-										   const VkDescriptorSetLayout*	descriptorSetLayout,
-										   const deUint32               pushConstantRangeCount,
-										   const VkPushConstantRange*   pPushConstantRanges)
+Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&				vk,
+										   const VkDevice						device,
+										   const deUint32						setLayoutCount,
+										   const VkDescriptorSetLayout*			descriptorSetLayout,
+										   const deUint32						pushConstantRangeCount,
+										   const VkPushConstantRange*			pPushConstantRanges,
+										   const VkPipelineLayoutCreateFlags	flags)
 {
 	const VkPipelineLayoutCreateInfo pipelineLayoutParams =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType					sType;
 		DE_NULL,											// const void*						pNext;
-		0u,													// VkPipelineLayoutCreateFlags		flags;
+		flags,	// VkPipelineLayoutCreateFlags		flags;
 		setLayoutCount,										// deUint32							setLayoutCount;
 		descriptorSetLayout,								// const VkDescriptorSetLayout*		pSetLayouts;
 		pushConstantRangeCount,								// deUint32							pushConstantRangeCount;

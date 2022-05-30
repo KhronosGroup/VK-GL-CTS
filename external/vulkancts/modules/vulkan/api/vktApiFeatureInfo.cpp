@@ -32,6 +32,7 @@
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
 #include "vkDeviceUtil.hpp"
+#include "vkSafetyCriticalUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkApiVersion.hpp"
@@ -523,7 +524,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 template<deUint32 MAJOR, deUint32 MINOR>
 void checkApiVersionSupport(Context& context)
 {
-	if (!context.contextSupports(vk::ApiVersion(MAJOR, MINOR, 0)))
+	if (!context.contextSupports(vk::ApiVersion(0, MAJOR, MINOR, 0)))
 		TCU_THROW(NotSupportedError, std::string("At least Vulkan ") + std::to_string(MAJOR) + "." + std::to_string(MINOR) + " required to run test");
 }
 
@@ -696,15 +697,24 @@ tcu::TestStatus validateLimits12 (Context& context)
 
 	const VkPhysicalDeviceFeatures2&			features2				= context.getDeviceFeatures2();
 	const VkPhysicalDeviceFeatures&				features				= features2.features;
+#ifdef CTS_USES_VULKANSC
+	const VkPhysicalDeviceVulkan11Features		features11				= getPhysicalDeviceVulkan11Features(vki, physicalDevice);
+#endif // CTS_USES_VULKANSC
 	const VkPhysicalDeviceVulkan12Features		features12				= getPhysicalDeviceVulkan12Features(vki, physicalDevice);
 
 	const VkPhysicalDeviceProperties2&			properties2				= context.getDeviceProperties2();
 	const VkPhysicalDeviceVulkan12Properties	vulkan12Properties		= getPhysicalDeviceVulkan12Properties(vki, physicalDevice);
 	const VkPhysicalDeviceVulkan11Properties	vulkan11Properties		= getPhysicalDeviceVulkan11Properties(vki, physicalDevice);
+#ifdef CTS_USES_VULKANSC
+	const VkPhysicalDeviceVulkanSC10Properties	vulkanSC10Properties	= getPhysicalDeviceVulkanSC10Properties(vki, physicalDevice);
+#endif // CTS_USES_VULKANSC
 	const VkPhysicalDeviceLimits&				limits					= properties2.properties.limits;
 
 	const VkBool32								checkAlways				= VK_TRUE;
 	const VkBool32								checkVulkan12Limit		= VK_TRUE;
+#ifdef CTS_USES_VULKANSC
+	const VkBool32								checkVulkanSC10Limit	= VK_TRUE;
+#endif // CTS_USES_VULKANSC
 
 	deUint32									shaderStages			= 3;
 	deUint32									maxPerStageResourcesMin	= deMin32(128,	limits.maxPerStageDescriptorUniformBuffers		+
@@ -852,8 +862,13 @@ tcu::TestStatus validateLimits12 (Context& context)
 		{ PN(checkAlways),								PN(limits.nonCoherentAtomSize),																	LIM_MAX_DEVSIZE(256) },
 
 		// VK_KHR_multiview
+#ifndef CTS_USES_VULKANSC
 		{ PN(checkVulkan12Limit),						PN(vulkan11Properties.maxMultiviewViewCount),													LIM_MIN_UINT32(6) },
-		{ PN(checkVulkan12Limit),						PN(vulkan11Properties.maxMultiviewInstanceIndex),												LIM_MIN_UINT32((1<<27) - 1) },
+		{ PN(checkVulkan12Limit),						PN(vulkan11Properties.maxMultiviewInstanceIndex),												LIM_MIN_UINT32((1 << 27) - 1) },
+#else
+		{ PN(features11.multiview),						PN(vulkan11Properties.maxMultiviewViewCount),													LIM_MIN_UINT32(6) },
+		{ PN(features11.multiview),						PN(vulkan11Properties.maxMultiviewInstanceIndex),												LIM_MIN_UINT32((1 << 27) - 1) },
+#endif // CTS_USES_VULKANSC
 
 		// VK_KHR_maintenance3
 		{ PN(checkVulkan12Limit),						PN(vulkan11Properties.maxPerSetDescriptors),													LIM_MIN_UINT32(1024) },
@@ -893,7 +908,26 @@ tcu::TestStatus validateLimits12 (Context& context)
 		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindInputAttachments),							LIM_MIN_UINT32(limits.maxDescriptorSetInputAttachments) },
 
 		// timelineSemaphore
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxTimelineSemaphoreValueDifference),										LIM_MIN_DEVSIZE((1ull<<31) - 1) },
+#ifndef CTS_USES_VULKANSC
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxTimelineSemaphoreValueDifference),										LIM_MIN_DEVSIZE((1ull << 31) - 1) },
+#else
+		// VkPhysicalDeviceVulkan12Features::timelineSemaphore is optional in Vulkan SC
+		{ PN(features12.timelineSemaphore),				PN(vulkan12Properties.maxTimelineSemaphoreValueDifference),										LIM_MIN_DEVSIZE((1ull << 31) - 1) },
+#endif // CTS_USES_VULKANSC
+
+		// Vulkan SC
+#ifdef CTS_USES_VULKANSC
+		{ PN(checkVulkanSC10Limit),						PN(vulkanSC10Properties.maxRenderPassSubpasses),												LIM_MIN_UINT32(1) },
+		{ PN(checkVulkanSC10Limit),						PN(vulkanSC10Properties.maxRenderPassDependencies),												LIM_MIN_UINT32(18) },
+		{ PN(checkVulkanSC10Limit),						PN(vulkanSC10Properties.maxSubpassInputAttachments),											LIM_MIN_UINT32(0) },
+		{ PN(checkVulkanSC10Limit),						PN(vulkanSC10Properties.maxSubpassPreserveAttachments),											LIM_MIN_UINT32(0) },
+		{ PN(checkVulkanSC10Limit),						PN(vulkanSC10Properties.maxFramebufferAttachments),												LIM_MIN_UINT32(9) },
+		{ PN(checkVulkanSC10Limit),						PN(vulkanSC10Properties.maxDescriptorSetLayoutBindings),										LIM_MIN_UINT32(64) },
+		{ PN(checkVulkanSC10Limit),						PN(vulkanSC10Properties.maxQueryFaultCount),													LIM_MIN_UINT32(16) },
+		{ PN(checkVulkanSC10Limit),						PN(vulkanSC10Properties.maxCallbackFaultCount),													LIM_MIN_UINT32(1) },
+		{ PN(checkVulkanSC10Limit),						PN(vulkanSC10Properties.maxCommandPoolCommandBuffers),											LIM_MIN_UINT32(256) },
+		{ PN(checkVulkanSC10Limit),						PN(vulkanSC10Properties.maxCommandBufferSize),													LIM_MIN_UINT32(1048576) },
+#endif // CTS_USES_VULKANSC
 	};
 
 	log << TestLog::Message << limits << TestLog::EndMessage;
@@ -931,6 +965,8 @@ tcu::TestStatus validateLimits12 (Context& context)
 		return tcu::TestStatus::fail("fail");
 }
 
+#ifndef CTS_USES_VULKANSC
+
 void checkSupportKhrPushDescriptor (Context& context)
 {
 	context.requireDeviceFunctionality("VK_KHR_push_descriptor");
@@ -958,6 +994,8 @@ tcu::TestStatus validateLimitsKhrPushDescriptor (Context& context)
 	else
 		return tcu::TestStatus::fail("fail");
 }
+
+#endif // CTS_USES_VULKANSC
 
 void checkSupportKhrMultiview (Context& context)
 {
@@ -1111,10 +1149,12 @@ void checkSupportKhrMaintenance3 (Context& context)
 	context.requireDeviceFunctionality("VK_KHR_maintenance3");
 }
 
+#ifndef CTS_USES_VULKANSC
 void checkSupportKhrMaintenance4 (Context& context)
 {
 	context.requireDeviceFunctionality("VK_KHR_maintenance4");
 }
+#endif // CTS_USES_VULKANSC
 
 tcu::TestStatus validateLimitsKhrMaintenance3 (Context& context)
 {
@@ -1140,6 +1180,7 @@ tcu::TestStatus validateLimitsKhrMaintenance3 (Context& context)
 		return tcu::TestStatus::fail("fail");
 }
 
+#ifndef CTS_USES_VULKANSC
 tcu::TestStatus validateLimitsKhrMaintenance4 (Context& context)
 {
 	const VkBool32									checkAlways				= VK_TRUE;
@@ -1162,6 +1203,7 @@ tcu::TestStatus validateLimitsKhrMaintenance4 (Context& context)
 	else
 		return tcu::TestStatus::fail("fail");
 }
+#endif // CTS_USES_VULKANSC
 
 void checkSupportExtConservativeRasterization (Context& context)
 {
@@ -1211,7 +1253,7 @@ tcu::TestStatus validateLimitsExtDescriptorIndexing (Context& context)
 	const VkBool32											checkAlways						= VK_TRUE;
 	const VkPhysicalDeviceProperties2&						properties2						= context.getDeviceProperties2();
 	const VkPhysicalDeviceLimits&							limits							= properties2.properties.limits;
-	const VkPhysicalDeviceDescriptorIndexingPropertiesEXT&	descriptorIndexingPropertiesEXT	= context.getDescriptorIndexingProperties();
+	const VkPhysicalDeviceDescriptorIndexingProperties&		descriptorIndexingProperties	= context.getDescriptorIndexingProperties();
 	const VkPhysicalDeviceFeatures&							features						= context.getDeviceFeatures();
 	const deUint32											tessellationShaderCount			= (features.tessellationShader) ? 2 : 0;
 	const deUint32											geometryShaderCount				= (features.geometryShader) ? 1 : 0;
@@ -1221,40 +1263,40 @@ tcu::TestStatus validateLimitsExtDescriptorIndexing (Context& context)
 
 	FeatureLimitTableItem featureLimitTable[] =
 	{
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxUpdateAfterBindDescriptorsInAllPools),				LIM_MIN_UINT32(500000) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindSamplers),			LIM_MIN_UINT32(500000) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindUniformBuffers),		LIM_MIN_UINT32(12) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindStorageBuffers),		LIM_MIN_UINT32(500000) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindSampledImages),		LIM_MIN_UINT32(500000) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindStorageImages),		LIM_MIN_UINT32(500000) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindInputAttachments),	LIM_MIN_UINT32(4) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxPerStageUpdateAfterBindResources),					LIM_MIN_UINT32(500000) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindSamplers),				LIM_MIN_UINT32(500000) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindUniformBuffers),			LIM_MIN_UINT32(shaderStages * 12) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindUniformBuffersDynamic),	LIM_MIN_UINT32(8) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindStorageBuffers),			LIM_MIN_UINT32(500000) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindStorageBuffersDynamic),	LIM_MIN_UINT32(4) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindSampledImages),			LIM_MIN_UINT32(500000) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindStorageImages),			LIM_MIN_UINT32(500000) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindInputAttachments),		LIM_MIN_UINT32(4) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindSamplers),			LIM_MIN_UINT32(limits.maxPerStageDescriptorSamplers) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindUniformBuffers),		LIM_MIN_UINT32(limits.maxPerStageDescriptorUniformBuffers) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindStorageBuffers),		LIM_MIN_UINT32(limits.maxPerStageDescriptorStorageBuffers) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindSampledImages),		LIM_MIN_UINT32(limits.maxPerStageDescriptorSampledImages) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindStorageImages),		LIM_MIN_UINT32(limits.maxPerStageDescriptorStorageImages) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindInputAttachments),	LIM_MIN_UINT32(limits.maxPerStageDescriptorInputAttachments) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxPerStageUpdateAfterBindResources),					LIM_MIN_UINT32(limits.maxPerStageResources) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindSamplers),				LIM_MIN_UINT32(limits.maxDescriptorSetSamplers) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindUniformBuffers),			LIM_MIN_UINT32(limits.maxDescriptorSetUniformBuffers) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindUniformBuffersDynamic),	LIM_MIN_UINT32(limits.maxDescriptorSetUniformBuffersDynamic) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindStorageBuffers),			LIM_MIN_UINT32(limits.maxDescriptorSetStorageBuffers) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindStorageBuffersDynamic),	LIM_MIN_UINT32(limits.maxDescriptorSetStorageBuffersDynamic) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindSampledImages),			LIM_MIN_UINT32(limits.maxDescriptorSetSampledImages) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindStorageImages),			LIM_MIN_UINT32(limits.maxDescriptorSetStorageImages) },
-		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindInputAttachments),		LIM_MIN_UINT32(limits.maxDescriptorSetInputAttachments) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxUpdateAfterBindDescriptorsInAllPools),				LIM_MIN_UINT32(500000) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxPerStageDescriptorUpdateAfterBindSamplers),			LIM_MIN_UINT32(500000) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxPerStageDescriptorUpdateAfterBindUniformBuffers),	LIM_MIN_UINT32(12) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxPerStageDescriptorUpdateAfterBindStorageBuffers),	LIM_MIN_UINT32(500000) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxPerStageDescriptorUpdateAfterBindSampledImages),		LIM_MIN_UINT32(500000) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxPerStageDescriptorUpdateAfterBindStorageImages),		LIM_MIN_UINT32(500000) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxPerStageDescriptorUpdateAfterBindInputAttachments),	LIM_MIN_UINT32(4) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxPerStageUpdateAfterBindResources),					LIM_MIN_UINT32(500000) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindSamplers),				LIM_MIN_UINT32(500000) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindUniformBuffers),			LIM_MIN_UINT32(shaderStages * 12) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindUniformBuffersDynamic),	LIM_MIN_UINT32(8) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindStorageBuffers),			LIM_MIN_UINT32(500000) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindStorageBuffersDynamic),	LIM_MIN_UINT32(4) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindSampledImages),			LIM_MIN_UINT32(500000) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindStorageImages),			LIM_MIN_UINT32(500000) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindInputAttachments),		LIM_MIN_UINT32(4) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxPerStageDescriptorUpdateAfterBindSamplers),			LIM_MIN_UINT32(limits.maxPerStageDescriptorSamplers) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxPerStageDescriptorUpdateAfterBindUniformBuffers),	LIM_MIN_UINT32(limits.maxPerStageDescriptorUniformBuffers) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxPerStageDescriptorUpdateAfterBindStorageBuffers),	LIM_MIN_UINT32(limits.maxPerStageDescriptorStorageBuffers) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxPerStageDescriptorUpdateAfterBindSampledImages),		LIM_MIN_UINT32(limits.maxPerStageDescriptorSampledImages) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxPerStageDescriptorUpdateAfterBindStorageImages),		LIM_MIN_UINT32(limits.maxPerStageDescriptorStorageImages) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxPerStageDescriptorUpdateAfterBindInputAttachments),	LIM_MIN_UINT32(limits.maxPerStageDescriptorInputAttachments) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxPerStageUpdateAfterBindResources),					LIM_MIN_UINT32(limits.maxPerStageResources) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindSamplers),				LIM_MIN_UINT32(limits.maxDescriptorSetSamplers) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindUniformBuffers),			LIM_MIN_UINT32(limits.maxDescriptorSetUniformBuffers) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindUniformBuffersDynamic),	LIM_MIN_UINT32(limits.maxDescriptorSetUniformBuffersDynamic) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindStorageBuffers),			LIM_MIN_UINT32(limits.maxDescriptorSetStorageBuffers) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindStorageBuffersDynamic),	LIM_MIN_UINT32(limits.maxDescriptorSetStorageBuffersDynamic) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindSampledImages),			LIM_MIN_UINT32(limits.maxDescriptorSetSampledImages) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindStorageImages),			LIM_MIN_UINT32(limits.maxDescriptorSetStorageImages) },
+		{ PN(checkAlways),	PN(descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindInputAttachments),		LIM_MIN_UINT32(limits.maxDescriptorSetInputAttachments) },
 	};
 
-	log << TestLog::Message << descriptorIndexingPropertiesEXT << TestLog::EndMessage;
+	log << TestLog::Message << descriptorIndexingProperties << TestLog::EndMessage;
 
 	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
 		limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
@@ -1264,6 +1306,8 @@ tcu::TestStatus validateLimitsExtDescriptorIndexing (Context& context)
 	else
 		return tcu::TestStatus::fail("fail");
 }
+
+#ifndef CTS_USES_VULKANSC
 
 void checkSupportExtInlineUniformBlock (Context& context)
 {
@@ -1297,6 +1341,9 @@ tcu::TestStatus validateLimitsExtInlineUniformBlock (Context& context)
 		return tcu::TestStatus::fail("fail");
 }
 
+#endif // CTS_USES_VULKANSC
+
+
 void checkSupportExtVertexAttributeDivisor (Context& context)
 {
 	context.requireDeviceFunctionality("VK_EXT_vertex_attribute_divisor");
@@ -1324,6 +1371,8 @@ tcu::TestStatus validateLimitsExtVertexAttributeDivisor (Context& context)
 	else
 		return tcu::TestStatus::fail("fail");
 }
+
+#ifndef CTS_USES_VULKANSC
 
 void checkSupportNvMeshShader (Context& context)
 {
@@ -1487,6 +1536,8 @@ tcu::TestStatus validateLimitsNvRayTracing (Context& context)
 		return tcu::TestStatus::fail("fail");
 }
 
+#endif // CTS_USES_VULKANSC
+
 void checkSupportKhrTimelineSemaphore (Context& context)
 {
 	context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
@@ -1495,16 +1546,16 @@ void checkSupportKhrTimelineSemaphore (Context& context)
 tcu::TestStatus validateLimitsKhrTimelineSemaphore (Context& context)
 {
 	const VkBool32											checkAlways						= VK_TRUE;
-	const VkPhysicalDeviceTimelineSemaphorePropertiesKHR&	timelineSemaphorePropertiesKHR	= context.getTimelineSemaphoreProperties();
+	const VkPhysicalDeviceTimelineSemaphoreProperties&		timelineSemaphoreProperties		= context.getTimelineSemaphoreProperties();
 	bool													limitsOk						= true;
 	TestLog&												log								= context.getTestContext().getLog();
 
 	FeatureLimitTableItem featureLimitTable[] =
 	{
-		{ PN(checkAlways),	PN(timelineSemaphorePropertiesKHR.maxTimelineSemaphoreValueDifference),	LIM_MIN_DEVSIZE((1ull<<31) - 1) },
+		{ PN(checkAlways),	PN(timelineSemaphoreProperties.maxTimelineSemaphoreValueDifference),	LIM_MIN_DEVSIZE((1ull<<31) - 1) },
 	};
 
-	log << TestLog::Message << timelineSemaphorePropertiesKHR << TestLog::EndMessage;
+	log << TestLog::Message << timelineSemaphoreProperties << TestLog::EndMessage;
 
 	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
 		limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
@@ -1543,6 +1594,34 @@ tcu::TestStatus validateLimitsExtLineRasterization (Context& context)
 		return tcu::TestStatus::fail("fail");
 }
 
+void checkSupportRobustness2 (Context& context)
+{
+	context.requireDeviceFunctionality("VK_EXT_robustness2");
+}
+
+tcu::TestStatus validateLimitsRobustness2 (Context& context)
+{
+	const InstanceInterface&						vki							= context.getInstanceInterface();
+	const VkPhysicalDevice							physicalDevice				= context.getPhysicalDevice();
+	const VkPhysicalDeviceRobustness2PropertiesEXT&	robustness2PropertiesEXT	= context.getRobustness2PropertiesEXT();
+	VkPhysicalDeviceRobustness2FeaturesEXT			robustness2Features			= initVulkanStructure();
+	VkPhysicalDeviceFeatures2						features2					= initVulkanStructure(&robustness2Features);
+
+	vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
+
+	if (robustness2Features.robustBufferAccess2 && !features2.features.robustBufferAccess)
+		return tcu::TestStatus::fail("If robustBufferAccess2 is enabled then robustBufferAccess must also be enabled");
+
+	if (robustness2PropertiesEXT.robustStorageBufferAccessSizeAlignment != 1 && robustness2PropertiesEXT.robustStorageBufferAccessSizeAlignment != 4)
+		return tcu::TestStatus::fail("robustness2PropertiesEXT.robustStorageBufferAccessSizeAlignment value must be either 1 or 4.");
+
+	if (!de::inRange(robustness2PropertiesEXT.robustUniformBufferAccessSizeAlignment, (VkDeviceSize)1u, (VkDeviceSize)256u) || !deIsPowerOfTwo64(robustness2PropertiesEXT.robustUniformBufferAccessSizeAlignment))
+		return tcu::TestStatus::fail("robustness2PropertiesEXT.robustUniformBufferAccessSizeAlignment must be a power of two in the range [1, 256]");
+
+	return tcu::TestStatus::pass("pass");
+}
+
+#ifndef CTS_USES_VULKANSC
 tcu::TestStatus validateLimitsMaxInlineUniformTotalSize (Context& context)
 {
 	const VkBool32								checkAlways			= VK_TRUE;
@@ -1714,6 +1793,8 @@ tcu::TestStatus validateRoadmap2022(Context& context)
 
 	return tcu::TestStatus::pass("Profile supported");
 }
+#endif // CTS_USES_VULKANSC
+
 
 void createTestDevice (Context& context, void* pNext, const char* const* ppEnabledExtensionNames, deUint32 enabledExtensionCount)
 {
@@ -1736,6 +1817,43 @@ void createTestDevice (Context& context, void* pNext, const char* const* ppEnabl
 		queueCount,									//  deUint32					queueCount;
 		&queuePriority,								//  const float*				pQueuePriorities;
 	};
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo	memReservationInfo			= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext										= pNext;
+	pNext															= &memReservationInfo;
+
+	VkPhysicalDeviceVulkanSC10Features	sc10Features				= createDefaultSC10Features();
+	sc10Features.pNext												= pNext;
+	pNext															= &sc10Features;
+
+	VkPipelineCacheCreateInfo			pcCI;
+	std::vector<VkPipelinePoolSize>		poolSizes;
+	if (context.getTestContext().getCommandLine().isSubProcess())
+	{
+		if (context.getResourceInterface()->getCacheDataSize() > 0)
+		{
+			pcCI =
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,		// VkStructureType				sType;
+				DE_NULL,											// const void*					pNext;
+				VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+					VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+				context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
+				context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
+			};
+			memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+			memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+		}
+
+		poolSizes							= context.getResourceInterface()->getPipelinePoolSizes();
+		if (!poolSizes.empty())
+		{
+			memReservationInfo.pipelinePoolSizeCount			= deUint32(poolSizes.size());
+			memReservationInfo.pPipelinePoolSizes				= poolSizes.data();
+		}
+	}
+#endif // CTS_USES_VULKANSC
+
 	const VkDeviceCreateInfo				deviceCreateInfo		=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,		//  VkStructureType					sType;
@@ -1787,7 +1905,7 @@ tcu::TestStatus featureBitInfluenceOnDeviceCreate (Context& context)
 
 	VkPhysicalDeviceVulkan11Features						vulkan11Features						= initVulkanStructure();
 	VkPhysicalDeviceVulkan12Features						vulkan12Features						= initVulkanStructure();
-	VkPhysicalDevice16BitStorageFeaturesKHR					sixteenBitStorageFeatures				= initVulkanStructure();
+	VkPhysicalDevice16BitStorageFeatures					sixteenBitStorageFeatures				= initVulkanStructure();
 	VkPhysicalDeviceMultiviewFeatures						multiviewFeatures						= initVulkanStructure();
 	VkPhysicalDeviceVariablePointersFeatures				variablePointersFeatures				= initVulkanStructure();
 	VkPhysicalDeviceProtectedMemoryFeatures					protectedMemoryFeatures					= initVulkanStructure();
@@ -1807,6 +1925,7 @@ tcu::TestStatus featureBitInfluenceOnDeviceCreate (Context& context)
 	VkPhysicalDeviceBufferDeviceAddressFeatures				bufferDeviceAddressFeatures				= initVulkanStructure();
 	VkPhysicalDeviceVulkanMemoryModelFeatures				vulkanMemoryModelFeatures				= initVulkanStructure();
 
+#ifndef CTS_USES_VULKANSC
 	VkPhysicalDeviceVulkan13Features						vulkan13Features						= initVulkanStructure();
 	VkPhysicalDeviceImageRobustnessFeatures					imageRobustnessFeatures					= initVulkanStructure();
 	VkPhysicalDeviceInlineUniformBlockFeatures				inlineUniformBlockFeatures				= initVulkanStructure();
@@ -1821,6 +1940,7 @@ tcu::TestStatus featureBitInfluenceOnDeviceCreate (Context& context)
 	VkPhysicalDeviceDynamicRenderingFeatures				dynamicRenderingFeatures				= initVulkanStructure();
 	VkPhysicalDeviceShaderIntegerDotProductFeatures			shaderIntegerDotProductFeatures			= initVulkanStructure();
 	VkPhysicalDeviceMaintenance4Features					maintenance4Features					= initVulkanStructure();
+#endif // CTS_USES_VULKANSC
 
 	struct UnusedExtensionFeatures
 	{
@@ -1922,6 +2042,7 @@ tcu::TestStatus featureBitInfluenceOnDeviceCreate (Context& context)
 			DEPENDENCY_DUAL_ITEM	(vulkan12Features,	vulkanMemoryModelFeatures,		vulkanMemoryModelAvailabilityVisibilityChains,		vulkanMemoryModel),
 		};
 	}
+#ifndef CTS_USES_VULKANSC
 	else // if (VK_API_VERSION == VK_API_VERSION_1_3)
 	{
 		featureTable =
@@ -1943,6 +2064,7 @@ tcu::TestStatus featureBitInfluenceOnDeviceCreate (Context& context)
 			FEATURE_TABLE_ITEM(vulkan13Features,	maintenance4Features,					maintenance4,										"VK_KHR_maintenance4"),
 		};
 	}
+#endif // CTS_USES_VULKANSC
 
 	deMemset(&unusedExtensionFeatures, 0, sizeof(unusedExtensionFeatures));
 
@@ -2219,20 +2341,23 @@ void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>&
 	checkDuplicateExtensions(results, extensions);
 }
 
-void checkInstanceExtensionDependencies(tcu::ResultCollector&											results,
-										int																dependencyLength,
-										const std::tuple<deUint32, deUint32, const char*, const char*>*	dependencies,
-										deUint32														versionMajor,
-										deUint32														versionMinor,
-										const vector<VkExtensionProperties>&							extensionProperties)
+#ifndef CTS_USES_VULKANSC
+
+void checkInstanceExtensionDependencies(tcu::ResultCollector&														results,
+										int																			dependencyLength,
+										const std::tuple<deUint32, deUint32, deUint32, const char*, const char*>*	dependencies,
+										deUint32																	apiVariant,
+										deUint32																	versionMajor,
+										deUint32																	versionMinor,
+										const vector<VkExtensionProperties>&										extensionProperties)
 {
 	for (int ndx = 0; ndx < dependencyLength; ndx++)
 	{
-		deUint32 currentVersionMajor, currentVersionMinor;
+		deUint32 currentApiVariant, currentVersionMajor, currentVersionMinor;
 		const char* extensionFirst;
 		const char* extensionSecond;
-		std::tie(currentVersionMajor, currentVersionMinor, extensionFirst, extensionSecond) = dependencies[ndx];
-		if (currentVersionMajor != versionMajor || currentVersionMinor != versionMinor)
+		std::tie(currentApiVariant, currentVersionMajor, currentVersionMinor, extensionFirst, extensionSecond) = dependencies[ndx];
+		if (currentApiVariant != apiVariant || currentVersionMajor != versionMajor || currentVersionMinor != versionMinor)
 			continue;
 		if (isExtensionSupported(extensionProperties, RequiredExtension(extensionFirst)) &&
 			!isExtensionSupported(extensionProperties, RequiredExtension(extensionSecond)))
@@ -2242,21 +2367,22 @@ void checkInstanceExtensionDependencies(tcu::ResultCollector&											results,
 	}
 }
 
-void checkDeviceExtensionDependencies(tcu::ResultCollector&												results,
-									  int																dependencyLength,
-									  const std::tuple<deUint32, deUint32, const char*, const char*>*	dependencies,
-									  deUint32															versionMajor,
-									  deUint32															versionMinor,
-									  const vector<VkExtensionProperties>&								instanceExtensionProperties,
-									  const vector<VkExtensionProperties>&								deviceExtensionProperties)
+void checkDeviceExtensionDependencies(tcu::ResultCollector&														results,
+									  int																		dependencyLength,
+									  const std::tuple<deUint32, deUint32, deUint32, const char*, const char*>*	dependencies,
+									  deUint32																	apiVariant,
+									  deUint32																	versionMajor,
+									  deUint32																	versionMinor,
+									  const vector<VkExtensionProperties>&										instanceExtensionProperties,
+									  const vector<VkExtensionProperties>&										deviceExtensionProperties)
 {
 	for (int ndx = 0; ndx < dependencyLength; ndx++)
 	{
-		deUint32 currentVersionMajor, currentVersionMinor;
+		deUint32 currentApiVariant, currentVersionMajor, currentVersionMinor;
 		const char* extensionFirst;
 		const char* extensionSecond;
-		std::tie(currentVersionMajor, currentVersionMinor, extensionFirst, extensionSecond) = dependencies[ndx];
-		if (currentVersionMajor != versionMajor || currentVersionMinor != versionMinor)
+		std::tie(currentApiVariant, currentVersionMajor, currentVersionMinor, extensionFirst, extensionSecond) = dependencies[ndx];
+		if (currentApiVariant != apiVariant || currentVersionMajor != versionMajor || currentVersionMinor != versionMinor)
 			continue;
 		if (isExtensionSupported(deviceExtensionProperties, RequiredExtension(extensionFirst)) &&
 			!isExtensionSupported(deviceExtensionProperties, RequiredExtension(extensionSecond)) &&
@@ -2266,6 +2392,8 @@ void checkDeviceExtensionDependencies(tcu::ResultCollector&												results,
 		}
 	}
 }
+
+#endif // CTS_USES_VULKANSC
 
 tcu::TestStatus enumerateInstanceLayers (Context& context)
 {
@@ -2307,21 +2435,25 @@ tcu::TestStatus enumerateInstanceExtensions (Context& context)
 		checkInstanceExtensions(results, extensionNames);
 		CheckEnumerateInstanceExtensionPropertiesIncompleteResult()(context, results, properties.size());
 
+#ifndef CTS_USES_VULKANSC
 		for (const auto& version : releasedApiVersions)
 		{
-			deUint32 versionMajor, versionMinor;
-			std::tie(std::ignore, versionMajor, versionMinor) = version;
-			if (context.contextSupports(vk::ApiVersion(versionMajor, versionMinor, 0)))
+			deUint32 apiVariant, versionMajor, versionMinor;
+			std::tie(std::ignore, apiVariant, versionMajor, versionMinor) = version;
+			if (context.contextSupports(vk::ApiVersion(apiVariant, versionMajor, versionMinor, 0)))
 			{
 				checkInstanceExtensionDependencies(results,
 					DE_LENGTH_OF_ARRAY(instanceExtensionDependencies),
 					instanceExtensionDependencies,
+					apiVariant,
 					versionMajor,
 					versionMinor,
 					properties);
 				break;
 			}
 		}
+#endif // CTS_USES_VULKANSC
+
 	}
 
 	{
@@ -2431,15 +2563,17 @@ tcu::TestStatus enumerateDeviceExtensions (Context& context)
 		checkDeviceExtensions(results, deviceExtensionNames);
 		CheckEnumerateDeviceExtensionPropertiesIncompleteResult()(context, results, deviceExtensionProperties.size());
 
+#ifndef CTS_USES_VULKANSC
 		for (const auto& version : releasedApiVersions)
 		{
-			deUint32 versionMajor, versionMinor;
-			std::tie(std::ignore, versionMajor, versionMinor) = version;
-			if (context.contextSupports(vk::ApiVersion(versionMajor, versionMinor, 0)))
+			deUint32 apiVariant, versionMajor, versionMinor;
+			std::tie(std::ignore, apiVariant, versionMajor, versionMinor) = version;
+			if (context.contextSupports(vk::ApiVersion(apiVariant, versionMajor, versionMinor, 0)))
 			{
 				checkDeviceExtensionDependencies(results,
 					DE_LENGTH_OF_ARRAY(deviceExtensionDependencies),
 					deviceExtensionDependencies,
+					apiVariant,
 					versionMajor,
 					versionMinor,
 					instanceExtensionProperties,
@@ -2447,6 +2581,8 @@ tcu::TestStatus enumerateDeviceExtensions (Context& context)
 				break;
 			}
 		}
+#endif // CTS_USES_VULKANSC
+
 	}
 
 	{
@@ -2492,7 +2628,7 @@ tcu::TestStatus extensionCoreVersions (Context& context)
 		const RequiredExtension reqExt (extName);
 
 		if ((isExtensionSupported(instanceExtensionProperties, reqExt) || isExtensionSupported(deviceExtensionProperties, reqExt)) &&
-		    !context.contextSupports(vk::ApiVersion(major, minor, 0u)))
+		    !context.contextSupports(vk::ApiVersion(0u, major, minor, 0u)))
 		{
 			results.fail("Required core version for " + std::string(extName) + " not met (" + de::toString(major) + "." + de::toString(minor) + ")");
 		}
@@ -2584,10 +2720,6 @@ tcu::TestStatus deviceFeatures (Context& context)
 	{
 		if (!features->robustBufferAccess)
 			return tcu::TestStatus::fail("robustBufferAccess is not supported");
-
-		// multiViewport requires MultiViewport (SPIR-V capability) support, which depends on Geometry
-		if (features->multiViewport && !features->geometryShader)
-			return tcu::TestStatus::fail("multiViewport is supported but geometryShader is not");
 	}
 
 	for (int ndx = 0; ndx < GUARD_SIZE; ndx++)
@@ -2775,7 +2907,11 @@ tcu::TestStatus deviceProperties (Context& context)
 
 	{
 		const ApiVersion deviceVersion = unpackVersion(props->apiVersion);
+#ifndef CTS_USES_VULKANSC
 		const ApiVersion deqpVersion = unpackVersion(VK_API_VERSION_1_3);
+#else
+		const ApiVersion deqpVersion = unpackVersion(VK_API_VERSION_1_2);
+#endif // CTS_USES_VULKANSC
 
 		if (deviceVersion.majorNum != deqpVersion.majorNum)
 		{
@@ -2940,7 +3076,9 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 
 	const vector<VkPhysicalDeviceGroupProperties>		deviceGroupProps = enumeratePhysicalDeviceGroups(vki, instance);
 	std::vector<const char*>							deviceExtensions;
+#ifndef CTS_USES_VULKANSC
 	deviceExtensions.push_back("VK_KHR_device_group");
+#endif // CTS_USES_VULKANSC
 
 	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_device_group"))
 		deviceExtensions.push_back("VK_KHR_device_group");
@@ -2967,7 +3105,7 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 		TCU_THROW(NotSupportedError, "Need a device Group with at least 2 physical devices.");
 
 	// Create device groups
-	const VkDeviceGroupDeviceCreateInfo						deviceGroupInfo =
+	VkDeviceGroupDeviceCreateInfo							deviceGroupInfo =
 	{
 		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO,	//stype
 		DE_NULL,											//pNext
@@ -2975,10 +3113,48 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 		deviceGroupProps[devGroupIdx].physicalDevices		//physicalDevices
 	};
 
+	void* pNext												= &deviceGroupInfo;
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext								= pNext;
+	pNext													= &memReservationInfo;
+
+	VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+	sc10Features.pNext										= pNext;
+	pNext													= &sc10Features;
+
+	VkPipelineCacheCreateInfo			pcCI;
+	std::vector<VkPipelinePoolSize>		poolSizes;
+	if (context.getTestContext().getCommandLine().isSubProcess())
+	{
+		if (context.getResourceInterface()->getCacheDataSize() > 0)
+		{
+			pcCI =
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,		// VkStructureType				sType;
+				DE_NULL,											// const void*					pNext;
+				VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+					VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+				context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
+				context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
+			};
+			memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+			memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+		}
+
+		poolSizes							= context.getResourceInterface()->getPipelinePoolSizes();
+		if (!poolSizes.empty())
+		{
+			memReservationInfo.pipelinePoolSizeCount			= deUint32(poolSizes.size());
+			memReservationInfo.pPipelinePoolSizes				= poolSizes.data();
+		}
+	}
+#endif // CTS_USES_VULKANSC
+
 	const VkDeviceCreateInfo								deviceCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							//sType;
-		&deviceGroupInfo,												//pNext;
+		pNext,															//pNext;
 		(VkDeviceCreateFlags)0u,										//flags
 		1,																//queueRecordCount;
 		&deviceQueueCreateInfo,											//pRequestedQueues;
@@ -3223,7 +3399,7 @@ VkFormatFeatureFlags getRequiredOptimalExtendedTilingFeatures (Context& context,
 			{
 				VkPhysicalDeviceSamplerFilterMinmaxProperties		physicalDeviceSamplerMinMaxProperties =
 				{
-					VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES_EXT,
+					VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES,
 					DE_NULL,
 					DE_FALSE,
 					DE_FALSE
@@ -3240,7 +3416,7 @@ VkFormatFeatureFlags getRequiredOptimalExtendedTilingFeatures (Context& context,
 
 				if (physicalDeviceSamplerMinMaxProperties.filterMinmaxSingleComponentFormats)
 				{
-					flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT_EXT;
+					flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT;
 				}
 			}
 		}
@@ -3527,6 +3703,7 @@ VkFormatFeatureFlags getRequiredOptimalTilingFeatures (Context& context, VkForma
 
 bool requiresYCbCrConversion(Context& context, VkFormat format)
 {
+#ifndef CTS_USES_VULKANSC
 	if (format == VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16)
 	{
 		if (!context.isDeviceFunctionalitySupported("VK_EXT_rgba10x6_formats"))
@@ -3546,6 +3723,9 @@ bool requiresYCbCrConversion(Context& context, VkFormat format)
 
 		return !rgba10x6features.formatRgba10x6WithoutYCbCrSampler;
 	}
+#else
+	DE_UNREF(context);
+#endif // CTS_USES_VULKANSC
 
 	return isYCbCrFormat(format) &&
 			format != VK_FORMAT_R10X6_UNORM_PACK16 && format != VK_FORMAT_R10X6G10X6_UNORM_2PACK16 &&
@@ -3567,7 +3747,7 @@ VkFormatFeatureFlags getAllowedOptimalTilingFeatures (Context &context, VkFormat
 		VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_SEPARATE_RECONSTRUCTION_FILTER_BIT |
 		VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT |
 		VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT |
-		VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT_EXT |
+		VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT |
 		VK_FORMAT_FEATURE_DISJOINT_BIT;
 
 	// By default everything is allowed.
@@ -3932,8 +4112,8 @@ VkImageCreateFlags getValidImageCreateFlags (const VkPhysicalDeviceFeatures& dev
 
 	if (isYCbCrFormat(format) && getPlaneCount(format) > 1)
 	{
-		if (formatFeatures & VK_FORMAT_FEATURE_DISJOINT_BIT_KHR)
-			flags |= VK_IMAGE_CREATE_DISJOINT_BIT_KHR;
+		if (formatFeatures & VK_FORMAT_FEATURE_DISJOINT_BIT)
+			flags |= VK_IMAGE_CREATE_DISJOINT_BIT;
 	}
 
 	if ((usage & (VK_IMAGE_USAGE_SAMPLED_BIT|VK_IMAGE_USAGE_STORAGE_BIT)) != 0 &&
@@ -3943,15 +4123,23 @@ VkImageCreateFlags getValidImageCreateFlags (const VkPhysicalDeviceFeatures& dev
 			flags |= VK_IMAGE_CREATE_SPARSE_BINDING_BIT|VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT;
 
 		if (deviceFeatures.sparseResidencyAliased)
-			flags |= VK_IMAGE_CREATE_SPARSE_ALIASED_BIT;
+			flags |= VK_IMAGE_CREATE_SPARSE_BINDING_BIT|VK_IMAGE_CREATE_SPARSE_ALIASED_BIT;
 	}
 
 	return flags;
 }
 
-bool isValidImageCreateFlagCombination (VkImageCreateFlags)
+bool isValidImageCreateFlagCombination (VkImageCreateFlags createFlags)
 {
-	return true;
+	bool isValid = true;
+
+	if (((createFlags & (VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT|VK_IMAGE_CREATE_SPARSE_ALIASED_BIT)) != 0) &&
+		((createFlags & VK_IMAGE_CREATE_SPARSE_BINDING_BIT) == 0))
+	{
+		isValid = false;
+	}
+
+	return isValid;
 }
 
 bool isRequiredImageParameterCombination (const VkPhysicalDeviceFeatures&	deviceFeatures,
@@ -4132,11 +4320,11 @@ tcu::TestStatus imageFormatProperties (Context& context, const VkFormat format, 
 					  "A sampled image format must have VK_FORMAT_FEATURE_TRANSFER_SRC_BIT and VK_FORMAT_FEATURE_TRANSFER_DST_BIT format feature flags set");
 	}
 
-	if (isYcbcrConversionSupported(context) && (format == VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM_KHR || format == VK_FORMAT_G8_B8R8_2PLANE_420_UNORM_KHR))
+	if (isYcbcrConversionSupported(context) && (format == VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM || format == VK_FORMAT_G8_B8R8_2PLANE_420_UNORM))
 	{
-		VkFormatFeatureFlags requiredFeatures = VK_FORMAT_FEATURE_TRANSFER_SRC_BIT_KHR | VK_FORMAT_FEATURE_TRANSFER_DST_BIT_KHR;
+		VkFormatFeatureFlags requiredFeatures = VK_FORMAT_FEATURE_TRANSFER_SRC_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
 		if (tiling == VK_IMAGE_TILING_OPTIMAL)
-			requiredFeatures |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT | VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT_KHR;
+			requiredFeatures |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT | VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT;
 
 		results.check((supportedFeatures & requiredFeatures) == requiredFeatures,
 					  getFormatName(format) + string(" must support ") + de::toString(getFormatFeatureFlagsStr(requiredFeatures)));
@@ -4281,12 +4469,13 @@ bool checkExtension (vector<VkExtensionProperties>& properties, const char* exte
 	return false;
 }
 
+#include "vkDeviceFeatures2.inl"
+
 tcu::TestStatus deviceFeatures2 (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const VkPhysicalDevice      physicalDevice = context.getPhysicalDevice();
 	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
 	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
 	TestLog&					log				= context.getTestContext().getLog();
 	VkPhysicalDeviceFeatures	coreFeatures;
 	VkPhysicalDeviceFeatures2	extFeatures;
@@ -4309,18 +4498,14 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 
 	log << TestLog::Message << extFeatures << TestLog::EndMessage;
 
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
-
-#include "vkDeviceFeatures2.inl"
-
 	return tcu::TestStatus::pass("Querying device features succeeded");
 }
 
 tcu::TestStatus deviceProperties2 (Context& context)
 {
-	const VkPhysicalDevice			physicalDevice	= context.getPhysicalDevice();
 	const CustomInstance			instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
 	const InstanceDriver&			vki				(instance.getDriver());
+	const VkPhysicalDevice			physicalDevice	(chooseDevice(vki, instance, context.getTestContext().getCommandLine()));
 	TestLog&						log				= context.getTestContext().getLog();
 	VkPhysicalDeviceProperties		coreProperties;
 	VkPhysicalDeviceProperties2		extProperties;
@@ -4354,25 +4539,27 @@ tcu::TestStatus deviceProperties2 (Context& context)
 	const int count = 2u;
 
 	vector<VkExtensionProperties> properties		= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
-	const bool khr_external_fence_capabilities		= checkExtension(properties, "VK_KHR_external_fence_capabilities")		||	context.contextSupports(vk::ApiVersion(1, 1, 0));
-	const bool khr_external_memory_capabilities		= checkExtension(properties, "VK_KHR_external_memory_capabilities")		||	context.contextSupports(vk::ApiVersion(1, 1, 0));
-	const bool khr_external_semaphore_capabilities	= checkExtension(properties, "VK_KHR_external_semaphore_capabilities")	||	context.contextSupports(vk::ApiVersion(1, 1, 0));
-	const bool khr_multiview						= checkExtension(properties, "VK_KHR_multiview")						||	context.contextSupports(vk::ApiVersion(1, 1, 0));
-	const bool khr_device_protected_memory			=																			context.contextSupports(vk::ApiVersion(1, 1, 0));
-	const bool khr_device_subgroup					=																			context.contextSupports(vk::ApiVersion(1, 1, 0));
-	const bool khr_maintenance2						= checkExtension(properties, "VK_KHR_maintenance2")						||	context.contextSupports(vk::ApiVersion(1, 1, 0));
-	const bool khr_maintenance3						= checkExtension(properties, "VK_KHR_maintenance3")						||	context.contextSupports(vk::ApiVersion(1, 1, 0));
-	const bool khr_depth_stencil_resolve			= checkExtension(properties, "VK_KHR_depth_stencil_resolve")			||	context.contextSupports(vk::ApiVersion(1, 2, 0));
-	const bool khr_driver_properties				= checkExtension(properties, "VK_KHR_driver_properties")				||	context.contextSupports(vk::ApiVersion(1, 2, 0));
-	const bool khr_shader_float_controls			= checkExtension(properties, "VK_KHR_shader_float_controls")			||	context.contextSupports(vk::ApiVersion(1, 2, 0));
-	const bool khr_descriptor_indexing				= checkExtension(properties, "VK_EXT_descriptor_indexing")				||	context.contextSupports(vk::ApiVersion(1, 2, 0));
-	const bool khr_sampler_filter_minmax			= checkExtension(properties, "VK_EXT_sampler_filter_minmax")			||	context.contextSupports(vk::ApiVersion(1, 2, 0));
+	const bool khr_external_fence_capabilities		= checkExtension(properties, "VK_KHR_external_fence_capabilities")		||	context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
+	const bool khr_external_memory_capabilities		= checkExtension(properties, "VK_KHR_external_memory_capabilities")		||	context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
+	const bool khr_external_semaphore_capabilities	= checkExtension(properties, "VK_KHR_external_semaphore_capabilities")	||	context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
+	const bool khr_multiview						= checkExtension(properties, "VK_KHR_multiview")						||	context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
+	const bool khr_device_protected_memory			=																			context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
+	const bool khr_device_subgroup					=																			context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
+	const bool khr_maintenance2						= checkExtension(properties, "VK_KHR_maintenance2")						||	context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
+	const bool khr_maintenance3						= checkExtension(properties, "VK_KHR_maintenance3")						||	context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
+	const bool khr_depth_stencil_resolve			= checkExtension(properties, "VK_KHR_depth_stencil_resolve")			||	context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
+	const bool khr_driver_properties				= checkExtension(properties, "VK_KHR_driver_properties")				||	context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
+	const bool khr_shader_float_controls			= checkExtension(properties, "VK_KHR_shader_float_controls")			||	context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
+	const bool khr_descriptor_indexing				= checkExtension(properties, "VK_EXT_descriptor_indexing")				||	context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
+	const bool khr_sampler_filter_minmax			= checkExtension(properties, "VK_EXT_sampler_filter_minmax")			||	context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
+#ifndef CTS_USES_VULKANSC
 	const bool khr_acceleration_structure			= checkExtension(properties, "VK_KHR_acceleration_structure");
-	const bool khr_integer_dot_product				= checkExtension(properties, "VK_KHR_shader_integer_dot_product")		||	context.contextSupports(vk::ApiVersion(1, 3, 0));
-	const bool khr_inline_uniform_block				= checkExtension(properties, "VK_EXT_inline_uniform_block")				||	context.contextSupports(vk::ApiVersion(1, 3, 0));
-	const bool khr_maintenance4						= checkExtension(properties, "VK_KHR_maintenance4")						||	context.contextSupports(vk::ApiVersion(1, 3, 0));
-	const bool khr_subgroup_size_control			= checkExtension(properties, "VK_EXT_subgroup_size_control")			||	context.contextSupports(vk::ApiVersion(1, 3, 0));
-	const bool khr_texel_buffer_alignment			= checkExtension(properties, "VK_EXT_texel_buffer_alignment")			||	context.contextSupports(vk::ApiVersion(1, 3, 0));
+	const bool khr_integer_dot_product				= checkExtension(properties, "VK_KHR_shader_integer_dot_product")		||	context.contextSupports(vk::ApiVersion(0, 1, 3, 0));
+	const bool khr_inline_uniform_block				= checkExtension(properties, "VK_EXT_inline_uniform_block")				||	context.contextSupports(vk::ApiVersion(0, 1, 3, 0));
+	const bool khr_maintenance4						= checkExtension(properties, "VK_KHR_maintenance4")						||	context.contextSupports(vk::ApiVersion(0, 1, 3, 0));
+	const bool khr_subgroup_size_control			= checkExtension(properties, "VK_EXT_subgroup_size_control")			||	context.contextSupports(vk::ApiVersion(0, 1, 3, 0));
+	const bool khr_texel_buffer_alignment			= checkExtension(properties, "VK_EXT_texel_buffer_alignment")			||	context.contextSupports(vk::ApiVersion(0, 1, 3, 0));
+#endif // CTS_USES_VULKANSC
 
 	VkPhysicalDeviceIDProperties							idProperties[count];
 	VkPhysicalDeviceMultiviewProperties						multiviewProperties[count];
@@ -4385,13 +4572,14 @@ tcu::TestStatus deviceProperties2 (Context& context)
 	VkPhysicalDeviceFloatControlsProperties					floatControlsProperties[count];
 	VkPhysicalDeviceDescriptorIndexingProperties			descriptorIndexingProperties[count];
 	VkPhysicalDeviceSamplerFilterMinmaxProperties			samplerFilterMinmaxProperties[count];
+#ifndef CTS_USES_VULKANSC
+	VkPhysicalDeviceShaderIntegerDotProductPropertiesKHR	integerDotProductProperties[count];
 	VkPhysicalDeviceAccelerationStructurePropertiesKHR		accelerationStructureProperties[count];
-	VkPhysicalDeviceShaderIntegerDotProductProperties		integerDotProductProperties[count];
 	VkPhysicalDeviceInlineUniformBlockProperties			inlineUniformBlockProperties[count];
 	VkPhysicalDeviceMaintenance4Properties					maintenance4Properties[count];
 	VkPhysicalDeviceSubgroupSizeControlProperties			subgroupSizeControlProperties[count];
 	VkPhysicalDeviceTexelBufferAlignmentProperties			texelBufferAlignmentProperties[count];
-
+#endif // CTS_USES_VULKANSC
 	for (int ndx = 0; ndx < count; ++ndx)
 	{
 		deMemset(&idProperties[ndx],					0xFF*ndx, sizeof(VkPhysicalDeviceIDProperties							));
@@ -4405,70 +4593,147 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		deMemset(&floatControlsProperties[ndx],			0xFF*ndx, sizeof(VkPhysicalDeviceFloatControlsProperties				));
 		deMemset(&descriptorIndexingProperties[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceDescriptorIndexingProperties			));
 		deMemset(&samplerFilterMinmaxProperties[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceSamplerFilterMinmaxProperties			));
+#ifndef CTS_USES_VULKANSC
 		deMemset(&integerDotProductProperties[ndx],		0xFF*ndx, sizeof(VkPhysicalDeviceShaderIntegerDotProductPropertiesKHR	));
 		deMemset(&accelerationStructureProperties[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceAccelerationStructurePropertiesKHR	));
 		deMemset(&inlineUniformBlockProperties[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceInlineUniformBlockProperties			));
 		deMemset(&maintenance4Properties[ndx],			0xFF*ndx, sizeof(VkPhysicalDeviceMaintenance4Properties					));
 		deMemset(&subgroupSizeControlProperties[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceSubgroupSizeControlProperties			));
 		deMemset(&texelBufferAlignmentProperties[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceTexelBufferAlignmentProperties			));
+#endif // CTS_USES_VULKANSC
 
-		idProperties[ndx].sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES;
-		idProperties[ndx].pNext						= &multiviewProperties[ndx];
+		void* prev = 0;
 
-		multiviewProperties[ndx].sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES;
-		multiviewProperties[ndx].pNext				= &protectedMemoryPropertiesKHR[ndx];
+		if (khr_external_fence_capabilities || khr_external_memory_capabilities || khr_external_semaphore_capabilities)
+		{
+			idProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES;
+			idProperties[ndx].pNext = prev;
+			prev = &idProperties[ndx];
+		}
 
-		protectedMemoryPropertiesKHR[ndx].sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_PROPERTIES;
-		protectedMemoryPropertiesKHR[ndx].pNext		= &subgroupProperties[ndx];
+		if (khr_multiview)
+		{
+			multiviewProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES;
+			multiviewProperties[ndx].pNext = prev;
+			prev = &multiviewProperties[ndx];
+		}
 
-		subgroupProperties[ndx].sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
-		subgroupProperties[ndx].pNext				= &pointClippingProperties[ndx];
+		if (khr_device_protected_memory)
+		{
+			protectedMemoryPropertiesKHR[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_PROPERTIES;
+			protectedMemoryPropertiesKHR[ndx].pNext = prev;
+			prev = &protectedMemoryPropertiesKHR[ndx];
+		}
 
-		pointClippingProperties[ndx].sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES;
-		pointClippingProperties[ndx].pNext			= &maintenance3Properties[ndx];
+		if (khr_device_subgroup)
+		{
+			subgroupProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
+			subgroupProperties[ndx].pNext = prev;
+			prev = &subgroupProperties[ndx];
+		}
 
-		maintenance3Properties[ndx].sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES;
-		maintenance3Properties[ndx].pNext			= &depthStencilResolveProperties[ndx];
+		if (khr_maintenance2)
+		{
+			pointClippingProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES;
+			pointClippingProperties[ndx].pNext = prev;
+			prev = &pointClippingProperties[ndx];
+		}
 
-		depthStencilResolveProperties[ndx].sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES;
-		depthStencilResolveProperties[ndx].pNext	= &driverProperties[ndx];
+		if (khr_maintenance3)
+		{
+			maintenance3Properties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES;
+			maintenance3Properties[ndx].pNext = prev;
+			prev = &maintenance3Properties[ndx];
+		}
 
-		driverProperties[ndx].sType					= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES;
-		driverProperties[ndx].pNext					= &floatControlsProperties[ndx];
+		if (khr_depth_stencil_resolve)
+		{
+			depthStencilResolveProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES;
+			depthStencilResolveProperties[ndx].pNext = prev;
+			prev = &depthStencilResolveProperties[ndx];
+		}
 
-		floatControlsProperties[ndx].sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR;
-		floatControlsProperties[ndx].pNext			= &descriptorIndexingProperties[ndx];
+		if (khr_driver_properties)
+		{
+			driverProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES;
+			driverProperties[ndx].pNext = prev;
+			prev = &driverProperties[ndx];
+		}
 
-		descriptorIndexingProperties[ndx].sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES;
-		descriptorIndexingProperties[ndx].pNext		= &samplerFilterMinmaxProperties[ndx];
+		if (khr_shader_float_controls)
+		{
+			floatControlsProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES;
+			floatControlsProperties[ndx].pNext = prev;
+			prev = &floatControlsProperties[ndx];
+		}
 
-		samplerFilterMinmaxProperties[ndx].sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES;
-		samplerFilterMinmaxProperties[ndx].pNext	= &integerDotProductProperties[ndx];
+		if (khr_descriptor_indexing)
+		{
+			descriptorIndexingProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES;
+			descriptorIndexingProperties[ndx].pNext = prev;
+			prev = &descriptorIndexingProperties[ndx];
+		}
 
-		integerDotProductProperties[ndx].sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES_KHR;
-		integerDotProductProperties[ndx].pNext		= &accelerationStructureProperties[ndx];
+		if (khr_sampler_filter_minmax)
+		{
+			samplerFilterMinmaxProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES;
+			samplerFilterMinmaxProperties[ndx].pNext = prev;
+			prev = &samplerFilterMinmaxProperties[ndx];
+		}
 
-		accelerationStructureProperties[ndx].sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR;
-		accelerationStructureProperties[ndx].pNext	= &inlineUniformBlockProperties[ndx];
+#ifndef CTS_USES_VULKANSC
+		if (khr_integer_dot_product)
+		{
+			integerDotProductProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES_KHR;
+			integerDotProductProperties[ndx].pNext = prev;
+			prev = &integerDotProductProperties[ndx];
+		}
 
-		inlineUniformBlockProperties[ndx].sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES;
-		inlineUniformBlockProperties[ndx].pNext		= &maintenance4Properties[ndx];
+		if (khr_acceleration_structure)
+		{
+			accelerationStructureProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR;
+			accelerationStructureProperties[ndx].pNext = prev;
+			prev = &accelerationStructureProperties[ndx];
+		}
 
-		maintenance4Properties[ndx].sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES;
-		maintenance4Properties[ndx].pNext			= &subgroupSizeControlProperties[ndx];
+		if (khr_inline_uniform_block)
+		{
+			inlineUniformBlockProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES;
+			inlineUniformBlockProperties[ndx].pNext = prev;
+			prev = &inlineUniformBlockProperties[ndx];
+		}
 
-		subgroupSizeControlProperties[ndx].sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES;
-		subgroupSizeControlProperties[ndx].pNext	= &texelBufferAlignmentProperties[ndx];
+		if (khr_maintenance4)
+		{
+			maintenance4Properties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES;
+			maintenance4Properties[ndx].pNext = prev;
+			prev = &maintenance4Properties[ndx];
+		}
 
-		texelBufferAlignmentProperties[ndx].sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES;
-		texelBufferAlignmentProperties[ndx].pNext	= DE_NULL;
+		if (khr_subgroup_size_control)
+		{
+			subgroupSizeControlProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES;
+			subgroupSizeControlProperties[ndx].pNext = prev;
+			prev = &subgroupSizeControlProperties[ndx];
+		}
 
-		extProperties.pNext							= &idProperties[ndx];
+		if (khr_texel_buffer_alignment)
+		{
+			texelBufferAlignmentProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES;
+			texelBufferAlignmentProperties[ndx].pNext = prev;
+			prev = &texelBufferAlignmentProperties[ndx];
+		}
+#endif // CTS_USES_VULKANSC
+
+		if (prev == 0)
+			TCU_THROW(NotSupportedError, "No supported structures found");
+
+		extProperties.pNext							= prev;
 
 		vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
 	}
 
-	if ( khr_external_fence_capabilities || khr_external_memory_capabilities || khr_external_semaphore_capabilities )
+	if (khr_external_fence_capabilities || khr_external_memory_capabilities || khr_external_semaphore_capabilities)
 		log << TestLog::Message << idProperties[0]					<< TestLog::EndMessage;
 	if (khr_multiview)
 		log << TestLog::Message << multiviewProperties[0]			<< TestLog::EndMessage;
@@ -4490,6 +4755,7 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		log << TestLog::Message << descriptorIndexingProperties[0] << TestLog::EndMessage;
 	if (khr_sampler_filter_minmax)
 		log << TestLog::Message << samplerFilterMinmaxProperties[0] << TestLog::EndMessage;
+#ifndef CTS_USES_VULKANSC
 	if (khr_integer_dot_product)
 		log << TestLog::Message << integerDotProductProperties[0] << TestLog::EndMessage;
 	if (khr_acceleration_structure)
@@ -4502,6 +4768,7 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		log << TestLog::Message << subgroupSizeControlProperties[0] << TestLog::EndMessage;
 	if (khr_texel_buffer_alignment)
 		log << TestLog::Message << texelBufferAlignmentProperties[0] << TestLog::EndMessage;
+#endif // CTS_USES_VULKANSC
 
 	if ( khr_external_fence_capabilities || khr_external_memory_capabilities || khr_external_semaphore_capabilities )
 	{
@@ -4636,70 +4903,8 @@ tcu::TestStatus deviceProperties2 (Context& context)
 	{
 		TCU_FAIL("Mismatch between VkPhysicalDeviceSamplerFilterMinmaxProperties");
 	}
-	if (khr_integer_dot_product &&
-		(integerDotProductProperties[0].integerDotProduct8BitUnsignedAccelerated										!= integerDotProductProperties[1].integerDotProduct8BitUnsignedAccelerated ||
-		 integerDotProductProperties[0].integerDotProduct8BitSignedAccelerated											!= integerDotProductProperties[1].integerDotProduct8BitSignedAccelerated ||
-		 integerDotProductProperties[0].integerDotProduct8BitMixedSignednessAccelerated									!= integerDotProductProperties[1].integerDotProduct8BitMixedSignednessAccelerated ||
-		 integerDotProductProperties[0].integerDotProduct4x8BitPackedUnsignedAccelerated								!= integerDotProductProperties[1].integerDotProduct4x8BitPackedUnsignedAccelerated ||
-		 integerDotProductProperties[0].integerDotProduct4x8BitPackedSignedAccelerated									!= integerDotProductProperties[1].integerDotProduct4x8BitPackedSignedAccelerated ||
-		 integerDotProductProperties[0].integerDotProduct4x8BitPackedMixedSignednessAccelerated							!= integerDotProductProperties[1].integerDotProduct4x8BitPackedMixedSignednessAccelerated ||
-		 integerDotProductProperties[0].integerDotProduct16BitUnsignedAccelerated										!= integerDotProductProperties[1].integerDotProduct16BitUnsignedAccelerated ||
-		 integerDotProductProperties[0].integerDotProduct16BitSignedAccelerated											!= integerDotProductProperties[1].integerDotProduct16BitSignedAccelerated ||
-		 integerDotProductProperties[0].integerDotProduct16BitMixedSignednessAccelerated								!= integerDotProductProperties[1].integerDotProduct16BitMixedSignednessAccelerated ||
-		 integerDotProductProperties[0].integerDotProduct32BitUnsignedAccelerated										!= integerDotProductProperties[1].integerDotProduct32BitUnsignedAccelerated ||
-		 integerDotProductProperties[0].integerDotProduct32BitSignedAccelerated											!= integerDotProductProperties[1].integerDotProduct32BitSignedAccelerated ||
-		 integerDotProductProperties[0].integerDotProduct32BitMixedSignednessAccelerated								!= integerDotProductProperties[1].integerDotProduct32BitMixedSignednessAccelerated ||
-		 integerDotProductProperties[0].integerDotProduct64BitUnsignedAccelerated										!= integerDotProductProperties[1].integerDotProduct64BitUnsignedAccelerated ||
-		 integerDotProductProperties[0].integerDotProduct64BitSignedAccelerated											!= integerDotProductProperties[1].integerDotProduct64BitSignedAccelerated ||
-		 integerDotProductProperties[0].integerDotProduct64BitMixedSignednessAccelerated								!= integerDotProductProperties[1].integerDotProduct64BitMixedSignednessAccelerated ||
-		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating8BitUnsignedAccelerated					!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating8BitUnsignedAccelerated ||
-		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating8BitSignedAccelerated					!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating8BitSignedAccelerated ||
-		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating8BitMixedSignednessAccelerated			!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating8BitMixedSignednessAccelerated ||
-		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating4x8BitPackedUnsignedAccelerated			!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating4x8BitPackedUnsignedAccelerated ||
-		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating4x8BitPackedSignedAccelerated			!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating4x8BitPackedSignedAccelerated ||
-		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating4x8BitPackedMixedSignednessAccelerated	!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating4x8BitPackedMixedSignednessAccelerated ||
-		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating16BitUnsignedAccelerated					!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating16BitUnsignedAccelerated ||
-		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating16BitSignedAccelerated					!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating16BitSignedAccelerated ||
-		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating16BitMixedSignednessAccelerated			!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating16BitMixedSignednessAccelerated ||
-		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating32BitUnsignedAccelerated					!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating32BitUnsignedAccelerated ||
-		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating32BitSignedAccelerated					!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating32BitSignedAccelerated ||
-		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating32BitMixedSignednessAccelerated			!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating32BitMixedSignednessAccelerated ||
-		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating64BitUnsignedAccelerated					!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating64BitUnsignedAccelerated ||
-		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating64BitSignedAccelerated					!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating64BitSignedAccelerated ||
-		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating64BitMixedSignednessAccelerated			!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating64BitMixedSignednessAccelerated))
-	{
-		TCU_FAIL("Mismatch between VkPhysicalDeviceShaderIntegerDotProductPropertiesKHR");
-	}
-	if (khr_inline_uniform_block &&
-		(inlineUniformBlockProperties[0].maxInlineUniformBlockSize									!= inlineUniformBlockProperties[1].maxInlineUniformBlockSize ||
-		 inlineUniformBlockProperties[0].maxPerStageDescriptorInlineUniformBlocks					!= inlineUniformBlockProperties[1].maxPerStageDescriptorInlineUniformBlocks ||
-		 inlineUniformBlockProperties[0].maxPerStageDescriptorUpdateAfterBindInlineUniformBlocks	!= inlineUniformBlockProperties[1].maxPerStageDescriptorUpdateAfterBindInlineUniformBlocks ||
-		 inlineUniformBlockProperties[0].maxDescriptorSetInlineUniformBlocks						!= inlineUniformBlockProperties[1].maxDescriptorSetInlineUniformBlocks ||
-		 inlineUniformBlockProperties[0].maxDescriptorSetUpdateAfterBindInlineUniformBlocks			!= inlineUniformBlockProperties[1].maxDescriptorSetUpdateAfterBindInlineUniformBlocks))
-	{
-		TCU_FAIL("Mismatch between VkPhysicalDeviceInlineUniformBlockProperties");
-	}
-	if (khr_maintenance4 &&
-		(maintenance4Properties[0].maxBufferSize	!= maintenance4Properties[1].maxBufferSize))
-	{
-		TCU_FAIL("Mismatch between VkPhysicalDeviceMaintenance4Properties");
-	}
-	if (khr_subgroup_size_control &&
-		(subgroupSizeControlProperties[0].minSubgroupSize				!= subgroupSizeControlProperties[1].minSubgroupSize ||
-		 subgroupSizeControlProperties[0].maxSubgroupSize				!= subgroupSizeControlProperties[1].maxSubgroupSize ||
-		 subgroupSizeControlProperties[0].maxComputeWorkgroupSubgroups	!= subgroupSizeControlProperties[1].maxComputeWorkgroupSubgroups ||
-		 subgroupSizeControlProperties[0].requiredSubgroupSizeStages		!= subgroupSizeControlProperties[1].requiredSubgroupSizeStages))
-	{
-		TCU_FAIL("Mismatch between VkPhysicalDeviceSubgroupSizeControlProperties");
-	}
-	if (khr_texel_buffer_alignment &&
-		(texelBufferAlignmentProperties[0].storageTexelBufferOffsetAlignmentBytes		!= texelBufferAlignmentProperties[1].storageTexelBufferOffsetAlignmentBytes ||
-		 texelBufferAlignmentProperties[0].storageTexelBufferOffsetSingleTexelAlignment	!= texelBufferAlignmentProperties[1].storageTexelBufferOffsetSingleTexelAlignment ||
-		 texelBufferAlignmentProperties[0].uniformTexelBufferOffsetAlignmentBytes		!= texelBufferAlignmentProperties[1].uniformTexelBufferOffsetAlignmentBytes ||
-		 texelBufferAlignmentProperties[0].uniformTexelBufferOffsetSingleTexelAlignment	!= texelBufferAlignmentProperties[1].uniformTexelBufferOffsetSingleTexelAlignment))
-	{
-		TCU_FAIL("Mismatch between VkPhysicalDeviceTexelBufferAlignmentProperties");
-	}
+
+#ifndef CTS_USES_VULKANSC
 
 	if (khr_integer_dot_product &&
 		(integerDotProductProperties[0].integerDotProduct8BitUnsignedAccelerated										!= integerDotProductProperties[1].integerDotProduct8BitUnsignedAccelerated ||
@@ -4755,6 +4960,29 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		{
 			TCU_FAIL("limit Validation failed uniformTexelBufferOffsetAlignmentBytes is not a power of two.");
 		}
+	}
+
+	if (khr_inline_uniform_block &&
+		(inlineUniformBlockProperties[0].maxInlineUniformBlockSize									!= inlineUniformBlockProperties[1].maxInlineUniformBlockSize ||
+		 inlineUniformBlockProperties[0].maxPerStageDescriptorInlineUniformBlocks					!= inlineUniformBlockProperties[1].maxPerStageDescriptorInlineUniformBlocks ||
+		 inlineUniformBlockProperties[0].maxPerStageDescriptorUpdateAfterBindInlineUniformBlocks	!= inlineUniformBlockProperties[1].maxPerStageDescriptorUpdateAfterBindInlineUniformBlocks ||
+		 inlineUniformBlockProperties[0].maxDescriptorSetInlineUniformBlocks						!= inlineUniformBlockProperties[1].maxDescriptorSetInlineUniformBlocks ||
+		 inlineUniformBlockProperties[0].maxDescriptorSetUpdateAfterBindInlineUniformBlocks			!= inlineUniformBlockProperties[1].maxDescriptorSetUpdateAfterBindInlineUniformBlocks))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceInlineUniformBlockProperties");
+	}
+	if (khr_maintenance4 &&
+		(maintenance4Properties[0].maxBufferSize	!= maintenance4Properties[1].maxBufferSize))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceMaintenance4Properties");
+	}
+	if (khr_subgroup_size_control &&
+		(subgroupSizeControlProperties[0].minSubgroupSize				!= subgroupSizeControlProperties[1].minSubgroupSize ||
+		 subgroupSizeControlProperties[0].maxSubgroupSize				!= subgroupSizeControlProperties[1].maxSubgroupSize ||
+		 subgroupSizeControlProperties[0].maxComputeWorkgroupSubgroups	!= subgroupSizeControlProperties[1].maxComputeWorkgroupSubgroups ||
+		 subgroupSizeControlProperties[0].requiredSubgroupSizeStages		!= subgroupSizeControlProperties[1].requiredSubgroupSizeStages))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceSubgroupSizeControlProperties");
 	}
 
 	if (khr_acceleration_structure)
@@ -4830,6 +5058,8 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		}
 	}
 
+#endif // CTS_USES_VULKANSC
+
 	if (isExtensionSupported(properties, RequiredExtension("VK_EXT_pci_bus_info", 2, 2)))
 	{
 		VkPhysicalDevicePCIBusInfoPropertiesEXT pciBusInfoProperties[count];
@@ -4880,6 +5110,7 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		}
 	}
 
+#ifndef CTS_USES_VULKANSC
 	if (isExtensionSupported(properties, RequiredExtension("VK_KHR_portability_subset")))
 	{
 		VkPhysicalDevicePortabilitySubsetPropertiesKHR portabilitySubsetProperties[count];
@@ -4907,6 +5138,7 @@ tcu::TestStatus deviceProperties2 (Context& context)
 			TCU_FAIL("limit Validation failed minVertexInputBindingStrideAlignment is not a power of two.");
 		}
 	}
+#endif // CTS_USES_VULKANSC
 
 	return tcu::TestStatus::pass("Querying device properties succeeded");
 }
@@ -4927,9 +5159,9 @@ string toString (const VkFormatProperties2& value)
 
 tcu::TestStatus deviceFormatProperties2 (Context& context)
 {
-	const VkPhysicalDevice			physicalDevice	= context.getPhysicalDevice();
 	const CustomInstance			instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
 	const InstanceDriver&			vki				(instance.getDriver());
+	const VkPhysicalDevice			physicalDevice	(chooseDevice(vki, instance, context.getTestContext().getCommandLine()));
 	TestLog&						log				= context.getTestContext().getLog();
 
 	for (int formatNdx = 0; formatNdx < VK_CORE_FORMAT_LAST; ++formatNdx)
@@ -4950,10 +5182,10 @@ tcu::TestStatus deviceFormatProperties2 (Context& context)
 		TCU_CHECK(extProperties.sType == VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2);
 		TCU_CHECK(extProperties.pNext == DE_NULL);
 
-	if (deMemCmp(&coreProperties, &extProperties.formatProperties, sizeof(VkFormatProperties)) != 0)
-		TCU_FAIL("Mismatch between format properties reported by vkGetPhysicalDeviceFormatProperties and vkGetPhysicalDeviceFormatProperties2");
+		if (deMemCmp(&coreProperties, &extProperties.formatProperties, sizeof(VkFormatProperties)) != 0)
+			TCU_FAIL("Mismatch between format properties reported by vkGetPhysicalDeviceFormatProperties and vkGetPhysicalDeviceFormatProperties2");
 
-	log << TestLog::Message << toString (extProperties) << TestLog::EndMessage;
+		log << TestLog::Message << toString (extProperties) << TestLog::EndMessage;
 	}
 
 	return tcu::TestStatus::pass("Querying device format properties succeeded");
@@ -4961,9 +5193,9 @@ tcu::TestStatus deviceFormatProperties2 (Context& context)
 
 tcu::TestStatus deviceQueueFamilyProperties2 (Context& context)
 {
-	const VkPhysicalDevice			physicalDevice			= context.getPhysicalDevice();
 	const CustomInstance			instance				(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
 	const InstanceDriver&			vki						(instance.getDriver());
+	const VkPhysicalDevice			physicalDevice	(chooseDevice(vki, instance, context.getTestContext().getCommandLine()));
 	TestLog&						log						= context.getTestContext().getLog();
 	deUint32						numCoreQueueFamilies	= ~0u;
 	deUint32						numExtQueueFamilies		= ~0u;
@@ -5012,9 +5244,9 @@ tcu::TestStatus deviceQueueFamilyProperties2 (Context& context)
 
 tcu::TestStatus deviceMemoryProperties2 (Context& context)
 {
-	const VkPhysicalDevice				physicalDevice	= context.getPhysicalDevice();
 	const CustomInstance				instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
 	const InstanceDriver&				vki				(instance.getDriver());
+	const VkPhysicalDevice				physicalDevice	(chooseDevice(vki, instance, context.getTestContext().getCommandLine()));
 	TestLog&							log				= context.getTestContext().getLog();
 	VkPhysicalDeviceMemoryProperties	coreProperties;
 	VkPhysicalDeviceMemoryProperties2	extProperties;
@@ -5031,8 +5263,16 @@ tcu::TestStatus deviceMemoryProperties2 (Context& context)
 	TCU_CHECK(extProperties.sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2);
 	TCU_CHECK(extProperties.pNext == DE_NULL);
 
-	if (deMemCmp(&coreProperties, &extProperties.memoryProperties, sizeof(VkPhysicalDeviceMemoryProperties)) != 0)
-		TCU_FAIL("Mismatch between properties reported by vkGetPhysicalDeviceMemoryProperties and vkGetPhysicalDeviceMemoryProperties2");
+	if (coreProperties.memoryTypeCount != extProperties.memoryProperties.memoryTypeCount)
+		TCU_FAIL("Mismatch between memoryTypeCount reported by vkGetPhysicalDeviceMemoryProperties and vkGetPhysicalDeviceMemoryProperties2");
+	if (coreProperties.memoryHeapCount != extProperties.memoryProperties.memoryHeapCount)
+		TCU_FAIL("Mismatch between memoryHeapCount reported by vkGetPhysicalDeviceMemoryProperties and vkGetPhysicalDeviceMemoryProperties2");
+	for (deUint32 i = 0; i < coreProperties.memoryTypeCount; i++)
+		if (deMemCmp(&coreProperties.memoryTypes[i], &extProperties.memoryProperties.memoryTypes[i], sizeof(VkMemoryType)) != 0)
+			TCU_FAIL("Mismatch between memoryTypes reported by vkGetPhysicalDeviceMemoryProperties and vkGetPhysicalDeviceMemoryProperties2");
+	for (deUint32 i = 0; i < coreProperties.memoryHeapCount; i++)
+		if (deMemCmp(&coreProperties.memoryHeaps[i], &extProperties.memoryProperties.memoryHeaps[i], sizeof(VkMemoryHeap)) != 0)
+			TCU_FAIL("Mismatch between memoryHeaps reported by vkGetPhysicalDeviceMemoryProperties and vkGetPhysicalDeviceMemoryProperties2");
 
 	log << TestLog::Message << extProperties << TestLog::EndMessage;
 
@@ -5153,9 +5393,9 @@ tcu::TestStatus deviceFeaturesVulkan12 (Context& context)
 		{ 0, 0 }
 	};
 	TestLog&											log										= context.getTestContext().getLog();
-	const VkPhysicalDevice								physicalDevice							= context.getPhysicalDevice();
 	const CustomInstance								instance								(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
 	const InstanceDriver&								vki										= instance.getDriver();
+	const VkPhysicalDevice								physicalDevice							(chooseDevice(vki, instance, context.getTestContext().getCommandLine()));
 	const deUint32										vulkan11FeaturesBufferSize				= sizeof(VkPhysicalDeviceVulkan11Features) + GUARD_SIZE;
 	const deUint32										vulkan12FeaturesBufferSize				= sizeof(VkPhysicalDeviceVulkan12Features) + GUARD_SIZE;
 	VkPhysicalDeviceFeatures2							extFeatures;
@@ -5167,7 +5407,7 @@ tcu::TestStatus deviceFeaturesVulkan12 (Context& context)
 	VkPhysicalDeviceVulkan11Features*					vulkan11Features[count]					= { (VkPhysicalDeviceVulkan11Features*)(buffer11a), (VkPhysicalDeviceVulkan11Features*)(buffer11b)};
 	VkPhysicalDeviceVulkan12Features*					vulkan12Features[count]					= { (VkPhysicalDeviceVulkan12Features*)(buffer12a), (VkPhysicalDeviceVulkan12Features*)(buffer12b)};
 
-	if (!context.contextSupports(vk::ApiVersion(1, 2, 0)))
+	if (!context.contextSupports(vk::ApiVersion(0, 1, 2, 0)))
 		TCU_THROW(NotSupportedError, "At least Vulkan 1.2 required to run test");
 
 	deMemset(buffer11b, GUARD_VALUE, sizeof(buffer11b));
@@ -5213,6 +5453,7 @@ tcu::TestStatus deviceFeaturesVulkan12 (Context& context)
 	return tcu::TestStatus::pass("Querying Vulkan 1.2 device features succeeded");
 }
 
+#ifndef CTS_USES_VULKANSC
 tcu::TestStatus deviceFeaturesVulkan13 (Context& context)
 {
 	using namespace ValidateQueryBits;
@@ -5272,7 +5513,7 @@ tcu::TestStatus deviceFeaturesVulkan13 (Context& context)
 	const int											count									= 2u;
 	VkPhysicalDeviceVulkan13Features*					vulkan13Features[count]					= { (VkPhysicalDeviceVulkan13Features*)(buffer13a), (VkPhysicalDeviceVulkan13Features*)(buffer13b)};
 
-	if (!context.contextSupports(vk::ApiVersion(1, 3, 0)))
+	if (!context.contextSupports(vk::ApiVersion(0, 1, 3, 0)))
 		TCU_THROW(NotSupportedError, "At least Vulkan 1.3 required to run test");
 
 	deMemset(buffer13a, GUARD_VALUE, sizeof(buffer13a));
@@ -5303,6 +5544,7 @@ tcu::TestStatus deviceFeaturesVulkan13 (Context& context)
 
 	return tcu::TestStatus::pass("Querying Vulkan 1.3 device features succeeded");
 }
+#endif // CTS_USES_VULKANSC
 
 tcu::TestStatus devicePropertiesVulkan12 (Context& context)
 {
@@ -5406,9 +5648,9 @@ tcu::TestStatus devicePropertiesVulkan12 (Context& context)
 		{ 0, 0 }
 	};
 	TestLog&										log											= context.getTestContext().getLog();
-	const VkPhysicalDevice							physicalDevice								= context.getPhysicalDevice();
 	const CustomInstance							instance									(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
 	const InstanceDriver&							vki											= instance.getDriver();
+	const VkPhysicalDevice							physicalDevice								(chooseDevice(vki, instance, context.getTestContext().getCommandLine()));
 	const deUint32									vulkan11PropertiesBufferSize				= sizeof(VkPhysicalDeviceVulkan11Properties) + GUARD_SIZE;
 	const deUint32									vulkan12PropertiesBufferSize				= sizeof(VkPhysicalDeviceVulkan12Properties) + GUARD_SIZE;
 	VkPhysicalDeviceProperties2						extProperties;
@@ -5420,7 +5662,7 @@ tcu::TestStatus devicePropertiesVulkan12 (Context& context)
 	VkPhysicalDeviceVulkan11Properties*				vulkan11Properties[count]					= { (VkPhysicalDeviceVulkan11Properties*)(buffer11a), (VkPhysicalDeviceVulkan11Properties*)(buffer11b)};
 	VkPhysicalDeviceVulkan12Properties*				vulkan12Properties[count]					= { (VkPhysicalDeviceVulkan12Properties*)(buffer12a), (VkPhysicalDeviceVulkan12Properties*)(buffer12b)};
 
-	if (!context.contextSupports(vk::ApiVersion(1, 2, 0)))
+	if (!context.contextSupports(vk::ApiVersion(0, 1, 2, 0)))
 		TCU_THROW(NotSupportedError, "At least Vulkan 1.2 required to run test");
 
 	deMemset(buffer11a, GUARD_VALUE, sizeof(buffer11a));
@@ -5467,6 +5709,7 @@ tcu::TestStatus devicePropertiesVulkan12 (Context& context)
 	return tcu::TestStatus::pass("Querying Vulkan 1.2 device properties succeeded");
 }
 
+#ifndef CTS_USES_VULKANSC
 tcu::TestStatus devicePropertiesVulkan13 (Context& context)
 {
 	using namespace ValidateQueryBits;
@@ -5543,7 +5786,7 @@ tcu::TestStatus devicePropertiesVulkan13 (Context& context)
 	const int										count										= 2u;
 	VkPhysicalDeviceVulkan13Properties*				vulkan13Properties[count]					= { (VkPhysicalDeviceVulkan13Properties*)(buffer13a), (VkPhysicalDeviceVulkan13Properties*)(buffer13b)};
 
-	if (!context.contextSupports(vk::ApiVersion(1, 3, 0)))
+	if (!context.contextSupports(vk::ApiVersion(0, 1, 3, 0)))
 		TCU_THROW(NotSupportedError, "At least Vulkan 1.3 required to run test");
 
 	deMemset(buffer13a, GUARD_VALUE, sizeof(buffer13a));
@@ -5573,15 +5816,16 @@ tcu::TestStatus devicePropertiesVulkan13 (Context& context)
 
 	return tcu::TestStatus::pass("Querying Vulkan 1.3 device properties succeeded");
 }
+#endif // CTS_USES_VULKANSC
 
 tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan12(Context& context)
 {
 	TestLog&											log										= context.getTestContext().getLog();
-	const VkPhysicalDevice								physicalDevice							= context.getPhysicalDevice();
 	const CustomInstance								instance								(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
 	const InstanceDriver&								vki										= instance.getDriver();
+	const VkPhysicalDevice								physicalDevice							(chooseDevice(vki, instance, context.getTestContext().getCommandLine()));
 
-	if (!context.contextSupports(vk::ApiVersion(1, 2, 0)))
+	if (!context.contextSupports(vk::ApiVersion(0, 1, 2, 0)))
 		TCU_THROW(NotSupportedError, "At least Vulkan 1.2 required to run test");
 
 	VkPhysicalDeviceVulkan12Features					vulkan12Features						= initVulkanStructure();
@@ -5787,6 +6031,7 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan12(Context& context)
 	return tcu::TestStatus::pass("Vulkan 1.2 device features are consistent with extensions");
 }
 
+#ifndef CTS_USES_VULKANSC
 tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan13(Context& context)
 {
 	TestLog&							log					= context.getTestContext().getLog();
@@ -5794,7 +6039,7 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan13(Context& context)
 	const CustomInstance				instance			= createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2");
 	const InstanceDriver&				vki					= instance.getDriver();
 
-	if (!context.contextSupports(vk::ApiVersion(1, 3, 0)))
+	if (!context.contextSupports(vk::ApiVersion(0, 1, 3, 0)))
 		TCU_THROW(NotSupportedError, "At least Vulkan 1.3 required to run test");
 
 	VkPhysicalDeviceVulkan13Features					vulkan13Features				= initVulkanStructure();
@@ -5917,15 +6162,16 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan13(Context& context)
 
 	return tcu::TestStatus::pass("Vulkan 1.3 device features are consistent with extensions");
 }
+#endif // CTS_USES_VULKANSC
 
 tcu::TestStatus devicePropertyExtensionsConsistencyVulkan12(Context& context)
 {
 	TestLog&										log											= context.getTestContext().getLog();
-	const VkPhysicalDevice							physicalDevice								= context.getPhysicalDevice();
 	const CustomInstance							instance									(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
 	const InstanceDriver&							vki											= instance.getDriver();
+	const VkPhysicalDevice							physicalDevice								(chooseDevice(vki, instance, context.getTestContext().getCommandLine()));
 
-	if (!context.contextSupports(vk::ApiVersion(1, 2, 0)))
+	if (!context.contextSupports(vk::ApiVersion(0, 1, 2, 0)))
 		TCU_THROW(NotSupportedError, "At least Vulkan 1.2 required to run test");
 
 	VkPhysicalDeviceVulkan12Properties				vulkan12Properties							= initVulkanStructure();
@@ -6084,6 +6330,7 @@ tcu::TestStatus devicePropertyExtensionsConsistencyVulkan12(Context& context)
 	return tcu::TestStatus::pass("Vulkan 1.2 device properties are consistent with extension properties");
 }
 
+#ifndef CTS_USES_VULKANSC
 tcu::TestStatus devicePropertyExtensionsConsistencyVulkan13(Context& context)
 {
 	TestLog&					log					= context.getTestContext().getLog();
@@ -6091,7 +6338,7 @@ tcu::TestStatus devicePropertyExtensionsConsistencyVulkan13(Context& context)
 	const CustomInstance		instance			= createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2");
 	const InstanceDriver&		vki					= instance.getDriver();
 
-	if (!context.contextSupports(vk::ApiVersion(1, 3, 0)))
+	if (!context.contextSupports(vk::ApiVersion(0, 1, 3, 0)))
 		TCU_THROW(NotSupportedError, "At least Vulkan 1.3 required to run test");
 
 	VkPhysicalDeviceVulkan13Properties		vulkan13Properties		= initVulkanStructure();
@@ -6179,6 +6426,7 @@ tcu::TestStatus devicePropertyExtensionsConsistencyVulkan13(Context& context)
 
 	return tcu::TestStatus::pass("Vulkan 1.3 device properties are consistent with extension properties");
 }
+#endif // CTS_USES_VULKANSC
 
 tcu::TestStatus imageFormatProperties2 (Context& context, const VkFormat format, const VkImageType imageType, const VkImageTiling tiling)
 {
@@ -6188,11 +6436,11 @@ tcu::TestStatus imageFormatProperties2 (Context& context, const VkFormat format,
 
 	TestLog&						log				= context.getTestContext().getLog();
 
-	const VkPhysicalDevice			physicalDevice	= context.getPhysicalDevice();
 	const CustomInstance			instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
 	const InstanceDriver&			vki				(instance.getDriver());
+	const VkPhysicalDevice			physicalDevice	(chooseDevice(vki, instance, context.getTestContext().getCommandLine()));
 
-	const VkImageCreateFlags		ycbcrFlags		= isYCbCrFormat(format) ? (VkImageCreateFlags)VK_IMAGE_CREATE_DISJOINT_BIT_KHR : (VkImageCreateFlags)0u;
+	const VkImageCreateFlags		ycbcrFlags		= isYCbCrFormat(format) ? (VkImageCreateFlags)VK_IMAGE_CREATE_DISJOINT_BIT : (VkImageCreateFlags)0u;
 	const VkImageUsageFlags			allUsageFlags	= VK_IMAGE_USAGE_TRANSFER_SRC_BIT
 													| VK_IMAGE_USAGE_TRANSFER_DST_BIT
 													| VK_IMAGE_USAGE_SAMPLED_BIT
@@ -6257,13 +6505,14 @@ tcu::TestStatus imageFormatProperties2 (Context& context, const VkFormat format,
 	return tcu::TestStatus::pass("Querying image format properties succeeded");
 }
 
+#ifndef CTS_USES_VULKANSC
 tcu::TestStatus sparseImageFormatProperties2 (Context& context, const VkFormat format, const VkImageType imageType, const VkImageTiling tiling)
 {
 	TestLog&						log				= context.getTestContext().getLog();
 
-	const VkPhysicalDevice			physicalDevice	= context.getPhysicalDevice();
 	const CustomInstance			instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
 	const InstanceDriver&			vki				(instance.getDriver());
+	const VkPhysicalDevice			physicalDevice	(chooseDevice(vki, instance, context.getTestContext().getCommandLine()));
 
 	const VkImageUsageFlags			allUsageFlags	= VK_IMAGE_USAGE_TRANSFER_SRC_BIT
 													| VK_IMAGE_USAGE_TRANSFER_DST_BIT
@@ -6355,6 +6604,7 @@ tcu::TestStatus sparseImageFormatProperties2 (Context& context, const VkFormat f
 
 	return tcu::TestStatus::pass("Querying sparse image format properties succeeded");
 }
+#endif // CTS_USES_VULKANSC
 
 tcu::TestStatus execImageFormatTest (Context& context, ImageFormatPropertyCase testCase)
 {
@@ -6376,7 +6626,7 @@ void createImageFormatTypeTilingTests (tcu::TestCaseGroup* testGroup, ImageForma
 		{ (VkFormat)(VK_FORMAT_UNDEFINED + 1),		VK_CORE_FORMAT_LAST,										params },
 
 		// YCbCr formats
-		{ VK_FORMAT_G8B8G8R8_422_UNORM_KHR,			(VkFormat)(VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM_KHR + 1),	params },
+		{ VK_FORMAT_G8B8G8R8_422_UNORM,				(VkFormat)(VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM + 1),	params },
 
 		// YCbCr extended formats
 		{ VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT,	(VkFormat)(VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT+1),	params },
@@ -6390,7 +6640,11 @@ void createImageFormatTypeTilingTests (tcu::TestCaseGroup* testGroup, ImageForma
 		for (VkFormat format = rangeBegin; format != rangeEnd; format = (VkFormat)(format+1))
 		{
 			const bool			isYCbCr		= isYCbCrFormat(format);
-			const bool			isSparse	= (params.testFunction == sparseImageFormatProperties2);
+#ifndef CTS_USES_VULKANSC
+			const bool			isSparse = (params.testFunction == sparseImageFormatProperties2);
+#else
+			const bool			isSparse = false;
+#endif // CTS_USES_VULKANSC
 
 			if (isYCbCr && isSparse)
 				continue;
@@ -6455,6 +6709,7 @@ tcu::TestStatus testNoUnknownExtensions (Context& context)
 	allowedDeviceExtensions.insert("VK_GOOGLE_display_timing");
 	allowedDeviceExtensions.insert("VK_GOOGLE_decorate_string");
 	allowedDeviceExtensions.insert("VK_GOOGLE_hlsl_functionality1");
+	allowedInstanceExtensions.insert("VK_GOOGLE_surfaceless_query");
 
 	// Instance extensions
 	checkExtensions(results,
@@ -6555,6 +6810,18 @@ tcu::TestStatus testMandatoryExtensions (Context& context)
 
 } // anonymous
 
+static inline void addFunctionCaseInNewSubgroup (
+	tcu::TestContext&			testCtx,
+	tcu::TestCaseGroup*			group,
+	const std::string&			subgroupName,
+	const std::string&			subgroupDescription,
+	FunctionInstance0::Function	testFunc)
+{
+	de::MovePtr<tcu::TestCaseGroup>	subgroup(new tcu::TestCaseGroup(testCtx, subgroupName.c_str(), subgroupDescription.c_str()));
+	addFunctionCase(subgroup.get(), "basic", "", testFunc);
+	group->addChild(subgroup.release());
+}
+
 tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	infoTests	(new tcu::TestCaseGroup(testCtx, "info", "Platform Information Tests"));
@@ -6573,11 +6840,16 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 	{
 		de::MovePtr<tcu::TestCaseGroup> extendedPropertiesTests (new tcu::TestCaseGroup(testCtx, "get_physical_device_properties2", "VK_KHR_get_physical_device_properties2"));
 
-		addFunctionCase(extendedPropertiesTests.get(), "features",					"Extended Device Features",					deviceFeatures2);
-		addFunctionCase(extendedPropertiesTests.get(), "properties",				"Extended Device Properties",				deviceProperties2);
-		addFunctionCase(extendedPropertiesTests.get(), "format_properties",			"Extended Device Format Properties",		deviceFormatProperties2);
-		addFunctionCase(extendedPropertiesTests.get(), "queue_family_properties",	"Extended Device Queue Family Properties",	deviceQueueFamilyProperties2);
-		addFunctionCase(extendedPropertiesTests.get(), "memory_properties",			"Extended Device Memory Properties",		deviceMemoryProperties2);
+		{
+			de::MovePtr<tcu::TestCaseGroup>	subgroup(new tcu::TestCaseGroup(testCtx, "features", ""));
+			addFunctionCase(subgroup.get(), "core", "Extended Device Features", deviceFeatures2);
+			addSeparateFeatureTests(subgroup.get());
+			extendedPropertiesTests->addChild(subgroup.release());
+		}
+		addFunctionCaseInNewSubgroup(testCtx, extendedPropertiesTests.get(), "properties",				"Extended Device Properties",				deviceProperties2);
+		addFunctionCaseInNewSubgroup(testCtx, extendedPropertiesTests.get(), "format_properties",			"Extended Device Format Properties",		deviceFormatProperties2);
+		addFunctionCaseInNewSubgroup(testCtx, extendedPropertiesTests.get(), "queue_family_properties",	"Extended Device Queue Family Properties",	deviceQueueFamilyProperties2);
+		addFunctionCaseInNewSubgroup(testCtx, extendedPropertiesTests.get(), "memory_properties",			"Extended Device Memory Properties",		deviceMemoryProperties2);
 
 		infoTests->addChild(extendedPropertiesTests.release());
 	}
@@ -6594,6 +6866,7 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 		infoTests->addChild(extendedPropertiesTests.release());
 	}
 
+#ifndef CTS_USES_VULKANSC
 	{
 		de::MovePtr<tcu::TestCaseGroup> extendedPropertiesTests (new tcu::TestCaseGroup(testCtx, "vulkan1p3", "Vulkan 1.3 related tests"));
 
@@ -6605,12 +6878,16 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 
 		infoTests->addChild(extendedPropertiesTests.release());
 	}
+#endif // CTS_USES_VULKANSC
 
 	{
 		de::MovePtr<tcu::TestCaseGroup> limitsValidationTests (new tcu::TestCaseGroup(testCtx, "vulkan1p2_limits_validation", "Vulkan 1.2 and core extensions limits validation"));
 
 		addFunctionCase(limitsValidationTests.get(), "general",							"Vulkan 1.2 Limit validation",							checkApiVersionSupport<1, 2>,				validateLimits12);
+#ifndef CTS_USES_VULKANSC
+		// Removed from Vulkan SC test set: VK_KHR_push_descriptor extension removed from Vulkan SC
 		addFunctionCase(limitsValidationTests.get(), "khr_push_descriptor",				"VK_KHR_push_descriptor limit validation",				checkSupportKhrPushDescriptor,				validateLimitsKhrPushDescriptor);
+#endif // CTS_USES_VULKANSC
 		addFunctionCase(limitsValidationTests.get(), "khr_multiview",					"VK_KHR_multiview limit validation",					checkSupportKhrMultiview,					validateLimitsKhrMultiview);
 		addFunctionCase(limitsValidationTests.get(), "ext_discard_rectangles",			"VK_EXT_discard_rectangles limit validation",			checkSupportExtDiscardRectangles,			validateLimitsExtDiscardRectangles);
 		addFunctionCase(limitsValidationTests.get(), "ext_sample_locations",			"VK_EXT_sample_locations limit validation",				checkSupportExtSampleLocations,				validateLimitsExtSampleLocations);
@@ -6619,14 +6896,21 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 		addFunctionCase(limitsValidationTests.get(), "khr_maintenance_3",				"VK_KHR_maintenance3 limit validation",					checkSupportKhrMaintenance3,				validateLimitsKhrMaintenance3);
 		addFunctionCase(limitsValidationTests.get(), "ext_conservative_rasterization",	"VK_EXT_conservative_rasterization limit validation",	checkSupportExtConservativeRasterization,	validateLimitsExtConservativeRasterization);
 		addFunctionCase(limitsValidationTests.get(), "ext_descriptor_indexing",			"VK_EXT_descriptor_indexing limit validation",			checkSupportExtDescriptorIndexing,			validateLimitsExtDescriptorIndexing);
+#ifndef CTS_USES_VULKANSC
+		// Removed from Vulkan SC test set: VK_EXT_inline_uniform_block extension removed from Vulkan SC
 		addFunctionCase(limitsValidationTests.get(), "ext_inline_uniform_block",		"VK_EXT_inline_uniform_block limit validation",			checkSupportExtInlineUniformBlock,			validateLimitsExtInlineUniformBlock);
+#endif // CTS_USES_VULKANSC
 		addFunctionCase(limitsValidationTests.get(), "ext_vertex_attribute_divisor",	"VK_EXT_vertex_attribute_divisor limit validation",		checkSupportExtVertexAttributeDivisor,		validateLimitsExtVertexAttributeDivisor);
+#ifndef CTS_USES_VULKANSC
+		// Removed from Vulkan SC test set: extensions VK_NV_mesh_shader, VK_EXT_transform_feedback, VK_EXT_fragment_density_map, VK_NV_ray_tracing extension removed from Vulkan SC
 		addFunctionCase(limitsValidationTests.get(), "nv_mesh_shader",					"VK_NV_mesh_shader limit validation",					checkSupportNvMeshShader,					validateLimitsNvMeshShader);
 		addFunctionCase(limitsValidationTests.get(), "ext_transform_feedback",			"VK_EXT_transform_feedback limit validation",			checkSupportExtTransformFeedback,			validateLimitsExtTransformFeedback);
 		addFunctionCase(limitsValidationTests.get(), "fragment_density_map",			"VK_EXT_fragment_density_map limit validation",			checkSupportExtFragmentDensityMap,			validateLimitsExtFragmentDensityMap);
 		addFunctionCase(limitsValidationTests.get(), "nv_ray_tracing",					"VK_NV_ray_tracing limit validation",					checkSupportNvRayTracing,					validateLimitsNvRayTracing);
+#endif
 		addFunctionCase(limitsValidationTests.get(), "timeline_semaphore",				"VK_KHR_timeline_semaphore limit validation",			checkSupportKhrTimelineSemaphore,			validateLimitsKhrTimelineSemaphore);
 		addFunctionCase(limitsValidationTests.get(), "ext_line_rasterization",			"VK_EXT_line_rasterization limit validation",			checkSupportExtLineRasterization,			validateLimitsExtLineRasterization);
+		addFunctionCase(limitsValidationTests.get(), "robustness2",						"VK_EXT_robustness2 limit validation",					checkSupportRobustness2,					validateLimitsRobustness2);
 
 		infoTests->addChild(limitsValidationTests.release());
 	}
@@ -6634,13 +6918,16 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 	{
 		de::MovePtr<tcu::TestCaseGroup> limitsValidationTests(new tcu::TestCaseGroup(testCtx, "vulkan1p3_limits_validation", "Vulkan 1.3 and core extensions limits validation"));
 
+#ifndef CTS_USES_VULKANSC
 		addFunctionCase(limitsValidationTests.get(), "khr_maintenance4",				"VK_KHR_maintenance4",									checkSupportKhrMaintenance4,				validateLimitsKhrMaintenance4);
 		addFunctionCase(limitsValidationTests.get(), "max_inline_uniform_total_size",	"maxInlineUniformTotalSize limit validation",			checkApiVersionSupport<1, 3>,				validateLimitsMaxInlineUniformTotalSize);
+#endif // CTS_USES_VULKANSC
 
 		infoTests->addChild(limitsValidationTests.release());
 	}
 
 	infoTests->addChild(createTestGroup(testCtx, "image_format_properties2",		"VkGetPhysicalDeviceImageFormatProperties2() Tests",		createImageFormatTests, imageFormatProperties2));
+#ifndef CTS_USES_VULKANSC
 	infoTests->addChild(createTestGroup(testCtx, "sparse_image_format_properties2",	"VkGetPhysicalDeviceSparseImageFormatProperties2() Tests",	createImageFormatTests, sparseImageFormatProperties2));
 
 	{
@@ -6650,6 +6937,7 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 
 		infoTests->addChild(profilesValidationTests.release());
 	}
+#endif // CTS_USES_VULKANSC
 
 	{
 		de::MovePtr<tcu::TestCaseGroup>	androidTests	(new tcu::TestCaseGroup(testCtx, "android", "Android CTS Tests"));

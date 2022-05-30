@@ -105,6 +105,21 @@ DE_DECLARE_COMMAND_LINE_OPT(CaseFractionMandatoryTests,	std::string);
 DE_DECLARE_COMMAND_LINE_OPT(WaiverFile,					std::string);
 DE_DECLARE_COMMAND_LINE_OPT(RunnerType,					tcu::TestRunnerType);
 DE_DECLARE_COMMAND_LINE_OPT(TerminateOnFail,			bool);
+DE_DECLARE_COMMAND_LINE_OPT(SubProcess,					bool);
+DE_DECLARE_COMMAND_LINE_OPT(SubprocessTestCount,		int);
+DE_DECLARE_COMMAND_LINE_OPT(SubprocessConfigFile,		std::string);
+DE_DECLARE_COMMAND_LINE_OPT(ServerAddress,				std::string);
+DE_DECLARE_COMMAND_LINE_OPT(CommandPoolMinSize,			int);
+DE_DECLARE_COMMAND_LINE_OPT(CommandBufferMinSize,		int);
+DE_DECLARE_COMMAND_LINE_OPT(CommandDefaultSize,			int);
+DE_DECLARE_COMMAND_LINE_OPT(PipelineDefaultSize,		int);
+DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerPath,		std::string);
+DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerDataDir,	std::string);
+DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerArgs,		std::string);
+DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerOutputFile,	std::string);
+DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerLogFile,	std::string);
+DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerFilePrefix,	std::string);
+
 
 static void parseIntList (const char* src, std::vector<int>* dst)
 {
@@ -215,7 +230,21 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<CaseFractionMandatoryTests>	(DE_NULL,	"deqp-fraction-mandatory-caselist-file",	"Case list file that must be run for each fraction",					"")
 		<< Option<WaiverFile>					(DE_NULL,	"deqp-waiver-file",							"Read waived tests from given file",									"")
 		<< Option<RunnerType>					(DE_NULL,	"deqp-runner-type",							"Filter test cases based on runner",				s_runnerTypes,		"any")
-		<< Option<TerminateOnFail>				(DE_NULL,	"deqp-terminate-on-fail",					"Terminate the run on first failure",				s_enableNames,		"disable");
+		<< Option<TerminateOnFail>				(DE_NULL,	"deqp-terminate-on-fail",					"Terminate the run on first failure",				s_enableNames,		"disable")
+		<< Option<SubProcess>					(DE_NULL,	"deqp-subprocess",							"Inform app that it works as subprocess (Vulkan SC only, do not use manually)", s_enableNames, "disable")
+		<< Option<SubprocessTestCount>			(DE_NULL,	"deqp-subprocess-test-count",				"Define default number of tests performed in subprocess for specific test cases(Vulkan SC only)",	"65536")
+		<< Option<SubprocessConfigFile>			(DE_NULL,	"deqp-subprocess-cfg-file",					"Config file defining number of tests performed in subprocess for specific test branches (Vulkan SC only)", "")
+		<< Option<ServerAddress>				(DE_NULL,	"deqp-server-address",						"Server address (host:port) responsible for shader compilation (Vulkan SC only)", "")
+		<< Option<CommandPoolMinSize>			(DE_NULL,	"deqp-command-pool-min-size",				"Define minimum size of the command pool (in bytes) to use (Vulkan SC only)","0")
+		<< Option<CommandBufferMinSize>			(DE_NULL,	"deqp-command-buffer-min-size",				"Define minimum size of the command buffer (in bytes) to use (Vulkan SC only)", "0")
+		<< Option<CommandDefaultSize>			(DE_NULL,	"deqp-command-default-size",				"Define default single command size (in bytes) to use (Vulkan SC only)",	"256")
+		<< Option<PipelineDefaultSize>			(DE_NULL,	"deqp-pipeline-default-size",				"Define default pipeline size (in bytes) to use (Vulkan SC only)",		"16384")
+		<< Option<PipelineCompilerPath>			(DE_NULL,	"deqp-pipeline-compiler",					"Path to offline pipeline compiler (Vulkan SC only)", "")
+		<< Option<PipelineCompilerDataDir>		(DE_NULL,	"deqp-pipeline-dir",						"Offline pipeline data directory (Vulkan SC only)", "")
+		<< Option<PipelineCompilerArgs>			(DE_NULL,	"deqp-pipeline-args",						"Additional compiler parameters (Vulkan SC only)", "")
+		<< Option<PipelineCompilerOutputFile>	(DE_NULL,	"deqp-pipeline-file",						"Output file with pipeline cache (Vulkan SC only, do not use manually)", "")
+		<< Option<PipelineCompilerLogFile>		(DE_NULL,	"deqp-pipeline-logfile",					"Log file for pipeline compiler (Vulkan SC only, do not use manually)", "")
+		<< Option<PipelineCompilerFilePrefix>	(DE_NULL,	"deqp-pipeline-prefix",						"Prefix for input pipeline compiler files (Vulkan SC only, do not use manually)", "");
 }
 
 void registerLegacyOptions (de::cmdline::Parser& parser)
@@ -740,7 +769,7 @@ bool CasePaths::matches (const string& caseName, bool allowPrefix) const
  * \note CommandLine is not fully initialized until parse() has been called.
  *//*--------------------------------------------------------------------*/
 CommandLine::CommandLine (void)
-	: m_logFlags	(0)
+	: m_appName(), m_logFlags(0)
 {
 }
 
@@ -753,7 +782,7 @@ CommandLine::CommandLine (void)
  * \param argv Command line arguments
  *//*--------------------------------------------------------------------*/
 CommandLine::CommandLine (int argc, const char* const* argv)
-	: m_logFlags	(0)
+	: m_appName(argv[0]), m_logFlags (0)
 {
 	if (argc > 1)
 	{
@@ -779,7 +808,7 @@ CommandLine::CommandLine (int argc, const char* const* argv)
  * \param cmdLine Full command line string.
  *//*--------------------------------------------------------------------*/
 CommandLine::CommandLine (const std::string& cmdLine)
-	: m_initialCmdLine	(cmdLine)
+	: m_appName(), m_initialCmdLine	(cmdLine)
 {
 	if (!parse(cmdLine))
 		throw Exception("Failed to parse command line");
@@ -798,6 +827,11 @@ void CommandLine::clear (void)
 const de::cmdline::CommandLine& CommandLine::getCommandLine (void) const
 {
 	return m_cmdLine;
+}
+
+const std::string& CommandLine::getApplicationName(void) const
+{
+	return m_appName;
 }
 
 const std::string& CommandLine::getInitialCmdLine(void) const
@@ -848,6 +882,9 @@ bool CommandLine::parse (int argc, const char* const* argv)
 
 	if (!m_cmdLine.getOption<opt::LogEmptyLoginfo>())
 		m_logFlags |= QP_TEST_LOG_EXCLUDE_EMPTY_LOGINFO;
+
+	if (m_cmdLine.getOption<opt::SubProcess>())
+		m_logFlags |= QP_TEST_LOG_NO_INITIAL_OUTPUT;
 
 	if ((m_cmdLine.hasOption<opt::CasePath>()?1:0) +
 		(m_cmdLine.hasOption<opt::CaseList>()?1:0) +
@@ -934,6 +971,12 @@ const char*				CommandLine::getCaseFractionMandatoryTests	(void) const	{ return 
 const char*				CommandLine::getArchiveDir					(void) const	{ return m_cmdLine.getOption<opt::ArchiveDir>().c_str();					}
 tcu::TestRunnerType		CommandLine::getRunnerType					(void) const	{ return m_cmdLine.getOption<opt::RunnerType>();							}
 bool					CommandLine::isTerminateOnFailEnabled		(void) const	{ return m_cmdLine.getOption<opt::TerminateOnFail>();						}
+bool					CommandLine::isSubProcess					(void) const	{ return m_cmdLine.getOption<opt::SubProcess>();							}
+int						CommandLine::getSubprocessTestCount			(void) const	{ return m_cmdLine.getOption<opt::SubprocessTestCount>();					}
+int						CommandLine::getCommandPoolMinSize			(void) const	{ return m_cmdLine.getOption<opt::CommandPoolMinSize>();					}
+int						CommandLine::getCommandBufferMinSize		(void) const	{ return m_cmdLine.getOption<opt::CommandBufferMinSize>();					}
+int						CommandLine::getCommandDefaultSize			(void) const	{ return m_cmdLine.getOption<opt::CommandDefaultSize>();					}
+int						CommandLine::getPipelineDefaultSize			(void) const	{ return m_cmdLine.getOption<opt::PipelineDefaultSize>();					}
 
 const char* CommandLine::getGLContextType (void) const
 {
@@ -986,6 +1029,71 @@ const char* CommandLine::getEGLPixmapType (void) const
 {
 	if (m_cmdLine.hasOption<opt::EGLPixmapType>())
 		return m_cmdLine.getOption<opt::EGLPixmapType>().c_str();
+	else
+		return DE_NULL;
+}
+
+const char* CommandLine::getSubprocessConfigFile (void) const
+{
+	if (m_cmdLine.hasOption<opt::SubprocessConfigFile>())
+		return m_cmdLine.getOption<opt::SubprocessConfigFile>().c_str();
+	else
+		return DE_NULL;
+}
+
+
+const char* CommandLine::getServerAddress (void) const
+{
+	if (m_cmdLine.hasOption<opt::ServerAddress>())
+		return m_cmdLine.getOption<opt::ServerAddress>().c_str();
+	else
+		return DE_NULL;
+}
+
+const char* CommandLine::getPipelineCompilerPath(void) const
+{
+	if (m_cmdLine.hasOption<opt::PipelineCompilerPath>())
+		return m_cmdLine.getOption<opt::PipelineCompilerPath>().c_str();
+	else
+		return DE_NULL;
+}
+
+const char* CommandLine::getPipelineCompilerDataDir(void) const
+{
+	if (m_cmdLine.hasOption<opt::PipelineCompilerDataDir>())
+		return m_cmdLine.getOption<opt::PipelineCompilerDataDir>().c_str();
+	else
+		return DE_NULL;
+}
+
+const char* CommandLine::getPipelineCompilerArgs(void) const
+{
+	if (m_cmdLine.hasOption<opt::PipelineCompilerArgs>())
+		return m_cmdLine.getOption<opt::PipelineCompilerArgs>().c_str();
+	else
+		return DE_NULL;
+}
+
+const char* CommandLine::getPipelineCompilerOutputFile(void) const
+{
+	if (m_cmdLine.hasOption<opt::PipelineCompilerOutputFile>())
+		return m_cmdLine.getOption<opt::PipelineCompilerOutputFile>().c_str();
+	else
+		return DE_NULL;
+}
+
+const char* CommandLine::getPipelineCompilerLogFile(void) const
+{
+	if (m_cmdLine.hasOption<opt::PipelineCompilerLogFile>())
+		return m_cmdLine.getOption<opt::PipelineCompilerLogFile>().c_str();
+	else
+		return DE_NULL;
+}
+
+const char* CommandLine::getPipelineCompilerFilePrefix(void) const
+{
+	if (m_cmdLine.hasOption<opt::PipelineCompilerFilePrefix>())
+		return m_cmdLine.getOption<opt::PipelineCompilerFilePrefix>().c_str();
 	else
 		return DE_NULL;
 }
@@ -1102,7 +1210,8 @@ CaseListFilter::CaseListFilter (const de::cmdline::CommandLine& cmdLine, const t
 	else if (cmdLine.hasOption<opt::CasePath>())
 		m_casePaths = de::MovePtr<const CasePaths>(new CasePaths(cmdLine.getOption<opt::CasePath>()));
 
-	m_caseFraction = cmdLine.getOption<opt::CaseFraction>();
+	if (!cmdLine.getOption<opt::SubProcess>())
+		m_caseFraction = cmdLine.getOption<opt::CaseFraction>();
 
 	if (m_caseFraction.size() == 2 &&
 		(m_caseFraction[0] < 0 || m_caseFraction[1] <= 0 || m_caseFraction[0] >= m_caseFraction[1] ))

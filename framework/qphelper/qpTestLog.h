@@ -137,6 +137,7 @@ typedef enum qpTestLogFlag_e
 	QP_TEST_LOG_EXCLUDE_SHADER_SOURCES	= (1<<1),		/*!< Do not log shader sources. Helps to reduce log size further.	*/
 	QP_TEST_LOG_NO_FLUSH				= (1<<2),		/*!< Do not do a fflush after writing the log.						*/
 	QP_TEST_LOG_EXCLUDE_EMPTY_LOGINFO	= (1<<3),		/*!< Do not log empty shader compile or link loginfo.				*/
+	QP_TEST_LOG_NO_INITIAL_OUTPUT		= (1<<4)		/*!< Do not push data to cout when initializing log.				*/
 } qpTestLogFlag;
 
 /* Shader type. */
@@ -243,6 +244,8 @@ deBool			qpTestLog_writeValueFloat		(qpTestLog* log, double value);
 deBool			qpTestLog_writeValueInteger		(qpTestLog* log, deInt64 value);
 deBool			qpTestLog_endSample				(qpTestLog* log);
 deBool			qpTestLog_endSampleList			(qpTestLog* log);
+
+deBool			qpTestLog_writeRaw				(qpTestLog* log, const char* rawContents);
 
 deUint32		qpTestLog_getLogFlags			(const qpTestLog* log);
 

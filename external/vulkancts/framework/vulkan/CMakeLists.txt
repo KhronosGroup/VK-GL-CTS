@@ -149,6 +149,27 @@ set(VKUTILNOSHADER_SRCS
 	vkDeviceProperties.cpp
 	vkRayTracingUtil.hpp
 	vkRayTracingUtil.cpp
+	vkPipelineConstructionUtil.hpp
+	vkPipelineConstructionUtil.cpp
+	vkSafetyCriticalUtil.hpp
+	vkSafetyCriticalUtil.cpp
+	vkResourceInterface.hpp
+	vkResourceInterface.cpp
+	)
+
+set(VKUTILNOSHADER_INLS
+	generated/vulkan/vkDeviceFeatures.inl
+	generated/vulkan/vkDeviceFeatureTest.inl
+	generated/vulkan/vkDeviceProperties.inl
+	)
+
+set(VKSCUTILNOSHADER_INLS
+	generated/vulkansc/vkDeviceFeatures.inl
+	generated/vulkansc/vkDeviceFeatureTest.inl
+	generated/vulkansc/vkDeviceProperties.inl
+	generated/vulkansc/vulkan_json_data.hpp
+	generated/vulkansc/vulkan_json_parser.hpp
+	generated/vulkansc/tlsWrapper.hpp
 	)
 
 set(VKUTIL_SRCS
@@ -184,10 +205,6 @@ if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
 		PROPERTIES COMPILE_FLAGS "${DE_3RD_PARTY_CXX_FLAGS}")
 endif ()
 
-set(VKUTIL_LIBS ${VKUTIL_LIBS} ${GLSLANG_LIBRARIES})
-
-include_directories(${spirv-tools_SOURCE_DIR}/include)
-include_directories(${spirv-tools_SOURCE_DIR}/external/include)
 
 # \note Code interfacing with spirv-opt needs to include third-party headers
 #       that cause all sorts of warnings to appear.
@@ -197,29 +214,52 @@ if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
 		PROPERTIES COMPILE_FLAGS "${DE_3RD_PARTY_CXX_FLAGS}")
 endif ()
 
-set(VKUTIL_LIBS ${VKUTIL_LIBS} SPIRV-Tools SPIRV-Tools-opt)
-
 if(DEQP_HAVE_RENDERDOC_HEADER)
 	add_definitions(-DDEQP_HAVE_RENDERDOC_HEADER=1)
 endif()
 
 PCH(VKUTILNOSHADER_SRCS ../../modules/vulkan/pch.cpp)
 PCH(VKUTIL_SRCS ../../modules/vulkan/pch.cpp)
+PCH(VKUTILNOSHADER_INLS ../../modules/vulkan/pch.cpp)
+PCH(VKSCUTILNOSHADER_INLS ../../modules/vulkan/pch.cpp)
 
-add_library(vkutilnoshader STATIC ${VKUTILNOSHADER_SRCS})
-target_link_libraries(vkutilnoshader ${VKUTILNOSHADER_LIBS})
+add_library(vkutilnoshader STATIC ${VKUTILNOSHADER_SRCS} ${VKUTILNOSHADER_INLS})
+target_compile_definitions(vkutilnoshader PUBLIC CTS_USES_VULKAN)
+target_link_libraries(vkutilnoshader PUBLIC ${VKUTILNOSHADER_LIBS})
 add_dependencies(vkutilnoshader deqp-vk-inl)
+
+add_library(vkscutilnoshader STATIC ${VKUTILNOSHADER_SRCS} ${VKSCUTILNOSHADER_INLS})
+target_include_directories(vkscutilnoshader BEFORE PUBLIC generated/vulkansc)
+target_include_directories(vkscutilnoshader BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/vkscserver)
+target_compile_definitions(vkscutilnoshader PUBLIC CTS_USES_VULKANSC)
+target_link_libraries(vkscutilnoshader PUBLIC ${VKUTILNOSHADER_LIBS} jsoncpp_static vksc-server-util)
 
 if (DEQP_USE_X11)
 	find_package(X11 REQUIRED)
-	target_link_libraries(vkutilnoshader ${X11_LIBRARIES})
-	add_definitions(-DDEQP_SUPPORT_X11=1)
+
+	target_compile_definitions(vkutilnoshader PUBLIC DEQP_SUPPORT_X11=1)
+	target_link_libraries(vkutilnoshader PUBLIC ${X11_LIBRARIES})
+
+	target_compile_definitions(vkscutilnoshader PUBLIC DEQP_SUPPORT_X11=1)
+	target_link_libraries(vkscutilnoshader PUBLIC ${X11_LIBRARIES})
+
 	if (DEQP_USE_XCB)
 		find_package(XCB REQUIRED)
-		target_link_libraries(vkutilnoshader ${XCB_LIBRARIES})
-		add_definitions(-DDEQP_SUPPORT_XCB=1)
+
+		target_compile_definitions(vkutilnoshader PUBLIC DEQP_SUPPORT_XCB=1)
+		target_link_libraries(vkutilnoshader PUBLIC ${XCB_LIBRARIES})
+
+		target_compile_definitions(vkscutilnoshader PUBLIC DEQP_SUPPORT_XCB=1)
+		target_link_libraries(vkscutilnoshader PUBLIC ${XCB_LIBRARIES})
+
 	endif ()
 endif()
 
 add_library(vkutil STATIC ${VKUTIL_SRCS})
-target_link_libraries(vkutil ${VKUTIL_LIBS})
+target_include_directories(vkutil PUBLIC ${GLSLANG_INCLUDE_PATH} ${spirv-tools_SOURCE_DIR}/include ${spirv-tools_SOURCE_DIR}/external/include )
+target_link_libraries(vkutil PUBLIC vkutilnoshader ${GLSLANG_LIBRARIES} SPIRV-Tools SPIRV-Tools-opt)
+
+add_library(vkscutil STATIC ${VKUTIL_SRCS})
+target_include_directories(vkscutil BEFORE PUBLIC generated/vulkansc)
+target_include_directories(vkscutil PUBLIC ${GLSLANG_INCLUDE_PATH} ${spirv-tools_SOURCE_DIR}/include ${spirv-tools_SOURCE_DIR}/external/include )
+target_link_libraries(vkscutil PUBLIC vkscutilnoshader ${GLSLANG_LIBRARIES} SPIRV-Tools SPIRV-Tools-opt)

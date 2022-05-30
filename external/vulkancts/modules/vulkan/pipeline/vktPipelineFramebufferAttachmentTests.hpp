@@ -25,13 +25,14 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktTestCase.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 
 namespace vkt
 {
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createFramebufferAttachmentTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createFramebufferAttachmentTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
 
 } // pipeline
 } // vkt

@@ -120,9 +120,12 @@ public:
 		m_context.requireDeviceFunctionality("VK_KHR_external_semaphore");
 		m_context.requireDeviceFunctionality("VK_KHR_external_memory");
 
-		if (config.semaphoreType == vk::VK_SEMAPHORE_TYPE_TIMELINE_KHR)
+		if (config.semaphoreType == vk::VK_SEMAPHORE_TYPE_TIMELINE)
 			m_context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
 
+		if (config.memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT
+			|| config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT
+			|| config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT)
 		if (config.type == SynchronizationType::SYNCHRONIZATION2)
 			m_context.requireDeviceFunctionality("VK_KHR_synchronization2");
 
@@ -139,10 +142,10 @@ public:
 			m_context.requireDeviceFunctionality("VK_EXT_external_memory_dma_buf");
 		}
 
-		if (config.memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR
-			|| config.memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR
-			|| config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR
-			|| config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR)
+		if (config.memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT
+			|| config.memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT
+			|| config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT
+			|| config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT)
 		{
 			m_context.requireDeviceFunctionality("VK_KHR_external_semaphore_win32");
 			m_context.requireDeviceFunctionality("VK_KHR_external_memory_win32");
@@ -201,13 +204,13 @@ public:
 
 			log << TestLog::Message << "External image format properties: " << imageFormatInfo << "\n"<< externalProperties << TestLog::EndMessage;
 
-			if ((externalProperties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_KHR) == 0)
+			if ((externalProperties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT) == 0)
 				TCU_THROW(NotSupportedError, "Exporting image resource not supported");
 
-			if ((externalProperties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR) == 0)
+			if ((externalProperties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT) == 0)
 				TCU_THROW(NotSupportedError, "Importing image resource not supported");
 
-			if (!config.dedicated && (externalProperties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_KHR) != 0)
+			if (!config.dedicated && (externalProperties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT) != 0)
 			{
 				TCU_THROW(NotSupportedError, "Handle requires dedicated allocation, but test uses suballocated memory");
 			}
@@ -238,11 +241,11 @@ public:
 
 			log << TestLog::Message << "External buffer properties: " << info << "\n" << properties << TestLog::EndMessage;
 
-			if ((properties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_KHR) == 0
-				|| (properties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR) == 0)
+			if ((properties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT) == 0
+				|| (properties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT) == 0)
 				TCU_THROW(NotSupportedError, "Exporting and importing memory type not supported");
 
-			if (!config.dedicated && (properties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_KHR) != 0)
+			if (!config.dedicated && (properties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT) != 0)
 			{
 				TCU_THROW(NotSupportedError, "Handle requires dedicated allocation, but test uses suballocated memory");
 			}
@@ -250,9 +253,9 @@ public:
 
 		// Check semaphore support
 		{
-			const vk::VkSemaphoreTypeCreateInfoKHR			semaphoreTypeInfo	=
+			const vk::VkSemaphoreTypeCreateInfo			semaphoreTypeInfo	=
 			{
-				vk::VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR,
+				vk::VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
 				DE_NULL,
 				config.semaphoreType,
 				0,
@@ -277,8 +280,8 @@ public:
 
 			log << TestLog::Message << info << "\n" << properties << TestLog::EndMessage;
 
-			if ((properties.externalSemaphoreFeatures & vk::VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT_KHR) == 0
-				|| (properties.externalSemaphoreFeatures & vk::VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT_KHR) == 0)
+			if ((properties.externalSemaphoreFeatures & vk::VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT) == 0
+				|| (properties.externalSemaphoreFeatures & vk::VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT) == 0)
 				TCU_THROW(NotSupportedError, "Exporting and importing semaphore type not supported");
 		}
 	}
@@ -794,6 +797,7 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 			DE_NULL,
 			(vk::VkExternalMemoryHandleTypeFlags)externalType
 		};
+		const vk::VkImageTiling				tiling					= chooseTiling(externalType);
 		const vk::VkImageCreateInfo			createInfo				=
 		{
 			vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -806,7 +810,7 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 			1u,
 			1u,
 			resourceDesc.imageSamples,
-			chooseTiling(externalType),
+			tiling,
 			readOp.getInResourceUsageFlags() | writeOp.getOutResourceUsageFlags(),
 			vk::VK_SHARING_MODE_EXCLUSIVE,
 
@@ -818,7 +822,7 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 		vk::Move<vk::VkImage>			image		= vk::createImage(vkd, device, &createInfo);
 		de::MovePtr<vk::Allocation>		allocation	= importAndBindMemory(vkd, device, *image, nativeHandle, externalType, exportedMemoryTypeIndex, dedicated);
 
-		return de::MovePtr<Resource>(new Resource(image, allocation, extent, resourceDesc.imageType, resourceDesc.imageFormat, subresourceRange, subresourceLayers));
+		return de::MovePtr<Resource>(new Resource(image, allocation, extent, resourceDesc.imageType, resourceDesc.imageFormat, subresourceRange, subresourceLayers, tiling));
 	}
 	else
 	{
@@ -1079,6 +1083,7 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 
 			vk::Move<vk::VkImage>			image					= createImage(m_vkdA, *m_deviceA, resourceDesc, extent, m_queueFamilyIndicesA,
 																				  *m_supportReadOp, *m_supportWriteOp, m_memoryHandleType);
+			const vk::VkImageTiling			tiling					= chooseTiling(m_memoryHandleType);
 			const vk::VkMemoryRequirements	requirements			= getMemoryRequirements(m_vkdA, *m_deviceA, *image, m_config.dedicated, m_getMemReq2Supported);
 											exportedMemoryTypeIndex = chooseMemoryType(requirements.memoryTypeBits);
 			vk::Move<vk::VkDeviceMemory>	memory					= allocateExportableMemory(m_vkdA, *m_deviceA, requirements.size, exportedMemoryTypeIndex, m_memoryHandleType, m_config.dedicated ? *image : (vk::VkImage)0);
@@ -1086,7 +1091,7 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 			VK_CHECK(m_vkdA.bindImageMemory(*m_deviceA, *image, *memory, 0u));
 
 			de::MovePtr<vk::Allocation> allocation = de::MovePtr<vk::Allocation>(new SimpleAllocation(m_vkdA, *m_deviceA, memory.disown()));
-			resourceA = de::MovePtr<Resource>(new Resource(image, allocation, extent, resourceDesc.imageType, resourceDesc.imageFormat, subresourceRange, subresourceLayers));
+			resourceA = de::MovePtr<Resource>(new Resource(image, allocation, extent, resourceDesc.imageType, resourceDesc.imageFormat, subresourceRange, subresourceLayers, tiling));
 		}
 		else
 		{
@@ -1191,7 +1196,7 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 		VK_CHECK(m_vkdA.queueWaitIdle(queueA));
 		VK_CHECK(m_vkdB.queueWaitIdle(queueB));
 
-		if (m_config.semaphoreType == vk::VK_SEMAPHORE_TYPE_TIMELINE_KHR)
+		if (m_config.semaphoreType == vk::VK_SEMAPHORE_TYPE_TIMELINE)
 		{
 			deUint64	valueA;
 			deUint64	valueB;

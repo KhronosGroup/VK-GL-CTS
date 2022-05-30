@@ -37,6 +37,7 @@
 #include "vkImageUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuCommandLine.hpp"
 #include "vktDrawTestCaseUtil.hpp"
 
 #include "deStringUtil.hpp"
@@ -358,6 +359,7 @@ MultipleClearsTest::MultipleClearsTest (Context &context, const TestParams& para
 	pipelineCreateInfo.addState (PipelineCreateInfo::RasterizerState	());
 	pipelineCreateInfo.addState (PipelineCreateInfo::MultiSampleState	());
 
+#ifndef CTS_USES_VULKANSC
 	vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
@@ -371,6 +373,7 @@ MultipleClearsTest::MultipleClearsTest (Context &context, const TestParams& para
 
 	if (m_params.useDynamicRendering)
 		pipelineCreateInfo.pNext = &renderingCreateInfo;
+#endif // CTS_USES_VULKANSC
 
 	m_pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 }
@@ -448,6 +451,7 @@ tcu::TestStatus MultipleClearsTest::iterate (void)
 		initialTransitionDepth2DImage(vk, *cmdBuffer, m_depthTargetImage->object(), VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
 
 	const VkRect2D renderArea = makeRect2D(0, 0, WIDTH, HEIGHT);
+#ifndef CTS_USES_VULKANSC
 	if (m_params.useDynamicRendering)
 	{
 		VkClearValue clearColorValue = makeClearValueColor(tcu::Vec4(0.0f));
@@ -503,6 +507,7 @@ tcu::TestStatus MultipleClearsTest::iterate (void)
 		vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
 	}
 	else
+#endif // CTS_USES_VULKANSC
 	{
 		if (!m_params.steps.empty() && m_params.steps[0].clearOp == ClearOp::LOAD)
 			beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, renderArea, m_params.steps[0].color, m_params.steps[0].depth, 0);
@@ -525,9 +530,11 @@ tcu::TestStatus MultipleClearsTest::iterate (void)
 			clearAttachments(vk, *cmdBuffer, step.clearOp, j);
 		}
 
+#ifndef CTS_USES_VULKANSC
 	if (m_params.useDynamicRendering)
 		endRendering(vk, *cmdBuffer);
 	else
+#endif // CTS_USES_VULKANSC
 		endRenderPass(vk, *cmdBuffer);
 
 	if (hasDepth)
@@ -561,16 +568,21 @@ tcu::TestStatus MultipleClearsTest::iterate (void)
 	{
 		const auto		resultImage	= m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, { 0, 0, 0 }, WIDTH, HEIGHT, VK_IMAGE_ASPECT_COLOR_BIT);
 
-		for(int z = 0; z < resultImage.getDepth(); ++z)
-		for(int y = 0; y < resultImage.getHeight(); ++y)
-		for(int x = 0; x < resultImage.getWidth(); ++x)
+#ifdef CTS_USES_VULKANSC
+		if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 		{
-			const Vec4	difference	= m_params.expectedColor - resultImage.getPixel(x,y,z);
-			if (abs(difference.x()) >= m_params.colorEpsilon || abs(difference.y()) >= m_params.colorEpsilon || abs(difference.z()) >= m_params.colorEpsilon)
+			for(int z = 0; z < resultImage.getDepth(); ++z)
+			for(int y = 0; y < resultImage.getHeight(); ++y)
+			for(int x = 0; x < resultImage.getWidth(); ++x)
 			{
-				ostringstream msg;
-				msg << "Color value mismatch, expected: " << m_params.expectedColor << ", got: " << resultImage.getPixel(x,y,z) << " at " << "(" << x << ", " << y << ", " << z << ")";
-				return tcu::TestStatus::fail(msg.str());
+				const Vec4	difference	= m_params.expectedColor - resultImage.getPixel(x,y,z);
+				if (abs(difference.x()) >= m_params.colorEpsilon || abs(difference.y()) >= m_params.colorEpsilon || abs(difference.z()) >= m_params.colorEpsilon)
+				{
+					ostringstream msg;
+					msg << "Color value mismatch, expected: " << m_params.expectedColor << ", got: " << resultImage.getPixel(x,y,z) << " at " << "(" << x << ", " << y << ", " << z << ")";
+					return tcu::TestStatus::fail(msg.str());
+				}
 			}
 		}
 	}
@@ -578,16 +590,21 @@ tcu::TestStatus MultipleClearsTest::iterate (void)
 	{
 		const auto		resultImage	= m_depthTargetImage->readSurface(queue, m_context.getDefaultAllocator(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, { 0, 0, 0 }, WIDTH, HEIGHT, VK_IMAGE_ASPECT_DEPTH_BIT);
 
-		for(int z = 0; z < resultImage.getDepth(); ++z)
-		for(int y = 0; y < resultImage.getHeight(); ++y)
-		for(int x = 0; x < resultImage.getWidth(); ++x)
+#ifdef CTS_USES_VULKANSC
+		if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 		{
-			const float	difference	= m_params.expectedDepth - resultImage.getPixDepth(x,y,z);
-			if (abs(difference) >= m_params.depthEpsilon)
+			for(int z = 0; z < resultImage.getDepth(); ++z)
+			for(int y = 0; y < resultImage.getHeight(); ++y)
+			for(int x = 0; x < resultImage.getWidth(); ++x)
 			{
-				ostringstream msg;
-				msg << "Depth value mismatch, expected: " << m_params.expectedDepth << ", got: " << resultImage.getPixDepth(x,y,z) << " at " << "(" << x << ", " << y << ", " << z << ")";
-				return tcu::TestStatus::fail(msg.str());
+				const float	difference	= m_params.expectedDepth - resultImage.getPixDepth(x,y,z);
+				if (abs(difference) >= m_params.depthEpsilon)
+				{
+					ostringstream msg;
+					msg << "Depth value mismatch, expected: " << m_params.expectedDepth << ", got: " << resultImage.getPixDepth(x,y,z) << " at " << "(" << x << ", " << y << ", " << z << ")";
+					return tcu::TestStatus::fail(msg.str());
+				}
 			}
 		}
 	}

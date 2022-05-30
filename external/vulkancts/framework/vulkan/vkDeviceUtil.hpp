@@ -45,7 +45,9 @@ Move<VkInstance>	createDefaultInstance	(const PlatformInterface&			vkPlatform,
 											 deUint32							apiVersion,
 											 const std::vector<std::string>&	enabledLayers,
 											 const std::vector<std::string>&	enabledExtensions,
+#ifndef CTS_USES_VULKANSC
 											 DebugReportRecorder*				recorder = nullptr,
+#endif // CTS_USES_VULKANSC
 											 const VkAllocationCallbacks*		pAllocator = nullptr);
 
 deUint32			chooseDeviceIndex		(const InstanceInterface&			vkInstance,

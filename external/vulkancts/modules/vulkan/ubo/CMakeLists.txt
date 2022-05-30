@@ -12,12 +12,11 @@ set(DEQP_VK_UBO_SRCS
 	vktUniformBlockTests.hpp
 )
 
-set(DEQP_VK_UBO_LIBS
-	tcutil
-	vkutil
-)
-
 PCH(DEQP_VK_UBO_SRCS ../pch.cpp)
 
 add_library(deqp-vk-ubo STATIC ${DEQP_VK_UBO_SRCS})
-target_link_libraries(deqp-vk-ubo ${DEQP_VK_UBO_LIBS})
+target_link_libraries(deqp-vk-ubo tcutil vkutil)
+
+add_library(deqp-vksc-ubo STATIC ${DEQP_VK_UBO_SRCS})
+target_include_directories(deqp-vksc-ubo BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
+target_link_libraries(deqp-vksc-ubo PUBLIC deqp-vksc-util tcutil vkscutil)

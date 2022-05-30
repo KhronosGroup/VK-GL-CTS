@@ -2,7 +2,7 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2021 Google LLC.
+ * Copyright (c) 2021-2022 Google LLC.
  *
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,6 +32,7 @@
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
 
+#include "tcuCompressedTexture.hpp"
 #include "tcuVectorType.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuImageCompare.hpp"
@@ -359,9 +360,9 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate (void)
 	VkImageUsageFlags				usageFlags				= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 	VkImageViewUsageCreateInfo		imageViewUsageInfo		=
 	{
-		VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,	//VkStructureType      sType;
-		DE_NULL,											//const void*          pNext;
-		usageFlags,											//VkImageUsageFlags    usage;
+		VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,		//VkStructureType		sType;
+		DE_NULL,											//const void*			pNext;
+		usageFlags,											//VkImageUsageFlags		usage;
 	};
 
 	Move<VkImageView>				sampledImageView;
@@ -666,49 +667,54 @@ SampleDrawnTextureTest::SampleDrawnTextureTest (tcu::TestContext&	testCtx,
 void SampleDrawnTextureTest::checkSupport(Context& context) const
 {
 	const auto&				vki					= context.getInstanceInterface();
-	const auto				physicalDevice		= context.getPhysicalDevice();
 	const auto				usageFlags			= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT
-												  | VK_IMAGE_USAGE_SAMPLED_BIT;
-	const bool				haveMaintenance2	= context.isDeviceFunctionalitySupported("VK_KHR_maintenance2");
+												  | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+	auto					creationFlags		= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT
+												  | VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT;
+	if (m_cubemap)
+		creationFlags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 
 	// Check that:
-	// - An image can be created with usage flags that are not supported by the image format
-	//   but are supported by an image view created for the image.
 	// - VkImageViewUsageCreateInfo can be used to override implicit usage flags derived from the image.
-	if (!haveMaintenance2)
+	// - A compressed image can be created with usage flags that are not supported for the format but are
+	//   supported by an image view that is using uncompressed format where each texel corresponds to
+	//   a compressed texel block of the image.
+
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_maintenance2"))
 		TCU_THROW(NotSupportedError, "Device does not support extended image usage flags nor overriding implicit usage flags");
 
 	VkImageFormatProperties	imageFormatProperties;
 
-	if (vki.getPhysicalDeviceImageFormatProperties(physicalDevice, VK_FORMAT_BC1_RGB_UNORM_BLOCK, VK_IMAGE_TYPE_2D,
-												   VK_IMAGE_TILING_OPTIMAL, usageFlags, (VkImageCreateFlags)0,
-												   &imageFormatProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
-		TCU_THROW(NotSupportedError, "BC1 compressed texture formats not supported.");
+	if (vki.getPhysicalDeviceImageFormatProperties(context.getPhysicalDevice(), m_imageFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
+												   usageFlags, creationFlags, &imageFormatProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
+	{
+		std::string	algorithmName	= (m_imageFormat == vk::VK_FORMAT_BC3_UNORM_BLOCK) ?  "BC3" : "BC1";
+		std::string	errorMsg		= algorithmName;
 
-	if (vki.getPhysicalDeviceImageFormatProperties(physicalDevice, VK_FORMAT_BC3_UNORM_BLOCK, VK_IMAGE_TYPE_2D,
-												   VK_IMAGE_TILING_OPTIMAL, usageFlags, (VkImageCreateFlags)0,
-												   &imageFormatProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
-		TCU_THROW(NotSupportedError, "BC3 compressed texture formats not supported.");
-
-	if (m_cubemap && vki.getPhysicalDeviceImageFormatProperties(context.getPhysicalDevice(), m_imageFormat,
-																VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
-																usageFlags, VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
-																&imageFormatProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
-		TCU_THROW(NotSupportedError, "Compressed images cannot be created with the VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT flag");
+		errorMsg += m_cubemap ? " compressed cubemap images" : " compressed images";
+		errorMsg += " created with VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT, VK_IMAGE_CREATE_EXTENDED_USAGE_BIT";
+		errorMsg += " and VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT flags not supported.";
+		TCU_THROW(NotSupportedError, errorMsg);
+	}
 }
 
 void SampleDrawnTextureTest::initPrograms (SourceCollections& programCollection) const
 {
 	// Pure red, green, and blue compressed with the BC1 and BC3 algorithms.
-	std::string			bc1_red		= "uvec4(4160813056u, 0u, 4160813056u, 0u);\n";
-	std::string			bc1_blue	= "uvec4(2031647, 0u, 2031647, 0u);\n";
-	std::string			bc3_red		= "uvec4(4294967295u, 4294967295u, 4160813056u, 0u);\n";
-	std::string			bc3_blue	= "uvec4(4294967295u, 4294967295u, 2031647, 0u);\n";
+	std::string					bc1_red				= "uvec4(4160813056u, 0u, 4160813056u, 0u);\n";
+	std::string					bc1_blue			= "uvec4(2031647, 0u, 2031647, 0u);\n";
+	std::string					bc3_red				= "uvec4(4294967295u, 4294967295u, 4160813056u, 0u);\n";
+	std::string					bc3_blue			= "uvec4(4294967295u, 4294967295u, 2031647, 0u);\n";
 
-	std::string			red			= (m_imageFormat == VK_FORMAT_BC1_RGB_UNORM_BLOCK) ? bc1_red : bc3_red;
-	std::string			blue		= (m_imageFormat == VK_FORMAT_BC1_RGB_UNORM_BLOCK) ? bc1_blue : bc3_blue;
+	std::string					red					= (m_imageFormat == VK_FORMAT_BC1_RGB_UNORM_BLOCK) ? bc1_red : bc3_red;
+	std::string					blue				= (m_imageFormat == VK_FORMAT_BC1_RGB_UNORM_BLOCK) ? bc1_blue : bc3_blue;
 
-	std::ostringstream	computeSrc;
+	tcu::CompressedTexFormat	compressedFormat	(mapVkCompressedFormat(m_imageFormat));
+	IVec3						blockSize			= tcu::getBlockPixelSize(compressedFormat);
+
+	DE_ASSERT(blockSize.z() == 1);
+
+	std::ostringstream			computeSrc;
 
 	// Generate the compute shader.
 	computeSrc << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n";
@@ -735,13 +741,13 @@ void SampleDrawnTextureTest::initPrograms (SourceCollections& programCollection)
 	}
 
 	computeSrc
-	<< "    for (int x = 0; x < " << WIDTH << "; x++)\n"
-	<< "        for (int y = 0; y < " << HEIGHT << "; y++)\n"
+	<< "    for (int x = 0; x < " << WIDTH / blockSize.x() << "; x++)\n"
+	<< "        for (int y = 0; y < " << HEIGHT / blockSize.y() << "; y++)\n"
 	<< "            imageStore(img, ivec2(x, y), color);\n"
 	<< "}\n";
 
 	// Generate the vertex shader.
-	std::ostringstream vertexSrc;
+	std::ostringstream			vertexSrc;
 	vertexSrc
 		<< glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
 		<< "layout(location = 0) in highp vec4 a_position;\n"
@@ -753,7 +759,7 @@ void SampleDrawnTextureTest::initPrograms (SourceCollections& programCollection)
 		<< "}\n";
 
 	// Generate the fragment shader.
-	std::ostringstream fragmentSrc;
+	std::ostringstream			fragmentSrc;
 	fragmentSrc
 		<< glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
 		<< "layout(location = 0) out vec4 outColor;\n"

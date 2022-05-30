@@ -393,11 +393,15 @@ TessCoordTest::TessCoordTest (tcu::TestContext&			testCtx,
 
 void TessCoordTest::checkSupport (Context& context) const
 {
+#ifndef CTS_USES_VULKANSC
 	if (const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR* const features = getPortability(context))
 	{
 		checkPointMode(*features);
 		checkPrimitive(*features, m_primitiveType);
 	}
+#else
+	DE_UNREF(context);
+#endif // CTS_USES_VULKANSC
 }
 
 void TessCoordTest::initPrograms (SourceCollections& programCollection) const

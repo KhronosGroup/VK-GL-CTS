@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": ""
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR":
+		[
+			{ "features": ["pipelineExecutableInfo"],	"requirements": ["VK_KHR_pipeline_executable_properties"] }
+		]
+	}
+}

@@ -56,6 +56,7 @@
 #include "tcuTestCase.hpp"
 #include "tcuTestLog.hpp"
 
+#include <set>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -82,6 +83,7 @@ enum class AttachmentUsage
 
 struct CaseDef
 {
+	SharedGroupParams groupParams;
 	deInt32 seed;
 	VkExtent2D framebufferDim;
 	VkSampleCountFlagBits samples;
@@ -91,7 +93,6 @@ struct CaseDef
 	bool geometryShader;
 	bool meshShader;
 	bool useDynamicState;
-	bool useDynamicRendering;
 	bool useApiSampleMask;
 	bool useSampleMaskIn;
 	bool conservativeEnable;
@@ -125,9 +126,9 @@ VkFormat getDSFormat ()
 class FSRTestInstance : public TestInstance
 {
 public:
-						FSRTestInstance		(Context& context, const CaseDef& data);
-						~FSRTestInstance	(void);
-	tcu::TestStatus		iterate				(void);
+						FSRTestInstance				(Context& context, const CaseDef& data);
+						~FSRTestInstance			(void);
+	tcu::TestStatus		iterate						(void);
 
 private:
 	// Test parameters
@@ -143,16 +144,70 @@ private:
 	vector<VkPhysicalDeviceFragmentShadingRateKHR>	m_supportedFragmentShadingRates;
 	VkPhysicalDeviceFragmentShadingRatePropertiesKHR	m_shadingRateProperties;
 
+protected:
+
+	void				beginSecondaryCmdBuffer			(VkCommandBuffer									cmdBuffer,
+														 VkFormat											cbFormat,
+														 VkFormat											dsFormat,
+														 VkRenderingFlagsKHR								renderingFlags = 0u) const;
+	void				preRenderCommands				(VkCommandBuffer									cmdBuffer,
+														 ImageWithMemory*									cbImage,
+														 ImageWithMemory*									dsImage,
+														 ImageWithMemory*									derivImage,
+														 deUint32											derivNumLevels,
+														 ImageWithMemory*									srImage,
+														 VkImageLayout										srLayout,
+														 BufferWithMemory*									srFillBuffer,
+														 deUint32											numSRLayers,
+														 deUint32											srWidth,
+														 deUint32											srHeight,
+														 deUint32											srFillBpp,
+														 const VkClearValue&								clearColor,
+														 const VkClearValue&								clearDepthStencil);
+	void				beginRender						(VkCommandBuffer									cmdBuffer,
+														 VkRenderPass										renderPass,
+														 VkFramebuffer										framebuffer,
+														 VkImageView										srImageView,
+														 VkImageLayout										srImageLayout,
+														 const VkExtent2D&									srTexelSize,
+														 VkImageView										cbImageView,
+														 VkImageView										dsImageView,
+														 bool												imagelessFB,
+														 const VkClearValue&								clearColor,
+														 const VkClearValue&								clearDepthStencil,
+														 VkRenderingFlagsKHR								renderingFlags = 0u) const;
+	void				drawCommands					(VkCommandBuffer									cmdBuffer,
+														 std::vector<GraphicsPipelineWrapper>&				pipelines,
+														 const std::vector<VkViewport>&						viewports,
+														 const std::vector<VkRect2D>&						scissors,
+														 const VkPipelineLayout								pipelineLayout,
+														 const VkRenderPass									renderPass,
+														 const VkPipelineVertexInputStateCreateInfo*		vertexInputState,
+														 const VkPipelineDynamicStateCreateInfo*			dynamicState,
+														 const VkPipelineRasterizationStateCreateInfo*		rasterizationState,
+														 const VkPipelineDepthStencilStateCreateInfo*		depthStencilState,
+														 const VkPipelineMultisampleStateCreateInfo*		multisampleState,
+														 VkPipelineFragmentShadingRateStateCreateInfoKHR*	shadingRateState,
+														 VkPipelineRenderingCreateInfoKHR*					dynamicRendering,
+														 const VkShaderModule								vertShader,
+														 const VkShaderModule								geomShader,
+														 const VkShaderModule								meshShader,
+														 const VkShaderModule								fragShader,
+														 const std::vector<VkDescriptorSet>&				descriptorSet,
+														 VkBuffer											vertexBuffer,
+														 const uint32_t										pushConstantSize);
+	void				endRender						(VkCommandBuffer									cmdBuffer) const;
+
 	deInt32				PrimIDToPrimitiveShadingRate	(deInt32 primID);
 	deInt32				PrimIDToPipelineShadingRate		(deInt32 primID);
-	VkExtent2D			SanitizeExtent		(VkExtent2D ext) const;
-	deInt32				SanitizeRate		(deInt32 rate) const;
+	VkExtent2D			SanitizeExtent					(VkExtent2D ext) const;
+	deInt32				SanitizeRate					(deInt32 rate) const;
 	deInt32				ShadingRateExtentToClampedMask	(VkExtent2D ext, bool allowSwap) const;
-	deInt32				ShadingRateExtentToEnum	(VkExtent2D ext) const;
-	VkExtent2D			ShadingRateEnumToExtent	(deInt32 rate) const;
-	deInt32				Simulate			(deInt32 rate0, deInt32 rate1, deInt32 rate2);
-	VkExtent2D			Combine				(VkExtent2D ext0, VkExtent2D ext1, VkFragmentShadingRateCombinerOpKHR comb) const;
-	bool				Force1x1			() const;
+	deInt32				ShadingRateExtentToEnum			(VkExtent2D ext) const;
+	VkExtent2D			ShadingRateEnumToExtent			(deInt32 rate) const;
+	deInt32				Simulate						(deInt32 rate0, deInt32 rate1, deInt32 rate2);
+	VkExtent2D			Combine							(VkExtent2D ext0, VkExtent2D ext1, VkFragmentShadingRateCombinerOpKHR comb) const;
+	bool				Force1x1						() const;
 };
 
 FSRTestInstance::FSRTestInstance (Context& context, const CaseDef& data)
@@ -248,7 +303,7 @@ void FSRTestCase::checkSupport(Context& context) const
 {
 	context.requireDeviceFunctionality("VK_KHR_fragment_shading_rate");
 
-	if (m_data.useDynamicRendering)
+	if (m_data.groupParams->useDynamicRendering)
 		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
 	if (!context.getFragmentShadingRateFeatures().pipelineFragmentShadingRate)
@@ -343,9 +398,16 @@ void FSRTestCase::checkSupport(Context& context) const
 	if (m_data.meshShader)
 	{
 		context.requireDeviceFunctionality("VK_EXT_mesh_shader");
-		if (m_data.shaderWritesRate && !context.getMeshShaderFeaturesEXT().primitiveFragmentShadingRateMeshShader)
+		const auto& meshFeatures = context.getMeshShaderFeaturesEXT();
+
+		if (m_data.shaderWritesRate && !meshFeatures.primitiveFragmentShadingRateMeshShader)
 			TCU_THROW(NotSupportedError, "primitiveFragmentShadingRateMeshShader not supported");
+
+		if (m_data.multiView && !meshFeatures.multiviewMeshShader)
+			TCU_THROW(NotSupportedError, "multiviewMeshShader not supported");
 	}
+
+	checkPipelineLibraryRequirements(vki, physDev, m_data.groupParams->pipelineConstructionType);
 }
 
 // Error codes writted by the fragment shader
@@ -491,8 +553,8 @@ void FSRTestCase::initPrograms (SourceCollections& programCollection) const
 			"layout(set=1, binding=0, std430) readonly buffer PosBuffer {\n"
 			"  vec2 vertexPositions[];\n"
 			"} pb;\n"
-			"layout(location = 0) perprimitiveEXT out int instanceIndex[];\n"
-			"layout(location = 1) perprimitiveEXT out int readbackok[];\n"
+			"layout(location = 0) flat out int instanceIndex[];\n"
+			"layout(location = 1) flat out int readbackok[];\n"
 			"layout(location = 2) out float zero[];\n";
 
 		if (m_data.shaderWritesRate)
@@ -514,8 +576,8 @@ void FSRTestCase::initPrograms (SourceCollections& programCollection) const
 			"  if (gl_LocalInvocationIndex == 0) {\n"
 			"    gl_PrimitiveTriangleIndicesEXT[0] = uvec3(0, 1, 2);\n"
 			"  }\n"
-			"  instanceIndex[0] = int(pc.instanceIndex);\n"
-			"  readbackok[0] = 1;\n"
+			"  instanceIndex[gl_LocalInvocationIndex] = int(pc.instanceIndex);\n"
+			"  readbackok[gl_LocalInvocationIndex] = 1;\n"
 			"  zero[gl_LocalInvocationIndex] = 0;\n";
 
 		if (m_data.shaderWritesRate)
@@ -880,9 +942,9 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 													  VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
 													  VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT |
 													  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
-													  VK_PIPELINE_STAGE_SHADING_RATE_IMAGE_BIT_NV;
+													  VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
 	const VkFormat			cbFormat				= VK_FORMAT_R32G32B32A32_UINT;
-	const VkFormat			dsFormat				= getDSFormat();
+	const VkFormat			dsFormat				= m_data.useDepthStencil ? getDSFormat() : VK_FORMAT_UNDEFINED;
 	const auto				vertBufferUsage			= (m_data.meshShader ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 
 	if (m_data.meshShader)
@@ -1370,7 +1432,6 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 					  srTexelHeight *= 2)
 		for (deUint32 formatIdx = 0; formatIdx < numFillFormats; ++formatIdx)
 		{
-
 			deUint32 aspectRatio = (srTexelHeight > srTexelWidth) ? (srTexelHeight / srTexelWidth) : (srTexelWidth / srTexelHeight);
 			if (aspectRatio > maxFragmentShadingRateAttachmentTexelSizeAspectRatio)
 				continue;
@@ -1585,7 +1646,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				attachments.push_back(*dsImageView);
 			}
 
-			if (!m_data.useDynamicRendering)
+			if (!m_data.groupParams->useDynamicRendering)
 			{
 				const vk::VkAttachmentReference2 colorAttachmentReference
 				{
@@ -1802,15 +1863,6 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				&vertexInputAttributeDescription							// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 			};
 
-			const VkPipelineInputAssemblyStateCreateInfo	inputAssemblyStateCreateInfo	=
-			{
-				VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType							sType;
-				DE_NULL,														// const void*								pNext;
-				(VkPipelineInputAssemblyStateCreateFlags)0,						// VkPipelineInputAssemblyStateCreateFlags	flags;
-				VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,							// VkPrimitiveTopology						topology;
-				VK_FALSE														// VkBool32									primitiveRestartEnable;
-			};
-
 			const VkPipelineRasterizationConservativeStateCreateInfoEXT consRastState =
 			{
 				VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT,	// VkStructureType										   sType;
@@ -1893,89 +1945,26 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				scissors.push_back(makeRect2D(m_data.framebufferDim.width, m_data.framebufferDim.height));
 			}
 
-			const VkPipelineViewportStateCreateInfo			viewportStateCreateInfo				=
-			{
-				VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,		// VkStructureType							sType
-				DE_NULL,													// const void*								pNext
-				(VkPipelineViewportStateCreateFlags)0,						// VkPipelineViewportStateCreateFlags		flags
-				(deUint32)viewports.size(),									// deUint32									viewportCount
-				&viewports[0],												// const VkViewport*						pViewports
-				(deUint32)scissors.size(),									// deUint32									scissorCount
-				&scissors[0]												// const VkRect2D*							pScissors
-			};
-
 			const auto& binaries = m_context.getBinaryCollection();
-
-			std::vector<VkPipelineShaderStageCreateInfo> shaderCreateInfo;
-			VkPipelineShaderStageCreateInfo shaderCreateInfoTemplate =
-			{
-					VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-					nullptr,
-					0u,
-					VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM,		// stage
-					DE_NULL,								// shader
-					"main",
-					DE_NULL,								// pSpecializationInfo
-			};
-
+			Move<VkShaderModule> fragShader = createShaderModule(vk, device, binaries.get("frag"), 0);
 			Move<VkShaderModule> vertShader;
 			Move<VkShaderModule> geomShader;
 			Move<VkShaderModule> meshShader;
-			Move<VkShaderModule> fragShader = createShaderModule(vk, device, binaries.get("frag"));
-
-			shaderCreateInfoTemplate.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-			shaderCreateInfoTemplate.module = *fragShader;
-			shaderCreateInfo.push_back(shaderCreateInfoTemplate);
 
 			if (m_data.meshShader)
 			{
-				meshShader = createShaderModule(vk, device, binaries.get("mesh"));
-				shaderCreateInfoTemplate.stage = VK_SHADER_STAGE_MESH_BIT_EXT;
-				shaderCreateInfoTemplate.module = *meshShader;
-				shaderCreateInfo.push_back(shaderCreateInfoTemplate);
+				meshShader = createShaderModule(vk, device, binaries.get("mesh"), 0);
 			}
 			else
 			{
-				vertShader = createShaderModule(vk, device, binaries.get("vert"));
-				shaderCreateInfoTemplate.stage = VK_SHADER_STAGE_VERTEX_BIT;
-				shaderCreateInfoTemplate.module = *vertShader;
-				shaderCreateInfo.push_back(shaderCreateInfoTemplate);
-
+				vertShader = createShaderModule(vk, device, binaries.get("vert"), 0);
 				if (m_data.geometryShader)
-				{
-					geomShader = createShaderModule(vk, device, m_context.getBinaryCollection().get("geom"), 0);
-					shaderCreateInfoTemplate.stage = VK_SHADER_STAGE_GEOMETRY_BIT;
-					shaderCreateInfoTemplate.module = *geomShader;
-					shaderCreateInfo.push_back(shaderCreateInfoTemplate);
-				}
+					geomShader = createShaderModule(vk, device, binaries.get("geom"), 0);
 			}
-
-			const VkPipelineColorBlendAttachmentState		colorBlendAttachmentState		=
-			{
-				VK_FALSE,				// VkBool32					 blendEnable;
-				VK_BLEND_FACTOR_ZERO,	// VkBlendFactor			srcColorBlendFactor;
-				VK_BLEND_FACTOR_ZERO,	// VkBlendFactor			dstColorBlendFactor;
-				VK_BLEND_OP_ADD,		// VkBlendOp				colorBlendOp;
-				VK_BLEND_FACTOR_ZERO,	// VkBlendFactor			srcAlphaBlendFactor;
-				VK_BLEND_FACTOR_ZERO,	// VkBlendFactor			dstAlphaBlendFactor;
-				VK_BLEND_OP_ADD,		// VkBlendOp				alphaBlendOp;
-				0xf						// VkColorComponentFlags	colorWriteMask;
-			};
-
-			const VkPipelineColorBlendStateCreateInfo		colorBlendStateCreateInfo		=
-			{
-				VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType;
-				DE_NULL,													// const void*									pNext;
-				0u,															// VkPipelineColorBlendStateCreateFlags			flags;
-				VK_FALSE,													// VkBool32										logicOpEnable;
-				VK_LOGIC_OP_COPY,											// VkLogicOp									logicOp;
-				1u,															// deUint32										attachmentCount;
-				&colorBlendAttachmentState,									// const VkPipelineColorBlendAttachmentState*	pAttachments;
-				{ 1.0f, 1.0f, 1.0f, 1.0f }									// float										blendConstants[4];
-			};
 
 			const deUint32 fragSizeWH = m_data.sampleMaskTest ? 2 : 0;
 
+#ifndef CTS_USES_VULKANSC
 			VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 			{
 				VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
@@ -1983,20 +1972,25 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				m_data.multiView ? 0x3 : 0u,
 				1u,
 				&cbFormat,
-				m_data.useDepthStencil ? dsFormat : VK_FORMAT_UNDEFINED,
-				m_data.useDepthStencil ? dsFormat : VK_FORMAT_UNDEFINED
+				dsFormat,
+				dsFormat
 			};
+#endif // CTS_USES_VULKANSC
 
-			VkPipelineFragmentShadingRateStateCreateInfoKHR shadingRateStateCreateInfo =
+			VkPipelineFragmentShadingRateStateCreateInfoKHR shadingRateStateCreateInfo
 			{
 				VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_STATE_CREATE_INFO_KHR,	// VkStructureType						sType;
-				m_data.useDynamicRendering ? &renderingCreateInfo : DE_NULL,			// const void*							pNext;
+#ifndef CTS_USES_VULKANSC
+				m_data.groupParams->useDynamicRendering ? &renderingCreateInfo : DE_NULL,			// const void*							pNext;
+#else
+				DE_NULL,																// const void*							pNext;
+#endif // CTS_USES_VULKANSC
 				{ fragSizeWH, fragSizeWH },												// VkExtent2D							fragmentSize;
 				{ m_data.combinerOp[0], m_data.combinerOp[1] },							// VkFragmentShadingRateCombinerOpKHR	combinerOps[2];
 			};
 
 			VkDynamicState dynamicState = VK_DYNAMIC_STATE_FRAGMENT_SHADING_RATE_KHR;
-			const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo =
+			const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo
 			{
 				VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,		// VkStructureType						sType;
 				DE_NULL,													// const void*							pNext;
@@ -2004,6 +1998,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				m_data.useDynamicState ? 1u : 0u,							// uint32_t								dynamicStateCount;
 				&dynamicState,												// const VkDynamicState*				pDynamicStates;
 			};
+			vk::VkPipelineRenderingCreateInfoKHR* pDynamicRendering = (m_data.groupParams->useDynamicRendering ? &renderingCreateInfo : DE_NULL);
 
 			// Enable depth/stencil writes, always passing
 			VkPipelineDepthStencilStateCreateInfo		depthStencilStateParams				=
@@ -2040,319 +2035,84 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				0.0f,						// float			maxDepthBounds;
 			};
 
-			const auto pVertexInputState   = (m_data.meshShader ? nullptr : &vertexInputStateCreateInfo);
-			const auto pInputAssemblyState = (m_data.meshShader ? nullptr : &inputAssemblyStateCreateInfo);
+			const VkQueue				queue				= m_context.getUniversalQueue();
+			Move<VkCommandPool>			cmdPool				= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, m_context.getUniversalQueueFamilyIndex());
+			Move<VkCommandBuffer>		cmdBuffer			= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+			Move<VkCommandBuffer>		secCmdBuffer;
+			VkClearValue				clearColor			= makeClearValueColorU32(0, 0, 0, 0);
+			VkClearValue				clearDepthStencil	= makeClearValueDepthStencil(0.0, 0);
+			const VkExtent2D			srTexelSize			{ srTexelWidth, srTexelHeight };
 
-			VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo	=
-			{
-				VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType									sType;
-				&shadingRateStateCreateInfo,						// const void*										pNext;
-				(VkPipelineCreateFlags)0,							// VkPipelineCreateFlags							flags;
-				static_cast<uint32_t>(shaderCreateInfo.size()),		// deUint32											stageCount;
-				de::dataOrNull(shaderCreateInfo),					// const VkPipelineShaderStageCreateInfo*			pStages;
-				pVertexInputState,									// const VkPipelineVertexInputStateCreateInfo*		pVertexInputState;
-				pInputAssemblyState,								// const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState;
-				DE_NULL,											// const VkPipelineTessellationStateCreateInfo*		pTessellationState;
-				&viewportStateCreateInfo,							// const VkPipelineViewportStateCreateInfo*			pViewportState;
-				&rasterizationStateCreateInfo,						// const VkPipelineRasterizationStateCreateInfo*	pRasterizationState;
-				&multisampleStateCreateInfo,						// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
-				&depthStencilStateParams,							// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
-				&colorBlendStateCreateInfo,							// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
-				&dynamicStateCreateInfo,							// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
-				pipelineLayout.get(),								// VkPipelineLayout									layout;
-				renderPass.get(),									// VkRenderPass										renderPass;
-				0u,													// deUint32											subpass;
-				DE_NULL,											// VkPipeline										basePipelineHandle;
-				0													// int												basePipelineIndex;
-			};
-
-			if (m_data.useDynamicRendering)
-				graphicsPipelineCreateInfo.flags |= VK_PIPELINE_CREATE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
-
-			VkImageMemoryBarrier imageBarrier =
-			{
-				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// VkStructureType		sType
-				DE_NULL,											// const void*			pNext
-				0u,													// VkAccessFlags		srcAccessMask
-				VK_ACCESS_TRANSFER_WRITE_BIT,						// VkAccessFlags		dstAccessMask
-				VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout		oldLayout
-				VK_IMAGE_LAYOUT_GENERAL,							// VkImageLayout		newLayout
-				VK_QUEUE_FAMILY_IGNORED,							// uint32_t				srcQueueFamilyIndex
-				VK_QUEUE_FAMILY_IGNORED,							// uint32_t				dstQueueFamilyIndex
-				**cbImage,											// VkImage				image
-				{
-					VK_IMAGE_ASPECT_COLOR_BIT,				// VkImageAspectFlags	aspectMask
-					0u,										// uint32_t				baseMipLevel
-					VK_REMAINING_MIP_LEVELS,				// uint32_t				mipLevels,
-					0u,										// uint32_t				baseArray
-					VK_REMAINING_ARRAY_LAYERS,				// uint32_t				arraySize
-				}
-			};
-
-			const VkQueue					queue					= m_context.getUniversalQueue();
-			Move<VkCommandPool>				cmdPool					= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, m_context.getUniversalQueueFamilyIndex());
-			Move<VkCommandBuffer>			cmdBuffer				= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-			VkClearValue					clearColor				= makeClearValueColorU32(0, 0, 0, 0);
-			VkClearValue					clearDepthStencil		= makeClearValueDepthStencil(0.0, 0);
-
-			beginCommandBuffer(vk, *cmdBuffer, 0u);
-
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-									(VkDependencyFlags)0,
-									0, (const VkMemoryBarrier*)DE_NULL,
-									0, (const VkBufferMemoryBarrier*)DE_NULL,
-									1, &imageBarrier);
-
-			imageBarrier.image = **derivImage;
-			imageBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
-
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-									(VkDependencyFlags)0,
-									0, (const VkMemoryBarrier*)DE_NULL,
-									0, (const VkBufferMemoryBarrier*)DE_NULL,
-									1, &imageBarrier);
-
-			// Clear level to 1<<level
-			for (deUint32 i = 0; i < derivNumLevels; ++i)
-			{
-				VkImageSubresourceRange range = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, i, 1u, 0u, 1u);
-				VkClearValue clearLevelColor = makeClearValueColorU32(1<<i,0,0,0);
-				vk.cmdClearColorImage(*cmdBuffer, **derivImage, VK_IMAGE_LAYOUT_GENERAL, &clearLevelColor.color, 1, &range);
-			}
-
-			// Clear color buffer to transparent black
-			{
-				VkImageSubresourceRange range = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, VK_REMAINING_ARRAY_LAYERS);
-				vk.cmdClearColorImage(*cmdBuffer, **cbImage, VK_IMAGE_LAYOUT_GENERAL, &clearColor.color, 1, &range);
-			}
-
-			// Clear depth and stencil
-			if (m_data.useDepthStencil)
-			{
-				VkImageSubresourceRange range = makeImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 1u, 0u, VK_REMAINING_ARRAY_LAYERS);
-				VkImageMemoryBarrier dsBarrier = imageBarrier;
-				dsBarrier.image = **dsImage;
-				dsBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
-				dsBarrier.subresourceRange = range;
-				vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-										0u, // dependencyFlags
-										0u, nullptr,
-										0u, nullptr,
-										1u, &dsBarrier);
-				vk.cmdClearDepthStencilImage(*cmdBuffer, **dsImage, VK_IMAGE_LAYOUT_GENERAL, &clearDepthStencil.depthStencil, 1, &range);
-			}
-
-			// Initialize shading rate image with varying values
-			if (m_data.useAttachment())
-			{
-				imageBarrier.image = **srImage;
-				imageBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
-
-				vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-										(VkDependencyFlags)0,
-										0, (const VkMemoryBarrier*)DE_NULL,
-										0, (const VkBufferMemoryBarrier*)DE_NULL,
-										1, &imageBarrier);
-
-				deMemset(fillPtr, 0, (size_t)srFillBufferSize);
-				for (deUint32 layer = 0; layer < numSRLayers; ++layer)
-				{
-					for (deUint32 x = 0; x < srWidth; ++x)
-					{
-						for (deUint32 y = 0; y < srHeight; ++y)
-						{
-							deUint32 idx = (layer*srHeight + y)*srWidth + x;
-							deUint8 val = (deUint8)SanitizeRate(idx & 0xF);
-							// actual shading rate is always in the LSBs of the first byte of a texel
-							fillPtr[srFillBpp*idx] = val;
-						}
-					}
-				}
-				flushAlloc(vk, device, srFillBuffer->getAllocation());
-
-				const VkBufferImageCopy				copyRegion							=
-				{
-					0u,																	// VkDeviceSize			bufferOffset;
-					0u,																	// deUint32				bufferRowLength;
-					0u,																	// deUint32				bufferImageHeight;
-					{
-						VK_IMAGE_ASPECT_COLOR_BIT,										// VkImageAspectFlags	aspect;
-						0u,																// deUint32				mipLevel;
-						0u,																// deUint32				baseArrayLayer;
-						numSRLayers,													// deUint32				layerCount;
-					},																	// VkImageSubresourceLayers imageSubresource;
-					{ 0, 0, 0 },														// VkOffset3D			imageOffset;
-					{ srWidth, srHeight, 1 },											// VkExtent3D			imageExtent;
-				};
-
-				vk.cmdCopyBufferToImage(*cmdBuffer, **srFillBuffer, **srImage, VK_IMAGE_LAYOUT_GENERAL, 1, &copyRegion);
-
-				imageBarrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
-				imageBarrier.newLayout = srLayout;
-
-				vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-										(VkDependencyFlags)0,
-										0, (const VkMemoryBarrier*)DE_NULL,
-										0, (const VkBufferMemoryBarrier*)DE_NULL,
-										1, &imageBarrier);
-			}
-
-			VkMemoryBarrier					memBarrier =
-			{
-				VK_STRUCTURE_TYPE_MEMORY_BARRIER,	// sType
-				DE_NULL,							// pNext
-				0u,									// srcAccessMask
-				0u,									// dstAccessMask
-			};
-
-			memBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-			memBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR;
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, allPipelineStages,
-				0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
+			std::vector<GraphicsPipelineWrapper> pipelines;
+			pipelines.reserve(m_data.useDynamicState ? 1u : NUM_TRIANGLES);
 
 			std::vector<VkDescriptorSet> descriptorSetsRaw;
+
 			descriptorSetsRaw.reserve(descriptorSets.size());
 
 			std::transform(begin(descriptorSets), end(descriptorSets), std::back_inserter(descriptorSetsRaw),
 				[](const Move<VkDescriptorSet>& elem) { return elem.get(); });
 
-			vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0, static_cast<uint32_t>(descriptorSetsRaw.size()), de::dataOrNull(descriptorSetsRaw), 0, DE_NULL);
-
-			vector<Move<VkPipeline>> pipelines;
-
-			// If using dynamic state, create a single graphics pipeline and bind it
-			if (m_data.useDynamicState)
+			if (m_data.groupParams->useSecondaryCmdBuffer)
 			{
-				pipelines.push_back(createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo));
-				vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelines[0]);
-			}
+				secCmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 
-			VkRect2D renderArea = makeRect2D(m_data.framebufferDim.width, m_data.framebufferDim.height);
-			if (m_data.useDynamicRendering)
-			{
-				VkRenderingFragmentShadingRateAttachmentInfoKHR shadingRateAttachmentInfo
+				// record secondary command buffer
+				if (m_data.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
 				{
-					VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR,	// VkStructureType		sType;
-					DE_NULL,																// const void*			pNext;
-					*srImageView,															// VkImageView			imageView;
-					srLayout,																// VkImageLayout		imageLayout;
-					{ srTexelWidth, srTexelHeight }											// VkExtent2D			shadingRateAttachmentTexelSize;
-				};
+					beginSecondaryCmdBuffer(*secCmdBuffer, cbFormat, dsFormat, VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+					beginRender(*secCmdBuffer, *renderPass, *framebuffer, *srImageView, srLayout, srTexelSize,
+								*cbImageView, *dsImageView, imagelessFB, clearColor, clearDepthStencil);
+				}
+				else
+					beginSecondaryCmdBuffer(*secCmdBuffer, cbFormat, dsFormat);
 
-				VkRenderingAttachmentInfoKHR colorAttachment
-				{
-					vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,					// VkStructureType						sType;
-					DE_NULL,																// const void*							pNext;
-					*cbImageView,															// VkImageView							imageView;
-					VK_IMAGE_LAYOUT_GENERAL,												// VkImageLayout						imageLayout;
-					VK_RESOLVE_MODE_NONE,													// VkResolveModeFlagBits				resolveMode;
-					DE_NULL,																// VkImageView							resolveImageView;
-					VK_IMAGE_LAYOUT_UNDEFINED,												// VkImageLayout						resolveImageLayout;
-					VK_ATTACHMENT_LOAD_OP_LOAD,												// VkAttachmentLoadOp					loadOp;
-					VK_ATTACHMENT_STORE_OP_STORE,											// VkAttachmentStoreOp					storeOp;
-					clearColor																// VkClearValue							clearValue;
-				};
+				drawCommands(*secCmdBuffer, pipelines, viewports, scissors, *pipelineLayout, *renderPass,
+							 &vertexInputStateCreateInfo, &dynamicStateCreateInfo, &rasterizationStateCreateInfo,
+							 &depthStencilStateParams, &multisampleStateCreateInfo, &shadingRateStateCreateInfo,
+							 pDynamicRendering, *vertShader, *geomShader, *meshShader, *fragShader, descriptorSetsRaw, **vertexBuffer, pushConstantSize);
 
-				std::vector<VkRenderingAttachmentInfoKHR> depthStencilAttachments(2,
-				{
-					VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,						// VkStructureType						sType;
-					DE_NULL,																// const void*							pNext;
-					*dsImageView,															// VkImageView							imageView;
-					VK_IMAGE_LAYOUT_GENERAL,												// VkImageLayout						imageLayout;
-					VK_RESOLVE_MODE_NONE,													// VkResolveModeFlagBits				resolveMode;
-					DE_NULL,																// VkImageView							resolveImageView;
-					VK_IMAGE_LAYOUT_UNDEFINED,												// VkImageLayout						resolveImageLayout;
-					VK_ATTACHMENT_LOAD_OP_LOAD,												// VkAttachmentLoadOp					loadOp;
-					VK_ATTACHMENT_STORE_OP_STORE,											// VkAttachmentStoreOp					storeOp;
-					clearDepthStencil														// VkClearValue							clearValue;
-				});
+				if (m_data.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+					endRender(*secCmdBuffer);
 
-				vk::VkRenderingInfoKHR renderingInfo
-				{
-					vk::VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
-					m_data.useAttachment() ? &shadingRateAttachmentInfo : DE_NULL,
-					0,																		// VkRenderingFlagsKHR					flags;
-					renderArea,																// VkRect2D								renderArea;
-					m_data.multiView ? 1 : m_data.numColorLayers,							// deUint32								layerCount;
-					m_data.multiView ? 0x3 : 0u,											// deUint32								viewMask;
-					1u,																		// deUint32								colorAttachmentCount;
-					&colorAttachment,														// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
-					m_data.useDepthStencil ? &depthStencilAttachments[0] : DE_NULL,			// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
-					m_data.useDepthStencil ? &depthStencilAttachments[1] : DE_NULL,			// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
-				};
+				endCommandBuffer(vk, *secCmdBuffer);
 
-				vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
+				// record primary command buffer
+				beginCommandBuffer(vk, *cmdBuffer, 0u);
+
+				preRenderCommands(*cmdBuffer, cbImage.get(), dsImage.get(), derivImage.get(), derivNumLevels, srImage.get(), srLayout,
+								  srFillBuffer.get(), numSRLayers, srWidth, srHeight, srFillBpp, clearColor, clearDepthStencil);
+				if (!m_data.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+					beginRender(*cmdBuffer, *renderPass, *framebuffer, *srImageView, srLayout, srTexelSize,
+								*cbImageView, *dsImageView, imagelessFB, clearColor, clearDepthStencil, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+
+				vk.cmdExecuteCommands(*cmdBuffer, 1u, &*secCmdBuffer);
+
+				if (!m_data.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+					endRender(*cmdBuffer);
 			}
 			else
 			{
-				const VkRenderPassAttachmentBeginInfo renderPassAttachmentBeginInfo
-				{
-					VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO,		//  VkStructureType		sType;
-					DE_NULL,													//  const void*			pNext;
-					(deUint32)attachments.size(),								//  deUint32			attachmentCount;
-					&attachments[0]												//  const VkImageView*	pAttachments;
-				};
-
-				beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea,
-								0, DE_NULL, VK_SUBPASS_CONTENTS_INLINE, imagelessFB ? &renderPassAttachmentBeginInfo : DE_NULL);
+				beginCommandBuffer(vk, *cmdBuffer);
+				preRenderCommands(*cmdBuffer, cbImage.get(), dsImage.get(), derivImage.get(), derivNumLevels, srImage.get(), srLayout,
+								  srFillBuffer.get(), numSRLayers, srWidth, srHeight, srFillBpp, clearColor, clearDepthStencil);
+				beginRender(*cmdBuffer, *renderPass, *framebuffer, *srImageView, srLayout, srTexelSize,
+							*cbImageView, *dsImageView, imagelessFB, clearColor, clearDepthStencil);
+				drawCommands(*cmdBuffer, pipelines, viewports, scissors, *pipelineLayout, *renderPass,
+							 &vertexInputStateCreateInfo, &dynamicStateCreateInfo, &rasterizationStateCreateInfo,
+							 &depthStencilStateParams, &multisampleStateCreateInfo, &shadingRateStateCreateInfo,
+							 pDynamicRendering, *vertShader, *geomShader, *meshShader, *fragShader, descriptorSetsRaw, **vertexBuffer, pushConstantSize);
+				endRender(*cmdBuffer);
 			}
 
-			// Push constant block (must match shaders).
-			struct
+			VkMemoryBarrier memBarrier
 			{
-				int32_t		shadingRate;
-				uint32_t	instanceIndex;
-			} pushConstantBlock;
-
-			for (deInt32 i = 0; i < NUM_TRIANGLES; ++i)
-			{
-				if (!m_data.meshShader)
-				{
-					// Bind vertex attributes pointing to the next triangle
-					VkDeviceSize vertexBufferOffset = i*3*2*sizeof(float);
-					VkBuffer vb = **vertexBuffer;
-					vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vb, &vertexBufferOffset);
-				}
-
-				// Put primitive shading rate and instance index (used in mesh shading cases) in push constants.
-				pushConstantBlock.shadingRate = PrimIDToPrimitiveShadingRate(i);
-				pushConstantBlock.instanceIndex = static_cast<uint32_t>(i);
-				vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, allShaderStages, 0, pushConstantSize, &pushConstantBlock);
-
-				if (m_data.useDynamicState)
-				{
-					VkExtent2D fragmentSize = ShadingRateEnumToExtent(PrimIDToPipelineShadingRate(i));
-					vk.cmdSetFragmentShadingRateKHR(*cmdBuffer, &fragmentSize, m_data.combinerOp);
-				}
-				else
-				{
-					// Create a new pipeline with the desired pipeline shading rate
-					shadingRateStateCreateInfo.fragmentSize = ShadingRateEnumToExtent(PrimIDToPipelineShadingRate(i));
-					pipelines.push_back(createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo));
-					vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelines.back());
-				}
-
-				if (!m_data.meshShader)
-				{
-					// Draw one triangle, with "primitive ID" in gl_InstanceIndex
-					vk.cmdDraw(*cmdBuffer, 3u, 1, 0u, i);
-				}
-				else
-				{
-					// Create a single workgroup to draw one triangle. The "primitive id" will be in the push constants.
-					vk.cmdDrawMeshTasksEXT(*cmdBuffer, 1u, 1u, 1u);
-				}
-			}
-
-			if (m_data.useDynamicRendering)
-				endRendering(vk, *cmdBuffer);
-			else
-				endRenderPass(vk, *cmdBuffer);
-
-			memBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-			memBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
-			vk.cmdPipelineBarrier(*cmdBuffer, allPipelineStages, allPipelineStages,
-				0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
+				VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+				DE_NULL,
+				VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+				VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT
+			};
+			vk.cmdPipelineBarrier(*cmdBuffer, allPipelineStages, allPipelineStages, 0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
 
 			vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1, &mainDescriptorSet, 0u, DE_NULL);
 			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
@@ -2653,9 +2413,479 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 	return tcu::TestStatus(res, qpGetTestResultName(res));
 }
 
+void FSRTestInstance::beginSecondaryCmdBuffer(VkCommandBuffer cmdBuffer, VkFormat cbFormat, VkFormat dsFormat, VkRenderingFlagsKHR renderingFlags) const
+{
+	VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,		// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		renderingFlags,															// VkRenderingFlagsKHR				flags;
+		m_data.multiView ? 0x3 : 0u,											// uint32_t							viewMask;
+		1u,																		// uint32_t							colorAttachmentCount;
+		&cbFormat,																// const VkFormat*					pColorAttachmentFormats;
+		dsFormat,																// VkFormat							depthAttachmentFormat;
+		dsFormat,																// VkFormat							stencilAttachmentFormat;
+		m_data.samples,															// VkSampleCountFlagBits			rasterizationSamples;
+	};
+	const VkCommandBufferInheritanceInfo bufferInheritanceInfo = initVulkanStructure(&inheritanceRenderingInfo);
+
+	VkCommandBufferUsageFlags usageFlags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	if (!m_data.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+		usageFlags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+
+	const VkCommandBufferBeginInfo commandBufBeginParams
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,							// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		usageFlags,																// VkCommandBufferUsageFlags		flags;
+		&bufferInheritanceInfo
+	};
+
+	const DeviceInterface& vk = m_context.getDeviceInterface();
+	VK_CHECK(vk.beginCommandBuffer(cmdBuffer, &commandBufBeginParams));
+}
+
+void FSRTestInstance::preRenderCommands(VkCommandBuffer cmdBuffer, ImageWithMemory* cbImage, ImageWithMemory* dsImage,
+										ImageWithMemory* derivImage, deUint32 derivNumLevels,
+										ImageWithMemory* srImage, VkImageLayout srLayout, BufferWithMemory* srFillBuffer,
+										deUint32 numSRLayers, deUint32 srWidth, deUint32 srHeight, deUint32 srFillBpp,
+										const VkClearValue& clearColor, const VkClearValue& clearDepthStencil)
+{
+	const DeviceInterface&	vk						= m_context.getDeviceInterface();
+	const VkDevice			device					= m_context.getDevice();
+
+	VkFlags					allPipelineStages		= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
+													  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
+													  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+													  VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+													  VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT |
+													  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
+													  VK_PIPELINE_STAGE_SHADING_RATE_IMAGE_BIT_NV;
+
+	if (m_data.geometryShader)
+		allPipelineStages |= VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
+
+	VkImageMemoryBarrier imageBarrier
+	{
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType		sType
+		DE_NULL,									// const void*			pNext
+		0u,											// VkAccessFlags		srcAccessMask
+		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags		dstAccessMask
+		VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout		oldLayout
+		VK_IMAGE_LAYOUT_GENERAL,					// VkImageLayout		newLayout
+		VK_QUEUE_FAMILY_IGNORED,					// uint32_t				srcQueueFamilyIndex
+		VK_QUEUE_FAMILY_IGNORED,					// uint32_t				dstQueueFamilyIndex
+		cbImage->get(),								// VkImage				image
+		{
+			VK_IMAGE_ASPECT_COLOR_BIT,				// VkImageAspectFlags	aspectMask
+			0u,										// uint32_t				baseMipLevel
+			VK_REMAINING_MIP_LEVELS,				// uint32_t				mipLevels,
+			0u,										// uint32_t				baseArray
+			VK_REMAINING_ARRAY_LAYERS,				// uint32_t				arraySize
+		}
+	};
+
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+							(VkDependencyFlags)0,
+							0, (const VkMemoryBarrier*)DE_NULL,
+							0, (const VkBufferMemoryBarrier*)DE_NULL,
+							1, &imageBarrier);
+
+	imageBarrier.image = derivImage->get();
+	imageBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+							(VkDependencyFlags)0,
+							0, (const VkMemoryBarrier*)DE_NULL,
+							0, (const VkBufferMemoryBarrier*)DE_NULL,
+							1, &imageBarrier);
+
+	// Clear level to 1<<level
+	for (deUint32 i = 0; i < derivNumLevels; ++i)
+	{
+		VkImageSubresourceRange range = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, i, 1u, 0u, 1u);
+		VkClearValue clearLevelColor = makeClearValueColorU32(1<<i,0,0,0);
+		vk.cmdClearColorImage(cmdBuffer, derivImage->get(), VK_IMAGE_LAYOUT_GENERAL, &clearLevelColor.color, 1, &range);
+	}
+
+	// Clear color buffer to transparent black
+	{
+		VkImageSubresourceRange range = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, VK_REMAINING_ARRAY_LAYERS);
+		vk.cmdClearColorImage(cmdBuffer, cbImage->get(), VK_IMAGE_LAYOUT_GENERAL, &clearColor.color, 1, &range);
+	}
+
+	// Clear depth and stencil
+	if (m_data.useDepthStencil)
+	{
+		VkImageSubresourceRange range = makeImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 1u, 0u, VK_REMAINING_ARRAY_LAYERS);
+		VkImageMemoryBarrier dsBarrier = imageBarrier;
+		dsBarrier.image = dsImage->get();
+		dsBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+		dsBarrier.subresourceRange = range;
+		vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+								0u, // dependencyFlags
+								0u, nullptr,
+								0u, nullptr,
+								1u, &dsBarrier);
+		vk.cmdClearDepthStencilImage(cmdBuffer, dsImage->get(), VK_IMAGE_LAYOUT_GENERAL, &clearDepthStencil.depthStencil, 1, &range);
+	}
+
+	// Initialize shading rate image with varying values
+	if (m_data.useAttachment())
+	{
+		imageBarrier.image = srImage->get();
+		imageBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+		vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+								(VkDependencyFlags)0,
+								0, (const VkMemoryBarrier*)DE_NULL,
+								0, (const VkBufferMemoryBarrier*)DE_NULL,
+								1, &imageBarrier);
+
+		deUint8 *fillPtr = (deUint8 *)srFillBuffer->getAllocation().getHostPtr();
+		for (deUint32 layer = 0; layer < numSRLayers; ++layer)
+		{
+			for (deUint32 x = 0; x < srWidth; ++x)
+			{
+				for (deUint32 y = 0; y < srHeight; ++y)
+				{
+					deUint32 idx = (layer*srHeight + y)*srWidth + x;
+					deUint8 val = (deUint8)SanitizeRate(idx & 0xF);
+					// actual shading rate is always in the LSBs of the first byte of a texel
+					fillPtr[srFillBpp*idx] = val;
+				}
+			}
+		}
+		flushAlloc(vk, device, srFillBuffer->getAllocation());
+
+		const VkBufferImageCopy copyRegion
+		{
+			0u,																	// VkDeviceSize			bufferOffset;
+			0u,																	// deUint32				bufferRowLength;
+			0u,																	// deUint32				bufferImageHeight;
+			{
+				VK_IMAGE_ASPECT_COLOR_BIT,										// VkImageAspectFlags	aspect;
+				0u,																// deUint32				mipLevel;
+				0u,																// deUint32				baseArrayLayer;
+				numSRLayers,													// deUint32				layerCount;
+			},																	// VkImageSubresourceLayers imageSubresource;
+			{ 0, 0, 0 },														// VkOffset3D			imageOffset;
+			{ srWidth, srHeight, 1 },											// VkExtent3D			imageExtent;
+		};
+
+		vk.cmdCopyBufferToImage(cmdBuffer, srFillBuffer->get(), srImage->get(), VK_IMAGE_LAYOUT_GENERAL, 1, &copyRegion);
+
+		imageBarrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
+		imageBarrier.newLayout = srLayout;
+
+		vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+								(VkDependencyFlags)0,
+								0, (const VkMemoryBarrier*)DE_NULL,
+								0, (const VkBufferMemoryBarrier*)DE_NULL,
+								1, &imageBarrier);
+	}
+
+	VkMemoryBarrier memBarrier
+	{
+		VK_STRUCTURE_TYPE_MEMORY_BARRIER,	// sType
+		DE_NULL,							// pNext
+		0u,									// srcAccessMask
+		0u,									// dstAccessMask
+	};
+
+	memBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	memBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR;
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, allPipelineStages,
+						  0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
+}
+
+void FSRTestInstance::beginRender(VkCommandBuffer cmdBuffer, VkRenderPass renderPass, VkFramebuffer framebuffer,
+								  VkImageView srImageView, VkImageLayout srImageLayout, const VkExtent2D& srTexelSize,
+								  VkImageView cbImageView, VkImageView dsImageView, bool imagelessFB,
+								  const VkClearValue& clearColor, const VkClearValue& clearDepthStencil,
+								  VkRenderingFlagsKHR renderingFlags) const
+{
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	VkRect2D				renderArea	= makeRect2D(m_data.framebufferDim.width, m_data.framebufferDim.height);
+
+	if (m_data.groupParams->useDynamicRendering)
+	{
+		VkRenderingFragmentShadingRateAttachmentInfoKHR shadingRateAttachmentInfo
+		{
+			VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR,	// VkStructureType		sType;
+			DE_NULL,																// const void*			pNext;
+			srImageView,															// VkImageView			imageView;
+			srImageLayout,															// VkImageLayout		imageLayout;
+			srTexelSize																// VkExtent2D			shadingRateAttachmentTexelSize;
+		};
+
+		VkRenderingAttachmentInfoKHR colorAttachment
+		{
+			vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,					// VkStructureType						sType;
+			DE_NULL,																// const void*							pNext;
+			cbImageView,															// VkImageView							imageView;
+			VK_IMAGE_LAYOUT_GENERAL,												// VkImageLayout						imageLayout;
+			VK_RESOLVE_MODE_NONE,													// VkResolveModeFlagBits				resolveMode;
+			DE_NULL,																// VkImageView							resolveImageView;
+			VK_IMAGE_LAYOUT_UNDEFINED,												// VkImageLayout						resolveImageLayout;
+			VK_ATTACHMENT_LOAD_OP_LOAD,												// VkAttachmentLoadOp					loadOp;
+			VK_ATTACHMENT_STORE_OP_STORE,											// VkAttachmentStoreOp					storeOp;
+			clearColor																// VkClearValue							clearValue;
+		};
+
+		std::vector<VkRenderingAttachmentInfoKHR> depthStencilAttachments(2,
+			{
+				VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,					// VkStructureType						sType;
+				DE_NULL,															// const void*							pNext;
+				dsImageView,														// VkImageView							imageView;
+				VK_IMAGE_LAYOUT_GENERAL,											// VkImageLayout						imageLayout;
+				VK_RESOLVE_MODE_NONE,												// VkResolveModeFlagBits				resolveMode;
+				DE_NULL,															// VkImageView							resolveImageView;
+				VK_IMAGE_LAYOUT_UNDEFINED,											// VkImageLayout						resolveImageLayout;
+				VK_ATTACHMENT_LOAD_OP_LOAD,											// VkAttachmentLoadOp					loadOp;
+				VK_ATTACHMENT_STORE_OP_STORE,										// VkAttachmentStoreOp					storeOp;
+				clearDepthStencil													// VkClearValue							clearValue;
+			});
+
+		vk::VkRenderingInfoKHR renderingInfo
+		{
+			vk::VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+			m_data.useAttachment() ? &shadingRateAttachmentInfo : DE_NULL,
+			renderingFlags,															// VkRenderingFlagsKHR					flags;
+			renderArea,																// VkRect2D								renderArea;
+			m_data.multiView ? 1 : m_data.numColorLayers,							// deUint32								layerCount;
+			m_data.multiView ? 0x3 : 0u,											// deUint32								viewMask;
+			1u,																		// deUint32								colorAttachmentCount;
+			&colorAttachment,														// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
+			m_data.useDepthStencil ? &depthStencilAttachments[0] : DE_NULL,			// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
+			m_data.useDepthStencil ? &depthStencilAttachments[1] : DE_NULL,			// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
+		};
+
+		vk.cmdBeginRendering(cmdBuffer, &renderingInfo);
+	}
+	else
+	{
+		std::vector<VkImageView> attachments = { cbImageView };
+		if (m_data.useAttachment())
+			attachments.push_back(srImageView);
+		if (m_data.useDepthStencil)
+			attachments.push_back(dsImageView);
+
+		const VkRenderPassAttachmentBeginInfo renderPassAttachmentBeginInfo
+		{
+			VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO,		// VkStructureType		sType;
+			DE_NULL,													// const void*			pNext;
+			(deUint32)attachments.size(),								// deUint32				attachmentCount;
+			&attachments[0]												// const VkImageView*	pAttachments;
+		};
+
+		beginRenderPass(vk, cmdBuffer, renderPass, framebuffer, renderArea,
+						0, DE_NULL, VK_SUBPASS_CONTENTS_INLINE, imagelessFB ? &renderPassAttachmentBeginInfo : DE_NULL);
+	}
+}
+
+void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
+								   std::vector<GraphicsPipelineWrapper>&			pipelines,
+								   const std::vector<VkViewport>&					viewports,
+								   const std::vector<VkRect2D>&						scissors,
+								   const VkPipelineLayout							pipelineLayout,
+								   const VkRenderPass								renderPass,
+								   const VkPipelineVertexInputStateCreateInfo*		vertexInputState,
+								   const VkPipelineDynamicStateCreateInfo*			dynamicState,
+								   const VkPipelineRasterizationStateCreateInfo*	rasterizationState,
+								   const VkPipelineDepthStencilStateCreateInfo*		depthStencilState,
+								   const VkPipelineMultisampleStateCreateInfo*		multisampleState,
+								   VkPipelineFragmentShadingRateStateCreateInfoKHR*	shadingRateState,
+								   VkPipelineRenderingCreateInfoKHR*				dynamicRendering,
+								   const VkShaderModule								vertShader,
+								   const VkShaderModule								geomShader,
+								   const VkShaderModule								meshShader,
+								   const VkShaderModule								fragShader,
+								   const std::vector<VkDescriptorSet>&				descriptorSets,
+								   VkBuffer											vertexBuffer,
+								   const uint32_t									pushConstantSize)
+{
+	const DeviceInterface&	vk		= m_context.getDeviceInterface();
+	const VkDevice			device	= m_context.getDevice();
+	const bool				useMesh	= (meshShader != DE_NULL);
+
+	VkFlags allShaderStages = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+	if (m_data.geometryShader)
+		allShaderStages |= VK_SHADER_STAGE_GEOMETRY_BIT;
+
+	VkPipelineCreateFlags pipelineCreateFlags = (VkPipelineCreateFlags)0;
+	if (m_data.groupParams->useDynamicRendering)
+		pipelineCreateFlags |= VK_PIPELINE_CREATE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
+
+	vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), de::dataOrNull(descriptorSets), 0, DE_NULL);
+
+	// If using dynamic state, create a single graphics pipeline and bind it
+	if (m_data.useDynamicState)
+	{
+		pipelines.emplace_back(vk, device, m_data.groupParams->pipelineConstructionType, pipelineCreateFlags);
+		auto& pipeline = pipelines.back();
+
+		pipeline
+			.setDefaultColorBlendState()
+			.setDynamicState(dynamicState);
+
+		if (useMesh)
+		{
+			pipeline
+				.setupPreRasterizationMeshShaderState(viewports,
+													  scissors,
+													  pipelineLayout,
+													  renderPass,
+													  0u,
+													  DE_NULL,
+													  meshShader,
+													  rasterizationState,
+													  nullptr,
+													  nullptr,
+													  dynamicRendering);
+		}
+		else
+		{
+			pipeline
+				.setupVertexInputStete(vertexInputState)
+				.setupPreRasterizationShaderState(viewports,
+												  scissors,
+												  pipelineLayout,
+												  renderPass,
+												  0u,
+												  vertShader,
+												  rasterizationState,
+												  DE_NULL,
+												  DE_NULL,
+												  geomShader,
+												  DE_NULL,
+												  dynamicRendering);
+		}
+
+		pipeline
+			.setupFragmentShaderState(pipelineLayout,
+									  renderPass,
+									  0u,
+									  fragShader,
+									  depthStencilState,
+									  multisampleState,
+									  shadingRateState)
+			.setupFragmentOutputState(renderPass, 0u, DE_NULL, multisampleState)
+			.buildPipeline();
+
+		vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getPipeline());
+	}
+
+	// Push constant block (must match shaders).
+	struct
+	{
+		int32_t		shadingRate;
+		uint32_t	instanceIndex;
+	} pushConstantBlock;
+
+	for (deInt32 i = 0; i < NUM_TRIANGLES; ++i)
+	{
+		if (!useMesh)
+		{
+			// Bind vertex attributes pointing to the next triangle
+			VkDeviceSize vertexBufferOffset = i * 3 * 2 * sizeof(float);
+			vk.cmdBindVertexBuffers(cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+		}
+
+		// Put primitive shading rate and instance index (used in mesh shading cases) in push constants.
+		pushConstantBlock.shadingRate	= PrimIDToPrimitiveShadingRate(i);
+		pushConstantBlock.instanceIndex	= static_cast<uint32_t>(i);
+		vk.cmdPushConstants(cmdBuffer, pipelineLayout, allShaderStages, 0, pushConstantSize, &pushConstantBlock);
+
+		if (m_data.useDynamicState)
+		{
+			VkExtent2D fragmentSize = ShadingRateEnumToExtent(PrimIDToPipelineShadingRate(i));
+			vk.cmdSetFragmentShadingRateKHR(cmdBuffer, &fragmentSize, m_data.combinerOp);
+		}
+		else
+		{
+			// Create a new pipeline with the desired pipeline shading rate
+			shadingRateState->fragmentSize = ShadingRateEnumToExtent(PrimIDToPipelineShadingRate(i));
+
+			pipelines.emplace_back(vk, device, m_data.groupParams->pipelineConstructionType, pipelineCreateFlags);
+			auto& pipeline = pipelines.back();
+
+			pipeline
+				.setDefaultColorBlendState()
+				.setDynamicState(dynamicState);
+
+			if (useMesh)
+			{
+				pipeline
+					.setupPreRasterizationMeshShaderState(viewports,
+														  scissors,
+														  pipelineLayout,
+														  renderPass,
+														  0u,
+														  DE_NULL,
+														  meshShader,
+														  rasterizationState,
+														  nullptr,
+														  nullptr,
+														  dynamicRendering);
+			}
+			else
+			{
+				pipeline
+					.setupVertexInputStete(vertexInputState)
+					.setupPreRasterizationShaderState(viewports,
+													  scissors,
+													  pipelineLayout,
+													  renderPass,
+													  0u,
+													  vertShader,
+													  rasterizationState,
+													  DE_NULL,
+													  DE_NULL,
+													  geomShader,
+													  DE_NULL,
+													  dynamicRendering);
+			}
+
+			pipeline
+				.setupFragmentShaderState(pipelineLayout,
+										  renderPass,
+										  0u,
+										  fragShader,
+										  depthStencilState,
+										  multisampleState,
+										  shadingRateState)
+				.setupFragmentOutputState(renderPass, 0u, DE_NULL, multisampleState)
+				.buildPipeline();
+
+			vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getPipeline());
+		}
+
+		if (useMesh)
+		{
+			// Create a single workgroup to draw one triangle. The "primitive id" will be in the push constants.
+			vk.cmdDrawMeshTasksEXT(cmdBuffer, 1u, 1u, 1u);
+		}
+		else
+		{
+			// Draw one triangle, with "primitive ID" in gl_InstanceIndex
+			vk.cmdDraw(cmdBuffer, 3u, 1, 0u, i);
+		}
+	}
+}
+
+void FSRTestInstance::endRender(VkCommandBuffer cmdBuffer) const
+{
+	const DeviceInterface& vk = m_context.getDeviceInterface();
+	if (m_data.groupParams->useDynamicRendering)
+		endRendering(vk, cmdBuffer);
+	else
+		endRenderPass(vk, cmdBuffer);
+}
+
 }	// anonymous
 
-void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGroup, bool useDynamicRendering)
+void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGroup, SharedGroupParams groupParams)
 {
 	typedef struct
 	{
@@ -2756,16 +2986,27 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 
 	for (int groupNdx = 0; groupNdx < DE_LENGTH_OF_ARRAY(groupCases); groupNdx++)
 	{
-		if (useDynamicRendering && groupNdx == 12)
+		if (groupParams->useDynamicRendering && groupNdx == 12)
 			continue;
+
+		if (groupParams->pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+		{
+			// for graphics pipeline library we need to repeat only selected groups
+			if (std::set<int> { 2, 3, 4, 10, 11, 12, 13, 14, 15 }.count(groupNdx) == 0)
+				continue;
+		}
 
 		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, groupCases[groupNdx].name, groupCases[groupNdx].description));
 		for (int dynNdx = 0; dynNdx < DE_LENGTH_OF_ARRAY(dynCases); dynNdx++)
 		{
+			// reduce number of tests for dynamic rendering cases where secondary command buffer is used
+			if (groupParams->useSecondaryCmdBuffer && (dynNdx != 0))
+				continue;
+
 			de::MovePtr<tcu::TestCaseGroup> dynGroup(new tcu::TestCaseGroup(testCtx, dynCases[dynNdx].name, dynCases[dynNdx].description));
 			for (int attNdx = 0; attNdx < DE_LENGTH_OF_ARRAY(attCases); attNdx++)
 			{
-				if (useDynamicRendering && attCases[attNdx].usage == AttachmentUsage::NO_ATTACHMENT_PTR)
+				if (groupParams->useDynamicRendering && attCases[attNdx].usage == AttachmentUsage::NO_ATTACHMENT_PTR)
 					continue;
 
 				de::MovePtr<tcu::TestCaseGroup> attGroup(new tcu::TestCaseGroup(testCtx, attCases[attNdx].name, attCases[attNdx].description));
@@ -2780,12 +3021,28 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 							de::MovePtr<tcu::TestCaseGroup> cmb1Group(new tcu::TestCaseGroup(testCtx, combCases[cmb1Ndx].name, combCases[cmb1Ndx].description));
 							for (int extNdx = 0; extNdx < DE_LENGTH_OF_ARRAY(extentCases); extNdx++)
 							{
+								// reduce number of cases repeat every other extent case for graphics pipeline library
+								if ((groupParams->pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC) && ((extNdx % 2) == 1))
+									continue;
+
+								// reduce number of tests for dynamic rendering cases where secondary command buffer is used
+								if (groupParams->useSecondaryCmdBuffer && (extNdx != 1))
+									continue;
+
 								de::MovePtr<tcu::TestCaseGroup> extGroup(new tcu::TestCaseGroup(testCtx, extentCases[extNdx].name, extentCases[extNdx].description));
 								for (int sampNdx = 0; sampNdx < DE_LENGTH_OF_ARRAY(sampCases); sampNdx++)
 								{
+									// reduce number of tests for dynamic rendering cases where secondary command buffer is used
+									if (groupParams->useSecondaryCmdBuffer && (sampNdx != 1))
+										continue;
+
 									de::MovePtr<tcu::TestCaseGroup> sampGroup(new tcu::TestCaseGroup(testCtx, sampCases[sampNdx].name, sampCases[sampNdx].description));
 									for (int shaderNdx = 0; shaderNdx < DE_LENGTH_OF_ARRAY(shaderCases); shaderNdx++)
 									{
+										// reduce number of tests for dynamic rendering cases where secondary command buffer is used
+										if (groupParams->useSecondaryCmdBuffer && (shaderNdx != 0))
+											continue;
+
 										bool useApiSampleMask = groupNdx == 1;
 										bool useSampleMaskIn = groupNdx == 2;
 										bool consRast = groupNdx == 3 || groupNdx == 4;
@@ -2833,8 +3090,9 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 										if (srLayered && attCases[attNdx].usage != AttachmentUsage::WITH_ATTACHMENT)
 											continue;
 
-										CaseDef c =
+										CaseDef c
 										{
+											groupParams,											// SharedGroupParams groupParams;
 											seed++,													// deInt32 seed;
 											extentCases[extNdx].count,								// VkExtent2D framebufferDim;
 											(VkSampleCountFlagBits)sampCases[sampNdx].count,		// VkSampleCountFlagBits samples;
@@ -2847,7 +3105,6 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 											useGeometryShader,										// bool geometryShader;
 											useMeshShader,											// bool meshShader;
 											(bool)dynCases[dynNdx].count,							// bool useDynamicState;
-											useDynamicRendering,									// bool useDynamicRendering;
 											useApiSampleMask,										// bool useApiSampleMask;
 											useSampleMaskIn,										// bool useSampleMaskIn;
 											consRast,												// bool conservativeEnable;
@@ -2887,42 +3144,45 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 		parentGroup->addChild(group.release());
 	}
 
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "misc_tests", "Single tests that don't need to be part of above test matrix"));
-	group->addChild(new FSRTestCase(testCtx, "sample_mask_test", "", {
-		123,													// deInt32 seed;
-		{32,  33},												// VkExtent2D framebufferDim;
-		VK_SAMPLE_COUNT_4_BIT,									// VkSampleCountFlagBits samples;
-		{
-			VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR,
-			VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR
-		},														// VkFragmentShadingRateCombinerOpKHR combinerOp[2];
-		AttachmentUsage::NO_ATTACHMENT,							// AttachmentUsage attachmentUsage;
-		true,													// bool shaderWritesRate;
-		false,													// bool geometryShader;
-		false,													// bool meshShader;
-		false,													// bool useDynamicState;
-		false,													// bool useDynamicRendering;
-		true,													// bool useApiSampleMask;
-		false,													// bool useSampleMaskIn;
-		false,													// bool conservativeEnable;
-		VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT,	// VkConservativeRasterizationModeEXT conservativeMode;
-		false,													// bool useDepthStencil;
-		false,													// bool fragDepth;
-		false,													// bool fragStencil;
-		false,													// bool multiViewport;
-		false,													// bool colorLayered;
-		false,													// bool srLayered;
-		1u,														// deUint32 numColorLayers;
-		false,													// bool multiView;
-		false,													// bool correlationMask;
-		false,													// bool interlock;
-		false,													// bool sampleLocations;
-		false,													// bool sampleShadingEnable;
-		false,													// bool sampleShadingInput;
-		true,													// bool sampleMaskTest;
-	}));
+	if (!groupParams->useSecondaryCmdBuffer)
+	{
+		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "misc_tests", "Single tests that don't need to be part of above test matrix"));
+		group->addChild(new FSRTestCase(testCtx, "sample_mask_test", "", {
+			groupParams,											// SharedGroupParams groupParams;
+			123,													// deInt32 seed;
+			{32,  33},												// VkExtent2D framebufferDim;
+			VK_SAMPLE_COUNT_4_BIT,									// VkSampleCountFlagBits samples;
+			{
+				VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR,
+				VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR
+			},														// VkFragmentShadingRateCombinerOpKHR combinerOp[2];
+			AttachmentUsage::NO_ATTACHMENT,							// AttachmentUsage attachmentUsage;
+			true,													// bool shaderWritesRate;
+			false,													// bool geometryShader;
+			false,													// bool meshShader;
+			false,													// bool useDynamicState;
+			true,													// bool useApiSampleMask;
+			false,													// bool useSampleMaskIn;
+			false,													// bool conservativeEnable;
+			VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT,	// VkConservativeRasterizationModeEXT conservativeMode;
+			false,													// bool useDepthStencil;
+			false,													// bool fragDepth;
+			false,													// bool fragStencil;
+			false,													// bool multiViewport;
+			false,													// bool colorLayered;
+			false,													// bool srLayered;
+			1u,														// deUint32 numColorLayers;
+			false,													// bool multiView;
+			false,													// bool correlationMask;
+			false,													// bool interlock;
+			false,													// bool sampleLocations;
+			false,													// bool sampleShadingEnable;
+			false,													// bool sampleShadingInput;
+			true,													// bool sampleMaskTest;
+		}));
 
-	parentGroup->addChild(group.release());
+		parentGroup->addChild(group.release());
+	}
 }
 
 }	// FragmentShadingRage

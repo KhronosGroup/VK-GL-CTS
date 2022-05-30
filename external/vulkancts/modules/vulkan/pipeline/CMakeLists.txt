@@ -1,7 +1,5 @@
 
-set(DEQP_VK_PIPELINE_SRCS
-	vktPipelineBindPointTests.cpp
-	vktPipelineBindPointTests.hpp
+set(DEQP_VK_VKSC_PIPELINE_SRCS
 	vktPipelineBlendTests.cpp
 	vktPipelineBlendTests.hpp
 	vktPipelineClearUtil.cpp
@@ -11,8 +9,6 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineCombinationsIterator.hpp
 	vktPipelineDepthTests.cpp
 	vktPipelineDepthTests.hpp
-	vktPipelineDerivativeTests.cpp
-	vktPipelineDerivativeTests.hpp
 	vktPipelineDynamicOffsetTests.cpp
 	vktPipelineDynamicOffsetTests.hpp
 	vktPipelineEarlyDestroyTests.cpp
@@ -25,8 +21,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineLogicOpTests.hpp
 	vktPipelinePushConstantTests.cpp
 	vktPipelinePushConstantTests.hpp
-	vktPipelinePushDescriptorTests.cpp
-	vktPipelinePushDescriptorTests.hpp
+	#vktPipelinePushDescriptorTests.cpp
+	#vktPipelinePushDescriptorTests.hpp
 	vktPipelineSampleLocationsUtil.cpp
 	vktPipelineSampleLocationsUtil.hpp
 	vktPipelineSpecConstantTests.hpp
@@ -37,6 +33,7 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineImageUtil.hpp
 	vktPipelineImageViewTests.cpp
 	vktPipelineImageViewTests.hpp
+
 	vktPipelineMatchedAttachmentsTests.cpp
 	vktPipelineMatchedAttachmentsTests.hpp
 	vktPipelineMultisampleTestsUtil.cpp
@@ -73,8 +70,6 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineRenderToImageTests.hpp
 	vktPipelineFramebufferAttachmentTests.cpp
 	vktPipelineFramebufferAttachmentTests.hpp
-	vktPipelineSamplerBorderSwizzleTests.cpp
-	vktPipelineSamplerBorderSwizzleTests.hpp
 	vktPipelineSamplerTests.cpp
 	vktPipelineSamplerTests.hpp
 	vktPipelineStencilExportTests.cpp
@@ -92,39 +87,63 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineMiscTests.hpp
 	vktPipelineVertexUtil.cpp
 	vktPipelineVertexUtil.hpp
-	vktPipelineCacheTests.cpp
-	vktPipelineCacheTests.hpp
+	#vktPipelineCacheTests.cpp
+	#vktPipelineCacheTests.hpp
 	vktPipelineMakeUtil.cpp
 	vktPipelineMakeUtil.hpp
-	vktPipelineCreationFeedbackTests.cpp
-	vktPipelineCreationFeedbackTests.hpp
+	#vktPipelineCreationFeedbackTests.cpp
+	#vktPipelineCreationFeedbackTests.hpp
 	vktPipelineDepthRangeUnrestrictedTests.cpp
 	vktPipelineDepthRangeUnrestrictedTests.hpp
-	vktPipelineExecutablePropertiesTests.cpp
-	vktPipelineExecutablePropertiesTests.hpp
+	#vktPipelineExecutablePropertiesTests.cpp
+	#vktPipelineExecutablePropertiesTests.hpp
 	vktPipelineMaxVaryingsTests.cpp
 	vktPipelineMaxVaryingsTests.hpp
 	vktPipelineBlendOperationAdvancedTests.cpp
 	vktPipelineBlendOperationAdvancedTests.hpp
 	vktPipelineExtendedDynamicStateTests.cpp
 	vktPipelineExtendedDynamicStateTests.hpp
-	vktPipelineCreationCacheControlTests.cpp
-	vktPipelineCreationCacheControlTests.hpp
 	vktPipelineNoPositionTests.cpp
 	vktPipelineNoPositionTests.hpp
 	)
 
-set(DEQP_VK_PIPELINE_LIBS
-	tcutil
-	vkutil
-	referencerenderer
-	libamber
+set(DEQP_VK_PIPELINE_SRCS
+	vktPipelineBindPointTests.cpp
+	vktPipelineBindPointTests.hpp
+	vktPipelinePushDescriptorTests.cpp
+	vktPipelinePushDescriptorTests.hpp
+	vktPipelineCacheTests.cpp
+	vktPipelineCacheTests.hpp
+	vktPipelineCreationFeedbackTests.cpp
+	vktPipelineCreationFeedbackTests.hpp
+	vktPipelineDerivativeTests.cpp
+	vktPipelineDerivativeTests.hpp
+	vktPipelineExecutablePropertiesTests.cpp
+	vktPipelineExecutablePropertiesTests.hpp
+	vktPipelineCreationCacheControlTests.cpp
+	vktPipelineCreationCacheControlTests.hpp
+	vktPipelineSamplerBorderSwizzleTests.cpp
+	vktPipelineSamplerBorderSwizzleTests.hpp
+	vktPipelineLibraryTests.cpp
+	vktPipelineLibraryTests.hpp
+	vktPipelineImage2DViewOf3DTests.cpp
+	vktPipelineImage2DViewOf3DTests.hpp
 	)
+
+#vktPipelinePushDescriptorTests.cpp				- missing VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR
+#vktPipelineCacheTests.cpp						- missing VkShaderModuleCreateInfo missing chache
+#vktPipelineCreationFeedbackTests.cpp			- missing VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT
+#vktPipelineExecutablePropertiesTests.cpp		- missing lots of things like VkPipelineExecutableStatisticKHR VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INFO_KHR
 
 PCH(DEQP_VK_PIPELINE_SRCS ../pch.cpp)
 
-add_library(deqp-vk-pipeline STATIC ${DEQP_VK_PIPELINE_SRCS})
-target_link_libraries(deqp-vk-pipeline ${DEQP_VK_PIPELINE_LIBS})
+add_library(deqp-vk-pipeline STATIC ${DEQP_VK_VKSC_PIPELINE_SRCS} ${DEQP_VK_PIPELINE_SRCS})
+target_link_libraries(deqp-vk-pipeline libamber referencerenderer tcutil vkutil)
+
+add_library(deqp-vksc-pipeline STATIC ${DEQP_VK_VKSC_PIPELINE_SRCS})
+target_include_directories(deqp-vksc-pipeline BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
+target_link_libraries(deqp-vksc-pipeline PUBLIC referencerenderer deqp-vksc-util tcutil vkscutil)
+
 target_include_directories(deqp-vk-pipeline
 	PRIVATE
 		..
@@ -132,4 +151,11 @@ target_include_directories(deqp-vk-pipeline
 		../amber
 		../util
 		${DEQP_INL_DIR}
+)
+target_include_directories(deqp-vksc-pipeline
+	PRIVATE
+		..
+		../../../../amber/src/include
+		../amber
+		../util
 )

@@ -37,11 +37,16 @@ namespace DynamicState
 
 using namespace Draw;
 
-DynamicStateBaseClass::DynamicStateBaseClass (Context& context, const char* vertexShaderName, const char* fragmentShaderName, const char* meshShaderName)
+DynamicStateBaseClass::DynamicStateBaseClass (Context& context,
+											  vk::PipelineConstructionType pipelineConstructionType,
+											  const char* vertexShaderName,
+											  const char* fragmentShaderName,
+											  const char* meshShaderName)
 	: TestInstance				(context)
-	, m_colorAttachmentFormat   (vk::VK_FORMAT_R8G8B8A8_UNORM)
+	, m_colorAttachmentFormat	(vk::VK_FORMAT_R8G8B8A8_UNORM)
 	, m_topology				(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
 	, m_vk						(context.getDeviceInterface())
+	, m_pipeline				(context.getDeviceInterface(), context.getDevice(), pipelineConstructionType)
 	, m_vertexShaderName		(vertexShaderName ? vertexShaderName : "")
 	, m_fragmentShaderName		(fragmentShaderName)
 	, m_meshShaderName			(meshShaderName ? meshShaderName : "")
@@ -59,6 +64,7 @@ void DynamicStateBaseClass::initialize (void)
 	std::vector<vk::VkPushConstantRange>	pcRanges;
 
 	// The mesh shading pipeline will contain a set with vertex data.
+#ifndef CTS_USES_VULKANSC
 	if (m_isMesh)
 	{
 		vk::DescriptorSetLayoutBuilder	setLayoutBuilder;
@@ -73,6 +79,7 @@ void DynamicStateBaseClass::initialize (void)
 		m_descriptorSet = vk::makeDescriptorSet(m_vk, device, m_descriptorPool.get(), m_setLayout.get());
 		pcRanges.push_back(vk::makePushConstantRange(vk::VK_SHADER_STAGE_MESH_BIT_EXT, 0u, static_cast<uint32_t>(sizeof(uint32_t))));
 	}
+#endif // CTS_USES_VULKANSC
 
 	m_pipelineLayout = vk::makePipelineLayout(m_vk, device, m_setLayout.get(), de::dataOrNull(pcRanges));
 
@@ -201,45 +208,54 @@ void DynamicStateBaseClass::initFramebuffer (const vk::VkDevice device)
 
 void DynamicStateBaseClass::initPipeline (const vk::VkDevice device)
 {
-	PipelineCreateInfo pipelineCreateInfo(*m_pipelineLayout, *m_renderPass, 0, 0);
+	const PipelineCreateInfo::ColorBlendState::Attachment	attachmentState;
+	const PipelineCreateInfo::ColorBlendState				colorBlendState(1, &attachmentState);
+	const PipelineCreateInfo::RasterizerState				rasterizerState;
+	const PipelineCreateInfo::DepthStencilState				depthStencilState;
+	const PipelineCreateInfo::DynamicState					dynamicState;
 
-	// Shader modules.
-	vk::Move<vk::VkShaderModule>	vs;
-	vk::Move<vk::VkShaderModule>	fs;
-	vk::Move<vk::VkShaderModule>	ms;
-	const auto&						binaries = m_context.getBinaryCollection();
+	const auto&							binaries	= m_context.getBinaryCollection();
+	const vk::Move<vk::VkShaderModule>	ms			(m_isMesh ? createShaderModule(m_vk, device, binaries.get(m_meshShaderName), 0) : vk::Move<vk::VkShaderModule>());
+	const vk::Move<vk::VkShaderModule>	vs			(m_isMesh ? vk::Move<vk::VkShaderModule>() : createShaderModule(m_vk, device, binaries.get(m_vertexShaderName), 0));
+	const vk::Move<vk::VkShaderModule>	fs			(createShaderModule(m_vk, device, binaries.get(m_fragmentShaderName), 0));
+	std::vector<vk::VkViewport>			viewports	{ { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } };
+	std::vector<vk::VkRect2D>			scissors	{ { { 0u, 0u }, { 0u, 0u } }};
 
+	m_pipeline.setDefaultTopology(m_topology)
+			  .setDynamicState(static_cast<const vk::VkPipelineDynamicStateCreateInfo*>(&dynamicState))
+			  .setDefaultMultisampleState();
+
+#ifndef CTS_USES_VULKANSC
 	if (m_isMesh)
 	{
-		ms = vk::createShaderModule(m_vk, device, binaries.get(m_meshShaderName));
-		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*ms, "main", vk::VK_SHADER_STAGE_MESH_BIT_EXT));
+		m_pipeline
+			  .setupPreRasterizationMeshShaderState(viewports,
+													scissors,
+													*m_pipelineLayout,
+													*m_renderPass,
+													0u,
+													DE_NULL,
+													*ms,
+													static_cast<const vk::VkPipelineRasterizationStateCreateInfo*>(&rasterizerState));
 	}
 	else
+#endif // CTS_USES_VULKANSC
 	{
-		vs = vk::createShaderModule(m_vk, device, binaries.get(m_vertexShaderName));
-		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", vk::VK_SHADER_STAGE_VERTEX_BIT));
+		m_pipeline
+			  .setupVertexInputStete(&m_vertexInputState)
+			  .setupPreRasterizationShaderState(viewports,
+												scissors,
+												*m_pipelineLayout,
+												*m_renderPass,
+												0u,
+												*vs,
+												static_cast<const vk::VkPipelineRasterizationStateCreateInfo*>(&rasterizerState));
 	}
 
-	fs = vk::createShaderModule(m_vk, device, binaries.get(m_fragmentShaderName));
-	pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, "main", vk::VK_SHADER_STAGE_FRAGMENT_BIT));
-
-	if (!m_isMesh)
-	{
-		pipelineCreateInfo.addState(PipelineCreateInfo::VertexInputState(m_vertexInputState));
-		pipelineCreateInfo.addState(PipelineCreateInfo::InputAssemblerState(m_topology));
-	}
-
-	// Color blend attachment state.
-	const PipelineCreateInfo::ColorBlendState::Attachment vkCbAttachmentState;
-	pipelineCreateInfo.addState(PipelineCreateInfo::ColorBlendState(1, &vkCbAttachmentState));
-
-	pipelineCreateInfo.addState(PipelineCreateInfo::ViewportState(1));
-	pipelineCreateInfo.addState(PipelineCreateInfo::DepthStencilState());
-	pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
-	pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState());
-	pipelineCreateInfo.addState(PipelineCreateInfo::DynamicState());
-
-	m_pipeline = vk::createGraphicsPipeline(m_vk, device, DE_NULL, &pipelineCreateInfo);
+	m_pipeline.setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fs, static_cast<const vk::VkPipelineDepthStencilStateCreateInfo*>(&depthStencilState))
+			  .setupFragmentOutputState(*m_renderPass, 0u, static_cast<const vk::VkPipelineColorBlendStateCreateInfo*>(&colorBlendState))
+			  .setMonolithicPipelineLayout(*m_pipelineLayout)
+			  .buildPipeline();
 }
 
 tcu::TestStatus DynamicStateBaseClass::iterate (void)
@@ -331,12 +347,14 @@ void DynamicStateBaseClass::setDynamicDepthStencilState (const float	minDepthBou
 	m_vk.cmdSetStencilReference(*m_cmdBuffer, vk::VK_STENCIL_FACE_BACK_BIT, stencilBackReference);
 }
 
+#ifndef CTS_USES_VULKANSC
 void DynamicStateBaseClass::pushVertexOffset (const uint32_t				vertexOffset,
 											  const vk::VkPipelineLayout	pipelineLayout,
 											  const vk::VkShaderStageFlags	stageFlags)
 {
 	m_vk.cmdPushConstants(*m_cmdBuffer, pipelineLayout, stageFlags, 0u, static_cast<uint32_t>(sizeof(uint32_t)), &vertexOffset);
 }
+#endif // CTS_USES_VULKANSC
 
 } // DynamicState
 } // vkt

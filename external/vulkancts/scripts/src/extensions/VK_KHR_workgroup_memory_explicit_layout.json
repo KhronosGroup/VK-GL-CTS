@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": ""
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR":
+		[
+			{ "features": ["workgroupMemoryExplicitLayout", "workgroupMemoryExplicitLayoutScalarBlockLayout", "workgroupMemoryExplicitLayout8BitAccess", "workgroupMemoryExplicitLayout16BitAccess"],	"requirements": ["VK_KHR_workgroup_memory_explicit_layout"] }
+		]
+	}
+}

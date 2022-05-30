@@ -27,7 +27,9 @@
 #include "vktRenderPassMultisampleTests.hpp"
 #include "vktRenderPassMultisampleResolveTests.hpp"
 #include "vktRenderPassSampleReadTests.hpp"
+#ifndef CTS_USES_VULKANSC
 #include "vktRenderPassSparseRenderTargetTests.hpp"
+#endif // CTS_USES_VULKANSC
 #include "vktRenderPassSubpassDependencyTests.hpp"
 #include "vktRenderPassUnusedAttachmentTests.hpp"
 #include "vktRenderPassUnusedClearAttachmentTests.hpp"
@@ -35,8 +37,11 @@
 #include "vktRenderPassUnusedAttachmentSparseFillingTests.hpp"
 #include "vktRenderPassFragmentDensityMapTests.hpp"
 #include "vktRenderPassMultipleSubpassesMultipleCommandBuffersTests.hpp"
+#ifndef CTS_USES_VULKANSC
 #include "vktRenderPassLoadStoreOpNoneTests.hpp"
 #include "vktDynamicRenderingTests.hpp"
+#endif // CTS_USES_VULKANSC
+#include "vktRenderPassDepthStencilWriteConditionsTests.hpp"
 
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -1791,6 +1796,7 @@ void beginCommandBuffer (const DeviceInterface&			vk,
 		pInheritanceInfo_queryFlags,
 		pInheritanceInfo_pipelineStatistics,
 	};
+#ifndef CTS_USES_VULKANSC
 	std::vector<vk::VkFormat> colorAttachmentFormats;
 	VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
 	{
@@ -1824,6 +1830,10 @@ void beginCommandBuffer (const DeviceInterface&			vk,
 		if (dynamicRenderPass)
 			pInheritanceInfo.pNext = &inheritanceRenderingInfo;
 	}
+#else
+	DE_UNREF(pRenderInfo);
+	DE_UNREF(dynamicRenderPass);
+#endif // CTS_USES_VULKANSC
 	const VkCommandBufferBeginInfo pBeginInfo =
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -2030,6 +2040,7 @@ Move<VkPipeline> createSubpassPipeline (const DeviceInterface&		vk,
 		{ 0.0f, 0.0f, 0.0f, 0.0f }											// blendConst
 	};
 
+#ifndef CTS_USES_VULKANSC
 	std::vector<vk::VkFormat> colorAttachmentFormats;
 	for (deUint32 i = 0; i < renderInfo.getColorAttachmentCount(); ++i)
 		colorAttachmentFormats.push_back(renderInfo.getColorAttachment(i).getFormat());
@@ -2051,6 +2062,7 @@ Move<VkPipeline> createSubpassPipeline (const DeviceInterface&		vk,
 		depthStencilFormat,
 		depthStencilFormat
 	};
+#endif // CTS_USES_VULKANSC
 
 	return makeGraphicsPipeline(vk,												// const DeviceInterface&                        vk
 								device,											// const VkDevice                                device
@@ -2072,8 +2084,12 @@ Move<VkPipeline> createSubpassPipeline (const DeviceInterface&		vk,
 								renderInfo.getOmitBlendState()
 									? DE_NULL : &blendState,					// const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
 								DE_NULL,										// const VkPipelineDynamicStateCreateInfo*       dynamicStateCreateInfo
+#ifndef CTS_USES_VULKANSC
 								(renderPass == DE_NULL)
 									? &renderingCreateInfo : DE_NULL);			// const void*                                   pNext)
+#else
+								DE_NULL);										// const void*                                   pNext)
+#endif // CTS_USES_VULKANSC
 }
 
 class SubpassRenderer
@@ -2743,6 +2759,7 @@ void pushRenderPassCommands (const DeviceInterface&							vk,
 	}
 }
 
+#ifndef CTS_USES_VULKANSC
 void pushDynamicRenderingCommands (const DeviceInterface&								vk,
 								   VkCommandBuffer										commandBuffer,
 								   const RenderPass&									renderPassInfo,
@@ -3024,6 +3041,7 @@ void pushDynamicRenderingCommands (const DeviceInterface&								vk,
 							  (deUint32)imageBarriersAfterRendering.size(),
 							  &imageBarriersAfterRendering[0]);
 }
+#endif // CTS_USES_VULKANSC
 
 void pushRenderPassCommands (const DeviceInterface&								vk,
 							 VkCommandBuffer									commandBuffer,
@@ -3039,14 +3057,22 @@ void pushRenderPassCommands (const DeviceInterface&								vk,
 							 TestConfig::RenderTypes							render,
 							 RenderingType										renderingType)
 {
+#ifdef CTS_USES_VULKANSC
+	DE_UNREF(renderPassInfo);
+	DE_UNREF(attachmentResources);
+	DE_UNREF(queueIndex);
+#endif // CTS_USES_VULKANSC
+
 	switch (renderingType)
 	{
 		case RENDERING_TYPE_RENDERPASS_LEGACY:
 			return pushRenderPassCommands<RenderpassSubpass1>(vk, commandBuffer, renderPass, framebuffer, subpassRenderers, renderPos, renderSize, renderPassClearValues, render);
 		case RENDERING_TYPE_RENDERPASS2:
 			return pushRenderPassCommands<RenderpassSubpass2>(vk, commandBuffer, renderPass, framebuffer, subpassRenderers, renderPos, renderSize, renderPassClearValues, render);
+#ifndef CTS_USES_VULKANSC
 		case RENDERING_TYPE_DYNAMIC_RENDERING:
 			return pushDynamicRenderingCommands(vk, commandBuffer, renderPassInfo, attachmentResources, subpassRenderers, renderPos, renderSize, renderPassClearValues, queueIndex, render);
+#endif // CTS_USES_VULKANSC
 		default:
 			TCU_THROW(InternalError, "Impossible");
 	}
@@ -5160,7 +5186,10 @@ tcu::TestStatus renderPassTest (Context& context, TestConfig config)
 				waitForFences(vk, device, 1, &fence.get(), VK_TRUE, ~0ull);
 			}
 		}
-
+#ifdef CTS_USES_VULKANSC
+		if (!context.getTestContext().getCommandLine().isSubProcess())
+			return tcu::TestStatus::pass("Pass");
+#endif
 		if (logAndVerifyImages(log, vk, device, attachmentResources, attachmentIsLazy, renderPassInfo, renderPassClearValues, imageClearValues, subpassRenderInfo, targetSize, config))
 			return tcu::TestStatus::pass("Pass");
 		else
@@ -6188,7 +6217,7 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, const TestConfigEx
 															| VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 
 														 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-														 VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
+														 (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_INPUT_ATTACHMENT_READ_BIT),
 
 														 byRegion ? (VkDependencyFlags)VK_DEPENDENCY_BY_REGION_BIT : 0u));
 					}
@@ -7576,9 +7605,14 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 		suballocationTestGroup->addChild(createRenderPassMultisampleResolveTests(testCtx));
 		suballocationTestGroup->addChild(createRenderPassSubpassDependencyTests(testCtx));
 		suballocationTestGroup->addChild(createRenderPassSampleReadTests(testCtx));
+#ifndef CTS_USES_VULKANSC
 		suballocationTestGroup->addChild(createRenderPassSparseRenderTargetTests(testCtx));
+#endif // CTS_USES_VULKANSC
 
 		renderingTests->addChild(createRenderPassMultipleSubpassesMultipleCommandBuffersTests(testCtx));
+#ifndef CTS_USES_VULKANSC
+		renderingTests->addChild(createDepthStencilWriteConditionsTests(testCtx));
+#endif // CTS_USES_VULKANSC
 		break;
 
 	case RENDERING_TYPE_RENDERPASS2:
@@ -7586,16 +7620,22 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 		suballocationTestGroup->addChild(createRenderPass2MultisampleResolveTests(testCtx));
 		suballocationTestGroup->addChild(createRenderPass2SubpassDependencyTests(testCtx));
 		suballocationTestGroup->addChild(createRenderPass2SampleReadTests(testCtx));
+#ifndef CTS_USES_VULKANSC
 		suballocationTestGroup->addChild(createRenderPass2SparseRenderTargetTests(testCtx));
+#endif // CTS_USES_VULKANSC
 
 		renderingTests->addChild(createRenderPass2DepthStencilResolveTests(testCtx));
 		break;
 
+#ifndef CTS_USES_VULKANSC
 	case RENDERING_TYPE_DYNAMIC_RENDERING:
 		suballocationTestGroup->addChild(createDynamicRenderingMultisampleResolveTests(testCtx));
 		suballocationTestGroup->addChild(createDynamicRenderingSparseRenderTargetTests(testCtx));
 
 		renderingTests->addChild(createDynamicRenderingBasicTests(testCtx));
+		break;
+#endif // CTS_USES_VULKANSC
+	default:
 		break;
 	}
 
@@ -7606,11 +7646,15 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 	}
 
 	suballocationTestGroup->addChild(createRenderPassUnusedClearAttachmentTests(testCtx, renderingType));
+#ifndef CTS_USES_VULKANSC
 	suballocationTestGroup->addChild(createRenderPassLoadStoreOpNoneTests(testCtx, renderingType));
+#endif // CTS_USES_VULKANSC
 
 	renderingTests->addChild(suballocationTestGroup.release());
 	renderingTests->addChild(dedicatedAllocationTestGroup.release());
+#ifndef CTS_USES_VULKANSC
 	renderingTests->addChild(createFragmentDensityMapTests(testCtx, renderingType));
+#endif // CTS_USES_VULKANSC
 
 	return renderingTests.release();
 }

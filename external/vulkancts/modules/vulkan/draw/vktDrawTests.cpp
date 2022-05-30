@@ -32,6 +32,7 @@
 #include "vktTestGroupUtil.hpp"
 #include "vktBasicDrawTests.hpp"
 #include "vktDrawShaderDrawParametersTests.hpp"
+#include "vktDrawShaderInvocationTests.hpp"
 #include "vktDrawNegativeViewportHeightTests.hpp"
 #include "vktDrawInvertedDepthRangesTests.hpp"
 #include "vktDrawDifferingInterpolationTests.hpp"
@@ -39,13 +40,21 @@
 #include "vktDrawShaderViewportIndexTests.hpp"
 #include "vktDrawScissorTests.hpp"
 #include "vktDrawMultipleInterpolationTests.hpp"
+#include "vktDrawMultisampleLinearInterpolationTests.hpp"
 #include "vktDrawDiscardRectanglesTests.hpp"
 #include "vktDrawExplicitVertexParameterTests.hpp"
+#ifndef CTS_USES_VULKANSC
 #include "vktDrawOutputLocationTests.hpp"
+#include "vktDrawDepthBiasTests.hpp"
+#endif // CTS_USES_VULKANSC
 #include "vktDrawDepthClampTests.hpp"
+#ifndef CTS_USES_VULKANSC
 #include "vktDrawAhbTests.hpp"
+#endif // CTS_USES_VULKANSC
 #include "vktDrawMultipleClearsWithinRenderPass.hpp"
+#ifndef CTS_USES_VULKANSC
 #include "vktDrawMultiExtTests.hpp"
+#endif // CTS_USES_VULKANSC
 
 namespace vkt
 {
@@ -57,35 +66,40 @@ namespace
 
 void createChildren (tcu::TestContext& testCtx, tcu::TestCaseGroup* group, bool useDynamicRendering)
 {
-	group->addChild(new ConcurrentDrawTests					(testCtx, useDynamicRendering));
-	group->addChild(new SimpleDrawTests						(testCtx, useDynamicRendering));
-	group->addChild(new DrawIndexedTests					(testCtx, useDynamicRendering));
-	group->addChild(new IndirectDrawTests					(testCtx, useDynamicRendering));
-	group->addChild(createBasicDrawTests					(testCtx, useDynamicRendering));
-	group->addChild(new InstancedTests						(testCtx, useDynamicRendering));
-	group->addChild(new ShaderDrawParametersTests			(testCtx, useDynamicRendering));
-	group->addChild(createNegativeViewportHeightTests		(testCtx, useDynamicRendering));
-	group->addChild(createZeroViewportHeightTests			(testCtx, useDynamicRendering));
-	group->addChild(createInvertedDepthRangesTests			(testCtx, useDynamicRendering));
-	group->addChild(createDifferingInterpolationTests		(testCtx, useDynamicRendering));
-	group->addChild(createShaderLayerTests					(testCtx, useDynamicRendering));
-	group->addChild(createShaderViewportIndexTests			(testCtx, useDynamicRendering));
-	group->addChild(createScissorTests						(testCtx, useDynamicRendering));
-	group->addChild(createMultipleInterpolationTests		(testCtx, useDynamicRendering));
-	group->addChild(createDiscardRectanglesTests			(testCtx, useDynamicRendering));
-	group->addChild(createExplicitVertexParameterTests		(testCtx, useDynamicRendering));
-	group->addChild(createDepthClampTests					(testCtx, useDynamicRendering));
-	group->addChild(new MultipleClearsWithinRenderPassTests	(testCtx, useDynamicRendering));
-	group->addChild(createDrawMultiExtTests					(testCtx, useDynamicRendering));
+	group->addChild(new ConcurrentDrawTests						(testCtx, useDynamicRendering));
+	group->addChild(new SimpleDrawTests							(testCtx, useDynamicRendering));
+	group->addChild(new DrawIndexedTests						(testCtx, useDynamicRendering));
+	group->addChild(new IndirectDrawTests						(testCtx, useDynamicRendering));
+	group->addChild(createBasicDrawTests						(testCtx, useDynamicRendering));
+	group->addChild(new InstancedTests							(testCtx, useDynamicRendering));
+	group->addChild(new ShaderDrawParametersTests				(testCtx, useDynamicRendering));
+	group->addChild(createNegativeViewportHeightTests			(testCtx, useDynamicRendering));
+	group->addChild(createZeroViewportHeightTests				(testCtx, useDynamicRendering));
+	group->addChild(createInvertedDepthRangesTests				(testCtx, useDynamicRendering));
+	group->addChild(createDifferingInterpolationTests			(testCtx, useDynamicRendering));
+	group->addChild(createShaderLayerTests						(testCtx, useDynamicRendering));
+	group->addChild(createShaderViewportIndexTests				(testCtx, useDynamicRendering));
+	group->addChild(createScissorTests							(testCtx, useDynamicRendering));
+	group->addChild(createMultipleInterpolationTests			(testCtx, useDynamicRendering));
+	group->addChild(createMultisampleLinearInterpolationTests	(testCtx, useDynamicRendering));
+	group->addChild(createDiscardRectanglesTests				(testCtx, useDynamicRendering));
+	group->addChild(createExplicitVertexParameterTests			(testCtx, useDynamicRendering));
+	group->addChild(createDepthClampTests						(testCtx, useDynamicRendering));
+	group->addChild(new MultipleClearsWithinRenderPassTests		(testCtx, useDynamicRendering));
+#ifndef CTS_USES_VULKANSC
+	group->addChild(createDrawMultiExtTests						(testCtx, useDynamicRendering));
 
 	if (!useDynamicRendering)
 	{
 		// amber tests - no support for dynamic rendering
+		group->addChild(createDepthBiasTests				(testCtx));
 		group->addChild(createOutputLocationTests			(testCtx));
+		group->addChild(createShaderInvocationTests			(testCtx));
 
 		// subpasses can't be translated to dynamic rendering
 		group->addChild(createAhbTests						(testCtx));
 	}
+#endif // CTS_USES_VULKANSC
 }
 
 } // anonymous
@@ -94,13 +108,19 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> mainGroup				(new tcu::TestCaseGroup(testCtx, "draw", "Simple Draw tests"));
 	de::MovePtr<tcu::TestCaseGroup> renderpassGroup			(new tcu::TestCaseGroup(testCtx, "renderpass", "Draw using render pass object"));
+#ifndef CTS_USES_VULKANSC
 	de::MovePtr<tcu::TestCaseGroup> dynamicRenderingGroup	(new tcu::TestCaseGroup(testCtx, "dynamic_rendering", "Draw using VK_KHR_dynamic_rendering"));
+#endif // CTS_USES_VULKANSC
 
 	createChildren(testCtx, renderpassGroup.get(), false);
+#ifndef CTS_USES_VULKANSC
 	createChildren(testCtx, dynamicRenderingGroup.get(), true);
+#endif // CTS_USES_VULKANSC
 
 	mainGroup->addChild(renderpassGroup.release());
+#ifndef CTS_USES_VULKANSC
 	mainGroup->addChild(dynamicRenderingGroup.release());
+#endif // CTS_USES_VULKANSC
 
 	return mainGroup.release();
 }

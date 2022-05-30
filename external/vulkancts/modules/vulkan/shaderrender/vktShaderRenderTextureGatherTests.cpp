@@ -1068,12 +1068,17 @@ static void checkMutableComparisonSamplersSupport(Context& context, const Gather
 	// when compare mode is not none then ShaderRenderCaseInstance::createSamplerUniform
 	// uses mapSampler utill from vkImageUtil that sets compareEnable to true
 	// for portability this needs to be under feature flag
+#ifndef CTS_USES_VULKANSC
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		!context.getPortabilitySubsetFeatures().mutableComparisonSamplers &&
 		(m_baseParams.shadowCompareMode != tcu::Sampler::COMPAREMODE_NONE))
 	{
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: mutableComparisonSamplers are not supported by this implementation");
 	}
+#else
+	DE_UNREF(context);
+	DE_UNREF(m_baseParams);
+#endif // CTS_USES_VULKANSC
 }
 
 IVec2 getOffsetRange (const OffsetSize offsetSize, const vk::VkPhysicalDeviceLimits& deviceLimits)
@@ -1178,8 +1183,15 @@ TextureGatherInstance::TextureGatherInstance (Context&						context,
 			  (m_baseParams.magFilter == tcu::Sampler::NEAREST && (m_baseParams.minFilter == tcu::Sampler::NEAREST || m_baseParams.minFilter == tcu::Sampler::NEAREST_MIPMAP_NEAREST)));
 	DE_ASSERT(m_baseParams.textureType == TEXTURETYPE_CUBE || !(m_baseParams.flags & GATHERCASE_DONT_SAMPLE_CUBE_CORNERS));
 
-	m_renderSize				= RENDER_SIZE.asUint();
-	m_colorFormat				= vk::mapTextureFormat(m_colorBufferFormat);
+	m_renderSize								= RENDER_SIZE.asUint();
+	m_colorFormat								= vk::mapTextureFormat(m_colorBufferFormat);
+
+#ifdef CTS_USES_VULKANSC
+	const VkDevice			vkDevice			= getDevice();
+	const DeviceInterface&	vk					= getDeviceInterface();
+	const deUint32			queueFamilyIndex	= getUniversalQueueFamilyIndex();
+	m_externalCommandPool						= de::SharedPtr<Unique<VkCommandPool>>(new vk::Unique<VkCommandPool>(createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex)));
+#endif // CTS_USES_VULKANSC
 }
 
 TextureGatherInstance::~TextureGatherInstance (void)
@@ -1221,6 +1233,7 @@ void TextureGatherInstance::init (void)
 
 	// Check image format support.
 	// This should happen earlier but it's easier to retrieve texture parameters once created and this is not expected to fail.
+#ifndef CTS_USES_VULKANSC
 	if (m_baseParams.levelMode != LevelMode::NORMAL)
 	{
 		const auto						format				= vk::mapTextureFormat(m_baseParams.textureFormat);
@@ -1262,6 +1275,7 @@ void TextureGatherInstance::init (void)
 		if (!lodGatherProperties.supportsTextureGatherLODBiasAMD)
 			TCU_THROW(NotSupportedError, "Format does not support texture gather LOD/Bias operations");
 	}
+#endif
 
 	if (m_baseParams.textureSwizzle.isSome())
 	{
@@ -1393,9 +1407,14 @@ tcu::TestStatus TextureGatherInstance::iterate (void)
 	}
 
 	// Verify result.
-
-	if (!verify(m_currentIteration, getResultImage().getAccess()))
-		return tcu::TestStatus::fail("Result verification failed");
+	bool result = verify(m_currentIteration, getResultImage().getAccess());
+#ifdef CTS_USES_VULKANSC
+	if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
+	{
+		if (!result)
+			return tcu::TestStatus::fail("Result verification failed");
+	}
 
 	m_currentIteration++;
 	if (m_currentIteration == getNumIterations())
@@ -2694,9 +2713,11 @@ void TextureGatherTests::init (void)
 									compareModeGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, caseName.c_str(), "", gatherType, offsetSize, format, compareMode, wrapS, wrapT,
 																					 MaybeTextureSwizzle::createNoneTextureSwizzle(), tcu::Sampler::NEAREST, tcu::Sampler::NEAREST, LevelMode::NORMAL, 0, textureSize,
 																					 noCorners ? GATHERCASE_DONT_SAMPLE_CUBE_CORNERS : 0));
+#ifndef CTS_USES_VULKANSC
 									compareModeGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, "sparse_" + caseName, "", gatherType, offsetSize, format, compareMode, wrapS, wrapT,
 																					 MaybeTextureSwizzle::createNoneTextureSwizzle(), tcu::Sampler::NEAREST, tcu::Sampler::NEAREST, LevelMode::NORMAL, 0, textureSize,
 																					 noCorners ? GATHERCASE_DONT_SAMPLE_CUBE_CORNERS : 0, ShaderRenderCaseInstance::IMAGE_BACKING_MODE_SPARSE));
+#endif // CTS_USES_VULKANSC
 								}
 							}
 						}
@@ -2724,9 +2745,11 @@ void TextureGatherTests::init (void)
 								swizzleGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, caseName.c_str(), "", gatherType, offsetSize, format,
 																			 tcu::Sampler::COMPAREMODE_NONE, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL,
 																			 swizzle, tcu::Sampler::NEAREST, tcu::Sampler::NEAREST, LevelMode::NORMAL, 0, IVec3(64, 64, 3)));
+#ifndef CTS_USES_VULKANSC
 								swizzleGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, "sparse_" + caseName, "", gatherType, offsetSize, format,
 																			 tcu::Sampler::COMPAREMODE_NONE, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL,
 																			 swizzle, tcu::Sampler::NEAREST, tcu::Sampler::NEAREST, LevelMode::NORMAL, 0, IVec3(64, 64, 3), 0, ShaderRenderCaseInstance::IMAGE_BACKING_MODE_SPARSE));
+#endif // CTS_USES_VULKANSC
 							}
 						}
 
@@ -2776,9 +2799,11 @@ void TextureGatherTests::init (void)
 								filterModeGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, caseName.c_str(), "", gatherType, offsetSize, format, compareMode,
 																				tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, MaybeTextureSwizzle::createNoneTextureSwizzle(),
 																				minFilter, magFilter, LevelMode::NORMAL, 0, IVec3(64, 64, 3)));
+#ifndef CTS_USES_VULKANSC
 								filterModeGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, "sparse_" + caseName, "", gatherType, offsetSize, format, compareMode,
 																				tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, MaybeTextureSwizzle::createNoneTextureSwizzle(),
 																				minFilter, magFilter, LevelMode::NORMAL, 0, IVec3(64, 64, 3), 0, ShaderRenderCaseInstance::IMAGE_BACKING_MODE_SPARSE));
+#endif // CTS_USES_VULKANSC
 							}
 						}
 
@@ -2795,8 +2820,10 @@ void TextureGatherTests::init (void)
 								} levelModes[] =
 								{
 									{ "",			LevelMode::NORMAL	},
+#ifndef CTS_USES_VULKANSC
 									{ "_amd_bias",	LevelMode::AMD_BIAS	},
 									{ "_amd_lod",	LevelMode::AMD_LOD	},
+#endif
 								};
 
 								for (int modeIdx = 0; modeIdx < DE_LENGTH_OF_ARRAY(levelModes); ++modeIdx)
@@ -2815,10 +2842,12 @@ void TextureGatherTests::init (void)
 																				compareMode, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL,
 																				MaybeTextureSwizzle::createNoneTextureSwizzle(), minFilter, tcu::Sampler::NEAREST,
 																				mode, baseLevel, IVec3(64, 64, 3)));
+#ifndef CTS_USES_VULKANSC
 									baseLevelGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, "sparse_" + caseName, "", gatherType, offsetSize, format,
 																				compareMode, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL,
 																				MaybeTextureSwizzle::createNoneTextureSwizzle(), minFilter, tcu::Sampler::NEAREST,
 																				mode, baseLevel, IVec3(64, 64, 3), 0, ShaderRenderCaseInstance::IMAGE_BACKING_MODE_SPARSE));
+#endif // CTS_USES_VULKANSC
 								}
 							}
 						}

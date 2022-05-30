@@ -119,45 +119,48 @@ enum LodMode
 struct ReferenceParams : public RenderParams
 {
 	ReferenceParams (TextureType texType_)
-		: RenderParams		(texType_)
-		, sampler			()
-		, lodMode			(LODMODE_EXACT)
-		, minLod			(-1000.0f)
-		, maxLod			(1000.0f)
-		, baseLevel			(0)
-		, maxLevel			(1000)
-		, unnormal			(false)
-		, float16TexCoord	(false)
-		, imageViewMinLod (0.0f)
-		, lodTexelFetch  (0)
+		: RenderParams			(texType_)
+		, sampler				()
+		, lodMode				(LODMODE_EXACT)
+		, minLod				(-1000.0f)
+		, maxLod				(1000.0f)
+		, baseLevel				(0)
+		, maxLevel				(1000)
+		, unnormal				(false)
+		, float16TexCoord		(false)
+		, imageViewMinLod		(0.0f)
+		, imageViewMinLodMode	(tcu::IMAGEVIEWMINLODMODE_PREFERRED)
+		, lodTexelFetch			(0)
 	{
 	}
 
 	ReferenceParams (TextureType texType_, const tcu::Sampler& sampler_, LodMode lodMode_ = LODMODE_EXACT)
-		: RenderParams		(texType_)
-		, sampler			(sampler_)
-		, lodMode			(lodMode_)
-		, minLod			(-1000.0f)
-		, maxLod			(1000.0f)
-		, baseLevel			(0)
-		, maxLevel			(1000)
-		, unnormal			(false)
-		, float16TexCoord	(false)
-		, imageViewMinLod (0.0f)
-		, lodTexelFetch  (0)
+		: RenderParams			(texType_)
+		, sampler				(sampler_)
+		, lodMode				(lodMode_)
+		, minLod				(-1000.0f)
+		, maxLod				(1000.0f)
+		, baseLevel				(0)
+		, maxLevel				(1000)
+		, unnormal				(false)
+		, float16TexCoord		(false)
+		, imageViewMinLod		(0.0f)
+		, imageViewMinLodMode	(tcu::IMAGEVIEWMINLODMODE_PREFERRED)
+		, lodTexelFetch			(0)
 	{
 	}
 
-	tcu::Sampler		sampler;
-	LodMode				lodMode;
-	float				minLod;
-	float				maxLod;
-	int					baseLevel;
-	int					maxLevel;
-	bool				unnormal;
-	bool				float16TexCoord;
-	float				imageViewMinLod;
-	int					lodTexelFetch;
+	tcu::Sampler				sampler;
+	LodMode						lodMode;
+	float						minLod;
+	float						maxLod;
+	int							baseLevel;
+	int							maxLevel;
+	bool						unnormal;
+	bool						float16TexCoord;
+	float						imageViewMinLod;
+	tcu::ImageViewMinLodMode	imageViewMinLodMode;
+	int							lodTexelFetch;
 };
 
 

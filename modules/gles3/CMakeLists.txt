@@ -41,7 +41,7 @@ set(DEQP_GLES3_LIBS
 	${DEQP_GLES3_LIBRARIES}
 	)
 
-add_deqp_module(deqp-gles3 "${DEQP_GLES3_SRCS}" "${DEQP_GLES3_LIBS}" tes3TestPackageEntry.cpp)
+add_deqp_module(deqp-gles3 "${DEQP_GLES3_SRCS}" "${DEQP_GLES3_LIBS}" "tcutil-platform" tes3TestPackageEntry.cpp)
 
 # Data directories
 add_data_dir(deqp-gles3 ../../data/gles3/data								gles3/data)

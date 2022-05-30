@@ -1,0 +1,9 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceConditionalRenderingFeaturesEXT":
+		[
+			{ "features": ["conditionalRendering"],	"requirements": ["VK_EXT_conditional_rendering"] }
+		]
+	}
+}

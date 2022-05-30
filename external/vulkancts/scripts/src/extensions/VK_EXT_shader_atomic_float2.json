@@ -1,0 +1,9 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT":
+		[
+			{ "features": ["shaderImageFloat32AtomicMinMax"],		"requirements": ["VK_EXT_shader_atomic_float2", "physicalDeviceShaderAtomicFloat2FeaturesEXT.sparseImageFloat32AtomicMinMax"],		"mandatory_variant": ["vulkan"] }
+		]
+	}
+}

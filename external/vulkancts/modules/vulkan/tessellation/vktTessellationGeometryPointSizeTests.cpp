@@ -437,9 +437,14 @@ std::string getTestCaseDescription (const Flags flags)
 
 void checkSupportTess (Context& context, const Flags flags)
 {
+#ifndef CTS_USES_VULKANSC
 	if (isTessellationStage(flags))
 		if (const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR* const features = getPortability(context))
 			checkPointMode(*features);
+#else
+	DE_UNREF(context);
+	DE_UNREF(flags);
+#endif // CTS_USES_VULKANSC
 }
 
 } // anonymous

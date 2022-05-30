@@ -200,7 +200,7 @@ public:
 
 private:
 	struct HitGroup;
-	using ShaderRecordEntry	= std::tuple<VkShaderStageFlags, HitGroup, ShaderRecordEXT>;
+	using ShaderRecordEntry	= std::tuple<VkShaderStageFlags, HitGroup, ShaderRecordEXT, bool /* initalized */>;
 
 	VkImageCreateInfo				makeImageCreateInfo						() const;
 	std::vector<TriGeometry>		prepareTriGeometries					(const float						zCoord)			const;
@@ -494,8 +494,8 @@ public:
 
 			for (deUint32 i = 0; i < hitGroupCount; ++i)
 			{
-				const VkShaderStageFlags	flags = std::get<0>(records[i + 2]);
-				if (flags)
+				// copy the SBT record if it was initialized in prepareShaderBindingTable()
+				if (std::get<3>(records[i + 2]))
 				{
 					const PipelineFlagsInstance::ShaderRecordEXT& rec = std::get<2>(records[i + 2]);
 					sbt.updateAt(i, handles.data(), rec);
@@ -806,7 +806,7 @@ PipelineFlagsInstance::prepareBoxGeometries (const float zFront, const float zBa
 		{
 			const float x = float(boxX) * boxWidth;
 			const float y = float(boxY) * boxHeight;
-			BoxGeometry box = { tcu::Vec3(x, y, zFront), tcu::Vec3((x + boxWidth), (y + boxHeight), zBack) };
+			BoxGeometry box = { { tcu::Vec3(x, y, zFront), tcu::Vec3((x + boxWidth), (y + boxHeight), zBack) } };
 			boxes[boxIdx].swap(box);
 		}
 	}
@@ -901,8 +901,8 @@ std::vector<PipelineFlagsInstance::ShaderRecordEntry> PipelineFlagsInstance::pre
 
 	std::vector<ShaderRecordEntry>	shaderRecords(totalGroupCount);
 
-	shaderRecords[0] = { VK_SHADER_STAGE_RAYGEN_BIT_KHR, {}, {} };
-	shaderRecords[1] = { VK_SHADER_STAGE_MISS_BIT_KHR, {}, { GeometryTypes::Box, (~0u), tcu::IVec4(0, defMissRetGreenComp, 0, 0) } };
+	shaderRecords[0] = std::tuple<VkShaderStageFlags, HitGroup, ShaderRecordEXT, bool>( VK_SHADER_STAGE_RAYGEN_BIT_KHR, {}, {}, true );
+	shaderRecords[1] = std::tuple<VkShaderStageFlags, HitGroup, ShaderRecordEXT, bool>( VK_SHADER_STAGE_MISS_BIT_KHR, {}, { GeometryTypes::Box, (~0u), tcu::IVec4(0, defMissRetGreenComp, 0, 0) }, true );
 
 	de::SharedPtr<AnyHitShader>			ahit(new AnyHitShader);
 	de::SharedPtr<ClosestHitShader>		chit(new ClosestHitShader);
@@ -933,7 +933,7 @@ std::vector<PipelineFlagsInstance::ShaderRecordEntry> PipelineFlagsInstance::pre
 						flags |= VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
 						hitGroup.chit = chit;
 					}
-					shaderRecords[shaderGroupIndex] = { flags, hitGroup, { GeometryTypes::Triangle, geometryIndex, tcu::IVec4(0, greenComp++, 0, 0) } };
+					shaderRecords[shaderGroupIndex] = std::tuple<VkShaderStageFlags, HitGroup, ShaderRecordEXT, bool>( flags, hitGroup, { GeometryTypes::Triangle, geometryIndex, tcu::IVec4(0, greenComp++, 0, 0) }, true );
 					usedIndexes.insert(shaderGroupIndex);
 				}
 			}
@@ -969,7 +969,7 @@ std::vector<PipelineFlagsInstance::ShaderRecordEntry> PipelineFlagsInstance::pre
 						flags |= VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
 						hitGroup.isect = isect;
 					}
-					shaderRecords[shaderGroupIndex] = { flags, hitGroup, { GeometryTypes::Box, geometryIndex, tcu::IVec4(0, greenComp++, 0, 0) } };
+					shaderRecords[shaderGroupIndex] = std::tuple<VkShaderStageFlags, HitGroup, ShaderRecordEXT, bool>( flags, hitGroup, { GeometryTypes::Box, geometryIndex, tcu::IVec4(0, greenComp++, 0, 0) }, true );
 					usedIndexes.insert(shaderGroupIndex);
 				}
 			}
@@ -1106,6 +1106,9 @@ void PipelineFlagsInstance::travelRay (std::vector<tcu::IVec4>&					outImage,
 		const VkShaderStageFlags	flags			= std::get<0>(shaderBindingTable[shaderGroupIndex]);
 		auto						hitAttribute	= rgenPayload;
 		bool						ignoreIsect		= false;
+
+		// check if the SBT entry was was initialized
+		DE_ASSERT(std::get<3>(shaderBindingTable[shaderGroupIndex]));
 
 		if (flags & VK_SHADER_STAGE_INTERSECTION_BIT_KHR)
 		{

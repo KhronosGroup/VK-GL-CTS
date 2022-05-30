@@ -509,6 +509,7 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 		pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
 		pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState(m_data.samples));
 
+#ifndef CTS_USES_VULKANSC
 		VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
@@ -522,6 +523,7 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 
 		if (m_data.useDynamicRendering)
 			pipelineCreateInfo.pNext = &renderingCreateInfo;
+#endif // CTS_USES_VULKANSC
 
 		pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 	}
@@ -542,6 +544,7 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 
 		beginCommandBuffer(vk, *cmdBuffer, 0u);
 
+#ifndef CTS_USES_VULKANSC
 		if (m_data.useDynamicRendering)
 		{
 			VkRenderingAttachmentInfoKHR colorAttachment
@@ -575,6 +578,7 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 			vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
 		}
 		else
+#endif // CTS_USES_VULKANSC
 		{
 			const VkRenderPassBeginInfo renderPassBeginInfo =
 			{
@@ -595,9 +599,11 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 		vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
 
+#ifndef CTS_USES_VULKANSC
 		if (m_data.useDynamicRendering)
 			endRendering(vk, *cmdBuffer);
 		else
+#endif // CTS_USES_VULKANSC
 			endRenderPass(vk, *cmdBuffer);
 
 		endCommandBuffer(vk, *cmdBuffer);

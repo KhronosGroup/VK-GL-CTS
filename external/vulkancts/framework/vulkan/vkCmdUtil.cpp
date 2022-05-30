@@ -231,6 +231,8 @@ void endRenderPass (const DeviceInterface&	vk,
 	vk.cmdEndRenderPass(commandBuffer);
 }
 
+#ifndef CTS_USES_VULKANSC
+
 void beginRendering(const DeviceInterface&		vk,
 					const VkCommandBuffer		commandBuffer,
 					const VkImageView			colorImageView,
@@ -338,6 +340,8 @@ void endRendering(const DeviceInterface&	vk,
 {
 	vk.cmdEndRendering(commandBuffer);
 }
+
+#endif // CTS_USES_VULKANSC
 
 void submitCommandsAndWait (const DeviceInterface&		vk,
 							const VkDevice				device,

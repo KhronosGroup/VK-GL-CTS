@@ -260,7 +260,7 @@ void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceP
 		const VkStructureType nextType = *reinterpret_cast<const VkStructureType*>(pNext);
 		switch (nextType)
 		{
-			case VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT:
+			case VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO:
 			{
 				context.requireDeviceFunctionality("VK_EXT_sampler_filter_minmax");
 
@@ -326,6 +326,7 @@ void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceP
 	if (params.allocationKind == ALLOCATION_KIND_DEDICATED)
 		context.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
 
+#ifndef CTS_USES_VULKANSC
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset"))
 	{
 		const auto portabilitySubsetFeatures	= context.getPortabilitySubsetFeatures();
@@ -339,26 +340,28 @@ void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceP
 			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Implementation does not support remapping format components");
 		}
 	}
+#endif // CTS_USES_VULKANSC
 }
 
 ImageSamplingInstance::ImageSamplingInstance (Context&						context,
 											  ImageSamplingInstanceParams	params)
-	: vkt::TestInstance		(context)
-	, m_allocationKind		(params.allocationKind)
-	, m_samplingType		(params.samplingType)
-	, m_imageViewType		(params.imageViewType)
-	, m_imageFormat			(params.imageFormat)
-	, m_imageSize			(params.imageSize)
-	, m_layerCount			(params.layerCount)
-	, m_imageCount			(params.imageCount)
-	, m_componentMapping	(params.componentMapping)
-	, m_componentMask		(true)
-	, m_subresourceRange	(params.subresourceRange)
-	, m_samplerParams		(params.samplerParams)
-	, m_samplerLod			(params.samplerLod)
-	, m_renderSize			(params.renderSize)
-	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
-	, m_vertices			(params.vertices)
+	: vkt::TestInstance				(context)
+	, m_allocationKind				(params.allocationKind)
+	, m_samplingType				(params.samplingType)
+	, m_imageViewType				(params.imageViewType)
+	, m_imageFormat					(params.imageFormat)
+	, m_imageSize					(params.imageSize)
+	, m_layerCount					(params.layerCount)
+	, m_imageCount					(params.imageCount)
+	, m_componentMapping			(params.componentMapping)
+	, m_componentMask				(true)
+	, m_subresourceRange			(params.subresourceRange)
+	, m_samplerParams				(params.samplerParams)
+	, m_samplerLod					(params.samplerLod)
+	, m_renderSize					(params.renderSize)
+	, m_colorFormat					(VK_FORMAT_R8G8B8A8_UNORM)
+	, m_vertices					(params.vertices)
+	, m_graphicsPipeline			(context.getDeviceInterface(), context.getDevice(), params.pipelineConstructionType)
 {
 	const InstanceInterface&				vki						= context.getInstanceInterface();
 	const DeviceInterface&					vk						= context.getDeviceInterface();
@@ -375,11 +378,11 @@ ImageSamplingInstance::ImageSamplingInstance (Context&						context,
 		const VkStructureType nextType = *reinterpret_cast<const VkStructureType*>(pNext);
 		switch (nextType)
 		{
-			case VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT:
+			case VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO:
 			{
 				VkPhysicalDeviceSamplerFilterMinmaxProperties	physicalDeviceSamplerMinMaxProperties =
 				{
-					VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES_EXT,
+					VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES,
 					DE_NULL,
 					DE_FALSE,
 					DE_FALSE
@@ -688,18 +691,26 @@ ImageSamplingInstance::ImageSamplingInstance (Context&						context,
 
 	// Create pipeline layout
 	{
-		const VkPipelineLayoutCreateInfo pipelineLayoutParams =
+#ifndef CTS_USES_VULKANSC
+		VkPipelineLayoutCreateFlags pipelineLayoutFlags = (params.pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC) ? 0u : deUint32(VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT);
+#else
+		VkPipelineLayoutCreateFlags pipelineLayoutFlags = 0u;
+#endif // CTS_USES_VULKANSC
+		VkPipelineLayoutCreateInfo	pipelineLayoutParams
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
-			0u,													// VkPipelineLayoutCreateFlags	flags;
-			1u,													// deUint32						setLayoutCount;
-			&m_descriptorSetLayout.get(),						// const VkDescriptorSetLayout*	pSetLayouts;
+			pipelineLayoutFlags,								// VkPipelineLayoutCreateFlags	flags;
+			0u,													// deUint32						setLayoutCount;
+			DE_NULL,											// const VkDescriptorSetLayout*	pSetLayouts;
 			0u,													// deUint32						pushConstantRangeCount;
 			DE_NULL												// const VkPushConstantRange*	pPushConstantRanges;
 		};
 
-		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		m_preRasterizationStatePipelineLayout	= createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		pipelineLayoutParams.setLayoutCount		= 1u;
+		pipelineLayoutParams.pSetLayouts		= &m_descriptorSetLayout.get();
+		m_fragmentStatePipelineLayout			= createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
 	}
 
 	m_vertexShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("tex_vert"), 0);
@@ -741,8 +752,8 @@ ImageSamplingInstance::ImageSamplingInstance (Context&						context,
 			vertexInputAttributeDescriptions								// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 		};
 
-		const std::vector<VkViewport>	viewports	(1, makeViewport(m_renderSize));
-		const std::vector<VkRect2D>		scissors	(1, makeRect2D(m_renderSize));
+		const std::vector<VkViewport>	viewports	{ makeViewport(m_renderSize) };
+		const std::vector<VkRect2D>		scissors	{ makeRect2D(m_renderSize) };
 
 		std::vector<VkPipelineColorBlendAttachmentState>	colorBlendAttachmentStates(m_imageCount);
 
@@ -771,25 +782,20 @@ ImageSamplingInstance::ImageSamplingInstance (Context&						context,
 			{ 0.0f, 0.0f, 0.0f, 0.0f }									// float										blendConstants[4];
 		};
 
-		m_graphicsPipeline = makeGraphicsPipeline(vk,									// const DeviceInterface&                        vk
-												  vkDevice,								// const VkDevice                                device
-												  *m_pipelineLayout,					// const VkPipelineLayout                        pipelineLayout
-												  *m_vertexShaderModule,				// const VkShaderModule                          vertexShaderModule
-												  DE_NULL,								// const VkShaderModule                          tessellationControlModule
-												  DE_NULL,								// const VkShaderModule                          tessellationEvalModule
-												  DE_NULL,								// const VkShaderModule                          geometryShaderModule
-												  *m_fragmentShaderModule,				// const VkShaderModule                          fragmentShaderModule
-												  *m_renderPass,						// const VkRenderPass                            renderPass
-												  viewports,							// const std::vector<VkViewport>&                viewports
-												  scissors,								// const std::vector<VkRect2D>&                  scissors
-												  VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	// const VkPrimitiveTopology                     topology
-												  0u,									// const deUint32                                subpass
-												  0u,									// const deUint32                                patchControlPoints
-												  &vertexInputStateParams,				// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-												  DE_NULL,								// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
-												  DE_NULL,								// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
-												  DE_NULL,								// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
-												  &colorBlendStateParams);				// const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
+		m_graphicsPipeline.setMonolithicPipelineLayout(*m_fragmentStatePipelineLayout)
+						  .setDefaultDepthStencilState()
+						  .setDefaultRasterizationState()
+						  .setDefaultMultisampleState()
+						  .setupVertexInputStete(&vertexInputStateParams)
+						  .setupPreRasterizationShaderState(viewports,
+														scissors,
+														*m_preRasterizationStatePipelineLayout,
+														*m_renderPass,
+														0u,
+														*m_vertexShaderModule)
+						  .setupFragmentShaderState(*m_fragmentStatePipelineLayout, *m_renderPass, 0u, *m_fragmentShaderModule)
+						  .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
+						  .buildPipeline();
 	}
 
 	// Create vertex buffer
@@ -854,9 +860,9 @@ ImageSamplingInstance::ImageSamplingInstance (Context&						context,
 
 		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), (deUint32)attachmentClearValues.size(), &attachmentClearValues[0]);
 
-		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipeline);
+		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.getPipeline());
 
-		vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0, 1, &m_descriptorSet.get(), 0, DE_NULL);
+		vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_fragmentStatePipelineLayout, 0, 1, &m_descriptorSet.get(), 0, DE_NULL);
 
 		const VkDeviceSize vertexBufferOffset = 0;
 		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);

@@ -1097,6 +1097,7 @@ void AtomicOperationCase::checkSupport (Context& ctx) const
 	if (m_dataType == DATA_TYPE_FLOAT16)
 	{
 		ctx.requireDeviceFunctionality("VK_EXT_shader_atomic_float2");
+#ifndef CTS_USES_VULKANSC
 		if (m_atomicOp == ATOMIC_OP_ADD)
 		{
 			if (m_shaderType.isSharedLike())
@@ -1148,6 +1149,7 @@ void AtomicOperationCase::checkSupport (Context& ctx) const
 				}
 			}
 		}
+#endif // CTS_USES_VULKANSC
 	}
 
 	if (m_dataType == DATA_TYPE_FLOAT32)
@@ -1173,6 +1175,7 @@ void AtomicOperationCase::checkSupport (Context& ctx) const
 		if (m_atomicOp == ATOMIC_OP_MIN || m_atomicOp == ATOMIC_OP_MAX)
 		{
 			ctx.requireDeviceFunctionality("VK_EXT_shader_atomic_float2");
+#ifndef CTS_USES_VULKANSC
 			if (m_shaderType.isSharedLike())
 			{
 				if (!ctx.getShaderAtomicFloat2FeaturesEXT().shaderSharedFloat32AtomicMinMax)
@@ -1187,6 +1190,7 @@ void AtomicOperationCase::checkSupport (Context& ctx) const
 					TCU_THROW(NotSupportedError, "VkShaderAtomicFloat32: 32-bit floating point buffer min/max atomic operation not supported");
 				}
 			}
+#endif // CTS_USES_VULKANSC
 		}
 		if (m_atomicOp == ATOMIC_OP_EXCHANGE)
 		{
@@ -1230,6 +1234,7 @@ void AtomicOperationCase::checkSupport (Context& ctx) const
 		if (m_atomicOp == ATOMIC_OP_MIN || m_atomicOp == ATOMIC_OP_MAX)
 		{
 			ctx.requireDeviceFunctionality("VK_EXT_shader_atomic_float2");
+#ifndef CTS_USES_VULKANSC
 			if (m_shaderType.isSharedLike())
 			{
 				if (!ctx.getShaderAtomicFloat2FeaturesEXT().shaderSharedFloat64AtomicMinMax)
@@ -1244,6 +1249,7 @@ void AtomicOperationCase::checkSupport (Context& ctx) const
 					TCU_THROW(NotSupportedError, "VkShaderAtomicFloat64: 64-bit floating point buffer min/max atomic operation not supported");
 				}
 			}
+#endif // CTS_USES_VULKANSC
 		}
 		if (m_atomicOp == ATOMIC_OP_EXCHANGE)
 		{
@@ -1494,7 +1500,9 @@ void addAtomicOperationTests (tcu::TestCaseGroup* atomicOperationTestsGroup)
 		const char*		description;
 	} dataSign[] =
 	{
+#ifndef CTS_USES_VULKANSC
 		{ DATA_TYPE_FLOAT16,"float16",			"Tests using 16-bit float data"				},
+#endif // CTS_USES_VULKANSC
 		{ DATA_TYPE_INT32,	"signed",			"Tests using signed data (int)"				},
 		{ DATA_TYPE_UINT32,	"unsigned",			"Tests using unsigned data (uint)"			},
 		{ DATA_TYPE_FLOAT32,"float32",			"Tests using 32-bit float data"				},
@@ -1529,9 +1537,11 @@ void addAtomicOperationTests (tcu::TestCaseGroup* atomicOperationTestsGroup)
 				if (dataSign[signNdx].dataType == DATA_TYPE_FLOAT16 || dataSign[signNdx].dataType == DATA_TYPE_FLOAT32 || dataSign[signNdx].dataType == DATA_TYPE_FLOAT64)
 				{
 					if (atomicOp[opNdx].value != ATOMIC_OP_ADD &&
+#ifndef CTS_USES_VULKANSC
 					    atomicOp[opNdx].value != ATOMIC_OP_MIN &&
 					    atomicOp[opNdx].value != ATOMIC_OP_MAX &&
-					    atomicOp[opNdx].value != ATOMIC_OP_EXCHANGE)
+#endif // CTS_USES_VULKANSC
+						atomicOp[opNdx].value != ATOMIC_OP_EXCHANGE)
 					{
 						continue;
 					}

@@ -122,7 +122,7 @@ bool isMinMaxFilteringSupported (const InstanceInterface& vki, VkPhysicalDevice 
 													? formatProperties.linearTilingFeatures
 													: formatProperties.optimalTilingFeatures;
 
-	return (formatFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT_EXT) != 0;
+	return (formatFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT) != 0;
 }
 
 VkBorderColor getFormatBorderColor (BorderColor color, VkFormat format)
@@ -475,10 +475,17 @@ bool checkSparseImageFormatSupport (const VkPhysicalDevice		physicalDevice,
 									const InstanceInterface&	instance,
 									const VkImageCreateInfo&	imageCreateInfo)
 {
+#ifndef CTS_USES_VULKANSC
 	const std::vector<VkSparseImageFormatProperties> sparseImageFormatPropVec =
 		getPhysicalDeviceSparseImageFormatProperties(instance, physicalDevice, imageCreateInfo.format, imageCreateInfo.imageType, imageCreateInfo.samples, imageCreateInfo.usage, imageCreateInfo.tiling);
 
 	return (sparseImageFormatPropVec.size() != 0);
+#else
+	DE_UNREF(physicalDevice);
+	DE_UNREF(instance);
+	DE_UNREF(imageCreateInfo);
+	return false;
+#endif // CTS_USES_VULKANSC
 }
 
 void uploadTestTextureInternalSparse (const DeviceInterface&					vk,
@@ -516,7 +523,14 @@ void uploadTestTextureInternalSparse (const DeviceInterface&					vk,
 		bufferSize		= stencilOffset + srcStencilTexture->getSize();
 	}
 
+#ifndef CTS_USES_VULKANSC
 	allocateAndBindSparseImage (vk, device, physicalDevice, instance, imageCreateInfo, imageMemoryBindSemaphore.get(), sparseQueue, allocator, allocations, format, destImage);
+#else
+	DE_UNREF(physicalDevice);
+	DE_UNREF(instance);
+	DE_UNREF(sparseQueue);
+	DE_UNREF(allocations);
+#endif // CTS_USES_VULKANSC
 
 	{
 		// Create source buffer
@@ -976,6 +990,16 @@ void TestTexture::populateCompressedLevels (tcu::CompressedTexFormat format, con
 			if (format != tcu::COMPRESSEDTEXFORMAT_ETC1_RGB8)
 				for (int byteNdx = 0; byteNdx < compressedLevel->getDataSize(); byteNdx++)
 					compressedData[byteNdx] = 0xFF & random.getUint32();
+
+			// BC7 mode 8 (LSB==0x00) should not be tested as it is underspecified
+			if (format == tcu::COMPRESSEDTEXFORMAT_BC7_UNORM_BLOCK || format == tcu::COMPRESSEDTEXFORMAT_BC7_SRGB_BLOCK)
+			{
+				const int blockSize = tcu::getBlockSize(format);
+
+				for (int byteNdx = 0; byteNdx < compressedLevel->getDataSize(); byteNdx += blockSize)
+					while (compressedData[byteNdx] == 0x00)
+						compressedData[byteNdx] = 0xFF & random.getUint32();
+			}
 		}
 
 		m_compressedLevels.push_back(compressedLevel);

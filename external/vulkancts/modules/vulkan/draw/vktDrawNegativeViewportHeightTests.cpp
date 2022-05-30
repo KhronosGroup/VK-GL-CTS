@@ -231,6 +231,7 @@ NegativeViewportHeightTestInstance::NegativeViewportHeightTestInstance (Context&
 	pipelineCreateInfo.addState (PipelineCreateInfo::MultiSampleState	());
 	pipelineCreateInfo.addState (PipelineCreateInfo::DynamicState		(dynamicStates));
 
+#ifndef CTS_USES_VULKANSC
 	vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
@@ -244,6 +245,7 @@ NegativeViewportHeightTestInstance::NegativeViewportHeightTestInstance (Context&
 
 	if (m_params.useDynamicRendering)
 		pipelineCreateInfo.pNext = &renderingCreateInfo;
+#endif // CTS_USES_VULKANSC
 
 	m_pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 }
@@ -305,9 +307,11 @@ tcu::ConstPixelBufferAccess NegativeViewportHeightTestInstance::draw (const VkVi
 	}
 
 	VkRect2D rect = makeRect2D(0, 0, WIDTH, HEIGHT);
+#ifndef CTS_USES_VULKANSC
 	if (m_params.useDynamicRendering)
 		beginRendering(vk, *cmdBuffer, *m_colorTargetView, rect, clearColor);
 	else
+#endif // CTS_USES_VULKANSC
 		beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, rect);
 
 	{
@@ -320,9 +324,11 @@ tcu::ConstPixelBufferAccess NegativeViewportHeightTestInstance::draw (const VkVi
 	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 	vk.cmdDraw(*cmdBuffer, 6, 1, 0, 0);
 
+#ifndef CTS_USES_VULKANSC
 	if (m_params.useDynamicRendering)
 		endRendering(vk, *cmdBuffer);
 	else
+#endif // CTS_USES_VULKANSC
 		endRenderPass(vk, *cmdBuffer);
 
 	endCommandBuffer(vk, *cmdBuffer);

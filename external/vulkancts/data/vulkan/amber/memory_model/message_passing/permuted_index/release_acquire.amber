@@ -1,0 +1,78 @@
+#!amber
+
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+SHADER compute compute_shader GLSL
+#version 450
+#extension GL_KHR_memory_scope_semantics: enable
+
+layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+struct S
+{
+    uint data;
+    uint flag;
+};
+
+layout(set = 0, binding = 0, std430) buffer Buf0
+{
+    S arr[];
+} buf;
+
+layout(set = 0, binding = 1, std430) buffer Buf1
+{
+    uint failures;
+} bufOut;
+
+uint permute(uint x)
+{
+    return (x * 419u) & 0xffff;
+}
+
+void main()
+{
+    // Message passing using data and flag pairs. The data is written to an index i, but the flag
+    // used for synchronization is from a different index calculated using permute(i).
+
+    uint i0 = gl_GlobalInvocationID.x;
+    atomicStore(buf.arr[i0].data, 1u, gl_ScopeDevice, gl_StorageSemanticsBuffer, gl_SemanticsRelaxed);
+    atomicStore(buf.arr[permute(i0)].flag, 1u, gl_ScopeDevice, gl_StorageSemanticsBuffer, gl_SemanticsRelease);
+
+    // Read from an index which is presumably written by a different workgroup.
+    uint i1 = (i0 * 4099u) & 0xffff;
+    uint flag = atomicLoad(buf.arr[permute(i1)].flag, gl_ScopeDevice, gl_StorageSemanticsBuffer, gl_SemanticsAcquire);
+    uint data = atomicLoad(buf.arr[i1].data, gl_ScopeDevice, gl_StorageSemanticsBuffer, gl_SemanticsRelaxed);
+
+    // The flag should never be written before data.
+    if (flag > data)
+    {
+        atomicAdd(bufOut.failures, 1u);
+    }
+}
+END
+
+BUFFER buf0 DATA_TYPE uint32 SIZE 131072 FILL 0
+BUFFER buf1 DATA_TYPE uint32 SIZE 1 FILL 0
+
+PIPELINE compute pipeline
+  ATTACH compute_shader
+
+  BIND BUFFER buf0 AS storage DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER buf1 AS storage DESCRIPTOR_SET 0 BINDING 1
+END
+
+RUN pipeline 256 1 1
+
+EXPECT buf1 IDX 0 EQ 0

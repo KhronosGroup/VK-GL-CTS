@@ -48,6 +48,10 @@ using de::UniquePtr;
 #	define WAYLAND_DISPLAY DE_NULL
 #endif // DEQP_SUPPORT_WAYLAND
 
+#if !defined(DEQP_VULKAN_LIBRARY_PATH)
+#   define DEQP_VULKAN_LIBRARY_PATH "libvulkan.so.1"
+#endif
+
 namespace tcu
 {
 namespace lnx
@@ -222,7 +226,7 @@ class VulkanLibrary : public vk::Library
 {
 public:
 	VulkanLibrary (void)
-		: m_library	("libvulkan.so.1")
+		: m_library	(DEQP_VULKAN_LIBRARY_PATH)
 		, m_driver	(m_library)
 	{
 	}

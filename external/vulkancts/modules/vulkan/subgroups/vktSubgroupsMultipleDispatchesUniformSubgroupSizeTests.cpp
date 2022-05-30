@@ -35,11 +35,8 @@
 #include "vkTypeUtil.hpp"
 #include "vkBufferWithMemory.hpp"
 #include "vkBarrierUtil.hpp"
-
 #include "vktTestCaseUtil.hpp"
-
 #include "tcuTestLog.hpp"
-
 #include <sstream>
 
 using namespace vk;
@@ -78,7 +75,11 @@ tcu::TestStatus MultipleDispatchesUniformSubgroupSizeInstance::iterate (void)
 
 	// The maximum number of invocations in a workgroup.
 	const uint32_t						maxLocalSize			= m_context.getDeviceProperties().limits.maxComputeWorkGroupSize[0];
+#ifndef CTS_USES_VULKANSC
 	const uint32_t						minSubgroupSize			= m_context.getSubgroupSizeControlProperties().minSubgroupSize;
+#else
+	const uint32_t						minSubgroupSize			= m_context.getSubgroupSizeControlPropertiesEXT().minSubgroupSize;
+#endif // CTS_USES_VULKANSC
 
 	// Create a storage buffer to hold the sizes of subgroups.
 	const VkDeviceSize					bufferSize				= (maxLocalSize / minSubgroupSize + 1u) * sizeof(uint32_t);
@@ -246,7 +247,11 @@ MultipleDispatchesUniformSubgroupSize::MultipleDispatchesUniformSubgroupSize (tc
 
 void MultipleDispatchesUniformSubgroupSize::checkSupport (Context& context) const
 {
-	const auto& subgroupSizeControlFeatures = context.getSubgroupSizeControlFeatures();
+#ifndef CTS_USES_VULKANSC
+	const VkPhysicalDeviceSubgroupSizeControlFeatures&		subgroupSizeControlFeatures = context.getSubgroupSizeControlFeatures();
+#else
+	const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT&	subgroupSizeControlFeatures = context.getSubgroupSizeControlFeaturesEXT();
+#endif // CTS_USES_VULKANSC
 
 	if (subgroupSizeControlFeatures.subgroupSizeControl == DE_FALSE)
 		TCU_THROW(NotSupportedError, "Device does not support varying subgroup sizes");
