@@ -505,6 +505,17 @@ bool AmberTestCase::validateRequirements()
 		for (const auto& amberReq : allRequirements)
 			log << tcu::TestLog::Message << "    " << amberReq << tcu::TestLog::EndMessage;
 
+		// Repeat message for cerr so it's visible in console log.
+		std::cerr << "ERROR: CTS and Amber test requirement mismatch.\n";
+		std::cerr << "Amber filename: " << m_readFilename << "\n";
+		std::cerr << "CTS requirements:\n";
+		for (const auto& ctsReq : ctsRequirements)
+			std::cerr << "    " << ctsReq << "\n";
+
+		std::cerr << "Amber requirements:\n";
+		for (const auto& amberReq : allRequirements)
+			std::cerr << "    " << amberReq << "\n";
+
 		return false;
 	}
 	return true;
