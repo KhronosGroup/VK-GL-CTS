@@ -379,6 +379,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassUnusedClearAttachmentTests.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktNonRobustBufferAccessTests.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustBufferAccessWithVariablePointersTests.cpp \
+	external/vulkancts/modules/vulkan/robustness/vktRobustness1VertexAccessTests.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessBufferAccessTests.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessExtsTests.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessTests.cpp \
