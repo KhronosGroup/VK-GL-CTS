@@ -391,7 +391,7 @@ typedef de::SharedPtr<DescriptorSet> DescriptorSetSp;
 class DescriptorCommands
 {
 public:
-					DescriptorCommands			(PipelineType pipelineType);
+					DescriptorCommands			(PipelineType pipelineType, bool useUpdateAfterBind);
 					~DescriptorCommands			(void);
 	void			addDescriptor				(DescriptorSp descriptor, deUint32 descriptorSet);
 	void			copyDescriptor				(deUint32 srcSet, deUint32 srcBinding, deUint32	srcArrayElement, deUint32 dstSet, deUint32 dstBinding, deUint32 dstArrayElement, deUint32 descriptorCount);
@@ -404,10 +404,16 @@ public:
 	bool			hasDynamicAreas				(void) const;
 	PipelineType	getPipelineType				(void) const { return m_pipelineType; }
 
-	tcu::TestStatus	run(Context& context);
+	void			checkSupport				(Context& context) const;
+	tcu::TestStatus	run							(Context& context);
+
+protected:
+
+	void			updateDescriptorSets		(Context& context, const vector<VkDescriptorSet>& descriptorSets);
 
 private:
 	PipelineType					m_pipelineType;
+	bool							m_useUpdateAfterBind;
 	vector<DescriptorSetSp>			m_descriptorSets;
 	vector<DescriptorCopy>			m_descriptorCopies;
 	vector<DescriptorSp>			m_descriptors;
@@ -435,6 +441,7 @@ class DescriptorCopyTestCase : public TestCase
 	virtual					~DescriptorCopyTestCase	(void);
 	virtual	void			initPrograms			(SourceCollections& programCollection) const;
 	virtual TestInstance*	createInstance			(Context& context) const;
+	void					checkSupport			(Context& context) const;
 
 private:
 	mutable DescriptorCommandsSp	m_commands;
@@ -968,8 +975,8 @@ void ImageDescriptor::init (Context&		context,
 							PipelineType	pipelineType)
 {
 	const DeviceInterface&			vk					= context.getDeviceInterface();
-    const VkDevice					device				= context.getDevice();
-    Allocator&						allocator			= context.getDefaultAllocator();
+	const VkDevice					device				= context.getDevice();
+	Allocator&						allocator			= context.getDefaultAllocator();
 	const VkQueue					queue				= context.getUniversalQueue();
 	deUint32						queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	const VkFormat					format				= VK_FORMAT_R32_SFLOAT;
@@ -1395,8 +1402,9 @@ void DescriptorSet::addBinding (DescriptorSp descriptor)
 	m_bindings.push_back(descriptor);
 }
 
-DescriptorCommands::DescriptorCommands (PipelineType pipelineType)
-: m_pipelineType(pipelineType)
+DescriptorCommands::DescriptorCommands (PipelineType pipelineType, bool useUpdateAfterBind)
+	: m_pipelineType		(pipelineType)
+	, m_useUpdateAfterBind	(useUpdateAfterBind)
 {
 	// Reset counters
 	Descriptor::s_nextId = 0xabc;
@@ -1540,100 +1548,68 @@ bool DescriptorCommands::hasDynamicAreas (void) const
 	return false;
 }
 
-tcu::TestStatus DescriptorCommands::run (Context& context)
+void DescriptorCommands::checkSupport(Context& context) const
 {
-	const InstanceInterface&				vki					= context.getInstanceInterface();
-	const DeviceInterface&					vk					= context.getDeviceInterface();
-	const VkDevice							device				= context.getDevice();
-	const VkQueue							queue				= context.getUniversalQueue();
-	const VkPhysicalDevice					physicalDevice		= context.getPhysicalDevice();
-	const VkPhysicalDeviceLimits			limits				= getPhysicalDeviceProperties(vki, physicalDevice).limits;
-	const deUint32							queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
-	Allocator&								allocator			= context.getDefaultAllocator();
-	tcu::TestLog&							log					= context.getTestContext().getLog();
-	const Unique<VkCommandPool>				commandPool			(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex));
-	const Unique<VkCommandBuffer>			commandBuffer		(allocateCommandBuffer(vk, device, *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-	const VkShaderStageFlags				shaderStage			= m_pipelineType == PIPELINE_TYPE_COMPUTE ? VK_SHADER_STAGE_COMPUTE_BIT : VK_SHADER_STAGE_FRAGMENT_BIT;
-	const VkFormat							resultFormat		= VK_FORMAT_R8G8B8A8_UNORM;
-#ifndef CTS_USES_VULKANSC
-	deUint32								numTotalIUBs		= 0;
-	deUint32								iubTotalBytes		= 0;
-#endif // CTS_USES_VULKANSC
-	de::MovePtr<ImageWithMemory>			resultImage;
-	de::MovePtr<BufferWithMemory>			resultImageBuffer;
-	Move<VkImageView>						resultImageView;
-	Move<VkRenderPass>						renderPass;
-	Move<VkFramebuffer>						framebuffer;
-	Move<VkDescriptorPool>					descriptorPool;
-	vector<VkDescriptorSetLayoutSp>			descriptorSetLayouts;
-	vector<VkDescriptorSet>					descriptorSets;
-	Move<VkPipelineLayout>					pipelineLayout;
-	Move<VkPipeline>						pipeline;
-	vector<VkAttachmentReference>			inputAttachments;
-	vector<VkAttachmentDescription>			attachmentDescriptions;
-	vector<VkImageView>						imageViews;
+	const InstanceInterface&		vki				= context.getInstanceInterface();
+	const VkPhysicalDevice			physicalDevice	= context.getPhysicalDevice();
+	const VkPhysicalDeviceLimits	limits			= getPhysicalDeviceProperties(vki, physicalDevice).limits;
 
 	if (limits.maxBoundDescriptorSets <= m_descriptorSets.size())
 		TCU_THROW(NotSupportedError, "Maximum bound descriptor sets limit exceeded.");
 
+	if (m_useUpdateAfterBind)
+		context.requireDeviceFunctionality("VK_EXT_descriptor_indexing");
+
 #ifndef CTS_USES_VULKANSC
+	deUint32 numTotalIUBs = 0;
+
 	// Check if inline uniform blocks are supported.
-	VkPhysicalDeviceInlineUniformBlockFeaturesEXT	iubFeatures =
+	VkPhysicalDeviceInlineUniformBlockFeaturesEXT iubFeatures
 	{
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT,
 		DE_NULL,
 		VK_FALSE, VK_FALSE
 	};
-	VkPhysicalDeviceInlineUniformBlockPropertiesEXT	iubProperties =
+	VkPhysicalDeviceInlineUniformBlockPropertiesEXT iubProperties
 	{
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES_EXT,
 		DE_NULL,
 		0u, 0u, 0u, 0u, 0u
 	};
-	{
-		if (context.isDeviceFunctionalitySupported("VK_EXT_inline_uniform_block"))
-		{
-			VkPhysicalDeviceFeatures2 features2;
-			deMemset(&features2, 0, sizeof(features2));
-			features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-			features2.pNext = &iubFeatures;
-			vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
 
-			VkPhysicalDeviceProperties2 properties2;
-			deMemset(&properties2, 0, sizeof(properties2));
-			properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-			properties2.pNext = &iubProperties;
-			vki.getPhysicalDeviceProperties2(physicalDevice, &properties2);
-		}
+	if (context.isDeviceFunctionalitySupported("VK_EXT_inline_uniform_block"))
+	{
+		VkPhysicalDeviceFeatures2 features2 = initVulkanStructure(&iubFeatures);
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
+
+		VkPhysicalDeviceProperties2 properties2 = initVulkanStructure(&iubProperties);
+		vki.getPhysicalDeviceProperties2(physicalDevice, &properties2);
 	}
 #endif
 
 	// Check physical device limits of per stage and per desriptor set descriptor count
 	{
-		deUint32	numPerStageSamplers			= 0;
-		deUint32	numPerStageUniformBuffers	= 0;
-		deUint32	numPerStageStorageBuffers	= 0;
-		deUint32	numPerStageSampledImages	= 0;
-		deUint32	numPerStageStorageImages	= 0;
-		deUint32	numPerStageInputAttachments	= 0;
-		deUint32	numPerStageTotalResources	= 0;
+		deUint32	numPerStageSamplers				= 0;
+		deUint32	numPerStageUniformBuffers		= 0;
+		deUint32	numPerStageStorageBuffers		= 0;
+		deUint32	numPerStageSampledImages		= 0;
+		deUint32	numPerStageStorageImages		= 0;
+		deUint32	numPerStageInputAttachments		= 0;
+		deUint32	numPerStageTotalResources		= 0;
 
 		for (size_t descriptorSetIdx = 0; descriptorSetIdx < m_descriptorSets.size(); descriptorSetIdx++)
 		{
-			deUint32					numSamplers					= 0;
-			deUint32					numUniformBuffers			= 0;
-			deUint32					numUniformBuffersDynamic	= 0;
-			deUint32					numStorageBuffers			= 0;
-			deUint32					numStorageBuffersDynamic	= 0;
-			deUint32					numSampledImages			= 0;
-			deUint32					numStorageImages			= 0;
-			deUint32					numInputAttachments			= 0;
-#ifndef CTS_USES_VULKANSC
-			deUint32					numIUBs						= 0;
-#endif // CTS_USES_VULKANSC
-			deUint32					numTotalResources			= m_pipelineType == PIPELINE_TYPE_GRAPHICS ? 1u : 0u; // Color buffer counts as a resource.
+			deUint32	numSamplers					= 0;
+			deUint32	numUniformBuffers			= 0;
+			deUint32	numUniformBuffersDynamic	= 0;
+			deUint32	numStorageBuffers			= 0;
+			deUint32	numStorageBuffersDynamic	= 0;
+			deUint32	numSampledImages			= 0;
+			deUint32	numStorageImages			= 0;
+			deUint32	numInputAttachments			= 0;
+			deUint32	numTotalResources			= m_pipelineType == PIPELINE_TYPE_GRAPHICS ? 1u : 0u; // Color buffer counts as a resource.
 
-			const vector<DescriptorSp>&	bindings					= m_descriptorSets[descriptorSetIdx]->getBindings();
+			const vector<DescriptorSp>&	bindings = m_descriptorSets[descriptorSetIdx]->getBindings();
 
 			for (size_t bindingIdx = 0; bindingIdx < bindings.size(); bindingIdx++)
 			{
@@ -1655,7 +1631,6 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 						TCU_THROW(NotSupportedError, msg.str().c_str());
 					}
 
-					iubTotalBytes += bytes;
 					++numTotalResources;
 				}
 				else
@@ -1666,56 +1641,55 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 
 				switch (bindings[bindingIdx]->getType())
 				{
-					case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-						numUniformBuffers += arraySize;
-						break;
+				case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+					numUniformBuffers += arraySize;
+					break;
 
-					case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
-						numUniformBuffers += arraySize;
-						numUniformBuffersDynamic += arraySize;
-						break;
+				case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+					numUniformBuffers += arraySize;
+					numUniformBuffersDynamic += arraySize;
+					break;
 
-					case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-						numStorageBuffers += arraySize;
-						break;
+				case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+					numStorageBuffers += arraySize;
+					break;
 
-					case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
-						numStorageBuffers += arraySize;
-						numStorageBuffersDynamic += arraySize;
-						break;
+				case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
+					numStorageBuffers += arraySize;
+					numStorageBuffersDynamic += arraySize;
+					break;
 
-					case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-						numSamplers += arraySize;
-						numSampledImages += arraySize;
-						break;
+				case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+					numSamplers += arraySize;
+					numSampledImages += arraySize;
+					break;
 
-					case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-					case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
-						numStorageImages += arraySize;
-						break;
+				case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+				case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+					numStorageImages += arraySize;
+					break;
 
-					case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
-						numInputAttachments += arraySize;
-						break;
+				case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
+					numInputAttachments += arraySize;
+					break;
 
-					case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
-					case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-						numSampledImages += arraySize;
-						break;
+				case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+				case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+					numSampledImages += arraySize;
+					break;
 
-					case VK_DESCRIPTOR_TYPE_SAMPLER:
-						numSamplers += arraySize;
-						break;
+				case VK_DESCRIPTOR_TYPE_SAMPLER:
+					numSamplers += arraySize;
+					break;
 
 #ifndef CTS_USES_VULKANSC
-					case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT:
-						++numIUBs;
-						break;
+				case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT:
+					++numTotalIUBs;
+					break;
 #endif
-
-					default:
-						DE_FATAL("Unexpected descriptor type");
-						break;
+				default:
+					DE_FATAL("Unexpected descriptor type");
+					break;
 				}
 			}
 
@@ -1750,9 +1724,6 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 			numPerStageStorageImages	+= numStorageImages;
 			numPerStageInputAttachments	+= numInputAttachments;
 			numPerStageTotalResources	+= numTotalResources;
-#ifndef CTS_USES_VULKANSC
-			numTotalIUBs				+= numIUBs;
-#endif // CTS_USES_VULKANSC
 		}
 
 		if (numPerStageTotalResources > limits.maxPerStageResources)
@@ -1784,10 +1755,70 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 		}
 #endif
 	}
+}
+
+tcu::TestStatus DescriptorCommands::run (Context& context)
+{
+	const DeviceInterface&					vk					= context.getDeviceInterface();
+	const VkDevice							device				= context.getDevice();
+	const VkQueue							queue				= context.getUniversalQueue();
+	const deUint32							queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	Allocator&								allocator			= context.getDefaultAllocator();
+	tcu::TestLog&							log					= context.getTestContext().getLog();
+	const Unique<VkCommandPool>				commandPool			(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex));
+	const Unique<VkCommandBuffer>			commandBuffer		(allocateCommandBuffer(vk, device, *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const VkShaderStageFlags				shaderStage			= m_pipelineType == PIPELINE_TYPE_COMPUTE ? VK_SHADER_STAGE_COMPUTE_BIT : VK_SHADER_STAGE_FRAGMENT_BIT;
+	const VkFormat							resultFormat		= VK_FORMAT_R8G8B8A8_UNORM;
+	de::MovePtr<ImageWithMemory>			resultImage;
+	de::MovePtr<BufferWithMemory>			resultImageBuffer;
+	Move<VkImageView>						resultImageView;
+	Move<VkRenderPass>						renderPass;
+	Move<VkFramebuffer>						framebuffer;
+	Move<VkDescriptorPool>					descriptorPool;
+	vector<VkDescriptorSetLayoutSp>			descriptorSetLayouts;
+	vector<VkDescriptorSet>					descriptorSets;
+	Move<VkPipelineLayout>					pipelineLayout;
+	Move<VkPipeline>						pipeline;
+	vector<VkAttachmentReference>			inputAttachments;
+	vector<VkAttachmentDescription>			attachmentDescriptions;
+	vector<VkImageView>						imageViews;
 
 	// Initialize all descriptors
 	for (vector<DescriptorSp>::iterator desc = m_descriptors.begin(); desc != m_descriptors.end(); desc++)
 		(*desc)->init(context, m_pipelineType);
+
+	deUint32							numTotalIUBs					= 0;
+	deUint32							iubTotalBytes					= 0;
+	VkDescriptorPoolCreateFlags			poolCreateFlags					= VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+	VkDescriptorSetLayoutCreateFlags	descriptorSetLayoutCreateFlags	= 0u;
+	VkDescriptorBindingFlags			bindingFlag						= 0u;
+	if (m_useUpdateAfterBind)
+	{
+		poolCreateFlags					|= VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
+		descriptorSetLayoutCreateFlags	|= VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
+		bindingFlag						|= VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
+	}
+
+#ifndef CTS_USES_VULKANSC
+	for (size_t descriptorSetIdx = 0; descriptorSetIdx < m_descriptorSets.size(); descriptorSetIdx++)
+	{
+		const vector<DescriptorSp>& bindings = m_descriptorSets[descriptorSetIdx]->getBindings();
+		for (size_t bindingIdx = 0; bindingIdx < bindings.size(); bindingIdx++)
+		{
+			// Inline uniform blocks cannot form arrays. The array size is the size of the data array in the descriptor.
+			if (bindings[bindingIdx]->getType() == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
+			{
+				const InlineUniformBlockDescriptor* iub = static_cast<InlineUniformBlockDescriptor*>(bindings[bindingIdx].get());
+				iubTotalBytes += iub->getSizeInBytes();
+
+				++numTotalIUBs;
+			}
+		}
+	}
+#else
+	DE_UNREF(numTotalIUBs);
+	DE_UNREF(iubTotalBytes);
+#endif // CTS_USES_VULKANSC
 
 	// Create descriptor pool
 	{
@@ -1814,7 +1845,7 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 		{
 			VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,		// VkStructureType				sType
 			DE_NULL,											// const void*					pNext
-			VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,	// VkDescriptorPoolCreateFlags	flags
+			poolCreateFlags,									// VkDescriptorPoolCreateFlags	flags
 			(deUint32)m_descriptorSets.size(),					// deUint32						maxSets
 			(deUint32)poolSizes.size(),							// deUint32						poolSizeCount
 			poolSizes.data(),									// const VkDescriptorPoolSize*	pPoolSizes
@@ -1841,6 +1872,7 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 		{
 			vector<VkDescriptorSetLayoutBinding>	layoutBindings;
 			const vector<DescriptorSp>&				bindings		= m_descriptorSets[descriptorSetIdx]->getBindings();
+			const vector<VkDescriptorBindingFlags>	bindingsFlags	(bindings.size(), bindingFlag);
 
 			for (size_t bindingIdx = 0; bindingIdx < bindings.size(); bindingIdx++)
 			{
@@ -1864,11 +1896,19 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 				layoutBindings.push_back(layoutBinding);
 			}
 
-			const VkDescriptorSetLayoutCreateInfo	descriptorSetLayoutCreateInfo	=
+			const VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo
+			{
+				VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,		// VkStructureType						sType;
+				DE_NULL,																// const void*							pNext;
+				(deUint32)layoutBindings.size(),										// uint32_t								bindingCount;
+				layoutBindings.empty() ? DE_NULL : bindingsFlags.data(),				// const VkDescriptorBindingFlags*	pBindingFlags;
+			};
+
+			const VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo
 			{
 				VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// VkStructureType						sType
-				DE_NULL,												// const void*							pNext
-				0u,														// VkDescriptorSetLayoutCreateFlags		flags
+				m_useUpdateAfterBind ? &bindingFlagsInfo : DE_NULL,		// const void*							pNext
+				descriptorSetLayoutCreateFlags,							// VkDescriptorSetLayoutCreateFlags		flags
 				(deUint32)layoutBindings.size(),						// deUint32								bindingCount
 				layoutBindings.data()									// const VkDescriptorSetLayoutBinding*	pBindings
 			};
@@ -1896,50 +1936,9 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 		}
 	}
 
-	// Descriptor writes and updates
-	{
-		vector<VkWriteDescriptorSet>	descriptorWrites;
-		vector<VkCopyDescriptorSet>		descriptorCopies;
-
-		// Write descriptors that are marked as needing initialization
-		for (size_t descriptorSetIdx = 0; descriptorSetIdx < m_descriptorSets.size(); descriptorSetIdx++)
-		{
-			const vector<DescriptorSp>& bindings = m_descriptorSets[descriptorSetIdx]->getBindings();
-
-			for (size_t bindingIdx = 0; bindingIdx < bindings.size(); bindingIdx++)
-			{
-				VkWriteDescriptorSet descriptorWrite = bindings[bindingIdx]->getDescriptorWrite();
-
-				descriptorWrite.dstSet		= descriptorSets[descriptorSetIdx];
-				descriptorWrite.dstBinding	= (deUint32)bindingIdx;
-
-				if (descriptorWrite.descriptorCount > 0)
-					descriptorWrites.push_back(descriptorWrite);
-			}
-		}
-
-		for (size_t copyIdx = 0; copyIdx < m_descriptorCopies.size(); copyIdx++)
-		{
-			const DescriptorCopy		indices	= m_descriptorCopies[copyIdx];
-			const VkCopyDescriptorSet	copy	=
-			{
-				VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET,	// VkStructureType	sType
-				DE_NULL,								// const void*		pNext
-				descriptorSets[indices.srcSet],			// VkDescriptorSet	srcSet
-				indices.srcBinding,						// deUint32			srcBinding
-				indices.srcArrayElement,				// deUint32			srcArrayElement
-				descriptorSets[indices.dstSet],			// VkDescriptorSet	dstSet
-				indices.dstBinding,						// deUint32			dstBinding
-				indices.dstArrayElement,				// deUint32			dstArrayElement
-				indices.descriptorCount					// deUint32			descriptorCount
-			};
-
-			descriptorCopies.push_back(copy);
-		}
-
-		// Update descriptors with writes and copies
-		vk.updateDescriptorSets(device, (deUint32)descriptorWrites.size(), descriptorWrites.data(), (deUint32)descriptorCopies.size(), descriptorCopies.data());
-	}
+	// Update descriptor sets when this should be done before bind
+	if (!m_useUpdateAfterBind)
+		updateDescriptorSets(context, descriptorSets);
 
 	// Create pipeline layout
 	{
@@ -2230,6 +2229,10 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 		vk.cmdBindPipeline(*commandBuffer, pipelineBindPoint, *pipeline);
 		vk.cmdBindDescriptorSets(*commandBuffer, pipelineBindPoint, *pipelineLayout, 0u, (deUint32)descriptorSets.size(), descriptorSets.data(), (deUint32)offsets.size(), offsets.empty() ? DE_NULL : offsets.data());
 
+		// Update descriptor sets when this should be done after bind
+		if (m_useUpdateAfterBind)
+			updateDescriptorSets(context, descriptorSets);
+
 		if (m_pipelineType == PIPELINE_TYPE_COMPUTE)
 		{
 			vk.cmdDispatch(*commandBuffer, 1u, 1u, 1u);
@@ -2279,6 +2282,53 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 
 		return tcu::TestStatus::pass("Pass");
 	}
+}
+
+void DescriptorCommands::updateDescriptorSets (Context& context, const vector<VkDescriptorSet>& descriptorSets)
+{
+	const DeviceInterface&			vk					= context.getDeviceInterface();
+	const VkDevice					device				= context.getDevice();
+	vector<VkWriteDescriptorSet>	descriptorWrites;
+	vector<VkCopyDescriptorSet>		descriptorCopies;
+
+	// Write descriptors that are marked as needing initialization
+	for (size_t descriptorSetIdx = 0; descriptorSetIdx < m_descriptorSets.size(); descriptorSetIdx++)
+	{
+		const vector<DescriptorSp>& bindings = m_descriptorSets[descriptorSetIdx]->getBindings();
+
+		for (size_t bindingIdx = 0; bindingIdx < bindings.size(); bindingIdx++)
+		{
+			VkWriteDescriptorSet descriptorWrite = bindings[bindingIdx]->getDescriptorWrite();
+
+			descriptorWrite.dstSet = descriptorSets[descriptorSetIdx];
+			descriptorWrite.dstBinding = (deUint32)bindingIdx;
+
+			if (descriptorWrite.descriptorCount > 0)
+				descriptorWrites.push_back(descriptorWrite);
+		}
+	}
+
+	for (size_t copyIdx = 0; copyIdx < m_descriptorCopies.size(); copyIdx++)
+	{
+		const DescriptorCopy		indices = m_descriptorCopies[copyIdx];
+		const VkCopyDescriptorSet	copy =
+		{
+			VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET,	// VkStructureType	sType
+			DE_NULL,								// const void*		pNext
+			descriptorSets[indices.srcSet],			// VkDescriptorSet	srcSet
+			indices.srcBinding,						// deUint32			srcBinding
+			indices.srcArrayElement,				// deUint32			srcArrayElement
+			descriptorSets[indices.dstSet],			// VkDescriptorSet	dstSet
+			indices.dstBinding,						// deUint32			dstBinding
+			indices.dstArrayElement,				// deUint32			dstArrayElement
+			indices.descriptorCount					// deUint32			descriptorCount
+		};
+
+		descriptorCopies.push_back(copy);
+	}
+
+	// Update descriptors with writes and copies
+	vk.updateDescriptorSets(device, (deUint32)descriptorWrites.size(), descriptorWrites.data(), (deUint32)descriptorCopies.size(), descriptorCopies.data());
 }
 
 DescriptorCopyTestInstance::DescriptorCopyTestInstance (Context&				context,
@@ -2365,6 +2415,11 @@ TestInstance* DescriptorCopyTestCase::createInstance (Context& context) const
 	return result;
 }
 
+void DescriptorCopyTestCase::checkSupport(Context& context) const
+{
+	m_commands->checkSupport(context);
+}
+
 tcu::TestStatus DescriptorCopyTestInstance::iterate (void)
 {
 	return m_commands->run(m_context);
@@ -2374,11 +2429,12 @@ template<class T>
 void addDescriptorCopyTests (tcu::TestContext&					testCtx,
 							 de::MovePtr<tcu::TestCaseGroup>&	group,
 							 string								name,
-							 PipelineType						pipelineType)
+							 PipelineType						pipelineType,
+							 bool								useUpdateAfterBind)
 {
 	// Simple test copying inside the same set.
 	{
-		DescriptorCommandsSp commands (new DescriptorCommands(pipelineType));
+		DescriptorCommandsSp commands (new DescriptorCommands(pipelineType, useUpdateAfterBind));
 		commands->addDescriptor(DescriptorSp(new T(1u, 0u, 1u, 3u)), 0u);
 		commands->addDescriptor(DescriptorSp(new T(1u, 0u, 1u, 2u)), 0u);
 
@@ -2397,7 +2453,7 @@ void addDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 	// Simple test copying between different sets.
 	{
-		DescriptorCommandsSp commands (new DescriptorCommands(pipelineType));
+		DescriptorCommandsSp commands (new DescriptorCommands(pipelineType, useUpdateAfterBind));
 		commands->addDescriptor(DescriptorSp(new T(1u, 0u, 1u, 2u)), 0u);
 		commands->addDescriptor(DescriptorSp(new T(1u, 0u, 1u, 4u)), 1u);
 
@@ -2416,7 +2472,7 @@ void addDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 	// Simple test copying between different sets. Destination not updated.
 	{
-		DescriptorCommandsSp commands (new DescriptorCommands(pipelineType));
+		DescriptorCommandsSp commands (new DescriptorCommands(pipelineType, useUpdateAfterBind));
 		commands->addDescriptor(DescriptorSp(new T(1u, 0u, 1u, 2u)), 0u);
 		commands->addDescriptor(DescriptorSp(new T(1u, 0u, 0u, 1u)), 1u);
 
@@ -2435,7 +2491,7 @@ void addDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 	// Five sets and several copies.
 	{
-		DescriptorCommandsSp commands (new DescriptorCommands(pipelineType));
+		DescriptorCommandsSp commands (new DescriptorCommands(pipelineType, useUpdateAfterBind));
 		commands->addDescriptor(DescriptorSp(new T(1u, 0u, 1u, 3u)), 0u);
 		commands->addDescriptor(DescriptorSp(new T(1u, 0u, 1u, 4u)), 0u);
 		commands->addDescriptor(DescriptorSp(new T(1u, 0u, 1u, 2u)), 1u);
@@ -2468,7 +2524,7 @@ void addDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 	// Several identical copies
 	{
-		DescriptorCommandsSp commands (new DescriptorCommands(pipelineType));
+		DescriptorCommandsSp commands (new DescriptorCommands(pipelineType, useUpdateAfterBind));
 		commands->addDescriptor(DescriptorSp(new T(1u, 0u, 1u, 2u)), 0u);
 		commands->addDescriptor(DescriptorSp(new T(1u, 0u, 1u, 4u)), 1u);
 		commands->addDescriptor(DescriptorSp(new T(1u, 0u, 1u, 2u)), 1u);
@@ -2501,7 +2557,7 @@ void addDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 	// Copy descriptors back and forth
 	{
-		DescriptorCommandsSp commands (new DescriptorCommands(pipelineType));
+		DescriptorCommandsSp commands (new DescriptorCommands(pipelineType, useUpdateAfterBind));
 		commands->addDescriptor(DescriptorSp(new T(1u, 0u, 1u, 3u)), 0u);
 		commands->addDescriptor(DescriptorSp(new T(1u, 0u, 1u, 3u)), 1u);
 		commands->addDescriptor(DescriptorSp(new T(1u, 0u, 1u, 3u)), 1u);
@@ -2534,7 +2590,7 @@ void addDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 	// Copy between non-consecutive descriptor sets
 	{
-		DescriptorCommandsSp commands (new DescriptorCommands(pipelineType));
+		DescriptorCommandsSp commands (new DescriptorCommands(pipelineType, useUpdateAfterBind));
 		commands->addDescriptor(DescriptorSp(new T(1u, 0u, 1u, 3u)), 0u);
 		commands->addDescriptor(DescriptorSp(new T(1u, 0u, 1u, 2u)), 5u);
 		commands->addDescriptor(DescriptorSp(new T(1u, 0u, 1u, 2u)), 5u);
@@ -2555,7 +2611,7 @@ void addDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 	// Simple 3 sized array to 3 sized array inside the same set.
 	{
-		DescriptorCommandsSp commands (new DescriptorCommands(pipelineType));
+		DescriptorCommandsSp commands (new DescriptorCommands(pipelineType, useUpdateAfterBind));
 		commands->addDescriptor(DescriptorSp(new T(3u, 0u, 3u, 3u)), 0u);
 		commands->addDescriptor(DescriptorSp(new T(3u, 0u, 3u, 4u)), 0u);
 
@@ -2581,7 +2637,7 @@ void addDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 	// Simple 2 sized array to 3 sized array into different set.
 	{
-		DescriptorCommandsSp commands (new DescriptorCommands(pipelineType));
+		DescriptorCommandsSp commands (new DescriptorCommands(pipelineType, useUpdateAfterBind));
 		commands->addDescriptor(DescriptorSp(new T(2u, 0u, 2u, 2u)), 0u);
 		commands->addDescriptor(DescriptorSp(new T(3u, 0u, 3u, 5u)), 1u);
 
@@ -2605,7 +2661,7 @@ void addDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 	// Update array partially with writes and partially with a copy
 	{
-		DescriptorCommandsSp commands (new DescriptorCommands(pipelineType));
+		DescriptorCommandsSp commands (new DescriptorCommands(pipelineType, useUpdateAfterBind));
 		commands->addDescriptor(DescriptorSp(new T(4u, 0u, 4u, 3u)), 0u);
 		commands->addDescriptor(DescriptorSp(new T(8u, 0u, 5u, 4u)), 0u);
 
@@ -2637,11 +2693,12 @@ void addDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 void addSamplerCopyTests (tcu::TestContext&					testCtx,
 						  de::MovePtr<tcu::TestCaseGroup>&	group,
-						  PipelineType						pipelineType)
+						  PipelineType						pipelineType,
+						  bool								useUpdateAfterBind)
 {
 	// Simple copy between two samplers in the same set
 	{
-		DescriptorCommandsSp	commands	(new DescriptorCommands(pipelineType));
+		DescriptorCommandsSp	commands	(new DescriptorCommands(pipelineType, useUpdateAfterBind));
 		SamplerDescriptor*		sampler0	(new SamplerDescriptor());
 		SamplerDescriptor*		sampler1	(new SamplerDescriptor());
 		SampledImageDescriptor*	image		(new SampledImageDescriptor());
@@ -2662,7 +2719,7 @@ void addSamplerCopyTests (tcu::TestContext&					testCtx,
 
 	// Simple 3 sized array to 3 sized array inside the same set.
 	{
-		DescriptorCommandsSp	commands	(new DescriptorCommands(pipelineType));
+		DescriptorCommandsSp	commands	(new DescriptorCommands(pipelineType, useUpdateAfterBind));
 		SamplerDescriptor*		sampler0	(new SamplerDescriptor(3u, 0u, 3u));
 		// One sampler in between to get the border colors to originally mismatch between sampler0 and sampler1.
 		SamplerDescriptor*		sampler1	(new SamplerDescriptor());
@@ -2688,7 +2745,7 @@ void addSamplerCopyTests (tcu::TestContext&					testCtx,
 
 	// Simple 2 sized array to 3 sized array into different set.
 	{
-		DescriptorCommandsSp	commands	(new DescriptorCommands(pipelineType));
+		DescriptorCommandsSp	commands	(new DescriptorCommands(pipelineType, useUpdateAfterBind));
 		SamplerDescriptor*		sampler0	(new SamplerDescriptor(2u, 0u, 2u));
 		SamplerDescriptor*		sampler1	(new SamplerDescriptor(3u, 0u, 3u));
 		SampledImageDescriptor*	image		(new SampledImageDescriptor());
@@ -2712,11 +2769,12 @@ void addSamplerCopyTests (tcu::TestContext&					testCtx,
 
 void addSampledImageCopyTests (tcu::TestContext&				testCtx,
 							   de::MovePtr<tcu::TestCaseGroup>&	group,
-							   PipelineType						pipelineType)
+							   PipelineType						pipelineType,
+							   bool								useUpdateAfterBind)
 {
 	// Simple copy between two images in the same set
 	{
-		DescriptorCommandsSp	commands	(new DescriptorCommands(pipelineType));
+		DescriptorCommandsSp	commands	(new DescriptorCommands(pipelineType, useUpdateAfterBind));
 		SamplerDescriptor*		sampler		(new SamplerDescriptor());
 		SampledImageDescriptor*	image0		(new SampledImageDescriptor());
 		SampledImageDescriptor*	image1		(new SampledImageDescriptor());
@@ -2737,7 +2795,7 @@ void addSampledImageCopyTests (tcu::TestContext&				testCtx,
 
 	// Simple 3 sized array to 3 sized array inside the same set.
 	{
-		DescriptorCommandsSp	commands	(new DescriptorCommands(pipelineType));
+		DescriptorCommandsSp	commands	(new DescriptorCommands(pipelineType, useUpdateAfterBind));
 		SamplerDescriptor*		sampler		(new SamplerDescriptor());
 		SampledImageDescriptor*	image0		(new SampledImageDescriptor(3u, 0u, 3u));
 		SampledImageDescriptor*	image1		(new SampledImageDescriptor(3u, 0u, 3u));
@@ -2764,7 +2822,7 @@ void addMixedDescriptorCopyTests (tcu::TestContext&					testCtx,
 								  PipelineType						pipelineType)
 {
 	{
-		DescriptorCommandsSp		commands		(new DescriptorCommands(pipelineType));
+		DescriptorCommandsSp		commands		(new DescriptorCommands(pipelineType, false));
 		SamplerDescriptor*			sampler0		(new SamplerDescriptor());
 		SamplerDescriptor*			sampler1		(new SamplerDescriptor());
 		SampledImageDescriptor*		image0			(new SampledImageDescriptor());
@@ -2801,7 +2859,7 @@ void addMixedDescriptorCopyTests (tcu::TestContext&					testCtx,
 	}
 
 	{
-		DescriptorCommandsSp			commands				(new DescriptorCommands(pipelineType));
+		DescriptorCommandsSp			commands				(new DescriptorCommands(pipelineType, false));
 		StorageTexelBufferDescriptor*	storageTexelBuffer0		(new StorageTexelBufferDescriptor());
 		StorageTexelBufferDescriptor*	storageTexelBuffer1		(new StorageTexelBufferDescriptor());
 		UniformBufferDescriptor*		uniformBuffer0			(new UniformBufferDescriptor());
@@ -2847,7 +2905,7 @@ void addMixedDescriptorCopyTests (tcu::TestContext&					testCtx,
 	if (pipelineType == PIPELINE_TYPE_GRAPHICS)
 	{
 		// Mixture of descriptors, including input attachment.
-		DescriptorCommandsSp			commands				(new DescriptorCommands(pipelineType));
+		DescriptorCommandsSp			commands				(new DescriptorCommands(pipelineType, false));
 		InputAttachmentDescriptor*		inputAttachment0		(new InputAttachmentDescriptor());
 		InputAttachmentDescriptor*		inputAttachment1		(new InputAttachmentDescriptor());
 		CombinedImageSamplerDescriptor*	combinedImageSampler0	(new CombinedImageSamplerDescriptor());
@@ -2884,7 +2942,7 @@ void addMixedDescriptorCopyTests (tcu::TestContext&					testCtx,
 	if (pipelineType == PIPELINE_TYPE_GRAPHICS)
 	{
 		// Similar to the previous one, but adding inline uniform blocks to the mix.
-		DescriptorCommandsSp			commands				(new DescriptorCommands(pipelineType));
+		DescriptorCommandsSp			commands				(new DescriptorCommands(pipelineType, false));
 		InlineUniformBlockDescriptor*	iub0					(new InlineUniformBlockDescriptor(4u, 0u, 4u));
 		InlineUniformBlockDescriptor*	iub1					(new InlineUniformBlockDescriptor(4u, 0u, 1u));
 		InputAttachmentDescriptor*		inputAttachment0		(new InputAttachmentDescriptor());
@@ -2929,7 +2987,7 @@ void addMixedDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 	// Mixture of descriptors using descriptor arrays
 	{
-		DescriptorCommandsSp			commands				(new DescriptorCommands(pipelineType));
+		DescriptorCommandsSp			commands				(new DescriptorCommands(pipelineType, false));
 		CombinedImageSamplerDescriptor*	combinedImageSampler0	(new CombinedImageSamplerDescriptor(3u, 0u, 3u));
 		CombinedImageSamplerDescriptor*	combinedImageSampler1	(new CombinedImageSamplerDescriptor(4u, 0u, 2u));
 		CombinedImageSamplerDescriptor*	combinedImageSampler2	(new CombinedImageSamplerDescriptor(3u, 0u, 3u));
@@ -2969,7 +3027,7 @@ void addMixedDescriptorCopyTests (tcu::TestContext&					testCtx,
 	// Similar to the previous one but including inline uniform blocks.
 #ifndef CTS_USES_VULKANSC
 	{
-		DescriptorCommandsSp			commands				(new DescriptorCommands(pipelineType));
+		DescriptorCommandsSp			commands				(new DescriptorCommands(pipelineType, false));
 		InlineUniformBlockDescriptor*	iub0					(new InlineUniformBlockDescriptor(4u, 0u, 1u));
 		InlineUniformBlockDescriptor*	iub1					(new InlineUniformBlockDescriptor(4u, 0u, 4u));
 		CombinedImageSamplerDescriptor*	combinedImageSampler0	(new CombinedImageSamplerDescriptor(3u, 0u, 3u));
@@ -3019,48 +3077,51 @@ void addMixedDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 } // anonymous
 
+void createTestsForAllDescriptorTypes (tcu::TestContext& testCtx, de::MovePtr<tcu::TestCaseGroup>& parentGroup, PipelineType pipelineType, bool useUpdateAfterBind = false)
+{
+	addDescriptorCopyTests<UniformBufferDescriptor>			(testCtx, parentGroup, "uniform_buffer",			pipelineType, useUpdateAfterBind);
+	addDescriptorCopyTests<StorageBufferDescriptor>			(testCtx, parentGroup, "storage_buffer",			pipelineType, useUpdateAfterBind);
+	addDescriptorCopyTests<CombinedImageSamplerDescriptor>	(testCtx, parentGroup, "combined_image_sampler",	pipelineType, useUpdateAfterBind);
+	addDescriptorCopyTests<StorageImageDescriptor>			(testCtx, parentGroup, "storage_image",				pipelineType, useUpdateAfterBind);
+	addDescriptorCopyTests<UniformTexelBufferDescriptor>	(testCtx, parentGroup, "uniform_texel_buffer",		pipelineType, useUpdateAfterBind);
+	addDescriptorCopyTests<StorageTexelBufferDescriptor>	(testCtx, parentGroup, "storage_texel_buffer",		pipelineType, useUpdateAfterBind);
+
+#ifndef CTS_USES_VULKANSC
+	addDescriptorCopyTests<InlineUniformBlockDescriptor>	(testCtx, parentGroup, "inline_uniform_block",		pipelineType, useUpdateAfterBind);
+#endif
+
+	// create tests that can be run only without UpdateAfterBind
+	if (useUpdateAfterBind == false)
+	{
+		addDescriptorCopyTests<DynamicUniformBufferDescriptor>	(testCtx, parentGroup, "uniform_buffer_dynamic", pipelineType, false);
+		addDescriptorCopyTests<DynamicStorageBufferDescriptor>	(testCtx, parentGroup, "storage_buffer_dynamic", pipelineType, false);
+
+		// create tests that are graphics pipeline specific
+		if (pipelineType == PIPELINE_TYPE_GRAPHICS)
+			addDescriptorCopyTests<InputAttachmentDescriptor>	(testCtx, parentGroup, "input_attachment", PIPELINE_TYPE_GRAPHICS, false);
+
+		addMixedDescriptorCopyTests(testCtx, parentGroup, pipelineType);
+	}
+
+	addSamplerCopyTests			(testCtx, parentGroup, pipelineType, useUpdateAfterBind);
+	addSampledImageCopyTests	(testCtx, parentGroup, pipelineType, useUpdateAfterBind);
+}
+
 tcu::TestCaseGroup*	createDescriptorCopyTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> descriptorCopyGroup(new tcu::TestCaseGroup(testCtx, "descriptor_copy", "Descriptor copy tests"));
 
-	de::MovePtr<tcu::TestCaseGroup> computeGroup(new tcu::TestCaseGroup(testCtx, "compute", "Compute tests"));
-	de::MovePtr<tcu::TestCaseGroup> graphicsGroup(new tcu::TestCaseGroup(testCtx, "graphics", "Graphics tests"));
+	de::MovePtr<tcu::TestCaseGroup> computeGroup	(new tcu::TestCaseGroup(testCtx, "compute", "Compute tests"));
+	de::MovePtr<tcu::TestCaseGroup> graphicsGroup	(new tcu::TestCaseGroup(testCtx, "graphics", "Graphics tests"));
+	de::MovePtr<tcu::TestCaseGroup> graphicsUABGroup(new tcu::TestCaseGroup(testCtx, "graphics_uab", "Graphics tests with update after bind"));
 
-	// Compute tests
-	addDescriptorCopyTests<UniformBufferDescriptor>(testCtx, computeGroup, "uniform_buffer", PIPELINE_TYPE_COMPUTE);
-#ifndef CTS_USES_VULKANSC
-	addDescriptorCopyTests<InlineUniformBlockDescriptor>(testCtx, computeGroup, "inline_uniform_block", PIPELINE_TYPE_COMPUTE);
-#endif
-	addDescriptorCopyTests<StorageBufferDescriptor>(testCtx, computeGroup, "storage_buffer", PIPELINE_TYPE_COMPUTE);
-	addDescriptorCopyTests<CombinedImageSamplerDescriptor>(testCtx, computeGroup, "combined_image_sampler", PIPELINE_TYPE_COMPUTE);
-	addDescriptorCopyTests<StorageImageDescriptor>(testCtx, computeGroup, "storage_image", PIPELINE_TYPE_COMPUTE);
-	addDescriptorCopyTests<UniformTexelBufferDescriptor>(testCtx, computeGroup, "uniform_texel_buffer", PIPELINE_TYPE_COMPUTE);
-	addDescriptorCopyTests<StorageTexelBufferDescriptor>(testCtx, computeGroup, "storage_texel_buffer", PIPELINE_TYPE_COMPUTE);
-	addDescriptorCopyTests<DynamicUniformBufferDescriptor>(testCtx, computeGroup, "uniform_buffer_dynamic", PIPELINE_TYPE_COMPUTE);
-	addDescriptorCopyTests<DynamicStorageBufferDescriptor>(testCtx, computeGroup, "storage_buffer_dynamic", PIPELINE_TYPE_COMPUTE);
-	addSamplerCopyTests(testCtx, computeGroup, PIPELINE_TYPE_COMPUTE);
-	addSampledImageCopyTests(testCtx, computeGroup, PIPELINE_TYPE_COMPUTE);
-	addMixedDescriptorCopyTests(testCtx, computeGroup, PIPELINE_TYPE_COMPUTE);
-
-	// Graphics tests
-	addDescriptorCopyTests<UniformBufferDescriptor>(testCtx, graphicsGroup, "uniform_buffer", PIPELINE_TYPE_GRAPHICS);
-#ifndef CTS_USES_VULKANSC
-	addDescriptorCopyTests<InlineUniformBlockDescriptor>(testCtx, graphicsGroup, "inline_uniform_block", PIPELINE_TYPE_GRAPHICS);
-#endif
-	addDescriptorCopyTests<StorageBufferDescriptor>(testCtx, graphicsGroup, "storage_buffer", PIPELINE_TYPE_GRAPHICS);
-	addDescriptorCopyTests<CombinedImageSamplerDescriptor>(testCtx, graphicsGroup, "combined_image_sampler", PIPELINE_TYPE_GRAPHICS);
-	addDescriptorCopyTests<StorageImageDescriptor>(testCtx, graphicsGroup, "storage_image", PIPELINE_TYPE_GRAPHICS);
-	addDescriptorCopyTests<InputAttachmentDescriptor>(testCtx, graphicsGroup, "input_attachment", PIPELINE_TYPE_GRAPHICS);
-	addDescriptorCopyTests<UniformTexelBufferDescriptor>(testCtx, graphicsGroup, "uniform_texel_buffer", PIPELINE_TYPE_GRAPHICS);
-	addDescriptorCopyTests<StorageTexelBufferDescriptor>(testCtx, graphicsGroup, "storage_texel_buffer", PIPELINE_TYPE_GRAPHICS);
-	addDescriptorCopyTests<DynamicUniformBufferDescriptor>(testCtx, graphicsGroup, "uniform_buffer_dynamic", PIPELINE_TYPE_GRAPHICS);
-	addDescriptorCopyTests<DynamicStorageBufferDescriptor>(testCtx, graphicsGroup, "storage_buffer_dynamic", PIPELINE_TYPE_GRAPHICS);
-	addSamplerCopyTests(testCtx, graphicsGroup, PIPELINE_TYPE_GRAPHICS);
-	addSampledImageCopyTests(testCtx, graphicsGroup, PIPELINE_TYPE_GRAPHICS);
-	addMixedDescriptorCopyTests(testCtx, graphicsGroup, PIPELINE_TYPE_GRAPHICS);
+	createTestsForAllDescriptorTypes(testCtx, computeGroup,		PIPELINE_TYPE_COMPUTE);
+	createTestsForAllDescriptorTypes(testCtx, graphicsGroup,	PIPELINE_TYPE_GRAPHICS);
+	createTestsForAllDescriptorTypes(testCtx, graphicsUABGroup,	PIPELINE_TYPE_GRAPHICS, true);
 
 	descriptorCopyGroup->addChild(computeGroup.release());
 	descriptorCopyGroup->addChild(graphicsGroup.release());
+	descriptorCopyGroup->addChild(graphicsUABGroup.release());
 
 	return descriptorCopyGroup.release();
 }
