@@ -42,6 +42,7 @@
 #include <cstring>
 #include <iterator>
 #include <numeric>
+#include <memory>
 
 namespace vkt
 {
@@ -52,8 +53,6 @@ namespace
 {
 
 using namespace vk;
-
-de::SharedPtr<Move<vk::VkDevice>>	g_singletonDevice;
 
 // Additional objects needed to set a given dynamic state that need to exist beyond the state-setting call. Empty by default.
 struct DynamicStateData
@@ -505,58 +504,135 @@ const StateInfo& getDynamicStateInfo (VkDynamicState state)
 	return itr->second;
 }
 
-VkDevice getDevice(Context& context, VkDynamicState dynamicState)
+// Device helper: this is needed in some tests when we create custom devices.
+class DeviceHelper
 {
-	const auto stateInfo = getDynamicStateInfo(dynamicState);
-	if (de::contains(stateInfo.requirements.begin(), stateInfo.requirements.end(), "VK_NV_shading_rate_image"))
+public:
+	virtual ~DeviceHelper () {}
+	virtual const DeviceInterface&	getDeviceInterface	(void) const = 0;
+	virtual VkDevice				getDevice			(void) const = 0;
+	virtual uint32_t				getQueueFamilyIndex	(void) const = 0;
+	virtual VkQueue					getQueue			(void) const = 0;
+	virtual Allocator&				getAllocator		(void) const = 0;
+};
+
+// This one just reuses the default device from the context.
+class ContextDeviceHelper : public DeviceHelper
+{
+public:
+	ContextDeviceHelper (Context& context)
+		: m_deviceInterface		(context.getDeviceInterface())
+		, m_device				(context.getDevice())
+		, m_queueFamilyIndex	(context.getUniversalQueueFamilyIndex())
+		, m_queue				(context.getUniversalQueue())
+		, m_allocator			(context.getDefaultAllocator())
+		{}
+
+	virtual ~ContextDeviceHelper () {}
+
+	const DeviceInterface&	getDeviceInterface	(void) const override	{ return m_deviceInterface;		}
+	VkDevice				getDevice			(void) const override	{ return m_device;				}
+	uint32_t				getQueueFamilyIndex	(void) const override	{ return m_queueFamilyIndex;	}
+	VkQueue					getQueue			(void) const override	{ return m_queue;				}
+	Allocator&				getAllocator		(void) const override	{ return m_allocator;			}
+
+protected:
+	const DeviceInterface&	m_deviceInterface;
+	const VkDevice			m_device;
+	const uint32_t			m_queueFamilyIndex;
+	const VkQueue			m_queue;
+	Allocator&				m_allocator;
+};
+
+// This one creates a new device with VK_NV_shading_rate_image.
+class ShadingRateImageDeviceHelper : public DeviceHelper
+{
+public:
+	ShadingRateImageDeviceHelper (Context& context)
 	{
-		if (!g_singletonDevice)
+		const auto&	vkp				= context.getPlatformInterface();
+		const auto&	vki				= context.getInstanceInterface();
+		const auto	instance		= context.getInstance();
+		const auto	physicalDevice	= context.getPhysicalDevice();
+		const auto	queuePriority	= 1.0f;
+
+		// Queue index first.
+		m_queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+
+		// Create a universal queue that supports graphics and compute.
+		const VkDeviceQueueCreateInfo queueParams =
 		{
-			const float queuePriority = 1.0f;
+			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,	// VkStructureType				sType;
+			DE_NULL,									// const void*					pNext;
+			0u,											// VkDeviceQueueCreateFlags		flags;
+			m_queueFamilyIndex,							// deUint32						queueFamilyIndex;
+			1u,											// deUint32						queueCount;
+			&queuePriority								// const float*					pQueuePriorities;
+		};
 
-			// Create a universal queue that supports graphics and compute
-			const VkDeviceQueueCreateInfo	queueParams =
-			{
-				VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,	// VkStructureType				sType;
-				DE_NULL,									// const void*					pNext;
-				0u,											// VkDeviceQueueCreateFlags		flags;
-				context.getUniversalQueueFamilyIndex(),		// deUint32						queueFamilyIndex;
-				1u,											// deUint32						queueCount;
-				&queuePriority								// const float*					pQueuePriorities;
-			};
+		const char* extensions[] =
+		{
+			"VK_NV_shading_rate_image",
+		};
 
-			const char* extensions[] =
-			{
-				"VK_NV_shading_rate_image",
-			};
+		VkPhysicalDeviceShadingRateImageFeaturesNV	shadingRateImageFeatures	= initVulkanStructure();
+		VkPhysicalDeviceFeatures2					features2					= initVulkanStructure(&shadingRateImageFeatures);
 
-			VkPhysicalDeviceShadingRateImageFeaturesNV			shadingRateImageFeatures = initVulkanStructure();
-			VkPhysicalDeviceFeatures2							features2 = initVulkanStructure(&shadingRateImageFeatures);
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
 
-			context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+		const VkDeviceCreateInfo deviceCreateInfo =
+		{
+			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,					//sType;
+			&features2,												//pNext;
+			0u,														//flags
+			1u,														//queueRecordCount;
+			&queueParams,											//pRequestedQueues;
+			0u,														//layerCount;
+			nullptr,												//ppEnabledLayerNames;
+			static_cast<uint32_t>(de::arrayLength(extensions)),		// deUint32							enabledExtensionCount;
+			extensions,												// const char* const*				ppEnabledExtensionNames;
+			nullptr,												//pEnabledFeatures;
+		};
 
-			const VkDeviceCreateInfo					deviceCreateInfo =
-			{
-				VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							//sType;
-				&features2,														//pNext;
-				(VkDeviceCreateFlags)0u,										//flags
-				1,																//queueRecordCount;
-				&queueParams,													//pRequestedQueues;
-				0,																//layerCount;
-				DE_NULL,														//ppEnabledLayerNames;
-				DE_LENGTH_OF_ARRAY(extensions),									// deUint32							enabledExtensionCount;
-				extensions,														// const char* const*				ppEnabledExtensionNames;
-				DE_NULL,														//pEnabledFeatures;
-			};
-
-			Move<VkDevice> device = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(), context.getPhysicalDevice(), &deviceCreateInfo);
-			g_singletonDevice = de::SharedPtr<Move<VkDevice>>(new Move<VkDevice>(device));
-		}
-
-		return g_singletonDevice->get();
+		m_device	= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &deviceCreateInfo);
+		m_vkd		.reset(new DeviceDriver(vkp, instance, m_device.get()));
+		m_queue		= getDeviceQueue(*m_vkd, *m_device, m_queueFamilyIndex, 0u);
+		m_allocator	.reset(new SimpleAllocator(*m_vkd, m_device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
 	}
 
-	return context.getDevice();
+	virtual ~ShadingRateImageDeviceHelper () {}
+
+	const DeviceInterface&	getDeviceInterface	(void) const override	{ return *m_vkd;				}
+	VkDevice				getDevice			(void) const override	{ return m_device.get();		}
+	uint32_t				getQueueFamilyIndex	(void) const override	{ return m_queueFamilyIndex;	}
+	VkQueue					getQueue			(void) const override	{ return m_queue;				}
+	Allocator&				getAllocator		(void) const override	{ return *m_allocator;			}
+
+protected:
+	Move<VkDevice>						m_device;
+	std::unique_ptr<DeviceDriver>		m_vkd;
+	deUint32							m_queueFamilyIndex;
+	VkQueue								m_queue;
+	std::unique_ptr<SimpleAllocator>	m_allocator;
+};
+
+std::unique_ptr<DeviceHelper> g_shadingRateDeviceHelper;
+std::unique_ptr<DeviceHelper> g_contextDeviceHelper;
+
+DeviceHelper& getDeviceHelper(Context& context, VkDynamicState dynamicState)
+{
+	const auto& stateInfo = getDynamicStateInfo(dynamicState);
+
+	if (de::contains(stateInfo.requirements.begin(), stateInfo.requirements.end(), "VK_NV_shading_rate_image"))
+	{
+		if (!g_shadingRateDeviceHelper)
+			g_shadingRateDeviceHelper.reset(new ShadingRateImageDeviceHelper(context));
+		return *g_shadingRateDeviceHelper;
+	}
+
+	if (!g_contextDeviceHelper)
+		g_contextDeviceHelper.reset(new ContextDeviceHelper(context));
+	return *g_contextDeviceHelper;
 }
 
 // Returns the set of auxiliary data needed to set a given state.
@@ -698,13 +774,14 @@ void fillBuffer(const DeviceInterface& vkd, VkDevice device, BufferWithMemory& b
 
 tcu::TestStatus DynamicStateComputeInstance::iterateTransfer (void)
 {
-	const auto&	vki		= m_context.getInstanceInterface();
-	const auto	phyDev	= m_context.getPhysicalDevice();
-	const auto&	vkd		= m_context.getDeviceInterface();
-	const auto	device	= getDevice(m_context, m_params.states[0]);
-	auto&		alloc	= m_context.getDefaultAllocator();
-	const auto	qIndex	= m_context.getUniversalQueueFamilyIndex();
-	const auto	queue	= getDeviceQueue(vkd, device, qIndex, 0U);
+	const auto&	vki			= m_context.getInstanceInterface();
+	const auto	phyDev		= m_context.getPhysicalDevice();
+	auto&		devHelper	= getDeviceHelper(m_context, m_params.states.at(0));
+	const auto&	vkd			= devHelper.getDeviceInterface();
+	const auto	device		= devHelper.getDevice();
+	const auto	qIndex		= devHelper.getQueueFamilyIndex();
+	const auto	queue		= devHelper.getQueue();
+	auto&		alloc		= devHelper.getAllocator();
 
 	const auto	cmdPool			= makeCommandPool(vkd, device, qIndex);
 	const auto	cmdBufferPtr	= allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -787,13 +864,14 @@ tcu::TestStatus DynamicStateComputeInstance::iterateTransfer (void)
 
 tcu::TestStatus DynamicStateComputeInstance::iterateCompute (void)
 {
-	const auto&	vki		= m_context.getInstanceInterface();
-	const auto	phyDev	= m_context.getPhysicalDevice();
-	const auto&	vkd		= m_context.getDeviceInterface();
-	const auto	device	= getDevice(m_context, m_params.states[0]);
-	auto&		alloc	= m_context.getDefaultAllocator();
-	const auto	qIndex	= m_context.getUniversalQueueFamilyIndex();
-	const auto	queue	= getDeviceQueue(vkd, device, qIndex, 0U);
+	const auto&	vki			= m_context.getInstanceInterface();
+	const auto	phyDev		= m_context.getPhysicalDevice();
+	auto&		devHelper	= getDeviceHelper(m_context, m_params.states.at(0));
+	const auto&	vkd			= devHelper.getDeviceInterface();
+	const auto	device		= devHelper.getDevice();
+	const auto	qIndex		= devHelper.getQueueFamilyIndex();
+	const auto	queue		= devHelper.getQueue();
+	auto&		alloc		= devHelper.getAllocator();
 
 	const auto	cmdPool			= makeCommandPool(vkd, device, qIndex);
 	const auto	cmdBufferPtr	= allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -1036,7 +1114,8 @@ tcu::TestCaseGroup* createDynamicStateComputeTests (tcu::TestContext& testCtx)
 
 void cleanupDevice()
 {
-	g_singletonDevice.clear();
+	g_shadingRateDeviceHelper.reset(nullptr);
+	g_contextDeviceHelper.reset(nullptr);
 }
 
 } // DynamicState
