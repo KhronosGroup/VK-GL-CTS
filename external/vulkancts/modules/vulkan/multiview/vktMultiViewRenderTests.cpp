@@ -262,8 +262,9 @@ protected:
 	typedef de::SharedPtr<Unique<VkShaderModule> >	ShaderModuleSP;
 
 	virtual tcu::TestStatus			iterate					(void);
-	virtual void					beforeDraw				(void);
-	virtual void					afterDraw				(void);
+	virtual void					beforeRenderPass		(void);
+	virtual void					afterRenderPass			(void);
+	virtual void					bindResources			(void) {}
 	virtual void					draw					(const deUint32			subpassCount,
 															 VkRenderPass			renderPass,
 															 VkFramebuffer			frameBuffer,
@@ -386,7 +387,7 @@ tcu::TestStatus MultiViewRenderTestInstance::iterate (void)
 	return tcu::TestStatus::pass("Pass");
 }
 
-void MultiViewRenderTestInstance::beforeDraw (void)
+void MultiViewRenderTestInstance::beforeRenderPass (void)
 {
 	const VkImageSubresourceRange	subresourceRange		=
 	{
@@ -410,7 +411,7 @@ void MultiViewRenderTestInstance::beforeDraw (void)
 		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 }
 
-void MultiViewRenderTestInstance::afterDraw (void)
+void MultiViewRenderTestInstance::afterRenderPass (void)
 {
 	const VkImageSubresourceRange	subresourceRange		=
 	{
@@ -448,17 +449,19 @@ void MultiViewRenderTestInstance::draw (const deUint32 subpassCount, VkRenderPas
 
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
-	beforeDraw();
+	beforeRenderPass();
 
 	cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderPassType);
 
-	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
-
-	if (m_parameters.viewIndex == TEST_TYPE_DRAW_INDEXED)
-		m_device->cmdBindIndexBuffer(*m_cmdBuffer, *m_vertexIndicesBuffer, 0u, VK_INDEX_TYPE_UINT32);
-
 	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
 	{
+		m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
+
+		if (m_parameters.viewIndex == TEST_TYPE_DRAW_INDEXED)
+			m_device->cmdBindIndexBuffer(*m_cmdBuffer, *m_vertexIndicesBuffer, 0u, VK_INDEX_TYPE_UINT32);
+
+		bindResources();
+
 		m_device->cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
 
 		for (deUint32 drawNdx = 0u; drawNdx < drawCountPerSubpass; ++drawNdx)
@@ -473,7 +476,7 @@ void MultiViewRenderTestInstance::draw (const deUint32 subpassCount, VkRenderPas
 
 	cmdEndRenderPass(*m_device, *m_cmdBuffer, m_parameters.renderPassType);
 
-	afterDraw();
+	afterRenderPass();
 
 	VK_CHECK(m_device->endCommandBuffer(*m_cmdBuffer));
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
@@ -1458,8 +1461,9 @@ class MultiViewAttachmentsTestInstance : public MultiViewRenderTestInstance
 public:
 						MultiViewAttachmentsTestInstance	(Context& context, const TestParameters& parameters);
 protected:
-	tcu::TestStatus		iterate								(void);
-	void				beforeDraw							(void);
+	tcu::TestStatus		iterate								(void) override;
+	void				beforeRenderPass					(void) override;
+	void				bindResources						(void) override;
 	void				setImageData						(VkImage image);
 	de::SharedPtr<ImageAttachment>	m_inputAttachment;
 	Move<VkDescriptorPool>			m_descriptorPool;
@@ -1523,7 +1527,7 @@ tcu::TestStatus MultiViewAttachmentsTestInstance::iterate (void)
 	return tcu::TestStatus::pass("Pass");
 }
 
-void MultiViewAttachmentsTestInstance::beforeDraw (void)
+void MultiViewAttachmentsTestInstance::beforeRenderPass (void)
 {
 	const VkDescriptorPoolSize poolSize =
 	{
@@ -1585,7 +1589,6 @@ void MultiViewAttachmentsTestInstance::beforeDraw (void)
 		0u,							//deUint32				baseArrayLayer;
 		m_parameters.extent.depth,	//deUint32				layerCount;
 	};
-	m_device->cmdBindDescriptorSets(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u, &(*m_descriptorSet), 0u, NULL);
 
 	imageBarrier(*m_device, *m_cmdBuffer, m_colorAttachment->getImage(), subresourceRange,
 		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -1599,6 +1602,11 @@ void MultiViewAttachmentsTestInstance::beforeDraw (void)
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
 		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+}
+
+void MultiViewAttachmentsTestInstance::bindResources (void)
+{
+	m_device->cmdBindDescriptorSets(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u, &(*m_descriptorSet), 0u, NULL);
 }
 
 void MultiViewAttachmentsTestInstance::setImageData (VkImage image)
@@ -1734,14 +1742,14 @@ void MultiViewInstancedTestInstance::draw (const deUint32 subpassCount, VkRender
 
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
-	beforeDraw();
+	beforeRenderPass();
 
 	cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderPassType);
 
-	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
-
 	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
 	{
+		m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
+
 		m_device->cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
 
 		m_device->cmdDraw(*m_cmdBuffer, 4u, drawCountPerSubpass, 0u, subpassNdx % m_squareCount);
@@ -1752,7 +1760,7 @@ void MultiViewInstancedTestInstance::draw (const deUint32 subpassCount, VkRender
 
 	cmdEndRenderPass(*m_device, *m_cmdBuffer, m_parameters.renderPassType);
 
-	afterDraw();
+	afterRenderPass();
 
 	VK_CHECK(m_device->endCommandBuffer(*m_cmdBuffer));
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
@@ -1804,14 +1812,14 @@ void MultiViewInputRateInstanceTestInstance::draw (const deUint32 subpassCount, 
 
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
-	beforeDraw();
+	beforeRenderPass();
 
 	cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderPassType);
 
-	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
-
 	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
 	{
+		m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
+
 		m_device->cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
 
 		for (deUint32 drawNdx = 0u; drawNdx < drawCountPerSubpass; ++drawNdx)
@@ -1823,7 +1831,7 @@ void MultiViewInputRateInstanceTestInstance::draw (const deUint32 subpassCount, 
 
 	cmdEndRenderPass(*m_device, *m_cmdBuffer, m_parameters.renderPassType);
 
-	afterDraw();
+	afterRenderPass();
 
 	VK_CHECK(m_device->endCommandBuffer(*m_cmdBuffer));
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
@@ -1933,17 +1941,17 @@ void MultiViewDrawIndirectTestInstance::draw (const deUint32 subpassCount, VkRen
 
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
-	beforeDraw();
+	beforeRenderPass();
 
 	cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderPassType);
 
-	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
-
-	if (m_parameters.viewIndex == TEST_TYPE_DRAW_INDIRECT_INDEXED)
-		m_device->cmdBindIndexBuffer(*m_cmdBuffer, *m_vertexIndicesBuffer, 0u, VK_INDEX_TYPE_UINT32);
-
 	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
 	{
+		m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
+
+		if (m_parameters.viewIndex == TEST_TYPE_DRAW_INDIRECT_INDEXED)
+			m_device->cmdBindIndexBuffer(*m_cmdBuffer, *m_vertexIndicesBuffer, 0u, VK_INDEX_TYPE_UINT32);
+
 		m_device->cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
 
 		if (m_hasMultiDrawIndirect)
@@ -1970,7 +1978,7 @@ void MultiViewDrawIndirectTestInstance::draw (const deUint32 subpassCount, VkRen
 
 	cmdEndRenderPass(*m_device, *m_cmdBuffer, m_parameters.renderPassType);
 
-	afterDraw();
+	afterRenderPass();
 
 	VK_CHECK(m_device->endCommandBuffer(*m_cmdBuffer));
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
@@ -2013,11 +2021,9 @@ void MultiViewClearAttachmentsTestInstance::draw (const deUint32 subpassCount, V
 
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
-	beforeDraw();
+	beforeRenderPass();
 
 	cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderPassType);
-
-	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
 
 	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
 	{
@@ -2054,6 +2060,7 @@ void MultiViewClearAttachmentsTestInstance::draw (const deUint32 subpassCount, V
 		};
 
 		m_device->cmdClearAttachments(*m_cmdBuffer, 1u, &clearAttachment, 1u, &clearRect);
+		m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
 		m_device->cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
 
 		for (deUint32 drawNdx = 0u; drawNdx < drawCountPerSubpass; ++drawNdx)
@@ -2069,7 +2076,7 @@ void MultiViewClearAttachmentsTestInstance::draw (const deUint32 subpassCount, V
 
 	cmdEndRenderPass(*m_device, *m_cmdBuffer, m_parameters.renderPassType);
 
-	afterDraw();
+	afterRenderPass();
 
 	VK_CHECK(m_device->endCommandBuffer(*m_cmdBuffer));
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
@@ -2113,7 +2120,7 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
-	beforeDraw();
+	beforeRenderPass();
 
 	cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS, m_parameters.renderPassType);
 
@@ -2148,7 +2155,7 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 
 	cmdEndRenderPass(*m_device, *m_cmdBuffer, m_parameters.renderPassType);
 
-	afterDraw();
+	afterRenderPass();
 
 	VK_CHECK(m_device->endCommandBuffer(*m_cmdBuffer));
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
@@ -2228,14 +2235,14 @@ void MultiViewPointSizeTestInstance::draw (const deUint32 subpassCount, VkRender
 
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
-	beforeDraw();
+	beforeRenderPass();
 
 	cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderPassType);
 
-	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
-
 	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
 	{
+		m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
+
 		m_device->cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
 
 		for (deUint32 drawNdx = 0u; drawNdx < drawCountPerSubpass; ++drawNdx)
@@ -2247,7 +2254,7 @@ void MultiViewPointSizeTestInstance::draw (const deUint32 subpassCount, VkRender
 
 	cmdEndRenderPass(*m_device, *m_cmdBuffer, m_parameters.renderPassType);
 
-	afterDraw();
+	afterRenderPass();
 
 	VK_CHECK(m_device->endCommandBuffer(*m_cmdBuffer));
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
@@ -2265,7 +2272,7 @@ protected:
 													 VkRenderPass			renderPass,
 													 VkFramebuffer			frameBuffer,
 													 vector<PipelineSp>&	pipelines);
-	void			afterDraw						(void);
+	void			afterRenderPass					(void);
 private:
 	de::SharedPtr<ImageAttachment>	m_resolveAttachment;
 };
@@ -2382,14 +2389,14 @@ void MultiViewMultsampleTestInstance::draw (const deUint32 subpassCount, VkRende
 
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
-	beforeDraw();
+	beforeRenderPass();
 
 	cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderPassType);
 
-	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
-
 	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
 	{
+		m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
+
 		m_device->cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
 
 		for (deUint32 drawNdx = 0u; drawNdx < drawCountPerSubpass; ++drawNdx)
@@ -2401,7 +2408,7 @@ void MultiViewMultsampleTestInstance::draw (const deUint32 subpassCount, VkRende
 
 	cmdEndRenderPass(*m_device, *m_cmdBuffer, m_parameters.renderPassType);
 
-	afterDraw();
+	afterRenderPass();
 
 	m_device->cmdResolveImage(*m_cmdBuffer, m_colorAttachment->getImage(), VK_IMAGE_LAYOUT_GENERAL, m_resolveAttachment->getImage(), VK_IMAGE_LAYOUT_GENERAL, 1u, &imageResolveRegion);
 
@@ -2409,7 +2416,7 @@ void MultiViewMultsampleTestInstance::draw (const deUint32 subpassCount, VkRende
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
 }
 
-void MultiViewMultsampleTestInstance::afterDraw (void)
+void MultiViewMultsampleTestInstance::afterRenderPass (void)
 {
 	const VkImageSubresourceRange	subresourceRange		=
 	{
@@ -2652,7 +2659,7 @@ void MultiViewQueriesTestInstance::draw (const deUint32 subpassCount, VkRenderPa
 
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
-	beforeDraw();
+	beforeRenderPass();
 
 	// Query pools must be reset before use
 	m_device->cmdResetQueryPool(*m_cmdBuffer, *occlusionQueryPool, queryStartIndex, queryCountersNumber);
@@ -2660,8 +2667,6 @@ void MultiViewQueriesTestInstance::draw (const deUint32 subpassCount, VkRenderPa
 	m_device->cmdResetQueryPool(*m_cmdBuffer, *timestampEndQueryPool, queryStartIndex, queryCountersNumber);
 
 	cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderPassType);
-
-	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
 
 	m_occlusionExpectedValues.reserve(queryCountersNumber);
 	m_counterSeriesStart.reserve(queryCountersNumber);
@@ -2671,6 +2676,7 @@ void MultiViewQueriesTestInstance::draw (const deUint32 subpassCount, VkRenderPa
 	{
 		deUint32	queryCountersToUse	= getUsedViewsCount(subpassNdx);
 
+		m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
 		m_device->cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
 
 		for (deUint32 drawNdx = 0u; drawNdx < drawCountPerSubpass; ++drawNdx)
@@ -2707,7 +2713,7 @@ void MultiViewQueriesTestInstance::draw (const deUint32 subpassCount, VkRenderPa
 
 	cmdEndRenderPass(*m_device, *m_cmdBuffer, m_parameters.renderPassType);
 
-	afterDraw();
+	afterRenderPass();
 
 	VK_CHECK(m_device->endCommandBuffer(*m_cmdBuffer));
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
@@ -2844,7 +2850,7 @@ void MultiViewReadbackTestInstance::drawClears (const deUint32 subpassCount, VkR
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
 	if (clearPass)
-		beforeDraw();
+		beforeRenderPass();
 
 	cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderPassType);
 
@@ -2874,7 +2880,7 @@ void MultiViewReadbackTestInstance::drawClears (const deUint32 subpassCount, VkR
 	cmdEndRenderPass(*m_device, *m_cmdBuffer, m_parameters.renderPassType);
 
 	if (!clearPass)
-		afterDraw();
+		afterRenderPass();
 
 	VK_CHECK(m_device->endCommandBuffer(*m_cmdBuffer));
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
@@ -2910,8 +2916,8 @@ protected:
 															 VkRenderPass					renderPass,
 															 VkFramebuffer					frameBuffer,
 															 vector<PipelineSp>&			pipelines);
-	void				beforeDraw							(void);
-	void				afterDraw							(void);
+	void				beforeRenderPass					(void);
+	void				afterRenderPass						(void);
 	vector<VkImageView>	makeAttachmentsVector				(void);
 	void				readImage							(VkImage						image,
 															 const tcu::PixelBufferAccess&	dst);
@@ -3237,16 +3243,15 @@ void MultiViewDepthStencilTestInstance::draw (const deUint32 subpassCount, VkRen
 
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
-	beforeDraw();
+	beforeRenderPass();
 
 	cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderPassType);
-
-	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
 
 	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
 	{
 		deUint32 firstVertexOffset = (subpassNdx < 4) ? 0u : m_squareCount * vertexPerPrimitive;
 
+		m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
 		m_device->cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
 
 		for (deUint32 drawNdx = 0u; drawNdx < drawCountPerSubpass; ++drawNdx)
@@ -3258,15 +3263,15 @@ void MultiViewDepthStencilTestInstance::draw (const deUint32 subpassCount, VkRen
 
 	cmdEndRenderPass(*m_device, *m_cmdBuffer, m_parameters.renderPassType);
 
-	afterDraw();
+	afterRenderPass();
 
 	VK_CHECK(m_device->endCommandBuffer(*m_cmdBuffer));
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
 }
 
-void MultiViewDepthStencilTestInstance::beforeDraw (void)
+void MultiViewDepthStencilTestInstance::beforeRenderPass (void)
 {
-	MultiViewRenderTestInstance::beforeDraw();
+	MultiViewRenderTestInstance::beforeRenderPass();
 
 	const VkImageSubresourceRange	subresourceRange		=
 	{
@@ -3293,9 +3298,9 @@ void MultiViewDepthStencilTestInstance::beforeDraw (void)
 		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT);
 }
 
-void MultiViewDepthStencilTestInstance::afterDraw (void)
+void MultiViewDepthStencilTestInstance::afterRenderPass (void)
 {
-	MultiViewRenderTestInstance::afterDraw();
+	MultiViewRenderTestInstance::afterRenderPass();
 
 	const VkImageSubresourceRange	dsSubresourceRange		=
 	{

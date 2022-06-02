@@ -46,6 +46,7 @@
 #include <iomanip>
 #include <string>
 #include <limits>
+#include <cassert>
 
 namespace vkt
 {
@@ -541,71 +542,40 @@ tcu::TestStatus FConvertTestInstance::iterate (void)
 	BufferSizeInfo			outputBufferSizeInfo;
 	std::vector<deUint8>	inputMemory;
 
-	// Calculate buffer sizes and convert input values to a packed input memory format, depending on the input and output types.
-	switch (m_params.from)
+	assert(m_params.from == FLOAT_TYPE_16_BITS || m_params.from == FLOAT_TYPE_32_BITS || m_params.from == FLOAT_TYPE_64_BITS);
+
+	if (m_params.from == FLOAT_TYPE_16_BITS)
+	{
+		auto& inputValues = InputGenerator::getInstance().getInputValues16();
+		inputBufferSizeInfo = BufferSizeInfo::calculate<tcu::Float16>(inputValues.size(), m_params.vectorLength);
+		inputMemory = packFloats(inputValues, m_params.vectorLength);
+	}
+	else if (m_params.from == FLOAT_TYPE_32_BITS)
+	{
+		auto& inputValues = InputGenerator::getInstance().getInputValues32();
+		inputBufferSizeInfo = BufferSizeInfo::calculate<tcu::Float32>(inputValues.size(), m_params.vectorLength);
+		inputMemory = packFloats(inputValues, m_params.vectorLength);
+	}
+	else
+	{
+		auto& inputValues = InputGenerator::getInstance().getInputValues64();
+		inputBufferSizeInfo = BufferSizeInfo::calculate<tcu::Float64>(inputValues.size(), m_params.vectorLength);
+		inputMemory = packFloats(inputValues, m_params.vectorLength);
+	}
+
+	switch (m_params.to)
 	{
 	case FLOAT_TYPE_16_BITS:
-		{
-			auto& inputValues = InputGenerator::getInstance().getInputValues16();
-			inputBufferSizeInfo = BufferSizeInfo::calculate<tcu::Float16>(inputValues.size(), m_params.vectorLength);
-			switch (m_params.to)
-			{
-			case FLOAT_TYPE_32_BITS:
-				outputBufferSizeInfo = BufferSizeInfo::calculate<tcu::Float32>(inputValues.size(), m_params.vectorLength);
-				break;
-			case FLOAT_TYPE_64_BITS:
-				outputBufferSizeInfo = BufferSizeInfo::calculate<tcu::Float64>(inputValues.size(), m_params.vectorLength);
-				break;
-			default:
-				DE_ASSERT(false);
-				break;
-			}
-			inputMemory = packFloats(inputValues, m_params.vectorLength);
-		}
+		outputBufferSizeInfo = BufferSizeInfo::calculate<tcu::Float16>(inputBufferSizeInfo.numValues, m_params.vectorLength);
 		break;
-
 	case FLOAT_TYPE_32_BITS:
-		{
-			auto& inputValues = InputGenerator::getInstance().getInputValues32();
-			inputBufferSizeInfo = BufferSizeInfo::calculate<tcu::Float32>(inputValues.size(), m_params.vectorLength);
-			switch (m_params.to)
-			{
-			case FLOAT_TYPE_16_BITS:
-				outputBufferSizeInfo = BufferSizeInfo::calculate<tcu::Float16>(inputValues.size(), m_params.vectorLength);
-				break;
-			case FLOAT_TYPE_64_BITS:
-				outputBufferSizeInfo = BufferSizeInfo::calculate<tcu::Float64>(inputValues.size(), m_params.vectorLength);
-				break;
-			default:
-				DE_ASSERT(false);
-				break;
-			}
-			inputMemory = packFloats(inputValues, m_params.vectorLength);
-		}
+		outputBufferSizeInfo = BufferSizeInfo::calculate<tcu::Float32>(inputBufferSizeInfo.numValues, m_params.vectorLength);
 		break;
-
 	case FLOAT_TYPE_64_BITS:
-		{
-			auto& inputValues = InputGenerator::getInstance().getInputValues64();
-			inputBufferSizeInfo = BufferSizeInfo::calculate<tcu::Float64>(inputValues.size(), m_params.vectorLength);
-			switch (m_params.to)
-			{
-			case FLOAT_TYPE_16_BITS:
-				outputBufferSizeInfo = BufferSizeInfo::calculate<tcu::Float16>(inputValues.size(), m_params.vectorLength);
-				break;
-			case FLOAT_TYPE_32_BITS:
-				outputBufferSizeInfo = BufferSizeInfo::calculate<tcu::Float32>(inputValues.size(), m_params.vectorLength);
-				break;
-			default:
-				DE_ASSERT(false);
-				break;
-			}
-			inputMemory = packFloats(inputValues, m_params.vectorLength);
-		}
+		outputBufferSizeInfo = BufferSizeInfo::calculate<tcu::Float64>(inputBufferSizeInfo.numValues, m_params.vectorLength);
 		break;
-
 	default:
-		DE_ASSERT(false);
+		assert(false);
 		break;
 	}
 
