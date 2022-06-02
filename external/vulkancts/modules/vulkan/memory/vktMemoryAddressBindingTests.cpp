@@ -1684,8 +1684,6 @@ static std::vector<std::string> getInstanceExtensions(const deUint32 instanceVer
 	if (!isCoreInstanceExtension(instanceVersion, "VK_KHR_get_physical_device_properties2"))
 		instanceExtensions.push_back("VK_KHR_get_physical_device_properties2");
 
-	if (!isCoreDeviceExtension(instanceVersion, "VK_EXT_device_address_binding_report"))
-		instanceExtensions.push_back("VK_EXT_device_address_binding_report");
 	return instanceExtensions;
 }
 
