@@ -1691,10 +1691,11 @@ template<typename Object>
 tcu::TestStatus createDestroyObjectTest (Context& context, typename Object::Parameters params)
 {
 	BindingCallbackRecorder	recorder;
+	CustomInstance          customInstance = createCustomInstanceWithExtensions(context, getInstanceExtensions(context.getUsedApiVersion()));
 
 	const Environment	env	(context.getPlatformInterface(),
 							 context.getInstanceInterface(),
-							(createCustomInstanceWithExtensions(context, getInstanceExtensions(context.getUsedApiVersion()))),
+							 customInstance,
 							 context.getPhysicalDevice(),
 							 context.getDeviceInterface(),
 							 context.getDevice(),
