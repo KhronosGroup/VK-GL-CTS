@@ -36,7 +36,7 @@ const vk::VkPhysicalDeviceExternalMemoryRDMAFeaturesNV&					Context::getExternal
 const vk::VkPhysicalDeviceFragmentDensityMapFeaturesEXT&				Context::getFragmentDensityMapFeaturesEXT				(void) const { return m_device->getFragmentDensityMapFeaturesEXT();					}
 const vk::VkPhysicalDeviceFragmentDensityMap2FeaturesEXT&				Context::getFragmentDensityMap2FeaturesEXT				(void) const { return m_device->getFragmentDensityMap2FeaturesEXT();				}
 const vk::VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM&			Context::getFragmentDensityMapOffsetFeaturesQCOM		(void) const { return m_device->getFragmentDensityMapOffsetFeaturesQCOM();			}
-const vk::VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV&			Context::getFragmentShaderBarycentricFeatures			(void) const { return m_device->getFragmentShaderBarycentricFeatures();				}
+const vk::VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR&			Context::getFragmentShaderBarycentricFeatures			(void) const { return m_device->getFragmentShaderBarycentricFeatures();				}
 const vk::VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT&			Context::getFragmentShaderInterlockFeaturesEXT			(void) const { return m_device->getFragmentShaderInterlockFeaturesEXT();			}
 const vk::VkPhysicalDeviceFragmentShadingRateFeaturesKHR&				Context::getFragmentShadingRateFeatures					(void) const { return m_device->getFragmentShadingRateFeatures();					}
 const vk::VkPhysicalDeviceFragmentShadingRateEnumsFeaturesNV&			Context::getFragmentShadingRateEnumsFeatures			(void) const { return m_device->getFragmentShadingRateEnumsFeatures();				}
@@ -90,6 +90,7 @@ const vk::VkPhysicalDeviceShaderAtomicInt64Features&					Context::getShaderAtomi
 const vk::VkPhysicalDeviceShaderClockFeaturesKHR&						Context::getShaderClockFeatures							(void) const { return m_device->getShaderClockFeatures();							}
 const vk::VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures&		Context::getShaderDemoteToHelperInvocationFeatures		(void) const { return m_device->getShaderDemoteToHelperInvocationFeatures();		}
 const vk::VkPhysicalDeviceShaderDrawParametersFeatures&					Context::getShaderDrawParametersFeatures				(void) const { return m_device->getShaderDrawParametersFeatures();					}
+const vk::VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD&	Context::getShaderEarlyAndLateFragmentTestsFeaturesAMD	(void) const { return m_device->getShaderEarlyAndLateFragmentTestsFeaturesAMD();	}
 const vk::VkPhysicalDeviceShaderFloat16Int8Features&					Context::getShaderFloat16Int8Features					(void) const { return m_device->getShaderFloat16Int8Features();						}
 const vk::VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT&			Context::getShaderImageAtomicInt64FeaturesEXT			(void) const { return m_device->getShaderImageAtomicInt64FeaturesEXT();				}
 const vk::VkPhysicalDeviceShaderImageFootprintFeaturesNV&				Context::getShaderImageFootprintFeatures				(void) const { return m_device->getShaderImageFootprintFeatures();					}

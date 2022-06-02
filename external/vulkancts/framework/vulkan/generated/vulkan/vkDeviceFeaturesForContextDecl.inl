@@ -36,7 +36,7 @@ const vk::VkPhysicalDeviceExternalMemoryRDMAFeaturesNV&					getExternalMemoryRDM
 const vk::VkPhysicalDeviceFragmentDensityMapFeaturesEXT&				getFragmentDensityMapFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMap2FeaturesEXT&				getFragmentDensityMap2FeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM&			getFragmentDensityMapOffsetFeaturesQCOM			(void) const;
-const vk::VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV&			getFragmentShaderBarycentricFeatures			(void) const;
+const vk::VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR&			getFragmentShaderBarycentricFeatures			(void) const;
 const vk::VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT&			getFragmentShaderInterlockFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceFragmentShadingRateFeaturesKHR&				getFragmentShadingRateFeatures					(void) const;
 const vk::VkPhysicalDeviceFragmentShadingRateEnumsFeaturesNV&			getFragmentShadingRateEnumsFeatures				(void) const;
@@ -90,6 +90,7 @@ const vk::VkPhysicalDeviceShaderAtomicInt64Features&					getShaderAtomicInt64Fea
 const vk::VkPhysicalDeviceShaderClockFeaturesKHR&						getShaderClockFeatures							(void) const;
 const vk::VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures&		getShaderDemoteToHelperInvocationFeatures		(void) const;
 const vk::VkPhysicalDeviceShaderDrawParametersFeatures&					getShaderDrawParametersFeatures					(void) const;
+const vk::VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD&	getShaderEarlyAndLateFragmentTestsFeaturesAMD	(void) const;
 const vk::VkPhysicalDeviceShaderFloat16Int8Features&					getShaderFloat16Int8Features					(void) const;
 const vk::VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT&			getShaderImageAtomicInt64FeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceShaderImageFootprintFeaturesNV&				getShaderImageFootprintFeatures					(void) const;

@@ -5,9 +5,9 @@
 
 const char*	getResultName											(VkResult value);
 const char*	getStructureTypeName									(VkStructureType value);
+const char*	getPipelineCacheHeaderVersionName						(VkPipelineCacheHeaderVersion value);
 const char*	getImageLayoutName										(VkImageLayout value);
 const char*	getObjectTypeName										(VkObjectType value);
-const char*	getPipelineCacheHeaderVersionName						(VkPipelineCacheHeaderVersion value);
 const char*	getVendorIdName											(VkVendorId value);
 const char*	getSystemAllocationScopeName							(VkSystemAllocationScope value);
 const char*	getInternalAllocationTypeName							(VkInternalAllocationType value);
@@ -126,9 +126,9 @@ const char*	getFullScreenExclusiveEXTName							(VkFullScreenExclusiveEXT value)
 
 inline tcu::Format::Enum<VkResult>											getResultStr										(VkResult value)										{ return tcu::Format::Enum<VkResult>(getResultName, value);																					}
 inline tcu::Format::Enum<VkStructureType>									getStructureTypeStr									(VkStructureType value)									{ return tcu::Format::Enum<VkStructureType>(getStructureTypeName, value);																	}
+inline tcu::Format::Enum<VkPipelineCacheHeaderVersion>						getPipelineCacheHeaderVersionStr					(VkPipelineCacheHeaderVersion value)					{ return tcu::Format::Enum<VkPipelineCacheHeaderVersion>(getPipelineCacheHeaderVersionName, value);											}
 inline tcu::Format::Enum<VkImageLayout>										getImageLayoutStr									(VkImageLayout value)									{ return tcu::Format::Enum<VkImageLayout>(getImageLayoutName, value);																		}
 inline tcu::Format::Enum<VkObjectType>										getObjectTypeStr									(VkObjectType value)									{ return tcu::Format::Enum<VkObjectType>(getObjectTypeName, value);																			}
-inline tcu::Format::Enum<VkPipelineCacheHeaderVersion>						getPipelineCacheHeaderVersionStr					(VkPipelineCacheHeaderVersion value)					{ return tcu::Format::Enum<VkPipelineCacheHeaderVersion>(getPipelineCacheHeaderVersionName, value);											}
 inline tcu::Format::Enum<VkVendorId>										getVendorIdStr										(VkVendorId value)										{ return tcu::Format::Enum<VkVendorId>(getVendorIdName, value);																				}
 inline tcu::Format::Enum<VkSystemAllocationScope>							getSystemAllocationScopeStr							(VkSystemAllocationScope value)							{ return tcu::Format::Enum<VkSystemAllocationScope>(getSystemAllocationScopeName, value);													}
 inline tcu::Format::Enum<VkInternalAllocationType>							getInternalAllocationTypeStr						(VkInternalAllocationType value)						{ return tcu::Format::Enum<VkInternalAllocationType>(getInternalAllocationTypeName, value);													}
@@ -247,9 +247,9 @@ inline tcu::Format::Enum<VkFullScreenExclusiveEXT>							getFullScreenExclusiveE
 
 inline std::ostream&	operator<<	(std::ostream& s, VkResult value)											{ return s << getResultStr(value);											}
 inline std::ostream&	operator<<	(std::ostream& s, VkStructureType value)									{ return s << getStructureTypeStr(value);									}
+inline std::ostream&	operator<<	(std::ostream& s, VkPipelineCacheHeaderVersion value)						{ return s << getPipelineCacheHeaderVersionStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkImageLayout value)										{ return s << getImageLayoutStr(value);										}
 inline std::ostream&	operator<<	(std::ostream& s, VkObjectType value)										{ return s << getObjectTypeStr(value);										}
-inline std::ostream&	operator<<	(std::ostream& s, VkPipelineCacheHeaderVersion value)						{ return s << getPipelineCacheHeaderVersionStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkVendorId value)											{ return s << getVendorIdStr(value);										}
 inline std::ostream&	operator<<	(std::ostream& s, VkSystemAllocationScope value)							{ return s << getSystemAllocationScopeStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkInternalAllocationType value)							{ return s << getInternalAllocationTypeStr(value);							}
@@ -884,6 +884,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkPresentIdKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePresentIdFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyCheckpointProperties2NV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCheckpointData2NV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR& value);
@@ -1010,7 +1012,6 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceComputeShaderDe
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMeshShaderFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMeshShaderPropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDrawMeshTasksIndirectCommandNV& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderImageFootprintFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineViewportExclusiveScissorStateCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExclusiveScissorFeaturesNV& value);
@@ -1091,6 +1092,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkDeviceDiagnosticsConfigCreate
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkGraphicsPipelineLibraryCreateInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentShadingRateEnumsFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineFragmentShadingRateEnumStateCreateInfoNV& value);

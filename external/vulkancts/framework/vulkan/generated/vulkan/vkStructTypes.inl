@@ -3580,6 +3580,20 @@ struct VkCheckpointData2NV
 	void*					pCheckpointMarker;
 };
 
+struct VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		fragmentShaderBarycentric;
+};
+
+struct VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		triStripVertexOrderIndependentOfProvokingVertex;
+};
+
 struct VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR
 {
 	VkStructureType	sType;
@@ -4695,13 +4709,6 @@ struct VkDrawMeshTasksIndirectCommandNV
 	uint32_t	firstTask;
 };
 
-struct VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV
-{
-	VkStructureType	sType;
-	void*			pNext;
-	VkBool32		fragmentShaderBarycentric;
-};
-
 struct VkPhysicalDeviceShaderImageFootprintFeaturesNV
 {
 	VkStructureType	sType;
@@ -5384,6 +5391,13 @@ struct VkGraphicsPipelineLibraryCreateInfoEXT
 	VkStructureType						sType;
 	void*								pNext;
 	VkGraphicsPipelineLibraryFlagsEXT	flags;
+};
+
+struct VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderEarlyAndLateFragmentTests;
 };
 
 struct VkPhysicalDeviceFragmentShadingRateEnumsFeaturesNV
@@ -8331,6 +8345,8 @@ typedef VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR VkPhysicalDeviceGlobalPri
 typedef VkQueueFamilyGlobalPriorityPropertiesKHR VkQueueFamilyGlobalPriorityPropertiesEXT;
 
 typedef VkPipelineInfoKHR VkPipelineInfoEXT;
+
+typedef VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV;
 
 typedef VkTransformMatrixKHR VkTransformMatrixNV;
 

@@ -596,7 +596,6 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMPUTE_SHADER_DERIVATIVES_FEATURES_NV:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMPUTE_SHADER_DERIVATIVES_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_NV:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_PROPERTIES_NV:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_PROPERTIES_NV";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_BARYCENTRIC_FEATURES_NV:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_BARYCENTRIC_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_IMAGE_FOOTPRINT_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_IMAGE_FOOTPRINT_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_EXCLUSIVE_SCISSOR_STATE_CREATE_INFO_NV:			return "VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_EXCLUSIVE_SCISSOR_STATE_CREATE_INFO_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXCLUSIVE_SCISSOR_FEATURES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXCLUSIVE_SCISSOR_FEATURES_NV";
@@ -697,6 +696,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_PROPERTIES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_LIBRARY_CREATE_INFO_EXT:							return "VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_LIBRARY_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_EARLY_AND_LATE_FRAGMENT_TESTS_FEATURES_AMD:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_EARLY_AND_LATE_FRAGMENT_TESTS_FEATURES_AMD";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_BARYCENTRIC_FEATURES_KHR:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_BARYCENTRIC_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_BARYCENTRIC_PROPERTIES_KHR:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_BARYCENTRIC_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_FEATURES_KHR:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_ENUMS_PROPERTIES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_ENUMS_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_ENUMS_FEATURES_NV:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_ENUMS_FEATURES_NV";
@@ -778,6 +780,16 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_RENDER_PASS_SUBPASS_FEEDBACK_INFO_EXT:								return "VK_STRUCTURE_TYPE_RENDER_PASS_SUBPASS_FEEDBACK_INFO_EXT";
 		case VK_STRUCTURE_TYPE_MAX_ENUM:															return "VK_STRUCTURE_TYPE_MAX_ENUM";
 		default:																					return DE_NULL;
+	}
+}
+
+const char* getPipelineCacheHeaderVersionName (VkPipelineCacheHeaderVersion value)
+{
+	switch (value)
+	{
+		case VK_PIPELINE_CACHE_HEADER_VERSION_ONE:		return "VK_PIPELINE_CACHE_HEADER_VERSION_ONE";
+		case VK_PIPELINE_CACHE_HEADER_VERSION_MAX_ENUM:	return "VK_PIPELINE_CACHE_HEADER_VERSION_MAX_ENUM";
+		default:										return DE_NULL;
 	}
 }
 
@@ -869,16 +881,6 @@ const char* getObjectTypeName (VkObjectType value)
 		case VK_OBJECT_TYPE_BUFFER_COLLECTION_FUCHSIA:			return "VK_OBJECT_TYPE_BUFFER_COLLECTION_FUCHSIA";
 		case VK_OBJECT_TYPE_MAX_ENUM:							return "VK_OBJECT_TYPE_MAX_ENUM";
 		default:												return DE_NULL;
-	}
-}
-
-const char* getPipelineCacheHeaderVersionName (VkPipelineCacheHeaderVersion value)
-{
-	switch (value)
-	{
-		case VK_PIPELINE_CACHE_HEADER_VERSION_ONE:		return "VK_PIPELINE_CACHE_HEADER_VERSION_ONE";
-		case VK_PIPELINE_CACHE_HEADER_VERSION_MAX_ENUM:	return "VK_PIPELINE_CACHE_HEADER_VERSION_MAX_ENUM";
-		default:										return DE_NULL;
 	}
 }
 
@@ -4176,6 +4178,7 @@ tcu::Format::Bitfield<32> getDeviceDiagnosticsConfigFlagsNVStr (VkDeviceDiagnost
 		tcu::Format::BitDesc(VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_SHADER_DEBUG_INFO_BIT_NV,		"VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_SHADER_DEBUG_INFO_BIT_NV"),
 		tcu::Format::BitDesc(VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_RESOURCE_TRACKING_BIT_NV,		"VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_RESOURCE_TRACKING_BIT_NV"),
 		tcu::Format::BitDesc(VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_AUTOMATIC_CHECKPOINTS_BIT_NV,	"VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_AUTOMATIC_CHECKPOINTS_BIT_NV"),
+		tcu::Format::BitDesc(VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_SHADER_ERROR_REPORTING_BIT_NV,	"VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_SHADER_ERROR_REPORTING_BIT_NV"),
 		tcu::Format::BitDesc(VK_DEVICE_DIAGNOSTICS_CONFIG_FLAG_BITS_MAX_ENUM_NV,				"VK_DEVICE_DIAGNOSTICS_CONFIG_FLAG_BITS_MAX_ENUM_NV"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
@@ -9500,6 +9503,26 @@ std::ostream& operator<< (std::ostream& s, const VkCheckpointData2NV& value)
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tfragmentShaderBarycentric = " << value.fragmentShaderBarycentric << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR& value)
+{
+	s << "VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\ttriStripVertexOrderIndependentOfProvokingVertex = " << value.triStripVertexOrderIndependentOfProvokingVertex << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR& value)
 {
 	s << "VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR = {\n";
@@ -10993,16 +11016,6 @@ std::ostream& operator<< (std::ostream& s, const VkDrawMeshTasksIndirectCommandN
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV& value)
-{
-	s << "VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tfragmentShaderBarycentric = " << value.fragmentShaderBarycentric << '\n';
-	s << '}';
-	return s;
-}
-
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderImageFootprintFeaturesNV& value)
 {
 	s << "VkPhysicalDeviceShaderImageFootprintFeaturesNV = {\n";
@@ -11923,6 +11936,16 @@ std::ostream& operator<< (std::ostream& s, const VkGraphicsPipelineLibraryCreate
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tflags = " << getGraphicsPipelineLibraryFlagsEXTStr(value.flags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD& value)
+{
+	s << "VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderEarlyAndLateFragmentTests = " << value.shaderEarlyAndLateFragmentTests << '\n';
 	s << '}';
 	return s;
 }

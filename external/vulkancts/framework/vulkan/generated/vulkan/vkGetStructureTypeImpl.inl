@@ -1383,6 +1383,16 @@ template<> VkStructureType getStructureType<VkCheckpointData2NV> (void)
 	return VK_STRUCTURE_TYPE_CHECKPOINT_DATA_2_NV;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_BARYCENTRIC_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_BARYCENTRIC_PROPERTIES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_FEATURES_KHR;
@@ -1893,11 +1903,6 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceMeshShaderProperties
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_PROPERTIES_NV;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV> (void)
-{
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_BARYCENTRIC_FEATURES_NV;
-}
-
 template<> VkStructureType getStructureType<VkPhysicalDeviceShaderImageFootprintFeaturesNV> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_IMAGE_FOOTPRINT_FEATURES_NV;
@@ -2261,6 +2266,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceGraphicsPipelineLibr
 template<> VkStructureType getStructureType<VkGraphicsPipelineLibraryCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_LIBRARY_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_EARLY_AND_LATE_FRAGMENT_TESTS_FEATURES_AMD;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceFragmentShadingRateEnumsFeaturesNV> (void)

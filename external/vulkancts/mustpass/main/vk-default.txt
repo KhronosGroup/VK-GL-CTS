@@ -11,6 +11,7 @@ vk-default/dynamic-rendering.txt
 vk-default/dynamic-state.txt
 vk-default/fragment-operations.txt
 vk-default/fragment-shader-interlock.txt
+vk-default/fragment-shading-barycentric.txt
 vk-default/fragment-shading-rate.txt
 vk-default/geometry.txt
 vk-default/glsl.txt

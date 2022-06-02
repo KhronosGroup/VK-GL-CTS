@@ -31,6 +31,7 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_external_semaphore_fd",
 	"VK_KHR_external_semaphore_win32",
 	"VK_KHR_format_feature_flags2",
+	"VK_KHR_fragment_shader_barycentric",
 	"VK_KHR_fragment_shading_rate",
 	"VK_KHR_get_memory_requirements2",
 	"VK_KHR_global_priority",

@@ -11,6 +11,7 @@ vk-master/dynamic-rendering.txt
 vk-master/dynamic-state.txt
 vk-master/fragment-operations.txt
 vk-master/fragment-shader-interlock.txt
+vk-master/fragment-shading-barycentric.txt
 vk-master/fragment-shading-rate.txt
 vk-master/geometry.txt
 vk-master/glsl.txt
