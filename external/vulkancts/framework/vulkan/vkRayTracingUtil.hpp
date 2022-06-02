@@ -959,6 +959,11 @@ void cmdTraceRaysIndirect	(const DeviceInterface&					vk,
 							 const VkStridedDeviceAddressRegionKHR*	callableShaderBindingTableRegion,
 							 VkDeviceAddress						indirectDeviceAddress);
 
+void cmdTraceRaysIndirect2	(const DeviceInterface&					vk,
+							 VkCommandBuffer						commandBuffer,
+							 VkDeviceAddress						indirectDeviceAddress);
+
+
 #else
 
 deUint32 rayTracingDefineAnything();

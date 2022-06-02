@@ -259,6 +259,7 @@ template<> void initPropertyFromBlob<VkPhysicalDeviceFragmentShadingRateEnumsPro
 template<> void initPropertyFromBlob<VkPhysicalDeviceFragmentDensityMap2PropertiesEXT>(VkPhysicalDeviceFragmentDensityMap2PropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceDrmPropertiesEXT>(VkPhysicalDeviceDrmPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceSubpassShadingPropertiesHUAWEI>(VkPhysicalDeviceSubpassShadingPropertiesHUAWEI&, const AllPropertiesBlobs&) {}
+template<> void initPropertyFromBlob<VkPhysicalDevicePipelinePropertiesFeaturesEXT>(VkPhysicalDevicePipelinePropertiesFeaturesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceMultiDrawPropertiesEXT>(VkPhysicalDeviceMultiDrawPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM>(VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceAccelerationStructurePropertiesKHR>(VkPhysicalDeviceAccelerationStructurePropertiesKHR&, const AllPropertiesBlobs&) {}

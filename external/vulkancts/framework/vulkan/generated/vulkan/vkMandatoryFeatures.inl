@@ -370,6 +370,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceRayQueryFeaturesKHR.pNext;
 	}
 
+	vk::VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR physicalDeviceRayTracingMaintenance1FeaturesKHR;
+	deMemset(&physicalDeviceRayTracingMaintenance1FeaturesKHR, 0, sizeof(physicalDeviceRayTracingMaintenance1FeaturesKHR));
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_ray_tracing_maintenance1")) )
+	{
+		physicalDeviceRayTracingMaintenance1FeaturesKHR.sType = getStructureType<VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR>();
+		*nextPtr = &physicalDeviceRayTracingMaintenance1FeaturesKHR;
+		nextPtr  = &physicalDeviceRayTracingMaintenance1FeaturesKHR.pNext;
+	}
+
 	vk::VkPhysicalDeviceRayTracingPipelineFeaturesKHR physicalDeviceRayTracingPipelineFeaturesKHR;
 	deMemset(&physicalDeviceRayTracingPipelineFeaturesKHR, 0, sizeof(physicalDeviceRayTracingPipelineFeaturesKHR));
 
@@ -1308,6 +1318,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceRayQueryFeaturesKHR.rayQuery == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature rayQuery not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_ray_tracing_maintenance1")) )
+	{
+		if ( physicalDeviceRayTracingMaintenance1FeaturesKHR.rayTracingMaintenance1 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature rayTracingMaintenance1 not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
