@@ -212,6 +212,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	vk::VkPhysicalDeviceImageCompressionControlFeaturesEXT physicalDeviceImageCompressionControlFeaturesEXT;
+	deMemset(&physicalDeviceImageCompressionControlFeaturesEXT, 0, sizeof(physicalDeviceImageCompressionControlFeaturesEXT));
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_image_compression_control")) )
+	{
+		physicalDeviceImageCompressionControlFeaturesEXT.sType = getStructureType<VkPhysicalDeviceImageCompressionControlFeaturesEXT>();
+		*nextPtr = &physicalDeviceImageCompressionControlFeaturesEXT;
+		nextPtr  = &physicalDeviceImageCompressionControlFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDeviceImagelessFramebufferFeatures physicalDeviceImagelessFramebufferFeatures;
 	deMemset(&physicalDeviceImagelessFramebufferFeatures, 0, sizeof(physicalDeviceImagelessFramebufferFeatures));
 
@@ -960,6 +970,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 #endif // defined(CTS_USES_VULKAN)
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_image_compression_control")) )
+	{
+		if ( physicalDeviceImageCompressionControlFeaturesEXT.imageCompressionControl == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature imageCompressionControl not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
 
 	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_index_type_uint8")) )
 	{
