@@ -41,6 +41,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
 
 #include "tcuTextureUtil.hpp"
 #include "tcuTexture.hpp"
@@ -672,7 +673,7 @@ void BasicComputeTestInstance::copyDataToImage (const VkCommandBuffer&	cmdBuffer
 	const VkQueue				queue		= m_context.getUniversalQueue();
 	Allocator&					allocator	= m_context.getDefaultAllocator();
 
-	Buffer						imageBuffer	(vk, device, allocator,
+	BufferWithMemory			imageBuffer	(vk, device, allocator,
 												makeBufferCreateInfo(m_data.size(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
 												MemoryRequirement::HostVisible);
 	VkDeviceSize				offset		= 0ull;
@@ -847,7 +848,7 @@ bool BasicComputeTestInstance::copyResultAndCompare (const VkCommandBuffer&	cmdB
 	Allocator&				allocator			= m_context.getDefaultAllocator();
 
 	VkDeviceSize			imageResultSize		= getImageSizeBytes (tcu::IVec3(size.x(), size.y(), size.z()), m_parameters.formatUncompressed);
-	Buffer					imageBufferResult	(vk, device, allocator,
+	BufferWithMemory		imageBufferResult	(vk, device, allocator,
 													makeBufferCreateInfo(imageResultSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT),
 													MemoryRequirement::HostVisible);
 
@@ -1113,11 +1114,11 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandBuffer&	cmdBuffer
 		const Unique<VkPipelineLayout>	pipelineLayout			(makePipelineLayout(vk, device, *descriptorSetLayout));
 		const Unique<VkPipeline>		pipeline				(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
 		const VkDeviceSize				bufferSize				= getImageSizeBytes(IVec3((int)extentCompressed.width, (int)extentCompressed.height, (int)extentCompressed.depth), m_parameters.formatForVerify);
-		Buffer							resultBuffer			(vk, device, allocator,
+		BufferWithMemory				resultBuffer			(vk, device, allocator,
 																	makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible);
-		Buffer							referenceBuffer			(vk, device, allocator,
+		BufferWithMemory				referenceBuffer			(vk, device, allocator,
 																	makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible);
-		Buffer							transferBuffer			(vk, device, allocator,
+		BufferWithMemory				transferBuffer			(vk, device, allocator,
 																	makeBufferCreateInfo(bufferSizeComp, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible);
 		Move<VkSampler>					sampler;
 		{
@@ -1516,7 +1517,7 @@ protected:
 	std::vector<tcu::UVec3>				m_srcImageResolutions;
 	std::vector<tcu::UVec3>				m_dstImageResolutions;
 
-	MovePtr<Buffer>						m_vertexBuffer;
+	MovePtr<BufferWithMemory>			m_vertexBuffer;
 	deUint32							m_vertexCount;
 	VkDeviceSize						m_vertexBufferOffset;
 };
@@ -1644,7 +1645,7 @@ void GraphicsAttachmentsTestInstance::prepareVertexBuffer ()
 	const size_t					vertexBufferSizeInBytes	= vertexArray.size() * sizeof(vertexArray[0]);
 
 	m_vertexCount	= static_cast<deUint32>(vertexArray.size());
-	m_vertexBuffer	= MovePtr<Buffer>(new Buffer(vk, device, allocator, makeBufferCreateInfo(vertexBufferSizeInBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible));
+	m_vertexBuffer	= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, makeBufferCreateInfo(vertexBufferSizeInBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible));
 
 	// Upload vertex data
 	const Allocation&	vertexBufferAlloc	= m_vertexBuffer->getAllocation();
@@ -1697,10 +1698,10 @@ void GraphicsAttachmentsTestInstance::transcodeRead ()
 		const VkImageCreateInfo		dstImageCreateInfo		= makeCreateImageInfo(m_dstFormat, m_parameters.imageType, dstImageResolution, m_dstImageUsageFlags, imgCreateFlagsOverride, SINGLE_LEVEL, SINGLE_LAYER);
 
 		const VkBufferCreateInfo	srcImageBufferInfo		= makeBufferCreateInfo(srcImageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-		const MovePtr<Buffer>		srcImageBuffer			= MovePtr<Buffer>(new Buffer(vk, device, allocator, srcImageBufferInfo, MemoryRequirement::HostVisible));
+		const MovePtr<BufferWithMemory>	srcImageBuffer		= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, srcImageBufferInfo, MemoryRequirement::HostVisible));
 
 		const VkBufferCreateInfo	dstImageBufferInfo		= makeBufferCreateInfo(dstImageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-		MovePtr<Buffer>				dstImageBuffer			= MovePtr<Buffer>(new Buffer(vk, device, allocator, dstImageBufferInfo, MemoryRequirement::HostVisible));
+		MovePtr<BufferWithMemory>	dstImageBuffer			= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, dstImageBufferInfo, MemoryRequirement::HostVisible));
 
 		const VkExtent2D			renderSize				(makeExtent2D(uncompressedImageRes.x(), uncompressedImageRes.y()));
 		const VkViewport			viewport				= makeViewport(renderSize);
@@ -1837,10 +1838,10 @@ void GraphicsAttachmentsTestInstance::transcodeWrite ()
 		for (deUint32 layerNdx = 0; layerNdx < getLayerCount(); ++layerNdx)
 		{
 			const VkBufferCreateInfo		srcImageBufferInfo		= makeBufferCreateInfo(srcImageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-			const MovePtr<Buffer>			srcImageBuffer			= MovePtr<Buffer>(new Buffer(vk, device, allocator, srcImageBufferInfo, MemoryRequirement::HostVisible));
+			const MovePtr<BufferWithMemory>	srcImageBuffer			= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, srcImageBufferInfo, MemoryRequirement::HostVisible));
 
 			const VkBufferCreateInfo		dstImageBufferInfo		= makeBufferCreateInfo(dstImageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-			MovePtr<Buffer>					dstImageBuffer			= MovePtr<Buffer>(new Buffer(vk, device, allocator, dstImageBufferInfo, MemoryRequirement::HostVisible));
+			MovePtr<BufferWithMemory>		dstImageBuffer			= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, dstImageBufferInfo, MemoryRequirement::HostVisible));
 
 			const VkImageSubresourceRange	srcSubresourceRange		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, SINGLE_LEVEL, 0u, SINGLE_LAYER);
 			const VkImageSubresourceRange	dstSubresourceRange		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, levelNdx, SINGLE_LEVEL, layerNdx, SINGLE_LAYER);
@@ -2021,7 +2022,7 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression (const std::vector<deU
 	const VkImageUsageFlags				refSrcImageUsageFlags		= VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
 	const VkBufferCreateInfo			refSrcImageBufferInfo		(makeBufferCreateInfo(refCompressedData.size(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT));
-	const MovePtr<Buffer>				refSrcImageBuffer			= MovePtr<Buffer>(new Buffer(vk, device, allocator, refSrcImageBufferInfo, MemoryRequirement::HostVisible));
+	const MovePtr<BufferWithMemory>		refSrcImageBuffer			= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, refSrcImageBufferInfo, MemoryRequirement::HostVisible));
 
 	const VkImageCreateFlags			refSrcImageCreateFlags		= 0;
 	const VkImageCreateInfo				refSrcImageCreateInfo		= makeCreateImageInfo(m_parameters.formatCompressed, m_parameters.imageType, mipmapDimsBlocked, refSrcImageUsageFlags, &refSrcImageCreateFlags, SINGLE_LEVEL, SINGLE_LAYER);
@@ -2039,7 +2040,7 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression (const std::vector<deU
 	const Move<VkImageView>				refDstImageView				(makeImageView(vk, device, refDstImage->get(), mapImageViewType(m_parameters.imageType), m_parameters.formatForVerify, subresourceRange));
 	const VkImageMemoryBarrier			refDstInitImageBarrier		= makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, refDstImage->get(), subresourceRange);
 	const VkBufferCreateInfo			refDstBufferInfo			(makeBufferCreateInfo(dstBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
-	const MovePtr<Buffer>				refDstBuffer				= MovePtr<Buffer>(new Buffer(vk, device, allocator, refDstBufferInfo, MemoryRequirement::HostVisible));
+	const MovePtr<BufferWithMemory>		refDstBuffer				= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, refDstBufferInfo, MemoryRequirement::HostVisible));
 
 	const VkImageCreateFlags			resDstImageCreateFlags		= 0;
 	const VkImageUsageFlags				resDstImageUsageFlags		= VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
@@ -2048,7 +2049,7 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression (const std::vector<deU
 	const Move<VkImageView>				resDstImageView				(makeImageView(vk, device, resDstImage->get(), mapImageViewType(m_parameters.imageType), m_parameters.formatForVerify, subresourceRange));
 	const VkImageMemoryBarrier			resDstInitImageBarrier		= makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, resDstImage->get(), subresourceRange);
 	const VkBufferCreateInfo			resDstBufferInfo			(makeBufferCreateInfo(dstBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
-	const MovePtr<Buffer>				resDstBuffer				= MovePtr<Buffer>(new Buffer(vk, device, allocator, resDstBufferInfo, MemoryRequirement::HostVisible));
+	const MovePtr<BufferWithMemory>		resDstBuffer				= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, resDstBufferInfo, MemoryRequirement::HostVisible));
 
 	const Unique<VkShaderModule>		vertShaderModule			(createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0));
 	const Unique<VkShaderModule>		fragShaderModule			(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag_verify"), 0));
@@ -2284,10 +2285,10 @@ void GraphicsTextureTestInstance::transcodeRead ()
 		const VkImageCreateInfo		dstImageCreateInfo		= makeCreateImageInfo(m_dstFormat, m_parameters.imageType, dstImageResolution, m_dstImageUsageFlags, imgCreateFlagsOverride, SINGLE_LEVEL, SINGLE_LAYER);
 
 		const VkBufferCreateInfo	srcImageBufferInfo		= makeBufferCreateInfo(srcImageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-		const MovePtr<Buffer>		srcImageBuffer			= MovePtr<Buffer>(new Buffer(vk, device, allocator, srcImageBufferInfo, MemoryRequirement::HostVisible));
+		const MovePtr<BufferWithMemory>	srcImageBuffer		= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, srcImageBufferInfo, MemoryRequirement::HostVisible));
 
 		const VkBufferCreateInfo	dstImageBufferInfo		= makeBufferCreateInfo(dstImageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-		MovePtr<Buffer>				dstImageBuffer			= MovePtr<Buffer>(new Buffer(vk, device, allocator, dstImageBufferInfo, MemoryRequirement::HostVisible));
+		MovePtr<BufferWithMemory>	dstImageBuffer			= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, dstImageBufferInfo, MemoryRequirement::HostVisible));
 
 		const VkExtent2D			renderSize				(makeExtent2D(uncompressedImageRes.x(), uncompressedImageRes.y()));
 		const VkViewport			viewport				= makeViewport(renderSize);
@@ -2430,10 +2431,10 @@ void GraphicsTextureTestInstance::transcodeWrite ()
 		for (deUint32 layerNdx = 0; layerNdx < getLayerCount(); ++layerNdx)
 		{
 			const VkBufferCreateInfo		srcImageBufferInfo		= makeBufferCreateInfo(srcImageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-			const MovePtr<Buffer>			srcImageBuffer			= MovePtr<Buffer>(new Buffer(vk, device, allocator, srcImageBufferInfo, MemoryRequirement::HostVisible));
+			const MovePtr<BufferWithMemory>	srcImageBuffer			= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, srcImageBufferInfo, MemoryRequirement::HostVisible));
 
 			const VkBufferCreateInfo		dstImageBufferInfo		= makeBufferCreateInfo(dstImageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-			MovePtr<Buffer>					dstImageBuffer			= MovePtr<Buffer>(new Buffer(vk, device, allocator, dstImageBufferInfo, MemoryRequirement::HostVisible));
+			MovePtr<BufferWithMemory>		dstImageBuffer			= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, dstImageBufferInfo, MemoryRequirement::HostVisible));
 
 			const VkImageSubresourceRange	srcSubresourceRange		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, SINGLE_LEVEL, 0u, SINGLE_LAYER);
 			const VkImageSubresourceRange	dstSubresourceRange		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, levelNdx, SINGLE_LEVEL, layerNdx, SINGLE_LAYER);

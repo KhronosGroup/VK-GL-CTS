@@ -35,6 +35,7 @@
 #include "vkMemUtil.hpp"
 #include "vkBarrierUtil.hpp"
 #include "vktPipelineSpecConstantUtil.hpp"
+#include "vkImageWithMemory.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuTextureUtil.hpp"
@@ -963,7 +964,7 @@ tcu::TestStatus test(Context& context, const MaxVaryingsParam param)
 	// Color attachment
 	const tcu::IVec2			renderSize		= tcu::IVec2(32, 32);
 	const VkFormat				imageFormat	= VK_FORMAT_R8G8B8A8_UNORM;
-	const Image				colorImage		(vk, device, allocator, makeImageCreateInfo(renderSize, imageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT), MemoryRequirement::Any);
+	const ImageWithMemory		colorImage		(vk, device, allocator, makeImageCreateInfo(renderSize, imageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT), MemoryRequirement::Any);
 	const Unique<VkImageView> colorImageView	(makeImageView(vk, device, *colorImage, VK_IMAGE_VIEW_TYPE_2D, imageFormat, makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u)));
 	const VkDeviceSize	colorBufferSize		= renderSize.x() * renderSize.y() * tcu::getPixelSize(mapVkFormat(imageFormat));
 	Move<VkBuffer>		colorBuffer			= vkt::pipeline::makeBuffer(vk, device, colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);

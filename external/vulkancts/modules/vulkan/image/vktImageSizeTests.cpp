@@ -38,6 +38,7 @@
 #include "vkImageUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
@@ -313,7 +314,7 @@ protected:
 	const VkFormat					m_format;
 	const VkDeviceSize				m_resultBufferSizeBytes;
 	const bool						m_2DViewOf3D;
-	de::MovePtr<Buffer>				m_resultBuffer;				//!< Shader writes the output here.
+	de::MovePtr<BufferWithMemory>	m_resultBuffer;				//!< Shader writes the output here.
 };
 
 SizeTestInstance::SizeTestInstance (Context& context, const Texture& texture, const VkFormat format, const bool is2DViewOf3D)
@@ -329,7 +330,7 @@ SizeTestInstance::SizeTestInstance (Context& context, const Texture& texture, co
 
 	// Create an SSBO for shader output.
 
-	m_resultBuffer = de::MovePtr<Buffer>(new Buffer(
+	m_resultBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
 		vk, device, allocator,
 		makeBufferCreateInfo(m_resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
 		MemoryRequirement::HostVisible));
@@ -481,7 +482,7 @@ protected:
 	void							commandBeforeCompute		(const VkCommandBuffer) {}
 	VkDescriptorSet					getDescriptorSet			(void) const { return *m_descriptorSet; }
 
-	de::MovePtr<Buffer>				m_imageBuffer;
+	de::MovePtr<BufferWithMemory>	m_imageBuffer;
 	Move<VkBufferView>				m_bufferView;
 	Move<VkDescriptorSetLayout>		m_descriptorSetLayout;
 	Move<VkDescriptorPool>			m_descriptorPool;
@@ -498,7 +499,7 @@ BufferSizeTestInstance::BufferSizeTestInstance (Context& context, const Texture&
 	// Create a texel storage buffer. Its data be uninitialized, as we're not reading from it.
 
 	const VkDeviceSize imageSizeBytes = getImageSizeBytes(m_texture.size(), m_format);
-	m_imageBuffer = de::MovePtr<Buffer>(new Buffer(vk, device, allocator,
+	m_imageBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator,
 		makeBufferCreateInfo(imageSizeBytes, VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT), MemoryRequirement::Any));
 
 	m_bufferView = makeBufferView(vk, device, m_imageBuffer->get(), m_format, 0ull, imageSizeBytes);

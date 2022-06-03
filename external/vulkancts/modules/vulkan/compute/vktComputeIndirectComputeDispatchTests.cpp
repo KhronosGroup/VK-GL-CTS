@@ -42,6 +42,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
 
 #include "tcuVector.hpp"
 #include "tcuVectorUtil.hpp"
@@ -132,11 +133,11 @@ public:
 	virtual tcu::TestStatus			iterate									(void);
 
 protected:
-	virtual void					fillIndirectBufferData					(const vk::VkCommandBuffer	commandBuffer,
-																			 const Buffer&				indirectBuffer);
+	virtual void					fillIndirectBufferData					(const vk::VkCommandBuffer		commandBuffer,
+																			 const vk::BufferWithMemory&	indirectBuffer);
 
-	deBool							verifyResultBuffer						(const Buffer&				resultBuffer,
-																			 const vk::VkDeviceSize		resultBlockSize) const;
+	deBool							verifyResultBuffer						(const vk::BufferWithMemory&	resultBuffer,
+																			 const vk::VkDeviceSize			resultBlockSize) const;
 
 	Context&						m_context;
 	const std::string				m_name;
@@ -177,7 +178,7 @@ IndirectDispatchInstanceBufferUpload::IndirectDispatchInstanceBufferUpload (Cont
 {
 }
 
-void IndirectDispatchInstanceBufferUpload::fillIndirectBufferData (const vk::VkCommandBuffer commandBuffer, const Buffer& indirectBuffer)
+void IndirectDispatchInstanceBufferUpload::fillIndirectBufferData (const vk::VkCommandBuffer commandBuffer, const vk::BufferWithMemory& indirectBuffer)
 {
 	DE_UNREF(commandBuffer);
 
@@ -221,7 +222,7 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate (void)
 	const vk::VkDeviceSize resultBlockSize = getResultBlockAlignedSize(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), RESULT_BLOCK_BASE_SIZE);
 	const vk::VkDeviceSize resultBufferSize = resultBlockSize * (deUint32)m_dispatchCommands.size();
 
-	Buffer resultBuffer(
+	vk::BufferWithMemory resultBuffer(
 		m_device_interface, m_device, m_allocator,
 		vk::makeBufferCreateInfo(resultBufferSize, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
 		vk::MemoryRequirement::HostVisible);
@@ -273,7 +274,7 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate (void)
 	beginCommandBuffer(m_device_interface, *cmdBuffer);
 
 	// Create indirect buffer
-	Buffer indirectBuffer(
+	vk::BufferWithMemory indirectBuffer(
 		m_device_interface, m_device, m_allocator,
 		vk::makeBufferCreateInfo(m_bufferSize, vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
 		vk::MemoryRequirement::HostVisible);
@@ -328,8 +329,8 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate (void)
 		return tcu::TestStatus(QP_TEST_RESULT_FAIL, "Invalid values in result buffer");
 }
 
-deBool IndirectDispatchInstanceBufferUpload::verifyResultBuffer (const Buffer&			resultBuffer,
-																 const vk::VkDeviceSize	resultBlockSize) const
+deBool IndirectDispatchInstanceBufferUpload::verifyResultBuffer (const vk::BufferWithMemory&	resultBuffer,
+																 const vk::VkDeviceSize			resultBlockSize) const
 {
 	deBool allOk = true;
 	const vk::Allocation& alloc = resultBuffer.getAllocation();
@@ -446,8 +447,8 @@ public:
 	virtual							~IndirectDispatchInstanceBufferGenerate	(void) {}
 
 protected:
-	virtual void					fillIndirectBufferData					(const vk::VkCommandBuffer	commandBuffer,
-																			 const Buffer&				indirectBuffer);
+	virtual void					fillIndirectBufferData					(const vk::VkCommandBuffer		commandBuffer,
+																			 const vk::BufferWithMemory&	indirectBuffer);
 
 	vk::Move<vk::VkDescriptorSetLayout>	m_descriptorSetLayout;
 	vk::Move<vk::VkDescriptorPool>		m_descriptorPool;
@@ -460,7 +461,7 @@ private:
 	IndirectDispatchInstanceBufferGenerate& operator= (const vkt::TestInstance&);
 };
 
-void IndirectDispatchInstanceBufferGenerate::fillIndirectBufferData (const vk::VkCommandBuffer commandBuffer, const Buffer& indirectBuffer)
+void IndirectDispatchInstanceBufferGenerate::fillIndirectBufferData (const vk::VkCommandBuffer commandBuffer, const vk::BufferWithMemory& indirectBuffer)
 {
 	// Create compute shader that generates data for indirect buffer
 	const vk::Unique<vk::VkShaderModule> genIndirectBufferDataShader(createShaderModule(

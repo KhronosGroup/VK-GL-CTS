@@ -48,6 +48,7 @@
 #include "vkObjUtil.hpp"
 #include "vkDeviceUtil.hpp"
 #include "vkSafetyCriticalUtil.hpp"
+#include "vkBufferWithMemory.hpp"
 
 #include "deRandom.hpp"
 
@@ -218,7 +219,7 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 
 	de::MovePtr<SimpleAllocator> allocator			= de::MovePtr<SimpleAllocator>(new SimpleAllocator(vk, *computeDevice, memoryProperties));
 	const VkDeviceSize			 bufferSizeBytes	= sizeof(deUint32) * numValues;
-	const vkt::compute::Buffer	 buffer(vk, *computeDevice, *allocator, makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
+	const vk::BufferWithMemory	 buffer(vk, *computeDevice, *allocator, makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	// Fill the buffer with data
 

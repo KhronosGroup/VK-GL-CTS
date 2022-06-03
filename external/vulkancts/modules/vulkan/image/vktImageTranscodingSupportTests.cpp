@@ -40,6 +40,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
 
 #include "tcuTextureUtil.hpp"
 #include "tcuTexture.hpp"
@@ -340,12 +341,12 @@ void GraphicsAttachmentsTestInstance::transcode (std::vector<deUint8>& srcData, 
 	const std::vector<tcu::Vec4>			vertexArray				= createFullscreenQuad();
 	const deUint32							vertexCount				= static_cast<deUint32>(vertexArray.size());
 	const size_t							vertexBufferSizeInBytes	= vertexCount * sizeof(vertexArray[0]);
-	const MovePtr<Buffer>					vertexBuffer			= MovePtr<Buffer>(new Buffer(vk, device, allocator, makeBufferCreateInfo(vertexBufferSizeInBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible));
+	const MovePtr<BufferWithMemory>			vertexBuffer			= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, makeBufferCreateInfo(vertexBufferSizeInBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible));
 	const Allocation&						vertexBufferAlloc		= vertexBuffer->getAllocation();
 	const VkDeviceSize						vertexBufferOffset[]	= { 0 };
 
 	const VkBufferCreateInfo				srcImageBufferInfo		(makeBufferCreateInfo(srcImageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_SRC_BIT));
-	const MovePtr<Buffer>					srcImageBuffer			= MovePtr<Buffer>(new Buffer(vk, device, allocator, srcImageBufferInfo, MemoryRequirement::HostVisible));
+	const MovePtr<BufferWithMemory>			srcImageBuffer			= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, srcImageBufferInfo, MemoryRequirement::HostVisible));
 
 	const VkImageCreateInfo					srcImageCreateInfo		= makeCreateImageInfo(srcFormat, m_parameters.imageType, m_parameters.size, srcImageUsageFlags, srcExtendedImageCreate);
 	const MovePtr<Image>					srcImage				(new Image(vk, device, allocator, srcImageCreateInfo, MemoryRequirement::Any));
@@ -356,7 +357,7 @@ void GraphicsAttachmentsTestInstance::transcode (std::vector<deUint8>& srcData, 
 	Move<VkImageView>						dstImageView			(makeImageView(vk, device, dstImage->get(), mapImageViewType(m_parameters.imageType), m_parameters.featuredFormat, subresourceRange, dstImageViewUsageFlags));
 
 	const VkBufferCreateInfo				dstImageBufferInfo		(makeBufferCreateInfo(dstImageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
-	MovePtr<Buffer>							dstImageBuffer			= MovePtr<Buffer>(new Buffer(vk, device, allocator, dstImageBufferInfo, MemoryRequirement::HostVisible));
+	MovePtr<BufferWithMemory>				dstImageBuffer			= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, dstImageBufferInfo, MemoryRequirement::HostVisible));
 
 	const Unique<VkShaderModule>			vertShaderModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0));
 	const Unique<VkShaderModule>			fragShaderModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0));
@@ -594,12 +595,12 @@ void GraphicsTextureTestInstance::transcode (std::vector<deUint8>& srcData, std:
 	const std::vector<tcu::Vec4>			vertexArray				= createFullscreenQuad();
 	const deUint32							vertexCount				= static_cast<deUint32>(vertexArray.size());
 	const size_t							vertexBufferSizeInBytes	= vertexCount * sizeof(vertexArray[0]);
-	const MovePtr<Buffer>					vertexBuffer			= MovePtr<Buffer>(new Buffer(vk, device, allocator, makeBufferCreateInfo(vertexBufferSizeInBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible));
+	const MovePtr<BufferWithMemory>			vertexBuffer			= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, makeBufferCreateInfo(vertexBufferSizeInBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible));
 	const Allocation&						vertexBufferAlloc		= vertexBuffer->getAllocation();
 	const VkDeviceSize						vertexBufferOffset[]	= { 0 };
 
 	const VkBufferCreateInfo				srcImageBufferInfo		(makeBufferCreateInfo(srcImageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_SRC_BIT));
-	const MovePtr<Buffer>					srcImageBuffer			= MovePtr<Buffer>(new Buffer(vk, device, allocator, srcImageBufferInfo, MemoryRequirement::HostVisible));
+	const MovePtr<BufferWithMemory>			srcImageBuffer			= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, srcImageBufferInfo, MemoryRequirement::HostVisible));
 
 	const VkImageCreateInfo					srcImageCreateInfo		= makeCreateImageInfo(srcFormat, m_parameters.imageType, m_parameters.size, srcImageUsageFlags, srcExtendedImageCreate);
 	const MovePtr<Image>					srcImage				(new Image(vk, device, allocator, srcImageCreateInfo, MemoryRequirement::Any));
@@ -611,7 +612,7 @@ void GraphicsTextureTestInstance::transcode (std::vector<deUint8>& srcData, std:
 	const VkImageMemoryBarrier				dstCopyImageBarrier		= makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, dstImage->get(), subresourceRange);
 
 	const VkBufferCreateInfo				dstImageBufferInfo		(makeBufferCreateInfo(dstImageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
-	MovePtr<Buffer>							dstImageBuffer			= MovePtr<Buffer>(new Buffer(vk, device, allocator, dstImageBufferInfo, MemoryRequirement::HostVisible));
+	MovePtr<BufferWithMemory>				dstImageBuffer			= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, dstImageBufferInfo, MemoryRequirement::HostVisible));
 
 	const Unique<VkShaderModule>			vertShaderModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0));
 	const Unique<VkShaderModule>			fragShaderModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0));

@@ -40,6 +40,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
 
 #include "tcuTextureUtil.hpp"
 #include "tcuTexture.hpp"
@@ -505,7 +506,7 @@ static void initDataForImage (const VkDevice			device,
 							  const TextureFormat&		format,
 							  const AtomicOperation		operation,
 							  const tcu::UVec3&			gridSize,
-							  Buffer&					buffer)
+							  BufferWithMemory&			buffer)
 {
 	Allocation&				bufferAllocation	= buffer.getAllocation();
 	const VkFormat			imageFormat			= mapTextureFormat(format);
@@ -947,30 +948,30 @@ protected:
 	void						createImageResources	(const VkFormat&				imageFormat,
 														 const bool						useTransfer);
 
-	const string				m_name;
-	const ImageType				m_imageType;
-	const tcu::UVec3			m_imageSize;
-	const TextureFormat			m_format;
-	const AtomicOperation		m_operation;
-	const bool					m_useTransfer;
-	const ShaderReadType		m_readType;
-	const ImageBackingType		m_backingType;
+	const string					m_name;
+	const ImageType					m_imageType;
+	const tcu::UVec3				m_imageSize;
+	const TextureFormat				m_format;
+	const AtomicOperation			m_operation;
+	const bool						m_useTransfer;
+	const ShaderReadType			m_readType;
+	const ImageBackingType			m_backingType;
 
-	de::MovePtr<Buffer>			m_inputBuffer;
-	de::MovePtr<Buffer>			m_outputBuffer;
-	Move<VkBufferView>			m_descResultBufferView;
-	Move<VkBufferView>			m_descIntermResultsBufferView;
-	Move<VkDescriptorPool>		m_descriptorPool;
-	Move<VkDescriptorSetLayout>	m_descriptorSetLayout;
-	Move<VkDescriptorSet>		m_descriptorSet;
+	de::MovePtr<BufferWithMemory>	m_inputBuffer;
+	de::MovePtr<BufferWithMemory>	m_outputBuffer;
+	Move<VkBufferView>				m_descResultBufferView;
+	Move<VkBufferView>				m_descIntermResultsBufferView;
+	Move<VkDescriptorPool>			m_descriptorPool;
+	Move<VkDescriptorSetLayout>		m_descriptorSetLayout;
+	Move<VkDescriptorSet>			m_descriptorSet;
 
-	Move<VkDescriptorSetLayout>	m_descriptorSetLayoutNoTransfer;
-	Move<VkDescriptorPool>		m_descriptorPoolNoTransfer;
+	Move<VkDescriptorSetLayout>		m_descriptorSetLayoutNoTransfer;
+	Move<VkDescriptorPool>			m_descriptorPoolNoTransfer;
 
-	de::MovePtr<Image>			m_resultImage;
-	Move<VkImageView>			m_resultImageView;
+	de::MovePtr<Image>				m_resultImage;
+	Move<VkImageView>				m_resultImageView;
 
-	std::vector<VkSemaphore>	m_waitSemaphores;
+	std::vector<VkSemaphore>		m_waitSemaphores;
 };
 
 BinaryAtomicInstanceBase::BinaryAtomicInstanceBase (Context&				context,
@@ -1014,7 +1015,7 @@ tcu::TestStatus	BinaryAtomicInstanceBase::iterate (void)
 	tcu::UVec3				gridSize			= getShaderGridSize(m_imageType, m_imageSize);
 
 	//Prepare the buffer with the initial data for the image
-	m_inputBuffer = de::MovePtr<Buffer>(new Buffer(deviceInterface,
+	m_inputBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(deviceInterface,
 													device,
 													allocator,
 													makeBufferCreateInfo(imageSizeInBytes,
@@ -1027,7 +1028,7 @@ tcu::TestStatus	BinaryAtomicInstanceBase::iterate (void)
 	initDataForImage(device, deviceInterface, m_format, m_operation, gridSize, *m_inputBuffer);
 
 	// Create a buffer to store shader output copied from result image
-	m_outputBuffer = de::MovePtr<Buffer>(new Buffer(deviceInterface,
+	m_outputBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(deviceInterface,
 													device,
 													allocator,
 													makeBufferCreateInfo(outBuffSizeInBytes,
