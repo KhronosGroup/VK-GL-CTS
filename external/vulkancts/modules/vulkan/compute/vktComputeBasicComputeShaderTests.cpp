@@ -3114,7 +3114,7 @@ tcu::TestStatus ConcurrentComputeInstance::iterate (void)
 	// Create an input/output buffers
 	const VkPhysicalDeviceMemoryProperties memoryProperties	= vk::getPhysicalDeviceMemoryProperties(instance, physicalDevice);
 
-	SimpleAllocator *allocator								= new SimpleAllocator(vk, *logicalDevice, memoryProperties);
+	de::MovePtr<SimpleAllocator> allocator					= de::MovePtr<SimpleAllocator>(new SimpleAllocator(vk, *logicalDevice, memoryProperties));
 	const VkDeviceSize bufferSizeBytes						= sizeof(deUint32) * numValues;
 	const Buffer buffer1(vk, *logicalDevice, *allocator, makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 	const Buffer buffer2(vk, *logicalDevice, *allocator, makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
