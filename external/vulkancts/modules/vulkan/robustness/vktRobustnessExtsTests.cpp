@@ -447,6 +447,11 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 	if (m_data.nullDescriptor && !robustness2Features.nullDescriptor)
 		TCU_THROW(NotSupportedError, "nullDescriptor not supported");
 
+	// The fill shader for 64-bit multisample image tests uses a storage image.
+	if (m_data.samples > VK_SAMPLE_COUNT_1_BIT && formatIsR64(m_data.format) &&
+		!features2.features.shaderStorageImageMultisample)
+		TCU_THROW(NotSupportedError, "shaderStorageImageMultisample not supported");
+
 	if ((m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) &&
 		m_data.samples != VK_SAMPLE_COUNT_1_BIT &&
 		!features2.features.shaderStorageImageMultisample)
@@ -1830,9 +1835,13 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 
 	vector<BufferViewHandleSp>					bufferViews(1);
 
-	VkImageCreateFlags imageCreateFlags = 0;
+	VkImageCreateFlags mutableFormatFlag = 0;
+	// The 64-bit image tests use a view format which differs from the image.
+	if (formatIsR64(m_data.format))
+		mutableFormatFlag = VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+	VkImageCreateFlags imageCreateFlags = mutableFormatFlag;
 	if (m_data.viewType == VK_IMAGE_VIEW_TYPE_CUBE || m_data.viewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)
-		imageCreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		imageCreateFlags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 
 	const bool featureSampledImage = ((getPhysicalDeviceFormatProperties(m_context.getInstanceInterface(),
 										m_context.getPhysicalDevice(),
@@ -1845,7 +1854,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType			sType;
 		DE_NULL,								// const void*				pNext;
-		(VkImageCreateFlags)0u,					// VkImageCreateFlags		flags;
+		mutableFormatFlag,						// VkImageCreateFlags		flags;
 		VK_IMAGE_TYPE_2D,						// VkImageType				imageType;
 		m_data.format,							// VkFormat					format;
 		{
