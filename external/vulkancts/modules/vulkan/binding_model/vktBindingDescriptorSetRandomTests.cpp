@@ -2365,9 +2365,9 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 			DE_NULL,													//  const void*						pNext;
 			VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_NV,				//  VkRayTracingShaderGroupTypeNV	type;
 			0,															//  deUint32						generalShader;
-			VK_SHADER_UNUSED_NV,										//  deUint32						closestHitShader;
-			VK_SHADER_UNUSED_NV,										//  deUint32						anyHitShader;
-			VK_SHADER_UNUSED_NV,										//  deUint32						intersectionShader;
+			VK_SHADER_UNUSED_KHR,										//  deUint32						closestHitShader;
+			VK_SHADER_UNUSED_KHR,										//  deUint32						anyHitShader;
+			VK_SHADER_UNUSED_KHR,										//  deUint32						intersectionShader;
 		};
 
 		VkRayTracingPipelineCreateInfoNV		pipelineCreateInfo	=
@@ -2396,7 +2396,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		const auto	ptr		= reinterpret_cast<deUint32*>(alloc.getHostPtr());
 
 		invalidateAlloc(vk, device, alloc);
-		vk.getRayTracingShaderGroupHandlesNV(device, *pipeline, 0, 1, static_cast<deUintptr>(allocSize), ptr);
+		vk.getRayTracingShaderGroupHandlesKHR(device, *pipeline, 0, 1, static_cast<deUintptr>(allocSize), ptr);
 	}
 	else if (m_data.stage == STAGE_RAYGEN)
 	{

@@ -1108,7 +1108,7 @@ deBool isValidGlobalPriority(VkQueueGlobalPriorityEXT priority)
 void checkGlobalPriorityProperties(const VkQueueFamilyGlobalPriorityPropertiesEXT& properties)
 {
 	TCU_CHECK(properties.priorityCount > 0);
-	TCU_CHECK(properties.priorityCount <= VK_MAX_GLOBAL_PRIORITY_SIZE_EXT);
+	TCU_CHECK(properties.priorityCount <= VK_MAX_GLOBAL_PRIORITY_SIZE_KHR);
 	TCU_CHECK(isValidGlobalPriority(properties.priorities[0]));
 
 	for (deUint32 ndx = 1; ndx < properties.priorityCount; ndx++)

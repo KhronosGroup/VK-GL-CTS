@@ -70,7 +70,6 @@ if (DEQP_VULKAN_INL_GEN_OUTPUTS_DIR MATCHES ^${PROJECT_BINARY_DIR})
 		COMMAND cmake -E remove ${DEQP_VULKAN_INL_GEN_OUTPUTS}
 
 		# Generate all inl files.
-		COMMAND ${PYTHON_EXECUTABLE} ARGS ${PROJECT_SOURCE_DIR}/external/vulkancts/scripts/gen_ext_deps.py -o ${DEQP_VULKAN_INL_GEN_OUTPUTS_DIR}
 		COMMAND ${PYTHON_EXECUTABLE} ARGS ${PROJECT_SOURCE_DIR}/external/vulkancts/scripts/gen_framework.py -o ${DEQP_VULKAN_INL_GEN_OUTPUTS_DIR}
 		COMMAND ${PYTHON_EXECUTABLE} ARGS ${PROJECT_SOURCE_DIR}/external/vulkancts/scripts/gen_framework_c.py -o ${DEQP_VULKAN_INL_GEN_OUTPUTS_DIR}
 
