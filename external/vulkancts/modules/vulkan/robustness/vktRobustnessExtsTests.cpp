@@ -66,9 +66,10 @@ using de::SharedPtr;
 
 enum RobustnessFeatureBits
 {
-	RF_IMG_ROBUSTNESS	= (1		),
-	RF_ROBUSTNESS2		= (1 << 1	),
-	SIF_INT64ATOMICS	= (1 << 2	),
+	RF_IMG_ROBUSTNESS		= (1		),
+	RF_ROBUSTNESS2			= (1 << 1	),
+	SIF_INT64ATOMICS		= (1 << 2	),
+	RF_PIPELINE_ROBUSTNESS	= (1 << 3	),
 };
 
 using RobustnessFeatures = deUint32;
@@ -92,16 +93,34 @@ class SingletonDevice
 		if (FEATURES & RF_IMG_ROBUSTNESS)
 		{
 			DE_ASSERT(context.isDeviceFunctionalitySupported("VK_EXT_image_robustness"));
-			imageRobustnessFeatures.pNext = features2.pNext;
-			features2.pNext = &imageRobustnessFeatures;
+
+			if (!(FEATURES & RF_PIPELINE_ROBUSTNESS))
+			{
+				imageRobustnessFeatures.pNext = features2.pNext;
+				features2.pNext = &imageRobustnessFeatures;
+			}
 		}
 
 		if (FEATURES & RF_ROBUSTNESS2)
 		{
 			DE_ASSERT(context.isDeviceFunctionalitySupported("VK_EXT_robustness2"));
-			robustness2Features.pNext = features2.pNext;
-			features2.pNext = &robustness2Features;
+
+			if (!(FEATURES & RF_PIPELINE_ROBUSTNESS))
+			{
+				robustness2Features.pNext = features2.pNext;
+				features2.pNext = &robustness2Features;
+			}
 		}
+
+#ifndef CTS_USES_VULKANSC
+		VkPhysicalDevicePipelineRobustnessFeaturesEXT		pipelineRobustnessFeatures = initVulkanStructure();
+		if (FEATURES & RF_PIPELINE_ROBUSTNESS)
+		{
+			DE_ASSERT(context.isDeviceFunctionalitySupported("VK_EXT_pipeline_robustness"));
+			pipelineRobustnessFeatures.pNext = features2.pNext;
+			features2.pNext = &pipelineRobustnessFeatures;
+		}
+#endif
 
 		if (FEATURES & SIF_INT64ATOMICS)
 		{
@@ -178,13 +197,20 @@ SharedPtr<SingletonDevice<FEATURES>> SingletonDevice<FEATURES>::m_singletonDevic
 
 constexpr RobustnessFeatures kImageRobustness			= RF_IMG_ROBUSTNESS;
 constexpr RobustnessFeatures kRobustness2				= RF_ROBUSTNESS2;
+constexpr RobustnessFeatures kPipelineRobustness		= RF_PIPELINE_ROBUSTNESS;
 constexpr RobustnessFeatures kShaderImageInt64Atomics	= SIF_INT64ATOMICS;
 
 using ImageRobustnessSingleton	= SingletonDevice<kImageRobustness>;
 using Robustness2Singleton		= SingletonDevice<kRobustness2>;
 
+using PipelineRobustnessImageRobustnessSingleton	= SingletonDevice<kImageRobustness | kPipelineRobustness>;
+using PipelineRobustnessRobustness2Singleton		= SingletonDevice<kRobustness2 | kPipelineRobustness>;
+
 using ImageRobustnessInt64AtomicsSingleton	= SingletonDevice<kImageRobustness | kShaderImageInt64Atomics>;
 using Robustness2Int64AtomicsSingleton		= SingletonDevice<kRobustness2 | kShaderImageInt64Atomics>;
+
+using PipelineRobustnessImageRobustnessInt64AtomicsSingleton	= SingletonDevice<kImageRobustness | kPipelineRobustness | kShaderImageInt64Atomics>;
+using PipelineRobustnessRobustness2Int64AtomicsSingleton		= SingletonDevice<kRobustness2 | kPipelineRobustness | kShaderImageInt64Atomics>;
 
 // Render target / compute grid dimensions
 static const deUint32 DIM = 8;
@@ -217,6 +243,7 @@ struct CaseDef
 	bool formatQualifier;
 	bool pushDescriptor;
 	bool testRobustness2;
+	bool testPipelineRobustness;
 	deUint32 imageDim[3]; // width, height, depth or layers
 	bool readOnly;
 };
@@ -266,16 +293,32 @@ const InstanceInterface& getInstanceInterface(Context& ctx, const CaseDef& caseD
 // Returns the appropriate singleton device for the given case.
 VkDevice getLogicalDevice (Context& ctx, const CaseDef& caseDef)
 {
-	if (formatIsR64(caseDef.format))
+	if (caseDef.testPipelineRobustness)
 	{
-		if (caseDef.testRobustness2)
-			return Robustness2Int64AtomicsSingleton::getDevice(ctx);
-		return ImageRobustnessInt64AtomicsSingleton::getDevice(ctx);
-	}
+		if (formatIsR64(caseDef.format))
+		{
+			if (caseDef.testRobustness2)
+				return PipelineRobustnessRobustness2Int64AtomicsSingleton::getDevice(ctx);
+			return PipelineRobustnessImageRobustnessInt64AtomicsSingleton::getDevice(ctx);
+		}
 
-	if (caseDef.testRobustness2)
-		return Robustness2Singleton::getDevice(ctx);
-	return ImageRobustnessSingleton::getDevice(ctx);
+		if (caseDef.testRobustness2)
+			return PipelineRobustnessRobustness2Singleton::getDevice(ctx);
+		return PipelineRobustnessImageRobustnessSingleton::getDevice(ctx);
+	}
+	else
+	{
+		if (formatIsR64(caseDef.format))
+		{
+			if (caseDef.testRobustness2)
+				return Robustness2Int64AtomicsSingleton::getDevice(ctx);
+			return ImageRobustnessInt64AtomicsSingleton::getDevice(ctx);
+		}
+
+		if (caseDef.testRobustness2)
+			return Robustness2Singleton::getDevice(ctx);
+		return ImageRobustnessSingleton::getDevice(ctx);
+	}
 }
 
 // Returns the appropriate singleton device driver for the given case.
@@ -386,6 +429,70 @@ static bool supportsStores(int descriptorType)
 	}
 }
 
+#ifndef CTS_USES_VULKANSC
+static VkPipelineRobustnessCreateInfoEXT getPipelineRobustnessInfo(bool robustness2, int descriptorType)
+{
+	VkPipelineRobustnessCreateInfoEXT robustnessCreateInfo = initVulkanStructure();
+
+	switch (descriptorType)
+	{
+		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
+		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+		case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+			if (robustness2)
+			{
+				robustnessCreateInfo.storageBuffers = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_EXT;
+			}
+			else
+			{
+				robustnessCreateInfo.storageBuffers = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_2_EXT;
+			}
+			break;
+
+		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+			if (robustness2)
+			{
+				robustnessCreateInfo.images = VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_ROBUST_IMAGE_ACCESS_EXT;
+			}
+			else
+			{
+				robustnessCreateInfo.images = VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_ROBUST_IMAGE_ACCESS_2_EXT;
+			}
+			break;
+
+		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+		case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+			if (robustness2)
+			{
+				robustnessCreateInfo.uniformBuffers = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_EXT;
+			}
+			else
+			{
+				robustnessCreateInfo.uniformBuffers = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_2_EXT;
+			}
+			break;
+
+		case VERTEX_ATTRIBUTE_FETCH:
+			if (robustness2)
+			{
+				robustnessCreateInfo.vertexInputs = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_EXT;
+			}
+			else
+			{
+				robustnessCreateInfo.vertexInputs = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_2_EXT;
+			}
+			break;
+
+		default:
+			DE_ASSERT(0);
+	}
+
+	return robustnessCreateInfo;
+}
+#endif
+
 void RobustnessExtsTestCase::checkSupport(Context& context) const
 {
 	const auto&	vki				= context.getInstanceInterface();
@@ -414,6 +521,15 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 		robustness2Features.pNext = features2.pNext;
 		features2.pNext = &robustness2Features;
 	}
+
+#ifndef CTS_USES_VULKANSC
+	VkPhysicalDevicePipelineRobustnessFeaturesEXT		pipelineRobustnessFeatures = initVulkanStructure();
+	if (context.isDeviceFunctionalitySupported("VK_EXT_pipeline_robustness"))
+	{
+		pipelineRobustnessFeatures.pNext = features2.pNext;
+		features2.pNext = &pipelineRobustnessFeatures;
+	}
+#endif
 
 	vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
 
@@ -542,6 +658,11 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") && !context.getDeviceFeatures().robustBufferAccess)
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: robustBufferAccess not supported by this implementation");
+
+#ifndef CTS_USES_VULKANSC
+	if (m_data.testPipelineRobustness && !pipelineRobustnessFeatures.pipelineRobustness)
+		TCU_THROW(NotSupportedError, "pipelineRobustness not supported");
+#endif
 }
 
 void generateLayout(Layout &layout, const CaseDef &caseDef)
@@ -2623,7 +2744,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 
 		deUint32 numAttribs = m_data.descriptorType == VERTEX_ATTRIBUTE_FETCH ? 1u : 0u;
 
-		const VkPipelineVertexInputStateCreateInfo		vertexInputStateCreateInfo		=
+		VkPipelineVertexInputStateCreateInfo		vertexInputStateCreateInfo		=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType							sType;
 			DE_NULL,													// const void*								pNext;
@@ -2704,7 +2825,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 			numStages = 2u;
 		}
 
-		const VkPipelineShaderStageCreateInfo	shaderCreateInfo[2] =
+		VkPipelineShaderStageCreateInfo	shaderCreateInfo[2] =
 		{
 			{
 				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
@@ -2726,7 +2847,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 			}
 		};
 
-		const VkGraphicsPipelineCreateInfo				graphicsPipelineCreateInfo		=
+		VkGraphicsPipelineCreateInfo				graphicsPipelineCreateInfo		=
 		{
 			VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType									sType;
 			DE_NULL,											// const void*										pNext;
@@ -2748,6 +2869,27 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 			DE_NULL,											// VkPipeline										basePipelineHandle;
 			0													// int												basePipelineIndex;
 		};
+
+#ifndef CTS_USES_VULKANSC
+		VkPipelineRobustnessCreateInfoEXT pipelineRobustnessInfo;
+		if (m_data.testPipelineRobustness)
+		{
+			pipelineRobustnessInfo = getPipelineRobustnessInfo(m_data.testRobustness2, m_data.descriptorType);
+
+			if (m_data.descriptorType == VERTEX_ATTRIBUTE_FETCH)
+			{
+				graphicsPipelineCreateInfo.pNext = &pipelineRobustnessInfo;
+			}
+			else if (m_data.stage == STAGE_VERTEX)
+			{
+				shaderCreateInfo[0].pNext = &pipelineRobustnessInfo;
+			}
+			else
+			{
+				shaderCreateInfo[1].pNext = &pipelineRobustnessInfo;
+			}
+		}
+#endif
 
 		pipeline = createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo);
 	}
@@ -2901,7 +3043,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 
 }	// anonymous
 
-static void createTests (tcu::TestCaseGroup* group, bool robustness2)
+static void createTests (tcu::TestCaseGroup* group, bool robustness2, bool pipelineRobustness)
 {
 	tcu::TestContext& testCtx = group->getTestContext();
 
@@ -3070,11 +3212,23 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2)
 			{
 				de::MovePtr<tcu::TestCaseGroup> fmtGroup(new tcu::TestCaseGroup(testCtx, fmtCases[fmtNdx].name, fmtCases[fmtNdx].name));
 
+				// Avoid too much duplication by excluding certain test cases
+				if (pipelineRobustness &&
+				    !(fmtCases[fmtNdx].count == VK_FORMAT_R32_UINT || fmtCases[fmtNdx].count == VK_FORMAT_R32G32B32A32_SFLOAT || fmtCases[fmtNdx].count == VK_FORMAT_R64_SINT))
+				{
+					continue;
+				}
+
 				int fmtSize = tcu::getPixelSize(mapVkFormat((VkFormat)fmtCases[fmtNdx].count));
 
 				for (int unrollNdx = 0; unrollNdx < DE_LENGTH_OF_ARRAY(unrollCases); unrollNdx++)
 				{
 					de::MovePtr<tcu::TestCaseGroup> unrollGroup(new tcu::TestCaseGroup(testCtx, unrollCases[unrollNdx].name, unrollCases[unrollNdx].name));
+
+					// Avoid too much duplication by excluding certain test cases
+					if (unrollNdx > 0 && pipelineRobustness)
+						continue;
+
 					for (int volNdx = 0; volNdx < DE_LENGTH_OF_ARRAY(volCases); volNdx++)
 					{
 						de::MovePtr<tcu::TestCaseGroup> volGroup(new tcu::TestCaseGroup(testCtx, volCases[volNdx].name, volCases[volNdx].name));
@@ -3086,6 +3240,14 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2)
 						{
 							de::MovePtr<tcu::TestCaseGroup> descGroup(new tcu::TestCaseGroup(testCtx, descCases[descNdx].name, descCases[descNdx].name));
 
+							// Avoid too much duplication by excluding certain test cases
+							if (pipelineRobustness &&
+								!(descCases[descNdx].count == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER || descCases[descNdx].count == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
+									descCases[descNdx].count == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER || descCases[descNdx].count == VERTEX_ATTRIBUTE_FETCH))
+							{
+								continue;
+							}
+
 							for (int roNdx = 0; roNdx < DE_LENGTH_OF_ARRAY(readOnlyCases); roNdx++)
 							{
 								de::MovePtr<tcu::TestCaseGroup> rwGroup(new tcu::TestCaseGroup(testCtx, readOnlyCases[roNdx].name, readOnlyCases[roNdx].name));
@@ -3095,6 +3257,12 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2)
 									descCases[descNdx].count != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER &&
 									descCases[descNdx].count != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC)
 									continue;
+
+								if (pipelineRobustness &&
+									readOnlyCases[roNdx].count != 0)
+								{
+									continue;
+								}
 
 								for (int fmtQualNdx = 0; fmtQualNdx < DE_LENGTH_OF_ARRAY(fmtQualCases); fmtQualNdx++)
 								{
@@ -3134,14 +3302,27 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2)
 											continue;
 										}
 
+										// Avoid too much duplication by excluding certain test cases
+										if (pipelineRobustness &&
+											(lenCases[lenNdx].count == 0 || ((lenCases[lenNdx].count & (lenCases[lenNdx].count - 1)) != 0)))
+										{
+											continue;
+										}
+
 										// "volatile" only applies to storage images/buffers
 										if (volCases[volNdx].count && !supportsStores(descCases[descNdx].count))
 											continue;
+
 
 										de::MovePtr<tcu::TestCaseGroup> lenGroup(new tcu::TestCaseGroup(testCtx, lenCases[lenNdx].name, lenCases[lenNdx].name));
 										for (int sampNdx = 0; sampNdx < DE_LENGTH_OF_ARRAY(sampCases); sampNdx++)
 										{
 											de::MovePtr<tcu::TestCaseGroup> sampGroup(new tcu::TestCaseGroup(testCtx, sampCases[sampNdx].name, sampCases[sampNdx].name));
+
+											// Avoid too much duplication by excluding certain test cases
+											if (pipelineRobustness && sampCases[sampNdx].count != VK_SAMPLE_COUNT_1_BIT)
+											    continue;
+
 											for (int viewNdx = 0; viewNdx < DE_LENGTH_OF_ARRAY(viewCases); viewNdx++)
 											{
 												if (viewCases[viewNdx].count != VK_IMAGE_VIEW_TYPE_1D &&
@@ -3158,6 +3339,13 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2)
 													continue;
 												}
 
+												// Avoid too much duplication by excluding certain test cases
+												if (pipelineRobustness &&
+													!(viewCases[viewNdx].count == VK_IMAGE_VIEW_TYPE_1D || viewCases[viewNdx].count == VK_IMAGE_VIEW_TYPE_2D || viewCases[viewNdx].count == VK_IMAGE_VIEW_TYPE_2D_ARRAY))
+												{
+													continue;
+												}
+
 												de::MovePtr<tcu::TestCaseGroup> viewGroup(new tcu::TestCaseGroup(testCtx, viewCases[viewNdx].name, viewCases[viewNdx].name));
 												for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stageCases); stageNdx++)
 												{
@@ -3169,8 +3357,13 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2)
 													{
 														allShaderStages |= VK_SHADER_STAGE_RAYGEN_BIT_NV;
 														allPipelineStages |= VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV;
+
+														if (pipelineRobustness)
+															continue;
 													}
 #endif // CTS_USES_VULKANSC
+													if ((lenCases[lenNdx].count == ~0U) && pipelineRobustness)
+														continue;
 
 													if (descCases[descNdx].count == VERTEX_ATTRIBUTE_FETCH &&
 														currentStage != STAGE_VERTEX)
@@ -3198,6 +3391,7 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2)
 														(bool)fmtQualCases[fmtQualNdx].count,							// bool formatQualifier
 														(bool)pushCases[pushNdx].count,									// bool pushDescriptor;
 														(bool)robustness2,												// bool testRobustness2;
+														(bool)pipelineRobustness,										// bool testPipelineRobustness;
 														{ imageDim[0], imageDim[1], imageDim[2] },						// deUint32 imageDim[3];
 														(bool)(readOnlyCases[roNdx].count == 1),						// bool readOnly;
 													};
@@ -3240,13 +3434,32 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2)
 
 static void createRobustness2Tests (tcu::TestCaseGroup* group)
 {
-	createTests(group, /*robustness2=*/true);
+	createTests(group, /*robustness2=*/true, /*pipelineRobustness=*/false);
 }
 
 static void createImageRobustnessTests (tcu::TestCaseGroup* group)
 {
-	createTests(group, /*robustness2=*/false);
+	createTests(group, /*robustness2=*/false, /*pipelineRobustness=*/false);
 }
+
+#ifndef CTS_USES_VULKANSC
+static void createPipelineRobustnessTests (tcu::TestCaseGroup* group)
+{
+	tcu::TestContext& testCtx = group->getTestContext();
+
+	tcu::TestCaseGroup *robustness2Group = new tcu::TestCaseGroup(testCtx, "robustness2", "robustness2");
+
+	createTests(robustness2Group, /*robustness2=*/true, /*pipelineRobustness=*/true);
+
+	group->addChild(robustness2Group);
+
+	tcu::TestCaseGroup *imageRobustness2Group = new tcu::TestCaseGroup(testCtx, "image_robustness", "image_robustness");
+
+	createTests(imageRobustness2Group, /*robustness2=*/false, /*pipelineRobustness=*/true);
+
+	group->addChild(imageRobustness2Group);
+}
+#endif
 
 static void cleanupGroup (tcu::TestCaseGroup* group)
 {
@@ -3256,6 +3469,10 @@ static void cleanupGroup (tcu::TestCaseGroup* group)
 	ImageRobustnessInt64AtomicsSingleton::destroy();
 	ImageRobustnessSingleton::destroy();
 	Robustness2Singleton::destroy();
+	PipelineRobustnessImageRobustnessSingleton::destroy();
+	PipelineRobustnessRobustness2Singleton::destroy();
+	PipelineRobustnessImageRobustnessInt64AtomicsSingleton::destroy();
+	PipelineRobustnessRobustness2Int64AtomicsSingleton::destroy();
 }
 
 tcu::TestCaseGroup* createRobustness2Tests (tcu::TestContext& testCtx)
@@ -3269,6 +3486,14 @@ tcu::TestCaseGroup* createImageRobustnessTests (tcu::TestContext& testCtx)
 	return createTestGroup(testCtx, "image_robustness", "VK_EXT_image_robustness tests",
 							createImageRobustnessTests, cleanupGroup);
 }
+
+#ifndef CTS_USES_VULKANSC
+tcu::TestCaseGroup* createPipelineRobustnessTests (tcu::TestContext& testCtx)
+{
+	return createTestGroup(testCtx, "pipeline_robustness", "VK_EXT_pipeline_robustness tests",
+							createPipelineRobustnessTests, cleanupGroup);
+}
+#endif
 
 }	// robustness
 }	// vkt
