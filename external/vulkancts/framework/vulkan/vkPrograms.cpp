@@ -234,8 +234,14 @@ struct cacheNode
 
 cacheNode* cacheSearch (deUint32 key)
 {
-	cacheNode*		r = (cacheNode*)(cacheMempool + 1);
-	unsigned int	p = 0;
+	cacheNode*		r		= (cacheNode*)(cacheMempool + 1);
+	int*			tail	= (int*)cacheMempool;
+	unsigned int	p		= 0;
+
+	if (!*tail) {
+		// Cache is empty.
+		return 0;
+	}
 
 	while (1)
 	{
