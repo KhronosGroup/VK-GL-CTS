@@ -22,8 +22,8 @@ dEQP-VK.api.info.vulkan1p2_limits_validation.fragment_density_map
 dEQP-VK.api.info.vulkan1p2_limits_validation.nv_ray_tracing
 dEQP-VK.api.info.vulkan1p2_limits_validation.timeline_semaphore
 dEQP-VK.api.info.vulkan1p2_limits_validation.ext_line_rasterization
-dEQP-VK.api.device_init.create_instance_extension_name_abuse
-dEQP-VK.api.device_init.create_instance_layer_name_abuse
+dEQP-VK.api.device_init.create_instance_extension_name_abuse.basic
+dEQP-VK.api.device_init.create_instance_layer_name_abuse.basic
 dEQP-VK.api.buffer_marker.graphics.external_host_mem.top_of_pipe.sequential.4
 dEQP-VK.api.buffer_marker.graphics.external_host_mem.top_of_pipe.sequential.64
 dEQP-VK.api.buffer_marker.graphics.external_host_mem.top_of_pipe.sequential.65536
