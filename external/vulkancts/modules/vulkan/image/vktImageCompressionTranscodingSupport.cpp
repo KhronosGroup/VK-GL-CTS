@@ -947,11 +947,6 @@ void BasicComputeTestInstance::createImageInfos (ImageData& imageData, const vec
 
 	if (isCompressed)
 	{
-		VkFormatProperties properties;
-		m_context.getInstanceInterface().getPhysicalDeviceFormatProperties(m_context.getPhysicalDevice(), m_parameters.formatCompressed, &properties);
-		if (!(properties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
-			TCU_THROW(NotSupportedError, "Format storage feature not supported");
-
 		const VkExtent3D	extentCompressed	= makeExtent3D(getLayerSize(m_parameters.imageType, m_parameters.size));
 		const VkImageCreateInfo compressedInfo =
 		{
@@ -976,6 +971,11 @@ void BasicComputeTestInstance::createImageInfos (ImageData& imageData, const vec
 			DE_NULL,												// const deUint32*			pQueueFamilyIndices;
 			VK_IMAGE_LAYOUT_UNDEFINED,								// VkImageLayout			initialLayout;
 		};
+
+		VkImageFormatProperties imageFormatProperties;
+		if (m_context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(m_context.getPhysicalDevice(), compressedInfo.format, compressedInfo.imageType, compressedInfo.tiling, compressedInfo.usage, compressedInfo.flags, &imageFormatProperties) != VK_SUCCESS)
+			TCU_THROW(NotSupportedError, "Image parameters not supported");
+
 		imageData.addImageInfo(compressedInfo);
 	}
 	else
@@ -2698,10 +2698,10 @@ void TexelViewCompatibleCase::initPrograms (vk::SourceCollections&	programCollec
 				"    const vec3 cord = vec3(v2, 0.0);\n"
 				"    const ivec3 pos = ivec3(gl_GlobalInvocationID); \n",
 			};
-			src_decompress	<< "layout (binding = 0) uniform "<<getGlslSamplerType(mapVkFormat(m_parameters.formatUncompressed), mapImageViewType(m_parameters.imageType))<<" compressed_result;\n"
-							<< "layout (binding = 1) uniform "<<getGlslSamplerType(mapVkFormat(m_parameters.formatUncompressed), mapImageViewType(m_parameters.imageType))<<" compressed_reference;\n"
-							<< "layout (binding = 2, "<<formatQualifierStr<<") writeonly uniform "<<imageTypeStr<<" decompressed_result;\n"
-							<< "layout (binding = 3, "<<formatQualifierStr<<") writeonly uniform "<<imageTypeStr<<" decompressed_reference;\n\n"
+			src_decompress	<< "layout (binding = 0) uniform "<<getGlslSamplerType(mapVkFormat(m_parameters.formatForVerify), mapImageViewType(m_parameters.imageType))<<" compressed_result;\n"
+							<< "layout (binding = 1) uniform "<<getGlslSamplerType(mapVkFormat(m_parameters.formatForVerify), mapImageViewType(m_parameters.imageType))<<" compressed_reference;\n"
+							<< "layout (binding = 2, "<<getShaderImageFormatQualifier(mapVkFormat(m_parameters.formatForVerify))<<") writeonly uniform "<<getShaderImageType(mapVkFormat(m_parameters.formatForVerify), m_parameters.imageType)<<" decompressed_result;\n"
+							<< "layout (binding = 3, "<<getShaderImageFormatQualifier(mapVkFormat(m_parameters.formatForVerify))<<") writeonly uniform "<<getShaderImageType(mapVkFormat(m_parameters.formatForVerify), m_parameters.imageType)<<" decompressed_reference;\n\n"
 							<< "void main (void)\n"
 							<< "{\n"
 							<< "    const vec2 pixels_resolution = vec2(gl_NumWorkGroups.xy);\n"
@@ -2844,10 +2844,10 @@ void TexelViewCompatibleCase::initPrograms (vk::SourceCollections&	programCollec
 				};
 
 				src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n\n"
-					<< "layout (binding = 0) uniform " << samplerType << " u_imageIn0;\n"
-					<< "layout (binding = 1) uniform " << samplerType << " u_imageIn1;\n"
-					<< "layout (binding = 2, " << formatQualifierStr << ") writeonly uniform " << imageTypeStr << " u_imageOut0;\n"
-					<< "layout (binding = 3, " << formatQualifierStr << ") writeonly uniform " << imageTypeStr << " u_imageOut1;\n"
+					<< "layout (binding = 0) uniform " << getGlslSamplerType(mapVkFormat(m_parameters.formatForVerify), mapImageViewType(m_parameters.imageType)) << " u_imageIn0;\n"
+					<< "layout (binding = 1) uniform " << getGlslSamplerType(mapVkFormat(m_parameters.formatForVerify), mapImageViewType(m_parameters.imageType)) << " u_imageIn1;\n"
+					<< "layout (binding = 2, " << getShaderImageFormatQualifier(mapVkFormat(m_parameters.formatForVerify)) << ") writeonly uniform " << getShaderImageType(mapVkFormat(m_parameters.formatForVerify), m_parameters.imageType) << " u_imageOut0;\n"
+					<< "layout (binding = 3, " << getShaderImageFormatQualifier(mapVkFormat(m_parameters.formatForVerify)) << ") writeonly uniform " << getShaderImageType(mapVkFormat(m_parameters.formatForVerify), m_parameters.imageType) << " u_imageOut1;\n"
 					<< "\n"
 					<< "void main (void)\n"
 					<< "{\n"
@@ -3030,7 +3030,18 @@ tcu::TestCaseGroup* createImageCompressionTranscodingTests (tcu::TestContext& te
 	{
 		{ IMAGE_TYPE_1D, "1d_image" },
 		{ IMAGE_TYPE_2D, "2d_image" },
-		{ IMAGE_TYPE_3D, "3d_image" },
+
+		// See issue: https://gitlab.khronos.org/vulkan/vulkan/-/issues/3164
+		//   Removed 3D because you can't take an uncompressed 3D view of a VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT image
+		// see VUID-VkImageViewCreateInfo-image-04739. This VUID came from https://gitlab.khronos.org/vulkan/vulkan/-/merge_requests/4350
+		// to resolve https://gitlab.khronos.org/vulkan/vulkan/-/issues/2501.
+		//   It is possible to take a 2D view of a compressed 3D image created
+		// with VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT, but then it also needs to be created with
+		// VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT from VK_EXT_image_2d_view_of_3d, and the implementation needs to support
+		// image2DViewOf3D or sampler2DViewOf3D depending on the test variant.
+		//   For this test to support VK_EXT_image_2d_view_of_3d there needs to be quite a few changes to the shader generation
+		// code, the descriptor set code and several other things, which isn't a trivial amount of work.
+		// { IMAGE_TYPE_3D, "3d_image" },
 	};
 
 	const VkImageUsageFlags		baseImageUsageFlagSet							= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
@@ -3215,8 +3226,7 @@ tcu::TestCaseGroup* createImageCompressionTranscodingTests (tcu::TestContext& te
 						continue;
 
 					if (imageType == IMAGE_TYPE_3D &&
-						(operationNdx == OPERATION_ATTACHMENT_READ || operationNdx == OPERATION_ATTACHMENT_WRITE ||
-						 operationNdx == OPERATION_TEXTURE_READ))
+						(operationNdx == OPERATION_ATTACHMENT_READ || operationNdx == OPERATION_ATTACHMENT_WRITE))
 						continue;
 
 					MovePtr<tcu::TestCaseGroup>	imageOperationGroup	(new tcu::TestCaseGroup(testCtx, operationName[operationNdx].c_str(), ""));
