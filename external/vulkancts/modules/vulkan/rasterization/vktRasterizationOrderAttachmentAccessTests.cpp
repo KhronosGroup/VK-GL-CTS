@@ -559,22 +559,27 @@ void AttachmentAccessOrderDepthTestCase::addShadersInternal(SourceCollections& p
 				<< "		out0.y = curIndex + 1 + gl_SampleID + zero;\n";
 	if (m_sampleCount != VK_SAMPLE_COUNT_1_BIT)
 	{
-		fragShader	<< "	gl_FragDepth = 0.125 * (float(curIndex) / float(total)) + gl_SampleID / 128.0;\n";
-	}
-	fragShader	<< "	}\n"
-				<< "	else if (ds.x == 0.125 * float(curIndex - 1) / float(total) + gl_SampleID / 128.0)\n"
-				<< "	{\n"
-				<< "		out0.x = color.x;\n"
-				<< "		out0.y = curIndex + 1 + gl_SampleID + zero;\n";
-	if (m_sampleCount != VK_SAMPLE_COUNT_1_BIT)
-	{
-		fragShader	<< "	gl_FragDepth = 0.125 * (float(curIndex) / float(total)) + gl_SampleID / 128.0;\n";
+		fragShader	<< "		gl_FragDepth = 0.125 * (float(curIndex) / float(total)) + gl_SampleID / 128.0;\n";
 	}
 	fragShader	<< "	}\n"
 				<< "	else\n"
 				<< "	{\n"
-				<< "		out0.y = 0;\n"
-				<< "		out0.x = 1u;\n"
+				<< "		const float expected = 0.125 * float(curIndex - 1) / float(total) + gl_SampleID / 128.0;\n"
+				<< "		const float threshold = 0.0000001;\n"
+				<< "		if (ds.x >= expected - threshold && ds.x <= expected + threshold)\n"
+				<< "		{\n"
+				<< "			out0.x = color.x;\n"
+				<< "			out0.y = curIndex + 1 + gl_SampleID + zero;\n";
+	if (m_sampleCount != VK_SAMPLE_COUNT_1_BIT)
+	{
+		fragShader	<< "			gl_FragDepth = 0.125 * (float(curIndex) / float(total)) + gl_SampleID / 128.0;\n";
+	}
+	fragShader	<< "		}\n"
+				<< "		else\n"
+				<< "		{\n"
+				<< "			out0.y = 0;\n"
+				<< "			out0.x = 1u;\n"
+				<< "		}\n"
 				<< "	}\n"
 				<< "}\n";
 
