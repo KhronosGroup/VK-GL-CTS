@@ -362,13 +362,14 @@ tcu::TestStatus EarlyFragmentTestInstance::iterate (void)
 	{
 		tcu::Vec4* const pVertices = reinterpret_cast<tcu::Vec4*>(vertexBufferAlloc->getHostPtr());
 
-		pVertices[0] = tcu::Vec4( 1.0f, -1.0f,  0.5f,  1.0f);
-		pVertices[1] = tcu::Vec4(-1.0f, -1.0f,  0.0f,  1.0f);
-		pVertices[2] = tcu::Vec4(-1.0f,  1.0f,  0.5f,  1.0f);
+		// A small +0.00001f adjustment for the z-coordinate to get the expected rounded value for depth.
+		pVertices[0] = tcu::Vec4( 1.0f, -1.0f,  0.50001f,  1.0f);
+		pVertices[1] = tcu::Vec4(-1.0f, -1.0f,  0.0f,      1.0f);
+		pVertices[2] = tcu::Vec4(-1.0f,  1.0f,  0.50001f,  1.0f);
 
-		pVertices[3] = tcu::Vec4(-1.0f,  1.0f,  0.5f,  1.0f);
-		pVertices[4] = tcu::Vec4( 1.0f,  1.0f,  1.0f,  1.0f);
-		pVertices[5] = tcu::Vec4( 1.0f, -1.0f,  0.5f,  1.0f);
+		pVertices[3] = tcu::Vec4(-1.0f,  1.0f,  0.50001f,  1.0f);
+		pVertices[4] = tcu::Vec4( 1.0f,  1.0f,  1.0f,      1.0f);
+		pVertices[5] = tcu::Vec4( 1.0f, -1.0f,  0.50001f,  1.0f);
 
 		flushAlloc(vk, device, *vertexBufferAlloc);
 		// No barrier needed, flushed memory is automatically visible
