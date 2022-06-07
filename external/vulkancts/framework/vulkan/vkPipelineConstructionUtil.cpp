@@ -144,19 +144,6 @@ void checkPipelineLibraryRequirements (const InstanceInterface&		vki,
 	const auto supportedExtensions = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 	if (!isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_graphics_pipeline_library")))
 		TCU_THROW(NotSupportedError, "VK_EXT_graphics_pipeline_library not supported");
-
-	// VK_KHR_pipeline_library must be supported if the VK_EXT_graphics_pipeline_library extension is supported
-	if (!isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_KHR_pipeline_library")))
-		TCU_FAIL("VK_KHR_pipeline_library not supported but VK_EXT_graphics_pipeline_library supported");
-
-#ifndef CTS_USES_VULKANSC
-	const vk::VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT pipelineLibraryProperties = getPhysicalDeviceExtensionProperties(vki, physicalDevice);
-	if ((pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY) && !pipelineLibraryProperties.graphicsPipelineLibraryFastLinking)
-		TCU_THROW(NotSupportedError, "graphicsPipelineLibraryFastLinking is not supported");
-#else
-	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY)
-		TCU_THROW(NotSupportedError, "graphicsPipelineLibraryFastLinking is not supported");
-#endif // CTS_USES_VULKANSC
 }
 
 template<typename StructNext>
