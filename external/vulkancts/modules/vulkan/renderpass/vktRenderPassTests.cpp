@@ -42,6 +42,7 @@
 #include "vktDynamicRenderingTests.hpp"
 #endif // CTS_USES_VULKANSC
 #include "vktRenderPassDepthStencilWriteConditionsTests.hpp"
+#include "vktRenderPassSubpassMergeFeedbackTests.hpp"
 
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -7648,6 +7649,13 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 	suballocationTestGroup->addChild(createRenderPassUnusedClearAttachmentTests(testCtx, renderingType));
 #ifndef CTS_USES_VULKANSC
 	suballocationTestGroup->addChild(createRenderPassLoadStoreOpNoneTests(testCtx, renderingType));
+#endif // CTS_USES_VULKANSC
+
+#ifndef CTS_USES_VULKANSC
+	if (renderingType == RENDERING_TYPE_RENDERPASS2)
+	{
+		suballocationTestGroup->addChild(createRenderPassSubpassMergeFeedbackTests(testCtx, renderingType));
+	}
 #endif // CTS_USES_VULKANSC
 
 	renderingTests->addChild(suballocationTestGroup.release());
