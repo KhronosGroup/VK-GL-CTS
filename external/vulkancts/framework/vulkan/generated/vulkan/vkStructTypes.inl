@@ -5923,18 +5923,28 @@ struct VkRenderPassCreationControlEXT
 
 struct VkRenderPassCreationFeedbackInfoEXT
 {
-	VkStructureType	sType;
-	const void*		pNext;
-	uint32_t		postMergeSubpassCount;
+	uint32_t	postMergeSubpassCount;
+};
+
+struct VkRenderPassCreationFeedbackCreateInfoEXT
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	VkRenderPassCreationFeedbackInfoEXT*	pRenderPassFeedback;
 };
 
 struct VkRenderPassSubpassFeedbackInfoEXT
 {
-	VkStructureType			sType;
-	const void*				pNext;
 	VkSubpassMergeStatusEXT	subpassMergeStatus;
 	char					description[VK_MAX_DESCRIPTION_SIZE];
 	uint32_t				postMergeIndex;
+};
+
+struct VkRenderPassSubpassFeedbackCreateInfoEXT
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkRenderPassSubpassFeedbackInfoEXT*	pSubpassFeedback;
 };
 
 union VkDeviceOrHostAddressKHR

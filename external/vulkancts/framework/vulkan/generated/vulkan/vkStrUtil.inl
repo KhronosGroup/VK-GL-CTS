@@ -1160,7 +1160,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageCompressio
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassCreationControlEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassCreationFeedbackInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkRenderPassCreationFeedbackCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassSubpassFeedbackInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkRenderPassSubpassFeedbackCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceOrHostAddressKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureBuildRangeInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureGeometryTrianglesDataKHR& value);

@@ -2558,14 +2558,14 @@ template<> VkStructureType getStructureType<VkRenderPassCreationControlEXT> (voi
 	return VK_STRUCTURE_TYPE_RENDER_PASS_CREATION_CONTROL_EXT;
 }
 
-template<> VkStructureType getStructureType<VkRenderPassCreationFeedbackInfoEXT> (void)
+template<> VkStructureType getStructureType<VkRenderPassCreationFeedbackCreateInfoEXT> (void)
 {
-	return VK_STRUCTURE_TYPE_RENDER_PASS_CREATION_FEEDBACK_INFO_EXT;
+	return VK_STRUCTURE_TYPE_RENDER_PASS_CREATION_FEEDBACK_CREATE_INFO_EXT;
 }
 
-template<> VkStructureType getStructureType<VkRenderPassSubpassFeedbackInfoEXT> (void)
+template<> VkStructureType getStructureType<VkRenderPassSubpassFeedbackCreateInfoEXT> (void)
 {
-	return VK_STRUCTURE_TYPE_RENDER_PASS_SUBPASS_FEEDBACK_INFO_EXT;
+	return VK_STRUCTURE_TYPE_RENDER_PASS_SUBPASS_FEEDBACK_CREATE_INFO_EXT;
 }
 
 template<> VkStructureType getStructureType<VkAccelerationStructureGeometryTrianglesDataKHR> (void)

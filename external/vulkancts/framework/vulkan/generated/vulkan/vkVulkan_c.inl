@@ -1071,7 +1071,7 @@ extern "C" {
 #define VK_API_VERSION_1_0 VK_MAKE_API_VERSION(0, 1, 0, 0)// Patch version should always be set to 0
 
 // Version of this file
-#define VK_HEADER_VERSION 215
+#define VK_HEADER_VERSION 216
 
 // Complete version of this file
 #define VK_HEADER_VERSION_COMPLETE VK_MAKE_API_VERSION(0, 1, 3, VK_HEADER_VERSION)
@@ -1955,8 +1955,8 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN_FEATURES_EXT = 1000437000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBPASS_MERGE_FEEDBACK_FEATURES_EXT = 1000458000,
     VK_STRUCTURE_TYPE_RENDER_PASS_CREATION_CONTROL_EXT = 1000458001,
-    VK_STRUCTURE_TYPE_RENDER_PASS_CREATION_FEEDBACK_INFO_EXT = 1000458002,
-    VK_STRUCTURE_TYPE_RENDER_PASS_SUBPASS_FEEDBACK_INFO_EXT = 1000458003,
+    VK_STRUCTURE_TYPE_RENDER_PASS_CREATION_FEEDBACK_CREATE_INFO_EXT = 1000458002,
+    VK_STRUCTURE_TYPE_RENDER_PASS_SUBPASS_FEEDBACK_CREATE_INFO_EXT = 1000458003,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES,
     VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
@@ -15192,7 +15192,7 @@ typedef struct VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT {
 
 
 #define VK_EXT_subpass_merge_feedback 1
-#define VK_EXT_SUBPASS_MERGE_FEEDBACK_SPEC_VERSION 1
+#define VK_EXT_SUBPASS_MERGE_FEEDBACK_SPEC_VERSION 2
 #define VK_EXT_SUBPASS_MERGE_FEEDBACK_EXTENSION_NAME "VK_EXT_subpass_merge_feedback"
 
 typedef enum VkSubpassMergeStatusEXT {
@@ -15225,18 +15225,26 @@ typedef struct VkRenderPassCreationControlEXT {
 } VkRenderPassCreationControlEXT;
 
 typedef struct VkRenderPassCreationFeedbackInfoEXT {
-    VkStructureType    sType;
-    const void*        pNext;
-    deUint32           postMergeSubpassCount;
+    deUint32    postMergeSubpassCount;
 } VkRenderPassCreationFeedbackInfoEXT;
 
+typedef struct VkRenderPassCreationFeedbackCreateInfoEXT {
+    VkStructureType                         sType;
+    const void*                             pNext;
+    VkRenderPassCreationFeedbackInfoEXT*    pRenderPassFeedback;
+} VkRenderPassCreationFeedbackCreateInfoEXT;
+
 typedef struct VkRenderPassSubpassFeedbackInfoEXT {
-    VkStructureType            sType;
-    const void*                pNext;
     VkSubpassMergeStatusEXT    subpassMergeStatus;
     char                       description[VK_MAX_DESCRIPTION_SIZE];
     deUint32                   postMergeIndex;
 } VkRenderPassSubpassFeedbackInfoEXT;
+
+typedef struct VkRenderPassSubpassFeedbackCreateInfoEXT {
+    VkStructureType                        sType;
+    const void*                            pNext;
+    VkRenderPassSubpassFeedbackInfoEXT*    pSubpassFeedback;
+} VkRenderPassSubpassFeedbackCreateInfoEXT;
 
 
 

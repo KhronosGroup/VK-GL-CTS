@@ -693,6 +693,13 @@ inline VkMultiDrawIndexedInfoEXT makeMultiDrawIndexedInfoEXT (uint32_t firstInde
 	return res;
 }
 
+inline VkRenderPassCreationFeedbackInfoEXT makeRenderPassCreationFeedbackInfoEXT (uint32_t postMergeSubpassCount)
+{
+	VkRenderPassCreationFeedbackInfoEXT res;
+	res.postMergeSubpassCount	= postMergeSubpassCount;
+	return res;
+}
+
 inline VkAccelerationStructureBuildRangeInfoKHR makeAccelerationStructureBuildRangeInfoKHR (uint32_t primitiveCount, uint32_t primitiveOffset, uint32_t firstVertex, uint32_t transformOffset)
 {
 	VkAccelerationStructureBuildRangeInfoKHR res;

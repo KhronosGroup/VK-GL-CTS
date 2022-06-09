@@ -776,8 +776,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN_FEATURES_EXT:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBPASS_MERGE_FEEDBACK_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBPASS_MERGE_FEEDBACK_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_CREATION_CONTROL_EXT:									return "VK_STRUCTURE_TYPE_RENDER_PASS_CREATION_CONTROL_EXT";
-		case VK_STRUCTURE_TYPE_RENDER_PASS_CREATION_FEEDBACK_INFO_EXT:								return "VK_STRUCTURE_TYPE_RENDER_PASS_CREATION_FEEDBACK_INFO_EXT";
-		case VK_STRUCTURE_TYPE_RENDER_PASS_SUBPASS_FEEDBACK_INFO_EXT:								return "VK_STRUCTURE_TYPE_RENDER_PASS_SUBPASS_FEEDBACK_INFO_EXT";
+		case VK_STRUCTURE_TYPE_RENDER_PASS_CREATION_FEEDBACK_CREATE_INFO_EXT:						return "VK_STRUCTURE_TYPE_RENDER_PASS_CREATION_FEEDBACK_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_RENDER_PASS_SUBPASS_FEEDBACK_CREATE_INFO_EXT:						return "VK_STRUCTURE_TYPE_RENDER_PASS_SUBPASS_FEEDBACK_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_MAX_ENUM:															return "VK_STRUCTURE_TYPE_MAX_ENUM";
 		default:																					return DE_NULL;
 	}
@@ -12672,9 +12672,17 @@ std::ostream& operator<< (std::ostream& s, const VkRenderPassCreationControlEXT&
 std::ostream& operator<< (std::ostream& s, const VkRenderPassCreationFeedbackInfoEXT& value)
 {
 	s << "VkRenderPassCreationFeedbackInfoEXT = {\n";
+	s << "\tpostMergeSubpassCount = " << value.postMergeSubpassCount << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRenderPassCreationFeedbackCreateInfoEXT& value)
+{
+	s << "VkRenderPassCreationFeedbackCreateInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tpostMergeSubpassCount = " << value.postMergeSubpassCount << '\n';
+	s << "\tpRenderPassFeedback = " << value.pRenderPassFeedback << '\n';
 	s << '}';
 	return s;
 }
@@ -12682,11 +12690,19 @@ std::ostream& operator<< (std::ostream& s, const VkRenderPassCreationFeedbackInf
 std::ostream& operator<< (std::ostream& s, const VkRenderPassSubpassFeedbackInfoEXT& value)
 {
 	s << "VkRenderPassSubpassFeedbackInfoEXT = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tsubpassMergeStatus = " << value.subpassMergeStatus << '\n';
 	s << "\tdescription = " << (const char*)value.description << '\n';
 	s << "\tpostMergeIndex = " << value.postMergeIndex << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRenderPassSubpassFeedbackCreateInfoEXT& value)
+{
+	s << "VkRenderPassSubpassFeedbackCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpSubpassFeedback = " << value.pSubpassFeedback << '\n';
 	s << '}';
 	return s;
 }
