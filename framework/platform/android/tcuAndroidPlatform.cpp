@@ -324,7 +324,7 @@ bool Platform::processEvents (void)
 
 vk::Library* Platform::createLibrary (const char* libraryPath) const
 {
-	return new VulkanLibrary(const char* libraryPath);
+	return new VulkanLibrary(libraryPath);
 }
 
 void Platform::describePlatform (std::ostream& dst) const
