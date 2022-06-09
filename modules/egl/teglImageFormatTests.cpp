@@ -421,6 +421,36 @@ static void framebufferRenderbuffer (const glw::Functions& gl, GLenum attachment
 						("EGLImage as " + string(glu::getFramebufferAttachmentName(attachment)) + " not supported").c_str());
 }
 
+static set<string> getSupportedExtensions (tcu::TestLog& log, const Library& egl, const EGLDisplay dpy, const glw::Functions gl)
+{
+	set<string>				exts;
+	const vector<string>	glExts	= de::splitString((const char*) gl.getString(GL_EXTENSIONS));
+	const vector<string>	eglExts	= eglu::getDisplayExtensions(egl, dpy);
+
+	exts.insert(glExts.begin(), glExts.end());
+	exts.insert(eglExts.begin(), eglExts.end());
+
+	if (eglu::getVersion(egl, dpy) >= eglu::Version(1, 5))
+	{
+		// EGL 1.5 has built-in support for EGLImage and GL sources
+		exts.insert("EGL_KHR_image_base");
+		exts.insert("EGL_KHR_gl_texture_2D_image");
+		exts.insert("EGL_KHR_gl_texture_cubemap_image");
+		exts.insert("EGL_KHR_gl_renderbuffer_image");
+	}
+
+	if (!de::contains(exts, "EGL_KHR_image_base") && !de::contains(exts, "EGL_KHR_image"))
+	{
+		log << tcu::TestLog::Message
+			<< "EGL version is under 1.5 and neither EGL_KHR_image nor EGL_KHR_image_base is supported."
+			<< "One should be supported."
+			<< tcu::TestLog::EndMessage;
+		TCU_THROW(NotSupportedError, "Extension not supported: EGL_KHR_image_base");
+	}
+
+	return exts;
+}
+
 static const float squareTriangleCoords[] =
 {
 	-1.0, -1.0,
@@ -1205,11 +1235,17 @@ bool GLESImageApi::RenderTryAll::invokeGLES (GLESImageApi& api, MovePtr<UniqueIm
 	GLESImageApi::RenderDepthbuffer					renderDepth;
 	GLESImageApi::RenderStencilbuffer				renderStencil;
 	Action*											actions[]				= { &renderTex2D, &renderExternal, &renderExternalSamplerArray, &renderReadPixels, &renderDepth, &renderStencil };
+	set<string>										exts					= getSupportedExtensions(log, api.m_egl, api.m_display, api.m_gl);
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(actions); ++ndx)
 	{
 		try
 		{
+			const string ext = actions[ndx]->getRequiredExtension();
+
+			if (!de::contains(exts, ext))
+				TCU_THROW_EXPR(NotSupportedError, "Extension not supported", ext.c_str());
+
 			if (!actions[ndx]->invoke(api, img, reference))
 				return false;
 
@@ -1387,32 +1423,7 @@ ImageFormatCase::~ImageFormatCase (void)
 
 void ImageFormatCase::checkExtensions (void)
 {
-	const Library&			egl		= m_eglTestCtx.getLibrary();
-	const EGLDisplay		dpy		= m_display;
-	set<string>				exts;
-	const vector<string>	glExts	= de::splitString((const char*) m_gl.getString(GL_EXTENSIONS));
-	const vector<string>	eglExts	= eglu::getDisplayExtensions(egl, dpy);
-
-	exts.insert(glExts.begin(), glExts.end());
-	exts.insert(eglExts.begin(), eglExts.end());
-
-	if (eglu::getVersion(egl, dpy) >= eglu::Version(1, 5))
-	{
-		// EGL 1.5 has built-in support for EGLImage and GL sources
-		exts.insert("EGL_KHR_image_base");
-		exts.insert("EGL_KHR_gl_texture_2D_image");
-		exts.insert("EGL_KHR_gl_texture_cubemap_image");
-		exts.insert("EGL_KHR_gl_renderbuffer_image");
-	}
-
-	if (!de::contains(exts, "EGL_KHR_image_base") && !de::contains(exts, "EGL_KHR_image"))
-	{
-		getLog() << tcu::TestLog::Message
-				 << "EGL version is under 1.5 and neither EGL_KHR_image nor EGL_KHR_image_base is supported."
-				 << "One should be supported."
-				 << tcu::TestLog::EndMessage;
-		TCU_THROW(NotSupportedError, "Extension not supported: EGL_KHR_image_base");
-	}
+	set<string> exts = getSupportedExtensions(getLog(), m_eglTestCtx.getLibrary(), m_display, m_gl);
 
 	for (int operationNdx = 0; operationNdx < (int)m_spec.operations.size(); operationNdx++)
 	{

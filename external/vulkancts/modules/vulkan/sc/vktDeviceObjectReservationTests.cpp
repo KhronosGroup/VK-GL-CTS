@@ -712,7 +712,7 @@ void createDescriptorPools	(const DeviceInterface&						vkd,
 		{
 			VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,					// sType
 			DE_NULL,														// pNext
-			(VkDescriptorPoolCreateFlags)0u,								// flags
+			VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,				// flags
 			maxSets,														// maxSets
 			1u,																// poolSizeCount
 			&poolSizes,														// pPoolSizes

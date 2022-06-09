@@ -115,6 +115,7 @@
 #include "vktFragmentShadingRateTests.hpp"
 #include "vktReconvergenceTests.hpp"
 #include "vktMeshShaderTests.hpp"
+#include "vktFragmentShadingBarycentricTests.hpp"
 #ifdef CTS_USES_VULKANSC
 #include "vktSafetyCriticalTests.hpp"
 #endif // CTS_USES_VULKANSC
@@ -201,7 +202,7 @@ static void		restoreStandardOutput	()												{ qpRedirectOut(openWrite, open
 
 static MovePtr<vk::Library> createLibrary (tcu::TestContext& testCtx)
 {
-	return MovePtr<vk::Library>(testCtx.getPlatform().getVulkanPlatform().createLibrary());
+	return MovePtr<vk::Library>(testCtx.getPlatform().getVulkanPlatform().createLibrary(testCtx.getCommandLine().getVkLibraryPath()));
 }
 
 static vk::VkPhysicalDeviceProperties getPhysicalDeviceProperties(vkt::Context& context)
@@ -1127,6 +1128,7 @@ void TestPackage::init (void)
 	addChild(FragmentShadingRate::createTests	(m_testCtx));
 	addChild(Reconvergence::createTests			(m_testCtx, false));
 	addChild(MeshShader::createTests			(m_testCtx));
+	addChild(FragmentShadingBarycentric::createTests(m_testCtx));
 }
 
 void ExperimentalTestPackage::init (void)

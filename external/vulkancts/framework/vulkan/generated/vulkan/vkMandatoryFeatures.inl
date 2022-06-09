@@ -180,20 +180,10 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceFragmentShaderInterlockFeaturesEXT.pNext;
 	}
 
-	vk::VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT physicalDeviceGlobalPriorityQueryFeaturesEXT;
-	deMemset(&physicalDeviceGlobalPriorityQueryFeaturesEXT, 0, sizeof(physicalDeviceGlobalPriorityQueryFeaturesEXT));
-
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_global_priority_query")) )
-	{
-		physicalDeviceGlobalPriorityQueryFeaturesEXT.sType = getStructureType<VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT>();
-		*nextPtr = &physicalDeviceGlobalPriorityQueryFeaturesEXT;
-		nextPtr  = &physicalDeviceGlobalPriorityQueryFeaturesEXT.pNext;
-	}
-
 	vk::VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR physicalDeviceGlobalPriorityQueryFeaturesKHR;
 	deMemset(&physicalDeviceGlobalPriorityQueryFeaturesKHR, 0, sizeof(physicalDeviceGlobalPriorityQueryFeaturesKHR));
 
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_global_priority")) )
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_global_priority_query")) || isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_global_priority")) )
 	{
 		physicalDeviceGlobalPriorityQueryFeaturesKHR.sType = getStructureType<VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR>();
 		*nextPtr = &physicalDeviceGlobalPriorityQueryFeaturesKHR;
@@ -221,6 +211,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceImage2DViewOf3DFeaturesEXT.pNext;
 	}
 #endif // defined(CTS_USES_VULKAN)
+
+	vk::VkPhysicalDeviceImageCompressionControlFeaturesEXT physicalDeviceImageCompressionControlFeaturesEXT;
+	deMemset(&physicalDeviceImageCompressionControlFeaturesEXT, 0, sizeof(physicalDeviceImageCompressionControlFeaturesEXT));
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_image_compression_control")) )
+	{
+		physicalDeviceImageCompressionControlFeaturesEXT.sType = getStructureType<VkPhysicalDeviceImageCompressionControlFeaturesEXT>();
+		*nextPtr = &physicalDeviceImageCompressionControlFeaturesEXT;
+		nextPtr  = &physicalDeviceImageCompressionControlFeaturesEXT.pNext;
+	}
 
 	vk::VkPhysicalDeviceImagelessFramebufferFeatures physicalDeviceImagelessFramebufferFeatures;
 	deMemset(&physicalDeviceImagelessFramebufferFeatures, 0, sizeof(physicalDeviceImagelessFramebufferFeatures));
@@ -378,6 +378,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		physicalDeviceRayQueryFeaturesKHR.sType = getStructureType<VkPhysicalDeviceRayQueryFeaturesKHR>();
 		*nextPtr = &physicalDeviceRayQueryFeaturesKHR;
 		nextPtr  = &physicalDeviceRayQueryFeaturesKHR.pNext;
+	}
+
+	vk::VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR physicalDeviceRayTracingMaintenance1FeaturesKHR;
+	deMemset(&physicalDeviceRayTracingMaintenance1FeaturesKHR, 0, sizeof(physicalDeviceRayTracingMaintenance1FeaturesKHR));
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_ray_tracing_maintenance1")) )
+	{
+		physicalDeviceRayTracingMaintenance1FeaturesKHR.sType = getStructureType<VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR>();
+		*nextPtr = &physicalDeviceRayTracingMaintenance1FeaturesKHR;
+		nextPtr  = &physicalDeviceRayTracingMaintenance1FeaturesKHR.pNext;
 	}
 
 	vk::VkPhysicalDeviceRayTracingPipelineFeaturesKHR physicalDeviceRayTracingPipelineFeaturesKHR;
@@ -941,15 +951,6 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
-	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_global_priority_query")) )
-	{
-		if ( physicalDeviceGlobalPriorityQueryFeaturesEXT.globalPriorityQuery == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature globalPriorityQuery not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
 	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_host_query_reset")) )
 	{
 		if ( physicalDeviceHostQueryResetFeatures.hostQueryReset == VK_FALSE )
@@ -969,6 +970,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 #endif // defined(CTS_USES_VULKAN)
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_image_compression_control")) )
+	{
+		if ( physicalDeviceImageCompressionControlFeaturesEXT.imageCompressionControl == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature imageCompressionControl not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
 
 	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_index_type_uint8")) )
 	{
@@ -1246,6 +1256,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_global_priority_query")) )
+	{
+		if ( physicalDeviceGlobalPriorityQueryFeaturesKHR.globalPriorityQuery == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature globalPriorityQuery not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
 	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_global_priority")) )
 	{
 		if ( physicalDeviceGlobalPriorityQueryFeaturesKHR.globalPriorityQuery == VK_FALSE )
@@ -1318,6 +1337,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceRayQueryFeaturesKHR.rayQuery == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature rayQuery not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_ray_tracing_maintenance1")) )
+	{
+		if ( physicalDeviceRayTracingMaintenance1FeaturesKHR.rayTracingMaintenance1 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature rayTracingMaintenance1 not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

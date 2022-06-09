@@ -163,9 +163,10 @@ public:
 		return false;
 	}
 
-	void			releaseQueue			(const deUint32& queueFamilyIndex, const int& queueIndex)
+	void			releaseQueue			(const deUint32& queueFamilyIndex, const int& queueIndex, Move<VkCommandBuffer>& commandBuffer)
 	{
 		m_mutex.lock();
+		commandBuffer = Move<VkCommandBuffer>();
 		m_queues[queueFamilyIndex].available[queueIndex] = true;
 		m_mutex.unlock();
 	}
@@ -406,7 +407,7 @@ TestStatus executeComputePipeline (const Context& context, const VkPipeline& pip
 
 		// Wait for command buffer execution finish
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
-		queues.releaseQueue(queueFamilyIndex, queueIndex);
+		queues.releaseQueue(queueFamilyIndex, queueIndex, cmdBuffer);
 
 		{
 			const Allocation& resultAlloc = resultBuffer.getAllocation();
@@ -500,7 +501,7 @@ TestStatus executeGraphicPipeline (const Context& context, const VkPipeline& pip
 
 		// Wait for command buffer execution finish
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
-		queues.releaseQueue(queueFamilyIndex, queueIndex);
+		queues.releaseQueue(queueFamilyIndex, queueIndex, cmdBuffer);
 
 		{
 			const Allocation& resultAlloc = resultBuffer.getAllocation();

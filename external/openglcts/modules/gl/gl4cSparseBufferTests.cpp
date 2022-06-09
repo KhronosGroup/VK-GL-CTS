@@ -885,8 +885,8 @@ void AtomicCounterBufferStorageTestCase::deinitTestCaseIteration()
 		m_gl.bindBuffer(GL_ARRAY_BUFFER, m_sparse_bo);
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
-		m_gl.bufferPageCommitmentARB(GL_ARRAY_BUFFER, 0,				  /* offset */
-									 m_helper_bo_size_rounded, GL_FALSE); /* commit */
+		m_gl.bufferPageCommitmentARB(GL_ARRAY_BUFFER, m_sparse_bo_data_start_offset_rounded,		/* offset */
+									 m_sparse_bo_data_size_rounded, GL_FALSE); /* commit */
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferPageCommitmentARB() call failed.");
 
 		m_sparse_bo = 0;

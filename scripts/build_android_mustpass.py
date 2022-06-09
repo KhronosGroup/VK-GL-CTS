@@ -321,28 +321,28 @@ MAIN_VULKAN_PKG				= Package(module = VULKAN_MODULE, configurations = [
 					  filters				= MAIN_VULKAN_FILTERS,
 					  runtime				= "2h39m",
 					  runByDefault			= False,
-					  splitToMultipleFiles	= True),
+					  listOfGroupsToSplit	= ["dEQP-VK", "dEQP-VK.pipeline"]),
 		Configuration(name					= "master-2019-03-01",
 					  filters				= [include("vk-master-2019-03-01.txt")],
 					  runtime				= "2h29m",
-					  splitToMultipleFiles	= True),
+					  listOfGroupsToSplit	= ["dEQP-VK"]),
 		Configuration(name					= "master-2020-03-01",
 					  filters				= [include("vk-master-2020-03-01.txt")],
 					  runtime				= "2h29m",
-					  splitToMultipleFiles	= True),
+					  listOfGroupsToSplit	= ["dEQP-VK"]),
 		Configuration(name					= "master-2021-03-01",
 					  filters				= [include("vk-master-2021-03-01.txt")],
 					  runtime				= "2h29m",
-					  splitToMultipleFiles	= True),
+					  listOfGroupsToSplit	= ["dEQP-VK"]),
 		Configuration(name					= "master-2022-03-01",
 					  filters				= MAIN_VULKAN_FILTERS + [exclude("vk-master-2019-03-01.txt"), exclude("vk-master-2020-03-01.txt"), exclude("vk-master-2021-03-01.txt")],
 					  runtime				= "10m",
-					  splitToMultipleFiles	= True),
+					  listOfGroupsToSplit	= ["dEQP-VK"]),
 		Configuration(name					= "incremental-deqp",
 					  filters				= [include("vk-incremental-deqp.txt")],
 					  runtime				= "5m",
 					  runByDefault			= False,
-					  splitToMultipleFiles	= True),
+					  listOfGroupsToSplit	= ["dEQP-VK"]),
 	])
 
 MAIN_VULKANSC_FILTERS			= [
@@ -353,7 +353,7 @@ MAIN_VULKANSC_PKG				= Package(module = VULKANSC_MODULE, configurations = [
 					  filters				= MAIN_VULKANSC_FILTERS,
 					  runtime				= "2h39m",
 					  runByDefault			= False,
-					  splitToMultipleFiles	= True),
+					  listOfGroupsToSplit	= ["dEQP-VKSC"]),
 	])
 
 MUSTPASS_LISTS				= [

@@ -368,11 +368,12 @@ bool compileHlslToSpirV (const HlslSource& program, std::vector<deUint32>* dst, 
 void stripSpirVDebugInfo (const size_t numSrcInstrs, const deUint32* srcInstrs, std::vector<deUint32>* dst)
 {
 	spv::spirvbin_t remapper;
+	std::vector<std::string> whiteListStrings;
 
 	// glslang operates in-place
 	dst->resize(numSrcInstrs);
 	std::copy(srcInstrs, srcInstrs+numSrcInstrs, dst->begin());
-	remapper.remap(*dst, spv::spirvbin_base_t::STRIP);
+	remapper.remap(*dst, whiteListStrings, spv::spirvbin_base_t::STRIP);
 }
 
 } // vk

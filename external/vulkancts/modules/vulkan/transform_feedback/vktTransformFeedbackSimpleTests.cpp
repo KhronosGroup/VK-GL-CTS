@@ -459,7 +459,6 @@ protected:
 	void											verifyTransformFeedbackBuffer	(const MovePtr<Allocation>& bufAlloc,
 																					 const deUint32 bufBytes);
 
-	const bool										m_extensions;
 	const VkExtent2D								m_imageExtent2D;
 	const TestParameters							m_parameters;
 	VkPhysicalDeviceTransformFeedbackPropertiesEXT	m_transformFeedbackProperties;
@@ -468,7 +467,6 @@ protected:
 
 TransformFeedbackTestInstance::TransformFeedbackTestInstance (Context& context, const TestParameters& parameters)
 	: TestInstance		(context)
-	, m_extensions		(context.requireDeviceFunctionality("VK_EXT_transform_feedback"))
 	, m_imageExtent2D	(makeExtent2D(IMAGE_SIZE, IMAGE_SIZE))
 	, m_parameters		(parameters)
 	, m_rnd				(0)
@@ -2378,6 +2376,8 @@ vkt::TestInstance*	TransformFeedbackTestCase::createInstance (vkt::Context& cont
 
 void TransformFeedbackTestCase::checkSupport (Context& context) const
 {
+	context.requireDeviceFunctionality("VK_EXT_transform_feedback");
+
 	if (context.getTransformFeedbackFeaturesEXT().transformFeedback == VK_FALSE)
 		TCU_THROW(NotSupportedError, "transformFeedback feature is not supported");
 

@@ -1757,9 +1757,7 @@ void BottomLevelAccelerationStructurePool::batchCreate (const DeviceInterface& v
 														Allocator&				allocator)
 {
 	// Prevent a programmer from calling this method more than once.
-	if (m_createOnce) DE_ASSERT(0);
-
-	m_createOnce = true;
+	if (m_createOnce) DE_ASSERT(0); m_createOnce = true;
 	DE_ASSERT(m_structs.size() != 0);
 
 	auto createAccellerationStructureBuffer = [&](VkDeviceSize bufferSize) -> typename std::add_pointer<BufferWithMemory>::type
@@ -2784,7 +2782,7 @@ void TopLevelAccelerationStructureKHR::createAndDeserializeBottoms (const Device
 	{
 		const deUint64& lookAddr	= addresses[i+1];
 		auto			end			= matches.end();
-		auto			match		= std::find_if(matches.begin(), end, [&](const std::pair<deUint64, deUint32>& item){ return item.first == lookAddr; });
+		auto			match		= std::find_if(matches.begin(), end, [&](const std::pair<deUint64, std::size_t>& item){ return item.first == lookAddr; });
 		if (match != end)
 		{
 			m_bottomLevelInstances .emplace_back(m_bottomLevelInstances[match->second]);
@@ -3489,6 +3487,22 @@ void cmdTraceRaysIndirect (const DeviceInterface&					vk,
 								   hitShaderBindingTableRegion,
 								   callableShaderBindingTableRegion,
 								   indirectDeviceAddress);
+}
+
+static inline void cmdTraceRaysIndirect2KHR (const DeviceInterface&	vk,
+											VkCommandBuffer			commandBuffer,
+											VkDeviceAddress			indirectDeviceAddress )
+{
+	DE_ASSERT(indirectDeviceAddress != 0);
+
+	return vk.cmdTraceRaysIndirect2KHR(commandBuffer, indirectDeviceAddress);
+}
+
+void cmdTraceRaysIndirect2	(const DeviceInterface&	vk,
+							 VkCommandBuffer		commandBuffer,
+							 VkDeviceAddress		indirectDeviceAddress)
+{
+	return cmdTraceRaysIndirect2KHR(vk, commandBuffer, indirectDeviceAddress);
 }
 
 #else

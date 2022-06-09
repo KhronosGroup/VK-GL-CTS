@@ -552,6 +552,7 @@ def parseVersions (src):
 	# 4. minor version number
 	return [(m.group()[:-2], m.start(), getApiVariantIndexByName(m.group(1)), int(m.group(2)), int(m.group(3))) for m in re.finditer('VK(SC)?_VERSION_([1-9])_([0-9]) 1', src)]
 
+
 def parseHandles (src):
 	matches	= re.findall(r'VK_DEFINE(_NON_DISPATCHABLE|)_HANDLE\((' + IDENT_PTRN + r')\)[ \t]*[\n\r]', src)
 	handles	= []
@@ -1760,17 +1761,6 @@ def writeDriverIds(apiName, filename):
 
 
 def writeSupportedExtensions(apiName, api, filename):
-	def getCoreVersion (extensionName, extensionsData):
-		# returns None when extension was not added to core for any Vulkan version
-		# returns array containing DEVICE or INSTANCE string followed by the vulkan version in which this extension is core
-		# note that this function is also called for vulkan 1.0 source for which extName is None
-		if not extensionName:
-			return None
-		ptrn		= extensionName + r'\s+(DEVICE|INSTANCE)\s+([0-9_]+)'
-		coreVersion = re.search(ptrn, extensionsData, re.I)
-		if coreVersion != None:
-			return [coreVersion.group(1)] + [int(number) for number in coreVersion.group(2).split('_')[:4]]
-		return None
 
 	def writeExtensionsForVersions(map):
 		result = []
@@ -1781,7 +1771,7 @@ def writeSupportedExtensions(apiName, api, filename):
 				result.append('		dst.push_back("' + extension.name + '");')
 			result.append("	}")
 
-		if  not map:
+		if not map:
 			result.append("	DE_UNREF(coreVersion);")
 
 		return result
@@ -1804,17 +1794,41 @@ def writeSupportedExtensions(apiName, api, filename):
 				deviceMap[Version(ext.versionInCore[1:])] = list + [ext] if list else [ext]
 			versionSet.add(Version(ext.versionInCore[1:]))
 
+	# add list of extensions missing in Vulkan SC specification
+	if apiName == 'SC':
+		for extensionName, data in api.additionalExtensionData:
+			# make sure that this extension was registered
+			if 'register_extension' not in data.keys():
+				continue
+			# save array containing 'device' or 'instance' string followed by the optional vulkan version in which this extension is core;
+			# note that register_extension section is also required for partialy promoted extensions like VK_EXT_extended_dynamic_state2
+			# but those extensions should not fill 'core' tag
+			match = re.match("(\d).(\d).(\d).(\d)", data['register_extension']['core'])
+			if match != None:
+				currVersion = Version([int(match.group(1)), int(match.group(2)), int(match.group(3)), int(match.group(4))])
+				ext = Extension(extensionName, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+				if currVersion.api==0 and currVersion.major==1 and currVersion.minor>2:
+					continue
+				if data['register_extension']['type'] == 'instance':
+					list = instanceMap.get(currVersion)
+					instanceMap[currVersion] = list + [ext] if list else [ext]
+				else:
+					list = deviceMap.get(currVersion)
+					deviceMap[currVersion] = list + [ext] if list else [ext]
+				versionSet.add(currVersion)
+
 	lines = addVersionDefines(versionSet) + [
 	"",
-	"void getCoreDeviceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char*>&%s)" % (" dst" if len(deviceMap) != 0 else ""),
+	"void getCoreDeviceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char*>&%s)" % (" dst" if len(deviceMap) != 0 or apiName == 'SC' else ""),
 	"{"] + writeExtensionsForVersions(deviceMap) + [
 	"}",
 	"",
-	"void getCoreInstanceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char*>&%s)" % (" dst" if len(instanceMap) != 0 else ""),
+	"void getCoreInstanceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char*>&%s)" % (" dst" if len(instanceMap) != 0 or apiName == 'SC' else ""),
 	"{"] + writeExtensionsForVersions(instanceMap) + [
 	"}",
 	""] + removeVersionDefines(versionSet)
 	writeInlFile(filename, INL_HEADER, lines)
+
 
 def writeExtensionFunctions (api, filename):
 
@@ -2484,6 +2498,7 @@ def writeDeviceFeatureTest(apiName, api, filename):
 
 	coreFeaturesPattern = re.compile("^VkPhysicalDeviceVulkan([1-9][0-9])Features[0-9]*$")
 	featureItems = []
+	testFunctions = []
 	# iterate over all feature structures
 	allFeaturesPattern = re.compile("^VkPhysicalDevice\w+Features[1-9]*")
 	for structureType in api.compositeTypes:
@@ -2500,21 +2515,69 @@ def writeDeviceFeatureTest(apiName, api, filename):
 		for member in structureMembers:
 			items.append("		FEATURE_ITEM ({0}, {1}),".format(structureType.name, member.name))
 
-		testBlock = \
-			"if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<{0}>()))\n" \
-			"{{\n" \
-			"	static const Feature features[] =\n" \
-			"	{{\n" \
-			"{1}\n" \
-			"	}};\n" \
-			"	auto* supportedFeatures = reinterpret_cast<const {0}*>(featuresStruct);\n" \
-			"	checkFeatures(vkp, instance, instanceDriver, physicalDevice, {2}, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, {3}, emptyDeviceFeatures, {4});\n" \
-			"}}\n"
+		testBlock = """
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTest{4} (Context& context)
+{{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+{6}
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	vector<const char*>	coreExtensions;
+	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
+	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
+
+	vector<const char*> extensionNames;
+	extensionNames.reserve(nonCoreExtensions.size());
+	for (const string& extension : nonCoreExtensions)
+		extensionNames.push_back(extension.c_str());
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<{0}>()))
+	{{
+		static const Feature features[] =
+		{{
+{1}
+		}};
+		auto* supportedFeatures = reinterpret_cast<const {0}*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, {2}, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, {3}, emptyDeviceFeatures, {5});
+	}}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}}
+"""
 		additionalParams = ( 'memReservationStatMax, isSubProcess' if apiName == 'SC' else 'isSubProcess' )
-		featureItems.append(testBlock.format(structureType.name, "\n".join(items), len(items), ("DE_NULL" if coreFeaturesPattern.match(structureType.name) else "&extensionNames"), additionalParams))
+		additionalDefs = ( '	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();' if apiName == 'SC' else '')
+		featureItems.append(testBlock.format(structureType.name, "\n".join(items), len(items), ("DE_NULL" if coreFeaturesPattern.match(structureType.name) else "&extensionNames"), structureType.name[len('VkPhysicalDevice'):], additionalParams, additionalDefs))
+
+		testFunctions.append("createDeviceWithUnsupportedFeaturesTest" + structureType.name[len('VkPhysicalDevice'):])
 
 	stream = ['']
 	stream.extend(featureItems)
+	stream.append("""
+void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
+{
+""")
+	for x in testFunctions:
+		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x[len('createDeviceWithUnsupportedFeaturesTest'):]) + '", "' + x + '", ' + x + ');')
+	stream.append('}\n')
+
 	writeInlFile(filename, INL_HEADER, stream)
 
 def writeDeviceProperties(api, dpDefs, filename):
@@ -2703,8 +2766,9 @@ def writeMandatoryFeatures(api, filename):
 		listStructFeatures = sorted(data['mandatory_features'].items(), key=lambda tup: tup[0])
 		for structure, featuresList in listStructFeatures:
 			for featureData in featuresList:
-				assert('features' in featureData.keys())
-				assert('requirements' in featureData.keys())
+				# allow for featureless VKSC only extensions
+				if not 'features' in featureData.keys() or 'requirements' not in featureData.keys():
+					continue
 				requirements = featureData['requirements']
 
 				mandatory_variant = ''
@@ -2835,7 +2899,7 @@ def writeMandatoryFeatures(api, filename):
 	stream.append('}\n')
 	writeInlFile(filename, INL_HEADER, stream)
 
-def writeExtensionList(api, filename, extensionType):
+def writeExtensionList(apiName, api, filename, extensionType):
 	extensionList = []
 	for extensionName, data in api.additionalExtensionData:
 		# make sure extension name starts with VK_KHR
@@ -2844,6 +2908,24 @@ def writeExtensionList(api, filename, extensionType):
 		# make sure that this extension was registered
 		if 'register_extension' not in data.keys():
 			continue
+		# make sure extension is intended for the vulkan variant
+		is_sc_only = False
+
+		if apiName != 'SC':
+			if 'mandatory_features' in data.keys():
+				for structure, listStruct in data['mandatory_features'].items():
+					for featureData in listStruct:
+						mandatory_variant = ''
+						try:
+							mandatory_variant = featureData['mandatory_variant']
+						except KeyError:
+							mandatory_variant = ''
+						# VKSC only
+						if 'vulkansc' in mandatory_variant:
+							is_sc_only = True
+		if is_sc_only:
+			continue
+
 		# make sure extension has proper type
 		if extensionType == data['register_extension']['type']:
 			extensionList.append(extensionName)
@@ -3006,8 +3088,8 @@ if __name__ == "__main__":
 	writeExtensionFunctions					(api, os.path.join(outputPath, "vkExtensionFunctions.inl"))
 	writeDeviceFeatures2					(api, os.path.join(outputPath, "vkDeviceFeatures2.inl"))
 	writeMandatoryFeatures					(api, os.path.join(outputPath, "vkMandatoryFeatures.inl"))
-	writeExtensionList						(api, os.path.join(outputPath, "vkInstanceExtensions.inl"),				'instance')
-	writeExtensionList						(api, os.path.join(outputPath, "vkDeviceExtensions.inl"),				'device')
+	writeExtensionList						(args.api, api, os.path.join(outputPath, "vkInstanceExtensions.inl"),				'instance')
+	writeExtensionList						(args.api, api, os.path.join(outputPath, "vkDeviceExtensions.inl"),				'device')
 	writeDriverIds							(args.api, os.path.join(outputPath, "vkKnownDriverIds.inl"))
 	writeObjTypeImpl						(api, os.path.join(outputPath, "vkObjTypeImpl.inl"))
 	# NOTE: when new files are generated then they should also be added to the

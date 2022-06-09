@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 9d534f9312e56c72df763207e449c6719576fd54.
+ * Generated from Khronos GL API description (gl.xml) revision d8371b44919d61c02e60f446a4b5461fda910f71.
  */
 typedef GLW_APICALL void			(GLW_APIENTRY* glActiveShaderProgramFunc)								(GLuint pipeline, GLuint program);
 typedef GLW_APICALL void			(GLW_APIENTRY* glActiveTextureFunc)										(GLenum texture);
@@ -217,6 +217,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferDrawBuffersEXTFunc)						
 typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferParameteriFunc)								(GLenum target, GLenum pname, GLint param);
 typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferReadBufferEXTFunc)							(GLuint framebuffer, GLenum mode);
 typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferRenderbufferFunc)							(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
+typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferShadingRateEXTFunc)							(GLenum target, GLenum attachment, GLuint texture, GLint baseLayer, GLsizei numLayers, GLsizei texelWidth, GLsizei texelHeight);
 typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferTextureFunc)								(GLenum target, GLenum attachment, GLuint texture, GLint level);
 typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferTexture1DFunc)								(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
 typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferTexture2DFunc)								(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
@@ -242,8 +243,8 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glGenerateTextureMipmapFunc)								(G
 typedef GLW_APICALL void			(GLW_APIENTRY* glGenerateTextureMipmapEXTFunc)							(GLuint texture, GLenum target);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetActiveAtomicCounterBufferivFunc)					(GLuint program, GLuint bufferIndex, GLenum pname, GLint *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetActiveAttribFunc)									(GLuint program, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name);
-typedef GLW_APICALL void			(GLW_APIENTRY* glGetActiveSubroutineNameFunc)							(GLuint program, GLenum shadertype, GLuint index, GLsizei bufsize, GLsizei *length, GLchar *name);
-typedef GLW_APICALL void			(GLW_APIENTRY* glGetActiveSubroutineUniformNameFunc)					(GLuint program, GLenum shadertype, GLuint index, GLsizei bufsize, GLsizei *length, GLchar *name);
+typedef GLW_APICALL void			(GLW_APIENTRY* glGetActiveSubroutineNameFunc)							(GLuint program, GLenum shadertype, GLuint index, GLsizei bufSize, GLsizei *length, GLchar *name);
+typedef GLW_APICALL void			(GLW_APIENTRY* glGetActiveSubroutineUniformNameFunc)					(GLuint program, GLenum shadertype, GLuint index, GLsizei bufSize, GLsizei *length, GLchar *name);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetActiveSubroutineUniformivFunc)						(GLuint program, GLenum shadertype, GLuint index, GLenum pname, GLint *values);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetActiveUniformFunc)									(GLuint program, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetActiveUniformBlockNameFunc)							(GLuint program, GLuint uniformBlockIndex, GLsizei bufSize, GLsizei *length, GLchar *uniformBlockName);
@@ -271,6 +272,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glGetFloati_vFunc)										(GLenum ta
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetFloatvFunc)											(GLenum pname, GLfloat *data);
 typedef GLW_APICALL GLint			(GLW_APIENTRY* glGetFragDataIndexFunc)									(GLuint program, const GLchar *name);
 typedef GLW_APICALL GLint			(GLW_APIENTRY* glGetFragDataLocationFunc)								(GLuint program, const GLchar *name);
+typedef GLW_APICALL void			(GLW_APIENTRY* glGetFragmentShadingRatesEXTFunc)						(GLsizei samples, GLsizei maxCount, GLsizei *count, GLenum *shadingRates);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetFramebufferAttachmentParameterivFunc)				(GLenum target, GLenum attachment, GLenum pname, GLint *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetFramebufferParameterivFunc)							(GLenum target, GLenum pname, GLint *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetFramebufferParameterivEXTFunc)						(GLuint framebuffer, GLenum pname, GLint *params);
@@ -279,9 +281,9 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glGetInteger64i_vFunc)									(GLenum
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetInteger64vFunc)										(GLenum pname, GLint64 *data);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetIntegeri_vFunc)										(GLenum target, GLuint index, GLint *data);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetIntegervFunc)										(GLenum pname, GLint *data);
-typedef GLW_APICALL void			(GLW_APIENTRY* glGetInternalformatSampleivNVFunc)						(GLenum target, GLenum internalformat, GLsizei samples, GLenum pname, GLsizei bufSize, GLint *params);
-typedef GLW_APICALL void			(GLW_APIENTRY* glGetInternalformati64vFunc)								(GLenum target, GLenum internalformat, GLenum pname, GLsizei bufSize, GLint64 *params);
-typedef GLW_APICALL void			(GLW_APIENTRY* glGetInternalformativFunc)								(GLenum target, GLenum internalformat, GLenum pname, GLsizei bufSize, GLint *params);
+typedef GLW_APICALL void			(GLW_APIENTRY* glGetInternalformatSampleivNVFunc)						(GLenum target, GLenum internalformat, GLsizei samples, GLenum pname, GLsizei count, GLint *params);
+typedef GLW_APICALL void			(GLW_APIENTRY* glGetInternalformati64vFunc)								(GLenum target, GLenum internalformat, GLenum pname, GLsizei count, GLint64 *params);
+typedef GLW_APICALL void			(GLW_APIENTRY* glGetInternalformativFunc)								(GLenum target, GLenum internalformat, GLenum pname, GLsizei count, GLint *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetMultiTexEnvfvEXTFunc)								(GLenum texunit, GLenum target, GLenum pname, GLfloat *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetMultiTexEnvivEXTFunc)								(GLenum texunit, GLenum target, GLenum pname, GLint *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetMultiTexGendvEXTFunc)								(GLenum texunit, GLenum coord, GLenum pname, GLdouble *params);
@@ -328,7 +330,7 @@ typedef GLW_APICALL GLuint			(GLW_APIENTRY* glGetProgramResourceIndexFunc)						
 typedef GLW_APICALL GLint			(GLW_APIENTRY* glGetProgramResourceLocationFunc)						(GLuint program, GLenum programInterface, const GLchar *name);
 typedef GLW_APICALL GLint			(GLW_APIENTRY* glGetProgramResourceLocationIndexFunc)					(GLuint program, GLenum programInterface, const GLchar *name);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetProgramResourceNameFunc)							(GLuint program, GLenum programInterface, GLuint index, GLsizei bufSize, GLsizei *length, GLchar *name);
-typedef GLW_APICALL void			(GLW_APIENTRY* glGetProgramResourceivFunc)								(GLuint program, GLenum programInterface, GLuint index, GLsizei propCount, const GLenum *props, GLsizei bufSize, GLsizei *length, GLint *params);
+typedef GLW_APICALL void			(GLW_APIENTRY* glGetProgramResourceivFunc)								(GLuint program, GLenum programInterface, GLuint index, GLsizei propCount, const GLenum *props, GLsizei count, GLsizei *length, GLint *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetProgramStageivFunc)									(GLuint program, GLenum shadertype, GLenum pname, GLint *values);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetProgramivFunc)										(GLuint program, GLenum pname, GLint *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetQueryBufferObjecti64vFunc)							(GLuint id, GLuint buffer, GLenum pname, GLintptr offset);
@@ -354,7 +356,7 @@ typedef GLW_APICALL const GLubyte *	(GLW_APIENTRY* glGetStringFunc)											(G
 typedef GLW_APICALL const GLubyte *	(GLW_APIENTRY* glGetStringiFunc)										(GLenum name, GLuint index);
 typedef GLW_APICALL GLuint			(GLW_APIENTRY* glGetSubroutineIndexFunc)								(GLuint program, GLenum shadertype, const GLchar *name);
 typedef GLW_APICALL GLint			(GLW_APIENTRY* glGetSubroutineUniformLocationFunc)						(GLuint program, GLenum shadertype, const GLchar *name);
-typedef GLW_APICALL void			(GLW_APIENTRY* glGetSyncivFunc)											(GLsync sync, GLenum pname, GLsizei bufSize, GLsizei *length, GLint *values);
+typedef GLW_APICALL void			(GLW_APIENTRY* glGetSyncivFunc)											(GLsync sync, GLenum pname, GLsizei count, GLsizei *length, GLint *values);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetTexImageFunc)										(GLenum target, GLint level, GLenum format, GLenum type, void *pixels);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetTexLevelParameterfvFunc)							(GLenum target, GLint level, GLenum pname, GLfloat *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetTexLevelParameterivFunc)							(GLenum target, GLint level, GLenum pname, GLint *params);
@@ -661,9 +663,11 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glScissorFunc)											(GLint x, GLi
 typedef GLW_APICALL void			(GLW_APIENTRY* glScissorArrayvFunc)										(GLuint first, GLsizei count, const GLint *v);
 typedef GLW_APICALL void			(GLW_APIENTRY* glScissorIndexedFunc)									(GLuint index, GLint left, GLint bottom, GLsizei width, GLsizei height);
 typedef GLW_APICALL void			(GLW_APIENTRY* glScissorIndexedvFunc)									(GLuint index, const GLint *v);
-typedef GLW_APICALL void			(GLW_APIENTRY* glShaderBinaryFunc)										(GLsizei count, const GLuint *shaders, GLenum binaryformat, const void *binary, GLsizei length);
+typedef GLW_APICALL void			(GLW_APIENTRY* glShaderBinaryFunc)										(GLsizei count, const GLuint *shaders, GLenum binaryFormat, const void *binary, GLsizei length);
 typedef GLW_APICALL void			(GLW_APIENTRY* glShaderSourceFunc)										(GLuint shader, GLsizei count, const GLchar *const*string, const GLint *length);
 typedef GLW_APICALL void			(GLW_APIENTRY* glShaderStorageBlockBindingFunc)							(GLuint program, GLuint storageBlockIndex, GLuint storageBlockBinding);
+typedef GLW_APICALL void			(GLW_APIENTRY* glShadingRateEXTFunc)									(GLenum rate);
+typedef GLW_APICALL void			(GLW_APIENTRY* glShadingRateCombinerOpsEXTFunc)							(GLenum combinerOp0, GLenum combinerOp1);
 typedef GLW_APICALL void			(GLW_APIENTRY* glSpecializeShaderFunc)									(GLuint shader, const GLchar *pEntryPoint, GLuint numSpecializationConstants, const GLuint *pConstantIndex, const GLuint *pConstantValue);
 typedef GLW_APICALL void			(GLW_APIENTRY* glStencilFuncFunc)										(GLenum func, GLint ref, GLuint mask);
 typedef GLW_APICALL void			(GLW_APIENTRY* glStencilFuncSeparateFunc)								(GLenum face, GLenum func, GLint ref, GLuint mask);

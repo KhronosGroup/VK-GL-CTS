@@ -88,6 +88,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/api/vktApiGetMemoryCommitment.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiGranularityTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiImageClearingTests.cpp \
+	external/vulkancts/modules/vulkan/api/vktApiImageCompressionControlTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiMaintenance3Check.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiMemoryRequirementInvarianceTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiNullHandleTests.cpp \
@@ -171,6 +172,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/fragment_ops/vktFragmentOperationsTransientAttachmentTests.cpp \
 	external/vulkancts/modules/vulkan/fragment_shader_interlock/vktFragmentShaderInterlockBasic.cpp \
 	external/vulkancts/modules/vulkan/fragment_shader_interlock/vktFragmentShaderInterlockTests.cpp \
+	external/vulkancts/modules/vulkan/fragment_shading_barycentric/vktFragmentShadingBarycentricTests.cpp \
 	external/vulkancts/modules/vulkan/fragment_shading_rate/vktAttachmentRateTests.cpp \
 	external/vulkancts/modules/vulkan/fragment_shading_rate/vktFragmentShadingRateBasic.cpp \
 	external/vulkancts/modules/vulkan/fragment_shading_rate/vktFragmentShadingRatePixelConsistency.cpp \
@@ -576,6 +578,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrCopyTests.cpp \
 	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrFilteringTests.cpp \
 	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrFormatTests.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrImageOffsetTests.cpp \
 	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrImageQueryTests.cpp \
 	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrStorageImageWriteTests.cpp \
 	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrTests.cpp \
@@ -1290,6 +1293,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/dynamic_state \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/fragment_ops \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/fragment_shader_interlock \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/fragment_shading_barycentric \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/fragment_shading_rate \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/geometry \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/image \

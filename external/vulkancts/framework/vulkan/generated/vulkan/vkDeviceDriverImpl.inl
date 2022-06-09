@@ -1094,6 +1094,11 @@ void DeviceDriver::getQueueCheckpointData2NV (VkQueue queue, uint32_t* pCheckpoi
 	m_vk.getQueueCheckpointData2NV(queue, pCheckpointDataCount, pCheckpointData);
 }
 
+void DeviceDriver::cmdTraceRaysIndirect2KHR (VkCommandBuffer commandBuffer, VkDeviceAddress indirectDeviceAddress) const
+{
+	m_vk.cmdTraceRaysIndirect2KHR(commandBuffer, indirectDeviceAddress);
+}
+
 VkResult DeviceDriver::debugMarkerSetObjectTagEXT (VkDevice device, const VkDebugMarkerObjectTagInfoEXT* pTagInfo) const
 {
 	return m_vk.debugMarkerSetObjectTagEXT(device, pTagInfo);
@@ -1544,6 +1549,11 @@ void DeviceDriver::cmdSetFragmentShadingRateEnumNV (VkCommandBuffer commandBuffe
 	m_vk.cmdSetFragmentShadingRateEnumNV(commandBuffer, shadingRate, combinerOps);
 }
 
+void DeviceDriver::getImageSubresourceLayout2EXT (VkDevice device, VkImage image, const VkImageSubresource2EXT* pSubresource, VkSubresourceLayout2EXT* pLayout) const
+{
+	m_vk.getImageSubresourceLayout2EXT(device, image, pSubresource, pLayout);
+}
+
 void DeviceDriver::cmdSetVertexInputEXT (VkCommandBuffer commandBuffer, uint32_t vertexBindingDescriptionCount, const VkVertexInputBindingDescription2EXT* pVertexBindingDescriptions, uint32_t vertexAttributeDescriptionCount, const VkVertexInputAttributeDescription2EXT* pVertexAttributeDescriptions) const
 {
 	m_vk.cmdSetVertexInputEXT(commandBuffer, vertexBindingDescriptionCount, pVertexBindingDescriptions, vertexAttributeDescriptionCount, pVertexAttributeDescriptions);
@@ -1567,6 +1577,11 @@ void DeviceDriver::cmdBindInvocationMaskHUAWEI (VkCommandBuffer commandBuffer, V
 VkResult DeviceDriver::getMemoryRemoteAddressNV (VkDevice device, const VkMemoryGetRemoteAddressInfoNV* pMemoryGetRemoteAddressInfo, VkRemoteAddressNV* pAddress) const
 {
 	return m_vk.getMemoryRemoteAddressNV(device, pMemoryGetRemoteAddressInfo, pAddress);
+}
+
+VkResult DeviceDriver::getPipelinePropertiesEXT (VkDevice device, const VkPipelineInfoEXT* pPipelineInfo, VkBaseOutStructure* pPipelineProperties) const
+{
+	return m_vk.getPipelinePropertiesEXT(device, pPipelineInfo, pPipelineProperties);
 }
 
 void DeviceDriver::cmdSetPatchControlPointsEXT (VkCommandBuffer commandBuffer, uint32_t patchControlPoints) const

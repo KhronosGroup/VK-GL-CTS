@@ -90,6 +90,7 @@ struct TestParams
 
 	bool			useDynamicRendering;
 	bool			useImagelessFramebuffer;
+	bool			useNullShadingRateImage;
 };
 
 deUint32 calculateRate(deUint32 rateWidth, deUint32 rateHeight)
@@ -842,7 +843,11 @@ void AttachmentRateInstance::startRendering(const VkCommandBuffer					commandBuf
 		if ((attachmentInfo.size() == 2) &&
 			(attachmentInfo[1].usage & VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR))
 		{
-			shadingRateAttachmentInfo.imageView							= attachmentInfo[1].view;
+			if (!m_params->useNullShadingRateImage)
+			{
+				shadingRateAttachmentInfo.imageView = attachmentInfo[1].view;
+			}
+
 			shadingRateAttachmentInfo.shadingRateAttachmentTexelSize	= { srTileWidth, srTileHeight };
 			renderingInfo.pNext											= &shadingRateAttachmentInfo;
 		}
@@ -2377,9 +2382,27 @@ void createAttachmentRateTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* pa
 						srFormat.format,						// VkFormat			srFormat;
 						srRate.count,							// VkExtent2D		srRate;
 						groupParams->useDynamicRendering,		// bool				useDynamicRendering;
-						false									// bool				useImagelessFramebuffer;
+						false,									// bool				useImagelessFramebuffer;
+						false									// bool				useNullShadingRateImage;
 					}
 				)));
+
+				if (groupParams->useDynamicRendering)
+				{
+					// Duplicate all tests using dynamic rendering for NULL shading image.
+					std::string nullShadingName = std::string(srRate.name) + "_null_shading";
+					formatGroup->addChild(new AttachmentRateTestCase(testCtx, nullShadingName.c_str(), de::SharedPtr<TestParams>(
+						new TestParams
+						{
+							testModeParam.mode,					// TestMode			mode;
+							srFormat.format,					// VkFormat			srFormat;
+							srRate.count,						// VkExtent2D		srRate;
+							false,								// bool				useDynamicRendering;
+							false,								// bool				useImagelessFramebuffer;
+							true								// bool				useNullShadingRateImage;
+						}
+					)));
+				}
 
 				if (!groupParams->useDynamicRendering)
 				{
@@ -2392,7 +2415,8 @@ void createAttachmentRateTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* pa
 							srFormat.format,					// VkFormat			srFormat;
 							srRate.count,						// VkExtent2D		srRate;
 							false,								// bool				useDynamicRendering;
-							true								// bool				useImagelessFramebuffer;
+							true,								// bool				useImagelessFramebuffer;
+							false								// bool				useNullShadingRateImage;
 						}
 					)));
 				}
@@ -2414,7 +2438,8 @@ void createAttachmentRateTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* pa
 				VK_FORMAT_R8_UINT,								// VkFormat			srFormat;
 				{0, 0},											// VkExtent2D		srRate;					// not used in TM_TWO_SUBPASS
 				false,											// bool				useDynamicRendering;
-				false											// bool				useImagelessFramebuffer;
+				false,											// bool				useImagelessFramebuffer;
+				false											// bool				useNullShadingRateImage;
 			}
 		)));
 		mainGroup->addChild(miscGroup.release());

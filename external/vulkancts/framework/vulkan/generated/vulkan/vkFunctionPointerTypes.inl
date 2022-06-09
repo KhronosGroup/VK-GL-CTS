@@ -324,6 +324,7 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyBufferToImage2KHRFunc)										
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyImageToBuffer2KHRFunc)											(VkCommandBuffer commandBuffer, const VkCopyImageToBufferInfo2* pCopyImageToBufferInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBlitImage2KHRFunc)													(VkCommandBuffer commandBuffer, const VkBlitImageInfo2* pBlitImageInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdResolveImage2KHRFunc)												(VkCommandBuffer commandBuffer, const VkResolveImageInfo2* pResolveImageInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdTraceRaysIndirect2KHRFunc)											(VkCommandBuffer commandBuffer, VkDeviceAddress indirectDeviceAddress);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetDeviceBufferMemoryRequirementsKHRFunc)								(VkDevice device, const VkDeviceBufferMemoryRequirements* pInfo, VkMemoryRequirements2* pMemoryRequirements);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetDeviceImageMemoryRequirementsKHRFunc)								(VkDevice device, const VkDeviceImageMemoryRequirements* pInfo, VkMemoryRequirements2* pMemoryRequirements);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetDeviceImageSparseMemoryRequirementsKHRFunc)							(VkDevice device, const VkDeviceImageMemoryRequirements* pInfo, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2* pSparseMemoryRequirements);
@@ -451,6 +452,7 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyPrivateDataSlotEXTFunc)									
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* SetPrivateDataEXTFunc)													(VkDevice device, VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlot privateDataSlot, uint64_t data);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetPrivateDataEXTFunc)													(VkDevice device, VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlot privateDataSlot, uint64_t* pData);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetFragmentShadingRateEnumNVFunc)									(VkCommandBuffer commandBuffer, VkFragmentShadingRateNV shadingRate, const VkFragmentShadingRateCombinerOpKHR combinerOps[2]);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetImageSubresourceLayout2EXTFunc)										(VkDevice device, VkImage image, const VkImageSubresource2EXT* pSubresource, VkSubresourceLayout2EXT* pLayout);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* AcquireWinrtDisplayNVFunc)												(VkPhysicalDevice physicalDevice, VkDisplayKHR display);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetWinrtDisplayNVFunc)													(VkPhysicalDevice physicalDevice, uint32_t deviceRelativeId, VkDisplayKHR* pDisplay);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetVertexInputEXTFunc)												(VkCommandBuffer commandBuffer, uint32_t vertexBindingDescriptionCount, const VkVertexInputBindingDescription2EXT* pVertexBindingDescriptions, uint32_t vertexAttributeDescriptionCount, const VkVertexInputAttributeDescription2EXT* pVertexAttributeDescriptions);
@@ -458,6 +460,7 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDeviceSubpassShadingMaxWorkgroupS
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSubpassShadingHUAWEIFunc)											(VkCommandBuffer commandBuffer);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindInvocationMaskHUAWEIFunc)										(VkCommandBuffer commandBuffer, VkImageView imageView, VkImageLayout imageLayout);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetMemoryRemoteAddressNVFunc)											(VkDevice device, const VkMemoryGetRemoteAddressInfoNV* pMemoryGetRemoteAddressInfo, VkRemoteAddressNV* pAddress);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPipelinePropertiesEXTFunc)											(VkDevice device, const VkPipelineInfoEXT* pPipelineInfo, VkBaseOutStructure* pPipelineProperties);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetPatchControlPointsEXTFunc)										(VkCommandBuffer commandBuffer, uint32_t patchControlPoints);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetRasterizerDiscardEnableEXTFunc)									(VkCommandBuffer commandBuffer, VkBool32 rasterizerDiscardEnable);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetDepthBiasEnableEXTFunc)											(VkCommandBuffer commandBuffer, VkBool32 depthBiasEnable);

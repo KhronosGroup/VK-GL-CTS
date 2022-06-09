@@ -288,6 +288,12 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate (void)
 															 .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 21u));
 
 	const VkFormat					renderedImageFormat		= VK_FORMAT_R8G8B8A8_UNORM;
+	tcu::CompressedTexFormat		compressedFormat		(mapVkCompressedFormat(m_imageFormat));
+	IVec3							blockSize				= tcu::getBlockPixelSize(compressedFormat);
+
+	DE_ASSERT(blockSize.z() == 1);
+
+	IVec3							storageImageViewSize = imageSize / blockSize;
 
 	// Create a storage image. The first pipeline fills it and the second pipeline
 	// uses it as a sampling source.
@@ -519,13 +525,13 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate (void)
 				for (int face = 0; face < FACES; face++)
 				{
 					vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipelineLayout, 0u, 1u, &(cubeStorageDscrSets[face].get()), 0u, DE_NULL);
-					vk.cmdDispatch(*cmdBuffer, WIDTH, HEIGHT, 1u);
+					vk.cmdDispatch(*cmdBuffer, storageImageViewSize.x(), storageImageViewSize.y(), 1u);
 				}
 			}
 			else
 			{
 				vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipelineLayout, 0u, 1u, &storageImageDescriptorSet.get(), 0u, DE_NULL);
-				vk.cmdDispatch(*cmdBuffer, WIDTH, HEIGHT, 1u);
+				vk.cmdDispatch(*cmdBuffer, storageImageViewSize.x(), storageImageViewSize.y(), 1u);
 			}
 
 			const auto barrier2 = makeImageMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL,
@@ -709,11 +715,6 @@ void SampleDrawnTextureTest::initPrograms (SourceCollections& programCollection)
 	std::string					red					= (m_imageFormat == VK_FORMAT_BC1_RGB_UNORM_BLOCK) ? bc1_red : bc3_red;
 	std::string					blue				= (m_imageFormat == VK_FORMAT_BC1_RGB_UNORM_BLOCK) ? bc1_blue : bc3_blue;
 
-	tcu::CompressedTexFormat	compressedFormat	(mapVkCompressedFormat(m_imageFormat));
-	IVec3						blockSize			= tcu::getBlockPixelSize(compressedFormat);
-
-	DE_ASSERT(blockSize.z() == 1);
-
 	std::ostringstream			computeSrc;
 
 	// Generate the compute shader.
@@ -741,9 +742,7 @@ void SampleDrawnTextureTest::initPrograms (SourceCollections& programCollection)
 	}
 
 	computeSrc
-	<< "    for (int x = 0; x < " << WIDTH / blockSize.x() << "; x++)\n"
-	<< "        for (int y = 0; y < " << HEIGHT / blockSize.y() << "; y++)\n"
-	<< "            imageStore(img, ivec2(x, y), color);\n"
+	<< "    imageStore(img, ivec2(gl_GlobalInvocationID.xy), color);\n"
 	<< "}\n";
 
 	// Generate the vertex shader.

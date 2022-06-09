@@ -1066,7 +1066,7 @@ tcu::TestStatus test(Context& context, const MaxVaryingsParam param)
 													*teseShaderModule,
 													*geomShaderModule,
 													&pSpecInfo)
-					.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragShaderModule)
+					.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragShaderModule, DE_NULL, DE_NULL, DE_NULL, &pSpecInfo)
 					.setupFragmentOutputState(*renderPass)
 					.setMonolithicPipelineLayout(*pipelineLayout)
 					.buildPipeline();

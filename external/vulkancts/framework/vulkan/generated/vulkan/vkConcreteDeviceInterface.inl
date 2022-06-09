@@ -221,6 +221,7 @@ virtual VkResult			getPipelineExecutableStatisticsKHR				(VkDevice device, const
 virtual VkResult			getPipelineExecutableInternalRepresentationsKHR	(VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, uint32_t* pInternalRepresentationCount, VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations) const;
 virtual void				cmdWriteBufferMarker2AMD						(VkCommandBuffer commandBuffer, VkPipelineStageFlags2 stage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker) const;
 virtual void				getQueueCheckpointData2NV						(VkQueue queue, uint32_t* pCheckpointDataCount, VkCheckpointData2NV* pCheckpointData) const;
+virtual void				cmdTraceRaysIndirect2KHR						(VkCommandBuffer commandBuffer, VkDeviceAddress indirectDeviceAddress) const;
 virtual VkResult			debugMarkerSetObjectTagEXT						(VkDevice device, const VkDebugMarkerObjectTagInfoEXT* pTagInfo) const;
 virtual VkResult			debugMarkerSetObjectNameEXT						(VkDevice device, const VkDebugMarkerObjectNameInfoEXT* pNameInfo) const;
 virtual void				cmdDebugMarkerBeginEXT							(VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo) const;
@@ -311,11 +312,13 @@ virtual void				cmdBindPipelineShaderGroupNV					(VkCommandBuffer commandBuffer,
 virtual VkResult			createIndirectCommandsLayoutNV					(VkDevice device, const VkIndirectCommandsLayoutCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectCommandsLayoutNV* pIndirectCommandsLayout) const;
 virtual void				destroyIndirectCommandsLayoutNV					(VkDevice device, VkIndirectCommandsLayoutNV indirectCommandsLayout, const VkAllocationCallbacks* pAllocator) const;
 virtual void				cmdSetFragmentShadingRateEnumNV					(VkCommandBuffer commandBuffer, VkFragmentShadingRateNV shadingRate, const VkFragmentShadingRateCombinerOpKHR combinerOps[2]) const;
+virtual void				getImageSubresourceLayout2EXT					(VkDevice device, VkImage image, const VkImageSubresource2EXT* pSubresource, VkSubresourceLayout2EXT* pLayout) const;
 virtual void				cmdSetVertexInputEXT							(VkCommandBuffer commandBuffer, uint32_t vertexBindingDescriptionCount, const VkVertexInputBindingDescription2EXT* pVertexBindingDescriptions, uint32_t vertexAttributeDescriptionCount, const VkVertexInputAttributeDescription2EXT* pVertexAttributeDescriptions) const;
 virtual VkResult			getDeviceSubpassShadingMaxWorkgroupSizeHUAWEI	(VkDevice device, VkRenderPass renderpass, VkExtent2D* pMaxWorkgroupSize) const;
 virtual void				cmdSubpassShadingHUAWEI							(VkCommandBuffer commandBuffer) const;
 virtual void				cmdBindInvocationMaskHUAWEI						(VkCommandBuffer commandBuffer, VkImageView imageView, VkImageLayout imageLayout) const;
 virtual VkResult			getMemoryRemoteAddressNV						(VkDevice device, const VkMemoryGetRemoteAddressInfoNV* pMemoryGetRemoteAddressInfo, VkRemoteAddressNV* pAddress) const;
+virtual VkResult			getPipelinePropertiesEXT						(VkDevice device, const VkPipelineInfoEXT* pPipelineInfo, VkBaseOutStructure* pPipelineProperties) const;
 virtual void				cmdSetPatchControlPointsEXT						(VkCommandBuffer commandBuffer, uint32_t patchControlPoints) const;
 virtual void				cmdSetLogicOpEXT								(VkCommandBuffer commandBuffer, VkLogicOp logicOp) const;
 virtual void				cmdSetColorWriteEnableEXT						(VkCommandBuffer commandBuffer, uint32_t attachmentCount, const VkBool32* pColorWriteEnables) const;

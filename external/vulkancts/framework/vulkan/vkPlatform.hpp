@@ -382,7 +382,7 @@ public:
 							Platform			(void) {}
 							~Platform			(void) {}
 
-	virtual Library*		createLibrary		(void) const = 0;
+	virtual Library*		createLibrary		(const char* libraryPath) const = 0;
 	virtual wsi::Display*	createWsiDisplay	(wsi::Type wsiType) const;
 	virtual bool			hasDisplay			(wsi::Type wsiType) const;
 	virtual void			describePlatform	(std::ostream& dst) const;

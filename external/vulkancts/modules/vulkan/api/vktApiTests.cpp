@@ -53,6 +53,7 @@
 #include "vktApiExternalMemoryTests.hpp"
 #include "vktApiToolingInfoTests.hpp"
 #include "vktApiFormatPropertiesExtendedKHRtests.hpp"
+#include "vktApiImageCompressionControlTests.hpp"
 #endif // CTS_USES_VULKANSC
 
 namespace vkt
@@ -111,6 +112,9 @@ void createApiTests (tcu::TestCaseGroup* apiTests)
 	apiTests->addChild(createFormatPropertiesExtendedKHRTests	(testCtx));
 #endif // CTS_USES_VULKANSC
 	apiTests->addChild(createBufferMemoryRequirementsTests		(testCtx));
+#ifndef CTS_USES_VULKANSC
+	apiTests->addChild(createImageCompressionControlTests		(testCtx));
+#endif
 }
 
 } // anonymous

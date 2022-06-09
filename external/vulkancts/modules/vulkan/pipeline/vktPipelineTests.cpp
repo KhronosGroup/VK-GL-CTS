@@ -129,6 +129,7 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 	group->addChild(createBindPointTests				(testCtx, pipelineConstructionType));
 #endif // CTS_USES_VULKANSC
 	group->addChild(createColorWriteEnableTests			(testCtx, pipelineConstructionType));
+	group->addChild(createColorWriteEnable2Tests		(testCtx, pipelineConstructionType));
 
 	// NOTE: all new pipeline tests should use GraphicsPipelineWrapper for pipeline creation
 

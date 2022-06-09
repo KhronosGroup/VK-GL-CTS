@@ -65,6 +65,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	group->addChild(createBuildTests(testCtx));
 	group->addChild(createCallableShadersTests(testCtx));
 	group->addChild(createTraceRaysTests(testCtx));
+	group->addChild(createTraceRaysMaintenance1Tests(testCtx));
 	group->addChild(createShaderBindingTableTests(testCtx));
 	group->addChild(createTraversalControlTests(testCtx));
 	group->addChild(createAccelerationStructuresTests(testCtx));
@@ -84,6 +85,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	group->addChild(createBarycentricCoordinatesTests(testCtx));
 	group->addChild(createNonUniformArgsTests(testCtx));
 	group->addChild(createPipelineFlagsTests(testCtx));
+	group->addChild(createTraceRays2Tests(testCtx));
 
 	return group.release();
 }
