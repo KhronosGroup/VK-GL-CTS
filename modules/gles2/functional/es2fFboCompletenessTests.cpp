@@ -243,7 +243,7 @@ static const FormatExtEntry s_es2ExtFormats[] =
 class ES2Checker : public Checker
 {
 public:
-			ES2Checker				(const glu::RenderContext& ctx);
+			ES2Checker				(const glu::RenderContext& ctx, const FormatDB& formats);
 	void	check					(GLenum attPoint, const Attachment& att,
 									 const Image* image);
 private:
@@ -251,8 +251,8 @@ private:
 	GLsizei	m_height;	//< The common height of images
 };
 
-ES2Checker::ES2Checker (const glu::RenderContext& ctx)\
-	: Checker		(ctx)
+ES2Checker::ES2Checker (const glu::RenderContext& ctx, const FormatDB& formats)\
+	: Checker		(ctx, formats)
 	, m_width		(-1)
 	, m_height		(-1)
 {
@@ -386,7 +386,7 @@ IterateResult SupportedCombinationTest::iterate (void)
 class ES2CheckerFactory : public CheckerFactory
 {
 public:
-	Checker*			createChecker	(const glu::RenderContext& ctx) { return new ES2Checker(ctx); }
+	Checker*			createChecker	(const glu::RenderContext& ctx, const FormatDB& formats) { return new ES2Checker(ctx, formats); }
 };
 
 class TestGroup : public TestCaseGroup
