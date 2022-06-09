@@ -2797,6 +2797,7 @@ tcu::TestStatus RayTracingHeaderBottomAddressTestInstance::iterate (void)
 
 	// deserialize all from the previous step to a new top-level AS
 	// bottom-level structure addresses should be updated when deep data is deserialized
+	vkd.resetCommandBuffer(*cmdBuffer, 0);
 	beginCommandBuffer(vkd, *cmdBuffer, 0);
 	dst->createAndDeserializeFrom(vkd, device, *cmdBuffer, allocator, &deepStorage);
 	endCommandBuffer(vkd, *cmdBuffer);
@@ -2805,6 +2806,7 @@ tcu::TestStatus RayTracingHeaderBottomAddressTestInstance::iterate (void)
 	SerialStorage										shallowStorage	(vkd, device, allocator, m_params->buildType, inSizes[0]);
 
 	// make shallow serialization - only top-level AS without bottom-level structures
+	vkd.resetCommandBuffer(*cmdBuffer, 0);
 	beginCommandBuffer(vkd, *cmdBuffer, 0);
 	dst->serialize(vkd, device, *cmdBuffer, &shallowStorage);
 	endCommandBuffer(vkd, *cmdBuffer);
