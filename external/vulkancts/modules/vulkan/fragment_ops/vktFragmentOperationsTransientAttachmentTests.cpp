@@ -35,6 +35,7 @@
 #include "vkObjUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkBarrierUtil.hpp"
 
 #include "tcuImageCompare.hpp"
 #include "tcuTestLog.hpp"
@@ -451,12 +452,8 @@ tcu::TestStatus	TransientAttachmentTestInstance::iterate (void)
 		updater.update(vk, device);
 	}
 
-	const tcu::TextureFormat			tcuFormat					= mapVkFormat(m_testFormat);
-	VkImageLayout						inputLayout					= tcuFormat.order == tcu::TextureFormat::DS
-																	? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-																	: tcuFormat.order == tcu::TextureFormat::D
-																	? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-																	: tcuFormat.order == tcu::TextureFormat::S
+	const bool							isDepthStencil				= isDepthStencilFormat(m_testFormat);
+	VkImageLayout						inputLayout					= isDepthStencil
 																	? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
 																	: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
@@ -513,6 +510,16 @@ tcu::TestStatus	TransientAttachmentTestInstance::iterate (void)
 		// Clear attachment
 		beginRenderPass(vk, *cmdBuffer, *renderPassOne, *framebufferOne, renderArea, clearValue);
 		endRenderPass(vk, *cmdBuffer);
+
+		// Synchronize clear and read operations.
+		{
+			const auto srcAccess	= isDepthStencil ? VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			const auto dstAccess	= VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
+			const auto srcStage		= isDepthStencil ? (VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT) : VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			const auto dstStage		= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+			const auto clearToLoad	= makeMemoryBarrier(srcAccess, dstAccess);
+			cmdPipelineMemoryBarrier(vk, *cmdBuffer, srcStage, dstStage, &clearToLoad);
+		}
 
 		// Draw with input attachment
 		beginRenderPass(vk, *cmdBuffer, *renderPassTwo, *framebufferTwo, renderArea);
