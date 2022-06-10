@@ -1799,7 +1799,7 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runCompareLinkTimes (void)
 
 		VkPipelineLibraryCreateInfoKHR	linkingInfo			= makePipelineLibraryCreateInfo(pipelinesToLink);
 		VkGraphicsPipelineCreateInfo	finalPipelineInfo	= initVulkanStructure();
-		finalPipelineInfo.layout = layout;
+		finalPipelineInfo.layout = *layout;
 
 		appendStructurePtrToVulkanChain(&finalPipelineInfo.pNext, &linkingInfo);
 
