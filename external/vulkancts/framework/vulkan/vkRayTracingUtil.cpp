@@ -3275,13 +3275,15 @@ de::MovePtr<BufferWithMemory> RayTracingPipeline::createShaderBindingTable (cons
 																			const VkDeviceAddress&		opaqueCaptureAddress,
 																			const deUint32				shaderBindingTableOffset,
 																			const deUint32				shaderRecordSize,
-																			const void**				shaderGroupDataPtrPerGroup)
+																			const void**				shaderGroupDataPtrPerGroup,
+																			const bool					autoAlignRecords)
 {
 	DE_ASSERT(shaderGroupBaseAlignment != 0u);
 	DE_ASSERT((shaderBindingTableOffset % shaderGroupBaseAlignment) == 0);
 	DE_UNREF(shaderGroupBaseAlignment);
 
-	const deUint32							sbtSize							= shaderBindingTableOffset + groupCount * deAlign32(shaderGroupHandleSize + shaderRecordSize, shaderGroupHandleSize);
+	const auto								totalEntrySize					= (autoAlignRecords ? (deAlign32(shaderGroupHandleSize + shaderRecordSize, shaderGroupHandleSize)) : (shaderGroupHandleSize + shaderRecordSize));
+	const deUint32							sbtSize							= shaderBindingTableOffset + groupCount * totalEntrySize;
 	const VkBufferUsageFlags				sbtFlags						= VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | additionalBufferUsageFlags;
 	VkBufferCreateInfo						sbtCreateInfo					= makeBufferCreateInfo(sbtSize, sbtFlags);
 	sbtCreateInfo.flags														|= additionalBufferCreateFlags;
@@ -3310,7 +3312,7 @@ de::MovePtr<BufferWithMemory> RayTracingPipeline::createShaderBindingTable (cons
 	for (deUint32 idx = 0; idx < groupCount; ++idx)
 	{
 		deUint8* shaderSrcPos	= shaderHandles.data() + idx * shaderGroupHandleSize;
-		deUint8* shaderDstPos	= shaderBegin + idx * deAlign32(shaderGroupHandleSize + shaderRecordSize, shaderGroupHandleSize);
+		deUint8* shaderDstPos	= shaderBegin + idx * totalEntrySize;
 		deMemcpy(shaderDstPos, shaderSrcPos, shaderGroupHandleSize);
 
 		if (shaderGroupDataPtrPerGroup		!= nullptr &&
@@ -3369,16 +3371,17 @@ public:
 																		 const VkPhysicalDevice		physicalDevice);
 	virtual					~RayTracingPropertiesKHR					();
 
-	virtual deUint32		getShaderGroupHandleSize					(void)	{ return m_rayTracingPipelineProperties.shaderGroupHandleSize;						}
-	virtual deUint32		getMaxRecursionDepth						(void)	{ return m_rayTracingPipelineProperties.maxRayRecursionDepth;						}
-	virtual deUint32		getMaxShaderGroupStride						(void)	{ return m_rayTracingPipelineProperties.maxShaderGroupStride;						}
-	virtual deUint32		getShaderGroupBaseAlignment					(void)	{ return m_rayTracingPipelineProperties.shaderGroupBaseAlignment;					}
-	virtual deUint64		getMaxGeometryCount							(void)	{ return m_accelerationStructureProperties.maxGeometryCount;						}
-	virtual deUint64		getMaxInstanceCount							(void)	{ return m_accelerationStructureProperties.maxInstanceCount;						}
-	virtual deUint64		getMaxPrimitiveCount						(void)	{ return m_accelerationStructureProperties.maxPrimitiveCount;						}
-	virtual deUint32		getMaxDescriptorSetAccelerationStructures	(void)	{ return m_accelerationStructureProperties.maxDescriptorSetAccelerationStructures;	}
-	deUint32				getMaxRayDispatchInvocationCount			(void)	{ return m_rayTracingPipelineProperties.maxRayDispatchInvocationCount;				}
-	deUint32				getMaxRayHitAttributeSize					(void)	{ return m_rayTracingPipelineProperties.maxRayHitAttributeSize;						}
+	uint32_t		getShaderGroupHandleSize					(void)	override { return m_rayTracingPipelineProperties.shaderGroupHandleSize;						}
+	uint32_t		getShaderGroupHandleAlignment				(void)	override { return m_rayTracingPipelineProperties.shaderGroupHandleAlignment;				}
+	uint32_t		getMaxRecursionDepth						(void)	override { return m_rayTracingPipelineProperties.maxRayRecursionDepth;						}
+	uint32_t		getMaxShaderGroupStride						(void)	override { return m_rayTracingPipelineProperties.maxShaderGroupStride;						}
+	uint32_t		getShaderGroupBaseAlignment					(void)	override { return m_rayTracingPipelineProperties.shaderGroupBaseAlignment;					}
+	uint64_t		getMaxGeometryCount							(void)	override { return m_accelerationStructureProperties.maxGeometryCount;						}
+	uint64_t		getMaxInstanceCount							(void)	override { return m_accelerationStructureProperties.maxInstanceCount;						}
+	uint64_t		getMaxPrimitiveCount						(void)	override { return m_accelerationStructureProperties.maxPrimitiveCount;						}
+	uint32_t		getMaxDescriptorSetAccelerationStructures	(void)	override { return m_accelerationStructureProperties.maxDescriptorSetAccelerationStructures;	}
+	uint32_t		getMaxRayDispatchInvocationCount			(void)	override { return m_rayTracingPipelineProperties.maxRayDispatchInvocationCount;				}
+	uint32_t		getMaxRayHitAttributeSize					(void)	override { return m_rayTracingPipelineProperties.maxRayHitAttributeSize;					}
 
 protected:
 	VkPhysicalDeviceAccelerationStructurePropertiesKHR	m_accelerationStructureProperties;
