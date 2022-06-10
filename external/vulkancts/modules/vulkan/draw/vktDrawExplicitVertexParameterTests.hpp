@@ -26,13 +26,14 @@
 
 #include "vkDefs.hpp"
 #include "vktTestCase.hpp"
+#include "vktDrawGroupParams.hpp"
 
 namespace vkt
 {
 namespace Draw
 {
 
-tcu::TestCaseGroup*	createExplicitVertexParameterTests (tcu::TestContext& testCtx, bool useDynamicRendering);
+tcu::TestCaseGroup*	createExplicitVertexParameterTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams);
 
 } // Draw
 } // vkt

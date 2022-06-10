@@ -26,6 +26,7 @@
 
 #include "vkDefs.hpp"
 #include "vktTestCase.hpp"
+#include "vktDrawGroupParams.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuResource.hpp"
@@ -105,14 +106,21 @@ struct ReferenceImageInstancedCoordinates
 class DrawTestsBaseClass : public TestInstance
 {
 public:
-								DrawTestsBaseClass	(Context& context, const char* vertexShaderName, const char* fragmentShaderName, bool useDynamicRendering, vk::VkPrimitiveTopology topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+								DrawTestsBaseClass	(Context& context, const char* vertexShaderName, const char* fragmentShaderName, const SharedGroupParams groupParams, vk::VkPrimitiveTopology topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
 
 protected:
-	void						initialize			(void);
-	virtual void				initPipeline		(const vk::VkDevice device);
-	void						beginRender			(const vk::VkSubpassContents content = vk::VK_SUBPASS_CONTENTS_INLINE);
-	void						endRender			(void);
-	virtual tcu::TestStatus		iterate				(void)						{ TCU_FAIL("Implement iterate() method!");	}
+	void						initialize				(void);
+	virtual void				initPipeline			(const vk::VkDevice device);
+	void						preRenderBarriers		(void);
+	void						beginLegacyRender		(vk::VkCommandBuffer cmdBuffer, const vk::VkSubpassContents content = vk::VK_SUBPASS_CONTENTS_INLINE);
+	void						endLegacyRender			(vk::VkCommandBuffer cmdBuffer);
+	virtual tcu::TestStatus		iterate					(void)						{ TCU_FAIL("Implement iterate() method!");	}
+
+#ifndef CTS_USES_VULKANSC
+	void						beginSecondaryCmdBuffer	(const vk::DeviceInterface& vk, const vk::VkRenderingFlagsKHR renderingFlags = 0u);
+	void						beginDynamicRender		(vk::VkCommandBuffer cmdBuffer, const vk::VkRenderingFlagsKHR renderingFlags = 0u);
+	void						endDynamicRender		(vk::VkCommandBuffer cmdBuffer);
+#endif // CTS_USES_VULKANSC
 
 	enum
 	{
@@ -122,7 +130,7 @@ protected:
 
 	vk::VkFormat									m_colorAttachmentFormat;
 
-	const bool										m_useDynamicRendering;
+	const SharedGroupParams							m_groupParams;
 	const vk::VkPrimitiveTopology					m_topology;
 
 	const vk::DeviceInterface&						m_vk;
@@ -143,6 +151,7 @@ protected:
 
 	vk::Move<vk::VkCommandPool>						m_cmdPool;
 	vk::Move<vk::VkCommandBuffer>					m_cmdBuffer;
+	vk::Move<vk::VkCommandBuffer>					m_secCmdBuffer;
 
 	vk::Move<vk::VkFramebuffer>						m_framebuffer;
 	vk::Move<vk::VkRenderPass>						m_renderPass;

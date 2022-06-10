@@ -2367,7 +2367,7 @@ public:
 
 	bool isSecondary (void) const
 	{
-		return m_commandBuffer;
+		return !!m_commandBuffer;
 	}
 
 	VkCommandBuffer getCommandBuffer (void) const
