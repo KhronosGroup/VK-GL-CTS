@@ -290,6 +290,7 @@ tcu::TextureLevel generateReferenceImage (const tcu::IVec3& imageSize, const VkF
 	const float storeColorScale = computeStoreColorScale(imageFormat, imageSize);
 	const float storeColorBias = computeStoreColorBias(imageFormat);
 
+	const bool srgbFormat = isSrgbFormat(imageFormat);
 	const bool intFormat = isIntegerFormat(imageFormat);
 	const bool storeNegativeValues = isSignedFormat(imageFormat) && (storeColorBias == 0);
 	const int xMax = imageSize.x() - 1;
@@ -313,7 +314,12 @@ tcu::TextureLevel generateReferenceImage (const tcu::IVec3& imageSize, const VkF
 			if (intFormat)
 				access.setPixel(color, x, y, z);
 			else
-				access.setPixel(color.asFloat()*storeColorScale + storeColorBias, x, y, z);
+			{
+				if (srgbFormat)
+					access.setPixel(tcu::linearToSRGB(color.asFloat() * storeColorScale + storeColorBias), x, y, z);
+				else
+					access.setPixel(color.asFloat() * storeColorScale + storeColorBias, x, y, z);
+			}
 		}
 	}
 
@@ -2688,6 +2694,13 @@ static const VkFormat s_formats[] =
 	VK_FORMAT_R32G32B32_SINT,
 	VK_FORMAT_R32G32B32_SFLOAT,
 	VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
+
+	VK_FORMAT_R8G8_SRGB,
+	VK_FORMAT_R8G8B8_SRGB,
+	VK_FORMAT_B8G8R8_SRGB,
+	VK_FORMAT_R8G8B8A8_SRGB,
+	VK_FORMAT_B8G8R8A8_SRGB,
+	VK_FORMAT_A8B8G8R8_SRGB_PACK32
 };
 
 static const VkFormat s_formatsThreeComponent[] =
