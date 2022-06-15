@@ -1676,7 +1676,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 										  VK_ATTACHMENT_STORE_OP_NONE_EXT,
 										  ATTACHMENT_INIT_PRE,
 										  {{VK_IMAGE_ASPECT_STENCIL_BIT, true, stencilInit, true, stencilInit}}});
-			params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_STENCIL | ATTACHMENT_USAGE_DEPTH_TEST_OFF}}, 1u});
+			params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_STENCIL | ATTACHMENT_USAGE_STENCIL_TEST_OFF | ATTACHMENT_USAGE_DEPTH_TEST_OFF}}, 1u});
 
 			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "stencil_" + formatName + "_load_op_none_store_op_none_write_off", "", params));
 		}
