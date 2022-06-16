@@ -714,6 +714,8 @@ bool exportImportMemoryExplicitModifiersCase (Context& context, const VkFormat f
 	tcu::ConstPixelBufferAccess	result	(referenceTextureFormat, imageSize.x(), imageSize.y(), 1, outputBuffer->getAllocation().getHostPtr());
 	const tcu::UVec4 threshold (0u);
 
+	invalidateAlloc(vkd, device, outputBuffer->getAllocation());
+
 	return tcu::intThresholdCompare(context.getTestContext().getLog(), "Compare", "Result comparison", referenceImage, result, threshold, tcu::COMPARE_LOG_RESULT);
 }
 
