@@ -303,6 +303,18 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	}
 
 #if defined(CTS_USES_VULKAN)
+	vk::VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT physicalDeviceNonSeamlessCubeMapFeaturesEXT;
+	deMemset(&physicalDeviceNonSeamlessCubeMapFeaturesEXT, 0, sizeof(physicalDeviceNonSeamlessCubeMapFeaturesEXT));
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_non_seamless_cube_map")) )
+	{
+		physicalDeviceNonSeamlessCubeMapFeaturesEXT.sType = getStructureType<VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT>();
+		*nextPtr = &physicalDeviceNonSeamlessCubeMapFeaturesEXT;
+		nextPtr  = &physicalDeviceNonSeamlessCubeMapFeaturesEXT.pNext;
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT physicalDevicePageableDeviceLocalMemoryFeaturesEXT;
 	deMemset(&physicalDevicePageableDeviceLocalMemoryFeaturesEXT, 0, sizeof(physicalDevicePageableDeviceLocalMemoryFeaturesEXT));
 
@@ -1033,6 +1045,17 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 			result = false;
 		}
 	}
+
+#if defined(CTS_USES_VULKAN)
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_non_seamless_cube_map")) )
+	{
+		if ( physicalDeviceNonSeamlessCubeMapFeaturesEXT.nonSeamlessCubeMap == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature nonSeamlessCubeMap not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
 
 #if defined(CTS_USES_VULKAN)
 	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_pageable_device_local_memory")) )

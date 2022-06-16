@@ -3850,7 +3850,8 @@ bool floatNearestBlitCompare (const tcu::ConstPixelBufferAccess&	source,
 							  const tcu::PixelBufferAccess&			errorMask,
 							  const std::vector<CopyRegion>&		regions)
 {
-	const tcu::Sampler		sampler		(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::NEAREST, tcu::Sampler::NEAREST);
+	const tcu::Sampler		sampler		(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::NEAREST, tcu::Sampler::NEAREST,
+										 0.0f, true, tcu::Sampler::COMPAREMODE_NONE, 0, tcu::Vec4(0.0f), true);
 	const tcu::IVec4		dstBitDepth (tcu::getTextureFormatBitDepth(result.getFormat()));
 	tcu::LookupPrecision	precision;
 
@@ -3895,7 +3896,8 @@ bool intNearestBlitCompare (const tcu::ConstPixelBufferAccess&	source,
 							const tcu::PixelBufferAccess&		errorMask,
 							const std::vector<CopyRegion>&		regions)
 {
-	const tcu::Sampler		sampler		(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::NEAREST, tcu::Sampler::NEAREST);
+	const tcu::Sampler		sampler		(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::NEAREST, tcu::Sampler::NEAREST,
+										 0.0f, true, tcu::Sampler::COMPAREMODE_NONE, 0, tcu::Vec4(0.0f), true);
 	tcu::IntLookupPrecision	precision;
 
 	{
@@ -4228,7 +4230,7 @@ void scaleFromWholeSrcBuffer (const tcu::PixelBufferAccess& dst, const tcu::Cons
 	DE_ASSERT(filter == tcu::Sampler::LINEAR || filter == tcu::Sampler::CUBIC);
 
 	tcu::Sampler sampler(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE,
-					filter, filter, 0.0f, false);
+					filter, filter, 0.0f, false, tcu::Sampler::COMPAREMODE_NONE, 0, tcu::Vec4(0.0f), true);
 
 	float sX = (float)regionExtent.x / (float)dst.getWidth();
 	float sY = (float)regionExtent.y / (float)dst.getHeight();
@@ -4253,7 +4255,7 @@ void blit (const tcu::PixelBufferAccess& dst, const tcu::ConstPixelBufferAccess&
 	DE_ASSERT(filter == tcu::Sampler::NEAREST || filter == tcu::Sampler::LINEAR || filter == tcu::Sampler::CUBIC);
 
 	tcu::Sampler sampler(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE,
-			filter, filter, 0.0f, false);
+			filter, filter, 0.0f, false, tcu::Sampler::COMPAREMODE_NONE, 0, tcu::Vec4(0.0f), true);
 
 	const float sX = (float)src.getWidth() / (float)dst.getWidth();
 	const float sY = (float)src.getHeight() / (float)dst.getHeight();

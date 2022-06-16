@@ -1027,6 +1027,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_non_seamless_cube_map")
+	{
+		return;
+	}
 	if (extName == "VK_QCOM_fragment_density_map_offset")
 	{
 		return;
@@ -2380,6 +2384,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		functions.push_back("vkGetDescriptorSetLayoutHostMappingInfoVALVE");
 		functions.push_back("vkGetDescriptorSetHostMappingVALVE");
+		return;
+	}
+	if (extName == "VK_EXT_non_seamless_cube_map")
+	{
 		return;
 	}
 	if (extName == "VK_QCOM_fragment_density_map_offset")

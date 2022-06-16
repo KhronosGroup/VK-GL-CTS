@@ -5871,6 +5871,13 @@ struct VkDescriptorSetLayoutHostMappingInfoVALVE
 	uint32_t		descriptorSize;
 };
 
+struct VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		nonSeamlessCubeMap;
+};
+
 struct VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM
 {
 	VkStructureType	sType;
