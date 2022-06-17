@@ -20591,6 +20591,7 @@ tcu::TestCaseGroup* createOpMulExtendedGroup (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	testGroup	(new tcu::TestCaseGroup(testCtx, "mul_extended", "Op[S/U]MulExtended tests"));
 
+#ifndef CTS_USES_VULKANSC
 	static const char	dataDir[]	= "spirv_assembly/instruction/compute/mul_extended";
 
 	static const struct Case
@@ -20619,6 +20620,7 @@ tcu::TestCaseGroup* createOpMulExtendedGroup (tcu::TestContext& testCtx)
 																			test.features);
 		testGroup->addChild(testCase);
 	}
+#endif // CTS_USES_VULKANSC
 
 	return testGroup.release();
 }
