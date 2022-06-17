@@ -2002,6 +2002,12 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate (void)
 	const Unique<VkCommandPool>			cmdPool						(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>		cmdBuffer					(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
+	enum QueryIndex
+	{
+		QUERY_INDEX_NO_EARLY_FRAG = 0,
+		QUERY_INDEX_EARLY_FRAG = 1
+	};
+
 	{
 		const VkRect2D					renderArea					=
 		{
@@ -2043,9 +2049,9 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate (void)
 		// Run without early fragment test.
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineNoEarlyFrag);
 
-		vk.cmdBeginQuery(cmdBuffer.get(), queryPool, 0, VK_QUERY_CONTROL_PRECISE_BIT);
+		vk.cmdBeginQuery(cmdBuffer.get(), queryPool, QUERY_INDEX_NO_EARLY_FRAG, VK_QUERY_CONTROL_PRECISE_BIT);
 		vk.cmdDraw(*cmdBuffer, numVertices, 1u, 0u, 0u);
-		vk.cmdEndQuery(cmdBuffer.get(), queryPool, 0);
+		vk.cmdEndQuery(cmdBuffer.get(), queryPool, QUERY_INDEX_NO_EARLY_FRAG);
 
 		endRenderPass(vk, *cmdBuffer);
 
@@ -2058,9 +2064,9 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate (void)
 		// Run with early fragment test.
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineEarlyFrag);
 
-		vk.cmdBeginQuery(cmdBuffer.get(), queryPool, 1, VK_QUERY_CONTROL_PRECISE_BIT);
+		vk.cmdBeginQuery(cmdBuffer.get(), queryPool, QUERY_INDEX_EARLY_FRAG, VK_QUERY_CONTROL_PRECISE_BIT);
 		vk.cmdDraw(*cmdBuffer, numVertices, 1u, 0u, 0u);
-		vk.cmdEndQuery(cmdBuffer.get(), queryPool, 1);
+		vk.cmdEndQuery(cmdBuffer.get(), queryPool, QUERY_INDEX_EARLY_FRAG);
 
 		endRenderPass(vk, *cmdBuffer);
 
@@ -2103,9 +2109,17 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate (void)
 		vk.destroyQueryPool(device, queryPool, nullptr);
 
 		// Check that number of the all passed samples are within an acceptable range.
-		if (sampleCounts[0] >= minValue && sampleCounts[0] <= maxValue && sampleCounts[1] >= minValue && sampleCounts[1] <= maxValue)
+		if (sampleCounts[QUERY_INDEX_NO_EARLY_FRAG] >= minValue && sampleCounts[QUERY_INDEX_NO_EARLY_FRAG] <= maxValue && sampleCounts[QUERY_INDEX_EARLY_FRAG] >= minValue && sampleCounts[QUERY_INDEX_EARLY_FRAG] <= maxValue)
 		{
 			return tcu::TestStatus::pass("Success");
+		}
+		else if (sampleCounts[QUERY_INDEX_NO_EARLY_FRAG] >= minValue && sampleCounts[QUERY_INDEX_NO_EARLY_FRAG] <= maxValue && sampleCounts[QUERY_INDEX_EARLY_FRAG] == 0)
+		{
+			// Spec says: "If the fragment shader declares the EarlyFragmentTests execution mode, fragment shading and
+			// multisample coverage operations should instead be performed after sample counting.
+
+			// since the specification says 'should', the opposite behavior is allowed, but not preferred
+			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Sample count is 0 - sample counting performed after multisample coverage and fragment shading");
 		}
 		else
 		{
