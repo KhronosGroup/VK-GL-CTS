@@ -3877,12 +3877,17 @@ VkSamplerCreateInfo mapSampler (const tcu::Sampler& sampler, const tcu::TextureF
 	const VkCompareOp	compareOp		= (compareEnabled) ? (mapCompareMode(sampler.compare)) : (VK_COMPARE_OP_ALWAYS);
 	const VkBorderColor	borderColor		= mapBorderColor(getTextureChannelClass(format.type), sampler.borderColor);
 	const bool			isMipmapEnabled = (sampler.minFilter != tcu::Sampler::NEAREST && sampler.minFilter != tcu::Sampler::LINEAR && sampler.minFilter != tcu::Sampler::CUBIC);
+#ifndef CTS_USES_VULKANSC
+	const VkSamplerCreateFlags flags	= sampler.seamlessCubeMap ? 0u : (VkSamplerCreateFlags)VK_SAMPLER_CREATE_NON_SEAMLESS_CUBE_MAP_BIT_EXT;
+#else
+	const VkSamplerCreateFlags flags	= 0u;
+#endif // CTS_USES_VULKANSC
 
 	const VkSamplerCreateInfo	createInfo		=
 	{
 		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
 		DE_NULL,
-		(VkSamplerCreateFlags)0,
+		flags,
 		mapFilterMode(sampler.magFilter),							// magFilter
 		mapFilterMode(sampler.minFilter),							// minFilter
 		mapMipmapMode(sampler.minFilter),							// mipMode
@@ -3970,7 +3975,11 @@ tcu::Sampler mapVkSampler (const VkSamplerCreateInfo& samplerCreateInfo)
 														 : tcu::Sampler::COMPAREMODE_NONE,
 						 0,
 						 tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),
+#ifndef CTS_USES_VULKANSC
+						 !(samplerCreateInfo.flags & VK_SAMPLER_CREATE_NON_SEAMLESS_CUBE_MAP_BIT_EXT),
+#else
 						 true,
+#endif // CTS_USES_VULKANSC
 						 tcu::Sampler::MODE_DEPTH,
 						 reductionMode);
 

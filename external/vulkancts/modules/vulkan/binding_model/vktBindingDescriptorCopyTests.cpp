@@ -993,7 +993,8 @@ void ImageDescriptor::init (Context&		context,
 
 	// Create sampler
 	{
-		const tcu::Sampler			sampler			= tcu::Sampler(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::NEAREST, tcu::Sampler::NEAREST);
+		const tcu::Sampler			sampler			= tcu::Sampler(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::NEAREST, tcu::Sampler::NEAREST,
+																   0.0f, true, tcu::Sampler::COMPAREMODE_NONE, 0, tcu::Vec4(0.0f), true);
 		const tcu::TextureFormat	texFormat		= mapVkFormat(format);
 		const VkSamplerCreateInfo	samplerParams	= mapSampler(sampler, texFormat);
 
@@ -1325,7 +1326,7 @@ void SamplerDescriptor::init (Context&		context,
 	for (deUint32 i = 0; i < m_arraySize; i++)
 	{
 		const float					borderValue		= (float)((m_id + i) % 2);
-		const tcu::Sampler			sampler			= tcu::Sampler(tcu::Sampler::CLAMP_TO_BORDER, tcu::Sampler::CLAMP_TO_BORDER, tcu::Sampler::CLAMP_TO_BORDER, tcu::Sampler::NEAREST, tcu::Sampler::NEAREST, 0.0f, true, tcu::Sampler::COMPAREMODE_NONE, 0, Vec4(borderValue));
+		const tcu::Sampler			sampler			= tcu::Sampler(tcu::Sampler::CLAMP_TO_BORDER, tcu::Sampler::CLAMP_TO_BORDER, tcu::Sampler::CLAMP_TO_BORDER, tcu::Sampler::NEAREST, tcu::Sampler::NEAREST, 0.0f, true, tcu::Sampler::COMPAREMODE_NONE, 0, Vec4(borderValue), true);
 		const tcu::TextureFormat	texFormat		= mapVkFormat(format);
 		const VkSamplerCreateInfo	samplerParams	= mapSampler(sampler, texFormat);
 

@@ -588,6 +588,7 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_memory_priority"),
 	std::make_tuple(1, 0, "VK_EXT_metal_surface"),
 	std::make_tuple(1, 0, "VK_EXT_multi_draw"),
+	std::make_tuple(1, 0, "VK_EXT_non_seamless_cube_map"),
 	std::make_tuple(1, 0, "VK_EXT_pageable_device_local_memory"),
 	std::make_tuple(1, 0, "VK_EXT_pci_bus_info"),
 	std::make_tuple(1, 0, "VK_EXT_physical_device_drm"),
