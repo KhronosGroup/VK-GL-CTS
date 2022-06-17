@@ -285,8 +285,6 @@ void FSRTestCase::checkSupport(Context& context) const
 {
 	context.requireDeviceFunctionality("VK_KHR_fragment_shading_rate");
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_data.groupParams->pipelineConstructionType);
-
 	if (m_data.groupParams->useDynamicRendering)
 		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
@@ -2558,6 +2556,7 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 									  multisampleState,
 									  shadingRateState)
 			.setupFragmentOutputState(renderPass, 0u, DE_NULL, multisampleState)
+			.setMonolithicPipelineLayout(pipelineLayout)
 			.buildPipeline();
 
 		vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.back().getPipeline());
@@ -2608,6 +2607,7 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 										  multisampleState,
 										  shadingRateState)
 				.setupFragmentOutputState(renderPass, 0u, DE_NULL, multisampleState)
+				.setMonolithicPipelineLayout(pipelineLayout)
 				.buildPipeline();
 
 			vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.back().getPipeline());

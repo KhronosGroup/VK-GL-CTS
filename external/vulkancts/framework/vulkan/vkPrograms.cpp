@@ -40,6 +40,10 @@
 
 #include <map>
 
+#if DE_OS == DE_OS_ANDROID
+#define DISABLE_SHADERCACHE_IPC
+#endif
+
 namespace vk
 {
 

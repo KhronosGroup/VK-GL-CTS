@@ -887,7 +887,7 @@ tcu::TestStatus querySurfacePresentModes2Test (Context& context, Type wsiType)
 	const Unique<VkSurfaceKHR>		surface			(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(), native.getWindow()));
 	const vector<VkPhysicalDevice>	physicalDevices	= enumeratePhysicalDevices(instHelper.vki, instHelper.instance);
 	const std::vector<VkExtensionProperties>	deviceExtensions(enumerateDeviceExtensionProperties(instHelper.vki, context.getPhysicalDevice(), DE_NULL));
-	if (!isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_full_screen_exclusive")))
+	if (!isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_full_screen_exclusive")))
 		TCU_THROW(NotSupportedError, "Extension VK_EXT_full_screen_exclusive not supported");
 
 	for (size_t deviceNdx = 0; deviceNdx < physicalDevices.size(); ++deviceNdx)
@@ -958,7 +958,7 @@ tcu::TestStatus querySurfacePresentModes2TestSurfaceless (Context& context, Type
 	const VkSurfaceKHR				nullSurface		= 0;
 	const vector<VkPhysicalDevice>	physicalDevices	= enumeratePhysicalDevices(instHelper.vki, instHelper.instance);
 	const std::vector<VkExtensionProperties>	deviceExtensions(enumerateDeviceExtensionProperties(instHelper.vki, context.getPhysicalDevice(), DE_NULL));
-	if (!isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_full_screen_exclusive")))
+	if (!isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_full_screen_exclusive")))
 		TCU_THROW(NotSupportedError, "Extension VK_EXT_full_screen_exclusive not supported");
 
 	for (size_t deviceNdx = 0; deviceNdx < physicalDevices.size(); ++deviceNdx)
@@ -1199,8 +1199,6 @@ tcu::TestStatus queryDevGroupSurfacePresentCapabilitiesTest (Context& context, T
 	deUint8											buffer					[sizeof(VkDeviceGroupPresentCapabilitiesKHR) + GUARD_SIZE];
 	deUint32										queueFamilyIndex		= 0;
 	VkDeviceGroupPresentCapabilitiesKHR*			presentCapabilities;
-	VkPhysicalDevice								physicalDevice			= chooseDevice(instHelper.vki, instHelper.instance, cmdLine);
-	const Extensions&								supportedExtensions		= enumerateDeviceExtensionProperties(instHelper.vki, physicalDevice, DE_NULL);
 	std::vector<const char*>						deviceExtensions;
 
 	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_device_group"))
@@ -1209,7 +1207,7 @@ tcu::TestStatus queryDevGroupSurfacePresentCapabilitiesTest (Context& context, T
 
 	for (int ndx = 0; ndx < int(deviceExtensions.size()); ++ndx)
 	{
-		if (!isExtensionSupported(supportedExtensions, RequiredExtension(deviceExtensions[ndx])))
+		if (!context.isDeviceFunctionalitySupported(deviceExtensions[ndx]))
 			TCU_THROW(NotSupportedError, (string(deviceExtensions[ndx]) + " is not supported").c_str());
 	}
 
@@ -1320,7 +1318,7 @@ tcu::TestStatus queryDevGroupSurfacePresentModesTest (Context& context, Type wsi
 
 	for (int ndx = 0; ndx < int(deviceExtensions.size()); ++ndx)
 	{
-		if (!isExtensionSupported(supportedExtensions, RequiredExtension(deviceExtensions[ndx])))
+		if (!isExtensionStructSupported(supportedExtensions, RequiredExtension(deviceExtensions[ndx])))
 			TCU_THROW(NotSupportedError, (string(deviceExtensions[ndx]) + " is not supported").c_str());
 	}
 

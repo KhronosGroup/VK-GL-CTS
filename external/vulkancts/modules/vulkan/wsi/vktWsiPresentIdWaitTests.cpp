@@ -1061,7 +1061,7 @@ void PresentIdWaitCase<T>::checkSupport (Context& context) const
 
 	for (const auto& ext : checkedDeviceExts)
 	{
-		if (!vk::isExtensionSupported(supportedDeviceExts, vk::RequiredExtension(ext)))
+		if (!context.isDeviceFunctionalitySupported(ext))
 			TCU_THROW(NotSupportedError, ext + string(" is not supported"));
 	}
 }

@@ -1475,9 +1475,10 @@ bool TextureGatherInstance::verify (const ConstPixelBufferAccess&	rendered,
 														: m_baseParams.textureType == TEXTURETYPE_2D_ARRAY		? IVec3(7,7,7)
 														: IVec3(-1);
 		tcu::Sampler					sampler;
-		sampler.wrapS		= m_baseParams.wrapS;
-		sampler.wrapT		= m_baseParams.wrapT;
-		sampler.compare		= m_baseParams.shadowCompareMode;
+		sampler.wrapS		    = m_baseParams.wrapS;
+		sampler.wrapT		    = m_baseParams.wrapT;
+		sampler.compare		    = m_baseParams.shadowCompareMode;
+		sampler.seamlessCubeMap = true;
 
 		if (isDepthFormat(m_baseParams.textureFormat))
 		{
@@ -1929,7 +1930,8 @@ TextureBindingSp TextureGather2DInstance::createTexture (void)
 	MovePtr<tcu::Texture2D>			texture		= MovePtr<tcu::Texture2D>(new tcu::Texture2D(m_baseParams.textureFormat, m_textureSize.x(), m_textureSize.y()));
 	const tcu::Sampler				sampler		(m_baseParams.wrapS, m_baseParams.wrapT, tcu::Sampler::REPEAT_GL,
 												 m_baseParams.minFilter, m_baseParams.magFilter,
-												 0.0f /* LOD threshold */, true /* normalized coords */, m_baseParams.shadowCompareMode);
+												 0.0f /* LOD threshold */, true /* normalized coords */, m_baseParams.shadowCompareMode,
+												 0 /* compare channel */, tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f) /* border color */, true /* seamless cube*/);
 
 	{
 		const int	levelBegin	= ((m_baseParams.levelMode == LevelMode::NORMAL) ? m_baseParams.baseLevel : 0);
@@ -2150,7 +2152,8 @@ TextureBindingSp TextureGather2DArrayInstance::createTexture (void)
 	MovePtr<tcu::Texture2DArray>	texture		= MovePtr<tcu::Texture2DArray>(new tcu::Texture2DArray(m_baseParams.textureFormat, m_textureSize.x(), m_textureSize.y(), m_textureSize.z()));
 	const tcu::Sampler				sampler		(m_baseParams.wrapS, m_baseParams.wrapT, tcu::Sampler::REPEAT_GL,
 												 m_baseParams.minFilter, m_baseParams.magFilter,
-												 0.0f /* LOD threshold */, true /* normalized coords */, m_baseParams.shadowCompareMode);
+												 0.0f /* LOD threshold */, true /* normalized coords */, m_baseParams.shadowCompareMode,
+												 0 /* compare channel */, tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f) /* border color */, true /* seamless cube*/);
 
 	{
 		const int	levelBegin	= ((m_baseParams.levelMode == LevelMode::NORMAL) ? m_baseParams.baseLevel : 0);

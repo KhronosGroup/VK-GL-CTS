@@ -20587,6 +20587,44 @@ tcu::TestCaseGroup* createOpExecutionModeTests (tcu::TestContext& testCtx)
 	return testGroup.release();
 }
 
+tcu::TestCaseGroup* createOpMulExtendedGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	testGroup	(new tcu::TestCaseGroup(testCtx, "mul_extended", "Op[S/U]MulExtended tests"));
+
+#ifndef CTS_USES_VULKANSC
+	static const char	dataDir[]	= "spirv_assembly/instruction/compute/mul_extended";
+
+	static const struct Case
+	{
+		const string name;
+		const vector<string> features;
+	} cases[] =
+	{
+		{	"signed_16bit",		{"Features.shaderInt16", "Storage16BitFeatures.storageBuffer16BitAccess"}			},
+		{	"signed_32bit",		{}																					},
+		{	"signed_64bit",		{"Features.shaderInt64"}															},
+		{	"signed_8bit",		{"Float16Int8Features.shaderInt8", "Storage8BitFeatures.storageBuffer8BitAccess"}	},
+		{	"unsigned_16bit",	{"Features.shaderInt16", "Storage16BitFeatures.storageBuffer16BitAccess"}			},
+		{	"unsigned_32bit",	{}																					},
+		{	"unsigned_64bit",	{"Features.shaderInt64"}															},
+		{	"unsigned_8bit",	{"Float16Int8Features.shaderInt8", "Storage8BitFeatures.storageBuffer8BitAccess"}	}
+	};
+
+	for (const auto& test : cases)
+	{
+		cts_amber::AmberTestCase *testCase = cts_amber::createAmberTestCase(testCtx,
+																			test.name.c_str(),
+																			"",
+																			dataDir,
+																			test.name + ".amber",
+																			test.features);
+		testGroup->addChild(testCase);
+	}
+#endif // CTS_USES_VULKANSC
+
+	return testGroup.release();
+}
+
 tcu::TestCaseGroup* createQueryGroup (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	testGroup (new tcu::TestCaseGroup(testCtx, "image_query", "image query tests"));
@@ -20735,6 +20773,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createOpArrayLengthComputeGroup(testCtx));
 #endif // CTS_USES_VULKANSC
 	computeTests->addChild(createPhysicalStorageBufferTestGroup(testCtx));
+	computeTests->addChild(createOpMulExtendedGroup(testCtx));
 
 	graphicsTests->addChild(createCrossStageInterfaceTests(testCtx));
 	graphicsTests->addChild(createSpivVersionCheckTests(testCtx, !testComputePipeline));

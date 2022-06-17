@@ -519,7 +519,7 @@ struct Instance
 		for (const auto& extName : params.instanceExtensions)
 		{
 			bool extNotInCore = !isCoreInstanceExtension(env.apiVersion, extName);
-			if (extNotInCore && !isExtensionSupported(instanceExts.begin(), instanceExts.end(), RequiredExtension(extName)))
+			if (extNotInCore && !isExtensionStructSupported(instanceExts.begin(), instanceExts.end(), RequiredExtension(extName)))
 				TCU_THROW(NotSupportedError, (extName + " is not supported").c_str());
 
 			if (extNotInCore)
