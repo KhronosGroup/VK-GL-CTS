@@ -566,6 +566,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceSubgroupSizeControlFeaturesEXT.pNext;
 	}
 
+	vk::VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT physicalDeviceSubpassMergeFeedbackFeaturesEXT;
+	deMemset(&physicalDeviceSubpassMergeFeedbackFeaturesEXT, 0, sizeof(physicalDeviceSubpassMergeFeedbackFeaturesEXT));
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_create_renderpass2")) )
+	{
+		physicalDeviceSubpassMergeFeedbackFeaturesEXT.sType = getStructureType<VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT>();
+		*nextPtr = &physicalDeviceSubpassMergeFeedbackFeaturesEXT;
+		nextPtr  = &physicalDeviceSubpassMergeFeedbackFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDeviceSynchronization2FeaturesKHR physicalDeviceSynchronization2FeaturesKHR;
 	deMemset(&physicalDeviceSynchronization2FeaturesKHR, 0, sizeof(physicalDeviceSynchronization2FeaturesKHR));
 
@@ -1167,6 +1177,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceSubgroupSizeControlFeaturesEXT.computeFullSubgroups == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature computeFullSubgroups not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_create_renderpass2")) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_subpass_merge_feedback")) )
+	{
+		if ( physicalDeviceSubpassMergeFeedbackFeaturesEXT.subpassMergeFeedback == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature subpassMergeFeedback not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
