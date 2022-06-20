@@ -94,6 +94,7 @@ tcu::TestStatus ConditionalClearAttachmentTest::iterate (void)
 	const tcu::Vec4 drawColor	= tcu::RGBA::blue().toVec();
 
 	beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+	preRenderBarriers();
 	const bool useSecondaryCmdBuffer = m_conditionalData.conditionInherited || m_conditionalData.conditionInSecondaryCommandBuffer;
 	beginLegacyRender(*m_cmdBuffer, useSecondaryCmdBuffer ? vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS : vk::VK_SUBPASS_CONTENTS_INLINE);
 
