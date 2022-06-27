@@ -256,7 +256,7 @@ tcu::TestCaseGroup* createSpirvVersion1p4Group (tcu::TestContext& testCtx)
 
 	group = CaseGroup(data_dir, "loop_control");
 	group.add("iteration_multiple", "Loop control IterationMultiple");
-	group.add("max_iterations", "Loop control IterationMultiple");
+	group.add("max_iterations", "Loop control MaxIterations");
 	group.add("min_iterations", "Loop control MinIterations");
 	group.add("partial_count", "Loop control PartialCount");
 	group.add("peel_count", "Loop control PeelCount");
