@@ -37,6 +37,7 @@
 #include "vktMeshShaderInOutTestsEXT.hpp"
 #include "vktMeshShaderPropertyTestsEXT.hpp"
 #include "vktMeshShaderConditionalRenderingTestsEXT.hpp"
+#include "vktMeshShaderProvokingVertexTestsEXT.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -72,6 +73,7 @@ tcu::TestCaseGroup*	createTests	(tcu::TestContext& testCtx)
 	extGroup->addChild(createMeshShaderInOutTestsEXT(testCtx));
 	extGroup->addChild(createMeshShaderPropertyTestsEXT(testCtx));
 	extGroup->addChild(createMeshShaderConditionalRenderingTestsEXT(testCtx));
+	extGroup->addChild(createMeshShaderProvokingVertexTestsEXT(testCtx));
 
 	mainGroup->addChild(nvGroup.release());
 	mainGroup->addChild(extGroup.release());

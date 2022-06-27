@@ -2612,6 +2612,7 @@ typedef enum VkQueryType {
 #ifdef VK_ENABLE_BETA_EXTENSIONS
     VK_QUERY_TYPE_VIDEO_ENCODE_BITSTREAM_BUFFER_RANGE_KHR = 1000299000,
 #endif
+    VK_QUERY_TYPE_MESH_PRIMITIVES_GENERATED_EXT = 1000328000,
     VK_QUERY_TYPE_PRIMITIVES_GENERATED_EXT = 1000382000,
     VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_BOTTOM_LEVEL_POINTERS_KHR = 1000386000,
     VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SIZE_KHR = 1000386001,
@@ -3282,6 +3283,8 @@ typedef enum VkQueryPipelineStatisticFlagBits {
     VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT = 0x00000100,
     VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT = 0x00000200,
     VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT = 0x00000400,
+    VK_QUERY_PIPELINE_STATISTIC_TASK_SHADER_INVOCATIONS_BIT_EXT = 0x00000800,
+    VK_QUERY_PIPELINE_STATISTIC_MESH_SHADER_INVOCATIONS_BIT_EXT = 0x00001000,
     VK_QUERY_PIPELINE_STATISTIC_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkQueryPipelineStatisticFlagBits;
 typedef VkFlags VkQueryPipelineStatisticFlags;
@@ -15684,40 +15687,40 @@ typedef struct VkPhysicalDeviceMeshShaderFeaturesEXT {
     VkBool32           meshShader;
     VkBool32           multiviewMeshShader;
     VkBool32           primitiveFragmentShadingRateMeshShader;
+    VkBool32           meshShaderQueries;
 } VkPhysicalDeviceMeshShaderFeaturesEXT;
 
 typedef struct VkPhysicalDeviceMeshShaderPropertiesEXT {
-    VkStructureType                  sType;
-    void*                            pNext;
-    deUint32                         maxTaskWorkGroupTotalCount;
-    deUint32                         maxTaskWorkGroupCount[3];
-    deUint32                         maxTaskWorkGroupInvocations;
-    deUint32                         maxTaskWorkGroupSize[3];
-    deUint32                         maxTaskPayloadSize;
-    deUint32                         maxTaskSharedMemorySize;
-    deUint32                         maxTaskPayloadAndSharedMemorySize;
-    deUint32                         maxMeshWorkGroupTotalCount;
-    deUint32                         maxMeshWorkGroupCount[3];
-    deUint32                         maxMeshWorkGroupInvocations;
-    deUint32                         maxMeshWorkGroupSize[3];
-    deUint32                         maxMeshSharedMemorySize;
-    deUint32                         maxMeshPayloadAndSharedMemorySize;
-    deUint32                         maxMeshOutputMemorySize;
-    deUint32                         maxMeshPayloadAndOutputMemorySize;
-    deUint32                         maxMeshOutputComponents;
-    deUint32                         maxMeshOutputVertices;
-    deUint32                         maxMeshOutputPrimitives;
-    deUint32                         maxMeshOutputLayers;
-    deUint32                         maxMeshMultiviewViewCount;
-    deUint32                         meshOutputPerVertexGranularity;
-    deUint32                         meshOutputPerPrimitiveGranularity;
-    deUint32                         maxPreferredTaskWorkGroupInvocations;
-    deUint32                         maxPreferredMeshWorkGroupInvocations;
-    VkBool32                         prefersLocalInvocationVertexOutput;
-    VkBool32                         prefersLocalInvocationPrimitiveOutput;
-    VkBool32                         prefersCompactVertexOutput;
-    VkBool32                         prefersCompactPrimitiveOutput;
-    VkQueryPipelineStatisticFlags    meshShadingAffectedPipelineStatistics;
+    VkStructureType    sType;
+    void*              pNext;
+    deUint32           maxTaskWorkGroupTotalCount;
+    deUint32           maxTaskWorkGroupCount[3];
+    deUint32           maxTaskWorkGroupInvocations;
+    deUint32           maxTaskWorkGroupSize[3];
+    deUint32           maxTaskPayloadSize;
+    deUint32           maxTaskSharedMemorySize;
+    deUint32           maxTaskPayloadAndSharedMemorySize;
+    deUint32           maxMeshWorkGroupTotalCount;
+    deUint32           maxMeshWorkGroupCount[3];
+    deUint32           maxMeshWorkGroupInvocations;
+    deUint32           maxMeshWorkGroupSize[3];
+    deUint32           maxMeshSharedMemorySize;
+    deUint32           maxMeshPayloadAndSharedMemorySize;
+    deUint32           maxMeshOutputMemorySize;
+    deUint32           maxMeshPayloadAndOutputMemorySize;
+    deUint32           maxMeshOutputComponents;
+    deUint32           maxMeshOutputVertices;
+    deUint32           maxMeshOutputPrimitives;
+    deUint32           maxMeshOutputLayers;
+    deUint32           maxMeshMultiviewViewCount;
+    deUint32           meshOutputPerVertexGranularity;
+    deUint32           meshOutputPerPrimitiveGranularity;
+    deUint32           maxPreferredTaskWorkGroupInvocations;
+    deUint32           maxPreferredMeshWorkGroupInvocations;
+    VkBool32           prefersLocalInvocationVertexOutput;
+    VkBool32           prefersLocalInvocationPrimitiveOutput;
+    VkBool32           prefersCompactVertexOutput;
+    VkBool32           prefersCompactPrimitiveOutput;
 } VkPhysicalDeviceMeshShaderPropertiesEXT;
 
 typedef struct VkDrawMeshTasksIndirectCommandEXT {

@@ -1233,6 +1233,7 @@ const char* getQueryTypeName (VkQueryType value)
 		case VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_NV:						return "VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_NV";
 		case VK_QUERY_TYPE_PERFORMANCE_QUERY_INTEL:											return "VK_QUERY_TYPE_PERFORMANCE_QUERY_INTEL";
 		case VK_QUERY_TYPE_VIDEO_ENCODE_BITSTREAM_BUFFER_RANGE_KHR:							return "VK_QUERY_TYPE_VIDEO_ENCODE_BITSTREAM_BUFFER_RANGE_KHR";
+		case VK_QUERY_TYPE_MESH_PRIMITIVES_GENERATED_EXT:									return "VK_QUERY_TYPE_MESH_PRIMITIVES_GENERATED_EXT";
 		case VK_QUERY_TYPE_PRIMITIVES_GENERATED_EXT:										return "VK_QUERY_TYPE_PRIMITIVES_GENERATED_EXT";
 		case VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_BOTTOM_LEVEL_POINTERS_KHR:	return "VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_BOTTOM_LEVEL_POINTERS_KHR";
 		case VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SIZE_KHR:									return "VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SIZE_KHR";
@@ -3223,6 +3224,8 @@ tcu::Format::Bitfield<32> getQueryPipelineStatisticFlagsStr (VkQueryPipelineStat
 		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT,			"VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT"),
 		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT,	"VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT"),
 		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT,					"VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_TASK_SHADER_INVOCATIONS_BIT_EXT,					"VK_QUERY_PIPELINE_STATISTIC_TASK_SHADER_INVOCATIONS_BIT_EXT"),
+		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_MESH_SHADER_INVOCATIONS_BIT_EXT,					"VK_QUERY_PIPELINE_STATISTIC_MESH_SHADER_INVOCATIONS_BIT_EXT"),
 		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_FLAG_BITS_MAX_ENUM,								"VK_QUERY_PIPELINE_STATISTIC_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
@@ -13027,6 +13030,7 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMeshShaderFeatu
 	s << "\tmeshShader = " << value.meshShader << '\n';
 	s << "\tmultiviewMeshShader = " << value.multiviewMeshShader << '\n';
 	s << "\tprimitiveFragmentShadingRateMeshShader = " << value.primitiveFragmentShadingRateMeshShader << '\n';
+	s << "\tmeshShaderQueries = " << value.meshShaderQueries << '\n';
 	s << '}';
 	return s;
 }
@@ -13064,7 +13068,6 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMeshShaderPrope
 	s << "\tprefersLocalInvocationPrimitiveOutput = " << value.prefersLocalInvocationPrimitiveOutput << '\n';
 	s << "\tprefersCompactVertexOutput = " << value.prefersCompactVertexOutput << '\n';
 	s << "\tprefersCompactPrimitiveOutput = " << value.prefersCompactPrimitiveOutput << '\n';
-	s << "\tmeshShadingAffectedPipelineStatistics = " << getQueryPipelineStatisticFlagsStr(value.meshShadingAffectedPipelineStatistics) << '\n';
 	s << '}';
 	return s;
 }

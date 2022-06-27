@@ -1372,9 +1372,10 @@ if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(de
 		FEATURE_ITEM (VkPhysicalDeviceMeshShaderFeaturesEXT, meshShader),
 		FEATURE_ITEM (VkPhysicalDeviceMeshShaderFeaturesEXT, multiviewMeshShader),
 		FEATURE_ITEM (VkPhysicalDeviceMeshShaderFeaturesEXT, primitiveFragmentShadingRateMeshShader),
+		FEATURE_ITEM (VkPhysicalDeviceMeshShaderFeaturesEXT, meshShaderQueries),
 	};
 	auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceMeshShaderFeaturesEXT*>(featuresStruct);
-	checkFeatures(vkp, instance, instanceDriver, physicalDevice, 4, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess);
+	checkFeatures(vkp, instance, instanceDriver, physicalDevice, 5, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess);
 }
 
 if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevicePortabilitySubsetFeaturesKHR>()))

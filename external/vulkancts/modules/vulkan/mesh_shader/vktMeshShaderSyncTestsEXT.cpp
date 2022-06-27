@@ -420,10 +420,29 @@ public:
 		return decl.str();
 	}
 
+	struct PushConstantStruct
+	{
+		uint32_t writeVal;
+		uint32_t readVal;
+	};
+
+	// Get declaration for the "pc" push constant block. Must match the structure above.
+	std::string getPushConstantDecl () const
+	{
+		std::ostringstream pc;
+		pc
+			<< "layout (push_constant, std430) uniform PushConstantBlock {\n"
+			<< "    uint writeVal;\n"
+			<< "    uint readVal;\n"
+			<< "} pc;\n"
+			;
+		return pc.str();
+	}
+
 	std::string getReadStatement (const std::string& outName) const
 	{
 		std::ostringstream statement;
-		statement << "    " << outName << " = ";
+		statement << "    if (pc.readVal > 0u) { " << outName << " = ";
 
 		switch (resourceType)
 		{
@@ -434,14 +453,14 @@ public:
 		default:							DE_ASSERT(false); break;
 		}
 
-		statement << ";\n";
+		statement << "; }\n";
 		return statement.str();
 	}
 
 	std::string getWriteStatement (const std::string& valueName) const
 	{
 		std::ostringstream statement;
-		statement << "    ";
+		statement << "    if (pc.writeVal > 0u) { ";
 
 		switch (resourceType)
 		{
@@ -452,7 +471,7 @@ public:
 		default:							DE_ASSERT(false); break;
 		}
 
-		statement << ";\n";
+		statement << "; }\n";
 		return statement.str();
 	}
 
@@ -483,6 +502,13 @@ public:
 		return (fromShaderToShader(fromStage, toStage) &&
 				(static_cast<int>(fromStage) >= static_cast<int>(toStage) ||
 				barrierType != BarrierType::DEPENDENCY));
+	}
+
+	// We need to use generic barriers when using subpass self-dependencies (single subpass and pipeline).
+	// Note: barrierType == BarrierType::DEPENDENCY is technically redundant with !needsTwoPipelines().
+	bool subpassSelfDependency () const
+	{
+		return (fromShaderToShader(fromStage, toStage) && barrierType == BarrierType::DEPENDENCY && !needsTwoPipelines());
 	}
 
 };
@@ -532,6 +558,7 @@ void MeshShaderSyncCase::initPrograms (vk::SourceCollections& programCollection)
 	const bool			needsTaskShader	= m_params.needsTask();
 	const auto			valueStr		= de::toString(m_params.testValue);
 	const auto			resourceDecl	= m_params.getResourceDecl();
+	const auto			pcDecl			= m_params.getPushConstantDecl();
 	const std::string	tdDecl			= "struct TaskData { uint value; }; taskPayloadSharedEXT TaskData td;\n";
 
 	if (needsTaskShader)
@@ -546,6 +573,7 @@ void MeshShaderSyncCase::initPrograms (vk::SourceCollections& programCollection)
 			<< tdDecl
 			<< "\n"
 			<< resourceDecl
+			<< pcDecl
 			<< "\n"
 			<< "void main ()\n"
 			<< "{\n"
@@ -560,7 +588,11 @@ void MeshShaderSyncCase::initPrograms (vk::SourceCollections& programCollection)
 
 	{
 		// In the mesh-to-task case, we need non-passthrough mesh and task shaders but the mesh shader doesn't have a previous task shader.
-		const bool prevTaskInMainMesh = (needsTaskShader && !(m_params.fromStage == Stage::MESH && m_params.toStage == Stage::TASK));
+		// In the task-to-mesh case, the second pipeline will have the main mesh shader but no previous task shader either.
+		const bool prevTaskInMainMesh	= (needsTaskShader
+											&& !(m_params.fromStage == Stage::MESH && m_params.toStage == Stage::TASK)
+											&& !(m_params.fromStage == Stage::TASK && m_params.toStage == Stage::MESH));
+		const bool rwInMeshStage		= m_params.readsOrWritesInMesh();
 
 		std::ostringstream mesh;
 		mesh
@@ -574,7 +606,8 @@ void MeshShaderSyncCase::initPrograms (vk::SourceCollections& programCollection)
 			<< (prevTaskInMainMesh ? tdDecl : "")
 			<< "layout (location=0) out perprimitiveEXT uint primitiveValue[];\n"
 			<< "\n"
-			<< (m_params.readsOrWritesInMesh() ? resourceDecl : "")
+			<< (rwInMeshStage ? resourceDecl : "")
+			<< (rwInMeshStage ? pcDecl : "")
 			<< "\n"
 			<< "void main ()\n"
 			<< "{\n"
@@ -595,6 +628,7 @@ void MeshShaderSyncCase::initPrograms (vk::SourceCollections& programCollection)
 	{
 		const bool			readFromFrag	= (m_params.toStage == Stage::FRAG);
 		const bool			writeFromFrag	= (m_params.fromStage == Stage::FRAG);
+		const bool			rwInFragStage	= (readFromFrag || writeFromFrag);
 		std::ostringstream	frag;
 
 		frag
@@ -604,12 +638,14 @@ void MeshShaderSyncCase::initPrograms (vk::SourceCollections& programCollection)
 			<< "layout (location=0) in perprimitiveEXT flat uint primitiveValue;\n"
 			<< "layout (location=0) out uvec4 outColor;\n"
 			<< "\n"
-			<< ((readFromFrag || writeFromFrag) ? resourceDecl : "")
+			<< (rwInFragStage ? resourceDecl : "")
+			<< (rwInFragStage ? pcDecl : "")
 			<< "\n"
 			<< "void main ()\n"
 			<< "{\n"
-			<< "	outColor = uvec4(primitiveValue, 0, 0, 0);\n"
-			<< (readFromFrag ?	m_params.getReadStatement("const uint readVal")	: "")
+			<< "    outColor = uvec4(primitiveValue, 0, 0, 0);\n"
+			<< "    uint readVal = 0u;\n"
+			<< (readFromFrag ?	m_params.getReadStatement("readVal")	: "")
 			<< (readFromFrag ?	"    outColor = uvec4(readVal, 0, 0, 0);\n"		: "")
 			<< (writeFromFrag ?	m_params.getWriteStatement(valueStr)			: "")
 			<< "}\n"
@@ -1011,11 +1047,24 @@ tcu::TestStatus MeshShaderSyncInstance::iterate (void)
 	std::vector<VkViewport>	viewports	(1u, makeViewport(imageExtent));
 	std::vector<VkRect2D>	scissors	(1u, makeRect2D(imageExtent));
 
+	using PushConstantStruct = TestParams::PushConstantStruct;
+
 	// Pipeline layout.
-	const auto pipelineLayout = makePipelineLayout(vkd, device, setLayout.get());
+	const auto pcSize			= static_cast<uint32_t>(sizeof(PushConstantStruct));
+	const auto pcRange			= makePushConstantRange(resourceStages, 0u, pcSize);
+	const auto pipelineLayout	= makePipelineLayout(vkd, device, setLayout.get(), &pcRange);
 
 	// Shader modules, pipelines and pipeline layouts.
-	const auto						pipelineCount	= (m_params.needsTwoPipelines() ? 2u : 1u);
+	const auto						twoPipelines	= m_params.needsTwoPipelines();
+	const auto						selfDeps		= m_params.subpassSelfDependency();
+
+	// Both at the same time does not make sense.
+	DE_ASSERT(!(twoPipelines && selfDeps));
+
+	const auto						pipelineCount	= (twoPipelines ? 2u : 1u);
+	const auto						drawCount		= (selfDeps ? 2u : 1u);
+	const auto						iterationCount	= std::max(pipelineCount, drawCount);
+
 	std::vector<Move<VkPipeline>>	pipelines;
 	pipelines.reserve(pipelineCount);
 
@@ -1171,7 +1220,7 @@ tcu::TestStatus MeshShaderSyncInstance::iterate (void)
 				currentLayout = newLayout;
 			}
 		}
-		// For subpass dependencies, they have already been included in the render pass.
+		// For subpass dependencies, they have already been included in the render pass or loop below.
 	}
 
 	// Run the pipeline.
@@ -1180,24 +1229,43 @@ tcu::TestStatus MeshShaderSyncInstance::iterate (void)
 
 	vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
 
-	for (uint32_t pipelineIdx = 0u; pipelineIdx < pipelineCount; ++pipelineIdx)
+	for (uint32_t iterationIdx = 0u; iterationIdx < iterationCount; ++iterationIdx)
 	{
-		if (pipelineIdx > 0u && !multiRenderPass)
+		if (iterationIdx > 0u && !multiRenderPass && twoPipelines)
 			vkd.cmdNextSubpass(cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
 		if (multiRenderPass)
-			beginRenderPass(vkd, cmdBuffer, renderPasses.at(pipelineIdx).get(), framebuffers.at(pipelineIdx).get(), scissors.at(0), tcu::UVec4(0u));
+			beginRenderPass(vkd, cmdBuffer, renderPasses.at(iterationIdx).get(), framebuffers.at(iterationIdx).get(), scissors.at(0), tcu::UVec4(0u));
 
-		vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.at(pipelineIdx).get());
+		if (twoPipelines || iterationIdx == 0u)
+			vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.at(iterationIdx).get());
+
+		PushConstantStruct pcData;
+		if (selfDeps)
+		{
+			// First draw writes, second draw reads.
+			pcData.writeVal	= 1u - iterationIdx;
+			pcData.readVal	= iterationIdx;
+		}
+		else
+		{
+			// Otherwise reads and writes freely according to the pipeline shaders.
+			pcData.writeVal	= 1u;
+			pcData.readVal	= 1u;
+		}
+		vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), resourceStages, 0u, pcSize, &pcData);
 		vkd.cmdDrawMeshTasksEXT(cmdBuffer, 1u, 1u, 1u);
 
 		if (multiRenderPass)
 			endRenderPass(vkd, cmdBuffer);
 
-		// If there are multiple render passes, synchronize resource between them.
-		if (multiRenderPass && pipelineIdx < pipelineCount - 1u)
+		// If there are self-dependencies or multiple render passes, synchronize resource between draw calls.
+		if ((multiRenderPass || selfDeps) && iterationIdx == 0u)
 		{
-			if (m_params.barrierType == BarrierType::GENERAL)
+			// In the case of self-dependencies, the barrier type is BarrierType::DEPENDENCY and we'll insert a general barrier because:
+			//    * VUID-vkCmdPipelineBarrier-bufferMemoryBarrierCount-01178 forbids using buffer barriers inside render passes.
+			//    * VUID-vkCmdPipelineBarrier-image-04073 forbids using image memory barriers inside render passes with resources that are not attachments.
+			if (m_params.barrierType == BarrierType::GENERAL || m_params.barrierType == BarrierType::DEPENDENCY)
 			{
 				const auto memoryBarrier = makeMemoryBarrier(writeAccessFlags, readAccessFlags);
 				cmdPipelineMemoryBarrier(vkd, cmdBuffer, fromStageFlags, toStageFlags, &memoryBarrier);
@@ -1222,20 +1290,22 @@ tcu::TestStatus MeshShaderSyncInstance::iterate (void)
 			}
 			else
 			{
-				// Subpass dependencies cannot be used with multiple render passes.
 				DE_ASSERT(false);
 			}
 
-			// Sync color attachment writes.
-			const auto colorWritesBarrier = makeMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
-			cmdPipelineMemoryBarrier(vkd, cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, &colorWritesBarrier);
+			if (multiRenderPass)
+			{
+				// Sync color attachment writes.
+				const auto colorWritesBarrier = makeMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+				cmdPipelineMemoryBarrier(vkd, cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, &colorWritesBarrier);
+			}
 		}
 	}
 
 	if (!multiRenderPass)
 		endRenderPass(vkd, cmdBuffer);
 
-	// If the resource was written to from the shaders and will be read from a non-shader stage, insert the main barrier after running the pipeline.
+	// If the resource was written to from shaders and will be read from a non-shader stage, insert the main barrier after running the pipeline.
 	if (isShaderStage(m_params.fromStage) && !isShaderStage(m_params.toStage))
 	{
 		if (m_params.barrierType == BarrierType::GENERAL)
@@ -1260,7 +1330,7 @@ tcu::TestStatus MeshShaderSyncInstance::iterate (void)
 				currentLayout = newLayout;
 			}
 		}
-		// For subpass dependencies, they have already been included in the render pass.
+		// For subpass dependencies, they have already been included in the render pass and loop.
 	}
 
 	// Read resource from the destination stage if needed.
@@ -1682,7 +1752,7 @@ tcu::TestCaseGroup* createMeshShaderSyncTestsEXT (tcu::TestContext& testCtx)
 				const auto shaderToShader      = fromShaderToShader(stageCombination.fromStage, stageCombination.toStage);
 				const auto barrierIsDependency = (barrierCase.barrierType == BarrierType::DEPENDENCY);
 
-				// Subpass can only be used in shader to shader situations.
+				// Subpass dependencies can only be used in shader to shader situations.
 				if (barrierIsDependency && !shaderToShader)
 						continue;
 

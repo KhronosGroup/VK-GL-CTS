@@ -1966,14 +1966,15 @@ MaxMeshOutputSizeCase::ParamsFromContext MaxMeshOutputSizeCase::getParamsFromCon
 	}
 
 	// This uses the equation in "Mesh Shader Output" spec section. Note per-vertex data already has gl_Position and gl_PointSize.
+	// Also note gl_PointSize uses 1 effective location (4 scalar components) despite being a float.
 	const auto granularity			= ((m_params.locationType == LocationType::PER_PRIMITIVE)
 									? meshProperties.meshOutputPerPrimitiveGranularity
 									: meshProperties.meshOutputPerVertexGranularity);
 	const auto actualPoints			= de::roundUp(kMaxPoints, granularity);
 	const auto sizeMultiplier		= actualPoints * kUvec4Size;
-	const auto builtinDataSize		= (16u/*gl_Position*/ + 4u/*gl_PointSize*/) * actualPoints;
+	const auto builtinDataSize		= (16u/*gl_Position*/ + 16u/*gl_PointSize*/) * actualPoints;
 	const auto locationsDataSize	= (outSize - builtinDataSize) / numViewFactor;
-	const auto maxTotalLocations	= meshProperties.maxMeshOutputComponents / kUvec4Comp;
+	const auto maxTotalLocations	= meshProperties.maxMeshOutputComponents / kUvec4Comp - 2u; // gl_Position and gl_PointSize use 1 location each.
 	const auto locationCount		= std::min(locationsDataSize / sizeMultiplier, maxTotalLocations);
 
 	ParamsFromContext params;

@@ -229,6 +229,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderMiscTestsEXT.cpp \
 	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderPropertyTests.cpp \
 	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderPropertyTestsEXT.cpp \
+	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderProvokingVertexTestsEXT.cpp \
 	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderSmokeTests.cpp \
 	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderSmokeTestsEXT.cpp \
 	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderSyncTests.cpp \

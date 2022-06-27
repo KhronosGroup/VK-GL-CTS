@@ -2709,9 +2709,18 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 	const VkDevice			device	= m_context.getDevice();
 	const bool				useMesh	= (meshShader != DE_NULL);
 
-	VkFlags allShaderStages = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
-	if (m_data.geometryShader)
-		allShaderStages |= VK_SHADER_STAGE_GEOMETRY_BIT;
+	VkFlags allShaderStages = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+
+	if (useMesh)
+	{
+		allShaderStages |= VK_SHADER_STAGE_MESH_BIT_EXT;
+	}
+	else
+	{
+		allShaderStages |= VK_SHADER_STAGE_VERTEX_BIT;
+		if (m_data.geometryShader)
+			allShaderStages |= VK_SHADER_STAGE_GEOMETRY_BIT;
+	}
 
 	VkPipelineCreateFlags pipelineCreateFlags = (VkPipelineCreateFlags)0;
 	if (m_data.groupParams->useDynamicRendering)
@@ -2771,6 +2780,7 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 									  multisampleState,
 									  shadingRateState)
 			.setupFragmentOutputState(renderPass, 0u, DE_NULL, multisampleState)
+			.setMonolithicPipelineLayout(pipelineLayout)
 			.buildPipeline();
 
 		vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getPipeline());
@@ -2856,6 +2866,7 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 										  multisampleState,
 										  shadingRateState)
 				.setupFragmentOutputState(renderPass, 0u, DE_NULL, multisampleState)
+				.setMonolithicPipelineLayout(pipelineLayout)
 				.buildPipeline();
 
 			vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getPipeline());
