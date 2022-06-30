@@ -40,11 +40,11 @@ namespace tcu
 namespace osx
 {
 
-class VulkanWindow : public vk::wsi::MacOSWindowInterface
+class VulkanWindow : public vk::wsi::MetalWindowInterface
 {
 public:
 	VulkanWindow (MovePtr<osx::MetalView> view)
-	: vk::wsi::MacOSWindowInterface(view->getView())
+	: vk::wsi::MetalWindowInterface(view->getLayer())
 	, m_view(view)
 	{
 	}
@@ -112,7 +112,7 @@ VulkanPlatform::VulkanPlatform ()
 
 vk::wsi::Display* VulkanPlatform::createWsiDisplay (vk::wsi::Type wsiType) const
 {
-	if (wsiType != vk::wsi::TYPE_MACOS)
+	if (wsiType != vk::wsi::TYPE_METAL)
 		TCU_THROW(NotSupportedError, "WSI type not supported");
 
 	return new VulkanDisplay();
@@ -120,7 +120,7 @@ vk::wsi::Display* VulkanPlatform::createWsiDisplay (vk::wsi::Type wsiType) const
 
 bool VulkanPlatform::hasDisplay (vk::wsi::Type wsiType)  const
 {
-	if (wsiType != vk::wsi::TYPE_MACOS)
+	if (wsiType != vk::wsi::TYPE_METAL)
 		return false;
 
 	return true;
