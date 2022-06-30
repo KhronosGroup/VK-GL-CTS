@@ -708,7 +708,7 @@ LOCAL_SRC_FILES := \
 	framework/delibs/dethread/deSingleton.c \
 	framework/delibs/dethread/deThreadTest.c \
 	framework/delibs/dethread/unix/deMutexUnix.c \
-	framework/delibs/dethread/unix/deNamedSemaphoreUnix.c \
+	framework/delibs/dethread/unix/deSemaphoreMach.c \
 	framework/delibs/dethread/unix/deSemaphoreUnix.c \
 	framework/delibs/dethread/unix/deThreadLocalUnix.c \
 	framework/delibs/dethread/unix/deThreadUnix.c \

@@ -20,7 +20,7 @@ set(DETHREAD_SRCS
 	win32/deThreadWin32.c
 	win32/deThreadLocalWin32.c
 	unix/deMutexUnix.c
-	unix/deNamedSemaphoreUnix.c
+	unix/deSemaphoreMach.c
 	unix/deSemaphoreUnix.c
 	unix/deThreadUnix.c
 	unix/deThreadLocalUnix.c
