@@ -142,7 +142,8 @@ static void validate(Context& context, tcu::ResultCollector& results, VkDevice d
 							 "in image format properties.");
 			}
 			if ((compressionPropertiesSupported.imageCompressionFlags & compressionProperties.imageCompressionFlags) !=
-				compressionProperties.imageCompressionFlags)
+					compressionProperties.imageCompressionFlags &&
+				compressionProperties.imageCompressionFlags != VK_IMAGE_COMPRESSION_DISABLED_EXT)
 			{
 				results.fail("Got image with compression flags that are not supported "
 							 "in image format properties.");
