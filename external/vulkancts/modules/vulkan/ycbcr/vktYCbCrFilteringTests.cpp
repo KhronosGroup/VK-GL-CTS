@@ -609,6 +609,10 @@ void LinearFilteringTestCase::checkSupport(Context& context) const
 	if (m_chromaFiltering != VK_FILTER_LINEAR &&
 		(featureFlags & VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_SEPARATE_RECONSTRUCTION_FILTER_BIT) == 0)
 		TCU_THROW(NotSupportedError, "Different chroma, min, and mag filters not supported for format");
+
+	if (m_chromaFiltering == VK_FILTER_LINEAR &&
+		(featureFlags & VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT) == 0)
+		TCU_THROW(NotSupportedError, "Linear chroma filtering not supported for format");
 }
 
 vkt::TestInstance* LinearFilteringTestCase::createInstance(vkt::Context& context) const
