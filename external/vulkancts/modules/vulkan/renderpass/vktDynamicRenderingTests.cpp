@@ -137,6 +137,8 @@ struct TestParameters
 {
 	TestType		testType;
 	const Vec4		clearColor;
+	float			depthClearValue;
+	deUint32		stencilClearValue;
 	const VkFormat	imageFormat;
 	const UVec2		renderSize;
 };
@@ -549,11 +551,12 @@ tcu::TextureLevel generateColroImage (const tcu::TextureFormat	format,
 }
 
 tcu::TextureLevel generateDepthImage (const tcu::TextureFormat	format,
-									  const UVec2&				renderSize)
+									  const UVec2&				renderSize,
+									  float						depthClearValue)
 {
 	tcu::TextureLevel	image	(format, renderSize.x(), renderSize.y());
 	const float			value1	= 0.0f;
-	const float			value2	= 0.2f;
+	const float			value2	= depthClearValue;
 
 	for (deUint32 y = 0; y < renderSize.y(); ++y)
 	{
@@ -571,11 +574,12 @@ tcu::TextureLevel generateDepthImage (const tcu::TextureFormat	format,
 }
 
 tcu::TextureLevel generateStencilImage (const tcu::TextureFormat	format,
-										const UVec2&				renderSize)
+										const UVec2&				renderSize,
+										deUint32					stencilClearValue)
 {
 	tcu::TextureLevel	image	(format, renderSize.x(), renderSize.y());
 	const IVec4			value1	= IVec4(1,0,0,0);
-	const IVec4			value2	= IVec4(2,0,0,0);
+	const IVec4			value2	= IVec4(stencilClearValue,0,0,0);
 
 	for (deUint32 x = 0; x < renderSize.x(); ++x)
 	{
@@ -974,10 +978,10 @@ void DynamicRenderingTestInstance::initialize (void)
 	}
 
 	m_referenceImages.push_back(generateDepthImage(getDepthTextureFormat(m_formatStencilDepthImage),
-		m_parameters.renderSize));
+		m_parameters.renderSize, 0.2f));
 
 	m_referenceImages.push_back(generateStencilImage(mapVkFormat(VK_FORMAT_S8_UINT),
-		m_parameters.renderSize));
+		m_parameters.renderSize, 2U));
 }
 
 void DynamicRenderingTestInstance::createCmdBuffer (void)
@@ -1146,15 +1150,17 @@ void DynamicRenderingTestInstance::preBarier (const deUint32		colorAtchCount,
 
 void DynamicRenderingTestInstance::beginRendering (VkCommandBuffer					cmdBuffer,
 												   const std::vector<VkImageView>&	attachmentBindInfos,
-												   const VkRenderingFlagsKHR			flags,
+												   const VkRenderingFlagsKHR		flags,
 												   const deUint32					colorAtchCount,
 												   const ImagesFormat&				imagesFormat,
 												   const VkAttachmentLoadOp			loadOp,
-												   const VkAttachmentStoreOp			storeOp)
+												   const VkAttachmentStoreOp		storeOp)
 {
-	const DeviceInterface&	vk			= m_context.getDeviceInterface();
-	const VkClearValue		clearValue	= makeClearValueColor(m_parameters.clearColor);
-	const VkRect2D			renderArea	=
+	const DeviceInterface&	vk						= m_context.getDeviceInterface();
+	const VkClearValue		clearValue				= makeClearValueColor(m_parameters.clearColor);
+	const VkClearValue		depthStencilClearValue	= makeClearValueDepthStencil(m_parameters.depthClearValue, m_parameters.stencilClearValue);
+
+	const VkRect2D			renderArea				=
 	{
 		makeOffset2D(0, 0),
 		makeExtent2D(m_parameters.renderSize.x(), m_parameters.renderSize.y()),
@@ -1194,7 +1200,7 @@ void DynamicRenderingTestInstance::beginRendering (VkCommandBuffer					cmdBuffer
 			VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout			resolveImageLayout;
 			loadOp,												// VkAttachmentLoadOp		loadOp;
 			storeOp,											// VkAttachmentStoreOp		storeOp;
-			clearValue,											// VkClearValue				clearValue;
+			depthStencilClearValue,								// VkClearValue				clearValue;
 		};
 
 		attachments.push_back(renderingAtachInfo);
@@ -1215,7 +1221,7 @@ void DynamicRenderingTestInstance::beginRendering (VkCommandBuffer					cmdBuffer
 			VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout			resolveImageLayout;
 			loadOp,												// VkAttachmentLoadOp		loadOp;
 			storeOp,											// VkAttachmentStoreOp		storeOp;
-			clearValue,											// VkClearValue				clearValue;
+			depthStencilClearValue,								// VkClearValue				clearValue;
 		};
 
 		attachments.push_back(renderingAtachInfo);
@@ -3519,6 +3525,8 @@ tcu::TestCaseGroup* createDynamicRenderingBasicTests(tcu::TestContext& testCtx)
 		{
 			static_cast<TestType>(testType),	// TestType			testType;
 			Vec4(0.0f, 0.0f, 0.0f, 1.0f),		// const Vec4		clearColor;
+			1.0f,								// float			depthClearValue;
+			0U,									// deUint32			stencilClearValue;
 			VK_FORMAT_R8G8B8A8_UNORM,			// const VkFormat	imageFormat;
 			(UVec2(32, 32))						// const UVec2		renderSize;
 		};
