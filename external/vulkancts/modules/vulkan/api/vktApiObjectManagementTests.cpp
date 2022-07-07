@@ -256,8 +256,9 @@ struct Environment
 	const VkAllocationCallbacks*		allocationCallbacks;
 	deUint32							maxResourceConsumers;		// Maximum number of objects using same Object::Resources concurrently
 #ifdef CTS_USES_VULKANSC
-	de::SharedPtr<ResourceInterface>	resourceInterface;
+	de::SharedPtr<ResourceInterface>		resourceInterface;
 	VkPhysicalDeviceVulkanSC10Properties	vulkanSC10Properties;
+	VkPhysicalDeviceProperties				properties;
 #endif // CTS_USES_VULKANSC
 	const tcu::CommandLine&			commandLine;
 
@@ -275,6 +276,7 @@ struct Environment
 #ifdef CTS_USES_VULKANSC
 		, resourceInterface		(context.getResourceInterface())
 		, vulkanSC10Properties	(context.getDeviceVulkanSC10Properties())
+		, properties			(context.getDeviceProperties())
 #endif // CTS_USES_VULKANSC
 		, commandLine			(context.getTestContext().getCommandLine())
 	{
@@ -2961,7 +2963,7 @@ struct EnvClone
 		, vkd(de::MovePtr<DeviceDriver>(new DeviceDriver(parent.vkp, parent.instance, *device)))
 		, env(parent.vkp, parent.apiVersion, parent.instanceInterface, parent.instance, *vkd, *device, deviceRes.queueFamilyIndex, parent.programBinaries, parent.allocationCallbacks, maxResourceConsumers, parent.commandLine)
 #else
-		, vkd(de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(parent.vkp, parent.instance, *device, parent.commandLine, parent.resourceInterface, parent.vulkanSC10Properties), vk::DeinitDeviceDeleter(parent.resourceInterface.get(), *device)))
+		, vkd(de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(parent.vkp, parent.instance, *device, parent.commandLine, parent.resourceInterface, parent.vulkanSC10Properties, parent.properties), vk::DeinitDeviceDeleter(parent.resourceInterface.get(), *device)))
 		, env(parent.vkp, parent.apiVersion, parent.instanceInterface, parent.instance, *vkd, *device, deviceRes.queueFamilyIndex, parent.programBinaries, parent.allocationCallbacks, maxResourceConsumers, parent.resourceInterface, parent.vulkanSC10Properties, parent.commandLine)
 #endif // CTS_USES_VULKANSC
 	{

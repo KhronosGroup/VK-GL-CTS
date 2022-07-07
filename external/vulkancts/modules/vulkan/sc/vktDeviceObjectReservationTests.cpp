@@ -890,7 +890,7 @@ tcu::TestStatus DeviceObjectReservationInstance::iterate (void)
 
 	Move<VkDevice>					device				= createTestDevice(deviceCreateInfo, objectInfo, sc10Features);
 	de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>
-									deviceDriver		= de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), instance, *device, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties()),
+									deviceDriver		= de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), instance, *device, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()),
 															DeinitDeviceDeleter(m_context.getResourceInterface().get(), *device));
 
 	performTest(*deviceDriver, *device);
