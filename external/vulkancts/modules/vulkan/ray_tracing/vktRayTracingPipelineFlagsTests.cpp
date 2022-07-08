@@ -310,8 +310,8 @@ public:
 		// miss shader is loaded into each test regardless m_params.miss() is set
 		m_missModule = createShaderModule(m_vkd, m_device, m_context.getBinaryCollection().get("miss"), 0);
 
-		if (m_params.chit())
-			m_chitModule = createShaderModule(m_vkd, m_device, m_context.getBinaryCollection().get("chit"), 0);
+		// cloest hit shader is loaded into each test regardless m_params.chit() is set
+		m_chitModule = createShaderModule(m_vkd, m_device, m_context.getBinaryCollection().get("chit"), 0);
 
 		if (m_params.ahit())
 			m_ahitModule = createShaderModule(m_vkd, m_device, m_context.getBinaryCollection().get("ahit"), 0);
@@ -413,7 +413,7 @@ public:
 		DE_ASSERT(						(VkShaderModule(0) != *m_rgenModule));
 		DE_ASSERT(						(VkShaderModule(0) != *m_missModule));
 		DE_ASSERT(m_params.ahit()	==	(VkShaderModule(0) != *m_ahitModule));
-		DE_ASSERT(m_params.chit()	==	(VkShaderModule(0) != *m_chitModule));
+		DE_ASSERT(						(VkShaderModule(0) != *m_chitModule));
 		DE_ASSERT(checkIsect		==	(VkShaderModule(0) != *m_isectModule));
 
 		// rgen in the main pipeline only
@@ -421,12 +421,11 @@ public:
 
 		createLibraryPipeline(appendPipelineLibrary)->addShader(VK_SHADER_STAGE_MISS_BIT_KHR, *m_missModule, (m_params.useLibs ? 0 : groupIndex++));
 
-		if (m_params.ahit() || m_params.chit() || m_params.isect() || checkIsect)
 		{
 			const deUint32 hitGroupIndex = m_params.useLibs ? 0 : groupIndex;
 			auto pipeline = createLibraryPipeline(appendPipelineLibrary);
 			if (m_params.ahit())	pipeline->addShader(VK_SHADER_STAGE_ANY_HIT_BIT_KHR,		*m_ahitModule, hitGroupIndex);
-			if (m_params.chit())	pipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,	*m_chitModule, hitGroupIndex);
+			pipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,	*m_chitModule, hitGroupIndex);
 			if (checkIsect)			pipeline->addShader(VK_SHADER_STAGE_INTERSECTION_BIT_KHR,	*m_isectModule, hitGroupIndex);
 		}
 
@@ -445,7 +444,7 @@ public:
 																	   m_testInstance.shaderGroupHandleSize,
 																	   m_testInstance.shaderGroupBaseAlignment, 0, 1);
 		VkStridedDeviceAddressRegionKHR	rgn	= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(m_vkd, m_device, **sbt, 0),
-																				m_testInstance.shaderGroupBaseAlignment,
+																				m_testInstance.shaderGroupHandleSize,
 																				m_testInstance.shaderGroupHandleSize);
 		return { de::SharedPtr<BufferWithMemory>(sbt.release()), rgn };
 	}
@@ -481,36 +480,29 @@ public:
 		de::MovePtr<BufferWithMemory>	buf;
 		VkStridedDeviceAddressRegionKHR	rgn;
 
-		if ((m_params.geomTypes == GeometryTypes::Box) || (m_params.geomTypes == GeometryTypes::TriangleAndBox) || m_params.ahit() || m_params.chit())
+		std::vector<deUint8>	handles			(m_testInstance.shaderGroupHandleSize);
+		auto					records			= m_testInstance.prepareShaderBindingTable();
+		const deUint32			hitGroupCount	= deUint32(records.size() - 2);
+
+		SBT<PipelineFlagsInstance::ShaderRecordEXT> sbt(m_vkd, m_device, m_allocator, pipeline, hitGroupCount,
+														m_testInstance.shaderGroupHandleSize, m_testInstance.shaderGroupBaseAlignment);
+
+		VK_CHECK(m_vkd.getRayTracingShaderGroupHandlesKHR(m_device, pipeline, 2, 1, handles.size(), handles.data()));
+
+		for (deUint32 i = 0; i < hitGroupCount; ++i)
 		{
-			std::vector<deUint8>	handles			(m_testInstance.shaderGroupHandleSize);
-			auto					records			= m_testInstance.prepareShaderBindingTable();
-			const deUint32			hitGroupCount	= deUint32(records.size() - 2);
-
-			SBT<PipelineFlagsInstance::ShaderRecordEXT> sbt(m_vkd, m_device, m_allocator, pipeline, hitGroupCount,
-															m_testInstance.shaderGroupHandleSize, m_testInstance.shaderGroupBaseAlignment);
-
-			VK_CHECK(m_vkd.getRayTracingShaderGroupHandlesKHR(m_device, pipeline, 2, 1, handles.size(), handles.data()));
-
-			for (deUint32 i = 0; i < hitGroupCount; ++i)
+			// copy the SBT record if it was initialized in prepareShaderBindingTable()
+			if (std::get<3>(records[i + 2]))
 			{
-				// copy the SBT record if it was initialized in prepareShaderBindingTable()
-				if (std::get<3>(records[i + 2]))
-				{
-					const PipelineFlagsInstance::ShaderRecordEXT& rec = std::get<2>(records[i + 2]);
-					sbt.updateAt(i, handles.data(), rec);
-				}
+				const PipelineFlagsInstance::ShaderRecordEXT& rec = std::get<2>(records[i + 2]);
+				sbt.updateAt(i, handles.data(), rec);
 			}
+		}
 
-			sbt.flush();
-			buf	= sbt.get();
-			rgn = makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(m_vkd, m_device, **buf, 0),
-																		   sbt.getAlignment(),	m_testInstance.shaderGroupHandleSize);
-		}
-		else
-		{
-			rgn = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-		}
+		sbt.flush();
+		buf	= sbt.get();
+		rgn = makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(m_vkd, m_device, **buf, 0),
+																		sbt.getAlignment(),	m_testInstance.shaderGroupHandleSize);
 
 		return { de::SharedPtr<BufferWithMemory>(buf.release()), rgn };
 	}
@@ -649,7 +641,7 @@ void PipelineFlagsCase::initPrograms (SourceCollections& programCollection) cons
 		programCollection.glslSources.add("miss") << glu::MissSource(str.str()) << buildOptions;
 	}
 
-	if (m_params.chit())
+	// closest hit shader is created in each test regardless the m_params.chit() is set
 	{
 		std::stringstream str;
 		str << "#version 460 core"														<< endl
@@ -925,10 +917,8 @@ std::vector<PipelineFlagsInstance::ShaderRecordEntry> PipelineFlagsInstance::pre
 						flags |= VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
 						hitGroup.ahit = ahit;
 					}
-					if (m_params.chit()) {
-						flags |= VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
-						hitGroup.chit = chit;
-					}
+					flags |= VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+					hitGroup.chit = chit;
 					shaderRecords[shaderGroupIndex] = std::tuple<VkShaderStageFlags, HitGroup, ShaderRecordEXT, bool>( flags, hitGroup, { GeometryTypes::Triangle, geometryIndex, tcu::IVec4(0, greenComp++, 0, 0) }, true );
 					usedIndexes.insert(shaderGroupIndex);
 				}
@@ -957,10 +947,8 @@ std::vector<PipelineFlagsInstance::ShaderRecordEntry> PipelineFlagsInstance::pre
 						flags |= VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
 						hitGroup.ahit = ahit;
 					}
-					if (m_params.chit()) {
-						flags |= VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
-						hitGroup.chit = chit;
-					}
+					flags |= VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+					hitGroup.chit = chit;
 					{ //In the case of AABB isect must be provided, otherwise we will process AABB with TRIANGLES_HIT_GROUP
 						flags |= VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
 						hitGroup.isect = isect;

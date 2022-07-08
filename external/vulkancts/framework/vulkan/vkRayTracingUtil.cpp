@@ -1757,7 +1757,9 @@ void BottomLevelAccelerationStructurePool::batchCreate (const DeviceInterface& v
 														Allocator&				allocator)
 {
 	// Prevent a programmer from calling this method more than once.
-	if (m_createOnce) DE_ASSERT(0); m_createOnce = true;
+	if (m_createOnce) DE_ASSERT(0);
+
+	m_createOnce = true;
 	DE_ASSERT(m_structs.size() != 0);
 
 	auto createAccellerationStructureBuffer = [&](VkDeviceSize bufferSize) -> typename std::add_pointer<BufferWithMemory>::type
