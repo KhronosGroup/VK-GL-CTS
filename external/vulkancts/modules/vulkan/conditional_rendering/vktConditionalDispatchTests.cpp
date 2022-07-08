@@ -371,6 +371,9 @@ void ConditionalDispatchTests::init (void)
 	{
 		const ConditionalData& conditionData = conditional::s_testsData[conditionNdx];
 
+		if (conditionData.clearInRenderPass)
+			continue;
+
 		de::MovePtr<tcu::TestCaseGroup> conditionalDrawRootGroup(new tcu::TestCaseGroup(m_testCtx, de::toString(conditionData).c_str(), "Conditionaly execute dispatch calls"));
 
 		for (deUint32 commandTypeIdx = 0; commandTypeIdx < DISPATCH_COMMAND_TYPE_DISPATCH_LAST; ++commandTypeIdx)
@@ -548,6 +551,7 @@ void ConditionalDispatchTests::init (void)
 						0u,							//	deUint32				conditionValue;
 						false,						//	bool					padConditionValue;
 						true,						//	bool					allocationOffset;
+						false,						//	bool					clearInRenderPass;
 						false,						//	bool					expectCommandExecution;
 						memoryTypeCase.memoryType,	//	ConditionalBufferMemory	memoryType;
 					};

@@ -242,6 +242,9 @@ void ConditionalClearAttachmentTests::init (void)
 	{
 		const ConditionalData& conditionData = conditional::s_testsData[conditionNdx];
 
+		if (conditionData.clearInRenderPass)
+			continue;
+
 		tcu::TestCaseGroup* conditionalDrawRootGroup = new tcu::TestCaseGroup(m_testCtx, de::toString(conditionData).c_str(), "");
 
 		ConditionalTestSpec testSpec;
