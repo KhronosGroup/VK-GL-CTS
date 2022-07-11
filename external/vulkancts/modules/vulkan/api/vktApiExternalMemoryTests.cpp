@@ -3989,6 +3989,41 @@ tcu::TestStatus testMemoryFdSendOverSocket(Context &context, MemoryTestConfig co
 #endif
 }
 
+tcu::TestStatus testMemoryZeroHandleType(Context &context)
+{
+    const vk::InstanceInterface &vki    = context.getInstanceInterface();
+    const vk::DeviceInterface &vk       = context.getDeviceInterface();
+    vk::VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    const vk::VkDevice device           = context.getDevice();
+    const uint32_t queueFamilyIndex     = context.getUniversalQueueFamilyIndex();
+
+    const vk::VkBufferUsageFlags usage = vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT | vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    const uint32_t seed                = 1261033864u;
+    const vk::VkDeviceSize bufferSize  = 1024;
+    const std::vector<uint8_t> testData(genTestData(seed, (size_t)bufferSize));
+
+    const vk::VkPhysicalDeviceMemoryProperties memoryProps = vk::getPhysicalDeviceMemoryProperties(vki, physicalDevice);
+    const uint32_t compatibleMemTypes = vk::getCompatibleMemoryTypes(memoryProps, vk::MemoryRequirement::HostVisible);
+
+    // Buffer is only allocated to get memory requirements
+    const vk::Unique<vk::VkBuffer> buffer(
+        createExternalBuffer(vk, device, queueFamilyIndex, {}, bufferSize, 0u, usage));
+    const vk::VkMemoryRequirements requirements(getBufferMemoryRequirements(vk, device, *buffer));
+
+    // this is tested, handleTypes equal to 0
+    const vk::VkExportMemoryAllocateInfo exportInfo = vk::initVulkanStructure();
+
+    const uint32_t memoryTypeIndex = static_cast<uint32_t>(deCtz32(requirements.memoryTypeBits & compatibleMemTypes));
+    const vk::VkMemoryAllocateInfo info{vk::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, &exportInfo, requirements.size,
+                                        memoryTypeIndex};
+    const vk::Unique<vk::VkDeviceMemory> memory(vk::allocateMemory(vk, device, &info));
+
+    writeHostMemory(vk, device, *memory, testData.size(), &testData[0]);
+    checkHostMemory(vk, device, *memory, testData.size(), &testData[0]);
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 struct BufferTestConfig
 {
     BufferTestConfig(vk::VkExternalMemoryHandleTypeFlagBits externalType_, bool dedicated_)
@@ -4302,8 +4337,8 @@ tcu::TestStatus testImageQueries(Context &context, vk::VkExternalMemoryHandleTyp
                     catch (const tcu::NotSupportedError &e)
                     {
                         log << e;
-                        TCU_FAIL(
-                            "Physical device claims to support handle type but required extensions are not supported");
+                        TCU_FAIL("Physical device claims to support handle type but required extensions are not "
+                                 "supported");
                     }
                 }
             }
@@ -5592,6 +5627,15 @@ de::MovePtr<tcu::TestCaseGroup> createMemoryTests(tcu::TestContext &testCtx)
     return group;
 }
 
+de::MovePtr<tcu::TestCaseGroup> createMiscTests(tcu::TestContext &testCtx)
+{
+    de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "misc", "Miscellaneous tests"));
+
+    addFunctionCase(group.get(), "zero_handle_memory", testMemoryZeroHandleType);
+
+    return group;
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createExternalMemoryTests(tcu::TestContext &testCtx)
@@ -5601,6 +5645,7 @@ tcu::TestCaseGroup *createExternalMemoryTests(tcu::TestContext &testCtx)
     group->addChild(createSemaphoreTests(testCtx).release());
     group->addChild(createMemoryTests(testCtx).release());
     group->addChild(createFenceTests(testCtx).release());
+    group->addChild(createMiscTests(testCtx).release());
 
     return group.release();
 }

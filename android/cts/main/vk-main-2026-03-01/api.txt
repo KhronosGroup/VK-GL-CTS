@@ -26677,6 +26677,7 @@ dEQP-VK.api.external.memory.mtltexture.suballocated.image.bind_export_import_bin
 dEQP-VK.api.external.memory.mtltexture.suballocated.image.export_bind_import_bind
 dEQP-VK.api.external.memory.mtltexture.suballocated.image.export_import_bind_bind
 dEQP-VK.api.external.memory.mtltexture.suballocated.image.info
+dEQP-VK.api.external.misc.zero_handle_memory
 dEQP-VK.api.fill_and_update_buffer.dedicated_alloc.fill_buffer_second_part_device_address
 dEQP-VK.api.fill_and_update_buffer.dedicated_alloc.fill_buffer_vk_whole_size_device_address
 dEQP-VK.api.fill_and_update_buffer.dedicated_alloc.fill_buffer_whole_device_address
