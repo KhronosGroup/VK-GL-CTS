@@ -60,6 +60,12 @@ std::ostream& operator<< (std::ostream& s, zx_handle_t					v) { return s << tcu:
 std::ostream& operator<< (std::ostream& s, GgpFrameToken				v) { return s << tcu::toHex(v.internal); }
 std::ostream& operator<< (std::ostream& s, GgpStreamDescriptor			v) { return s << tcu::toHex(v.internal); }
 std::ostream& operator<< (std::ostream& s, CAMetalLayer					v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, MTLDevice_id					v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, MTLCommandQueue_id			v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, MTLBuffer_id					v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, MTLTexture_id				v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, IOSurfaceRef					v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, MTLSharedEvent_id			v) { return s << tcu::toHex(v.internal); }
 }
 
 const char* getResultName (VkResult value)
