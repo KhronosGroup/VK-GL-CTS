@@ -396,13 +396,22 @@ AttachmentAccessOrderTestCase::~AttachmentAccessOrderTestCase (void)
 }
 void AttachmentAccessOrderTestCase::addSimpleVertexShader(SourceCollections& programCollection, const std::string &dest) const
 {
+	/*
+	 * The "prim_id" variable here (and in other tests below) is emulating gl_PrimitiveID.
+	 * This is done to avoid having this test dependon the geometry shader feature.
+	 * Note that this emulation only works because the draw calls used in the tests are
+	 * non-indexed independent triangles.
+	 */
 	std::stringstream vertShader;
 	vertShader	<< "#version 310 es\n"
 				<< "layout(location = 0) in highp vec2 v_position;\n"
+	                        << "layout(location = 1) flat out int prim_id;\n"
 				<< "void main ()\n"
 				<< "{\n"
+	                        << "    prim_id = gl_VertexIndex / 3;\n"
 				<< "	gl_Position = vec4(v_position, float(gl_InstanceIndex)/256.0, 1);\n"
 				<< "}\n";
+
 	programCollection.glslSources.add(dest) << glu::VertexSource(vertShader.str());
 }
 
@@ -421,15 +430,15 @@ void AttachmentAccessOrderColorTestCase::addShadersInternal(SourceCollections& p
 					<< "layout( location = " << i << " ) out ${VEC_NAME}2 out" << i << ";\n";
 	}
 
-
 	fragShader	<< "layout( push_constant ) uniform ConstBlock\n"
 				<< "{\n"
 				<< "	uint drawCur;\n"
 				<< "};\n"
+				<< "layout(location = 1) flat in int prim_id;\n"
 				<< "void main()\n"
 				<< "{\n"
 				<< "	uint instanceCur = uint(round(gl_FragCoord.z * 256.0));\n"
-				<< "	uint primitiveCur = uint(gl_PrimitiveID) / 2u;\n"
+				<< "	uint primitiveCur = uint(prim_id) / 2u;\n"
 				<< "	uint primitiveNum = ${PRIMITIVE_NUM}u;\n"
 				<< "	uint instanceNum = ${INSTANCE_NUM}u;\n"
 				<< "	uint drawNum = ${DRAW_NUM}u;\n"
@@ -490,6 +499,7 @@ void AttachmentAccessOrderDepthTestCase::addShadersInternal(SourceCollections& p
 	vertShader	<< "#version 460\n"
 				<< "layout(location = 0) in highp vec2 v_position;\n"
 				<< "layout(location = 1) flat out uint instance_index;\n"
+	                        << "layout(location = 2) flat out int prim_id;\n"
 				<< "layout( push_constant ) uniform ConstBlock\n"
 				<< "{\n"
 				<< "	uint drawCur;\n"
@@ -497,6 +507,7 @@ void AttachmentAccessOrderDepthTestCase::addShadersInternal(SourceCollections& p
 				<< "void main ()\n"
 				<< "{\n"
 				<< "	uint primitiveCur = uint(gl_VertexIndex) / 6u;\n"
+	                        << "    prim_id = gl_VertexIndex / 3;\n"
 				<< "	uint instanceNum = ${INSTANCE_NUM};\n"
 				<< "	uint primitiveNum = ${PRIMITIVE_NUM};\n"
 				<< "	uint drawNum = ${DRAW_NUM};\n"
@@ -518,6 +529,7 @@ void AttachmentAccessOrderDepthTestCase::addShadersInternal(SourceCollections& p
 				<< "layout( set = 0, binding = 1, input_attachment_index = 1 ) uniform ${SUBPASS_INPUT} in_ds;\n"
 				<< "layout( location = 0 ) out ${VEC_NAME}2 out0;\n"
 				<< "layout( location = 1 ) flat in uint instance_index;\n"
+	                        << "layout( location = 2 ) flat in int prim_id;\n"
 				<< "layout( push_constant ) uniform ConstBlock\n"
 				<< "{\n"
 				<< "	uint drawCur;\n"
@@ -525,7 +537,7 @@ void AttachmentAccessOrderDepthTestCase::addShadersInternal(SourceCollections& p
 				<< "void main()\n"
 				<< "{\n"
 				<< "	uint instanceCur = instance_index;\n"
-				<< "	uint primitiveCur = uint(gl_PrimitiveID) / 2u;\n"
+				<< "	uint primitiveCur = uint(prim_id) / 2u;\n"
 				<< "	uint primitiveNum = ${PRIMITIVE_NUM}u;\n"
 				<< "	uint instanceNum = ${INSTANCE_NUM}u;\n"
 				<< "	uint drawNum = ${DRAW_NUM}u;\n"
@@ -593,6 +605,7 @@ void AttachmentAccessOrderStencilTestCase::addShadersInternal(SourceCollections&
 	vertShader	<< "#version 460\n"
 				<< "layout(location = 0) in highp vec2 v_position;\n"
 				<< "layout(location = 1) flat out uint instance_index;"
+	                        << "layout(location = 2) flat out int prim_id;\n"
 				<< "layout( push_constant ) uniform ConstBlock\n"
 				<< "{\n"
 				<< "	uint drawCur;\n"
@@ -600,6 +613,7 @@ void AttachmentAccessOrderStencilTestCase::addShadersInternal(SourceCollections&
 				<< "void main ()\n"
 				<< "{\n"
 				<< "	uint primitiveCur = uint(gl_VertexIndex) / 6u;\n"
+	                        << "    prim_id = gl_VertexIndex / 3;\n"
 				<< "	uint instanceNum = ${INSTANCE_NUM};\n"
 				<< "	uint primitiveNum = ${PRIMITIVE_NUM};\n"
 				<< "	uint drawNum = ${DRAW_NUM};\n"
@@ -621,6 +635,7 @@ void AttachmentAccessOrderStencilTestCase::addShadersInternal(SourceCollections&
 				<< "layout( set = 0, binding = 1, input_attachment_index = 1 ) uniform ${SUBPASS_INPUT} in_ds;\n"
 				<< "layout( location = 0 ) out ${VEC_NAME}2 out0;\n"
 				<< "layout( location = 1 ) flat in uint instance_index;\n"
+	                        << "layout( location = 2 ) flat in int prim_id;\n"
 				<< "layout( push_constant ) uniform ConstBlock\n"
 				<< "{\n"
 				<< "	uint drawCur;\n"
@@ -628,7 +643,7 @@ void AttachmentAccessOrderStencilTestCase::addShadersInternal(SourceCollections&
 				<< "void main()\n"
 				<< "{\n"
 				<< "	uint instanceCur = instance_index;\n"
-				<< "	uint primitiveCur = uint(gl_PrimitiveID) / 2u;\n"
+				<< "	uint primitiveCur = uint(prim_id) / 2u;\n"
 				<< "	uint primitiveNum = ${PRIMITIVE_NUM}u;\n"
 				<< "	uint instanceNum = ${INSTANCE_NUM}u;\n"
 				<< "	uint drawNum = ${DRAW_NUM}u;\n"
@@ -856,12 +871,6 @@ void AttachmentAccessOrderTestCase::checkSupport (Context& context) const
 	if (m_sampleCount != VK_SAMPLE_COUNT_1_BIT && !features2.features.sampleRateShading)
 	{
 		TCU_THROW(NotSupportedError , "sampleRateShading feature not supported");
-	}
-
-	/* Needed for gl_PrimitiveID */
-	if (!features2.features.geometryShader)
-	{
-		TCU_THROW(NotSupportedError , "geometryShader feature not supported");
 	}
 
 	if (properties2.properties.limits.maxFragmentOutputAttachments < m_inputAttachmentNum ||
