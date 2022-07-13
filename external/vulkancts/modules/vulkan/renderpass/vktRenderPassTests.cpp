@@ -44,6 +44,7 @@
 #include "vktRenderPassDepthStencilWriteConditionsTests.hpp"
 #include "vktRenderPassSubpassMergeFeedbackTests.hpp"
 #include "vktDynamicRenderingRandomTests.hpp"
+#include "vktRenderPassDitheringTests.hpp"
 
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -7664,6 +7665,7 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 	renderingTests->addChild(dedicatedAllocationTestGroup.release());
 #ifndef CTS_USES_VULKANSC
 	renderingTests->addChild(createFragmentDensityMapTests(testCtx, renderingType));
+	renderingTests->addChild(createRenderPassDitheringTests(testCtx, renderingType));
 #endif // CTS_USES_VULKANSC
 
 	return renderingTests.release();
