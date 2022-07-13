@@ -341,7 +341,7 @@ public:
 
 protected:
 	void				beginSecondaryCmdBuffer	(VkCommandBuffer cmdBuffer, VkFormat colorFormat,
-												 VkFormat depthStencilFormat, VkRenderingFlagsKHR renderingFlags) const;
+												 VkFormat depthStencilFormat, VkRenderingFlagsKHR renderingFlags, deUint32 viewMask) const;
 	void				preRenderingCommands	(VkCommandBuffer cmdBuffer,
 												 VkImage colorImage, const VkImageSubresourceRange colorSubresourceRange,
 												 VkImage dsImage, const VkImageSubresourceRange dsSubresourceRange) const;
@@ -698,14 +698,14 @@ Move<VkRenderPass> makeMultidrawRenderPass (const DeviceInterface&	vk,
 }
 
 void MultiDrawInstance::beginSecondaryCmdBuffer(VkCommandBuffer cmdBuffer, VkFormat colorFormat,
-												VkFormat depthStencilFormat, VkRenderingFlagsKHR renderingFlags) const
+												VkFormat depthStencilFormat, VkRenderingFlagsKHR renderingFlags, deUint32 viewMask) const
 {
 	VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,		// VkStructureType					sType;
 		DE_NULL,																// const void*						pNext;
 		renderingFlags,															// VkRenderingFlagsKHR				flags;
-		0u,																		// uint32_t							viewMask;
+		viewMask,																// uint32_t							viewMask;
 		1u,																		// uint32_t							colorAttachmentCount;
 		&colorFormat,															// const VkFormat*					pColorAttachmentFormats;
 		depthStencilFormat,														// VkFormat							depthAttachmentFormat;
@@ -995,7 +995,7 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 		renderingCreateInfo.viewMask = m_params.multiview ? (1u << subpassIdx) : 0u;
 		pipelines.emplace_back(makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
 			vertModule.get(), tescModule.get(), teseModule.get(), geomModule.get(), fragModule.get(),
-			renderPass.get(), viewports, scissors, primitiveTopology, subpassIdx, patchControlPoints,
+			renderPass.get(), viewports, scissors, primitiveTopology, m_params.groupParams->useDynamicRendering ? 0u : subpassIdx, patchControlPoints,
 			nullptr/*vertexInputStateCreateInfo*/, &rasterizationInfo, nullptr/*multisampleStateCreateInfo*/, &depthStencilInfo,
 			nullptr/*colorBlendStateCreateInfo*/, nullptr/*dynamicStateCreateInfo*/, nextPtr));
 	}
@@ -1116,18 +1116,19 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 		for (deUint32 layerIdx = 0u; layerIdx < imageLayers; ++layerIdx)
 		{
 			secCmdBuffers[layerIdx]			= allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
-			VkCommandBuffer secCmdBuffer	= *secCmdBuffers[layerIdx];
+			VkCommandBuffer	secCmdBuffer	= *secCmdBuffers[layerIdx];
+			const deUint32	viewMask		= m_params.multiview ? (1u << layerIdx) : 0u;
 
 			// record secondary command buffer
 			if (m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
 			{
-				beginSecondaryCmdBuffer(secCmdBuffer, colorFormat, dsFormat, VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+				beginSecondaryCmdBuffer(secCmdBuffer, colorFormat, dsFormat, VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT, viewMask);
 				beginRendering(vkd, secCmdBuffer, *colorBufferView, *dsBufferView, true, scissor, clearValues[0], clearValues[1],
 							   vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-							   VK_ATTACHMENT_LOAD_OP_CLEAR, 0, imageLayers, m_params.multiview ? (1u << layerIdx) : 0u);
+							   VK_ATTACHMENT_LOAD_OP_CLEAR, 0, imageLayers, viewMask);
 			}
 			else
-				beginSecondaryCmdBuffer(secCmdBuffer, colorFormat, dsFormat, VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+				beginSecondaryCmdBuffer(secCmdBuffer, colorFormat, dsFormat, 0u, viewMask);
 
 			drawCommands(secCmdBuffer, pipelines[layerIdx].get(), vertexBuffer.get(), vertexBufferOffset, vertexOffset,
 						 indexBufferHandle, indexBufferOffset, isMixedMode, drawInfos);
@@ -1148,7 +1149,7 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 			{
 				beginRendering(vkd, cmdBuffer, *colorBufferView, *dsBufferView, true, scissor, clearValues[0], clearValues[1],
 							   vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-							   VK_ATTACHMENT_LOAD_OP_CLEAR, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS, imageLayers,
+							   VK_ATTACHMENT_LOAD_OP_CLEAR, VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT, imageLayers,
 							   m_params.multiview ? (1u << layerIdx) : 0u);
 			}
 
