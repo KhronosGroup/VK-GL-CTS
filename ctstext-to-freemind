@@ -1,0 +1,232 @@
+#!/usr/bin/env python3
+#
+# A simple cts text to freemind conversion program
+# inspired by https://github.com/wbolster/text-to-freemind
+#
+# upgrade to use python3 as interpreter
+
+import sys, time, encodings, re
+import os
+import getopt
+
+
+def bailout(msg, line=None):
+    global filename
+    if filename == '-':
+        filename = '<stdin>'
+    if line is not None:
+        sys.stderr.write('%s:%d: %s\n' % (filename, line, msg))
+    else:
+        sys.stderr.write('%s: %s\n' % (filename, msg))
+    sys.exit(1)
+
+
+# Try to load a suitable celementtree incarnation. This is supposed to work for
+try:
+    import xml.etree.ElementTree as et # python 2.5
+except ImportError:
+    try:
+        import cElementTree as et # python 2.4 celementtree
+    except ImportError:
+        import elementtree.ElementTree as et # python 2.4 elementtree
+
+try:
+    et
+except NameError:
+    bailout('No suitable ElementTree package found. Install python-elementtree (default in python 2.5).')
+
+
+creation_time = str(int(time.time() * 1000))
+
+def indent(elem, level=0):
+    # Indentation helper from http://effbot.org/zone/element-lib.htm
+    i = "\n" + level*"  "
+    if len(elem):
+        if not elem.text or not elem.text.strip():
+            elem.text = i + "  "
+        for elem in elem:
+            indent(elem, level+1)
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+    else:
+        if level and (not elem.tail or not elem.tail.strip()):
+            elem.tail = i
+
+def set_node_properties(node, text):  
+    # convert literal \n into newlines
+    if r'\n' in text:
+        text = text.replace(r'\n', '\n')
+
+    # parse line for markdown url links
+    if r'[' in text and r'](' in text and r']' in text: # find [text](link) formatted markdown
+        match = re.search("\[(\w.*)\]\((\w.*)\)$", text)
+        if match:
+            text = match.group(1) 
+            link = match.group(2) 
+            node.set('LINK', link)
+    elif r'<' in text and r'>' in text:                 # find <link> formatted markdown
+        match = re.search("\<(\w.*)\>$", text)
+        if match:
+            text = match.group(1) 
+            link = match.group(1) 
+            node.set('LINK', link)
+
+    node.set('TEXT', text)
+    node.set('CREATED', creation_time)
+    node.set('MODIFIED', creation_time)
+
+def cts_convert_lines_into_mm(lines, out_fp, max_level=-1, child_max=100):
+
+    topnode = et.Element('map')
+    topnode.set('version', '1.0.1')
+    curpath = [topnode]
+
+    for line in [line.strip() for line in lines]:
+        # Skip empty lines
+        if not line.strip(): continue
+        # Skip comments
+        if line.startswith('#'): continue
+        if line.startswith('//'): continue
+
+        # topnode
+        # 'map'     'dEQP-VK'   ...
+        # [0]       [1]         [2-]
+
+        # iter each segment of a line
+        for level,seg in enumerate(line.split('.')[:max_level], start=1):
+            root_idx = 0
+            for idx in list(range(0,min(level+1, len(curpath)))):
+                # [0]
+                if 'map' == curpath[idx].tag:
+                    root_idx = idx
+                # [1:]
+                elif 'TEXT' in curpath[idx].attrib.keys() and curpath[idx].attrib['TEXT'] == line.split('.')[idx-1]:
+                    root_idx = idx
+
+
+            if level > root_idx:
+                n = et.SubElement(curpath[root_idx], 'node')
+                set_node_properties(n, seg)
+                curpath = curpath[:level]
+                curpath.append(n)
+                pass
+            elif level == root_idx:
+                # no need to add sibling node
+                # curpath[root_idx] = n
+                pass
+            else:
+                for i in list(range(root_idx - level + 1)):
+                    curpath.pop(-1)
+                #curpath.append(n)
+
+    #iterate topnode and add FOLDED="true" if the subnode count more than child_max
+    for node in et.ElementTree(topnode).findall('.//node'):
+        if node == topnode:
+            continue
+        if sum(1 for _ in node.iter('node')) > child_max:
+            node.set('FOLDED', "true")
+            node.set('MODIFIED', str(int(time.time() * 1000)))
+            #print("Fold for %s %s FOLDED:%s, MODIFIED:%s "%(node.tag, node.attrib, node.get('FOLDED'), node.get('MODIFIED'))) #DEBUG TODO
+                
+    indent(topnode)
+    out_fp.write(et.tostring(topnode).decode("utf-8"))
+    out_fp.write('\n')
+
+def __is_root_holder(fin):
+    '''
+    checkout whether the file is a inlude holder or specific test case file
+
+    1. get the dirname for the file by os.path.abspath(os.path.dirname(fin))
+    2. concatenate dirname with each line in @fin, check out whether it exist or not
+    3. return True only if all lines prefixed with dirname both exist(os.access and readable(fin, os.R_OK)
+    '''
+    dir = os.path.dirname(os.path.abspath(fin))
+
+    with open(fin) as f:
+        lines = f.readlines()
+
+    if len(lines) == 0:
+        return False
+
+    for l in lines:
+        if not os.access(os.path.join(dir, l).strip(), os.R_OK):
+            return False
+     
+    return True
+
+def usage():
+    '''
+    %s [-m max_level, default unlimited] [-h] -|input_cts_file
+
+        options:
+        -m -> specifiy the max_level
+        -h -> show this help info
+
+        args:
+        - -> open stdio input stream from pipe.
+        input_cts_file ->   a case holder other file(include other case)
+                            or normal cts case file.
+
+        note:
+            output to stdout, redirect it to you_name_it.mm then you
+            can:
+            1. open it by freemind(https://snapcraft.io/freemind)
+            2. import from xmind(https://snapcraft.io/xmind)
+            
+        For generating openglcts testcase to '.mm' file, you can run:
+        
+        for file in $(find external/openglcts/ -name '*.txt');do date -R ; echo analysis ${file}; time ./ctstext-to-freemind $file > ${file}.mm;done;
+
+        For generating different level of '.mm' for vulkan cts, you can run:
+
+        for i in $(seq 1 15);do date ; echo id${i}; time ./ctstext-to-freemind -m ${i} $(find . -name vk-default.txt) > ~/vk-default_lvl${i}.mm;done;
+    '''
+    f = os.path.basename(__file__)
+    print(usage.__doc__%(f))
+
+if __name__ == '__main__':
+    global filename
+    global max_level
+    global fold_over_child_max
+    try:
+        max_level = -1
+        fold_over_child_max = 100
+        optlist, args = getopt.getopt(sys.argv[1:], 'm:f:h')
+        for o, a in optlist:
+            if o == '-m':
+                max_level = int(a,0)
+            elif o == '-h':
+                usage()
+                sys.exit()
+            elif o == '-f':
+                fold_over_child_max = int(a,0)
+            else:
+                usage()
+                sys.exit()
+
+        filename = args[0]
+        if filename == '-':
+            # stdin
+            lines = [line for line in sys.stdin.readlines()]
+        else:
+            lines = []
+            # user-specified filename
+            if __is_root_holder(filename):
+                # only do 1 level include check
+                dir = os.path.dirname(os.path.abspath(filename))
+                with open(filename) as f:
+                    for l in f.readlines():
+                        if os.access(os.path.join(dir, l).strip(), os.R_OK):
+                            for line in open(os.path.join(dir, l).strip(), 'r'):
+                                lines.append(line)
+            else:
+                lines = [line for line in open(filename, 'r')]
+    except getopt.GetoptError as err:
+        print("E:%s"%(str(err)))
+        usage()
+        sys.exit(-1)
+    except IndexError:
+        # stdin
+        lines = [line for line in sys.stdin.readlines()]
+
+    cts_convert_lines_into_mm(lines, sys.stdout, max_level, fold_over_child_max)

@@ -8,3 +8,10 @@
 !.editorconfig
 !.travis.yml
 !.github
+build
+*.log
+*.mm
+*.txt
+*.xmind
+tags
+*.xml
