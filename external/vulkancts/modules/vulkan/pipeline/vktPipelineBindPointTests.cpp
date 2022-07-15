@@ -180,12 +180,18 @@ BindPointTest::BindPointTest (tcu::TestContext& testCtx, const std::string& name
 
 void BindPointTest::checkSupport (Context& context) const
 {
-	if (m_params.graphicsSetUpdateType != SetUpdateType::WRITE || m_params.computeSetUpdateType != SetUpdateType::WRITE)
+	if ((m_params.hasGraphics() && m_params.graphicsSetUpdateType != SetUpdateType::WRITE) ||
+		(m_params.hasCompute() && m_params.computeSetUpdateType != SetUpdateType::WRITE) ||
+		(m_params.hasRayTracing() && m_params.rayTracingSetUpdateType != SetUpdateType::WRITE))
 	{
 		context.requireDeviceFunctionality("VK_KHR_push_descriptor");
 
-		if (m_params.graphicsSetUpdateType == SetUpdateType::PUSH_WITH_TEMPLATE || m_params.computeSetUpdateType == SetUpdateType::PUSH_WITH_TEMPLATE)
+		if ((m_params.hasGraphics() && m_params.graphicsSetUpdateType == SetUpdateType::PUSH_WITH_TEMPLATE) ||
+			(m_params.hasCompute() && m_params.computeSetUpdateType == SetUpdateType::PUSH_WITH_TEMPLATE) ||
+			(m_params.hasRayTracing() && m_params.rayTracingSetUpdateType == SetUpdateType::PUSH_WITH_TEMPLATE))
+		{
 			context.requireDeviceFunctionality("VK_KHR_descriptor_update_template");
+		}
 	}
 
 	if (m_params.hasRayTracing())
