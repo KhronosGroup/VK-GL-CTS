@@ -498,7 +498,7 @@ public:
 	void								submitCommandBuffer				(void) const;
 	void								beginRenderPass					(VkSubpassContents content, VkClearValue clearValue) const;
 	void								preClearImage					(const deUint32 imageMipLevels, VkExtent3D imageExtent, deUint32 imageLayerCount, Unique<VkCommandBuffer>& commandBuffer) const;
-	Move<VkBuffer>						createImageClearingBuffer		(const DeviceInterface& vkd, const VkDevice device, Unique<VkImage>& image);
+	Move<VkBuffer>						createImageClearingBuffer		(const DeviceInterface& vkd, const VkDevice device);
 
 	void								pipelineImageBarrier			(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldLayout, VkImageLayout newLayout, VkImageAspectFlags aspectMask = 0u) const;
 	de::MovePtr<TextureLevelPyramid>	readImage						(VkImageAspectFlags aspectMask, deUint32 baseLayer) const;
@@ -578,7 +578,7 @@ ImageClearingTestInstance::ImageClearingTestInstance (Context& context, const Te
 											 params.imageLayerCount,
 											 m_imageUsageFlags))
 
-	, m_stagingBuffer			(createImageClearingBuffer(m_vkd, m_device,  m_image))
+	, m_stagingBuffer			(createImageClearingBuffer(m_vkd, m_device))
 	, m_stagingBufferMemory		(allocateAndBindBufferMemory(*m_stagingBuffer))
 
 	, m_imageMemory				(allocateAndBindImageMemory(*m_image))
@@ -1311,11 +1311,12 @@ tcu::TestStatus ImageClearingTestInstance::verifyResultImage (const std::string&
 	return TestStatus::pass(successMessage);
 }
 
-Move<VkBuffer> ImageClearingTestInstance::createImageClearingBuffer(const DeviceInterface& vkd, const VkDevice device, Unique<VkImage>& image)
+Move<VkBuffer> ImageClearingTestInstance::createImageClearingBuffer(const DeviceInterface& vkd, const VkDevice device)
 {
 	Move<VkBuffer>							stagingBuffer;
 	de::MovePtr<Allocation>					stagingBufferAlloc;
-	const VkDeviceSize stagingBufferSize	= getImageMemoryRequirements(vkd, device, *image).size;
+	const VkDeviceSize stagingBufferSize	= m_params.imageExtent.width * m_params.imageExtent.height * m_params.imageExtent.depth
+											  * getPixelSize(mapVkFormat(m_params.imageFormat)) * m_params.imageLayerCount;
 	// Create image clearing buffer
 	{
 		const VkBufferCreateInfo   bufferParams   =
