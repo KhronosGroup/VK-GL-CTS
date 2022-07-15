@@ -3030,18 +3030,7 @@ tcu::TestCaseGroup* createImageCompressionTranscodingTests (tcu::TestContext& te
 	{
 		{ IMAGE_TYPE_1D, "1d_image" },
 		{ IMAGE_TYPE_2D, "2d_image" },
-
-		// See issue: https://gitlab.khronos.org/vulkan/vulkan/-/issues/3164
-		//   Removed 3D because you can't take an uncompressed 3D view of a VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT image
-		// see VUID-VkImageViewCreateInfo-image-04739. This VUID came from https://gitlab.khronos.org/vulkan/vulkan/-/merge_requests/4350
-		// to resolve https://gitlab.khronos.org/vulkan/vulkan/-/issues/2501.
-		//   It is possible to take a 2D view of a compressed 3D image created
-		// with VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT, but then it also needs to be created with
-		// VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT from VK_EXT_image_2d_view_of_3d, and the implementation needs to support
-		// image2DViewOf3D or sampler2DViewOf3D depending on the test variant.
-		//   For this test to support VK_EXT_image_2d_view_of_3d there needs to be quite a few changes to the shader generation
-		// code, the descriptor set code and several other things, which isn't a trivial amount of work.
-		// { IMAGE_TYPE_3D, "3d_image" },
+		{ IMAGE_TYPE_3D, "3d_image" },
 	};
 
 	const VkImageUsageFlags		baseImageUsageFlagSet							= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
