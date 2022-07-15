@@ -1891,6 +1891,9 @@ void BindingAcceleratioStructureRayTracingRayTracingTestInstance::checkSupport (
 
 	if (rayTracingPipelineFeaturesKHR.rayTracingPipeline == DE_FALSE)
 		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
+	const VkPhysicalDeviceRayTracingPipelinePropertiesKHR&	rayTracingPipelinePropertiesKHR = context.getRayTracingPipelineProperties();
+	if (rayTracingPipelinePropertiesKHR.maxRayRecursionDepth < 2 && testParams.testType == TEST_TYPE_USING_RAY_TRACING && (testParams.stage == VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR || testParams.stage == VK_SHADER_STAGE_MISS_BIT_KHR))
+		TCU_THROW(NotSupportedError, "rayTracingPipelinePropertiesKHR.maxRayRecursionDepth is smaller than required");
 }
 
 void BindingAcceleratioStructureRayTracingRayTracingTestInstance::initPrograms (SourceCollections&	programCollection,
