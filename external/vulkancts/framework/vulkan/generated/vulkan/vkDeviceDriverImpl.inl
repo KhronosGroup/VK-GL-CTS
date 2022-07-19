@@ -1624,6 +1624,16 @@ void DeviceDriver::getDescriptorSetHostMappingVALVE (VkDevice device, VkDescript
 	m_vk.getDescriptorSetHostMappingVALVE(device, descriptorSet, ppData);
 }
 
+void DeviceDriver::getShaderModuleIdentifierEXT (VkDevice device, VkShaderModule shaderModule, VkShaderModuleIdentifierEXT* pIdentifier) const
+{
+	m_vk.getShaderModuleIdentifierEXT(device, shaderModule, pIdentifier);
+}
+
+void DeviceDriver::getShaderModuleCreateInfoIdentifierEXT (VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, VkShaderModuleIdentifierEXT* pIdentifier) const
+{
+	m_vk.getShaderModuleCreateInfoIdentifierEXT(device, pCreateInfo, pIdentifier);
+}
+
 VkResult DeviceDriver::createAccelerationStructureKHR (VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure) const
 {
 	return m_vk.createAccelerationStructureKHR(device, pCreateInfo, pAllocator, pAccelerationStructure);
@@ -1847,6 +1857,11 @@ void DeviceDriver::destroyBufferCollectionFUCHSIA (VkDevice device, VkBufferColl
 VkResult DeviceDriver::getBufferCollectionPropertiesFUCHSIA (VkDevice device, VkBufferCollectionFUCHSIA collection, VkBufferCollectionPropertiesFUCHSIA* pProperties) const
 {
 	return m_vk.getBufferCollectionPropertiesFUCHSIA(device, collection, pProperties);
+}
+
+void DeviceDriver::exportMetalObjectsEXT (VkDevice device, VkExportMetalObjectsInfoEXT* pMetalObjectsInfo) const
+{
+	m_vk.exportMetalObjectsEXT(device, pMetalObjectsInfo);
 }
 
 VkResult DeviceDriver::getMemoryWin32HandleKHR (VkDevice device, const VkMemoryGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle) const

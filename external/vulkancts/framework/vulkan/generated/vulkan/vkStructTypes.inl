@@ -5743,6 +5743,28 @@ struct VkPhysicalDevicePipelinePropertiesFeaturesEXT
 	VkBool32		pipelinePropertiesIdentifier;
 };
 
+struct VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		multisampledRenderToSingleSampled;
+};
+
+struct VkSubpassResolvePerformanceQueryEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		optimal;
+};
+
+struct VkMultisampledRenderToSingleSampledInfoEXT
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkBool32				multisampledRenderToSingleSampledEnable;
+	VkSampleCountFlagBits	rasterizationSamples;
+};
+
 struct VkPhysicalDeviceExtendedDynamicState2FeaturesEXT
 {
 	VkStructureType	sType;
@@ -5952,6 +5974,36 @@ struct VkRenderPassSubpassFeedbackCreateInfoEXT
 	VkStructureType						sType;
 	const void*							pNext;
 	VkRenderPassSubpassFeedbackInfoEXT*	pSubpassFeedback;
+};
+
+struct VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderModuleIdentifier;
+};
+
+struct VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint8_t			shaderModuleIdentifierAlgorithmUUID[VK_UUID_SIZE];
+};
+
+struct VkPipelineShaderStageModuleIdentifierCreateInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		identifierSize;
+	const uint8_t*	pIdentifier;
+};
+
+struct VkShaderModuleIdentifierEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		identifierSize;
+	uint8_t			identifier[VK_MAX_SHADER_MODULE_IDENTIFIER_SIZE_EXT];
 };
 
 union VkDeviceOrHostAddressKHR
@@ -6283,7 +6335,7 @@ struct VkQueueFamilyQueryResultStatusProperties2KHR
 {
 	VkStructureType	sType;
 	void*			pNext;
-	VkBool32		supported;
+	VkBool32		queryResultStatusSupport;
 };
 
 struct VkVideoQueueFamilyProperties2KHR
@@ -6296,7 +6348,7 @@ struct VkVideoQueueFamilyProperties2KHR
 struct VkVideoProfileKHR
 {
 	VkStructureType						sType;
-	void*								pNext;
+	const void*							pNext;
 	VkVideoCodecOperationFlagBitsKHR	videoCodecOperation;
 	VkVideoChromaSubsamplingFlagsKHR	chromaSubsampling;
 	VkVideoComponentBitDepthFlagsKHR	lumaBitDepth;
@@ -6306,7 +6358,7 @@ struct VkVideoProfileKHR
 struct VkVideoProfilesKHR
 {
 	VkStructureType				sType;
-	void*						pNext;
+	const void*					pNext;
 	uint32_t					profileCount;
 	const VkVideoProfileKHR*	pProfiles;
 };
@@ -6328,17 +6380,21 @@ struct VkVideoCapabilitiesKHR
 
 struct VkPhysicalDeviceVideoFormatInfoKHR
 {
-	VkStructureType				sType;
-	void*						pNext;
-	VkImageUsageFlags			imageUsage;
-	const VkVideoProfilesKHR*	pVideoProfiles;
+	VkStructureType		sType;
+	void*				pNext;
+	VkImageUsageFlags	imageUsage;
 };
 
 struct VkVideoFormatPropertiesKHR
 {
-	VkStructureType	sType;
-	void*			pNext;
-	VkFormat		format;
+	VkStructureType		sType;
+	void*				pNext;
+	VkFormat			format;
+	VkComponentMapping	componentMapping;
+	VkImageCreateFlags	imageCreateFlags;
+	VkImageType			imageType;
+	VkImageTiling		imageTiling;
+	VkImageUsageFlags	imageUsageFlags;
 };
 
 struct VkVideoPictureResourceKHR
@@ -7829,6 +7885,99 @@ struct VkMetalSurfaceCreateInfoEXT
 	const void*						pNext;
 	VkMetalSurfaceCreateFlagsEXT	flags;
 	const pt::CAMetalLayer*			pLayer;
+};
+
+struct VkExportMetalObjectCreateInfoEXT
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkExportMetalObjectTypeFlagBitsEXT	exportObjectType;
+};
+
+struct VkExportMetalObjectsInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+};
+
+struct VkExportMetalDeviceInfoEXT
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	pt::MTLDevice_id	mtlDevice;
+};
+
+struct VkExportMetalCommandQueueInfoEXT
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkQueue					queue;
+	pt::MTLCommandQueue_id	mtlCommandQueue;
+};
+
+struct VkExportMetalBufferInfoEXT
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkDeviceMemory		memory;
+	pt::MTLBuffer_id	mtlBuffer;
+};
+
+struct VkImportMetalBufferInfoEXT
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	pt::MTLBuffer_id	mtlBuffer;
+};
+
+struct VkExportMetalTextureInfoEXT
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkImage					image;
+	VkImageView				imageView;
+	VkBufferView			bufferView;
+	VkImageAspectFlagBits	plane;
+	pt::MTLTexture_id		mtlTexture;
+};
+
+struct VkImportMetalTextureInfoEXT
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkImageAspectFlagBits	plane;
+	pt::MTLTexture_id		mtlTexture;
+};
+
+struct VkExportMetalIOSurfaceInfoEXT
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkImage				image;
+	pt::IOSurfaceRef	ioSurface;
+};
+
+struct VkImportMetalIOSurfaceInfoEXT
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	pt::IOSurfaceRef	ioSurface;
+};
+
+struct VkExportMetalSharedEventInfoEXT
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkSemaphore				semaphore;
+	VkEvent					event;
+	pt::MTLSharedEvent_id	mtlSharedEvent;
+};
+
+struct VkImportMetalSharedEventInfoEXT
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	pt::MTLSharedEvent_id	mtlSharedEvent;
 };
 
 struct VkViSurfaceCreateInfoNN

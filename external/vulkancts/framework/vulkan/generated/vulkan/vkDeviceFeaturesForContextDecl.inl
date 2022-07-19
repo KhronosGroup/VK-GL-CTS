@@ -58,6 +58,7 @@ const vk::VkPhysicalDeviceLineRasterizationFeaturesEXT&					getLineRasterization
 const vk::VkPhysicalDeviceMaintenance4Features&							getMaintenance4Features							(void) const;
 const vk::VkPhysicalDeviceMemoryPriorityFeaturesEXT&					getMemoryPriorityFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceMeshShaderFeaturesNV&							getMeshShaderFeatures							(void) const;
+const vk::VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT&	getMultisampledRenderToSingleSampledFeaturesEXT	(void) const;
 const vk::VkPhysicalDeviceMultiviewFeatures&							getMultiviewFeatures							(void) const;
 const vk::VkPhysicalDeviceMultiDrawFeaturesEXT&							getMultiDrawFeaturesEXT							(void) const;
 const vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE&			getMutableDescriptorTypeFeaturesVALVE			(void) const;
@@ -97,6 +98,7 @@ const vk::VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT&			getShaderImageAto
 const vk::VkPhysicalDeviceShaderImageFootprintFeaturesNV&				getShaderImageFootprintFeatures					(void) const;
 const vk::VkPhysicalDeviceShaderIntegerDotProductFeatures&				getShaderIntegerDotProductFeatures				(void) const;
 const vk::VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL&			getShaderIntegerFunctions2FeaturesINTEL			(void) const;
+const vk::VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT&			getShaderModuleIdentifierFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceShaderSMBuiltinsFeaturesNV&					getShaderSMBuiltinsFeatures						(void) const;
 const vk::VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures&			getShaderSubgroupExtendedTypesFeatures			(void) const;
 const vk::VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR&	getShaderSubgroupUniformControlFlowFeatures		(void) const;

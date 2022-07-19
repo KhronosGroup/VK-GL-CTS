@@ -983,6 +983,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_multisampled_render_to_single_sampled")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_extended_dynamic_state2")
 	{
 		return;
@@ -1048,6 +1052,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_EXT_subpass_merge_feedback")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_shader_module_identifier")
 	{
 		return;
 	}
@@ -1145,6 +1153,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	if (extName == "VK_EXT_metal_surface")
 	{
 		functions.push_back("vkCreateMetalSurfaceEXT");
+		return;
+	}
+	if (extName == "VK_EXT_metal_objects")
+	{
 		return;
 	}
 	if (extName == "VK_NN_vi_surface")
@@ -2331,6 +2343,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkGetPipelinePropertiesEXT");
 		return;
 	}
+	if (extName == "VK_EXT_multisampled_render_to_single_sampled")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_extended_dynamic_state2")
 	{
 		functions.push_back("vkCmdSetPatchControlPointsEXT");
@@ -2408,6 +2424,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_EXT_subpass_merge_feedback")
 	{
+		return;
+	}
+	if (extName == "VK_EXT_shader_module_identifier")
+	{
+		functions.push_back("vkGetShaderModuleIdentifierEXT");
+		functions.push_back("vkGetShaderModuleCreateInfoIdentifierEXT");
 		return;
 	}
 	if (extName == "VK_KHR_acceleration_structure")
@@ -2541,6 +2563,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_EXT_metal_surface")
 	{
+		return;
+	}
+	if (extName == "VK_EXT_metal_objects")
+	{
+		functions.push_back("vkExportMetalObjectsEXT");
 		return;
 	}
 	if (extName == "VK_NN_vi_surface")
@@ -2719,6 +2746,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_multi_draw",
 	"VK_EXT_pageable_device_local_memory",
 	"VK_VALVE_descriptor_set_host_mapping",
+	"VK_EXT_shader_module_identifier",
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_ray_tracing_pipeline",
 	"VK_ANDROID_external_memory_android_hardware_buffer",
@@ -2727,6 +2755,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_FUCHSIA_external_memory",
 	"VK_FUCHSIA_external_semaphore",
 	"VK_FUCHSIA_buffer_collection",
+	"VK_EXT_metal_objects",
 	"VK_KHR_external_memory_win32",
 	"VK_KHR_external_semaphore_win32",
 	"VK_KHR_external_fence_win32",
