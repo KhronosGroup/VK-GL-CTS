@@ -2253,6 +2253,66 @@ template<> VkStructureType getStructureType<VkDeviceDiagnosticsConfigCreateInfoN
 	return VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceDescriptorBufferPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDescriptorBufferDensityMapPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_DENSITY_MAP_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDescriptorBufferFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkDescriptorAddressInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_DESCRIPTOR_ADDRESS_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkDescriptorBufferBindingInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkDescriptorGetInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_DESCRIPTOR_GET_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkBufferCaptureDescriptorDataInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_BUFFER_CAPTURE_DESCRIPTOR_DATA_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkImageCaptureDescriptorDataInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_CAPTURE_DESCRIPTOR_DATA_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkImageViewCaptureDescriptorDataInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_VIEW_CAPTURE_DESCRIPTOR_DATA_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkSamplerCaptureDescriptorDataInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_SAMPLER_CAPTURE_DESCRIPTOR_DATA_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkOpaqueCaptureDescriptorDataCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_OPAQUE_CAPTURE_DESCRIPTOR_DATA_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkAccelerationStructureCaptureDescriptorDataInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CAPTURE_DESCRIPTOR_DATA_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_FEATURES_EXT;
@@ -2448,6 +2508,21 @@ template<> VkStructureType getStructureType<VkPhysicalDevicePipelinePropertiesFe
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROPERTIES_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkSubpassResolvePerformanceQueryEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_SUBPASS_RESOLVE_PERFORMANCE_QUERY_EXT;
+}
+
+template<> VkStructureType getStructureType<VkMultisampledRenderToSingleSampledInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceExtendedDynamicState2FeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT;
@@ -2571,6 +2646,26 @@ template<> VkStructureType getStructureType<VkRenderPassCreationFeedbackCreateIn
 template<> VkStructureType getStructureType<VkRenderPassSubpassFeedbackCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_RENDER_PASS_SUBPASS_FEEDBACK_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPipelineShaderStageModuleIdentifierCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_MODULE_IDENTIFIER_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkShaderModuleIdentifierEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_SHADER_MODULE_IDENTIFIER_EXT;
 }
 
 template<> VkStructureType getStructureType<VkAccelerationStructureGeometryTrianglesDataKHR> (void)

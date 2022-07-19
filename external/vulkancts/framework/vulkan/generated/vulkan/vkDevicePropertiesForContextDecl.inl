@@ -9,6 +9,8 @@ const vk::VkPhysicalDeviceConservativeRasterizationPropertiesEXT&	getConservativ
 const vk::VkPhysicalDeviceCooperativeMatrixPropertiesNV&			getCooperativeMatrixProperties				(void) const;
 const vk::VkPhysicalDeviceCustomBorderColorPropertiesEXT&			getCustomBorderColorPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceDepthStencilResolveProperties&			getDepthStencilResolveProperties			(void) const;
+const vk::VkPhysicalDeviceDescriptorBufferPropertiesEXT&			getDescriptorBufferPropertiesEXT			(void) const;
+const vk::VkPhysicalDeviceDescriptorBufferDensityMapPropertiesEXT&	getDescriptorBufferDensityMapPropertiesEXT	(void) const;
 const vk::VkPhysicalDeviceDescriptorIndexingProperties&				getDescriptorIndexingProperties				(void) const;
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV&		getDeviceGeneratedCommandsProperties		(void) const;
 const vk::VkPhysicalDeviceDiscardRectanglePropertiesEXT&			getDiscardRectanglePropertiesEXT			(void) const;
@@ -46,6 +48,7 @@ const vk::VkPhysicalDeviceSampleLocationsPropertiesEXT&				getSampleLocationsPro
 const vk::VkPhysicalDeviceShaderCorePropertiesAMD&					getShaderCorePropertiesAMD					(void) const;
 const vk::VkPhysicalDeviceShaderCoreProperties2AMD&					getShaderCoreProperties2AMD					(void) const;
 const vk::VkPhysicalDeviceShaderIntegerDotProductProperties&		getShaderIntegerDotProductProperties		(void) const;
+const vk::VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT&		getShaderModuleIdentifierPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceShadingRateImagePropertiesNV&				getShadingRateImageProperties				(void) const;
 const vk::VkPhysicalDeviceSubgroupProperties&						getSubgroupProperties						(void) const;
 const vk::VkPhysicalDeviceSubgroupSizeControlProperties&			getSubgroupSizeControlProperties			(void) const;

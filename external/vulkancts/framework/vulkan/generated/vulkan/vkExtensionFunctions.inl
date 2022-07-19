@@ -893,6 +893,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_descriptor_buffer")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_graphics_pipeline_library")
 	{
 		return;
@@ -983,6 +987,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_multisampled_render_to_single_sampled")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_extended_dynamic_state2")
 	{
 		return;
@@ -1048,6 +1056,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_EXT_subpass_merge_feedback")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_shader_module_identifier")
 	{
 		return;
 	}
@@ -2235,6 +2247,21 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_descriptor_buffer")
+	{
+		functions.push_back("vkGetDescriptorSetLayoutSizeEXT");
+		functions.push_back("vkGetDescriptorSetLayoutBindingOffsetEXT");
+		functions.push_back("vkGetDescriptorEXT");
+		functions.push_back("vkCmdBindDescriptorBuffersEXT");
+		functions.push_back("vkCmdSetDescriptorBufferOffsetsEXT");
+		functions.push_back("vkCmdBindDescriptorBufferEmbeddedSamplersEXT");
+		functions.push_back("vkGetBufferOpaqueCaptureDescriptorDataEXT");
+		functions.push_back("vkGetImageOpaqueCaptureDescriptorDataEXT");
+		functions.push_back("vkGetImageViewOpaqueCaptureDescriptorDataEXT");
+		functions.push_back("vkGetSamplerOpaqueCaptureDescriptorDataEXT");
+		functions.push_back("vkGetAccelerationStructureOpaqueCaptureDescriptorDataEXT");
+		return;
+	}
 	if (extName == "VK_EXT_graphics_pipeline_library")
 	{
 		return;
@@ -2331,6 +2358,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkGetPipelinePropertiesEXT");
 		return;
 	}
+	if (extName == "VK_EXT_multisampled_render_to_single_sampled")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_extended_dynamic_state2")
 	{
 		functions.push_back("vkCmdSetPatchControlPointsEXT");
@@ -2408,6 +2439,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_EXT_subpass_merge_feedback")
 	{
+		return;
+	}
+	if (extName == "VK_EXT_shader_module_identifier")
+	{
+		functions.push_back("vkGetShaderModuleIdentifierEXT");
+		functions.push_back("vkGetShaderModuleCreateInfoIdentifierEXT");
 		return;
 	}
 	if (extName == "VK_KHR_acceleration_structure")
@@ -2707,6 +2744,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_extended_dynamic_state",
 	"VK_NV_device_generated_commands",
 	"VK_EXT_private_data",
+	"VK_EXT_descriptor_buffer",
 	"VK_NV_fragment_shading_rate_enums",
 	"VK_EXT_image_compression_control",
 	"VK_EXT_vertex_input_dynamic_state",
@@ -2719,6 +2757,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_multi_draw",
 	"VK_EXT_pageable_device_local_memory",
 	"VK_VALVE_descriptor_set_host_mapping",
+	"VK_EXT_shader_module_identifier",
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_ray_tracing_pipeline",
 	"VK_ANDROID_external_memory_android_hardware_buffer",

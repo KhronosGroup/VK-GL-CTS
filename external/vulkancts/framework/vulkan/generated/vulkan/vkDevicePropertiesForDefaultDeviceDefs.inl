@@ -9,6 +9,8 @@ const VkPhysicalDeviceConservativeRasterizationPropertiesEXT&	getConservativeRas
 const VkPhysicalDeviceCooperativeMatrixPropertiesNV&			getCooperativeMatrixProperties				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceCooperativeMatrixPropertiesNV>();				}
 const VkPhysicalDeviceCustomBorderColorPropertiesEXT&			getCustomBorderColorPropertiesEXT			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceCustomBorderColorPropertiesEXT>();				}
 const VkPhysicalDeviceDepthStencilResolveProperties&			getDepthStencilResolveProperties			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceDepthStencilResolveProperties>();				}
+const VkPhysicalDeviceDescriptorBufferPropertiesEXT&			getDescriptorBufferPropertiesEXT			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceDescriptorBufferPropertiesEXT>();				}
+const VkPhysicalDeviceDescriptorBufferDensityMapPropertiesEXT&	getDescriptorBufferDensityMapPropertiesEXT	(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceDescriptorBufferDensityMapPropertiesEXT>();	}
 const VkPhysicalDeviceDescriptorIndexingProperties&				getDescriptorIndexingProperties				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceDescriptorIndexingProperties>();				}
 const VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV&		getDeviceGeneratedCommandsProperties		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV>();		}
 const VkPhysicalDeviceDiscardRectanglePropertiesEXT&			getDiscardRectanglePropertiesEXT			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceDiscardRectanglePropertiesEXT>();				}
@@ -46,6 +48,7 @@ const VkPhysicalDeviceSampleLocationsPropertiesEXT&				getSampleLocationsPropert
 const VkPhysicalDeviceShaderCorePropertiesAMD&					getShaderCorePropertiesAMD					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceShaderCorePropertiesAMD>();					}
 const VkPhysicalDeviceShaderCoreProperties2AMD&					getShaderCoreProperties2AMD					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceShaderCoreProperties2AMD>();					}
 const VkPhysicalDeviceShaderIntegerDotProductProperties&		getShaderIntegerDotProductProperties		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceShaderIntegerDotProductProperties>();			}
+const VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT&		getShaderModuleIdentifierPropertiesEXT		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT>();		}
 const VkPhysicalDeviceShadingRateImagePropertiesNV&				getShadingRateImageProperties				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceShadingRateImagePropertiesNV>();				}
 const VkPhysicalDeviceSubgroupProperties&						getSubgroupProperties						(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceSubgroupProperties>();							}
 const VkPhysicalDeviceSubgroupSizeControlProperties&			getSubgroupSizeControlProperties			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceSubgroupSizeControlProperties>();				}

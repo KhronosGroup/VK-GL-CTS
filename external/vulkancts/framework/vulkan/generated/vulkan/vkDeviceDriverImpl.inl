@@ -1544,6 +1544,61 @@ void DeviceDriver::destroyIndirectCommandsLayoutNV (VkDevice device, VkIndirectC
 	m_vk.destroyIndirectCommandsLayoutNV(device, indirectCommandsLayout, pAllocator);
 }
 
+VkResult DeviceDriver::getDescriptorSetLayoutSizeEXT (VkDevice device, VkDescriptorSetLayout layout, VkDeviceSize* pLayoutSizeInBytes) const
+{
+	return m_vk.getDescriptorSetLayoutSizeEXT(device, layout, pLayoutSizeInBytes);
+}
+
+VkResult DeviceDriver::getDescriptorSetLayoutBindingOffsetEXT (VkDevice device, VkDescriptorSetLayout layout, uint32_t binding, VkDeviceSize* pOffset) const
+{
+	return m_vk.getDescriptorSetLayoutBindingOffsetEXT(device, layout, binding, pOffset);
+}
+
+VkResult DeviceDriver::getDescriptorEXT (VkDevice device, const VkDescriptorGetInfoEXT* pDescriptorInfo, void* pDescriptor) const
+{
+	return m_vk.getDescriptorEXT(device, pDescriptorInfo, pDescriptor);
+}
+
+void DeviceDriver::cmdBindDescriptorBuffersEXT (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, uint32_t firstBuffer, uint32_t bufferCount, const VkDescriptorBufferBindingInfoEXT* pBindingInfos) const
+{
+	m_vk.cmdBindDescriptorBuffersEXT(commandBuffer, pipelineBindPoint, firstBuffer, bufferCount, pBindingInfos);
+}
+
+void DeviceDriver::cmdSetDescriptorBufferOffsetsEXT (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t firstSet, uint32_t setCount, const uint32_t* pBufferIndices, const VkDeviceSize* pOffsets) const
+{
+	m_vk.cmdSetDescriptorBufferOffsetsEXT(commandBuffer, pipelineBindPoint, layout, firstSet, setCount, pBufferIndices, pOffsets);
+}
+
+void DeviceDriver::cmdBindDescriptorBufferEmbeddedSamplersEXT (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t set) const
+{
+	m_vk.cmdBindDescriptorBufferEmbeddedSamplersEXT(commandBuffer, pipelineBindPoint, layout, set);
+}
+
+VkResult DeviceDriver::getBufferOpaqueCaptureDescriptorDataEXT (VkDevice device, const VkBufferCaptureDescriptorDataInfoEXT* pInfo, void* pData) const
+{
+	return m_vk.getBufferOpaqueCaptureDescriptorDataEXT(device, pInfo, pData);
+}
+
+VkResult DeviceDriver::getImageOpaqueCaptureDescriptorDataEXT (VkDevice device, const VkImageCaptureDescriptorDataInfoEXT* pInfo, void* pData) const
+{
+	return m_vk.getImageOpaqueCaptureDescriptorDataEXT(device, pInfo, pData);
+}
+
+VkResult DeviceDriver::getImageViewOpaqueCaptureDescriptorDataEXT (VkDevice device, const VkImageViewCaptureDescriptorDataInfoEXT* pInfo, void* pData) const
+{
+	return m_vk.getImageViewOpaqueCaptureDescriptorDataEXT(device, pInfo, pData);
+}
+
+VkResult DeviceDriver::getSamplerOpaqueCaptureDescriptorDataEXT (VkDevice device, const VkSamplerCaptureDescriptorDataInfoEXT* pInfo, void* pData) const
+{
+	return m_vk.getSamplerOpaqueCaptureDescriptorDataEXT(device, pInfo, pData);
+}
+
+VkResult DeviceDriver::getAccelerationStructureOpaqueCaptureDescriptorDataEXT (VkDevice device, const VkAccelerationStructureCaptureDescriptorDataInfoEXT* pInfo, void* pData) const
+{
+	return m_vk.getAccelerationStructureOpaqueCaptureDescriptorDataEXT(device, pInfo, pData);
+}
+
 void DeviceDriver::cmdSetFragmentShadingRateEnumNV (VkCommandBuffer commandBuffer, VkFragmentShadingRateNV shadingRate, const VkFragmentShadingRateCombinerOpKHR combinerOps[2]) const
 {
 	m_vk.cmdSetFragmentShadingRateEnumNV(commandBuffer, shadingRate, combinerOps);
@@ -1622,6 +1677,16 @@ void DeviceDriver::getDescriptorSetLayoutHostMappingInfoVALVE (VkDevice device, 
 void DeviceDriver::getDescriptorSetHostMappingVALVE (VkDevice device, VkDescriptorSet descriptorSet, void** ppData) const
 {
 	m_vk.getDescriptorSetHostMappingVALVE(device, descriptorSet, ppData);
+}
+
+void DeviceDriver::getShaderModuleIdentifierEXT (VkDevice device, VkShaderModule shaderModule, VkShaderModuleIdentifierEXT* pIdentifier) const
+{
+	m_vk.getShaderModuleIdentifierEXT(device, shaderModule, pIdentifier);
+}
+
+void DeviceDriver::getShaderModuleCreateInfoIdentifierEXT (VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, VkShaderModuleIdentifierEXT* pIdentifier) const
+{
+	m_vk.getShaderModuleCreateInfoIdentifierEXT(device, pCreateInfo, pIdentifier);
 }
 
 VkResult DeviceDriver::createAccelerationStructureKHR (VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure) const

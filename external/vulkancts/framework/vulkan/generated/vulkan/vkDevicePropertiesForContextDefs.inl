@@ -9,6 +9,8 @@ const vk::VkPhysicalDeviceConservativeRasterizationPropertiesEXT&	Context::getCo
 const vk::VkPhysicalDeviceCooperativeMatrixPropertiesNV&			Context::getCooperativeMatrixProperties				(void) const { return m_device->getCooperativeMatrixProperties();				}
 const vk::VkPhysicalDeviceCustomBorderColorPropertiesEXT&			Context::getCustomBorderColorPropertiesEXT			(void) const { return m_device->getCustomBorderColorPropertiesEXT();			}
 const vk::VkPhysicalDeviceDepthStencilResolveProperties&			Context::getDepthStencilResolveProperties			(void) const { return m_device->getDepthStencilResolveProperties();				}
+const vk::VkPhysicalDeviceDescriptorBufferPropertiesEXT&			Context::getDescriptorBufferPropertiesEXT			(void) const { return m_device->getDescriptorBufferPropertiesEXT();				}
+const vk::VkPhysicalDeviceDescriptorBufferDensityMapPropertiesEXT&	Context::getDescriptorBufferDensityMapPropertiesEXT	(void) const { return m_device->getDescriptorBufferDensityMapPropertiesEXT();	}
 const vk::VkPhysicalDeviceDescriptorIndexingProperties&				Context::getDescriptorIndexingProperties			(void) const { return m_device->getDescriptorIndexingProperties();				}
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV&		Context::getDeviceGeneratedCommandsProperties		(void) const { return m_device->getDeviceGeneratedCommandsProperties();			}
 const vk::VkPhysicalDeviceDiscardRectanglePropertiesEXT&			Context::getDiscardRectanglePropertiesEXT			(void) const { return m_device->getDiscardRectanglePropertiesEXT();				}
@@ -46,6 +48,7 @@ const vk::VkPhysicalDeviceSampleLocationsPropertiesEXT&				Context::getSampleLoc
 const vk::VkPhysicalDeviceShaderCorePropertiesAMD&					Context::getShaderCorePropertiesAMD					(void) const { return m_device->getShaderCorePropertiesAMD();					}
 const vk::VkPhysicalDeviceShaderCoreProperties2AMD&					Context::getShaderCoreProperties2AMD				(void) const { return m_device->getShaderCoreProperties2AMD();					}
 const vk::VkPhysicalDeviceShaderIntegerDotProductProperties&		Context::getShaderIntegerDotProductProperties		(void) const { return m_device->getShaderIntegerDotProductProperties();			}
+const vk::VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT&		Context::getShaderModuleIdentifierPropertiesEXT		(void) const { return m_device->getShaderModuleIdentifierPropertiesEXT();		}
 const vk::VkPhysicalDeviceShadingRateImagePropertiesNV&				Context::getShadingRateImageProperties				(void) const { return m_device->getShadingRateImageProperties();				}
 const vk::VkPhysicalDeviceSubgroupProperties&						Context::getSubgroupProperties						(void) const { return m_device->getSubgroupProperties();						}
 const vk::VkPhysicalDeviceSubgroupSizeControlProperties&			Context::getSubgroupSizeControlProperties			(void) const { return m_device->getSubgroupSizeControlProperties();				}

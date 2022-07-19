@@ -5371,6 +5371,144 @@ struct VkDeviceDiagnosticsConfigCreateInfoNV
 	VkDeviceDiagnosticsConfigFlagsNV	flags;
 };
 
+struct VkPhysicalDeviceDescriptorBufferPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		splitCombinedImageSamplers;
+	VkBool32		pushDescriptorsRequireBuffer;
+	VkDeviceSize	descriptorBufferOffsetAlignment;
+	uint32_t		maxDescriptorBufferBindings;
+	uint32_t		maxResourceDescriptorBufferBindings;
+	uint32_t		maxSamplerDescriptorBufferBindings;
+	uint32_t		maxEmbeddedImmutableSamplerBindings;
+	uint32_t		maxEmbeddedImmutableSamplers;
+	size_t			bufferCaptureReplayDescriptorDataSize;
+	size_t			imageCaptureReplayDescriptorDataSize;
+	size_t			imageViewCaptureReplayDescriptorDataSize;
+	size_t			samplerCaptureReplayDescriptorDataSize;
+	size_t			accelerationStructureCaptureReplayDescriptorDataSize;
+	size_t			samplerDescriptorSize;
+	size_t			combinedImageSamplerDescriptorSize;
+	size_t			sampledImageDescriptorSize;
+	size_t			storageImageDescriptorSize;
+	size_t			uniformTexelBufferDescriptorSize;
+	size_t			robustUniformTexelBufferDescriptorSize;
+	size_t			storageTexelBufferDescriptorSize;
+	size_t			robustStorageTexelBufferDescriptorSize;
+	size_t			uniformBufferDescriptorSize;
+	size_t			robustUniformBufferDescriptorSize;
+	size_t			storageBufferDescriptorSize;
+	size_t			robustStorageBufferDescriptorSize;
+	size_t			inputAttachmentDescriptorSize;
+	size_t			accelerationStructureDescriptorSize;
+	VkDeviceSize	maxSamplerDescriptorBufferRange;
+	VkDeviceSize	maxResourceDescriptorBufferRange;
+	VkDeviceSize	resourceDescriptorBufferAddressSpaceSize;
+	VkDeviceSize	samplerDescriptorBufferAddressSpaceSize;
+	VkDeviceSize	descriptorBufferAddressSpaceSize;
+};
+
+struct VkPhysicalDeviceDescriptorBufferDensityMapPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	size_t			combinedImageSamplerDensityMapDescriptorSize;
+};
+
+struct VkPhysicalDeviceDescriptorBufferFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		descriptorBuffer;
+	VkBool32		descriptorBufferCaptureReplay;
+	VkBool32		descriptorBufferImageLayoutIgnored;
+	VkBool32		descriptorBufferPushDescriptors;
+};
+
+struct VkDescriptorAddressInfoEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkDeviceAddress	address;
+	VkDeviceSize	range;
+	VkFormat		format;
+};
+
+struct VkDescriptorBufferBindingInfoEXT
+{
+	VkStructureType		sType;
+	void*				pNext;
+	VkDeviceAddress		address;
+	VkBufferUsageFlags	usage;
+};
+
+union VkDescriptorDataEXT
+{
+	const VkSampler*					pSampler;
+	const VkDescriptorImageInfo*		pCombinedImageSampler;
+	const VkDescriptorImageInfo*		pInputAttachmentImage;
+	const VkDescriptorImageInfo*		pSampledImage;
+	const VkDescriptorImageInfo*		pStorageImage;
+	const VkDescriptorAddressInfoEXT*	pUniformTexelBuffer;
+	const VkDescriptorAddressInfoEXT*	pStorageTexelBuffer;
+	const VkDescriptorAddressInfoEXT*	pUniformBuffer;
+	const VkDescriptorAddressInfoEXT*	pStorageBuffer;
+	const VkAccelerationStructureKHR*	pAccelerationStructure;
+	const VkAccelerationStructureNV*	pAccelerationStructureNV;
+};
+
+struct VkDescriptorGetInfoEXT
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkDescriptorType	type;
+	VkDescriptorDataEXT	data;
+};
+
+struct VkBufferCaptureDescriptorDataInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBuffer		buffer;
+};
+
+struct VkImageCaptureDescriptorDataInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkImage			image;
+};
+
+struct VkImageViewCaptureDescriptorDataInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkImageView		imageView;
+};
+
+struct VkSamplerCaptureDescriptorDataInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkSampler		sampler;
+};
+
+struct VkOpaqueCaptureDescriptorDataCreateInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	const void*		opaqueCaptureDescriptorData;
+};
+
+struct VkAccelerationStructureCaptureDescriptorDataInfoEXT
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkAccelerationStructureKHR	accelerationStructure;
+	VkAccelerationStructureNV	accelerationStructureNV;
+};
+
 struct VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT
 {
 	VkStructureType	sType;
@@ -5743,6 +5881,28 @@ struct VkPhysicalDevicePipelinePropertiesFeaturesEXT
 	VkBool32		pipelinePropertiesIdentifier;
 };
 
+struct VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		multisampledRenderToSingleSampled;
+};
+
+struct VkSubpassResolvePerformanceQueryEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		optimal;
+};
+
+struct VkMultisampledRenderToSingleSampledInfoEXT
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkBool32				multisampledRenderToSingleSampledEnable;
+	VkSampleCountFlagBits	rasterizationSamples;
+};
+
 struct VkPhysicalDeviceExtendedDynamicState2FeaturesEXT
 {
 	VkStructureType	sType;
@@ -5952,6 +6112,36 @@ struct VkRenderPassSubpassFeedbackCreateInfoEXT
 	VkStructureType						sType;
 	const void*							pNext;
 	VkRenderPassSubpassFeedbackInfoEXT*	pSubpassFeedback;
+};
+
+struct VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderModuleIdentifier;
+};
+
+struct VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint8_t			shaderModuleIdentifierAlgorithmUUID[VK_UUID_SIZE];
+};
+
+struct VkPipelineShaderStageModuleIdentifierCreateInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		identifierSize;
+	const uint8_t*	pIdentifier;
+};
+
+struct VkShaderModuleIdentifierEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		identifierSize;
+	uint8_t			identifier[VK_MAX_SHADER_MODULE_IDENTIFIER_SIZE_EXT];
 };
 
 union VkDeviceOrHostAddressKHR
@@ -6283,7 +6473,7 @@ struct VkQueueFamilyQueryResultStatusProperties2KHR
 {
 	VkStructureType	sType;
 	void*			pNext;
-	VkBool32		supported;
+	VkBool32		queryResultStatusSupport;
 };
 
 struct VkVideoQueueFamilyProperties2KHR
@@ -6296,7 +6486,7 @@ struct VkVideoQueueFamilyProperties2KHR
 struct VkVideoProfileKHR
 {
 	VkStructureType						sType;
-	void*								pNext;
+	const void*							pNext;
 	VkVideoCodecOperationFlagBitsKHR	videoCodecOperation;
 	VkVideoChromaSubsamplingFlagsKHR	chromaSubsampling;
 	VkVideoComponentBitDepthFlagsKHR	lumaBitDepth;
@@ -6306,7 +6496,7 @@ struct VkVideoProfileKHR
 struct VkVideoProfilesKHR
 {
 	VkStructureType				sType;
-	void*						pNext;
+	const void*					pNext;
 	uint32_t					profileCount;
 	const VkVideoProfileKHR*	pProfiles;
 };
@@ -6328,17 +6518,21 @@ struct VkVideoCapabilitiesKHR
 
 struct VkPhysicalDeviceVideoFormatInfoKHR
 {
-	VkStructureType				sType;
-	void*						pNext;
-	VkImageUsageFlags			imageUsage;
-	const VkVideoProfilesKHR*	pVideoProfiles;
+	VkStructureType		sType;
+	void*				pNext;
+	VkImageUsageFlags	imageUsage;
 };
 
 struct VkVideoFormatPropertiesKHR
 {
-	VkStructureType	sType;
-	void*			pNext;
-	VkFormat		format;
+	VkStructureType		sType;
+	void*				pNext;
+	VkFormat			format;
+	VkComponentMapping	componentMapping;
+	VkImageCreateFlags	imageCreateFlags;
+	VkImageType			imageType;
+	VkImageTiling		imageTiling;
+	VkImageUsageFlags	imageUsageFlags;
 };
 
 struct VkVideoPictureResourceKHR
