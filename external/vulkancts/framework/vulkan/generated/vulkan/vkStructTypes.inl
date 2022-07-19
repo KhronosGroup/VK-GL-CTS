@@ -6006,6 +6006,13 @@ struct VkShaderModuleIdentifierEXT
 	uint8_t			identifier[VK_MAX_SHADER_MODULE_IDENTIFIER_SIZE_EXT];
 };
 
+struct VkPhysicalDeviceLegacyDitheringFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		legacyDithering;
+};
+
 union VkDeviceOrHostAddressKHR
 {
 	VkDeviceAddress	deviceAddress;

@@ -1059,6 +1059,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_legacy_dithering")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_acceleration_structure")
 	{
 		return;
@@ -2430,6 +2434,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		functions.push_back("vkGetShaderModuleIdentifierEXT");
 		functions.push_back("vkGetShaderModuleCreateInfoIdentifierEXT");
+		return;
+	}
+	if (extName == "VK_EXT_legacy_dithering")
+	{
 		return;
 	}
 	if (extName == "VK_KHR_acceleration_structure")

@@ -53,6 +53,7 @@ const vk::VkPhysicalDeviceIndexTypeUint8FeaturesEXT&					Context::getIndexTypeUi
 const vk::VkPhysicalDeviceInheritedViewportScissorFeaturesNV&			Context::getInheritedViewportScissorFeatures				(void) const { return m_device->getInheritedViewportScissorFeatures();				}
 const vk::VkPhysicalDeviceInlineUniformBlockFeatures&					Context::getInlineUniformBlockFeatures						(void) const { return m_device->getInlineUniformBlockFeatures();					}
 const vk::VkPhysicalDeviceInvocationMaskFeaturesHUAWEI&					Context::getInvocationMaskFeaturesHUAWEI					(void) const { return m_device->getInvocationMaskFeaturesHUAWEI();					}
+const vk::VkPhysicalDeviceLegacyDitheringFeaturesEXT&					Context::getLegacyDitheringFeaturesEXT						(void) const { return m_device->getLegacyDitheringFeaturesEXT();					}
 const vk::VkPhysicalDeviceLinearColorAttachmentFeaturesNV&				Context::getLinearColorAttachmentFeatures					(void) const { return m_device->getLinearColorAttachmentFeatures();					}
 const vk::VkPhysicalDeviceLineRasterizationFeaturesEXT&					Context::getLineRasterizationFeaturesEXT					(void) const { return m_device->getLineRasterizationFeaturesEXT();					}
 const vk::VkPhysicalDeviceMaintenance4Features&							Context::getMaintenance4Features							(void) const { return m_device->getMaintenance4Features();							}

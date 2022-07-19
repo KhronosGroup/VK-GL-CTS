@@ -810,6 +810,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_PROPERTIES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_MODULE_IDENTIFIER_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_MODULE_IDENTIFIER_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_SHADER_MODULE_IDENTIFIER_EXT:										return "VK_STRUCTURE_TYPE_SHADER_MODULE_IDENTIFIER_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_DITHERING_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_DITHERING_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_MAX_ENUM:															return "VK_STRUCTURE_TYPE_MAX_ENUM";
 		default:																					return DE_NULL;
 	}
@@ -3578,6 +3579,7 @@ tcu::Format::Bitfield<32> getSubpassDescriptionFlagsStr (VkSubpassDescriptionFla
 		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_COLOR_ACCESS_BIT_ARM,	"VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_COLOR_ACCESS_BIT_ARM"),
 		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_DEPTH_ACCESS_BIT_ARM,	"VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_DEPTH_ACCESS_BIT_ARM"),
 		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_STENCIL_ACCESS_BIT_ARM,	"VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_STENCIL_ACCESS_BIT_ARM"),
+		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_ENABLE_LEGACY_DITHERING_BIT_EXT,						"VK_SUBPASS_DESCRIPTION_ENABLE_LEGACY_DITHERING_BIT_EXT"),
 		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_FLAG_BITS_MAX_ENUM,										"VK_SUBPASS_DESCRIPTION_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
@@ -3931,6 +3933,7 @@ tcu::Format::Bitfield<32> getRenderingFlagsStr (VkRenderingFlags value)
 		tcu::Format::BitDesc(VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT,		"VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT"),
 		tcu::Format::BitDesc(VK_RENDERING_SUSPENDING_BIT,								"VK_RENDERING_SUSPENDING_BIT"),
 		tcu::Format::BitDesc(VK_RENDERING_RESUMING_BIT,									"VK_RENDERING_RESUMING_BIT"),
+		tcu::Format::BitDesc(VK_RENDERING_ENABLE_LEGACY_DITHERING_BIT_EXT,				"VK_RENDERING_ENABLE_LEGACY_DITHERING_BIT_EXT"),
 		tcu::Format::BitDesc(VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR,	"VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR"),
 		tcu::Format::BitDesc(VK_RENDERING_SUSPENDING_BIT_KHR,							"VK_RENDERING_SUSPENDING_BIT_KHR"),
 		tcu::Format::BitDesc(VK_RENDERING_RESUMING_BIT_KHR,								"VK_RENDERING_RESUMING_BIT_KHR"),
@@ -12836,6 +12839,16 @@ std::ostream& operator<< (std::ostream& s, const VkShaderModuleIdentifierEXT& va
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tidentifierSize = " << value.identifierSize << '\n';
 	s << "\tidentifier = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.identifier)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.identifier))) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLegacyDitheringFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceLegacyDitheringFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tlegacyDithering = " << value.legacyDithering << '\n';
 	s << '}';
 	return s;
 }

@@ -53,6 +53,7 @@ const vk::VkPhysicalDeviceIndexTypeUint8FeaturesEXT&					getIndexTypeUint8Featur
 const vk::VkPhysicalDeviceInheritedViewportScissorFeaturesNV&			getInheritedViewportScissorFeatures				(void) const;
 const vk::VkPhysicalDeviceInlineUniformBlockFeatures&					getInlineUniformBlockFeatures					(void) const;
 const vk::VkPhysicalDeviceInvocationMaskFeaturesHUAWEI&					getInvocationMaskFeaturesHUAWEI					(void) const;
+const vk::VkPhysicalDeviceLegacyDitheringFeaturesEXT&					getLegacyDitheringFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceLinearColorAttachmentFeaturesNV&				getLinearColorAttachmentFeatures				(void) const;
 const vk::VkPhysicalDeviceLineRasterizationFeaturesEXT&					getLineRasterizationFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceMaintenance4Features&							getMaintenance4Features							(void) const;

@@ -2608,6 +2608,11 @@ template<> VkStructureType getStructureType<VkShaderModuleIdentifierEXT> (void)
 	return VK_STRUCTURE_TYPE_SHADER_MODULE_IDENTIFIER_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceLegacyDitheringFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_DITHERING_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkAccelerationStructureGeometryTrianglesDataKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
