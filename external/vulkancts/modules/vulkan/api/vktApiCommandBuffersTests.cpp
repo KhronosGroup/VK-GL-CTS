@@ -825,6 +825,11 @@ tcu::TestStatus resetBufferImplicitlyTest(Context& context)
 	const VkQueue							queue					= context.getUniversalQueue();
 	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
 
+#ifdef CTS_USES_VULKANSC
+	if (context.getDeviceVulkanSC10Properties().commandPoolResetCommandBuffer == VK_FALSE)
+		TCU_THROW(NotSupportedError, "commandPoolResetCommandBuffer not supported by this implementation");
+#endif // CTS_USES_VULKANSC
+
 	const VkCommandPoolCreateInfo			cmdPoolParams			=
 	{
 		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,					// sType;
@@ -1414,6 +1419,11 @@ tcu::TestStatus submitSecondaryBufferTwiceTest(Context& context)
 	const VkQueue							queue					= context.getUniversalQueue();
 	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
 
+#ifdef CTS_USES_VULKANSC
+	if (context.getDeviceVulkanSC10Properties().commandPoolResetCommandBuffer == VK_FALSE)
+		TCU_THROW(NotSupportedError, "commandPoolResetCommandBuffer not supported by this implementation");
+#endif // CTS_USES_VULKANSC
+
 	const VkCommandPoolCreateInfo			cmdPoolParams			=
 	{
 		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,					//	VkStructureType				sType;
@@ -1503,7 +1513,7 @@ tcu::TestStatus submitSecondaryBufferTwiceTest(Context& context)
 		return tcu::TestStatus::fail("Submit Twice Secondary Command Buffer FAILED");
 
 	// reset first primary buffer
-	vk.resetCommandBuffer( *primCmdBuf1, 0u);
+	VK_CHECK(vk.resetCommandBuffer( *primCmdBuf1, 0u));
 
 	// reset event to allow receiving it again
 	VK_CHECK(vk.resetEvent(vkDevice, *event));
@@ -1533,6 +1543,11 @@ tcu::TestStatus oneTimeSubmitFlagPrimaryBufferTest(Context& context)
 	const DeviceInterface&					vk						= context.getDeviceInterface();
 	const VkQueue							queue					= context.getUniversalQueue();
 	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
+
+#ifdef CTS_USES_VULKANSC
+	if (context.getDeviceVulkanSC10Properties().commandPoolResetCommandBuffer == VK_FALSE)
+		TCU_THROW(NotSupportedError, "commandPoolResetCommandBuffer not supported by this implementation");
+#endif // CTS_USES_VULKANSC
 
 	const VkCommandPoolCreateInfo			cmdPoolParams			=
 	{
@@ -1605,6 +1620,11 @@ tcu::TestStatus oneTimeSubmitFlagSecondaryBufferTest(Context& context)
 	const DeviceInterface&					vk						= context.getDeviceInterface();
 	const VkQueue							queue					= context.getUniversalQueue();
 	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
+
+#ifdef CTS_USES_VULKANSC
+	if (context.getDeviceVulkanSC10Properties().commandPoolResetCommandBuffer == VK_FALSE)
+		TCU_THROW(NotSupportedError, "commandPoolResetCommandBuffer not supported by this implementation");
+#endif // CTS_USES_VULKANSC
 
 	const VkCommandPoolCreateInfo			cmdPoolParams			=
 	{
@@ -1695,7 +1715,7 @@ tcu::TestStatus oneTimeSubmitFlagSecondaryBufferTest(Context& context)
 		return tcu::TestStatus::fail("Submit Twice Secondary Command Buffer FAILED");
 
 	// reset first primary buffer
-	vk.resetCommandBuffer( *primCmdBuf1, 0u);
+	VK_CHECK(vk.resetCommandBuffer( *primCmdBuf1, 0u));
 
 	// reset event to allow receiving it again
 	VK_CHECK(vk.resetEvent(vkDevice, *event));
@@ -1770,6 +1790,7 @@ tcu::TestStatus renderPassContinueTest(Context& context, bool framebufferHint)
 	endCommandBuffer(vkd, primaryCommandBuffer);
 
 	env.submitPrimaryCommandBuffer();
+	context.resetCommandPoolForVKSC(context.getDevice(), env.getCommandPool());
 
 	de::MovePtr<tcu::TextureLevel>			result					= env.readColorAttachment();
 	tcu::PixelBufferAccess					pixelBufferAccess		= result->getAccess();
@@ -4017,6 +4038,12 @@ tcu::TestStatus executeStateTransitionTest(Context& context, StateTransitionTest
 	const DeviceInterface&			vk					= context.getDeviceInterface();
 	const VkQueue					queue				= context.getUniversalQueue();
 	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+
+#ifdef CTS_USES_VULKANSC
+	if (context.getDeviceVulkanSC10Properties().commandPoolResetCommandBuffer == VK_FALSE)
+		TCU_THROW(NotSupportedError, "commandPoolResetCommandBuffer not supported by this implementation");
+#endif // CTS_USES_VULKANSC
+
 	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>	cmdBuffer			(allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 	const Unique<VkEvent>			globalEvent			(createEvent(vk, vkDevice));
@@ -4096,7 +4123,7 @@ tcu::TestStatus executeStateTransitionTest(Context& context, StateTransitionTest
 
 	VK_CHECK(vk.resetEvent(vkDevice, *globalEvent));
 
-	vk.resetCommandBuffer(*cmdBuffer, 0u);
+	VK_CHECK(vk.resetCommandBuffer(*cmdBuffer, 0u));
 	// command buffer should now be back in initial state
 
 	// verify commandBuffer

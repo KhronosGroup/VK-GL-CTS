@@ -129,7 +129,7 @@ tcu::TestStatus ConditionalClearAttachmentTest::iterate (void)
 			&inheritanceInfo
 		};
 
-		m_vk.beginCommandBuffer(*m_secondaryCmdBuffer, &commandBufferBeginInfo);
+		VK_CHECK(m_vk.beginCommandBuffer(*m_secondaryCmdBuffer, &commandBufferBeginInfo));
 
 		targetCmdBuffer = *m_secondaryCmdBuffer;
 	}

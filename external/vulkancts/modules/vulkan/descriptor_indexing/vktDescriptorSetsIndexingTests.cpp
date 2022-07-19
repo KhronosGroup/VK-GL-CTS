@@ -1430,6 +1430,7 @@ void CommonDescriptorInstance::iterateCommandEnd					(IterateCommonVariables&			
 		iterateCollectResults(programResult, variables, true);
 		iterateCollectResults(referenceResult, variables, false);
 	}
+	m_context.resetCommandPoolForVKSC(m_vkd, *m_commandPool);
 }
 
 bool CommonDescriptorInstance::iterateVerifyResults			(IterateCommonVariables&					variables,

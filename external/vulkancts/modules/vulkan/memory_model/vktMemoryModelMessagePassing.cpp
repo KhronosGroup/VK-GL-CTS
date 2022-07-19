@@ -1746,7 +1746,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 
 		submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 
-		vk.resetCommandBuffer(*cmdBuffer, 0x00000000);
+		m_context.resetCommandPoolForVKSC(device, *cmdPool);
 	}
 
 	tcu::TestLog& log = m_context.getTestContext().getLog();

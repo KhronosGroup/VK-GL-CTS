@@ -719,6 +719,7 @@ void InstancedDrawInstance::beginRender(vk::VkCommandBuffer cmdBuffer, const vk:
 */
 
 			submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
+			m_context.resetCommandPoolForVKSC(device, *m_cmdPool);
 
 			// Reference rendering
 			std::vector<tcu::Vec4>	vetrices;

@@ -436,13 +436,13 @@ tcu::TestStatus MultisampleLinearInterpolationTestInstance::iterate (void)
 					if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
 					{
 						inheritanceRenderingInfo.flags = VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT;
-						vk.beginCommandBuffer(*secCmdBuffer, &commandBufBeginParams);
+						VK_CHECK(vk.beginCommandBuffer(*secCmdBuffer, &commandBufBeginParams));
 						vk.cmdBeginRendering(*secCmdBuffer, &renderingInfo);
 					}
 					else
 					{
 						commandBufBeginParams.flags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-						vk.beginCommandBuffer(*secCmdBuffer, &commandBufBeginParams);
+						VK_CHECK(vk.beginCommandBuffer(*secCmdBuffer, &commandBufBeginParams));
 					}
 
 					drawCommands(*secCmdBuffer);

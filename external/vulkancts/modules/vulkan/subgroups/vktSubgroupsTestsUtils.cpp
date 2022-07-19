@@ -2729,6 +2729,7 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTestRequire
 
 			submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 		}
+		context.resetCommandPoolForVKSC(device, *cmdPool);
 
 		{
 			const Allocation& allocResult = imageBufferResult.getAllocation();
@@ -2967,6 +2968,7 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTestRequiredSubgroupSize 
 
 			submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 		}
+		context.resetCommandPoolForVKSC(device, *cmdPool);
 
 		{
 			const Allocation& allocResult = imageBufferResult.getAllocation();
@@ -3333,7 +3335,7 @@ tcu::TestStatus vkt::subgroups::allStagesRequiredSubgroupSize (Context&						con
 					failedIterations++;
 			}
 
-			vk.resetCommandBuffer(*cmdBuffer, 0);
+			context.resetCommandPoolForVKSC(device, *cmdPool);
 		}
 
 		if (0 < failedIterations)
@@ -3548,6 +3550,7 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTestRequiredSubgroupSize (C
 
 			submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 		}
+		context.resetCommandPoolForVKSC(device, *cmdPool);
 
 		{
 			const Allocation& allocResult = imageBufferResult.getAllocation();
@@ -3758,7 +3761,7 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTestRequiredSubgroupSize 
 				failedIterations++;
 			}
 
-			vk.resetCommandBuffer(*cmdBuffer, 0);
+			context.resetCommandPoolForVKSC(device, *cmdPool);
 		}
 	}
 
@@ -4029,7 +4032,7 @@ tcu::TestStatus vkt::subgroups::makeComputeTestRequiredSubgroupSize (Context&			
 			failedIterations++;
 		}
 
-		vk.resetCommandBuffer(*cmdBuffer, 0);
+		context.resetCommandPoolForVKSC(device, *cmdPool);
 	}
 
 	if (0 < failedIterations)
@@ -4723,7 +4726,7 @@ tcu::TestStatus allRayTracingStagesRequiredSubgroupSize (Context&					context,
 				passIterations++;
 		}
 
-		vkd.resetCommandBuffer(*cmdBuffer, 0);
+		context.resetCommandPoolForVKSC(device, *cmdPool);
 	}
 
 	if (failIterations > 0 || passIterations == 0)

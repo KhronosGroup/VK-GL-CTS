@@ -793,6 +793,7 @@ void CopiesAndBlittingTestInstance::uploadImageAspect (const tcu::ConstPixelBuff
 	endCommandBuffer(vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(vk, vkDevice, queue, *m_cmdBuffer);
+	m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
 }
 
 void CopiesAndBlittingTestInstance::uploadImage (const tcu::ConstPixelBufferAccess& src, VkImage dst, const ImageParms& parms, const deUint32 mipLevels)
@@ -983,6 +984,7 @@ void CopiesAndBlittingTestInstance::readImageAspect (vk::VkImage					image,
 	endCommandBuffer(vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
+	m_context.resetCommandPoolForVKSC(device, *m_cmdPool);
 
 	// Read buffer data
 	invalidateAlloc(vk, device, *bufferAlloc);
@@ -1254,6 +1256,7 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 	endCommandBuffer(vk, *m_cmdBuffer);
 
 	submitCommandsAndWait (vk, vkDevice, queue, *m_cmdBuffer);
+	m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
 
 	de::MovePtr<tcu::TextureLevel>	resultTextureLevel	= readImage(*m_destination, m_params.dst.image);
 
@@ -1700,6 +1703,7 @@ tcu::TestStatus CopyImageToImageMipmap::iterate (void)
 	endCommandBuffer(vk, *m_cmdBuffer);
 
 	submitCommandsAndWait (vk, vkDevice, queue, *m_cmdBuffer);
+	m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
 
 	for (deUint32 miplevel = 0; miplevel < m_params.mipLevels; miplevel++)
 	{
@@ -2108,6 +2112,7 @@ tcu::TestStatus CopyBufferToBuffer::iterate (void)
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &dstBufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	endCommandBuffer(vk, *m_cmdBuffer);
 	submitCommandsAndWait(vk, vkDevice, queue, *m_cmdBuffer);
+	m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
 
 	// Read buffer data
 	de::MovePtr<tcu::TextureLevel>	resultLevel		(new tcu::TextureLevel(mapVkFormat(VK_FORMAT_R32_UINT), dstLevelWidth, 1));
@@ -2334,6 +2339,7 @@ tcu::TestStatus CopyImageToBuffer::iterate (void)
 	endCommandBuffer(vk, *m_cmdBuffer);
 
 	submitCommandsAndWait (vk, vkDevice, queue, *m_cmdBuffer);
+	m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
 
 	// Read buffer data
 	de::MovePtr<tcu::TextureLevel>	resultLevel		(new tcu::TextureLevel(m_textureFormat, (int)m_params.dst.buffer.size, 1));
@@ -2567,6 +2573,7 @@ tcu::TestStatus CopyBufferToImage::iterate (void)
 	endCommandBuffer(vk, *m_cmdBuffer);
 
 	submitCommandsAndWait (vk, vkDevice, queue, *m_cmdBuffer);
+	m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
 
 	de::MovePtr<tcu::TextureLevel>	resultLevel	= readImage(*m_destination, m_params.dst.image);
 
@@ -2969,6 +2976,7 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
 	endCommandBuffer(vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(vk, vkDevice, queue, *m_cmdBuffer);
+	m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
 
 	de::MovePtr<tcu::TextureLevel>	resultLevel = readImage(*m_destination, m_params.dst.image);
 
@@ -3385,6 +3393,7 @@ tcu::TestStatus BlittingImages::iterate (void)
 
 	endCommandBuffer(vk, *m_cmdBuffer);
 	submitCommandsAndWait(vk, vkDevice, queue, *m_cmdBuffer);
+	m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
 
 	de::MovePtr<tcu::TextureLevel>	resultLevel		= readImage(*m_destination, dstImageParams);
 	tcu::PixelBufferAccess			resultAccess	= resultLevel->getAccess();
@@ -4576,6 +4585,7 @@ void BlittingImages::uploadCompressedImage (const VkImage& image, const ImagePar
 	endCommandBuffer(vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(vk, vkDevice, queue, *m_cmdBuffer);
+	m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
 }
 
 
@@ -5013,6 +5023,7 @@ tcu::TestStatus BlittingMipmaps::iterate (void)
 
 	endCommandBuffer(vk, *m_cmdBuffer);
 	submitCommandsAndWait(vk, vkDevice, queue, *m_cmdBuffer);
+	m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
 
 	return checkTestResult();
 }
@@ -6046,6 +6057,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 		// Queue submit.
 		{
 			submitCommandsAndWait (vk, vkDevice, m_queue, *m_cmdBuffer);
+			m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
 		}
 	}
 }
@@ -6234,6 +6246,7 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 	endCommandBuffer(vk, *m_cmdBuffer);
 	submitCommandsAndWait(vk, vkDevice, queue, *m_cmdBuffer);
+	m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
 
 	de::MovePtr<tcu::TextureLevel>	resultTextureLevel	= readImage(*m_destination, m_params.dst.image);
 
@@ -6573,6 +6586,7 @@ tcu::TestStatus ResolveImageToImage::checkIntermediateCopy (void)
 	vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u, &bufferBarrier, 0u, nullptr, 0u, nullptr);
 	endCommandBuffer(vkd, cmdBuffer);
 	submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+	m_context.resetCommandPoolForVKSC(device, *cmdPool);
 
 	// Verify intermediate results.
 	invalidateAlloc(vkd, device, bufferAlloc);
@@ -6608,6 +6622,7 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 	const VkDevice					vkDevice			= m_device;
 	const VkQueue					queue				= useTwoQueues ? m_alternativeQueue : m_queue;
 	const VkCommandBuffer			commandBuffer		= useTwoQueues ? m_alternativeCmdBuffer.get() : m_cmdBuffer.get();
+	const VkCommandPool				commandPool			= useTwoQueues ? m_alternativeCmdPool.get() : m_cmdPool.get();
 	const tcu::TextureFormat		srcTcuFormat		= mapVkFormat(m_params.src.image.format);
 	std::vector<VkImageCopy>		imageCopies;
 	std::vector<VkImageCopy2KHR>	imageCopies2KHR;
@@ -6832,6 +6847,7 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 			vk.cmdPipelineBarrier(m_cmdBuffer.get(), VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, (uint32_t)barriers.size(), barriers.data());
 			endCommandBuffer(vk, m_cmdBuffer.get());
 			submitCommandsAndWait(vk, vkDevice, m_queue, m_cmdBuffer.get());
+			m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
 		}
 
 		// Acquire ownership to compute / transfer queue.
@@ -6857,6 +6873,7 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 			vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, (uint32_t)barriers.size(), barriers.data());
 			endCommandBuffer(vk, commandBuffer);
 			submitCommandsAndWait(vk, vkDevice, queue, commandBuffer);
+			m_context.resetCommandPoolForVKSC(vkDevice, commandPool);
 		}
 
 		beginCommandBuffer(vk, commandBuffer);
@@ -6948,6 +6965,7 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 	{
 		endCommandBuffer(vk, commandBuffer);
 		submitCommandsAndWait(vk, vkDevice, queue, commandBuffer);
+		m_context.resetCommandPoolForVKSC(vkDevice, commandPool);
 
 		VkImageMemoryBarrier srcImageBarrier = makeImageMemoryBarrier(
 				0u,
@@ -6978,6 +6996,7 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 			vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, (uint32_t)barriers.size(), barriers.data());
 			endCommandBuffer(vk, commandBuffer);
 			submitCommandsAndWait(vk, vkDevice, queue, commandBuffer);
+			m_context.resetCommandPoolForVKSC(vkDevice, commandPool);
 		}
 
 		// Acquire ownership to graphics queue.
@@ -7000,6 +7019,7 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 			vk.cmdPipelineBarrier(m_cmdBuffer.get(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0,  0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, (uint32_t)barriers.size(), barriers.data());
 			endCommandBuffer(vk, m_cmdBuffer.get());
 			submitCommandsAndWait(vk, vkDevice, m_queue, m_cmdBuffer.get());
+			m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
 		}
 	}
 	else
@@ -7007,6 +7027,7 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 		vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &multisampledCopyImagePostBarrier);
 		endCommandBuffer(vk, commandBuffer);
 		submitCommandsAndWait (vk, vkDevice, queue, commandBuffer);
+		m_context.resetCommandPoolForVKSC(vkDevice, commandPool);
 	}
 }
 
@@ -7719,6 +7740,7 @@ tcu::TestStatus DepthStencilMSAA::iterate (void)
 			}
 
 			submitCommandsAndWait (vk, vkDevice, queue, *cmdBuffer);
+			m_context.resetCommandPoolForVKSC(vkDevice, *cmdPool);
 		}
 	}
 
@@ -7803,6 +7825,7 @@ tcu::TestStatus DepthStencilMSAA::iterate (void)
 	}
 	endCommandBuffer(vk, *cmdBuffer);
 	submitCommandsAndWait (vk, vkDevice, queue, *cmdBuffer);
+	m_context.resetCommandPoolForVKSC(vkDevice, *cmdPool);
 
 	// Verify that all samples have been copied properly from all aspects.
 	const auto usedImageAspects = getUsedImageAspects();

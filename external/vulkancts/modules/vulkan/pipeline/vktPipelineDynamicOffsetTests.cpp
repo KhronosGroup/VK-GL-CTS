@@ -1996,6 +1996,7 @@ tcu::TestStatus DynamicOffsetMixedTestInstance::iterate (void)
 		endCommandBuffer(vk, *cmdBuffer);
 
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+		m_context.resetCommandPoolForVKSC(device, *cmdPool);
 	}
 
 	// Check result image

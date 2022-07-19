@@ -275,7 +275,7 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 			&inheritanceInfo
 		};
 
-		vk.beginCommandBuffer(*secondaryCmdBuffer, &commandBufferBeginInfo);
+		VK_CHECK(vk.beginCommandBuffer(*secondaryCmdBuffer, &commandBufferBeginInfo));
 
 		targetCmdBuffer = *secondaryCmdBuffer;
 	}

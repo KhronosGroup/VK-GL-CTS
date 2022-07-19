@@ -854,6 +854,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	endCommandBuffer(vkdi, *cmdBuffer);
 
 	submitCommandsAndWait(vkdi, device, queue, *cmdBuffer);
+	m_context.resetCommandPoolForVKSC(device, *cmdPool);
 
 	// Invalidate output memory ranges before checking on host.
 	for (size_t outputNdx = 0; outputNdx < m_shaderSpec.outputs.size(); ++outputNdx)
