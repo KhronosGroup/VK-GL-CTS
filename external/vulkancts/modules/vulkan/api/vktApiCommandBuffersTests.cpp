@@ -2687,7 +2687,6 @@ tcu::TestStatus recordBufferQueryImpreciseWithFlagTest(Context& context)
 		&secBufferInheritInfo,
 	};
 
-	// Create an occlusion query with VK_QUERY_CONTROL_PRECISE_BIT set
 	const VkQueryPoolCreateInfo				queryPoolCreateInfo		=
 	{
 		VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,					// sType
@@ -2705,7 +2704,7 @@ tcu::TestStatus recordBufferQueryImpreciseWithFlagTest(Context& context)
 	VK_CHECK(vk.beginCommandBuffer(primCmdBuf.get(), &primBufferBeginInfo));
 	{
 		vk.cmdResetQueryPool(primCmdBuf.get(), queryPool.get(), 0u, 1u);
-		vk.cmdBeginQuery(primCmdBuf.get(), queryPool.get(), 0u, VK_QUERY_CONTROL_PRECISE_BIT);
+		vk.cmdBeginQuery(primCmdBuf.get(), queryPool.get(), 0u, 0u);
 		{
 			vk.cmdExecuteCommands(primCmdBuf.get(), 1u, &secCmdBuf.get());
 		}
@@ -2713,7 +2712,7 @@ tcu::TestStatus recordBufferQueryImpreciseWithFlagTest(Context& context)
 	}
 	endCommandBuffer(vk, primCmdBuf.get());
 
-	return tcu::TestStatus::pass("Successfully recorded a secondary command buffer allowing a precise occlusion query.");
+	return tcu::TestStatus::pass("Successfully recorded an imprecise query with a secondary command buffer allowing a precise occlusion query.");
 }
 
 tcu::TestStatus recordBufferQueryImpreciseWithoutFlagTest(Context& context)
@@ -2783,7 +2782,6 @@ tcu::TestStatus recordBufferQueryImpreciseWithoutFlagTest(Context& context)
 		&secBufferInheritInfo,
 	};
 
-	// Create an occlusion query with VK_QUERY_CONTROL_PRECISE_BIT set
 	const VkQueryPoolCreateInfo				queryPoolCreateInfo		=
 	{
 		VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,					// sType
@@ -2801,7 +2799,7 @@ tcu::TestStatus recordBufferQueryImpreciseWithoutFlagTest(Context& context)
 	VK_CHECK(vk.beginCommandBuffer(primCmdBuf.get(), &primBufferBeginInfo));
 	{
 		vk.cmdResetQueryPool(primCmdBuf.get(), queryPool.get(), 0u, 1u);
-		vk.cmdBeginQuery(primCmdBuf.get(), queryPool.get(), 0u, VK_QUERY_CONTROL_PRECISE_BIT);
+		vk.cmdBeginQuery(primCmdBuf.get(), queryPool.get(), 0u, 0u);
 		{
 			vk.cmdExecuteCommands(primCmdBuf.get(), 1u, &secCmdBuf.get());
 		}
@@ -2809,7 +2807,7 @@ tcu::TestStatus recordBufferQueryImpreciseWithoutFlagTest(Context& context)
 	}
 	endCommandBuffer(vk, primCmdBuf.get());
 
-	return tcu::TestStatus::pass("Successfully recorded a secondary command buffer allowing a precise occlusion query.");
+	return tcu::TestStatus::pass("Successfully recorded an imprecise query with a secondary command buffer not allowing a precise occlusion query.");
 }
 
 /******** 19.4. Command Buffer Submission (5.4 in VK 1.0 Spec) ****************/

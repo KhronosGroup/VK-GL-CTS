@@ -965,6 +965,7 @@ void getDisplays(Context& context, std::vector<VkDisplayKHR>& availableDisplays)
 	deUint32					countReported		= 0u;
 	VkPhysicalDevice			physicalDevice		= context.getPhysicalDevice();
 	const InstanceInterface&	vki					= context.getInstanceInterface();
+	const vk::Platform&	platform	= context.getTestContext().getPlatform().getVulkanPlatform();
 
 	VkResult result = vki.getPhysicalDeviceDisplayPropertiesKHR(physicalDevice, &countReported, DE_NULL);
 	if (result != VK_SUCCESS)
@@ -972,6 +973,15 @@ void getDisplays(Context& context, std::vector<VkDisplayKHR>& availableDisplays)
 
 	if (countReported == 0)
 		TCU_THROW(NotSupportedError, "No displays available");
+
+	for (int typeNdx = 0; typeNdx < vk::wsi::TYPE_LAST; ++typeNdx)
+	{
+		vk::wsi::Type	wsiType = (vk::wsi::Type)typeNdx;
+		if (platform.hasDisplay(wsiType))
+		{
+			TCU_THROW(NotSupportedError, "Display is unavailable as windowing system has access");
+		}
+	}
 
 	// get display properties
 	std::vector<VkDisplayPropertiesKHR> displaysProperties(countReported);
