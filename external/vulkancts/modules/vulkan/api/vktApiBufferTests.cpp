@@ -681,13 +681,18 @@ struct LargeBufferParameters
 
 tcu::TestStatus testLargeBuffer(Context& context, LargeBufferParameters params)
 {
-	const DeviceInterface&	vk					= context.getDeviceInterface();
-	const VkDevice			vkDevice			= context.getDevice();
-	const deUint32			queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
-	VkBuffer				rawBuffer			= DE_NULL;
+	const DeviceInterface&			vk					= context.getDeviceInterface();
+	const VkDevice					vkDevice			= context.getDevice();
+	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	const VkPhysicalDeviceLimits	limits				= getPhysicalDeviceProperties(context.getInstanceInterface(),
+				                                                                      context.getPhysicalDevice()).limits;
+	VkBuffer						rawBuffer			= DE_NULL;
 
 	if (params.useMaxBufferSize)
 		params.bufferSize = context.getMaintenance4Properties().maxBufferSize;
+
+	if ((params.flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT) != 0)
+		params.bufferSize = std::min(params.bufferSize, limits.sparseAddressSpaceSize);
 
 	VkBufferCreateInfo bufferParams =
 	{
