@@ -554,20 +554,23 @@ Move<VkDescriptorSetLayout>	CommonDescriptorInstance::createDescriptorSetLayout 
 
 	bool optional = (m_testParams.additionalDescriptorBinding != BINDING_Undefined) && (m_testParams.additionalDescriptorType != VK_DESCRIPTOR_TYPE_UNDEFINED);
 
+	const VkShaderStageFlags bindingStageFlags = (m_testParams.descriptorType == VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT) ?
+													VkShaderStageFlags{VK_SHADER_STAGE_FRAGMENT_BIT} : m_testParams.stageFlags;
+
 	const VkDescriptorSetLayoutBinding	bindings[] =
 	{
 		{
 			m_testParams.descriptorBinding,				// binding
 			m_testParams.descriptorType,				// descriptorType
 			descriptorCount,							// descriptorCount
-			m_testParams.stageFlags,					// stageFlags
+			bindingStageFlags,							// stageFlags
 			DE_NULL,									// pImmutableSamplers
 		},
 		{
 			m_testParams.additionalDescriptorBinding,	// binding
 			m_testParams.additionalDescriptorType,		// descriptorType
 			1,											// descriptorCount
-			m_testParams.stageFlags,					// stageFlags
+			bindingStageFlags,							// stageFlags
 			DE_NULL,									// pImmutableSamplers
 		}
 	};

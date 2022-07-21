@@ -282,7 +282,7 @@ macro (add_deqp_module MODULE_NAME SRCS LIBS ENTRY)
 	if (NOT DE_OS_IS_ANDROID AND NOT DE_OS_IS_IOS)
 		# Executable target
 		add_executable(${MODULE_NAME} ${PROJECT_SOURCE_DIR}/framework/platform/tcuMain.cpp ${ENTRY})
-		target_link_libraries(${MODULE_NAME} tcutil-platform "${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}")
+		target_link_libraries(${MODULE_NAME} PUBLIC tcutil-platform "${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}")
 		target_copy_files(${MODULE_NAME} platform-libs-${MODULE_NAME} "${DEQP_PLATFORM_COPY_LIBRARIES}")
 	endif ()
 
