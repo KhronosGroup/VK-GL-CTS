@@ -108,9 +108,9 @@ class BatchResultParser:
 			del self.testCaseResults[:]
 			self.curResultText = None
 
-			isNextResult = self.parseLine(file.next())
+			isNextResult = self.parseLine(next(file))
 			while not isNextResult:
-				isNextResult = self.parseLine(file.next())
+				isNextResult = self.parseLine(next(file))
 
 			# Return the next TestCaseResult
 			return self.testCaseResults.pop()
