@@ -710,19 +710,19 @@ private:
 
 const VertexGenerator* getVertexWithPaddingGenerator ()
 {
-	static const VertexWithPadding vertexWithPadding;
+	static VertexWithPadding vertexWithPadding;
 	return &vertexWithPadding;
 }
 
 const VertexGenerator* getVertexWithExtraAttributesGenerator ()
 {
-	static const VertexWithExtraAttributes vertexWithExtraAttributes;
+	static VertexWithExtraAttributes vertexWithExtraAttributes;
 	return &vertexWithExtraAttributes;
 }
 
 const VertexGenerator* getVertexWithMultipleBindingsGenerator ()
 {
-	static const MultipleBindingsVertex multipleBindingsVertex;
+	static MultipleBindingsVertex multipleBindingsVertex;
 	return &multipleBindingsVertex;
 }
 
@@ -837,6 +837,10 @@ struct TestConfig
 	vk::VkDeviceSize				vertexDataOffset;
 	vk::VkDeviceSize				vertexDataExtraBytes;
 
+	// Bind and draw with a pipeline that uses dynamic patch control points but doesn't actually use a tessellation
+	// shader, before using the real pipelines being tested.
+	bool							useExtraDynPCPPipeline;
+
 	// Static and dynamic pipeline configuration.
 	VertexGeneratorConfig			vertexGenerator;
 	CullModeConfig					cullModeConfig;
@@ -877,6 +881,7 @@ struct TestConfig
 		, singleVertexDrawCount			(0)
 		, vertexDataOffset				(0ull)
 		, vertexDataExtraBytes			(0ull)
+		, useExtraDynPCPPipeline		(false)
 		, vertexGenerator				(makeVertexGeneratorConfig(staticVertexGenerator, dynamicVertexGenerator))
 		, cullModeConfig				(static_cast<vk::VkCullModeFlags>(vk::VK_CULL_MODE_NONE))
 		, frontFaceConfig				(vk::VK_FRONT_FACE_COUNTER_CLOCKWISE)
@@ -1100,7 +1105,8 @@ struct TestConfig
 		    || rastDiscardEnableConfig.dynamicValue
 		    || depthBiasEnableConfig.dynamicValue
 		    || logicOpConfig.dynamicValue
-		    || primRestartEnableConfig.dynamicValue)
+		    || primRestartEnableConfig.dynamicValue
+			|| useExtraDynPCPPipeline)
 		{
 			extensions.push_back("VK_EXT_extended_dynamic_state2");
 		}
@@ -1184,6 +1190,9 @@ ExtendedDynamicStateTest::ExtendedDynamicStateTest (tcu::TestContext& testCtx, c
 	// Make sure these are consistent.
 	DE_ASSERT(!(m_testConfig.testPatchControlPoints() && !m_testConfig.patchesTopology()));
 	DE_ASSERT(!(m_testConfig.patchesTopology() && m_testConfig.getActivePatchControlPoints() <= 1u));
+
+	// Do not use an extra dynamic patch control points pipeline if we're not testing them.
+	DE_ASSERT(!m_testConfig.useExtraDynPCPPipeline || m_testConfig.testPatchControlPoints());
 }
 
 void ExtendedDynamicStateTest::checkSupport (Context& context) const
@@ -1204,7 +1213,7 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 		if (m_testConfig.testLogicOp() && !eds2Features.extendedDynamicState2LogicOp)
 			TCU_THROW(NotSupportedError, "VK_EXT_extended_dynamic_state2 : changing LogicOp dynamically is not supported");
 
-		if (m_testConfig.testPatchControlPoints() && !eds2Features.extendedDynamicState2PatchControlPoints)
+		if ((m_testConfig.testPatchControlPoints() || m_testConfig.useExtraDynPCPPipeline) && !eds2Features.extendedDynamicState2PatchControlPoints)
 			TCU_THROW(NotSupportedError, "VK_EXT_extended_dynamic_state2 : changing patch control points dynamically is not supported");
 	}
 
@@ -1451,6 +1460,36 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 		programCollection.glslSources.add("tesc") << glu::TessellationControlSource(tescSource.str());
 		programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(teseSource.str());
 	}
+
+	// Extra vert and frag shaders for the extra patch control points pipeline. These draw offscreen.
+	if (m_testConfig.useExtraDynPCPPipeline)
+	{
+		std::ostringstream vertDPCP;
+		vertDPCP
+			<< "#version 450\n"
+			<< "\n"
+			<< "vec2 positions[3] = vec2[](\n"
+			<< "    vec2(-1.0, -1.0),\n"
+			<< "    vec2( 3.0, -1.0),\n"
+			<< "    vec2(-1.0,  3.0)\n"
+			<< ");\n"
+			<< "\n"
+			<< "void main() {\n"
+			<< "    gl_Position = vec4(positions[gl_VertexIndex] + 10.0 + 1.0 * float(gl_VertexIndex), 0.0, 1.0);\n"
+			<< "}\n"
+			;
+		programCollection.glslSources.add("vertDPCP") << glu::VertexSource(vertDPCP.str());
+
+		std::ostringstream fragDPCP;
+		fragDPCP
+			<< "#version 450\n"
+			<< "layout(location=0) out " << vecType << " color;\n"
+			<< "void main() {\n"
+			<< "    color = " << vecType << "(1.0, 1.0, 1.0, 1.0);\n"
+			<< "}\n"
+			;
+		programCollection.glslSources.add("fragDPCP") << glu::FragmentSource(fragDPCP.str());
+	}
 }
 
 TestInstance* ExtendedDynamicStateTest::createInstance (Context& context) const
@@ -1504,43 +1543,87 @@ void copyAndFlush(const vk::DeviceInterface& vkd, vk::VkDevice device, vk::Buffe
 void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& vkd, vk::VkCommandBuffer cmdBuffer)
 {
 	if (testConfig.cullModeConfig.dynamicValue)
+#ifndef CTS_USES_VULKANSC
 		vkd.cmdSetCullMode(cmdBuffer, testConfig.cullModeConfig.dynamicValue.get());
+#else
+		vkd.cmdSetCullModeEXT(cmdBuffer, testConfig.cullModeConfig.dynamicValue.get());
+#endif // CTS_USES_VULKANSC
 
 	if (testConfig.frontFaceConfig.dynamicValue)
+#ifndef CTS_USES_VULKANSC
 		vkd.cmdSetFrontFace(cmdBuffer, testConfig.frontFaceConfig.dynamicValue.get());
+#else
+		vkd.cmdSetFrontFaceEXT(cmdBuffer, testConfig.frontFaceConfig.dynamicValue.get());
+#endif // CTS_USES_VULKANSC
 
 	if (testConfig.topologyConfig.dynamicValue)
+#ifndef CTS_USES_VULKANSC
 		vkd.cmdSetPrimitiveTopology(cmdBuffer, testConfig.topologyConfig.dynamicValue.get());
+#else
+		vkd.cmdSetPrimitiveTopologyEXT(cmdBuffer, testConfig.topologyConfig.dynamicValue.get());
+#endif // CTS_USES_VULKANSC
 
 	if (testConfig.viewportConfig.dynamicValue)
 	{
 		const auto& viewports = testConfig.viewportConfig.dynamicValue.get();
+#ifndef CTS_USES_VULKANSC
 		vkd.cmdSetViewportWithCount(cmdBuffer, static_cast<deUint32>(viewports.size()), viewports.data());
+#else
+		vkd.cmdSetViewportWithCountEXT(cmdBuffer, static_cast<deUint32>(viewports.size()), viewports.data());
+#endif // CTS_USES_VULKANSC
 	}
 
 	if (testConfig.scissorConfig.dynamicValue)
 	{
 		const auto& scissors = testConfig.scissorConfig.dynamicValue.get();
+#ifndef CTS_USES_VULKANSC
 		vkd.cmdSetScissorWithCount(cmdBuffer, static_cast<deUint32>(scissors.size()), scissors.data());
+#else
+		vkd.cmdSetScissorWithCountEXT(cmdBuffer, static_cast<deUint32>(scissors.size()), scissors.data());
+#endif // CTS_USES_VULKANSC
 	}
 
 	if (testConfig.depthTestEnableConfig.dynamicValue)
+#ifndef CTS_USES_VULKANSC
 		vkd.cmdSetDepthTestEnable(cmdBuffer, makeVkBool32(testConfig.depthTestEnableConfig.dynamicValue.get()));
+#else
+		vkd.cmdSetDepthTestEnableEXT(cmdBuffer, makeVkBool32(testConfig.depthTestEnableConfig.dynamicValue.get()));
+#endif // CTS_USES_VULKANSC
 
 	if (testConfig.depthWriteEnableConfig.dynamicValue)
+#ifndef CTS_USES_VULKANSC
 		vkd.cmdSetDepthWriteEnable(cmdBuffer, makeVkBool32(testConfig.depthWriteEnableConfig.dynamicValue.get()));
+#else
+		vkd.cmdSetDepthWriteEnableEXT(cmdBuffer, makeVkBool32(testConfig.depthWriteEnableConfig.dynamicValue.get()));
+#endif // CTS_USES_VULKANSC
 
 	if (testConfig.depthCompareOpConfig.dynamicValue)
+#ifndef CTS_USES_VULKANSC
 		vkd.cmdSetDepthCompareOp(cmdBuffer, testConfig.depthCompareOpConfig.dynamicValue.get());
+#else
+		vkd.cmdSetDepthCompareOpEXT(cmdBuffer, testConfig.depthCompareOpConfig.dynamicValue.get());
+#endif // CTS_USES_VULKANSC
 
 	if (testConfig.depthBoundsTestEnableConfig.dynamicValue)
+#ifndef CTS_USES_VULKANSC
 		vkd.cmdSetDepthBoundsTestEnable(cmdBuffer, makeVkBool32(testConfig.depthBoundsTestEnableConfig.dynamicValue.get()));
+#else
+		vkd.cmdSetDepthBoundsTestEnableEXT(cmdBuffer, makeVkBool32(testConfig.depthBoundsTestEnableConfig.dynamicValue.get()));
+#endif // CTS_USES_VULKANSC
 
 	if (testConfig.stencilTestEnableConfig.dynamicValue)
+#ifndef CTS_USES_VULKANSC
 		vkd.cmdSetStencilTestEnable(cmdBuffer, makeVkBool32(testConfig.stencilTestEnableConfig.dynamicValue.get()));
+#else
+		vkd.cmdSetStencilTestEnableEXT(cmdBuffer, makeVkBool32(testConfig.stencilTestEnableConfig.dynamicValue.get()));
+#endif // CTS_USES_VULKANSC
 
 	if (testConfig.depthBiasEnableConfig.dynamicValue)
+#ifndef CTS_USES_VULKANSC
 		vkd.cmdSetDepthBiasEnable(cmdBuffer, makeVkBool32(testConfig.depthBiasEnableConfig.dynamicValue.get()));
+#else
+		vkd.cmdSetDepthBiasEnableEXT(cmdBuffer, makeVkBool32(testConfig.depthBiasEnableConfig.dynamicValue.get()));
+#endif // CTS_USES_VULKANSC
 
 	if (testConfig.depthBiasConfig.dynamicValue)
 	{
@@ -1549,10 +1632,18 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 	}
 
 	if (testConfig.rastDiscardEnableConfig.dynamicValue)
+#ifndef CTS_USES_VULKANSC
 		vkd.cmdSetRasterizerDiscardEnable(cmdBuffer, makeVkBool32(testConfig.rastDiscardEnableConfig.dynamicValue.get()));
+#else
+		vkd.cmdSetRasterizerDiscardEnableEXT(cmdBuffer, makeVkBool32(testConfig.rastDiscardEnableConfig.dynamicValue.get()));
+#endif // CTS_USES_VULKANSC
 
 	if (testConfig.primRestartEnableConfig.dynamicValue)
+#ifndef CTS_USES_VULKANSC
 		vkd.cmdSetPrimitiveRestartEnable(cmdBuffer, makeVkBool32(testConfig.primRestartEnableConfig.dynamicValue.get()));
+#else
+		vkd.cmdSetPrimitiveRestartEnableEXT(cmdBuffer, makeVkBool32(testConfig.primRestartEnableConfig.dynamicValue.get()));
+#endif // CTS_USES_VULKANSC
 
 	if (testConfig.logicOpConfig.dynamicValue)
 		vkd.cmdSetLogicOpEXT(cmdBuffer, testConfig.logicOpConfig.dynamicValue.get());
@@ -1563,7 +1654,11 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 	if (testConfig.stencilOpConfig.dynamicValue)
 	{
 		for (const auto& params : testConfig.stencilOpConfig.dynamicValue.get())
+#ifndef CTS_USES_VULKANSC
 			vkd.cmdSetStencilOp(cmdBuffer, params.faceMask, params.failOp, params.passOp, params.depthFailOp, params.compareOp);
+#else
+			vkd.cmdSetStencilOpEXT(cmdBuffer, params.faceMask, params.failOp, params.passOp, params.depthFailOp, params.compareOp);
+#endif // CTS_USES_VULKANSC
 	}
 
 	if (testConfig.vertexGenerator.dynamicValue)
@@ -1614,7 +1709,11 @@ bool maybeBindVertexBufferDynStride(const TestConfig& testConfig, const vk::Devi
 		sizes.push_back		(vertBuffer.dataSize);
 	}
 
+#ifndef CTS_USES_VULKANSC
 	vkd.cmdBindVertexBuffers2(cmdBuffer, 0u, static_cast<deUint32>(chosenBuffers.size()), buffers.data(), offsets.data(), sizes.data(), strides.data());
+#else
+	vkd.cmdBindVertexBuffers2EXT(cmdBuffer, 0u, static_cast<deUint32>(chosenBuffers.size()), buffers.data(), offsets.data(), sizes.data(), strides.data());
+#endif // CTS_USES_VULKANSC
 
 	return true;
 }
@@ -2014,6 +2113,8 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	vk::Move<vk::VkShaderModule>	geomModule;
 	vk::Move<vk::VkShaderModule>	tescModule;
 	vk::Move<vk::VkShaderModule>	teseModule;
+	vk::Move<vk::VkShaderModule>	vertDPCPModule;
+	vk::Move<vk::VkShaderModule>	fragDPCPModule;
 
 	if (m_testConfig.needsGeometryShader())
 		geomModule = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("geom"), 0u);
@@ -2185,22 +2286,53 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 													   kSequenceOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC);
 	const bool					useStaticPipeline	= (bindStaticFirst || kReversed);
 
+	// Create extra dynamic patch control points pipeline if needed.
+	vk::Move<vk::VkPipeline> extraDynPCPPipeline;
+
+	if (m_testConfig.useExtraDynPCPPipeline)
+	{
+		vertDPCPModule = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vertDPCP"));
+		fragDPCPModule = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("fragDPCP"));
+
+		const vk::VkPipelineVertexInputStateCreateInfo	extraDPCPInputState		= vk::initVulkanStructure();
+		const vk::VkDynamicState						extraDynamicState		= vk::VK_DYNAMIC_STATE_PATCH_CONTROL_POINTS_EXT;
+		const vk::VkPipelineDynamicStateCreateInfo		extraDynamicStateInfo	=
+		{
+			vk::VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,	//	VkStructureType						sType;
+			nullptr,													//	const void*							pNext;
+			0u,															//	VkPipelineDynamicStateCreateFlags	flags;
+			1u,															//	uint32_t							dynamicStateCount;
+			&extraDynamicState,												//	const VkDynamicState*				pDynamicStates;
+		};
+
+		const auto extraPipelineLayout = vk::makePipelineLayout(vkd, device);
+
+		const auto viewports	= m_testConfig.viewportConfig.staticValue;
+		const auto scissors		= m_testConfig.scissorConfig.staticValue;
+
+		extraDynPCPPipeline = vk::makeGraphicsPipeline(
+			vkd, device, *extraPipelineLayout,
+			vertDPCPModule.get(), DE_NULL, DE_NULL, DE_NULL, fragDPCPModule.get(),
+			renderPass.get(), viewports, scissors, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u,
+			&extraDPCPInputState, nullptr, nullptr, nullptr, nullptr, &extraDynamicStateInfo);
+	}
+
 	// Create static pipeline when needed.
 	if (useStaticPipeline)
 	{
 		auto viewports	= m_testConfig.viewportConfig.staticValue;
-		auto scisors	= m_testConfig.scissorConfig.staticValue;
+		auto scissors	= m_testConfig.scissorConfig.staticValue;
 
 		// The viewport and scissor counts must match in the static part, which will be used by the static pipeline.
 		const auto minStaticCount = static_cast<deUint32>(std::min(m_testConfig.viewportConfig.staticValue.size(), m_testConfig.scissorConfig.staticValue.size()));
 		viewports.resize(minStaticCount);
-		scisors.resize(minStaticCount);
+		scissors.resize(minStaticCount);
 
 		staticPipeline.setDefaultPatchControlPoints(m_testConfig.patchControlPointsConfig.staticValue)
 					  .setupVertexInputStete(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
 					  .setupPreRasterizationShaderState(
 											viewports,
-											scisors,
+											scissors,
 											*pipelineLayout,
 											*renderPass,
 											0u,
@@ -2219,7 +2351,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	vk::GraphicsPipelineWrapper graphicsPipeline(vkd, device, m_testConfig.pipelineConstructionType);
 	{
 		auto viewports	= m_testConfig.viewportConfig.staticValue;
-		auto scisors	= m_testConfig.scissorConfig.staticValue;
+		auto scissors	= m_testConfig.scissorConfig.staticValue;
 
 		const auto finalDynamicViewportCount = (m_testConfig.viewportConfig.dynamicValue
 			? m_testConfig.viewportConfig.dynamicValue.get().size()
@@ -2243,17 +2375,17 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		if (m_testConfig.scissorConfig.dynamicValue)
 		{
 			graphicsPipeline.setDefaultScissorsCount();
-			scisors = std::vector<vk::VkRect2D>();
+			scissors = std::vector<vk::VkRect2D>();
 		}
 		else
-			scisors.resize(minDynamicCount);
+			scissors.resize(minDynamicCount);
 
 		graphicsPipeline.setDynamicState(&dynamicStateCreateInfo)
 						.setDefaultPatchControlPoints(m_testConfig.patchControlPointsConfig.staticValue)
 						.setupVertexInputStete(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
 						.setupPreRasterizationShaderState(
 											viewports,
-											scisors,
+											scissors,
 											*pipelineLayout,
 											*renderPass,
 											0u,
@@ -2313,6 +2445,17 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 				(kSequenceOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC && iteration > 0u) ||
 				(kSequenceOrdering == SequenceOrdering::TWO_DRAWS_STATIC && iteration == 0u))
 			{
+				if (m_testConfig.useExtraDynPCPPipeline)
+				{
+					vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, extraDynPCPPipeline.get());
+
+					// In these two sequence orderings, the right dynamic state value will have been set before and we would be
+					// setting it to a wrong value here, resulting in test failures. We keep the right value instead.
+					if (kSequenceOrdering != SequenceOrdering::CMD_BUFFER_START && kSequenceOrdering != SequenceOrdering::BETWEEN_PIPELINES)
+						vkd.cmdSetPatchControlPointsEXT(cmdBuffer, m_testConfig.patchControlPointsConfig.staticValue);
+
+					vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
+				}
 				vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.getPipeline());
 			}
 
@@ -2661,11 +2804,22 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 
 		// Dynamically change the number of primitive control points
 		{
-			TestConfig config(pipelineConstructionType, kOrdering);
-			config.topologyConfig.staticValue = vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
-			config.patchControlPointsConfig.staticValue = 1;
-			config.patchControlPointsConfig.dynamicValue = 3;
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "patch_control_points", "Dynamically change patch control points", config));
+			for (int i = 0; i < 2; ++i)
+			{
+				const bool useExtraPipeline = (i > 0);
+
+				TestConfig config(pipelineConstructionType, kOrdering);
+				config.topologyConfig.staticValue = vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
+				config.patchControlPointsConfig.staticValue = 1;
+				config.patchControlPointsConfig.dynamicValue = 3;
+				config.useExtraDynPCPPipeline = useExtraPipeline;
+
+				const auto testName	= std::string("patch_control_points") + (useExtraPipeline ? "_extra_pipeline" : "");
+				const auto testDesc	= std::string("Dynamically change patch control points")
+									+ (useExtraPipeline ? " and draw first with a pipeline using the state and no tessellation shaders" : "");
+
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, testDesc, config));
+			}
 		}
 
 		// Dynamic topology.
@@ -3193,7 +3347,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			{
 				{ vk::VK_STENCIL_FACE_FRONT_BIT,			"face_front"		},
 				{ vk::VK_STENCIL_FACE_BACK_BIT,				"face_back"			},
-				{ vk::VK_STENCIL_FRONT_AND_BACK,			"face_both_single"	},
+				{ vk::VK_STENCIL_FACE_FRONT_AND_BACK,		"face_both_single"	},
 				{ vk::VK_STENCIL_FACE_FLAG_BITS_MAX_ENUM,	"face_both_dual"	},	// MAX_ENUM is a placeholder.
 			};
 

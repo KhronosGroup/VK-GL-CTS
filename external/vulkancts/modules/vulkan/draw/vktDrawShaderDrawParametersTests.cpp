@@ -54,6 +54,11 @@ typedef deUint32 TestFlags;
 struct FlagsTestSpec : public TestSpecBase
 {
 	TestFlags	flags;
+
+	FlagsTestSpec(const SharedGroupParams groupParams_)
+		: TestSpecBase{ {}, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, groupParams_ }
+	{
+	}
 };
 
 enum Constants
@@ -89,6 +94,11 @@ private:
 	bool					isIndirect				(void) const { return (m_flags & TEST_FLAG_INDIRECT)		!= 0; }
 	bool					isMultiDraw				(void) const { return (m_flags & TEST_FLAG_MULTIDRAW)		!= 0; }
 	bool					isFirstInstance			(void) const { return (m_flags & TEST_FLAG_FIRST_INSTANCE)	!= 0; }
+	void					draw					(vk::VkCommandBuffer cmdBuffer);
+
+#ifndef CTS_USES_VULKANSC
+	void					beginSecondaryCmdBuffer	(vk::VkRenderingFlagsKHR renderingFlags = 0u);
+#endif // CTS_USES_VULKANSC
 
 	const TestFlags			m_flags;
 	de::SharedPtr<Buffer>	m_indexBuffer;
@@ -96,7 +106,7 @@ private:
 };
 
 DrawTest::DrawTest (Context &context, TestSpec testSpec)
-	: DrawTestsBaseClass(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], testSpec.useDynamicRendering, testSpec.topology)
+	: DrawTestsBaseClass(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], testSpec.groupParams, testSpec.topology)
 	, m_flags			(testSpec.flags)
 {
 	DE_ASSERT(m_topology == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
@@ -217,67 +227,58 @@ void DrawTest::drawReferenceImage (const tcu::PixelBufferAccess& refImage) const
 tcu::TestStatus DrawTest::iterate (void)
 {
 	// Draw
+#ifndef CTS_USES_VULKANSC
+	if (m_groupParams->useSecondaryCmdBuffer)
 	{
-		beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
-		beginRender();
-
-		const vk::VkDeviceSize	vertexBufferOffset	= 0;
-		const vk::VkBuffer		vertexBuffer		= m_vertexBuffer->object();
-
-		m_vk.cmdBindVertexBuffers	(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
-		m_vk.cmdBindPipeline		(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
-
-		if (isIndexed())
-			m_vk.cmdBindIndexBuffer(*m_cmdBuffer, m_indexBuffer->object(), 0ull, vk::VK_INDEX_TYPE_UINT32);
-
-		const deUint32			numInstances		= isInstanced() ? MAX_INSTANCE_COUNT : 1;
-
-		if (isIndirect())
+		// record secondary command buffer
+		if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
 		{
-			if (isIndexed())
-			{
-				const vk::VkDrawIndexedIndirectCommand commands[] =
-				{
-					// indexCount, instanceCount, firstIndex, vertexOffset, firstInstance
-					{ NUM_VERTICES,	numInstances,	NDX_FIRST_INDEX,	OFFSET_FIRST_INDEX,		(isFirstInstance() ? 2u : 0u) },
-					{ NUM_VERTICES,	numInstances,	NDX_SECOND_INDEX,	OFFSET_SECOND_INDEX,	(isFirstInstance() ? 1u : 0u) },
-					{ NUM_VERTICES,	numInstances,	NDX_FIRST_INDEX,	OFFSET_FIRST_INDEX,		(isFirstInstance() ? 3u : 0u) },
-				};
-				setIndirectCommand(commands);
-			}
-			else
-			{
-				const vk::VkDrawIndirectCommand commands[] =
-				{
-					// vertexCount, instanceCount, firstVertex, firstInstance
-					{ NUM_VERTICES,	numInstances,	NDX_FIRST_VERTEX,	(isFirstInstance() ? 2u : 0u) },
-					{ NUM_VERTICES,	numInstances,	NDX_SECOND_VERTEX,	(isFirstInstance() ? 1u : 0u) },
-					{ NUM_VERTICES,	numInstances,	NDX_FIRST_VERTEX,	(isFirstInstance() ? 3u : 0u) },
-				};
-				setIndirectCommand(commands);
-			}
-		}
-
-		if (isIndirect())
-		{
-			const deUint32 numIndirectDraws = isMultiDraw() ? MAX_INDIRECT_DRAW_COUNT : 1;
-
-			if (isIndexed())
-				m_vk.cmdDrawIndexedIndirect(*m_cmdBuffer, m_indirectBuffer->object(), 0ull, numIndirectDraws, sizeof(vk::VkDrawIndexedIndirectCommand));
-			else
-				m_vk.cmdDrawIndirect(*m_cmdBuffer, m_indirectBuffer->object(), 0ull, numIndirectDraws, sizeof(vk::VkDrawIndirectCommand));
+			beginSecondaryCmdBuffer(vk::VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+			beginDynamicRender(*m_secCmdBuffer);
 		}
 		else
-		{
-			const deUint32 firstInstance = 2;
+			beginSecondaryCmdBuffer();
 
-			if (isIndexed())
-				m_vk.cmdDrawIndexed(*m_cmdBuffer, NUM_VERTICES, numInstances, NDX_FIRST_INDEX, OFFSET_FIRST_INDEX, firstInstance);
-			else
-				m_vk.cmdDraw(*m_cmdBuffer, NUM_VERTICES, numInstances, NDX_FIRST_VERTEX, firstInstance);
-		}
+		draw(*m_secCmdBuffer);
 
-		endRender();
+		if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			endDynamicRender(*m_secCmdBuffer);
+
+		endCommandBuffer(m_vk, *m_secCmdBuffer);
+
+		// record primary command buffer
+		beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+
+		preRenderBarriers();
+
+		if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			beginDynamicRender(*m_cmdBuffer, vk::VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+
+		m_vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_secCmdBuffer);
+
+		if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			endDynamicRender(*m_cmdBuffer);
+
+		endCommandBuffer(m_vk, *m_cmdBuffer);
+	}
+	else if (m_groupParams->useDynamicRendering)
+	{
+		beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+		preRenderBarriers();
+		beginDynamicRender(*m_cmdBuffer);
+		draw(*m_cmdBuffer);
+		endDynamicRender(*m_cmdBuffer);
+		endCommandBuffer(m_vk, *m_cmdBuffer);
+	}
+#endif // CTS_USES_VULKANSC
+
+	if (!m_groupParams->useDynamicRendering)
+	{
+		beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+		preRenderBarriers();
+		beginLegacyRender(*m_cmdBuffer);
+		draw(*m_cmdBuffer);
+		endLegacyRender(*m_cmdBuffer);
 		endCommandBuffer(m_vk, *m_cmdBuffer);
 	}
 
@@ -306,12 +307,104 @@ tcu::TestStatus DrawTest::iterate (void)
 	}
 }
 
+#ifndef CTS_USES_VULKANSC
+void DrawTest::beginSecondaryCmdBuffer(vk::VkRenderingFlagsKHR renderingFlags)
+{
+	vk::VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
+	{
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,	// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		renderingFlags,															// VkRenderingFlagsKHR				flags;
+		0u,																		// uint32_t							viewMask;
+		1u,																		// uint32_t							colorAttachmentCount;
+		&m_colorAttachmentFormat,												// const VkFormat*					pColorAttachmentFormats;
+		vk::VK_FORMAT_UNDEFINED,												// VkFormat							depthAttachmentFormat;
+		vk::VK_FORMAT_UNDEFINED,												// VkFormat							stencilAttachmentFormat;
+		vk::VK_SAMPLE_COUNT_1_BIT,												// VkSampleCountFlagBits			rasterizationSamples;
+	};
+	const vk::VkCommandBufferInheritanceInfo bufferInheritanceInfo = vk::initVulkanStructure(&inheritanceRenderingInfo);
+
+	vk::VkCommandBufferUsageFlags usageFlags = vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+		usageFlags |= vk::VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+
+	const vk::VkCommandBufferBeginInfo commandBufBeginParams
+	{
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,						// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		usageFlags,																// VkCommandBufferUsageFlags		flags;
+		&bufferInheritanceInfo
+	};
+
+	VK_CHECK(m_vk.beginCommandBuffer(*m_secCmdBuffer, &commandBufBeginParams));
+}
+#endif // CTS_USES_VULKANSC
+
+void DrawTest::draw(vk::VkCommandBuffer cmdBuffer)
+{
+	const vk::VkDeviceSize	vertexBufferOffset	= 0;
+	const vk::VkBuffer		vertexBuffer		= m_vertexBuffer->object();
+
+	m_vk.cmdBindVertexBuffers(cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+	m_vk.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+
+	if (isIndexed())
+		m_vk.cmdBindIndexBuffer(cmdBuffer, m_indexBuffer->object(), 0ull, vk::VK_INDEX_TYPE_UINT32);
+
+	const deUint32 numInstances = isInstanced() ? MAX_INSTANCE_COUNT : 1;
+
+	if (isIndirect())
+	{
+		if (isIndexed())
+		{
+			const vk::VkDrawIndexedIndirectCommand commands[]
+			{
+				// indexCount, instanceCount, firstIndex, vertexOffset, firstInstance
+				{ NUM_VERTICES,	numInstances,	NDX_FIRST_INDEX,	OFFSET_FIRST_INDEX,		(isFirstInstance() ? 2u : 0u) },
+				{ NUM_VERTICES,	numInstances,	NDX_SECOND_INDEX,	OFFSET_SECOND_INDEX,	(isFirstInstance() ? 1u : 0u) },
+				{ NUM_VERTICES,	numInstances,	NDX_FIRST_INDEX,	OFFSET_FIRST_INDEX,		(isFirstInstance() ? 3u : 0u) },
+			};
+			setIndirectCommand(commands);
+		}
+		else
+		{
+			const vk::VkDrawIndirectCommand commands[]
+			{
+				// vertexCount, instanceCount, firstVertex, firstInstance
+				{ NUM_VERTICES,	numInstances,	NDX_FIRST_VERTEX,	(isFirstInstance() ? 2u : 0u) },
+				{ NUM_VERTICES,	numInstances,	NDX_SECOND_VERTEX,	(isFirstInstance() ? 1u : 0u) },
+				{ NUM_VERTICES,	numInstances,	NDX_FIRST_VERTEX,	(isFirstInstance() ? 3u : 0u) },
+			};
+			setIndirectCommand(commands);
+		}
+	}
+
+	if (isIndirect())
+	{
+		const deUint32 numIndirectDraws = isMultiDraw() ? MAX_INDIRECT_DRAW_COUNT : 1;
+
+		if (isIndexed())
+			m_vk.cmdDrawIndexedIndirect(cmdBuffer, m_indirectBuffer->object(), 0ull, numIndirectDraws, sizeof(vk::VkDrawIndexedIndirectCommand));
+		else
+			m_vk.cmdDrawIndirect(cmdBuffer, m_indirectBuffer->object(), 0ull, numIndirectDraws, sizeof(vk::VkDrawIndirectCommand));
+	}
+	else
+	{
+		const deUint32 firstInstance = 2;
+
+		if (isIndexed())
+			m_vk.cmdDrawIndexed(cmdBuffer, NUM_VERTICES, numInstances, NDX_FIRST_INDEX, OFFSET_FIRST_INDEX, firstInstance);
+		else
+			m_vk.cmdDraw(cmdBuffer, NUM_VERTICES, numInstances, NDX_FIRST_VERTEX, firstInstance);
+	}
+}
+
 void checkSupport (Context& context, DrawTest::TestSpec testSpec)
 {
 	context.requireDeviceFunctionality("VK_KHR_shader_draw_parameters");
 
 	// Shader draw parameters is part of Vulkan 1.1 but is optional
-	if (context.contextSupports(vk::ApiVersion(1, 1, 0)) )
+	if (context.contextSupports(vk::ApiVersion(0, 1, 1, 0)) )
 	{
 		// Check if shader draw parameters is supported on the physical device.
 		vk::VkPhysicalDeviceShaderDrawParametersFeatures	drawParameters	=
@@ -337,7 +430,7 @@ void checkSupport (Context& context, DrawTest::TestSpec testSpec)
 			TCU_THROW(NotSupportedError, "shaderDrawParameters feature not supported by the device");
 	}
 
-	if (testSpec.useDynamicRendering)
+	if (testSpec.groupParams->useDynamicRendering)
 		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
 	if (testSpec.flags & TEST_FLAG_MULTIDRAW)
@@ -364,19 +457,18 @@ void addDrawCase (tcu::TestCaseGroup* group, DrawTest::TestSpec testSpec, const 
 
 }	// anonymous
 
-ShaderDrawParametersTests::ShaderDrawParametersTests (tcu::TestContext &testCtx, bool useDynamicRendering)
+ShaderDrawParametersTests::ShaderDrawParametersTests (tcu::TestContext &testCtx, const SharedGroupParams groupParams)
 	: TestCaseGroup			(testCtx, "shader_draw_parameters", "VK_KHR_shader_draw_parameters")
-	, m_useDynamicRendering	(useDynamicRendering)
+	, m_groupParams			(groupParams)
 {
 }
 
 void ShaderDrawParametersTests::init (void)
 {
 	{
-		DrawTest::TestSpec testSpec;
+		DrawTest::TestSpec testSpec(m_groupParams);
 		testSpec.shaders[glu::SHADERTYPE_VERTEX]	= "vulkan/draw/VertexFetchShaderDrawParameters.vert";
 		testSpec.shaders[glu::SHADERTYPE_FRAGMENT]	= "vulkan/draw/VertexFetch.frag";
-		testSpec.useDynamicRendering				= m_useDynamicRendering;
 		testSpec.topology							= vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 		testSpec.flags								= 0;
 
@@ -388,10 +480,9 @@ void ShaderDrawParametersTests::init (void)
 		addChild(group.release());
 	}
 	{
-		DrawTest::TestSpec testSpec;
+		DrawTest::TestSpec testSpec(m_groupParams);
 		testSpec.shaders[glu::SHADERTYPE_VERTEX]	= "vulkan/draw/VertexFetchShaderDrawParameters.vert";
 		testSpec.shaders[glu::SHADERTYPE_FRAGMENT]	= "vulkan/draw/VertexFetch.frag";
-		testSpec.useDynamicRendering				= m_useDynamicRendering;
 		testSpec.topology							= vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 		testSpec.flags								= TEST_FLAG_INSTANCED;
 
@@ -405,10 +496,9 @@ void ShaderDrawParametersTests::init (void)
 		addChild(group.release());
 	}
 	{
-		DrawTest::TestSpec testSpec;
+		DrawTest::TestSpec testSpec(m_groupParams);
 		testSpec.shaders[glu::SHADERTYPE_VERTEX]	= "vulkan/draw/VertexFetchShaderDrawParametersDrawIndex.vert";
 		testSpec.shaders[glu::SHADERTYPE_FRAGMENT]	= "vulkan/draw/VertexFetch.frag";
-		testSpec.useDynamicRendering				= m_useDynamicRendering;
 		testSpec.topology							= vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 		testSpec.flags								= TEST_FLAG_INDIRECT | TEST_FLAG_MULTIDRAW;
 

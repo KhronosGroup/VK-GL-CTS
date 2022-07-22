@@ -27,6 +27,7 @@
 #include "vktPipelineImageUtil.hpp"
 #include "vktPipelineVertexUtil.hpp"
 #include "vktPipelineReferenceRenderer.hpp"
+#include "vktAmberTestCase.hpp"
 #include "vktTestCase.hpp"
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
@@ -79,7 +80,9 @@ public:
 	virtual void						checkSupport			(Context& context) const;
 	virtual TestInstance*				createInstance			(Context& context) const;
 	static bool							isRestartIndex			(VkIndexType indexType, deUint32 indexValue);
+#ifndef CTS_USES_VULKANSC
 	static deUint32						getRestartIndex			(VkIndexType indexType);
+#endif // CTS_USES_VULKANSC
 
 protected:
 	virtual void						createBufferData		(VkPrimitiveTopology		topology,
@@ -117,6 +120,7 @@ protected:
 private:
 };
 
+#ifndef CTS_USES_VULKANSC
 class PrimitiveRestartTest : public InputAssemblyTest
 {
 public:
@@ -151,6 +155,8 @@ private:
 
 	std::vector<deUint32>				m_restartPrimitives;
 };
+#endif // CTS_USES_VULKANSC
+
 
 class InputAssemblyInstance : public vkt::TestInstance
 {
@@ -266,12 +272,14 @@ void InputAssemblyTest::checkSupport (Context& context) const
 
 	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 
+#ifndef CTS_USES_VULKANSC
 	if (m_primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN &&
 		context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		!context.getPortabilitySubsetFeatures().triangleFans)
 	{
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
 	}
+#endif // CTS_USES_VULKANSC
 }
 
 TestInstance* InputAssemblyTest::createInstance (Context& context) const
@@ -361,6 +369,7 @@ bool InputAssemblyTest::isRestartIndex (VkIndexType indexType, deUint32 indexVal
 		return indexValue == s_restartIndex32;
 }
 
+#ifndef CTS_USES_VULKANSC
 deUint32 InputAssemblyTest::getRestartIndex (VkIndexType indexType)
 {
 	if (indexType == VK_INDEX_TYPE_UINT16)
@@ -370,7 +379,7 @@ deUint32 InputAssemblyTest::getRestartIndex (VkIndexType indexType)
 	else
 		return InputAssemblyTest::s_restartIndex32;
 }
-
+#endif // CTS_USES_VULKANSC
 
 // PrimitiveTopologyTest
 
@@ -716,7 +725,7 @@ void PrimitiveTopologyTest::createBufferData (VkPrimitiveTopology topology, int 
 	indexData	= indices;
 }
 
-
+#ifndef CTS_USES_VULKANSC
 // PrimitiveRestartTest
 
 PrimitiveRestartTest::PrimitiveRestartTest (tcu::TestContext&			testContext,
@@ -1125,7 +1134,7 @@ bool PrimitiveRestartTest::isRestartPrimitive (int primitiveIndex) const
 {
 	return std::find(m_restartPrimitives.begin(), m_restartPrimitives.end(), primitiveIndex) != m_restartPrimitives.end();
 }
-
+#endif // CTS_USES_VULKANSC
 
 // InputAssemblyInstance
 
@@ -1639,6 +1648,7 @@ de::MovePtr<tcu::TestCaseGroup> createPrimitiveTopologyTests (tcu::TestContext& 
 	return primitiveTopologyTests;
 }
 
+#ifndef CTS_USES_VULKANSC
 de::MovePtr<tcu::TestCaseGroup> createPrimitiveRestartTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
 	const VkPrimitiveTopology primitiveRestartTopologies[] =
@@ -1690,12 +1700,46 @@ de::MovePtr<tcu::TestCaseGroup> createPrimitiveRestartTests (tcu::TestContext& t
 															VK_INDEX_TYPE_UINT8_EXT));
 	}
 
+	// Tests that have primitive restart disabled, but have indices with restart index value.
+	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+	{
+		struct
+		{
+			std::string	name;
+			std::vector<std::string> requirements;
+		} tests[] =
+		{
+			{ "line_list", { "VK_EXT_primitive_topology_list_restart" } },
+			{ "line_list_with_adjacency", { "Features.geometryShader", "VK_EXT_primitive_topology_list_restart" } },
+			{ "line_strip", {} },
+			{ "line_strip_with_adjacency", {"Features.geometryShader"} },
+			{ "patch_list", { "VK_EXT_primitive_topology_list_restart", "Features.tessellationShader" } },
+			{ "point_list", { "VK_EXT_primitive_topology_list_restart" } },
+			{ "triangle_fan", {} },
+			{ "triangle_list", { "VK_EXT_primitive_topology_list_restart" } },
+			{ "triangle_list_with_adjacency", { "Features.geometryShader", "VK_EXT_primitive_topology_list_restart" } },
+			{ "triangle_strip", {} },
+			{ "triangle_strip_with_adjacency", {"Features.geometryShader"} }
+		};
+
+		const std::string dataDir = "pipeline/input_assembly/primitive_restart";
+
+		for (auto& test : tests)
+		{
+			std::string testName = "restart_disabled_" + test.name;
+			indexUint16Tests->addChild(cts_amber::createAmberTestCase(testCtx, testName.c_str(), "", dataDir.c_str(), testName + "_uint16.amber", test.requirements));
+			test.requirements.push_back("VK_EXT_index_type_uint8");
+			indexUint8Tests->addChild(cts_amber::createAmberTestCase(testCtx, testName.c_str(), "", dataDir.c_str(), testName + "_uint8.amber", test.requirements));
+		}
+	}
+
 	primitiveRestartTests->addChild(indexUint16Tests.release());
 	primitiveRestartTests->addChild(indexUint32Tests.release());
 	primitiveRestartTests->addChild(indexUint8Tests.release());
 
 	return primitiveRestartTests;
 }
+#endif // CTS_USES_VULKANSC
 
 } // anonymous
 
@@ -1704,7 +1748,9 @@ tcu::TestCaseGroup* createInputAssemblyTests (tcu::TestContext& testCtx, Pipelin
 	de::MovePtr<tcu::TestCaseGroup>		inputAssemblyTests (new tcu::TestCaseGroup(testCtx, "input_assembly", "Input assembly tests"));
 
 	inputAssemblyTests->addChild(createPrimitiveTopologyTests(testCtx, pipelineConstructionType).release());
+#ifndef CTS_USES_VULKANSC
 	inputAssemblyTests->addChild(createPrimitiveRestartTests(testCtx, pipelineConstructionType).release());
+#endif // CTS_USES_VULKANSC
 
 	return inputAssemblyTests.release();
 }

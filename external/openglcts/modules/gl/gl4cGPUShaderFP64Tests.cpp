@@ -12349,32 +12349,45 @@ template <int Size>
 static tcu::Matrix<glw::GLdouble, Size - 1, Size - 1> eliminate(const tcu::Matrix<glw::GLdouble, Size, Size>& matrix,
 																glw::GLuint column, glw::GLuint row)
 {
+	// GCC sometimes diagnoses an incorrect out of bounds write here. The code has been verified to be correct.
+#if (DE_COMPILER == DE_COMPILER_GCC)
+#	pragma GCC diagnostic push
+#	pragma GCC diagnostic ignored "-Warray-bounds"
+#endif
+
+	const glw::GLint eCol = static_cast<glw::GLint>(column);
+	const glw::GLint eRow = static_cast<glw::GLint>(row);
+
 	tcu::Matrix<glw::GLdouble, Size - 1, Size - 1> result;
 
-	for (glw::GLuint c = 0; c < Size; ++c)
+	for (glw::GLint c = 0; c < Size; ++c)
 	{
 		/* Skip eliminated column */
-		if (column == c)
+		if (eCol == c)
 		{
 			continue;
 		}
 
-		for (glw::GLuint r = 0; r < Size; ++r)
+		for (glw::GLint r = 0; r < Size; ++r)
 		{
 			/* Skip eliminated row */
-			if (row == r)
+			if (eRow == r)
 			{
 				continue;
 			}
 
-			const glw::GLint r_offset = (r > row) ? -1 : 0;
-			const glw::GLint c_offset = (c > column) ? -1 : 0;
+			const glw::GLint r_offset = (r > eRow) ? -1 : 0;
+			const glw::GLint c_offset = (c > eCol) ? -1 : 0;
 
 			result(r + r_offset, c + c_offset) = matrix(r, c);
 		}
 	}
 
 	return result;
+
+#if (DE_COMPILER == DE_COMPILER_GCC)
+#	pragma GCC diagnostic pop
+#endif
 }
 
 template <int Size>
@@ -15287,10 +15300,12 @@ bool BuiltinFunctionTest::isResultEdgeCase(const functionObject& function_object
 
 			// if coresponding components of arguments are equal and if component of first argument
 			// and component of result are equal then expected result must be corrected
-			edge_case_present = (m_epsilon > de::abs(argument_1_component - argument_2_component)) &&
-								(m_epsilon > de::abs(argument_1_component - actual_result_component));
+                        bool possible_edge_case = m_epsilon > de::abs((argument_1_component / argument_2_component) -
+                                                                      round(argument_1_component / argument_2_component));
+                        edge_case_present = possible_edge_case &&
+                                            (m_epsilon > de::abs(argument_2_component - actual_result_component));
 			recheck |= edge_case_present;
-			corrected_expected_result[component] = edge_case_present ? argument_1_component : expected_result_component;
+                        corrected_expected_result[component] = edge_case_present ? argument_2_component : expected_result_component;
 		}
 
 		// recheck test result with corrected expected result

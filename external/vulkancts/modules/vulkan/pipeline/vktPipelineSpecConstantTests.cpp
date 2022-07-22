@@ -41,6 +41,8 @@
 #include "vkBarrierUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+ #include "vkBufferWithMemory.hpp"
+ #include "vkImageWithMemory.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
@@ -522,7 +524,7 @@ tcu::TestStatus ComputeTestInstance::iterate (void)
 
 	// Descriptors
 
-	const Buffer resultBuffer(vk, device, allocator, makeBufferCreateInfo(m_ssboSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
+	const BufferWithMemory resultBuffer(vk, device, allocator, makeBufferCreateInfo(m_ssboSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	const Unique<VkDescriptorSetLayout> descriptorSetLayout(DescriptorSetLayoutBuilder()
 		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
@@ -632,14 +634,14 @@ tcu::TestStatus GraphicsTestInstance::iterate (void)
 
 	const tcu::IVec2          renderSize    = tcu::IVec2(32, 32);
 	const VkFormat            imageFormat   = VK_FORMAT_R8G8B8A8_UNORM;
-	const Image               colorImage    (vk, device, allocator, makeImageCreateInfo(renderSize, imageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT), MemoryRequirement::Any);
+	const ImageWithMemory     colorImage    (vk, device, allocator, makeImageCreateInfo(renderSize, imageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT), MemoryRequirement::Any);
 	const Unique<VkImageView> colorImageView(makeImageView(vk, device, *colorImage, VK_IMAGE_VIEW_TYPE_2D, imageFormat, makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u)));
 
 	// Vertex buffer
 
-	const deUint32     numVertices           = 3;
-	const VkDeviceSize vertexBufferSizeBytes = sizeof(tcu::Vec4) * numVertices;
-	const Buffer       vertexBuffer          (vk, device, allocator, makeBufferCreateInfo(vertexBufferSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible);
+	const deUint32			numVertices           = 3;
+	const VkDeviceSize		vertexBufferSizeBytes = sizeof(tcu::Vec4) * numVertices;
+	const BufferWithMemory	vertexBuffer          (vk, device, allocator, makeBufferCreateInfo(vertexBufferSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	{
 		const Allocation& alloc = vertexBuffer.getAllocation();
@@ -655,7 +657,7 @@ tcu::TestStatus GraphicsTestInstance::iterate (void)
 
 	// Descriptors
 
-	const Buffer resultBuffer(vk, device, allocator, makeBufferCreateInfo(m_ssboSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
+	const BufferWithMemory resultBuffer(vk, device, allocator, makeBufferCreateInfo(m_ssboSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	const Unique<VkDescriptorSetLayout> descriptorSetLayout(DescriptorSetLayoutBuilder()
 		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
@@ -803,7 +805,6 @@ FeatureFlags getShaderStageRequirements (const VkShaderStageFlags stageFlags)
 void SpecConstantTest::checkSupport (Context& context) const
 {
 	requireFeatures(context, m_caseDef.requirements | getShaderStageRequirements(m_stage));
-
 	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 }
 

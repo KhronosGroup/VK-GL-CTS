@@ -1,0 +1,9 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT":
+		[
+			{ "features": ["vertexInputDynamicState"],	"requirements": ["VK_EXT_vertex_input_dynamic_state"] }
+		]
+	}
+}

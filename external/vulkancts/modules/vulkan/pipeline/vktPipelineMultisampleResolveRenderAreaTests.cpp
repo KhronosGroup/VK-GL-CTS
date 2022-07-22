@@ -503,7 +503,7 @@ void MultisampleRenderAreaTest::checkSupport(Context& context) const
 	if ((formatProperties.sampleCounts & m_sampleCount) == 0)
 		TCU_THROW(NotSupportedError, "Format does not support this number of samples");
 
-	checkPipelineLibraryRequirements(vki, physDevice, m_pipelineConstructionType);
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 }
 
 } // anonymous

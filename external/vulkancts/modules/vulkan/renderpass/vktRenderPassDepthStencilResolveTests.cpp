@@ -468,13 +468,13 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass(VkFormat vkformat, 
 	{
 		if (m_config.verifyBuffer == VB_DEPTH)
 		{
-			layout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL_KHR;
+			layout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
 			stencilLayout = VK_IMAGE_LAYOUT_GENERAL;
 		}
 		else
 		{
 			layout = VK_IMAGE_LAYOUT_GENERAL;
-			stencilLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR;
+			stencilLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
 		}
 	}
 
@@ -484,9 +484,9 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass(VkFormat vkformat, 
 		stencilFinalLayout = stencilLayout;
 	}
 
-	const VkAttachmentDescriptionStencilLayoutKHR multisampleAttachmentStencilLayout =
+	const VkAttachmentDescriptionStencilLayout multisampleAttachmentStencilLayout =
 	{
-		VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_STENCIL_LAYOUT_KHR,		// VkStructureType					sType;
+		VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_STENCIL_LAYOUT,			// VkStructureType					sType;
 		DE_NULL,															// const void*						pNext;
 		(renderPassNo == 0) ? VK_IMAGE_LAYOUT_UNDEFINED : stencilLayout,	// VkImageLayout					initialLayout;
 		stencilFinalLayout,
@@ -499,15 +499,15 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass(VkFormat vkformat, 
 		m_config.format,									// VkFormat							format;
 		samples,											// VkSampleCountFlagBits			samples;
 		(renderPassNo == 0) ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD,		// VkAttachmentLoadOp				loadOp;
-		VK_ATTACHMENT_STORE_OP_STORE,
+		(m_numRenderPasses > 1) ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE,
 		(renderPassNo == 0) ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD,		// VkAttachmentLoadOp				stencilLoadOp;
-		VK_ATTACHMENT_STORE_OP_STORE,
+		(m_numRenderPasses > 1) ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE,
 		(renderPassNo == 0) ? VK_IMAGE_LAYOUT_UNDEFINED : layout,							// VkImageLayout					initialLayout;
 		finalLayout											// VkImageLayout					finalLayout;
 	);
-	const VkAttachmentReferenceStencilLayoutKHR multisampleAttachmentRefStencilLayout =
+	const VkAttachmentReferenceStencilLayout multisampleAttachmentRefStencilLayout =
 	{
-		VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_STENCIL_LAYOUT_KHR,		// VkStructureType					sType;
+		VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_STENCIL_LAYOUT,			// VkStructureType					sType;
 		DE_NULL,														// const void*						pNext;
 		stencilLayout													// VkImageLayout					stencilLayout;
 	};
@@ -528,9 +528,9 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass(VkFormat vkformat, 
 		singleSampleStencilInitialLayout = stencilLayout;
 	}
 
-	const VkAttachmentDescriptionStencilLayoutKHR singlesampleAttachmentStencilLayout =
+	const VkAttachmentDescriptionStencilLayout singlesampleAttachmentStencilLayout =
 	{
-		VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_STENCIL_LAYOUT_KHR,	// VkStructureType					sType;
+		VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_STENCIL_LAYOUT,		// VkStructureType					sType;
 		DE_NULL,														// const void*						pNext;
 		singleSampleStencilInitialLayout,								// VkImageLayout					initialLayout;
 		stencilFinalLayout,
@@ -550,9 +550,9 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass(VkFormat vkformat, 
 		finalLayout											// VkImageLayout					finalLayout;
 	);
 
-	const VkAttachmentReferenceStencilLayoutKHR singlesampleAttachmentRefStencilLayout =
+	const VkAttachmentReferenceStencilLayout singlesampleAttachmentRefStencilLayout =
 	{
-		VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_STENCIL_LAYOUT_KHR,		// VkStructureType					sType;
+		VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_STENCIL_LAYOUT,			// VkStructureType					sType;
 		DE_NULL,														// const void*						pNext;
 		stencilLayout													// VkImageLayout					stencilLayout;
 	};
@@ -972,7 +972,7 @@ void DepthStencilResolveTest::submit (void)
 			deUint32 stencilReference = 1 + 254 * (i >= halfOfSamples);
 			vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline[m_config.sampleMask ? i : 0]);
 			vkd.cmdPushConstants(*commandBuffer, *m_renderPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, sizeof(i), &i);
-			vkd.cmdSetStencilReference(*commandBuffer, VK_STENCIL_FRONT_AND_BACK, stencilReference);
+			vkd.cmdSetStencilReference(*commandBuffer, VK_STENCIL_FACE_FRONT_AND_BACK, stencilReference);
 			vkd.cmdDraw(*commandBuffer, 6u, 1u, 0u, 0u);
 			if (i == m_config.sampleCount - 1 || m_config.sampleMask)
 				RenderpassSubpass2::cmdEndRenderPass(vkd, *commandBuffer, &subpassEndInfo);
@@ -1353,8 +1353,8 @@ void PropertiesTestCase::checkSupport (Context& context) const
 
 tcu::TestStatus PropertiesTestInstance::iterate (void)
 {
-	vk::VkPhysicalDeviceDepthStencilResolvePropertiesKHR dsrProperties;
-	dsrProperties.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES_KHR;
+	vk::VkPhysicalDeviceDepthStencilResolveProperties dsrProperties;
+	dsrProperties.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES;
 	dsrProperties.pNext = nullptr;
 
 	vk::VkPhysicalDeviceProperties2 properties2;
@@ -1363,13 +1363,15 @@ tcu::TestStatus PropertiesTestInstance::iterate (void)
 
 	m_context.getInstanceInterface().getPhysicalDeviceProperties2(m_context.getPhysicalDevice(), &properties2);
 
-	if ((dsrProperties.supportedDepthResolveModes & vk::VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR) == 0)
+#ifndef CTS_USES_VULKANSC
+	if ((dsrProperties.supportedDepthResolveModes & vk::VK_RESOLVE_MODE_SAMPLE_ZERO_BIT) == 0)
 		TCU_FAIL("supportedDepthResolveModes does not include VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR");
 
-	if ((dsrProperties.supportedStencilResolveModes & vk::VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR) == 0)
+	if ((dsrProperties.supportedStencilResolveModes & vk::VK_RESOLVE_MODE_SAMPLE_ZERO_BIT) == 0)
 		TCU_FAIL("supportedStencilResolveModes does not include VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR");
+#endif // CTS_USES_VULKANCTS
 
-	if ((dsrProperties.supportedStencilResolveModes & vk::VK_RESOLVE_MODE_AVERAGE_BIT_KHR) != 0)
+	if ((dsrProperties.supportedStencilResolveModes & vk::VK_RESOLVE_MODE_AVERAGE_BIT) != 0)
 		TCU_FAIL("supportedStencilResolveModes includes forbidden VK_RESOLVE_MODE_AVERAGE_BIT_KHR");
 
 	if (dsrProperties.independentResolve == VK_TRUE && dsrProperties.independentResolveNone != VK_TRUE)
@@ -1426,7 +1428,7 @@ void initTests (tcu::TestCaseGroup* group)
 	};
 
 	// NOTE: tests cant be executed for 1D and 3D images:
-	// 1D images are not tested because acording to specyfication sampleCounts
+	// 1D images are not tested because acording to specification sampleCounts
 	// will be set to VK_SAMPLE_COUNT_1_BIT when type is not VK_IMAGE_TYPE_2D
 	// 3D images are not tested because VkFramebufferCreateInfo specification
 	// states that: each element of pAttachments that is a 2D or 2D array image

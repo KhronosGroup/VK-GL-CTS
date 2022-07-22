@@ -45,6 +45,7 @@ struct ConditionalData
 	bool						conditionInherited;
 	deUint32					conditionValue;
 	bool						padConditionValue;
+	bool						allocationOffset; // Apply an offset to the condition variable buffer allocation.
 
 	bool						expectCommandExecution;
 
@@ -53,54 +54,54 @@ struct ConditionalData
 
 static const ConditionalData s_testsData[] =
 {
-	//	CONDPRI	CONDSEC	INV		INH		V	PAD		RES		MEM
-	{	true,	false,	false,	false,	1,	false,	true,	HOST	},
-	{	true,	false,	false,	false,	0,	false,	false,	HOST	},
-	{	true,	false,	true,	false,	0,	false,	true,	HOST	},
-	{	true,	false,	true,	false,	1,	false,	false,	HOST	},
-	{	true,	false,	false,	true,	1,	false,	true,	HOST	},
-	{	true,	false,	false,	true,	0,	false,	false,	HOST	},
-	{	true,	false,	true,	true,	0,	false,	true,	HOST	},
-	{	true,	false,	true,	true,	1,	false,	false,	HOST	},
+	//	CONDPRI	CONDSEC	INV		INH		V	PAD		ALLOCOFFSET	RES		MEM
+	{	true,	false,	false,	false,	1,	false,	false,		true,	HOST	},
+	{	true,	false,	false,	false,	0,	false,	false,		false,	HOST	},
+	{	true,	false,	true,	false,	0,	false,	false,		true,	HOST	},
+	{	true,	false,	true,	false,	1,	false,	false,		false,	HOST	},
+	{	true,	false,	false,	true,	1,	false,	false,		true,	HOST	},
+	{	true,	false,	false,	true,	0,	false,	false,		false,	HOST	},
+	{	true,	false,	true,	true,	0,	false,	false,		true,	HOST	},
+	{	true,	false,	true,	true,	1,	false,	false,		false,	HOST	},
 
-	{	true,	false,	false,	false,	1,	false,	true,	LOCAL	},
-	{	true,	false,	false,	false,	0,	false,	false,	LOCAL	},
-	{	true,	false,	true,	false,	0,	false,	true,	LOCAL	},
-	{	true,	false,	true,	false,	1,	false,	false,	LOCAL	},
-	{	true,	false,	false,	true,	1,	false,	true,	LOCAL	},
-	{	true,	false,	false,	true,	0,	false,	false,	LOCAL	},
-	{	true,	false,	true,	true,	0,	false,	true,	LOCAL	},
-	{	true,	false,	true,	true,	1,	false,	false,	LOCAL	},
+	{	true,	false,	false,	false,	1,	false,	false,		true,	LOCAL	},
+	{	true,	false,	false,	false,	0,	false,	false,		false,	LOCAL	},
+	{	true,	false,	true,	false,	0,	false,	false,		true,	LOCAL	},
+	{	true,	false,	true,	false,	1,	false,	false,		false,	LOCAL	},
+	{	true,	false,	false,	true,	1,	false,	false,		true,	LOCAL	},
+	{	true,	false,	false,	true,	0,	false,	false,		false,	LOCAL	},
+	{	true,	false,	true,	true,	0,	false,	false,		true,	LOCAL	},
+	{	true,	false,	true,	true,	1,	false,	false,		false,	LOCAL	},
 
-	{	false,	true,	false,	false,	1,	false,	true,	HOST	},
-	{	false,	true,	false,	false,	0,	false,	false,	HOST	},
-	{	false,	true,	true,	false,	0,	false,	true,	HOST	},
-	{	false,	true,	true,	false,	1,	false,	false,	HOST	},
+	{	false,	true,	false,	false,	1,	false,	false,		true,	HOST	},
+	{	false,	true,	false,	false,	0,	false,	false,		false,	HOST	},
+	{	false,	true,	true,	false,	0,	false,	false,		true,	HOST	},
+	{	false,	true,	true,	false,	1,	false,	false,		false,	HOST	},
 
-	{	false,	true,	false,	false,	1,	false,	true,	LOCAL	},
-	{	false,	true,	false,	false,	0,	false,	false,	LOCAL	},
-	{	false,	true,	true,	false,	0,	false,	true,	LOCAL	},
-	{	false,	true,	true,	false,	1,	false,	false,	LOCAL	},
+	{	false,	true,	false,	false,	1,	false,	false,		true,	LOCAL	},
+	{	false,	true,	false,	false,	0,	false,	false,		false,	LOCAL	},
+	{	false,	true,	true,	false,	0,	false,	false,		true,	LOCAL	},
+	{	false,	true,	true,	false,	1,	false,	false,		false,	LOCAL	},
 
 	// Test that inheritance does not affect outcome of secondary command buffer with conditional rendering or not.
-	{	false,	false,	false,	true,	0,	false,	true,	HOST	},
-	{	false,	false,	false,	true,	0,	false,	true,	LOCAL	},
+	{	false,	false,	false,	true,	0,	false,	false,		true,	HOST	},
+	{	false,	false,	false,	true,	0,	false,	false,		true,	LOCAL	},
 
-	{	false,	true,	false,	true,	1,	false,	true,	HOST	},
-	{	false,	true,	false,	true,	0,	false,	false,	HOST	},
-	{	false,	true,	true,	true,	1,	false,	false,	HOST	},
-	{	false,	true,	true,	true,	0,	false,	true,	HOST	},
+	{	false,	true,	false,	true,	1,	false,	false,		true,	HOST	},
+	{	false,	true,	false,	true,	0,	false,	false,		false,	HOST	},
+	{	false,	true,	true,	true,	1,	false,	false,		false,	HOST	},
+	{	false,	true,	true,	true,	0,	false,	false,		true,	HOST	},
 
-	{	false,	true,	false,	true,	1,	false,	true,	LOCAL	},
-	{	false,	true,	false,	true,	0,	false,	false,	LOCAL	},
-	{	false,	true,	true,	true,	1,	false,	false,	LOCAL	},
-	{	false,	true,	true,	true,	0,	false,	true,	LOCAL	},
+	{	false,	true,	false,	true,	1,	false,	false,		true,	LOCAL	},
+	{	false,	true,	false,	true,	0,	false,	false,		false,	LOCAL	},
+	{	false,	true,	true,	true,	1,	false,	false,		false,	LOCAL	},
+	{	false,	true,	true,	true,	0,	false,	false,		true,	LOCAL	},
 };
 
 std::ostream&				operator<< (std::ostream& str, ConditionalData const& c);
 
 void						checkConditionalRenderingCapabilities	(vkt::Context& context, const ConditionalData& data);
-de::SharedPtr<Draw::Buffer>	createConditionalRenderingBuffer		(vkt::Context& context, const ConditionalData& data, vk::VkCommandPool cmdPool);
+de::SharedPtr<Draw::Buffer>	createConditionalRenderingBuffer		(vkt::Context& context, const ConditionalData& data);
 void						beginConditionalRendering				(const vk::DeviceInterface& vk,
 																	 vk::VkCommandBuffer cmdBuffer,
 																	 Draw::Buffer& buffer,

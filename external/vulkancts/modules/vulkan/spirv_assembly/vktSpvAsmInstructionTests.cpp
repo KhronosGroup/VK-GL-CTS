@@ -85,7 +85,9 @@
 #include "vktSpvAsm64bitCompareTests.hpp"
 #include "vktSpvAsmTrinaryMinMaxTests.hpp"
 #include "vktSpvAsmTerminateInvocationTests.hpp"
+#ifndef CTS_USES_VULKANSC
 #include "vktSpvAsmIntegerDotProductTests.hpp"
+#endif // CTS_USES_VULKANSC
 #include "vktSpvAsmPhysicalStorageBufferPointerTests.hpp"
 
 #include <cmath>
@@ -1449,7 +1451,6 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 
 	#define ADD_OPATOMIC_CASE(NAME, ASSEMBLY, RETVAL_ASSEMBLY, OPATOMIC, NUM_OUTPUT_ELEMENTS) \
 	do { \
-		DE_ASSERT((NUM_OUTPUT_ELEMENTS) == 1 || (NUM_OUTPUT_ELEMENTS) == numElements); \
 		cases.push_back(OpAtomicCase(#NAME, ASSEMBLY, RETVAL_ASSEMBLY, OPATOMIC, NUM_OUTPUT_ELEMENTS)); \
 	} while (deGetFalse())
 	#define ADD_OPATOMIC_CASE_1(NAME, ASSEMBLY, RETVAL_ASSEMBLY, OPATOMIC) ADD_OPATOMIC_CASE(NAME, ASSEMBLY, RETVAL_ASSEMBLY, OPATOMIC, 1)
@@ -3190,6 +3191,7 @@ tcu::TestCaseGroup* createOpCopyObjectGroup (tcu::TestContext& testCtx)
 
 void addOpUnreachableAmberTests(tcu::TestCaseGroup& group, tcu::TestContext& testCtx)
 {
+#ifndef CTS_USES_VULKANSC
 	static const char dataDir[] = "spirv_assembly/instruction/compute/unreachable";
 
 	struct Case
@@ -3208,10 +3210,15 @@ void addOpUnreachableAmberTests(tcu::TestCaseGroup& group, tcu::TestContext& tes
 		const string fileName = cases[i].name + ".amber";
 		group.addChild(cts_amber::createAmberTestCase(testCtx, cases[i].name.c_str(), cases[i].desc.c_str(), dataDir, fileName));
 	}
+#else
+	DE_UNREF(group);
+	DE_UNREF(testCtx);
+#endif
 }
 
 void addOpSwitchAmberTests(tcu::TestCaseGroup& group, tcu::TestContext& testCtx)
 {
+#ifndef CTS_USES_VULKANSC
 	static const char dataDir[] = "spirv_assembly/instruction/compute/switch";
 
 	struct Case
@@ -3230,8 +3237,13 @@ void addOpSwitchAmberTests(tcu::TestCaseGroup& group, tcu::TestContext& testCtx)
 		const string fileName = cases[i].name + ".amber";
 		group.addChild(cts_amber::createAmberTestCase(testCtx, cases[i].name.c_str(), cases[i].desc.c_str(), dataDir, fileName));
 	}
+#else
+	DE_UNREF(group);
+	DE_UNREF(testCtx);
+#endif
 }
 
+#ifndef CTS_USES_VULKANSC
 tcu::TestCaseGroup* createOpArrayLengthComputeGroup (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	group		(new tcu::TestCaseGroup(testCtx, "oparraylength", "Test the OpArrayLength instruction"));
@@ -3256,6 +3268,7 @@ tcu::TestCaseGroup* createOpArrayLengthComputeGroup (tcu::TestContext& testCtx)
 
 	return group.release();
 }
+#endif
 
 tcu::TestCaseGroup* createOpUnreachableGroup (tcu::TestContext& testCtx)
 {
@@ -7046,6 +7059,7 @@ tcu::TestCaseGroup* createOpUndefGroup (tcu::TestContext& testCtx)
 	}
 
 	// OpUndef with constants.
+#ifndef CTS_USES_VULKANSC
 	{
 		static const char data_dir[] = "spirv_assembly/instruction/compute/undef";
 
@@ -7069,6 +7083,7 @@ tcu::TestCaseGroup* createOpUndefGroup (tcu::TestContext& testCtx)
 			group->addChild(testCase);
 		}
 	}
+#endif
 
 	return group.release();
 }
@@ -18877,6 +18892,7 @@ tcu::TestCaseGroup* createFloat32ComparisonComputeSet (tcu::TestContext& testCtx
 {
 	const string					testGroupName	("comparison_" + de::toString(C));
 	de::MovePtr<tcu::TestCaseGroup>	testGroup		(new tcu::TestCaseGroup(testCtx, testGroupName.c_str(), "Float 32 comparison tests"));
+#ifndef CTS_USES_VULKANSC
 	const char*						dataDir			= "spirv_assembly/instruction/float32/comparison";
 
 	const ComparisonCase			amberTests[]	=
@@ -18896,7 +18912,7 @@ tcu::TestCaseGroup* createFloat32ComparisonComputeSet (tcu::TestContext& testCtx
 														   dataDir,
 														   fileName));
 	}
-
+#endif
 	return testGroup.release();
 }
 
@@ -18911,6 +18927,7 @@ tcu::TestCaseGroup* createFloat32ComparisonGraphicsSet (tcu::TestContext& testCt
 {
 	const string					testGroupName	("comparison_" + de::toString(C));
 	de::MovePtr<tcu::TestCaseGroup>	testGroup		(new tcu::TestCaseGroup(testCtx, testGroupName.c_str(), "Float 32 comparison tests"));
+#ifndef CTS_USES_VULKANSC
 	const char*						dataDir			= "spirv_assembly/instruction/float32/comparison";
 
 	const ShaderStage				stages[]		=
@@ -18942,6 +18959,7 @@ tcu::TestCaseGroup* createFloat32ComparisonGraphicsSet (tcu::TestContext& testCt
 														   fileName,
 														   stage.requirement));
 	}
+#endif
 
 	return testGroup.release();
 }
@@ -20463,7 +20481,7 @@ tcu::TestCaseGroup* createSpirvIdsAbuseGroup (tcu::TestContext& testCtx)
 tcu::TestCaseGroup* createFunctionParamsGroup (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	testGroup (new tcu::TestCaseGroup(testCtx, "function_params", "Function parameter tests"));
-
+#ifndef CTS_USES_VULKANSC
 	static const char data_dir[] = "spirv_assembly/instruction/function_params";
 
 	static const struct
@@ -20484,7 +20502,7 @@ tcu::TestCaseGroup* createFunctionParamsGroup (tcu::TestContext& testCtx)
 																			cases[i].name + ".amber");
 		testGroup->addChild(testCase);
 	}
-
+#endif
 	return testGroup.release();
 }
 
@@ -20492,6 +20510,7 @@ tcu::TestCaseGroup* createEarlyFragmentTests(tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> earlyFragTests (new tcu::TestCaseGroup(testCtx, "early_fragment", "Early Fragment Tests"));
 
+#ifndef CTS_USES_VULKANSC
 	static const char dataDir[] = "spirv_assembly/instruction/graphics/early_fragment";
 
 	static const struct Case
@@ -20520,6 +20539,7 @@ tcu::TestCaseGroup* createEarlyFragmentTests(tcu::TestContext& testCtx)
 
 		earlyFragTests->addChild(testCase);
 	}
+#endif // CTS_USES_VULKANSC
 
 	return earlyFragTests.release();
 }
@@ -20528,6 +20548,7 @@ tcu::TestCaseGroup* createOpExecutionModeTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "execution_mode", "Execution mode tests"));
 
+#ifndef CTS_USES_VULKANSC
 	static const char dataDir[] = "spirv_assembly/instruction/graphics/execution_mode";
 
 	static const struct Case
@@ -20561,6 +20582,45 @@ tcu::TestCaseGroup* createOpExecutionModeTests (tcu::TestContext& testCtx)
 																			case_.name + ".amber");
 		testGroup->addChild(testCase);
 	}
+#endif // CTS_USES_VULKANSC
+
+	return testGroup.release();
+}
+
+tcu::TestCaseGroup* createOpMulExtendedGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	testGroup	(new tcu::TestCaseGroup(testCtx, "mul_extended", "Op[S/U]MulExtended tests"));
+
+#ifndef CTS_USES_VULKANSC
+	static const char	dataDir[]	= "spirv_assembly/instruction/compute/mul_extended";
+
+	static const struct Case
+	{
+		const string name;
+		const vector<string> features;
+	} cases[] =
+	{
+		{	"signed_16bit",		{"Features.shaderInt16", "Storage16BitFeatures.storageBuffer16BitAccess"}			},
+		{	"signed_32bit",		{}																					},
+		{	"signed_64bit",		{"Features.shaderInt64"}															},
+		{	"signed_8bit",		{"Float16Int8Features.shaderInt8", "Storage8BitFeatures.storageBuffer8BitAccess"}	},
+		{	"unsigned_16bit",	{"Features.shaderInt16", "Storage16BitFeatures.storageBuffer16BitAccess"}			},
+		{	"unsigned_32bit",	{}																					},
+		{	"unsigned_64bit",	{"Features.shaderInt64"}															},
+		{	"unsigned_8bit",	{"Float16Int8Features.shaderInt8", "Storage8BitFeatures.storageBuffer8BitAccess"}	}
+	};
+
+	for (const auto& test : cases)
+	{
+		cts_amber::AmberTestCase *testCase = cts_amber::createAmberTestCase(testCtx,
+																			test.name.c_str(),
+																			"",
+																			dataDir,
+																			test.name + ".amber",
+																			test.features);
+		testGroup->addChild(testCase);
+	}
+#endif // CTS_USES_VULKANSC
 
 	return testGroup.release();
 }
@@ -20569,6 +20629,7 @@ tcu::TestCaseGroup* createQueryGroup (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	testGroup (new tcu::TestCaseGroup(testCtx, "image_query", "image query tests"));
 
+#ifndef CTS_USES_VULKANSC
 	static const char data_dir[] = "spirv_assembly/instruction/image_query";
 
 	static const struct
@@ -20592,6 +20653,7 @@ tcu::TestCaseGroup* createQueryGroup (tcu::TestContext& testCtx)
 																			requirements);
 		testGroup->addChild(testCase);
 	}
+#endif // CTS_USES_VULKANSC
 
 	return testGroup.release();
 }
@@ -20643,12 +20705,14 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createOpSRemComputeGroup64(testCtx, QP_TEST_RESULT_PASS));
 	computeTests->addChild(createOpSModComputeGroup(testCtx, QP_TEST_RESULT_PASS));
 	computeTests->addChild(createOpSModComputeGroup64(testCtx, QP_TEST_RESULT_PASS));
+#ifndef CTS_USES_VULKANSC
 	computeTests->addChild(createOpSDotKHRComputeGroup(testCtx));
 	computeTests->addChild(createOpUDotKHRComputeGroup(testCtx));
 	computeTests->addChild(createOpSUDotKHRComputeGroup(testCtx));
 	computeTests->addChild(createOpSDotAccSatKHRComputeGroup(testCtx));
 	computeTests->addChild(createOpUDotAccSatKHRComputeGroup(testCtx));
 	computeTests->addChild(createOpSUDotAccSatKHRComputeGroup(testCtx));
+#endif // CTS_USES_VULKANSC
 	computeTests->addChild(createConvertComputeTests(testCtx, "OpSConvert", "sconvert"));
 	computeTests->addChild(createConvertComputeTests(testCtx, "OpUConvert", "uconvert"));
 	computeTests->addChild(createConvertComputeTests(testCtx, "OpFConvert", "fconvert"));
@@ -20687,20 +20751,29 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createOpMemberNameGroup(testCtx));
 	computeTests->addChild(createPointerParameterComputeGroup(testCtx));
 	computeTests->addChild(createFloat16Group(testCtx));
+#ifndef CTS_USES_VULKANSC
 	computeTests->addChild(createFloat32Group(testCtx));
+#endif // CTS_USES_VULKANSC
 	computeTests->addChild(createBoolGroup(testCtx));
 	computeTests->addChild(createWorkgroupMemoryComputeGroup(testCtx));
 	computeTests->addChild(createSpirvIdsAbuseGroup(testCtx));
+#ifndef CTS_USES_VULKANSC
 	computeTests->addChild(createSignedIntCompareGroup(testCtx));
 	computeTests->addChild(createSignedOpTestsGroup(testCtx));
+#endif // CTS_USES_VULKANSC
 	computeTests->addChild(createUnusedVariableComputeTests(testCtx));
+#ifndef CTS_USES_VULKANSC
 	computeTests->addChild(createPtrAccessChainGroup(testCtx));
 	computeTests->addChild(createVectorShuffleGroup(testCtx));
+#endif // CTS_USES_VULKANSC
 	computeTests->addChild(createHlslComputeGroup(testCtx));
 	computeTests->addChild(createEmptyStructComputeGroup(testCtx));
 	computeTests->addChild(create64bitCompareComputeGroup(testCtx));
+#ifndef CTS_USES_VULKANSC
 	computeTests->addChild(createOpArrayLengthComputeGroup(testCtx));
+#endif // CTS_USES_VULKANSC
 	computeTests->addChild(createPhysicalStorageBufferTestGroup(testCtx));
+	computeTests->addChild(createOpMulExtendedGroup(testCtx));
 
 	graphicsTests->addChild(createCrossStageInterfaceTests(testCtx));
 	graphicsTests->addChild(createSpivVersionCheckTests(testCtx, !testComputePipeline));
@@ -20763,7 +20836,9 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	graphicsTests->addChild(createPointerParameterGraphicsGroup(testCtx));
 	graphicsTests->addChild(createVaryingNameGraphicsGroup(testCtx));
 	graphicsTests->addChild(createFloat16Tests(testCtx));
+#ifndef CTS_USES_VULKANSC
 	graphicsTests->addChild(createFloat32Tests(testCtx));
+#endif // CTS_USES_VULKANSC
 	graphicsTests->addChild(createSpirvIdsAbuseTests(testCtx));
 	graphicsTests->addChild(create64bitCompareGraphicsGroup(testCtx));
 	graphicsTests->addChild(createEarlyFragmentTests(testCtx));
@@ -20771,8 +20846,10 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 
 	instructionTests->addChild(computeTests.release());
 	instructionTests->addChild(graphicsTests.release());
+#ifndef CTS_USES_VULKANSC
 	instructionTests->addChild(createSpirvVersion1p4Group(testCtx));
 	instructionTests->addChild(createFunctionParamsGroup(testCtx));
+#endif // CTS_USES_VULKANSC
 	instructionTests->addChild(createQueryGroup(testCtx));
 	instructionTests->addChild(createTrinaryMinMaxGroup(testCtx));
 	instructionTests->addChild(createTerminateInvocationGroup(testCtx));

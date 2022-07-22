@@ -25,11 +25,11 @@
 #include "vktPipelineMakeUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkBarrierUtil.hpp"
-#include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
-#include "vkTypeUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkImageWithMemory.hpp"
 #include "tcuTestLog.hpp"
 #include <vector>
 
@@ -46,6 +46,7 @@ tcu::TestStatus MSInstanceBaseResolve::iterate (void)
 {
 	// cases creating this tests are defined using templates and we do not have easy access
 	// to image type - to do this check in checkSupport bigger reffactoring would be needed
+#ifndef CTS_USES_VULKANSC
 	if (m_context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		!m_context.getPortabilitySubsetFeatures().multisampleArrayImage &&
 		(m_imageType == IMAGE_TYPE_2D_ARRAY) &&
@@ -54,6 +55,7 @@ tcu::TestStatus MSInstanceBaseResolve::iterate (void)
 	{
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Implementation does not support image array with multiple samples per texel");
 	}
+#endif // CTS_USES_VULKANSC
 
 	const InstanceInterface&		instance			= m_context.getInstanceInterface();
 	const DeviceInterface&			deviceInterface		= m_context.getDeviceInterface();
@@ -98,14 +100,14 @@ tcu::TestStatus MSInstanceBaseResolve::iterate (void)
 
 	validateImageInfo(instance, physicalDevice, imageMSInfo);
 
-	const de::UniquePtr<Image> imageMS(new Image(deviceInterface, device, allocator, imageMSInfo, MemoryRequirement::Any));
+	const de::UniquePtr<ImageWithMemory> imageMS(new ImageWithMemory(deviceInterface, device, allocator, imageMSInfo, MemoryRequirement::Any));
 
 	imageRSInfo			= imageMSInfo;
 	imageRSInfo.samples	= VK_SAMPLE_COUNT_1_BIT;
 
 	validateImageInfo(instance, physicalDevice, imageRSInfo);
 
-	const de::UniquePtr<Image> imageRS(new Image(deviceInterface, device, allocator, imageRSInfo, MemoryRequirement::Any));
+	const de::UniquePtr<ImageWithMemory> imageRS(new ImageWithMemory(deviceInterface, device, allocator, imageRSInfo, MemoryRequirement::Any));
 
 	// Create render pass
 	const VkAttachmentDescription attachmentMSDesc =
@@ -233,7 +235,7 @@ tcu::TestStatus MSInstanceBaseResolve::iterate (void)
 	// Create vertex attributes data
 	const VertexDataDesc vertexDataDesc = getVertexDataDescripton();
 
-	de::SharedPtr<Buffer> vertexBuffer = de::SharedPtr<Buffer>(new Buffer(deviceInterface, device, allocator, makeBufferCreateInfo(vertexDataDesc.dataSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible));
+	de::SharedPtr<BufferWithMemory> vertexBuffer = de::SharedPtr<BufferWithMemory>(new BufferWithMemory(deviceInterface, device, allocator, makeBufferCreateInfo(vertexDataDesc.dataSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible));
 	const Allocation& vertexBufferAllocation = vertexBuffer->getAllocation();
 
 	uploadVertexData(vertexBufferAllocation, vertexDataDesc);
@@ -373,8 +375,8 @@ tcu::TestStatus MSInstanceBaseResolve::iterate (void)
 	// Copy data from resolve image to buffer
 	const deUint32				imageRSSizeInBytes = getImageSizeInBytes(imageRSInfo.extent, imageRSInfo.arrayLayers, m_imageFormat, imageRSInfo.mipLevels);
 
-	const VkBufferCreateInfo	bufferRSInfo = makeBufferCreateInfo(imageRSSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-	const de::UniquePtr<Buffer>	bufferRS(new Buffer(deviceInterface, device, allocator, bufferRSInfo, MemoryRequirement::HostVisible));
+	const VkBufferCreateInfo				bufferRSInfo = makeBufferCreateInfo(imageRSSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	const de::UniquePtr<BufferWithMemory>	bufferRS(new BufferWithMemory(deviceInterface, device, allocator, bufferRSInfo, MemoryRequirement::HostVisible));
 
 	{
 		const VkBufferImageCopy bufferImageCopy =

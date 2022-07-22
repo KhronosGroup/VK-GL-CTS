@@ -1,0 +1,9 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT":
+		[
+			{ "features": ["imageCompressionControlSwapchain"],	"requirements": ["VK_EXT_image_compression_control", "VK_EXT_image_compression_control_swapchain"]	}
+		]
+	}
+}

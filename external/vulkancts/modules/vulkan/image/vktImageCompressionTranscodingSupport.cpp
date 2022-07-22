@@ -41,6 +41,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
 
 #include "tcuTextureUtil.hpp"
 #include "tcuTexture.hpp"
@@ -505,15 +506,18 @@ protected:
 		vector<ImageViewSp>			imagesViews;
 		vector<VkImageCreateInfo>	imagesInfos;
 	};
-	void			copyDataToImage				(const VkCommandBuffer&				cmdBuffer,
+	void			copyDataToImage				(const VkCommandPool&				cmdPool,
+												 const VkCommandBuffer&				cmdBuffer,
 												 ImageData&							imageData,
 												 const vector<UVec3>&				mipMapSizes,
 												 const bool							isCompressed);
-	virtual void	executeShader				(const VkCommandBuffer&				cmdBuffer,
+	virtual void	executeShader				(const VkCommandPool&				cmdPool,
+												 const VkCommandBuffer&				cmdBuffer,
 												 const VkDescriptorSetLayout&		descriptorSetLayout,
 												 const VkDescriptorPool&			descriptorPool,
 												vector<ImageData>&					imageData);
-	bool			copyResultAndCompare		(const VkCommandBuffer&				cmdBuffer,
+	bool			copyResultAndCompare		(const VkCommandPool&				cmdPool,
+												 const VkCommandBuffer&				cmdBuffer,
 												 const VkImage&						uncompressed,
 												 const VkDeviceSize					offset,
 												 const UVec3&						size);
@@ -522,7 +526,8 @@ protected:
 	void			createImageInfos			(ImageData&							imageData,
 												 const vector<UVec3>&				mipMapSizes,
 												 const bool							isCompressed);
-	bool			decompressImage				(const VkCommandBuffer&				cmdBuffer,
+	bool			decompressImage				(const VkCommandPool&				cmdPool,
+												 const VkCommandBuffer&				cmdBuffer,
 												 vector<ImageData>&					imageData,
 												 const vector<UVec3>&				mipMapSizes);
 	vector<deUint8>	m_data;
@@ -559,7 +564,7 @@ TestStatus BasicComputeTestInstance::iterate (void)
 			{
 				const VkImageViewUsageCreateInfo	imageViewUsageKHR	=
 				{
-					VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,				//VkStructureType		sType;
+					VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,					//VkStructureType		sType;
 					DE_NULL,														//const void*			pNext;
 					m_parameters.compressedImageUsage,								//VkImageUsageFlags		usage;
 				};
@@ -596,10 +601,10 @@ TestStatus BasicComputeTestInstance::iterate (void)
 		case OPERATION_IMAGE_LOAD:
 		case OPERATION_TEXEL_FETCH:
 		case OPERATION_TEXTURE:
-			copyDataToImage(*cmdBuffer, imageData[compressedNdx], mipMapSizes, true);
+			copyDataToImage(*cmdPool, *cmdBuffer, imageData[compressedNdx], mipMapSizes, true);
 			break;
 		case OPERATION_IMAGE_STORE:
-			copyDataToImage(*cmdBuffer, imageData[1], mipMapSizes, false);
+			copyDataToImage(*cmdPool, *cmdBuffer, imageData[1], mipMapSizes, false);
 			break;
 		default:
 			DE_ASSERT(false);
@@ -633,7 +638,7 @@ TestStatus BasicComputeTestInstance::iterate (void)
 		}
 		descriptorSetLayout	= descriptorSetLayoutBuilder.build(vk, device);
 		descriptorPool		= descriptorPoolBuilder.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, imageData[0].getImageViewCount());
-		executeShader(*cmdBuffer, *descriptorSetLayout, *descriptorPool, imageData);
+		executeShader(*cmdPool, *cmdBuffer, *descriptorSetLayout, *descriptorPool, imageData);
 
 		{
 			VkDeviceSize offset = 0ull;
@@ -644,13 +649,13 @@ TestStatus BasicComputeTestInstance::iterate (void)
 				const UVec3		size		= UVec3(imageData[resultImageNdx].getImageInfo(imageNdx).extent.width,
 													imageData[resultImageNdx].getImageInfo(imageNdx).extent.height,
 													imageData[resultImageNdx].getImageInfo(imageNdx).extent.depth);
-				if (!copyResultAndCompare(*cmdBuffer, imageData[resultImageNdx].getImage(imageNdx), offset, size))
+				if (!copyResultAndCompare(*cmdPool, *cmdBuffer, imageData[resultImageNdx].getImage(imageNdx), offset, size))
 					return TestStatus::fail("Fail");
 				offset += getCompressedImageSizeInBytes(m_parameters.formatCompressed, mipMapSizes[mipNdx]);
 			}
 		}
 	}
-	if (!decompressImage(*cmdBuffer, imageData, mipMapSizes))
+	if (!decompressImage(*cmdPool, *cmdBuffer, imageData, mipMapSizes))
 			return TestStatus::fail("Fail");
 
 	if (m_bASTCErrorColourMismatch)
@@ -662,7 +667,8 @@ TestStatus BasicComputeTestInstance::iterate (void)
 	return TestStatus::pass("Pass");
 }
 
-void BasicComputeTestInstance::copyDataToImage (const VkCommandBuffer&	cmdBuffer,
+void BasicComputeTestInstance::copyDataToImage (const VkCommandPool&	cmdPool,
+												const VkCommandBuffer&	cmdBuffer,
 												ImageData&				imageData,
 												const vector<UVec3>&	mipMapSizes,
 												const bool				isCompressed)
@@ -672,7 +678,7 @@ void BasicComputeTestInstance::copyDataToImage (const VkCommandBuffer&	cmdBuffer
 	const VkQueue				queue		= m_context.getUniversalQueue();
 	Allocator&					allocator	= m_context.getDefaultAllocator();
 
-	Buffer						imageBuffer	(vk, device, allocator,
+	BufferWithMemory			imageBuffer	(vk, device, allocator,
 												makeBufferCreateInfo(m_data.size(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
 												MemoryRequirement::HostVisible);
 	VkDeviceSize				offset		= 0ull;
@@ -729,9 +735,11 @@ void BasicComputeTestInstance::copyDataToImage (const VkCommandBuffer&	cmdBuffer
 	}
 	endCommandBuffer(vk, cmdBuffer);
 	submitCommandsAndWait(vk, device, queue, cmdBuffer);
+	m_context.resetCommandPoolForVKSC(device, cmdPool);
 }
 
-void BasicComputeTestInstance::executeShader (const VkCommandBuffer&		cmdBuffer,
+void BasicComputeTestInstance::executeShader (const VkCommandPool&			cmdPool,
+											  const VkCommandBuffer&		cmdBuffer,
 											  const VkDescriptorSetLayout&	descriptorSetLayout,
 											  const VkDescriptorPool&		descriptorPool,
 											  vector<ImageData>&			imageData)
@@ -834,9 +842,11 @@ void BasicComputeTestInstance::executeShader (const VkCommandBuffer&		cmdBuffer,
 	}
 	endCommandBuffer(vk, cmdBuffer);
 	submitCommandsAndWait(vk, device, queue, cmdBuffer);
+	m_context.resetCommandPoolForVKSC(device, cmdPool);
 }
 
-bool BasicComputeTestInstance::copyResultAndCompare (const VkCommandBuffer&	cmdBuffer,
+bool BasicComputeTestInstance::copyResultAndCompare (const VkCommandPool&				cmdPool,
+													 const VkCommandBuffer&	cmdBuffer,
 													 const VkImage&			uncompressed,
 													 const VkDeviceSize		offset,
 													 const UVec3&			size)
@@ -847,7 +857,7 @@ bool BasicComputeTestInstance::copyResultAndCompare (const VkCommandBuffer&	cmdB
 	Allocator&				allocator			= m_context.getDefaultAllocator();
 
 	VkDeviceSize			imageResultSize		= getImageSizeBytes (tcu::IVec3(size.x(), size.y(), size.z()), m_parameters.formatUncompressed);
-	Buffer					imageBufferResult	(vk, device, allocator,
+	BufferWithMemory		imageBufferResult	(vk, device, allocator,
 													makeBufferCreateInfo(imageResultSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT),
 													MemoryRequirement::HostVisible);
 
@@ -887,6 +897,7 @@ bool BasicComputeTestInstance::copyResultAndCompare (const VkCommandBuffer&	cmdB
 	}
 	endCommandBuffer(vk, cmdBuffer);
 	submitCommandsAndWait(vk, device, queue, cmdBuffer);
+	m_context.resetCommandPoolForVKSC(device, cmdPool);
 
 	const Allocation& allocResult = imageBufferResult.getAllocation();
 	invalidateAlloc(vk, device, allocResult);
@@ -947,8 +958,8 @@ void BasicComputeTestInstance::createImageInfos (ImageData& imageData, const vec
 			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,					// VkStructureType			sType;
 			DE_NULL,												// const void*				pNext;
 			VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT |
-			VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT_KHR |
-			VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR,					// VkImageCreateFlags		flags;
+			VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT |
+			VK_IMAGE_CREATE_EXTENDED_USAGE_BIT,						// VkImageCreateFlags		flags;
 			imageType,												// VkImageType				imageType;
 			m_parameters.formatCompressed,							// VkFormat					format;
 			extentCompressed,										// VkExtent3D				extent;
@@ -1006,7 +1017,8 @@ void BasicComputeTestInstance::createImageInfos (ImageData& imageData, const vec
 	}
 }
 
-bool BasicComputeTestInstance::decompressImage (const VkCommandBuffer&	cmdBuffer,
+bool BasicComputeTestInstance::decompressImage (const VkCommandPool&				cmdPool,
+												 const VkCommandBuffer&	cmdBuffer,
 												 vector<ImageData>&		imageData,
 												 const vector<UVec3>&	mipMapSizes)
 {
@@ -1080,7 +1092,7 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandBuffer&	cmdBuffer
 		const VkImageUsageFlags				compressedViewUsageFlags	= VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 		const VkImageViewUsageCreateInfo	compressedViewUsageCI		=
 		{
-			VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,					//VkStructureType		sType;
+			VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,						//VkStructureType		sType;
 			DE_NULL,															//const void*			pNext;
 			compressedViewUsageFlags,											//VkImageUsageFlags		usage;
 		};
@@ -1113,11 +1125,11 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandBuffer&	cmdBuffer
 		const Unique<VkPipelineLayout>	pipelineLayout			(makePipelineLayout(vk, device, *descriptorSetLayout));
 		const Unique<VkPipeline>		pipeline				(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
 		const VkDeviceSize				bufferSize				= getImageSizeBytes(IVec3((int)extentCompressed.width, (int)extentCompressed.height, (int)extentCompressed.depth), m_parameters.formatForVerify);
-		Buffer							resultBuffer			(vk, device, allocator,
+		BufferWithMemory				resultBuffer			(vk, device, allocator,
 																	makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible);
-		Buffer							referenceBuffer			(vk, device, allocator,
+		BufferWithMemory				referenceBuffer			(vk, device, allocator,
 																	makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible);
-		Buffer							transferBuffer			(vk, device, allocator,
+		BufferWithMemory				transferBuffer			(vk, device, allocator,
 																	makeBufferCreateInfo(bufferSizeComp, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible);
 		Move<VkSampler>					sampler;
 		{
@@ -1292,6 +1304,7 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandBuffer&	cmdBuffer
 		}
 		endCommandBuffer(vk, cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, cmdBuffer);
+		m_context.resetCommandPoolForVKSC(device, cmdPool);
 
 		const Allocation&		resultAlloc		= resultBuffer.getAllocation();
 		const Allocation&		referenceAlloc	= referenceBuffer.getAllocation();
@@ -1332,7 +1345,8 @@ public:
 					ImageStoreComputeTestInstance	(Context&							context,
 													 const TestParameters&				parameters);
 protected:
-	virtual void	executeShader					(const VkCommandBuffer&				cmdBuffer,
+	virtual void	executeShader					(const VkCommandPool&				cmdPool,
+													 const VkCommandBuffer&				cmdBuffer,
 													 const VkDescriptorSetLayout&		descriptorSetLayout,
 													 const VkDescriptorPool&			descriptorPool,
 													 vector<ImageData>&					imageData);
@@ -1344,7 +1358,8 @@ ImageStoreComputeTestInstance::ImageStoreComputeTestInstance (Context& context, 
 {
 }
 
-void ImageStoreComputeTestInstance::executeShader (const VkCommandBuffer&		cmdBuffer,
+void ImageStoreComputeTestInstance::executeShader (const VkCommandPool&			cmdPool,
+												   const VkCommandBuffer&		cmdBuffer,
 												   const VkDescriptorSetLayout&	descriptorSetLayout,
 												   const VkDescriptorPool&		descriptorPool,
 												   vector<ImageData>&			imageData)
@@ -1452,6 +1467,7 @@ void ImageStoreComputeTestInstance::executeShader (const VkCommandBuffer&		cmdBu
 	}
 	endCommandBuffer(vk, cmdBuffer);
 	submitCommandsAndWait(vk, device, queue, cmdBuffer);
+	m_context.resetCommandPoolForVKSC(device, cmdPool);
 }
 
 class GraphicsAttachmentsTestInstance : public BasicTranscodingTestInstance
@@ -1516,7 +1532,7 @@ protected:
 	std::vector<tcu::UVec3>				m_srcImageResolutions;
 	std::vector<tcu::UVec3>				m_dstImageResolutions;
 
-	MovePtr<Buffer>						m_vertexBuffer;
+	MovePtr<BufferWithMemory>			m_vertexBuffer;
 	deUint32							m_vertexCount;
 	VkDeviceSize						m_vertexBufferOffset;
 };
@@ -1644,7 +1660,7 @@ void GraphicsAttachmentsTestInstance::prepareVertexBuffer ()
 	const size_t					vertexBufferSizeInBytes	= vertexArray.size() * sizeof(vertexArray[0]);
 
 	m_vertexCount	= static_cast<deUint32>(vertexArray.size());
-	m_vertexBuffer	= MovePtr<Buffer>(new Buffer(vk, device, allocator, makeBufferCreateInfo(vertexBufferSizeInBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible));
+	m_vertexBuffer	= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, makeBufferCreateInfo(vertexBufferSizeInBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible));
 
 	// Upload vertex data
 	const Allocation&	vertexBufferAlloc	= m_vertexBuffer->getAllocation();
@@ -1697,10 +1713,10 @@ void GraphicsAttachmentsTestInstance::transcodeRead ()
 		const VkImageCreateInfo		dstImageCreateInfo		= makeCreateImageInfo(m_dstFormat, m_parameters.imageType, dstImageResolution, m_dstImageUsageFlags, imgCreateFlagsOverride, SINGLE_LEVEL, SINGLE_LAYER);
 
 		const VkBufferCreateInfo	srcImageBufferInfo		= makeBufferCreateInfo(srcImageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-		const MovePtr<Buffer>		srcImageBuffer			= MovePtr<Buffer>(new Buffer(vk, device, allocator, srcImageBufferInfo, MemoryRequirement::HostVisible));
+		const MovePtr<BufferWithMemory>	srcImageBuffer		= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, srcImageBufferInfo, MemoryRequirement::HostVisible));
 
 		const VkBufferCreateInfo	dstImageBufferInfo		= makeBufferCreateInfo(dstImageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-		MovePtr<Buffer>				dstImageBuffer			= MovePtr<Buffer>(new Buffer(vk, device, allocator, dstImageBufferInfo, MemoryRequirement::HostVisible));
+		MovePtr<BufferWithMemory>	dstImageBuffer			= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, dstImageBufferInfo, MemoryRequirement::HostVisible));
 
 		const VkExtent2D			renderSize				(makeExtent2D(uncompressedImageRes.x(), uncompressedImageRes.y()));
 		const VkViewport			viewport				= makeViewport(renderSize);
@@ -1776,6 +1792,7 @@ void GraphicsAttachmentsTestInstance::transcodeRead ()
 			endCommandBuffer(vk, *cmdBuffer);
 
 			submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+			m_context.resetCommandPoolForVKSC(device, *cmdPool);
 
 			const Allocation& dstImageBufferAlloc = dstImageBuffer->getAllocation();
 			invalidateAlloc(vk, device, dstImageBufferAlloc);
@@ -1837,10 +1854,10 @@ void GraphicsAttachmentsTestInstance::transcodeWrite ()
 		for (deUint32 layerNdx = 0; layerNdx < getLayerCount(); ++layerNdx)
 		{
 			const VkBufferCreateInfo		srcImageBufferInfo		= makeBufferCreateInfo(srcImageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-			const MovePtr<Buffer>			srcImageBuffer			= MovePtr<Buffer>(new Buffer(vk, device, allocator, srcImageBufferInfo, MemoryRequirement::HostVisible));
+			const MovePtr<BufferWithMemory>	srcImageBuffer			= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, srcImageBufferInfo, MemoryRequirement::HostVisible));
 
 			const VkBufferCreateInfo		dstImageBufferInfo		= makeBufferCreateInfo(dstImageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-			MovePtr<Buffer>					dstImageBuffer			= MovePtr<Buffer>(new Buffer(vk, device, allocator, dstImageBufferInfo, MemoryRequirement::HostVisible));
+			MovePtr<BufferWithMemory>		dstImageBuffer			= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, dstImageBufferInfo, MemoryRequirement::HostVisible));
 
 			const VkImageSubresourceRange	srcSubresourceRange		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, SINGLE_LEVEL, 0u, SINGLE_LAYER);
 			const VkImageSubresourceRange	dstSubresourceRange		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, levelNdx, SINGLE_LEVEL, layerNdx, SINGLE_LAYER);
@@ -1910,6 +1927,7 @@ void GraphicsAttachmentsTestInstance::transcodeWrite ()
 			endCommandBuffer(vk, *cmdBuffer);
 
 			submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+			m_context.resetCommandPoolForVKSC(device, *cmdPool);
 
 			const Allocation& dstImageBufferAlloc = dstImageBuffer->getAllocation();
 			invalidateAlloc(vk, device, dstImageBufferAlloc);
@@ -1935,7 +1953,7 @@ VkImageCreateInfo GraphicsAttachmentsTestInstance::makeCreateImageInfo (const Vk
 {
 	const VkImageType			imageType				= mapImageType(type);
 	const VkImageCreateFlags	imageCreateFlagsBase	= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
-	const VkImageCreateFlags	imageCreateFlagsAddOn	= isCompressedFormat(format) ? VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT_KHR | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR : 0;
+	const VkImageCreateFlags	imageCreateFlagsAddOn	= isCompressedFormat(format) ? VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT : 0;
 	const VkImageCreateFlags	imageCreateFlags		= (createFlags != DE_NULL) ? *createFlags : (imageCreateFlagsBase | imageCreateFlagsAddOn);
 
 	VkFormatProperties properties;
@@ -2021,7 +2039,7 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression (const std::vector<deU
 	const VkImageUsageFlags				refSrcImageUsageFlags		= VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
 	const VkBufferCreateInfo			refSrcImageBufferInfo		(makeBufferCreateInfo(refCompressedData.size(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT));
-	const MovePtr<Buffer>				refSrcImageBuffer			= MovePtr<Buffer>(new Buffer(vk, device, allocator, refSrcImageBufferInfo, MemoryRequirement::HostVisible));
+	const MovePtr<BufferWithMemory>		refSrcImageBuffer			= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, refSrcImageBufferInfo, MemoryRequirement::HostVisible));
 
 	const VkImageCreateFlags			refSrcImageCreateFlags		= 0;
 	const VkImageCreateInfo				refSrcImageCreateInfo		= makeCreateImageInfo(m_parameters.formatCompressed, m_parameters.imageType, mipmapDimsBlocked, refSrcImageUsageFlags, &refSrcImageCreateFlags, SINGLE_LEVEL, SINGLE_LAYER);
@@ -2039,7 +2057,7 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression (const std::vector<deU
 	const Move<VkImageView>				refDstImageView				(makeImageView(vk, device, refDstImage->get(), mapImageViewType(m_parameters.imageType), m_parameters.formatForVerify, subresourceRange));
 	const VkImageMemoryBarrier			refDstInitImageBarrier		= makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, refDstImage->get(), subresourceRange);
 	const VkBufferCreateInfo			refDstBufferInfo			(makeBufferCreateInfo(dstBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
-	const MovePtr<Buffer>				refDstBuffer				= MovePtr<Buffer>(new Buffer(vk, device, allocator, refDstBufferInfo, MemoryRequirement::HostVisible));
+	const MovePtr<BufferWithMemory>		refDstBuffer				= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, refDstBufferInfo, MemoryRequirement::HostVisible));
 
 	const VkImageCreateFlags			resDstImageCreateFlags		= 0;
 	const VkImageUsageFlags				resDstImageUsageFlags		= VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
@@ -2048,7 +2066,7 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression (const std::vector<deU
 	const Move<VkImageView>				resDstImageView				(makeImageView(vk, device, resDstImage->get(), mapImageViewType(m_parameters.imageType), m_parameters.formatForVerify, subresourceRange));
 	const VkImageMemoryBarrier			resDstInitImageBarrier		= makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, resDstImage->get(), subresourceRange);
 	const VkBufferCreateInfo			resDstBufferInfo			(makeBufferCreateInfo(dstBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
-	const MovePtr<Buffer>				resDstBuffer				= MovePtr<Buffer>(new Buffer(vk, device, allocator, resDstBufferInfo, MemoryRequirement::HostVisible));
+	const MovePtr<BufferWithMemory>		resDstBuffer				= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, resDstBufferInfo, MemoryRequirement::HostVisible));
 
 	const Unique<VkShaderModule>		vertShaderModule			(createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0));
 	const Unique<VkShaderModule>		fragShaderModule			(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag_verify"), 0));
@@ -2080,7 +2098,11 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression (const std::vector<deU
 	const VkExtent2D					renderSize					(makeExtent2D(mipmapDims.x(), mipmapDims.y()));
 	const Unique<VkPipelineLayout>		pipelineLayout				(makePipelineLayout(vk, device, *descriptorSetLayout));
 	const Unique<VkPipeline>			pipeline					(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertShaderModule, *fragShaderModule, renderSize, 0u));
+#ifndef CTS_USES_VULKANSC
 	const Unique<VkCommandPool>			cmdPool						(createCommandPool(vk, device, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT, queueFamilyIndex));
+#else
+	const Unique<VkCommandPool>			cmdPool						(createCommandPool(vk, device, VkCommandPoolCreateFlags(0u), queueFamilyIndex));
+#endif // CTS_USES_VULKANSC
 	const Unique<VkCommandBuffer>		cmdBuffer					(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const VkBufferImageCopy				copyBufferToImageRegion		= makeBufferImageCopy(mipmapDimsBlocked.x(), mipmapDimsBlocked.y(), 0u, 0u, mipmapDimsBlocked.x(), mipmapDimsBlocked.y());
@@ -2164,6 +2186,7 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression (const std::vector<deU
 	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+	m_context.resetCommandPoolForVKSC(device, *cmdPool);
 
 	// Compare decompressed pixel data in reference and result images
 	{
@@ -2280,10 +2303,10 @@ void GraphicsTextureTestInstance::transcodeRead ()
 		const VkImageCreateInfo		dstImageCreateInfo		= makeCreateImageInfo(m_dstFormat, m_parameters.imageType, dstImageResolution, m_dstImageUsageFlags, imgCreateFlagsOverride, SINGLE_LEVEL, SINGLE_LAYER);
 
 		const VkBufferCreateInfo	srcImageBufferInfo		= makeBufferCreateInfo(srcImageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-		const MovePtr<Buffer>		srcImageBuffer			= MovePtr<Buffer>(new Buffer(vk, device, allocator, srcImageBufferInfo, MemoryRequirement::HostVisible));
+		const MovePtr<BufferWithMemory>	srcImageBuffer		= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, srcImageBufferInfo, MemoryRequirement::HostVisible));
 
 		const VkBufferCreateInfo	dstImageBufferInfo		= makeBufferCreateInfo(dstImageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-		MovePtr<Buffer>				dstImageBuffer			= MovePtr<Buffer>(new Buffer(vk, device, allocator, dstImageBufferInfo, MemoryRequirement::HostVisible));
+		MovePtr<BufferWithMemory>	dstImageBuffer			= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, dstImageBufferInfo, MemoryRequirement::HostVisible));
 
 		const VkExtent2D			renderSize				(makeExtent2D(uncompressedImageRes.x(), uncompressedImageRes.y()));
 		const VkViewport			viewport				= makeViewport(renderSize);
@@ -2363,6 +2386,7 @@ void GraphicsTextureTestInstance::transcodeRead ()
 			endCommandBuffer(vk, *cmdBuffer);
 
 			submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+			m_context.resetCommandPoolForVKSC(device, *cmdPool);
 
 			const Allocation& dstImageBufferAlloc = dstImageBuffer->getAllocation();
 			invalidateAlloc(vk, device, dstImageBufferAlloc);
@@ -2426,10 +2450,10 @@ void GraphicsTextureTestInstance::transcodeWrite ()
 		for (deUint32 layerNdx = 0; layerNdx < getLayerCount(); ++layerNdx)
 		{
 			const VkBufferCreateInfo		srcImageBufferInfo		= makeBufferCreateInfo(srcImageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-			const MovePtr<Buffer>			srcImageBuffer			= MovePtr<Buffer>(new Buffer(vk, device, allocator, srcImageBufferInfo, MemoryRequirement::HostVisible));
+			const MovePtr<BufferWithMemory>	srcImageBuffer			= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, srcImageBufferInfo, MemoryRequirement::HostVisible));
 
 			const VkBufferCreateInfo		dstImageBufferInfo		= makeBufferCreateInfo(dstImageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-			MovePtr<Buffer>					dstImageBuffer			= MovePtr<Buffer>(new Buffer(vk, device, allocator, dstImageBufferInfo, MemoryRequirement::HostVisible));
+			MovePtr<BufferWithMemory>		dstImageBuffer			= MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, dstImageBufferInfo, MemoryRequirement::HostVisible));
 
 			const VkImageSubresourceRange	srcSubresourceRange		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, SINGLE_LEVEL, 0u, SINGLE_LAYER);
 			const VkImageSubresourceRange	dstSubresourceRange		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, levelNdx, SINGLE_LEVEL, layerNdx, SINGLE_LAYER);
@@ -2503,6 +2527,7 @@ void GraphicsTextureTestInstance::transcodeWrite ()
 			endCommandBuffer(vk, *cmdBuffer);
 
 			submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+			m_context.resetCommandPoolForVKSC(device, *cmdPool);
 
 			const Allocation& dstImageBufferAlloc = dstImageBuffer->getAllocation();
 			invalidateAlloc(vk, device, dstImageBufferAlloc);
@@ -2862,7 +2887,7 @@ void TexelViewCompatibleCase::checkSupport (Context& context) const
 		if (VK_ERROR_FORMAT_NOT_SUPPORTED == vk.getPhysicalDeviceImageFormatProperties(physicalDevice, m_parameters.formatCompressed,
 												mapImageType(m_parameters.imageType), VK_IMAGE_TILING_OPTIMAL,
 												m_parameters.compressedImageUsage,
-												VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT_KHR | VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR,
+												VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT | VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT,
 												&imageFormatProperties))
 			TCU_THROW(NotSupportedError, "Operation not supported with this image format");
 	}
@@ -3189,7 +3214,9 @@ tcu::TestCaseGroup* createImageCompressionTranscodingTests (tcu::TestContext& te
 					if (shaderType != SHADER_TYPE_COMPUTE && deInRange32(operationNdx, OPERATION_IMAGE_LOAD, OPERATION_IMAGE_STORE))
 						continue;
 
-					if (imageType == IMAGE_TYPE_3D && (operationNdx == OPERATION_ATTACHMENT_READ || operationNdx == OPERATION_ATTACHMENT_WRITE))
+					if (imageType == IMAGE_TYPE_3D &&
+						(operationNdx == OPERATION_ATTACHMENT_READ || operationNdx == OPERATION_ATTACHMENT_WRITE ||
+						 operationNdx == OPERATION_TEXTURE_READ))
 						continue;
 
 					MovePtr<tcu::TestCaseGroup>	imageOperationGroup	(new tcu::TestCaseGroup(testCtx, operationName[operationNdx].c_str(), ""));

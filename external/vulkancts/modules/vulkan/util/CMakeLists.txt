@@ -11,10 +11,9 @@ set(DEQP_VK_UTIL_SRCS
 	vktConstexprVectorUtil.hpp
 )
 
-set(DEQP_VK_UTIL_LIBS
-	tcutil
-	vkutil
-)
-
 add_library(deqp-vk-util STATIC ${DEQP_VK_UTIL_SRCS})
-target_link_libraries(deqp-vk-util ${DEQP_VK_UTIL_LIBS})
+target_link_libraries(deqp-vk-util PUBLIC tcutil vkutil)
+
+add_library(deqp-vksc-util STATIC ${DEQP_VK_UTIL_SRCS})
+target_include_directories(deqp-vksc-util BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
+target_link_libraries(deqp-vksc-util PUBLIC tcutil vkscutil)

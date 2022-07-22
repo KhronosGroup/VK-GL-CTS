@@ -71,7 +71,7 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
 	std::vector<const char*>							deviceExtensions;
 	VkDeviceGroupDeviceCreateInfo						deviceGroupInfo =
 	{
-		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR,		//stype
+		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO,			//stype
 		DE_NULL,													//pNext
 		0,															//physicalDeviceCount
 		DE_NULL														//physicalDevices

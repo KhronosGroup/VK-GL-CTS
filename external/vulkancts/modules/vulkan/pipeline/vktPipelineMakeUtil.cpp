@@ -35,26 +35,6 @@ namespace pipeline
 using namespace vk;
 using de::MovePtr;
 
-Buffer::Buffer (const vk::DeviceInterface&		vk,
-				const vk::VkDevice				device,
-				vk::Allocator&					allocator,
-				const vk::VkBufferCreateInfo&	bufferCreateInfo,
-				const vk::MemoryRequirement		memoryRequirement)
-	: m_buffer		(createBuffer(vk, device, &bufferCreateInfo))
-	, m_allocation	(bindBuffer(vk, device, allocator, *m_buffer, memoryRequirement))
-{
-}
-
-Image::Image (const vk::DeviceInterface&		vk,
-			  const vk::VkDevice				device,
-			  vk::Allocator&					allocator,
-			  const vk::VkImageCreateInfo&		imageCreateInfo,
-			  const vk::MemoryRequirement		memoryRequirement)
-	: m_image		(createImage(vk, device, &imageCreateInfo))
-	, m_allocation	(bindImage(vk, device, allocator, *m_image, memoryRequirement))
-{
-}
-
 Move<VkCommandBuffer> makeCommandBuffer (const DeviceInterface& vk, const VkDevice device, const VkCommandPool commandPool)
 {
 	return allocateCommandBuffer(vk, device, commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);

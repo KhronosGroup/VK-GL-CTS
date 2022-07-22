@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 9d534f9312e56c72df763207e449c6719576fd54.
+ * Generated from Khronos GL API description (gl.xml) revision d8371b44919d61c02e60f446a4b5461fda910f71.
  */
 
 int getBasicQueryNumArgsOut (int pname)

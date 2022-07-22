@@ -119,7 +119,7 @@ public:
 	TestContext&			getTestContext			(void) const	{ return m_testCtx;				}
 	const char*				getName					(void) const	{ return m_name.c_str();		}
 	const char*				getDescription			(void) const	{ return m_description.c_str(); }
-	void					getChildren				(std::vector<TestNode*>& children);
+	void					getChildren				(std::vector<TestNode*>& children) const;
 	void					addChild				(TestNode* node);
 	bool					empty					() const		{ return m_children.empty();	}
 

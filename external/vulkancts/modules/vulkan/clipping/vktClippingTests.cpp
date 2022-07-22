@@ -32,6 +32,7 @@
 #include "tcuImageCompare.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuVectorUtil.hpp"
+#include "tcuCommandLine.hpp"
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
 #include "deRandom.hpp"
@@ -728,8 +729,13 @@ tcu::TestStatus testPrimitivesDepthClip (Context& context, const VkPrimitiveTopo
 			++numPassed;
 	}
 
-	if (numPassed < numCases)
-		return tcu::TestStatus::fail("Rendered image(s) are incorrect (depth clip with depth clamp disabled)");
+#ifdef CTS_USES_VULKANSC
+	if (context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
+	{
+		if (numPassed < numCases)
+			return tcu::TestStatus::fail("Rendered image(s) are incorrect (depth clip with depth clamp disabled)");
+	}
 
 	// Test depth clip with depth clamp enabled.
 	numPassed = 0;
@@ -1543,12 +1549,17 @@ tcu::TestStatus testComplementarity (Context& context, const int numClipDistance
 
 void checkTopologySupport(Context& context, const VkPrimitiveTopology topology)
 {
+#ifndef CTS_USES_VULKANSC
 	if (topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN &&
 		context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		!context.getPortabilitySubsetFeatures().triangleFans)
 	{
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
 	}
+#else
+	DE_UNREF(context);
+	DE_UNREF(topology);
+#endif // CTS_USES_VULKANSC
 }
 
 void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)

@@ -1214,6 +1214,7 @@ tcu::TestStatus testSemaphoreImportSyncFdSignaled (Context&						context,
 		const vk::Unique<vk::VkSemaphore>	semaphore	(createAndImportSemaphore(vkd, *device, config.externalType, handle, flags));
 
 		submitEmptyWait(vkd, queue, *semaphore);
+		VK_CHECK(vkd.queueWaitIdle(queue));
 
 		return tcu::TestStatus::pass("Pass");
 	}
@@ -4624,6 +4625,7 @@ de::MovePtr<tcu::TestCaseGroup> createMemoryTests (tcu::TestContext& testCtx, vk
 			vk::VK_FORMAT_D32_SFLOAT,
 			vk::VK_FORMAT_D32_SFLOAT_S8_UINT,
 			vk::VK_FORMAT_S8_UINT,
+			vk::VK_FORMAT_R8_UNORM,
 		};
 		const size_t		numOfAhbFormats	= DE_LENGTH_OF_ARRAY(ahbFormats);
 

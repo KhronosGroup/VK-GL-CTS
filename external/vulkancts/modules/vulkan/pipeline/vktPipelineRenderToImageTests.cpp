@@ -50,6 +50,7 @@
 #include <string>
 #include <vector>
 #include <set>
+#include <algorithm>
 
 namespace vkt
 {
@@ -565,7 +566,7 @@ VkImageCreateFlags getImageCreateFlags (const VkImageViewType viewType)
 {
 	VkImageCreateFlags	flags	= (VkImageCreateFlags)0;
 
-	if (viewType == VK_IMAGE_VIEW_TYPE_3D)	flags |= VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT_KHR;
+	if (viewType == VK_IMAGE_VIEW_TYPE_3D)	flags |= VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT;
 	if (isCube(viewType))					flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 
 	return flags;
@@ -596,17 +597,6 @@ void generateExpectedImage (const tcu::PixelBufferAccess& outputImage, const IVe
 				outputImage.setPixel(setColor, x, y, z);
 		}
 	}
-}
-
-deUint32 selectMatchingMemoryType (const VkPhysicalDeviceMemoryProperties& deviceMemProps, deUint32 allowedMemTypeBits, MemoryRequirement requirement)
-{
-	const deUint32	compatibleTypes	= getCompatibleMemoryTypes(deviceMemProps, requirement);
-	const deUint32	candidates		= allowedMemTypeBits & compatibleTypes;
-
-	if (candidates == 0)
-		TCU_THROW(NotSupportedError, "No compatible memory type found");
-
-	return (deUint32)deCtz32(candidates);
 }
 
 IVec4 getMaxImageSize (const VkImageViewType viewType, const IVec4& sizeHint)
@@ -994,9 +984,13 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 				makeImageView(vk, device, *colorImage, getImageViewSliceType(caseDef.viewType), caseDef.colorFormat, makeColorSubresourceRange(subpassNdx, 1))));
 			attachmentHandles.push_back(**colorAttachments.back());
 
+#ifndef CTS_USES_VULKANSC  // Pipeline derivatives are forbidden in Vulkan SC
 			// We also have to create pipelines for each subpass
 			pipelines.emplace_back(vk, device, caseDef.pipelineConstructionType, (basePipeline == DE_NULL ? VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT
 																										  : VK_PIPELINE_CREATE_DERIVATIVE_BIT));
+#else
+			pipelines.emplace_back(vk, device, caseDef.pipelineConstructionType, 0u);
+#endif // CTS_USES_VULKANSC
 			preparePipelineWrapper(pipelines.back(), basePipeline, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
 								   imageSize.swizzle(0, 1), VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, static_cast<deUint32>(subpassNdx), useDepth, useStencil);
 
@@ -1134,16 +1128,18 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 
 void checkImageViewTypeRequirements (Context& context, const VkImageViewType viewType)
 {
+#ifndef CTS_USES_VULKANSC
 	if (viewType == VK_IMAGE_VIEW_TYPE_3D)
 	{
 		if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
-		   !context.getPortabilitySubsetFeatures().imageView2DOn3DImage)
+			!context.getPortabilitySubsetFeatures().imageView2DOn3DImage)
 		{
 			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Implementation does not support 2D or 2D array image view to be created on a 3D VkImage");
 		}
 
 		context.requireDeviceFunctionality("VK_KHR_maintenance1");
 	}
+#endif // CTS_USES_VULKANSC
 
 	if (viewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
@@ -1239,9 +1235,13 @@ void drawToMipLevel (const Context&				context,
 				makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, mipLevel, 1u, subpassNdx, 1u))));
 			attachmentHandles.push_back(**colorAttachments.back());
 
-			// We also have to create pipelines for each subpass
+		// We also have to create pipelines for each subpass
+#ifndef CTS_USES_VULKANSC // Pipeline derivatives are forbidden in Vulkan SC
 			pipelines.emplace_back(vk, device, caseDef.pipelineConstructionType, (basePipeline == DE_NULL ? VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT
 																										  : VK_PIPELINE_CREATE_DERIVATIVE_BIT));
+#else
+			pipelines.emplace_back(vk, device, caseDef.pipelineConstructionType, 0u);
+#endif // CTS_USES_VULKANSC
 			preparePipelineWrapper(pipelines.back(), basePipeline, pipelineLayout, *renderPass, vertexModule, fragmentModule,
 								   mipSize.swizzle(0, 1), VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, static_cast<deUint32>(subpassNdx), useDepth, useStencil);
 
@@ -1686,7 +1686,12 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineConstructionT
 
 		// Generate attachment size cases
 		{
-			const vector<IVec4> sizes = genSizeCombinations(testCase[caseNdx].baselineSize, testCase[caseNdx].sizeMask, testCase[caseNdx].viewType);
+			vector<IVec4> sizes = genSizeCombinations(testCase[caseNdx].baselineSize, testCase[caseNdx].sizeMask, testCase[caseNdx].viewType);
+
+#ifdef CTS_USES_VULKANSC
+			// filter out sizes in which width and height is equal to maximimum values
+			sizes.erase(std::remove_if(begin(sizes), end(sizes), [&](const IVec4& v) { return v.x() == MAX_SIZE && v.y() == MAX_SIZE; }), end(sizes));
+#endif // CTS_USES_VULKANSC
 
 			MovePtr<tcu::TestCaseGroup>	smallGroup(new tcu::TestCaseGroup(group->getTestContext(), "small", ""));
 			MovePtr<tcu::TestCaseGroup>	hugeGroup (new tcu::TestCaseGroup(group->getTestContext(), "huge",  ""));

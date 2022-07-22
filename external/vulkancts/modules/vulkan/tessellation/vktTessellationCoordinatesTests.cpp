@@ -39,6 +39,8 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkImageWithMemory.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -393,11 +395,15 @@ TessCoordTest::TessCoordTest (tcu::TestContext&			testCtx,
 
 void TessCoordTest::checkSupport (Context& context) const
 {
+#ifndef CTS_USES_VULKANSC
 	if (const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR* const features = getPortability(context))
 	{
 		checkPointMode(*features);
 		checkPrimitive(*features, m_primitiveType);
 	}
+#else
+	DE_UNREF(context);
+#endif // CTS_USES_VULKANSC
 }
 
 void TessCoordTest::initPrograms (SourceCollections& programCollection) const
@@ -669,15 +675,15 @@ tcu::TestStatus TessCoordTestInstance::iterate (void)
 
 	// Input buffer: tessellation levels. Data is filled in later.
 
-	const Buffer tessLevelsBuffer(vk, device, allocator,
+	const BufferWithMemory tessLevelsBuffer(vk, device, allocator,
 		makeBufferCreateInfo(sizeof(TessLevels), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	// Output buffer: number of invocations + padding + tessellation coordinates. Initialized later.
 
-	const int          resultBufferTessCoordsOffset	 = 4 * (int)sizeof(deInt32);
-	const int          extraneousVertices			 = 16;	// allow some room for extraneous vertices from duplicate shader invocations (number is arbitrary)
-	const VkDeviceSize resultBufferSizeBytes		 = resultBufferTessCoordsOffset + (maxNumVertices + extraneousVertices)*sizeof(tcu::Vec4);
-	const Buffer       resultBuffer					 (vk, device, allocator, makeBufferCreateInfo(resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
+	const int				resultBufferTessCoordsOffset	= 4 * (int)sizeof(deInt32);
+	const int				extraneousVertices				= 16;	// allow some room for extraneous vertices from duplicate shader invocations (number is arbitrary)
+	const VkDeviceSize		resultBufferSizeBytes			= resultBufferTessCoordsOffset + (maxNumVertices + extraneousVertices)*sizeof(tcu::Vec4);
+	const BufferWithMemory	resultBuffer					(vk, device, allocator, makeBufferCreateInfo(resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	// Descriptors
 

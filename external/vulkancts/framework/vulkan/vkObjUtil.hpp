@@ -138,7 +138,8 @@ VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize			size,
 
 VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize				size,
 										 const VkBufferUsageFlags		usage,
-										 const std::vector<deUint32>&	queueFamilyIndices);
+										 const std::vector<deUint32>&	queueFamilyIndices,
+										 const VkBufferCreateFlags		createFlags = 0);
 
 Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 										   const VkDevice				device,
@@ -148,17 +149,19 @@ Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&								vk,
 										   const VkDevice										device,
 										   const std::vector<vk::Move<VkDescriptorSetLayout>>	&descriptorSetLayouts);
 
-Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
-										   const VkDevice				device,
-										   const deUint32				setLayoutCount,
-										   const VkDescriptorSetLayout*	descriptorSetLayout);
+Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&				vk,
+										   const VkDevice						device,
+										   const deUint32						setLayoutCount,
+										   const VkDescriptorSetLayout*			descriptorSetLayout,
+										   const VkPipelineLayoutCreateFlags	flags = 0u);
 
-Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
-										   const VkDevice				device,
-										   const deUint32				setLayoutCount,
-										   const VkDescriptorSetLayout*	descriptorSetLayout,
-										   const deUint32               pushConstantRangeCount,
-										   const VkPushConstantRange*   pPushConstantRanges);
+Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&				vk,
+										   const VkDevice						device,
+										   const deUint32						setLayoutCount,
+										   const VkDescriptorSetLayout*			descriptorSetLayout,
+										   const deUint32						pushConstantRangeCount,
+										   const VkPushConstantRange*			pPushConstantRanges,
+										   const VkPipelineLayoutCreateFlags	flags = 0u);
 
 Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&	vk,
 									 const VkDevice			device,

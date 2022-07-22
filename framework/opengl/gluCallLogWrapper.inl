@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 9d534f9312e56c72df763207e449c6719576fd54.
+ * Generated from Khronos GL API description (gl.xml) revision d8371b44919d61c02e60f446a4b5461fda910f71.
  */
 
 void CallLogWrapper::glActiveShaderProgram (glw::GLuint pipeline, glw::GLuint program)
@@ -1526,6 +1526,13 @@ void CallLogWrapper::glFramebufferRenderbuffer (glw::GLenum target, glw::GLenum 
 	m_gl.framebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer);
 }
 
+void CallLogWrapper::glFramebufferShadingRateEXT (glw::GLenum target, glw::GLenum attachment, glw::GLuint texture, glw::GLint baseLayer, glw::GLsizei numLayers, glw::GLsizei texelWidth, glw::GLsizei texelHeight)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glFramebufferShadingRateEXT(" << toHex(target) << ", " << toHex(attachment) << ", " << texture << ", " << baseLayer << ", " << numLayers << ", " << texelWidth << ", " << texelHeight << ");" << TestLog::EndMessage;
+	m_gl.framebufferShadingRateEXT(target, attachment, texture, baseLayer, numLayers, texelWidth, texelHeight);
+}
+
 void CallLogWrapper::glFramebufferTexture (glw::GLenum target, glw::GLenum attachment, glw::GLuint texture, glw::GLint level)
 {
 	if (m_enableLog)
@@ -1717,18 +1724,18 @@ void CallLogWrapper::glGetActiveAttrib (glw::GLuint program, glw::GLuint index, 
 	m_gl.getActiveAttrib(program, index, bufSize, length, size, type, name);
 }
 
-void CallLogWrapper::glGetActiveSubroutineName (glw::GLuint program, glw::GLenum shadertype, glw::GLuint index, glw::GLsizei bufsize, glw::GLsizei *length, glw::GLchar *name)
+void CallLogWrapper::glGetActiveSubroutineName (glw::GLuint program, glw::GLenum shadertype, glw::GLuint index, glw::GLsizei bufSize, glw::GLsizei *length, glw::GLchar *name)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetActiveSubroutineName(" << program << ", " << toHex(shadertype) << ", " << index << ", " << bufsize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(name))) << ");" << TestLog::EndMessage;
-	m_gl.getActiveSubroutineName(program, shadertype, index, bufsize, length, name);
+		m_log << TestLog::Message << "glGetActiveSubroutineName(" << program << ", " << toHex(shadertype) << ", " << index << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(name))) << ");" << TestLog::EndMessage;
+	m_gl.getActiveSubroutineName(program, shadertype, index, bufSize, length, name);
 }
 
-void CallLogWrapper::glGetActiveSubroutineUniformName (glw::GLuint program, glw::GLenum shadertype, glw::GLuint index, glw::GLsizei bufsize, glw::GLsizei *length, glw::GLchar *name)
+void CallLogWrapper::glGetActiveSubroutineUniformName (glw::GLuint program, glw::GLenum shadertype, glw::GLuint index, glw::GLsizei bufSize, glw::GLsizei *length, glw::GLchar *name)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetActiveSubroutineUniformName(" << program << ", " << toHex(shadertype) << ", " << index << ", " << bufsize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(name))) << ");" << TestLog::EndMessage;
-	m_gl.getActiveSubroutineUniformName(program, shadertype, index, bufsize, length, name);
+		m_log << TestLog::Message << "glGetActiveSubroutineUniformName(" << program << ", " << toHex(shadertype) << ", " << index << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(name))) << ");" << TestLog::EndMessage;
+	m_gl.getActiveSubroutineUniformName(program, shadertype, index, bufSize, length, name);
 }
 
 void CallLogWrapper::glGetActiveSubroutineUniformiv (glw::GLuint program, glw::GLenum shadertype, glw::GLuint index, glw::GLenum pname, glw::GLint *values)
@@ -1950,6 +1957,13 @@ glw::GLint CallLogWrapper::glGetFragDataLocation (glw::GLuint program, const glw
 	return returnValue;
 }
 
+void CallLogWrapper::glGetFragmentShadingRatesEXT (glw::GLsizei samples, glw::GLsizei maxCount, glw::GLsizei *count, glw::GLenum *shadingRates)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glGetFragmentShadingRatesEXT(" << samples << ", " << maxCount << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(count))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(shadingRates))) << ");" << TestLog::EndMessage;
+	m_gl.getFragmentShadingRatesEXT(samples, maxCount, count, shadingRates);
+}
+
 void CallLogWrapper::glGetFramebufferAttachmentParameteriv (glw::GLenum target, glw::GLenum attachment, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
@@ -2021,27 +2035,27 @@ void CallLogWrapper::glGetIntegerv (glw::GLenum pname, glw::GLint *data)
 		m_log << TestLog::Message << "// data = " << getPointerStr(data, getBasicQueryNumArgsOut(pname)) << TestLog::EndMessage;
 }
 
-void CallLogWrapper::glGetInternalformatSampleivNV (glw::GLenum target, glw::GLenum internalformat, glw::GLsizei samples, glw::GLenum pname, glw::GLsizei bufSize, glw::GLint *params)
+void CallLogWrapper::glGetInternalformatSampleivNV (glw::GLenum target, glw::GLenum internalformat, glw::GLsizei samples, glw::GLenum pname, glw::GLsizei count, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetInternalformatSampleivNV(" << toHex(target) << ", " << toHex(internalformat) << ", " << samples << ", " << toHex(pname) << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
-	m_gl.getInternalformatSampleivNV(target, internalformat, samples, pname, bufSize, params);
+		m_log << TestLog::Message << "glGetInternalformatSampleivNV(" << toHex(target) << ", " << toHex(internalformat) << ", " << samples << ", " << toHex(pname) << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.getInternalformatSampleivNV(target, internalformat, samples, pname, count, params);
 }
 
-void CallLogWrapper::glGetInternalformati64v (glw::GLenum target, glw::GLenum internalformat, glw::GLenum pname, glw::GLsizei bufSize, glw::GLint64 *params)
+void CallLogWrapper::glGetInternalformati64v (glw::GLenum target, glw::GLenum internalformat, glw::GLenum pname, glw::GLsizei count, glw::GLint64 *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetInternalformati64v(" << toHex(target) << ", " << toHex(internalformat) << ", " << toHex(pname) << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
-	m_gl.getInternalformati64v(target, internalformat, pname, bufSize, params);
+		m_log << TestLog::Message << "glGetInternalformati64v(" << toHex(target) << ", " << toHex(internalformat) << ", " << toHex(pname) << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.getInternalformati64v(target, internalformat, pname, count, params);
 }
 
-void CallLogWrapper::glGetInternalformativ (glw::GLenum target, glw::GLenum internalformat, glw::GLenum pname, glw::GLsizei bufSize, glw::GLint *params)
+void CallLogWrapper::glGetInternalformativ (glw::GLenum target, glw::GLenum internalformat, glw::GLenum pname, glw::GLsizei count, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetInternalformativ(" << getInternalFormatTargetStr(target) << ", " << getUncompressedTextureFormatStr(internalformat) << ", " << getInternalFormatParameterStr(pname) << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
-	m_gl.getInternalformativ(target, internalformat, pname, bufSize, params);
+		m_log << TestLog::Message << "glGetInternalformativ(" << getInternalFormatTargetStr(target) << ", " << getUncompressedTextureFormatStr(internalformat) << ", " << getInternalFormatParameterStr(pname) << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.getInternalformativ(target, internalformat, pname, count, params);
 	if (m_enableLog)
-		m_log << TestLog::Message << "// params = " << getPointerStr(params, bufSize) << TestLog::EndMessage;
+		m_log << TestLog::Message << "// params = " << getPointerStr(params, count) << TestLog::EndMessage;
 }
 
 void CallLogWrapper::glGetMultiTexEnvfvEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, glw::GLfloat *params)
@@ -2385,15 +2399,15 @@ void CallLogWrapper::glGetProgramResourceName (glw::GLuint program, glw::GLenum 
 	m_gl.getProgramResourceName(program, programInterface, index, bufSize, length, name);
 }
 
-void CallLogWrapper::glGetProgramResourceiv (glw::GLuint program, glw::GLenum programInterface, glw::GLuint index, glw::GLsizei propCount, const glw::GLenum *props, glw::GLsizei bufSize, glw::GLsizei *length, glw::GLint *params)
+void CallLogWrapper::glGetProgramResourceiv (glw::GLuint program, glw::GLenum programInterface, glw::GLuint index, glw::GLsizei propCount, const glw::GLenum *props, glw::GLsizei count, glw::GLsizei *length, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetProgramResourceiv(" << program << ", " << getProgramInterfaceStr(programInterface) << ", " << index << ", " << propCount << ", " << getEnumPointerStr(props, propCount, getProgramResourcePropertyName) << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
-	m_gl.getProgramResourceiv(program, programInterface, index, propCount, props, bufSize, length, params);
+		m_log << TestLog::Message << "glGetProgramResourceiv(" << program << ", " << getProgramInterfaceStr(programInterface) << ", " << index << ", " << propCount << ", " << getEnumPointerStr(props, propCount, getProgramResourcePropertyName) << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+	m_gl.getProgramResourceiv(program, programInterface, index, propCount, props, count, length, params);
 	if (m_enableLog)
 	{
 		m_log << TestLog::Message << "// length = " << getPointerStr(length, 1) << TestLog::EndMessage;
-		m_log << TestLog::Message << "// params = " << getPointerStr(params, ((length == DE_NULL) ? (bufSize) : ((bufSize < *length) ? (bufSize) : (*length)))) << TestLog::EndMessage;
+		m_log << TestLog::Message << "// params = " << getPointerStr(params, ((length == DE_NULL) ? (count) : ((count < *length) ? (count) : (*length)))) << TestLog::EndMessage;
 	}
 }
 
@@ -2608,11 +2622,11 @@ glw::GLint CallLogWrapper::glGetSubroutineUniformLocation (glw::GLuint program, 
 	return returnValue;
 }
 
-void CallLogWrapper::glGetSynciv (glw::GLsync sync, glw::GLenum pname, glw::GLsizei bufSize, glw::GLsizei *length, glw::GLint *values)
+void CallLogWrapper::glGetSynciv (glw::GLsync sync, glw::GLenum pname, glw::GLsizei count, glw::GLsizei *length, glw::GLint *values)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetSynciv(" << sync << ", " << toHex(pname) << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(values))) << ");" << TestLog::EndMessage;
-	m_gl.getSynciv(sync, pname, bufSize, length, values);
+		m_log << TestLog::Message << "glGetSynciv(" << sync << ", " << toHex(pname) << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(values))) << ");" << TestLog::EndMessage;
+	m_gl.getSynciv(sync, pname, count, length, values);
 }
 
 void CallLogWrapper::glGetTexImage (glw::GLenum target, glw::GLint level, glw::GLenum format, glw::GLenum type, void *pixels)
@@ -4845,11 +4859,11 @@ void CallLogWrapper::glScissorIndexedv (glw::GLuint index, const glw::GLint *v)
 	m_gl.scissorIndexedv(index, v);
 }
 
-void CallLogWrapper::glShaderBinary (glw::GLsizei count, const glw::GLuint *shaders, glw::GLenum binaryformat, const void *binary, glw::GLsizei length)
+void CallLogWrapper::glShaderBinary (glw::GLsizei count, const glw::GLuint *shaders, glw::GLenum binaryFormat, const void *binary, glw::GLsizei length)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glShaderBinary(" << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(shaders))) << ", " << toHex(binaryformat) << ", " << binary << ", " << length << ");" << TestLog::EndMessage;
-	m_gl.shaderBinary(count, shaders, binaryformat, binary, length);
+		m_log << TestLog::Message << "glShaderBinary(" << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(shaders))) << ", " << toHex(binaryFormat) << ", " << binary << ", " << length << ");" << TestLog::EndMessage;
+	m_gl.shaderBinary(count, shaders, binaryFormat, binary, length);
 }
 
 void CallLogWrapper::glShaderSource (glw::GLuint shader, glw::GLsizei count, const glw::GLchar *const*string, const glw::GLint *length)
@@ -4864,6 +4878,20 @@ void CallLogWrapper::glShaderStorageBlockBinding (glw::GLuint program, glw::GLui
 	if (m_enableLog)
 		m_log << TestLog::Message << "glShaderStorageBlockBinding(" << program << ", " << storageBlockIndex << ", " << storageBlockBinding << ");" << TestLog::EndMessage;
 	m_gl.shaderStorageBlockBinding(program, storageBlockIndex, storageBlockBinding);
+}
+
+void CallLogWrapper::glShadingRateEXT (glw::GLenum rate)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glShadingRateEXT(" << toHex(rate) << ");" << TestLog::EndMessage;
+	m_gl.shadingRateEXT(rate);
+}
+
+void CallLogWrapper::glShadingRateCombinerOpsEXT (glw::GLenum combinerOp0, glw::GLenum combinerOp1)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glShadingRateCombinerOpsEXT(" << toHex(combinerOp0) << ", " << toHex(combinerOp1) << ");" << TestLog::EndMessage;
+	m_gl.shadingRateCombinerOpsEXT(combinerOp0, combinerOp1);
 }
 
 void CallLogWrapper::glSpecializeShader (glw::GLuint shader, const glw::GLchar *pEntryPoint, glw::GLuint numSpecializationConstants, const glw::GLuint *pConstantIndex, const glw::GLuint *pConstantValue)

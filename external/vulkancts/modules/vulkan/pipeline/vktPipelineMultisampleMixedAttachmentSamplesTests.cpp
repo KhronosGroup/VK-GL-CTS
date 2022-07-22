@@ -1331,7 +1331,7 @@ void checkRequirements (Context& context, TestParams params)
 			TCU_THROW(NotSupportedError, "Required FragmentShadingRate not supported");
 	}
 
-	checkPipelineLibraryRequirements(vki, physicalDevice, params.pipelineConstructionType);
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.pipelineConstructionType);
 }
 
 //! Verify the values of all samples in all attachments.
@@ -1351,7 +1351,7 @@ tcu::TestStatus test (Context& context, const TestParams params)
 
 		VkPhysicalDeviceProperties2 properties =
 		{
-			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR,	    // VkStructureType               sType;
+			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,			// VkStructureType               sType;
 			&wd.sampleLocationsProperties,							// void*                         pNext;
 			VkPhysicalDeviceProperties(),							// VkPhysicalDeviceProperties    properties;
 		};

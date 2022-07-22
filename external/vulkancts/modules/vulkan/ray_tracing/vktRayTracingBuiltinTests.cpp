@@ -2720,6 +2720,13 @@ void createRayFlagsTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtin
 				if (skipTriangles && skipAABBs)
 					continue;
 
+				// Skipping - SkipTrianglesKHR is mutually exclusive with CullBackFacingTrianglesKHR and CullFrontFacingTrianglesKHR
+				if ((geomTypes[geomTypesNdx].geomType == GEOM_TYPE_TRIANGLES) && skipRayFlags[skipRayFlagsNdx].skipTriangles &&
+					(pipelineFlags[pipelineFlagsNdx].flag == static_cast<VkPipelineCreateFlags>(0)))
+				{
+					continue;
+				}
+
 				de::MovePtr<tcu::TestCaseGroup>	pipelineFlagsGroup	(new tcu::TestCaseGroup(testCtx, pipelineFlags[pipelineFlagsNdx].name, ""));
 
 				for (size_t opaquesNdx = 0; opaquesNdx < DE_LENGTH_OF_ARRAY(opaques); ++opaquesNdx)
@@ -2890,8 +2897,8 @@ tcu::TestCaseGroup*	createBuiltinTests (tcu::TestContext& testCtx)
 		{ TEST_ID_HIT_KIND_EXT,					"HitKindEXT"			,			A	|	C							, createScalarTests			},
 		{ TEST_ID_OBJECT_TO_WORLD_EXT,			"ObjectToWorldEXT"		,			A	|	C	|	I					, createMultiOutputTests	},
 		{ TEST_ID_WORLD_TO_OBJECT_EXT,			"WorldToObjectEXT"		,			A	|	C	|	I					, createMultiOutputTests	},
-        { TEST_ID_OBJECT_TO_WORLD_3X4_EXT,		"ObjectToWorld3x4EXT"	,			A	|	C	|	I					, createMultiOutputTests	},
-        { TEST_ID_WORLD_TO_OBJECT_3X4_EXT,		"WorldToObject3x4EXT"	,			A	|	C	|	I					, createMultiOutputTests	},
+		{ TEST_ID_OBJECT_TO_WORLD_3X4_EXT,		"ObjectToWorld3x4EXT"	,			A	|	C	|	I					, createMultiOutputTests	},
+		{ TEST_ID_WORLD_TO_OBJECT_3X4_EXT,		"WorldToObject3x4EXT"	,			A	|	C	|	I					, createMultiOutputTests	},
 	};
 
 	de::MovePtr<tcu::TestCaseGroup> builtinGroup(new tcu::TestCaseGroup(testCtx, "builtin", "Ray tracing shader builtin tests"));

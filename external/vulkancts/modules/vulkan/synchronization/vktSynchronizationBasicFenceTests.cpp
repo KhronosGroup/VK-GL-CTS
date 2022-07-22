@@ -105,6 +105,22 @@ tcu::TestStatus basicOneFenceCase (Context& context)
 	return tcu::TestStatus::pass("Basic one fence tests passed");
 }
 
+void checkCommandBufferSimultaneousUseSupport(Context& context)
+{
+#ifdef CTS_USES_VULKANSC
+	if (context.getDeviceVulkanSC10Properties().commandBufferSimultaneousUse == VK_FALSE)
+		TCU_THROW(NotSupportedError, "commandBufferSimultaneousUse is not supported");
+#else
+	DE_UNREF(context);
+#endif
+}
+
+void checkCommandBufferSimultaneousUseSupport1(Context& context, uint32_t numFences)
+{
+	DE_UNREF(numFences);
+	checkCommandBufferSimultaneousUseSupport(context);
+}
+
 tcu::TestStatus basicSignaledCase (Context& context, uint32_t numFences)
 {
 	const auto&		vkd			= context.getDeviceInterface();
@@ -328,12 +344,12 @@ tcu::TestStatus basicMultiFenceWaitAllFalseCase (Context& context)
 tcu::TestCaseGroup* createBasicFenceTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> basicFenceTests(new tcu::TestCaseGroup(testCtx, "fence", "Basic fence tests"));
-	addFunctionCase(basicFenceTests.get(),	"one",					"Basic one fence tests",							basicOneFenceCase);
-	addFunctionCase(basicFenceTests.get(),	"multi",				"Basic multi fence tests",							basicMultiFenceCase);
-	addFunctionCase(basicFenceTests.get(),	"empty_submit",			"Signal a fence after an empty queue submission",	emptySubmitCase);
-	addFunctionCase(basicFenceTests.get(),	"multi_waitall_false",	"Basic multi fence test without waitAll",			basicMultiFenceWaitAllFalseCase);
+	addFunctionCase(basicFenceTests.get(),	"one",					"Basic one fence tests",																		basicOneFenceCase);
+	addFunctionCase(basicFenceTests.get(),	"multi",				"Basic multi fence tests",							checkCommandBufferSimultaneousUseSupport,	basicMultiFenceCase);
+	addFunctionCase(basicFenceTests.get(),	"empty_submit",			"Signal a fence after an empty queue submission",												emptySubmitCase);
+	addFunctionCase(basicFenceTests.get(),	"multi_waitall_false",	"Basic multi fence test without waitAll",			checkCommandBufferSimultaneousUseSupport,	basicMultiFenceWaitAllFalseCase);
 	addFunctionCase(basicFenceTests.get(),	"one_signaled",			"Create a single signaled fence and wait on it",	basicSignaledCase, 1u);
-	addFunctionCase(basicFenceTests.get(),	"multiple_signaled",	"Create multiple signaled fences and wait on them",	basicSignaledCase, 10u);
+	addFunctionCase(basicFenceTests.get(),	"multiple_signaled",	"Create multiple signaled fences and wait on them",	checkCommandBufferSimultaneousUseSupport1,	basicSignaledCase, 10u);
 
 	return basicFenceTests.release();
 }

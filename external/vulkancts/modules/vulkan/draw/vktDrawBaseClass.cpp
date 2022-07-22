@@ -23,6 +23,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktDrawBaseClass.hpp"
+#include "vkQueryUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkTypeUtil.hpp"
 
@@ -31,10 +32,10 @@ namespace vkt
 namespace Draw
 {
 
-DrawTestsBaseClass::DrawTestsBaseClass (Context& context, const char* vertexShaderName, const char* fragmentShaderName, bool useDynamicRendering, vk::VkPrimitiveTopology topology)
+DrawTestsBaseClass::DrawTestsBaseClass (Context& context, const char* vertexShaderName, const char* fragmentShaderName, const SharedGroupParams groupParams, vk::VkPrimitiveTopology topology)
 	: TestInstance				(context)
 	, m_colorAttachmentFormat	(vk::VK_FORMAT_R8G8B8A8_UNORM)
-	, m_useDynamicRendering		(useDynamicRendering)
+	, m_groupParams				(groupParams)
 	, m_topology				(topology)
 	, m_vk						(context.getDeviceInterface())
 	, m_vertexShaderName		(vertexShaderName)
@@ -60,7 +61,7 @@ void DrawTestsBaseClass::initialize (void)
 	m_colorTargetView						= vk::createImageView(m_vk, device, &colorTargetViewInfo);
 
 	// create renderpass and framebuffer only when we are not using dynamic rendering
-	if (!m_useDynamicRendering)
+	if (!m_groupParams->useDynamicRendering)
 	{
 		RenderPassCreateInfo renderPassCreateInfo;
 		renderPassCreateInfo.addAttachment(AttachmentDescription(m_colorAttachmentFormat,
@@ -144,6 +145,9 @@ void DrawTestsBaseClass::initialize (void)
 	m_cmdPool	= vk::createCommandPool(m_vk, device, &cmdPoolCreateInfo);
 	m_cmdBuffer	= vk::allocateCommandBuffer(m_vk, device, *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
+	if (m_groupParams->useSecondaryCmdBuffer)
+		m_secCmdBuffer = vk::allocateCommandBuffer(m_vk, device, *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+
 	initPipeline(device);
 }
 
@@ -168,6 +172,7 @@ void DrawTestsBaseClass::initPipeline (const vk::VkDevice device)
 	pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
 	pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState());
 
+#ifndef CTS_USES_VULKANSC
 	vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
@@ -179,24 +184,25 @@ void DrawTestsBaseClass::initPipeline (const vk::VkDevice device)
 		vk::VK_FORMAT_UNDEFINED
 	};
 
-	if (m_useDynamicRendering)
+	if (m_groupParams->useDynamicRendering)
 		pipelineCreateInfo.pNext = &renderingCreateInfo;
+#endif // CTS_USES_VULKANSC
 
 	m_pipeline = vk::createGraphicsPipeline(m_vk, device, DE_NULL, &pipelineCreateInfo);
 }
 
-void DrawTestsBaseClass::beginRender (const vk::VkSubpassContents content)
+void DrawTestsBaseClass::preRenderBarriers(void)
 {
 	const vk::VkClearValue clearColor { { { 0.0f, 0.0f, 0.0f, 1.0f } } };
 
 	initialTransitionColor2DImage(m_vk, *m_cmdBuffer, m_colorTargetImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL,
-								  vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
+		vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 	const ImageSubresourceRange subresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT);
 	m_vk.cmdClearColorImage(*m_cmdBuffer, m_colorTargetImage->object(),
 		vk::VK_IMAGE_LAYOUT_GENERAL, &clearColor.color, 1, &subresourceRange);
 
-	const vk::VkMemoryBarrier memBarrier =
+	const vk::VkMemoryBarrier memBarrier
 	{
 		vk::VK_STRUCTURE_TYPE_MEMORY_BARRIER,
 		DE_NULL,
@@ -207,27 +213,65 @@ void DrawTestsBaseClass::beginRender (const vk::VkSubpassContents content)
 	m_vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
 		vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 		0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
-
-	const vk::VkRect2D renderArea = vk::makeRect2D(WIDTH, HEIGHT);
-	if (m_useDynamicRendering)
-	{
-		vk::VkRenderingFlagsKHR renderingFlags = 0;
-		if (content == vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS)
-			renderingFlags = vk::VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR;
-
-		vk::beginRendering(m_vk, *m_cmdBuffer, *m_colorTargetView, renderArea, clearColor, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_LOAD, renderingFlags);
-	}
-	else
-		vk::beginRenderPass(m_vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, renderArea, content);
 }
 
-void DrawTestsBaseClass::endRender (void)
+void DrawTestsBaseClass::beginLegacyRender (vk::VkCommandBuffer cmdBuffer, const vk::VkSubpassContents content)
 {
-	if (m_useDynamicRendering)
-		vk::endRendering(m_vk, *m_cmdBuffer);
-	else
-		vk::endRenderPass(m_vk, *m_cmdBuffer);
+	const vk::VkRect2D renderArea = vk::makeRect2D(WIDTH, HEIGHT);
+
+	vk::beginRenderPass(m_vk, cmdBuffer, *m_renderPass, *m_framebuffer, renderArea, content);
 }
+
+void DrawTestsBaseClass::endLegacyRender (vk::VkCommandBuffer cmdBuffer)
+{
+	vk::endRenderPass(m_vk, cmdBuffer);
+}
+
+#ifndef CTS_USES_VULKANSC
+void DrawTestsBaseClass::beginSecondaryCmdBuffer(const vk::DeviceInterface& vk, const vk::VkRenderingFlagsKHR renderingFlags)
+{
+	vk::VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
+	{
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,	// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		renderingFlags,															// VkRenderingFlagsKHR				flags;
+		0u,																		// uint32_t							viewMask;
+		1u,																		// uint32_t							colorAttachmentCount;
+		&m_colorAttachmentFormat,												// const VkFormat*					pColorAttachmentFormats;
+		vk::VK_FORMAT_UNDEFINED,												// VkFormat							depthAttachmentFormat;
+		vk::VK_FORMAT_UNDEFINED,												// VkFormat							stencilAttachmentFormat;
+		vk::VK_SAMPLE_COUNT_1_BIT,												// VkSampleCountFlagBits			rasterizationSamples;
+	};
+	const vk::VkCommandBufferInheritanceInfo bufferInheritanceInfo = vk::initVulkanStructure(&inheritanceRenderingInfo);
+
+	vk::VkCommandBufferUsageFlags usageFlags = vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+		usageFlags |= vk::VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+
+	const vk::VkCommandBufferBeginInfo commandBufBeginParams
+	{
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,						// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		usageFlags,																// VkCommandBufferUsageFlags		flags;
+		&bufferInheritanceInfo
+	};
+
+	VK_CHECK(vk.beginCommandBuffer(*m_secCmdBuffer, &commandBufBeginParams));
+}
+
+void DrawTestsBaseClass::beginDynamicRender(vk::VkCommandBuffer cmdBuffer, const vk::VkRenderingFlagsKHR renderingFlags)
+{
+	const vk::VkClearValue	clearColor{ { { 0.0f, 0.0f, 0.0f, 1.0f } } };
+	const vk::VkRect2D		renderArea = vk::makeRect2D(WIDTH, HEIGHT);
+
+	vk::beginRendering(m_vk, cmdBuffer, *m_colorTargetView, renderArea, clearColor, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_LOAD, renderingFlags);
+}
+
+void DrawTestsBaseClass::endDynamicRender(vk::VkCommandBuffer cmdBuffer)
+{
+	vk::endRendering(m_vk, cmdBuffer);
+}
+#endif // CTS_USES_VULKANSC
 
 }	// Draw
 }	// vkt

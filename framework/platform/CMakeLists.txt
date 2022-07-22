@@ -170,7 +170,7 @@ if (DEQP_USE_X11)
 	if (DEQP_USE_XCB)
 		find_package(XCB REQUIRED)
 		target_link_libraries(tcutil-platform ${XCB_LIBRARIES})
-		add_definitions(-DDEQP_SUPPORT_XCB=1)
+		target_compile_definitions(tcutil-platform PUBLIC DEQP_SUPPORT_XCB=1)
 	endif ()
 	if (DEQP_SUPPORT_GLX)
 	  # GLX functions don't currently have wrappers, so link directly to libGL.
@@ -179,10 +179,50 @@ if (DEQP_USE_X11)
 	if (DEQP_USE_WAYLAND)
 		find_package(Wayland REQUIRED)
 		target_link_libraries(tcutil-platform ${WAYLAND_LIBRARIES})
-		add_definitions(-DDEQP_SUPPORT_WAYLAND=1)
+		target_compile_definitions(tcutil-platform PUBLIC DEQP_SUPPORT_WAYLAND=1)
 	endif ()
 endif ()
 
 if (DE_OS_IS_WIN32)
 	target_link_libraries(tcutil-platform "version")
 endif()
+
+# Add similar library for Vulkan SC ( uses same code as vkutil, but with different INL files )
+add_library(tcutil-sc-platform STATIC ${TCUTIL_PLATFORM_SRCS})
+target_include_directories(tcutil-sc-platform BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
+
+# Add vkscutil to the deps before tcutil so that it picks up the c++11 dependencies
+target_link_libraries(tcutil-sc-platform vkscutil)
+
+target_link_libraries(tcutil-sc-platform tcutil ${TCUTIL_PLATFORM_LIBS})
+
+# Always link to glutil as some platforms such as Win32 always support GL
+target_link_libraries(tcutil-sc-platform glutil)
+
+# Always link to eglutil
+target_link_libraries(tcutil-sc-platform eglutil)
+
+# X11 libraries
+if (DEQP_USE_X11)
+	find_package(X11 REQUIRED)
+	target_link_libraries(tcutil-sc-platform ${X11_LIBRARIES})
+	if (DEQP_USE_XCB)
+		find_package(XCB REQUIRED)
+		target_link_libraries(tcutil-sc-platform ${XCB_LIBRARIES})
+		target_compile_definitions(tcutil-sc-platform PUBLIC DEQP_SUPPORT_XCB=1)
+	endif ()
+	if (DEQP_SUPPORT_GLX)
+	  # GLX functions don't currently have wrappers, so link directly to libGL.
+	  target_link_libraries(tcutil-sc-platform GL)
+	endif ()
+	if (DEQP_USE_WAYLAND)
+		find_package(Wayland REQUIRED)
+		target_link_libraries(tcutil-sc-platform ${WAYLAND_LIBRARIES})
+		target_compile_definitions(tcutil-sc-platform PUBLIC DEQP_SUPPORT_WAYLAND=1)
+	endif ()
+endif ()
+
+if (DE_OS_IS_WIN32)
+	target_link_libraries(tcutil-sc-platform "version")
+endif()
+

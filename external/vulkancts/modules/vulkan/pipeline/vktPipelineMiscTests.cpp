@@ -44,6 +44,7 @@ enum AmberFeatureBits
 
 using AmberFeatureFlags = deUint32;
 
+#ifndef CTS_USES_VULKANSC
 std::vector<std::string> getFeatureList (AmberFeatureFlags flags)
 {
 	std::vector<std::string> requirements;
@@ -59,9 +60,11 @@ std::vector<std::string> getFeatureList (AmberFeatureFlags flags)
 
 	return requirements;
 }
+#endif // CTS_USES_VULKANSC
 
 void addTests (tcu::TestCaseGroup* tests, const char* data_dir)
 {
+#ifndef CTS_USES_VULKANSC
 	tcu::TestContext& testCtx = tests->getTestContext();
 
 	// Shader test files are saved in <path>/external/vulkancts/data/vulkan/amber/<data_dir>/<basename>.amber
@@ -84,7 +87,6 @@ void addTests (tcu::TestCaseGroup* tests, const char* data_dir)
 			(AMBER_FEATURE_TESSELATION_SHADER | AMBER_FEATURE_GEOMETRY_SHADER),
 		},
 	};
-
 	for (unsigned i = 0; i < DE_LENGTH_OF_ARRAY(cases) ; ++i)
 	{
 		std::string					file			= std::string(cases[i].basename) + ".amber";
@@ -93,6 +95,10 @@ void addTests (tcu::TestCaseGroup* tests, const char* data_dir)
 
 		tests->addChild(testCase);
 	}
+#else
+	DE_UNREF(tests);
+	DE_UNREF(data_dir);
+#endif
 }
 
 } // anonymous

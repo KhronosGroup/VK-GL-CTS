@@ -87,7 +87,7 @@ void checkAllSupported (const Extensions& supportedExtensions, const vector<stri
 {
 	for (auto& requiredExtName : requiredExtensions)
 	{
-		if (!isExtensionSupported(supportedExtensions, RequiredExtension(requiredExtName)))
+		if (!isExtensionStructSupported(supportedExtensions, RequiredExtension(requiredExtName)))
 			TCU_THROW(NotSupportedError, (requiredExtName + " is not supported").c_str());
 	}
 }
@@ -112,7 +112,8 @@ Move<VkDevice> createDeviceWithPushDescriptor (const Context&				context,
 											   const InstanceInterface&		vki,
 											   VkPhysicalDevice				physicalDevice,
 											   const Extensions&			supportedExtensions,
-											   const deUint32				queueFamilyIndex)
+											   const deUint32				queueFamilyIndex,
+											   const TestParams&			params)
 {
 
 	const float						queuePriority			= 1.0f;
@@ -130,6 +131,10 @@ Move<VkDevice> createDeviceWithPushDescriptor (const Context&				context,
 	deMemset(&features, 0, sizeof(features));
 
 	vector<string>					requiredExtensionsStr	= { "VK_KHR_push_descriptor" };
+	if (params.pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+	{
+		requiredExtensionsStr.push_back("VK_EXT_graphics_pipeline_library");
+	}
 	vector<const char *>			requiredExtensions;
 	checkAllSupported(supportedExtensions, requiredExtensionsStr);
 	// We need the contents of requiredExtensionsStr as a vector<const char*> in VkDeviceCreateInfo.
@@ -274,7 +279,7 @@ PushDescriptorBufferGraphicsTestInstance::PushDescriptorBufferGraphicsTestInstan
 	, m_physicalDevice		(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
 	, m_queueFamilyIndex	(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT))
 	, m_deviceExtensions	(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
-	, m_device				(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex))
+	, m_device				(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, params))
 	, m_vkd					(m_vkp, m_instance, *m_device)
 	, m_queue				(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
 	, m_allocator			(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
@@ -740,7 +745,7 @@ PushDescriptorBufferComputeTestInstance::PushDescriptorBufferComputeTestInstance
 	, m_physicalDevice		(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
 	, m_queueFamilyIndex	(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_COMPUTE_BIT))
 	, m_deviceExtensions	(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
-	, m_device				(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex))
+	, m_device				(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, params))
 	, m_vkd					(m_vkp, m_instance, *m_device)
 	, m_queue				(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
 	, m_itemSize			(calcItemSize(m_vki, m_physicalDevice))
@@ -1096,7 +1101,7 @@ PushDescriptorImageGraphicsTestInstance::PushDescriptorImageGraphicsTestInstance
 	, m_physicalDevice		(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
 	, m_queueFamilyIndex	(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT))
 	, m_deviceExtensions	(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
-	, m_device				(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex))
+	, m_device				(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, params))
 	, m_vkd					(m_vkp, m_instance, *m_device)
 	, m_queue				(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
 	, m_allocator			(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
@@ -1953,7 +1958,7 @@ PushDescriptorImageComputeTestInstance::PushDescriptorImageComputeTestInstance (
 	, m_physicalDevice		(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
 	, m_queueFamilyIndex	(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_COMPUTE_BIT | VK_QUEUE_GRAPHICS_BIT))
 	, m_deviceExtensions	(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
-	, m_device				(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex))
+	, m_device				(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, params))
 	, m_vkd					(m_vkp, m_instance, *m_device)
 	, m_queue				(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
 	, m_itemSize			(calcItemSize(m_vki, m_physicalDevice, 2u))
@@ -2745,7 +2750,7 @@ PushDescriptorTexelBufferGraphicsTestInstance::PushDescriptorTexelBufferGraphics
 	, m_physicalDevice		(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
 	, m_queueFamilyIndex	(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT))
 	, m_deviceExtensions	(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
-	, m_device				(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex))
+	, m_device				(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, params))
 	, m_vkd					(m_vkp, m_instance, *m_device)
 	, m_queue				(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
 	, m_allocator			(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
@@ -3233,7 +3238,7 @@ PushDescriptorTexelBufferComputeTestInstance::PushDescriptorTexelBufferComputeTe
 	, m_physicalDevice		(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
 	, m_queueFamilyIndex	(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_COMPUTE_BIT))
 	, m_deviceExtensions	(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
-	, m_device				(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex))
+	, m_device				(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, params))
 	, m_vkd					(m_vkp, m_instance, *m_device)
 	, m_queue				(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
 	, m_itemSize			(calcItemSize(m_vki, m_physicalDevice))
@@ -3615,7 +3620,7 @@ PushDescriptorInputAttachmentGraphicsTestInstance::PushDescriptorInputAttachment
 	, m_physicalDevice		(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
 	, m_queueFamilyIndex	(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT))
 	, m_deviceExtensions	(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
-	, m_device				(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex))
+	, m_device				(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, params))
 	, m_vkd					(m_vkp, m_instance, *m_device)
 	, m_queue				(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
 	, m_allocator			(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))

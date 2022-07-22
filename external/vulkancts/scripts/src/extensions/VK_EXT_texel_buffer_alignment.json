@@ -1,0 +1,15 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": "",
+		"note": "Partial promotion, only the properties structure was promoted to vk1.3, the feature structure was not promoted"
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT":
+		[
+			{ "features": ["texelBufferAlignment"],	"requirements": ["VK_EXT_texel_buffer_alignment"] }
+		]
+	}
+}

@@ -49,6 +49,7 @@ void checkSupport (Context& context, std::string testName)
 
 void createTests (tcu::TestCaseGroup* testGroup)
 {
+#ifndef CTS_USES_VULKANSC
 	tcu::TestContext& testCtx = testGroup->getTestContext();
 
 	// .array
@@ -112,7 +113,6 @@ void createTests (tcu::TestCaseGroup* testGroup)
 		};
 
 		testGroup->addChild(shuffle);
-
 		for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
 		{
 			const std::string			fileName	= cases[i] + ".amber";
@@ -121,6 +121,9 @@ void createTests (tcu::TestCaseGroup* testGroup)
 			shuffle->addChild(testCase);
 		}
 	}
+#else
+	DE_UNREF(testGroup);
+#endif
 }
 
 } // anonymous

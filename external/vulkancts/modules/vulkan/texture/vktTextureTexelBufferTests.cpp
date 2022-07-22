@@ -101,6 +101,7 @@ tcu::TestCaseGroup* createUniformTexelBufferTests (tcu::TestContext& testCtx)
 	}
 
 	// .packed
+#ifndef CTS_USES_VULKANSC
 	{
 		tcu::TestCaseGroup* const	packed		= new tcu::TestCaseGroup(testCtx, "packed", "Test uniform texel buffer with packed formats");
 		static const char			dataDir[]	= "texture/texel_buffer/uniform/packed";
@@ -126,8 +127,10 @@ tcu::TestCaseGroup* createUniformTexelBufferTests (tcu::TestContext& testCtx)
 			packed->addChild(testCase);
 		}
 	}
+#endif
 
 	// .snorm
+#ifndef CTS_USES_VULKANSC
 	{
 		tcu::TestCaseGroup* const	snorm		= new tcu::TestCaseGroup(testCtx, "snorm", "Test uniform texel buffer with SNORM formats");
 		static const char			dataDir[]	= "texture/texel_buffer/uniform/snorm";
@@ -169,6 +172,7 @@ tcu::TestCaseGroup* createUniformTexelBufferTests (tcu::TestContext& testCtx)
 			snorm->addChild(testCase);
 		}
 	}
+#endif
 
 	return uniform.release();
 }

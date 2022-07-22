@@ -37,6 +37,8 @@
 #include "vkImageUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkImageWithMemory.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -142,7 +144,11 @@ private:
 
 void IdentityGeometryShaderTestCase::checkSupport (Context& context) const
 {
+#ifndef CTS_USES_VULKANSC
 	checkSupportPrimitive(context, m_primitiveType);
+#else
+	DE_UNREF(context);
+#endif // CTS_USES_VULKANSC
 }
 
 void IdentityGeometryShaderTestCase::initPrograms (vk::SourceCollections& programCollection) const
@@ -237,7 +243,11 @@ private:
 
 void IdentityTessellationShaderTestCase::checkSupport (Context& context) const
 {
+#ifndef CTS_USES_VULKANSC
 	checkSupportPrimitive(context, m_primitiveType);
+#else
+	DE_UNREF(context);
+#endif // CTS_USES_VULKANSC
 }
 
 //! Geometry shader used in passthrough tessellation shader case.
@@ -360,11 +370,11 @@ void IdentityTessellationShaderTestCase::initPrograms (vk::SourceCollections& pr
 	}
 }
 
-inline tcu::ConstPixelBufferAccess getPixelBufferAccess (const DeviceInterface& vk,
-														 const VkDevice			device,
-														 const Buffer&			colorBuffer,
-														 const VkFormat			colorFormat,
-														 const tcu::IVec2&		renderSize)
+inline tcu::ConstPixelBufferAccess getPixelBufferAccess (const DeviceInterface&		vk,
+														 const VkDevice				device,
+														 const BufferWithMemory&	colorBuffer,
+														 const VkFormat				colorFormat,
+														 const tcu::IVec2&			renderSize)
 {
 	const Allocation& alloc = colorBuffer.getAllocation();
 
@@ -443,7 +453,7 @@ tcu::TestStatus PassthroughTestInstance::iterate (void)
 	Allocator&				allocator			= m_context.getDefaultAllocator();
 
 	// Tessellation levels
-	const Buffer tessLevelsBuffer (vk, device, allocator, makeBufferCreateInfo(sizeof(TessLevels), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
+	const BufferWithMemory tessLevelsBuffer (vk, device, allocator, makeBufferCreateInfo(sizeof(TessLevels), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	if (m_params.useTessLevels)
 	{
@@ -456,9 +466,9 @@ tcu::TestStatus PassthroughTestInstance::iterate (void)
 
 	// Vertex attributes
 
-	const VkDeviceSize	vertexDataSizeBytes	= sizeInBytes(m_params.vertices);
-	const VkFormat		vertexFormat		= VK_FORMAT_R32G32B32A32_SFLOAT;
-	const Buffer		vertexBuffer		(vk, device, allocator, makeBufferCreateInfo(vertexDataSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible);
+	const VkDeviceSize		vertexDataSizeBytes	= sizeInBytes(m_params.vertices);
+	const VkFormat			vertexFormat		= VK_FORMAT_R32G32B32A32_SFLOAT;
+	const BufferWithMemory	vertexBuffer		(vk, device, allocator, makeBufferCreateInfo(vertexDataSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	{
 		const Allocation& alloc = vertexBuffer.getAllocation();
@@ -489,17 +499,17 @@ tcu::TestStatus PassthroughTestInstance::iterate (void)
 	const tcu::IVec2			  renderSize				 = tcu::IVec2(RENDER_SIZE, RENDER_SIZE);
 	const VkFormat				  colorFormat				 = VK_FORMAT_R8G8B8A8_UNORM;
 	const VkImageSubresourceRange colorImageSubresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
-	const Image					  colorAttachmentImage		 (vk, device, allocator,
+	const ImageWithMemory		  colorAttachmentImage		 (vk, device, allocator,
 															 makeImageCreateInfo(renderSize, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 1u),
 															 MemoryRequirement::Any);
 
 	// Color output buffer: image will be copied here for verification.
 	//                      We use two buffers, one for each case.
 
-	const VkDeviceSize	colorBufferSizeBytes		= renderSize.x()*renderSize.y() * tcu::getPixelSize(mapVkFormat(colorFormat));
-	const Buffer		colorBuffer1				(vk, device, allocator, makeBufferCreateInfo(colorBufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible);
-	const Buffer		colorBuffer2				(vk, device, allocator, makeBufferCreateInfo(colorBufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible);
-	const Buffer* const colorBuffer[PIPELINE_CASES] = { &colorBuffer1, &colorBuffer2 };
+	const VkDeviceSize			colorBufferSizeBytes		= renderSize.x()*renderSize.y() * tcu::getPixelSize(mapVkFormat(colorFormat));
+	const BufferWithMemory		colorBuffer1				(vk, device, allocator, makeBufferCreateInfo(colorBufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible);
+	const BufferWithMemory		colorBuffer2				(vk, device, allocator, makeBufferCreateInfo(colorBufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible);
+	const BufferWithMemory* const colorBuffer[PIPELINE_CASES] = { &colorBuffer1, &colorBuffer2 };
 
 	// Pipeline
 

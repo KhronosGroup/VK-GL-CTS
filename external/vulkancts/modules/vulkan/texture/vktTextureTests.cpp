@@ -57,11 +57,13 @@ void createTextureTests (tcu::TestCaseGroup* textureTests)
 	textureTests->addChild(createTextureCompressedFormatTests	(testCtx));
 	textureTests->addChild(create3DTextureCompressedFormatTests	(testCtx));
 	textureTests->addChild(createTextureSwizzleTests			(testCtx));
+#ifndef CTS_USES_VULKANSC
 	textureTests->addChild(createTextureSubgroupLodTests		(testCtx));
 	textureTests->addChild(createTextureConversionTests			(testCtx));
 	textureTests->addChild(createTextureTexelBufferTests		(testCtx));
 	textureTests->addChild(createTextureMultisampleTests		(testCtx));
 	textureTests->addChild(createTextureTexelOffsetTests		(testCtx));
+#endif // CTS_USES_VULKANSC
 }
 
 } // anonymous

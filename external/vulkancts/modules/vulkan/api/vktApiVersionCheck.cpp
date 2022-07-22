@@ -36,6 +36,7 @@
 #include "vkApiVersion.hpp"
 #include "vkDefs.hpp"
 #include "vkPlatform.hpp"
+#include "vkSafetyCriticalUtil.hpp"
 
 #include "vktApiVersionCheck.hpp"
 #include "vktTestCase.hpp"
@@ -134,7 +135,7 @@ public:
 		tcu::TestLog&						log				= m_context.getTestContext().getLog();
 		const deUint32						apiVersion		= m_context.getUsedApiVersion();
 		const vk::Platform&					platform		= m_context.getTestContext().getPlatform().getVulkanPlatform();
-		de::MovePtr<vk::Library>			vkLibrary		= de::MovePtr<vk::Library>(platform.createLibrary());
+		de::MovePtr<vk::Library>			vkLibrary		= de::MovePtr<vk::Library>(platform.createLibrary(m_context.getTestContext().getCommandLine().getVkLibraryPath()));
 		const tcu::FunctionLibrary&			funcLibrary		= vkLibrary->getFunctionLibrary();
 
 		deUint32							failsQuantity	= 0u;
@@ -350,9 +351,47 @@ private:
 			&queuePriority
 		};
 
+		void* pNext									= DE_NULL;
+#ifdef CTS_USES_VULKANSC
+		VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
+		memReservationInfo.pNext								= pNext;
+		pNext													= &memReservationInfo;
+
+		VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+		sc10Features.pNext										= pNext;
+		pNext													= &sc10Features;
+
+		VkPipelineCacheCreateInfo			pcCI;
+		std::vector<VkPipelinePoolSize>		poolSizes;
+		if (context.getTestContext().getCommandLine().isSubProcess())
+		{
+			if (context.getResourceInterface()->getCacheDataSize() > 0)
+			{
+				pcCI =
+				{
+					VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,		// VkStructureType				sType;
+					DE_NULL,											// const void*					pNext;
+					VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+						VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+					context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
+					context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
+				};
+				memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+				memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+			}
+
+			poolSizes							= context.getResourceInterface()->getPipelinePoolSizes();
+			if (!poolSizes.empty())
+			{
+				memReservationInfo.pipelinePoolSizeCount		= deUint32(poolSizes.size());
+				memReservationInfo.pPipelinePoolSizes			= poolSizes.data();
+			}
+		}
+#endif // CTS_USES_VULKANSC
+
 		const VkDeviceCreateInfo	deviceInfo		= {
 			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-			DE_NULL,
+			pNext,
 			static_cast<VkDeviceCreateFlags>(0u),
 			1u,
 			&queueInfo,
@@ -448,25 +487,39 @@ private:
 	deBool regularCheck (const APIContext& ctx, tcu::TestLog& log, deUint32& failsQuantity, const vector<pair<const char*, FunctionOrigin> >& testsArr)
 	{
 		const deUint32 startingQuantity = failsQuantity;
+
 		for (deUint32 ndx = 0u; ndx < testsArr.size(); ++ndx)
 		{
-			if (deStringEqual(testsArr[ndx].first, "vkGetInstanceProcAddr") && m_context.getUsedApiVersion() < VK_API_VERSION_1_2)
+			const auto&	funcName	= testsArr[ndx].first;
+			const auto&	funcType	= testsArr[ndx].second;
+			const auto	apiVersion	= m_context.getUsedApiVersion();
+
+			if (deStringEqual(funcName, "vkGetInstanceProcAddr") && apiVersion < VK_API_VERSION_1_2)
 				continue;
 
-			const deUint32 functionType	= testsArr[ndx].second;
-			if (functionType == FUNCTIONORIGIN_PLATFORM)
-				checkPlatformFunction(ctx, log, testsArr[ndx].first, DE_TRUE, failsQuantity);
-			else if (functionType == FUNCTIONORIGIN_INSTANCE)
+			// VK_KHR_draw_indirect_count was promoted to core in Vulkan 1.2, but these entrypoints are not mandatory unless the
+			// device supports the extension. In that case, the drawIndirectCount feature bit will also be true. Any of the two
+			// checks is valid. We use the extension name for convenience here.
+			if ((deStringEqual(funcName, "vkCmdDrawIndirectCount") || deStringEqual(funcName, "vkCmdDrawIndexedIndirectCount"))
+				&& !isSupportedDeviceExt("VK_KHR_draw_indirect_count", apiVersion))
+				continue;
+
+			if (funcType == FUNCTIONORIGIN_PLATFORM)
 			{
-				checkInstanceFunction(ctx, log, testsArr[ndx].first, DE_TRUE, failsQuantity);
-				checkDeviceFunction(ctx, log, testsArr[ndx].first, DE_FALSE, failsQuantity);
+				checkPlatformFunction(ctx, log, funcName, DE_TRUE, failsQuantity);
 			}
-			else if (functionType == FUNCTIONORIGIN_DEVICE)
+			else if (funcType == FUNCTIONORIGIN_INSTANCE)
 			{
-				checkInstanceFunction(ctx, log, testsArr[ndx].first, DE_TRUE, failsQuantity);
-				checkDeviceFunction(ctx, log, testsArr[ndx].first, DE_TRUE, failsQuantity);
+				checkInstanceFunction(ctx, log, funcName, DE_TRUE, failsQuantity);
+				checkDeviceFunction(ctx, log, funcName, DE_FALSE, failsQuantity);
+			}
+			else if (funcType == FUNCTIONORIGIN_DEVICE)
+			{
+				checkInstanceFunction(ctx, log, funcName, DE_TRUE, failsQuantity);
+				checkDeviceFunction(ctx, log, funcName, DE_TRUE, failsQuantity);
 			}
 		}
+
 		return startingQuantity == failsQuantity;
 	}
 };

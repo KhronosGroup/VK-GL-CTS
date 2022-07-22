@@ -41,6 +41,8 @@
 namespace vk
 {
 
+#ifndef CTS_USES_VULKANSC
+
 struct DeferredThreadParams
 {
 	const DeviceInterface&	vk;
@@ -573,6 +575,7 @@ SerialStorage::SerialStorage (const DeviceInterface&									vk,
 							  const VkDeviceSize										storageSize)
 	: m_buildType		(buildType)
 	, m_storageSize		(storageSize)
+	, m_serialInfo		()
 {
 	const VkBufferCreateInfo	bufferCreateInfo	= makeBufferCreateInfo(storageSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
 	try
@@ -830,7 +833,6 @@ void updateVertexBuffer (const DeviceInterface&										vk,
 {
 	const Allocation&				geometryAlloc		= vertexBuffer->getAllocation();
 	deUint8*						bufferStart			= static_cast<deUint8*>(geometryAlloc.getHostPtr());
-	const VkDeviceSize				bufferSize			= getVertexBufferSize(geometriesData);
 	VkDeviceSize					bufferOffset		= geometriesOffset;
 
 	for (size_t geometryNdx = 0; geometryNdx < geometriesData.size(); ++geometryNdx)
@@ -843,7 +845,10 @@ void updateVertexBuffer (const DeviceInterface&										vk,
 		bufferOffset += deAlignSize(geometryPtrSize,8);
 	}
 
-	flushMappedMemoryRange(vk, device, geometryAlloc.getMemory(), geometryAlloc.getOffset()+geometriesOffset, bufferSize);
+	// Flush the whole allocation. We could flush only the interesting range, but we'd need to be sure both the offset and size
+	// align to VkPhysicalDeviceLimits::nonCoherentAtomSize, which we are not considering. Also note most code uses Coherent memory
+	// for the vertex and index buffers, so flushing is actually not needed.
+	flushAlloc(vk, device, geometryAlloc);
 }
 
 VkDeviceSize getIndexBufferSize (const std::vector<de::SharedPtr<RaytracedGeometryBase>>&	geometriesData)
@@ -886,7 +891,6 @@ void updateIndexBuffer (const DeviceInterface&										vk,
 {
 	const Allocation&				indexAlloc			= indexBuffer->getAllocation();
 	deUint8*						bufferStart			= static_cast<deUint8*>(indexAlloc.getHostPtr());
-	const VkDeviceSize				bufferSize			= getIndexBufferSize(geometriesData);
 	VkDeviceSize					bufferOffset		= geometriesOffset;
 
 	for (size_t geometryNdx = 0; geometryNdx < geometriesData.size(); ++geometryNdx)
@@ -902,7 +906,10 @@ void updateIndexBuffer (const DeviceInterface&										vk,
 		}
 	}
 
-	flushMappedMemoryRange(vk, device, indexAlloc.getMemory(), indexAlloc.getOffset()+geometriesOffset, bufferSize);
+	// Flush the whole allocation. We could flush only the interesting range, but we'd need to be sure both the offset and size
+	// align to VkPhysicalDeviceLimits::nonCoherentAtomSize, which we are not considering. Also note most code uses Coherent memory
+	// for the vertex and index buffers, so flushing is actually not needed.
+	flushAlloc(vk, device, indexAlloc);
 }
 
 class BottomLevelAccelerationStructureKHR : public BottomLevelAccelerationStructure
@@ -2777,7 +2784,7 @@ void TopLevelAccelerationStructureKHR::createAndDeserializeBottoms (const Device
 	{
 		const deUint64& lookAddr	= addresses[i+1];
 		auto			end			= matches.end();
-		auto			match		= std::find_if(matches.begin(), end, [&](const std::pair<deUint64, deUint32>& item){ return item.first == lookAddr; });
+		auto			match		= std::find_if(matches.begin(), end, [&](const std::pair<deUint64, std::size_t>& item){ return item.first == lookAddr; });
 		if (match != end)
 		{
 			m_bottomLevelInstances .emplace_back(m_bottomLevelInstances[match->second]);
@@ -3212,7 +3219,6 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR (const DeviceInterface&		
 	};
 	VkPipeline											object							= DE_NULL;
 	VkResult											result							= vk.createRayTracingPipelinesKHR(device, deferredOperation.get(), DE_NULL, 1u, &pipelineCreateInfo, DE_NULL, &object);
-	Move<VkPipeline>									pipeline						(check<VkPipeline>(object), Deleter<VkPipeline>(vk, device, DE_NULL));
 
 	if (m_deferredOperation)
 	{
@@ -3221,6 +3227,7 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR (const DeviceInterface&		
 		finishDeferredOperation(vk, device, deferredOperation.get(), m_workerThreadCount, result == VK_OPERATION_NOT_DEFERRED_KHR);
 	}
 
+	Move<VkPipeline> pipeline (check<VkPipeline>(object), Deleter<VkPipeline>(vk, device, DE_NULL));
 	return pipeline;
 }
 
@@ -3270,13 +3277,15 @@ de::MovePtr<BufferWithMemory> RayTracingPipeline::createShaderBindingTable (cons
 																			const VkDeviceAddress&		opaqueCaptureAddress,
 																			const deUint32				shaderBindingTableOffset,
 																			const deUint32				shaderRecordSize,
-																			const void**				shaderGroupDataPtrPerGroup)
+																			const void**				shaderGroupDataPtrPerGroup,
+																			const bool					autoAlignRecords)
 {
 	DE_ASSERT(shaderGroupBaseAlignment != 0u);
 	DE_ASSERT((shaderBindingTableOffset % shaderGroupBaseAlignment) == 0);
 	DE_UNREF(shaderGroupBaseAlignment);
 
-	const deUint32							sbtSize							= shaderBindingTableOffset + groupCount * deAlign32(shaderGroupHandleSize + shaderRecordSize, shaderGroupHandleSize);
+	const auto								totalEntrySize					= (autoAlignRecords ? (deAlign32(shaderGroupHandleSize + shaderRecordSize, shaderGroupHandleSize)) : (shaderGroupHandleSize + shaderRecordSize));
+	const deUint32							sbtSize							= shaderBindingTableOffset + groupCount * totalEntrySize;
 	const VkBufferUsageFlags				sbtFlags						= VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | additionalBufferUsageFlags;
 	VkBufferCreateInfo						sbtCreateInfo					= makeBufferCreateInfo(sbtSize, sbtFlags);
 	sbtCreateInfo.flags														|= additionalBufferCreateFlags;
@@ -3305,7 +3314,7 @@ de::MovePtr<BufferWithMemory> RayTracingPipeline::createShaderBindingTable (cons
 	for (deUint32 idx = 0; idx < groupCount; ++idx)
 	{
 		deUint8* shaderSrcPos	= shaderHandles.data() + idx * shaderGroupHandleSize;
-		deUint8* shaderDstPos	= shaderBegin + idx * deAlign32(shaderGroupHandleSize + shaderRecordSize, shaderGroupHandleSize);
+		deUint8* shaderDstPos	= shaderBegin + idx * totalEntrySize;
 		deMemcpy(shaderDstPos, shaderSrcPos, shaderGroupHandleSize);
 
 		if (shaderGroupDataPtrPerGroup		!= nullptr &&
@@ -3364,16 +3373,17 @@ public:
 																		 const VkPhysicalDevice		physicalDevice);
 	virtual					~RayTracingPropertiesKHR					();
 
-	virtual deUint32		getShaderGroupHandleSize					(void)	{ return m_rayTracingPipelineProperties.shaderGroupHandleSize;						}
-	virtual deUint32		getMaxRecursionDepth						(void)	{ return m_rayTracingPipelineProperties.maxRayRecursionDepth;						}
-	virtual deUint32		getMaxShaderGroupStride						(void)	{ return m_rayTracingPipelineProperties.maxShaderGroupStride;						}
-	virtual deUint32		getShaderGroupBaseAlignment					(void)	{ return m_rayTracingPipelineProperties.shaderGroupBaseAlignment;					}
-	virtual deUint64		getMaxGeometryCount							(void)	{ return m_accelerationStructureProperties.maxGeometryCount;						}
-	virtual deUint64		getMaxInstanceCount							(void)	{ return m_accelerationStructureProperties.maxInstanceCount;						}
-	virtual deUint64		getMaxPrimitiveCount						(void)	{ return m_accelerationStructureProperties.maxPrimitiveCount;						}
-	virtual deUint32		getMaxDescriptorSetAccelerationStructures	(void)	{ return m_accelerationStructureProperties.maxDescriptorSetAccelerationStructures;	}
-	deUint32				getMaxRayDispatchInvocationCount			(void)	{ return m_rayTracingPipelineProperties.maxRayDispatchInvocationCount;				}
-	deUint32				getMaxRayHitAttributeSize					(void)	{ return m_rayTracingPipelineProperties.maxRayHitAttributeSize;						}
+	uint32_t		getShaderGroupHandleSize					(void)	override { return m_rayTracingPipelineProperties.shaderGroupHandleSize;						}
+	uint32_t		getShaderGroupHandleAlignment				(void)	override { return m_rayTracingPipelineProperties.shaderGroupHandleAlignment;				}
+	uint32_t		getMaxRecursionDepth						(void)	override { return m_rayTracingPipelineProperties.maxRayRecursionDepth;						}
+	uint32_t		getMaxShaderGroupStride						(void)	override { return m_rayTracingPipelineProperties.maxShaderGroupStride;						}
+	uint32_t		getShaderGroupBaseAlignment					(void)	override { return m_rayTracingPipelineProperties.shaderGroupBaseAlignment;					}
+	uint64_t		getMaxGeometryCount							(void)	override { return m_accelerationStructureProperties.maxGeometryCount;						}
+	uint64_t		getMaxInstanceCount							(void)	override { return m_accelerationStructureProperties.maxInstanceCount;						}
+	uint64_t		getMaxPrimitiveCount						(void)	override { return m_accelerationStructureProperties.maxPrimitiveCount;						}
+	uint32_t		getMaxDescriptorSetAccelerationStructures	(void)	override { return m_accelerationStructureProperties.maxDescriptorSetAccelerationStructures;	}
+	uint32_t		getMaxRayDispatchInvocationCount			(void)	override { return m_rayTracingPipelineProperties.maxRayDispatchInvocationCount;				}
+	uint32_t		getMaxRayHitAttributeSize					(void)	override { return m_rayTracingPipelineProperties.maxRayHitAttributeSize;					}
 
 protected:
 	VkPhysicalDeviceAccelerationStructurePropertiesKHR	m_accelerationStructureProperties;
@@ -3483,5 +3493,30 @@ void cmdTraceRaysIndirect (const DeviceInterface&					vk,
 								   callableShaderBindingTableRegion,
 								   indirectDeviceAddress);
 }
+
+static inline void cmdTraceRaysIndirect2KHR (const DeviceInterface&	vk,
+											VkCommandBuffer			commandBuffer,
+											VkDeviceAddress			indirectDeviceAddress )
+{
+	DE_ASSERT(indirectDeviceAddress != 0);
+
+	return vk.cmdTraceRaysIndirect2KHR(commandBuffer, indirectDeviceAddress);
+}
+
+void cmdTraceRaysIndirect2	(const DeviceInterface&	vk,
+							 VkCommandBuffer		commandBuffer,
+							 VkDeviceAddress		indirectDeviceAddress)
+{
+	return cmdTraceRaysIndirect2KHR(vk, commandBuffer, indirectDeviceAddress);
+}
+
+#else
+
+deUint32 rayTracingDefineAnything()
+{
+	return 0;
+}
+
+#endif // CTS_USES_VULKANSC
 
 } // vk

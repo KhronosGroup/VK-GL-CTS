@@ -80,7 +80,6 @@ public:
 		: TestCase(testCtx, name, "")
 		, m_imageMSParams(imageMSParams)
 	{}
-
 	virtual void checkSupport (Context& context) const
 	{
 		checkGraphicsPipelineLibrarySupport(context);

@@ -29,10 +29,14 @@
 #include "deMemory.h"
 #include "deInt32.h"
 
+#ifndef CTS_USES_VULKANSC
+
 namespace vkt
 {
+
 namespace ExternalMemoryUtil
 {
+
 
 class NativeHandle
 {
@@ -360,6 +364,9 @@ vk::VkPhysicalDeviceExternalMemoryHostPropertiesEXT getPhysicalDeviceExternalMem
 																								  vk::VkPhysicalDevice			physicalDevice);
 
 } // ExternalMemoryUtil
+
 } // vkt
+
+#endif // CTS_USES_VULKANSC
 
 #endif // _VKTEXTERNALMEMORYUTIL_HPP

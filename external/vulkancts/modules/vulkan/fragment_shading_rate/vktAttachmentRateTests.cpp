@@ -90,6 +90,7 @@ struct TestParams
 
 	bool			useDynamicRendering;
 	bool			useImagelessFramebuffer;
+	bool			useNullShadingRateImage;
 };
 
 deUint32 calculateRate(deUint32 rateWidth, deUint32 rateHeight)
@@ -697,6 +698,7 @@ Move<VkPipeline> AttachmentRateInstance::buildGraphicsPipeline(deUint32 subpass,
 	};
 
 	void* pNext = useShadingRate ? &shadingRateStateCreateInfo : DE_NULL;
+#ifndef CTS_USES_VULKANSC
 	VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
@@ -710,6 +712,9 @@ Move<VkPipeline> AttachmentRateInstance::buildGraphicsPipeline(deUint32 subpass,
 
 	if (m_params->useDynamicRendering)
 		pNext = &renderingCreateInfo;
+#else
+	DE_UNREF(cbFormat);
+#endif // CTS_USES_VULKANSC
 
 	VkGraphicsPipelineCreateInfo pipelineCreateInfo
 	{
@@ -734,8 +739,10 @@ Move<VkPipeline> AttachmentRateInstance::buildGraphicsPipeline(deUint32 subpass,
 		0														// deInt32											basePipelineIndex;
 	};
 
+#ifndef CTS_USES_VULKANSC
 	if (useShadingRate && m_params->useDynamicRendering)
 		pipelineCreateInfo.flags |= VK_PIPELINE_CREATE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
+#endif // CTS_USES_VULKANSC
 
 	VkDevice device = m_device.get() ? *m_device : m_context.getDevice();
 	return createGraphicsPipeline(m_context.getDeviceInterface(), device, DE_NULL, &pipelineCreateInfo);
@@ -792,6 +799,7 @@ void AttachmentRateInstance::startRendering(const VkCommandBuffer					commandBuf
 	const DeviceInterface&		vk			(m_context.getDeviceInterface());
 	std::vector<VkClearValue>	clearColor	(attachmentInfo.size(), makeClearValueColorU32(0, 0, 0, 0));
 
+#ifndef CTS_USES_VULKANSC
 	if (m_params->useDynamicRendering)
 	{
 		VkRenderingFragmentShadingRateAttachmentInfoKHR shadingRateAttachmentInfo
@@ -835,7 +843,11 @@ void AttachmentRateInstance::startRendering(const VkCommandBuffer					commandBuf
 		if ((attachmentInfo.size() == 2) &&
 			(attachmentInfo[1].usage & VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR))
 		{
-			shadingRateAttachmentInfo.imageView							= attachmentInfo[1].view;
+			if (!m_params->useNullShadingRateImage)
+			{
+				shadingRateAttachmentInfo.imageView = attachmentInfo[1].view;
+			}
+
 			shadingRateAttachmentInfo.shadingRateAttachmentTexelSize	= { srTileWidth, srTileHeight };
 			renderingInfo.pNext											= &shadingRateAttachmentInfo;
 		}
@@ -844,6 +856,10 @@ void AttachmentRateInstance::startRendering(const VkCommandBuffer					commandBuf
 
 		return;
 	}
+#else
+	DE_UNREF(srTileWidth);
+	DE_UNREF(srTileHeight);
+#endif // CTS_USES_VULKANSC
 
 	std::vector<VkImageView>			attachments(attachmentInfo.size(), 0);
 	VkRenderPassAttachmentBeginInfo		renderPassAttachmentBeginInfo;
@@ -874,9 +890,11 @@ void AttachmentRateInstance::finishRendering(const VkCommandBuffer commandBuffer
 {
 	const DeviceInterface& vk = m_context.getDeviceInterface();
 
+#ifndef CTS_USES_VULKANSC
 	if (m_params->useDynamicRendering)
 		endRendering(vk, commandBuffer);
 	else
+#endif // CTS_USES_VULKANSC
 		endRenderPass(vk, commandBuffer);
 }
 
@@ -1553,7 +1571,7 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
 		vki.getPhysicalDeviceFeatures(pd, &deviceFeatures);
 
 		VkPhysicalDeviceFragmentShadingRateFeaturesKHR	fsrFeatures				{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR, DE_NULL, DE_FALSE, DE_FALSE, DE_TRUE };
-		VkPhysicalDeviceImagelessFramebufferFeaturesKHR	ifbFeatures				{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES, DE_NULL, DE_TRUE };
+		VkPhysicalDeviceImagelessFramebufferFeatures	ifbFeatures				{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES, DE_NULL, DE_TRUE };
 		VkPhysicalDeviceFeatures2						createPhysicalFeature	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &fsrFeatures, deviceFeatures };
 
 		std::vector<const char*> enabledExtensions = { "VK_KHR_fragment_shading_rate" };
@@ -2283,7 +2301,7 @@ TestInstance* AttachmentRateTestCase::createInstance(Context& context) const
 
 }	// anonymous
 
-void createAttachmentRateTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGroup, bool useDynamicRendering)
+void createAttachmentRateTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGroup, SharedGroupParams groupParams)
 {
 	struct SRFormat
 	{
@@ -2363,14 +2381,32 @@ void createAttachmentRateTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* pa
 						testModeParam.mode,						// TestMode			mode;
 						srFormat.format,						// VkFormat			srFormat;
 						srRate.count,							// VkExtent2D		srRate;
-						useDynamicRendering,					// bool				useDynamicRendering;
-						false									// bool				useImagelessFramebuffer;
+						groupParams->useDynamicRendering,		// bool				useDynamicRendering;
+						false,									// bool				useImagelessFramebuffer;
+						false									// bool				useNullShadingRateImage;
 					}
 				)));
 
-				// duplicate all tests for imageless framebuffer
-				if (!useDynamicRendering)
+				if (groupParams->useDynamicRendering)
 				{
+					// Duplicate all tests using dynamic rendering for NULL shading image.
+					std::string nullShadingName = std::string(srRate.name) + "_null_shading";
+					formatGroup->addChild(new AttachmentRateTestCase(testCtx, nullShadingName.c_str(), de::SharedPtr<TestParams>(
+						new TestParams
+						{
+							testModeParam.mode,					// TestMode			mode;
+							srFormat.format,					// VkFormat			srFormat;
+							srRate.count,						// VkExtent2D		srRate;
+							false,								// bool				useDynamicRendering;
+							false,								// bool				useImagelessFramebuffer;
+							true								// bool				useNullShadingRateImage;
+						}
+					)));
+				}
+
+				if (!groupParams->useDynamicRendering)
+				{
+					// duplicate all tests for imageless framebuffer
 					std::string imagelessName = std::string(srRate.name) + "_imageless";
 					formatGroup->addChild(new AttachmentRateTestCase(testCtx, imagelessName.c_str(), de::SharedPtr<TestParams>(
 						new TestParams
@@ -2379,7 +2415,8 @@ void createAttachmentRateTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* pa
 							srFormat.format,					// VkFormat			srFormat;
 							srRate.count,						// VkExtent2D		srRate;
 							false,								// bool				useDynamicRendering;
-							true								// bool				useImagelessFramebuffer;
+							true,								// bool				useImagelessFramebuffer;
+							false								// bool				useNullShadingRateImage;
 						}
 					)));
 				}
@@ -2391,7 +2428,7 @@ void createAttachmentRateTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* pa
 		mainGroup->addChild(testModeGroup.release());
 	}
 
-	if (!useDynamicRendering)
+	if (!groupParams->useDynamicRendering)
 	{
 		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc", ""));
 		miscGroup->addChild(new AttachmentRateTestCase(testCtx, "two_subpass", de::SharedPtr<TestParams>(
@@ -2401,7 +2438,8 @@ void createAttachmentRateTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* pa
 				VK_FORMAT_R8_UINT,								// VkFormat			srFormat;
 				{0, 0},											// VkExtent2D		srRate;					// not used in TM_TWO_SUBPASS
 				false,											// bool				useDynamicRendering;
-				false											// bool				useImagelessFramebuffer;
+				false,											// bool				useImagelessFramebuffer;
+				false											// bool				useNullShadingRateImage;
 			}
 		)));
 		mainGroup->addChild(miscGroup.release());
