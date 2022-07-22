@@ -5547,7 +5547,7 @@ public:
 												{
 													// Destroy the command pool (and free the related command buffer).
 													// This must be done before the m_customDevice is destroyed.
-													m_cmdBuffer.disown();
+													m_cmdBuffer = Move<VkCommandBuffer>();
 													m_cmdPool = Move<VkCommandPool>();
 												}
 protected:
@@ -5600,8 +5600,8 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 		m_alternativeAllocator			= de::MovePtr<Allocator>(new SimpleAllocator(vk, m_device, getPhysicalDeviceMemoryProperties(vki, context.getPhysicalDevice())));
 		m_allocator						= m_alternativeAllocator.get();
 
-		// Release the command buffer. It will be freed when the related command pool gets destroyed (at the next line).
-		m_cmdBuffer.disown();
+		// Release the command buffer.
+		m_cmdBuffer = Move<VkCommandBuffer>();
 
 		// Create a new command pool and allocate a command buffer with universal queue family index and destroy the old one.
 		m_cmdPool						= createCommandPool(vk, m_device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, context.getUniversalQueueFamilyIndex());

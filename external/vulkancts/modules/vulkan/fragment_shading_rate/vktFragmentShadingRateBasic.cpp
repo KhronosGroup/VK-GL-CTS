@@ -846,12 +846,26 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 													  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
 													  VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
 	const VkFormat			cbFormat				= VK_FORMAT_R32G32B32A32_UINT;
-	const VkFormat			dsFormat				= m_data.useDepthStencil ? VK_FORMAT_D32_SFLOAT_S8_UINT : VK_FORMAT_UNDEFINED;
+	VkFormat				dsFormat				= VK_FORMAT_UNDEFINED;
 
 	if (m_data.geometryShader)
 	{
 		allShaderStages	|= VK_SHADER_STAGE_GEOMETRY_BIT;
 		allPipelineStages |= VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
+	}
+
+	if (m_data.useDepthStencil)
+	{
+		VkFormatProperties formatProps;
+		m_context.getInstanceInterface().getPhysicalDeviceFormatProperties(m_context.getPhysicalDevice(), VK_FORMAT_D32_SFLOAT_S8_UINT, &formatProps);
+		if (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+		{
+			dsFormat = VK_FORMAT_D32_SFLOAT_S8_UINT;
+		}
+		else
+		{
+			dsFormat = VK_FORMAT_D24_UNORM_S8_UINT;
+		}
 	}
 
 	deRandom rnd;

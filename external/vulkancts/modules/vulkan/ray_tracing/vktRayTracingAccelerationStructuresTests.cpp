@@ -4093,7 +4093,7 @@ TestStatus CopySBTInstance::iterate (void)
 	{
 		0,	// VkDeviceSize srcOffset;
 		0,	// VkDeviceSize srcOffset;
-		getBufferForSBT(1, shaderGroupHandleSize, shaderGroupBaseAlignment)
+		getBufferSizeForSBT(1, shaderGroupHandleSize, shaderGroupBaseAlignment)
 	};
 	const VkMemoryBarrier2KHR				postCopySBTMemoryBarrier	= makeMemoryBarrier2(VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR,
 																							 VkAccessFlags2KHR(0),
