@@ -172,7 +172,6 @@ def prefixName (prefix, name):
 	name = name.replace("3_D", "3D_")
 	name = name.replace("IOSURFACE", "IO_SURFACE")
 
-
 	return prefix + name
 
 def getApiVariantIndexByName(variantName):

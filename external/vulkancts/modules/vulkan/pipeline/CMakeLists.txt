@@ -126,6 +126,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineSamplerBorderSwizzleTests.hpp
 	vktPipelineLibraryTests.cpp
 	vktPipelineLibraryTests.hpp
+	vktPipelineShaderModuleIdentifierTests.cpp
+	vktPipelineShaderModuleIdentifierTests.hpp
 	vktPipelineImage2DViewOf3DTests.cpp
 	vktPipelineImage2DViewOf3DTests.hpp
 	vktPipelineMultisampledRenderToSingleSampledTests.cpp
