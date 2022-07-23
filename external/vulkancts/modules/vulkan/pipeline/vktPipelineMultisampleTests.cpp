@@ -29,6 +29,7 @@
 #include "vktPipelineMultisampleMixedAttachmentSamplesTests.hpp"
 #include "vktPipelineMultisampleResolveRenderAreaTests.hpp"
 #include "vktPipelineMultisampleShaderFragmentMaskTests.hpp"
+#include "vktPipelineMultisampledRenderToSingleSampledTests.hpp"
 #include "vktPipelineClearUtil.hpp"
 #include "vktPipelineImageUtil.hpp"
 #include "vktPipelineVertexUtil.hpp"
@@ -5493,6 +5494,13 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx, PipelineC
 
 		// Multisample resolve tests where a render area is less than an attachment size.
 		multisampleTests->addChild(createMultisampleResolveRenderpassRenderAreaTests(testCtx, pipelineConstructionType));
+
+		// VK_EXT_multisampled_render_to_single_sampled
+		{
+			multisampleTests->addChild(createMultisampledRenderToSingleSampledTests(testCtx, pipelineConstructionType));
+			// Take advantage of the code for this extension's tests to add some normal multisampling tests
+			multisampleTests->addChild(createMultisampledMiscTests(testCtx, pipelineConstructionType));
+		}
 	}
 
 	// VK_EXT_sample_locations

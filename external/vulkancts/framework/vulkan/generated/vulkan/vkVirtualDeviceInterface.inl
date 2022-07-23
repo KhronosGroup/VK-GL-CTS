@@ -327,6 +327,10 @@ virtual void				cmdDrawMultiIndexedEXT							(VkCommandBuffer commandBuffer, uin
 virtual void				setDeviceMemoryPriorityEXT						(VkDevice device, VkDeviceMemory memory, float priority) const = 0;
 virtual void				getDescriptorSetLayoutHostMappingInfoVALVE		(VkDevice device, const VkDescriptorSetBindingReferenceVALVE* pBindingReference, VkDescriptorSetLayoutHostMappingInfoVALVE* pHostMapping) const = 0;
 virtual void				getDescriptorSetHostMappingVALVE				(VkDevice device, VkDescriptorSet descriptorSet, void** ppData) const = 0;
+virtual void				getShaderModuleIdentifierEXT					(VkDevice device, VkShaderModule shaderModule, VkShaderModuleIdentifierEXT* pIdentifier) const = 0;
+virtual void				getShaderModuleCreateInfoIdentifierEXT			(VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, VkShaderModuleIdentifierEXT* pIdentifier) const = 0;
+virtual VkResult			getFramebufferTilePropertiesQCOM				(VkDevice device, VkFramebuffer framebuffer, uint32_t* pPropertiesCount, VkTilePropertiesQCOM* pProperties) const = 0;
+virtual VkResult			getDynamicRenderingTilePropertiesQCOM			(VkDevice device, const VkRenderingInfo* pRenderingInfo, VkTilePropertiesQCOM* pProperties) const = 0;
 virtual VkResult			createAccelerationStructureKHR					(VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure) const = 0;
 virtual void				destroyAccelerationStructureKHR					(VkDevice device, VkAccelerationStructureKHR accelerationStructure, const VkAllocationCallbacks* pAllocator) const = 0;
 virtual void				cmdBuildAccelerationStructuresKHR				(VkCommandBuffer commandBuffer, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos) const = 0;
@@ -372,6 +376,7 @@ virtual VkResult			setBufferCollectionImageConstraintsFUCHSIA		(VkDevice device,
 virtual VkResult			setBufferCollectionBufferConstraintsFUCHSIA		(VkDevice device, VkBufferCollectionFUCHSIA collection, const VkBufferConstraintsInfoFUCHSIA* pBufferConstraintsInfo) const = 0;
 virtual void				destroyBufferCollectionFUCHSIA					(VkDevice device, VkBufferCollectionFUCHSIA collection, const VkAllocationCallbacks* pAllocator) const = 0;
 virtual VkResult			getBufferCollectionPropertiesFUCHSIA			(VkDevice device, VkBufferCollectionFUCHSIA collection, VkBufferCollectionPropertiesFUCHSIA* pProperties) const = 0;
+virtual void				exportMetalObjectsEXT							(VkDevice device, VkExportMetalObjectsInfoEXT* pMetalObjectsInfo) const = 0;
 virtual VkResult			getMemoryWin32HandleKHR							(VkDevice device, const VkMemoryGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle) const = 0;
 virtual VkResult			getMemoryWin32HandlePropertiesKHR				(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, pt::Win32Handle handle, VkMemoryWin32HandlePropertiesKHR* pMemoryWin32HandleProperties) const = 0;
 virtual VkResult			importSemaphoreWin32HandleKHR					(VkDevice device, const VkImportSemaphoreWin32HandleInfoKHR* pImportSemaphoreWin32HandleInfo) const = 0;

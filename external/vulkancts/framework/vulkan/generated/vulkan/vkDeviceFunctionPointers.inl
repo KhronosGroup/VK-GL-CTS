@@ -327,6 +327,10 @@ CmdDrawMultiIndexedEXTFunc							cmdDrawMultiIndexedEXT;
 SetDeviceMemoryPriorityEXTFunc						setDeviceMemoryPriorityEXT;
 GetDescriptorSetLayoutHostMappingInfoVALVEFunc		getDescriptorSetLayoutHostMappingInfoVALVE;
 GetDescriptorSetHostMappingVALVEFunc				getDescriptorSetHostMappingVALVE;
+GetShaderModuleIdentifierEXTFunc					getShaderModuleIdentifierEXT;
+GetShaderModuleCreateInfoIdentifierEXTFunc			getShaderModuleCreateInfoIdentifierEXT;
+GetFramebufferTilePropertiesQCOMFunc				getFramebufferTilePropertiesQCOM;
+GetDynamicRenderingTilePropertiesQCOMFunc			getDynamicRenderingTilePropertiesQCOM;
 CreateAccelerationStructureKHRFunc					createAccelerationStructureKHR;
 DestroyAccelerationStructureKHRFunc					destroyAccelerationStructureKHR;
 CmdBuildAccelerationStructuresKHRFunc				cmdBuildAccelerationStructuresKHR;
@@ -372,6 +376,7 @@ SetBufferCollectionImageConstraintsFUCHSIAFunc		setBufferCollectionImageConstrai
 SetBufferCollectionBufferConstraintsFUCHSIAFunc		setBufferCollectionBufferConstraintsFUCHSIA;
 DestroyBufferCollectionFUCHSIAFunc					destroyBufferCollectionFUCHSIA;
 GetBufferCollectionPropertiesFUCHSIAFunc			getBufferCollectionPropertiesFUCHSIA;
+ExportMetalObjectsEXTFunc							exportMetalObjectsEXT;
 GetMemoryWin32HandleKHRFunc							getMemoryWin32HandleKHR;
 GetMemoryWin32HandlePropertiesKHRFunc				getMemoryWin32HandlePropertiesKHR;
 ImportSemaphoreWin32HandleKHRFunc					importSemaphoreWin32HandleKHR;

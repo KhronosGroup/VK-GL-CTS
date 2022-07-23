@@ -472,6 +472,10 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawMultiIndexedEXTFunc)											(
 typedef VKAPI_ATTR void					(VKAPI_CALL* SetDeviceMemoryPriorityEXTFunc)										(VkDevice device, VkDeviceMemory memory, float priority);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetDescriptorSetLayoutHostMappingInfoVALVEFunc)						(VkDevice device, const VkDescriptorSetBindingReferenceVALVE* pBindingReference, VkDescriptorSetLayoutHostMappingInfoVALVE* pHostMapping);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetDescriptorSetHostMappingVALVEFunc)									(VkDevice device, VkDescriptorSet descriptorSet, void** ppData);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetShaderModuleIdentifierEXTFunc)										(VkDevice device, VkShaderModule shaderModule, VkShaderModuleIdentifierEXT* pIdentifier);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetShaderModuleCreateInfoIdentifierEXTFunc)							(VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, VkShaderModuleIdentifierEXT* pIdentifier);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetFramebufferTilePropertiesQCOMFunc)									(VkDevice device, VkFramebuffer framebuffer, uint32_t* pPropertiesCount, VkTilePropertiesQCOM* pProperties);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDynamicRenderingTilePropertiesQCOMFunc)								(VkDevice device, const VkRenderingInfo* pRenderingInfo, VkTilePropertiesQCOM* pProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateAccelerationStructureKHRFunc)									(VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyAccelerationStructureKHRFunc)									(VkDevice device, VkAccelerationStructureKHR accelerationStructure, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBuildAccelerationStructuresKHRFunc)									(VkCommandBuffer commandBuffer, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos);
@@ -525,6 +529,7 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateStreamDescriptorSurfaceGGPFunc
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateIOSSurfaceMVKFunc)												(VkInstance instance, const VkIOSSurfaceCreateInfoMVK* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateMacOSSurfaceMVKFunc)												(VkInstance instance, const VkMacOSSurfaceCreateInfoMVK* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateMetalSurfaceEXTFunc)												(VkInstance instance, const VkMetalSurfaceCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface);
+typedef VKAPI_ATTR void					(VKAPI_CALL* ExportMetalObjectsEXTFunc)												(VkDevice device, VkExportMetalObjectsInfoEXT* pMetalObjectsInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateViSurfaceNNFunc)													(VkInstance instance, const VkViSurfaceCreateInfoNN* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateWaylandSurfaceKHRFunc)											(VkInstance instance, const VkWaylandSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface);
 typedef VKAPI_ATTR VkBool32				(VKAPI_CALL* GetPhysicalDeviceWaylandPresentationSupportKHRFunc)					(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, pt::WaylandDisplayPtr display);

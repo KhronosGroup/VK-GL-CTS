@@ -47,6 +47,7 @@ const vk::VkPhysicalDeviceImagelessFramebufferFeatures&					getImagelessFramebuf
 const vk::VkPhysicalDeviceImage2DViewOf3DFeaturesEXT&					getImage2DViewOf3DFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceImageCompressionControlFeaturesEXT&			getImageCompressionControlFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT&	getImageCompressionControlSwapchainFeaturesEXT	(void) const;
+const vk::VkPhysicalDeviceImageProcessingFeaturesQCOM&					getImageProcessingFeaturesQCOM					(void) const;
 const vk::VkPhysicalDeviceImageRobustnessFeatures&						getImageRobustnessFeatures						(void) const;
 const vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT&					getImageViewMinLodFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceIndexTypeUint8FeaturesEXT&					getIndexTypeUint8FeaturesEXT					(void) const;
@@ -58,6 +59,7 @@ const vk::VkPhysicalDeviceLineRasterizationFeaturesEXT&					getLineRasterization
 const vk::VkPhysicalDeviceMaintenance4Features&							getMaintenance4Features							(void) const;
 const vk::VkPhysicalDeviceMemoryPriorityFeaturesEXT&					getMemoryPriorityFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceMeshShaderFeaturesNV&							getMeshShaderFeatures							(void) const;
+const vk::VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT&	getMultisampledRenderToSingleSampledFeaturesEXT	(void) const;
 const vk::VkPhysicalDeviceMultiviewFeatures&							getMultiviewFeatures							(void) const;
 const vk::VkPhysicalDeviceMultiDrawFeaturesEXT&							getMultiDrawFeaturesEXT							(void) const;
 const vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE&			getMutableDescriptorTypeFeaturesVALVE			(void) const;
@@ -67,6 +69,7 @@ const vk::VkPhysicalDevicePerformanceQueryFeaturesKHR&					getPerformanceQueryFe
 const vk::VkPhysicalDevicePipelineCreationCacheControlFeatures&			getPipelineCreationCacheControlFeatures			(void) const;
 const vk::VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR&		getPipelineExecutablePropertiesFeatures			(void) const;
 const vk::VkPhysicalDevicePipelinePropertiesFeaturesEXT&				getPipelinePropertiesFeaturesEXT				(void) const;
+const vk::VkPhysicalDevicePipelineRobustnessFeaturesEXT&				getPipelineRobustnessFeaturesEXT				(void) const;
 const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR&					getPortabilitySubsetFeatures					(void) const;
 const vk::VkPhysicalDevicePresentIdFeaturesKHR&							getPresentIdFeatures							(void) const;
 const vk::VkPhysicalDevicePresentWaitFeaturesKHR&						getPresentWaitFeatures							(void) const;
@@ -97,6 +100,7 @@ const vk::VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT&			getShaderImageAto
 const vk::VkPhysicalDeviceShaderImageFootprintFeaturesNV&				getShaderImageFootprintFeatures					(void) const;
 const vk::VkPhysicalDeviceShaderIntegerDotProductFeatures&				getShaderIntegerDotProductFeatures				(void) const;
 const vk::VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL&			getShaderIntegerFunctions2FeaturesINTEL			(void) const;
+const vk::VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT&			getShaderModuleIdentifierFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceShaderSMBuiltinsFeaturesNV&					getShaderSMBuiltinsFeatures						(void) const;
 const vk::VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures&			getShaderSubgroupExtendedTypesFeatures			(void) const;
 const vk::VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR&	getShaderSubgroupUniformControlFlowFeatures		(void) const;
@@ -108,6 +112,7 @@ const vk::VkPhysicalDeviceSubpassShadingFeaturesHUAWEI&					getSubpassShadingFea
 const vk::VkPhysicalDeviceSynchronization2Features&						getSynchronization2Features						(void) const;
 const vk::VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT&				getTexelBufferAlignmentFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceTextureCompressionASTCHDRFeatures&			getTextureCompressionASTCHDRFeatures			(void) const;
+const vk::VkPhysicalDeviceTilePropertiesFeaturesQCOM&					getTilePropertiesFeaturesQCOM					(void) const;
 const vk::VkPhysicalDeviceTimelineSemaphoreFeatures&					getTimelineSemaphoreFeatures					(void) const;
 const vk::VkPhysicalDeviceTransformFeedbackFeaturesEXT&					getTransformFeedbackFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceUniformBufferStandardLayoutFeatures&			getUniformBufferStandardLayoutFeatures			(void) const;

@@ -1523,6 +1523,21 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceASTCDecodeFeaturesEX
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ASTC_DECODE_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDevicePipelineRobustnessFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_ROBUSTNESS_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDevicePipelineRobustnessPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_ROBUSTNESS_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPipelineRobustnessCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_ROBUSTNESS_CREATE_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkConditionalRenderingBeginInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT;
@@ -2448,6 +2463,21 @@ template<> VkStructureType getStructureType<VkPhysicalDevicePipelinePropertiesFe
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROPERTIES_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkSubpassResolvePerformanceQueryEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_SUBPASS_RESOLVE_PERFORMANCE_QUERY_EXT;
+}
+
+template<> VkStructureType getStructureType<VkMultisampledRenderToSingleSampledInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceExtendedDynamicState2FeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT;
@@ -2553,6 +2583,21 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceImageCompressionCont
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkImageViewSampleWeightCreateInfoQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_VIEW_SAMPLE_WEIGHT_CREATE_INFO_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceImageProcessingFeaturesQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_FEATURES_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceImageProcessingPropertiesQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_PROPERTIES_QCOM;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBPASS_MERGE_FEEDBACK_FEATURES_EXT;
@@ -2571,6 +2616,36 @@ template<> VkStructureType getStructureType<VkRenderPassCreationFeedbackCreateIn
 template<> VkStructureType getStructureType<VkRenderPassSubpassFeedbackCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_RENDER_PASS_SUBPASS_FEEDBACK_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPipelineShaderStageModuleIdentifierCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_MODULE_IDENTIFIER_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkShaderModuleIdentifierEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_SHADER_MODULE_IDENTIFIER_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceTilePropertiesFeaturesQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_PROPERTIES_FEATURES_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkTilePropertiesQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_TILE_PROPERTIES_QCOM;
 }
 
 template<> VkStructureType getStructureType<VkAccelerationStructureGeometryTrianglesDataKHR> (void)
@@ -3121,6 +3196,66 @@ template<> VkStructureType getStructureType<VkMacOSSurfaceCreateInfoMVK> (void)
 template<> VkStructureType getStructureType<VkMetalSurfaceCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkExportMetalObjectCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECT_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkExportMetalObjectsInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECTS_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkExportMetalDeviceInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_EXPORT_METAL_DEVICE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkExportMetalCommandQueueInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_EXPORT_METAL_COMMAND_QUEUE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkExportMetalBufferInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_EXPORT_METAL_BUFFER_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkImportMetalBufferInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_IMPORT_METAL_BUFFER_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkExportMetalTextureInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_EXPORT_METAL_TEXTURE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkImportMetalTextureInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_IMPORT_METAL_TEXTURE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkExportMetalIOSurfaceInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_EXPORT_METAL_IO_SURFACE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkImportMetalIOSurfaceInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_IMPORT_METAL_IO_SURFACE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkExportMetalSharedEventInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_EXPORT_METAL_SHARED_EVENT_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkImportMetalSharedEventInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_IMPORT_METAL_SHARED_EVENT_INFO_EXT;
 }
 
 template<> VkStructureType getStructureType<VkViSurfaceCreateInfoNN> (void)

@@ -2892,6 +2892,37 @@ VKAPI_ATTR void VKAPI_CALL getDescriptorSetHostMappingVALVE (VkDevice device, Vk
 	DE_UNREF(ppData);
 }
 
+VKAPI_ATTR void VKAPI_CALL getShaderModuleIdentifierEXT (VkDevice device, VkShaderModule shaderModule, VkShaderModuleIdentifierEXT* pIdentifier)
+{
+	DE_UNREF(device);
+	DE_UNREF(shaderModule);
+	DE_UNREF(pIdentifier);
+}
+
+VKAPI_ATTR void VKAPI_CALL getShaderModuleCreateInfoIdentifierEXT (VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, VkShaderModuleIdentifierEXT* pIdentifier)
+{
+	DE_UNREF(device);
+	DE_UNREF(pCreateInfo);
+	DE_UNREF(pIdentifier);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getFramebufferTilePropertiesQCOM (VkDevice device, VkFramebuffer framebuffer, uint32_t* pPropertiesCount, VkTilePropertiesQCOM* pProperties)
+{
+	DE_UNREF(device);
+	DE_UNREF(framebuffer);
+	DE_UNREF(pPropertiesCount);
+	DE_UNREF(pProperties);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getDynamicRenderingTilePropertiesQCOM (VkDevice device, const VkRenderingInfo* pRenderingInfo, VkTilePropertiesQCOM* pProperties)
+{
+	DE_UNREF(device);
+	DE_UNREF(pRenderingInfo);
+	DE_UNREF(pProperties);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdBuildAccelerationStructuresKHR (VkCommandBuffer commandBuffer, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos)
 {
 	DE_UNREF(commandBuffer);
@@ -3190,6 +3221,12 @@ VKAPI_ATTR VkResult VKAPI_CALL getBufferCollectionPropertiesFUCHSIA (VkDevice de
 	DE_UNREF(collection);
 	DE_UNREF(pProperties);
 	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL exportMetalObjectsEXT (VkDevice device, VkExportMetalObjectsInfoEXT* pMetalObjectsInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pMetalObjectsInfo);
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL getPhysicalDeviceWaylandPresentationSupportKHR (VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, pt::WaylandDisplayPtr display)
@@ -3828,6 +3865,10 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkSetDeviceMemoryPriorityEXT,						setDeviceMemoryPriorityEXT),
 	VK_NULL_FUNC_ENTRY(vkGetDescriptorSetLayoutHostMappingInfoVALVE,		getDescriptorSetLayoutHostMappingInfoVALVE),
 	VK_NULL_FUNC_ENTRY(vkGetDescriptorSetHostMappingVALVE,					getDescriptorSetHostMappingVALVE),
+	VK_NULL_FUNC_ENTRY(vkGetShaderModuleIdentifierEXT,						getShaderModuleIdentifierEXT),
+	VK_NULL_FUNC_ENTRY(vkGetShaderModuleCreateInfoIdentifierEXT,			getShaderModuleCreateInfoIdentifierEXT),
+	VK_NULL_FUNC_ENTRY(vkGetFramebufferTilePropertiesQCOM,					getFramebufferTilePropertiesQCOM),
+	VK_NULL_FUNC_ENTRY(vkGetDynamicRenderingTilePropertiesQCOM,				getDynamicRenderingTilePropertiesQCOM),
 	VK_NULL_FUNC_ENTRY(vkCreateAccelerationStructureKHR,					createAccelerationStructureKHR),
 	VK_NULL_FUNC_ENTRY(vkDestroyAccelerationStructureKHR,					destroyAccelerationStructureKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdBuildAccelerationStructuresKHR,					cmdBuildAccelerationStructuresKHR),
@@ -3873,6 +3914,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkSetBufferCollectionBufferConstraintsFUCHSIA,		setBufferCollectionBufferConstraintsFUCHSIA),
 	VK_NULL_FUNC_ENTRY(vkDestroyBufferCollectionFUCHSIA,					destroyBufferCollectionFUCHSIA),
 	VK_NULL_FUNC_ENTRY(vkGetBufferCollectionPropertiesFUCHSIA,				getBufferCollectionPropertiesFUCHSIA),
+	VK_NULL_FUNC_ENTRY(vkExportMetalObjectsEXT,								exportMetalObjectsEXT),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandleKHR,							getMemoryWin32HandleKHR),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandlePropertiesKHR,					getMemoryWin32HandlePropertiesKHR),
 	VK_NULL_FUNC_ENTRY(vkImportSemaphoreWin32HandleKHR,						importSemaphoreWin32HandleKHR),

@@ -272,6 +272,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceMultiDrawFeaturesEXT.pNext;
 	}
 
+	vk::VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT physicalDeviceMultisampledRenderToSingleSampledFeaturesEXT;
+	deMemset(&physicalDeviceMultisampledRenderToSingleSampledFeaturesEXT, 0, sizeof(physicalDeviceMultisampledRenderToSingleSampledFeaturesEXT));
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_multisampled_render_to_single_sampled")) )
+	{
+		physicalDeviceMultisampledRenderToSingleSampledFeaturesEXT.sType = getStructureType<VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT>();
+		*nextPtr = &physicalDeviceMultisampledRenderToSingleSampledFeaturesEXT;
+		nextPtr  = &physicalDeviceMultisampledRenderToSingleSampledFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDeviceMultiviewFeatures physicalDeviceMultiviewFeatures;
 	deMemset(&physicalDeviceMultiviewFeatures, 0, sizeof(physicalDeviceMultiviewFeatures));
 
@@ -1186,6 +1196,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceMultiDrawFeaturesEXT.multiDraw == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature multiDraw not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_multisampled_render_to_single_sampled")) )
+	{
+		if ( physicalDeviceMultisampledRenderToSingleSampledFeaturesEXT.multisampledRenderToSingleSampled == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature multisampledRenderToSingleSampled not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
