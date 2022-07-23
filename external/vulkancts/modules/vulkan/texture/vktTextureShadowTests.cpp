@@ -206,11 +206,31 @@ bool verifyTexCompareResult (tcu::TestContext&						testCtx,
 	return numFailedPixels == 0;
 }
 
+#ifdef CTS_USES_VULKANSC
+bool isDepthFormat(VkFormat format)
+{
+	if (isCompressedFormat(format))
+		return false;
+
+	if (isYCbCrFormat(format))
+		return false;
+
+	const tcu::TextureFormat tcuFormat = mapVkFormat(format);
+	return tcuFormat.order == tcu::TextureFormat::D || tcuFormat.order == tcu::TextureFormat::DS;
+}
+#endif // CTS_USES_VULKANSC
+
 void checkTextureSupport (Context& context, const Texture2DShadowTestCaseParameters& testParameters)
 {
+#ifndef CTS_USES_VULKANSC
 	const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
 	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
 		TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
+#else
+	DE_UNREF(context);
+	if (!isDepthFormat(testParameters.format))
+		TCU_THROW(NotSupportedError, "Format cannot be used as depth format");
+#endif // CTS_USES_VULKANSC
 }
 
 class Texture2DShadowTestInstance : public TestInstance
@@ -388,24 +408,29 @@ tcu::TestStatus Texture2DShadowTestInstance::iterate (void)
 		texComparePrecision.referenceBits	= 16;
 		texComparePrecision.resultBits		= pixelFormat.redBits-1;
 
-		const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
-														  &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
-
-		if (!isHighQuality)
+#ifdef CTS_USES_VULKANSC
+		if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 		{
-			m_context.getTestContext().getLog() << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
+			const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
+															  &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
 
-			lodPrecision.lodBits			= 4;
-			texComparePrecision.uvwBits		= tcu::IVec3(4,4,0);
-			texComparePrecision.pcfBits		= 0;
-
-			const bool isOk = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
-													 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
-
-			if (!isOk)
+			if (!isHighQuality)
 			{
-				m_context.getTestContext().getLog() << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
-				return tcu::TestStatus::fail("Image verification failed");
+				m_context.getTestContext().getLog() << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
+
+				lodPrecision.lodBits			= 4;
+				texComparePrecision.uvwBits		= tcu::IVec3(4,4,0);
+				texComparePrecision.pcfBits		= 0;
+
+				const bool isOk = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
+														 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
+
+				if (!isOk)
+				{
+					m_context.getTestContext().getLog() << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
+					return tcu::TestStatus::fail("Image verification failed");
+				}
 			}
 		}
 	}
@@ -420,9 +445,17 @@ struct TextureCubeShadowTestCaseParameters : public TextureShadowCommonTestCaseP
 
 void checkTextureSupport (Context& context, const TextureCubeShadowTestCaseParameters& testParameters)
 {
+#ifndef CTS_USES_VULKANSC
 	const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
 	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
 		TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
+	if (!testParameters.seamless)
+		context.requireDeviceFunctionality("VK_EXT_non_seamless_cube_map");
+#else
+	DE_UNREF(context);
+	if (!isDepthFormat(testParameters.format))
+		TCU_THROW(NotSupportedError, "Format cannot be used as depth format");
+#endif // CTS_USES_VULKANSC
 }
 
 
@@ -575,7 +608,7 @@ tcu::TestStatus TextureCubeShadowTestInstance::iterate (void)
 
 	// Params for reference computation.
 	sampleParams.sampler					= util::createSampler(Sampler::CLAMP_TO_EDGE, Sampler::CLAMP_TO_EDGE, m_testParameters.minFilter, m_testParameters.magFilter);
-	sampleParams.sampler.seamlessCubeMap	= true;
+	sampleParams.sampler.seamlessCubeMap	= m_testParameters.seamless;
 	sampleParams.sampler.compare			= m_testParameters.compareOp;
 	sampleParams.samplerType				= SAMPLERTYPE_SHADOW;
 	sampleParams.lodMode					= LODMODE_EXACT;
@@ -613,24 +646,29 @@ tcu::TestStatus TextureCubeShadowTestInstance::iterate (void)
 			texComparePrecision.referenceBits	= 16;
 			texComparePrecision.resultBits		= pixelFormat.redBits-1;
 
-			const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), result.getAccess(), texture.getTexture(),
-															  &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
-
-			if (!isHighQuality)
+#ifdef CTS_USES_VULKANSC
+			if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 			{
-				log << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
+				const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), result.getAccess(), texture.getTexture(),
+																  &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
 
-				lodPrecision.lodBits			= 4;
-				texComparePrecision.uvwBits		= tcu::IVec3(4,4,0);
-				texComparePrecision.pcfBits		= 0;
-
-				const bool isOk = verifyTexCompareResult(m_context.getTestContext(), result.getAccess(), texture.getTexture(),
-														 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
-
-				if (!isOk)
+				if (!isHighQuality)
 				{
-					log << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
-					return tcu::TestStatus::fail("Image verification failed");
+					log << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
+
+					lodPrecision.lodBits			= 4;
+					texComparePrecision.uvwBits		= tcu::IVec3(4,4,0);
+					texComparePrecision.pcfBits		= 0;
+
+					const bool isOk = verifyTexCompareResult(m_context.getTestContext(), result.getAccess(), texture.getTexture(),
+															 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
+
+					if (!isOk)
+					{
+						log << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
+						return tcu::TestStatus::fail("Image verification failed");
+					}
 				}
 			}
 		}
@@ -646,9 +684,15 @@ struct Texture2DArrayShadowTestCaseParameters : public TextureShadowCommonTestCa
 
 void checkTextureSupport (Context& context, const Texture2DArrayShadowTestCaseParameters& testParameters)
 {
+#ifndef CTS_USES_VULKANSC
 	const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
 	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
 		TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
+#else
+	DE_UNREF(context);
+	if (!isDepthFormat(testParameters.format))
+		TCU_THROW(NotSupportedError, "Format cannot be used as depth format");
+#endif // CTS_USES_VULKANSC
 }
 
 class Texture2DArrayShadowTestInstance : public TestInstance
@@ -832,24 +876,29 @@ tcu::TestStatus Texture2DArrayShadowTestInstance::iterate (void)
 		texComparePrecision.referenceBits	= 16;
 		texComparePrecision.resultBits		= pixelFormat.redBits-1;
 
-		const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
-														  &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
-
-		if (!isHighQuality)
+#ifdef CTS_USES_VULKANSC
+		if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 		{
-			log << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
+			const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
+															  &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
 
-			lodPrecision.lodBits			= 4;
-			texComparePrecision.uvwBits		= tcu::IVec3(4,4,4);
-			texComparePrecision.pcfBits		= 0;
-
-			const bool isOk = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
-													 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
-
-			if (!isOk)
+			if (!isHighQuality)
 			{
-				log << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
-				return tcu::TestStatus::fail("Image verification failed");
+				log << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
+
+				lodPrecision.lodBits			= 4;
+				texComparePrecision.uvwBits		= tcu::IVec3(4,4,4);
+				texComparePrecision.pcfBits		= 0;
+
+				const bool isOk = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
+														 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
+
+				if (!isOk)
+				{
+					log << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
+					return tcu::TestStatus::fail("Image verification failed");
+				}
 			}
 		}
 	}
@@ -864,9 +913,15 @@ struct Texture1DShadowTestCaseParameters : public Texture1DTestCaseParameters, p
 
 void checkTextureSupport (Context& context, const Texture1DShadowTestCaseParameters& testParameters)
 {
+#ifndef CTS_USES_VULKANSC
 	const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
 	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
 		TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
+#else
+	DE_UNREF(context);
+	if (!isDepthFormat(testParameters.format))
+		TCU_THROW(NotSupportedError, "Format cannot be used as depth format");
+#endif // CTS_USES_VULKANSC
 }
 
 class Texture1DShadowTestInstance : public TestInstance
@@ -1043,24 +1098,29 @@ tcu::TestStatus Texture1DShadowTestInstance::iterate (void)
 		texComparePrecision.referenceBits	= 16;
 		texComparePrecision.resultBits		= pixelFormat.redBits-1;
 
-		const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
-														  &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
-
-		if (!isHighQuality)
+#ifdef CTS_USES_VULKANSC
+		if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 		{
-			m_context.getTestContext().getLog() << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
+			const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
+															  &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
 
-			lodPrecision.lodBits			= 4;
-			texComparePrecision.uvwBits		= tcu::IVec3(4,0,0);
-			texComparePrecision.pcfBits		= 0;
-
-			const bool isOk = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
-													 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
-
-			if (!isOk)
+			if (!isHighQuality)
 			{
-				m_context.getTestContext().getLog() << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
-				return tcu::TestStatus::fail("Image verification failed");
+				m_context.getTestContext().getLog() << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
+
+				lodPrecision.lodBits			= 4;
+				texComparePrecision.uvwBits		= tcu::IVec3(4,0,0);
+				texComparePrecision.pcfBits		= 0;
+
+				const bool isOk = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
+														 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
+
+				if (!isOk)
+				{
+					m_context.getTestContext().getLog() << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
+					return tcu::TestStatus::fail("Image verification failed");
+				}
 			}
 		}
 	}
@@ -1075,9 +1135,15 @@ struct Texture1DArrayShadowTestCaseParameters : public TextureShadowCommonTestCa
 
 void checkTextureSupport (Context& context, const Texture1DArrayShadowTestCaseParameters& testParameters)
 {
+#ifndef CTS_USES_VULKANSC
 	const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
 	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
 		TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
+#else
+	DE_UNREF(context);
+	if (!isDepthFormat(testParameters.format))
+		TCU_THROW(NotSupportedError, "Format cannot be used as depth format");
+#endif // CTS_USES_VULKANSC
 }
 
 class Texture1DArrayShadowTestInstance : public TestInstance
@@ -1258,24 +1324,29 @@ tcu::TestStatus Texture1DArrayShadowTestInstance::iterate (void)
 		texComparePrecision.referenceBits	= 16;
 		texComparePrecision.resultBits		= pixelFormat.redBits-1;
 
-		const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
-														  &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
-
-		if (!isHighQuality)
+#ifdef CTS_USES_VULKANSC
+		if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 		{
-			log << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
+			const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
+															  &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
 
-			lodPrecision.lodBits			= 4;
-			texComparePrecision.uvwBits		= tcu::IVec3(4,4,4);
-			texComparePrecision.pcfBits		= 0;
-
-			const bool isOk = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
-													 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
-
-			if (!isOk)
+			if (!isHighQuality)
 			{
-				log << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
-				return tcu::TestStatus::fail("Image verification failed");
+				log << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
+
+				lodPrecision.lodBits			= 4;
+				texComparePrecision.uvwBits		= tcu::IVec3(4,4,4);
+				texComparePrecision.pcfBits		= 0;
+
+				const bool isOk = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
+														 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
+
+				if (!isOk)
+				{
+					log << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
+					return tcu::TestStatus::fail("Image verification failed");
+				}
 			}
 		}
 	}
@@ -1290,9 +1361,17 @@ struct TextureCubeArrayShadowTestCaseParameters : public TextureShadowCommonTest
 
 void checkTextureSupport (Context& context, const TextureCubeArrayShadowTestCaseParameters& testParameters)
 {
+#ifndef CTS_USES_VULKANSC
 	const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
 	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
 		TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
+	if (!testParameters.seamless)
+		context.requireDeviceFunctionality("VK_EXT_non_seamless_cube_map");
+#else
+	DE_UNREF(context);
+	if (!isDepthFormat(testParameters.format))
+		TCU_THROW(NotSupportedError, "Format cannot be used as depth format");
+#endif // CTS_USES_VULKANSC
 }
 
 class TextureCubeArrayShadowTestInstance : public TestInstance
@@ -1438,7 +1517,7 @@ tcu::TestStatus TextureCubeArrayShadowTestInstance::iterate (void)
 
 	// Params for reference computation.
 	sampleParams.sampler					= util::createSampler(Sampler::CLAMP_TO_EDGE, Sampler::CLAMP_TO_EDGE, m_testParameters.minFilter, m_testParameters.magFilter);
-	sampleParams.sampler.seamlessCubeMap	= true;
+	sampleParams.sampler.seamlessCubeMap	= m_testParameters.seamless;
 	sampleParams.sampler.compare			= m_testParameters.compareOp;
 	sampleParams.samplerType				= SAMPLERTYPE_SHADOW;
 	sampleParams.lodMode					= LODMODE_EXACT;
@@ -1479,24 +1558,29 @@ tcu::TestStatus TextureCubeArrayShadowTestInstance::iterate (void)
 			texComparePrecision.referenceBits	= 16;
 			texComparePrecision.resultBits		= pixelFormat.redBits-1;
 
-			const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), result.getAccess(), texture.getTexture(),
+#ifdef CTS_USES_VULKANSC
+			if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
+			{
+				const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), result.getAccess(), texture.getTexture(),
 															  &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
 
-			if (!isHighQuality)
-			{
-				log << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
-
-				lodPrecision.lodBits			= 4;
-				texComparePrecision.uvwBits		= tcu::IVec3(4,4,0);
-				texComparePrecision.pcfBits		= 0;
-
-				const bool isOk = verifyTexCompareResult(m_context.getTestContext(), result.getAccess(), texture.getTexture(),
-														 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
-
-				if (!isOk)
+				if (!isHighQuality)
 				{
-					log << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
-					return tcu::TestStatus::fail("Image verification failed");
+					log << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
+
+					lodPrecision.lodBits			= 4;
+					texComparePrecision.uvwBits		= tcu::IVec3(4,4,0);
+					texComparePrecision.pcfBits		= 0;
+
+					const bool isOk = verifyTexCompareResult(m_context.getTestContext(), result.getAccess(), texture.getTexture(),
+															 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
+
+					if (!isOk)
+					{
+						log << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
+						return tcu::TestStatus::fail("Image verification failed");
+					}
 				}
 			}
 		}
@@ -1518,7 +1602,9 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 	} backingModes[] =
 	{
 		{ "",			TextureBinding::IMAGE_BACKING_MODE_REGULAR	},
+#ifndef CTS_USES_VULKANSC
 		{ "sparse_",	TextureBinding::IMAGE_BACKING_MODE_SPARSE	}
+#endif // CTS_USES_VULKANSC
 	};
 
 	static const struct
@@ -1567,6 +1653,18 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 		{ "not_equal",			Sampler::COMPAREMODE_NOT_EQUAL			},
 		{ "always",				Sampler::COMPAREMODE_ALWAYS				},
 		{ "never",				Sampler::COMPAREMODE_NEVER				}
+	};
+
+	static const struct
+	{
+		const char*								name;
+		deBool									seamless;
+	} seamModes[] =
+	{
+		{"",				true},
+#ifndef CTS_USES_VULKANSC
+		{"non_seamless_",	false}
+#endif // CTS_USES_VULKANSC
 	};
 
 	// 2D cases.
@@ -1623,22 +1721,26 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 				{
 					for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
 					{
-						const string							name	= string(backingModes[backingNdx].name) + compareOp[compareNdx].name + "_" + formats[formatNdx].name;
-						TextureCubeShadowTestCaseParameters		testParameters;
+						for (int seamNdx = 0; seamNdx < DE_LENGTH_OF_ARRAY(seamModes); seamNdx++)
+						{
+							const string							name	= string(backingModes[backingNdx].name) + seamModes[seamNdx].name + compareOp[compareNdx].name + "_" + formats[formatNdx].name;
+							TextureCubeShadowTestCaseParameters		testParameters;
 
-						testParameters.minFilter	= filters[filterNdx].minFilter;
-						testParameters.magFilter	= filters[filterNdx].magFilter;
-						testParameters.format		= formats[formatNdx].format;
-						testParameters.backingMode	= backingModes[backingNdx].backingMode;
-						testParameters.compareOp	= compareOp[compareNdx].op;
-						testParameters.wrapS		= Sampler::REPEAT_GL;
-						testParameters.wrapT		= Sampler::REPEAT_GL;
-						testParameters.size			= 32;
-						testParameters.aspectMask	= formats[formatNdx].aspect;
+							testParameters.minFilter	= filters[filterNdx].minFilter;
+							testParameters.magFilter	= filters[filterNdx].magFilter;
+							testParameters.format		= formats[formatNdx].format;
+							testParameters.backingMode	= backingModes[backingNdx].backingMode;
+							testParameters.seamless		= seamModes[seamNdx].seamless;
+							testParameters.compareOp	= compareOp[compareNdx].op;
+							testParameters.wrapS		= Sampler::REPEAT_GL;
+							testParameters.wrapT		= Sampler::REPEAT_GL;
+							testParameters.size			= 32;
+							testParameters.aspectMask	= formats[formatNdx].aspect;
 
-						testParameters.programs.push_back(PROGRAM_CUBE_SHADOW);
+							testParameters.programs.push_back(PROGRAM_CUBE_SHADOW);
 
-						filterGroup->addChild(new TextureTestCase<TextureCubeShadowTestInstance>(testCtx, name.c_str(), "", testParameters));
+							filterGroup->addChild(new TextureTestCase<TextureCubeShadowTestInstance>(testCtx, name.c_str(), "", testParameters));
+						}
 					}
 				}
 			}
@@ -1783,23 +1885,27 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 				{
 					for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
 					{
-						const string								name			= string(backingModes[backingNdx].name) + compareOp[compareNdx].name + "_" + formats[formatNdx].name;
-						TextureCubeArrayShadowTestCaseParameters	testParameters;
+						for (int seamNdx = 0; seamNdx < DE_LENGTH_OF_ARRAY(seamModes); seamNdx++)
+						{
+							const string								name	= string(backingModes[backingNdx].name) + seamModes[seamNdx].name + compareOp[compareNdx].name + "_" + formats[formatNdx].name;
+							TextureCubeArrayShadowTestCaseParameters	testParameters;
 
-						testParameters.minFilter	= filters[filterNdx].minFilter;
-						testParameters.magFilter	= filters[filterNdx].magFilter;
-						testParameters.format		= formats[formatNdx].format;
-						testParameters.backingMode	= backingModes[backingNdx].backingMode;
-						testParameters.compareOp	= compareOp[compareNdx].op;
-						testParameters.wrapS		= Sampler::REPEAT_GL;
-						testParameters.wrapT		= Sampler::REPEAT_GL;
-						testParameters.size			= 32;
-						testParameters.numLayers	= 4 * 6;
-						testParameters.aspectMask	= formats[formatNdx].aspect;
+							testParameters.minFilter	= filters[filterNdx].minFilter;
+							testParameters.magFilter	= filters[filterNdx].magFilter;
+							testParameters.format		= formats[formatNdx].format;
+							testParameters.backingMode	= backingModes[backingNdx].backingMode;
+							testParameters.compareOp	= compareOp[compareNdx].op;
+							testParameters.seamless		= seamModes[seamNdx].seamless;
+							testParameters.wrapS		= Sampler::REPEAT_GL;
+							testParameters.wrapT		= Sampler::REPEAT_GL;
+							testParameters.size			= 32;
+							testParameters.numLayers	= 4 * 6;
+							testParameters.aspectMask	= formats[formatNdx].aspect;
 
-						testParameters.programs.push_back(PROGRAM_CUBE_ARRAY_SHADOW);
+							testParameters.programs.push_back(PROGRAM_CUBE_ARRAY_SHADOW);
 
-						filterGroup->addChild(new TextureTestCase<TextureCubeArrayShadowTestInstance>(testCtx, name.c_str(), "", testParameters));
+							filterGroup->addChild(new TextureTestCase<TextureCubeArrayShadowTestInstance>(testCtx, name.c_str(), "", testParameters));
+						}
 					}
 				}
 			}
@@ -1809,7 +1915,7 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 
 		textureShadowTests->addChild(groupCubeArray.release());
 	}
-
+#ifndef CTS_USES_VULKANSC
 	// Texel replacement tests.
 	{
 		de::MovePtr<tcu::TestCaseGroup>	groupTexelReplacement	(new tcu::TestCaseGroup(testCtx, "texel_replacement", "Texel replacement texture shadow lookup tests"));
@@ -1819,7 +1925,7 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 		groupTexelReplacement->addChild(testCaseLod);
 		textureShadowTests->addChild(groupTexelReplacement.release());
 	}
-
+#endif // CTS_USES_VULKANSC
 }
 
 tcu::TestCaseGroup* createTextureShadowTests (tcu::TestContext& testCtx)

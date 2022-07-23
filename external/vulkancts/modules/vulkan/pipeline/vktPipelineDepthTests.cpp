@@ -282,8 +282,10 @@ void DepthTest::checkSupport (Context& context) const
 
 	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 
+#ifndef CTS_USES_VULKANSC
 	if (m_depthClipControl != DepthClipControlCase::DISABLED && !context.isDeviceFunctionalitySupported("VK_EXT_depth_clip_control"))
 		TCU_THROW(NotSupportedError, "VK_EXT_depth_clip_control is not supported");
+#endif // CTS_USES_VULKANSC
 }
 
 TestInstance* DepthTest::createInstance (Context& context) const
@@ -617,20 +619,28 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 			1.0f,															//	float									lineWidth;
 		};
 
-		const VkPipelineViewportDepthClipControlCreateInfoEXT	depthClipControlCreateInfo
+		PipelineViewportDepthClipControlCreateInfoWrapper depthClipControlWrapper;
+		PipelineViewportDepthClipControlCreateInfoWrapper depthClipControl01Wrapper;
+
+#ifndef CTS_USES_VULKANSC
+		VkPipelineViewportDepthClipControlCreateInfoEXT depthClipControlCreateInfo
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLIP_CONTROL_CREATE_INFO_EXT,	// VkStructureType	sType;
 			DE_NULL,																// const void*		pNext;
 			VK_TRUE,																// VkBool32			negativeOneToOne;
 		};
+		if (hasDepthClipControl)
+			depthClipControlWrapper.ptr = &depthClipControlCreateInfo;
 
 		// Using the range 0,1 in the structure.
-		const VkPipelineViewportDepthClipControlCreateInfoEXT	depthClipControlCreateInfo01
+		VkPipelineViewportDepthClipControlCreateInfoEXT depthClipControlCreateInfo01
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLIP_CONTROL_CREATE_INFO_EXT,	// VkStructureType	sType;
 			DE_NULL,																// const void*		pNext;
 			VK_FALSE,																// VkBool32			negativeOneToOne;
 		};
+		depthClipControl01Wrapper.ptr = &depthClipControlCreateInfo01;
+#endif // CTS_USES_VULKANSC
 
 		// Dynamic viewport if needed.
 		std::vector<VkDynamicState> dynamicStates;
@@ -657,7 +667,7 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 
 			m_graphicsPipelines[quadNdx].setDefaultMultisampleState()
 										.setDefaultColorBlendState()
-										.setDepthClipControl(hasDepthClipControl ? &depthClipControlCreateInfo : DE_NULL)
+										.setDepthClipControl(depthClipControlWrapper)
 										.setDynamicState(&dynamicStateCreateInfo)
 										.setupVertexInputStete(&vertexInputStateParams)
 										.setupPreRasterizationShaderState((dynamicViewport ? badViewports : viewports),
@@ -680,7 +690,7 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 			{
 				m_altGraphicsPipelines[quadNdx].setDefaultMultisampleState()
 											   .setDefaultColorBlendState()
-											   .setDepthClipControl(&depthClipControlCreateInfo01)
+											   .setDepthClipControl(depthClipControl01Wrapper)
 											   .setDynamicState(&dynamicStateCreateInfo)
 											   .setupVertexInputStete(&vertexInputStateParams)
 											   .setupPreRasterizationShaderState((dynamicViewport ? badViewports : viewports),
@@ -765,7 +775,7 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 		if (m_separateDepthStencilLayouts)
 		{
 			depthBarrierSubresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-			newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL_KHR;
+			newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
 		}
 
 		const VkImageMemoryBarrier			depthBarrier					=
@@ -1236,6 +1246,7 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 	}
 	depthTests->addChild(noColorAttachmentTests.release());
 
+#ifndef CTS_USES_VULKANSC
 	de::MovePtr<tcu::TestCaseGroup>	depthClipControlTests		(new tcu::TestCaseGroup(testCtx, "depth_clip_control", "Depth tests with depth clip control enabled"));
 	{
 		const VkCompareOp compareOps[] = { VK_COMPARE_OP_ALWAYS, VK_COMPARE_OP_LESS };
@@ -1265,6 +1276,7 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 				}
 	}
 	depthTests->addChild(depthClipControlTests.release());
+#endif // CTS_USES_VULKANSC
 
 	return depthTests.release();
 }

@@ -37,6 +37,7 @@ namespace
 
 void createSignedOpTests (tcu::TestCaseGroup* tests, const char* data_dir)
 {
+#ifndef CTS_USES_VULKANSC
 	tcu::TestContext& testCtx = tests->getTestContext();
 
 	// Shader test files are saved in <path>/external/vulkancts/data/vulkan/amber/<data_dir>/<basename>.amber
@@ -68,6 +69,7 @@ void createSignedOpTests (tcu::TestCaseGroup* tests, const char* data_dir)
 		{ "uint_smulextended", "32bit unsigned int with SMulExtended" },
 		{ "uint_snegate", "32bit unsigned int with SNegate" },
 	};
+
 	for (unsigned i = 0; i < sizeof(cases)/sizeof(cases[0]) ; ++i)
 	{
 		std::string					file		= std::string(cases[i].basename) + ".amber";
@@ -75,6 +77,10 @@ void createSignedOpTests (tcu::TestCaseGroup* tests, const char* data_dir)
 
 		tests->addChild(testCase);
 	}
+#else
+	DE_UNREF(tests);
+	DE_UNREF(data_dir);
+#endif
 }
 
 } // anonymous

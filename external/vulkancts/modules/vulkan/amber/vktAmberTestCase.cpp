@@ -83,6 +83,8 @@ static bool isFeatureSupported(const vkt::Context& ctx, const std::string& featu
 		return ctx.get16BitStorageFeatures().storageBuffer16BitAccess;
 	if (feature == "Float16Int8Features.shaderFloat16")
 		return ctx.getShaderFloat16Int8Features().shaderFloat16;
+	if (feature == "Float16Int8Features.shaderInt8")
+		return ctx.getShaderFloat16Int8Features().shaderInt8;
 	if (feature == "Features.shaderFloat64")
 		return ctx.getDeviceFeatures().shaderFloat64;
 	if (feature == "Features.shaderInt16")
@@ -119,6 +121,8 @@ static bool isFeatureSupported(const vkt::Context& ctx, const std::string& featu
 		return (ctx.getSubgroupProperties().supportedOperations & vk::VK_SUBGROUP_FEATURE_BALLOT_BIT) != 0;
 	if (feature == "Storage16BitFeatures.storageBuffer16BitAccess")
 		return ctx.get16BitStorageFeatures().storageBuffer16BitAccess;
+	if (feature == "Storage8BitFeatures.storageBuffer8BitAccess")
+		return ctx.get8BitStorageFeatures().storageBuffer8BitAccess;
 
 	std::string message = std::string("Unexpected feature name: ") + feature;
 	TCU_THROW(InternalError, message.c_str());
@@ -504,6 +508,17 @@ bool AmberTestCase::validateRequirements()
 		log << tcu::TestLog::Message << "Amber requirements:" << tcu::TestLog::EndMessage;
 		for (const auto& amberReq : allRequirements)
 			log << tcu::TestLog::Message << "    " << amberReq << tcu::TestLog::EndMessage;
+
+		// Repeat message for cerr so it's visible in console log.
+		std::cerr << "ERROR: CTS and Amber test requirement mismatch.\n";
+		std::cerr << "Amber filename: " << m_readFilename << "\n";
+		std::cerr << "CTS requirements:\n";
+		for (const auto& ctsReq : ctsRequirements)
+			std::cerr << "    " << ctsReq << "\n";
+
+		std::cerr << "Amber requirements:\n";
+		for (const auto& amberReq : allRequirements)
+			std::cerr << "    " << amberReq << "\n";
 
 		return false;
 	}

@@ -54,6 +54,39 @@ public:
 		{}
 };
 
+// PointerWrapper template is used to hide structures that should not be visible for Vulkan SC
+template <typename T>
+class PointerWrapper
+{
+public:
+
+	PointerWrapper(): ptr(DE_NULL)	{}
+	PointerWrapper(T* p0) : ptr(p0) {}
+	T* ptr;
+};
+
+template <typename T>
+class ConstPointerWrapper
+{
+public:
+
+        ConstPointerWrapper(): ptr(DE_NULL)  {}
+	ConstPointerWrapper(const T* p0) : ptr(p0) {}
+        const T* ptr;
+};
+
+#ifndef CTS_USES_VULKANSC
+typedef PointerWrapper<VkPipelineViewportDepthClipControlCreateInfoEXT> PipelineViewportDepthClipControlCreateInfoWrapper;
+typedef PointerWrapper<VkPipelineRenderingCreateInfoKHR> PipelineRenderingCreateInfoWrapper;
+typedef PointerWrapper<VkPipelineCreationFeedbackCreateInfoEXT> PipelineCreationFeedbackCreateInfoWrapper;
+typedef ConstPointerWrapper<VkPipelineShaderStageModuleIdentifierCreateInfoEXT> PipelineShaderStageModuleIdentifierCreateInfoWrapper;
+#else
+typedef PointerWrapper<void> PipelineViewportDepthClipControlCreateInfoWrapper;
+typedef PointerWrapper<void> PipelineRenderingCreateInfoWrapper;
+typedef PointerWrapper<void> PipelineCreationFeedbackCreateInfoWrapper;
+typedef ConstPointerWrapper<void> PipelineShaderStageModuleIdentifierCreateInfoWrapper;
+#endif
+
 // Class that can build monolithic pipeline or fully separated pipeline libraries
 // depending on PipelineType specified in the constructor.
 // Rarely needed configuration was extracted to setDefault*/disable* functions while common
@@ -108,7 +141,7 @@ public:
 	GraphicsPipelineWrapper&	setDefaultScissorsCount				(deUint32 scissorCount = 0u);
 
 	// Pre-rasterization shader state uses default ViewportState, this method extends it with VkPipelineViewportDepthClipControlCreateInfoEXT.
-	GraphicsPipelineWrapper&	setDepthClipControl					(const VkPipelineViewportDepthClipControlCreateInfoEXT* depthClipControlCreateInfo);
+	GraphicsPipelineWrapper&	setDepthClipControl					(PipelineViewportDepthClipControlCreateInfoWrapper& depthClipControlCreateInfo);
 
 	// Pre-rasterization shader state uses provieded viewports and scissors to create ViewportState. When disableViewportState
 	// is used then ViewportState won't be constructed and NULL will be used.
@@ -119,7 +152,7 @@ public:
 	GraphicsPipelineWrapper&	setupVertexInputStete				(const VkPipelineVertexInputStateCreateInfo*		vertexInputState = DE_NULL,
 																	 const VkPipelineInputAssemblyStateCreateInfo*		inputAssemblyState = DE_NULL,
 																	 const VkPipelineCache								partPipelineCache = DE_NULL,
-																	 VkPipelineCreationFeedbackCreateInfoEXT*			partCreationFeedback = DE_NULL);
+																	 PipelineCreationFeedbackCreateInfoWrapper			partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
 
 	// Setup pre-rasterization shader state.
 	GraphicsPipelineWrapper&	setupPreRasterizationShaderState	(const std::vector<VkViewport>&						viewports,
@@ -133,9 +166,9 @@ public:
 																	 const VkShaderModule								tessellationEvalShaderModule = DE_NULL,
 																	 const VkShaderModule								geometryShaderModule = DE_NULL,
 																	 const VkSpecializationInfo*						specializationInfo = DE_NULL,
-																	 VkPipelineRenderingCreateInfoKHR*					rendering = DE_NULL,
+																	 PipelineRenderingCreateInfoWrapper					rendering = PipelineRenderingCreateInfoWrapper(),
 																	 const VkPipelineCache								partPipelineCache = DE_NULL,
-																	 VkPipelineCreationFeedbackCreateInfoEXT*			partCreationFeedback = DE_NULL);
+																	 PipelineCreationFeedbackCreateInfoWrapper			partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
 
 	GraphicsPipelineWrapper&	setupPreRasterizationShaderState2	(const std::vector<VkViewport>&						viewports,
 																	 const std::vector<VkRect2D>&						scissors,
@@ -151,9 +184,9 @@ public:
 																	 const VkSpecializationInfo*						tescSpecializationInfo = nullptr,
 																	 const VkSpecializationInfo*						teseSpecializationInfo = nullptr,
 																	 const VkSpecializationInfo*						geomSpecializationInfo = nullptr,
-																	 VkPipelineRenderingCreateInfoKHR*					rendering = nullptr,
+																	 PipelineRenderingCreateInfoWrapper					rendering = PipelineRenderingCreateInfoWrapper(),
 																	 const VkPipelineCache								partPipelineCache = DE_NULL,
-																	 VkPipelineCreationFeedbackCreateInfoEXT*			partCreationFeedback = nullptr);
+																	 PipelineCreationFeedbackCreateInfoWrapper				partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
 
 	// Note: VkPipelineShaderStageModuleIdentifierCreateInfoEXT::pIdentifier will not be copied. They need to continue to exist outside this wrapper.
 	GraphicsPipelineWrapper&	setupPreRasterizationShaderState3	(const std::vector<VkViewport>&								viewports,
@@ -162,21 +195,21 @@ public:
 																	 const VkRenderPass											renderPass,
 																	 const deUint32												subpass,
 																	 const VkShaderModule										vertexShaderModule,
-																	 const VkPipelineShaderStageModuleIdentifierCreateInfoEXT*	vertShaderModuleId = nullptr,
+																	 PipelineShaderStageModuleIdentifierCreateInfoWrapper			vertShaderModuleId = PipelineShaderStageModuleIdentifierCreateInfoWrapper(),
 																	 const VkPipelineRasterizationStateCreateInfo*				rasterizationState = nullptr,
 																	 const VkShaderModule										tessellationControlShaderModule = DE_NULL,
-																	 const VkPipelineShaderStageModuleIdentifierCreateInfoEXT*	tescShaderModuleId = nullptr,
+																	 PipelineShaderStageModuleIdentifierCreateInfoWrapper			tescShaderModuleId = PipelineShaderStageModuleIdentifierCreateInfoWrapper(),
 																	 const VkShaderModule										tessellationEvalShaderModule = DE_NULL,
-																	 const VkPipelineShaderStageModuleIdentifierCreateInfoEXT*	teseShaderModuleId = nullptr,
+																	 PipelineShaderStageModuleIdentifierCreateInfoWrapper			teseShaderModuleId = PipelineShaderStageModuleIdentifierCreateInfoWrapper(),
 																	 const VkShaderModule										geometryShaderModule = DE_NULL,
-																	 const VkPipelineShaderStageModuleIdentifierCreateInfoEXT*	geomShaderModuleId = nullptr,
+																	 PipelineShaderStageModuleIdentifierCreateInfoWrapper			geomShaderModuleId = PipelineShaderStageModuleIdentifierCreateInfoWrapper(),
 																	 const VkSpecializationInfo*								vertSpecializationInfo = nullptr,
 																	 const VkSpecializationInfo*								tescSpecializationInfo = nullptr,
 																	 const VkSpecializationInfo*								teseSpecializationInfo = nullptr,
 																	 const VkSpecializationInfo*								geomSpecializationInfo = nullptr,
-																	 VkPipelineRenderingCreateInfoKHR*							rendering = nullptr,
+																	 PipelineRenderingCreateInfoWrapper							rendering = PipelineRenderingCreateInfoWrapper(),
 																	 const VkPipelineCache										partPipelineCache = DE_NULL,
-																	 VkPipelineCreationFeedbackCreateInfoEXT*					partCreationFeedback = nullptr);
+																	 PipelineCreationFeedbackCreateInfoWrapper					partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
 
 	// Setup fragment shader state.
 	GraphicsPipelineWrapper&	setupFragmentShaderState			(const VkPipelineLayout								layout,
@@ -188,20 +221,20 @@ public:
 																	 VkPipelineFragmentShadingRateStateCreateInfoKHR*	fragmentShadingRateState = DE_NULL,
 																	 const VkSpecializationInfo*						specializationInfo = DE_NULL,
 																	 const VkPipelineCache								partPipelineCache = DE_NULL,
-																	 VkPipelineCreationFeedbackCreateInfoEXT*			partCreationFeedback = DE_NULL);
+																	 PipelineCreationFeedbackCreateInfoWrapper			partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
 
 	// Note: VkPipelineShaderStageModuleIdentifierCreateInfoEXT::pIdentifier will not be copied. They need to continue to exist outside this wrapper.
 	GraphicsPipelineWrapper&	setupFragmentShaderState2			(const VkPipelineLayout										layout,
 																	 const VkRenderPass											renderPass,
 																	 const deUint32												subpass,
 																	 const VkShaderModule										fragmentShaderModule,
-																	 const VkPipelineShaderStageModuleIdentifierCreateInfoEXT*	fragmentShaderModuleId = nullptr,
+																	 PipelineShaderStageModuleIdentifierCreateInfoWrapper			fragmentShaderModuleId = PipelineShaderStageModuleIdentifierCreateInfoWrapper(),
 																	 const VkPipelineDepthStencilStateCreateInfo*				depthStencilState = nullptr,
 																	 const VkPipelineMultisampleStateCreateInfo*				multisampleState = nullptr,
 																	 VkPipelineFragmentShadingRateStateCreateInfoKHR*			fragmentShadingRateState = nullptr,
 																	 const VkSpecializationInfo*								specializationInfo = nullptr,
 																	 const VkPipelineCache										partPipelineCache = DE_NULL,
-																	 VkPipelineCreationFeedbackCreateInfoEXT*					partCreationFeedback = nullptr);
+																	 PipelineCreationFeedbackCreateInfoWrapper                      partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
 
 	// Setup fragment output state.
 	GraphicsPipelineWrapper&	setupFragmentOutputState			(const VkRenderPass									renderPass,
@@ -209,13 +242,13 @@ public:
 																	 const VkPipelineColorBlendStateCreateInfo*			colorBlendState = DE_NULL,
 																	 const VkPipelineMultisampleStateCreateInfo*		multisampleState = DE_NULL,
 																	 const VkPipelineCache								partPipelineCache = DE_NULL,
-																	 VkPipelineCreationFeedbackCreateInfoEXT*			partCreationFeedback = DE_NULL);
+																	 PipelineCreationFeedbackCreateInfoWrapper			partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
 
 	// Build pipeline object out of provided state.
 	void						buildPipeline						(const VkPipelineCache								pipelineCache = DE_NULL,
 																	 const VkPipeline									basePipelineHandle = DE_NULL,
 																	 const deInt32										basePipelineIndex = 0,
-																	 VkPipelineCreationFeedbackCreateInfoEXT*			creationFeedback = DE_NULL);
+																	 PipelineCreationFeedbackCreateInfoWrapper			creationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
 
 	// Returns true when pipeline was build using buildPipeline method.
 	deBool						wasBuild							(void) const;

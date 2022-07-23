@@ -195,12 +195,13 @@ public:
 												 const std::string&		name,
 												 const ImageMSParams&	imageMSParams);
 };
-
+#ifndef CTS_USES_VULKANSC
 template <typename CaseClassName>
 void MSCase<CaseClassName>::checkSupport(Context& context) const
 {
 	checkGraphicsPipelineLibrarySupport(context);
 }
+#endif // CTS_USES_VULKANSC
 
 template <typename CaseClassName>
 MultisampleCaseBase* MSCase<CaseClassName>::createCase (tcu::TestContext& testCtx, const std::string& name, const ImageMSParams& imageMSParams)
@@ -623,11 +624,11 @@ public:
 																		 const tcu::ConstPixelBufferAccess&					dataRS) const;
 protected:
 
-	VkSampleMask				m_sampleMask;
-	Move<VkDescriptorSetLayout>	m_descriptorSetLayout;
-	Move<VkDescriptorPool>		m_descriptorPool;
-	Move<VkDescriptorSet>		m_descriptorSet;
-	de::MovePtr<Buffer>			m_buffer;
+	VkSampleMask					m_sampleMask;
+	Move<VkDescriptorSetLayout>		m_descriptorSetLayout;
+	Move<VkDescriptorPool>			m_descriptorPool;
+	Move<VkDescriptorSet>			m_descriptorSet;
+	de::MovePtr<BufferWithMemory>	m_buffer;
 };
 
 MSInstanceSampleMaskPattern::MSInstanceSampleMaskPattern (Context& context, const ImageMSParams& imageMSParams) : MSInstanceBaseResolveAndPerSampleFetch(context, imageMSParams)
@@ -686,7 +687,7 @@ const VkDescriptorSet* MSInstanceSampleMaskPattern::createMSPassDescSet (const I
 
 	const VkBufferCreateInfo bufferSampleMaskInfo = makeBufferCreateInfo(sizeof(VkSampleMask), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
-	m_buffer = de::MovePtr<Buffer>(new Buffer(deviceInterface, device, allocator, bufferSampleMaskInfo, MemoryRequirement::HostVisible));
+	m_buffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(deviceInterface, device, allocator, bufferSampleMaskInfo, MemoryRequirement::HostVisible));
 
 	deMemcpy(m_buffer->getAllocation().getHostPtr(), &m_sampleMask, sizeof(VkSampleMask));
 
@@ -1218,7 +1219,7 @@ void WriteSampleTest::checkSupport (Context& context) const
 	if (!(imgProps.sampleCounts & m_params.sampleCount))
 		TCU_THROW(NotSupportedError, "Format does not support the required sample count");
 
-	checkPipelineLibraryRequirements(vki, physicalDevice, m_params.pipelineConstructionType);
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 
 void WriteSampleTest::initPrograms (vk::SourceCollections& programCollection) const
@@ -1571,7 +1572,7 @@ void WriteSampleMaskTestCase::checkSupport (Context& context) const
 	if (!(imgProps.sampleCounts & m_params.sampleCount))
 		TCU_THROW(NotSupportedError, "Format does not support the required sample count");
 
-	checkPipelineLibraryRequirements(vki, physicalDevice, m_params.pipelineConstructionType);
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 
 void WriteSampleMaskTestCase::initPrograms (vk::SourceCollections& programCollection) const

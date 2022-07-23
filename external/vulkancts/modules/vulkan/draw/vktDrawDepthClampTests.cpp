@@ -252,18 +252,26 @@ bool isUnormDepthFormat(VkFormat format)
 
 class DepthClampTestInstance : public TestInstance {
 public:
-								DepthClampTestInstance	(Context& context, const TestParams& params, const VkFormat format, const float epsilon, bool useDynamicRendering);
+								DepthClampTestInstance	(Context& context, const TestParams& params, const VkFormat format, const float epsilon, const SharedGroupParams groupParams);
 	tcu::TestStatus				iterate					();
 
 private:
 	tcu::ConstPixelBufferAccess draw					();
+
+	void						preRenderCommands		(VkCommandBuffer cmdBuffer, const VkImageAspectFlagBits aspectBits, const VkClearValue& clearValue) const;
+	void						drawCommands			(VkCommandBuffer cmdBuffer) const;
+
+#ifndef CTS_USES_VULKANSC
+	void						beginSecondaryCmdBuffer	(VkCommandBuffer cmdBuffer, VkRenderingFlagsKHR renderingFlags = 0u) const;
+	void						beginDynamicRender		(VkCommandBuffer cmdBuffer, VkClearValue clearValue, VkRenderingFlagsKHR renderingFlags = 0u) const;
+#endif // CTS_USES_VULKANSC
 
 	const TestParams									m_params;
 	const VkFormat										m_format;
 	const float											m_epsilon;
 	std::vector<VkViewport>								m_viewportVect;
 	std::vector<VkRect2D>								m_scissorVect;
-	const bool											m_useDynamicRendering;
+	const SharedGroupParams								m_groupParams;
 	SharedPtr<Image>									m_depthTargetImage;
 	Move<VkImageView>									m_depthTargetView;
 	SharedPtr<Buffer>									m_vertexBuffer;
@@ -281,14 +289,14 @@ static const Vec4					vertices[]			= {
 };
 static const VkPrimitiveTopology	verticesTopology	= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 
-DepthClampTestInstance::DepthClampTestInstance (Context& context, const TestParams& params, const VkFormat format, const float epsilon, bool useDynamicRendering)
-	: TestInstance(context)
-	, m_params(params)
-	, m_format(format)
-	, m_epsilon(epsilon)
-	, m_viewportVect(params.viewportData.size(), VkViewport())
-	, m_scissorVect(params.viewportData.size(), VkRect2D())
-	, m_useDynamicRendering(useDynamicRendering)
+DepthClampTestInstance::DepthClampTestInstance (Context& context, const TestParams& params, const VkFormat format, const float epsilon, const SharedGroupParams groupParams)
+	: TestInstance		(context)
+	, m_params			(params)
+	, m_format			(format)
+	, m_epsilon			(epsilon)
+	, m_viewportVect	(params.viewportData.size(), VkViewport())
+	, m_scissorVect		(params.viewportData.size(), VkRect2D())
+	, m_groupParams		(groupParams)
 {
 	const DeviceInterface&		vk								= m_context.getDeviceInterface();
 	const VkDevice				device							= m_context.getDevice();
@@ -358,7 +366,7 @@ DepthClampTestInstance::DepthClampTestInstance (Context& context, const TestPara
 	m_depthTargetView = createImageView(vk, device, &depthTargetViewInfo);
 
 	// Render pass and framebuffer
-	if (!m_useDynamicRendering)
+	if (!m_groupParams->useDynamicRendering)
 	{
 		RenderPassCreateInfo		renderPassCreateInfo;
 		renderPassCreateInfo.addAttachment(AttachmentDescription(
@@ -443,6 +451,7 @@ DepthClampTestInstance::DepthClampTestInstance (Context& context, const TestPara
 	pipelineCreateInfo.addState (PipelineCreateInfo::MultiSampleState	());
 	pipelineCreateInfo.addState (PipelineCreateInfo::DynamicState		(dynamicStates));
 
+#ifndef CTS_USES_VULKANSC
 	VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
@@ -454,8 +463,9 @@ DepthClampTestInstance::DepthClampTestInstance (Context& context, const TestPara
 		m_format
 	};
 
-	if (m_useDynamicRendering)
+	if (m_groupParams->useDynamicRendering)
 		pipelineCreateInfo.pNext = &renderingCreateInfo;
+#endif // CTS_USES_VULKANSC
 
 	m_pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 }
@@ -470,102 +480,196 @@ tcu::ConstPixelBufferAccess DepthClampTestInstance::draw ()
 	const CmdPoolCreateInfo				cmdPoolCreateInfo	(queueFamilyIndex);
 	const Unique<VkCommandPool>			cmdPool				(createCommandPool(vk, device, &cmdPoolCreateInfo));
 	const Unique<VkCommandBuffer>		cmdBuffer			(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-
-	const bool							isCombinedType		= tcu::isCombinedDepthStencilType(mapVkFormat(m_format).type) && m_format != VK_FORMAT_X8_D24_UNORM_PACK32;
-
-	beginCommandBuffer(vk, *cmdBuffer);
-
-	if (isCombinedType)
-		initialTransitionDepthStencil2DImage(vk, *cmdBuffer, m_depthTargetImage->object(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
-	else
-		initialTransitionDepth2DImage(vk, *cmdBuffer, m_depthTargetImage->object(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
-
-	const VkImageAspectFlagBits			aspectBits			= (VkImageAspectFlagBits)(isCombinedType ? VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT : VK_IMAGE_ASPECT_DEPTH_BIT);
-	const ImageSubresourceRange			subresourceRange	(aspectBits);
+	Move<VkCommandBuffer>				secCmdBuffer;
 	const VkClearValue					clearDepth			= makeClearValueDepthStencil(initialClearDepth, 0u);
+	const bool							isCombinedType		= tcu::isCombinedDepthStencilType(mapVkFormat(m_format).type) && m_format != VK_FORMAT_X8_D24_UNORM_PACK32;
+	const VkImageAspectFlagBits			aspectBits			= (VkImageAspectFlagBits)(isCombinedType ? VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT : VK_IMAGE_ASPECT_DEPTH_BIT);
 
-	vk.cmdClearDepthStencilImage(*cmdBuffer, m_depthTargetImage->object(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearDepth.depthStencil, 1, &subresourceRange);
-
-	transition2DImage(vk, *cmdBuffer, m_depthTargetImage->object(), aspectBits,
-					  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-					  VK_ACCESS_TRANSFER_WRITE_BIT		  , VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-					  VK_PIPELINE_STAGE_TRANSFER_BIT	  , VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
-
+#ifndef CTS_USES_VULKANSC
+	if (m_groupParams->useSecondaryCmdBuffer)
 	{
-		const VkMemoryBarrier memBarrier					= { VK_STRUCTURE_TYPE_MEMORY_BARRIER, DE_NULL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT };
-		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
-	}
+		secCmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 
-	// if there is more then one viewport we are also checking
-	// proper behaviour of cmdSetViewport/Scissor - there was
-	// a driver bug that caused invalid behaviour of those
-	// functions when firstViewport/Scissor had a non 0 value
-	deUint32 indexCount = static_cast<deUint32>(m_viewportVect.size());
-	for (deUint32 index = 0 ; index < indexCount ; ++index)
-	{
-		vk.cmdSetViewport(*cmdBuffer, index, 1u, &m_viewportVect[index]);
-		vk.cmdSetScissor (*cmdBuffer, index, 1u, &m_scissorVect[index]);
-	}
-
-	const VkRect2D renderArea = makeRect2D(0, 0, WIDTH, HEIGHT);
-	if (m_useDynamicRendering)
-	{
-		VkRenderingAttachmentInfoKHR depthAttachment
+		// record secondary command buffer
+		if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
 		{
-			VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,								// VkStructureType						sType;
-			DE_NULL,																		// const void*							pNext;
-			*m_depthTargetView,																// VkImageView							imageView;
-			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,								// VkImageLayout						imageLayout;
-			VK_RESOLVE_MODE_NONE,															// VkResolveModeFlagBits				resolveMode;
-			DE_NULL,																		// VkImageView							resolveImageView;
-			VK_IMAGE_LAYOUT_UNDEFINED,														// VkImageLayout						resolveImageLayout;
-			VK_ATTACHMENT_LOAD_OP_LOAD,														// VkAttachmentLoadOp					loadOp;
-			VK_ATTACHMENT_STORE_OP_STORE,													// VkAttachmentStoreOp					storeOp;
-			clearDepth																		// VkClearValue							clearValue;
-		};
+			beginSecondaryCmdBuffer(*secCmdBuffer, VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+			beginDynamicRender(*secCmdBuffer, clearDepth);
+		}
+		else
+			beginSecondaryCmdBuffer(*secCmdBuffer);
 
-		VkRenderingInfoKHR renderingInfo
-		{
-			VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
-			DE_NULL,
-			0u,																				// VkRenderingFlagsKHR					flags;
-			renderArea,																		// VkRect2D								renderArea;
-			1u,																				// deUint32								layerCount;
-			0u,																				// deUint32								viewMask;
-			0u,																				// deUint32								colorAttachmentCount;
-			DE_NULL,																		// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
-			&depthAttachment,																// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
-			DE_NULL,																		// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
-		};
+		drawCommands(*secCmdBuffer);
 
-		vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
+		if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			endRendering(vk, *secCmdBuffer);
+
+		endCommandBuffer(vk, *secCmdBuffer);
+
+		// record primary command buffer
+		beginCommandBuffer(vk, *cmdBuffer, 0u);
+		preRenderCommands(*cmdBuffer, aspectBits, clearDepth);
+
+		if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			beginDynamicRender(*cmdBuffer, clearDepth, VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+
+		vk.cmdExecuteCommands(*cmdBuffer, 1u, &*secCmdBuffer);
+
+		if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			endRendering(vk, *cmdBuffer);
 	}
-	else
-		beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT));
-
-	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
-	const VkDeviceSize		offset							= 0;
-	const VkBuffer			buffer							= m_vertexBuffer->object();
-	vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &buffer, &offset);
-	vk.cmdDraw(*cmdBuffer, DE_LENGTH_OF_ARRAY(vertices), 1, 0, 0);
-
-	if (m_useDynamicRendering)
+	else if (m_groupParams->useDynamicRendering)
+	{
+		beginCommandBuffer(vk, *cmdBuffer);
+		preRenderCommands(*cmdBuffer, aspectBits, clearDepth);
+		beginDynamicRender(*cmdBuffer, clearDepth);
+		drawCommands(*cmdBuffer);
 		endRendering(vk, *cmdBuffer);
-	else
+	}
+#endif // CTS_USES_VULKANSC
+
+	if (!m_groupParams->useDynamicRendering)
+	{
+		const VkRect2D renderArea = makeRect2D(0, 0, WIDTH, HEIGHT);
+
+		beginCommandBuffer(vk, *cmdBuffer);
+		preRenderCommands(*cmdBuffer, aspectBits, clearDepth);
+		beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, renderArea);
+		drawCommands(*cmdBuffer);
 		endRenderPass(vk, *cmdBuffer);
+	}
 
 	transition2DImage(vk, *cmdBuffer, m_depthTargetImage->object(), aspectBits,
-					  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-					  VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT	  , VK_ACCESS_MEMORY_READ_BIT,
-					  VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT		  , VK_PIPELINE_STAGE_HOST_BIT);
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+		VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 	endCommandBuffer(vk, *cmdBuffer);
+
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 	VK_CHECK(vk.queueWaitIdle(queue));
 
 	return m_depthTargetImage->readDepth(queue, m_context.getDefaultAllocator(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, { 0, 0, 0 }, WIDTH, HEIGHT, VK_IMAGE_ASPECT_DEPTH_BIT);
 }
+
+void DepthClampTestInstance::preRenderCommands(VkCommandBuffer cmdBuffer, const VkImageAspectFlagBits aspectBits, const VkClearValue& clearValue) const
+{
+	const DeviceInterface&	vk				= m_context.getDeviceInterface();
+	const bool				isCombinedType	= tcu::isCombinedDepthStencilType(mapVkFormat(m_format).type) && m_format != VK_FORMAT_X8_D24_UNORM_PACK32;
+
+	if (isCombinedType)
+		initialTransitionDepthStencil2DImage(vk, cmdBuffer, m_depthTargetImage->object(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+	else
+		initialTransitionDepth2DImage(vk, cmdBuffer, m_depthTargetImage->object(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+	const ImageSubresourceRange subresourceRange (aspectBits);
+
+	vk.cmdClearDepthStencilImage(cmdBuffer, m_depthTargetImage->object(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue.depthStencil, 1, &subresourceRange);
+
+	transition2DImage(vk, cmdBuffer, m_depthTargetImage->object(), aspectBits,
+					  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+					  VK_ACCESS_TRANSFER_WRITE_BIT		  , VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+					  VK_PIPELINE_STAGE_TRANSFER_BIT	  , VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+
+	{
+		const VkMemoryBarrier memBarrier					= { VK_STRUCTURE_TYPE_MEMORY_BARRIER, DE_NULL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT };
+		vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
+	}
+}
+
+void DepthClampTestInstance::drawCommands(VkCommandBuffer cmdBuffer) const
+{
+	const DeviceInterface&	vk		= m_context.getDeviceInterface();
+	const VkDeviceSize		offset	= 0;
+	const VkBuffer			buffer	= m_vertexBuffer->object();
+
+	// if there is more then one viewport we are also checking
+	// proper behaviour of cmdSetViewport/Scissor - there was
+	// a driver bug that caused invalid behaviour of those
+	// functions when firstViewport/Scissor had a non 0 value
+	deUint32 indexCount = static_cast<deUint32>(m_viewportVect.size());
+	for (deUint32 index = 0; index < indexCount; ++index)
+	{
+		vk.cmdSetViewport(cmdBuffer, index, 1u, &m_viewportVect[index]);
+		vk.cmdSetScissor(cmdBuffer, index, 1u, &m_scissorVect[index]);
+	}
+
+	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+	vk.cmdBindVertexBuffers(cmdBuffer, 0, 1, &buffer, &offset);
+	vk.cmdDraw(cmdBuffer, DE_LENGTH_OF_ARRAY(vertices), 1, 0, 0);
+}
+
+#ifndef CTS_USES_VULKANSC
+void DepthClampTestInstance::beginSecondaryCmdBuffer(VkCommandBuffer cmdBuffer, VkRenderingFlagsKHR renderingFlags) const
+{
+	VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,		// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		renderingFlags,															// VkRenderingFlagsKHR				flags;
+		0u,																		// uint32_t							viewMask;
+		0u,																		// uint32_t							colorAttachmentCount;
+		DE_NULL,																// const VkFormat*					pColorAttachmentFormats;
+		m_format,																// VkFormat							depthAttachmentFormat;
+		VK_FORMAT_UNDEFINED,													// VkFormat							stencilAttachmentFormat;
+		VK_SAMPLE_COUNT_1_BIT,													// VkSampleCountFlagBits			rasterizationSamples;
+	};
+
+	const VkCommandBufferInheritanceInfo bufferInheritanceInfo = initVulkanStructure(&inheritanceRenderingInfo);
+
+	VkCommandBufferUsageFlags usageFlags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+		usageFlags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+
+	const VkCommandBufferBeginInfo commandBufBeginParams
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,							// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		usageFlags,																// VkCommandBufferUsageFlags		flags;
+		&bufferInheritanceInfo
+	};
+
+	const DeviceInterface& vk = m_context.getDeviceInterface();
+	VK_CHECK(vk.beginCommandBuffer(cmdBuffer, &commandBufBeginParams));
+}
+
+void DepthClampTestInstance::beginDynamicRender(VkCommandBuffer cmdBuffer, VkClearValue clearValue, VkRenderingFlagsKHR renderingFlags) const
+{
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkRect2D			renderArea	= makeRect2D(0, 0, WIDTH, HEIGHT);
+
+	VkRenderingAttachmentInfoKHR depthAttachment
+	{
+		VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,		// VkStructureType						sType;
+		DE_NULL,												// const void*							pNext;
+		*m_depthTargetView,										// VkImageView							imageView;
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,		// VkImageLayout						imageLayout;
+		VK_RESOLVE_MODE_NONE,									// VkResolveModeFlagBits				resolveMode;
+		DE_NULL,												// VkImageView							resolveImageView;
+		VK_IMAGE_LAYOUT_UNDEFINED,								// VkImageLayout						resolveImageLayout;
+		VK_ATTACHMENT_LOAD_OP_LOAD,								// VkAttachmentLoadOp					loadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,							// VkAttachmentStoreOp					storeOp;
+		clearValue												// VkClearValue							clearValue;
+	};
+
+	VkRenderingInfoKHR renderingInfo
+	{
+		VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+		DE_NULL,
+		renderingFlags,											// VkRenderingFlagsKHR					flags;
+		renderArea,												// VkRect2D								renderArea;
+		1u,														// deUint32								layerCount;
+		0u,														// deUint32								viewMask;
+		0u,														// deUint32								colorAttachmentCount;
+		DE_NULL,												// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
+		&depthAttachment,										// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
+		DE_NULL,												// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
+	};
+
+	vk.cmdBeginRendering(cmdBuffer, &renderingInfo);
+}
+#endif // CTS_USES_VULKANSC
 
 tcu::TestStatus DepthClampTestInstance::iterate (void)
 {
@@ -608,12 +712,12 @@ tcu::TestStatus DepthClampTestInstance::iterate (void)
 class DepthClampTest : public TestCase
 {
 public:
-	DepthClampTest (tcu::TestContext &testCtx, const string& name, const string& description, const TestParams &params, const VkFormat format, const float epsilon, bool useDynamicRendering)
-		: TestCase	(testCtx, name, description)
-		, m_params(params)
-		, m_format(format)
-		, m_epsilon(epsilon)
-		, m_useDynamicRendering(useDynamicRendering)
+	DepthClampTest (tcu::TestContext &testCtx, const string& name, const string& description, const TestParams &params, const VkFormat format, const float epsilon, const SharedGroupParams groupParams)
+		: TestCase		(testCtx, name, description)
+		, m_params		(params)
+		, m_format		(format)
+		, m_epsilon		(epsilon)
+		, m_groupParams	(groupParams)
 	{
 	}
 
@@ -671,7 +775,11 @@ public:
 			context.requireDeviceFunctionality(extensionName);
 
 		if (m_params.viewportData.size() > 1)
+		{
 			context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_MULTI_VIEWPORT);
+			if (!context.getDeviceFeatures().geometryShader)
+				throw tcu::NotSupportedError("Geometry shader is not supported");
+		}
 
 		VkImageFormatProperties imageFormatProperties;
 		const auto&	vki		= context.getInstanceInterface();
@@ -682,20 +790,20 @@ public:
 			TCU_THROW(NotSupportedError, "Format not supported");
 		}
 
-		if (m_useDynamicRendering)
+		if (m_groupParams->useDynamicRendering)
 			context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 	}
 
 	virtual TestInstance* createInstance (Context& context) const
 	{
-		return new DepthClampTestInstance(context, m_params, m_format, m_epsilon, m_useDynamicRendering);
+		return new DepthClampTestInstance(context, m_params, m_format, m_epsilon, m_groupParams);
 	}
 
 private:
-	const TestParams	m_params;
-	const VkFormat		m_format;
-	const float			m_epsilon;
-	const bool			m_useDynamicRendering;
+	const TestParams			m_params;
+	const VkFormat				m_format;
+	const float					m_epsilon;
+	const SharedGroupParams		m_groupParams;
 };
 
 std::string getFormatCaseName (VkFormat format)
@@ -703,11 +811,16 @@ std::string getFormatCaseName (VkFormat format)
 	return de::toLower(de::toString(getFormatStr(format)).substr(10));
 }
 
-void createTests (tcu::TestCaseGroup* testGroup, bool useDynamicRendering)
+void createTests (tcu::TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 {
 	for(int i = 0; i < DE_LENGTH_OF_ARRAY(depthStencilImageFormatsToTest); ++i)
 	{
-		const auto		format			= depthStencilImageFormatsToTest[i];
+		const auto format = depthStencilImageFormatsToTest[i];
+
+		// reduce number of tests for dynamic rendering cases where secondary command buffer is used
+		if (groupParams->useSecondaryCmdBuffer && (format != VK_FORMAT_D16_UNORM))
+			continue;
+
 		const float		epsilon			= depthEpsilonValuesByFormat[i];
 		const auto		formatCaseName	= getFormatCaseName(format);
 		for(const auto& params : depthClearValuesToTest)
@@ -715,15 +828,15 @@ void createTests (tcu::TestCaseGroup* testGroup, bool useDynamicRendering)
 			if ((params.skipSNorm && vk::isSnormFormat(format)) || (params.skipUNorm && isUnormDepthFormat(format)))
 				continue;
 			const auto	testCaseName	= formatCaseName + params.testNameSuffix;
-			testGroup->addChild(new DepthClampTest(testGroup->getTestContext(), testCaseName, "Depth clamp", params, format, epsilon, useDynamicRendering));
+			testGroup->addChild(new DepthClampTest(testGroup->getTestContext(), testCaseName, "Depth clamp", params, format, epsilon, groupParams));
 		}
 	}
 }
 }	// anonymous
 
-tcu::TestCaseGroup*	createDepthClampTests (tcu::TestContext& testCtx, bool useDynamicRendering)
+tcu::TestCaseGroup*	createDepthClampTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
-	return createTestGroup(testCtx, "depth_clamp", "Depth Clamp Tests", createTests, useDynamicRendering);
+	return createTestGroup(testCtx, "depth_clamp", "Depth Clamp Tests", createTests, groupParams);
 }
 }	// Draw
 }	// vkt

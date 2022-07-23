@@ -25,9 +25,6 @@
 #include "vktConditionalDispatchTests.hpp"
 #include "vktConditionalRenderingTestUtil.hpp"
 
-#include "vktTestCaseUtil.hpp"
-#include "vktComputeTestsUtil.hpp"
-
 #include "tcuTestLog.hpp"
 #include "tcuResource.hpp"
 
@@ -35,6 +32,8 @@
 #include "vkCmdUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkTypeUtil.hpp"
+#include "vkBufferWithMemory.hpp"
 
 namespace vkt
 {
@@ -94,7 +93,7 @@ public:
 	virtual		tcu::TestStatus iterate							(void);
 	void						recordDispatch					(const vk::DeviceInterface&	vk,
 																 vk::VkCommandBuffer cmdBuffer,
-																 compute::Buffer& indirectBuffer);
+																 vk::BufferWithMemory& indirectBuffer);
 
 protected:
 	const DispatchCommandType		m_command;
@@ -151,7 +150,7 @@ ConditionalDispatchTestInstance::ConditionalDispatchTestInstance (Context &conte
 
 void ConditionalDispatchTestInstance::recordDispatch (const vk::DeviceInterface& vk,
 													  vk::VkCommandBuffer cmdBuffer,
-													  compute::Buffer& indirectBuffer)
+													  vk::BufferWithMemory& indirectBuffer)
 {
 	for (int i = 0; i < m_numCalls; i++)
 	{
@@ -188,7 +187,7 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 	// Create a buffer and host-visible memory for it
 
 	const vk::VkDeviceSize bufferSizeBytes = sizeof(deUint32);
-	const compute::Buffer outputBuffer(vk, device, allocator, vk::makeBufferCreateInfo(bufferSizeBytes, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), vk::MemoryRequirement::HostVisible);
+	const vk::BufferWithMemory outputBuffer(vk, device, allocator, vk::makeBufferCreateInfo(bufferSizeBytes, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), vk::MemoryRequirement::HostVisible);
 
 	{
 		const vk::Allocation& alloc = outputBuffer.getAllocation();
@@ -229,7 +228,7 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 	// Create indirect buffer
 	const vk::VkDispatchIndirectCommand dispatchCommands[] = { { 1u, 1u, 1u } };
 
-	compute::Buffer indirectBuffer(
+	vk::BufferWithMemory indirectBuffer(
 		vk, device, allocator,
 		vk::makeBufferCreateInfo(sizeof(dispatchCommands), vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
 		vk::MemoryRequirement::HostVisible);
@@ -276,7 +275,7 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 			&inheritanceInfo
 		};
 
-		vk.beginCommandBuffer(*secondaryCmdBuffer, &commandBufferBeginInfo);
+		VK_CHECK(vk.beginCommandBuffer(*secondaryCmdBuffer, &commandBufferBeginInfo));
 
 		targetCmdBuffer = *secondaryCmdBuffer;
 	}

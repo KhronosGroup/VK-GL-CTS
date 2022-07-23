@@ -39,11 +39,27 @@ public:
 													 const std::string&		name,
 													 const std::string&		description,
 													 CreateChildrenFunc		createChildren,
-													 CleanupGroupFunc		cleanupGroup);
-								~TestGroupHelper0	(void);
+													 CleanupGroupFunc		cleanupGroup)
+									: tcu::TestCaseGroup(testCtx, name.c_str(), description.c_str())
+									, m_createChildren(createChildren)
+									, m_cleanupGroup(cleanupGroup)
+								{
+								}
 
-	void						init				(void);
-	void						deinit				(void);
+								~TestGroupHelper0	(void)
+								{
+								}
+
+	void						init				(void)
+								{
+									m_createChildren(this);
+								}
+
+	void						deinit				(void)
+								{
+									if (m_cleanupGroup)
+										m_cleanupGroup(this);
+								}
 
 private:
 	const CreateChildrenFunc	m_createChildren;

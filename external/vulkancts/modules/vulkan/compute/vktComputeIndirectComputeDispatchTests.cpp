@@ -24,6 +24,7 @@
 
 #include "vktComputeIndirectComputeDispatchTests.hpp"
 #include "vktComputeTestsUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 
 #include <string>
 #include <map>
@@ -42,6 +43,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
 
 #include "tcuVector.hpp"
 #include "tcuVectorUtil.hpp"
@@ -55,6 +57,9 @@
 #include "deArrayUtil.hpp"
 
 #include "gluShaderUtil.hpp"
+#include "tcuCommandLine.hpp"
+
+#include <set>
 
 namespace vkt
 {
@@ -62,6 +67,89 @@ namespace compute
 {
 namespace
 {
+std::vector<std::string> removeCoreExtensions (const std::vector<std::string>& supportedExtensions, const std::vector<const char*>& coreExtensions)
+{
+	std::vector<std::string>	nonCoreExtensions;
+	std::set<std::string>		excludedExtensions	(coreExtensions.begin(), coreExtensions.end());
+
+	for (const auto & supportedExtension : supportedExtensions)
+	{
+		if (!de::contains(excludedExtensions, supportedExtension))
+			nonCoreExtensions.push_back(supportedExtension);
+	}
+
+	return nonCoreExtensions;
+}
+
+// Creates a device that has a queue for compute capabilities without graphics.
+vk::Move<vk::VkDevice> createCustomDevice (Context& context, uint32_t& queueFamilyIndex)
+{
+	const std::vector<vk::VkQueueFamilyProperties>	queueFamilies				= getPhysicalDeviceQueueFamilyProperties(context.getInstanceInterface(),
+																														 context.getPhysicalDevice());
+
+	queueFamilyIndex = 0;
+	for (const auto &queueFamily: queueFamilies)
+	{
+		if (queueFamily.queueFlags & vk::VK_QUEUE_COMPUTE_BIT && !(queueFamily.queueFlags & vk::VK_QUEUE_GRAPHICS_BIT))
+			break;
+		else
+			queueFamilyIndex++;
+	}
+
+	// One queue family without a graphics bit should be found, since this is checked in checkSupport.
+	DE_ASSERT(queueFamilyIndex < queueFamilies.size());
+
+	const float										queuePriority				= 1.0f;
+	const vk::VkDeviceQueueCreateInfo				deviceQueueCreateInfos[]	= {
+		{
+			vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,	// VkStructureType				sType;
+			DE_NULL,										// const void*					pNext;
+			(vk::VkDeviceQueueCreateFlags)0u,				// VkDeviceQueueCreateFlags		flags;
+			context.getUniversalQueueFamilyIndex(),			// uint32_t						queueFamilyIndex;
+			1u,												// uint32_t						queueCount;
+			&queuePriority,									// const float*					pQueuePriorities;
+		},
+		{
+			vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,	// VkStructureType				sType;
+			DE_NULL,										// const void*					pNext;
+			(vk::VkDeviceQueueCreateFlags)0u,				// VkDeviceQueueCreateFlags		flags;
+			queueFamilyIndex,								// uint32_t						queueFamilyIndex;
+			1u,												// uint32_t						queueCount;
+			&queuePriority,									// const float*					pQueuePriorities;
+		}
+	};
+
+	// context.getDeviceExtensions() returns supported device extension including extensions that have been promoted to
+	// Vulkan core. The core extensions must be removed from the list.
+	std::vector<const char*>						coreExtensions;
+	vk::getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
+	std::vector<std::string> nonCoreExtensions(removeCoreExtensions(context.getDeviceExtensions(), coreExtensions));
+
+	std::vector<const char*>						extensionNames;
+	extensionNames.reserve(nonCoreExtensions.size());
+	for (const std::string& extension : nonCoreExtensions)
+		extensionNames.push_back(extension.c_str());
+
+	const auto&										deviceFeatures2				= context.getDeviceFeatures2();
+
+	const vk::VkDeviceCreateInfo					deviceCreateInfo			=
+	{
+		vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,		// VkStructureType					sType;
+		&deviceFeatures2,								// const void*						pNext;
+		(vk::VkDeviceCreateFlags)0u,					// VkDeviceCreateFlags				flags;
+		DE_LENGTH_OF_ARRAY(deviceQueueCreateInfos),		// uint32_t							queueCreateInfoCount;
+		deviceQueueCreateInfos,							// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
+		0u,												// uint32_t							enabledLayerCount;
+		DE_NULL,										// const char* const*				ppEnabledLayerNames;
+		static_cast<uint32_t>(extensionNames.size()),	// uint32_t							enabledExtensionCount;
+		extensionNames.data(),							// const char* const*				ppEnabledExtensionNames;
+		DE_NULL,										// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+	};
+
+	return vkt::createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
+								   context.getPlatformInterface(), context.getInstance(),
+								   context.getInstanceInterface(), context.getPhysicalDevice(), &deviceCreateInfo);
+}
 
 enum
 {
@@ -104,18 +192,21 @@ struct DispatchCaseDesc
 												  const char*					description,
 												  const deUintptr				bufferSize,
 												  const tcu::UVec3				workGroupSize,
-												  const DispatchCommandsVec&	dispatchCommands)
+												  const DispatchCommandsVec&	dispatchCommands,
+												  const bool					computeQueueOnly)
 									: m_name				(name)
 									, m_description			(description)
 									, m_bufferSize			(bufferSize)
 									, m_workGroupSize		(workGroupSize)
-									, m_dispatchCommands	(dispatchCommands) {}
+									, m_dispatchCommands	(dispatchCommands)
+									, m_computeOnlyQueue	(computeQueueOnly) {}
 
 	const char*					m_name;
 	const char*					m_description;
 	const deUintptr				m_bufferSize;
 	const tcu::UVec3			m_workGroupSize;
 	const DispatchCommandsVec	m_dispatchCommands;
+	const bool					m_computeOnlyQueue;
 };
 
 class IndirectDispatchInstanceBufferUpload : public vkt::TestInstance
@@ -125,27 +216,29 @@ public:
 																			 const std::string&			name,
 																			 const deUintptr			bufferSize,
 																			 const tcu::UVec3&			workGroupSize,
-																			 const DispatchCommandsVec& dispatchCommands);
+																			 const DispatchCommandsVec& dispatchCommands,
+																			 const bool					computeQueueOnly);
 
 	virtual							~IndirectDispatchInstanceBufferUpload	(void) {}
 
 	virtual tcu::TestStatus			iterate									(void);
 
 protected:
-	virtual void					fillIndirectBufferData					(const vk::VkCommandBuffer	commandBuffer,
-																			 const Buffer&				indirectBuffer);
+	virtual void					fillIndirectBufferData					(const vk::VkCommandBuffer		commandBuffer,
+																			 const vk::BufferWithMemory&	indirectBuffer);
 
-	deBool							verifyResultBuffer						(const Buffer&				resultBuffer,
-																			 const vk::VkDeviceSize		resultBlockSize) const;
+	deBool							verifyResultBuffer						(const vk::BufferWithMemory&	resultBuffer,
+																			 const vk::VkDeviceSize			resultBlockSize) const;
 
 	Context&						m_context;
 	const std::string				m_name;
 
 	const vk::DeviceInterface&		m_device_interface;
-	const vk::VkDevice				m_device;
+	vk::VkDevice					m_device;
+	vk::Move<vk::VkDevice>			m_customDevice;
 
-	const vk::VkQueue				m_queue;
-	const deUint32					m_queueFamilyIndex;
+	vk::VkQueue						m_queue;
+	deUint32						m_queueFamilyIndex;
 
 	const deUintptr					m_bufferSize;
 	const tcu::UVec3				m_workGroupSize;
@@ -153,6 +246,7 @@ protected:
 
 	vk::Allocator&					m_allocator;
 
+	const bool						m_computeQueueOnly;
 private:
 	IndirectDispatchInstanceBufferUpload (const vkt::TestInstance&);
 	IndirectDispatchInstanceBufferUpload& operator= (const vkt::TestInstance&);
@@ -162,7 +256,8 @@ IndirectDispatchInstanceBufferUpload::IndirectDispatchInstanceBufferUpload (Cont
 																			const std::string&			name,
 																			const deUintptr				bufferSize,
 																			const tcu::UVec3&			workGroupSize,
-																			const DispatchCommandsVec&	dispatchCommands)
+																			const DispatchCommandsVec&	dispatchCommands,
+																			const bool					computeQueueOnly)
 	: vkt::TestInstance		(context)
 	, m_context				(context)
 	, m_name				(name)
@@ -174,10 +269,11 @@ IndirectDispatchInstanceBufferUpload::IndirectDispatchInstanceBufferUpload (Cont
 	, m_workGroupSize		(workGroupSize)
 	, m_dispatchCommands	(dispatchCommands)
 	, m_allocator			(context.getDefaultAllocator())
+	, m_computeQueueOnly	(computeQueueOnly)
 {
 }
 
-void IndirectDispatchInstanceBufferUpload::fillIndirectBufferData (const vk::VkCommandBuffer commandBuffer, const Buffer& indirectBuffer)
+void IndirectDispatchInstanceBufferUpload::fillIndirectBufferData (const vk::VkCommandBuffer commandBuffer, const vk::BufferWithMemory& indirectBuffer)
 {
 	DE_UNREF(commandBuffer);
 
@@ -217,11 +313,22 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate (void)
 		}
 	}
 
+	if (m_computeQueueOnly)
+	{
+		// m_queueFamilyIndex will be updated in createCustomDevice() to match the requested queue type.
+		m_customDevice = createCustomDevice(m_context, m_queueFamilyIndex);
+		m_device = m_customDevice.get();
+
+		m_queue = getDeviceQueue(m_context.getDeviceInterface(), m_device, m_queueFamilyIndex, 0u);
+		m_allocator = vk::SimpleAllocator(m_device_interface, m_device,
+										  vk::getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
+	}
+
 	// Create result buffer
 	const vk::VkDeviceSize resultBlockSize = getResultBlockAlignedSize(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), RESULT_BLOCK_BASE_SIZE);
 	const vk::VkDeviceSize resultBufferSize = resultBlockSize * (deUint32)m_dispatchCommands.size();
 
-	Buffer resultBuffer(
+	vk::BufferWithMemory resultBuffer(
 		m_device_interface, m_device, m_allocator,
 		vk::makeBufferCreateInfo(resultBufferSize, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
 		vk::MemoryRequirement::HostVisible);
@@ -273,7 +380,7 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate (void)
 	beginCommandBuffer(m_device_interface, *cmdBuffer);
 
 	// Create indirect buffer
-	Buffer indirectBuffer(
+	vk::BufferWithMemory indirectBuffer(
 		m_device_interface, m_device, m_allocator,
 		vk::makeBufferCreateInfo(m_bufferSize, vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
 		vk::MemoryRequirement::HostVisible);
@@ -328,8 +435,8 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate (void)
 		return tcu::TestStatus(QP_TEST_RESULT_FAIL, "Invalid values in result buffer");
 }
 
-deBool IndirectDispatchInstanceBufferUpload::verifyResultBuffer (const Buffer&			resultBuffer,
-																 const vk::VkDeviceSize	resultBlockSize) const
+deBool IndirectDispatchInstanceBufferUpload::verifyResultBuffer (const vk::BufferWithMemory&	resultBuffer,
+																 const vk::VkDeviceSize			resultBlockSize) const
 {
 	deBool allOk = true;
 	const vk::Allocation& alloc = resultBuffer.getAllocation();
@@ -374,12 +481,14 @@ public:
 
 	virtual void				initPrograms						(vk::SourceCollections&		programCollection) const;
 	virtual TestInstance*		createInstance						(Context&					context) const;
+	virtual void				checkSupport						(Context& context) const;
 
 protected:
 	const deUintptr				m_bufferSize;
 	const tcu::UVec3			m_workGroupSize;
 	const DispatchCommandsVec	m_dispatchCommands;
 	const glu::GLSLVersion		m_glslVersion;
+	const bool					m_computeOnlyQueue;
 
 private:
 	IndirectDispatchCaseBufferUpload (const vkt::TestCase&);
@@ -394,6 +503,7 @@ IndirectDispatchCaseBufferUpload::IndirectDispatchCaseBufferUpload (tcu::TestCon
 	, m_workGroupSize		(caseDesc.m_workGroupSize)
 	, m_dispatchCommands	(caseDesc.m_dispatchCommands)
 	, m_glslVersion			(glslVersion)
+	, m_computeOnlyQueue	(caseDesc.m_computeOnlyQueue)
 {
 }
 
@@ -430,24 +540,49 @@ void IndirectDispatchCaseBufferUpload::initPrograms (vk::SourceCollections& prog
 
 TestInstance* IndirectDispatchCaseBufferUpload::createInstance (Context& context) const
 {
-	return new IndirectDispatchInstanceBufferUpload(context, m_name, m_bufferSize, m_workGroupSize, m_dispatchCommands);
+	return new IndirectDispatchInstanceBufferUpload(context, m_name, m_bufferSize, m_workGroupSize, m_dispatchCommands, m_computeOnlyQueue);
 }
 
-class IndirectDispatchInstanceBufferGenerate : public IndirectDispatchInstanceBufferUpload
+void IndirectDispatchCaseBufferUpload::checkSupport (Context& context) const
+{
+	// Find at least one queue family that supports compute queue but does NOT support graphics queue.
+	if (m_computeOnlyQueue)
+	{
+		bool foundQueue = false;
+		const std::vector<vk::VkQueueFamilyProperties> queueFamilies = getPhysicalDeviceQueueFamilyProperties(
+				context.getInstanceInterface(), context.getPhysicalDevice());
+
+		for (const auto &queueFamily: queueFamilies)
+		{
+			if (queueFamily.queueFlags & vk::VK_QUEUE_COMPUTE_BIT &&
+				!(queueFamily.queueFlags & vk::VK_QUEUE_GRAPHICS_BIT))
+			{
+				foundQueue = true;
+				break;
+			}
+		}
+		if (!foundQueue)
+			TCU_THROW(NotSupportedError, "No queue family found that only supports compute queue.");
+	}
+}
+
+	class IndirectDispatchInstanceBufferGenerate : public IndirectDispatchInstanceBufferUpload
 {
 public:
 									IndirectDispatchInstanceBufferGenerate	(Context&					context,
 																			 const std::string&			name,
 																			 const deUintptr			bufferSize,
 																			 const tcu::UVec3&			workGroupSize,
-																			 const DispatchCommandsVec&	dispatchCommands)
-										: IndirectDispatchInstanceBufferUpload(context, name, bufferSize, workGroupSize, dispatchCommands) {}
+																			 const DispatchCommandsVec&	dispatchCommands,
+																			 const bool					computeOnlyQueue)
+
+										: IndirectDispatchInstanceBufferUpload(context, name, bufferSize, workGroupSize, dispatchCommands, computeOnlyQueue) {}
 
 	virtual							~IndirectDispatchInstanceBufferGenerate	(void) {}
 
 protected:
-	virtual void					fillIndirectBufferData					(const vk::VkCommandBuffer	commandBuffer,
-																			 const Buffer&				indirectBuffer);
+	virtual void					fillIndirectBufferData					(const vk::VkCommandBuffer		commandBuffer,
+																			 const vk::BufferWithMemory&	indirectBuffer);
 
 	vk::Move<vk::VkDescriptorSetLayout>	m_descriptorSetLayout;
 	vk::Move<vk::VkDescriptorPool>		m_descriptorPool;
@@ -460,7 +595,7 @@ private:
 	IndirectDispatchInstanceBufferGenerate& operator= (const vkt::TestInstance&);
 };
 
-void IndirectDispatchInstanceBufferGenerate::fillIndirectBufferData (const vk::VkCommandBuffer commandBuffer, const Buffer& indirectBuffer)
+void IndirectDispatchInstanceBufferGenerate::fillIndirectBufferData (const vk::VkCommandBuffer commandBuffer, const vk::BufferWithMemory& indirectBuffer)
 {
 	// Create compute shader that generates data for indirect buffer
 	const vk::Unique<vk::VkShaderModule> genIndirectBufferDataShader(createShaderModule(
@@ -574,7 +709,7 @@ void IndirectDispatchCaseBufferGenerate::initPrograms (vk::SourceCollections& pr
 
 TestInstance* IndirectDispatchCaseBufferGenerate::createInstance (Context& context) const
 {
-	return new IndirectDispatchInstanceBufferGenerate(context, m_name, m_bufferSize, m_workGroupSize, m_dispatchCommands);
+	return new IndirectDispatchInstanceBufferGenerate(context, m_name, m_bufferSize, m_workGroupSize, m_dispatchCommands, m_computeOnlyQueue);
 }
 
 DispatchCommandsVec commandsVec (const DispatchCommand& cmd)
@@ -622,35 +757,36 @@ DispatchCommandsVec commandsVec (const DispatchCommand& cmd0,
 
 tcu::TestCaseGroup* createIndirectComputeDispatchTests (tcu::TestContext& testCtx)
 {
+
 	static const DispatchCaseDesc s_dispatchCases[] =
 	{
 		DispatchCaseDesc("single_invocation", "Single invocation only from offset 0", INDIRECT_COMMAND_OFFSET, tcu::UVec3(1, 1, 1),
-			commandsVec(DispatchCommand(0, tcu::UVec3(1, 1, 1)))
-        ),
+			commandsVec(DispatchCommand(0, tcu::UVec3(1, 1, 1))), false
+		),
 		DispatchCaseDesc("multiple_groups", "Multiple groups dispatched from offset 0", INDIRECT_COMMAND_OFFSET, tcu::UVec3(1, 1, 1),
-			commandsVec(DispatchCommand(0, tcu::UVec3(2, 3, 5)))
+			commandsVec(DispatchCommand(0, tcu::UVec3(2, 3, 5))), false
 		),
 		DispatchCaseDesc("multiple_groups_multiple_invocations", "Multiple groups of size 2x3x1 from offset 0", INDIRECT_COMMAND_OFFSET, tcu::UVec3(2, 3, 1),
-			commandsVec(DispatchCommand(0, tcu::UVec3(1, 2, 3)))
+			commandsVec(DispatchCommand(0, tcu::UVec3(1, 2, 3))), false
 		),
 		DispatchCaseDesc("small_offset", "Small offset", 16 + INDIRECT_COMMAND_OFFSET, tcu::UVec3(1, 1, 1),
-			commandsVec(DispatchCommand(16, tcu::UVec3(1, 1, 1)))
+			commandsVec(DispatchCommand(16, tcu::UVec3(1, 1, 1))), false
 		),
 		DispatchCaseDesc("large_offset", "Large offset", (2 << 20), tcu::UVec3(1, 1, 1),
-			commandsVec(DispatchCommand((1 << 20) + 12, tcu::UVec3(1, 1, 1)))
+			commandsVec(DispatchCommand((1 << 20) + 12, tcu::UVec3(1, 1, 1))), false
 		),
 		DispatchCaseDesc("large_offset_multiple_invocations", "Large offset, multiple invocations", (2 << 20), tcu::UVec3(2, 3, 1),
-			commandsVec(DispatchCommand((1 << 20) + 12, tcu::UVec3(1, 2, 3)))
+			commandsVec(DispatchCommand((1 << 20) + 12, tcu::UVec3(1, 2, 3))), false
 		),
 		DispatchCaseDesc("empty_command", "Empty command", INDIRECT_COMMAND_OFFSET, tcu::UVec3(1, 1, 1),
-			commandsVec(DispatchCommand(0, tcu::UVec3(0, 0, 0)))
+			commandsVec(DispatchCommand(0, tcu::UVec3(0, 0, 0))), false
 		),
 		DispatchCaseDesc("multi_dispatch", "Dispatch multiple compute commands from single buffer", 1 << 10, tcu::UVec3(3, 1, 2),
 			commandsVec(DispatchCommand(0, tcu::UVec3(1, 1, 1)),
 						DispatchCommand(INDIRECT_COMMAND_OFFSET, tcu::UVec3(2, 1, 1)),
 						DispatchCommand(104, tcu::UVec3(1, 3, 1)),
 						DispatchCommand(40, tcu::UVec3(1, 1, 7)),
-						DispatchCommand(52, tcu::UVec3(1, 1, 4)))
+						DispatchCommand(52, tcu::UVec3(1, 1, 4))), false
 		),
 		DispatchCaseDesc("multi_dispatch_reuse_command", "Dispatch multiple compute commands from single buffer", 1 << 10, tcu::UVec3(3, 1, 2),
 			commandsVec(DispatchCommand(0, tcu::UVec3(1, 1, 1)),
@@ -659,7 +795,7 @@ tcu::TestCaseGroup* createIndirectComputeDispatchTests (tcu::TestContext& testCt
 						DispatchCommand(104, tcu::UVec3(1, 3, 1)),
 						DispatchCommand(104, tcu::UVec3(1, 3, 1)),
 						DispatchCommand(52, tcu::UVec3(1, 1, 4)),
-						DispatchCommand(52, tcu::UVec3(1, 1, 4)))
+						DispatchCommand(52, tcu::UVec3(1, 1, 4))), false
 		),
 	};
 
@@ -670,7 +806,12 @@ tcu::TestCaseGroup* createIndirectComputeDispatchTests (tcu::TestContext& testCt
 
 	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_dispatchCases); ndx++)
 	{
-		groupBufferUpload->addChild(new IndirectDispatchCaseBufferUpload(testCtx, s_dispatchCases[ndx], glu::GLSL_VERSION_310_ES));
+		DispatchCaseDesc desc = s_dispatchCases[ndx];
+		std::string computeName = std::string(desc.m_name) + std::string("_compute_only_queue");
+		DispatchCaseDesc computeOnlyDesc = DispatchCaseDesc(computeName.c_str(), desc.m_description, desc.m_bufferSize, desc.m_workGroupSize,
+															desc.m_dispatchCommands, true);
+		groupBufferUpload->addChild(new IndirectDispatchCaseBufferUpload(testCtx, desc, glu::GLSL_VERSION_310_ES));
+		groupBufferUpload->addChild(new IndirectDispatchCaseBufferUpload(testCtx, computeOnlyDesc, glu::GLSL_VERSION_310_ES));
 	}
 
 	tcu::TestCaseGroup* const	groupBufferGenerate = new tcu::TestCaseGroup(testCtx, "gen_in_compute", "");
@@ -678,7 +819,12 @@ tcu::TestCaseGroup* createIndirectComputeDispatchTests (tcu::TestContext& testCt
 
 	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_dispatchCases); ndx++)
 	{
-		groupBufferGenerate->addChild(new IndirectDispatchCaseBufferGenerate(testCtx, s_dispatchCases[ndx], glu::GLSL_VERSION_310_ES));
+		DispatchCaseDesc desc = s_dispatchCases[ndx];
+		std::string computeName = std::string(desc.m_name) + std::string("_compute_only_queue");
+		DispatchCaseDesc computeOnlyDesc = DispatchCaseDesc(computeName.c_str(), desc.m_description, desc.m_bufferSize, desc.m_workGroupSize,
+															desc.m_dispatchCommands, true);
+		groupBufferGenerate->addChild(new IndirectDispatchCaseBufferGenerate(testCtx, desc, glu::GLSL_VERSION_310_ES));
+		groupBufferGenerate->addChild(new IndirectDispatchCaseBufferGenerate(testCtx, computeOnlyDesc, glu::GLSL_VERSION_310_ES));
 	}
 
 	return indirectComputeDispatchTests.release();

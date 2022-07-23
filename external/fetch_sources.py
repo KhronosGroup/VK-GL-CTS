@@ -229,12 +229,13 @@ class SourceFile (Source):
 		writeBinaryFile(dstPath, data)
 
 class GitRepo (Source):
-	def __init__(self, httpsUrl, sshUrl, revision, baseDir, extractDir = "src", removeTags = []):
+	def __init__(self, httpsUrl, sshUrl, revision, baseDir, extractDir = "src", removeTags = [], patch = ""):
 		Source.__init__(self, baseDir, extractDir)
 		self.httpsUrl	= httpsUrl
 		self.sshUrl		= sshUrl
 		self.revision	= revision
 		self.removeTags	= removeTags
+		self.patch		= patch
 
 	def checkout(self, url, fullDstPath, force):
 		if not os.path.exists(os.path.join(fullDstPath, '.git')):
@@ -250,6 +251,11 @@ class GitRepo (Source):
 			force_arg = ['--force'] if force else []
 			execute(["git", "fetch"] + force_arg + ["--tags", url, "+refs/heads/*:refs/remotes/origin/*"])
 			execute(["git", "checkout"] + force_arg + [self.revision])
+
+			if(self.patch != ""):
+				patchFile = os.path.join(EXTERNAL_DIR, self.patch)
+				execute(["git", "reset", "--hard", "HEAD"])
+				execute(["git", "apply", patchFile])
 		finally:
 			popWorkingDir()
 
@@ -293,29 +299,34 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Tools.git",
 		"git@github.com:KhronosGroup/SPIRV-Tools.git",
-		"b0ce31fd2d8fdf0bdf87832a63d3da3289202fdf",
+		"b930e734ea198b7aabbbf04ee1562cf6f57962f0",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
 		"git@github.com:KhronosGroup/glslang.git",
-		"abbe466451ca975fecfdba453ef9073df52aefc5",
+		"7dda6a6347b0bd550e202942adee475956ef462a",
 		"glslang",
 		removeTags = ["master-tot"]),
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Headers.git",
 		"git@github.com:KhronosGroup/SPIRV-Headers.git",
-		"4995a2f2723c401eb0ea3e10c81298906bf1422b",
+		"b765c355f488837ca4c77980ba69484f3ff277f5",
 		"spirv-headers"),
 	GitRepo(
-		"https://gitlab.khronos.org/vulkan/vulkan.git",
-		"git@gitlab.khronos.org:vulkan/vulkan.git",
-		"7c7d5305655a171ca495e7a6e5b8cff88e67d40a",
+		"https://github.com/KhronosGroup/Vulkan-Docs.git",
+		"git@github.com:KhronosGroup/Vulkan-Docs.git",
+		"8dcc7469b01529600b712596a5a48ec8c710e228",
 		"vulkan-docs"),
 	GitRepo(
 		"https://github.com/google/amber.git",
 		"git@github.com:google/amber.git",
 		"8b145a6c89dcdb4ec28173339dd176fb7b6f43ed",
 		"amber"),
+	GitRepo(
+		"https://github.com/open-source-parsers/jsoncpp.git",
+		"git@github.com:open-source-parsers/jsoncpp.git",
+		"9059f5cad030ba11d37818847443a53918c327b1",
+		"jsoncpp"),
 ]
 
 def parseArgs ():

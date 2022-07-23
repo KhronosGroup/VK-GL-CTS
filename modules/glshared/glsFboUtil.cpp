@@ -518,8 +518,8 @@ static void checkAttachmentCompleteness (Checker& cctx, const Attachment& attach
 
 using namespace config;
 
-Checker::Checker (const glu::RenderContext& ctx)
-	: m_renderCtx(ctx)
+Checker::Checker (const glu::RenderContext& ctx, const FormatDB& formats)
+	: m_renderCtx(ctx), m_formats(formats)
 {
 	m_statusCodes.setAllowComplete(true);
 }
@@ -573,7 +573,7 @@ FboVerifier::FboVerifier (const FormatDB& formats, CheckerFactory& factory, cons
 ValidStatusCodes FboVerifier::validStatusCodes (const Framebuffer& fboConfig) const
 {
 	const AttachmentMap& atts = fboConfig.attachments;
-	const UniquePtr<Checker> cctx(m_factory.createChecker(m_renderCtx));
+	const UniquePtr<Checker> cctx(m_factory.createChecker(m_renderCtx, m_formats));
 
 	for (TextureMap::const_iterator it = fboConfig.textures.begin();
 		 it != fboConfig.textures.end(); it++)

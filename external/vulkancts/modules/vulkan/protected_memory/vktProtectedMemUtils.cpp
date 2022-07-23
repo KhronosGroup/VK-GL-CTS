@@ -34,6 +34,7 @@
 #include "vkDebugReportUtil.hpp"
 #include "vkApiVersion.hpp"
 #include "vkObjUtil.hpp"
+#include "vkSafetyCriticalUtil.hpp"
 
 #include "vkPlatform.hpp"
 #include "vktProtectedMemContext.hpp"
@@ -140,7 +141,10 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::PlatformInterface&		vkp
 												 const deUint32						queueFamilyIndex,
 												 const deUint32						apiVersion,
 												 const std::vector<std::string>&	extraExtensions,
-												 bool								validationEnabled)
+#ifdef CTS_USES_VULKANSC
+												 de::SharedPtr<vk::ResourceInterface> resourceInterface,
+#endif // CTS_USES_VULKANSC
+												 const tcu::CommandLine&		cmdLine)
 {
 	const Extensions					supportedExtensions	(vk::enumerateDeviceExtensionProperties(vkd, physicalDevice, DE_NULL));
 	std::vector<std::string>			requiredExtensions;
@@ -155,7 +159,7 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::PlatformInterface&		vkp
 	for (deUint32 ndx = 0; ndx < extensions.size(); ++ndx)
 	{
 		bool notInCore = !isCoreDeviceExtension(apiVersion, extensions[ndx]);
-		if (notInCore && !isExtensionSupported(supportedExtensions.begin(), supportedExtensions.end(), RequiredExtension(extensions[ndx])))
+		if (notInCore && !isExtensionStructSupported(supportedExtensions.begin(), supportedExtensions.end(), RequiredExtension(extensions[ndx])))
 			TCU_THROW(NotSupportedError, (extensions[ndx] + " is not supported").c_str());
 
 		if (notInCore)
@@ -218,10 +222,48 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::PlatformInterface&		vkp
 		}
 	};
 
+	void* pNext												= &featuresExt;
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= cmdLine.isSubProcess() ? resourceInterface->getStatMax() : resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext								= pNext;
+	pNext													= &memReservationInfo;
+
+	VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+	sc10Features.pNext										= pNext;
+	pNext													= &sc10Features;
+
+	VkPipelineCacheCreateInfo			pcCI;
+	std::vector<VkPipelinePoolSize>		poolSizes;
+	if (cmdLine.isSubProcess())
+	{
+		if (resourceInterface->getCacheDataSize() > 0)
+		{
+			pcCI =
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,	// VkStructureType				sType;
+				DE_NULL,										// const void*					pNext;
+				VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+					VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+				resourceInterface->getCacheDataSize(),			// deUintptr					initialDataSize;
+				resourceInterface->getCacheData()				// const void*					pInitialData;
+			};
+			memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+			memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+		}
+
+		poolSizes							= resourceInterface->getPipelinePoolSizes();
+		if (!poolSizes.empty())
+		{
+			memReservationInfo.pipelinePoolSizeCount		= deUint32(poolSizes.size());
+			memReservationInfo.pPipelinePoolSizes			= poolSizes.data();
+		}
+	}
+#endif // CTS_USES_VULKANSC
+
 	const vk::VkDeviceCreateInfo		deviceParams		=
 	{
 		vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,						// sType
-		&featuresExt,													// pNext
+		pNext,															// pNext
 		(vk::VkDeviceCreateFlags)0,										// flags
 		DE_LENGTH_OF_ARRAY(queueInfos),									// queueCreateInfosCount
 		&queueInfos[0],													// pQueueCreateInfos
@@ -232,7 +274,7 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::PlatformInterface&		vkp
 		DE_NULL															// pEnabledFeatures
 	};
 
-	return createCustomDevice(validationEnabled, vkp, instance, vkd, physicalDevice, &deviceParams, DE_NULL);
+	return createCustomDevice(cmdLine.isValidationEnabled(), vkp, instance, vkd, physicalDevice, &deviceParams, DE_NULL);
 }
 
 vk::VkQueue getProtectedQueue	(const vk::DeviceInterface&	vk,

@@ -217,6 +217,10 @@ ProgramBinary*			assembleProgram		(const vk::SpirVAsmSource& program, SpirVProgr
 void					disassembleProgram	(const ProgramBinary& program, std::ostream* dst);
 bool					validateProgram		(const ProgramBinary& program, std::ostream* dst, const SpirvValidatorOptions&);
 
+#ifdef CTS_USES_VULKANSC
+	typedef deUint32 VkShaderModuleCreateFlags;
+#endif // CTS_USES_VULKANSC
+
 Move<VkShaderModule>	createShaderModule	(const DeviceInterface& deviceInterface, VkDevice device, const ProgramBinary& binary, VkShaderModuleCreateFlags flags = 0u);
 
 glu::ShaderType			getGluShaderType	(VkShaderStageFlagBits shaderStage);

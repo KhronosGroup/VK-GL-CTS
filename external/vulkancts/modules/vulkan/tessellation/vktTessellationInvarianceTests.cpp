@@ -37,6 +37,8 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkImageWithMemory.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
@@ -569,10 +571,10 @@ protected:
 	const std::vector<OuterEdgeDescription>	m_edgeDescriptions;
 	const int								m_maxNumPrimitivesInDrawCall;
 	const VkDeviceSize						m_vertexDataSizeBytes;
-	const Buffer							m_vertexBuffer;
+	const BufferWithMemory					m_vertexBuffer;
 	const int								m_resultBufferPrimitiveDataOffset;
 	const VkDeviceSize						m_resultBufferSizeBytes;
-	const Buffer							m_resultBuffer;
+	const BufferWithMemory					m_resultBuffer;
 	Unique<VkDescriptorSetLayout>			m_descriptorSetLayout;
 	Unique<VkDescriptorPool>				m_descriptorPool;
 	Unique<VkDescriptorSet>					m_descriptorSet;
@@ -1029,8 +1031,12 @@ public:
 
 	void checkSupport (Context& context) const
 	{
+#ifndef CTS_USES_VULKANSC
 		if (const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR* const features = getPortability(context))
 			checkPointMode(*features);
+#else
+		DE_UNREF(context);
+#endif // CTS_USES_VULKANSC
 	}
 
 private:
@@ -1382,17 +1388,17 @@ tcu::TestStatus InvarianceTestInstance::iterate (void)
 
 	// Vertex input attributes buffer: to pass tessellation levels
 
-	const VkFormat		vertexFormat		= VK_FORMAT_R32_SFLOAT;
-	const deUint32		vertexStride		= tcu::getPixelSize(mapVkFormat(vertexFormat));
-	const VkDeviceSize	vertexDataSizeBytes	= NUM_TESS_LEVELS * numPatchesPerDrawCall * vertexStride;
-	const Buffer		vertexBuffer		(vk, device, allocator, makeBufferCreateInfo(vertexDataSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible);
+	const VkFormat			vertexFormat		= VK_FORMAT_R32_SFLOAT;
+	const deUint32			vertexStride		= tcu::getPixelSize(mapVkFormat(vertexFormat));
+	const VkDeviceSize		vertexDataSizeBytes	= NUM_TESS_LEVELS * numPatchesPerDrawCall * vertexStride;
+	const BufferWithMemory	vertexBuffer		(vk, device, allocator, makeBufferCreateInfo(vertexDataSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	// Output buffer: number of primitives and an array of PerPrimitive structures
 
-	const int			resultBufferMaxVertices			= numPatchesPerDrawCall * maxNumPrimitivesPerPatch * numVerticesPerPrimitive(m_caseDef.primitiveType, m_caseDef.usePointMode);
-	const int			resultBufferTessCoordsOffset	= (int)sizeof(deInt32) * 4;
-	const VkDeviceSize	resultBufferSizeBytes			= resultBufferTessCoordsOffset + resultBufferMaxVertices * sizeof(PerPrimitive);
-	const Buffer		resultBuffer					(vk, device, allocator, makeBufferCreateInfo(resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
+	const int				resultBufferMaxVertices			= numPatchesPerDrawCall * maxNumPrimitivesPerPatch * numVerticesPerPrimitive(m_caseDef.primitiveType, m_caseDef.usePointMode);
+	const int				resultBufferTessCoordsOffset	= (int)sizeof(deInt32) * 4;
+	const VkDeviceSize		resultBufferSizeBytes			= resultBufferTessCoordsOffset + resultBufferMaxVertices * sizeof(PerPrimitive);
+	const BufferWithMemory	resultBuffer					(vk, device, allocator, makeBufferCreateInfo(resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	// Descriptors
 
@@ -2034,18 +2040,18 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 
 	// Vertex input attributes buffer: to pass tessellation levels
 
-	const VkFormat		vertexFormat		= VK_FORMAT_R32_SFLOAT;
-	const deUint32		vertexStride		= tcu::getPixelSize(mapVkFormat(vertexFormat));
-	const VkDeviceSize	vertexDataSizeBytes	= NUM_TESS_LEVELS * vertexStride;
-	const Buffer		vertexBuffer		(vk, device, allocator, makeBufferCreateInfo(vertexDataSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible);
+	const VkFormat			vertexFormat		= VK_FORMAT_R32_SFLOAT;
+	const deUint32			vertexStride		= tcu::getPixelSize(mapVkFormat(vertexFormat));
+	const VkDeviceSize		vertexDataSizeBytes	= NUM_TESS_LEVELS * vertexStride;
+	const BufferWithMemory	vertexBuffer		(vk, device, allocator, makeBufferCreateInfo(vertexDataSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	DE_ASSERT(vertexDataSizeBytes == sizeof(TessLevels));
 
 	// Output buffer: number of invocations and array of tess coords
 
-	const int			resultBufferTessCoordsOffset	= (int)sizeof(deInt32) * 4;
-	const VkDeviceSize	resultBufferSizeBytes			= resultBufferTessCoordsOffset + maxNumVerticesInDrawCall * sizeof(tcu::Vec4);
-	const Buffer		resultBuffer					(vk, device, allocator, makeBufferCreateInfo(resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
+	const int				resultBufferTessCoordsOffset	= (int)sizeof(deInt32) * 4;
+	const VkDeviceSize		resultBufferSizeBytes			= resultBufferTessCoordsOffset + maxNumVerticesInDrawCall * sizeof(tcu::Vec4);
+	const BufferWithMemory	resultBuffer					(vk, device, allocator, makeBufferCreateInfo(resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	// Descriptors
 

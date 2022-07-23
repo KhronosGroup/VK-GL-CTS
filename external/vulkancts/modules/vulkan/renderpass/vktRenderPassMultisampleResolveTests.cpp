@@ -768,6 +768,7 @@ void MultisampleRenderPassTestInstance::submit (void)
 	}
 
 	VkRect2D renderArea = makeRect2D(m_width, m_height);
+#ifndef CTS_USES_VULKANSC
 	if (m_renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
 	{
 		const VkClearValue clearValue = makeClearValueColor( { 0.0f, 0.0f, 0.0f, 1.0f } );
@@ -812,6 +813,7 @@ void MultisampleRenderPassTestInstance::submit (void)
 		vkd.cmdBeginRendering(*commandBuffer, &renderingInfo);
 	}
 	else
+#endif // CTS_USES_VULKANSC
 	{
 		const typename RenderpassSubpass::SubpassBeginInfo subpassBeginInfo(DE_NULL, VK_SUBPASS_CONTENTS_INLINE);
 		const VkRenderPassBeginInfo beginInfo =
@@ -839,9 +841,11 @@ void MultisampleRenderPassTestInstance::submit (void)
 		vkd.cmdDraw(*commandBuffer, 6u, 1u, 0u, 0u);
 	}
 
+#ifndef CTS_USES_VULKANSC
 	if (m_renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
 		vkd.cmdEndRendering(*commandBuffer);
 	else
+#endif // CTS_USES_VULKANSC
 	{
 		const typename RenderpassSubpass::SubpassEndInfo subpassEndInfo(DE_NULL);
 		RenderpassSubpass::cmdEndRenderPass(vkd, *commandBuffer, &subpassEndInfo);
@@ -1672,7 +1676,8 @@ Move<VkPipeline> MultisampleRenderPassTestInstance::createRenderPipeline (void)
 		{ 0.0f, 0.0f, 0.0f, 0.0f }
 	};
 
-	VkPipelineRenderingCreateInfoKHR* pNext = DE_NULL;
+	void* pNext = DE_NULL;
+#ifndef CTS_USES_VULKANSC
 	std::vector<VkFormat> attachmentFormats(m_attachmentsCount, m_format);
 	VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 	{
@@ -1686,6 +1691,7 @@ Move<VkPipeline> MultisampleRenderPassTestInstance::createRenderPipeline (void)
 	};
 	if (m_renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
 		pNext = &renderingCreateInfo;
+#endif // CTS_USES_VULKANSC
 
 	return makeGraphicsPipeline(vkd,												// const DeviceInterface&                        vk
 								device,												// const VkDevice                                device
@@ -2816,12 +2822,14 @@ void checkSupport(Context& context, TestConfigType config)
 	if (config.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
 		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
+#ifndef CTS_USES_VULKANSC
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		!context.getPortabilitySubsetFeatures().multisampleArrayImage &&
 		(config.sampleCount != VK_SAMPLE_COUNT_1_BIT) && (config.layerCount != 1))
 	{
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Implementation does not support image array with multiple samples per texel");
 	}
+#endif // CTS_USES_VULKANSC
 
 	const InstanceInterface&				vki				= context.getInstanceInterface();
 	vk::VkPhysicalDevice					physicalDevice	= context.getPhysicalDevice();

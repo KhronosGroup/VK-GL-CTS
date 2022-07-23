@@ -15300,10 +15300,12 @@ bool BuiltinFunctionTest::isResultEdgeCase(const functionObject& function_object
 
 			// if coresponding components of arguments are equal and if component of first argument
 			// and component of result are equal then expected result must be corrected
-			edge_case_present = (m_epsilon > de::abs(argument_1_component - argument_2_component)) &&
-								(m_epsilon > de::abs(argument_1_component - actual_result_component));
+                        bool possible_edge_case = m_epsilon > de::abs((argument_1_component / argument_2_component) -
+                                                                      round(argument_1_component / argument_2_component));
+                        edge_case_present = possible_edge_case &&
+                                            (m_epsilon > de::abs(argument_2_component - actual_result_component));
 			recheck |= edge_case_present;
-			corrected_expected_result[component] = edge_case_present ? argument_1_component : expected_result_component;
+                        corrected_expected_result[component] = edge_case_present ? argument_2_component : expected_result_component;
 		}
 
 		// recheck test result with corrected expected result

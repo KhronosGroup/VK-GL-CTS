@@ -2,11 +2,11 @@
 	"register_extension":
 	{
 		"type": "device",
-		"core": "1.2.0"
+		"core": "0.1.2.0"
 	},
 	"mandatory_features":
 	{
-		"VkPhysicalDeviceShaderAtomicInt64FeaturesKHR":
+		"VkPhysicalDeviceShaderAtomicInt64Features":
 		[
 			{ "features": ["shaderBufferInt64Atomics"],	"requirements": ["VK_KHR_shader_atomic_int64"] }
 		]

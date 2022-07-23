@@ -44,6 +44,7 @@ MODULES = [
 	Module("dEQP-GLES3",	"gles3",								"deqp-gles3"),
 	Module("dEQP-GLES31",	"gles31",								"deqp-gles31"),
 	Module("dEQP-VK",		"../external/vulkancts/modules/vulkan",	"deqp-vk"),
+	Module("dEQP-VKSC",		"../external/vulkancts/modules/vulkan",	"deqp-vksc"),
 ]
 
 DEFAULT_BUILD_DIR	= os.path.join(tempfile.gettempdir(), "deqp-caselists", "{targetName}-{buildType}")

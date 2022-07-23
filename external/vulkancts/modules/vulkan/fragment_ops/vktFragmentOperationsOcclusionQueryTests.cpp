@@ -555,7 +555,9 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate (void)
 			log << tcu::TestLog::Message << "Passed Samples : " << de::toString(sampleCounts[0]) << " / " << expResult << tcu::TestLog::EndMessage;
 		}
 
+#ifndef CTS_USES_VULKANSC
 		vk.destroyQueryPool(device, queryPool, nullptr);
+#endif // CTS_USES_VULKANSC
 
 		if ((m_preciseBitEnabled && sampleCounts[0] == expResult) || (!m_preciseBitEnabled && sampleCounts[0] > 0))
 		{

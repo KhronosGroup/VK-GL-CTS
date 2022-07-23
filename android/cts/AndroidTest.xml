@@ -36,7 +36,7 @@
 	</object>
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
 		<option name="deqp-package" value="dEQP-EGL"/>
-		<option name="deqp-caselist-file" value="egl-master-2021-03-01.txt"/>
+		<option name="deqp-caselist-file" value="egl-master-2020-03-01.txt"/>
 		<option name="deqp-gl-config-name" value="rgba8888d24s8ms0"/>
 		<option name="deqp-surface-type" value="window"/>
 		<option name="deqp-screen-rotation" value="unspecified"/>

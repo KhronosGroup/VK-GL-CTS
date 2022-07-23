@@ -498,7 +498,7 @@ public:
 	void								submitCommandBuffer				(void) const;
 	void								beginRenderPass					(VkSubpassContents content, VkClearValue clearValue) const;
 	void								preClearImage					(const deUint32 imageMipLevels, VkExtent3D imageExtent, deUint32 imageLayerCount, Unique<VkCommandBuffer>& commandBuffer) const;
-	Move<VkBuffer>						createImageClearingBuffer		(const DeviceInterface& vkd, const VkDevice device, Unique<VkImage>& image);
+	Move<VkBuffer>						createImageClearingBuffer		(const DeviceInterface& vkd, const VkDevice device);
 
 	void								pipelineImageBarrier			(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldLayout, VkImageLayout newLayout, VkImageAspectFlags aspectMask = 0u) const;
 	de::MovePtr<TextureLevelPyramid>	readImage						(VkImageAspectFlags aspectMask, deUint32 baseLayer) const;
@@ -578,7 +578,7 @@ ImageClearingTestInstance::ImageClearingTestInstance (Context& context, const Te
 											 params.imageLayerCount,
 											 m_imageUsageFlags))
 
-	, m_stagingBuffer			(createImageClearingBuffer(m_vkd, m_device,  m_image))
+	, m_stagingBuffer			(createImageClearingBuffer(m_vkd, m_device))
 	, m_stagingBufferMemory		(allocateAndBindBufferMemory(*m_stagingBuffer))
 
 	, m_imageMemory				(allocateAndBindImageMemory(*m_image))
@@ -890,44 +890,44 @@ Move<VkRenderPass> ImageClearingTestInstance::createRenderPass (VkFormat format)
 
 		VkImageLayout								initialLayout			= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 		VkImageLayout								finalLayout				= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-		VkAttachmentDescriptionStencilLayoutKHR		stencilLayouts			=
+		VkAttachmentDescriptionStencilLayout		stencilLayouts			=
 		{
-			VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_STENCIL_LAYOUT_KHR,
+			VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_STENCIL_LAYOUT,
 			DE_NULL,
 			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 		};
 
 		VkImageLayout								imageLayout;
-		VkAttachmentReferenceStencilLayoutKHR		stencilLayoutRef		=
+		VkAttachmentReferenceStencilLayout			stencilLayoutRef		=
 		{
-			VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_STENCIL_LAYOUT_KHR,
+			VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_STENCIL_LAYOUT,
 			DE_NULL,
 			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 		};
 
 		if (m_params.separateDepthStencilLayoutMode == SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_DEPTH)
 		{
-			initialLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL_KHR;
-			finalLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL_KHR;
+			initialLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+			finalLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
 			stencilLayouts.stencilInitialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 			stencilLayouts.stencilFinalLayout = VK_IMAGE_LAYOUT_GENERAL;
-			imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL_KHR;
+			imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
 			stencilLayoutRef.stencilLayout = VK_IMAGE_LAYOUT_GENERAL;
 		}
 		else
 		{
 			initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 			finalLayout = VK_IMAGE_LAYOUT_GENERAL;
-			stencilLayouts.stencilInitialLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR;
-			stencilLayouts.stencilFinalLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR;
+			stencilLayouts.stencilInitialLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
+			stencilLayouts.stencilFinalLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
 			imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-			stencilLayoutRef.stencilLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR;
+			stencilLayoutRef.stencilLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
 		}
 
-		const VkAttachmentDescription2KHR			attachmentDesc			=
+		const VkAttachmentDescription2				attachmentDesc			=
 		{
-			VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR,		// VkStructureType					sType;
+			VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,			// VkStructureType					sType;
 			&stencilLayouts,									// const void*						pNext;
 			0u,													// VkAttachmentDescriptionFlags		flags;
 			format,												// VkFormat							format;
@@ -940,18 +940,18 @@ Move<VkRenderPass> ImageClearingTestInstance::createRenderPass (VkFormat format)
 			finalLayout,										// VkImageLayout					finalLayout;
 		};
 
-		const VkAttachmentReference2KHR				attachmentRef			=
+		const VkAttachmentReference2				attachmentRef			=
 		{
-			VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR,		// VkStructureType		sType;
+			VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,			// VkStructureType		sType;
 			&stencilLayoutRef,									// const void*			pNext;
 			0u,													// deUint32				attachment;
 			imageLayout,										// VkImageLayout		layout;
 			0u,													// VkImageAspectFlags	aspectMask;
 		};
 
-		const VkSubpassDescription2KHR				subpassDesc			=
+		const VkSubpassDescription2					subpassDesc			=
 		{
-			VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2_KHR,	// VkStructureType					sType;
+			VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2,		// VkStructureType					sType;
 			DE_NULL,										// const void*						pNext;
 			0u,												// VkSubpassDescriptionFlags		flags;
 			VK_PIPELINE_BIND_POINT_GRAPHICS,				// VkPipelineBindPoint				pipelineBindPoint;
@@ -966,9 +966,9 @@ Move<VkRenderPass> ImageClearingTestInstance::createRenderPass (VkFormat format)
 			DE_NULL,										// const VkAttachmentReference2KHR*	pPreserveAttachments;
 		};
 
-		const VkRenderPassCreateInfo2KHR			renderPassCreateInfo	=
+		const VkRenderPassCreateInfo2				renderPassCreateInfo	=
 		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2_KHR,	// VkStructureType					sType;
+			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2,		// VkStructureType					sType;
 			DE_NULL,											// const void*						pNext;
 			0u,													// VkRenderPassCreateFlags			flags;
 			1u,													// deUint32							attachmentCount;
@@ -1021,6 +1021,7 @@ void ImageClearingTestInstance::endCommandBuffer (void) const
 void ImageClearingTestInstance::submitCommandBuffer (void) const
 {
 	submitCommandsAndWait(m_vkd, m_device, m_queue, m_commandBuffer.get());
+	m_context.resetCommandPoolForVKSC(m_device, *m_commandPool);
 }
 
 void ImageClearingTestInstance::pipelineImageBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldLayout, VkImageLayout newLayout, VkImageAspectFlags aspectMask) const
@@ -1172,18 +1173,26 @@ tcu::TestStatus ImageClearingTestInstance::verifyResultImage (const std::string&
 {
 	DE_ASSERT((clearCoords == UVec4()) || m_params.imageExtent.depth == 1u);
 
+	tcu::TestStatus result	= tcu::TestStatus::pass(successMessage);
+	bool errorsPresent		= false;
+
 	if (getIsDepthFormat(m_params.imageFormat) && m_params.separateDepthStencilLayoutMode != SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_STENCIL)
 	{
 		DE_ASSERT(m_imageMipLevels == 1u);
 
-		for (deUint32 arrayLayer = 0; arrayLayer < m_params.imageLayerCount; ++arrayLayer)
+		for (deUint32 arrayLayer = 0; arrayLayer < m_params.imageLayerCount && !errorsPresent; ++arrayLayer)
 		{
 			de::MovePtr<TextureLevelPyramid>	image			= readImage(VK_IMAGE_ASPECT_DEPTH_BIT, arrayLayer);
 			std::string							message;
 			float								depthValue;
 
-			for (deUint32 y = 0; y < m_params.imageExtent.height; ++y)
-			for (deUint32 x = 0; x < m_params.imageExtent.width; ++x)
+#ifdef CTS_USES_VULKANSC
+			if (!m_context.getTestContext().getCommandLine().isSubProcess())
+				continue;
+#endif // CTS_USES_VULKANSC
+
+			for (deUint32 y = 0; y < m_params.imageExtent.height && !errorsPresent; ++y)
+			for (deUint32 x = 0; x < m_params.imageExtent.width && !errorsPresent; ++x)
 			{
 				if (isInClearRange(clearCoords, x, y, arrayLayer, m_params.imageViewLayerRange, m_params.clearLayerRange))
 					depthValue = m_params.clearValue[0].depthStencil.depth;
@@ -1196,7 +1205,10 @@ tcu::TestStatus ImageClearingTestInstance::verifyResultImage (const std::string&
 					continue;
 
 				if (!comparePixelToDepthClearValue(image->getLevel(0), x, y, depthValue, message))
-					return TestStatus::fail("Depth value mismatch! " + message);
+				{
+					result			= TestStatus::fail("Depth value mismatch! " + message);
+					errorsPresent	= true;
+				}
 			}
 		}
 	}
@@ -1205,14 +1217,19 @@ tcu::TestStatus ImageClearingTestInstance::verifyResultImage (const std::string&
 	{
 		DE_ASSERT(m_imageMipLevels == 1u);
 
-		for (deUint32 arrayLayer = 0; arrayLayer < m_params.imageLayerCount; ++arrayLayer)
+		for (deUint32 arrayLayer = 0; arrayLayer < m_params.imageLayerCount && !errorsPresent; ++arrayLayer)
 		{
 			de::MovePtr<TextureLevelPyramid>	image			= readImage(VK_IMAGE_ASPECT_STENCIL_BIT, arrayLayer);
 			std::string							message;
 			deUint32							stencilValue;
 
-			for (deUint32 y = 0; y < m_params.imageExtent.height; ++y)
-			for (deUint32 x = 0; x < m_params.imageExtent.width; ++x)
+#ifdef CTS_USES_VULKANSC
+			if (!m_context.getTestContext().getCommandLine().isSubProcess())
+				continue;
+#endif // CTS_USES_VULKANSC
+
+			for (deUint32 y = 0; y < m_params.imageExtent.height && !errorsPresent; ++y)
+			for (deUint32 x = 0; x < m_params.imageExtent.width && !errorsPresent; ++x)
 			{
 				if (isInClearRange(clearCoords, x, y, arrayLayer, m_params.imageViewLayerRange, m_params.clearLayerRange))
 					stencilValue = m_params.clearValue[0].depthStencil.stencil;
@@ -1225,7 +1242,10 @@ tcu::TestStatus ImageClearingTestInstance::verifyResultImage (const std::string&
 					continue;
 
 				if (!comparePixelToStencilClearValue(image->getLevel(0), x, y, stencilValue, message))
-					return TestStatus::fail("Stencil value mismatch! " + message);
+				{
+					result			= TestStatus::fail("Stencil value mismatch! " + message);
+					errorsPresent	= true;
+				}
 			}
 		}
 	}
@@ -1269,22 +1289,27 @@ tcu::TestStatus ImageClearingTestInstance::verifyResultImage (const std::string&
 				DE_FATAL("Invalid channel class");
 		}
 
-		for (deUint32 arrayLayer = 0; arrayLayer < m_params.imageLayerCount; ++arrayLayer)
+		for (deUint32 arrayLayer = 0; arrayLayer < m_params.imageLayerCount && !errorsPresent; ++arrayLayer)
 		{
 			de::MovePtr<TextureLevelPyramid>	image			= readImage(VK_IMAGE_ASPECT_COLOR_BIT, arrayLayer);
 			std::string							message;
 			const VkClearColorValue*			pColorValue;
 
-			for (deUint32 mipLevel = 0; mipLevel < m_imageMipLevels; ++mipLevel)
+#ifdef CTS_USES_VULKANSC
+			if (!m_context.getTestContext().getCommandLine().isSubProcess())
+				continue;
+#endif // CTS_USES_VULKANSC
+
+			for (deUint32 mipLevel = 0; mipLevel < m_imageMipLevels && !errorsPresent; ++mipLevel)
 			{
 				const int					clearColorNdx		= ((mipLevel < m_thresholdMipLevel || m_params.isColorMultipleSubresourceRangeTest) ? 0 : 1);
 				const VkExtent3D			extent				= getMipLevelExtent(m_params.imageExtent, mipLevel);
 				const VkClearColorValue*	pExpectedColorValue	= &(m_params.useSeparateExpectedClearValue ? m_params.expectedClearValue : m_params.clearValue)[clearColorNdx].color;
 				const auto&					pixelBufferAccess	= image->getLevel(mipLevel);
 
-				for (deUint32 z = 0; z < extent.depth;  ++z)
-				for (deUint32 y = 0; y < extent.height; ++y)
-				for (deUint32 x = 0; x < extent.width;  ++x)
+				for (deUint32 z = 0; z < extent.depth && !errorsPresent;  ++z)
+				for (deUint32 y = 0; y < extent.height && !errorsPresent; ++y)
+				for (deUint32 x = 0; x < extent.width && !errorsPresent;  ++x)
 				{
 					if (isInClearRange(clearCoords, x, y, arrayLayer, m_params.imageViewLayerRange, m_params.clearLayerRange))
 					{
@@ -1302,20 +1327,24 @@ tcu::TestStatus ImageClearingTestInstance::verifyResultImage (const std::string&
 						}
 					}
 					if (!comparePixelToColorClearValue(pixelBufferAccess, x, y, z, *pColorValue, message, threshold, channelMask, channelClass))
-						return TestStatus::fail("Color value mismatch! " + message);
+					{
+						errorsPresent	= true;
+						result			= TestStatus::fail("Color value mismatch! " + message);
+					}
 				}
 			}
 		}
 	}
 
-	return TestStatus::pass(successMessage);
+	return result;
 }
 
-Move<VkBuffer> ImageClearingTestInstance::createImageClearingBuffer(const DeviceInterface& vkd, const VkDevice device, Unique<VkImage>& image)
+Move<VkBuffer> ImageClearingTestInstance::createImageClearingBuffer(const DeviceInterface& vkd, const VkDevice device)
 {
 	Move<VkBuffer>							stagingBuffer;
 	de::MovePtr<Allocation>					stagingBufferAlloc;
-	const VkDeviceSize stagingBufferSize	= getImageMemoryRequirements(vkd, device, *image).size;
+	const VkDeviceSize stagingBufferSize	= m_params.imageExtent.width * m_params.imageExtent.height * m_params.imageExtent.depth
+											  * getPixelSize(mapVkFormat(m_params.imageFormat)) * m_params.imageLayerCount;
 	// Create image clearing buffer
 	{
 		const VkBufferCreateInfo   bufferParams   =
@@ -1677,12 +1706,12 @@ public:
 
 		if (m_params.separateDepthStencilLayoutMode == SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_DEPTH)
 		{
-			attachmentLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL_KHR;
+			attachmentLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
 			aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 		}
 		else if (m_params.separateDepthStencilLayoutMode == SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_STENCIL)
 		{
-			attachmentLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR;
+			attachmentLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
 			aspectMask = VK_IMAGE_ASPECT_STENCIL_BIT;
 		}
 

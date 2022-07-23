@@ -96,8 +96,8 @@ namespace surfaceless
 class VulkanLibrary : public vk::Library
 {
 public:
-	VulkanLibrary (void)
-		: m_library	(DEQP_VULKAN_LIBRARY_PATH)
+	VulkanLibrary (const char* libraryPath)
+		: m_library	(libraryPath != DE_NULL ? libraryPath : DEQP_VULKAN_LIBRARY_PATH)
 		, m_driver	(m_library)
 	{
 	}
@@ -119,9 +119,9 @@ private:
 class VulkanPlatform : public vk::Platform
 {
 public:
-	vk::Library* createLibrary (void) const
+	vk::Library* createLibrary (const char* libraryPath) const
 	{
-		return new VulkanLibrary();
+		return new VulkanLibrary(libraryPath);
 	}
 
 	void describePlatform (std::ostream& dst) const

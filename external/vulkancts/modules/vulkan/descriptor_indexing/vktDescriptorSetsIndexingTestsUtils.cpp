@@ -705,7 +705,9 @@ deUint32 DeviceProperties::computeMaxPerStageDescriptorCount	(VkDescriptorType	d
 	deUint32		sampledImages			= 0;
 	deUint32		storageImages			= 0;
 	deUint32		inputAttachments		= 0;
+#ifndef CTS_USES_VULKANSC
 	deUint32		inlineUniforms			= 0;
+#endif
 
 	// in_loop tests use an additional single texel buffer, which is calculated against the limits below
 	const deUint32	reservedCount			= (reserveUniformTexelBuffer ? 1u : 0u);
@@ -758,7 +760,9 @@ deUint32 DeviceProperties::computeMaxPerStageDescriptorCount	(VkDescriptorType	d
 	case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:		result = deMinu32(resources, uniformBuffersDynamic);				break;
 	case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:		result = deMinu32(resources, storageBuffersDynamic);				break;
 	case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:			result = deMinu32(resources, inputAttachments);						break;
+#ifndef CTS_USES_VULKANSC
 	case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT:	result = deMinu32(resources, inlineUniforms);						break;
+#endif
 	default: DE_ASSERT(0);
 	}
 

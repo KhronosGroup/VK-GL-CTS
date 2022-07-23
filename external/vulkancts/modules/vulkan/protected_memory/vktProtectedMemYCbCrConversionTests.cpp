@@ -1021,7 +1021,7 @@ void generateYCbCrImage (ProtectedContext&				ctx,
 	ycbcr::ChannelAccess				bChannelAccess			(planeInfo.hasChannelNdx(2) ? getChannelAccess(ycbcrSrc, planeInfo, size, 2) : nullAccess);
 	ycbcr::ChannelAccess				aChannelAccess			(planeInfo.hasChannelNdx(3) ? getChannelAccess(ycbcrSrc, planeInfo, size, 3) : nullAccessAlpha);
 	const bool							implicitNearestCosited	((config.chromaFilter == vk::VK_FILTER_NEAREST && !explicitReconstruction) &&
-																 (config.xChromaOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN_KHR || config.yChromaOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN_KHR));
+																 (config.xChromaOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN || config.yChromaOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN));
 
 	for (deUint32 planeNdx = 0; planeNdx < planeInfo.numPlanes; planeNdx++)
 		deMemset(ycbcrSrc.getPlanePtr(planeNdx), 0u, ycbcrSrc.getPlaneSize(planeNdx));
@@ -1065,7 +1065,7 @@ void generateYCbCrImage (ProtectedContext&				ctx,
 		std::vector<tcu::Vec4>			relaxedYcbcrMinBounds;
 		std::vector<tcu::Vec4>			relaxedYcbcrMaxBounds;
 
-		ycbcr::calculateBounds(rChannelAccess, gChannelAccess, bChannelAccess, aChannelAccess, bitDepth, texCoords, filteringPrecision, conversionPrecision, subTexelPrecisionBits, config.textureFilter, config.colorModel, config.colorRange, config.chromaFilter, vk::VK_CHROMA_LOCATION_MIDPOINT_KHR, vk::VK_CHROMA_LOCATION_MIDPOINT_KHR, config.componentMapping, explicitReconstruction, config.addressModeU, config.addressModeV, relaxedYcbcrMinBounds, relaxedYcbcrMaxBounds, uvBounds, ijBounds);
+		ycbcr::calculateBounds(rChannelAccess, gChannelAccess, bChannelAccess, aChannelAccess, bitDepth, texCoords, filteringPrecision, conversionPrecision, subTexelPrecisionBits, config.textureFilter, config.colorModel, config.colorRange, config.chromaFilter, vk::VK_CHROMA_LOCATION_MIDPOINT, vk::VK_CHROMA_LOCATION_MIDPOINT, config.componentMapping, explicitReconstruction, config.addressModeU, config.addressModeV, relaxedYcbcrMinBounds, relaxedYcbcrMaxBounds, uvBounds, ijBounds);
 
 		DE_ASSERT(relaxedYcbcrMinBounds.size() == ycbcrMinBounds.size());
 		DE_ASSERT(relaxedYcbcrMaxBounds.size() == ycbcrMaxBounds.size());

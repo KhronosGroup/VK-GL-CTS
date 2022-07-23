@@ -2,13 +2,14 @@
 	"register_extension":
 	{
 		"type": "device",
-		"core": "1.2.0"
+		"core": "0.1.2.0"
 	},
 	"mandatory_features":
 	{
-		"VkPhysicalDeviceBufferDeviceAddressFeaturesKHR":
+		"VkPhysicalDeviceBufferDeviceAddressFeatures":
 		[
-			{ "features": ["bufferDeviceAddress"],	"requirements": ["VK_KHR_buffer_device_address"] }
+			{ "features": ["bufferDeviceAddress"],	"requirements": ["VK_KHR_buffer_device_address"] },
+			{ "features": ["bufferDeviceAddress"],	"requirements": ["ApiVersion(0, 1, 1, 0)", "VK_KHR_acceleration_structure"] }
 		]
 	}
 }

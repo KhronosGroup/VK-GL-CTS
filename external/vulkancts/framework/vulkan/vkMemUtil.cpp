@@ -72,17 +72,6 @@ HostPtr::~HostPtr (void)
 	m_vkd.unmapMemory(m_device, m_memory);
 }
 
-deUint32 selectMatchingMemoryType (const VkPhysicalDeviceMemoryProperties& deviceMemProps, deUint32 allowedMemTypeBits, MemoryRequirement requirement)
-{
-	const deUint32	compatibleTypes	= getCompatibleMemoryTypes(deviceMemProps, requirement);
-	const deUint32	candidates		= allowedMemTypeBits & compatibleTypes;
-
-	if (candidates == 0)
-		TCU_THROW(NotSupportedError, "No compatible memory type found");
-
-	return (deUint32)deCtz32(candidates);
-}
-
 bool isHostVisibleMemory (const VkPhysicalDeviceMemoryProperties& deviceMemProps, deUint32 memoryTypeNdx)
 {
 	DE_ASSERT(memoryTypeNdx < deviceMemProps.memoryTypeCount);
@@ -356,6 +345,24 @@ void invalidateMappedMemoryRange (const DeviceInterface& vkd, VkDevice device, V
 	VK_CHECK(vkd.invalidateMappedMemoryRanges(device, 1u, &range));
 }
 
+deUint32 selectMatchingMemoryType (const VkPhysicalDeviceMemoryProperties& deviceMemProps, deUint32 allowedMemTypeBits, MemoryRequirement requirement)
+{
+	const deUint32	compatibleTypes		= getCompatibleMemoryTypes(deviceMemProps, requirement);
+	deUint32		candidates			= allowedMemTypeBits & compatibleTypes;
+#ifdef CTS_USES_VULKANSC
+	// in case of Vulkan SC: prefer memory types from SEU-safe heaps ( SEU = single event upsets )
+	const deUint32	seuSafeTypes		= getSEUSafeMemoryTypes(deviceMemProps);
+	deUint32		seuSafeCandidates	= candidates & seuSafeTypes;
+	if (seuSafeCandidates != 0u)
+		candidates						= seuSafeCandidates;
+#endif // CTS_USES_VULKANSC
+
+	if (candidates == 0u)
+		TCU_THROW(NotSupportedError, "No compatible memory type found");
+
+	return (deUint32)deCtz32(candidates);
+}
+
 deUint32 getCompatibleMemoryTypes (const VkPhysicalDeviceMemoryProperties& deviceMemProps, MemoryRequirement requirement)
 {
 	deUint32	compatibleTypes	= 0u;
@@ -368,6 +375,22 @@ deUint32 getCompatibleMemoryTypes (const VkPhysicalDeviceMemoryProperties& devic
 
 	return compatibleTypes;
 }
+
+#ifdef CTS_USES_VULKANSC
+
+deUint32 getSEUSafeMemoryTypes (const VkPhysicalDeviceMemoryProperties& deviceMemProps)
+{
+	deUint32	seuSafeTypes	= 0u;
+
+	for (deUint32 memoryTypeNdx = 0; memoryTypeNdx < deviceMemProps.memoryTypeCount; memoryTypeNdx++)
+	{
+		if( ( deviceMemProps.memoryHeaps[deviceMemProps.memoryTypes[memoryTypeNdx].heapIndex].flags & VK_MEMORY_HEAP_SEU_SAFE_BIT ) != 0u )
+			seuSafeTypes |= (1u << memoryTypeNdx);
+	}
+	return seuSafeTypes;
+}
+
+#endif // CTS_USES_VULKANSC
 
 void bindImagePlanesMemory (const DeviceInterface&		vkd,
 							const VkDevice				device,

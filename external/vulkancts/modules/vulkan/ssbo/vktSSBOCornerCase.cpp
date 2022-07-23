@@ -228,7 +228,9 @@ tcu::TestStatus SSBOCornerCaseInstance::iterate (void)
 	}
 
 	// Query the buffer device address and push them via push constants
+#ifndef CTS_USES_VULKANSC
 	const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
+#endif // CTS_USES_VULKANSC
 
 	vk::VkBufferDeviceAddressInfo info =
 	{
@@ -239,10 +241,14 @@ tcu::TestStatus SSBOCornerCaseInstance::iterate (void)
 
 	info.buffer = descriptor.buffer;
 	vk::VkDeviceAddress	addr;
+#ifndef CTS_USES_VULKANSC
 	if (useKHR)
+#endif // CTS_USES_VULKANSC
 		addr = vk.getBufferDeviceAddress(device, &info);
+#ifndef CTS_USES_VULKANSC
 	else
 		addr = vk.getBufferDeviceAddressEXT(device, &info);
+#endif // CTS_USES_VULKANSC
 
 	setUpdateBuilder.update(vk, device);
 

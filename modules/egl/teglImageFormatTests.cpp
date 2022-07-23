@@ -233,6 +233,12 @@ public:
 			bool	invokeGLES				(GLESImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const override;
 			string	getRequiredExtension	(void) const override { return "GL_EXT_YUV_target"; }
 	};
+	class RenderSampleTexture2DArray			         : public RenderTexture2DArray
+	{
+		public:
+			bool	invokeGLES				(GLESImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const override;
+			string	getRequiredExtension	(void) const override { return "GL_EXT_EGL_image_array"; }
+	};
 	class Modify : public GLESAction
 	{
 	public:
@@ -419,6 +425,36 @@ static void framebufferRenderbuffer (const glw::Functions& gl, GLenum attachment
 	TCU_CHECK_AND_THROW(NotSupportedError,
 						gl.checkFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE,
 						("EGLImage as " + string(glu::getFramebufferAttachmentName(attachment)) + " not supported").c_str());
+}
+
+static set<string> getSupportedExtensions (tcu::TestLog& log, const Library& egl, const EGLDisplay dpy, const glw::Functions gl)
+{
+	set<string>				exts;
+	const vector<string>	glExts	= de::splitString((const char*) gl.getString(GL_EXTENSIONS));
+	const vector<string>	eglExts	= eglu::getDisplayExtensions(egl, dpy);
+
+	exts.insert(glExts.begin(), glExts.end());
+	exts.insert(eglExts.begin(), eglExts.end());
+
+	if (eglu::getVersion(egl, dpy) >= eglu::Version(1, 5))
+	{
+		// EGL 1.5 has built-in support for EGLImage and GL sources
+		exts.insert("EGL_KHR_image_base");
+		exts.insert("EGL_KHR_gl_texture_2D_image");
+		exts.insert("EGL_KHR_gl_texture_cubemap_image");
+		exts.insert("EGL_KHR_gl_renderbuffer_image");
+	}
+
+	if (!de::contains(exts, "EGL_KHR_image_base") && !de::contains(exts, "EGL_KHR_image"))
+	{
+		log << tcu::TestLog::Message
+			<< "EGL version is under 1.5 and neither EGL_KHR_image nor EGL_KHR_image_base is supported."
+			<< "One should be supported."
+			<< tcu::TestLog::EndMessage;
+		TCU_THROW(NotSupportedError, "Extension not supported: EGL_KHR_image_base");
+	}
+
+	return exts;
 }
 
 static const float squareTriangleCoords[] =
@@ -612,6 +648,181 @@ bool GLESImageApi::RenderTexture2DArray::invokeGLES (GLESImageApi& api, MovePtr<
 	float	threshold	= 0.05f;
 	bool	match		= tcu::fuzzyCompare(log, "ComparisonResult", "Image comparison result", refSurface, screen, threshold, tcu::COMPARE_LOG_RESULT);
 
+	return match;
+}
+
+//Texture2D array can be both rendered and sampled as a texture.
+bool GLESImageApi::RenderSampleTexture2DArray::invokeGLES(GLESImageApi& api, MovePtr<UniqueImage>& img, tcu::Texture2D& reference) const
+{
+	const glw::Functions&	gl		= api.m_gl;
+	tcu::TestLog&			log		= api.getLog();
+	Texture					srcTex	(gl);
+	Texture					srcTexArray	(gl);
+
+	gl.clearColor(0.0, 0.0, 0.0, 0.0);
+	gl.viewport(0, 0, reference.getWidth(), reference.getHeight());
+	gl.clear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+	gl.disable(GL_DEPTH_TEST);
+
+	log << tcu::TestLog::Message << "Rendering and sampling EGLImage as GL_TEXTURE_2D_ARRAY in context: " << api.m_contextId << tcu::TestLog::EndMessage;
+	TCU_CHECK(**img != EGL_NO_IMAGE_KHR);
+
+	glu::TransferFormat transferFormat = glu::getTransferFormat(reference.getFormat());
+	deUint32 internalForat = glu::getInternalFormat(reference.getFormat());
+	GLU_CHECK_GLW_CALL(gl, bindTexture(GL_TEXTURE_2D, *srcTex));
+	GLU_CHECK_GLW_CALL(gl, texImage2D(GL_TEXTURE_2D,
+			0,										// Level
+			internalForat,							// Internal format
+			reference.getWidth(),					// Width
+			reference.getHeight(),					// Height
+			0,										// Border
+			transferFormat.format,					// Format
+			transferFormat.dataType,				// Type
+			reference.getLevel(0).getDataPtr()));	// Pixel data
+
+	GLU_CHECK_GLW_CALL(gl, texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+	GLU_CHECK_GLW_CALL(gl, texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+	GLU_CHECK_GLW_CALL(gl, texParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+	GLU_CHECK_GLW_CALL(gl, texParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+
+	GLU_CHECK_GLW_CALL(gl, bindTexture(GL_TEXTURE_2D_ARRAY, *srcTexArray));
+	imageTargetTexture2DArray(api.m_egl, gl, **img);
+
+	GLU_CHECK_GLW_CALL(gl, texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+	GLU_CHECK_GLW_CALL(gl, texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+	GLU_CHECK_GLW_CALL(gl, texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+	GLU_CHECK_GLW_CALL(gl, texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+
+	/* Create FBO and attach source texture layer 0 */
+	glu::Framebuffer		fbo(gl);
+	GLU_CHECK_GLW_CALL(gl, bindFramebuffer(GL_FRAMEBUFFER, *fbo));
+	GLU_CHECK_GLW_CALL(gl, framebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, *srcTexArray, 0, 0));
+
+	const char* const vertexShader0 =
+		"attribute highp vec2 a_coord;\n"
+		"varying mediump vec2 v_texCoord;\n"
+		"void main(void) {\n"
+		"\tv_texCoord = vec2((a_coord.x + 1.0) * 0.5, (a_coord.y + 1.0) * 0.5);\n"
+		"\tgl_Position = vec4(a_coord, -0.1, 1.0);\n"
+		"}\n";
+
+	const char* const fragmentShader0 =
+		"varying mediump vec2 v_texCoord;\n"
+		"uniform sampler2D u_sampler;\n"
+		"void main(void) {\n"
+		"\tmediump vec4 texColor = texture2D(u_sampler, v_texCoord);\n"
+		"\tgl_FragColor = vec4(texColor);\n"
+		"}";
+
+	Program program0(gl, vertexShader0, fragmentShader0);
+	if (!program0.isOk())
+	{
+		log << tcu::TestLog::Message << "Shader build failed.\n"
+			<< "Vertex: " << program0.getShaderInfo(glu::SHADERTYPE_VERTEX).infoLog << "\n"
+			<< vertexShader0 << "\n"
+			<< "Fragment: " << program0.getShaderInfo(glu::SHADERTYPE_FRAGMENT).infoLog << "\n"
+			<< fragmentShader0 << "\n"
+			<< "Program: " << program0.getProgramInfo().infoLog << tcu::TestLog::EndMessage;
+	}
+
+	TCU_CHECK(program0.isOk());
+
+	GLuint glProgram0 = program0.getProgram();
+	GLU_CHECK_GLW_CALL(gl, useProgram(glProgram0));
+
+	GLuint coordLoc = gl.getAttribLocation(glProgram0, "a_coord");
+	TCU_CHECK_MSG((int)coordLoc != -1, "Couldn't find attribute a_coord");
+	GLuint samplerLoc = gl.getUniformLocation(glProgram0, "u_sampler");
+	TCU_CHECK_MSG((int)samplerLoc != (int)-1, "Couldn't find uniform u_sampler");
+	GLU_CHECK_GLW_CALL(gl, uniform1i(samplerLoc, 0));
+
+	GLU_CHECK_GLW_CALL(gl, enableVertexAttribArray(coordLoc));
+	GLU_CHECK_GLW_CALL(gl, vertexAttribPointer(coordLoc, 2, GL_FLOAT, GL_FALSE, 0, squareTriangleCoords));
+	GLU_CHECK_GLW_CALL(gl, drawArrays(GL_TRIANGLES, 0, 6));
+	GLU_CHECK_GLW_CALL(gl, disableVertexAttribArray(coordLoc));
+
+	tcu::Surface refSurface0	(reference.getWidth(), reference.getHeight());
+	tcu::Surface screen0		(reference.getWidth(), reference.getHeight());
+	GLU_CHECK_GLW_CALL(gl, readPixels(0, 0, screen0.getWidth(), screen0.getHeight(), GL_RGBA, GL_UNSIGNED_BYTE, screen0.getAccess().getDataPtr()));
+
+	tcu::copy(refSurface0.getAccess(), reference.getLevel(0));
+
+	float	threshold	= 0.01f;
+	bool	match		= tcu::fuzzyCompare(log, "ComparisonResult", "Image comparison result", refSurface0, screen0, threshold, tcu::COMPARE_LOG_RESULT);
+
+	if (match == false)
+		return match;
+
+	/* Bind texture to FBO. */
+	GLU_CHECK_GLW_CALL(gl, framebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *srcTex, 0));
+
+	const char* const vertexShader =
+		"#version 320 es\n"
+		"precision highp int;\n"
+		"precision highp float;\n"
+		"layout(location = 0) in vec2 pos_in;\n"
+		"layout(location = 0) out vec2 texcoord_out;\n"
+		"void main()\n"
+		"{\n"
+		"    gl_Position = vec4(pos_in, -0.1, 1.0);\n"
+		"    texcoord_out = vec2((pos_in.x + 1.0) * 0.5, (pos_in.y + 1.0) * 0.5);\n"
+		"}\n";
+
+	const char* const fragmentShader =
+		"#version 320 es\n"
+		"precision highp int;\n"
+		"precision highp float;\n"
+		"layout(location = 0) in vec2 texcoords_in;\n"
+		"layout(location = 0) out vec4 color_out;\n"
+		"uniform layout(binding=0) highp sampler2DArray tex_sampler;\n"
+		"void main()\n"
+		"{\n"
+		// Samples layer 0.
+		"    color_out = texture(tex_sampler, vec3(texcoords_in, 0));\n"
+		"}\n";
+
+	Program program(gl, vertexShader, fragmentShader);
+
+	if (!program.isOk())
+	{
+		log << tcu::TestLog::Message << "Shader build failed.\n"
+			<< "Vertex: " << program.getShaderInfo(glu::SHADERTYPE_VERTEX).infoLog << "\n"
+			<< vertexShader << "\n"
+			<< "Fragment: " << program.getShaderInfo(glu::SHADERTYPE_FRAGMENT).infoLog << "\n"
+			<< fragmentShader << "\n"
+			<< "Program: " << program.getProgramInfo().infoLog << tcu::TestLog::EndMessage;
+	}
+
+	TCU_CHECK(program.isOk());
+
+	GLuint glProgram = program.getProgram();
+	GLU_CHECK_GLW_CALL(gl, useProgram(glProgram));
+
+	coordLoc = gl.getAttribLocation(glProgram, "pos_in");
+	TCU_CHECK_MSG((int)coordLoc != -1, "Couldn't find attribute pos_in");
+
+	samplerLoc = gl.getUniformLocation(glProgram, "tex_sampler");
+	TCU_CHECK_MSG((int)samplerLoc != (int)-1, "Couldn't find uniform tex_sampler");
+
+	GLU_CHECK_GLW_CALL(gl, bindTexture(GL_TEXTURE_2D_ARRAY, *srcTexArray));
+	GLU_CHECK_GLW_CALL(gl, uniform1i(samplerLoc, 0));
+	GLU_CHECK_GLW_CALL(gl, enableVertexAttribArray(coordLoc));
+	GLU_CHECK_GLW_CALL(gl, vertexAttribPointer(coordLoc, 2, GL_FLOAT, GL_FALSE, 0, squareTriangleCoords));
+
+	GLU_CHECK_GLW_CALL(gl, drawArrays(GL_TRIANGLES, 0, 6));
+	GLU_CHECK_GLW_CALL(gl, disableVertexAttribArray(coordLoc));
+	GLU_CHECK_GLW_CALL(gl, finish());
+
+	tcu::Surface refSurface	(reference.getWidth(), reference.getHeight());
+	tcu::Surface screen		(reference.getWidth(), reference.getHeight());
+	GLU_CHECK_GLW_CALL(gl, readPixels(0, 0, screen.getWidth(), screen.getHeight(), GL_RGBA, GL_UNSIGNED_BYTE, screen.getAccess().getDataPtr()));
+
+	tcu::copy(refSurface.getAccess(), reference.getLevel(0));
+
+	GLU_CHECK_GLW_CALL(gl, bindFramebuffer(GL_FRAMEBUFFER, 0));
+
+	threshold	= 0.01f;
+	match		= tcu::fuzzyCompare(log, "ComparisonResult", "Image comparison result", refSurface, screen, threshold, tcu::COMPARE_LOG_RESULT);
 	return match;
 }
 
@@ -1205,11 +1416,17 @@ bool GLESImageApi::RenderTryAll::invokeGLES (GLESImageApi& api, MovePtr<UniqueIm
 	GLESImageApi::RenderDepthbuffer					renderDepth;
 	GLESImageApi::RenderStencilbuffer				renderStencil;
 	Action*											actions[]				= { &renderTex2D, &renderExternal, &renderExternalSamplerArray, &renderReadPixels, &renderDepth, &renderStencil };
+	set<string>										exts					= getSupportedExtensions(log, api.m_egl, api.m_display, api.m_gl);
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(actions); ++ndx)
 	{
 		try
 		{
+			const string ext = actions[ndx]->getRequiredExtension();
+
+			if (!de::contains(exts, ext))
+				TCU_THROW_EXPR(NotSupportedError, "Extension not supported", ext.c_str());
+
 			if (!actions[ndx]->invoke(api, img, reference))
 				return false;
 
@@ -1387,32 +1604,7 @@ ImageFormatCase::~ImageFormatCase (void)
 
 void ImageFormatCase::checkExtensions (void)
 {
-	const Library&			egl		= m_eglTestCtx.getLibrary();
-	const EGLDisplay		dpy		= m_display;
-	set<string>				exts;
-	const vector<string>	glExts	= de::splitString((const char*) m_gl.getString(GL_EXTENSIONS));
-	const vector<string>	eglExts	= eglu::getDisplayExtensions(egl, dpy);
-
-	exts.insert(glExts.begin(), glExts.end());
-	exts.insert(eglExts.begin(), eglExts.end());
-
-	if (eglu::getVersion(egl, dpy) >= eglu::Version(1, 5))
-	{
-		// EGL 1.5 has built-in support for EGLImage and GL sources
-		exts.insert("EGL_KHR_image_base");
-		exts.insert("EGL_KHR_gl_texture_2D_image");
-		exts.insert("EGL_KHR_gl_texture_cubemap_image");
-		exts.insert("EGL_KHR_gl_renderbuffer_image");
-	}
-
-	if (!de::contains(exts, "EGL_KHR_image_base") && !de::contains(exts, "EGL_KHR_image"))
-	{
-		getLog() << tcu::TestLog::Message
-				 << "EGL version is under 1.5 and neither EGL_KHR_image nor EGL_KHR_image_base is supported."
-				 << "One should be supported."
-				 << tcu::TestLog::EndMessage;
-		TCU_THROW(NotSupportedError, "Extension not supported: EGL_KHR_image_base");
-	}
+	set<string> exts = getSupportedExtensions(getLog(), m_eglTestCtx.getLibrary(), m_display, m_gl);
 
 	for (int operationNdx = 0; operationNdx < (int)m_spec.operations.size(); operationNdx++)
 	{
@@ -1676,6 +1868,7 @@ void RenderTests::addRenderActions (void)
 	m_renderActions.add("depth_buffer",		MovePtr<Action>(new GLESImageApi::RenderDepthbuffer()));
 	m_renderActions.add("stencil_buffer",	MovePtr<Action>(new GLESImageApi::RenderStencilbuffer()));
 	m_renderActions.add("yuv_texture",		MovePtr<Action>(new GLESImageApi::RenderYUVTexture()));
+	m_renderActions.add("render_sample_texture_array",    MovePtr<Action>(new GLESImageApi::RenderSampleTexture2DArray()));
 }
 
 class SimpleCreationTests : public RenderTests
@@ -1843,7 +2036,8 @@ void SimpleCreationTests::init (void)
 				continue;
 
 			if (dynamic_cast<const GLESImageApi::RenderTexture2DArray*>(renderAction.action.get()) ||
-				dynamic_cast<const GLESImageApi::RenderYUVTexture*>(renderAction.action.get()))
+				dynamic_cast<const GLESImageApi::RenderYUVTexture*>(renderAction.action.get()) ||
+				dynamic_cast<const GLESImageApi::RenderSampleTexture2DArray*>(renderAction.action.get()))
 			{
 				// Texture array tests require GLES3.
 				spec.name = std::string("gles3_") + createAction.label + "_" + renderAction.label;

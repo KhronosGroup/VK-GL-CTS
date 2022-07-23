@@ -1402,7 +1402,7 @@ void AddRepeatedPipelineTests(tcu::TestCaseGroup* group)
 		}
 	}
 }
-
+#ifndef CTS_USES_VULKANSC
 void AddSharedMemoryTests (tcu::TestCaseGroup* group)
 {
 	tcu::TestContext&			testCtx		= group->getTestContext();
@@ -1427,6 +1427,7 @@ void AddSharedMemoryTests (tcu::TestCaseGroup* group)
 		group->addChild(cts_amber::createAmberTestCase(testCtx, testName.c_str(), "", filePath.c_str(), testName + ".amber", requirements));
 	}
 }
+#endif // CTS_USES_VULKANSC
 
 } // anonymous
 
@@ -1459,9 +1460,11 @@ tcu::TestCaseGroup* createZeroInitializeWorkgroupMemoryTests(tcu::TestContext& t
 	AddRepeatedPipelineTests(repeatPipelineGroup);
 	tests->addChild(repeatPipelineGroup);
 
+#ifndef CTS_USES_VULKANSC
 	tcu::TestCaseGroup* subgroupInvocationGroup = new tcu::TestCaseGroup(testCtx, "shared_memory_blocks", "shared memory tests");
 	AddSharedMemoryTests(subgroupInvocationGroup);
 	tests->addChild(subgroupInvocationGroup);
+#endif // CTS_USES_VULKANSC
 
 	return tests.release();
 }

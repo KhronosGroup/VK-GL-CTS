@@ -60,10 +60,10 @@ enum Constants
 
 struct TestParams
 {
-	VkFrontFace			frontFace;
-	VkCullModeFlagBits	cullMode;
-	bool				zeroViewportHeight;
-	bool				useDynamicRendering;
+	VkFrontFace					frontFace;
+	VkCullModeFlagBits			cullMode;
+	bool						zeroViewportHeight;
+	const SharedGroupParams		groupParams;
 };
 
 class NegativeViewportHeightTestInstance : public TestInstance
@@ -71,9 +71,15 @@ class NegativeViewportHeightTestInstance : public TestInstance
 public:
 									NegativeViewportHeightTestInstance	(Context& context, const TestParams& params);
 	tcu::TestStatus					iterate								(void);
-	tcu::ConstPixelBufferAccess		draw								(const VkViewport viewport);
+	void							preRenderCommands					(VkCommandBuffer cmdBuffer, const VkClearValue& clearColor);
+	void							draw								(VkCommandBuffer cmdBuffer, const VkViewport& viewport);
+
 	MovePtr<tcu::TextureLevel>		generateReferenceImage				(void) const;
 	bool							isCulled							(const VkFrontFace triangleFace) const;
+
+#ifndef CTS_USES_VULKANSC
+	void							beginSecondaryCmdBuffer				(VkCommandBuffer cmdBuffer, VkRenderingFlagsKHR renderingFlags = 0u);
+#endif // CTS_USES_VULKANSC
 
 private:
 	const TestParams				m_params;
@@ -136,7 +142,7 @@ NegativeViewportHeightTestInstance::NegativeViewportHeightTestInstance (Context&
 	m_colorTargetView = createImageView(vk, device, &colorTargetViewInfo);
 
 	// Render pass and framebuffer
-	if (!m_params.useDynamicRendering)
+	if (!m_params.groupParams->useDynamicRendering)
 	{
 		RenderPassCreateInfo	renderPassCreateInfo;
 		renderPassCreateInfo.addAttachment(AttachmentDescription(
@@ -231,6 +237,7 @@ NegativeViewportHeightTestInstance::NegativeViewportHeightTestInstance (Context&
 	pipelineCreateInfo.addState (PipelineCreateInfo::MultiSampleState	());
 	pipelineCreateInfo.addState (PipelineCreateInfo::DynamicState		(dynamicStates));
 
+#ifndef CTS_USES_VULKANSC
 	vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
@@ -242,44 +249,43 @@ NegativeViewportHeightTestInstance::NegativeViewportHeightTestInstance (Context&
 		vk::VK_FORMAT_UNDEFINED
 	};
 
-	if (m_params.useDynamicRendering)
+	if (m_params.groupParams->useDynamicRendering)
 		pipelineCreateInfo.pNext = &renderingCreateInfo;
+#endif // CTS_USES_VULKANSC
 
 	m_pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 }
 
-tcu::ConstPixelBufferAccess NegativeViewportHeightTestInstance::draw (const VkViewport viewport)
+void NegativeViewportHeightTestInstance::preRenderCommands(VkCommandBuffer cmdBuffer, const VkClearValue& clearColor)
 {
-	const DeviceInterface&	vk					= m_context.getDeviceInterface();
-	const VkDevice			device				= m_context.getDevice();
-	const VkQueue			queue				= m_context.getUniversalQueue();
-	const deUint32			queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-	const VkClearValue		clearColor			= makeClearValueColorF32(0.125f, 0.25f, 0.5f, 1.0f);
+	const DeviceInterface&		vk					= m_context.getDeviceInterface();
+	const ImageSubresourceRange	subresourceRange	(VK_IMAGE_ASPECT_COLOR_BIT);
 
-	// Command buffer
+	initialTransitionColor2DImage(vk, cmdBuffer, m_colorTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL,
+								  VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+	vk.cmdClearColorImage(cmdBuffer, m_colorTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL, &clearColor.color, 1, &subresourceRange);
 
-	const CmdPoolCreateInfo			cmdPoolCreateInfo	(queueFamilyIndex);
-	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, &cmdPoolCreateInfo));
-	const Unique<VkCommandBuffer>	cmdBuffer			(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-
-	// Draw
-
-	beginCommandBuffer(vk, *cmdBuffer);
-
-	vk.cmdSetViewport(*cmdBuffer, 0u, 1u, &viewport);
-
+	const VkMemoryBarrier memBarrier
 	{
-		const ImageSubresourceRange subresourceRange	(VK_IMAGE_ASPECT_COLOR_BIT);
+		VK_STRUCTURE_TYPE_MEMORY_BARRIER,												// VkStructureType		sType;
+		DE_NULL,																		// const void*			pNext;
+		VK_ACCESS_TRANSFER_WRITE_BIT,													// VkAccessFlags		srcAccessMask;
+		VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT		// VkAccessFlags		dstAccessMask;
+	};
 
-		initialTransitionColor2DImage(vk, *cmdBuffer, m_colorTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL,
-									  VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
-		vk.cmdClearColorImage(*cmdBuffer, m_colorTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL, &clearColor.color, 1, &subresourceRange);
-	}
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
+}
+
+void NegativeViewportHeightTestInstance::draw (VkCommandBuffer cmdBuffer, const VkViewport& viewport)
+{
+	const DeviceInterface&	vk		= m_context.getDeviceInterface();
+	const VkBuffer			buffer	= m_vertexBuffer->object();
+	const VkDeviceSize		offset	= 0;
 
 	if (m_params.zeroViewportHeight)
 	{
 		// Set zero viewport height
-		const VkViewport zeroViewportHeight =
+		const VkViewport zeroViewportHeight
 		{
 			viewport.x,			// float    x;
 			viewport.y / 2.0f,	// float    y;
@@ -289,52 +295,14 @@ tcu::ConstPixelBufferAccess NegativeViewportHeightTestInstance::draw (const VkVi
 			viewport.maxDepth	// float    maxDepth;
 		};
 
-		vk.cmdSetViewport(*cmdBuffer, 0u, 1u, &zeroViewportHeight);
+		vk.cmdSetViewport(cmdBuffer, 0u, 1u, &zeroViewportHeight);
 	}
-
-	{
-		const VkMemoryBarrier memBarrier =
-		{
-			VK_STRUCTURE_TYPE_MEMORY_BARRIER,												// VkStructureType    sType;
-			DE_NULL,																		// const void*        pNext;
-			VK_ACCESS_TRANSFER_WRITE_BIT,													// VkAccessFlags      srcAccessMask;
-			VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT		// VkAccessFlags      dstAccessMask;
-		};
-
-		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
-	}
-
-	VkRect2D rect = makeRect2D(0, 0, WIDTH, HEIGHT);
-	if (m_params.useDynamicRendering)
-		beginRendering(vk, *cmdBuffer, *m_colorTargetView, rect, clearColor);
 	else
-		beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, rect);
+		vk.cmdSetViewport(cmdBuffer, 0u, 1u, &viewport);
 
-	{
-		const VkDeviceSize	offset	= 0;
-		const VkBuffer		buffer	= m_vertexBuffer->object();
-
-		vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &buffer, &offset);
-	}
-
-	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
-	vk.cmdDraw(*cmdBuffer, 6, 1, 0, 0);
-
-	if (m_params.useDynamicRendering)
-		endRendering(vk, *cmdBuffer);
-	else
-		endRenderPass(vk, *cmdBuffer);
-
-	endCommandBuffer(vk, *cmdBuffer);
-
-	// Submit
-	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
-
-	// Get result
-	{
-		const VkOffset3D zeroOffset = { 0, 0, 0 };
-		return m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(), VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, VK_IMAGE_ASPECT_COLOR_BIT);
-	}
+	vk.cmdBindVertexBuffers(cmdBuffer, 0, 1, &buffer, &offset);
+	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+	vk.cmdDraw(cmdBuffer, 6, 1, 0, 0);
 }
 
 //! Determine if a triangle with triangleFace orientation will be culled or not
@@ -397,6 +365,40 @@ MovePtr<tcu::TextureLevel> NegativeViewportHeightTestInstance::generateReference
 	}
 }
 
+#ifndef CTS_USES_VULKANSC
+void NegativeViewportHeightTestInstance::beginSecondaryCmdBuffer(VkCommandBuffer cmdBuffer, VkRenderingFlagsKHR renderingFlags)
+{
+	VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,		// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		renderingFlags,															// VkRenderingFlagsKHR				flags;
+		0u,																		// uint32_t							viewMask;
+		1u,																		// uint32_t							colorAttachmentCount;
+		&m_colorAttachmentFormat,												// const VkFormat*					pColorAttachmentFormats;
+		VK_FORMAT_UNDEFINED,													// VkFormat							depthAttachmentFormat;
+		VK_FORMAT_UNDEFINED,													// VkFormat							stencilAttachmentFormat;
+		VK_SAMPLE_COUNT_1_BIT,													// VkSampleCountFlagBits			rasterizationSamples;
+	};
+	const VkCommandBufferInheritanceInfo bufferInheritanceInfo = initVulkanStructure(&inheritanceRenderingInfo);
+
+	VkCommandBufferUsageFlags usageFlags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	if (!m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+		usageFlags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+
+	const VkCommandBufferBeginInfo commandBufBeginParams
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,							// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		usageFlags,																// VkCommandBufferUsageFlags		flags;
+		&bufferInheritanceInfo
+	};
+
+	const DeviceInterface& vk = m_context.getDeviceInterface();
+	VK_CHECK(vk.beginCommandBuffer(cmdBuffer, &commandBufBeginParams));
+}
+#endif // CTS_USES_VULKANSC
+
 std::string getCullModeStr (const VkCullModeFlagBits cullMode)
 {
 	// Cull mode flags are a bit special, because there's a meaning to 0 and or'ed flags.
@@ -419,7 +421,7 @@ tcu::TestStatus NegativeViewportHeightTestInstance::iterate (void)
 {
 	// Set up the viewport and draw
 
-	const VkViewport viewport =
+	const VkViewport viewport
 	{
 		0.0f,							// float    x;
 		static_cast<float>(HEIGHT),		// float    y;
@@ -428,8 +430,85 @@ tcu::TestStatus NegativeViewportHeightTestInstance::iterate (void)
 		0.0f,							// float    minDepth;
 		1.0f,							// float    maxDepth;
 	};
+	VkRect2D rect = makeRect2D(0, 0, WIDTH, HEIGHT);
 
-	const tcu::ConstPixelBufferAccess	resultImage	= draw(viewport);
+	const DeviceInterface&			vk					= m_context.getDeviceInterface();
+	const VkDevice					device				= m_context.getDevice();
+	const VkQueue					queue				= m_context.getUniversalQueue();
+	const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	const VkClearValue				clearColor			= makeClearValueColorF32(0.125f, 0.25f, 0.5f, 1.0f);
+	const CmdPoolCreateInfo			cmdPoolCreateInfo	(queueFamilyIndex);
+	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, &cmdPoolCreateInfo));
+	const Unique<VkCommandBuffer>	cmdBuffer			(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	Move<VkCommandBuffer>			secCmdBuffer;
+
+#ifndef CTS_USES_VULKANSC
+	if (m_params.groupParams->useSecondaryCmdBuffer)
+	{
+		secCmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+
+		// record secondary command buffer
+		if (m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+		{
+			beginSecondaryCmdBuffer(*secCmdBuffer, VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+			beginRendering(vk, *secCmdBuffer, *m_colorTargetView, rect, clearColor, VK_IMAGE_LAYOUT_GENERAL, VK_ATTACHMENT_LOAD_OP_LOAD, 0u);
+		}
+		else
+			beginSecondaryCmdBuffer(*secCmdBuffer);
+
+		draw(*secCmdBuffer, viewport);
+
+		if (m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			endRendering(vk, *secCmdBuffer);
+
+		endCommandBuffer(vk, *secCmdBuffer);
+
+		// record primary command buffer
+		beginCommandBuffer(vk, *cmdBuffer, 0u);
+
+		preRenderCommands(*cmdBuffer, clearColor);
+
+		if (!m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			beginRendering(vk, *cmdBuffer, *m_colorTargetView, rect, clearColor, VK_IMAGE_LAYOUT_GENERAL, VK_ATTACHMENT_LOAD_OP_LOAD, VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+
+		vk.cmdExecuteCommands(*cmdBuffer, 1u, &*secCmdBuffer);
+
+		if (!m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			endRendering(vk, *cmdBuffer);
+
+		endCommandBuffer(vk, *cmdBuffer);
+	}
+	else if (m_params.groupParams->useDynamicRendering)
+	{
+		beginCommandBuffer(vk, *cmdBuffer);
+
+		preRenderCommands(*cmdBuffer, clearColor);
+		beginRendering(vk, *cmdBuffer, *m_colorTargetView, rect, clearColor, VK_IMAGE_LAYOUT_GENERAL, VK_ATTACHMENT_LOAD_OP_LOAD, 0u);
+		draw(*cmdBuffer, viewport);
+		endRendering(vk, *cmdBuffer);
+
+		endCommandBuffer(vk, *cmdBuffer);
+	}
+#endif // CTS_USES_VULKANSC
+
+	if (!m_params.groupParams->useDynamicRendering)
+	{
+		beginCommandBuffer(vk, *cmdBuffer);
+
+		preRenderCommands(*cmdBuffer, clearColor);
+		beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, rect);
+		draw(*cmdBuffer, viewport);
+		endRenderPass(vk, *cmdBuffer);
+
+		endCommandBuffer(vk, *cmdBuffer);
+	}
+
+	// Submit
+	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
+
+	// Get result
+	const VkOffset3D					zeroOffset	= { 0, 0, 0 };
+	const tcu::ConstPixelBufferAccess	resultImage	= m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(), VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, VK_IMAGE_ASPECT_COLOR_BIT);
 
 	// Verify the results
 
@@ -520,7 +599,7 @@ public:
 
 	virtual void checkSupport (Context& context) const
 	{
-		if (m_params.useDynamicRendering)
+		if (m_params.groupParams->useDynamicRendering)
 			context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
 		context.requireDeviceFunctionality("VK_KHR_maintenance1");
@@ -535,13 +614,13 @@ private:
 	const TestParams	m_params;
 };
 
-struct GroupParams
+struct SubGroupParams
 {
-	bool zeroViewportHeight;
-	bool useDynamicRendering;
+	bool					zeroViewportHeight;
+	const SharedGroupParams	groupParams;
 };
 
-void populateTestGroup (tcu::TestCaseGroup* testGroup, GroupParams groupParams)
+void populateTestGroup (tcu::TestCaseGroup* testGroup, SubGroupParams subGroupParams)
 {
 	const struct
 	{
@@ -572,8 +651,8 @@ void populateTestGroup (tcu::TestCaseGroup* testGroup, GroupParams groupParams)
 		{
 			frontFace[ndxFrontFace].frontFace,
 			cullMode[ndxCullMode].cullMode,
-			groupParams.zeroViewportHeight,
-			groupParams.useDynamicRendering
+			subGroupParams.zeroViewportHeight,
+			subGroupParams.groupParams
 		};
 		std::ostringstream	name;
 		name << frontFace[ndxFrontFace].name << "_" << cullMode[ndxCullMode].name;
@@ -584,16 +663,16 @@ void populateTestGroup (tcu::TestCaseGroup* testGroup, GroupParams groupParams)
 
 }	// anonymous
 
-tcu::TestCaseGroup*	createNegativeViewportHeightTests (tcu::TestContext& testCtx, bool useDynamicRendering)
+tcu::TestCaseGroup*	createNegativeViewportHeightTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
-	GroupParams groupParams { false, useDynamicRendering };
-	return createTestGroup(testCtx, "negative_viewport_height", "Negative viewport height (VK_KHR_maintenance1)", populateTestGroup, groupParams);
+	SubGroupParams subGroupParams { false, groupParams };
+	return createTestGroup(testCtx, "negative_viewport_height", "Negative viewport height (VK_KHR_maintenance1)", populateTestGroup, subGroupParams);
 }
 
-tcu::TestCaseGroup*	createZeroViewportHeightTests (tcu::TestContext& testCtx, bool useDynamicRendering)
+tcu::TestCaseGroup*	createZeroViewportHeightTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
-	GroupParams groupParams{ false, useDynamicRendering };
-	return createTestGroup(testCtx, "zero_viewport_height", "Zero viewport height (VK_KHR_maintenance1)", populateTestGroup, groupParams);
+	SubGroupParams subGroupParams{ false, groupParams };
+	return createTestGroup(testCtx, "zero_viewport_height", "Zero viewport height (VK_KHR_maintenance1)", populateTestGroup, subGroupParams);
 }
 
 }	// Draw

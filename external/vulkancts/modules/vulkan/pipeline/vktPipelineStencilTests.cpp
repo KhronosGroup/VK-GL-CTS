@@ -294,8 +294,10 @@ void StencilTest::checkSupport (Context& context) const
 
 	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 
+#ifndef CTS_USES_VULKANSC
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") && !context.getPortabilitySubsetFeatures().separateStencilMaskRef)
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Separate stencil mask references are not supported by this implementation");
+#endif // CTS_USES_VULKANSC
 }
 
 TestInstance* StencilTest::createInstance (Context& context) const
@@ -681,7 +683,7 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 		if (m_separateDepthStencilLayouts)
 		{
 			stencilImageBarrierSubresourceRange.aspectMask = VK_IMAGE_ASPECT_STENCIL_BIT;
-			newLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR;
+			newLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
 		}
 
 		const VkImageMemoryBarrier	stencilImageBarrier					=

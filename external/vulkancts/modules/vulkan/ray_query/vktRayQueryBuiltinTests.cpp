@@ -3975,7 +3975,7 @@ namespace vkt
 				const auto	physicalDevice		= context.getPhysicalDevice();
 				const auto	supportedExtensions	= enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
-				if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_EXT_robustness2")))
+				if (!isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_robustness2")))
 					TCU_THROW(NotSupportedError, "VK_EXT_robustness2 not supported");
 
 				VkPhysicalDeviceRobustness2FeaturesEXT	robustness2Features	= initVulkanStructure();
@@ -3993,7 +3993,6 @@ namespace vkt
 				const auto&	vki					= context.getInstanceInterface();
 				const auto	instance			= context.getInstance();
 				const auto	physicalDevice		= context.getPhysicalDevice();
-				const auto	supportedExtensions	= enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 				const auto	queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 				const auto	queuePriority		= 1.0f;
 				bool		accelStructSupport	= false;
@@ -4007,19 +4006,17 @@ namespace vkt
 				VkPhysicalDeviceRobustness2FeaturesEXT				robustness2Features				= initVulkanStructure();
 				std::vector<const char*>							deviceExtensions;
 
-				if (isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_deferred_host_operations")))
+				if (context.isDeviceFunctionalitySupported("VK_KHR_deferred_host_operations"))
 				{
 					deviceExtensions.push_back("VK_KHR_deferred_host_operations");
 				}
-
-				if (isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_buffer_device_address")))
+				if (context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
 				{
 					deviceAddressFeatures.pNext = features2.pNext;
 					features2.pNext = &deviceAddressFeatures;
 					deviceExtensions.push_back("VK_KHR_buffer_device_address");
 				}
-
-				if (isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_acceleration_structure")))
+				if (context.isDeviceFunctionalitySupported("VK_KHR_acceleration_structure"))
 				{
 					accelerationStructureFeatures.pNext = features2.pNext;
 					features2.pNext = &accelerationStructureFeatures;
@@ -4027,14 +4024,14 @@ namespace vkt
 					accelStructSupport = true;
 				}
 
-				if (isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_ray_query")))
+				if (context.isDeviceFunctionalitySupported("VK_KHR_ray_query"))
 				{
 					rayQueryFeatures.pNext = features2.pNext;
 					features2.pNext = &rayQueryFeatures;
 					deviceExtensions.push_back("VK_KHR_ray_query");
 				}
 
-				if (isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_ray_tracing_pipeline")))
+				if (context.isDeviceFunctionalitySupported("VK_KHR_ray_tracing_pipeline"))
 				{
 					raytracingPipelineFeatures.pNext = features2.pNext;
 					features2.pNext = &raytracingPipelineFeatures;
