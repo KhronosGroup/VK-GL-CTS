@@ -835,7 +835,8 @@ public:
 		if (m_sharingMode == VK_SHARING_MODE_CONCURRENT && queueFamilyProperties.size() < 2)
 			TCU_THROW(NotSupportedError, "Concurrent requires more than 1 queue family");
 
-		if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
+		if (m_syncPrimitive == SYNC_PRIMITIVE_TIMELINE_SEMAPHORE &&
+			!context.getTimelineSemaphoreFeatures().timelineSemaphore)
 			TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
 
 		if (m_resourceDesc.type == RESOURCE_TYPE_IMAGE)
