@@ -35,6 +35,7 @@
 #include "vkDeviceProperties.hpp"
 #ifdef CTS_USES_VULKANSC
 #include "vkSafetyCriticalUtil.hpp"
+#include "vkAppParamsUtil.hpp"
 #endif // CTS_USES_VULKANSC
 
 #include "tcuCommandLine.hpp"
@@ -172,7 +173,7 @@ deUint32 getTargetInstanceVersion (const PlatformInterface& vkp)
 
 std::pair<deUint32, deUint32> determineDeviceVersions(const PlatformInterface& vkp, deUint32 apiVersion, const tcu::CommandLine& cmdLine)
 {
-	Move<VkInstance>						preinstance				= createDefaultInstance(vkp, apiVersion);
+	Move<VkInstance>						preinstance				= createDefaultInstance(vkp, apiVersion, cmdLine);
 	InstanceDriver							preinterface			(vkp, preinstance.get());
 
 	const vector<VkPhysicalDevice>			devices					= enumeratePhysicalDevices(preinterface, preinstance.get());
@@ -192,9 +193,9 @@ std::pair<deUint32, deUint32> determineDeviceVersions(const PlatformInterface& v
 }
 
 #ifndef CTS_USES_VULKANSC
-Move<VkInstance> createInstance (const PlatformInterface& vkp, deUint32 apiVersion, const vector<string>& enabledExtensions, DebugReportRecorder* recorder)
+Move<VkInstance> createInstance (const PlatformInterface& vkp, deUint32 apiVersion, const vector<string>& enabledExtensions, const tcu::CommandLine& cmdLine, DebugReportRecorder* recorder)
 #else
-Move<VkInstance> createInstance (const PlatformInterface& vkp, deUint32 apiVersion, const vector<string>& enabledExtensions)
+Move<VkInstance> createInstance (const PlatformInterface& vkp, deUint32 apiVersion, const vector<string>& enabledExtensions, const tcu::CommandLine& cmdLine)
 #endif // CTS_USES_VULKANSC
 {
 #ifndef CTS_USES_VULKANSC
@@ -221,9 +222,9 @@ Move<VkInstance> createInstance (const PlatformInterface& vkp, deUint32 apiVersi
 	}
 
 #ifndef CTS_USES_VULKANSC
-	return createDefaultInstance(vkp, apiVersion, vector<string>(begin(enabledLayers), end(enabledLayers)), nonCoreExtensions, recorder);
+	return createDefaultInstance(vkp, apiVersion, vector<string>(begin(enabledLayers), end(enabledLayers)), nonCoreExtensions, cmdLine, recorder);
 #else
-	return createDefaultInstance(vkp, apiVersion, vector<string>(begin(enabledLayers), end(enabledLayers)), nonCoreExtensions);
+	return createDefaultInstance(vkp, apiVersion, vector<string>(begin(enabledLayers), end(enabledLayers)), nonCoreExtensions, cmdLine);
 #endif // CTS_USES_VULKANSC
 }
 
@@ -353,6 +354,14 @@ Move<VkDevice> createDefaultDevice (const PlatformInterface&				vkp,
 	}
 	else
 		deviceInfo.pNext = &dmrCI;
+
+	vector<VkApplicationParametersEXT> appParams;
+	if (readApplicationParameters(appParams, cmdLine, false))
+	{
+		appParams[appParams.size() - 1].pNext = deviceInfo.pNext;
+		deviceInfo.pNext = &appParams[0];
+	}
+
 #else
 	DE_UNREF(resourceInterface);
 #endif // CTS_USES_VULKANSC
@@ -492,9 +501,9 @@ DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::Co
 #endif // CTS_USES_VULKANSC
 	, m_instanceExtensions				(addCoreInstanceExtensions(filterExtensions(enumerateInstanceExtensionProperties(vkPlatform, DE_NULL)), m_usedApiVersion))
 #ifndef CTS_USES_VULKANSC
-	, m_instance						(createInstance(vkPlatform, m_usedApiVersion, m_instanceExtensions, m_debugReportRecorder.get()))
+	, m_instance						(createInstance(vkPlatform, m_usedApiVersion, m_instanceExtensions, cmdLine, m_debugReportRecorder.get()))
 #else
-	, m_instance						(createInstance(vkPlatform, m_usedApiVersion, m_instanceExtensions))
+	, m_instance						(createInstance(vkPlatform, m_usedApiVersion, m_instanceExtensions, cmdLine))
 #endif // CTS_USES_VULKANSC
 
 #ifndef CTS_USES_VULKANSC

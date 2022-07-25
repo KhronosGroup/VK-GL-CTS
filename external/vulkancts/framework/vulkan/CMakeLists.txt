@@ -90,6 +90,8 @@ endif()
 set(VKUTILNOSHADER_SRCS
 	vkApiVersion.cpp
 	vkApiVersion.hpp
+	vkAppParamsUtil.cpp
+	vkAppParamsUtil.hpp
 	vkBuilderUtil.cpp
 	vkBuilderUtil.hpp
 	vkBarrierUtil.cpp

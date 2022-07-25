@@ -17,6 +17,8 @@ set(DEQP_VK_SC_SRCS
 	vktObjectRefreshTests.hpp
 	vktPipelineCacheSCTests.cpp
 	vktPipelineCacheSCTests.hpp
+	vktApplicationParametersTests.cpp
+	vktApplicationParametersTests.hpp
 )
 
 PCH(DEQP_VK_SC_SRCS ../pch.cpp)

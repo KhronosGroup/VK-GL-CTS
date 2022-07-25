@@ -1791,7 +1791,7 @@ void createTestDevice (Context& context, void* pNext, const char* const* ppEnabl
 {
 	const PlatformInterface&				platformInterface		= context.getPlatformInterface();
 	const auto								validationEnabled		= context.getTestContext().getCommandLine().isValidationEnabled();
-	const Unique<VkInstance>				instance				(createDefaultInstance(platformInterface, context.getUsedApiVersion()));
+	const Unique<VkInstance>				instance				(createDefaultInstance(platformInterface, context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 	const InstanceDriver					instanceDriver			(platformInterface, instance.get());
 	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance.get(), context.getTestContext().getCommandLine());
 	const deUint32							queueFamilyIndex		= 0;
