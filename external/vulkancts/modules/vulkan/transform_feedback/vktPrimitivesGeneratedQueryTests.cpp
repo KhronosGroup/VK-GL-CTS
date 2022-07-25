@@ -161,7 +161,8 @@ private:
 	Move<VkPipeline>		makeGraphicsPipeline					(const DeviceInterface&	vk,
 																	 const VkDevice device,
 																	 const VkRenderPass renderPass);
-
+	void					fillVertexBuffer						(tcu::Vec2* vertices,
+																	 const deUint64 primitivesGenerated);
 	const TestParameters	m_parameters;
 };
 
@@ -202,6 +203,7 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 		imageAllocation	= bindImage(vk, device, allocator, *image, MemoryRequirement::Any);
 	}
 
+	const VkDeviceSize				primitivesGenerated = 32;
 	const deUint32					baseMipLevel		= 0;
 	const deUint32					levelCount			= 1;
 	const deUint32					baseArrayLayer		= 0;
@@ -216,6 +218,18 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 	const Unique<VkRenderPass>		renderPass			(makeRenderPass(vk, device, format, VK_FORMAT_UNDEFINED, VK_ATTACHMENT_LOAD_OP_DONT_CARE));
 	const Unique<VkFramebuffer>		framebuffer			(makeFramebuffer(vk, device, *renderPass, imageViewCount, &*imageView, IMAGE_WIDTH, IMAGE_HEIGHT));
 	const Unique<VkPipeline>		pipeline			(PrimitivesGeneratedQueryTestInstance::makeGraphicsPipeline(vk, device, *renderPass));
+	Move<VkBuffer>					vtxBuffer;
+	de::MovePtr<Allocation>			vtxBufferAlloc;
+
+	{
+		const VkBufferUsageFlags		usage				= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		const std::vector<deUint32>		queueFamilyIndices	(1, queueFamilyIndex);
+		const VkDeviceSize				vtxBufferSize		= topologyData.at(m_parameters.primitiveTopology).getNumVertices(primitivesGenerated) * sizeof(tcu::Vec2);
+		const VkBufferCreateInfo		createInfo			= makeBufferCreateInfo(vtxBufferSize, usage, queueFamilyIndices);
+
+		vtxBuffer			= createBuffer(vk, device, &createInfo);
+		vtxBufferAlloc		= allocator.allocate(getBufferMemoryRequirements(vk, device, *vtxBuffer), MemoryRequirement::HostVisible);
+	}
 
 	const VkCommandPoolCreateFlags	cmdPoolCreateFlags	= VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 	const VkCommandBufferLevel		cmdBufferLevel		= VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -294,7 +308,6 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 		}
 	}
 
-	const VkDeviceSize				primitivesGenerated	= 32;
 	const VkDeviceSize				primitivesWritten	= primitivesGenerated - 3;
 	const VkDeviceSize				verticesWritten		= topologyData.at(m_parameters.primitiveTopology).getNumVertices(primitivesWritten);
 	const VkDeviceSize				primitiveSize		= m_parameters.nonZeroStreams() ? 1 : topologyData.at(m_parameters.primitiveTopology).primitiveSize;
@@ -315,8 +328,14 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 		VK_CHECK(vk.bindBufferMemory(device, *xfbBuffer, xfbBufferAlloc->getMemory(), xfbBufferAlloc->getOffset()));
 	}
 
+	fillVertexBuffer(static_cast<tcu::Vec2*>(vtxBufferAlloc.get()->getHostPtr()), primitivesGenerated);
+
+	VK_CHECK(vk.bindBufferMemory(device, *vtxBuffer, vtxBufferAlloc->getMemory(), vtxBufferAlloc->getOffset()));
+
 	beginCommandBuffer(vk, *cmdBuffer);
 	{
+		const VkDeviceSize	vertexBufferOffset	= static_cast<VkDeviceSize>(0);
+
 		// After query pool creation, each query must be reset before it is used.
 		if (m_parameters.queryResetType == QUERY_RESET_TYPE_QUEUE)
 		{
@@ -327,6 +346,8 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 		}
 
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+
+		vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vtxBuffer.get(), &vertexBufferOffset);
 
 		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(makeExtent2D(IMAGE_WIDTH, IMAGE_HEIGHT)));
 		{
@@ -505,6 +526,8 @@ Move<VkPipeline> PrimitivesGeneratedQueryTestInstance::makeGraphicsPipeline (con
 	Move<VkShaderModule>							teseModule;
 	Move<VkShaderModule>							geomModule;
 	Move<VkShaderModule>							fragModule;
+	VkVertexInputBindingDescription					bindingDescription;
+	VkVertexInputAttributeDescription				attributeDescription;
 
 	if (m_parameters.shaderStage == SHADER_STAGE_TESSELLATION_EVALUATION)
 	{
@@ -518,15 +541,24 @@ Move<VkPipeline> PrimitivesGeneratedQueryTestInstance::makeGraphicsPipeline (con
 	if (m_parameters.rasterization)
 		fragModule = createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0u);
 
+	bindingDescription.binding		= 0;
+	bindingDescription.stride		= sizeof(tcu::Vec2);
+	bindingDescription.inputRate	= VK_VERTEX_INPUT_RATE_VERTEX;
+
+	attributeDescription.binding	= 0;
+	attributeDescription.location	= 0;
+	attributeDescription.format		= VK_FORMAT_R32G32_SFLOAT;
+	attributeDescription.offset		= 0;
+
 	const VkPipelineVertexInputStateCreateInfo		vertexInputStateCreateInfo		=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType							sType
 		DE_NULL,													// const void*								pNext
 		0u,															// VkPipelineVertexInputStateCreateFlags	flags
-		0u,															// deUint32									vertexBindingDescriptionCount
-		DE_NULL,													// const VkVertexInputBindingDescription*	pVertexBindingDescriptions
-		0u,															// deUint32									vertexAttributeDescriptionCount
-		DE_NULL,													// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions
+		1u,															// deUint32									vertexBindingDescriptionCount
+		&bindingDescription,										// const VkVertexInputBindingDescription*	pVertexBindingDescriptions
+		1u,															// deUint32									vertexAttributeDescriptionCount
+		&attributeDescription,										// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions
 	};
 
 	const VkPipelineRasterizationStateCreateInfo	rasterizationStateCreateInfo	=
@@ -566,6 +598,183 @@ Move<VkPipeline> PrimitivesGeneratedQueryTestInstance::makeGraphicsPipeline (con
 									DE_NULL,	// depthStencilStateCreateInfo
 									DE_NULL,	// colorBlendStateCreateInfo
 									DE_NULL);	// dynamicStateCreateInfo
+}
+
+void PrimitivesGeneratedQueryTestInstance::fillVertexBuffer(tcu::Vec2* vertices, const deUint64 primitivesGenerated)
+{
+	const float step = 1.0f / static_cast<float>(primitivesGenerated);
+
+	switch (m_parameters.primitiveTopology)
+	{
+		case VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
+		{
+			for (deUint32 prim = 0; prim < primitivesGenerated; ++prim)
+			{
+				vertices[prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, 0.0f);
+			}
+			break;
+		}
+		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+		{
+			for (deUint32 prim = 0; prim < primitivesGenerated; ++prim)
+			{
+				vertices[2* prim + 0] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step,  1.0f);
+				vertices[2* prim + 1] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -1.0f);
+			}
+			break;
+		}
+		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
+		{
+			vertices[0] = tcu::Vec2(-1.0f,-1.0f);
+			vertices[1] = tcu::Vec2(-1.0f, 1.0f);
+
+			for (deUint32 prim = 1; prim < primitivesGenerated; ++prim)
+			{
+				if (prim % 2 == 0)
+				{
+					vertices[2 + prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step,  1.0f);
+				}
+				else
+				{
+					vertices[2 + prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -1.0f);
+				}
+			}
+			break;
+		}
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
+		{
+			vertices[0] = tcu::Vec2(-1.0f,				 1.0f);
+			vertices[1] = tcu::Vec2(-1.0f,				-1.0f);
+			vertices[2] = tcu::Vec2(-1.0f + 2.0f * step, 1.0f);
+
+			for (deUint32 prim = 1; prim < primitivesGenerated; ++prim)
+			{
+				if (prim % 2 == 0)
+				{
+					vertices[3 + prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, 1.0f);
+				}
+				else
+				{
+					vertices[3 + prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -1.0f);
+				}
+			}
+			break;
+		}
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
+		{
+			vertices[0] = tcu::Vec2(0.0f, -1.0f);
+
+			for (deUint32 prim = 0; prim < primitivesGenerated+1; ++prim)
+			{
+				vertices[1 + prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -1.0f + 2.0f * (float)prim * step);
+			}
+			break;
+		}
+		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
+		{
+			for (deUint32 prim = 0; prim < primitivesGenerated; ++prim)
+			{
+				vertices[4 * prim + 0] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step,  1.0f);
+				vertices[4 * prim + 1] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step,  0.5f);
+				vertices[4 * prim + 2] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -0.5f);
+				vertices[4 * prim + 3] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -1.0f);
+			}
+			break;
+		}
+		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
+		{
+			vertices[0] = tcu::Vec2(-1.0f,  0.0f);
+			vertices[1] = tcu::Vec2(-1.0f, -1.0f);
+			vertices[2] = tcu::Vec2(-1.0f,  1.0f);
+
+			for (deUint32 prim = 1; prim < primitivesGenerated; ++prim)
+			{
+				if (prim % 2 == 0)
+				{
+					vertices[3 + prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step,  1.0f);
+				}
+				else
+				{
+					vertices[3 + prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -1.0f);
+				}
+			}
+
+			vertices[3 + primitivesGenerated] = tcu::Vec2(1.0f, 0.0f);
+
+			break;
+		}
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
+		case VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
+		{
+			for (deUint32 prim = 0; prim < primitivesGenerated; ++prim)
+			{
+				if (prim % 2 == 0)
+				{
+					vertices[3 * prim + 0] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step,  1.0f);
+					vertices[3 * prim + 1] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step, -1.0f);
+					vertices[3 * prim + 2] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 1) * step, -1.0f);
+				}
+				else
+				{
+					vertices[3 * prim + 0] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 1) * step, -1.0f);
+					vertices[3 * prim + 1] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 1) * step,  1.0f);
+					vertices[3 * prim + 2] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step,  1.0f);
+				}
+			}
+			break;
+		}
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
+		{
+			for (deUint32 prim = 0; prim < primitivesGenerated; ++prim)
+			{
+				if (prim % 2 == 0)
+				{
+					vertices[6 * prim + 0] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step,  1.0f);
+					vertices[6 * prim + 1] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step,  1.0f);
+					vertices[6 * prim + 2] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step, -1.0f);
+					vertices[6 * prim + 3] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step, -1.0f);
+					vertices[6 * prim + 4] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 1) * step, -1.0f);
+					vertices[6 * prim + 5] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 1) * step, -1.0f);
+				}
+				else
+				{
+					vertices[6 * prim + 0] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 1) * step, -1.0f);
+					vertices[6 * prim + 1] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 1) * step, -1.0f);
+					vertices[6 * prim + 2] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 1) * step,  1.0f);
+					vertices[6 * prim + 3] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 1) * step,  1.0f);
+					vertices[6 * prim + 4] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step,  1.0f);
+					vertices[6 * prim + 5] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step,  1.0f);
+				}
+			}
+			break;
+		}
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
+		{
+			vertices[0] = tcu::Vec2(-1.0f,  1.0f);
+			vertices[1] = tcu::Vec2(-1.0f,  1.0f);
+			vertices[2] = tcu::Vec2(-1.0f, -1.0f);
+			vertices[3] = tcu::Vec2(-1.0f, -1.0f);
+			vertices[4] = tcu::Vec2(-1.0f + 2.0f * step, 1.0f);
+			vertices[5] = tcu::Vec2(-1.0f + 2.0f * step, 1.0f);
+
+			for (deUint32 prim = 1; prim < primitivesGenerated; ++prim)
+			{
+				if (prim % 2 == 0)
+				{
+					vertices[6 + prim + 0] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, 1.0f);
+					vertices[6 + prim + 1] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, 1.0f);
+				}
+				else
+				{
+					vertices[6 + prim + 0] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -1.0f);
+					vertices[6 + prim + 1] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -1.0f);
+				}
+			}
+			break;
+		}
+		default:
+			TCU_THROW(InternalError, "Unrecognized primitive topology");
+	}
 }
 
 class PrimitivesGeneratedQueryTestCase : public vkt::TestCase
@@ -638,6 +847,7 @@ void PrimitivesGeneratedQueryTestCase::initPrograms (vk::SourceCollections& prog
 		std::ostringstream	src;
 
 		src	<<	"#version 450\n";
+		src << "layout(location=0) in vec2 inPosition;\n";
 
 		if (vertXfb)
 			src	<<	"layout(xfb_buffer = 0, xfb_offset = 0, xfb_stride = 16, location = 0) out vec4 out0;\n";
@@ -647,6 +857,8 @@ void PrimitivesGeneratedQueryTestCase::initPrograms (vk::SourceCollections& prog
 
 		if (m_parameters.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_POINT_LIST && m_parameters.shaderStage == SHADER_STAGE_VERTEX)
 			src	<<	"    gl_PointSize = 1.0;\n";
+
+		src << "	 gl_Position = vec4(inPosition, 0, 1);\n";
 
 		if (vertXfb)
 			src	<<	"    out0 = vec4(42);\n";
