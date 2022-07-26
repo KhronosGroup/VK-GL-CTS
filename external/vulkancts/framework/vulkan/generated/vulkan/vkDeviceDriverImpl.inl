@@ -1094,11 +1094,6 @@ void DeviceDriver::getQueueCheckpointData2NV (VkQueue queue, uint32_t* pCheckpoi
 	m_vk.getQueueCheckpointData2NV(queue, pCheckpointDataCount, pCheckpointData);
 }
 
-void DeviceDriver::cmdTraceRaysIndirect2KHR (VkCommandBuffer commandBuffer, VkDeviceAddress indirectDeviceAddress) const
-{
-	m_vk.cmdTraceRaysIndirect2KHR(commandBuffer, indirectDeviceAddress);
-}
-
 VkResult DeviceDriver::debugMarkerSetObjectTagEXT (VkDevice device, const VkDebugMarkerObjectTagInfoEXT* pTagInfo) const
 {
 	return m_vk.debugMarkerSetObjectTagEXT(device, pTagInfo);
@@ -1544,69 +1539,9 @@ void DeviceDriver::destroyIndirectCommandsLayoutNV (VkDevice device, VkIndirectC
 	m_vk.destroyIndirectCommandsLayoutNV(device, indirectCommandsLayout, pAllocator);
 }
 
-VkResult DeviceDriver::getDescriptorSetLayoutSizeEXT (VkDevice device, VkDescriptorSetLayout layout, VkDeviceSize* pLayoutSizeInBytes) const
-{
-	return m_vk.getDescriptorSetLayoutSizeEXT(device, layout, pLayoutSizeInBytes);
-}
-
-VkResult DeviceDriver::getDescriptorSetLayoutBindingOffsetEXT (VkDevice device, VkDescriptorSetLayout layout, uint32_t binding, VkDeviceSize* pOffset) const
-{
-	return m_vk.getDescriptorSetLayoutBindingOffsetEXT(device, layout, binding, pOffset);
-}
-
-VkResult DeviceDriver::getDescriptorEXT (VkDevice device, const VkDescriptorGetInfoEXT* pDescriptorInfo, void* pDescriptor) const
-{
-	return m_vk.getDescriptorEXT(device, pDescriptorInfo, pDescriptor);
-}
-
-void DeviceDriver::cmdBindDescriptorBuffersEXT (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, uint32_t firstBuffer, uint32_t bufferCount, const VkDescriptorBufferBindingInfoEXT* pBindingInfos) const
-{
-	m_vk.cmdBindDescriptorBuffersEXT(commandBuffer, pipelineBindPoint, firstBuffer, bufferCount, pBindingInfos);
-}
-
-void DeviceDriver::cmdSetDescriptorBufferOffsetsEXT (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t firstSet, uint32_t setCount, const uint32_t* pBufferIndices, const VkDeviceSize* pOffsets) const
-{
-	m_vk.cmdSetDescriptorBufferOffsetsEXT(commandBuffer, pipelineBindPoint, layout, firstSet, setCount, pBufferIndices, pOffsets);
-}
-
-void DeviceDriver::cmdBindDescriptorBufferEmbeddedSamplersEXT (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t set) const
-{
-	m_vk.cmdBindDescriptorBufferEmbeddedSamplersEXT(commandBuffer, pipelineBindPoint, layout, set);
-}
-
-VkResult DeviceDriver::getBufferOpaqueCaptureDescriptorDataEXT (VkDevice device, const VkBufferCaptureDescriptorDataInfoEXT* pInfo, void* pData) const
-{
-	return m_vk.getBufferOpaqueCaptureDescriptorDataEXT(device, pInfo, pData);
-}
-
-VkResult DeviceDriver::getImageOpaqueCaptureDescriptorDataEXT (VkDevice device, const VkImageCaptureDescriptorDataInfoEXT* pInfo, void* pData) const
-{
-	return m_vk.getImageOpaqueCaptureDescriptorDataEXT(device, pInfo, pData);
-}
-
-VkResult DeviceDriver::getImageViewOpaqueCaptureDescriptorDataEXT (VkDevice device, const VkImageViewCaptureDescriptorDataInfoEXT* pInfo, void* pData) const
-{
-	return m_vk.getImageViewOpaqueCaptureDescriptorDataEXT(device, pInfo, pData);
-}
-
-VkResult DeviceDriver::getSamplerOpaqueCaptureDescriptorDataEXT (VkDevice device, const VkSamplerCaptureDescriptorDataInfoEXT* pInfo, void* pData) const
-{
-	return m_vk.getSamplerOpaqueCaptureDescriptorDataEXT(device, pInfo, pData);
-}
-
-VkResult DeviceDriver::getAccelerationStructureOpaqueCaptureDescriptorDataEXT (VkDevice device, const VkAccelerationStructureCaptureDescriptorDataInfoEXT* pInfo, void* pData) const
-{
-	return m_vk.getAccelerationStructureOpaqueCaptureDescriptorDataEXT(device, pInfo, pData);
-}
-
 void DeviceDriver::cmdSetFragmentShadingRateEnumNV (VkCommandBuffer commandBuffer, VkFragmentShadingRateNV shadingRate, const VkFragmentShadingRateCombinerOpKHR combinerOps[2]) const
 {
 	m_vk.cmdSetFragmentShadingRateEnumNV(commandBuffer, shadingRate, combinerOps);
-}
-
-void DeviceDriver::getImageSubresourceLayout2EXT (VkDevice device, VkImage image, const VkImageSubresource2EXT* pSubresource, VkSubresourceLayout2EXT* pLayout) const
-{
-	m_vk.getImageSubresourceLayout2EXT(device, image, pSubresource, pLayout);
 }
 
 void DeviceDriver::cmdSetVertexInputEXT (VkCommandBuffer commandBuffer, uint32_t vertexBindingDescriptionCount, const VkVertexInputBindingDescription2EXT* pVertexBindingDescriptions, uint32_t vertexAttributeDescriptionCount, const VkVertexInputAttributeDescription2EXT* pVertexAttributeDescriptions) const
@@ -1632,11 +1567,6 @@ void DeviceDriver::cmdBindInvocationMaskHUAWEI (VkCommandBuffer commandBuffer, V
 VkResult DeviceDriver::getMemoryRemoteAddressNV (VkDevice device, const VkMemoryGetRemoteAddressInfoNV* pMemoryGetRemoteAddressInfo, VkRemoteAddressNV* pAddress) const
 {
 	return m_vk.getMemoryRemoteAddressNV(device, pMemoryGetRemoteAddressInfo, pAddress);
-}
-
-VkResult DeviceDriver::getPipelinePropertiesEXT (VkDevice device, const VkPipelineInfoEXT* pPipelineInfo, VkBaseOutStructure* pPipelineProperties) const
-{
-	return m_vk.getPipelinePropertiesEXT(device, pPipelineInfo, pPipelineProperties);
 }
 
 void DeviceDriver::cmdSetPatchControlPointsEXT (VkCommandBuffer commandBuffer, uint32_t patchControlPoints) const

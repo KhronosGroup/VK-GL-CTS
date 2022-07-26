@@ -9,8 +9,6 @@ const vk::VkPhysicalDeviceConservativeRasterizationPropertiesEXT&	getConservativ
 const vk::VkPhysicalDeviceCooperativeMatrixPropertiesNV&			getCooperativeMatrixProperties				(void) const;
 const vk::VkPhysicalDeviceCustomBorderColorPropertiesEXT&			getCustomBorderColorPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceDepthStencilResolveProperties&			getDepthStencilResolveProperties			(void) const;
-const vk::VkPhysicalDeviceDescriptorBufferPropertiesEXT&			getDescriptorBufferPropertiesEXT			(void) const;
-const vk::VkPhysicalDeviceDescriptorBufferDensityMapPropertiesEXT&	getDescriptorBufferDensityMapPropertiesEXT	(void) const;
 const vk::VkPhysicalDeviceDescriptorIndexingProperties&				getDescriptorIndexingProperties				(void) const;
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV&		getDeviceGeneratedCommandsProperties		(void) const;
 const vk::VkPhysicalDeviceDiscardRectanglePropertiesEXT&			getDiscardRectanglePropertiesEXT			(void) const;
@@ -21,7 +19,6 @@ const vk::VkPhysicalDeviceFloatControlsProperties&					getFloatControlsPropertie
 const vk::VkPhysicalDeviceFragmentDensityMapPropertiesEXT&			getFragmentDensityMapPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMap2PropertiesEXT&			getFragmentDensityMap2PropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM&	getFragmentDensityMapOffsetPropertiesQCOM	(void) const;
-const vk::VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR&	getFragmentShaderBarycentricProperties		(void) const;
 const vk::VkPhysicalDeviceFragmentShadingRatePropertiesKHR&			getFragmentShadingRateProperties			(void) const;
 const vk::VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV&		getFragmentShadingRateEnumsProperties		(void) const;
 const vk::VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT&		getGraphicsPipelineLibraryPropertiesEXT		(void) const;
