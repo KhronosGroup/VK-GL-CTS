@@ -40,6 +40,7 @@
 #include "vkBuilderUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
@@ -442,8 +443,8 @@ tcu::TestStatus	ComputeBuiltinVarInstance::iterate (void)
 	const deUint32				resultBufferSize	= numInvocations * resultBufferStride;
 
 	// Create result buffer
-	Buffer uniformBuffer(m_vki, m_device, m_context.getDefaultAllocator(), makeBufferCreateInfo(sizeOfUniformBuffer, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT), MemoryRequirement::HostVisible);
-	Buffer resultBuffer(m_vki, m_device, m_context.getDefaultAllocator(), makeBufferCreateInfo(resultBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
+	vk::BufferWithMemory uniformBuffer(m_vki, m_device, m_context.getDefaultAllocator(), makeBufferCreateInfo(sizeOfUniformBuffer, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT), MemoryRequirement::HostVisible);
+	vk::BufferWithMemory resultBuffer(m_vki, m_device, m_context.getDefaultAllocator(), makeBufferCreateInfo(resultBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	{
 		const Allocation& alloc = uniformBuffer.getAllocation();

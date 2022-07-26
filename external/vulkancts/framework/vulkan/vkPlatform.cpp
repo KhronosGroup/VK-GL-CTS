@@ -179,11 +179,13 @@ DeviceDriverSC::DeviceDriverSC (const PlatformInterface&					platformInterface,
 								VkDevice									device,
 								const tcu::CommandLine&						cmdLine,
 								de::SharedPtr<vk::ResourceInterface>		resourceInterface,
-								const VkPhysicalDeviceVulkanSC10Properties&	physicalDeviceVulkanSC10Properties)
+								const VkPhysicalDeviceVulkanSC10Properties&	physicalDeviceVulkanSC10Properties,
+								const VkPhysicalDeviceProperties&			physicalDeviceProperties)
 	: DeviceDriver(platformInterface, instance, device)
 	, m_normalMode(cmdLine.isSubProcess())
 	, m_resourceInterface(resourceInterface)
 	, m_physicalDeviceVulkanSC10Properties(physicalDeviceVulkanSC10Properties)
+	, m_physicalDeviceProperties(physicalDeviceProperties)
 	, m_commandDefaultSize((VkDeviceSize)cmdLine.getCommandDefaultSize())
 	, m_commandBufferMinimumSize( de::max((VkDeviceSize)cmdLine.getCommandDefaultSize(), (VkDeviceSize)cmdLine.getCommandBufferMinSize()))
 	, m_commandPoolMinimumSize((VkDeviceSize)cmdLine.getCommandPoolMinSize())
@@ -322,10 +324,27 @@ void DeviceDriverSC::createImageViewHandler (VkDevice						device,
 	DDSTAT_HANDLE_CREATE(imageViewRequestCount,1);
 	if (pCreateInfo->subresourceRange.layerCount > 1)
 		DDSTAT_HANDLE_CREATE(layeredImageViewRequestCount,1);
-	m_resourceInterface->getStatMax().maxImageViewMipLevels		= de::max(m_resourceInterface->getStatMax().maxImageViewMipLevels, pCreateInfo->subresourceRange.levelCount);
-	m_resourceInterface->getStatMax().maxImageViewArrayLayers	= de::max(m_resourceInterface->getStatMax().maxImageViewArrayLayers, pCreateInfo->subresourceRange.layerCount);
-	if(pCreateInfo->subresourceRange.layerCount > 1)
-		m_resourceInterface->getStatMax().maxLayeredImageViewMipLevels = de::max(m_resourceInterface->getStatMax().maxLayeredImageViewMipLevels, pCreateInfo->subresourceRange.levelCount);
+
+	const auto& limits = m_physicalDeviceProperties.limits;
+
+	deUint32 levelCount = pCreateInfo->subresourceRange.levelCount;
+	if (levelCount == VK_REMAINING_MIP_LEVELS)
+	{
+		deUint32 maxDimensions = limits.maxImageDimension1D;
+		maxDimensions = de::max(maxDimensions, limits.maxImageDimension2D);
+		maxDimensions = de::max(maxDimensions, limits.maxImageDimension3D);
+		maxDimensions = de::max(maxDimensions, limits.maxImageDimensionCube);
+		levelCount = deLog2Floor32(maxDimensions) + 1;
+	}
+
+	uint32_t layerCount = pCreateInfo->subresourceRange.layerCount;
+	if (layerCount == VK_REMAINING_ARRAY_LAYERS)
+		layerCount = limits.maxImageArrayLayers;
+
+	m_resourceInterface->getStatMax().maxImageViewMipLevels		= de::max(m_resourceInterface->getStatMax().maxImageViewMipLevels, levelCount);
+	m_resourceInterface->getStatMax().maxImageViewArrayLayers	= de::max(m_resourceInterface->getStatMax().maxImageViewArrayLayers, layerCount);
+	if (pCreateInfo->subresourceRange.layerCount > 1)
+		m_resourceInterface->getStatMax().maxLayeredImageViewMipLevels = de::max(m_resourceInterface->getStatMax().maxLayeredImageViewMipLevels, levelCount);
 
 	*pView = VkImageView(m_resourceInterface->incResourceCounter());
 	m_imageViews.insert({ *pView, *pCreateInfo });

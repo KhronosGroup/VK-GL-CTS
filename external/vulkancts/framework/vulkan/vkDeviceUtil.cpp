@@ -57,7 +57,7 @@ Move<VkInstance> createDefaultInstance (const PlatformInterface&		vkPlatform,
 	if (validationEnabled)
 	{
 		// Make sure the debug report extension is enabled when validation is enabled.
-		if (!isExtensionSupported(availableExtensions, RequiredExtension("VK_EXT_debug_report")))
+		if (!isExtensionStructSupported(availableExtensions, RequiredExtension("VK_EXT_debug_report")))
 			TCU_THROW(NotSupportedError, "VK_EXT_debug_report is not supported");
 
 		if (!de::contains(begin(actualExtensions), end(actualExtensions), "VK_EXT_debug_report"))
@@ -67,7 +67,7 @@ Move<VkInstance> createDefaultInstance (const PlatformInterface&		vkPlatform,
 	}
 
         // Make sure portability enumeration is enabled whenever it is available
-        bool portability_enumeration_available = isExtensionSupported(availableExtensions, RequiredExtension("VK_KHR_portability_enumeration"));
+        bool portability_enumeration_available = isExtensionStructSupported(availableExtensions, RequiredExtension("VK_KHR_portability_enumeration"));
         if (portability_enumeration_available)
         {
                 actualExtensions.push_back("VK_KHR_portability_enumeration");

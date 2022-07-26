@@ -598,11 +598,13 @@ void GraphicsCacheTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&
 		1.0f,														// float									maxDepthBounds;
 	};
 
-	VkPipelineCreationFeedbackCreateInfoEXT pipelineCreationFeedbackCreateInfo[VK_MAX_PIPELINE_PARTS];
+	VkPipelineCreationFeedbackCreateInfoEXT		pipelineCreationFeedbackCreateInfo[VK_MAX_PIPELINE_PARTS];
+	PipelineCreationFeedbackCreateInfoWrapper	pipelineCreationFeedbackWrapper[VK_MAX_PIPELINE_PARTS];
 	for (deUint32 i = 0u ; i < VK_MAX_PIPELINE_PARTS ; ++i)
 	{
 		pipelineCreationFeedbackCreateInfo[i] = initVulkanStructure();
 		pipelineCreationFeedbackCreateInfo[i].pPipelineCreationFeedback = &pipelineCreationFeedback[i];
+		pipelineCreationFeedbackWrapper[i].ptr = &pipelineCreationFeedbackCreateInfo[i];
 	}
 
 	deUint32 geometryStages = 1u + (geomShaderModule != DE_NULL) + (tescShaderModule != DE_NULL) + (teseShaderModule != DE_NULL);
@@ -630,7 +632,7 @@ void GraphicsCacheTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&
 	gpw.setDefaultTopology((tescShaderModule == DE_NULL) ? VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST : VK_PRIMITIVE_TOPOLOGY_PATCH_LIST)
 	   .setDefaultRasterizationState()
 	   .setDefaultMultisampleState()
-	   .setupVertexInputStete(&vertexInputStateParams, DE_NULL, *m_cache, &pipelineCreationFeedbackCreateInfo[0])
+	   .setupVertexInputStete(&vertexInputStateParams, DE_NULL, *m_cache, pipelineCreationFeedbackWrapper[0])
 	   .setupPreRasterizationShaderState(
 			viewport,
 			scissor,
@@ -643,9 +645,9 @@ void GraphicsCacheTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&
 			teseShaderModule,
 			geomShaderModule,
 			DE_NULL,
-			DE_NULL,
+			PipelineRenderingCreateInfoWrapper(),
 			*m_cache,
-			&pipelineCreationFeedbackCreateInfo[1])
+			pipelineCreationFeedbackWrapper[1])
 	   .setupFragmentShaderState(
 			*m_pipelineLayout,
 			*m_renderPass,
@@ -656,10 +658,10 @@ void GraphicsCacheTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&
 			DE_NULL,
 			DE_NULL,
 			*m_cache,
-			&pipelineCreationFeedbackCreateInfo[2])
-	   .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams, DE_NULL, *m_cache, &pipelineCreationFeedbackCreateInfo[3])
+			pipelineCreationFeedbackWrapper[2])
+	   .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams, DE_NULL, *m_cache, pipelineCreationFeedbackWrapper[3])
 	   .setMonolithicPipelineLayout(*m_pipelineLayout)
-	   .buildPipeline(*m_cache, basePipelineHandle, basePipelineHandle != DE_NULL ? -1 : 0, &pipelineCreationFeedbackCreateInfo[4]);
+	   .buildPipeline(*m_cache, basePipelineHandle, basePipelineHandle != DE_NULL ? -1 : 0, pipelineCreationFeedbackWrapper[4]);
 }
 
 tcu::TestStatus GraphicsCacheTestInstance::verifyTestResult (void)

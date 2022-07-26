@@ -344,7 +344,7 @@ bool SparseTextureClampLookupResidencyTestCase::verifyLookupTextureData(const Fu
 		FunctionToken f = funcToken;
 
 		// Adjust shader source to texture format
-		TokenStringsExt s = createLookupShaderTokens(target, format, level, sample, f);
+		TokenStringsExt s = createLookupShaderTokens(target, verifyTarget, format, level, sample, f);
 
 		replaceToken("<COORD_TYPE>", s.coordType.c_str(), vertex);
 
@@ -411,6 +411,8 @@ bool SparseTextureClampLookupResidencyTestCase::verifyLookupTextureData(const Fu
 
 				gl.bindTexture(target, texture);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture");
+				gl.texParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+				gl.texParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 				gl.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 				draw(target, z, program);
@@ -425,8 +427,14 @@ bool SparseTextureClampLookupResidencyTestCase::verifyLookupTextureData(const Fu
 					{
 						GLubyte* dataRegion	= exp_data + x + y * width;
 						GLubyte* outDataRegion = out_data + x + y * width;
-						if (dataRegion[0] != outDataRegion[0])
+						if (dataRegion[0] != outDataRegion[0]) {
+							m_testCtx.getLog() << tcu::TestLog::Message << mLog.str() <<
+								"Error detected at " << x << "," << y << "," << z <<
+								": expected [" << (unsigned)dataRegion[0] << "] got [" <<
+								(unsigned)outDataRegion[0] << "]" << tcu::TestLog::EndMessage;
 							result = false;
+							goto out;
+						}
 					}
 			}
 		}
@@ -441,7 +449,7 @@ bool SparseTextureClampLookupResidencyTestCase::verifyLookupTextureData(const Fu
 			result = false;
 		}
 	}
-
+out:
 	gl.bindFramebuffer(GL_FRAMEBUFFER, 0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindFramebuffer");
 
@@ -727,7 +735,12 @@ bool SparseTextureClampLookupColorTestCase::writeDataToTexture(const Functions& 
 			std::string shader = stc_compute_textureFill;
 
 			// Adjust shader source to texture format
-			TokenStrings s = createShaderTokens(target, format, sample);
+			GLint verifyTarget;
+			if (target == GL_TEXTURE_2D_MULTISAMPLE || target == GL_TEXTURE_2D || target == GL_TEXTURE_RECTANGLE)
+				verifyTarget = GL_TEXTURE_2D;
+			else
+				verifyTarget = GL_TEXTURE_2D_ARRAY;
+			TokenStrings s = createShaderTokens(target, verifyTarget, format, sample);
 
 			GLint convFormat = format;
 			if (format == GL_DEPTH_COMPONENT16)
@@ -848,7 +861,7 @@ bool SparseTextureClampLookupColorTestCase::verifyLookupTextureData(const Functi
 		std::string functionDef = generateFunctionDef(f.name);
 
 		// Adjust shader source to texture format
-		TokenStringsExt s = createLookupShaderTokens(target, format, level, sample, f);
+		TokenStringsExt s = createLookupShaderTokens(target, verifyTarget, format, level, sample, f);
 
 		// Change expected result as it has to be adjusted to different levels
 		s.resultExpected = generateExpectedResult(s.returnType, level, format);
@@ -916,6 +929,8 @@ bool SparseTextureClampLookupColorTestCase::verifyLookupTextureData(const Functi
 
 				gl.bindTexture(target, texture);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture");
+				gl.texParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+				gl.texParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 				gl.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 				draw(target, z, program);

@@ -68,7 +68,11 @@ protected:
 };
 
 ConditionalClearAttachmentTest::ConditionalClearAttachmentTest (Context &context, ConditionalTestSpec testSpec)
-	: Draw::DrawTestsBaseClass(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], false, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+	: Draw::DrawTestsBaseClass(context,
+							   testSpec.shaders[glu::SHADERTYPE_VERTEX],
+							   testSpec.shaders[glu::SHADERTYPE_FRAGMENT],
+							   Draw::SharedGroupParams(new Draw::GroupParams{ false, false, false }),
+							   vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
 	, m_conditionalData(testSpec.conditionalData)
 {
 	checkConditionalRenderingCapabilities(context, m_conditionalData);
@@ -90,8 +94,9 @@ tcu::TestStatus ConditionalClearAttachmentTest::iterate (void)
 	const tcu::Vec4 drawColor	= tcu::RGBA::blue().toVec();
 
 	beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+	preRenderBarriers();
 	const bool useSecondaryCmdBuffer = m_conditionalData.conditionInherited || m_conditionalData.conditionInSecondaryCommandBuffer;
-	beginRender(useSecondaryCmdBuffer ? vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS : vk::VK_SUBPASS_CONTENTS_INLINE);
+	beginLegacyRender(*m_cmdBuffer, useSecondaryCmdBuffer ? vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS : vk::VK_SUBPASS_CONTENTS_INLINE);
 
 	vk::VkCommandBuffer targetCmdBuffer = *m_cmdBuffer;
 
@@ -180,7 +185,7 @@ tcu::TestStatus ConditionalClearAttachmentTest::iterate (void)
 		m_vk.cmdExecuteCommands(*m_cmdBuffer, 1, &m_secondaryCmdBuffer.get());
 	}
 
-	endRender();
+	endLegacyRender(*m_cmdBuffer);
 	endCommandBuffer(m_vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());

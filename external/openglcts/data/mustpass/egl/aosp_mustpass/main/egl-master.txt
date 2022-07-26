@@ -2512,6 +2512,7 @@ dEQP-EGL.functional.get_proc_address.extension.gl_ext_draw_elements_base_vertex
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_draw_instanced
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_draw_transform_feedback
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_external_buffer
+dEQP-EGL.functional.get_proc_address.extension.gl_ext_fragment_shading_rate
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_geometry_shader
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_instanced_arrays
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_memory_object
@@ -2533,7 +2534,9 @@ dEQP-EGL.functional.get_proc_address.extension.gl_ext_sparse_texture
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_tessellation_shader
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_texture_border_clamp
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_texture_buffer
+dEQP-EGL.functional.get_proc_address.extension.gl_ext_texture_storage_compression
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_texture_view
+dEQP-EGL.functional.get_proc_address.extension.gl_nv_timeline_semaphore
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_win32_keyed_mutex
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_window_rectangles
 dEQP-EGL.functional.get_proc_address.extension.gl_img_bindless_texture
@@ -2544,6 +2547,7 @@ dEQP-EGL.functional.get_proc_address.extension.gl_khr_blend_equation_advanced
 dEQP-EGL.functional.get_proc_address.extension.gl_khr_debug
 dEQP-EGL.functional.get_proc_address.extension.gl_khr_robustness
 dEQP-EGL.functional.get_proc_address.extension.gl_khr_parallel_shader_compile
+dEQP-EGL.functional.get_proc_address.extension.gl_mesa_framebuffer_flip_y
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_bindless_texture
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_blend_equation_advanced
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_clip_space_w_scaling
@@ -2563,6 +2567,7 @@ dEQP-EGL.functional.get_proc_address.extension.gl_nv_gpu_shader5
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_instanced_arrays
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_internalformat_sample_query
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_memory_attachment
+dEQP-EGL.functional.get_proc_address.extension.gl_nv_memory_object_sparse
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_mesh_shader
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_non_square_matrices
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_path_rendering
@@ -2591,8 +2596,11 @@ dEQP-EGL.functional.get_proc_address.extension.gl_ovr_multiview
 dEQP-EGL.functional.get_proc_address.extension.gl_ovr_multiview_multisampled_render_to_texture
 dEQP-EGL.functional.get_proc_address.extension.gl_qcom_alpha_test
 dEQP-EGL.functional.get_proc_address.extension.gl_qcom_framebuffer_foveated
+dEQP-EGL.functional.get_proc_address.extension.gl_qcom_motion_estimation
+dEQP-EGL.functional.get_proc_address.extension.gl_qcom_frame_extrapolation
 dEQP-EGL.functional.get_proc_address.extension.gl_qcom_texture_foveated
 dEQP-EGL.functional.get_proc_address.extension.gl_qcom_shader_framebuffer_fetch_noncoherent
+dEQP-EGL.functional.get_proc_address.extension.gl_qcom_shading_rate
 dEQP-EGL.functional.get_proc_address.core.egl
 dEQP-EGL.functional.get_proc_address.core.egl15
 dEQP-EGL.functional.get_proc_address.core.gles

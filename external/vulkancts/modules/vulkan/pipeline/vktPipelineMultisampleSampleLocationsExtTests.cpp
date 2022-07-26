@@ -791,12 +791,22 @@ public:
 			makeAttachmentReference(VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_UNDEFINED));
 	}
 
-	void addSubpassColorAttachmentWithResolve (const deUint32 colorAttachmentIndex, const VkImageLayout colorSubpassLayout, const deUint32 resolveAttachmentIndex, const VkImageLayout resolveSubpassLayout)
+	void addSubpassColorAttachmentWithResolve (const deUint32 colorAttachmentIndex, const VkImageLayout colorSubpassLayout, const deUint32 resolveAttachmentIndex, const VkImageLayout resolveSubpassLayout, const VkSampleLocationsInfoEXT* pSampleLocations = DE_NULL)
 	{
 		m_subpasses.back().colorAttachmentReferences.push_back(
 			makeAttachmentReference(colorAttachmentIndex, colorSubpassLayout));
 		m_subpasses.back().resolveAttachmentReferences.push_back(
 			makeAttachmentReference(resolveAttachmentIndex, resolveSubpassLayout));
+
+		if (pSampleLocations)
+		{
+			const VkSubpassSampleLocationsEXT subpassSampleLocations =
+			{
+				static_cast<deUint32>(m_subpasses.size() - 1),		// uint32_t                    subpassIndex;
+				*pSampleLocations,									// VkSampleLocationsInfoEXT    sampleLocationsInfo;
+			};
+			m_subpassSampleLocations.push_back(subpassSampleLocations);
+		}
 	}
 
 	void addSubpassDepthStencilAttachment (const deUint32 attachmentIndex, const VkImageLayout subpassLayout, const VkSampleLocationsInfoEXT* pSampleLocations = DE_NULL)
@@ -1296,7 +1306,7 @@ enum TestOptionFlagBits
 	TEST_OPTION_DYNAMIC_STATE_BIT				= 0x1,	//!< Use dynamic pipeline state to pass in sample locations
 	TEST_OPTION_CLOSELY_PACKED_BIT				= 0x2,	//!< Place samples as close as possible to each other
 	TEST_OPTION_FRAGMENT_SHADING_RATE_BIT		= 0x4,	//!< Use VK_KHR_fragment_shading_rate
-
+	TEST_OPTION_VARIABLE_SAMPLE_LOCATIONS_BIT	= 0x8	//!< Use variable sample locations
 };
 typedef deUint32 TestOptionFlags;
 
@@ -1321,6 +1331,9 @@ void checkSupportVerifyTests (Context& context, const TestParams params)
 
 	if (TEST_OPTION_FRAGMENT_SHADING_RATE_BIT & params.options)
 		checkFragmentShadingRateRequirements(context, params.numSamples);
+
+	if (TEST_OPTION_VARIABLE_SAMPLE_LOCATIONS_BIT & params.options && !getSampleLocationsPropertiesEXT(context).variableSampleLocations)
+		TCU_THROW(NotSupportedError, "VkPhysicalDeviceSampleLocationsPropertiesEXT: variableSampleLocations not supported");
 
 	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.pipelineConstructionType);
 }
@@ -1578,8 +1591,16 @@ protected:
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,						// VkImageLayout				finalLayout,
 			VkClearValue());											// VkClearValue					clearValue,
 
-		rt.addSubpassColorAttachmentWithResolve(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-												1u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+		if (TEST_OPTION_VARIABLE_SAMPLE_LOCATIONS_BIT & m_params.options)
+		{
+			rt.addSubpassColorAttachmentWithResolve(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+				1u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, &sampleLocationsInfo);
+		}
+		else
+		{
+			rt.addSubpassColorAttachmentWithResolve(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+				1u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+		}
 
 		rt.bake(vk, device, m_renderSize);
 
@@ -1793,17 +1814,34 @@ void addCases (tcu::TestCaseGroup* group, const VkSampleCountFlagBits numSamples
 	TestParams params;
 	deMemset(&params, 0, sizeof(params));
 
-	params.pipelineConstructionType = pipelineConstructionType;
+	params.pipelineConstructionType	= pipelineConstructionType;
 	params.numSamples				= numSamples;
-	params.options					= useFragmentShadingRate ? (TestOptionFlags)TEST_OPTION_FRAGMENT_SHADING_RATE_BIT : (TestOptionFlags)0;
 
-	addInstanceTestCaseWithPrograms<Test>(group, getString(numSamples).c_str(), "", checkSupportVerifyTests, initPrograms, params);
+	struct TestOptions
+	{
+		std::string		testSuffix;
+		TestOptionFlags	testFlags;
 
-	params.options |= (TestOptionFlags)TEST_OPTION_DYNAMIC_STATE_BIT;
-	addInstanceTestCaseWithPrograms<Test>(group, (getString(numSamples) + "_dynamic").c_str(), "", checkSupportVerifyTests, initPrograms, params);
+	};
 
-	params.options |= (TestOptionFlags)TEST_OPTION_CLOSELY_PACKED_BIT;
-	addInstanceTestCaseWithPrograms<Test>(group, (getString(numSamples) + "_packed").c_str(), "", checkSupportVerifyTests, initPrograms, params);
+	TestOptions testOpts[]	=
+	{
+		{ "",				useFragmentShadingRate ? (TestOptionFlags)TEST_OPTION_FRAGMENT_SHADING_RATE_BIT : (TestOptionFlags)0 | (TestOptionFlags)TEST_OPTION_VARIABLE_SAMPLE_LOCATIONS_BIT },
+		{ "_invariable",	useFragmentShadingRate ? (TestOptionFlags)TEST_OPTION_FRAGMENT_SHADING_RATE_BIT : (TestOptionFlags)0 }
+	};
+
+	for (const auto &options : testOpts)
+	{
+		params.options	= options.testFlags;
+
+		addInstanceTestCaseWithPrograms<Test>(group, (getString(numSamples) + options.testSuffix).c_str(), "", checkSupportVerifyTests, initPrograms, params);
+
+		params.options	|= (TestOptionFlags)TEST_OPTION_DYNAMIC_STATE_BIT;
+		addInstanceTestCaseWithPrograms<Test>(group, (getString(numSamples) + "_dynamic" + options.testSuffix).c_str(), "", checkSupportVerifyTests, initPrograms, params);
+
+		params.options	|= (TestOptionFlags)TEST_OPTION_CLOSELY_PACKED_BIT;
+		addInstanceTestCaseWithPrograms<Test>(group, (getString(numSamples) + "_packed" + options.testSuffix).c_str(), "", checkSupportVerifyTests, initPrograms, params);
+	}
 }
 
 } // VerifySamples

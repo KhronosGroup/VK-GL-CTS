@@ -424,6 +424,7 @@ struct TextureCubeTestCaseParameters : public TextureCommonTestCaseParameters
 								TextureCubeTestCaseParameters	(void);
 	tcu::Sampler::WrapMode		wrapT;
 	int							size;
+	deBool						seamless;
 };
 
 struct Texture2DArrayTestCaseParameters : public Texture2DTestCaseParameters

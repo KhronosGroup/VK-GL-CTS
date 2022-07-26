@@ -430,20 +430,19 @@ bool ShaderBallotBaseTestCase::validateScreenPixelsSameColor(deqp::Context& cont
 {
 	const glw::Functions&   gl			 = context.getRenderContext().getFunctions();
 	const tcu::RenderTarget renderTarget = context.getRenderContext().getRenderTarget();
-	tcu::IVec2				size(renderTarget.getWidth(), renderTarget.getHeight());
 
-	glw::GLfloat* centerPixel = new glw::GLfloat[4];
-	centerPixel[0]			  = -1.0f;
-	centerPixel[1]			  = -1.0f;
-	centerPixel[2]			  = -1.0f;
-	centerPixel[3]			  = -1.0f;
+	glw::GLfloat* topLeftPixel = new glw::GLfloat[4];
+	topLeftPixel[0]			  = -1.0f;
+	topLeftPixel[1]			  = -1.0f;
+	topLeftPixel[2]			  = -1.0f;
+	topLeftPixel[3]			  = -1.0f;
 
 	// read pixel
-	gl.readPixels(size.x() / 2, size.y() / 2, 1, 1, GL_RGBA, GL_FLOAT, centerPixel);
+	gl.readPixels(0, 0, 1, 1, GL_RGBA, GL_FLOAT, topLeftPixel);
 
-	tcu::Vec4 desiredColor(centerPixel[0], centerPixel[1], centerPixel[2], centerPixel[3]);
+	tcu::Vec4 desiredColor(topLeftPixel[0], topLeftPixel[1], topLeftPixel[2], topLeftPixel[3]);
 
-	delete[] centerPixel;
+	delete[] topLeftPixel;
 
 	// validation
 	return ShaderBallotBaseTestCase::validateScreenPixels(context, desiredColor, ignoredColor);
@@ -731,7 +730,7 @@ tcu::TestNode::IterateResult ShaderBallotFunctionReadTestCase::iterate()
 	const tcu::RenderTarget renderTarget = m_context.getRenderContext().getRenderTarget();
 
 	gl.clearColor(1.0f, 0.0f, 0.0f, 1.0f);
-	gl.viewport(renderTarget.getWidth() / 2 - 1, renderTarget.getHeight() / 2 - 1, 2, 2);
+	gl.viewport(0, 0, 2, 2);
 
 	for (ShaderPipelineIter pipelineIter = m_shaderPipelines.begin(); pipelineIter != m_shaderPipelines.end();
 		 ++pipelineIter)

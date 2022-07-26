@@ -42,6 +42,8 @@
 #include "vktDynamicRenderingTests.hpp"
 #endif // CTS_USES_VULKANSC
 #include "vktRenderPassDepthStencilWriteConditionsTests.hpp"
+#include "vktRenderPassSubpassMergeFeedbackTests.hpp"
+#include "vktDynamicRenderingRandomTests.hpp"
 
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -2367,7 +2369,7 @@ public:
 
 	bool isSecondary (void) const
 	{
-		return m_commandBuffer;
+		return !!m_commandBuffer;
 	}
 
 	VkCommandBuffer getCommandBuffer (void) const
@@ -7633,6 +7635,7 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 		suballocationTestGroup->addChild(createDynamicRenderingSparseRenderTargetTests(testCtx));
 
 		renderingTests->addChild(createDynamicRenderingBasicTests(testCtx));
+		renderingTests->addChild(createDynamicRenderingRandomTests(testCtx));
 		break;
 #endif // CTS_USES_VULKANSC
 	default:
@@ -7648,6 +7651,13 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 	suballocationTestGroup->addChild(createRenderPassUnusedClearAttachmentTests(testCtx, renderingType));
 #ifndef CTS_USES_VULKANSC
 	suballocationTestGroup->addChild(createRenderPassLoadStoreOpNoneTests(testCtx, renderingType));
+#endif // CTS_USES_VULKANSC
+
+#ifndef CTS_USES_VULKANSC
+	if (renderingType == RENDERING_TYPE_RENDERPASS2)
+	{
+		suballocationTestGroup->addChild(createRenderPassSubpassMergeFeedbackTests(testCtx, renderingType));
+	}
 #endif // CTS_USES_VULKANSC
 
 	renderingTests->addChild(suballocationTestGroup.release());

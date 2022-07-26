@@ -29,8 +29,9 @@
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
-#include "vkTypeUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkImageWithMemory.hpp"
 #include "tcuTestLog.hpp"
 #include <vector>
 
@@ -160,7 +161,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 
 	validateImageInfo(instance, physicalDevice, imageMSInfo);
 
-	const de::UniquePtr<Image> imageMS(new Image(deviceInterface, device, allocator, imageMSInfo, MemoryRequirement::Any));
+	const de::UniquePtr<ImageWithMemory> imageMS(new ImageWithMemory(deviceInterface, device, allocator, imageMSInfo, MemoryRequirement::Any));
 
 	imageRSInfo			= imageMSInfo;
 	imageRSInfo.samples	= VK_SAMPLE_COUNT_1_BIT;
@@ -168,15 +169,15 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 
 	validateImageInfo(instance, physicalDevice, imageRSInfo);
 
-	const de::UniquePtr<Image> imageRS(new Image(deviceInterface, device, allocator, imageRSInfo, MemoryRequirement::Any));
+	const de::UniquePtr<ImageWithMemory> imageRS(new ImageWithMemory(deviceInterface, device, allocator, imageRSInfo, MemoryRequirement::Any));
 
 	const deUint32 numSamples = static_cast<deUint32>(imageMSInfo.samples);
 
-	std::vector<de::SharedPtr<Image> > imagesPerSampleVec(numSamples);
+	std::vector<de::SharedPtr<ImageWithMemory> > imagesPerSampleVec(numSamples);
 
 	for (deUint32 sampleNdx = 0u; sampleNdx < numSamples; ++sampleNdx)
 	{
-		imagesPerSampleVec[sampleNdx] = de::SharedPtr<Image>(new Image(deviceInterface, device, allocator, imageRSInfo, MemoryRequirement::Any));
+		imagesPerSampleVec[sampleNdx] = de::SharedPtr<ImageWithMemory>(new ImageWithMemory(deviceInterface, device, allocator, imageRSInfo, MemoryRequirement::Any));
 	}
 
 	// Create render pass
@@ -393,7 +394,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 	// Create vertex attributes data
 	const VertexDataDesc vertexDataDesc = getVertexDataDescripton();
 
-	de::SharedPtr<Buffer> vertexBuffer = de::SharedPtr<Buffer>(new Buffer(deviceInterface, device, allocator, makeBufferCreateInfo(vertexDataDesc.dataSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible));
+	de::SharedPtr<BufferWithMemory> vertexBuffer = de::SharedPtr<BufferWithMemory>(new BufferWithMemory(deviceInterface, device, allocator, makeBufferCreateInfo(vertexDataDesc.dataSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible));
 	const Allocation& vertexBufferAllocation = vertexBuffer->getAllocation();
 
 	uploadVertexData(vertexBufferAllocation, vertexDataDesc);
@@ -453,7 +454,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 
 	const deUint32 bufferPerSampleFetchPassSize = 4u * (deUint32)sizeof(tcu::Vec4);
 
-	de::SharedPtr<Buffer> vertexBufferPerSampleFetchPass = de::SharedPtr<Buffer>(new Buffer(deviceInterface, device, allocator, makeBufferCreateInfo(bufferPerSampleFetchPassSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible));
+	de::SharedPtr<BufferWithMemory> vertexBufferPerSampleFetchPass = de::SharedPtr<BufferWithMemory>(new BufferWithMemory(deviceInterface, device, allocator, makeBufferCreateInfo(bufferPerSampleFetchPassSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible));
 
 	// Create graphics pipelines for per sample texel fetch passes
 	{
@@ -509,7 +510,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 	uboOffsetAlignment += (deviceLimits.minUniformBufferOffsetAlignment - uboOffsetAlignment % deviceLimits.minUniformBufferOffsetAlignment) % deviceLimits.minUniformBufferOffsetAlignment;
 
 	const VkBufferCreateInfo	bufferSampleIDInfo = makeBufferCreateInfo(uboOffsetAlignment * numSamples, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-	const de::UniquePtr<Buffer>	bufferSampleID(new Buffer(deviceInterface, device, allocator, bufferSampleIDInfo, MemoryRequirement::HostVisible));
+	const de::UniquePtr<BufferWithMemory>	bufferSampleID(new BufferWithMemory(deviceInterface, device, allocator, bufferSampleIDInfo, MemoryRequirement::HostVisible));
 
 	std::vector<deUint32> sampleIDsOffsets(numSamples);
 
@@ -654,8 +655,8 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 	// Copy data from imageRS to buffer
 	const deUint32				imageRSSizeInBytes = getImageSizeInBytes(imageRSInfo.extent, imageRSInfo.arrayLayers, m_imageFormat, imageRSInfo.mipLevels, 1u);
 
-	const VkBufferCreateInfo	bufferRSInfo = makeBufferCreateInfo(imageRSSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-	const de::UniquePtr<Buffer>	bufferRS(new Buffer(deviceInterface, device, allocator, bufferRSInfo, MemoryRequirement::HostVisible));
+	const VkBufferCreateInfo				bufferRSInfo = makeBufferCreateInfo(imageRSSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	const de::UniquePtr<BufferWithMemory>	bufferRS(new BufferWithMemory(deviceInterface, device, allocator, bufferRSInfo, MemoryRequirement::HostVisible));
 
 	{
 		const VkBufferImageCopy bufferImageCopy =
@@ -703,11 +704,11 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 	deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL,
 		static_cast<deUint32>(imagesPerSampleTransferBarriers.size()), dataPointer(imagesPerSampleTransferBarriers));
 
-	std::vector<de::SharedPtr<Buffer> > buffersPerSample(numSamples);
+	std::vector<de::SharedPtr<BufferWithMemory> > buffersPerSample(numSamples);
 
 	for (deUint32 sampleNdx = 0u; sampleNdx < numSamples; ++sampleNdx)
 	{
-		buffersPerSample[sampleNdx] = de::SharedPtr<Buffer>(new Buffer(deviceInterface, device, allocator, bufferRSInfo, MemoryRequirement::HostVisible));
+		buffersPerSample[sampleNdx] = de::SharedPtr<BufferWithMemory>(new BufferWithMemory(deviceInterface, device, allocator, bufferRSInfo, MemoryRequirement::HostVisible));
 
 		const VkBufferImageCopy bufferImageCopy =
 		{

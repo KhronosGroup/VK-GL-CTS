@@ -73,7 +73,7 @@ void checkAllSupported (const Extensions& supportedExtensions, const vector<stri
 		 requiredExtName != requiredExtensions.end();
 		 ++requiredExtName)
 	{
-		if (!isExtensionSupported(supportedExtensions, vk::RequiredExtension(*requiredExtName)))
+		if (!isExtensionStructSupported(supportedExtensions, vk::RequiredExtension(*requiredExtName)))
 			TCU_THROW(NotSupportedError, (*requiredExtName + " is not supported").c_str());
 	}
 }
@@ -144,7 +144,7 @@ vk::Move<vk::VkDevice> createDeviceWithWsi (const vk::PlatformInterface&		vkp,
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(extensions); ++ndx)
 	{
-		if (!isExtensionSupported(supportedExtensions, vk::RequiredExtension(extensions[ndx])))
+		if (!isExtensionStructSupported(supportedExtensions, vk::RequiredExtension(extensions[ndx])))
 			TCU_THROW(NotSupportedError, (string(extensions[ndx]) + " is not supported").c_str());
 	}
 
@@ -161,7 +161,7 @@ de::MovePtr<vk::wsi::Display> createDisplay (const vk::Platform&	platform,
 	}
 	catch (const tcu::NotSupportedError& e)
 	{
-		if (isExtensionSupported(supportedExtensions, vk::RequiredExtension(getExtensionName(wsiType))) &&
+		if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension(getExtensionName(wsiType))) &&
 		    platform.hasDisplay(wsiType))
 		{
 			// If VK_KHR_{platform}_surface was supported, vk::Platform implementation

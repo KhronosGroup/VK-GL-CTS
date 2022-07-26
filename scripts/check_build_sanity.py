@@ -212,6 +212,12 @@ LATE_SPECIAL_RECIPES	= [
 									"--build-dir", os.path.join(env.tmpDir, "spirv-binaries"),
 									"--dst-path", os.path.join(env.tmpDir, "spirv-binaries")]),
 		]),
+	('amber-verify', [
+			RunScript(os.path.join("external", "vulkancts", "scripts", "amber_verify.py"),
+					  lambda env: ["--build-type", "Release",
+									"--build-dir", os.path.join(env.tmpDir, "amber-verify"),
+									"--dst-path", os.path.join(env.tmpDir, "amber-verify")]),
+		]),
 	('check-all', [
 			RunScript(os.path.join("scripts", "src_util", "check_all.py")),
 		])

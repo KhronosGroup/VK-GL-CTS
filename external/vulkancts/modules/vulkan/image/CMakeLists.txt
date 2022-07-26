@@ -47,7 +47,7 @@ set(DEQP_VK_IMAGE_SRCS
 	vktImageSampleCompressedTextureTests.cpp
 	vktImageSampleCompressedTextureTests.hpp
 	vktImageExtendedUsageBitTests.cpp
-	vktImageExtendedUsageBitTests.cpp
+	vktImageExtendedUsageBitTests.hpp
 	)
 
 PCH(DEQP_VK_IMAGE_SRCS ../pch.cpp)

@@ -316,6 +316,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_fragment_shader_barycentric")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_shader_subgroup_uniform_control_flow")
 	{
 		return;
@@ -333,6 +337,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_KHR_format_feature_flags2")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_ray_tracing_maintenance1")
 	{
 		return;
 	}
@@ -889,6 +897,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_AMD_shader_early_and_late_fragment_tests")
+	{
+		return;
+	}
 	if (extName == "VK_NV_fragment_shading_rate_enums")
 	{
 		return;
@@ -910,6 +922,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_EXT_image_robustness")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_image_compression_control")
 	{
 		return;
 	}
@@ -963,6 +979,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_pipeline_properties")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_extended_dynamic_state2")
 	{
 		return;
@@ -1007,6 +1027,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_non_seamless_cube_map")
+	{
+		return;
+	}
 	if (extName == "VK_QCOM_fragment_density_map_offset")
 	{
 		return;
@@ -1016,6 +1040,14 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_GOOGLE_surfaceless_query")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_image_compression_control_swapchain")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_subpass_merge_feedback")
 	{
 		return;
 	}
@@ -1528,6 +1560,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkQueueSubmit2KHR");
 		return;
 	}
+	if (extName == "VK_KHR_fragment_shader_barycentric")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_shader_subgroup_uniform_control_flow")
 	{
 		return;
@@ -1552,6 +1588,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_KHR_format_feature_flags2")
 	{
+		return;
+	}
+	if (extName == "VK_KHR_ray_tracing_maintenance1")
+	{
+		functions.push_back("vkCmdTraceRaysIndirect2KHR");
 		return;
 	}
 	if (extName == "VK_KHR_portability_enumeration")
@@ -2198,6 +2239,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_AMD_shader_early_and_late_fragment_tests")
+	{
+		return;
+	}
 	if (extName == "VK_NV_fragment_shading_rate_enums")
 	{
 		functions.push_back("vkCmdSetFragmentShadingRateEnumNV");
@@ -2221,6 +2266,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_EXT_image_robustness")
 	{
+		return;
+	}
+	if (extName == "VK_EXT_image_compression_control")
+	{
+		functions.push_back("vkGetImageSubresourceLayout2EXT");
 		return;
 	}
 	if (extName == "VK_EXT_4444_formats")
@@ -2274,6 +2324,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	if (extName == "VK_NV_external_memory_rdma")
 	{
 		functions.push_back("vkGetMemoryRemoteAddressNV");
+		return;
+	}
+	if (extName == "VK_EXT_pipeline_properties")
+	{
+		functions.push_back("vkGetPipelinePropertiesEXT");
 		return;
 	}
 	if (extName == "VK_EXT_extended_dynamic_state2")
@@ -2331,6 +2386,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkGetDescriptorSetHostMappingVALVE");
 		return;
 	}
+	if (extName == "VK_EXT_non_seamless_cube_map")
+	{
+		return;
+	}
 	if (extName == "VK_QCOM_fragment_density_map_offset")
 	{
 		return;
@@ -2340,6 +2399,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_GOOGLE_surfaceless_query")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_image_compression_control_swapchain")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_subpass_merge_feedback")
 	{
 		return;
 	}
@@ -2607,6 +2674,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_KHR_pipeline_executable_properties",
 	"VK_KHR_synchronization2",
 	"VK_KHR_copy_commands2",
+	"VK_KHR_ray_tracing_maintenance1",
 	"VK_KHR_maintenance4",
 	"VK_EXT_debug_marker",
 	"VK_EXT_transform_feedback",
@@ -2640,10 +2708,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_NV_device_generated_commands",
 	"VK_EXT_private_data",
 	"VK_NV_fragment_shading_rate_enums",
+	"VK_EXT_image_compression_control",
 	"VK_EXT_vertex_input_dynamic_state",
 	"VK_HUAWEI_subpass_shading",
 	"VK_HUAWEI_invocation_mask",
 	"VK_NV_external_memory_rdma",
+	"VK_EXT_pipeline_properties",
 	"VK_EXT_extended_dynamic_state2",
 	"VK_EXT_color_write_enable",
 	"VK_EXT_multi_draw",

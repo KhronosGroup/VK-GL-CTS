@@ -47,6 +47,12 @@
 #define DRAW_BUFFERS_INDEXED_NOT_SUPPORTED "Draw buffers indexed functionality not supported, skipping"
 #define VIEWPORT_ARRAY_NOT_SUPPORTED "Viewport array functionality not supported, skipping"
 #define DISJOINT_TIMER_QUERY_NOT_SUPPORTED "Disjoint timer query functionality not supported, skipping"
+#define FRAGMENT_SHADING_RATE_NOT_SUPPORTED "Fragment shading rate functionality not supported, skipping"
+#define FRAGMENT_SHADING_RATE_PRIMITIVE_NOT_SUPPORTED \
+	"Fragment shading rate primitive functionality not supported, skipping"
+#define FRAGMENT_SHADING_RATE_ATTACHMENT_NOT_SUPPORTED \
+	"Fragment shading rate attachment functionality not supported, skipping"
+#define MULTIVIEW_OVR_NOT_SUPPORTED "multiview ovr functionality not supported, skipping"
 
 namespace glcts
 {
@@ -225,6 +231,10 @@ protected:
 	bool m_is_texture_border_clamp_supported;
 	bool m_is_texture_buffer_supported;
 	bool m_is_viewport_array_supported;
+	bool m_is_fragment_shading_rate_supported;
+	bool m_is_fragment_shading_rate_primitive_supported;
+	bool m_is_fragment_shading_rate_attachment_supported;
+	bool m_is_multiview_ovr_supported;
 
 	/* Predefined shader strings */
 	static const char* m_boilerplate_vs_code;

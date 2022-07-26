@@ -218,6 +218,8 @@ if(DEQP_HAVE_RENDERDOC_HEADER)
 	add_definitions(-DDEQP_HAVE_RENDERDOC_HEADER=1)
 endif()
 
+add_definitions(-DDISABLE_SHADERCACHE_IPC)
+
 PCH(VKUTILNOSHADER_SRCS ../../modules/vulkan/pch.cpp)
 PCH(VKUTIL_SRCS ../../modules/vulkan/pch.cpp)
 PCH(VKUTILNOSHADER_INLS ../../modules/vulkan/pch.cpp)

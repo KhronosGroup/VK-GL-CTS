@@ -1238,11 +1238,8 @@ tcu::TestStatus validateLimitsExtConservativeRasterization (Context& context)
 void checkSupportExtDescriptorIndexing (Context& context)
 {
 	const std::string&							requiredDeviceExtension		= "VK_EXT_descriptor_indexing";
-	const VkPhysicalDevice						physicalDevice				= context.getPhysicalDevice();
-	const InstanceInterface&					vki							= context.getInstanceInterface();
-	const std::vector<VkExtensionProperties>	deviceExtensionProperties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
-	if (!isExtensionSupported(deviceExtensionProperties, RequiredExtension(requiredDeviceExtension)))
+	if (!context.isDeviceFunctionalitySupported(requiredDeviceExtension))
 		TCU_THROW(NotSupportedError, requiredDeviceExtension + " is not supported");
 
 	// Extension string is present, then extension is really supported and should have been added into chain in DefaultDevice properties and features
@@ -1377,11 +1374,8 @@ tcu::TestStatus validateLimitsExtVertexAttributeDivisor (Context& context)
 void checkSupportNvMeshShader (Context& context)
 {
 	const std::string&							requiredDeviceExtension		= "VK_NV_mesh_shader";
-	const VkPhysicalDevice						physicalDevice				= context.getPhysicalDevice();
-	const InstanceInterface&					vki							= context.getInstanceInterface();
-	const std::vector<VkExtensionProperties>	deviceExtensionProperties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
-	if (!isExtensionSupported(deviceExtensionProperties, RequiredExtension(requiredDeviceExtension)))
+	if (!context.isDeviceFunctionalitySupported(requiredDeviceExtension))
 		TCU_THROW(NotSupportedError, requiredDeviceExtension + " is not supported");
 }
 
@@ -1494,11 +1488,8 @@ tcu::TestStatus validateLimitsExtFragmentDensityMap (Context& context)
 void checkSupportNvRayTracing (Context& context)
 {
 	const std::string&							requiredDeviceExtension		= "VK_NV_ray_tracing";
-	const VkPhysicalDevice						physicalDevice				= context.getPhysicalDevice();
-	const InstanceInterface&					vki							= context.getInstanceInterface();
-	const std::vector<VkExtensionProperties>	deviceExtensionProperties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
-	if (!isExtensionSupported(deviceExtensionProperties, RequiredExtension(requiredDeviceExtension)))
+	if (!context.isDeviceFunctionalitySupported(requiredDeviceExtension))
 		TCU_THROW(NotSupportedError, requiredDeviceExtension + " is not supported");
 }
 
@@ -2115,7 +2106,7 @@ tcu::TestStatus featureBitInfluenceOnDeviceCreate (Context& context)
 			if (structPtr != &unusedExtensionFeatures)
 				features2.pNext	= structPtr;
 
-			if (extStringPtr == DE_NULL || isExtensionSupported(deviceExtensionProperties, RequiredExtension(extStringPtr)))
+			if (extStringPtr == DE_NULL || isExtensionStructSupported(deviceExtensionProperties, RequiredExtension(extStringPtr)))
 			{
 				vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
 
@@ -2359,8 +2350,8 @@ void checkInstanceExtensionDependencies(tcu::ResultCollector&														resul
 		std::tie(currentApiVariant, currentVersionMajor, currentVersionMinor, extensionFirst, extensionSecond) = dependencies[ndx];
 		if (currentApiVariant != apiVariant || currentVersionMajor != versionMajor || currentVersionMinor != versionMinor)
 			continue;
-		if (isExtensionSupported(extensionProperties, RequiredExtension(extensionFirst)) &&
-			!isExtensionSupported(extensionProperties, RequiredExtension(extensionSecond)))
+		if (isExtensionStructSupported(extensionProperties, RequiredExtension(extensionFirst)) &&
+			!isExtensionStructSupported(extensionProperties, RequiredExtension(extensionSecond)))
 		{
 			results.fail("Extension " + string(extensionFirst) + " is missing dependency: " + string(extensionSecond));
 		}
@@ -2384,9 +2375,9 @@ void checkDeviceExtensionDependencies(tcu::ResultCollector&														results
 		std::tie(currentApiVariant, currentVersionMajor, currentVersionMinor, extensionFirst, extensionSecond) = dependencies[ndx];
 		if (currentApiVariant != apiVariant || currentVersionMajor != versionMajor || currentVersionMinor != versionMinor)
 			continue;
-		if (isExtensionSupported(deviceExtensionProperties, RequiredExtension(extensionFirst)) &&
-			!isExtensionSupported(deviceExtensionProperties, RequiredExtension(extensionSecond)) &&
-			!isExtensionSupported(instanceExtensionProperties, RequiredExtension(extensionSecond)))
+		if (isExtensionStructSupported(deviceExtensionProperties, RequiredExtension(extensionFirst)) &&
+			!isExtensionStructSupported(deviceExtensionProperties, RequiredExtension(extensionSecond)) &&
+			!isExtensionStructSupported(instanceExtensionProperties, RequiredExtension(extensionSecond)))
 		{
 			results.fail("Extension " + string(extensionFirst) + " is missing dependency: " + string(extensionSecond));
 		}
@@ -2627,7 +2618,7 @@ tcu::TestStatus extensionCoreVersions (Context& context)
 		std::tie(major, minor, extName) = majorMinorName;
 		const RequiredExtension reqExt (extName);
 
-		if ((isExtensionSupported(instanceExtensionProperties, reqExt) || isExtensionSupported(deviceExtensionProperties, reqExt)) &&
+		if ((isExtensionStructSupported(instanceExtensionProperties, reqExt) || isExtensionStructSupported(deviceExtensionProperties, reqExt)) &&
 		    !context.contextSupports(vk::ApiVersion(0u, major, minor, 0u)))
 		{
 			results.fail("Required core version for " + std::string(extName) + " not met (" + de::toString(major) + "." + de::toString(minor) + ")");
@@ -5005,7 +4996,7 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		}
 	}
 
-	if (isExtensionSupported(properties, RequiredExtension("VK_KHR_push_descriptor")))
+	if (isExtensionStructSupported(properties, RequiredExtension("VK_KHR_push_descriptor")))
 	{
 		VkPhysicalDevicePushDescriptorPropertiesKHR		pushDescriptorProperties[count];
 
@@ -5035,7 +5026,7 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		}
 	}
 
-	if (isExtensionSupported(properties, RequiredExtension("VK_KHR_performance_query")))
+	if (isExtensionStructSupported(properties, RequiredExtension("VK_KHR_performance_query")))
 	{
 		VkPhysicalDevicePerformanceQueryPropertiesKHR performanceQueryProperties[count];
 
@@ -5060,7 +5051,7 @@ tcu::TestStatus deviceProperties2 (Context& context)
 
 #endif // CTS_USES_VULKANSC
 
-	if (isExtensionSupported(properties, RequiredExtension("VK_EXT_pci_bus_info", 2, 2)))
+	if (isExtensionStructSupported(properties, RequiredExtension("VK_EXT_pci_bus_info", 2, 2)))
 	{
 		VkPhysicalDevicePCIBusInfoPropertiesEXT pciBusInfoProperties[count];
 
@@ -5111,7 +5102,7 @@ tcu::TestStatus deviceProperties2 (Context& context)
 	}
 
 #ifndef CTS_USES_VULKANSC
-	if (isExtensionSupported(properties, RequiredExtension("VK_KHR_portability_subset")))
+	if (isExtensionStructSupported(properties, RequiredExtension("VK_KHR_portability_subset")))
 	{
 		VkPhysicalDevicePortabilitySubsetPropertiesKHR portabilitySubsetProperties[count];
 
@@ -5267,12 +5258,18 @@ tcu::TestStatus deviceMemoryProperties2 (Context& context)
 		TCU_FAIL("Mismatch between memoryTypeCount reported by vkGetPhysicalDeviceMemoryProperties and vkGetPhysicalDeviceMemoryProperties2");
 	if (coreProperties.memoryHeapCount != extProperties.memoryProperties.memoryHeapCount)
 		TCU_FAIL("Mismatch between memoryHeapCount reported by vkGetPhysicalDeviceMemoryProperties and vkGetPhysicalDeviceMemoryProperties2");
-	for (deUint32 i = 0; i < coreProperties.memoryTypeCount; i++)
-		if (deMemCmp(&coreProperties.memoryTypes[i], &extProperties.memoryProperties.memoryTypes[i], sizeof(VkMemoryType)) != 0)
+	for (deUint32 i = 0; i < coreProperties.memoryTypeCount; i++) {
+		const VkMemoryType *coreType = &coreProperties.memoryTypes[i];
+		const VkMemoryType *extType = &extProperties.memoryProperties.memoryTypes[i];
+		if (coreType->propertyFlags != extType->propertyFlags || coreType->heapIndex != extType->heapIndex)
 			TCU_FAIL("Mismatch between memoryTypes reported by vkGetPhysicalDeviceMemoryProperties and vkGetPhysicalDeviceMemoryProperties2");
-	for (deUint32 i = 0; i < coreProperties.memoryHeapCount; i++)
-		if (deMemCmp(&coreProperties.memoryHeaps[i], &extProperties.memoryProperties.memoryHeaps[i], sizeof(VkMemoryHeap)) != 0)
+	}
+	for (deUint32 i = 0; i < coreProperties.memoryHeapCount; i++) {
+		const VkMemoryHeap *coreHeap = &coreProperties.memoryHeaps[i];
+		const VkMemoryHeap *extHeap = &extProperties.memoryProperties.memoryHeaps[i];
+		if (coreHeap->size != extHeap->size || coreHeap->flags != extHeap->flags)
 			TCU_FAIL("Mismatch between memoryHeaps reported by vkGetPhysicalDeviceMemoryProperties and vkGetPhysicalDeviceMemoryProperties2");
+	}
 
 	log << TestLog::Message << extProperties << TestLog::EndMessage;
 

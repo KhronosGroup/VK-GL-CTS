@@ -87,7 +87,7 @@ void checkAllSupported (const Extensions& supportedExtensions, const vector<stri
 {
 	for (auto& requiredExtName : requiredExtensions)
 	{
-		if (!isExtensionSupported(supportedExtensions, RequiredExtension(requiredExtName)))
+		if (!isExtensionStructSupported(supportedExtensions, RequiredExtension(requiredExtName)))
 			TCU_THROW(NotSupportedError, (requiredExtName + " is not supported").c_str());
 	}
 }

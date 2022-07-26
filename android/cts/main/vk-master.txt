@@ -11,6 +11,7 @@ vk-master/dynamic-rendering.txt
 vk-master/dynamic-state.txt
 vk-master/fragment-operations.txt
 vk-master/fragment-shader-interlock.txt
+vk-master/fragment-shading-barycentric.txt
 vk-master/fragment-shading-rate.txt
 vk-master/geometry.txt
 vk-master/glsl.txt
@@ -22,7 +23,9 @@ vk-master/memory-model.txt
 vk-master/memory.txt
 vk-master/mesh-shader.txt
 vk-master/multiview.txt
-vk-master/pipeline.txt
+vk-master/pipeline/fast-linked-library.txt
+vk-master/pipeline/monolithic.txt
+vk-master/pipeline/pipeline-library.txt
 vk-master/protected-memory.txt
 vk-master/query-pool.txt
 vk-master/rasterization.txt

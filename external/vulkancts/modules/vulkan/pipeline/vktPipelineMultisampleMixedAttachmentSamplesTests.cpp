@@ -1331,7 +1331,7 @@ void checkRequirements (Context& context, TestParams params)
 			TCU_THROW(NotSupportedError, "Required FragmentShadingRate not supported");
 	}
 
-	checkPipelineLibraryRequirements(vki, physicalDevice, params.pipelineConstructionType);
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.pipelineConstructionType);
 }
 
 //! Verify the values of all samples in all attachments.

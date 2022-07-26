@@ -1585,6 +1585,35 @@ deUint64 AndroidHardwareBufferExternalApi28::mustSupportAhbUsageFlags()
 }
 
 #endif // defined(BUILT_WITH_ANDROID_P_HARDWARE_BUFFER)
+
+#if defined(BUILT_WITH_ANDROID_T_HARDWARE_BUFFER)
+class AndroidHardwareBufferExternalApi33 : public  AndroidHardwareBufferExternalApi28
+{
+public:
+
+	virtual deUint32 vkFormatToAhbFormat(vk::VkFormat vkFormat);
+
+	AndroidHardwareBufferExternalApi33() : AndroidHardwareBufferExternalApi28() {};
+	virtual ~AndroidHardwareBufferExternalApi33() {};
+
+private:
+	// Stop the compiler generating methods of copy the object
+	AndroidHardwareBufferExternalApi33(AndroidHardwareBufferExternalApi33 const& copy);            // Not Implemented
+	AndroidHardwareBufferExternalApi33& operator=(AndroidHardwareBufferExternalApi33 const& copy); // Not Implemented
+};
+
+deUint32 AndroidHardwareBufferExternalApi33::vkFormatToAhbFormat(vk::VkFormat vkFormat)
+{
+	switch(vkFormat)
+	{
+	  case vk::VK_FORMAT_R8_UNORM:
+		return AHARDWAREBUFFER_FORMAT_R8_UNORM;
+	  default:
+		return AndroidHardwareBufferExternalApi28::vkFormatToAhbFormat(vkFormat);
+	}
+}
+
+#endif // defined(BUILT_WITH_ANDROID_T_HARDWARE_BUFFER)
 #endif // defined(BUILT_WITH_ANDROID_HARDWARE_BUFFER)
 #endif // (DE_OS == DE_OS_ANDROID)
 

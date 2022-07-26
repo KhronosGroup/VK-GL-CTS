@@ -94,18 +94,19 @@ deUint32 chooseQueueFamilyIndex (const InstanceInterface& vki, VkPhysicalDevice 
 	return 0;
 }
 
-Move<VkDevice> createTestDevice (const vk::Platform&			platform,
+Move<VkDevice> createTestDevice (const Context&					context,
 								 const PlatformInterface&		vkp,
 								 const VkInstance				instance,
 								 const InstanceInterface&		vki,
 								 VkPhysicalDevice				physicalDevice,
-								 const Extensions&				supportedExtensions,
 								 const deUint32					queueFamilyIndex,
-								 bool							validationEnabled,
 								 const VkAllocationCallbacks*	pAllocator = DE_NULL)
 {
-	const float queuePriorities[] = { 1.0f };
-	bool displayAvailable = true;
+	const float queuePriorities[]	= { 1.0f };
+	bool displayAvailable			= true;
+	bool validationEnabled			= context.getTestContext().getCommandLine().isValidationEnabled();
+	const vk::Platform&	platform	= context.getTestContext().getPlatform().getVulkanPlatform();
+
 	const VkDeviceQueueCreateInfo queueInfos[] =
 	{
 		{
@@ -143,7 +144,7 @@ Move<VkDevice> createTestDevice (const vk::Platform&			platform,
 
 	for (auto ext: extensions)
 	{
-		if (!isExtensionSupported(supportedExtensions, RequiredExtension(ext)))
+		if (!context.isDeviceFunctionalitySupported(ext))
 			TCU_THROW(NotSupportedError, (string(ext) + " is not supported").c_str());
 	}
 
@@ -664,7 +665,6 @@ private:
 	const VkSurfaceKHR					m_surface;
 
 	const deUint32						m_queueFamilyIndex;
-	const Extensions					m_deviceExtensions;
 	const Unique<VkDevice>				m_device;
 	const DeviceDriver					m_vkd;
 	const VkQueue						m_queue;
@@ -714,8 +714,7 @@ SwapchainCounterTestInstance::SwapchainCounterTestInstance (Context& context)
 	, m_surface					(createSurface(m_vki, m_instance, m_physicalDevice, m_display, m_planeIndex))
 
 	, m_queueFamilyIndex		(chooseQueueFamilyIndex(m_vki, m_physicalDevice, m_surface))
-	, m_deviceExtensions		(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
-	, m_device					(createTestDevice(context.getTestContext().getPlatform().getVulkanPlatform(), m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, context.getTestContext().getCommandLine().isValidationEnabled()))
+	, m_device					(createTestDevice(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_queueFamilyIndex))
 	, m_vkd						(m_vkp, m_instance, *m_device)
 	, m_queue					(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
 
@@ -965,6 +964,7 @@ void getDisplays(Context& context, std::vector<VkDisplayKHR>& availableDisplays)
 	deUint32					countReported		= 0u;
 	VkPhysicalDevice			physicalDevice		= context.getPhysicalDevice();
 	const InstanceInterface&	vki					= context.getInstanceInterface();
+	const vk::Platform&	platform	= context.getTestContext().getPlatform().getVulkanPlatform();
 
 	VkResult result = vki.getPhysicalDeviceDisplayPropertiesKHR(physicalDevice, &countReported, DE_NULL);
 	if (result != VK_SUCCESS)
@@ -972,6 +972,15 @@ void getDisplays(Context& context, std::vector<VkDisplayKHR>& availableDisplays)
 
 	if (countReported == 0)
 		TCU_THROW(NotSupportedError, "No displays available");
+
+	for (int typeNdx = 0; typeNdx < vk::wsi::TYPE_LAST; ++typeNdx)
+	{
+		vk::wsi::Type	wsiType = (vk::wsi::Type)typeNdx;
+		if (platform.hasDisplay(wsiType))
+		{
+			TCU_THROW(NotSupportedError, "Display is unavailable as windowing system has access");
+		}
+	}
 
 	// get display properties
 	std::vector<VkDisplayPropertiesKHR> displaysProperties(countReported);

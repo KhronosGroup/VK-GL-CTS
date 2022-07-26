@@ -64,13 +64,13 @@ void checkModifiersSupported (Context& context, VkFormat)
 		TCU_THROW(NotSupportedError, "VK_EXT_image_drm_format_modifier is not supported");
 
 	if (!context.isInstanceFunctionalitySupported("VK_KHR_get_physical_device_properties2"))
-		TCU_THROW(TestError, "VK_KHR_get_physical_device_properties2 not supported");
+		TCU_THROW(NotSupportedError, "VK_KHR_get_physical_device_properties2 not supported");
 
 	if (!context.isDeviceFunctionalitySupported("VK_KHR_bind_memory2"))
-		TCU_THROW(TestError, "VK_KHR_bind_memory2 not supported");
+		TCU_THROW(NotSupportedError, "VK_KHR_bind_memory2 not supported");
 
 	if (!context.isDeviceFunctionalitySupported("VK_KHR_image_format_list"))
-		TCU_THROW(TestError, "VK_KHR_image_format_list not supported");
+		TCU_THROW(NotSupportedError, "VK_KHR_image_format_list not supported");
 }
 
 void checkModifiersList2Supported (Context& context, VkFormat fmt)
@@ -78,7 +78,7 @@ void checkModifiersList2Supported (Context& context, VkFormat fmt)
 	checkModifiersSupported(context, fmt);
 
 	if (!context.isDeviceFunctionalitySupported("VK_KHR_format_feature_flags2"))
-		TCU_THROW(TestError, "VK_KHR_format_feature_flags2 not supported");
+		TCU_THROW(NotSupportedError, "VK_KHR_format_feature_flags2 not supported");
 }
 
 std::string getFormatCaseName (VkFormat format)
@@ -747,6 +747,8 @@ bool exportImportMemoryExplicitModifiersCase (Context& context, const VkFormat f
 
 	tcu::ConstPixelBufferAccess	result	(referenceTextureFormat, imageSize.x(), imageSize.y(), 1, outputBuffer->getAllocation().getHostPtr());
 	const tcu::UVec4 threshold (0u);
+
+	invalidateAlloc(vkd, device, outputBuffer->getAllocation());
 
 	return tcu::intThresholdCompare(context.getTestContext().getLog(), "Compare", "Result comparison", referenceImage, result, threshold, tcu::COMPARE_LOG_RESULT);
 }

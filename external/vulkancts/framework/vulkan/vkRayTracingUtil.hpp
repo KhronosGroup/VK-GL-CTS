@@ -887,7 +887,8 @@ public:
 																							 const VkDeviceAddress&									opaqueCaptureAddress		= 0u,
 																							 const deUint32											shaderBindingTableOffset	= 0u,
 																							 const deUint32											shaderRecordSize			= 0u,
-																							 const void**											shaderGroupDataPtrPerGroup	= nullptr);
+																							 const void**											shaderGroupDataPtrPerGroup	= nullptr,
+																							 const bool												autoAlignRecords			= true);
 	void														setCreateFlags				(const VkPipelineCreateFlags&							pipelineCreateFlags);
 	void														setMaxRecursionDepth		(const deUint32&										maxRecursionDepth);
 	void														setMaxPayloadSize			(const deUint32&										maxPayloadSize);
@@ -926,16 +927,17 @@ public:
 																				 const VkPhysicalDevice		physicalDevice) { DE_UNREF(vki); DE_UNREF(physicalDevice); }
 	virtual							~RayTracingProperties						() {}
 
-	virtual deUint32				getShaderGroupHandleSize					(void)	= DE_NULL;
-	virtual deUint32				getMaxRecursionDepth						(void)	= DE_NULL;
-	virtual deUint32				getMaxShaderGroupStride						(void)	= DE_NULL;
-	virtual deUint32				getShaderGroupBaseAlignment					(void)	= DE_NULL;
-	virtual deUint64				getMaxGeometryCount							(void)	= DE_NULL;
-	virtual deUint64				getMaxInstanceCount							(void)	= DE_NULL;
-	virtual deUint64				getMaxPrimitiveCount						(void)	= DE_NULL;
-	virtual deUint32				getMaxDescriptorSetAccelerationStructures	(void)	= DE_NULL;
-	virtual deUint32				getMaxRayDispatchInvocationCount			(void)	= DE_NULL;
-	virtual deUint32				getMaxRayHitAttributeSize					(void)	= DE_NULL;
+	virtual uint32_t				getShaderGroupHandleSize					(void)	= 0;
+	virtual uint32_t				getShaderGroupHandleAlignment				(void)	= 0;
+	virtual uint32_t				getMaxRecursionDepth						(void)	= 0;
+	virtual uint32_t				getMaxShaderGroupStride						(void)	= 0;
+	virtual uint32_t				getShaderGroupBaseAlignment					(void)	= 0;
+	virtual uint64_t				getMaxGeometryCount							(void)	= 0;
+	virtual uint64_t				getMaxInstanceCount							(void)	= 0;
+	virtual uint64_t				getMaxPrimitiveCount						(void)	= 0;
+	virtual uint32_t				getMaxDescriptorSetAccelerationStructures	(void)	= 0;
+	virtual uint32_t				getMaxRayDispatchInvocationCount			(void)	= 0;
+	virtual uint32_t				getMaxRayHitAttributeSize					(void)	= 0;
 };
 
 de::MovePtr<RayTracingProperties> makeRayTracingProperties (const InstanceInterface&	vki,
@@ -958,6 +960,11 @@ void cmdTraceRaysIndirect	(const DeviceInterface&					vk,
 							 const VkStridedDeviceAddressRegionKHR*	hitShaderBindingTableRegion,
 							 const VkStridedDeviceAddressRegionKHR*	callableShaderBindingTableRegion,
 							 VkDeviceAddress						indirectDeviceAddress);
+
+void cmdTraceRaysIndirect2	(const DeviceInterface&					vk,
+							 VkCommandBuffer						commandBuffer,
+							 VkDeviceAddress						indirectDeviceAddress);
+
 
 #else
 

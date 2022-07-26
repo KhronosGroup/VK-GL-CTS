@@ -7795,7 +7795,7 @@ public:
 				"    float tmin        = 0.001;\n"
 				"    float tmax        = 9.0;\n"
 				"    vec3  origin      = vec3(-1,  -1,  -1);\n"
-				"    vec3  target      = vec3(0.5, 0.5,  0);\n"
+				"    vec3  target      = vec3(0.0, 0.5,  0);\n"
 				"    vec3  direct      = normalize(target - origin);\n"
 				"\n"
 				"    traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 0, origin, tmin, direct, tmax, 0);\n"

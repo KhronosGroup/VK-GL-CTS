@@ -3628,7 +3628,11 @@ void SamplerInstance::createAndPopulateDescriptors					(IterateCommonVariables&	
 		m_testParams.usesMipMaps ? tcu::Sampler::LINEAR_MIPMAP_NEAREST : tcu::Sampler::NEAREST,	// minFilter
 		m_testParams.usesMipMaps ? tcu::Sampler::LINEAR_MIPMAP_NEAREST : tcu::Sampler::NEAREST,	// magFilter
 		0.0f,																					// lodTreshold
-		true);																					// normalizeCoords
+		true,																					// normalizeCoords
+		tcu::Sampler::COMPAREMODE_NONE,															// compare
+		0,																						// compareChannel
+		tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),														// borderColor
+		true);																					// seamlessCubeMap
 	const VkSamplerCreateInfo createInfo = vk::mapSampler(sampler, vk::mapVkFormat(m_colorFormat));
 	variables.descriptorSamplers.resize(variables.validDescriptorCount);
 
@@ -3715,7 +3719,11 @@ void SampledImageInstance::createAndPopulateDescriptors				(IterateCommonVariabl
 			m_testParams.usesMipMaps ? tcu::Sampler::NEAREST_MIPMAP_NEAREST : tcu::Sampler::NEAREST,	// minFilter
 			m_testParams.usesMipMaps ? tcu::Sampler::NEAREST_MIPMAP_NEAREST : tcu::Sampler::NEAREST,	// magFilter
 			0.0f,																						// lodTreshold
-			true);																						// normalizeCoords
+			true,																						// normalizeCoords
+			tcu::Sampler::COMPAREMODE_NONE,																// compare
+			0,																							// compareChannel
+			tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),															// borderColor
+			true);																						// seamlessCubeMap
 		const VkSamplerCreateInfo createInfo = vk::mapSampler(sampler, vk::mapVkFormat(m_colorFormat));
 		variables.descriptorSamplers.push_back(ut::SamplerSp(new Move<VkSampler>(vk::createSampler(m_vki, m_vkd, &createInfo))));
 	}
@@ -3829,7 +3837,11 @@ void CombinedImageInstance::createAndPopulateDescriptors			(IterateCommonVariabl
 		m_testParams.usesMipMaps ? tcu::Sampler::NEAREST_MIPMAP_NEAREST : tcu::Sampler::NEAREST,	// minFilter
 		m_testParams.usesMipMaps ? tcu::Sampler::NEAREST_MIPMAP_NEAREST : tcu::Sampler::NEAREST,	// magFilter
 		0.0f,																						// lodTreshold
-		true);																						// normalizeCoords
+		true,																						// normalizeCoords
+		tcu::Sampler::COMPAREMODE_NONE,																// compare
+		0,																							// compareChannel
+		tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),															// borderColor
+		true);																						// seamlessCubeMap
 	const VkSamplerCreateInfo	createInfo = vk::mapSampler(sampler, vk::mapVkFormat(m_colorFormat));
 	variables.descriptorSamplers.push_back(ut::SamplerSp(new Move<VkSampler>(vk::createSampler(m_vki, m_vkd, &createInfo))));
 

@@ -71,7 +71,6 @@ using tcu::Vec4;
 using std::vector;
 using de::MovePtr;
 using tcu::TextureLevel;
-using tcu::PixelBufferAccess;
 using tcu::ConstPixelBufferAccess;
 
 const VkDeviceSize	BUFFERSIZE	= 100u * 1024;
@@ -79,12 +78,17 @@ const int			WIDTH		= 80;
 const int			HEIGHT		= 80;
 const int			FACES		= 6;
 
+uint32_t getLayerCount (const bool cubemap)
+{
+	return (cubemap ? static_cast<uint32_t>(FACES) : 1u);
+}
+
 inline VkImageCreateInfo makeImageCreateInfo (const IVec3& size, const VkFormat& format, bool storageImage, bool cubemap)
 {
 	VkImageUsageFlags	usageFlags	= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
 									  | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 	VkImageCreateFlags	createFlags	= cubemap ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : DE_NULL;
-	const deUint32		layerCount	= cubemap ? 6u : 1u;
+	const deUint32		layerCount	= getLayerCount(cubemap);
 
 	if (storageImage)
 	{
@@ -160,12 +164,6 @@ SampleDrawnTextureTestInstance::SampleDrawnTextureTestInstance (Context& context
 	, m_twoSamplers		(twoSamplers)
 	, m_cubemap			(cubemap)
 {
-}
-
-template<typename T>
-inline size_t sizeInBytes (const vector<T>& vec)
-{
-	return vec.size() * sizeof(vec[0]);
 }
 
 Move<VkSampler> makeSampler (const DeviceInterface& vk, const VkDevice& device)
@@ -288,11 +286,18 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate (void)
 															 .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 21u));
 
 	const VkFormat					renderedImageFormat		= VK_FORMAT_R8G8B8A8_UNORM;
+	tcu::CompressedTexFormat		compressedFormat		(mapVkCompressedFormat(m_imageFormat));
+	IVec3							blockSize				= tcu::getBlockPixelSize(compressedFormat);
+
+	DE_ASSERT(blockSize.z() == 1);
+
+	IVec3							storageImageViewSize = imageSize / blockSize;
 
 	// Create a storage image. The first pipeline fills it and the second pipeline
 	// uses it as a sampling source.
 	const VkImageCreateInfo			imageCreateInfo			= makeImageCreateInfo(imageSize, m_imageFormat, true, m_cubemap);
-	const VkImageSubresourceRange	imageSubresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1, 0, 1);
+	const auto						layerCount				= getLayerCount(m_cubemap);
+	const VkImageSubresourceRange	imageSubresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1, 0, layerCount);
 	const ImageWithMemory			storageImage			(vk, device, m_context.getDefaultAllocator(), imageCreateInfo, MemoryRequirement::Any);
 
 	// Create image views and descriptor sets for the first pipeline
@@ -435,8 +440,11 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate (void)
 	Move<VkImageView>				targetImageView			= makeImageView(vk, device, *targetImage, VK_IMAGE_VIEW_TYPE_2D, renderedImageFormat, targetSubresourceRange);
 
 	// Clear the render target image as black and do a layout transition.
+	const auto clearColor = makeClearValueColor(Vec4(0.0f, 0.0f, 0.0f, 0.0f)).color;
 	clearColorImage(vk, device, m_context.getUniversalQueue(), m_context.getUniversalQueueFamilyIndex(), targetImage.get(),
-					Vec4(0, 0, 0, 0), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+					clearColor, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+					(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
+					VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
 	const VkPushConstantRange		pushConstantRange2		=
 	{
@@ -449,10 +457,11 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate (void)
 
 	// Vertices for a full quad and texture coordinates for each vertex.
 	const vector<Vertex>			vertices				= generateVertices();
+	const uint32_t					vertexCount				= static_cast<uint32_t>(vertices.size());
 	Move<VkBuffer>					vertexBuffer			= makeVertexBuffer(vk, device, queueFamilyIndex);
 	de::MovePtr<Allocation>			vertexBufferAlloc		= bindBuffer(vk, device, allocator, *vertexBuffer, MemoryRequirement::HostVisible);
 	const VkDeviceSize				vertexBufferOffset		= 0ull;
-	deMemcpy(vertexBufferAlloc->getHostPtr(), &vertices[0], sizeInBytes(vertices));
+	deMemcpy(vertexBufferAlloc->getHostPtr(), de::dataOrNull(vertices), de::dataSize(vertices));
 	flushAlloc(vk, device, *vertexBufferAlloc);
 
 	const auto						vtxBindingDescription	= Vertex::getBindingDescription();
@@ -493,11 +502,10 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate (void)
 	beginCommandBuffer(vk, *cmdBuffer);
 
 	// Do a layout transition for the storage image.
-	const VkImageSubresourceRange	imageSubresourceRange2	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1, 0, m_cubemap ? 6 : 1);
-	const auto						barrier1				= makeImageMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_WRITE_BIT,
+	const auto						barrier1				= makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_WRITE_BIT,
 																					 VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
-																					 storageImage.get(), imageSubresourceRange2);
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1u, &barrier1);
+																					 storageImage.get(), imageSubresourceRange);
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1u, &barrier1);
 
 	// Bind the vertices and the descriptors used in the graphics pipeline.
 	vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
@@ -519,13 +527,13 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate (void)
 				for (int face = 0; face < FACES; face++)
 				{
 					vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipelineLayout, 0u, 1u, &(cubeStorageDscrSets[face].get()), 0u, DE_NULL);
-					vk.cmdDispatch(*cmdBuffer, WIDTH, HEIGHT, 1u);
+					vk.cmdDispatch(*cmdBuffer, storageImageViewSize.x(), storageImageViewSize.y(), 1u);
 				}
 			}
 			else
 			{
 				vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipelineLayout, 0u, 1u, &storageImageDescriptorSet.get(), 0u, DE_NULL);
-				vk.cmdDispatch(*cmdBuffer, WIDTH, HEIGHT, 1u);
+				vk.cmdDispatch(*cmdBuffer, storageImageViewSize.x(), storageImageViewSize.y(), 1u);
 			}
 
 			const auto barrier2 = makeImageMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL,
@@ -545,12 +553,12 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate (void)
 				vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipelineLayout, 0u, 1u, &(cubeSamplerDescriptorSets[face].get()), 0u, DE_NULL);
 
 				beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, imageSize.x(), imageSize.y()),0u, DE_NULL);
-				vk.cmdDraw(*cmdBuffer, 6u, 1u, 0u, 0u);
+				vk.cmdDraw(*cmdBuffer, vertexCount, 1u, 0u, 0u);
 				endRenderPass(vk, *cmdBuffer);
 
 				if (face < FACES-1)
 				{
-					const auto barrier4 = makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+					const auto barrier4 = makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT),
 																 VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 																 targetImage.get(), targetSubresourceRange);
 					vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -563,7 +571,7 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate (void)
 			vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipelineLayout, 0u, 1u, &(graphicsDescriptorSet.get()), 0u, DE_NULL);
 
 			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, imageSize.x(), imageSize.y()),0u, DE_NULL);
-			vk.cmdDraw(*cmdBuffer, 6u, 1u, 0u, 0u);
+			vk.cmdDraw(*cmdBuffer, vertexCount, 1u, 0u, 0u);
 			endRenderPass(vk, *cmdBuffer);
 		}
 
@@ -573,7 +581,7 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate (void)
 														 VK_IMAGE_LAYOUT_GENERAL, storageImage.get(), imageSubresourceRange);
 			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1u, &barrier3);
 
-			const auto barrier4 = makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+			const auto barrier4 = makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT),
 														 VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 														 targetImage.get(), targetSubresourceRange);
 			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1u, &barrier4);
@@ -709,11 +717,6 @@ void SampleDrawnTextureTest::initPrograms (SourceCollections& programCollection)
 	std::string					red					= (m_imageFormat == VK_FORMAT_BC1_RGB_UNORM_BLOCK) ? bc1_red : bc3_red;
 	std::string					blue				= (m_imageFormat == VK_FORMAT_BC1_RGB_UNORM_BLOCK) ? bc1_blue : bc3_blue;
 
-	tcu::CompressedTexFormat	compressedFormat	(mapVkCompressedFormat(m_imageFormat));
-	IVec3						blockSize			= tcu::getBlockPixelSize(compressedFormat);
-
-	DE_ASSERT(blockSize.z() == 1);
-
 	std::ostringstream			computeSrc;
 
 	// Generate the compute shader.
@@ -741,9 +744,7 @@ void SampleDrawnTextureTest::initPrograms (SourceCollections& programCollection)
 	}
 
 	computeSrc
-	<< "    for (int x = 0; x < " << WIDTH / blockSize.x() << "; x++)\n"
-	<< "        for (int y = 0; y < " << HEIGHT / blockSize.y() << "; y++)\n"
-	<< "            imageStore(img, ivec2(x, y), color);\n"
+	<< "    imageStore(img, ivec2(gl_GlobalInvocationID.xy), color);\n"
 	<< "}\n";
 
 	// Generate the vertex shader.

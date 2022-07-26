@@ -57,7 +57,7 @@ dEQP-VK.glsl.texture_gather.basic.cube.depth32f.base_level.sparse_level_2
 # is incorrectly disabled when the viewport minDepth is equal to maxDepth.
 #
 dEQP-VK.draw.renderpass.inverted_depth_ranges.nodepthclamp_deltazero
-dEQP-VK.draw.dynamic_rendering.inverted_depth_ranges.nodepthclamp_deltazero
+dEQP-VK.draw.dynamic_rendering.*.inverted_depth_ranges.nodepthclamp_deltazero
 
 
 #

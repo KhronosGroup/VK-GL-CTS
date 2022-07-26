@@ -27,6 +27,7 @@
 #include "vktPipelineImageUtil.hpp"
 #include "vktPipelineVertexUtil.hpp"
 #include "vktPipelineReferenceRenderer.hpp"
+#include "vktAmberTestCase.hpp"
 #include "vktTestCase.hpp"
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
@@ -1697,6 +1698,39 @@ de::MovePtr<tcu::TestCaseGroup> createPrimitiveRestartTests (tcu::TestContext& t
 															pipelineConstructionType,
 															topology,
 															VK_INDEX_TYPE_UINT8_EXT));
+	}
+
+	// Tests that have primitive restart disabled, but have indices with restart index value.
+	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+	{
+		struct
+		{
+			std::string	name;
+			std::vector<std::string> requirements;
+		} tests[] =
+		{
+			{ "line_list", { "VK_EXT_primitive_topology_list_restart" } },
+			{ "line_list_with_adjacency", { "Features.geometryShader", "VK_EXT_primitive_topology_list_restart" } },
+			{ "line_strip", {} },
+			{ "line_strip_with_adjacency", {"Features.geometryShader"} },
+			{ "patch_list", { "VK_EXT_primitive_topology_list_restart", "Features.tessellationShader" } },
+			{ "point_list", { "VK_EXT_primitive_topology_list_restart" } },
+			{ "triangle_fan", {} },
+			{ "triangle_list", { "VK_EXT_primitive_topology_list_restart" } },
+			{ "triangle_list_with_adjacency", { "Features.geometryShader", "VK_EXT_primitive_topology_list_restart" } },
+			{ "triangle_strip", {} },
+			{ "triangle_strip_with_adjacency", {"Features.geometryShader"} }
+		};
+
+		const std::string dataDir = "pipeline/input_assembly/primitive_restart";
+
+		for (auto& test : tests)
+		{
+			std::string testName = "restart_disabled_" + test.name;
+			indexUint16Tests->addChild(cts_amber::createAmberTestCase(testCtx, testName.c_str(), "", dataDir.c_str(), testName + "_uint16.amber", test.requirements));
+			test.requirements.push_back("VK_EXT_index_type_uint8");
+			indexUint8Tests->addChild(cts_amber::createAmberTestCase(testCtx, testName.c_str(), "", dataDir.c_str(), testName + "_uint8.amber", test.requirements));
+		}
 	}
 
 	primitiveRestartTests->addChild(indexUint16Tests.release());

@@ -1457,7 +1457,7 @@ public:
 #ifndef CTS_USES_VULKANSC
 		, m_deviceDriver	(de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), SingletonDevice::getInstance(), *m_device)))
 #else
-		, m_deviceDriver	(de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), SingletonDevice::getInstance(), *m_device, context.getTestContext().getCommandLine(), context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_device)))
+		, m_deviceDriver	(de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), SingletonDevice::getInstance(), *m_device, context.getTestContext().getCommandLine(), context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_device)))
 #endif // CTS_USES_VULKANSC
 		, m_allocator		(new SimpleAllocator(*m_deviceDriver, *m_device,
 												 getPhysicalDeviceMemoryProperties(SingletonDevice::getDriver(),
@@ -1889,7 +1889,7 @@ public:
 #ifndef CTS_USES_VULKANSC
 		, m_deviceDriver(de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), SingletonDevice::getInstance(), *m_device)))
 #else
-		, m_deviceDriver(de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), SingletonDevice::getInstance(), *m_device, context.getTestContext().getCommandLine(), context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_device)))
+		, m_deviceDriver(de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), SingletonDevice::getInstance(), *m_device, context.getTestContext().getCommandLine(), context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_device)))
 #endif // CTS_USES_VULKANSC
 		, m_allocator		(new SimpleAllocator(*m_deviceDriver, *m_device,
 												 getPhysicalDeviceMemoryProperties(SingletonDevice::getDriver(),
