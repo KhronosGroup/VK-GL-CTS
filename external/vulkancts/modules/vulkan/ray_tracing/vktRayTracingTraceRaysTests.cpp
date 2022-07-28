@@ -179,8 +179,11 @@ std::tuple<bool, VkQueue, deUint32> getQueueFamilyIndexAtExact (const DeviceInte
 		found = true;
 		vkd.getDeviceQueue(device, queueFamilyIndex, queueIndex, &queue);
 	}
-
+#ifdef __cpp_lib_constexpr_tuple
 	return { found, queue, queueFamilyIndex };
+#else
+    return std::tuple<bool, VkQueue, deUint32>(found, queue, queueFamilyIndex);
+#endif
 }
 
 typedef std::vector<de::SharedPtr<BottomLevelAccelerationStructure>>	BlasVec;
