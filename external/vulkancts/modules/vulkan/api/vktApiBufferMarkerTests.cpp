@@ -425,7 +425,7 @@ void computeMemoryDepBarrier(MemoryDepMethod			method,
 	if (owner == MEMORY_DEP_OWNER_MARKER)
 	{
 		*memoryDepAccess = VK_ACCESS_TRANSFER_WRITE_BIT;
-		*executionScope  = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		*executionScope  = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT;
 	}
 	else
 	{
