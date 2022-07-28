@@ -96,6 +96,7 @@ static const VkConformanceVersion knownConformanceVersions[] =
 	makeConformanceVersion(1, 1, 3, 1),
 	makeConformanceVersion(1, 1, 3, 0),
 #else
+	makeConformanceVersion(1, 0, 1, 0),
 	makeConformanceVersion(1, 0, 0, 0),
 #endif // CTS_USES_VULKANSC
 };
