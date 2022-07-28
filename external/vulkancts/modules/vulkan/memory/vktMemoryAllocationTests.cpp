@@ -213,7 +213,10 @@ void BaseAllocateTestInstance::createTestDevice (void)
 
 	std::vector<const char*>						deviceExtensions;
 	if (usePageable)
+	{
+		deviceExtensions.push_back("VK_EXT_memory_priority");
 		deviceExtensions.push_back("VK_EXT_pageable_device_local_memory");
+	}
 
 	VkDeviceQueueCreateInfo							queueInfo		=
 	{
