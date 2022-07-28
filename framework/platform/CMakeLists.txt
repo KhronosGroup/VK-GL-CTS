@@ -23,7 +23,7 @@ if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 
 		set(TCUTIL_PLATFORM_SRCS
 			lnx/tcuLnx.cpp
-			lnx/tcuLnx.cpp
+			lnx/tcuLnx.hpp
 			lnx/tcuLnxPlatform.cpp
 			lnx/tcuLnxPlatform.hpp
 			lnx/tcuLnxEglPlatform.hpp
@@ -73,13 +73,35 @@ if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 			add_definitions(-DDEQP_SUPPORT_WAYLAND=1)
 			include_directories(lnx/wayland)
 
+			pkg_get_variable(WAYLAND_PROTOCOLS_DIR wayland-protocols pkgdatadir)
+			pkg_get_variable(WAYLAND_SCANNER wayland-scanner wayland_scanner)
+
+			set(DEQP_XDG_SHELL_PROTOCOL ${WAYLAND_PROTOCOLS_DIR}/stable/xdg-shell/xdg-shell.xml)
+			set(DEQP_XDG_SHELL_GEN_OUTPUTS_DIR ${PROJECT_BINARY_DIR}/framework/platform)
+			set(DEQP_XDG_SHELL_OUTPUTS
+				${DEQP_XDG_SHELL_GEN_OUTPUTS_DIR}/xdg-shell.c
+				${DEQP_XDG_SHELL_GEN_OUTPUTS_DIR}/xdg-shell.h)
+
+			add_custom_command(
+				COMMAND ${WAYLAND_SCANNER} ARGS client-header ${DEQP_XDG_SHELL_PROTOCOL} xdg-shell.h
+				COMMAND ${WAYLAND_SCANNER} ARGS public-code ${DEQP_XDG_SHELL_PROTOCOL} xdg-shell.c
+				DEPENDS ${DEQP_XDG_SHELL_PROTOCOL}
+				OUTPUT ${DEQP_XDG_SHELL_OUTPUTS})
+
+			add_custom_target(
+				deqp-xdg-shell ALL
+				DEPENDS ${DEQP_XDG_SHELL_OUTPUTS})
+
 			set(TCUTIL_PLATFORM_SRCS
 				${TCUTIL_PLATFORM_SRCS}
 				lnx/wayland/tcuLnxWayland.hpp
 				lnx/wayland/tcuLnxWayland.cpp
 				lnx/wayland/tcuLnxWaylandEglDisplayFactory.cpp
 				lnx/wayland/tcuLnxWaylandEglDisplayFactory.hpp
+				${DEQP_XDG_SHELL_GEN_OUTPUTS_DIR}/xdg-shell.c
+				${DEQP_XDG_SHELL_GEN_OUTPUTS_DIR}/xdg-shell.h
 				)
+			include_directories(${DEQP_XDG_SHELL_GEN_OUTPUTS_DIR})
 			include_directories(wayland)
 		endif()
 
@@ -150,7 +172,9 @@ endif ()
 include_directories(${PROJECT_BINARY_DIR}/external/vulkancts/framework/vulkan)
 
 add_library(tcutil-platform STATIC ${TCUTIL_PLATFORM_SRCS})
-
+if (DEQP_USE_WAYLAND)
+	add_dependencies(tcutil-platform deqp-xdg-shell)
+endif()
 
 # Add vkutil to the deps before tcutil so that it picks up the c++11 dependencies
 target_link_libraries(tcutil-platform vkutil)
