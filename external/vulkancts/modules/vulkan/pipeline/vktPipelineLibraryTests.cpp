@@ -822,8 +822,6 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 	const de::MovePtr<BufferWithMemory>		paletteBuffer			= makePaletteBuffer();
 	const Move<VkDescriptorPool>			descriptorPool			= createDescriptorPool();
 
-	const Move<VkDescriptorSetLayout>		descriptorSetLayoutBlank	= createDescriptorSetLayout(DE_NULL, DE_NULL);
-
 	const Move<VkDescriptorSetLayout>		descriptorSetLayoutVert	= createDescriptorSetLayout(**zCoordBuffer, DE_NULL);
 	const Move<VkDescriptorSetLayout>		descriptorSetLayoutFrag	= createDescriptorSetLayout(DE_NULL, **paletteBuffer);
 	const Move<VkDescriptorSetLayout>		descriptorSetLayoutBoth	= createDescriptorSetLayout(**zCoordBuffer, **paletteBuffer);
@@ -832,19 +830,19 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 
 	VkDescriptorSet vecDescriptorSetBoth[2] = { *descriptorSetVert, *descriptorSetFrag };
 
-	VkDescriptorSetLayout vecLayoutVert[2] = { *descriptorSetLayoutVert, *descriptorSetLayoutBlank };
-	VkDescriptorSetLayout vecLayoutFrag[2] = { *descriptorSetLayoutBlank, *descriptorSetLayoutFrag };
+	VkDescriptorSetLayout vecLayoutVert[2] = { *descriptorSetLayoutVert, DE_NULL };
+	VkDescriptorSetLayout vecLayoutFrag[2] = { DE_NULL, *descriptorSetLayoutFrag };
 	VkDescriptorSetLayout vecLayoutBoth[2] = { *descriptorSetLayoutVert, *descriptorSetLayoutFrag };
 
 	VkPipelineLayoutCreateFlags pipelineLayoutCreateFlag = 0u;
 	if (m_data.delayedShaderCreate || (m_data.pipelineTreeConfiguration.size() > 1))
 		pipelineLayoutCreateFlag = VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT;
 
-	const Move<VkPipelineLayout>			pipelineLayoutVert		= makePipelineLayout(vk, device, 2, vecLayoutVert, pipelineLayoutCreateFlag);
-	const Move<VkPipelineLayout>			pipelineLayoutFrag		= makePipelineLayout(vk, device, 2, vecLayoutFrag, pipelineLayoutCreateFlag);
-	const Move<VkPipelineLayout>			pipelineLayoutSame		= makePipelineLayout(vk, device, 2, vecLayoutBoth, pipelineLayoutCreateFlag);
 	const Move<VkCommandPool>				cmdPool					= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
 	const Move<VkCommandBuffer>				cmdBuffer				= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	const Move<VkPipelineLayout>			pipelineLayoutSame		= makePipelineLayout(vk, device, 2, vecLayoutBoth, pipelineLayoutCreateFlag);
+	Move<VkPipelineLayout>					pipelineLayoutVert;
+	Move<VkPipelineLayout>					pipelineLayoutFrag;
 	Move<VkPipeline>						rootPipeline;
 
 	// Go through tree nodes and create library for each up to root
@@ -854,9 +852,23 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 		const bool								buildLibrary						= (nodeNdx != 0);
 		const VkPipelineCreateFlags				pipelineCreateFlags					= calcPipelineCreateFlags(optimize, buildLibrary);
 		const VkGraphicsPipelineLibraryFlagsEXT	subtreeGraphicsPipelineLibraryFlags	= node.subtreeGraphicsPipelineLibraryFlags | node.graphicsPipelineLibraryFlags;
-		bool									samePipelineLayout					= samePipelineFlags == (samePipelineFlags & subtreeGraphicsPipelineLibraryFlags);
-		bool									vertPipelineLayout					= vertPipelineFlags == (vertPipelineFlags & subtreeGraphicsPipelineLibraryFlags);
-		bool									fragPipelineLayout					= fragPipelineFlags == (fragPipelineFlags & subtreeGraphicsPipelineLibraryFlags);
+		const bool								samePipelineLayout					= samePipelineFlags == (samePipelineFlags & subtreeGraphicsPipelineLibraryFlags);
+		const bool								vertPipelineLayout					= vertPipelineFlags == (vertPipelineFlags & subtreeGraphicsPipelineLibraryFlags);
+		const bool								fragPipelineLayout					= fragPipelineFlags == (fragPipelineFlags & subtreeGraphicsPipelineLibraryFlags);
+
+		if (samePipelineLayout)
+			; // pipelineLayoutSame is always built before.
+		else if (vertPipelineLayout)
+		{
+			if (!pipelineLayoutVert)
+				pipelineLayoutVert = makePipelineLayout(vk, device, 2, vecLayoutVert, pipelineLayoutCreateFlag);
+		}
+		else if (fragPipelineLayout)
+		{
+			if (!pipelineLayoutFrag)
+				pipelineLayoutFrag = makePipelineLayout(vk, device, 2, vecLayoutFrag, pipelineLayoutCreateFlag);
+		}
+
 		const VkPipelineLayout					pipelineLayout						= samePipelineLayout ? *pipelineLayoutSame
 																					: vertPipelineLayout ? *pipelineLayoutVert
 																					: fragPipelineLayout ? *pipelineLayoutFrag
@@ -1170,7 +1182,7 @@ void PipelineLibraryTestCase::initPrograms (SourceCollections& programCollection
 {
 	std::string	vert	=
 		"#version 450\n"
-		"layout(location = 0) in vec4 in_position;"
+		"layout(location = 0) in vec4 in_position;\n"
 		"layout(set = 0, binding = 0) uniform buf\n"
 		"{\n"
 		"  vec4 z_coord;\n"
