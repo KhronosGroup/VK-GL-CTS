@@ -864,6 +864,9 @@ TestStatus	BufferMemoryRequirementsInstance::iterate (void)
 							break;
 						}
 					}
+
+					if (m_context.getTestContext().getWatchDog())
+						qpWatchDog_reset(m_context.getTestContext().getWatchDog());
 				}
 				else
 				{
