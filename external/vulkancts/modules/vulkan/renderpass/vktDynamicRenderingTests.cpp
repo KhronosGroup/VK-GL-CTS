@@ -121,6 +121,7 @@ enum TestAttachmentType
 	TEST_ATTACHMENT_DEPTH_ATTACHMENT,
 	TEST_ATTACHMENT_STENCIL_ATTACHMENT,
 	TEST_ATTACHMENT_MULTIPLE_COLOR,
+	TEST_ATTACHMENT_NONE,
 	TEST_ATTACHMENT_ALL,
 	TEST_ATTACHMENT_LAST
 };
@@ -819,6 +820,12 @@ tcu::TestStatus DynamicRenderingTestInstance::iterate (void)
 					attachmentBindInfos.push_back(*m_colorAttachmentView[ndx]);
 
 				colorAtchCount			= COLOR_ATTACHMENTS_NUMBER;
+				imagesFormat.depth		= VK_FORMAT_UNDEFINED;
+				imagesFormat.stencil	= VK_FORMAT_UNDEFINED;
+				break;
+			}
+			case TEST_ATTACHMENT_NONE:
+			{
 				imagesFormat.depth		= VK_FORMAT_UNDEFINED;
 				imagesFormat.stencil	= VK_FORMAT_UNDEFINED;
 				break;
