@@ -36,6 +36,8 @@ set(DEQP_VK_MESH_SHADER_SRCS
 	vktMeshShaderConditionalRenderingTestsEXT.hpp
 	vktMeshShaderProvokingVertexTestsEXT.cpp
 	vktMeshShaderProvokingVertexTestsEXT.hpp
+	vktMeshShaderQueryTestsEXT.cpp
+	vktMeshShaderQueryTestsEXT.hpp
 	vktMeshShaderUtil.cpp
 	vktMeshShaderUtil.hpp
 	)
