@@ -218,10 +218,12 @@ void NegativeShaderApiTests::init (void)
 			expectError(GL_INVALID_OPERATION);
 			m_log << TestLog::EndSection;
 
-			m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if a shader of the same type as shader is already attached to program.");
-			glAttachShader(program, shader2);
-			expectError(GL_INVALID_OPERATION);
-			m_log << TestLog::EndSection;
+			if (glu::isContextTypeES(m_context.getRenderContext().getType())){
+				m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if a shader of the same type as shader is already attached to program.");
+				glAttachShader(program, shader2);
+				expectError(GL_INVALID_OPERATION);
+				m_log << TestLog::EndSection;
+			}
 
 			glDeleteProgram(program);
 			glDeleteShader(shader1);
