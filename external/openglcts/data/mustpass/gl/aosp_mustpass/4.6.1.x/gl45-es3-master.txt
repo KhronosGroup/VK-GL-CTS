@@ -1186,7 +1186,6 @@ dEQP-GL45-ES3.functional.negative_api.shader.link_program
 dEQP-GL45-ES3.functional.negative_api.shader.use_program
 dEQP-GL45-ES3.functional.negative_api.shader.delete_program
 dEQP-GL45-ES3.functional.negative_api.shader.validate_program
-dEQP-GL45-ES3.functional.negative_api.shader.get_program_binary
 dEQP-GL45-ES3.functional.negative_api.shader.program_binary
 dEQP-GL45-ES3.functional.negative_api.shader.program_parameteri
 dEQP-GL45-ES3.functional.negative_api.shader.gen_samplers
