@@ -5,9 +5,7 @@
 
 const vk::VkPhysicalDeviceTransformFeedbackPropertiesEXT&			getTransformFeedbackPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceMultiviewProperties&						getMultiviewProperties						(void) const;
-const vk::VkPhysicalDeviceMemoryProperties2&						getMemoryProperties2						(void) const;
 const vk::VkPhysicalDevicePipelineRobustnessPropertiesEXT&			getPipelineRobustnessPropertiesEXT			(void) const;
-const vk::VkPhysicalDeviceGroupProperties&							getGroupProperties							(void) const;
 const vk::VkPhysicalDeviceIDProperties&								getIDProperties								(void) const;
 const vk::VkPhysicalDevicePushDescriptorPropertiesKHR&				getPushDescriptorProperties					(void) const;
 const vk::VkPhysicalDeviceMultiviewPerViewAttributesPropertiesNVX&	getMultiviewPerViewAttributesPropertiesX	(void) const;
@@ -40,8 +38,6 @@ const vk::VkPhysicalDeviceFragmentDensityMapPropertiesEXT&			getFragmentDensityM
 const vk::VkPhysicalDeviceSubgroupSizeControlProperties&			getSubgroupSizeControlProperties			(void) const;
 const vk::VkPhysicalDeviceFragmentShadingRatePropertiesKHR&			getFragmentShadingRateProperties			(void) const;
 const vk::VkPhysicalDeviceShaderCoreProperties2AMD&					getShaderCoreProperties2AMD					(void) const;
-const vk::VkPhysicalDeviceMemoryBudgetPropertiesEXT&				getMemoryBudgetPropertiesEXT				(void) const;
-const vk::VkPhysicalDeviceToolProperties&							getToolProperties							(void) const;
 const vk::VkPhysicalDeviceCooperativeMatrixPropertiesNV&			getCooperativeMatrixProperties				(void) const;
 const vk::VkPhysicalDeviceProvokingVertexPropertiesEXT&				getProvokingVertexPropertiesEXT				(void) const;
 const vk::VkPhysicalDeviceLineRasterizationPropertiesEXT&			getLineRasterizationPropertiesEXT			(void) const;
