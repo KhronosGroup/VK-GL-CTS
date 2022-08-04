@@ -87,9 +87,7 @@ public:
 		log << tcu::TestLog::Message << "deviceVersion: " << deviceVersion << tcu::TestLog::EndMessage;
 		log << tcu::TestLog::Message << "usedApiVersion: " << usedApiVersion << tcu::TestLog::EndMessage;
 
-		if (instanceVersion.majorNum > maxVulkanVersion.majorNum || instanceVersion.minorNum > maxVulkanVersion.minorNum)
-			return tcu::TestStatus::fail(de::toString("This version of CTS does not support a Vulkan instance with version ") + instanceVersionString);
-		else if (deviceVersion.majorNum > maxVulkanVersion.majorNum || deviceVersion.minorNum > maxVulkanVersion.minorNum)
+		if (deviceVersion.majorNum > maxVulkanVersion.majorNum || deviceVersion.minorNum > maxVulkanVersion.minorNum)
 			return tcu::TestStatus::fail(de::toString("This version of CTS does not support Vulkan device version ") + deviceVersionString);
 		else
 			return tcu::TestStatus::pass(usedApiVersionString);
