@@ -3080,20 +3080,37 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 	const deUint32						devGroupIdx				= cmdLine.getVKDeviceGroupId() - 1;
 	const deUint32						deviceIdx				= vk::chooseDeviceIndex(context.getInstanceInterface(), instance, cmdLine);
 	const float							queuePriority			= 1.0f;
+	const char*							deviceGroupExtName		= "VK_KHR_device_group";
 	VkPhysicalDeviceMemoryProperties	memProps;
 	VkPeerMemoryFeatureFlags*			peerMemFeatures;
 	deUint8								buffer					[sizeof(VkPeerMemoryFeatureFlags) + GUARD_SIZE];
-	deUint32							numPhysicalDevices		= 0;
 	deUint32							queueFamilyIndex		= 0;
 
 	const vector<VkPhysicalDeviceGroupProperties>		deviceGroupProps = enumeratePhysicalDeviceGroups(vki, instance);
 	std::vector<const char*>							deviceExtensions;
-#ifndef CTS_USES_VULKANSC
-	deviceExtensions.push_back("VK_KHR_device_group");
-#endif // CTS_USES_VULKANSC
 
-	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_device_group"))
-		deviceExtensions.push_back("VK_KHR_device_group");
+	if (static_cast<size_t>(devGroupIdx) >= deviceGroupProps.size())
+	{
+		std::ostringstream msg;
+		msg << "Chosen device group index " << devGroupIdx << " too big: found " << deviceGroupProps.size() << " device groups";
+		TCU_THROW(NotSupportedError, msg.str());
+	}
+
+	const auto numPhysicalDevices = deviceGroupProps[devGroupIdx].physicalDeviceCount;
+
+	if (deviceIdx >= numPhysicalDevices)
+	{
+		std::ostringstream msg;
+		msg << "Chosen device index " << deviceIdx << " too big: chosen device group " << devGroupIdx << " has " << numPhysicalDevices << " devices";
+		TCU_THROW(NotSupportedError, msg.str());
+	}
+
+	// Need at least 2 devices for peer memory features.
+	if (numPhysicalDevices < 2)
+		TCU_THROW(NotSupportedError, "Need a device group with at least 2 physical devices");
+
+	if (!isCoreDeviceExtension(context.getUsedApiVersion(), deviceGroupExtName))
+		deviceExtensions.push_back(deviceGroupExtName);
 
 	const std::vector<VkQueueFamilyProperties>	queueProps		= getPhysicalDeviceQueueFamilyProperties(vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx]);
 	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
@@ -3110,11 +3127,6 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 		1u,													//queueCount;
 		&queuePriority,										//pQueuePriorities;
 	};
-
-	// Need atleast 2 devices for peer memory features
-	numPhysicalDevices = deviceGroupProps[devGroupIdx].physicalDeviceCount;
-	if (numPhysicalDevices < 2)
-		TCU_THROW(NotSupportedError, "Need a device Group with at least 2 physical devices.");
 
 	// Create device groups
 	VkDeviceGroupDeviceCreateInfo							deviceGroupInfo =
@@ -3173,7 +3185,7 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 		0,																//layerCount;
 		DE_NULL,														//ppEnabledLayerNames;
 		deUint32(deviceExtensions.size()),								//extensionCount;
-		(deviceExtensions.empty() ? DE_NULL : &deviceExtensions[0]),	//ppEnabledExtensionNames;
+		de::dataOrNull(deviceExtensions),								//ppEnabledExtensionNames;
 		DE_NULL,														//pEnabledFeatures;
 	};
 
