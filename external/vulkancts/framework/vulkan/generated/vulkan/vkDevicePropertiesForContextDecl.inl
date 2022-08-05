@@ -26,6 +26,7 @@ const vk::VkPhysicalDeviceFragmentShadingRatePropertiesKHR&			getFragmentShading
 const vk::VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV&		getFragmentShadingRateEnumsProperties		(void) const;
 const vk::VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT&		getGraphicsPipelineLibraryPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceIDProperties&								getIDProperties								(void) const;
+const vk::VkPhysicalDeviceImageProcessingPropertiesQCOM&			getImageProcessingPropertiesQCOM			(void) const;
 const vk::VkPhysicalDeviceInlineUniformBlockProperties&				getInlineUniformBlockProperties				(void) const;
 const vk::VkPhysicalDeviceLineRasterizationPropertiesEXT&			getLineRasterizationPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceMaintenance3Properties&					getMaintenance3Properties					(void) const;
@@ -35,6 +36,7 @@ const vk::VkPhysicalDeviceMultiviewProperties&						getMultiviewProperties						
 const vk::VkPhysicalDeviceMultiviewPerViewAttributesPropertiesNVX&	getMultiviewPerViewAttributesPropertiesX	(void) const;
 const vk::VkPhysicalDeviceMultiDrawPropertiesEXT&					getMultiDrawPropertiesEXT					(void) const;
 const vk::VkPhysicalDevicePerformanceQueryPropertiesKHR&			getPerformanceQueryProperties				(void) const;
+const vk::VkPhysicalDevicePipelineRobustnessPropertiesEXT&			getPipelineRobustnessPropertiesEXT			(void) const;
 const vk::VkPhysicalDevicePointClippingProperties&					getPointClippingProperties					(void) const;
 const vk::VkPhysicalDevicePortabilitySubsetPropertiesKHR&			getPortabilitySubsetProperties				(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryProperties&				getProtectedMemoryProperties				(void) const;

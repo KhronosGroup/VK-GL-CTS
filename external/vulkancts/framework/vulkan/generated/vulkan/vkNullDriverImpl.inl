@@ -2756,36 +2756,31 @@ VKAPI_ATTR VkResult VKAPI_CALL getDrmDisplayEXT (VkPhysicalDevice physicalDevice
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getDescriptorSetLayoutSizeEXT (VkDevice device, VkDescriptorSetLayout layout, VkDeviceSize* pLayoutSizeInBytes)
+VKAPI_ATTR void VKAPI_CALL getDescriptorSetLayoutSizeEXT (VkDevice device, VkDescriptorSetLayout layout, VkDeviceSize* pLayoutSizeInBytes)
 {
 	DE_UNREF(device);
 	DE_UNREF(layout);
 	DE_UNREF(pLayoutSizeInBytes);
-	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getDescriptorSetLayoutBindingOffsetEXT (VkDevice device, VkDescriptorSetLayout layout, uint32_t binding, VkDeviceSize* pOffset)
+VKAPI_ATTR void VKAPI_CALL getDescriptorSetLayoutBindingOffsetEXT (VkDevice device, VkDescriptorSetLayout layout, uint32_t binding, VkDeviceSize* pOffset)
 {
 	DE_UNREF(device);
 	DE_UNREF(layout);
 	DE_UNREF(binding);
 	DE_UNREF(pOffset);
-	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getDescriptorEXT (VkDevice device, const VkDescriptorGetInfoEXT* pDescriptorInfo, void* pDescriptor)
+VKAPI_ATTR void VKAPI_CALL getDescriptorEXT (VkDevice device, const VkDescriptorGetInfoEXT* pDescriptorInfo, void* pDescriptor)
 {
 	DE_UNREF(device);
 	DE_UNREF(pDescriptorInfo);
 	DE_UNREF(pDescriptor);
-	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdBindDescriptorBuffersEXT (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, uint32_t firstBuffer, uint32_t bufferCount, const VkDescriptorBufferBindingInfoEXT* pBindingInfos)
+VKAPI_ATTR void VKAPI_CALL cmdBindDescriptorBuffersEXT (VkCommandBuffer commandBuffer, uint32_t bufferCount, const VkDescriptorBufferBindingInfoEXT* pBindingInfos)
 {
 	DE_UNREF(commandBuffer);
-	DE_UNREF(pipelineBindPoint);
-	DE_UNREF(firstBuffer);
 	DE_UNREF(bufferCount);
 	DE_UNREF(pBindingInfos);
 }
@@ -2997,6 +2992,23 @@ VKAPI_ATTR void VKAPI_CALL getShaderModuleCreateInfoIdentifierEXT (VkDevice devi
 	DE_UNREF(device);
 	DE_UNREF(pCreateInfo);
 	DE_UNREF(pIdentifier);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getFramebufferTilePropertiesQCOM (VkDevice device, VkFramebuffer framebuffer, uint32_t* pPropertiesCount, VkTilePropertiesQCOM* pProperties)
+{
+	DE_UNREF(device);
+	DE_UNREF(framebuffer);
+	DE_UNREF(pPropertiesCount);
+	DE_UNREF(pProperties);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getDynamicRenderingTilePropertiesQCOM (VkDevice device, const VkRenderingInfo* pRenderingInfo, VkTilePropertiesQCOM* pProperties)
+{
+	DE_UNREF(device);
+	DE_UNREF(pRenderingInfo);
+	DE_UNREF(pProperties);
+	return VK_SUCCESS;
 }
 
 VKAPI_ATTR void VKAPI_CALL cmdBuildAccelerationStructuresKHR (VkCommandBuffer commandBuffer, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos)
@@ -3948,6 +3960,8 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetDescriptorSetHostMappingVALVE,							getDescriptorSetHostMappingVALVE),
 	VK_NULL_FUNC_ENTRY(vkGetShaderModuleIdentifierEXT,								getShaderModuleIdentifierEXT),
 	VK_NULL_FUNC_ENTRY(vkGetShaderModuleCreateInfoIdentifierEXT,					getShaderModuleCreateInfoIdentifierEXT),
+	VK_NULL_FUNC_ENTRY(vkGetFramebufferTilePropertiesQCOM,							getFramebufferTilePropertiesQCOM),
+	VK_NULL_FUNC_ENTRY(vkGetDynamicRenderingTilePropertiesQCOM,						getDynamicRenderingTilePropertiesQCOM),
 	VK_NULL_FUNC_ENTRY(vkCreateAccelerationStructureKHR,							createAccelerationStructureKHR),
 	VK_NULL_FUNC_ENTRY(vkDestroyAccelerationStructureKHR,							destroyAccelerationStructureKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdBuildAccelerationStructuresKHR,							cmdBuildAccelerationStructuresKHR),

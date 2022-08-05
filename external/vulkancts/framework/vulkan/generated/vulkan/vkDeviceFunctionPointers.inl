@@ -340,6 +340,8 @@ GetDescriptorSetLayoutHostMappingInfoVALVEFunc				getDescriptorSetLayoutHostMapp
 GetDescriptorSetHostMappingVALVEFunc						getDescriptorSetHostMappingVALVE;
 GetShaderModuleIdentifierEXTFunc							getShaderModuleIdentifierEXT;
 GetShaderModuleCreateInfoIdentifierEXTFunc					getShaderModuleCreateInfoIdentifierEXT;
+GetFramebufferTilePropertiesQCOMFunc						getFramebufferTilePropertiesQCOM;
+GetDynamicRenderingTilePropertiesQCOMFunc					getDynamicRenderingTilePropertiesQCOM;
 CreateAccelerationStructureKHRFunc							createAccelerationStructureKHR;
 DestroyAccelerationStructureKHRFunc							destroyAccelerationStructureKHR;
 CmdBuildAccelerationStructuresKHRFunc						cmdBuildAccelerationStructuresKHR;

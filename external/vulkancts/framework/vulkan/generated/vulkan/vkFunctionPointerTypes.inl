@@ -451,10 +451,10 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreatePrivateDataSlotEXTFunc)							
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyPrivateDataSlotEXTFunc)											(VkDevice device, VkPrivateDataSlot privateDataSlot, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* SetPrivateDataEXTFunc)													(VkDevice device, VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlot privateDataSlot, uint64_t data);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetPrivateDataEXTFunc)													(VkDevice device, VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlot privateDataSlot, uint64_t* pData);
-typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDescriptorSetLayoutSizeEXTFunc)										(VkDevice device, VkDescriptorSetLayout layout, VkDeviceSize* pLayoutSizeInBytes);
-typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDescriptorSetLayoutBindingOffsetEXTFunc)							(VkDevice device, VkDescriptorSetLayout layout, uint32_t binding, VkDeviceSize* pOffset);
-typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDescriptorEXTFunc)													(VkDevice device, const VkDescriptorGetInfoEXT* pDescriptorInfo, void* pDescriptor);
-typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindDescriptorBuffersEXTFunc)										(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, uint32_t firstBuffer, uint32_t bufferCount, const VkDescriptorBufferBindingInfoEXT* pBindingInfos);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetDescriptorSetLayoutSizeEXTFunc)										(VkDevice device, VkDescriptorSetLayout layout, VkDeviceSize* pLayoutSizeInBytes);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetDescriptorSetLayoutBindingOffsetEXTFunc)							(VkDevice device, VkDescriptorSetLayout layout, uint32_t binding, VkDeviceSize* pOffset);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetDescriptorEXTFunc)													(VkDevice device, const VkDescriptorGetInfoEXT* pDescriptorInfo, void* pDescriptor);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindDescriptorBuffersEXTFunc)										(VkCommandBuffer commandBuffer, uint32_t bufferCount, const VkDescriptorBufferBindingInfoEXT* pBindingInfos);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetDescriptorBufferOffsetsEXTFunc)									(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t firstSet, uint32_t setCount, const uint32_t* pBufferIndices, const VkDeviceSize* pOffsets);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindDescriptorBufferEmbeddedSamplersEXTFunc)						(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t set);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetBufferOpaqueCaptureDescriptorDataEXTFunc)							(VkDevice device, const VkBufferCaptureDescriptorDataInfoEXT* pInfo, void* pData);
@@ -485,6 +485,8 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* GetDescriptorSetLayoutHostMappingInfoVA
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetDescriptorSetHostMappingVALVEFunc)									(VkDevice device, VkDescriptorSet descriptorSet, void** ppData);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetShaderModuleIdentifierEXTFunc)										(VkDevice device, VkShaderModule shaderModule, VkShaderModuleIdentifierEXT* pIdentifier);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetShaderModuleCreateInfoIdentifierEXTFunc)							(VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, VkShaderModuleIdentifierEXT* pIdentifier);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetFramebufferTilePropertiesQCOMFunc)									(VkDevice device, VkFramebuffer framebuffer, uint32_t* pPropertiesCount, VkTilePropertiesQCOM* pProperties);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDynamicRenderingTilePropertiesQCOMFunc)								(VkDevice device, const VkRenderingInfo* pRenderingInfo, VkTilePropertiesQCOM* pProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateAccelerationStructureKHRFunc)									(VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyAccelerationStructureKHRFunc)									(VkDevice device, VkAccelerationStructureKHR accelerationStructure, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBuildAccelerationStructuresKHRFunc)									(VkCommandBuffer commandBuffer, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos);

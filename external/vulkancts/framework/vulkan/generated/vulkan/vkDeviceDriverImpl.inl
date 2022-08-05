@@ -1544,24 +1544,24 @@ void DeviceDriver::destroyIndirectCommandsLayoutNV (VkDevice device, VkIndirectC
 	m_vk.destroyIndirectCommandsLayoutNV(device, indirectCommandsLayout, pAllocator);
 }
 
-VkResult DeviceDriver::getDescriptorSetLayoutSizeEXT (VkDevice device, VkDescriptorSetLayout layout, VkDeviceSize* pLayoutSizeInBytes) const
+void DeviceDriver::getDescriptorSetLayoutSizeEXT (VkDevice device, VkDescriptorSetLayout layout, VkDeviceSize* pLayoutSizeInBytes) const
 {
-	return m_vk.getDescriptorSetLayoutSizeEXT(device, layout, pLayoutSizeInBytes);
+	m_vk.getDescriptorSetLayoutSizeEXT(device, layout, pLayoutSizeInBytes);
 }
 
-VkResult DeviceDriver::getDescriptorSetLayoutBindingOffsetEXT (VkDevice device, VkDescriptorSetLayout layout, uint32_t binding, VkDeviceSize* pOffset) const
+void DeviceDriver::getDescriptorSetLayoutBindingOffsetEXT (VkDevice device, VkDescriptorSetLayout layout, uint32_t binding, VkDeviceSize* pOffset) const
 {
-	return m_vk.getDescriptorSetLayoutBindingOffsetEXT(device, layout, binding, pOffset);
+	m_vk.getDescriptorSetLayoutBindingOffsetEXT(device, layout, binding, pOffset);
 }
 
-VkResult DeviceDriver::getDescriptorEXT (VkDevice device, const VkDescriptorGetInfoEXT* pDescriptorInfo, void* pDescriptor) const
+void DeviceDriver::getDescriptorEXT (VkDevice device, const VkDescriptorGetInfoEXT* pDescriptorInfo, void* pDescriptor) const
 {
-	return m_vk.getDescriptorEXT(device, pDescriptorInfo, pDescriptor);
+	m_vk.getDescriptorEXT(device, pDescriptorInfo, pDescriptor);
 }
 
-void DeviceDriver::cmdBindDescriptorBuffersEXT (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, uint32_t firstBuffer, uint32_t bufferCount, const VkDescriptorBufferBindingInfoEXT* pBindingInfos) const
+void DeviceDriver::cmdBindDescriptorBuffersEXT (VkCommandBuffer commandBuffer, uint32_t bufferCount, const VkDescriptorBufferBindingInfoEXT* pBindingInfos) const
 {
-	m_vk.cmdBindDescriptorBuffersEXT(commandBuffer, pipelineBindPoint, firstBuffer, bufferCount, pBindingInfos);
+	m_vk.cmdBindDescriptorBuffersEXT(commandBuffer, bufferCount, pBindingInfos);
 }
 
 void DeviceDriver::cmdSetDescriptorBufferOffsetsEXT (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t firstSet, uint32_t setCount, const uint32_t* pBufferIndices, const VkDeviceSize* pOffsets) const
@@ -1687,6 +1687,16 @@ void DeviceDriver::getShaderModuleIdentifierEXT (VkDevice device, VkShaderModule
 void DeviceDriver::getShaderModuleCreateInfoIdentifierEXT (VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, VkShaderModuleIdentifierEXT* pIdentifier) const
 {
 	m_vk.getShaderModuleCreateInfoIdentifierEXT(device, pCreateInfo, pIdentifier);
+}
+
+VkResult DeviceDriver::getFramebufferTilePropertiesQCOM (VkDevice device, VkFramebuffer framebuffer, uint32_t* pPropertiesCount, VkTilePropertiesQCOM* pProperties) const
+{
+	return m_vk.getFramebufferTilePropertiesQCOM(device, framebuffer, pPropertiesCount, pProperties);
+}
+
+VkResult DeviceDriver::getDynamicRenderingTilePropertiesQCOM (VkDevice device, const VkRenderingInfo* pRenderingInfo, VkTilePropertiesQCOM* pProperties) const
+{
+	return m_vk.getDynamicRenderingTilePropertiesQCOM(device, pRenderingInfo, pProperties);
 }
 
 VkResult DeviceDriver::createAccelerationStructureKHR (VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure) const

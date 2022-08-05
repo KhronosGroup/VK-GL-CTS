@@ -311,10 +311,10 @@ virtual void				cmdExecuteGeneratedCommandsNV							(VkCommandBuffer commandBuff
 virtual void				cmdBindPipelineShaderGroupNV							(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline, uint32_t groupIndex) const = 0;
 virtual VkResult			createIndirectCommandsLayoutNV							(VkDevice device, const VkIndirectCommandsLayoutCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectCommandsLayoutNV* pIndirectCommandsLayout) const = 0;
 virtual void				destroyIndirectCommandsLayoutNV							(VkDevice device, VkIndirectCommandsLayoutNV indirectCommandsLayout, const VkAllocationCallbacks* pAllocator) const = 0;
-virtual VkResult			getDescriptorSetLayoutSizeEXT							(VkDevice device, VkDescriptorSetLayout layout, VkDeviceSize* pLayoutSizeInBytes) const = 0;
-virtual VkResult			getDescriptorSetLayoutBindingOffsetEXT					(VkDevice device, VkDescriptorSetLayout layout, uint32_t binding, VkDeviceSize* pOffset) const = 0;
-virtual VkResult			getDescriptorEXT										(VkDevice device, const VkDescriptorGetInfoEXT* pDescriptorInfo, void* pDescriptor) const = 0;
-virtual void				cmdBindDescriptorBuffersEXT								(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, uint32_t firstBuffer, uint32_t bufferCount, const VkDescriptorBufferBindingInfoEXT* pBindingInfos) const = 0;
+virtual void				getDescriptorSetLayoutSizeEXT							(VkDevice device, VkDescriptorSetLayout layout, VkDeviceSize* pLayoutSizeInBytes) const = 0;
+virtual void				getDescriptorSetLayoutBindingOffsetEXT					(VkDevice device, VkDescriptorSetLayout layout, uint32_t binding, VkDeviceSize* pOffset) const = 0;
+virtual void				getDescriptorEXT										(VkDevice device, const VkDescriptorGetInfoEXT* pDescriptorInfo, void* pDescriptor) const = 0;
+virtual void				cmdBindDescriptorBuffersEXT								(VkCommandBuffer commandBuffer, uint32_t bufferCount, const VkDescriptorBufferBindingInfoEXT* pBindingInfos) const = 0;
 virtual void				cmdSetDescriptorBufferOffsetsEXT						(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t firstSet, uint32_t setCount, const uint32_t* pBufferIndices, const VkDeviceSize* pOffsets) const = 0;
 virtual void				cmdBindDescriptorBufferEmbeddedSamplersEXT				(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t set) const = 0;
 virtual VkResult			getBufferOpaqueCaptureDescriptorDataEXT					(VkDevice device, const VkBufferCaptureDescriptorDataInfoEXT* pInfo, void* pData) const = 0;
@@ -340,6 +340,8 @@ virtual void				getDescriptorSetLayoutHostMappingInfoVALVE				(VkDevice device, 
 virtual void				getDescriptorSetHostMappingVALVE						(VkDevice device, VkDescriptorSet descriptorSet, void** ppData) const = 0;
 virtual void				getShaderModuleIdentifierEXT							(VkDevice device, VkShaderModule shaderModule, VkShaderModuleIdentifierEXT* pIdentifier) const = 0;
 virtual void				getShaderModuleCreateInfoIdentifierEXT					(VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, VkShaderModuleIdentifierEXT* pIdentifier) const = 0;
+virtual VkResult			getFramebufferTilePropertiesQCOM						(VkDevice device, VkFramebuffer framebuffer, uint32_t* pPropertiesCount, VkTilePropertiesQCOM* pProperties) const = 0;
+virtual VkResult			getDynamicRenderingTilePropertiesQCOM					(VkDevice device, const VkRenderingInfo* pRenderingInfo, VkTilePropertiesQCOM* pProperties) const = 0;
 virtual VkResult			createAccelerationStructureKHR							(VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure) const = 0;
 virtual void				destroyAccelerationStructureKHR							(VkDevice device, VkAccelerationStructureKHR accelerationStructure, const VkAllocationCallbacks* pAllocator) const = 0;
 virtual void				cmdBuildAccelerationStructuresKHR						(VkCommandBuffer commandBuffer, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos) const = 0;

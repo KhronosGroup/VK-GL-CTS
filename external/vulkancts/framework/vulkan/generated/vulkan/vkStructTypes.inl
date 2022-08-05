@@ -3864,6 +3864,33 @@ struct VkPhysicalDeviceASTCDecodeFeaturesEXT
 	VkBool32		decodeModeSharedExponent;
 };
 
+struct VkPhysicalDevicePipelineRobustnessFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		pipelineRobustness;
+};
+
+struct VkPhysicalDevicePipelineRobustnessPropertiesEXT
+{
+	VkStructureType							sType;
+	void*									pNext;
+	VkPipelineRobustnessBufferBehaviorEXT	defaultRobustnessStorageBuffers;
+	VkPipelineRobustnessBufferBehaviorEXT	defaultRobustnessUniformBuffers;
+	VkPipelineRobustnessBufferBehaviorEXT	defaultRobustnessVertexInputs;
+	VkPipelineRobustnessImageBehaviorEXT	defaultRobustnessImages;
+};
+
+struct VkPipelineRobustnessCreateInfoEXT
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	VkPipelineRobustnessBufferBehaviorEXT	storageBuffers;
+	VkPipelineRobustnessBufferBehaviorEXT	uniformBuffers;
+	VkPipelineRobustnessBufferBehaviorEXT	vertexInputs;
+	VkPipelineRobustnessImageBehaviorEXT	images;
+};
+
 struct VkConditionalRenderingBeginInfoEXT
 {
 	VkStructureType					sType;
@@ -5717,6 +5744,13 @@ struct VkImageCompressionPropertiesEXT
 	VkImageCompressionFixedRateFlagsEXT	imageCompressionFixedRateFlags;
 };
 
+struct VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		attachmentFeedbackLoopLayout;
+};
+
 struct VkPhysicalDevice4444FormatsFeaturesEXT
 {
 	VkStructureType	sType;
@@ -6074,6 +6108,34 @@ struct VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT
 	VkBool32		imageCompressionControlSwapchain;
 };
 
+struct VkImageViewSampleWeightCreateInfoQCOM
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkOffset2D		filterCenter;
+	VkExtent2D		filterSize;
+	uint32_t		numPhases;
+};
+
+struct VkPhysicalDeviceImageProcessingFeaturesQCOM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		textureSampleWeighted;
+	VkBool32		textureBoxFilter;
+	VkBool32		textureBlockMatch;
+};
+
+struct VkPhysicalDeviceImageProcessingPropertiesQCOM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxWeightFilterPhases;
+	VkExtent2D		maxWeightFilterDimension;
+	VkExtent2D		maxBlockMatchRegion;
+	VkExtent2D		maxBoxFilterBlockSize;
+};
+
 struct VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT
 {
 	VkStructureType	sType;
@@ -6142,6 +6204,37 @@ struct VkShaderModuleIdentifierEXT
 	void*			pNext;
 	uint32_t		identifierSize;
 	uint8_t			identifier[VK_MAX_SHADER_MODULE_IDENTIFIER_SIZE_EXT];
+};
+
+struct VkPhysicalDeviceTilePropertiesFeaturesQCOM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		tileProperties;
+};
+
+struct VkTilePropertiesQCOM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkExtent3D		tileSize;
+	VkExtent2D		apronSize;
+	VkOffset2D		origin;
+};
+
+struct VkPhysicalDeviceAmigoProfilingFeaturesSEC
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		amigoProfiling;
+};
+
+struct VkAmigoProfilingSubmitInfoSEC
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint64_t		firstDrawTimestamp;
+	uint64_t		swapBufferTimestamp;
 };
 
 union VkDeviceOrHostAddressKHR

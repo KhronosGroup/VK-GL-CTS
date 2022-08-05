@@ -1523,6 +1523,21 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceASTCDecodeFeaturesEX
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ASTC_DECODE_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDevicePipelineRobustnessFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_ROBUSTNESS_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDevicePipelineRobustnessPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_ROBUSTNESS_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPipelineRobustnessCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_ROBUSTNESS_CREATE_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkConditionalRenderingBeginInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT;
@@ -2408,6 +2423,11 @@ template<> VkStructureType getStructureType<VkImageCompressionPropertiesEXT> (vo
 	return VK_STRUCTURE_TYPE_IMAGE_COMPRESSION_PROPERTIES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDevice4444FormatsFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT;
@@ -2628,6 +2648,21 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceImageCompressionCont
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkImageViewSampleWeightCreateInfoQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_VIEW_SAMPLE_WEIGHT_CREATE_INFO_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceImageProcessingFeaturesQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_FEATURES_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceImageProcessingPropertiesQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_PROPERTIES_QCOM;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBPASS_MERGE_FEEDBACK_FEATURES_EXT;
@@ -2666,6 +2701,26 @@ template<> VkStructureType getStructureType<VkPipelineShaderStageModuleIdentifie
 template<> VkStructureType getStructureType<VkShaderModuleIdentifierEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_SHADER_MODULE_IDENTIFIER_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceTilePropertiesFeaturesQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_PROPERTIES_FEATURES_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkTilePropertiesQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_TILE_PROPERTIES_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceAmigoProfilingFeaturesSEC> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_AMIGO_PROFILING_FEATURES_SEC;
+}
+
+template<> VkStructureType getStructureType<VkAmigoProfilingSubmitInfoSEC> (void)
+{
+	return VK_STRUCTURE_TYPE_AMIGO_PROFILING_SUBMIT_INFO_SEC;
 }
 
 template<> VkStructureType getStructureType<VkAccelerationStructureGeometryTrianglesDataKHR> (void)

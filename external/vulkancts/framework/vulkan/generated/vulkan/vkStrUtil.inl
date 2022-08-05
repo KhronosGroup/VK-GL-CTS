@@ -62,6 +62,8 @@ const char*	getDebugReportObjectTypeEXTName							(VkDebugReportObjectTypeEXT va
 const char*	getRasterizationOrderAMDName							(VkRasterizationOrderAMD value);
 const char*	getShaderInfoTypeAMDName								(VkShaderInfoTypeAMD value);
 const char*	getValidationCheckEXTName								(VkValidationCheckEXT value);
+const char*	getPipelineRobustnessBufferBehaviorEXTName				(VkPipelineRobustnessBufferBehaviorEXT value);
+const char*	getPipelineRobustnessImageBehaviorEXTName				(VkPipelineRobustnessImageBehaviorEXT value);
 const char*	getDisplayPowerStateEXTName								(VkDisplayPowerStateEXT value);
 const char*	getDeviceEventTypeEXTName								(VkDeviceEventTypeEXT value);
 const char*	getDisplayEventTypeEXTName								(VkDisplayEventTypeEXT value);
@@ -183,6 +185,8 @@ inline tcu::Format::Enum<VkDebugReportObjectTypeEXT>						getDebugReportObjectTy
 inline tcu::Format::Enum<VkRasterizationOrderAMD>							getRasterizationOrderAMDStr							(VkRasterizationOrderAMD value)							{ return tcu::Format::Enum<VkRasterizationOrderAMD>(getRasterizationOrderAMDName, value);													}
 inline tcu::Format::Enum<VkShaderInfoTypeAMD>								getShaderInfoTypeAMDStr								(VkShaderInfoTypeAMD value)								{ return tcu::Format::Enum<VkShaderInfoTypeAMD>(getShaderInfoTypeAMDName, value);															}
 inline tcu::Format::Enum<VkValidationCheckEXT>								getValidationCheckEXTStr							(VkValidationCheckEXT value)							{ return tcu::Format::Enum<VkValidationCheckEXT>(getValidationCheckEXTName, value);															}
+inline tcu::Format::Enum<VkPipelineRobustnessBufferBehaviorEXT>				getPipelineRobustnessBufferBehaviorEXTStr			(VkPipelineRobustnessBufferBehaviorEXT value)			{ return tcu::Format::Enum<VkPipelineRobustnessBufferBehaviorEXT>(getPipelineRobustnessBufferBehaviorEXTName, value);						}
+inline tcu::Format::Enum<VkPipelineRobustnessImageBehaviorEXT>				getPipelineRobustnessImageBehaviorEXTStr			(VkPipelineRobustnessImageBehaviorEXT value)			{ return tcu::Format::Enum<VkPipelineRobustnessImageBehaviorEXT>(getPipelineRobustnessImageBehaviorEXTName, value);							}
 inline tcu::Format::Enum<VkDisplayPowerStateEXT>							getDisplayPowerStateEXTStr							(VkDisplayPowerStateEXT value)							{ return tcu::Format::Enum<VkDisplayPowerStateEXT>(getDisplayPowerStateEXTName, value);														}
 inline tcu::Format::Enum<VkDeviceEventTypeEXT>								getDeviceEventTypeEXTStr							(VkDeviceEventTypeEXT value)							{ return tcu::Format::Enum<VkDeviceEventTypeEXT>(getDeviceEventTypeEXTName, value);															}
 inline tcu::Format::Enum<VkDisplayEventTypeEXT>								getDisplayEventTypeEXTStr							(VkDisplayEventTypeEXT value)							{ return tcu::Format::Enum<VkDisplayEventTypeEXT>(getDisplayEventTypeEXTName, value);														}
@@ -304,6 +308,8 @@ inline std::ostream&	operator<<	(std::ostream& s, VkDebugReportObjectTypeEXT val
 inline std::ostream&	operator<<	(std::ostream& s, VkRasterizationOrderAMD value)							{ return s << getRasterizationOrderAMDStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkShaderInfoTypeAMD value)								{ return s << getShaderInfoTypeAMDStr(value);								}
 inline std::ostream&	operator<<	(std::ostream& s, VkValidationCheckEXT value)								{ return s << getValidationCheckEXTStr(value);								}
+inline std::ostream&	operator<<	(std::ostream& s, VkPipelineRobustnessBufferBehaviorEXT value)				{ return s << getPipelineRobustnessBufferBehaviorEXTStr(value);				}
+inline std::ostream&	operator<<	(std::ostream& s, VkPipelineRobustnessImageBehaviorEXT value)				{ return s << getPipelineRobustnessImageBehaviorEXTStr(value);				}
 inline std::ostream&	operator<<	(std::ostream& s, VkDisplayPowerStateEXT value)								{ return s << getDisplayPowerStateEXTStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkDeviceEventTypeEXT value)								{ return s << getDeviceEventTypeEXTStr(value);								}
 inline std::ostream&	operator<<	(std::ostream& s, VkDisplayEventTypeEXT value)								{ return s << getDisplayEventTypeEXTStr(value);								}
@@ -916,6 +922,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkExportMemoryAllocateInfoNV& v
 std::ostream&	operator<<	(std::ostream& s, const VkValidationFlagsEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageViewASTCDecodeModeEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceASTCDecodeFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineRobustnessFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineRobustnessPropertiesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineRobustnessCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkConditionalRenderingBeginInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceConditionalRenderingFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCommandBufferInheritanceConditionalRenderingInfoEXT& value);
@@ -1127,6 +1136,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkImageCompressionControlEXT& v
 std::ostream&	operator<<	(std::ostream& s, const VkSubresourceLayout2EXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageSubresource2EXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageCompressionPropertiesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevice4444FormatsFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT& value);
@@ -1174,6 +1184,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensity
 std::ostream&	operator<<	(std::ostream& s, const VkSubpassFragmentDensityMapOffsetEndInfoQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLinearColorAttachmentFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImageViewSampleWeightCreateInfoQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageProcessingFeaturesQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageProcessingPropertiesQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassCreationControlEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassCreationFeedbackInfoEXT& value);
@@ -1184,6 +1197,10 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderModuleIde
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineShaderStageModuleIdentifierCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkShaderModuleIdentifierEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceTilePropertiesFeaturesQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkTilePropertiesQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceAmigoProfilingFeaturesSEC& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAmigoProfilingSubmitInfoSEC& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceOrHostAddressKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureBuildRangeInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureGeometryTrianglesDataKHR& value);

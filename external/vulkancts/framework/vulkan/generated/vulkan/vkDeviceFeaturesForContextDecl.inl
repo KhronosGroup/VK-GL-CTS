@@ -7,7 +7,9 @@ const vk::VkPhysicalDevice16BitStorageFeatures&							get16BitStorageFeatures			
 const vk::VkPhysicalDevice4444FormatsFeaturesEXT&						get4444FormatsFeaturesEXT						(void) const;
 const vk::VkPhysicalDevice8BitStorageFeatures&							get8BitStorageFeatures							(void) const;
 const vk::VkPhysicalDeviceAccelerationStructureFeaturesKHR&				getAccelerationStructureFeatures				(void) const;
+const vk::VkPhysicalDeviceAmigoProfilingFeaturesSEC&					getAmigoProfilingFeaturesSEC					(void) const;
 const vk::VkPhysicalDeviceASTCDecodeFeaturesEXT&						getASTCDecodeFeaturesEXT						(void) const;
+const vk::VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT&		getAttachmentFeedbackLoopLayoutFeaturesEXT		(void) const;
 const vk::VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT&			getBlendOperationAdvancedFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceBorderColorSwizzleFeaturesEXT&				getBorderColorSwizzleFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceBufferDeviceAddressFeatures&					getBufferDeviceAddressFeatures					(void) const;
@@ -48,6 +50,7 @@ const vk::VkPhysicalDeviceImagelessFramebufferFeatures&					getImagelessFramebuf
 const vk::VkPhysicalDeviceImage2DViewOf3DFeaturesEXT&					getImage2DViewOf3DFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceImageCompressionControlFeaturesEXT&			getImageCompressionControlFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT&	getImageCompressionControlSwapchainFeaturesEXT	(void) const;
+const vk::VkPhysicalDeviceImageProcessingFeaturesQCOM&					getImageProcessingFeaturesQCOM					(void) const;
 const vk::VkPhysicalDeviceImageRobustnessFeatures&						getImageRobustnessFeatures						(void) const;
 const vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT&					getImageViewMinLodFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceIndexTypeUint8FeaturesEXT&					getIndexTypeUint8FeaturesEXT					(void) const;
@@ -69,6 +72,7 @@ const vk::VkPhysicalDevicePerformanceQueryFeaturesKHR&					getPerformanceQueryFe
 const vk::VkPhysicalDevicePipelineCreationCacheControlFeatures&			getPipelineCreationCacheControlFeatures			(void) const;
 const vk::VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR&		getPipelineExecutablePropertiesFeatures			(void) const;
 const vk::VkPhysicalDevicePipelinePropertiesFeaturesEXT&				getPipelinePropertiesFeaturesEXT				(void) const;
+const vk::VkPhysicalDevicePipelineRobustnessFeaturesEXT&				getPipelineRobustnessFeaturesEXT				(void) const;
 const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR&					getPortabilitySubsetFeatures					(void) const;
 const vk::VkPhysicalDevicePresentIdFeaturesKHR&							getPresentIdFeatures							(void) const;
 const vk::VkPhysicalDevicePresentWaitFeaturesKHR&						getPresentWaitFeatures							(void) const;
@@ -111,6 +115,7 @@ const vk::VkPhysicalDeviceSubpassShadingFeaturesHUAWEI&					getSubpassShadingFea
 const vk::VkPhysicalDeviceSynchronization2Features&						getSynchronization2Features						(void) const;
 const vk::VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT&				getTexelBufferAlignmentFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceTextureCompressionASTCHDRFeatures&			getTextureCompressionASTCHDRFeatures			(void) const;
+const vk::VkPhysicalDeviceTilePropertiesFeaturesQCOM&					getTilePropertiesFeaturesQCOM					(void) const;
 const vk::VkPhysicalDeviceTimelineSemaphoreFeatures&					getTimelineSemaphoreFeatures					(void) const;
 const vk::VkPhysicalDeviceTransformFeedbackFeaturesEXT&					getTransformFeedbackFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceUniformBufferStandardLayoutFeatures&			getUniformBufferStandardLayoutFeatures			(void) const;

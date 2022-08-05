@@ -472,6 +472,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_pipeline_robustness")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_conditional_rendering")
 	{
 		return;
@@ -933,6 +937,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_attachment_feedback_loop_layout")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_4444_formats")
 	{
 		return;
@@ -1055,11 +1063,23 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_QCOM_image_processing")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_subpass_merge_feedback")
 	{
 		return;
 	}
 	if (extName == "VK_EXT_shader_module_identifier")
+	{
+		return;
+	}
+	if (extName == "VK_QCOM_tile_properties")
+	{
+		return;
+	}
+	if (extName == "VK_SEC_amigo_profiling")
 	{
 		return;
 	}
@@ -1755,6 +1775,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_pipeline_robustness")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_conditional_rendering")
 	{
 		functions.push_back("vkCmdBeginConditionalRenderingEXT");
@@ -2300,6 +2324,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkGetImageSubresourceLayout2EXT");
 		return;
 	}
+	if (extName == "VK_EXT_attachment_feedback_loop_layout")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_4444_formats")
 	{
 		return;
@@ -2437,6 +2465,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_QCOM_image_processing")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_subpass_merge_feedback")
 	{
 		return;
@@ -2445,6 +2477,16 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		functions.push_back("vkGetShaderModuleIdentifierEXT");
 		functions.push_back("vkGetShaderModuleCreateInfoIdentifierEXT");
+		return;
+	}
+	if (extName == "VK_QCOM_tile_properties")
+	{
+		functions.push_back("vkGetFramebufferTilePropertiesQCOM");
+		functions.push_back("vkGetDynamicRenderingTilePropertiesQCOM");
+		return;
+	}
+	if (extName == "VK_SEC_amigo_profiling")
+	{
 		return;
 	}
 	if (extName == "VK_KHR_acceleration_structure")
@@ -2758,6 +2800,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_pageable_device_local_memory",
 	"VK_VALVE_descriptor_set_host_mapping",
 	"VK_EXT_shader_module_identifier",
+	"VK_QCOM_tile_properties",
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_ray_tracing_pipeline",
 	"VK_ANDROID_external_memory_android_hardware_buffer",

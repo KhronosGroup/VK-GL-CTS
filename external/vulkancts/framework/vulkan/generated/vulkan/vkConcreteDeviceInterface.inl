@@ -311,10 +311,10 @@ virtual void				cmdExecuteGeneratedCommandsNV							(VkCommandBuffer commandBuff
 virtual void				cmdBindPipelineShaderGroupNV							(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline, uint32_t groupIndex) const;
 virtual VkResult			createIndirectCommandsLayoutNV							(VkDevice device, const VkIndirectCommandsLayoutCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectCommandsLayoutNV* pIndirectCommandsLayout) const;
 virtual void				destroyIndirectCommandsLayoutNV							(VkDevice device, VkIndirectCommandsLayoutNV indirectCommandsLayout, const VkAllocationCallbacks* pAllocator) const;
-virtual VkResult			getDescriptorSetLayoutSizeEXT							(VkDevice device, VkDescriptorSetLayout layout, VkDeviceSize* pLayoutSizeInBytes) const;
-virtual VkResult			getDescriptorSetLayoutBindingOffsetEXT					(VkDevice device, VkDescriptorSetLayout layout, uint32_t binding, VkDeviceSize* pOffset) const;
-virtual VkResult			getDescriptorEXT										(VkDevice device, const VkDescriptorGetInfoEXT* pDescriptorInfo, void* pDescriptor) const;
-virtual void				cmdBindDescriptorBuffersEXT								(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, uint32_t firstBuffer, uint32_t bufferCount, const VkDescriptorBufferBindingInfoEXT* pBindingInfos) const;
+virtual void				getDescriptorSetLayoutSizeEXT							(VkDevice device, VkDescriptorSetLayout layout, VkDeviceSize* pLayoutSizeInBytes) const;
+virtual void				getDescriptorSetLayoutBindingOffsetEXT					(VkDevice device, VkDescriptorSetLayout layout, uint32_t binding, VkDeviceSize* pOffset) const;
+virtual void				getDescriptorEXT										(VkDevice device, const VkDescriptorGetInfoEXT* pDescriptorInfo, void* pDescriptor) const;
+virtual void				cmdBindDescriptorBuffersEXT								(VkCommandBuffer commandBuffer, uint32_t bufferCount, const VkDescriptorBufferBindingInfoEXT* pBindingInfos) const;
 virtual void				cmdSetDescriptorBufferOffsetsEXT						(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t firstSet, uint32_t setCount, const uint32_t* pBufferIndices, const VkDeviceSize* pOffsets) const;
 virtual void				cmdBindDescriptorBufferEmbeddedSamplersEXT				(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t set) const;
 virtual VkResult			getBufferOpaqueCaptureDescriptorDataEXT					(VkDevice device, const VkBufferCaptureDescriptorDataInfoEXT* pInfo, void* pData) const;
@@ -340,6 +340,8 @@ virtual void				getDescriptorSetLayoutHostMappingInfoVALVE				(VkDevice device, 
 virtual void				getDescriptorSetHostMappingVALVE						(VkDevice device, VkDescriptorSet descriptorSet, void** ppData) const;
 virtual void				getShaderModuleIdentifierEXT							(VkDevice device, VkShaderModule shaderModule, VkShaderModuleIdentifierEXT* pIdentifier) const;
 virtual void				getShaderModuleCreateInfoIdentifierEXT					(VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, VkShaderModuleIdentifierEXT* pIdentifier) const;
+virtual VkResult			getFramebufferTilePropertiesQCOM						(VkDevice device, VkFramebuffer framebuffer, uint32_t* pPropertiesCount, VkTilePropertiesQCOM* pProperties) const;
+virtual VkResult			getDynamicRenderingTilePropertiesQCOM					(VkDevice device, const VkRenderingInfo* pRenderingInfo, VkTilePropertiesQCOM* pProperties) const;
 virtual VkResult			createAccelerationStructureKHR							(VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure) const;
 virtual void				destroyAccelerationStructureKHR							(VkDevice device, VkAccelerationStructureKHR accelerationStructure, const VkAllocationCallbacks* pAllocator) const;
 virtual void				cmdBuildAccelerationStructuresKHR						(VkCommandBuffer commandBuffer, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos) const;
