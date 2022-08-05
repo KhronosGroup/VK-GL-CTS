@@ -65,6 +65,16 @@ constexpr deUint32	ConstUniformBufferDwords	= 0x1000;	// 16 KiB spec minimum
 constexpr deUint32	ConstTexelBufferElements    = 512;
 constexpr deUint32	ConstMaxDescriptorArraySize	= 3;		// at most define N-element descriptor arrays
 constexpr deUint32  ConstRobustBufferAlignment  = 256;		// 256 is the worst-case alignment required by UBOs in robustness2
+constexpr deUint32	ConstChecksPerBuffer		= 4;		// when verifying data in buffers, do at most N comparisons;
+															// this is to avoid excessive shader execution time
+
+constexpr VkComponentMapping ComponentMappingIdentity =
+{
+	VK_COMPONENT_SWIZZLE_IDENTITY,
+	VK_COMPONENT_SWIZZLE_IDENTITY,
+	VK_COMPONENT_SWIZZLE_IDENTITY,
+	VK_COMPONENT_SWIZZLE_IDENTITY,
+};
 
 template<typename T>
 inline deUint32 u32(const T& value)
@@ -135,7 +145,6 @@ enum class SubCase : deUint32
 {
 	NONE,								// no sub case, i.e. a baseline test case
 	IMMUTABLE_SAMPLERS,					// treat all samplers as immutable
-	INCREMENTAL_BIND,					// call vkCmdBindDescriptorBuffersEXT/vkCmdSetDescriptorBufferOffsetsEXT multiple times to complete the full bind
 	CAPTURE_REPLAY_CUSTOM_BORDER_COLOR,	// in capture/replay tests, test VK_EXT_custom_border_color interaction
 };
 
@@ -527,10 +536,6 @@ std::string getCaseName(const TestParams& params)
 	{
 		str << "_imm_samplers";
 	}
-	else if (params.subcase == SubCase::INCREMENTAL_BIND)
-	{
-		str << "_incremental_bind";
-	}
 
 	return str.str();
 }
@@ -794,9 +799,14 @@ std::string glslOutputVerification(const TestParams& params, const std::vector<S
 				}
 			}
 
-			const deUint32	bufferLoopIterations = getBufferLoopIterations(sb.type);
-			const bool		isNullDescriptor	 = (params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR) && (sb.type == params.descriptor);
-			const bool		isCustomBorderColor	 = (params.subcase == SubCase::CAPTURE_REPLAY_CUSTOM_BORDER_COLOR);
+			const deUint32 bufferLoopIterations	= getBufferLoopIterations(sb.type);
+			const deUint32 loopIncrement		= bufferLoopIterations / (ConstChecksPerBuffer - 1);
+
+			// Ensure we won't miss the last check (the index will always be less than the buffer length).
+			DE_ASSERT((bufferLoopIterations == 0) || ((bufferLoopIterations % (ConstChecksPerBuffer - 1)) != 0));
+
+			const bool isNullDescriptor		= (params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR) && (sb.type == params.descriptor);
+			const bool isCustomBorderColor  = (params.subcase == SubCase::CAPTURE_REPLAY_CUSTOM_BORDER_COLOR);
 
 			for (deUint32 arrayIndex = 0; arrayIndex < sb.count; ++arrayIndex)
 			{
@@ -852,7 +862,7 @@ std::string glslOutputVerification(const TestParams& params, const std::vector<S
 					const auto loadOp	= (sb.type == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER) ? "texelFetch" : "imageLoad";
 					const auto loopData = isNullDescriptor ? expectedData : "(" + expectedData + " + i)";
 
-					str << "	for (uint i = 0; i < " << glslFormat(bufferLoopIterations) << "; ++i) {\n"
+					str << "	for (uint i = 0; i < " << glslFormat(bufferLoopIterations) << "; i += " << glslFormat(loopIncrement) << ") {\n"
 						<< "		uint value = " << loadOp << "(" << glslResourceName(sb.set, sb.binding) << subscript << ", int(i)).r;\n"
 						<< "		if (value == " << loopData << ") " << glslResultBlock("\t\t", bindingArgs, "i")
 						<< "	}\n";
@@ -865,7 +875,7 @@ std::string glslOutputVerification(const TestParams& params, const std::vector<S
 					const auto loopData2 = isNullDescriptor ? expectedData : "(" + expectedData + " + 4 * i + 2)";
 					const auto loopData3 = isNullDescriptor ? expectedData : "(" + expectedData + " + 4 * i + 3)";
 
-					str << "	for (uint i = 0; i < " << glslFormat(bufferLoopIterations) << "; ++i) {\n"
+					str << "	for (uint i = 0; i < " << glslFormat(bufferLoopIterations) << "; i += " << glslFormat(loopIncrement) << ") {\n"
 						<< "        uvec4 value = " << glslResourceName(sb.set, sb.binding) << subscript << ".data[i];\n"
 						<< "		if (value.x == " << loopData0 << ") " << glslResultBlock("\t\t", bindingArgs, "4 * i + 0")
 						<< "		if (value.y == " << loopData1 << ") " << glslResultBlock("\t\t", bindingArgs, "4 * i + 1")
@@ -877,7 +887,7 @@ std::string glslOutputVerification(const TestParams& params, const std::vector<S
 				{
 					const auto loopData = isNullDescriptor ? expectedData : "(" + expectedData + " + i)";
 
-					str << "	for (uint i = 0; i < " << glslFormat(bufferLoopIterations) << "; ++i) {\n"
+					str << "	for (uint i = 0; i < " << glslFormat(bufferLoopIterations) << "; i += " << glslFormat(loopIncrement) << ") {\n"
 						<< "		uint value = " << glslResourceName(sb.set, sb.binding) << subscript << ".data[i];\n"
 						<< "		if (value == " << loopData << ") " << glslResultBlock("\t\t", bindingArgs, "i")
 						<< "	}\n";
@@ -902,8 +912,12 @@ std::string glslOutputVerification(const TestParams& params, const std::vector<S
 				continue;
 			}
 
-			const deUint32  bufferLoopIterations = getBufferLoopIterations(sb.type);
-			const auto		iterationOffsetStr   = glslFormat(bufferLoopIterations / 2);
+			const deUint32 bufferLoopIterations	= getBufferLoopIterations(sb.type);
+			const deUint32 loopIncrement		= bufferLoopIterations / (ConstChecksPerBuffer - 1);
+			const auto	   iterationOffsetStr	= glslFormat(bufferLoopIterations / 2);
+
+			// Ensure we won't miss the last check (the index will always be less than the buffer length).
+			DE_ASSERT((bufferLoopIterations == 0) || ((bufferLoopIterations % (ConstChecksPerBuffer - 1)) != 0));
 
 			for (deUint32 arrayIndex = 0; arrayIndex < sb.count; ++arrayIndex)
 			{
@@ -913,19 +927,19 @@ std::string glslOutputVerification(const TestParams& params, const std::vector<S
 				switch (sb.type)
 				{
 				case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
-					str << "	for (uint i = 0; i < " << glslFormat(bufferLoopIterations) << "; ++i) {\n"
+					str << "	for (uint i = 0; i < " << glslFormat(bufferLoopIterations) << ";  i += " << glslFormat(loopIncrement) << ") {\n"
 						<< "		if (texelFetch(" << glslResourceName(sb.set, sb.binding) << subscript << ", int(i + " << iterationOffsetStr << ")).r == 0) " << glslResultBlock("\t\t", bindingArgs, "i + " + iterationOffsetStr)
 						<< "	}\n";
 					break;
 
 				case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
-					str << "	for (uint i = 0; i < " << glslFormat(bufferLoopIterations) << "; ++i) {\n"
+					str << "	for (uint i = 0; i < " << glslFormat(bufferLoopIterations) << ";  i += " << glslFormat(loopIncrement) << ") {\n"
 						<< "		if (imageLoad(" << glslResourceName(sb.set, sb.binding) << subscript << ", int(i + " << iterationOffsetStr << ")).r == 0) " << glslResultBlock("\t\t", bindingArgs, "i + " + iterationOffsetStr)
 						<< "	}\n";
 					break;
 
 				case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-					str << "	for (uint i = 0; i < " << glslFormat(bufferLoopIterations) << "; ++i) {\n"
+					str << "	for (uint i = 0; i < " << glslFormat(bufferLoopIterations) << ";  i += " << glslFormat(loopIncrement) << ") {\n"
 						<< "		if (" << glslResourceName(sb.set, sb.binding) << subscript << ".data[i + " << iterationOffsetStr << "].x == 0) " << glslResultBlock("\t\t", bindingArgs, "4 * i + " + iterationOffsetStr + " + 0")
 						<< "		if (" << glslResourceName(sb.set, sb.binding) << subscript << ".data[i + " << iterationOffsetStr << "].y == 0) " << glslResultBlock("\t\t", bindingArgs, "4 * i + " + iterationOffsetStr + " + 1")
 						<< "		if (" << glslResourceName(sb.set, sb.binding) << subscript << ".data[i + " << iterationOffsetStr << "].z == 0) " << glslResultBlock("\t\t", bindingArgs, "4 * i + " + iterationOffsetStr + " + 2")
@@ -934,7 +948,7 @@ std::string glslOutputVerification(const TestParams& params, const std::vector<S
 					break;
 
 				case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-					str << "	for (uint i = 0; i < " << glslFormat(bufferLoopIterations) << "; ++i) {\n"
+					str << "	for (uint i = 0; i < " << glslFormat(bufferLoopIterations) << ";  i += " << glslFormat(loopIncrement) << ") {\n"
 						<< "		if (" << glslResourceName(sb.set, sb.binding) << subscript << ".data[i + " << iterationOffsetStr << "] == 0) " << glslResultBlock("\t\t", bindingArgs, "i + " + iterationOffsetStr)
 						<< "	}\n";
 					break;
@@ -1568,6 +1582,11 @@ void DescriptorBufferTestCase::checkSupport (Context& context) const
 		TCU_THROW(NotSupportedError, "VK_KHR_synchronization2 is not supported");
 	}
 
+	if (!context.isDeviceFunctionalitySupported("VK_EXT_descriptor_indexing"))
+	{
+		TCU_THROW(NotSupportedError, "VK_EXT_descriptor_indexing is not supported");
+	}
+
 	// Optional
 
 	if ((m_params.descriptor == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK) &&
@@ -1878,6 +1897,7 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(
 	extensions.push_back("VK_EXT_descriptor_buffer");
 	extensions.push_back("VK_KHR_buffer_device_address");
 	extensions.push_back("VK_KHR_synchronization2");
+	extensions.push_back("VK_EXT_descriptor_indexing");
 
 	if ((params.descriptor == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK) ||
 		(params.variant == TestVariant::MULTIPLE))
@@ -2050,15 +2070,15 @@ void DescriptorBufferTestInstance::createDescriptorSetLayouts()
 
 		dsl.layout = createDescriptorSetLayout(*m_deviceInterface, *m_device, &createInfo);
 
-		VK_CHECK(m_deviceInterface->getDescriptorSetLayoutSizeEXT(*m_device, *dsl.layout, &dsl.size));
+		m_deviceInterface->getDescriptorSetLayoutSizeEXT(*m_device, *dsl.layout, &dsl.size);
 
 		for (auto& binding : dsl.bindings)
 		{
-			VK_CHECK(m_deviceInterface->getDescriptorSetLayoutBindingOffsetEXT(
+			m_deviceInterface->getDescriptorSetLayoutBindingOffsetEXT(
 				*m_device,
 				*dsl.layout,
 				binding.binding,
-				&binding.offset));
+				&binding.offset);
 		}
 	}
 }
@@ -2244,23 +2264,7 @@ void DescriptorBufferTestInstance::bindDescriptorBuffers(VkCommandBuffer cmdBuf,
 	std::vector<VkDeviceSize>						bufferOffsets;
 	std::vector<VkDescriptorBufferBindingInfoEXT>	bufferBindingInfos;
 
-	deUint32 bindLimit	 = 0;	// max number of descriptor buffers to bind in one API call
-	deUint32 setLimit	 = 0;	// max number of descriptor set offsets to set in one API call
-	deUint32 nextBuffer  = 0;	// index of the next buffer to bind
-	deUint32 firstBuffer = 0;
-	deUint32 firstSet    = 0;
-
-	if (m_params.subcase == SubCase::INCREMENTAL_BIND)
-	{
-		// Artificially break up the bind/offset commands to ensure that calling them multiple times is also working.
-		bindLimit = (m_descriptorBuffers.size() > 2) ? 2 : 1;
-		setLimit  = deMaxu32(1, m_params.setsPerBuffer / 2);
-	}
-	else
-	{
-		bindLimit = u32(m_descriptorBuffers.size());
-		setLimit  = u32(m_descriptorSetLayouts.size());
-	}
+	deUint32 firstSet = 0;
 
 	if (m_params.variant == TestVariant::EMBEDDED_IMMUTABLE_SAMPLERS)
 	{
@@ -2285,94 +2289,55 @@ void DescriptorBufferTestInstance::bindDescriptorBuffers(VkCommandBuffer cmdBuf,
 		}
 	}
 
-	for (;;)
+	for (const auto& buffer : m_descriptorBuffers)
 	{
-		const bool isWithinBufferLimit = (u32(bufferBindingInfos.size()) < bindLimit);
-		const bool hasMoreBuffers	   = (nextBuffer < u32(m_descriptorBuffers.size()));
+		VkDescriptorBufferBindingInfoEXT info = initVulkanStructure();
 
-		if (isWithinBufferLimit && hasMoreBuffers)
+		info.address = buffer->deviceAddress;
+		info.usage   = buffer->usage;
+
+		bufferBindingInfos.emplace_back(info);
+	}
+
+	m_deviceInterface->cmdBindDescriptorBuffersEXT(
+		cmdBuf,
+		u32(bufferBindingInfos.size()),
+		bufferBindingInfos.data());
+
+	// Next, set the offsets for the bound buffers.
+
+	for (deUint32 setIndex = firstSet; setIndex < u32(m_descriptorSetLayouts.size()); ++setIndex)
+	{
+		const auto& dsl		   = **m_descriptorSetLayouts[setIndex];
+		const bool	isBoundSet = (dsl.bufferIndex != INDEX_INVALID);
+		const bool  isLastSet  = ((setIndex + 1) == u32(m_descriptorSetLayouts.size()));
+
+		if (isBoundSet)
 		{
-			const auto& buffer = m_descriptorBuffers[nextBuffer];
-
-			VkDescriptorBufferBindingInfoEXT info = initVulkanStructure();
-
-			info.address = buffer->deviceAddress;
-			info.usage   = buffer->usage;
-
-			bufferBindingInfos.emplace_back(info);
-
-			++nextBuffer;
+			bufferIndices.emplace_back(dsl.bufferIndex);
+			bufferOffsets.emplace_back(dsl.bufferOffset);
 		}
-		else
+
+		if ((!isBoundSet || isLastSet) && !bufferIndices.empty())
 		{
-			m_deviceInterface->cmdBindDescriptorBuffersEXT(
+			m_deviceInterface->cmdSetDescriptorBufferOffsetsEXT(
 				cmdBuf,
 				bindPoint,
-				firstBuffer,
-				u32(bufferBindingInfos.size()),
-				bufferBindingInfos.data());
+				*m_pipelineLayout,
+				firstSet,
+				u32(bufferIndices.size()),
+				bufferIndices.data(),
+				bufferOffsets.data());
 
-			bufferBindingInfos.clear();
+			bufferIndices.clear();
+			bufferOffsets.clear();
 
-			firstBuffer = nextBuffer;
-
-			// Proceed to setting the offsets for the bound buffers.
-
-			for (deUint32 setIndex = firstSet; setIndex < u32(m_descriptorSetLayouts.size()); ++setIndex)
-			{
-				const auto& dsl		  = **m_descriptorSetLayouts[setIndex];
-				const bool  isBound	  = (dsl.bufferIndex < nextBuffer);
-				const bool  isLastSet = ((setIndex + 1) == u32(m_descriptorSetLayouts.size()));
-
-				bool isWithinLimit = (u32(bufferIndices.size()) < setLimit);
-				bool isAddedSet	   = false;
-
-				if (isBound && isWithinLimit)
-				{
-					bufferIndices.emplace_back(dsl.bufferIndex);
-					bufferOffsets.emplace_back(dsl.bufferOffset);
-
-					isWithinLimit = (u32(bufferIndices.size()) < setLimit);
-					isAddedSet	  = true;
-				}
-
-				if (!isAddedSet || isLastSet || !isWithinLimit)
-				{
-					if (!bufferIndices.empty())
-					{
-						m_deviceInterface->cmdSetDescriptorBufferOffsetsEXT(
-							cmdBuf,
-							bindPoint,
-							*m_pipelineLayout,
-							firstSet,
-							u32(bufferIndices.size()),
-							bufferIndices.data(),
-							bufferOffsets.data());
-
-						bufferIndices.clear();
-						bufferOffsets.clear();
-
-						firstSet = setIndex + (isAddedSet ? 1 : 0);
-					}
-
-					if (dsl.bufferIndex == INDEX_INVALID)
-					{
-						// This set doesn't use buffer binding, skip it.
-						++firstSet;
-					}
-					else if (!isBound)
-					{
-						// This set and subsequent sets aren't bound yet. Exit early and try again.
-						break;
-					}
-				}
-			}
-
-			if (nextBuffer >= u32(m_descriptorBuffers.size()))
-			{
-				// We've bound all buffers.
-				break;
-			}
+			firstSet = setIndex + 1;
+		}
+		else if (!isBoundSet)
+		{
+			// Push descriptor sets will have no buffer backing. Skip this set.
+			++firstSet;
 		}
 	}
 }
@@ -2446,7 +2411,7 @@ void DescriptorBufferTestInstance::createGraphicsPipeline()
 		createInfo.image			= *m_colorImage.image;
 		createInfo.viewType			= VK_IMAGE_VIEW_TYPE_2D;
 		createInfo.format			= m_colorImage.info.format;
-		createInfo.components		= makeComponentMappingRGBA();
+		createInfo.components		= ComponentMappingIdentity;
 		createInfo.subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1);
 
 		m_colorImage.imageView = createImageView(*m_deviceInterface, *m_device, &createInfo);
@@ -2632,7 +2597,7 @@ void DescriptorBufferTestInstance::createGraphicsPipeline()
 		createInfo.subpass				= 0;
 		createInfo.basePipelineHandle	= DE_NULL;
 		createInfo.basePipelineIndex	= -1;
-		createInfo.flags				= VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT;
+		createInfo.flags				= VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT;
 
 		m_pipeline = vk::createGraphicsPipeline(
 			*m_deviceInterface,
@@ -2789,7 +2754,7 @@ void DescriptorBufferTestInstance::createImageForBinding(
 		createInfo.image			= *imageResource.image;
 		createInfo.viewType			= VK_IMAGE_VIEW_TYPE_2D;
 		createInfo.format			= imageResource.info.format;
-		createInfo.components		= makeComponentMappingRGBA();
+		createInfo.components		= ComponentMappingIdentity;
 		createInfo.subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1);
 
 		if (isCaptureDescriptor(descriptorType))
@@ -3155,7 +3120,7 @@ void DescriptorBufferTestInstance::initializeBinding(
 				deMemcpy(reference.data(), descriptorPtr, descriptorSize);
 
 				deMemset(descriptorPtr, 0xcc, descriptorSize);
-				VK_CHECK(m_deviceInterface->getDescriptorEXT(*m_device, &descGetInfo, descriptorPtr));
+				m_deviceInterface->getDescriptorEXT(*m_device, &descGetInfo, descriptorPtr);
 
 				if (deMemCmp(reference.data(), descriptorPtr, descriptorSize) != 0)
 				{
@@ -3164,7 +3129,7 @@ void DescriptorBufferTestInstance::initializeBinding(
 			}
 			else
 			{
-				VK_CHECK(m_deviceInterface->getDescriptorEXT(*m_device, &descGetInfo, offsetPtr(bindingHostPtr, arrayOffset)));
+				m_deviceInterface->getDescriptorEXT(*m_device, &descGetInfo, offsetPtr(bindingHostPtr, arrayOffset));
 			}
 
 			// After writing the last array element, rearrange the split combined image sampler data.
@@ -3639,7 +3604,7 @@ tcu::TestStatus	DescriptorBufferTestInstance::iterate()
 			vk,
 			*m_device,
 			*m_pipelineLayout,
-			VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT,
+			VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT,
 			*shaderModule,
 			(VkPipelineShaderStageCreateFlags)0,
 			pSpecializationInfo);
@@ -3909,19 +3874,20 @@ tcu::TestStatus	DescriptorBufferTestInstance::iterate()
 				}
 				else
 				{
+					// Uniform blocks/buffers check 4 elements per iteration.
 					if (sb.type == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK)
 					{
-						expected += ConstInlineBlockDwords;
+						expected += ConstChecksPerBuffer * 4;
+					}
+					else if (sb.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+					{
+						expected += ConstChecksPerBuffer * 4 * sb.count;
 					}
 					else if ((sb.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) ||
-							 (sb.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER))
-					{
-						expected += ConstUniformBufferDwords * sb.count;
-					}
-					else if ((sb.type == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER) ||
+							 (sb.type == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER) ||
 							 (sb.type == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER))
 					{
-						expected += ConstTexelBufferElements * sb.count;
+						expected += ConstChecksPerBuffer * sb.count;
 					}
 					// Samplers are tested implicitly via sampled images
 					else if (sb.type != VK_DESCRIPTOR_TYPE_SAMPLER)
@@ -4170,15 +4136,15 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 		const struct {
 			deUint32 bufferBindingCount;
 			deUint32 setsPerBuffer;
-			bool	 addIncrementalBindSubcase;
 
 		} caseOptions[] = {
-			{  1,  3, false },
-			{  2,  4, true  },
-			{  3,  1, true  },		// 3 buffer bindings is spec minimum
-			{  8,  1, false },
-			{ 16,  1, false },
-			{ 32,  1, false },
+			{  1,  1 },
+			{  1,  3 },
+			{  2,  4 },
+			{  3,  1 },		// 3 buffer bindings is spec minimum
+			{  8,  1 },
+			{ 16,  1 },
+			{ 32,  1 },
 		};
 
 		for (auto pQueue = choiceQueues; pQueue < DE_ARRAY_END(choiceQueues); ++pQueue)
@@ -4205,23 +4171,11 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 
 			subGroup->addChild(new DescriptorBufferTestCase(testCtx, getCaseName(params), "", params));
 
-			if (pOptions->bufferBindingCount < 4)
+			if ((pOptions->setsPerBuffer != 1) && (pOptions->bufferBindingCount < 4))
 			{
 				// For the smaller binding counts add a subcase with immutable samplers.
 
 				params.subcase = SubCase::IMMUTABLE_SAMPLERS;
-
-				params.updateHash();
-
-				subGroup->addChild(new DescriptorBufferTestCase(testCtx, getCaseName(params), "", params));
-			}
-
-			if (pOptions->addIncrementalBindSubcase)
-			{
-				// Add a case that binds descriptor buffers (and offsets) over more than a one API call.
-				DE_ASSERT(params.bufferBindingCount > 1);
-
-				params.subcase = SubCase::INCREMENTAL_BIND;
 
 				params.updateHash();
 
