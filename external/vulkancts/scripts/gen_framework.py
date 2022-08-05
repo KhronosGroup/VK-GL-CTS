@@ -108,6 +108,14 @@ PLATFORM_TYPES		= [
 	(["GgpFrameToken"],						["GgpFrameToken"],				"int32_t"),
 	(["GgpStreamDescriptor"],				["GgpStreamDescriptor"],		"int32_t"),
 	(["CAMetalLayer"],						["CAMetalLayer"],				"void*"),
+
+	# VK_EXT_metal_objects
+	(["MTLDevice_id"],						["MTLDevice_id"],				"void*"),
+	(["MTLCommandQueue_id"],				["MTLCommandQueue_id"],			"void*"),
+	(["MTLBuffer_id"],						["MTLBuffer_id"],				"void*"),
+	(["MTLTexture_id"],						["MTLTexture_id"],				"void*"),
+	(["IOSurfaceRef"],						["IOSurfaceRef"],				"void*"),
+	(["MTLSharedEvent_id"],					["MTLSharedEvent_id"],			"void*"),
 ]
 
 PLATFORM_TYPE_NAMESPACE	= "pt"
@@ -162,6 +170,7 @@ def prefixName (prefix, name):
 	name = name.replace("RGBA_10_X_6", "RGBA10X6")
 	name = name.replace("2_D", "2D_")
 	name = name.replace("3_D", "3D_")
+	name = name.replace("IOSURFACE", "IO_SURFACE")
 
 
 	return prefix + name
@@ -2267,12 +2276,6 @@ def generateDeviceFeaturesDefs(apiName, src):
 				continue
 			elif sType == 'RASTERIZATION_ORDER_ATTACHMENT_ACCESS':
 				# skip case that has const pNext pointer
-				continue
-			# skip cases that have const pNext pointer
-			if sType == 'RASTERIZATION_ORDER_ATTACHMENT_ACCESS':
-				continue
-			# skip cases that have const pNext pointer
-			if sType == 'RASTERIZATION_ORDER_ATTACHMENT_ACCESS':
 				continue
 			# end handling special cases
 			ptrnExtensionName	= r'^\s*#define\s+(\w+' + sSuffix + '_' + sType + '_EXTENSION_NAME).+$'

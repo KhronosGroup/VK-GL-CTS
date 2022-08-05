@@ -64,6 +64,7 @@
 #include "vktPipelineNoPositionTests.hpp"
 #include "vktPipelineColorWriteEnableTests.hpp"
 #include "vktPipelineLibraryTests.hpp"
+#include "vktPipelineAttachmentFeedbackLoopLayoutTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt
@@ -129,6 +130,9 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 	group->addChild(createBindPointTests				(testCtx, pipelineConstructionType));
 #endif // CTS_USES_VULKANSC
 	group->addChild(createColorWriteEnableTests			(testCtx, pipelineConstructionType));
+#ifndef CTS_USES_VULKANSC
+	group->addChild(createAttachmentFeedbackLoopLayoutTests (testCtx, pipelineConstructionType));
+#endif // CTS_USES_VULKANSC
 
 	// NOTE: all new pipeline tests should use GraphicsPipelineWrapper for pipeline creation
 
@@ -143,6 +147,7 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 
 		// dont repeat tests requiring timing execution of vkCreate*Pipelines
 		group->addChild(createCacheControlTests			(testCtx));
+
 #endif // CTS_USES_VULKANSC
 	}
 #ifndef CTS_USES_VULKANSC

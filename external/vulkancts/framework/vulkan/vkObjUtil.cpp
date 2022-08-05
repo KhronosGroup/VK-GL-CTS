@@ -100,7 +100,8 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface&						vk,
 									  const VkPipelineDepthStencilStateCreateInfo*	depthStencilStateCreateInfo,
 									  const VkPipelineColorBlendStateCreateInfo*	colorBlendStateCreateInfo,
 									  const VkPipelineDynamicStateCreateInfo*		dynamicStateCreateInfo,
-									  const void*									pNext)
+									  const void*									pNext,
+									  const VkPipelineCreateFlags					pipelineCreateFlags)
 {
 	const VkPipelineInputAssemblyStateCreateInfo	inputAssemblyStateCreateInfo		=
 	{
@@ -154,7 +155,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface&						vk,
 								 &tessStateCreateInfo, &viewportStateCreateInfo, rasterizationStateCreateInfo,
 								 multisampleStateCreateInfo, depthStencilStateCreateInfo, colorBlendStateCreateInfo,
 								 dynamicStateCreateInfo ? dynamicStateCreateInfo : dynamicStateCreateInfoDefaultPtr,
-								 pNext);
+								 pNext, pipelineCreateFlags);
 }
 
 Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
@@ -176,7 +177,8 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 									   const VkPipelineDepthStencilStateCreateInfo*		depthStencilStateCreateInfo,
 									   const VkPipelineColorBlendStateCreateInfo*		colorBlendStateCreateInfo,
 									   const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfo,
-									   const void*										pNext)
+									   const void*										pNext,
+									   const VkPipelineCreateFlags						pipelineCreateFlags)
 {
 	DE_ASSERT(tessStateCreateInfo || (tessellationControlShaderModule == DE_NULL && tessellationEvalShaderModule == DE_NULL));
 
@@ -366,7 +368,7 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 	{
 		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,														// VkStructureType                                  sType
 		pNext,																									// const void*                                      pNext
-		0u,																										// VkPipelineCreateFlags                            flags
+		pipelineCreateFlags,																					// VkPipelineCreateFlags                            flags
 		(deUint32)pipelineShaderStageParams.size(),																// deUint32                                         stageCount
 		&pipelineShaderStageParams[0],																			// const VkPipelineShaderStageCreateInfo*           pStages
 		vertexInputStateCreateInfo ? vertexInputStateCreateInfo : &vertexInputStateCreateInfoDefault,			// const VkPipelineVertexInputStateCreateInfo*      pVertexInputState
@@ -404,7 +406,8 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 									   const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo,
 									   const VkPipelineDepthStencilStateCreateInfo*		depthStencilStateCreateInfo,
 									   const VkPipelineColorBlendStateCreateInfo*		colorBlendStateCreateInfo,
-									   const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfo)
+									   const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfo,
+									   const VkPipelineCreateFlags						pipelineCreateFlags)
 {
 	const VkBool32									disableRasterization				= (fragmentShaderModule == DE_NULL);
 
@@ -482,7 +485,7 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 	{
 		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,														// VkStructureType                                  sType
 		nullptr,																								// const void*                                      pNext
-		0u,																										// VkPipelineCreateFlags                            flags
+		pipelineCreateFlags,																					// VkPipelineCreateFlags                            flags
 		static_cast<uint32_t>(pipelineShaderStageParams.size()),												// deUint32                                         stageCount
 		de::dataOrNull(pipelineShaderStageParams),																// const VkPipelineShaderStageCreateInfo*           pStages
 		nullptr,																								// const VkPipelineVertexInputStateCreateInfo*      pVertexInputState

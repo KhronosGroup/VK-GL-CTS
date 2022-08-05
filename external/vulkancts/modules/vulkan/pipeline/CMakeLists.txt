@@ -128,6 +128,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineLibraryTests.hpp
 	vktPipelineImage2DViewOf3DTests.cpp
 	vktPipelineImage2DViewOf3DTests.hpp
+	vktPipelineAttachmentFeedbackLoopLayoutTests.cpp
+	vktPipelineAttachmentFeedbackLoopLayoutTests.hpp
 	)
 
 #vktPipelinePushDescriptorTests.cpp				- missing VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR

@@ -232,6 +232,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/multiview/vktMultiViewRenderUtil.cpp \
 	external/vulkancts/modules/vulkan/multiview/vktMultiViewTests.cpp \
 	external/vulkancts/modules/vulkan/pch.cpp \
+	external/vulkancts/modules/vulkan/pipeline/vktPipelineAttachmentFeedbackLoopLayoutTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineBindPointTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineBlendOperationAdvancedTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineBlendTests.cpp \

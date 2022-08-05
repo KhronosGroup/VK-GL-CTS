@@ -221,6 +221,7 @@ virtual VkResult			getPipelineExecutableStatisticsKHR				(VkDevice device, const
 virtual VkResult			getPipelineExecutableInternalRepresentationsKHR	(VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, uint32_t* pInternalRepresentationCount, VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations) const;
 virtual void				cmdWriteBufferMarker2AMD						(VkCommandBuffer commandBuffer, VkPipelineStageFlags2 stage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker) const;
 virtual void				getQueueCheckpointData2NV						(VkQueue queue, uint32_t* pCheckpointDataCount, VkCheckpointData2NV* pCheckpointData) const;
+virtual void				cmdTraceRaysIndirect2KHR						(VkCommandBuffer commandBuffer, VkDeviceAddress indirectDeviceAddress) const;
 virtual VkResult			debugMarkerSetObjectTagEXT						(VkDevice device, const VkDebugMarkerObjectTagInfoEXT* pTagInfo) const;
 virtual VkResult			debugMarkerSetObjectNameEXT						(VkDevice device, const VkDebugMarkerObjectNameInfoEXT* pNameInfo) const;
 virtual void				cmdDebugMarkerBeginEXT							(VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo) const;
@@ -311,11 +312,13 @@ virtual void				cmdBindPipelineShaderGroupNV					(VkCommandBuffer commandBuffer,
 virtual VkResult			createIndirectCommandsLayoutNV					(VkDevice device, const VkIndirectCommandsLayoutCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectCommandsLayoutNV* pIndirectCommandsLayout) const;
 virtual void				destroyIndirectCommandsLayoutNV					(VkDevice device, VkIndirectCommandsLayoutNV indirectCommandsLayout, const VkAllocationCallbacks* pAllocator) const;
 virtual void				cmdSetFragmentShadingRateEnumNV					(VkCommandBuffer commandBuffer, VkFragmentShadingRateNV shadingRate, const VkFragmentShadingRateCombinerOpKHR combinerOps[2]) const;
+virtual void				getImageSubresourceLayout2EXT					(VkDevice device, VkImage image, const VkImageSubresource2EXT* pSubresource, VkSubresourceLayout2EXT* pLayout) const;
 virtual void				cmdSetVertexInputEXT							(VkCommandBuffer commandBuffer, uint32_t vertexBindingDescriptionCount, const VkVertexInputBindingDescription2EXT* pVertexBindingDescriptions, uint32_t vertexAttributeDescriptionCount, const VkVertexInputAttributeDescription2EXT* pVertexAttributeDescriptions) const;
 virtual VkResult			getDeviceSubpassShadingMaxWorkgroupSizeHUAWEI	(VkDevice device, VkRenderPass renderpass, VkExtent2D* pMaxWorkgroupSize) const;
 virtual void				cmdSubpassShadingHUAWEI							(VkCommandBuffer commandBuffer) const;
 virtual void				cmdBindInvocationMaskHUAWEI						(VkCommandBuffer commandBuffer, VkImageView imageView, VkImageLayout imageLayout) const;
 virtual VkResult			getMemoryRemoteAddressNV						(VkDevice device, const VkMemoryGetRemoteAddressInfoNV* pMemoryGetRemoteAddressInfo, VkRemoteAddressNV* pAddress) const;
+virtual VkResult			getPipelinePropertiesEXT						(VkDevice device, const VkPipelineInfoEXT* pPipelineInfo, VkBaseOutStructure* pPipelineProperties) const;
 virtual void				cmdSetPatchControlPointsEXT						(VkCommandBuffer commandBuffer, uint32_t patchControlPoints) const;
 virtual void				cmdSetLogicOpEXT								(VkCommandBuffer commandBuffer, VkLogicOp logicOp) const;
 virtual void				cmdSetColorWriteEnableEXT						(VkCommandBuffer commandBuffer, uint32_t attachmentCount, const VkBool32* pColorWriteEnables) const;
@@ -324,6 +327,10 @@ virtual void				cmdDrawMultiIndexedEXT							(VkCommandBuffer commandBuffer, uin
 virtual void				setDeviceMemoryPriorityEXT						(VkDevice device, VkDeviceMemory memory, float priority) const;
 virtual void				getDescriptorSetLayoutHostMappingInfoVALVE		(VkDevice device, const VkDescriptorSetBindingReferenceVALVE* pBindingReference, VkDescriptorSetLayoutHostMappingInfoVALVE* pHostMapping) const;
 virtual void				getDescriptorSetHostMappingVALVE				(VkDevice device, VkDescriptorSet descriptorSet, void** ppData) const;
+virtual void				getShaderModuleIdentifierEXT					(VkDevice device, VkShaderModule shaderModule, VkShaderModuleIdentifierEXT* pIdentifier) const;
+virtual void				getShaderModuleCreateInfoIdentifierEXT			(VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, VkShaderModuleIdentifierEXT* pIdentifier) const;
+virtual VkResult			getFramebufferTilePropertiesQCOM				(VkDevice device, VkFramebuffer framebuffer, uint32_t* pPropertiesCount, VkTilePropertiesQCOM* pProperties) const;
+virtual VkResult			getDynamicRenderingTilePropertiesQCOM			(VkDevice device, const VkRenderingInfo* pRenderingInfo, VkTilePropertiesQCOM* pProperties) const;
 virtual VkResult			createAccelerationStructureKHR					(VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure) const;
 virtual void				destroyAccelerationStructureKHR					(VkDevice device, VkAccelerationStructureKHR accelerationStructure, const VkAllocationCallbacks* pAllocator) const;
 virtual void				cmdBuildAccelerationStructuresKHR				(VkCommandBuffer commandBuffer, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos) const;
@@ -369,6 +376,7 @@ virtual VkResult			setBufferCollectionImageConstraintsFUCHSIA		(VkDevice device,
 virtual VkResult			setBufferCollectionBufferConstraintsFUCHSIA		(VkDevice device, VkBufferCollectionFUCHSIA collection, const VkBufferConstraintsInfoFUCHSIA* pBufferConstraintsInfo) const;
 virtual void				destroyBufferCollectionFUCHSIA					(VkDevice device, VkBufferCollectionFUCHSIA collection, const VkAllocationCallbacks* pAllocator) const;
 virtual VkResult			getBufferCollectionPropertiesFUCHSIA			(VkDevice device, VkBufferCollectionFUCHSIA collection, VkBufferCollectionPropertiesFUCHSIA* pProperties) const;
+virtual void				exportMetalObjectsEXT							(VkDevice device, VkExportMetalObjectsInfoEXT* pMetalObjectsInfo) const;
 virtual VkResult			getMemoryWin32HandleKHR							(VkDevice device, const VkMemoryGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle) const;
 virtual VkResult			getMemoryWin32HandlePropertiesKHR				(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, pt::Win32Handle handle, VkMemoryWin32HandlePropertiesKHR* pMemoryWin32HandleProperties) const;
 virtual VkResult			importSemaphoreWin32HandleKHR					(VkDevice device, const VkImportSemaphoreWin32HandleInfoKHR* pImportSemaphoreWin32HandleInfo) const;
