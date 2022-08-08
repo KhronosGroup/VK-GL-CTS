@@ -2643,6 +2643,11 @@ template<> VkStructureType getStructureType<VkMultisampledRenderToSingleSampledI
 	return VK_STRUCTURE_TYPE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_INFO_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDevicePipelineProtectedAccessFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROTECTED_ACCESS_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkQueueFamilyVideoPropertiesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_QUEUE_FAMILY_VIDEO_PROPERTIES_KHR;

@@ -3184,6 +3184,43 @@ tcu::TestStatus testPhysicalDeviceFeatureMultisampledRenderToSingleSampledFeatur
 	return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeaturePipelineProtectedAccessFeaturesEXT (Context& context)
+{
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+	const InstanceDriver&		vki				(instance.getDriver());
+	const int					count			= 2u;
+	TestLog&					log				= context.getTestContext().getLog();
+	VkPhysicalDeviceFeatures2	extFeatures;
+	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+
+	VkPhysicalDevicePipelineProtectedAccessFeaturesEXT	devicePipelineProtectedAccessFeaturesEXT[count];
+	const bool											isPipelineProtectedAccessFeaturesEXT = checkExtension(properties, "VK_EXT_pipeline_protected_access");
+
+	for (int ndx = 0; ndx < count; ++ndx)
+	{
+		deMemset(&devicePipelineProtectedAccessFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDevicePipelineProtectedAccessFeaturesEXT));
+		devicePipelineProtectedAccessFeaturesEXT[ndx].sType = isPipelineProtectedAccessFeaturesEXT ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROTECTED_ACCESS_FEATURES_EXT : VK_STRUCTURE_TYPE_MAX_ENUM;
+		devicePipelineProtectedAccessFeaturesEXT[ndx].pNext = DE_NULL;
+
+		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		extFeatures.pNext = &devicePipelineProtectedAccessFeaturesEXT[ndx];
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+	}
+
+	if (isPipelineProtectedAccessFeaturesEXT)
+		log << TestLog::Message << devicePipelineProtectedAccessFeaturesEXT[0] << TestLog::EndMessage;
+
+	if (isPipelineProtectedAccessFeaturesEXT &&
+		(devicePipelineProtectedAccessFeaturesEXT[0].pipelineProtectedAccess != devicePipelineProtectedAccessFeaturesEXT[1].pipelineProtectedAccess))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDevicePipelineProtectedAccessFeaturesEXT");
+	}
+	return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureYcbcr2Plane444FormatsFeaturesEXT (Context& context)
 {
 	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
@@ -3938,6 +3975,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "synchronization2_features", "VkPhysicalDeviceSynchronization2Features", testPhysicalDeviceFeatureSynchronization2Features);
 	addFunctionCase(testGroup, "primitives_generated_query_features_ext", "VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT", testPhysicalDeviceFeaturePrimitivesGeneratedQueryFeaturesEXT);
 	addFunctionCase(testGroup, "multisampled_render_to_single_sampled_features_ext", "VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT", testPhysicalDeviceFeatureMultisampledRenderToSingleSampledFeaturesEXT);
+	addFunctionCase(testGroup, "pipeline_protected_access_features_ext", "VkPhysicalDevicePipelineProtectedAccessFeaturesEXT", testPhysicalDeviceFeaturePipelineProtectedAccessFeaturesEXT);
 	addFunctionCase(testGroup, "ycbcr2_plane444_formats_features_ext", "VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT", testPhysicalDeviceFeatureYcbcr2Plane444FormatsFeaturesEXT);
 	addFunctionCase(testGroup, "provoking_vertex_features_ext", "VkPhysicalDeviceProvokingVertexFeaturesEXT", testPhysicalDeviceFeatureProvokingVertexFeaturesEXT);
 	addFunctionCase(testGroup, "shader_integer_dot_product_features", "VkPhysicalDeviceShaderIntegerDotProductFeatures", testPhysicalDeviceFeatureShaderIntegerDotProductFeatures);

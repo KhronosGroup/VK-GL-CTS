@@ -123,6 +123,7 @@ const vk::VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT&		getImage
 const vk::VkPhysicalDeviceImageProcessingFeaturesQCOM&						getImageProcessingFeaturesQCOM						(void) const;
 const vk::VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT&					getSubpassMergeFeedbackFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT&				getShaderModuleIdentifierFeaturesEXT				(void) const;
+const vk::VkPhysicalDevicePipelineProtectedAccessFeaturesEXT&				getPipelineProtectedAccessFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceTilePropertiesFeaturesQCOM&						getTilePropertiesFeaturesQCOM						(void) const;
 const vk::VkPhysicalDeviceAmigoProfilingFeaturesSEC&						getAmigoProfilingFeaturesSEC						(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&							getProtectedMemoryFeatures							(void) const;

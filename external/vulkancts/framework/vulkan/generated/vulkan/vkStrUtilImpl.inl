@@ -1159,6 +1159,8 @@ tcu::Format::Bitfield<32> getPipelineCreateFlagsStr (VkPipelineCreateFlags value
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT,				"VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_COLOR_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT,					"VK_PIPELINE_CREATE_COLOR_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DEPTH_STENCIL_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT,			"VK_PIPELINE_CREATE_DEPTH_STENCIL_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_NO_PROTECTED_ACCESS_BIT_EXT,							"VK_PIPELINE_CREATE_NO_PROTECTED_ACCESS_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_PROTECTED_ACCESS_ONLY_BIT_EXT,							"VK_PIPELINE_CREATE_PROTECTED_ACCESS_ONLY_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2065,6 +2067,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_PROPERTIES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_MODULE_IDENTIFIER_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_MODULE_IDENTIFIER_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_SHADER_MODULE_IDENTIFIER_EXT:										return "VK_STRUCTURE_TYPE_SHADER_MODULE_IDENTIFIER_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROTECTED_ACCESS_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROTECTED_ACCESS_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_PROPERTIES_FEATURES_QCOM:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_PROPERTIES_FEATURES_QCOM";
 		case VK_STRUCTURE_TYPE_TILE_PROPERTIES_QCOM:												return "VK_STRUCTURE_TYPE_TILE_PROPERTIES_QCOM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_AMIGO_PROFILING_FEATURES_SEC:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_AMIGO_PROFILING_FEATURES_SEC";
@@ -12722,6 +12725,16 @@ std::ostream& operator<< (std::ostream& s, const VkMultisampledRenderToSingleSam
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmultisampledRenderToSingleSampledEnable = " << value.multisampledRenderToSingleSampledEnable << '\n';
 	s << "\trasterizationSamples = " << value.rasterizationSamples << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePipelineProtectedAccessFeaturesEXT& value)
+{
+	s << "VkPhysicalDevicePipelineProtectedAccessFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpipelineProtectedAccess = " << value.pipelineProtectedAccess << '\n';
 	s << '}';
 	return s;
 }

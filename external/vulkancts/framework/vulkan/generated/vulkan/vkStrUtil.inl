@@ -1191,6 +1191,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePrimitivesGener
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSubpassResolvePerformanceQueryEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMultisampledRenderToSingleSampledInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineProtectedAccessFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyVideoPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyQueryResultStatusPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoProfileListInfoKHR& value);

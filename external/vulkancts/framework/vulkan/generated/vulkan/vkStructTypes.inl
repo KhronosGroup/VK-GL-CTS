@@ -6070,6 +6070,13 @@ struct VkMultisampledRenderToSingleSampledInfoEXT
 	VkSampleCountFlagBits	rasterizationSamples;
 };
 
+struct VkPhysicalDevicePipelineProtectedAccessFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		pipelineProtectedAccess;
+};
+
 struct VkQueueFamilyVideoPropertiesKHR
 {
 	VkStructureType					sType;

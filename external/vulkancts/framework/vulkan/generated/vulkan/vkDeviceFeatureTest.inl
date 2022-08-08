@@ -4989,6 +4989,53 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMultisampledRenderToSingl
 }
 
 
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPipelineProtectedAccessFeaturesEXT (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	vector<const char*>	coreExtensions;
+	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
+	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
+
+	vector<const char*> extensionNames;
+	extensionNames.reserve(nonCoreExtensions.size());
+	for (const string& extension : nonCoreExtensions)
+		extensionNames.push_back(extension.c_str());
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevicePipelineProtectedAccessFeaturesEXT>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDevicePipelineProtectedAccessFeaturesEXT, pipelineProtectedAccess),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDevicePipelineProtectedAccessFeaturesEXT*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
 tcu::TestStatus createDeviceWithUnsupportedFeaturesTestInheritedViewportScissorFeaturesNV (Context& context)
 {
 	const PlatformInterface&				vkp						= context.getPlatformInterface();
@@ -6275,6 +6322,7 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "synchronization2_features", "createDeviceWithUnsupportedFeaturesTestSynchronization2Features", createDeviceWithUnsupportedFeaturesTestSynchronization2Features);
 	addFunctionCase(testGroup, "primitives_generated_query_features_ext", "createDeviceWithUnsupportedFeaturesTestPrimitivesGeneratedQueryFeaturesEXT", createDeviceWithUnsupportedFeaturesTestPrimitivesGeneratedQueryFeaturesEXT);
 	addFunctionCase(testGroup, "multisampled_render_to_single_sampled_features_ext", "createDeviceWithUnsupportedFeaturesTestMultisampledRenderToSingleSampledFeaturesEXT", createDeviceWithUnsupportedFeaturesTestMultisampledRenderToSingleSampledFeaturesEXT);
+	addFunctionCase(testGroup, "pipeline_protected_access_features_ext", "createDeviceWithUnsupportedFeaturesTestPipelineProtectedAccessFeaturesEXT", createDeviceWithUnsupportedFeaturesTestPipelineProtectedAccessFeaturesEXT);
 	addFunctionCase(testGroup, "inherited_viewport_scissor_features_nv", "createDeviceWithUnsupportedFeaturesTestInheritedViewportScissorFeaturesNV", createDeviceWithUnsupportedFeaturesTestInheritedViewportScissorFeaturesNV);
 	addFunctionCase(testGroup, "ycbcr2_plane444_formats_features_ext", "createDeviceWithUnsupportedFeaturesTestYcbcr2Plane444FormatsFeaturesEXT", createDeviceWithUnsupportedFeaturesTestYcbcr2Plane444FormatsFeaturesEXT);
 	addFunctionCase(testGroup, "provoking_vertex_features_ext", "createDeviceWithUnsupportedFeaturesTestProvokingVertexFeaturesEXT", createDeviceWithUnsupportedFeaturesTestProvokingVertexFeaturesEXT);
