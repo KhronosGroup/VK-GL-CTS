@@ -41,7 +41,8 @@ Move<VkPipeline> makeComputePipeline (const DeviceInterface&					vk,
 									  const VkPipelineCreateFlags				pipelineFlags,
 									  const VkShaderModule						shaderModule,
 									  const VkPipelineShaderStageCreateFlags	shaderFlags,
-									  const VkSpecializationInfo*				specializationInfo)
+									  const VkSpecializationInfo*				specializationInfo,
+									  const VkPipelineCache						pipelineCache)
 {
 	const VkPipelineShaderStageCreateInfo pipelineShaderStageParams =
 	{
@@ -63,7 +64,7 @@ Move<VkPipeline> makeComputePipeline (const DeviceInterface&					vk,
 		DE_NULL,											// VkPipeline						basePipelineHandle;
 		0,													// deInt32							basePipelineIndex;
 	};
-	return createComputePipeline(vk, device, DE_NULL , &pipelineCreateInfo);
+	return createComputePipeline(vk, device, pipelineCache, &pipelineCreateInfo);
 }
 
 Move<VkPipeline> makeComputePipeline (const DeviceInterface&	vk,

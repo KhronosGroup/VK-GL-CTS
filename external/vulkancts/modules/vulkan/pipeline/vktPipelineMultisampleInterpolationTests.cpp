@@ -1100,6 +1100,14 @@ tcu::TestCaseGroup* createMultisampleInterpolationTests (tcu::TestContext& testC
 		reInterpolationGroup->addChild(cts_amber::createAmberTestCase(testCtx, "interpolate_at_centroid", "", "pipeline", "reinterpolate_at_centroid.amber", requirements));
 		reInterpolationGroup->addChild(cts_amber::createAmberTestCase(testCtx, "interpolate_at_sample", "", "pipeline", "reinterpolate_at_sample.amber", requirements));
 		testGroup->addChild(reInterpolationGroup.release());
+
+		de::MovePtr<tcu::TestCaseGroup> nonuniformInterpolantIndexingGroup(new tcu::TestCaseGroup(testCtx, "nonuniform_interpolant_indexing", "Test nonuniform interpolant indexing"));
+		std::vector<std::string> requirementsNonuniformIntepolantIndexing;
+		requirementsNonuniformIntepolantIndexing.push_back("Features.sampleRateShading");
+		nonuniformInterpolantIndexingGroup->addChild(cts_amber::createAmberTestCase(testCtx, "centroid", "", "pipeline/nonuniform_interpolant_indexing", "centroid.amber", requirementsNonuniformIntepolantIndexing));
+		nonuniformInterpolantIndexingGroup->addChild(cts_amber::createAmberTestCase(testCtx, "sample", "", "pipeline/nonuniform_interpolant_indexing", "sample.amber", requirementsNonuniformIntepolantIndexing));
+		nonuniformInterpolantIndexingGroup->addChild(cts_amber::createAmberTestCase(testCtx, "offset", "", "pipeline/nonuniform_interpolant_indexing", "offset.amber", requirementsNonuniformIntepolantIndexing));
+		testGroup->addChild(nonuniformInterpolantIndexingGroup.release());
 	}
 
 	testGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseCentroidQualifierInsidePrimitive> >	(testCtx, "centroid_qualifier_inside_primitive",	pipelineConstructionType, imageSizes, sizesElemCount, imageSamples, samplesElemCount));

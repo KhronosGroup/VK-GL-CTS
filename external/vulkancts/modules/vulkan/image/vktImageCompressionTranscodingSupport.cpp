@@ -506,15 +506,18 @@ protected:
 		vector<ImageViewSp>			imagesViews;
 		vector<VkImageCreateInfo>	imagesInfos;
 	};
-	void			copyDataToImage				(const VkCommandBuffer&				cmdBuffer,
+	void			copyDataToImage				(const VkCommandPool&				cmdPool,
+												 const VkCommandBuffer&				cmdBuffer,
 												 ImageData&							imageData,
 												 const vector<UVec3>&				mipMapSizes,
 												 const bool							isCompressed);
-	virtual void	executeShader				(const VkCommandBuffer&				cmdBuffer,
+	virtual void	executeShader				(const VkCommandPool&				cmdPool,
+												 const VkCommandBuffer&				cmdBuffer,
 												 const VkDescriptorSetLayout&		descriptorSetLayout,
 												 const VkDescriptorPool&			descriptorPool,
 												vector<ImageData>&					imageData);
-	bool			copyResultAndCompare		(const VkCommandBuffer&				cmdBuffer,
+	bool			copyResultAndCompare		(const VkCommandPool&				cmdPool,
+												 const VkCommandBuffer&				cmdBuffer,
 												 const VkImage&						uncompressed,
 												 const VkDeviceSize					offset,
 												 const UVec3&						size);
@@ -523,7 +526,8 @@ protected:
 	void			createImageInfos			(ImageData&							imageData,
 												 const vector<UVec3>&				mipMapSizes,
 												 const bool							isCompressed);
-	bool			decompressImage				(const VkCommandBuffer&				cmdBuffer,
+	bool			decompressImage				(const VkCommandPool&				cmdPool,
+												 const VkCommandBuffer&				cmdBuffer,
 												 vector<ImageData>&					imageData,
 												 const vector<UVec3>&				mipMapSizes);
 	vector<deUint8>	m_data;
@@ -597,10 +601,10 @@ TestStatus BasicComputeTestInstance::iterate (void)
 		case OPERATION_IMAGE_LOAD:
 		case OPERATION_TEXEL_FETCH:
 		case OPERATION_TEXTURE:
-			copyDataToImage(*cmdBuffer, imageData[compressedNdx], mipMapSizes, true);
+			copyDataToImage(*cmdPool, *cmdBuffer, imageData[compressedNdx], mipMapSizes, true);
 			break;
 		case OPERATION_IMAGE_STORE:
-			copyDataToImage(*cmdBuffer, imageData[1], mipMapSizes, false);
+			copyDataToImage(*cmdPool, *cmdBuffer, imageData[1], mipMapSizes, false);
 			break;
 		default:
 			DE_ASSERT(false);
@@ -634,7 +638,7 @@ TestStatus BasicComputeTestInstance::iterate (void)
 		}
 		descriptorSetLayout	= descriptorSetLayoutBuilder.build(vk, device);
 		descriptorPool		= descriptorPoolBuilder.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, imageData[0].getImageViewCount());
-		executeShader(*cmdBuffer, *descriptorSetLayout, *descriptorPool, imageData);
+		executeShader(*cmdPool, *cmdBuffer, *descriptorSetLayout, *descriptorPool, imageData);
 
 		{
 			VkDeviceSize offset = 0ull;
@@ -645,13 +649,13 @@ TestStatus BasicComputeTestInstance::iterate (void)
 				const UVec3		size		= UVec3(imageData[resultImageNdx].getImageInfo(imageNdx).extent.width,
 													imageData[resultImageNdx].getImageInfo(imageNdx).extent.height,
 													imageData[resultImageNdx].getImageInfo(imageNdx).extent.depth);
-				if (!copyResultAndCompare(*cmdBuffer, imageData[resultImageNdx].getImage(imageNdx), offset, size))
+				if (!copyResultAndCompare(*cmdPool, *cmdBuffer, imageData[resultImageNdx].getImage(imageNdx), offset, size))
 					return TestStatus::fail("Fail");
 				offset += getCompressedImageSizeInBytes(m_parameters.formatCompressed, mipMapSizes[mipNdx]);
 			}
 		}
 	}
-	if (!decompressImage(*cmdBuffer, imageData, mipMapSizes))
+	if (!decompressImage(*cmdPool, *cmdBuffer, imageData, mipMapSizes))
 			return TestStatus::fail("Fail");
 
 	if (m_bASTCErrorColourMismatch)
@@ -663,7 +667,8 @@ TestStatus BasicComputeTestInstance::iterate (void)
 	return TestStatus::pass("Pass");
 }
 
-void BasicComputeTestInstance::copyDataToImage (const VkCommandBuffer&	cmdBuffer,
+void BasicComputeTestInstance::copyDataToImage (const VkCommandPool&	cmdPool,
+												const VkCommandBuffer&	cmdBuffer,
 												ImageData&				imageData,
 												const vector<UVec3>&	mipMapSizes,
 												const bool				isCompressed)
@@ -730,9 +735,11 @@ void BasicComputeTestInstance::copyDataToImage (const VkCommandBuffer&	cmdBuffer
 	}
 	endCommandBuffer(vk, cmdBuffer);
 	submitCommandsAndWait(vk, device, queue, cmdBuffer);
+	m_context.resetCommandPoolForVKSC(device, cmdPool);
 }
 
-void BasicComputeTestInstance::executeShader (const VkCommandBuffer&		cmdBuffer,
+void BasicComputeTestInstance::executeShader (const VkCommandPool&			cmdPool,
+											  const VkCommandBuffer&		cmdBuffer,
 											  const VkDescriptorSetLayout&	descriptorSetLayout,
 											  const VkDescriptorPool&		descriptorPool,
 											  vector<ImageData>&			imageData)
@@ -835,9 +842,11 @@ void BasicComputeTestInstance::executeShader (const VkCommandBuffer&		cmdBuffer,
 	}
 	endCommandBuffer(vk, cmdBuffer);
 	submitCommandsAndWait(vk, device, queue, cmdBuffer);
+	m_context.resetCommandPoolForVKSC(device, cmdPool);
 }
 
-bool BasicComputeTestInstance::copyResultAndCompare (const VkCommandBuffer&	cmdBuffer,
+bool BasicComputeTestInstance::copyResultAndCompare (const VkCommandPool&				cmdPool,
+													 const VkCommandBuffer&	cmdBuffer,
 													 const VkImage&			uncompressed,
 													 const VkDeviceSize		offset,
 													 const UVec3&			size)
@@ -888,6 +897,7 @@ bool BasicComputeTestInstance::copyResultAndCompare (const VkCommandBuffer&	cmdB
 	}
 	endCommandBuffer(vk, cmdBuffer);
 	submitCommandsAndWait(vk, device, queue, cmdBuffer);
+	m_context.resetCommandPoolForVKSC(device, cmdPool);
 
 	const Allocation& allocResult = imageBufferResult.getAllocation();
 	invalidateAlloc(vk, device, allocResult);
@@ -937,11 +947,6 @@ void BasicComputeTestInstance::createImageInfos (ImageData& imageData, const vec
 
 	if (isCompressed)
 	{
-		VkFormatProperties properties;
-		m_context.getInstanceInterface().getPhysicalDeviceFormatProperties(m_context.getPhysicalDevice(), m_parameters.formatCompressed, &properties);
-		if (!(properties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
-			TCU_THROW(NotSupportedError, "Format storage feature not supported");
-
 		const VkExtent3D	extentCompressed	= makeExtent3D(getLayerSize(m_parameters.imageType, m_parameters.size));
 		const VkImageCreateInfo compressedInfo =
 		{
@@ -966,6 +971,11 @@ void BasicComputeTestInstance::createImageInfos (ImageData& imageData, const vec
 			DE_NULL,												// const deUint32*			pQueueFamilyIndices;
 			VK_IMAGE_LAYOUT_UNDEFINED,								// VkImageLayout			initialLayout;
 		};
+
+		VkImageFormatProperties imageFormatProperties;
+		if (m_context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(m_context.getPhysicalDevice(), compressedInfo.format, compressedInfo.imageType, compressedInfo.tiling, compressedInfo.usage, compressedInfo.flags, &imageFormatProperties) != VK_SUCCESS)
+			TCU_THROW(NotSupportedError, "Image parameters not supported");
+
 		imageData.addImageInfo(compressedInfo);
 	}
 	else
@@ -1007,7 +1017,8 @@ void BasicComputeTestInstance::createImageInfos (ImageData& imageData, const vec
 	}
 }
 
-bool BasicComputeTestInstance::decompressImage (const VkCommandBuffer&	cmdBuffer,
+bool BasicComputeTestInstance::decompressImage (const VkCommandPool&				cmdPool,
+												 const VkCommandBuffer&	cmdBuffer,
 												 vector<ImageData>&		imageData,
 												 const vector<UVec3>&	mipMapSizes)
 {
@@ -1293,6 +1304,7 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandBuffer&	cmdBuffer
 		}
 		endCommandBuffer(vk, cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, cmdBuffer);
+		m_context.resetCommandPoolForVKSC(device, cmdPool);
 
 		const Allocation&		resultAlloc		= resultBuffer.getAllocation();
 		const Allocation&		referenceAlloc	= referenceBuffer.getAllocation();
@@ -1333,7 +1345,8 @@ public:
 					ImageStoreComputeTestInstance	(Context&							context,
 													 const TestParameters&				parameters);
 protected:
-	virtual void	executeShader					(const VkCommandBuffer&				cmdBuffer,
+	virtual void	executeShader					(const VkCommandPool&				cmdPool,
+													 const VkCommandBuffer&				cmdBuffer,
 													 const VkDescriptorSetLayout&		descriptorSetLayout,
 													 const VkDescriptorPool&			descriptorPool,
 													 vector<ImageData>&					imageData);
@@ -1345,7 +1358,8 @@ ImageStoreComputeTestInstance::ImageStoreComputeTestInstance (Context& context, 
 {
 }
 
-void ImageStoreComputeTestInstance::executeShader (const VkCommandBuffer&		cmdBuffer,
+void ImageStoreComputeTestInstance::executeShader (const VkCommandPool&			cmdPool,
+												   const VkCommandBuffer&		cmdBuffer,
 												   const VkDescriptorSetLayout&	descriptorSetLayout,
 												   const VkDescriptorPool&		descriptorPool,
 												   vector<ImageData>&			imageData)
@@ -1453,6 +1467,7 @@ void ImageStoreComputeTestInstance::executeShader (const VkCommandBuffer&		cmdBu
 	}
 	endCommandBuffer(vk, cmdBuffer);
 	submitCommandsAndWait(vk, device, queue, cmdBuffer);
+	m_context.resetCommandPoolForVKSC(device, cmdPool);
 }
 
 class GraphicsAttachmentsTestInstance : public BasicTranscodingTestInstance
@@ -1777,6 +1792,7 @@ void GraphicsAttachmentsTestInstance::transcodeRead ()
 			endCommandBuffer(vk, *cmdBuffer);
 
 			submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+			m_context.resetCommandPoolForVKSC(device, *cmdPool);
 
 			const Allocation& dstImageBufferAlloc = dstImageBuffer->getAllocation();
 			invalidateAlloc(vk, device, dstImageBufferAlloc);
@@ -1911,6 +1927,7 @@ void GraphicsAttachmentsTestInstance::transcodeWrite ()
 			endCommandBuffer(vk, *cmdBuffer);
 
 			submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+			m_context.resetCommandPoolForVKSC(device, *cmdPool);
 
 			const Allocation& dstImageBufferAlloc = dstImageBuffer->getAllocation();
 			invalidateAlloc(vk, device, dstImageBufferAlloc);
@@ -2169,6 +2186,7 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression (const std::vector<deU
 	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+	m_context.resetCommandPoolForVKSC(device, *cmdPool);
 
 	// Compare decompressed pixel data in reference and result images
 	{
@@ -2368,6 +2386,7 @@ void GraphicsTextureTestInstance::transcodeRead ()
 			endCommandBuffer(vk, *cmdBuffer);
 
 			submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+			m_context.resetCommandPoolForVKSC(device, *cmdPool);
 
 			const Allocation& dstImageBufferAlloc = dstImageBuffer->getAllocation();
 			invalidateAlloc(vk, device, dstImageBufferAlloc);
@@ -2508,6 +2527,7 @@ void GraphicsTextureTestInstance::transcodeWrite ()
 			endCommandBuffer(vk, *cmdBuffer);
 
 			submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+			m_context.resetCommandPoolForVKSC(device, *cmdPool);
 
 			const Allocation& dstImageBufferAlloc = dstImageBuffer->getAllocation();
 			invalidateAlloc(vk, device, dstImageBufferAlloc);
@@ -2678,10 +2698,10 @@ void TexelViewCompatibleCase::initPrograms (vk::SourceCollections&	programCollec
 				"    const vec3 cord = vec3(v2, 0.0);\n"
 				"    const ivec3 pos = ivec3(gl_GlobalInvocationID); \n",
 			};
-			src_decompress	<< "layout (binding = 0) uniform "<<getGlslSamplerType(mapVkFormat(m_parameters.formatUncompressed), mapImageViewType(m_parameters.imageType))<<" compressed_result;\n"
-							<< "layout (binding = 1) uniform "<<getGlslSamplerType(mapVkFormat(m_parameters.formatUncompressed), mapImageViewType(m_parameters.imageType))<<" compressed_reference;\n"
-							<< "layout (binding = 2, "<<formatQualifierStr<<") writeonly uniform "<<imageTypeStr<<" decompressed_result;\n"
-							<< "layout (binding = 3, "<<formatQualifierStr<<") writeonly uniform "<<imageTypeStr<<" decompressed_reference;\n\n"
+			src_decompress	<< "layout (binding = 0) uniform "<<getGlslSamplerType(mapVkFormat(m_parameters.formatForVerify), mapImageViewType(m_parameters.imageType))<<" compressed_result;\n"
+							<< "layout (binding = 1) uniform "<<getGlslSamplerType(mapVkFormat(m_parameters.formatForVerify), mapImageViewType(m_parameters.imageType))<<" compressed_reference;\n"
+							<< "layout (binding = 2, "<<getShaderImageFormatQualifier(mapVkFormat(m_parameters.formatForVerify))<<") writeonly uniform "<<getShaderImageType(mapVkFormat(m_parameters.formatForVerify), m_parameters.imageType)<<" decompressed_result;\n"
+							<< "layout (binding = 3, "<<getShaderImageFormatQualifier(mapVkFormat(m_parameters.formatForVerify))<<") writeonly uniform "<<getShaderImageType(mapVkFormat(m_parameters.formatForVerify), m_parameters.imageType)<<" decompressed_reference;\n\n"
 							<< "void main (void)\n"
 							<< "{\n"
 							<< "    const vec2 pixels_resolution = vec2(gl_NumWorkGroups.xy);\n"
@@ -2824,10 +2844,10 @@ void TexelViewCompatibleCase::initPrograms (vk::SourceCollections&	programCollec
 				};
 
 				src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n\n"
-					<< "layout (binding = 0) uniform " << samplerType << " u_imageIn0;\n"
-					<< "layout (binding = 1) uniform " << samplerType << " u_imageIn1;\n"
-					<< "layout (binding = 2, " << formatQualifierStr << ") writeonly uniform " << imageTypeStr << " u_imageOut0;\n"
-					<< "layout (binding = 3, " << formatQualifierStr << ") writeonly uniform " << imageTypeStr << " u_imageOut1;\n"
+					<< "layout (binding = 0) uniform " << getGlslSamplerType(mapVkFormat(m_parameters.formatForVerify), mapImageViewType(m_parameters.imageType)) << " u_imageIn0;\n"
+					<< "layout (binding = 1) uniform " << getGlslSamplerType(mapVkFormat(m_parameters.formatForVerify), mapImageViewType(m_parameters.imageType)) << " u_imageIn1;\n"
+					<< "layout (binding = 2, " << getShaderImageFormatQualifier(mapVkFormat(m_parameters.formatForVerify)) << ") writeonly uniform " << getShaderImageType(mapVkFormat(m_parameters.formatForVerify), m_parameters.imageType) << " u_imageOut0;\n"
+					<< "layout (binding = 3, " << getShaderImageFormatQualifier(mapVkFormat(m_parameters.formatForVerify)) << ") writeonly uniform " << getShaderImageType(mapVkFormat(m_parameters.formatForVerify), m_parameters.imageType) << " u_imageOut1;\n"
 					<< "\n"
 					<< "void main (void)\n"
 					<< "{\n"
@@ -3010,7 +3030,18 @@ tcu::TestCaseGroup* createImageCompressionTranscodingTests (tcu::TestContext& te
 	{
 		{ IMAGE_TYPE_1D, "1d_image" },
 		{ IMAGE_TYPE_2D, "2d_image" },
-		{ IMAGE_TYPE_3D, "3d_image" },
+
+		// See issue: https://gitlab.khronos.org/vulkan/vulkan/-/issues/3164
+		//   Removed 3D because you can't take an uncompressed 3D view of a VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT image
+		// see VUID-VkImageViewCreateInfo-image-04739. This VUID came from https://gitlab.khronos.org/vulkan/vulkan/-/merge_requests/4350
+		// to resolve https://gitlab.khronos.org/vulkan/vulkan/-/issues/2501.
+		//   It is possible to take a 2D view of a compressed 3D image created
+		// with VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT, but then it also needs to be created with
+		// VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT from VK_EXT_image_2d_view_of_3d, and the implementation needs to support
+		// image2DViewOf3D or sampler2DViewOf3D depending on the test variant.
+		//   For this test to support VK_EXT_image_2d_view_of_3d there needs to be quite a few changes to the shader generation
+		// code, the descriptor set code and several other things, which isn't a trivial amount of work.
+		// { IMAGE_TYPE_3D, "3d_image" },
 	};
 
 	const VkImageUsageFlags		baseImageUsageFlagSet							= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
@@ -3195,8 +3226,7 @@ tcu::TestCaseGroup* createImageCompressionTranscodingTests (tcu::TestContext& te
 						continue;
 
 					if (imageType == IMAGE_TYPE_3D &&
-						(operationNdx == OPERATION_ATTACHMENT_READ || operationNdx == OPERATION_ATTACHMENT_WRITE ||
-						 operationNdx == OPERATION_TEXTURE_READ))
+						(operationNdx == OPERATION_ATTACHMENT_READ || operationNdx == OPERATION_ATTACHMENT_WRITE))
 						continue;
 
 					MovePtr<tcu::TestCaseGroup>	imageOperationGroup	(new tcu::TestCaseGroup(testCtx, operationName[operationNdx].c_str(), ""));

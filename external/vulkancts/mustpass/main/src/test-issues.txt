@@ -3,3 +3,10 @@ dEQP-VK.glsl.texture_functions.textureoffset.isampler2darray_vertex
 dEQP-VK.glsl.texture_functions.textureoffset.usampler2darray_vertex
 dEQP-VK.glsl.texture_functions.textureoffset.usampler3d_vertex
 dEQP-VK.glsl.texture_functions.texturegradoffset.usampler2darray_vertex
+
+
+# Issue 3836: RT maintenance1 test expects exact VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_SIZE_KHR value
+dEQP-VK.ray_tracing_pipeline.acceleration_structures.query_pool_results.cpu.memory.size
+dEQP-VK.ray_tracing_pipeline.acceleration_structures.query_pool_results.cpu.buffer.size
+dEQP-VK.ray_tracing_pipeline.acceleration_structures.query_pool_results.gpu.memory.size
+dEQP-VK.ray_tracing_pipeline.acceleration_structures.query_pool_results.gpu.buffer.size

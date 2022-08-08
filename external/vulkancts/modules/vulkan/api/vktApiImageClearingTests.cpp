@@ -1021,6 +1021,7 @@ void ImageClearingTestInstance::endCommandBuffer (void) const
 void ImageClearingTestInstance::submitCommandBuffer (void) const
 {
 	submitCommandsAndWait(m_vkd, m_device, m_queue, m_commandBuffer.get());
+	m_context.resetCommandPoolForVKSC(m_device, *m_commandPool);
 }
 
 void ImageClearingTestInstance::pipelineImageBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldLayout, VkImageLayout newLayout, VkImageAspectFlags aspectMask) const

@@ -705,6 +705,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 		endCommandBuffer(vk, *transferCmdBuffer);
 
 		submitCommandsAndWait(vk, device, queue, transferCmdBuffer.get());
+		m_context.resetCommandPoolForVKSC(device, *cmdPool);
 	}
 
 
@@ -848,6 +849,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 		endCommandBuffer(vk, *transferCmdBuffer);
 
 		submitCommandsAndWait(vk, device, queue, transferCmdBuffer.get());
+		m_context.resetCommandPoolForVKSC(device, *cmdPool);
 	}
 
 	// Resolve Depth Buffer
@@ -930,6 +932,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 		endCommandBuffer(vk, *transferCmdBuffer);
 
 		submitCommandsAndWait(vk, device, queue, transferCmdBuffer.get());
+		m_context.resetCommandPoolForVKSC(device, *cmdPool);
 	}
 
 	// Verify depth buffer
@@ -941,6 +944,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 		endCommandBuffer(vk, *transferCmdBuffer);
 
 		submitCommandsAndWait(vk, device, queue, transferCmdBuffer.get());
+		m_context.resetCommandPoolForVKSC(device, *cmdPool);
 
 		invalidateMappedMemoryRange(vk, device, validationAlloc->getMemory(), validationAlloc->getOffset(), VK_WHOLE_SIZE);
 		invalidateMappedMemoryRange(vk, device, markerBufferAllocation->getMemory(), markerBufferAllocation->getOffset(), VK_WHOLE_SIZE);
@@ -1243,6 +1247,7 @@ TestStatus BuiltinFragCoordMsaaCaseInstance::iterate (void)
 		endCommandBuffer(vk, *transferCmdBuffer);
 
 		submitCommandsAndWait(vk, device, queue, transferCmdBuffer.get());
+		m_context.resetCommandPoolForVKSC(device, *cmdPool);
 	}
 
 	// Perform draw
@@ -1290,6 +1295,7 @@ TestStatus BuiltinFragCoordMsaaCaseInstance::iterate (void)
 		endCommandBuffer(vk, *transferCmdBuffer);
 
 		submitCommandsAndWait(vk, device, queue, transferCmdBuffer.get());
+		m_context.resetCommandPoolForVKSC(device, *cmdPool);
 
 		invalidateAlloc(vk, device, *sampleLocationBufferAllocation);
 	}

@@ -1271,7 +1271,7 @@ tcu::TestStatus queryDevGroupSurfacePresentCapabilitiesTest (Context& context, T
 	}
 
 	// Check each physical device can present on itself
-	for (size_t physDevIdx = 0; physDevIdx < VK_MAX_DEVICE_GROUP_SIZE_KHR; physDevIdx++)
+	for (size_t physDevIdx = 0; physDevIdx < VK_MAX_DEVICE_GROUP_SIZE; physDevIdx++)
 	{
 		if (presentCapabilities->presentMask[physDevIdx])
 			if (!((1 << physDevIdx) & (presentCapabilities->presentMask[physDevIdx])))

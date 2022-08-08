@@ -85,6 +85,17 @@ Move<VkCommandBuffer> allocateCommandBuffer (const DeviceInterface& vk, VkDevice
 	return Move<VkCommandBuffer>(check<VkCommandBuffer>(object), Deleter<VkCommandBuffer>(vk, device, pAllocateInfo->commandPool));
 }
 
+void allocateCommandBuffers (const DeviceInterface& vk, VkDevice device, const VkCommandBufferAllocateInfo* pAllocateInfo, Move<VkCommandBuffer> *pCommandBuffers)
+{
+	VkCommandBufferAllocateInfo allocateInfoCopy = *pAllocateInfo;
+	allocateInfoCopy.commandBufferCount = 1;
+	for (uint32_t i = 0; i < pAllocateInfo->commandBufferCount; ++i) {
+		VkCommandBuffer object = 0;
+		VK_CHECK(vk.allocateCommandBuffers(device, &allocateInfoCopy, &object));
+		pCommandBuffers[i] = Move<VkCommandBuffer>(check<VkCommandBuffer>(object), Deleter<VkCommandBuffer>(vk, device, pAllocateInfo->commandPool));
+	}
+}
+
 Move<VkDescriptorSet> allocateDescriptorSet (const DeviceInterface& vk, VkDevice device, const VkDescriptorSetAllocateInfo* pAllocateInfo)
 {
 	VkDescriptorSet object = 0;
@@ -240,7 +251,10 @@ void Deleter<VkQueryPool>::operator() (VkQueryPool obj) const
 template<>
 void Deleter<VkDescriptorPool>::operator() (VkDescriptorPool obj) const
 {
-	DE_UNREF(obj);
+	// vkDestroyDescriptorPool is unsupported in VulkanSC. Instead, reset the descriptor pool
+    // so that any sets allocated from it will be implicitly freed (similar to if it were being
+    // destroyed). Lots of tests rely on sets being implicitly freed.
+	m_deviceIface->resetDescriptorPool(m_device, obj, 0);
 }
 
 template<>

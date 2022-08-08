@@ -1189,7 +1189,7 @@ void DepthBoundsRangeUnrestrictedTestInstance::prepareCommandBuffer (bool firstD
 
 	if (!firstDraw)
 	{
-		vk.resetCommandBuffer(*m_cmdBuffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+		VK_CHECK(vk.resetCommandBuffer(*m_cmdBuffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT));
 		// Color image layout changed after verifying the first draw call, restore it.
 		m_imageLayoutBarriers[0].srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 		m_imageLayoutBarriers[0].oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;

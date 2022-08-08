@@ -2964,6 +2964,7 @@ tcu::TestStatus DeviceIndexTestInstance::iterate (void)
 
 		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer, true, physDevMask);
+		m_context.resetCommandPoolForVKSC(device, *cmdPool);
 
 		// Validate the results on all physical devices where compute shader was launched
 		const VkBufferMemoryBarrier srcBufferBarrier = makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT , *sboBuffer, 0ull, bufferSizeBytes);

@@ -292,7 +292,7 @@ tcu::TestStatus testEarlyDestroy (Context& context, const TestParams& params, bo
 			VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
 			vk::submitCommandsAndWait(vk, vkDevice, queue, *cmdBuffer);
-			vk.resetCommandBuffer(*cmdBuffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+			VK_CHECK(vk.resetCommandBuffer(*cmdBuffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT));
 			const auto&									imageBufferAlloc				= imageBuffer.getAllocation();
 			vk::invalidateAlloc(vk, vkDevice, imageBufferAlloc);
 

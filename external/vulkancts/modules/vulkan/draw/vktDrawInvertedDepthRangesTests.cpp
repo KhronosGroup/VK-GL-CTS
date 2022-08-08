@@ -491,7 +491,7 @@ void InvertedDepthRangesTestInstance::beginSecondaryCmdBuffer(VkCommandBuffer cm
 	};
 
 	const DeviceInterface& vk = m_context.getDeviceInterface();
-	vk.beginCommandBuffer(cmdBuffer, &commandBufBeginParams);
+	VK_CHECK(vk.beginCommandBuffer(cmdBuffer, &commandBufBeginParams));
 }
 
 void InvertedDepthRangesTestInstance::beginRender(VkCommandBuffer cmdBuffer, const VkClearValue& clearColor, const VkClearValue& clearDepth, VkRenderingFlagsKHR renderingFlags)

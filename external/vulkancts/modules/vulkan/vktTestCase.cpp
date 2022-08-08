@@ -988,6 +988,20 @@ vk::DebugReportRecorder& Context::getDebugReportRecorder () const
 
 #endif // CTS_USES_VULKANSC
 
+void Context::resetCommandPoolForVKSC	(const VkDevice					device,
+										 const VkCommandPool			commandPool)
+{
+#ifdef CTS_USES_VULKANSC
+	if (getDeviceVulkanSC10Properties().commandPoolResetCommandBuffer == VK_FALSE) {
+		const DeviceInterface &vk = getDeviceInterface();
+		VK_CHECK(vk.resetCommandPool(device, commandPool, 0u));
+	}
+#else
+	DE_UNREF(device);
+	DE_UNREF(commandPool);
+#endif
+}
+
 // TestCase
 
 void TestCase::initPrograms (SourceCollections&) const

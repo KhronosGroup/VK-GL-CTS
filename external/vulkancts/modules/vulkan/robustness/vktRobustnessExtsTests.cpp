@@ -2519,9 +2519,9 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 			DE_NULL,
 			VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_NV,			// type
 			0,														// generalShader
-			VK_SHADER_UNUSED_NV,									// closestHitShader
-			VK_SHADER_UNUSED_NV,									// anyHitShader
-			VK_SHADER_UNUSED_NV,									// intersectionShader
+			VK_SHADER_UNUSED_KHR,									// closestHitShader
+			VK_SHADER_UNUSED_KHR,									// anyHitShader
+			VK_SHADER_UNUSED_KHR,									// intersectionShader
 		};
 
 		VkRayTracingPipelineCreateInfoNV pipelineCreateInfo = {
@@ -2546,7 +2546,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 		deUint32 *ptr = (deUint32 *)sbtBuffer->getAllocation().getHostPtr();
 		invalidateAlloc(vk, device, sbtBuffer->getAllocation());
 
-		vk.getRayTracingShaderGroupHandlesNV(device, *pipeline, 0, 1, rayTracingProperties.shaderGroupHandleSize, ptr);
+		vk.getRayTracingShaderGroupHandlesKHR(device, *pipeline, 0, 1, rayTracingProperties.shaderGroupHandleSize, ptr);
 	}
 #endif
 	else
