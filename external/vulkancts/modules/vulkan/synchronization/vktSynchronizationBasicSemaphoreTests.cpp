@@ -134,6 +134,8 @@ tcu::TestStatus basicChainCase(Context & context, TestConfig config)
 
 	for (int i = 0; err == VK_SUCCESS && i < basicChainLength; i++)
 	{
+		if (i % (basicChainLength/4) == 0) context.getTestContext().touchWatchdog();
+
 		err = vk.createSemaphore(device, &sci, DE_NULL, &pSignalSemaphoreInfo->semaphore);
 		if (err != VK_SUCCESS)
 			continue;
@@ -196,6 +198,8 @@ tcu::TestStatus basicChainTimelineCase (Context& context, TestConfig config)
 
 	for (int i = 0; err == VK_SUCCESS && i < basicChainLength; i++)
 	{
+		if (i % (basicChainLength/4) == 0) context.getTestContext().touchWatchdog();
+
 		pSignalSemaphoreInfo->value = static_cast<deUint64>(i+1);
 
 		SynchronizationWrapperPtr synchronizationWrapper = getSynchronizationWrapper(config.type, vk, DE_TRUE);
