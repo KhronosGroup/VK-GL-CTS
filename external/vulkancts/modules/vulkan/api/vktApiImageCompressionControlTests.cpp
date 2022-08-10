@@ -208,6 +208,102 @@ static void validate(Context& context, tcu::ResultCollector& results, VkDevice d
 	}
 }
 
+static void checkAhbImageSupport (const Context& context, const TestParams testParams, const deUint32 width, const deUint32	height, const VkImageUsageFlagBits vkUsage)
+{
+	using namespace vkt::ExternalMemoryUtil;
+
+	// Check android hardware buffer can be allocated for the format with usage.
+	AndroidHardwareBufferExternalApi* ahbApi = AndroidHardwareBufferExternalApi::getInstance();
+	if (!ahbApi)
+	{
+		TCU_THROW(NotSupportedError, "Platform doesn't support Android Hardware Buffer handles");
+	}
+	deUint64 ahbUsage =  ahbApi->vkUsageToAhbUsage(vkUsage);
+	{
+		pt::AndroidHardwareBufferPtr ahb = ahbApi->allocate(width,height, 1, ahbApi->vkFormatToAhbFormat(testParams.format), ahbUsage);
+		if (ahb.internal == DE_NULL)
+		{
+			TCU_THROW(NotSupportedError, "Android hardware buffer format not supported");
+		}
+	}
+
+	// Check external memory supported.
+	const VkPhysicalDeviceExternalImageFormatInfoKHR external_image_format_info =
+	{
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO,
+		&testParams.control,
+		VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID
+	};
+
+	const VkPhysicalDeviceImageFormatInfo2			info				=
+	{
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
+		&external_image_format_info,
+		testParams.format,
+		VK_IMAGE_TYPE_2D,
+		VK_IMAGE_TILING_OPTIMAL,
+		VK_IMAGE_USAGE_SAMPLED_BIT,
+		0,
+	};
+
+	VkImageCompressionPropertiesEXT compressionPropertiesSupported =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_COMPRESSION_PROPERTIES_EXT,
+		DE_NULL,
+		0,
+		0
+	};
+
+	VkAndroidHardwareBufferUsageANDROID		ahbUsageProperties	=
+	{
+		VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_USAGE_ANDROID,
+		&compressionPropertiesSupported,
+		0u
+	};
+
+	VkExternalImageFormatProperties					externalProperties	=
+	{
+		VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES,
+		&ahbUsageProperties,
+		{ 0u, 0u, 0u }
+	};
+
+	VkImageFormatProperties2						properties			=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
+		&externalProperties,
+		{
+			{ 0u, 0u, 0u },
+			0u,
+			0u,
+			0u,
+			0u
+		}
+	};
+
+	VkResult result = context.getInstanceInterface().getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &info, &properties);
+
+	if(result == VK_ERROR_FORMAT_NOT_SUPPORTED)
+		TCU_THROW(NotSupportedError, "Format not supported");
+
+	if ((externalProperties.externalMemoryProperties.externalMemoryFeatures & VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT) == 0)
+		TCU_THROW(NotSupportedError, "External handle type doesn't support exporting image");
+
+	if ((externalProperties.externalMemoryProperties.externalMemoryFeatures & VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT) == 0)
+		TCU_THROW(NotSupportedError, "External handle type requires dedicated allocation");
+
+	if((compressionPropertiesSupported.imageCompressionFlags == VK_IMAGE_COMPRESSION_DISABLED_EXT)
+		&& (testParams.control.flags != VK_IMAGE_COMPRESSION_DISABLED_EXT))
+	{
+		TCU_THROW(NotSupportedError, "Compression is disbaled, and other compression flags are not supported");
+	}
+
+	if((ahbUsageProperties.androidHardwareBufferUsage & ahbUsage) != ahbUsage)
+	{
+		TCU_THROW(NotSupportedError, "Android hardware buffer usage is not supported");
+	}
+}
+
 static tcu::TestStatus ahbImageCreateTest(Context& context, TestParams testParams)
 {
 	using namespace vkt::ExternalMemoryUtil;
@@ -224,6 +320,7 @@ static tcu::TestStatus ahbImageCreateTest(Context& context, TestParams testParam
 	tcu::ResultCollector	   results(log);
 	const bool				   is_fixed_rate_ex = testParams.control.flags == VK_IMAGE_COMPRESSION_FIXED_RATE_EXPLICIT_EXT;
 	const uint32_t			   numPlanes		= isYCbCrFormat(testParams.format) ? getPlaneCount(testParams.format) : 1;
+	const VkImageUsageFlagBits vkUsage			= VK_IMAGE_USAGE_SAMPLED_BIT;
 
 	testParams.control.compressionControlPlaneCount = is_fixed_rate_ex ? numPlanes : 0;
 
@@ -259,11 +356,14 @@ static tcu::TestStatus ahbImageCreateTest(Context& context, TestParams testParam
 												   1,
 												   vk::VK_SAMPLE_COUNT_1_BIT,
 												   VK_IMAGE_TILING_OPTIMAL,
-												   VK_IMAGE_USAGE_SAMPLED_BIT,
+												   vkUsage,
 												   vk::VK_SHARING_MODE_EXCLUSIVE,
 												   1,
 												   &queueFamilyIndex,
 												   vk::VK_IMAGE_LAYOUT_UNDEFINED };
+
+
+		checkAhbImageSupport(context, testParams, width, height, vkUsage);
 
 		Move<VkImage>			   image		= vk::createImage(vkd, device, &createInfo);
 		const VkMemoryRequirements requirements = ExternalMemoryUtil::getImageMemoryRequirements(
@@ -374,6 +474,32 @@ void addImageCompressionControlTests(tcu::TestCaseGroup* group, TestParams testP
 	}
 }
 
+void addAhbCompressionControlTests(tcu::TestCaseGroup *group, TestParams testParams)
+{
+	// Ahb formats
+	static const vk::VkFormat ahbFormats[] = {
+		VK_FORMAT_R8G8B8A8_UNORM,
+		VK_FORMAT_R8G8B8_UNORM,
+		VK_FORMAT_R5G6B5_UNORM_PACK16,
+		VK_FORMAT_R16G16B16A16_SFLOAT,
+		VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+		VK_FORMAT_D16_UNORM,
+		VK_FORMAT_X8_D24_UNORM_PACK32,
+		VK_FORMAT_D24_UNORM_S8_UINT,
+		VK_FORMAT_D32_SFLOAT,
+		VK_FORMAT_D32_SFLOAT_S8_UINT,
+		VK_FORMAT_S8_UINT
+	};
+
+	for (int index = 0; index < DE_LENGTH_OF_ARRAY(ahbFormats); ++index)
+	{
+		testParams.format = ahbFormats[index];
+		const char *const enumName = getFormatName(testParams.format);
+		const string caseName = de::toLower(string(enumName).substr(10));
+		addFunctionCase(group, caseName, enumName, ahbImageCreateTest, testParams);
+	}
+}
+
 tcu::TestCaseGroup* createImageCompressionControlTests(tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> group(
@@ -413,12 +539,16 @@ tcu::TestCaseGroup* createImageCompressionControlTests(tcu::TestContext& testCtx
 
 	subgroup = new tcu::TestCaseGroup(testCtx, "android_hardware_buffer",
 									  "Test creating Android Hardware buffer with compression control struct");
+
 	for (auto& flag : compression_flags)
 	{
 		testParams.control.flags = flag.flag;
-		addFunctionCase(subgroup, flag.name, flag.name, ahbImageCreateTest, testParams);
+		subgroup->addChild(createTestGroup(testCtx, flag.name,
+										   "Queries images created with compression control struct.",
+										   addAhbCompressionControlTests, testParams));
 	}
-	group->addChild(subgroup);
+
+		group->addChild(subgroup);
 
 	return group.release();
 }
