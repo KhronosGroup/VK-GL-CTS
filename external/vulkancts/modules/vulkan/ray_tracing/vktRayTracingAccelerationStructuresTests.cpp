@@ -78,6 +78,7 @@ enum TopTestType
 {
 	TTT_IDENTICAL_INSTANCES,
 	TTT_DIFFERENT_INSTANCES,
+	TTT_UPDATED_INSTANCES,
 	TTT_MIX_INSTANCES,
 };
 
@@ -93,7 +94,9 @@ enum OperationType
 	OP_NONE,
 	OP_COPY,
 	OP_COMPACT,
-	OP_SERIALIZE
+	OP_SERIALIZE,
+	OP_UPDATE,
+	OP_UPDATE_IN_PLACE
 };
 
 enum class InstanceCullFlags
@@ -1891,6 +1894,31 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 					topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
 					topLevelAccelerationStructureCopy->setDeferredOperation(htSerialize, workerThreadsCount);
 					topLevelAccelerationStructureCopy->createAndDeserializeFrom(vkd, device, *cmdBuffer, allocator, storage.get(), 0u);
+					break;
+				}
+				case OP_UPDATE:
+				{
+					topLevelAccelerationStructureCopy = m_data.testConfiguration->initTopAccelerationStructure(m_context, m_data, *bottomLevelAccelerationStructuresPtr);
+					topLevelAccelerationStructureCopy->setBuildFlags(m_data.buildFlags);
+					topLevelAccelerationStructureCopy->create(vkd, device, allocator, 0u, 0u);
+					// Update AS based on topLevelAccelerationStructure
+					topLevelAccelerationStructureCopy->build(vkd, device, *cmdBuffer, topLevelAccelerationStructure.get());
+					break;
+				}
+				case OP_UPDATE_IN_PLACE:
+				{
+					// Update in place
+					topLevelAccelerationStructure->build(vkd, device, *cmdBuffer, topLevelAccelerationStructure.get());
+					// Make a coppy
+					topLevelAccelerationStructureCopy = makeTopLevelAccelerationStructure();
+					topLevelAccelerationStructureCopy->setDeferredOperation(htCopy, workerThreadsCount);
+					topLevelAccelerationStructureCopy->setBuildType(m_data.buildType);
+					topLevelAccelerationStructureCopy->setBuildFlags(m_data.buildFlags);
+					topLevelAccelerationStructureCopy->setBuildWithoutPrimitives(topNoPrimitives);
+					topLevelAccelerationStructureCopy->setInactiveInstances(inactiveInstances);
+					topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
+					topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
+					topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, topLevelAccelerationStructure.get(), 0u, 0u);
 					break;
 				}
 				default:
@@ -4973,6 +5001,67 @@ void addInstanceIndexTests (tcu::TestCaseGroup* group)
 	}
 }
 
+void addInstanceUpdateTests (tcu::TestCaseGroup* group)
+{
+	const struct
+	{
+		vk::VkAccelerationStructureBuildTypeKHR				buildType;
+		std::string											name;
+	} buildTypes[] =
+	{
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR,	"cpu_built"	},
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,	"gpu_built"	},
+	};
+
+	struct
+	{
+		OperationType										operationType;
+		const char*											name;
+	} operationTypes[] =
+	{
+		{ OP_UPDATE,											"update"			},
+		{ OP_UPDATE_IN_PLACE,									"update_in_place"	},
+	};
+
+
+	auto& ctx = group->getTestContext();
+
+	for (int buildTypeIdx = 0; buildTypeIdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeIdx)
+	{
+		de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(new tcu::TestCaseGroup(ctx, buildTypes[buildTypeIdx].name.c_str(), ""));
+
+		for (int operationTypesIdx = 0; operationTypesIdx < DE_LENGTH_OF_ARRAY(operationTypes); ++operationTypesIdx)
+		{
+			TestParams testParams
+			{
+				buildTypes[buildTypeIdx].buildType,
+				VK_FORMAT_R32G32B32_SFLOAT,
+				false,
+				VK_INDEX_TYPE_NONE_KHR,
+				BTT_TRIANGLES,
+				InstanceCullFlags::NONE,
+				false,
+				false,
+				TTT_IDENTICAL_INSTANCES,
+				false,
+				false,
+				VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR,
+				OT_TOP_ACCELERATION,
+				operationTypes[operationTypesIdx].operationType,
+				RTAS_DEFAULT_SIZE,
+				RTAS_DEFAULT_SIZE,
+				de::SharedPtr<TestConfiguration>(new SingleTriangleConfiguration()),
+				0u,
+				EmptyAccelerationStructureCase::NOT_EMPTY,
+				InstanceCustomIndexCase::NONE,
+				false,
+				0xFFu,
+			};
+			buildTypeGroup->addChild(new RayTracingASBasicTestCase(ctx, operationTypes[operationTypesIdx].name, "", testParams));
+		}
+		group->addChild(buildTypeGroup.release());
+	}
+}
 
 void addInstanceRayCullMaskTests(tcu::TestCaseGroup* group)
 {
@@ -5292,6 +5381,7 @@ tcu::TestCaseGroup*	createAccelerationStructuresTests(tcu::TestContext& testCtx)
 	addTestGroup(group.get(), "dynamic_indexing", "Exercise dynamic indexing of acceleration structures", addDynamicIndexingTests);
 	addTestGroup(group.get(), "empty", "Test building empty acceleration structures using different methods", addEmptyAccelerationStructureTests);
 	addTestGroup(group.get(), "instance_index", "Test using different values for the instance index and checking them in shaders", addInstanceIndexTests);
+	addTestGroup(group.get(), "instance_update", "Test updating instance index using both in-place and separate src/dst acceleration structures", addInstanceUpdateTests);
 	addTestGroup(group.get(), "device_compability_khr", "", addGetDeviceAccelerationStructureCompabilityTests);
 	addTestGroup(group.get(), "header_bottom_address", "", addUpdateHeaderBottomAddressTests);
 	addTestGroup(group.get(), "query_pool_results", "Test for a new VkQueryPool queries for VK_KHR_ray_tracing_maintenance1", addQueryPoolResultsTests);

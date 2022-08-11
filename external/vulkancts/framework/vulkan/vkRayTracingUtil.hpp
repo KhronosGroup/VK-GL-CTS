@@ -798,7 +798,8 @@ public:
 																										 const MemoryRequirement&					addMemoryRequirement	= MemoryRequirement::Any) = DE_NULL;
 	virtual void													build								(const DeviceInterface&						vk,
 																										 const VkDevice								device,
-																										 const VkCommandBuffer						cmdBuffer) = DE_NULL;
+																										 const VkCommandBuffer						cmdBuffer,
+																										 TopLevelAccelerationStructure*				srcAccelerationStructure = DE_NULL) = DE_NULL;
 	virtual void													copyFrom							(const DeviceInterface&						vk,
 																										 const VkDevice								device,
 																										 const VkCommandBuffer						cmdBuffer,
