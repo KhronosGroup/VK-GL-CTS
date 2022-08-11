@@ -598,7 +598,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 				));
 			}
 
-			deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, static_cast<deUint32>(imageSparseShaderStorageBarriers.size()), imageSparseShaderStorageBarriers.data());
+			deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, static_cast<deUint32>(imageSparseShaderStorageBarriers.size()), imageSparseShaderStorageBarriers.data());
 		}
 
 		// Create descriptor set layout
