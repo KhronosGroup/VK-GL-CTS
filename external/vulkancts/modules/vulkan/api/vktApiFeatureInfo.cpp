@@ -2063,10 +2063,21 @@ struct CheckEnumeratePhysicalDevicesIncompleteResult : public CheckIncompleteRes
 
 struct CheckEnumeratePhysicalDeviceGroupsIncompleteResult : public CheckIncompleteResult<VkPhysicalDeviceGroupProperties>
 {
-	void getResult (Context& context, VkPhysicalDeviceGroupProperties* data)
+	CheckEnumeratePhysicalDeviceGroupsIncompleteResult (const InstanceInterface& vki, const VkInstance instance)
+		: m_vki			(vki)
+		, m_instance	(instance)
+		{}
+
+	void getResult (Context&, VkPhysicalDeviceGroupProperties* data)
 	{
-		m_result = context.getInstanceInterface().enumeratePhysicalDeviceGroups(context.getInstance(), &m_count, data);
+		for (uint32_t idx = 0u; idx < m_count; ++idx)
+			data[idx] = initVulkanStructure();
+		m_result = m_vki.enumeratePhysicalDeviceGroups(m_instance, &m_count, data);
 	}
+
+protected:
+	const InstanceInterface&	m_vki;
+	const VkInstance			m_instance;
 };
 
 struct CheckEnumerateInstanceLayerPropertiesIncompleteResult : public CheckIncompleteResult<VkLayerProperties>
@@ -2133,7 +2144,7 @@ tcu::TestStatus enumeratePhysicalDeviceGroups (Context& context)
 {
 	TestLog&											log				= context.getTestContext().getLog();
 	tcu::ResultCollector								results			(log);
-	const CustomInstance								instance		(createCustomInstanceWithExtension(context, "VK_KHR_device_group_creation"));
+	CustomInstance										instance		(createCustomInstanceWithExtension(context, "VK_KHR_device_group_creation"));
 	const InstanceDriver&								vki				(instance.getDriver());
 	const vector<VkPhysicalDeviceGroupProperties>		devicegroups	= enumeratePhysicalDeviceGroups(vki, instance);
 
@@ -2142,8 +2153,9 @@ tcu::TestStatus enumeratePhysicalDeviceGroups (Context& context)
 	for (size_t ndx = 0; ndx < devicegroups.size(); ndx++)
 		log << TestLog::Message << ndx << ": " << devicegroups[ndx] << TestLog::EndMessage;
 
-	CheckEnumeratePhysicalDeviceGroupsIncompleteResult()(context, results, devicegroups.size());
+	CheckEnumeratePhysicalDeviceGroupsIncompleteResult(vki, instance)(context, results, devicegroups.size());
 
+	instance.collectMessages();
 	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
