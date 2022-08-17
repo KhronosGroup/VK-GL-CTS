@@ -289,6 +289,7 @@ void ColorWriteEnableTest::checkSupport (Context& context) const
 
 	if ((colorProperties.optimalTilingFeatures & kColorFeatures) != kColorFeatures)
 		TCU_THROW(NotSupportedError, "Required color image features not supported");
+
 	checkPipelineLibraryRequirements(vki, physicalDevice, m_testConfig.pipelineConstructionType);
 }
 
@@ -1508,7 +1509,7 @@ void ColorWriteEnable2Instance::setupAndBuildPipeline (GraphicsPipelineWrapperEx
 		&vertexAttrib													//	const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 	};
 
-	const vk::VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo
+	const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	//	VkStructureType							sType;
 		nullptr,														//	const void*								pNext;
@@ -1568,10 +1569,13 @@ void ColorWriteEnable2Instance::setupAndBuildPipeline (GraphicsPipelineWrapperEx
 		colorWriteEnables.data()										// const VkBool32*	pColorWriteEnables;
 	};
 
+	const bool cweAllowed = (dynamic && m_params.colorWriteEnables);
+	owner.m_isDynamicColorWriteEnable = cweAllowed;
+
 	const VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,		// VkStructureType                               sType
-		&colorWriteCreateInfo,											// const void*                                   pNext
+		cweAllowed ? nullptr : &colorWriteCreateInfo,					// const void*                                   pNext
 		0u,																// VkPipelineColorBlendStateCreateFlags          flags
 		VK_FALSE,														// VkBool32                                      logicOpEnable
 		VK_LOGIC_OP_CLEAR,												// VkLogicOp                                     logicOp
@@ -1579,9 +1583,6 @@ void ColorWriteEnable2Instance::setupAndBuildPipeline (GraphicsPipelineWrapperEx
 		colorBlendAttachmentStates.data(),								// const VkPipelineColorBlendAttachmentState*    pAttachments
 		{ blendComp, blendComp, blendComp, blendComp }					// float                                         blendConstants[4]
 	};
-
-	const bool cweAllowed = (dynamic && m_params.colorWriteEnables);
-	owner.m_isDynamicColorWriteEnable = cweAllowed;
 
 	owner
 		.setDefaultRasterizationState()
@@ -1641,7 +1642,7 @@ TestStatus ColorWriteEnable2Instance::iterate (void)
 	ColorWriteEnables						writeEnables		(attachmentCount + m_params.attachmentMore, VK_TRUE);
 	for (deUint32 i = 0; i < attachmentCount; ++i)	writeEnables[i] = (i % 2) ? VK_TRUE : VK_FALSE;
 
-	Move<VkPipelineLayout>					pipelineLayout	= makePipelineLayout(m_vkd, m_device, 0u, nullptr, 0u, nullptr);
+	Move<VkPipelineLayout>					pipelineLayout		= makePipelineLayout(m_vkd, m_device, 0u, nullptr, 0u, nullptr);
 	std::vector<Move<VkRenderPass>>			renderPasses;
 	std::vector<Framebuffer>				framebuffers;
 	std::vector<GraphicsPipelineWrapperEx>	pipelines;
@@ -1656,12 +1657,6 @@ TestStatus ColorWriteEnable2Instance::iterate (void)
 		pipelines.emplace_back(m_vkd, m_device, m_params.pct);
 		setupAndBuildPipeline(pipelines.back(), *pipelineLayout, *renderPasses[i], (i+1), writeEnables, blendComp, dynamicColorWriteEnable);
 	}
-
-
-	const VkImageSubresourceRange			attachmentResource	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
-	VkImageMemoryBarrier					attachmentReady		= makeImageMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-																						 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-																						 VkImage(0), attachmentResource);
 
 	Move<VkCommandPool>						cmdPool				= makeCommandPool(m_vkd, m_device, queueIndex);
 	Move<VkCommandBuffer>					cmdBuff				= allocateCommandBuffer(m_vkd, m_device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -1687,13 +1682,6 @@ TestStatus ColorWriteEnable2Instance::iterate (void)
 			beginRenderPass(m_vkd, *cmdBuff, *renderPasses[a], *framebuffers[a].framebuffer, renderArea, attachmentCount, clearValues.data());
 				m_vkd.cmdDraw(*cmdBuff, 6u, 1u, 0u, (a + 1));
 			endRenderPass(m_vkd, *cmdBuff);
-
-			for (Attachment& attachment : framebuffers[a].attachments)
-			{
-				attachmentReady.image = **attachment.image;
-				m_vkd.cmdPipelineBarrier(*cmdBuff, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-										 VK_DEPENDENCY_VIEW_LOCAL_BIT, 0, nullptr, 0, nullptr, 1u, &attachmentReady);
-			}
 		}
 
 	endCommandBuffer(m_vkd, *cmdBuff);
