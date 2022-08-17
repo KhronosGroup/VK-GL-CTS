@@ -594,7 +594,7 @@ public:
 																								 const VkDeviceSize								indirectBufferOffset,
 																								 const deUint32									indirectBufferStride) = DE_NULL;
 	virtual VkBuildAccelerationStructureFlagsKHR		getBuildFlags							() const = DE_NULL;
-	VkDeviceSize										getStructureSize						() const;
+	VkAccelerationStructureBuildSizesInfoKHR			getStructureBuildSizes					() const;
 
 	// methods specific for each acceleration structure
 	virtual void										create									(const DeviceInterface&							vk,
@@ -750,7 +750,7 @@ public:
 																										 const deUint32										indirectBufferStride) = DE_NULL;
 	virtual void													setUsePPGeometries					(const bool											usePPGeometries) = 0;
 	virtual VkBuildAccelerationStructureFlagsKHR					getBuildFlags						() const = DE_NULL;
-	VkDeviceSize													getStructureSize					() const;
+	VkAccelerationStructureBuildSizesInfoKHR						getStructureBuildSizes				() const;
 
 	// methods specific for each acceleration structure
 	virtual void													create								(const DeviceInterface&						vk,
