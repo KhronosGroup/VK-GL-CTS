@@ -27,6 +27,8 @@ set(DEQP_VK_DYNAMIC_STATE_SRCS
 	vktDynamicStateTests.hpp
 	vktDynamicStateVPTests.cpp
 	vktDynamicStateVPTests.hpp
+	vktDynamicStateDiscardTests.cpp
+	vktDynamicStateDiscardTests.hpp
 )
 
 PCH(DEQP_VK_DYNAMIC_STATE_SRCS ../pch.cpp)

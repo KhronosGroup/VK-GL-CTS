@@ -95,6 +95,7 @@ protected:
 
 	vk::GraphicsPipelineWrapper								m_pipeline;
 	vk::Move<vk::VkPipelineLayout>							m_pipelineLayout;
+	vk::Move<vk::VkDescriptorSetLayout>						m_descriptorSetLayout;
 
 	de::SharedPtr<Draw::Image>								m_colorTargetImage;
 	vk::Move<vk::VkImageView>								m_colorTargetView;

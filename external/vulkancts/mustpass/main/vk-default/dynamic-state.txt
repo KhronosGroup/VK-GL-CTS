@@ -25,6 +25,12 @@ dEQP-VK.dynamic_state.pipeline_library.image.clear
 dEQP-VK.dynamic_state.pipeline_library.image.blit
 dEQP-VK.dynamic_state.pipeline_library.image.copy
 dEQP-VK.dynamic_state.pipeline_library.image.resolve
+dEQP-VK.dynamic_state.pipeline_library.discard.stencil
+dEQP-VK.dynamic_state.pipeline_library.discard.viewport
+dEQP-VK.dynamic_state.pipeline_library.discard.scissor
+dEQP-VK.dynamic_state.pipeline_library.discard.depth
+dEQP-VK.dynamic_state.pipeline_library.discard.blend
+dEQP-VK.dynamic_state.pipeline_library.discard.line
 dEQP-VK.dynamic_state.monolithic.vp_state.viewport
 dEQP-VK.dynamic_state.monolithic.vp_state.scissor
 dEQP-VK.dynamic_state.monolithic.vp_state.viewport_array
@@ -52,6 +58,12 @@ dEQP-VK.dynamic_state.monolithic.image.clear
 dEQP-VK.dynamic_state.monolithic.image.blit
 dEQP-VK.dynamic_state.monolithic.image.copy
 dEQP-VK.dynamic_state.monolithic.image.resolve
+dEQP-VK.dynamic_state.monolithic.discard.stencil
+dEQP-VK.dynamic_state.monolithic.discard.viewport
+dEQP-VK.dynamic_state.monolithic.discard.scissor
+dEQP-VK.dynamic_state.monolithic.discard.depth
+dEQP-VK.dynamic_state.monolithic.discard.blend
+dEQP-VK.dynamic_state.monolithic.discard.line
 dEQP-VK.dynamic_state.monolithic.compute_transfer.single.compute.viewport.before
 dEQP-VK.dynamic_state.monolithic.compute_transfer.single.compute.viewport.after
 dEQP-VK.dynamic_state.monolithic.compute_transfer.single.compute.scissor.before
@@ -203,3 +215,9 @@ dEQP-VK.dynamic_state.fast_linked_library.image.clear
 dEQP-VK.dynamic_state.fast_linked_library.image.blit
 dEQP-VK.dynamic_state.fast_linked_library.image.copy
 dEQP-VK.dynamic_state.fast_linked_library.image.resolve
+dEQP-VK.dynamic_state.fast_linked_library.discard.stencil
+dEQP-VK.dynamic_state.fast_linked_library.discard.viewport
+dEQP-VK.dynamic_state.fast_linked_library.discard.scissor
+dEQP-VK.dynamic_state.fast_linked_library.discard.depth
+dEQP-VK.dynamic_state.fast_linked_library.discard.blend
+dEQP-VK.dynamic_state.fast_linked_library.discard.line

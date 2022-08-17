@@ -51,7 +51,11 @@ void DynamicStateBaseClass::initialize (void)
 	const vk::VkDevice device		= m_context.getDevice();
 	const deUint32 queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
 
-	const PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
+	PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
+	if (m_descriptorSetLayout) {
+		pipelineLayoutCreateInfo.setLayoutCount = 1;
+		pipelineLayoutCreateInfo.pSetLayouts = &*m_descriptorSetLayout;
+	}
 	m_pipelineLayout = vk::createPipelineLayout(m_vk, device, &pipelineLayoutCreateInfo);
 
 	const vk::VkExtent3D targetImageExtent = { WIDTH, HEIGHT, 1 };

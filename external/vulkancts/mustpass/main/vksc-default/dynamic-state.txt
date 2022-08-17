@@ -18,6 +18,12 @@ dEQP-VKSC.dynamic_state.pipeline_library.image.clear
 dEQP-VKSC.dynamic_state.pipeline_library.image.blit
 dEQP-VKSC.dynamic_state.pipeline_library.image.copy
 dEQP-VKSC.dynamic_state.pipeline_library.image.resolve
+dEQP-VKSC.dynamic_state.pipeline_library.discard.stencil
+dEQP-VKSC.dynamic_state.pipeline_library.discard.viewport
+dEQP-VKSC.dynamic_state.pipeline_library.discard.scissor
+dEQP-VKSC.dynamic_state.pipeline_library.discard.depth
+dEQP-VKSC.dynamic_state.pipeline_library.discard.blend
+dEQP-VKSC.dynamic_state.pipeline_library.discard.line
 dEQP-VKSC.dynamic_state.monolithic.vp_state.viewport
 dEQP-VKSC.dynamic_state.monolithic.vp_state.scissor
 dEQP-VKSC.dynamic_state.monolithic.vp_state.viewport_array
@@ -38,6 +44,12 @@ dEQP-VKSC.dynamic_state.monolithic.image.clear
 dEQP-VKSC.dynamic_state.monolithic.image.blit
 dEQP-VKSC.dynamic_state.monolithic.image.copy
 dEQP-VKSC.dynamic_state.monolithic.image.resolve
+dEQP-VKSC.dynamic_state.monolithic.discard.stencil
+dEQP-VKSC.dynamic_state.monolithic.discard.viewport
+dEQP-VKSC.dynamic_state.monolithic.discard.scissor
+dEQP-VKSC.dynamic_state.monolithic.discard.depth
+dEQP-VKSC.dynamic_state.monolithic.discard.blend
+dEQP-VKSC.dynamic_state.monolithic.discard.line
 dEQP-VKSC.dynamic_state.monolithic.compute_transfer.single.compute.viewport.before
 dEQP-VKSC.dynamic_state.monolithic.compute_transfer.single.compute.viewport.after
 dEQP-VKSC.dynamic_state.monolithic.compute_transfer.single.compute.scissor.before
@@ -162,3 +174,9 @@ dEQP-VKSC.dynamic_state.fast_linked_library.image.clear
 dEQP-VKSC.dynamic_state.fast_linked_library.image.blit
 dEQP-VKSC.dynamic_state.fast_linked_library.image.copy
 dEQP-VKSC.dynamic_state.fast_linked_library.image.resolve
+dEQP-VKSC.dynamic_state.fast_linked_library.discard.stencil
+dEQP-VKSC.dynamic_state.fast_linked_library.discard.viewport
+dEQP-VKSC.dynamic_state.fast_linked_library.discard.scissor
+dEQP-VKSC.dynamic_state.fast_linked_library.discard.depth
+dEQP-VKSC.dynamic_state.fast_linked_library.discard.blend
+dEQP-VKSC.dynamic_state.fast_linked_library.discard.line
