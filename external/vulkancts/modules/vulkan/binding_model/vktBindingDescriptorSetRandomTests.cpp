@@ -2229,6 +2229,13 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	de::MovePtr<BufferWithMemory>	callableShaderBindingTable;
 	de::MovePtr<RayTracingPipeline>	rayTracingPipeline;
 
+	// Disable interval watchdog timer for long shader compilations that can
+	// happen when the number of descriptor sets gets to 32 and above.
+	if (m_data.numDescriptorSets >= 32)
+	{
+		m_context.getTestContext().touchWatchdogAndDisableIntervalTimeLimit();
+	}
+
 	if (m_data.stage == STAGE_COMPUTE)
 	{
 		const Unique<VkShaderModule>	shader(createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0));
@@ -2779,6 +2786,13 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
+
+	// Re-enable watchdog interval timer here to favor virtualized vulkan
+	// implementation that asynchronously creates the pipeline on the host.
+	if (m_data.numDescriptorSets >= 32)
+	{
+		m_context.getTestContext().touchWatchdogAndEnableIntervalTimeLimit();
+	}
 
 	// Verify output image.
 	deUint32 *ptr = (deUint32 *)copyBuffer->getAllocation().getHostPtr();
