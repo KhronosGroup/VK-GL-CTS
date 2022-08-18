@@ -58,6 +58,8 @@ using namespace shaderexecutor;
 using tcu::UVec2;
 using tcu::Vec2;
 using tcu::Vec4;
+using tcu::IVec4;
+using tcu::UVec4;
 using tcu::TestLog;
 using de::MovePtr;
 using de::UniquePtr;
@@ -350,10 +352,22 @@ struct TestParameters
 	}
 };
 
+static glu::DataType getDataType(VkFormat f) {
+	if (isIntFormat(f))			return glu::TYPE_INT_VEC4;
+	else if (isUintFormat(f))	return glu::TYPE_UINT_VEC4;
+	else						return glu::TYPE_FLOAT_VEC4;
+}
+
 static std::string getSamplerDecl(VkFormat f) {
 	if (isIntFormat(f))			return "isampler2D";
 	else if (isUintFormat(f))	return "usampler2D";
 	else						return "sampler2D";
+}
+
+static std::string getVecType(VkFormat f) {
+	if (isIntFormat(f))			return "ivec4";
+	else if (isUintFormat(f))	return "uvec4";
+	else						return "vec4";
 }
 
 ShaderSpec getShaderSpec (const TestParameters& params)
@@ -362,7 +376,7 @@ ShaderSpec getShaderSpec (const TestParameters& params)
 
 	spec.inputs.push_back(Symbol("texCoord", glu::VarType(glu::TYPE_FLOAT_VEC2, glu::PRECISION_HIGHP)));
 	spec.outputs.push_back(Symbol("result0", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
-	spec.outputs.push_back(Symbol("result1", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
+	spec.outputs.push_back(Symbol("result1", glu::VarType(getDataType(params.planeCompatibleFormat), glu::PRECISION_HIGHP)));
 
 	const std::string sampler = getSamplerDecl(params.planeCompatibleFormat);
 	spec.globalDeclarations =
@@ -371,7 +385,7 @@ ShaderSpec getShaderSpec (const TestParameters& params)
 
 	spec.source =
 		"result0 = texture(u_image, texCoord);\n"
-		"result1 = vec4(texture(u_planeView, texCoord));\n";
+		"result1 = " + getVecType(params.planeCompatibleFormat) + "(texture(u_planeView, texCoord));\n";
 
 	return spec;
 }
@@ -407,6 +421,22 @@ void checkSupport(Context& context, TestParameters params)
 	checkImageSupport(context, params.format, params.createFlags);
 	checkImageFeatureSupport(context, params.format,				VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT | VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT);
 	checkImageFeatureSupport(context, params.planeCompatibleFormat,	VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT);
+}
+
+Vec4 castResult(Vec4 result, VkFormat f) {
+	if (isIntFormat(f)) {
+		IVec4* result_ptr = reinterpret_cast<IVec4*>(&result);
+		IVec4 ivec = *(result_ptr);
+		return Vec4((float)ivec.x(), (float)ivec.y(), (float)ivec.z(), (float)ivec.w());
+	}
+	else if (isUintFormat(f)) {
+		UVec4* result_ptr = reinterpret_cast<UVec4*>(&result);
+		UVec4 uvec = *(result_ptr);
+		return Vec4((float)uvec.x(), (float)uvec.y(), (float)uvec.z(), (float)uvec.w());
+	}
+	else {
+		return result;
+	}
 }
 
 tcu::TestStatus testPlaneView (Context& context, TestParameters params)
@@ -675,7 +705,8 @@ tcu::TestStatus testPlaneView (Context& context, TestParameters params)
 
 			for (size_t ndx = 0; ndx < numValues; ++ndx)
 			{
-				if (boolAny(greaterThanEqual(abs(result[ndx] - reference[ndx]), threshold)))
+				const Vec4 resultValue = (viewNdx == 0) ? result[ndx] : castResult(result[ndx], params.planeCompatibleFormat);
+				if (boolAny(greaterThanEqual(abs(resultValue - reference[ndx]), threshold)))
 				{
 					context.getTestContext().getLog()
 						<< TestLog::Message << "ERROR: When sampling " << viewName << " at " << texCoord[ndx]
