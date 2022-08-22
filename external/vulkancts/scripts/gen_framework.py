@@ -2107,6 +2107,7 @@ def generateDeviceFeaturesOrPropertiesDefs(api, FeaturesOrProperties):
 	structureTypePattern				= f'VkPhysicalDevice(\w+){FeaturesOrProperties}(\w+)'
 	structureTypePatternNotExtension	= structureTypePattern[:-5] + '$'
 	structureTypeToSkipPattern			= f'VkPhysicalDeviceVulkan\d\d{FeaturesOrProperties}'
+	structureExtendsPattern				= f'VkPhysicalDevice{FeaturesOrProperties}2'
 	# iterate over all extensions to find extension that adds enum value matching pattern;
 	# this will always be in first requirement section
 	for ext in api.extensions:
@@ -2119,25 +2120,28 @@ def generateDeviceFeaturesOrPropertiesDefs(api, FeaturesOrProperties):
 			if matchedStructEnum:
 				# find feature/property structure type name
 				structureTypeName = ""
-				for st in ext.requirementsList[0].newTypes:
-					matchedStructType = re.search(structureTypePattern, st, re.IGNORECASE)
+				for stName in ext.requirementsList[0].newTypes:
+					matchedStructType = re.search(structureTypePattern, stName, re.IGNORECASE)
 					if matchedStructType:
-						structureTypeName = st
+						structureTypeName = stName
 						break
 				# iterate over all composite types to check if structureTypeName is not alias
 				# this handles case where extension was promoted and with it feature/property structure
+				structureType = None
 				for ct in api.compositeTypes:
-					if structureTypeName in ct.aliasList:
-						structureTypeName = ct.name
+					if structureTypeName == ct.name:
+						structureType = ct
 						break
+					elif structureTypeName in ct.aliasList:
+						structureType = ct
+						structureTypeName = structureType.name
+						break
+				# use data in structextends to skip structures that should not be passed to vkGetPhysicalDeviceProperties(/Features)2 function
+				if structureType.structextends is None or structureExtendsPattern not in structureType.structextends:
+					continue
 				# meke sure that structure was not added earlier - this handles special
 				# cases like VkPhysicalDeviceIDPropertiesKHR added by 3 extensions
 				if len([d for d in defs if d[3] == structureTypeName]) > 0:
-					continue
-				# special case for VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR that
-				# contains both 'Properties' and 'Features' at the end - skip it for Properties
-				if FeaturesOrProperties == 'Properties' and 'Features' in structureTypeName:
-					foundStructureEnums.append(matchedStructEnum.group(1))
 					continue
 				# there are cases like VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_2_AMD
 				# where 2 is after PROPERTIES - to handle this we need to split suffix to two parts
@@ -2161,6 +2165,8 @@ def generateDeviceFeaturesOrPropertiesDefs(api, FeaturesOrProperties):
 		matchedStructType = re.search(structureTypePatternNotExtension, ct.name, re.IGNORECASE)
 		if matchedStructType:
 			if ct.members[0].name != "sType":
+				continue
+			if ct.structextends is None or structureExtendsPattern not in ct.structextends:
 				continue
 			matchedStructEnum = re.search(structureEnumPatternNotExtension, ct.members[0].values, re.IGNORECASE)
 			if (matchedStructEnum.group(1) not in foundStructureEnums) and (re.match(structureTypeToSkipPattern, ct.name) == None):
