@@ -469,7 +469,7 @@ VkResult InstanceDriver::getPhysicalDeviceFragmentShadingRatesKHR (VkPhysicalDev
 	return m_vk.getPhysicalDeviceFragmentShadingRatesKHR(physicalDevice, pFragmentShadingRateCount, pFragmentShadingRates);
 }
 
-VkResult InstanceDriver::getPhysicalDeviceVideoCapabilitiesKHR (VkPhysicalDevice physicalDevice, const VkVideoProfileKHR* pVideoProfile, VkVideoCapabilitiesKHR* pCapabilities) const
+VkResult InstanceDriver::getPhysicalDeviceVideoCapabilitiesKHR (VkPhysicalDevice physicalDevice, const VkVideoProfileInfoKHR* pVideoProfile, VkVideoCapabilitiesKHR* pCapabilities) const
 {
 	return m_vk.getPhysicalDeviceVideoCapabilitiesKHR(physicalDevice, pVideoProfile, pCapabilities);
 }

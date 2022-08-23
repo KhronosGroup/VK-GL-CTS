@@ -94,7 +94,7 @@ const vk::VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR&			getWorkgro
 const vk::VkPhysicalDeviceImageCompressionControlFeaturesEXT&				getImageCompressionControlFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT&			getAttachmentFeedbackLoopLayoutFeaturesEXT			(void) const;
 const vk::VkPhysicalDevice4444FormatsFeaturesEXT&							get4444FormatsFeaturesEXT							(void) const;
-const vk::VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM&	getRasterizationOrderAttachmentAccessFeaturesARM	(void) const;
+const vk::VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT&	getRasterizationOrderAttachmentAccessFeaturesEXT	(void) const;
 const vk::VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT&						getRGBA10X6FormatsFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE&				getMutableDescriptorTypeFeaturesVALVE				(void) const;
 const vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT&				getVertexInputDynamicStateFeaturesEXT				(void) const;

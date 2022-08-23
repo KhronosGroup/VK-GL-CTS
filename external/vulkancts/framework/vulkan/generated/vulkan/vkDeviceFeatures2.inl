@@ -3444,6 +3444,45 @@ tcu::TestStatus testPhysicalDeviceFeatureImageViewMinLodFeaturesEXT (Context& co
 	return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureRasterizationOrderAttachmentAccessFeaturesEXT (Context& context)
+{
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+	const InstanceDriver&		vki				(instance.getDriver());
+	const int					count			= 2u;
+	TestLog&					log				= context.getTestContext().getLog();
+	VkPhysicalDeviceFeatures2	extFeatures;
+	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+
+	VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT	deviceRasterizationOrderAttachmentAccessFeaturesEXT[count];
+	const bool														isRasterizationOrderAttachmentAccessFeaturesEXT = checkExtension(properties, "VK_EXT_rasterization_order_attachment_access");
+
+	for (int ndx = 0; ndx < count; ++ndx)
+	{
+		deMemset(&deviceRasterizationOrderAttachmentAccessFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT));
+		deviceRasterizationOrderAttachmentAccessFeaturesEXT[ndx].sType = isRasterizationOrderAttachmentAccessFeaturesEXT ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_FEATURES_EXT : VK_STRUCTURE_TYPE_MAX_ENUM;
+		deviceRasterizationOrderAttachmentAccessFeaturesEXT[ndx].pNext = DE_NULL;
+
+		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		extFeatures.pNext = &deviceRasterizationOrderAttachmentAccessFeaturesEXT[ndx];
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+	}
+
+	if (isRasterizationOrderAttachmentAccessFeaturesEXT)
+		log << TestLog::Message << deviceRasterizationOrderAttachmentAccessFeaturesEXT[0] << TestLog::EndMessage;
+
+	if (isRasterizationOrderAttachmentAccessFeaturesEXT &&
+		(deviceRasterizationOrderAttachmentAccessFeaturesEXT[0].rasterizationOrderColorAttachmentAccess != deviceRasterizationOrderAttachmentAccessFeaturesEXT[1].rasterizationOrderColorAttachmentAccess ||
+		 deviceRasterizationOrderAttachmentAccessFeaturesEXT[0].rasterizationOrderDepthAttachmentAccess != deviceRasterizationOrderAttachmentAccessFeaturesEXT[1].rasterizationOrderDepthAttachmentAccess ||
+		 deviceRasterizationOrderAttachmentAccessFeaturesEXT[0].rasterizationOrderStencilAttachmentAccess != deviceRasterizationOrderAttachmentAccessFeaturesEXT[1].rasterizationOrderStencilAttachmentAccess))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT");
+	}
+	return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureGraphicsPipelineLibraryFeaturesEXT (Context& context)
 {
 	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
@@ -3906,6 +3945,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "rgba10_x6_formats_features_ext", "VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT", testPhysicalDeviceFeatureRGBA10X6FormatsFeaturesEXT);
 	addFunctionCase(testGroup, "dynamic_rendering_features", "VkPhysicalDeviceDynamicRenderingFeatures", testPhysicalDeviceFeatureDynamicRenderingFeatures);
 	addFunctionCase(testGroup, "image_view_min_lod_features_ext", "VkPhysicalDeviceImageViewMinLodFeaturesEXT", testPhysicalDeviceFeatureImageViewMinLodFeaturesEXT);
+	addFunctionCase(testGroup, "rasterization_order_attachment_access_features_ext", "VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT", testPhysicalDeviceFeatureRasterizationOrderAttachmentAccessFeaturesEXT);
 	addFunctionCase(testGroup, "graphics_pipeline_library_features_ext", "VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT", testPhysicalDeviceFeatureGraphicsPipelineLibraryFeaturesEXT);
 	addFunctionCase(testGroup, "shader_module_identifier_features_ext", "VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT", testPhysicalDeviceFeatureShaderModuleIdentifierFeaturesEXT);
 	addFunctionCase(testGroup, "image_compression_control_features_ext", "VkPhysicalDeviceImageCompressionControlFeaturesEXT", testPhysicalDeviceFeatureImageCompressionControlFeaturesEXT);

@@ -5414,7 +5414,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImageViewMinLodFeaturesEX
 }
 
 
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRasterizationOrderAttachmentAccessFeaturesARM (Context& context)
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRasterizationOrderAttachmentAccessFeaturesEXT (Context& context)
 {
 	const PlatformInterface&				vkp						= context.getPlatformInterface();
 	tcu::TestLog&							log						= context.getTestContext().getLog();
@@ -5444,15 +5444,15 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRasterizationOrderAttachm
 	for (const string& extension : nonCoreExtensions)
 		extensionNames.push_back(extension.c_str());
 
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM>()))
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT>()))
 	{
 		static const Feature features[] =
 		{
-		FEATURE_ITEM (VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM, rasterizationOrderColorAttachmentAccess),
-		FEATURE_ITEM (VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM, rasterizationOrderDepthAttachmentAccess),
-		FEATURE_ITEM (VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM, rasterizationOrderStencilAttachmentAccess),
+		FEATURE_ITEM (VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT, rasterizationOrderColorAttachmentAccess),
+		FEATURE_ITEM (VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT, rasterizationOrderDepthAttachmentAccess),
+		FEATURE_ITEM (VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT, rasterizationOrderStencilAttachmentAccess),
 		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM*>(featuresStruct);
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT*>(featuresStruct);
 		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess);
 	}
 
@@ -6284,7 +6284,7 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "rgba10_x6_formats_features_ext", "createDeviceWithUnsupportedFeaturesTestRGBA10X6FormatsFeaturesEXT", createDeviceWithUnsupportedFeaturesTestRGBA10X6FormatsFeaturesEXT);
 	addFunctionCase(testGroup, "dynamic_rendering_features", "createDeviceWithUnsupportedFeaturesTestDynamicRenderingFeatures", createDeviceWithUnsupportedFeaturesTestDynamicRenderingFeatures);
 	addFunctionCase(testGroup, "image_view_min_lod_features_ext", "createDeviceWithUnsupportedFeaturesTestImageViewMinLodFeaturesEXT", createDeviceWithUnsupportedFeaturesTestImageViewMinLodFeaturesEXT);
-	addFunctionCase(testGroup, "rasterization_order_attachment_access_features_arm", "createDeviceWithUnsupportedFeaturesTestRasterizationOrderAttachmentAccessFeaturesARM", createDeviceWithUnsupportedFeaturesTestRasterizationOrderAttachmentAccessFeaturesARM);
+	addFunctionCase(testGroup, "rasterization_order_attachment_access_features_ext", "createDeviceWithUnsupportedFeaturesTestRasterizationOrderAttachmentAccessFeaturesEXT", createDeviceWithUnsupportedFeaturesTestRasterizationOrderAttachmentAccessFeaturesEXT);
 	addFunctionCase(testGroup, "linear_color_attachment_features_nv", "createDeviceWithUnsupportedFeaturesTestLinearColorAttachmentFeaturesNV", createDeviceWithUnsupportedFeaturesTestLinearColorAttachmentFeaturesNV);
 	addFunctionCase(testGroup, "graphics_pipeline_library_features_ext", "createDeviceWithUnsupportedFeaturesTestGraphicsPipelineLibraryFeaturesEXT", createDeviceWithUnsupportedFeaturesTestGraphicsPipelineLibraryFeaturesEXT);
 	addFunctionCase(testGroup, "descriptor_set_host_mapping_features_valve", "createDeviceWithUnsupportedFeaturesTestDescriptorSetHostMappingFeaturesVALVE", createDeviceWithUnsupportedFeaturesTestDescriptorSetHostMappingFeaturesVALVE);

@@ -1458,23 +1458,23 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT:									return "VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT";
 		case VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_TAG_INFO_EXT:									return "VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_TAG_INFO_EXT";
 		case VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT:										return "VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT";
-		case VK_STRUCTURE_TYPE_VIDEO_PROFILE_KHR:													return "VK_STRUCTURE_TYPE_VIDEO_PROFILE_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR:												return "VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_CAPABILITIES_KHR:												return "VK_STRUCTURE_TYPE_VIDEO_CAPABILITIES_KHR";
-		case VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_KHR:											return "VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_KHR";
-		case VK_STRUCTURE_TYPE_VIDEO_GET_MEMORY_PROPERTIES_KHR:										return "VK_STRUCTURE_TYPE_VIDEO_GET_MEMORY_PROPERTIES_KHR";
-		case VK_STRUCTURE_TYPE_VIDEO_BIND_MEMORY_KHR:												return "VK_STRUCTURE_TYPE_VIDEO_BIND_MEMORY_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_INFO_KHR:										return "VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_SESSION_MEMORY_REQUIREMENTS_KHR:								return "VK_STRUCTURE_TYPE_VIDEO_SESSION_MEMORY_REQUIREMENTS_KHR";
+		case VK_STRUCTURE_TYPE_BIND_VIDEO_SESSION_MEMORY_INFO_KHR:									return "VK_STRUCTURE_TYPE_BIND_VIDEO_SESSION_MEMORY_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_SESSION_CREATE_INFO_KHR:										return "VK_STRUCTURE_TYPE_VIDEO_SESSION_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_SESSION_PARAMETERS_CREATE_INFO_KHR:							return "VK_STRUCTURE_TYPE_VIDEO_SESSION_PARAMETERS_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_SESSION_PARAMETERS_UPDATE_INFO_KHR:							return "VK_STRUCTURE_TYPE_VIDEO_SESSION_PARAMETERS_UPDATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_BEGIN_CODING_INFO_KHR:											return "VK_STRUCTURE_TYPE_VIDEO_BEGIN_CODING_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_END_CODING_INFO_KHR:											return "VK_STRUCTURE_TYPE_VIDEO_END_CODING_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_CODING_CONTROL_INFO_KHR:										return "VK_STRUCTURE_TYPE_VIDEO_CODING_CONTROL_INFO_KHR";
-		case VK_STRUCTURE_TYPE_VIDEO_REFERENCE_SLOT_KHR:											return "VK_STRUCTURE_TYPE_VIDEO_REFERENCE_SLOT_KHR";
-		case VK_STRUCTURE_TYPE_VIDEO_QUEUE_FAMILY_PROPERTIES_2_KHR:									return "VK_STRUCTURE_TYPE_VIDEO_QUEUE_FAMILY_PROPERTIES_2_KHR";
-		case VK_STRUCTURE_TYPE_VIDEO_PROFILES_KHR:													return "VK_STRUCTURE_TYPE_VIDEO_PROFILES_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_REFERENCE_SLOT_INFO_KHR:										return "VK_STRUCTURE_TYPE_VIDEO_REFERENCE_SLOT_INFO_KHR";
+		case VK_STRUCTURE_TYPE_QUEUE_FAMILY_VIDEO_PROPERTIES_KHR:									return "VK_STRUCTURE_TYPE_QUEUE_FAMILY_VIDEO_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_PROFILE_LIST_INFO_KHR:											return "VK_STRUCTURE_TYPE_VIDEO_PROFILE_LIST_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_FORMAT_INFO_KHR:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_FORMAT_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_FORMAT_PROPERTIES_KHR:											return "VK_STRUCTURE_TYPE_VIDEO_FORMAT_PROPERTIES_KHR";
-		case VK_STRUCTURE_TYPE_QUEUE_FAMILY_QUERY_RESULT_STATUS_PROPERTIES_2_KHR:					return "VK_STRUCTURE_TYPE_QUEUE_FAMILY_QUERY_RESULT_STATUS_PROPERTIES_2_KHR";
+		case VK_STRUCTURE_TYPE_QUEUE_FAMILY_QUERY_RESULT_STATUS_PROPERTIES_KHR:						return "VK_STRUCTURE_TYPE_QUEUE_FAMILY_QUERY_RESULT_STATUS_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_DECODE_INFO_KHR:												return "VK_STRUCTURE_TYPE_VIDEO_DECODE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_DECODE_CAPABILITIES_KHR:										return "VK_STRUCTURE_TYPE_VIDEO_DECODE_CAPABILITIES_KHR";
 		case VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_IMAGE_CREATE_INFO_NV:							return "VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_IMAGE_CREATE_INFO_NV";
@@ -1493,27 +1493,27 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_PARAMETERS_ADD_INFO_EXT:					return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_PARAMETERS_ADD_INFO_EXT";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_VCL_FRAME_INFO_EXT:								return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_VCL_FRAME_INFO_EXT";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_DPB_SLOT_INFO_EXT:									return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_DPB_SLOT_INFO_EXT";
-		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_NALU_SLICE_EXT:									return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_NALU_SLICE_EXT";
-		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_EMIT_PICTURE_PARAMETERS_EXT:						return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_EMIT_PICTURE_PARAMETERS_EXT";
-		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_EXT:										return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_EXT";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_NALU_SLICE_INFO_EXT:								return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_NALU_SLICE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_EMIT_PICTURE_PARAMETERS_INFO_EXT:					return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_EMIT_PICTURE_PARAMETERS_INFO_EXT";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_INFO_EXT:									return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_INFO_EXT:								return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_INFO_EXT";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_LAYER_INFO_EXT:						return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_LAYER_INFO_EXT";
-		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_REFERENCE_LISTS_EXT:								return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_REFERENCE_LISTS_EXT";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_REFERENCE_LISTS_INFO_EXT:							return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_REFERENCE_LISTS_INFO_EXT";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_CAPABILITIES_EXT:									return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_CAPABILITIES_EXT";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_SESSION_PARAMETERS_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_SESSION_PARAMETERS_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_SESSION_PARAMETERS_ADD_INFO_EXT:					return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_SESSION_PARAMETERS_ADD_INFO_EXT";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_VCL_FRAME_INFO_EXT:								return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_VCL_FRAME_INFO_EXT";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_DPB_SLOT_INFO_EXT:									return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_DPB_SLOT_INFO_EXT";
-		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_NALU_SLICE_SEGMENT_EXT:							return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_NALU_SLICE_SEGMENT_EXT";
-		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_EMIT_PICTURE_PARAMETERS_EXT:						return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_EMIT_PICTURE_PARAMETERS_EXT";
-		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_PROFILE_EXT:										return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_PROFILE_EXT";
-		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_REFERENCE_LISTS_EXT:								return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_REFERENCE_LISTS_EXT";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_NALU_SLICE_SEGMENT_INFO_EXT:						return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_NALU_SLICE_SEGMENT_INFO_EXT";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_EMIT_PICTURE_PARAMETERS_INFO_EXT:					return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_EMIT_PICTURE_PARAMETERS_INFO_EXT";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_PROFILE_INFO_EXT:									return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_PROFILE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_REFERENCE_LISTS_INFO_EXT:							return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_REFERENCE_LISTS_INFO_EXT";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_RATE_CONTROL_INFO_EXT:								return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_RATE_CONTROL_INFO_EXT";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_RATE_CONTROL_LAYER_INFO_EXT:						return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_RATE_CONTROL_LAYER_INFO_EXT";
 		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_CAPABILITIES_EXT:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_CAPABILITIES_EXT";
 		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PICTURE_INFO_EXT:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PICTURE_INFO_EXT";
-		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_MVC_EXT:											return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_MVC_EXT";
-		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_EXT:										return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_EXT";
+		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_MVC_INFO_EXT:										return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_MVC_INFO_EXT";
+		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_EXT:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_ADD_INFO_EXT:					return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_ADD_INFO_EXT";
 		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_DPB_SLOT_INFO_EXT:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_DPB_SLOT_INFO_EXT";
@@ -1780,7 +1780,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_CAPABILITIES_EXT:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_CAPABILITIES_EXT";
 		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_SESSION_PARAMETERS_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_SESSION_PARAMETERS_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_SESSION_PARAMETERS_ADD_INFO_EXT:					return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_SESSION_PARAMETERS_ADD_INFO_EXT";
-		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PROFILE_EXT:										return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PROFILE_EXT";
+		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PROFILE_INFO_EXT:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PROFILE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PICTURE_INFO_EXT:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PICTURE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_DPB_SLOT_INFO_EXT:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_DPB_SLOT_INFO_EXT";
 		case VK_STRUCTURE_TYPE_DEVICE_MEMORY_OVERALLOCATION_CREATE_INFO_AMD:						return "VK_STRUCTURE_TYPE_DEVICE_MEMORY_OVERALLOCATION_CREATE_INFO_AMD";
@@ -1983,7 +1983,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_IMAGE_COMPRESSION_PROPERTIES_EXT:									return "VK_STRUCTURE_TYPE_IMAGE_COMPRESSION_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_FEATURES_EXT:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_FEATURES_ARM:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_FEATURES_ARM";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_FEATURES_EXT:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RGBA10X6_FORMATS_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RGBA10X6_FORMATS_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_DIRECTFB_SURFACE_CREATE_INFO_EXT:									return "VK_STRUCTURE_TYPE_DIRECTFB_SURFACE_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR";
@@ -2384,9 +2384,9 @@ tcu::Format::Bitfield<32> getSubpassDescriptionFlagsStr (VkSubpassDescriptionFla
 		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_PER_VIEW_POSITION_X_ONLY_BIT_NVX,						"VK_SUBPASS_DESCRIPTION_PER_VIEW_POSITION_X_ONLY_BIT_NVX"),
 		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_FRAGMENT_REGION_BIT_QCOM,								"VK_SUBPASS_DESCRIPTION_FRAGMENT_REGION_BIT_QCOM"),
 		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_SHADER_RESOLVE_BIT_QCOM,								"VK_SUBPASS_DESCRIPTION_SHADER_RESOLVE_BIT_QCOM"),
-		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_COLOR_ACCESS_BIT_ARM,	"VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_COLOR_ACCESS_BIT_ARM"),
-		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_DEPTH_ACCESS_BIT_ARM,	"VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_DEPTH_ACCESS_BIT_ARM"),
-		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_STENCIL_ACCESS_BIT_ARM,	"VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_STENCIL_ACCESS_BIT_ARM"),
+		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_COLOR_ACCESS_BIT_EXT,	"VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_COLOR_ACCESS_BIT_EXT"),
+		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_DEPTH_ACCESS_BIT_EXT,	"VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_DEPTH_ACCESS_BIT_EXT"),
+		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_STENCIL_ACCESS_BIT_EXT,	"VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_STENCIL_ACCESS_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3103,8 +3103,8 @@ tcu::Format::Bitfield<32> getPipelineDepthStencilStateCreateFlagsStr (VkPipeline
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_PIPELINE_DEPTH_STENCIL_STATE_CREATE_RASTERIZATION_ORDER_ATTACHMENT_DEPTH_ACCESS_BIT_ARM,	"VK_PIPELINE_DEPTH_STENCIL_STATE_CREATE_RASTERIZATION_ORDER_ATTACHMENT_DEPTH_ACCESS_BIT_ARM"),
-		tcu::Format::BitDesc(VK_PIPELINE_DEPTH_STENCIL_STATE_CREATE_RASTERIZATION_ORDER_ATTACHMENT_STENCIL_ACCESS_BIT_ARM,	"VK_PIPELINE_DEPTH_STENCIL_STATE_CREATE_RASTERIZATION_ORDER_ATTACHMENT_STENCIL_ACCESS_BIT_ARM"),
+		tcu::Format::BitDesc(VK_PIPELINE_DEPTH_STENCIL_STATE_CREATE_RASTERIZATION_ORDER_ATTACHMENT_DEPTH_ACCESS_BIT_EXT,	"VK_PIPELINE_DEPTH_STENCIL_STATE_CREATE_RASTERIZATION_ORDER_ATTACHMENT_DEPTH_ACCESS_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_DEPTH_STENCIL_STATE_CREATE_RASTERIZATION_ORDER_ATTACHMENT_STENCIL_ACCESS_BIT_EXT,	"VK_PIPELINE_DEPTH_STENCIL_STATE_CREATE_RASTERIZATION_ORDER_ATTACHMENT_STENCIL_ACCESS_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3113,7 +3113,7 @@ tcu::Format::Bitfield<32> getPipelineColorBlendStateCreateFlagsStr (VkPipelineCo
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_PIPELINE_COLOR_BLEND_STATE_CREATE_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_BIT_ARM,	"VK_PIPELINE_COLOR_BLEND_STATE_CREATE_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_BIT_ARM"),
+		tcu::Format::BitDesc(VK_PIPELINE_COLOR_BLEND_STATE_CREATE_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_BIT_EXT,	"VK_PIPELINE_COLOR_BLEND_STATE_CREATE_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3869,7 +3869,7 @@ tcu::Format::Bitfield<32> getVideoCodecOperationFlagsKHRStr (VkVideoCodecOperati
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_VIDEO_CODEC_OPERATION_INVALID_BIT_KHR,		"VK_VIDEO_CODEC_OPERATION_INVALID_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_CODEC_OPERATION_NONE_KHR,				"VK_VIDEO_CODEC_OPERATION_NONE_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_EXT,	"VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_EXT"),
 		tcu::Format::BitDesc(VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_EXT,	"VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_EXT"),
 		tcu::Format::BitDesc(VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT,	"VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT"),
@@ -3882,7 +3882,7 @@ tcu::Format::Bitfield<32> getVideoChromaSubsamplingFlagsKHRStr (VkVideoChromaSub
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_VIDEO_CHROMA_SUBSAMPLING_INVALID_BIT_KHR,		"VK_VIDEO_CHROMA_SUBSAMPLING_INVALID_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_CHROMA_SUBSAMPLING_INVALID_KHR,			"VK_VIDEO_CHROMA_SUBSAMPLING_INVALID_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_CHROMA_SUBSAMPLING_MONOCHROME_BIT_KHR,	"VK_VIDEO_CHROMA_SUBSAMPLING_MONOCHROME_BIT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,			"VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_CHROMA_SUBSAMPLING_422_BIT_KHR,			"VK_VIDEO_CHROMA_SUBSAMPLING_422_BIT_KHR"),
@@ -3917,19 +3917,7 @@ tcu::Format::Bitfield<32> getVideoSessionCreateFlagsKHRStr (VkVideoSessionCreate
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_VIDEO_SESSION_CREATE_DEFAULT_KHR,				"VK_VIDEO_SESSION_CREATE_DEFAULT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_SESSION_CREATE_PROTECTED_CONTENT_BIT_KHR,	"VK_VIDEO_SESSION_CREATE_PROTECTED_CONTENT_BIT_KHR"),
-	};
-	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
-}
-
-tcu::Format::Bitfield<32> getVideoCodingQualityPresetFlagsKHRStr (VkVideoCodingQualityPresetFlagsKHR value)
-{
-	static const tcu::Format::BitDesc s_desc[] =
-	{
-		tcu::Format::BitDesc(VK_VIDEO_CODING_QUALITY_PRESET_NORMAL_BIT_KHR,		"VK_VIDEO_CODING_QUALITY_PRESET_NORMAL_BIT_KHR"),
-		tcu::Format::BitDesc(VK_VIDEO_CODING_QUALITY_PRESET_POWER_BIT_KHR,		"VK_VIDEO_CODING_QUALITY_PRESET_POWER_BIT_KHR"),
-		tcu::Format::BitDesc(VK_VIDEO_CODING_QUALITY_PRESET_QUALITY_BIT_KHR,	"VK_VIDEO_CODING_QUALITY_PRESET_QUALITY_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3938,8 +3926,9 @@ tcu::Format::Bitfield<32> getVideoCodingControlFlagsKHRStr (VkVideoCodingControl
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_VIDEO_CODING_CONTROL_DEFAULT_KHR,	"VK_VIDEO_CODING_CONTROL_DEFAULT_KHR"),
-		tcu::Format::BitDesc(VK_VIDEO_CODING_CONTROL_RESET_BIT_KHR,	"VK_VIDEO_CODING_CONTROL_RESET_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_CODING_CONTROL_RESET_BIT_KHR,						"VK_VIDEO_CODING_CONTROL_RESET_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_CODING_CONTROL_ENCODE_RATE_CONTROL_BIT_KHR,		"VK_VIDEO_CODING_CONTROL_ENCODE_RATE_CONTROL_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_CODING_CONTROL_ENCODE_RATE_CONTROL_LAYER_BIT_KHR,	"VK_VIDEO_CODING_CONTROL_ENCODE_RATE_CONTROL_LAYER_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3959,19 +3948,8 @@ tcu::Format::Bitfield<32> getVideoDecodeCapabilityFlagsKHRStr (VkVideoDecodeCapa
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_VIDEO_DECODE_CAPABILITY_DEFAULT_KHR,						"VK_VIDEO_DECODE_CAPABILITY_DEFAULT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_COINCIDE_BIT_KHR,	"VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_COINCIDE_BIT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_DISTINCT_BIT_KHR,	"VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_DISTINCT_BIT_KHR"),
-	};
-	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
-}
-
-tcu::Format::Bitfield<32> getVideoDecodeFlagsKHRStr (VkVideoDecodeFlagsKHR value)
-{
-	static const tcu::Format::BitDesc s_desc[] =
-	{
-		tcu::Format::BitDesc(VK_VIDEO_DECODE_DEFAULT_KHR,			"VK_VIDEO_DECODE_DEFAULT_KHR"),
-		tcu::Format::BitDesc(VK_VIDEO_DECODE_RESERVED_0_BIT_KHR,	"VK_VIDEO_DECODE_RESERVED_0_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3987,32 +3965,11 @@ tcu::Format::Bitfield<32> getVideoDecodeH264PictureLayoutFlagsEXTStr (VkVideoDec
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
-tcu::Format::Bitfield<32> getVideoEncodeFlagsKHRStr (VkVideoEncodeFlagsKHR value)
-{
-	static const tcu::Format::BitDesc s_desc[] =
-	{
-		tcu::Format::BitDesc(VK_VIDEO_ENCODE_DEFAULT_KHR,			"VK_VIDEO_ENCODE_DEFAULT_KHR"),
-		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RESERVED_0_BIT_KHR,	"VK_VIDEO_ENCODE_RESERVED_0_BIT_KHR"),
-	};
-	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
-}
-
 tcu::Format::Bitfield<32> getVideoEncodeCapabilityFlagsKHRStr (VkVideoEncodeCapabilityFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_VIDEO_ENCODE_CAPABILITY_DEFAULT_KHR,								"VK_VIDEO_ENCODE_CAPABILITY_DEFAULT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_CAPABILITY_PRECEDING_EXTERNALLY_ENCODED_BYTES_BIT_KHR,	"VK_VIDEO_ENCODE_CAPABILITY_PRECEDING_EXTERNALLY_ENCODED_BYTES_BIT_KHR"),
-	};
-	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
-}
-
-tcu::Format::Bitfield<32> getVideoEncodeRateControlFlagsKHRStr (VkVideoEncodeRateControlFlagsKHR value)
-{
-	static const tcu::Format::BitDesc s_desc[] =
-	{
-		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RATE_CONTROL_DEFAULT_KHR,			"VK_VIDEO_ENCODE_RATE_CONTROL_DEFAULT_KHR"),
-		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RATE_CONTROL_RESERVED_0_BIT_KHR,	"VK_VIDEO_ENCODE_RATE_CONTROL_RESERVED_0_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -4083,15 +4040,15 @@ tcu::Format::Bitfield<32> getVideoEncodeH264OutputModeFlagsEXTStr (VkVideoEncode
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
-tcu::Format::Bitfield<32> getVideoEncodeH264RateControlStructureFlagsEXTStr (VkVideoEncodeH264RateControlStructureFlagsEXT value)
+const char* getVideoEncodeH264RateControlStructureEXTName (VkVideoEncodeH264RateControlStructureEXT value)
 {
-	static const tcu::Format::BitDesc s_desc[] =
+	switch (value)
 	{
-		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_UNKNOWN_EXT,		"VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_UNKNOWN_EXT"),
-		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_FLAT_BIT_EXT,		"VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_FLAT_BIT_EXT"),
-		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_DYADIC_BIT_EXT,	"VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_DYADIC_BIT_EXT"),
-	};
-	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+		case VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_UNKNOWN_EXT:	return "VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_UNKNOWN_EXT";
+		case VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_FLAT_EXT:		return "VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_FLAT_EXT";
+		case VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_DYADIC_EXT:	return "VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_DYADIC_EXT";
+		default:														return DE_NULL;
+	}
 }
 
 tcu::Format::Bitfield<32> getVideoEncodeH265CapabilityFlagsEXTStr (VkVideoEncodeH265CapabilityFlagsEXT value)
@@ -4150,15 +4107,15 @@ tcu::Format::Bitfield<32> getVideoEncodeH265OutputModeFlagsEXTStr (VkVideoEncode
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
-tcu::Format::Bitfield<32> getVideoEncodeH265RateControlStructureFlagsEXTStr (VkVideoEncodeH265RateControlStructureFlagsEXT value)
+const char* getVideoEncodeH265RateControlStructureEXTName (VkVideoEncodeH265RateControlStructureEXT value)
 {
-	static const tcu::Format::BitDesc s_desc[] =
+	switch (value)
 	{
-		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_UNKNOWN_EXT,		"VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_UNKNOWN_EXT"),
-		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_FLAT_BIT_EXT,		"VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_FLAT_BIT_EXT"),
-		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_DYADIC_BIT_EXT,	"VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_DYADIC_BIT_EXT"),
-	};
-	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+		case VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_UNKNOWN_EXT:	return "VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_UNKNOWN_EXT";
+		case VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_FLAT_EXT:		return "VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_FLAT_EXT";
+		case VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_DYADIC_EXT:	return "VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_DYADIC_EXT";
+		default:														return DE_NULL;
+	}
 }
 
 tcu::Format::Bitfield<32> getVideoEncodeH265CtbSizeFlagsEXTStr (VkVideoEncodeH265CtbSizeFlagsEXT value)
@@ -4734,12 +4691,32 @@ tcu::Format::Bitfield<32> getImageFormatConstraintsFlagsFUCHSIAStr (VkImageForma
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
+tcu::Format::Bitfield<32> getVideoSessionParametersCreateFlagsKHRStr (VkVideoSessionParametersCreateFlagsKHR value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
 tcu::Format::Bitfield<32> getVideoBeginCodingFlagsKHRStr (VkVideoBeginCodingFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
 tcu::Format::Bitfield<32> getVideoEndCodingFlagsKHRStr (VkVideoEndCodingFlagsKHR value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
+tcu::Format::Bitfield<32> getVideoDecodeFlagsKHRStr (VkVideoDecodeFlagsKHR value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
+tcu::Format::Bitfield<32> getVideoEncodeFlagsKHRStr (VkVideoEncodeFlagsKHR value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
+tcu::Format::Bitfield<32> getVideoEncodeRateControlFlagsKHRStr (VkVideoEncodeRateControlFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
@@ -12749,9 +12726,9 @@ std::ostream& operator<< (std::ostream& s, const VkMultisampledRenderToSingleSam
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoQueueFamilyProperties2KHR& value)
+std::ostream& operator<< (std::ostream& s, const VkQueueFamilyVideoPropertiesKHR& value)
 {
-	s << "VkVideoQueueFamilyProperties2KHR = {\n";
+	s << "VkQueueFamilyVideoPropertiesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tvideoCodecOperations = " << getVideoCodecOperationFlagsKHRStr(value.videoCodecOperations) << '\n';
@@ -12759,9 +12736,9 @@ std::ostream& operator<< (std::ostream& s, const VkVideoQueueFamilyProperties2KH
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkQueueFamilyQueryResultStatusProperties2KHR& value)
+std::ostream& operator<< (std::ostream& s, const VkQueueFamilyQueryResultStatusPropertiesKHR& value)
 {
-	s << "VkQueueFamilyQueryResultStatusProperties2KHR = {\n";
+	s << "VkQueueFamilyQueryResultStatusPropertiesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tqueryResultStatusSupport = " << value.queryResultStatusSupport << '\n';
@@ -12769,9 +12746,9 @@ std::ostream& operator<< (std::ostream& s, const VkQueueFamilyQueryResultStatusP
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoProfilesKHR& value)
+std::ostream& operator<< (std::ostream& s, const VkVideoProfileListInfoKHR& value)
 {
-	s << "VkVideoProfilesKHR = {\n";
+	s << "VkVideoProfileListInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tprofileCount = " << value.profileCount << '\n';
@@ -12805,9 +12782,9 @@ std::ostream& operator<< (std::ostream& s, const VkVideoFormatPropertiesKHR& val
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoProfileKHR& value)
+std::ostream& operator<< (std::ostream& s, const VkVideoProfileInfoKHR& value)
 {
-	s << "VkVideoProfileKHR = {\n";
+	s << "VkVideoProfileInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tvideoCodecOperation = " << value.videoCodecOperation << '\n';
@@ -12836,20 +12813,20 @@ std::ostream& operator<< (std::ostream& s, const VkVideoCapabilitiesKHR& value)
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoGetMemoryPropertiesKHR& value)
+std::ostream& operator<< (std::ostream& s, const VkVideoSessionMemoryRequirementsKHR& value)
 {
-	s << "VkVideoGetMemoryPropertiesKHR = {\n";
+	s << "VkVideoSessionMemoryRequirementsKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmemoryBindIndex = " << value.memoryBindIndex << '\n';
-	s << "\tpMemoryRequirements = " << value.pMemoryRequirements << '\n';
+	s << "\tmemoryRequirements = " << value.memoryRequirements << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoBindMemoryKHR& value)
+std::ostream& operator<< (std::ostream& s, const VkBindVideoSessionMemoryInfoKHR& value)
 {
-	s << "VkVideoBindMemoryKHR = {\n";
+	s << "VkBindVideoSessionMemoryInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmemoryBindIndex = " << value.memoryBindIndex << '\n';
@@ -12860,9 +12837,9 @@ std::ostream& operator<< (std::ostream& s, const VkVideoBindMemoryKHR& value)
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoPictureResourceKHR& value)
+std::ostream& operator<< (std::ostream& s, const VkVideoPictureResourceInfoKHR& value)
 {
-	s << "VkVideoPictureResourceKHR = {\n";
+	s << "VkVideoPictureResourceInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tcodedOffset = " << value.codedOffset << '\n';
@@ -12873,9 +12850,9 @@ std::ostream& operator<< (std::ostream& s, const VkVideoPictureResourceKHR& valu
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoReferenceSlotKHR& value)
+std::ostream& operator<< (std::ostream& s, const VkVideoReferenceSlotInfoKHR& value)
 {
-	s << "VkVideoReferenceSlotKHR = {\n";
+	s << "VkVideoReferenceSlotInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tslotIndex = " << value.slotIndex << '\n';
@@ -12911,9 +12888,9 @@ std::ostream& operator<< (std::ostream& s, const VkVideoDecodeInfoKHR& value)
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264ProfileEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264ProfileInfoEXT& value)
 {
-	s << "VkVideoDecodeH264ProfileEXT = {\n";
+	s << "VkVideoDecodeH264ProfileInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tstdProfileIdc = " << value.stdProfileIdc << '\n';
@@ -12980,9 +12957,9 @@ std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264DpbSlotInfoEXT
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264MvcEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264MvcInfoEXT& value)
 {
-	s << "VkVideoDecodeH264MvcEXT = {\n";
+	s << "VkVideoDecodeH264MvcInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpStdMvc = " << value.pStdMvc << '\n';
@@ -12990,9 +12967,9 @@ std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264MvcEXT& value)
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH265ProfileEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH265ProfileInfoEXT& value)
 {
-	s << "VkVideoDecodeH265ProfileEXT = {\n";
+	s << "VkVideoDecodeH265ProfileInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tstdProfileIdc = " << value.stdProfileIdc << '\n';
@@ -13083,6 +13060,7 @@ std::ostream& operator<< (std::ostream& s, const VkVideoSessionParametersCreateI
 	s << "VkVideoSessionParametersCreateInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getVideoSessionParametersCreateFlagsKHRStr(value.flags) << '\n';
 	s << "\tvideoSessionParametersTemplate = " << value.videoSessionParametersTemplate << '\n';
 	s << "\tvideoSession = " << value.videoSession << '\n';
 	s << '}';
@@ -13105,7 +13083,6 @@ std::ostream& operator<< (std::ostream& s, const VkVideoBeginCodingInfoKHR& valu
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tflags = " << getVideoBeginCodingFlagsKHRStr(value.flags) << '\n';
-	s << "\tcodecQualityPreset = " << getVideoCodingQualityPresetFlagsKHRStr(value.codecQualityPreset) << '\n';
 	s << "\tvideoSession = " << value.videoSession << '\n';
 	s << "\tvideoSessionParameters = " << value.videoSessionParameters << '\n';
 	s << "\treferenceSlotCount = " << value.referenceSlotCount << '\n';
@@ -13264,9 +13241,9 @@ std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH264VclFrameInfoEX
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH264ReferenceListsEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH264ReferenceListsInfoEXT& value)
 {
-	s << "VkVideoEncodeH264ReferenceListsEXT = {\n";
+	s << "VkVideoEncodeH264ReferenceListsInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\treferenceList0EntryCount = " << value.referenceList0EntryCount << '\n';
@@ -13278,9 +13255,9 @@ std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH264ReferenceLists
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH264EmitPictureParametersEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH264EmitPictureParametersInfoEXT& value)
 {
-	s << "VkVideoEncodeH264EmitPictureParametersEXT = {\n";
+	s << "VkVideoEncodeH264EmitPictureParametersInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tspsId = " << value.spsId << '\n';
@@ -13291,9 +13268,9 @@ std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH264EmitPicturePar
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH264ProfileEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH264ProfileInfoEXT& value)
 {
-	s << "VkVideoEncodeH264ProfileEXT = {\n";
+	s << "VkVideoEncodeH264ProfileInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tstdProfileIdc = " << value.stdProfileIdc << '\n';
@@ -13301,9 +13278,9 @@ std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH264ProfileEXT& va
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH264NaluSliceEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH264NaluSliceInfoEXT& value)
 {
-	s << "VkVideoEncodeH264NaluSliceEXT = {\n";
+	s << "VkVideoEncodeH264NaluSliceInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmbCount = " << value.mbCount << '\n';
@@ -13435,9 +13412,9 @@ std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH265VclFrameInfoEX
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH265EmitPictureParametersEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH265EmitPictureParametersInfoEXT& value)
 {
-	s << "VkVideoEncodeH265EmitPictureParametersEXT = {\n";
+	s << "VkVideoEncodeH265EmitPictureParametersInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tvpsId = " << value.vpsId << '\n';
@@ -13450,9 +13427,9 @@ std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH265EmitPicturePar
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH265NaluSliceSegmentEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH265NaluSliceSegmentInfoEXT& value)
 {
-	s << "VkVideoEncodeH265NaluSliceSegmentEXT = {\n";
+	s << "VkVideoEncodeH265NaluSliceSegmentInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tctbCount = " << value.ctbCount << '\n';
@@ -13514,9 +13491,9 @@ std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH265RateControlLay
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH265ProfileEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH265ProfileInfoEXT& value)
 {
-	s << "VkVideoEncodeH265ProfileEXT = {\n";
+	s << "VkVideoEncodeH265ProfileInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tstdProfileIdc = " << value.stdProfileIdc << '\n';
@@ -13535,9 +13512,9 @@ std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH265DpbSlotInfoEXT
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH265ReferenceListsEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH265ReferenceListsInfoEXT& value)
 {
-	s << "VkVideoEncodeH265ReferenceListsEXT = {\n";
+	s << "VkVideoEncodeH265ReferenceListsInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\treferenceList0EntryCount = " << value.referenceList0EntryCount << '\n';
@@ -14181,9 +14158,9 @@ std::ostream& operator<< (std::ostream& s, const VkImageViewMinLodCreateInfoEXT&
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT& value)
 {
-	s << "VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM = {\n";
+	s << "VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\trasterizationOrderColorAttachmentAccess = " << value.rasterizationOrderColorAttachmentAccess << '\n';

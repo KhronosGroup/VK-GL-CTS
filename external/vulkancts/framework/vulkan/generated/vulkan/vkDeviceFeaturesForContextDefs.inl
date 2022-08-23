@@ -94,7 +94,7 @@ const vk::VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR&			Context::g
 const vk::VkPhysicalDeviceImageCompressionControlFeaturesEXT&				Context::getImageCompressionControlFeaturesEXT				(void) const { return m_device->getImageCompressionControlFeaturesEXT();			}
 const vk::VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT&			Context::getAttachmentFeedbackLoopLayoutFeaturesEXT			(void) const { return m_device->getAttachmentFeedbackLoopLayoutFeaturesEXT();		}
 const vk::VkPhysicalDevice4444FormatsFeaturesEXT&							Context::get4444FormatsFeaturesEXT							(void) const { return m_device->get4444FormatsFeaturesEXT();						}
-const vk::VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM&	Context::getRasterizationOrderAttachmentAccessFeaturesARM	(void) const { return m_device->getRasterizationOrderAttachmentAccessFeaturesARM();	}
+const vk::VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT&	Context::getRasterizationOrderAttachmentAccessFeaturesEXT	(void) const { return m_device->getRasterizationOrderAttachmentAccessFeaturesEXT();	}
 const vk::VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT&						Context::getRGBA10X6FormatsFeaturesEXT						(void) const { return m_device->getRGBA10X6FormatsFeaturesEXT();					}
 const vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE&				Context::getMutableDescriptorTypeFeaturesVALVE				(void) const { return m_device->getMutableDescriptorTypeFeaturesVALVE();			}
 const vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT&				Context::getVertexInputDynamicStateFeaturesEXT				(void) const { return m_device->getVertexInputDynamicStateFeaturesEXT();			}

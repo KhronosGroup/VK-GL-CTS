@@ -510,6 +510,7 @@ static const std::tuple<deUint32, deUint32, deUint32, const char*, const char*>	
 	std::make_tuple(0, 1, 0, "VK_EXT_shader_module_identifier", "VK_EXT_pipeline_creation_cache_control"),
 	std::make_tuple(0, 1, 1, "VK_EXT_shader_module_identifier", "VK_EXT_pipeline_creation_cache_control"),
 	std::make_tuple(0, 1, 2, "VK_EXT_shader_module_identifier", "VK_EXT_pipeline_creation_cache_control"),
+	std::make_tuple(0, 1, 0, "VK_EXT_rasterization_order_attachment_access", "VK_KHR_get_physical_device_properties2"),
 	std::make_tuple(0, 1, 0, "VK_QCOM_tile_properties", "VK_KHR_get_physical_device_properties2"),
 	std::make_tuple(0, 1, 0, "VK_SEC_amigo_profiling", "VK_KHR_get_physical_device_properties2"),
 };
@@ -812,6 +813,7 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_QCOM_image_processing"),
 	std::make_tuple(1, 0, "VK_EXT_subpass_merge_feedback"),
 	std::make_tuple(1, 0, "VK_EXT_shader_module_identifier"),
+	std::make_tuple(1, 0, "VK_EXT_rasterization_order_attachment_access"),
 	std::make_tuple(1, 0, "VK_QCOM_tile_properties"),
 	std::make_tuple(1, 0, "VK_SEC_amigo_profiling"),
 };

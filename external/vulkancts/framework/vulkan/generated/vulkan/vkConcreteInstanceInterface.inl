@@ -85,7 +85,7 @@ virtual VkResult	createHeadlessSurfaceEXT										(VkInstance instance, const V
 virtual VkResult	getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV	(VkPhysicalDevice physicalDevice, uint32_t* pCombinationCount, VkFramebufferMixedSamplesCombinationNV* pCombinations) const;
 virtual VkResult	getPhysicalDeviceToolProperties									(VkPhysicalDevice physicalDevice, uint32_t* pToolCount, VkPhysicalDeviceToolProperties* pToolProperties) const;
 virtual VkResult	getPhysicalDeviceFragmentShadingRatesKHR						(VkPhysicalDevice physicalDevice, uint32_t* pFragmentShadingRateCount, VkPhysicalDeviceFragmentShadingRateKHR* pFragmentShadingRates) const;
-virtual VkResult	getPhysicalDeviceVideoCapabilitiesKHR							(VkPhysicalDevice physicalDevice, const VkVideoProfileKHR* pVideoProfile, VkVideoCapabilitiesKHR* pCapabilities) const;
+virtual VkResult	getPhysicalDeviceVideoCapabilitiesKHR							(VkPhysicalDevice physicalDevice, const VkVideoProfileInfoKHR* pVideoProfile, VkVideoCapabilitiesKHR* pCapabilities) const;
 virtual VkResult	getPhysicalDeviceVideoFormatPropertiesKHR						(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceVideoFormatInfoKHR* pVideoFormatInfo, uint32_t* pVideoFormatPropertyCount, VkVideoFormatPropertiesKHR* pVideoFormatProperties) const;
 virtual VkResult	acquireDrmDisplayEXT											(VkPhysicalDevice physicalDevice, int32_t drmFd, VkDisplayKHR display) const;
 virtual VkResult	getDrmDisplayEXT												(VkPhysicalDevice physicalDevice, int32_t drmFd, uint32_t connectorId, VkDisplayKHR* display) const;
