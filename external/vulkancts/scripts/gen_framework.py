@@ -335,7 +335,7 @@ class API:
 		# if enumerator node has alias atribute then update existing enumerator
 		if alias is not None:
 			for e in reversed(enumDefinition.enumeratorList):
-				if alias == e.name:
+				if alias == e.name or alias in e.aliasList:
 					# make sure same alias is not already on the list; this handles special case like
 					# VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES_KHR alais which is defined in three places
 					if name not in e.aliasList:
