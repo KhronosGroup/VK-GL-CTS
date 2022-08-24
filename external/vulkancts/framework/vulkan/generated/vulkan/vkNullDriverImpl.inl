@@ -3126,7 +3126,7 @@ VKAPI_ATTR void VKAPI_CALL getQueueCheckpointData2NV (VkQueue queue, uint32_t* p
 	DE_UNREF(pCheckpointData);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceVideoCapabilitiesKHR (VkPhysicalDevice physicalDevice, const VkVideoProfileKHR* pVideoProfile, VkVideoCapabilitiesKHR* pCapabilities)
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceVideoCapabilitiesKHR (VkPhysicalDevice physicalDevice, const VkVideoProfileInfoKHR* pVideoProfile, VkVideoCapabilitiesKHR* pCapabilities)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(pVideoProfile);
@@ -3151,21 +3151,21 @@ VKAPI_ATTR VkResult VKAPI_CALL updateVideoSessionParametersKHR (VkDevice device,
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getVideoSessionMemoryRequirementsKHR (VkDevice device, VkVideoSessionKHR videoSession, uint32_t* pVideoSessionMemoryRequirementsCount, VkVideoGetMemoryPropertiesKHR* pVideoSessionMemoryRequirements)
+VKAPI_ATTR VkResult VKAPI_CALL getVideoSessionMemoryRequirementsKHR (VkDevice device, VkVideoSessionKHR videoSession, uint32_t* pMemoryRequirementsCount, VkVideoSessionMemoryRequirementsKHR* pMemoryRequirements)
 {
 	DE_UNREF(device);
 	DE_UNREF(videoSession);
-	DE_UNREF(pVideoSessionMemoryRequirementsCount);
-	DE_UNREF(pVideoSessionMemoryRequirements);
+	DE_UNREF(pMemoryRequirementsCount);
+	DE_UNREF(pMemoryRequirements);
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL bindVideoSessionMemoryKHR (VkDevice device, VkVideoSessionKHR videoSession, uint32_t videoSessionBindMemoryCount, const VkVideoBindMemoryKHR* pVideoSessionBindMemories)
+VKAPI_ATTR VkResult VKAPI_CALL bindVideoSessionMemoryKHR (VkDevice device, VkVideoSessionKHR videoSession, uint32_t bindSessionMemoryInfoCount, const VkBindVideoSessionMemoryInfoKHR* pBindSessionMemoryInfos)
 {
 	DE_UNREF(device);
 	DE_UNREF(videoSession);
-	DE_UNREF(videoSessionBindMemoryCount);
-	DE_UNREF(pVideoSessionBindMemories);
+	DE_UNREF(bindSessionMemoryInfoCount);
+	DE_UNREF(pBindSessionMemoryInfos);
 	return VK_SUCCESS;
 }
 

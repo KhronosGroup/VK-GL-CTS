@@ -348,12 +348,12 @@ VkVideoCodecOperationFlagsKHR readVideoCodecOperationFlagsKHR (const InstanceInt
 	vki.getPhysicalDeviceQueueFamilyProperties2(device, &queueFamilyPropertyCount, nullptr);
 	DE_ASSERT(queueFamilyPropertyCount);
 
-	std::vector<VkVideoQueueFamilyProperties2KHR>	videoQueueFamilyProperties(
+	std::vector<VkQueueFamilyVideoPropertiesKHR>	videoQueueFamilyProperties(
 														queueFamilyPropertyCount,
 														{
-														   VK_STRUCTURE_TYPE_VIDEO_QUEUE_FAMILY_PROPERTIES_2_KHR,	// VkStructureType					sType
-														   nullptr,													// void*							pNext
-														   0														// VkVideoCodecOperationFlagsKHR	videoCodecOperations
+														   VK_STRUCTURE_TYPE_QUEUE_FAMILY_VIDEO_PROPERTIES_KHR,	// VkStructureType					sType
+														   nullptr,												// void*							pNext
+														   0													// VkVideoCodecOperationFlagsKHR	videoCodecOperations
 														});
 	std::vector<VkQueueFamilyProperties2>			queueFamilyProperties(
 														queueFamilyPropertyCount,
@@ -369,8 +369,8 @@ VkVideoCodecOperationFlagsKHR readVideoCodecOperationFlagsKHR (const InstanceInt
 
 	vki.getPhysicalDeviceQueueFamilyProperties2(device, &queueFamilyPropertyCount, queueFamilyProperties.data());
 
-	VkVideoCodecOperationFlagsKHR	codecOperationFlags = VK_VIDEO_CODEC_OPERATION_INVALID_BIT_KHR;
-	for (const VkVideoQueueFamilyProperties2KHR& props : videoQueueFamilyProperties)
+	VkVideoCodecOperationFlagsKHR	codecOperationFlags = VK_VIDEO_CODEC_OPERATION_NONE_KHR;
+	for (const VkQueueFamilyVideoPropertiesKHR& props : videoQueueFamilyProperties)
 	{
 		codecOperationFlags |= props.videoCodecOperations;
 	}
@@ -721,31 +721,31 @@ BufferMemoryRequirementsInstance::chainVkStructure<VkExternalMemoryBufferCreateI
 }
 
 #ifndef CTS_USES_VULKANSC
-template<> void* BufferMemoryRequirementsInstance::chainVkStructure<VkVideoProfilesKHR> (void* pNext, const VkBufferUsageFlags& videoCodecUsage) const
+template<> void* BufferMemoryRequirementsInstance::chainVkStructure<VkVideoProfileListInfoKHR> (void* pNext, const VkBufferUsageFlags& videoCodecUsage) const
 {
 	const bool encode = (videoCodecUsage & VK_BUFFER_USAGE_VIDEO_ENCODE_SRC_BIT_KHR) || (videoCodecUsage & VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR);
 	const bool decode = (videoCodecUsage & VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR) || (videoCodecUsage & VK_BUFFER_USAGE_VIDEO_DECODE_DST_BIT_KHR);
 
-	static VkVideoEncodeH264ProfileEXT	encodeProfile
+	static VkVideoEncodeH264ProfileInfoEXT	encodeProfile
 	{
-		VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_EXT,		// VkStructureType						sType;
-		nullptr,												// const void*							pNext;
-		STD_VIDEO_H264_PROFILE_IDC_BASELINE						// StdVideoH264ProfileIdc				stdProfileIdc;
+		VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_INFO_EXT,		// VkStructureType						sType;
+		nullptr,													// const void*							pNext;
+		STD_VIDEO_H264_PROFILE_IDC_BASELINE							// StdVideoH264ProfileIdc				stdProfileIdc;
 	};
 
-	static VkVideoDecodeH264ProfileEXT	decodeProfile
+	static VkVideoDecodeH264ProfileInfoEXT	decodeProfile
 	{
-		VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_EXT,		// VkStructureType						sType;
-		nullptr,												// const void*							pNext;
-		STD_VIDEO_H264_PROFILE_IDC_BASELINE,					// StdVideoH264ProfileIdc				stdProfileIdc;
-		VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_PROGRESSIVE_EXT		// VkVideoDecodeH264FieldLayoutFlagsEXT	fieldLayout;
+		VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_EXT,		// VkStructureType						sType;
+		nullptr,													// const void*							pNext;
+		STD_VIDEO_H264_PROFILE_IDC_BASELINE,						// StdVideoH264ProfileIdc				stdProfileIdc;
+		VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_PROGRESSIVE_EXT			// VkVideoDecodeH264FieldLayoutFlagsEXT	fieldLayout;
 	};
 
-	static const VkVideoProfileKHR	videoProfiles[]
+	static const VkVideoProfileInfoKHR	videoProfiles[]
 	{
 		// encode profile
 		{
-			VK_STRUCTURE_TYPE_VIDEO_PROFILE_KHR,				// VkStructureType						sType;
+			VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR,			// VkStructureType						sType;
 			&encodeProfile,										// void*								pNext;
 			VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT,		// VkVideoCodecOperationFlagBitsKHR		videoCodecOperation;
 			VK_VIDEO_CHROMA_SUBSAMPLING_MONOCHROME_BIT_KHR,		// VkVideoChromaSubsamplingFlagsKHR		chromaSubsampling;
@@ -754,7 +754,7 @@ template<> void* BufferMemoryRequirementsInstance::chainVkStructure<VkVideoProfi
 		},
 		// decode profile
 		{
-			VK_STRUCTURE_TYPE_VIDEO_PROFILE_KHR,				// VkStructureType						sType;
+			VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR,			// VkStructureType						sType;
 			&decodeProfile,										// void*								pNext;
 			VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_EXT,		// VkVideoCodecOperationFlagBitsKHR		videoCodecOperation;
 			VK_VIDEO_CHROMA_SUBSAMPLING_MONOCHROME_BIT_KHR,		// VkVideoChromaSubsamplingFlagsKHR		chromaSubsampling;
@@ -762,8 +762,8 @@ template<> void* BufferMemoryRequirementsInstance::chainVkStructure<VkVideoProfi
 			VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR				// VkVideoComponentBitDepthFlagsKHR		chromaBitDepth;
 		}
 	};
-	static VkVideoProfilesKHR	profiles;
-	profiles.sType			= VK_STRUCTURE_TYPE_VIDEO_PROFILES_KHR;
+	static VkVideoProfileListInfoKHR	profiles;
+	profiles.sType			= VK_STRUCTURE_TYPE_VIDEO_PROFILE_LIST_INFO_KHR;
 	profiles.pNext			= pNext;
 	if (encode && decode)
 	{
@@ -817,7 +817,7 @@ TestStatus	BufferMemoryRequirementsInstance::iterate (void)
 #ifndef CTS_USES_VULKANSC
 				if (m_config.fateBits->contains(BufferFateFlagBits::Video))
 				{
-					pNext = chainVkStructure<VkVideoProfilesKHR>(pNext, infoUsageFlags);
+					pNext = chainVkStructure<VkVideoProfileListInfoKHR>(pNext, infoUsageFlags);
 				}
 #endif // CTS_USES_VULKANSC
 				if (m_config.incExtMemTypeFlags)

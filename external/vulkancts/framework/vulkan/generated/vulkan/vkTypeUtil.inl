@@ -682,9 +682,9 @@ inline VkAabbPositionsKHR makeAabbPositionsKHR (float minX, float minY, float mi
 	return res;
 }
 
-inline VkMutableDescriptorTypeListVALVE makeMutableDescriptorTypeListVALVE (uint32_t descriptorTypeCount, const VkDescriptorType* pDescriptorTypes)
+inline VkMutableDescriptorTypeListEXT makeMutableDescriptorTypeListEXT (uint32_t descriptorTypeCount, const VkDescriptorType* pDescriptorTypes)
 {
-	VkMutableDescriptorTypeListVALVE res;
+	VkMutableDescriptorTypeListEXT res;
 	res.descriptorTypeCount	= descriptorTypeCount;
 	res.pDescriptorTypes	= pDescriptorTypes;
 	return res;

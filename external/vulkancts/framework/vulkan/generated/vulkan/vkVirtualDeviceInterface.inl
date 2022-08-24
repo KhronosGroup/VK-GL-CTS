@@ -353,8 +353,8 @@ virtual void				destroyVideoSessionKHR							(VkDevice device, VkVideoSessionKHR
 virtual VkResult			createVideoSessionParametersKHR					(VkDevice device, const VkVideoSessionParametersCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkVideoSessionParametersKHR* pVideoSessionParameters) const = 0;
 virtual VkResult			updateVideoSessionParametersKHR					(VkDevice device, VkVideoSessionParametersKHR videoSessionParameters, const VkVideoSessionParametersUpdateInfoKHR* pUpdateInfo) const = 0;
 virtual void				destroyVideoSessionParametersKHR				(VkDevice device, VkVideoSessionParametersKHR videoSessionParameters, const VkAllocationCallbacks* pAllocator) const = 0;
-virtual VkResult			getVideoSessionMemoryRequirementsKHR			(VkDevice device, VkVideoSessionKHR videoSession, uint32_t* pVideoSessionMemoryRequirementsCount, VkVideoGetMemoryPropertiesKHR* pVideoSessionMemoryRequirements) const = 0;
-virtual VkResult			bindVideoSessionMemoryKHR						(VkDevice device, VkVideoSessionKHR videoSession, uint32_t videoSessionBindMemoryCount, const VkVideoBindMemoryKHR* pVideoSessionBindMemories) const = 0;
+virtual VkResult			getVideoSessionMemoryRequirementsKHR			(VkDevice device, VkVideoSessionKHR videoSession, uint32_t* pMemoryRequirementsCount, VkVideoSessionMemoryRequirementsKHR* pMemoryRequirements) const = 0;
+virtual VkResult			bindVideoSessionMemoryKHR						(VkDevice device, VkVideoSessionKHR videoSession, uint32_t bindSessionMemoryInfoCount, const VkBindVideoSessionMemoryInfoKHR* pBindSessionMemoryInfos) const = 0;
 virtual void				cmdDecodeVideoKHR								(VkCommandBuffer commandBuffer, const VkVideoDecodeInfoKHR* pFrameInfo) const = 0;
 virtual void				cmdBeginVideoCodingKHR							(VkCommandBuffer commandBuffer, const VkVideoBeginCodingInfoKHR* pBeginInfo) const = 0;
 virtual void				cmdControlVideoCodingKHR						(VkCommandBuffer commandBuffer, const VkVideoCodingControlInfoKHR* pCodingControlInfo) const = 0;
