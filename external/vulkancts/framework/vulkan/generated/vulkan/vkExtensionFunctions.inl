@@ -1058,6 +1058,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_attachment_feedback_loop_layout")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_4444_formats")
 	{
 		return;
@@ -1227,6 +1231,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_QCOM_tile_properties")
+	{
+		return;
+	}
+	if (extName == "VK_SEC_amigo_profiling")
 	{
 		return;
 	}
@@ -2428,6 +2436,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkGetImageSubresourceLayout2EXT");
 		return;
 	}
+	if (extName == "VK_EXT_attachment_feedback_loop_layout")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_4444_formats")
 	{
 		return;
@@ -2622,6 +2634,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		functions.push_back("vkGetFramebufferTilePropertiesQCOM");
 		functions.push_back("vkGetDynamicRenderingTilePropertiesQCOM");
+		return;
+	}
+	if (extName == "VK_SEC_amigo_profiling")
+	{
 		return;
 	}
 	if (extName == "vulkan_video_codecs_common")
@@ -2912,6 +2928,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_KHR_workgroup_memory_explicit_layout",
 	"VK_KHR_copy_commands2",
 	"VK_EXT_image_compression_control",
+	"VK_EXT_attachment_feedback_loop_layout",
 	"VK_EXT_4444_formats",
 	"VK_ARM_rasterization_order_attachment_access",
 	"VK_EXT_rgba10x6_formats",
@@ -2951,4 +2968,5 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_subpass_merge_feedback",
 	"VK_EXT_shader_module_identifier",
 	"VK_QCOM_tile_properties",
+	"VK_SEC_amigo_profiling",
 };

@@ -914,6 +914,7 @@ const char* getImageLayoutName (VkImageLayout value)
 		case VK_IMAGE_LAYOUT_VIDEO_ENCODE_DPB_KHR:							return "VK_IMAGE_LAYOUT_VIDEO_ENCODE_DPB_KHR";
 		case VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL:								return "VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL";
 		case VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL:							return "VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL";
+		case VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT:			return "VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT";
 		default:															return DE_NULL;
 	}
 }
@@ -961,6 +962,7 @@ tcu::Format::Bitfield<32> getImageUsageFlagsStr (VkImageUsageFlags value)
 		tcu::Format::BitDesc(VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR,					"VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR"),
 		tcu::Format::BitDesc(VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR,					"VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR"),
 		tcu::Format::BitDesc(VK_IMAGE_USAGE_INVOCATION_MASK_BIT_HUAWEI,					"VK_IMAGE_USAGE_INVOCATION_MASK_BIT_HUAWEI"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT,			"VK_IMAGE_USAGE_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT"),
 		tcu::Format::BitDesc(VK_IMAGE_USAGE_SAMPLE_WEIGHT_BIT_QCOM,						"VK_IMAGE_USAGE_SAMPLE_WEIGHT_BIT_QCOM"),
 		tcu::Format::BitDesc(VK_IMAGE_USAGE_SAMPLE_BLOCK_MATCH_BIT_QCOM,				"VK_IMAGE_USAGE_SAMPLE_BLOCK_MATCH_BIT_QCOM"),
 	};
@@ -1155,6 +1157,8 @@ tcu::Format::Bitfield<32> getPipelineCreateFlagsStr (VkPipelineCreateFlags value
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR,		"VK_PIPELINE_CREATE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RENDERING_FRAGMENT_DENSITY_MAP_ATTACHMENT_BIT_EXT,		"VK_PIPELINE_CREATE_RENDERING_FRAGMENT_DENSITY_MAP_ATTACHMENT_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT,				"VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_COLOR_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT,					"VK_PIPELINE_CREATE_COLOR_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DEPTH_STENCIL_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT,			"VK_PIPELINE_CREATE_DEPTH_STENCIL_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1977,6 +1981,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_SUBRESOURCE_LAYOUT_2_EXT:											return "VK_STRUCTURE_TYPE_SUBRESOURCE_LAYOUT_2_EXT";
 		case VK_STRUCTURE_TYPE_IMAGE_SUBRESOURCE_2_EXT:												return "VK_STRUCTURE_TYPE_IMAGE_SUBRESOURCE_2_EXT";
 		case VK_STRUCTURE_TYPE_IMAGE_COMPRESSION_PROPERTIES_EXT:									return "VK_STRUCTURE_TYPE_IMAGE_COMPRESSION_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_FEATURES_EXT:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_FEATURES_ARM:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_FEATURES_ARM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RGBA10X6_FORMATS_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RGBA10X6_FORMATS_FEATURES_EXT";
@@ -2062,6 +2067,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_SHADER_MODULE_IDENTIFIER_EXT:										return "VK_STRUCTURE_TYPE_SHADER_MODULE_IDENTIFIER_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_PROPERTIES_FEATURES_QCOM:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_PROPERTIES_FEATURES_QCOM";
 		case VK_STRUCTURE_TYPE_TILE_PROPERTIES_QCOM:												return "VK_STRUCTURE_TYPE_TILE_PROPERTIES_QCOM";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_AMIGO_PROFILING_FEATURES_SEC:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_AMIGO_PROFILING_FEATURES_SEC";
+		case VK_STRUCTURE_TYPE_AMIGO_PROFILING_SUBMIT_INFO_SEC:										return "VK_STRUCTURE_TYPE_AMIGO_PROFILING_SUBMIT_INFO_SEC";
 		default:																					return DE_NULL;
 	}
 }
@@ -2217,9 +2224,10 @@ tcu::Format::Bitfield<32> getDependencyFlagsStr (VkDependencyFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_DEPENDENCY_BY_REGION_BIT,		"VK_DEPENDENCY_BY_REGION_BIT"),
-		tcu::Format::BitDesc(VK_DEPENDENCY_VIEW_LOCAL_BIT,		"VK_DEPENDENCY_VIEW_LOCAL_BIT"),
-		tcu::Format::BitDesc(VK_DEPENDENCY_DEVICE_GROUP_BIT,	"VK_DEPENDENCY_DEVICE_GROUP_BIT"),
+		tcu::Format::BitDesc(VK_DEPENDENCY_BY_REGION_BIT,			"VK_DEPENDENCY_BY_REGION_BIT"),
+		tcu::Format::BitDesc(VK_DEPENDENCY_VIEW_LOCAL_BIT,			"VK_DEPENDENCY_VIEW_LOCAL_BIT"),
+		tcu::Format::BitDesc(VK_DEPENDENCY_DEVICE_GROUP_BIT,		"VK_DEPENDENCY_DEVICE_GROUP_BIT"),
+		tcu::Format::BitDesc(VK_DEPENDENCY_FEEDBACK_LOOP_BIT_EXT,	"VK_DEPENDENCY_FEEDBACK_LOOP_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -14681,6 +14689,37 @@ std::ostream& operator<< (std::ostream& s, const VkTilePropertiesQCOM& value)
 	s << "\ttileSize = " << value.tileSize << '\n';
 	s << "\tapronSize = " << value.apronSize << '\n';
 	s << "\torigin = " << value.origin << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceAmigoProfilingFeaturesSEC& value)
+{
+	s << "VkPhysicalDeviceAmigoProfilingFeaturesSEC = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tamigoProfiling = " << value.amigoProfiling << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAmigoProfilingSubmitInfoSEC& value)
+{
+	s << "VkAmigoProfilingSubmitInfoSEC = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tfirstDrawTimestamp = " << value.firstDrawTimestamp << '\n';
+	s << "\tswapBufferTimestamp = " << value.swapBufferTimestamp << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tattachmentFeedbackLoopLayout = " << value.attachmentFeedbackLoopLayout << '\n';
 	s << '}';
 	return s;
 }

@@ -7340,6 +7340,28 @@ struct VkTilePropertiesQCOM
 	VkOffset2D		origin;
 };
 
+struct VkPhysicalDeviceAmigoProfilingFeaturesSEC
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		amigoProfiling;
+};
+
+struct VkAmigoProfilingSubmitInfoSEC
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint64_t		firstDrawTimestamp;
+	uint64_t		swapBufferTimestamp;
+};
+
+struct VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		attachmentFeedbackLoopLayout;
+};
+
 struct StdVideoH264SpsVuiFlags
 {
 	uint32_t	aspect_ratio_info_present_flag:1;

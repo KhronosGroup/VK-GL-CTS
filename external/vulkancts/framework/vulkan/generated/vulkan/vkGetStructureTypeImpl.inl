@@ -3378,3 +3378,18 @@ template<> VkStructureType getStructureType<VkTilePropertiesQCOM> (void)
 	return VK_STRUCTURE_TYPE_TILE_PROPERTIES_QCOM;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceAmigoProfilingFeaturesSEC> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_AMIGO_PROFILING_FEATURES_SEC;
+}
+
+template<> VkStructureType getStructureType<VkAmigoProfilingSubmitInfoSEC> (void)
+{
+	return VK_STRUCTURE_TYPE_AMIGO_PROFILING_SUBMIT_INFO_SEC;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_FEATURES_EXT;
+}
+

@@ -1346,6 +1346,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageProcessing
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageProcessingPropertiesQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceTilePropertiesFeaturesQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkTilePropertiesQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceAmigoProfilingFeaturesSEC& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAmigoProfilingSubmitInfoSEC& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SpsVuiFlags& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264HrdParameters& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SequenceParameterSetVui& value);

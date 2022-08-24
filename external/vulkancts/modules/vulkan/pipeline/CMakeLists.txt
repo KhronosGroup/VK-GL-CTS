@@ -130,6 +130,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineShaderModuleIdentifierTests.hpp
 	vktPipelineImage2DViewOf3DTests.cpp
 	vktPipelineImage2DViewOf3DTests.hpp
+	vktPipelineAttachmentFeedbackLoopLayoutTests.cpp
+	vktPipelineAttachmentFeedbackLoopLayoutTests.hpp
 	vktPipelineMultisampledRenderToSingleSampledTests.cpp
 	vktPipelineMultisampledRenderToSingleSampledTests.hpp
 	)

@@ -64,6 +64,7 @@
 #include "vktPipelineNoPositionTests.hpp"
 #include "vktPipelineColorWriteEnableTests.hpp"
 #include "vktPipelineLibraryTests.hpp"
+#include "vktPipelineAttachmentFeedbackLoopLayoutTests.hpp"
 #include "vktPipelineShaderModuleIdentifierTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
@@ -131,6 +132,7 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 #endif // CTS_USES_VULKANSC
 	group->addChild(createColorWriteEnableTests			(testCtx, pipelineConstructionType));
 #ifndef CTS_USES_VULKANSC
+	group->addChild(createAttachmentFeedbackLoopLayoutTests (testCtx, pipelineConstructionType));
 	group->addChild(createShaderModuleIdentifierTests	(testCtx, pipelineConstructionType));
 #endif // CTS_USES_VULKANSC
 	group->addChild(createColorWriteEnable2Tests		(testCtx, pipelineConstructionType));
