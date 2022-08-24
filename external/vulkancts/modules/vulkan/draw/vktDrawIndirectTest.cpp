@@ -86,8 +86,9 @@ enum class IndirectCountType
 
 struct DrawTypedTestSpec : public TestSpecBase
 {
-	DrawTypedTestSpec()
-		: drawType(DRAWTYPE_LAST)
+	DrawTypedTestSpec(const SharedGroupParams groupParams_)
+		: TestSpecBase{ {}, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, groupParams_ }
+		, drawType(DRAWTYPE_LAST)
 		, testFirstInstanceNdx(false)
 		, testIndirectCountExt(IndirectCountType::NONE)
 		, dataFromCompute(false)
@@ -107,6 +108,7 @@ public:
 										IndirectDraw					(Context &context, TestSpec testSpec);
 	virtual	tcu::TestStatus				iterate							(void);
 
+	void								draw							(vk::VkCommandBuffer cmdBuffer);
 	template<typename T> void			addCommand						(const T&);
 
 protected:
@@ -315,7 +317,7 @@ void IndirectDraw::negateDataUsingCompute(vk::VkDeviceSize indirectBufferSize, v
 }
 
 IndirectDraw::IndirectDraw (Context &context, TestSpec testSpec)
-	: DrawTestsBaseClass				(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], testSpec.useDynamicRendering, testSpec.topology)
+	: DrawTestsBaseClass				(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], testSpec.groupParams, testSpec.topology)
 	, m_testIndirectCountExt			(testSpec.testIndirectCountExt)
 	, m_indirectCountExtDrawPadding		(1u)
 	, m_drawType						(testSpec.drawType)
@@ -373,6 +375,89 @@ void IndirectDraw::addCommand<vk::VkDrawIndexedIndirectCommand> (const vk::VkDra
 	m_indirectBufferContents.resize(currentSize + sizeof(command));
 
 	deMemcpy(&m_indirectBufferContents[currentSize], &command, sizeof(command));
+}
+
+void IndirectDraw::draw (vk::VkCommandBuffer cmdBuffer)
+{
+	const vk::VkDeviceSize	vertexBufferOffset	= 0;
+	const vk::VkBuffer		vertexBuffer		= m_vertexBuffer->object();
+
+	m_vk.cmdBindVertexBuffers(cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+	m_vk.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+	if (m_drawType == DRAW_TYPE_INDEXED)
+		m_vk.cmdBindIndexBuffer(cmdBuffer, m_indexBuffer->object(), DE_NULL, vk::VK_INDEX_TYPE_UINT32);
+
+	if (m_isMultiDrawEnabled && m_drawCount <= m_drawIndirectMaxCount)
+	{
+		switch (m_drawType)
+		{
+			case DRAW_TYPE_SEQUENTIAL:
+			{
+				if (m_testIndirectCountExt != IndirectCountType::NONE)
+				{
+					const deUint32 maxDrawCount = m_drawCount + (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? m_indirectCountExtDrawPadding : 0u);
+					m_vk.cmdDrawIndirectCount(cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer,
+											  m_indirectCountBuffer->object(), m_offsetInCountBuffer, maxDrawCount,
+											  m_strideInBuffer);
+				}
+				else
+					m_vk.cmdDrawIndirect(cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer, m_drawCount, m_strideInBuffer);
+				break;
+			}
+			case DRAW_TYPE_INDEXED:
+			{
+				if (m_testIndirectCountExt != IndirectCountType::NONE)
+				{
+					const deUint32 maxDrawCount = m_drawCount + (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? m_indirectCountExtDrawPadding : 0u);
+					m_vk.cmdDrawIndexedIndirectCount(cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer,
+													 m_indirectCountBuffer->object(), m_offsetInCountBuffer, maxDrawCount,
+													 m_strideInBuffer);
+				}
+				else
+					m_vk.cmdDrawIndexedIndirect(cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer, m_drawCount, m_strideInBuffer);
+				break;
+			}
+			default:
+				TCU_FAIL("impossible");
+		}
+	}
+	else
+	{
+		for (deUint32 drawNdx = 0; drawNdx < m_drawCount; drawNdx++)
+		{
+			switch (m_drawType)
+			{
+				case DRAW_TYPE_SEQUENTIAL:
+				{
+					if (m_testIndirectCountExt != IndirectCountType::NONE)
+					{
+						const deUint32 maxDrawCount = (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? m_drawCount + m_indirectCountExtDrawPadding : 1u);
+						m_vk.cmdDrawIndirectCount(cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx*m_strideInBuffer,
+												  m_indirectCountBuffer->object(), m_offsetInCountBuffer, maxDrawCount,
+												  m_strideInBuffer);
+					}
+					else
+						m_vk.cmdDrawIndirect(cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx*m_strideInBuffer, 1u, 0u);
+					break;
+				}
+				case DRAW_TYPE_INDEXED:
+				{
+					if (m_testIndirectCountExt != IndirectCountType::NONE)
+					{
+						const deUint32 maxDrawCount = (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? m_drawCount + m_indirectCountExtDrawPadding : 1u);
+						m_vk.cmdDrawIndexedIndirectCount(cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx*m_strideInBuffer,
+														 m_indirectCountBuffer->object(), m_offsetInCountBuffer, maxDrawCount,
+														 m_strideInBuffer);
+					}
+					else
+						m_vk.cmdDrawIndexedIndirect(cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx*m_strideInBuffer, 1u, 0u);
+					break;
+				}
+				default:
+					TCU_FAIL("impossible");
+			}
+		}
+	}
 }
 
 tcu::TestStatus IndirectDraw::iterate (void)
@@ -601,98 +686,75 @@ tcu::TestStatus IndirectDraw::iterate (void)
 		vk::flushAlloc(m_vk, m_context.getDevice(), m_indirectCountBuffer->getBoundMemory());
 	}
 
-	beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
-
-	if (m_dataFromComputeShader)
-		negateDataUsingCompute(indirectBufferSize, countBufferSize);
-
-	beginRender();
-
-	const vk::VkDeviceSize vertexBufferOffset	= 0;
-	const vk::VkBuffer vertexBuffer				= m_vertexBuffer->object();
-
-	m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
-
-	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
-
-	if (m_drawType == DRAW_TYPE_INDEXED)
+#ifndef CTS_USES_VULKANSC
+	if (m_groupParams->useSecondaryCmdBuffer)
 	{
-		m_vk.cmdBindIndexBuffer(*m_cmdBuffer, m_indexBuffer->object(), DE_NULL, vk::VK_INDEX_TYPE_UINT32);
-	}
-
-	if (m_isMultiDrawEnabled && m_drawCount <= m_drawIndirectMaxCount)
-	{
-		switch (m_drawType)
+		// record secondary command buffer
+		if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
 		{
-			case DRAW_TYPE_SEQUENTIAL:
-			{
-				if (m_testIndirectCountExt != IndirectCountType::NONE)
-				{
-					const deUint32 maxDrawCount = m_drawCount + (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? m_indirectCountExtDrawPadding : 0u);
-					m_vk.cmdDrawIndirectCount(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer,
-											  m_indirectCountBuffer->object(), m_offsetInCountBuffer, maxDrawCount,
-											  m_strideInBuffer);
-				}
-				else
-					m_vk.cmdDrawIndirect(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer, m_drawCount, m_strideInBuffer);
-				break;
-			}
-			case DRAW_TYPE_INDEXED:
-			{
-				if (m_testIndirectCountExt != IndirectCountType::NONE)
-				{
-					const deUint32 maxDrawCount = m_drawCount + (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? m_indirectCountExtDrawPadding : 0u);
-					m_vk.cmdDrawIndexedIndirectCount(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer,
-													 m_indirectCountBuffer->object(), m_offsetInCountBuffer, maxDrawCount,
-													 m_strideInBuffer);
-				}
-				else
-					m_vk.cmdDrawIndexedIndirect(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer, m_drawCount, m_strideInBuffer);
-				break;
-			}
-			default:
-				TCU_FAIL("impossible");
+			beginSecondaryCmdBuffer(m_vk, vk::VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+			beginDynamicRender(*m_secCmdBuffer);
 		}
+		else
+			beginSecondaryCmdBuffer(m_vk);
+
+		draw(*m_secCmdBuffer);
+
+		if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			endDynamicRender(*m_secCmdBuffer);
+
+		endCommandBuffer(m_vk, *m_secCmdBuffer);
+
+		// record primary command buffer
+		beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+
+		if (m_dataFromComputeShader)
+			negateDataUsingCompute(indirectBufferSize, countBufferSize);
+
+		preRenderBarriers();
+
+		if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			beginDynamicRender(*m_cmdBuffer, vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+
+		m_vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_secCmdBuffer);
+
+		if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			endDynamicRender(*m_cmdBuffer);
+
+		endCommandBuffer(m_vk, *m_cmdBuffer);
 	}
-	else
+	else if (m_groupParams->useDynamicRendering)
 	{
-		for (deUint32 drawNdx = 0; drawNdx < m_drawCount; drawNdx++)
-		{
-			switch (m_drawType)
-			{
-				case DRAW_TYPE_SEQUENTIAL:
-				{
-					if (m_testIndirectCountExt != IndirectCountType::NONE)
-					{
-						const deUint32 maxDrawCount = (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? m_drawCount + m_indirectCountExtDrawPadding : 1u);
-						m_vk.cmdDrawIndirectCount(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx*m_strideInBuffer,
-												  m_indirectCountBuffer->object(), m_offsetInCountBuffer, maxDrawCount,
-												  m_strideInBuffer);
-					}
-					else
-						m_vk.cmdDrawIndirect(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx*m_strideInBuffer, 1u, 0u);
-					break;
-				}
-				case DRAW_TYPE_INDEXED:
-				{
-					if (m_testIndirectCountExt != IndirectCountType::NONE)
-					{
-						const deUint32 maxDrawCount = (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? m_drawCount + m_indirectCountExtDrawPadding : 1u);
-						m_vk.cmdDrawIndexedIndirectCount(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx*m_strideInBuffer,
-														 m_indirectCountBuffer->object(), m_offsetInCountBuffer, maxDrawCount,
-														 m_strideInBuffer);
-					}
-					else
-						m_vk.cmdDrawIndexedIndirect(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx*m_strideInBuffer, 1u, 0u);
-					break;
-				}
-				default:
-					TCU_FAIL("impossible");
-			}
-		}
+		beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+
+		if (m_dataFromComputeShader)
+			negateDataUsingCompute(indirectBufferSize, countBufferSize);
+
+		preRenderBarriers();
+		beginDynamicRender(*m_cmdBuffer);
+
+		draw(*m_cmdBuffer);
+
+		endDynamicRender(*m_cmdBuffer);
+		endCommandBuffer(m_vk, *m_cmdBuffer);
 	}
-	endRender();
-	endCommandBuffer(m_vk, *m_cmdBuffer);
+#endif // CTS_USES_VULKANSC
+
+	if (!m_groupParams->useDynamicRendering)
+	{
+		beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+
+		if (m_dataFromComputeShader)
+			negateDataUsingCompute(indirectBufferSize, countBufferSize);
+
+		preRenderBarriers();
+		beginLegacyRender(*m_cmdBuffer);
+
+		draw(*m_cmdBuffer);
+
+		endLegacyRender(*m_cmdBuffer);
+		endCommandBuffer(m_vk, *m_cmdBuffer);
+	}
 
 	submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
 
@@ -973,98 +1035,73 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 		vk::flushAlloc(m_vk, m_context.getDevice(), m_indirectCountBuffer->getBoundMemory());
 	}
 
-	beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
-
-	if (m_dataFromComputeShader)
-		negateDataUsingCompute(indirectBufferSize, countBufferSize);
-
-	beginRender();
-
-	const vk::VkDeviceSize	vertexBufferOffset	= 0;
-	const vk::VkBuffer		vertexBuffer		= m_vertexBuffer->object();
-
-	m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
-
-	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
-
-	if (m_drawType == DRAW_TYPE_INDEXED)
+#ifndef CTS_USES_VULKANSC
+	if (m_groupParams->useSecondaryCmdBuffer)
 	{
-		m_vk.cmdBindIndexBuffer(*m_cmdBuffer, m_indexBuffer->object(), DE_NULL, vk::VK_INDEX_TYPE_UINT32);
-	}
-
-	if (m_isMultiDrawEnabled && m_drawCount <= m_drawIndirectMaxCount)
-	{
-		switch (m_drawType)
+		// record secondary command buffer
+		if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
 		{
-			case DRAW_TYPE_SEQUENTIAL:
-			{
-				if (m_testIndirectCountExt != IndirectCountType::NONE)
-				{
-					const deUint32 maxDrawCount = m_drawCount + (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? m_indirectCountExtDrawPadding : 0u);
-					m_vk.cmdDrawIndirectCount(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer,
-											  m_indirectCountBuffer->object(), m_offsetInCountBuffer,
-											  maxDrawCount, m_strideInBuffer);
-				}
-				else
-					m_vk.cmdDrawIndirect(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer, m_drawCount, m_strideInBuffer);
-				break;
-			}
-			case DRAW_TYPE_INDEXED:
-			{
-				if (m_testIndirectCountExt != IndirectCountType::NONE)
-				{
-					const deUint32 maxDrawCount = m_drawCount + (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? m_indirectCountExtDrawPadding : 0u);
-					m_vk.cmdDrawIndexedIndirectCount(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer,
-													 m_indirectCountBuffer->object(), m_offsetInCountBuffer,
-													 maxDrawCount, m_strideInBuffer);
-				}
-				else
-					m_vk.cmdDrawIndexedIndirect(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer, m_drawCount, m_strideInBuffer);
-				break;
-			}
-			default:
-				TCU_FAIL("impossible");
+			beginSecondaryCmdBuffer(m_vk, vk::VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+			beginDynamicRender(*m_secCmdBuffer);
 		}
+		else
+			beginSecondaryCmdBuffer(m_vk);
+
+		draw(*m_secCmdBuffer);
+
+		if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			endDynamicRender(*m_secCmdBuffer);
+
+		endCommandBuffer(m_vk, *m_secCmdBuffer);
+
+		// record primary command buffer
+		beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+
+		if (m_dataFromComputeShader)
+			negateDataUsingCompute(indirectBufferSize, countBufferSize);
+
+		preRenderBarriers();
+
+		if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			beginDynamicRender(*m_cmdBuffer, vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+
+		m_vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_secCmdBuffer);
+
+		if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			endDynamicRender(*m_cmdBuffer);
+
+		endCommandBuffer(m_vk, *m_cmdBuffer);
 	}
-	else
+	else if(m_groupParams->useDynamicRendering)
 	{
-		for (deUint32 drawNdx = 0; drawNdx < m_drawCount; drawNdx++)
-		{
-			switch (m_drawType)
-			{
-				case DRAW_TYPE_SEQUENTIAL:
-				{
-					if (m_testIndirectCountExt != IndirectCountType::NONE)
-					{
-						const deUint32 maxDrawCount = (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? m_drawCount + m_indirectCountExtDrawPadding : 1u);
-						m_vk.cmdDrawIndirectCount(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx*m_strideInBuffer,
-												  m_indirectCountBuffer->object(), m_offsetInCountBuffer, maxDrawCount,
-												  m_strideInBuffer);
-					}
-					else
-						m_vk.cmdDrawIndirect(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx*m_strideInBuffer, 1u, 0u);
-					break;
-				}
-				case DRAW_TYPE_INDEXED:
-				{
-					if (m_testIndirectCountExt != IndirectCountType::NONE)
-					{
-						const deUint32 maxDrawCount = (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? m_drawCount + m_indirectCountExtDrawPadding : 1u);
-						m_vk.cmdDrawIndexedIndirectCount(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx*m_strideInBuffer,
-														 m_indirectCountBuffer->object(), m_offsetInCountBuffer, maxDrawCount,
-														 m_strideInBuffer);
-					}
-					else
-						m_vk.cmdDrawIndexedIndirect(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx*m_strideInBuffer, 1u, 0u);
-					break;
-				}
-				default:
-					TCU_FAIL("impossible");
-			}
-		}
+		beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+
+		if (m_dataFromComputeShader)
+			negateDataUsingCompute(indirectBufferSize, countBufferSize);
+
+		preRenderBarriers();
+		beginDynamicRender(*m_cmdBuffer);
+		draw(*m_cmdBuffer);
+		endDynamicRender(*m_cmdBuffer);
+
+		endCommandBuffer(m_vk, *m_cmdBuffer);
 	}
-	endRender();
-	endCommandBuffer(m_vk, *m_cmdBuffer);
+#endif // CTS_USES_VULKANSC
+
+	if (!m_groupParams->useDynamicRendering)
+	{
+		beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+
+		if (m_dataFromComputeShader)
+			negateDataUsingCompute(indirectBufferSize, countBufferSize);
+
+		preRenderBarriers();
+		beginLegacyRender(*m_cmdBuffer);
+		draw(*m_cmdBuffer);
+		endLegacyRender(*m_cmdBuffer);
+
+		endCommandBuffer(m_vk, *m_cmdBuffer);
+	}
 
 	submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
 
@@ -1118,15 +1155,15 @@ void checkSupport(Context& context, IndirectDraw::TestSpec testSpec)
 	if (testSpec.testIndirectCountExt != IndirectCountType::NONE)
 		context.requireDeviceFunctionality("VK_KHR_draw_indirect_count");
 
-	if (testSpec.useDynamicRendering)
+	if (testSpec.groupParams->useDynamicRendering)
 		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 }
 
 }	// anonymous
 
-IndirectDrawTests::IndirectDrawTests (tcu::TestContext& testCtx, bool useDynamicRendering)
-	: TestCaseGroup			(testCtx, "indirect_draw", "indirect drawing simple geometry")
-	, m_useDynamicRendering	(useDynamicRendering)
+IndirectDrawTests::IndirectDrawTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
+	: TestCaseGroup		(testCtx, "indirect_draw", "indirect drawing simple geometry")
+	, m_groupParams		(groupParams)
 {
 	/* Left blank on purpose */
 }
@@ -1139,6 +1176,10 @@ void IndirectDrawTests::init (void)
 	for (auto dataFromCompute : {false, true})
 	for (int drawTypeIdx = 0; drawTypeIdx < DRAWTYPE_LAST; drawTypeIdx++)
 	{
+		// reduce number of tests for dynamic rendering cases where secondary command buffer is used
+		if (m_groupParams->useSecondaryCmdBuffer && (dataFromCompute == m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass))
+			continue;
+
 		std::string drawTypeStr;
 		switch (drawTypeIdx)
 		{
@@ -1161,9 +1202,8 @@ void IndirectDrawTests::init (void)
 			tcu::TestCaseGroup* indirectDrawCountGroup		= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_count", "Draws geometry with VK_KHR_draw_indirect_count extension");
 			tcu::TestCaseGroup* indirectDrawParamCountGroup	= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_param_count", "Draws geometry with VK_KHR_draw_indirect_count extension and limit draws count with call parameter");
 			{
-				IndirectDraw::TestSpec testSpec;
+				IndirectDraw::TestSpec testSpec(m_groupParams);
 				testSpec.drawType = static_cast<DrawType>(drawTypeIdx);
-				testSpec.useDynamicRendering = m_useDynamicRendering;
 				testSpec.dataFromCompute = dataFromCompute;
 				testSpec.shaders[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetch.vert";
 				testSpec.shaders[glu::SHADERTYPE_FRAGMENT] = "vulkan/draw/VertexFetch.frag";
@@ -1202,10 +1242,9 @@ void IndirectDrawTests::init (void)
 				tcu::TestCaseGroup* indirectDrawCountFirstInstanceGroup			= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_count_first_instance", "Draws geometry with VK_KHR_draw_indirect_count extension with different first instance in one commandbuffer");
 				tcu::TestCaseGroup* indirectDrawParamCountFirstInstanceGroup	= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_param_count_first_instance", "Draws geometry with VK_KHR_draw_indirect_count extension with different first instance in one commandbuffer and limit draws count with call parameter");
 				{
-					IndirectDraw::TestSpec testSpec;
+					IndirectDraw::TestSpec testSpec(m_groupParams);
 					testSpec.testFirstInstanceNdx = true;
 					testSpec.drawType = static_cast<DrawType>(drawTypeIdx);
-					testSpec.useDynamicRendering = m_useDynamicRendering;
 					testSpec.dataFromCompute = dataFromCompute;
 					testSpec.shaders[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetchInstanceIndex.vert";
 					testSpec.shaders[glu::SHADERTYPE_FRAGMENT] = "vulkan/draw/VertexFetch.frag";
@@ -1250,9 +1289,8 @@ void IndirectDrawTests::init (void)
 				{
 					typedef IndirectDrawInstanced<FirstInstanceNotSupported> IDFirstInstanceNotSupported;
 
-					IDFirstInstanceNotSupported::TestSpec testSpec;
+					IDFirstInstanceNotSupported::TestSpec testSpec(m_groupParams);
 					testSpec.drawType = static_cast<DrawType>(drawTypeIdx);
-					testSpec.useDynamicRendering = m_useDynamicRendering;
 					testSpec.dataFromCompute = dataFromCompute;
 
 					testSpec.shaders[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetchInstanced.vert";
@@ -1293,9 +1331,8 @@ void IndirectDrawTests::init (void)
 				{
 					typedef IndirectDrawInstanced<FirstInstanceSupported> IDFirstInstanceSupported;
 
-					IDFirstInstanceSupported::TestSpec testSpec;
+					IDFirstInstanceSupported::TestSpec testSpec(m_groupParams);
 					testSpec.drawType = static_cast<DrawType>(drawTypeIdx);
-					testSpec.useDynamicRendering = m_useDynamicRendering;
 					testSpec.dataFromCompute = dataFromCompute;
 
 					testSpec.shaders[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetchInstancedFirstInstance.vert";

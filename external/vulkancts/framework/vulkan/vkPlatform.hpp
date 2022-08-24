@@ -158,7 +158,8 @@ public:
 																			 VkDevice										device,
 																			 const tcu::CommandLine&						cmdLine,
 																			 de::SharedPtr<vk::ResourceInterface>			resourceInterface,
-																			 const VkPhysicalDeviceVulkanSC10Properties&	physicalDeviceVulkanSC10Properties);
+																			 const VkPhysicalDeviceVulkanSC10Properties&	physicalDeviceVulkanSC10Properties,
+																			 const VkPhysicalDeviceProperties&				physicalDeviceProperties);
 	virtual								~DeviceDriverSC						(void);
 
 #include "vkConcreteDeviceInterface.inl"
@@ -335,6 +336,7 @@ protected:
 	mutable std::map<VkPipeline, VkComputePipelineCreateInfo>					m_computePipelines;
 	mutable std::map<VkDescriptorSet, VkDescriptorPool>							m_descriptorSetsInPool;
 	VkPhysicalDeviceVulkanSC10Properties										m_physicalDeviceVulkanSC10Properties;
+	VkPhysicalDeviceProperties													m_physicalDeviceProperties;
 
 	VkDeviceSize																m_commandDefaultSize;
 	VkDeviceSize																m_commandBufferMinimumSize;
@@ -382,7 +384,7 @@ public:
 							Platform			(void) {}
 							~Platform			(void) {}
 
-	virtual Library*		createLibrary		(void) const = 0;
+	virtual Library*		createLibrary		(const char* libraryPath) const = 0;
 	virtual wsi::Display*	createWsiDisplay	(wsi::Type wsiType) const;
 	virtual bool			hasDisplay			(wsi::Type wsiType) const;
 	virtual void			describePlatform	(std::ostream& dst) const;

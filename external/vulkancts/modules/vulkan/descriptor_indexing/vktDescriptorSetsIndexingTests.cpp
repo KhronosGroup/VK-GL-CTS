@@ -559,20 +559,23 @@ Move<VkDescriptorSetLayout>	CommonDescriptorInstance::createDescriptorSetLayout 
 
 	bool optional = (m_testParams.additionalDescriptorBinding != BINDING_Undefined) && (m_testParams.additionalDescriptorType != VK_DESCRIPTOR_TYPE_UNDEFINED);
 
+	const VkShaderStageFlags bindingStageFlags = (m_testParams.descriptorType == VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT) ?
+													VkShaderStageFlags{VK_SHADER_STAGE_FRAGMENT_BIT} : m_testParams.stageFlags;
+
 	const VkDescriptorSetLayoutBinding	bindings[] =
 	{
 		{
 			m_testParams.descriptorBinding,				// binding
 			m_testParams.descriptorType,				// descriptorType
 			descriptorCount,							// descriptorCount
-			m_testParams.stageFlags,					// stageFlags
+			bindingStageFlags,							// stageFlags
 			DE_NULL,									// pImmutableSamplers
 		},
 		{
 			m_testParams.additionalDescriptorBinding,	// binding
 			m_testParams.additionalDescriptorType,		// descriptorType
 			1,											// descriptorCount
-			m_testParams.stageFlags,					// stageFlags
+			bindingStageFlags,							// stageFlags
 			DE_NULL,									// pImmutableSamplers
 		}
 	};
@@ -1427,6 +1430,7 @@ void CommonDescriptorInstance::iterateCommandEnd					(IterateCommonVariables&			
 		iterateCollectResults(programResult, variables, true);
 		iterateCollectResults(referenceResult, variables, false);
 	}
+	m_context.resetCommandPoolForVKSC(m_vkd, *m_commandPool);
 }
 
 bool CommonDescriptorInstance::iterateVerifyResults			(IterateCommonVariables&					variables,
@@ -3628,7 +3632,11 @@ void SamplerInstance::createAndPopulateDescriptors					(IterateCommonVariables&	
 		m_testParams.usesMipMaps ? tcu::Sampler::LINEAR_MIPMAP_NEAREST : tcu::Sampler::NEAREST,	// minFilter
 		m_testParams.usesMipMaps ? tcu::Sampler::LINEAR_MIPMAP_NEAREST : tcu::Sampler::NEAREST,	// magFilter
 		0.0f,																					// lodTreshold
-		true);																					// normalizeCoords
+		true,																					// normalizeCoords
+		tcu::Sampler::COMPAREMODE_NONE,															// compare
+		0,																						// compareChannel
+		tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),														// borderColor
+		true);																					// seamlessCubeMap
 	const VkSamplerCreateInfo createInfo = vk::mapSampler(sampler, vk::mapVkFormat(m_colorFormat));
 	variables.descriptorSamplers.resize(variables.validDescriptorCount);
 
@@ -3715,7 +3723,11 @@ void SampledImageInstance::createAndPopulateDescriptors				(IterateCommonVariabl
 			m_testParams.usesMipMaps ? tcu::Sampler::NEAREST_MIPMAP_NEAREST : tcu::Sampler::NEAREST,	// minFilter
 			m_testParams.usesMipMaps ? tcu::Sampler::NEAREST_MIPMAP_NEAREST : tcu::Sampler::NEAREST,	// magFilter
 			0.0f,																						// lodTreshold
-			true);																						// normalizeCoords
+			true,																						// normalizeCoords
+			tcu::Sampler::COMPAREMODE_NONE,																// compare
+			0,																							// compareChannel
+			tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),															// borderColor
+			true);																						// seamlessCubeMap
 		const VkSamplerCreateInfo createInfo = vk::mapSampler(sampler, vk::mapVkFormat(m_colorFormat));
 		variables.descriptorSamplers.push_back(ut::SamplerSp(new Move<VkSampler>(vk::createSampler(m_vki, m_vkd, &createInfo))));
 	}
@@ -3829,7 +3841,11 @@ void CombinedImageInstance::createAndPopulateDescriptors			(IterateCommonVariabl
 		m_testParams.usesMipMaps ? tcu::Sampler::NEAREST_MIPMAP_NEAREST : tcu::Sampler::NEAREST,	// minFilter
 		m_testParams.usesMipMaps ? tcu::Sampler::NEAREST_MIPMAP_NEAREST : tcu::Sampler::NEAREST,	// magFilter
 		0.0f,																						// lodTreshold
-		true);																						// normalizeCoords
+		true,																						// normalizeCoords
+		tcu::Sampler::COMPAREMODE_NONE,																// compare
+		0,																							// compareChannel
+		tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),															// borderColor
+		true);																						// seamlessCubeMap
 	const VkSamplerCreateInfo	createInfo = vk::mapSampler(sampler, vk::mapVkFormat(m_colorFormat));
 	variables.descriptorSamplers.push_back(ut::SamplerSp(new Move<VkSampler>(vk::createSampler(m_vki, m_vkd, &createInfo))));
 

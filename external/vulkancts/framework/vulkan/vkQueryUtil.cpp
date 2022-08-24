@@ -101,12 +101,7 @@ vector<VkPhysicalDeviceGroupProperties> enumeratePhysicalDeviceGroups(const Inst
 
 	if (numDeviceGroups > 0)
 	{
-		properties.resize(numDeviceGroups);
-		for (deUint32 i = 0; i < numDeviceGroups; i++)
-		{
-			properties[i].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GROUP_PROPERTIES;
-			properties[i].pNext = DE_NULL;
-		}
+		properties.resize(numDeviceGroups, initVulkanStructure());
 		VK_CHECK(vk.enumeratePhysicalDeviceGroups(instance, &numDeviceGroups, &properties[0]));
 
 		if ((size_t)numDeviceGroups != properties.size())
@@ -488,12 +483,12 @@ bool isCompatible (const VkLayerProperties& layerProperties, const RequiredLayer
 	return true;
 }
 
-bool isExtensionSupported (const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required)
+bool isExtensionStructSupported (const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required)
 {
-	return isExtensionSupported(extensions.begin(), extensions.end(), required);
+	return isExtensionStructSupported(extensions.begin(), extensions.end(), required);
 }
 
-bool isExtensionSupported (const vector<std::string>& extensionStrings, const std::string& extensionName)
+bool isExtensionStructSupported (const vector<std::string>& extensionStrings, const std::string& extensionName)
 {
 	return de::contains(extensionStrings.begin(), extensionStrings.end(), extensionName);
 }

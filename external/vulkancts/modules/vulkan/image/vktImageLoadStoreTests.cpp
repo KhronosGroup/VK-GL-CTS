@@ -40,6 +40,7 @@
 #include "vkImageUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
 
 #include "deMath.h"
 #include "deUniquePtr.hpp"
@@ -184,8 +185,12 @@ bool comparePixelBuffers (tcu::TestLog&						log,
 
 			case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
 			{
+				const tcu::UVec4 bitDepth = tcu::getTextureFormatMantissaBitDepth(mapVkFormat(format)).cast<deUint32>() - 1u;
+				// To avoid bit-shifting with negative value, which is undefined behaviour.
+				const tcu::UVec4 fixedBitDepth = tcu::select(bitDepth, tcu::UVec4(0u, 0u, 0u, 0u), tcu::greaterThanEqual(bitDepth.cast<deInt32>(), tcu::IVec4(0, 0, 0, 0)));
+
 				// Allow error of minimum representable difference
-				const tcu::Vec4 threshold (1.0f / ((tcu::UVec4(1u) << (tcu::getTextureFormatMantissaBitDepth(mapVkFormat(format)).cast<deUint32>() - 1u)) - 1u).cast<float>());
+				const tcu::Vec4 threshold (1.0f / ((tcu::UVec4(1u) << fixedBitDepth) - 1u).cast<float>());
 
 				ok = tcu::floatThresholdCompare(log, comparisonName.c_str(), comparisonDesc.c_str(), refLayer, resultLayer, threshold, tcu::COMPARE_LOG_RESULT);
 				break;
@@ -289,6 +294,7 @@ tcu::TextureLevel generateReferenceImage (const tcu::IVec3& imageSize, const VkF
 	const float storeColorScale = computeStoreColorScale(imageFormat, imageSize);
 	const float storeColorBias = computeStoreColorBias(imageFormat);
 
+	const bool srgbFormat = isSrgbFormat(imageFormat);
 	const bool intFormat = isIntegerFormat(imageFormat);
 	const bool storeNegativeValues = isSignedFormat(imageFormat) && (storeColorBias == 0);
 	const int xMax = imageSize.x() - 1;
@@ -312,7 +318,12 @@ tcu::TextureLevel generateReferenceImage (const tcu::IVec3& imageSize, const VkF
 			if (intFormat)
 				access.setPixel(color, x, y, z);
 			else
-				access.setPixel(color.asFloat()*storeColorScale + storeColorBias, x, y, z);
+			{
+				if (srgbFormat)
+					access.setPixel(tcu::linearToSRGB(color.asFloat() * storeColorScale + storeColorBias), x, y, z);
+				else
+					access.setPixel(color.asFloat() * storeColorScale + storeColorBias, x, y, z);
+			}
 		}
 	}
 
@@ -781,7 +792,7 @@ protected:
 	void							commandBetweenShaderInvocations			(const VkCommandBuffer) {}
 	void							commandAfterCompute						(const VkCommandBuffer) {}
 
-	de::MovePtr<Buffer>				m_imageBuffer;
+	de::MovePtr<BufferWithMemory>	m_imageBuffer;
 	const VkDeviceSize				m_imageSizeBytes;
 	bool							m_storeConstantValue;
 };
@@ -833,7 +844,7 @@ StoreTestInstance::StoreTestInstance (Context& context, const Texture& texture, 
 
 	// A helper buffer with enough space to hold the whole image. Usage flags accommodate all derived test instances.
 
-	m_imageBuffer = de::MovePtr<Buffer>(new Buffer(
+	m_imageBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
 		vk, device, allocator,
 		makeBufferCreateInfo(m_imageSizeBytes + m_dstViewOffset, VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT),
 		MemoryRequirement::HostVisible));
@@ -880,7 +891,7 @@ protected:
 																				 const int				layerNdx);
 
 	de::MovePtr<Image>					m_image;
-	de::MovePtr<Buffer>					m_constantsBuffer;
+	de::MovePtr<BufferWithMemory>		m_constantsBuffer;
 	const VkDeviceSize					m_constantsBufferChunkSizeBytes;
 	Move<VkDescriptorSetLayout>			m_descriptorSetLayout;
 	Move<VkDescriptorPool>				m_descriptorPool;
@@ -913,7 +924,7 @@ ImageStoreTestInstance::ImageStoreTestInstance (Context&		context,
 
 	const int numLayers = m_texture.numLayers();
 	const VkDeviceSize constantsBufferSizeBytes = numLayers * m_constantsBufferChunkSizeBytes;
-	m_constantsBuffer = de::MovePtr<Buffer>(new Buffer(
+	m_constantsBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
 		vk, device, allocator,
 		makeBufferCreateInfo(constantsBufferSizeBytes, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT),
 		MemoryRequirement::HostVisible));
@@ -1173,6 +1184,9 @@ void LoadStoreTest::checkSupport (Context& context) const
 	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
 		TCU_THROW(NotSupportedError, "Format not supported for storage images");
 
+	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(imageFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+		TCU_THROW(NotSupportedError, "Format not supported for storage images");
+
 	if (m_texture.type() == IMAGE_TYPE_BUFFER && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
 		TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
 
@@ -1214,6 +1228,9 @@ void LoadStoreTest::checkSupport (Context& context) const
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
 
 	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+		TCU_THROW(NotSupportedError, "Format not supported for storage images");
+
+	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(imageFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
 		TCU_THROW(NotSupportedError, "Format not supported for storage images");
 
 	if (m_texture.type() == IMAGE_TYPE_BUFFER && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
@@ -1380,7 +1397,7 @@ public:
 																		 const bool			bufferLoadUniform);
 
 protected:
-	virtual Buffer*					getResultBuffer						(void) const = 0;	//!< Get the buffer that contains the result image
+	virtual BufferWithMemory*					getResultBuffer						(void) const = 0;	//!< Get the buffer that contains the result image
 
 	tcu::TestStatus					verifyResult						(void);
 
@@ -1389,7 +1406,7 @@ protected:
 	void							commandBetweenShaderInvocations		(const VkCommandBuffer) {}
 	void							commandAfterCompute					(const VkCommandBuffer) {}
 
-	de::MovePtr<Buffer>				m_imageBuffer;		//!< Source data and helper buffer
+	de::MovePtr<BufferWithMemory>	m_imageBuffer;		//!< Source data and helper buffer
 	const VkDeviceSize				m_imageSizeBytes;
 	const VkFormat					m_imageFormat;		//!< Image format (for storage, may be different than texture format)
 	tcu::TextureLevel				m_referenceImage;	//!< Used as input data and later to verify result image
@@ -1422,7 +1439,7 @@ LoadStoreTestInstance::LoadStoreTestInstance (Context&			context,
 
 	// A helper buffer with enough space to hold the whole image.
 
-	m_imageBuffer = de::MovePtr<Buffer>(new Buffer(
+	m_imageBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
 		vk, device, allocator,
 		makeBufferCreateInfo(m_imageSizeBytes + m_srcViewOffset, m_bufferLoadUsageBit | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
 		MemoryRequirement::HostVisible));
@@ -1476,7 +1493,7 @@ protected:
 																			 const VkPipelineLayout pipelineLayout,
 																			 const int				layerNdx);
 
-	Buffer*								getResultBuffer						(void) const { return m_imageBuffer.get(); }
+	BufferWithMemory*					getResultBuffer						(void) const { return m_imageBuffer.get(); }
 
 	de::MovePtr<Image>					m_imageSrc;
 	de::MovePtr<Image>					m_imageDst;
@@ -1647,10 +1664,10 @@ protected:
 																			 const VkPipelineLayout pipelineLayout,
 																			 const int				layerNdx);
 
-	Buffer*								getResultBuffer						(void) const { return m_imageBuffer.get(); }
+	BufferWithMemory*					getResultBuffer						(void) const { return m_imageBuffer.get(); }
 	tcu::TestStatus						verifyResult						(void);
 
-	de::MovePtr<Buffer>					m_imageBuffer;		//!< Source data and helper buffer
+	de::MovePtr<BufferWithMemory>		m_imageBuffer;		//!< Source data and helper buffer
 	const VkDeviceSize					m_imageSizeBytes;
 	const VkFormat						m_imageFormat;		//!< Image format (for storage, may be different than texture format)
 	std::vector<tcu::TextureLevel>		m_referenceImages;	//!< Used as input data and later to verify result image
@@ -1702,7 +1719,7 @@ ImageLoadStoreLodAMDTestInstance::ImageLoadStoreLodAMDTestInstance (Context&		co
 	m_bufferLoadUsageBit = m_bufferLoadUniform ? VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
 
 	// A helper buffer with enough space to hold the whole image.
-	m_imageBuffer = de::MovePtr<Buffer>(new Buffer(
+	m_imageBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
 												   vk, device, allocator,
 												   makeBufferCreateInfo(m_imageSizeBytes + m_srcViewOffset, m_bufferLoadUsageBit | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
 												   MemoryRequirement::HostVisible));
@@ -1943,9 +1960,9 @@ protected:
 																	 const VkPipelineLayout pipelineLayout,
 																	 const int				layerNdx);
 
-	Buffer*							getResultBuffer					(void) const { return m_imageBufferDst.get(); }
+	BufferWithMemory*				getResultBuffer					(void) const { return m_imageBufferDst.get(); }
 
-	de::MovePtr<Buffer>				m_imageBufferDst;
+	de::MovePtr<BufferWithMemory>	m_imageBufferDst;
 	Move<VkDescriptorSetLayout>		m_descriptorSetLayout;
 	Move<VkDescriptorPool>			m_descriptorPool;
 	Move<VkDescriptorSet>			m_descriptorSet;
@@ -1968,7 +1985,7 @@ BufferLoadStoreTestInstance::BufferLoadStoreTestInstance (Context&			context,
 
 	// Create a destination buffer.
 
-	m_imageBufferDst = de::MovePtr<Buffer>(new Buffer(
+	m_imageBufferDst = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
 		vk, device, allocator,
 		makeBufferCreateInfo(m_imageSizeBytes + m_dstViewOffset, VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT),
 		MemoryRequirement::HostVisible));
@@ -2075,7 +2092,7 @@ protected:
 	VkFormat						m_imageDstFormat;
 	VkDeviceSize					m_imageDstSize;
 
-	de::MovePtr<Buffer>				m_buffer;				// result buffer
+	de::MovePtr<BufferWithMemory>	m_buffer;				// result buffer
 
 	Move<VkDescriptorSetLayout>		m_descriptorSetLayout;
 	Move<VkDescriptorPool>			m_descriptorPool;
@@ -2132,7 +2149,7 @@ ImageExtendOperandTestInstance::ImageExtendOperandTestInstance (Context& context
 	VkDeviceSize bufferSizeBytes	= de::max(m_imageSrcSize, m_imageDstSize);
 
 	// Create helper buffer able to store input data and image write result
-	m_buffer = de::MovePtr<Buffer>(new Buffer(
+	m_buffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
 		vk, device, allocator,
 		makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT),
 		MemoryRequirement::HostVisible));
@@ -2681,6 +2698,13 @@ static const VkFormat s_formats[] =
 	VK_FORMAT_R32G32B32_SINT,
 	VK_FORMAT_R32G32B32_SFLOAT,
 	VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
+
+	VK_FORMAT_R8G8_SRGB,
+	VK_FORMAT_R8G8B8_SRGB,
+	VK_FORMAT_B8G8R8_SRGB,
+	VK_FORMAT_R8G8B8A8_SRGB,
+	VK_FORMAT_B8G8R8A8_SRGB,
+	VK_FORMAT_A8B8G8R8_SRGB_PACK32
 };
 
 static const VkFormat s_formatsThreeComponent[] =

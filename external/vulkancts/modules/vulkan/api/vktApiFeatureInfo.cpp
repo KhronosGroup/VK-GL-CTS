@@ -1238,11 +1238,8 @@ tcu::TestStatus validateLimitsExtConservativeRasterization (Context& context)
 void checkSupportExtDescriptorIndexing (Context& context)
 {
 	const std::string&							requiredDeviceExtension		= "VK_EXT_descriptor_indexing";
-	const VkPhysicalDevice						physicalDevice				= context.getPhysicalDevice();
-	const InstanceInterface&					vki							= context.getInstanceInterface();
-	const std::vector<VkExtensionProperties>	deviceExtensionProperties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
-	if (!isExtensionSupported(deviceExtensionProperties, RequiredExtension(requiredDeviceExtension)))
+	if (!context.isDeviceFunctionalitySupported(requiredDeviceExtension))
 		TCU_THROW(NotSupportedError, requiredDeviceExtension + " is not supported");
 
 	// Extension string is present, then extension is really supported and should have been added into chain in DefaultDevice properties and features
@@ -1377,11 +1374,8 @@ tcu::TestStatus validateLimitsExtVertexAttributeDivisor (Context& context)
 void checkSupportNvMeshShader (Context& context)
 {
 	const std::string&							requiredDeviceExtension		= "VK_NV_mesh_shader";
-	const VkPhysicalDevice						physicalDevice				= context.getPhysicalDevice();
-	const InstanceInterface&					vki							= context.getInstanceInterface();
-	const std::vector<VkExtensionProperties>	deviceExtensionProperties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
-	if (!isExtensionSupported(deviceExtensionProperties, RequiredExtension(requiredDeviceExtension)))
+	if (!context.isDeviceFunctionalitySupported(requiredDeviceExtension))
 		TCU_THROW(NotSupportedError, requiredDeviceExtension + " is not supported");
 }
 
@@ -1494,11 +1488,8 @@ tcu::TestStatus validateLimitsExtFragmentDensityMap (Context& context)
 void checkSupportNvRayTracing (Context& context)
 {
 	const std::string&							requiredDeviceExtension		= "VK_NV_ray_tracing";
-	const VkPhysicalDevice						physicalDevice				= context.getPhysicalDevice();
-	const InstanceInterface&					vki							= context.getInstanceInterface();
-	const std::vector<VkExtensionProperties>	deviceExtensionProperties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
-	if (!isExtensionSupported(deviceExtensionProperties, RequiredExtension(requiredDeviceExtension)))
+	if (!context.isDeviceFunctionalitySupported(requiredDeviceExtension))
 		TCU_THROW(NotSupportedError, requiredDeviceExtension + " is not supported");
 }
 
@@ -2115,7 +2106,7 @@ tcu::TestStatus featureBitInfluenceOnDeviceCreate (Context& context)
 			if (structPtr != &unusedExtensionFeatures)
 				features2.pNext	= structPtr;
 
-			if (extStringPtr == DE_NULL || isExtensionSupported(deviceExtensionProperties, RequiredExtension(extStringPtr)))
+			if (extStringPtr == DE_NULL || isExtensionStructSupported(deviceExtensionProperties, RequiredExtension(extStringPtr)))
 			{
 				vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
 
@@ -2185,10 +2176,21 @@ struct CheckEnumeratePhysicalDevicesIncompleteResult : public CheckIncompleteRes
 
 struct CheckEnumeratePhysicalDeviceGroupsIncompleteResult : public CheckIncompleteResult<VkPhysicalDeviceGroupProperties>
 {
-	void getResult (Context& context, VkPhysicalDeviceGroupProperties* data)
+	CheckEnumeratePhysicalDeviceGroupsIncompleteResult (const InstanceInterface& vki, const VkInstance instance)
+		: m_vki			(vki)
+		, m_instance	(instance)
+		{}
+
+	void getResult (Context&, VkPhysicalDeviceGroupProperties* data)
 	{
-		m_result = context.getInstanceInterface().enumeratePhysicalDeviceGroups(context.getInstance(), &m_count, data);
+		for (uint32_t idx = 0u; idx < m_count; ++idx)
+			data[idx] = initVulkanStructure();
+		m_result = m_vki.enumeratePhysicalDeviceGroups(m_instance, &m_count, data);
 	}
+
+protected:
+	const InstanceInterface&	m_vki;
+	const VkInstance			m_instance;
 };
 
 struct CheckEnumerateInstanceLayerPropertiesIncompleteResult : public CheckIncompleteResult<VkLayerProperties>
@@ -2255,7 +2257,7 @@ tcu::TestStatus enumeratePhysicalDeviceGroups (Context& context)
 {
 	TestLog&											log				= context.getTestContext().getLog();
 	tcu::ResultCollector								results			(log);
-	const CustomInstance								instance		(createCustomInstanceWithExtension(context, "VK_KHR_device_group_creation"));
+	CustomInstance										instance		(createCustomInstanceWithExtension(context, "VK_KHR_device_group_creation"));
 	const InstanceDriver&								vki				(instance.getDriver());
 	const vector<VkPhysicalDeviceGroupProperties>		devicegroups	= enumeratePhysicalDeviceGroups(vki, instance);
 
@@ -2264,8 +2266,9 @@ tcu::TestStatus enumeratePhysicalDeviceGroups (Context& context)
 	for (size_t ndx = 0; ndx < devicegroups.size(); ndx++)
 		log << TestLog::Message << ndx << ": " << devicegroups[ndx] << TestLog::EndMessage;
 
-	CheckEnumeratePhysicalDeviceGroupsIncompleteResult()(context, results, devicegroups.size());
+	CheckEnumeratePhysicalDeviceGroupsIncompleteResult(vki, instance)(context, results, devicegroups.size());
 
+	instance.collectMessages();
 	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
@@ -2359,8 +2362,8 @@ void checkInstanceExtensionDependencies(tcu::ResultCollector&														resul
 		std::tie(currentApiVariant, currentVersionMajor, currentVersionMinor, extensionFirst, extensionSecond) = dependencies[ndx];
 		if (currentApiVariant != apiVariant || currentVersionMajor != versionMajor || currentVersionMinor != versionMinor)
 			continue;
-		if (isExtensionSupported(extensionProperties, RequiredExtension(extensionFirst)) &&
-			!isExtensionSupported(extensionProperties, RequiredExtension(extensionSecond)))
+		if (isExtensionStructSupported(extensionProperties, RequiredExtension(extensionFirst)) &&
+			!isExtensionStructSupported(extensionProperties, RequiredExtension(extensionSecond)))
 		{
 			results.fail("Extension " + string(extensionFirst) + " is missing dependency: " + string(extensionSecond));
 		}
@@ -2384,9 +2387,9 @@ void checkDeviceExtensionDependencies(tcu::ResultCollector&														results
 		std::tie(currentApiVariant, currentVersionMajor, currentVersionMinor, extensionFirst, extensionSecond) = dependencies[ndx];
 		if (currentApiVariant != apiVariant || currentVersionMajor != versionMajor || currentVersionMinor != versionMinor)
 			continue;
-		if (isExtensionSupported(deviceExtensionProperties, RequiredExtension(extensionFirst)) &&
-			!isExtensionSupported(deviceExtensionProperties, RequiredExtension(extensionSecond)) &&
-			!isExtensionSupported(instanceExtensionProperties, RequiredExtension(extensionSecond)))
+		if (isExtensionStructSupported(deviceExtensionProperties, RequiredExtension(extensionFirst)) &&
+			!isExtensionStructSupported(deviceExtensionProperties, RequiredExtension(extensionSecond)) &&
+			!isExtensionStructSupported(instanceExtensionProperties, RequiredExtension(extensionSecond)))
 		{
 			results.fail("Extension " + string(extensionFirst) + " is missing dependency: " + string(extensionSecond));
 		}
@@ -2627,7 +2630,7 @@ tcu::TestStatus extensionCoreVersions (Context& context)
 		std::tie(major, minor, extName) = majorMinorName;
 		const RequiredExtension reqExt (extName);
 
-		if ((isExtensionSupported(instanceExtensionProperties, reqExt) || isExtensionSupported(deviceExtensionProperties, reqExt)) &&
+		if ((isExtensionStructSupported(instanceExtensionProperties, reqExt) || isExtensionStructSupported(deviceExtensionProperties, reqExt)) &&
 		    !context.contextSupports(vk::ApiVersion(0u, major, minor, 0u)))
 		{
 			results.fail("Required core version for " + std::string(extName) + " not met (" + de::toString(major) + "." + de::toString(minor) + ")");
@@ -3068,20 +3071,37 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 	const deUint32						devGroupIdx				= cmdLine.getVKDeviceGroupId() - 1;
 	const deUint32						deviceIdx				= vk::chooseDeviceIndex(context.getInstanceInterface(), instance, cmdLine);
 	const float							queuePriority			= 1.0f;
+	const char*							deviceGroupExtName		= "VK_KHR_device_group";
 	VkPhysicalDeviceMemoryProperties	memProps;
 	VkPeerMemoryFeatureFlags*			peerMemFeatures;
 	deUint8								buffer					[sizeof(VkPeerMemoryFeatureFlags) + GUARD_SIZE];
-	deUint32							numPhysicalDevices		= 0;
 	deUint32							queueFamilyIndex		= 0;
 
 	const vector<VkPhysicalDeviceGroupProperties>		deviceGroupProps = enumeratePhysicalDeviceGroups(vki, instance);
 	std::vector<const char*>							deviceExtensions;
-#ifndef CTS_USES_VULKANSC
-	deviceExtensions.push_back("VK_KHR_device_group");
-#endif // CTS_USES_VULKANSC
 
-	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_device_group"))
-		deviceExtensions.push_back("VK_KHR_device_group");
+	if (static_cast<size_t>(devGroupIdx) >= deviceGroupProps.size())
+	{
+		std::ostringstream msg;
+		msg << "Chosen device group index " << devGroupIdx << " too big: found " << deviceGroupProps.size() << " device groups";
+		TCU_THROW(NotSupportedError, msg.str());
+	}
+
+	const auto numPhysicalDevices = deviceGroupProps[devGroupIdx].physicalDeviceCount;
+
+	if (deviceIdx >= numPhysicalDevices)
+	{
+		std::ostringstream msg;
+		msg << "Chosen device index " << deviceIdx << " too big: chosen device group " << devGroupIdx << " has " << numPhysicalDevices << " devices";
+		TCU_THROW(NotSupportedError, msg.str());
+	}
+
+	// Need at least 2 devices for peer memory features.
+	if (numPhysicalDevices < 2)
+		TCU_THROW(NotSupportedError, "Need a device group with at least 2 physical devices");
+
+	if (!isCoreDeviceExtension(context.getUsedApiVersion(), deviceGroupExtName))
+		deviceExtensions.push_back(deviceGroupExtName);
 
 	const std::vector<VkQueueFamilyProperties>	queueProps		= getPhysicalDeviceQueueFamilyProperties(vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx]);
 	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
@@ -3098,11 +3118,6 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 		1u,													//queueCount;
 		&queuePriority,										//pQueuePriorities;
 	};
-
-	// Need atleast 2 devices for peer memory features
-	numPhysicalDevices = deviceGroupProps[devGroupIdx].physicalDeviceCount;
-	if (numPhysicalDevices < 2)
-		TCU_THROW(NotSupportedError, "Need a device Group with at least 2 physical devices.");
 
 	// Create device groups
 	VkDeviceGroupDeviceCreateInfo							deviceGroupInfo =
@@ -3161,7 +3176,7 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 		0,																//layerCount;
 		DE_NULL,														//ppEnabledLayerNames;
 		deUint32(deviceExtensions.size()),								//extensionCount;
-		(deviceExtensions.empty() ? DE_NULL : &deviceExtensions[0]),	//ppEnabledExtensionNames;
+		de::dataOrNull(deviceExtensions),								//ppEnabledExtensionNames;
 		DE_NULL,														//pEnabledFeatures;
 	};
 
@@ -5005,7 +5020,7 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		}
 	}
 
-	if (isExtensionSupported(properties, RequiredExtension("VK_KHR_push_descriptor")))
+	if (isExtensionStructSupported(properties, RequiredExtension("VK_KHR_push_descriptor")))
 	{
 		VkPhysicalDevicePushDescriptorPropertiesKHR		pushDescriptorProperties[count];
 
@@ -5035,7 +5050,7 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		}
 	}
 
-	if (isExtensionSupported(properties, RequiredExtension("VK_KHR_performance_query")))
+	if (isExtensionStructSupported(properties, RequiredExtension("VK_KHR_performance_query")))
 	{
 		VkPhysicalDevicePerformanceQueryPropertiesKHR performanceQueryProperties[count];
 
@@ -5060,7 +5075,7 @@ tcu::TestStatus deviceProperties2 (Context& context)
 
 #endif // CTS_USES_VULKANSC
 
-	if (isExtensionSupported(properties, RequiredExtension("VK_EXT_pci_bus_info", 2, 2)))
+	if (isExtensionStructSupported(properties, RequiredExtension("VK_EXT_pci_bus_info", 2, 2)))
 	{
 		VkPhysicalDevicePCIBusInfoPropertiesEXT pciBusInfoProperties[count];
 
@@ -5111,7 +5126,7 @@ tcu::TestStatus deviceProperties2 (Context& context)
 	}
 
 #ifndef CTS_USES_VULKANSC
-	if (isExtensionSupported(properties, RequiredExtension("VK_KHR_portability_subset")))
+	if (isExtensionStructSupported(properties, RequiredExtension("VK_KHR_portability_subset")))
 	{
 		VkPhysicalDevicePortabilitySubsetPropertiesKHR portabilitySubsetProperties[count];
 
@@ -5267,12 +5282,18 @@ tcu::TestStatus deviceMemoryProperties2 (Context& context)
 		TCU_FAIL("Mismatch between memoryTypeCount reported by vkGetPhysicalDeviceMemoryProperties and vkGetPhysicalDeviceMemoryProperties2");
 	if (coreProperties.memoryHeapCount != extProperties.memoryProperties.memoryHeapCount)
 		TCU_FAIL("Mismatch between memoryHeapCount reported by vkGetPhysicalDeviceMemoryProperties and vkGetPhysicalDeviceMemoryProperties2");
-	for (deUint32 i = 0; i < coreProperties.memoryTypeCount; i++)
-		if (deMemCmp(&coreProperties.memoryTypes[i], &extProperties.memoryProperties.memoryTypes[i], sizeof(VkMemoryType)) != 0)
+	for (deUint32 i = 0; i < coreProperties.memoryTypeCount; i++) {
+		const VkMemoryType *coreType = &coreProperties.memoryTypes[i];
+		const VkMemoryType *extType = &extProperties.memoryProperties.memoryTypes[i];
+		if (coreType->propertyFlags != extType->propertyFlags || coreType->heapIndex != extType->heapIndex)
 			TCU_FAIL("Mismatch between memoryTypes reported by vkGetPhysicalDeviceMemoryProperties and vkGetPhysicalDeviceMemoryProperties2");
-	for (deUint32 i = 0; i < coreProperties.memoryHeapCount; i++)
-		if (deMemCmp(&coreProperties.memoryHeaps[i], &extProperties.memoryProperties.memoryHeaps[i], sizeof(VkMemoryHeap)) != 0)
+	}
+	for (deUint32 i = 0; i < coreProperties.memoryHeapCount; i++) {
+		const VkMemoryHeap *coreHeap = &coreProperties.memoryHeaps[i];
+		const VkMemoryHeap *extHeap = &extProperties.memoryProperties.memoryHeaps[i];
+		if (coreHeap->size != extHeap->size || coreHeap->flags != extHeap->flags)
 			TCU_FAIL("Mismatch between memoryHeaps reported by vkGetPhysicalDeviceMemoryProperties and vkGetPhysicalDeviceMemoryProperties2");
+	}
 
 	log << TestLog::Message << extProperties << TestLog::EndMessage;
 

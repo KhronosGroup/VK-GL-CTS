@@ -70,9 +70,8 @@ if (DEQP_VULKAN_INL_GEN_OUTPUTS_DIR MATCHES ^${PROJECT_BINARY_DIR})
 		COMMAND cmake -E remove ${DEQP_VULKAN_INL_GEN_OUTPUTS}
 
 		# Generate all inl files.
-		COMMAND ${PYTHON_EXECUTABLE} ARGS ${PROJECT_SOURCE_DIR}/external/vulkancts/scripts/gen_ext_deps.py ${DEQP_VULKAN_INL_GEN_OUTPUTS_DIR}
-		COMMAND ${PYTHON_EXECUTABLE} ARGS ${PROJECT_SOURCE_DIR}/external/vulkancts/scripts/gen_framework.py ${DEQP_VULKAN_INL_GEN_OUTPUTS_DIR}
-		COMMAND ${PYTHON_EXECUTABLE} ARGS ${PROJECT_SOURCE_DIR}/external/vulkancts/scripts/gen_framework_c.py ${DEQP_VULKAN_INL_GEN_OUTPUTS_DIR}
+		COMMAND ${PYTHON_EXECUTABLE} ARGS ${PROJECT_SOURCE_DIR}/external/vulkancts/scripts/gen_framework.py -o ${DEQP_VULKAN_INL_GEN_OUTPUTS_DIR}
+		COMMAND ${PYTHON_EXECUTABLE} ARGS ${PROJECT_SOURCE_DIR}/external/vulkancts/scripts/gen_framework_c.py -o ${DEQP_VULKAN_INL_GEN_OUTPUTS_DIR}
 
 		# Check all outputs exist, as CMake does not do this.
 		COMMAND cmake -E md5sum ${DEQP_VULKAN_INL_GEN_OUTPUTS}
@@ -217,6 +216,8 @@ endif ()
 if(DEQP_HAVE_RENDERDOC_HEADER)
 	add_definitions(-DDEQP_HAVE_RENDERDOC_HEADER=1)
 endif()
+
+add_definitions(-DDISABLE_SHADERCACHE_IPC)
 
 PCH(VKUTILNOSHADER_SRCS ../../modules/vulkan/pch.cpp)
 PCH(VKUTIL_SRCS ../../modules/vulkan/pch.cpp)

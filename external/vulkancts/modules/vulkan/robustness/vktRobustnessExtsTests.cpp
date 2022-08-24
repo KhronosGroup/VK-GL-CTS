@@ -117,7 +117,7 @@ class SingletonDevice
 #ifndef CTS_USES_VULKANSC
 		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), m_instanceWrapper->instance, *m_logicalDevice));
 #else
-		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), m_instanceWrapper->instance, *m_logicalDevice, context.getTestContext().getCommandLine(), context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_logicalDevice));
+		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), m_instanceWrapper->instance, *m_logicalDevice, context.getTestContext().getCommandLine(), context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_logicalDevice));
 #endif // CTS_USES_VULKANSC
 	}
 
@@ -503,6 +503,11 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 
 	if (m_data.nullDescriptor && !robustness2Features.nullDescriptor)
 		TCU_THROW(NotSupportedError, "nullDescriptor not supported");
+
+	// The fill shader for 64-bit multisample image tests uses a storage image.
+	if (m_data.samples > VK_SAMPLE_COUNT_1_BIT && formatIsR64(m_data.format) &&
+		!features2.features.shaderStorageImageMultisample)
+		TCU_THROW(NotSupportedError, "shaderStorageImageMultisample not supported");
 
 	if ((m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) &&
 		m_data.samples != VK_SAMPLE_COUNT_1_BIT &&
@@ -1876,9 +1881,13 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 
 	vector<BufferViewHandleSp>					bufferViews(1);
 
-	VkImageCreateFlags imageCreateFlags = 0;
+	VkImageCreateFlags mutableFormatFlag = 0;
+	// The 64-bit image tests use a view format which differs from the image.
+	if (formatIsR64(m_data.format))
+		mutableFormatFlag = VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+	VkImageCreateFlags imageCreateFlags = mutableFormatFlag;
 	if (m_data.viewType == VK_IMAGE_VIEW_TYPE_CUBE || m_data.viewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)
-		imageCreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		imageCreateFlags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 
 	const bool featureSampledImage = ((getPhysicalDeviceFormatProperties(vki,
 										physicalDevice,
@@ -1891,7 +1900,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType			sType;
 		DE_NULL,								// const void*				pNext;
-		(VkImageCreateFlags)0u,					// VkImageCreateFlags		flags;
+		mutableFormatFlag,						// VkImageCreateFlags		flags;
 		VK_IMAGE_TYPE_2D,						// VkImageType				imageType;
 		m_data.format,							// VkFormat					format;
 		{
@@ -2510,9 +2519,9 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 			DE_NULL,
 			VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_NV,			// type
 			0,														// generalShader
-			VK_SHADER_UNUSED_NV,									// closestHitShader
-			VK_SHADER_UNUSED_NV,									// anyHitShader
-			VK_SHADER_UNUSED_NV,									// intersectionShader
+			VK_SHADER_UNUSED_KHR,									// closestHitShader
+			VK_SHADER_UNUSED_KHR,									// anyHitShader
+			VK_SHADER_UNUSED_KHR,									// intersectionShader
 		};
 
 		VkRayTracingPipelineCreateInfoNV pipelineCreateInfo = {
@@ -2537,7 +2546,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 		deUint32 *ptr = (deUint32 *)sbtBuffer->getAllocation().getHostPtr();
 		invalidateAlloc(vk, device, sbtBuffer->getAllocation());
 
-		vk.getRayTracingShaderGroupHandlesNV(device, *pipeline, 0, 1, rayTracingProperties.shaderGroupHandleSize, ptr);
+		vk.getRayTracingShaderGroupHandlesKHR(device, *pipeline, 0, 1, rayTracingProperties.shaderGroupHandleSize, ptr);
 	}
 #endif
 	else

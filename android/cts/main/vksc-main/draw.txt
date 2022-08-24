@@ -1006,10 +1006,6 @@ dEQP-VKSC.draw.renderpass.scissor.dynamic_scissor_two_clears
 dEQP-VKSC.draw.renderpass.scissor.dynamic_scissor_mix
 dEQP-VKSC.draw.renderpass.scissor.static_scissor_framebuffer_border_in
 dEQP-VKSC.draw.renderpass.scissor.dynamic_scissor_framebuffer_border_in
-dEQP-VKSC.draw.renderpass.scissor.static_scissor_framebuffer_border_out
-dEQP-VKSC.draw.renderpass.scissor.dynamic_scissor_framebuffer_border_out
-dEQP-VKSC.draw.renderpass.scissor.static_scissor_oversized
-dEQP-VKSC.draw.renderpass.scissor.dynamic_scissor_oversized
 dEQP-VKSC.draw.renderpass.multiple_interpolation.separate.no_sample_decoration.1_sample
 dEQP-VKSC.draw.renderpass.multiple_interpolation.separate.no_sample_decoration.2_samples
 dEQP-VKSC.draw.renderpass.multiple_interpolation.separate.no_sample_decoration.4_samples

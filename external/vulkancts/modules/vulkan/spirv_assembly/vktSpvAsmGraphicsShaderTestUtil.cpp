@@ -2943,7 +2943,7 @@ Move<VkImage> createImageForResource (const DeviceInterface& vk, const VkDevice 
 	return createImage(vk, vkDevice, &resourceImageParams);
 }
 
-void copyBufferToImage (const DeviceInterface& vk, const VkDevice& device, const VkQueue& queue, VkCommandBuffer cmdBuffer, VkBuffer buffer, VkImage image, VkImageAspectFlags aspect)
+void copyBufferToImage (Context& context, const DeviceInterface& vk, const VkDevice& device, const VkQueue& queue, VkCommandPool cmdPool, VkCommandBuffer cmdBuffer, VkBuffer buffer, VkImage image, VkImageAspectFlags aspect)
 {
 	const VkBufferImageCopy			copyRegion			=
 	{
@@ -2968,6 +2968,7 @@ void copyBufferToImage (const DeviceInterface& vk, const VkDevice& device, const
 	endCommandBuffer(vk, cmdBuffer);
 
 	submitCommandsAndWait(vk, device, queue, cmdBuffer);
+	context.resetCommandPoolForVKSC(device, cmdPool);
 }
 
 VkImageAspectFlags getImageAspectFlags (VkFormat format)
@@ -3500,7 +3501,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 				VK_CHECK(vk.bindImageMemory(device, *resourceImage, resourceImageMemory->getMemory(), resourceImageMemory->getOffset()));
 
-				copyBufferToImage(vk, device, queue, *cmdBuf, resourceBuffer.get(), resourceImage.get(), inputImageAspect);
+				copyBufferToImage(context, vk, device, queue, *cmdPool, *cmdBuf, resourceBuffer.get(), resourceImage.get(), inputImageAspect);
 
 				inResourceMemories.push_back(AllocationSp(resourceImageMemory.release()));
 				inResourceImages.push_back(ImageHandleSp(new ImageHandleUp(resourceImage)));
@@ -4419,6 +4420,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 			// Submit & wait for completion
 			submitCommandsAndWait(vk, device, queue, cmdBuf.get());
+			context.resetCommandPoolForVKSC(device, *cmdPool);
 		}
 	}
 

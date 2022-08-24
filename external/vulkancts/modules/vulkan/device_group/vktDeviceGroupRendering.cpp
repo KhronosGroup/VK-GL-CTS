@@ -377,7 +377,7 @@ void DeviceGroupTestInstance::init (void)
 #ifndef CTS_USES_VULKANSC
 		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_deviceGroup));
 #else
-		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_deviceGroup, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_deviceGroup));
+		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_deviceGroup, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_deviceGroup));
 #endif // CTS_USES_VULKANSC
 	}
 
@@ -1181,6 +1181,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 			endCommandBuffer(vk, *cmdBuffer);
 			const deUint32 deviceMask = (1 << firstDeviceID) | (1 << secondDeviceID);
 			submitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
+			m_context.resetCommandPoolForVKSC(*m_deviceGroup, *cmdPool);
 		}
 
 		// Bind renderImage across devices for SFR
@@ -1485,6 +1486,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 		{
 			const deUint32 deviceMask = (1 << firstDeviceID) | (1 << secondDeviceID);
 			submitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
+			m_context.resetCommandPoolForVKSC(*m_deviceGroup, *cmdPool);
 		}
 
 		// Copy image from secondDeviceID in case of AFR and SFR(only if Peer memory as copy source is not allowed)
@@ -1566,6 +1568,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 
 					const deUint32 deviceMask = 1 << firstDeviceID;
 					submitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
+					m_context.resetCommandPoolForVKSC(*m_deviceGroup, *cmdPool);
 				}
 
 				// Copy Image from secondDeviceID to firstDeviceID
@@ -1606,6 +1609,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 
 					const deUint32 deviceMask = 1 << secondDeviceID;
 					submitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
+					m_context.resetCommandPoolForVKSC(*m_deviceGroup, *cmdPool);
 				}
 
 				// Change layout back on firstDeviceID
@@ -1637,6 +1641,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 
 					const deUint32 deviceMask = 1 << firstDeviceID;
 					submitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
+					m_context.resetCommandPoolForVKSC(*m_deviceGroup, *cmdPool);
 				}
 			}
 		}
@@ -1705,6 +1710,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 			{
 				const deUint32 deviceMask = 1 << firstDeviceID;
 				submitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
+				m_context.resetCommandPoolForVKSC(*m_deviceGroup, *cmdPool);
 			}
 
 			// Read results and check against reference image

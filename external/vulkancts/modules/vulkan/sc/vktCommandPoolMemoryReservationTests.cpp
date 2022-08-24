@@ -181,7 +181,7 @@ tcu::TestStatus verifyCommandPoolAllocEqualsCommandBufferAlloc (Context& context
 	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, device, &cmdPoolParams));
 
 	// Allocate command buffers
-	std::vector<VkCommandBuffer>			commandBuffers			(testParams.commandBufferCount);
+	std::vector<Move<VkCommandBuffer>>			commandBuffers			(testParams.commandBufferCount);
 	const VkCommandBufferAllocateInfo		cmdBufferAllocateInfo	=
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,				// VkStructureType             sType;
@@ -190,7 +190,7 @@ tcu::TestStatus verifyCommandPoolAllocEqualsCommandBufferAlloc (Context& context
 		VK_COMMAND_BUFFER_LEVEL_PRIMARY,							// VkCommandBufferLevel        level;
 		testParams.commandBufferCount								// deUint32                    commandBufferCount;
 	};
-	VK_CHECK(vk.allocateCommandBuffers(device, &cmdBufferAllocateInfo, commandBuffers.data()));
+    allocateCommandBuffers(vk, device, &cmdBufferAllocateInfo, commandBuffers.data());
 
 	std::vector<VkEventSp>					events;
 	for (deUint32 ndx = 0; ndx < eventCount; ++ndx)
@@ -205,25 +205,25 @@ tcu::TestStatus verifyCommandPoolAllocEqualsCommandBufferAlloc (Context& context
 			if (testParams.multipleRecording)
 			{
 				for (deUint32 i = 0; i < testParams.commandBufferCount; ++i)
-					beginCommandBuffer(vk, commandBuffers[i], 0u);
+					beginCommandBuffer(vk, commandBuffers[i].get(), 0u);
 
 				for (deUint32 i = 0; i < testParams.commandBufferCount; ++i)
 					for (deUint32 j = 0; j < eventCount; ++j)
-						vk.cmdSetEvent(commandBuffers[i], events[j]->get(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+						vk.cmdSetEvent(commandBuffers[i].get(), events[j]->get(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 
 				for (deUint32 i = 0; i < testParams.commandBufferCount; ++i)
-					endCommandBuffer(vk, commandBuffers[i]);
+					endCommandBuffer(vk, commandBuffers[i].get());
 			}
 			else
 			{
 				for (deUint32 i = 0; i < testParams.commandBufferCount; ++i)
 				{
-					beginCommandBuffer(vk, commandBuffers[i], 0u);
+					beginCommandBuffer(vk, commandBuffers[i].get(), 0u);
 
 					for (deUint32 j = 0; j < eventCount; ++j)
-						vk.cmdSetEvent(commandBuffers[i], events[j]->get(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+						vk.cmdSetEvent(commandBuffers[i].get(), events[j]->get(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 
-					endCommandBuffer(vk, commandBuffers[i]);
+					endCommandBuffer(vk, commandBuffers[i].get());
 				}
 			}
 		}
@@ -248,7 +248,7 @@ tcu::TestStatus verifyCommandPoolAllocEqualsCommandBufferAlloc (Context& context
 				0,													// VkDeviceSize		commandPoolReservedSize
 				0,													// VkDeviceSize		commandBufferAllocated
 			};
-			vk.getCommandPoolMemoryConsumption(device, *cmdPool, commandBuffers[i], &memConsumption);
+			vk.getCommandPoolMemoryConsumption(device, *cmdPool, commandBuffers[i].get(), &memConsumption);
 			cbAllocSum			+=	memConsumption.commandBufferAllocated;
 			commandPoolAlloc	=	memConsumption.commandPoolAllocated;
 		}

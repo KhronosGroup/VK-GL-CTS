@@ -227,28 +227,14 @@ tcu::TestStatus SSBOCornerCaseInstance::iterate (void)
 		descriptor	= makeDescriptorBufferInfo(*buffer, 0, bufferSize);
 	}
 
-	// Query the buffer device address and push them via push constants
-#ifndef CTS_USES_VULKANSC
-	const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
-#endif // CTS_USES_VULKANSC
-
-	vk::VkBufferDeviceAddressInfo info =
+	vk::VkBufferDeviceAddressInfo info
 	{
 		vk::VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,	// VkStructureType	sType;
 		DE_NULL,											// const void*		pNext;
-		0,													// VkBuffer			buffer
+		descriptor.buffer									// VkBuffer			buffer
 	};
 
-	info.buffer = descriptor.buffer;
-	vk::VkDeviceAddress	addr;
-#ifndef CTS_USES_VULKANSC
-	if (useKHR)
-#endif // CTS_USES_VULKANSC
-		addr = vk.getBufferDeviceAddress(device, &info);
-#ifndef CTS_USES_VULKANSC
-	else
-		addr = vk.getBufferDeviceAddressEXT(device, &info);
-#endif // CTS_USES_VULKANSC
+	vk::VkDeviceAddress addr = vk.getBufferDeviceAddress(device, &info);
 
 	setUpdateBuilder.update(vk, device);
 

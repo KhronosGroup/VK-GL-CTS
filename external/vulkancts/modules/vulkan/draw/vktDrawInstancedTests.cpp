@@ -66,7 +66,7 @@ struct TestParams
 
 	DrawFunction			function;
 	vk::VkPrimitiveTopology	topology;
-	deBool					useDynamicRendering;
+	const SharedGroupParams	groupParams;
 
 	deBool					testAttribDivisor;
 	deUint32				attribDivisor;
@@ -229,6 +229,17 @@ public:
 
 private:
 	void										prepareVertexData		(int instanceCount, int firstInstance, int instanceDivisor);
+	void										preRenderCommands		(const vk::VkClearValue& clearColor, deUint32 numLayers);
+	void										draw					(vk::VkCommandBuffer cmdBuffer,
+																		 vk::VkBuffer vertexBuffer, vk::VkBuffer instancedVertexBuffer,
+																		 de::SharedPtr<Buffer> indexBuffer, de::SharedPtr<Buffer> indirectBuffer,
+																		 deUint32 firstInstance, deUint32 instanceCount);
+
+#ifndef CTS_USES_VULKANSC
+	void										beginSecondaryCmdBuffer	(vk::VkRenderingFlagsKHR renderingFlags = 0u);
+#endif // CTS_USES_VULKANSC
+
+private:
 
 	const TestParams							m_params;
 	const vk::DeviceInterface&					m_vk;
@@ -245,6 +256,7 @@ private:
 
 	vk::Move<vk::VkCommandPool>					m_cmdPool;
 	vk::Move<vk::VkCommandBuffer>				m_cmdBuffer;
+	vk::Move<vk::VkCommandBuffer>				m_secCmdBuffer;
 
 	vk::Move<vk::VkFramebuffer>					m_framebuffer;
 	vk::Move<vk::VkRenderPass>					m_renderPass;
@@ -325,7 +337,7 @@ public:
 		}
 
 #ifndef CTS_USES_VULKANSC
-		if (m_params.useDynamicRendering)
+		if (m_params.groupParams->useDynamicRendering)
 			context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
 		if (m_params.topology == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN &&
@@ -388,7 +400,7 @@ InstancedDrawInstance::InstancedDrawInstance(Context &context, TestParams params
 	const ImageViewCreateInfo colorTargetViewInfo(m_colorTargetImage->object(), imageViewType, m_colorAttachmentFormat, subresourceRange);
 	m_colorTargetView						= vk::createImageView(m_vk, device, &colorTargetViewInfo);
 
-	if (!m_params.useDynamicRendering)
+	if (!m_params.groupParams->useDynamicRendering)
 	{
 		RenderPassCreateInfo renderPassCreateInfo;
 		renderPassCreateInfo.addAttachment(AttachmentDescription(m_colorAttachmentFormat,
@@ -500,9 +512,10 @@ InstancedDrawInstance::InstancedDrawInstance(Context &context, TestParams params
 		m_vertexInputState.addDivisors(1, &vertexInputBindingDivisorDescription);
 
 	const CmdPoolCreateInfo cmdPoolCreateInfo(queueFamilyIndex);
-	m_cmdPool = vk::createCommandPool(m_vk, device, &cmdPoolCreateInfo);
-
-	m_cmdBuffer = vk::allocateCommandBuffer(m_vk, device, *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	m_cmdPool	= vk::createCommandPool(m_vk, device, &cmdPoolCreateInfo);
+	m_cmdBuffer	= vk::allocateCommandBuffer(m_vk, device, *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	if (m_params.groupParams->useSecondaryCmdBuffer)
+		m_secCmdBuffer = vk::allocateCommandBuffer(m_vk, device, *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 
 	const vk::Unique<vk::VkShaderModule> vs(createShaderModule(m_vk, device, m_context.getBinaryCollection().get("InstancedDrawVert"), 0));
 	const vk::Unique<vk::VkShaderModule> fs(createShaderModule(m_vk, device, m_context.getBinaryCollection().get("InstancedDrawFrag"), 0));
@@ -556,7 +569,7 @@ InstancedDrawInstance::InstancedDrawInstance(Context &context, TestParams params
 		vk::VK_FORMAT_UNDEFINED
 	};
 
-	if (m_params.useDynamicRendering)
+	if (m_params.groupParams->useDynamicRendering)
 	{
 		pipelineCreateInfo.pNext = &renderingFormatCreateInfo;
 
@@ -575,6 +588,7 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 	static const deUint32	instanceCounts[]		= { 0, 1, 2, 4, 20 };
 	static const deUint32	firstInstanceIndices[]	= { 0, 1, 3, 4, 20 };
 	const deUint32			numLayers				= m_params.testMultiview ? 2 : 1;
+	const vk::VkRect2D		renderArea				= vk::makeRect2D(WIDTH, HEIGHT);
 
 	qpTestResult			res						= QP_TEST_RESULT_PASS;
 
@@ -599,197 +613,113 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 			prepareVertexData(prepareCount, firstInstance, m_params.testAttribDivisor ? m_params.attribDivisor : 1);
 			const de::SharedPtr<Buffer>	vertexBuffer			= createAndUploadBuffer(m_data, m_vk, m_context, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 			const de::SharedPtr<Buffer>	instancedVertexBuffer	= createAndUploadBuffer(m_instancedColor, m_vk, m_context, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-			de::SharedPtr<Buffer>		indexBuffer;
-			de::SharedPtr<Buffer>		indirectBuffer;
-			beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
 
-			if (m_params.testMultiview)
-			{
-				vk::VkImageMemoryBarrier barrier;
-				barrier.sType							= vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-				barrier.pNext							= DE_NULL;
-				barrier.srcAccessMask					= 0u;
-				barrier.dstAccessMask					= vk::VK_ACCESS_TRANSFER_WRITE_BIT;
-				barrier.oldLayout						= vk::VK_IMAGE_LAYOUT_UNDEFINED;
-				barrier.newLayout						= vk::VK_IMAGE_LAYOUT_GENERAL;
-				barrier.srcQueueFamilyIndex				= VK_QUEUE_FAMILY_IGNORED;
-				barrier.dstQueueFamilyIndex				= VK_QUEUE_FAMILY_IGNORED;
-				barrier.image							= m_colorTargetImage->object();
-				barrier.subresourceRange.aspectMask		= vk::VK_IMAGE_ASPECT_COLOR_BIT;
-				barrier.subresourceRange.baseMipLevel	= 0;
-				barrier.subresourceRange.levelCount		= 1;
-				barrier.subresourceRange.baseArrayLayer = 0;
-				barrier.subresourceRange.layerCount		= numLayers;
-
-				m_vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL,
-										0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &barrier);
-
-			}
-			else
-			{
-				initialTransitionColor2DImage(m_vk, *m_cmdBuffer, m_colorTargetImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL,
-											  vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
-			}
-
-			const ImageSubresourceRange subresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, numLayers);
-			m_vk.cmdClearColorImage(*m_cmdBuffer, m_colorTargetImage->object(),
-				vk::VK_IMAGE_LAYOUT_GENERAL, &clearColor.color, 1, &subresourceRange);
-
-			const vk::VkMemoryBarrier memBarrier =
-			{
-				vk::VK_STRUCTURE_TYPE_MEMORY_BARRIER,
-				DE_NULL,
-				vk::VK_ACCESS_TRANSFER_WRITE_BIT,
-				vk::VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
-			};
-
-			m_vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-				vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-				0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
-
-			const vk::VkRect2D renderArea = vk::makeRect2D(WIDTH, HEIGHT);
-#ifndef CTS_USES_VULKANSC
-			if (m_params.useDynamicRendering)
-				beginRendering(m_vk, *m_cmdBuffer, *m_colorTargetView, renderArea, clearColor, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_LOAD, 0, (m_params.testMultiview) ? 2u : 1u, (m_params.testMultiview) ? 3u : 0u);
-			else
-#endif // CTS_USES_VULKANSC
-				beginRenderPass(m_vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, renderArea);
-
+			de::SharedPtr<Buffer> indexBuffer;
 			if (m_params.function == TestParams::FUNCTION_DRAW_INDEXED || m_params.function == TestParams::FUNCTION_DRAW_INDEXED_INDIRECT)
-			{
 				indexBuffer = createAndUploadBuffer(m_indexes, m_vk, m_context, vk::VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-				m_vk.cmdBindIndexBuffer(*m_cmdBuffer, indexBuffer->object(), 0, vk::VK_INDEX_TYPE_UINT32);
+
+			de::SharedPtr<Buffer> indirectBuffer;
+			if (m_params.function == TestParams::FUNCTION_DRAW_INDIRECT)
+			{
+				std::vector<vk::VkDrawIndirectCommand> drawCommands;
+				drawCommands.push_back({
+					(deUint32)m_data.size(),	// uint32_t	vertexCount;
+					instanceCount,				// uint32_t	instanceCount;
+					0u,							// uint32_t	firstVertex;
+					firstInstance				// uint32_t	firstInstance;
+				});
+				indirectBuffer = createAndUploadBuffer(drawCommands, m_vk, m_context, vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
 			}
-
-			const vk::VkBuffer vertexBuffers[] =
+			if (m_params.function == TestParams::FUNCTION_DRAW_INDEXED_INDIRECT)
 			{
-				vertexBuffer->object(),
-				instancedVertexBuffer->object(),
-			};
-
-			const vk::VkDeviceSize vertexBufferOffsets[] =
-			{
-				0,	// vertexBufferOffset
-				0,	// instancedVertexBufferOffset
-			};
-
-			m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
-
-			const float pushConstants[] = { (float)firstInstance, (float)instanceCount };
-			m_vk.cmdPushConstants(*m_cmdBuffer, *m_pipelineLayout, vk::VK_SHADER_STAGE_VERTEX_BIT, 0u, (deUint32)sizeof(pushConstants), pushConstants);
-
-			m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
-
-			if (m_params.dynamicState)
-			{
-				vk::VkVertexInputBindingDescription2EXT vertexBindingDescription[2] =
-				{
-					{
-						vk::VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT,
-						0,
-						0u,
-						(deUint32)sizeof(VertexPositionAndColor),
-						vk::VK_VERTEX_INPUT_RATE_VERTEX,
-						1
-					},
-					{
-						vk::VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT,
-						0,
-						1u,
-						(deUint32)sizeof(tcu::Vec4),
-						vk::VK_VERTEX_INPUT_RATE_INSTANCE,
-						m_params.attribDivisor
-					},
-
-				};
-				vk::VkVertexInputAttributeDescription2EXT vertexAttributeDescription[3] =
-				{
-					{
-						vk::VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT,
-						0,
-						0u,
-						0u,
-						vk::VK_FORMAT_R32G32B32A32_SFLOAT,
-						0u
-					},
-					{
-						vk::VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT,
-						0,
-						1u,
-						0u,
-						vk::VK_FORMAT_R32G32B32A32_SFLOAT,
-						(deUint32)sizeof(tcu::Vec4),
-					},
-					{
-						vk::VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT,
-						0,
-						2u,
-						1u,
-						vk::VK_FORMAT_R32G32B32A32_SFLOAT,
-						0,
-					}
-				};
-
-				m_vk.cmdSetVertexInputEXT(*m_cmdBuffer, 2, vertexBindingDescription, 3, vertexAttributeDescription);
-			}
-
-			switch (m_params.function)
-			{
-				case TestParams::FUNCTION_DRAW:
-					m_vk.cmdDraw(*m_cmdBuffer, (deUint32)m_data.size(), instanceCount, 0u, firstInstance);
-					break;
-
-				case TestParams::FUNCTION_DRAW_INDEXED:
-					m_vk.cmdDrawIndexed(*m_cmdBuffer, (deUint32)m_indexes.size(), instanceCount, 0u, 0u, firstInstance);
-					break;
-
-				case TestParams::FUNCTION_DRAW_INDIRECT:
-				{
-					vk::VkDrawIndirectCommand drawCommand =
-					{
-						(deUint32)m_data.size(),	// uint32_t	vertexCount;
-						instanceCount,				// uint32_t	instanceCount;
-						0u,							// uint32_t	firstVertex;
-						firstInstance,				// uint32_t	firstInstance;
-					};
-					std::vector<vk::VkDrawIndirectCommand> drawCommands;
-					drawCommands.push_back(drawCommand);
-					indirectBuffer = createAndUploadBuffer(drawCommands, m_vk, m_context, vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
-
-					m_vk.cmdDrawIndirect(*m_cmdBuffer, indirectBuffer->object(), 0, 1u, 0u);
-					break;
-				}
-				case TestParams::FUNCTION_DRAW_INDEXED_INDIRECT:
-				{
-					vk::VkDrawIndexedIndirectCommand drawCommand =
-					{
-						(deUint32)m_indexes.size(),	// uint32_t	indexCount;
-						instanceCount,				// uint32_t	instanceCount;
-						0u,							// uint32_t	firstIndex;
-						0,							// int32_t	vertexOffset;
-						firstInstance,				// uint32_t	firstInstance;
-					};
-					std::vector<vk::VkDrawIndexedIndirectCommand> drawCommands;
-					drawCommands.push_back(drawCommand);
-					indirectBuffer = createAndUploadBuffer(drawCommands, m_vk, m_context, vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
-
-					m_vk.cmdDrawIndexedIndirect(*m_cmdBuffer, indirectBuffer->object(), 0, 1u, 0u);
-					break;
-				}
-				default:
-					DE_ASSERT(false);
+				std::vector<vk::VkDrawIndexedIndirectCommand> drawCommands;
+				drawCommands.push_back({
+					(deUint32)m_indexes.size(),	// uint32_t	indexCount;
+					instanceCount,				// uint32_t	instanceCount;
+					0u,							// uint32_t	firstIndex;
+					0,							// int32_t	vertexOffset;
+					firstInstance				// uint32_t	firstInstance;
+				});
+				indirectBuffer = createAndUploadBuffer(drawCommands, m_vk, m_context, vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
 			}
 
 #ifndef CTS_USES_VULKANSC
-			if (m_params.useDynamicRendering)
+			const deUint32 layerCount	= (m_params.testMultiview) ? 2u : 1u;
+			const deUint32 viewMask		= (m_params.testMultiview) ? 3u : 0u;
+			if (m_params.groupParams->useSecondaryCmdBuffer)
+			{
+				// record secondary command buffer
+				if (m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+				{
+					beginSecondaryCmdBuffer(vk::VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+					beginRendering(m_vk, *m_secCmdBuffer, *m_colorTargetView, renderArea, clearColor, vk::VK_IMAGE_LAYOUT_GENERAL,
+								   vk::VK_ATTACHMENT_LOAD_OP_LOAD, 0u, layerCount, viewMask);
+				}
+				else
+					beginSecondaryCmdBuffer();
+
+				draw(*m_secCmdBuffer, vertexBuffer->object(), instancedVertexBuffer->object(), indexBuffer, indirectBuffer, firstInstance, instanceCount);
+
+				if (m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+					endRendering(m_vk, *m_secCmdBuffer);
+
+				endCommandBuffer(m_vk, *m_secCmdBuffer);
+
+				// record primary command buffer
+				beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+
+				preRenderCommands(clearColor, numLayers);
+
+				if (!m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+				{
+					beginRendering(m_vk, *m_cmdBuffer, *m_colorTargetView, renderArea, clearColor, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_LOAD,
+								   vk::VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR, layerCount, viewMask);
+				}
+
+				m_vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_secCmdBuffer);
+
+				if (!m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+					endRendering(m_vk, *m_cmdBuffer);
+
+				endCommandBuffer(m_vk, *m_cmdBuffer);
+			}
+			else if (m_params.groupParams->useDynamicRendering)
+			{
+				beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+				preRenderCommands(clearColor, numLayers);
+
+				beginRendering(m_vk, *m_cmdBuffer, *m_colorTargetView, renderArea, clearColor, vk::VK_IMAGE_LAYOUT_GENERAL,
+							   vk::VK_ATTACHMENT_LOAD_OP_LOAD, 0u, layerCount, viewMask);
+				draw(*m_cmdBuffer, vertexBuffer->object(), instancedVertexBuffer->object(), indexBuffer, indirectBuffer, firstInstance, instanceCount);
 				endRendering(m_vk, *m_cmdBuffer);
-			else
+
+				endCommandBuffer(m_vk, *m_cmdBuffer);
+			}
 #endif // CTS_USES_VULKANSC
+
+			if (!m_params.groupParams->useDynamicRendering)
+			{
+				beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+				preRenderCommands(clearColor, numLayers);
+
+				beginRenderPass(m_vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, renderArea);
+				draw(*m_cmdBuffer, vertexBuffer->object(), instancedVertexBuffer->object(), indexBuffer, indirectBuffer, firstInstance, instanceCount);
 				endRenderPass(m_vk, *m_cmdBuffer);
 
-			endCommandBuffer(m_vk, *m_cmdBuffer);
+				endCommandBuffer(m_vk, *m_cmdBuffer);
+			}
+
+/*
+
+void InstancedDrawInstance::beginRender(vk::VkCommandBuffer cmdBuffer, const vk::VkClearValue& clearColor, vk::VkRenderingFlagsKHR renderingFlags)
+{
+
+	if (m_params.groupParams->useDynamicRendering)
+	else
+*/
 
 			submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
+			m_context.resetCommandPoolForVKSC(device, *m_cmdPool);
 
 			// Reference rendering
 			std::vector<tcu::Vec4>	vetrices;
@@ -944,11 +874,193 @@ void InstancedDrawInstance::prepareVertexData(int instanceCount, int firstInstan
 	}
 }
 
+void InstancedDrawInstance::preRenderCommands(const vk::VkClearValue& clearColor, deUint32 numLayers)
+{
+	const ImageSubresourceRange subresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, numLayers);
+
+	if (m_params.testMultiview)
+	{
+		vk::VkImageMemoryBarrier barrier
+		{
+			vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
+			DE_NULL,											// const void*				pNext;
+			0u,													// VkAccessFlags			srcAccessMask;
+			vk::VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			dstAccessMask;
+			vk::VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout			oldLayout;
+			vk::VK_IMAGE_LAYOUT_GENERAL,						// VkImageLayout			newLayout;
+			VK_QUEUE_FAMILY_IGNORED,							// uint32_t					srcQueueFamilyIndex;
+			VK_QUEUE_FAMILY_IGNORED,							// uint32_t					dstQueueFamilyIndex;
+			m_colorTargetImage->object(),						// VkImage					image;
+			subresourceRange									// VkImageSubresourceRange	subresourceRange;
+		};
+
+		m_vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL,
+								0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &barrier);
+	}
+	else
+	{
+		initialTransitionColor2DImage(m_vk, *m_cmdBuffer, m_colorTargetImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL,
+									  vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
+	}
+
+	m_vk.cmdClearColorImage(*m_cmdBuffer, m_colorTargetImage->object(),
+							vk::VK_IMAGE_LAYOUT_GENERAL, &clearColor.color, 1, &subresourceRange);
+
+	const vk::VkMemoryBarrier memBarrier
+	{
+		vk::VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+		DE_NULL,
+		vk::VK_ACCESS_TRANSFER_WRITE_BIT,
+		vk::VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
+	};
+
+	m_vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+							vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+							0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
+}
+
+void InstancedDrawInstance::draw(vk::VkCommandBuffer cmdBuffer,
+								 vk::VkBuffer vertexBuffer, vk::VkBuffer instancedVertexBuffer,
+								 de::SharedPtr<Buffer> indexBuffer, de::SharedPtr<Buffer> indirectBuffer,
+								 deUint32 firstInstance, deUint32 instanceCount)
+{
+	if (m_params.function == TestParams::FUNCTION_DRAW_INDEXED || m_params.function == TestParams::FUNCTION_DRAW_INDEXED_INDIRECT)
+		m_vk.cmdBindIndexBuffer(cmdBuffer, indexBuffer->object(), 0, vk::VK_INDEX_TYPE_UINT32);
+
+	const vk::VkBuffer		vertexBuffers[]			{ vertexBuffer,		instancedVertexBuffer	};
+	const vk::VkDeviceSize	vertexBufferOffsets[]	{ 0,				0 };
+
+	m_vk.cmdBindVertexBuffers(cmdBuffer, 0, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
+
+	const float pushConstants[] = { (float)firstInstance, (float)instanceCount };
+	m_vk.cmdPushConstants(cmdBuffer, *m_pipelineLayout, vk::VK_SHADER_STAGE_VERTEX_BIT, 0u, (deUint32)sizeof(pushConstants), pushConstants);
+	m_vk.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+
+	if (m_params.dynamicState)
+	{
+		vk::VkVertexInputBindingDescription2EXT vertexBindingDescription[2]
+		{
+			{
+				vk::VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT,
+				0,
+				0u,
+				(deUint32)sizeof(VertexPositionAndColor),
+				vk::VK_VERTEX_INPUT_RATE_VERTEX,
+				1
+			},
+			{
+				vk::VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT,
+				0,
+				1u,
+				(deUint32)sizeof(tcu::Vec4),
+				vk::VK_VERTEX_INPUT_RATE_INSTANCE,
+				m_params.attribDivisor
+			},
+
+		};
+		vk::VkVertexInputAttributeDescription2EXT vertexAttributeDescription[3]
+		{
+			{
+				vk::VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT,
+				0,
+				0u,
+				0u,
+				vk::VK_FORMAT_R32G32B32A32_SFLOAT,
+				0u
+			},
+			{
+				vk::VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT,
+				0,
+				1u,
+				0u,
+				vk::VK_FORMAT_R32G32B32A32_SFLOAT,
+				(deUint32)sizeof(tcu::Vec4),
+			},
+			{
+				vk::VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT,
+				0,
+				2u,
+				1u,
+				vk::VK_FORMAT_R32G32B32A32_SFLOAT,
+				0,
+			}
+		};
+
+		m_vk.cmdSetVertexInputEXT(cmdBuffer, 2, vertexBindingDescription, 3, vertexAttributeDescription);
+	}
+
+	switch (m_params.function)
+	{
+	case TestParams::FUNCTION_DRAW:
+		m_vk.cmdDraw(cmdBuffer, (deUint32)m_data.size(), instanceCount, 0u, firstInstance);
+		break;
+
+	case TestParams::FUNCTION_DRAW_INDEXED:
+		m_vk.cmdDrawIndexed(cmdBuffer, (deUint32)m_indexes.size(), instanceCount, 0u, 0u, firstInstance);
+		break;
+
+	case TestParams::FUNCTION_DRAW_INDIRECT:
+		m_vk.cmdDrawIndirect(cmdBuffer, indirectBuffer->object(), 0, 1u, 0u);
+		break;
+
+	case TestParams::FUNCTION_DRAW_INDEXED_INDIRECT:
+		m_vk.cmdDrawIndexedIndirect(cmdBuffer, indirectBuffer->object(), 0, 1u, 0u);
+		break;
+
+	default:
+		DE_ASSERT(false);
+	}
+}
+
+#ifndef CTS_USES_VULKANSC
+void InstancedDrawInstance::beginSecondaryCmdBuffer(vk::VkRenderingFlagsKHR renderingFlags)
+{
+	const vk::VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
+	{
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,	// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		renderingFlags,															// VkRenderingFlagsKHR				flags;
+		(m_params.testMultiview) ? 3u : 0u,										// uint32_t							viewMask;
+		1u,																		// uint32_t							colorAttachmentCount;
+		&m_colorAttachmentFormat,												// const VkFormat*					pColorAttachmentFormats;
+		vk::VK_FORMAT_UNDEFINED,												// VkFormat							depthAttachmentFormat;
+		vk::VK_FORMAT_UNDEFINED,												// VkFormat							stencilAttachmentFormat;
+		vk::VK_SAMPLE_COUNT_1_BIT,												// VkSampleCountFlagBits			rasterizationSamples;
+	};
+
+	const vk::VkCommandBufferInheritanceInfo bufferInheritanceInfo
+	{
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,					// VkStructureType					sType;
+		&inheritanceRenderingInfo,												// const void*						pNext;
+		DE_NULL,																// VkRenderPass						renderPass;
+		0u,																		// deUint32							subpass;
+		DE_NULL,																// VkFramebuffer					framebuffer;
+		VK_FALSE,																// VkBool32							occlusionQueryEnable;
+		(vk::VkQueryControlFlags)0u,											// VkQueryControlFlags				queryFlags;
+		(vk::VkQueryPipelineStatisticFlags)0u									// VkQueryPipelineStatisticFlags	pipelineStatistics;
+	};
+
+	vk::VkCommandBufferUsageFlags usageFlags = vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	if (!m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+		usageFlags |= vk::VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+
+	const vk::VkCommandBufferBeginInfo commandBufBeginParams
+	{
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,						// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		usageFlags,																// VkCommandBufferUsageFlags		flags;
+		&bufferInheritanceInfo
+	};
+
+	VK_CHECK(m_vk.beginCommandBuffer(*m_secCmdBuffer, &commandBufBeginParams));
+}
+#endif // CTS_USES_VULKANSC
+
 } // anonymus
 
-InstancedTests::InstancedTests(tcu::TestContext& testCtx, bool useDynamicRendering)
-	: TestCaseGroup			(testCtx, "instanced", "Instanced drawing tests")
-	, m_useDynamicRendering	(useDynamicRendering)
+InstancedTests::InstancedTests(tcu::TestContext& testCtx, const SharedGroupParams groupParams)
+	: TestCaseGroup		(testCtx, "instanced", "Instanced drawing tests")
+	, m_groupParams		(groupParams)
 {
 	static const vk::VkPrimitiveTopology	topologies[]			=
 	{
@@ -974,26 +1086,36 @@ InstancedTests::InstancedTests(tcu::TestContext& testCtx, bool useDynamicRenderi
 	{
 		for (int topologyNdx = 0; topologyNdx < DE_LENGTH_OF_ARRAY(topologies); topologyNdx++)
 		{
+			// reduce number of tests for dynamic rendering cases where secondary command buffer is used
+			if (groupParams->useSecondaryCmdBuffer && (topologyNdx % 2u))
+				continue;
+
 			for (int functionNdx = 0; functionNdx < DE_LENGTH_OF_ARRAY(functions); functionNdx++)
 			{
 				for (int testAttribDivisor = 0; testAttribDivisor < 2; testAttribDivisor++)
 				{
 					for (int divisorNdx = 0; divisorNdx < DE_LENGTH_OF_ARRAY(divisors); divisorNdx++)
 					{
+						// reduce number of tests for dynamic rendering cases where secondary command buffer is used
+						if (groupParams->useSecondaryCmdBuffer && (divisorNdx % 2u))
+							continue;
+
 						for (int multiviewNdx = 0; multiviewNdx < DE_LENGTH_OF_ARRAY(multiviews); multiviewNdx++)
 						{
 							// If we don't have VK_EXT_vertex_attribute_divisor, we only get a divisor or 1.
 							if (!testAttribDivisor && divisors[divisorNdx] != 1)
 								continue;
 
-							TestParams param;
-							param.function = functions[functionNdx];
-							param.topology = topologies[topologyNdx];
-							param.useDynamicRendering = useDynamicRendering;
-							param.testAttribDivisor = testAttribDivisor ? DE_TRUE : DE_FALSE;
-							param.attribDivisor = divisors[divisorNdx];
-							param.testMultiview = multiviews[multiviewNdx];
-							param.dynamicState = dynState == 0 ? false : true;
+							TestParams param
+							{
+								functions[functionNdx],						// DrawFunction				function;
+								topologies[topologyNdx],					// vk::VkPrimitiveTopology	topology;
+								groupParams,								// const SharedGroupParams	groupParams;
+								testAttribDivisor ? DE_TRUE : DE_FALSE,		// deBool					testAttribDivisor;
+								divisors[divisorNdx],						// deUint32					attribDivisor;
+								multiviews[multiviewNdx],					// deBool					testMultiview;
+								dynState == 0 ? false : true				// deBool					dynamicState;
+							};
 
 							// Add multiview tests only when vertex attribute divisor is enabled.
 							if (param.testMultiview && !testAttribDivisor)

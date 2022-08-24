@@ -126,6 +126,7 @@ tcu::TestStatus deviceResetSetEventCase (Context& context, TestConfig config)
 	}
 
 	VK_CHECK(vk.queueWaitIdle(queue));
+	context.resetCommandPoolForVKSC(device, *cmdPool);
 
 	if (VK_EVENT_SET != vk.getEventStatus(device, *event))
 		return tcu::TestStatus::fail("Event should be in signaled state after set");

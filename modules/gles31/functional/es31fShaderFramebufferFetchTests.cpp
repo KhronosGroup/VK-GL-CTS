@@ -613,7 +613,13 @@ tcu::TextureLevel TextureFormatTestCase::genReferenceTexture (const tcu::Vec4& f
 	}
 	else if (textureChannelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER)
 	{
-		tcu::clear(reference.getAccess(), tcu::clamp(fbColor.asInt() + uniformColor.asInt(), formatMinValue.asInt(), formatMaxValue.asInt()));
+		tcu::IVec4 clearColor;
+
+		// Calculate using 64 bits to avoid signed integer overflow.
+		for (int i = 0; i < 4; i++)
+			clearColor[i] = static_cast<int>((static_cast<deInt64>(fbColor.asInt()[i]) + static_cast<deInt64>(uniformColor.asInt()[i])) & 0xffffffff);
+
+		tcu::clear(reference.getAccess(), clearColor);
 	}
 	else
 	{

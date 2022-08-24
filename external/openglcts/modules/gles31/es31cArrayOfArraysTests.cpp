@@ -8895,10 +8895,13 @@ void AtomicUsageTest<API>::execute(typename TestCaseBase<API>::TestShaderType te
 	int diff = 0;
 	for (size_t i = 0; i < n_entries; ++i)
 	{
-		/* Tesselation evaluation can be called several times
-		 In here, check the increment is consistent over all results.
+		/* Any vertex processing shader could be called an implementation defined
+		 * number of times. In here, check the increment is consistent over all results.
 		 */
-		if (tested_shader_type == TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE)
+		if (tested_shader_type == TestCaseBase<API>::VERTEX_SHADER_TYPE ||
+			tested_shader_type == TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE ||
+			tested_shader_type == TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE ||
+			tested_shader_type == TestCaseBase<API>::GEOMETRY_SHADER_TYPE)
 		{
 			if (i == 0)
 			{

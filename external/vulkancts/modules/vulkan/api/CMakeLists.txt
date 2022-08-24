@@ -51,13 +51,13 @@ set(DEQP_VK_VKSC_API_SRCS
 	vktApiMaintenance3Check.cpp
 	vktApiDescriptorSetTests.hpp
 	vktApiDescriptorSetTests.cpp
-	vktApiMemoryRequirementInvarianceTests.cpp
-	vktApiMemoryRequirementInvarianceTests.hpp
 	vktApiPipelineTests.hpp
 	vktApiPipelineTests.cpp
+	vktApiMemoryRequirementInvarianceTests.cpp
+	vktApiMemoryRequirementInvarianceTests.hpp
 	vktApiBufferMemoryRequirementsTests.cpp
 	vktApiBufferMemoryRequirementsTests.hpp
-    vktApiBufferMemoryRequirementsTestsUtils.hpp
+	vktApiBufferMemoryRequirementsTestsUtils.hpp
 	)
 
 set(DEQP_VK_API_SRCS
@@ -69,10 +69,12 @@ set(DEQP_VK_API_SRCS
 	vktApiDeviceDrmPropertiesTests.hpp
 	vktApiExternalMemoryTests.cpp
 	vktApiExternalMemoryTests.hpp
-    vktApiToolingInfoTests.cpp
-    vktApiToolingInfoTests.hpp
-    vktApiFormatPropertiesExtendedKHRtests.cpp
-    vktApiFormatPropertiesExtendedKHRtests.hpp
+	vktApiToolingInfoTests.cpp
+	vktApiToolingInfoTests.hpp
+	vktApiFormatPropertiesExtendedKHRtests.cpp
+	vktApiFormatPropertiesExtendedKHRtests.hpp
+	vktApiImageCompressionControlTests.cpp
+	vktApiImageCompressionControlTests.hpp
 	)
 
 PCH(DEQP_VK_API_SRCS ../pch.cpp)

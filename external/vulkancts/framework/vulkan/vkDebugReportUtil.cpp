@@ -179,7 +179,7 @@ Move<VkDebugReportCallbackEXT> DebugReportRecorder::createCallback (const Instan
 bool isDebugReportSupported (const PlatformInterface& vkp)
 {
 #ifndef CTS_USES_VULKANSC
-	return isExtensionSupported(enumerateInstanceExtensionProperties(vkp, DE_NULL),
+	return isExtensionStructSupported(enumerateInstanceExtensionProperties(vkp, DE_NULL),
 								RequiredExtension("VK_EXT_debug_report"));
 #else // CTS_USES_VULKANSC
 	DE_UNREF(vkp);

@@ -30,6 +30,7 @@
 #include "vkCmdUtil.hpp"
 
 #include "deStringUtil.hpp"
+#include "deSTLUtil.hpp"
 
 #include <vector>
 #include <string>
@@ -2784,7 +2785,7 @@ void TopLevelAccelerationStructureKHR::createAndDeserializeBottoms (const Device
 	{
 		const deUint64& lookAddr	= addresses[i+1];
 		auto			end			= matches.end();
-		auto			match		= std::find_if(matches.begin(), end, [&](const std::pair<deUint64, deUint32>& item){ return item.first == lookAddr; });
+		auto			match		= std::find_if(matches.begin(), end, [&](const std::pair<deUint64, std::size_t>& item){ return item.first == lookAddr; });
 		if (match != end)
 		{
 			m_bottomLevelInstances .emplace_back(m_bottomLevelInstances[match->second]);
@@ -3067,7 +3068,7 @@ void RayTracingPipeline::addShader (VkShaderStageFlagBits					shaderStage,
 }
 
 void RayTracingPipeline::addShader (VkShaderStageFlagBits					shaderStage,
-									VkShaderModule		                    shaderModule,
+									VkShaderModule							shaderModule,
 									deUint32								group,
 									const VkSpecializationInfo*				specializationInfoPtr,
 									const VkPipelineShaderStageCreateFlags	pipelineShaderStageCreateFlags,
@@ -3155,26 +3156,21 @@ void RayTracingPipeline::addLibrary (de::SharedPtr<de::MovePtr<RayTracingPipelin
 	m_pipelineLibraries.push_back(pipelineLibrary);
 }
 
-Move<VkPipeline> RayTracingPipeline::createPipelineKHR (const DeviceInterface&								vk,
-														const VkDevice										device,
-														const VkPipelineLayout								pipelineLayout,
-														const std::vector<de::SharedPtr<Move<VkPipeline>>>&	pipelineLibraries)
+Move<VkPipeline> RayTracingPipeline::createPipelineKHR (const DeviceInterface&			vk,
+														const VkDevice					device,
+														const VkPipelineLayout			pipelineLayout,
+														const std::vector<VkPipeline>&	pipelineLibraries,
+														const VkPipelineCache			pipelineCache)
 {
 	for (size_t groupNdx = 0; groupNdx < m_shadersGroupCreateInfos.size(); ++groupNdx)
 		DE_ASSERT(m_shadersGroupCreateInfos[groupNdx].sType == VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR);
 
-	DE_ASSERT(m_shaderCreateInfos.size() > 0);
-	DE_ASSERT(m_shadersGroupCreateInfos.size() > 0);
-
-	std::vector<VkPipeline>								vkPipelineLibraries;
-	for (auto it = begin(pipelineLibraries), eit = end(pipelineLibraries); it != eit; ++it)
-		vkPipelineLibraries.push_back( it->get()->get() );
 	VkPipelineLibraryCreateInfoKHR				librariesCreateInfo	=
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR,		//  VkStructureType	sType;
-		DE_NULL,												//  const void*		pNext;
-		deUint32(vkPipelineLibraries.size()),					//  deUint32		libraryCount;
-		dataOrNullPtr(vkPipelineLibraries)						//  VkPipeline*		pLibraries;
+		VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR,	//  VkStructureType	sType;
+		DE_NULL,											//  const void*		pNext;
+		de::sizeU32(pipelineLibraries),						//  deUint32		libraryCount;
+		de::dataOrNull(pipelineLibraries)					//  VkPipeline*		pLibraries;
 	};
 	const VkRayTracingPipelineInterfaceCreateInfoKHR	pipelineInterfaceCreateInfo		=
 	{
@@ -3185,7 +3181,7 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR (const DeviceInterface&		
 	};
 	const bool											addPipelineInterfaceCreateInfo	= m_maxPayloadSize != 0 || m_maxAttributeSize != 0;
 	const VkRayTracingPipelineInterfaceCreateInfoKHR*	pipelineInterfaceCreateInfoPtr	= addPipelineInterfaceCreateInfo ? &pipelineInterfaceCreateInfo : DE_NULL;
-	const VkPipelineLibraryCreateInfoKHR*				librariesCreateInfoPtr			= (vkPipelineLibraries.empty() ? nullptr : &librariesCreateInfo);
+	const VkPipelineLibraryCreateInfoKHR*				librariesCreateInfoPtr			= (pipelineLibraries.empty() ? nullptr : &librariesCreateInfo);
 
 	Move<VkDeferredOperationKHR>						deferredOperation;
 	if (m_deferredOperation)
@@ -3205,10 +3201,10 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR (const DeviceInterface&		
 		VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,	//  VkStructureType								sType;
 		DE_NULL,												//  const void*									pNext;
 		m_pipelineCreateFlags,									//  VkPipelineCreateFlags						flags;
-		(deUint32)m_shaderCreateInfos.size(),					//  deUint32									stageCount;
-		m_shaderCreateInfos.data(),								//  const VkPipelineShaderStageCreateInfo*		pStages;
-		(deUint32)m_shadersGroupCreateInfos.size(),				//  deUint32									groupCount;
-		m_shadersGroupCreateInfos.data(),						//  const VkRayTracingShaderGroupCreateInfoKHR*	pGroups;
+		de::sizeU32(m_shaderCreateInfos),						//  deUint32									stageCount;
+		de::dataOrNull(m_shaderCreateInfos),					//  const VkPipelineShaderStageCreateInfo*		pStages;
+		de::sizeU32(m_shadersGroupCreateInfos),					//  deUint32									groupCount;
+		de::dataOrNull(m_shadersGroupCreateInfos),				//  const VkRayTracingShaderGroupCreateInfoKHR*	pGroups;
 		m_maxRecursionDepth,									//  deUint32									maxRecursionDepth;
 		librariesCreateInfoPtr,									//  VkPipelineLibraryCreateInfoKHR*				pLibraryInfo;
 		pipelineInterfaceCreateInfoPtr,							//  VkRayTracingPipelineInterfaceCreateInfoKHR*	pLibraryInterface;
@@ -3218,14 +3214,17 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR (const DeviceInterface&		
 		0,														//  deInt32										basePipelineIndex;
 	};
 	VkPipeline											object							= DE_NULL;
-	VkResult											result							= vk.createRayTracingPipelinesKHR(device, deferredOperation.get(), DE_NULL, 1u, &pipelineCreateInfo, DE_NULL, &object);
+	VkResult											result							= vk.createRayTracingPipelinesKHR(device, deferredOperation.get(), pipelineCache, 1u, &pipelineCreateInfo, DE_NULL, &object);
+	const bool											allowCompileRequired			= ((m_pipelineCreateFlags & VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT_EXT) != 0);
 
 	if (m_deferredOperation)
 	{
-		DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
-
+		DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS || (allowCompileRequired && result == VK_PIPELINE_COMPILE_REQUIRED));
 		finishDeferredOperation(vk, device, deferredOperation.get(), m_workerThreadCount, result == VK_OPERATION_NOT_DEFERRED_KHR);
 	}
+
+	if (allowCompileRequired && result == VK_PIPELINE_COMPILE_REQUIRED)
+		throw CompileRequiredError("createRayTracingPipelinesKHR returned VK_PIPELINE_COMPILE_REQUIRED");
 
 	Move<VkPipeline> pipeline (check<VkPipeline>(object), Deleter<VkPipeline>(vk, device, DE_NULL));
 	return pipeline;
@@ -3237,7 +3236,21 @@ Move<VkPipeline> RayTracingPipeline::createPipeline (const DeviceInterface&					
 													 const VkPipelineLayout									pipelineLayout,
 													 const std::vector<de::SharedPtr<Move<VkPipeline>>>&	pipelineLibraries)
 {
-	return createPipelineKHR(vk, device, pipelineLayout, pipelineLibraries);
+	std::vector<VkPipeline> rawPipelines;
+	rawPipelines.reserve(pipelineLibraries.size());
+	for (const auto& lib : pipelineLibraries)
+		rawPipelines.push_back(lib.get()->get());
+
+	return createPipelineKHR(vk, device, pipelineLayout, rawPipelines);
+}
+
+Move<VkPipeline> RayTracingPipeline::createPipeline (const DeviceInterface&			vk,
+													 const VkDevice					device,
+													 const VkPipelineLayout			pipelineLayout,
+													 const std::vector<VkPipeline>&	pipelineLibraries,
+													 const VkPipelineCache			pipelineCache)
+{
+	return createPipelineKHR(vk, device, pipelineLayout, pipelineLibraries, pipelineCache);
 }
 
 std::vector<de::SharedPtr<Move<VkPipeline>>> RayTracingPipeline::createPipelineWithLibraries (const DeviceInterface&			vk,
@@ -3277,13 +3290,15 @@ de::MovePtr<BufferWithMemory> RayTracingPipeline::createShaderBindingTable (cons
 																			const VkDeviceAddress&		opaqueCaptureAddress,
 																			const deUint32				shaderBindingTableOffset,
 																			const deUint32				shaderRecordSize,
-																			const void**				shaderGroupDataPtrPerGroup)
+																			const void**				shaderGroupDataPtrPerGroup,
+																			const bool					autoAlignRecords)
 {
 	DE_ASSERT(shaderGroupBaseAlignment != 0u);
 	DE_ASSERT((shaderBindingTableOffset % shaderGroupBaseAlignment) == 0);
 	DE_UNREF(shaderGroupBaseAlignment);
 
-	const deUint32							sbtSize							= shaderBindingTableOffset + groupCount * deAlign32(shaderGroupHandleSize + shaderRecordSize, shaderGroupHandleSize);
+	const auto								totalEntrySize					= (autoAlignRecords ? (deAlign32(shaderGroupHandleSize + shaderRecordSize, shaderGroupHandleSize)) : (shaderGroupHandleSize + shaderRecordSize));
+	const deUint32							sbtSize							= shaderBindingTableOffset + groupCount * totalEntrySize;
 	const VkBufferUsageFlags				sbtFlags						= VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | additionalBufferUsageFlags;
 	VkBufferCreateInfo						sbtCreateInfo					= makeBufferCreateInfo(sbtSize, sbtFlags);
 	sbtCreateInfo.flags														|= additionalBufferCreateFlags;
@@ -3312,7 +3327,7 @@ de::MovePtr<BufferWithMemory> RayTracingPipeline::createShaderBindingTable (cons
 	for (deUint32 idx = 0; idx < groupCount; ++idx)
 	{
 		deUint8* shaderSrcPos	= shaderHandles.data() + idx * shaderGroupHandleSize;
-		deUint8* shaderDstPos	= shaderBegin + idx * deAlign32(shaderGroupHandleSize + shaderRecordSize, shaderGroupHandleSize);
+		deUint8* shaderDstPos	= shaderBegin + idx * totalEntrySize;
 		deMemcpy(shaderDstPos, shaderSrcPos, shaderGroupHandleSize);
 
 		if (shaderGroupDataPtrPerGroup		!= nullptr &&
@@ -3371,16 +3386,17 @@ public:
 																		 const VkPhysicalDevice		physicalDevice);
 	virtual					~RayTracingPropertiesKHR					();
 
-	virtual deUint32		getShaderGroupHandleSize					(void)	{ return m_rayTracingPipelineProperties.shaderGroupHandleSize;						}
-	virtual deUint32		getMaxRecursionDepth						(void)	{ return m_rayTracingPipelineProperties.maxRayRecursionDepth;						}
-	virtual deUint32		getMaxShaderGroupStride						(void)	{ return m_rayTracingPipelineProperties.maxShaderGroupStride;						}
-	virtual deUint32		getShaderGroupBaseAlignment					(void)	{ return m_rayTracingPipelineProperties.shaderGroupBaseAlignment;					}
-	virtual deUint64		getMaxGeometryCount							(void)	{ return m_accelerationStructureProperties.maxGeometryCount;						}
-	virtual deUint64		getMaxInstanceCount							(void)	{ return m_accelerationStructureProperties.maxInstanceCount;						}
-	virtual deUint64		getMaxPrimitiveCount						(void)	{ return m_accelerationStructureProperties.maxPrimitiveCount;						}
-	virtual deUint32		getMaxDescriptorSetAccelerationStructures	(void)	{ return m_accelerationStructureProperties.maxDescriptorSetAccelerationStructures;	}
-	deUint32				getMaxRayDispatchInvocationCount			(void)	{ return m_rayTracingPipelineProperties.maxRayDispatchInvocationCount;				}
-	deUint32				getMaxRayHitAttributeSize					(void)	{ return m_rayTracingPipelineProperties.maxRayHitAttributeSize;						}
+	uint32_t		getShaderGroupHandleSize					(void)	override { return m_rayTracingPipelineProperties.shaderGroupHandleSize;						}
+	uint32_t		getShaderGroupHandleAlignment				(void)	override { return m_rayTracingPipelineProperties.shaderGroupHandleAlignment;				}
+	uint32_t		getMaxRecursionDepth						(void)	override { return m_rayTracingPipelineProperties.maxRayRecursionDepth;						}
+	uint32_t		getMaxShaderGroupStride						(void)	override { return m_rayTracingPipelineProperties.maxShaderGroupStride;						}
+	uint32_t		getShaderGroupBaseAlignment					(void)	override { return m_rayTracingPipelineProperties.shaderGroupBaseAlignment;					}
+	uint64_t		getMaxGeometryCount							(void)	override { return m_accelerationStructureProperties.maxGeometryCount;						}
+	uint64_t		getMaxInstanceCount							(void)	override { return m_accelerationStructureProperties.maxInstanceCount;						}
+	uint64_t		getMaxPrimitiveCount						(void)	override { return m_accelerationStructureProperties.maxPrimitiveCount;						}
+	uint32_t		getMaxDescriptorSetAccelerationStructures	(void)	override { return m_accelerationStructureProperties.maxDescriptorSetAccelerationStructures;	}
+	uint32_t		getMaxRayDispatchInvocationCount			(void)	override { return m_rayTracingPipelineProperties.maxRayDispatchInvocationCount;				}
+	uint32_t		getMaxRayHitAttributeSize					(void)	override { return m_rayTracingPipelineProperties.maxRayHitAttributeSize;					}
 
 protected:
 	VkPhysicalDeviceAccelerationStructurePropertiesKHR	m_accelerationStructureProperties;
@@ -3489,6 +3505,22 @@ void cmdTraceRaysIndirect (const DeviceInterface&					vk,
 								   hitShaderBindingTableRegion,
 								   callableShaderBindingTableRegion,
 								   indirectDeviceAddress);
+}
+
+static inline void cmdTraceRaysIndirect2KHR (const DeviceInterface&	vk,
+											VkCommandBuffer			commandBuffer,
+											VkDeviceAddress			indirectDeviceAddress )
+{
+	DE_ASSERT(indirectDeviceAddress != 0);
+
+	return vk.cmdTraceRaysIndirect2KHR(commandBuffer, indirectDeviceAddress);
+}
+
+void cmdTraceRaysIndirect2	(const DeviceInterface&	vk,
+							 VkCommandBuffer		commandBuffer,
+							 VkDeviceAddress		indirectDeviceAddress)
+{
+	return cmdTraceRaysIndirect2KHR(vk, commandBuffer, indirectDeviceAddress);
 }
 
 #else

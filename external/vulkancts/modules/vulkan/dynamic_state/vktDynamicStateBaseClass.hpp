@@ -87,30 +87,32 @@ protected:
 		HEIGHT      = 128
 	};
 
-	vk::VkFormat									m_colorAttachmentFormat;
+	vk::VkFormat											m_colorAttachmentFormat;
 
-	vk::VkPrimitiveTopology							m_topology;
+	vk::VkPrimitiveTopology									m_topology;
 
-	const vk::DeviceInterface&						m_vk;
+	const vk::DeviceInterface&								m_vk;
 
-	vk::GraphicsPipelineWrapper						m_pipeline;
-	vk::Move<vk::VkPipelineLayout>					m_pipelineLayout;
+	vk::GraphicsPipelineWrapper								m_pipeline;
+	vk::Move<vk::VkPipelineLayout>							m_pipelineLayout;
 
-	de::SharedPtr<Draw::Image>						m_colorTargetImage;
-	vk::Move<vk::VkImageView>						m_colorTargetView;
+	de::SharedPtr<Draw::Image>								m_colorTargetImage;
+	vk::Move<vk::VkImageView>								m_colorTargetView;
 
-	Draw::PipelineCreateInfo::VertexInputState		m_vertexInputState;
-	de::SharedPtr<Draw::Buffer>						m_vertexBuffer;
+	Draw::PipelineCreateInfo::VertexInputState				m_vertexInputState;
+	de::SharedPtr<Draw::Buffer>								m_vertexBuffer;
 
-	vk::Move<vk::VkCommandPool>						m_cmdPool;
-	vk::Move<vk::VkCommandBuffer>					m_cmdBuffer;
+	vk::Move<vk::VkCommandPool>								m_cmdPool;
+	vk::Move<vk::VkCommandBuffer>							m_cmdBuffer;
 
-	vk::Move<vk::VkFramebuffer>						m_framebuffer;
-	vk::Move<vk::VkRenderPass>						m_renderPass;
+	vk::Move<vk::VkFramebuffer>								m_framebuffer;
+	vk::Move<vk::VkRenderPass>								m_renderPass;
 
-	const std::string								m_vertexShaderName;
-	const std::string								m_fragmentShaderName;
-	std::vector<PositionColorVertex>				m_data;
+	const std::string										m_vertexShaderName;
+	const std::string										m_fragmentShaderName;
+	std::vector<PositionColorVertex>						m_data;
+
+	Draw::PipelineCreateInfo::ColorBlendState::Attachment	m_attachmentState;
 };
 
 } // DynamicState

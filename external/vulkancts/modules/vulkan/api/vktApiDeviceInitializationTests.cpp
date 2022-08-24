@@ -212,7 +212,6 @@ tcu::TestStatus createInstanceTest (Context& context)
 	return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
-#ifndef CTS_USES_VULKANSC
 tcu::TestStatus createInstanceWithInvalidApiVersionTest (Context& context)
 {
 	tcu::TestLog&				log						= context.getTestContext().getLog();
@@ -230,7 +229,12 @@ tcu::TestStatus createInstanceWithInvalidApiVersionTest (Context& context)
 	vector<ApiVersion>			invalidApiVersions;
 
 	invalidApiVersions.push_back(ApiVersion(invalidApiVariant, invalidMajorVersion, apiVersion.minorNum, apiVersion.patchNum));
+	invalidApiVersions.push_back(ApiVersion(apiVersion.variantNum, invalidMajorVersion, apiVersion.minorNum, apiVersion.patchNum));
 	invalidApiVersions.push_back(ApiVersion(apiVersion.variantNum, apiVersion.majorNum, invalidMinorVersion, apiVersion.patchNum));
+#ifdef CTS_USES_VULKANSC
+	invalidApiVersions.push_back(ApiVersion(invalidApiVariant, apiVersion.majorNum, apiVersion.minorNum, apiVersion.patchNum));
+	invalidApiVersions.push_back(ApiVersion(0, apiVersion.majorNum, apiVersion.minorNum, apiVersion.patchNum));
+#endif // CTS_USES_VULKANSC
 
 	for (size_t apiVersionNdx = 0; apiVersionNdx < invalidApiVersions.size(); apiVersionNdx++)
 	{
@@ -265,6 +269,9 @@ tcu::TestStatus createInstanceWithInvalidApiVersionTest (Context& context)
 			UncheckedInstance	instance;
 			const VkResult		result		= createUncheckedInstance(context, &instanceCreateInfo, DE_NULL, &instance);
 
+#ifdef CTS_USES_VULKANSC
+			if (invalidApiVersions[apiVersionNdx].variantNum == apiVersion.variantNum)
+#else
 			if (apiVersion.majorNum == 1 && apiVersion.minorNum == 0)
 			{
 				if (result == VK_ERROR_INCOMPATIBLE_DRIVER)
@@ -276,15 +283,20 @@ tcu::TestStatus createInstanceWithInvalidApiVersionTest (Context& context)
 					resultCollector.fail("Fail, instance creation with invalid apiVersion is not rejected");
 			}
 			else if (apiVersion.majorNum == 1 && apiVersion.minorNum >= 1)
+#endif // CTS_USES_VULKANSC
 			{
 				if (result == VK_SUCCESS)
 				{
 					TCU_CHECK(static_cast<bool>(instance));
-					log << TestLog::Message << "Pass, instance creation with nonstandard apiVersion succeeds for Vulkan 1.1" << TestLog::EndMessage;
+					log << TestLog::Message << "Pass, instance creation with nonstandard apiVersion succeeds for "
+						<< ((apiVersion.variantNum == 0) ? "Vulkan 1.1" : "Vulkan SC when api variant is correct") << TestLog::EndMessage;
 				}
 				else if (result == VK_ERROR_INCOMPATIBLE_DRIVER)
 				{
-					resultCollector.fail("Fail, In Vulkan 1.1 instance creation must not return VK_ERROR_INCOMPATIBLE_DRIVER.");
+					std::ostringstream message;
+					message << "Fail, instance creation must not return VK_ERROR_INCOMPATIBLE_DRIVER for "
+						<< ((apiVersion.variantNum == 0) ? "Vulkan 1.1" : "Vulkan SC when api variant is correct");
+					resultCollector.fail(message.str().c_str());
 				}
 				else
 				{
@@ -293,12 +305,20 @@ tcu::TestStatus createInstanceWithInvalidApiVersionTest (Context& context)
 					resultCollector.fail(message.str().c_str());
 				}
 			}
+#ifdef CTS_USES_VULKANSC
+			else if (result == VK_ERROR_INCOMPATIBLE_DRIVER)
+			{
+				TCU_CHECK(!static_cast<bool>(instance));
+				log << TestLog::Message << "Pass, instance creation with invalid apiVersion is rejected" << TestLog::EndMessage;
+			}
+			else
+				resultCollector.fail("Fail, instance creation with invalid apiVersion is not rejected");
+#endif // CTS_USES_VULKANSC
 		}
 	}
 
 	return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
-#endif // CTS_USES_VULKANSC
 
 tcu::TestStatus createInstanceWithNullApplicationInfoTest (Context& context)
 {
@@ -1088,7 +1108,7 @@ deBool isValidGlobalPriority(VkQueueGlobalPriorityEXT priority)
 void checkGlobalPriorityProperties(const VkQueueFamilyGlobalPriorityPropertiesEXT& properties)
 {
 	TCU_CHECK(properties.priorityCount > 0);
-	TCU_CHECK(properties.priorityCount <= VK_MAX_GLOBAL_PRIORITY_SIZE_EXT);
+	TCU_CHECK(properties.priorityCount <= VK_MAX_GLOBAL_PRIORITY_SIZE_KHR);
 	TCU_CHECK(isValidGlobalPriority(properties.priorities[0]));
 
 	for (deUint32 ndx = 1; ndx < properties.priorityCount; ndx++)
@@ -1525,10 +1545,6 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest (Context& context)
 	const VkPhysicalDeviceFeatures			deviceFeatures			= deviceFeatures2.features;
 	const vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 	int										numErrors				= 0;
-#ifdef CTS_USES_VULKANSC
-	VkDeviceObjectReservationCreateInfo		memReservationStatMax	= context.getResourceInterface()->getStatMax();
-#endif // CTS_USES_VULKANSC
-	bool									isSubProcess			= context.getTestContext().getCommandLine().isSubProcess();
 
 	// Test features listed in VkPhysicalDeviceFeatures structure
 	{
@@ -1653,28 +1669,10 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest (Context& context)
 		}
 	}
 
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
-
-	// Test features provided by extensions and Vulkan 1.1 and 1.2.
-
-	#include "vkDeviceFeatureTest.inl"
-
-	if (numErrors > 1)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling " + de::toString(numErrors) + " unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+	return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
+
+#include "vkDeviceFeatureTest.inl"
 
 tcu::TestStatus createDeviceQueue2Test (Context& context)
 {
@@ -2689,49 +2687,92 @@ tcu::TestStatus createInstanceDeviceIntentionalAllocFail (Context& context)
 
 } // anonymous
 
+static inline void addFunctionCaseInNewSubgroup (
+	tcu::TestContext&			testCtx,
+	tcu::TestCaseGroup*			group,
+	const std::string&			subgroupName,
+	const std::string&			subgroupDescription,
+	FunctionInstance0::Function		testFunc)
+{
+	de::MovePtr<tcu::TestCaseGroup>	subgroup(new tcu::TestCaseGroup(testCtx, subgroupName.c_str(), subgroupDescription.c_str()));
+	addFunctionCase(subgroup.get(), "basic", "", testFunc);
+	group->addChild(subgroup.release());
+}
+
+static inline void addFunctionCaseInNewSubgroup (
+	tcu::TestContext&			testCtx,
+	tcu::TestCaseGroup*			group,
+	const std::string&			subgroupName,
+	const std::string&			subgroupDescription,
+	FunctionSupport0::Function		checkSupport,
+	FunctionInstance0::Function		testFunc)
+{
+	de::MovePtr<tcu::TestCaseGroup> subgroup(new tcu::TestCaseGroup(testCtx, subgroupName.c_str(), subgroupDescription.c_str()));
+	addFunctionCase(subgroup.get(), "basic", "", checkSupport, testFunc);
+	group->addChild(subgroup.release());
+}
+
+template<typename Arg0>
+static void addFunctionCaseInNewSubgroup (
+	tcu::TestContext&							testCtx,
+	tcu::TestCaseGroup*							group,
+	const std::string&							subgroupName,
+	const std::string&							subgroupDescription,
+	typename FunctionSupport1<Arg0>::Function	checkSupport,
+	typename FunctionInstance1<Arg0>::Function	testFunc,
+	Arg0										arg0)
+{
+	de::MovePtr<tcu::TestCaseGroup>	subgroup(new tcu::TestCaseGroup(testCtx, subgroupName.c_str(), subgroupDescription.c_str()));
+	subgroup->addChild(createFunctionCase<Arg0>(testCtx, tcu::NODETYPE_SELF_VALIDATE, "basic", "", checkSupport, testFunc, arg0));
+	group->addChild(subgroup.release());
+}
+
 tcu::TestCaseGroup* createDeviceInitializationTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	deviceInitializationTests (new tcu::TestCaseGroup(testCtx, "device_init", "Device Initialization Tests"));
 
-	addFunctionCase(deviceInitializationTests.get(), "create_instance_name_version",					"", createInstanceTest);
+	addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_instance_name_version",					"", createInstanceTest);
+	addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_instance_invalid_api_version",			"", createInstanceWithInvalidApiVersionTest);
+	addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_instance_null_appinfo",					"", createInstanceWithNullApplicationInfoTest);
+	addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_instance_unsupported_extensions",		"", createInstanceWithUnsupportedExtensionsTest);
+	addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_instance_extension_name_abuse",			"", createInstanceWithExtensionNameAbuseTest);
+	addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_instance_layer_name_abuse",				"", createInstanceWithLayerNameAbuseTest);
 #ifndef CTS_USES_VULKANSC
-	addFunctionCase(deviceInitializationTests.get(), "create_instance_invalid_api_version",				"", createInstanceWithInvalidApiVersionTest);
+	addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "enumerate_devices_alloc_leak",					"", enumerateDevicesAllocLeakTest);
 #endif // CTS_USES_VULKANSC
-	addFunctionCase(deviceInitializationTests.get(), "create_instance_null_appinfo",					"", createInstanceWithNullApplicationInfoTest);
-	addFunctionCase(deviceInitializationTests.get(), "create_instance_unsupported_extensions",			"", createInstanceWithUnsupportedExtensionsTest);
-	addFunctionCase(deviceInitializationTests.get(), "create_instance_extension_name_abuse",			"", createInstanceWithExtensionNameAbuseTest);
-	addFunctionCase(deviceInitializationTests.get(), "create_instance_layer_name_abuse",				"", createInstanceWithLayerNameAbuseTest);
+	addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_device",									"", createDeviceTest);
+	addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_multiple_devices",						"", createMultipleDevicesTest);
+	addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_device_unsupported_extensions",			"", createDeviceWithUnsupportedExtensionsTest);
+	addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_device_various_queue_counts",			"", createDeviceWithVariousQueueCountsTest);
+	addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_device_global_priority",					"", checkGlobalPrioritySupport, createDeviceWithGlobalPriorityTest, false);
 #ifndef CTS_USES_VULKANSC
-	addFunctionCase(deviceInitializationTests.get(), "enumerate_devices_alloc_leak",					"", enumerateDevicesAllocLeakTest);
+	addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_device_global_priority_khr",				"", checkGlobalPrioritySupport, createDeviceWithGlobalPriorityTest, true);
+	addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_device_global_priority_query",			"", checkGlobalPriorityQuerySupport, createDeviceWithQueriedGlobalPriorityTest, false);
+	addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_device_global_priority_query_khr",		"", checkGlobalPriorityQuerySupport, createDeviceWithQueriedGlobalPriorityTest, true);
 #endif // CTS_USES_VULKANSC
-	addFunctionCase(deviceInitializationTests.get(), "create_device",									"", createDeviceTest);
-	addFunctionCase(deviceInitializationTests.get(), "create_multiple_devices",							"", createMultipleDevicesTest);
-	addFunctionCase(deviceInitializationTests.get(), "create_device_unsupported_extensions",			"", createDeviceWithUnsupportedExtensionsTest);
-	addFunctionCase(deviceInitializationTests.get(), "create_device_various_queue_counts",				"", createDeviceWithVariousQueueCountsTest);
-	addFunctionCase(deviceInitializationTests.get(), "create_device_global_priority",					"", checkGlobalPrioritySupport, createDeviceWithGlobalPriorityTest, false);
-#ifndef CTS_USES_VULKANSC
-	addFunctionCase(deviceInitializationTests.get(), "create_device_global_priority_khr",				"", checkGlobalPrioritySupport, createDeviceWithGlobalPriorityTest, true);
-	addFunctionCase(deviceInitializationTests.get(), "create_device_global_priority_query",				"", checkGlobalPriorityQuerySupport, createDeviceWithQueriedGlobalPriorityTest, false);
-	addFunctionCase(deviceInitializationTests.get(), "create_device_global_priority_query_khr",			"", checkGlobalPriorityQuerySupport, createDeviceWithQueriedGlobalPriorityTest, true);
-#endif // CTS_USES_VULKANSC
-	addFunctionCase(deviceInitializationTests.get(), "create_device_features2",							"", createDeviceFeatures2Test);
-	addFunctionCase(deviceInitializationTests.get(), "create_device_unsupported_features",				"", createDeviceWithUnsupportedFeaturesTest);
-	addFunctionCase(deviceInitializationTests.get(), "create_device_queue2",							"", createDeviceQueue2Test);
+	addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_device_features2",						"", createDeviceFeatures2Test);
+	{
+		de::MovePtr<tcu::TestCaseGroup>	subgroup(new tcu::TestCaseGroup(testCtx, "create_device_unsupported_features", ""));
+		addFunctionCase(subgroup.get(), "core", "", createDeviceWithUnsupportedFeaturesTest);
+		addSeparateUnsupportedFeatureTests(subgroup.get());
+		deviceInitializationTests->addChild(subgroup.release());
+	}
+	addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_device_queue2",							"", createDeviceQueue2Test);
 #ifndef CTS_USES_VULKANSC
 	// Removed because in main process this test does not really create any instance nor device and functions creating it always return VK_SUCCESS
-	addFunctionCase(deviceInitializationTests.get(), "create_instance_device_intentional_alloc_fail",	"", createInstanceDeviceIntentionalAllocFail);
+	addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_instance_device_intentional_alloc_fail",	"", createInstanceDeviceIntentionalAllocFail);
 #endif // CTS_USES_VULKANSC
 
 	// Tests using a single Queue Family when creating a device.
-	addFunctionCase(deviceInitializationTests.get(), "create_device_queue2_two_queues",					"", checkProtectedMemorySupport, createDeviceQueue2WithTwoQueuesSmokeTest);
-	addFunctionCase(deviceInitializationTests.get(), "create_device_queue2_all_protected",				"", checkProtectedMemorySupport, createDeviceQueue2WithAllProtectedQueues);
-	addFunctionCase(deviceInitializationTests.get(), "create_device_queue2_all_unprotected",			"", checkProtectedMemorySupport, createDeviceQueue2WithAllUnprotectedQueues);
-	addFunctionCase(deviceInitializationTests.get(), "create_device_queue2_split",						"", checkProtectedMemorySupport, createDeviceQueue2WithNProtectedAndMUnprotectedQueues);
+	addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_device_queue2_two_queues",					"", checkProtectedMemorySupport, createDeviceQueue2WithTwoQueuesSmokeTest);
+	addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_device_queue2_all_protected",				"", checkProtectedMemorySupport, createDeviceQueue2WithAllProtectedQueues);
+	addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_device_queue2_all_unprotected",			"", checkProtectedMemorySupport, createDeviceQueue2WithAllUnprotectedQueues);
+	addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_device_queue2_split",						"", checkProtectedMemorySupport, createDeviceQueue2WithNProtectedAndMUnprotectedQueues);
 
 	// Tests using multiple Queue Families when creating a device.
-	addFunctionCase(deviceInitializationTests.get(), "create_device_queue2_all_families",				"", checkProtectedMemorySupport, createDeviceQueue2WithAllFamilies);
-	addFunctionCase(deviceInitializationTests.get(), "create_device_queue2_all_families_protected",		"", checkProtectedMemorySupport, createDeviceQueue2WithAllFamiliesProtected);
-	addFunctionCase(deviceInitializationTests.get(), "create_device_queue2_all_combinations",			"", checkProtectedMemorySupport, createDeviceQueue2WithMultipleQueueCombinations);
+	addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_device_queue2_all_families",				"", checkProtectedMemorySupport, createDeviceQueue2WithAllFamilies);
+	addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_device_queue2_all_families_protected",		"", checkProtectedMemorySupport, createDeviceQueue2WithAllFamiliesProtected);
+	addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_device_queue2_all_combinations",			"", checkProtectedMemorySupport, createDeviceQueue2WithMultipleQueueCombinations);
 
 	return deviceInitializationTests.release();
 }

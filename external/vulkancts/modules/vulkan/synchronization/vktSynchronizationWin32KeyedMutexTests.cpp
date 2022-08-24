@@ -1298,7 +1298,7 @@ public:
 			DXGI_ADAPTER_DESC desc;
 			pAdapter->GetDesc(&desc);
 
-			if (deMemCmp(&desc.AdapterLuid, propertiesId.deviceLUID, VK_LUID_SIZE_KHR) == 0)
+			if (deMemCmp(&desc.AdapterLuid, propertiesId.deviceLUID, VK_LUID_SIZE) == 0)
 				break;
 		}
 		pFactory->Release();

@@ -35,7 +35,8 @@ Move<VkPipeline> makeComputePipeline (const DeviceInterface&					vk,
 									  const VkPipelineCreateFlags				pipelineFlags,
 									  const VkShaderModule						shaderModule,
 									  const VkPipelineShaderStageCreateFlags	shaderFlags,
-									  const VkSpecializationInfo*				specializationInfo = DE_NULL);
+									  const VkSpecializationInfo*				specializationInfo = DE_NULL,
+									  const VkPipelineCache						pipelineCache = DE_NULL);
 
 Move<VkPipeline> makeComputePipeline (const DeviceInterface&	vk,
 									  VkDevice					device,
@@ -141,7 +142,8 @@ VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize			size,
 
 VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize				size,
 										 const VkBufferUsageFlags		usage,
-										 const std::vector<deUint32>&	queueFamilyIndices);
+										 const std::vector<deUint32>&	queueFamilyIndices,
+										 const VkBufferCreateFlags		createFlags = 0);
 
 Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 										   const VkDevice				device,

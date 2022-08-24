@@ -51,62 +51,6 @@ struct PrimitiveTestSpec
 	vk::VkPrimitiveTopology		outputType;
 };
 
-class Buffer
-{
-public:
-										Buffer			(const vk::DeviceInterface&		vk,
-														 const vk::VkDevice				device,
-														 vk::Allocator&					allocator,
-														 const vk::VkBufferCreateInfo&	bufferCreateInfo,
-														 const vk::MemoryRequirement	memoryRequirement)
-
-											: m_buffer		(createBuffer(vk, device, &bufferCreateInfo))
-											, m_allocation	(allocator.allocate(getBufferMemoryRequirements(vk, device, *m_buffer), memoryRequirement))
-										{
-											VK_CHECK(vk.bindBufferMemory(device, *m_buffer, m_allocation->getMemory(), m_allocation->getOffset()));
-										}
-
-	const vk::VkBuffer&					get				(void) const { return *m_buffer; }
-	const vk::VkBuffer&					operator*		(void) const { return get(); }
-	vk::Allocation&						getAllocation	(void) const { return *m_allocation; }
-
-private:
-	const vk::Unique<vk::VkBuffer>		m_buffer;
-	const de::UniquePtr<vk::Allocation>	m_allocation;
-
-	// "deleted"
-										Buffer			(const Buffer&);
-	Buffer&								operator=		(const Buffer&);
-};
-
-class Image
-{
-public:
-										Image			(const vk::DeviceInterface&		vk,
-														 const vk::VkDevice				device,
-														 vk::Allocator&					allocator,
-														 const vk::VkImageCreateInfo&	imageCreateInfo,
-														 const vk::MemoryRequirement	memoryRequirement)
-
-											: m_image		(createImage(vk, device, &imageCreateInfo))
-											, m_allocation	(allocator.allocate(getImageMemoryRequirements(vk, device, *m_image), memoryRequirement))
-										{
-											VK_CHECK(vk.bindImageMemory(device, *m_image, m_allocation->getMemory(), m_allocation->getOffset()));
-										}
-
-	const vk::VkImage&					get				(void) const { return *m_image; }
-	const vk::VkImage&					operator*		(void) const { return get(); }
-	vk::Allocation&						getAllocation	(void) const { return *m_allocation; }
-
-private:
-	const vk::Unique<vk::VkImage>		m_image;
-	const de::UniquePtr<vk::Allocation>	m_allocation;
-
-	// "deleted"
-										Image			(const Image&);
-	Image&								operator=		(const Image&);
-};
-
 class GraphicsPipelineBuilder
 {
 public:

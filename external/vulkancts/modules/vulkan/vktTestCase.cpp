@@ -522,7 +522,7 @@ DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::Co
 #ifndef CTS_USES_VULKANSC
 	, m_deviceInterface					(de::MovePtr<DeviceDriver>(new DeviceDriver(vkPlatform, *m_instance, *m_device)))
 #else
-	, m_deviceInterface					(de::MovePtr<DeviceDriverSC>(new DeviceDriverSC(vkPlatform, *m_instance, *m_device, cmdLine, resourceInterface, getDeviceVulkanSC10Properties())))
+	, m_deviceInterface					(de::MovePtr<DeviceDriverSC>(new DeviceDriverSC(vkPlatform, *m_instance, *m_device, cmdLine, resourceInterface, getDeviceVulkanSC10Properties(), getDeviceProperties())))
 #endif // CTS_USES_VULKANSC
 {
 #ifndef CTS_USES_VULKANSC
@@ -987,6 +987,20 @@ vk::DebugReportRecorder& Context::getDebugReportRecorder () const
 }
 
 #endif // CTS_USES_VULKANSC
+
+void Context::resetCommandPoolForVKSC	(const VkDevice					device,
+										 const VkCommandPool			commandPool)
+{
+#ifdef CTS_USES_VULKANSC
+	if (getDeviceVulkanSC10Properties().commandPoolResetCommandBuffer == VK_FALSE) {
+		const DeviceInterface &vk = getDeviceInterface();
+		VK_CHECK(vk.resetCommandPool(device, commandPool, 0u));
+	}
+#else
+	DE_UNREF(device);
+	DE_UNREF(commandPool);
+#endif
+}
 
 // TestCase
 

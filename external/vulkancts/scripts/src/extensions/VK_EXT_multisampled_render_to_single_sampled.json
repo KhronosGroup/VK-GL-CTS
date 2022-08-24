@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": ""
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT":
+		[
+			{ "features": ["multisampledRenderToSingleSampled"],				"requirements": ["VK_EXT_multisampled_render_to_single_sampled"] }
+		]
+	}
+}

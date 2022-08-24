@@ -88,6 +88,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/api/vktApiGetMemoryCommitment.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiGranularityTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiImageClearingTests.cpp \
+	external/vulkancts/modules/vulkan/api/vktApiImageCompressionControlTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiMaintenance3Check.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiMemoryRequirementInvarianceTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiNullHandleTests.cpp \
@@ -156,6 +157,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/draw/vktDrawTests.cpp \
 	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateBaseClass.cpp \
 	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateCBTests.cpp \
+	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateClearTests.cpp \
 	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateComputeTests.cpp \
 	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateDSTests.cpp \
 	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateGeneralTests.cpp \
@@ -171,6 +173,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/fragment_ops/vktFragmentOperationsTransientAttachmentTests.cpp \
 	external/vulkancts/modules/vulkan/fragment_shader_interlock/vktFragmentShaderInterlockBasic.cpp \
 	external/vulkancts/modules/vulkan/fragment_shader_interlock/vktFragmentShaderInterlockTests.cpp \
+	external/vulkancts/modules/vulkan/fragment_shading_barycentric/vktFragmentShadingBarycentricTests.cpp \
 	external/vulkancts/modules/vulkan/fragment_shading_rate/vktAttachmentRateTests.cpp \
 	external/vulkancts/modules/vulkan/fragment_shading_rate/vktFragmentShadingRateBasic.cpp \
 	external/vulkancts/modules/vulkan/fragment_shading_rate/vktFragmentShadingRatePixelConsistency.cpp \
@@ -274,6 +277,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineMultisampleShaderFragmentMaskTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineMultisampleTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineMultisampleTestsUtil.cpp \
+	external/vulkancts/modules/vulkan/pipeline/vktPipelineMultisampledRenderToSingleSampledTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineNoPositionTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelinePushConstantTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelinePushDescriptorTests.cpp \
@@ -282,6 +286,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineSampleLocationsUtil.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineSamplerBorderSwizzleTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineSamplerTests.cpp \
+	external/vulkancts/modules/vulkan/pipeline/vktPipelineShaderModuleIdentifierTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineSpecConstantTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineSpecConstantUtil.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineStencilExportTests.cpp \
@@ -358,6 +363,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingTraversalControlTests.cpp \
 	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingWatertightnessTests.cpp \
 	external/vulkancts/modules/vulkan/reconvergence/vktReconvergenceTests.cpp \
+	external/vulkancts/modules/vulkan/renderpass/vktDynamicRenderingRandomTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktDynamicRenderingTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassDepthStencilResolveTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassDepthStencilWriteConditionsTests.cpp \
@@ -369,6 +375,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassSampleReadTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassSparseRenderTargetTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassSubpassDependencyTests.cpp \
+	external/vulkancts/modules/vulkan/renderpass/vktRenderPassSubpassMergeFeedbackTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassTestsUtil.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassUnusedAttachmentSparseFillingTests.cpp \
@@ -376,6 +383,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassUnusedClearAttachmentTests.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktNonRobustBufferAccessTests.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustBufferAccessWithVariablePointersTests.cpp \
+	external/vulkancts/modules/vulkan/robustness/vktRobustness1VertexAccessTests.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessBufferAccessTests.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessExtsTests.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessTests.cpp \
@@ -493,6 +501,8 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsTests.cpp \
 	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsTestsUtils.cpp \
 	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsVoteTests.cpp \
+	external/vulkancts/modules/vulkan/synchronization/vktGlobalPriorityQueueTests.cpp \
+	external/vulkancts/modules/vulkan/synchronization/vktGlobalPriorityQueueUtils.cpp \
 	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationBasicEventTests.cpp \
 	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationBasicFenceTests.cpp \
 	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationBasicSemaphoreTests.cpp \
@@ -577,6 +587,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrCopyTests.cpp \
 	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrFilteringTests.cpp \
 	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrFormatTests.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrImageOffsetTests.cpp \
 	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrImageQueryTests.cpp \
 	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrStorageImageWriteTests.cpp \
 	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrTests.cpp \
@@ -1291,6 +1302,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/dynamic_state \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/fragment_ops \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/fragment_shader_interlock \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/fragment_shading_barycentric \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/fragment_shading_rate \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/geometry \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/image \

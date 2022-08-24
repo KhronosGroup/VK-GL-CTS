@@ -29,6 +29,7 @@
 #include "vktPipelineMultisampleMixedAttachmentSamplesTests.hpp"
 #include "vktPipelineMultisampleResolveRenderAreaTests.hpp"
 #include "vktPipelineMultisampleShaderFragmentMaskTests.hpp"
+#include "vktPipelineMultisampledRenderToSingleSampledTests.hpp"
 #include "vktPipelineClearUtil.hpp"
 #include "vktPipelineImageUtil.hpp"
 #include "vktPipelineVertexUtil.hpp"
@@ -4657,7 +4658,7 @@ void VariableRateTestCase::checkSupport (Context& context) const
 	if (m_params.useFragmentShadingRate && !checkFragmentShadingRateRequirements(context, m_params.fbCount))
 		TCU_THROW(NotSupportedError, "Required FragmentShadingRate not supported");
 
-	checkPipelineLibraryRequirements(vki, physicalDevice, m_params.pipelineConstructionType);
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 
 void zeroOutAndFlush(const vk::DeviceInterface& vkd, vk::VkDevice device, vk::BufferWithMemory& buffer, vk::VkDeviceSize size)
@@ -5493,6 +5494,13 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx, PipelineC
 
 		// Multisample resolve tests where a render area is less than an attachment size.
 		multisampleTests->addChild(createMultisampleResolveRenderpassRenderAreaTests(testCtx, pipelineConstructionType));
+
+		// VK_EXT_multisampled_render_to_single_sampled
+		{
+			multisampleTests->addChild(createMultisampledRenderToSingleSampledTests(testCtx, pipelineConstructionType));
+			// Take advantage of the code for this extension's tests to add some normal multisampling tests
+			multisampleTests->addChild(createMultisampledMiscTests(testCtx, pipelineConstructionType));
+		}
 	}
 
 	// VK_EXT_sample_locations

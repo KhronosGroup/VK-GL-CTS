@@ -1768,7 +1768,7 @@ void checkAllSupported(const Extensions& supportedExtensions, const vector<strin
 		requiredExtName != requiredExtensions.end();
 		++requiredExtName)
 	{
-		if (!isExtensionSupported(supportedExtensions, RequiredExtension(*requiredExtName)))
+		if (!isExtensionStructSupported(supportedExtensions, RequiredExtension(*requiredExtName)))
 			TCU_THROW(NotSupportedError, (*requiredExtName + " is not supported").c_str());
 	}
 }
@@ -1793,7 +1793,7 @@ CustomInstance createInstanceWithWsi(Context&						context,
 	// 2) Enable VK_EXT_swapchain colorspace if advertised by the driver.
 	//
 	// We opt for (2) as it provides basic coverage for the extension as a bonus.
-	if (isExtensionSupported(supportedExtensions, RequiredExtension("VK_EXT_swapchain_colorspace")))
+	if (isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_swapchain_colorspace")))
 		extensions.push_back("VK_EXT_swapchain_colorspace");
 
 	checkAllSupported(supportedExtensions, extensions);
@@ -1885,7 +1885,7 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface&		vkp,
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(extensions); ++ndx)
 	{
-		if (!isExtensionSupported(supportedExtensions, RequiredExtension(extensions[ndx])))
+		if (!isExtensionStructSupported(supportedExtensions, RequiredExtension(extensions[ndx])))
 			TCU_THROW(NotSupportedError, (string(extensions[ndx]) + " is not supported").c_str());
 	}
 
@@ -1952,7 +1952,7 @@ MovePtr<Display> createDisplay(const vk::Platform&	platform,
 	}
 	catch (const tcu::NotSupportedError& e)
 	{
-		if (isExtensionSupported(supportedExtensions, RequiredExtension(getExtensionName(wsiType))) &&
+		if (isExtensionStructSupported(supportedExtensions, RequiredExtension(getExtensionName(wsiType))) &&
 		    platform.hasDisplay(wsiType))
 		{
 			// If VK_KHR_{platform}_surface was supported, vk::Platform implementation

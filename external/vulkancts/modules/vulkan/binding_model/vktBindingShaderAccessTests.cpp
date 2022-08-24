@@ -996,6 +996,14 @@ void SingleCmdRenderInstance::renderToTarget (void)
 	const vk::Unique<vk::VkFence>						fence						(vk::createFence(m_vki, m_device));
 	const vk::VkSubpassContents							passContents				= (m_isPrimaryCmdBuf) ? (vk::VK_SUBPASS_CONTENTS_INLINE) : (vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
+	if (!m_isPrimaryCmdBuf)
+	{
+		VK_CHECK(m_vki.beginCommandBuffer(*passCmd, &passCmdBufBeginInfo));
+		m_vki.cmdBindPipeline(*passCmd, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+		writeDrawCmdBuffer(*passCmd);
+		endCommandBuffer(m_vki, *passCmd);
+	}
+
 	beginCommandBuffer(m_vki, *mainCmd);
 	beginRenderPass(m_vki, *mainCmd, *m_renderPass, *m_framebuffer, renderArea, tcu::Vec4(0.0f), passContents);
 
@@ -1006,11 +1014,6 @@ void SingleCmdRenderInstance::renderToTarget (void)
 	}
 	else
 	{
-		VK_CHECK(m_vki.beginCommandBuffer(*passCmd, &passCmdBufBeginInfo));
-		m_vki.cmdBindPipeline(*passCmd, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
-		writeDrawCmdBuffer(*passCmd);
-		endCommandBuffer(m_vki, *passCmd);
-
 		m_vki.cmdExecuteCommands(*mainCmd, 1, &passCmd.get());
 	}
 
@@ -5503,12 +5506,14 @@ tcu::Sampler ImageSampleInstanceImages::createRefSampler (int ndx)
 	if (ndx % 2 == 0)
 	{
 		// linear, wrapping
-		return tcu::Sampler(tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::LINEAR, tcu::Sampler::LINEAR);
+		return tcu::Sampler(tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::LINEAR, tcu::Sampler::LINEAR,
+							0.0f, true, tcu::Sampler::COMPAREMODE_NONE, 0, tcu::Vec4(0.0f), true);
 	}
 	else
 	{
 		// nearest, clamping
-		return tcu::Sampler(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::NEAREST, tcu::Sampler::NEAREST);
+		return tcu::Sampler(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::NEAREST, tcu::Sampler::NEAREST,
+							0.0f, true, tcu::Sampler::COMPAREMODE_NONE, 0, tcu::Vec4(0.0f), true);
 	}
 }
 
