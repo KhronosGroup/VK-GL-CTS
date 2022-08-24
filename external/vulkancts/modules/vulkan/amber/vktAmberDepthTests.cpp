@@ -46,12 +46,16 @@ de::SharedPtr<Move<vk::VkDevice>> g_singletonDeviceDepthGroup;
 
 class DepthTestCase : public AmberTestCase
 {
+	bool m_useCustomDevice;
+
 public:
-	DepthTestCase  (tcu::TestContext&   testCtx,
-					const char*      name,
-					const char*      description,
-					const std::string&  readFilename)
-		: AmberTestCase(testCtx, name, description, readFilename)
+	DepthTestCase  (tcu::TestContext&	testCtx,
+					const char*			name,
+					const char*			description,
+					bool				useCustomDevice,
+					const std::string&	readFilename)
+		:	AmberTestCase(testCtx, name, description, readFilename),
+			m_useCustomDevice(useCustomDevice)
 	{ }
 
 	TestInstance* createInstance (Context& ctx) const
@@ -104,7 +108,7 @@ public:
 			Move<VkDevice> device = createCustomDevice(ctx.getTestContext().getCommandLine().isValidationEnabled(), ctx.getPlatformInterface(), ctx.getInstance(), ctx.getInstanceInterface(), ctx.getPhysicalDevice(), &deviceCreateInfo);
 			g_singletonDeviceDepthGroup = de::SharedPtr<Move<VkDevice>>(new Move<VkDevice>(device));
 		}
-		return new AmberTestInstance(ctx, m_recipe, g_singletonDeviceDepthGroup->get());
+		return new AmberTestInstance(ctx, m_recipe, m_useCustomDevice ? g_singletonDeviceDepthGroup->get() : nullptr);
 	}
 };
 
@@ -112,7 +116,8 @@ struct TestInfo
 {
 	std::string					name;
 	std::string					desc;
-	std::vector<std::string>	required_features;
+	std::vector<std::string>	base_required_features;
+	bool						unrestricted;
 };
 
 DepthTestCase* createDepthTestCase (tcu::TestContext&   testCtx,
@@ -127,10 +132,13 @@ DepthTestCase* createDepthTestCase (tcu::TestContext&   testCtx,
 	readFilename.append("/");
 	readFilename.append(filename);
 
-	DepthTestCase *testCase = new DepthTestCase(testCtx, testInfo.name.c_str(), testInfo.desc.c_str(), readFilename);
+	DepthTestCase *testCase = new DepthTestCase(testCtx, testInfo.name.c_str(), testInfo.desc.c_str(), !testInfo.unrestricted, readFilename);
 
-	for (auto req : testInfo.required_features)
+	for (auto req : testInfo.base_required_features)
 		testCase->addRequirement(req);
+
+	if (testInfo.unrestricted)
+		testCase->addRequirement("VK_EXT_depth_range_unrestricted");
 
 	return testCase;
 }
@@ -139,12 +147,16 @@ static void createTests(tcu::TestCaseGroup *g)
 {
 	static const std::vector<TestInfo>	tests		=
 	{
-		{ "fs_clamp",						"Test fragment shader depth value clamping",					{ "VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics", "Features.depthClamp" } },
-		{ "out_of_range",					"Test late clamping of out-of-range depth values",				{ "VK_EXT_depth_clamp_zero_one" } },
-		{ "ez_fs_clamp",					"Test fragment shader depth value with early fragment tests",	{ "VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics", "Features.depthClamp" } },
-		{ "bias_fs_clamp",					"Test fragment shader depth value with depthBias enabled",		{ "VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics", "Features.depthClamp" } },
-		{ "bias_outside_range",				"Test biasing depth values out of the depth range",				{ "VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics" } },
-		{ "bias_outside_range_fs_clamp",	"Test fragment shader depth value when biasing out of range",	{ "VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics" } },
+		{ "fs_clamp",						"Test fragment shader depth value clamping",					{ "VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics", "Features.depthClamp" },	false },
+		{ "out_of_range",					"Test late clamping of out-of-range depth values",				{ "VK_EXT_depth_clamp_zero_one" },																false },
+		{ "ez_fs_clamp",					"Test fragment shader depth value with early fragment tests",	{ "VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics", "Features.depthClamp" },	false },
+		{ "bias_fs_clamp",					"Test fragment shader depth value with depthBias enabled",		{ "VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics", "Features.depthClamp" },	false },
+		{ "bias_outside_range",				"Test biasing depth values out of the depth range",				{ "VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics" },							false },
+		{ "bias_outside_range_fs_clamp",	"Test fragment shader depth value when biasing out of range",	{ "VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics" },							false },
+
+		// Rerun any tests that will get different results with VK_EXT_depth_range_unrestricted
+		{ "out_of_range_unrestricted",					"Test late clamping of out-of-range depth values",				{ "VK_EXT_depth_clamp_zero_one" },										true },
+		{ "bias_outside_range_fs_clamp_unrestricted",	"Test fragment shader depth value when biasing out of range",	{ "VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics" },	true },
 	};
 
    tcu::TestContext& testCtx = g->getTestContext();
