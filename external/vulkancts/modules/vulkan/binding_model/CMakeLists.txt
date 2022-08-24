@@ -26,8 +26,8 @@ set(DEQP_VK_BINDING_MODEL_SRCS
 	vktBindingDescriptorUpdateASTests.hpp
 	vktBindingDynamicOffsetTests.cpp
 	vktBindingDynamicOffsetTests.hpp
-	vktBindingValveMutableTests.cpp
-	vktBindingValveMutableTests.hpp	)
+	vktBindingMutableTests.cpp
+	vktBindingMutableTests.hpp	)
 
 PCH(DEQP_VK_BINDING_MODEL_SRCS ../pch.cpp)
 

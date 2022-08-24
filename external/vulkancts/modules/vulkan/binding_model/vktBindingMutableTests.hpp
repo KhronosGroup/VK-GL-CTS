@@ -1,5 +1,5 @@
-#ifndef _VKTBINDINGVALVEMUTABLETESTS_HPP
-#define _VKTBINDINGVALVEMUTABLETESTS_HPP
+#ifndef _VKTBINDINGMUTABLETESTS_HPP
+#define _VKTBINDINGMUTABLETESTS_HPP
 /*-------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -31,9 +31,9 @@ namespace vkt
 namespace BindingModel
 {
 
-tcu::TestCaseGroup* createDescriptorValveMutableTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createDescriptorMutableTests(tcu::TestContext& testCtx);
 
 } // BindingModel
 } // vkt
 
-#endif // _VKTBINDINGVALVEMUTABLETESTS_HPP
+#endif // _VKTBINDINGMUTABLETESTS_HPP

@@ -19,10 +19,14 @@
  *
  *//*!
  * \file
- * \brief Tests for VK_VALVE_mutable_descriptor_type.
+ * \brief Tests for VK_VALVE_mutable_descriptor_type and VK_EXT_mutable_descriptor_type.
  *//*--------------------------------------------------------------------*/
-#include "vktBindingValveMutableTests.hpp"
+#include "vktBindingMutableTests.hpp"
 #include "vktTestCase.hpp"
+#include "vktTestGroupUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
+
+#include "tcuCommandLine.hpp"
 
 #include "vkDefs.hpp"
 #include "vkRefUtil.hpp"
@@ -56,6 +60,77 @@ namespace
 {
 
 using namespace vk;
+
+de::SharedPtr<Move<vk::VkDevice>>	g_singletonDevice;
+
+static std::vector<std::string> removeExtensions (const std::vector<std::string>& a, const std::vector<const char*>& b)
+{
+	std::vector<std::string>	res;
+	std::set<std::string>		removeExts	(b.begin(), b.end());
+
+	for (std::vector<std::string>::const_iterator aIter = a.begin(); aIter != a.end(); ++aIter)
+	{
+		if (!de::contains(removeExts, *aIter))
+			res.push_back(*aIter);
+	}
+
+	return res;
+}
+
+VkDevice getDevice(Context& context)
+{
+	if (!g_singletonDevice)
+	{
+		const float queuePriority = 1.0f;
+
+		// Create a universal queue that supports graphics and compute
+		const VkDeviceQueueCreateInfo queueParams
+		{
+			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,	// VkStructureType				sType;
+			DE_NULL,									// const void*					pNext;
+			0u,											// VkDeviceQueueCreateFlags		flags;
+			context.getUniversalQueueFamilyIndex(),		// deUint32						queueFamilyIndex;
+			1u,											// deUint32						queueCount;
+			&queuePriority								// const float*					pQueuePriorities;
+		};
+
+		// \note Extensions in core are not explicitly enabled even though
+		//		 they are in the extension list advertised to tests.
+		std::vector<const char*>	extensionPtrs;
+		std::vector<const char*>	coreExtensions;
+		getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
+		std::vector<std::string>	nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
+
+		extensionPtrs.resize(nonCoreExtensions.size());
+
+		for (size_t ndx = 0; ndx < nonCoreExtensions.size(); ++ndx)
+			extensionPtrs[ndx] = nonCoreExtensions[ndx].c_str();
+
+		VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT	mutableDescriptorTypeFeatures	= initVulkanStructure();
+		VkPhysicalDeviceFeatures2							features2					= initVulkanStructure(&mutableDescriptorTypeFeatures);
+
+		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+
+		const VkDeviceCreateInfo deviceCreateInfo
+		{
+			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							//sType;
+			&features2,														//pNext;
+			(VkDeviceCreateFlags)0u,										//flags
+			1,																//queueRecordCount;
+			&queueParams,													//pRequestedQueues;
+			0,																//layerCount;
+			DE_NULL,														//ppEnabledLayerNames;
+			(deUint32)extensionPtrs.size(),			// deUint32				enabledExtensionCount;
+			(extensionPtrs.empty() ? DE_NULL : &extensionPtrs[0]),			// const char* const*				ppEnabledExtensionNames;
+			DE_NULL,														//pEnabledFeatures;
+		};
+
+		Move<VkDevice> device = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(), context.getPhysicalDevice(), &deviceCreateInfo);
+		g_singletonDevice = de::SharedPtr<Move<VkDevice>>(new Move<VkDevice>(device));
+	}
+
+	return g_singletonDevice->get();
+}
 
 deUint32 getDescriptorNumericValue (deUint32 iteration, deUint32 bindingIdx, deUint32 descriptorIdx = 0u)
 {
@@ -113,7 +188,7 @@ std::vector<VkDescriptorType> getForbiddenMutableTypes ()
 {
 	return std::vector<VkDescriptorType>
 		{
-			VK_DESCRIPTOR_TYPE_MUTABLE_VALVE,
+			VK_DESCRIPTOR_TYPE_MUTABLE_EXT,
 			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,
 			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
 			VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT,
@@ -151,7 +226,7 @@ enum DescriptorTypeFlagBits
 	DTFB_INLINE_UNIFORM_BLOCK_EXT   = (1 << 11),
 	DTFB_ACCELERATION_STRUCTURE_KHR = (1 << 12),
 	DTFB_ACCELERATION_STRUCTURE_NV  = (1 << 13),
-	DTFB_MUTABLE_VALVE              = (1 << 14),
+	DTFB_MUTABLE                    = (1 << 14),
 };
 
 using DescriptorTypeFlags = deUint32;
@@ -175,7 +250,7 @@ DescriptorTypeFlagBits toDescriptorTypeFlagBit (VkDescriptorType descriptorType)
 	case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT:       return DTFB_INLINE_UNIFORM_BLOCK_EXT;
 	case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:     return DTFB_ACCELERATION_STRUCTURE_KHR;
 	case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV:      return DTFB_ACCELERATION_STRUCTURE_NV;
-	case VK_DESCRIPTOR_TYPE_MUTABLE_VALVE:                  return DTFB_MUTABLE_VALVE;
+	case VK_DESCRIPTOR_TYPE_MUTABLE_EXT:                    return DTFB_MUTABLE;
 	default: break;
 	}
 
@@ -212,7 +287,7 @@ std::vector<VkDescriptorType> toDescriptorTypeVector (DescriptorTypeFlags bitfie
 	if (bitfield & DTFB_INLINE_UNIFORM_BLOCK_EXT)    result.push_back(VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT);
 	if (bitfield & DTFB_ACCELERATION_STRUCTURE_KHR)  result.push_back(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
 	if (bitfield & DTFB_ACCELERATION_STRUCTURE_NV)   result.push_back(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV);
-	if (bitfield & DTFB_MUTABLE_VALVE)               result.push_back(VK_DESCRIPTOR_TYPE_MUTABLE_VALVE);
+	if (bitfield & DTFB_MUTABLE)                     result.push_back(VK_DESCRIPTOR_TYPE_MUTABLE_EXT);
 
 	return result;
 }
@@ -907,7 +982,7 @@ public:
 		DE_UNREF(kBeginForbidden);
 		DE_UNREF(kEndForbidden);
 
-		if (type != VK_DESCRIPTOR_TYPE_MUTABLE_VALVE)
+		if (type != VK_DESCRIPTOR_TYPE_MUTABLE_EXT)
 		{
 			DE_ASSERT(mutableTypesVec.empty());
 		}
@@ -923,7 +998,7 @@ public:
 
 	deUint32 maxTypes () const override
 	{
-		if (type != VK_DESCRIPTOR_TYPE_MUTABLE_VALVE)
+		if (type != VK_DESCRIPTOR_TYPE_MUTABLE_EXT)
 			return 1u;
 		const auto vecSize = mutableTypesVec.size();
 		DE_ASSERT(vecSize <= std::numeric_limits<deUint32>::max());
@@ -937,7 +1012,7 @@ public:
 
 	std::vector<VkDescriptorType> usedTypes () const
 	{
-		if (type != VK_DESCRIPTOR_TYPE_MUTABLE_VALVE)
+		if (type != VK_DESCRIPTOR_TYPE_MUTABLE_EXT)
 			return std::vector<VkDescriptorType>(1u, type);
 		return mutableTypesVec;
 	}
@@ -978,7 +1053,7 @@ public:
 		DE_UNREF(iteration);
 
 		static const auto kMandatoryMutableTypeFlags = toDescriptorTypeFlags(getMandatoryMutableTypes());
-		if (type == VK_DESCRIPTOR_TYPE_MUTABLE_VALVE)
+		if (type == VK_DESCRIPTOR_TYPE_MUTABLE_EXT)
 		{
 			const auto descFlags = (toDescriptorTypeFlags(mutableTypesVec) | kMandatoryMutableTypeFlags);
 			return de::MovePtr<BindingInterface>(new SingleBinding(type, toDescriptorTypeVector(descFlags)));
@@ -991,7 +1066,7 @@ public:
 		// Convert the binding to mutable using a wider set of descriptor types if possible, including the binding type.
 		const auto descFlags = (kMandatoryMutableTypeFlags | toDescriptorTypeFlagBit(type));
 
-		return de::MovePtr<BindingInterface>(new SingleBinding(VK_DESCRIPTOR_TYPE_MUTABLE_VALVE, toDescriptorTypeVector(descFlags)));
+		return de::MovePtr<BindingInterface>(new SingleBinding(VK_DESCRIPTOR_TYPE_MUTABLE_EXT, toDescriptorTypeVector(descFlags)));
 	}
 
 	de::MovePtr<BindingInterface> toNonMutable (deUint32 iteration) const override
@@ -1451,9 +1526,9 @@ public:
 	// Makes a descriptor pool that can be used when allocating descriptors for this set.
 	Move<VkDescriptorPool> makeDescriptorPool (const DeviceInterface& vkd, VkDevice device, PoolMutableStrategy strategy, VkDescriptorPoolCreateFlags flags) const
 	{
-		std::vector<VkDescriptorPoolSize>             poolSizes;
-		std::vector<std::vector<VkDescriptorType>>    mutableTypesVec;
-		std::vector<VkMutableDescriptorTypeListVALVE> mutableTypeLists;
+		std::vector<VkDescriptorPoolSize>           poolSizes;
+		std::vector<std::vector<VkDescriptorType>>  mutableTypesVec;
+		std::vector<VkMutableDescriptorTypeListEXT> mutableTypeLists;
 
 		// Make vector element addresses stable.
 		const auto bindingCount = numBindings();
@@ -1472,7 +1547,7 @@ public:
 
 			if (strategy == PoolMutableStrategy::KEEP_TYPES || strategy == PoolMutableStrategy::EXPAND_TYPES)
 			{
-				if (mainType == VK_DESCRIPTOR_TYPE_MUTABLE_VALVE)
+				if (mainType == VK_DESCRIPTOR_TYPE_MUTABLE_EXT)
 				{
 					if (strategy == PoolMutableStrategy::KEEP_TYPES)
 					{
@@ -1488,12 +1563,12 @@ public:
 					}
 
 					const auto& lastVec = mutableTypesVec.back();
-					const VkMutableDescriptorTypeListVALVE typeList = { static_cast<deUint32>(lastVec.size()), de::dataOrNull(lastVec) };
+					const VkMutableDescriptorTypeListEXT typeList = { static_cast<deUint32>(lastVec.size()), de::dataOrNull(lastVec) };
 					mutableTypeLists.push_back(typeList);
 				}
 				else
 				{
-					const VkMutableDescriptorTypeListVALVE typeList = { 0u, nullptr };
+					const VkMutableDescriptorTypeListEXT typeList = { 0u, nullptr };
 					mutableTypeLists.push_back(typeList);
 				}
 			}
@@ -1510,7 +1585,7 @@ public:
 		poolCreateInfo.poolSizeCount = static_cast<deUint32>(poolSizes.size());
 		poolCreateInfo.pPoolSizes    = de::dataOrNull(poolSizes);
 
-		VkMutableDescriptorTypeCreateInfoVALVE mutableInfo = initVulkanStructure();
+		VkMutableDescriptorTypeCreateInfoEXT mutableInfo = initVulkanStructure();
 
 		if (strategy == PoolMutableStrategy::KEEP_TYPES || strategy == PoolMutableStrategy::EXPAND_TYPES)
 		{
@@ -1546,10 +1621,10 @@ private:
 
 	DescriptorSetLayoutResult makeOrCheckDescriptorSetLayout (bool checkOnly, const DeviceInterface& vkd, VkDevice device, VkShaderStageFlags stageFlags, VkDescriptorSetLayoutCreateFlags createFlags) const
 	{
-		const auto                                    numIterations = maxTypes();
-		std::vector<VkDescriptorSetLayoutBinding>     bindingsVec;
-		std::vector<std::vector<VkDescriptorType>>    mutableTypesVec;
-		std::vector<VkMutableDescriptorTypeListVALVE> mutableTypeLists;
+		const auto                                  numIterations = maxTypes();
+		std::vector<VkDescriptorSetLayoutBinding>   bindingsVec;
+		std::vector<std::vector<VkDescriptorType>>  mutableTypesVec;
+		std::vector<VkMutableDescriptorTypeListEXT> mutableTypeLists;
 
 		// Make vector element addresses stable.
 		const auto bindingCount = numBindings();
@@ -1575,7 +1650,7 @@ private:
 			mutableTypesVec.push_back(binding->mutableTypes());
 			const auto& lastVec = mutableTypesVec.back();
 
-			const VkMutableDescriptorTypeListVALVE typeList = {
+			const VkMutableDescriptorTypeListEXT typeList = {
 				static_cast<deUint32>(lastVec.size()),  //  deUint32				descriptorTypeCount;
 				de::dataOrNull(lastVec),                //  const VkDescriptorType*	pDescriptorTypes;
 			};
@@ -1627,8 +1702,8 @@ private:
 			flagsCreateInfo->pBindingFlags = de::dataOrNull(*bindingFlagsVec);
 		}
 
-		const VkMutableDescriptorTypeCreateInfoVALVE createInfoValve = {
-			VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_VALVE,
+		const VkMutableDescriptorTypeCreateInfoEXT createInfoMutable = {
+			VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_EXT,
 			flagsCreateInfo.get(),
 			static_cast<deUint32>(mutableTypeLists.size()),
 			de::dataOrNull(mutableTypeLists),
@@ -1636,7 +1711,7 @@ private:
 
 		const VkDescriptorSetLayoutCreateInfo layoutCreateInfo = {
 			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,    //  VkStructureType						sType;
-			&createInfoValve,                                       //  const void*							pNext;
+			&createInfoMutable,                                     //  const void*							pNext;
 			createFlags,                                            //  VkDescriptorSetLayoutCreateFlags	flags;
 			static_cast<deUint32>(bindingsVec.size()),              //  deUint32							bindingCount;
 			de::dataOrNull(bindingsVec),                            //  const VkDescriptorSetLayoutBinding*	pBindings;
@@ -2004,7 +2079,7 @@ private:
 			createFlags |= VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
 
 		if (isSourceSet && sourceSetType == SourceSetType::HOST_ONLY)
-			createFlags |= VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_VALVE;
+			createFlags |= VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_EXT;
 
 		return createFlags;
 	}
@@ -2032,7 +2107,7 @@ private:
 			poolCreateFlags |= VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
 
 		if (isSourceSet && sourceSetType == SourceSetType::HOST_ONLY)
-			poolCreateFlags |= VK_DESCRIPTOR_POOL_CREATE_HOST_ONLY_BIT_VALVE;
+			poolCreateFlags |= VK_DESCRIPTOR_POOL_CREATE_HOST_ONLY_BIT_EXT;
 
 		return poolCreateFlags;
 	}
@@ -2598,7 +2673,18 @@ bool isVertexStage (TestingStage stage)
 
 void MutableTypesTest::checkSupport (Context& context) const
 {
-	context.requireDeviceFunctionality("VK_VALVE_mutable_descriptor_type");
+	if (!context.isDeviceFunctionalitySupported("VK_VALVE_mutable_descriptor_type") &&
+		!context.isDeviceFunctionalitySupported("VK_EXT_mutable_descriptor_type"))
+
+		TCU_THROW(NotSupportedError, "VK_VALVE_mutable_descriptor_type or VK_EXT_mutable_descriptor_type is not supported");
+
+	VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT	mutableDescriptorType		= initVulkanStructure();
+	VkPhysicalDeviceFeatures2KHR						features2					= initVulkanStructure(&mutableDescriptorType);
+
+	context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+
+	if (!mutableDescriptorType.mutableDescriptorType)
+		TCU_THROW(NotSupportedError, "mutableDescriptorType feature is not supported");
 
 	// Check ray tracing if needed.
 	const bool rayTracing = isRayTracingStage(m_params.testingStage);
@@ -2699,8 +2785,8 @@ void MutableTypesTest::checkSupport (Context& context) const
 				}
 				break;
 
-			case VK_DESCRIPTOR_TYPE_MUTABLE_VALVE:
-				TCU_THROW(InternalError, "Found VK_DESCRIPTOR_TYPE_MUTABLE_VALVE in list of used descriptor types");
+			case VK_DESCRIPTOR_TYPE_MUTABLE_EXT:
+				TCU_THROW(InternalError, "Found VK_DESCRIPTOR_TYPE_MUTABLE_EXT in list of used descriptor types");
 
 			default:
 				TCU_THROW(InternalError, "Unexpected descriptor type found in list of used descriptor types: " + de::toString(descType));
@@ -2763,8 +2849,8 @@ void MutableTypesTest::checkSupport (Context& context) const
 				context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
 				break;
 
-			case VK_DESCRIPTOR_TYPE_MUTABLE_VALVE:
-				TCU_THROW(InternalError, "Found VK_DESCRIPTOR_TYPE_MUTABLE_VALVE in list of used array descriptor types");
+			case VK_DESCRIPTOR_TYPE_MUTABLE_EXT:
+				TCU_THROW(InternalError, "Found VK_DESCRIPTOR_TYPE_MUTABLE_EXT in list of used array descriptor types");
 
 			default:
 				TCU_THROW(InternalError, "Unexpected descriptor type found in list of used descriptor types: " + de::toString(descType));
@@ -2775,7 +2861,7 @@ void MutableTypesTest::checkSupport (Context& context) const
 	// Check layout support.
 	{
 		const auto& vkd               = context.getDeviceInterface();
-		const auto  device            = context.getDevice();
+		const auto  device            = getDevice(context);
 		const auto  stageFlags        = m_params.getStageFlags();
 
 		{
@@ -3015,16 +3101,16 @@ Move<VkFramebuffer> buildFramebuffer (const DeviceInterface& vkd, VkDevice devic
 
 tcu::TestStatus MutableTypesInstance::iterate ()
 {
-	const auto device  = m_context.getDevice();
+	const auto& vki    = m_context.getInstanceInterface();
+	const auto& vkd    = m_context.getDeviceInterface();
+	const auto device  = getDevice(m_context);
 	const auto physDev = m_context.getPhysicalDevice();
 	const auto qIndex  = m_context.getUniversalQueueFamilyIndex();
-	const auto queue   = m_context.getUniversalQueue();
+	const auto queue   = getDeviceQueue(vkd, device, m_context.getUniversalQueueFamilyIndex(), 0);
 
-	const auto& vki      = m_context.getInstanceInterface();
-	const auto& vkd      = m_context.getDeviceInterface();
-	auto      & alloc    = m_context.getDefaultAllocator();
-	const auto& paramSet = m_params.descriptorSet;
+	SimpleAllocator alloc(vkd, device, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
 
+	const auto& paramSet          = m_params.descriptorSet;
 	const auto numIterations      = paramSet->maxTypes();
 	const bool useExternalImage   = needsExternalImage(*m_params.descriptorSet);
 	const bool useExternalSampler = needsExternalSampler(*m_params.descriptorSet);
@@ -3694,9 +3780,23 @@ std::string descriptorTypeStr (VkDescriptorType descriptorType)
 	return de::toLower(de::toString(descriptorType).substr(prefixLen));
 }
 
-tcu::TestCaseGroup* createDescriptorValveMutableTests (tcu::TestContext& testCtx)
+static void createChildren (tcu::TestCaseGroup* testGroup);
+
+static void cleanupGroup (tcu::TestCaseGroup* testGroup)
 {
-	GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "mutable_descriptor", "Tests for VK_VALVE_mutable_descriptor_type"));
+	DE_UNREF(testGroup);
+	// Destroy singleton objects.
+	g_singletonDevice.clear();
+}
+
+tcu::TestCaseGroup* createDescriptorMutableTests (tcu::TestContext& testCtx)
+{
+	return createTestGroup(testCtx, "mutable_descriptor", "Tests for VK_VALVE_mutable_descriptor_type and VK_EXT_mutable_descriptor_type", createChildren, cleanupGroup);
+}
+
+void createChildren (tcu::TestCaseGroup* mainGroup)
+{
+	tcu::TestContext&	testCtx		= mainGroup->getTestContext();
 
 	const VkDescriptorType basicDescriptorTypes[] = {
 		VK_DESCRIPTOR_TYPE_SAMPLER,
@@ -3756,7 +3856,7 @@ tcu::TestCaseGroup* createDescriptorValveMutableTests (tcu::TestContext& testCtx
 			DescriptorSetPtr setPtr;
 			{
 				DescriptorSet::BindingPtrVector setBindings;
-				setBindings.emplace_back(new SingleBinding(VK_DESCRIPTOR_TYPE_MUTABLE_VALVE, actualTypes));
+				setBindings.emplace_back(new SingleBinding(VK_DESCRIPTOR_TYPE_MUTABLE_EXT, actualTypes));
 				setPtr = DescriptorSetPtr(new DescriptorSet(setBindings));
 			}
 
@@ -3771,7 +3871,7 @@ tcu::TestCaseGroup* createDescriptorValveMutableTests (tcu::TestContext& testCtx
 			DescriptorSetPtr setPtr;
 			{
 				DescriptorSet::BindingPtrVector setBindings;
-				setBindings.emplace_back(new SingleBinding(VK_DESCRIPTOR_TYPE_MUTABLE_VALVE, mandatoryTypes));
+				setBindings.emplace_back(new SingleBinding(VK_DESCRIPTOR_TYPE_MUTABLE_EXT, mandatoryTypes));
 				setPtr = DescriptorSetPtr(new DescriptorSet(setBindings));
 			}
 
@@ -3794,7 +3894,7 @@ tcu::TestCaseGroup* createDescriptorValveMutableTests (tcu::TestContext& testCtx
 
 					const std::vector<VkDescriptorType> mutableTypes { initialDescriptorType, finalDescriptorType };
 					DescriptorSet::BindingPtrVector setBindings;
-					setBindings.emplace_back(new SingleBinding(VK_DESCRIPTOR_TYPE_MUTABLE_VALVE, mutableTypes));
+					setBindings.emplace_back(new SingleBinding(VK_DESCRIPTOR_TYPE_MUTABLE_EXT, mutableTypes));
 
 					DescriptorSetPtr setPtr = DescriptorSetPtr(new DescriptorSet(setBindings));
 
@@ -3899,13 +3999,13 @@ tcu::TestCaseGroup* createDescriptorValveMutableTests (tcu::TestContext& testCtx
 
 							std::rotate(beginPtr, &rotatedTypes[typeIdx], endPtr);
 
-							arrayBindings.emplace_back(VK_DESCRIPTOR_TYPE_MUTABLE_VALVE, rotatedTypes);
+							arrayBindings.emplace_back(VK_DESCRIPTOR_TYPE_MUTABLE_EXT, rotatedTypes);
 						}
 					}
 					else
 					{
 						// Without aliasing, all descriptors use the same type at the same time.
-						const SingleBinding noAliasingBinding(VK_DESCRIPTOR_TYPE_MUTABLE_VALVE, mandatoryTypesVector);
+						const SingleBinding noAliasingBinding(VK_DESCRIPTOR_TYPE_MUTABLE_EXT, mandatoryTypesVector);
 						arrayBindings.resize(mandatoryTypesVector.size(), noAliasingBinding);
 					}
 
@@ -3960,7 +4060,7 @@ tcu::TestCaseGroup* createDescriptorValveMutableTests (tcu::TestContext& testCtx
 				std::vector<SingleBinding> arrayBindings;
 
 				// Single mutable descriptor as the first binding.
-				setBindings.emplace_back(new SingleBinding(VK_DESCRIPTOR_TYPE_MUTABLE_VALVE, mandatoryTypes));
+				setBindings.emplace_back(new SingleBinding(VK_DESCRIPTOR_TYPE_MUTABLE_EXT, mandatoryTypes));
 
 				// Descriptor array as the second binding.
 				auto arrayBindingDescTypes = mandatoryTypes;
@@ -3977,13 +4077,13 @@ tcu::TestCaseGroup* createDescriptorValveMutableTests (tcu::TestContext& testCtx
 
 						std::rotate(beginPtr, &rotatedTypes[typeIdx], endPtr);
 
-						arrayBindings.emplace_back(VK_DESCRIPTOR_TYPE_MUTABLE_VALVE, rotatedTypes);
+						arrayBindings.emplace_back(VK_DESCRIPTOR_TYPE_MUTABLE_EXT, rotatedTypes);
 					}
 				}
 				else
 				{
 					// Without aliasing, all descriptors use the same type at the same time.
-					const SingleBinding noAliasingBinding(VK_DESCRIPTOR_TYPE_MUTABLE_VALVE, arrayBindingDescTypes);
+					const SingleBinding noAliasingBinding(VK_DESCRIPTOR_TYPE_MUTABLE_EXT, arrayBindingDescTypes);
 					arrayBindings.resize(arrayBindingDescTypes.size(), noAliasingBinding);
 				}
 
@@ -4022,7 +4122,7 @@ tcu::TestCaseGroup* createDescriptorValveMutableTests (tcu::TestContext& testCtx
 				const auto endPtr       = beginPtr + rotatedTypes.size();
 
 				std::rotate(beginPtr, &rotatedTypes[typeIdx], endPtr);
-				setBindings.emplace_back(new SingleBinding(VK_DESCRIPTOR_TYPE_MUTABLE_VALVE, rotatedTypes));
+				setBindings.emplace_back(new SingleBinding(VK_DESCRIPTOR_TYPE_MUTABLE_EXT, rotatedTypes));
 
 				// Additional non-mutable binding interleaved with the mutable ones.
 				if (mixed)
@@ -4038,8 +4138,6 @@ tcu::TestCaseGroup* createDescriptorValveMutableTests (tcu::TestContext& testCtx
 		multipleGroup->addChild(mixedGroup.release());
 		mainGroup->addChild(multipleGroup.release());
 	}
-
-	return mainGroup.release();
 }
 
 } // BindingModel
