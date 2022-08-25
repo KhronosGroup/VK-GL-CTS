@@ -9586,7 +9586,7 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 	map<string, string> continue_target;
 
 	// The Continue Target is the loop block itself.
-	continue_target["continue_target"] = "%loop";
+	continue_target["continue_target"] = "%if";
 	fragments["testfun"] = multiBlock.specialize(continue_target);
 	createTestsForAllStages("multi_block_continue_construct", defaultColors, defaultColors, fragments, testGroup.get());
 

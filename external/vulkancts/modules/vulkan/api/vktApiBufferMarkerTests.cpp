@@ -415,26 +415,26 @@ enum MemoryDepOwner
 	MEMORY_DEP_OWNER_NON_MARKER = 2
 };
 
-void computeMemoryDepBarrier(MemoryDepMethod			method,
-							 MemoryDepOwner				owner,
-							 VkAccessFlags*				memoryDepAccess,
-							 VkPipelineStageFlags*		executionScope)
+void computeMemoryDepBarrier(const MemoryDepParams&			params,
+							 MemoryDepOwner					owner,
+							 VkAccessFlags*					memoryDepAccess,
+							 VkPipelineStageFlags*			executionScope)
 {
 	DE_ASSERT(owner != MEMORY_DEP_OWNER_NOBODY);
 
 	if (owner == MEMORY_DEP_OWNER_MARKER)
 	{
 		*memoryDepAccess = VK_ACCESS_TRANSFER_WRITE_BIT;
-		*executionScope  = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT;
+		*executionScope  = params.base.stage | VK_PIPELINE_STAGE_TRANSFER_BIT;
 	}
 	else
 	{
-		if (method == MEMORY_DEP_COPY)
+		if (params.method == MEMORY_DEP_COPY)
 		{
 			*memoryDepAccess = VK_ACCESS_TRANSFER_WRITE_BIT;
 			*executionScope  = VK_PIPELINE_STAGE_TRANSFER_BIT;
 		}
-		else if (method == MEMORY_DEP_DISPATCH)
+		else if (params.method == MEMORY_DEP_DISPATCH)
 		{
 			*memoryDepAccess = VK_ACCESS_SHADER_WRITE_BIT;
 			*executionScope  = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
@@ -879,8 +879,8 @@ tcu::TestStatus bufferMarkerMemoryDep(Context& context, MemoryDepParams params)
 			VkPipelineStageFlags srcStageMask;
 			VkPipelineStageFlags dstStageMask;
 
-			computeMemoryDepBarrier(params.method, oldOwner, &memoryDep.srcAccessMask, &srcStageMask);
-			computeMemoryDepBarrier(params.method, newOwner, &memoryDep.dstAccessMask, &dstStageMask);
+			computeMemoryDepBarrier(params, oldOwner, &memoryDep.srcAccessMask, &srcStageMask);
+			computeMemoryDepBarrier(params, newOwner, &memoryDep.dstAccessMask, &dstStageMask);
 
 			vk.cmdPipelineBarrier(*cmdBuffer, srcStageMask, dstStageMask, 0, 0, DE_NULL, 1, &memoryDep, 0, DE_NULL);
 		}
