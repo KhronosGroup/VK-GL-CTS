@@ -25,6 +25,7 @@
 #include "vktComputeIndirectComputeDispatchTests.hpp"
 #include "vktComputeTestsUtil.hpp"
 #include "vktCustomInstancesDevices.hpp"
+#include "vkSafetyCriticalUtil.hpp"
 
 #include <string>
 #include <map>
@@ -41,6 +42,7 @@
 #include "vkBarrierUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkDeviceUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
 #include "vkBufferWithMemory.hpp"
@@ -82,10 +84,21 @@ std::vector<std::string> removeCoreExtensions (const std::vector<std::string>& s
 }
 
 // Creates a device that has a queue for compute capabilities without graphics.
-vk::Move<vk::VkDevice> createCustomDevice (Context& context, uint32_t& queueFamilyIndex)
+vk::Move<vk::VkDevice> createCustomDevice (Context& context,
+#ifdef CTS_USES_VULKANSC
+										  const vkt::CustomInstance& customInstance,
+#endif // CTS_USES_VULKANSC
+										  uint32_t& queueFamilyIndex)
 {
-	const std::vector<vk::VkQueueFamilyProperties>	queueFamilies				= getPhysicalDeviceQueueFamilyProperties(context.getInstanceInterface(),
-																														 context.getPhysicalDevice());
+#ifdef CTS_USES_VULKANSC
+	const vk::InstanceInterface&	instanceDriver		= customInstance.getDriver();
+	const vk::VkPhysicalDevice		physicalDevice		= chooseDevice(instanceDriver, customInstance, context.getTestContext().getCommandLine());
+#else
+	const vk::InstanceInterface&	instanceDriver		= context.getInstanceInterface();
+	const vk::VkPhysicalDevice		physicalDevice		= context.getPhysicalDevice();
+#endif // CTS_USES_VULKANSC
+
+	const std::vector<vk::VkQueueFamilyProperties>	queueFamilies = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 
 	queueFamilyIndex = 0;
 	for (const auto &queueFamily: queueFamilies)
@@ -132,10 +145,43 @@ vk::Move<vk::VkDevice> createCustomDevice (Context& context, uint32_t& queueFami
 
 	const auto&										deviceFeatures2				= context.getDeviceFeatures2();
 
+	const void *pNext = &deviceFeatures2;
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo = context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext = pNext;
+	pNext = &memReservationInfo;
+
+	VkPipelineCacheCreateInfo			pcCI;
+	std::vector<VkPipelinePoolSize>		poolSizes;
+	if (context.getTestContext().getCommandLine().isSubProcess())
+	{
+		if (context.getResourceInterface()->getCacheDataSize() > 0)
+		{
+			pcCI =
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,			// VkStructureType				sType;
+				DE_NULL,												// const void*					pNext;
+				VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+					VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+				context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
+				context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
+			};
+			memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+			memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+		}
+		poolSizes							= context.getResourceInterface()->getPipelinePoolSizes();
+		if (!poolSizes.empty())
+		{
+			memReservationInfo.pipelinePoolSizeCount		= deUint32(poolSizes.size());
+			memReservationInfo.pPipelinePoolSizes			= poolSizes.data();
+		}
+	}
+#endif // CTS_USES_VULKANSC
+
 	const vk::VkDeviceCreateInfo					deviceCreateInfo			=
 	{
 		vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,		// VkStructureType					sType;
-		&deviceFeatures2,								// const void*						pNext;
+		pNext,											// const void*						pNext;
 		(vk::VkDeviceCreateFlags)0u,					// VkDeviceCreateFlags				flags;
 		DE_LENGTH_OF_ARRAY(deviceQueueCreateInfos),		// uint32_t							queueCreateInfoCount;
 		deviceQueueCreateInfos,							// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
@@ -147,8 +193,13 @@ vk::Move<vk::VkDevice> createCustomDevice (Context& context, uint32_t& queueFami
 	};
 
 	return vkt::createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
-								   context.getPlatformInterface(), context.getInstance(),
-								   context.getInstanceInterface(), context.getPhysicalDevice(), &deviceCreateInfo);
+								   context.getPlatformInterface(),
+#ifdef CTS_USES_VULKANSC
+								   customInstance,
+#else
+								   context.getInstance(),
+#endif
+								   instanceDriver, physicalDevice, &deviceCreateInfo);
 }
 
 enum
@@ -225,17 +276,24 @@ public:
 
 protected:
 	virtual void					fillIndirectBufferData					(const vk::VkCommandBuffer		commandBuffer,
+																			 const vk::DeviceInterface&     vkdi,
 																			 const vk::BufferWithMemory&	indirectBuffer);
 
 	deBool							verifyResultBuffer						(const vk::BufferWithMemory&	resultBuffer,
+																			 const vk::DeviceInterface&     vkdi,
 																			 const vk::VkDeviceSize			resultBlockSize) const;
 
 	Context&						m_context;
 	const std::string				m_name;
 
-	const vk::DeviceInterface&		m_device_interface;
 	vk::VkDevice					m_device;
+	const CustomInstance			m_customInstance;
 	vk::Move<vk::VkDevice>			m_customDevice;
+#ifndef CTS_USES_VULKANSC
+	de::MovePtr<vk::DeviceDriver>	m_deviceDriver;
+#else
+	de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>	m_deviceDriver;
+#endif // CTS_USES_VULKANSC
 
 	vk::VkQueue						m_queue;
 	deUint32						m_queueFamilyIndex;
@@ -244,7 +302,7 @@ protected:
 	const tcu::UVec3				m_workGroupSize;
 	const DispatchCommandsVec		m_dispatchCommands;
 
-	vk::Allocator&					m_allocator;
+	de::MovePtr<vk::Allocator>		m_allocator;
 
 	const bool						m_computeQueueOnly;
 private:
@@ -261,19 +319,18 @@ IndirectDispatchInstanceBufferUpload::IndirectDispatchInstanceBufferUpload (Cont
 	: vkt::TestInstance		(context)
 	, m_context				(context)
 	, m_name				(name)
-	, m_device_interface	(context.getDeviceInterface())
 	, m_device				(context.getDevice())
+	, m_customInstance		(createCustomInstanceFromContext(context))
 	, m_queue				(context.getUniversalQueue())
 	, m_queueFamilyIndex	(context.getUniversalQueueFamilyIndex())
 	, m_bufferSize			(bufferSize)
 	, m_workGroupSize		(workGroupSize)
 	, m_dispatchCommands	(dispatchCommands)
-	, m_allocator			(context.getDefaultAllocator())
 	, m_computeQueueOnly	(computeQueueOnly)
 {
 }
 
-void IndirectDispatchInstanceBufferUpload::fillIndirectBufferData (const vk::VkCommandBuffer commandBuffer, const vk::BufferWithMemory& indirectBuffer)
+void IndirectDispatchInstanceBufferUpload::fillIndirectBufferData (const vk::VkCommandBuffer commandBuffer, const vk::DeviceInterface& vkdi, const vk::BufferWithMemory& indirectBuffer)
 {
 	DE_UNREF(commandBuffer);
 
@@ -293,11 +350,16 @@ void IndirectDispatchInstanceBufferUpload::fillIndirectBufferData (const vk::VkC
 		dstPtr[2] = cmdIter->m_numWorkGroups[2];
 	}
 
-	vk::flushAlloc(m_device_interface, m_device, alloc);
+	vk::flushAlloc(vkdi, m_device, alloc);
 }
 
 tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate (void)
 {
+#ifdef CTS_USES_VULKANSC
+	const vk::InstanceInterface&	vki						= m_customInstance.getDriver();
+#else
+	const vk::InstanceInterface&	vki						= m_context.getInstanceInterface();
+#endif // CTS_USES_VULKANSC
 	tcu::TestContext& testCtx = m_context.getTestContext();
 
 	testCtx.getLog() << tcu::TestLog::Message << "GL_DISPATCH_INDIRECT_BUFFER size = " << m_bufferSize << tcu::TestLog::EndMessage;
@@ -316,20 +378,36 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate (void)
 	if (m_computeQueueOnly)
 	{
 		// m_queueFamilyIndex will be updated in createCustomDevice() to match the requested queue type.
-		m_customDevice = createCustomDevice(m_context, m_queueFamilyIndex);
+		m_customDevice = createCustomDevice(m_context,
+#ifdef CTS_USES_VULKANSC
+											m_customInstance,
+#endif
+											m_queueFamilyIndex);
 		m_device = m_customDevice.get();
-
-		m_queue = getDeviceQueue(m_context.getDeviceInterface(), m_device, m_queueFamilyIndex, 0u);
-		m_allocator = vk::SimpleAllocator(m_device_interface, m_device,
-										  vk::getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
+#ifndef CTS_USES_VULKANSC
+		m_deviceDriver = de::MovePtr<vk::DeviceDriver>(new vk::DeviceDriver(m_context.getPlatformInterface(), m_customInstance, m_device));
+#else
+		m_deviceDriver = de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>(new vk::DeviceDriverSC(m_context.getPlatformInterface(), m_customInstance, m_device, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), m_device));
+#endif // CTS_USES_VULKANSC
 	}
+#ifndef CTS_USES_VULKANSC
+	const vk::DeviceInterface& vkdi = m_context.getDeviceInterface();
+#else
+	const vk::DeviceInterface& vkdi = (m_computeQueueOnly && (DE_NULL != m_deviceDriver)) ? *m_deviceDriver : m_context.getDeviceInterface();
+#endif // CTS_USES_VULKANSC
+	if (m_computeQueueOnly)
+	{
+		m_queue = getDeviceQueue(vkdi, m_device, m_queueFamilyIndex, 0u);
+		m_allocator		= de::MovePtr<vk::Allocator>(new vk::SimpleAllocator(vkdi, m_device, vk::getPhysicalDeviceMemoryProperties(vki, m_context.getPhysicalDevice())));
+	}
+	vk::Allocator&			allocator			= m_allocator.get() ? *m_allocator : m_context.getDefaultAllocator();
 
 	// Create result buffer
-	const vk::VkDeviceSize resultBlockSize = getResultBlockAlignedSize(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), RESULT_BLOCK_BASE_SIZE);
+	const vk::VkDeviceSize resultBlockSize = getResultBlockAlignedSize(vki, m_context.getPhysicalDevice(), RESULT_BLOCK_BASE_SIZE);
 	const vk::VkDeviceSize resultBufferSize = resultBlockSize * (deUint32)m_dispatchCommands.size();
 
 	vk::BufferWithMemory resultBuffer(
-		m_device_interface, m_device, m_allocator,
+		vkdi, m_device, allocator,
 		vk::makeBufferCreateInfo(resultBufferSize, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
 		vk::MemoryRequirement::HostVisible);
 
@@ -347,47 +425,47 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate (void)
 			*(deUint32*)(dstPtr + RESULT_BLOCK_NUM_PASSED_OFFSET) = 0;
 		}
 
-		vk::flushAlloc(m_device_interface, m_device, alloc);
+		vk::flushAlloc(vkdi, m_device, alloc);
 	}
 
 	// Create verify compute shader
 	const vk::Unique<vk::VkShaderModule> verifyShader(createShaderModule(
-		m_device_interface, m_device, m_context.getBinaryCollection().get("indirect_dispatch_" + m_name + "_verify"), 0u));
+		vkdi, m_device, m_context.getBinaryCollection().get("indirect_dispatch_" + m_name + "_verify"), 0u));
 
 	// Create descriptorSetLayout
 	vk::DescriptorSetLayoutBuilder layoutBuilder;
 	layoutBuilder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT);
-	vk::Unique<vk::VkDescriptorSetLayout> descriptorSetLayout(layoutBuilder.build(m_device_interface, m_device));
+	vk::Unique<vk::VkDescriptorSetLayout> descriptorSetLayout(layoutBuilder.build(vkdi, m_device));
 
 	// Create compute pipeline
-	const vk::Unique<vk::VkPipelineLayout> pipelineLayout(makePipelineLayout(m_device_interface, m_device, *descriptorSetLayout));
-	const vk::Unique<vk::VkPipeline> computePipeline(makeComputePipeline(m_device_interface, m_device, *pipelineLayout, *verifyShader));
+	const vk::Unique<vk::VkPipelineLayout> pipelineLayout(makePipelineLayout(vkdi, m_device, *descriptorSetLayout));
+	const vk::Unique<vk::VkPipeline> computePipeline(makeComputePipeline(vkdi, m_device, *pipelineLayout, *verifyShader));
 
 	// Create descriptor pool
 	const vk::Unique<vk::VkDescriptorPool> descriptorPool(
 		vk::DescriptorPoolBuilder()
 		.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, (deUint32)m_dispatchCommands.size())
-		.build(m_device_interface, m_device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, static_cast<deUint32>(m_dispatchCommands.size())));
+		.build(vkdi, m_device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, static_cast<deUint32>(m_dispatchCommands.size())));
 
 	const vk::VkBufferMemoryBarrier ssboPostBarrier = makeBufferMemoryBarrier(
 		vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT, *resultBuffer, 0ull, resultBufferSize);
 
 	// Create command buffer
-	const vk::Unique<vk::VkCommandPool> cmdPool(makeCommandPool(m_device_interface, m_device, m_queueFamilyIndex));
-	const vk::Unique<vk::VkCommandBuffer> cmdBuffer(allocateCommandBuffer(m_device_interface, m_device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const vk::Unique<vk::VkCommandPool> cmdPool(makeCommandPool(vkdi, m_device, m_queueFamilyIndex));
+	const vk::Unique<vk::VkCommandBuffer> cmdBuffer(allocateCommandBuffer(vkdi, m_device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	// Begin recording commands
-	beginCommandBuffer(m_device_interface, *cmdBuffer);
+	beginCommandBuffer(vkdi, *cmdBuffer);
 
 	// Create indirect buffer
 	vk::BufferWithMemory indirectBuffer(
-		m_device_interface, m_device, m_allocator,
+		vkdi, m_device, allocator,
 		vk::makeBufferCreateInfo(m_bufferSize, vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
 		vk::MemoryRequirement::HostVisible);
-	fillIndirectBufferData(*cmdBuffer, indirectBuffer);
+	fillIndirectBufferData(*cmdBuffer, vkdi, indirectBuffer);
 
 	// Bind compute pipeline
-	m_device_interface.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
+	vkdi.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
 
 	// Allocate descriptor sets
 	typedef de::SharedPtr<vk::Unique<vk::VkDescriptorSet> > SharedVkDescriptorSet;
@@ -399,48 +477,49 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate (void)
 	for (deUint32 cmdNdx = 0; cmdNdx < m_dispatchCommands.size(); ++cmdNdx)
 	{
 		descriptorSets[cmdNdx] = SharedVkDescriptorSet(new vk::Unique<vk::VkDescriptorSet>(
-									makeDescriptorSet(m_device_interface, m_device, *descriptorPool, *descriptorSetLayout)));
+									makeDescriptorSet(vkdi, m_device, *descriptorPool, *descriptorSetLayout)));
 
 		const vk::VkDescriptorBufferInfo resultDescriptorInfo = makeDescriptorBufferInfo(*resultBuffer, curOffset, resultBlockSize);
 
 		vk::DescriptorSetUpdateBuilder descriptorSetBuilder;
 		descriptorSetBuilder.writeSingle(**descriptorSets[cmdNdx], vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &resultDescriptorInfo);
-		descriptorSetBuilder.update(m_device_interface, m_device);
+		descriptorSetBuilder.update(vkdi, m_device);
 
 		// Bind descriptor set
-		m_device_interface.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &(**descriptorSets[cmdNdx]), 0u, DE_NULL);
+		vkdi.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &(**descriptorSets[cmdNdx]), 0u, DE_NULL);
 
 		// Dispatch indirect compute command
-		m_device_interface.cmdDispatchIndirect(*cmdBuffer, *indirectBuffer, m_dispatchCommands[cmdNdx].m_offset);
+		vkdi.cmdDispatchIndirect(*cmdBuffer, *indirectBuffer, m_dispatchCommands[cmdNdx].m_offset);
 
 		curOffset += resultBlockSize;
 	}
 
 	// Insert memory barrier
-	m_device_interface.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (vk::VkDependencyFlags)0,
+	vkdi.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (vk::VkDependencyFlags)0,
 										  0, (const vk::VkMemoryBarrier*)DE_NULL,
 										  1, &ssboPostBarrier,
 										  0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 
 	// End recording commands
-	endCommandBuffer(m_device_interface, *cmdBuffer);
+	endCommandBuffer(vkdi, *cmdBuffer);
 
 	// Wait for command buffer execution finish
-	submitCommandsAndWait(m_device_interface, m_device, m_queue, *cmdBuffer);
+	submitCommandsAndWait(vkdi, m_device, m_queue, *cmdBuffer);
 
 	// Check if result buffer contains valid values
-	if (verifyResultBuffer(resultBuffer, resultBlockSize))
+	if (verifyResultBuffer(resultBuffer, vkdi, resultBlockSize))
 		return tcu::TestStatus(QP_TEST_RESULT_PASS, "Pass");
 	else
 		return tcu::TestStatus(QP_TEST_RESULT_FAIL, "Invalid values in result buffer");
 }
 
 deBool IndirectDispatchInstanceBufferUpload::verifyResultBuffer (const vk::BufferWithMemory&	resultBuffer,
+																 const vk::DeviceInterface&     vkdi,
 																 const vk::VkDeviceSize			resultBlockSize) const
 {
 	deBool allOk = true;
 	const vk::Allocation& alloc = resultBuffer.getAllocation();
-	vk::invalidateAlloc(m_device_interface, m_device, alloc);
+	vk::invalidateAlloc(vkdi, m_device, alloc);
 
 	const deUint8* const resultDataPtr = reinterpret_cast<deUint8*>(alloc.getHostPtr());
 
@@ -582,6 +661,7 @@ public:
 
 protected:
 	virtual void					fillIndirectBufferData					(const vk::VkCommandBuffer		commandBuffer,
+																			 const vk::DeviceInterface&     vkdi,
 																			 const vk::BufferWithMemory&	indirectBuffer);
 
 	vk::Move<vk::VkDescriptorSetLayout>	m_descriptorSetLayout;
@@ -595,49 +675,49 @@ private:
 	IndirectDispatchInstanceBufferGenerate& operator= (const vkt::TestInstance&);
 };
 
-void IndirectDispatchInstanceBufferGenerate::fillIndirectBufferData (const vk::VkCommandBuffer commandBuffer, const vk::BufferWithMemory& indirectBuffer)
+void IndirectDispatchInstanceBufferGenerate::fillIndirectBufferData (const vk::VkCommandBuffer commandBuffer, const vk::DeviceInterface& vkdi, const vk::BufferWithMemory& indirectBuffer)
 {
 	// Create compute shader that generates data for indirect buffer
 	const vk::Unique<vk::VkShaderModule> genIndirectBufferDataShader(createShaderModule(
-		m_device_interface, m_device, m_context.getBinaryCollection().get("indirect_dispatch_" + m_name + "_generate"), 0u));
+		vkdi, m_device, m_context.getBinaryCollection().get("indirect_dispatch_" + m_name + "_generate"), 0u));
 
 	// Create descriptorSetLayout
 	m_descriptorSetLayout = vk::DescriptorSetLayoutBuilder()
 		.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT)
-		.build(m_device_interface, m_device);
+		.build(vkdi, m_device);
 
 	// Create compute pipeline
-	m_pipelineLayout = makePipelineLayout(m_device_interface, m_device, *m_descriptorSetLayout);
-	m_computePipeline = makeComputePipeline(m_device_interface, m_device, *m_pipelineLayout, *genIndirectBufferDataShader);
+	m_pipelineLayout = makePipelineLayout(vkdi, m_device, *m_descriptorSetLayout);
+	m_computePipeline = makeComputePipeline(vkdi, m_device, *m_pipelineLayout, *genIndirectBufferDataShader);
 
 	// Create descriptor pool
 	m_descriptorPool = vk::DescriptorPoolBuilder()
 		.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
-		.build(m_device_interface, m_device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+		.build(vkdi, m_device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 
 	// Create descriptor set
-	m_descriptorSet = makeDescriptorSet(m_device_interface, m_device, *m_descriptorPool, *m_descriptorSetLayout);
+	m_descriptorSet = makeDescriptorSet(vkdi, m_device, *m_descriptorPool, *m_descriptorSetLayout);
 
 	const vk::VkDescriptorBufferInfo indirectDescriptorInfo = makeDescriptorBufferInfo(*indirectBuffer, 0ull, m_bufferSize);
 
 	vk::DescriptorSetUpdateBuilder	descriptorSetBuilder;
 	descriptorSetBuilder.writeSingle(*m_descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &indirectDescriptorInfo);
-	descriptorSetBuilder.update(m_device_interface, m_device);
+	descriptorSetBuilder.update(vkdi, m_device);
 
 	const vk::VkBufferMemoryBarrier bufferBarrier = makeBufferMemoryBarrier(
 		vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_INDIRECT_COMMAND_READ_BIT, *indirectBuffer, 0ull, m_bufferSize);
 
 	// Bind compute pipeline
-	m_device_interface.cmdBindPipeline(commandBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *m_computePipeline);
+	vkdi.cmdBindPipeline(commandBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *m_computePipeline);
 
 	// Bind descriptor set
-	m_device_interface.cmdBindDescriptorSets(commandBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0u, 1u, &m_descriptorSet.get(), 0u, DE_NULL);
+	vkdi.cmdBindDescriptorSets(commandBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0u, 1u, &m_descriptorSet.get(), 0u, DE_NULL);
 
 	// Dispatch compute command
-	m_device_interface.cmdDispatch(commandBuffer, 1u, 1u, 1u);
+	vkdi.cmdDispatch(commandBuffer, 1u, 1u, 1u);
 
 	// Insert memory barrier
-	m_device_interface.cmdPipelineBarrier(commandBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, (vk::VkDependencyFlags)0,
+	vkdi.cmdPipelineBarrier(commandBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, (vk::VkDependencyFlags)0,
 										  0, (const vk::VkMemoryBarrier*)DE_NULL,
 										  1, &bufferBarrier,
 										  0, (const vk::VkImageMemoryBarrier*)DE_NULL);

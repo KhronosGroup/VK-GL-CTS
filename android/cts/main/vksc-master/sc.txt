@@ -150,3 +150,13 @@ dEQP-VKSC.sc.command_pool_memory_reservation.memory_consumption.cb_above_min_lim
 dEQP-VKSC.sc.object_refresh.query_refreshable_objects
 dEQP-VKSC.sc.object_refresh.refresh_individual_objects
 dEQP-VKSC.sc.object_refresh.refresh_all_objects
+dEQP-VKSC.sc.application_parameters.create_instance.invalid_vendor_id
+dEQP-VKSC.sc.application_parameters.create_instance.invalid_device_id
+dEQP-VKSC.sc.application_parameters.create_instance.invalid_parameter_key
+dEQP-VKSC.sc.application_parameters.create_instance.invalid_parameter_value
+dEQP-VKSC.sc.application_parameters.create_instance.valid
+dEQP-VKSC.sc.application_parameters.create_device.invalid_vendor_id
+dEQP-VKSC.sc.application_parameters.create_device.invalid_device_id
+dEQP-VKSC.sc.application_parameters.create_device.invalid_parameter_key
+dEQP-VKSC.sc.application_parameters.create_device.invalid_parameter_value
+dEQP-VKSC.sc.application_parameters.create_device.valid

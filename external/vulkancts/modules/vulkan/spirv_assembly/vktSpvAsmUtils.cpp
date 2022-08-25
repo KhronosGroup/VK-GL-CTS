@@ -310,9 +310,11 @@ deUint32 getMinRequiredVulkanVersion (const SpirvVersion version)
 		return VK_API_VERSION_1_1;
 	case SPIRV_VERSION_1_5:
 		return VK_API_VERSION_1_2;
-#ifndef CTS_USES_VULKANSC
 	case SPIRV_VERSION_1_6:
+#ifndef CTS_USES_VULKANSC
 		return VK_API_VERSION_1_3;
+#else// CTS_USES_VULKANSC
+		TCU_THROW(NotSupportedError, "Unsupported SPIR-V version");
 #endif // CTS_USES_VULKANSC
 	default:
 		DE_ASSERT(0);

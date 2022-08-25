@@ -323,10 +323,10 @@ CustomInstance createCustomInstanceWithExtensions (Context& context, const std::
 	// Create custom instance.
 	const vector<string> usedExtensionsVec(begin(usedExtensions), end(usedExtensions));
 #ifndef CTS_USES_VULKANSC
-	Move<VkInstance> instance = vk::createDefaultInstance(vkp, apiVersion, enabledLayersStr, usedExtensionsVec, debugReportRecorder.get(), pAllocator);
+	Move<VkInstance> instance = vk::createDefaultInstance(vkp, apiVersion, enabledLayersStr, usedExtensionsVec, cmdLine, debugReportRecorder.get(), pAllocator);
 	return CustomInstance(context, instance, debugReportRecorder);
 #else
-	Move<VkInstance> instance = vk::createDefaultInstance(vkp, apiVersion, enabledLayersStr, usedExtensionsVec, pAllocator);
+	Move<VkInstance> instance = vk::createDefaultInstance(vkp, apiVersion, enabledLayersStr, usedExtensionsVec, cmdLine, pAllocator);
 	return CustomInstance(context, instance);
 #endif // CTS_USES_VULKANSC
 }
