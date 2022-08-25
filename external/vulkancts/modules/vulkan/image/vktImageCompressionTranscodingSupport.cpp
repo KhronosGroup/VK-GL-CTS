@@ -645,13 +645,13 @@ TestStatus BasicComputeTestInstance::iterate (void)
 													imageData[resultImageNdx].getImageInfo(imageNdx).extent.height,
 													imageData[resultImageNdx].getImageInfo(imageNdx).extent.depth);
 				if (!copyResultAndCompare(*cmdBuffer, imageData[resultImageNdx].getImage(imageNdx), offset, size))
-					return TestStatus::fail("Fail");
+					return TestStatus::fail("Uncompressed output mismatch at offset " + de::toString(offset) + " even before executing decompression");
 				offset += getCompressedImageSizeInBytes(m_parameters.formatCompressed, mipMapSizes[mipNdx]);
 			}
 		}
 	}
 	if (!decompressImage(*cmdBuffer, imageData, mipMapSizes))
-			return TestStatus::fail("Fail");
+			return TestStatus::fail("Decompression failed");
 
 	if (m_bASTCErrorColourMismatch)
 	{
