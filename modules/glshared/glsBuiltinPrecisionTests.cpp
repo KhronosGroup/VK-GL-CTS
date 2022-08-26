@@ -2276,7 +2276,7 @@ ExprP<TRET> NAME (const ExprP<T0>& arg0, const ExprP<T1>& arg1,			\
 	return app<CLASS>(arg0, arg1, arg2, arg3);							\
 }
 
-DEFINE_DERIVED_FLOAT1(Sqrt,		sqrt,		x,		constant(1.0f) / app<InverseSqrt>(x))
+DEFINE_DERIVED_FLOAT1(Sqrt,		sqrt,		x,		(x == 0.0f ? constant(1.0f) : (constant(1.0f) / app<InverseSqrt>(x))))
 DEFINE_DERIVED_FLOAT2(Pow,		pow,		x,	y,	exp2(y * log2(x)))
 DEFINE_DERIVED_FLOAT1(Radians,	radians,	d,		(constant(DE_PI) / constant(180.0f)) * d)
 DEFINE_DERIVED_FLOAT1(Degrees,	degrees,	r,		(constant(180.0f) / constant(DE_PI)) * r)
