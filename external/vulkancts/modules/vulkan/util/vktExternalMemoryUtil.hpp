@@ -59,17 +59,20 @@ public:
 	NativeHandle&						operator=					(int fd);
 	NativeHandle&						operator=					(vk::pt::AndroidHardwareBufferPtr buffer);
 
+	void								setZirconHandle				(vk::pt::zx_handle_t zirconHandle);
 	void								setWin32Handle				(Win32HandleType type, vk::pt::Win32Handle handle);
 	vk::pt::Win32Handle					getWin32Handle				(void) const;
 	void								setHostPtr					(void* hostPtr);
 	void*								getHostPtr					(void) const;
 	int									getFd						(void) const;
 	vk::pt::AndroidHardwareBufferPtr	getAndroidHardwareBuffer	(void) const;
+	vk::pt::zx_handle_t					getZirconHandle				(void) const;
 	void								disown						(void);
 	void								reset						(void);
 
 private:
 	int									m_fd;
+	vk::pt::zx_handle_t					m_zirconHandle;
 	Win32HandleType						m_win32HandleType;
 	vk::pt::Win32Handle					m_win32Handle;
 	vk::pt::AndroidHardwareBufferPtr	m_androidHardwareBuffer;
