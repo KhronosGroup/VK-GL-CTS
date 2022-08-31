@@ -90,6 +90,7 @@ public:
 	static const MemoryRequirement	Cached;
 	static const MemoryRequirement	NonLocal;
 	static const MemoryRequirement	DeviceAddress;
+	static const MemoryRequirement	DeviceAddressCaptureReplay;
 
 	inline MemoryRequirement		operator|			(MemoryRequirement requirement) const
 	{
@@ -112,14 +113,15 @@ private:
 
 	enum Flags
 	{
-		FLAG_HOST_VISIBLE		= 1u << 0u,
-		FLAG_COHERENT			= 1u << 1u,
-		FLAG_LAZY_ALLOCATION	= 1u << 2u,
-		FLAG_PROTECTED			= 1u << 3u,
-		FLAG_LOCAL				= 1u << 4u,
-		FLAG_CACHED				= 1u << 5u,
-		FLAG_NON_LOCAL			= 1u << 6u,
-		FLAG_DEVICE_ADDRESS		= 1u << 7u,
+		FLAG_HOST_VISIBLE					= 1u << 0u,
+		FLAG_COHERENT						= 1u << 1u,
+		FLAG_LAZY_ALLOCATION				= 1u << 2u,
+		FLAG_PROTECTED						= 1u << 3u,
+		FLAG_LOCAL							= 1u << 4u,
+		FLAG_CACHED							= 1u << 5u,
+		FLAG_NON_LOCAL						= 1u << 6u,
+		FLAG_DEVICE_ADDRESS					= 1u << 7u,
+		FLAG_DEVICE_ADDRESS_CAPTURE_REPLAY	= 1u << 8u,
 	};
 };
 

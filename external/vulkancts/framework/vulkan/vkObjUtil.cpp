@@ -761,6 +761,16 @@ Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 	return makePipelineLayout(vk, device, layoutCount, &descriptorSetLayout, rangeCount, pushConstantRange);
 }
 
+Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&					vk,
+										   const VkDevice							device,
+										   const std::vector<VkDescriptorSetLayout>	&descriptorSetLayouts)
+{
+	const deUint32					setLayoutCount		= descriptorSetLayouts.empty() ? 0u : (deUint32)descriptorSetLayouts.size();
+	const VkDescriptorSetLayout*	descriptorSetLayout	= descriptorSetLayouts.empty() ? DE_NULL : descriptorSetLayouts.data();
+
+	return makePipelineLayout(vk, device, setLayoutCount, descriptorSetLayout);
+}
+
 Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&								vk,
 										   const VkDevice										device,
 										   const std::vector<vk::Move<VkDescriptorSetLayout>>	&descriptorSetLayouts)
