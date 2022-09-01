@@ -360,8 +360,10 @@ as part of the submission package (3). This can be done by running:
 Changes to platform-specific code (mostly under `framework/platform`)
 are allowed. The commit message for each change must include a clear
 description of the change and why it is necessary.
-For Vulkan SC, changes are also permitted to the vksc-pipeline-compiler
-(under `vkscpc/`) and the vksc-server (under `vkscserver/`).
+For Vulkan SC, changes are also permitted to the following:
+- vksc-pipeline-compiler (under `vkscpc/`)
+- vksc-server (under `vkscserver/`)
+- modules/vulkan/sc/vktApplicationParametersTests.cpp (to provide vendor-specific test data)
 
 Bugfixes to the tests are allowed. Before being used for a submission,
 bugfixes must be accepted and merged into the CTS repository.
@@ -855,6 +857,17 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
   --deqp-command-buffer-min-size=<value>
     Define minimum size of the command buffer (in bytes) to use (Vulkan SC only)
 	default: '0'
+
+  --deqp-app-params-input-file=<path>
+    File providing default application parameters (Vulkan SC only)
+    default: ''
+
+    The file should contain lines of input in the following format:
+    type ("instance" or "device"), 32-bit vendorID, 32-bit deviceID, 32-bit parameterKey, 64-bit parameterValue
+
+    `type` specifies whether the values will be used for instance or device creation.
+    All the other values should be encoded in hex. For example:
+    instance, 0x01234567, 0x76543210, 0x01234567, 0x0000000076543210
 
   --deqp-command-default-size=<value>
     Define default single command size (in bytes) to use (Vulkan SC only)

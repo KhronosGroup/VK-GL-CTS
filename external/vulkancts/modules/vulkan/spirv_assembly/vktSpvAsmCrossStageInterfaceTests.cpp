@@ -670,7 +670,6 @@ void CrossStageBasicTestsCase::initPrograms (SourceCollections& programCollectio
 		decorations.push_back(Decorations("",
 								//Vertex
 								"OpDecorate %color_out Flat\n"
-								"OpDecorate %color_in Flat\n"
 								"OpDecorate %r_float_out Flat\n"
 								"OpDecorate %rg_float_out Flat\n"
 								"OpDecorate %rgb_float_out Flat\n"
@@ -693,7 +692,6 @@ void CrossStageBasicTestsCase::initPrograms (SourceCollections& programCollectio
 								"OpDecorate %rgba_float_in Flat\n",
 								//Vertex
 								"OpDecorate %color_out Flat\n"
-								"OpDecorate %color_in Flat\n"
 								"OpDecorate %r_float_out Flat\n"
 								"OpDecorate %rg_float_out Flat\n"
 								"OpDecorate %rgb_float_out Flat\n"
@@ -705,7 +703,6 @@ void CrossStageBasicTestsCase::initPrograms (SourceCollections& programCollectio
 		decorations.push_back(Decorations("",
 								//Vertex
 								"OpDecorate %color_out NoPerspective\n"
-								"OpDecorate %color_in NoPerspective\n"
 								"OpDecorate %r_float_out NoPerspective\n"
 								"OpDecorate %rg_float_out NoPerspective\n"
 								"OpDecorate %rgb_float_out NoPerspective\n"
@@ -729,7 +726,6 @@ void CrossStageBasicTestsCase::initPrograms (SourceCollections& programCollectio
 								"OpDecorate %rgba_float_in NoPerspective\n",
 								//Vertex
 								"OpDecorate %color_out NoPerspective\n"
-								"OpDecorate %color_in NoPerspective\n"
 								"OpDecorate %r_float_out NoPerspective\n"
 								"OpDecorate %rg_float_out NoPerspective\n"
 								"OpDecorate %rgb_float_out NoPerspective\n"
@@ -1793,7 +1789,6 @@ void CrossStageInterfaceTestsCase::initPrograms (SourceCollections& programColle
 		decorations.push_back(Decorations("",
 								//Vertex
 								"OpDecorate %color_out Flat\n"
-								"OpDecorate %color_in Flat\n"
 								"OpMemberDecorate %block_out 0 Flat\n"
 								"OpMemberDecorate %block_out 1 Flat\n",
 								""));
@@ -1810,7 +1805,6 @@ void CrossStageInterfaceTestsCase::initPrograms (SourceCollections& programColle
 								"OpMemberDecorate %block_in 1 Flat\n",
 								//Vertex
 								"OpDecorate %color_out Flat\n"
-								"OpDecorate %color_in Flat\n"
 								"OpMemberDecorate %block_out 0 Flat\n"
 								"OpMemberDecorate %block_out 1 Flat\n",
 								""));
@@ -1820,7 +1814,6 @@ void CrossStageInterfaceTestsCase::initPrograms (SourceCollections& programColle
 		decorations.push_back(Decorations("",
 								//Vertex
 								"OpDecorate %color_out NoPerspective\n"
-								"OpDecorate %color_in NoPerspective\n"
 								"OpMemberDecorate %block_out 0 NoPerspective\n"
 								"OpMemberDecorate %block_out 1 NoPerspective\n",
 								""));
@@ -1838,7 +1831,6 @@ void CrossStageInterfaceTestsCase::initPrograms (SourceCollections& programColle
 								"OpMemberDecorate %block_in 1 NoPerspective\n",
 								//Vertex
 								"OpDecorate %color_out NoPerspective\n"
-								"OpDecorate %color_in NoPerspective\n"
 								"OpMemberDecorate %block_out 0 NoPerspective\n"
 								"OpMemberDecorate %block_out 1 NoPerspective\n",
 								""));

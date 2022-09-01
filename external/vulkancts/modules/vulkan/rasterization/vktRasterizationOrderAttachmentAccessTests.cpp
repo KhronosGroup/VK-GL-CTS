@@ -812,7 +812,8 @@ void AttachmentAccessOrderTestCase::checkSupport (Context& context) const
 
 	// When explicit synchronization is used, there's no need for the extension.
 	if (!m_explicitSync)
-		context.requireDeviceFunctionality("VK_ARM_rasterization_order_attachment_access");
+		if (!context.isDeviceFunctionalitySupported("VK_ARM_rasterization_order_attachment_access") && !context.isDeviceFunctionalitySupported("VK_EXT_rasterization_order_attachment_access"))
+			TCU_THROW(NotSupportedError, "Neither VK_ARM_rasterization_order_attachment_access nor VK_EXT_rasterization_order_attachment_access is supported");
 
 	const auto&	vki				= context.getInstanceInterface();
 	const auto	physicalDevice	= context.getPhysicalDevice();

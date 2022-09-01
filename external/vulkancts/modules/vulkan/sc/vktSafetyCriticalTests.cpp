@@ -32,6 +32,7 @@
 #include "vktFaultHandlingTests.hpp"
 #include "vktCommandPoolMemoryReservationTests.hpp"
 #include "vktObjectRefreshTests.hpp"
+#include "vktApplicationParametersTests.hpp"
 
 namespace vkt
 {
@@ -52,6 +53,7 @@ void createChildren (tcu::TestCaseGroup* scTests)
 	scTests->addChild(createFaultHandlingTests					(testCtx));
 	scTests->addChild(createCommandPoolMemoryReservationTests	(testCtx));
 	scTests->addChild(createObjectRefreshTests					(testCtx));
+	scTests->addChild(createApplicationParametersTests			(testCtx));
 }
 
 } // anonymous

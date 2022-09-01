@@ -74,9 +74,31 @@ struct TestParams
 {
 	PipelineConstructionType	pipelineConstructionType;
 	vk::VkFormat				stencilFormat;
+	bool						early_and_late;
 };
 
-void initPrograms (SourceCollections& programCollection, TestParams)
+static const std::string ExecutionModeStencil[] =
+{
+	"StencilRefGreaterFrontAMD",
+	"StencilRefLessFrontAMD",
+	"StencilRefGreaterBackAMD",
+	"StencilRefLessBackAMD",
+	"StencilRefUnchangedFrontAMD",
+	"StencilRefUnchangedBackAMD",
+};
+
+enum ExecutionModeEarlyAndLate
+{
+	MODE_STENCIL_REF_GREATER_FRONT_AMD = 0,
+	MODE_STENCIL_REF_LESS_FRONT_AMD,
+	MODE_STENCIL_REF_GREATER_BACK_AMD,
+	MODE_STENCIL_REF_LESS_BACK_AMD,
+	MODE_STENCIL_REF_UNCHANGED_FRONT_AMD,
+	MODE_STENCIL_REF_UNCHANGED_BACK_AMD,
+	MODE_COUNT_AMD
+};
+
+void initPrograms (SourceCollections& programCollection, TestParams paramaeters)
 {
 	// Vertex shader.
 	{
@@ -100,6 +122,74 @@ void initPrograms (SourceCollections& programCollection, TestParams)
 	}
 
 	// Fragment shader that writes to Stencil buffer.
+	if (paramaeters.early_and_late)
+	{
+		for (int stencilModeNdx = 0; stencilModeNdx < 6; stencilModeNdx++)
+		{
+			const std::string src =
+			"; SPIR-V\n"
+			"; Version: 1.0\n"
+			"; Bound: 36\n"
+			"; Schema: 0\n"
+			"OpCapability Shader\n"
+			"OpCapability StencilExportEXT\n"
+			"OpExtension \"SPV_EXT_shader_stencil_export\"\n"
+			"OpExtension \"SPV_AMD_shader_early_and_late_fragment_tests\"\n"
+			"%1 = OpExtInstImport \"GLSL.std.450\"\n"
+			"OpMemoryModel Logical GLSL450\n"
+			"OpEntryPoint Fragment %4 \"main\" %12 %31\n"
+			"OpExecutionMode %4 StencilRefReplacingEXT\n"
+			"OpExecutionMode %4 OriginUpperLeft\n"
+			"OpExecutionMode %4 EarlyAndLateFragmentTestsAMD\n"
+			"OpExecutionMode %4 " + ExecutionModeStencil[stencilModeNdx] + "\n"
+			"OpDecorate %12 BuiltIn FragCoord\n"
+			"OpDecorate %31 BuiltIn FragStencilRefEXT\n"
+			"%2 = OpTypeVoid\n"
+			"%3 = OpTypeFunction %2\n"
+			"%6 = OpTypeInt 32 1\n"
+			"%7 = OpTypePointer Function %6\n"
+			"%9 = OpTypeFloat 32\n"
+			"%10 = OpTypeVector %9 4\n"
+			"%11 = OpTypePointer Input %10\n"
+			"%12 = OpVariable %11 Input\n"
+			"%13 = OpTypeInt 32 0\n"
+			"%14 = OpConstant %13 0\n"
+			"%15 = OpTypePointer Input %9\n"
+			"%19 = OpConstant %6 4\n"
+			"%21 = OpConstant %6 2\n"
+			"%24 = OpConstant %13 1\n"
+			"%30 = OpTypePointer Output %6\n"
+			"%31 = OpVariable %30 Output\n"
+			"%4 = OpFunction %2 None %3\n"
+			"%5 = OpLabel\n"
+			"%8 = OpVariable %7 Function\n"
+			"%23 = OpVariable %7 Function\n"
+			"%16 = OpAccessChain %15 %12 %14\n"
+			"%17 = OpLoad %9 %16\n"
+			"%18 = OpConvertFToS %6 %17\n"
+			"%20 = OpShiftRightArithmetic %6 %18 %19\n"
+			"%22 = OpSMod %6 %20 %21\n"
+			"OpStore %8 %22\n"
+			"%25 = OpAccessChain %15 %12 %24\n"
+			"%26 = OpLoad %9 %25\n"
+			"%27 = OpConvertFToS %6 %26\n"
+			"%28 = OpShiftRightArithmetic %6 %27 %19\n"
+			"%29 = OpSMod %6 %28 %21\n"
+			"OpStore %23 %29\n"
+			"%32 = OpLoad %6 %8\n"
+			"%33 = OpLoad %6 %23\n"
+			"%34 = OpIAdd %6 %32 %33\n"
+			"%35 = OpSMod %6 %34 %21\n"
+			"OpStore %31 %35\n"
+			"OpReturn\n"
+			"OpFunctionEnd\n";
+
+			std::ostringstream shaderName;
+			shaderName << "frag-stencil" << stencilModeNdx;
+			programCollection.spirvAsmSources.add(shaderName.str()) << src << SpirVAsmBuildOptions(programCollection.usedVulkanVersion, SPIRV_VERSION_1_1);
+		}
+	}
+	else
 	{
 		std::ostringstream src;
 		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
@@ -111,7 +201,7 @@ void initPrograms (SourceCollections& programCollection, TestParams)
 			<< "    int refY = (int(gl_FragCoord.y) >> 4) % 2;\n"
 			<< "    gl_FragStencilRefARB = (refX + refY) % 2;\n"
 			<< "}\n";
-		programCollection.glslSources.add("frag-stencil") << glu::FragmentSource(src.str());
+		programCollection.glslSources.add("frag-stencil0") << glu::FragmentSource(src.str());
 	}
 
 	// Fragment shader that writes to Color buffer.
@@ -265,7 +355,8 @@ void preparePipelineWrapper(GraphicsPipelineWrapper&	gpw,
 							const VkShaderModule		vertexModule,
 							const VkShaderModule		fragmentModule,
 							const UVec2					renderSize,
-							const bool					useColor)
+							const bool					useColor,
+							const bool					earlyLate = false)
 {
 	const VkPipelineVertexInputStateCreateInfo vertexInputStateInfo =
 	{
@@ -282,13 +373,13 @@ void preparePipelineWrapper(GraphicsPipelineWrapper&	gpw,
 	const std::vector<VkRect2D>		scissor		{ makeRect2D(renderSize) };
 
 	const VkStencilOpState stencilOpState = makeStencilOpState(
-		useColor ? VK_STENCIL_OP_KEEP : VK_STENCIL_OP_REPLACE,			// stencil fail
-		useColor ? VK_STENCIL_OP_KEEP : VK_STENCIL_OP_REPLACE,			// depth & stencil pass
-		useColor ? VK_STENCIL_OP_KEEP : VK_STENCIL_OP_REPLACE,			// depth only fail
-		useColor ? VK_COMPARE_OP_EQUAL : VK_COMPARE_OP_NEVER,			// compare op
-		useColor ? 0xffu : 0u,											// compare mask
-		useColor ? 0u : 0xffu,											// write mask
-		0u);															// reference
+		useColor ? VK_STENCIL_OP_KEEP  : VK_STENCIL_OP_REPLACE,										// stencil fail
+		useColor ? VK_STENCIL_OP_KEEP  : (earlyLate ? VK_STENCIL_OP_KEEP  : VK_STENCIL_OP_REPLACE),	// depth & stencil pass
+		useColor ? VK_STENCIL_OP_KEEP  : (earlyLate ? VK_STENCIL_OP_KEEP  : VK_STENCIL_OP_REPLACE),	// depth only fail
+		useColor ? VK_COMPARE_OP_EQUAL : (earlyLate ? VK_COMPARE_OP_EQUAL : VK_COMPARE_OP_NEVER),	// compare op VK_COMPARE_OP_ALWAYS
+		useColor ? 0xffu : 0xffu,																	// compare mask
+		useColor ? 0u : 0xffu,																		// write mask
+		useColor ? 0u : 1u);																		// reference
 
 	VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateInfo
 	{
@@ -409,15 +500,12 @@ tcu::TestStatus testStencilExportReplace (Context& context, TestParams params)
 		Move<VkImageView>				colorAttachment			= makeImageView				(vk, device, *colorImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresourceRange);
 
 		Move<VkShaderModule>			vertexModule			= createShaderModule		(vk, device, context.getBinaryCollection().get("vert"), 0);
-		Move<VkShaderModule>			fragmentStencilModule	= createShaderModule		(vk, device, context.getBinaryCollection().get("frag-stencil"), 0);
 		Move<VkShaderModule>			fragmentColorModule		= createShaderModule		(vk, device, context.getBinaryCollection().get("frag-color"), 0);
 
 		Move<VkRenderPass>				renderPass				= makeTestRenderPass		(vk, device, colorFormat, params.stencilFormat);
 		Move<VkPipelineLayout>			pipelineLayout			= makePipelineLayout		(vk, device);
-		GraphicsPipelineWrapper			stencilPipeline										(vk, device, params.pipelineConstructionType);
 		GraphicsPipelineWrapper			colorPipeline										(vk, device, params.pipelineConstructionType);
 
-		preparePipelineWrapper(stencilPipeline, *pipelineLayout, *renderPass, 0, *vertexModule, *fragmentStencilModule, renderSize, false);
 		preparePipelineWrapper(colorPipeline, *pipelineLayout, *renderPass, 1, *vertexModule, *fragmentColorModule, renderSize, true);
 
 		const VkImageView attachments[] =
@@ -429,39 +517,68 @@ tcu::TestStatus testStencilExportReplace (Context& context, TestParams params)
 
 		Move<VkCommandPool>				cmdPool					= createCommandPool			(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, context.getUniversalQueueFamilyIndex());
 		Move<VkCommandBuffer>			cmdBuffer				= allocateCommandBuffer		(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+		const VkQueue					queue					= context.getUniversalQueue	();
+		tcu::TextureLevel				referenceImage			= generateReferenceImage	(mapVkFormat(colorFormat), renderSize, 1 << 4, clearColor, Vec4(0, 0, 1, 1));
 
-		const VkQueue					queue					= context.getUniversalQueue();
+		const int stencilModeCount = (params.early_and_late ? MODE_COUNT_AMD : 1);
 
-		beginCommandBuffer(vk, *cmdBuffer);
-		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), clearColor, 0.0, 0u);
+		for (int stencilModeNdx = 0; stencilModeNdx < stencilModeCount; stencilModeNdx++)
+		{
+			std::ostringstream shaderName;
+			shaderName << "frag-stencil" << stencilModeNdx;
 
-		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, stencilPipeline.getPipeline());
-		vk.cmdDraw(*cmdBuffer, 6u, 1u, 0u, 0u);
+			Move<VkShaderModule>			fragmentStencilModule	= createShaderModule(vk, device, context.getBinaryCollection().get(shaderName.str()), 0);
+			GraphicsPipelineWrapper			stencilPipeline			(vk, device, params.pipelineConstructionType);
 
-		vk.cmdNextSubpass(*cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+			preparePipelineWrapper(stencilPipeline, *pipelineLayout, *renderPass, 0, *vertexModule, *fragmentStencilModule, renderSize, false);
+			beginCommandBuffer(vk, *cmdBuffer);
+			if (params.early_and_late)
+			{
+				switch (stencilModeNdx)
+				{
+				case MODE_STENCIL_REF_GREATER_FRONT_AMD:
+				case MODE_STENCIL_REF_GREATER_BACK_AMD:
+					beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), clearColor, 0.0, 1u);//0
+					break;
+				case MODE_STENCIL_REF_LESS_FRONT_AMD:
+				case MODE_STENCIL_REF_LESS_BACK_AMD:
+					beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), clearColor, 0.0, 1u);//10
+					break;
+				default:
+					beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), clearColor, 0.0, 1u);
+					break;
+				}
+			}
+			else
+			{
+				beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), clearColor, 0.0, 0u);
+			}
 
-		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, colorPipeline.getPipeline());
-		vk.cmdDraw(*cmdBuffer, 6u, 1u, 0u, 0u);
+			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, stencilPipeline.getPipeline());
+			vk.cmdDraw(*cmdBuffer, 6u, 1u, 0u, 0u);
 
-		endRenderPass(vk, *cmdBuffer);
+			vk.cmdNextSubpass(*cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
-		copyImageToBuffer(vk, *cmdBuffer, *colorImage, *colorBuffer, tcu::IVec2(renderSize.x(), renderSize.y()));
+			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, colorPipeline.getPipeline());
+			vk.cmdDraw(*cmdBuffer, 6u, 1u, 0u, 0u);
 
-		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
-		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+			endRenderPass(vk, *cmdBuffer);
+
+			copyImageToBuffer(vk, *cmdBuffer, *colorImage, *colorBuffer, tcu::IVec2(renderSize.x(), renderSize.y()));
+
+			VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+			submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+			// Compare the resulting color buffer.
+			{
+				invalidateAlloc(vk, device, *colorBufferAlloc);
+				const tcu::ConstPixelBufferAccess	resultImage(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1u, colorBufferAlloc->getHostPtr());
+
+				if (!tcu::floatThresholdCompare(log, "color", "Image compare", referenceImage.getAccess(), resultImage, Vec4(0.02f), tcu::COMPARE_LOG_RESULT))
+					TCU_FAIL("Rendered image is not correct" + (params.early_and_late ? (" for OpExecutionMode: " + ExecutionModeStencil[stencilModeNdx]) : ""));
+			}
+		}
 	}
-
-	// Compare the resulting color buffer.
-	{
-		invalidateAlloc(vk, device, *colorBufferAlloc);
-		const tcu::ConstPixelBufferAccess	resultImage		(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1u, colorBufferAlloc->getHostPtr());
-
-		tcu::TextureLevel					referenceImage	= generateReferenceImage(mapVkFormat(colorFormat), renderSize, 1 << 4, clearColor, Vec4(0, 0, 1, 1));
-
-		if (!tcu::floatThresholdCompare(log, "color", "Image compare", referenceImage.getAccess(), resultImage, Vec4(0.02f), tcu::COMPARE_LOG_RESULT))
-			TCU_FAIL("Rendered image is not correct");
-	}
-
 	return tcu::TestStatus::pass("OK");
 }
 
@@ -473,6 +590,15 @@ void checkSupport (Context& context, TestParams params)
 		TCU_THROW(NotSupportedError, "Image format not supported");
 
 	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.pipelineConstructionType);
+
+#ifndef CTS_USES_VULKANSC
+	if (params.early_and_late)
+	{
+		context.requireDeviceFunctionality("VK_AMD_shader_early_and_late_fragment_tests");
+		if (context.getShaderEarlyAndLateFragmentTestsFeaturesAMD().shaderEarlyAndLateFragmentTests == VK_FALSE)
+			TCU_THROW(NotSupportedError, "shaderEarlyAndLateFragmentTests is not supported");
+	}
+#endif
 }
 
 } // anonymous
@@ -493,7 +619,8 @@ tcu::TestCaseGroup* createStencilExportTests (tcu::TestContext& testCtx, Pipelin
 	TestParams params
 	{
 		pipelineConstructionType,
-		vk::VK_FORMAT_S8_UINT
+		vk::VK_FORMAT_S8_UINT,
+		false
 	};
 
 	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "shader_stencil_export", ""));
@@ -502,6 +629,11 @@ tcu::TestCaseGroup* createStencilExportTests (tcu::TestContext& testCtx, Pipelin
 		params.stencilFormat = kFormats[fmtIdx].format;
 		de::MovePtr<tcu::TestCaseGroup> formatGroup (new tcu::TestCaseGroup(testCtx, kFormats[fmtIdx].name.c_str(), ""));
 		addFunctionCaseWithPrograms(formatGroup.get(), "op_replace", "", checkSupport, initPrograms, testStencilExportReplace, params);
+#ifndef CTS_USES_VULKANSC
+		params.early_and_late = true;
+		addFunctionCaseWithPrograms(formatGroup.get(), "op_replace_early_and_late", "", checkSupport, initPrograms, testStencilExportReplace, params);
+		params.early_and_late = false;
+#endif
 		group->addChild(formatGroup.release());
 	}
 	return group.release();

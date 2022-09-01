@@ -105,6 +105,8 @@ const char*	getShadingRatePaletteEntryNVName						(VkShadingRatePaletteEntryNV v
 const char*	getCoarseSampleOrderTypeNVName							(VkCoarseSampleOrderTypeNV value);
 const char*	getPipelineExecutableStatisticFormatKHRName				(VkPipelineExecutableStatisticFormatKHR value);
 const char*	getQueryResultStatusKHRName								(VkQueryResultStatusKHR value);
+const char*	getVideoEncodeH264RateControlStructureEXTName			(VkVideoEncodeH264RateControlStructureEXT value);
+const char*	getVideoEncodeH265RateControlStructureEXTName			(VkVideoEncodeH265RateControlStructureEXT value);
 const char*	getAccelerationStructureMotionInstanceTypeNVName		(VkAccelerationStructureMotionInstanceTypeNV value);
 const char*	getdVideoH264ChromaFormatIdcName						(StdVideoH264ChromaFormatIdc value);
 const char*	getdVideoH264ProfileIdcName								(StdVideoH264ProfileIdc value);
@@ -228,6 +230,8 @@ inline tcu::Format::Enum<VkShadingRatePaletteEntryNV>						getShadingRatePalette
 inline tcu::Format::Enum<VkCoarseSampleOrderTypeNV>							getCoarseSampleOrderTypeNVStr						(VkCoarseSampleOrderTypeNV value)						{ return tcu::Format::Enum<VkCoarseSampleOrderTypeNV>(getCoarseSampleOrderTypeNVName, value);												}
 inline tcu::Format::Enum<VkPipelineExecutableStatisticFormatKHR>			getPipelineExecutableStatisticFormatKHRStr			(VkPipelineExecutableStatisticFormatKHR value)			{ return tcu::Format::Enum<VkPipelineExecutableStatisticFormatKHR>(getPipelineExecutableStatisticFormatKHRName, value);						}
 inline tcu::Format::Enum<VkQueryResultStatusKHR>							getQueryResultStatusKHRStr							(VkQueryResultStatusKHR value)							{ return tcu::Format::Enum<VkQueryResultStatusKHR>(getQueryResultStatusKHRName, value);														}
+inline tcu::Format::Enum<VkVideoEncodeH264RateControlStructureEXT>			getVideoEncodeH264RateControlStructureEXTStr		(VkVideoEncodeH264RateControlStructureEXT value)		{ return tcu::Format::Enum<VkVideoEncodeH264RateControlStructureEXT>(getVideoEncodeH264RateControlStructureEXTName, value);					}
+inline tcu::Format::Enum<VkVideoEncodeH265RateControlStructureEXT>			getVideoEncodeH265RateControlStructureEXTStr		(VkVideoEncodeH265RateControlStructureEXT value)		{ return tcu::Format::Enum<VkVideoEncodeH265RateControlStructureEXT>(getVideoEncodeH265RateControlStructureEXTName, value);					}
 inline tcu::Format::Enum<VkAccelerationStructureMotionInstanceTypeNV>		getAccelerationStructureMotionInstanceTypeNVStr		(VkAccelerationStructureMotionInstanceTypeNV value)		{ return tcu::Format::Enum<VkAccelerationStructureMotionInstanceTypeNV>(getAccelerationStructureMotionInstanceTypeNVName, value);			}
 inline tcu::Format::Enum<StdVideoH264ChromaFormatIdc>						getdVideoH264ChromaFormatIdcStr						(StdVideoH264ChromaFormatIdc value)						{ return tcu::Format::Enum<StdVideoH264ChromaFormatIdc>(getdVideoH264ChromaFormatIdcName, value);											}
 inline tcu::Format::Enum<StdVideoH264ProfileIdc>							getdVideoH264ProfileIdcStr							(StdVideoH264ProfileIdc value)							{ return tcu::Format::Enum<StdVideoH264ProfileIdc>(getdVideoH264ProfileIdcName, value);														}
@@ -351,6 +355,8 @@ inline std::ostream&	operator<<	(std::ostream& s, VkShadingRatePaletteEntryNV va
 inline std::ostream&	operator<<	(std::ostream& s, VkCoarseSampleOrderTypeNV value)							{ return s << getCoarseSampleOrderTypeNVStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkPipelineExecutableStatisticFormatKHR value)				{ return s << getPipelineExecutableStatisticFormatKHRStr(value);			}
 inline std::ostream&	operator<<	(std::ostream& s, VkQueryResultStatusKHR value)								{ return s << getQueryResultStatusKHRStr(value);							}
+inline std::ostream&	operator<<	(std::ostream& s, VkVideoEncodeH264RateControlStructureEXT value)			{ return s << getVideoEncodeH264RateControlStructureEXTStr(value);			}
+inline std::ostream&	operator<<	(std::ostream& s, VkVideoEncodeH265RateControlStructureEXT value)			{ return s << getVideoEncodeH265RateControlStructureEXTStr(value);			}
 inline std::ostream&	operator<<	(std::ostream& s, VkAccelerationStructureMotionInstanceTypeNV value)		{ return s << getAccelerationStructureMotionInstanceTypeNVStr(value);		}
 inline std::ostream&	operator<<	(std::ostream& s, StdVideoH264ChromaFormatIdc value)						{ return s << getdVideoH264ChromaFormatIdcStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, StdVideoH264ProfileIdc value)								{ return s << getdVideoH264ProfileIdcStr(value);							}
@@ -517,9 +523,9 @@ tcu::Format::Bitfield<32>	getExportMetalObjectTypeFlagsEXTStr							(VkExportMet
 tcu::Format::Bitfield<32>	getVideoCodecOperationFlagsKHRStr							(VkVideoCodecOperationFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoCapabilityFlagsKHRStr								(VkVideoCapabilityFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoSessionCreateFlagsKHRStr							(VkVideoSessionCreateFlagsKHR value);
+tcu::Format::Bitfield<32>	getVideoSessionParametersCreateFlagsKHRStr					(VkVideoSessionParametersCreateFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoBeginCodingFlagsKHRStr								(VkVideoBeginCodingFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoEndCodingFlagsKHRStr								(VkVideoEndCodingFlagsKHR value);
-tcu::Format::Bitfield<32>	getVideoCodingQualityPresetFlagsKHRStr						(VkVideoCodingQualityPresetFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoCodingControlFlagsKHRStr							(VkVideoCodingControlFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoDecodeCapabilityFlagsKHRStr							(VkVideoDecodeCapabilityFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoDecodeFlagsKHRStr									(VkVideoDecodeFlagsKHR value);
@@ -533,11 +539,9 @@ tcu::Format::Bitfield<32>	getVideoComponentBitDepthFlagsKHRStr						(VkVideoComp
 tcu::Format::Bitfield<32>	getVideoEncodeH264CapabilityFlagsEXTStr						(VkVideoEncodeH264CapabilityFlagsEXT value);
 tcu::Format::Bitfield<32>	getVideoEncodeH264InputModeFlagsEXTStr						(VkVideoEncodeH264InputModeFlagsEXT value);
 tcu::Format::Bitfield<32>	getVideoEncodeH264OutputModeFlagsEXTStr						(VkVideoEncodeH264OutputModeFlagsEXT value);
-tcu::Format::Bitfield<32>	getVideoEncodeH264RateControlStructureFlagsEXTStr			(VkVideoEncodeH264RateControlStructureFlagsEXT value);
 tcu::Format::Bitfield<32>	getVideoEncodeH265CapabilityFlagsEXTStr						(VkVideoEncodeH265CapabilityFlagsEXT value);
 tcu::Format::Bitfield<32>	getVideoEncodeH265InputModeFlagsEXTStr						(VkVideoEncodeH265InputModeFlagsEXT value);
 tcu::Format::Bitfield<32>	getVideoEncodeH265OutputModeFlagsEXTStr						(VkVideoEncodeH265OutputModeFlagsEXT value);
-tcu::Format::Bitfield<32>	getVideoEncodeH265RateControlStructureFlagsEXTStr			(VkVideoEncodeH265RateControlStructureFlagsEXT value);
 tcu::Format::Bitfield<32>	getVideoEncodeH265CtbSizeFlagsEXTStr						(VkVideoEncodeH265CtbSizeFlagsEXT value);
 tcu::Format::Bitfield<32>	getVideoEncodeH265TransformBlockSizeFlagsEXTStr				(VkVideoEncodeH265TransformBlockSizeFlagsEXT value);
 
@@ -1187,27 +1191,27 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePrimitivesGener
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSubpassResolvePerformanceQueryEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMultisampledRenderToSingleSampledInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoQueueFamilyProperties2KHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyQueryResultStatusProperties2KHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoProfilesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyVideoPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyQueryResultStatusPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoProfileListInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVideoFormatInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoFormatPropertiesKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoProfileKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoProfileInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoCapabilitiesKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoGetMemoryPropertiesKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoBindMemoryKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoPictureResourceKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoReferenceSlotKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoSessionMemoryRequirementsKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkBindVideoSessionMemoryInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoPictureResourceInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoReferenceSlotInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeCapabilitiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeInfoKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH264ProfileEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH264ProfileInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH264CapabilitiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH264SessionParametersAddInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH264SessionParametersCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH264PictureInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH264DpbSlotInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH264MvcEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH265ProfileEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH264MvcInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH265ProfileInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH265CapabilitiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH265SessionParametersAddInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH265SessionParametersCreateInfoEXT& value);
@@ -1228,10 +1232,10 @@ std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264SessionParamet
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264SessionParametersCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264DpbSlotInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264VclFrameInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264ReferenceListsEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264EmitPictureParametersEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264ProfileEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264NaluSliceEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264ReferenceListsInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264EmitPictureParametersInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264ProfileInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264NaluSliceInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264RateControlInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264QpEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264FrameSizeEXT& value);
@@ -1240,15 +1244,15 @@ std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265CapabilitiesEX
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265SessionParametersAddInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265SessionParametersCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265VclFrameInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265EmitPictureParametersEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265NaluSliceSegmentEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265EmitPictureParametersInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265NaluSliceSegmentInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265RateControlInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265QpEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265FrameSizeEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265RateControlLayerInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265ProfileEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265ProfileInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265DpbSlotInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265ReferenceListsEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265ReferenceListsInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceInheritedViewportScissorFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCommandBufferInheritanceViewportScissorInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT& value);
@@ -1298,7 +1302,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkAttachmentSampleCountInfoAMD&
 std::ostream&	operator<<	(std::ostream& s, const VkMultiviewPerViewAttributesInfoNVX& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageViewMinLodFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageViewMinLodCreateInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLinearColorAttachmentFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT& value);
@@ -1346,6 +1350,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageProcessing
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageProcessingPropertiesQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceTilePropertiesFeaturesQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkTilePropertiesQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceAmigoProfilingFeaturesSEC& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAmigoProfilingSubmitInfoSEC& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SpsVuiFlags& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264HrdParameters& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SequenceParameterSetVui& value);

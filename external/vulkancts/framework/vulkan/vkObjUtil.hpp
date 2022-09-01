@@ -63,7 +63,8 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 									   const VkPipelineDepthStencilStateCreateInfo*		depthStencilStateCreateInfo = DE_NULL,
 									   const VkPipelineColorBlendStateCreateInfo*		colorBlendStateCreateInfo = DE_NULL,
 									   const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfo = DE_NULL,
-									   const void*										pNext = DE_NULL);
+									   const void*										pNext = DE_NULL,
+									   const VkPipelineCreateFlags						pipelineCreateFlags = 0u);
 
 Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 									   const VkDevice									device,
@@ -84,7 +85,8 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 									   const VkPipelineDepthStencilStateCreateInfo*		depthStencilStateCreateInfo = DE_NULL,
 									   const VkPipelineColorBlendStateCreateInfo*		colorBlendStateCreateInfo = DE_NULL,
 									   const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfo = DE_NULL,
-									   const void*										pNext = DE_NULL);
+									   const void*										pNext = DE_NULL,
+									   const VkPipelineCreateFlags						pipelineCreateFlags = 0u);
 
 Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 									   const VkDevice									device,
@@ -100,7 +102,8 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 									   const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo = nullptr,
 									   const VkPipelineDepthStencilStateCreateInfo*		depthStencilStateCreateInfo = nullptr,
 									   const VkPipelineColorBlendStateCreateInfo*		colorBlendStateCreateInfo = nullptr,
-									   const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfo = nullptr);
+									   const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfo = nullptr,
+									   const VkPipelineCreateFlags						pipelineCreateFlags = 0u);
 
 Move<VkRenderPass> makeRenderPass (const DeviceInterface&				vk,
 								   const VkDevice						device,

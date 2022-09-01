@@ -9601,7 +9601,7 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 	map<string, string> continue_target;
 
 	// The Continue Target is the loop block itself.
-	continue_target["continue_target"] = "%loop";
+	continue_target["continue_target"] = "%if";
 	fragments["testfun"] = multiBlock.specialize(continue_target);
 	createTestsForAllStages("multi_block_continue_construct", defaultColors, defaultColors, fragments, testGroup.get());
 
@@ -20544,6 +20544,42 @@ tcu::TestCaseGroup* createEarlyFragmentTests(tcu::TestContext& testCtx)
 	return earlyFragTests.release();
 }
 
+tcu::TestCaseGroup* createEarlyAndLateFragmentTests(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> earlyLateFragTests(new tcu::TestCaseGroup(testCtx, "early_and_late_fragment", "Early And Late Fragment Tests"));
+#ifndef CTS_USES_VULKANSC
+	static const char dataDir[] = "spirv_assembly/instruction/graphics/early_and_late_fragment";
+
+	static const struct Case
+	{
+		const string name;
+		const string desc;
+	}	cases[] =
+	{
+		{ "depth_less",				"gl_FragDepth < CLEAR_DEPTH. Polygon depth < CLEAR_DEPTH."	},
+		{ "depth_greater",			"gl_FragDepth > CLEAR_DEPTH. Polygon depth > CLEAR_DEPTH."	},
+		{ "depth_less_or_equal",	"gl_FragDepth > CLEAR_DEPTH. Polygon depth == CLEAR_DEPTH."	},
+		{ "depth_greater_or_equal",	"gl_FragDepth < CLEAR_DEPTH. Polygon depth == CLEAR_DEPTH."	},
+		{ "depth_equal",			"gl_FragDepth < CLEAR_DEPTH. Polygon depth == CLEAR_DEPTH."	},
+		{ "depth_not_equal",		"gl_FragDepth == CLEAR_DEPTH. Polygon depth < CLEAR_DEPTH."	}
+	};
+
+	for (const auto& tCase : cases)
+	{
+		cts_amber::AmberTestCase* testCase = cts_amber::createAmberTestCase(testCtx,
+			tCase.name.c_str(),
+			tCase.desc.c_str(),
+			dataDir,
+			tCase.name + ".amber",
+			{ "VK_AMD_shader_early_and_late_fragment_tests" });
+
+		earlyLateFragTests->addChild(testCase);
+	}
+#endif
+
+	return earlyLateFragTests.release();
+}
+
 tcu::TestCaseGroup* createOpExecutionModeTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "execution_mode", "Execution mode tests"));
@@ -20842,6 +20878,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	graphicsTests->addChild(createSpirvIdsAbuseTests(testCtx));
 	graphicsTests->addChild(create64bitCompareGraphicsGroup(testCtx));
 	graphicsTests->addChild(createEarlyFragmentTests(testCtx));
+	graphicsTests->addChild(createEarlyAndLateFragmentTests(testCtx));
 	graphicsTests->addChild(createOpExecutionModeTests(testCtx));
 
 	instructionTests->addChild(computeTests.release());

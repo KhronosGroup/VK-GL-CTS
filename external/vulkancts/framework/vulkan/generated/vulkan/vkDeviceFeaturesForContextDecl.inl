@@ -92,8 +92,9 @@ const vk::VkPhysicalDeviceFragmentDensityMap2FeaturesEXT&					getFragmentDensity
 const vk::VkPhysicalDeviceImageRobustnessFeatures&							getImageRobustnessFeatures							(void) const;
 const vk::VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR&			getWorkgroupMemoryExplicitLayoutFeatures			(void) const;
 const vk::VkPhysicalDeviceImageCompressionControlFeaturesEXT&				getImageCompressionControlFeaturesEXT				(void) const;
+const vk::VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT&			getAttachmentFeedbackLoopLayoutFeaturesEXT			(void) const;
 const vk::VkPhysicalDevice4444FormatsFeaturesEXT&							get4444FormatsFeaturesEXT							(void) const;
-const vk::VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM&	getRasterizationOrderAttachmentAccessFeaturesARM	(void) const;
+const vk::VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT&	getRasterizationOrderAttachmentAccessFeaturesEXT	(void) const;
 const vk::VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT&						getRGBA10X6FormatsFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE&				getMutableDescriptorTypeFeaturesVALVE				(void) const;
 const vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT&				getVertexInputDynamicStateFeaturesEXT				(void) const;
@@ -123,5 +124,6 @@ const vk::VkPhysicalDeviceImageProcessingFeaturesQCOM&						getImageProcessingFe
 const vk::VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT&					getSubpassMergeFeedbackFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT&				getShaderModuleIdentifierFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceTilePropertiesFeaturesQCOM&						getTilePropertiesFeaturesQCOM						(void) const;
+const vk::VkPhysicalDeviceAmigoProfilingFeaturesSEC&						getAmigoProfilingFeaturesSEC						(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&							getProtectedMemoryFeatures							(void) const;
 const vk::VkPhysicalDeviceShaderDrawParametersFeatures&						getShaderDrawParametersFeatures						(void) const;

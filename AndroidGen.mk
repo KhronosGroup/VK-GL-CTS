@@ -26,6 +26,7 @@ LOCAL_SRC_FILES := \
 	executor/xeXMLWriter.cpp \
 	external/vulkancts/framework/vulkan/vkAllocationCallbackUtil.cpp \
 	external/vulkancts/framework/vulkan/vkApiVersion.cpp \
+	external/vulkancts/framework/vulkan/vkAppParamsUtil.cpp \
 	external/vulkancts/framework/vulkan/vkBarrierUtil.cpp \
 	external/vulkancts/framework/vulkan/vkBinaryRegistry.cpp \
 	external/vulkancts/framework/vulkan/vkBufferWithMemory.cpp \
@@ -235,6 +236,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/multiview/vktMultiViewRenderUtil.cpp \
 	external/vulkancts/modules/vulkan/multiview/vktMultiViewTests.cpp \
 	external/vulkancts/modules/vulkan/pch.cpp \
+	external/vulkancts/modules/vulkan/pipeline/vktPipelineAttachmentFeedbackLoopLayoutTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineBindPointTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineBlendOperationAdvancedTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineBlendTests.cpp \
@@ -388,6 +390,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessTests.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessUtil.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessVertexAccessTests.cpp \
+	external/vulkancts/modules/vulkan/sc/vktApplicationParametersTests.cpp \
 	external/vulkancts/modules/vulkan/sc/vktCommandPoolMemoryReservationTests.cpp \
 	external/vulkancts/modules/vulkan/sc/vktDeviceObjectReservationTests.cpp \
 	external/vulkancts/modules/vulkan/sc/vktFaultHandlingTests.cpp \

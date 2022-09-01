@@ -137,7 +137,8 @@ void							uploadTestTexture			(const vk::DeviceInterface&		vk,
 															 deUint32						queueFamilyIndex,
 															 vk::Allocator&					allocator,
 															 const TestTexture&				testTexture,
-															 vk::VkImage					destImage);
+															 vk::VkImage					destImage,
+															 vk::VkImageLayout				destImageLayout = vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 /*--------------------------------------------------------------------*//*!
  * Uploads data from a test texture to a destination VK image using sparse
