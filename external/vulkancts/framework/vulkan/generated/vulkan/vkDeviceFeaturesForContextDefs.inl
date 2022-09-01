@@ -87,6 +87,7 @@ const vk::VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR&		Context:
 const vk::VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeatures&			Context::getZeroInitializeWorkgroupMemoryFeatures			(void) const { return m_device->getZeroInitializeWorkgroupMemoryFeatures();			}
 const vk::VkPhysicalDeviceFragmentShadingRateEnumsFeaturesNV&				Context::getFragmentShadingRateEnumsFeatures				(void) const { return m_device->getFragmentShadingRateEnumsFeatures();				}
 const vk::VkPhysicalDeviceRayTracingMotionBlurFeaturesNV&					Context::getRayTracingMotionBlurFeatures					(void) const { return m_device->getRayTracingMotionBlurFeatures();					}
+const vk::VkPhysicalDeviceMeshShaderFeaturesEXT&							Context::getMeshShaderFeaturesEXT							(void) const { return m_device->getMeshShaderFeaturesEXT();							}
 const vk::VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT&					Context::getYcbcr2Plane444FormatsFeaturesEXT				(void) const { return m_device->getYcbcr2Plane444FormatsFeaturesEXT();				}
 const vk::VkPhysicalDeviceFragmentDensityMap2FeaturesEXT&					Context::getFragmentDensityMap2FeaturesEXT					(void) const { return m_device->getFragmentDensityMap2FeaturesEXT();				}
 const vk::VkPhysicalDeviceImageRobustnessFeatures&							Context::getImageRobustnessFeatures							(void) const { return m_device->getImageRobustnessFeatures();						}
@@ -94,7 +95,6 @@ const vk::VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR&			Context::g
 const vk::VkPhysicalDeviceImageCompressionControlFeaturesEXT&				Context::getImageCompressionControlFeaturesEXT				(void) const { return m_device->getImageCompressionControlFeaturesEXT();			}
 const vk::VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT&			Context::getAttachmentFeedbackLoopLayoutFeaturesEXT			(void) const { return m_device->getAttachmentFeedbackLoopLayoutFeaturesEXT();		}
 const vk::VkPhysicalDevice4444FormatsFeaturesEXT&							Context::get4444FormatsFeaturesEXT							(void) const { return m_device->get4444FormatsFeaturesEXT();						}
-const vk::VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT&	Context::getRasterizationOrderAttachmentAccessFeaturesEXT	(void) const { return m_device->getRasterizationOrderAttachmentAccessFeaturesEXT();	}
 const vk::VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT&						Context::getRGBA10X6FormatsFeaturesEXT						(void) const { return m_device->getRGBA10X6FormatsFeaturesEXT();					}
 const vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE&				Context::getMutableDescriptorTypeFeaturesVALVE				(void) const { return m_device->getMutableDescriptorTypeFeaturesVALVE();			}
 const vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT&				Context::getVertexInputDynamicStateFeaturesEXT				(void) const { return m_device->getVertexInputDynamicStateFeaturesEXT();			}
@@ -116,6 +116,7 @@ const vk::VkPhysicalDeviceBorderColorSwizzleFeaturesEXT&					Context::getBorderC
 const vk::VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT&				Context::getPageableDeviceLocalMemoryFeaturesEXT			(void) const { return m_device->getPageableDeviceLocalMemoryFeaturesEXT();			}
 const vk::VkPhysicalDeviceMaintenance4Features&								Context::getMaintenance4Features							(void) const { return m_device->getMaintenance4Features();							}
 const vk::VkPhysicalDeviceDescriptorSetHostMappingFeaturesVALVE&			Context::getDescriptorSetHostMappingFeaturesVALVE			(void) const { return m_device->getDescriptorSetHostMappingFeaturesVALVE();			}
+const vk::VkPhysicalDeviceDepthClampZeroOneFeaturesEXT&						Context::getDepthClampZeroOneFeaturesEXT					(void) const { return m_device->getDepthClampZeroOneFeaturesEXT();					}
 const vk::VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT&					Context::getNonSeamlessCubeMapFeaturesEXT					(void) const { return m_device->getNonSeamlessCubeMapFeaturesEXT();					}
 const vk::VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM&				Context::getFragmentDensityMapOffsetFeaturesQCOM			(void) const { return m_device->getFragmentDensityMapOffsetFeaturesQCOM();			}
 const vk::VkPhysicalDeviceLinearColorAttachmentFeaturesNV&					Context::getLinearColorAttachmentFeatures					(void) const { return m_device->getLinearColorAttachmentFeatures();					}
@@ -123,6 +124,7 @@ const vk::VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT&		Context:
 const vk::VkPhysicalDeviceImageProcessingFeaturesQCOM&						Context::getImageProcessingFeaturesQCOM						(void) const { return m_device->getImageProcessingFeaturesQCOM();					}
 const vk::VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT&					Context::getSubpassMergeFeedbackFeaturesEXT					(void) const { return m_device->getSubpassMergeFeedbackFeaturesEXT();				}
 const vk::VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT&				Context::getShaderModuleIdentifierFeaturesEXT				(void) const { return m_device->getShaderModuleIdentifierFeaturesEXT();				}
+const vk::VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT&	Context::getRasterizationOrderAttachmentAccessFeaturesEXT	(void) const { return m_device->getRasterizationOrderAttachmentAccessFeaturesEXT();	}
 const vk::VkPhysicalDeviceTilePropertiesFeaturesQCOM&						Context::getTilePropertiesFeaturesQCOM						(void) const { return m_device->getTilePropertiesFeaturesQCOM();					}
 const vk::VkPhysicalDeviceAmigoProfilingFeaturesSEC&						Context::getAmigoProfilingFeaturesSEC						(void) const { return m_device->getAmigoProfilingFeaturesSEC();						}
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&							Context::getProtectedMemoryFeatures							(void) const { return m_device->getProtectedMemoryFeatures();						}

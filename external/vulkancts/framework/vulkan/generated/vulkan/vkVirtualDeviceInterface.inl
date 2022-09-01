@@ -244,6 +244,9 @@ virtual void				cmdSetCoarseSampleOrderNV						(VkCommandBuffer commandBuffer, V
 virtual void				cmdDrawMeshTasksNV								(VkCommandBuffer commandBuffer, uint32_t taskCount, uint32_t firstTask) const = 0;
 virtual void				cmdDrawMeshTasksIndirectNV						(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride) const = 0;
 virtual void				cmdDrawMeshTasksIndirectCountNV					(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride) const = 0;
+virtual void				cmdDrawMeshTasksEXT								(VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const = 0;
+virtual void				cmdDrawMeshTasksIndirectEXT						(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride) const = 0;
+virtual void				cmdDrawMeshTasksIndirectCountEXT				(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride) const = 0;
 virtual VkResult			compileDeferredNV								(VkDevice device, VkPipeline pipeline, uint32_t shader) const = 0;
 virtual VkResult			createAccelerationStructureNV					(VkDevice device, const VkAccelerationStructureCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureNV* pAccelerationStructure) const = 0;
 virtual void				cmdBindInvocationMaskHUAWEI						(VkCommandBuffer commandBuffer, VkImageView imageView, VkImageLayout imageLayout) const = 0;

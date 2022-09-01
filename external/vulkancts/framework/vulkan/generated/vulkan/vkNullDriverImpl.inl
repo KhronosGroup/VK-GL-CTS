@@ -2344,6 +2344,34 @@ VKAPI_ATTR void VKAPI_CALL cmdDrawMeshTasksIndirectCountNV (VkCommandBuffer comm
 	DE_UNREF(stride);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdDrawMeshTasksEXT (VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(groupCountX);
+	DE_UNREF(groupCountY);
+	DE_UNREF(groupCountZ);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDrawMeshTasksIndirectEXT (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(buffer);
+	DE_UNREF(offset);
+	DE_UNREF(drawCount);
+	DE_UNREF(stride);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDrawMeshTasksIndirectCountEXT (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(buffer);
+	DE_UNREF(offset);
+	DE_UNREF(countBuffer);
+	DE_UNREF(countBufferOffset);
+	DE_UNREF(maxDrawCount);
+	DE_UNREF(stride);
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL compileDeferredNV (VkDevice device, VkPipeline pipeline, uint32_t shader)
 {
 	DE_UNREF(device);
@@ -3682,6 +3710,9 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdDrawMeshTasksNV,								cmdDrawMeshTasksNV),
 	VK_NULL_FUNC_ENTRY(vkCmdDrawMeshTasksIndirectNV,						cmdDrawMeshTasksIndirectNV),
 	VK_NULL_FUNC_ENTRY(vkCmdDrawMeshTasksIndirectCountNV,					cmdDrawMeshTasksIndirectCountNV),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawMeshTasksEXT,								cmdDrawMeshTasksEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawMeshTasksIndirectEXT,						cmdDrawMeshTasksIndirectEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawMeshTasksIndirectCountEXT,					cmdDrawMeshTasksIndirectCountEXT),
 	VK_NULL_FUNC_ENTRY(vkCompileDeferredNV,									compileDeferredNV),
 	VK_NULL_FUNC_ENTRY(vkCreateAccelerationStructureNV,						createAccelerationStructureNV),
 	VK_NULL_FUNC_ENTRY(vkCmdBindInvocationMaskHUAWEI,						cmdBindInvocationMaskHUAWEI),

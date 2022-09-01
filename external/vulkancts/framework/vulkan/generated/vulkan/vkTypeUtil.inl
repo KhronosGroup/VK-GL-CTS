@@ -605,6 +605,15 @@ inline VkDrawMeshTasksIndirectCommandNV makeDrawMeshTasksIndirectCommandNV (uint
 	return res;
 }
 
+inline VkDrawMeshTasksIndirectCommandEXT makeDrawMeshTasksIndirectCommandEXT (uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+{
+	VkDrawMeshTasksIndirectCommandEXT res;
+	res.groupCountX	= groupCountX;
+	res.groupCountY	= groupCountY;
+	res.groupCountZ	= groupCountZ;
+	return res;
+}
+
 inline VkStridedDeviceAddressRegionKHR makeStridedDeviceAddressRegionKHR (VkDeviceAddress deviceAddress, VkDeviceSize stride, VkDeviceSize size)
 {
 	VkStridedDeviceAddressRegionKHR res;

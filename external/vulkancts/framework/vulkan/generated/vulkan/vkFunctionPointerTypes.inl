@@ -364,6 +364,9 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetCoarseSampleOrderNVFunc)									
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawMeshTasksNVFunc)												(VkCommandBuffer commandBuffer, uint32_t taskCount, uint32_t firstTask);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawMeshTasksIndirectNVFunc)										(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawMeshTasksIndirectCountNVFunc)									(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawMeshTasksEXTFunc)												(VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawMeshTasksIndirectEXTFunc)										(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawMeshTasksIndirectCountEXTFunc)									(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CompileDeferredNVFunc)													(VkDevice device, VkPipeline pipeline, uint32_t shader);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateAccelerationStructureNVFunc)										(VkDevice device, const VkAccelerationStructureCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureNV* pAccelerationStructure);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindInvocationMaskHUAWEIFunc)										(VkCommandBuffer commandBuffer, VkImageView imageView, VkImageLayout imageLayout);

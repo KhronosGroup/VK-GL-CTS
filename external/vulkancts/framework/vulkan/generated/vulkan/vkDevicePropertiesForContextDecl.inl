@@ -49,6 +49,7 @@ const vk::VkPhysicalDeviceCustomBorderColorPropertiesEXT&			getCustomBorderColor
 const vk::VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT&		getGraphicsPipelineLibraryPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR&	getFragmentShaderBarycentricProperties		(void) const;
 const vk::VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV&		getFragmentShadingRateEnumsProperties		(void) const;
+const vk::VkPhysicalDeviceMeshShaderPropertiesEXT&					getMeshShaderPropertiesEXT					(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMap2PropertiesEXT&			getFragmentDensityMap2PropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceDrmPropertiesEXT&							getDrmPropertiesEXT							(void) const;
 const vk::VkPhysicalDeviceSubpassShadingPropertiesHUAWEI&			getSubpassShadingPropertiesHUAWEI			(void) const;

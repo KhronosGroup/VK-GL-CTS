@@ -1030,6 +1030,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_mesh_shader")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_ycbcr_2plane_444_formats")
 	{
 		return;
@@ -1195,6 +1199,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_VALVE_descriptor_set_host_mapping")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_depth_clamp_zero_one")
 	{
 		return;
 	}
@@ -2411,6 +2419,13 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_mesh_shader")
+	{
+		functions.push_back("vkCmdDrawMeshTasksEXT");
+		functions.push_back("vkCmdDrawMeshTasksIndirectEXT");
+		functions.push_back("vkCmdDrawMeshTasksIndirectCountEXT");
+		return;
+	}
 	if (extName == "VK_EXT_ycbcr_2plane_444_formats")
 	{
 		return;
@@ -2598,6 +2613,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		functions.push_back("vkGetDescriptorSetLayoutHostMappingInfoVALVE");
 		functions.push_back("vkGetDescriptorSetHostMappingVALVE");
+		return;
+	}
+	if (extName == "VK_EXT_depth_clamp_zero_one")
+	{
 		return;
 	}
 	if (extName == "VK_EXT_non_seamless_cube_map")
@@ -2929,6 +2948,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_KHR_zero_initialize_workgroup_memory",
 	"VK_NV_fragment_shading_rate_enums",
 	"VK_NV_ray_tracing_motion_blur",
+	"VK_EXT_mesh_shader",
 	"VK_EXT_ycbcr_2plane_444_formats",
 	"VK_EXT_fragment_density_map2",
 	"VK_QCOM_rotated_copy_commands",
@@ -2968,6 +2988,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_pageable_device_local_memory",
 	"VK_KHR_maintenance4",
 	"VK_VALVE_descriptor_set_host_mapping",
+	"VK_EXT_depth_clamp_zero_one",
 	"VK_EXT_non_seamless_cube_map",
 	"VK_QCOM_fragment_density_map_offset",
 	"VK_NV_linear_color_attachment",

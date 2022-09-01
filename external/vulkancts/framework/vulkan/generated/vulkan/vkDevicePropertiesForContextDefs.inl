@@ -49,6 +49,7 @@ const vk::VkPhysicalDeviceCustomBorderColorPropertiesEXT&			Context::getCustomBo
 const vk::VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT&		Context::getGraphicsPipelineLibraryPropertiesEXT	(void) const { return m_device->getGraphicsPipelineLibraryPropertiesEXT();		}
 const vk::VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR&	Context::getFragmentShaderBarycentricProperties		(void) const { return m_device->getFragmentShaderBarycentricProperties();		}
 const vk::VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV&		Context::getFragmentShadingRateEnumsProperties		(void) const { return m_device->getFragmentShadingRateEnumsProperties();		}
+const vk::VkPhysicalDeviceMeshShaderPropertiesEXT&					Context::getMeshShaderPropertiesEXT					(void) const { return m_device->getMeshShaderPropertiesEXT();					}
 const vk::VkPhysicalDeviceFragmentDensityMap2PropertiesEXT&			Context::getFragmentDensityMap2PropertiesEXT		(void) const { return m_device->getFragmentDensityMap2PropertiesEXT();			}
 const vk::VkPhysicalDeviceDrmPropertiesEXT&							Context::getDrmPropertiesEXT						(void) const { return m_device->getDrmPropertiesEXT();							}
 const vk::VkPhysicalDeviceSubpassShadingPropertiesHUAWEI&			Context::getSubpassShadingPropertiesHUAWEI			(void) const { return m_device->getSubpassShadingPropertiesHUAWEI();			}

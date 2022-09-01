@@ -1618,6 +1618,16 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceMeshShaderProperties
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_PROPERTIES_NV;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceMeshShaderFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceMeshShaderPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_PROPERTIES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkRayTracingShaderGroupCreateInfoNV> (void)
 {
 	return VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_NV;
@@ -2703,6 +2713,11 @@ template<> VkStructureType getStructureType<VkVideoDecodeCapabilitiesKHR> (void)
 	return VK_STRUCTURE_TYPE_VIDEO_DECODE_CAPABILITIES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkVideoDecodeUsageInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_DECODE_USAGE_INFO_KHR;
+}
+
 template<> VkStructureType getStructureType<VkVideoDecodeInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_VIDEO_DECODE_INFO_KHR;
@@ -2801,6 +2816,11 @@ template<> VkStructureType getStructureType<VkVideoEndCodingInfoKHR> (void)
 template<> VkStructureType getStructureType<VkVideoCodingControlInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_VIDEO_CODING_CONTROL_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoEncodeUsageInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_USAGE_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkVideoEncodeInfoKHR> (void)
@@ -3391,5 +3411,10 @@ template<> VkStructureType getStructureType<VkAmigoProfilingSubmitInfoSEC> (void
 template<> VkStructureType getStructureType<VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDepthClampZeroOneFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_ZERO_ONE_FEATURES_EXT;
 }
 

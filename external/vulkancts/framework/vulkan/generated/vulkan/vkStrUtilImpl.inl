@@ -1206,6 +1206,8 @@ tcu::Format::Bitfield<32> getQueryPipelineStatisticFlagsStr (VkQueryPipelineStat
 		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT,			"VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT"),
 		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT,	"VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT"),
 		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT,					"VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_TASK_SHADER_INVOCATIONS_BIT_EXT,					"VK_QUERY_PIPELINE_STATISTIC_TASK_SHADER_INVOCATIONS_BIT_EXT"),
+		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_MESH_SHADER_INVOCATIONS_BIT_EXT,					"VK_QUERY_PIPELINE_STATISTIC_MESH_SHADER_INVOCATIONS_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1238,6 +1240,7 @@ const char* getQueryTypeName (VkQueryType value)
 		case VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_NV:						return "VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_NV";
 		case VK_QUERY_TYPE_PERFORMANCE_QUERY_INTEL:											return "VK_QUERY_TYPE_PERFORMANCE_QUERY_INTEL";
 		case VK_QUERY_TYPE_VIDEO_ENCODE_BITSTREAM_BUFFER_RANGE_KHR:							return "VK_QUERY_TYPE_VIDEO_ENCODE_BITSTREAM_BUFFER_RANGE_KHR";
+		case VK_QUERY_TYPE_MESH_PRIMITIVES_GENERATED_EXT:									return "VK_QUERY_TYPE_MESH_PRIMITIVES_GENERATED_EXT";
 		case VK_QUERY_TYPE_PRIMITIVES_GENERATED_EXT:										return "VK_QUERY_TYPE_PRIMITIVES_GENERATED_EXT";
 		case VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_BOTTOM_LEVEL_POINTERS_KHR:	return "VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_BOTTOM_LEVEL_POINTERS_KHR";
 		case VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SIZE_KHR:									return "VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SIZE_KHR";
@@ -1333,8 +1336,8 @@ tcu::Format::Bitfield<32> getShaderStageFlagsStr (VkShaderStageFlags value)
 		tcu::Format::BitDesc(VK_SHADER_STAGE_GEOMETRY_BIT,					"VK_SHADER_STAGE_GEOMETRY_BIT"),
 		tcu::Format::BitDesc(VK_SHADER_STAGE_FRAGMENT_BIT,					"VK_SHADER_STAGE_FRAGMENT_BIT"),
 		tcu::Format::BitDesc(VK_SHADER_STAGE_COMPUTE_BIT,					"VK_SHADER_STAGE_COMPUTE_BIT"),
-		tcu::Format::BitDesc(VK_SHADER_STAGE_TASK_BIT_NV,					"VK_SHADER_STAGE_TASK_BIT_NV"),
-		tcu::Format::BitDesc(VK_SHADER_STAGE_MESH_BIT_NV,					"VK_SHADER_STAGE_MESH_BIT_NV"),
+		tcu::Format::BitDesc(VK_SHADER_STAGE_TASK_BIT_EXT,					"VK_SHADER_STAGE_TASK_BIT_EXT"),
+		tcu::Format::BitDesc(VK_SHADER_STAGE_MESH_BIT_EXT,					"VK_SHADER_STAGE_MESH_BIT_EXT"),
 		tcu::Format::BitDesc(VK_SHADER_STAGE_RAYGEN_BIT_KHR,				"VK_SHADER_STAGE_RAYGEN_BIT_KHR"),
 		tcu::Format::BitDesc(VK_SHADER_STAGE_ANY_HIT_BIT_KHR,				"VK_SHADER_STAGE_ANY_HIT_BIT_KHR"),
 		tcu::Format::BitDesc(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,			"VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR"),
@@ -1477,6 +1480,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_QUEUE_FAMILY_QUERY_RESULT_STATUS_PROPERTIES_KHR:						return "VK_STRUCTURE_TYPE_QUEUE_FAMILY_QUERY_RESULT_STATUS_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_DECODE_INFO_KHR:												return "VK_STRUCTURE_TYPE_VIDEO_DECODE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_DECODE_CAPABILITIES_KHR:										return "VK_STRUCTURE_TYPE_VIDEO_DECODE_CAPABILITIES_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_DECODE_USAGE_INFO_KHR:											return "VK_STRUCTURE_TYPE_VIDEO_DECODE_USAGE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_IMAGE_CREATE_INFO_NV:							return "VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_IMAGE_CREATE_INFO_NV";
 		case VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_BUFFER_CREATE_INFO_NV:							return "VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_BUFFER_CREATE_INFO_NV";
 		case VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_MEMORY_ALLOCATE_INFO_NV:						return "VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_MEMORY_ALLOCATE_INFO_NV";
@@ -1922,6 +1926,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_INFO_KHR:									return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_LAYER_INFO_KHR:							return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_LAYER_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_CAPABILITIES_KHR:										return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_CAPABILITIES_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_USAGE_INFO_KHR:											return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_USAGE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV:							return "VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV";
 		case VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECT_CREATE_INFO_EXT:									return "VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECT_CREATE_INFO_EXT";
@@ -1959,6 +1964,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_MOTION_TRIANGLES_DATA_NV:			return "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_MOTION_TRIANGLES_DATA_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MOTION_BLUR_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MOTION_BLUR_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_MOTION_INFO_NV:								return "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_MOTION_INFO_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_PROPERTIES_EXT:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_YCBCR_2_PLANE_444_FORMATS_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_YCBCR_2_PLANE_444_FORMATS_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_PROPERTIES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_PROPERTIES_EXT";
@@ -2048,6 +2055,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_SET_HOST_MAPPING_FEATURES_VALVE:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_SET_HOST_MAPPING_FEATURES_VALVE";
 		case VK_STRUCTURE_TYPE_DESCRIPTOR_SET_BINDING_REFERENCE_VALVE:								return "VK_STRUCTURE_TYPE_DESCRIPTOR_SET_BINDING_REFERENCE_VALVE";
 		case VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_HOST_MAPPING_INFO_VALVE:						return "VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_HOST_MAPPING_INFO_VALVE";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_ZERO_ONE_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_ZERO_ONE_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_NON_SEAMLESS_CUBE_MAP_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_NON_SEAMLESS_CUBE_MAP_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_QCOM:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_QCOM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_QCOM:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_QCOM";
@@ -2163,8 +2171,8 @@ tcu::Format::Bitfield<32> getPipelineStageFlagsStr (VkPipelineStageFlags value)
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,							"VK_PIPELINE_STAGE_ALL_COMMANDS_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_NV,					"VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_NV"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_CONDITIONAL_RENDERING_BIT_EXT,				"VK_PIPELINE_STAGE_CONDITIONAL_RENDERING_BIT_EXT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_TASK_SHADER_BIT_NV,							"VK_PIPELINE_STAGE_TASK_SHADER_BIT_NV"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_MESH_SHADER_BIT_NV,							"VK_PIPELINE_STAGE_MESH_SHADER_BIT_NV"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_TASK_SHADER_BIT_EXT,							"VK_PIPELINE_STAGE_TASK_SHADER_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_MESH_SHADER_BIT_EXT,							"VK_PIPELINE_STAGE_MESH_SHADER_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,					"VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR,	"VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_FRAGMENT_DENSITY_PROCESS_BIT_EXT,			"VK_PIPELINE_STAGE_FRAGMENT_DENSITY_PROCESS_BIT_EXT"),
@@ -2319,15 +2327,16 @@ const char* getIndirectCommandsTokenTypeNVName (VkIndirectCommandsTokenTypeNV va
 {
 	switch (value)
 	{
-		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_SHADER_GROUP_NV:	return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_SHADER_GROUP_NV";
-		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_STATE_FLAGS_NV:	return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_STATE_FLAGS_NV";
-		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_INDEX_BUFFER_NV:	return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_INDEX_BUFFER_NV";
-		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_VERTEX_BUFFER_NV:	return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_VERTEX_BUFFER_NV";
-		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_PUSH_CONSTANT_NV:	return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_PUSH_CONSTANT_NV";
-		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_INDEXED_NV:	return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_INDEXED_NV";
-		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_NV:			return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_NV";
-		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_TASKS_NV:		return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_TASKS_NV";
-		default:												return DE_NULL;
+		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_SHADER_GROUP_NV:		return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_SHADER_GROUP_NV";
+		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_STATE_FLAGS_NV:		return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_STATE_FLAGS_NV";
+		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_INDEX_BUFFER_NV:		return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_INDEX_BUFFER_NV";
+		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_VERTEX_BUFFER_NV:		return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_VERTEX_BUFFER_NV";
+		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_PUSH_CONSTANT_NV:		return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_PUSH_CONSTANT_NV";
+		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_INDEXED_NV:		return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_INDEXED_NV";
+		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_NV:				return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_NV";
+		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_TASKS_NV:			return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_TASKS_NV";
+		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_MESH_TASKS_NV:	return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_MESH_TASKS_NV";
+		default:													return DE_NULL;
 	}
 }
 
@@ -2995,8 +3004,8 @@ tcu::Format::Bitfield<64> getPipelineStageFlags2Str (VkPipelineStageFlags2 value
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,							"VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_COMMAND_PREPROCESS_BIT_NV,					"VK_PIPELINE_STAGE_2_COMMAND_PREPROCESS_BIT_NV"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_CONDITIONAL_RENDERING_BIT_EXT,				"VK_PIPELINE_STAGE_2_CONDITIONAL_RENDERING_BIT_EXT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_NV,						"VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_NV"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_NV,						"VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_NV"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_EXT,						"VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_EXT,						"VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,				"VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR,	"VK_PIPELINE_STAGE_2_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_FRAGMENT_DENSITY_PROCESS_BIT_EXT,			"VK_PIPELINE_STAGE_2_FRAGMENT_DENSITY_PROCESS_BIT_EXT"),
@@ -3944,6 +3953,18 @@ const char* getQueryResultStatusKHRName (VkQueryResultStatusKHR value)
 	}
 }
 
+tcu::Format::Bitfield<32> getVideoDecodeUsageFlagsKHRStr (VkVideoDecodeUsageFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_DECODE_USAGE_DEFAULT_KHR,			"VK_VIDEO_DECODE_USAGE_DEFAULT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_DECODE_USAGE_TRANSCODING_BIT_KHR,	"VK_VIDEO_DECODE_USAGE_TRANSCODING_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_DECODE_USAGE_OFFLINE_BIT_KHR,		"VK_VIDEO_DECODE_USAGE_OFFLINE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_DECODE_USAGE_STREAMING_BIT_KHR,	"VK_VIDEO_DECODE_USAGE_STREAMING_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
 tcu::Format::Bitfield<32> getVideoDecodeCapabilityFlagsKHRStr (VkVideoDecodeCapabilityFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -3963,6 +3984,44 @@ tcu::Format::Bitfield<32> getVideoDecodeH264PictureLayoutFlagsEXTStr (VkVideoDec
 		tcu::Format::BitDesc(VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_INTERLACED_SEPARATE_PLANES_BIT_EXT,	"VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_INTERLACED_SEPARATE_PLANES_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getVideoEncodeUsageFlagsKHRStr (VkVideoEncodeUsageFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_USAGE_DEFAULT_KHR,				"VK_VIDEO_ENCODE_USAGE_DEFAULT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_USAGE_TRANSCODING_BIT_KHR,		"VK_VIDEO_ENCODE_USAGE_TRANSCODING_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_USAGE_STREAMING_BIT_KHR,		"VK_VIDEO_ENCODE_USAGE_STREAMING_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_USAGE_RECORDING_BIT_KHR,		"VK_VIDEO_ENCODE_USAGE_RECORDING_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_USAGE_CONFERENCING_BIT_KHR,	"VK_VIDEO_ENCODE_USAGE_CONFERENCING_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getVideoEncodeContentFlagsKHRStr (VkVideoEncodeContentFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_CONTENT_DEFAULT_KHR,		"VK_VIDEO_ENCODE_CONTENT_DEFAULT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_CONTENT_CAMERA_BIT_KHR,	"VK_VIDEO_ENCODE_CONTENT_CAMERA_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_CONTENT_DESKTOP_BIT_KHR,	"VK_VIDEO_ENCODE_CONTENT_DESKTOP_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_CONTENT_RENDERED_BIT_KHR,	"VK_VIDEO_ENCODE_CONTENT_RENDERED_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+const char* getVideoEncodeTuningModeKHRName (VkVideoEncodeTuningModeKHR value)
+{
+	switch (value)
+	{
+		case VK_VIDEO_ENCODE_TUNING_MODE_DEFAULT_KHR:			return "VK_VIDEO_ENCODE_TUNING_MODE_DEFAULT_KHR";
+		case VK_VIDEO_ENCODE_TUNING_MODE_HIGH_QUALITY_KHR:		return "VK_VIDEO_ENCODE_TUNING_MODE_HIGH_QUALITY_KHR";
+		case VK_VIDEO_ENCODE_TUNING_MODE_LOW_LATENCY_KHR:		return "VK_VIDEO_ENCODE_TUNING_MODE_LOW_LATENCY_KHR";
+		case VK_VIDEO_ENCODE_TUNING_MODE_ULTRA_LOW_LATENCY_KHR:	return "VK_VIDEO_ENCODE_TUNING_MODE_ULTRA_LOW_LATENCY_KHR";
+		case VK_VIDEO_ENCODE_TUNING_MODE_LOSSLESS_KHR:			return "VK_VIDEO_ENCODE_TUNING_MODE_LOSSLESS_KHR";
+		default:												return DE_NULL;
+	}
 }
 
 tcu::Format::Bitfield<32> getVideoEncodeCapabilityFlagsKHRStr (VkVideoEncodeCapabilityFlagsKHR value)
@@ -9938,6 +9997,67 @@ std::ostream& operator<< (std::ostream& s, const VkDrawMeshTasksIndirectCommandN
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMeshShaderFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceMeshShaderFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\ttaskShader = " << value.taskShader << '\n';
+	s << "\tmeshShader = " << value.meshShader << '\n';
+	s << "\tmultiviewMeshShader = " << value.multiviewMeshShader << '\n';
+	s << "\tprimitiveFragmentShadingRateMeshShader = " << value.primitiveFragmentShadingRateMeshShader << '\n';
+	s << "\tmeshShaderQueries = " << value.meshShaderQueries << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMeshShaderPropertiesEXT& value)
+{
+	s << "VkPhysicalDeviceMeshShaderPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxTaskWorkGroupTotalCount = " << value.maxTaskWorkGroupTotalCount << '\n';
+	s << "\tmaxTaskWorkGroupCount = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.maxTaskWorkGroupCount), DE_ARRAY_END(value.maxTaskWorkGroupCount)) << '\n';
+	s << "\tmaxTaskWorkGroupInvocations = " << value.maxTaskWorkGroupInvocations << '\n';
+	s << "\tmaxTaskWorkGroupSize = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.maxTaskWorkGroupSize), DE_ARRAY_END(value.maxTaskWorkGroupSize)) << '\n';
+	s << "\tmaxTaskPayloadSize = " << value.maxTaskPayloadSize << '\n';
+	s << "\tmaxTaskSharedMemorySize = " << value.maxTaskSharedMemorySize << '\n';
+	s << "\tmaxTaskPayloadAndSharedMemorySize = " << value.maxTaskPayloadAndSharedMemorySize << '\n';
+	s << "\tmaxMeshWorkGroupTotalCount = " << value.maxMeshWorkGroupTotalCount << '\n';
+	s << "\tmaxMeshWorkGroupCount = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.maxMeshWorkGroupCount), DE_ARRAY_END(value.maxMeshWorkGroupCount)) << '\n';
+	s << "\tmaxMeshWorkGroupInvocations = " << value.maxMeshWorkGroupInvocations << '\n';
+	s << "\tmaxMeshWorkGroupSize = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.maxMeshWorkGroupSize), DE_ARRAY_END(value.maxMeshWorkGroupSize)) << '\n';
+	s << "\tmaxMeshSharedMemorySize = " << value.maxMeshSharedMemorySize << '\n';
+	s << "\tmaxMeshPayloadAndSharedMemorySize = " << value.maxMeshPayloadAndSharedMemorySize << '\n';
+	s << "\tmaxMeshOutputMemorySize = " << value.maxMeshOutputMemorySize << '\n';
+	s << "\tmaxMeshPayloadAndOutputMemorySize = " << value.maxMeshPayloadAndOutputMemorySize << '\n';
+	s << "\tmaxMeshOutputComponents = " << value.maxMeshOutputComponents << '\n';
+	s << "\tmaxMeshOutputVertices = " << value.maxMeshOutputVertices << '\n';
+	s << "\tmaxMeshOutputPrimitives = " << value.maxMeshOutputPrimitives << '\n';
+	s << "\tmaxMeshOutputLayers = " << value.maxMeshOutputLayers << '\n';
+	s << "\tmaxMeshMultiviewViewCount = " << value.maxMeshMultiviewViewCount << '\n';
+	s << "\tmeshOutputPerVertexGranularity = " << value.meshOutputPerVertexGranularity << '\n';
+	s << "\tmeshOutputPerPrimitiveGranularity = " << value.meshOutputPerPrimitiveGranularity << '\n';
+	s << "\tmaxPreferredTaskWorkGroupInvocations = " << value.maxPreferredTaskWorkGroupInvocations << '\n';
+	s << "\tmaxPreferredMeshWorkGroupInvocations = " << value.maxPreferredMeshWorkGroupInvocations << '\n';
+	s << "\tprefersLocalInvocationVertexOutput = " << value.prefersLocalInvocationVertexOutput << '\n';
+	s << "\tprefersLocalInvocationPrimitiveOutput = " << value.prefersLocalInvocationPrimitiveOutput << '\n';
+	s << "\tprefersCompactVertexOutput = " << value.prefersCompactVertexOutput << '\n';
+	s << "\tprefersCompactPrimitiveOutput = " << value.prefersCompactPrimitiveOutput << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDrawMeshTasksIndirectCommandEXT& value)
+{
+	s << "VkDrawMeshTasksIndirectCommandEXT = {\n";
+	s << "\tgroupCountX = " << value.groupCountX << '\n';
+	s << "\tgroupCountY = " << value.groupCountY << '\n';
+	s << "\tgroupCountZ = " << value.groupCountZ << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkRayTracingShaderGroupCreateInfoNV& value)
 {
 	s << "VkRayTracingShaderGroupCreateInfoNV = {\n";
@@ -12871,6 +12991,16 @@ std::ostream& operator<< (std::ostream& s, const VkVideoDecodeCapabilitiesKHR& v
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeUsageInfoKHR& value)
+{
+	s << "VkVideoDecodeUsageInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tvideoUsageHints = " << getVideoDecodeUsageFlagsKHRStr(value.videoUsageHints) << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkVideoDecodeInfoKHR& value)
 {
 	s << "VkVideoDecodeInfoKHR = {\n";
@@ -13107,6 +13237,18 @@ std::ostream& operator<< (std::ostream& s, const VkVideoCodingControlInfoKHR& va
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tflags = " << getVideoCodingControlFlagsKHRStr(value.flags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeUsageInfoKHR& value)
+{
+	s << "VkVideoEncodeUsageInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tvideoUsageHints = " << getVideoEncodeUsageFlagsKHRStr(value.videoUsageHints) << '\n';
+	s << "\tvideoContentHints = " << getVideoEncodeContentFlagsKHRStr(value.videoContentHints) << '\n';
+	s << "\ttuningMode = " << value.tuningMode << '\n';
 	s << '}';
 	return s;
 }
@@ -14697,6 +14839,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceAttachmentFeedb
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tattachmentFeedbackLoopLayout = " << value.attachmentFeedbackLoopLayout << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDepthClampZeroOneFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceDepthClampZeroOneFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdepthClampZeroOne = " << value.depthClampZeroOne << '\n';
 	s << '}';
 	return s;
 }
