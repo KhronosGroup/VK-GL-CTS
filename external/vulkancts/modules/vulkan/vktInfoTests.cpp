@@ -217,9 +217,9 @@ PrettySize<SizeType> prettySize (SizeType value, int precision = 2)
 tcu::TestStatus logPlatformMemoryLimits (Context& context)
 {
 	TestLog&					log			= context.getTestContext().getLog();
-	vk::PlatformMemoryLimits	limits;
+	tcu::PlatformMemoryLimits	limits;
 
-	context.getTestContext().getPlatform().getVulkanPlatform().getMemoryLimits(limits);
+	context.getTestContext().getPlatform().getMemoryLimits(limits);
 
 	log << TestLog::Message << "totalSystemMemory = " << prettySize(limits.totalSystemMemory) << " (" << limits.totalSystemMemory << ")\n"
 							<< "totalDeviceLocalMemory = " << prettySize(limits.totalDeviceLocalMemory) << " (" << limits.totalDeviceLocalMemory << ")\n"

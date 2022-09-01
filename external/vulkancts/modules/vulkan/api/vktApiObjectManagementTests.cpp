@@ -331,7 +331,7 @@ inline bool hasDeviceExtension (Context& context, const string name)
 	return context.isDeviceFunctionalitySupported(name);
 }
 
-VkDeviceSize getPageTableSize (const PlatformMemoryLimits& limits, VkDeviceSize allocationSize)
+VkDeviceSize getPageTableSize (const tcu::PlatformMemoryLimits& limits, VkDeviceSize allocationSize)
 {
 	VkDeviceSize	totalSize	= 0;
 
@@ -383,9 +383,9 @@ size_t computeSystemMemoryUsage (Context& context, const typename Object::Parame
 	}
 }
 
-size_t getSafeObjectCount (const PlatformMemoryLimits&	memoryLimits,
-						   size_t						objectSystemMemoryUsage,
-						   VkDeviceSize					objectDeviceMemoryUsage = 0)
+size_t getSafeObjectCount (const tcu::PlatformMemoryLimits&	memoryLimits,
+						   size_t							objectSystemMemoryUsage,
+						   VkDeviceSize						objectDeviceMemoryUsage = 0)
 {
 	const VkDeviceSize	roundedUpDeviceMemory	= roundUpToNextMultiple(objectDeviceMemoryUsage, memoryLimits.deviceMemoryAllocationGranularity);
 
@@ -409,11 +409,11 @@ size_t getSafeObjectCount (const PlatformMemoryLimits&	memoryLimits,
 	}
 }
 
-PlatformMemoryLimits getPlatformMemoryLimits (Context& context)
+tcu::PlatformMemoryLimits getPlatformMemoryLimits (Context& context)
 {
-	PlatformMemoryLimits	memoryLimits;
+	tcu::PlatformMemoryLimits	memoryLimits;
 
-	context.getTestContext().getPlatform().getVulkanPlatform().getMemoryLimits(memoryLimits);
+	context.getTestContext().getPlatform().getMemoryLimits(memoryLimits);
 
 	return memoryLimits;
 }
