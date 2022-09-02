@@ -1996,3 +1996,4 @@ dEQP-VK.fragment_shading_barycentric.data.provoking_last.dynamic.triangle_strip_
 dEQP-VK.fragment_shading_barycentric.data.provoking_last.dynamic.triangle_strip_with_adjacency.array2.uvec2
 dEQP-VK.fragment_shading_barycentric.data.provoking_last.dynamic.triangle_strip_with_adjacency.array2.uvec3
 dEQP-VK.fragment_shading_barycentric.data.provoking_last.dynamic.triangle_strip_with_adjacency.array2.uvec4
+dEQP-VK.fragment_shading_barycentric.data.misc.pervertex_correctness

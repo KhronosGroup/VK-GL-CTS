@@ -65,6 +65,12 @@ enum TestType
 	TEST_TYPE_WEIGHTS,
 };
 
+enum TestSubtype
+{
+	TEST_SUBTYPE_DEFAULT = 0,
+	TEST_SUBTYPE_PERVERTEX_CORRECTNESS,
+};
+
 const size_t	DATA_TEST_WIDTH		= 8u;
 const size_t	DATA_TEST_HEIGHT	= 8u;
 const size_t	WEIGHT_TEST_WIDTH	= 128u;
@@ -74,6 +80,7 @@ const float		WEIGHT_TEST_SLOPE	= 16.0f;
 struct TestParams
 {
 	TestType			testType;
+	TestSubtype			testSubtype;
 	VkPrimitiveTopology	topology;
 	bool				dynamicIndexing;
 	size_t				aggregate; // 0: value itself, 1:struct, 2+:Array
@@ -485,7 +492,7 @@ vector<tcu::Vec4> FragmentShadingBarycentricDataTestInstance::generateVertexBuff
 bool FragmentShadingBarycentricDataTestInstance::verify (BufferWithMemory* resultBuffer)
 {
 	const size_t	components	= getComponentCount(m_testParams);
-	const deUint32	expected	= static_cast<deUint32>(1<<components) - 1;
+	const deUint32	expected	= m_testParams.testSubtype == TEST_SUBTYPE_PERVERTEX_CORRECTNESS ? 10u : static_cast<deUint32>(1 << components) - 1;
 	const deUint32* retrieved	= (deUint32*)resultBuffer->getAllocation().getHostPtr();
 	size_t			failures	= 0;
 
@@ -1069,6 +1076,7 @@ public:
 
 private:
 	void					initDataPrograms					(SourceCollections&	programCollection) const;
+	void					initMiscDataPrograms				(SourceCollections& programCollection) const;
 	void					initWeightPrograms					(SourceCollections&	programCollection) const;
 	string					getDataPrimitiveFormula				(void) const;
 	string					getDataVertexFormula				(const uint32_t		vertex,
@@ -1131,9 +1139,17 @@ void FragmentShadingBarycentricTestCase::initPrograms (SourceCollections& progra
 {
 	switch (m_testParams.testType)
 	{
-		case TEST_TYPE_DATA:	initDataPrograms(programCollection);	break;
-		case TEST_TYPE_WEIGHTS:	initWeightPrograms(programCollection);	break;
-		default:				TCU_THROW(InternalError, "Unknown testType");
+		case TEST_TYPE_DATA:
+			if (m_testParams.testSubtype == TEST_SUBTYPE_PERVERTEX_CORRECTNESS)
+				initMiscDataPrograms(programCollection);
+			else
+				initDataPrograms(programCollection);
+			break;
+		case TEST_TYPE_WEIGHTS:
+			initWeightPrograms(programCollection);
+			break;
+		default:
+			TCU_THROW(InternalError, "Unknown testType");
 	}
 }
 
@@ -1344,6 +1360,41 @@ void FragmentShadingBarycentricTestCase::initDataPrograms (SourceCollections& pr
 	}
 }
 
+void FragmentShadingBarycentricTestCase::initMiscDataPrograms(SourceCollections& programCollection) const
+{
+	const std::string vertShader(
+		"#version 450\n"
+		"#extension GL_EXT_fragment_shader_barycentric : require\n"
+		"\n"
+		"layout(location = 0) in  vec4 in_position;\n"
+		"layout(location = 0) out uvec2 dataA;\n"
+		"layout(location = 1) out uvec2 dataB;\n"
+		"void main()\n"
+		"{\n"
+		// we will draw two triangles and we need to convert dataA for
+		// second triangle to 0-2 range to simplify verification
+		"    dataA       = uvec2(mod(gl_VertexIndex, 3));\n"
+		"    dataB       = uvec2(7);\n"
+		"    gl_Position = in_position;\n"
+		"}\n");
+	const std::string fragShader(
+		"#version 450\n"
+		"#extension GL_EXT_fragment_shader_barycentric : require\n"
+		"layout(location = 0) pervertexEXT in uvec2 dataA[];\n"
+		"layout(location = 1) flat in uvec2 dataB;\n"
+		"layout(location = 0) out uvec4 out_color;\n"
+		"void main()\n"
+		"{\n"
+		// make sure that PerVertex decoration is only applied to location 0
+		// and that the location 1 isn't compacted/remapped to location 0
+		// by adding all values and making sure the result is 10
+		"    out_color = uvec4(dataA[0].y + dataA[1].x + dataA[2].y + dataB.x);\n"
+		"}\n");
+
+	programCollection.glslSources.add("vert") << glu::VertexSource(vertShader);
+	programCollection.glslSources.add("frag") << glu::FragmentSource(fragShader);
+}
+
 void FragmentShadingBarycentricTestCase::initWeightPrograms (SourceCollections& programCollection) const
 {
 	const string				formulaeTemplate	= "in_color[0] * ${coord}.x + in_color[1] * ${coord}.y + in_color[2] * ${coord}.z";
@@ -1514,17 +1565,18 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 
 							const TestParams	testParams		=
 							{
-								testType,				//  TestType			testType;
-								topology,				//  VkPrimitiveTopology	topology;
-								dynamicIndexing,		//  bool				dynamicIndexing;
-								aggregateNdx,			//  size_t				aggregate;
-								dataType,				//  glu::DataType		dataType;
-								DATA_TEST_WIDTH,		//  uint32_t			width;
-								DATA_TEST_HEIGHT,		//  uint32_t			height;
-								notused,				//  bool				perspective;
-								provokingVertexLast,	//  bool				provokingVertexLast;
-								(uint32_t)notused,		//  uint32_t			rotation;
-								notused,				//  bool				dynamicTopologyInPipeline
+								testType,				//  TestType				testType;
+								TEST_SUBTYPE_DEFAULT,	//  TestSubtype				testSubtype;
+								topology,				//  VkPrimitiveTopology		topology;
+								dynamicIndexing,		//  bool					dynamicIndexing;
+								aggregateNdx,			//  size_t					aggregate;
+								dataType,				//  glu::DataType			dataType;
+								DATA_TEST_WIDTH,		//  uint32_t				width;
+								DATA_TEST_HEIGHT,		//  uint32_t				height;
+								notused,				//  bool					perspective;
+								provokingVertexLast,	//  bool					provokingVertexLast;
+								(uint32_t)notused,		//  uint32_t				rotation;
+								notused,				//  bool					dynamicTopologyInPipeline
 							};
 
 							aggregateGroup->addChild(new FragmentShadingBarycentricTestCase(testCtx, dataTypeName, "", testParams));
@@ -1540,6 +1592,27 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 			}
 
 			testTypeGroup->addChild(provokingVertexGroup.release());
+		}
+
+		{
+			MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc", ""));
+			const TestParams testParams
+			{
+				TEST_TYPE_DATA,							//  TestType				testType;
+				TEST_SUBTYPE_PERVERTEX_CORRECTNESS,		//  TestSubtype				testSubtype;
+				VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	//  VkPrimitiveTopology		topology;
+				notused,								//  bool					dynamicIndexing;
+				notused,								//  size_t					aggregate;
+				glu::TYPE_FLOAT_VEC2,					//  glu::DataType			dataType;
+				DATA_TEST_WIDTH,						//  uint32_t				width;
+				DATA_TEST_HEIGHT,						//  uint32_t				height;
+				notused,								//  bool					perspective;
+				notused,								//  bool					provokingVertexLast;
+				(uint32_t)notused,						//  uint32_t				rotation;
+				notused,								//  bool					dynamicTopologyInPipeline
+			};
+			miscGroup->addChild(new FragmentShadingBarycentricTestCase(testCtx, "pervertex_correctness", "", testParams));
+			testTypeGroup->addChild(miscGroup.release());
 		}
 
 		group->addChild(testTypeGroup.release());
@@ -1572,17 +1645,18 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 
 						const TestParams	testParams	=
 						{
-							testType,				//  TestType			testType;
-							topology,				//  VkPrimitiveTopology	topology;
-							notused,				//  bool				dynamicIndexing;
-							(size_t)notused,		//  size_t				aggregate;
-							(glu::DataType)notused,	//  glu::DataType		dataType;
-							WEIGHT_TEST_WIDTH,		//  uint32_t			width;
-							WEIGHT_TEST_HEIGHT,		//  uint32_t			height;
-							perspective,			//  bool				perspective;
-							false,					//  bool				provokingVertexLast;
-							0,						//  uint32_t			rotation;
-							topologyInPipeline,		//  bool				dynamicTopologyInPipeline
+							testType,				//  TestType				testType;
+							TEST_SUBTYPE_DEFAULT,	//  TestSubtype				testSubtype;
+							topology,				//  VkPrimitiveTopology		topology;
+							notused,				//  bool					dynamicIndexing;
+							(size_t)notused,		//  size_t					aggregate;
+							(glu::DataType)notused,	//  glu::DataType			dataType;
+							WEIGHT_TEST_WIDTH,		//  uint32_t				width;
+							WEIGHT_TEST_HEIGHT,		//  uint32_t				height;
+							perspective,			//  bool					perspective;
+							false,					//  bool					provokingVertexLast;
+							0,						//  uint32_t				rotation;
+							topologyInPipeline,		//  bool					dynamicTopologyInPipeline
 						};
 
 						topologyGroup->addChild(new FragmentShadingBarycentricTestCase(testCtx, perspectiveName, "", testParams));
@@ -1610,17 +1684,18 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 
 							const TestParams	testParams =
 							{
-								testType,				//  TestType			testType;
-								topology,				//  VkPrimitiveTopology	topology;
-								notused,				//  bool				dynamicIndexing;
-								(size_t)-1,				//  size_t				aggregate;
-								glu::TYPE_INVALID,		//  glu::DataType		dataType;
-								WEIGHT_TEST_WIDTH,		//  uint32_t			width;
-								WEIGHT_TEST_HEIGHT,		//  uint32_t			height;
-								perspective,			//  bool				perspective;
-								false,					//  bool				provokingVertexLast;
-								rotation,				//  uint32_t			rotation;
-								topologyInPipeline,		//  bool				dynamicTopologyInPipeline
+								testType,				//  TestType				testType;
+								TEST_SUBTYPE_DEFAULT,	//  TestSubtype				testSubtype;
+								topology,				//  VkPrimitiveTopology		topology;
+								notused,				//  bool					dynamicIndexing;
+								(size_t)-1,				//  size_t					aggregate;
+								glu::TYPE_INVALID,		//  glu::DataType			dataType;
+								WEIGHT_TEST_WIDTH,		//  uint32_t				width;
+								WEIGHT_TEST_HEIGHT,		//  uint32_t				height;
+								perspective,			//  bool					perspective;
+								false,					//  bool					provokingVertexLast;
+								rotation,				//  uint32_t				rotation;
+								topologyInPipeline,		//  bool					dynamicTopologyInPipeline
 							};
 
 							topologyGroup->addChild(new FragmentShadingBarycentricTestCase(testCtx, perspectiveName, "", testParams));
