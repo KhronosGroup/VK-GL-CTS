@@ -1015,12 +1015,12 @@ bool ImageMemoryRequirementsOriginal::isImageSupported (const Context& context, 
 {
 	DE_ASSERT(info.extent.width >= 1u && info.extent.height >= 1u && info.extent.depth >= 1u);
 
-	if ((isYCbCrFormat(info.format)
+	if (isYCbCrFormat(info.format)
 		&& (info.imageType != VK_IMAGE_TYPE_2D
 			|| info.mipLevels != 1
 			|| info.arrayLayers != 1
-			|| info.samples != VK_SAMPLE_COUNT_1_BIT))
-			|| !context.isDeviceFunctionalitySupported("VK_KHR_sampler_ycbcr_conversion"))
+			|| info.samples != VK_SAMPLE_COUNT_1_BIT
+			|| !context.isDeviceFunctionalitySupported("VK_KHR_sampler_ycbcr_conversion")))
 	{
 		return false;
 	}
