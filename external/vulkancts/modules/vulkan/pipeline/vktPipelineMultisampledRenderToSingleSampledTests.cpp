@@ -5051,6 +5051,7 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 						testParams.floatColor2Format					= color2Format;
 						testParams.intColorFormat						= color3Format;
 						testParams.depthStencilFormat					= depthStencilFormat;
+						testParams.dynamicRendering						= dynamicRendering;
 
 						generateBasicTest(rng, testParams, sampleCount, resolveMode, renderToWholeFramebuffer);
 
