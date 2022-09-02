@@ -18,7 +18,7 @@
  *
  *//*!
  * \file
- * \brief Android EGL platform.
+ * \brief Android EGL and Vulkan platforms.
  *//*--------------------------------------------------------------------*/
 
 #include "tcuAndroidPlatform.hpp"
@@ -332,7 +332,7 @@ void Platform::describePlatform (std::ostream& dst) const
 	tcu::Android::describePlatform(m_activity.getNativeActivity(), dst);
 }
 
-void Platform::getMemoryLimits (vk::PlatformMemoryLimits& limits) const
+void Platform::getMemoryLimits (tcu::PlatformMemoryLimits& limits) const
 {
 	// Worst-case estimates
 	const size_t	MiB				= (size_t)(1<<20);

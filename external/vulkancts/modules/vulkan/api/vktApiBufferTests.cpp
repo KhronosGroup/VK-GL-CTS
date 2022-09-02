@@ -53,18 +53,18 @@ enum AllocationKind
 	ALLOCATION_KIND_LAST,
 };
 
-PlatformMemoryLimits getPlatformMemoryLimits (Context& context)
+tcu::PlatformMemoryLimits getPlatformMemoryLimits (Context& context)
 {
-	PlatformMemoryLimits	memoryLimits;
+	tcu::PlatformMemoryLimits memoryLimits;
 
-	context.getTestContext().getPlatform().getVulkanPlatform().getMemoryLimits(memoryLimits);
+	context.getTestContext().getPlatform().getMemoryLimits(memoryLimits);
 
 	return memoryLimits;
 }
 
 VkDeviceSize getMaxBufferSize(const VkDeviceSize& bufferSize,
 							  const VkDeviceSize& alignment,
-							  const PlatformMemoryLimits& limits)
+							  const tcu::PlatformMemoryLimits& limits)
 {
 	VkDeviceSize size = bufferSize;
 
