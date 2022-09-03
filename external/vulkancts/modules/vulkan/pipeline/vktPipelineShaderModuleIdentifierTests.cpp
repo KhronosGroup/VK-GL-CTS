@@ -1427,19 +1427,20 @@ tcu::TestStatus ConstantModuleIdentifiersInstance::runTest (const DeviceInterfac
 		++binaryCount;
 		binary.setUsed();
 
-		const auto binSize		= binary.getSize();
-		const auto binData		= reinterpret_cast<const uint32_t*>(binary.getBinary());
-		const auto shaderModule	= (m_params->needsVkModule() ? createShaderModule(vkd1, device1, binary) : Move<VkShaderModule>());
+		const auto binSize			= binary.getSize();
+		const auto binData			= reinterpret_cast<const uint32_t*>(binary.getBinary());
+		const auto shaderModule1	= (m_params->needsVkModule() ? createShaderModule(vkd1, device1, binary) : Move<VkShaderModule>());
+		const auto shaderModule2	= (m_params->needsVkModule() ? createShaderModule(vkd2, device2, binary) : Move<VkShaderModule>());
 
 		// The first one will be a VkShaderModule if needed.
-		const auto id1			= (m_params->needsVkModule()
-								? getShaderModuleIdentifier(vkd1, device1, shaderModule.get())
-								: getShaderModuleIdentifier(vkd1, device1, makeShaderModuleCreateInfo(binSize, binData)));
+		const auto id1				= (m_params->needsVkModule()
+									? getShaderModuleIdentifier(vkd1, device1, shaderModule1.get())
+									: getShaderModuleIdentifier(vkd1, device1, makeShaderModuleCreateInfo(binSize, binData)));
 
 		// The second one will be a VkShaderModule only when comparing shader modules.
-		const auto id2			= ((m_params->apiCall == APICall::MODULE)
-								? getShaderModuleIdentifier(vkd2, device2, shaderModule.get())
-								: getShaderModuleIdentifier(vkd2, device2, makeShaderModuleCreateInfo(binSize, binData)));
+		const auto id2				= ((m_params->apiCall == APICall::MODULE)
+									? getShaderModuleIdentifier(vkd2, device2, shaderModule2.get())
+									: getShaderModuleIdentifier(vkd2, device2, makeShaderModuleCreateInfo(binSize, binData)));
 
 		if (id1 != id2)
 			pass = false;
