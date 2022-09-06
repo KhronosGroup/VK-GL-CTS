@@ -410,6 +410,8 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup (void)
 			VK_IMAGE_LAYOUT_UNDEFINED										// VkImageLayout			initialLayout;
 		};
 
+		checkImageSupport(vki, physDevice, imageParams);
+
 		m_images.resize(m_imageCount);
 		m_imageAllocs.resize(m_imageCount);
 		m_imageViews.resize(m_imageCount);
@@ -518,6 +520,8 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup (void)
 			&queueFamilyIndex,															// const deUint32*			pQueueFamilyIndices;
 			VK_IMAGE_LAYOUT_UNDEFINED													// VkImageLayout			initialLayout;
 		};
+
+		checkImageSupport(vki, physDevice, colorImageParams);
 
 		m_colorImages.resize(m_imageCount);
 		m_colorImageAllocs.resize(m_imageCount);
@@ -923,6 +927,8 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup (void)
 			&queueFamilyIndex,												// const deUint32*			pQueueFamilyIndices;
 			VK_IMAGE_LAYOUT_UNDEFINED										// VkImageLayout			initialLayout;
 		};
+
+		checkImageSupport(vki, physDevice, imageParams);
 
 		m_images.resize(m_imageCount);
 		m_imageAllocs.resize(m_imageCount);
