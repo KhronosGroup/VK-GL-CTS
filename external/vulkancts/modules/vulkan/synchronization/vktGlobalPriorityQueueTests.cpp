@@ -396,14 +396,15 @@ void GPQInstanceBase::submitCommands (VkCommandBuffer producerCmd, VkCommandBuff
 		&sem.get(),						// const VkSemaphore*			pSignalSemaphores;
 	};
 
-	const VkPipelineStageFlags	waitStage = queueFlagBitToPipelineStage(m_config.transitionFrom);
+	const VkPipelineStageFlags	dstWaitStages = VK_PIPELINE_STAGE_TRANSFER_BIT |
+											    queueFlagBitToPipelineStage(m_config.transitionTo);
 	const VkSubmitInfo		semSubmitConsumer
 	{
 		VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType				sType;
 		nullptr,						// const void*					pNext;
 		1u,								// deUint32						waitSemaphoreCount;
 		&(*sem),						// const VkSemaphore*			pWaitSemaphores;
-		&waitStage,						// const VkPipelineStageFlags*	pWaitDstStageMask;
+		&dstWaitStages,					// const VkPipelineStageFlags*	pWaitDstStageMask;
 		1u,								// deUint32						commandBufferCount;
 		&consumerCmd,					// const VkCommandBuffer*		pCommandBuffers;
 		0,								// deUint32						signalSemaphoreCount;
