@@ -7710,13 +7710,10 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, co
 
 #ifndef CTS_USES_VULKANSC
 		suballocationTestGroup->addChild(createRenderPassSparseRenderTargetTests(testCtx, groupParams));
+		renderingTests->addChild(createDepthStencilWriteConditionsTests(testCtx));
 #endif // CTS_USES_VULKANSC
 
 		renderingTests->addChild(createRenderPassMultipleSubpassesMultipleCommandBuffersTests(testCtx));
-
-#ifndef CTS_USES_VULKANSC
-		renderingTests->addChild(createDepthStencilWriteConditionsTests(testCtx));
-#endif // CTS_USES_VULKANSC
 
 		break;
 
@@ -7760,21 +7757,17 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, co
 
 #ifndef CTS_USES_VULKANSC
 	suballocationTestGroup->addChild(createRenderPassLoadStoreOpNoneTests(testCtx, groupParams));
-#endif // CTS_USES_VULKANSC
 
-#ifndef CTS_USES_VULKANSC
 	if (renderingType == RENDERING_TYPE_RENDERPASS2)
 	{
 		suballocationTestGroup->addChild(createRenderPassSubpassMergeFeedbackTests(testCtx, renderingType));
 	}
+
+	renderingTests->addChild(createFragmentDensityMapTests(testCtx, groupParams));
 #endif // CTS_USES_VULKANSC
 
 	renderingTests->addChild(suballocationTestGroup.release());
 	renderingTests->addChild(dedicatedAllocationTestGroup.release());
-
-#ifndef CTS_USES_VULKANSC
-	renderingTests->addChild(createFragmentDensityMapTests(testCtx, groupParams));
-#endif // CTS_USES_VULKANSC
 
 	return renderingTests.release();
 }
