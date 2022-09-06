@@ -208,7 +208,7 @@
 {	"cov-inst-peephole-optimizer-acosh.amber",													"cov-inst-peephole-optimizer-acosh",												"A fragment shader that covers a specific peephole optimizer code path"				},
 {	"cov-inst-value-tracking-inversesqrt.amber",												"cov-inst-value-tracking-inversesqrt",												"A fragment shader that covers a specific value tracking path"						},
 {	"cov-instr-emitter-pow-asinh.amber",														"cov-instr-emitter-pow-asinh",														"A fragment shader that covers a specific instruction emitter code path"			},
-{	"cov-instruction-simplify-atanh-log-undefined.amber",										"cov-instruction-simplify-atanh-log-undefined",										"A fragment shader that covers a specific instruction simplification path"			},
+{	"cov-instruction-simplify-atanh-log-undefined.amber",										"cov-instruction-simplify-atanh-log-undefined",										"A fragment shader that covers a specific instruction simplification path",			"VK_KHR_shader_float_controls"},
 {	"cov-instruction-simplify-bit-shifting.amber",												"cov-instruction-simplify-bit-shifting",											"A fragment shader that covers a specific instruction simplification path"			},
 {	"cov-instruction-simplify-inclusive-or.amber",												"cov-instruction-simplify-inclusive-or",											"A fragment shader that covers a specific instruction simplification path"			},
 {	"cov-instruction-simplify-inst-combine-calls-for-compare-function-call-result.amber",		"cov-instruction-simplify-inst-combine-calls-for-compare-function-call-result",		"A fragment shader that covers a specific instruction simplification path"			},

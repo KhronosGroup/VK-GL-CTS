@@ -319,7 +319,7 @@ public:
 		, m_config						(config)
 		, m_result						(m_context.getTestContext().getLog())
 		, m_memoryTypeIndex				(0)
-                , m_memoryLimits                (getMemoryLimits(context.getTestContext().getPlatform().getVulkanPlatform()))
+                , m_memoryLimits                (tcu::getMemoryLimits(context.getTestContext().getPlatform()))
 	{
 		DE_ASSERT(!!m_config.memorySize != !!m_config.memoryPercentage);
 	}
@@ -330,7 +330,7 @@ private:
 	const TestConfig						m_config;
 	tcu::ResultCollector					m_result;
 	deUint32								m_memoryTypeIndex;
-	const PlatformMemoryLimits				m_memoryLimits;
+	const tcu::PlatformMemoryLimits			m_memoryLimits;
 };
 
 
@@ -592,19 +592,19 @@ public:
 	tcu::TestStatus				iterate							(void);
 
 private:
-	const size_t				m_opCount;
-	const size_t				m_allocSysMemSize;
-	const PlatformMemoryLimits	m_memoryLimits;
-	const deUint32				m_totalDeviceMaskCombinations;
+	const size_t					m_opCount;
+	const size_t					m_allocSysMemSize;
+	const tcu::PlatformMemoryLimits	m_memoryLimits;
+	const deUint32					m_totalDeviceMaskCombinations;
 
-	deUint32					m_memoryObjectCount;
-	deUint32					m_memoryProtectedObjectCount;
-	deUint32					m_currentDeviceMask;
-	size_t						m_opNdx;
-	de::Random					m_rng;
-	vector<Heap>				m_heaps;
-	VkDeviceSize				m_totalSystemMem;
-	VkDeviceSize				m_totalDeviceMem;
+	deUint32						m_memoryObjectCount;
+	deUint32						m_memoryProtectedObjectCount;
+	deUint32						m_currentDeviceMask;
+	size_t							m_opNdx;
+	de::Random						m_rng;
+	vector<Heap>					m_heaps;
+	VkDeviceSize					m_totalSystemMem;
+	VkDeviceSize					m_totalDeviceMem;
 };
 
 RandomAllocFreeTestInstance::RandomAllocFreeTestInstance (Context& context, TestConfigRandom config)
@@ -612,7 +612,7 @@ RandomAllocFreeTestInstance::RandomAllocFreeTestInstance (Context& context, Test
 	, m_opCount						(128)
 	, m_allocSysMemSize				(computeDeviceMemorySystemMemFootprint(getDeviceInterface(), context.getDevice())
 									 + sizeof(MemoryObject))
-	, m_memoryLimits				(getMemoryLimits(context.getTestContext().getPlatform().getVulkanPlatform()))
+	, m_memoryLimits				(tcu::getMemoryLimits(context.getTestContext().getPlatform()))
 	, m_totalDeviceMaskCombinations	(m_subsetAllocationAllowed ? (1 << m_numPhysDevices) - 1 : 1)
 	, m_memoryObjectCount			(0)
 	, m_memoryProtectedObjectCount	(0)
