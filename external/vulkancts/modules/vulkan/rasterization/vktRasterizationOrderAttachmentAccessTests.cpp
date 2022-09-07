@@ -566,7 +566,7 @@ void AttachmentAccessOrderDepthTestCase::addShadersInternal(SourceCollections& p
 				<< "	{\n"
 				<< "		const float expected = 0.125 * float(curIndex - 1) / float(total) + gl_SampleID / 128.0;\n"
 				<< "		const float threshold = 0.0000001;\n"
-				<< "		if (ds.x >= expected - threshold && ds.x <= expected + threshold)\n"
+				<< "		if (ds.x >= (expected - threshold) && ds.x <= (expected + threshold))\n"
 				<< "		{\n"
 				<< "			out0.x = color.x;\n"
 				<< "			out0.y = curIndex + 1 + gl_SampleID + zero;\n";
@@ -1617,13 +1617,15 @@ tcu::TestStatus AttachmentAccessOrderTestInstance::validateResults(deUint32 numD
 	else
 	{
 		tcu::Vec2 *resBuf = static_cast<tcu::Vec2 *> (m_resultBufferMemory->getHostPtr());
+		const float threshold = 0.0000001;
 
 		for (deUint32 y = 0; y < HEIGHT && res == QP_TEST_RESULT_PASS; y ++)
 		{
 			for (deUint32 x = 0; x < WIDTH && res == QP_TEST_RESULT_PASS; x ++)
 			{
 				tcu::Vec2 pixel = resBuf[y * WIDTH + x];
-				if (pixel[0] != 0 || pixel[1] != (float)(numDraws * numPrimitives/2 * numInstances))
+                float expected = (float)numDraws * (float)numPrimitives / 2 * (float)numInstances;
+                if (pixel[0] != 0 || ((pixel[1] < (expected - threshold)) || (pixel[1] > (expected + threshold))))
 				{
 					res = QP_TEST_RESULT_FAIL;
 				}
