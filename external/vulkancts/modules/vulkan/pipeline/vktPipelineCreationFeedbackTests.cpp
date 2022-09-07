@@ -678,6 +678,7 @@ tcu::TestStatus GraphicsCacheTestInstance::verifyTestResult (void)
 		deUint32		pipelineCacheNdx		= creationFeedbackNdx / deUint32(VK_MAX_PIPELINE_PARTS);
 		auto			creationFeedbackFlags	= m_pipelineCreationFeedback[creationFeedbackNdx].flags;
 		std::string		caseString				= getCaseStr(pipelineCacheNdx);
+		deUint32		pipelinePartIndex	= creationFeedbackNdx % deUint32(VK_MAX_PIPELINE_PARTS);
 
 		std::ostringstream message;
 		message << caseString;
@@ -689,45 +690,46 @@ tcu::TestStatus GraphicsCacheTestInstance::verifyTestResult (void)
 			return tcu::TestStatus::fail(message.str());
 		}
 
-		if (m_param->isCacheDisabled() && creationFeedbackFlags & VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT)
 		{
-			message << ": feedback indicates pipeline hit cache when it shouldn't";
-			return tcu::TestStatus::fail(message.str());
-		}
-
-		if (pipelineCacheNdx == PIPELINE_CACHE_NDX_NO_CACHE && creationFeedbackFlags & VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT)
-		{
-			message << ": hit the cache when it shouldn't";
-			return tcu::TestStatus::fail(message.str());
-		}
-
-		if (pipelineCacheNdx != PIPELINE_CACHE_NDX_DERIVATIVE && creationFeedbackFlags & VK_PIPELINE_CREATION_FEEDBACK_BASE_PIPELINE_ACCELERATION_BIT_EXT)
-		{
-			message << ": feedback indicates base pipeline acceleration when it shouldn't";
-			return tcu::TestStatus::fail(message.str());
-		}
-
-		deUint32 pipelinePartIndex = creationFeedbackNdx % deUint32(VK_MAX_PIPELINE_PARTS);
-		if (pipelineCacheNdx == PIPELINE_CACHE_NDX_CACHED && !m_param->isCacheDisabled() && (creationFeedbackFlags & VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT) == 0)
-		{
-			// For graphics pipeline library cache is only hit for the pre_rasterization and fragment_shader stages
-			if (isMonolithic || (pipelinePartIndex == 1u) || (pipelinePartIndex == 2u))
+			if (m_param->isCacheDisabled() && creationFeedbackFlags & VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT)
 			{
-				message << "\nWarning: Cached pipeline case did not hit the cache";
-				cachedPipelineWarning = DE_TRUE;
+				message << ": feedback indicates pipeline hit cache when it shouldn't";
+				return tcu::TestStatus::fail(message.str());
 			}
-		}
 
-		if (m_pipelineCreationFeedback[creationFeedbackNdx].duration == 0)
-		{
-			message << "\nWarning: Pipeline creation feedback reports duration spent creating a pipeline was zero nanoseconds\n";
-			durationZeroWarning = DE_TRUE;
-		}
+			if (pipelineCacheNdx == PIPELINE_CACHE_NDX_NO_CACHE && creationFeedbackFlags & VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT)
+			{
+				message << ": hit the cache when it shouldn't";
+				return tcu::TestStatus::fail(message.str());
+			}
 
-		message << "\n";
-		message << "\t\t Hit cache ? \t\t\t"				<< (creationFeedbackFlags & VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT ? "yes" : "no")	<< "\n";
-		message << "\t\t Base Pipeline Acceleration ? \t"	<< (creationFeedbackFlags & VK_PIPELINE_CREATION_FEEDBACK_BASE_PIPELINE_ACCELERATION_BIT_EXT ?	 "yes" : "no")		<< "\n";
-		message << "\t\t Duration (ns): \t\t"				<< m_pipelineCreationFeedback[creationFeedbackNdx].duration																							<< "\n";
+			if (pipelineCacheNdx != PIPELINE_CACHE_NDX_DERIVATIVE && creationFeedbackFlags & VK_PIPELINE_CREATION_FEEDBACK_BASE_PIPELINE_ACCELERATION_BIT_EXT)
+			{
+				message << ": feedback indicates base pipeline acceleration when it shouldn't";
+				return tcu::TestStatus::fail(message.str());
+			}
+
+			if (pipelineCacheNdx == PIPELINE_CACHE_NDX_CACHED && !m_param->isCacheDisabled() && (creationFeedbackFlags & VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT) == 0)
+			{
+				// For graphics pipeline library cache is only hit for the pre_rasterization and fragment_shader stages
+				if (isMonolithic || (pipelinePartIndex == 1u) || (pipelinePartIndex == 2u))
+				{
+					message << "\nWarning: Cached pipeline case did not hit the cache";
+					cachedPipelineWarning = DE_TRUE;
+				}
+			}
+
+			if (m_pipelineCreationFeedback[creationFeedbackNdx].duration == 0)
+			{
+				message << "\nWarning: Pipeline creation feedback reports duration spent creating a pipeline was zero nanoseconds\n";
+				durationZeroWarning = DE_TRUE;
+			}
+
+			message << "\n";
+			message << "\t\t Hit cache ? \t\t\t"				<< (creationFeedbackFlags & VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT ? "yes" : "no")	<< "\n";
+			message << "\t\t Base Pipeline Acceleration ? \t"	<< (creationFeedbackFlags & VK_PIPELINE_CREATION_FEEDBACK_BASE_PIPELINE_ACCELERATION_BIT_EXT ?	 "yes" : "no")		<< "\n";
+			message << "\t\t Duration (ns): \t\t"				<< m_pipelineCreationFeedback[creationFeedbackNdx].duration																							<< "\n";
+		}
 
 		// dont repeat checking shader feedback for pipeline parts - just check all shaders when checkin final pipelines
 		if (pipelinePartIndex == finalPipelineIndex)
@@ -1035,43 +1037,45 @@ tcu::TestStatus ComputeCacheTestInstance::verifyTestResult (void)
 			return tcu::TestStatus::fail(message.str());
 		}
 
-		if (m_param->isCacheDisabled() && m_pipelineCreationFeedback[ndx].flags & VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT)
 		{
-			message << ": feedback indicates pipeline hit cache when it shouldn't";
-			return tcu::TestStatus::fail(message.str());
+			if (m_param->isCacheDisabled() && m_pipelineCreationFeedback[ndx].flags & VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT)
+			{
+				message << ": feedback indicates pipeline hit cache when it shouldn't";
+				return tcu::TestStatus::fail(message.str());
+			}
+
+			if (ndx == PIPELINE_CACHE_NDX_NO_CACHE && m_pipelineCreationFeedback[ndx].flags & VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT)
+			{
+				message << ": hit the cache when it shouldn't";
+				return tcu::TestStatus::fail(message.str());
+			}
+
+			if (!(ndx == PIPELINE_CACHE_NDX_DERIVATIVE && !m_param->isCacheDisabled()) && m_pipelineCreationFeedback[ndx].flags & VK_PIPELINE_CREATION_FEEDBACK_BASE_PIPELINE_ACCELERATION_BIT_EXT)
+			{
+				message << ": feedback indicates base pipeline acceleration when it shouldn't";
+				return tcu::TestStatus::fail(message.str());
+			}
+
+			if (ndx == PIPELINE_CACHE_NDX_CACHED && !m_param->isCacheDisabled() && (m_pipelineCreationFeedback[ndx].flags & VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT) == 0)
+			{
+				message << "\nWarning: Cached pipeline case did not hit the cache";
+				cachedPipelineWarning = DE_TRUE;
+			}
+
+			if (m_pipelineCreationFeedback[ndx].duration == 0)
+			{
+				message << "\nWarning: Pipeline creation feedback reports duration spent creating a pipeline was zero nanoseconds\n";
+				durationZeroWarning = DE_TRUE;
+			}
+
+			message << "\n";
+
+			message << "\t\t Hit cache ? \t\t\t"				<< (m_pipelineCreationFeedback[ndx].flags & VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT ? "yes" : "no")	<< "\n";
+			message << "\t\t Base Pipeline Acceleration ? \t"	<< (m_pipelineCreationFeedback[ndx].flags & VK_PIPELINE_CREATION_FEEDBACK_BASE_PIPELINE_ACCELERATION_BIT_EXT ? "yes" : "no")		<< "\n";
+			message << "\t\t Duration (ns): \t\t"				<< m_pipelineCreationFeedback[ndx].duration																						<< "\n";
+
+			message << "\t Compute Stage\n";
 		}
-
-		if (ndx == PIPELINE_CACHE_NDX_NO_CACHE && m_pipelineCreationFeedback[ndx].flags & VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT)
-		{
-			message << ": hit the cache when it shouldn't";
-			return tcu::TestStatus::fail(message.str());
-		}
-
-		if (!(ndx == PIPELINE_CACHE_NDX_DERIVATIVE && !m_param->isCacheDisabled()) && m_pipelineCreationFeedback[ndx].flags & VK_PIPELINE_CREATION_FEEDBACK_BASE_PIPELINE_ACCELERATION_BIT_EXT)
-		{
-			message << ": feedback indicates base pipeline acceleration when it shouldn't";
-			return tcu::TestStatus::fail(message.str());
-		}
-
-		if (ndx == PIPELINE_CACHE_NDX_CACHED && !m_param->isCacheDisabled() && (m_pipelineCreationFeedback[ndx].flags & VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT) == 0)
-		{
-			message << "\nWarning: Cached pipeline case did not hit the cache";
-			cachedPipelineWarning = DE_TRUE;
-		}
-
-		if (m_pipelineCreationFeedback[ndx].duration == 0)
-		{
-			message << "\nWarning: Pipeline creation feedback reports duration spent creating a pipeline was zero nanoseconds\n";
-			durationZeroWarning = DE_TRUE;
-		}
-
-		message << "\n";
-
-		message << "\t\t Hit cache ? \t\t\t"				<< (m_pipelineCreationFeedback[ndx].flags & VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT ? "yes" : "no")	<< "\n";
-		message << "\t\t Base Pipeline Acceleration ? \t"	<< (m_pipelineCreationFeedback[ndx].flags & VK_PIPELINE_CREATION_FEEDBACK_BASE_PIPELINE_ACCELERATION_BIT_EXT ? "yes" : "no")		<< "\n";
-		message << "\t\t Duration (ns): \t\t"				<< m_pipelineCreationFeedback[ndx].duration																						<< "\n";
-
-		message << "\t Compute Stage\n";
 
 		// According to the spec:
 		//
