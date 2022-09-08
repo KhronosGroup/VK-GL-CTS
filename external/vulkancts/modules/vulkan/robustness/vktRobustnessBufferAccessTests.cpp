@@ -253,7 +253,7 @@ public:
 
 // RobustBufferAccessTest
 
-const deUint32 RobustBufferAccessTest::s_testArraySize = 1024;
+const deUint32 RobustBufferAccessTest::s_testArraySize = 128; // Fit within minimum required maxUniformBufferRange
 const deUint32 RobustBufferAccessTest::s_numberOfBytesAccessed	= (deUint32)(16 * sizeof(float)); // size of mat4
 
 RobustBufferAccessTest::RobustBufferAccessTest (tcu::TestContext&		testContext,
