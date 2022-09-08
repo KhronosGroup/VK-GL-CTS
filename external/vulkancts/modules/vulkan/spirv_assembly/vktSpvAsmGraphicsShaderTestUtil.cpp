@@ -4617,8 +4617,9 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 								return tcu::TestStatus::fail("Value returned is invalid");
 
 							diff = outputFloats[expectedNdx] - expectedFloats[expectedNdx];
+							deUint32 intDiff = static_cast<deUint32>(diff);
 
-							if ((diff < 0.0f) || (deFloatFloor(diff) != diff))
+							if ((diff < 0.0f) || (expectedFloats[expectedNdx] + static_cast<float>(intDiff)) != outputFloats[expectedNdx])
 								return tcu::TestStatus::fail("Value returned should be equal to expected value plus non-negative integer");
 						}
 						else
