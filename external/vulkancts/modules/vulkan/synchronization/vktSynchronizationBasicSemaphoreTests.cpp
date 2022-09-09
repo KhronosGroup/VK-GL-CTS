@@ -54,7 +54,11 @@ struct TestConfig
 	SynchronizationType type;
 };
 
+#ifdef CTS_USES_VULKANSC
+static const int basicChainLength	= 1024;
+#else
 static const int basicChainLength	= 32768;
+#endif
 
 Move<VkSemaphore> createTestSemaphore(Context& context, const DeviceInterface& vk, const VkDevice device, const TestConfig& config)
 {
