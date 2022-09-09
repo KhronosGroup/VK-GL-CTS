@@ -1968,7 +1968,7 @@ def writeDeviceFeatures2(api, filename):
 	# helper class used to encapsulate all data needed during generation
 	class StructureDetail:
 		def __init__ (self, compositeObject):
-			self.name			= compositeObject.name
+			self.nameList		= [compositeObject.name] + compositeObject.aliasList
 			self.sType			= compositeObject.members[0].values
 			self.instanceName	= 'd' + compositeObject.name[11:]
 			self.flagName		= 'is' + compositeObject.name[16:]
@@ -2000,13 +2000,17 @@ def writeDeviceFeatures2(api, filename):
 			for extension in api.extensions:
 				for requirement in extension.requirementsList:
 					for extensionStructure in requirement.newTypes:
-						if structureDetail.name == extensionStructure.name:
+						if extensionStructure.name in structureDetail.nameList:
 							structureDetail.extension = extension.name
-							if extension.promotedto is not None:
-								versionSplit = extension.promotedto.split('_')
-								structureDetail.api		= 0					# TODO handle this for Vulkan SC
-								structureDetail.major	= versionSplit[-2]
-								structureDetail.minor	= versionSplit[-1]
+							if extension.promotedto is not None and extension.partiallyPromoted is False:
+								# check if extension was promoted to vulkan version or other extension
+								if 'VK_VERSION' in extension.promotedto:
+									versionSplit = extension.promotedto.split('_')
+									structureDetail.api		= 0					# TODO handle this for Vulkan SC
+									structureDetail.major	= versionSplit[-2]
+									structureDetail.minor	= versionSplit[-1]
+								else:
+									structureDetail.extension = extension.promotedto
 							raise StructureFoundContinueToNextOne
 		except StructureFoundContinueToNextOne:
 			continue
@@ -2015,9 +2019,10 @@ def writeDeviceFeatures2(api, filename):
 			continue
 		# if structure was not added with extension then check if
 		# it was added directly with one of vulkan versions
+		structureName = structureDetail.nameList[0]
 		for feature in api.features:
 			for requirement in feature.requirementsList:
-				if structureDetail.name in requirement.typeList:
+				if structureName in requirement.typeList:
 					versionSplit = feature.name.split('_')
 					structureDetail.api		= 0							# TODO handle this for Vulkan SC
 					structureDetail.major	= versionSplit[-2]
@@ -2033,9 +2038,10 @@ def writeDeviceFeatures2(api, filename):
 	logStructures = []
 	verifyStructures = []
 	for index, structureDetail in enumerate(testedStructureDetail):
+		structureName = structureDetail.nameList[0]
 		# create two instances of each structure
 		nameSpacing = '\t'
-		structureDefinitions.append(structureDetail.name + nameSpacing + structureDetail.instanceName + '[count];')
+		structureDefinitions.append(structureName + nameSpacing + structureDetail.instanceName + '[count];')
 		# create flags that check if proper extension or vulkan version is available
 		condition	= ''
 		extension	= structureDetail.extension
@@ -2043,18 +2049,15 @@ def writeDeviceFeatures2(api, filename):
 		if extension is not None:
 			condition = ' checkExtension(properties, "' + extension + '")'
 		if major is not None:
-			if condition != '':
-				condition += ' || '
-			else:
-				condition += ' '
+			condition = ' ' if condition == '' else condition + ' || '
 			condition += 'context.contextSupports(vk::ApiVersion(' + str(structureDetail.api) + ', ' + str(major) + ', ' + str(structureDetail.minor) + ', 0))'
 		if condition == '':
 			condition = 'true'
 		condition += ';'
-		nameSpacing = '\t' * int((len(structureDetail.name) - 4) / 4)
+		nameSpacing = '\t' * int((len(structureName) - 4) / 4)
 		featureEnabledFlags.append('const bool' + nameSpacing + structureDetail.flagName + ' =' + condition)
 		# clear memory of each structure
-		clearStructures.append('\tdeMemset(&' + structureDetail.instanceName + '[ndx], 0xFF * ndx, sizeof(' + structureDetail.name + '));')
+		clearStructures.append('\tdeMemset(&' + structureDetail.instanceName + '[ndx], 0xFF * ndx, sizeof(' + structureName + '));')
 		# construct structure chain
 		nextInstanceName = 'DE_NULL';
 		if index < len(testedStructureDetail)-1:
@@ -2076,7 +2079,7 @@ def writeDeviceFeatures2(api, filename):
 			verifyStructure.append(prefix + structureDetail.instanceName + '[0].' + m + ' != ' + structureDetail.instanceName + '[1].' + m + postfix)
 		if len(structureDetail.members) == 0:
 			verifyStructure.append('\t\tfalse)')
-		verifyStructure.append('\t{\n\t\tTCU_FAIL("Mismatch between ' + structureDetail.name + '");\n\t}')
+		verifyStructure.append('\t{\n\t\tTCU_FAIL("Mismatch between ' + structureName + '");\n\t}')
 		verifyStructures.append(verifyStructure)
 
 	# construct file content
@@ -2114,12 +2117,9 @@ def writeDeviceFeatures2(api, filename):
 		stream.append("}\n")
 
 	# function to create tests
-	stream.append("""
-void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
-{
-""")
+	stream.append("void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)\n{")
 	for x in testedStructureDetail:
-		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x.instanceName[len('device'):]) + '", "' + x.name + '", testPhysicalDeviceFeature' + x.instanceName[len('device'):] + ');')
+		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x.instanceName[len('device'):]) + '", "' + x.nameList[0] + '", testPhysicalDeviceFeature' + x.instanceName[len('device'):] + ');')
 	stream.append('}\n')
 
 	# write out
