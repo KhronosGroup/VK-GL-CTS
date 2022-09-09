@@ -686,12 +686,24 @@ tcu::TestStatus GraphicsCacheTestInstance::verifyTestResult (void)
 		message << caseString;
 
 		// Check first that the no cached pipeline was missed in the pipeline cache
+
+		// According to the spec:
+		// "An implementation should write pipeline creation feedback to pPipelineCreationFeedback and
+		//	may write pipeline stage creation feedback to pPipelineStageCreationFeedbacks."
 		if (!(creationFeedbackFlags & VK_PIPELINE_CREATION_FEEDBACK_VALID_BIT_EXT))
 		{
-			message << ": invalid data";
-			return tcu::TestStatus::fail(message.str());
+			// According to the spec:
+			// "If the VK_PIPELINE_CREATION_FEEDBACK_VALID_BIT_EXT is not set in flags, an implementation
+			//	must not set any other bits in flags, and all other VkPipelineCreationFeedbackEXT data members are undefined."
+			if (m_pipelineCreationFeedback[creationFeedbackNdx].flags)
+			{
+				std::ostringstream			errorMsg;
+				errorMsg << ": Creation feedback is not valid but there are other flags written";
+				return tcu::TestStatus::fail(errorMsg.str());
+			}
+			message << "\t\t Pipeline Creation Feedback data is not valid\n";
 		}
-
+		else
 		{
 			if (m_param->isCacheDisabled() && creationFeedbackFlags & VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT)
 			{
@@ -745,8 +757,14 @@ tcu::TestStatus GraphicsCacheTestInstance::verifyTestResult (void)
 				const deUint32 index = VK_MAX_SHADER_STAGES * pipelineCacheNdx + shader;
 				message << "\t" <<(shader + 1) << " shader stage\n";
 
+				// According to the spec:
+				// "An implementation should write pipeline creation feedback to pPipelineCreationFeedback and
+				//      may write pipeline stage creation feedback to pPipelineStageCreationFeedbacks."
 				if (!(m_pipelineStageCreationFeedbacks[index].flags & VK_PIPELINE_CREATION_FEEDBACK_VALID_BIT_EXT))
 				{
+					// According to the spec:
+					// "If the VK_PIPELINE_CREATION_FEEDBACK_VALID_BIT_EXT is not set in flags, an implementation
+					//      must not set any other bits in flags, and all other VkPipelineCreationFeedbackEXT data members are undefined."
 					if (m_pipelineStageCreationFeedbacks[index].flags)
 					{
 						std::ostringstream			errorMsg;
@@ -1033,12 +1051,24 @@ tcu::TestStatus ComputeCacheTestInstance::verifyTestResult (void)
 		// VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT is set in pPipelineCreationFeedback."
 		//
 		// Check first that the no cached pipeline was missed in the pipeline cache
+
+		// According to the spec:
+		// "An implementation should write pipeline creation feedback to pPipelineCreationFeedback and
+		//	may write pipeline stage creation feedback to pPipelineStageCreationFeedbacks."
 		if (!(m_pipelineCreationFeedback[ndx].flags & VK_PIPELINE_CREATION_FEEDBACK_VALID_BIT_EXT))
 		{
-			message << ": invalid data";
-			return tcu::TestStatus::fail(message.str());
+			// According to the spec:
+			// "If the VK_PIPELINE_CREATION_FEEDBACK_VALID_BIT_EXT is not set in flags, an implementation
+			//	must not set any other bits in flags, and all other VkPipelineCreationFeedbackEXT data members are undefined."
+			if (m_pipelineCreationFeedback[ndx].flags)
+			{
+				std::ostringstream			errorMsg;
+				errorMsg << ": Creation feedback is not valid but there are other flags written";
+				return tcu::TestStatus::fail(errorMsg.str());
+			}
+			message << "\t\t Pipeline Creation Feedback data is not valid\n";
 		}
-
+		else
 		{
 			if (m_param->isCacheDisabled() && m_pipelineCreationFeedback[ndx].flags & VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT)
 			{
@@ -1080,7 +1110,6 @@ tcu::TestStatus ComputeCacheTestInstance::verifyTestResult (void)
 		}
 
 		// According to the spec:
-		//
 		// "An implementation should write pipeline creation feedback to pPipelineCreationFeedback and
 		//	may write pipeline stage creation feedback to pPipelineStageCreationFeedbacks."
 		if (!(m_pipelineStageCreationFeedback[ndx].flags & VK_PIPELINE_CREATION_FEEDBACK_VALID_BIT_EXT))
