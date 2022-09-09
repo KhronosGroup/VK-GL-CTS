@@ -11517,6 +11517,31 @@ void addBufferToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocatio
 
 		group->addChild(new BufferToBufferTestCase(testCtx, "regions", "Multiple regions", params));
 	}
+
+	{
+		TestParams params;
+		params.src.buffer.size	= 32;
+		params.dst.buffer.size	= 32;
+		params.allocationKind	= allocationKind;
+		params.extensionUse		= extensionUse;
+
+		// Copy four unaligned regions
+		for (unsigned int i = 0; i < 4; i++)
+		{
+			const VkBufferCopy bufferCopy
+			{
+				3 + i * 3,	// VkDeviceSize	srcOffset;	3  6   9  12
+				1 + i * 5,	// VkDeviceSize	dstOffset;	1  6  11  16
+				2 + i,		// VkDeviceSize	size;		2  3   4   5
+			};
+
+			CopyRegion copyRegion;
+			copyRegion.bufferCopy = bufferCopy;
+			params.regions.push_back(copyRegion);
+		}
+
+		group->addChild(new BufferToBufferTestCase(testCtx, "unaligned_regions", "Multiple unaligned regions", params));
+	}
 }
 
 void addBlittingImageSimpleTests (tcu::TestCaseGroup* group, TestParams& params)
