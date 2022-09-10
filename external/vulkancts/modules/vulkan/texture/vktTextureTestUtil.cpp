@@ -516,9 +516,6 @@ Move<VkDevice> createRobustBufferAccessDevice (Context& context, const VkPhysica
 		&queuePriority								// const float*					pQueuePriorities;
 	};
 
-	VkPhysicalDeviceFeatures enabledFeatures = context.getDeviceFeatures();
-	enabledFeatures.robustBufferAccess = true;
-
 	// \note Extensions in core are not explicitly enabled even though
 	//		 they are in the extension list advertised to tests.
     std::vector<const char*>	extensionPtrs;
@@ -542,7 +539,7 @@ Move<VkDevice> createRobustBufferAccessDevice (Context& context, const VkPhysica
 		DE_NULL,								// const char* const*				ppEnabledLayerNames;
 		(deUint32)extensionPtrs.size(),			// deUint32							enabledExtensionCount;
 		(extensionPtrs.empty() ? DE_NULL : &extensionPtrs[0]),	// const char* const*				ppEnabledExtensionNames;
-        enabledFeatures2 ? NULL : &enabledFeatures	// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+		DE_NULL									// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 
 	return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(),
@@ -551,18 +548,18 @@ Move<VkDevice> createRobustBufferAccessDevice (Context& context, const VkPhysica
 
 VkDevice TextureRenderer::getDevice (void) const
 {
-	return m_requireRobustness2 ? *m_customDevice : m_context.getDevice();
+	return (m_requireRobustness2 || m_requireImageViewMinLod) ? *m_customDevice : m_context.getDevice();
 }
 
 const deUint16		TextureRenderer::s_vertexIndices[6] = { 0, 1, 2, 2, 1, 3 };
 const VkDeviceSize	TextureRenderer::s_vertexIndexBufferSize = sizeof(TextureRenderer::s_vertexIndices);
 
-TextureRenderer::TextureRenderer(Context& context, vk::VkSampleCountFlagBits sampleCount, deUint32 renderWidth, deUint32 renderHeight, vk::VkComponentMapping componentMapping, bool requireRobustness2)
-	: TextureRenderer(context, sampleCount, renderWidth, renderHeight, 1u, componentMapping, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, requireRobustness2)
+TextureRenderer::TextureRenderer(Context& context, vk::VkSampleCountFlagBits sampleCount, deUint32 renderWidth, deUint32 renderHeight, vk::VkComponentMapping componentMapping, bool requireRobustness2,	bool requireImageViewMinLod)
+	: TextureRenderer(context, sampleCount, renderWidth, renderHeight, 1u, componentMapping, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, requireRobustness2, requireImageViewMinLod)
 {
 }
 
-TextureRenderer::TextureRenderer (Context& context, VkSampleCountFlagBits sampleCount, deUint32 renderWidth, deUint32 renderHeight, deUint32 renderDepth, VkComponentMapping componentMapping, VkImageType imageType, VkImageViewType imageViewType, vk::VkFormat imageFormat, bool requireRobustness2)
+TextureRenderer::TextureRenderer (Context& context, VkSampleCountFlagBits sampleCount, deUint32 renderWidth, deUint32 renderHeight, deUint32 renderDepth, VkComponentMapping componentMapping, VkImageType imageType, VkImageViewType imageViewType, vk::VkFormat imageFormat, bool requireRobustness2, bool requireImageViewMinLod)
 	: m_context					(context)
 	, m_log						(context.getTestContext().getLog())
 	, m_renderWidth				(renderWidth)
@@ -580,18 +577,36 @@ TextureRenderer::TextureRenderer (Context& context, VkSampleCountFlagBits sample
 	, m_viewportHeight			((float)renderHeight)
 	, m_componentMapping		(componentMapping)
 	, m_requireRobustness2		(requireRobustness2)
+	, m_requireImageViewMinLod	(requireImageViewMinLod)
 {
 	const DeviceInterface&						vkd						= m_context.getDeviceInterface();
 	const deUint32								queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
 
-	if (m_requireRobustness2)
+	if (m_requireRobustness2 || m_requireImageViewMinLod)
 	{
 		// Note we are already checking the needed features are available in checkSupport().
-		VkPhysicalDeviceRobustness2FeaturesEXT				robustness2Features				= initVulkanStructure();
-		VkPhysicalDeviceFeatures2							features2						= initVulkanStructure(&robustness2Features);
-
-		DE_ASSERT(context.isDeviceFunctionalitySupported("VK_EXT_robustness2"));
-		robustness2Features.robustImageAccess2 = true;
+		VkPhysicalDeviceRobustness2FeaturesEXT				robustness2Features			= initVulkanStructure();
+		VkPhysicalDeviceFeatures2							features2					= initVulkanStructure(&robustness2Features);
+#ifndef CTS_USES_VULKANSC
+		VkPhysicalDeviceImageViewMinLodFeaturesEXT			imageViewMinLodFeatures		= initVulkanStructure();
+		if (m_requireImageViewMinLod)
+		{
+			DE_ASSERT(context.isDeviceFunctionalitySupported("VK_EXT_image_view_min_lod"));
+			imageViewMinLodFeatures.minLod = true;
+			if (m_requireRobustness2)
+			{
+				robustness2Features.pNext = &imageViewMinLodFeatures;
+			}
+			else {
+				features2.pNext = &imageViewMinLodFeatures;
+			}
+		}
+#endif
+		if (m_requireRobustness2)
+		{
+			DE_ASSERT(context.isDeviceFunctionalitySupported("VK_EXT_robustness2"));
+			robustness2Features.robustImageAccess2 = true;
+		}
 
 		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
 		m_customDevice = createRobustBufferAccessDevice(context, &features2);
