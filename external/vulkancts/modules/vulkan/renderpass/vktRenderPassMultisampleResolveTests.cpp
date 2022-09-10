@@ -789,6 +789,9 @@ void MultisampleRenderPassTestInstance::submit (void)
 		{
 			colorAttachments[i].imageView = **m_multisampleImageViews[i];
 			colorAttachments[i].resolveImageView = **m_singlesampleImageViews[i];
+			if (isUintFormat(m_format) || isIntFormat(m_format)) {
+				colorAttachments[i].resolveMode = vk::VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
+			}
 		}
 
 		vk::VkRenderingInfoKHR renderingInfo
