@@ -1075,43 +1075,33 @@ struct TestConfig
 		return dynamicStates;
 	}
 
-	// Returns the list of extensions needed by this config.
-	std::vector<std::string> getRequiredExtensions () const
+	bool testEDS() const
 	{
-		std::vector<std::string> extensions;
+		return (cullModeConfig.dynamicValue
+			|| frontFaceConfig.dynamicValue
+			|| topologyConfig.dynamicValue
+			|| viewportConfig.dynamicValue
+			|| scissorConfig.dynamicValue
+			|| strideConfig.dynamicValue
+			|| depthTestEnableConfig.dynamicValue
+			|| depthWriteEnableConfig.dynamicValue
+			|| depthCompareOpConfig.dynamicValue
+			|| depthBoundsTestEnableConfig.dynamicValue
+			|| stencilTestEnableConfig.dynamicValue
+			|| stencilOpConfig.dynamicValue);
+	}
 
-		if (cullModeConfig.dynamicValue
-		    || frontFaceConfig.dynamicValue
-		    || topologyConfig.dynamicValue
-		    || viewportConfig.dynamicValue
-		    || scissorConfig.dynamicValue
-		    || strideConfig.dynamicValue
-		    || depthTestEnableConfig.dynamicValue
-		    || depthWriteEnableConfig.dynamicValue
-		    || depthCompareOpConfig.dynamicValue
-		    || depthBoundsTestEnableConfig.dynamicValue
-		    || stencilTestEnableConfig.dynamicValue
-		    || stencilOpConfig.dynamicValue)
-		{
-			extensions.push_back("VK_EXT_extended_dynamic_state");
-		}
+	bool testEDS2() const
+	{
+		return (rastDiscardEnableConfig.dynamicValue
+			|| depthBiasEnableConfig.dynamicValue
+			|| primRestartEnableConfig.dynamicValue
+			|| useExtraDynPCPPipeline);
+	}
 
-		if (vertexGenerator.dynamicValue)
-		{
-			extensions.push_back("VK_EXT_vertex_input_dynamic_state");
-		}
-
-		if (patchControlPointsConfig.dynamicValue
-		    || rastDiscardEnableConfig.dynamicValue
-		    || depthBiasEnableConfig.dynamicValue
-		    || logicOpConfig.dynamicValue
-		    || primRestartEnableConfig.dynamicValue
-			|| useExtraDynPCPPipeline)
-		{
-			extensions.push_back("VK_EXT_extended_dynamic_state2");
-		}
-
-		return extensions;
+	bool testVertexDynamic() const
+	{
+		return static_cast<bool>(vertexGenerator.dynamicValue);
 	}
 
 private:
@@ -1200,22 +1190,25 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 	const auto&	vki				= context.getInstanceInterface();
 	const auto	physicalDevice	= context.getPhysicalDevice();
 
-	// Check extension support.
-	const auto requiredExtensions = m_testConfig.getRequiredExtensions();
-	for (const auto& extension : requiredExtensions)
-		context.requireDeviceFunctionality(extension);
+	// Check feature support.
+	const auto& edsFeatures = context.getExtendedDynamicStateFeaturesEXT();
+	const auto& eds2Features = context.getExtendedDynamicState2FeaturesEXT();
+	const auto& viFeatures = context.getVertexInputDynamicStateFeaturesEXT();
 
-	// Needed for extended state included as part of VK_EXT_extended_dynamic_state2.
-	if (de::contains(begin(requiredExtensions), end(requiredExtensions), "VK_EXT_extended_dynamic_state2"))
-	{
-		const auto& eds2Features = context.getExtendedDynamicState2FeaturesEXT();
+	if (m_testConfig.testEDS() && !edsFeatures.extendedDynamicState)
+		TCU_THROW(NotSupportedError, "extendedDynamicState is not supported");
 
-		if (m_testConfig.testLogicOp() && !eds2Features.extendedDynamicState2LogicOp)
-			TCU_THROW(NotSupportedError, "VK_EXT_extended_dynamic_state2 : changing LogicOp dynamically is not supported");
+	if (m_testConfig.testEDS2() && !eds2Features.extendedDynamicState2)
+		TCU_THROW(NotSupportedError, "extendedDynamicState2 is not supported");
 
-		if ((m_testConfig.testPatchControlPoints() || m_testConfig.useExtraDynPCPPipeline) && !eds2Features.extendedDynamicState2PatchControlPoints)
-			TCU_THROW(NotSupportedError, "VK_EXT_extended_dynamic_state2 : changing patch control points dynamically is not supported");
-	}
+	if (m_testConfig.testLogicOp() && !eds2Features.extendedDynamicState2LogicOp)
+		TCU_THROW(NotSupportedError, "extendedDynamicState2LogicOp is not supported");
+
+	if ((m_testConfig.testPatchControlPoints() || m_testConfig.useExtraDynPCPPipeline) && !eds2Features.extendedDynamicState2PatchControlPoints)
+		TCU_THROW(NotSupportedError, "extendedDynamicState2PatchControlPoints is not supported");
+
+	if (m_testConfig.testVertexDynamic() && !viFeatures.vertexInputDynamicState)
+		TCU_THROW(NotSupportedError, "vertexInputDynamicState is not supported");
 
 	// Check the number of viewports needed and the corresponding limits.
 	const auto&	viewportConfig	= m_testConfig.viewportConfig;
