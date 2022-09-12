@@ -420,7 +420,10 @@ vector<u8>	buildOfflinePipelineCache (const VulkanPipelineCacheInput&		input,
 
 		std::string command = compilerCommand.str();
 		int returnValue = system(command.c_str());
-		DE_UNREF(returnValue);
+		// offline pipeline compiler returns EXIT_SUCCESS on success
+		if (returnValue != EXIT_SUCCESS) {
+			TCU_THROW(InternalError, "offline pipeline compilation failed");
+		}
 	}
 
 	// read created pipeline cache into result vector
