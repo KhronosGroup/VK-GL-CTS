@@ -191,25 +191,14 @@ void checkImageSupport (Context& context, VkFormat format, VkImageCreateFlags cr
 {
 	const bool													disjoint	= (createFlags & VK_IMAGE_CREATE_DISJOINT_BIT) != 0;
 	const VkPhysicalDeviceSamplerYcbcrConversionFeatures		features	= context.getSamplerYcbcrConversionFeatures();
-	vector<string>												reqExts;
 
-	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_sampler_ycbcr_conversion"))
-		reqExts.push_back("VK_KHR_sampler_ycbcr_conversion");
+	if (features.samplerYcbcrConversion == VK_FALSE)
+		TCU_THROW(NotSupportedError, "samplerYcbcrConversion is not supported");
 
 	if (disjoint)
 	{
-		if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_bind_memory2"))
-			reqExts.push_back("VK_KHR_bind_memory2");
-		if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_get_memory_requirements2"))
-			reqExts.push_back("VK_KHR_get_memory_requirements2");
-	}
-
-	for (const string& ext : reqExts)
-		context.requireDeviceFunctionality(ext);
-
-	if (features.samplerYcbcrConversion == VK_FALSE)
-	{
-		TCU_THROW(NotSupportedError, "samplerYcbcrConversion is not supported");
+		context.requireDeviceFunctionality("VK_KHR_bind_memory2");
+		context.requireDeviceFunctionality("VK_KHR_get_memory_requirements2");
 	}
 
 	{
