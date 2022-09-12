@@ -1348,6 +1348,7 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 	// Verify selected attachments.
 	for (size_t i = 0; i < m_testParams.attachments.size(); i++)
 	{
+		bool transitioned = false;
 		for (const auto& verify : m_testParams.attachments[i].verifyAspects)
 		{
 			de::MovePtr<tcu::TextureLevel>		textureLevelResult;
@@ -1357,19 +1358,22 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 
 			if (verify.aspect == VK_IMAGE_ASPECT_DEPTH_BIT)
 			{
-				VkImageLayout layout = (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+				VkImageLayout layout = (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING && !transitioned) ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 				textureLevelResult = pipeline::readDepthAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *attachmentImages[i], m_testParams.depthStencilFormat, m_imageSize, layout);
+				transitioned = true;
 			}
 			else if (verify.aspect == VK_IMAGE_ASPECT_STENCIL_BIT)
 			{
-				VkImageLayout layout = (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+				VkImageLayout layout = (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING && !transitioned) ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 				textureLevelResult = pipeline::readStencilAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *attachmentImages[i], m_testParams.depthStencilFormat, m_imageSize, layout);
+				transitioned = true;
 			}
 			else
 			{
 				DE_ASSERT(verify.aspect == VK_IMAGE_ASPECT_COLOR_BIT);
-				VkImageLayout layout = ((m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+				VkImageLayout layout = ((m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING && !transitioned) ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 				textureLevelResult = pipeline::readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *attachmentImages[i], format, m_imageSize, layout);
+				transitioned = true;
 			}
 
 			const tcu::ConstPixelBufferAccess&	access				= textureLevelResult->getAccess();
