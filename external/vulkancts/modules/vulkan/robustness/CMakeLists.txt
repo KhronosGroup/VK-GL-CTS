@@ -16,6 +16,8 @@ set(DEQP_VK_ROBUSTNESS_SRCS
 	vktRobustnessUtil.hpp
 	vktRobustnessVertexAccessTests.cpp
 	vktRobustnessVertexAccessTests.hpp
+	vktRobustnessIndexAccessTests.cpp
+	vktRobustnessIndexAccessTests.hpp
 	vktNonRobustBufferAccessTests.hpp
 	vktNonRobustBufferAccessTests.cpp
 	vktRobustnessExtsTests.cpp
