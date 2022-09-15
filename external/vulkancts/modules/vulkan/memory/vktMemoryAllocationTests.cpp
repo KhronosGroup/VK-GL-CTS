@@ -158,12 +158,13 @@ private:
 
 void BaseAllocateTestInstance::createTestDevice (void)
 {
-	VkInstance										instance				(m_context.getInstance());
-	InstanceDriver									instanceDriver			(m_context.getPlatformInterface(), instance);
-	const VkPhysicalDeviceFeatures					deviceFeatures			= getPhysicalDeviceFeatures(instanceDriver, m_context.getPhysicalDevice());
-	const float										queuePriority			= 1.0f;
-	deUint32										queueFamilyIndex		= 0;
-	bool											protMemSupported		= false;
+	VkInstance										instance					(m_context.getInstance());
+	InstanceDriver									instanceDriver				(m_context.getPlatformInterface(), instance);
+	const VkPhysicalDeviceFeatures					deviceFeatures				= getPhysicalDeviceFeatures(instanceDriver, m_context.getPhysicalDevice());
+	const float										queuePriority				= 1.0f;
+	deUint32										queueFamilyIndex			= 0;
+	bool											protMemSupported			= false;
+	bool											deviceCoherentMemSupported	= false;
 
 	VkPhysicalDeviceProtectedMemoryFeatures protectedMemoryFeature =
 	{
@@ -172,19 +173,28 @@ void BaseAllocateTestInstance::createTestDevice (void)
 		VK_FALSE													// VkBool32							protectedMemory;
 	};
 
+	VkPhysicalDeviceCoherentMemoryFeaturesAMD coherentMemoryFeatures =
+	{
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COHERENT_MEMORY_FEATURES_AMD, // VkStructureType                                      sType
+		&protectedMemoryFeature,										// const void*                                          pNext
+		VK_FALSE                                                        // VkBool32                                             deviceCoherentMemory;
+	};
+
+
 	VkPhysicalDeviceFeatures				features;
 	deMemset(&features, 0, sizeof(vk::VkPhysicalDeviceFeatures));
 
 	VkPhysicalDeviceFeatures2				features2		=
 	{
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,				// VkStructureType					sType
-		&protectedMemoryFeature,									// const void*						pNext
+		&coherentMemoryFeatures,									// const void*						pNext
 		features													// VkPhysicalDeviceFeatures			features
 	};
 
 	// Check if the physical device supports the protected memory feature
 	instanceDriver.getPhysicalDeviceFeatures2(m_context.getPhysicalDevice(), &features2);
-	protMemSupported = ((VkPhysicalDeviceProtectedMemoryFeatures*)(features2.pNext))->protectedMemory;
+	protMemSupported			= protectedMemoryFeature.protectedMemory;
+	deviceCoherentMemSupported	= coherentMemoryFeatures.deviceCoherentMemory;
 
 	VkDeviceQueueCreateFlags queueCreateFlags = protMemSupported ? (vk::VkDeviceQueueCreateFlags)vk::VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT : 0u;
 
@@ -200,16 +210,16 @@ void BaseAllocateTestInstance::createTestDevice (void)
 
 	const VkDeviceCreateInfo						deviceInfo		=
 	{
-		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,						// VkStructureType					sType;
-		protMemSupported ? &features2 : DE_NULL,					// const void*						pNext;
-		(VkDeviceCreateFlags)0,										// VkDeviceCreateFlags				flags;
-		1u,															// uint32_t							queueCreateInfoCount;
-		&queueInfo,													// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
-		0u,															// uint32_t							enabledLayerCount;
-		DE_NULL,													// const char* const*				ppEnabledLayerNames;
-		0u,															// uint32_t							enabledExtensionCount;
-		DE_NULL,													// const char* const*				ppEnabledExtensionNames;
-		protMemSupported ? DE_NULL : &deviceFeatures				// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,											// VkStructureType					sType;
+		(protMemSupported || deviceCoherentMemSupported) ? &features2 : DE_NULL,		// const void*						pNext;
+		(VkDeviceCreateFlags)0,															// VkDeviceCreateFlags				flags;
+		1u,																				// uint32_t							queueCreateInfoCount;
+		&queueInfo,																		// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
+		0u,																				// uint32_t							enabledLayerCount;
+		DE_NULL,																		// const char* const*				ppEnabledLayerNames;
+		0u,																				// uint32_t							enabledExtensionCount;
+		DE_NULL,																		// const char* const*				ppEnabledExtensionNames;
+		(protMemSupported || deviceCoherentMemSupported) ? DE_NULL : &deviceFeatures	// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 
 	m_logicalDevice		= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), instance, instanceDriver, m_context.getPhysicalDevice(), &deviceInfo);
