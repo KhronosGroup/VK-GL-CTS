@@ -653,33 +653,6 @@ private:
 	int		m_count;
 };
 
-class ExpandContext
-{
-public:
-						ExpandContext	(Counter& symCounter) : m_symCounter(symCounter) {}
-						ExpandContext	(const ExpandContext& parent)
-							: m_symCounter(parent.m_symCounter) {}
-
-	template<typename T>
-	VariableP<T>		genSym			(const string& baseName)
-	{
-		return variable<T>(baseName + de::toString(m_symCounter()));
-	}
-
-	void				addStatement	(const StatementP& stmt)
-	{
-		m_statements.push_back(stmt);
-	}
-
-	vector<StatementP>	getStatements	(void) const
-	{
-		return m_statements;
-	}
-private:
-	Counter&			m_symCounter;
-	vector<StatementP>	m_statements;
-};
-
 /*--------------------------------------------------------------------*//*!
  * \brief A statement or declaration.
  *
@@ -726,6 +699,33 @@ public:
 				StatementP			(void) {}
 	explicit	StatementP			(const Statement* ptr)	: Super(ptr) {}
 				StatementP			(const Super& ptr)		: Super(ptr) {}
+};
+
+class ExpandContext
+{
+public:
+						ExpandContext	(Counter& symCounter) : m_symCounter(symCounter) {}
+						ExpandContext	(const ExpandContext& parent)
+							: m_symCounter(parent.m_symCounter) {}
+
+	template<typename T>
+	VariableP<T>		genSym			(const string& baseName)
+	{
+		return variable<T>(baseName + de::toString(m_symCounter()));
+	}
+
+	void				addStatement	(const StatementP& stmt)
+	{
+		m_statements.push_back(stmt);
+	}
+
+	vector<StatementP>	getStatements	(void) const
+	{
+		return m_statements;
+	}
+private:
+	Counter&			m_symCounter;
+	vector<StatementP>	m_statements;
 };
 
 /*--------------------------------------------------------------------*//*!
