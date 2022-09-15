@@ -75,6 +75,7 @@ enum class AttachmentUsage
 	NO_ATTACHMENT = 0,
 	NO_ATTACHMENT_PTR,
 	WITH_ATTACHMENT,
+	WITH_ATTACHMENT_WITHOUT_IMAGEVIEW, // No imageview at VkRenderingFragmentShadingRateAttachmentInfoKHR.
 };
 
 struct CaseDef
@@ -111,6 +112,11 @@ struct CaseDef
 	bool useAttachment () const
 	{
 		return (attachmentUsage == AttachmentUsage::WITH_ATTACHMENT);
+	}
+
+	bool useAttachmentWithoutImageView () const
+	{
+		return (attachmentUsage == AttachmentUsage::WITH_ATTACHMENT_WITHOUT_IMAGEVIEW);
 	}
 };
 
@@ -2323,7 +2329,7 @@ void FSRTestInstance::beginDynamicRender(VkCommandBuffer cmdBuffer, VkImageView 
 	{
 		VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR,	// VkStructureType		sType;
 		DE_NULL,																// const void*			pNext;
-		srImageView,															// VkImageView			imageView;
+		m_data.useAttachment() ? srImageView : DE_NULL,							// VkImageView			imageView;
 		srImageLayout,															// VkImageLayout		imageLayout;
 		srTexelSize																// VkExtent2D			shadingRateAttachmentTexelSize;
 	};
@@ -2359,7 +2365,7 @@ void FSRTestInstance::beginDynamicRender(VkCommandBuffer cmdBuffer, VkImageView 
 	vk::VkRenderingInfoKHR renderingInfo
 	{
 		vk::VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
-		m_data.useAttachment() ? &shadingRateAttachmentInfo : DE_NULL,
+		m_data.useAttachment() || m_data.useAttachmentWithoutImageView() ? &shadingRateAttachmentInfo : DE_NULL,
 		renderingFlags,															// VkRenderingFlagsKHR					flags;
 		renderArea,																// VkRect2D								renderArea;
 		m_data.multiView ? 1 : m_data.numColorLayers,							// deUint32								layerCount;
@@ -2735,9 +2741,10 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 
 	TestGroupUsageCase attCases[] =
 	{
-		{ AttachmentUsage::NO_ATTACHMENT,		"noattachment",		"no shading rate attachment"			},
-		{ AttachmentUsage::WITH_ATTACHMENT,		"attachment",		"has shading rate attachment"			},
-		{ AttachmentUsage::NO_ATTACHMENT_PTR,	"noattachmentptr",	"no shading rate attachment pointer"	},
+		{ AttachmentUsage::NO_ATTACHMENT,						"noattachment",				"no shading rate attachment"					},
+		{ AttachmentUsage::WITH_ATTACHMENT,						"attachment",				"has shading rate attachment"					},
+		{ AttachmentUsage::NO_ATTACHMENT_PTR,					"noattachmentptr",			"no shading rate attachment pointer"			},
+		{ AttachmentUsage::WITH_ATTACHMENT_WITHOUT_IMAGEVIEW,	"attachment_noimageview",	"has shading rate attachment without imageview"	},
 	};
 
 	TestGroupCase shdCases[] =
@@ -2804,6 +2811,10 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 			for (int attNdx = 0; attNdx < DE_LENGTH_OF_ARRAY(attCases); attNdx++)
 			{
 				if (groupParams->useDynamicRendering && attCases[attNdx].usage == AttachmentUsage::NO_ATTACHMENT_PTR)
+					continue;
+
+				// WITH_ATTACHMENT_WITHOUT_IMAGEVIEW is only for VkRenderingFragmentShadingRateAttachmentInfoKHR.
+				if (!groupParams->useDynamicRendering && attCases[attNdx].usage == AttachmentUsage::WITH_ATTACHMENT_WITHOUT_IMAGEVIEW)
 					continue;
 
 				de::MovePtr<tcu::TestCaseGroup> attGroup(new tcu::TestCaseGroup(testCtx, attCases[attNdx].name, attCases[attNdx].description));
