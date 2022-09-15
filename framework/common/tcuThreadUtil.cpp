@@ -61,7 +61,7 @@ Event::Result Event::waitReady (void)
 	m_lock.lock();
 
 	if (m_result == RESULT_NOT_READY)
-		m_waiterCount++;
+		m_waiterCount = m_waiterCount + 1;
 	else
 	{
 		m_lock.unlock();
