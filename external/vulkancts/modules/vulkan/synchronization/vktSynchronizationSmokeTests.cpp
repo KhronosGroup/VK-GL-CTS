@@ -146,19 +146,22 @@ Move<VkDevice> createTestDevice (Context& context, SemaphoreTestConfig& config, 
 	queueInfo.pQueuePriorities				= queuePriority;
 
 	vector<const char*> deviceExtensions;
+	bool useFeatures2 = false;
 	if (config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE)
 	{
 		if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_timeline_semaphore"))
 			deviceExtensions.push_back("VK_KHR_timeline_semaphore");
 		addToChainVulkanStructure(&nextPtr, timelineSemaphoreFeatures);
+		useFeatures2 = true;
 	}
 	if (config.synchronizationType == SynchronizationType::SYNCHRONIZATION2)
 	{
 		deviceExtensions.push_back("VK_KHR_synchronization2");
 		addToChainVulkanStructure(&nextPtr, synchronization2Features);
+		useFeatures2 = true;
 	}
 
-	void* pNext												= deviceExtensions.empty() ? DE_NULL : &physicalDeviceFeatures2;
+	void* pNext												= !useFeatures2 ? DE_NULL : &physicalDeviceFeatures2;
 #ifdef CTS_USES_VULKANSC
 	VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
 	memReservationInfo.pNext								= pNext;
@@ -206,7 +209,7 @@ Move<VkDevice> createTestDevice (Context& context, SemaphoreTestConfig& config, 
 	deviceInfo.ppEnabledExtensionNames		= deviceExtensions.empty() ? DE_NULL : &deviceExtensions[0];
 	deviceInfo.enabledLayerCount			= 0u;
 	deviceInfo.ppEnabledLayerNames			= DE_NULL;
-	deviceInfo.pEnabledFeatures				= deviceExtensions.empty() ? &physicalDeviceFeatures : DE_NULL;
+	deviceInfo.pEnabledFeatures				= !useFeatures2 ? &physicalDeviceFeatures : DE_NULL;
 
 	*outQueueFamilyIndex					= queueInfo.queueFamilyIndex;
 
