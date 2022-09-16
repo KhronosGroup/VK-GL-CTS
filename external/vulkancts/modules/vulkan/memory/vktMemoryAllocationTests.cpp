@@ -177,6 +177,7 @@ void BaseAllocateTestInstance::createTestDevice (void)
 	const float										queuePriority			= 1.0f;
 	deUint32										queueFamilyIndex		= 0;
 	bool											protMemSupported		= false;
+	bool                                                                                    deviceCoherentMemSupported      = false;
 	const bool										usePageable				= m_allocationMode == ALLOCATION_MODE_PAGEABLE;
 
 	if (usePageable && !m_context.isDeviceFunctionalitySupported("VK_EXT_pageable_device_local_memory"))
@@ -202,19 +203,35 @@ void BaseAllocateTestInstance::createTestDevice (void)
 		VK_FALSE														// VkBool32							protectedMemory;
 	};
 
+#ifndef CTS_USES_VULKANSC
+	VkPhysicalDeviceCoherentMemoryFeaturesAMD coherentMemoryFeatures =
+	{
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COHERENT_MEMORY_FEATURES_AMD, // VkStructureType                                      sType
+		&protectedMemoryFeature,										// const void*                                          pNext
+		VK_FALSE                                                        // VkBool32                                             deviceCoherentMemory;
+	};
+#endif // CTS_USES_VULKANSC
+
 	VkPhysicalDeviceFeatures				features;
 	deMemset(&features, 0, sizeof(vk::VkPhysicalDeviceFeatures));
 
 	VkPhysicalDeviceFeatures2				features2		=
 	{
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,				// VkStructureType					sType
+#ifndef CTS_USES_VULKANSC
+		&coherentMemoryFeatures,									// const void*						pNext
+#else
 		&protectedMemoryFeature,									// const void*						pNext
+#endif // CTS_USES_VULKANSC
 		features													// VkPhysicalDeviceFeatures			features
 	};
 
 	// Check if the physical device supports the protected memory feature
 	instanceDriver.getPhysicalDeviceFeatures2(physicalDevice, &features2);
-	protMemSupported = protectedMemoryFeature.protectedMemory;
+	protMemSupported			= protectedMemoryFeature.protectedMemory;
+#ifndef CTS_USES_VULKANSC
+	deviceCoherentMemSupported	= coherentMemoryFeatures.deviceCoherentMemory;
+#endif // CTS_USES_VULKANSC
 
 	VkDeviceQueueCreateFlags queueCreateFlags = protMemSupported ? (vk::VkDeviceQueueCreateFlags)vk::VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT : 0u;
 
@@ -245,7 +262,7 @@ void BaseAllocateTestInstance::createTestDevice (void)
 	const VkDeviceCreateInfo						deviceInfo		=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							// VkStructureType					sType;
-		(protMemSupported || usePageable) ? &features2 : DE_NULL,		// const void*						pNext;
+		(protMemSupported || usePageable || deviceCoherentMemSupported) ? &features2 : DE_NULL,		// const void*						pNext;
 		(VkDeviceCreateFlags)0,											// VkDeviceCreateFlags				flags;
 		1u,																// uint32_t							queueCreateInfoCount;
 		&queueInfo,														// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
@@ -253,7 +270,7 @@ void BaseAllocateTestInstance::createTestDevice (void)
 		DE_NULL,														// const char* const*				ppEnabledLayerNames;
 		deUint32(deviceExtensions.size()),								// uint32_t							enabledExtensionCount;
 		(deviceExtensions.empty()) ? DE_NULL : deviceExtensions.data(),	// const char* const*				ppEnabledExtensionNames;
-		(protMemSupported || usePageable) ? DE_NULL : &deviceFeatures	// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+		(protMemSupported || usePageable || deviceCoherentMemSupported) ? DE_NULL : &deviceFeatures	// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 
 	m_logicalDevice		= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), m_deviceGroupInstance, instanceDriver, physicalDevice, &deviceInfo);
