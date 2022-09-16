@@ -605,13 +605,13 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup (void)
 		{
 			const VkSubpassDependency spdVal =
 			{
-				0u,												//	uint32_t				srcSubpass;
-				0u,												//	uint32_t				dstSubpass;
-				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,			//	VkPipelineStageFlags	srcStageMask;
-				VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,	//	VkPipelineStageFlags	dstStageMask;
-				VK_ACCESS_SHADER_READ_BIT,						//	VkAccessFlags			srcAccessMask;
-				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			//	VkAccessFlags			dstAccessMask;
-				VK_DEPENDENCY_FEEDBACK_LOOP_BIT_EXT,			//	VkDependencyFlags		dependencyFlags;
+				0u,																	//	uint32_t				srcSubpass;
+				0u,																	//	uint32_t				dstSubpass;
+				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,								//	VkPipelineStageFlags	srcStageMask;
+				VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,						//	VkPipelineStageFlags	dstStageMask;
+				VK_ACCESS_SHADER_READ_BIT,											//	VkAccessFlags			srcAccessMask;
+				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,								//	VkAccessFlags			dstAccessMask;
+				VK_DEPENDENCY_FEEDBACK_LOOP_BIT_EXT | VK_DEPENDENCY_BY_REGION_BIT,	//	VkDependencyFlags		dependencyFlags;
 			};
 
 			subpassDependencies.push_back(spdVal);
@@ -1091,13 +1091,13 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup (void)
 
 			const VkSubpassDependency spdVal =
 			{
-				0u,										//	uint32_t				srcSubpass;
-				0u,										//	uint32_t				dstSubpass;
-				srcStageMask,							//	VkPipelineStageFlags	srcStageMask;
-				dstStageMask,							//	VkPipelineStageFlags	dstStageMask;
-				srcAccessMask,							//	VkAccessFlags			srcAccessMask;
-				dstAccessMask,							//	VkAccessFlags			dstAccessMask;
-				VK_DEPENDENCY_FEEDBACK_LOOP_BIT_EXT,	//	VkDependencyFlags		dependencyFlags;
+				0u,																	//	uint32_t				srcSubpass;
+				0u,																	//	uint32_t				dstSubpass;
+				srcStageMask,														//	VkPipelineStageFlags	srcStageMask;
+				dstStageMask,														//	VkPipelineStageFlags	dstStageMask;
+				srcAccessMask,														//	VkAccessFlags			srcAccessMask;
+				dstAccessMask,														//	VkAccessFlags			dstAccessMask;
+				VK_DEPENDENCY_FEEDBACK_LOOP_BIT_EXT | VK_DEPENDENCY_BY_REGION_BIT,	//	VkDependencyFlags		dependencyFlags;
 			};
 
 			subpassDependencies.push_back(spdVal);
