@@ -324,7 +324,7 @@ tcu::TestStatus bufferMarkerSequential(Context& context, BaseTestParams params)
 		VK_ACCESS_HOST_READ_BIT,
 	};
 
-	vk.cmdPipelineBarrier(*cmdBuffer, params.stage, VK_PIPELINE_STAGE_HOST_BIT, 0, 1, &memoryDep, 0, DE_NULL, 0, DE_NULL);
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 1, &memoryDep, 0, DE_NULL, 0, DE_NULL);
 
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
