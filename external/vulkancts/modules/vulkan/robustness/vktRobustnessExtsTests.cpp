@@ -78,7 +78,7 @@ template <RobustnessFeatures FEATURES>
 class SingletonDevice
 {
 	SingletonDevice	(Context& context)
-		: m_context(context), m_instanceWrapper(new CustomInstanceWrapper(context)),  m_logicalDevice ()
+		: m_context(context), m_instanceWrapper(new CustomInstanceWrapper(context, context.getInstanceExtensions())), m_logicalDevice()
 	{
 		// Note we are already checking the needed features are available in checkSupport().
 		VkPhysicalDeviceRobustness2FeaturesEXT				robustness2Features				= initVulkanStructure();
