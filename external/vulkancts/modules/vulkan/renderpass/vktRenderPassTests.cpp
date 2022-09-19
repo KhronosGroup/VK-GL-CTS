@@ -1814,8 +1814,9 @@ void beginCommandBuffer (const DeviceInterface&			vk,
 		inheritanceRenderingInfo.pColorAttachmentFormats = colorAttachmentFormats.data();
 		if (pRenderInfo->getDepthStencilAttachment())
 		{
-			inheritanceRenderingInfo.depthAttachmentFormat		= pRenderInfo->getDepthStencilAttachment()->getFormat();
-			inheritanceRenderingInfo.stencilAttachmentFormat	= pRenderInfo->getDepthStencilAttachment()->getFormat();
+			const VkFormat dsFormat = pRenderInfo->getDepthStencilAttachment()->getFormat();
+			inheritanceRenderingInfo.depthAttachmentFormat		= tcu::hasDepthComponent(mapVkFormat(dsFormat).order) ? dsFormat : VK_FORMAT_UNDEFINED;
+			inheritanceRenderingInfo.stencilAttachmentFormat	= tcu::hasStencilComponent(mapVkFormat(dsFormat).order) ? dsFormat : VK_FORMAT_UNDEFINED;
 		}
 		if (pRenderInfo->getColorAttachmentCount())
 			inheritanceRenderingInfo.rasterizationSamples = pRenderInfo->getColorAttachment(0).getSamples();
