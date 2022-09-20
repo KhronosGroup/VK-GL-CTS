@@ -106,7 +106,10 @@ enum RenderType
 	RENDER_TYPE_DEPTHSTENCIL_ONLY	= 2u,
 
 	// render using color attachment at location 1 and location 0 set as unused
-	RENDER_TYPE_UNUSED_ATTACHMENT	= 3u
+	RENDER_TYPE_UNUSED_ATTACHMENT	= 3u,
+
+	// render using color attachment with single sample, required by alpha_to_one tests.
+	RENDER_TYPE_SINGLE_SAMPLE		= 4u
 };
 
 enum ImageBackingMode
@@ -2503,9 +2506,11 @@ tcu::TestStatus AlphaToOneInstance::iterate	(void)
 	de::MovePtr<tcu::TextureLevel>	alphaOneImage;
 	de::MovePtr<tcu::TextureLevel>	noAlphaOneImage;
 
+	RenderType renderType = m_multisampleStateParams.rasterizationSamples == vk::VK_SAMPLE_COUNT_1_BIT ? RENDER_TYPE_SINGLE_SAMPLE : RENDER_TYPE_RESOLVE;
+
 	// Render with blend enabled and alpha to one on
 	{
-		MultisampleRenderer renderer (m_context, m_pipelineConstructionType, m_colorFormat, m_renderSize, m_primitiveTopology, m_vertices, m_multisampleStateParams, m_colorBlendState, RENDER_TYPE_RESOLVE, m_backingMode, m_useFragmentShadingRate);
+		MultisampleRenderer renderer (m_context, m_pipelineConstructionType, m_colorFormat, m_renderSize, m_primitiveTopology, m_vertices, m_multisampleStateParams, m_colorBlendState, renderType, m_backingMode, m_useFragmentShadingRate);
 		alphaOneImage = renderer.render();
 	}
 
@@ -2514,7 +2519,7 @@ tcu::TestStatus AlphaToOneInstance::iterate	(void)
 		VkPipelineMultisampleStateCreateInfo	multisampleParams	= m_multisampleStateParams;
 		multisampleParams.alphaToOneEnable = false;
 
-		MultisampleRenderer renderer (m_context, m_pipelineConstructionType, m_colorFormat, m_renderSize, m_primitiveTopology, m_vertices, multisampleParams, m_colorBlendState, RENDER_TYPE_RESOLVE, m_backingMode, m_useFragmentShadingRate);
+		MultisampleRenderer renderer (m_context, m_pipelineConstructionType, m_colorFormat, m_renderSize, m_primitiveTopology, m_vertices, multisampleParams, m_colorBlendState, renderType, m_backingMode, m_useFragmentShadingRate);
 		noAlphaOneImage = renderer.render();
 	}
 
@@ -3378,6 +3383,9 @@ void MultisampleRenderer::initialize (Context&									context,
 		bool sparseSamplesSupported = false;
 		switch(m_multisampleStateParams.rasterizationSamples)
 		{
+			case VK_SAMPLE_COUNT_1_BIT:
+				sparseSamplesSupported = features.sparseResidencyImage2D;
+				break;
 			case VK_SAMPLE_COUNT_2_BIT:
 				sparseSamplesSupported = features.sparseResidency2Samples;
 				break;
@@ -4508,6 +4516,10 @@ de::MovePtr<tcu::TextureLevel> MultisampleRenderer::render (void)
 	{
 		return readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, m_context.getDefaultAllocator(), *m_resolveImage, m_colorFormat, m_renderSize.cast<deUint32>());
 	}
+	else if(m_renderType == RENDER_TYPE_SINGLE_SAMPLE)
+	{
+		return readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, m_context.getDefaultAllocator(), *m_colorImage, m_colorFormat, m_renderSize.cast<deUint32>());
+	}
 	else
 	{
 		return de::MovePtr<tcu::TextureLevel>();
@@ -5387,17 +5399,27 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx, PipelineC
 
 	// AlphaToOne tests
 	{
+		const VkSampleCountFlagBits samplesForAlphaToOne[] =
+		{
+			VK_SAMPLE_COUNT_1_BIT,
+			VK_SAMPLE_COUNT_2_BIT,
+			VK_SAMPLE_COUNT_4_BIT,
+			VK_SAMPLE_COUNT_8_BIT,
+			VK_SAMPLE_COUNT_16_BIT,
+			VK_SAMPLE_COUNT_32_BIT,
+			VK_SAMPLE_COUNT_64_BIT
+		};
 		de::MovePtr<tcu::TestCaseGroup> alphaToOneTests(new tcu::TestCaseGroup(testCtx, "alpha_to_one", ""));
 
-		for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(samples); samplesNdx++)
+		for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(samplesForAlphaToOne); samplesNdx++)
 		{
 			std::ostringstream caseName;
-			caseName << "samples_" << samples[samplesNdx];
+			caseName << "samples_" << samplesForAlphaToOne[samplesNdx];
 
-			alphaToOneTests->addChild(new AlphaToOneTest(testCtx, caseName.str(), "", pipelineConstructionType, samples[samplesNdx], IMAGE_BACKING_MODE_REGULAR, useFragmentShadingRate));
+			alphaToOneTests->addChild(new AlphaToOneTest(testCtx, caseName.str(), "", pipelineConstructionType, samplesForAlphaToOne[samplesNdx], IMAGE_BACKING_MODE_REGULAR, useFragmentShadingRate));
 #ifndef CTS_USES_VULKANSC
 			caseName << "_sparse";
-			alphaToOneTests->addChild(new AlphaToOneTest(testCtx, caseName.str(), "", pipelineConstructionType, samples[samplesNdx], IMAGE_BACKING_MODE_SPARSE, useFragmentShadingRate));
+			alphaToOneTests->addChild(new AlphaToOneTest(testCtx, caseName.str(), "", pipelineConstructionType, samplesForAlphaToOne[samplesNdx], IMAGE_BACKING_MODE_SPARSE, useFragmentShadingRate));
 #endif // CTS_USES_VULKANSC
 		}
 
