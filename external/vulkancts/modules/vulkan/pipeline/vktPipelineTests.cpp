@@ -116,6 +116,7 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 	group->addChild(createTimestampTests				(testCtx, pipelineConstructionType));
 #ifndef CTS_USES_VULKANSC
 	group->addChild(createCacheTests					(testCtx, pipelineConstructionType));
+	group->addChild(createBinariesTests					(testCtx, pipelineConstructionType));
 	group->addChild(createFramebufferAttachmentTests	(testCtx, pipelineConstructionType));
 #endif // CTS_USES_VULKANSC
 	group->addChild(createRenderToImageTests			(testCtx, pipelineConstructionType));

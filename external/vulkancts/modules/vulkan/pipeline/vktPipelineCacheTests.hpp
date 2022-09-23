@@ -21,7 +21,7 @@
  *
  *//*!
  * \file
- * \brief Pipeline Cache Tests
+ * \brief Pipeline Cache and Pipeline Binaries Tests
  *//*--------------------------------------------------------------------*/
 
 #include "vktTestCase.hpp"
@@ -32,7 +32,8 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
+tcu::TestCaseGroup* createCacheTests	(tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
+tcu::TestCaseGroup* createBinariesTests	(tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
 
 } // pipeline
 } // vkt
