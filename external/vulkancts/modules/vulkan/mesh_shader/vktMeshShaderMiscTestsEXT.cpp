@@ -3791,7 +3791,6 @@ void LocalSizeIdCase::initPrograms (vk::SourceCollections& programCollection) co
 			<< "%19 = OpAccessChain %18 %11 %13 %16\n"
 			<< "      OpStore %19 %17\n"
 			<< "      OpEmitMeshTasksEXT %20 %20 %20 %11\n"
-			<< "      OpReturn\n"
 			<< "      OpFunctionEnd\n"
 			;
 

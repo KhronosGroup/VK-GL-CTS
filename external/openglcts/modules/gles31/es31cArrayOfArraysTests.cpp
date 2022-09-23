@@ -1003,6 +1003,68 @@ tcu::TestNode::IterateResult TestCaseBase<API>::execute_positive_test(const std:
 	return CONTINUE;
 }
 
+/** Check that the shader supports the number of SSBOs used in the test.
+ *  The number of active shader storage blocks referenced by the shaders in a program implementation dependent and cannot exceeds
+ *  implementation-dependent limits. The limits for vertex, tessellation control, tessellation evaluation and geometry can be obtained
+ *  by calling GetIntegerv with pname values of MAX_VERTEX_SHADER_STORAGE_BLOCKS, MAX_TESS_CONTROL_SHADER_STORAGE_BLOCKS,
+ *  MAX_TESS_EVALUATION_SHADER_STORAGE_BLOCKS and MAX_GEOMETRY_SHADER_STORAGE_BLOCKS, respectively.
+ *
+ * @tparam API                  Tested API descriptor
+ *
+ * @param tested_shader_type    The type of shader used.
+ * @param num                   The number of SSBOs used in shader.
+ *
+ *  @return STOP     - test is not supported by the implementation;
+ *          CONTINUE - test is supported by the implementation;
+ **/
+template <class API>
+tcu::TestNode::IterateResult TestCaseBase<API>::limit_active_shader_storage_block_number(
+	typename TestCaseBase<API>::TestShaderType tested_shader_type, size_t num)
+{
+	const glw::Functions& gl = context_id.getRenderContext().getFunctions();
+	glw::GLint res;
+
+	switch (tested_shader_type)
+	{
+	case TestCaseBase<API>::VERTEX_SHADER_TYPE:
+		gl.getIntegerv(GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS, &res);
+		if (static_cast<size_t>(res) < num)
+		{
+			tcu::NotSupportedError(
+				"The number of active vertex shader storage blocks exceeds implementation-dependent limits.");
+			return STOP;
+		}
+		break;
+	case TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE:
+		gl.getIntegerv(GL_MAX_TESS_CONTROL_SHADER_STORAGE_BLOCKS, &res);
+		if (static_cast<size_t>(res) < num)
+		{
+			tcu::NotSupportedError("The number of active TC shader storage blocks exceeds implementation-dependent limits.");
+			return STOP;
+		}
+		break;
+	case TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE:
+		gl.getIntegerv(GL_MAX_TESS_EVALUATION_SHADER_STORAGE_BLOCKS, &res);
+		if (static_cast<size_t>(res) < num)
+		{
+			tcu::NotSupportedError("The number of active TE shader storage blocks exceeds implementation-dependent limits.");
+			return STOP;
+		}
+		break;
+	case TestCaseBase<API>::GEOMETRY_SHADER_TYPE:
+		gl.getIntegerv(GL_MAX_GEOMETRY_SHADER_STORAGE_BLOCKS, &res);
+		if (static_cast<size_t>(res) < num)
+		{
+			tcu::NotSupportedError("The number of active geometry shader storage blocks exceeds implementation-dependent limits.");
+			return STOP;
+		}
+		break;
+	default:
+		break;
+	}
+	return CONTINUE;
+}
+
 /** Runs the positive test.
  *  The shader sources are considered as valid,
  *  and the compilation and program linking are expected to succeed.
@@ -8895,10 +8957,13 @@ void AtomicUsageTest<API>::execute(typename TestCaseBase<API>::TestShaderType te
 	int diff = 0;
 	for (size_t i = 0; i < n_entries; ++i)
 	{
-		/* Tesselation evaluation can be called several times
-		 In here, check the increment is consistent over all results.
+		/* Any vertex processing shader could be called an implementation defined
+		 * number of times. In here, check the increment is consistent over all results.
 		 */
-		if (tested_shader_type == TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE)
+		if (tested_shader_type == TestCaseBase<API>::VERTEX_SHADER_TYPE ||
+			tested_shader_type == TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE ||
+			tested_shader_type == TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE ||
+			tested_shader_type == TestCaseBase<API>::GEOMETRY_SHADER_TYPE)
 		{
 			if (i == 0)
 			{

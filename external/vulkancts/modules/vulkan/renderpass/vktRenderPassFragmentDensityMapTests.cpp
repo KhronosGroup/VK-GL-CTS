@@ -27,6 +27,7 @@
 #include "vktTestCase.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktCustomInstancesDevices.hpp"
+#include "vktRenderPassTestsUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkCmdUtil.hpp"
@@ -88,6 +89,7 @@ struct TestParams
 	bool					nonSubsampledImages;
 	bool					subsampledLoads;
 	bool					coarseReconstruction;
+	bool					imagelessFramebuffer;
 	deUint32				samplersCount;
 	deUint32				viewCount;
 	bool					makeCopy;
@@ -96,7 +98,7 @@ struct TestParams
 	tcu::UVec2				fragmentArea;
 	tcu::UVec2				densityMapSize;
 	VkFormat				densityMapFormat;
-	RenderingType			renderingType;
+	const SharedGroupParams	groupParams;
 };
 
 struct Vertex4RGBA
@@ -753,22 +755,36 @@ void RenderPassWrapper<RenderingTypeValue>::cmdEndRenderPass(VkCommandBuffer cmd
 	RenderpassSubpass::cmdEndRenderPass(m_vk, cmdBuffer, &m_subpassEndInfo);
 }
 
-Move<VkFramebuffer> createFrameBuffer( const DeviceInterface& vk, VkDevice vkDevice, VkRenderPass renderPass, VkExtent3D size, const std::vector<VkImageView>& imageViews)
+Move<VkFramebuffer> createImagelessFrameBuffer(const DeviceInterface& vk, VkDevice vkDevice, VkRenderPass renderPass, VkExtent3D size, const std::vector<VkFramebufferAttachmentImageInfo>& attachmentInfo)
 {
-	const VkFramebufferCreateInfo framebufferParams =
+	const deUint32 attachmentCount = static_cast<deUint32>(attachmentInfo.size());
+	const VkFramebufferAttachmentsCreateInfo framebufferAttachmentsCreateInfo
 	{
-		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,	// VkStructureType			sType;
-		DE_NULL,									// const void*				pNext;
-		0u,											// VkFramebufferCreateFlags	flags;
-		renderPass,									// VkRenderPass				renderPass;
-		static_cast<deUint32>(imageViews.size()),	// deUint32					attachmentCount;
-		imageViews.data(),							// const VkImageView*		pAttachments;
-		size.width,									// deUint32					width;
-		size.height,								// deUint32					height;
-		1u											// deUint32					layers;
+		VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO,		// VkStructureType								sType;
+		DE_NULL,													// const void*									pNext;
+		attachmentCount,											// deUint32										attachmentImageInfoCount;
+		&attachmentInfo[0]											// const VkFramebufferAttachmentImageInfo*		pAttachmentImageInfos;
+	};
+
+	const VkFramebufferCreateInfo framebufferParams
+	{
+		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,					// VkStructureType			sType;
+		&framebufferAttachmentsCreateInfo,							// const void*				pNext;
+		VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT,						// VkFramebufferCreateFlags	flags;
+		renderPass,													// VkRenderPass				renderPass;
+		attachmentCount,											// deUint32					attachmentCount;
+		DE_NULL,													// const VkImageView*		pAttachments;
+		size.width,													// deUint32					width;
+		size.height,												// deUint32					height;
+		1u															// deUint32					layers;
 	};
 
 	return createFramebuffer(vk, vkDevice, &framebufferParams);
+}
+
+Move<VkFramebuffer> createFrameBuffer(const DeviceInterface& vk, VkDevice vkDevice, VkRenderPass renderPass, VkExtent3D size, const std::vector<VkImageView>& imageViews)
+{
+	return makeFramebuffer(vk, vkDevice, renderPass, static_cast<deUint32>(imageViews.size()), imageViews.data(), size.width, size.height);
 }
 
 void copyBufferToImage(const DeviceInterface&					vk,
@@ -1076,13 +1092,27 @@ private:
 class FragmentDensityMapTestInstance : public vkt::TestInstance
 {
 public:
-									FragmentDensityMapTestInstance	(Context&			context,
-																	 const TestParams&	testParams);
-	virtual tcu::TestStatus			iterate							(void);
+									FragmentDensityMapTestInstance			(Context&			context,
+																			 const TestParams&	testParams);
+	virtual tcu::TestStatus			iterate									(void);
 
 private:
 
-	tcu::TestStatus					verifyImage						(void);
+	typedef std::shared_ptr<RenderPassWrapperBase> RenderPassWrapperBasePtr;
+
+	void							drawDynamicDensityMap					(VkCommandBuffer cmdBuffer);
+	void							drawSubsampledImage						(VkCommandBuffer cmdBuffer);
+	void							drawResampleSubsampledImage				(VkCommandBuffer cmdBuffer);
+	void							drawCopySubsampledImage					(VkCommandBuffer cmdBuffer);
+	void							createCommandBufferForRenderpass		(RenderPassWrapperBasePtr	renderPassWrapper,
+																			 const VkExtent3D&			colorImageSize,
+																			 const VkRect2D&			dynamicDensityMapRenderArea,
+																			 const VkRect2D&			colorImageRenderArea,
+																			 const VkRect2D&			outputRenderArea);
+	void							createCommandBufferForDynamicRendering	(const VkRect2D&			dynamicDensityMapRenderArea,
+																			 const VkRect2D&			colorImageRenderArea,
+																			 const VkRect2D&			outputRenderArea);
+	tcu::TestStatus					verifyImage								(void);
 
 private:
 
@@ -1167,6 +1197,10 @@ private:
 	Move<VkPipeline>				m_graphicsPipelineOutputSubsampledImage;
 
 	Move<VkCommandBuffer>			m_cmdBuffer;
+	Move<VkCommandBuffer>			m_dynamicDensityMapSecCmdBuffer;
+	Move<VkCommandBuffer>			m_subsampledImageSecCmdBuffer;
+	Move<VkCommandBuffer>			m_resampleSubsampledImageSecCmdBuffer;
+	Move<VkCommandBuffer>			m_copySubsampledImageSecCmdBuffer;
 };
 
 FragmentDensityMapTest::FragmentDensityMapTest (tcu::TestContext&	testContext,
@@ -1322,8 +1356,11 @@ void FragmentDensityMapTest::checkSupport(Context& context) const
 	const VkPhysicalDevice		vkPhysicalDevice	= context.getPhysicalDevice();
 
 	context.requireDeviceFunctionality("VK_EXT_fragment_density_map");
-	if (m_testParams.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+	if (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
 		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+
+	if (m_testParams.imagelessFramebuffer)
+		context.requireDeviceFunctionality("VK_KHR_imageless_framebuffer");
 
 	VkPhysicalDeviceFragmentDensityMapFeaturesEXT		fragmentDensityMapFeatures		= initVulkanStructure();
 	VkPhysicalDeviceFragmentDensityMap2FeaturesEXT		fragmentDensityMap2Features		= initVulkanStructure(&fragmentDensityMapFeatures);
@@ -1416,8 +1453,6 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 	const VkQueue				queue						= getDeviceQueue(vk, vkDevice, queueFamilyIndex, 0);
 	SimpleAllocator				memAlloc					(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), vkPhysicalDevice));
 	const VkComponentMapping	componentMappingRGBA		= makeComponentMappingRGBA();
-
-	typedef std::shared_ptr<RenderPassWrapperBase> RenderPassWrapperBasePtr;
 	RenderPassWrapperBasePtr	renderPassWrapper;
 
 	// calculate all image sizes, image usage flags, view types etc.
@@ -1437,7 +1472,7 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 	deUint32						colorImageCreateFlags		= m_testParams.nonSubsampledImages ? 0u : (deUint32)VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT;
 	const VkImageSubresourceRange	colorSubresourceRange		= { VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, colorImageLayers };
 	bool							isColorImageMultisampled	= m_testParams.colorSamples != VK_SAMPLE_COUNT_1_BIT;
-	bool							isDynamicRendering			= m_testParams.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING;
+	bool							isDynamicRendering			= m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING;
 
 	VkExtent3D						outputImageSize				{ m_renderSize.x(), m_renderSize.y(), 1 };
 	const VkImageSubresourceRange	outputSubresourceRange		{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u };
@@ -1577,7 +1612,7 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 	if (!isDynamicRendering)
 	{
 		// Create render passes
-		if (m_testParams.renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
+		if (m_testParams.groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
 			renderPassWrapper = RenderPassWrapperBasePtr(new RenderPassWrapper<RENDERING_TYPE_RENDERPASS_LEGACY>(vk, vkDevice, testParams));
 		else
 			renderPassWrapper = RenderPassWrapperBasePtr(new RenderPassWrapper<RENDERING_TYPE_RENDERPASS2>(vk, vkDevice, testParams));
@@ -1590,38 +1625,134 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 		m_renderPassOutputSubsampledImage = renderPassWrapper->createRenderPassOutputSubsampledImage();
 
 		// Create framebuffers
-		if (testParams.dynamicDensityMap)
+		if (!testParams.imagelessFramebuffer)
 		{
-			m_framebufferProduceDynamicDensityMap = createFrameBuffer(vk, vkDevice,
-				*m_renderPassProduceDynamicDensityMap,
-				densityMapImageSize,
-				{ **m_densityMapImageViews[0] });
-		}
+			if (testParams.dynamicDensityMap)
+			{
+				m_framebufferProduceDynamicDensityMap = createFrameBuffer(vk, vkDevice,
+					*m_renderPassProduceDynamicDensityMap,
+					densityMapImageSize,
+					{ **m_densityMapImageViews[0] });
+			}
 
-		std::vector<VkImageView> imageViewsProduceSubsampledImage = { *m_colorImageView };
-		if (isColorImageMultisampled)
-			imageViewsProduceSubsampledImage.push_back(*m_colorResolvedImageView);
-		if (testParams.makeCopy)
-			imageViewsProduceSubsampledImage.push_back(*m_colorCopyImageView);
-		imageViewsProduceSubsampledImage.push_back(**m_densityMapImageViews[0]);
+			std::vector<VkImageView> imageViewsProduceSubsampledImage = { *m_colorImageView };
+			if (isColorImageMultisampled)
+				imageViewsProduceSubsampledImage.push_back(*m_colorResolvedImageView);
+			if (testParams.makeCopy)
+				imageViewsProduceSubsampledImage.push_back(*m_colorCopyImageView);
+			imageViewsProduceSubsampledImage.push_back(**m_densityMapImageViews[0]);
 
-		m_framebufferProduceSubsampledImage = createFrameBuffer(vk, vkDevice,
-			*m_renderPassProduceSubsampledImage,
-			colorImageSize,
-			imageViewsProduceSubsampledImage);
-
-		if (testParams.subsampledLoads)
-		{
-			m_framebufferUpdateSubsampledImage = createFrameBuffer(vk, vkDevice,
-				*m_renderPassUpdateSubsampledImage,
+			m_framebufferProduceSubsampledImage = createFrameBuffer(vk, vkDevice,
+				*m_renderPassProduceSubsampledImage,
 				colorImageSize,
-				{ *m_colorImageView, **m_densityMapImageViews[1] });
-		}
+				imageViewsProduceSubsampledImage);
 
-		m_framebufferOutputSubsampledImage = createFrameBuffer(vk, vkDevice,
-			*m_renderPassOutputSubsampledImage,
-			outputImageSize,
-			{ *m_outputImageView });
+			if (testParams.subsampledLoads)
+			{
+				m_framebufferUpdateSubsampledImage = createFrameBuffer(vk, vkDevice,
+					*m_renderPassUpdateSubsampledImage,
+					colorImageSize,
+					{ *m_colorImageView, **m_densityMapImageViews[1] });
+			}
+
+			m_framebufferOutputSubsampledImage = createFrameBuffer(vk, vkDevice,
+				*m_renderPassOutputSubsampledImage,
+				outputImageSize,
+				{ *m_outputImageView });
+		}
+		else // create same framebuffers as above but with VkFramebufferAttachmentsCreateInfo instead of image views
+		{
+			// helper lambda used to create VkFramebufferAttachmentImageInfo structure and reduce code size
+			auto createFramebufferAttachmentImageInfo = [](VkImageCreateFlags createFlags, VkImageUsageFlags usageFlags, VkExtent3D& extent, deUint32 layerCount, const VkFormat* format)
+			{
+				return VkFramebufferAttachmentImageInfo
+				{
+					VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO,	// VkStructureType		sType;
+					DE_NULL,												// const void*			pNext;
+					createFlags,											// VkImageCreateFlags	flags;
+					usageFlags,												// VkImageUsageFlags	usage;
+					extent.width,											// deUint32				width;
+					extent.height,											// deUint32				height;
+					layerCount,												// deUint32				layerCount;
+					1u,														// deUint32				viewFormatCount;
+					format													// const VkFormat*		pViewFormats;
+				};
+			};
+
+			if (testParams.dynamicDensityMap)
+			{
+				m_framebufferProduceDynamicDensityMap = createImagelessFrameBuffer(vk, vkDevice,
+					*m_renderPassProduceDynamicDensityMap,
+					densityMapImageSize,
+					{ createFramebufferAttachmentImageInfo(0u, densityMapImageUsage, densityMapImageSize, densityMapImageLayers, &m_testParams.densityMapFormat) });
+			}
+
+			std::vector<VkFramebufferAttachmentImageInfo> attachmentInfoProduceSubsampledImage;
+			attachmentInfoProduceSubsampledImage.reserve(4);
+			attachmentInfoProduceSubsampledImage.push_back(
+				createFramebufferAttachmentImageInfo((VkImageCreateFlags)colorImageCreateFlags,
+					colorImageUsage,
+					colorImageSize,
+					colorImageLayers,
+					&colorImageFormat));
+			if (isColorImageMultisampled)
+			{
+				attachmentInfoProduceSubsampledImage.push_back(
+					createFramebufferAttachmentImageInfo((VkImageCreateFlags)colorImageCreateFlags,
+						VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+						colorImageSize,
+						colorImageLayers,
+						&colorImageFormat));
+			}
+			if (testParams.makeCopy)
+			{
+				attachmentInfoProduceSubsampledImage.push_back(
+					createFramebufferAttachmentImageInfo((VkImageCreateFlags)colorImageCreateFlags,
+						VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+						colorImageSize,
+						colorImageLayers,
+						&colorImageFormat));
+			}
+			attachmentInfoProduceSubsampledImage.push_back(
+				createFramebufferAttachmentImageInfo((VkImageCreateFlags)colorImageCreateFlags,
+					colorImageUsage,
+					colorImageSize,
+					colorImageLayers,
+					&colorImageFormat));
+
+			m_framebufferProduceSubsampledImage = createImagelessFrameBuffer(vk, vkDevice,
+				*m_renderPassProduceSubsampledImage,
+				colorImageSize,
+				attachmentInfoProduceSubsampledImage);
+
+			if (testParams.subsampledLoads)
+			{
+				m_framebufferUpdateSubsampledImage = createImagelessFrameBuffer(vk, vkDevice,
+					*m_renderPassUpdateSubsampledImage,
+					colorImageSize,
+					{
+						createFramebufferAttachmentImageInfo((VkImageCreateFlags)colorImageCreateFlags,
+															 colorImageUsage,
+															 colorImageSize,
+															 colorImageLayers,
+															 &colorImageFormat),
+						createFramebufferAttachmentImageInfo(0u,
+															 densityMapImageUsage,
+															 densityMapImageSize,
+															 densityMapImageLayers,
+															 &m_testParams.densityMapFormat)
+					});
+			}
+
+			m_framebufferOutputSubsampledImage = createImagelessFrameBuffer(vk, vkDevice,
+				*m_renderPassOutputSubsampledImage,
+				outputImageSize,
+				{ createFramebufferAttachmentImageInfo(0u,
+													   VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+													   outputImageSize,
+													   1u,
+													   &colorImageFormat) });
+		}
 	}
 
 	// Create pipeline layout for subpasses that do not use any descriptors
@@ -1846,333 +1977,604 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 	m_cmdPool	= createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 	m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-	const VkDeviceSize						vertexBufferOffset				= 0;
-	const VkClearValue						attachmentClearValue			= makeClearValueColorF32(0.0f, 0.0f, 0.0f, 1.0f);
-	const deUint32							attachmentCount					= 1 + testParams.makeCopy + isColorImageMultisampled;
-	const std::vector<VkClearValue>			attachmentClearValues			(attachmentCount, attachmentClearValue);
+	if (isDynamicRendering)
+		createCommandBufferForDynamicRendering(dynamicDensityMapRenderArea, colorImageRenderArea, outputRenderArea);
+	else
+		createCommandBufferForRenderpass(renderPassWrapper, colorImageSize, dynamicDensityMapRenderArea, colorImageRenderArea, outputRenderArea);
+}
+
+void FragmentDensityMapTestInstance::drawDynamicDensityMap(VkCommandBuffer cmdBuffer)
+{
+	const DeviceInterface&	vk					= m_context.getDeviceInterface();
+	const VkDeviceSize		vertexBufferOffset	= 0;
+
+	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineProduceDynamicDensityMap);
+	vk.cmdBindVertexBuffers(cmdBuffer, 0, 1, &m_vertexBufferDDM.get(), &vertexBufferOffset);
+	vk.cmdDraw(cmdBuffer, (deUint32)m_verticesDDM.size(), 1, 0, 0);
+}
+
+void FragmentDensityMapTestInstance::drawSubsampledImage(VkCommandBuffer cmdBuffer)
+{
+	const DeviceInterface&	vk					= m_context.getDeviceInterface();
+	const VkDeviceSize		vertexBufferOffset	= 0;
+
+	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineProduceSubsampledImage);
+	vk.cmdBindVertexBuffers(cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
+	vk.cmdDraw(cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
+}
+
+void FragmentDensityMapTestInstance::drawResampleSubsampledImage(VkCommandBuffer cmdBuffer)
+{
+	const DeviceInterface&	vk					= m_context.getDeviceInterface();
+	const VkDeviceSize		vertexBufferOffset	= 0;
+
+	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineUpdateSubsampledImage);
+	vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayoutOperateOnSubsampledImage, 0, 1, &m_descriptorSetOperateOnSubsampledImage.get(), 0, DE_NULL);
+	vk.cmdBindVertexBuffers(cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
+	vk.cmdDraw(cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
+}
+
+void FragmentDensityMapTestInstance::drawCopySubsampledImage(VkCommandBuffer cmdBuffer)
+{
+	const DeviceInterface&	vk					= m_context.getDeviceInterface();
+	const VkDeviceSize		vertexBufferOffset	= 0;
+
+	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineOutputSubsampledImage);
+	vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayoutOutputSubsampledImage, 0, 1, &m_descriptorSetOutputSubsampledImage.get(), 0, DE_NULL);
+	vk.cmdBindVertexBuffers(cmdBuffer, 0, 1, &m_vertexBufferOutput.get(), &vertexBufferOffset);
+	vk.cmdDraw(cmdBuffer, (deUint32)m_verticesOutput.size(), 1, 0, 0);
+}
+
+void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(RenderPassWrapperBasePtr	renderPassWrapper,
+																	  const VkExtent3D&			colorImageSize,
+																	  const VkRect2D&			dynamicDensityMapRenderArea,
+																	  const VkRect2D&			colorImageRenderArea,
+																	  const VkRect2D&			outputRenderArea)
+{
+	const DeviceInterface&				vk							= m_context.getDeviceInterface();
+	const VkDeviceSize					vertexBufferOffset			= 0;
+	const bool							isColorImageMultisampled	= m_testParams.colorSamples != VK_SAMPLE_COUNT_1_BIT;
+	const VkClearValue					attachmentClearValue		= makeClearValueColorF32(0.0f, 0.0f, 0.0f, 1.0f);
+	const deUint32						attachmentCount				= 1 + m_testParams.makeCopy + isColorImageMultisampled;
+	const std::vector<VkClearValue>		attachmentClearValues		(attachmentCount, attachmentClearValue);
 
 	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
 	// First render pass - render dynamic density map
-	if (testParams.dynamicDensityMap)
+	if (m_testParams.dynamicDensityMap)
 	{
-		std::vector<VkClearValue>	attachmentClearValuesDDM { makeClearValueColorF32(1.0f, 1.0f, 1.0f, 1.0f) };
+		std::vector<VkClearValue>	attachmentClearValuesDDM{ makeClearValueColorF32(1.0f, 1.0f, 1.0f, 1.0f) };
 
-		if (isDynamicRendering)
+		const VkRenderPassAttachmentBeginInfo renderPassAttachmentBeginInfo
 		{
-			// change layout of density map - after filling it layout was changed
-			// to density map optimal but here we want to render values to it
-			const VkImageSubresourceRange	subresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, densityMapImageLayers, 0u, 1u);
-			const VkImageMemoryBarrier		imageBarrier		= makeImageMemoryBarrier(
-				VK_ACCESS_FRAGMENT_DENSITY_MAP_READ_BIT_EXT,		// VkAccessFlags			srcAccessMask;
-				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,				// VkAccessFlags			dstAccessMask;
-				VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT,	// VkImageLayout			oldLayout;
-				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout			newLayout;
-				**m_densityMapImages[0],							// VkImage					image;
-				subresourceRange									// VkImageSubresourceRange	subresourceRange;
-			);
-			vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_NONE_KHR, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-								  0, 0, DE_NULL, 0, DE_NULL, 1, &imageBarrier);
+			VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO,							// VkStructureType		sType;
+			DE_NULL,																		// const void*			pNext;
+			1u,																				// deUint32				attachmentCount;
+			&**m_densityMapImageViews[0]													// const VkImageView*	pAttachments;
+		};
 
-			VkRenderingAttachmentInfoKHR colorAttachment
-			{
-				VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,	// VkStructureType						sType;
-				DE_NULL,											// const void*							pNext;
-				**m_densityMapImageViews[0],						// VkImageView							imageView;
-				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout						imageLayout;
-				VK_RESOLVE_MODE_NONE,								// VkResolveModeFlagBits				resolveMode;
-				DE_NULL,											// VkImageView							resolveImageView;
-				VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout						resolveImageLayout;
-				VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp					loadOp;
-				VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp					storeOp;
-				attachmentClearValuesDDM[0]							// VkClearValue							clearValue;
-			};
-
-			VkRenderingInfoKHR renderingInfo
-			{
-				VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
-				DE_NULL,
-				0u,													// VkRenderingFlagsKHR					flags;
-				dynamicDensityMapRenderArea,						// VkRect2D								renderArea;
-				densityMapImageLayers,								// deUint32								layerCount;
-				m_viewMask,											// deUint32								viewMask;
-				1u,													// deUint32								colorAttachmentCount;
-				&colorAttachment,									// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
-				DE_NULL,											// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
-				DE_NULL,											// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
-			};
-
-			vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
-		}
-		else
+		const VkRenderPassBeginInfo renderPassBeginInfoProduceDynamicDensityMap
 		{
-			const VkRenderPassBeginInfo renderPassBeginInfoProduceDynamicDensityMap
-			{
-				VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,					// VkStructureType		sType;
-				DE_NULL,													// const void*			pNext;
-				*m_renderPassProduceDynamicDensityMap,						// VkRenderPass			renderPass;
-				*m_framebufferProduceDynamicDensityMap,						// VkFramebuffer		framebuffer;
-				dynamicDensityMapRenderArea,								// VkRect2D				renderArea;
-				static_cast<deUint32>(attachmentClearValuesDDM.size()),		// uint32_t				clearValueCount;
-				attachmentClearValuesDDM.data()								// const VkClearValue*	pClearValues;
-			};
+			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,										// VkStructureType		sType;
+			m_testParams.imagelessFramebuffer ? &renderPassAttachmentBeginInfo : DE_NULL,	// const void*			pNext;
+			*m_renderPassProduceDynamicDensityMap,											// VkRenderPass			renderPass;
+			*m_framebufferProduceDynamicDensityMap,											// VkFramebuffer		framebuffer;
+			dynamicDensityMapRenderArea,													// VkRect2D				renderArea;
+			static_cast<deUint32>(attachmentClearValuesDDM.size()),							// uint32_t				clearValueCount;
+			attachmentClearValuesDDM.data()													// const VkClearValue*	pClearValues;
+		};
 
-			renderPassWrapper->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfoProduceDynamicDensityMap);
-		}
+		renderPassWrapper->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfoProduceDynamicDensityMap);
 
-		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineProduceDynamicDensityMap);
-		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBufferDDM.get(), &vertexBufferOffset);
-		vk.cmdDraw(*m_cmdBuffer, (deUint32)m_verticesDDM.size(), 1, 0, 0);
+		drawDynamicDensityMap(*m_cmdBuffer);
 
-		if (isDynamicRendering)
-		{
-			vk.cmdEndRendering(*m_cmdBuffer);
-
-			// barrier that will change layout of density map
-			VkImageMemoryBarrier densityMapImageBarrier = makeImageMemoryBarrier(
-				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,						// VkAccessFlags			srcAccessMask;
-				VK_ACCESS_FRAGMENT_DENSITY_MAP_READ_BIT_EXT,				// VkAccessFlags			dstAccessMask;
-				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,					// VkImageLayout			oldLayout;
-				VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT,			// VkImageLayout			newLayout;
-				**m_densityMapImages[0],									// VkImage					image;
-				densityMapSubresourceRange									// VkImageSubresourceRange	subresourceRange;
-			);
-			vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_DENSITY_PROCESS_BIT_EXT,
-				0, 0, DE_NULL, 0, DE_NULL, 1, &densityMapImageBarrier);
-		}
-		else
-			renderPassWrapper->cmdEndRenderPass(*m_cmdBuffer);
+		renderPassWrapper->cmdEndRenderPass(*m_cmdBuffer);
 	}
 
 	// Render subsampled image
-	if (isDynamicRendering)
 	{
-		// barier that will change layout of color and resolve attachments
-		std::vector<VkImageMemoryBarrier> cbImageBarrier(2, makeImageMemoryBarrier(
-			VK_ACCESS_NONE_KHR,																// VkAccessFlags			srcAccessMask;
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,											// VkAccessFlags			dstAccessMask;
-			VK_IMAGE_LAYOUT_UNDEFINED,														// VkImageLayout			oldLayout;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,										// VkImageLayout			newLayout;
-			*m_colorImage,																	// VkImage					image;
-			colorSubresourceRange															// VkImageSubresourceRange	subresourceRange;
-		));
-		cbImageBarrier[1].image = *m_colorResolvedImage;
-		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_NONE_KHR, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-			0, 0, DE_NULL, 0, DE_NULL, 1 + isColorImageMultisampled, cbImageBarrier.data());
+		std::vector<VkImageView> imageViewsProduceSubsampledImage = { *m_colorImageView };
+		if (isColorImageMultisampled)
+			imageViewsProduceSubsampledImage.push_back(*m_colorResolvedImageView);
+		if (m_testParams.makeCopy)
+			imageViewsProduceSubsampledImage.push_back(*m_colorCopyImageView);
+		imageViewsProduceSubsampledImage.push_back(**m_densityMapImageViews[0]);
 
-		VkRenderingAttachmentInfoKHR colorAttachment
+		const VkRenderPassAttachmentBeginInfo renderPassAttachmentBeginInfo
 		{
-			VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,								// VkStructureType						sType;
-			DE_NULL,																		// const void*							pNext;
-			*m_colorImageView,																// VkImageView							imageView;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,										// VkImageLayout						imageLayout;
-			isColorImageMultisampled ? VK_RESOLVE_MODE_AVERAGE_BIT : VK_RESOLVE_MODE_NONE,	// VkResolveModeFlagBits				resolveMode;
-			isColorImageMultisampled ? *m_colorResolvedImageView : DE_NULL,					// VkImageView							resolveImageView;
-			isColorImageMultisampled ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-									 : VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout						resolveImageLayout;
-			VK_ATTACHMENT_LOAD_OP_CLEAR,													// VkAttachmentLoadOp					loadOp;
-			VK_ATTACHMENT_STORE_OP_STORE,													// VkAttachmentStoreOp					storeOp;
-			attachmentClearValues[0]														// VkClearValue							clearValue;
+			VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO,								// VkStructureType		sType;
+			DE_NULL,																			// const void*			pNext;
+			static_cast<deUint32>(imageViewsProduceSubsampledImage.size()),						// deUint32				attachmentCount;
+			imageViewsProduceSubsampledImage.data()												// const VkImageView*	pAttachments;
 		};
 
-		VkRenderingFragmentDensityMapAttachmentInfoEXT densityMapAttachment
-		{
-			VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_DENSITY_MAP_ATTACHMENT_INFO_EXT,			// VkStructureType						sType;
-			DE_NULL,																		// const void*							pNext;
-			**m_densityMapImageViews[0],													// VkImageView							imageView;
-			VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT								// VkImageLayout						imageLayout;
-		};
-
-		VkRenderingInfoKHR renderingInfo
-		{
-			VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
-			&densityMapAttachment,
-			0u,																				// VkRenderingFlagsKHR					flags;
-			colorImageRenderArea,															// VkRect2D								renderArea;
-			densityMapImageLayers,															// deUint32								layerCount;
-			m_viewMask,																		// deUint32								viewMask;
-			1u,																				// deUint32								colorAttachmentCount;
-			&colorAttachment,																// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
-			DE_NULL,																		// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
-			DE_NULL,																		// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
-		};
-
-		vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
-	}
-	else
-	{
 		const VkRenderPassBeginInfo renderPassBeginInfoProduceSubsampledImage
 		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,						// VkStructureType		sType;
-			DE_NULL,														// const void*			pNext;
-			*m_renderPassProduceSubsampledImage,							// VkRenderPass			renderPass;
-			*m_framebufferProduceSubsampledImage,							// VkFramebuffer		framebuffer;
-			colorImageRenderArea,											// VkRect2D				renderArea;
-			static_cast<deUint32>(attachmentClearValues.size()),			// uint32_t				clearValueCount;
-			attachmentClearValues.data()									// const VkClearValue*	pClearValues;
+			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,											// VkStructureType		sType;
+			m_testParams.imagelessFramebuffer ? &renderPassAttachmentBeginInfo : DE_NULL,		// const void*			pNext;
+			*m_renderPassProduceSubsampledImage,												// VkRenderPass			renderPass;
+			*m_framebufferProduceSubsampledImage,												// VkFramebuffer		framebuffer;
+			colorImageRenderArea,																// VkRect2D				renderArea;
+			static_cast<deUint32>(attachmentClearValues.size()),								// uint32_t				clearValueCount;
+			attachmentClearValues.data()														// const VkClearValue*	pClearValues;
 		};
 		renderPassWrapper->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfoProduceSubsampledImage);
-	}
 
-	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineProduceSubsampledImage);
-	vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
-	vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
-	if (testParams.makeCopy)
-	{
-		// no subpasses in dynamic rendering - makeCopy tests are not repeated for dynamic rendering
-		DE_ASSERT(!isDynamicRendering);
+		drawSubsampledImage(*m_cmdBuffer);
 
-		renderPassWrapper->cmdNextSubpass(*m_cmdBuffer);
-		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineCopySubsampledImage);
-		vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayoutOperateOnSubsampledImage, 0, 1, &m_descriptorSetOperateOnSubsampledImage.get(), 0, DE_NULL);
-		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
-		vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
-	}
+		if (m_testParams.makeCopy)
+		{
+			renderPassWrapper->cmdNextSubpass(*m_cmdBuffer);
+			vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineCopySubsampledImage);
+			vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayoutOperateOnSubsampledImage, 0, 1, &m_descriptorSetOperateOnSubsampledImage.get(), 0, DE_NULL);
+			vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
+			vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
+		}
 
-	if (isDynamicRendering)
-		vk.cmdEndRendering(*m_cmdBuffer);
-	else
 		renderPassWrapper->cmdEndRenderPass(*m_cmdBuffer);
+	}
 
 	// Resample subsampled image
-	if (testParams.subsampledLoads)
+	if (m_testParams.subsampledLoads)
 	{
-		if (isDynamicRendering)
+		VkImageView pAttachments[] = { *m_colorImageView, **m_densityMapImageViews[1] };
+		const VkRenderPassAttachmentBeginInfo renderPassAttachmentBeginInfo
 		{
-			VkRenderingAttachmentInfoKHR colorAttachment
-			{
-				VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,						// VkStructureType						sType;
-				DE_NULL,																// const void*							pNext;
-				*m_colorImageView,														// VkImageView							imageView;
-				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,								// VkImageLayout						imageLayout;
-				VK_RESOLVE_MODE_NONE,													// VkResolveModeFlagBits				resolveMode;
-				DE_NULL,																// VkImageView							resolveImageView;
-				VK_IMAGE_LAYOUT_UNDEFINED,												// VkImageLayout						resolveImageLayout;
-				VK_ATTACHMENT_LOAD_OP_LOAD,												// VkAttachmentLoadOp					loadOp;
-				VK_ATTACHMENT_STORE_OP_STORE,											// VkAttachmentStoreOp					storeOp;
-				attachmentClearValues[0]												// VkClearValue							clearValue;
-			};
+			VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO,							// VkStructureType		sType;
+			DE_NULL,																		// const void*			pNext;
+			2u,																				// deUint32				attachmentCount;
+			pAttachments																	// const VkImageView*	pAttachments;
+		};
 
-			VkRenderingFragmentDensityMapAttachmentInfoEXT densityMapAttachment
-			{
-				VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_DENSITY_MAP_ATTACHMENT_INFO_EXT,	// VkStructureType						sType;
-				DE_NULL,																// const void*							pNext;
-				**m_densityMapImageViews[1],											// VkImageView							imageView;
-				VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT						// VkImageLayout						imageLayout;
-			};
-
-			VkRenderingInfoKHR renderingInfo
-			{
-				VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
-				&densityMapAttachment,
-				0u,																		// VkRenderingFlagsKHR					flags;
-				colorImageRenderArea,													// VkRect2D								renderArea;
-				densityMapImageLayers,													// deUint32								layerCount;
-				m_viewMask,																// deUint32								viewMask;
-				1u,																		// deUint32								colorAttachmentCount;
-				&colorAttachment,														// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
-				DE_NULL,																// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
-				DE_NULL,																// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
-			};
-			vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
-		}
-		else
+		const VkRenderPassBeginInfo renderPassBeginInfoUpdateSubsampledImage
 		{
-			const VkRenderPassBeginInfo renderPassBeginInfoUpdateSubsampledImage
-			{
-				VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,					// VkStructureType		sType;
-				DE_NULL,													// const void*			pNext;
-				*m_renderPassUpdateSubsampledImage,							// VkRenderPass			renderPass;
-				*m_framebufferUpdateSubsampledImage,						// VkFramebuffer		framebuffer;
-				makeRect2D(colorImageSize.width, colorImageSize.height),	// VkRect2D				renderArea;
-				0u,															// uint32_t				clearValueCount;
-				DE_NULL														// const VkClearValue*	pClearValues;
-			};
-			renderPassWrapper->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfoUpdateSubsampledImage);
-		}
+			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,										// VkStructureType		sType;
+			m_testParams.imagelessFramebuffer ? &renderPassAttachmentBeginInfo : DE_NULL,	// const void*			pNext;
+			*m_renderPassUpdateSubsampledImage,												// VkRenderPass			renderPass;
+			*m_framebufferUpdateSubsampledImage,											// VkFramebuffer		framebuffer;
+			makeRect2D(colorImageSize.width, colorImageSize.height),						// VkRect2D				renderArea;
+			0u,																				// uint32_t				clearValueCount;
+			DE_NULL																			// const VkClearValue*	pClearValues;
+		};
+		renderPassWrapper->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfoUpdateSubsampledImage);
 
-		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineUpdateSubsampledImage);
-		vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayoutOperateOnSubsampledImage, 0, 1, &m_descriptorSetOperateOnSubsampledImage.get(), 0, DE_NULL);
-		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
-		vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
+		drawResampleSubsampledImage(*m_cmdBuffer);
 
-		if (isDynamicRendering)
-			vk.cmdEndRendering(*m_cmdBuffer);
-		else
-			renderPassWrapper->cmdEndRenderPass(*m_cmdBuffer);
+		renderPassWrapper->cmdEndRenderPass(*m_cmdBuffer);
 	}
 
 	// Copy subsampled image to normal image using sampler that is able to read from subsampled images
 	// (subsampled image cannot be copied using vkCmdCopyImageToBuffer)
-	if (isDynamicRendering)
+	const VkRenderPassAttachmentBeginInfo renderPassAttachmentBeginInfo
 	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO,								// VkStructureType		sType;
+		DE_NULL,																			// const void*			pNext;
+		1u,																					// deUint32				attachmentCount;
+		&*m_outputImageView																	// const VkImageView*	pAttachments;
+	};
+
+	const VkRenderPassBeginInfo renderPassBeginInfoOutputSubsampledImage
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,											// VkStructureType		sType;
+		m_testParams.imagelessFramebuffer ? &renderPassAttachmentBeginInfo : DE_NULL,		// const void*			pNext;
+		*m_renderPassOutputSubsampledImage,													// VkRenderPass			renderPass;
+		*m_framebufferOutputSubsampledImage,												// VkFramebuffer		framebuffer;
+		outputRenderArea,																	// VkRect2D				renderArea;
+		static_cast<deUint32>(attachmentClearValues.size()),								// uint32_t				clearValueCount;
+		attachmentClearValues.data()														// const VkClearValue*	pClearValues;
+	};
+	renderPassWrapper->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfoOutputSubsampledImage);
+
+	drawCopySubsampledImage(*m_cmdBuffer);
+
+	renderPassWrapper->cmdEndRenderPass(*m_cmdBuffer);
+
+	endCommandBuffer(vk, *m_cmdBuffer);
+}
+
+void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(const VkRect2D&		dynamicDensityMapRenderArea,
+																			const VkRect2D&		colorImageRenderArea,
+																			const VkRect2D&		outputRenderArea)
+{
+	// no subpasses in dynamic rendering - makeCopy tests are not repeated for dynamic rendering
+	DE_ASSERT (!m_testParams.makeCopy);
+
+	const DeviceInterface&				vk							= m_context.getDeviceInterface();
+	const VkDevice						vkDevice					= m_context.getDevice();
+	const bool							isColorImageMultisampled	= m_testParams.colorSamples != VK_SAMPLE_COUNT_1_BIT;
+	std::vector<VkClearValue>			attachmentClearValuesDDM	{ makeClearValueColorF32(1.0f, 1.0f, 1.0f, 1.0f) };
+	const VkClearValue					attachmentClearValue		= makeClearValueColorF32(0.0f, 0.0f, 0.0f, 1.0f);
+	const deUint32						attachmentCount				= 1 + m_testParams.makeCopy + isColorImageMultisampled;
+	const std::vector<VkClearValue>		attachmentClearValues		(attachmentCount, attachmentClearValue);
+	const VkImageSubresourceRange		dynamicDensitMapSubresourceRange	{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, m_testParams.viewCount, 0u, 1u };
+	const VkImageSubresourceRange		colorSubresourceRange				{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, m_testParams.viewCount };
+	const VkImageSubresourceRange		outputSubresourceRange				{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u };
+
+	const VkImageMemoryBarrier dynamicDensitMapBarrier = makeImageMemoryBarrier(
+		VK_ACCESS_FRAGMENT_DENSITY_MAP_READ_BIT_EXT,									// VkAccessFlags			srcAccessMask;
+		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,											// VkAccessFlags			dstAccessMask;
+		VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT,								// VkImageLayout			oldLayout;
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,										// VkImageLayout			newLayout;
+		**m_densityMapImages[0],														// VkImage					image;
+		dynamicDensitMapSubresourceRange												// VkImageSubresourceRange	subresourceRange;
+	);
+
+	const VkImageMemoryBarrier densityMapImageBarrier = makeImageMemoryBarrier(
+		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,											// VkAccessFlags			srcAccessMask;
+		VK_ACCESS_FRAGMENT_DENSITY_MAP_READ_BIT_EXT,									// VkAccessFlags			dstAccessMask;
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,										// VkImageLayout			oldLayout;
+		VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT,								// VkImageLayout			newLayout;
+		**m_densityMapImages[0],														// VkImage					image;
+		colorSubresourceRange															// VkImageSubresourceRange	subresourceRange;
+	);
+
+	std::vector<VkImageMemoryBarrier> cbImageBarrier(2, makeImageMemoryBarrier(
+		VK_ACCESS_NONE_KHR,																// VkAccessFlags			srcAccessMask;
+		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,											// VkAccessFlags			dstAccessMask;
+		VK_IMAGE_LAYOUT_UNDEFINED,														// VkImageLayout			oldLayout;
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,										// VkImageLayout			newLayout;
+		*m_colorImage,																	// VkImage					image;
+		colorSubresourceRange															// VkImageSubresourceRange	subresourceRange;
+	));
+	cbImageBarrier[1].image = *m_colorResolvedImage;
+
+	const VkImageMemoryBarrier outputImageBarrier = makeImageMemoryBarrier(
+		VK_ACCESS_NONE_KHR,																// VkAccessFlags						srcAccessMask;
+		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,											// VkAccessFlags						dstAccessMask;
+		VK_IMAGE_LAYOUT_UNDEFINED,														// VkImageLayout						oldLayout;
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,										// VkImageLayout						newLayout;
+		*m_outputImage,																	// VkImage								image;
+		outputSubresourceRange															// VkImageSubresourceRange				subresourceRange;
+	);
+
+	const VkRenderingFragmentDensityMapAttachmentInfoEXT densityMap0Attachment
+	{
+		VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_DENSITY_MAP_ATTACHMENT_INFO_EXT,			// VkStructureType						sType;
+		DE_NULL,																		// const void*							pNext;
+		**m_densityMapImageViews[0],													// VkImageView							imageView;
+		VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT								// VkImageLayout						imageLayout;
+	};
+
+	const VkRenderingFragmentDensityMapAttachmentInfoEXT densityMap1Attachment
+	{
+		VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_DENSITY_MAP_ATTACHMENT_INFO_EXT,			// VkStructureType						sType;
+		DE_NULL,																		// const void*							pNext;
+		m_testParams.subsampledLoads ? **m_densityMapImageViews[1] : DE_NULL,			// VkImageView							imageView;
+		VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT								// VkImageLayout						imageLayout;
+	};
+
+	const VkRenderingAttachmentInfoKHR dynamicDensityMapColorAttachment
+	{
+		VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,								// VkStructureType						sType;
+		DE_NULL,																		// const void*							pNext;
+		**m_densityMapImageViews[0],													// VkImageView							imageView;
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,										// VkImageLayout						imageLayout;
+		VK_RESOLVE_MODE_NONE,															// VkResolveModeFlagBits				resolveMode;
+		DE_NULL,																		// VkImageView							resolveImageView;
+		VK_IMAGE_LAYOUT_UNDEFINED,														// VkImageLayout						resolveImageLayout;
+		VK_ATTACHMENT_LOAD_OP_CLEAR,													// VkAttachmentLoadOp					loadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,													// VkAttachmentStoreOp					storeOp;
+		attachmentClearValuesDDM[0]														// VkClearValue							clearValue;
+	};
+
+	VkRenderingInfoKHR dynamicDensityMapRenderingInfo
+	{
+		VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+		DE_NULL,
+		0u,																				// VkRenderingFlagsKHR					flags;
+		dynamicDensityMapRenderArea,													// VkRect2D								renderArea;
+		m_testParams.viewCount,															// deUint32								layerCount;
+		m_viewMask,																		// deUint32								viewMask;
+		1u,																				// deUint32								colorAttachmentCount;
+		&dynamicDensityMapColorAttachment,												// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
+		DE_NULL,																		// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
+		DE_NULL,																		// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
+	};
+
+	const VkRenderingAttachmentInfoKHR subsampledImageColorAttachment
+	{
+		VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,								// VkStructureType						sType;
+		DE_NULL,																		// const void*							pNext;
+		*m_colorImageView,																// VkImageView							imageView;
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,										// VkImageLayout						imageLayout;
+		isColorImageMultisampled ? VK_RESOLVE_MODE_AVERAGE_BIT : VK_RESOLVE_MODE_NONE,	// VkResolveModeFlagBits				resolveMode;
+		isColorImageMultisampled ? *m_colorResolvedImageView : DE_NULL,					// VkImageView							resolveImageView;
+		isColorImageMultisampled ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+									: VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout						resolveImageLayout;
+		VK_ATTACHMENT_LOAD_OP_CLEAR,													// VkAttachmentLoadOp					loadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,													// VkAttachmentStoreOp					storeOp;
+		attachmentClearValues[0]														// VkClearValue							clearValue;
+	};
+
+	VkRenderingInfoKHR subsampledImageRenderingInfo
+	{
+		VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+		&densityMap0Attachment,
+		0u,																				// VkRenderingFlagsKHR					flags;
+		colorImageRenderArea,															// VkRect2D								renderArea;
+		m_testParams.viewCount,															// deUint32								layerCount;
+		m_viewMask,																		// deUint32								viewMask;
+		1u,																				// deUint32								colorAttachmentCount;
+		&subsampledImageColorAttachment,												// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
+		DE_NULL,																		// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
+		DE_NULL,																		// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
+	};
+
+	const VkRenderingAttachmentInfoKHR resampleSubsampledImageColorAttachment
+	{
+		VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,								// VkStructureType						sType;
+		DE_NULL,																		// const void*							pNext;
+		*m_colorImageView,																// VkImageView							imageView;
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,										// VkImageLayout						imageLayout;
+		VK_RESOLVE_MODE_NONE,															// VkResolveModeFlagBits				resolveMode;
+		DE_NULL,																		// VkImageView							resolveImageView;
+		VK_IMAGE_LAYOUT_UNDEFINED,														// VkImageLayout						resolveImageLayout;
+		VK_ATTACHMENT_LOAD_OP_LOAD,														// VkAttachmentLoadOp					loadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,													// VkAttachmentStoreOp					storeOp;
+		attachmentClearValues[0]														// VkClearValue							clearValue;
+	};
+
+	VkRenderingInfoKHR resampleSubsampledImageRenderingInfo
+	{
+		VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+		&densityMap1Attachment,
+		0u,																				// VkRenderingFlagsKHR					flags;
+		colorImageRenderArea,															// VkRect2D								renderArea;
+		m_testParams.viewCount,															// deUint32								layerCount;
+		m_viewMask,																		// deUint32								viewMask;
+		1u,																				// deUint32								colorAttachmentCount;
+		&resampleSubsampledImageColorAttachment,										// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
+		DE_NULL,																		// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
+		DE_NULL,																		// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
+	};
+
+	const VkRenderingAttachmentInfoKHR copySubsampledColorAttachment
+	{
+		VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,								// VkStructureType						sType;
+		DE_NULL,																		// const void*							pNext;
+		*m_outputImageView,																// VkImageView							imageView;
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,										// VkImageLayout						imageLayout;
+		VK_RESOLVE_MODE_NONE,															// VkResolveModeFlagBits				resolveMode;
+		DE_NULL,																		// VkImageView							resolveImageView;
+		VK_IMAGE_LAYOUT_UNDEFINED,														// VkImageLayout						resolveImageLayout;
+		VK_ATTACHMENT_LOAD_OP_CLEAR,													// VkAttachmentLoadOp					loadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,													// VkAttachmentStoreOp					storeOp;
+		attachmentClearValues[0]														// VkClearValue							clearValue;
+	};
+
+	VkRenderingInfoKHR copySubsampledRenderingInfo
+	{
+		VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+		DE_NULL,
+		0u,																				// VkRenderingFlagsKHR					flags;
+		outputRenderArea,																// VkRect2D								renderArea;
+		1u,																				// deUint32								layerCount;
+		0u,																				// deUint32								viewMask;
+		1u,																				// deUint32								colorAttachmentCount;
+		&copySubsampledColorAttachment,													// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
+		DE_NULL,																		// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
+		DE_NULL,																		// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
+	};
+
+	if (m_testParams.groupParams->useSecondaryCmdBuffer)
+	{
+		const VkFormat colorImageFormat = VK_FORMAT_R8G8B8A8_UNORM;
+		VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
+		{
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,			// VkStructureType						sType;
+			DE_NULL,																	// const void*							pNext;
+			0u,																			// VkRenderingFlagsKHR					flags;
+			m_viewMask,																	// uint32_t								viewMask;
+			1u,																			// uint32_t								colorAttachmentCount;
+			&m_testParams.densityMapFormat,												// const VkFormat*						pColorAttachmentFormats;
+			VK_FORMAT_UNDEFINED,														// VkFormat								depthAttachmentFormat;
+			VK_FORMAT_UNDEFINED,														// VkFormat								stencilAttachmentFormat;
+			VK_SAMPLE_COUNT_1_BIT														// VkSampleCountFlagBits				rasterizationSamples;
+		};
+
+		const VkCommandBufferInheritanceInfo	bufferInheritanceInfo = initVulkanStructure(&inheritanceRenderingInfo);
+		VkCommandBufferBeginInfo				commandBufBeginParams
+		{
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,							// VkStructureType					sType;
+			DE_NULL,																// const void*						pNext;
+			VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,							// VkCommandBufferUsageFlags		flags;
+			&bufferInheritanceInfo
+		};
+
+		m_dynamicDensityMapSecCmdBuffer			= allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+		m_subsampledImageSecCmdBuffer			= allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+		m_resampleSubsampledImageSecCmdBuffer	= allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+		m_copySubsampledImageSecCmdBuffer		= allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+
+		// Record secondary command buffers
+		if (m_testParams.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+		{
+			inheritanceRenderingInfo.flags = VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT;
+
+			if (m_testParams.dynamicDensityMap)
+			{
+				vk.beginCommandBuffer(*m_dynamicDensityMapSecCmdBuffer, &commandBufBeginParams);
+				vk.cmdBeginRendering(*m_dynamicDensityMapSecCmdBuffer, &dynamicDensityMapRenderingInfo);
+				drawDynamicDensityMap(*m_dynamicDensityMapSecCmdBuffer);
+				vk.cmdEndRendering(*m_dynamicDensityMapSecCmdBuffer);
+				endCommandBuffer(vk, *m_dynamicDensityMapSecCmdBuffer);
+			}
+
+			inheritanceRenderingInfo.pColorAttachmentFormats	= &colorImageFormat;
+			inheritanceRenderingInfo.rasterizationSamples		= m_testParams.colorSamples;
+			vk.beginCommandBuffer(*m_subsampledImageSecCmdBuffer, &commandBufBeginParams);
+			vk.cmdBeginRendering(*m_subsampledImageSecCmdBuffer, &subsampledImageRenderingInfo);
+			drawSubsampledImage(*m_subsampledImageSecCmdBuffer);
+			vk.cmdEndRendering(*m_subsampledImageSecCmdBuffer);
+			endCommandBuffer(vk, *m_subsampledImageSecCmdBuffer);
+
+			if (m_testParams.subsampledLoads)
+			{
+				vk.beginCommandBuffer(*m_resampleSubsampledImageSecCmdBuffer, &commandBufBeginParams);
+				vk.cmdBeginRendering(*m_resampleSubsampledImageSecCmdBuffer, &resampleSubsampledImageRenderingInfo);
+				drawResampleSubsampledImage(*m_resampleSubsampledImageSecCmdBuffer);
+				vk.cmdEndRendering(*m_resampleSubsampledImageSecCmdBuffer);
+				endCommandBuffer(vk, *m_resampleSubsampledImageSecCmdBuffer);
+			}
+
+			inheritanceRenderingInfo.viewMask				= 0u;
+			inheritanceRenderingInfo.rasterizationSamples	= VK_SAMPLE_COUNT_1_BIT;
+			vk.beginCommandBuffer(*m_copySubsampledImageSecCmdBuffer, &commandBufBeginParams);
+			vk.cmdBeginRendering(*m_copySubsampledImageSecCmdBuffer, &copySubsampledRenderingInfo);
+			drawCopySubsampledImage(*m_copySubsampledImageSecCmdBuffer);
+			vk.cmdEndRendering(*m_copySubsampledImageSecCmdBuffer);
+			endCommandBuffer(vk, *m_copySubsampledImageSecCmdBuffer);
+		}
+		else
+		{
+			commandBufBeginParams.flags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+
+			if (m_testParams.dynamicDensityMap)
+			{
+				vk.beginCommandBuffer(*m_dynamicDensityMapSecCmdBuffer, &commandBufBeginParams);
+				drawDynamicDensityMap(*m_dynamicDensityMapSecCmdBuffer);
+				endCommandBuffer(vk, *m_dynamicDensityMapSecCmdBuffer);
+			}
+
+			inheritanceRenderingInfo.pColorAttachmentFormats	= &colorImageFormat;
+			inheritanceRenderingInfo.rasterizationSamples		= m_testParams.colorSamples;
+			vk.beginCommandBuffer(*m_subsampledImageSecCmdBuffer, &commandBufBeginParams);
+			drawSubsampledImage(*m_subsampledImageSecCmdBuffer);
+			endCommandBuffer(vk, *m_subsampledImageSecCmdBuffer);
+
+			if (m_testParams.subsampledLoads)
+			{
+				vk.beginCommandBuffer(*m_resampleSubsampledImageSecCmdBuffer, &commandBufBeginParams);
+				drawResampleSubsampledImage(*m_resampleSubsampledImageSecCmdBuffer);
+				endCommandBuffer(vk, *m_resampleSubsampledImageSecCmdBuffer);
+			}
+
+			inheritanceRenderingInfo.viewMask				= 0u;
+			inheritanceRenderingInfo.rasterizationSamples	= VK_SAMPLE_COUNT_1_BIT;
+			vk.beginCommandBuffer(*m_copySubsampledImageSecCmdBuffer, &commandBufBeginParams);
+			drawCopySubsampledImage(*m_copySubsampledImageSecCmdBuffer);
+			endCommandBuffer(vk, *m_copySubsampledImageSecCmdBuffer);
+		}
+
+		// Record primary command buffer
+		beginCommandBuffer(vk, *m_cmdBuffer, 0u);
+
+		// Render dynamic density map
+		if (m_testParams.dynamicDensityMap)
+		{
+			// change layout of density map - after filling it layout was changed
+			// to density map optimal but here we want to render values to it
+			vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_NONE_KHR, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+				0, 0, DE_NULL, 0, DE_NULL, 1, &dynamicDensitMapBarrier);
+
+			if (m_testParams.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+				vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_dynamicDensityMapSecCmdBuffer);
+			else
+			{
+				dynamicDensityMapRenderingInfo.flags = vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS;
+				vk.cmdBeginRendering(*m_cmdBuffer, &dynamicDensityMapRenderingInfo);
+				vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_dynamicDensityMapSecCmdBuffer);
+				vk.cmdEndRendering(*m_cmdBuffer);
+			}
+
+			// barrier that will change layout of density map
+			vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_DENSITY_PROCESS_BIT_EXT,
+				0, 0, DE_NULL, 0, DE_NULL, 1, &densityMapImageBarrier);
+		}
+
+		// barier that will change layout of color and resolve attachments
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_NONE_KHR, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+			0, 0, DE_NULL, 0, DE_NULL, 1 + isColorImageMultisampled, cbImageBarrier.data());
+
+		// Render subsampled image
+		if (m_testParams.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_subsampledImageSecCmdBuffer);
+		else
+		{
+			subsampledImageRenderingInfo.flags = vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS;
+			vk.cmdBeginRendering(*m_cmdBuffer, &subsampledImageRenderingInfo);
+			vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_subsampledImageSecCmdBuffer);
+			vk.cmdEndRendering(*m_cmdBuffer);
+		}
+
+		// Resample subsampled image
+		if (m_testParams.subsampledLoads)
+		{
+			if (m_testParams.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+				vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_resampleSubsampledImageSecCmdBuffer);
+			else
+			{
+				resampleSubsampledImageRenderingInfo.flags = vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS;
+				vk.cmdBeginRendering(*m_cmdBuffer, &resampleSubsampledImageRenderingInfo);
+				vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_resampleSubsampledImageSecCmdBuffer);
+				vk.cmdEndRendering(*m_cmdBuffer);
+			}
+		}
+
 		// barrier that will change layout of output image
-		VkImageMemoryBarrier outputImageBarrier = makeImageMemoryBarrier(
-			VK_ACCESS_NONE_KHR,													// VkAccessFlags						srcAccessMask;
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,								// VkAccessFlags						dstAccessMask;
-			VK_IMAGE_LAYOUT_UNDEFINED,											// VkImageLayout						oldLayout;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,							// VkImageLayout						newLayout;
-			*m_outputImage,														// VkImage								image;
-			outputSubresourceRange												// VkImageSubresourceRange				subresourceRange;
-		);
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_NONE_KHR, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 			0, 0, DE_NULL, 0, DE_NULL, 1, &outputImageBarrier);
 
-		VkRenderingAttachmentInfoKHR colorAttachment
+		if (m_testParams.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_copySubsampledImageSecCmdBuffer);
+		else
 		{
-			VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,					// VkStructureType						sType;
-			DE_NULL,															// const void*							pNext;
-			*m_outputImageView,													// VkImageView							imageView;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,							// VkImageLayout						imageLayout;
-			VK_RESOLVE_MODE_NONE,												// VkResolveModeFlagBits				resolveMode;
-			DE_NULL,															// VkImageView							resolveImageView;
-			VK_IMAGE_LAYOUT_UNDEFINED,											// VkImageLayout						resolveImageLayout;
-			VK_ATTACHMENT_LOAD_OP_CLEAR,										// VkAttachmentLoadOp					loadOp;
-			VK_ATTACHMENT_STORE_OP_STORE,										// VkAttachmentStoreOp					storeOp;
-			attachmentClearValues[0]											// VkClearValue							clearValue;
-		};
+			copySubsampledRenderingInfo.flags = vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS;
+			vk.cmdBeginRendering(*m_cmdBuffer, &copySubsampledRenderingInfo);
+			vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_copySubsampledImageSecCmdBuffer);
+			vk.cmdEndRendering(*m_cmdBuffer);
+		}
 
-		VkRenderingInfoKHR renderingInfo
-		{
-			VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
-			DE_NULL,
-			0u,																	// VkRenderingFlagsKHR					flags;
-			outputRenderArea,													// VkRect2D								renderArea;
-			1u,																	// deUint32								layerCount;
-			0u,																	// deUint32								viewMask;
-			1u,																	// deUint32								colorAttachmentCount;
-			&colorAttachment,													// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
-			DE_NULL,															// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
-			DE_NULL,															// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
-		};
-		vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
+		endCommandBuffer(vk, *m_cmdBuffer);
 	}
 	else
 	{
-		const VkRenderPassBeginInfo renderPassBeginInfoOutputSubsampledImage
+		beginCommandBuffer(vk, *m_cmdBuffer, 0u);
+
+		// First render pass - render dynamic density map
+		if (m_testParams.dynamicDensityMap)
 		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,							// VkStructureType		sType;
-			DE_NULL,															// const void*			pNext;
-			*m_renderPassOutputSubsampledImage,									// VkRenderPass			renderPass;
-			*m_framebufferOutputSubsampledImage,								// VkFramebuffer		framebuffer;
-			outputRenderArea,													// VkRect2D				renderArea;
-			static_cast<deUint32>(attachmentClearValues.size()),				// uint32_t				clearValueCount;
-			attachmentClearValues.data()										// const VkClearValue*	pClearValues;
-		};
-		renderPassWrapper->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfoOutputSubsampledImage);
-	}
+			// change layout of density map - after filling it layout was changed
+			// to density map optimal but here we want to render values to it
+			vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_NONE_KHR, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+								  0, 0, DE_NULL, 0, DE_NULL, 1, &dynamicDensitMapBarrier);
 
-	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineOutputSubsampledImage);
-	vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayoutOutputSubsampledImage, 0, 1, &m_descriptorSetOutputSubsampledImage.get(), 0, DE_NULL);
-	vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBufferOutput.get(), &vertexBufferOffset);
-	vk.cmdDraw(*m_cmdBuffer, (deUint32)m_verticesOutput.size(), 1, 0, 0);
+			vk.cmdBeginRendering(*m_cmdBuffer, &dynamicDensityMapRenderingInfo);
+			drawDynamicDensityMap(*m_cmdBuffer);
+			vk.cmdEndRendering(*m_cmdBuffer);
 
-	if (isDynamicRendering)
+			// barrier that will change layout of density map
+			vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_DENSITY_PROCESS_BIT_EXT,
+								  0, 0, DE_NULL, 0, DE_NULL, 1, &densityMapImageBarrier);
+		}
+
+		// barier that will change layout of color and resolve attachments
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_NONE_KHR, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+							  0, 0, DE_NULL, 0, DE_NULL, 1 + isColorImageMultisampled, cbImageBarrier.data());
+
+		// Render subsampled image
+		vk.cmdBeginRendering(*m_cmdBuffer, &subsampledImageRenderingInfo);
+		drawSubsampledImage(*m_cmdBuffer);
 		vk.cmdEndRendering(*m_cmdBuffer);
-	else
-		renderPassWrapper->cmdEndRenderPass(*m_cmdBuffer);
 
-	endCommandBuffer(vk, *m_cmdBuffer);
+		// Resample subsampled image
+		if (m_testParams.subsampledLoads)
+		{
+			vk.cmdBeginRendering(*m_cmdBuffer, &resampleSubsampledImageRenderingInfo);
+			drawResampleSubsampledImage(*m_cmdBuffer);
+			vk.cmdEndRendering(*m_cmdBuffer);
+		}
+
+		// barrier that will change layout of output image
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_NONE_KHR, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+							  0, 0, DE_NULL, 0, DE_NULL, 1, &outputImageBarrier);
+
+		vk.cmdBeginRendering(*m_cmdBuffer, &copySubsampledRenderingInfo);
+		drawCopySubsampledImage(*m_cmdBuffer);
+		vk.cmdEndRendering(*m_cmdBuffer);
+
+		endCommandBuffer(vk, *m_cmdBuffer);
+	}
 }
 
 tcu::TestStatus FragmentDensityMapTestInstance::iterate (void)
@@ -2255,7 +2657,7 @@ tcu::TestStatus FragmentDensityMapTestInstance::verifyImage (void)
 
 } // anonymous
 
-static void createChildren (tcu::TestCaseGroup* fdmTests, RenderingType renderingType)
+static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParams groupParams)
 {
 	tcu::TestContext&	testCtx		= fdmTests->getTestContext();
 
@@ -2312,13 +2714,13 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, RenderingType renderin
 
 	for (const auto& view : views)
 	{
-		if ((renderingType == RENDERING_TYPE_RENDERPASS_LEGACY) && view.viewCount > 1)
+		if ((groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY) && view.viewCount > 1)
 			continue;
 
 		de::MovePtr<tcu::TestCaseGroup> viewGroup(new tcu::TestCaseGroup(testCtx, view.name.c_str(), ""));
 		for (const auto& render : renders)
 		{
-			if ((renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) && render.makeCopy)
+			if ((groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) && render.makeCopy)
 				continue;
 
 			de::MovePtr<tcu::TestCaseGroup> renderGroup(new tcu::TestCaseGroup(testCtx, render.name.c_str(), ""));
@@ -2327,6 +2729,10 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, RenderingType renderin
 				de::MovePtr<tcu::TestCaseGroup> sizeGroup(new tcu::TestCaseGroup(testCtx, size.name.c_str(), ""));
 				for (const auto& sample : samples)
 				{
+					// Reduce number of tests for dynamic rendering cases where secondary command buffer is used
+					if (groupParams->useSecondaryCmdBuffer && (sample.samples > VK_SAMPLE_COUNT_2_BIT))
+						break;
+
 					de::MovePtr<tcu::TestCaseGroup> sampleGroup(new tcu::TestCaseGroup(testCtx, sample.name.c_str(), ""));
 					for (const auto& area : fragmentArea)
 					{
@@ -2340,6 +2746,7 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, RenderingType renderin
 							false,							// bool						nonSubsampledImages;
 							false,							// bool						subsampledLoads;
 							false,							// bool						coarseReconstruction;
+							false,							// bool						imagelessFramebuffer;
 							1,								// deUint32					samplersCount;
 							view.viewCount,					// deUint32					viewCount;
 							render.makeCopy,				// bool						makeCopy;
@@ -2348,8 +2755,7 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, RenderingType renderin
 							area,							// tcu::UVec2				fragmentArea;
 							{ 16, 16 },						// tcu::UVec2				densityMapSize;
 							VK_FORMAT_R8G8_UNORM,			// VkFormat					densityMapFormat;
-							renderingType					// RenderingType			renderingType;
-
+							groupParams						// SharedGroupParams		groupParams;
 						};
 
 						sampleGroup->addChild(new FragmentDensityMapTest(testCtx, std::string("static_subsampled") + str.str(), "", params));
@@ -2402,6 +2808,7 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, RenderingType renderin
 			false,							// bool						nonSubsampledImages;
 			false,							// bool						subsampledLoads;
 			false,							// bool						coarseReconstruction;
+			false,							// bool						imagelessFramebuffer;
 			sampler.count,					// deUint32					samplersCount;
 			1,								// deUint32					viewCount;
 			false,							// bool						makeCopy;
@@ -2410,12 +2817,45 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, RenderingType renderin
 			{  2,  2 },						// tcu::UVec2				fragmentArea;
 			{ 16, 16 },						// tcu::UVec2				densityMapSize;
 			VK_FORMAT_R8G8_UNORM,			// VkFormat					densityMapFormat;
-			renderingType					// RenderingType			renderingType;
+			groupParams						// SharedGroupParams		groupParams;
 		};
 		propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, sampler.name, "", params));
+
+		// Reduce number of tests for dynamic rendering cases where secondary command buffer is used
+		if (groupParams->useSecondaryCmdBuffer)
+			break;
 	}
 
-	if (renderingType == RENDERING_TYPE_RENDERPASS2)
+	// interaction between fragment density map and imageless framebuffer
+	if (groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
+	{
+		TestParams params
+		{
+			false,							// bool						dynamicDensityMap;
+			false,							// bool						deferredDensityMap;
+			false,							// bool						nonSubsampledImages;
+			false,							// bool						subsampledLoads;
+			false,							// bool						coarseReconstruction;
+			true,							// bool						imagelessFramebuffer;
+			1,								// deUint32					samplersCount;
+			1,								// deUint32					viewCount;
+			false,							// bool						makeCopy;
+			4.0f,							// float					renderMultiplier;
+			VK_SAMPLE_COUNT_1_BIT,			// VkSampleCountFlagBits	colorSamples;
+			{  2,  2 },						// tcu::UVec2				fragmentArea;
+			{ 16, 16 },						// tcu::UVec2				densityMapSize;
+			VK_FORMAT_R8G8_UNORM,			// VkFormat					densityMapFormat;
+			groupParams						// SharedGroupParams		groupParams;
+		};
+		propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, "imageless_framebuffer_static_subsampled", "", params));
+		params.deferredDensityMap = true;
+		propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, "imageless_framebuffer_deferred_subsampled", "", params));
+		params.deferredDensityMap = false;
+		params.dynamicDensityMap = true;
+		propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, "imageless_framebuffer_dynamic_subsampled", "", params));
+	}
+
+	if (groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
 	{
 		TestParams params
 		{
@@ -2424,6 +2864,7 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, RenderingType renderin
 			false,							// bool						nonSubsampledImages;
 			true,							// bool						subsampledLoads;
 			false,							// bool						coarseReconstruction;
+			false,							// bool						imagelessFramebuffer;
 			1,								// deUint32					samplersCount;
 			2,								// deUint32					viewCount;
 			false,							// bool						makeCopy;
@@ -2432,7 +2873,7 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, RenderingType renderin
 			{  1,  2 },						// tcu::UVec2				fragmentArea;
 			{ 16, 16 },						// tcu::UVec2				densityMapSize;
 			VK_FORMAT_R8G8_UNORM,			// VkFormat					densityMapFormat;
-			renderingType					// RenderingType			renderingType;
+			groupParams						// SharedGroupParams		groupParams;
 		};
 		propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, "subsampled_loads", "", params));
 		params.subsampledLoads		= false;
@@ -2442,16 +2883,16 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, RenderingType renderin
 	}
 }
 
-static void cleanupGroup (tcu::TestCaseGroup* group, RenderingType)
+static void cleanupGroup (tcu::TestCaseGroup* group, const SharedGroupParams)
 {
 	DE_UNREF(group);
 	// Destroy singleton objects.
 	g_singletonDevice.clear();
 }
 
-tcu::TestCaseGroup* createFragmentDensityMapTests (tcu::TestContext& testCtx, RenderingType renderingType)
+tcu::TestCaseGroup* createFragmentDensityMapTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
-	return createTestGroup(testCtx, "fragment_density_map", "VK_EXT_fragment_density_map and VK_EXT_fragment_density_map2 extensions tests", createChildren, renderingType, cleanupGroup);
+	return createTestGroup(testCtx, "fragment_density_map", "VK_EXT_fragment_density_map and VK_EXT_fragment_density_map2 extensions tests", createChildren, groupParams, cleanupGroup);
 }
 
 } // renderpass

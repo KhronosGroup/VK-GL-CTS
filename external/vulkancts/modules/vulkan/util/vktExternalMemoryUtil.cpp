@@ -48,6 +48,12 @@
 #	define BUILT_WITH_ANDROID_HARDWARE_BUFFER 1
 #endif
 
+
+#if (DE_OS == DE_OS_FUCHSIA)
+#	include <zircon/syscalls.h>
+#	include <zircon/types.h>
+#endif
+
 namespace vkt
 {
 namespace ExternalMemoryUtil
@@ -59,6 +65,7 @@ namespace
 
 NativeHandle::NativeHandle (void)
 	: m_fd						(-1)
+	, m_zirconHandle			(0)
 	, m_win32HandleType			(WIN32HANDLETYPE_LAST)
 	, m_win32Handle				(DE_NULL)
 	, m_androidHardwareBuffer	(DE_NULL)
@@ -68,6 +75,7 @@ NativeHandle::NativeHandle (void)
 
 NativeHandle::NativeHandle (const NativeHandle& other)
 	: m_fd						(-1)
+	, m_zirconHandle			(0)
 	, m_win32HandleType			(WIN32HANDLETYPE_LAST)
 	, m_win32Handle				(DE_NULL)
 	, m_androidHardwareBuffer	(DE_NULL)
@@ -82,6 +90,15 @@ NativeHandle::NativeHandle (const NativeHandle& other)
 		TCU_CHECK(m_fd >= 0);
 #else
 		DE_FATAL("Platform doesn't support file descriptors");
+#endif
+	}
+	else if (other.m_zirconHandle.internal)
+	{
+#if (DE_OS == DE_OS_FUCHSIA)
+		DE_ASSERT(!other.m_win32Handle.internal);
+		zx_handle_duplicate(other.m_zirconHandle.internal, ZX_RIGHT_SAME_RIGHTS, &m_zirconHandle.internal);
+#else
+		DE_FATAL("Platform doesn't support zircon handles");
 #endif
 	}
 	else if (other.m_win32Handle.internal)
@@ -132,6 +149,7 @@ NativeHandle::NativeHandle (const NativeHandle& other)
 
 NativeHandle::NativeHandle (int fd)
 	: m_fd						(fd)
+	, m_zirconHandle			(0)
 	, m_win32HandleType			(WIN32HANDLETYPE_LAST)
 	, m_win32Handle				(DE_NULL)
 	, m_androidHardwareBuffer	(DE_NULL)
@@ -141,6 +159,7 @@ NativeHandle::NativeHandle (int fd)
 
 NativeHandle::NativeHandle (Win32HandleType handleType, vk::pt::Win32Handle handle)
 	: m_fd						(-1)
+	, m_zirconHandle			(0)
 	, m_win32HandleType			(handleType)
 	, m_win32Handle				(handle)
 	, m_androidHardwareBuffer	(DE_NULL)
@@ -150,6 +169,7 @@ NativeHandle::NativeHandle (Win32HandleType handleType, vk::pt::Win32Handle hand
 
 NativeHandle::NativeHandle (vk::pt::AndroidHardwareBufferPtr buffer)
 	: m_fd						(-1)
+	, m_zirconHandle			(0)
 	, m_win32HandleType			(WIN32HANDLETYPE_LAST)
 	, m_win32Handle				(DE_NULL)
 	, m_androidHardwareBuffer	(buffer)
@@ -174,6 +194,16 @@ void NativeHandle::reset (void)
 		DE_FATAL("Platform doesn't support file descriptors");
 #endif
 	}
+
+	if (m_zirconHandle.internal != 0)
+	{
+#if (DE_OS == DE_OS_FUCHSIA)
+		zx_handle_close(m_zirconHandle.internal);
+#else
+		DE_FATAL("Platform doesn't support fuchsia handles");
+#endif
+	}
+
 
 	if (m_win32Handle.internal)
 	{
@@ -207,6 +237,7 @@ void NativeHandle::reset (void)
 			DE_FATAL("Platform doesn't support Android Hardware Buffer handles");
 	}
 	m_fd					= -1;
+	m_zirconHandle			= vk::pt::zx_handle_t(0);
 	m_win32Handle			= vk::pt::Win32Handle(DE_NULL);
 	m_win32HandleType		= WIN32HANDLETYPE_LAST;
 	m_androidHardwareBuffer	= vk::pt::AndroidHardwareBufferPtr(DE_NULL);
@@ -239,6 +270,13 @@ void NativeHandle::setWin32Handle (Win32HandleType type, vk::pt::Win32Handle han
 	m_win32Handle		= handle;
 }
 
+void NativeHandle::setZirconHandle (vk::pt::zx_handle_t zirconHandle)
+{
+	reset();
+
+	m_zirconHandle = zirconHandle;
+}
+
 void NativeHandle::setHostPtr(void* hostPtr)
 {
 	reset();
@@ -249,6 +287,7 @@ void NativeHandle::setHostPtr(void* hostPtr)
 void NativeHandle::disown (void)
 {
 	m_fd = -1;
+	m_zirconHandle = vk::pt::zx_handle_t(0);
 	m_win32Handle = vk::pt::Win32Handle(DE_NULL);
 	m_androidHardwareBuffer = vk::pt::AndroidHardwareBufferPtr(DE_NULL);
 	m_hostPtr = DE_NULL;
@@ -270,6 +309,15 @@ int NativeHandle::getFd (void) const
 	DE_ASSERT(m_hostPtr == DE_NULL);
 	return m_fd;
 }
+
+vk::pt::zx_handle_t NativeHandle::getZirconHandle (void) const
+{
+	DE_ASSERT(!m_win32Handle.internal);
+	DE_ASSERT(!m_androidHardwareBuffer.internal);
+
+	return m_zirconHandle;
+}
+
 
 vk::pt::AndroidHardwareBufferPtr NativeHandle::getAndroidHardwareBuffer (void) const
 {
@@ -304,6 +352,9 @@ const char* externalSemaphoreTypeToName (vk::VkExternalSemaphoreHandleTypeFlagBi
 
 		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT:
 			return "sync_fd";
+
+		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA:
+			return "zircon_event";
 
 		default:
 			DE_FATAL("Unknown external semaphore type");
@@ -367,6 +418,10 @@ const char* externalMemoryTypeToName (vk::VkExternalMemoryHandleTypeFlagBits typ
 		case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT:
 			return "host_allocation";
 
+		case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA:
+			return "zircon_vmo";
+
+
 		default:
 			DE_FATAL("Unknown external memory type");
 			return DE_NULL;
@@ -388,6 +443,9 @@ bool isSupportedPermanence (vk::VkExternalSemaphoreHandleTypeFlagBits	type,
 		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT:
 			return permanence == PERMANENCE_TEMPORARY;
 
+		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA:
+			return permanence == PERMANENCE_PERMANENT || permanence == PERMANENCE_TEMPORARY;
+
 		default:
 			DE_FATAL("Unknown external semaphore type");
 			return false;
@@ -407,6 +465,9 @@ Transference getHandelTypeTransferences (vk::VkExternalSemaphoreHandleTypeFlagBi
 
 		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT:
 			return TRANSFERENCE_COPY;
+
+		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA:
+			return TRANSFERENCE_REFERENCE;
 
 		default:
 			DE_FATAL("Unknown external semaphore type");
@@ -498,6 +559,21 @@ void getMemoryNative (const vk::DeviceInterface&					vkd,
 		VK_CHECK(vkd.getMemoryFdKHR(device, &info, &fd));
 		TCU_CHECK(fd >= 0);
 		nativeHandle = fd;
+	}
+	else if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA)
+	{
+		const vk::VkMemoryGetZirconHandleInfoFUCHSIA	info	=
+		{
+			vk::VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA,
+			DE_NULL,
+
+			memory,
+			externalType
+		};
+		vk::pt::zx_handle_t handle(0);
+
+		VK_CHECK(vkd.getMemoryZirconHandleFUCHSIA(device, &info, &handle));
+		nativeHandle.setZirconHandle(handle);
 	}
 	else if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT
 		|| externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT)
@@ -808,6 +884,21 @@ void getSemaphoreNative (const vk::DeviceInterface&					vkd,
 		TCU_CHECK(fd >= 0);
 		nativeHandle = fd;
 	}
+	else if (externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA)
+	{
+		const vk::VkSemaphoreGetZirconHandleInfoFUCHSIA	info	=
+		{
+			vk::VK_STRUCTURE_TYPE_SEMAPHORE_GET_ZIRCON_HANDLE_INFO_FUCHSIA,
+			DE_NULL,
+
+			semaphore,
+			externalType
+		};
+		vk::pt::zx_handle_t zirconHandle(0);
+
+		VK_CHECK(vkd.getSemaphoreZirconHandleFUCHSIA(device, &info, &zirconHandle));
+		nativeHandle.setZirconHandle(zirconHandle);
+	}
 	else if (externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT
 		|| externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT)
 	{
@@ -862,6 +953,21 @@ void importSemaphore (const vk::DeviceInterface&					vkd,
 		};
 
 		VK_CHECK(vkd.importSemaphoreFdKHR(device, &importInfo));
+		handle.disown();
+	}
+	else if (externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA)
+	{
+		const vk::VkImportSemaphoreZirconHandleInfoFUCHSIA	importInfo	=
+		{
+			vk::VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_ZIRCON_HANDLE_INFO_FUCHSIA,
+			DE_NULL,
+			semaphore,
+			flags,
+			externalType,
+			handle.getZirconHandle()
+		};
+
+		VK_CHECK(vkd.importSemaphoreZirconHandleFUCHSIA(device, &importInfo));
 		handle.disown();
 	}
 	else if (externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT
@@ -1028,6 +1134,35 @@ static vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				
 			DE_NULL,
 			externalType,
 			handle.getFd()
+		};
+		const vk::VkMemoryDedicatedAllocateInfo	dedicatedInfo	=
+		{
+			vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
+			&importInfo,
+			image,
+			buffer,
+		};
+		const vk::VkMemoryAllocateInfo				info			=
+		{
+			vk::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+			(isDedicated ? (const void*)&dedicatedInfo : (const void*)&importInfo),
+			requirements.size,
+			(memoryTypeIndex == ~0U) ? chooseMemoryType(requirements.memoryTypeBits) : memoryTypeIndex
+		};
+		vk::Move<vk::VkDeviceMemory> memory (vk::allocateMemory(vkd, device, &info));
+
+		handle.disown();
+
+		return memory;
+	}
+	else if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA)
+	{
+		const vk::VkImportMemoryZirconHandleInfoFUCHSIA			importInfo		=
+		{
+			vk::VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA,
+			DE_NULL,
+			externalType,
+			handle.getZirconHandle()
 		};
 		const vk::VkMemoryDedicatedAllocateInfo		dedicatedInfo	=
 		{
@@ -1585,6 +1720,35 @@ deUint64 AndroidHardwareBufferExternalApi28::mustSupportAhbUsageFlags()
 }
 
 #endif // defined(BUILT_WITH_ANDROID_P_HARDWARE_BUFFER)
+
+#if defined(BUILT_WITH_ANDROID_T_HARDWARE_BUFFER)
+class AndroidHardwareBufferExternalApi33 : public  AndroidHardwareBufferExternalApi28
+{
+public:
+
+	virtual deUint32 vkFormatToAhbFormat(vk::VkFormat vkFormat);
+
+	AndroidHardwareBufferExternalApi33() : AndroidHardwareBufferExternalApi28() {};
+	virtual ~AndroidHardwareBufferExternalApi33() {};
+
+private:
+	// Stop the compiler generating methods of copy the object
+	AndroidHardwareBufferExternalApi33(AndroidHardwareBufferExternalApi33 const& copy);            // Not Implemented
+	AndroidHardwareBufferExternalApi33& operator=(AndroidHardwareBufferExternalApi33 const& copy); // Not Implemented
+};
+
+deUint32 AndroidHardwareBufferExternalApi33::vkFormatToAhbFormat(vk::VkFormat vkFormat)
+{
+	switch(vkFormat)
+	{
+	  case vk::VK_FORMAT_R8_UNORM:
+		return AHARDWAREBUFFER_FORMAT_R8_UNORM;
+	  default:
+		return AndroidHardwareBufferExternalApi28::vkFormatToAhbFormat(vkFormat);
+	}
+}
+
+#endif // defined(BUILT_WITH_ANDROID_T_HARDWARE_BUFFER)
 #endif // defined(BUILT_WITH_ANDROID_HARDWARE_BUFFER)
 #endif // (DE_OS == DE_OS_ANDROID)
 

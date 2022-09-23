@@ -139,6 +139,11 @@ std::ostream& operator<< (std::ostream& str, ConditionalData const& c)
 		str << "_padded";
 	}
 
+	if (c.clearInRenderPass)
+	{
+		str << "_rp_clear";
+	}
+
 	return str;
 }
 

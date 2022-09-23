@@ -264,7 +264,7 @@ tcu::TestStatus MeshShaderBuiltinInstance::iterate ()
 
 	const auto pipeline = makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
 		taskModule.get(), meshModule.get(), fragModule.get(),
-		renderPass.get(), viewports, scissors, 0u, nullptr, nullptr, nullptr, nullptr, nullptr, pNext.get());
+		renderPass.get(), viewports, scissors, 0u, nullptr, nullptr, nullptr, nullptr, nullptr, 0u, pNext.get());
 
 	// Command pool and buffer.
 	const auto cmdPool		= makeCommandPool(vkd, device, queueIndex);

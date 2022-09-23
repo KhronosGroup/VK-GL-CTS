@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": ""
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR":
+		[
+			{ "features": ["rayTracingMaintenance1"],	"requirements": ["VK_KHR_ray_tracing_maintenance1"] }
+		]
+	}
+}

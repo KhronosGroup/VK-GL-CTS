@@ -56,6 +56,7 @@ Move<VkPipeline>		createRayTracingPipelineKHR	(const DeviceInterface&					vk,
 #endif // CTS_USES_VULKANSC
 
 Move<VkCommandBuffer>	allocateCommandBuffer	(const DeviceInterface& vk, VkDevice device, const VkCommandBufferAllocateInfo* pAllocateInfo);
+void allocateCommandBuffers	(const DeviceInterface& vk, VkDevice device, const VkCommandBufferAllocateInfo* pAllocateInfo, Move<VkCommandBuffer> *pCommandBuffers);
 Move<VkDescriptorSet>	allocateDescriptorSet	(const DeviceInterface& vk, VkDevice device, const VkDescriptorSetAllocateInfo* pAllocateInfo);
 
 Move<VkSemaphore>		createSemaphore			(const DeviceInterface&			vk,

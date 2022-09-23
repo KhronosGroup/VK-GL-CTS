@@ -27,16 +27,17 @@ import re
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts"))
 
-from build.common import DEQP_DIR
+from build.common import DEQP_DIR, execute
 from khr_util.format import writeInlFile
 
-VULKAN_H			= { "" : [	os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include", "vk_video", "vulkan_video_codecs_common.h"),
-								os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include", "vk_video", "vulkan_video_codec_h264std.h"),
-								os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include", "vk_video", "vulkan_video_codec_h264std_encode.h"),
-								os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include", "vk_video", "vulkan_video_codec_h265std.h"),
-								os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include", "vk_video", "vulkan_video_codec_h264std_decode.h"),
-								os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include", "vk_video", "vulkan_video_codec_h265std_decode.h"),
-								os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include", "vulkan", "vulkan_core.h") ],
+VULKAN_HEADERS_INCLUDE_DIR	  = os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include")
+VULKAN_H			= { "" : [	os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vk_video", "vulkan_video_codecs_common.h"),
+								os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vk_video", "vulkan_video_codec_h264std.h"),
+								os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vk_video", "vulkan_video_codec_h264std_encode.h"),
+								os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vk_video", "vulkan_video_codec_h265std.h"),
+								os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vk_video", "vulkan_video_codec_h264std_decode.h"),
+								os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vk_video", "vulkan_video_codec_h265std_decode.h"),
+								os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vulkan", "vulkan_core.h") ],
 						"SC" : [ os.path.join(os.path.dirname(__file__), "src", "vulkan_sc_core.h") ] }
 DEFAULT_OUTPUT_DIR	= { "" :	os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "generated", "vulkan"),
 						"SC" :	os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "generated", "vulkansc") }
@@ -99,10 +100,36 @@ if __name__ == "__main__":
 	args					= parseCmdLineArgs()
 
 	outputPath = DEFAULT_OUTPUT_DIR[args.api]
-	# if argument was specified it is interpreted as a path to which .inl files will be written
+	# if argument was specified it is interpreted as a path to which .inl file will be written
 	if args.outdir != '':
 		outputPath = args.outdir
 	src = ""
+
+	# Generate vulkan headers from vk.xml
+	currentDir			= os.getcwd()
+	pythonExecutable	= sys.executable or "python"
+	os.chdir(os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "..", "xml"))
+	vkTargets = ["vulkan_core.h"]
+	for target in vkTargets:
+		execute([pythonExecutable, "../scripts/genvk.py", "-o", "../include/vulkan", target])
+
+	videoDir = "../include/vk_video"
+	if (not os.path.isdir(videoDir)):
+		os.mkdir(videoDir)
+
+	videoTargets = [
+		'vulkan_video_codecs_common.h',
+		'vulkan_video_codec_h264std.h',
+		'vulkan_video_codec_h264std_decode.h',
+		'vulkan_video_codec_h264std_encode.h',
+		'vulkan_video_codec_h265std.h',
+		'vulkan_video_codec_h265std_decode.h',
+	]
+	for target in videoTargets:
+		execute([pythonExecutable, "../scripts/genvk.py", "-registry", "video.xml", "-o", videoDir, target])
+
+	os.chdir(currentDir)
+
 	for file in VULKAN_H[args.api]:
 		src += readFile(file)
 

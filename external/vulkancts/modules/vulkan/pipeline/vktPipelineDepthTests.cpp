@@ -619,21 +619,27 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 			1.0f,															//	float									lineWidth;
 		};
 
+		PipelineViewportDepthClipControlCreateInfoWrapper depthClipControlWrapper;
+		PipelineViewportDepthClipControlCreateInfoWrapper depthClipControl01Wrapper;
+
 #ifndef CTS_USES_VULKANSC
-		const VkPipelineViewportDepthClipControlCreateInfoEXT	depthClipControlCreateInfo
+		VkPipelineViewportDepthClipControlCreateInfoEXT depthClipControlCreateInfo
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLIP_CONTROL_CREATE_INFO_EXT,	// VkStructureType	sType;
 			DE_NULL,																// const void*		pNext;
 			VK_TRUE,																// VkBool32			negativeOneToOne;
 		};
+		if (hasDepthClipControl)
+			depthClipControlWrapper.ptr = &depthClipControlCreateInfo;
 
 		// Using the range 0,1 in the structure.
-		const VkPipelineViewportDepthClipControlCreateInfoEXT	depthClipControlCreateInfo01
+		VkPipelineViewportDepthClipControlCreateInfoEXT depthClipControlCreateInfo01
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLIP_CONTROL_CREATE_INFO_EXT,	// VkStructureType	sType;
 			DE_NULL,																// const void*		pNext;
 			VK_FALSE,																// VkBool32			negativeOneToOne;
 		};
+		depthClipControl01Wrapper.ptr = &depthClipControlCreateInfo01;
 #endif // CTS_USES_VULKANSC
 
 		// Dynamic viewport if needed.
@@ -661,9 +667,7 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 
 			m_graphicsPipelines[quadNdx].setDefaultMultisampleState()
 										.setDefaultColorBlendState()
-#ifndef CTS_USES_VULKANSC
-										.setDepthClipControl(hasDepthClipControl ? &depthClipControlCreateInfo : DE_NULL)
-#endif // CTS_USES_VULKANSC
+										.setDepthClipControl(depthClipControlWrapper)
 										.setDynamicState(&dynamicStateCreateInfo)
 										.setupVertexInputStete(&vertexInputStateParams)
 										.setupPreRasterizationShaderState((dynamicViewport ? badViewports : viewports),
@@ -686,9 +690,7 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 			{
 				m_altGraphicsPipelines[quadNdx].setDefaultMultisampleState()
 											   .setDefaultColorBlendState()
-#ifndef CTS_USES_VULKANSC
-											   .setDepthClipControl(&depthClipControlCreateInfo01)
-#endif // CTS_USES_VULKANSC
+											   .setDepthClipControl(depthClipControl01Wrapper)
 											   .setDynamicState(&dynamicStateCreateInfo)
 											   .setupVertexInputStete(&vertexInputStateParams)
 											   .setupPreRasterizationShaderState((dynamicViewport ? badViewports : viewports),

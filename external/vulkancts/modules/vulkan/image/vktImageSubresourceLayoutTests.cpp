@@ -182,6 +182,7 @@ public:
 		VkFormat	imageFormat;
 		VkExtent3D	dimensions;		// .depth will be the number of layers for 2D images and the depth for 3D images.
 		deUint32	mipLevels;
+		bool		imageOffset;	// Add an offset when a region of memory is bound to an image.
 	};
 
 							ImageSubresourceLayoutCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params);
@@ -442,9 +443,17 @@ tcu::TestStatus ImageSubresourceLayoutInstance::iterateAspect (VkImageAspectFlag
 		nullptr,										//	const deUint32*			pQueueFamilyIndices;
 		VK_IMAGE_LAYOUT_UNDEFINED,						//	VkImageLayout			initialLayout;
 	};
-	ImageWithMemory image		(vkd, device, alloc, imageInfo, MemoryRequirement::HostVisible);
-	auto&			imageAlloc	= image.getAllocation();
-	auto*			imagePtr	= reinterpret_cast<unsigned char*>(imageAlloc.getHostPtr());
+
+	Move<VkImage>				image = createImage(vkd, device, &imageInfo);
+	VkMemoryRequirements		req = getImageMemoryRequirements(vkd, device, *image);
+	if (m_params.imageOffset)
+		req.size += req.alignment;
+
+	Allocator&									allocator				= m_context.getDefaultAllocator();
+	de::MovePtr<Allocation>		imageAlloc	= allocator.allocate(req, MemoryRequirement::HostVisible);
+
+	VK_CHECK(vkd.bindImageMemory(device, *image, imageAlloc->getMemory(), m_params.imageOffset ? req.alignment : 0u));
+	auto*			imagePtr	= reinterpret_cast<unsigned char*>(imageAlloc->getHostPtr());
 
 	// Copy regions.
 	std::vector<VkBufferImageCopy> copyRegions;
@@ -496,7 +505,7 @@ tcu::TestStatus ImageSubresourceLayoutInstance::iterateAspect (VkImageAspectFlag
 #endif
 
 	// Sync image memory for host access.
-	invalidateAlloc(vkd, device, imageAlloc);
+	invalidateAlloc(vkd, device, *imageAlloc);
 
 	VkSubresourceLayout levelSubresourceLayout;
 	VkSubresourceLayout subresourceLayout;
@@ -595,7 +604,7 @@ tcu::TestStatus ImageSubresourceLayoutInstance::iterateAspect (VkImageAspectFlag
 			const auto	layerBufferOffset	= level.offset + layerNdx * numPixels * pixelSize;
 			const auto	layerImageOffset	= subresourceLayout.offset;
 			const auto	layerBufferPtr		= bufferPtr + layerBufferOffset;
-			const auto	layerImagePtr		= imagePtr + layerImageOffset;
+			const auto	layerImagePtr		= imagePtr + layerImageOffset + (m_params.imageOffset ? req.alignment : 0u);
 			bool		pixelMatch;
 
 			// We could do this row by row to be faster, but in the use24LSB case we need to manipulate pixels independently.
@@ -835,8 +844,13 @@ tcu::TestCaseGroup* createImageSubresourceLayoutTests (tcu::TestContext& testCtx
 				params.imageType	= imgClass.type;
 				params.mipLevels	= mipLevel.maxLevels;
 				params.dimensions	= getDefaultDimensions(imgClass.type, imgClass.array);
+				params.imageOffset	= false;
 
 				mipGroup->addChild(new ImageSubresourceLayoutCase(testCtx, name, desc, params));
+
+				params.imageOffset	= true;
+
+				mipGroup->addChild(new ImageSubresourceLayoutCase(testCtx, name+"_offset", desc, params));
 			}
 
 			classGroup->addChild(mipGroup.release());

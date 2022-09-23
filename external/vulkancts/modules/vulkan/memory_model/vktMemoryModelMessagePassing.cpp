@@ -1661,32 +1661,14 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 		if (m_data.payloadSC == SC_PHYSBUFFER)
 		{
 			addrInfo.buffer = **buffers[0];
-			VkDeviceAddress addr;
-#ifndef CTS_USES_VULKANSC
-			const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
-			if (useKHR)
-				addr = vk.getBufferDeviceAddress(device, &addrInfo);
-			else
-				addr = vk.getBufferDeviceAddressEXT(device, &addrInfo);
-#else
-			addr = vk.getBufferDeviceAddress(device, &addrInfo);
-#endif
+			VkDeviceAddress addr = vk.getBufferDeviceAddress(device, &addrInfo);
 			vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, allShaderStages,
 								0, sizeof(VkDeviceSize), &addr);
 		}
 		if (m_data.guardSC == SC_PHYSBUFFER)
 		{
 			addrInfo.buffer = **buffers[1];
-			VkDeviceAddress addr;
-#ifndef CTS_USES_VULKANSC
-			const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
-			if (useKHR)
-				addr = vk.getBufferDeviceAddress(device, &addrInfo);
-			else
-				addr = vk.getBufferDeviceAddressEXT(device, &addrInfo);
-#else
-			addr = vk.getBufferDeviceAddress(device, &addrInfo);
-#endif
+			VkDeviceAddress addr = vk.getBufferDeviceAddress(device, &addrInfo);
 			vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, allShaderStages,
 								8, sizeof(VkDeviceSize), &addr);
 		}
@@ -1746,7 +1728,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 
 		submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 
-		vk.resetCommandBuffer(*cmdBuffer, 0x00000000);
+		m_context.resetCommandPoolForVKSC(device, *cmdPool);
 	}
 
 	tcu::TestLog& log = m_context.getTestContext().getLog();
@@ -1832,7 +1814,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 		const char*				name;
 		const char*				description;
 	} TestGroupCase;
-#ifndef CTS_USES_VULKANSC
+
 	TestGroupCase ttCases[] =
 	{
 		{ TT_MP,	"message_passing",	"message passing"		},
@@ -1852,7 +1834,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 		{ DATA_TYPE_FLOAT32,	"f32",	"float32 atomics"		},
 		{ DATA_TYPE_FLOAT64,	"f64",	"float64 atomics"		},
 	};
-#endif // CTS_USES_VULKANSC
+
 	TestGroupCase cohCases[] =
 	{
 		{ 1,	"coherent",		"coherent payload variable"			},
@@ -1868,7 +1850,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 		{ ST_CONTROL_BARRIER,				"control_barrier",				"control barrier"						},
 		{ ST_CONTROL_AND_MEMORY_BARRIER,	"control_and_memory_barrier",	"control barrier with release/acquire"	},
 	};
-#ifndef CTS_USES_VULKANSC
+
 	TestGroupCase rmwCases[] =
 	{
 		{ 0,	"atomicwrite",		"atomic write"		},
@@ -1882,7 +1864,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 		{ SCOPE_WORKGROUP,		"workgroup",	"workgroup scope"		},
 		{ SCOPE_SUBGROUP,		"subgroup",		"subgroup scope"		},
 	};
-#endif // CTS_USES_VULKANSC
+
 	TestGroupCase plCases[] =
 	{
 		{ 0,	"payload_nonlocal",		"payload variable in non-local memory"		},
@@ -1910,7 +1892,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 		{ SC_WORKGROUP,	"workgroup",	"guard variable in workgroup memory"		},
 		{ SC_PHYSBUFFER,"physbuffer",	"guard variable in physical storage buffer memory"	},
 	};
-#ifndef CTS_USES_VULKANSC
+
 	TestGroupCase stageCases[] =
 	{
 		{ STAGE_COMPUTE,	"comp",		"compute shader"			},
@@ -1922,9 +1904,11 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	{
 		de::MovePtr<tcu::TestCaseGroup> ttGroup(new tcu::TestCaseGroup(testCtx, ttCases[ttNdx].name, ttCases[ttNdx].description));
 
+#ifndef CTS_USES_VULKANSC
 		// Permuted index tests for message passing.
 		if (ttCases[ttNdx].value == TT_MP)
 			ttGroup->addChild(createPermutedIndexTests(testCtx));
+#endif // CTS_USES_VULKANSC
 
 		for (int core11Ndx = 0; core11Ndx < DE_LENGTH_OF_ARRAY(core11Cases); core11Ndx++)
 		{
@@ -2074,7 +2058,6 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 		}
 		group->addChild(ttGroup.release());
 	}
-#endif // CTS_USES_VULKANSC
 
 	TestGroupCase transVisCases[] =
 	{

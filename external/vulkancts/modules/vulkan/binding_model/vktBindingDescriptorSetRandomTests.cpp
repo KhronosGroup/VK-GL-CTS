@@ -2457,6 +2457,13 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	de::MovePtr<RayTracingPipeline>	rayTracingPipeline;
 #endif
 
+	// Disable interval watchdog timer for long shader compilations that can
+	// happen when the number of descriptor sets gets to 32 and above.
+	if (m_data.numDescriptorSets >= 32)
+	{
+		m_context.getTestContext().touchWatchdogAndDisableIntervalTimeLimit();
+	}
+
 	if (m_data.stage == STAGE_COMPUTE)
 	{
 		const Unique<VkShaderModule>	shader(createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0));
@@ -2506,9 +2513,9 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 			DE_NULL,													//  const void*						pNext;
 			VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_NV,				//  VkRayTracingShaderGroupTypeNV	type;
 			0,															//  deUint32						generalShader;
-			VK_SHADER_UNUSED_NV,										//  deUint32						closestHitShader;
-			VK_SHADER_UNUSED_NV,										//  deUint32						anyHitShader;
-			VK_SHADER_UNUSED_NV,										//  deUint32						intersectionShader;
+			VK_SHADER_UNUSED_KHR,										//  deUint32						closestHitShader;
+			VK_SHADER_UNUSED_KHR,										//  deUint32						anyHitShader;
+			VK_SHADER_UNUSED_KHR,										//  deUint32						intersectionShader;
 		};
 
 		VkRayTracingPipelineCreateInfoNV		pipelineCreateInfo	=
@@ -2537,7 +2544,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		const auto	ptr		= reinterpret_cast<deUint32*>(alloc.getHostPtr());
 
 		invalidateAlloc(vk, device, alloc);
-		vk.getRayTracingShaderGroupHandlesNV(device, *pipeline, 0, 1, static_cast<deUintptr>(allocSize), ptr);
+		vk.getRayTracingShaderGroupHandlesKHR(device, *pipeline, 0, 1, static_cast<deUintptr>(allocSize), ptr);
 	}
 	else if (m_data.stage == STAGE_RAYGEN)
 	{
@@ -3018,6 +3025,13 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
+
+	// Re-enable watchdog interval timer here to favor virtualized vulkan
+	// implementation that asynchronously creates the pipeline on the host.
+	if (m_data.numDescriptorSets >= 32)
+	{
+		m_context.getTestContext().touchWatchdogAndEnableIntervalTimeLimit();
+	}
 
 	// Verify output image.
 	deUint32 *ptr = (deUint32 *)copyBuffer->getAllocation().getHostPtr();

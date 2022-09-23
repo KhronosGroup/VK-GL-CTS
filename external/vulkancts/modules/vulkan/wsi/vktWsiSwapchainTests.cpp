@@ -90,7 +90,7 @@ void checkAllSupported (const Extensions& supportedExtensions, const vector<stri
 		 requiredExtName != requiredExtensions.end();
 		 ++requiredExtName)
 	{
-		if (!isExtensionSupported(supportedExtensions, RequiredExtension(*requiredExtName)))
+		if (!isExtensionStructSupported(supportedExtensions, RequiredExtension(*requiredExtName)))
 			TCU_THROW(NotSupportedError, (*requiredExtName + " is not supported").c_str());
 	}
 }
@@ -116,7 +116,7 @@ CustomInstance createInstanceWithWsi (Context&						context,
 	// 2) Enable VK_EXT_swapchain colorspace if advertised by the driver.
 	//
 	// We opt for (2) as it provides basic coverage for the extension as a bonus.
-	if (isExtensionSupported(supportedExtensions, RequiredExtension("VK_EXT_swapchain_colorspace")))
+	if (isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_swapchain_colorspace")))
 		extensions.push_back("VK_EXT_swapchain_colorspace");
 
 	checkAllSupported(supportedExtensions, extensions);
@@ -166,7 +166,7 @@ Move<VkDevice> createDeviceWithWsi (const PlatformInterface&		vkp,
 
 	for (const auto& extName : extensions)
 	{
-		if (!isCoreDeviceExtension(apiVersion, extName) && !isExtensionSupported(supportedExtensions, RequiredExtension(extName)))
+		if (!isCoreDeviceExtension(apiVersion, extName) && !isExtensionStructSupported(supportedExtensions, RequiredExtension(extName)))
 			TCU_THROW(NotSupportedError, extName + " is not supported");
 	}
 
@@ -965,7 +965,7 @@ tcu::TestStatus testImageSwapchainCreateInfo (Context& context, Type wsiType)
 	const Extensions&			deviceExtensions	= enumerateDeviceExtensionProperties(instHelper.vki, devHelper.physicalDevice, DE_NULL);
 
 	// structures this tests checks were added in revision 69
-	if (!isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_swapchain", 69)))
+	if (!isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_swapchain", 69)))
 		TCU_THROW(NotSupportedError, "Required extension revision is not supported");
 
 	const VkSurfaceCapabilitiesKHR		capabilities		= getPhysicalDeviceSurfaceCapabilities(instHelper.vki,
@@ -1662,7 +1662,7 @@ tcu::TestStatus deviceGroupRenderTest (Context& context, Type wsiType)
 
 	for (std::size_t ndx = 0; ndx < deviceExtensions.size(); ++ndx)
 	{
-		if (!isExtensionSupported(supportedExtensions, RequiredExtension(deviceExtensions[ndx])))
+		if (!isExtensionStructSupported(supportedExtensions, RequiredExtension(deviceExtensions[ndx])))
 			TCU_THROW(NotSupportedError, (string(deviceExtensions[ndx]) + " is not supported").c_str());
 	}
 
@@ -1881,7 +1881,7 @@ tcu::TestStatus deviceGroupRenderTest2 (Context& context, Type wsiType)
 	const Extensions&			deviceExtensions	= enumerateDeviceExtensionProperties(instHelper.vki, physicalDevice, DE_NULL);
 
 	// structures this tests checks were added in revision 69
-	if (!isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_swapchain", 69)))
+	if (!isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_swapchain", 69)))
 		TCU_THROW(NotSupportedError, "Required extension revision is not supported");
 
 	std::vector<const char*> requiredExtensions;
@@ -1889,7 +1889,7 @@ tcu::TestStatus deviceGroupRenderTest2 (Context& context, Type wsiType)
 	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_device_group"))
 	{
 		requiredExtensions.push_back("VK_KHR_device_group");
-		if (!isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_device_group")))
+		if (!isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_device_group")))
 			TCU_THROW(NotSupportedError, "VK_KHR_device_group is not supported");
 	}
 

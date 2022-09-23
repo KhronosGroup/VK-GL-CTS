@@ -997,7 +997,7 @@ tcu::TestStatus testFullscreenGradient (Context& context, tcu::Maybe<FragmentSiz
 	std::vector<VkRect2D>	scissors	(1u, makeRect2D(colorBufferExtent));
 	const auto				pipeline	= makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
 		taskModule.get(), meshModule.get(), fragModule.get(),
-		renderPass.get(), viewports, scissors, 0u, nullptr, nullptr, nullptr, nullptr, nullptr, pNext.get());
+		renderPass.get(), viewports, scissors, 0u, nullptr, nullptr, nullptr, nullptr, nullptr, 0u, pNext.get());
 
 	// Command pool and buffer.
 	const auto cmdPool			= makeCommandPool(vkd, device, qIndex);

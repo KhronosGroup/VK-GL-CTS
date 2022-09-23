@@ -1033,6 +1033,10 @@ struct TestConfig
 	vk::VkDeviceSize				vertexDataOffset;
 	vk::VkDeviceSize				vertexDataExtraBytes;
 
+	// Bind and draw with a pipeline that uses dynamic patch control points but doesn't actually use a tessellation
+	// shader, before using the real pipelines being tested.
+	bool							useExtraDynPCPPipeline;
+
 	// Static and dynamic pipeline configuration.
 	VertexGeneratorConfig			vertexGenerator;
 	CullModeConfig					cullModeConfig;
@@ -1075,6 +1079,7 @@ struct TestConfig
 		, singleVertexDrawCount			(0)
 		, vertexDataOffset				(0ull)
 		, vertexDataExtraBytes			(0ull)
+		, useExtraDynPCPPipeline		(false)
 		, vertexGenerator				(makeVertexGeneratorConfig(staticVertexGenerator, dynamicVertexGenerator))
 		, cullModeConfig				(static_cast<vk::VkCullModeFlags>(vk::VK_CULL_MODE_NONE))
 		, frontFaceConfig				(vk::VK_FRONT_FACE_COUNTER_CLOCKWISE)
@@ -1120,6 +1125,7 @@ struct TestConfig
 		, singleVertexDrawCount			(other.singleVertexDrawCount)
 		, vertexDataOffset				(other.vertexDataOffset)
 		, vertexDataExtraBytes			(other.vertexDataExtraBytes)
+		, useExtraDynPCPPipeline		(other.useExtraDynPCPPipeline)
 		, vertexGenerator				(other.vertexGenerator)
 		, cullModeConfig				(other.cullModeConfig)
 		, frontFaceConfig				(other.frontFaceConfig)
@@ -1364,7 +1370,8 @@ struct TestConfig
 		    || rastDiscardEnableConfig.dynamicValue
 		    || depthBiasEnableConfig.dynamicValue
 		    || logicOpConfig.dynamicValue
-		    || primRestartEnableConfig.dynamicValue)
+		    || primRestartEnableConfig.dynamicValue
+			|| useExtraDynPCPPipeline)
 		{
 			extensions.push_back("VK_EXT_extended_dynamic_state2");
 		}
@@ -1458,6 +1465,9 @@ ExtendedDynamicStateTest::ExtendedDynamicStateTest (tcu::TestContext& testCtx, c
 	// Make sure these are consistent.
 	DE_ASSERT(!(m_testConfig.testPatchControlPoints() && !m_testConfig.patchesTopology()));
 	DE_ASSERT(!(m_testConfig.patchesTopology() && m_testConfig.getActivePatchControlPoints() <= 1u));
+
+	// Do not use an extra dynamic patch control points pipeline if we're not testing them.
+	DE_ASSERT(!m_testConfig.useExtraDynPCPPipeline || m_testConfig.testPatchControlPoints());
 }
 
 void ExtendedDynamicStateTest::checkSupport (Context& context) const
@@ -1478,7 +1488,7 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 		if (m_testConfig.testLogicOp() && !eds2Features.extendedDynamicState2LogicOp)
 			TCU_THROW(NotSupportedError, "VK_EXT_extended_dynamic_state2 : changing LogicOp dynamically is not supported");
 
-		if (m_testConfig.testPatchControlPoints() && !eds2Features.extendedDynamicState2PatchControlPoints)
+		if ((m_testConfig.testPatchControlPoints() || m_testConfig.useExtraDynPCPPipeline) && !eds2Features.extendedDynamicState2PatchControlPoints)
 			TCU_THROW(NotSupportedError, "VK_EXT_extended_dynamic_state2 : changing patch control points dynamically is not supported");
 	}
 
@@ -1795,6 +1805,36 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 			<< "}\n"
 			;
 		programCollection.glslSources.add("meshNoOut") << glu::MeshSource(meshNoOut.str()) << meshBuildOptions;
+	}
+
+	// Extra vert and frag shaders for the extra patch control points pipeline. These draw offscreen.
+	if (m_testConfig.useExtraDynPCPPipeline)
+	{
+		std::ostringstream vertDPCP;
+		vertDPCP
+			<< "#version 450\n"
+			<< "\n"
+			<< "vec2 positions[3] = vec2[](\n"
+			<< "    vec2(-1.0, -1.0),\n"
+			<< "    vec2( 3.0, -1.0),\n"
+			<< "    vec2(-1.0,  3.0)\n"
+			<< ");\n"
+			<< "\n"
+			<< "void main() {\n"
+			<< "    gl_Position = vec4(positions[gl_VertexIndex] + 10.0 + 1.0 * float(gl_VertexIndex), 0.0, 1.0);\n"
+			<< "}\n"
+			;
+		programCollection.glslSources.add("vertDPCP") << glu::VertexSource(vertDPCP.str());
+
+		std::ostringstream fragDPCP;
+		fragDPCP
+			<< "#version 450\n"
+			<< "layout(location=0) out " << vecType << " color;\n"
+			<< "void main() {\n"
+			<< "    color = " << vecType << "(1.0, 1.0, 1.0, 1.0);\n"
+			<< "}\n"
+			;
+		programCollection.glslSources.add("fragDPCP") << glu::FragmentSource(fragDPCP.str());
 	}
 }
 
@@ -2492,6 +2532,9 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	const auto	meshModule			= (m_testConfig.useMeshShaders ? vk::createShaderModule(vkd, device, binaries.get("mesh")) : vk::Move<vk::VkShaderModule>());
 	const auto	meshNoOutModule		= (m_testConfig.bindUnusedMeshShadingPipeline ? vk::createShaderModule(vkd, device, binaries.get("meshNoOut")) : vk::Move<vk::VkShaderModule>());
 
+	vk::Move<vk::VkShaderModule>	vertDPCPModule;
+	vk::Move<vk::VkShaderModule>	fragDPCPModule;
+
 	// Input state.
 	const auto vertexBindings	= m_testConfig.vertexGenerator.staticValue->getBindingDescriptions(m_testConfig.strideConfig.staticValue);
 	const auto vertexAttributes	= m_testConfig.vertexGenerator.staticValue->getAttributeDescriptions();
@@ -2653,16 +2696,47 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 													   kSequenceOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC);
 	const bool					useStaticPipeline	= (bindStaticFirst || kReversed);
 
+	// Create extra dynamic patch control points pipeline if needed.
+	vk::Move<vk::VkPipeline> extraDynPCPPipeline;
+
+	if (m_testConfig.useExtraDynPCPPipeline)
+	{
+		vertDPCPModule = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vertDPCP"));
+		fragDPCPModule = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("fragDPCP"));
+
+		const vk::VkPipelineVertexInputStateCreateInfo	extraDPCPInputState		= vk::initVulkanStructure();
+		const vk::VkDynamicState						extraDynamicState		= vk::VK_DYNAMIC_STATE_PATCH_CONTROL_POINTS_EXT;
+		const vk::VkPipelineDynamicStateCreateInfo		extraDynamicStateInfo	=
+		{
+			vk::VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,	//	VkStructureType						sType;
+			nullptr,													//	const void*							pNext;
+			0u,															//	VkPipelineDynamicStateCreateFlags	flags;
+			1u,															//	uint32_t							dynamicStateCount;
+			&extraDynamicState,												//	const VkDynamicState*				pDynamicStates;
+		};
+
+		const auto extraPipelineLayout = vk::makePipelineLayout(vkd, device);
+
+		const auto viewports	= m_testConfig.viewportConfig.staticValue;
+		const auto scissors		= m_testConfig.scissorConfig.staticValue;
+
+		extraDynPCPPipeline = vk::makeGraphicsPipeline(
+			vkd, device, *extraPipelineLayout,
+			vertDPCPModule.get(), DE_NULL, DE_NULL, DE_NULL, fragDPCPModule.get(),
+			renderPass.get(), viewports, scissors, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u,
+			&extraDPCPInputState, nullptr, nullptr, nullptr, nullptr, &extraDynamicStateInfo);
+	}
+
 	// Create static pipeline when needed.
 	if (useStaticPipeline)
 	{
 		auto viewports	= m_testConfig.viewportConfig.staticValue;
-		auto scisors	= m_testConfig.scissorConfig.staticValue;
+		auto scissors	= m_testConfig.scissorConfig.staticValue;
 
 		// The viewport and scissor counts must match in the static part, which will be used by the static pipeline.
 		const auto minStaticCount = static_cast<deUint32>(std::min(m_testConfig.viewportConfig.staticValue.size(), m_testConfig.scissorConfig.staticValue.size()));
 		viewports.resize(minStaticCount);
-		scisors.resize(minStaticCount);
+		scissors.resize(minStaticCount);
 
 		staticPipeline.setDefaultPatchControlPoints(m_testConfig.patchControlPointsConfig.staticValue);
 
@@ -2671,7 +2745,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		{
 			staticPipeline.setupPreRasterizationMeshShaderState(
 												viewports,
-												scisors,
+												scissors,
 												*pipelineLayout,
 												*renderPass,
 												0u,
@@ -2685,7 +2759,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 			staticPipeline.setupVertexInputStete(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
 						  .setupPreRasterizationShaderState(
 												viewports,
-												scisors,
+												scissors,
 												*pipelineLayout,
 												*renderPass,
 												0u,
@@ -2706,7 +2780,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	vk::GraphicsPipelineWrapper graphicsPipeline(vkd, device, m_testConfig.pipelineConstructionType);
 	{
 		auto viewports	= m_testConfig.viewportConfig.staticValue;
-		auto scisors	= m_testConfig.scissorConfig.staticValue;
+		auto scissors	= m_testConfig.scissorConfig.staticValue;
 
 		const auto finalDynamicViewportCount = (m_testConfig.viewportConfig.dynamicValue
 			? m_testConfig.viewportConfig.dynamicValue.get().size()
@@ -2730,10 +2804,10 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		if (m_testConfig.scissorConfig.dynamicValue)
 		{
 			graphicsPipeline.setDefaultScissorsCount();
-			scisors = std::vector<vk::VkRect2D>();
+			scissors = std::vector<vk::VkRect2D>();
 		}
 		else
-			scisors.resize(minDynamicCount);
+			scissors.resize(minDynamicCount);
 
 		graphicsPipeline.setDynamicState(&dynamicStateCreateInfo)
 						.setDefaultPatchControlPoints(m_testConfig.patchControlPointsConfig.staticValue);
@@ -2743,7 +2817,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		{
 			graphicsPipeline.setupPreRasterizationMeshShaderState(
 												viewports,
-												scisors,
+												scissors,
 												*pipelineLayout,
 												*renderPass,
 												0u,
@@ -2757,7 +2831,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 			graphicsPipeline.setupVertexInputStete(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
 							.setupPreRasterizationShaderState(
 												viewports,
-												scisors,
+												scissors,
 												*pipelineLayout,
 												*renderPass,
 												0u,
@@ -2794,16 +2868,16 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 
 		// Provide a viewport state similar to the static pipeline.
 		auto viewports	= m_testConfig.viewportConfig.staticValue;
-		auto scisors	= m_testConfig.scissorConfig.staticValue;
+		auto scissors	= m_testConfig.scissorConfig.staticValue;
 
 		const auto minStaticCount = static_cast<deUint32>(std::min(m_testConfig.viewportConfig.staticValue.size(), m_testConfig.scissorConfig.staticValue.size()));
 		viewports.resize(minStaticCount);
-		scisors.resize(minStaticCount);
+		scissors.resize(minStaticCount);
 
 		meshNoOutPipeline.setDynamicState(&meshNoOutDynamicStateInfo)
 						 .setupPreRasterizationMeshShaderState(
 											viewports,
-											scisors,
+											scissors,
 											*pipelineLayout,
 											*renderPass,
 											0u,
@@ -2867,6 +2941,19 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 					DE_ASSERT(kSequenceOrdering == SequenceOrdering::CMD_BUFFER_START);
 					vkd.cmdBindPipeline(cmdBuffer, pipelineBindPoint, meshNoOutPipeline.getPipeline());
 				}
+
+				if (m_testConfig.useExtraDynPCPPipeline)
+				{
+					vkd.cmdBindPipeline(cmdBuffer, pipelineBindPoint, extraDynPCPPipeline.get());
+
+					// In these two sequence orderings, the right dynamic state value will have been set before and we would be
+					// setting it to a wrong value here, resulting in test failures. We keep the right value instead.
+					if (kSequenceOrdering != SequenceOrdering::CMD_BUFFER_START && kSequenceOrdering != SequenceOrdering::BETWEEN_PIPELINES)
+						vkd.cmdSetPatchControlPointsEXT(cmdBuffer, m_testConfig.patchControlPointsConfig.staticValue);
+
+					vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
+				}
+
 				vkd.cmdBindPipeline(cmdBuffer, pipelineBindPoint, graphicsPipeline.getPipeline());
 			}
 
@@ -3290,6 +3377,19 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.patchControlPointsConfig.dynamicValue = 3;
 				config.bindUnusedMeshShadingPipeline = bindUnusedCase.bindUnusedMeshShadingPipeline;
 				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "patch_control_points" + bindUnusedCase.nameSuffix, "Dynamically change patch control points" + bindUnusedCase.descSuffix, config));
+			}
+
+			{
+				TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+				config.topologyConfig.staticValue = vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
+				config.patchControlPointsConfig.staticValue = 1;
+				config.patchControlPointsConfig.dynamicValue = 3;
+				config.useExtraDynPCPPipeline = true;
+
+				const auto testName	= "patch_control_points_extra_pipeline";
+				const auto testDesc	= "Dynamically change patch control points and draw first with a pipeline using the state and no tessellation shaders";
+
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, testDesc, config));
 			}
 		}
 

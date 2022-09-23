@@ -788,14 +788,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 		for (deUint32 i = 0; i < numBuffers; ++i)
 		{
 			bufferDeviceAddressInfo.buffer = **buffers[i];
-#ifndef CTS_USES_VULKANSC
-			if (useKHR)
-				gpuAddrs[i] = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
-			else
-				gpuAddrs[i] = vk.getBufferDeviceAddressEXT(device, &bufferDeviceAddressInfo);
-#else
 			gpuAddrs[i] = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
-#endif
 		}
 		buffers.clear();
 		buffers.resize(numBuffers);
@@ -821,16 +814,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 			VK_CHECK(vk.bindBufferMemory(device, **buffers[i], allocations[i]->getMemory(), 0));
 
 			bufferDeviceAddressInfo.buffer = **buffers[i];
-			VkDeviceSize newAddr;
-
-#ifndef CTS_USES_VULKANSC
-			if (useKHR)
-				newAddr = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
-			else
-				newAddr = vk.getBufferDeviceAddressEXT(device, &bufferDeviceAddressInfo);
-#else
-			newAddr = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
-#endif
+			VkDeviceSize newAddr = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
 
 			if (newAddr != gpuAddrs[i])
 				return tcu::TestStatus(QP_TEST_RESULT_FAIL, "address mismatch");
@@ -841,15 +825,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 	for (deUint32 i = 0; i < numBindings; ++i)
 	{
 		bufferDeviceAddressInfo.buffer = **buffers[multiBuffer ? i : 0];
-
-#ifndef CTS_USES_VULKANSC
-		if (useKHR)
-			gpuAddrs[i] = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
-		else
-			gpuAddrs[i] = vk.getBufferDeviceAddressEXT(device, &bufferDeviceAddressInfo);
-#else
 		gpuAddrs[i] = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
-#endif
 
 		cpuAddrs[i] = (deUint8 *)allocations[multiBuffer ? i : 0]->getHostPtr();
 		if (!multiBuffer)
@@ -1541,14 +1517,7 @@ tcu::TestStatus CaptureReplayTestInstance::iterate (void)
 	for (deUint32 i = 0; i < numBuffers; ++i)
 	{
 		bufferDeviceAddressInfo.buffer = **buffers[i];
-#ifndef CTS_USES_VULKANSC
-		if (useKHR)
-			gpuAddrs[i] = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
-		else
-			gpuAddrs[i] = vk.getBufferDeviceAddressEXT(device, &bufferDeviceAddressInfo);
-#else
-			gpuAddrs[i] = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
-#endif
+		gpuAddrs[i] = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
 	}
 	buffers.clear();
 	buffers.resize(numBuffers);
@@ -1575,16 +1544,7 @@ tcu::TestStatus CaptureReplayTestInstance::iterate (void)
 		VK_CHECK(vk.bindBufferMemory(device, **buffers[i], allocations[i]->getMemory(), 0));
 
 		bufferDeviceAddressInfo.buffer = **buffers[i];
-		VkDeviceSize newAddr;
-
-#ifndef CTS_USES_VULKANSC
-		if (useKHR)
-			newAddr = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
-		else
-			newAddr = vk.getBufferDeviceAddressEXT(device, &bufferDeviceAddressInfo);
-#else
-			newAddr = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
-#endif
+		VkDeviceSize newAddr = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
 
 		if (newAddr != gpuAddrs[i])
 			return tcu::TestStatus(QP_TEST_RESULT_FAIL, "address mismatch");

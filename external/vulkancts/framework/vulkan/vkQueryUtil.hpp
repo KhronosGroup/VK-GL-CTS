@@ -122,8 +122,8 @@ bool										isCompatible							(const VkExtensionProperties& extensionProperti
 bool										isCompatible							(const VkLayerProperties& layerProperties, const RequiredLayer& required);
 
 template<typename ExtensionIterator>
-bool										isExtensionSupported					(ExtensionIterator begin, ExtensionIterator end, const RequiredExtension& required);
-bool										isExtensionSupported					(const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required);
+bool										isExtensionStructSupported					(ExtensionIterator begin, ExtensionIterator end, const RequiredExtension& required);
+bool										isExtensionStructSupported					(const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required);
 
 bool										isInstanceExtensionSupported			(const deUint32 instanceVersion, const std::vector<std::string>& extensions, const std::string& required);
 
@@ -326,7 +326,7 @@ bool checkBits (IterT beg, const IterT end, const deUint8 pattern = 0xdeu)
 // Template implementations
 
 template<typename ExtensionIterator>
-bool isExtensionSupported (ExtensionIterator begin, ExtensionIterator end, const RequiredExtension& required)
+bool isExtensionStructSupported (ExtensionIterator begin, ExtensionIterator end, const RequiredExtension& required)
 {
 	for (ExtensionIterator cur = begin; cur != end; ++cur)
 	{

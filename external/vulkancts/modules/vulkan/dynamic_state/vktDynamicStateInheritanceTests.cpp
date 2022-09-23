@@ -164,12 +164,12 @@ class InheritanceTestInstance : public TestInstance
 	Move<VkCommandPool> m_cmdPool;
 
 	// Primary command buffer, re-used for every test
-	VkCommandBuffer m_primaryCmdBuffer;
+	Move<VkCommandBuffer> m_primaryCmdBuffer;
 
 	// Secondary command buffers, first for specifying
 	// viewport/scissor state, second for subpass contents.
 	// Both re-used to check for stale state.
-	VkCommandBuffer m_setStateCmdBuffer, m_subpassCmdBuffer;
+	Move<VkCommandBuffer> m_setStateCmdBuffer, m_subpassCmdBuffer;
 
 	// "depth buffer" used for CPU rasterization of expected image.
 	float m_cpuDepthBuffer[kHeight][kWidth];
@@ -487,10 +487,10 @@ InheritanceTestInstance::InheritanceTestInstance(Context& context, PipelineConst
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, NULL,
 		m_cmdPool.get(),
 		VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1 };
-	VK_CHECK(m_vk.allocateCommandBuffers(dev, &cmdBufferInfo, &m_primaryCmdBuffer));
+	m_primaryCmdBuffer = allocateCommandBuffer(m_vk, dev, &cmdBufferInfo);
 	cmdBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-	VK_CHECK(m_vk.allocateCommandBuffers(dev, &cmdBufferInfo, &m_setStateCmdBuffer));
-	VK_CHECK(m_vk.allocateCommandBuffers(dev, &cmdBufferInfo, &m_subpassCmdBuffer));
+	m_setStateCmdBuffer = allocateCommandBuffer(m_vk, dev, &cmdBufferInfo);
+	m_subpassCmdBuffer = allocateCommandBuffer(m_vk, dev, &cmdBufferInfo);
 }
 
 
@@ -534,7 +534,7 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 	// ************************************************************************
 	// Record state-setting secondary command buffer.
 	// ************************************************************************
-	VK_CHECK(m_vk.beginCommandBuffer(m_setStateCmdBuffer, &cmdBeginInfo));
+	VK_CHECK(m_vk.beginCommandBuffer(m_setStateCmdBuffer.get(), &cmdBeginInfo));
 	switch (m_inheritanceMode)
 	{
 	case kInheritanceDisabled:
@@ -543,35 +543,35 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 		break;
 	case kInheritFromSecondary:
 		// Set all viewport/scissor state.
-		m_vk.cmdSetViewport(m_setStateCmdBuffer, 0, deUint32(geometry.viewports.size()), &geometry.viewports[0]);
-		m_vk.cmdSetScissor(m_setStateCmdBuffer, 0, deUint32(geometry.scissors.size()), &geometry.scissors[0]);
+		m_vk.cmdSetViewport(m_setStateCmdBuffer.get(), 0, deUint32(geometry.viewports.size()), &geometry.viewports[0]);
+		m_vk.cmdSetScissor(m_setStateCmdBuffer.get(), 0, deUint32(geometry.scissors.size()), &geometry.scissors[0]);
 		break;
 	case kSplitInheritance:
 		// Set just the first viewport / scissor, rest are set in
 		// primary command buffer. Checks that extension properly
 		// muxes state from different sources.
-		m_vk.cmdSetViewport(m_setStateCmdBuffer, 0, 1, &geometry.viewports[0]);
-		m_vk.cmdSetScissor(m_setStateCmdBuffer, 0, 1, &geometry.scissors[0]);
+		m_vk.cmdSetViewport(m_setStateCmdBuffer.get(), 0, 1, &geometry.viewports[0]);
+		m_vk.cmdSetScissor(m_setStateCmdBuffer.get(), 0, 1, &geometry.scissors[0]);
 		break;
 	case kInheritFromSecondaryWithCount:
 #ifndef CTS_USES_VULKANSC
-		m_vk.cmdSetViewportWithCount(m_setStateCmdBuffer,
+		m_vk.cmdSetViewportWithCount(m_setStateCmdBuffer.get(),
 									 deUint32(geometry.viewports.size()),
 									 &geometry.viewports[0]);
-		m_vk.cmdSetScissorWithCount(m_setStateCmdBuffer,
+		m_vk.cmdSetScissorWithCount(m_setStateCmdBuffer.get(),
 									deUint32(geometry.scissors.size()),
 									&geometry.scissors[0]);
 #else
-		m_vk.cmdSetViewportWithCountEXT(m_setStateCmdBuffer,
+		m_vk.cmdSetViewportWithCountEXT(m_setStateCmdBuffer.get(),
 									 deUint32(geometry.viewports.size()),
 									 &geometry.viewports[0]);
-		m_vk.cmdSetScissorWithCountEXT(m_setStateCmdBuffer,
+		m_vk.cmdSetScissorWithCountEXT(m_setStateCmdBuffer.get(),
 									deUint32(geometry.scissors.size()),
 									&geometry.scissors[0]);
 #endif // CTS_USES_VULKANSC
 		break;
 	}
-	VK_CHECK(m_vk.endCommandBuffer(m_setStateCmdBuffer));
+	VK_CHECK(m_vk.endCommandBuffer(m_setStateCmdBuffer.get()));
 
 	// ************************************************************************
 	// Record subpass command buffer, bind vertex buffer and pipeline,
@@ -587,19 +587,19 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 			VK_TRUE,
 			deUint32(geometry.viewports.size()), &geometry.viewports[0] };
 		inheritanceInfo.pNext = &inheritViewportInfo;
-		VK_CHECK(m_vk.beginCommandBuffer(m_subpassCmdBuffer, &cmdBeginInfo));
+		VK_CHECK(m_vk.beginCommandBuffer(m_subpassCmdBuffer.get(), &cmdBeginInfo));
 		inheritanceInfo.pNext = NULL;
 #endif // CTS_USES_VULKANSC
 	}
 	else
 	{
-		VK_CHECK(m_vk.beginCommandBuffer(m_subpassCmdBuffer, &cmdBeginInfo));
+		VK_CHECK(m_vk.beginCommandBuffer(m_subpassCmdBuffer.get(), &cmdBeginInfo));
 	}
 	// Set viewport/scissor state only when not inherited.
 	if (m_inheritanceMode == kInheritanceDisabled)
 	{
-		m_vk.cmdSetViewport(m_subpassCmdBuffer, 0, deUint32(geometry.viewports.size()), &geometry.viewports[0]);
-		m_vk.cmdSetScissor(m_subpassCmdBuffer, 0, deUint32(geometry.scissors.size()), &geometry.scissors[0]);
+		m_vk.cmdSetViewport(m_subpassCmdBuffer.get(), 0, deUint32(geometry.viewports.size()), &geometry.viewports[0]);
+		m_vk.cmdSetScissor(m_subpassCmdBuffer.get(), 0, deUint32(geometry.scissors.size()), &geometry.scissors[0]);
 	}
 	// Get the graphics pipeline, creating it if needed (encountered
 	// new static viewport/scissor count). 0 = dynamic count.
@@ -651,14 +651,14 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 			.buildPipeline();
 	}
 	const VkPipeline graphicsPipeline = m_rectanglePipelines[staticViewportCount].getPipeline();
-	m_vk.cmdBindPipeline(m_subpassCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+	m_vk.cmdBindPipeline(m_subpassCmdBuffer.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
 	// Bind vertex buffer and draw.
 	VkDeviceSize offset = 0;
 	VkBuffer     vertexBuffer = m_rectangleBuffer.get();
-	m_vk.cmdBindVertexBuffers(m_subpassCmdBuffer, 0, 1, &vertexBuffer, &offset);
-	m_vk.cmdDraw(m_subpassCmdBuffer, deUint32(geometry.rectangles.size()), 1, 0, 0);
-	VK_CHECK(m_vk.endCommandBuffer(m_subpassCmdBuffer));
+	m_vk.cmdBindVertexBuffers(m_subpassCmdBuffer.get(), 0, 1, &vertexBuffer, &offset);
+	m_vk.cmdDraw(m_subpassCmdBuffer.get(), deUint32(geometry.rectangles.size()), 1, 0, 0);
+	VK_CHECK(m_vk.endCommandBuffer(m_subpassCmdBuffer.get()));
 
 	// ************************************************************************
 	// Primary command buffer commands, start render pass and execute
@@ -669,7 +669,7 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		NULL,
 		0, NULL };
-	VK_CHECK(m_vk.beginCommandBuffer(m_primaryCmdBuffer, &beginInfo));
+	VK_CHECK(m_vk.beginCommandBuffer(m_primaryCmdBuffer.get(), &beginInfo));
 
 	VkClearValue clearValues[2];
 	clearValues[0].color.float32[0] = geometry.clearColor.x();
@@ -691,23 +691,23 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 	case kInheritFromPrimary:
 		// Specify all viewport/scissor state only when we expect to.
 		// inherit ALL viewport/scissor state from primary command buffer.
-		m_vk.cmdSetViewport(m_primaryCmdBuffer, 0, deUint32(geometry.viewports.size()), &geometry.viewports[0]);
-		m_vk.cmdSetScissor(m_primaryCmdBuffer, 0, deUint32(geometry.scissors.size()), &geometry.scissors[0]);
+		m_vk.cmdSetViewport(m_primaryCmdBuffer.get(), 0, deUint32(geometry.viewports.size()), &geometry.viewports[0]);
+		m_vk.cmdSetScissor(m_primaryCmdBuffer.get(), 0, deUint32(geometry.scissors.size()), &geometry.scissors[0]);
 		break;
 	case kInheritFromPrimaryWithCount:
 		// Same but with count inherited.
 #ifndef CTS_USES_VULKANSC
-		m_vk.cmdSetViewportWithCount(m_primaryCmdBuffer,
+		m_vk.cmdSetViewportWithCount(m_primaryCmdBuffer.get(),
 									 deUint32(geometry.viewports.size()),
 									 &geometry.viewports[0]);
-		m_vk.cmdSetScissorWithCount(m_primaryCmdBuffer,
+		m_vk.cmdSetScissorWithCount(m_primaryCmdBuffer.get(),
 									deUint32(geometry.scissors.size()),
 									&geometry.scissors[0]);
 #else
-		m_vk.cmdSetViewportWithCountEXT(m_primaryCmdBuffer,
+		m_vk.cmdSetViewportWithCountEXT(m_primaryCmdBuffer.get(),
 									 deUint32(geometry.viewports.size()),
 									 &geometry.viewports[0]);
-		m_vk.cmdSetScissorWithCountEXT(m_primaryCmdBuffer,
+		m_vk.cmdSetScissorWithCountEXT(m_primaryCmdBuffer.get(),
 									deUint32(geometry.scissors.size()),
 									&geometry.scissors[0]);
 #endif // CTS_USES_VULKANSC
@@ -717,8 +717,8 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 		// setStateCmdBuffer in this test mode.
 		if (geometry.viewports.size() > 1)
 		{
-			m_vk.cmdSetViewport(m_primaryCmdBuffer, 1, deUint32(geometry.viewports.size() - 1), &geometry.viewports[1]);
-			m_vk.cmdSetScissor(m_primaryCmdBuffer, 1, deUint32(geometry.scissors.size() - 1), &geometry.scissors[1]);
+			m_vk.cmdSetViewport(m_primaryCmdBuffer.get(), 1, deUint32(geometry.viewports.size() - 1), &geometry.viewports[1]);
+			m_vk.cmdSetScissor(m_primaryCmdBuffer.get(), 1, deUint32(geometry.scissors.size() - 1), &geometry.scissors[1]);
 		}
 		/* FALLTHROUGH */
 	case kInheritanceDisabled:
@@ -727,17 +727,17 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 		// Specify some bogus state, ensure correctly overwritten later.
 		VkViewport bogusViewport { 0.f, 0.f, 8.f, 8.f, 0.f, 0.1f };
 		VkRect2D   bogusScissors { { 2, 0 }, { 100, 100 }};
-		m_vk.cmdSetViewport(m_primaryCmdBuffer, 0, 1, &bogusViewport);
-		m_vk.cmdSetScissor(m_primaryCmdBuffer, 0, 1, &bogusScissors);
+		m_vk.cmdSetViewport(m_primaryCmdBuffer.get(), 0, 1, &bogusViewport);
+		m_vk.cmdSetScissor(m_primaryCmdBuffer.get(), 0, 1, &bogusScissors);
 		break;
 	}
 
-	m_vk.cmdBeginRenderPass(m_primaryCmdBuffer, &renderPassBeginInfo,
+	m_vk.cmdBeginRenderPass(m_primaryCmdBuffer.get(), &renderPassBeginInfo,
 		VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-	VkCommandBuffer secondaryCmdBuffers[2] = {m_setStateCmdBuffer,
-											  m_subpassCmdBuffer};
-	m_vk.cmdExecuteCommands(m_primaryCmdBuffer, 2, secondaryCmdBuffers);
-	m_vk.cmdEndRenderPass(m_primaryCmdBuffer);
+	VkCommandBuffer secondaryCmdBuffers[2] = {m_setStateCmdBuffer.get(),
+											  m_subpassCmdBuffer.get()};
+	m_vk.cmdExecuteCommands(m_primaryCmdBuffer.get(), 2, secondaryCmdBuffers);
+	m_vk.cmdEndRenderPass(m_primaryCmdBuffer.get());
 
 	// Barrier, then copy rendered image to download buffer.
 	VkImageMemoryBarrier imageBarrier {
@@ -751,7 +751,7 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 		m_colorImage.get(),
 		{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }};
 	m_vk.cmdPipelineBarrier(
-		m_primaryCmdBuffer,
+		m_primaryCmdBuffer.get(),
 		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 		VK_PIPELINE_STAGE_TRANSFER_BIT,
 		0, 0, NULL, 0, NULL, 1, &imageBarrier );
@@ -761,7 +761,7 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 		{ 0, 0, 0 },
 		{ kWidth, kHeight, 1 } };
 	m_vk.cmdCopyImageToBuffer(
-		m_primaryCmdBuffer,
+		m_primaryCmdBuffer.get(),
 		m_colorImage.get(),
 		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 		m_downloadBuffer.get(),
@@ -777,18 +777,19 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 		m_downloadBuffer.get(),
 		0, VK_WHOLE_SIZE };
 	m_vk.cmdPipelineBarrier(
-		m_primaryCmdBuffer,
+		m_primaryCmdBuffer.get(),
 		VK_PIPELINE_STAGE_TRANSFER_BIT,
 		VK_PIPELINE_STAGE_HOST_BIT,
 		0, 0, NULL, 1, &bufferBarrier, 0, NULL);
 
 	// End and submit primary command buffer.
-	VK_CHECK(m_vk.endCommandBuffer(m_primaryCmdBuffer));
+	VK_CHECK(m_vk.endCommandBuffer(m_primaryCmdBuffer.get()));
+	VkCommandBuffer primaryCmd = m_primaryCmdBuffer.get();
 	VkSubmitInfo submitInfo {
 		VK_STRUCTURE_TYPE_SUBMIT_INFO,
 		NULL,
 		0, NULL, NULL,
-		1, &m_primaryCmdBuffer,
+		1, &primaryCmd,
 		0, NULL };
 	m_vk.queueSubmit(m_context.getUniversalQueue(), 1, &submitInfo, 0);
 }

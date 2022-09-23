@@ -4103,6 +4103,39 @@ protected:
 	}
 };
 
+template <class T>
+class Reflect<1, T> : public DerivedFunc<
+	Signature<T, T, T> >
+{
+public:
+	typedef typename	Reflect::Ret		Ret;
+	typedef typename	Reflect::Arg0		Arg0;
+	typedef typename	Reflect::Arg1		Arg1;
+	typedef typename	Reflect::ArgExprs	ArgExprs;
+
+	string		getName		(void) const
+	{
+		return "reflect";
+	}
+
+protected:
+	ExprP<Ret>	doExpand	(ExpandContext& ctx, const ArgExprs& args) const
+	{
+		const ExprP<Arg0>&	i		= args.a;
+		const ExprP<Arg1>&	n		= args.b;
+		const ExprP<T>	dotNI	= bindExpression("dotNI", ctx, dot(n, i));
+
+		return i - alternatives((n * dotNI) * getConstTwo<T>(),
+								   alternatives( n * (dotNI * getConstTwo<T>()),
+												alternatives(n * dot(i * getConstTwo<T>(), n),
+															 alternatives(n * dot(i, n * getConstTwo<T>()),
+																	dot(n * n, i * getConstTwo<T>()))
+												)
+									)
+								);
+	}
+};
+
 template <int Size, class T>
 class Refract : public DerivedFunc<
 	Signature<typename ContainerOf<T, Size>::Container,
@@ -6881,6 +6914,8 @@ public:
 				else
 				{
 					requirements.push_back("Float16Int8Features.shaderFloat16");
+					requirements.push_back("VK_KHR_16bit_storage");
+					requirements.push_back("VK_KHR_storage_buffer_storage_class");
 					fileName += "_fp16";
 
 					if (ctx.isPackFloat16b == true)
@@ -6893,9 +6928,6 @@ public:
 					}
 				}
 			}
-
-			requirements.push_back("VK_KHR_16bit_storage");
-			requirements.push_back("VK_KHR_storage_buffer_storage_class");
 
 			group->addChild(cts_amber::createAmberTestCase(ctx.testContext, "mat3", "Square matrix 3x3 precision tests", dataDir, fileName + "_mat_3x3.amber", requirements));
 			group->addChild(cts_amber::createAmberTestCase(ctx.testContext, "mat4", "Square matrix 4x4 precision tests", dataDir, fileName + "_mat_4x4.amber", requirements));

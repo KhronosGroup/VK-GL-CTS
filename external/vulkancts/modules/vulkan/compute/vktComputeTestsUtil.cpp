@@ -32,28 +32,6 @@ namespace vkt
 namespace compute
 {
 
-Buffer::Buffer (const DeviceInterface&		vk,
-				const VkDevice				device,
-				Allocator&					allocator,
-				const VkBufferCreateInfo&	bufferCreateInfo,
-				const MemoryRequirement		memoryRequirement)
-{
-	m_buffer = createBuffer(vk, device, &bufferCreateInfo);
-	m_allocation = allocator.allocate(getBufferMemoryRequirements(vk, device, *m_buffer), memoryRequirement);
-	VK_CHECK(vk.bindBufferMemory(device, *m_buffer, m_allocation->getMemory(), m_allocation->getOffset()));
-}
-
-Image::Image (const DeviceInterface&	vk,
-			  const VkDevice			device,
-			  Allocator&				allocator,
-			  const VkImageCreateInfo&	imageCreateInfo,
-			  const MemoryRequirement	memoryRequirement)
-{
-	m_image = createImage(vk, device, &imageCreateInfo);
-	m_allocation = allocator.allocate(getImageMemoryRequirements(vk, device, *m_image), memoryRequirement);
-	VK_CHECK(vk.bindImageMemory(device, *m_image, m_allocation->getMemory(), m_allocation->getOffset()));
-}
-
 VkBufferImageCopy makeBufferImageCopy (const VkExtent3D extent,
 									   const deUint32	arraySize)
 {

@@ -366,7 +366,7 @@ tcu::TestStatus MeshShaderBuiltinInstance::iterate ()
 		pipelines.emplace_back(makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
 			taskModule.get(), meshModule.get(), fragModule.get(),
 			renderPass.get(), viewports, scissors, subpassIdx,
-			nullptr, nullptr, nullptr, nullptr, nullptr, pNext.get()));
+			nullptr, nullptr, nullptr, nullptr, nullptr, 0u, pNext.get()));
 	}
 
 	// Command pool and buffer.

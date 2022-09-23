@@ -562,15 +562,11 @@ void evalShader (Context&												context,
 	const ShaderSpec									spec				(createShaderSpec(samplerBinding, colorModels));
 	const de::UniquePtr<ShaderExecutor>					executor			(createExecutor(context, shaderType, spec, *layout));
 
-#ifdef CTS_USES_VULKANSC
-	if (context.getTestContext().getCommandLine().isSubProcess())
-#endif // CTS_USES_VULKANSC
-	{
-		if (imageTiling == vk::VK_IMAGE_TILING_OPTIMAL)
-			uploadImage(vkd, device, context.getUniversalQueueFamilyIndex(), context.getDefaultAllocator(), *image, imageData, vk::VK_ACCESS_SHADER_READ_BIT, vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-		else
-			fillImageMemory(vkd, device, context.getUniversalQueueFamilyIndex(), *image, imageMemory, imageData, vk::VK_ACCESS_SHADER_READ_BIT, vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	}
+	if (imageTiling == vk::VK_IMAGE_TILING_OPTIMAL)
+		uploadImage(vkd, device, context.getUniversalQueueFamilyIndex(), context.getDefaultAllocator(), *image, imageData, vk::VK_ACCESS_SHADER_READ_BIT, vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	else
+		fillImageMemory(vkd, device, context.getUniversalQueueFamilyIndex(), *image, imageMemory, imageData, vk::VK_ACCESS_SHADER_READ_BIT, vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
 	for(int i=0; i<(int)results.size(); i++)
 		results[i].resize(sts.size());
 

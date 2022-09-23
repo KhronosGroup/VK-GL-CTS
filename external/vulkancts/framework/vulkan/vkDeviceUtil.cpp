@@ -32,6 +32,10 @@
 
 #include "qpInfo.h"
 
+#ifdef CTS_USES_VULKANSC
+#include "vkAppParamsUtil.hpp"
+#endif // CTS_USES_VULKANSC
+
 namespace vk
 {
 
@@ -42,6 +46,7 @@ Move<VkInstance> createDefaultInstance (const PlatformInterface&		vkPlatform,
 										deUint32						apiVersion,
 										const vector<string>&			enabledLayers,
 										const vector<string>&			enabledExtensions,
+										const tcu::CommandLine&			cmdLine,
 #ifndef CTS_USES_VULKANSC
 										DebugReportRecorder*			recorder,
 #endif // CTS_USES_VULKANSC
@@ -57,7 +62,7 @@ Move<VkInstance> createDefaultInstance (const PlatformInterface&		vkPlatform,
 	if (validationEnabled)
 	{
 		// Make sure the debug report extension is enabled when validation is enabled.
-		if (!isExtensionSupported(availableExtensions, RequiredExtension("VK_EXT_debug_report")))
+		if (!isExtensionStructSupported(availableExtensions, RequiredExtension("VK_EXT_debug_report")))
 			TCU_THROW(NotSupportedError, "VK_EXT_debug_report is not supported");
 
 		if (!de::contains(begin(actualExtensions), end(actualExtensions), "VK_EXT_debug_report"))
@@ -67,7 +72,7 @@ Move<VkInstance> createDefaultInstance (const PlatformInterface&		vkPlatform,
 	}
 
         // Make sure portability enumeration is enabled whenever it is available
-        bool portability_enumeration_available = isExtensionSupported(availableExtensions, RequiredExtension("VK_KHR_portability_enumeration"));
+        bool portability_enumeration_available = isExtensionStructSupported(availableExtensions, RequiredExtension("VK_KHR_portability_enumeration"));
         if (portability_enumeration_available)
         {
                 actualExtensions.push_back("VK_KHR_portability_enumeration");
@@ -84,16 +89,28 @@ Move<VkInstance> createDefaultInstance (const PlatformInterface&		vkPlatform,
 	for (size_t ndx = 0; ndx < actualExtensions.size(); ++ndx)
 		extensionNamePtrs[ndx] = actualExtensions[ndx].c_str();
 
-	const struct VkApplicationInfo		appInfo			=
+#ifdef CTS_USES_VULKANSC
+	vector<VkApplicationParametersEXT> appParams;
+	const bool hasAppParams = readApplicationParameters(appParams, cmdLine, true);
+#else
+	DE_UNREF(cmdLine);
+#endif // CTS_USES_VULKANSC
+
+	const struct VkApplicationInfo			appInfo			=
 	{
 		VK_STRUCTURE_TYPE_APPLICATION_INFO,
+#ifdef CTS_USES_VULKANSC
+		hasAppParams ? &appParams[0] : DE_NULL,
+#else
 		DE_NULL,
+#endif // CTS_USES_VULKANSC
 		"deqp",									// pAppName
 		qpGetReleaseId(),						// appVersion
 		"deqp",									// pEngineName
 		qpGetReleaseId(),						// engineVersion
 		apiVersion								// apiVersion
 	};
+
 
 #ifndef CTS_USES_VULKANSC
 	const VkDebugReportCallbackCreateInfoEXT callbackInfo = (validationEnabled ? recorder->makeCreateInfo() : initVulkanStructure());
@@ -119,12 +136,12 @@ Move<VkInstance> createDefaultInstance (const PlatformInterface&		vkPlatform,
 	return createInstance(vkPlatform, &instanceInfo, pAllocator);
 }
 
-Move<VkInstance> createDefaultInstance (const PlatformInterface& vkPlatform, deUint32 apiVersion)
+Move<VkInstance> createDefaultInstance (const PlatformInterface& vkPlatform, deUint32 apiVersion, const tcu::CommandLine& cmdLine)
 {
 #ifndef CTS_USES_VULKANSC
-	return createDefaultInstance(vkPlatform, apiVersion, vector<string>(), vector<string>(), nullptr, nullptr);
+	return createDefaultInstance(vkPlatform, apiVersion, vector<string>(), vector<string>(), cmdLine, nullptr, nullptr);
 #else
-	return createDefaultInstance(vkPlatform, apiVersion, vector<string>(), vector<string>(), nullptr);
+	return createDefaultInstance(vkPlatform, apiVersion, vector<string>(), vector<string>(), cmdLine, nullptr);
 #endif
 }
 

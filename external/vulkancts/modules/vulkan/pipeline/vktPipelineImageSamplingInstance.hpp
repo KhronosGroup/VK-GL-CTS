@@ -62,7 +62,9 @@ struct ImageSamplingInstanceParams
 								 bool									separateStencilUsage_ = false,
 								 vk::VkDescriptorType					samplingType_ = vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 								 int									imageCount_ = 1,
-								 AllocationKind							allocationKind_ = ALLOCATION_KIND_SUBALLOCATED)
+								 AllocationKind							allocationKind_ = ALLOCATION_KIND_SUBALLOCATED,
+								 const vk::VkImageLayout				imageLayout_ = vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+								 const vk::VkPipelineCreateFlags		pipelineCreateFlags_ = 0u)
 	: pipelineConstructionType	(pipelineConstructionType_)
 	, renderSize				(renderSize_)
 	, imageViewType				(imageViewType_)
@@ -78,6 +80,8 @@ struct ImageSamplingInstanceParams
 	, samplingType				(samplingType_)
 	, imageCount				(imageCount_)
 	, allocationKind			(allocationKind_)
+	, imageLayout				(imageLayout_)
+	, pipelineCreateFlags		(pipelineCreateFlags_)
 	{}
 
 	const vk::PipelineConstructionType	pipelineConstructionType;
@@ -95,6 +99,8 @@ struct ImageSamplingInstanceParams
 	vk::VkDescriptorType				samplingType;
 	int									imageCount;
 	AllocationKind						allocationKind;
+	const vk::VkImageLayout				imageLayout;
+	const vk::VkPipelineCreateFlags		pipelineCreateFlags;
 };
 
 void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceParams params);
@@ -110,9 +116,9 @@ public:
 	virtual tcu::TestStatus						iterate					(void);
 
 protected:
-	tcu::TestStatus								verifyImage				(void);
+	virtual tcu::TestStatus						verifyImage				(void);
+	virtual void								setup					(void);
 
-private:
 	typedef	vk::Unique<vk::VkImage>				UniqueImage;
 	typedef	vk::Unique<vk::VkImageView>			UniqueImageView;
 	typedef	de::UniquePtr<vk::Allocation>		UniqueAlloc;
@@ -163,9 +169,12 @@ private:
 	vk::Move<vk::VkPipelineLayout>				m_preRasterizationStatePipelineLayout;
 	vk::Move<vk::VkPipelineLayout>				m_fragmentStatePipelineLayout;
 	vk::GraphicsPipelineWrapper					m_graphicsPipeline;
+	const vk::PipelineConstructionType			m_pipelineConstructionType;
 
 	vk::Move<vk::VkCommandPool>					m_cmdPool;
 	vk::Move<vk::VkCommandBuffer>				m_cmdBuffer;
+
+	const vk::VkImageLayout						m_imageLayout;
 };
 
 } // pipeline

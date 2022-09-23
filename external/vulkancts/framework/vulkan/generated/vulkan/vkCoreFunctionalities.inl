@@ -723,4 +723,3 @@ void initApisMap (ApisMap& apis)
 	apis[VK_API_VERSION_1_3].push_back(FunctionInfo("vkGetDeviceImageSparseMemoryRequirements",			FUNCTIONORIGIN_DEVICE));
 
 }
-

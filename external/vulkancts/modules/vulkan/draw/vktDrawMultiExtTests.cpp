@@ -92,7 +92,7 @@ struct TestParams
 	bool							useTessellation;
 	bool							useGeometry;
 	bool							multiview;
-	bool							useDynamicRendering;
+	const SharedGroupParams			groupParams;
 
 	deUint32 maxInstanceIndex () const
 	{
@@ -334,10 +334,21 @@ private:
 class MultiDrawInstance : public vkt::TestInstance
 {
 public:
-						MultiDrawInstance	(Context& context, const TestParams& params);
-	virtual				~MultiDrawInstance	(void) {}
+						MultiDrawInstance		(Context& context, const TestParams& params);
+	virtual				~MultiDrawInstance		(void) {}
 
-	tcu::TestStatus		iterate				(void) override;
+	tcu::TestStatus		iterate					(void) override;
+
+protected:
+	void				beginSecondaryCmdBuffer	(VkCommandBuffer cmdBuffer, VkFormat colorFormat,
+												 VkFormat depthStencilFormat, VkRenderingFlagsKHR renderingFlags, deUint32 viewMask) const;
+	void				preRenderingCommands	(VkCommandBuffer cmdBuffer,
+												 VkImage colorImage, const VkImageSubresourceRange colorSubresourceRange,
+												 VkImage dsImage, const VkImageSubresourceRange dsSubresourceRange) const;
+	void				drawCommands			(VkCommandBuffer cmdBuffer, VkPipeline pipeline,
+												 VkBuffer vertexBuffer, VkDeviceSize vertexBufferOffset, deInt32 vertexOffset,
+												 VkBuffer indexBuffer, VkDeviceSize indexBufferOffset,
+												 bool isMixedMode, const DrawInfoPacker& drawInfos) const;
 
 private:
 	TestParams			m_params;
@@ -377,7 +388,7 @@ void MultiDrawTest::checkSupport (Context& context) const
 			TCU_THROW(NotSupportedError, "Multiview not supported with geometry shaders");
 	}
 
-	if (m_params.useDynamicRendering)
+	if (m_params.groupParams->useDynamicRendering)
 		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 }
 
@@ -686,6 +697,99 @@ Move<VkRenderPass> makeMultidrawRenderPass (const DeviceInterface&	vk,
 	return createRenderPass(vk, device, &renderPassInfo, nullptr);
 }
 
+void MultiDrawInstance::beginSecondaryCmdBuffer(VkCommandBuffer cmdBuffer, VkFormat colorFormat,
+												VkFormat depthStencilFormat, VkRenderingFlagsKHR renderingFlags, deUint32 viewMask) const
+{
+	VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,		// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		renderingFlags,															// VkRenderingFlagsKHR				flags;
+		viewMask,																// uint32_t							viewMask;
+		1u,																		// uint32_t							colorAttachmentCount;
+		&colorFormat,															// const VkFormat*					pColorAttachmentFormats;
+		depthStencilFormat,														// VkFormat							depthAttachmentFormat;
+		depthStencilFormat,														// VkFormat							stencilAttachmentFormat;
+		VK_SAMPLE_COUNT_1_BIT,													// VkSampleCountFlagBits			rasterizationSamples;
+	};
+
+	const VkCommandBufferInheritanceInfo bufferInheritanceInfo = initVulkanStructure(&inheritanceRenderingInfo);
+
+	VkCommandBufferUsageFlags usageFlags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	if (!m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+		usageFlags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+
+	const VkCommandBufferBeginInfo commandBufBeginParams
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,							// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		usageFlags,																// VkCommandBufferUsageFlags		flags;
+		&bufferInheritanceInfo
+	};
+
+	const DeviceInterface& vk = m_context.getDeviceInterface();
+	VK_CHECK(vk.beginCommandBuffer(cmdBuffer, &commandBufBeginParams));
+}
+
+void MultiDrawInstance::preRenderingCommands(VkCommandBuffer cmdBuffer,
+											 VkImage colorImage, const VkImageSubresourceRange colorSubresourceRange,
+											 VkImage dsImage, const VkImageSubresourceRange dsSubresourceRange) const
+{
+	const auto& vk = m_context.getDeviceInterface();
+
+	// Transition color and depth stencil attachment to the proper initial layout for dynamic rendering
+	const auto colorPreBarrier = makeImageMemoryBarrier(
+		0u,
+		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+		VK_IMAGE_LAYOUT_UNDEFINED,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		colorImage, colorSubresourceRange);
+
+	vk.cmdPipelineBarrier(
+		cmdBuffer,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+		0u, 0u, nullptr, 0u, nullptr, 1u, &colorPreBarrier);
+
+	const auto dsPreBarrier = makeImageMemoryBarrier(
+		0u,
+		VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+		VK_IMAGE_LAYOUT_UNDEFINED,
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		dsImage, dsSubresourceRange);
+
+	vk.cmdPipelineBarrier(
+		cmdBuffer,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT),
+		0u, 0u, nullptr, 0u, nullptr, 1u, &dsPreBarrier);
+}
+
+void MultiDrawInstance::drawCommands(VkCommandBuffer cmdBuffer, VkPipeline pipeline,
+									 VkBuffer vertexBuffer, VkDeviceSize vertexBufferOffset, deInt32 vertexOffset,
+									 VkBuffer indexBuffer, VkDeviceSize indexBufferOffset,
+									 bool isMixedMode, const DrawInfoPacker& drawInfos) const
+{
+	const auto& vk = m_context.getDeviceInterface();
+
+	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+	vk.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
+
+	if (indexBuffer == DE_NULL)
+	{
+		const auto drawInfoPtr = reinterpret_cast<const VkMultiDrawInfoEXT*>(drawInfos.drawInfoData());
+		vk.cmdDrawMultiEXT(cmdBuffer, drawInfos.drawInfoCount(), drawInfoPtr, m_params.instanceCount, m_params.firstInstance, drawInfos.stride());
+	}
+	else
+	{
+		vk.cmdBindIndexBuffer(cmdBuffer, indexBuffer, indexBufferOffset, VK_INDEX_TYPE_UINT32);
+
+		const auto drawInfoPtr = reinterpret_cast<const VkMultiDrawIndexedInfoEXT*>(drawInfos.drawInfoData());
+		const auto offsetPtr = (isMixedMode ? nullptr : &vertexOffset);
+		vk.cmdDrawMultiIndexedEXT(cmdBuffer, drawInfos.drawInfoCount(), drawInfoPtr, m_params.instanceCount, m_params.firstInstance, drawInfos.stride(), offsetPtr);
+	}
+}
+
 tcu::TestStatus MultiDrawInstance::iterate (void)
 {
 	const auto&	vki				= m_context.getInstanceInterface();
@@ -811,7 +915,7 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 	Move<VkFramebuffer>			framebuffer;
 
 	// Render pass and Framebuffer (note layers is always 1 as required by the spec).
-	if (!m_params.useDynamicRendering)
+	if (!m_params.groupParams->useDynamicRendering)
 	{
 		renderPass = makeMultidrawRenderPass(vkd, device, colorFormat, dsFormat, imageLayers);
 		const std::vector<VkImageView> attachments { colorBufferView.get(), dsBufferView.get() };
@@ -877,7 +981,7 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 	};
 
 	vk::VkPipelineRenderingCreateInfoKHR* nextPtr = nullptr;
-	if (m_params.useDynamicRendering)
+	if (m_params.groupParams->useDynamicRendering)
 		nextPtr = &renderingCreateInfo;
 
 	const auto primitiveTopology	= (m_params.useTessellation ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
@@ -891,15 +995,16 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 		renderingCreateInfo.viewMask = m_params.multiview ? (1u << subpassIdx) : 0u;
 		pipelines.emplace_back(makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
 			vertModule.get(), tescModule.get(), teseModule.get(), geomModule.get(), fragModule.get(),
-			renderPass.get(), viewports, scissors, primitiveTopology, subpassIdx, patchControlPoints,
+			renderPass.get(), viewports, scissors, primitiveTopology, m_params.groupParams->useDynamicRendering ? 0u : subpassIdx, patchControlPoints,
 			nullptr/*vertexInputStateCreateInfo*/, &rasterizationInfo, nullptr/*multisampleStateCreateInfo*/, &depthStencilInfo,
 			nullptr/*colorBlendStateCreateInfo*/, nullptr/*dynamicStateCreateInfo*/, nextPtr));
 	}
 
 	// Command pool and buffer.
-	const auto cmdPool		= makeCommandPool(vkd, device, qIndex);
-	const auto cmdBufferPtr	= allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-	const auto cmdBuffer	= cmdBufferPtr.get();
+	const auto								cmdPool			= makeCommandPool(vkd, device, qIndex);
+	Move<VkCommandBuffer>					cmdBufferPtr	= allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	VkCommandBuffer							cmdBuffer		= cmdBufferPtr.get();
+	std::vector<Move<VkCommandBuffer> >		secCmdBuffers;
 
 	// Create vertex buffer.
 	std::vector<tcu::Vec4> triangleVertices;
@@ -956,6 +1061,7 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 	// Index buffer if needed.
 	de::MovePtr<BufferWithMemory>	indexBuffer;
 	VkDeviceSize					indexBufferOffset = 0ull;
+	VkBuffer						indexBufferHandle = DE_NULL;
 
 	if (isIndexed)
 	{
@@ -974,6 +1080,7 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 
 		deMemcpy(indexBufferData, indices.data(), de::dataSize(indices));
 		flushAlloc(vkd, device, indexBufferAlloc);
+		indexBufferHandle = indexBuffer->get();
 	}
 
 	// Prepare draw information.
@@ -998,78 +1105,88 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 		}
 	}
 
-	beginCommandBuffer(vkd, cmdBuffer);
-
-	// Draw stuff.
 	std::vector<VkClearValue> clearValues;
 	clearValues.reserve(2u);
 	clearValues.push_back(makeClearValueColorU32(0u, 0u, 0u, 0u));
 	clearValues.push_back(makeClearValueDepthStencil(((isMosaic || isIndexed) ? 0.0f : 1.0f), 0u));
 
-	if (m_params.useDynamicRendering)
+	if (m_params.groupParams->useSecondaryCmdBuffer)
 	{
-		// Transition color and depth stencil attachment to the proper initial layout for dynamic rendering
-		const auto colorPreBarrier = makeImageMemoryBarrier(
-			0u,
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-			VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-			colorBuffer.get(), colorSubresourceRange);
+		secCmdBuffers.resize(imageLayers);
+		for (deUint32 layerIdx = 0u; layerIdx < imageLayers; ++layerIdx)
+		{
+			secCmdBuffers[layerIdx]			= allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+			VkCommandBuffer	secCmdBuffer	= *secCmdBuffers[layerIdx];
+			const deUint32	viewMask		= m_params.multiview ? (1u << layerIdx) : 0u;
 
-		vkd.cmdPipelineBarrier(
-			cmdBuffer,
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-			0u, 0u, nullptr, 0u, nullptr, 1u, &colorPreBarrier);
+			// record secondary command buffer
+			if (m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			{
+				beginSecondaryCmdBuffer(secCmdBuffer, colorFormat, dsFormat, VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT, viewMask);
+				beginRendering(vkd, secCmdBuffer, *colorBufferView, *dsBufferView, true, scissor, clearValues[0], clearValues[1],
+							   vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+							   VK_ATTACHMENT_LOAD_OP_CLEAR, 0, imageLayers, viewMask);
+			}
+			else
+				beginSecondaryCmdBuffer(secCmdBuffer, colorFormat, dsFormat, 0u, viewMask);
 
-		const auto dsPreBarrier = makeImageMemoryBarrier(
-			0u,
-			VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-			VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-			dsBuffer.get(), dsSubresourceRange);
+			drawCommands(secCmdBuffer, pipelines[layerIdx].get(), vertexBuffer.get(), vertexBufferOffset, vertexOffset,
+						 indexBufferHandle, indexBufferOffset, isMixedMode, drawInfos);
 
-		vkd.cmdPipelineBarrier(
-			cmdBuffer,
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-			(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT),
-			0u, 0u, nullptr, 0u, nullptr, 1u, &dsPreBarrier);
+			if (m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+				endRendering(vkd, secCmdBuffer);
+
+			endCommandBuffer(vkd, secCmdBuffer);
+		}
+
+		// record primary command buffer
+		beginCommandBuffer(vkd, cmdBuffer, 0u);
+		preRenderingCommands(cmdBuffer, *colorBuffer, colorSubresourceRange, *dsBuffer, dsSubresourceRange);
+
+		for (deUint32 layerIdx = 0u; layerIdx < imageLayers; ++layerIdx)
+		{
+			if (!m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			{
+				beginRendering(vkd, cmdBuffer, *colorBufferView, *dsBufferView, true, scissor, clearValues[0], clearValues[1],
+							   vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+							   VK_ATTACHMENT_LOAD_OP_CLEAR, VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT, imageLayers,
+							   m_params.multiview ? (1u << layerIdx) : 0u);
+			}
+
+			vkd.cmdExecuteCommands(cmdBuffer, 1u, &*secCmdBuffers[layerIdx]);
+
+			if (!m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+				endRendering(vkd, cmdBuffer);
+		}
 	}
 	else
-		beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissor, static_cast<deUint32>(clearValues.size()), de::dataOrNull(clearValues));
-
-	for (deUint32 layerIdx = 0u; layerIdx < imageLayers; ++layerIdx)
 	{
-		if (m_params.useDynamicRendering)
-			beginRendering(vkd, cmdBuffer, *colorBufferView, *dsBufferView, true, scissor, clearValues[0], clearValues[1],
-				vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-				VK_ATTACHMENT_LOAD_OP_CLEAR, 0, imageLayers, m_params.multiview ? (1u << layerIdx) : 0u);
-		else if (layerIdx > 0u)
-			vkd.cmdNextSubpass(cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+		beginCommandBuffer(vkd, cmdBuffer);
 
-		vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[layerIdx].get());
-		vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
-		if (isIndexed)
-			vkd.cmdBindIndexBuffer(cmdBuffer, indexBuffer->get(), indexBufferOffset, VK_INDEX_TYPE_UINT32);
-
-		if (isIndexed)
-		{
-			const auto drawInfoPtr	= reinterpret_cast<const VkMultiDrawIndexedInfoEXT*>(drawInfos.drawInfoData());
-			const auto offsetPtr	= (isMixedMode ? nullptr : &vertexOffset);
-			vkd.cmdDrawMultiIndexedEXT(cmdBuffer, drawInfos.drawInfoCount(), drawInfoPtr, m_params.instanceCount, m_params.firstInstance, drawInfos.stride(), offsetPtr);
-		}
+		if (m_params.groupParams->useDynamicRendering)
+			preRenderingCommands(cmdBuffer, *colorBuffer, colorSubresourceRange, *dsBuffer, dsSubresourceRange);
 		else
+			beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissor, static_cast<deUint32>(clearValues.size()), de::dataOrNull(clearValues));
+
+		for (deUint32 layerIdx = 0u; layerIdx < imageLayers; ++layerIdx)
 		{
-			const auto drawInfoPtr = reinterpret_cast<const VkMultiDrawInfoEXT*>(drawInfos.drawInfoData());
-			vkd.cmdDrawMultiEXT(cmdBuffer, drawInfos.drawInfoCount(), drawInfoPtr, m_params.instanceCount, m_params.firstInstance, drawInfos.stride());
+			if (m_params.groupParams->useDynamicRendering)
+				beginRendering(vkd, cmdBuffer, *colorBufferView, *dsBufferView, true, scissor, clearValues[0], clearValues[1],
+					vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+					VK_ATTACHMENT_LOAD_OP_CLEAR, 0, imageLayers, m_params.multiview ? (1u << layerIdx) : 0u);
+			else if (layerIdx > 0u)
+				vkd.cmdNextSubpass(cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+
+			drawCommands(cmdBuffer, pipelines[layerIdx].get(), vertexBuffer.get(), vertexBufferOffset, vertexOffset,
+						 indexBufferHandle, indexBufferOffset, isMixedMode, drawInfos);
+
+			if (m_params.groupParams->useDynamicRendering)
+				endRendering(vkd, cmdBuffer);
 		}
 
-		if (m_params.useDynamicRendering)
-			endRendering(vkd, cmdBuffer);
+		if (!m_params.groupParams->useDynamicRendering)
+			endRenderPass(vkd, cmdBuffer);
 	}
-
-	if (!m_params.useDynamicRendering)
-		endRenderPass(vkd, cmdBuffer);
 
 	// Prepare images for copying.
 	const auto colorBufferBarrier = makeImageMemoryBarrier(
@@ -1200,7 +1317,7 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 
 } // anonymous
 
-tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx, bool useDynamicRendering)
+tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
 	using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
@@ -1302,12 +1419,20 @@ tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx, bool use
 
 	for (const auto& meshTypeCase : meshTypeCases)
 	{
+		// reduce number of tests for dynamic rendering cases where secondary command buffer is used
+		if (groupParams->useSecondaryCmdBuffer && (meshTypeCase.meshType != MeshType::MOSAIC))
+			continue;
+
 		GroupPtr meshTypeGroup(new tcu::TestCaseGroup(testCtx, meshTypeCase.name, ""));
 
 		for (const auto& drawTypeCase : drawTypeCases)
 		{
 			for (const auto& offsetTypeCase : offsetTypeCases)
 			{
+				// reduce number of tests for dynamic rendering cases where secondary command buffer is used
+				if (groupParams->useSecondaryCmdBuffer && offsetTypeCase.vertexOffsetType && (*offsetTypeCase.vertexOffsetType != VertexOffsetType::CONSTANT_RANDOM))
+					continue;
+
 				const auto hasOffsetType = static_cast<bool>(offsetTypeCase.vertexOffsetType);
 				if ((drawTypeCase.drawType == DrawType::NORMAL && hasOffsetType) ||
 					(drawTypeCase.drawType == DrawType::INDEXED && !hasOffsetType))
@@ -1323,6 +1448,10 @@ tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx, bool use
 
 				for (const auto& drawCountCase : drawCountCases)
 				{
+					// reduce number of tests for dynamic rendering cases where secondary command buffer is used
+					if (groupParams->useSecondaryCmdBuffer && (drawCountCase.drawCount != 1u))
+						continue;
+
 					GroupPtr drawCountGroup(new tcu::TestCaseGroup(testCtx, drawCountCase.name, ""));
 
 					for (const auto& strideCase : strideCases)
@@ -1355,7 +1484,7 @@ tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx, bool use
 									if (instanceCase.instanceCount > 1u && meshTypeCase.meshType == MeshType::OVERLAPPING)
 										continue;
 
-									TestParams params =
+									TestParams params
 									{
 										meshTypeCase.meshType,			//	MeshType						meshType;
 										drawTypeCase.drawType,			//	DrawType						drawType;
@@ -1368,7 +1497,7 @@ tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx, bool use
 										shaderCase.useTessellation,		//	bool							useTessellation;
 										shaderCase.useGeometry,			//	bool							useGeometry;
 										multiviewCase.multiview,		//	bool							multiview;
-										useDynamicRendering,			//	bool							useDynamicRendering;
+										groupParams,					//	SharedGroupParams				groupParams;
 									};
 
 									multiviewGroup->addChild(new MultiDrawTest(testCtx, "no_offset", "", params));

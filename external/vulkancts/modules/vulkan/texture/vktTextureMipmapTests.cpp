@@ -35,9 +35,20 @@
 #include "tcuTexLookupVerifier.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuVectorUtil.hpp"
+#include "tcuCommandLine.hpp"
 #include "vkImageUtil.hpp"
+#include "vkQueryUtil.hpp"
+#include "vkImageWithMemory.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkObjUtil.hpp"
+#include "vkCmdUtil.hpp"
+#include "vkBarrierUtil.hpp"
+#include "vkBuilderUtil.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktTextureTestUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
+
+#include <memory>
 
 using namespace vk;
 
@@ -2131,7 +2142,7 @@ TestInstance* Texture2DImageViewMinLodIntTexCoordTest::createInstance(Context& c
 	if (m_params.testType == util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD_INT_TEX_COORD)
 		return new Texture2DImageViewMinLodIntTexCoordTestInstance(context, m_params);
 	else
-	   return new Texture2DImageViewMinLodBaseLevelIntTexCoordTestInstance(context, m_params);
+		return new Texture2DImageViewMinLodBaseLevelIntTexCoordTestInstance(context, m_params);
 }
 
 class Texture3DImageViewMinLodIntTexCoordTestInstance : public Texture3DLodControlTestInstance
@@ -2311,6 +2322,540 @@ TestInstance* Texture3DImageViewMinLodIntTexCoordTest::createInstance(Context& c
 	   return new Texture3DImageViewMinLodBaseLevelIntTexCoordTestInstance(context, m_params);
 }
 
+// Texture gather tests.
+enum class GatherMinLod
+{
+	MINLOD_0_1,		// 0.1
+	MINLOD_1_1,		// 1.1
+};
+
+struct GatherParams
+{
+	uint32_t		randomSeed;	// Seed for the pseudorandom number generator.
+	GatherMinLod	minLod;		// Idea: make it 0.1 or 1.1
+	int				component;	// 0, 1, 2, 3 for the gather operation.
+
+	float getNumericMinLod (void) const
+	{
+		float lod = 0.0f;
+
+		switch (minLod)
+		{
+		case GatherMinLod::MINLOD_0_1:	lod = 0.1f; break;
+		case GatherMinLod::MINLOD_1_1:	lod = 1.1f; break;
+		default: DE_ASSERT(false); break;
+		}
+
+		return lod;
+	}
+
+	uint32_t getMinLodInteger (void) const
+	{
+		uint32_t lod = 0u;
+
+		switch (minLod)
+		{
+		case GatherMinLod::MINLOD_0_1:	lod = 0u; break;
+		case GatherMinLod::MINLOD_1_1:	lod = 1u; break;
+		default: DE_ASSERT(false); break;
+		}
+
+		return lod;
+	}
+
+	bool needsRobustness2 (void) const
+	{
+		return (getNumericMinLod() >= 1.0f);
+	}
+};
+
+class TextureGatherMinLodTest : public vkt::TestCase
+{
+public:
+					TextureGatherMinLodTest		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const GatherParams& params)
+						: vkt::TestCase	(testCtx, name, description)
+						, m_params		(params)
+						{}
+	virtual			~TextureGatherMinLodTest	(void) {}
+
+	void			initPrograms				(vk::SourceCollections& programCollection) const override;
+	TestInstance*	createInstance				(Context& context) const override;
+	void			checkSupport				(Context& context) const override;
+
+protected:
+	GatherParams	m_params;
+};
+
+class TextureGatherMinLodInstance : public vkt::TestInstance
+{
+public:
+					TextureGatherMinLodInstance		(Context& context, const GatherParams& params)
+						: vkt::TestInstance	(context)
+						, m_params			(params)
+						{}
+	virtual			~TextureGatherMinLodInstance	(void) {}
+
+	tcu::TestStatus	iterate							(void) override;
+
+protected:
+	GatherParams	m_params;
+};
+
+// Test idea: create texture with 3 levels, each of them having a unique nonzero color. Render gathering the color from a fixed
+// position in that texture (center point). Use the minLod parameter when creating the view to control which one should be the
+// output color. If minLod is 0.1, minLodInteger should be 0 and gathering from the base level is defined, so we should get the
+// output color from the base level. If minLod is 1.1, gathering texels from the base level requires robustness2 and will result in
+// zeros instead of the color from levels 0 or 1.
+void TextureGatherMinLodTest::initPrograms (vk::SourceCollections &programCollection) const
+{
+	// Full screen triangle covering the whole viewport.
+	std::ostringstream vert;
+	vert
+		<< "#version 450\n"
+		<< "\n"
+		<< "vec2 positions[3] = vec2[](\n"
+		<< "    vec2(-1.0, -1.0),\n"
+		<< "    vec2(3.0, -1.0),\n"
+		<< "    vec2(-1.0, 3.0)\n"
+		<< ");\n"
+		<< "\n"
+		<< "void main (void)\n"
+		<< "{\n"
+		<< "    gl_Position = vec4(positions[gl_VertexIndex], 0.0, 1.0);\n"
+		<< "}\n"
+		;
+	programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+	std::ostringstream frag;
+	frag
+		<< "#version 450\n"
+		<< "\n"
+		<< "layout (location=0) out vec4 outColor;\n"
+		<< "layout (set=0, binding=0) uniform sampler2D u_sampler;\n"
+		<< "\n"
+		<< "void main (void)\n"
+		<< "{\n"
+		<< "    const vec2 gatherCoords = vec2(0.5, 0.5);\n"
+		<< "    const vec4 gatherRes = textureGather(u_sampler, gatherCoords, " << m_params.component << ");\n"
+		<< "    outColor = vec4(gatherRes.xyz, 1.0);\n"
+		<< "}\n";
+		;
+	programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+void TextureGatherMinLodTest::checkSupport (Context& context) const
+{
+	context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
+	context.requireDeviceFunctionality("VK_EXT_image_view_min_lod");
+
+	if (m_params.needsRobustness2())
+	{
+		context.requireDeviceFunctionality("VK_EXT_robustness2");
+
+		VkPhysicalDeviceRobustness2FeaturesEXT	robustness2Features	= initVulkanStructure();
+		VkPhysicalDeviceFeatures2				features2			= initVulkanStructure(&robustness2Features);
+
+		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+
+		if (robustness2Features.robustImageAccess2 == DE_FALSE)
+			TCU_THROW(NotSupportedError, "robustImageAccess2 not supported");
+	}
+}
+
+TestInstance* TextureGatherMinLodTest::createInstance (Context& context) const
+{
+	return new TextureGatherMinLodInstance(context, m_params);
+}
+
+// Device helper: this is needed because we sometimes need a custom device with robustImageAccess2.
+class DeviceHelper
+{
+public:
+	virtual ~DeviceHelper () {}
+	virtual const DeviceInterface&	getDeviceInterface	(void) const = 0;
+	virtual VkDevice				getDevice			(void) const = 0;
+	virtual uint32_t				getQueueFamilyIndex	(void) const = 0;
+	virtual VkQueue					getQueue			(void) const = 0;
+	virtual Allocator&				getAllocator		(void) const = 0;
+};
+
+// This one just reuses the default device from the context.
+class ContextDeviceHelper : public DeviceHelper
+{
+public:
+	ContextDeviceHelper (Context& context)
+		: m_deviceInterface		(context.getDeviceInterface())
+		, m_device				(context.getDevice())
+		, m_queueFamilyIndex	(context.getUniversalQueueFamilyIndex())
+		, m_queue				(context.getUniversalQueue())
+		, m_allocator			(context.getDefaultAllocator())
+		{}
+
+	virtual ~ContextDeviceHelper () {}
+
+	const DeviceInterface&	getDeviceInterface	(void) const override	{ return m_deviceInterface;		}
+	VkDevice				getDevice			(void) const override	{ return m_device;				}
+	uint32_t				getQueueFamilyIndex	(void) const override	{ return m_queueFamilyIndex;	}
+	VkQueue					getQueue			(void) const override	{ return m_queue;				}
+	Allocator&				getAllocator		(void) const override	{ return m_allocator;			}
+
+protected:
+	const DeviceInterface&	m_deviceInterface;
+	const VkDevice			m_device;
+	const uint32_t			m_queueFamilyIndex;
+	const VkQueue			m_queue;
+	Allocator&				m_allocator;
+};
+
+// This one creates a new device with robustImageAccess2.
+class RobustImageAccess2DeviceHelper : public DeviceHelper
+{
+public:
+	RobustImageAccess2DeviceHelper (Context& context)
+	{
+		const auto&	vkp				= context.getPlatformInterface();
+		const auto&	vki				= context.getInstanceInterface();
+		const auto	instance		= context.getInstance();
+		const auto	physicalDevice	= context.getPhysicalDevice();
+		const auto	queuePriority	= 1.0f;
+
+		// Queue index first.
+		m_queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+
+		// Create a universal queue that supports graphics and compute.
+		const VkDeviceQueueCreateInfo queueParams =
+		{
+			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,	// VkStructureType				sType;
+			DE_NULL,									// const void*					pNext;
+			0u,											// VkDeviceQueueCreateFlags		flags;
+			m_queueFamilyIndex,							// deUint32						queueFamilyIndex;
+			1u,											// deUint32						queueCount;
+			&queuePriority								// const float*					pQueuePriorities;
+		};
+
+		const char* extensions[] =
+		{
+			"VK_EXT_robustness2",
+		};
+
+		VkPhysicalDeviceImageViewMinLodFeaturesEXT	minLodfeatures		= initVulkanStructure();
+		VkPhysicalDeviceRobustness2FeaturesEXT		robustness2Features	= initVulkanStructure(&minLodfeatures);
+		VkPhysicalDeviceFeatures2					features2			= initVulkanStructure(&robustness2Features);
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
+
+		const VkDeviceCreateInfo deviceCreateInfo =
+		{
+			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,					//sType;
+			&features2,												//pNext;
+			0u,														//flags
+			1u,														//queueRecordCount;
+			&queueParams,											//pRequestedQueues;
+			0u,														//layerCount;
+			nullptr,												//ppEnabledLayerNames;
+			static_cast<uint32_t>(de::arrayLength(extensions)),		// deUint32							enabledExtensionCount;
+			extensions,												// const char* const*				ppEnabledExtensionNames;
+			nullptr,												//pEnabledFeatures;
+		};
+
+		m_device	= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &deviceCreateInfo);
+		m_vkd		.reset(new DeviceDriver(vkp, instance, m_device.get()));
+		m_queue		= getDeviceQueue(*m_vkd, *m_device, m_queueFamilyIndex, 0u);
+		m_allocator	.reset(new SimpleAllocator(*m_vkd, m_device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
+	}
+
+	virtual ~RobustImageAccess2DeviceHelper () {}
+
+	const DeviceInterface&	getDeviceInterface	(void) const override	{ return *m_vkd;				}
+	VkDevice				getDevice			(void) const override	{ return m_device.get();		}
+	uint32_t				getQueueFamilyIndex	(void) const override	{ return m_queueFamilyIndex;	}
+	VkQueue					getQueue			(void) const override	{ return m_queue;				}
+	Allocator&				getAllocator		(void) const override	{ return *m_allocator;			}
+
+protected:
+	Move<VkDevice>						m_device;
+	std::unique_ptr<DeviceDriver>		m_vkd;
+	deUint32							m_queueFamilyIndex;
+	VkQueue								m_queue;
+	std::unique_ptr<SimpleAllocator>	m_allocator;
+};
+
+std::unique_ptr<DeviceHelper> g_robustness2DeviceHelper;
+std::unique_ptr<DeviceHelper> g_contextDeviceHelper;
+
+DeviceHelper& getDeviceHelper (Context& context, bool needsRobustness2)
+{
+	if (needsRobustness2)
+	{
+		if (!g_robustness2DeviceHelper)
+			g_robustness2DeviceHelper.reset(new RobustImageAccess2DeviceHelper(context));
+		return *g_robustness2DeviceHelper;
+	}
+
+	if (!g_contextDeviceHelper)
+		g_contextDeviceHelper.reset(new ContextDeviceHelper(context));
+	return *g_contextDeviceHelper;
+}
+
+// Cleanup function for the test group.
+void destroyDeviceHelpers (tcu::TestCaseGroup*)
+{
+	g_robustness2DeviceHelper.reset(nullptr);
+	g_contextDeviceHelper.reset(nullptr);
+}
+
+tcu::TestStatus TextureGatherMinLodInstance::iterate (void)
+{
+	const auto&	deviceHelper	= getDeviceHelper(m_context, m_params.needsRobustness2());
+	const auto&	vkd				= deviceHelper.getDeviceInterface();
+	const auto	device			= deviceHelper.getDevice();
+	const auto	queueIndex		= deviceHelper.getQueueFamilyIndex();
+	const auto	queue			= deviceHelper.getQueue();
+	auto&		alloc			= deviceHelper.getAllocator();
+
+	const auto			imageFormat		= VK_FORMAT_R8G8B8A8_UNORM;
+	const auto			tcuFormat		= mapVkFormat(imageFormat);
+	const auto			colorExtent		= makeExtent3D(1u, 1u, 1u);
+	const tcu::IVec3	iColorExtent	(static_cast<int>(colorExtent.width), static_cast<int>(colorExtent.height), static_cast<int>(colorExtent.depth));
+	const auto			texExtent		= makeExtent3D(8u, 8u, 1u);
+	const auto			texMipLevels	= 3u;
+	const auto			colorUsage		= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+	const auto			texUsage		= (VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+	const auto			minLodF			= m_params.getNumericMinLod();
+	const auto			minLodU			= m_params.getMinLodInteger();
+	const tcu::Vec4		clearColor		(0.0f, 0.0f, 0.0f, 1.0f);
+
+	// Color attachment: a simple 1x1 image.
+	const VkImageCreateInfo colorCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	//	VkStructureType			sType;
+		nullptr,								//	const void*				pNext;
+		0u,										//	VkImageCreateFlags		flags;
+		VK_IMAGE_TYPE_2D,						//	VkImageType				imageType;
+		imageFormat,							//	VkFormat				format;
+		colorExtent,							//	VkExtent3D				extent;
+		1u,										//	uint32_t				mipLevels;
+		1u,										//	uint32_t				arrayLayers;
+		VK_SAMPLE_COUNT_1_BIT,					//	VkSampleCountFlagBits	samples;
+		VK_IMAGE_TILING_OPTIMAL,				//	VkImageTiling			tiling;
+		colorUsage,								//	VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,				//	VkSharingMode			sharingMode;
+		0u,										//	uint32_t				queueFamilyIndexCount;
+		nullptr,								//	const uint32_t*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,				//	VkImageLayout			initialLayout;
+	};
+
+	ImageWithMemory	colorBuffer		(vkd, device, alloc, colorCreateInfo, MemoryRequirement::Any);
+	const auto		colorSRR		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	const auto		colorSRL		= makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+	const auto		colorBufferView	= makeImageView(vkd, device, colorBuffer.get(), VK_IMAGE_VIEW_TYPE_2D, imageFormat, colorSRR);
+
+	// Texture: an 8x8 image with several mip levels.
+	const VkImageCreateInfo texCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	//	VkStructureType			sType;
+		nullptr,								//	const void*				pNext;
+		0u,										//	VkImageCreateFlags		flags;
+		VK_IMAGE_TYPE_2D,						//	VkImageType				imageType;
+		imageFormat,							//	VkFormat				format;
+		texExtent,								//	VkExtent3D				extent;
+		texMipLevels,							//	uint32_t				mipLevels;
+		1u,										//	uint32_t				arrayLayers;
+		VK_SAMPLE_COUNT_1_BIT,					//	VkSampleCountFlagBits	samples;
+		VK_IMAGE_TILING_OPTIMAL,				//	VkImageTiling			tiling;
+		texUsage,								//	VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,				//	VkSharingMode			sharingMode;
+		0u,										//	uint32_t				queueFamilyIndexCount;
+		nullptr,								//	const uint32_t*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,				//	VkImageLayout			initialLayout;
+	};
+
+	ImageWithMemory texture (vkd, device, alloc, texCreateInfo, MemoryRequirement::Any);
+	const auto texSRR = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, texMipLevels, 0u, 1u);
+
+	DE_ASSERT(texMipLevels > 0u);
+	DE_ASSERT(minLodU < texMipLevels);
+
+	const VkImageViewMinLodCreateInfoEXT texMinLodInfo =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_VIEW_MIN_LOD_CREATE_INFO_EXT,	//	VkStructureType	sType;
+		nullptr,												//	const void*		pNext;
+		minLodF,												//	float			minLod;
+	};
+
+	const VkImageViewCreateInfo texViewCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,	//	VkStructureType			sType;
+		&texMinLodInfo,								//	const void*				pNext;
+		0u,											//	VkImageViewCreateFlags	flags;
+		texture.get(),								//	VkImage					image;
+		VK_IMAGE_VIEW_TYPE_2D,						//	VkImageViewType			viewType;
+		imageFormat,								//	VkFormat				format;
+		makeComponentMappingRGBA(),					//	VkComponentMapping		components;
+		texSRR,										//	VkImageSubresourceRange	subresourceRange;
+	};
+
+	const auto texView = createImageView(vkd, device, &texViewCreateInfo);
+
+	// Verification buffer for the color attachment.
+	const auto			verifBufferSize			= static_cast<VkDeviceSize>(iColorExtent.x() * iColorExtent.y() * iColorExtent.z() * tcu::getPixelSize(tcuFormat));
+	const auto			verifBufferCreateInfo	= makeBufferCreateInfo(verifBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	BufferWithMemory	verifBuffer				(vkd, device, alloc, verifBufferCreateInfo, MemoryRequirement::HostVisible);
+	auto&				verifBufferAlloc		= verifBuffer.getAllocation();
+	void*				verifBufferData			= verifBufferAlloc.getHostPtr();
+
+	// Descriptor set layout.
+	DescriptorSetLayoutBuilder setLayoutBuilder;
+	setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+	const auto setLayout = setLayoutBuilder.build(vkd, device);
+
+	// Pipeline layout.
+	const auto pipelineLayout = makePipelineLayout(vkd, device, setLayout.get());
+
+	// Sampler.
+	const VkSamplerCreateInfo samplerCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,		//	VkStructureType			sType;
+		nullptr,									//	const void*				pNext;
+		0u,											//	VkSamplerCreateFlags	flags;
+		VK_FILTER_LINEAR,							//	VkFilter				magFilter;
+		VK_FILTER_LINEAR,							//	VkFilter				minFilter;
+		VK_SAMPLER_MIPMAP_MODE_LINEAR,				//	VkSamplerMipmapMode		mipmapMode;
+		VK_SAMPLER_ADDRESS_MODE_REPEAT,				//	VkSamplerAddressMode	addressModeU;
+		VK_SAMPLER_ADDRESS_MODE_REPEAT,				//	VkSamplerAddressMode	addressModeV;
+		VK_SAMPLER_ADDRESS_MODE_REPEAT,				//	VkSamplerAddressMode	addressModeW;
+		0.0f,										//	float					mipLodBias;
+		VK_FALSE,									//	VkBool32				anisotropyEnable;
+		0.0f,										//	float					maxAnisotropy;
+		VK_FALSE,									//	VkBool32				compareEnable;
+		VK_COMPARE_OP_NEVER,						//	VkCompareOp				compareOp;
+		0.0f,										//	float					minLod;
+		static_cast<float>(texMipLevels),			//	float					maxLod;
+		VK_BORDER_COLOR_INT_TRANSPARENT_BLACK,		//	VkBorderColor			borderColor;
+		VK_FALSE,									//	VkBool32				unnormalizedCoordinates;
+	};
+	const auto sampler = createSampler(vkd, device, &samplerCreateInfo);
+
+	// Descriptor pool and set.
+	DescriptorPoolBuilder poolBuilder;
+	poolBuilder.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+	const auto descriptorPool	= poolBuilder.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+	const auto descriptorSet	= makeDescriptorSet(vkd, device, descriptorPool.get(), setLayout.get());
+
+	// Update descriptor set.
+	DescriptorSetUpdateBuilder setUpdateBuilder;
+	const auto combinedSamplerInfo = makeDescriptorImageInfo(sampler.get(), texView.get(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	setUpdateBuilder.writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &combinedSamplerInfo);
+	setUpdateBuilder.update(vkd, device);
+
+	// Render pass and framebuffer.
+	const auto renderPass	= makeRenderPass(vkd, device, imageFormat);
+	const auto framebuffer	= makeFramebuffer(vkd, device, renderPass.get(), colorBufferView.get(), colorExtent.width, colorExtent.height);
+
+	// Shader modules.
+	const auto&	binaries	= m_context.getBinaryCollection();
+	const auto	vertModule	= createShaderModule(vkd, device, binaries.get("vert"));
+	const auto	fragModule	= createShaderModule(vkd, device, binaries.get("frag"));
+
+	// Viewports and scissors.
+	std::vector<VkViewport>	viewports	(1u, makeViewport(colorExtent));
+	std::vector<VkRect2D>	scissors	(1u, makeRect2D(colorExtent));
+
+	// Pipeline.
+	const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
+
+	const auto pipeline = makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
+		vertModule.get(), DE_NULL, DE_NULL, DE_NULL, fragModule.get(),
+		renderPass.get(), viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+		0u/*subpass*/, 0u/*patchControlPoints*/, &vertexInputState);
+
+	// Command pool and buffer.
+	const auto cmdPool		= makeCommandPool(vkd, device, queueIndex);
+	const auto cmdBufferPtr	= allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	const auto cmdBuffer	= cmdBufferPtr.get();
+
+	beginCommandBuffer(vkd, cmdBuffer);
+
+	// Move the whole texture to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL.
+	const auto preClearBarrier = makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, texture.get(), texSRR);
+	cmdPipelineImageMemoryBarrier(vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, &preClearBarrier);
+
+	// Fill each texture mip level with a different pseudorandom nonzero color.
+	std::vector<tcu::Vec4> levelColors;
+	de::Random rnd (m_params.randomSeed);
+
+	levelColors.reserve(texMipLevels);
+
+	const auto minColor = 0.004f; // Slightly above 1/255.
+	const auto maxColor = 1.0f;
+
+	for (uint32_t level = 0u; level < texMipLevels; ++level)
+	{
+		const auto r			= rnd.getFloat(minColor, maxColor);
+		const auto g			= rnd.getFloat(minColor, maxColor);
+		const auto b			= rnd.getFloat(minColor, maxColor);
+		const auto a			= rnd.getFloat(minColor, maxColor);
+		const auto levelColor	= makeClearValueColorF32(r, g, b, a).color;
+		const auto levelRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, level, 1u, 0u, 1u);
+
+		levelColors.emplace_back(r, g, b, a);
+		vkd.cmdClearColorImage(cmdBuffer, texture.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &levelColor, 1u, &levelRange);
+	}
+
+	// Move the whole texture to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+	const auto postClearBarrier = makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, texture.get(), texSRR);
+	cmdPipelineImageMemoryBarrier(vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, &postClearBarrier);
+
+	beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.at(0u), clearColor);
+	vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
+	vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u); // This has to match the vertex shader.
+	endRenderPass(vkd, cmdBuffer);
+
+	// Copy color buffer to verification buffer.
+	const auto postColorBarier = makeImageMemoryBarrier(
+		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		colorBuffer.get(), colorSRR);
+	cmdPipelineImageMemoryBarrier(vkd, cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, &postColorBarier);
+
+	const auto copyRegion = makeBufferImageCopy(colorExtent, colorSRL);
+	vkd.cmdCopyImageToBuffer(cmdBuffer, colorBuffer.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, verifBuffer.get(), 1u, &copyRegion);
+
+	const auto preHostBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+	cmdPipelineMemoryBarrier(vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, &preHostBarrier);
+
+	endCommandBuffer(vkd, cmdBuffer);
+	submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+	// Verify color buffer.
+	invalidateAlloc(vkd, device, verifBufferAlloc);
+	tcu::ConstPixelBufferAccess resultAccess (tcuFormat, iColorExtent, verifBufferData);
+
+	const auto		resultColor		= resultAccess.getPixel(0, 0);
+	const auto		srcLevelColor	= levelColors.at(minLodU);
+	const auto		compColor		= srcLevelColor[m_params.component];
+	const auto		expectedColor	= (m_params.needsRobustness2() // This has to match the fragment shader.
+									? tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f)
+									: tcu::Vec4(compColor, compColor, compColor, 1.0f));
+	const auto		threshold		= (m_params.needsRobustness2()
+									? 0.0f
+									: 0.005f); // 1/255 < 0.005 < 2/255
+
+	const auto		diff			= abs(resultColor - expectedColor);
+	const tcu::Vec4	thresholdVec	(threshold, threshold, threshold, 0.0f);
+	const auto		thresholdMet	= tcu::lessThanEqual(diff, thresholdVec);
+
+	if (!tcu::boolAll(thresholdMet))
+	{
+		std::ostringstream msg;
+		msg << "Unexpected output buffer color: expected " << expectedColor << " but found " << resultColor << " [diff=" << diff << "]";
+		TCU_FAIL(msg.str());
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 #endif // CTS_USES_VULKANSC
 
 } // anonymous
@@ -2386,6 +2931,55 @@ void checkTextureSupport (Context& context, const Texture3DMipmapTestCaseParamet
 }
 
 } // util
+
+void populateMinLodGatherGroup (tcu::TestCaseGroup* minLodGatherGroup)
+{
+	using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
+
+	const struct
+	{
+		GatherMinLod	minLod;
+		const char*		name;
+	} GatherMinLodCases[] =
+	{
+		{ GatherMinLod::MINLOD_0_1,		"minlod_0_1"	},
+		{ GatherMinLod::MINLOD_1_1,		"minlod_1_1"	},
+	};
+
+	const struct
+	{
+		int				component;
+		const char*		name;
+	} ComponentCases[] =
+	{
+		{ 0,	"component_0"	},
+		{ 1,	"component_1"	},
+		{ 2,	"component_2"	},
+		{ 3,	"component_3"	},
+	};
+
+	auto& testCtx = minLodGatherGroup->getTestContext();
+
+	for (const auto& gatherMinLodCase : GatherMinLodCases)
+	{
+		GroupPtr minLodGroup (new tcu::TestCaseGroup(testCtx, gatherMinLodCase.name, ""));
+
+		for (const auto& componentCase : ComponentCases)
+		{
+			const uint32_t seed	= (static_cast<uint32_t>(gatherMinLodCase.minLod) + 1000u) * 1000u
+								+ (static_cast<uint32_t>(componentCase.component) + 1000u);
+
+			GatherParams params;
+			params.randomSeed	= seed;
+			params.minLod		= gatherMinLodCase.minLod;
+			params.component	= componentCase.component;
+
+			minLodGroup->addChild(new TextureGatherMinLodTest(testCtx, componentCase.name, "", params));
+		}
+
+		minLodGatherGroup->addChild(minLodGroup.release());
+	}
+}
 
 #endif // CTS_USES_VULKANSC
 
@@ -2968,19 +3562,19 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 			// BASE_LEVEL
 			for (int minFilter = 0; minFilter < DE_LENGTH_OF_ARRAY(minFilterModes); minFilter++)
 			{
-				Texture3DMipmapTestCaseParameters	testParameters;
+				Texture3DMipmapTestCaseParameters testParameters;
 				testParameters.minFilter				= minFilterModes[minFilter].mode;
 				testParameters.minFilterName			= minFilterModes[minFilter].name;
 				testParameters.aspectMask				= VK_IMAGE_ASPECT_COLOR_BIT;
 				testParameters.programs.push_back(PROGRAM_3D_FLOAT);
-				testParameters.testType				= util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD;
+				testParameters.testType					= util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD;
 
 
 				imageViewMinLodBaseLevelGroup3D->addChild(new TextureTestCase<Texture3DImageViewMinLodBaseLevelTestInstance>(testCtx, minFilterModes[minFilter].name, "", testParameters));
 
 				std::ostringstream name;
 				name << minFilterModes[minFilter].name << "_integer_texel_coord";
-				testParameters.testType				= util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD_INT_TEX_COORD_BASELEVEL;
+				testParameters.testType					= util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD_INT_TEX_COORD_BASELEVEL;
 				imageViewMinLodBaseLevelGroup3D->addChild(new Texture3DImageViewMinLodIntTexCoordTest(testCtx, name.str().c_str(), "", testParameters));
 			}
 
@@ -3000,6 +3594,13 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 
 		textureMipmappingTests->addChild(group3D.release());
 	}
+
+#ifndef CTS_USES_VULKANSC
+	{
+		const auto minLodGatherGroup = createTestGroup(testCtx, "min_lod_gather", "Test minLod with textureGather operations", populateMinLodGatherGroup, destroyDeviceHelpers);
+		textureMipmappingTests->addChild(minLodGatherGroup);
+	}
+#endif // CTS_USES_VULKANSC
 }
 
 tcu::TestCaseGroup* createTextureMipmappingTests (tcu::TestContext& testCtx)

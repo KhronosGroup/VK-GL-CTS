@@ -655,6 +655,7 @@ tcu::TestStatus SamplerlessDescriptorWriteTestInstance::iterate (void)
 
 	vk::endCommandBuffer(vkd, cmdBuffer);
 	vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+	m_context.resetCommandPoolForVKSC(device, *cmdPool);
 
 	// Check results.
 	const auto& resultsBufferAlloc = resultsBuffer.getAllocation();
@@ -1089,6 +1090,7 @@ tcu::TestStatus RandomDescriptorUpdateTestInstance::iterate()
 						   0u, DE_NULL, 0u, DE_NULL, 1u, &fbBarrier);
 	vk::endCommandBuffer(vkd, cmdBuffer);
 	vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+	m_context.resetCommandPoolForVKSC(device, *cmdPool);
 
 	struct DescriptorWrite
 	{
@@ -1248,6 +1250,7 @@ tcu::TestStatus RandomDescriptorUpdateTestInstance::iterate()
 		vk::endRenderPass(vkd, cmdBuffer);
 		vk::endCommandBuffer(vkd, cmdBuffer);
 		vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+		m_context.resetCommandPoolForVKSC(device, *cmdPool);
 	}
 
 	vk::beginCommandBuffer(vkd, cmdBuffer);
@@ -1256,6 +1259,7 @@ tcu::TestStatus RandomDescriptorUpdateTestInstance::iterate()
 	vk::copyImageToBuffer(vkd, cmdBuffer, fbImage.get(), resultsBuffer.get(), copySize);
 	vk::endCommandBuffer(vkd, cmdBuffer);
 	vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+	m_context.resetCommandPoolForVKSC(device, *cmdPool);
 
 	// Check results.
 	const auto& resultsBufferAlloc = resultsBuffer.getAllocation();

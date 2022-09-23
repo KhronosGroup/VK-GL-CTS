@@ -444,7 +444,7 @@ void ConditionalRenderingBaseTestInstance::createInitBufferWithPredicate (Condit
 			nullptr
 		};
 
-		m_vkd.beginCommandBuffer(*cmdBuffer, &commandBufferBeginInfo);
+		VK_CHECK(m_vkd.beginCommandBuffer(*cmdBuffer, &commandBufferBeginInfo));
 
 		vk::VkBufferCopy copyInfo
 		{

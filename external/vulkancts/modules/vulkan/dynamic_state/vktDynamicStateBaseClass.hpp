@@ -97,35 +97,37 @@ protected:
 		HEIGHT      = 128
 	};
 
-	vk::VkFormat									m_colorAttachmentFormat;
+	vk::VkFormat											m_colorAttachmentFormat;
 
-	vk::VkPrimitiveTopology							m_topology;
+	vk::VkPrimitiveTopology									m_topology;
 
-	const vk::DeviceInterface&						m_vk;
+	const vk::DeviceInterface&								m_vk;
 
-	vk::Move<vk::VkDescriptorPool>					m_descriptorPool;
-	vk::Move<vk::VkDescriptorSetLayout>				m_setLayout;
-	vk::Move<vk::VkPipelineLayout>					m_pipelineLayout;
-	vk::Move<vk::VkDescriptorSet>					m_descriptorSet;
-	vk::GraphicsPipelineWrapper						m_pipeline;
+	vk::Move<vk::VkDescriptorPool>							m_descriptorPool;
+	vk::Move<vk::VkDescriptorSetLayout>						m_setLayout;
+	vk::Move<vk::VkPipelineLayout>							m_pipelineLayout;
+	vk::Move<vk::VkDescriptorSet>							m_descriptorSet;
+	vk::GraphicsPipelineWrapper								m_pipeline;
 
-	de::SharedPtr<Draw::Image>						m_colorTargetImage;
-	vk::Move<vk::VkImageView>						m_colorTargetView;
+	de::SharedPtr<Draw::Image>								m_colorTargetImage;
+	vk::Move<vk::VkImageView>								m_colorTargetView;
 
-	Draw::PipelineCreateInfo::VertexInputState		m_vertexInputState;
-	de::SharedPtr<Draw::Buffer>						m_vertexBuffer;
+	Draw::PipelineCreateInfo::VertexInputState				m_vertexInputState;
+	de::SharedPtr<Draw::Buffer>								m_vertexBuffer;
 
-	vk::Move<vk::VkCommandPool>						m_cmdPool;
-	vk::Move<vk::VkCommandBuffer>					m_cmdBuffer;
+	vk::Move<vk::VkCommandPool>								m_cmdPool;
+	vk::Move<vk::VkCommandBuffer>							m_cmdBuffer;
 
-	vk::Move<vk::VkFramebuffer>						m_framebuffer;
-	vk::Move<vk::VkRenderPass>						m_renderPass;
+	vk::Move<vk::VkFramebuffer>								m_framebuffer;
+	vk::Move<vk::VkRenderPass>								m_renderPass;
 
-	const std::string								m_vertexShaderName;
-	const std::string								m_fragmentShaderName;
-	const std::string								m_meshShaderName;
-	std::vector<PositionColorVertex>				m_data;
-	bool											m_isMesh;
+	const std::string										m_vertexShaderName;
+	const std::string										m_fragmentShaderName;
+	const std::string										m_meshShaderName;
+	std::vector<PositionColorVertex>						m_data;
+	bool													m_isMesh;
+
+	Draw::PipelineCreateInfo::ColorBlendState::Attachment	m_attachmentState;
 };
 
 } // DynamicState

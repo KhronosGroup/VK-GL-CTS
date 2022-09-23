@@ -648,7 +648,8 @@ public:
 		}
 #endif // CTS_USES_VULKANSC
 
-		if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
+		if (m_syncPrimitive == SYNC_PRIMITIVE_TIMELINE_SEMAPHORE &&
+			!context.getTimelineSemaphoreFeatures().timelineSemaphore)
 			TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
 
 		if (m_resourceDesc.type == RESOURCE_TYPE_IMAGE)

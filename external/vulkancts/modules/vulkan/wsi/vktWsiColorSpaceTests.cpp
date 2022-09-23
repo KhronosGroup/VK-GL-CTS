@@ -89,7 +89,7 @@ void checkAllSupported (const Extensions& supportedExtensions, const vector<stri
 		 requiredExtName != requiredExtensions.end();
 		 ++requiredExtName)
 	{
-		if (!isExtensionSupported(supportedExtensions, RequiredExtension(*requiredExtName)))
+		if (!isExtensionStructSupported(supportedExtensions, RequiredExtension(*requiredExtName)))
 			TCU_THROW(NotSupportedError, (*requiredExtName + " is not supported").c_str());
 	}
 }
@@ -114,7 +114,7 @@ CustomInstance createInstanceWithWsi (Context&						context,
 	// 2) Enable VK_EXT_swapchain colorspace if advertised by the driver.
 	//
 	// We opt for (2) as it provides basic coverage for the extension as a bonus.
-	if (isExtensionSupported(supportedExtensions, RequiredExtension("VK_EXT_swapchain_colorspace")))
+	if (isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_swapchain_colorspace")))
 		extensions.push_back("VK_EXT_swapchain_colorspace");
 
 	checkAllSupported(supportedExtensions, extensions);
@@ -153,11 +153,11 @@ Move<VkDevice> createDeviceWithWsi (const vk::PlatformInterface&	vkp,
 	const VkPhysicalDeviceFeatures	features		= getDeviceFeaturesForWsi();
 	vector<const char*>		extensions;
 
-	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_swapchain")))
+	if (!isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_KHR_swapchain")))
 		TCU_THROW(NotSupportedError, "VK_KHR_swapchain is not supported");
 	extensions.push_back("VK_KHR_swapchain");
 
-	if (isExtensionSupported(supportedExtensions, RequiredExtension("VK_EXT_hdr_metadata")))
+	if (isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_hdr_metadata")))
 		extensions.push_back("VK_EXT_hdr_metadata");
 
 	VkDeviceCreateInfo		deviceParams	=
@@ -635,7 +635,7 @@ tcu::TestStatus surfaceFormatRenderTest (Context& context,
 	const vector<VkImage>				swapchainImages			= getSwapchainImages(vkd, device, *swapchain);
 	const vector<VkExtensionProperties>	deviceExtensions		(enumerateDeviceExtensionProperties(instHelper.vki, devHelper.physicalDevice, DE_NULL));
 
-	if (checkHdr && !isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_hdr_metadata")))
+	if (checkHdr && !isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_hdr_metadata")))
 		TCU_THROW(NotSupportedError, "Extension VK_EXT_hdr_metadata not supported");
 
 	const WsiTriangleRenderer		renderer					(vkd,

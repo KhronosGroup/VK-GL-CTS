@@ -499,9 +499,9 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass(VkFormat vkformat, 
 		m_config.format,									// VkFormat							format;
 		samples,											// VkSampleCountFlagBits			samples;
 		(renderPassNo == 0) ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD,		// VkAttachmentLoadOp				loadOp;
-		VK_ATTACHMENT_STORE_OP_STORE,
+		(m_numRenderPasses > 1) ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE,
 		(renderPassNo == 0) ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD,		// VkAttachmentLoadOp				stencilLoadOp;
-		VK_ATTACHMENT_STORE_OP_STORE,
+		(m_numRenderPasses > 1) ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE,
 		(renderPassNo == 0) ? VK_IMAGE_LAYOUT_UNDEFINED : layout,							// VkImageLayout					initialLayout;
 		finalLayout											// VkImageLayout					finalLayout;
 	);
@@ -1579,7 +1579,7 @@ void initTests (tcu::TestCaseGroup* group)
 									};
 									formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
 
-									if (sampleCountNdx == 0 && imageDataNdx == 0)
+									if (sampleCountNdx == 0 && imageDataNdx == 0 && dResolve.flag != VK_RESOLVE_MODE_NONE)
 									{
 										const auto compatibleFormat = compatManager.getAlternativeFormat(format);
 
@@ -1634,7 +1634,7 @@ void initTests (tcu::TestCaseGroup* group)
 									// All formats with stencil and depth aspects have incompatible formats and sizes in the depth
 									// aspect, so their only alternative is the VK_FORMAT_S8_UINT format. Finally, that stencil-only
 									// format has no compatible formats that can be used.
-									if (sampleCountNdx == 0 && imageDataNdx == 0 && hasDepth)
+									if (sampleCountNdx == 0 && imageDataNdx == 0 && hasDepth && sResolve.flag != VK_RESOLVE_MODE_NONE)
 									{
 										std::string	compatibilityTestName			= "compatibility_" + name;
 										TestConfig compatibilityTestConfig			= testConfig;
@@ -1704,6 +1704,12 @@ void initTests (tcu::TestCaseGroup* group)
 
 							const bool			unusedResolve	= (unusedIdx > 0);
 							const std::string	unusedSuffix	= (unusedResolve ? "_unused_resolve" : "");
+
+							if (!hasStencil && mode.flag == VK_RESOLVE_MODE_NONE)
+								continue;
+
+							if (!hasDepth && mode.flag == VK_RESOLVE_MODE_NONE)
+								continue;
 
 							if (hasDepth)
 							{

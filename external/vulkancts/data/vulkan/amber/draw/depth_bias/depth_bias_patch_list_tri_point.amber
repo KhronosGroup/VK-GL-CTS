@@ -49,10 +49,10 @@ layout (vertices = 3) out;
 
 void main(void)
 {
-  float tessLevel = 5.0;
+  float tessLevel = 2.0;
 
-  gl_TessLevelOuter[0] = tessLevel;
-  gl_TessLevelOuter[1] = tessLevel;
+  gl_TessLevelInner[0] = tessLevel;
+  gl_TessLevelInner[1] = tessLevel;
   gl_TessLevelOuter[0] = 1.0;
   gl_TessLevelOuter[1] = 1.0;
   gl_TessLevelOuter[2] = 1.0;

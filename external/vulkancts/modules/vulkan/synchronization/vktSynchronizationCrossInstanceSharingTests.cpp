@@ -151,6 +151,13 @@ public:
 			m_context.requireDeviceFunctionality("VK_KHR_external_memory_win32");
 		}
 
+		if (config.memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA
+			|| config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA)
+		{
+			m_context.requireDeviceFunctionality("VK_FUCHSIA_external_semaphore");
+			m_context.requireDeviceFunctionality("VK_FUCHSIA_external_memory");
+		}
+
 		TestLog&						log				= context.getTestContext().getLog();
 		const vk::InstanceInterface&	vki				= context.getInstanceInterface();
 		const vk::VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
@@ -376,6 +383,11 @@ vk::Move<vk::VkDevice> createTestDevice (const Context&					context,
 		extensions.push_back("VK_KHR_external_semaphore_win32");
 	if (context.isDeviceFunctionalitySupported("VK_KHR_external_memory_win32"))
 		extensions.push_back("VK_KHR_external_memory_win32");
+
+	if (context.isDeviceFunctionalitySupported("VK_FUCHSIA_external_semaphore"))
+		extensions.push_back("VK_FUCHSIA_external_semaphore");
+	if (context.isDeviceFunctionalitySupported("VK_FUCHSIA_external_memory"))
+		extensions.push_back("VK_FUCHSIA_external_memory");
 
 	if (context.isDeviceFunctionalitySupported("VK_KHR_timeline_semaphore"))
 	{
@@ -1360,6 +1372,11 @@ static void createTests (tcu::TestCaseGroup* group, SynchronizationType type)
 			vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT,
 			vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT,
 			"_dma_buf"
+		},
+		{
+			vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA,
+			vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA,
+			"_zircon_handle"
 		},
 	};
 

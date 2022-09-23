@@ -43,7 +43,8 @@ Move<VkPipeline> makeComputePipeline (const DeviceInterface&					vk,
 									  const VkPipelineCreateFlags				pipelineFlags,
 									  const VkShaderModule						shaderModule,
 									  const VkPipelineShaderStageCreateFlags	shaderFlags,
-									  const VkSpecializationInfo*				specializationInfo)
+									  const VkSpecializationInfo*				specializationInfo,
+									  const VkPipelineCache						pipelineCache)
 {
 	const VkPipelineShaderStageCreateInfo pipelineShaderStageParams =
 	{
@@ -65,7 +66,7 @@ Move<VkPipeline> makeComputePipeline (const DeviceInterface&					vk,
 		DE_NULL,											// VkPipeline						basePipelineHandle;
 		0,													// deInt32							basePipelineIndex;
 	};
-	return createComputePipeline(vk, device, DE_NULL , &pipelineCreateInfo);
+	return createComputePipeline(vk, device, pipelineCache, &pipelineCreateInfo);
 }
 
 Move<VkPipeline> makeComputePipeline (const DeviceInterface&	vk,
@@ -102,7 +103,8 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface&						vk,
 									  const VkPipelineDepthStencilStateCreateInfo*	depthStencilStateCreateInfo,
 									  const VkPipelineColorBlendStateCreateInfo*	colorBlendStateCreateInfo,
 									  const VkPipelineDynamicStateCreateInfo*		dynamicStateCreateInfo,
-									  const void*									pNext)
+									  const void*									pNext,
+									  const VkPipelineCreateFlags					pipelineCreateFlags)
 {
 	const VkPipelineInputAssemblyStateCreateInfo	inputAssemblyStateCreateInfo		=
 	{
@@ -156,7 +158,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface&						vk,
 								 &tessStateCreateInfo, &viewportStateCreateInfo, rasterizationStateCreateInfo,
 								 multisampleStateCreateInfo, depthStencilStateCreateInfo, colorBlendStateCreateInfo,
 								 dynamicStateCreateInfo ? dynamicStateCreateInfo : dynamicStateCreateInfoDefaultPtr,
-								 pNext);
+								 pNext, pipelineCreateFlags);
 }
 
 Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
@@ -178,7 +180,8 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 									   const VkPipelineDepthStencilStateCreateInfo*		depthStencilStateCreateInfo,
 									   const VkPipelineColorBlendStateCreateInfo*		colorBlendStateCreateInfo,
 									   const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfo,
-									   const void*										pNext)
+									   const void*										pNext,
+									   const VkPipelineCreateFlags						pipelineCreateFlags)
 {
 	DE_ASSERT(tessStateCreateInfo || (tessellationControlShaderModule == DE_NULL && tessellationEvalShaderModule == DE_NULL));
 
@@ -368,7 +371,7 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 	{
 		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,														// VkStructureType                                  sType
 		pNext,																									// const void*                                      pNext
-		0u,																										// VkPipelineCreateFlags                            flags
+		pipelineCreateFlags,																					// VkPipelineCreateFlags                            flags
 		(deUint32)pipelineShaderStageParams.size(),																// deUint32                                         stageCount
 		&pipelineShaderStageParams[0],																			// const VkPipelineShaderStageCreateInfo*           pStages
 		vertexInputStateCreateInfo ? vertexInputStateCreateInfo : &vertexInputStateCreateInfoDefault,			// const VkPipelineVertexInputStateCreateInfo*      pVertexInputState
@@ -406,6 +409,7 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 									   const VkPipelineDepthStencilStateCreateInfo*		depthStencilStateCreateInfo,
 									   const VkPipelineColorBlendStateCreateInfo*		colorBlendStateCreateInfo,
 									   const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfo,
+									   const VkPipelineCreateFlags						pipelineCreateFlags,
 									   const void*										pNext)
 {
 	VkPipelineShaderStageCreateInfo					stageCreateInfo						=
@@ -446,7 +450,7 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 		device,
 		DE_NULL,
 		pipelineLayout,
-		0u, // pipelineCreateFlags
+		pipelineCreateFlags,
 		pipelineShaderStageParams,
 		renderPass,
 		viewports,
@@ -726,7 +730,8 @@ VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize			size,
 
 VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize				size,
 										 const VkBufferUsageFlags		usage,
-										 const std::vector<deUint32>&	queueFamilyIndices)
+										 const std::vector<deUint32>&	queueFamilyIndices,
+										 const VkBufferCreateFlags		createFlags)
 {
 	const deUint32				queueFamilyIndexCount	= static_cast<deUint32>(queueFamilyIndices.size());
 	const deUint32*				pQueueFamilyIndices		= de::dataOrNull(queueFamilyIndices);
@@ -734,7 +739,7 @@ VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize				size,
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
 		DE_NULL,								// const void*			pNext;
-		(VkBufferCreateFlags)0,					// VkBufferCreateFlags	flags;
+		createFlags,							// VkBufferCreateFlags	flags;
 		size,									// VkDeviceSize			size;
 		usage,									// VkBufferUsageFlags	usage;
 		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;

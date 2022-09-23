@@ -54,7 +54,11 @@ struct TestConfig
 	SynchronizationType type;
 };
 
+#ifdef CTS_USES_VULKANSC
+static const int basicChainLength	= 1024;
+#else
 static const int basicChainLength	= 32768;
+#endif
 
 Move<VkSemaphore> createTestSemaphore(Context& context, const DeviceInterface& vk, const VkDevice device, const TestConfig& config)
 {
@@ -136,6 +140,8 @@ tcu::TestStatus basicChainCase(Context & context, TestConfig config)
 
 	for (int i = 0; err == VK_SUCCESS && i < basicChainLength; i++)
 	{
+		if (i % (basicChainLength/4) == 0) context.getTestContext().touchWatchdog();
+
 		err = vk.createSemaphore(device, &sci, DE_NULL, &pSignalSemaphoreInfo->semaphore);
 		if (err != VK_SUCCESS)
 			continue;
@@ -198,6 +204,8 @@ tcu::TestStatus basicChainTimelineCase (Context& context, TestConfig config)
 
 	for (int i = 0; err == VK_SUCCESS && i < basicChainLength; i++)
 	{
+		if (i % (basicChainLength/4) == 0) context.getTestContext().touchWatchdog();
+
 		pSignalSemaphoreInfo->value = static_cast<deUint64>(i+1);
 
 		SynchronizationWrapperPtr synchronizationWrapper = getSynchronizationWrapper(config.type, vk, DE_TRUE);
@@ -468,7 +476,7 @@ tcu::TestStatus basicMultiQueueCase(Context& context, TestConfig config)
 #ifndef CTS_USES_VULKANSC
 	de::MovePtr<vk::DeviceDriver>								deviceDriver	= de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), instance, *logicalDevice));
 #else
-	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver	= de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), instance, *logicalDevice, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *logicalDevice));
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver	= de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), instance, *logicalDevice, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *logicalDevice));
 #endif // CTS_USES_VULKANSC
 	const DeviceInterface&										vk				= *deviceDriver;
 

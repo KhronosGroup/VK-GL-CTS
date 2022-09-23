@@ -778,7 +778,8 @@ protected:
 			};
 			rr::ViewportState						viewport		(colorAccess);
 			rr::RenderState							state			(viewport, rr::RenderState::DEFAULT_SUBPIXEL_BITS);
-			const rr::DrawCommand					drawCmd			(state, renderTarget, program, DE_LENGTH_OF_ARRAY(vertexAttribs), vertexAttribs, rr::PrimitiveList(rr::PRIMITIVETYPE_TRIANGLES, 3, 0));
+			const rr::PrimitiveList					primitives		(rr::PRIMITIVETYPE_TRIANGLES, 3, 0);
+			const rr::DrawCommand					drawCmd			(state, renderTarget, program, DE_LENGTH_OF_ARRAY(vertexAttribs), vertexAttribs, primitives);
 			const rr::Renderer						renderer;
 
 			viewport.zn	= zn;

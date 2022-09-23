@@ -35,6 +35,8 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkImageWithMemory.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
@@ -527,13 +529,13 @@ tcu::TestStatus test (Context& context, TestParams testParams)
 
 	// Result buffer: generated tess coords go here.
 
-	const VkDeviceSize resultBufferSizeBytes = sizeof(int) + sizeof(float) * maxNumVertices;
-	const Buffer	   resultBuffer			 (vk, device, allocator, makeBufferCreateInfo(resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
+	const VkDeviceSize		resultBufferSizeBytes = sizeof(int) + sizeof(float) * maxNumVertices;
+	const BufferWithMemory	resultBuffer			 (vk, device, allocator, makeBufferCreateInfo(resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	// Outer1 tessellation level constant buffer.
 
-	const VkDeviceSize tessLevelsBufferSizeBytes = sizeof(float);  // we pass only outer1
-	const Buffer	   tessLevelsBuffer			 (vk, device, allocator, makeBufferCreateInfo(tessLevelsBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
+	const VkDeviceSize		tessLevelsBufferSizeBytes = sizeof(float);  // we pass only outer1
+	const BufferWithMemory	tessLevelsBuffer			 (vk, device, allocator, makeBufferCreateInfo(tessLevelsBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	// Descriptors
 

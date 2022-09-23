@@ -153,13 +153,16 @@ static tcu::TestCase* makeSwitchCase (Context& context, const char* name, const 
 								type == SWITCHTYPE_DYNAMIC	? evalSwitchDynamic	: (ShaderEvalFunc)DE_NULL);
 }
 
-static void makeSwitchCases (TestCaseGroup* group, const char* name, const char* desc, const LineStream& switchBody)
+static void makeSwitchCases (TestCaseGroup* group, const char* name, const char* desc, const LineStream& switchBody, const bool skipDynamicType = false)
 {
 	static const char* switchTypeNames[] = { "static", "uniform", "dynamic" };
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(switchTypeNames) == SWITCHTYPE_LAST);
 
 	for (int type = 0; type < SWITCHTYPE_LAST; type++)
 	{
+		if (skipDynamicType && (type == SWITCHTYPE_DYNAMIC))
+			continue;
+
 		group->addChild(makeSwitchCase(group->getContext(), (string(name) + "_" + switchTypeNames[type] + "_vertex").c_str(),	desc, (SwitchType)type, true,	switchBody));
 		group->addChild(makeSwitchCase(group->getContext(), (string(name) + "_" + switchTypeNames[type] + "_fragment").c_str(),	desc, (SwitchType)type, false,	switchBody));
 	}
@@ -232,6 +235,23 @@ void ShaderSwitchTests::init (void)
 		<< "	case 1:		res = coords.wzy;	break;"
 		<< "	case 3:		res = coords.zyx;	break;"
 		<< "}");
+
+	makeSwitchCases(this, "default_only", "Default case only",
+		LineStream(1)
+		<< "switch (${CONDITION})"
+		<< "{"
+		<< "	default:"
+		<< "		res = coords.yzw;"
+		<< "}", true);
+
+	makeSwitchCases(this, "empty_case_default", "Empty case and default",
+		LineStream(1)
+		<< "switch (${CONDITION})"
+		<< "{"
+		<< "	case 2:"
+		<< "	default:"
+		<< "		res = coords.yzw;"
+		<< "}", true);
 
 	makeSwitchCases(this, "fall_through", "Fall-through",
 		LineStream(1)

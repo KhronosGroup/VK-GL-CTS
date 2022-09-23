@@ -361,15 +361,21 @@ ImageSamplingInstance::ImageSamplingInstance (Context&						context,
 	, m_renderSize					(params.renderSize)
 	, m_colorFormat					(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_vertices					(params.vertices)
-	, m_graphicsPipeline			(context.getDeviceInterface(), context.getDevice(), params.pipelineConstructionType)
+	, m_graphicsPipeline			(context.getDeviceInterface(), context.getDevice(), params.pipelineConstructionType, params.pipelineCreateFlags)
+	, m_pipelineConstructionType	(params.pipelineConstructionType)
+	, m_imageLayout					(params.imageLayout)
 {
-	const InstanceInterface&				vki						= context.getInstanceInterface();
-	const DeviceInterface&					vk						= context.getDeviceInterface();
-	const VkPhysicalDevice					physDevice				= context.getPhysicalDevice();
-	const VkDevice							vkDevice				= context.getDevice();
-	const VkQueue							queue					= context.getUniversalQueue();
-	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
-	SimpleAllocator							memAlloc				(vk, vkDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
+}
+
+void ImageSamplingInstance::setup ()
+{
+	const InstanceInterface&				vki						= m_context.getInstanceInterface();
+	const DeviceInterface&					vk						= m_context.getDeviceInterface();
+	const VkPhysicalDevice					physDevice				= m_context.getPhysicalDevice();
+	const VkDevice							vkDevice				= m_context.getDevice();
+	const VkQueue							queue					= m_context.getUniversalQueue();
+	const deUint32							queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
+	SimpleAllocator							memAlloc				(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
 	const VkComponentMapping				componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 
 	void const* pNext = m_samplerParams.pNext;
@@ -391,7 +397,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&						context,
 				physicalDeviceProperties.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 				physicalDeviceProperties.pNext	= &physicalDeviceSamplerMinMaxProperties;
 
-				vki.getPhysicalDeviceProperties2(context.getPhysicalDevice(), &physicalDeviceProperties);
+				vki.getPhysicalDeviceProperties2(m_context.getPhysicalDevice(), &physicalDeviceProperties);
 
 				if (physicalDeviceSamplerMinMaxProperties.filterMinmaxImageComponentMapping != VK_TRUE)
 				{
@@ -428,7 +434,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&						context,
 				physicalDeviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 				physicalDeviceFeatures.pNext = &physicalDeviceCustomBorderColorFeatures;
 
-				vki.getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &physicalDeviceFeatures);
+				vki.getPhysicalDeviceFeatures2(m_context.getPhysicalDevice(), &physicalDeviceFeatures);
 
 				if (physicalDeviceCustomBorderColorFeatures.customBorderColors != VK_TRUE)
 				{
@@ -692,7 +698,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&						context,
 	// Create pipeline layout
 	{
 #ifndef CTS_USES_VULKANSC
-		VkPipelineLayoutCreateFlags pipelineLayoutFlags = (params.pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC) ? 0u : deUint32(VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT);
+		VkPipelineLayoutCreateFlags pipelineLayoutFlags = (m_pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC) ? 0u : deUint32(VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT);
 #else
 		VkPipelineLayoutCreateFlags pipelineLayoutFlags = 0u;
 #endif // CTS_USES_VULKANSC
@@ -882,6 +888,8 @@ tcu::TestStatus ImageSamplingInstance::iterate (void)
 	const DeviceInterface&		vk			= m_context.getDeviceInterface();
 	const VkDevice				vkDevice	= m_context.getDevice();
 	const VkQueue				queue		= m_context.getUniversalQueue();
+
+	setup();
 
 	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
 

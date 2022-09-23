@@ -41,6 +41,10 @@ set(DEQP_VK_SYNCHRONIZATION_SRCS
 	vktSynchronizationSignalOrderTests.hpp
 	vktSynchronizationWin32KeyedMutexTests.cpp
 	vktSynchronizationWin32KeyedMutexTests.hpp
+    vktGlobalPriorityQueueTests.cpp
+    vktGlobalPriorityQueueTests.hpp
+    vktGlobalPriorityQueueUtils.cpp
+    vktGlobalPriorityQueueUtils.hpp
 	)
 
 PCH(DEQP_VK_SYNCHRONIZATION_SRCS ../pch.cpp)

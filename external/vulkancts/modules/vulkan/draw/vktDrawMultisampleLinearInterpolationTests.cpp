@@ -45,12 +45,12 @@ public:
 																	 const tcu::IVec2				renderSize,
 																	 const float					interpolationRange,
 																	 const VkSampleCountFlagBits	sampleCountFlagBits,
-																	 const bool						useDynamicRendering)
+																	 const SharedGroupParams		groupParams)
 						: vkt::TestInstance		(context)
 						, m_renderSize			(renderSize)
 						, m_interpolationRange	(interpolationRange)
 						, m_sampleCountFlagBits	(sampleCountFlagBits)
-						, m_useDynamicRendering	(useDynamicRendering)
+						, m_groupParams			(groupParams)
 						{}
 
 						~MultisampleLinearInterpolationTestInstance	(void)
@@ -62,7 +62,7 @@ private:
 	const tcu::IVec2			m_renderSize;
 	const float					m_interpolationRange;
 	const VkSampleCountFlagBits	m_sampleCountFlagBits;
-	const bool					m_useDynamicRendering;
+	const SharedGroupParams		m_groupParams;
 };
 
 tcu::TestStatus MultisampleLinearInterpolationTestInstance::iterate (void)
@@ -93,6 +93,7 @@ tcu::TestStatus MultisampleLinearInterpolationTestInstance::iterate (void)
 		const CmdPoolCreateInfo							cmdPoolCreateInfo	(m_context.getUniversalQueueFamilyIndex());
 		Move<VkCommandPool>								cmdPool				= createCommandPool(vk, device, &cmdPoolCreateInfo);
 		Move<VkCommandBuffer>							cmdBuffer			= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+		Move<VkCommandBuffer>							secCmdBuffer;
 
 		Move<VkRenderPass>								renderPass;
 
@@ -163,7 +164,7 @@ tcu::TestStatus MultisampleLinearInterpolationTestInstance::iterate (void)
 		}
 
 		// Create render pass and frame buffer.
-		if (!m_useDynamicRendering)
+		if (!m_groupParams->useDynamicRendering)
 		{
 			RenderPassCreateInfo				renderPassCreateInfo;
 			std::vector<VkImageView>			attachments;
@@ -314,7 +315,7 @@ tcu::TestStatus MultisampleLinearInterpolationTestInstance::iterate (void)
 				VK_FORMAT_UNDEFINED
 			};
 
-			if (m_useDynamicRendering)
+			if (m_groupParams->useDynamicRendering)
 				pipelineCreateInfo.pNext = &renderingCreateInfo;
 #endif // CTS_USES_VULKANSC
 
@@ -327,21 +328,39 @@ tcu::TestStatus MultisampleLinearInterpolationTestInstance::iterate (void)
 			const VkClearValue				clearColor			= { { { 0.0f, 0.0f, 0.0f, 1.0f } } };
 			const ImageSubresourceRange		subresourceRange	(VK_IMAGE_ASPECT_COLOR_BIT);
 			const VkRect2D					renderArea			= makeRect2D(m_renderSize.x(), m_renderSize.y());
-			const VkDeviceSize				vertexBufferOffset	= 0;
 			const VkBuffer					buffer				= vertexBuffer->object();
 			const VkOffset3D				zeroOffset			= { 0, 0, 0 };
 
 			std::vector<VkClearValue>		clearValues			(2, clearColor);
+
+			auto drawCommands = [&](VkCommandBuffer cmdBuff)
+			{
+				const VkDeviceSize vertexBufferOffset = 0;
+				vk.cmdBindVertexBuffers(cmdBuff, 0, 1, &buffer, &vertexBufferOffset);
+				vk.cmdBindPipeline(cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+				vk.cmdDraw(cmdBuff, 6u, 1u, 0u, 0u);
+			};
 
 			clearColorImage(vk, device, queue, m_context.getUniversalQueueFamilyIndex(),
 				colorTargetImages[draw]->object(), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f),
 				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 1u);
 
-			beginCommandBuffer(vk, *cmdBuffer, 0u);
-
 #ifndef CTS_USES_VULKANSC
-			if (m_useDynamicRendering)
+			auto preRenderBarriers = [&]()
+			{
+				// Transition Images
+				initialTransitionColor2DImage(vk, *cmdBuffer, colorTargetImages[draw]->object(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+				if (useMultisampling)
+				{
+					initialTransitionColor2DImage(vk, *cmdBuffer, multisampleImages[draw]->object(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+						VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+				}
+			};
+
+			if (m_groupParams->useDynamicRendering)
 			{
 				const deUint32 imagesCount = static_cast<deUint32>(colorTargetViews.size());
 
@@ -387,37 +406,93 @@ tcu::TestStatus MultisampleLinearInterpolationTestInstance::iterate (void)
 					DE_NULL,							// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
 				};
 
-				// Transition Images
-				initialTransitionColor2DImage(vk, *cmdBuffer, colorTargetImages[draw]->object(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
-
-				if (useMultisampling)
+				if (m_groupParams->useSecondaryCmdBuffer)
 				{
-					initialTransitionColor2DImage(vk, *cmdBuffer, multisampleImages[draw]->object(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
-				}
+					VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
+					{
+						VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,		// VkStructureType						sType;
+						DE_NULL,																// const void*							pNext;
+						0u,																		// VkRenderingFlagsKHR					flags;
+						0u,																		// uint32_t								viewMask;
+						1u,																		// uint32_t								colorAttachmentCount;
+						&imageColorFormat,														// const VkFormat*						pColorAttachmentFormats;
+						VK_FORMAT_UNDEFINED,													// VkFormat								depthAttachmentFormat;
+						VK_FORMAT_UNDEFINED,													// VkFormat								stencilAttachmentFormat;
+						m_sampleCountFlagBits													// VkSampleCountFlagBits				rasterizationSamples;
+					};
 
-				vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
+					const VkCommandBufferInheritanceInfo	bufferInheritanceInfo = initVulkanStructure(&inheritanceRenderingInfo);
+					VkCommandBufferBeginInfo				commandBufBeginParams
+					{
+						VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,							// VkStructureType					sType;
+						DE_NULL,																// const void*						pNext;
+						VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,							// VkCommandBufferUsageFlags		flags;
+						&bufferInheritanceInfo
+					};
+
+					secCmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+
+					// record secondary command buffer
+					if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+					{
+						inheritanceRenderingInfo.flags = VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT;
+						VK_CHECK(vk.beginCommandBuffer(*secCmdBuffer, &commandBufBeginParams));
+						vk.cmdBeginRendering(*secCmdBuffer, &renderingInfo);
+					}
+					else
+					{
+						commandBufBeginParams.flags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+						VK_CHECK(vk.beginCommandBuffer(*secCmdBuffer, &commandBufBeginParams));
+					}
+
+					drawCommands(*secCmdBuffer);
+
+					if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+						endRendering(vk, *secCmdBuffer);
+
+					endCommandBuffer(vk, *secCmdBuffer);
+
+					// record primary command buffer
+					beginCommandBuffer(vk, *cmdBuffer, 0u);
+
+					preRenderBarriers();
+
+					if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+					{
+						renderingInfo.flags = VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS;
+						vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
+					}
+					vk.cmdExecuteCommands(*cmdBuffer, 1u, &*secCmdBuffer);
+
+					if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+						endRendering(vk, *cmdBuffer);
+					endCommandBuffer(vk, *cmdBuffer);
+				}
+				else
+				{
+					beginCommandBuffer(vk, *cmdBuffer, 0u);
+					preRenderBarriers();
+
+					vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
+					drawCommands(*cmdBuffer);
+					endRendering(vk, *cmdBuffer);
+
+					endCommandBuffer(vk, *cmdBuffer);
+				}
 			}
 			else
 #endif // CTS_USES_VULKANSC
 			{
+				beginCommandBuffer(vk, *cmdBuffer, 0u);
+
 				const deUint32 imagesCount = static_cast<deUint32>(colorTargetViews.size() + multisampleViews.size());
+
 				beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea, imagesCount, &clearValues[0]);
-			}
-
-			vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &buffer, &vertexBufferOffset);
-			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
-			vk.cmdDraw(*cmdBuffer, 6u, 1u, 0u, 0u);
-
-#ifndef CTS_USES_VULKANSC
-			if (m_useDynamicRendering)
-				endRendering(vk, *cmdBuffer);
-			else
-#endif // CTS_USES_VULKANSC
+				drawCommands(*cmdBuffer);
 				endRenderPass(vk, *cmdBuffer);
 
-			endCommandBuffer(vk, *cmdBuffer);
+				endCommandBuffer(vk, *cmdBuffer);
+			}
 
 			submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 
@@ -441,13 +516,13 @@ class MultisampleLinearInterpolationTestCase : public TestCase
 																		 const float					interpolationRange,
 																		 const tcu::Vec2				offset,
 																		 const VkSampleCountFlagBits	sampleCountFlagBits,
-																		 const bool						useDynamicRendering)
+																		 const SharedGroupParams		groupParams)
 								: vkt::TestCase(context, name, desc)
 								, m_renderSize			(renderSize)
 								, m_interpolationRange	(interpolationRange)
 								, m_offset				(offset)
 								, m_sampleCountFlagBits	(sampleCountFlagBits)
-								, m_useDynamicRendering	(useDynamicRendering)
+								, m_groupParams			(groupParams)
 								{}
 
 								~MultisampleLinearInterpolationTestCase	(void)
@@ -462,7 +537,7 @@ private:
 	const float					m_interpolationRange;
 	const tcu::Vec2				m_offset;
 	const VkSampleCountFlagBits	m_sampleCountFlagBits;
-	const bool					m_useDynamicRendering;
+	const SharedGroupParams		m_groupParams;
 };
 
 void MultisampleLinearInterpolationTestCase::initPrograms (SourceCollections& programCollection) const
@@ -554,8 +629,9 @@ void MultisampleLinearInterpolationTestCase::checkSupport (Context& context) con
 {
 	if (!(m_sampleCountFlagBits & context.getDeviceProperties().limits.framebufferColorSampleCounts))
 		TCU_THROW(NotSupportedError, "Multisampling with " + de::toString(m_sampleCountFlagBits) + " samples not supported");
+
 #ifndef CTS_USES_VULKANSC
-	if (m_useDynamicRendering)
+	if (m_groupParams->useDynamicRendering)
 		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
@@ -568,10 +644,10 @@ void MultisampleLinearInterpolationTestCase::checkSupport (Context& context) con
 
 TestInstance* MultisampleLinearInterpolationTestCase::createInstance (Context& context) const
 {
-	return new MultisampleLinearInterpolationTestInstance(context, m_renderSize, m_interpolationRange, m_sampleCountFlagBits, m_useDynamicRendering);
+	return new MultisampleLinearInterpolationTestInstance(context, m_renderSize, m_interpolationRange, m_sampleCountFlagBits, m_groupParams);
 }
 
-void createTests (tcu::TestCaseGroup* testGroup, bool useDynamicRendering)
+void createTests (tcu::TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 {
 	tcu::TestContext&	testCtx	= testGroup->getTestContext();
 
@@ -605,16 +681,20 @@ void createTests (tcu::TestCaseGroup* testGroup, bool useDynamicRendering)
 	{
 		for (const auto& flagBit : flagBits)
 		{
-			testGroup->addChild(new MultisampleLinearInterpolationTestCase(testCtx, (offset.name + "_" + flagBit.name).c_str(), ".", tcu::IVec2(16, 16), 1.0f, offset.value, flagBit.value, useDynamicRendering));
+			// reduce number of tests for dynamic rendering cases where secondary command buffer is used
+			if (groupParams->useSecondaryCmdBuffer && (flagBit.value > VK_SAMPLE_COUNT_4_BIT))
+				break;
+
+			testGroup->addChild(new MultisampleLinearInterpolationTestCase(testCtx, (offset.name + "_" + flagBit.name).c_str(), ".", tcu::IVec2(16, 16), 1.0f, offset.value, flagBit.value, groupParams));
 		}
 	}
 }
 
 }	// anonymous
 
-tcu::TestCaseGroup*	createMultisampleLinearInterpolationTests (tcu::TestContext& testCtx, bool useDynamicRendering)
+tcu::TestCaseGroup*	createMultisampleLinearInterpolationTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
-	return createTestGroup(testCtx, "linear_interpolation", "Tests for linear interpolation decorations.", createTests, useDynamicRendering);
+	return createTestGroup(testCtx, "linear_interpolation", "Tests for linear interpolation decorations.", createTests, groupParams);
 }
 
 }	// Draw

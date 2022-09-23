@@ -208,11 +208,11 @@ void DynamicStateBaseClass::initFramebuffer (const vk::VkDevice device)
 
 void DynamicStateBaseClass::initPipeline (const vk::VkDevice device)
 {
-	const PipelineCreateInfo::ColorBlendState::Attachment	attachmentState;
-	const PipelineCreateInfo::ColorBlendState				colorBlendState(1, &attachmentState);
+	const PipelineCreateInfo::ColorBlendState				colorBlendState(1, &m_attachmentState);
 	const PipelineCreateInfo::RasterizerState				rasterizerState;
-	const PipelineCreateInfo::DepthStencilState				depthStencilState;
+	const PipelineCreateInfo::DepthStencilState             depthStencilState;
 	const PipelineCreateInfo::DynamicState					dynamicState;
+	const PipelineCreateInfo::MultiSampleState				multisampleState;
 
 	const auto&							binaries	= m_context.getBinaryCollection();
 	const vk::Move<vk::VkShaderModule>	ms			(m_isMesh ? createShaderModule(m_vk, device, binaries.get(m_meshShaderName), 0) : vk::Move<vk::VkShaderModule>());
@@ -222,8 +222,7 @@ void DynamicStateBaseClass::initPipeline (const vk::VkDevice device)
 	std::vector<vk::VkRect2D>			scissors	{ { { 0u, 0u }, { 0u, 0u } }};
 
 	m_pipeline.setDefaultTopology(m_topology)
-			  .setDynamicState(static_cast<const vk::VkPipelineDynamicStateCreateInfo*>(&dynamicState))
-			  .setDefaultMultisampleState();
+			  .setDynamicState(static_cast<const vk::VkPipelineDynamicStateCreateInfo*>(&dynamicState));
 
 #ifndef CTS_USES_VULKANSC
 	if (m_isMesh)
@@ -252,8 +251,8 @@ void DynamicStateBaseClass::initPipeline (const vk::VkDevice device)
 												static_cast<const vk::VkPipelineRasterizationStateCreateInfo*>(&rasterizerState));
 	}
 
-	m_pipeline.setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fs, static_cast<const vk::VkPipelineDepthStencilStateCreateInfo*>(&depthStencilState))
-			  .setupFragmentOutputState(*m_renderPass, 0u, static_cast<const vk::VkPipelineColorBlendStateCreateInfo*>(&colorBlendState))
+	m_pipeline.setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fs, static_cast<const vk::VkPipelineDepthStencilStateCreateInfo*>(&depthStencilState), &multisampleState)
+			  .setupFragmentOutputState(*m_renderPass, 0u, static_cast<const vk::VkPipelineColorBlendStateCreateInfo*>(&colorBlendState), &multisampleState)
 			  .setMonolithicPipelineLayout(*m_pipelineLayout)
 			  .buildPipeline();
 }

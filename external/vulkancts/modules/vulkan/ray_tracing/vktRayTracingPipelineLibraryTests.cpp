@@ -261,24 +261,24 @@ void RayTracingPipelineLibraryTestCase::checkSupport(Context& context) const
 	const auto	physicalDevice		= context.getPhysicalDevice();
 	const auto	supportedExtensions	= enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
-	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_ray_tracing_pipeline")))
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_ray_tracing_pipeline"))
 		TCU_THROW(NotSupportedError, "VK_KHR_ray_tracing_pipeline not supported");
 
 	// VK_KHR_pipeline_library must be supported if the ray tracing pipeline extension is supported, which it should be at this point.
 	// If it's not supported, this is considered a failure.
-	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_pipeline_library")))
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_pipeline_library"))
 		TCU_FAIL("VK_KHR_pipeline_library not supported but VK_KHR_ray_tracing_pipeline supported");
 
 	// VK_KHR_acceleration_structure is required by VK_KHR_ray_tracing_pipeline.
-	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_acceleration_structure")))
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_acceleration_structure"))
 		TCU_FAIL("VK_KHR_acceleration_structure not supported but VK_KHR_ray_tracing_pipeline supported");
 
 	// VK_KHR_deferred_host_operations is required by VK_KHR_acceleration_structure.
-	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_deferred_host_operations")))
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_deferred_host_operations"))
 		TCU_FAIL("VK_KHR_deferred_host_operations not supported but VK_KHR_acceleration_structure supported");
 
 	// The same for VK_KHR_buffer_device_address.
-	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_buffer_device_address")))
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
 		TCU_FAIL("VK_KHR_buffer_device_address not supported but VK_KHR_acceleration_structure supported");
 
 	// Get and check needed features.

@@ -302,7 +302,7 @@ tcu::TestStatus zeroPoolSizeCount(Context& context)
 	{
 		VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,				// VkStructureType                sType;
 		DE_NULL,													// const void*                    pNext;
-		(VkDescriptorPoolCreateFlags)0,								// VkDescriptorPoolCreateFlags    flags;
+		VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,			// VkDescriptorPoolCreateFlags    flags;
 		1u,															// uint32_t                       maxSets;
 		0u,															// uint32_t                       poolSizeCount;
 		DE_NULL,													// const VkDescriptorPoolSize*    pPoolSizes;

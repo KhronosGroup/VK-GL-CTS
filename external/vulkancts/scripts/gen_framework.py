@@ -27,6 +27,7 @@ import copy
 import glob
 import json
 import argparse
+from lxml import etree
 from itertools import chain
 from collections import OrderedDict
 
@@ -35,7 +36,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scrip
 from build.common import DEQP_DIR, execute
 from khr_util.format import indentLines, writeInlFile
 
-VULKAN_HEADERS_INCLUDE_DIR	= os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include")
+VULKAN_XML_DIR				= os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "xml")
 SCRIPTS_SRC_DIR				= os.path.join(os.path.dirname(__file__), "src")
 DEFAULT_OUTPUT_DIR			= { "" :	os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "generated", "vulkan"),
 								"SC" :	os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "generated", "vulkansc") }
@@ -48,27 +49,27 @@ INL_HEADER = """\
 
 """
 
-DEFINITIONS			= [
-	("VK_MAX_PHYSICAL_DEVICE_NAME_SIZE",	"size_t"),
-	("VK_MAX_EXTENSION_NAME_SIZE",			"size_t"),
-	("VK_MAX_DRIVER_NAME_SIZE",				"size_t"),
-	("VK_MAX_DRIVER_INFO_SIZE",				"size_t"),
-	("VK_UUID_SIZE",						"size_t"),
-	("VK_LUID_SIZE",						"size_t"),
-	("VK_MAX_MEMORY_TYPES",					"size_t"),
-	("VK_MAX_MEMORY_HEAPS",					"size_t"),
-	("VK_MAX_DESCRIPTION_SIZE",				"size_t"),
-	("VK_MAX_DEVICE_GROUP_SIZE",			"size_t"),
-	("VK_ATTACHMENT_UNUSED",				"uint32_t"),
-	("VK_SUBPASS_EXTERNAL",					"uint32_t"),
-	("VK_QUEUE_FAMILY_IGNORED",				"uint32_t"),
-	("VK_QUEUE_FAMILY_EXTERNAL",			"uint32_t"),
-	("VK_REMAINING_MIP_LEVELS",				"uint32_t"),
-	("VK_REMAINING_ARRAY_LAYERS",			"uint32_t"),
-	("VK_WHOLE_SIZE",						"vk::VkDeviceSize"),
-	("VK_TRUE",								"vk::VkBool32"),
-	("VK_FALSE",							"vk::VkBool32"),
-]
+DEFINITIONS			= {
+	"VK_MAX_PHYSICAL_DEVICE_NAME_SIZE":		"size_t",
+	"VK_MAX_EXTENSION_NAME_SIZE":			"size_t",
+	"VK_MAX_DRIVER_NAME_SIZE":				"size_t",
+	"VK_MAX_DRIVER_INFO_SIZE":				"size_t",
+	"VK_UUID_SIZE":							"size_t",
+	"VK_LUID_SIZE":							"size_t",
+	"VK_MAX_MEMORY_TYPES":					"size_t",
+	"VK_MAX_MEMORY_HEAPS":					"size_t",
+	"VK_MAX_DESCRIPTION_SIZE":				"size_t",
+	"VK_MAX_DEVICE_GROUP_SIZE":				"size_t",
+	"VK_ATTACHMENT_UNUSED":					"uint32_t",
+	"VK_SUBPASS_EXTERNAL":					"uint32_t",
+	"VK_QUEUE_FAMILY_IGNORED":				"uint32_t",
+	"VK_QUEUE_FAMILY_EXTERNAL":				"uint32_t",
+	"VK_REMAINING_MIP_LEVELS":				"uint32_t",
+	"VK_REMAINING_ARRAY_LAYERS":			"uint32_t",
+	"VK_WHOLE_SIZE":						"vk::VkDeviceSize",
+	"VK_TRUE":								"vk::VkBool32",
+	"VK_FALSE":								"vk::VkBool32",
+}
 
 PLATFORM_TYPES		= [
 	# VK_KHR_xlib_surface
@@ -108,6 +109,16 @@ PLATFORM_TYPES		= [
 	(["GgpFrameToken"],						["GgpFrameToken"],				"int32_t"),
 	(["GgpStreamDescriptor"],				["GgpStreamDescriptor"],		"int32_t"),
 	(["CAMetalLayer"],						["CAMetalLayer"],				"void*"),
+	(["struct", "_screen_context", "*"],	["QNXScreenContextPtr"],		"void*"),
+	(["struct", "_screen_window", "*"],		["QNXScreenWindowPtr"],			"void*"),
+
+	# VK_EXT_metal_objects
+	(["MTLDevice_id"],						["MTLDevice_id"],				"void*"),
+	(["MTLCommandQueue_id"],				["MTLCommandQueue_id"],			"void*"),
+	(["MTLBuffer_id"],						["MTLBuffer_id"],				"void*"),
+	(["MTLTexture_id"],						["MTLTexture_id"],				"void*"),
+	(["IOSurfaceRef"],						["IOSurfaceRef"],				"void*"),
+	(["MTLSharedEvent_id"],					["MTLSharedEvent_id"],			"void*"),
 ]
 
 PLATFORM_TYPE_NAMESPACE	= "pt"
@@ -118,53 +129,655 @@ TYPE_SUBSTITUTIONS		= [
 	("HANDLE*",		PLATFORM_TYPE_NAMESPACE + "::" + "Win32Handle*"),
 ]
 
-EXTENSION_POSTFIXES				= ["KHR", "EXT", "NV", "NVX", "KHX", "NN", "MVK", "FUCHSIA", "GGP", "AMD", "QNX"]
 EXTENSION_POSTFIXES_STANDARD	= ["KHR", "EXT"]
+EXTENSION_POSTFIXES_VENDOR		= ["AMD", "ARM", "NV", 'INTEL', "NVX", "KHX", "NN", "MVK", "FUCHSIA", 'QCOM', "GGP", "QNX", "ANDROID", 'VALVE', 'HUAWEI']
+EXTENSION_POSTFIXES				= EXTENSION_POSTFIXES_STANDARD + EXTENSION_POSTFIXES_VENDOR
+
+def substituteType(object):		# both CompositeMember and FunctionArgument can be passed to this function
+	for src, dst in TYPE_SUBSTITUTIONS:
+		object.type = object.type.replace(src, dst)
+	for platformType, substitute, _ in PLATFORM_TYPES:
+		platformTypeName = platformType[0]
+		platformTypeName = platformType[-2] if "*" in platformType else platformType[0]
+		if object.type == platformTypeName:
+			object.type = PLATFORM_TYPE_NAMESPACE + '::' + substitute[0]
+			object.qualifiers = None if 'struct' in platformType else object.qualifiers
+			object.qualifiers = None if 'const' in platformType else object.qualifiers
+			if "*" in platformType:
+				object.pointer = "*" if object.pointer == "**" else None
+
+class Define:
+	def __init__ (self, name, aType, alias, value):
+		self.name			= name
+		self.type			= aType
+		self.alias			= alias
+		self.value			= value
+
+class Handle:
+	def __init__ (self, name, aType, alias, parent, objtypeenum):
+		self.name			= name
+		self.type			= aType
+		self.alias			= alias
+		self.parent			= parent
+		self.objtypeenum	= objtypeenum
+
+class Bitmask:
+	def __init__ (self, name, aType, requires, bitvalues):
+		self.name		= name
+		self.type		= aType
+		self.alias		= None					# initialy None but may be filled while parsing next tag
+		self.requires	= requires
+		self.bitvalues	= bitvalues
+
+class Enumerator:
+	def __init__ (self, name, value, bitpos):
+		self.name		= name
+		self.aliasList	= []					# list of strings
+		self.value		= value					# some enums specify value and some bitpos
+		self.bitpos		= bitpos
+		self.extension	= None					# name of extension that added this enumerator
+
+class Enum:
+	def __init__ (self, name):
+		self.name				= name
+		self.alias				= None			# name of enum alias or None
+		self.type				= None			# enum or bitmask
+		self.bitwidth			= "32"
+		self.enumeratorList		= []			# list of Enumerator objects
+
+	def areValuesLinear (self):
+		if self.type == 'bitmask':
+			return False
+		curIndex = 0
+		for enumerator in self.enumeratorList:
+			intValue = parseInt(enumerator.value)
+			if intValue != curIndex:
+				return False
+			curIndex += 1
+		return True
+
+class CompositeMember:
+	def __init__ (self, name, aType, pointer, qualifiers, arraySizeList, optional, limittype, values, fieldWidth):
+		self.name			= name
+		self.type			= aType					# member type
+		self.pointer		= pointer				# None, '*' or '**'
+		self.qualifiers		= qualifiers			# 'const' or 'struct' or None
+		self.arraySizeList	= arraySizeList			# can contain digits or enums
+		self.optional		= optional
+		self.limittype		= limittype
+		self.values			= values				# allowed member values
+		self.fieldWidth		= fieldWidth			# ':' followed by number of bits
+
+		# check if type should be swaped
+		substituteType(self)
+
+class Composite:
+	def __init__ (self, name, category, allowduplicate, structextends, returnedonly, members):
+		self.name			= name
+		self.category		= category			# is it struct or union
+		self.aliasList		= []				# most composite types have single alias but there are cases like VkPhysicalDeviceVariablePointersFeatures that have 3
+		self.allowduplicate	= allowduplicate
+		self.structextends	= structextends
+		self.returnedonly	= returnedonly
+		self.members		= members			# list of CompositeMember objects
+
+class FunctionArgument:
+	def __init__ (self, name, qualifiers, aType, pointer = None, secondPointerIsConst = False, arraySize = None):
+		self.name					= name
+		self.qualifiers				= qualifiers
+		self.type					= aType
+		self.pointer				= pointer			# None, '*' or '**'
+		self.secondPointerIsConst	= secondPointerIsConst
+		self.arraySize				= arraySize
+
+		# check if type should be swaped
+		substituteType(self)
+
+class Function:
+	TYPE_PLATFORM		= 0 # Not bound to anything
+	TYPE_INSTANCE		= 1 # Bound to VkInstance
+	TYPE_DEVICE			= 2 # Bound to VkDevice
+
+	def __init__ (self, name, returnType = None, arguments = None):
+		self.name			= name
+		self.aliasList		= []
+		self.returnType		= returnType
+		self.arguments		= arguments				# list of FunctionArgument objects
+		self.functionType	= Function.TYPE_PLATFORM
+
+		# Determine function type based on first argument but use TYPE_PLATFORM for vkGetInstanceProcAddr
+		if self.name == "vkGetInstanceProcAddr":
+			return
+		assert len(self.arguments) > 0
+		firstArgType = self.arguments[0].type
+		if firstArgType in ["VkInstance", "VkPhysicalDevice"]:
+			self.functionType = Function.TYPE_INSTANCE
+		elif firstArgType in ["VkDevice", "VkCommandBuffer", "VkQueue"]:
+			self.functionType = Function.TYPE_DEVICE
+
+	def getType (self):
+		return self.functionType
+
+class FeatureRequirement:
+	def __init__ (self, comment, enumList, typeList, commandList):
+		self.comment			= comment
+		self.enumList			= enumList
+		self.typeList			= typeList
+		self.commandList		= commandList			# list of strings, each representing required function
+
+class Feature:
+	def __init__ (self, api, name, number, requirementsList):
+		self.api				= api
+		self.name				= name
+		self.number				= number
+		self.requirementsList	= requirementsList		# list of FeatureRequirement objects
+
+class ExtensionEnumerator:
+	def __init__ (self, name, extends, alias, value, extnumber, offset, comment):
+		self.name		= name
+		self.extends	= extends
+		self.alias		= alias
+		self.value		= value
+		self.extnumber	= extnumber
+		self.offset		= offset
+		self.comment	= comment						# note: comment is used to mark not promoted features for partially promoted extensions
+
+class ExtensionCommand:
+	def __init__ (self, name, comment):
+		self.name		= name
+		self.comment	= comment
+
+class ExtensionType:
+	def __init__ (self, name, comment):
+		self.name		= name
+		self.comment	= comment
+
+class ExtensionRequirements:
+	def __init__ (self, extensionName, extendedEnums, newCommands, newTypes):
+		self.extensionName	= extensionName					# None when requirements apply to all implementations of extension;
+															# string with extension name when requirements apply to implementations that also support given extension
+		self.extendedEnums	= extendedEnums					# list of ExtensionEnumerator objects
+		self.newCommands	= newCommands					# list of ExtensionCommand objects
+		self.newTypes		= newTypes						# list of ExtensionType objects
+
+class Extension:
+	def __init__ (self, name, number, type, requiresCore, requiredExtensions, platform, promotedto, partiallyPromoted, requirementsList):
+		self.name				= name						# extension name
+		self.number				= number					# extension version
+		self.type				= type						# extension type - "device" or "instance"
+		self.requiresCore		= requiresCore				# required core vulkan version e.g. "1.1"
+		self.requiredExtensions	= requiredExtensions		# list of extensions names that also need to be available on implementation or None
+		self.platform			= platform					# None, "win32", "ios", "android" etc.
+		self.promotedto			= promotedto				# vulkan version, other extension or None
+		self.partiallyPromoted	= partiallyPromoted			# when True then some of requirements were not promoted
+		self.requirementsList	= requirementsList			# list of ExtensionRequirements objects
+
+class API:
+	def __init__ (self):
+		self.versions			= []
+		self.basetypes			= {}	# dictionary, e.g. one of keys is VkFlags and its value is uint32_t
+		self.defines			= []
+		self.handles			= []
+		self.bitmasks			= []	# list of Bitmask objects
+		self.enums				= []	# list of Enum objects - each contains individual enum definition (including extension enums)
+		self.compositeTypes		= []	# list of Composite objects - each contains individual structure/union definition (including extension structures)
+		self.functions			= []	# list of Function objects - each contains individual command definition (including extension functions)
+		self.features			= []	# list of Feature objects
+		self.extensions			= []	# list of Extension objects - each contains individual extension definition
+		self.basicCTypes		= []	# list of basic C types e.g. 'void', 'int8_t'
+		self.tempAliasesList	= []	# list of touples used to handle aliases for enumerators that will be defined later
+
+		# read all files from extensions directory
+		additionalExtensionData	= {}
+		for fileName in glob.glob(os.path.join(SCRIPTS_SRC_DIR, "extensions", "*.json")):
+			if "schema.json" in fileName:
+				continue
+			extensionName	= os.path.basename(fileName)[:-5]
+			fileContent		= readFile(fileName)
+			try:
+				additionalExtensionData[extensionName] = json.loads(fileContent)
+			except ValueError as err:
+				print("Error in %s: %s" % (os.path.basename(fileName), str(err)))
+				sys.exit(-1)
+		self.additionalExtensionData = sorted(additionalExtensionData.items(), key=lambda e: e[0])
+
+	def addOrUpdateEnumerator (self, enumeratorNode, enumDefinition, extensionNumber = None):
+		name	= enumeratorNode.get("name")
+		alias	= enumeratorNode.get("alias")
+		# if enumerator node has alias atribute then update existing enumerator
+		if alias is not None:
+			for e in reversed(enumDefinition.enumeratorList):
+				if alias == e.name or alias in e.aliasList:
+					# make sure same alias is not already on the list; this handles special case like
+					# VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES_KHR alais which is defined in three places
+					if name not in e.aliasList:
+						e.aliasList.append(name)
+					return
+			# there are cases where alias is specified for enumerator that wasn't yet defined,
+			# we need to remember those aliases and assign them after we parse whole xml
+			self.tempAliasesList.append((enumDefinition, name, alias))
+			return
+		# calculate enumerator value if offset attribute is present
+		value = enumeratorNode.get("value")
+		if value is None:
+			value = enumeratorNode.get("offset")
+			if value is not None:
+				# check if extensionNumber should be overridden
+				extnumber = enumeratorNode.get("extnumber")
+				if extnumber is not None:
+					extensionNumber = extnumber
+				value = 1000000000 + (int(extensionNumber)-1) * 1000 + int(value)
+				# check if value should be negative
+				dir = enumeratorNode.get("dir")
+				if dir == "-":
+					value *= -1
+				# convert to string so that type matches the type in which values
+				# are stored for enums that were read from enums xml section
+				value = str(value)
+		# add new enumerator
+		enumDefinition.enumeratorList.append(Enumerator(
+			name,
+			value,
+			enumeratorNode.get("bitpos")
+		))
+
+	def readEnum (self, enumsNode):
+		enumName = enumsNode.get("name")
+		# special case for vulkan hardcoded constants that are specified as enum in vk.xml
+		if enumName == "API Constants":
+			for enumItem in enumsNode:
+				self.defines.append(Define(
+					enumItem.get("name"),
+					enumItem.get("type"),
+					enumItem.get("alias"),
+					enumItem.get("value")
+				))
+			return
+		# initial enum definition is read while processing types section;
+		# we need to find this enum definition and add data to it
+		enumDefinition = [enumDef for enumDef in self.enums if enumName == enumDef.name][0]
+		# add type and bitwidth to enum definition
+		enumDefinition.type		= enumsNode.get("type")
+		enumDefinition.bitwidth	= enumsNode.get("bitwidth")
+		if enumDefinition.bitwidth is None:
+			enumDefinition.bitwidth = "32"
+		# add components to enum definition
+		for enumeratorItem in enumsNode:
+			# skip comment tags
+			if enumeratorItem.tag != "enum":
+				continue
+			self.addOrUpdateEnumerator(enumeratorItem, enumDefinition)
+
+	def readCommand (self, commandNode):
+		protoNode = None					# proto is a first child of every command node
+		# check if this is alias
+		alias = commandNode.get("alias")
+		# if node is alias then use the fact that alias definition follows aliased structure
+		if alias is not None:
+			lastFunction = self.functions[-1]
+			# make sure last structure that was added to list is beeing aliased now
+			# if this assert fails use same workaround as for structures
+			assert(alias == lastFunction.name)
+			lastFunction.aliasList.append(commandNode.get("name"))
+			# go to next node
+			return
+		# memorize all parameters
+		functionParams = []
+		for paramNode in commandNode:
+			# memorize prototype node
+			if paramNode.tag == "proto":
+				protoNode = paramNode
+				continue
+			# skip implicitexternsyncparams
+			if paramNode.tag != "param":
+				continue
+			nameNode	= paramNode.find("name")
+			typeNode	= paramNode.find("type")
+			starCount	= typeNode.tail.count('*')
+			functionParams.append(FunctionArgument(
+				nameNode.text,
+				paramNode.text,
+				paramNode.find("type").text,
+				'*' * starCount if starCount > 0 else None,
+				'const' in typeNode.tail,
+				nameNode.tail
+			))
+		# memorize whole function
+		self.functions.append(Function(
+			protoNode.find("name").text,
+			protoNode.find("type").text,
+			functionParams,
+		))
+
+	def readExtension (self, extensionNode):
+		# skip disabled extensions
+		if extensionNode.get("supported") == "disabled":
+			return
+		extensionName		= extensionNode.get("name")
+		extensionNumber		= extensionNode.get("number")
+		partiallyPromoted	= False
+		# before reading extension data first read extension
+		# requirements by iterating over all require tags
+		requirementsList = []
+		for requireItem in extensionNode:
+			extendedEnums	= []
+			newCommands		= []
+			newTypes		= []
+			# iterate over all children in current require tag
+			# and add them to proper list
+			for individualRequirement in requireItem:
+				requirementName = individualRequirement.get("name")
+				requirementComment = individualRequirement.get("comment")
+				# check if this requirement was not promoted and mark
+				# this extension as not fully promoted
+				if requirementComment is not None and "Not promoted to" in requirementComment:
+					partiallyPromoted = True
+				# check if this requirement describes enum, command or type
+				if individualRequirement.tag == "enum":
+					extendedEnumName = individualRequirement.get("extends")
+					extendedEnums.append(ExtensionEnumerator(
+						requirementName,
+						extendedEnumName,
+						individualRequirement.get("alias"),
+						individualRequirement.get("value"),
+						individualRequirement.get("extnumber"),
+						individualRequirement.get("offset"),
+						requirementComment))
+					# add enumerator to proper enum from api.enums
+					if extendedEnumName is not None:
+						newEnumerator = individualRequirement.get("name")
+						# find extendedEnumName in self.enums
+						matchedEnum = [enum for enum in self.enums if enum.name == extendedEnumName][0]
+						# add enumerator only when it is not already in enum
+						if len([e for e in matchedEnum.enumeratorList if e.name == newEnumerator]) == 0:
+							self.addOrUpdateEnumerator(individualRequirement, matchedEnum, extensionNumber)
+				elif individualRequirement.tag == "command":
+					newCommands.append(ExtensionCommand(requirementName, requirementComment))
+				elif individualRequirement.tag == "type":
+					newTypes.append(ExtensionType(requirementName, requirementComment))
+				elif individualRequirement.tag == "comment" and "not promoted to" in individualRequirement.text:
+					# partial promotion of VK_EXT_ycbcr_2plane_444_formats and VK_EXT_4444_formats
+					# is marked with comment tag in first require section
+					partiallyPromoted = True
+			# construct requirement object and add it to the list
+			requirementsList.append(ExtensionRequirements(
+				requireItem.get("extension"),	# extensionName
+				extendedEnums,					# extendedEnums
+				newCommands,					# newCommands
+				newTypes						# newTypes
+			))
+		# read extensions that need to be supported when current extension is suported;
+		# in xml this is single comma separated string, we split it to list of strings
+		requiredExtensions = extensionNode.get("requires")
+		if requiredExtensions is not None:
+			requiredExtensions = requiredExtensions.split(',')
+		# add extension definition to api object
+		self.extensions.append(Extension(
+			extensionName,						# name
+			extensionNumber,					# number
+			extensionNode.get("type"),			# type
+			extensionNode.get("requiresCore"),	# requiresCore
+			requiredExtensions,					# requiredExtensions
+			extensionNode.get("platform"),		# platform
+			extensionNode.get("promotedto"),	# promotedto
+			partiallyPromoted,					# partiallyPromoted
+			requirementsList					# requirementsList
+		))
+
+	def readFeature (self, featureNode):
+		requirementsList = []
+		for requirementGroup in featureNode:
+			enumList	= []
+			typeList	= []
+			commandList	= []
+			for requirement in requirementGroup:
+				requirementName = requirement.get("name")
+				if requirement.tag == "enum":
+					enumList.append(requirementName)
+					extendedEnumName = requirement.get("extends")
+					if extendedEnumName is not None:
+						# find extended enum in api.enums list
+						for e in self.enums:
+							if extendedEnumName == e.name:
+								# read enumerator and add it to enum
+								self.addOrUpdateEnumerator(requirement, e)
+								break
+				elif requirement.tag == "type":
+					typeList.append(requirementName)
+				elif requirement.tag == "command":
+					commandList.append(requirementName)
+			requirementsList.append(FeatureRequirement(
+				requirementGroup.get("comment"),
+				enumList,
+				typeList,
+				commandList
+			))
+		self.features.append(Feature(
+			featureNode.get("api"),
+			featureNode.get("name"),
+			featureNode.get("number"),
+			requirementsList
+		))
+
+	def readType (self, typeNode):
+		name		= typeNode.get("name")
+		alias		= typeNode.get("alias")
+		category	= typeNode.get("category")
+		if category == "enum":
+			if alias is None:
+				self.enums.append(Enum(name))
+			else:
+				for e in reversed(self.enums):
+					if alias == e.name:
+						e.alias = name
+						break
+		elif category == "handle":
+			type = None
+			if alias is None:
+				name = typeNode.find("name").text
+				type = typeNode.find("type").text
+				self.handles.append(Handle(
+					name,
+					type,
+					alias,
+					typeNode.get("parent"),
+					typeNode.get("objtypeenum"),
+				))
+			else:
+				for h in reversed(self.handles):
+					if alias == h.name:
+						h.alias = name
+						break
+		elif category == "basetype":
+			# processing only those basetypes that have type child
+			type = typeNode.find("type")
+			if type is not None:
+				self.basetypes[typeNode.find("name").text] = type.text
+		elif category == "bitmask":
+			# if node is alias then use the fact that alias definition follows aliased bitmasks;
+			# in majoriti of cases it follows directly aliased bitmasks but in some cases there
+			# is a unrelated bitmasks definition in between - to handle this traverse in reverse order
+			if alias is not None:
+				for bm in reversed(self.bitmasks):
+					if alias == bm.name:
+						bm.alias = name
+						break
+			else:
+				self.bitmasks.append(Bitmask(
+					typeNode.find("name").text,
+					typeNode.find("type").text,
+					typeNode.get("requires"),
+					typeNode.get("bitvalues")
+				))
+		elif category in ["struct", "union"]:
+			# if node is alias then use the fact that alias definition follows aliased structure;
+			# in majoriti of cases it follows directly aliased structure but in some cases there
+			# is a unrelated structure definition in between - to handle this traverse in reverse order
+			if alias is not None:
+				for ct in reversed(self.compositeTypes):
+					if alias == ct.name:
+						ct.aliasList.append(name)
+						break
+				# go to next node
+				return
+			# read structure members
+			structMembers = []
+			for memberNode in typeNode:
+				if memberNode.tag != "member":
+					continue
+				# handle enum nodes that can be used for arrays
+				arraySizeList = []
+				for node in memberNode:
+					if node.tag == "enum":
+						arraySizeList.append(node.text)
+				# handle additional text after name tag; it can represent array
+				# size like in VkPipelineFragmentShadingRateEnumStateCreateInfoNV
+				# or number of bits like in VkAccelerationStructureInstanceKHR
+				nameNode	= memberNode.find("name")
+				nameTail	= nameNode.tail
+				fieldWidth	= None
+				if nameTail:
+					if ':' in nameTail:
+						fieldWidth = nameTail.replace(':', '').replace(' ', '')
+					elif '[' in nameTail and ']' in nameTail:
+						nameTail = nameTail.replace(']', ' ').replace('[', ' ')
+						arraySizeList = nameTail.split()
+				# handle additional text after type tag; it can represent pointers like *pNext
+				memberTypeNode	= memberNode.find("type")
+				pointer			= memberTypeNode.tail.strip() if memberTypeNode.tail is not None else None
+				structMembers.append(CompositeMember(
+					nameNode.text,					# name
+					memberTypeNode.text,			# type
+					pointer,						# pointer
+					memberNode.text,				# qualifiers
+					arraySizeList,					# arraySizeList
+					memberNode.get("optional"),		# optional
+					memberNode.get("limittype"),	# limittype
+					memberNode.get("values"),		# values
+					fieldWidth						# fieldWidth
+				))
+			# create structure definition
+			self.compositeTypes.append(Composite(
+				name,
+				category,
+				typeNode.get("allowduplicate"),
+				typeNode.get("structextends"),
+				typeNode.get("returnedonly"),
+				structMembers
+			))
+		elif category == "define":
+			if typeNode.get("requires") == "VK_MAKE_API_VERSION":
+				value = typeNode.find("type").tail
+				value = 'VK_MAKE_API_VERSION' + value[:value.find(')')+1]
+				self.defines.append(Define(
+					typeNode.find("name").text,
+					"uint32_t",
+					None,
+					value
+				))
+		else:
+			requires = typeNode.get("requires")
+			if requires == 'vk_platform':
+				self.basicCTypes.append(name)
+
+	def build (self, rawVkXml):
+		# iterate over all *.xml root children
+		for rootChild in rawVkXml.getroot():
+
+			# each enum is defined in separate enums node directly under root node
+			if rootChild.tag == "enums":
+				self.readEnum(rootChild)
+
+			# read function definitions
+			if rootChild.tag == "commands":
+				commandsNode = rootChild
+				for commandItem in commandsNode:
+					self.readCommand(commandItem)
+
+			# read vulkan versions
+			if rootChild.tag == "feature":
+				self.readFeature(rootChild)
+
+			# read extensions
+			if rootChild.tag == "extensions":
+				extensionsNode = rootChild
+				for extensionItem in extensionsNode:
+					self.readExtension(extensionItem)
+
+			# "types" is a first child of root so it's optimal to check for it
+			# last and don't repeat this check for all other iterations
+			if rootChild.tag == "types":
+				typesNode = rootChild
+				for typeItem in typesNode:
+					self.readType(typeItem)
+
+	def postProcess (self):
+		def removeExtensionFromApi(extName, structureNameList, commandNameList):
+			extObjectList = [e for e in api.extensions if e.name == extName]
+			if len(extObjectList) > 0:
+				api.extensions.remove(extObjectList[0])
+			structObjectList = [ct for ct in api.compositeTypes if ct.name in structureNameList]
+			for s in structObjectList:
+				api.compositeTypes.remove(s)
+			commandObjectList = [f for f in api.functions if f.name in commandNameList]
+			for f in commandObjectList:
+				api.functions.remove(f)
+
+		# remove structures and commands added by VK_EXT_directfb_surface extension
+		removeExtensionFromApi("VK_EXT_directfb_surface",
+							   ["VkDirectFBSurfaceCreateFlagsEXT", "VkDirectFBSurfaceCreateInfoEXT"],
+							   ["vkCreateDirectFBSurfaceEXT", "vkGetPhysicalDeviceDirectFBPresentationSupportEXT"])
+
+		# remove structures and commands added by disabled VK_ANDROID_native_buffer extension;
+		# disabled extensions aren't read but their structures and commands will be in types and commands sections in vk.xml
+		removeExtensionFromApi("VK_ANDROID_native_buffer",
+							   ["VkNativeBufferANDROID", "VkSwapchainImageCreateInfoANDROID",
+								"VkPhysicalDevicePresentationPropertiesANDROID", "VkNativeBufferUsage2ANDROID",
+								"VkSwapchainImageUsageFlagBitsANDROID", "VkSwapchainImageUsageFlagsANDROID"],
+							   ["vkGetSwapchainGrallocUsageANDROID", "vkAcquireImageANDROID",
+								"vkQueueSignalReleaseImageANDROID", "vkGetSwapchainGrallocUsage2ANDROID"])
+
+		# remove empty enums e.g. VkQueryPoolCreateFlagBits, VkDeviceCreateFlagBits
+		enumsToRemove = [enum for enum in self.enums if len(enum.enumeratorList) == 0]
+		for er in enumsToRemove:
+			self.enums.remove(er)
+
+		# add aliases to enumerators that were defined after alias (there are ~10 cases like that in vk.xml)
+		for tmpAliasTouple in self.tempAliasesList:
+			(enum, name, alias) = tmpAliasTouple
+			for e in enum.enumeratorList:
+				if e.name == alias:
+					e.aliasList.append(name)
+					break
+		self.tempAliasesList = None
+
+		# add alias for VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR (in vk.xml for this struct alias is defined before struct
+		# where in all other cases it is defined after structure definition)
+		barycentricFeaturesStruct = [c for c in api.compositeTypes if c.name == 'VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR'][0]
+		barycentricFeaturesStruct.aliasList.append('VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV')
+
+		# sort enumerators in enums
+		sortLambda	= lambda enumerator: int(enumerator.bitpos) if enumerator.value is None else int(enumerator.value, 16 if 'x' in enumerator.value else 10)
+		for enum in self.enums:
+			# skip enums that have no items in enumeratorList (e.g. VkQueryPoolCreateFlagBits) or just one item
+			if len(enum.enumeratorList) < 2:
+				continue
+			# construct list of enumerators in which value and bitpos are not None
+			enumeratorsToSort		= [e for e in enum.enumeratorList if e.value != e.bitpos]
+			# construct list of enumerators in which value and bitpos are equal to None
+			remainingEnumerators	= [e for e in enum.enumeratorList if e.value == e.bitpos]
+			# construct sorted enumerator list with aliases at the end
+			enum.enumeratorList = sorted(enumeratorsToSort, key=sortLambda)
+			enum.enumeratorList.extend(remainingEnumerators)
 
 def prefixName (prefix, name):
 	name = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', name[2:])
 	name = re.sub(r'([a-zA-Z])([0-9])', r'\1_\2', name)
 	name = name.upper()
-
-	name = name.replace("YCB_CR_", "YCBCR_")
-	name = name.replace("WIN_32_", "WIN32_")
-	name = name.replace("8_BIT_", "8BIT_")
-	name = name.replace("16_BIT_", "16BIT_")
-	name = name.replace("INT_64_", "INT64_")
-	name = name.replace("D_3_D_12_", "D3D12_")
-	name = name.replace("IOSSURFACE_", "IOS_SURFACE_")
-	name = name.replace("MAC_OS", "MACOS_")
-	name = name.replace("TEXTURE_LOD", "TEXTURE_LOD_")
-	name = name.replace("VIEWPORT_W", "VIEWPORT_W_")
-	name = name.replace("_IDPROPERTIES", "_ID_PROPERTIES")
-	name = name.replace("PHYSICAL_DEVICE_SHADER_FLOAT_16_INT_8_FEATURES", "PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES")
-	name = name.replace("PHYSICAL_DEVICE_RGBA_10_X_6_FORMATS_FEATURES_EXT", "PHYSICAL_DEVICE_RGBA10X6_FORMATS_FEATURES_EXT")
-	name = name.replace("_PCIBUS_", "_PCI_BUS_")
-	name = name.replace("ASTCD", "ASTC_D")
-	name = name.replace("AABBNV", "AABB_NV")
-	name = name.replace("IMAGE_PIPE", "IMAGEPIPE")
-	name = name.replace("SMBUILTINS", "SM_BUILTINS")
-	name = name.replace("ASTCHDRFEATURES", "ASTC_HDR_FEATURES")
-	name = name.replace("UINT_8", "UINT8")
-	name = name.replace("VULKAN_11_FEATURES", "VULKAN_1_1_FEATURES")
-	name = name.replace("VULKAN_11_PROPERTIES", "VULKAN_1_1_PROPERTIES")
-	name = name.replace("VULKAN_12_FEATURES", "VULKAN_1_2_FEATURES")
-	name = name.replace("VULKAN_12_PROPERTIES", "VULKAN_1_2_PROPERTIES")
-	name = name.replace("VULKAN_13_FEATURES", "VULKAN_1_3_FEATURES")
-	name = name.replace("VULKAN_13_PROPERTIES", "VULKAN_1_3_PROPERTIES")
-	name = name.replace("VULKAN_SC_10_FEATURES", "VULKAN_SC_1_0_FEATURES")
-	name = name.replace("VULKAN_SC_10_PROPERTIES", "VULKAN_SC_1_0_PROPERTIES")
-	name = name.replace("INT_8_", "INT8_")
-	name = name.replace("AABBNV", "AABB_NV")
-	name = name.replace("_H_264_", "_H264_")
-	name = name.replace("_H_265_", "_H265_")
-	name = name.replace("RDMAFEATURES", "RDMA_FEATURES")
-	name = name.replace("RGBA_10_X_6", "RGBA10X6")
-	name = name.replace("2_D", "2D_")
-	name = name.replace("3_D", "3D_")
-
-
 	return prefix + name
+
+def parseInt (value):
+	return int(value, 16 if (value[:2] == "0x") else 10)
 
 def getApiVariantIndexByName(variantName):
 	apiVariant = {
@@ -182,695 +795,34 @@ def getApiVariantNameByIndex(variantIndex):
 	}
 	return apiVariant[variantIndex]
 
-class Version:
-	def __init__ (self, versionTuple):
-		self.api   = versionTuple[0]
-		self.major = versionTuple[1]
-		self.minor = versionTuple[2]
-		self.patch = versionTuple[3]
-
-	def getInHex (self):
-		if self.patch == 0:
-			return "VK%s_API_VERSION_%d_%d" % (getApiVariantNameByIndex(self.api), self.major, self.minor)
-		return '0x%Xu' % (hash(self))
-
-	def isStandardVersion (self):
-		if self.patch != 0:
-			return False
-		if self.major != 1:
-			return False
-		return True
-
-	def getBestRepresentation (self):
-		if self.isStandardVersion():
-			return self.getInHex()
-		return self.getDefineName()
-
-	def getDefineName (self):
-		return 'VERSION_%d_%d_%d' % (self.major, self.minor, self.patch)
-
-	def __hash__ (self):
-		return (self.api << 29) | (self.major << 22) | (self.minor << 12) | self.patch
-
-	def __eq__ (self, other):
-		return self.api == other.api and self.major == other.major and self.minor == other.minor and self.patch == other.patch
-
-	def __str__ (self):
-		return self.getBestRepresentation()
-
-class Handle:
-	TYPE_DISP		= 0
-	TYPE_NONDISP	= 1
-
-	def __init__ (self, type, name):
-		self.type		= type
-		self.name		= name
-		self.alias		= None
-		self.isAlias	= False
-
-	def getHandleType (self):
-		return prefixName("HANDLE_TYPE_", self.name)
-
-	def checkAliasValidity (self):
-		pass
-
-	def __repr__ (self):
-		return '%s (%s, %s)' % (self.name, self.alias, self.isAlias)
-
-class Definition:
-	def __init__ (self, type, name, value):
-		self.type	= type
-		self.name	= name
-		self.value	= value
-		self.alias	= None
-		self.isAlias	= False
-
-	def __repr__ (self):
-		return '%s = %s (%s)' % (self.name, self.value, self.type)
-
-class Enum:
-	def __init__ (self, name, values):
-		self.name		= name
-		self.values		= values
-		self.alias		= None
-		self.isAlias	= False
-
-	def checkAliasValidity (self):
-		if self.alias != None:
-			if len(self.values) != len(self.alias.values):
-				raise Exception("%s has different number of flags than its alias %s." % (self.name, self.alias.name))
-			for index, value in enumerate(self.values):
-				aliasVal = self.alias.values[index]
-				if value[1] != aliasVal[1] or not (value[0].startswith(aliasVal[0]) or aliasVal[0].startswith(value[0])):
-					raise Exception("Flag %s of %s has different value than %s of %s." % (self.alias.values[index], self.alias.name, value, self.name))
-
-	def __repr__ (self):
-		return '%s (%s) %s' % (self.name, self.alias, self.values)
-
-class Bitfield:
-	def __init__ (self, name, values):
-		self.name		= name
-		self.values		= values
-		self.alias		= None
-		self.isAlias	= False
-
-	def checkAliasValidity (self):
-		if self.alias != None:
-			if len(self.values) != len(self.alias.values):
-				raise Exception("%s has different number of flags than its alias %s." % (self.name, self.alias.name))
-			for index, value in enumerate(self.values):
-				aliasVal = self.alias.values[index]
-				if value[1] != aliasVal[1] or not (value[0].startswith(aliasVal[0]) or aliasVal[0].startswith(value[0])):
-					raise Exception("Flag %s of %s has different value than %s of %s." % (self.alias.values[index], self.alias.name, value, self.name))
-
-	def __repr__ (self):
-		return '%s (%s)' % (self.name, self.alias)
-
-class Variable:
-	def __init__ (self, type, name, arraySizeOrFieldWidth):
-		type		= type.replace('*',' *').replace('&',' &')
-		for src, dst in TYPE_SUBSTITUTIONS:
-			type = type.replace(src, dst)
-		self.type	= type.split(' ')
-		for platformType, substitute, compat in PLATFORM_TYPES:
-			range = self.contains(self.type, platformType)
-			if range != None:
-				self.type = self.type[:range[0]]+[PLATFORM_TYPE_NAMESPACE + '::' + substitute[0]] + substitute[1:] + self.type[range[1]:]
-				break
-		self.name		= name
-		if len(arraySizeOrFieldWidth) > 0 and arraySizeOrFieldWidth[0] == ':':
-			self.arraySize	= ''
-			self.fieldWidth = arraySizeOrFieldWidth
-		else:
-			self.arraySize	= arraySizeOrFieldWidth
-			self.fieldWidth = ''
-
-	def contains(self, big, small):
-		for i in range(len(big)-len(small)+1):
-			for j in range(len(small)):
-				if big[i+j] != small[j]:
-					break
-			else:
-				return i, i+len(small)
-		return None
-
-	def getType (self):
-		return ' '.join(self.type).replace(' *','*').replace(' &','&')
-
-	def getAsString (self, separator):
-		return '%s%s%s%s%s' % (self.getType(), separator, self.name, self.arraySize, self.fieldWidth)
-
-	def getAsStringForArgumentList (self, separator):
-		return '%s%s%s%s' % (self.getType(), separator, self.name, self.arraySize)
-
-	def __repr__ (self):
-		return '<%s> <%s> <%s>' % (self.type, self.name, self.arraySize)
-
-	def __eq__ (self, other):
-		if len(self.type) != len(other.type):
-			return False
-		for index, type in enumerate(self.type):
-			if "*" == type or "&" == type or "const" == type or "volatile" == type:
-				if type != other.type[index]:
-					return False
-			elif type != other.type[index] and \
-				type not in map(lambda ext: other.type[index] + ext, EXTENSION_POSTFIXES_STANDARD) and \
-				other.type[index] not in map(lambda ext: type + ext, EXTENSION_POSTFIXES_STANDARD):
-				return False
-		return self.arraySize == other.arraySize
-
-	def __ne__ (self, other):
-		return not self == other
-
-class CompositeType:
-	CLASS_STRUCT	= 0
-	CLASS_UNION		= 1
-
-	def __init__ (self, typeClass, name, members, apiVersion = None):
-		self.typeClass	= typeClass
-		self.name		= name
-		self.members	= members
-		self.alias		= None
-		self.isAlias	= False
-		self.apiVersion	= apiVersion
-
-	def getClassName (self):
-		names = {CompositeType.CLASS_STRUCT: 'struct', CompositeType.CLASS_UNION: 'union'}
-		return names[self.typeClass]
-
-	def checkAliasValidity (self):
-		if self.alias != None:
-			if len(self.members) != len(self.alias.members):
-				raise Exception("%s has different number of members than its alias %s." % (self.name, self.alias.name))
-			for index, member in enumerate(self.members ):
-				break
-				#if member != self.alias.members[index]:
-					#raise Exception("Member %s of %s is different than core member %s in %s." % (self.alias.members[index], self.alias.name, member, self.name))
-					#raise Exception("Member ",str(self.alias.members[index])," of ", str(self.alias.name)," is different than core member ", str(member)," in ", str(self.name),".")
-	def __repr__ (self):
-		return '%s (%s)' % (self.name, self.alias)
-
-class Function:
-	TYPE_PLATFORM		= 0 # Not bound to anything
-	TYPE_INSTANCE		= 1 # Bound to VkInstance
-	TYPE_DEVICE			= 2 # Bound to VkDevice
-
-	def __init__ (self, name, returnType, arguments, apiVersion = None):
-		self.name		= name
-		self.returnType	= returnType
-		self.arguments	= arguments
-		self.alias		= None
-		self.isAlias	= False
-		self.apiVersion	= apiVersion
-
-	def getType (self):
-		# Special functions
-		if self.name == "vkGetInstanceProcAddr":
-			return Function.TYPE_PLATFORM
-		assert len(self.arguments) > 0
-		firstArgType = self.arguments[0].getType()
-		if firstArgType in ["VkInstance", "VkPhysicalDevice"]:
-			return Function.TYPE_INSTANCE
-		elif firstArgType in ["VkDevice", "VkCommandBuffer", "VkQueue"]:
-			return Function.TYPE_DEVICE
-		else:
-			return Function.TYPE_PLATFORM
-
-	def checkAliasValidity (self):
-		if self.alias != None:
-			if len(self.arguments) != len(self.alias.arguments):
-				raise Exception("%s has different number of arguments than its alias %s." % (self.name, self.alias.name))
-			if self.returnType != self.alias.returnType or not (self.returnType.startswith(self.alias.returnType) or self.alias.returnType.startswith(self.returnType)):
-				raise Exception("%s has different return value's type than its alias %s." % (self.name, self.alias.name))
-			for index, argument in enumerate(self.arguments):
-				if argument != self.alias.arguments[index]:
-					raise Exception("argument %s: \"%s\" of %s is different than \"%s\" of %s." % (index, self.alias.arguments[index].getAsString(' '), self.alias.name, argument.getAsString(' '), self.name))
-
-	def __repr__ (self):
-		return '%s (%s)' % (self.name, self.alias)
-
-class Extension:
-	def __init__ (self, name, handles, enums, bitfields, compositeTypes, functions, definitions, additionalDefinitions, typedefs, versionInCore):
-		self.name			= name
-		self.definitions	= definitions
-		self.additionalDefs = additionalDefinitions
-		self.handles		= handles
-		self.enums			= enums
-		self.bitfields		= bitfields
-		self.compositeTypes	= compositeTypes
-		self.functions		= functions
-		self.typedefs		= typedefs
-		self.versionInCore	= versionInCore
-
-	def __repr__ (self):
-		return 'EXT:\n%s ->\nENUMS:\n%s\nCOMPOS:\n%s\nFUNCS:\n%s\nBITF:\n%s\nHAND:\n%s\nDEFS:\n%s\n' % (self.name, self.enums, self.compositeTypes, self.functions, self.bitfields, self.handles, self.definitions, self.versionInCore)
-
-class API:
-	def __init__ (self, versions, definitions, handles, enums, bitfields, bitfields64, compositeTypes, functions, extensions, additionalExtensionData):
-		self.versions					= versions
-		self.definitions				= definitions
-		self.handles					= handles
-		self.enums						= enums
-		self.bitfields					= bitfields
-		self.bitfields64				= bitfields64
-		self.compositeTypes				= compositeTypes
-		self.functions					= functions					# \note contains extension functions as well
-		self.extensions					= extensions
-		self.additionalExtensionData	= additionalExtensionData	# \note contains mandatory features and information about promotion
-
 def readFile (filename):
 	with open(filename, 'rt') as f:
 		return f.read()
 
-IDENT_PTRN	= r'[a-zA-Z_][a-zA-Z0-9_]*'
-WIDTH_PTRN	= r'[:0-9]*'
-TYPE_PTRN	= r'[a-zA-Z_][a-zA-Z0-9_ \t*&]*'
+def getInterfaceName (functionName):
+	assert functionName[:2] == "vk"
+	return functionName[2].lower() + functionName[3:]
 
-def getInterfaceName (function):
-	assert function.name[:2] == "vk"
-	return function.name[2].lower() + function.name[3:]
-
-def getFunctionTypeName (function):
-	assert function.name[:2] == "vk"
-	return function.name[2:] + "Func"
+def getFunctionTypeName (functionName):
+	assert functionName[:2] == "vk"
+	return functionName[2:] + "Func"
 
 def endsWith (str, postfix):
 	return str[-len(postfix):] == postfix
 
-def splitNameExtPostfix (name):
-	knownExtPostfixes = EXTENSION_POSTFIXES
-	for postfix in knownExtPostfixes:
-		if endsWith(name, postfix):
-			return (name[:-len(postfix)], postfix)
-	return (name, "")
-
-def getBitEnumNameForBitfield (bitfieldName):
-	bitfieldName, postfix = splitNameExtPostfix(bitfieldName)
-	assert bitfieldName[-1] == "s"
-	return bitfieldName[:-1] + "Bits" + postfix
-
-def getBitfieldNameForBitEnum (bitEnumName):
-	bitEnumName, postfix = splitNameExtPostfix(bitEnumName)
-	assert bitEnumName[-4:] == "Bits"
-	return bitEnumName[:-4] + "s" + postfix
-
-def parsePreprocDefinedValue (src, name):
-	value = parsePreprocDefinedValueOptional(src, name)
-	if value is None:
-		raise Exception("No such definition: %s" % name)
-	return value
-
-def parsePreprocDefinedValueOptional (src, name):
-	definition = re.search(r'#\s*define\s+' + name + r'\s+([^\n]+)\n', src)
-	if definition is None:
-		return None
-	value = definition.group(1).strip()
-	if value == "UINT32_MAX":
-		value = "(~0u)"
-	return value
-
-def parseEnum (name, src):
-	keyValuePtrn = '(' + IDENT_PTRN + r')\s*=\s*([^\s,\n}]+)\s*[,\n}]'
-	return Enum(name, re.findall(keyValuePtrn, src))
-
-# \note Parses raw enums, some are mapped to bitfields later
-def parseEnums (src):
-	matches	= re.findall(r'typedef enum(\s*' + IDENT_PTRN + r')?\s*{([^}]*)}\s*(' + IDENT_PTRN + r')\s*;', src)
-	enums	= []
-	for enumname, contents, typename in matches:
-		enums.append(parseEnum(typename, contents))
-	return enums
-
-def parseCompositeType (type, name, src):
-	typeNamePtrn	= r'(' + TYPE_PTRN + r')(\s+' + IDENT_PTRN + r')((\[[^\]]+\]|\s*:\s*[0-9]+)*)\s*;'
-	matches			= re.findall(typeNamePtrn, src)
-	members			= [Variable(t.strip(), n.strip(), a.replace(' ', '')) for t, n, a, _ in matches]
-	return CompositeType(type, name, members)
-
-def parseCompositeTypes (src):
-	typeMap	= { 'struct': CompositeType.CLASS_STRUCT, 'union': CompositeType.CLASS_UNION }
-	matches	= re.findall(r'typedef (struct|union)(\s*' + IDENT_PTRN + r')?\s*{([^}]*)}\s*(' + IDENT_PTRN + r')\s*;', src)
-	types	= []
-	for type, structname, contents, typename in matches:
-		types.append(parseCompositeType(typeMap[type], typename, contents))
-	return types
-
-def parseCompositeTypesByVersion (src, versionsData):
-
-	# find occurence of extension is a place where
-	# we cant assign apiVersion to found structures
-	extPtrn		= r'#define\s+[A-Z0-9_]+_EXTENSION_NAME\s+"([^"]+)"'
-	versionEnd	= re.search(extPtrn, src)
-	versions	= [Version((v[2], v[3], v[4], 0)) for v in versionsData]
-	versions.append(None)
-
-	# construct list of locations where version definitions start, and add the end of the file to it
-	sectionLocations = [versionDef[1] for versionDef in versionsData]
-	sectionLocations.append(versionEnd.start())
-	sectionLocations.append(len(src))
-
-	# construct function declaration pattern
-	ptrn		= r'typedef (struct|union)(\s*' + IDENT_PTRN + r')?\s*{([^}]*)}\s*(' + IDENT_PTRN + r')\s*;'
-	regPtrn		= re.compile(ptrn)
-	types		= []
-	typeMap		= { 'struct': CompositeType.CLASS_STRUCT, 'union': CompositeType.CLASS_UNION }
-
-	# iterate over all versions and find all structure definitions
-	for index, v in enumerate(versions):
-		matches = regPtrn.findall(src, sectionLocations[index], sectionLocations[index+1])
-		for type, structname, contents, typename in matches:
-			compositeType = parseCompositeType(typeMap[type], typename, contents)
-			compositeType.apiVersion = v
-			types.append(compositeType)
-	return types
-
-def parseVersions (src):
-	# returns list of tuples each with four items:
-	# 1. string with version token (without ' 1' at the end)
-	# 2. starting point off version specific definitions in vulkan.h.in
-	# 3. major version number
-	# 4. minor version number
-	return [(m.group()[:-2], m.start(), getApiVariantIndexByName(m.group(1)), int(m.group(2)), int(m.group(3))) for m in re.finditer('VK(SC)?_VERSION_([1-9])_([0-9]) 1', src)]
-
-
-def parseHandles (src):
-	matches	= re.findall(r'VK_DEFINE(_NON_DISPATCHABLE|)_HANDLE\((' + IDENT_PTRN + r')\)[ \t]*[\n\r]', src)
-	handles	= []
-	typeMap	= {'': Handle.TYPE_DISP, '_NON_DISPATCHABLE': Handle.TYPE_NONDISP}
-	for type, name in matches:
-		handle = Handle(typeMap[type], name)
-		handles.append(handle)
-	return handles
-
-def parseArgList (src):
-	typeNamePtrn	= r'(' + TYPE_PTRN + r')(\s+' + IDENT_PTRN + r')((\[[^\]]+\])*)\s*'
-	args			= []
-	for rawArg in src.split(','):
-		m = re.search(typeNamePtrn, rawArg)
-		args.append(Variable(m.group(1).strip(), m.group(2).strip(), m.group(3)))
-	return args
-
-def removeTypeExtPostfix (name):
-	for extPostfix in EXTENSION_POSTFIXES_STANDARD:
-		if endsWith(name, extPostfix):
-			return name[0:-len(extPostfix)]
-	return None
-
-def populateExtensionAliases(allObjects, extensionObjects):
-	for object in extensionObjects:
-		withoutPostfix = removeTypeExtPostfix(object.name)
-		if withoutPostfix != None and withoutPostfix in allObjects:
-			# max 1 alias is assumed by functions in this file
-			assert allObjects[withoutPostfix].alias == None
-			allObjects[withoutPostfix].alias = object
-			object.isAlias = True
-	for object in extensionObjects:
-		object.checkAliasValidity()
-
-def populateAliasesWithTypedefs (objects, src):
-	objectsByName = {}
-	for object in objects:
-		objectsByName[object.name] = object
-		ptrn	= r'\s*typedef\s+' + object.name + r'\s+([^;]+)'
-		stash = re.findall(ptrn, src)
-		if len(stash) == 1:
-			objExt = copy.deepcopy(object)
-			objExt.name = stash[0]
-			object.alias = objExt
-			objExt.isAlias = True
-			objects.append(objExt)
-
-def removeAliasedValues (enum):
-	valueByName = {}
-	for name, value in enum.values:
-		valueByName[name] = value
-
-	def removeDefExtPostfix (name):
-		for extPostfix in EXTENSION_POSTFIXES:
-			if endsWith(name, "_" + extPostfix):
-				return name[0:-(len(extPostfix)+1)]
-		return None
-
-	newValues = []
-	for name, value in enum.values:
-		withoutPostfix = removeDefExtPostfix(name)
-		if withoutPostfix != None and withoutPostfix in valueByName and valueByName[withoutPostfix] == value:
-			continue
-		newValues.append((name, value))
-	enum.values = newValues
-
-def parseFunctions (src):
-	ptrn		= r'VKAPI_ATTR\s+(' + TYPE_PTRN + ')\s+VKAPI_CALL\s+(' + IDENT_PTRN + r')\s*\(([^)]*)\)\s*;'
-	matches		= re.findall(ptrn, src)
-	functions	= []
-	for returnType, name, argList in matches:
-		functions.append(Function(name.strip(), returnType.strip(), parseArgList(argList)))
-	return functions
-
-def parseFunctionsByVersion (src, versions):
-	# construct list of locations where version definitions start, and add the end of the file to it
-	sectionLocations = [versionDef[1] for versionDef in versions]
-	sectionLocations.append(len(src))
-
-	# construct function declaration pattern
-	ptrn		= r'VKAPI_ATTR\s+(' + TYPE_PTRN + ')\s+VKAPI_CALL\s+(' + IDENT_PTRN + r')\s*\(([^)]*)\)\s*;'
-	regPtrn		= re.compile(ptrn)
-	functions	= []
-
-	# iterate over all versions and find all function definitions
-	for index, v in enumerate(versions):
-		matches = regPtrn.findall(src, sectionLocations[index], sectionLocations[index+1])
-		for returnType, name, argList in matches:
-			functions.append(Function(name.strip(), returnType.strip(), parseArgList(argList), v[0]))
-	return functions
-
-def splitByExtension (src):
-	ptrn		= r'#define\s+[A-Z0-9_]+_EXTENSION_NAME\s+"([^"]+)"'
-	# Construct long pattern that will be used to split whole source by extensions
-	match		= "#define\s+("
-	for part in re.finditer(ptrn, src):
-		 match += part.group(1)+"|"
-	match = match[:-1] + ")\s+1"
-	parts = re.split(match, src)
-
-	# First part is core, following tuples contain extension name and all its definitions
-	byExtension	= [(None, parts[0])]
-	for ndx in range(1, len(parts), 2):
-		byExtension.append((parts[ndx], parts[ndx+1]))
-	return byExtension
-
-def parseDefinitions (extensionName, src):
-
-	def skipDefinition (extensionName, definition):
-		if extensionName == None:
-			return True
-		extNameUpper = extensionName.upper()
-		extNameUpper = extNameUpper.replace("VK_KHR_SYNCHRONIZATION2", "VK_KHR_SYNCHRONIZATION_2")
-		extNameUpper = extNameUpper.replace("VK_INTEL_SHADER_INTEGER_FUNCTIONS2", "VK_INTEL_SHADER_INTEGER_FUNCTIONS_2")
-		extNameUpper = extNameUpper.replace("VK_EXT_ROBUSTNESS2", "VK_EXT_ROBUSTNESS_2")
-		extNameUpper = extNameUpper.replace("VK_EXT_FRAGMENT_DENSITY_MAP2", "VK_EXT_FRAGMENT_DENSITY_MAP_2")
-		extNameUpper = extNameUpper.replace("VK_EXT_SHADER_ATOMIC_FLOAT2", "VK_EXT_SHADER_ATOMIC_FLOAT_2")
-		extNameUpper = extNameUpper.replace("VK_AMD_SHADER_CORE_PROPERTIES2", "VK_AMD_SHADER_CORE_PROPERTIES_2")
-		extNameUpper = extNameUpper.replace("VK_EXT_EXTENDED_DYNAMIC_STATE2", "VK_EXT_EXTENDED_DYNAMIC_STATE_2")
-		# SPEC_VERSION enums
-		if definition[0].startswith(extNameUpper) and definition[1].isdigit():
-			return False
-		if definition[0].startswith(extNameUpper):
-			return True
-		if definition[0].endswith("_H_"):
-			return True
-		return False
-
-	ptrn		= r'#define\s+([^\s]+)\s+([^\r\n]+)'
-	matches		= re.findall(ptrn, src)
-
-	return [Definition(None, match[0], match[1]) for match in matches if not skipDefinition(extensionName, match)]
-
-def parseTypedefs (src):
-
-	ptrn		= r'typedef\s+([^\s]+)\s+([^\r\n]+);'
-	matches		= re.findall(ptrn, src)
-
-	return [Definition(None, match[0], match[1]) for match in matches]
-
-def parseExtensions (src, versions, allFunctions, allCompositeTypes, allEnums, allBitfields, allHandles, allDefinitions, additionalExtensionData):
-
-	# note registeredExtensionDict is also executed for vulkan 1.0 source for which extension name is None
-	registeredExtensionDict = {None: None}
-	for extensionName, data in additionalExtensionData:
-		# make sure that this extension was registered
-		if 'register_extension' not in data.keys():
-			continue
-		# save array containing 'device' or 'instance' string followed by the optional vulkan version in which this extension is core;
-		# note that register_extension section is also required for partialy promoted extensions like VK_EXT_extended_dynamic_state2
-		# but those extensions should not fill 'core' tag
-		registeredExtensionDict[extensionName] = [ data['register_extension']['type'] ]
-		match = re.match("(\d).(\d).(\d).(\d)", data['register_extension']['core'])
-		if match != None:
-			registeredExtensionDict[extensionName].extend( [ int(match.group(1)), int(match.group(2)), int(match.group(3)), int(match.group(4)) ] )
-
-	splitSrc				= splitByExtension(src)
-	extensions				= []
-	functionsByName			= {function.name: function for function in allFunctions}
-	compositeTypesByName	= {compType.name: compType for compType in allCompositeTypes}
-	enumsByName				= {enum.name: enum for enum in allEnums}
-	bitfieldsByName			= {bitfield.name: bitfield for bitfield in allBitfields}
-	handlesByName			= {handle.name: handle for handle in allHandles}
-	definitionsByName		= {definition.name: definition for definition in allDefinitions}
-
-	for extensionName, extensionSrc in splitSrc:
-		definitions			= [Definition("uint32_t", v.getInHex(), parsePreprocDefinedValueOptional(extensionSrc, v.getInHex())) for v in versions]
-		definitions.extend([Definition(type, name, parsePreprocDefinedValueOptional(extensionSrc, name)) for name, type in DEFINITIONS])
-		definitions			= [definition for definition in definitions if definition.value != None]
-		additionalDefinitions = parseDefinitions(extensionName, extensionSrc)
-		handles				= parseHandles(extensionSrc)
-		functions			= parseFunctions(extensionSrc)
-		compositeTypes		= parseCompositeTypes(extensionSrc)
-		rawEnums			= parseEnums(extensionSrc)
-		bitfieldNames		= parse32bitBitfieldNames(extensionSrc)
-		typedefs			= parseTypedefs(extensionSrc)
-		enumBitfieldNames	= [getBitEnumNameForBitfield(name) for name in bitfieldNames]
-		enums				= [enum for enum in rawEnums if enum.name not in enumBitfieldNames]
-
-		extCoreVersion		= None
-		extData				= registeredExtensionDict.get(extensionName, None)
-		extFunctions		= [functionsByName[function.name] for function in functions]
-		extCompositeTypes	= [compositeTypesByName[compositeType.name] for compositeType in compositeTypes]
-		extEnums			= [enumsByName[enum.name] for enum in enums]
-		extBitfields		= [bitfieldsByName[bitfieldName] for bitfieldName in bitfieldNames]
-		extHandles			= [handlesByName[handle.name] for handle in handles]
-		extDefinitions		= [definitionsByName[definition.name] for definition in definitions]
-
-		if extData != None:
-			populateExtensionAliases(functionsByName, extFunctions)
-			populateExtensionAliases(handlesByName, extHandles)
-			populateExtensionAliases(enumsByName, extEnums)
-			populateExtensionAliases(bitfieldsByName, extBitfields)
-			populateExtensionAliases(compositeTypesByName, extCompositeTypes)
-			if len(extData) > 1:
-				extCoreVersion = extData
-
-		extensions.append(Extension(extensionName, extHandles, extEnums, extBitfields, extCompositeTypes, extFunctions, extDefinitions, additionalDefinitions, typedefs, extCoreVersion))
-	return extensions
-
-def parse32bitBitfieldNames (src):
-	ptrn		= r'typedef\s+VkFlags\s(' + IDENT_PTRN + r')\s*;'
-	matches		= re.findall(ptrn, src)
-
-	return matches
-
-def parse64bitBitfieldNames (src):
-	ptrn		= r'typedef\s+VkFlags64\s(' + IDENT_PTRN + r')\s*;'
-	matches		= re.findall(ptrn, src)
-
-	return matches
-
-def parse64bitBitfieldValues (src, bitfieldNamesList):
-
-	bitfields64 = []
-	for bitfieldName in bitfieldNamesList:
-		ptrn		= r'static const ' + bitfieldName + r'\s*(' + IDENT_PTRN + r')\s*=\s*([a-zA-Z0-9_]+)\s*;'
-		matches		= re.findall(ptrn, src)
-		bitfields64.append(Bitfield(bitfieldName, matches))
-
-	return bitfields64
-
-def parseAPI (src):
-	versionsData	= parseVersions(src)
-	versions		= [Version((v[2], v[3], v[4], 0)) for v in versionsData]
-	definitions		= [Definition("uint32_t", v.getInHex(), parsePreprocDefinedValue(src, v.getInHex())) for v in versions] +\
-					  [Definition(type, name, parsePreprocDefinedValue(src, name)) for name, type in DEFINITIONS]
-
-	handles						= parseHandles(src)
-	rawEnums					= parseEnums(src)
-	bitfieldNames				= parse32bitBitfieldNames(src)
-	bitfieldEnums				= set([getBitEnumNameForBitfield(n) for n in bitfieldNames if getBitEnumNameForBitfield(n) in [enum.name for enum in rawEnums]])
-	bitfield64Names				= parse64bitBitfieldNames(src)
-	bitfields64					= parse64bitBitfieldValues(src, bitfield64Names)
-	enums						= []
-	bitfields					= []
-	compositeTypes				= parseCompositeTypesByVersion(src, versionsData)
-	allFunctions				= parseFunctionsByVersion(src, versionsData)
-	additionalExtensionData		= {}
-
-	# read all files from extensions directory
-	for fileName in glob.glob(os.path.join(SCRIPTS_SRC_DIR, "extensions", "*.json")):
-		extensionName	= os.path.basename(fileName)[:-5]
-		fileContent		= readFile(fileName)
-		try:
-			additionalExtensionData[extensionName] = json.loads(fileContent)
-		except ValueError as err:
-			print("Error in %s: %s" % (os.path.basename(fileName), str(err)))
-			sys.exit(-1)
-	additionalExtensionData = sorted(additionalExtensionData.items(), key=lambda e: e[0])
-
-	for enum in rawEnums:
-		if enum.name in bitfieldEnums:
-			bitfields.append(Bitfield(getBitfieldNameForBitEnum(enum.name), enum.values))
-		else:
-			enums.append(enum)
-
-	for bitfieldName in bitfieldNames:
-		if not bitfieldName in [bitfield.name for bitfield in bitfields]:
-			# Add empty bitfield
-			bitfields.append(Bitfield(bitfieldName, []))
-
-	extensions = parseExtensions(src, versions, allFunctions, compositeTypes, enums, bitfields, handles, definitions, additionalExtensionData)
-
-	# Populate alias fields
-	populateAliasesWithTypedefs(compositeTypes, src)
-	populateAliasesWithTypedefs(enums, src)
-	populateAliasesWithTypedefs(bitfields, src)
-	populateAliasesWithTypedefs(bitfields64, src)
-	populateAliasesWithTypedefs(handles, src)
-
-	for enum in enums:
-		removeAliasedValues(enum)
-
-	# Make generator to create Deleter<VkAccelerationStructureNV>
-	for f in allFunctions:
-		if (f.name == 'vkDestroyAccelerationStructureNV'):
-			f.arguments[1].type[0] = 'VkAccelerationStructureNV'
-
-	# Dealias handles VkAccelerationStructureNV and VkAccelerationStructureKHR
-	for handle in handles:
-		if handle.name == 'VkAccelerationStructureKHR':
-			handle.alias = None
-		if handle.name == 'VkAccelerationStructureNV':
-			handle.isAlias = False
-
-	return API(
-		versions				= versions,
-		definitions				= definitions,
-		handles					= handles,
-		enums					= enums,
-		bitfields				= bitfields,
-		bitfields64				= bitfields64,
-		compositeTypes			= compositeTypes,
-		functions				= allFunctions,
-		extensions				= extensions,
-		additionalExtensionData	= additionalExtensionData)
-
-def splitUniqueAndDuplicatedEntries (handles):
-	listOfUniqueHandles = []
-	duplicates			= OrderedDict()
-	for handle in handles:
-		if handle.alias != None:
-			duplicates[handle.alias] = handle
-		if not handle.isAlias:
-			listOfUniqueHandles.append(handle)
-	return listOfUniqueHandles, duplicates
-
 def writeHandleType (api, filename):
-	uniqeHandles, duplicatedHandles = splitUniqueAndDuplicatedEntries(api.handles)
+
+	def getHandleName (name):
+		return prefixName("HANDLE_TYPE_", name)
 
 	def genHandles ():
-		yield "\t%s\t= 0," % uniqeHandles[0].getHandleType()
-		for handle in uniqeHandles[1:]:
-			yield "\t%s," % handle.getHandleType()
-		for duplicate in duplicatedHandles:
-			yield "\t%s\t= %s," % (duplicate.getHandleType(), duplicatedHandles[duplicate].getHandleType())
-		yield "\tHANDLE_TYPE_LAST\t= %s + 1" % (uniqeHandles[-1].getHandleType())
+		yield "\t%s\t= 0," % getHandleName(api.handles[0].name)
+		for h in api.handles[1:]:
+			yield "\t%s," % getHandleName(h.name)
+		for h in api.handles:
+			if h.alias is not None:
+				yield "\t%s\t= %s," % (getHandleName(h.alias), getHandleName(h.name))
+		yield "\tHANDLE_TYPE_LAST\t= %s + 1" % (getHandleName(api.handles[-1].name))
 
 	def genHandlesBlock ():
 		yield "enum HandleType"
@@ -884,62 +836,35 @@ def writeHandleType (api, filename):
 
 	writeInlFile(filename, INL_HEADER, genHandlesBlock())
 
-def getEnumValuePrefix (enum):
+def getEnumValuePrefixAndPostfix (enum):
 	prefix = enum.name[0]
 	for i in range(1, len(enum.name)):
 		if enum.name[i].isupper() and not enum.name[i-1].isupper():
 			prefix += "_"
 		prefix += enum.name[i].upper()
-	return prefix
-
-def parseInt (value):
-	if value[:2] == "0x":
-		return int(value, 16)
-	else:
-		return int(value, 10)
-
-def areEnumValuesLinear (enum):
-	curIndex = 0
-	maxIntCount = 0
-	for name, value in enum.values:
-		if value[:2] != "VK":
-			intValue = parseInt(value)
-			if intValue != curIndex:
-				# enum is linear when all items are in order
-				if intValue != 0x7FFFFFFF:
-					return False
-				# count number of items with 0x7FFFFFFF value;
-				# enum containing single 0x7FFFFFFF item are also
-				# considered as linear (this is usualy *_MAX_ENUM item)
-				maxIntCount += 1
-				# enums containing more then one 0x7FFFFFFF value
-				# are not considered as linear (vulkan video enums)
-				if maxIntCount > 1:
-					return False
-			curIndex += 1
-	return True
+	for p in EXTENSION_POSTFIXES:
+		if prefix.endswith(p):
+			return prefix[:-len(p)-1], '_'+p
+	return prefix, ''
 
 def genEnumSrc (enum):
 	yield "enum %s" % enum.name
 	yield "{"
-
 	lines = []
-	if areEnumValuesLinear(enum):
-		hasMaxItem	= parseInt(enum.values[-1][1]) == 0x7FFFFFFF
+	for ed in enum.enumeratorList:
+		if ed.value is not None:
+			lines.append(f"\t{ed.name}\t= {ed.value},")
+	for ed in enum.enumeratorList:
+		for alias in ed.aliasList:
+			lines.append(f"\t{alias}\t= {ed.name},")
 
-		values		= enum.values[:-1] if hasMaxItem else enum.values
-		lastItem	= "\t%s_LAST," % getEnumValuePrefix(enum)
+	# add *_LAST item when enum is linear
+	prefix, postfix = getEnumValuePrefixAndPostfix(enum)
+	if enum.areValuesLinear():
+		lines.append(f"\t{prefix}{postfix}_LAST,")
 
-		# linear values first, followed by *_LAST
-		lines		+= ["\t%s\t= %s," % v for v in values if v[1][:2] != "VK"]
-		lines.append(lastItem)
-
-		# equivalence enums and *_MAX_ENUM
-		lines		+= ["\t%s\t= %s," % v for v in values if v[1][:2] == "VK"]
-		if hasMaxItem:
-			lines.append("\t%s\t= %s," % enum.values[-1])
-	else:
-		lines		+= ["\t%s\t= %s," % v for v in enum.values]
+	# add _MAX_ENUM item with the ext postifix at the end
+	lines.append(f"\t{prefix}_MAX_ENUM{postfix}\t= 0x7FFFFFFF")
 
 	for line in indentLines(lines):
 		yield line
@@ -947,170 +872,243 @@ def genEnumSrc (enum):
 	yield "};"
 
 def genBitfieldSrc (bitfield):
-	if len(bitfield.values) > 0:
-		yield "enum %s" % getBitEnumNameForBitfield(bitfield.name)
-		yield "{"
-		for line in indentLines(["\t%s\t= %s," % v for v in bitfield.values]):
-			yield line
-		yield "};"
-	yield "typedef uint32_t %s;" % bitfield.name
-
-def genBitfield64Src (bitfield64):
-	yield "typedef uint64_t %s;" % bitfield64.name
-	if len(bitfield64.values) > 0:
-		ptrn = "static const " + bitfield64.name + " %s\t= %s;"
-		for line in indentLines([ptrn % v for v in bitfield64.values]):
-			yield line
-		yield ""
-
-def genCompositeTypeSrc (type):
-	yield "%s %s" % (type.getClassName(), type.name)
+	lines = []
+	for ev in bitfield.enumeratorList:
+		# bitfields may use mix of bitpos and values
+		if ev.bitpos is not None:
+			value = pow(2, int(ev.bitpos))
+			lines.append(f"\t{ev.name}\t= {value:#010x},")
+		if ev.value is not None:
+			lines.append(f"\t{ev.name}\t= {ev.value},")
+	for ev in bitfield.enumeratorList:
+		for alias in ev.aliasList:
+			lines.append(f"\t{alias}\t= {ev.name},")
+	# add _MAX_ENUM item
+	prefix, postfix = getEnumValuePrefixAndPostfix(bitfield)
+	lines.append(f"\t{prefix}_MAX_ENUM{postfix}\t= 0x7FFFFFFF")
+	yield f"enum {bitfield.name}"
 	yield "{"
-	for line in indentLines(['\t'+m.getAsString('\t')+';' for m in type.members]):
+	for line in indentLines(lines):
 		yield line
 	yield "};"
 
+def genBitfield64Src (bitfield64):
+	def generateEntry(lines, bitfieldName, entryName, bitpos, value):
+		if entryName is None:
+			return
+		# bitfields may use mix of bitpos and values
+		if ev.bitpos is not None:
+			v = pow(2, int(bitpos))
+			lines.append(f"static const {bitfieldName} {entryName}\t= {v:#010x}ULL;")
+		if value is not None:
+			lines.append(f"static const {bitfieldName} {entryName}\t= {value}ULL;")
+
+	yield f"typedef uint64_t {bitfield64.name};"
+	lines = []
+	for ev in bitfield64.enumeratorList:
+		generateEntry(lines, bitfield64.name, ev.name,  ev.bitpos, ev.value)
+		for alias in ev.aliasList:
+			generateEntry(lines, bitfield64.name, alias, ev.bitpos, ev.value)
+	# write indented lines
+	for line in indentLines(lines):
+		yield line
+	yield ""
+
+def genDefinesSrc (apiName, defines):
+	def genLines (defines):
+		for d in defines:
+			if d.alias is not None:
+				continue
+			defineType = DEFINITIONS.get(d.name, d.type)
+			yield f"#define {d.name}\t(static_cast<{defineType}>\t({d.value}))"
+	for line in indentLines(genLines(defines)):
+		yield line
+	# add VK_API_MAX_FRAMEWORK_VERSION
+	major, minor = api.features[-1].number.split('.')
+	yield f"#define VK_API_MAX_FRAMEWORK_VERSION\tVK{apiName}_API_VERSION_{major}_{minor}"
+
 def genHandlesSrc (handles):
-	uniqeHandles, duplicatedHandles = splitUniqueAndDuplicatedEntries(handles)
-
 	def genLines (handles):
-		for handle in uniqeHandles:
-			if handle.type == Handle.TYPE_DISP:
-				yield "VK_DEFINE_HANDLE\t(%s,\t%s);" % (handle.name, handle.getHandleType())
-			elif handle.type == Handle.TYPE_NONDISP:
-				yield "VK_DEFINE_NON_DISPATCHABLE_HANDLE\t(%s,\t%s);" % (handle.name, handle.getHandleType())
+		for h in handles:
+			handleType = h.type
+			handleObjtype = h.objtypeenum
+			if h.alias is not None:
+				# search for aliased handle
+				for searchedHandle in handles:
+					if h.alias == searchedHandle.name:
+						handleType = searchedHandle.type
+						handleObjtype = searchedHandle.objtypeenum
+						break
+			yield f"{handleType}\t({h.name},\tHANDLE{handleObjtype[9:]});"
+	for line in indentLines(genLines(handles)):
+		yield line
 
-		for duplicate in duplicatedHandles:
-			if duplicate.type == Handle.TYPE_DISP:
-				yield "VK_DEFINE_HANDLE\t(%s,\t%s);" % (duplicate.name, duplicatedHandles[duplicate].getHandleType())
-			elif duplicate.type == Handle.TYPE_NONDISP:
-				yield "VK_DEFINE_NON_DISPATCHABLE_HANDLE\t(%s,\t%s);" % (duplicate.name, duplicatedHandles[duplicate].getHandleType())
+def genHandlesSrc (handles):
+	def genLines (handles):
+		for h in handles:
+			handleType    = h.type
+			handleObjtype = h.objtypeenum
+			line = f"{handleType}\t({{}},\tHANDLE{handleObjtype[9:]});"
+			yield line.format(h.name)
+			if h.alias is not None:
+				yield line.format(h.alias)
 
 	for line in indentLines(genLines(handles)):
 		yield line
 
-def stripTrailingComment(str):
-	index = str.find("//")
-	if index == -1:
-		return str
-	return str[:index]
-
-def genDefinitionsSrc (definitions):
-	for line in ["#define %s\t(static_cast<%s>\t(%s))" % (definition.name, definition.type, stripTrailingComment(definition.value)) for definition in definitions]:
-		yield line
-
-def genDefinitionsAliasSrc (definitions):
-	for line in ["#define %s\t%s" % (definition.name, definitions[definition].name) for definition in definitions]:
-		if definition.value != definitions[definition].value and definition.value != definitions[definition].name:
-			raise Exception("Value of %s (%s) is different than core definition value %s (%s)." % (definition.name, definition.value, definitions[definition].name, definitions[definition].value))
-		yield line
-
-def genMaxFrameworkVersion (definitions):
-	maxApiVersionMajor = 1
-	maxApiVersionMinor = 0
-	for definition in definitions:
-		match = re.match("VK_API_VERSION_(\d+)_(\d+)", definition.name)
-		if match:
-			apiVersionMajor = int(match.group(1))
-			apiVersionMinor = int(match.group(2))
-			if apiVersionMajor > maxApiVersionMajor:
-				maxApiVersionMajor = apiVersionMajor
-				maxApiVersionMinor = apiVersionMinor
-			elif apiVersionMajor == maxApiVersionMajor and apiVersionMinor > maxApiVersionMinor:
-				maxApiVersionMinor = apiVersionMinor
-	yield "#define VK_API_MAX_FRAMEWORK_VERSION\tVK_API_VERSION_%d_%d" % (maxApiVersionMajor, maxApiVersionMinor)
-
-def genMaxFrameworkVersionSC (definitions):
-	maxApiVersionMajor = 1
-	maxApiVersionMinor = 0
-	for definition in definitions:
-		match = re.match("VKSC_API_VERSION_(\d+)_(\d+)", definition.name)
-		if match:
-			apiVersionMajor = int(match.group(1))
-			apiVersionMinor = int(match.group(2))
-			if apiVersionMajor > maxApiVersionMajor:
-				maxApiVersionMajor = apiVersionMajor
-				maxApiVersionMinor = apiVersionMinor
-			elif apiVersionMajor == maxApiVersionMajor and apiVersionMinor > maxApiVersionMinor:
-				maxApiVersionMinor = apiVersionMinor
-	yield "#define VKSC_API_MAX_FRAMEWORK_VERSION\tVKSC_API_VERSION_%d_%d" % (maxApiVersionMajor, maxApiVersionMinor)
-
 def writeBasicTypes (apiName, api, filename):
 
 	def gen ():
-		definitionsCore, definitionDuplicates = splitUniqueAndDuplicatedEntries(api.definitions)
 
-		if apiName == '':
-			for line in indentLines(chain(genDefinitionsSrc(definitionsCore), genMaxFrameworkVersion(definitionsCore), genDefinitionsAliasSrc(definitionDuplicates))):
-				yield line
-			yield ""
-		elif apiName == 'SC':
-			for line in indentLines(chain(genDefinitionsSrc(definitionsCore), genMaxFrameworkVersion(definitionsCore), genMaxFrameworkVersionSC(definitionsCore), genDefinitionsAliasSrc(definitionDuplicates))):
-				yield line
-			yield ""
+		for line in genDefinesSrc(apiName, api.defines):
+			yield line
+		yield ""
 
 		for line in genHandlesSrc(api.handles):
 			yield line
 		yield ""
 
 		for enum in api.enums:
-			if not enum.isAlias:
+			if len(enum.enumeratorList) == 0:
+				continue
+			if enum.type == "bitmask":
+				if enum.bitwidth == "32":
+					for line in genBitfieldSrc(enum):
+						yield line
+				else:
+					for line in genBitfield64Src(enum):
+						yield line
+			else:
 				for line in genEnumSrc(enum):
 					yield line
-			else:
-				for enum2 in api.enums:
-					if enum2.alias == enum:
-						yield "typedef %s %s;" % (enum2.name, enum.name)
+			if enum.alias is not None:
+				yield f"typedef {enum.name} {enum.alias};"
 			yield ""
 
-		for bitfield in api.bitfields:
-			if not bitfield.isAlias:
-				for line in genBitfieldSrc(bitfield):
-					yield line
-			else:
-				for bitfield2 in api.bitfields:
-					if bitfield2.alias == bitfield:
-						yield "typedef %s %s;" % (bitfield2.name, bitfield.name)
-			yield ""
+		for bitmask in api.bitmasks:
+			plainType = api.basetypes[bitmask.type]
+			yield f"typedef {plainType} {bitmask.name};\n"
+			if bitmask.alias:
+				yield f"typedef {bitmask.name} {bitmask.alias};\n"
 
-		for bitfield in api.bitfields64:
-			if not bitfield.isAlias:
-				for line in genBitfield64Src(bitfield):
-					yield line
-			else:
-				for bitfield2 in api.bitfields64:
-					if bitfield2.alias == bitfield:
-						yield "typedef %s %s;" % (bitfield2.name, bitfield.name)
-			yield ""
-
+		yield ""
 		for line in indentLines(["VK_DEFINE_PLATFORM_TYPE(%s,\t%s)" % (s[0], c) for n, s, c in PLATFORM_TYPES]):
 			yield line
+		yield ""
 
 		for ext in api.extensions:
-			if ext.additionalDefs != None:
-				for definition in ext.additionalDefs:
-					yield "#define " + definition.name + " " + definition.value
+			firstRequirementEnums = ext.requirementsList[0].extendedEnums
+			for e in firstRequirementEnums:
+				if e.extends is None and e.value is not None:
+					yield "#define " + e.name + " " + e.value
 
 	writeInlFile(filename, INL_HEADER, gen())
 
 def writeCompositeTypes (api, filename):
-	def gen ():
-		for type in api.compositeTypes:
-			type.checkAliasValidity()
+	# function that returns definition of structure member
+	def memberAsString (member):
+		result = ''
+		if member.qualifiers:
+			result += member.qualifiers
+		result += member.type
+		if member.pointer:
+			result += member.pointer
+		result += '\t' + member.name
+		for size in member.arraySizeList:
+			result += f"[{size}]"
+		if member.fieldWidth:
+			result += f":{member.fieldWidth}"
+		return result
 
-			if not type.isAlias:
-				for line in genCompositeTypeSrc(type):
-					yield line
+	# function that prints single structure definition
+	def genCompositeTypeSrc (type):
+		structLines = "%s %s\n{\n" % (type.category, type.name)
+		for line in indentLines(['\t'+memberAsString(m)+';' for m in type.members]):
+			structLines += line + '\n'
+		return structLines + "};\n"
+
+	# function that prints all structure definitions and alias typedefs
+	def gen ():
+		# structures in xml are not ordered in a correct way for C++
+		# we need to save structures that are used in other structures first
+		allStructureNamesList = [s.name for s in api.compositeTypes]
+		commonTypesList = api.basicCTypes + ['VkStructureType']
+		savedStructureNamesList = []
+		delayedStructureObjectsList = []
+
+		# helper function that checks if all structure members were already saved
+		def canStructBeSaved(compositeObject):
+			for m in compositeObject.members:
+				# check first commonTypesList to speed up the algorithm
+				if m.type in commonTypesList:
+					continue
+				# make sure that member is not of same type as compositeObject
+				# (this hadles cases like VkBaseOutStructure)
+				if m.type == compositeObject.name:
+					continue
+				# if member is of compositeType that was not saved we cant save it now
+				if m.type in allStructureNamesList and m.type not in savedStructureNamesList:
+					return False
+			return True
+
+		# iterate over all composite types
+		lastDelayedComposite = None
+		for ct in api.compositeTypes:
+			# check if one of delayed structures can be saved
+			delayedButSaved = []
+			for dct in delayedStructureObjectsList:
+				if lastDelayedComposite != dct and canStructBeSaved(dct):
+					yield genCompositeTypeSrc(dct)
+					delayedButSaved.append(dct)
+			lastDelayedComposite = None
+			for dsct in delayedButSaved:
+				savedStructureNamesList.append(dsct.name)
+				delayedStructureObjectsList.remove(dsct)
+			# check if current structure can be saved
+			if canStructBeSaved(ct):
+				yield genCompositeTypeSrc(ct)
+				savedStructureNamesList.append(ct.name)
 			else:
-				for type2 in api.compositeTypes:
-					if type2.alias == type:
-						yield "typedef %s %s;" % (type2.name, type.name)
-			yield ""
+				delayedStructureObjectsList.append(ct)
+				# memorize structure that was delayed in last iteration to
+				# avoid calling for it canStructBeSaved in next iteration
+				lastDelayedComposite = ct
+		# save remaining delayed composite types (~4 video related structures)
+		while len(delayedStructureObjectsList) > 0:
+			for dct in delayedStructureObjectsList:
+				if canStructBeSaved(dct):
+					yield genCompositeTypeSrc(dct)
+					savedStructureNamesList.append(dct.name)
+					delayedStructureObjectsList.remove(dct)
+					break
+		# write all alias typedefs
+		for ct in api.compositeTypes:
+			for alias in ct.aliasList:
+				yield "typedef %s %s;" % (ct.name, alias)
+				yield ""
 
 	writeInlFile(filename, INL_HEADER, gen())
 
 def argListToStr (args):
-	return ", ".join(v.getAsStringForArgumentList(' ') for v in args)
+	def argumentToString(arg):
+		# args can be instance of FunctionArgument or CompositeMember
+		# but CompositeMember has no arraySize atrribute nor secondPointerIsConst
+		workingOnFunctionArgument = True if hasattr(arg, 'arraySize') else False
+		result = ''
+		if arg.qualifiers:
+			result += arg.qualifiers
+		result += arg.type
+		if arg.pointer:
+			if workingOnFunctionArgument and arg.secondPointerIsConst:
+				result += '* const*'
+			else:
+				result += arg.pointer
+		result += ' ' + arg.name
+		if workingOnFunctionArgument:
+			if arg.arraySize:
+				result += arg.arraySize
+		return result
+	return ", ".join(argumentToString(arg) for arg in args)
 
 def writeInterfaceDecl (api, filename, functionTypes, concrete):
 	def genProtos ():
@@ -1118,15 +1116,18 @@ def writeInterfaceDecl (api, filename, functionTypes, concrete):
 		for function in api.functions:
 			if not function.getType() in functionTypes:
 				continue
-			if not function.isAlias:
-				yield "virtual %s\t%s\t(%s) const%s;" % (function.returnType, getInterfaceName(function), argListToStr(function.arguments), postfix)
+			yield "virtual %s\t%s\t(%s) const%s;" % (function.returnType, getInterfaceName(function.name), argListToStr(function.arguments), postfix)
 
 	writeInlFile(filename, INL_HEADER, indentLines(genProtos()))
 
 def writeFunctionPtrTypes (api, filename):
 	def genTypes ():
+		pattern = "typedef VKAPI_ATTR {}\t(VKAPI_CALL* {})\t({});"
 		for function in api.functions:
-			yield "typedef VKAPI_ATTR %s\t(VKAPI_CALL* %s)\t(%s);" % (function.returnType, getFunctionTypeName(function), argListToStr(function.arguments))
+			argList = argListToStr(function.arguments)
+			yield pattern.format(function.returnType, getFunctionTypeName(function.name), argList)
+			for alias in function.aliasList:
+				yield pattern.format(function.returnType, getFunctionTypeName(alias), argList)
 
 	writeInlFile(filename, INL_HEADER, indentLines(genTypes()))
 
@@ -1134,11 +1135,14 @@ def writeFunctionPointers (api, filename, functionTypes):
 	def FunctionsYielder ():
 		for function in api.functions:
 			if function.getType() in functionTypes:
-				if function.isAlias:
-					if function.getType() == Function.TYPE_INSTANCE and function.arguments[0].getType() == "VkPhysicalDevice":
-						yield "%s\t%s;" % (getFunctionTypeName(function), getInterfaceName(function))
-				else:
-					yield "%s\t%s;" % (getFunctionTypeName(function), getInterfaceName(function))
+				interfaceName		= getInterfaceName(function.name)
+				functionTypeName	= getFunctionTypeName(function.name)
+				yield f"{functionTypeName}\t{interfaceName};"
+				if function.getType() == Function.TYPE_INSTANCE:
+					for alias in function.aliasList:
+						interfaceName		= getInterfaceName(alias)
+						functionTypeName	= getFunctionTypeName(alias)
+						yield f"{functionTypeName}\t{interfaceName};"
 
 	writeInlFile(filename, INL_HEADER, indentLines(FunctionsYielder()))
 
@@ -1146,24 +1150,26 @@ def writeInitFunctionPointers (api, filename, functionTypes, cond = None):
 	def makeInitFunctionPointers ():
 		for function in api.functions:
 			if function.getType() in functionTypes and (cond == None or cond(function)):
-				interfaceName = getInterfaceName(function)
-				if function.isAlias:
-					if function.getType() == Function.TYPE_INSTANCE and function.arguments[0].getType() == "VkPhysicalDevice":
-						yield "m_vk.%s\t= (%s)\tGET_PROC_ADDR(\"%s\");" % (getInterfaceName(function), getFunctionTypeName(function), function.name)
-				else:
-					yield "m_vk.%s\t= (%s)\tGET_PROC_ADDR(\"%s\");" % (getInterfaceName(function), getFunctionTypeName(function), function.name)
-					if function.alias != None:
-						yield "if (!m_vk.%s)" % (getInterfaceName(function))
-						yield "    m_vk.%s\t= (%s)\tGET_PROC_ADDR(\"%s\");" % (getInterfaceName(function), getFunctionTypeName(function), function.alias.name)
+				interfaceName		= getInterfaceName(function.name)
+				functionTypeName	= getFunctionTypeName(function.name)
+				yield f"m_vk.{interfaceName}\t= ({functionTypeName})\tGET_PROC_ADDR(\"{function.name}\");"
+				for alias in function.aliasList:
+					yield f"if (!m_vk.{interfaceName})"
+					yield f"    m_vk.{interfaceName}\t= ({functionTypeName})\tGET_PROC_ADDR(\"{alias}\");"
+					if function.getType() == Function.TYPE_INSTANCE and function.arguments[0].type == "VkPhysicalDevice":
+						interfaceName		= getInterfaceName(alias)
+						functionTypeName	= getFunctionTypeName(alias)
+						yield f"m_vk.{interfaceName}\t= ({functionTypeName})\tGET_PROC_ADDR(\"{alias}\");"
+
 	lines = [line.replace('    ', '\t') for line in indentLines(makeInitFunctionPointers())]
 	writeInlFile(filename, INL_HEADER, lines)
 
 def writeFuncPtrInterfaceImpl (api, filename, functionTypes, className):
 	def makeFuncPtrInterfaceImpl ():
 		for function in api.functions:
-			if function.getType() in functionTypes and not function.isAlias:
+			if function.getType() in functionTypes:
 				yield ""
-				yield "%s %s::%s (%s) const" % (function.returnType, className, getInterfaceName(function), argListToStr(function.arguments))
+				yield "%s %s::%s (%s) const" % (function.returnType, className, getInterfaceName(function.name), argListToStr(function.arguments))
 				yield "{"
 				if function.name == "vkEnumerateInstanceVersion":
 					yield "	if (m_vk.enumerateInstanceVersion)"
@@ -1171,15 +1177,15 @@ def writeFuncPtrInterfaceImpl (api, filename, functionTypes, className):
 					yield ""
 					yield "	*pApiVersion = VK_API_VERSION_1_0;"
 					yield "	return VK_SUCCESS;"
-				elif function.getType() == Function.TYPE_INSTANCE and function.arguments[0].getType() == "VkPhysicalDevice" and function.alias != None:
+				elif function.getType() == Function.TYPE_INSTANCE and function.arguments[0].type == "VkPhysicalDevice" and len(function.aliasList) > 0:
 					yield "	vk::VkPhysicalDeviceProperties props;"
 					yield "	m_vk.getPhysicalDeviceProperties(physicalDevice, &props);"
 					yield "	if (props.apiVersion >= VK_API_VERSION_1_1)"
-					yield "		%sm_vk.%s(%s);" % ("return " if function.returnType != "void" else "", getInterfaceName(function), ", ".join(a.name for a in function.arguments))
+					yield "		%sm_vk.%s(%s);" % ("return " if function.returnType != "void" else "", getInterfaceName(function.name), ", ".join(a.name for a in function.arguments))
 					yield "	else"
-					yield "		%sm_vk.%s(%s);" % ("return " if function.returnType != "void" else "", getInterfaceName(function.alias), ", ".join(a.name for a in function.arguments))
+					yield "		%sm_vk.%s(%s);" % ("return " if function.returnType != "void" else "", getInterfaceName(function.aliasList[0]), ", ".join(a.name for a in function.arguments))
 				else:
-					yield "	%sm_vk.%s(%s);" % ("return " if function.returnType != "void" else "", getInterfaceName(function), ", ".join(a.name for a in function.arguments))
+					yield "	%sm_vk.%s(%s);" % ("return " if function.returnType != "void" else "", getInterfaceName(function.name), ", ".join(a.name for a in function.arguments))
 				yield "}"
 
 	writeInlFile(filename, INL_HEADER, makeFuncPtrInterfaceImpl())
@@ -1289,26 +1295,26 @@ def writeFuncPtrInterfaceSCImpl (api, filename, functionTypes, className):
 
 def writeStrUtilProto (api, filename):
 	def makeStrUtilProto ():
-		for line in indentLines(["const char*\tget%sName\t(%s value);" % (enum.name[2:], enum.name) for enum in api.enums if not enum.isAlias]):
+		for line in indentLines(["const char*\tget%sName\t(%s value);" % (enum.name[2:], enum.name) for enum in api.enums if enum.type == "enum"]):
 			yield line
 		yield ""
-		for line in indentLines(["inline tcu::Format::Enum<%s>\tget%sStr\t(%s value)\t{ return tcu::Format::Enum<%s>(get%sName, value);\t}" % (e.name, e.name[2:], e.name, e.name, e.name[2:]) for e in api.enums if not e.isAlias]):
+		for line in indentLines(["inline tcu::Format::Enum<%s>\tget%sStr\t(%s value)\t{ return tcu::Format::Enum<%s>(get%sName, value);\t}" % (e.name, e.name[2:], e.name, e.name, e.name[2:]) for e in api.enums if e.type == "enum"]):
 			yield line
 		yield ""
-		for line in indentLines(["inline std::ostream&\toperator<<\t(std::ostream& s, %s value)\t{ return s << get%sStr(value);\t}" % (e.name, e.name[2:]) for e in api.enums if not e.isAlias]):
+		for line in indentLines(["inline std::ostream&\toperator<<\t(std::ostream& s, %s value)\t{ return s << get%sStr(value);\t}" % (e.name, e.name[2:]) for e in api.enums if e.type == "enum"]):
 			yield line
 		yield ""
-		for line in indentLines(["tcu::Format::Bitfield<32>\tget%sStr\t(%s value);" % (bitfield.name[2:], bitfield.name) for bitfield in api.bitfields if not bitfield.isAlias or bitfield.name=='VkBuildAccelerationStructureFlagsNV']):
+		for line in indentLines(["tcu::Format::Bitfield<%s>\tget%sStr\t(%s value);" % (("64" if b.type == "VkFlags64" else "32"), b.name[2:], b.name) for b in api.bitmasks]):
 			yield line
 		yield ""
-		for line in indentLines(["std::ostream&\toperator<<\t(std::ostream& s, const %s& value);" % (s.name) for s in api.compositeTypes if not s.isAlias]):
+		for line in indentLines(["std::ostream&\toperator<<\t(std::ostream& s, const %s& value);" % (s.name) for s in api.compositeTypes]):
 			yield line
 
 	writeInlFile(filename, INL_HEADER, makeStrUtilProto())
 
 def writeStrUtilImpl (api, filename):
 	def makeStrUtilImpl ():
-		for line in indentLines(["template<> const char*\tgetTypeName<%s>\t(void) { return \"%s\";\t}" % (handle.name, handle.name) for handle in api.handles if not handle.isAlias]):
+		for line in indentLines(["template<> const char*\tgetTypeName<%s>\t(void) { return \"%s\";\t}" % (handle.name, handle.name) for handle in api.handles]):
 			yield line
 
 		yield ""
@@ -1320,86 +1326,92 @@ def writeStrUtilImpl (api, filename):
 
 		yield "}"
 
+		savedBitmasks = []
 		for enum in api.enums:
-			if enum.isAlias:
-				continue
-			yield ""
-			yield "const char* get%sName (%s value)" % (enum.name[2:], enum.name)
-			yield "{"
-			yield "\tswitch (value)"
-			yield "\t{"
-			enumValues = []
-			lastValue = 0x7FFFFFFF
-			for n, v in enum.values:
-				if (v[:2] != "VK") and (v != lastValue):
-					enumValues.append(f"\t\tcase {n}:\treturn \"{n}\";")
-				lastValue = v
-			enumValues.append("\t\tdefault:\treturn DE_NULL;")
-			for line in indentLines(enumValues):
-				yield line
-			yield "\t}"
-			yield "}"
-
-		for bitfield in api.bitfields:
-			if bitfield.isAlias:
-				if bitfield.name != 'VkBuildAccelerationStructureFlagsNV':
-					continue
-			yield ""
-			yield "tcu::Format::Bitfield<32> get%sStr (%s value)" % (bitfield.name[2:], bitfield.name)
-			yield "{"
-
-			if len(bitfield.values) > 0:
+			if enum.type == "enum":
+				yield ""
+				yield "const char* get%sName (%s value)" % (enum.name[2:], enum.name)
+				yield "{"
+				yield "\tswitch (value)"
+				yield "\t{"
+				enumValues = []
+				lastValue = 0x7FFFFFFF
+				for e in enum.enumeratorList:
+					enumValues.append(f"\t\tcase {e.name}:\treturn \"{e.name}\";")
+				enumValues.append("\t\tdefault:\treturn DE_NULL;")
+				for line in indentLines(enumValues):
+					yield line
+				yield "\t}"
+				yield "}"
+			elif enum.type == "bitmask":
+				# find bitfield that uses those bitmasks
+				foundBitmask = None
+				for bitmask in api.bitmasks:
+					if bitmask.requires == enum.name or bitmask.bitvalues == enum.name:
+						foundBitmask = bitmask
+						break
+				savedBitmasks.append(foundBitmask.name)
+				bitSize = "64" if foundBitmask.type == "VkFlags64" else "32"
+				yield ""
+				yield f"tcu::Format::Bitfield<{bitSize}> get{bitmask.name[2:]}Str ({bitmask.name} value)"
+				yield "{"
 				yield "\tstatic const tcu::Format::BitDesc s_desc[] ="
 				yield "\t{"
-				for line in indentLines(["\t\ttcu::Format::BitDesc(%s,\t\"%s\")," % (n, n) for n, v in bitfield.values]):
+				for line in indentLines([f"\t\ttcu::Format::BitDesc({e.name},\t\"{e.name}\")," for e in enum.enumeratorList]):
 					yield line
 				yield "\t};"
-				yield "\treturn tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));"
-			else:
-				yield "\treturn tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);"
-			yield "}"
+				yield f"\treturn tcu::Format::Bitfield<{bitSize}>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));"
+				yield "}"
 
-		bitfieldTypeNames = set([bitfield.name for bitfield in api.bitfields])
+		for bitmask in api.bitmasks:
+			if bitmask.name not in savedBitmasks:
+				bitSize = "64" if bitmask.type == "VkFlags64" else "32"
+				yield ""
+				yield f"tcu::Format::Bitfield<{bitSize}> get{bitmask.name[2:]}Str ({bitmask.name} value)"
+				yield "{"
+				yield f"\treturn tcu::Format::Bitfield<{bitSize}>(value, DE_NULL, DE_NULL);"
+				yield "}"
+
+		bitfieldTypeNames = set([bitmask.name for bitmask in api.bitmasks])
 
 		for type in api.compositeTypes:
-			if not type.isAlias:
-				yield ""
-				yield "std::ostream& operator<< (std::ostream& s, const %s& value)" % type.name
-				yield "{"
-				yield "\ts << \"%s = {\\n\";" % type.name
-				for member in type.members:
-					memberName	= member.name
-					valFmt		= None
-					newLine		= ""
-					if member.getType() in bitfieldTypeNames:
-						valFmt = "get%sStr(value.%s)" % (member.getType()[2:], member.name)
-					elif member.getType() == "const char*" or member.getType() == "char*":
-						valFmt = "getCharPtrStr(value.%s)" % member.name
-					elif member.getType() == PLATFORM_TYPE_NAMESPACE + "::Win32LPCWSTR":
-						valFmt = "getWStr(value.%s)" % member.name
-					elif member.arraySize != '':
-						singleDimensional = not '][' in member.arraySize
-						if member.name in ["extensionName", "deviceName", "layerName", "description"]:
-							valFmt = "(const char*)value.%s" % member.name
-						elif singleDimensional and (member.getType() == 'char' or member.getType() == 'uint8_t'):
-							newLine = "'\\n' << "
-							valFmt	= "tcu::formatArray(tcu::Format::HexIterator<%s>(DE_ARRAY_BEGIN(value.%s)), tcu::Format::HexIterator<%s>(DE_ARRAY_END(value.%s)))" % (member.getType(), member.name, member.getType(), member.name)
-						else:
-							if member.name == "memoryTypes" or member.name == "memoryHeaps":
-								endIter = "DE_ARRAY_BEGIN(value.%s) + value.%sCount" % (member.name, member.name[:-1])
-							else:
-								endIter = "DE_ARRAY_END(value.%s)" % member.name
-							newLine = "'\\n' << "
-							valFmt	= "tcu::formatArray(DE_ARRAY_BEGIN(value.%s), %s)" % (member.name, endIter)
-						memberName = member.name
+			yield ""
+			yield "std::ostream& operator<< (std::ostream& s, const %s& value)" % type.name
+			yield "{"
+			yield "\ts << \"%s = {\\n\";" % type.name
+			for member in type.members:
+				memberName	= member.name
+				valFmt		= None
+				newLine		= ""
+				if member.type in bitfieldTypeNames:
+					operator = '*' if member.pointer == '*' else ''
+					valFmt = "get%sStr(%svalue.%s)" % (member.type[2:], operator, member.name)
+				elif member.type == "char" and member.pointer == '*':
+					valFmt = "getCharPtrStr(value.%s)" % member.name
+				elif member.type == PLATFORM_TYPE_NAMESPACE + "::Win32LPCWSTR":
+					valFmt = "getWStr(value.%s)" % member.name
+				elif len(member.arraySizeList) > 0:
+					singleDimensional = len(member.arraySizeList) == 1
+					if member.name in ["extensionName", "deviceName", "layerName", "description"]:
+						valFmt = "(const char*)value.%s" % member.name
+					elif singleDimensional and (member.type == 'char' or member.type == 'uint8_t'):
+						newLine = "'\\n' << "
+						valFmt	= "tcu::formatArray(tcu::Format::HexIterator<%s>(DE_ARRAY_BEGIN(value.%s)), tcu::Format::HexIterator<%s>(DE_ARRAY_END(value.%s)))" % (member.type, member.name, member.type, member.name)
 					else:
-						valFmt = "value.%s" % member.name
-					yield ("\ts << \"\\t%s = \" << " % memberName) + newLine + valFmt + " << '\\n';"
-				yield "\ts << '}';"
-				yield "\treturn s;"
-				yield "}"
+						if member.name == "memoryTypes" or member.name == "memoryHeaps":
+							endIter = "DE_ARRAY_BEGIN(value.%s) + value.%sCount" % (member.name, member.name[:-1])
+						else:
+							endIter = "DE_ARRAY_END(value.%s)" % member.name
+						newLine = "'\\n' << "
+						valFmt	= "tcu::formatArray(DE_ARRAY_BEGIN(value.%s), %s)" % (member.name, endIter)
+					memberName = member.name
+				else:
+					valFmt = "value.%s" % member.name
+				yield ("\ts << \"\\t%s = \" << " % memberName) + newLine + valFmt + " << '\\n';"
+			yield "\ts << '}';"
+			yield "\treturn s;"
+			yield "}"
 	writeInlFile(filename, INL_HEADER, makeStrUtilImpl())
-
 
 def writeObjTypeImpl (api, filename):
 	def makeObjTypeImpl ():
@@ -1409,7 +1421,7 @@ def writeObjTypeImpl (api, filename):
 
 		yield "template<typename T> VkObjectType getObjectType	(void);"
 
-		for line in indentLines(["template<> inline VkObjectType\tgetObjectType<%s>\t(void) { return %s;\t}" % (handle.name, prefixName("VK_OBJECT_TYPE_", handle.name)) for handle in api.handles if not handle.isAlias]):
+		for line in indentLines(["template<> inline VkObjectType\tgetObjectType<%s>\t(void) { return %s;\t}" % (handle.name, prefixName("VK_OBJECT_TYPE_", handle.name)) for handle in api.handles]):
 			yield line
 
 		yield "}"
@@ -1426,36 +1438,34 @@ class ConstructorFunction:
 
 def getConstructorFunctions (api):
 	funcs = []
+
 	ifacesDict = {
-		Function.TYPE_PLATFORM: [Variable("const PlatformInterface&", "vk", "")],
-		Function.TYPE_INSTANCE: [Variable("const InstanceInterface&", "vk", "")],
-		Function.TYPE_DEVICE: [Variable("const DeviceInterface&", "vk", "")]
-	}
+		Function.TYPE_PLATFORM:	[FunctionArgument("vk", "const ", "PlatformInterface&")],
+		Function.TYPE_INSTANCE:	[FunctionArgument("vk", "const ", "InstanceInterface&")],
+		Function.TYPE_DEVICE:	[FunctionArgument("vk", "const ", "DeviceInterface&")]}
+
 	for function in api.functions:
-		if function.isAlias:
-			continue
 		if (function.name[:8] == "vkCreate" or function.name == "vkAllocateMemory") and not "createInfoCount" in [a.name for a in function.arguments]:
 			if function.name == "vkCreateDisplayModeKHR":
 				continue # No way to delete display modes (bug?)
 
-			# \todo [pyry] Rather hacky
-			ifaceArgs = ifacesDict[function.getType()]
+			ifaceArgs = []
 			if function.name == "vkCreateDevice":
-				ifaceArgs = [Variable("const PlatformInterface&", "vkp", ""), Variable("VkInstance", "instance", "")] + ifaceArgs
+				ifaceArgs = [FunctionArgument("vkp", "const ", "PlatformInterface&"),
+							 FunctionArgument("instance", "", "VkInstance")]
+			ifaceArgs.extend(ifacesDict[function.getType()])
 
-			assert (function.arguments[-2].type == ["const", "VkAllocationCallbacks", "*"])
+			assert (function.arguments[-2].type == "VkAllocationCallbacks" and \
+					"const" in function.arguments[-2].qualifiers and \
+					function.arguments[-2].pointer == "*")
 
-			objectType	= function.arguments[-1].type[0] #not getType() but type[0] on purpose
+			objectType	= function.arguments[-1].type
 			arguments	= function.arguments[:-1]
-			funcs.append(ConstructorFunction(function.getType(), getInterfaceName(function), objectType, ifaceArgs, arguments))
+			funcs.append(ConstructorFunction(function.getType(), getInterfaceName(function.name), objectType, ifaceArgs, arguments))
 	return funcs
 
 def addVersionDefines(versionSpectrum):
 	output = ["#define " + ver.getDefineName() + " " + ver.getInHex() for ver in versionSpectrum if not ver.isStandardVersion()]
-	return output
-
-def removeVersionDefines(versionSpectrum):
-	output = ["#undef " + ver.getDefineName() for ver in versionSpectrum if not ver.isStandardVersion()]
 	return output
 
 def writeRefUtilProto (api, filename):
@@ -1479,13 +1489,12 @@ def writeRefUtilImpl (api, filename):
 		for function in api.functions:
 			if function.getType() == Function.TYPE_DEVICE \
 			and (function.name[:9] == "vkDestroy" or function.name == "vkFreeMemory") \
-			and not function.name == "vkDestroyDevice" \
-			and not function.isAlias:
-				objectType = function.arguments[-2].getType()
+			and not function.name == "vkDestroyDevice":
+				objectType = function.arguments[-2].type
 				yield "template<>"
 				yield "void Deleter<%s>::operator() (%s obj) const" % (objectType, objectType)
 				yield "{"
-				yield "\tm_deviceIface->%s(m_device, obj, m_allocator);" % (getInterfaceName(function))
+				yield "\tm_deviceIface->%s(m_device, obj, m_allocator);" % (getInterfaceName(function.name))
 				yield "}"
 				yield ""
 
@@ -1518,11 +1527,11 @@ def writeRefUtilImpl (api, filename):
 
 def writeStructTraitsImpl (api, filename):
 	def gen ():
-		for type in api.compositeTypes:
-			if type.getClassName() == "struct" and type.members[0].name == "sType" and not type.isAlias and type.name != "VkBaseOutStructure" and type.name != "VkBaseInStructure":
-				yield "template<> VkStructureType getStructureType<%s> (void)" % type.name
+		for cType in api.compositeTypes:
+			if cType.category == "struct" and cType.members[0].name == "sType" and cType.name != "VkBaseOutStructure" and cType.name != "VkBaseInStructure":
+				yield "template<> VkStructureType getStructureType<%s> (void)" % cType.name
 				yield "{"
-				yield "\treturn %s;" % prefixName("VK_STRUCTURE_TYPE_", type.name)
+				yield "\treturn %s;" % cType.members[0].values
 				yield "}"
 				yield ""
 
@@ -1568,51 +1577,50 @@ def writeNullDriverImpl (api, filename):
 				"vkGetMemoryAndroidHardwareBufferANDROID",
 			]
 
-		coreFunctions		= [f for f in api.functions if not f.isAlias]
-		specialFuncs		= [f for f in coreFunctions if f.name in specialFuncNames]
-		createFuncs			= [f for f in coreFunctions if (f.name[:8] == "vkCreate" or f.name == "vkAllocateMemory") and not f in specialFuncs]
-		destroyFuncs		= [f for f in coreFunctions if (f.name[:9] == "vkDestroy" or f.name == "vkFreeMemory") and not f in specialFuncs]
-		dummyFuncs			= [f for f in coreFunctions if f not in specialFuncs + createFuncs + destroyFuncs]
+		specialFuncs		= [f for f in api.functions if f.name in specialFuncNames]
+		createFuncs			= [f for f in api.functions if (f.name[:8] == "vkCreate" or f.name == "vkAllocateMemory") and not f in specialFuncs]
+		destroyFuncs		= [f for f in api.functions if (f.name[:9] == "vkDestroy" or f.name == "vkFreeMemory") and not f in specialFuncs]
+		dummyFuncs			= [f for f in api.functions if f not in specialFuncs + createFuncs + destroyFuncs]
 
 		def getHandle (name):
 			for handle in api.handles:
-				if handle.name == name[0]:
+				if handle.name == name:
 					return handle
 			raise Exception("No such handle: %s" % name)
 
 		for function in createFuncs:
-			objectType	= function.arguments[-1].type[:-1]
+			objectType	= function.arguments[-1].type
 			argsStr		= ", ".join([a.name for a in function.arguments[:-1]])
 
-			yield "VKAPI_ATTR %s VKAPI_CALL %s (%s)" % (function.returnType, getInterfaceName(function), argListToStr(function.arguments))
+			yield "VKAPI_ATTR %s VKAPI_CALL %s (%s)" % (function.returnType, getInterfaceName(function.name), argListToStr(function.arguments))
 			yield "{"
 			yield "\tDE_UNREF(%s);" % function.arguments[-2].name
 
-			if getHandle(objectType).type == Handle.TYPE_NONDISP:
-				yield "\tVK_NULL_RETURN((*%s = allocateNonDispHandle<%s, %s>(%s)));" % (function.arguments[-1].name, objectType[0][2:], objectType[0], argsStr)
+			if getHandle(objectType).type == "VK_DEFINE_NON_DISPATCHABLE_HANDLE":
+				yield "\tVK_NULL_RETURN((*%s = allocateNonDispHandle<%s, %s>(%s)));" % (function.arguments[-1].name, objectType[2:], objectType, argsStr)
 			else:
-				yield "\tVK_NULL_RETURN((*%s = allocateHandle<%s, %s>(%s)));" % (function.arguments[-1].name, objectType[0][2:], objectType[0], argsStr)
+				yield "\tVK_NULL_RETURN((*%s = allocateHandle<%s, %s>(%s)));" % (function.arguments[-1].name, objectType[2:], objectType, argsStr)
 			yield "}"
 			yield ""
 
 		for function in destroyFuncs:
 			objectArg	= function.arguments[-2]
 
-			yield "VKAPI_ATTR %s VKAPI_CALL %s (%s)" % (function.returnType, getInterfaceName(function), argListToStr(function.arguments))
+			yield "VKAPI_ATTR %s VKAPI_CALL %s (%s)" % (function.returnType, getInterfaceName(function.name), argListToStr(function.arguments))
 			yield "{"
 			for arg in function.arguments[:-2]:
 				yield "\tDE_UNREF(%s);" % arg.name
 
-			if getHandle(objectArg.type).type == Handle.TYPE_NONDISP:
-				yield "\tfreeNonDispHandle<%s, %s>(%s, %s);" % (objectArg.getType()[2:], objectArg.getType(), objectArg.name, function.arguments[-1].name)
+			if getHandle(objectArg.type).type == 'VK_DEFINE_NON_DISPATCHABLE_HANDLE':
+				yield "\tfreeNonDispHandle<%s, %s>(%s, %s);" % (objectArg.type[2:], objectArg.type, objectArg.name, function.arguments[-1].name)
 			else:
-				yield "\tfreeHandle<%s, %s>(%s, %s);" % (objectArg.getType()[2:], objectArg.getType(), objectArg.name, function.arguments[-1].name)
+				yield "\tfreeHandle<%s, %s>(%s, %s);" % (objectArg.type[2:], objectArg.type, objectArg.name, function.arguments[-1].name)
 
 			yield "}"
 			yield ""
 
 		for function in dummyFuncs:
-			yield "VKAPI_ATTR %s VKAPI_CALL %s (%s)" % (function.returnType, getInterfaceName(function), argListToStr(function.arguments))
+			yield "VKAPI_ATTR %s VKAPI_CALL %s (%s)" % (function.returnType, getInterfaceName(function.name), argListToStr(function.arguments))
 			yield "{"
 			for arg in function.arguments:
 				yield "\tDE_UNREF(%s);" % arg.name
@@ -1622,15 +1630,18 @@ def writeNullDriverImpl (api, filename):
 			yield ""
 
 		def genFuncEntryTable (type, name):
-			funcs = [f for f in api.functions if f.getType() == type]
-			refFuncs = {}
+
+			entries = []
+			pattern = "\tVK_NULL_FUNC_ENTRY(%s,\t%s),"
 			for f in api.functions:
-				if f.alias != None:
-					refFuncs[f.alias] = f
+				if f.getType() != type:
+					continue
+				entries.append(pattern % (f.name, getInterfaceName(f.name)))
 
 			yield "static const tcu::StaticFunctionLibrary::Entry %s[] =" % name
 			yield "{"
-			for line in indentLines(["\tVK_NULL_FUNC_ENTRY(%s,\t%s)," % (function.name, getInterfaceName(function if not function.isAlias else refFuncs[function])) for function in funcs]):
+
+			for line in indentLines(entries):
 				yield line
 			yield "};"
 			yield ""
@@ -1682,30 +1693,31 @@ def writeTypeUtil (api, filename):
 			"StdVideoEncodeH265ReferenceInfoFlags",
 			"StdVideoEncodeH265SliceSegmentHeaderFlags",
 		])
-	COMPOSITE_TYPES = set([t.name for t in api.compositeTypes if not t.isAlias])
 
 	def isSimpleStruct (type):
 		def hasArrayMember (type):
 			for member in type.members:
-				if member.arraySize != '':
+				if len(member.arraySizeList) > 0:
 					return True
 			return False
 
 		def hasCompositeMember (type):
 			for member in type.members:
-				if member.getType() in COMPOSITE_TYPES:
-					return True
+				if member.pointer is not None and '*' not in member.pointer:
+					match = [c for c in api.compositeTypes if member.type == c.name]
+					if len(match) > 0:
+						return True
 			return False
 
-		return type.typeClass == CompositeType.CLASS_STRUCT and \
-		type.members[0].getType() != "VkStructureType" and \
+		return type.category == "struct" and \
+		type.members[0].type != "VkStructureType" and \
 		not type.name in QUERY_RESULT_TYPES and \
 		not hasArrayMember(type) and \
 		not hasCompositeMember(type)
 
 	def gen ():
 		for type in api.compositeTypes:
-			if not isSimpleStruct(type) or type.isAlias:
+			if not isSimpleStruct(type):
 				continue
 
 			name = type.name[2:] if type.name[:2].lower() == "vk" else type.name
@@ -1721,8 +1733,7 @@ def writeTypeUtil (api, filename):
 
 	writeInlFile(filename, INL_HEADER, gen())
 
-def writeDriverIds(apiName, filename):
-
+def writeDriverIds(api, filename):
 	driverIdsString = []
 	driverIdsString.append("static const struct\n"
 					 "{\n"
@@ -1730,36 +1741,18 @@ def writeDriverIds(apiName, filename):
 					 "\tuint32_t id;\n"
 					 "} driverIds [] =\n"
 					 "{")
-
-	vulkanHeaderFile = { "" :	os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vulkan", "vulkan_core.h"),
-						"SC" :	os.path.join(SCRIPTS_SRC_DIR, "vulkan_sc_core.h") }
-	vulkanCore = readFile(vulkanHeaderFile[apiName])
-
-	items = re.search(r'(?:typedef\s+enum\s+VkDriverId\s*{)((.*\n)*)(?:}\s*VkDriverId\s*;)', vulkanCore).group(1).split(',')
 	driverItems = dict()
-	for item in items:
-		item.strip()
-		splitted = item.split('=')
-		key = splitted[0].strip()
-		value_str = splitted[1].strip()
-		try: # is this previously defined value?
-			value = driverItems[value_str]
-		except:
-			value = value_str
-			value_str = ""
-		if value_str:
-			value_str = "\t// " + value_str
-		driverItems[key] = value
-		if not item == items[-1]:
-			driverIdsString.append("\t{\"" + key + "\"" + ", " + value + "}," + value_str)
-		else:
-			driverIdsString.append("\t{\"" + key + "\"" + ", " + value + "}" + value_str)
-		driverItems[key] = value
-
+	driverIdEnum = [enum for enum in api.enums if enum.name == 'VkDriverId'][0]
+	for enumerator in driverIdEnum.enumeratorList:
+		driverIdsString.append(f"\t{{\"{enumerator.name}\", {enumerator.value}}},")
+		driverItems[enumerator.name] = enumerator.value
+	for enumerator in driverIdEnum.enumeratorList:
+		if len(enumerator.aliasList) > 0:
+			driverIdsString.append(f"\t{{\"{enumerator.aliasList[0]}\", {enumerator.value}}},\t// {enumerator.name}")
+	driverIdsString.append("\t{\"VK_DRIVER_ID_MAX_ENUM\", 0x7FFFFFFF}")
 	driverIdsString.append("};")
 
 	writeInlFile(filename, INL_HEADER, driverIdsString)
-
 
 def writeSupportedExtensions(apiName, api, filename):
 
@@ -1779,21 +1772,25 @@ def writeSupportedExtensions(apiName, api, filename):
 
 	instanceMap		= {}
 	deviceMap		= {}
-	versionSet		= set()
 
 	for ext in api.extensions:
-		if ext.versionInCore != None:
-			currVersion = Version(ext.versionInCore[1:])
-			# VulkanSC is based on Vulkan 1.2. Any Vulkan version greater than 1.2 should be excluded
-			if apiName=='SC' and currVersion.api==0 and currVersion.major==1 and currVersion.minor>2:
-				continue
-			if ext.versionInCore[0] == 'instance':
-				list = instanceMap.get(Version(ext.versionInCore[1:]))
-				instanceMap[Version(ext.versionInCore[1:])] = list + [ext] if list else [ext]
-			else:
-				list = deviceMap.get(Version(ext.versionInCore[1:]))
-				deviceMap[Version(ext.versionInCore[1:])] = list + [ext] if list else [ext]
-			versionSet.add(Version(ext.versionInCore[1:]))
+		if ext.promotedto is None or "VK_VERSION" not in ext.promotedto:
+			continue
+		# skip partialy promoted extensions
+		if ext.partiallyPromoted is True:
+			continue
+		major		= int(ext.promotedto[-3])
+		minor		= int(ext.promotedto[-1])
+		currVersion = "VK_API_VERSION_" + ext.promotedto[-3:]
+		# VulkanSC is based on Vulkan 1.2. Any Vulkan version greater than 1.2 should be excluded
+		if apiName=='SC' and major==1 and minor>2:
+			continue
+		if ext.type == 'instance':
+			list = instanceMap.get(currVersion)
+			instanceMap[currVersion] = list + [ext] if list else [ext]
+		else:
+			list = deviceMap.get(currVersion)
+			deviceMap[currVersion] = list + [ext] if list else [ext]
 
 	# add list of extensions missing in Vulkan SC specification
 	if apiName == 'SC':
@@ -1816,9 +1813,8 @@ def writeSupportedExtensions(apiName, api, filename):
 				else:
 					list = deviceMap.get(currVersion)
 					deviceMap[currVersion] = list + [ext] if list else [ext]
-				versionSet.add(currVersion)
 
-	lines = addVersionDefines(versionSet) + [
+	lines = [
 	"",
 	"void getCoreDeviceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char*>&%s)" % (" dst" if len(deviceMap) != 0 or apiName == 'SC' else ""),
 	"{"] + writeExtensionsForVersions(deviceMap) + [
@@ -1827,47 +1823,22 @@ def writeSupportedExtensions(apiName, api, filename):
 	"void getCoreInstanceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char*>&%s)" % (" dst" if len(instanceMap) != 0 or apiName == 'SC' else ""),
 	"{"] + writeExtensionsForVersions(instanceMap) + [
 	"}",
-	""] + removeVersionDefines(versionSet)
+	""]
 	writeInlFile(filename, INL_HEADER, lines)
 
 
 def writeExtensionFunctions (api, filename):
 
-	def isInstanceExtension (ext):
-		if ext.name and ext.functions:
-			if ext.functions[0].getType() == Function.TYPE_INSTANCE:
-				return True
-			else:
-				return False
-
-	def isDeviceExtension (ext):
-		if ext.name and ext.functions:
-			if ext.functions[0].getType() == Function.TYPE_DEVICE:
-				return True
-			else:
-				return False
-
 	def writeExtensionNameArrays ():
-		instanceExtensionNames = []
-		deviceExtensionNames = []
-		for ext in api.extensions:
-			if ext.name and isInstanceExtension(ext):
-				instanceExtensionNames += [ext.name]
-			elif ext.name and isDeviceExtension(ext):
-				deviceExtensionNames += [ext.name]
+		instanceExtensionNames	= [f"\t\"{ext.name}\"," for ext in api.extensions if ext.type == "instance"]
+		deviceExtensionNames	= [f"\t\"{ext.name}\"," for ext in api.extensions if ext.type == "device"]
 		yield '::std::string instanceExtensionNames[] =\n{'
 		for instanceExtName in instanceExtensionNames:
-			if (instanceExtName == instanceExtensionNames[len(instanceExtensionNames) - 1]):
-				yield '\t"%s"' % instanceExtName
-			else:
-				yield '\t"%s",' % instanceExtName
+			yield instanceExtName
 		yield '};\n'
 		yield '::std::string deviceExtensionNames[] =\n{'
 		for deviceExtName in deviceExtensionNames:
-			if (deviceExtName == deviceExtensionNames[len(deviceExtensionNames) - 1]):
-				yield '\t"%s"' % deviceExtName
-			else:
-				yield '\t"%s",' % deviceExtName
+			yield deviceExtName
 		yield '};'
 
 	def writeExtensionFunctions (functionType):
@@ -1881,12 +1852,25 @@ def writeExtensionFunctions (api, filename):
 			dg_list = ["vkGetDeviceGroupPresentCapabilitiesKHR", "vkGetDeviceGroupSurfacePresentModesKHR", "vkAcquireNextImage2KHR"]
 		for ext in api.extensions:
 			funcNames = []
-			if ext.name:
-				for func in ext.functions:
+			for requirement in ext.requirementsList:
+				for requiredCommand in requirement.newCommands:
+					commandName = requiredCommand.name
+					# find function that has specified name
+					func		= None
+					funcList	= [f for f in api.functions if f.name == commandName]
+					# if name was not found check if this is alias
+					if len(funcList) == 0:
+						for f in api.functions:
+							for aliasName in f.aliasList:
+								if aliasName == commandName:
+									func = f
+									break
+					else:
+						func = funcList[0]
 					if func.getType() == functionType:
 						# only add functions with same vendor as extension
 						# this is a workaroudn for entrypoints requiring more
-						# than one excetions and lack of the dependency in vulkan_core.h
+						# than one excetions and lack of the dependency in vk.xml
 						vendor = ext.name.split('_')[1]
 						if func.name.endswith(vendor):
 							funcNames.append(func.name)
@@ -1921,8 +1905,16 @@ def writeExtensionFunctions (api, filename):
 	writeInlFile(filename, INL_HEADER, lines)
 
 def writeCoreFunctionalities(api, filename):
-	functionOriginValues    = ["FUNCTIONORIGIN_PLATFORM", "FUNCTIONORIGIN_INSTANCE", "FUNCTIONORIGIN_DEVICE"]
-	lines					= addVersionDefines(api.versions) + [
+	functionOriginValues = ["FUNCTIONORIGIN_PLATFORM", "FUNCTIONORIGIN_INSTANCE", "FUNCTIONORIGIN_DEVICE"]
+
+	functionNamesPerApiVersionDict = {}
+	for feature in api.features:
+		apiVersion = "VK_API_VERSION_" + feature.number.replace('.', '_')
+		functionNamesPerApiVersionDict[apiVersion] = []
+		for r in feature.requirementsList:
+			functionNamesPerApiVersionDict[apiVersion].extend(r.commandList)
+
+	lines = [
 	"",
 	'enum FunctionOrigin', '{'] + [line for line in indentLines([
 	'\t' + functionOriginValues[0] + '\t= 0,',
@@ -1937,192 +1929,103 @@ def writeCoreFunctionalities(api, filename):
 	"void initApisMap (ApisMap& apis)",
 	"{",
 	"	apis.clear();"] + [
-	"	apis.insert(::std::pair<uint32_t, FunctionInfosList>(" + str(v) + ", FunctionInfosList()));" for v in api.versions] + [
+	"	apis.insert(::std::pair<uint32_t, FunctionInfosList>(" + v + ", FunctionInfosList()));" for v in functionNamesPerApiVersionDict] + [
 	""]
 
-	apiVersions = []
-	for index, v in enumerate(api.versions):
-		funcs = []
-		apiVersions.append("VK_VERSION_{0}_{1}".format(v.major, v.minor))
-		# iterate over all functions that are core in latest vulkan version
-		# note that first item in api.extension array are actually all definitions that are in vulkan.h.in before section with extensions
-		for fun in api.extensions[0].functions:
-			if fun.apiVersion in apiVersions:
-				funcs.append('	apis[' + str(v) + '].push_back(FunctionInfo("' + fun.name + '",\t' + functionOriginValues[fun.getType()] + '));')
-		lines = lines + [line for line in indentLines(funcs)] + [""]
+	apiVersions		= []
+	functionLines	= []
+	for apiVersion in functionNamesPerApiVersionDict:
+		# iterate over names of functions added with api
+		for functionName in functionNamesPerApiVersionDict[apiVersion]:
+			# search for data of this function in all functions list
+			functionData = None
+			for f in api.functions:
+				if functionName == f.name:
+					functionData = f
+					break
+			assert(functionData != None)
+			# add line coresponding to this function
+			functionLines.append('\tapis[{0}].push_back(FunctionInfo("' + functionName + '",\t' + functionOriginValues[functionData.getType()] + '));')
+		# functions for every api version should also include all functions from previous versions
+		specializedLines = [line.format(apiVersion) for line in functionLines]
+		# indent all functions of specified api and add them to main list
+		lines = lines + [line for line in indentLines(specializedLines)] + [""]
 
-	lines = lines + ["}", ""] + removeVersionDefines(api.versions)
+	lines = lines + ["}"]
 	writeInlFile(filename, INL_HEADER, lines)
 
 def camelToSnake(name):
-    name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
+	name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+	return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
 
 def writeDeviceFeatures2(api, filename):
-	def structInAPI(name):
+
+	def structInAPI(compositeObject):
 		for c in api.compositeTypes:
-			if c.name == name:
+			if c.name == compositeObject.name:
 				return True
 		return False
 
-	# list of structures that should be tested with getPhysicalDeviceFeatures2
-	# this is not posible to determine from vulkan_core.h, if new feature structures
-	# are added they should be manualy added to this list
-	testedStructures = [
-		'VkPhysicalDevice4444FormatsFeaturesEXT',
-		'VkPhysicalDevice8BitStorageFeatures',
-		'VkPhysicalDevice16BitStorageFeatures',
-		'VkPhysicalDeviceAccelerationStructureFeaturesKHR',
-		'VkPhysicalDeviceASTCDecodeFeaturesEXT',
-		'VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT',
-		'VkPhysicalDeviceBufferDeviceAddressFeaturesEXT',
-		'VkPhysicalDeviceBufferDeviceAddressFeatures',
-		'VkPhysicalDeviceConditionalRenderingFeaturesEXT',
-		'VkPhysicalDeviceCustomBorderColorFeaturesEXT',
-		'VkPhysicalDeviceColorWriteEnableFeaturesEXT',
-		'VkPhysicalDeviceDescriptorIndexingFeatures',
-		'VkPhysicalDeviceDepthClipEnableFeaturesEXT',
-		'VkPhysicalDeviceDynamicRenderingFeatures',
-		'VkPhysicalDeviceExtendedDynamicStateFeaturesEXT',
-		'VkPhysicalDeviceExtendedDynamicState2FeaturesEXT',
-		'VkPhysicalDeviceFragmentDensityMapFeaturesEXT',
-		'VkPhysicalDeviceFragmentDensityMap2FeaturesEXT',
-		'VkPhysicalDeviceFragmentShadingRateFeaturesKHR',
-		'VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR',
-		'VkPhysicalDeviceInlineUniformBlockFeatures',
-		'VkPhysicalDeviceIndexTypeUint8FeaturesEXT',
-		'VkPhysicalDeviceImagelessFramebufferFeatures',
-		'VkPhysicalDeviceImageRobustnessFeatures',
-		'VkPhysicalDeviceHostQueryResetFeatures',
-		'VkPhysicalDeviceLineRasterizationFeaturesEXT',
-		'VkPhysicalDeviceMaintenance4Features',
-		'VkPhysicalDeviceMultiviewFeatures',
-		'VkPhysicalDeviceMultiDrawFeaturesEXT',
-		'VkPhysicalDeviceMemoryPriorityFeaturesEXT',
-		'VkPhysicalDeviceDeviceMemoryReportFeaturesEXT',
-		'VkPhysicalDevicePerformanceQueryFeaturesKHR',
-		'VkPhysicalDevicePipelineCreationCacheControlFeatures',
-		'VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR',
-		'VkPhysicalDevicePresentIdFeaturesKHR',
-		'VkPhysicalDevicePresentWaitFeaturesKHR',
-		'VkPhysicalDeviceProtectedMemoryFeatures',
-		'VkPhysicalDeviceProvokingVertexFeaturesEXT',
-		'VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT',
-		'VkPhysicalDevicePrivateDataFeatures',
-		'VkPhysicalDeviceRayTracingPipelineFeaturesKHR',
-		'VkPhysicalDeviceRayQueryFeaturesKHR',
-		'VkPhysicalDeviceRobustness2FeaturesEXT',
-		'VkPhysicalDeviceSamplerYcbcrConversionFeatures',
-		'VkPhysicalDeviceScalarBlockLayoutFeatures',
-		'VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures',
-		'VkPhysicalDeviceShaderAtomicInt64Features',
-		'VkPhysicalDeviceShaderAtomicFloatFeaturesEXT',
-		'VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT',
-		'VkPhysicalDeviceShaderFloat16Int8Features',
-		'VkPhysicalDeviceShaderClockFeaturesKHR',
-		'VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures',
-		'VkPhysicalDeviceShaderDrawParametersFeatures',
-		'VkPhysicalDeviceShaderIntegerDotProductFeatures',
-		'VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures',
-		'VkPhysicalDeviceShaderTerminateInvocationFeatures',
-		'VkPhysicalDeviceSubgroupSizeControlFeatures',
-		'VkPhysicalDeviceSynchronization2Features',
-		'VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT',
-		'VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT',
-		'VkPhysicalDeviceTextureCompressionASTCHDRFeatures',
-		'VkPhysicalDeviceTimelineSemaphoreFeatures',
-		'VkPhysicalDeviceTransformFeedbackFeaturesEXT',
-		'VkPhysicalDeviceUniformBufferStandardLayoutFeatures',
-		'VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR',
-		'VkPhysicalDeviceVariablePointersFeatures',
-		'VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT',
-		'VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT',
-		'VkPhysicalDeviceVulkanMemoryModelFeaturesKHR',
-		'VkPhysicalDeviceYcbcrImageArraysFeaturesEXT',
-		'VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT',
-		'VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeatures',
-	]
-
 	# helper class used to encapsulate all data needed during generation
 	class StructureDetail:
-		def __init__ (self, name):
-			nameResult			= re.search('(.*)Features(.*)', name[len('VkPhysicalDevice'):])
-			nameSplitUp			= ''
-			# generate structure type name from structure name
-			# note that sometimes digits are separated with '_':
-			# VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_FEATURES_EXT
-			# but mostly they are not:
-			# VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES
-			specialCaseDict = {
-				'FragmentDensityMap2'			: ['FRAGMENT', 'DENSITY', 'MAP', '2'],
-				'Ycbcr2Plane444Formats'			: ['YCBCR', '2', 'PLANE', '444', 'FORMATS'],
-				'ASTCDecode'					: ['ASTC', 'DECODE'],
-				'4444Formats'					: ['4444', 'FORMATS'],
-				'TextureCompressionASTCHDR'		: ['TEXTURE', 'COMPRESSION', 'ASTC', 'HDR'],
-				'Synchronization2'				: ['SYNCHRONIZATION', '2'],
-				'ShaderAtomicFloat2'			: ['SHADER', 'ATOMIC', 'FLOAT', '2'],
-				'Robustness2'					: ['ROBUSTNESS', '2'],
-				'Maintenance4'					: ['MAINTENANCE', '4'],
-				'ExtendedDynamicState2'			: ['EXTENDED', 'DYNAMIC', 'STATE', '2'],
-			}
-			nameSplitUp = specialCaseDict.get(nameResult.group(1))
-			if nameSplitUp == None:
-				nameSplit		= re.findall(r'[1-9A-Z]+(?:[a-z1-9]+|[A-Z]*(?=[A-Z]|$))', nameResult.group(1))
-				nameSplitUp		= map(str.upper, nameSplit)
-			nameSplitUp = list(nameSplitUp) + ['FEATURES']
-			# check if there is extension suffix
-			if (len(nameResult.group(2)) != 0):
-				nameSplitUp.append(nameResult.group(2))
-			self.name			= name
-			self.sType			= 'VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_' + '_'.join(nameSplitUp)
-			self.instanceName	= 'd' + name[11:]
-			self.flagName		= 'is' + name[16:]
+		def __init__ (self, compositeObject):
+			self.name			= compositeObject.name
+			self.sType			= compositeObject.members[0].values
+			self.instanceName	= 'd' + compositeObject.name[11:]
+			self.flagName		= 'is' + compositeObject.name[16:]
 			self.extension		= None
 			self.api			= None
 			self.major			= None
 			self.minor			= None
-			self.members		= []
+			structureMembers	= compositeObject.members[2:]
+			self.members		= [m.name for m in structureMembers]
+
 	# helper extension class used in algorith below
 	class StructureFoundContinueToNextOne(Exception):
 		pass
-	existingStructures = list(filter(structInAPI, testedStructures)) # remove features not found in API ( important for Vulkan SC )
-	testedStructureDetail = [StructureDetail(struct) for struct in existingStructures]
-	# iterate over all searched structures and find extensions that enable them
+
+	# find structures that extend VkPhysicalDeviceFeatures2
+	structures = [c for c in api.compositeTypes if c.structextends is not None and 'VkPhysicalDeviceFeatures2' in c.structextends]
+	# remove structures that were added by extensions other than KHR and EXT
+	testedStructures = []
+	for s in structures:
+		if all([postfix not in s.name for postfix in EXTENSION_POSTFIXES_VENDOR]):
+			testedStructures.append(s)
+
+	existingStructures		= list(filter(structInAPI, testedStructures)) # remove features not found in API ( important for Vulkan SC )
+	testedStructureDetail	= [StructureDetail(struct) for struct in existingStructures]
+	# iterate over all searched structures and find extensions that enabled them
 	for structureDetail in testedStructureDetail:
 		try:
 			# iterate over all extensions
-			for extension in api.extensions[1:]:
-				# check composite types and typedefs in case extension is part of core
-				for structureList in [extension.compositeTypes, extension.typedefs]:
-					# iterate over all structures added by extension
-					for extensionStructure in structureList:
-						# compare checked structure name to name of structure from extension
+			for extension in api.extensions:
+				for requirement in extension.requirementsList:
+					for extensionStructure in requirement.newTypes:
 						if structureDetail.name == extensionStructure.name:
 							structureDetail.extension = extension.name
-							if extension.versionInCore is not None:
-								structureDetail.api   = extension.versionInCore[1]
-								structureDetail.major = extension.versionInCore[2]
-								structureDetail.minor = extension.versionInCore[3]
+							if extension.promotedto is not None:
+								versionSplit = extension.promotedto.split('_')
+								structureDetail.api		= 0					# TODO handle this for Vulkan SC
+								structureDetail.major	= versionSplit[-2]
+								structureDetail.minor	= versionSplit[-1]
 							raise StructureFoundContinueToNextOne
 		except StructureFoundContinueToNextOne:
 			continue
 	for structureDetail in testedStructureDetail:
-		for compositeType in api.compositeTypes:
-			if structureDetail.name != compositeType.name:
-				continue
-			structureMembers = compositeType.members[2:]
-			structureDetail.members = [m.name for m in structureMembers]
+		if structureDetail.major is not None:
+			continue
+		# if structure was not added with extension then check if
+		# it was added directly with one of vulkan versions
+		for feature in api.features:
+			for requirement in feature.requirementsList:
+				if structureDetail.name in requirement.typeList:
+					versionSplit = feature.name.split('_')
+					structureDetail.api		= 0							# TODO handle this for Vulkan SC
+					structureDetail.major	= versionSplit[-2]
+					structureDetail.minor	= versionSplit[-1]
+					break
 			if structureDetail.major is not None:
 				break
-			# if structure was not added with extension then check if
-			# it was added directly with one of vulkan versions
-			apiVersion = compositeType.apiVersion
-			if apiVersion is None:
-				continue
-			structureDetail.api   = apiVersion.api
-			structureDetail.major = apiVersion.major
-			structureDetail.minor = apiVersion.minor
-			break
 	# generate file content
 	structureDefinitions = []
 	featureEnabledFlags = []
@@ -2223,69 +2126,80 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	# write out
 	writeInlFile(filename, INL_HEADER, stream)
 
-def generateDeviceFeaturesDefs(apiName, src):
-	# look for definitions
-	ptrnSType	= r'VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_(\w+)_FEATURES(\w*)\s*='
-	matches		= re.findall(ptrnSType, src, re.M)
-	matches		= sorted(matches, key=lambda m: m[0])
-	# hardcoded list of core extensions having features and missing from Vulkan SC
-	missingVulkanSCExt = \
-		'#define VK_KHR_16BIT_STORAGE_EXTENSION_NAME \"VK_KHR_16bit_storage\"\n' \
-		'#define VK_KHR_8BIT_STORAGE_EXTENSION_NAME \"VK_KHR_8bit_storage\"\n' \
-		'#define VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME \"VK_KHR_buffer_device_address\"\n' \
-		'#define VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME \"VK_EXT_descriptor_indexing\"\n' \
-		'#define VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME \"VK_EXT_host_query_reset\"\n' \
-		'#define VK_KHR_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME \"VK_KHR_imageless_framebuffer\"\n' \
-		'#define VK_KHR_MULTIVIEW_EXTENSION_NAME   \"VK_KHR_multiview\"\n' \
-		'#define VK_KHR_SAMPLER_YCBCR_CONVERSION_EXTENSION_NAME \"VK_KHR_sampler_ycbcr_conversion\"\n' \
-		'#define VK_EXT_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME \"VK_EXT_scalar_block_layout\"\n' \
-		'#define VK_KHR_SEPARATE_DEPTH_STENCIL_LAYOUTS_EXTENSION_NAME \"VK_KHR_separate_depth_stencil_layouts\"\n' \
-		'#define VK_KHR_SHADER_ATOMIC_INT64_EXTENSION_NAME \"VK_KHR_shader_atomic_int64\"\n' \
-		'#define VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME \"VK_KHR_shader_draw_parameters\"\n' \
-		'#define VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME \"VK_KHR_shader_float16_int8\"\n' \
-		'#define VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES_EXTENSION_NAME \"VK_KHR_shader_subgroup_extended_types\"\n' \
-		'#define VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME \"VK_KHR_timeline_semaphore\"\n' \
-		'#define VK_KHR_UNIFORM_BUFFER_STANDARD_LAYOUT_EXTENSION_NAME \"VK_KHR_uniform_buffer_standard_layout\"\n' \
-		'#define VK_KHR_VARIABLE_POINTERS_EXTENSION_NAME \"VK_KHR_variable_pointers\"\n' \
-		'#define VK_KHR_VULKAN_MEMORY_MODEL_EXTENSION_NAME \"VK_KHR_vulkan_memory_model\"\n'
-	# construct final list
-	defs = []
-	for sType, sSuffix in matches:
-		structName			= re.sub("[_0-9][a-z]", lambda match: match.group(0).upper(), sType.capitalize()).replace('_', '')
-		ptrnStructName		= r'\s*typedef\s+struct\s+(VkPhysicalDevice' + structName + 'Features' + sSuffix.replace('_', '') + ')'
-		matchStructName		= re.search(ptrnStructName, src, re.IGNORECASE)
-		if matchStructName:
-			# handle special cases
-			if sType == "EXCLUSIVE_SCISSOR":
-				sType = "SCISSOR_EXCLUSIVE"
-			elif sType == "ASTC_DECODE":
-				sType = "ASTC_DECODE_MODE"
-			elif sType == "MAINTENANCE_4":
-				sType = "MAINTENANCE4"
-			elif sType == "YCBCR_2_PLANE_444_FORMATS":
-				sType = "YCBCR_2PLANE_444_FORMATS"
-			elif sType in {'VULKAN_1_1', 'VULKAN_1_2', 'VULKAN_1_3'}:
+def generateDeviceFeaturesOrPropertiesDefs(api, FeaturesOrProperties):
+	assert(FeaturesOrProperties in ['Features', 'Properties'])
+	defs								= []
+	foundStructureEnums					= []
+	structureEnumPattern				= f'VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_(\w+)_{FeaturesOrProperties.upper()}(\w+)'
+	structureEnumPatternNotExtension	= structureEnumPattern[:-5] + '$'
+	structureTypePattern				= f'VkPhysicalDevice(\w+){FeaturesOrProperties}(\w+)'
+	structureTypePatternNotExtension	= structureTypePattern[:-5] + '$'
+	structureTypeToSkipPattern			= f'VkPhysicalDeviceVulkan\d\d{FeaturesOrProperties}'
+	structureExtendsPattern				= f'VkPhysicalDevice{FeaturesOrProperties}2'
+	# iterate over all extensions to find extension that adds enum value matching pattern;
+	# this will always be in first requirement section
+	for ext in api.extensions:
+		# skip extensions that were promoted to other extensions (not vk version)
+		if ext.promotedto is not None and "VK_VERSION" not in ext.promotedto:
+			continue
+		allExtendedEnums = ext.requirementsList[0].extendedEnums
+		for extendedEnum in allExtendedEnums:
+			matchedStructEnum = re.search(structureEnumPattern, extendedEnum.name, re.IGNORECASE)
+			if matchedStructEnum:
+				# find feature/property structure type name
+				structureTypeName = ""
+				for stRequirement in ext.requirementsList[0].newTypes:
+					stName = stRequirement.name
+					matchedStructType = re.search(structureTypePattern, stName, re.IGNORECASE)
+					if matchedStructType:
+						structureTypeName = stName
+						break
+				# iterate over all composite types to check if structureTypeName is not alias
+				# this handles case where extension was promoted and with it feature/property structure
+				structureType = None
+				for ct in api.compositeTypes:
+					if structureTypeName == ct.name:
+						structureType = ct
+						break
+					elif structureTypeName in ct.aliasList:
+						structureType = ct
+						structureTypeName = structureType.name
+						break
+				# use data in structextends to skip structures that should not be passed to vkGetPhysicalDeviceProperties(/Features)2 function
+				if structureType.structextends is None or structureExtendsPattern not in structureType.structextends:
+					continue
+				# meke sure that structure was not added earlier - this handles special
+				# cases like VkPhysicalDeviceIDPropertiesKHR added by 3 extensions
+				if len([d for d in defs if d[3] == structureTypeName]) > 0:
+					continue
+				# there are cases like VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_2_AMD
+				# where 2 is after PROPERTIES - to handle this we need to split suffix to two parts
+				sSuffix		= matchedStructEnum.group(2)
+				sVerSuffix	= ''
+				sExtSuffix	= sSuffix
+				suffixStart = sSuffix.rfind('_')
+				if suffixStart > 0:
+					sVerSuffix = sSuffix[:suffixStart]
+					sExtSuffix = sSuffix[suffixStart:]
+				foundStructureEnums.append(matchedStructEnum.group(1))
+				defs.append( (matchedStructEnum.group(1), sVerSuffix, sExtSuffix, structureTypeName,\
+							  ext.name, allExtendedEnums[1].name, allExtendedEnums[0].name) )
+				# accept single feature/property structure per extension - this also handles cases
+				# like VK_KHR_variable_pointers which specify feature structure and its alias
+				break
+
+	# iterate over all structures to find Feature/Property structures that were not added with extension
+	# but with vulkan version; to do that we need to skip extension part from pattern
+	for ct in api.compositeTypes:
+		matchedStructType = re.search(structureTypePatternNotExtension, ct.name, re.IGNORECASE)
+		if matchedStructType:
+			if ct.members[0].name != "sType":
 				continue
-			elif sType == 'RASTERIZATION_ORDER_ATTACHMENT_ACCESS':
-				# skip case that has const pNext pointer
+			if ct.structextends is None or structureExtendsPattern not in ct.structextends:
 				continue
-			# skip cases that have const pNext pointer
-			if sType == 'RASTERIZATION_ORDER_ATTACHMENT_ACCESS':
-				continue
-			# skip cases that have const pNext pointer
-			if sType == 'RASTERIZATION_ORDER_ATTACHMENT_ACCESS':
-				continue
-			# end handling special cases
-			ptrnExtensionName	= r'^\s*#define\s+(\w+' + sSuffix + '_' + sType + '_EXTENSION_NAME).+$'
-			matchExtensionName	= re.search(ptrnExtensionName, src, re.M)
-			if matchExtensionName is None and apiName=='SC':
-				matchExtensionName	= re.search(ptrnExtensionName, missingVulkanSCExt, re.M)
-			ptrnSpecVersion		= r'^\s*#define\s+(\w+' + sSuffix + '_' + sType + '_SPEC_VERSION).+$'
-			matchSpecVersion	= re.search(ptrnSpecVersion, src, re.M)
-			defs.append( (sType, '', sSuffix, matchStructName.group(1), \
-							matchExtensionName.group(0)	if matchExtensionName	else None,
-							matchExtensionName.group(1)	if matchExtensionName	else None,
-							matchSpecVersion.group(1)	if matchSpecVersion		else '0') )
+			matchedStructEnum = re.search(structureEnumPatternNotExtension, ct.members[0].values, re.IGNORECASE)
+			if (matchedStructEnum.group(1) not in foundStructureEnums) and (re.match(structureTypeToSkipPattern, ct.name) == None):
+				defs.append( (matchedStructEnum.group(1), '', '', ct.name, None, None, '0') )
 	return defs
 
 def generateDevicePropertiesDefs(apiName, src):
@@ -2326,16 +2240,6 @@ def generateDevicePropertiesDefs(apiName, src):
 		matchStructName		= re.search(ptrnStructName, src, re.M)
 		if matchStructName:
 			extType = sType
-			if extType == "DISCARD_RECTANGLE":
-				extType = "DISCARD_RECTANGLES"
-			elif extType == "DRIVER":
-				extType = "DRIVER_PROPERTIES"
-			elif extType == "POINT_CLIPPING":
-				extType = "MAINTENANCE_2"
-			elif extType == "SHADER_CORE":
-				extType = "SHADER_CORE_PROPERTIES"
-			elif extType == "DRM":
-				extType = "PHYSICAL_DEVICE_DRM"
 			if apiName == 'SC':
 				if extType == "MAINTENANCE_3":
 					extType = "MAINTENANCE3"
@@ -2381,8 +2285,6 @@ def writeDeviceFeatures(api, dfDefs, filename):
 		# skip structures that were previously identified as blobs
 		if blobPattern.match(structureType.name):
 			continue
-		if structureType.isAlias:
-			continue
 		# skip sType and pNext and just grab third and next attributes
 		structureMembers = structureType.members[2:]
 		notPartOfBlob = True
@@ -2416,31 +2318,21 @@ def writeDeviceFeatures(api, dfDefs, filename):
 	extensionDefines = []
 	makeFeatureDescDefinitions = []
 	featureStructWrappers = []
-	for idx, (sType, sVerSuffix, sExtSuffix, extStruct, extLine, extName, specVer) in enumerate(dfDefs):
-		extensionNameDefinition = extName
+	for idx, (sType, sVerSuffix, sExtSuffix, extStruct, extName, extNameDef, specVersionDef) in enumerate(dfDefs):
+		extensionNameDefinition = extNameDef
 		if not extensionNameDefinition:
 			extensionNameDefinition = 'DECL{0}_{1}_EXTENSION_NAME'.format((sExtSuffix if sExtSuffix else ''), sType)
 		# construct defines with names
-		if extLine:
-			extensionDefines.append(extLine)
+		if extName:
+			extensionDefines.append(f'#define {extNameDef} \"{extName}\"')
 		else:
-			extensionDefines.append('#define {0} "not_existent_feature"'.format(extensionNameDefinition))
-		# handle special cases
-		if sType == "SCISSOR_EXCLUSIVE":
-			sType = "EXCLUSIVE_SCISSOR"
-		elif sType == "ASTC_DECODE_MODE":
-			sType = "ASTC_DECODE"
-		elif sType == "MAINTENANCE4":
-			sType = "MAINTENANCE_4"
-		elif sType == "YCBCR_2PLANE_444_FORMATS":
-			sType = "YCBCR_2_PLANE_444_FORMATS"
-		# end handling special cases
+			extensionDefines.append(f'#define {extensionNameDefinition} "not_existent_feature"')
 		# construct makeFeatureDesc template function definitions
 		sTypeName = "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_{0}_FEATURES{1}".format(sType, sVerSuffix + sExtSuffix)
 		makeFeatureDescDefinitions.append("template<> FeatureDesc makeFeatureDesc<{0}>(void) " \
-			"{{ return FeatureDesc{{{1}, {2}, {3}, {4}}}; }}".format(extStruct, sTypeName, extensionNameDefinition, specVer, len(dfDefs)-idx))
+			"{{ return FeatureDesc{{{1}, {2}, {3}, {4}}}; }}".format(extStruct, sTypeName, extensionNameDefinition, specVersionDef, len(dfDefs)-idx))
 		# construct CreateFeatureStruct wrapper block
-		featureStructWrappers.append("\t{{ createFeatureStructWrapper<{0}>, {1}, {2} }},".format(extStruct, extensionNameDefinition, specVer))
+		featureStructWrappers.append("\t{{ createFeatureStructWrapper<{0}>, {1}, {2} }},".format(extStruct, extensionNameDefinition, specVersionDef))
 	# construct function that will check for which vk version structure sType is part of blob
 	blobChecker = "deUint32 getBlobFeaturesVersion (VkStructureType sType)\n{\n" \
 				  "\tconst std::map<VkStructureType, deUint32> sTypeBlobMap\n" \
@@ -2453,20 +2345,17 @@ def writeDeviceFeatures(api, dfDefs, filename):
 		structuresList = sorted(structuresList, key=lambda s: s.name)
 		for structType in structuresList:
 			# find definition of this structure in dfDefs
-			structName = structType.name
-			# handle special cases
-			if structName == 'VkPhysicalDeviceShaderDrawParameterFeatures':
-				structName = 'VkPhysicalDeviceShaderDrawParametersFeatures'
-			# end handling special cases
-			structDef = [s for s in dfDefs if s[3] == structName][0]
+			structDef = None
+			allNamesToCheck = [structType.name]
+			if len(structType.aliasList) > 0:
+				allNamesToCheck.extend(structType.aliasList)
+			for structName in allNamesToCheck:
+				structDefList = [s for s in dfDefs if s[3] == structName]
+				if len(structDefList) > 0:
+					structDef = structDefList[0]
+					break
 			sType = structDef[0]
 			sSuffix = structDef[1] + structDef[2]
-			# handle special cases
-			if sType == "SCISSOR_EXCLUSIVE":
-				sType = "EXCLUSIVE_SCISSOR"
-			elif sType == "MAINTENANCE4":
-				sType = "MAINTENANCE_4"
-			# end handling special cases
 			sTypeName = "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_{0}_FEATURES{1}".format(sType, sSuffix)
 			tabs = "\t" * int((88 - len(sTypeName)) / 4)
 			blobChecker += "\t\t{{ {0},{1}VK_API_VERSION_{2}_{3} }},\n".format(sTypeName, tabs, blobName[0], blobName[1])
@@ -2499,14 +2388,12 @@ def writeDeviceFeatureTest(apiName, api, filename):
 
 	coreFeaturesPattern = re.compile("^VkPhysicalDeviceVulkan([1-9][0-9])Features[0-9]*$")
 	featureItems = []
+	testFunctions = []
 	# iterate over all feature structures
 	allFeaturesPattern = re.compile("^VkPhysicalDevice\w+Features[1-9]*")
 	for structureType in api.compositeTypes:
 		# skip structures that are not feature structures
 		if not allFeaturesPattern.match(structureType.name):
-			continue
-		# skip alias structures
-		if structureType.isAlias:
 			continue
 		# skip sType and pNext and just grab third and next attributes
 		structureMembers = structureType.members[2:]
@@ -2515,21 +2402,69 @@ def writeDeviceFeatureTest(apiName, api, filename):
 		for member in structureMembers:
 			items.append("		FEATURE_ITEM ({0}, {1}),".format(structureType.name, member.name))
 
-		testBlock = \
-			"if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<{0}>()))\n" \
-			"{{\n" \
-			"	static const Feature features[] =\n" \
-			"	{{\n" \
-			"{1}\n" \
-			"	}};\n" \
-			"	auto* supportedFeatures = reinterpret_cast<const {0}*>(featuresStruct);\n" \
-			"	checkFeatures(vkp, instance, instanceDriver, physicalDevice, {2}, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, {3}, emptyDeviceFeatures, {4});\n" \
-			"}}\n"
+		testBlock = """
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTest{4} (Context& context)
+{{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+{6}
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	vector<const char*>	coreExtensions;
+	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
+	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
+
+	vector<const char*> extensionNames;
+	extensionNames.reserve(nonCoreExtensions.size());
+	for (const string& extension : nonCoreExtensions)
+		extensionNames.push_back(extension.c_str());
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<{0}>()))
+	{{
+		static const Feature features[] =
+		{{
+{1}
+		}};
+		auto* supportedFeatures = reinterpret_cast<const {0}*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, {2}, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, {3}, emptyDeviceFeatures, {5});
+	}}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}}
+"""
 		additionalParams = ( 'memReservationStatMax, isSubProcess' if apiName == 'SC' else 'isSubProcess' )
-		featureItems.append(testBlock.format(structureType.name, "\n".join(items), len(items), ("DE_NULL" if coreFeaturesPattern.match(structureType.name) else "&extensionNames"), additionalParams))
+		additionalDefs = ( '	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();' if apiName == 'SC' else '')
+		featureItems.append(testBlock.format(structureType.name, "\n".join(items), len(items), ("DE_NULL" if coreFeaturesPattern.match(structureType.name) else "&extensionNames"), structureType.name[len('VkPhysicalDevice'):], additionalParams, additionalDefs))
+
+		testFunctions.append("createDeviceWithUnsupportedFeaturesTest" + structureType.name[len('VkPhysicalDevice'):])
 
 	stream = ['']
 	stream.extend(featureItems)
+	stream.append("""
+void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
+{
+""")
+	for x in testFunctions:
+		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x[len('createDeviceWithUnsupportedFeaturesTest'):]) + '", "' + x + '", ' + x + ');')
+	stream.append('}\n')
+
 	writeInlFile(filename, INL_HEADER, stream)
 
 def writeDeviceProperties(api, dpDefs, filename):
@@ -2557,8 +2492,6 @@ def writeDeviceProperties(api, dpDefs, filename):
 		# skip structures that were previously identified as blobs
 		if blobPattern.match(structureType.name):
 			continue
-		if structureType.isAlias:
-			continue
 		# skip sType and pNext and just grab third and next attributes
 		structureMembers = structureType.members[2:]
 		notPartOfBlob = True
@@ -2574,7 +2507,7 @@ def writeDeviceProperties(api, dpDefs, filename):
 				# add specialization for this property structure
 				memberCopying = ""
 				for member in structureMembers:
-					if not member.arraySize:
+					if len(member.arraySizeList) == 0:
 						# handle special case
 						if structureType.name == "VkPhysicalDeviceSubgroupProperties" and "subgroup" not in member.name :
 							blobMemberName = "subgroup" + member.name[0].capitalize() + member.name[1:]
@@ -2583,7 +2516,7 @@ def writeDeviceProperties(api, dpDefs, filename):
 						else:
 							memberCopying += "\tpropertyType.{0} = allPropertiesBlobs.vk{1}.{0};\n".format(member.name, blobName)
 					else:
-						memberCopying += "\tmemcpy(propertyType.{0}, allPropertiesBlobs.vk{1}.{0}, sizeof({2}) * {3});\n".format(member.name, blobName, member.type[0], member.arraySize[1:-1])
+						memberCopying += "\tmemcpy(propertyType.{0}, allPropertiesBlobs.vk{1}.{0}, sizeof({2}) * {3});\n".format(member.name, blobName, member.type, member.arraySizeList[0])
 				wholeFunction = \
 					"template<> void initPropertyFromBlob<{0}>({0}& propertyType, const AllPropertiesBlobs& allPropertiesBlobs)\n" \
 					"{{\n" \
@@ -2601,21 +2534,21 @@ def writeDeviceProperties(api, dpDefs, filename):
 	extensionDefines = []
 	makePropertyDescDefinitions = []
 	propertyStructWrappers = []
-	for idx, (sType, sVerSuffix, sExtSuffix, extStruct, extLine, extName, specVer) in enumerate(dpDefs):
-		extensionNameDefinition = extName
+	for idx, (sType, sVerSuffix, sExtSuffix, extStruct, extName, extNameDef, specVersionDef) in enumerate(dpDefs):
+		extensionNameDefinition = extNameDef
 		if not extensionNameDefinition:
 			extensionNameDefinition = 'DECL{0}_{1}_EXTENSION_NAME'.format((sExtSuffix if sExtSuffix else ''), sType)
 		# construct defines with names
-		if extLine:
-			extensionDefines.append(extLine)
+		if extName:
+			extensionDefines.append(f'#define {extNameDef} \"{extName}\"')
 		else:
-			extensionDefines.append('#define {0} "core_property"'.format(extensionNameDefinition))
+			extensionDefines.append(f'#define {extensionNameDefinition} "core_property"')
 		# construct makePropertyDesc template function definitions
 		sTypeName = "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_{0}_PROPERTIES{1}".format(sType, sVerSuffix + sExtSuffix)
 		makePropertyDescDefinitions.append("template<> PropertyDesc makePropertyDesc<{0}>(void) " \
-			"{{ return PropertyDesc{{{1}, {2}, {3}, {4}}}; }}".format(extStruct, sTypeName, extensionNameDefinition, specVer, len(dpDefs)-idx))
+			"{{ return PropertyDesc{{{1}, {2}, {3}, {4}}}; }}".format(extStruct, sTypeName, extensionNameDefinition, specVersionDef, len(dpDefs)-idx))
 		# construct CreateProperty struct wrapper block
-		propertyStructWrappers.append("\t{{ createPropertyStructWrapper<{0}>, {1}, {2} }},".format(extStruct, extensionNameDefinition, specVer))
+		propertyStructWrappers.append("\t{{ createPropertyStructWrapper<{0}>, {1}, {2} }},".format(extStruct, extensionNameDefinition, specVersionDef))
 	# construct method that will check if structure sType is part of blob
 	blobChecker = "deUint32 getBlobPropertiesVersion (VkStructureType sType)\n{\n" \
 				  "\tconst std::map<VkStructureType, deUint32> sTypeBlobMap\n" \
@@ -2629,11 +2562,20 @@ def writeDeviceProperties(api, dpDefs, filename):
 		for structType in structuresList:
 			# find definition of this structure in dpDefs
 			structName = structType.name
-			structDef = [s for s in dpDefs if s[3] == structName][0]
+			structDef = None
+			foundDefs = [s for s in dpDefs if s[3] == structName]
+			if len(foundDefs) > 0:
+				structDef = foundDefs[0]
+			else:
+				for alias in structType.aliasList:
+					foundDefs = [s for s in dpDefs if s[3] == alias]
+					if len(foundDefs) > 0:
+						structDef = foundDefs[0]
+						break
 			sType = structDef[0]
 			sSuffix = structDef[1] + structDef[2]
 			sTypeName = "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_{0}_PROPERTIES{1}".format(sType, sSuffix)
-			tabs = "\t" * int((76 - len(sTypeName)) / 4)
+			tabs = "\t" * int((80 - len(sTypeName)) / 4)
 			blobChecker += "\t\t{{ {0},{1}VK_API_VERSION_{2}_{3} }},\n".format(sTypeName, tabs, blobName[0], blobName[1])
 	blobChecker += "\t};\n\n" \
 				   "\tauto it = sTypeBlobMap.find(sType);\n" \
@@ -2706,6 +2648,9 @@ def writeMandatoryFeatures(api, filename):
 		for c in api.compositeTypes:
 			if c.name == name:
 				return True
+			for alias in c.aliasList:
+				if alias == name:
+					return True
 		return False
 	stream = []
 
@@ -2778,7 +2723,7 @@ def writeMandatoryFeatures(api, filename):
 				if (req.startswith("ApiVersion")):
 					cond = cond + 'context.contextSupports(vk::' + req + ')'
 				else:
-					cond = cond + 'isExtensionSupported(deviceExtensions, RequiredExtension("' + req + '"))'
+					cond = cond + 'isExtensionStructSupported(deviceExtensions, RequiredExtension("' + req + '"))'
 				if i+1 < len(reqs) :
 					cond = cond + ' || '
 			cond = cond + ' )'
@@ -2796,7 +2741,6 @@ def writeMandatoryFeatures(api, filename):
 	stream.extend(['\tcontext.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &coreFeatures);',
 				   '\tbool result = true;',
 				   ''])
-
 
 	for v in dictData:
 		if not structInAPI(v[0]): # remove items not defined in current API ( important for Vulkan SC )
@@ -2818,7 +2762,7 @@ def writeMandatoryFeatures(api, filename):
 				elif '.' in req:
 					condition = condition + req
 				else:
-					condition = condition + 'isExtensionSupported(deviceExtensions, RequiredExtension("' + req + '"))'
+					condition = condition + 'isExtensionStructSupported(deviceExtensions, RequiredExtension("' + req + '"))'
 				if i+1 < len(v[2]) :
 					condition = condition + ' && '
 			condition = condition + ' )'
@@ -2890,6 +2834,84 @@ def writeExtensionList(apiName, api, filename, extensionType):
 	stream.append('};\n')
 	writeInlFile(filename, INL_HEADER, stream)
 
+def writeApiExtensionDependencyInfo(api, filename):
+
+	def isExtensionInCore(ext, apiMajor, apiMinor):
+		if ext.promotedto is None:
+			return False
+		if 'VK_VERSION' not in ext.promotedto:
+			return False
+		extMajor = ext.promotedto[-3]
+		extMinor = ext.promotedto[-1]
+		if apiMajor > extMajor:
+			return True
+		if apiMajor == extMajor and apiMinor >= extMinor:
+			return True
+		return False
+
+	def genExtDepArray(extType):
+		yield 'static const std::tuple<deUint32, deUint32, deUint32, const char*, const char*>\t{}ExtensionDependencies[]\t='.format(extType)
+		yield '{'
+		allApiVersions = [f.number for f in api.features]
+		# iterate over all extension that are of specified type and that have requirements
+		for ext in api.extensions:
+			if ext.type != extType:
+				continue
+			if ext.requiredExtensions is None:
+				continue
+			apiVariant = '0'
+			# iterate over all api versions
+			for apiVersion in allApiVersions:
+				major, minor = apiVersion.split('.')
+				if ext.requiresCore is not None:
+					requiresCoreMajor, requiresCoreMinor = ext.requiresCore.split('.')
+					if major < requiresCoreMajor or  minor < requiresCoreMinor:
+						continue
+				if isExtensionInCore(ext, major, minor):
+					continue
+				# iterate over all requirements and add to the list those that are
+				# applicable for currently processed api version
+				for r in ext.requiredExtensions:
+					# find required extension and make sure it is not part of core for this or previous api version
+					requiredExtensionList = [re for re in api.extensions if re.name == r]
+					if len(requiredExtensionList) > 0:
+						requiredExtension = requiredExtensionList[0]
+						if isExtensionInCore(requiredExtension, major, minor):
+							continue
+					yield '\tstd::make_tuple({}, {}, {}, "{}", "{}"),'.format(apiVariant, major, minor, ext.name, r)
+		yield '};'
+
+	def genApiVersions():
+		yield 'static const std::tuple<deUint32, deUint32, deUint32, deUint32>\treleasedApiVersions[]\t='
+		yield '{'
+		for f in reversed(api.features):
+			apiVariant = '0' if f.api == 'vulkan' else '1'
+			major, minor = f.number.split('.')
+			version = (int(apiVariant) << 29) | (int(major) << 22) | (int(minor) << 12)
+			yield '\tstd::make_tuple({}, {}, {}, {}),'.format(version, apiVariant, major, minor)
+		yield '};'
+
+	def genRequiredCoreVersions():
+		yield 'static const std::tuple<deUint32, deUint32, const char*>\textensionRequiredCoreVersion[]\t ='
+		yield '{'
+		for ext in api.extensions:
+			# skip video extensions
+			if 'vulkan_video_' in ext.name:
+				continue
+			major, minor = '1', '0'
+			if ext.requiresCore is not None:
+				major, minor = ext.requiresCore.split('.')
+			yield '\tstd::make_tuple({}, {}, "{}"),'.format(major, minor, ext.name)
+		yield '};'
+
+	stream = []
+	stream.extend(genExtDepArray('instance'))
+	stream.extend(genExtDepArray('device'))
+	stream.extend(genApiVersions())
+	stream.extend(genRequiredCoreVersions())
+
+	writeInlFile(filename, INL_HEADER, stream)
+
 def parseCmdLineArgs():
 	parser = argparse.ArgumentParser(description = "Generate Vulkan INL files",
 									 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -2905,104 +2927,47 @@ def parseCmdLineArgs():
 						help="Choose output directory")
 	return parser.parse_args()
 
-def preprocessTopInclude(src, dir):
-	pattern = r'#include\s+"([^\n]+)"'
-	while True:
-		inc = re.search(pattern, src)
-		if inc is None:
-			return src
-		incFileName = inc.string[inc.start(1):inc.end(1)]
-		patternIncNamed = r'#include\s+"' + incFileName + '"'
-		incBody = readFile(os.path.join(dir, incFileName)) if incFileName != 'vk_platform.h' else ''
-		incBodySanitized = re.sub(pattern, '', incBody)
-		bodyEndSanitized = re.sub(patternIncNamed, '', src[inc.end(0):])
-		src = src[0:inc.start(0)] + incBodySanitized + bodyEndSanitized
-	return src
-
 if __name__ == "__main__":
 	args = parseCmdLineArgs()
 
-	outputPath = DEFAULT_OUTPUT_DIR[args.api]
 	# if argument was specified it is interpreted as a path to which .inl files will be written
-	if args.outdir != '':
-		outputPath = args.outdir
+	outputPath = DEFAULT_OUTPUT_DIR[args.api] if args.outdir == '' else args.outdir
 
-	files = []
-	src = ""
+	currentDir = os.getcwd()
+	api = API()
+
 	if args.api == '':
 
-		# Generate vulkan headers from vk.xml
-		currentDir			= os.getcwd()
-		pythonExecutable	= sys.executable or "python"
-		os.chdir(os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "..", "xml"))
-		vkTargets = [
-			"vulkan_android.h",
-			"vulkan_beta.h",
-			"vulkan_core.h",
-			"vulkan_fuchsia.h",
-			"vulkan_ggp.h",
-			"vulkan_ios.h",
-			"vulkan_macos.h",
-			"vulkan_metal.h",
-			"vulkan_vi.h",
-			"vulkan_wayland.h",
-			"vulkan_win32.h",
-			"vulkan_xcb.h",
-			"vulkan_xlib.h",
-			"vulkan_xlib_xrandr.h",
-		]
-		for target in vkTargets:
-			execute([pythonExecutable, "../scripts/genvk.py", "-o", "../include/vulkan", target])
+		# Read vk.xml and generate vulkan headers from it
+		os.chdir(VULKAN_XML_DIR)
+		api.build( etree.parse("vk.xml") )
+		api.build( etree.parse("video.xml") )
+		api.postProcess()
 
-		videoDir = "../include/vk_video"
-		if (not os.path.isdir(videoDir)):
-			os.mkdir(videoDir)
-
-		videoTargets = [
-			'vulkan_video_codecs_common.h',
-			'vulkan_video_codec_h264std.h',
-			'vulkan_video_codec_h264std_decode.h',
-			'vulkan_video_codec_h264std_encode.h',
-			'vulkan_video_codec_h265std.h',
-			'vulkan_video_codec_h265std_decode.h',
-			'vulkan_video_codec_h265std_encode.h',
-		]
-		for target in videoTargets:
-			execute([pythonExecutable, "../scripts/genvk.py", "-registry", "video.xml", "-o", videoDir, target])
-
-		os.chdir(currentDir)
-
-		# Read all .h files and make sure vulkan_core.h is first out of vulkan files
-		vkTargets.remove("vulkan_core.h")
-		vkTargets.sort()
-		vkTargets.insert(0, "vulkan_core.h")
-		vkFilesWithCatalog = [os.path.join("vulkan", f) for f in vkTargets]
-
-		for file in vkFilesWithCatalog:
-			src += preprocessTopInclude(readFile(os.path.join(VULKAN_HEADERS_INCLUDE_DIR,file)), VULKAN_HEADERS_INCLUDE_DIR)
 	elif args.api=='SC':
-		# At the moment vulkan-docs does not have vulkan_sc_core.h. We will use a file from external/vulkancts/scripts/src
-		src = preprocessTopInclude(readFile(os.path.join(os.path.dirname(__file__), "src", "vulkan_sc_core.h" )), VULKAN_HEADERS_INCLUDE_DIR)
+		# At the moment structure of vk.xml for Vulkan SC is not final.
+		# For time being we will use old version of gen_framework script that
+		# was saved as gen_framework_sc (it still parses vulkan_sc_core.h)
+		os.chdir(os.path.dirname(__file__))
+		pythonExecutable = sys.executable or "python"
+		execute([pythonExecutable, "gen_framework_sc.py", "--api", "SC"])
+		exit (0)
 
-	src = re.sub('\s*//[^\n]*', '', src)
-	src = re.sub('\n\n', '\n', src)
-
-	api				= parseAPI(src)
+	os.chdir(currentDir)
 
 	platformFuncs	= [Function.TYPE_PLATFORM]
 	instanceFuncs	= [Function.TYPE_INSTANCE]
 	deviceFuncs		= [Function.TYPE_DEVICE]
 
-	dfd										= generateDeviceFeaturesDefs(args.api, src)
+	dfd										= generateDeviceFeaturesOrPropertiesDefs(api, 'Features')
 	writeDeviceFeatures						(api, dfd, os.path.join(outputPath, "vkDeviceFeatures.inl"))
 	writeDeviceFeaturesDefaultDeviceDefs	(dfd, os.path.join(outputPath, "vkDeviceFeaturesForDefaultDeviceDefs.inl"))
 	writeDeviceFeaturesContextDecl			(dfd, os.path.join(outputPath, "vkDeviceFeaturesForContextDecl.inl"))
 	writeDeviceFeaturesContextDefs			(dfd, os.path.join(outputPath, "vkDeviceFeaturesForContextDefs.inl"))
 	writeDeviceFeatureTest					(args.api, api, os.path.join(outputPath, "vkDeviceFeatureTest.inl"))
 
-	dpd										= generateDevicePropertiesDefs(args.api, src)
+	dpd										= generateDeviceFeaturesOrPropertiesDefs(api, 'Properties')
 	writeDeviceProperties					(api, dpd, os.path.join(outputPath, "vkDeviceProperties.inl"))
-
 	writeDevicePropertiesDefaultDeviceDefs	(dpd, os.path.join(outputPath, "vkDevicePropertiesForDefaultDeviceDefs.inl"))
 	writeDevicePropertiesContextDecl		(dpd, os.path.join(outputPath, "vkDevicePropertiesForContextDecl.inl"))
 	writeDevicePropertiesContextDefs		(dpd, os.path.join(outputPath, "vkDevicePropertiesForContextDefs.inl"))
@@ -3040,9 +3005,11 @@ if __name__ == "__main__":
 	writeExtensionFunctions					(api, os.path.join(outputPath, "vkExtensionFunctions.inl"))
 	writeDeviceFeatures2					(api, os.path.join(outputPath, "vkDeviceFeatures2.inl"))
 	writeMandatoryFeatures					(api, os.path.join(outputPath, "vkMandatoryFeatures.inl"))
-	writeExtensionList						(args.api, api, os.path.join(outputPath, "vkInstanceExtensions.inl"),				'instance')
-	writeExtensionList						(args.api, api, os.path.join(outputPath, "vkDeviceExtensions.inl"),				'device')
-	writeDriverIds							(args.api, os.path.join(outputPath, "vkKnownDriverIds.inl"))
+	writeExtensionList						(args.api, api, os.path.join(outputPath, "vkInstanceExtensions.inl"),	'instance')
+	writeExtensionList						(args.api, api, os.path.join(outputPath, "vkDeviceExtensions.inl"),		'device')
+	writeDriverIds							(api, os.path.join(outputPath, "vkKnownDriverIds.inl"))
 	writeObjTypeImpl						(api, os.path.join(outputPath, "vkObjTypeImpl.inl"))
+	writeApiExtensionDependencyInfo			(api, os.path.join(outputPath, "vkApiExtensionDependencyInfo.inl"))
+
 	# NOTE: when new files are generated then they should also be added to the
 	# vk-gl-cts\external\vulkancts\framework\vulkan\CMakeLists.txt outputs list

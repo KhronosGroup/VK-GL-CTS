@@ -236,19 +236,16 @@ public:
 										SurfaceKHR		(VkInstance, const VkWaylandSurfaceCreateInfoKHR*)	{}
 										SurfaceKHR		(VkInstance, const VkAndroidSurfaceCreateInfoKHR*)	{}
 										SurfaceKHR		(VkInstance, const VkWin32SurfaceCreateInfoKHR*)	{}
-#endif // CTS_USES_VULKANSC
-										SurfaceKHR		(VkInstance, const VkDisplaySurfaceCreateInfoKHR*)	{}
-#ifndef CTS_USES_VULKANSC
 										SurfaceKHR		(VkInstance, const VkViSurfaceCreateInfoNN*)		{}
 										SurfaceKHR		(VkInstance, const VkIOSSurfaceCreateInfoMVK*)		{}
 										SurfaceKHR		(VkInstance, const VkMacOSSurfaceCreateInfoMVK*)	{}
 										SurfaceKHR		(VkInstance, const VkImagePipeSurfaceCreateInfoFUCHSIA*)	{}
-#endif // CTS_USES_VULKANSC
-										SurfaceKHR		(VkInstance, const VkHeadlessSurfaceCreateInfoEXT*)	{}
-#ifndef CTS_USES_VULKANSC
 										SurfaceKHR		(VkInstance, const VkStreamDescriptorSurfaceCreateInfoGGP*)	{}
 										SurfaceKHR		(VkInstance, const VkMetalSurfaceCreateInfoEXT*)	{}
+										SurfaceKHR		(VkInstance, const VkScreenSurfaceCreateInfoQNX*)	{}
 #endif // CTS_USES_VULKANSC
+										SurfaceKHR		(VkInstance, const VkDisplaySurfaceCreateInfoKHR*)	{}
+										SurfaceKHR		(VkInstance, const VkHeadlessSurfaceCreateInfoEXT*)	{}
 										~SurfaceKHR		(void)												{}
 };
 

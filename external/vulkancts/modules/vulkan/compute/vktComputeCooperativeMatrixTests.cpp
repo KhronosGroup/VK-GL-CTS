@@ -846,9 +846,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 		vk::DescriptorSetUpdateBuilder setUpdateBuilder;
 		if (m_data.storageClass == SC_PHYSICAL_STORAGE_BUFFER)
 		{
-			const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
-
-			VkBufferDeviceAddressInfo info =
+			VkBufferDeviceAddressInfo info
 			{
 				VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,		// VkStructureType	 sType;
 				DE_NULL,											// const void*		 pNext;
@@ -858,11 +856,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 			for (deUint32 i = 0; i < 4; ++i)
 			{
 				info.buffer = **buffers[i];
-				VkDeviceAddress addr;
-				if (useKHR)
-					addr = vk.getBufferDeviceAddress(device, &info);
-				else
-					addr = vk.getBufferDeviceAddressEXT(device, &info);
+				VkDeviceAddress addr = vk.getBufferDeviceAddress(device, &info);
 				addrsInMemory[i] = addr;
 			}
 			setUpdateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(4),

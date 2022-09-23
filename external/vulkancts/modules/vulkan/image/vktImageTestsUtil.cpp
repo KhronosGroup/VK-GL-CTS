@@ -35,17 +35,6 @@ namespace vkt
 namespace image
 {
 
-Buffer::Buffer (const DeviceInterface&		vk,
-				const VkDevice				device,
-				Allocator&					allocator,
-				const VkBufferCreateInfo&	bufferCreateInfo,
-				const MemoryRequirement		memoryRequirement)
-{
-	m_buffer = createBuffer(vk, device, &bufferCreateInfo);
-	m_allocation = allocator.allocate(getBufferMemoryRequirements(vk, device, *m_buffer), memoryRequirement);
-	VK_CHECK(vk.bindBufferMemory(device, *m_buffer, m_allocation->getMemory(), m_allocation->getOffset()));
-}
-
 Image::Image (const DeviceInterface&	vk,
 			  const VkDevice			device,
 			  Allocator&				allocator,

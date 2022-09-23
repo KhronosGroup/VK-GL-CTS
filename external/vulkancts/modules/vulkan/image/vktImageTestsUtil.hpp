@@ -66,27 +66,6 @@ bool					isComponentSwizzled				(const vk::VkFormat format);
 int						getNumUsedChannels				(const vk::VkFormat format);
 bool					isFormatImageLoadStoreCapable	(const vk::VkFormat format);
 
-class Buffer
-{
-public:
-									Buffer			(const vk::DeviceInterface&		vk,
-													 const vk::VkDevice				device,
-													 vk::Allocator&					allocator,
-													 const vk::VkBufferCreateInfo&	bufferCreateInfo,
-													 const vk::MemoryRequirement	memoryRequirement);
-
-	const vk::VkBuffer&				get				(void) const { return *m_buffer; }
-	const vk::VkBuffer&				operator*		(void) const { return get(); }
-	vk::Allocation&					getAllocation	(void) const { return *m_allocation; }
-
-private:
-	de::MovePtr<vk::Allocation>		m_allocation;
-	vk::Move<vk::VkBuffer>			m_buffer;
-
-									Buffer			(const Buffer&);  // "deleted"
-	Buffer&							operator=		(const Buffer&);
-};
-
 class Image
 {
 public:
