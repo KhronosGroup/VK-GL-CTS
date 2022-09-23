@@ -371,6 +371,18 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 #endif // defined(CTS_USES_VULKAN)
 
 #if defined(CTS_USES_VULKAN)
+	vk::VkPhysicalDeviceOpacityMicromapFeaturesEXT physicalDeviceOpacityMicromapFeaturesEXT;
+	deMemset(&physicalDeviceOpacityMicromapFeaturesEXT, 0, sizeof(physicalDeviceOpacityMicromapFeaturesEXT));
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_opacity_micromap")) )
+	{
+		physicalDeviceOpacityMicromapFeaturesEXT.sType = getStructureType<VkPhysicalDeviceOpacityMicromapFeaturesEXT>();
+		*nextPtr = &physicalDeviceOpacityMicromapFeaturesEXT;
+		nextPtr  = &physicalDeviceOpacityMicromapFeaturesEXT.pNext;
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT physicalDevicePageableDeviceLocalMemoryFeaturesEXT;
 	deMemset(&physicalDevicePageableDeviceLocalMemoryFeaturesEXT, 0, sizeof(physicalDevicePageableDeviceLocalMemoryFeaturesEXT));
 
@@ -1351,6 +1363,17 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceNonSeamlessCubeMapFeaturesEXT.nonSeamlessCubeMap == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature nonSeamlessCubeMap not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_opacity_micromap")) )
+	{
+		if ( physicalDeviceOpacityMicromapFeaturesEXT.micromap == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature micromap not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
