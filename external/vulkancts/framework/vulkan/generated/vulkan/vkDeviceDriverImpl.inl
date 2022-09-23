@@ -1884,6 +1884,76 @@ void DeviceDriver::getDescriptorSetHostMappingVALVE (VkDevice device, VkDescript
 	m_vk.getDescriptorSetHostMappingVALVE(device, descriptorSet, ppData);
 }
 
+VkResult DeviceDriver::createMicromapEXT (VkDevice device, const VkMicromapCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkMicromapEXT* pMicromap) const
+{
+	return m_vk.createMicromapEXT(device, pCreateInfo, pAllocator, pMicromap);
+}
+
+void DeviceDriver::cmdBuildMicromapsEXT (VkCommandBuffer commandBuffer, uint32_t infoCount, const VkMicromapBuildInfoEXT* pInfos) const
+{
+	m_vk.cmdBuildMicromapsEXT(commandBuffer, infoCount, pInfos);
+}
+
+VkResult DeviceDriver::buildMicromapsEXT (VkDevice device, VkDeferredOperationKHR deferredOperation, uint32_t infoCount, const VkMicromapBuildInfoEXT* pInfos) const
+{
+	return m_vk.buildMicromapsEXT(device, deferredOperation, infoCount, pInfos);
+}
+
+void DeviceDriver::destroyMicromapEXT (VkDevice device, VkMicromapEXT micromap, const VkAllocationCallbacks* pAllocator) const
+{
+	m_vk.destroyMicromapEXT(device, micromap, pAllocator);
+}
+
+void DeviceDriver::cmdCopyMicromapEXT (VkCommandBuffer commandBuffer, const VkCopyMicromapInfoEXT* pInfo) const
+{
+	m_vk.cmdCopyMicromapEXT(commandBuffer, pInfo);
+}
+
+VkResult DeviceDriver::copyMicromapEXT (VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyMicromapInfoEXT* pInfo) const
+{
+	return m_vk.copyMicromapEXT(device, deferredOperation, pInfo);
+}
+
+void DeviceDriver::cmdCopyMicromapToMemoryEXT (VkCommandBuffer commandBuffer, const VkCopyMicromapToMemoryInfoEXT* pInfo) const
+{
+	m_vk.cmdCopyMicromapToMemoryEXT(commandBuffer, pInfo);
+}
+
+VkResult DeviceDriver::copyMicromapToMemoryEXT (VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyMicromapToMemoryInfoEXT* pInfo) const
+{
+	return m_vk.copyMicromapToMemoryEXT(device, deferredOperation, pInfo);
+}
+
+void DeviceDriver::cmdCopyMemoryToMicromapEXT (VkCommandBuffer commandBuffer, const VkCopyMemoryToMicromapInfoEXT* pInfo) const
+{
+	m_vk.cmdCopyMemoryToMicromapEXT(commandBuffer, pInfo);
+}
+
+VkResult DeviceDriver::copyMemoryToMicromapEXT (VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyMemoryToMicromapInfoEXT* pInfo) const
+{
+	return m_vk.copyMemoryToMicromapEXT(device, deferredOperation, pInfo);
+}
+
+void DeviceDriver::cmdWriteMicromapsPropertiesEXT (VkCommandBuffer commandBuffer, uint32_t micromapCount, const VkMicromapEXT* pMicromaps, VkQueryType queryType, VkQueryPool queryPool, uint32_t firstQuery) const
+{
+	m_vk.cmdWriteMicromapsPropertiesEXT(commandBuffer, micromapCount, pMicromaps, queryType, queryPool, firstQuery);
+}
+
+VkResult DeviceDriver::writeMicromapsPropertiesEXT (VkDevice device, uint32_t micromapCount, const VkMicromapEXT* pMicromaps, VkQueryType queryType, size_t dataSize, void* pData, size_t stride) const
+{
+	return m_vk.writeMicromapsPropertiesEXT(device, micromapCount, pMicromaps, queryType, dataSize, pData, stride);
+}
+
+void DeviceDriver::getDeviceMicromapCompatibilityEXT (VkDevice device, const VkMicromapVersionInfoEXT* pVersionInfo, VkAccelerationStructureCompatibilityKHR* pCompatibility) const
+{
+	m_vk.getDeviceMicromapCompatibilityEXT(device, pVersionInfo, pCompatibility);
+}
+
+void DeviceDriver::getMicromapBuildSizesEXT (VkDevice device, VkAccelerationStructureBuildTypeKHR buildType, const VkMicromapBuildInfoEXT* pBuildInfo, VkMicromapBuildSizesInfoEXT* pSizeInfo) const
+{
+	m_vk.getMicromapBuildSizesEXT(device, buildType, pBuildInfo, pSizeInfo);
+}
+
 void DeviceDriver::getShaderModuleIdentifierEXT (VkDevice device, VkShaderModule shaderModule, VkShaderModuleIdentifierEXT* pIdentifier) const
 {
 	m_vk.getShaderModuleIdentifierEXT(device, shaderModule, pIdentifier);

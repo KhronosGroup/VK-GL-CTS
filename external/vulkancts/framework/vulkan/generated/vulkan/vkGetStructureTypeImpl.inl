@@ -2533,14 +2533,14 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceImage2DViewOf3DFeatu
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE> (void)
+template<> VkStructureType getStructureType<VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT> (void)
 {
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_VALVE;
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_EXT;
 }
 
-template<> VkStructureType getStructureType<VkMutableDescriptorTypeCreateInfoVALVE> (void)
+template<> VkStructureType getStructureType<VkMutableDescriptorTypeCreateInfoEXT> (void)
 {
-	return VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_VALVE;
+	return VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_EXT;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceDepthClipControlFeaturesEXT> (void)
@@ -2636,6 +2636,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceSynchronization2Feat
 template<> VkStructureType getStructureType<VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVES_GENERATED_QUERY_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceLegacyDitheringFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_DITHERING_FEATURES_EXT;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT> (void)
@@ -3276,6 +3281,56 @@ template<> VkStructureType getStructureType<VkRenderPassSubpassFeedbackCreateInf
 template<> VkStructureType getStructureType<VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBPASS_MERGE_FEEDBACK_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkMicromapBuildInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_MICROMAP_BUILD_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkMicromapCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_MICROMAP_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkMicromapVersionInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_MICROMAP_VERSION_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkCopyMicromapInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_COPY_MICROMAP_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkCopyMicromapToMemoryInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_COPY_MICROMAP_TO_MEMORY_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkCopyMemoryToMicromapInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_COPY_MEMORY_TO_MICROMAP_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkMicromapBuildSizesInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_MICROMAP_BUILD_SIZES_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceOpacityMicromapFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPACITY_MICROMAP_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceOpacityMicromapPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPACITY_MICROMAP_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkAccelerationStructureTrianglesOpacityMicromapEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_TRIANGLES_OPACITY_MICROMAP_EXT;
 }
 
 template<> VkStructureType getStructureType<VkPipelinePropertiesIdentifierEXT> (void)

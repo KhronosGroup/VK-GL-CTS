@@ -1182,6 +1182,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_opacity_micromap")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_load_store_op_none")
 	{
 		return;
@@ -1242,11 +1246,19 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_legacy_dithering")
+	{
+		return;
+	}
 	if (extName == "VK_QCOM_tile_properties")
 	{
 		return;
 	}
 	if (extName == "VK_SEC_amigo_profiling")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_mutable_descriptor_type")
 	{
 		return;
 	}
@@ -2592,6 +2604,24 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_opacity_micromap")
+	{
+		functions.push_back("vkCreateMicromapEXT");
+		functions.push_back("vkDestroyMicromapEXT");
+		functions.push_back("vkCmdBuildMicromapsEXT");
+		functions.push_back("vkBuildMicromapsEXT");
+		functions.push_back("vkCopyMicromapEXT");
+		functions.push_back("vkCopyMicromapToMemoryEXT");
+		functions.push_back("vkCopyMemoryToMicromapEXT");
+		functions.push_back("vkWriteMicromapsPropertiesEXT");
+		functions.push_back("vkCmdCopyMicromapEXT");
+		functions.push_back("vkCmdCopyMicromapToMemoryEXT");
+		functions.push_back("vkCmdCopyMemoryToMicromapEXT");
+		functions.push_back("vkCmdWriteMicromapsPropertiesEXT");
+		functions.push_back("vkGetDeviceMicromapCompatibilityEXT");
+		functions.push_back("vkGetMicromapBuildSizesEXT");
+		return;
+	}
 	if (extName == "VK_EXT_load_store_op_none")
 	{
 		return;
@@ -2657,6 +2687,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_legacy_dithering")
+	{
+		return;
+	}
 	if (extName == "VK_QCOM_tile_properties")
 	{
 		functions.push_back("vkGetFramebufferTilePropertiesQCOM");
@@ -2664,6 +2698,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_SEC_amigo_profiling")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_mutable_descriptor_type")
 	{
 		return;
 	}
@@ -2983,6 +3021,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_image_view_min_lod",
 	"VK_EXT_multi_draw",
 	"VK_EXT_image_2d_view_of_3d",
+	"VK_EXT_opacity_micromap",
 	"VK_EXT_load_store_op_none",
 	"VK_EXT_border_color_swizzle",
 	"VK_EXT_pageable_device_local_memory",
@@ -2997,6 +3036,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_subpass_merge_feedback",
 	"VK_EXT_shader_module_identifier",
 	"VK_EXT_rasterization_order_attachment_access",
+	"VK_EXT_legacy_dithering",
 	"VK_QCOM_tile_properties",
 	"VK_SEC_amigo_profiling",
+	"VK_EXT_mutable_descriptor_type",
 };

@@ -303,6 +303,12 @@ VKAPI_ATTR VkResult VKAPI_CALL createBufferCollectionFUCHSIA (VkDevice device, c
 	VK_NULL_RETURN((*pCollection = allocateNonDispHandle<BufferCollectionFUCHSIA, VkBufferCollectionFUCHSIA>(device, pCreateInfo, pAllocator)));
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL createMicromapEXT (VkDevice device, const VkMicromapCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkMicromapEXT* pMicromap)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pMicromap = allocateNonDispHandle<MicromapEXT, VkMicromapEXT>(device, pCreateInfo, pAllocator)));
+}
+
 VKAPI_ATTR void VKAPI_CALL destroyInstance (VkInstance instance, const VkAllocationCallbacks* pAllocator)
 {
 	freeHandle<Instance, VkInstance>(instance, pAllocator);
@@ -527,6 +533,12 @@ VKAPI_ATTR void VKAPI_CALL destroyBufferCollectionFUCHSIA (VkDevice device, VkBu
 {
 	DE_UNREF(device);
 	freeNonDispHandle<BufferCollectionFUCHSIA, VkBufferCollectionFUCHSIA>(collection, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyMicromapEXT (VkDevice device, VkMicromapEXT micromap, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<MicromapEXT, VkMicromapEXT>(micromap, pAllocator);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL enumerateInstanceVersion (uint32_t* pApiVersion)
@@ -3315,6 +3327,101 @@ VKAPI_ATTR void VKAPI_CALL getDescriptorSetHostMappingVALVE (VkDevice device, Vk
 	DE_UNREF(ppData);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdBuildMicromapsEXT (VkCommandBuffer commandBuffer, uint32_t infoCount, const VkMicromapBuildInfoEXT* pInfos)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(infoCount);
+	DE_UNREF(pInfos);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL buildMicromapsEXT (VkDevice device, VkDeferredOperationKHR deferredOperation, uint32_t infoCount, const VkMicromapBuildInfoEXT* pInfos)
+{
+	DE_UNREF(device);
+	DE_UNREF(deferredOperation);
+	DE_UNREF(infoCount);
+	DE_UNREF(pInfos);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdCopyMicromapEXT (VkCommandBuffer commandBuffer, const VkCopyMicromapInfoEXT* pInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pInfo);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL copyMicromapEXT (VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyMicromapInfoEXT* pInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(deferredOperation);
+	DE_UNREF(pInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdCopyMicromapToMemoryEXT (VkCommandBuffer commandBuffer, const VkCopyMicromapToMemoryInfoEXT* pInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pInfo);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL copyMicromapToMemoryEXT (VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyMicromapToMemoryInfoEXT* pInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(deferredOperation);
+	DE_UNREF(pInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdCopyMemoryToMicromapEXT (VkCommandBuffer commandBuffer, const VkCopyMemoryToMicromapInfoEXT* pInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pInfo);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL copyMemoryToMicromapEXT (VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyMemoryToMicromapInfoEXT* pInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(deferredOperation);
+	DE_UNREF(pInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdWriteMicromapsPropertiesEXT (VkCommandBuffer commandBuffer, uint32_t micromapCount, const VkMicromapEXT* pMicromaps, VkQueryType queryType, VkQueryPool queryPool, uint32_t firstQuery)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(micromapCount);
+	DE_UNREF(pMicromaps);
+	DE_UNREF(queryType);
+	DE_UNREF(queryPool);
+	DE_UNREF(firstQuery);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL writeMicromapsPropertiesEXT (VkDevice device, uint32_t micromapCount, const VkMicromapEXT* pMicromaps, VkQueryType queryType, size_t dataSize, void* pData, size_t stride)
+{
+	DE_UNREF(device);
+	DE_UNREF(micromapCount);
+	DE_UNREF(pMicromaps);
+	DE_UNREF(queryType);
+	DE_UNREF(dataSize);
+	DE_UNREF(pData);
+	DE_UNREF(stride);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL getDeviceMicromapCompatibilityEXT (VkDevice device, const VkMicromapVersionInfoEXT* pVersionInfo, VkAccelerationStructureCompatibilityKHR* pCompatibility)
+{
+	DE_UNREF(device);
+	DE_UNREF(pVersionInfo);
+	DE_UNREF(pCompatibility);
+}
+
+VKAPI_ATTR void VKAPI_CALL getMicromapBuildSizesEXT (VkDevice device, VkAccelerationStructureBuildTypeKHR buildType, const VkMicromapBuildInfoEXT* pBuildInfo, VkMicromapBuildSizesInfoEXT* pSizeInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(buildType);
+	DE_UNREF(pBuildInfo);
+	DE_UNREF(pSizeInfo);
+}
+
 VKAPI_ATTR void VKAPI_CALL getShaderModuleIdentifierEXT (VkDevice device, VkShaderModule shaderModule, VkShaderModuleIdentifierEXT* pIdentifier)
 {
 	DE_UNREF(device);
@@ -3845,6 +3952,20 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdEndRendering,									cmdEndRendering),
 	VK_NULL_FUNC_ENTRY(vkGetDescriptorSetLayoutHostMappingInfoVALVE,		getDescriptorSetLayoutHostMappingInfoVALVE),
 	VK_NULL_FUNC_ENTRY(vkGetDescriptorSetHostMappingVALVE,					getDescriptorSetHostMappingVALVE),
+	VK_NULL_FUNC_ENTRY(vkCreateMicromapEXT,									createMicromapEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdBuildMicromapsEXT,								cmdBuildMicromapsEXT),
+	VK_NULL_FUNC_ENTRY(vkBuildMicromapsEXT,									buildMicromapsEXT),
+	VK_NULL_FUNC_ENTRY(vkDestroyMicromapEXT,								destroyMicromapEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdCopyMicromapEXT,								cmdCopyMicromapEXT),
+	VK_NULL_FUNC_ENTRY(vkCopyMicromapEXT,									copyMicromapEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdCopyMicromapToMemoryEXT,						cmdCopyMicromapToMemoryEXT),
+	VK_NULL_FUNC_ENTRY(vkCopyMicromapToMemoryEXT,							copyMicromapToMemoryEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdCopyMemoryToMicromapEXT,						cmdCopyMemoryToMicromapEXT),
+	VK_NULL_FUNC_ENTRY(vkCopyMemoryToMicromapEXT,							copyMemoryToMicromapEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdWriteMicromapsPropertiesEXT,					cmdWriteMicromapsPropertiesEXT),
+	VK_NULL_FUNC_ENTRY(vkWriteMicromapsPropertiesEXT,						writeMicromapsPropertiesEXT),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceMicromapCompatibilityEXT,					getDeviceMicromapCompatibilityEXT),
+	VK_NULL_FUNC_ENTRY(vkGetMicromapBuildSizesEXT,							getMicromapBuildSizesEXT),
 	VK_NULL_FUNC_ENTRY(vkGetShaderModuleIdentifierEXT,						getShaderModuleIdentifierEXT),
 	VK_NULL_FUNC_ENTRY(vkGetShaderModuleCreateInfoIdentifierEXT,			getShaderModuleCreateInfoIdentifierEXT),
 	VK_NULL_FUNC_ENTRY(vkGetImageSubresourceLayout2EXT,						getImageSubresourceLayout2EXT),

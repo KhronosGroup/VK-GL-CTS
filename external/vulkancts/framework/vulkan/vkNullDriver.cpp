@@ -557,6 +557,13 @@ public:
 						{}
 };
 
+class MicromapEXT
+{
+public:
+						MicromapEXT	(VkDevice, const VkMicromapCreateInfoEXT*)
+						{}
+};
+
 #endif // CTS_USES_VULKANSC
 
 class DebugUtilsMessengerEXT

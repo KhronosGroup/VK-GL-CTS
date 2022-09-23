@@ -5900,25 +5900,25 @@ struct VkPhysicalDeviceImage2DViewOf3DFeaturesEXT
 	VkBool32		sampler2DViewOf3D;
 };
 
-struct VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE
+struct VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT
 {
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		mutableDescriptorType;
 };
 
-struct VkMutableDescriptorTypeListVALVE
+struct VkMutableDescriptorTypeListEXT
 {
 	uint32_t				descriptorTypeCount;
 	const VkDescriptorType*	pDescriptorTypes;
 };
 
-struct VkMutableDescriptorTypeCreateInfoVALVE
+struct VkMutableDescriptorTypeCreateInfoEXT
 {
 	VkStructureType							sType;
 	const void*								pNext;
 	uint32_t								mutableDescriptorTypeListCount;
-	const VkMutableDescriptorTypeListVALVE*	pMutableDescriptorTypeLists;
+	const VkMutableDescriptorTypeListEXT*	pMutableDescriptorTypeLists;
 };
 
 struct VkPhysicalDeviceDepthClipControlFeaturesEXT
@@ -6098,6 +6098,13 @@ struct VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT
 	VkBool32		primitivesGeneratedQuery;
 	VkBool32		primitivesGeneratedQueryWithRasterizerDiscard;
 	VkBool32		primitivesGeneratedQueryWithNonZeroStreams;
+};
+
+struct VkPhysicalDeviceLegacyDitheringFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		legacyDithering;
 };
 
 struct VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT
@@ -7214,6 +7221,123 @@ struct VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		subpassMergeFeedback;
+};
+
+struct VkMicromapCreateInfoEXT
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkMicromapCreateFlagsEXT	createFlags;
+	VkBuffer					buffer;
+	VkDeviceSize				offset;
+	VkDeviceSize				size;
+	VkMicromapTypeEXT			type;
+	VkDeviceAddress				deviceAddress;
+};
+
+struct VkMicromapVersionInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	const uint8_t*	pVersionData;
+};
+
+struct VkCopyMicromapInfoEXT
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkMicromapEXT			src;
+	VkMicromapEXT			dst;
+	VkCopyMicromapModeEXT	mode;
+};
+
+struct VkCopyMicromapToMemoryInfoEXT
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkMicromapEXT				src;
+	VkDeviceOrHostAddressKHR	dst;
+	VkCopyMicromapModeEXT		mode;
+};
+
+struct VkCopyMemoryToMicromapInfoEXT
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkDeviceOrHostAddressConstKHR	src;
+	VkMicromapEXT					dst;
+	VkCopyMicromapModeEXT			mode;
+};
+
+struct VkMicromapBuildSizesInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkDeviceSize	micromapSize;
+	VkDeviceSize	buildScratchSize;
+	VkBool32		discardable;
+};
+
+struct VkMicromapUsageEXT
+{
+	uint32_t	count;
+	uint32_t	subdivisionLevel;
+	uint32_t	format;
+};
+
+struct VkMicromapBuildInfoEXT
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkMicromapTypeEXT					type;
+	VkBuildMicromapFlagsEXT				flags;
+	VkBuildMicromapModeEXT				mode;
+	VkMicromapEXT						dstMicromap;
+	uint32_t							usageCountsCount;
+	const VkMicromapUsageEXT*			pUsageCounts;
+	const VkMicromapUsageEXT* const*	ppUsageCounts;
+	VkDeviceOrHostAddressConstKHR		data;
+	VkDeviceOrHostAddressKHR			scratchData;
+	VkDeviceOrHostAddressConstKHR		triangleArray;
+	VkDeviceSize						triangleArrayStride;
+};
+
+struct VkMicromapTriangleEXT
+{
+	uint32_t	dataOffset;
+	uint16_t	subdivisionLevel;
+	uint16_t	format;
+};
+
+struct VkPhysicalDeviceOpacityMicromapFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		micromap;
+	VkBool32		micromapCaptureReplay;
+	VkBool32		micromapHostCommands;
+};
+
+struct VkPhysicalDeviceOpacityMicromapPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxOpacity2StateSubdivisionLevel;
+	uint32_t		maxOpacity4StateSubdivisionLevel;
+};
+
+struct VkAccelerationStructureTrianglesOpacityMicromapEXT
+{
+	VkStructureType						sType;
+	void*								pNext;
+	VkIndexType							indexType;
+	VkDeviceOrHostAddressConstKHR		indexBuffer;
+	VkDeviceSize						indexStride;
+	uint32_t							baseTriangle;
+	uint32_t							usageCountsCount;
+	const VkMicromapUsageEXT*			pUsageCounts;
+	const VkMicromapUsageEXT* const*	ppUsageCounts;
+	VkMicromapEXT						micromap;
 };
 
 struct VkPipelinePropertiesIdentifierEXT
@@ -8678,6 +8802,12 @@ typedef VkCopyImageToBufferInfo2 VkCopyImageToBufferInfo2KHR;
 typedef VkResolveImageInfo2 VkResolveImageInfo2KHR;
 
 typedef VkPhysicalDeviceShaderTerminateInvocationFeatures VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR;
+
+typedef VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE;
+
+typedef VkMutableDescriptorTypeListEXT VkMutableDescriptorTypeListVALVE;
+
+typedef VkMutableDescriptorTypeCreateInfoEXT VkMutableDescriptorTypeCreateInfoVALVE;
 
 typedef VkMemoryBarrier2 VkMemoryBarrier2KHR;
 

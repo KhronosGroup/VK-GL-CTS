@@ -40,6 +40,7 @@ template<> const char*	getTypeName<VkDeferredOperationKHR>				(void) { return "V
 template<> const char*	getTypeName<VkPrivateDataSlot>					(void) { return "VkPrivateDataSlot";				}
 template<> const char*	getTypeName<VkCuModuleNVX>						(void) { return "VkCuModuleNVX";					}
 template<> const char*	getTypeName<VkCuFunctionNVX>					(void) { return "VkCuFunctionNVX";					}
+template<> const char*	getTypeName<VkMicromapEXT>						(void) { return "VkMicromapEXT";					}
 template<> const char*	getTypeName<VkDisplayKHR>						(void) { return "VkDisplayKHR";						}
 template<> const char*	getTypeName<VkDisplayModeKHR>					(void) { return "VkDisplayModeKHR";					}
 template<> const char*	getTypeName<VkSurfaceKHR>						(void) { return "VkSurfaceKHR";						}
@@ -273,7 +274,7 @@ tcu::Format::Bitfield<32> getDescriptorSetLayoutCreateFlagsStr (VkDescriptorSetL
 	{
 		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR,		"VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR"),
 		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT,	"VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT"),
-		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_VALVE,		"VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_VALVE"),
+		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_EXT,		"VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -333,6 +334,8 @@ tcu::Format::Bitfield<32> getBufferUsageFlagsStr (VkBufferUsageFlags value)
 		tcu::Format::BitDesc(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,								"VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT"),
 		tcu::Format::BitDesc(VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,	"VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR"),
 		tcu::Format::BitDesc(VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR,				"VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_MICROMAP_BUILD_INPUT_READ_ONLY_BIT_EXT,				"VK_BUFFER_USAGE_MICROMAP_BUILD_INPUT_READ_ONLY_BIT_EXT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_MICROMAP_STORAGE_BIT_EXT,								"VK_BUFFER_USAGE_MICROMAP_STORAGE_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -460,7 +463,7 @@ const char* getDescriptorTypeName (VkDescriptorType value)
 		case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK:		return "VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK";
 		case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:	return "VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR";
 		case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV:	return "VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV";
-		case VK_DESCRIPTOR_TYPE_MUTABLE_VALVE:				return "VK_DESCRIPTOR_TYPE_MUTABLE_VALVE";
+		case VK_DESCRIPTOR_TYPE_MUTABLE_EXT:				return "VK_DESCRIPTOR_TYPE_MUTABLE_EXT";
 		case VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM:	return "VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM";
 		case VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM:		return "VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM";
 		default:											return DE_NULL;
@@ -1157,6 +1160,7 @@ tcu::Format::Bitfield<32> getPipelineCreateFlagsStr (VkPipelineCreateFlags value
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR,		"VK_PIPELINE_CREATE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RENDERING_FRAGMENT_DENSITY_MAP_ATTACHMENT_BIT_EXT,		"VK_PIPELINE_CREATE_RENDERING_FRAGMENT_DENSITY_MAP_ATTACHMENT_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT,				"VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_OPACITY_MICROMAP_BIT_EXT,					"VK_PIPELINE_CREATE_RAY_TRACING_OPACITY_MICROMAP_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_COLOR_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT,					"VK_PIPELINE_CREATE_COLOR_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DEPTH_STENCIL_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT,			"VK_PIPELINE_CREATE_DEPTH_STENCIL_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT"),
 	};
@@ -1244,6 +1248,8 @@ const char* getQueryTypeName (VkQueryType value)
 		case VK_QUERY_TYPE_PRIMITIVES_GENERATED_EXT:										return "VK_QUERY_TYPE_PRIMITIVES_GENERATED_EXT";
 		case VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_BOTTOM_LEVEL_POINTERS_KHR:	return "VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_BOTTOM_LEVEL_POINTERS_KHR";
 		case VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SIZE_KHR:									return "VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SIZE_KHR";
+		case VK_QUERY_TYPE_MICROMAP_SERIALIZATION_SIZE_EXT:									return "VK_QUERY_TYPE_MICROMAP_SERIALIZATION_SIZE_EXT";
+		case VK_QUERY_TYPE_MICROMAP_COMPACTED_SIZE_EXT:										return "VK_QUERY_TYPE_MICROMAP_COMPACTED_SIZE_EXT";
 		default:																			return DE_NULL;
 	}
 }
@@ -1996,8 +2002,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_VALVE:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_VALVE";
-		case VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_VALVE:							return "VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_VALVE";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_EXT:								return "VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT:								return "VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT";
 		case VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT:							return "VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT";
@@ -2045,6 +2051,16 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_PROPERTIES_EXT:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_MICROMAP_BUILD_INFO_EXT:												return "VK_STRUCTURE_TYPE_MICROMAP_BUILD_INFO_EXT";
+		case VK_STRUCTURE_TYPE_MICROMAP_VERSION_INFO_EXT:											return "VK_STRUCTURE_TYPE_MICROMAP_VERSION_INFO_EXT";
+		case VK_STRUCTURE_TYPE_COPY_MICROMAP_INFO_EXT:												return "VK_STRUCTURE_TYPE_COPY_MICROMAP_INFO_EXT";
+		case VK_STRUCTURE_TYPE_COPY_MICROMAP_TO_MEMORY_INFO_EXT:									return "VK_STRUCTURE_TYPE_COPY_MICROMAP_TO_MEMORY_INFO_EXT";
+		case VK_STRUCTURE_TYPE_COPY_MEMORY_TO_MICROMAP_INFO_EXT:									return "VK_STRUCTURE_TYPE_COPY_MEMORY_TO_MICROMAP_INFO_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPACITY_MICROMAP_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPACITY_MICROMAP_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPACITY_MICROMAP_PROPERTIES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPACITY_MICROMAP_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_MICROMAP_CREATE_INFO_EXT:											return "VK_STRUCTURE_TYPE_MICROMAP_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_MICROMAP_BUILD_SIZES_INFO_EXT:										return "VK_STRUCTURE_TYPE_MICROMAP_BUILD_SIZES_INFO_EXT";
+		case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_TRIANGLES_OPACITY_MICROMAP_EXT:				return "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_TRIANGLES_OPACITY_MICROMAP_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BORDER_COLOR_SWIZZLE_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BORDER_COLOR_SWIZZLE_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_SAMPLER_BORDER_COLOR_COMPONENT_MAPPING_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_SAMPLER_BORDER_COLOR_COMPONENT_MAPPING_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PAGEABLE_DEVICE_LOCAL_MEMORY_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PAGEABLE_DEVICE_LOCAL_MEMORY_FEATURES_EXT";
@@ -2073,6 +2089,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_PROPERTIES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_MODULE_IDENTIFIER_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_MODULE_IDENTIFIER_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_SHADER_MODULE_IDENTIFIER_EXT:										return "VK_STRUCTURE_TYPE_SHADER_MODULE_IDENTIFIER_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_DITHERING_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_DITHERING_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_PROPERTIES_FEATURES_QCOM:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_PROPERTIES_FEATURES_QCOM";
 		case VK_STRUCTURE_TYPE_TILE_PROPERTIES_QCOM:												return "VK_STRUCTURE_TYPE_TILE_PROPERTIES_QCOM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_AMIGO_PROFILING_FEATURES_SEC:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_AMIGO_PROFILING_FEATURES_SEC";
@@ -2223,7 +2240,7 @@ tcu::Format::Bitfield<32> getDescriptorPoolCreateFlagsStr (VkDescriptorPoolCreat
 	{
 		tcu::Format::BitDesc(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,	"VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT"),
 		tcu::Format::BitDesc(VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT,	"VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT"),
-		tcu::Format::BitDesc(VK_DESCRIPTOR_POOL_CREATE_HOST_ONLY_BIT_VALVE,		"VK_DESCRIPTOR_POOL_CREATE_HOST_ONLY_BIT_VALVE"),
+		tcu::Format::BitDesc(VK_DESCRIPTOR_POOL_CREATE_HOST_ONLY_BIT_EXT,		"VK_DESCRIPTOR_POOL_CREATE_HOST_ONLY_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2290,6 +2307,7 @@ const char* getObjectTypeName (VkObjectType value)
 		case VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_NV:		return "VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_NV";
 		case VK_OBJECT_TYPE_PRIVATE_DATA_SLOT:					return "VK_OBJECT_TYPE_PRIVATE_DATA_SLOT";
 		case VK_OBJECT_TYPE_BUFFER_COLLECTION_FUCHSIA:			return "VK_OBJECT_TYPE_BUFFER_COLLECTION_FUCHSIA";
+		case VK_OBJECT_TYPE_MICROMAP_EXT:						return "VK_OBJECT_TYPE_MICROMAP_EXT";
 		default:												return DE_NULL;
 	}
 }
@@ -2396,6 +2414,7 @@ tcu::Format::Bitfield<32> getSubpassDescriptionFlagsStr (VkSubpassDescriptionFla
 		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_COLOR_ACCESS_BIT_EXT,	"VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_COLOR_ACCESS_BIT_EXT"),
 		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_DEPTH_ACCESS_BIT_EXT,	"VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_DEPTH_ACCESS_BIT_EXT"),
 		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_STENCIL_ACCESS_BIT_EXT,	"VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_STENCIL_ACCESS_BIT_EXT"),
+		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_ENABLE_LEGACY_DITHERING_BIT_EXT,						"VK_SUBPASS_DESCRIPTION_ENABLE_LEGACY_DITHERING_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2549,6 +2568,8 @@ tcu::Format::Bitfield<32> getGeometryInstanceFlagsKHRStr (VkGeometryInstanceFlag
 		tcu::Format::BitDesc(VK_GEOMETRY_INSTANCE_TRIANGLE_FLIP_FACING_BIT_KHR,			"VK_GEOMETRY_INSTANCE_TRIANGLE_FLIP_FACING_BIT_KHR"),
 		tcu::Format::BitDesc(VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_KHR,					"VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_KHR"),
 		tcu::Format::BitDesc(VK_GEOMETRY_INSTANCE_FORCE_NO_OPAQUE_BIT_KHR,				"VK_GEOMETRY_INSTANCE_FORCE_NO_OPAQUE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_GEOMETRY_INSTANCE_FORCE_OPACITY_MICROMAP_2_STATE_EXT,	"VK_GEOMETRY_INSTANCE_FORCE_OPACITY_MICROMAP_2_STATE_EXT"),
+		tcu::Format::BitDesc(VK_GEOMETRY_INSTANCE_DISABLE_OPACITY_MICROMAPS_EXT,		"VK_GEOMETRY_INSTANCE_DISABLE_OPACITY_MICROMAPS_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2557,12 +2578,15 @@ tcu::Format::Bitfield<32> getBuildAccelerationStructureFlagsKHRStr (VkBuildAccel
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR,		"VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR"),
-		tcu::Format::BitDesc(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR,	"VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR"),
-		tcu::Format::BitDesc(VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR,	"VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR"),
-		tcu::Format::BitDesc(VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_KHR,	"VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_KHR"),
-		tcu::Format::BitDesc(VK_BUILD_ACCELERATION_STRUCTURE_LOW_MEMORY_BIT_KHR,		"VK_BUILD_ACCELERATION_STRUCTURE_LOW_MEMORY_BIT_KHR"),
-		tcu::Format::BitDesc(VK_BUILD_ACCELERATION_STRUCTURE_MOTION_BIT_NV,				"VK_BUILD_ACCELERATION_STRUCTURE_MOTION_BIT_NV"),
+		tcu::Format::BitDesc(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR,						"VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR,					"VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR"),
+		tcu::Format::BitDesc(VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR,					"VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_KHR,					"VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_KHR"),
+		tcu::Format::BitDesc(VK_BUILD_ACCELERATION_STRUCTURE_LOW_MEMORY_BIT_KHR,						"VK_BUILD_ACCELERATION_STRUCTURE_LOW_MEMORY_BIT_KHR"),
+		tcu::Format::BitDesc(VK_BUILD_ACCELERATION_STRUCTURE_MOTION_BIT_NV,								"VK_BUILD_ACCELERATION_STRUCTURE_MOTION_BIT_NV"),
+		tcu::Format::BitDesc(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_OPACITY_MICROMAP_UPDATE_EXT,			"VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_OPACITY_MICROMAP_UPDATE_EXT"),
+		tcu::Format::BitDesc(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DISABLE_OPACITY_MICROMAPS_EXT,		"VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DISABLE_OPACITY_MICROMAPS_EXT"),
+		tcu::Format::BitDesc(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_OPACITY_MICROMAP_DATA_UPDATE_EXT,	"VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_OPACITY_MICROMAP_DATA_UPDATE_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2976,6 +3000,8 @@ tcu::Format::Bitfield<64> getAccessFlags2Str (VkAccessFlags2 value)
 		tcu::Format::BitDesc(VK_ACCESS_2_VIDEO_ENCODE_WRITE_BIT_KHR,					"VK_ACCESS_2_VIDEO_ENCODE_WRITE_BIT_KHR"),
 		tcu::Format::BitDesc(VK_ACCESS_2_INVOCATION_MASK_READ_BIT_HUAWEI,				"VK_ACCESS_2_INVOCATION_MASK_READ_BIT_HUAWEI"),
 		tcu::Format::BitDesc(VK_ACCESS_2_SHADER_BINDING_TABLE_READ_BIT_KHR,				"VK_ACCESS_2_SHADER_BINDING_TABLE_READ_BIT_KHR"),
+		tcu::Format::BitDesc(VK_ACCESS_2_MICROMAP_READ_BIT_EXT,							"VK_ACCESS_2_MICROMAP_READ_BIT_EXT"),
+		tcu::Format::BitDesc(VK_ACCESS_2_MICROMAP_WRITE_BIT_EXT,						"VK_ACCESS_2_MICROMAP_WRITE_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3014,6 +3040,7 @@ tcu::Format::Bitfield<64> getPipelineStageFlags2Str (VkPipelineStageFlags2 value
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR,						"VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_VIDEO_ENCODE_BIT_KHR,						"VK_PIPELINE_STAGE_2_VIDEO_ENCODE_BIT_KHR"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_COPY_BIT_KHR,		"VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_COPY_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_MICROMAP_BUILD_BIT_EXT,					"VK_PIPELINE_STAGE_2_MICROMAP_BUILD_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_COPY_BIT,									"VK_PIPELINE_STAGE_2_COPY_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_RESOLVE_BIT,								"VK_PIPELINE_STAGE_2_RESOLVE_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_BLIT_BIT,									"VK_PIPELINE_STAGE_2_BLIT_BIT"),
@@ -3104,6 +3131,7 @@ tcu::Format::Bitfield<32> getRenderingFlagsStr (VkRenderingFlags value)
 		tcu::Format::BitDesc(VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT,	"VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT"),
 		tcu::Format::BitDesc(VK_RENDERING_SUSPENDING_BIT,							"VK_RENDERING_SUSPENDING_BIT"),
 		tcu::Format::BitDesc(VK_RENDERING_RESUMING_BIT,								"VK_RENDERING_RESUMING_BIT"),
+		tcu::Format::BitDesc(VK_RENDERING_ENABLE_LEGACY_DITHERING_BIT_EXT,			"VK_RENDERING_ENABLE_LEGACY_DITHERING_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3206,6 +3234,78 @@ const char* getPipelineRobustnessImageBehaviorEXTName (VkPipelineRobustnessImage
 		case VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_DISABLED_EXT:				return "VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_DISABLED_EXT";
 		case VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_ROBUST_IMAGE_ACCESS_EXT:		return "VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_ROBUST_IMAGE_ACCESS_EXT";
 		case VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_ROBUST_IMAGE_ACCESS_2_EXT:	return "VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_ROBUST_IMAGE_ACCESS_2_EXT";
+		default:																return DE_NULL;
+	}
+}
+
+const char* getMicromapTypeEXTName (VkMicromapTypeEXT value)
+{
+	switch (value)
+	{
+		case VK_MICROMAP_TYPE_OPACITY_MICROMAP_EXT:	return "VK_MICROMAP_TYPE_OPACITY_MICROMAP_EXT";
+		default:									return DE_NULL;
+	}
+}
+
+const char* getBuildMicromapModeEXTName (VkBuildMicromapModeEXT value)
+{
+	switch (value)
+	{
+		case VK_BUILD_MICROMAP_MODE_BUILD_EXT:	return "VK_BUILD_MICROMAP_MODE_BUILD_EXT";
+		default:								return DE_NULL;
+	}
+}
+
+const char* getCopyMicromapModeEXTName (VkCopyMicromapModeEXT value)
+{
+	switch (value)
+	{
+		case VK_COPY_MICROMAP_MODE_CLONE_EXT:		return "VK_COPY_MICROMAP_MODE_CLONE_EXT";
+		case VK_COPY_MICROMAP_MODE_SERIALIZE_EXT:	return "VK_COPY_MICROMAP_MODE_SERIALIZE_EXT";
+		case VK_COPY_MICROMAP_MODE_DESERIALIZE_EXT:	return "VK_COPY_MICROMAP_MODE_DESERIALIZE_EXT";
+		case VK_COPY_MICROMAP_MODE_COMPACT_EXT:		return "VK_COPY_MICROMAP_MODE_COMPACT_EXT";
+		default:									return DE_NULL;
+	}
+}
+
+tcu::Format::Bitfield<32> getBuildMicromapFlagsEXTStr (VkBuildMicromapFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_BUILD_MICROMAP_PREFER_FAST_TRACE_BIT_EXT,	"VK_BUILD_MICROMAP_PREFER_FAST_TRACE_BIT_EXT"),
+		tcu::Format::BitDesc(VK_BUILD_MICROMAP_PREFER_FAST_BUILD_BIT_EXT,	"VK_BUILD_MICROMAP_PREFER_FAST_BUILD_BIT_EXT"),
+		tcu::Format::BitDesc(VK_BUILD_MICROMAP_ALLOW_COMPACTION_BIT_EXT,	"VK_BUILD_MICROMAP_ALLOW_COMPACTION_BIT_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getMicromapCreateFlagsEXTStr (VkMicromapCreateFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_MICROMAP_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_EXT,	"VK_MICROMAP_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+const char* getOpacityMicromapFormatEXTName (VkOpacityMicromapFormatEXT value)
+{
+	switch (value)
+	{
+		case VK_OPACITY_MICROMAP_FORMAT_2_STATE_EXT:	return "VK_OPACITY_MICROMAP_FORMAT_2_STATE_EXT";
+		case VK_OPACITY_MICROMAP_FORMAT_4_STATE_EXT:	return "VK_OPACITY_MICROMAP_FORMAT_4_STATE_EXT";
+		default:										return DE_NULL;
+	}
+}
+
+const char* getOpacityMicromapSpecialIndexEXTName (VkOpacityMicromapSpecialIndexEXT value)
+{
+	switch (value)
+	{
+		case VK_OPACITY_MICROMAP_SPECIAL_INDEX_FULLY_UNKNOWN_OPAQUE_EXT:		return "VK_OPACITY_MICROMAP_SPECIAL_INDEX_FULLY_UNKNOWN_OPAQUE_EXT";
+		case VK_OPACITY_MICROMAP_SPECIAL_INDEX_FULLY_UNKNOWN_TRANSPARENT_EXT:	return "VK_OPACITY_MICROMAP_SPECIAL_INDEX_FULLY_UNKNOWN_TRANSPARENT_EXT";
+		case VK_OPACITY_MICROMAP_SPECIAL_INDEX_FULLY_OPAQUE_EXT:				return "VK_OPACITY_MICROMAP_SPECIAL_INDEX_FULLY_OPAQUE_EXT";
+		case VK_OPACITY_MICROMAP_SPECIAL_INDEX_FULLY_TRANSPARENT_EXT:			return "VK_OPACITY_MICROMAP_SPECIAL_INDEX_FULLY_TRANSPARENT_EXT";
 		default:																return DE_NULL;
 	}
 }
@@ -12549,9 +12649,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImage2DViewOf3D
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT& value)
 {
-	s << "VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE = {\n";
+	s << "VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmutableDescriptorType = " << value.mutableDescriptorType << '\n';
@@ -12559,18 +12659,18 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMutableDescript
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkMutableDescriptorTypeListVALVE& value)
+std::ostream& operator<< (std::ostream& s, const VkMutableDescriptorTypeListEXT& value)
 {
-	s << "VkMutableDescriptorTypeListVALVE = {\n";
+	s << "VkMutableDescriptorTypeListEXT = {\n";
 	s << "\tdescriptorTypeCount = " << value.descriptorTypeCount << '\n';
 	s << "\tpDescriptorTypes = " << value.pDescriptorTypes << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkMutableDescriptorTypeCreateInfoVALVE& value)
+std::ostream& operator<< (std::ostream& s, const VkMutableDescriptorTypeCreateInfoEXT& value)
 {
-	s << "VkMutableDescriptorTypeCreateInfoVALVE = {\n";
+	s << "VkMutableDescriptorTypeCreateInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmutableDescriptorTypeListCount = " << value.mutableDescriptorTypeListCount << '\n';
@@ -12811,6 +12911,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePrimitivesGener
 	s << "\tprimitivesGeneratedQuery = " << value.primitivesGeneratedQuery << '\n';
 	s << "\tprimitivesGeneratedQueryWithRasterizerDiscard = " << value.primitivesGeneratedQueryWithRasterizerDiscard << '\n';
 	s << "\tprimitivesGeneratedQueryWithNonZeroStreams = " << value.primitivesGeneratedQueryWithNonZeroStreams << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLegacyDitheringFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceLegacyDitheringFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tlegacyDithering = " << value.legacyDithering << '\n';
 	s << '}';
 	return s;
 }
@@ -14544,6 +14654,159 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceSubpassMergeFee
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tsubpassMergeFeedback = " << value.subpassMergeFeedback << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMicromapBuildInfoEXT& value)
+{
+	s << "VkMicromapBuildInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\ttype = " << value.type << '\n';
+	s << "\tflags = " << getBuildMicromapFlagsEXTStr(value.flags) << '\n';
+	s << "\tmode = " << value.mode << '\n';
+	s << "\tdstMicromap = " << value.dstMicromap << '\n';
+	s << "\tusageCountsCount = " << value.usageCountsCount << '\n';
+	s << "\tpUsageCounts = " << value.pUsageCounts << '\n';
+	s << "\tppUsageCounts = " << value.ppUsageCounts << '\n';
+	s << "\tdata = " << value.data << '\n';
+	s << "\tscratchData = " << value.scratchData << '\n';
+	s << "\ttriangleArray = " << value.triangleArray << '\n';
+	s << "\ttriangleArrayStride = " << value.triangleArrayStride << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMicromapCreateInfoEXT& value)
+{
+	s << "VkMicromapCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcreateFlags = " << getMicromapCreateFlagsEXTStr(value.createFlags) << '\n';
+	s << "\tbuffer = " << value.buffer << '\n';
+	s << "\toffset = " << value.offset << '\n';
+	s << "\tsize = " << value.size << '\n';
+	s << "\ttype = " << value.type << '\n';
+	s << "\tdeviceAddress = " << value.deviceAddress << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMicromapVersionInfoEXT& value)
+{
+	s << "VkMicromapVersionInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpVersionData = " << value.pVersionData << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCopyMicromapInfoEXT& value)
+{
+	s << "VkCopyMicromapInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsrc = " << value.src << '\n';
+	s << "\tdst = " << value.dst << '\n';
+	s << "\tmode = " << value.mode << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCopyMicromapToMemoryInfoEXT& value)
+{
+	s << "VkCopyMicromapToMemoryInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsrc = " << value.src << '\n';
+	s << "\tdst = " << value.dst << '\n';
+	s << "\tmode = " << value.mode << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCopyMemoryToMicromapInfoEXT& value)
+{
+	s << "VkCopyMemoryToMicromapInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsrc = " << value.src << '\n';
+	s << "\tdst = " << value.dst << '\n';
+	s << "\tmode = " << value.mode << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMicromapBuildSizesInfoEXT& value)
+{
+	s << "VkMicromapBuildSizesInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmicromapSize = " << value.micromapSize << '\n';
+	s << "\tbuildScratchSize = " << value.buildScratchSize << '\n';
+	s << "\tdiscardable = " << value.discardable << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMicromapUsageEXT& value)
+{
+	s << "VkMicromapUsageEXT = {\n";
+	s << "\tcount = " << value.count << '\n';
+	s << "\tsubdivisionLevel = " << value.subdivisionLevel << '\n';
+	s << "\tformat = " << value.format << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMicromapTriangleEXT& value)
+{
+	s << "VkMicromapTriangleEXT = {\n";
+	s << "\tdataOffset = " << value.dataOffset << '\n';
+	s << "\tsubdivisionLevel = " << value.subdivisionLevel << '\n';
+	s << "\tformat = " << value.format << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceOpacityMicromapFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceOpacityMicromapFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmicromap = " << value.micromap << '\n';
+	s << "\tmicromapCaptureReplay = " << value.micromapCaptureReplay << '\n';
+	s << "\tmicromapHostCommands = " << value.micromapHostCommands << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceOpacityMicromapPropertiesEXT& value)
+{
+	s << "VkPhysicalDeviceOpacityMicromapPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxOpacity2StateSubdivisionLevel = " << value.maxOpacity2StateSubdivisionLevel << '\n';
+	s << "\tmaxOpacity4StateSubdivisionLevel = " << value.maxOpacity4StateSubdivisionLevel << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureTrianglesOpacityMicromapEXT& value)
+{
+	s << "VkAccelerationStructureTrianglesOpacityMicromapEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tindexType = " << value.indexType << '\n';
+	s << "\tindexBuffer = " << value.indexBuffer << '\n';
+	s << "\tindexStride = " << value.indexStride << '\n';
+	s << "\tbaseTriangle = " << value.baseTriangle << '\n';
+	s << "\tusageCountsCount = " << value.usageCountsCount << '\n';
+	s << "\tpUsageCounts = " << value.pUsageCounts << '\n';
+	s << "\tppUsageCounts = " << value.ppUsageCounts << '\n';
+	s << "\tmicromap = " << value.micromap << '\n';
 	s << '}';
 	return s;
 }

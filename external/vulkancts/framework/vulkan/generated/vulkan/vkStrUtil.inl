@@ -79,6 +79,11 @@ const char*	getSubpassMergeStatusEXTName							(VkSubpassMergeStatusEXT value);
 const char*	getProvokingVertexModeEXTName							(VkProvokingVertexModeEXT value);
 const char*	getPipelineRobustnessBufferBehaviorEXTName				(VkPipelineRobustnessBufferBehaviorEXT value);
 const char*	getPipelineRobustnessImageBehaviorEXTName				(VkPipelineRobustnessImageBehaviorEXT value);
+const char*	getMicromapTypeEXTName									(VkMicromapTypeEXT value);
+const char*	getBuildMicromapModeEXTName								(VkBuildMicromapModeEXT value);
+const char*	getCopyMicromapModeEXTName								(VkCopyMicromapModeEXT value);
+const char*	getOpacityMicromapFormatEXTName							(VkOpacityMicromapFormatEXT value);
+const char*	getOpacityMicromapSpecialIndexEXTName					(VkOpacityMicromapSpecialIndexEXT value);
 const char*	getColorSpaceKHRName									(VkColorSpaceKHR value);
 const char*	getPresentModeKHRName									(VkPresentModeKHR value);
 const char*	getDebugReportObjectTypeEXTName							(VkDebugReportObjectTypeEXT value);
@@ -205,6 +210,11 @@ inline tcu::Format::Enum<VkSubpassMergeStatusEXT>							getSubpassMergeStatusEXT
 inline tcu::Format::Enum<VkProvokingVertexModeEXT>							getProvokingVertexModeEXTStr						(VkProvokingVertexModeEXT value)						{ return tcu::Format::Enum<VkProvokingVertexModeEXT>(getProvokingVertexModeEXTName, value);													}
 inline tcu::Format::Enum<VkPipelineRobustnessBufferBehaviorEXT>				getPipelineRobustnessBufferBehaviorEXTStr			(VkPipelineRobustnessBufferBehaviorEXT value)			{ return tcu::Format::Enum<VkPipelineRobustnessBufferBehaviorEXT>(getPipelineRobustnessBufferBehaviorEXTName, value);						}
 inline tcu::Format::Enum<VkPipelineRobustnessImageBehaviorEXT>				getPipelineRobustnessImageBehaviorEXTStr			(VkPipelineRobustnessImageBehaviorEXT value)			{ return tcu::Format::Enum<VkPipelineRobustnessImageBehaviorEXT>(getPipelineRobustnessImageBehaviorEXTName, value);							}
+inline tcu::Format::Enum<VkMicromapTypeEXT>									getMicromapTypeEXTStr								(VkMicromapTypeEXT value)								{ return tcu::Format::Enum<VkMicromapTypeEXT>(getMicromapTypeEXTName, value);																}
+inline tcu::Format::Enum<VkBuildMicromapModeEXT>							getBuildMicromapModeEXTStr							(VkBuildMicromapModeEXT value)							{ return tcu::Format::Enum<VkBuildMicromapModeEXT>(getBuildMicromapModeEXTName, value);														}
+inline tcu::Format::Enum<VkCopyMicromapModeEXT>								getCopyMicromapModeEXTStr							(VkCopyMicromapModeEXT value)							{ return tcu::Format::Enum<VkCopyMicromapModeEXT>(getCopyMicromapModeEXTName, value);														}
+inline tcu::Format::Enum<VkOpacityMicromapFormatEXT>						getOpacityMicromapFormatEXTStr						(VkOpacityMicromapFormatEXT value)						{ return tcu::Format::Enum<VkOpacityMicromapFormatEXT>(getOpacityMicromapFormatEXTName, value);												}
+inline tcu::Format::Enum<VkOpacityMicromapSpecialIndexEXT>					getOpacityMicromapSpecialIndexEXTStr				(VkOpacityMicromapSpecialIndexEXT value)				{ return tcu::Format::Enum<VkOpacityMicromapSpecialIndexEXT>(getOpacityMicromapSpecialIndexEXTName, value);									}
 inline tcu::Format::Enum<VkColorSpaceKHR>									getColorSpaceKHRStr									(VkColorSpaceKHR value)									{ return tcu::Format::Enum<VkColorSpaceKHR>(getColorSpaceKHRName, value);																	}
 inline tcu::Format::Enum<VkPresentModeKHR>									getPresentModeKHRStr								(VkPresentModeKHR value)								{ return tcu::Format::Enum<VkPresentModeKHR>(getPresentModeKHRName, value);																	}
 inline tcu::Format::Enum<VkDebugReportObjectTypeEXT>						getDebugReportObjectTypeEXTStr						(VkDebugReportObjectTypeEXT value)						{ return tcu::Format::Enum<VkDebugReportObjectTypeEXT>(getDebugReportObjectTypeEXTName, value);												}
@@ -331,6 +341,11 @@ inline std::ostream&	operator<<	(std::ostream& s, VkSubpassMergeStatusEXT value)
 inline std::ostream&	operator<<	(std::ostream& s, VkProvokingVertexModeEXT value)							{ return s << getProvokingVertexModeEXTStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkPipelineRobustnessBufferBehaviorEXT value)				{ return s << getPipelineRobustnessBufferBehaviorEXTStr(value);				}
 inline std::ostream&	operator<<	(std::ostream& s, VkPipelineRobustnessImageBehaviorEXT value)				{ return s << getPipelineRobustnessImageBehaviorEXTStr(value);				}
+inline std::ostream&	operator<<	(std::ostream& s, VkMicromapTypeEXT value)									{ return s << getMicromapTypeEXTStr(value);									}
+inline std::ostream&	operator<<	(std::ostream& s, VkBuildMicromapModeEXT value)								{ return s << getBuildMicromapModeEXTStr(value);							}
+inline std::ostream&	operator<<	(std::ostream& s, VkCopyMicromapModeEXT value)								{ return s << getCopyMicromapModeEXTStr(value);								}
+inline std::ostream&	operator<<	(std::ostream& s, VkOpacityMicromapFormatEXT value)							{ return s << getOpacityMicromapFormatEXTStr(value);						}
+inline std::ostream&	operator<<	(std::ostream& s, VkOpacityMicromapSpecialIndexEXT value)					{ return s << getOpacityMicromapSpecialIndexEXTStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkColorSpaceKHR value)									{ return s << getColorSpaceKHRStr(value);									}
 inline std::ostream&	operator<<	(std::ostream& s, VkPresentModeKHR value)									{ return s << getPresentModeKHRStr(value);									}
 inline std::ostream&	operator<<	(std::ostream& s, VkDebugReportObjectTypeEXT value)							{ return s << getDebugReportObjectTypeEXTStr(value);						}
@@ -461,6 +476,8 @@ tcu::Format::Bitfield<32>	getAccelerationStructureMotionInfoFlagsNVStr				(VkAcc
 tcu::Format::Bitfield<32>	getAccelerationStructureMotionInstanceFlagsNVStr			(VkAccelerationStructureMotionInstanceFlagsNV value);
 tcu::Format::Bitfield<64>	getFormatFeatureFlags2Str									(VkFormatFeatureFlags2 value);
 tcu::Format::Bitfield<32>	getRenderingFlagsStr										(VkRenderingFlags value);
+tcu::Format::Bitfield<32>	getBuildMicromapFlagsEXTStr									(VkBuildMicromapFlagsEXT value);
+tcu::Format::Bitfield<32>	getMicromapCreateFlagsEXTStr								(VkMicromapCreateFlagsEXT value);
 tcu::Format::Bitfield<32>	getCompositeAlphaFlagsKHRStr								(VkCompositeAlphaFlagsKHR value);
 tcu::Format::Bitfield<32>	getDisplayPlaneAlphaFlagsKHRStr								(VkDisplayPlaneAlphaFlagsKHR value);
 tcu::Format::Bitfield<32>	getSurfaceTransformFlagsKHRStr								(VkSurfaceTransformFlagsKHR value);
@@ -1175,9 +1192,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentShading
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineFragmentShadingRateEnumStateCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureBuildSizesInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImage2DViewOf3DFeaturesEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE& value);
-std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeListVALVE& value);
-std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeCreateInfoVALVE& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeListEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDepthClipControlFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineViewportDepthClipControlCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT& value);
@@ -1197,6 +1214,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyCheckpointProperti
 std::ostream&	operator<<	(std::ostream& s, const VkCheckpointData2NV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSynchronization2Features& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLegacyDitheringFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSubpassResolvePerformanceQueryEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMultisampledRenderToSingleSampledInfoEXT& value);
@@ -1337,6 +1355,18 @@ std::ostream&	operator<<	(std::ostream& s, const VkRenderPassCreationFeedbackCre
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassSubpassFeedbackInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassSubpassFeedbackCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMicromapBuildInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMicromapCreateInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMicromapVersionInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCopyMicromapInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCopyMicromapToMemoryInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCopyMemoryToMicromapInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMicromapBuildSizesInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMicromapUsageEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMicromapTriangleEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceOpacityMicromapFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceOpacityMicromapPropertiesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureTrianglesOpacityMicromapEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelinePropertiesIdentifierEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelinePropertiesFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD& value);

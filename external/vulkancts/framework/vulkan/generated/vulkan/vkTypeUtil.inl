@@ -691,9 +691,9 @@ inline VkAabbPositionsKHR makeAabbPositionsKHR (float minX, float minY, float mi
 	return res;
 }
 
-inline VkMutableDescriptorTypeListVALVE makeMutableDescriptorTypeListVALVE (uint32_t descriptorTypeCount, const VkDescriptorType* pDescriptorTypes)
+inline VkMutableDescriptorTypeListEXT makeMutableDescriptorTypeListEXT (uint32_t descriptorTypeCount, const VkDescriptorType* pDescriptorTypes)
 {
-	VkMutableDescriptorTypeListVALVE res;
+	VkMutableDescriptorTypeListEXT res;
 	res.descriptorTypeCount	= descriptorTypeCount;
 	res.pDescriptorTypes	= pDescriptorTypes;
 	return res;
@@ -770,6 +770,24 @@ inline VkRenderPassCreationFeedbackInfoEXT makeRenderPassCreationFeedbackInfoEXT
 {
 	VkRenderPassCreationFeedbackInfoEXT res;
 	res.postMergeSubpassCount	= postMergeSubpassCount;
+	return res;
+}
+
+inline VkMicromapUsageEXT makeMicromapUsageEXT (uint32_t count, uint32_t subdivisionLevel, uint32_t format)
+{
+	VkMicromapUsageEXT res;
+	res.count				= count;
+	res.subdivisionLevel	= subdivisionLevel;
+	res.format				= format;
+	return res;
+}
+
+inline VkMicromapTriangleEXT makeMicromapTriangleEXT (uint32_t dataOffset, uint16_t subdivisionLevel, uint16_t format)
+{
+	VkMicromapTriangleEXT res;
+	res.dataOffset			= dataOffset;
+	res.subdivisionLevel	= subdivisionLevel;
+	res.format				= format;
 	return res;
 }
 

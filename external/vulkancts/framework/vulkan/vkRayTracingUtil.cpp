@@ -133,6 +133,7 @@ RaytracedGeometryBase::RaytracedGeometryBase (VkGeometryTypeKHR geometryType, Vk
 	, m_vertexFormat	(vertexFormat)
 	, m_indexType		(indexType)
 	, m_geometryFlags	((VkGeometryFlagsKHR)0u)
+	, m_hasOpacityMicromap (false)
 {
 	if (m_geometryType == VK_GEOMETRY_TYPE_AABBS_KHR)
 		DE_ASSERT(m_vertexFormat == VK_FORMAT_R32G32B32_SFLOAT);
@@ -304,72 +305,6 @@ VkDeviceAddress getBufferDeviceAddress ( const DeviceInterface&	vk,
 	return vk.getBufferDeviceAddress(device, &deviceAddressInfo) + offset;
 }
 
-
-static inline VkDeviceOrHostAddressConstKHR makeDeviceOrHostAddressConstKHR (const void* hostAddress)
-{
-	// VS2015: Cannot create as a const due to cannot assign hostAddress due to it is a second field. Only assigning of first field supported.
-	VkDeviceOrHostAddressConstKHR result;
-
-	deMemset(&result, 0, sizeof(result));
-
-	result.hostAddress = hostAddress;
-
-	return result;
-}
-
-static inline VkDeviceOrHostAddressKHR makeDeviceOrHostAddressKHR (void* hostAddress)
-{
-	// VS2015: Cannot create as a const due to cannot assign hostAddress due to it is a second field. Only assigning of first field supported.
-	VkDeviceOrHostAddressKHR result;
-
-	deMemset(&result, 0, sizeof(result));
-
-	result.hostAddress = hostAddress;
-
-	return result;
-}
-
-static inline VkDeviceOrHostAddressConstKHR makeDeviceOrHostAddressConstKHR (const DeviceInterface&	vk,
-																	  const VkDevice			device,
-																	  VkBuffer					buffer,
-																	  VkDeviceSize				offset)
-{
-	// VS2015: Cannot create as a const due to cannot assign hostAddress due to it is a second field. Only assigning of first field supported.
-	VkDeviceOrHostAddressConstKHR result;
-
-	deMemset(&result, 0, sizeof(result));
-
-	VkBufferDeviceAddressInfo bufferDeviceAddressInfo =
-	{
-		VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_KHR,	// VkStructureType	 sType;
-		DE_NULL,											// const void*		 pNext;
-		buffer,												// VkBuffer			buffer
-	};
-	result.deviceAddress = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo) + offset;
-
-	return result;
-}
-
-static inline VkDeviceOrHostAddressKHR makeDeviceOrHostAddressKHR (const DeviceInterface&	vk,
-																   const VkDevice			device,
-																   VkBuffer					buffer,
-																   VkDeviceSize				offset)
-{
-	// VS2015: Cannot create as a const due to cannot assign hostAddress due to it is a second field. Only assigning of first field supported.
-	VkDeviceOrHostAddressKHR result;
-
-	deMemset(&result, 0, sizeof(result));
-
-	VkBufferDeviceAddressInfo bufferDeviceAddressInfo =
-	{
-		VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_KHR,	// VkStructureType	 sType;
-		DE_NULL,											// const void*		 pNext;
-		buffer,												// VkBuffer			buffer
-	};
-	result.deviceAddress = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo) + offset;
-
-	return result;
-}
 
 static inline Move<VkQueryPool> makeQueryPool (const DeviceInterface&		vk,
 											   const VkDevice				device,
@@ -774,7 +709,8 @@ void BottomLevelAccelerationStructure::addGeometry (de::SharedPtr<RaytracedGeome
 
 void BottomLevelAccelerationStructure::addGeometry (const std::vector<tcu::Vec3>&	geometryData,
 													const bool						triangles,
-													const VkGeometryFlagsKHR		geometryFlags)
+													const VkGeometryFlagsKHR		geometryFlags,
+													const VkAccelerationStructureTrianglesOpacityMicromapEXT* opacityGeometryMicromap)
 {
 	DE_ASSERT(geometryData.size() > 0);
 	DE_ASSERT((triangles && geometryData.size() % 3 == 0) || (!triangles && geometryData.size() % 2 == 0));
@@ -792,6 +728,8 @@ void BottomLevelAccelerationStructure::addGeometry (const std::vector<tcu::Vec3>
 		geometry->addVertex(*it);
 
 	geometry->setGeometryFlags(geometryFlags);
+	if (opacityGeometryMicromap)
+		geometry->setOpacityMicromap(opacityGeometryMicromap);
 	addGeometry(geometry);
 }
 
@@ -981,14 +919,15 @@ protected:
 	VkDeviceSize											m_indirectBufferOffset;
 	deUint32												m_indirectBufferStride;
 
-	void													prepareGeometries								(const DeviceInterface&									vk,
-																											 const VkDevice											device,
-																											 std::vector<VkAccelerationStructureGeometryKHR>&		accelerationStructureGeometriesKHR,
-																											 std::vector<VkAccelerationStructureGeometryKHR*>&		accelerationStructureGeometriesKHRPointers,
-																											 std::vector<VkAccelerationStructureBuildRangeInfoKHR>&	accelerationStructureBuildRangeInfoKHR,
-																											 std::vector<deUint32>&									maxPrimitiveCounts,
-																											 VkDeviceSize											vertexBufferOffset = 0,
-																											 VkDeviceSize											indexBufferOffset = 0);
+	void													prepareGeometries								(const DeviceInterface&												vk,
+																											 const VkDevice														device,
+																											 std::vector<VkAccelerationStructureGeometryKHR>&					accelerationStructureGeometriesKHR,
+																											 std::vector<VkAccelerationStructureGeometryKHR*>&					accelerationStructureGeometriesKHRPointers,
+																											 std::vector<VkAccelerationStructureBuildRangeInfoKHR>&				accelerationStructureBuildRangeInfoKHR,
+																											 std::vector<VkAccelerationStructureTrianglesOpacityMicromapEXT>&	accelerationStructureGeometryMicromapsEXT,
+																											 std::vector<deUint32>&												maxPrimitiveCounts,
+																											 VkDeviceSize														vertexBufferOffset = 0,
+																											 VkDeviceSize														indexBufferOffset = 0);
 
 	virtual BufferWithMemory*								getAccelerationStructureBuffer					() { return m_accelerationStructureBuffer.get(); }
 	virtual BufferWithMemory*								getDeviceScratchBuffer							() { return m_deviceScratchBuffer.get(); }
@@ -1108,8 +1047,9 @@ void BottomLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 		std::vector<VkAccelerationStructureGeometryKHR>			accelerationStructureGeometriesKHR;
 		std::vector<VkAccelerationStructureGeometryKHR*>		accelerationStructureGeometriesKHRPointers;
 		std::vector<VkAccelerationStructureBuildRangeInfoKHR>	accelerationStructureBuildRangeInfoKHR;
+		std::vector<VkAccelerationStructureTrianglesOpacityMicromapEXT> accelerationStructureGeometryMicromapsEXT;
 		std::vector<deUint32>									maxPrimitiveCounts;
-		prepareGeometries(vk, device, accelerationStructureGeometriesKHR, accelerationStructureGeometriesKHRPointers, accelerationStructureBuildRangeInfoKHR, maxPrimitiveCounts);
+		prepareGeometries(vk, device, accelerationStructureGeometriesKHR, accelerationStructureGeometriesKHRPointers, accelerationStructureBuildRangeInfoKHR, accelerationStructureGeometryMicromapsEXT, maxPrimitiveCounts);
 
 		const VkAccelerationStructureGeometryKHR*				accelerationStructureGeometriesKHRPointer	= accelerationStructureGeometriesKHR.data();
 		const VkAccelerationStructureGeometryKHR* const*		accelerationStructureGeometry				= accelerationStructureGeometriesKHRPointers.data();
@@ -1221,10 +1161,11 @@ void BottomLevelAccelerationStructureKHR::build (const DeviceInterface&						vk,
 		std::vector<VkAccelerationStructureGeometryKHR>			accelerationStructureGeometriesKHR;
 		std::vector<VkAccelerationStructureGeometryKHR*>		accelerationStructureGeometriesKHRPointers;
 		std::vector<VkAccelerationStructureBuildRangeInfoKHR>	accelerationStructureBuildRangeInfoKHR;
+		std::vector<VkAccelerationStructureTrianglesOpacityMicromapEXT> accelerationStructureGeometryMicromapsEXT;
 		std::vector<deUint32>									maxPrimitiveCounts;
 
 		prepareGeometries(vk, device, accelerationStructureGeometriesKHR, accelerationStructureGeometriesKHRPointers,
-						  accelerationStructureBuildRangeInfoKHR, maxPrimitiveCounts, getVertexBufferOffset(), getIndexBufferOffset());
+						  accelerationStructureBuildRangeInfoKHR, accelerationStructureGeometryMicromapsEXT, maxPrimitiveCounts, getVertexBufferOffset(), getIndexBufferOffset());
 
 		const VkAccelerationStructureGeometryKHR*			accelerationStructureGeometriesKHRPointer	= accelerationStructureGeometriesKHR.data();
 		const VkAccelerationStructureGeometryKHR* const*	accelerationStructureGeometry				= accelerationStructureGeometriesKHRPointers.data();
@@ -1425,18 +1366,20 @@ const VkAccelerationStructureKHR* BottomLevelAccelerationStructureKHR::getPtr (v
 	return &m_accelerationStructureKHR.get();
 }
 
-void BottomLevelAccelerationStructureKHR::prepareGeometries (const DeviceInterface&										vk,
-															 const VkDevice												device,
-															 std::vector<VkAccelerationStructureGeometryKHR>&			accelerationStructureGeometriesKHR,
-															 std::vector<VkAccelerationStructureGeometryKHR*>&			accelerationStructureGeometriesKHRPointers,
-															 std::vector<VkAccelerationStructureBuildRangeInfoKHR>&		accelerationStructureBuildRangeInfoKHR,
-															 std::vector<deUint32>&										maxPrimitiveCounts,
-															 VkDeviceSize												vertexBufferOffset,
-															 VkDeviceSize												indexBufferOffset)
+void BottomLevelAccelerationStructureKHR::prepareGeometries (const DeviceInterface&												vk,
+															 const VkDevice														device,
+															 std::vector<VkAccelerationStructureGeometryKHR>&					accelerationStructureGeometriesKHR,
+															 std::vector<VkAccelerationStructureGeometryKHR*>&					accelerationStructureGeometriesKHRPointers,
+															 std::vector<VkAccelerationStructureBuildRangeInfoKHR>&				accelerationStructureBuildRangeInfoKHR,
+															 std::vector<VkAccelerationStructureTrianglesOpacityMicromapEXT>&	accelerationStructureGeometryMicromapsEXT,
+															 std::vector<deUint32>&												maxPrimitiveCounts,
+															 VkDeviceSize														vertexBufferOffset,
+															 VkDeviceSize														indexBufferOffset)
 {
 	accelerationStructureGeometriesKHR.resize(m_geometriesData.size());
 	accelerationStructureGeometriesKHRPointers.resize(m_geometriesData.size());
 	accelerationStructureBuildRangeInfoKHR.resize(m_geometriesData.size());
+	accelerationStructureGeometryMicromapsEXT.resize(m_geometriesData.size());
 	maxPrimitiveCounts.resize(m_geometriesData.size());
 
 	for (size_t geometryNdx = 0; geometryNdx < m_geometriesData.size(); ++geometryNdx)
@@ -1473,7 +1416,7 @@ void BottomLevelAccelerationStructureKHR::prepareGeometries (const DeviceInterfa
 				indexData = makeDeviceOrHostAddressConstKHR(DE_NULL);
 		}
 
-		const VkAccelerationStructureGeometryTrianglesDataKHR	accelerationStructureGeometryTrianglesDataKHR =
+		VkAccelerationStructureGeometryTrianglesDataKHR	accelerationStructureGeometryTrianglesDataKHR =
 		{
 			VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR,	//  VkStructureType					sType;
 			DE_NULL,																//  const void*						pNext;
@@ -1485,6 +1428,9 @@ void BottomLevelAccelerationStructureKHR::prepareGeometries (const DeviceInterfa
 			indexData,																//  VkDeviceOrHostAddressConstKHR	indexData;
 			makeDeviceOrHostAddressConstKHR(DE_NULL),								//  VkDeviceOrHostAddressConstKHR	transformData;
 		};
+
+		if (geometryData->getHasOpacityMicromap())
+			accelerationStructureGeometryTrianglesDataKHR.pNext = &geometryData->getOpacityMicromap();
 
 		const VkAccelerationStructureGeometryAabbsDataKHR		accelerationStructureGeometryAabbsDataKHR =
 		{
@@ -1922,8 +1868,9 @@ void BottomLevelAccelerationStructurePoolMember::preCreateComputeSizesAndOffsets
 		std::vector<VkAccelerationStructureGeometryKHR>			accelerationStructureGeometriesKHR;
 		std::vector<VkAccelerationStructureGeometryKHR*>		accelerationStructureGeometriesKHRPointers;
 		std::vector<VkAccelerationStructureBuildRangeInfoKHR>	accelerationStructureBuildRangeInfoKHR;
+		std::vector<VkAccelerationStructureTrianglesOpacityMicromapEXT> accelerationStructureGeometryMicromapsEXT;
 		std::vector<deUint32>									maxPrimitiveCounts;
-		prepareGeometries(vk, device, accelerationStructureGeometriesKHR, accelerationStructureGeometriesKHRPointers, accelerationStructureBuildRangeInfoKHR, maxPrimitiveCounts);
+		prepareGeometries(vk, device, accelerationStructureGeometriesKHR, accelerationStructureGeometriesKHRPointers, accelerationStructureBuildRangeInfoKHR, accelerationStructureGeometryMicromapsEXT, maxPrimitiveCounts);
 
 		const VkAccelerationStructureGeometryKHR*				accelerationStructureGeometriesKHRPointer	= accelerationStructureGeometriesKHR.data();
 		const VkAccelerationStructureGeometryKHR* const*		accelerationStructureGeometry				= accelerationStructureGeometriesKHRPointers.data();

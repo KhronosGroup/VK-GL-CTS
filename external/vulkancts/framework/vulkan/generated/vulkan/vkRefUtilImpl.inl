@@ -204,6 +204,12 @@ void Deleter<VkBufferCollectionFUCHSIA>::operator() (VkBufferCollectionFUCHSIA o
 	m_deviceIface->destroyBufferCollectionFUCHSIA(m_device, obj, m_allocator);
 }
 
+template<>
+void Deleter<VkMicromapEXT>::operator() (VkMicromapEXT obj) const
+{
+	m_deviceIface->destroyMicromapEXT(m_device, obj, m_allocator);
+}
+
 } // refdetails
 
 Move<VkInstance> createInstance (const PlatformInterface& vk, const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)
@@ -568,5 +574,12 @@ Move<VkBufferCollectionFUCHSIA> createBufferCollectionFUCHSIA (const DeviceInter
 	VkBufferCollectionFUCHSIA object = 0;
 	VK_CHECK(vk.createBufferCollectionFUCHSIA(device, pCreateInfo, pAllocator, &object));
 	return Move<VkBufferCollectionFUCHSIA>(check<VkBufferCollectionFUCHSIA>(object), Deleter<VkBufferCollectionFUCHSIA>(vk, device, pAllocator));
+}
+
+Move<VkMicromapEXT> createMicromapEXT (const DeviceInterface& vk, VkDevice device, const VkMicromapCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkMicromapEXT object = 0;
+	VK_CHECK(vk.createMicromapEXT(device, pCreateInfo, pAllocator, &object));
+	return Move<VkMicromapEXT>(check<VkMicromapEXT>(object), Deleter<VkMicromapEXT>(vk, device, pAllocator));
 }
 

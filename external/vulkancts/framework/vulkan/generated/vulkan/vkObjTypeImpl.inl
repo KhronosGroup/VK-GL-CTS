@@ -43,6 +43,7 @@ template<> inline VkObjectType	getObjectType<VkDeferredOperationKHR>			(void) { 
 template<> inline VkObjectType	getObjectType<VkPrivateDataSlot>				(void) { return VK_OBJECT_TYPE_PRIVATE_DATA_SLOT;				}
 template<> inline VkObjectType	getObjectType<VkCuModuleNVX>					(void) { return VK_OBJECT_TYPE_CU_MODULE_NVX;					}
 template<> inline VkObjectType	getObjectType<VkCuFunctionNVX>					(void) { return VK_OBJECT_TYPE_CU_FUNCTION_NVX;					}
+template<> inline VkObjectType	getObjectType<VkMicromapEXT>					(void) { return VK_OBJECT_TYPE_MICROMAP_EXT;					}
 template<> inline VkObjectType	getObjectType<VkDisplayKHR>						(void) { return VK_OBJECT_TYPE_DISPLAY_KHR;						}
 template<> inline VkObjectType	getObjectType<VkDisplayModeKHR>					(void) { return VK_OBJECT_TYPE_DISPLAY_MODE_KHR;				}
 template<> inline VkObjectType	getObjectType<VkSurfaceKHR>						(void) { return VK_OBJECT_TYPE_SURFACE_KHR;						}
