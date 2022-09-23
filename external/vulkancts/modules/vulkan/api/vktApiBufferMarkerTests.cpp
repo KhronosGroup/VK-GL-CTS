@@ -488,7 +488,7 @@ tcu::TestStatus bufferMarkerMemoryDep(Context& context, MemoryDepParams params)
 		DescriptorPoolBuilder descriptorPoolBuilder;
 
 		descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u);
-		descriptorPool = descriptorPoolBuilder.build(vk, device, 0, 1u);
+		descriptorPool = descriptorPoolBuilder.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 
 		DescriptorSetLayoutBuilder setLayoutBuilder;
 
@@ -891,7 +891,7 @@ tcu::TestStatus bufferMarkerMemoryDep(Context& context, MemoryDepParams params)
 		{
 			vk.cmdWriteBufferMarkerAMD(*cmdBuffer, params.base.stage, *markerBuffer, sizeof(deUint32) * slot, value);
 
-			writeStages |= params.base.stage;
+			writeStages |= VK_PIPELINE_STAGE_TRANSFER_BIT;
 			writeAccess |= VK_ACCESS_TRANSFER_WRITE_BIT;
 		}
 		else
