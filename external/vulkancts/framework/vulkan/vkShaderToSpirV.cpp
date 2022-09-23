@@ -88,7 +88,7 @@ void prepareGlslang (void)
 
 // Fail compilation if more members are added to TLimits or TBuiltInResource
 struct LimitsSizeHelper_s			{ bool m0, m1, m2, m3, m4, m5, m6, m7, m8; };
-struct BuiltInResourceSizeHelper_s	{ int m[93]; LimitsSizeHelper_s l; };
+struct BuiltInResourceSizeHelper_s	{ int m[102]; LimitsSizeHelper_s l; };
 
 DE_STATIC_ASSERT(sizeof(TLimits)			== sizeof(LimitsSizeHelper_s));
 DE_STATIC_ASSERT(sizeof(TBuiltInResource)	== sizeof(BuiltInResourceSizeHelper_s));
@@ -202,6 +202,15 @@ void getDefaultBuiltInResources (TBuiltInResource* builtin)
 	builtin->maxTaskWorkGroupSizeY_NV					= 1;
 	builtin->maxTaskWorkGroupSizeZ_NV					= 1;
 	builtin->maxMeshViewCountNV							= 4;
+	builtin->maxMeshOutputVerticesEXT					= 256;
+	builtin->maxMeshOutputPrimitivesEXT					= 256;
+	builtin->maxMeshWorkGroupSizeX_EXT					= 256;
+	builtin->maxMeshWorkGroupSizeY_EXT					= 1;
+	builtin->maxMeshWorkGroupSizeZ_EXT					= 1;
+	builtin->maxTaskWorkGroupSizeX_EXT					= 1024;
+	builtin->maxTaskWorkGroupSizeY_EXT					= 1;
+	builtin->maxTaskWorkGroupSizeZ_EXT					= 1;
+	builtin->maxMeshViewCountEXT						= 4;
 	builtin->maxDualSourceDrawBuffersEXT				= 1;
 };
 
@@ -368,12 +377,11 @@ bool compileHlslToSpirV (const HlslSource& program, std::vector<deUint32>* dst, 
 void stripSpirVDebugInfo (const size_t numSrcInstrs, const deUint32* srcInstrs, std::vector<deUint32>* dst)
 {
 	spv::spirvbin_t remapper;
-	std::vector<std::string> whiteListStrings;
 
 	// glslang operates in-place
 	dst->resize(numSrcInstrs);
 	std::copy(srcInstrs, srcInstrs+numSrcInstrs, dst->begin());
-	remapper.remap(*dst, whiteListStrings, spv::spirvbin_base_t::STRIP);
+	remapper.remap(*dst, spv::spirvbin_base_t::STRIP);
 }
 
 } // vk
