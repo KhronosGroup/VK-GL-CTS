@@ -71,6 +71,10 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreatePipelineCacheFunc)												
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyPipelineCacheFunc)												(VkDevice device, VkPipelineCache pipelineCache, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPipelineCacheDataFunc)												(VkDevice device, VkPipelineCache pipelineCache, size_t* pDataSize, void* pData);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* MergePipelineCachesFunc)												(VkDevice device, VkPipelineCache dstCache, uint32_t srcCacheCount, const VkPipelineCache* pSrcCaches);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreatePipelineBinariesKHRFunc)											(VkDevice device, uint32_t createInfoCount, const VkPipelineBinaryCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipelineBinaryKHR* pPipelineBinaries);
+typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyPipelineBinaryKHRFunc)											(VkDevice device, VkPipelineBinaryKHR pipelineBinary, const VkAllocationCallbacks* pAllocator);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GeneratePipelineBinaryKeysKHRFunc)										(VkDevice device, const void* pCreateInfo, uint32_t* pKeyCount, VkPipelineBinaryKeyKHR* pKeys);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPipelineBinaryDataKHRFunc)											(VkDevice device, VkPipelineBinaryKHR pipelineBinary, size_t* pPipelineBinaryDataSize, void* pPipelineBinaryData);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateGraphicsPipelinesFunc)											(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkGraphicsPipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateComputePipelinesFunc)											(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkComputePipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDeviceSubpassShadingMaxWorkgroupSizeHUAWEIFunc)						(VkDevice device, VkRenderPass renderpass, VkExtent2D* pMaxWorkgroupSize);

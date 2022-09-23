@@ -673,6 +673,10 @@ std::ostream&	operator<<	(std::ostream& s, const VkGraphicsPipelineCreateInfo& v
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineCacheCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineCacheHeaderVersionOne& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPushConstantRange& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineBinaryCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineBinaryDataKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineBinaryKeyKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineBinaryInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineLayoutCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSamplerCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCommandPoolCreateInfo& value);
@@ -1440,8 +1444,6 @@ std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultVendorInfoEXT& val
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultCountsEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultVendorBinaryHeaderVersionOneEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SpsVuiFlags& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264HrdParameters& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SequenceParameterSetVui& value);

@@ -1275,6 +1275,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_pipeline_binaries")
+	{
+		return;
+	}
 	if (extName == "VK_QCOM_tile_properties")
 	{
 		return;
@@ -1284,10 +1288,6 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_EXT_mutable_descriptor_type")
-	{
-		return;
-	}
-	if (extName == "VK_ARM_shader_core_builtins")
 	{
 		return;
 	}
@@ -2770,6 +2770,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_pipeline_binaries")
+	{
+		functions.push_back("vkCreatePipelineBinariesKHR");
+		functions.push_back("vkDestroyPipelineBinaryKHR");
+		functions.push_back("vkGeneratePipelineBinaryKeysKHR");
+		functions.push_back("vkGetPipelineBinaryDataKHR");
+		return;
+	}
 	if (extName == "VK_QCOM_tile_properties")
 	{
 		functions.push_back("vkGetFramebufferTilePropertiesQCOM");
@@ -2781,10 +2789,6 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_EXT_mutable_descriptor_type")
-	{
-		return;
-	}
-	if (extName == "VK_ARM_shader_core_builtins")
 	{
 		return;
 	}
@@ -3126,8 +3130,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_NV_optical_flow",
 	"VK_EXT_legacy_dithering",
 	"VK_EXT_pipeline_protected_access",
+	"VK_KHR_pipeline_binaries",
 	"VK_QCOM_tile_properties",
 	"VK_SEC_amigo_profiling",
 	"VK_EXT_mutable_descriptor_type",
-	"VK_ARM_shader_core_builtins",
 };

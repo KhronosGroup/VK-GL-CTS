@@ -445,6 +445,13 @@ class API:
 				'const' in typeNode.tail,
 				nameNode.tail
 			))
+		# <temp>
+		# this temp section should be removed as this is temporary workaround
+		# for vkCreatePipelineBinariesKHR; ATM this function has pResults
+		# as a last paramter which will be removed from spec soon
+		if protoNode.find("name").text == "vkCreatePipelineBinariesKHR" and functionParams[-1].name == "pResults":
+			functionParams.pop(len(functionParams)-1)
+		# </temp>
 		# memorize whole function
 		self.functions.append(Function(
 			protoNode.find("name").text,
@@ -1600,7 +1607,14 @@ def writeNullDriverImpl (api, filename):
 			yield "\tDE_UNREF(%s);" % function.arguments[-2].name
 
 			if getHandle(objectType).type == "VK_DEFINE_NON_DISPATCHABLE_HANDLE":
-				yield "\tVK_NULL_RETURN((*%s = allocateNonDispHandle<%s, %s>(%s)));" % (function.arguments[-1].name, objectType[2:], objectType, argsStr)
+				if function.name == "vkCreatePipelineBinariesKHR":
+					yield "\tDE_UNREF(device);"
+					yield "\tDE_UNREF(createInfoCount);"
+					yield "\tDE_UNREF(pCreateInfos);"
+					yield "\tDE_UNREF(pPipelineBinaries);"
+					yield "\treturn VK_SUCCESS;"
+				else:
+					yield "\tVK_NULL_RETURN((*%s = allocateNonDispHandle<%s, %s>(%s)));" % (function.arguments[-1].name, objectType[2:], objectType, argsStr)
 			else:
 				yield "\tVK_NULL_RETURN((*%s = allocateHandle<%s, %s>(%s)));" % (function.arguments[-1].name, objectType[2:], objectType, argsStr)
 			yield "}"

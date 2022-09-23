@@ -168,6 +168,16 @@ template<> VkStructureType getStructureType<VkPipelineCacheCreateInfo> (void)
 	return VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
 }
 
+template<> VkStructureType getStructureType<VkPipelineBinaryCreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_BINARY_CREATE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPipelineBinaryInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_BINARY_INFO_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPipelineLayoutCreateInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -3556,15 +3566,5 @@ template<> VkStructureType getStructureType<VkDeviceFaultCountsEXT> (void)
 template<> VkStructureType getStructureType<VkDeviceFaultInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_DEVICE_FAULT_INFO_EXT;
-}
-
-template<> VkStructureType getStructureType<VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM> (void)
-{
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM;
-}
-
-template<> VkStructureType getStructureType<VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM> (void)
-{
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM;
 }
 

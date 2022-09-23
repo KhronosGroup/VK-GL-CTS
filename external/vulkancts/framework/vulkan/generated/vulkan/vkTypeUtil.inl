@@ -280,6 +280,14 @@ inline VkPushConstantRange makePushConstantRange (VkShaderStageFlags stageFlags,
 	return res;
 }
 
+inline VkPipelineBinaryDataKHR makePipelineBinaryDataKHR (size_t size, void* pData)
+{
+	VkPipelineBinaryDataKHR res;
+	res.size	= size;
+	res.pData	= pData;
+	return res;
+}
+
 inline VkClearDepthStencilValue makeClearDepthStencilValue (float depth, uint32_t stencil)
 {
 	VkClearDepthStencilValue res;

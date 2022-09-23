@@ -28,6 +28,7 @@ template<> const char*	getTypeName<VkQueryPool>						(void) { return "VkQueryPoo
 template<> const char*	getTypeName<VkFramebuffer>						(void) { return "VkFramebuffer";					}
 template<> const char*	getTypeName<VkRenderPass>						(void) { return "VkRenderPass";						}
 template<> const char*	getTypeName<VkPipelineCache>					(void) { return "VkPipelineCache";					}
+template<> const char*	getTypeName<VkPipelineBinaryKHR>				(void) { return "VkPipelineBinaryKHR";				}
 template<> const char*	getTypeName<VkIndirectCommandsLayoutNV>			(void) { return "VkIndirectCommandsLayoutNV";		}
 template<> const char*	getTypeName<VkDescriptorUpdateTemplate>			(void) { return "VkDescriptorUpdateTemplate";		}
 template<> const char*	getTypeName<VkSamplerYcbcrConversion>			(void) { return "VkSamplerYcbcrConversion";			}
@@ -1198,6 +1199,7 @@ tcu::Format::Bitfield<32> getPipelineCreateFlagsStr (VkPipelineCreateFlags value
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DEPTH_STENCIL_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT,			"VK_PIPELINE_CREATE_DEPTH_STENCIL_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_NO_PROTECTED_ACCESS_BIT_EXT,							"VK_PIPELINE_CREATE_NO_PROTECTED_ACCESS_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_PROTECTED_ACCESS_ONLY_BIT_EXT,							"VK_PIPELINE_CREATE_PROTECTED_ACCESS_ONLY_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_CAPTURE_DATA_BIT_KHR,									"VK_PIPELINE_CREATE_CAPTURE_DATA_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2143,12 +2145,12 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_OPTICAL_FLOW_SESSION_CREATE_PRIVATE_DATA_INFO_NV:					return "VK_STRUCTURE_TYPE_OPTICAL_FLOW_SESSION_CREATE_PRIVATE_DATA_INFO_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_DITHERING_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_DITHERING_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROTECTED_ACCESS_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROTECTED_ACCESS_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PIPELINE_BINARY_CREATE_INFO_KHR:										return "VK_STRUCTURE_TYPE_PIPELINE_BINARY_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PIPELINE_BINARY_INFO_KHR:											return "VK_STRUCTURE_TYPE_PIPELINE_BINARY_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_PROPERTIES_FEATURES_QCOM:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_PROPERTIES_FEATURES_QCOM";
 		case VK_STRUCTURE_TYPE_TILE_PROPERTIES_QCOM:												return "VK_STRUCTURE_TYPE_TILE_PROPERTIES_QCOM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_AMIGO_PROFILING_FEATURES_SEC:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_AMIGO_PROFILING_FEATURES_SEC";
 		case VK_STRUCTURE_TYPE_AMIGO_PROFILING_SUBMIT_INFO_SEC:										return "VK_STRUCTURE_TYPE_AMIGO_PROFILING_SUBMIT_INFO_SEC";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM";
 		default:																					return DE_NULL;
 	}
 }
@@ -2364,6 +2366,7 @@ const char* getObjectTypeName (VkObjectType value)
 		case VK_OBJECT_TYPE_BUFFER_COLLECTION_FUCHSIA:			return "VK_OBJECT_TYPE_BUFFER_COLLECTION_FUCHSIA";
 		case VK_OBJECT_TYPE_MICROMAP_EXT:						return "VK_OBJECT_TYPE_MICROMAP_EXT";
 		case VK_OBJECT_TYPE_OPTICAL_FLOW_SESSION_NV:			return "VK_OBJECT_TYPE_OPTICAL_FLOW_SESSION_NV";
+		case VK_OBJECT_TYPE_PIPELINE_BINARY_KHR:				return "VK_OBJECT_TYPE_PIPELINE_BINARY_KHR";
 		default:												return DE_NULL;
 	}
 }
@@ -6113,6 +6116,47 @@ std::ostream& operator<< (std::ostream& s, const VkPushConstantRange& value)
 	s << "\tstageFlags = " << getShaderStageFlagsStr(value.stageFlags) << '\n';
 	s << "\toffset = " << value.offset << '\n';
 	s << "\tsize = " << value.size << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineBinaryCreateInfoKHR& value)
+{
+	s << "VkPipelineBinaryCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpKey = " << value.pKey << '\n';
+	s << "\tpDataInfo = " << value.pDataInfo << '\n';
+	s << "\tpipeline = " << value.pipeline << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineBinaryDataKHR& value)
+{
+	s << "VkPipelineBinaryDataKHR = {\n";
+	s << "\tsize = " << value.size << '\n';
+	s << "\tpData = " << value.pData << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineBinaryKeyKHR& value)
+{
+	s << "VkPipelineBinaryKeyKHR = {\n";
+	s << "\tuuid = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.uuid)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.uuid))) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineBinaryInfoKHR& value)
+{
+	s << "VkPipelineBinaryInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tbinaryCount = " << value.binaryCount << '\n';
+	s << "\tpPipelineBinaryKeys = " << value.pPipelineBinaryKeys << '\n';
+	s << "\tpPipelineBinaries = " << value.pPipelineBinaries << '\n';
 	s << '}';
 	return s;
 }
@@ -15615,27 +15659,6 @@ std::ostream& operator<< (std::ostream& s, const VkDeviceFaultVendorBinaryHeader
 	s << "\tapplicationNameOffset = " << value.applicationNameOffset << '\n';
 	s << "\tapplicationVersion = " << value.applicationVersion << '\n';
 	s << "\tengineNameOffset = " << value.engineNameOffset << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM& value)
-{
-	s << "VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tshaderCoreCount = " << value.shaderCoreCount << '\n';
-	s << "\tshaderWarpsPerCore = " << value.shaderWarpsPerCore << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM& value)
-{
-	s << "VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tshaderCoreBuiltins = " << value.shaderCoreBuiltins << '\n';
 	s << '}';
 	return s;
 }

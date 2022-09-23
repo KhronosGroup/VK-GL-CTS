@@ -53,6 +53,10 @@ virtual VkResult			createPipelineCache								(VkDevice device, const VkPipeline
 virtual void				destroyPipelineCache							(VkDevice device, VkPipelineCache pipelineCache, const VkAllocationCallbacks* pAllocator) const;
 virtual VkResult			getPipelineCacheData							(VkDevice device, VkPipelineCache pipelineCache, size_t* pDataSize, void* pData) const;
 virtual VkResult			mergePipelineCaches								(VkDevice device, VkPipelineCache dstCache, uint32_t srcCacheCount, const VkPipelineCache* pSrcCaches) const;
+virtual VkResult			createPipelineBinariesKHR						(VkDevice device, uint32_t createInfoCount, const VkPipelineBinaryCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipelineBinaryKHR* pPipelineBinaries) const;
+virtual void				destroyPipelineBinaryKHR						(VkDevice device, VkPipelineBinaryKHR pipelineBinary, const VkAllocationCallbacks* pAllocator) const;
+virtual VkResult			generatePipelineBinaryKeysKHR					(VkDevice device, const void* pCreateInfo, uint32_t* pKeyCount, VkPipelineBinaryKeyKHR* pKeys) const;
+virtual VkResult			getPipelineBinaryDataKHR						(VkDevice device, VkPipelineBinaryKHR pipelineBinary, size_t* pPipelineBinaryDataSize, void* pPipelineBinaryData) const;
 virtual VkResult			createGraphicsPipelines							(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkGraphicsPipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const;
 virtual VkResult			createComputePipelines							(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkComputePipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const;
 virtual VkResult			getDeviceSubpassShadingMaxWorkgroupSizeHUAWEI	(VkDevice device, VkRenderPass renderpass, VkExtent2D* pMaxWorkgroupSize) const;

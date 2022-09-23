@@ -756,6 +756,35 @@ struct VkPushConstantRange
 	uint32_t			size;
 };
 
+struct VkPipelineBinaryDataKHR
+{
+	size_t	size;
+	void*	pData;
+};
+
+struct VkPipelineBinaryKeyKHR
+{
+	uint8_t	uuid[VK_UUID_SIZE];
+};
+
+struct VkPipelineBinaryCreateInfoKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	const VkPipelineBinaryKeyKHR*	pKey;
+	const VkPipelineBinaryDataKHR*	pDataInfo;
+	VkPipeline						pipeline;
+};
+
+struct VkPipelineBinaryInfoKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	uint32_t						binaryCount;
+	const VkPipelineBinaryKeyKHR*	pPipelineBinaryKeys;
+	const VkPipelineBinaryKHR*		pPipelineBinaries;
+};
+
 struct VkPipelineLayoutCreateInfo
 {
 	VkStructureType					sType;
@@ -7792,21 +7821,6 @@ struct VkDeviceFaultVendorBinaryHeaderVersionOneEXT
 	uint32_t									applicationNameOffset;
 	uint32_t									applicationVersion;
 	uint32_t									engineNameOffset;
-};
-
-struct VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM
-{
-	VkStructureType	sType;
-	void*			pNext;
-	uint32_t		shaderCoreCount;
-	uint32_t		shaderWarpsPerCore;
-};
-
-struct VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM
-{
-	VkStructureType	sType;
-	void*			pNext;
-	VkBool32		shaderCoreBuiltins;
 };
 
 struct StdVideoH264SpsVuiFlags

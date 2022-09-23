@@ -254,6 +254,26 @@ VkResult DeviceDriver::mergePipelineCaches (VkDevice device, VkPipelineCache dst
 	return m_vk.mergePipelineCaches(device, dstCache, srcCacheCount, pSrcCaches);
 }
 
+VkResult DeviceDriver::createPipelineBinariesKHR (VkDevice device, uint32_t createInfoCount, const VkPipelineBinaryCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipelineBinaryKHR* pPipelineBinaries) const
+{
+	return m_vk.createPipelineBinariesKHR(device, createInfoCount, pCreateInfos, pAllocator, pPipelineBinaries);
+}
+
+void DeviceDriver::destroyPipelineBinaryKHR (VkDevice device, VkPipelineBinaryKHR pipelineBinary, const VkAllocationCallbacks* pAllocator) const
+{
+	m_vk.destroyPipelineBinaryKHR(device, pipelineBinary, pAllocator);
+}
+
+VkResult DeviceDriver::generatePipelineBinaryKeysKHR (VkDevice device, const void* pCreateInfo, uint32_t* pKeyCount, VkPipelineBinaryKeyKHR* pKeys) const
+{
+	return m_vk.generatePipelineBinaryKeysKHR(device, pCreateInfo, pKeyCount, pKeys);
+}
+
+VkResult DeviceDriver::getPipelineBinaryDataKHR (VkDevice device, VkPipelineBinaryKHR pipelineBinary, size_t* pPipelineBinaryDataSize, void* pPipelineBinaryData) const
+{
+	return m_vk.getPipelineBinaryDataKHR(device, pipelineBinary, pPipelineBinaryDataSize, pPipelineBinaryData);
+}
+
 VkResult DeviceDriver::createGraphicsPipelines (VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkGraphicsPipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const
 {
 	return m_vk.createGraphicsPipelines(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);

@@ -75,6 +75,16 @@ VKAPI_ATTR VkResult VKAPI_CALL createPipelineCache (VkDevice device, const VkPip
 	VK_NULL_RETURN((*pPipelineCache = allocateNonDispHandle<PipelineCache, VkPipelineCache>(device, pCreateInfo, pAllocator)));
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL createPipelineBinariesKHR (VkDevice device, uint32_t createInfoCount, const VkPipelineBinaryCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipelineBinaryKHR* pPipelineBinaries)
+{
+	DE_UNREF(pAllocator);
+	DE_UNREF(device);
+	DE_UNREF(createInfoCount);
+	DE_UNREF(pCreateInfos);
+	DE_UNREF(pPipelineBinaries);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL createPipelineLayout (VkDevice device, const VkPipelineLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPipelineLayout* pPipelineLayout)
 {
 	DE_UNREF(pAllocator);
@@ -389,6 +399,12 @@ VKAPI_ATTR void VKAPI_CALL destroyPipelineCache (VkDevice device, VkPipelineCach
 {
 	DE_UNREF(device);
 	freeNonDispHandle<PipelineCache, VkPipelineCache>(pipelineCache, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyPipelineBinaryKHR (VkDevice device, VkPipelineBinaryKHR pipelineBinary, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<PipelineBinaryKHR, VkPipelineBinaryKHR>(pipelineBinary, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyPipeline (VkDevice device, VkPipeline pipeline, const VkAllocationCallbacks* pAllocator)
@@ -755,6 +771,24 @@ VKAPI_ATTR VkResult VKAPI_CALL mergePipelineCaches (VkDevice device, VkPipelineC
 	DE_UNREF(dstCache);
 	DE_UNREF(srcCacheCount);
 	DE_UNREF(pSrcCaches);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL generatePipelineBinaryKeysKHR (VkDevice device, const void* pCreateInfo, uint32_t* pKeyCount, VkPipelineBinaryKeyKHR* pKeys)
+{
+	DE_UNREF(device);
+	DE_UNREF(pCreateInfo);
+	DE_UNREF(pKeyCount);
+	DE_UNREF(pKeys);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPipelineBinaryDataKHR (VkDevice device, VkPipelineBinaryKHR pipelineBinary, size_t* pPipelineBinaryDataSize, void* pPipelineBinaryData)
+{
+	DE_UNREF(device);
+	DE_UNREF(pipelineBinary);
+	DE_UNREF(pPipelineBinaryDataSize);
+	DE_UNREF(pPipelineBinaryData);
 	return VK_SUCCESS;
 }
 
@@ -3871,6 +3905,10 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkDestroyPipelineCache,								destroyPipelineCache),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineCacheData,								getPipelineCacheData),
 	VK_NULL_FUNC_ENTRY(vkMergePipelineCaches,								mergePipelineCaches),
+	VK_NULL_FUNC_ENTRY(vkCreatePipelineBinariesKHR,							createPipelineBinariesKHR),
+	VK_NULL_FUNC_ENTRY(vkDestroyPipelineBinaryKHR,							destroyPipelineBinaryKHR),
+	VK_NULL_FUNC_ENTRY(vkGeneratePipelineBinaryKeysKHR,						generatePipelineBinaryKeysKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPipelineBinaryDataKHR,							getPipelineBinaryDataKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateGraphicsPipelines,							createGraphicsPipelines),
 	VK_NULL_FUNC_ENTRY(vkCreateComputePipelines,							createComputePipelines),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI,		getDeviceSubpassShadingMaxWorkgroupSizeHUAWEI),
