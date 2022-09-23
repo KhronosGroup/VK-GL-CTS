@@ -3187,7 +3187,7 @@ TestStatus QueryPoolResultsSizeInstance::iterate (void)
 	const VkQueue										queue			= m_context.getUniversalQueue();
 	Allocator&											allocator		= m_context.getDefaultAllocator();
 
-	const Move<VkCommandPool>							cmdPool			= createCommandPool(vk, device, 0, familyIndex);
+	const Move<VkCommandPool>							cmdPool			= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, familyIndex);
 	const Move<VkCommandBuffer>							cmdBuffer		= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	beginCommandBuffer(vk, *cmdBuffer, 0);
