@@ -4903,6 +4903,18 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 	const std::vector<VkViewport>	viewport	{ vk::makeViewport(kWidth32, kHeight32) };
 	const std::vector<VkRect2D>		scissor		{ vk::makeRect2D(kWidth32, kHeight32) };
 
+	const vk::VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType;
+		DE_NULL,														// const void*									pNext;
+		0u,																// VkPipelineColorBlendStateCreateFlags			flags;
+		false,															// VkBool32										logicOpEnable;
+		vk::VK_LOGIC_OP_CLEAR,											// VkLogicOp									logicOp;
+		0,																// deUint32										attachmentCount;
+		DE_NULL,														// const VkPipelineColorBlendAttachmentState*	pAttachments;
+		{ 0.0f, 0.0f, 0.0f, 0.0f }										// float										blendConstants[4];
+	};
+
 	vk::VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	//	VkStructureType							sType;
@@ -4924,7 +4936,6 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 
 		outputPipelines.emplace_back(vkd, device, m_params.pipelineConstructionType);
 		outputPipelines.back()
-			.setDefaultColorBlendState()
 			.setDefaultDepthStencilState()
 			.setDefaultRasterizationState()
 			.setupVertexInputStete(&vertexInputStateCreateInfo)
@@ -4935,7 +4946,7 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 				0u,
 				*vertModule)
 			.setupFragmentShaderState(*pipelineLayout, *renderPassSingleSubpass, 0u, *fragModule)
-			.setupFragmentOutputState(*renderPassSingleSubpass, 0u, DE_NULL, &multisampleStateCreateInfo)
+			.setupFragmentOutputState(*renderPassSingleSubpass, 0u, &colorBlendStateCreateInfo, &multisampleStateCreateInfo)
 			.setMonolithicPipelineLayout(*pipelineLayout)
 			.buildPipeline();
 	}
@@ -4950,7 +4961,6 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 		deUint32 subpass = static_cast<deUint32>(i);
 		referencePipelines.emplace_back(vkd, device, m_params.pipelineConstructionType);
 		referencePipelines.back()
-			.setDefaultColorBlendState()
 			.setDefaultDepthStencilState()
 			.setDefaultRasterizationState()
 			.setupVertexInputStete(&vertexInputStateCreateInfo)
@@ -4961,7 +4971,7 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 				subpass,
 				*vertModule)
 			.setupFragmentShaderState(*pipelineLayout, *renderPassMultiplePasses, subpass, *fragModule)
-			.setupFragmentOutputState(*renderPassMultiplePasses, subpass, DE_NULL, &multisampleStateCreateInfo)
+			.setupFragmentOutputState(*renderPassMultiplePasses, subpass, &colorBlendStateCreateInfo, &multisampleStateCreateInfo)
 			.setMonolithicPipelineLayout(*pipelineLayout)
 			.buildPipeline();
 	}
