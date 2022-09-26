@@ -625,14 +625,14 @@ void GraphicsCacheTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&
 	{
 		// setup proper stages count for CreationFeedback structures
 		// that will be passed to pre-rasterization and fragment shader states
-		pipelineCreationFeedbackCreateInfo[1].pipelineStageCreationFeedbackCount	= geometryStages;
+		pipelineCreationFeedbackCreateInfo[1].pipelineStageCreationFeedbackCount	= zeroOutFeedbackCount ? 0u : geometryStages;
 		pipelineCreationFeedbackCreateInfo[1].pPipelineStageCreationFeedbacks		= pipelineStageCreationFeedbacks;
-		pipelineCreationFeedbackCreateInfo[2].pipelineStageCreationFeedbackCount	= 1u;
+		pipelineCreationFeedbackCreateInfo[2].pipelineStageCreationFeedbackCount	= zeroOutFeedbackCount ? 0u : 1u;
 		pipelineCreationFeedbackCreateInfo[2].pPipelineStageCreationFeedbacks		= pipelineStageCreationFeedbacks + geometryStages;
 
 		if (m_param->getPipelineConstructionType() == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
 		{
-			pipelineCreationFeedbackCreateInfo[4].pipelineStageCreationFeedbackCount	= 1u + geometryStages;
+			pipelineCreationFeedbackCreateInfo[4].pipelineStageCreationFeedbackCount	= zeroOutFeedbackCount ? 0u : (1u + geometryStages);
 			pipelineCreationFeedbackCreateInfo[4].pPipelineStageCreationFeedbacks		= pipelineStageCreationFeedbacks;
 		}
 	}
