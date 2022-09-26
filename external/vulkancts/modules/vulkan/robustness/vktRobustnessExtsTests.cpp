@@ -70,6 +70,7 @@ enum RobustnessFeatureBits
 	RF_ROBUSTNESS2			= (1 << 1	),
 	SIF_INT64ATOMICS		= (1 << 2	),
 	RF_PIPELINE_ROBUSTNESS	= (1 << 3	),
+	SBL_SCALAR_BLOCK_LAYOUT	= (1 << 4	),
 };
 
 using RobustnessFeatures = deUint32;
@@ -88,7 +89,12 @@ class SingletonDevice
 		VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT	shaderImageAtomicInt64Features	= initVulkanStructure();
 		VkPhysicalDeviceFeatures2							features2						= initVulkanStructure();
 
-		features2.pNext = &scalarBlockLayoutFeatures;
+		if (FEATURES & SBL_SCALAR_BLOCK_LAYOUT)
+		{
+			DE_ASSERT(context.isDeviceFunctionalitySupported("VK_EXT_scalar_block_layout"));
+			scalarBlockLayoutFeatures.pNext = features2.pNext;
+			features2.pNext = &scalarBlockLayoutFeatures;
+		}
 
 		if (FEATURES & RF_IMG_ROBUSTNESS)
 		{
@@ -199,18 +205,31 @@ constexpr RobustnessFeatures kImageRobustness			= RF_IMG_ROBUSTNESS;
 constexpr RobustnessFeatures kRobustness2				= RF_ROBUSTNESS2;
 constexpr RobustnessFeatures kPipelineRobustness		= RF_PIPELINE_ROBUSTNESS;
 constexpr RobustnessFeatures kShaderImageInt64Atomics	= SIF_INT64ATOMICS;
+constexpr RobustnessFeatures kScalarBlockLayout			= SBL_SCALAR_BLOCK_LAYOUT;
 
 using ImageRobustnessSingleton	= SingletonDevice<kImageRobustness>;
 using Robustness2Singleton		= SingletonDevice<kRobustness2>;
 
+using ImageRobustnessScalarSingleton	= SingletonDevice<kImageRobustness | kScalarBlockLayout>;
+using Robustness2ScalarSingleton		= SingletonDevice<kRobustness2 | kScalarBlockLayout>;
+
 using PipelineRobustnessImageRobustnessSingleton	= SingletonDevice<kImageRobustness | kPipelineRobustness>;
 using PipelineRobustnessRobustness2Singleton		= SingletonDevice<kRobustness2 | kPipelineRobustness>;
+
+using PipelineRobustnessImageRobustnessScalarSingleton	= SingletonDevice<kImageRobustness | kPipelineRobustness | kScalarBlockLayout>;
+using PipelineRobustnessRobustness2ScalarSingleton		= SingletonDevice<kRobustness2 | kPipelineRobustness | kScalarBlockLayout>;
 
 using ImageRobustnessInt64AtomicsSingleton	= SingletonDevice<kImageRobustness | kShaderImageInt64Atomics>;
 using Robustness2Int64AtomicsSingleton		= SingletonDevice<kRobustness2 | kShaderImageInt64Atomics>;
 
+using ImageRobustnessInt64AtomicsScalarSingleton	= SingletonDevice<kImageRobustness | kShaderImageInt64Atomics | kScalarBlockLayout>;
+using Robustness2Int64AtomicsScalarSingleton		= SingletonDevice<kRobustness2 | kShaderImageInt64Atomics | kScalarBlockLayout>;
+
 using PipelineRobustnessImageRobustnessInt64AtomicsSingleton	= SingletonDevice<kImageRobustness | kPipelineRobustness | kShaderImageInt64Atomics>;
 using PipelineRobustnessRobustness2Int64AtomicsSingleton		= SingletonDevice<kRobustness2 | kPipelineRobustness | kShaderImageInt64Atomics>;
+
+using PipelineRobustnessImageRobustnessInt64AtomicsScalarSingleton	= SingletonDevice<kImageRobustness | kPipelineRobustness | kShaderImageInt64Atomics | kScalarBlockLayout>;
+using PipelineRobustnessRobustness2Int64AtomicsScalarSingleton		= SingletonDevice<kRobustness2 | kPipelineRobustness | kShaderImageInt64Atomics | kScalarBlockLayout>;
 
 // Render target / compute grid dimensions
 static const deUint32 DIM = 8;
@@ -246,6 +265,26 @@ struct CaseDef
 	bool testPipelineRobustness;
 	deUint32 imageDim[3]; // width, height, depth or layers
 	bool readOnly;
+
+	bool needsScalarBlockLayout() const
+	{
+		bool scalarNeeded = false;
+
+		switch (descriptorType)
+		{
+		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
+		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+			scalarNeeded = true;
+			break;
+		default:
+			scalarNeeded = false;
+			break;
+		}
+
+		return scalarNeeded;
+	}
 };
 
 static bool formatIsR64(const VkFormat& f)
@@ -263,6 +302,20 @@ static bool formatIsR64(const VkFormat& f)
 // Returns the appropriate singleton device for the given case.
 VkInstance getInstance(Context& ctx, const CaseDef& caseDef)
 {
+	if (caseDef.needsScalarBlockLayout())
+	{
+		if (formatIsR64(caseDef.format))
+		{
+			if (caseDef.testRobustness2)
+				return Robustness2Int64AtomicsScalarSingleton::getInstance(ctx);
+			return ImageRobustnessInt64AtomicsScalarSingleton::getInstance(ctx);
+		}
+
+		if (caseDef.testRobustness2)
+			return Robustness2ScalarSingleton::getInstance(ctx);
+		return ImageRobustnessScalarSingleton::getInstance(ctx);
+	}
+
 	if (formatIsR64(caseDef.format))
 	{
 		if (caseDef.testRobustness2)
@@ -278,6 +331,20 @@ VkInstance getInstance(Context& ctx, const CaseDef& caseDef)
 // Returns the appropriate singleton device driver for the given case.
 const InstanceInterface& getInstanceInterface(Context& ctx, const CaseDef& caseDef)
 {
+	if (caseDef.needsScalarBlockLayout())
+	{
+		if (formatIsR64(caseDef.format))
+		{
+			if (caseDef.testRobustness2)
+				return Robustness2Int64AtomicsScalarSingleton::getInstanceInterface(ctx);
+			return ImageRobustnessInt64AtomicsScalarSingleton::getInstanceInterface(ctx);
+		}
+
+		if (caseDef.testRobustness2)
+			return Robustness2ScalarSingleton::getInstanceInterface(ctx);
+		return ImageRobustnessScalarSingleton::getInstanceInterface(ctx);
+	}
+
 	if (formatIsR64(caseDef.format))
 	{
 		if (caseDef.testRobustness2)
@@ -293,6 +360,34 @@ const InstanceInterface& getInstanceInterface(Context& ctx, const CaseDef& caseD
 // Returns the appropriate singleton device for the given case.
 VkDevice getLogicalDevice (Context& ctx, const CaseDef& caseDef)
 {
+	if (caseDef.needsScalarBlockLayout())
+	{
+		if (caseDef.testPipelineRobustness)
+		{
+			if (formatIsR64(caseDef.format))
+			{
+				if (caseDef.testRobustness2)
+					return PipelineRobustnessRobustness2Int64AtomicsScalarSingleton::getDevice(ctx);
+				return PipelineRobustnessImageRobustnessInt64AtomicsScalarSingleton::getDevice(ctx);
+			}
+
+			if (caseDef.testRobustness2)
+				return PipelineRobustnessRobustness2ScalarSingleton::getDevice(ctx);
+			return PipelineRobustnessImageRobustnessScalarSingleton::getDevice(ctx);
+		}
+
+		if (formatIsR64(caseDef.format))
+		{
+			if (caseDef.testRobustness2)
+				return Robustness2Int64AtomicsScalarSingleton::getDevice(ctx);
+			return ImageRobustnessInt64AtomicsScalarSingleton::getDevice(ctx);
+		}
+
+		if (caseDef.testRobustness2)
+			return Robustness2ScalarSingleton::getDevice(ctx);
+		return ImageRobustnessScalarSingleton::getDevice(ctx);
+	}
+
 	if (caseDef.testPipelineRobustness)
 	{
 		if (formatIsR64(caseDef.format))
@@ -306,24 +401,36 @@ VkDevice getLogicalDevice (Context& ctx, const CaseDef& caseDef)
 			return PipelineRobustnessRobustness2Singleton::getDevice(ctx);
 		return PipelineRobustnessImageRobustnessSingleton::getDevice(ctx);
 	}
-	else
-	{
-		if (formatIsR64(caseDef.format))
-		{
-			if (caseDef.testRobustness2)
-				return Robustness2Int64AtomicsSingleton::getDevice(ctx);
-			return ImageRobustnessInt64AtomicsSingleton::getDevice(ctx);
-		}
 
+	if (formatIsR64(caseDef.format))
+	{
 		if (caseDef.testRobustness2)
-			return Robustness2Singleton::getDevice(ctx);
-		return ImageRobustnessSingleton::getDevice(ctx);
+			return Robustness2Int64AtomicsSingleton::getDevice(ctx);
+		return ImageRobustnessInt64AtomicsSingleton::getDevice(ctx);
 	}
+
+	if (caseDef.testRobustness2)
+		return Robustness2Singleton::getDevice(ctx);
+	return ImageRobustnessSingleton::getDevice(ctx);
 }
 
 // Returns the appropriate singleton device driver for the given case.
 const DeviceInterface& getDeviceInterface(Context& ctx, const CaseDef& caseDef)
 {
+	if (caseDef.needsScalarBlockLayout())
+	{
+		if (formatIsR64(caseDef.format))
+		{
+			if (caseDef.testRobustness2)
+				return Robustness2Int64AtomicsScalarSingleton::getDeviceInterface(ctx);
+			return ImageRobustnessInt64AtomicsScalarSingleton::getDeviceInterface(ctx);
+		}
+
+		if (caseDef.testRobustness2)
+			return Robustness2ScalarSingleton::getDeviceInterface(ctx);
+		return ImageRobustnessScalarSingleton::getDeviceInterface(ctx);
+	}
+
 	if (formatIsR64(caseDef.format))
 	{
 		if (caseDef.testRobustness2)
@@ -507,8 +614,11 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 
 	context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
 
-	context.requireDeviceFunctionality("VK_EXT_scalar_block_layout");
-	features2.pNext = &scalarLayoutFeatures;
+	if (context.isDeviceFunctionalitySupported("VK_EXT_scalar_block_layout"))
+	{
+		scalarLayoutFeatures.pNext = features2.pNext;
+		features2.pNext = &scalarLayoutFeatures;
+	}
 
 	if (context.isDeviceFunctionalitySupported("VK_EXT_image_robustness"))
 	{
@@ -569,7 +679,7 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 	}
 
 	// Check needed properties and features
-	if (!scalarLayoutFeatures.scalarBlockLayout)
+	if (m_data.needsScalarBlockLayout() && !scalarLayoutFeatures.scalarBlockLayout)
 		TCU_THROW(NotSupportedError, "Scalar block layout not supported");
 
 	if (m_data.stage == STAGE_VERTEX && !features2.features.vertexPipelineStoresAndAtomics)
@@ -1601,10 +1711,15 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 	}
 
 
+	const bool		needsScalarLayout	= m_data.needsScalarBlockLayout();
+	const uint32_t	shaderBuildOptions	= (needsScalarLayout
+										? static_cast<uint32_t>(vk::ShaderBuildOptions::FLAG_ALLOW_SCALAR_OFFSETS)
+										: 0u);
+
 	const bool is64BitFormat = formatIsR64(m_data.format);
 	std::string support =	"#version 460 core\n"
-							"#extension GL_EXT_nonuniform_qualifier : enable\n"
-							"#extension GL_EXT_scalar_block_layout : enable\n"
+							"#extension GL_EXT_nonuniform_qualifier : enable\n" +
+							(needsScalarLayout ? std::string("#extension GL_EXT_scalar_block_layout : enable\n") : std::string()) +
 							"#extension GL_EXT_samplerless_texture_functions : enable\n"
 							"#extension GL_EXT_control_flow_attributes : enable\n"
 							"#extension GL_EXT_shader_image_load_formatted : enable\n";
@@ -1637,7 +1752,7 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 				"}\n";
 
 			programCollection.glslSources.add("test") << glu::ComputeSource(css.str())
-				<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, is64BitFormat ? vk::SPIRV_VERSION_1_3 : vk::SPIRV_VERSION_1_0, vk::ShaderBuildOptions::FLAG_ALLOW_SCALAR_OFFSETS);
+				<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, is64BitFormat ? vk::SPIRV_VERSION_1_3 : vk::SPIRV_VERSION_1_0, shaderBuildOptions);
 			break;
 		}
 	case STAGE_RAYGEN:
@@ -1652,7 +1767,7 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 				"}\n";
 
 			programCollection.glslSources.add("test") << glu::RaygenSource(css.str())
-				<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_0, vk::ShaderBuildOptions::FLAG_ALLOW_SCALAR_OFFSETS);
+				<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_0, shaderBuildOptions);
 			break;
 		}
 	case STAGE_VERTEX:
@@ -1669,7 +1784,7 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 				"}\n";
 
 			programCollection.glslSources.add("test") << glu::VertexSource(vss.str())
-				<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_0, vk::ShaderBuildOptions::FLAG_ALLOW_SCALAR_OFFSETS);
+				<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_0, shaderBuildOptions);
 			break;
 		}
 	case STAGE_FRAGMENT:
@@ -1684,7 +1799,7 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 				"}\n";
 
 			programCollection.glslSources.add("vert") << glu::VertexSource(vss.str())
-				<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_0, vk::ShaderBuildOptions::FLAG_ALLOW_SCALAR_OFFSETS);
+				<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_0, shaderBuildOptions);
 
 			std::stringstream fss;
 			fss << support
@@ -1696,7 +1811,7 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 				"}\n";
 
 			programCollection.glslSources.add("test") << glu::FragmentSource(fss.str())
-				<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_0, vk::ShaderBuildOptions::FLAG_ALLOW_SCALAR_OFFSETS);
+				<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_0, shaderBuildOptions);
 			break;
 		}
 	}
@@ -1735,7 +1850,7 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 			fillShader << "}\n";
 
 		programCollection.glslSources.add("fillShader") << glu::ComputeSource(fillShader.str())
-			<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, is64BitFormat ? vk::SPIRV_VERSION_1_3 : vk::SPIRV_VERSION_1_0, vk::ShaderBuildOptions::FLAG_ALLOW_SCALAR_OFFSETS);
+			<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, is64BitFormat ? vk::SPIRV_VERSION_1_3 : vk::SPIRV_VERSION_1_0, shaderBuildOptions);
 	}
 
 }
@@ -3478,6 +3593,14 @@ static void cleanupGroup (tcu::TestCaseGroup* group)
 	PipelineRobustnessRobustness2Singleton::destroy();
 	PipelineRobustnessImageRobustnessInt64AtomicsSingleton::destroy();
 	PipelineRobustnessRobustness2Int64AtomicsSingleton::destroy();
+	Robustness2Int64AtomicsScalarSingleton::destroy();
+	ImageRobustnessInt64AtomicsScalarSingleton::destroy();
+	ImageRobustnessScalarSingleton::destroy();
+	Robustness2ScalarSingleton::destroy();
+	PipelineRobustnessImageRobustnessScalarSingleton::destroy();
+	PipelineRobustnessRobustness2ScalarSingleton::destroy();
+	PipelineRobustnessImageRobustnessInt64AtomicsScalarSingleton::destroy();
+	PipelineRobustnessRobustness2Int64AtomicsScalarSingleton::destroy();
 }
 
 tcu::TestCaseGroup* createRobustness2Tests (tcu::TestContext& testCtx)
