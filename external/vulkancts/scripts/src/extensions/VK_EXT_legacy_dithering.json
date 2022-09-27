@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": ""
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceLegacyDitheringFeaturesEXT":
+		[
+			{ "features": ["legacyDithering"],				"requirements": ["VK_EXT_legacy_dithering"] }
+		]
+	}
+}

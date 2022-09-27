@@ -125,6 +125,7 @@ const VkPhysicalDeviceImageProcessingFeaturesQCOM&						getImageProcessingFeatur
 const VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT&					getSubpassMergeFeedbackFeaturesEXT					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT>();				}
 const VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT&				getShaderModuleIdentifierFeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT>();				}
 const VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT&	getRasterizationOrderAttachmentAccessFeaturesEXT	(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT>();	}
+const VkPhysicalDeviceLegacyDitheringFeaturesEXT&						getLegacyDitheringFeaturesEXT						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceLegacyDitheringFeaturesEXT>();					}
 const VkPhysicalDeviceTilePropertiesFeaturesQCOM&						getTilePropertiesFeaturesQCOM						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceTilePropertiesFeaturesQCOM>();					}
 const VkPhysicalDeviceAmigoProfilingFeaturesSEC&						getAmigoProfilingFeaturesSEC						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceAmigoProfilingFeaturesSEC>();						}
 const VkPhysicalDeviceProtectedMemoryFeatures&							getProtectedMemoryFeatures							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceProtectedMemoryFeatures>();						}

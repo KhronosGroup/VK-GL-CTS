@@ -3188,6 +3188,43 @@ tcu::TestStatus testPhysicalDeviceFeaturePrimitivesGeneratedQueryFeaturesEXT (Co
 	return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureLegacyDitheringFeaturesEXT (Context& context)
+{
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+	const InstanceDriver&		vki				(instance.getDriver());
+	const int					count			= 2u;
+	TestLog&					log				= context.getTestContext().getLog();
+	VkPhysicalDeviceFeatures2	extFeatures;
+	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+
+	VkPhysicalDeviceLegacyDitheringFeaturesEXT	deviceLegacyDitheringFeaturesEXT[count];
+	const bool									isLegacyDitheringFeaturesEXT = checkExtension(properties, "VK_EXT_legacy_dithering");
+
+	for (int ndx = 0; ndx < count; ++ndx)
+	{
+		deMemset(&deviceLegacyDitheringFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceLegacyDitheringFeaturesEXT));
+		deviceLegacyDitheringFeaturesEXT[ndx].sType = isLegacyDitheringFeaturesEXT ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_DITHERING_FEATURES_EXT : VK_STRUCTURE_TYPE_MAX_ENUM;
+		deviceLegacyDitheringFeaturesEXT[ndx].pNext = DE_NULL;
+
+		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		extFeatures.pNext = &deviceLegacyDitheringFeaturesEXT[ndx];
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+	}
+
+	if (isLegacyDitheringFeaturesEXT)
+		log << TestLog::Message << deviceLegacyDitheringFeaturesEXT[0] << TestLog::EndMessage;
+
+	if (isLegacyDitheringFeaturesEXT &&
+		(deviceLegacyDitheringFeaturesEXT[0].legacyDithering != deviceLegacyDitheringFeaturesEXT[1].legacyDithering))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceLegacyDitheringFeaturesEXT");
+	}
+	return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureMultisampledRenderToSingleSampledFeaturesEXT (Context& context)
 {
 	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
@@ -4014,6 +4051,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "color_write_enable_features_ext", "VkPhysicalDeviceColorWriteEnableFeaturesEXT", testPhysicalDeviceFeatureColorWriteEnableFeaturesEXT);
 	addFunctionCase(testGroup, "synchronization2_features", "VkPhysicalDeviceSynchronization2Features", testPhysicalDeviceFeatureSynchronization2Features);
 	addFunctionCase(testGroup, "primitives_generated_query_features_ext", "VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT", testPhysicalDeviceFeaturePrimitivesGeneratedQueryFeaturesEXT);
+	addFunctionCase(testGroup, "legacy_dithering_features_ext", "VkPhysicalDeviceLegacyDitheringFeaturesEXT", testPhysicalDeviceFeatureLegacyDitheringFeaturesEXT);
 	addFunctionCase(testGroup, "multisampled_render_to_single_sampled_features_ext", "VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT", testPhysicalDeviceFeatureMultisampledRenderToSingleSampledFeaturesEXT);
 	addFunctionCase(testGroup, "ycbcr2_plane444_formats_features_ext", "VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT", testPhysicalDeviceFeatureYcbcr2Plane444FormatsFeaturesEXT);
 	addFunctionCase(testGroup, "provoking_vertex_features_ext", "VkPhysicalDeviceProvokingVertexFeaturesEXT", testPhysicalDeviceFeatureProvokingVertexFeaturesEXT);

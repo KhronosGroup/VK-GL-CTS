@@ -264,6 +264,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceInlineUniformBlockFeaturesEXT.pNext;
 	}
 
+	vk::VkPhysicalDeviceLegacyDitheringFeaturesEXT physicalDeviceLegacyDitheringFeaturesEXT;
+	deMemset(&physicalDeviceLegacyDitheringFeaturesEXT, 0, sizeof(physicalDeviceLegacyDitheringFeaturesEXT));
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_legacy_dithering")) )
+	{
+		physicalDeviceLegacyDitheringFeaturesEXT.sType = getStructureType<VkPhysicalDeviceLegacyDitheringFeaturesEXT>();
+		*nextPtr = &physicalDeviceLegacyDitheringFeaturesEXT;
+		nextPtr  = &physicalDeviceLegacyDitheringFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDeviceLineRasterizationFeaturesEXT physicalDeviceLineRasterizationFeaturesEXT;
 	deMemset(&physicalDeviceLineRasterizationFeaturesEXT, 0, sizeof(physicalDeviceLineRasterizationFeaturesEXT));
 
@@ -1240,6 +1250,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceInlineUniformBlockFeaturesEXT.descriptorBindingInlineUniformBlockUpdateAfterBind == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature descriptorBindingInlineUniformBlockUpdateAfterBind not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_legacy_dithering")) )
+	{
+		if ( physicalDeviceLegacyDitheringFeaturesEXT.legacyDithering == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature legacyDithering not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

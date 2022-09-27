@@ -6100,6 +6100,13 @@ struct VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT
 	VkBool32		primitivesGeneratedQueryWithNonZeroStreams;
 };
 
+struct VkPhysicalDeviceLegacyDitheringFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		legacyDithering;
+};
+
 struct VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT
 {
 	VkStructureType	sType;

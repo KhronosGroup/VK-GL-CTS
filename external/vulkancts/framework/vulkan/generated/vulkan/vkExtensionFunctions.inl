@@ -1242,6 +1242,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_legacy_dithering")
+	{
+		return;
+	}
 	if (extName == "VK_QCOM_tile_properties")
 	{
 		return;
@@ -2657,6 +2661,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_legacy_dithering")
+	{
+		return;
+	}
 	if (extName == "VK_QCOM_tile_properties")
 	{
 		functions.push_back("vkGetFramebufferTilePropertiesQCOM");
@@ -2997,6 +3005,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_subpass_merge_feedback",
 	"VK_EXT_shader_module_identifier",
 	"VK_EXT_rasterization_order_attachment_access",
+	"VK_EXT_legacy_dithering",
 	"VK_QCOM_tile_properties",
 	"VK_SEC_amigo_profiling",
 };

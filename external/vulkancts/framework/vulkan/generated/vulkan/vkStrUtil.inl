@@ -1197,6 +1197,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyCheckpointProperti
 std::ostream&	operator<<	(std::ostream& s, const VkCheckpointData2NV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSynchronization2Features& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLegacyDitheringFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSubpassResolvePerformanceQueryEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMultisampledRenderToSingleSampledInfoEXT& value);

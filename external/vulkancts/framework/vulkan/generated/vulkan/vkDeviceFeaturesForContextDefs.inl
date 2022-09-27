@@ -125,6 +125,7 @@ const vk::VkPhysicalDeviceImageProcessingFeaturesQCOM&						Context::getImagePro
 const vk::VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT&					Context::getSubpassMergeFeedbackFeaturesEXT					(void) const { return m_device->getSubpassMergeFeedbackFeaturesEXT();				}
 const vk::VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT&				Context::getShaderModuleIdentifierFeaturesEXT				(void) const { return m_device->getShaderModuleIdentifierFeaturesEXT();				}
 const vk::VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT&	Context::getRasterizationOrderAttachmentAccessFeaturesEXT	(void) const { return m_device->getRasterizationOrderAttachmentAccessFeaturesEXT();	}
+const vk::VkPhysicalDeviceLegacyDitheringFeaturesEXT&						Context::getLegacyDitheringFeaturesEXT						(void) const { return m_device->getLegacyDitheringFeaturesEXT();					}
 const vk::VkPhysicalDeviceTilePropertiesFeaturesQCOM&						Context::getTilePropertiesFeaturesQCOM						(void) const { return m_device->getTilePropertiesFeaturesQCOM();					}
 const vk::VkPhysicalDeviceAmigoProfilingFeaturesSEC&						Context::getAmigoProfilingFeaturesSEC						(void) const { return m_device->getAmigoProfilingFeaturesSEC();						}
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&							Context::getProtectedMemoryFeatures							(void) const { return m_device->getProtectedMemoryFeatures();						}
