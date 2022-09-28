@@ -3308,7 +3308,7 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2, bool pipel
 										}
 
 										// Avoid too much duplication by excluding certain test cases
-										if (pipelineRobustness &&
+										if (pipelineRobustness && robustness2 &&
 											(lenCases[lenNdx].count == 0 || ((lenCases[lenNdx].count & (lenCases[lenNdx].count - 1)) != 0)))
 										{
 											continue;
