@@ -546,50 +546,30 @@ static VkPipelineRobustnessCreateInfoEXT getPipelineRobustnessInfo(bool robustne
 		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
 		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
 		case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
-			if (robustness2)
-			{
-				robustnessCreateInfo.storageBuffers = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_EXT;
-			}
-			else
-			{
-				robustnessCreateInfo.storageBuffers = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_2_EXT;
-			}
+			robustnessCreateInfo.storageBuffers	= (robustness2
+												? VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_2_EXT
+												: VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_EXT);
 			break;
 
 		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
 		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-			if (robustness2)
-			{
-				robustnessCreateInfo.images = VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_ROBUST_IMAGE_ACCESS_EXT;
-			}
-			else
-			{
-				robustnessCreateInfo.images = VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_ROBUST_IMAGE_ACCESS_2_EXT;
-			}
+			robustnessCreateInfo.images	= (robustness2
+										? VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_ROBUST_IMAGE_ACCESS_2_EXT
+										: VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_ROBUST_IMAGE_ACCESS_EXT);
 			break;
 
 		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
 		case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
 		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-			if (robustness2)
-			{
-				robustnessCreateInfo.uniformBuffers = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_EXT;
-			}
-			else
-			{
-				robustnessCreateInfo.uniformBuffers = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_2_EXT;
-			}
+			robustnessCreateInfo.uniformBuffers	= (robustness2
+												? VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_2_EXT
+												: VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_EXT);
 			break;
 
 		case VERTEX_ATTRIBUTE_FETCH:
-			if (robustness2)
-			{
-				robustnessCreateInfo.vertexInputs = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_EXT;
-			}
-			else
-			{
-				robustnessCreateInfo.vertexInputs = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_2_EXT;
-			}
+			robustnessCreateInfo.vertexInputs	= (robustness2
+												? VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_2_EXT
+												: VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_EXT);
 			break;
 
 		default:
