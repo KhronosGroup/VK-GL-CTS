@@ -448,7 +448,7 @@ tcu::TestStatus FSITestInstance::iterate (void)
 
 	de::MovePtr<BufferWithMemory> buffer;
 	buffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
-		vk, device, allocator, makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::Any));
+		vk, device, allocator, makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible));
 
 	flushAlloc(vk, device, buffer->getAllocation());
 

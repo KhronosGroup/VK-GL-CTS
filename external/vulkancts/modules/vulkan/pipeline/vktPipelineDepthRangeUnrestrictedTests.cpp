@@ -881,7 +881,7 @@ DepthRangeUnrestrictedTestInstance::DepthRangeUnrestrictedTestInstance	(Context&
 			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// VkStructureType			sType;
 			DE_NULL,											// const void*				pNext;
 			0u,													// VkAccessFlags			srcAccessMask;
-			VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,		// VkAccessFlags			dstAccessMask;
+			VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,		// VkAccessFlags			dstAccessMask;
 			VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout			oldLayout;
 			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	// VkImageLayout			newLayout;
 			VK_QUEUE_FAMILY_IGNORED,							// deUint32					srcQueueFamilyIndex;
@@ -1268,7 +1268,7 @@ void DepthBoundsRangeUnrestrictedTestInstance::prepareCommandBuffer (bool firstD
 
 	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
-	vk.cmdPipelineBarrier(*m_cmdBuffer, (firstDraw ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT : VK_PIPELINE_STAGE_TRANSFER_BIT), VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, (VkDependencyFlags)0,
+	vk.cmdPipelineBarrier(*m_cmdBuffer, (firstDraw ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT : VK_PIPELINE_STAGE_TRANSFER_BIT), VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, (VkDependencyFlags)0,
 		0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(m_imageLayoutBarriers), m_imageLayoutBarriers);
 
 	prepareRenderPass((firstDraw ? *m_renderPass : *m_renderPassSecondDraw),
