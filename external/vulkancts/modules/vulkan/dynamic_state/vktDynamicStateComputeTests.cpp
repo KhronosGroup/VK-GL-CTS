@@ -446,7 +446,7 @@ void setCoarseSamplingOrder (const DeviceInterface* vkd, VkCommandBuffer cmdBuff
 		{
 			0u,	//	deUint32	pixelX;
 			1u,	//	deUint32	pixelY;
-			1u,	//	deUint32	sample;
+			0u,	//	deUint32	sample;
 		},
 	};
 	const VkCoarseSampleOrderCustomNV order =
