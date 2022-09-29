@@ -195,7 +195,8 @@ public:
 																		 deUint32 renderWidth,
 																		 deUint32 renderHeight,
 																		 vk::VkComponentMapping componentMapping = vk::makeComponentMappingRGBA(),
-																		 bool requireRobustness2 = false);
+																		 bool requireRobustness2 = false,
+																		 bool requireImageViewMinLod = false);
 
 											TextureRenderer				(Context& context,
 																		 vk::VkSampleCountFlagBits sampleCount,
@@ -206,7 +207,8 @@ public:
 																		 vk::VkImageType imageType = vk::VK_IMAGE_TYPE_2D,
 																		 vk::VkImageViewType imageViewType = vk::VK_IMAGE_VIEW_TYPE_2D,
 																		 vk::VkFormat imageFormat = vk::VK_FORMAT_R8G8B8A8_UNORM,
-																		 bool requireRobustness2 = false);
+																		 bool requireRobustness2 = false,
+																		 bool requireImageViewMinLod = false);
 
 											~TextureRenderer			(void);
 
@@ -326,6 +328,7 @@ protected:
 	vk::VkComponentMapping					m_componentMapping;
 
 	bool									m_requireRobustness2;
+	bool									m_requireImageViewMinLod;
 
 private:
 	vk::Move<vk::VkDescriptorSet>			makeDescriptorSet			(const vk::VkDescriptorPool descriptorPool, const vk::VkDescriptorSetLayout setLayout) const;
