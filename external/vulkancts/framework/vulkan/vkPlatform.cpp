@@ -728,6 +728,8 @@ VkResult DeviceDriverSC::createCommandPoolHandlerNorm (VkDevice								device,
 	{
 		VkDeviceSize cmdPoolSize	= de::max(memC.maxCommandPoolReservedSize, m_commandPoolMinimumSize);
 		cmdPoolSize					= de::max(cmdPoolSize, memC.commandBufferCount * m_commandBufferMinimumSize);
+		if (m_physicalDeviceVulkanSC10Properties.maxCommandBufferSize < UINT64_MAX)
+			cmdPoolSize = de::min(cmdPoolSize, m_physicalDeviceVulkanSC10Properties.maxCommandBufferSize * memC.commandBufferCount);
 		cpMemReservationCI			=
 		{
 			VK_STRUCTURE_TYPE_COMMAND_POOL_MEMORY_RESERVATION_CREATE_INFO,			// VkStructureType		sType
