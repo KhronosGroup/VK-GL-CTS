@@ -653,6 +653,7 @@ void GraphicsCacheTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&
 			teseShaderModule,
 			geomShaderModule,
 			DE_NULL,
+			nullptr,
 			PipelineRenderingCreateInfoWrapper(),
 			*m_cache,
 			pipelineCreationFeedbackWrapper[1])
@@ -662,7 +663,6 @@ void GraphicsCacheTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&
 			0u,
 			fragShaderModule,
 			&depthStencilStateParams,
-			DE_NULL,
 			DE_NULL,
 			DE_NULL,
 			*m_cache,

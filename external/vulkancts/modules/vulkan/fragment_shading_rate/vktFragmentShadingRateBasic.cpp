@@ -2606,14 +2606,14 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 											  DE_NULL,
 											  geomShader,
 											  DE_NULL,
+											  shadingRateState,
 											  dynamicRenderingState)
 			.setupFragmentShaderState(pipelineLayout,
 									  renderPass,
 									  0u,
 									  fragShader,
 									  depthStencilState,
-									  multisampleState,
-									  shadingRateState)
+									  multisampleState)
 			.setupFragmentOutputState(renderPass, 0u, DE_NULL, multisampleState)
 			.setMonolithicPipelineLayout(pipelineLayout)
 			.buildPipeline();
@@ -2657,14 +2657,14 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 												  DE_NULL,
 												  geomShader,
 												  DE_NULL,
+												  shadingRateState,
 												  dynamicRenderingState)
 				.setupFragmentShaderState(pipelineLayout,
 										  renderPass,
 										  0u,
 										  fragShader,
 										  depthStencilState,
-										  multisampleState,
-										  shadingRateState)
+										  multisampleState)
 				.setupFragmentOutputState(renderPass, 0u, DE_NULL, multisampleState)
 				.setMonolithicPipelineLayout(pipelineLayout)
 				.buildPipeline();

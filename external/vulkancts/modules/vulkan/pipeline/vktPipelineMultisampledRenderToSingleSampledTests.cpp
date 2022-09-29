@@ -595,6 +595,7 @@ MovePtr<GraphicsPipelineWrapper> makeGraphicsPipeline (const DeviceInterface&			
 											  DE_NULL,
 											  DE_NULL,
 											  DE_NULL,
+											  nullptr,
 											  pipelineRenderingCreateInfo)
 			.setupFragmentShaderState(pipelineLayout,
 									  renderPass,

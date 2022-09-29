@@ -2210,6 +2210,7 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 						tescSpecInfo.get(),
 						teseSpecInfo.get(),
 						geomSpecInfo.get(),
+						nullptr,
 						PipelineRenderingCreateInfoWrapper(),
 						pipelineCache.get())
 					.setupFragmentShaderState(
@@ -2219,7 +2220,6 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 						fragModule,
 						&depthStencilState,
 						&multisampleState,
-						nullptr,
 						fragSpecInfo.get(),
 						pipelineCache.get())
 					.setupFragmentOutputState(*renderPass, 0u, &colorBlendState, &multisampleState, pipelineCache.get())
@@ -2295,6 +2295,7 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 							tescToRun.getSpecInfo(),
 							teseToRun.getSpecInfo(),
 							geomToRun.getSpecInfo(),
+							nullptr,
 							PipelineRenderingCreateInfoWrapper(),
 							pipelineCache.get())
 						.setupFragmentShaderState2(
@@ -2305,7 +2306,6 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 							fragToRun.getModuleIdCreateInfo(),
 							&depthStencilState,
 							&multisampleState,
-							nullptr,
 							fragToRun.getSpecInfo(),
 							pipelineCache.get())
 						.setupFragmentOutputState(*renderPass, 0u, &colorBlendState, &multisampleState, pipelineCache.get())
@@ -3299,6 +3299,7 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 							nullptr,
 							nullptr,
 							nullptr,
+							nullptr,
 							PipelineRenderingCreateInfoWrapper(),
 							pipelineCache.get())
 						.setupFragmentShaderState(
@@ -3308,7 +3309,6 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 							fragModule.get(),
 							&depthStencilState,
 							&multisampleState,
-							nullptr,
 							nullptr,
 							pipelineCache.get())
 						.setupFragmentOutputState(
@@ -3373,6 +3373,7 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 						nullptr,
 						nullptr,
 						nullptr,
+						nullptr,
 						PipelineRenderingCreateInfoWrapper(),
 						pipelineCache.get())
 					.setupFragmentShaderState2(
@@ -3383,7 +3384,6 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 						PipelineShaderStageModuleIdentifierCreateInfoWrapper(fragIdInfo.get()),
 						&depthStencilState,
 						&multisampleState,
-						nullptr,
 						nullptr,
 						pipelineCache.get())
 					.setupFragmentOutputState(
