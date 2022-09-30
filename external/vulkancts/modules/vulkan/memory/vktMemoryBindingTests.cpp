@@ -477,6 +477,7 @@ public:
 			pageableDeviceLocalMemoryFeature.pageableDeviceLocalMemory = VK_TRUE;
 
 			std::vector<const char*>						deviceExtensions;
+			deviceExtensions.push_back("VK_EXT_memory_priority");
 			deviceExtensions.push_back("VK_EXT_pageable_device_local_memory");
 
 			VkDeviceQueueCreateInfo							queueInfo		=

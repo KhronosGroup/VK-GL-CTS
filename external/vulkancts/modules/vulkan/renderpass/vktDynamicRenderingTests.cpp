@@ -302,7 +302,8 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&	vk,
 									   const UVec2				renderSize,
 									   const deUint32			colorAttachmentCount,
 									   const VkFormat*			pColorAttachmentFormats,
-									   const VkFormat			depthStencilAttachmentFormat)
+									   const VkFormat			depthAttachmentFormat,
+									   const VkFormat			stencilAttachmentFormat)
 {
 	const VkVertexInputBindingDescription vertexInputBindingDescription =
 	{
@@ -475,8 +476,8 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&	vk,
 		0u,																// deUint32			viewMask;
 		colorAttachmentCount,											// deUint32			colorAttachmentCount;
 		pColorAttachmentFormats,										// const VkFormat*	pColorAttachmentFormats;
-		depthStencilAttachmentFormat,									// VkFormat			depthAttachmentFormat;
-		depthStencilAttachmentFormat,									// VkFormat			stencilAttachmentFormat;
+		depthAttachmentFormat,											// VkFormat			depthAttachmentFormat;
+		stencilAttachmentFormat,										// VkFormat			stencilAttachmentFormat;
 	};
 
 	const VkGraphicsPipelineCreateInfo graphicsPipelineInfo =
@@ -631,8 +632,6 @@ void beginSecondaryCmdBuffer (const DeviceInterface&	vk,
 							  const deUint32			colorAttachmentCount,
 							  const ImagesFormat&		imagesFormat)
 {
-	const VkFormat depthStencilFormat = (imagesFormat.depth != VK_FORMAT_UNDEFINED) ?
-		imagesFormat.depth : imagesFormat.stencil;
 	const VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,	// VkStructureType			sType;
@@ -641,8 +640,8 @@ void beginSecondaryCmdBuffer (const DeviceInterface&	vk,
 		0u,																	// uint32_t					viewMask;
 		colorAttachmentCount,												// uint32_t					colorAttachmentCount;
 		(colorAttachmentCount > 0) ? imagesFormat.colors : DE_NULL,			// const VkFormat*			pColorAttachmentFormats;
-		depthStencilFormat,													// VkFormat					depthAttachmentFormat;
-		depthStencilFormat,													// VkFormat					stencilAttachmentFormat;
+		imagesFormat.depth,													// VkFormat					depthAttachmentFormat;
+		imagesFormat.stencil,												// VkFormat					stencilAttachmentFormat;
 		VK_SAMPLE_COUNT_1_BIT,												// VkSampleCountFlagBits	rasterizationSamples;
 	};
 
@@ -855,7 +854,7 @@ tcu::TestStatus DynamicRenderingTestInstance::iterate (void)
 		Move<VkPipeline>	pipeline	= makeGraphicsPipeline(vk, device, *m_pipelineLayout,
 															  *m_vertexModule, *m_fragmentModule,
 															   m_parameters.renderSize, colorAtchCount, imagesFormat.colors,
-															   ((imagesFormat.depth == VK_FORMAT_UNDEFINED) ? imagesFormat.stencil : imagesFormat.depth));
+															   imagesFormat.depth, imagesFormat.stencil);
 
 		rendering(*pipeline, attachmentBindInfos, colorAtchCount, imagesLayout, imagesFormat);
 	}

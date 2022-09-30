@@ -1652,8 +1652,8 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 						m_data.framebufferDim.width,								//  deUint32			width;
 						m_data.framebufferDim.height,								//  deUint32			height;
 						m_data.numColorLayers,										//  deUint32			layerCount;
-						0u,															//  deUint32			viewFormatCount;
-						DE_NULL														//  const VkFormat*		pViewFormats;
+						1u,															//  deUint32			viewFormatCount;
+						&cbFormat													//  const VkFormat*		pViewFormats;
 					}
 				);
 				if (m_data.useAttachment())
@@ -1666,8 +1666,8 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 						srWidth,													//  deUint32			width;
 						srHeight,													//  deUint32			height;
 						numSRLayers,												//  deUint32			layerCount;
-						0u,															//  deUint32			viewFormatCount;
-						DE_NULL														//  const VkFormat*		pViewFormats;
+						1u,															//  deUint32			viewFormatCount;
+						&srFormat													//  const VkFormat*		pViewFormats;
 					}
 					);
 
@@ -1681,8 +1681,8 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 						m_data.framebufferDim.width,								//  deUint32			width;
 						m_data.framebufferDim.height,								//  deUint32			height;
 						m_data.numColorLayers,										//  deUint32			layerCount;
-						0u,															//  deUint32			viewFormatCount;
-						DE_NULL														//  const VkFormat*		pViewFormats;
+						1u,															//  deUint32			viewFormatCount;
+						&dsFormat													//  const VkFormat*		pViewFormats;
 					}
 					);
 
