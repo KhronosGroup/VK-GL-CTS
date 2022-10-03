@@ -2981,17 +2981,6 @@ bool RayTracingHeaderBottomAddressTestInstance::areAddressesDifferent (const std
 	return (matches == 0);
 }
 
-// note that these names should be auto-generated but they do not
-#ifndef VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME
-#define VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME "VK_KHR_acceleration_structure"
-#endif
-#ifndef VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME
-#define VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME "VK_KHR_ray_tracing_maintenance1"
-#endif
-#ifndef VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME
-#define VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME "VK_KHR_ray_tracing_pipeline"
-#endif
-
 template<class X, class... Y>
 inline de::SharedPtr<X> makeShared(Y&&... ctorArgs) {
 	return de::SharedPtr<X>(new X(std::forward<Y>(ctorArgs)...));
@@ -3369,12 +3358,6 @@ TestStatus QueryPoolResultsPointersInstance::iterate (void)
 	return pass ? TestStatus::pass("") : TestStatus::fail("");
 }
 
-#ifndef VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME
-#define VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME "VK_KHR_synchronization2"
-#endif
-#ifndef VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME
-#define VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME "VK_KHR_push_descriptor"
-#endif
 
 struct CopyWithinPipelineParams
 {

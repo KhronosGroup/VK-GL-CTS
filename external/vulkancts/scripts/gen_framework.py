@@ -2321,10 +2321,6 @@ def writeDeviceFeatures(api, dfDefs, filename):
 		extensionNameDefinition = extNameDef
 		if not extensionNameDefinition:
 			extensionNameDefinition = 'DECL{0}_{1}_EXTENSION_NAME'.format((sExtSuffix if sExtSuffix else ''), sType)
-		# construct defines with names
-		if extName:
-			extensionDefines.append(f'#define {extNameDef} \"{extName}\"')
-		else:
 			extensionDefines.append(f'#define {extensionNameDefinition} "not_existent_feature"')
 		# construct makeFeatureDesc template function definitions
 		sTypeName = "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_{0}_FEATURES{1}".format(sType, sVerSuffix + sExtSuffix)
@@ -2537,10 +2533,6 @@ def writeDeviceProperties(api, dpDefs, filename):
 		extensionNameDefinition = extNameDef
 		if not extensionNameDefinition:
 			extensionNameDefinition = 'DECL{0}_{1}_EXTENSION_NAME'.format((sExtSuffix if sExtSuffix else ''), sType)
-		# construct defines with names
-		if extName:
-			extensionDefines.append(f'#define {extNameDef} \"{extName}\"')
-		else:
 			extensionDefines.append(f'#define {extensionNameDefinition} "core_property"')
 		# construct makePropertyDesc template function definitions
 		sTypeName = "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_{0}_PROPERTIES{1}".format(sType, sVerSuffix + sExtSuffix)
