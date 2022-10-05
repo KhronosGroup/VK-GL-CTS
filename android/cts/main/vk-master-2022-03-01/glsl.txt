@@ -40,6 +40,10 @@ dEQP-VK.glsl.switch.empty_case_default_static_vertex
 dEQP-VK.glsl.switch.empty_case_default_static_fragment
 dEQP-VK.glsl.switch.empty_case_default_uniform_vertex
 dEQP-VK.glsl.switch.empty_case_default_uniform_fragment
+dEQP-VK.glsl.crash_test.divbyzero_vert
+dEQP-VK.glsl.crash_test.divbyzero_tesc
+dEQP-VK.glsl.crash_test.divbyzero_tese
+dEQP-VK.glsl.crash_test.divbyzero_geom
 dEQP-VK.glsl.crash_test.divbyzero_frag
 dEQP-VK.glsl.crash_test.divbyzero_comp
 dEQP-VK.glsl.builtin_var.fragcoord_msaa_input.1_bit_no_sample_shading
