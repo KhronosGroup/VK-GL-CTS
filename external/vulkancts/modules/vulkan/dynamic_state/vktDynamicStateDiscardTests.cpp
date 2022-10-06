@@ -56,6 +56,36 @@ enum TestDynamicStateDiscard
 	TEST_LINE_WIDTH,
 };
 
+VkFormat pickSupportedStencilFormat	(const InstanceInterface&	instanceInterface,
+									 const VkPhysicalDevice		device)
+{
+	static const VkFormat stencilFormats[] =
+	{
+		VK_FORMAT_S8_UINT,
+		VK_FORMAT_D16_UNORM_S8_UINT,
+		VK_FORMAT_D24_UNORM_S8_UINT,
+		VK_FORMAT_D32_SFLOAT_S8_UINT,
+	};
+
+	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(stencilFormats); ++i)
+	{
+		VkFormatProperties formatProps;
+		instanceInterface.getPhysicalDeviceFormatProperties(device, stencilFormats[i], &formatProps);
+
+		if ((formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0)
+		{
+			return stencilFormats[i];
+		}
+	}
+	TCU_FAIL("Cannot find supported stencil format");
+}
+
+bool isFormatStencil (VkFormat format)
+{
+	const auto textureFormat = vk::mapVkFormat(format);
+	return (textureFormat.order == tcu::TextureFormat::DS || textureFormat.order == tcu::TextureFormat::S);
+}
+
 class DiscardTestInstance : public DynamicStateBaseClass
 {
 public:
@@ -256,7 +286,7 @@ void DiscardTestInstance::beginRenderPass (const vk::VkClearColorValue& clearCol
 		vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 		0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
 
-	if (m_depthStencilAttachmentFormat == vk::VK_FORMAT_S8_UINT) {
+	if (isFormatStencil(m_depthStencilAttachmentFormat)) {
 		initialTransitionStencil2DImage(m_vk, *m_cmdBuffer, m_depthStencilImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
 	}
 	else
@@ -350,7 +380,7 @@ class StencilTestInstance : public DiscardTestInstance
 {
 public:
 	StencilTestInstance(Context& context, vk::PipelineConstructionType pipelineConstructionType, const char* vertexShaderName, const char* fragmentShaderName)
-		: DiscardTestInstance(context, pipelineConstructionType, vertexShaderName, fragmentShaderName, vk::VK_FORMAT_S8_UINT)
+		: DiscardTestInstance(context, pipelineConstructionType, vertexShaderName, fragmentShaderName, pickSupportedStencilFormat(context.getInstanceInterface(), context.getPhysicalDevice()))
 	{
 		m_dynamicStates = { vk::VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK, vk::VK_DYNAMIC_STATE_STENCIL_WRITE_MASK, vk::VK_DYNAMIC_STATE_STENCIL_REFERENCE };
 		const auto features = context.getDeviceFeatures();
@@ -372,7 +402,16 @@ public:
 	virtual tcu::TestStatus verifyResults(void) {
 		const vk::VkQueue					queue			= m_context.getUniversalQueue();
 		const vk::VkOffset3D				zeroOffset		= { 0, 0, 0 };
-		const tcu::ConstPixelBufferAccess	renderedFrame	= m_depthStencilImage->readSurface(queue, m_context.getDefaultAllocator(), vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_STENCIL_BIT);
+		tcu::ConstPixelBufferAccess			renderedFrame	= m_depthStencilImage->readSurface(queue, m_context.getDefaultAllocator(), vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_STENCIL_BIT);
+		de::SharedPtr<tcu::TextureLevel>	stencilFrame;
+
+		if (tcu::isCombinedDepthStencilType(renderedFrame.getFormat().type))
+		{
+			stencilFrame = de::SharedPtr<tcu::TextureLevel>( new tcu::TextureLevel(tcu::TextureFormat(tcu::TextureFormat::S, tcu::TextureFormat::UNSIGNED_INT8), WIDTH, HEIGHT, 1u));
+
+			tcu::copy(stencilFrame->getAccess(), tcu::getEffectiveDepthStencilAccess(renderedFrame, tcu::Sampler::MODE_STENCIL));
+			renderedFrame = stencilFrame->getAccess();
+		}
 
 		for (int i = 0; i < WIDTH; ++i) {
 			for (int j = 0; j < HEIGHT; ++j) {
@@ -390,7 +429,7 @@ class ViewportTestInstance : public DiscardTestInstance
 {
 public:
 	ViewportTestInstance(Context& context, vk::PipelineConstructionType pipelineConstructionType, const char* vertexShaderName, const char* fragmentShaderName)
-		: DiscardTestInstance(context, pipelineConstructionType, vertexShaderName, fragmentShaderName, vk::VK_FORMAT_S8_UINT)
+		: DiscardTestInstance(context, pipelineConstructionType, vertexShaderName, fragmentShaderName, pickSupportedStencilFormat(context.getInstanceInterface(), context.getPhysicalDevice()))
 	{
 		m_dynamicStates = { vk::VK_DYNAMIC_STATE_VIEWPORT };
 		DynamicStateBaseClass::initialize();
@@ -426,7 +465,7 @@ class ScissorTestInstance : public DiscardTestInstance
 {
 public:
 	ScissorTestInstance(Context& context, vk::PipelineConstructionType pipelineConstructionType, const char* vertexShaderName, const char* fragmentShaderName)
-		: DiscardTestInstance(context, pipelineConstructionType, vertexShaderName, fragmentShaderName, vk::VK_FORMAT_S8_UINT)
+		: DiscardTestInstance(context, pipelineConstructionType, vertexShaderName, fragmentShaderName, pickSupportedStencilFormat(context.getInstanceInterface(), context.getPhysicalDevice()))
 	{
 		m_dynamicStates = { vk::VK_DYNAMIC_STATE_SCISSOR };
 		DynamicStateBaseClass::initialize();
@@ -494,7 +533,7 @@ class BlendTestInstance : public DiscardTestInstance
 {
 public:
 	BlendTestInstance(Context& context, vk::PipelineConstructionType pipelineConstructionType, const char* vertexShaderName, const char* fragmentShaderName)
-		: DiscardTestInstance(context, pipelineConstructionType, vertexShaderName, fragmentShaderName, vk::VK_FORMAT_S8_UINT)
+		: DiscardTestInstance(context, pipelineConstructionType, vertexShaderName, fragmentShaderName, pickSupportedStencilFormat(context.getInstanceInterface(), context.getPhysicalDevice()))
 	{
 		m_dynamicStates = { vk::VK_DYNAMIC_STATE_BLEND_CONSTANTS };
 		DynamicStateBaseClass::initialize();
@@ -530,7 +569,7 @@ class LineTestInstance : public DiscardTestInstance
 {
 public:
 	LineTestInstance(Context& context, vk::PipelineConstructionType pipelineConstructionType, const char* vertexShaderName, const char* fragmentShaderName)
-		: DiscardTestInstance(context, pipelineConstructionType, vertexShaderName, fragmentShaderName, vk::VK_FORMAT_S8_UINT)
+		: DiscardTestInstance(context, pipelineConstructionType, vertexShaderName, fragmentShaderName, pickSupportedStencilFormat(context.getInstanceInterface(), context.getPhysicalDevice()))
 	{
 		m_dynamicStates = { vk::VK_DYNAMIC_STATE_LINE_WIDTH };
 		DynamicStateBaseClass::initialize();
