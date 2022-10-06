@@ -3413,11 +3413,8 @@ tcu::TestStatus executeSecondaryBufferTwiceTest(Context& context)
 		// record secondary command buffer
 		VK_CHECK(vk.beginCommandBuffer(cmdBuffers[ndx], &secCmdBufBeginInfo));
 		{
-			// allow execution of event during every stage of pipeline
-			VkPipelineStageFlags stageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-
 			// wait for event
-			vk.cmdWaitEvents(cmdBuffers[ndx], 1, &eventOne.get(), stageMask, stageMask, 0, DE_NULL, 0u, DE_NULL, 0u, DE_NULL);
+			vk.cmdWaitEvents(cmdBuffers[ndx], 1, &eventOne.get(), VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, DE_NULL, 0u, DE_NULL, 0u, DE_NULL);
 		}
 		// end recording of secondary buffers
 		endCommandBuffer(vk, cmdBuffers[ndx]);

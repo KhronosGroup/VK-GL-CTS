@@ -178,6 +178,8 @@ vk::Move<vk::VkDevice> createTestDevice (Context&						context,
 	extensions.push_back("VK_KHR_external_memory_win32");
 	extensions.push_back("VK_KHR_win32_keyed_mutex");
 
+	const auto& features = context.getDeviceFeatures();
+
 	try
 	{
 		std::vector<vk::VkDeviceQueueCreateInfo>	queues;
@@ -212,7 +214,7 @@ vk::Move<vk::VkDevice> createTestDevice (Context&						context,
 
 			(deUint32)extensions.size(),
 			extensions.empty() ? DE_NULL : &extensions[0],
-			0u
+			&features
 		};
 
 		return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &createInfo);
