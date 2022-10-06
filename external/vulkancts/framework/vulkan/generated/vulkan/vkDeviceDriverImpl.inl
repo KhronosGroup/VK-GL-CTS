@@ -1634,6 +1634,161 @@ VkResult DeviceDriver::createPrivateDataSlot (VkDevice device, const VkPrivateDa
 	return m_vk.createPrivateDataSlot(device, pCreateInfo, pAllocator, pPrivateDataSlot);
 }
 
+void DeviceDriver::cmdSetTessellationDomainOriginEXT (VkCommandBuffer commandBuffer, VkTessellationDomainOrigin domainOrigin) const
+{
+	m_vk.cmdSetTessellationDomainOriginEXT(commandBuffer, domainOrigin);
+}
+
+void DeviceDriver::cmdSetDepthClampEnableEXT (VkCommandBuffer commandBuffer, VkBool32 depthClampEnable) const
+{
+	m_vk.cmdSetDepthClampEnableEXT(commandBuffer, depthClampEnable);
+}
+
+void DeviceDriver::cmdSetPolygonModeEXT (VkCommandBuffer commandBuffer, VkPolygonMode polygonMode) const
+{
+	m_vk.cmdSetPolygonModeEXT(commandBuffer, polygonMode);
+}
+
+void DeviceDriver::cmdSetRasterizationSamplesEXT (VkCommandBuffer commandBuffer, VkSampleCountFlagBits rasterizationSamples) const
+{
+	m_vk.cmdSetRasterizationSamplesEXT(commandBuffer, rasterizationSamples);
+}
+
+void DeviceDriver::cmdSetSampleMaskEXT (VkCommandBuffer commandBuffer, VkSampleCountFlagBits samples, const VkSampleMask* pSampleMask) const
+{
+	m_vk.cmdSetSampleMaskEXT(commandBuffer, samples, pSampleMask);
+}
+
+void DeviceDriver::cmdSetAlphaToCoverageEnableEXT (VkCommandBuffer commandBuffer, VkBool32 alphaToCoverageEnable) const
+{
+	m_vk.cmdSetAlphaToCoverageEnableEXT(commandBuffer, alphaToCoverageEnable);
+}
+
+void DeviceDriver::cmdSetAlphaToOneEnableEXT (VkCommandBuffer commandBuffer, VkBool32 alphaToOneEnable) const
+{
+	m_vk.cmdSetAlphaToOneEnableEXT(commandBuffer, alphaToOneEnable);
+}
+
+void DeviceDriver::cmdSetLogicOpEnableEXT (VkCommandBuffer commandBuffer, VkBool32 logicOpEnable) const
+{
+	m_vk.cmdSetLogicOpEnableEXT(commandBuffer, logicOpEnable);
+}
+
+void DeviceDriver::cmdSetColorBlendEnableEXT (VkCommandBuffer commandBuffer, uint32_t firstAttachment, uint32_t attachmentCount, const VkBool32* pColorBlendEnables) const
+{
+	m_vk.cmdSetColorBlendEnableEXT(commandBuffer, firstAttachment, attachmentCount, pColorBlendEnables);
+}
+
+void DeviceDriver::cmdSetColorBlendEquationEXT (VkCommandBuffer commandBuffer, uint32_t firstAttachment, uint32_t attachmentCount, const VkColorBlendEquationEXT* pColorBlendEquations) const
+{
+	m_vk.cmdSetColorBlendEquationEXT(commandBuffer, firstAttachment, attachmentCount, pColorBlendEquations);
+}
+
+void DeviceDriver::cmdSetColorWriteMaskEXT (VkCommandBuffer commandBuffer, uint32_t firstAttachment, uint32_t attachmentCount, const VkColorComponentFlags* pColorWriteMasks) const
+{
+	m_vk.cmdSetColorWriteMaskEXT(commandBuffer, firstAttachment, attachmentCount, pColorWriteMasks);
+}
+
+void DeviceDriver::cmdSetRasterizationStreamEXT (VkCommandBuffer commandBuffer, uint32_t rasterizationStream) const
+{
+	m_vk.cmdSetRasterizationStreamEXT(commandBuffer, rasterizationStream);
+}
+
+void DeviceDriver::cmdSetConservativeRasterizationModeEXT (VkCommandBuffer commandBuffer, VkConservativeRasterizationModeEXT conservativeRasterizationMode) const
+{
+	m_vk.cmdSetConservativeRasterizationModeEXT(commandBuffer, conservativeRasterizationMode);
+}
+
+void DeviceDriver::cmdSetExtraPrimitiveOverestimationSizeEXT (VkCommandBuffer commandBuffer, float extraPrimitiveOverestimationSize) const
+{
+	m_vk.cmdSetExtraPrimitiveOverestimationSizeEXT(commandBuffer, extraPrimitiveOverestimationSize);
+}
+
+void DeviceDriver::cmdSetDepthClipEnableEXT (VkCommandBuffer commandBuffer, VkBool32 depthClipEnable) const
+{
+	m_vk.cmdSetDepthClipEnableEXT(commandBuffer, depthClipEnable);
+}
+
+void DeviceDriver::cmdSetSampleLocationsEnableEXT (VkCommandBuffer commandBuffer, VkBool32 sampleLocationsEnable) const
+{
+	m_vk.cmdSetSampleLocationsEnableEXT(commandBuffer, sampleLocationsEnable);
+}
+
+void DeviceDriver::cmdSetColorBlendAdvancedEXT (VkCommandBuffer commandBuffer, uint32_t firstAttachment, uint32_t attachmentCount, const VkColorBlendAdvancedEXT* pColorBlendAdvanced) const
+{
+	m_vk.cmdSetColorBlendAdvancedEXT(commandBuffer, firstAttachment, attachmentCount, pColorBlendAdvanced);
+}
+
+void DeviceDriver::cmdSetProvokingVertexModeEXT (VkCommandBuffer commandBuffer, VkProvokingVertexModeEXT provokingVertexMode) const
+{
+	m_vk.cmdSetProvokingVertexModeEXT(commandBuffer, provokingVertexMode);
+}
+
+void DeviceDriver::cmdSetLineRasterizationModeEXT (VkCommandBuffer commandBuffer, VkLineRasterizationModeEXT lineRasterizationMode) const
+{
+	m_vk.cmdSetLineRasterizationModeEXT(commandBuffer, lineRasterizationMode);
+}
+
+void DeviceDriver::cmdSetLineStippleEnableEXT (VkCommandBuffer commandBuffer, VkBool32 stippledLineEnable) const
+{
+	m_vk.cmdSetLineStippleEnableEXT(commandBuffer, stippledLineEnable);
+}
+
+void DeviceDriver::cmdSetDepthClipNegativeOneToOneEXT (VkCommandBuffer commandBuffer, VkBool32 negativeOneToOne) const
+{
+	m_vk.cmdSetDepthClipNegativeOneToOneEXT(commandBuffer, negativeOneToOne);
+}
+
+void DeviceDriver::cmdSetViewportWScalingEnableNV (VkCommandBuffer commandBuffer, VkBool32 viewportWScalingEnable) const
+{
+	m_vk.cmdSetViewportWScalingEnableNV(commandBuffer, viewportWScalingEnable);
+}
+
+void DeviceDriver::cmdSetViewportSwizzleNV (VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewportSwizzleNV* pViewportSwizzles) const
+{
+	m_vk.cmdSetViewportSwizzleNV(commandBuffer, firstViewport, viewportCount, pViewportSwizzles);
+}
+
+void DeviceDriver::cmdSetCoverageToColorEnableNV (VkCommandBuffer commandBuffer, VkBool32 coverageToColorEnable) const
+{
+	m_vk.cmdSetCoverageToColorEnableNV(commandBuffer, coverageToColorEnable);
+}
+
+void DeviceDriver::cmdSetCoverageToColorLocationNV (VkCommandBuffer commandBuffer, uint32_t coverageToColorLocation) const
+{
+	m_vk.cmdSetCoverageToColorLocationNV(commandBuffer, coverageToColorLocation);
+}
+
+void DeviceDriver::cmdSetCoverageModulationModeNV (VkCommandBuffer commandBuffer, VkCoverageModulationModeNV coverageModulationMode) const
+{
+	m_vk.cmdSetCoverageModulationModeNV(commandBuffer, coverageModulationMode);
+}
+
+void DeviceDriver::cmdSetCoverageModulationTableEnableNV (VkCommandBuffer commandBuffer, VkBool32 coverageModulationTableEnable) const
+{
+	m_vk.cmdSetCoverageModulationTableEnableNV(commandBuffer, coverageModulationTableEnable);
+}
+
+void DeviceDriver::cmdSetCoverageModulationTableNV (VkCommandBuffer commandBuffer, uint32_t coverageModulationTableCount, const float* pCoverageModulationTable) const
+{
+	m_vk.cmdSetCoverageModulationTableNV(commandBuffer, coverageModulationTableCount, pCoverageModulationTable);
+}
+
+void DeviceDriver::cmdSetShadingRateImageEnableNV (VkCommandBuffer commandBuffer, VkBool32 shadingRateImageEnable) const
+{
+	m_vk.cmdSetShadingRateImageEnableNV(commandBuffer, shadingRateImageEnable);
+}
+
+void DeviceDriver::cmdSetCoverageReductionModeNV (VkCommandBuffer commandBuffer, VkCoverageReductionModeNV coverageReductionMode) const
+{
+	m_vk.cmdSetCoverageReductionModeNV(commandBuffer, coverageReductionMode);
+}
+
+void DeviceDriver::cmdSetRepresentativeFragmentTestEnableNV (VkCommandBuffer commandBuffer, VkBool32 representativeFragmentTestEnable) const
+{
+	m_vk.cmdSetRepresentativeFragmentTestEnableNV(commandBuffer, representativeFragmentTestEnable);
+}
+
 void DeviceDriver::destroyPrivateDataSlot (VkDevice device, VkPrivateDataSlot privateDataSlot, const VkAllocationCallbacks* pAllocator) const
 {
 	m_vk.destroyPrivateDataSlot(device, privateDataSlot, pAllocator);
@@ -1779,9 +1934,9 @@ VkResult DeviceDriver::bindVideoSessionMemoryKHR (VkDevice device, VkVideoSessio
 	return m_vk.bindVideoSessionMemoryKHR(device, videoSession, bindSessionMemoryInfoCount, pBindSessionMemoryInfos);
 }
 
-void DeviceDriver::cmdDecodeVideoKHR (VkCommandBuffer commandBuffer, const VkVideoDecodeInfoKHR* pFrameInfo) const
+void DeviceDriver::cmdDecodeVideoKHR (VkCommandBuffer commandBuffer, const VkVideoDecodeInfoKHR* pDecodeInfo) const
 {
-	m_vk.cmdDecodeVideoKHR(commandBuffer, pFrameInfo);
+	m_vk.cmdDecodeVideoKHR(commandBuffer, pDecodeInfo);
 }
 
 void DeviceDriver::cmdBeginVideoCodingKHR (VkCommandBuffer commandBuffer, const VkVideoBeginCodingInfoKHR* pBeginInfo) const
@@ -1884,6 +2039,76 @@ void DeviceDriver::getDescriptorSetHostMappingVALVE (VkDevice device, VkDescript
 	m_vk.getDescriptorSetHostMappingVALVE(device, descriptorSet, ppData);
 }
 
+VkResult DeviceDriver::createMicromapEXT (VkDevice device, const VkMicromapCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkMicromapEXT* pMicromap) const
+{
+	return m_vk.createMicromapEXT(device, pCreateInfo, pAllocator, pMicromap);
+}
+
+void DeviceDriver::cmdBuildMicromapsEXT (VkCommandBuffer commandBuffer, uint32_t infoCount, const VkMicromapBuildInfoEXT* pInfos) const
+{
+	m_vk.cmdBuildMicromapsEXT(commandBuffer, infoCount, pInfos);
+}
+
+VkResult DeviceDriver::buildMicromapsEXT (VkDevice device, VkDeferredOperationKHR deferredOperation, uint32_t infoCount, const VkMicromapBuildInfoEXT* pInfos) const
+{
+	return m_vk.buildMicromapsEXT(device, deferredOperation, infoCount, pInfos);
+}
+
+void DeviceDriver::destroyMicromapEXT (VkDevice device, VkMicromapEXT micromap, const VkAllocationCallbacks* pAllocator) const
+{
+	m_vk.destroyMicromapEXT(device, micromap, pAllocator);
+}
+
+void DeviceDriver::cmdCopyMicromapEXT (VkCommandBuffer commandBuffer, const VkCopyMicromapInfoEXT* pInfo) const
+{
+	m_vk.cmdCopyMicromapEXT(commandBuffer, pInfo);
+}
+
+VkResult DeviceDriver::copyMicromapEXT (VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyMicromapInfoEXT* pInfo) const
+{
+	return m_vk.copyMicromapEXT(device, deferredOperation, pInfo);
+}
+
+void DeviceDriver::cmdCopyMicromapToMemoryEXT (VkCommandBuffer commandBuffer, const VkCopyMicromapToMemoryInfoEXT* pInfo) const
+{
+	m_vk.cmdCopyMicromapToMemoryEXT(commandBuffer, pInfo);
+}
+
+VkResult DeviceDriver::copyMicromapToMemoryEXT (VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyMicromapToMemoryInfoEXT* pInfo) const
+{
+	return m_vk.copyMicromapToMemoryEXT(device, deferredOperation, pInfo);
+}
+
+void DeviceDriver::cmdCopyMemoryToMicromapEXT (VkCommandBuffer commandBuffer, const VkCopyMemoryToMicromapInfoEXT* pInfo) const
+{
+	m_vk.cmdCopyMemoryToMicromapEXT(commandBuffer, pInfo);
+}
+
+VkResult DeviceDriver::copyMemoryToMicromapEXT (VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyMemoryToMicromapInfoEXT* pInfo) const
+{
+	return m_vk.copyMemoryToMicromapEXT(device, deferredOperation, pInfo);
+}
+
+void DeviceDriver::cmdWriteMicromapsPropertiesEXT (VkCommandBuffer commandBuffer, uint32_t micromapCount, const VkMicromapEXT* pMicromaps, VkQueryType queryType, VkQueryPool queryPool, uint32_t firstQuery) const
+{
+	m_vk.cmdWriteMicromapsPropertiesEXT(commandBuffer, micromapCount, pMicromaps, queryType, queryPool, firstQuery);
+}
+
+VkResult DeviceDriver::writeMicromapsPropertiesEXT (VkDevice device, uint32_t micromapCount, const VkMicromapEXT* pMicromaps, VkQueryType queryType, size_t dataSize, void* pData, size_t stride) const
+{
+	return m_vk.writeMicromapsPropertiesEXT(device, micromapCount, pMicromaps, queryType, dataSize, pData, stride);
+}
+
+void DeviceDriver::getDeviceMicromapCompatibilityEXT (VkDevice device, const VkMicromapVersionInfoEXT* pVersionInfo, VkAccelerationStructureCompatibilityKHR* pCompatibility) const
+{
+	m_vk.getDeviceMicromapCompatibilityEXT(device, pVersionInfo, pCompatibility);
+}
+
+void DeviceDriver::getMicromapBuildSizesEXT (VkDevice device, VkAccelerationStructureBuildTypeKHR buildType, const VkMicromapBuildInfoEXT* pBuildInfo, VkMicromapBuildSizesInfoEXT* pSizeInfo) const
+{
+	m_vk.getMicromapBuildSizesEXT(device, buildType, pBuildInfo, pSizeInfo);
+}
+
 void DeviceDriver::getShaderModuleIdentifierEXT (VkDevice device, VkShaderModule shaderModule, VkShaderModuleIdentifierEXT* pIdentifier) const
 {
 	m_vk.getShaderModuleIdentifierEXT(device, shaderModule, pIdentifier);
@@ -1917,4 +2142,29 @@ VkResult DeviceDriver::getFramebufferTilePropertiesQCOM (VkDevice device, VkFram
 VkResult DeviceDriver::getDynamicRenderingTilePropertiesQCOM (VkDevice device, const VkRenderingInfo* pRenderingInfo, VkTilePropertiesQCOM* pProperties) const
 {
 	return m_vk.getDynamicRenderingTilePropertiesQCOM(device, pRenderingInfo, pProperties);
+}
+
+VkResult DeviceDriver::createOpticalFlowSessionNV (VkDevice device, const VkOpticalFlowSessionCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkOpticalFlowSessionNV* pSession) const
+{
+	return m_vk.createOpticalFlowSessionNV(device, pCreateInfo, pAllocator, pSession);
+}
+
+void DeviceDriver::destroyOpticalFlowSessionNV (VkDevice device, VkOpticalFlowSessionNV session, const VkAllocationCallbacks* pAllocator) const
+{
+	m_vk.destroyOpticalFlowSessionNV(device, session, pAllocator);
+}
+
+VkResult DeviceDriver::bindOpticalFlowSessionImageNV (VkDevice device, VkOpticalFlowSessionNV session, VkOpticalFlowSessionBindingPointNV bindingPoint, VkImageView view, VkImageLayout layout) const
+{
+	return m_vk.bindOpticalFlowSessionImageNV(device, session, bindingPoint, view, layout);
+}
+
+void DeviceDriver::cmdOpticalFlowExecuteNV (VkCommandBuffer commandBuffer, VkOpticalFlowSessionNV session, const VkOpticalFlowExecuteInfoNV* pExecuteInfo) const
+{
+	m_vk.cmdOpticalFlowExecuteNV(commandBuffer, session, pExecuteInfo);
+}
+
+VkResult DeviceDriver::getDeviceFaultInfoEXT (VkDevice device, VkDeviceFaultCountsEXT* pFaultCounts, VkDeviceFaultInfoEXT* pFaultInfo) const
+{
+	return m_vk.getDeviceFaultInfoEXT(device, pFaultCounts, pFaultInfo);
 }

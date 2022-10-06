@@ -89,3 +89,4 @@ virtual VkResult	getPhysicalDeviceVideoCapabilitiesKHR							(VkPhysicalDevice p
 virtual VkResult	getPhysicalDeviceVideoFormatPropertiesKHR						(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceVideoFormatInfoKHR* pVideoFormatInfo, uint32_t* pVideoFormatPropertyCount, VkVideoFormatPropertiesKHR* pVideoFormatProperties) const;
 virtual VkResult	acquireDrmDisplayEXT											(VkPhysicalDevice physicalDevice, int32_t drmFd, VkDisplayKHR display) const;
 virtual VkResult	getDrmDisplayEXT												(VkPhysicalDevice physicalDevice, int32_t drmFd, uint32_t connectorId, VkDisplayKHR* display) const;
+virtual VkResult	getPhysicalDeviceOpticalFlowImageFormatsNV						(VkPhysicalDevice physicalDevice, const VkOpticalFlowImageFormatInfoNV* pOpticalFlowImageFormatInfo, uint32_t* pFormatCount, VkOpticalFlowImageFormatPropertiesNV* pImageFormatProperties) const;

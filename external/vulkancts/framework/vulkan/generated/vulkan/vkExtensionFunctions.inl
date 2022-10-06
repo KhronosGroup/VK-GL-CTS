@@ -966,6 +966,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_NV_present_barrier")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_shader_non_semantic_info")
 	{
 		return;
@@ -1070,6 +1074,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_device_fault")
+	{
+		return;
+	}
 	if (extName == "VK_ARM_rasterization_order_attachment_access")
 	{
 		return;
@@ -1093,6 +1101,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_EXT_physical_device_drm")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_device_address_binding_report")
 	{
 		return;
 	}
@@ -1182,6 +1194,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_opacity_micromap")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_load_store_op_none")
 	{
 		return;
@@ -1230,6 +1246,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_extended_dynamic_state3")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_subpass_merge_feedback")
 	{
 		return;
@@ -1242,7 +1262,16 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_NV_optical_flow")
+	{
+		functions.push_back("vkGetPhysicalDeviceOpticalFlowImageFormatsNV");
+		return;
+	}
 	if (extName == "VK_EXT_legacy_dithering")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_pipeline_protected_access")
 	{
 		return;
 	}
@@ -1251,6 +1280,14 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_SEC_amigo_profiling")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_mutable_descriptor_type")
+	{
+		return;
+	}
+	if (extName == "VK_ARM_shader_core_builtins")
 	{
 		return;
 	}
@@ -2356,6 +2393,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_NV_present_barrier")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_shader_non_semantic_info")
 	{
 		return;
@@ -2467,6 +2508,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_device_fault")
+	{
+		functions.push_back("vkGetDeviceFaultInfoEXT");
+		return;
+	}
 	if (extName == "VK_ARM_rasterization_order_attachment_access")
 	{
 		return;
@@ -2489,6 +2535,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_EXT_physical_device_drm")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_device_address_binding_report")
 	{
 		return;
 	}
@@ -2596,6 +2646,24 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_opacity_micromap")
+	{
+		functions.push_back("vkCreateMicromapEXT");
+		functions.push_back("vkDestroyMicromapEXT");
+		functions.push_back("vkCmdBuildMicromapsEXT");
+		functions.push_back("vkBuildMicromapsEXT");
+		functions.push_back("vkCopyMicromapEXT");
+		functions.push_back("vkCopyMicromapToMemoryEXT");
+		functions.push_back("vkCopyMemoryToMicromapEXT");
+		functions.push_back("vkWriteMicromapsPropertiesEXT");
+		functions.push_back("vkCmdCopyMicromapEXT");
+		functions.push_back("vkCmdCopyMicromapToMemoryEXT");
+		functions.push_back("vkCmdCopyMemoryToMicromapEXT");
+		functions.push_back("vkCmdWriteMicromapsPropertiesEXT");
+		functions.push_back("vkGetDeviceMicromapCompatibilityEXT");
+		functions.push_back("vkGetMicromapBuildSizesEXT");
+		return;
+	}
 	if (extName == "VK_EXT_load_store_op_none")
 	{
 		return;
@@ -2647,6 +2715,31 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_extended_dynamic_state3")
+	{
+		functions.push_back("vkCmdSetTessellationDomainOriginEXT");
+		functions.push_back("vkCmdSetDepthClampEnableEXT");
+		functions.push_back("vkCmdSetPolygonModeEXT");
+		functions.push_back("vkCmdSetRasterizationSamplesEXT");
+		functions.push_back("vkCmdSetSampleMaskEXT");
+		functions.push_back("vkCmdSetAlphaToCoverageEnableEXT");
+		functions.push_back("vkCmdSetAlphaToOneEnableEXT");
+		functions.push_back("vkCmdSetLogicOpEnableEXT");
+		functions.push_back("vkCmdSetColorBlendEnableEXT");
+		functions.push_back("vkCmdSetColorBlendEquationEXT");
+		functions.push_back("vkCmdSetColorWriteMaskEXT");
+		functions.push_back("vkCmdSetRasterizationStreamEXT");
+		functions.push_back("vkCmdSetConservativeRasterizationModeEXT");
+		functions.push_back("vkCmdSetExtraPrimitiveOverestimationSizeEXT");
+		functions.push_back("vkCmdSetDepthClipEnableEXT");
+		functions.push_back("vkCmdSetSampleLocationsEnableEXT");
+		functions.push_back("vkCmdSetColorBlendAdvancedEXT");
+		functions.push_back("vkCmdSetProvokingVertexModeEXT");
+		functions.push_back("vkCmdSetLineRasterizationModeEXT");
+		functions.push_back("vkCmdSetLineStippleEnableEXT");
+		functions.push_back("vkCmdSetDepthClipNegativeOneToOneEXT");
+		return;
+	}
 	if (extName == "VK_EXT_subpass_merge_feedback")
 	{
 		return;
@@ -2661,7 +2754,19 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_NV_optical_flow")
+	{
+		functions.push_back("vkCreateOpticalFlowSessionNV");
+		functions.push_back("vkDestroyOpticalFlowSessionNV");
+		functions.push_back("vkBindOpticalFlowSessionImageNV");
+		functions.push_back("vkCmdOpticalFlowExecuteNV");
+		return;
+	}
 	if (extName == "VK_EXT_legacy_dithering")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_pipeline_protected_access")
 	{
 		return;
 	}
@@ -2672,6 +2777,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_SEC_amigo_profiling")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_mutable_descriptor_type")
+	{
+		return;
+	}
+	if (extName == "VK_ARM_shader_core_builtins")
 	{
 		return;
 	}
@@ -2940,6 +3053,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_custom_border_color",
 	"VK_GOOGLE_user_type",
 	"VK_KHR_pipeline_library",
+	"VK_NV_present_barrier",
 	"VK_KHR_shader_non_semantic_info",
 	"VK_KHR_present_id",
 	"VK_EXT_private_data",
@@ -2966,12 +3080,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_image_compression_control",
 	"VK_EXT_attachment_feedback_loop_layout",
 	"VK_EXT_4444_formats",
+	"VK_EXT_device_fault",
 	"VK_ARM_rasterization_order_attachment_access",
 	"VK_EXT_rgba10x6_formats",
 	"VK_NV_acquire_winrt_display",
 	"VK_VALVE_mutable_descriptor_type",
 	"VK_EXT_vertex_input_dynamic_state",
 	"VK_EXT_physical_device_drm",
+	"VK_EXT_device_address_binding_report",
 	"VK_EXT_depth_clip_control",
 	"VK_EXT_primitive_topology_list_restart",
 	"VK_KHR_format_feature_flags2",
@@ -2991,6 +3107,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_image_view_min_lod",
 	"VK_EXT_multi_draw",
 	"VK_EXT_image_2d_view_of_3d",
+	"VK_EXT_opacity_micromap",
 	"VK_EXT_load_store_op_none",
 	"VK_EXT_border_color_swizzle",
 	"VK_EXT_pageable_device_local_memory",
@@ -3002,10 +3119,15 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_NV_linear_color_attachment",
 	"VK_EXT_image_compression_control_swapchain",
 	"VK_QCOM_image_processing",
+	"VK_EXT_extended_dynamic_state3",
 	"VK_EXT_subpass_merge_feedback",
 	"VK_EXT_shader_module_identifier",
 	"VK_EXT_rasterization_order_attachment_access",
+	"VK_NV_optical_flow",
 	"VK_EXT_legacy_dithering",
+	"VK_EXT_pipeline_protected_access",
 	"VK_QCOM_tile_properties",
 	"VK_SEC_amigo_profiling",
+	"VK_EXT_mutable_descriptor_type",
+	"VK_ARM_shader_core_builtins",
 };

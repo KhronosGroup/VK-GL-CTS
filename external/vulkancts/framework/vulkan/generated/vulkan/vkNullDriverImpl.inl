@@ -303,6 +303,18 @@ VKAPI_ATTR VkResult VKAPI_CALL createBufferCollectionFUCHSIA (VkDevice device, c
 	VK_NULL_RETURN((*pCollection = allocateNonDispHandle<BufferCollectionFUCHSIA, VkBufferCollectionFUCHSIA>(device, pCreateInfo, pAllocator)));
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL createMicromapEXT (VkDevice device, const VkMicromapCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkMicromapEXT* pMicromap)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pMicromap = allocateNonDispHandle<MicromapEXT, VkMicromapEXT>(device, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createOpticalFlowSessionNV (VkDevice device, const VkOpticalFlowSessionCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkOpticalFlowSessionNV* pSession)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pSession = allocateNonDispHandle<OpticalFlowSessionNV, VkOpticalFlowSessionNV>(device, pCreateInfo, pAllocator)));
+}
+
 VKAPI_ATTR void VKAPI_CALL destroyInstance (VkInstance instance, const VkAllocationCallbacks* pAllocator)
 {
 	freeHandle<Instance, VkInstance>(instance, pAllocator);
@@ -527,6 +539,18 @@ VKAPI_ATTR void VKAPI_CALL destroyBufferCollectionFUCHSIA (VkDevice device, VkBu
 {
 	DE_UNREF(device);
 	freeNonDispHandle<BufferCollectionFUCHSIA, VkBufferCollectionFUCHSIA>(collection, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyMicromapEXT (VkDevice device, VkMicromapEXT micromap, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<MicromapEXT, VkMicromapEXT>(micromap, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyOpticalFlowSessionNV (VkDevice device, VkOpticalFlowSessionNV session, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<OpticalFlowSessionNV, VkOpticalFlowSessionNV>(session, pAllocator);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL enumerateInstanceVersion (uint32_t* pApiVersion)
@@ -2991,6 +3015,204 @@ VKAPI_ATTR void VKAPI_CALL cmdSetPrimitiveRestartEnable (VkCommandBuffer command
 	DE_UNREF(primitiveRestartEnable);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdSetTessellationDomainOriginEXT (VkCommandBuffer commandBuffer, VkTessellationDomainOrigin domainOrigin)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(domainOrigin);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetDepthClampEnableEXT (VkCommandBuffer commandBuffer, VkBool32 depthClampEnable)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(depthClampEnable);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetPolygonModeEXT (VkCommandBuffer commandBuffer, VkPolygonMode polygonMode)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(polygonMode);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetRasterizationSamplesEXT (VkCommandBuffer commandBuffer, VkSampleCountFlagBits rasterizationSamples)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(rasterizationSamples);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetSampleMaskEXT (VkCommandBuffer commandBuffer, VkSampleCountFlagBits samples, const VkSampleMask* pSampleMask)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(samples);
+	DE_UNREF(pSampleMask);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetAlphaToCoverageEnableEXT (VkCommandBuffer commandBuffer, VkBool32 alphaToCoverageEnable)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(alphaToCoverageEnable);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetAlphaToOneEnableEXT (VkCommandBuffer commandBuffer, VkBool32 alphaToOneEnable)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(alphaToOneEnable);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetLogicOpEnableEXT (VkCommandBuffer commandBuffer, VkBool32 logicOpEnable)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(logicOpEnable);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetColorBlendEnableEXT (VkCommandBuffer commandBuffer, uint32_t firstAttachment, uint32_t attachmentCount, const VkBool32* pColorBlendEnables)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(firstAttachment);
+	DE_UNREF(attachmentCount);
+	DE_UNREF(pColorBlendEnables);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetColorBlendEquationEXT (VkCommandBuffer commandBuffer, uint32_t firstAttachment, uint32_t attachmentCount, const VkColorBlendEquationEXT* pColorBlendEquations)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(firstAttachment);
+	DE_UNREF(attachmentCount);
+	DE_UNREF(pColorBlendEquations);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetColorWriteMaskEXT (VkCommandBuffer commandBuffer, uint32_t firstAttachment, uint32_t attachmentCount, const VkColorComponentFlags* pColorWriteMasks)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(firstAttachment);
+	DE_UNREF(attachmentCount);
+	DE_UNREF(pColorWriteMasks);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetRasterizationStreamEXT (VkCommandBuffer commandBuffer, uint32_t rasterizationStream)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(rasterizationStream);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetConservativeRasterizationModeEXT (VkCommandBuffer commandBuffer, VkConservativeRasterizationModeEXT conservativeRasterizationMode)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(conservativeRasterizationMode);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetExtraPrimitiveOverestimationSizeEXT (VkCommandBuffer commandBuffer, float extraPrimitiveOverestimationSize)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(extraPrimitiveOverestimationSize);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetDepthClipEnableEXT (VkCommandBuffer commandBuffer, VkBool32 depthClipEnable)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(depthClipEnable);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetSampleLocationsEnableEXT (VkCommandBuffer commandBuffer, VkBool32 sampleLocationsEnable)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(sampleLocationsEnable);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetColorBlendAdvancedEXT (VkCommandBuffer commandBuffer, uint32_t firstAttachment, uint32_t attachmentCount, const VkColorBlendAdvancedEXT* pColorBlendAdvanced)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(firstAttachment);
+	DE_UNREF(attachmentCount);
+	DE_UNREF(pColorBlendAdvanced);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetProvokingVertexModeEXT (VkCommandBuffer commandBuffer, VkProvokingVertexModeEXT provokingVertexMode)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(provokingVertexMode);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetLineRasterizationModeEXT (VkCommandBuffer commandBuffer, VkLineRasterizationModeEXT lineRasterizationMode)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(lineRasterizationMode);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetLineStippleEnableEXT (VkCommandBuffer commandBuffer, VkBool32 stippledLineEnable)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(stippledLineEnable);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetDepthClipNegativeOneToOneEXT (VkCommandBuffer commandBuffer, VkBool32 negativeOneToOne)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(negativeOneToOne);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetViewportWScalingEnableNV (VkCommandBuffer commandBuffer, VkBool32 viewportWScalingEnable)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(viewportWScalingEnable);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetViewportSwizzleNV (VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewportSwizzleNV* pViewportSwizzles)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(firstViewport);
+	DE_UNREF(viewportCount);
+	DE_UNREF(pViewportSwizzles);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetCoverageToColorEnableNV (VkCommandBuffer commandBuffer, VkBool32 coverageToColorEnable)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(coverageToColorEnable);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetCoverageToColorLocationNV (VkCommandBuffer commandBuffer, uint32_t coverageToColorLocation)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(coverageToColorLocation);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetCoverageModulationModeNV (VkCommandBuffer commandBuffer, VkCoverageModulationModeNV coverageModulationMode)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(coverageModulationMode);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetCoverageModulationTableEnableNV (VkCommandBuffer commandBuffer, VkBool32 coverageModulationTableEnable)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(coverageModulationTableEnable);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetCoverageModulationTableNV (VkCommandBuffer commandBuffer, uint32_t coverageModulationTableCount, const float* pCoverageModulationTable)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(coverageModulationTableCount);
+	DE_UNREF(pCoverageModulationTable);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetShadingRateImageEnableNV (VkCommandBuffer commandBuffer, VkBool32 shadingRateImageEnable)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(shadingRateImageEnable);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetCoverageReductionModeNV (VkCommandBuffer commandBuffer, VkCoverageReductionModeNV coverageReductionMode)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(coverageReductionMode);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetRepresentativeFragmentTestEnableNV (VkCommandBuffer commandBuffer, VkBool32 representativeFragmentTestEnable)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(representativeFragmentTestEnable);
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL setPrivateData (VkDevice device, VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlot privateDataSlot, uint64_t data)
 {
 	DE_UNREF(device);
@@ -3197,10 +3419,10 @@ VKAPI_ATTR VkResult VKAPI_CALL bindVideoSessionMemoryKHR (VkDevice device, VkVid
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdDecodeVideoKHR (VkCommandBuffer commandBuffer, const VkVideoDecodeInfoKHR* pFrameInfo)
+VKAPI_ATTR void VKAPI_CALL cmdDecodeVideoKHR (VkCommandBuffer commandBuffer, const VkVideoDecodeInfoKHR* pDecodeInfo)
 {
 	DE_UNREF(commandBuffer);
-	DE_UNREF(pFrameInfo);
+	DE_UNREF(pDecodeInfo);
 }
 
 VKAPI_ATTR void VKAPI_CALL cmdBeginVideoCodingKHR (VkCommandBuffer commandBuffer, const VkVideoBeginCodingInfoKHR* pBeginInfo)
@@ -3315,6 +3537,101 @@ VKAPI_ATTR void VKAPI_CALL getDescriptorSetHostMappingVALVE (VkDevice device, Vk
 	DE_UNREF(ppData);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdBuildMicromapsEXT (VkCommandBuffer commandBuffer, uint32_t infoCount, const VkMicromapBuildInfoEXT* pInfos)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(infoCount);
+	DE_UNREF(pInfos);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL buildMicromapsEXT (VkDevice device, VkDeferredOperationKHR deferredOperation, uint32_t infoCount, const VkMicromapBuildInfoEXT* pInfos)
+{
+	DE_UNREF(device);
+	DE_UNREF(deferredOperation);
+	DE_UNREF(infoCount);
+	DE_UNREF(pInfos);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdCopyMicromapEXT (VkCommandBuffer commandBuffer, const VkCopyMicromapInfoEXT* pInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pInfo);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL copyMicromapEXT (VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyMicromapInfoEXT* pInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(deferredOperation);
+	DE_UNREF(pInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdCopyMicromapToMemoryEXT (VkCommandBuffer commandBuffer, const VkCopyMicromapToMemoryInfoEXT* pInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pInfo);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL copyMicromapToMemoryEXT (VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyMicromapToMemoryInfoEXT* pInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(deferredOperation);
+	DE_UNREF(pInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdCopyMemoryToMicromapEXT (VkCommandBuffer commandBuffer, const VkCopyMemoryToMicromapInfoEXT* pInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pInfo);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL copyMemoryToMicromapEXT (VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyMemoryToMicromapInfoEXT* pInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(deferredOperation);
+	DE_UNREF(pInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdWriteMicromapsPropertiesEXT (VkCommandBuffer commandBuffer, uint32_t micromapCount, const VkMicromapEXT* pMicromaps, VkQueryType queryType, VkQueryPool queryPool, uint32_t firstQuery)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(micromapCount);
+	DE_UNREF(pMicromaps);
+	DE_UNREF(queryType);
+	DE_UNREF(queryPool);
+	DE_UNREF(firstQuery);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL writeMicromapsPropertiesEXT (VkDevice device, uint32_t micromapCount, const VkMicromapEXT* pMicromaps, VkQueryType queryType, size_t dataSize, void* pData, size_t stride)
+{
+	DE_UNREF(device);
+	DE_UNREF(micromapCount);
+	DE_UNREF(pMicromaps);
+	DE_UNREF(queryType);
+	DE_UNREF(dataSize);
+	DE_UNREF(pData);
+	DE_UNREF(stride);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL getDeviceMicromapCompatibilityEXT (VkDevice device, const VkMicromapVersionInfoEXT* pVersionInfo, VkAccelerationStructureCompatibilityKHR* pCompatibility)
+{
+	DE_UNREF(device);
+	DE_UNREF(pVersionInfo);
+	DE_UNREF(pCompatibility);
+}
+
+VKAPI_ATTR void VKAPI_CALL getMicromapBuildSizesEXT (VkDevice device, VkAccelerationStructureBuildTypeKHR buildType, const VkMicromapBuildInfoEXT* pBuildInfo, VkMicromapBuildSizesInfoEXT* pSizeInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(buildType);
+	DE_UNREF(pBuildInfo);
+	DE_UNREF(pSizeInfo);
+}
+
 VKAPI_ATTR void VKAPI_CALL getShaderModuleIdentifierEXT (VkDevice device, VkShaderModule shaderModule, VkShaderModuleIdentifierEXT* pIdentifier)
 {
 	DE_UNREF(device);
@@ -3365,6 +3682,40 @@ VKAPI_ATTR VkResult VKAPI_CALL getDynamicRenderingTilePropertiesQCOM (VkDevice d
 	DE_UNREF(device);
 	DE_UNREF(pRenderingInfo);
 	DE_UNREF(pProperties);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceOpticalFlowImageFormatsNV (VkPhysicalDevice physicalDevice, const VkOpticalFlowImageFormatInfoNV* pOpticalFlowImageFormatInfo, uint32_t* pFormatCount, VkOpticalFlowImageFormatPropertiesNV* pImageFormatProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pOpticalFlowImageFormatInfo);
+	DE_UNREF(pFormatCount);
+	DE_UNREF(pImageFormatProperties);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL bindOpticalFlowSessionImageNV (VkDevice device, VkOpticalFlowSessionNV session, VkOpticalFlowSessionBindingPointNV bindingPoint, VkImageView view, VkImageLayout layout)
+{
+	DE_UNREF(device);
+	DE_UNREF(session);
+	DE_UNREF(bindingPoint);
+	DE_UNREF(view);
+	DE_UNREF(layout);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdOpticalFlowExecuteNV (VkCommandBuffer commandBuffer, VkOpticalFlowSessionNV session, const VkOpticalFlowExecuteInfoNV* pExecuteInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(session);
+	DE_UNREF(pExecuteInfo);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getDeviceFaultInfoEXT (VkDevice device, VkDeviceFaultCountsEXT* pFaultCounts, VkDeviceFaultInfoEXT* pFaultInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pFaultCounts);
+	DE_UNREF(pFaultInfo);
 	return VK_SUCCESS;
 }
 
@@ -3465,6 +3816,7 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceVideoFormatPropertiesKHR,							getPhysicalDeviceVideoFormatPropertiesKHR),
 	VK_NULL_FUNC_ENTRY(vkAcquireDrmDisplayEXT,												acquireDrmDisplayEXT),
 	VK_NULL_FUNC_ENTRY(vkGetDrmDisplayEXT,													getDrmDisplayEXT),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceOpticalFlowImageFormatsNV,						getPhysicalDeviceOpticalFlowImageFormatsNV),
 };
 
 static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
@@ -3795,6 +4147,37 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdSetLogicOpEXT,									cmdSetLogicOpEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdSetPrimitiveRestartEnable,						cmdSetPrimitiveRestartEnable),
 	VK_NULL_FUNC_ENTRY(vkCreatePrivateDataSlot,								createPrivateDataSlot),
+	VK_NULL_FUNC_ENTRY(vkCmdSetTessellationDomainOriginEXT,					cmdSetTessellationDomainOriginEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetDepthClampEnableEXT,							cmdSetDepthClampEnableEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetPolygonModeEXT,								cmdSetPolygonModeEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetRasterizationSamplesEXT,						cmdSetRasterizationSamplesEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetSampleMaskEXT,								cmdSetSampleMaskEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetAlphaToCoverageEnableEXT,					cmdSetAlphaToCoverageEnableEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetAlphaToOneEnableEXT,							cmdSetAlphaToOneEnableEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetLogicOpEnableEXT,							cmdSetLogicOpEnableEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetColorBlendEnableEXT,							cmdSetColorBlendEnableEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetColorBlendEquationEXT,						cmdSetColorBlendEquationEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetColorWriteMaskEXT,							cmdSetColorWriteMaskEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetRasterizationStreamEXT,						cmdSetRasterizationStreamEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetConservativeRasterizationModeEXT,			cmdSetConservativeRasterizationModeEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetExtraPrimitiveOverestimationSizeEXT,			cmdSetExtraPrimitiveOverestimationSizeEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetDepthClipEnableEXT,							cmdSetDepthClipEnableEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetSampleLocationsEnableEXT,					cmdSetSampleLocationsEnableEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetColorBlendAdvancedEXT,						cmdSetColorBlendAdvancedEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetProvokingVertexModeEXT,						cmdSetProvokingVertexModeEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetLineRasterizationModeEXT,					cmdSetLineRasterizationModeEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetLineStippleEnableEXT,						cmdSetLineStippleEnableEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetDepthClipNegativeOneToOneEXT,				cmdSetDepthClipNegativeOneToOneEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetViewportWScalingEnableNV,					cmdSetViewportWScalingEnableNV),
+	VK_NULL_FUNC_ENTRY(vkCmdSetViewportSwizzleNV,							cmdSetViewportSwizzleNV),
+	VK_NULL_FUNC_ENTRY(vkCmdSetCoverageToColorEnableNV,						cmdSetCoverageToColorEnableNV),
+	VK_NULL_FUNC_ENTRY(vkCmdSetCoverageToColorLocationNV,					cmdSetCoverageToColorLocationNV),
+	VK_NULL_FUNC_ENTRY(vkCmdSetCoverageModulationModeNV,					cmdSetCoverageModulationModeNV),
+	VK_NULL_FUNC_ENTRY(vkCmdSetCoverageModulationTableEnableNV,				cmdSetCoverageModulationTableEnableNV),
+	VK_NULL_FUNC_ENTRY(vkCmdSetCoverageModulationTableNV,					cmdSetCoverageModulationTableNV),
+	VK_NULL_FUNC_ENTRY(vkCmdSetShadingRateImageEnableNV,					cmdSetShadingRateImageEnableNV),
+	VK_NULL_FUNC_ENTRY(vkCmdSetCoverageReductionModeNV,						cmdSetCoverageReductionModeNV),
+	VK_NULL_FUNC_ENTRY(vkCmdSetRepresentativeFragmentTestEnableNV,			cmdSetRepresentativeFragmentTestEnableNV),
 	VK_NULL_FUNC_ENTRY(vkDestroyPrivateDataSlot,							destroyPrivateDataSlot),
 	VK_NULL_FUNC_ENTRY(vkSetPrivateData,									setPrivateData),
 	VK_NULL_FUNC_ENTRY(vkGetPrivateData,									getPrivateData),
@@ -3845,6 +4228,20 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdEndRendering,									cmdEndRendering),
 	VK_NULL_FUNC_ENTRY(vkGetDescriptorSetLayoutHostMappingInfoVALVE,		getDescriptorSetLayoutHostMappingInfoVALVE),
 	VK_NULL_FUNC_ENTRY(vkGetDescriptorSetHostMappingVALVE,					getDescriptorSetHostMappingVALVE),
+	VK_NULL_FUNC_ENTRY(vkCreateMicromapEXT,									createMicromapEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdBuildMicromapsEXT,								cmdBuildMicromapsEXT),
+	VK_NULL_FUNC_ENTRY(vkBuildMicromapsEXT,									buildMicromapsEXT),
+	VK_NULL_FUNC_ENTRY(vkDestroyMicromapEXT,								destroyMicromapEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdCopyMicromapEXT,								cmdCopyMicromapEXT),
+	VK_NULL_FUNC_ENTRY(vkCopyMicromapEXT,									copyMicromapEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdCopyMicromapToMemoryEXT,						cmdCopyMicromapToMemoryEXT),
+	VK_NULL_FUNC_ENTRY(vkCopyMicromapToMemoryEXT,							copyMicromapToMemoryEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdCopyMemoryToMicromapEXT,						cmdCopyMemoryToMicromapEXT),
+	VK_NULL_FUNC_ENTRY(vkCopyMemoryToMicromapEXT,							copyMemoryToMicromapEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdWriteMicromapsPropertiesEXT,					cmdWriteMicromapsPropertiesEXT),
+	VK_NULL_FUNC_ENTRY(vkWriteMicromapsPropertiesEXT,						writeMicromapsPropertiesEXT),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceMicromapCompatibilityEXT,					getDeviceMicromapCompatibilityEXT),
+	VK_NULL_FUNC_ENTRY(vkGetMicromapBuildSizesEXT,							getMicromapBuildSizesEXT),
 	VK_NULL_FUNC_ENTRY(vkGetShaderModuleIdentifierEXT,						getShaderModuleIdentifierEXT),
 	VK_NULL_FUNC_ENTRY(vkGetShaderModuleCreateInfoIdentifierEXT,			getShaderModuleCreateInfoIdentifierEXT),
 	VK_NULL_FUNC_ENTRY(vkGetImageSubresourceLayout2EXT,						getImageSubresourceLayout2EXT),
@@ -3852,5 +4249,10 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkExportMetalObjectsEXT,								exportMetalObjectsEXT),
 	VK_NULL_FUNC_ENTRY(vkGetFramebufferTilePropertiesQCOM,					getFramebufferTilePropertiesQCOM),
 	VK_NULL_FUNC_ENTRY(vkGetDynamicRenderingTilePropertiesQCOM,				getDynamicRenderingTilePropertiesQCOM),
+	VK_NULL_FUNC_ENTRY(vkCreateOpticalFlowSessionNV,						createOpticalFlowSessionNV),
+	VK_NULL_FUNC_ENTRY(vkDestroyOpticalFlowSessionNV,						destroyOpticalFlowSessionNV),
+	VK_NULL_FUNC_ENTRY(vkBindOpticalFlowSessionImageNV,						bindOpticalFlowSessionImageNV),
+	VK_NULL_FUNC_ENTRY(vkCmdOpticalFlowExecuteNV,							cmdOpticalFlowExecuteNV),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceFaultInfoEXT,								getDeviceFaultInfoEXT),
 };
 
