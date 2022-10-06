@@ -862,7 +862,7 @@ public:
 				};
 
 				// Unblock the whole lot.
-				hostSignal(vkA, deviceA, semaphoreHandlesA.front(), 1);
+				hostSignal(vkA, deviceA, semaphoreHandlesA.front(), 2);
 
 				VK_CHECK(vkB.waitSemaphores(*deviceB, &waitInfo, ~0ull));
 			}
