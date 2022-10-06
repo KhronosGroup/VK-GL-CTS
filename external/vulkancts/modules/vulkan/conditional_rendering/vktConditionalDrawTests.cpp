@@ -110,6 +110,12 @@ protected:
 	de::SharedPtr<Draw::Buffer>		m_indirectCountBuffer;
 };
 
+void checkSupport(Context& context, DrawCommandType command)
+{
+	if (command == DRAW_COMMAND_TYPE_DRAW_INDIRECT_COUNT || command == DRAW_COMMAND_TYPE_DRAW_INDEXED_INDIRECT_COUNT)
+		context.requireDeviceFunctionality("VK_KHR_draw_indirect_count");
+}
+
 ConditionalDraw::ConditionalDraw (Context &context, ConditionalTestSpec testSpec)
 	: Draw::DrawTestsBaseClass(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], false, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
 	, m_command(testSpec.command)
@@ -117,6 +123,7 @@ ConditionalDraw::ConditionalDraw (Context &context, ConditionalTestSpec testSpec
 	, m_conditionalData(testSpec.conditionalData)
 {
 	checkConditionalRenderingCapabilities(context, m_conditionalData);
+	checkSupport(context, m_command);
 
 	const float minX = -0.3f;
 	const float maxX = 0.3f;
