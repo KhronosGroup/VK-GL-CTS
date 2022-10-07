@@ -504,7 +504,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupVertexInputStete(const Vk
 		VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
 #ifndef CTS_USES_VULKANSC
 			pipelinePartCreateInfo.pNext			= firstStructInChain;
-			pipelinePartCreateInfo.flags			= m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
+			pipelinePartCreateInfo.flags			= (m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR) & ~VK_PIPELINE_CREATE_DERIVATIVE_BIT;
 #else
 			pipelinePartCreateInfo.flags			= m_internalData->pipelineFlags;
 #endif // CTS_USES_VULKANSC
@@ -632,7 +632,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 		VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
 #ifndef CTS_USES_VULKANSC
 		pipelinePartCreateInfo.pNext			= firstStructInChain;
-		pipelinePartCreateInfo.flags			= m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
+		pipelinePartCreateInfo.flags			= (m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR) & ~VK_PIPELINE_CREATE_DERIVATIVE_BIT;
 #else
 		pipelinePartCreateInfo.flags			= m_internalData->pipelineFlags;
 #endif // CTS_USES_VULKANSC
@@ -725,7 +725,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState(const
 		VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
 #ifndef CTS_USES_VULKANSC
 		pipelinePartCreateInfo.pNext				= firstStructInChain;
-		pipelinePartCreateInfo.flags				= m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
+		pipelinePartCreateInfo.flags				= (m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR) &  ~VK_PIPELINE_CREATE_DERIVATIVE_BIT;
 #else
 		pipelinePartCreateInfo.flags				= m_internalData->pipelineFlags;
 #endif // CTS_USES_VULKANSC
@@ -800,7 +800,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentOutputState(const
 		VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
 		pipelinePartCreateInfo.pNext				= firstStructInChain;
 #ifndef CTS_USES_VULKANSC
-		pipelinePartCreateInfo.flags				= m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
+		pipelinePartCreateInfo.flags				= (m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR) & ~VK_PIPELINE_CREATE_DERIVATIVE_BIT;
 #else
 		pipelinePartCreateInfo.flags				= m_internalData->pipelineFlags;
 #endif // CTS_USES_VULKANSC

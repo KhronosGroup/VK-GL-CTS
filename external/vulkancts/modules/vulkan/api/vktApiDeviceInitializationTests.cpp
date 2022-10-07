@@ -2293,7 +2293,6 @@ tcu::TestStatus createDeviceQueue2WithAllFamiliesProtected (Context& context)
 }
 
 #ifndef CTS_USES_VULKANSC
-
 // Allocation tracking utilities
 struct	AllocTrack
 {

@@ -1571,15 +1571,27 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
 		vki.getPhysicalDeviceFeatures(pd, &deviceFeatures);
 
 		VkPhysicalDeviceFragmentShadingRateFeaturesKHR	fsrFeatures				{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR, DE_NULL, DE_FALSE, DE_FALSE, DE_TRUE };
+#ifndef CTS_USES_VULKANSC
+		VkPhysicalDeviceDynamicRenderingFeaturesKHR		drFeatures				{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR, DE_NULL, DE_TRUE };
+#endif // CTS_USES_VULKANSC
 		VkPhysicalDeviceImagelessFramebufferFeatures	ifbFeatures				{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES, DE_NULL, DE_TRUE };
 		VkPhysicalDeviceFeatures2						createPhysicalFeature	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &fsrFeatures, deviceFeatures };
 
+		void* pNext = DE_NULL;
 		std::vector<const char*> enabledExtensions = { "VK_KHR_fragment_shading_rate" };
+#ifndef CTS_USES_VULKANSC
+		if (m_params->useDynamicRendering)
+		{
+			pNext = &drFeatures;
+		}
+#endif // CTS_USES_VULKANSC
 		if (m_params->useImagelessFramebuffer)
 		{
 			enabledExtensions.push_back("VK_KHR_imageless_framebuffer");
-			fsrFeatures.pNext = &ifbFeatures;
+			ifbFeatures.pNext = pNext;
+			pNext = &ifbFeatures;
 		}
+		fsrFeatures.pNext = pNext;
 
 		std::vector<const char*> enabledLayers = getValidationLayers(vki, pd);
 		VkDeviceCreateInfo deviceInfo
