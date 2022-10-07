@@ -189,10 +189,31 @@ vk::Move<vk::VkDevice> createDeviceWithWsi (const vk::PlatformInterface&				vkp,
 		extensions.push_back(ext);
 
 	deMemset(&features, 0, sizeof(features));
+
+	vk::VkPhysicalDeviceFeatures2		physicalDeviceFeatures2 { vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, DE_NULL, features };
+
+	vk::VkPhysicalDevicePresentIdFeaturesKHR presentIdFeatures = { vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_FEATURES_KHR, DE_NULL, DE_TRUE };
+	vk::VkPhysicalDevicePresentWaitFeaturesKHR presentWaitFeatures = { vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_WAIT_FEATURES_KHR, DE_NULL, DE_TRUE };
+
+	void* pNext = DE_NULL;
+	for (size_t i = 0; i < extraExtensions.size(); ++i) {
+		if (strcmp(extraExtensions[i], "VK_KHR_present_id") == 0)
+		{
+			presentIdFeatures.pNext = pNext;
+			pNext = &presentIdFeatures;
+		}
+		else if (strcmp(extraExtensions[i], "VK_KHR_present_wait") == 0)
+		{
+			presentWaitFeatures.pNext = pNext;
+			pNext = &presentWaitFeatures;
+		}
+	}
+	physicalDeviceFeatures2.pNext = pNext;
+
 	const vk::VkDeviceCreateInfo		deviceParams	=
 	{
 		vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-		nullptr,
+		pNext ? &physicalDeviceFeatures2 : DE_NULL,
 		(vk::VkDeviceCreateFlags)0,
 		DE_LENGTH_OF_ARRAY(queueInfos),
 		&queueInfos[0],
@@ -200,7 +221,7 @@ vk::Move<vk::VkDevice> createDeviceWithWsi (const vk::PlatformInterface&				vkp,
 		nullptr,									// ppEnabledLayerNames
 		static_cast<deUint32>(extensions.size()),	// enabledExtensionCount
 		extensions.data(),							// ppEnabledExtensionNames
-		&features
+		pNext ? DE_NULL : &features
 	};
 
 	return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);

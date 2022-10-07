@@ -4060,7 +4060,7 @@ void MultisampleRenderer::initialize (Context&									context,
 		for (deUint32 attachmentIdx = 0; attachmentIdx < attachmentCount; attachmentIdx++)
 			attachments.push_back(m_colorBlendState);
 
-		const VkPipelineColorBlendStateCreateInfo colorBlendStateParams =
+		VkPipelineColorBlendStateCreateInfo colorBlendStateParams =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType;
 			DE_NULL,													// const void*									pNext;
@@ -4128,6 +4128,18 @@ void MultisampleRenderer::initialize (Context&									context,
 
 		m_graphicsPipelines.reserve(numSubpasses * numTopologies);
 		for (deUint32 subpassIdx = 0; subpassIdx < numSubpasses; subpassIdx++)
+		{
+			if (m_renderType == RENDER_TYPE_DEPTHSTENCIL_ONLY)
+			{
+				if (subpassIdx == 0)
+				{
+					colorBlendStateParams.attachmentCount = 0;
+				}
+				else
+				{
+					colorBlendStateParams.attachmentCount = 1;
+				}
+			}
 			for (deUint32 i = 0u; i < numTopologies; ++i)
 			{
 				m_graphicsPipelines.emplace_back(vk, vkDevice, m_pipelineConstructionType);
@@ -4150,6 +4162,7 @@ void MultisampleRenderer::initialize (Context&									context,
 										  .setupFragmentOutputState(*m_renderPass, subpassIdx, &colorBlendStateParams, &m_multisampleStateParams)
 										  .setMonolithicPipelineLayout(*m_pipelineLayout)
 										  .buildPipeline();
+			}
 			}
 	}
 

@@ -2349,7 +2349,7 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 		{
 			VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,	// VkStructureType							sType;
 			DE_NULL,															// const void*								pNext;
-			VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR,			// VkRenderingFlagsKHR						flags;
+			0u,																	// VkRenderingFlagsKHR						flags;
 			m_parameters.viewMasks[subpassNdx],									// uint32_t									viewMask;
 			1u,																	// uint32_t									colorAttachmentCount;
 			&m_parameters.colorFormat,											// const VkFormat*							pColorAttachmentFormats;

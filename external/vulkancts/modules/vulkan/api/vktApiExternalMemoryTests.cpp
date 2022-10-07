@@ -609,7 +609,7 @@ void submitEmptySignalAndGetSemaphoreNative (	const vk::DeviceInterface&						vk
 		is already signalled, instead of a file descriptor, . In order to make sure that a valid file descriptor is returned
 		we use vkCmdWaitEvents to make sure that vkQueueSubmit doesn't signal the fence.
 	*/
-	vk.cmdWaitEvents(*cmdBuffer, 1, &event.get(), vk::VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, DE_NULL, 0, DE_NULL, 0, DE_NULL);
+	vk.cmdWaitEvents(*cmdBuffer, 1, &event.get(), vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, DE_NULL, 0, DE_NULL, 0, DE_NULL);
 	vk.endCommandBuffer(*cmdBuffer);
 
 	const vk::VkSubmitInfo submit =
@@ -722,7 +722,7 @@ void submitEmptySignalAndGetFenceNative (	const vk::DeviceInterface&					vk,
 		file descriptor, if the fence is already signalled. In order to make sure that a valid file descriptor is returned
 		we use vkCmdWaitEvents to make sure that vkQueueSubmit doesn't signal the fence.
 	*/
-	vk.cmdWaitEvents(*cmdBuffer, 1, &event.get(), vk::VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, DE_NULL, 0, DE_NULL, 0, DE_NULL);
+	vk.cmdWaitEvents(*cmdBuffer, 1, &event.get(), vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, DE_NULL, 0, DE_NULL, 0, DE_NULL);
 	vk.endCommandBuffer(*cmdBuffer);
 
 	const vk::VkSubmitInfo submit =

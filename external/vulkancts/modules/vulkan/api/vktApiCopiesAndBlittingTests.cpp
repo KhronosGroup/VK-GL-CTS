@@ -1611,7 +1611,7 @@ tcu::TestStatus CopyImageToImageMipmap::iterate (void)
 		}
 	}
 
-	const VkImageMemoryBarrier	imageBarriers[]		=
+	VkImageMemoryBarrier	imageBarriers[]		=
 	{
 		// source image
 		{

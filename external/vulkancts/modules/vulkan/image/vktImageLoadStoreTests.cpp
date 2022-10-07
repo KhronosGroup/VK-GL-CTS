@@ -512,6 +512,9 @@ void StoreTest::checkSupport (Context& context) const
 {
 	const VkFormatProperties3 formatProperties (context.getFormatProperties(m_format));
 
+	if (!m_declareImageFormatInShader && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR))
+		TCU_THROW(NotSupportedError, "Format not supported for unformatted stores via storage buffer");
+
 	if (!m_declareImageFormatInShader && !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR))
 		TCU_THROW(NotSupportedError, "Format not supported for unformatted stores via storage images");
 

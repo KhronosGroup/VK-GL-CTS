@@ -1947,7 +1947,7 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 	// Render subsampled image
 	if (isDynamicRendering)
 	{
-		// barier that will change layout of color and resolve attachments
+		// barrier that will change layout of color and resolve attachments
 		std::vector<VkImageMemoryBarrier> cbImageBarrier(2, makeImageMemoryBarrier(
 			VK_ACCESS_NONE_KHR,																// VkAccessFlags			srcAccessMask;
 			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,											// VkAccessFlags			dstAccessMask;
@@ -1996,7 +1996,6 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 			DE_NULL,																		// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
 			DE_NULL,																		// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
 		};
-
 		vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
 	}
 	else
@@ -2102,13 +2101,26 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 			renderPassWrapper->cmdEndRenderPass(*m_cmdBuffer);
 	}
 
+	// Add barrier to ensure work on subsampled image is complete before copying to output image.
+	VkImageMemoryBarrier subsampledImageBarrier = makeImageMemoryBarrier(
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT					,			// VkAccessFlags						srcAccessMask;
+			VK_ACCESS_SHADER_READ_BIT,											// VkAccessFlags						dstAccessMask;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,							// VkImageLayout						oldLayout;
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,							// VkImageLayout						newLayout;
+			*m_colorImage,														// VkImage								image;
+			colorSubresourceRange												// VkImageSubresourceRange				subresourceRange;
+		);
+
+	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                                          0, 0, DE_NULL, 0, DE_NULL, 1u, &subsampledImageBarrier);
+
 	// Copy subsampled image to normal image using sampler that is able to read from subsampled images
 	// (subsampled image cannot be copied using vkCmdCopyImageToBuffer)
 	if (isDynamicRendering)
 	{
 		// barrier that will change layout of output image
 		VkImageMemoryBarrier outputImageBarrier = makeImageMemoryBarrier(
-			VK_ACCESS_NONE_KHR,													// VkAccessFlags						srcAccessMask;
+			VK_ACCESS_NONE_KHR,										// VkAccessFlags						srcAccessMask;
 			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,								// VkAccessFlags						dstAccessMask;
 			VK_IMAGE_LAYOUT_UNDEFINED,											// VkImageLayout						oldLayout;
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,							// VkImageLayout						newLayout;
