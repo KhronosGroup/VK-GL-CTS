@@ -730,6 +730,14 @@ void checkSupport(Context& context, TestConfigType config)
 
 	if (config.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
 		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+
+	const auto& vki = context.getInstanceInterface();
+	const auto& physicalDevice = context.getPhysicalDevice();
+	VkImageFormatProperties formatProperties;
+	const auto result = vki.getPhysicalDeviceImageFormatProperties(physicalDevice, config.format, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0u, &formatProperties);
+	if (result == VK_ERROR_FORMAT_NOT_SUPPORTED) {
+		TCU_THROW(NotSupportedError, "Image format not supported");
+	}
 }
 
 void initTests (tcu::TestCaseGroup* group, const RenderingType renderingType)

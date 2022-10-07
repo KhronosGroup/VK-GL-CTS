@@ -2773,7 +2773,7 @@ tcu::TestStatus RayTracingHeaderBottomAddressTestInstance::iterate (void)
 	const VkQueue										queue			= m_context.getUniversalQueue();
 	Allocator&											allocator		= m_context.getDefaultAllocator();
 
-	const Move<VkCommandPool>							cmdPool			= createCommandPool(vkd, device, 0, familyIndex);
+	const Move<VkCommandPool>							cmdPool			= createCommandPool(vkd, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, familyIndex);
 	const Move<VkCommandBuffer>							cmdBuffer		= allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	beginCommandBuffer(vkd, *cmdBuffer, 0);
@@ -2790,6 +2790,7 @@ tcu::TestStatus RayTracingHeaderBottomAddressTestInstance::iterate (void)
 	SerialStorage										deepStorage		(vkd, device, allocator, m_params->buildType, serialInfo);
 
 	// make deep serialization - top-level AS width bottom-level structures that it owns
+	vkd.resetCommandBuffer(*cmdBuffer, 0);
 	beginCommandBuffer(vkd, *cmdBuffer, 0);
 	src->serialize(vkd, device, *cmdBuffer, &deepStorage);
 	endCommandBuffer(vkd, *cmdBuffer);

@@ -3970,7 +3970,7 @@ void MultisampleRenderer::initialize (Context&									context,
 		for (deUint32 attachmentIdx = 0; attachmentIdx < attachmentCount; attachmentIdx++)
 			attachments.push_back(m_colorBlendState);
 
-		const VkPipelineColorBlendStateCreateInfo colorBlendStateParams =
+		VkPipelineColorBlendStateCreateInfo colorBlendStateParams =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType;
 			DE_NULL,													// const void*									pNext;
@@ -4062,6 +4062,18 @@ void MultisampleRenderer::initialize (Context&									context,
 		const deUint32 numSubpasses = m_renderType == RENDER_TYPE_DEPTHSTENCIL_ONLY ? 2u : 1u;
 
 		for (deUint32 subpassIdx = 0; subpassIdx < numSubpasses; subpassIdx++)
+		{
+			if (m_renderType == RENDER_TYPE_DEPTHSTENCIL_ONLY)
+			{
+				if (subpassIdx == 0)
+				{
+					colorBlendStateParams.attachmentCount = 0;
+				}
+				else
+				{
+					colorBlendStateParams.attachmentCount = 1;
+				}
+			}
 			for (deUint32 i = 0u; i < numTopologies; ++i)
 			{
 				const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo
@@ -4097,6 +4109,7 @@ void MultisampleRenderer::initialize (Context&									context,
 				};
 
 				m_graphicsPipelines.push_back(VkPipelineSp(new Unique<VkPipeline>(createGraphicsPipeline(vk, vkDevice, DE_NULL, &pipelineCreateInfo))));
+			}
 			}
 	}
 
