@@ -79,7 +79,7 @@ template <RobustnessFeatures FEATURES>
 class SingletonDevice
 {
 	SingletonDevice	(Context& context)
-		: m_context(context), m_instanceWrapper(new CustomInstanceWrapper(context)),  m_logicalDevice ()
+		: m_context(context), m_instanceWrapper(new CustomInstanceWrapper(context, context.getInstanceExtensions())), m_logicalDevice()
 	{
 		// Note we are already checking the needed features are available in checkSupport().
 		VkPhysicalDeviceRobustness2FeaturesEXT				robustness2Features				= initVulkanStructure();
@@ -1894,15 +1894,26 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 			(VkDeviceSize)(m_data.bufferLen ? m_data.bufferLen : 1),
 			(VkDeviceSize)256);
 
+		VkBufferUsageFlags usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 		if (m_data.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
 			m_data.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC)
 		{
 			size = deIntRoundToPow2((int)size, (int)robustness2Properties.robustUniformBufferAccessSizeAlignment);
+			usage |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 		}
 		else if (m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
 				 m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC)
 		{
 			size = deIntRoundToPow2((int)size, (int)robustness2Properties.robustStorageBufferAccessSizeAlignment);
+			usage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+		}
+		else if (m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER)
+		{
+			usage |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
+		}
+		else if (m_data.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER)
+		{
+			usage |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
 		}
 		else if (m_data.descriptorType == VERTEX_ATTRIBUTE_FETCH)
 		{
@@ -1910,13 +1921,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 		}
 
 		buffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
-			vk, device, allocator, makeBufferCreateInfo(size,
-														VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-														VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
-														VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT |
-														VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT |
-														VK_BUFFER_USAGE_VERTEX_BUFFER_BIT),
-														MemoryRequirement::HostVisible));
+			vk, device, allocator, makeBufferCreateInfo(size, usage), MemoryRequirement::HostVisible));
 		bufferPtr = (deUint8 *)buffer->getAllocation().getHostPtr();
 
 		deMemset(bufferPtr, 0x3f, (size_t)size);

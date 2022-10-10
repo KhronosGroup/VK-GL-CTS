@@ -25,7 +25,7 @@
 
 #ifndef CTS_USES_VULKANSC
 
-#if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
+#if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_OSX)
 #	include <unistd.h>
 #	include <fcntl.h>
 #	include <errno.h>
@@ -83,7 +83,7 @@ NativeHandle::NativeHandle (const NativeHandle& other)
 {
 	if (other.m_fd >= 0)
 	{
-#if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
+#if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_OSX)
 		DE_ASSERT(!other.m_win32Handle.internal);
 		DE_ASSERT(!other.m_androidHardwareBuffer.internal);
 		m_fd = dup(other.m_fd);
@@ -186,7 +186,7 @@ void NativeHandle::reset (void)
 {
 	if (m_fd >= 0)
 	{
-#if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
+#if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_OSX)
 		DE_ASSERT(!m_win32Handle.internal);
 		DE_ASSERT(!m_androidHardwareBuffer.internal);
 		::close(m_fd);

@@ -500,7 +500,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupVertexInputStete(const Vk
 
 		VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
 		pipelinePartCreateInfo.pNext						= firstStructInChain;
-		pipelinePartCreateInfo.flags						= m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
+		pipelinePartCreateInfo.flags						= (m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR) & ~VK_PIPELINE_CREATE_DERIVATIVE_BIT;
 		pipelinePartCreateInfo.pVertexInputState			= pVertexInputState;
 		pipelinePartCreateInfo.pInputAssemblyState			= pInputAssemblyState;
 		pipelinePartCreateInfo.pDynamicState				= m_internalData->pDynamicState;
@@ -766,7 +766,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 
 		VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
 		pipelinePartCreateInfo.pNext				= firstStructInChain;
-		pipelinePartCreateInfo.flags				= m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR | shaderModuleIdFlags;
+		pipelinePartCreateInfo.flags				= (m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR | shaderModuleIdFlags) & ~VK_PIPELINE_CREATE_DERIVATIVE_BIT;
 		pipelinePartCreateInfo.layout				= layout;
 		pipelinePartCreateInfo.renderPass			= renderPass;
 		pipelinePartCreateInfo.subpass				= subpass;
@@ -898,7 +898,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState2(cons
 
 		VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
 		pipelinePartCreateInfo.pNext				= firstStructInChain;
-		pipelinePartCreateInfo.flags				= m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR | shaderModuleIdFlags;
+		pipelinePartCreateInfo.flags				= (m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR | shaderModuleIdFlags) & ~VK_PIPELINE_CREATE_DERIVATIVE_BIT;
 		pipelinePartCreateInfo.layout				= layout;
 		pipelinePartCreateInfo.renderPass			= renderPass;
 		pipelinePartCreateInfo.subpass				= subpass;
@@ -972,7 +972,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentOutputState(const
 
 		VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
 		pipelinePartCreateInfo.pNext				= firstStructInChain;
-		pipelinePartCreateInfo.flags				= m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
+		pipelinePartCreateInfo.flags				= (m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR) & ~VK_PIPELINE_CREATE_DERIVATIVE_BIT;
 		pipelinePartCreateInfo.renderPass			= renderPass;
 		pipelinePartCreateInfo.subpass				= subpass;
 		pipelinePartCreateInfo.pColorBlendState		= pColorBlendState;

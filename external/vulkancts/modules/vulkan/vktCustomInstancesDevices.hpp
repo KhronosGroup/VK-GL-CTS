@@ -140,6 +140,7 @@ class CustomInstanceWrapper
 {
 public:
 	CustomInstanceWrapper(Context& context);
+	CustomInstanceWrapper(Context& context, const std::vector<std::string> extensions);
 	vkt::CustomInstance instance;
 };
 

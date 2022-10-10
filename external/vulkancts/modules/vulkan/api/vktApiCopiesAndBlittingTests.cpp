@@ -1633,7 +1633,7 @@ tcu::TestStatus CopyImageToImageMipmap::iterate (void)
 		}
 	}
 
-	const VkImageMemoryBarrier	imageBarriers[]		=
+	VkImageMemoryBarrier	imageBarriers[]		=
 	{
 		// source image
 		{
@@ -13663,7 +13663,9 @@ void addResolveImageWholeTests (tcu::TestCaseGroup* group, AllocationKind alloca
 		const std::string description	= "With " + getSampleCountCaseName(samples[samplesIndex]);
 		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params));
 		params.imageOffset = true;
-		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params));
+		if (allocationKind != ALLOCATION_KIND_DEDICATED) {
+			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params));
+		}
 	}
 }
 
@@ -13712,7 +13714,9 @@ void addResolveImagePartialTests (tcu::TestCaseGroup* group, AllocationKind allo
 		params.imageOffset = false;
 		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params));
 		params.imageOffset = true;
-		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params));
+		if (allocationKind != ALLOCATION_KIND_DEDICATED) {
+			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params));
+		}
 	}
 }
 
@@ -13813,7 +13817,9 @@ void addResolveImageWholeCopyBeforeResolvingTests (tcu::TestCaseGroup* group, Al
 		params.imageOffset = false;
 		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params, COPY_MS_IMAGE_TO_MS_IMAGE));
 		params.imageOffset = true;
-		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_MS_IMAGE));
+		if (allocationKind != ALLOCATION_KIND_DEDICATED) {
+			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_MS_IMAGE));
+		}
 	}
 }
 
@@ -13917,7 +13923,9 @@ void addResolveImageWholeCopyWithoutCabBeforeResolvingTests (tcu::TestCaseGroup*
 		params.imageOffset = false;
 		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params, COPY_MS_IMAGE_TO_MS_IMAGE_NO_CAB));
 		params.imageOffset = true;
-		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_MS_IMAGE_NO_CAB));
+		if (allocationKind != ALLOCATION_KIND_DEDICATED) {
+			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_MS_IMAGE_NO_CAB));
+		}
 	}
 }
 
@@ -13986,7 +13994,9 @@ void addResolveImageWholeCopyDiffLayoutsBeforeResolvingTests (tcu::TestCaseGroup
 		params.imageOffset = false;
 		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), testName, description, params, COPY_MS_IMAGE_TO_MS_IMAGE));
 		params.imageOffset = true;
-		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), testName + "_bind_offset", description, params, COPY_MS_IMAGE_TO_MS_IMAGE));
+		if (allocationKind != ALLOCATION_KIND_DEDICATED) {
+			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), testName + "_bind_offset", description, params, COPY_MS_IMAGE_TO_MS_IMAGE));
+		}
 	}
 }
 
@@ -14039,7 +14049,9 @@ void addResolveImageLayerCopyBeforeResolvingTests (tcu::TestCaseGroup* group, Al
 		params.imageOffset = false;
 		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params, COPY_MS_IMAGE_LAYER_TO_MS_IMAGE));
 		params.imageOffset = true;
-		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_LAYER_TO_MS_IMAGE));
+		if (allocationKind != ALLOCATION_KIND_DEDICATED) {
+			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_LAYER_TO_MS_IMAGE));
+		}
 	}
 }
 
@@ -14118,7 +14130,9 @@ void addResolveCopyImageWithRegionsTests (tcu::TestCaseGroup* group, AllocationK
 		params.imageOffset = false;
 		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params, COPY_MS_IMAGE_TO_MS_IMAGE_MULTIREGION));
 		params.imageOffset = true;
-		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_MS_IMAGE_MULTIREGION));
+		if (allocationKind != ALLOCATION_KIND_DEDICATED) {
+			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_MS_IMAGE_MULTIREGION));
+		}
 	}
 }
 
@@ -14170,7 +14184,9 @@ void addResolveImageWholeArrayImageTests (tcu::TestCaseGroup* group, AllocationK
 		params.imageOffset = false;
 		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
 		params.imageOffset = true;
-		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
+		if (allocationKind != ALLOCATION_KIND_DEDICATED) {
+			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
+		}
 	}
 }
 
@@ -14217,7 +14233,9 @@ void addResolveImageWholeArrayImageSingleRegionTests (tcu::TestCaseGroup* group,
 		params.imageOffset = false;
 		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
 		params.imageOffset = true;
-		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
+		if (allocationKind != ALLOCATION_KIND_DEDICATED) {
+			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
+		}
 	}
 }
 
@@ -14296,7 +14314,9 @@ void addResolveImageDiffImageSizeTests (tcu::TestCaseGroup* group, AllocationKin
 			params.imageOffset = false;
 			group->addChild(new ResolveImageToImageTestCase(testCtx, testName.str(), description.str(), params));
 			params.imageOffset = true;
-			group->addChild(new ResolveImageToImageTestCase(testCtx, testName.str() + "_bind_offset", description.str(), params));
+			if (allocationKind != ALLOCATION_KIND_DEDICATED) {
+				group->addChild(new ResolveImageToImageTestCase(testCtx, testName.str() + "_bind_offset", description.str(), params));
+			}
 		}
 	}
 }
@@ -14352,7 +14372,9 @@ void addDepthStencilCopyMSAATest (tcu::TestCaseGroup* group, DepthStencilMSAA::T
 						testCreateParams.imageOffset = false;
 						group->addChild(new DepthStencilMSAATestCase(group->getTestContext(), testNameBase + "D_" + getSampleCountCaseName(sample), description, testCreateParams));
 						testCreateParams.imageOffset = true;
-						group->addChild(new DepthStencilMSAATestCase(group->getTestContext(), testNameBase + "D_" + getSampleCountCaseName(sample) + "_bind_offset", description, testCreateParams));
+						if (testCreateParams.allocationKind != ALLOCATION_KIND_DEDICATED) {
+							group->addChild(new DepthStencilMSAATestCase(group->getTestContext(), testNameBase + "D_" + getSampleCountCaseName(sample) + "_bind_offset", description, testCreateParams));
+						}
 					}
 				}
 
@@ -14366,7 +14388,9 @@ void addDepthStencilCopyMSAATest (tcu::TestCaseGroup* group, DepthStencilMSAA::T
 						testCreateParams.imageOffset = false;
 						group->addChild(new DepthStencilMSAATestCase(group->getTestContext(), testNameBase + "S_" + getSampleCountCaseName(sample), description, testCreateParams));
 						testCreateParams.imageOffset = true;
-						group->addChild(new DepthStencilMSAATestCase(group->getTestContext(), testNameBase + "S_" + getSampleCountCaseName(sample) + "_bind_offset", description, testCreateParams));
+						if (testCreateParams.allocationKind != ALLOCATION_KIND_DEDICATED) {
+							group->addChild(new DepthStencilMSAATestCase(group->getTestContext(), testNameBase + "S_" + getSampleCountCaseName(sample) + "_bind_offset", description, testCreateParams));
+						}
 					}
 				}
 			}
