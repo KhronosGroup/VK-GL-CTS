@@ -146,8 +146,12 @@ void		testFaultCallback (VkBool32			incompleteFaultData,
 	DE_UNREF(pFaultData);
 }
 
+struct FaultCallbackInfoTestParams
+{
+	bool allocateFaultData;
+};
 
-tcu::TestStatus testCreateDeviceWithFaultCallbackInfo (Context& context)
+tcu::TestStatus testCreateDeviceWithFaultCallbackInfo (Context& context, FaultCallbackInfoTestParams testParams)
 {
 	const CustomInstance				instance				(createCustomInstanceFromContext(context));
 	const InstanceDriver&				instanceDriver			(instance.getDriver());
@@ -166,17 +170,21 @@ tcu::TestStatus testCreateDeviceWithFaultCallbackInfo (Context& context)
 	// create VkFaultCallbackInfo
 	deUint32							maxQueryFaultCount		= context.getDeviceVulkanSC10Properties().maxQueryFaultCount;
 	std::vector<VkFaultData>			faults;
-	for (deUint32 i = 0; i < maxQueryFaultCount; ++i)
+
+	if (testParams.allocateFaultData)
 	{
-		faults.push_back
-		(
-			{
-				VK_STRUCTURE_TYPE_FAULT_DATA,	// VkStructureType	sType;
-				DE_NULL,						// void*			pNext;
-				VK_FAULT_LEVEL_UNASSIGNED,		// VkFaultLevel		faultLevel;
-				VK_FAULT_TYPE_UNASSIGNED,		// VkFaultType		faultType;
-			}
-		);
+		for (deUint32 i = 0; i < maxQueryFaultCount; ++i)
+		{
+			faults.push_back
+			(
+				{
+					VK_STRUCTURE_TYPE_FAULT_DATA,	// VkStructureType	sType;
+					DE_NULL,						// void*			pNext;
+					VK_FAULT_LEVEL_UNASSIGNED,		// VkFaultLevel		faultLevel;
+					VK_FAULT_TYPE_UNASSIGNED,		// VkFaultType		faultType;
+				}
+			);
+		}
 	}
 
 	VkFaultCallbackInfo					faultCallBackInfo		=
@@ -184,7 +192,7 @@ tcu::TestStatus testCreateDeviceWithFaultCallbackInfo (Context& context)
 		VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO,					//	VkStructureType				sType;
 		DE_NULL,												//	void*						pNext;
 		deUint32(faults.size()),								//	uint32_t					faultCount;
-		faults.data(),											//	VkFaultData*				pFaults;
+		testParams.allocateFaultData ? faults.data() : nullptr,	//	VkFaultData*				pFaults;
 		(PFN_vkFaultCallbackFunction) testFaultCallback			//	PFN_vkFaultCallbackFunction	pfnFaultCallback;
 	};
 	faultCallBackInfo.pNext										= pNext;
@@ -271,8 +279,14 @@ tcu::TestCaseGroup*	createFaultHandlingTests (tcu::TestContext& testCtx)
 	{
 		de::MovePtr<tcu::TestCaseGroup>	faultCallbackInfoGroup(new tcu::TestCaseGroup(testCtx, "fault_callback_info", "Testing vkGetFaultData results"));
 
-		addFunctionCase(faultCallbackInfoGroup.get(), "create_device_with_callback", "", testCreateDeviceWithFaultCallbackInfo);
-
+		{
+			FaultCallbackInfoTestParams testParams { true };
+			addFunctionCase(faultCallbackInfoGroup.get(), "create_device_with_callback_with_fault_data", "", testCreateDeviceWithFaultCallbackInfo, testParams);
+		}
+		{
+			FaultCallbackInfoTestParams testParams { false };
+			addFunctionCase(faultCallbackInfoGroup.get(), "create_device_with_callback_without_fault_data", "", testCreateDeviceWithFaultCallbackInfo, testParams);
+		}
 		group->addChild(faultCallbackInfoGroup.release());
 	}
 
