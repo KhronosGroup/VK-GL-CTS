@@ -156,7 +156,7 @@ public:
 			&deviceFaultFeatures,									// void*							pNext;
 			{ /* zeroed automatically since c++11 */ }				// VkPhysicalDeviceFeatures			features;
 		};
-		instanceInterface.getPhysicalDeviceFeatures(physicalDevice, &deviceFeatures2.features);
+		instanceInterface.getPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures2);
 
 		const VkDeviceCreateInfo				deviceCreateInfo
 		{
