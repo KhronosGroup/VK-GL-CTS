@@ -131,9 +131,15 @@ Move<VkDevice> createDeviceWithPushDescriptor (const Context&				context,
 	deMemset(&features, 0, sizeof(features));
 
 	vector<string>					requiredExtensionsStr	= { "VK_KHR_push_descriptor" };
+	VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT graphicsPipelineLibraryFeaturesEXT = initVulkanStructure();
+	VkPhysicalDeviceFeatures2 features2 = initVulkanStructure(&graphicsPipelineLibraryFeaturesEXT);
 	if (params.pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
+		requiredExtensionsStr.push_back("VK_KHR_pipeline_library");
 		requiredExtensionsStr.push_back("VK_EXT_graphics_pipeline_library");
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
+		if (!graphicsPipelineLibraryFeaturesEXT.graphicsPipelineLibrary)
+			TCU_THROW(NotSupportedError, "graphicsPipelineLibraryFeaturesEXT.graphicsPipelineLibrary required");
 	}
 	vector<const char *>			requiredExtensions;
 	checkAllSupported(supportedExtensions, requiredExtensionsStr);
@@ -144,7 +150,7 @@ Move<VkDevice> createDeviceWithPushDescriptor (const Context&				context,
 	const VkDeviceCreateInfo		deviceParams    =
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-		DE_NULL,
+		params.pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC ? &features2 : DE_NULL,
 		(VkDeviceCreateFlags)0,
 		1u,
 		&queueInfo,
@@ -152,7 +158,7 @@ Move<VkDevice> createDeviceWithPushDescriptor (const Context&				context,
 		DE_NULL,
 		static_cast<deUint32>(requiredExtensions.size()),
 		(requiredExtensions.empty() ? DE_NULL : requiredExtensions.data()),
-		&features
+		params.pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC ? DE_NULL : &features
 	};
 
 	return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &deviceParams, DE_NULL);

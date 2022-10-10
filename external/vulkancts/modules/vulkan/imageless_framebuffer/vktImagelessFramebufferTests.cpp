@@ -276,7 +276,7 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&				vk,
 		(VkAttachmentDescriptionFlags)0,		//  VkAttachmentDescriptionFlags	flags;
 		colorFormat,							//  VkFormat						format;
 		VK_SAMPLE_COUNT_1_BIT,					//  VkSampleCountFlagBits			samples;
-		VK_ATTACHMENT_LOAD_OP_LOAD,				//  VkAttachmentLoadOp				loadOp;
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,		//  VkAttachmentLoadOp				loadOp;
 		VK_ATTACHMENT_STORE_OP_STORE,			//  VkAttachmentStoreOp				storeOp;
 		VK_ATTACHMENT_LOAD_OP_DONT_CARE,		//  VkAttachmentLoadOp				stencilLoadOp;
 		VK_ATTACHMENT_STORE_OP_DONT_CARE,		//  VkAttachmentStoreOp				stencilStoreOp;
@@ -434,7 +434,7 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&				vk,
 			(VkAttachmentDescriptionFlags)0,			//  VkAttachmentDescriptionFlags	flags;
 			colorFormat,								//  VkFormat						format;
 			VK_SAMPLE_COUNT_1_BIT,						//  VkSampleCountFlagBits			samples;
-			VK_ATTACHMENT_LOAD_OP_LOAD,					//  VkAttachmentLoadOp				loadOp;
+			VK_ATTACHMENT_LOAD_OP_DONT_CARE,			//  VkAttachmentLoadOp				loadOp;
 			VK_ATTACHMENT_STORE_OP_STORE,				//  VkAttachmentStoreOp				storeOp;
 			VK_ATTACHMENT_LOAD_OP_DONT_CARE,			//  VkAttachmentLoadOp				stencilLoadOp;
 			VK_ATTACHMENT_STORE_OP_DONT_CARE,			//  VkAttachmentStoreOp				stencilStoreOp;
@@ -956,7 +956,7 @@ ColorImagelessTestInstance::ColorImagelessTestInstance (Context& context, const 
 	, m_extensions				(context.requireDeviceFunctionality("VK_KHR_imageless_framebuffer"))
 	, m_imageExtent2D			(makeExtent2D(32u, 32u))
 	, m_parameters				(parameters)
-	, m_colorImageUsage			(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+	, m_colorImageUsage			(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT)
 {
 	const InstanceInterface&								vki								= m_context.getInstanceInterface();
 	const VkPhysicalDevice									physDevice						= m_context.getPhysicalDevice();

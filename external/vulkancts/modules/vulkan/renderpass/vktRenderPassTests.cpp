@@ -1820,8 +1820,9 @@ void beginCommandBuffer (const DeviceInterface&			vk,
 		inheritanceRenderingInfo.pColorAttachmentFormats = colorAttachmentFormats.data();
 		if (pRenderInfo->getDepthStencilAttachment())
 		{
-			inheritanceRenderingInfo.depthAttachmentFormat		= pRenderInfo->getDepthStencilAttachment()->getFormat();
-			inheritanceRenderingInfo.stencilAttachmentFormat	= pRenderInfo->getDepthStencilAttachment()->getFormat();
+			const VkFormat dsFormat = pRenderInfo->getDepthStencilAttachment()->getFormat();
+			inheritanceRenderingInfo.depthAttachmentFormat		= tcu::hasDepthComponent(mapVkFormat(dsFormat).order) ? dsFormat : VK_FORMAT_UNDEFINED;
+			inheritanceRenderingInfo.stencilAttachmentFormat	= tcu::hasStencilComponent(mapVkFormat(dsFormat).order) ? dsFormat : VK_FORMAT_UNDEFINED;
 		}
 
 		if (pRenderInfo->getColorAttachmentCount())
@@ -2056,12 +2057,25 @@ Move<VkPipeline> createSubpassPipeline (const DeviceInterface&		vk,
 	for (deUint32 i = 0; i < renderInfo.getColorAttachmentCount(); ++i)
 		colorAttachmentFormats.push_back(renderInfo.getColorAttachment(i).getFormat());
 
-	vk::VkFormat depthStencilFormat = VK_FORMAT_UNDEFINED;
+	vk::VkFormat depthFormat = VK_FORMAT_UNDEFINED;
+	vk::VkFormat stencilFormat = VK_FORMAT_UNDEFINED;
 	if (renderInfo.getDepthStencilAttachment())
 	{
 		const Attachment& attachment = *renderInfo.getDepthStencilAttachment();
-		depthStencilFormat = attachment.getFormat();
+		vk::VkFormat depthStencilFormat = attachment.getFormat();
+		if (depthStencilFormat != VK_FORMAT_UNDEFINED)
+		{
+			if (tcu::hasDepthComponent(mapVkFormat(depthStencilFormat).order))
+			{
+				depthFormat = depthStencilFormat;
+			}
+			if (tcu::hasStencilComponent(mapVkFormat(depthStencilFormat).order))
+			{
+				stencilFormat = depthStencilFormat;
+			}
+		}
 	}
+
 
 	VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 	{
@@ -2070,8 +2084,8 @@ Move<VkPipeline> createSubpassPipeline (const DeviceInterface&		vk,
 		0u,
 		static_cast<deUint32>(colorAttachmentFormats.size()),
 		colorAttachmentFormats.data(),
-		depthStencilFormat,
-		depthStencilFormat
+		depthFormat,
+		stencilFormat
 	};
 #endif // CTS_USES_VULKANSC
 

@@ -345,7 +345,7 @@ MovePtr<MultiQueues> createQueues (Context& context, const VkQueueFlags& queueFl
 		{
 			vk.getDeviceQueue(queues.getDevice(), queues.getQueueFamilyIndex(queueFamilyIndex), queueReqNdx, &queues.getQueues(queueFamilyIndex).queues[queueReqNdx]);
 			queues.getQueues(queueFamilyIndex).available[queueReqNdx]=true;
-			queues.getQueues(queueFamilyIndex).commandPools.push_back(makeVkSharedPtr(createCommandPool(vk, queues.getDevice(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex)));
+			queues.getQueues(queueFamilyIndex).commandPools.push_back(makeVkSharedPtr(createCommandPool(vk, queues.getDevice(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queues.getQueueFamilyIndex(queueFamilyIndex))));
 		}
 	}
 
