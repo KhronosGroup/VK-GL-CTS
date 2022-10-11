@@ -354,7 +354,8 @@ public:
 
 void updateVertexInputInterface (Context&						context,
 								 GraphicsPipelineCreateInfo&	graphicsPipelineCreateInfo,
-								 VkPrimitiveTopology			topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+								 VkPrimitiveTopology			topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+								 deUint32						vertexDescriptionCount = 1u)
 {
 	DE_UNREF(context);
 
@@ -377,9 +378,9 @@ void updateVertexInputInterface (Context&						context,
 		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,		// VkStructureType							sType;
 		DE_NULL,														// const void*								pNext;
 		0u,																// VkPipelineVertexInputStateCreateFlags	flags;
-		1u,																// deUint32									vertexBindingDescriptionCount;
+		vertexDescriptionCount,											// deUint32									vertexBindingDescriptionCount;
 		&graphicsPipelineCreateInfo.m_vertexInputBindingDescription,	// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
-		1u,																// deUint32									vertexAttributeDescriptionCount;
+		vertexDescriptionCount,											// deUint32									vertexAttributeDescriptionCount;
 		&graphicsPipelineCreateInfo.m_vertexInputAttributeDescription,	// const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
 	};
 	const VkPipelineInputAssemblyStateCreateInfo	inputAssemblyStateCreateInfo	=
@@ -1652,7 +1653,7 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runIndependentPipelineLayoutSet
 	};
 
 	// fill proper portion of pipeline state
-	updateVertexInputInterface		(m_context, partialPipelineCreateInfo[0], VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+	updateVertexInputInterface		(m_context, partialPipelineCreateInfo[0], VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u);
 	updatePreRasterization			(m_context, partialPipelineCreateInfo[1], false);
 	updatePostRasterization			(m_context, partialPipelineCreateInfo[2], false);
 	updateFragmentOutputInterface	(m_context, partialPipelineCreateInfo[3]);
@@ -1703,7 +1704,7 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runIndependentPipelineLayoutSet
 		));
 		initialBufferBarriers[1].buffer = uniformBuffer[1]->get();
 		initialBufferBarriers[2].buffer = uniformBuffer[2]->get();
-		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, (VkDependencyFlags)0, 0, DE_NULL, 3, initialBufferBarriers.data(), 0, DE_NULL);
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, DE_NULL, 3, initialBufferBarriers.data(), 0, DE_NULL);
 
 		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, m_renderArea, m_colorClearColor);
 
