@@ -161,6 +161,7 @@ void ES32TestPackage::init(void)
 		tcu::TestCaseGroup* shadersGroup = new tcu::TestCaseGroup(getTestContext(), "shaders", "");
 		shadersGroup->addChild(new deqp::ShaderIntegerMixTests(getContext(), glu::GLSL_VERSION_320_ES));
 		shadersGroup->addChild(new deqp::ShaderNegativeTests(getContext(), glu::GLSL_VERSION_320_ES));
+		shadersGroup->addChild(new deqp::ShaderStructTests(getContext(), glu::GLSL_VERSION_320_ES));
 		shadersGroup->addChild(new glcts::AggressiveShaderOptimizationsTests(getContext()));
 		addChild(shadersGroup);
 
