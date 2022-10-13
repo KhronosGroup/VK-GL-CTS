@@ -24,7 +24,7 @@
 * \brief Drm utilities.
 *//*--------------------------------------------------------------------*/
 
-#if DEQP_SUPPORT_DRM
+#if DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 
 #include "deDynamicLibrary.hpp"
 
@@ -91,6 +91,6 @@ private:
 
 } // tcu
 
-#endif // DEQP_SUPPORT_DRM
+#endif // DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 
 #endif // _TCULIBDRM_HPP

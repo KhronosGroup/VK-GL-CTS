@@ -55,7 +55,7 @@ void testFilesExist (const VkPhysicalDeviceDrmPropertiesEXT& deviceDrmProperties
 	bool primaryFound = !deviceDrmProperties.hasPrimary;
 	bool renderFound = !deviceDrmProperties.hasRender;
 
-#if DEQP_SUPPORT_DRM
+#if DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 	static const tcu::LibDrm libDrm;
 
 	int numDrmDevices;
@@ -71,7 +71,7 @@ void testFilesExist (const VkPhysicalDeviceDrmPropertiesEXT& deviceDrmProperties
 		renderFound = true;
 
 	libDrm.freeDevices(drmDevices, numDrmDevices);
-#endif // DEQP_SUPPORT_DRM
+#endif // DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 
 	if (!primaryFound && !renderFound) {
 		TCU_THROW(NotSupportedError, "Nether DRM primary nor render device files were found");

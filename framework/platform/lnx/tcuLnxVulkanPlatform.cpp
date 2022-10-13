@@ -38,7 +38,9 @@
 
 using de::MovePtr;
 using de::UniquePtr;
+#if DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 using tcu::LibDrm;
+#endif // DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 
 #if defined (DEQP_SUPPORT_X11)
 #	include "tcuLnxX11.hpp"
@@ -227,7 +229,7 @@ public:
 
 #endif // DEQP_SUPPORT_HEADLESS
 
-#if DEQP_SUPPORT_DRM
+#if DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 
 struct VulkanWindowDirectDrm : public vk::wsi::Window
 {
@@ -244,7 +246,7 @@ public:
 	{
 	}
 
-	vk::wsi::Window* createWindow (const Maybe<UVec2>&) const
+	vk::wsi::Window* createWindow (const Maybe<UVec2>&) const override
 	{
 		return new VulkanWindowDirectDrm();
 	}
@@ -321,7 +323,7 @@ public:
 	bool m_initialized = false;
 };
 
-#endif // DEQP_SUPPORT_DRM
+#endif // DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 
 class VulkanLibrary : public vk::Library
 {
@@ -377,10 +379,10 @@ vk::wsi::Display* VulkanPlatform::createWsiDisplay (vk::wsi::Type wsiType) const
 	case vk::wsi::TYPE_HEADLESS:
 		return new VulkanDisplayHeadless();
 #endif // DEQP_SUPPORT_HEADLESS
-#if DEQP_SUPPORT_DRM
+#if DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 	case vk::wsi::TYPE_DIRECT_DRM:
 		return new VulkanDisplayDirectDrm();
-#endif // DEQP_SUPPORT_DRM
+#endif // DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 
 	default:
 		TCU_THROW(NotSupportedError, "WSI type not supported");
@@ -407,10 +409,10 @@ bool VulkanPlatform::hasDisplay (vk::wsi::Type wsiType) const
        case vk::wsi::TYPE_HEADLESS:
                return true;
 #endif // DEQP_SUPPORT_HEADLESS
-#if DEQP_SUPPORT_DRM
+#if DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 	case vk::wsi::TYPE_DIRECT_DRM:
 		return true;
-#endif // DEQP_SUPPORT_DRM
+#endif // DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 	default:
 		return false;
 

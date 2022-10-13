@@ -22,7 +22,7 @@
 * \brief Drm utilities.
 *//*--------------------------------------------------------------------*/
 
-#if DEQP_SUPPORT_DRM
+#if DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 
 #include "tcuLibDrm.hpp"
 
@@ -204,4 +204,4 @@ const char* LibDrm::libDrmFiles[] =
 
 } // tcu
 
-#endif // DEQP_SUPPORT_DRM
+#endif // DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)

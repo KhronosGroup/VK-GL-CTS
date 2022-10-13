@@ -31,9 +31,9 @@
 #include "tcuDefs.hpp"
 #include "tcuLibDrm.hpp"
 
-#if DEQP_SUPPORT_DRM
+#if DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 #include <fcntl.h>
-#endif // DEQP_SUPPORT_DRM
+#endif // DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 
 #include <string>
 #include <vector>
@@ -45,9 +45,9 @@ namespace wsi
 using namespace vk;
 using std::string;
 using std::vector;
-#if DEQP_SUPPORT_DRM
+#if DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 using tcu::LibDrm;
-#endif // DEQP_SUPPORT_DRM
+#endif // DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 
 #define INVALID_PTR 0xFFFFFFFF
 
@@ -79,7 +79,7 @@ public:
 private:
 	CustomInstance				createInstanceWithAcquireDrmDisplay			(void);
 
-#if DEQP_SUPPORT_DRM
+#if DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 	LibDrm::FdPtr				getDrmFdPtr									(void);
 	deUint32					getConnectedConnectorId						(int fd, deUint32 connectorId = 0);
 	deUint32					getValidCrtcId								(int fd, deUint32 connectorId);
@@ -98,7 +98,7 @@ private:
 	tcu::TestStatus				testReleaseDisplayEXT						(void);
 
 	const LibDrm				m_libDrm;
-#endif // DEQP_SUPPORT_DRM
+#endif // DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 
 	const CustomInstance		m_instance;
 	const InstanceInterface&	m_vki;
@@ -132,7 +132,7 @@ AcquireDrmDisplayTestInstance::AcquireDrmDisplayTestInstance (Context& context, 
  *//*--------------------------------------------------------------------*/
 tcu::TestStatus AcquireDrmDisplayTestInstance::iterate (void)
 {
-#if DEQP_SUPPORT_DRM
+#if DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 	switch (m_testId)
 	{
 		case DRM_TEST_INDEX_GET_DRM_DISPLAY:							return testGetDrmDisplayEXT();
@@ -154,7 +154,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::iterate (void)
 	TCU_FAIL("Invalid test identifier");
 #else
 	TCU_THROW(NotSupportedError, "Drm not supported.");
-#endif // DEQP_SUPPORT_DRM
+#endif // DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 }
 
 // /*--------------------------------------------------------------------*//*!
@@ -177,7 +177,7 @@ CustomInstance AcquireDrmDisplayTestInstance::createInstanceWithAcquireDrmDispla
 	return createCustomInstanceWithExtensions(m_context, requiredExtensions);
 }
 
-#if DEQP_SUPPORT_DRM
+#if DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 // /*--------------------------------------------------------------------*//*!
 //  * \brief Open a fd for the Drm corresponding to the Vulkan instance
 //  *
@@ -663,7 +663,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testReleaseDisplayEXT (void)
 
 	return tcu::TestStatus::pass("pass");
 }
-#endif // DEQP_SUPPORT_DRM
+#endif // DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 
 /*--------------------------------------------------------------------*//*!
  * \brief Acquire Drm display tests case class
