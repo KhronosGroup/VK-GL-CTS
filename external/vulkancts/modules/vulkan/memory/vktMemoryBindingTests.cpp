@@ -539,13 +539,16 @@ protected:
 	void						layoutTransitionResource			(Move<TTarget>&			target);
 
 	void						createBuffer						(Move<VkBuffer>&		buffer,
-																	 Move<VkDeviceMemory>&	memory);
+																	 Move<VkDeviceMemory>&	memory,
+																	 VkDeviceSize* memorySize);
 
 	void						pushData							(VkDeviceMemory			memory,
-																	 deUint32				dataSeed);
+																	 deUint32				dataSeed,
+																	VkDeviceSize size);
 
 	deBool						checkData							(VkDeviceMemory			memory,
-																	 deUint32				dataSeed);
+																	 deUint32				dataSeed,
+																	VkDeviceSize size);
 
 	BindingCaseParameters		m_params;
 
@@ -874,7 +877,8 @@ void					BaseTestInstance::layoutTransitionResource<VkImage>	(Move<VkImage>&			t
 
 
 void					BaseTestInstance::createBuffer						(Move<VkBuffer>&		buffer,
-																			 Move<VkDeviceMemory>&	memory)
+																			 Move<VkDeviceMemory>&	memory,
+																			 VkDeviceSize*			memorySize)
 {
 	const DeviceInterface&				vk									= getDeviceInterface();
 	const VkDevice						vkDevice							= getDevice();
@@ -883,6 +887,7 @@ void					BaseTestInstance::createBuffer						(Move<VkBuffer>&		buffer,
 
 	buffer = vk::createBuffer(vk, vkDevice, &bufferParams);
 	vk.getBufferMemoryRequirements(vkDevice, *buffer, &memReqs);
+	*memorySize = memReqs.size;
 
 	const VkMemoryAllocateInfo			memAlloc							= makeMemoryAllocateInfo(m_context, memReqs, MemoryHostVisible);
 	VkDeviceMemory						rawMemory							= DE_NULL;
@@ -893,15 +898,16 @@ void					BaseTestInstance::createBuffer						(Move<VkBuffer>&		buffer,
 }
 
 void					BaseTestInstance::pushData							(VkDeviceMemory			memory,
-																			 deUint32				dataSeed)
+																			 deUint32				dataSeed,
+																			 VkDeviceSize			size)
 {
 	const DeviceInterface&				vk									= getDeviceInterface();
 	const VkDevice						vkDevice							= getDevice();
-	MemoryMappingRAII					hostMemory							(vk, vkDevice, memory, 0u, m_params.bufferSize, 0u);
+	MemoryMappingRAII					hostMemory							(vk, vkDevice, memory, 0u, size, 0u);
 	deUint8*							hostBuffer							= static_cast<deUint8*>(hostMemory.ptr());
 	SimpleRandomGenerator				random								(dataSeed);
 
-	for (deUint32 i = 0u; i < m_params.bufferSize; ++i)
+	for (deUint32 i = 0u; i < size; ++i)
 	{
 		hostBuffer[i] = static_cast<deUint8>(random.getNext() & 0xFFu);
 	}
@@ -909,17 +915,18 @@ void					BaseTestInstance::pushData							(VkDeviceMemory			memory,
 }
 
 deBool					BaseTestInstance::checkData							(VkDeviceMemory			memory,
-																			 deUint32				dataSeed)
+																			 deUint32				dataSeed,
+																			 VkDeviceSize			size)
 {
 	const DeviceInterface&				vk									= getDeviceInterface();
 	const VkDevice						vkDevice							= getDevice();
-	MemoryMappingRAII					hostMemory							(vk, vkDevice, memory, 0u, m_params.bufferSize, 0u);
+	MemoryMappingRAII					hostMemory							(vk, vkDevice, memory, 0u, size, 0u);
 	deUint8*							hostBuffer							= static_cast<deUint8*>(hostMemory.ptr());
 	SimpleRandomGenerator				random								(dataSeed);
 
 	hostMemory.invalidate();
 
-	for (deUint32 i = 0u; i < m_params.bufferSize; ++i)
+	for (deUint32 i = 0u; i < size; ++i)
 	{
 		if (hostBuffer[i] != static_cast<deUint8>(random.getNext() & 0xFFu) )
 			return DE_FALSE;
@@ -939,6 +946,10 @@ public:
 
 	virtual tcu::TestStatus				iterate								(void)
 	{
+		const InstanceInterface&	vkInstance			= m_context.getInstanceInterface();
+		const VkPhysicalDevice		vkPhysicalDevice	= m_context.getPhysicalDevice();
+		VkPhysicalDeviceProperties	properties;
+		vkInstance.getPhysicalDeviceProperties(vkPhysicalDevice, &properties);
 		std::vector<de::SharedPtr<Move<TTarget> > >
 										targets;
 		MemoryRegionsList				memory;
@@ -949,21 +960,23 @@ public:
 
 		Move<VkBuffer>					srcBuffer;
 		Move<VkDeviceMemory>			srcMemory;
+		VkDeviceSize					srcMemorySize;
 
-		createBuffer(srcBuffer, srcMemory);
-		pushData(*srcMemory, 1);
+		createBuffer(srcBuffer, srcMemory, &srcMemorySize);
+		pushData(*srcMemory, 1, srcMemorySize);
 
 		Move<VkBuffer>					dstBuffer;
 		Move<VkDeviceMemory>			dstMemory;
+		VkDeviceSize					dstMemorySize;
 
-		createBuffer(dstBuffer, dstMemory);
+		createBuffer(dstBuffer, dstMemory, &dstMemorySize);
 
 		deBool							passed								= DE_TRUE;
 		for (deUint32 i = 0; passed && i < m_params.targetsCount; ++i)
 		{
 			fillUpResource(srcBuffer, *targets[i]);
 			readUpResource(*targets[i], dstBuffer);
-			passed = checkData(*dstMemory, 1);
+			passed = checkData(*dstMemory, 1, dstMemorySize);
 		}
 
 		return passed ? tcu::TestStatus::pass("Pass") : tcu::TestStatus::fail("Failed");
@@ -982,6 +995,10 @@ public:
 
 	virtual tcu::TestStatus				iterate								(void)
 	{
+		const InstanceInterface& vkInstance = m_context.getInstanceInterface();
+		const VkPhysicalDevice		vkPhysicalDevice = m_context.getPhysicalDevice();
+		VkPhysicalDeviceProperties	properties;
+		vkInstance.getPhysicalDeviceProperties(vkPhysicalDevice, &properties);
 		std::vector<de::SharedPtr<Move<TTarget> > >
 										targets[2];
 		MemoryRegionsList				memory;
@@ -994,14 +1011,16 @@ public:
 
 		Move<VkBuffer>					srcBuffer;
 		Move<VkDeviceMemory>			srcMemory;
+		VkDeviceSize					srcMemorySize;
 
-		createBuffer(srcBuffer, srcMemory);
-		pushData(*srcMemory, 2);
+		createBuffer(srcBuffer, srcMemory, &srcMemorySize);
+		pushData(*srcMemory, 2, srcMemorySize);
 
 		Move<VkBuffer>					dstBuffer;
 		Move<VkDeviceMemory>			dstMemory;
+		VkDeviceSize					dstMemorySize;
 
-		createBuffer(dstBuffer, dstMemory);
+		createBuffer(dstBuffer, dstMemory, &dstMemorySize);
 
 		deBool							passed								= DE_TRUE;
 		for (deUint32 i = 0; passed && i < m_params.targetsCount; ++i)
@@ -1010,7 +1029,7 @@ public:
 			layoutTransitionResource(*(targets[1][i]));
 			fillUpResource(srcBuffer, *(targets[0][i]));
 			readUpResource(*(targets[1][i]), dstBuffer);
-			passed = checkData(*dstMemory, 2);
+			passed = checkData(*dstMemory, 2, dstMemorySize);
 		}
 
 		return passed ? tcu::TestStatus::pass("Pass") : tcu::TestStatus::fail("Failed");
