@@ -273,7 +273,7 @@ tcu::Format::Bitfield<32> getDescriptorSetLayoutCreateFlagsStr (VkDescriptorSetL
 	{
 		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR,		"VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR"),
 		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT,	"VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT"),
-		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_VALVE,		"VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_VALVE"),
+		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_EXT,		"VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -460,7 +460,7 @@ const char* getDescriptorTypeName (VkDescriptorType value)
 		case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK:		return "VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK";
 		case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:	return "VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR";
 		case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV:	return "VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV";
-		case VK_DESCRIPTOR_TYPE_MUTABLE_VALVE:				return "VK_DESCRIPTOR_TYPE_MUTABLE_VALVE";
+		case VK_DESCRIPTOR_TYPE_MUTABLE_EXT:				return "VK_DESCRIPTOR_TYPE_MUTABLE_EXT";
 		case VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM:	return "VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM";
 		case VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM:		return "VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM";
 		default:											return DE_NULL;
@@ -1996,8 +1996,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_VALVE:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_VALVE";
-		case VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_VALVE:							return "VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_VALVE";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_EXT:								return "VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT:								return "VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT";
 		case VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT:							return "VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT";
@@ -2224,7 +2224,7 @@ tcu::Format::Bitfield<32> getDescriptorPoolCreateFlagsStr (VkDescriptorPoolCreat
 	{
 		tcu::Format::BitDesc(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,	"VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT"),
 		tcu::Format::BitDesc(VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT,	"VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT"),
-		tcu::Format::BitDesc(VK_DESCRIPTOR_POOL_CREATE_HOST_ONLY_BIT_VALVE,		"VK_DESCRIPTOR_POOL_CREATE_HOST_ONLY_BIT_VALVE"),
+		tcu::Format::BitDesc(VK_DESCRIPTOR_POOL_CREATE_HOST_ONLY_BIT_EXT,		"VK_DESCRIPTOR_POOL_CREATE_HOST_ONLY_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -12552,9 +12552,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImage2DViewOf3D
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT& value)
 {
-	s << "VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE = {\n";
+	s << "VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmutableDescriptorType = " << value.mutableDescriptorType << '\n';
@@ -12562,18 +12562,18 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMutableDescript
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkMutableDescriptorTypeListVALVE& value)
+std::ostream& operator<< (std::ostream& s, const VkMutableDescriptorTypeListEXT& value)
 {
-	s << "VkMutableDescriptorTypeListVALVE = {\n";
+	s << "VkMutableDescriptorTypeListEXT = {\n";
 	s << "\tdescriptorTypeCount = " << value.descriptorTypeCount << '\n';
 	s << "\tpDescriptorTypes = " << value.pDescriptorTypes << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkMutableDescriptorTypeCreateInfoVALVE& value)
+std::ostream& operator<< (std::ostream& s, const VkMutableDescriptorTypeCreateInfoEXT& value)
 {
-	s << "VkMutableDescriptorTypeCreateInfoVALVE = {\n";
+	s << "VkMutableDescriptorTypeCreateInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmutableDescriptorTypeListCount = " << value.mutableDescriptorTypeListCount << '\n';

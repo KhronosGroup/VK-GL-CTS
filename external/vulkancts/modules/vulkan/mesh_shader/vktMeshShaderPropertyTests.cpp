@@ -23,6 +23,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktMeshShaderPropertyTests.hpp"
+#include "vktMeshShaderUtil.hpp"
 #include "vktTestCase.hpp"
 
 #include "vkBufferWithMemory.hpp"
@@ -99,19 +100,9 @@ std::string getCommonStorageBufferDecl ()
 
 void genericCheckSupport (Context& context, bool taskShaderNeeded)
 {
-	context.requireDeviceFunctionality("VK_NV_mesh_shader");
+	checkTaskMeshShaderSupportNV(context, taskShaderNeeded, true);
 
-	const auto& meshFeatures = context.getMeshShaderFeatures();
-
-	if (!meshFeatures.meshShader)
-		TCU_THROW(NotSupportedError, "Mesh shaders not supported");
-
-	if (taskShaderNeeded && !meshFeatures.taskShader)
-		TCU_THROW(NotSupportedError, "Task shaders not supported");
-
-	const auto& features = context.getDeviceFeatures();
-	if (!features.vertexPipelineStoresAndAtomics)
-		TCU_THROW(NotSupportedError, "Vertex pipeline stores and atomics not supported");
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
 }
 
 struct InstanceParams
@@ -523,11 +514,13 @@ std::string getSharedMemoryBody (uint32_t localSize)
 		<< "            sharedArray[i] = 0u;\n"
 		<< "    }\n"
 		<< "\n"
+		<< "    memoryBarrierShared();\n"
 		<< "    barrier();\n"
 		<< "\n"
 		<< "    for (uint i = 0; i < arrayElements; ++i)\n"
 		<< "        atomicAdd(sharedArray[i], 1u);\n"
 		<< "\n"
+		<< "    memoryBarrierShared();\n"
 		<< "    barrier();\n"
 		<< "\n"
 		<< "    uint allGood = 1u;\n"

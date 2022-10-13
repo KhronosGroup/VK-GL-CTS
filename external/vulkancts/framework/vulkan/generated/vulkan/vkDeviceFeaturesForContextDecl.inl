@@ -96,7 +96,6 @@ const vk::VkPhysicalDeviceImageCompressionControlFeaturesEXT&				getImageCompres
 const vk::VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT&			getAttachmentFeedbackLoopLayoutFeaturesEXT			(void) const;
 const vk::VkPhysicalDevice4444FormatsFeaturesEXT&							get4444FormatsFeaturesEXT							(void) const;
 const vk::VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT&						getRGBA10X6FormatsFeaturesEXT						(void) const;
-const vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE&				getMutableDescriptorTypeFeaturesVALVE				(void) const;
 const vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT&				getVertexInputDynamicStateFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceDepthClipControlFeaturesEXT&						getDepthClipControlFeaturesEXT						(void) const;
 const vk::VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT&			getPrimitiveTopologyListRestartFeaturesEXT			(void) const;
@@ -128,5 +127,6 @@ const vk::VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT&	getRast
 const vk::VkPhysicalDeviceLegacyDitheringFeaturesEXT&						getLegacyDitheringFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceTilePropertiesFeaturesQCOM&						getTilePropertiesFeaturesQCOM						(void) const;
 const vk::VkPhysicalDeviceAmigoProfilingFeaturesSEC&						getAmigoProfilingFeaturesSEC						(void) const;
+const vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT&					getMutableDescriptorTypeFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&							getProtectedMemoryFeatures							(void) const;
 const vk::VkPhysicalDeviceShaderDrawParametersFeatures&						getShaderDrawParametersFeatures						(void) const;

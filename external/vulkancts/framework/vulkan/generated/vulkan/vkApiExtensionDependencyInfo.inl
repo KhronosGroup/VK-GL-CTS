@@ -517,6 +517,7 @@ static const std::tuple<deUint32, deUint32, deUint32, const char*, const char*>	
 	std::make_tuple(0, 1, 0, "VK_EXT_legacy_dithering", "VK_KHR_get_physical_device_properties2"),
 	std::make_tuple(0, 1, 0, "VK_QCOM_tile_properties", "VK_KHR_get_physical_device_properties2"),
 	std::make_tuple(0, 1, 0, "VK_SEC_amigo_profiling", "VK_KHR_get_physical_device_properties2"),
+	std::make_tuple(0, 1, 0, "VK_EXT_mutable_descriptor_type", "VK_KHR_maintenance3"),
 };
 static const std::tuple<deUint32, deUint32, deUint32, deUint32>	releasedApiVersions[]	=
 {
@@ -823,4 +824,5 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_legacy_dithering"),
 	std::make_tuple(1, 0, "VK_QCOM_tile_properties"),
 	std::make_tuple(1, 0, "VK_SEC_amigo_profiling"),
+	std::make_tuple(1, 0, "VK_EXT_mutable_descriptor_type"),
 };

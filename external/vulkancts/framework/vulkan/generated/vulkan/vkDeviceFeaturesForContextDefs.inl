@@ -96,7 +96,6 @@ const vk::VkPhysicalDeviceImageCompressionControlFeaturesEXT&				Context::getIma
 const vk::VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT&			Context::getAttachmentFeedbackLoopLayoutFeaturesEXT			(void) const { return m_device->getAttachmentFeedbackLoopLayoutFeaturesEXT();		}
 const vk::VkPhysicalDevice4444FormatsFeaturesEXT&							Context::get4444FormatsFeaturesEXT							(void) const { return m_device->get4444FormatsFeaturesEXT();						}
 const vk::VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT&						Context::getRGBA10X6FormatsFeaturesEXT						(void) const { return m_device->getRGBA10X6FormatsFeaturesEXT();					}
-const vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE&				Context::getMutableDescriptorTypeFeaturesVALVE				(void) const { return m_device->getMutableDescriptorTypeFeaturesVALVE();			}
 const vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT&				Context::getVertexInputDynamicStateFeaturesEXT				(void) const { return m_device->getVertexInputDynamicStateFeaturesEXT();			}
 const vk::VkPhysicalDeviceDepthClipControlFeaturesEXT&						Context::getDepthClipControlFeaturesEXT						(void) const { return m_device->getDepthClipControlFeaturesEXT();					}
 const vk::VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT&			Context::getPrimitiveTopologyListRestartFeaturesEXT			(void) const { return m_device->getPrimitiveTopologyListRestartFeaturesEXT();		}
@@ -128,5 +127,6 @@ const vk::VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT&	Context
 const vk::VkPhysicalDeviceLegacyDitheringFeaturesEXT&						Context::getLegacyDitheringFeaturesEXT						(void) const { return m_device->getLegacyDitheringFeaturesEXT();					}
 const vk::VkPhysicalDeviceTilePropertiesFeaturesQCOM&						Context::getTilePropertiesFeaturesQCOM						(void) const { return m_device->getTilePropertiesFeaturesQCOM();					}
 const vk::VkPhysicalDeviceAmigoProfilingFeaturesSEC&						Context::getAmigoProfilingFeaturesSEC						(void) const { return m_device->getAmigoProfilingFeaturesSEC();						}
+const vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT&					Context::getMutableDescriptorTypeFeaturesEXT				(void) const { return m_device->getMutableDescriptorTypeFeaturesEXT();				}
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&							Context::getProtectedMemoryFeatures							(void) const { return m_device->getProtectedMemoryFeatures();						}
 const vk::VkPhysicalDeviceShaderDrawParametersFeatures&						Context::getShaderDrawParametersFeatures					(void) const { return m_device->getShaderDrawParametersFeatures();					}

@@ -118,7 +118,7 @@ DiscardTestInstance::DiscardTestInstance(Context& context, vk::PipelineConstruct
 	};
 
 	DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo(1, &binding);
-	m_descriptorSetLayout = vk::createDescriptorSetLayout(m_vk, device, &descriptorSetLayoutCreateInfo);
+	m_otherSetLayout = vk::createDescriptorSetLayout(m_vk, device, &descriptorSetLayoutCreateInfo);
 }
 
 void DiscardTestInstance::initRenderPass (const vk::VkDevice device)
@@ -299,7 +299,7 @@ tcu::TestStatus DiscardTestInstance::iterate(void) {
 	};
 
 	vk::Move<vk::VkDescriptorPool>		descriptorPool		= createDescriptorPool(m_vk, device, &poolInfo);
-	vk::Move<vk::VkDescriptorSet>		descriptorSet		= makeDescriptorSet(m_vk, device, *descriptorPool, *m_descriptorSetLayout);
+	vk::Move<vk::VkDescriptorSet>		descriptorSet		= makeDescriptorSet(m_vk, device, *descriptorPool, *m_otherSetLayout);
 
 	const vk::VkDeviceSize				size				= sizeof(int);
 

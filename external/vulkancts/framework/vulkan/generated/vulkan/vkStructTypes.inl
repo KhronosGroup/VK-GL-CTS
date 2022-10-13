@@ -5900,25 +5900,25 @@ struct VkPhysicalDeviceImage2DViewOf3DFeaturesEXT
 	VkBool32		sampler2DViewOf3D;
 };
 
-struct VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE
+struct VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT
 {
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		mutableDescriptorType;
 };
 
-struct VkMutableDescriptorTypeListVALVE
+struct VkMutableDescriptorTypeListEXT
 {
 	uint32_t				descriptorTypeCount;
 	const VkDescriptorType*	pDescriptorTypes;
 };
 
-struct VkMutableDescriptorTypeCreateInfoVALVE
+struct VkMutableDescriptorTypeCreateInfoEXT
 {
 	VkStructureType							sType;
 	const void*								pNext;
 	uint32_t								mutableDescriptorTypeListCount;
-	const VkMutableDescriptorTypeListVALVE*	pMutableDescriptorTypeLists;
+	const VkMutableDescriptorTypeListEXT*	pMutableDescriptorTypeLists;
 };
 
 struct VkPhysicalDeviceDepthClipControlFeaturesEXT
@@ -8685,6 +8685,12 @@ typedef VkCopyImageToBufferInfo2 VkCopyImageToBufferInfo2KHR;
 typedef VkResolveImageInfo2 VkResolveImageInfo2KHR;
 
 typedef VkPhysicalDeviceShaderTerminateInvocationFeatures VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR;
+
+typedef VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE;
+
+typedef VkMutableDescriptorTypeListEXT VkMutableDescriptorTypeListVALVE;
+
+typedef VkMutableDescriptorTypeCreateInfoEXT VkMutableDescriptorTypeCreateInfoVALVE;
 
 typedef VkMemoryBarrier2 VkMemoryBarrier2KHR;
 
