@@ -1053,7 +1053,6 @@ void PrimitivesGeneratedQueryTestCase::initPrograms (vk::SourceCollections& prog
 		if (vertXfb)
 			src	<<	"    out0 = vec4(42);\n";
 
-		src << "    gl_Position = vec4(1.0f);\n";
 		src	<<	"}\n";
 
 		programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
