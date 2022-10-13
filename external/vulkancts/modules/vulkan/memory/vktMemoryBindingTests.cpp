@@ -774,7 +774,8 @@ void									layoutTransitionResource<VkImage>	(Move<VkImage>&			target,
 void									createBuffer						(Move<VkBuffer>&		buffer,
 																			 Move<VkDeviceMemory>&	memory,
 																			 Context&				ctx,
-																			 BindingCaseParameters	params)
+																			 BindingCaseParameters	params,
+																			 VkDeviceSize*			memorySize)
 {
 	const DeviceInterface&				vk									= ctx.getDeviceInterface();
 	const VkDevice						vkDevice							= ctx.getDevice();
@@ -783,6 +784,7 @@ void									createBuffer						(Move<VkBuffer>&		buffer,
 
 	buffer = createBuffer(vk, vkDevice, &bufferParams);
 	vk.getBufferMemoryRequirements(vkDevice, *buffer, &memReqs);
+	*memorySize = memReqs.size;
 
 	const VkMemoryAllocateInfo			memAlloc							= makeMemoryAllocateInfo(ctx, memReqs, MemoryHostVisible);
 	VkDeviceMemory						rawMemory							= DE_NULL;
@@ -795,15 +797,15 @@ void									createBuffer						(Move<VkBuffer>&		buffer,
 void									pushData							(VkDeviceMemory			memory,
 																			 deUint32				dataSeed,
 																			 Context&				ctx,
-																			 BindingCaseParameters	params)
+																			 VkDeviceSize			size)
 {
 	const DeviceInterface&				vk									= ctx.getDeviceInterface();
 	const VkDevice						vkDevice							= ctx.getDevice();
-	MemoryMappingRAII					hostMemory							(vk, vkDevice, memory, 0u, params.bufferSize, 0u);
+	MemoryMappingRAII					hostMemory							(vk, vkDevice, memory, 0u, size, 0u);
 	deUint8*							hostBuffer							= static_cast<deUint8*>(hostMemory.ptr());
 	SimpleRandomGenerator				random								(dataSeed);
 
-	for (deUint32 i = 0u; i < params.bufferSize; ++i)
+	for (deUint32 i = 0u; i < size; ++i)
 	{
 		hostBuffer[i] = static_cast<deUint8>(random.getNext() & 0xFFu);
 	}
@@ -813,11 +815,12 @@ void									pushData							(VkDeviceMemory			memory,
 deBool									checkData							(VkDeviceMemory			memory,
 																			 deUint32				dataSeed,
 																			 Context&				ctx,
-																			 BindingCaseParameters	params)
+																			 BindingCaseParameters	params,
+																			 VkDeviceSize			size)
 {
 	const DeviceInterface&				vk									= ctx.getDeviceInterface();
 	const VkDevice						vkDevice							= ctx.getDevice();
-	MemoryMappingRAII					hostMemory							(vk, vkDevice, memory, 0u, params.bufferSize, 0u);
+	MemoryMappingRAII					hostMemory							(vk, vkDevice, memory, 0u, size, 0u);
 	deUint8*							hostBuffer							= static_cast<deUint8*>(hostMemory.ptr());
 	SimpleRandomGenerator				random								(dataSeed);
 
@@ -844,6 +847,10 @@ public:
 
 	virtual tcu::TestStatus				iterate								(void)
 	{
+		const InstanceInterface&	vkInstance			= m_context.getInstanceInterface();
+		const VkPhysicalDevice		vkPhysicalDevice	= m_context.getPhysicalDevice();
+		VkPhysicalDeviceProperties	properties;
+		vkInstance.getPhysicalDeviceProperties(vkPhysicalDevice, &properties);
 		std::vector<de::SharedPtr<Move<TTarget> > >
 										targets;
 		MemoryRegionsList				memory;
@@ -854,21 +861,23 @@ public:
 
 		Move<VkBuffer>					srcBuffer;
 		Move<VkDeviceMemory>			srcMemory;
+		VkDeviceSize					srcMemorySize;
 
-		createBuffer(srcBuffer, srcMemory, m_context, m_params);
-		pushData(*srcMemory, 1, m_context, m_params);
+		createBuffer(srcBuffer, srcMemory, m_context, m_params, &srcMemorySize);
+		pushData(*srcMemory, 1, m_context, srcMemorySize);
 
 		Move<VkBuffer>					dstBuffer;
 		Move<VkDeviceMemory>			dstMemory;
+		VkDeviceSize					dstMemorySize;
 
-		createBuffer(dstBuffer, dstMemory, m_context, m_params);
+		createBuffer(dstBuffer, dstMemory, m_context, m_params, &dstMemorySize);
 
 		deBool							passed								= DE_TRUE;
 		for (deUint32 i = 0; passed && i < m_params.targetsCount; ++i)
 		{
 			fillUpResource(srcBuffer, *targets[i], m_context, m_params);
 			readUpResource(*targets[i], dstBuffer, m_context, m_params);
-			passed = checkData(*dstMemory, 1, m_context, m_params);
+			passed = checkData(*dstMemory, 1, m_context, m_params, dstMemorySize);
 		}
 
 		return passed ? tcu::TestStatus::pass("Pass") : tcu::TestStatus::fail("Failed");
@@ -890,6 +899,10 @@ public:
 
 	virtual tcu::TestStatus				iterate								(void)
 	{
+		const InstanceInterface& vkInstance = m_context.getInstanceInterface();
+		const VkPhysicalDevice		vkPhysicalDevice = m_context.getPhysicalDevice();
+		VkPhysicalDeviceProperties	properties;
+		vkInstance.getPhysicalDeviceProperties(vkPhysicalDevice, &properties);
 		std::vector<de::SharedPtr<Move<TTarget> > >
 										targets[2];
 		MemoryRegionsList				memory;
@@ -902,14 +915,16 @@ public:
 
 		Move<VkBuffer>					srcBuffer;
 		Move<VkDeviceMemory>			srcMemory;
+		VkDeviceSize					srcMemorySize;
 
-		createBuffer(srcBuffer, srcMemory, m_context, m_params);
-		pushData(*srcMemory, 2, m_context, m_params);
+		createBuffer(srcBuffer, srcMemory, m_context, m_params, &srcMemorySize);
+		pushData(*srcMemory, 2, m_context, srcMemorySize);
 
 		Move<VkBuffer>					dstBuffer;
 		Move<VkDeviceMemory>			dstMemory;
+		VkDeviceSize					dstMemorySize;
 
-		createBuffer(dstBuffer, dstMemory, m_context, m_params);
+		createBuffer(dstBuffer, dstMemory, m_context, m_params, &dstMemorySize);
 
 		deBool							passed								= DE_TRUE;
 		for (deUint32 i = 0; passed && i < m_params.targetsCount; ++i)
@@ -918,7 +933,7 @@ public:
 			layoutTransitionResource(*(targets[1][i]), m_context);
 			fillUpResource(srcBuffer, *(targets[0][i]), m_context, m_params);
 			readUpResource(*(targets[1][i]), dstBuffer, m_context, m_params);
-			passed = checkData(*dstMemory, 2, m_context, m_params);
+			passed = checkData(*dstMemory, 2, m_context, m_params, dstMemorySize);
 		}
 
 		return passed ? tcu::TestStatus::pass("Pass") : tcu::TestStatus::fail("Failed");

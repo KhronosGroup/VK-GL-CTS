@@ -7,7 +7,6 @@ dEQP-VK.api.driver_properties.info_zero_terminated
 dEQP-VK.api.smoke.create_sampler
 dEQP-VK.api.smoke.create_shader
 dEQP-VK.api.smoke.triangle
-dEQP-VK.api.smoke.triangle_ext_structs
 dEQP-VK.api.smoke.asm_triangle
 dEQP-VK.api.smoke.asm_triangle_no_opname
 dEQP-VK.api.smoke.unused_resolve_attachment

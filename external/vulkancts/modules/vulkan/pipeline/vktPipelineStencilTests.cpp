@@ -584,6 +584,18 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 			1.0f,															//	float									lineWidth;
 		};
 
+		const vk::VkPipelineColorBlendStateCreateInfo colorBlendStateParams
+		{
+			vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType
+			DE_NULL,														// const void*									pNext
+			0u,																// VkPipelineColorBlendStateCreateFlags			flags
+			VK_FALSE,														// VkBool32										logicOpEnable
+			vk::VK_LOGIC_OP_CLEAR,											// VkLogicOp									logicOp
+			0u,																// deUint32										attachmentCount
+			DE_NULL,														// const VkPipelineColorBlendAttachmentState*	pAttachments
+			{ 1.0f, 1.0f, 1.0f, 1.0f }										// float										blendConstants[4]
+		};
+
 		// Setup different stencil masks and refs in each quad
 		for (int quadNdx = 0; quadNdx < StencilTest::QUAD_COUNT; quadNdx++)
 		{
@@ -599,24 +611,25 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 			back.writeMask		= config.backWriteMask;
 			back.reference		= config.backRef;
 
-			m_graphicsPipelines[quadNdx] = makeGraphicsPipeline(vk,										// const DeviceInterface&                        vk
-																vkDevice,								// const VkDevice                                device
-																*m_pipelineLayout,						// const VkPipelineLayout                        pipelineLayout
-																*m_vertexShaderModule,					// const VkShaderModule                          vertexShaderModule
-																DE_NULL,								// const VkShaderModule                          tessellationControlModule
-																DE_NULL,								// const VkShaderModule                          tessellationEvalModule
-																DE_NULL,								// const VkShaderModule                          geometryShaderModule
-																*m_fragmentShaderModule,				// const VkShaderModule                          fragmentShaderModule
-																*m_renderPass,							// const VkRenderPass                            renderPass
-																viewports,								// const std::vector<VkViewport>&                viewports
-																scissors,								// const std::vector<VkRect2D>&                  scissors
-																VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	// const VkPrimitiveTopology                     topology
-																0u,										// const deUint32                                subpass
-																0u,										// const deUint32                                patchControlPoints
-																&vertexInputStateParams,				// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-																&rasterizationStateParams,				// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
-																DE_NULL,								// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
-																&depthStencilStateParams);				// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
+			m_graphicsPipelines[quadNdx] = makeGraphicsPipeline(vk,																// const DeviceInterface&                        vk
+																vkDevice,														// const VkDevice                                device
+																*m_pipelineLayout,												// const VkPipelineLayout                        pipelineLayout
+																*m_vertexShaderModule,											// const VkShaderModule                          vertexShaderModule
+																DE_NULL,														// const VkShaderModule                          tessellationControlModule
+																DE_NULL,														// const VkShaderModule                          tessellationEvalModule
+																DE_NULL,														// const VkShaderModule                          geometryShaderModule
+																*m_fragmentShaderModule,										// const VkShaderModule                          fragmentShaderModule
+																*m_renderPass,													// const VkRenderPass                            renderPass
+																viewports,														// const std::vector<VkViewport>&                viewports
+																scissors,														// const std::vector<VkRect2D>&                  scissors
+																VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,							// const VkPrimitiveTopology                     topology
+																0u,																// const deUint32                                subpass
+																0u,																// const deUint32                                patchControlPoints
+																&vertexInputStateParams,										// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+																&rasterizationStateParams,										// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+																DE_NULL,														// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
+																&depthStencilStateParams,										// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
+																(m_colorAttachmentEnable ? DE_NULL : &colorBlendStateParams));	// const VkPipelineColorBlendStateCreateInfo*	 colorBlendStateCreateInfo
 		}
 	}
 
