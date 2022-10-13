@@ -1166,10 +1166,11 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 			VK_CHECK(synchronizationWrapperA->queueSubmit(queueA, DE_NULL));
 
 			{
-				NativeHandle	nativeSemaphoreHandle;
+				NativeHandle						nativeSemaphoreHandle;
+				const vk::VkSemaphoreImportFlags	flags = isSupportedPermanence(m_semaphoreHandleType, PERMANENCE_PERMANENT) ? (vk::VkSemaphoreImportFlagBits)0u : vk::VK_SEMAPHORE_IMPORT_TEMPORARY_BIT;
 
 				getSemaphoreNative(m_vkdA, *m_deviceA, *semaphoreA, m_semaphoreHandleType, nativeSemaphoreHandle);
-				importSemaphore(m_vkdB, *m_deviceB, *semaphoreB, m_semaphoreHandleType, nativeSemaphoreHandle, 0u);
+				importSemaphore(m_vkdB, *m_deviceB, *semaphoreB, m_semaphoreHandleType, nativeSemaphoreHandle, flags);
 			}
 		}
 		{

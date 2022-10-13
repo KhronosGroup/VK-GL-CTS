@@ -1374,6 +1374,27 @@ void ImageClearingTestInstance::preClearImage (const deUint32 imageMipLevels, Vk
 
 	m_vkd.cmdFillBuffer(*commandBuffer, *m_stagingBuffer, 0u, VK_WHOLE_SIZE, 0u);
 
+	const vk::VkBufferMemoryBarrier copyBufferBarrier       =
+	  {
+		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType
+		DE_NULL,										// const void*		pNext
+		VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags	srcAccessMask
+		VK_ACCESS_TRANSFER_READ_BIT,					// VkAccessFlags	dstAccessMask
+		VK_QUEUE_FAMILY_IGNORED,						// uint32_t			srcQueueFamilyIndex
+		VK_QUEUE_FAMILY_IGNORED,						// uint32_t			dstQueueFamilyIndex
+		*m_stagingBuffer,								// VkBuffer			buffer
+		0u,												// VkDeviceSize		offset
+		VK_WHOLE_SIZE,									// VkDeviceSize		size
+	};
+
+	m_vkd.cmdPipelineBarrier(*commandBuffer,
+							 VK_PIPELINE_STAGE_TRANSFER_BIT,
+							 VK_PIPELINE_STAGE_TRANSFER_BIT,
+							 (VkDependencyFlags)0,
+							 0, (const vk::VkMemoryBarrier*)DE_NULL,
+							 1, &copyBufferBarrier,
+							 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
+
 	pipelineImageBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,			// VkPipelineStageFlags		srcStageMask
 						 VK_PIPELINE_STAGE_TRANSFER_BIT,			// VkPipelineStageFlags		dstStageMask
 						 VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask
