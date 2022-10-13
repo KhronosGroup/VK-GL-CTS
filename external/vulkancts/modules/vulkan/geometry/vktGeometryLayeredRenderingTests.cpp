@@ -270,7 +270,7 @@ Move<VkRenderPass> makeRenderPassWithSelfDependency (const DeviceInterface&	vk,
 		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,	// VkPipelineStageFlags	dstStageMask
 		VK_ACCESS_SHADER_WRITE_BIT,				// VkAccessFlags		srcAccessMask
 		VK_ACCESS_SHADER_READ_BIT,				// VkAccessFlags		dstAccessMask
-		0u,										// VkDependencyFlags	dependencyFlags
+		VK_DEPENDENCY_BY_REGION_BIT,			// VkDependencyFlags	dependencyFlags
 	};
 
 	const VkRenderPassCreateInfo	renderPassInfo			=
@@ -1782,7 +1782,7 @@ tcu::TestStatus testSecondaryCmdBuffer (Context& context, const TestParams param
 			VK_ACCESS_SHADER_READ_BIT			// VkAccessFlags	dstAccessMask
 		};
 
-		vk.cmdPipelineBarrier(*secondaryCmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 1u, &barrier, 0u, DE_NULL, 0u, DE_NULL);
+		vk.cmdPipelineBarrier(*secondaryCmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_DEPENDENCY_BY_REGION_BIT, 1u, &barrier, 0u, DE_NULL, 0u, DE_NULL);
 	}
 	vk.cmdDraw(*secondaryCmdBuffer, 1u, 1u, 0u, 0u);
 	endCommandBuffer(vk, *secondaryCmdBuffer);
