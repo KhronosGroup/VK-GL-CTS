@@ -783,6 +783,10 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context&			
 
 		VkPipelineRenderingCreateInfoKHR* pNext = DE_NULL;
 		const std::vector<VkFormat> colorAttachmentFormats(testParams.colorUsed.size(), FORMAT_COLOR);
+		const bool hasDepth = m_testParams.depthStencilType == DEPTH_STENCIL_BOTH ||
+			m_testParams.depthStencilType == DEPTH_STENCIL_DEPTH_ONLY;
+		const bool hasStencil = m_testParams.depthStencilType == DEPTH_STENCIL_BOTH ||
+			m_testParams.depthStencilType == DEPTH_STENCIL_STENCIL_ONLY;
 		VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
@@ -790,8 +794,8 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context&			
 			0u,
 			static_cast<deUint32>(colorAttachmentFormats.size()),
 			colorAttachmentFormats.data(),
-			(hasDepthStencil(m_testParams.depthStencilType) ? m_testParams.depthStencilFormat : vk::VK_FORMAT_UNDEFINED),
-			(hasDepthStencil(m_testParams.depthStencilType) ? m_testParams.depthStencilFormat : vk::VK_FORMAT_UNDEFINED),
+			(hasDepth ? m_testParams.depthStencilFormat : vk::VK_FORMAT_UNDEFINED),
+			(hasStencil ? m_testParams.depthStencilFormat : vk::VK_FORMAT_UNDEFINED),
 		};
 
 		if (testParams.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
