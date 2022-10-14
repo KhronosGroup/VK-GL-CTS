@@ -1683,6 +1683,12 @@ void CreateAndUseIdsCase::checkSupport (Context &context) const
 
 	if (m_createAndUseIdsParams->capturedProperties != 0u)
 		context.requireDeviceFunctionality("VK_KHR_pipeline_executable_properties");
+
+	if ((m_params->pipelineType == PipelineType::COMPUTE || m_params->hasRayTracing()) && static_cast<bool>(m_params->pipelineToRun)) {
+		const auto features = context.getPipelineCreationCacheControlFeatures();
+		if (features.pipelineCreationCacheControl == DE_FALSE)
+			TCU_THROW(NotSupportedError, "Feature 'pipelineCreationCacheControl' is not enabled");
+	}
 }
 
 TestInstance* CreateAndUseIdsCase::createInstance (Context &context) const
@@ -2204,6 +2210,7 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 						tescSpecInfo.get(),
 						teseSpecInfo.get(),
 						geomSpecInfo.get(),
+						nullptr,
 						PipelineRenderingCreateInfoWrapper(),
 						pipelineCache.get())
 					.setupFragmentShaderState(
@@ -2213,7 +2220,6 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 						fragModule,
 						&depthStencilState,
 						&multisampleState,
-						nullptr,
 						fragSpecInfo.get(),
 						pipelineCache.get())
 					.setupFragmentOutputState(*renderPass, 0u, &colorBlendState, &multisampleState, pipelineCache.get())
@@ -2289,6 +2295,7 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 							tescToRun.getSpecInfo(),
 							teseToRun.getSpecInfo(),
 							geomToRun.getSpecInfo(),
+							nullptr,
 							PipelineRenderingCreateInfoWrapper(),
 							pipelineCache.get())
 						.setupFragmentShaderState2(
@@ -2299,7 +2306,6 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 							fragToRun.getModuleIdCreateInfo(),
 							&depthStencilState,
 							&multisampleState,
-							nullptr,
 							fragToRun.getSpecInfo(),
 							pipelineCache.get())
 						.setupFragmentOutputState(*renderPass, 0u, &colorBlendState, &multisampleState, pipelineCache.get())
@@ -3293,6 +3299,7 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 							nullptr,
 							nullptr,
 							nullptr,
+							nullptr,
 							PipelineRenderingCreateInfoWrapper(),
 							pipelineCache.get())
 						.setupFragmentShaderState(
@@ -3302,7 +3309,6 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 							fragModule.get(),
 							&depthStencilState,
 							&multisampleState,
-							nullptr,
 							nullptr,
 							pipelineCache.get())
 						.setupFragmentOutputState(
@@ -3367,6 +3373,7 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 						nullptr,
 						nullptr,
 						nullptr,
+						nullptr,
 						PipelineRenderingCreateInfoWrapper(),
 						pipelineCache.get())
 					.setupFragmentShaderState2(
@@ -3377,7 +3384,6 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 						PipelineShaderStageModuleIdentifierCreateInfoWrapper(fragIdInfo.get()),
 						&depthStencilState,
 						&multisampleState,
-						nullptr,
 						nullptr,
 						pipelineCache.get())
 					.setupFragmentOutputState(

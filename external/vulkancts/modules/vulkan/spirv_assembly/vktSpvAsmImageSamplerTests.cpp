@@ -1146,14 +1146,16 @@ void addGraphicsImageSamplerTest (tcu::TestCaseGroup* group)
 	vector<tcu::Vec4>			inputDataBase		(numDataPoints);
 	for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
 		inputDataBase[numIdx] = tcu::randomVec4(rnd);
+	// Depth only has 1 component
+	vector<tcu::Vec4>			inputDataBaseDepth	= inputDataBase;
+	inputDataBaseDepth.resize(numDataPoints / 4);
 
 	for (deUint32 opNdx = 0u; opNdx < READOP_LAST; opNdx++)
 	{
 		de::MovePtr<tcu::TestCaseGroup>	readOpGroup	(new tcu::TestCaseGroup(testCtx, getReadOpName((ReadOp)opNdx), ""));
 
-		vector<tcu::Vec4>				inputData	= inputDataBase;
-		if (opNdx > READOP_IMAGESAMPLE)
-			inputData.resize(numDataPoints / 4u);
+		const VkFormat					imageFormat			= getImageFormat((ReadOp)opNdx);
+		const bool						hasDepthComponent	= tcu::hasDepthComponent(vk::mapVkFormat(imageFormat).order);
 
 		for (deUint32 descNdx = 0u; descNdx < DESCRIPTOR_TYPE_LAST; descNdx++)
 		{
@@ -1176,7 +1178,7 @@ void addGraphicsImageSamplerTest (tcu::TestCaseGroup* group)
 					// optypeimage_mismatch uses an additional level of test hierarchy
 					const char *groupname = testNdx == TESTTYPE_OPTYPEIMAGE_MISMATCH ? optypeimageFormatMismatchCase[formatIndex] : getTestTypeName((TestType)testNdx);
 					de::MovePtr<tcu::TestCaseGroup>	typeGroup(new tcu::TestCaseGroup(testCtx, groupname, ""));
-
+					vector<Vec4>&					inputData = hasDepthComponent && testNdx != TESTTYPE_OPTYPEIMAGE_MISMATCH ? inputDataBaseDepth : inputDataBase;
 					GraphicsResources				resources;
 
 					resources.inputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData)), getVkDescriptorType((DescriptorType)descNdx)));
@@ -1202,18 +1204,17 @@ void addGraphicsImageSamplerTest (tcu::TestCaseGroup* group)
 
 					getDefaultColors(defaultColors);
 
-					if (opNdx > READOP_IMAGESAMPLE)
-					{
-						resources.verifyIO		= verifyDepthCompareResult;
-						resources.inputFormat	= getImageFormat((ReadOp)opNdx);
-					}
-
 					// If testing for mismatched optypeimage, ignore the rendered
 					// result (we're only interested to see if we crash)
 					if (testNdx == TESTTYPE_OPTYPEIMAGE_MISMATCH)
 					{
 						resources.verifyIO		= nopVerifyFunction;
 						resources.inputFormat	= optypeimageFormatMismatchVkFormat[formatIndex];
+					}
+					else if (hasDepthComponent)
+					{
+						resources.verifyIO		= verifyDepthCompareResult;
+						resources.inputFormat	= getImageFormat((ReadOp)opNdx);
 					}
 
 					de::MovePtr<tcu::TestCaseGroup> depthGroup (new tcu::TestCaseGroup(testCtx, "depth_property", ""));

@@ -269,6 +269,7 @@ protected:
 														 VkPipeline						basePipelineHandle,
 														 VkBool32						zeroOutFeedbackCount);
 	virtual tcu::TestStatus verifyTestResult			(void);
+	void					clearFeedbacks				(void);
 
 protected:
 	const tcu::UVec2					m_renderSize;
@@ -423,9 +424,6 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&				context,
 	const DeviceInterface&	vk				= m_context.getDeviceInterface();
 	const VkDevice			vkDevice		= m_context.getDevice();
 
-	deMemset(m_pipelineCreationFeedback, 0, sizeof(VkPipelineCreationFeedbackEXT) * VK_MAX_PIPELINE_PARTS * PIPELINE_CACHE_NDX_COUNT);
-	deMemset(m_pipelineStageCreationFeedbacks, 0, sizeof(VkPipelineCreationFeedbackEXT) * PIPELINE_CACHE_NDX_COUNT * VK_MAX_SHADER_STAGES);
-
 	// Create pipeline layout
 	{
 		const VkPipelineLayoutCreateInfo pipelineLayoutParams =
@@ -471,6 +469,8 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&				context,
 			// except for the case where we're testing cache hit of a pipeline still active.
 			m_pipeline[PIPELINE_CACHE_NDX_NO_CACHE].destroyPipeline();
 		}
+
+		clearFeedbacks();
 
 		preparePipelineWrapper(m_pipeline[ndx], vertShaderModule, *tescShaderModule, *teseShaderModule, *geomShaderModule, *fragShaderModule,
 							   &m_pipelineCreationFeedback[VK_MAX_PIPELINE_PARTS * ndx],
@@ -625,14 +625,14 @@ void GraphicsCacheTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&
 	{
 		// setup proper stages count for CreationFeedback structures
 		// that will be passed to pre-rasterization and fragment shader states
-		pipelineCreationFeedbackCreateInfo[1].pipelineStageCreationFeedbackCount	= geometryStages;
+		pipelineCreationFeedbackCreateInfo[1].pipelineStageCreationFeedbackCount	= zeroOutFeedbackCount ? 0u : geometryStages;
 		pipelineCreationFeedbackCreateInfo[1].pPipelineStageCreationFeedbacks		= pipelineStageCreationFeedbacks;
-		pipelineCreationFeedbackCreateInfo[2].pipelineStageCreationFeedbackCount	= 1u;
+		pipelineCreationFeedbackCreateInfo[2].pipelineStageCreationFeedbackCount	= zeroOutFeedbackCount ? 0u : 1u;
 		pipelineCreationFeedbackCreateInfo[2].pPipelineStageCreationFeedbacks		= pipelineStageCreationFeedbacks + geometryStages;
 
 		if (m_param->getPipelineConstructionType() == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
 		{
-			pipelineCreationFeedbackCreateInfo[4].pipelineStageCreationFeedbackCount	= 1u + geometryStages;
+			pipelineCreationFeedbackCreateInfo[4].pipelineStageCreationFeedbackCount	= zeroOutFeedbackCount ? 0u : (1u + geometryStages);
 			pipelineCreationFeedbackCreateInfo[4].pPipelineStageCreationFeedbacks		= pipelineStageCreationFeedbacks;
 		}
 	}
@@ -653,6 +653,7 @@ void GraphicsCacheTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&
 			teseShaderModule,
 			geomShaderModule,
 			DE_NULL,
+			nullptr,
 			PipelineRenderingCreateInfoWrapper(),
 			*m_cache,
 			pipelineCreationFeedbackWrapper[1])
@@ -662,7 +663,6 @@ void GraphicsCacheTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&
 			0u,
 			fragShaderModule,
 			&depthStencilStateParams,
-			DE_NULL,
 			DE_NULL,
 			DE_NULL,
 			*m_cache,
@@ -682,6 +682,8 @@ tcu::TestStatus GraphicsCacheTestInstance::verifyTestResult (void)
 	deUint32		finalPipelineIndex		= deUint32(VK_MAX_PIPELINE_PARTS) - 1u;
 	deUint32		start					= isMonolithic ? finalPipelineIndex : 0u;
 	deUint32		step					= start + 1u;
+
+	clearFeedbacks();
 
 	// Iterate ofer creation feedback for all pipeline parts - if monolithic pipeline is tested then skip (step over) feedback for parts
 	for (deUint32 creationFeedbackNdx = start; creationFeedbackNdx < VK_MAX_PIPELINE_PARTS * PIPELINE_CACHE_NDX_COUNT; creationFeedbackNdx += step)
@@ -825,6 +827,12 @@ tcu::TestStatus GraphicsCacheTestInstance::verifyTestResult (void)
 		return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Pipeline creation feedback reports duration spent creating a pipeline was zero nanoseconds");
 	}
 	return tcu::TestStatus::pass("Pass");
+}
+
+void GraphicsCacheTestInstance::clearFeedbacks(void)
+{
+	deMemset(m_pipelineCreationFeedback, 0, sizeof(VkPipelineCreationFeedbackEXT) * VK_MAX_PIPELINE_PARTS * PIPELINE_CACHE_NDX_COUNT);
+	deMemset(m_pipelineStageCreationFeedbacks, 0, sizeof(VkPipelineCreationFeedbackEXT) * PIPELINE_CACHE_NDX_COUNT * VK_MAX_SHADER_STAGES);
 }
 
 class ComputeCacheTest : public CacheTest

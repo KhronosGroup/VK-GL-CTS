@@ -329,18 +329,6 @@ struct Info
 #define INFOCREATE(msg_) Info(Info::Create, (msg_), __FILE__, __LINE__)
 #define INFOUSAGE(msg_) Info(Info::Usage, (msg_), __FILE__, __LINE__)
 
-#ifndef VK_KHR_VIDEO_QUEUE_EXTENSION_NAME
-#define VK_KHR_VIDEO_QUEUE_EXTENSION_NAME "VK_KHR_video_queue"
-#endif
-
-#ifndef VK_EXT_VIDEO_ENCODE_H264_EXTENSION_NAME
-#define VK_EXT_VIDEO_ENCODE_H264_EXTENSION_NAME "VK_EXT_video_encode_h264"
-#endif
-
-#ifndef VK_EXT_VIDEO_DECODE_H264_EXTENSION_NAME
-#define VK_EXT_VIDEO_DECODE_H264_EXTENSION_NAME "VK_EXT_video_decode_h264"
-#endif
-
 #ifndef CTS_USES_VULKANSC
 VkVideoCodecOperationFlagsKHR readVideoCodecOperationFlagsKHR (const InstanceInterface& vki, const VkPhysicalDevice& device)
 {

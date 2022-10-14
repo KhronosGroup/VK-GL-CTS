@@ -747,6 +747,19 @@ Move<VkPipeline> PrimitivesGeneratedQueryTestInstance::makeGraphicsPipeline (con
 		&dynamicStates											// const VkDynamicState*				pDynamicStates
 	};
 
+	const VkPipelineMultisampleStateCreateInfo		multisampleStateCreateInfo		=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	//	VkStructureType							sType;
+		nullptr,													//	const void*								pNext;
+		0u,															//	VkPipelineMultisampleStateCreateFlags	flags;
+		VK_SAMPLE_COUNT_1_BIT,										//	VkSampleCountFlagBits					rasterizationSamples;
+		VK_FALSE,													//	VkBool32								sampleShadingEnable;
+		1.0f,														//	float									minSampleShading;
+		nullptr,													//	const VkSampleMask*						pSampleMask;
+		VK_FALSE,													//	VkBool32								alphaToCoverageEnable;
+		VK_FALSE,													//	VkBool32								alphaToOneEnable;
+	};
+
 	return vk::makeGraphicsPipeline(vk,
 									device,
 									*pipelineLayout,
@@ -763,7 +776,7 @@ Move<VkPipeline> PrimitivesGeneratedQueryTestInstance::makeGraphicsPipeline (con
 									patchControlPoints,
 									&vertexInputStateCreateInfo,
 									&rasterizationStateCreateInfo,
-									DE_NULL,	// multisampleStateCreateInfo
+									&multisampleStateCreateInfo,
 									m_parameters.depthStencilAttachment ? &depthStencilStateCreateInfo : DE_NULL,
 									m_parameters.staticColorWriteDisable() ? &colorBlendStateCreateInfo : DE_NULL,
 									m_parameters.dynamicColorWriteDisable() ? &pipelineDynamicStateCreateInfo : DE_NULL);
@@ -801,11 +814,11 @@ void PrimitivesGeneratedQueryTestInstance::fillVertexBuffer(tcu::Vec2* vertices,
 			{
 				if (prim % 2 == 0)
 				{
-					vertices[2 + prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step,  1.0f);
+					vertices[1 + prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step,  1.0f);
 				}
 				else
 				{
-					vertices[2 + prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -1.0f);
+					vertices[1 + prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -1.0f);
 				}
 			}
 			break;
@@ -860,15 +873,15 @@ void PrimitivesGeneratedQueryTestInstance::fillVertexBuffer(tcu::Vec2* vertices,
 			{
 				if (prim % 2 == 0)
 				{
-					vertices[3 + prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step,  1.0f);
+					vertices[2 + prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step,  1.0f);
 				}
 				else
 				{
-					vertices[3 + prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -1.0f);
+					vertices[2 + prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -1.0f);
 				}
 			}
 
-			vertices[3 + primitivesGenerated] = tcu::Vec2(1.0f, 0.0f);
+			vertices[2 + primitivesGenerated] = tcu::Vec2(1.0f, 0.0f);
 
 			break;
 		}

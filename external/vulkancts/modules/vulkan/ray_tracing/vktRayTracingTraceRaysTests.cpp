@@ -809,11 +809,6 @@ TestInstance* TraceRaysIndirect2Case::createInstance (Context& context) const
 	return new TraceRaysIndirect2Instance(context, m_params);
 }
 
-// note that this/these name(s) should be auto-generated but they do not
-#ifndef VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME
-#define VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME "VK_KHR_acceleration_structure"
-#endif
-
 void TraceRaysIndirect2Case::checkSupport (Context& context) const
 {
 	context.requireInstanceFunctionality(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
