@@ -585,9 +585,9 @@ tcu::TestStatus createImageModifierExplicitCase (Context& context, const VkForma
 		{
 			const ExplicitModifier modifier =
 			{
-				.modifier			= modProps.drmFormatModifier,
-				.modifierPlaneCount = modProps.drmFormatModifierPlaneCount,
-				.pPlaneLayouts		= DE_NULL,
+				modProps.drmFormatModifier,				// modifier
+				modProps.drmFormatModifierPlaneCount,	// modifierPlaneCount
+				DE_NULL,								// pPlaneLayouts
 			};
 
 			modifiers.push_back(modifier);
