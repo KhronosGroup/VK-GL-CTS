@@ -888,7 +888,7 @@ deBool					BaseTestInstance::checkData							(VkDeviceMemory			memory,
 
 	hostMemory.invalidate();
 
-	for (deUint32 i = 0u; i < size; ++i)
+	for (deUint32 i = 0u; i < m_params.bufferSize; ++i)
 	{
 		if (hostBuffer[i] != static_cast<deUint8>(random.getNext() & 0xFFu) )
 			return DE_FALSE;
