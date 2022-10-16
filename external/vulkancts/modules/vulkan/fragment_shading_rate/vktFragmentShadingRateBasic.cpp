@@ -1701,11 +1701,11 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				// Split the viewport into left and right halves
 				int x0 = 0, x1 = m_data.framebufferDim.width/2, x2 = m_data.framebufferDim.width;
 
-				viewports.push_back(makeViewport((float)x0, 0, (float)(x1-x0), (float)m_data.framebufferDim.height, 0.0f, 1.0f));
-				scissors.push_back(makeRect2D(x0, 0, x1-x0, m_data.framebufferDim.height));
+				viewports.push_back(makeViewport((float)x0, 0, std::max((float)(x1 - x0), 1.0f), (float)m_data.framebufferDim.height, 0.0f, 1.0f));
+				scissors.push_back(makeRect2D(x0, 0, x1 - x0, m_data.framebufferDim.height));
 
-				viewports.push_back(makeViewport((float)x1, 0, (float)(x2-x1), (float)m_data.framebufferDim.height, 0.0f, 1.0f));
-				scissors.push_back(makeRect2D(x1, 0, x2-x1, m_data.framebufferDim.height));
+				viewports.push_back(makeViewport((float)x1, 0, std::max((float)(x2 - x1), 1.0f), (float)m_data.framebufferDim.height, 0.0f, 1.0f));
+				scissors.push_back(makeRect2D(x1, 0, x2 - x1, m_data.framebufferDim.height));
 			}
 			else
 			{
