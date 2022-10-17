@@ -1471,13 +1471,14 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 	const CoordinateCaptureProgram		coordCaptureProgram;
 	const rr::Program					rrProgram				= coordCaptureProgram.getReferenceProgram();
 	ReferenceRenderer					refRenderer				(m_renderSize.x(), m_renderSize.y(), 1, colorFormat, depthStencilFormat, &rrProgram);
+	const bool							useStencilAspect		= (m_subresourceRange.aspectMask == VK_IMAGE_ASPECT_STENCIL_BIT);
 
 	bool								compareOkAll			= true;
 
 	tcu::Vec4							lookupScale				(1.0f);
 	tcu::Vec4							lookupBias				(0.0f);
 
-	getLookupScaleBias(m_imageFormat, lookupScale, lookupBias);
+	getLookupScaleBias(m_imageFormat, lookupScale, lookupBias, useStencilAspect);
 
 	// Render out coordinates
 	{
@@ -1519,24 +1520,36 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 			// Verification loop does not support reading from combined depth stencil texture levels.
 			// Get rid of stencil component.
 
-			tcu::TextureFormat::ChannelType depthChannelType = tcu::TextureFormat::CHANNELTYPE_LAST;
+			tcu::TextureFormat::ChannelOrder	channelOrder	= tcu::TextureFormat::CHANNELORDER_LAST;
+			tcu::TextureFormat::ChannelType		channelType		= tcu::TextureFormat::CHANNELTYPE_LAST;
 
-			switch (m_texture->getTextureFormat().type)
+			if (subresource.aspectMask == VK_IMAGE_ASPECT_STENCIL_BIT)
 			{
-			case tcu::TextureFormat::UNSIGNED_INT_16_8_8:
-				depthChannelType = tcu::TextureFormat::UNORM_INT16;
-				break;
-			case tcu::TextureFormat::UNSIGNED_INT_24_8:
-			case tcu::TextureFormat::UNSIGNED_INT_24_8_REV:
-				depthChannelType = tcu::TextureFormat::UNORM_INT24;
-				break;
-			case tcu::TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
-				depthChannelType = tcu::TextureFormat::FLOAT;
-				break;
-			default:
-				DE_FATAL("Unhandled texture format type in switch");
+				channelOrder	= tcu::TextureFormat::S;
+				channelType		= tcu::TextureFormat::UNSIGNED_INT8;
 			}
-			textureCopy	= m_texture->copy(tcu::TextureFormat(tcu::TextureFormat::D, depthChannelType));
+			else
+			{
+				channelOrder = tcu::TextureFormat::D;
+
+				switch (m_texture->getTextureFormat().type)
+				{
+				case tcu::TextureFormat::UNSIGNED_INT_16_8_8:
+					channelType = tcu::TextureFormat::UNORM_INT16;
+					break;
+				case tcu::TextureFormat::UNSIGNED_INT_24_8:
+				case tcu::TextureFormat::UNSIGNED_INT_24_8_REV:
+					channelType = tcu::TextureFormat::UNORM_INT24;
+					break;
+				case tcu::TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
+					channelType = tcu::TextureFormat::FLOAT;
+					break;
+				default:
+					DE_FATAL("Unhandled texture format type in switch");
+				}
+			}
+
+			textureCopy	= m_texture->copy(tcu::TextureFormat(channelOrder, channelType));
 			texture		= textureCopy.get();
 		}
 		else
