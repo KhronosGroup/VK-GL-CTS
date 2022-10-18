@@ -623,6 +623,7 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 
 			m_graphicsPipelines[quadNdx].setDefaultRasterizerDiscardEnable(!m_colorAttachmentEnable)
 										.setDefaultMultisampleState()
+										.setDefaultColorBlendState()
 										.setupVertexInputStete(&vertexInputStateParams)
 										.setupPreRasterizationShaderState(viewports,
 																		  scissors,
