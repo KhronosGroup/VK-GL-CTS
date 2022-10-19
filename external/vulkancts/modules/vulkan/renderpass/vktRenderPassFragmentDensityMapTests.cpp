@@ -2295,6 +2295,15 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
 	));
 	cbImageBarrier[1].image = *m_colorResolvedImage;
 
+	const VkImageMemoryBarrier subsampledImageBarrier = makeImageMemoryBarrier(
+		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT					,						// VkAccessFlags						srcAccessMask;
+		VK_ACCESS_SHADER_READ_BIT,														// VkAccessFlags						dstAccessMask;
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,										// VkImageLayout						oldLayout;
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,										// VkImageLayout						newLayout;
+		*m_colorImage,																	// VkImage								image;
+		colorSubresourceRange															// VkImageSubresourceRange				subresourceRange;
+	);
+
 	const VkImageMemoryBarrier outputImageBarrier = makeImageMemoryBarrier(
 		VK_ACCESS_NONE_KHR,																// VkAccessFlags						srcAccessMask;
 		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,											// VkAccessFlags						dstAccessMask;
@@ -2559,7 +2568,7 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
 				0, 0, DE_NULL, 0, DE_NULL, 1, &densityMapImageBarrier);
 		}
 
-		// barier that will change layout of color and resolve attachments
+		// barrier that will change layout of color and resolve attachments
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_NONE_KHR, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 			0, 0, DE_NULL, 0, DE_NULL, 1 + isColorImageMultisampled, cbImageBarrier.data());
 
@@ -2587,6 +2596,10 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
 				vk.cmdEndRendering(*m_cmdBuffer);
 			}
 		}
+
+		// barrier that ensures writing to colour image has completed.
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                                          0, 0, DE_NULL, 0, DE_NULL, 1u, &subsampledImageBarrier);
 
 		// barrier that will change layout of output image
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_NONE_KHR, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -2625,7 +2638,7 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
 								  0, 0, DE_NULL, 0, DE_NULL, 1, &densityMapImageBarrier);
 		}
 
-		// barier that will change layout of color and resolve attachments
+		// barrier that will change layout of color and resolve attachments
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_NONE_KHR, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 							  0, 0, DE_NULL, 0, DE_NULL, 1 + isColorImageMultisampled, cbImageBarrier.data());
 
@@ -2641,6 +2654,10 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
 			drawResampleSubsampledImage(*m_cmdBuffer);
 			vk.cmdEndRendering(*m_cmdBuffer);
 		}
+
+		// barrier that ensures writing to colour image has completed.
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                                          0, 0, DE_NULL, 0, DE_NULL, 1u, &subsampledImageBarrier);
 
 		// barrier that will change layout of output image
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_NONE_KHR, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
