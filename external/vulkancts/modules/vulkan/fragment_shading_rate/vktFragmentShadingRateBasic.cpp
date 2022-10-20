@@ -113,6 +113,7 @@ struct CaseDef
 	bool sampleShadingInput;
 	bool sampleMaskTest;
 	bool earlyAndLateTest;
+	bool garbageAttachment;
 
 	bool useAttachment () const
 	{
@@ -2793,6 +2794,19 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 
 	vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), de::dataOrNull(descriptorSets), 0, DE_NULL);
 
+	PipelineRenderingCreateInfoWrapper		pipelineRenderingCreateInfo = dynamicRenderingState;
+#ifndef CTS_USES_VULKANSC
+	vk::VkPipelineRenderingCreateInfo		pipelineRenderingCreateInfoWithGarbage;
+	if (m_data.garbageAttachment)
+	{
+		pipelineRenderingCreateInfoWithGarbage = *dynamicRenderingState.ptr;
+		pipelineRenderingCreateInfoWithGarbage.colorAttachmentCount		= 99999u;
+		pipelineRenderingCreateInfoWithGarbage.pColorAttachmentFormats	= reinterpret_cast<VkFormat *>(0x11);
+
+		pipelineRenderingCreateInfo = &pipelineRenderingCreateInfoWithGarbage;
+	}
+#endif
+
 	// If using dynamic state, create a single graphics pipeline and bind it
 	if (m_data.useDynamicState)
 	{
@@ -2818,7 +2832,7 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 													  nullptr,
 													  nullptr,
 													  shadingRateState,
-													  dynamicRenderingState);
+													  pipelineRenderingCreateInfo);
 #endif // CTS_USES_VULKANSC
 		}
 		else
@@ -2837,7 +2851,7 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 												  geomShader,
 												  DE_NULL,
 												  shadingRateState,
-												  dynamicRenderingState);
+												  pipelineRenderingCreateInfo);
 		}
 
 		pipeline
@@ -2936,6 +2950,9 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 										  fragShader,
 										  depthStencilState,
 										  multisampleState)
+#ifndef CTS_USES_VULKANSC
+				.setRenderingColorAttachmentsInfo(dynamicRenderingState)
+#endif
 				.setupFragmentOutputState(renderPass, 0u, DE_NULL, multisampleState)
 				.setMonolithicPipelineLayout(pipelineLayout)
 				.buildPipeline();
@@ -3211,6 +3228,7 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 											sampleShadingInput,										// bool sampleShadingInput;
 											false,													// bool sampleMaskTest;
 											earlyAndLateTest,										// bool earlyAndLateTest;
+											false,													// bool garbageAttachment;
 										};
 
 										sampGroup->addChild(new FSRTestCase(testCtx, shaderCases[shaderNdx].name, shaderCases[shaderNdx].description, c));
@@ -3232,43 +3250,88 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 		parentGroup->addChild(group.release());
 	}
 
-	if (!groupParams->useSecondaryCmdBuffer)
 	{
 		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "misc_tests", "Single tests that don't need to be part of above test matrix"));
-		group->addChild(new FSRTestCase(testCtx, "sample_mask_test", "", {
-			groupParams,											// SharedGroupParams groupParams;
-			123,													// deInt32 seed;
-			{32,  33},												// VkExtent2D framebufferDim;
-			VK_SAMPLE_COUNT_4_BIT,									// VkSampleCountFlagBits samples;
-			{
-				VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR,
-				VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR
-			},														// VkFragmentShadingRateCombinerOpKHR combinerOp[2];
-			AttachmentUsage::NO_ATTACHMENT,							// AttachmentUsage attachmentUsage;
-			true,													// bool shaderWritesRate;
-			false,													// bool geometryShader;
-			false,													// bool meshShader;
-			false,													// bool useDynamicState;
-			true,													// bool useApiSampleMask;
-			false,													// bool useSampleMaskIn;
-			false,													// bool conservativeEnable;
-			VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT,	// VkConservativeRasterizationModeEXT conservativeMode;
-			false,													// bool useDepthStencil;
-			false,													// bool fragDepth;
-			false,													// bool fragStencil;
-			false,													// bool multiViewport;
-			false,													// bool colorLayered;
-			false,													// bool srLayered;
-			1u,														// deUint32 numColorLayers;
-			false,													// bool multiView;
-			false,													// bool correlationMask;
-			false,													// bool interlock;
-			false,													// bool sampleLocations;
-			false,													// bool sampleShadingEnable;
-			false,													// bool sampleShadingInput;
-			true,													// bool sampleMaskTest;
-			false,													// bool earlyAndLateTest;
-		}));
+
+		if (!groupParams->useSecondaryCmdBuffer)
+		{
+			group->addChild(new FSRTestCase(testCtx, "sample_mask_test", "", {
+				groupParams,											// SharedGroupParams groupParams;
+				123,													// deInt32 seed;
+				{32,  33},												// VkExtent2D framebufferDim;
+				VK_SAMPLE_COUNT_4_BIT,									// VkSampleCountFlagBits samples;
+				{
+					VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR,
+					VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR
+				},														// VkFragmentShadingRateCombinerOpKHR combinerOp[2];
+				AttachmentUsage::NO_ATTACHMENT,							// AttachmentUsage attachmentUsage;
+				true,													// bool shaderWritesRate;
+				false,													// bool geometryShader;
+				false,													// bool meshShader;
+				false,													// bool useDynamicState;
+				true,													// bool useApiSampleMask;
+				false,													// bool useSampleMaskIn;
+				false,													// bool conservativeEnable;
+				VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT,	// VkConservativeRasterizationModeEXT conservativeMode;
+				false,													// bool useDepthStencil;
+				false,													// bool fragDepth;
+				false,													// bool fragStencil;
+				false,													// bool multiViewport;
+				false,													// bool colorLayered;
+				false,													// bool srLayered;
+				1u,														// deUint32 numColorLayers;
+				false,													// bool multiView;
+				false,													// bool correlationMask;
+				false,													// bool interlock;
+				false,													// bool sampleLocations;
+				false,													// bool sampleShadingEnable;
+				false,													// bool sampleShadingInput;
+				true,													// bool sampleMaskTest;
+				false,													// bool earlyAndLateTest;
+				false,													// bool garbageAttachment;
+			}));
+		}
+
+#ifndef CTS_USES_VULKANSC
+		if (groupParams->useDynamicRendering && groupParams->pipelineConstructionType != vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+		{
+			group->addChild(new FSRTestCase(testCtx, "garbage_color_attachment", "", {
+				groupParams,											// SharedGroupParams groupParams;
+				123,													// deInt32 seed;
+				{32,  33},												// VkExtent2D framebufferDim;
+				VK_SAMPLE_COUNT_1_BIT,									// VkSampleCountFlagBits samples;
+				{
+					VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR,
+					VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR
+				},														// VkFragmentShadingRateCombinerOpKHR combinerOp[2];
+				AttachmentUsage::NO_ATTACHMENT,							// AttachmentUsage attachmentUsage;
+				false,													// bool shaderWritesRate;
+				false,													// bool geometryShader;
+				false,													// bool meshShader;
+				false,													// bool useDynamicState;
+				false,													// bool useApiSampleMask;
+				false,													// bool useSampleMaskIn;
+				false,													// bool conservativeEnable;
+				VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT,	// VkConservativeRasterizationModeEXT conservativeMode;
+				false,													// bool useDepthStencil;
+				false,													// bool fragDepth;
+				false,													// bool fragStencil;
+				false,													// bool multiViewport;
+				false,													// bool colorLayered;
+				false,													// bool srLayered;
+				1u,														// deUint32 numColorLayers;
+				false,													// bool multiView;
+				false,													// bool correlationMask;
+				false,													// bool interlock;
+				false,													// bool sampleLocations;
+				false,													// bool sampleShadingEnable;
+				false,													// bool sampleShadingInput;
+				false,													// bool sampleMaskTest;
+				false,													// bool earlyAndLateTest;
+				true,													// bool garbageAttachment;
+			}));
+		}
+#endif // CTS_USES_VULKANSC
 
 		parentGroup->addChild(group.release());
 	}
