@@ -26,6 +26,10 @@ KHR-GLES3.shaders.fragdepth.compare.uniform_conditional_write
 KHR-GLES3.shaders.fragdepth.compare.dynamic_conditional_write
 KHR-GLES3.shaders.fragdepth.compare.uniform_loop_write
 KHR-GLES3.shaders.fragdepth.compare.write_in_function
+KHR-GLES3.shaders.function.local_variable_aliasing_vertex
+KHR-GLES3.shaders.function.local_variable_aliasing_fragment
+KHR-GLES3.shaders.function.global_variable_aliasing_vertex
+KHR-GLES3.shaders.function.global_variable_aliasing_fragment
 KHR-GLES3.shaders.indexing.varying_array.float_static_write_dynamic_read
 KHR-GLES3.shaders.indexing.varying_array.float_static_write_static_loop_read
 KHR-GLES3.shaders.indexing.varying_array.float_static_write_dynamic_loop_read

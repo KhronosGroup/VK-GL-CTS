@@ -960,6 +960,7 @@ LOCAL_SRC_FILES := \
 	modules/gles2/functional/es2fShaderDiscardTests.cpp \
 	modules/gles2/functional/es2fShaderExecuteTest.cpp \
 	modules/gles2/functional/es2fShaderFragDataTests.cpp \
+	modules/gles2/functional/es2fShaderFunctionTests.cpp \
 	modules/gles2/functional/es2fShaderIndexingTests.cpp \
 	modules/gles2/functional/es2fShaderInvarianceTests.cpp \
 	modules/gles2/functional/es2fShaderLoopTests.cpp \
@@ -1090,6 +1091,7 @@ LOCAL_SRC_FILES := \
 	modules/gles3/functional/es3fShaderDerivateTests.cpp \
 	modules/gles3/functional/es3fShaderDiscardTests.cpp \
 	modules/gles3/functional/es3fShaderFragDataTests.cpp \
+	modules/gles3/functional/es3fShaderFunctionTests.cpp \
 	modules/gles3/functional/es3fShaderIndexingTests.cpp \
 	modules/gles3/functional/es3fShaderInvarianceTests.cpp \
 	modules/gles3/functional/es3fShaderLoopTests.cpp \

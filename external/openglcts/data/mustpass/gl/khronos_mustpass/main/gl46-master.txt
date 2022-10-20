@@ -2626,6 +2626,10 @@ KHR-GL46.shaders.preprocessor.operator_precedence.logical_and_vs_bitwise_and_ver
 KHR-GL46.shaders.preprocessor.operator_precedence.logical_and_vs_bitwise_and_fragment
 KHR-GL46.shaders.preprocessor.operator_precedence.logical_or_vs_logical_and_vertex
 KHR-GL46.shaders.preprocessor.operator_precedence.logical_or_vs_logical_and_fragment
+KHR-GL46.shaders.function.local_variable_aliasing_vertex
+KHR-GL46.shaders.function.local_variable_aliasing_fragment
+KHR-GL46.shaders.function.global_variable_aliasing_vertex
+KHR-GL46.shaders.function.global_variable_aliasing_fragment
 KHR-GL46.shaders.struct.local.basic_vertex
 KHR-GL46.shaders.struct.local.basic_fragment
 KHR-GL46.shaders.struct.local.nested_vertex

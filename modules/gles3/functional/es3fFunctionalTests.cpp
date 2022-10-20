@@ -66,6 +66,7 @@
 #include "es3fShaderApiTests.hpp"
 #include "es3fShaderConstExprTests.hpp"
 #include "es3fShaderDiscardTests.hpp"
+#include "es3fShaderFunctionTests.hpp"
 #include "es3fShaderIndexingTests.hpp"
 #include "es3fShaderLoopTests.hpp"
 #include "es3fShaderMatrixTests.hpp"
@@ -213,6 +214,7 @@ public:
 		addChild(new ShaderLibraryTest			(m_context, "invalid_implicit_conversions",	"Invalid Implicit Conversions"));
 
 		addChild(new ShaderDiscardTests			(m_context));
+		addChild(new ShaderFunctionTests		(m_context));
 		addChild(new ShaderIndexingTests		(m_context));
 		addChild(new ShaderLoopTests			(m_context));
 		addChild(new ShaderOperatorTests		(m_context));
