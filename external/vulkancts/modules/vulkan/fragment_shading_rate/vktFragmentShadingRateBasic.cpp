@@ -256,6 +256,9 @@ void FSRTestCase::checkSupport(Context& context) const
 	if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
 		TCU_THROW(NotSupportedError, "VK_FORMAT_R32G32B32A32_UINT not supported");
 
+	if (m_data.geometryShader)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+
 	if (!(imageProperties.sampleCounts & m_data.samples))
 		TCU_THROW(NotSupportedError, "color buffer sample count not supported");
 
