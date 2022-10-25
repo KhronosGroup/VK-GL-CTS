@@ -85,6 +85,12 @@ public:
 		m_window->setDimensions((int)newSize.x(), (int)newSize.y());
 	}
 
+	void setMinimized(bool minimized)
+	{
+		DE_UNREF(minimized);
+		TCU_THROW(NotSupportedError, "Minimized on X11 is not implemented");
+	}
+
 private:
 	UniquePtr<x11::XlibWindow>	m_window;
 };
@@ -133,6 +139,12 @@ public:
 		m_window->setDimensions((int)newSize.x(), (int)newSize.y());
 	}
 
+	void setMinimized(bool minimized)
+	{
+		DE_UNREF(minimized);
+		TCU_THROW(NotSupportedError, "Minimized on xcb is not implemented");
+	}
+
 private:
 	UniquePtr<x11::XcbWindow>	m_window;
 };
@@ -177,6 +189,12 @@ public:
 	void resize (const UVec2& newSize)
 	{
 		m_window->setDimensions((int)newSize.x(), (int)newSize.y());
+	}
+
+	void setMinimized(bool minimized)
+	{
+		DE_UNREF(minimized);
+		TCU_THROW(NotSupportedError, "Minimized on wayland is not implemented");
 	}
 
 private:

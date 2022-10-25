@@ -613,6 +613,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/wsi/vktWsiDisplayTimingTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiFullScreenExclusiveTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiIncrementalPresentTests.cpp \
+	external/vulkancts/modules/vulkan/wsi/vktWsiMaintenance1Tests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiPresentIdWaitTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiSharedPresentableImageTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiSurfaceTests.cpp \

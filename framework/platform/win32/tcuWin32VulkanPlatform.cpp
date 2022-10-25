@@ -68,6 +68,11 @@ public:
 		m_window->setSize((int)newSize.x(), (int)newSize.y());
 	}
 
+	void setMinimized(bool minimized)
+	{
+		m_window->setMinimized(minimized);
+	}
+
 private:
 	UniquePtr<win32::Window>	m_window;
 };

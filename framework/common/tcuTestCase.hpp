@@ -191,6 +191,7 @@ public:
 						TestStatus		(qpTestResult code, const std::string& description) : m_code(code), m_description(description) {}
 
 	bool				isComplete		(void) const { return m_code != QP_TEST_RESULT_LAST;			}
+	bool				isFail			(void) const { return m_code == QP_TEST_RESULT_FAIL;			}
 	qpTestResult		getCode			(void) const { DE_ASSERT(isComplete()); return m_code;			}
 	const std::string&	getDescription	(void) const { DE_ASSERT(isComplete()); return m_description;	}
 

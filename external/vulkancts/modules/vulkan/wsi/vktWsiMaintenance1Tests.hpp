@@ -1,8 +1,11 @@
+#ifndef _VKTWSIMAINTENANCE1TESTS_HPP
+#define _VKTWSIMAINTENANCE1TESTS_HPP
 /*-------------------------------------------------------------------------
- * Vulkan CTS Framework
- * --------------------
+ * Vulkan Conformance Tests
+ * ------------------------
  *
- * Copyright (c) 2016 Google Inc.
+ * Copyright (c) 2022 Google Inc.
+ * Copyright (c) 2022 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,36 +21,21 @@
  *
  *//*!
  * \file
- * \brief WSI Platform Abstraction.
+ * \brief VK_EXT_surface_maintenance1 and VK_EXT_swapchain_maintenance1 extension tests
  *//*--------------------------------------------------------------------*/
 
-#include "vkWsiPlatform.hpp"
+#include "tcuDefs.hpp"
+#include "tcuTestCase.hpp"
+#include "vkDefs.hpp"
 
-namespace vk
+namespace vkt
 {
 namespace wsi
 {
 
-void Window::setVisible (bool visible)
-{
-	DE_UNREF(visible);
-	TCU_THROW(InternalError, "setVisible() called on window not supporting it");
-}
-
-void Window::setForeground(void)
-{
-}
-
-void Window::resize (const tcu::UVec2&)
-{
-	TCU_THROW(InternalError, "resize() called on window not supporting it");
-}
-
-void Window::setMinimized (bool minimized)
-{
-	DE_UNREF(minimized);
-	TCU_THROW(InternalError, "setMinimized() called on window not supporting it");
-}
+void	createMaintenance1Tests	(tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType);
 
 } // wsi
-} // vk
+} // vkt
+
+#endif // _VKTWSIMAINTENANCE1TESTS_HPP
