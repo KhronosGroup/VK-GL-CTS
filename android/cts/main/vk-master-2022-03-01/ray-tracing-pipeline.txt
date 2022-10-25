@@ -56,6 +56,7 @@ dEQP-VK.ray_tracing_pipeline.shader_binding_table.handle_alignment.alignment_4
 dEQP-VK.ray_tracing_pipeline.shader_binding_table.handle_alignment.alignment_8
 dEQP-VK.ray_tracing_pipeline.shader_binding_table.handle_alignment.alignment_16
 dEQP-VK.ray_tracing_pipeline.shader_binding_table.handle_alignment.alignment_32
+dEQP-VK.ray_tracing_pipeline.procedural_geometry.pipeline_binaries
 dEQP-VK.ray_tracing_pipeline.pipeline_no_null_shaders_flag.gpu.triangles.stride_3.offset_7.use_libs.miss
 dEQP-VK.ray_tracing_pipeline.pipeline_no_null_shaders_flag.gpu.triangles.stride_3.offset_7.use_libs.chit
 dEQP-VK.ray_tracing_pipeline.pipeline_no_null_shaders_flag.gpu.triangles.stride_3.offset_7.use_libs.chit_or_miss
