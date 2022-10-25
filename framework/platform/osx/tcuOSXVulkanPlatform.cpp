@@ -57,6 +57,12 @@ public:
 		m_view->setSize(newSize.x(), newSize.y());
 	}
 
+	void setMinimized(bool minimized)
+	{
+		DE_UNREF(minimized);
+		TCU_THROW(NotSupportedError, "Minimized on osx is not implemented");
+	}
+
 private:
 	UniquePtr<osx::MetalView> m_view;
 };
