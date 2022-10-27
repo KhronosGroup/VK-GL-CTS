@@ -30,13 +30,9 @@
 #include "deMemory.h"
 
 #if (DE_OS == DE_OS_WIN32)
-#	define FFMPEG_AVCODEC_LIBRARY_NAME "avcodec-59.dll"
-#	define FFMPEG_AVFORMAT_LIBRARY_NAME "avformat-59.dll"
-#	define FFMPEG_AVUTIL_LIBRARY_NAME "avutil-57.dll"
-#elif (DE_OS == DE_OS_ANDROID)
-#	define FFMPEG_AVCODEC_LIBRARY_NAME "avcodec-59.so"
-#	define FFMPEG_AVFORMAT_LIBRARY_NAME "avformat-59.so"
-#	define FFMPEG_AVUTIL_LIBRARY_NAME "avutil-57.so"
+#	define FFMPEG_AVCODEC_LIBRARY_NAME "avcodec-58.dll"
+#	define FFMPEG_AVFORMAT_LIBRARY_NAME "avformat-58.dll"
+#	define FFMPEG_AVUTIL_LIBRARY_NAME "avutil-56.dll"
 #else
 #	define FFMPEG_AVCODEC_LIBRARY_NAME "libavcodec.so"
 #	define FFMPEG_AVFORMAT_LIBRARY_NAME "libavformat.so"
