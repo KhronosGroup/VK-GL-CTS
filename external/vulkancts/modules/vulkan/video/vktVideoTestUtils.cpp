@@ -153,32 +153,32 @@ de::MovePtr<vector<deUint8>> VideoBaseTestInstance::loadVideoData (const string&
 
 de::MovePtr<vector<deUint8>> VideoBaseTestInstance::loadVideoDataClipA (void)
 {
-	return loadVideoData("vulkan/video/clip-a.mp4");
+	return loadVideoData("vulkan/video/clip-a.h264");
 }
 
 de::MovePtr<vector<deUint8>> VideoBaseTestInstance::loadVideoDataClipB (void)
 {
-	return loadVideoData("vulkan/video/clip-b.mp4");
+	return loadVideoData("vulkan/video/clip-b.h264");
 }
 
 de::MovePtr<vector<deUint8>> VideoBaseTestInstance::loadVideoDataClipC (void)
 {
-	return loadVideoData("vulkan/video/clip-c.mp4");
+	return loadVideoData("vulkan/video/clip-c.h264");
 }
 
 de::MovePtr<vector<deUint8>> VideoBaseTestInstance::loadVideoDataClipD (void)
 {
-	return loadVideoData("vulkan/video/clip-d.mp4");
+	return loadVideoData("vulkan/video/clip-d.h265");
 }
 
 de::MovePtr<vector<deUint8>> VideoBaseTestInstance::loadVideoDataClipH264G13 (void)
 {
-	return loadVideoData("vulkan/video/jellyfish-250-mbps-4k-uhd-GOB-IPB13.h264.mp4");
+	return loadVideoData("vulkan/video/jellyfish-250-mbps-4k-uhd-GOB-IPB13.h264");
 }
 
 de::MovePtr<vector<deUint8>> VideoBaseTestInstance::loadVideoDataClipH265G13 (void)
 {
-	return loadVideoData("vulkan/video/jellyfish-250-mbps-4k-uhd-GOB-IPB13.h265.mp4");
+	return loadVideoData("vulkan/video/jellyfish-250-mbps-4k-uhd-GOB-IPB13.h265");
 }
 
 de::MovePtr<VkVideoDecodeCapabilitiesKHR> getVideoDecodeCapabilities (void* pNext)
