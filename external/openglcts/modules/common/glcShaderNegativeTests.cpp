@@ -277,6 +277,187 @@ protected:
 	GLSLVersion m_glslVersion;
 };
 
+class ShaderNonPrecisionQualifiersStructCase : public TestCase
+{
+public:
+	ShaderNonPrecisionQualifiersStructCase(Context& context, const char* name, const char* description,
+										 GLSLVersion glslVersion)
+		: TestCase(context, name, description), m_glslVersion(glslVersion)
+	{
+	}
+
+	~ShaderNonPrecisionQualifiersStructCase()
+	{
+		// empty
+	}
+
+	IterateResult iterate()
+	{
+		static const char* qualifier_values[] =
+		{
+			// Storage Qualifiers
+			"const",
+			"in",
+			"out",
+			"attribute",
+			"uniform",
+			"varying",
+			"buffer",
+			"shared",
+
+			// Interpolation Qualifiers
+			"smooth in",
+			"flat in",
+			"noperspective in",
+			"smooth out",
+			"flat out",
+			"noperspective out",
+
+			// Invariant Qualifier
+			"invariant",
+
+			// Precise Qualifier
+			"precise",
+
+			// Memory Qualifiers
+			"coherent",
+			"volatile",
+			"restrict",
+			"readonly",
+			"writeonly",
+		};
+		static const unsigned qualifier_count = sizeof(qualifier_values) / sizeof(qualifier_values[0]);
+
+		static const char* layout_values[] =
+		{
+			"(shared)",
+			"(packed)",
+			"(std140)",
+			"(std430)",
+
+			"(row_major)",
+			"(column_major)",
+		};
+		static const unsigned layout_count = sizeof(layout_values) / sizeof(layout_values[0]);
+
+		const std::string layout_str = "layout";
+
+		std::map<std::string, std::string> args;
+		args["VERSION_DECL"] = getGLSLVersionDeclaration(m_glslVersion);
+
+		// Vertex and fragment shaders
+		{
+			// Layout qualifier test
+			args["QUALIFIER"] = layout_str;
+			for (unsigned i = 0; i < layout_count; ++i)
+			{
+				args["LAYOUT_VALUE"] = layout_values[i];
+				if (testVertexFragment(args, layout_str + layout_values[i]))
+					return STOP;
+			}
+
+			// Remaining qualifier tests
+			args["LAYOUT_VALUE"] = "";
+			for (unsigned i = 0; i < qualifier_count; ++i)
+			{
+				args["QUALIFIER"] = qualifier_values[i];
+				if (testVertexFragment(args, qualifier_values[i]))
+					return STOP;
+			}
+		}
+
+		// Compute shader, not available for GLES2 and GLES3
+		if (!glslVersionIsES(m_glslVersion) || m_glslVersion >= GLSL_VERSION_310_ES)
+		{
+			// Layout qualifier test
+			args["QUALIFIER"] = layout_str;
+			for (unsigned i = 0; i < layout_count; ++i)
+			{
+				args["LAYOUT_VALUE"] = layout_values[i];
+				if (testCompute(args, layout_str + layout_values[i]))
+					return STOP;
+			}
+
+			// Remaining qualifier tests
+			args["LAYOUT_VALUE"] = "";
+			for (unsigned i = 0; i < qualifier_count; ++i)
+			{
+				args["QUALIFIER"] = qualifier_values[i];
+				if (testCompute(args, qualifier_values[i]))
+					return STOP;
+			}
+		}
+
+		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, qpGetTestResultName(QP_TEST_RESULT_PASS));
+
+		return STOP;
+	}
+
+protected:
+	bool testVertexFragment(const std::map<std::string, std::string>& args, const std::string& qualifier_name)
+	{
+		static const char* vertex_source_template = "${VERSION_DECL}\n"
+													"precision mediump float;\n"
+													"struct Base\n"
+													"{\n"
+													"  ${QUALIFIER} ${LAYOUT_VALUE} mat4 some_matrix;\n"
+													"};\n"
+													"\n"
+													"void main(void)\n"
+													"{\n"
+													"  gl_Position = vec4(1.0f, 0.0f, 0.0f, 1.0f);\n"
+													"}\n";
+
+		static const char* fragment_source_template = "${VERSION_DECL}\n"
+													  "precision mediump float;\n"
+													  "struct Base\n"
+													  "{\n"
+													  "  ${QUALIFIER} ${LAYOUT_VALUE} mat4 some_matrix;\n"
+													  "};\n"
+													  "\n"
+													  "void main(void) { }\n";
+
+		std::string vertex_code   = tcu::StringTemplate(vertex_source_template).specialize(args);
+		std::string fragment_code = tcu::StringTemplate(fragment_source_template).specialize(args);
+		ShaderProgram program(m_context.getRenderContext(), makeVtxFragSources(vertex_code.c_str(), fragment_code.c_str()));
+		if (program.getShaderInfo(SHADERTYPE_VERTEX).compileOk || program.getShaderInfo(SHADERTYPE_FRAGMENT).compileOk)
+		{
+			m_testCtx.getLog() << TestLog::Message << "ERROR: expected shaders not to compile, but failed with \'"
+							   << qualifier_name << "\' qualifier." << TestLog::EndMessage;
+			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, qpGetTestResultName(QP_TEST_RESULT_FAIL));
+			return true;
+		}
+		return false;
+	}
+
+	bool testCompute(const std::map<std::string, std::string>& args, const std::string& qualifier_name)
+	{
+		static const char* compute_source_template = "${VERSION_DECL}\n"
+													 "precision mediump float;\n"
+													 "struct Base\n"
+													 "{\n"
+													 "  ${QUALIFIER} ${LAYOUT_VALUE} mat4 some_matrix;\n"
+													 "};\n"
+													 "\n"
+													 "void main(void) { }\n";
+
+		std::string compute_code   = tcu::StringTemplate(compute_source_template).specialize(args);
+		ProgramSources sources;
+		sources.sources[SHADERTYPE_COMPUTE].emplace_back(compute_code);
+		ShaderProgram program(m_context.getRenderContext(), sources);
+		if (program.getShaderInfo(SHADERTYPE_COMPUTE).compileOk)
+		{
+			m_testCtx.getLog() << TestLog::Message << "ERROR: expected compute shader not to compile, but failed with \'"
+							   << qualifier_name << "\' qualifier." << TestLog::EndMessage;
+			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, qpGetTestResultName(QP_TEST_RESULT_FAIL));
+			return true;
+		}
+		return false;
+	}
+
+	GLSLVersion m_glslVersion;
+};
+
 ShaderNegativeTests::ShaderNegativeTests(Context& context, GLSLVersion glslVersion)
 	: TestCaseGroup(context, "negative", "Shader Negative tests"), m_glslVersion(glslVersion)
 {
@@ -296,6 +477,10 @@ void ShaderNegativeTests::init(void)
 
 	addChild(new ShaderConstantSequenceExpressionCase(
 		m_context, "constant_sequence", "Verify that the sequence operator cannot be used as a constant expression.",
+		m_glslVersion));
+
+	addChild(new ShaderNonPrecisionQualifiersStructCase(
+		m_context, "non_precision_qualifiers_in_struct_members", "Verify non-precision qualifiers in struct members are not allowed.",
 		m_glslVersion));
 
 	if (isGLSLVersionSupported(m_context.getRenderContext().getType(), GLSL_VERSION_320_ES))
