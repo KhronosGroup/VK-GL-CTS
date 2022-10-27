@@ -59,21 +59,15 @@ class Source:
 			shutil.rmtree(fullDstPath, ignore_errors=False)
 
 class SourcePackage (Source):
-	def __init__(self, url, filename, checksum, baseDir, extractDir = "src", postExtract=None):
+	def __init__(self, url, checksum, baseDir, extractDir = "src", postExtract=None):
 		Source.__init__(self, baseDir, extractDir)
 		self.url			= url
-		self.filename		= filename
+		self.filename		= os.path.basename(self.url)
 		self.checksum		= checksum
 		self.archiveDir		= "packages"
 		self.postExtract	= postExtract
 		self.sysNdx			= {"Windows":0, "Linux":1, "Darwin":2}[platform.system()]
 		self.FFmpeg			= "FFmpeg" in url
-
-		if self.FFmpeg:
-			if self.sysNdx != 2:
-				self.url = self.url.split()[self.sysNdx]
-				self.checksum =	self.checksum.split()[self.sysNdx]
-				self.filename =	self.filename.split()[self.sysNdx]
 
 	def clean (self):
 		Source.clean(self)
@@ -296,19 +290,16 @@ def postExtractLibpng (path):
 PACKAGES = [
 	SourcePackage(
 		"http://zlib.net/fossils/zlib-1.2.13.tar.gz",
-		"zlib-1.2.13.tar.gz",
 		"b3a24de97a8fdbc835b9833169501030b8977031bcb54b3b3ac13740f846ab30",
 		"zlib"),
 	SourcePackage(
 		"http://prdownloads.sourceforge.net/libpng/libpng-1.6.27.tar.gz",
-		"libpng-1.6.27.tar.gz",
 		"c9d164ec247f426a525a7b89936694aefbc91fb7a50182b198898b8fc91174b4",
 		"libpng",
 		postExtract = postExtractLibpng),
 	SourcePackage(
-		"http://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2021-05-31-13-09/ffmpeg-N-102631-gbaf5cc5b7a-win64-lgpl-shared.zip https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2021-05-31-13-09/ffmpeg-N-102631-gbaf5cc5b7a-linux64-lgpl-shared.tar.xz",
-		"ffmpeg-N-102631-gbaf5cc5b7a-win64-lgpl-shared.zip ffmpeg-N-102631-gbaf5cc5b7a-linux64-lgpl-shared.tar.xz",
-		"9c1855b066d75de6ea6b2c3bb2c1cb87d3bd51dee056adfdcb00e4eaa1e437ad 22454a9a9639898171351b07b6f6c17288249596f96a28b7da67823988a316f9",
+		{"Windows":"https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-05-31-12-34/ffmpeg-n4.4.2-1-g8e98dfc57f-win64-lgpl-shared-4.4.zip", "Linux": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-05-31-12-34/ffmpeg-n4.4.2-1-g8e98dfc57f-linux64-gpl-shared-4.4.tar.xz"}[platform.system()],
+		{"Windows":"670df8e9d2ddd5e761459b3538f64b8826566270ef1ed13bcbfc63e73aab3fd9","Linux":"817f8c93ff1ef7ede3dad15b20415d5e366bcd6848844d55046111fd3de827d0"}[platform.system()],
 		"ffmpeg"),
 	SourceFile(
 		"https://raw.githubusercontent.com/baldurk/renderdoc/v1.1/renderdoc/api/app/renderdoc_app.h",
