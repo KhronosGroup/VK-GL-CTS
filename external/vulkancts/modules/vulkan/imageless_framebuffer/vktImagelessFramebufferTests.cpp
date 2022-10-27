@@ -288,9 +288,9 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&				vk,
 		(VkAttachmentDescriptionFlags)0,		//  VkAttachmentDescriptionFlags	flags;
 		depthStencilFormat,						//  VkFormat						format;
 		VK_SAMPLE_COUNT_1_BIT,					//  VkSampleCountFlagBits			samples;
-		VK_ATTACHMENT_LOAD_OP_LOAD,				//  VkAttachmentLoadOp				loadOp;
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,		//  VkAttachmentLoadOp				loadOp;
 		VK_ATTACHMENT_STORE_OP_STORE,			//  VkAttachmentStoreOp				storeOp;
-		VK_ATTACHMENT_LOAD_OP_LOAD,				//  VkAttachmentLoadOp				stencilLoadOp;
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,		//  VkAttachmentLoadOp				stencilLoadOp;
 		VK_ATTACHMENT_STORE_OP_STORE,			//  VkAttachmentStoreOp				stencilStoreOp;
 		initialLayoutDepthStencil,				//  VkImageLayout					initialLayout;
 		finalLayoutDepthStencil					//  VkImageLayout					finalLayout;
