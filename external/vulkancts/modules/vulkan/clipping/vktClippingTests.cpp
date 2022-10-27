@@ -279,14 +279,14 @@ bool checkFragColors (const tcu::ConstPixelBufferAccess pixels, IVec2 clipRegion
 		if (x < clipRegion.x() && y < clipRegion.y())
 			continue;
 
-		const tcu::Vec4	color					= pixels.getPixel(x, y);
-		const int		barWidth				= pixels.getWidth() / 8;
-		const bool		insideBar				= x >= barWidth * barIdx && x < barWidth * (barIdx + 1);
-		const float		expectedClipDistance	= insideBar ? (((((float)y + 0.5f) / (float)pixels.getHeight()) - 0.5f) * 2.0f) : 0.0f;
-		float			expectedCullDistance	= 0.5f;
-		const float		clipDistance			= color.y();
-		const float		cullDistance			= color.z();
-		const float		height					= (float)pixels.getHeight();
+		const tcu::Vec4	color = pixels.getPixel(x, y);
+		const int		barWidth = pixels.getWidth() / 8;
+		const bool		insideBar = x >= barWidth * barIdx && x < barWidth* (barIdx + 1);
+		const float		expectedClipDistance = insideBar ? (((((float)y + 0.5f) / (float)pixels.getHeight()) - 0.5f) * 2.0f) : 0.0f;
+		float			expectedCullDistance = 0.5f;
+		const float		clipDistance = color.y();
+		const float		cullDistance = color.z();
+		const float		height = (float)pixels.getHeight();
 
 		if (hasCullDistance)
 		{
@@ -1086,10 +1086,17 @@ void initPrograms (SourceCollections& programCollection, const CaseDefinition ca
 			if (caseDef.numCullDistances > 0)
 			{
 				src << "    for (int i = 0; i < " << caseDef.numCullDistances << "; ++i)\n";
-				if (caseDef.enableTessellation || caseDef.enableGeometry)
-					src	<< "        gl_CullDistance[i] = 0.1f;\n";
+				if (!caseDef.readInFragmentShader)
+				{
+					src << "		gl_CullDistance[i] = (gl_Position.x >= 0.75f) ? -0.5f : 0.5f;\n";
+				}
 				else
-					src	<< "        gl_CullDistance[i] = (gl_Position.y < 0) ? -0.5f : 0.5f;\n";
+				{
+					if (caseDef.enableTessellation || caseDef.enableGeometry)
+						src << "        gl_CullDistance[i] = 0.1f;\n";
+					else
+						src << "        gl_CullDistance[i] = (gl_Position.y < 0) ? -0.5f : 0.5f;\n";
+				}
 			}
 		}
 		else
@@ -1099,10 +1106,17 @@ void initPrograms (SourceCollections& programCollection, const CaseDefinition ca
 
 			for (int i = 0; i < caseDef.numCullDistances; ++i)
 			{
-				if (caseDef.enableTessellation || caseDef.enableGeometry)
-					src	<< "    gl_CullDistance[" << i << "] = 0.1f;\n";
+				if (!caseDef.readInFragmentShader)
+				{
+					src << "    gl_CullDistance[" << i << "] = (gl_Position.x >= 0.75f) ? -0.5f : 0.5f;\n";
+				}
 				else
-					src << "    gl_CullDistance[" << i << "] = (gl_Position.y < 0) ? -0.5f : 0.5f;\n";
+				{
+					if (caseDef.enableTessellation || caseDef.enableGeometry)
+						src << "    gl_CullDistance[" << i << "] = 0.1f;\n";
+					else
+						src << "    gl_CullDistance[" << i << "] = (gl_Position.y < 0) ? -0.5f : 0.5f;\n";
+				}
 			}
 		}
 		src	<< "}\n";
@@ -1146,12 +1160,19 @@ void initPrograms (SourceCollections& programCollection, const CaseDefinition ca
 			{
 				src << "    for (int i = 0; i < " << caseDef.numCullDistances << "; ++i)\n";
 				src << "    {\n";
-				src	<< "        gl_out[gl_InvocationID].gl_CullDistance[i] = (gl_in[gl_InvocationID].gl_CullDistance[i] == 0.1f) ? ";
-				if (caseDef.enableGeometry)
-					src << "0.3f";
+				if (!caseDef.readInFragmentShader)
+				{
+					src << "    gl_out[gl_InvocationID].gl_CullDistance[i] = (gl_in[gl_InvocationID].gl_Position.x >= 0.75f) ? -0.5f : 0.5f;\n";
+				}
 				else
-					src << "((gl_in[gl_InvocationID].gl_Position.y < 0) ? -0.5f : 0.5f)";
-				src << " : 0.2f;\n";
+				{
+					src << "        gl_out[gl_InvocationID].gl_CullDistance[i] = (gl_in[gl_InvocationID].gl_CullDistance[i] == 0.1f) ? ";
+					if (caseDef.enableGeometry)
+						src << "0.3f";
+					else
+						src << "((gl_in[gl_InvocationID].gl_Position.y < 0) ? -0.5f : 0.5f)";
+					src << " : 0.2f;\n";
+				}
 				src << "    }\n";
 			}
 		}
@@ -1161,12 +1182,19 @@ void initPrograms (SourceCollections& programCollection, const CaseDefinition ca
 				src << "    gl_out[gl_InvocationID].gl_ClipDistance[" << i << "] = gl_in[gl_InvocationID].gl_ClipDistance[" << i << "];\n";
 			for (int i = 0; i < caseDef.numCullDistances; ++i)
 			{
-				src	<< "    gl_out[gl_InvocationID].gl_CullDistance[" << i << "] = (gl_in[gl_InvocationID].gl_CullDistance[" << i << "] == 0.1f) ? ";
-				if (caseDef.enableGeometry)
-					src << "0.3f";
+				if (!caseDef.readInFragmentShader)
+				{
+					src << "    gl_out[gl_InvocationID].gl_CullDistance[" << i << "] = (gl_in[gl_InvocationID].gl_Position.x >= 0.75f) ? -0.5f : 0.5f;\n";
+				}
 				else
-					src << "((gl_in[gl_InvocationID].gl_Position.y < 0) ? -0.5f : 0.5f)";
-				src << " : 0.2f;\n";
+				{
+					src << "    gl_out[gl_InvocationID].gl_CullDistance[" << i << "] = (gl_in[gl_InvocationID].gl_CullDistance[" << i << "] == 0.1f) ? ";
+					if (caseDef.enableGeometry)
+						src << "0.3f";
+					else
+						src << "((gl_in[gl_InvocationID].gl_Position.y < 0) ? -0.5f : 0.5f)";
+					src << " : 0.2f;\n";
+				}
 			}
 		}
 		src << "}\n";
@@ -1259,12 +1287,19 @@ void initPrograms (SourceCollections& programCollection, const CaseDefinition ca
 				{
 					src << "    for (int i = 0; i < " << caseDef.numCullDistances << "; ++i)\n";
 					src << "    {\n";
-					src	<< "        gl_CullDistance[i] = (gl_in[" << vertNdx << "].gl_CullDistance[i] == ";
-					if (caseDef.enableTessellation)
-						src << "0.3f";
+					if (!caseDef.readInFragmentShader)
+					{
+						src << "    gl_CullDistance[i] = (gl_in[" << vertNdx << "].gl_Position.x >= 0.75f) ? -0.5f : 0.5f;\n";
+					}
 					else
-						src << "0.1f";
-					src << ") ? ((gl_in[" << vertNdx << "].gl_Position.y < 0) ? -0.5f : 0.5f) : 0.4f;\n";
+					{
+						src << "        gl_CullDistance[i] = (gl_in[" << vertNdx << "].gl_CullDistance[i] == ";
+						if (caseDef.enableTessellation)
+							src << "0.3f";
+						else
+							src << "0.1f";
+						src << ") ? ((gl_in[" << vertNdx << "].gl_Position.y < 0) ? -0.5f : 0.5f) : 0.4f;\n";
+					}
 					src << "    }\n";
 				}
 			}
@@ -1275,12 +1310,19 @@ void initPrograms (SourceCollections& programCollection, const CaseDefinition ca
 
 				for (int i = 0; i < caseDef.numCullDistances; ++i)
 				{
-					src	<< "        gl_CullDistance[" << i << "] = (gl_in[" << vertNdx << "].gl_CullDistance[" << i << "] == ";
-					if (caseDef.enableTessellation)
-						src << "0.3f";
+					if (!caseDef.readInFragmentShader)
+					{
+						src << "    gl_CullDistance[" << i << "] = (gl_in[" << vertNdx << "].gl_Position.x >= 0.75f) ? -0.5f : 0.5f;\n";
+					}
 					else
-						src << "0.1f";
-					src << ") ? ((gl_in[" << vertNdx << "].gl_Position.y < 0) ? -0.5f : 0.5f) : 0.4f;\n";
+					{
+						src << "        gl_CullDistance[" << i << "] = (gl_in[" << vertNdx << "].gl_CullDistance[" << i << "] == ";
+						if (caseDef.enableTessellation)
+							src << "0.3f";
+						else
+							src << "0.1f";
+						src << ") ? ((gl_in[" << vertNdx << "].gl_Position.y < 0) ? -0.5f : 0.5f) : 0.4f;\n";
+					}
 				}
 			}
 			src << "    EmitVertex();\n";
@@ -1407,7 +1449,10 @@ tcu::TestStatus testClipDistance (Context& context, const CaseDefinition caseDef
 	// Count black pixels in the whole image.
 	const int	numBlackPixels			= countPixels(drawContext.getColorPixels(), Vec4(0.0f, 0.0f, 0.0f, 1.0f), Vec4());
 	const IVec2	clipRegion				= IVec2(caseDef.numClipDistances * RENDER_SIZE / numBars, RENDER_SIZE / 2);
-	const int	expectedClippedPixels	= clipRegion.x() * clipRegion.y();
+	// Cull is set to > 0.75 in the shader if caseDef.readInFragmentShader is false
+	const int	barsCulled				= (int)deFloor((0.25f) / (1.0f / numBars));
+	const IVec2	cullRegion				= (caseDef.readInFragmentShader || caseDef.numCullDistances == 0) ? IVec2(0.0f, 0.0f) : IVec2(barsCulled, RENDER_SIZE);
+	const int	expectedClippedPixels	= clipRegion.x() * clipRegion.y() + cullRegion.x() * cullRegion.y();
 	// Make sure the bottom half has no black pixels (possible if image became corrupted).
 	const int	guardPixels				= countPixels(drawContext.getColorPixels(), IVec2(0, RENDER_SIZE/2), clipRegion, Vec4(0.0f, 0.0f, 0.0f, 1.0f), Vec4());
 	const bool	fragColorsOk			= caseDef.readInFragmentShader ? checkFragColors(drawContext.getColorPixels(), clipRegion, caseDef.numClipDistances / 2, caseDef.numCullDistances > 0) : true;
