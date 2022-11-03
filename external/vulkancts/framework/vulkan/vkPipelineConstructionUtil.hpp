@@ -37,7 +37,7 @@ namespace vk
 enum PipelineConstructionType
 {
 	PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC			= 0,	// Construct legacy - monolithic pipeline
-	PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY,	// Use VK_EXT_graphics_pipeline_library and construc pipeline out of 4 pipeline parts
+	PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY,	// Use VK_EXT_graphics_pipeline_library and construct pipeline out of several pipeline parts.
 	PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY			// Same as PIPELINE_CONSTRUCTION_TYPE_OPTIMISED_LIBRARY but with fast linking
 };
 
@@ -212,6 +212,24 @@ public:
 																	 const VkPipelineCache										partPipelineCache = DE_NULL,
 																	 PipelineCreationFeedbackCreateInfoWrapper					partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
 
+#ifndef CTS_USES_VULKANSC
+	// Setup pre-rasterization shader state, mesh shading version.
+	GraphicsPipelineWrapper&	setupPreRasterizationMeshShaderState(const std::vector<VkViewport>&						viewports,
+																	 const std::vector<VkRect2D>&						scissors,
+																	 const VkPipelineLayout								layout,
+																	 const VkRenderPass									renderPass,
+																	 const deUint32										subpass,
+																	 const VkShaderModule								taskShaderModule,
+																	 const VkShaderModule								meshShaderModule,
+																	 const VkPipelineRasterizationStateCreateInfo*		rasterizationState = nullptr,
+																	 const VkSpecializationInfo*						taskSpecializationInfo = nullptr,
+																	 const VkSpecializationInfo*						meshSpecializationInfo = nullptr,
+																	 VkPipelineFragmentShadingRateStateCreateInfoKHR*	fragmentShadingRateState = nullptr,
+																	 PipelineRenderingCreateInfoWrapper					rendering = PipelineRenderingCreateInfoWrapper(),
+																	 const VkPipelineCache								partPipelineCache = DE_NULL,
+																	 VkPipelineCreationFeedbackCreateInfoEXT*			partCreationFeedback = nullptr);
+#endif // CTS_USES_VULKANSC
+
 	// Setup fragment shader state.
 	GraphicsPipelineWrapper&	setupFragmentShaderState			(const VkPipelineLayout								layout,
 																	 const VkRenderPass									renderPass,
@@ -267,8 +285,10 @@ protected:
 
 protected:
 
+	static constexpr size_t kMaxPipelineParts = 4u;
+
 	// Store partial pipelines when non monolithic construction was used.
-	Move<VkPipeline>				m_pipelineParts[4];
+	Move<VkPipeline>				m_pipelineParts[kMaxPipelineParts];
 
 	// Store monolithic pipeline or linked pipeline libraries.
 	Move<VkPipeline>				m_pipelineFinal;

@@ -227,12 +227,23 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/memory_model/vktMemoryModelSharedLayout.cpp \
 	external/vulkancts/modules/vulkan/memory_model/vktMemoryModelSharedLayoutCase.cpp \
 	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderApiTests.cpp \
+	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderApiTestsEXT.cpp \
 	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderBuiltinTests.cpp \
+	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderBuiltinTestsEXT.cpp \
+	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderConditionalRenderingTestsEXT.cpp \
+	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderInOutTestsEXT.cpp \
 	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderMiscTests.cpp \
+	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderMiscTestsEXT.cpp \
 	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderPropertyTests.cpp \
+	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderPropertyTestsEXT.cpp \
+	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderProvokingVertexTestsEXT.cpp \
+	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderQueryTestsEXT.cpp \
 	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderSmokeTests.cpp \
+	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderSmokeTestsEXT.cpp \
 	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderSyncTests.cpp \
+	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderSyncTestsEXT.cpp \
 	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderTests.cpp \
+	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderUtil.cpp \
 	external/vulkancts/modules/vulkan/modifiers/vktModifiersTests.cpp \
 	external/vulkancts/modules/vulkan/multiview/vktMultiViewRenderPassUtil.cpp \
 	external/vulkancts/modules/vulkan/multiview/vktMultiViewRenderTests.cpp \

@@ -1680,6 +1680,7 @@ def writeTypeUtil (api, filename):
 			"StdVideoDecodeH264MvcElementFlags",
 			"StdVideoEncodeH264SliceHeaderFlags",
 			"StdVideoEncodeH264PictureInfoFlags",
+			"StdVideoEncodeH264ReferenceInfoFlags",
 			"StdVideoEncodeH264RefMgmtFlags",
 			"StdVideoEncodeH264ReferenceInfoFlags",
 			"StdVideoH265HrdFlags",

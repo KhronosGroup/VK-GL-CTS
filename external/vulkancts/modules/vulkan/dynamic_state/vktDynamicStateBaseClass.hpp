@@ -1,28 +1,28 @@
 #ifndef _VKTDYNAMICSTATEBASECLASS_HPP
 #define _VKTDYNAMICSTATEBASECLASS_HPP
 /*------------------------------------------------------------------------
- * Vulkan Conformance Tests
- * ------------------------
- *
- * Copyright (c) 2015 The Khronos Group Inc.
- * Copyright (c) 2015 Intel Corporation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- *//*!
- * \file
- * \brief Dynamic State Tests - Base Class
- *//*--------------------------------------------------------------------*/
+* Vulkan Conformance Tests
+* ------------------------
+*
+* Copyright (c) 2015 The Khronos Group Inc.
+* Copyright (c) 2015 Intel Corporation
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*      http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*
+*//*!
+* \file
+* \brief Dynamic State Tests - Base Class
+*//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
 #include "vktTestCase.hpp"
@@ -41,8 +41,11 @@ namespace DynamicState
 class DynamicStateBaseClass : public TestInstance
 {
 public:
-	DynamicStateBaseClass (Context& context, vk::PipelineConstructionType pipelineConstructionType,
-						   const char* vertexShaderName, const char* fragmentShaderName);
+	DynamicStateBaseClass (Context& context,
+						   vk::PipelineConstructionType pipelineConstructionType,
+						   const char* vertexShaderName,
+						   const char* fragmentShaderName,
+						   const char* meshShaderName = nullptr);
 
 protected:
 	void					initialize						(void);
@@ -73,7 +76,7 @@ protected:
 	void					setDynamicBlendState			(const float					const1 = 0.0f, const float const2 = 0.0f,
 															 const float					const3 = 0.0f, const float const4 = 0.0f);
 
-	void					setDynamicDepthStencilState		(const float					minDepthBounds = -1.0f,
+	void					setDynamicDepthStencilState		(const float					minDepthBounds = 0.0f,
 															 const float					maxDepthBounds = 1.0f,
 															 const deUint32					stencilFrontCompareMask = 0xffffffffu,
 															 const deUint32					stencilFrontWriteMask = 0xffffffffu,
@@ -81,6 +84,13 @@ protected:
 															 const deUint32					stencilBackCompareMask = 0xffffffffu,
 															 const deUint32					stencilBackWriteMask = 0xffffffffu,
 															 const deUint32					stencilBackReference = 0);
+
+#ifndef CTS_USES_VULKANSC
+	void					pushVertexOffset				(const uint32_t					vertexOffset,
+															 const vk::VkPipelineLayout		pipelineLayout,
+															 const vk::VkShaderStageFlags	stageFlags = vk::VK_SHADER_STAGE_MESH_BIT_EXT);
+#endif // CTS_USES_VULKANSC
+
 	enum
 	{
 		WIDTH       = 128,
@@ -93,9 +103,12 @@ protected:
 
 	const vk::DeviceInterface&								m_vk;
 
-	vk::GraphicsPipelineWrapper								m_pipeline;
+	vk::Move<vk::VkDescriptorPool>							m_descriptorPool;
+	vk::Move<vk::VkDescriptorSetLayout>						m_meshSetLayout;
+	vk::Move<vk::VkDescriptorSetLayout>						m_otherSetLayout;
 	vk::Move<vk::VkPipelineLayout>							m_pipelineLayout;
-	vk::Move<vk::VkDescriptorSetLayout>						m_descriptorSetLayout;
+	vk::Move<vk::VkDescriptorSet>							m_descriptorSet;
+	vk::GraphicsPipelineWrapper								m_pipeline;
 
 	de::SharedPtr<Draw::Image>								m_colorTargetImage;
 	vk::Move<vk::VkImageView>								m_colorTargetView;
@@ -111,7 +124,9 @@ protected:
 
 	const std::string										m_vertexShaderName;
 	const std::string										m_fragmentShaderName;
+	const std::string										m_meshShaderName;
 	std::vector<PositionColorVertex>						m_data;
+	bool													m_isMesh;
 
 	Draw::PipelineCreateInfo::ColorBlendState::Attachment	m_attachmentState;
 };

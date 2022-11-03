@@ -23,7 +23,9 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktMeshShaderMiscTests.hpp"
+#include "vktMeshShaderUtil.hpp"
 #include "vktTestCase.hpp"
+#include "vktTestCaseUtil.hpp"
 
 #include "vkBuilderUtil.hpp"
 #include "vkImageWithMemory.hpp"
@@ -79,21 +81,11 @@ float getCompareThreshold ()
 // Check mesh shader support.
 void genericCheckSupport (Context& context, bool requireTaskShader, bool requireVertexStores)
 {
-	context.requireDeviceFunctionality("VK_NV_mesh_shader");
-
-	const auto& meshFeatures = context.getMeshShaderFeatures();
-
-	if (!meshFeatures.meshShader)
-		TCU_THROW(NotSupportedError, "Mesh shader not supported");
-
-	if (requireTaskShader && !meshFeatures.taskShader)
-		TCU_THROW(NotSupportedError, "Task shader not supported");
+	checkTaskMeshShaderSupportNV(context, requireTaskShader, true);
 
 	if (requireVertexStores)
 	{
-		const auto& features = context.getDeviceFeatures();
-		if (!features.vertexPipelineStoresAndAtomics)
-			TCU_THROW(NotSupportedError, "Vertex pieline stores and atomics not supported");
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
 	}
 }
 
@@ -1398,8 +1390,10 @@ void NoPrimitivesExtraWritesCase::initPrograms (vk::SourceCollections& programCo
 		<< "void main ()\n"
 		<< "{\n"
 		<< "    sumOfIds = 0u;\n"
+		<< "    memoryBarrierShared();\n"
 		<< "    barrier();\n"
 		<< "    atomicAdd(sumOfIds, td.localInvocations[gl_LocalInvocationID.x]);\n"
+		<< "    memoryBarrierShared();\n"
 		<< "    barrier();\n"
 		<< "    // This should dynamically give 0\n"
 		<< "    gl_PrimitiveCountNV = sumOfIds - (" << kLocalInvocations * (kLocalInvocations - 1u) / 2u << ");\n"
@@ -1518,8 +1512,10 @@ void SimpleBarrierCase::initPrograms (vk::SourceCollections& programCollection) 
 	std::ostringstream	verification;
 	verification
 		<< "counter = 0;\n"
+		<< "memoryBarrierShared();\n"
 		<< "barrier();\n"
 		<< "atomicAdd(counter, 1u);\n"
+		<< "memoryBarrierShared();\n"
 		<< "barrier();\n"
 		<< "if (gl_LocalInvocationID.x == 0u) {\n"
 		<< "    if (counter == " << kLocalInvocations << ") {\n"
@@ -4395,7 +4391,447 @@ for line in sys.stdin:
 	return tcu::TestStatus::pass("Pass");
 }
 
+void checkMeshSupport (Context& context)
+{
+	checkTaskMeshShaderSupportNV(context, false, true);
 }
+
+void initMixedPipelinesPrograms (vk::SourceCollections& programCollection)
+{
+	std::ostringstream frag;
+	frag
+		<< "#version 450\n"
+		<< "\n"
+		<< "layout (location=0) in  vec4 inColor;\n"
+		<< "layout (location=0) out vec4 outColor;\n"
+		<< "\n"
+		<< "void main ()\n"
+		<< "{\n"
+		<< "    outColor = inColor;\n"
+		<< "}\n"
+		;
+	programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+
+	const std::string pushConstantDecl =
+		"layout (push_constant, std430) uniform PushConstantBlock {\n"
+		"    vec4 color;\n"
+		"    uint firstVertex;\n"
+		"} pc;\n"
+		;
+
+	// The normal pipeline will have a binding with the vertex position and will take the vertex color from the push constants.
+	std::ostringstream vert;
+	vert
+		<< "#version 450\n"
+		<< "\n"
+		<< pushConstantDecl
+		<< "layout (location=0) out vec4 outColor;\n"
+		<< "layout (location=0) in  vec4 inPos;\n"
+		<< "\n"
+		<< "void main ()\n"
+		<< "{\n"
+		<< "    gl_Position = inPos;\n"
+		<< "    outColor    = pc.color;\n"
+		<< "}\n"
+		;
+	programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+	// The mesh pipeline will emit a quad based on the first vertex as indicated by the push constants, using the push constant color as well.
+	std::ostringstream mesh;
+	mesh
+		<< "#version 450\n"
+		<< "#extension GL_NV_mesh_shader : enable\n"
+		<< "\n"
+		<< pushConstantDecl
+		<< "\n"
+		<< "layout (local_size_x=2) in;\n"
+		<< "layout (triangles) out;\n"
+		<< "layout (max_vertices=4, max_primitives=2) out;\n"
+		<< "\n"
+		<< "layout (location=0) out vec4 outColor[];\n"
+		<< "\n"
+		<< "layout (set=0, binding=0) readonly buffer VertexBlock {\n"
+		<< "    vec4 positions[];\n"
+		<< "} vertexData;\n"
+		<< "\n"
+		<< "void main ()\n"
+		<< "{\n"
+		<< "    // Emit 4 vertices starting at firstVertex, 2 per invocation.\n"
+		<< "    gl_PrimitiveCountNV = 2u;\n"
+		<< "    \n"
+		<< "    const uint localVertexOffset = 2u * gl_LocalInvocationIndex;\n"
+		<< "    const uint firstLocalVertex  = pc.firstVertex + localVertexOffset;\n"
+		<< "    const uint localIndexOffset  = 3u * gl_LocalInvocationIndex;\n"
+		<< "\n"
+		<< "    for (uint i = 0; i < 2; ++i)\n"
+		<< "    {\n"
+		<< "        gl_MeshVerticesNV[localVertexOffset + i].gl_Position = vertexData.positions[firstLocalVertex + i];\n"
+		<< "        outColor[localVertexOffset + i] = pc.color;\n"
+		<< "    }\n"
+		<< "\n"
+		<< "    // Emit 2 primitives, 1 per invocation.\n"
+		<< "    const uint indices[] = uint[](0, 1, 2, 2, 1, 3);\n"
+		<< "\n"
+		<< "    for (uint i = 0; i < 3; ++i)\n"
+		<< "    {\n"
+		<< "        const uint pos = localIndexOffset + i;\n"
+		<< "        gl_PrimitiveIndicesNV[pos] = indices[pos];\n"
+		<< "    }\n"
+		<< "}\n"
+		;
+	programCollection.glslSources.add("mesh") << glu::MeshSource(mesh.str());
+}
+
+tcu::TestStatus testMixedPipelines (Context& context)
+{
+	const auto&			vkd			= context.getDeviceInterface();
+	const auto			device		= context.getDevice();
+	auto&				alloc		= context.getDefaultAllocator();
+	const auto			queue		= context.getUniversalQueue();
+	const auto			qIndex		= context.getUniversalQueueFamilyIndex();
+
+	const auto			colorFormat	= getOutputFormat();
+	const auto			colorExtent	= makeExtent3D(32u, 32u, 1u);
+	const auto			colorUsage	= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const auto			tcuFormat	= mapVkFormat(colorFormat);
+	const tcu::IVec3	iExtent		(static_cast<int>(colorExtent.width), static_cast<int>(colorExtent.height), static_cast<int>(colorExtent.depth));
+	const tcu::Vec4		clearValue	(0.0f, 0.0f, 0.0f, 1.0f);
+
+	// Divide the image in 4 quadrants and emit a "full-screen" quad (2 triangles) in each quadrant, using a mesh or normal pipeline.
+	// Replicate a standard quad 4 times with different offsets in X and Y for each quadrant.
+
+	// Triangle vertices for a single full-screen quad.
+	const std::vector<tcu::Vec4> stdQuad
+	{
+		tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f),
+		tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f),
+		tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f),
+		tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f),
+	};
+
+	// Offsets for each quadrant.
+	const std::vector<tcu::Vec4> quadrantOffsets
+	{
+		tcu::Vec4(-1.0f, -1.0f, 0.0f, 0.0f),		// Top left.
+		tcu::Vec4( 0.0f, -1.0f, 0.0f, 0.0f),		// Top right.
+		tcu::Vec4(-1.0f,  0.0f, 0.0f, 0.0f),		// Bottom left.
+		tcu::Vec4( 0.0f,  0.0f, 0.0f, 0.0f),		// Bottom right.
+	};
+
+	// Colors for each quadrant.
+	const std::vector<tcu::Vec4> quadrantColors
+	{
+		tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f),
+		tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f),
+		tcu::Vec4(1.0f, 0.0f, 1.0f, 1.0f),
+		tcu::Vec4(0.0f, 1.0f, 1.0f, 1.0f),
+	};
+
+	DE_ASSERT(quadrantOffsets.size() == quadrantColors.size());
+
+	// Fill the vertex buffer.
+	const auto				numVertices			= stdQuad.size() * quadrantOffsets.size();
+	std::vector<tcu::Vec4>	vertexBufferSrc;
+
+	vertexBufferSrc.reserve(numVertices);
+	for (size_t quadrantIdx = 0; quadrantIdx < quadrantOffsets.size(); ++quadrantIdx)
+	{
+		const auto& quadrantOffset = quadrantOffsets[quadrantIdx];
+
+		for (size_t vertexIdx = 0; vertexIdx < stdQuad.size(); ++vertexIdx)
+		{
+			const tcu::Vec4 pos = stdQuad[vertexIdx] + quadrantOffset;
+			vertexBufferSrc.push_back(pos);
+		}
+	}
+
+	const auto			vertexBufferSize	= de::dataSize(vertexBufferSrc);
+	const auto			vertexBufferUsage	= (VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	const auto			vertexBufferInfo	= makeBufferCreateInfo(vertexBufferSize, vertexBufferUsage);
+	BufferWithMemory	vertexBuffer		(vkd, device, alloc, vertexBufferInfo, MemoryRequirement::HostVisible);
+	auto&				vertexBufferAlloc	= vertexBuffer.getAllocation();
+	tcu::Vec4*			vertexBufferData	= reinterpret_cast<tcu::Vec4*>(vertexBufferAlloc.getHostPtr());
+
+	deMemcpy(vertexBufferData, vertexBufferSrc.data(), vertexBufferSize);
+	flushAlloc(vkd, device, vertexBufferAlloc);
+
+	// Index buffer, only used for the classic pipeline.
+	const std::vector<uint32_t> vertexIndices {0u, 1u, 2u, 2u, 1u, 3u};
+
+	const auto indexBufferSize	= de::dataSize(vertexIndices);
+	const auto indexBufferUsage	= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+	const auto indexBufferInfo	= makeBufferCreateInfo(indexBufferSize, indexBufferUsage);
+
+	BufferWithMemory	indexBuffer			(vkd, device, alloc, indexBufferInfo, MemoryRequirement::HostVisible);
+	auto&				indexBufferAlloc	= indexBuffer.getAllocation();
+	void*				indexBufferData		= indexBufferAlloc.getHostPtr();
+
+	deMemcpy(indexBufferData, vertexIndices.data(), indexBufferSize);
+	flushAlloc(vkd, device, indexBufferAlloc);
+
+	// Color attachment.
+	const VkImageCreateInfo colorAttachmentInfo =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	//	VkStructureType			sType;
+		nullptr,								//	const void*				pNext;
+		0u,										//	VkImageCreateFlags		flags;
+		VK_IMAGE_TYPE_2D,						//	VkImageType				imageType;
+		colorFormat,							//	VkFormat				format;
+		colorExtent,							//	VkExtent3D				extent;
+		1u,										//	uint32_t				mipLevels;
+		1u,										//	uint32_t				arrayLayers;
+		VK_SAMPLE_COUNT_1_BIT,					//	VkSampleCountFlagBits	samples;
+		VK_IMAGE_TILING_OPTIMAL,				//	VkImageTiling			tiling;
+		colorUsage,								//	VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,				//	VkSharingMode			sharingMode;
+		0u,										//	uint32_t				queueFamilyIndexCount;
+		nullptr,								//	const uint32_t*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,				//	VkImageLayout			initialLayout;
+	};
+	ImageWithMemory	colorAttachment	(vkd, device, alloc, colorAttachmentInfo, MemoryRequirement::Any);
+	const auto		colorSRR		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	const auto		colorView		= makeImageView(vkd, device, colorAttachment.get(), VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSRR);
+
+	// Verification buffer.
+	const auto			verificationBufferSize		= tcu::getPixelSize(tcuFormat) * iExtent.x() * iExtent.y() * iExtent.z();
+	const auto			verificationBufferSizeSz	= static_cast<VkDeviceSize>(verificationBufferSize);
+	const auto			verificationBufferInfo		= makeBufferCreateInfo(verificationBufferSizeSz, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	BufferWithMemory	verificationBuffer			(vkd, device, alloc, verificationBufferInfo, MemoryRequirement::HostVisible);
+	auto&				verificationBufferAlloc		= verificationBuffer.getAllocation();
+	void*				verificationBufferData		= verificationBufferAlloc.getHostPtr();
+
+	// Render pass and framebuffer.
+	const auto renderPass	= makeRenderPass(vkd, device, colorFormat);
+	const auto framebuffer	= makeFramebuffer(vkd, device, renderPass.get(), colorView.get(), colorExtent.width, colorExtent.height);
+
+	// Push constant range.
+	struct PushConstantBlock
+	{
+		tcu::Vec4	color;
+		uint32_t	firstVertex;
+	};
+
+	const auto pcSize	= static_cast<uint32_t>(sizeof(PushConstantBlock));
+	const auto pcStages	= (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_MESH_BIT_EXT);
+	const auto pcRange	= makePushConstantRange(pcStages, 0u, pcSize);
+
+	// No descriptor set layout for the classic pipeline.
+	// Descriptor set layout for the mesh pipeline using the vertex buffer.
+	DescriptorSetLayoutBuilder dsLayoutBuilder;
+	dsLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_MESH_BIT_EXT);
+	const auto meshDSLayout = dsLayoutBuilder.build(vkd, device);
+
+	// Pipeline layout for the classic pipeline.
+	const auto classicPipelineLayout = makePipelineLayout(vkd, device, 0u, nullptr, 1u, &pcRange);
+
+	// Pipeline layout for the mesh pipeline.
+	const auto meshPipelineLayout = makePipelineLayout(vkd, device, 1u, &meshDSLayout.get(), 1u, &pcRange);
+
+	// Descriptor pool and set with the vertex buffer.
+	DescriptorPoolBuilder poolBuilder;
+	poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	const auto descriptorPool		= poolBuilder.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+	const auto meshDescriptorSet	= makeDescriptorSet(vkd, device, descriptorPool.get(), meshDSLayout.get());
+
+	DescriptorSetUpdateBuilder updateBuilder;
+	const auto vertexBufferDescInfo = makeDescriptorBufferInfo(vertexBuffer.get(), 0ull, vertexBufferSize);
+	updateBuilder.writeSingle(meshDescriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &vertexBufferDescInfo);
+	updateBuilder.update(vkd, device);
+
+	// Shaders and pipelines.
+	const auto&	binaries	= context.getBinaryCollection();
+	const auto	vertModule	= createShaderModule(vkd, device, binaries.get("vert"));
+	const auto	meshModule	= createShaderModule(vkd, device, binaries.get("mesh"));
+	const auto	fragModule	= createShaderModule(vkd, device, binaries.get("frag"));
+
+	const std::vector<VkViewport>	viewports	(1u, makeViewport(colorExtent));
+	const std::vector<VkRect2D>		scissors	(1u, makeRect2D(colorExtent));
+
+	const auto classicPipeline = makeGraphicsPipeline(vkd, device, classicPipelineLayout.get(),
+		vertModule.get(), DE_NULL, DE_NULL, DE_NULL, fragModule.get(), renderPass.get(), viewports, scissors);
+
+	const auto meshPipeline = makeGraphicsPipeline(vkd, device, meshPipelineLayout.get(),
+		DE_NULL, meshModule.get(), fragModule.get(), renderPass.get(), viewports, scissors);
+
+	// Command pool and buffer.
+	const auto cmdPool		= makeCommandPool(vkd, device, qIndex);
+	const auto cmdBufferPtr	= allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	const auto cmdBuffer	= cmdBufferPtr.get();
+
+	beginCommandBuffer(vkd, cmdBuffer);
+	beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.at(0), clearValue);
+
+	// Draw a triangle quad in each of the 4 image quadrants.
+	PushConstantBlock pcData;
+
+	for (size_t quadrantIdx = 0; quadrantIdx < quadrantColors.size(); ++quadrantIdx)
+	{
+		pcData.color				= quadrantColors[quadrantIdx];
+		pcData.firstVertex			= static_cast<uint32_t>(quadrantIdx * stdQuad.size());
+		const auto vOffset			= static_cast<VkDeviceSize>(pcData.firstVertex * sizeof(tcu::Vec4));
+		const bool isMeshQuadrant	= (quadrantIdx % 2u == 0u);
+
+		if (isMeshQuadrant)
+		{
+			vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, meshPipeline.get());
+			vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, meshPipelineLayout.get(), 0u, 1u, &meshDescriptorSet.get(), 0u, nullptr);
+			vkd.cmdPushConstants(cmdBuffer, meshPipelineLayout.get(), pcStages, 0u, pcSize, &pcData);
+			vkd.cmdDrawMeshTasksNV(cmdBuffer, 1u, 0u);
+		}
+		else
+		{
+			vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, classicPipeline.get());
+			vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vOffset);
+			vkd.cmdBindIndexBuffer(cmdBuffer, indexBuffer.get(), 0ull, VK_INDEX_TYPE_UINT32);
+			vkd.cmdPushConstants(cmdBuffer, classicPipelineLayout.get(), pcStages, 0u, pcSize, &pcData);
+			vkd.cmdDrawIndexed(cmdBuffer, static_cast<uint32_t>(vertexIndices.size()), 1u, 0u, 0, 0u);
+		}
+	}
+
+	endRenderPass(vkd, cmdBuffer);
+
+	copyImageToBuffer(vkd, cmdBuffer, colorAttachment.get(), verificationBuffer.get(), tcu::IVec2(iExtent.x(), iExtent.y()));
+	endCommandBuffer(vkd, cmdBuffer);
+	submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+	invalidateAlloc(vkd, device, verificationBufferAlloc);
+
+	// Prepare a reference image with the quadrant colors.
+	tcu::TextureLevel	refLevel	(tcuFormat, iExtent.x(), iExtent.y(), iExtent.z());
+	auto				refAccess	= refLevel.getAccess();
+	const tcu::Vec4		halfSize	(static_cast<float>(iExtent.x()) / 2.0f, static_cast<float>(iExtent.y()) / 2.0f, 0, 0);
+	const tcu::Vec4		fbOffset	(-1.0f, -1.0f, 0.0f, 0.0f);
+
+	for (size_t quadrantIdx = 0; quadrantIdx < quadrantOffsets.size(); ++quadrantIdx)
+	{
+		const auto&	offset		= quadrantOffsets[quadrantIdx];
+		const auto	absOffset	= (offset - fbOffset) * halfSize;
+		const auto	subregion	= tcu::getSubregion(refAccess,
+			static_cast<int>(absOffset.x()),
+			static_cast<int>(absOffset.y()),
+			static_cast<int>(halfSize.x()),
+			static_cast<int>(halfSize.y()));
+
+		tcu::clear(subregion, quadrantColors.at(quadrantIdx));
+	}
+
+	auto&								log			= context.getTestContext().getLog();
+	const tcu::ConstPixelBufferAccess	resAccess	(tcuFormat, iExtent, verificationBufferData);
+	const tcu::Vec4						threshold	(0.0f, 0.0f, 0.0f, 0.0f); // The chosen colors should need no threshold. They can be represented exactly.
+
+	if (!tcu::floatThresholdCompare(log, "TestResult", "", refAccess, resAccess, threshold, tcu::COMPARE_LOG_ON_ERROR))
+		TCU_FAIL("Check log for details");
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+// Test reading the gl_TaskCountNV and gl_PrimitiveCountNV built-ins from several invocations.
+class CountReadCase : public MeshShaderMiscCase
+{
+public:
+					CountReadCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, ParamsPtr params)
+						: MeshShaderMiscCase (testCtx, name, description, std::move(params))
+					{}
+
+	void			initPrograms	(vk::SourceCollections& programCollection) const override;
+	TestInstance*	createInstance	(Context& context) const override;
+
+	static constexpr uint32_t kLocalSize = 32u;
+};
+
+class CountReadInstance : public MeshShaderMiscInstance
+{
+public:
+	CountReadInstance (Context& context, const MiscTestParams* params)
+		: MeshShaderMiscInstance (context, params)
+	{}
+
+	void generateReferenceLevel () override;
+};
+
+TestInstance* CountReadCase::createInstance (Context& context) const
+{
+	return new CountReadInstance(context, m_params.get());
+}
+
+void CountReadInstance::generateReferenceLevel ()
+{
+	generateSolidRefLevel(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f), m_referenceLevel);
+}
+
+void CountReadCase::initPrograms (vk::SourceCollections& programCollection) const
+{
+	DE_ASSERT(m_params->needsTaskShader());
+	DE_ASSERT(m_params->height == m_params->meshCount);
+	DE_ASSERT(m_params->width == kLocalSize);
+
+	std::ostringstream taskDataDeclStream;
+	taskDataDeclStream
+		<< "taskNV TaskData {\n"
+		<< "    vec4 color[" << kLocalSize << "];\n"
+		<< "} td;\n"
+		;
+	const auto taskDataDecl = taskDataDeclStream.str();
+
+	std::ostringstream task;
+	task
+		<< "#version 450\n"
+		<< "#extension GL_NV_mesh_shader : enable\n"
+		<< "\n"
+		<< "layout(local_size_x=" << kLocalSize << ") in;\n"
+		<< "\n"
+		<< "out " << taskDataDecl
+		<< "void main ()\n"
+		<< "{\n"
+		<< "    gl_TaskCountNV = 0u;\n"
+		<< "    if (gl_LocalInvocationIndex == 0u) {\n"
+		<< "        gl_TaskCountNV = " << m_params->meshCount << ";\n"
+		<< "    }\n"
+		<< "    memoryBarrierShared();\n"
+		<< "    barrier();\n"
+		<< "    td.color[gl_LocalInvocationIndex] = ((gl_TaskCountNV == " << m_params->meshCount << ") ? vec4(0.0, 0.0, 1.0, 1.0) : vec4(0.0, 0.0, 0.0, 1.0));\n"
+		<< "}\n"
+		;
+	programCollection.glslSources.add("task") << glu::TaskSource(task.str());
+
+	std::ostringstream mesh;
+	mesh
+		<< "#version 450\n"
+		<< "#extension GL_NV_mesh_shader : enable\n"
+		<< "\n"
+		<< "in " << taskDataDecl
+		<< "\n"
+		<< "layout (local_size_x=" << kLocalSize << ") in;\n"
+		<< "layout (points) out;\n"
+		<< "layout (max_vertices=" << kLocalSize << ", max_primitives=" << kLocalSize << ") out;\n"
+		<< "\n"
+		<< "layout (location=0) out perprimitiveNV vec4 pointColor[];\n"
+		<< "\n"
+		<< "void main ()\n"
+		<< "{\n"
+		<< "    gl_PrimitiveCountNV = 0u;\n"
+		<< "    if (gl_LocalInvocationIndex == 0u) {\n"
+		<< "        gl_PrimitiveCountNV = " << kLocalSize << ";\n"
+		<< "    }\n"
+		<< "    memoryBarrierShared();\n"
+		<< "    barrier();\n"
+		<< "\n"
+		<< "    const vec4  color  = ((gl_PrimitiveCountNV == " << kLocalSize << ") ? td.color[gl_LocalInvocationIndex] : vec4(0.0, 0.0, 0.0, 1.0));\n"
+		<< "    const float xCoord = (((float(gl_LocalInvocationIndex) + 0.5) / " << m_params->width << ") * 2.0 - 1.0);\n"
+		<< "    const float yCoord = (((float(gl_WorkGroupID.x) + 0.5) / " << m_params->height << ") * 2.0 - 1.0);\n"
+		<< "\n"
+		<< "    gl_MeshVerticesNV[gl_LocalInvocationIndex].gl_Position = vec4(xCoord, yCoord, 0.0, 1.0);\n"
+		<< "    gl_PrimitiveIndicesNV[gl_LocalInvocationIndex] = gl_LocalInvocationIndex;\n"
+		<< "    pointColor[gl_LocalInvocationIndex] = color;\n"
+		<< "}\n"
+		;
+	programCollection.glslSources.add("mesh") << glu::MeshSource(mesh.str());
+
+	// Default fragment shader.
+	MeshShaderMiscCase::initPrograms(programCollection);
+}
+
+} // anonymous namespace
 
 tcu::TestCaseGroup* createMeshShaderMiscTests (tcu::TestContext& testCtx)
 {
@@ -4665,6 +5101,20 @@ tcu::TestCaseGroup* createMeshShaderMiscTests (tcu::TestContext& testCtx)
 			miscTests->addChild(new MaximizeInvocationsCase(testCtx, "maximize_invocations_" + invsStr, "Use a large number of invocations compared to other sizes: " + invsStr, std::move(paramsPtr)));
 		}
 	}
+
+	if (false) // This test does not work and the spec is not clear that it should.
+	{
+		ParamsPtr paramsPtr (new MiscTestParams(
+			/*taskCount*/	tcu::just(1u),
+			/*meshCount*/	128u,
+			/*width*/		32u,
+			/*height*/		128u));
+
+		miscTests->addChild(new CountReadCase(testCtx, "count_reads", "Attempt to read gl_TaskCountNV and gl_PrimitiveCountNV from multiple invocations", std::move(paramsPtr)));
+	}
+
+
+	addFunctionCaseWithPrograms(miscTests.get(), "mixed_pipelines", "Mix classic and mesh shader pipelines in the same render pass", checkMeshSupport, initMixedPipelinesPrograms, testMixedPipelines);
 
 	return miscTests.release();
 }
