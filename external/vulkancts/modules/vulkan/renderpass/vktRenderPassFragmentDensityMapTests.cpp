@@ -1111,7 +1111,8 @@ private:
 																			 const VkRect2D&			outputRenderArea);
 	void							createCommandBufferForDynamicRendering	(const VkRect2D&			dynamicDensityMapRenderArea,
 																			 const VkRect2D&			colorImageRenderArea,
-																			 const VkRect2D&			outputRenderArea);
+																			 const VkRect2D&			outputRenderArea,
+																			 const VkDevice&			vkDevice);
 	tcu::TestStatus					verifyImage								(void);
 
 private:
@@ -1978,7 +1979,7 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 	m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	if (isDynamicRendering)
-		createCommandBufferForDynamicRendering(dynamicDensityMapRenderArea, colorImageRenderArea, outputRenderArea);
+		createCommandBufferForDynamicRendering(dynamicDensityMapRenderArea, colorImageRenderArea, outputRenderArea, vkDevice);
 	else
 		createCommandBufferForRenderpass(renderPassWrapper, colorImageSize, dynamicDensityMapRenderArea, colorImageRenderArea, outputRenderArea);
 }
@@ -2250,13 +2251,13 @@ void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(RenderPass
 
 void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(const VkRect2D&		dynamicDensityMapRenderArea,
 																			const VkRect2D&		colorImageRenderArea,
-																			const VkRect2D&		outputRenderArea)
+																			const VkRect2D&		outputRenderArea,
+																			const VkDevice&     vkDevice)
 {
 	// no subpasses in dynamic rendering - makeCopy tests are not repeated for dynamic rendering
 	DE_ASSERT (!m_testParams.makeCopy);
 
 	const DeviceInterface&				vk							= m_context.getDeviceInterface();
-	const VkDevice						vkDevice					= m_context.getDevice();
 	const bool							isColorImageMultisampled	= m_testParams.colorSamples != VK_SAMPLE_COUNT_1_BIT;
 	std::vector<VkClearValue>			attachmentClearValuesDDM	{ makeClearValueColorF32(1.0f, 1.0f, 1.0f, 1.0f) };
 	const VkClearValue					attachmentClearValue		= makeClearValueColorF32(0.0f, 0.0f, 0.0f, 1.0f);
