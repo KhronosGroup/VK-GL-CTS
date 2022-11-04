@@ -109,6 +109,7 @@
 #define DE_CPU_ARM_64	4
 #define DE_CPU_MIPS		5
 #define DE_CPU_MIPS_64	6
+#define DE_CPU_RISCV_64	7
 
 /* CPU detection. */
 #if defined(DE_CPU)
@@ -125,6 +126,8 @@
 #	define DE_CPU DE_CPU_MIPS
 #elif defined(__mips__) && ((__mips) == 64)
 #	define DE_CPU DE_CPU_MIPS_64
+#elif defined(__riscv) && ((__riscv_xlen) == 64)
+#	define DE_CPU DE_CPU_RISCV_64
 #else
 #	error Unknown CPU.
 #endif
