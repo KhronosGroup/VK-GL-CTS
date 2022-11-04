@@ -414,11 +414,14 @@ class API:
 		alias = commandNode.get("alias")
 		# if node is alias then use the fact that alias definition follows aliased structure
 		if alias is not None:
-			lastFunction = self.functions[-1]
-			# make sure last structure that was added to list is beeing aliased now
-			# if this assert fails use same workaround as for structures
-			assert(alias == lastFunction.name)
-			lastFunction.aliasList.append(commandNode.get("name"))
+			# The aliased command has usually been added recently, so we iterate in reverse order.
+			found = False
+			for funcObj in reversed(self.functions):
+				if funcObj.name == alias:
+					funcObj.aliasList.append(commandNode.get("name"))
+					found = True
+					break
+			assert found
 			# go to next node
 			return
 		# memorize all parameters
@@ -1687,10 +1690,11 @@ def writeTypeUtil (api, filename):
 			"StdVideoDecodeH265PictureInfoFlags",
 			"StdVideoDecodeH265ReferenceInfoFlags",
 			"StdVideoEncodeH265PictureInfoFlags",
-			"StdVideoEncodeH265SliceHeaderFlags",
+			"StdVideoEncodeH265SliceSegmentHeaderFlags",
 			"StdVideoEncodeH265ReferenceModificationFlags",
 			"StdVideoEncodeH265ReferenceInfoFlags",
-			"StdVideoEncodeH265SliceSegmentHeaderFlags",
+			"StdVideoH265ProfileTierLevelFlags",
+			"StdVideoH265ShortTermRefPicSetFlags"
 		])
 
 	def isSimpleStruct (type):

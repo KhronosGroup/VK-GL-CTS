@@ -378,6 +378,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDevicePipelineExecutablePropertiesFeaturesKHR.pNext;
 	}
 
+	vk::VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT physicalDevicePipelineLibraryGroupHandlesFeaturesEXT;
+	deMemset(&physicalDevicePipelineLibraryGroupHandlesFeaturesEXT, 0, sizeof(physicalDevicePipelineLibraryGroupHandlesFeaturesEXT));
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_pipeline_library_group_handles")) )
+	{
+		physicalDevicePipelineLibraryGroupHandlesFeaturesEXT.sType = getStructureType<VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT>();
+		*nextPtr = &physicalDevicePipelineLibraryGroupHandlesFeaturesEXT;
+		nextPtr  = &physicalDevicePipelineLibraryGroupHandlesFeaturesEXT.pNext;
+	}
+
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDevicePresentIdFeaturesKHR physicalDevicePresentIdFeaturesKHR;
 	deMemset(&physicalDevicePresentIdFeaturesKHR, 0, sizeof(physicalDevicePresentIdFeaturesKHR));
@@ -1320,6 +1330,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 #endif // defined(CTS_USES_VULKAN)
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_pipeline_library_group_handles")) )
+	{
+		if ( physicalDevicePipelineLibraryGroupHandlesFeaturesEXT.pipelineLibraryGroupHandles == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature pipelineLibraryGroupHandles not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
 
 #if defined(CTS_USES_VULKAN)
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_primitive_topology_list_restart")) )
