@@ -990,6 +990,27 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest (Context& context, bool)
 	const vector<float>						queuePriorities			(1, 1.0f);
 	const VkQueueGlobalPriorityEXT			globalPriorities[]		= { VK_QUEUE_GLOBAL_PRIORITY_LOW_EXT, VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT, VK_QUEUE_GLOBAL_PRIORITY_HIGH_EXT, VK_QUEUE_GLOBAL_PRIORITY_REALTIME_EXT };
 
+#ifndef CTS_USES_VULKANSC
+	deUint32						queueFamilyPropertyCount	= ~0u;
+
+	instanceDriver.getPhysicalDeviceQueueFamilyProperties2(physicalDevice, &queueFamilyPropertyCount, DE_NULL);
+	TCU_CHECK(queueFamilyPropertyCount > 0);
+
+	std::vector<VkQueueFamilyProperties2>					queueFamilyProperties2		(queueFamilyPropertyCount);
+	std::vector<VkQueueFamilyGlobalPriorityPropertiesKHR>	globalPriorityProperties	(queueFamilyPropertyCount);
+
+	for (deUint32 ndx = 0; ndx < queueFamilyPropertyCount; ndx++)
+	{
+		globalPriorityProperties[ndx].sType	= VK_STRUCTURE_TYPE_QUEUE_FAMILY_GLOBAL_PRIORITY_PROPERTIES_KHR;
+		globalPriorityProperties[ndx].pNext	= DE_NULL;
+		queueFamilyProperties2[ndx].sType	= VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2;
+		queueFamilyProperties2[ndx].pNext	= &globalPriorityProperties[ndx];
+	}
+
+	instanceDriver.getPhysicalDeviceQueueFamilyProperties2(physicalDevice, &queueFamilyPropertyCount, queueFamilyProperties2.data());
+	TCU_CHECK((size_t)queueFamilyPropertyCount == queueFamilyProperties2.size());
+#endif // CTS_USES_VULKANSC
+
 	for (VkQueueGlobalPriorityEXT globalPriority : globalPriorities)
 	{
 		const VkDeviceQueueGlobalPriorityCreateInfoEXT	queueGlobalPriority		=
@@ -1035,6 +1056,9 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest (Context& context, bool)
 		};
 
 		const bool		mayBeDenied				= globalPriority > VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT;
+#ifndef CTS_USES_VULKANSC
+		const bool		mustFail				= globalPriority < globalPriorityProperties[0].priorities[0] || globalPriority > globalPriorityProperties[0].priorities[globalPriorityProperties[0].priorityCount - 1];
+#endif // CTS_USES_VULKANSC
 
 		try
 		{
@@ -1052,6 +1076,23 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest (Context& context, bool)
 				continue;
 			}
 
+#ifndef CTS_USES_VULKANSC
+			if (result == VK_ERROR_INITIALIZATION_FAILED && mustFail)
+			{
+				continue;
+			}
+
+			if (mustFail)
+			{
+				log << TestLog::Message
+					<< "device creation must fail but not"
+					<< ", globalPriority = " << globalPriority
+					<< ", queueCreateInfo " << queueCreateInfo
+					<< TestLog::EndMessage;
+				return tcu::TestStatus::fail("Fail");
+			}
+#endif // CTS_USES_VULKANSC
+
 			if (result != VK_SUCCESS)
 			{
 				log << TestLog::Message
@@ -1065,7 +1106,11 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest (Context& context, bool)
 		}
 		catch (const Error& error)
 		{
-			if (error.getError() == VK_ERROR_NOT_PERMITTED_EXT && mayBeDenied)
+			if ((error.getError() == VK_ERROR_NOT_PERMITTED_EXT && mayBeDenied)
+#ifndef CTS_USES_VULKANSC
+			   || (error.getError() == VK_ERROR_INITIALIZATION_FAILED && mustFail)
+#endif // CTS_USES_VULKANSC
+			   )
 			{
 				continue;
 			}
@@ -1108,7 +1153,7 @@ deBool isValidGlobalPriority(VkQueueGlobalPriorityEXT priority)
 void checkGlobalPriorityProperties(const VkQueueFamilyGlobalPriorityPropertiesEXT& properties)
 {
 	TCU_CHECK(properties.priorityCount > 0);
-	TCU_CHECK(properties.priorityCount <= VK_MAX_GLOBAL_PRIORITY_SIZE_EXT);
+	TCU_CHECK(properties.priorityCount <= VK_MAX_GLOBAL_PRIORITY_SIZE_KHR);
 	TCU_CHECK(isValidGlobalPriority(properties.priorities[0]));
 
 	for (deUint32 ndx = 1; ndx < properties.priorityCount; ndx++)
@@ -1544,7 +1589,6 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest (Context& context)
 	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
 	const VkPhysicalDeviceFeatures			deviceFeatures			= deviceFeatures2.features;
 	const vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
-	int										numErrors				= 0;
 
 	// Test features listed in VkPhysicalDeviceFeatures structure
 	{
@@ -1656,7 +1700,6 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest (Context& context)
 
 			if (res != VK_ERROR_FEATURE_NOT_PRESENT)
 			{
-				numErrors++;
 				resultCollector.fail("Not returning VK_ERROR_FEATURE_NOT_PRESENT when creating device with feature "
 				+ de::toString(feature.name) + ", which was reported as unsupported.");
 			}
@@ -2313,7 +2356,6 @@ tcu::TestStatus createDeviceQueue2WithAllFamiliesProtected (Context& context)
 }
 
 #ifndef CTS_USES_VULKANSC
-
 // Allocation tracking utilities
 struct	AllocTrack
 {

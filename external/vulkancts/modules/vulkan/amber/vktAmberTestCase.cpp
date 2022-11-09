@@ -61,16 +61,21 @@ AmberTestCase::~AmberTestCase (void)
 
 TestInstance* AmberTestCase::createInstance (Context& ctx) const
 {
-	return new AmberTestInstance(ctx, m_recipe);
+	return new AmberTestInstance(ctx, m_recipe, nullptr);
 }
 
-static amber::EngineConfig* createEngineConfig (Context& ctx)
+static amber::EngineConfig* createEngineConfig (Context& ctx, vk::VkDevice customDevice)
 {
+	vk::VkDevice dev = customDevice != nullptr ? customDevice : ctx.getDevice();
+	vk::VkQueue  queue;
+	vk::DeviceDriver vk(ctx.getPlatformInterface(), ctx.getInstance(), dev);
+	vk.getDeviceQueue(dev, ctx.getUniversalQueueFamilyIndex(), 0, &queue);
+
 	amber::EngineConfig* vkConfig = GetVulkanConfig(ctx.getInstance(),
-			ctx.getPhysicalDevice(), ctx.getDevice(), &ctx.getDeviceFeatures(),
+			ctx.getPhysicalDevice(), dev, &ctx.getDeviceFeatures(),
 			&ctx.getDeviceFeatures2(), ctx.getInstanceExtensions(),
 			ctx.getDeviceExtensions(), ctx.getUniversalQueueFamilyIndex(),
-			ctx.getUniversalQueue(), ctx.getInstanceProcAddr());
+			queue, ctx.getInstanceProcAddr());
 
 	return vkConfig;
 }
@@ -91,6 +96,8 @@ static bool isFeatureSupported(const vkt::Context& ctx, const std::string& featu
 		return ctx.getDeviceFeatures().shaderInt16;
 	if (feature == "Features.shaderInt64")
 		return ctx.getDeviceFeatures().shaderInt64;
+	if (feature == "Features.depthClamp")
+		return ctx.getDeviceFeatures().depthClamp;
 	if (feature == "Features.tessellationShader")
 		return ctx.getDeviceFeatures().tessellationShader;
 	if (feature == "Features.shaderTessellationAndGeometryPointSize")
@@ -394,7 +401,7 @@ tcu::TestStatus AmberTestInstance::iterate (void)
 	amber::Result		r;
 
 	amber_options.engine			= amber::kEngineTypeVulkan;
-	amber_options.config			= createEngineConfig(m_context);
+	amber_options.config			= createEngineConfig(m_context, m_customDevice);
 	amber_options.execution_type	= amber::ExecutionType::kExecute;
 
 	// Check for extensions as declared by the Amber script itself.  Throw an internal

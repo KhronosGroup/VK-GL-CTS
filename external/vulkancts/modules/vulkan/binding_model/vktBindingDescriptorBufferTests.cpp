@@ -1631,7 +1631,7 @@ void DescriptorBufferTestCase::checkSupport (Context& context) const
 		{
 			TCU_THROW(NotSupportedError, "VK_KHR_push_descriptor is not supported");
 		}
-		else if (descriptorBufferProps.pushDescriptorsRequireBuffer == VK_TRUE)
+		else if (descriptorBufferProps.bufferlessPushDescriptors == VK_TRUE)
 		{
 			DE_ASSERT(0);	// TODO
 			TCU_THROW(NotSupportedError, "Test does not support pushDescriptorsRequireBuffer");
@@ -2810,7 +2810,7 @@ void DescriptorBufferTestInstance::initializeBinding(
 	const bool mustSplitCombinedImageSampler =
 		(arrayCount > 1) &&
 		(binding.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) &&
-		(m_descriptorBufferProperties.splitCombinedImageSamplers == VK_TRUE);
+		(m_descriptorBufferProperties.combinedImageSamplerDescriptorSingleArray == VK_TRUE);
 
 	const bool isRobustBufferAccess = (m_params.variant == TestVariant::ROBUST_BUFFER_ACCESS);
 	const bool isNullDescriptor =
@@ -3120,7 +3120,7 @@ void DescriptorBufferTestInstance::initializeBinding(
 				deMemcpy(reference.data(), descriptorPtr, descriptorSize);
 
 				deMemset(descriptorPtr, 0xcc, descriptorSize);
-				m_deviceInterface->getDescriptorEXT(*m_device, &descGetInfo, descriptorPtr);
+				m_deviceInterface->getDescriptorEXT(*m_device, &descGetInfo, descriptorSize, descriptorPtr);
 
 				if (deMemCmp(reference.data(), descriptorPtr, descriptorSize) != 0)
 				{
@@ -3129,7 +3129,9 @@ void DescriptorBufferTestInstance::initializeBinding(
 			}
 			else
 			{
-				m_deviceInterface->getDescriptorEXT(*m_device, &descGetInfo, offsetPtr(bindingHostPtr, arrayOffset));
+				auto		descriptorPtr  = offsetPtr(bindingHostPtr, arrayOffset);
+				const auto  descriptorSize = static_cast<size_t>(getDescriptorSize(binding));
+				m_deviceInterface->getDescriptorEXT(*m_device, &descGetInfo, descriptorSize, descriptorPtr);
 			}
 
 			// After writing the last array element, rearrange the split combined image sampler data.
@@ -4027,10 +4029,10 @@ tcu::TestStatus testLimits(Context& context)
 		// - there's no unnecessary padding at the end, or
 		// - there's no risk of overrun (if somehow the sum of image and sampler was greater).
 
-		if ((props.splitCombinedImageSamplers == VK_TRUE) &&
+		if ((props.combinedImageSamplerDescriptorSingleArray == VK_TRUE) &&
 			((props.sampledImageDescriptorSize + props.samplerDescriptorSize) != props.combinedImageSamplerDescriptorSize))
 		{
-			return tcu::TestStatus::fail("For splitCombinedImageSamplers, it is expected that the sampled image size "
+			return tcu::TestStatus::fail("For combinedImageSamplerDescriptorSingleArray, it is expected that the sampled image size "
 				"and the sampler size add up to combinedImageSamplerDescriptorSize.");
 		}
 	}

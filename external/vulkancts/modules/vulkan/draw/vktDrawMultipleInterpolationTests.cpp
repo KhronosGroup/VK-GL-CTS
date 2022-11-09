@@ -739,7 +739,7 @@ void DrawTestInstance::beginSecondaryCmdBuffer(vk::VkCommandBuffer cmdBuffer, vk
 	};
 
 	const vk::DeviceInterface& vk = m_context.getDeviceInterface();
-	vk.beginCommandBuffer(cmdBuffer, &commandBufBeginParams);
+	VK_CHECK(vk.beginCommandBuffer(cmdBuffer, &commandBufBeginParams));
 }
 
 void DrawTestInstance::beginDynamicRender(vk::VkCommandBuffer cmdBuffer, vk::VkRect2D renderArea, vk::VkClearValue clearValue, vk::VkRenderingFlagsKHR renderingFlags) const

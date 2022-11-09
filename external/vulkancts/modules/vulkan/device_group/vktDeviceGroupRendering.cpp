@@ -456,7 +456,8 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 		vk::Move<vk::VkDeviceMemory>	indexBufferMemory;
 		vk::Move<vk::VkDeviceMemory>	uniformBufferMemory;
 		vk::Move<vk::VkDeviceMemory>	sboBufferMemory;
-		vk::Move<vk::VkDeviceMemory>	imageMemory;
+		vk::Move<vk::VkDeviceMemory>	renderImageMemory;
+		vk::Move<vk::VkDeviceMemory>	readImageMemory;
 
 		Move<VkRenderPass>				renderPass;
 		Move<VkImage>					renderImage;
@@ -845,11 +846,19 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 			memoryTypeNdx = getMemoryIndex(memReqs.memoryTypeBits, m_useHostMemory ? 0 : VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 			allocInfo.allocationSize = memReqs.size;
 			allocInfo.memoryTypeIndex = memoryTypeNdx;
-			imageMemory = allocateMemory(vk, *m_deviceGroup, &allocInfo);
+			renderImageMemory = allocateMemory(vk, *m_deviceGroup, &allocInfo);
+
+			dedicatedAllocInfo.image = *readImage;
+			dedicatedAllocInfo.buffer = DE_NULL;
+			memReqs = getImageMemoryRequirements(vk, *m_deviceGroup, readImage.get());
+			memoryTypeNdx = getMemoryIndex(memReqs.memoryTypeBits, m_useHostMemory ? 0 : VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+			allocInfo.allocationSize = memReqs.size;
+			allocInfo.memoryTypeIndex = memoryTypeNdx;
+			readImageMemory = allocateMemory(vk, *m_deviceGroup, &allocInfo);
 		}
 
-		VK_CHECK(vk.bindImageMemory(*m_deviceGroup, *renderImage, imageMemory.get(), 0));
-		VK_CHECK(vk.bindImageMemory(*m_deviceGroup, *readImage, imageMemory.get(), 0));
+		VK_CHECK(vk.bindImageMemory(*m_deviceGroup, *renderImage, renderImageMemory.get(), 0));
+		VK_CHECK(vk.bindImageMemory(*m_deviceGroup, *readImage, readImageMemory.get(), 0));
 
 		// Create renderpass
 		{
@@ -1181,6 +1190,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 			endCommandBuffer(vk, *cmdBuffer);
 			const deUint32 deviceMask = (1 << firstDeviceID) | (1 << secondDeviceID);
 			submitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
+			m_context.resetCommandPoolForVKSC(*m_deviceGroup, *cmdPool);
 		}
 
 		// Bind renderImage across devices for SFR
@@ -1240,7 +1250,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 				VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO,					// sType
 				&devGroupBindInfo,											// pNext
 				*renderImage,												// image
-				imageMemory.get(),											// memory
+				renderImageMemory.get(),									// memory
 				0u,															// memoryOffset
 			};
 			VK_CHECK(vk.bindImageMemory2(*m_deviceGroup, 1, &bindInfo));
@@ -1485,6 +1495,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 		{
 			const deUint32 deviceMask = (1 << firstDeviceID) | (1 << secondDeviceID);
 			submitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
+			m_context.resetCommandPoolForVKSC(*m_deviceGroup, *cmdPool);
 		}
 
 		// Copy image from secondDeviceID in case of AFR and SFR(only if Peer memory as copy source is not allowed)
@@ -1529,7 +1540,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 					VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO,					// sType
 					&devGroupBindInfo,											// pNext
 					peerImage.get(),											// image
-					imageMemory.get(),											// memory
+					renderImageMemory.get(),									// memory
 					0u,															// memoryOffset
 				};
 				VK_CHECK(vk.bindImageMemory2(*m_deviceGroup, 1, &bindInfo));
@@ -1566,6 +1577,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 
 					const deUint32 deviceMask = 1 << firstDeviceID;
 					submitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
+					m_context.resetCommandPoolForVKSC(*m_deviceGroup, *cmdPool);
 				}
 
 				// Copy Image from secondDeviceID to firstDeviceID
@@ -1606,6 +1618,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 
 					const deUint32 deviceMask = 1 << secondDeviceID;
 					submitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
+					m_context.resetCommandPoolForVKSC(*m_deviceGroup, *cmdPool);
 				}
 
 				// Change layout back on firstDeviceID
@@ -1637,6 +1650,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 
 					const deUint32 deviceMask = 1 << firstDeviceID;
 					submitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
+					m_context.resetCommandPoolForVKSC(*m_deviceGroup, *cmdPool);
 				}
 			}
 		}
@@ -1705,6 +1719,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 			{
 				const deUint32 deviceMask = 1 << firstDeviceID;
 				submitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
+				m_context.resetCommandPoolForVKSC(*m_deviceGroup, *cmdPool);
 			}
 
 			// Read results and check against reference image

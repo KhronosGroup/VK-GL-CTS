@@ -646,7 +646,7 @@ tcu::TestStatus framebufferCompatibleRenderPassTest (Context& context)
 	const Unique<VkFramebuffer>		frameBuffer				(createFramebuffer(vk, device, &framebufferCreateInfo));
 
 	const Unique<VkRenderPass>		renderPassB				(createSimpleRenderPass(vk, device, format,
-																					VK_ATTACHMENT_LOAD_OP_LOAD,
+																					VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 																					VK_ATTACHMENT_LOAD_OP_LOAD,
 																					VK_ATTACHMENT_STORE_OP_STORE,
 																					VK_IMAGE_LAYOUT_GENERAL));
@@ -1013,20 +1013,17 @@ tcu::TestStatus pipelineLayoutLifetimeTest (Context& context, VkPipelineBindPoin
 		}
 	};
 
-	VkDescriptorPool descriptorPool;
+	const VkDescriptorPoolCreateInfo descriptorPoolCreateInfo =
 	{
-		const VkDescriptorPoolCreateInfo descriptorPoolCreateInfo =
-		{
-			VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,	// VkStructureType                sType;
-			DE_NULL,										// const void*                    pNext;
-			(VkDescriptorPoolCreateFlags)0u,				// VkDescriptorPoolCreateFlags    flags;
-			(isGraphics ? 3u : 5u),							// deUint32                       maxSets;
-			DE_LENGTH_OF_ARRAY(descriptorPoolSizes),		// deUint32                       poolSizeCount;
-			descriptorPoolSizes								// const VkDescriptorPoolSize*    pPoolSizes;
-		};
+		VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,	// VkStructureType                sType;
+		DE_NULL,										// const void*                    pNext;
+		(VkDescriptorPoolCreateFlags)0u,				// VkDescriptorPoolCreateFlags    flags;
+		(isGraphics ? 3u : 5u),							// deUint32                       maxSets;
+		DE_LENGTH_OF_ARRAY(descriptorPoolSizes),		// deUint32                       poolSizeCount;
+		descriptorPoolSizes								// const VkDescriptorPoolSize*    pPoolSizes;
+	};
 
-		VK_CHECK(vk.createDescriptorPool(device, &descriptorPoolCreateInfo, DE_NULL, &descriptorPool));
-	}
+	Move<VkDescriptorPool> descriptorPool = createDescriptorPool(vk, device, &descriptorPoolCreateInfo, DE_NULL);
 
 	const VkDescriptorSetLayoutBinding setLayoutBindingA[] =
 	{
@@ -1096,9 +1093,9 @@ tcu::TestStatus pipelineLayoutLifetimeTest (Context& context, VkPipelineBindPoin
 
 	const VkDescriptorSet					descriptorSets[]			=
 	{
-		getDescriptorSet(vk, device, descriptorPool, descriptorSetLayouts[0].get()),
-		getDescriptorSet(vk, device, descriptorPool, descriptorSetLayouts[1].get()),
-		getDescriptorSet(vk, device, descriptorPool, descriptorSetLayouts[2].get())
+		getDescriptorSet(vk, device, descriptorPool.get(), descriptorSetLayouts[0].get()),
+		getDescriptorSet(vk, device, descriptorPool.get(), descriptorSetLayouts[1].get()),
+		getDescriptorSet(vk, device, descriptorPool.get(), descriptorSetLayouts[2].get())
 	};
 
 	const VkDescriptorSet					setHandlesAC[]				=
@@ -1227,10 +1224,6 @@ tcu::TestStatus pipelineLayoutLifetimeTest (Context& context, VkPipelineBindPoin
 	}
 
 	vk.cmdBindDescriptorSets(commandBuffer.get(), bindPoint, pipelineLayoutAC.get(), 0u, DE_LENGTH_OF_ARRAY(setHandlesAC), setHandlesAC, 0u, DE_NULL);
-
-#ifndef CTS_USES_VULKANSC
-	vk.destroyDescriptorPool(device, descriptorPool, DE_NULL);
-#endif // CTS_USES_VULKANSC
 
 	// Test should always pass
 	return tcu::TestStatus::pass("Pass");

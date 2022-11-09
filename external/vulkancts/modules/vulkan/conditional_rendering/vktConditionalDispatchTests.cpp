@@ -275,7 +275,7 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 			&inheritanceInfo
 		};
 
-		vk.beginCommandBuffer(*secondaryCmdBuffer, &commandBufferBeginInfo);
+		VK_CHECK(vk.beginCommandBuffer(*secondaryCmdBuffer, &commandBufferBeginInfo));
 
 		targetCmdBuffer = *secondaryCmdBuffer;
 	}
@@ -370,6 +370,9 @@ void ConditionalDispatchTests::init (void)
 	for (int conditionNdx = 0; conditionNdx < DE_LENGTH_OF_ARRAY(conditional::s_testsData); conditionNdx++)
 	{
 		const ConditionalData& conditionData = conditional::s_testsData[conditionNdx];
+
+		if (conditionData.clearInRenderPass)
+			continue;
 
 		de::MovePtr<tcu::TestCaseGroup> conditionalDrawRootGroup(new tcu::TestCaseGroup(m_testCtx, de::toString(conditionData).c_str(), "Conditionaly execute dispatch calls"));
 
@@ -548,6 +551,7 @@ void ConditionalDispatchTests::init (void)
 						0u,							//	deUint32				conditionValue;
 						false,						//	bool					padConditionValue;
 						true,						//	bool					allocationOffset;
+						false,						//	bool					clearInRenderPass;
 						false,						//	bool					expectCommandExecution;
 						memoryTypeCase.memoryType,	//	ConditionalBufferMemory	memoryType;
 					};

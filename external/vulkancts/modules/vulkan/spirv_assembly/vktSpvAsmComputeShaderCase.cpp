@@ -736,11 +736,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	// all the descriptors with just a desciptor to this new buffer.
 	if (m_shaderSpec.usesPhysStorageBuffer)
 	{
-#ifndef CTS_USES_VULKANSC
-		const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
-#endif
-
-		VkBufferDeviceAddressInfo info =
+		VkBufferDeviceAddressInfo info
 		{
 			VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,		// VkStructureType	sType;
 			DE_NULL,											// const void*		pNext;
@@ -750,32 +746,14 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 		for (deUint32 inputNdx = 0; inputNdx < m_shaderSpec.inputs.size(); ++inputNdx)
 		{
 			info.buffer = **inputBuffers[inputNdx];
-			VkDeviceAddress addr;
-
-#ifndef CTS_USES_VULKANSC
-			if (useKHR)
-				addr = vkdi.getBufferDeviceAddress(device, &info);
-			else
-				addr = vkdi.getBufferDeviceAddressEXT(device, &info);
-#else
-			addr = vkdi.getBufferDeviceAddress(device, &info);
-#endif
+			VkDeviceAddress addr = vkdi.getBufferDeviceAddress(device, &info);
 
 			gpuAddrs.push_back(addr);
 		}
 		for (deUint32 outputNdx = 0; outputNdx < m_shaderSpec.outputs.size(); ++outputNdx)
 		{
 			info.buffer = **outputBuffers[outputNdx];
-			VkDeviceAddress addr;
-
-#ifndef CTS_USES_VULKANSC
-			if (useKHR)
-				addr = vkdi.getBufferDeviceAddress(device, &info);
-			else
-				addr = vkdi.getBufferDeviceAddressEXT(device, &info);
-#else
-			addr = vkdi.getBufferDeviceAddress(device, &info);
-#endif
+			VkDeviceAddress addr = vkdi.getBufferDeviceAddress(device, &info);
 
 			gpuAddrs.push_back(addr);
 		}
@@ -854,6 +832,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	endCommandBuffer(vkdi, *cmdBuffer);
 
 	submitCommandsAndWait(vkdi, device, queue, *cmdBuffer);
+	m_context.resetCommandPoolForVKSC(device, *cmdPool);
 
 	// Invalidate output memory ranges before checking on host.
 	for (size_t outputNdx = 0; outputNdx < m_shaderSpec.outputs.size(); ++outputNdx)

@@ -42,6 +42,7 @@
 #include "vkMemUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkDeviceUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
@@ -55,6 +56,7 @@
 
 #include "pipeline/vktPipelineImageUtil.hpp"		// required for compressed image blit
 #include "vktCustomInstancesDevices.hpp"
+#include "vkSafetyCriticalUtil.hpp"
 
 #include <set>
 #include <array>
@@ -793,6 +795,7 @@ void CopiesAndBlittingTestInstance::uploadImageAspect (const tcu::ConstPixelBuff
 	endCommandBuffer(vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(vk, vkDevice, queue, *m_cmdBuffer);
+	m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
 }
 
 void CopiesAndBlittingTestInstance::uploadImage (const tcu::ConstPixelBufferAccess& src, VkImage dst, const ImageParms& parms, const deUint32 mipLevels)
@@ -983,6 +986,7 @@ void CopiesAndBlittingTestInstance::readImageAspect (vk::VkImage					image,
 	endCommandBuffer(vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
+	m_context.resetCommandPoolForVKSC(device, *m_cmdPool);
 
 	// Read buffer data
 	invalidateAlloc(vk, device, *bufferAlloc);
@@ -1254,6 +1258,7 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 	endCommandBuffer(vk, *m_cmdBuffer);
 
 	submitCommandsAndWait (vk, vkDevice, queue, *m_cmdBuffer);
+	m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
 
 	de::MovePtr<tcu::TextureLevel>	resultTextureLevel	= readImage(*m_destination, m_params.dst.image);
 
@@ -1628,7 +1633,7 @@ tcu::TestStatus CopyImageToImageMipmap::iterate (void)
 		}
 	}
 
-	const VkImageMemoryBarrier	imageBarriers[]		=
+	VkImageMemoryBarrier	imageBarriers[]		=
 	{
 		// source image
 		{
@@ -1700,6 +1705,7 @@ tcu::TestStatus CopyImageToImageMipmap::iterate (void)
 	endCommandBuffer(vk, *m_cmdBuffer);
 
 	submitCommandsAndWait (vk, vkDevice, queue, *m_cmdBuffer);
+	m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
 
 	for (deUint32 miplevel = 0; miplevel < m_params.mipLevels; miplevel++)
 	{
@@ -2108,6 +2114,7 @@ tcu::TestStatus CopyBufferToBuffer::iterate (void)
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &dstBufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	endCommandBuffer(vk, *m_cmdBuffer);
 	submitCommandsAndWait(vk, vkDevice, queue, *m_cmdBuffer);
+	m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
 
 	// Read buffer data
 	de::MovePtr<tcu::TextureLevel>	resultLevel		(new tcu::TextureLevel(mapVkFormat(VK_FORMAT_R32_UINT), dstLevelWidth, 1));
@@ -2334,6 +2341,7 @@ tcu::TestStatus CopyImageToBuffer::iterate (void)
 	endCommandBuffer(vk, *m_cmdBuffer);
 
 	submitCommandsAndWait (vk, vkDevice, queue, *m_cmdBuffer);
+	m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
 
 	// Read buffer data
 	de::MovePtr<tcu::TextureLevel>	resultLevel		(new tcu::TextureLevel(m_textureFormat, (int)m_params.dst.buffer.size, 1));
@@ -2567,6 +2575,7 @@ tcu::TestStatus CopyBufferToImage::iterate (void)
 	endCommandBuffer(vk, *m_cmdBuffer);
 
 	submitCommandsAndWait (vk, vkDevice, queue, *m_cmdBuffer);
+	m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
 
 	de::MovePtr<tcu::TextureLevel>	resultLevel	= readImage(*m_destination, m_params.dst.image);
 
@@ -2969,6 +2978,7 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
 	endCommandBuffer(vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(vk, vkDevice, queue, *m_cmdBuffer);
+	m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
 
 	de::MovePtr<tcu::TextureLevel>	resultLevel = readImage(*m_destination, m_params.dst.image);
 
@@ -3385,6 +3395,7 @@ tcu::TestStatus BlittingImages::iterate (void)
 
 	endCommandBuffer(vk, *m_cmdBuffer);
 	submitCommandsAndWait(vk, vkDevice, queue, *m_cmdBuffer);
+	m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
 
 	de::MovePtr<tcu::TextureLevel>	resultLevel		= readImage(*m_destination, dstImageParams);
 	tcu::PixelBufferAccess			resultAccess	= resultLevel->getAccess();
@@ -4576,6 +4587,7 @@ void BlittingImages::uploadCompressedImage (const VkImage& image, const ImagePar
 	endCommandBuffer(vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(vk, vkDevice, queue, *m_cmdBuffer);
+	m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
 }
 
 
@@ -5013,6 +5025,7 @@ tcu::TestStatus BlittingMipmaps::iterate (void)
 
 	endCommandBuffer(vk, *m_cmdBuffer);
 	submitCommandsAndWait(vk, vkDevice, queue, *m_cmdBuffer);
+	m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
 
 	return checkTestResult();
 }
@@ -5449,11 +5462,23 @@ std::vector<std::string> removeExtensions (const std::vector<std::string>& a, co
 	return res;
 }
 
+
 // Creates a device that has queues for graphics/compute capabilities and compute or transfer capabilities without graphics.
 Move<VkDevice> createCustomDevice (Context&								context,
 								   const ResolveImageToImageOptions		imageCreateOptions,
+#ifdef CTS_USES_VULKANSC
+								   const CustomInstance&				customInstance,
+#endif // CTS_USES_VULKANSC
 								   uint32_t&							queueFamilyIndex)
 {
+#ifdef CTS_USES_VULKANSC
+	const InstanceInterface&	instanceDriver		= customInstance.getDriver();
+	const VkPhysicalDevice		physicalDevice		= chooseDevice(instanceDriver, customInstance, context.getTestContext().getCommandLine());
+#else
+	const InstanceInterface&	instanceDriver		= context.getInstanceInterface();
+	const VkPhysicalDevice		physicalDevice		= context.getPhysicalDevice();
+#endif // CTS_USES_VULKANSC
+
 	// This function can only be used to create a device with compute only or transfer only queue.
 	DE_ASSERT(imageCreateOptions == COPY_MS_IMAGE_TO_MS_IMAGE_COMPUTE || imageCreateOptions == COPY_MS_IMAGE_TO_MS_IMAGE_TRANSFER);
 
@@ -5515,10 +5540,43 @@ Move<VkDevice> createCustomDevice (Context&								context,
 
 	const auto& deviceFeatures2 = context.getDeviceFeatures2();
 
+	const void *pNext = &deviceFeatures2;
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo = context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext = pNext;
+	pNext = &memReservationInfo;
+
+	VkPipelineCacheCreateInfo			pcCI;
+	std::vector<VkPipelinePoolSize>		poolSizes;
+	if (context.getTestContext().getCommandLine().isSubProcess())
+	{
+		if (context.getResourceInterface()->getCacheDataSize() > 0)
+		{
+			pcCI =
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,			// VkStructureType				sType;
+				DE_NULL,												// const void*					pNext;
+				VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+					VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+				context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
+				context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
+			};
+			memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+			memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+		}
+		poolSizes							= context.getResourceInterface()->getPipelinePoolSizes();
+		if (!poolSizes.empty())
+		{
+			memReservationInfo.pipelinePoolSizeCount		= deUint32(poolSizes.size());
+			memReservationInfo.pPipelinePoolSizes			= poolSizes.data();
+		}
+	}
+#endif // CTS_USES_VULKANSC
+
 	const VkDeviceCreateInfo	deviceCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,			// VkStructureType					sType;
-		&deviceFeatures2,								// const void*						pNext;
+		pNext,											// const void*						pNext;
 		(VkDeviceCreateFlags)0u,						// VkDeviceCreateFlags				flags;
 		DE_LENGTH_OF_ARRAY(deviceQueueCreateInfos),		// uint32_t							queueCreateInfoCount;
 		deviceQueueCreateInfos,							// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
@@ -5529,7 +5587,11 @@ Move<VkDevice> createCustomDevice (Context&								context,
 		DE_NULL,										// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 
-	return vkt::createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(), context.getPhysicalDevice(), &deviceCreateInfo);
+#ifndef CTS_USES_VULKANSC
+	return vkt::createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), instanceDriver, physicalDevice, &deviceCreateInfo);
+#else
+	return vkt::createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), customInstance, instanceDriver, physicalDevice, &deviceCreateInfo);
+#endif // CTS_USES_VULKANSC
 }
 
 class ResolveImageToImage : public CopiesAndBlittingTestInstance
@@ -5547,7 +5609,7 @@ public:
 												{
 													// Destroy the command pool (and free the related command buffer).
 													// This must be done before the m_customDevice is destroyed.
-													m_cmdBuffer.disown();
+													m_cmdBuffer = Move<VkCommandBuffer>();
 													m_cmdPool = Move<VkCommandPool>();
 												}
 protected:
@@ -5555,7 +5617,15 @@ protected:
 	void										copyMSImageToMSImage			(deUint32 copyArraySize);
 	tcu::TestStatus								checkIntermediateCopy			(void);
 private:
+	const CustomInstance						m_customInstance;
 	Move<VkDevice>								m_customDevice;
+
+#ifndef CTS_USES_VULKANSC
+	de::MovePtr<vk::DeviceDriver>				m_deviceDriver;
+#else
+	de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>	m_deviceDriver;
+#endif // CTS_USES_VULKANSC
+
 	Move<VkCommandPool>							m_alternativeCmdPool;
 	Move<VkCommandBuffer>						m_alternativeCmdBuffer;
 	VkQueue										m_alternativeQueue;
@@ -5582,35 +5652,60 @@ private:
 
 ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, const ResolveImageToImageOptions options)
 	: CopiesAndBlittingTestInstance	(context, params)
+	, m_customInstance				(createCustomInstanceFromContext(context))
 	, m_options						(options)
 {
-	const InstanceInterface&	vki						= m_context.getInstanceInterface();
-	const DeviceInterface&		vk						= m_context.getDeviceInterface();
 
+
+#ifdef CTS_USES_VULKANSC
+	const InstanceInterface&	vki						= m_customInstance.getDriver();
+#else
+	const InstanceInterface&	vki						= m_context.getInstanceInterface();
+#endif // CTS_USES_VULKANSC
+
+		uint32_t queueFamilyIndex		= 0;
 	// Create custom device for compute and transfer only queue tests.
 	if (m_options == COPY_MS_IMAGE_TO_MS_IMAGE_COMPUTE || m_options == COPY_MS_IMAGE_TO_MS_IMAGE_TRANSFER)
 	{
 		// 'queueFamilyIndex' will be updated in 'createCustomDevice()' to match the requested queue type.
-		uint32_t queueFamilyIndex		= 0;
+#ifdef CTS_USES_VULKANSC
+		m_customDevice					= createCustomDevice(context, m_options, m_customInstance, queueFamilyIndex);
+#else
 		m_customDevice					= createCustomDevice(context, m_options, queueFamilyIndex);
+#endif // CTS_USES_VULKANSC
 		m_device						= m_customDevice.get();
+
+#ifndef CTS_USES_VULKANSC
+		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), m_customInstance, m_device));
+#else
+		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), m_customInstance, m_device, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), m_device));
+#endif // CTS_USES_VULKANSC
+
 		m_queue							= getDeviceQueue(m_context.getDeviceInterface(), m_device, context.getUniversalQueueFamilyIndex(), 0u);
 		m_alternativeQueue				= getDeviceQueue(m_context.getDeviceInterface(), m_device, queueFamilyIndex, 0u);
-		m_alternativeQueueFamilyIndex	= queueFamilyIndex;
-		m_alternativeAllocator			= de::MovePtr<Allocator>(new SimpleAllocator(vk, m_device, getPhysicalDeviceMemoryProperties(vki, context.getPhysicalDevice())));
-		m_allocator						= m_alternativeAllocator.get();
-
-		// Release the command buffer. It will be freed when the related command pool gets destroyed (at the next line).
-		m_cmdBuffer.disown();
-
-		// Create a new command pool and allocate a command buffer with universal queue family index and destroy the old one.
-		m_cmdPool						= createCommandPool(vk, m_device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, context.getUniversalQueueFamilyIndex());
-		m_cmdBuffer						= allocateCommandBuffer(vk, m_device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-
-		// Create a command pool and allocate a command buffer from the queue family supporting compute / transfer capabilities.
-		m_alternativeCmdPool			= createCommandPool(vk, m_device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
-		m_alternativeCmdBuffer			= allocateCommandBuffer(vk, m_device, *m_alternativeCmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 	}
+
+	m_alternativeQueueFamilyIndex	= queueFamilyIndex;
+
+#ifndef CTS_USES_VULKANSC
+	const DeviceInterface&		vk						= m_context.getDeviceInterface();
+#else
+	const DeviceInterface&		vk						= (DE_NULL != m_deviceDriver) ? *m_deviceDriver : m_context.getDeviceInterface();
+#endif // CTS_USES_VULKANSC
+
+	m_alternativeAllocator			= de::MovePtr<Allocator>(new SimpleAllocator(vk, m_device, getPhysicalDeviceMemoryProperties(vki, context.getPhysicalDevice())));
+	m_allocator						= m_alternativeAllocator.get();
+
+	// Release the command buffer.
+	m_cmdBuffer = Move<VkCommandBuffer>();
+
+	// Create a new command pool and allocate a command buffer with universal queue family index and destroy the old one.
+	m_cmdPool						= createCommandPool(vk, m_device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, context.getUniversalQueueFamilyIndex());
+	m_cmdBuffer						= allocateCommandBuffer(vk, m_device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	// Create a command pool and allocate a command buffer from the queue family supporting compute / transfer capabilities.
+	m_alternativeCmdPool			= createCommandPool(vk, m_device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
+	m_alternativeCmdBuffer			= allocateCommandBuffer(vk, m_device, *m_alternativeCmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	Allocator&					memAlloc				= *m_allocator;
 	const VkPhysicalDevice		vkPhysDevice			= m_context.getPhysicalDevice();
@@ -6046,6 +6141,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 		// Queue submit.
 		{
 			submitCommandsAndWait (vk, vkDevice, m_queue, *m_cmdBuffer);
+			m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
 		}
 	}
 }
@@ -6234,6 +6330,7 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 	endCommandBuffer(vk, *m_cmdBuffer);
 	submitCommandsAndWait(vk, vkDevice, queue, *m_cmdBuffer);
+	m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
 
 	de::MovePtr<tcu::TextureLevel>	resultTextureLevel	= readImage(*m_destination, m_params.dst.image);
 
@@ -6573,6 +6670,7 @@ tcu::TestStatus ResolveImageToImage::checkIntermediateCopy (void)
 	vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u, &bufferBarrier, 0u, nullptr, 0u, nullptr);
 	endCommandBuffer(vkd, cmdBuffer);
 	submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+	m_context.resetCommandPoolForVKSC(device, *cmdPool);
 
 	// Verify intermediate results.
 	invalidateAlloc(vkd, device, bufferAlloc);
@@ -6608,6 +6706,7 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 	const VkDevice					vkDevice			= m_device;
 	const VkQueue					queue				= useTwoQueues ? m_alternativeQueue : m_queue;
 	const VkCommandBuffer			commandBuffer		= useTwoQueues ? m_alternativeCmdBuffer.get() : m_cmdBuffer.get();
+	const VkCommandPool				commandPool			= useTwoQueues ? m_alternativeCmdPool.get() : m_cmdPool.get();
 	const tcu::TextureFormat		srcTcuFormat		= mapVkFormat(m_params.src.image.format);
 	std::vector<VkImageCopy>		imageCopies;
 	std::vector<VkImageCopy2KHR>	imageCopies2KHR;
@@ -6832,6 +6931,7 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 			vk.cmdPipelineBarrier(m_cmdBuffer.get(), VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, (uint32_t)barriers.size(), barriers.data());
 			endCommandBuffer(vk, m_cmdBuffer.get());
 			submitCommandsAndWait(vk, vkDevice, m_queue, m_cmdBuffer.get());
+			m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
 		}
 
 		// Acquire ownership to compute / transfer queue.
@@ -6857,6 +6957,7 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 			vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, (uint32_t)barriers.size(), barriers.data());
 			endCommandBuffer(vk, commandBuffer);
 			submitCommandsAndWait(vk, vkDevice, queue, commandBuffer);
+			m_context.resetCommandPoolForVKSC(vkDevice, commandPool);
 		}
 
 		beginCommandBuffer(vk, commandBuffer);
@@ -6948,6 +7049,7 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 	{
 		endCommandBuffer(vk, commandBuffer);
 		submitCommandsAndWait(vk, vkDevice, queue, commandBuffer);
+		m_context.resetCommandPoolForVKSC(vkDevice, commandPool);
 
 		VkImageMemoryBarrier srcImageBarrier = makeImageMemoryBarrier(
 				0u,
@@ -6978,6 +7080,7 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 			vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, (uint32_t)barriers.size(), barriers.data());
 			endCommandBuffer(vk, commandBuffer);
 			submitCommandsAndWait(vk, vkDevice, queue, commandBuffer);
+			m_context.resetCommandPoolForVKSC(vkDevice, commandPool);
 		}
 
 		// Acquire ownership to graphics queue.
@@ -7000,6 +7103,7 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 			vk.cmdPipelineBarrier(m_cmdBuffer.get(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0,  0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, (uint32_t)barriers.size(), barriers.data());
 			endCommandBuffer(vk, m_cmdBuffer.get());
 			submitCommandsAndWait(vk, vkDevice, m_queue, m_cmdBuffer.get());
+			m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
 		}
 	}
 	else
@@ -7007,6 +7111,7 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 		vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &multisampledCopyImagePostBarrier);
 		endCommandBuffer(vk, commandBuffer);
 		submitCommandsAndWait (vk, vkDevice, queue, commandBuffer);
+		m_context.resetCommandPoolForVKSC(vkDevice, commandPool);
 	}
 }
 
@@ -7719,6 +7824,7 @@ tcu::TestStatus DepthStencilMSAA::iterate (void)
 			}
 
 			submitCommandsAndWait (vk, vkDevice, queue, *cmdBuffer);
+			m_context.resetCommandPoolForVKSC(vkDevice, *cmdPool);
 		}
 	}
 
@@ -7803,6 +7909,7 @@ tcu::TestStatus DepthStencilMSAA::iterate (void)
 	}
 	endCommandBuffer(vk, *cmdBuffer);
 	submitCommandsAndWait (vk, vkDevice, queue, *cmdBuffer);
+	m_context.resetCommandPoolForVKSC(vkDevice, *cmdPool);
 
 	// Verify that all samples have been copied properly from all aspects.
 	const auto usedImageAspects = getUsedImageAspects();
@@ -11410,6 +11517,31 @@ void addBufferToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocatio
 
 		group->addChild(new BufferToBufferTestCase(testCtx, "regions", "Multiple regions", params));
 	}
+
+	{
+		TestParams params;
+		params.src.buffer.size	= 32;
+		params.dst.buffer.size	= 32;
+		params.allocationKind	= allocationKind;
+		params.extensionUse		= extensionUse;
+
+		// Copy four unaligned regions
+		for (unsigned int i = 0; i < 4; i++)
+		{
+			const VkBufferCopy bufferCopy
+			{
+				3 + i * 3,	// VkDeviceSize	srcOffset;	3  6   9  12
+				1 + i * 5,	// VkDeviceSize	dstOffset;	1  6  11  16
+				2 + i,		// VkDeviceSize	size;		2  3   4   5
+			};
+
+			CopyRegion copyRegion;
+			copyRegion.bufferCopy = bufferCopy;
+			params.regions.push_back(copyRegion);
+		}
+
+		group->addChild(new BufferToBufferTestCase(testCtx, "unaligned_regions", "Multiple unaligned regions", params));
+	}
 }
 
 void addBlittingImageSimpleTests (tcu::TestCaseGroup* group, TestParams& params)
@@ -13556,7 +13688,9 @@ void addResolveImageWholeTests (tcu::TestCaseGroup* group, AllocationKind alloca
 		const std::string description	= "With " + getSampleCountCaseName(samples[samplesIndex]);
 		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params));
 		params.imageOffset = true;
-		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params));
+		if (allocationKind != ALLOCATION_KIND_DEDICATED) {
+			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params));
+		}
 	}
 }
 
@@ -13605,7 +13739,9 @@ void addResolveImagePartialTests (tcu::TestCaseGroup* group, AllocationKind allo
 		params.imageOffset = false;
 		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params));
 		params.imageOffset = true;
-		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params));
+		if (allocationKind != ALLOCATION_KIND_DEDICATED) {
+			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params));
+		}
 	}
 }
 
@@ -13706,7 +13842,9 @@ void addResolveImageWholeCopyBeforeResolvingTests (tcu::TestCaseGroup* group, Al
 		params.imageOffset = false;
 		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params, COPY_MS_IMAGE_TO_MS_IMAGE));
 		params.imageOffset = true;
-		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_MS_IMAGE));
+		if (allocationKind != ALLOCATION_KIND_DEDICATED) {
+			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_MS_IMAGE));
+		}
 	}
 }
 
@@ -13810,7 +13948,9 @@ void addResolveImageWholeCopyWithoutCabBeforeResolvingTests (tcu::TestCaseGroup*
 		params.imageOffset = false;
 		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params, COPY_MS_IMAGE_TO_MS_IMAGE_NO_CAB));
 		params.imageOffset = true;
-		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_MS_IMAGE_NO_CAB));
+		if (allocationKind != ALLOCATION_KIND_DEDICATED) {
+			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_MS_IMAGE_NO_CAB));
+		}
 	}
 }
 
@@ -13879,7 +14019,9 @@ void addResolveImageWholeCopyDiffLayoutsBeforeResolvingTests (tcu::TestCaseGroup
 		params.imageOffset = false;
 		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), testName, description, params, COPY_MS_IMAGE_TO_MS_IMAGE));
 		params.imageOffset = true;
-		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), testName + "_bind_offset", description, params, COPY_MS_IMAGE_TO_MS_IMAGE));
+		if (allocationKind != ALLOCATION_KIND_DEDICATED) {
+			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), testName + "_bind_offset", description, params, COPY_MS_IMAGE_TO_MS_IMAGE));
+		}
 	}
 }
 
@@ -13932,7 +14074,9 @@ void addResolveImageLayerCopyBeforeResolvingTests (tcu::TestCaseGroup* group, Al
 		params.imageOffset = false;
 		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params, COPY_MS_IMAGE_LAYER_TO_MS_IMAGE));
 		params.imageOffset = true;
-		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_LAYER_TO_MS_IMAGE));
+		if (allocationKind != ALLOCATION_KIND_DEDICATED) {
+			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_LAYER_TO_MS_IMAGE));
+		}
 	}
 }
 
@@ -14011,7 +14155,9 @@ void addResolveCopyImageWithRegionsTests (tcu::TestCaseGroup* group, AllocationK
 		params.imageOffset = false;
 		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params, COPY_MS_IMAGE_TO_MS_IMAGE_MULTIREGION));
 		params.imageOffset = true;
-		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_MS_IMAGE_MULTIREGION));
+		if (allocationKind != ALLOCATION_KIND_DEDICATED) {
+			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_MS_IMAGE_MULTIREGION));
+		}
 	}
 }
 
@@ -14063,7 +14209,9 @@ void addResolveImageWholeArrayImageTests (tcu::TestCaseGroup* group, AllocationK
 		params.imageOffset = false;
 		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
 		params.imageOffset = true;
-		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
+		if (allocationKind != ALLOCATION_KIND_DEDICATED) {
+			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
+		}
 	}
 }
 
@@ -14110,7 +14258,9 @@ void addResolveImageWholeArrayImageSingleRegionTests (tcu::TestCaseGroup* group,
 		params.imageOffset = false;
 		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
 		params.imageOffset = true;
-		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
+		if (allocationKind != ALLOCATION_KIND_DEDICATED) {
+			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
+		}
 	}
 }
 
@@ -14189,7 +14339,9 @@ void addResolveImageDiffImageSizeTests (tcu::TestCaseGroup* group, AllocationKin
 			params.imageOffset = false;
 			group->addChild(new ResolveImageToImageTestCase(testCtx, testName.str(), description.str(), params));
 			params.imageOffset = true;
-			group->addChild(new ResolveImageToImageTestCase(testCtx, testName.str() + "_bind_offset", description.str(), params));
+			if (allocationKind != ALLOCATION_KIND_DEDICATED) {
+				group->addChild(new ResolveImageToImageTestCase(testCtx, testName.str() + "_bind_offset", description.str(), params));
+			}
 		}
 	}
 }
@@ -14245,7 +14397,9 @@ void addDepthStencilCopyMSAATest (tcu::TestCaseGroup* group, DepthStencilMSAA::T
 						testCreateParams.imageOffset = false;
 						group->addChild(new DepthStencilMSAATestCase(group->getTestContext(), testNameBase + "D_" + getSampleCountCaseName(sample), description, testCreateParams));
 						testCreateParams.imageOffset = true;
-						group->addChild(new DepthStencilMSAATestCase(group->getTestContext(), testNameBase + "D_" + getSampleCountCaseName(sample) + "_bind_offset", description, testCreateParams));
+						if (testCreateParams.allocationKind != ALLOCATION_KIND_DEDICATED) {
+							group->addChild(new DepthStencilMSAATestCase(group->getTestContext(), testNameBase + "D_" + getSampleCountCaseName(sample) + "_bind_offset", description, testCreateParams));
+						}
 					}
 				}
 
@@ -14259,7 +14413,9 @@ void addDepthStencilCopyMSAATest (tcu::TestCaseGroup* group, DepthStencilMSAA::T
 						testCreateParams.imageOffset = false;
 						group->addChild(new DepthStencilMSAATestCase(group->getTestContext(), testNameBase + "S_" + getSampleCountCaseName(sample), description, testCreateParams));
 						testCreateParams.imageOffset = true;
-						group->addChild(new DepthStencilMSAATestCase(group->getTestContext(), testNameBase + "S_" + getSampleCountCaseName(sample) + "_bind_offset", description, testCreateParams));
+						if (testCreateParams.allocationKind != ALLOCATION_KIND_DEDICATED) {
+							group->addChild(new DepthStencilMSAATestCase(group->getTestContext(), testNameBase + "S_" + getSampleCountCaseName(sample) + "_bind_offset", description, testCreateParams));
+						}
 					}
 				}
 			}

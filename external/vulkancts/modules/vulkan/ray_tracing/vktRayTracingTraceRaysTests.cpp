@@ -179,8 +179,11 @@ std::tuple<bool, VkQueue, deUint32> getQueueFamilyIndexAtExact (const DeviceInte
 		found = true;
 		vkd.getDeviceQueue(device, queueFamilyIndex, queueIndex, &queue);
 	}
-
+#ifdef __cpp_lib_constexpr_tuple
 	return { found, queue, queueFamilyIndex };
+#else
+    return std::tuple<bool, VkQueue, deUint32>(found, queue, queueFamilyIndex);
+#endif
 }
 
 typedef std::vector<de::SharedPtr<BottomLevelAccelerationStructure>>	BlasVec;
@@ -777,7 +780,7 @@ protected:
 													 const BufferWithMemory&	callSbt) const;
 	void				initBottomAccellStructures	(VkCommandBuffer			cmdBuffer,
 													 BottomLevelAccelerationStructurePool&	pool,
-													 const size_t&							batchStructCount) const;
+													 const deUint32&			batchStructCount) const;
 private:
 	TestParams2			m_params;
 	const VkExtent3D	m_imageExtent;
@@ -805,11 +808,6 @@ TestInstance* TraceRaysIndirect2Case::createInstance (Context& context) const
 {
 	return new TraceRaysIndirect2Instance(context, m_params);
 }
-
-// note that this/these name(s) should be auto-generated but they do not
-#ifndef VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME
-#define VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME "VK_KHR_acceleration_structure"
-#endif
 
 void TraceRaysIndirect2Case::checkSupport (Context& context) const
 {
@@ -1037,7 +1035,7 @@ void TraceRaysIndirect2Instance::makeIndirectStructAndFlush	(BufferWithMemory&		
 
 void TraceRaysIndirect2Instance::initBottomAccellStructures (VkCommandBuffer						cmdBuffer,
 															 BottomLevelAccelerationStructurePool&	pool,
-															 const size_t&							batchStructCount) const
+															 const deUint32&						batchStructCount) const
 {
 	const DeviceInterface&											vkd			= m_context.getDeviceInterface();
 	const VkDevice													device		= m_context.getDevice();

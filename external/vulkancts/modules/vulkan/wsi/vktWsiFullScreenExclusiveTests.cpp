@@ -87,6 +87,8 @@ CustomInstance createInstanceWithWsi (Context&						context,
 
 	extensions.push_back("VK_KHR_surface");
 	extensions.push_back(getExtensionName(wsiType));
+	if (isDisplaySurface(wsiType))
+		extensions.push_back("VK_KHR_display");
 
 	if (isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_KHR_get_surface_capabilities2")))
 		extensions.push_back("VK_KHR_get_surface_capabilities2");
@@ -342,7 +344,7 @@ tcu::TestStatus fullScreenExclusiveTest(Context& context,
 
 	const InstanceHelper						instHelper(context, testParams.wsiType);
 	const NativeObjectsFS						native(context, instHelper.supportedExtensions, testParams.wsiType);
-	const Unique<VkSurfaceKHR>					surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display, *native.window));
+	const Unique<VkSurfaceKHR>					surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display, *native.window, context.getTestContext().getCommandLine()));
 	const DeviceHelper							devHelper(context, instHelper.vki, instHelper.instance, *surface);
 	const std::vector<VkExtensionProperties>	deviceExtensions(enumerateDeviceExtensionProperties(instHelper.vki, devHelper.physicalDevice, DE_NULL));
 	if (!isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_full_screen_exclusive")))

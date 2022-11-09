@@ -359,6 +359,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 
 		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+		context.resetCommandPoolForVKSC(device, *cmdPool);
 	}
 
 	// Pass 2: "Resolve" MS image in compute shader
@@ -398,6 +399,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 
 		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+		context.resetCommandPoolForVKSC(device, *cmdPool);
 	}
 
 	// Retrieve result

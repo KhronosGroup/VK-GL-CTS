@@ -412,3 +412,9 @@ elseif (DE_OS_IS_IOS)
 	set_target_properties(deqp PROPERTIES XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2")
 	set_target_properties(deqp PROPERTIES XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "iPhone Developer: ${DEQP_IOS_CODE_SIGN_IDENTITY}")
 endif ()
+
+if (DE_OS_IS_FUCHSIA)
+	# The default Fuchsia stack is small, so the size needs to be increased to at
+	# least 2**20 bytes, but 2**24 is chosen for safety.
+	set_target_properties(deqp-vk PROPERTIES LINK_FLAGS "-Wl,-z,stack-size=0x1000000")
+endif ()

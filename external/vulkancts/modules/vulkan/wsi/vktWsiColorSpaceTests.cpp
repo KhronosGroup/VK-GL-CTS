@@ -103,6 +103,8 @@ CustomInstance createInstanceWithWsi (Context&						context,
 
 	extensions.push_back("VK_KHR_surface");
 	extensions.push_back(getExtensionName(wsiType));
+	if (isDisplaySurface(wsiType))
+		extensions.push_back("VK_KHR_display");
 
 	// VK_EXT_swapchain_colorspace adds new surface formats. Driver can enumerate
 	// the formats regardless of whether VK_EXT_swapchain_colorspace was enabled,
@@ -417,7 +419,7 @@ tcu::TestStatus basicExtensionTest (Context& context, Type wsiType)
 	const tcu::UVec2				desiredSize		(256, 256);
 	const InstanceHelper			instHelper		(context, wsiType);
 	const NativeObjects				native			(context, instHelper.supportedExtensions, wsiType, 1u, tcu::just(desiredSize));
-	const Unique<VkSurfaceKHR>		surface			(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(), native.getWindow()));
+	const Unique<VkSurfaceKHR>		surface			(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(), native.getWindow(), context.getTestContext().getCommandLine()));
 	const DeviceHelper				devHelper		(context, instHelper.vki, instHelper.instance, *surface);
 
 	if (!de::contains(context.getInstanceExtensions().begin(), context.getInstanceExtensions().end(), "VK_EXT_swapchain_colorspace"))
@@ -458,7 +460,7 @@ tcu::TestStatus colorspaceCompareTest (Context& context, TestParams params)
 	const tcu::UVec2					desiredSize				(256, 256);
 	const InstanceHelper				instHelper				(context, params.wsiType);
 	const NativeObjects					native					(context, instHelper.supportedExtensions, params.wsiType, tcu::just(desiredSize));
-	const Unique<VkSurfaceKHR>			surface					(createSurface(instHelper.vki, instHelper.instance, params.wsiType, native.getDisplay(), native.getWindow()));
+	const Unique<VkSurfaceKHR>			surface					(createSurface(instHelper.vki, instHelper.instance, params.wsiType, native.getDisplay(), native.getWindow(), context.getTestContext().getCommandLine()));
 	const DeviceHelper					devHelper				(context, instHelper.vki, instHelper.instance, *surface);
 
 	const vector<VkSurfaceFormatKHR>	queriedFormats		=	getPhysicalDeviceSurfaceFormats(instHelper.vki,
@@ -767,7 +769,7 @@ tcu::TestStatus surfaceFormatRenderTests (Context& context, Type wsiType)
 	const tcu::UVec2					desiredSize		(256, 256);
 	const InstanceHelper				instHelper		(context, wsiType);
 	const NativeObjects					native			(context, instHelper.supportedExtensions, wsiType, 1u, tcu::just(desiredSize));
-	const Unique<VkSurfaceKHR>			surface			(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(), native.getWindow()));
+	const Unique<VkSurfaceKHR>			surface			(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(), native.getWindow(), context.getTestContext().getCommandLine()));
 	const DeviceHelper					devHelper		(context, instHelper.vki, instHelper.instance, *surface);
 
 	if (!de::contains(context.getInstanceExtensions().begin(), context.getInstanceExtensions().end(), "VK_EXT_swapchain_colorspace"))
@@ -788,7 +790,7 @@ tcu::TestStatus surfaceFormatRenderWithHdrTests (Context& context, Type wsiType)
 	const tcu::UVec2					desiredSize		(256, 256);
 	const InstanceHelper				instHelper		(context, wsiType);
 	const NativeObjects					native			(context, instHelper.supportedExtensions, wsiType, 1u, tcu::just(desiredSize));
-	const Unique<VkSurfaceKHR>			surface			(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(), native.getWindow()));
+	const Unique<VkSurfaceKHR>			surface			(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(), native.getWindow(), context.getTestContext().getCommandLine()));
 	const DeviceHelper					devHelper		(context, instHelper.vki, instHelper.instance, *surface);
 
 	if (!de::contains(context.getInstanceExtensions().begin(), context.getInstanceExtensions().end(), "VK_EXT_swapchain_colorspace"))

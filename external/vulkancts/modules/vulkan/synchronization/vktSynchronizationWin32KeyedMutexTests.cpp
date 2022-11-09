@@ -178,6 +178,8 @@ vk::Move<vk::VkDevice> createTestDevice (Context&						context,
 	extensions.push_back("VK_KHR_external_memory_win32");
 	extensions.push_back("VK_KHR_win32_keyed_mutex");
 
+	const auto& features = context.getDeviceFeatures();
+
 	try
 	{
 		std::vector<vk::VkDeviceQueueCreateInfo>	queues;
@@ -212,7 +214,7 @@ vk::Move<vk::VkDevice> createTestDevice (Context&						context,
 
 			(deUint32)extensions.size(),
 			extensions.empty() ? DE_NULL : &extensions[0],
-			0u
+			&features
 		};
 
 		return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &createInfo);
@@ -1298,7 +1300,7 @@ public:
 			DXGI_ADAPTER_DESC desc;
 			pAdapter->GetDesc(&desc);
 
-			if (deMemCmp(&desc.AdapterLuid, propertiesId.deviceLUID, VK_LUID_SIZE_KHR) == 0)
+			if (deMemCmp(&desc.AdapterLuid, propertiesId.deviceLUID, VK_LUID_SIZE) == 0)
 				break;
 		}
 		pFactory->Release();

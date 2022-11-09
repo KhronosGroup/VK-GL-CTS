@@ -129,7 +129,7 @@ tcu::TestStatus ConditionalClearAttachmentTest::iterate (void)
 			&inheritanceInfo
 		};
 
-		m_vk.beginCommandBuffer(*m_secondaryCmdBuffer, &commandBufferBeginInfo);
+		VK_CHECK(m_vk.beginCommandBuffer(*m_secondaryCmdBuffer, &commandBufferBeginInfo));
 
 		targetCmdBuffer = *m_secondaryCmdBuffer;
 	}
@@ -241,6 +241,9 @@ void ConditionalClearAttachmentTests::init (void)
 	for (int conditionNdx = 0; conditionNdx < DE_LENGTH_OF_ARRAY(conditional::s_testsData); conditionNdx++)
 	{
 		const ConditionalData& conditionData = conditional::s_testsData[conditionNdx];
+
+		if (conditionData.clearInRenderPass)
+			continue;
 
 		tcu::TestCaseGroup* conditionalDrawRootGroup = new tcu::TestCaseGroup(m_testCtx, de::toString(conditionData).c_str(), "");
 

@@ -61,6 +61,7 @@ struct NAME {											\
 #define VK_API_VERSION_PATCH(version)			((deUint32)(version) & 0xFFFU)
 
 #define VK_CHECK(EXPR)							vk::checkResult((EXPR), #EXPR, __FILE__, __LINE__)
+#define VK_CHECK_SUPPORTED(EXPR)				vk::checkResultSupported((EXPR), #EXPR, __FILE__, __LINE__)
 #define VK_CHECK_MSG(EXPR, MSG)					vk::checkResult((EXPR), MSG, __FILE__, __LINE__)
 #define VK_CHECK_WSI(EXPR)						vk::checkWsiResult((EXPR), #EXPR, __FILE__, __LINE__)
 
@@ -147,6 +148,7 @@ enum Type
 	TYPE_WIN32,
 	TYPE_MACOS,
 	TYPE_HEADLESS,
+	TYPE_DIRECT_DRM,
 
 	TYPE_LAST
 };
@@ -294,6 +296,19 @@ private:
 	const VkResult	m_error;
 };
 
+class NotSupportedError : public tcu::NotSupportedError
+{
+public:
+					NotSupportedError	(VkResult error, const char* message, const char* expr, const char* file, int line);
+					NotSupportedError	(VkResult error, const std::string& message);
+	virtual			~NotSupportedError	(void) throw();
+
+	VkResult		getError			(void) const { return m_error; }
+
+private:
+	const VkResult	m_error;
+};
+
 class OutOfMemoryError : public tcu::ResourceError
 {
 public:
@@ -307,8 +322,9 @@ private:
 	const VkResult	m_error;
 };
 
-void			checkResult			(VkResult result, const char* message, const char* file, int line);
-void			checkWsiResult		(VkResult result, const char* message, const char* file, int line);
+void			checkResult				(VkResult result, const char* message, const char* file, int line);
+void			checkResultSupported	(VkResult result, const char* message, const char* file, int line);
+void			checkWsiResult			(VkResult result, const char* message, const char* file, int line);
 
 } // vk
 

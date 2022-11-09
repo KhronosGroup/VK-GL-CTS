@@ -835,7 +835,7 @@ protected:
 		};
 
 		const DeviceInterface& vk = context.getDeviceInterface();
-		vk.beginCommandBuffer(cmdBuffer, &commandBufBeginParams);
+		VK_CHECK(vk.beginCommandBuffer(cmdBuffer, &commandBufBeginParams));
 	}
 #endif // CTS_USES_VULKANSC
 

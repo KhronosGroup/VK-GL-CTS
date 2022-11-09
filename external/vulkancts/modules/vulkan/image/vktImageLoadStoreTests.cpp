@@ -185,8 +185,12 @@ bool comparePixelBuffers (tcu::TestLog&						log,
 
 			case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
 			{
+				const tcu::UVec4 bitDepth = tcu::getTextureFormatMantissaBitDepth(mapVkFormat(format)).cast<deUint32>() - 1u;
+				// To avoid bit-shifting with negative value, which is undefined behaviour.
+				const tcu::UVec4 fixedBitDepth = tcu::select(bitDepth, tcu::UVec4(0u, 0u, 0u, 0u), tcu::greaterThanEqual(bitDepth.cast<deInt32>(), tcu::IVec4(0, 0, 0, 0)));
+
 				// Allow error of minimum representable difference
-				const tcu::Vec4 threshold (1.0f / ((tcu::UVec4(1u) << (tcu::getTextureFormatMantissaBitDepth(mapVkFormat(format)).cast<deUint32>() - 1u)) - 1u).cast<float>());
+				const tcu::Vec4 threshold (1.0f / ((tcu::UVec4(1u) << fixedBitDepth) - 1u).cast<float>());
 
 				ok = tcu::floatThresholdCompare(log, comparisonName.c_str(), comparisonDesc.c_str(), refLayer, resultLayer, threshold, tcu::COMPARE_LOG_RESULT);
 				break;
@@ -515,6 +519,9 @@ void StoreTest::checkSupport (Context& context) const
 {
 #ifndef CTS_USES_VULKANSC
 	const VkFormatProperties3 formatProperties (context.getFormatProperties(m_format));
+
+	if (!m_declareImageFormatInShader && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR))
+		TCU_THROW(NotSupportedError, "Format not supported for unformatted stores via storage buffer");
 
 	if (!m_declareImageFormatInShader && !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR))
 		TCU_THROW(NotSupportedError, "Format not supported for unformatted stores via storage images");

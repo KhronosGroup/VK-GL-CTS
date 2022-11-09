@@ -50,7 +50,7 @@ using namespace vk;
 using tcu::UVec2;
 using tcu::Vec4;
 
-const deUint32	maxQueries		= 50u;
+const deUint32	maxQueries		= 50u * 3u; // multiview with 3 bits can be used
 const deUint32	numLayers		= 4u;
 
 struct TestParameters
@@ -411,6 +411,7 @@ tcu::TestStatus DynamicRenderingTestInstance::iterate (void)
 	deUint32							renderY			= 0u;
 	deUint32							quadShrink		= 0u;
 	deUint32							queryIndex		= 0u;
+	std::vector<uint32_t>				queryMultiviewCount;
 
 	enum PipelineType
 	{
@@ -679,7 +680,20 @@ tcu::TestStatus DynamicRenderingTestInstance::iterate (void)
 		}
 
 		if (occlusionQuery)
-			vk.cmdEndQuery(cmdBuffer, *m_queryPool, queryIndex++);
+		{
+			vk.cmdEndQuery(cmdBuffer, *m_queryPool, queryIndex);
+			if (pipelineType == PIPELINE_TYPE_VERTEX_FRAGMENT_MULTIVIEW) {
+				queryIndex += 3;
+				queryMultiviewCount.push_back(3);
+				queryMultiviewCount.push_back(0);
+				queryMultiviewCount.push_back(0);
+			}
+			else
+			{
+				queryIndex++;
+				queryMultiviewCount.push_back(1);
+			}
+		}
 
 		deUint32				activeLayersClear					= 0x1;
 		deUint32				activeLayersQuad					= 0x1;
@@ -803,12 +817,18 @@ tcu::TestStatus DynamicRenderingTestInstance::iterate (void)
 		deUint32* queryPtr = static_cast<deUint32*>(m_queryResults->getBoundMemory().getHostPtr());
 		invalidateAlloc(vk, device, m_queryResults->getBoundMemory());
 
-		for (deUint32 i = 0; i < queryIndex; i++)
+		deUint32 i = 0;
+		while (i < queryIndex)
 		{
-			if (queryPtr[i] == 0)
+			uint32_t querySum = 0;
+			for (uint32_t j = 0; j < queryMultiviewCount[i]; j++) {
+				querySum += queryPtr[i];
+			}
+			if (querySum == 0)
 			{
 				return tcu::TestStatus::fail("Expected nonzero occlusion query results.");
 			}
+			i += queryMultiviewCount[i];
 		}
 	}
 

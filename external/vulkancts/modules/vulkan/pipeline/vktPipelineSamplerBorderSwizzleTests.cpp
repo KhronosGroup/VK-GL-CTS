@@ -922,7 +922,6 @@ tcu::TestStatus BorderSwizzleInstance::iterate (void)
 									*fragShader,
 									DE_NULL,
 									DE_NULL,
-									DE_NULL,
 									&specializationInfo)
 					.setupFragmentOutputState(*renderPass, 0u, &colorBlendInfo)
 					.setMonolithicPipelineLayout(*pipelineLayout)

@@ -2883,7 +2883,7 @@ tcu::TestStatus RayTracingHeaderBottomAddressTestInstance::iterate (void)
 	const VkQueue										queue			= m_context.getUniversalQueue();
 	Allocator&											allocator		= m_context.getDefaultAllocator();
 
-	const Move<VkCommandPool>							cmdPool			= createCommandPool(vkd, device, 0, familyIndex);
+	const Move<VkCommandPool>							cmdPool			= createCommandPool(vkd, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, familyIndex);
 	const Move<VkCommandBuffer>							cmdBuffer		= allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	beginCommandBuffer(vkd, *cmdBuffer, 0);
@@ -2900,6 +2900,7 @@ tcu::TestStatus RayTracingHeaderBottomAddressTestInstance::iterate (void)
 	SerialStorage										deepStorage		(vkd, device, allocator, m_params->buildType, serialInfo);
 
 	// make deep serialization - top-level AS width bottom-level structures that it owns
+	vkd.resetCommandBuffer(*cmdBuffer, 0);
 	beginCommandBuffer(vkd, *cmdBuffer, 0);
 	src->serialize(vkd, device, *cmdBuffer, &deepStorage);
 	endCommandBuffer(vkd, *cmdBuffer);
@@ -2979,14 +2980,6 @@ bool RayTracingHeaderBottomAddressTestInstance::areAddressesDifferent (const std
 
 	return (matches == 0);
 }
-
-// note that these names should be auto-generated but they do not
-#ifndef VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME
-#define VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME "VK_KHR_acceleration_structure"
-#endif
-#ifndef VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME
-#define VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME "VK_KHR_ray_tracing_maintenance1"
-#endif
 
 template<class X, class... Y>
 inline de::SharedPtr<X> makeShared(Y&&... ctorArgs) {
@@ -3183,7 +3176,7 @@ TestStatus QueryPoolResultsSizeInstance::iterate (void)
 	const VkQueue										queue			= m_context.getUniversalQueue();
 	Allocator&											allocator		= m_context.getDefaultAllocator();
 
-	const Move<VkCommandPool>							cmdPool			= createCommandPool(vk, device, 0, familyIndex);
+	const Move<VkCommandPool>							cmdPool			= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, familyIndex);
 	const Move<VkCommandBuffer>							cmdBuffer		= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	beginCommandBuffer(vk, *cmdBuffer, 0);
@@ -3287,7 +3280,7 @@ TestStatus QueryPoolResultsPointersInstance::iterate (void)
 	const VkQueue										queue			= m_context.getUniversalQueue();
 	Allocator&											allocator		= m_context.getDefaultAllocator();
 
-	const Move<VkCommandPool>							cmdPool			= createCommandPool(vk, device, 0, familyIndex);
+	const Move<VkCommandPool>							cmdPool			= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, familyIndex);
 	const Move<VkCommandBuffer>							cmdBuffer		= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	beginCommandBuffer(vk, *cmdBuffer, 0);
@@ -3365,12 +3358,6 @@ TestStatus QueryPoolResultsPointersInstance::iterate (void)
 	return pass ? TestStatus::pass("") : TestStatus::fail("");
 }
 
-#ifndef VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME
-#define VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME "VK_KHR_synchronization2"
-#endif
-#ifndef VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME
-#define VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME "VK_KHR_push_descriptor"
-#endif
 
 struct CopyWithinPipelineParams
 {
@@ -3605,6 +3592,7 @@ void PipelineStageASCase::checkSupport (Context& context) const
 	context.requireInstanceFunctionality(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 	context.requireDeviceFunctionality(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
 	context.requireDeviceFunctionality(VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME);
+	context.requireDeviceFunctionality(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
 	context.requireDeviceFunctionality(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
 
 	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR = context.getAccelerationStructureFeatures();
@@ -3860,8 +3848,11 @@ TestStatus CopyBlasInstance::iterate (void)
 			queryAccelerationStructureSize(vk, device, *cmdBuffer, { *blas1->getPtr() }, m_params->build, *queryPoolSize, query, 0u, blasSize);
 		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
-		VK_CHECK(vk.getQueryPoolResults(device, *queryPoolSize, 0u, 1, sizeof(VkDeviceSize), blasSize.data(),
-										sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+		if (m_params->build == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
+		{
+			VK_CHECK(vk.getQueryPoolResults(device, *queryPoolSize, 0u, 1, sizeof(VkDeviceSize), blasSize.data(),
+											sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+		}
 	}
 
 	de::MovePtr<BufferWithMemory>			referenceImageBuffer	= getRefImage(blas1);
@@ -4093,7 +4084,7 @@ TestStatus CopySBTInstance::iterate (void)
 	{
 		0,	// VkDeviceSize srcOffset;
 		0,	// VkDeviceSize srcOffset;
-		getBufferForSBT(1, shaderGroupHandleSize, shaderGroupBaseAlignment)
+		getBufferSizeForSBT(1, shaderGroupHandleSize, shaderGroupBaseAlignment)
 	};
 	const VkMemoryBarrier2KHR				postCopySBTMemoryBarrier	= makeMemoryBarrier2(VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR,
 																							 VkAccessFlags2KHR(0),

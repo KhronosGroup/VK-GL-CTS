@@ -506,7 +506,7 @@ vk::Move<vk::VkCommandBuffer> createBeginCommandBuffer (const vk::DeviceInterfac
 
 	vk::Move<vk::VkCommandBuffer> commandBuffer (allocateCommandBuffer(vkd, device, pool, level));
 
-	vkd.beginCommandBuffer(*commandBuffer, &beginInfo);
+	VK_CHECK(vkd.beginCommandBuffer(*commandBuffer, &beginInfo));
 
 	return commandBuffer;
 }

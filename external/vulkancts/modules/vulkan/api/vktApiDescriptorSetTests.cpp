@@ -47,18 +47,11 @@ using namespace std;
 using namespace vk;
 
 // Descriptor set layout used to create a pipeline layout is destroyed prior to creating a pipeline
-Move<VkPipelineLayout> createPipelineLayoutDestroyDescriptorSetLayout (const DeviceInterface& vk, const VkDevice& device)
+Move<VkPipelineLayout> createPipelineLayoutDestroyDescriptorSetLayout (Context& context)
 {
-	const VkDescriptorSetLayoutCreateInfo	descriptorSetLayoutInfo		=
-	{
-		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// VkStructureType						sType;
-		DE_NULL,												// const void*							pNext;
-		(VkDescriptorSetLayoutCreateFlags)0,					// VkDescriptorSetLayoutCreateFlags		flags;
-		0u,														// deUint32								bindingCount;
-		DE_NULL,												// const VkDescriptorSetLayoutBinding*	pBindings;
-	};
-
-	Unique<VkDescriptorSetLayout>			descriptorSetLayout			(createDescriptorSetLayout(vk, device, &descriptorSetLayoutInfo));
+	const DeviceInterface&					vk							= context.getDeviceInterface();
+	const VkDevice							device						= context.getDevice();
+	Unique<VkDescriptorSetLayout>			descriptorSetLayout			(createDescriptorSetLayout(context));
 
 	const VkPipelineLayoutCreateInfo		pipelineLayoutCreateInfo	=
 	{
@@ -81,7 +74,7 @@ tcu::TestStatus descriptorSetLayoutLifetimeGraphicsTest (Context& context)
     deUint32					                    queueFamilyIndex                = context.getUniversalQueueFamilyIndex();
     const VkQueue					                queue				            = context.getUniversalQueue();
 
-	Unique<VkPipelineLayout>						pipelineLayout					(createPipelineLayoutDestroyDescriptorSetLayout(vk, device));
+	Unique<VkPipelineLayout>						pipelineLayout					(createPipelineLayoutDestroyDescriptorSetLayout(context));
 
 	const Unique<VkShaderModule>					vertexShaderModule				(createShaderModule(vk, device, context.getBinaryCollection().get("vertex"), 0));
 
@@ -260,7 +253,7 @@ tcu::TestStatus descriptorSetLayoutLifetimeComputeTest (Context& context)
     const ComputeInstanceResultBuffer		result(vk, device, allocator, 0.0f);
 
 
-    Unique<VkPipelineLayout>				pipelineLayout				(createPipelineLayoutDestroyDescriptorSetLayout(vk, device));
+    Unique<VkPipelineLayout>				pipelineLayout				(createPipelineLayoutDestroyDescriptorSetLayout(context));
 
 	const Unique<VkShaderModule>			computeShaderModule			(createShaderModule(vk, device, context.getBinaryCollection().get("compute"), 0));
 

@@ -596,6 +596,18 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 			1.0f,															//	float									lineWidth;
 		};
 
+		const vk::VkPipelineColorBlendStateCreateInfo colorBlendStateParams
+		{
+			vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType
+			DE_NULL,														// const void*									pNext
+			0u,																// VkPipelineColorBlendStateCreateFlags			flags
+			VK_FALSE,														// VkBool32										logicOpEnable
+			vk::VK_LOGIC_OP_CLEAR,											// VkLogicOp									logicOp
+			0u,																// deUint32										attachmentCount
+			DE_NULL,														// const VkPipelineColorBlendAttachmentState*	pAttachments
+			{ 1.0f, 1.0f, 1.0f, 1.0f }										// float										blendConstants[4]
+		};
+
 		// Setup different stencil masks and refs in each quad
 		for (int quadNdx = 0; quadNdx < StencilTest::QUAD_COUNT; quadNdx++)
 		{
@@ -623,7 +635,7 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 																		  *m_vertexShaderModule,
 																		  &rasterizationStateParams)
 										.setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *m_fragmentShaderModule, &depthStencilStateParams)
-										.setupFragmentOutputState(*m_renderPass)
+										.setupFragmentOutputState(*m_renderPass, 0, (m_colorAttachmentEnable ? DE_NULL : &colorBlendStateParams))
 										.setMonolithicPipelineLayout(*m_pipelineLayout)
 										.buildPipeline();
 		}

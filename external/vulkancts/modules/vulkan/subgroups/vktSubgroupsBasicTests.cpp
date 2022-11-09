@@ -26,6 +26,8 @@
 #include "vktSubgroupsBasicTests.hpp"
 #include "vktSubgroupsTestsUtils.hpp"
 
+#include "tcuStringTemplate.hpp"
+
 #include <string>
 #include <vector>
 
@@ -295,29 +297,29 @@ static bool checkTessellationEvaluationSubgroupBarriersNoSSBO (const void*				in
 	return _checkTessellationEvaluationSubgroupBarriersNoSSBO (datas, width, height, false);
 }
 
-static bool checkComputeSubgroupElect (const void*				internalData,
-									   vector<const void*>		datas,
-									   const deUint32			numWorkgroups[3],
-									   const deUint32			localSize[3],
-									   deUint32)
+static bool checkComputeOrMeshSubgroupElect (const void*			internalData,
+											 vector<const void*>	datas,
+											 const deUint32			numWorkgroups[3],
+											 const deUint32			localSize[3],
+											 deUint32)
 {
 	DE_UNREF(internalData);
 
-	return subgroups::checkCompute(datas, numWorkgroups, localSize, 1);
+	return subgroups::checkComputeOrMesh(datas, numWorkgroups, localSize, 1);
 }
 
-static bool checkComputeSubgroupBarriers (const void*			internalData,
-										  vector<const void*>	datas,
-										  const deUint32		numWorkgroups[3],
-										  const deUint32		localSize[3],
-										  deUint32)
+static bool checkComputeOrMeshSubgroupBarriers (const void*			internalData,
+												vector<const void*>	datas,
+												const deUint32		numWorkgroups[3],
+												const deUint32		localSize[3],
+												deUint32)
 {
 	DE_UNREF(internalData);
 
 	// We used this SSBO to generate our unique value!
 	const deUint32 ref = *reinterpret_cast<const deUint32*>(datas[2]);
 
-	return subgroups::checkCompute(datas, numWorkgroups, localSize, ref);
+	return subgroups::checkComputeOrMesh(datas, numWorkgroups, localSize, ref);
 }
 
 string getOpTypeName (OpType opType)
@@ -1597,101 +1599,186 @@ string getExtHeader (const CaseDefinition& caseDef)
 	return extensions;
 }
 
-void initComputePrograms (SourceCollections&			programCollection,
-						  CaseDefinition&				caseDef,
-						  const string&					extensions,
-						  const string&					testSrc,
-						  const ShaderBuildOptions&		buildOptions)
+void initComputeOrMeshPrograms (SourceCollections&			programCollection,
+								CaseDefinition&				caseDef,
+								const string&				extensions,
+								const string&				testSrc,
+								const ShaderBuildOptions&	buildOptions)
 {
-	if (OPTYPE_ELECT == caseDef.opType)
+	std::ostringstream electTemplateStream;
+	electTemplateStream
+		<< "#version 450\n"
+		<< extensions
+		<< "${EXTENSIONS:opt}"
+		<< "layout (local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2) in;\n"
+		<< "${LAYOUTS:opt}"
+		<< "layout (set = 0, binding = 0, std430) buffer Buffer1\n"
+		<< "{\n"
+		<< "  uint result[];\n"
+		<< "};\n"
+		<< "\n"
+		<< subgroups::getSharedMemoryBallotHelper()
+		<< "void main (void)\n"
+		<< "{\n"
+		<< "  uvec3 globalSize = gl_NumWorkGroups * gl_WorkGroupSize;\n"
+		<< "  highp uint offset = globalSize.x * ((globalSize.y * gl_GlobalInvocationID.z) + gl_GlobalInvocationID.y) + gl_GlobalInvocationID.x;\n"
+		<< "  uint value = " << UNELECTED_VALUE << ";\n"
+		<< "  if (subgroupElect())\n"
+		<< "  {\n"
+		<< "    value = " << ELECTED_VALUE << ";\n"
+		<< "  }\n"
+		<< "  uvec4 bits = bitCount(sharedMemoryBallot(value == " << ELECTED_VALUE << "));\n"
+		<< "  result[offset] = bits.x + bits.y + bits.z + bits.w;\n"
+		<< "${BODY:opt}"
+		<< "}\n";
+		;
+	const tcu::StringTemplate electTemplate(electTemplateStream.str());
+
+	std::ostringstream nonElectTemplateStream;
+	nonElectTemplateStream
+		<< "#version 450\n"
+		<< "#extension GL_KHR_shader_subgroup_basic: enable\n"
+		<< "${EXTENSIONS:opt}"
+		<< "layout (local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2) in;\n"
+		<< "${LAYOUTS:opt}"
+		<< "layout (set = 0, binding = 0, std430) buffer Buffer1\n"
+		<< "{\n"
+		<< "  uint result[];\n"
+		<< "};\n"
+		<< "layout (set = 0, binding = 1, std430) buffer Buffer2\n"
+		<< "{\n"
+		<< "  uint tempBuffer[];\n"
+		<< "};\n"
+		<< "layout (set = 0, binding = 2, std430) buffer Buffer3\n"
+		<< "{\n"
+		<< "  uint value;\n"
+		<< "};\n"
+		<< "layout (set = 0, binding = 3, r32ui) uniform uimage2D tempImage;\n"
+		<< "shared uint tempShared[gl_WorkGroupSize.x * gl_WorkGroupSize.y * gl_WorkGroupSize.z];\n"
+		<< "\n"
+		<< "void main (void)\n"
+		<< "{\n"
+		<< "  uvec3 globalSize = gl_NumWorkGroups * gl_WorkGroupSize;\n"
+		<< "  highp uint offset = globalSize.x * ((globalSize.y * gl_GlobalInvocationID.z) + gl_GlobalInvocationID.y) + gl_GlobalInvocationID.x;\n"
+		<< "  uint localId = gl_SubgroupID;\n"
+		<< "  uint id = globalSize.x * ((globalSize.y * gl_WorkGroupID.z) + gl_WorkGroupID.y) + gl_WorkGroupID.x + localId;\n"
+		<< "  uint tempResult = 0;\n"
+		<< testSrc
+		<< "  result[offset] = tempResult;\n"
+		<< "${BODY:opt}"
+		<< "}\n";
+		;
+	const tcu::StringTemplate nonElectTemplate(nonElectTemplateStream.str());
+
+	if (isAllComputeStages(caseDef.shaderStage))
 	{
-		ostringstream src;
+		const std::map<std::string, std::string> emptyMap;
 
-		src << "#version 450\n"
-			<< extensions
-			<< "layout (local_size_x_id = 0, local_size_y_id = 1, "
-			"local_size_z_id = 2) in;\n"
-			<< "layout(set = 0, binding = 0, std430) buffer Buffer1\n"
-			<< "{\n"
-			<< "  uint result[];\n"
-			<< "};\n"
-			<< "\n"
-			<< subgroups::getSharedMemoryBallotHelper()
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "  uvec3 globalSize = gl_NumWorkGroups * gl_WorkGroupSize;\n"
-			<< "  highp uint offset = globalSize.x * ((globalSize.y * "
-			"gl_GlobalInvocationID.z) + gl_GlobalInvocationID.y) + "
-			"gl_GlobalInvocationID.x;\n"
-			<< "  uint value = " << UNELECTED_VALUE << ";\n"
-			<< "  if (subgroupElect())\n"
-			<< "  {\n"
-			<< "    value = " << ELECTED_VALUE << ";\n"
-			<< "  }\n"
-			<< "  uvec4 bits = bitCount(sharedMemoryBallot(value == " << ELECTED_VALUE << "));\n"
-			<< "  result[offset] = bits.x + bits.y + bits.z + bits.w;\n"
-			<< "}\n";
-
-		programCollection.glslSources.add("comp") << glu::ComputeSource(src.str()) << buildOptions;
+		if (OPTYPE_ELECT == caseDef.opType)
+		{
+			const auto programSource = electTemplate.specialize(emptyMap);
+			programCollection.glslSources.add("comp") << glu::ComputeSource(programSource) << buildOptions;
+		}
+		else
+		{
+			const auto programSource = nonElectTemplate.specialize(emptyMap);
+			programCollection.glslSources.add("comp") << glu::ComputeSource(programSource) << buildOptions;
+		}
 	}
+#ifndef CTS_USES_VULKANSC
+	else if (isAllMeshShadingStages(caseDef.shaderStage))
+	{
+		const bool			testMesh = ((caseDef.shaderStage & VK_SHADER_STAGE_MESH_BIT_EXT) != 0u);
+		const bool			testTask = ((caseDef.shaderStage & VK_SHADER_STAGE_TASK_BIT_EXT) != 0u);
+		const tcu::UVec3	emitSize = (testMesh ? tcu::UVec3(1u, 1u, 1u) : tcu::UVec3(0u, 0u, 0u));
+
+		const std::map<std::string, std::string> meshMap
+		{
+			std::make_pair("EXTENSIONS",	"#extension GL_EXT_mesh_shader : enable\n"),
+			std::make_pair("LAYOUTS",		"layout (points) out;\nlayout (max_vertices=1, max_primitives=1) out;\n"),
+			std::make_pair("BODY",			"  SetMeshOutputsEXT(0u, 0u);\n")
+		};
+
+		const std::map<std::string, std::string> taskMap
+		{
+			std::make_pair("EXTENSIONS",	"#extension GL_EXT_mesh_shader : enable\n"),
+			std::make_pair("BODY",			"  EmitMeshTasksEXT(" + std::to_string(emitSize.x()) + ", " + std::to_string(emitSize.y()) + ", " + std::to_string(emitSize.z()) + ");\n")
+		};
+
+		if (testMesh)
+		{
+			if (OPTYPE_ELECT == caseDef.opType)
+			{
+				const auto programSource = electTemplate.specialize(meshMap);
+				programCollection.glslSources.add("mesh") << glu::MeshSource(programSource) << buildOptions;
+			}
+			else
+			{
+				const auto programSource = nonElectTemplate.specialize(meshMap);
+				programCollection.glslSources.add("mesh") << glu::MeshSource(programSource) << buildOptions;
+			}
+		}
+		else
+		{
+			const std::string meshShaderNoSubgroups =
+				"#version 450\n"
+				"#extension GL_EXT_mesh_shader : enable\n"
+				"\n"
+				"layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+				"layout (points) out;\n"
+				"layout (max_vertices = 1, max_primitives = 1) out;\n"
+				"\n"
+				"void main (void)\n"
+				"{\n"
+				"  SetMeshOutputsEXT(0u, 0u);\n"
+				"}\n"
+				;
+			programCollection.glslSources.add("mesh") << glu::MeshSource(meshShaderNoSubgroups) << buildOptions;
+		}
+
+		if (testTask)
+		{
+			if (OPTYPE_ELECT == caseDef.opType)
+			{
+				const auto programSource = electTemplate.specialize(taskMap);
+				programCollection.glslSources.add("task") << glu::TaskSource(programSource) << buildOptions;
+			}
+			else
+			{
+				const auto programSource = nonElectTemplate.specialize(taskMap);
+				programCollection.glslSources.add("task") << glu::TaskSource(programSource) << buildOptions;
+			}
+		}
+	}
+#endif // CTS_USES_VULKANSC
 	else
 	{
-		ostringstream src;
-
-		src << "#version 450\n"
-			<< "#extension GL_KHR_shader_subgroup_basic: enable\n"
-			<< "layout (local_size_x_id = 0, local_size_y_id = 1, "
-			"local_size_z_id = 2) in;\n"
-			<< "layout(set = 0, binding = 0, std430) buffer Buffer1\n"
-			<< "{\n"
-			<< "  uint result[];\n"
-			<< "};\n"
-			<< "layout(set = 0, binding = 1, std430) buffer Buffer2\n"
-			<< "{\n"
-			<< "  uint tempBuffer[];\n"
-			<< "};\n"
-			<< "layout(set = 0, binding = 2, std430) buffer Buffer3\n"
-			<< "{\n"
-			<< "  uint value;\n"
-			<< "};\n"
-			<< "layout(set = 0, binding = 3, r32ui) uniform uimage2D tempImage;\n"
-			<< "shared uint tempShared[gl_WorkGroupSize.x * gl_WorkGroupSize.y * gl_WorkGroupSize.z];\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "  uvec3 globalSize = gl_NumWorkGroups * gl_WorkGroupSize;\n"
-			<< "  highp uint offset = globalSize.x * ((globalSize.y * "
-			"gl_GlobalInvocationID.z) + gl_GlobalInvocationID.y) + "
-			"gl_GlobalInvocationID.x;\n"
-			<< "  uint localId = gl_SubgroupID;\n"
-			<< "  uint id = globalSize.x * ((globalSize.y * "
-			"gl_WorkGroupID.z) + gl_WorkGroupID.y) + "
-			"gl_WorkGroupID.x + localId;\n"
-			<< "  uint tempResult = 0;\n"
-			<< testSrc
-			<< "  result[offset] = tempResult;\n"
-			<< "}\n";
-
-		programCollection.glslSources.add("comp") << glu::ComputeSource(src.str()) << buildOptions;
+		DE_ASSERT(false);
 	}
 }
 
 void initPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
 {
 #ifndef CTS_USES_VULKANSC
-	const bool					spirv14required		= isAllRayTracingStages(caseDef.shaderStage);
+	const bool					spirv14required		= (isAllRayTracingStages(caseDef.shaderStage) || isAllMeshShadingStages(caseDef.shaderStage));
 #else
 	const bool					spirv14required		= false;
 #endif // CTS_USES_VULKANSC
-	const SpirvVersion			spirvVersion		= spirv14required ? SPIRV_VERSION_1_4 : SPIRV_VERSION_1_3;
-	const ShaderBuildOptions	buildOptions		(programCollection.usedVulkanVersion, spirvVersion, 0u);
+	const SpirvVersion			spirvVersion		= (spirv14required ? SPIRV_VERSION_1_4 : SPIRV_VERSION_1_3);
+	const ShaderBuildOptions	buildOptions		(programCollection.usedVulkanVersion, spirvVersion, 0u, spirv14required);
 	const string				extHeader			= getExtHeader(caseDef);
 	const string				testSrc				= getTestString(caseDef);
 	const vector<string>		headDeclarations	= getPerStageHeadDeclarations(caseDef);
 	const bool					pointSizeSupport	= *caseDef.geometryPointSizeSupported;
+	const bool					isComp				= isAllComputeStages(caseDef.shaderStage);
+#ifndef CTS_USES_VULKANSC
+	const bool					isMesh				= isAllMeshShadingStages(caseDef.shaderStage);
+#else
+	const bool					isMesh				= false;
+#endif // CTS_USES_VULKANSC
 
-	if (isAllComputeStages(caseDef.shaderStage))
-		initComputePrograms(programCollection, caseDef, extHeader, testSrc, buildOptions);
+	if (isComp || isMesh)
+		initComputeOrMeshPrograms(programCollection, caseDef, extHeader, testSrc, buildOptions);
 	else
 		subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, VK_FORMAT_R32_UINT, pointSizeSupport, extHeader, testSrc, "", headDeclarations, true);
 }
@@ -1742,6 +1829,18 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 	if (isAllRayTracingStages(caseDef.shaderStage))
 	{
 		context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
+	}
+	else if (isAllMeshShadingStages(caseDef.shaderStage))
+	{
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
+		context.requireDeviceFunctionality("VK_EXT_mesh_shader");
+
+		if ((caseDef.shaderStage & VK_SHADER_STAGE_TASK_BIT_EXT) != 0u)
+		{
+			const auto& features = context.getMeshShaderFeaturesEXT();
+			if (!features.taskShader)
+				TCU_THROW(NotSupportedError, "Task shaders not supported");
+		}
 	}
 #endif // CTS_USES_VULKANSC
 }
@@ -1819,7 +1918,15 @@ TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 
 TestStatus test (Context& context, const CaseDefinition caseDef)
 {
-	if (isAllComputeStages(caseDef.shaderStage))
+	const bool isCompute	= isAllComputeStages(caseDef.shaderStage);
+#ifndef CTS_USES_VULKANSC
+	const bool isMesh		= isAllMeshShadingStages(caseDef.shaderStage);
+#else
+	const bool isMesh		= false;
+#endif // CTS_USES_VULKANSC
+	DE_ASSERT(!(isCompute && isMesh));
+
+	if (isCompute || isMesh)
 	{
 #ifndef CTS_USES_VULKANSC
 		const VkPhysicalDeviceSubgroupSizeControlProperties&	subgroupSizeControlProperties	= context.getSubgroupSizeControlProperties();
@@ -1831,21 +1938,32 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 		if (OPTYPE_ELECT == caseDef.opType)
 		{
 			if (caseDef.requiredSubgroupSize == DE_FALSE)
-				return subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL, checkComputeSubgroupElect);
+			{
+				if (isCompute)
+					return subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL, checkComputeOrMeshSubgroupElect);
+				else
+					return subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr, checkComputeOrMeshSubgroupElect);
+			}
 
 			log << TestLog::Message << "Testing required subgroup size range [" <<  subgroupSizeControlProperties.minSubgroupSize << ", "
 				<< subgroupSizeControlProperties.maxSubgroupSize << "]" << TestLog::EndMessage;
 
 			// According to the spec, requiredSubgroupSize must be a power-of-two integer.
 			for (deUint32 size = subgroupSizeControlProperties.minSubgroupSize; size <= subgroupSizeControlProperties.maxSubgroupSize; size *= 2)
+			{
+				TestStatus result (QP_TEST_RESULT_INTERNAL_ERROR, "Internal Error");
+
+				if (isCompute)
+					result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0u, DE_NULL, checkComputeOrMeshSubgroupElect, size);
+				else
+					result = subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, nullptr, 0u, nullptr, checkComputeOrMeshSubgroupElect, size);
+
+				if (result.getCode() != QP_TEST_RESULT_PASS)
 				{
-					TestStatus result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0u, DE_NULL, checkComputeSubgroupElect, size);
-					if (result.getCode() != QP_TEST_RESULT_PASS)
-						{
-							log << TestLog::Message << "subgroupSize " << size << " failed" << TestLog::EndMessage;
-							return result;
-						}
+					log << TestLog::Message << "subgroupSize " << size << " failed" << TestLog::EndMessage;
+					return result;
 				}
+			}
 
 			return TestStatus::pass("OK");
 		}
@@ -1876,7 +1994,12 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 			};
 
 			if (caseDef.requiredSubgroupSize == DE_FALSE)
-				return subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, inputDatas, inputDatasCount, DE_NULL, checkComputeSubgroupBarriers);
+			{
+				if (isCompute)
+					return subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, inputDatas, inputDatasCount, DE_NULL, checkComputeOrMeshSubgroupBarriers);
+				else
+					return subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, inputDatas, inputDatasCount, nullptr, checkComputeOrMeshSubgroupBarriers);
+			}
 
 			log << TestLog::Message << "Testing required subgroup size range [" <<  subgroupSizeControlProperties.minSubgroupSize << ", "
 				<< subgroupSizeControlProperties.maxSubgroupSize << "]" << TestLog::EndMessage;
@@ -1884,7 +2007,13 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 			// According to the spec, requiredSubgroupSize must be a power-of-two integer.
 			for (deUint32 size = subgroupSizeControlProperties.minSubgroupSize; size <= subgroupSizeControlProperties.maxSubgroupSize; size *= 2)
 			{
-				TestStatus result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, inputDatas, inputDatasCount, DE_NULL, checkComputeSubgroupBarriers, size);
+				TestStatus result (QP_TEST_RESULT_INTERNAL_ERROR, "Internal Error");
+
+				if (isCompute)
+					result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, inputDatas, inputDatasCount, DE_NULL, checkComputeOrMeshSubgroupBarriers, size);
+				else
+					result = subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, inputDatas, inputDatasCount, nullptr, checkComputeOrMeshSubgroupBarriers, size);
+
 				if (result.getCode() != QP_TEST_RESULT_PASS)
 				{
 					log << TestLog::Message << "subgroupSize " << size << " failed" << TestLog::EndMessage;
@@ -2061,9 +2190,10 @@ TestCaseGroup* createSubgroupsBasicTests (TestContext& testCtx)
 	de::MovePtr<TestCaseGroup>	group				(new TestCaseGroup(testCtx, "basic", "Subgroup basic category tests"));
 	de::MovePtr<TestCaseGroup>	graphicGroup		(new TestCaseGroup(testCtx, "graphics", "Subgroup basic category tests: graphics"));
 	de::MovePtr<TestCaseGroup>	computeGroup		(new TestCaseGroup(testCtx, "compute", "Subgroup basic category tests: compute"));
+	de::MovePtr<TestCaseGroup>	meshGroup			(new TestCaseGroup(testCtx, "mesh", "Subgroup basic category tests: mesh shading"));
 	de::MovePtr<TestCaseGroup>	framebufferGroup	(new TestCaseGroup(testCtx, "framebuffer", "Subgroup basic category tests: framebuffer"));
 	de::MovePtr<TestCaseGroup>	raytracingGroup		(new TestCaseGroup(testCtx, "ray_tracing", "Subgroup basic category tests: ray tracing"));
-	const VkShaderStageFlags	stages[]			=
+	const VkShaderStageFlags	fbStages[]			=
 	{
 		VK_SHADER_STAGE_FRAGMENT_BIT,
 		VK_SHADER_STAGE_VERTEX_BIT,
@@ -2071,6 +2201,13 @@ TestCaseGroup* createSubgroupsBasicTests (TestContext& testCtx)
 		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
 		VK_SHADER_STAGE_GEOMETRY_BIT,
 	};
+#ifndef CTS_USES_VULKANSC
+	const VkShaderStageFlags	meshStages[]		=
+	{
+		VK_SHADER_STAGE_MESH_BIT_EXT,
+		VK_SHADER_STAGE_TASK_BIT_EXT,
+	};
+#endif // CTS_USES_VULKANSC
 	const deBool				boolValues[]		=
 	{
 		DE_FALSE,
@@ -2097,6 +2234,27 @@ TestCaseGroup* createSubgroupsBasicTests (TestContext& testCtx)
 
 			addFunctionCaseWithPrograms(computeGroup.get(), testName, "", supportedCheck, initPrograms, test, caseDef);
 		}
+
+#ifndef CTS_USES_VULKANSC
+		for (size_t groupSizeNdx = 0; groupSizeNdx < DE_LENGTH_OF_ARRAY(boolValues); ++groupSizeNdx)
+		{
+			for (const auto& stage : meshStages)
+			{
+				const deBool			requiredSubgroupSize	= boolValues[groupSizeNdx];
+				const string			testNameSuffix			= requiredSubgroupSize ? "_requiredsubgroupsize" : "";
+				const CaseDefinition	caseDef					=
+				{
+					opType,							//  OpType				opType;
+					stage,							//  VkShaderStageFlags	shaderStage;
+					de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
+					requiredSubgroupSize			//  deBool				requiredSubgroupSize;
+				};
+				const string			testName				= op + testNameSuffix + "_" + getShaderStageName(stage);
+
+				addFunctionCaseWithPrograms(meshGroup.get(), testName, "", supportedCheck, initPrograms, test, caseDef);
+			}
+		}
+#endif // CTS_USES_VULKANSC
 
 		if (OPTYPE_SUBGROUP_MEMORY_BARRIER_SHARED == opType)
 		{
@@ -2130,15 +2288,15 @@ TestCaseGroup* createSubgroupsBasicTests (TestContext& testCtx)
 		}
 #endif // CTS_USES_VULKANSC
 
-		for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
+		for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(fbStages); ++stageIndex)
 		{
-			if (OPTYPE_ELECT == opType && stages[stageIndex] == VK_SHADER_STAGE_FRAGMENT_BIT)
+			if (OPTYPE_ELECT == opType && fbStages[stageIndex] == VK_SHADER_STAGE_FRAGMENT_BIT)
 				continue;		// This is not tested. I don't know why.
 
 			const CaseDefinition	caseDef		=
 			{
 				opType,							//  OpType				opType;
-				stages[stageIndex],				//  VkShaderStageFlags	shaderStage;
+				fbStages[stageIndex],			//  VkShaderStageFlags	shaderStage;
 				de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
 				DE_FALSE						//  deBool				requiredSubgroupSize;
 			};
@@ -2152,6 +2310,7 @@ TestCaseGroup* createSubgroupsBasicTests (TestContext& testCtx)
 	group->addChild(computeGroup.release());
 	group->addChild(framebufferGroup.release());
 	group->addChild(raytracingGroup.release());
+	group->addChild(meshGroup.release());
 
 	return group.release();
 }

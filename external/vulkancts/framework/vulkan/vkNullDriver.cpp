@@ -200,20 +200,44 @@ struct NAME											\
 	NAME (VkDevice, const Vk##NAME##CreateInfo*) {}	\
 }
 
+#define VK_NULL_DEFINE_OBJ_WITH_POSTFIX(DEVICE_OR_INSTANCE, NAME, POSTFIX)			\
+struct NAME##POSTFIX																\
+{																					\
+	NAME##POSTFIX (DEVICE_OR_INSTANCE, const Vk##NAME##CreateInfo##POSTFIX*) {}		\
+};
+
 VK_NULL_DEFINE_DEVICE_OBJ(Fence);
 VK_NULL_DEFINE_DEVICE_OBJ(Semaphore);
 VK_NULL_DEFINE_DEVICE_OBJ(Event);
 VK_NULL_DEFINE_DEVICE_OBJ(QueryPool);
 VK_NULL_DEFINE_DEVICE_OBJ(BufferView);
 VK_NULL_DEFINE_DEVICE_OBJ(ImageView);
-#ifndef CTS_USES_VULKANSC
-VK_NULL_DEFINE_DEVICE_OBJ(ShaderModule);
-#endif // CTS_USES_VULKANSC
 VK_NULL_DEFINE_DEVICE_OBJ(PipelineCache);
 VK_NULL_DEFINE_DEVICE_OBJ(PipelineLayout);
 VK_NULL_DEFINE_DEVICE_OBJ(DescriptorSetLayout);
 VK_NULL_DEFINE_DEVICE_OBJ(Sampler);
 VK_NULL_DEFINE_DEVICE_OBJ(Framebuffer);
+VK_NULL_DEFINE_DEVICE_OBJ(SamplerYcbcrConversion);
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, Swapchain, KHR)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkInstance, DebugUtilsMessenger, EXT)
+
+#ifndef CTS_USES_VULKANSC
+VK_NULL_DEFINE_DEVICE_OBJ(ShaderModule);
+VK_NULL_DEFINE_DEVICE_OBJ(DescriptorUpdateTemplate);
+VK_NULL_DEFINE_DEVICE_OBJ(PrivateDataSlot);
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkInstance, DebugReportCallback, EXT)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, CuModule, NVX)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, CuFunction, NVX)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, Micromap, EXT)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, OpticalFlowSession, NV)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectCommandsLayout, NV)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, AccelerationStructure, NV)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, AccelerationStructure, KHR)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, VideoSession, KHR)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, VideoSessionParameters, KHR)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, ValidationCache, EXT)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, BufferCollection, FUCHSIA)
+#endif // CTS_USES_VULKANSC
 
 class Instance
 {
@@ -236,19 +260,16 @@ public:
 										SurfaceKHR		(VkInstance, const VkWaylandSurfaceCreateInfoKHR*)	{}
 										SurfaceKHR		(VkInstance, const VkAndroidSurfaceCreateInfoKHR*)	{}
 										SurfaceKHR		(VkInstance, const VkWin32SurfaceCreateInfoKHR*)	{}
-#endif // CTS_USES_VULKANSC
-										SurfaceKHR		(VkInstance, const VkDisplaySurfaceCreateInfoKHR*)	{}
-#ifndef CTS_USES_VULKANSC
 										SurfaceKHR		(VkInstance, const VkViSurfaceCreateInfoNN*)		{}
 										SurfaceKHR		(VkInstance, const VkIOSSurfaceCreateInfoMVK*)		{}
 										SurfaceKHR		(VkInstance, const VkMacOSSurfaceCreateInfoMVK*)	{}
 										SurfaceKHR		(VkInstance, const VkImagePipeSurfaceCreateInfoFUCHSIA*)	{}
-#endif // CTS_USES_VULKANSC
-										SurfaceKHR		(VkInstance, const VkHeadlessSurfaceCreateInfoEXT*)	{}
-#ifndef CTS_USES_VULKANSC
 										SurfaceKHR		(VkInstance, const VkStreamDescriptorSurfaceCreateInfoGGP*)	{}
 										SurfaceKHR		(VkInstance, const VkMetalSurfaceCreateInfoEXT*)	{}
+										SurfaceKHR		(VkInstance, const VkScreenSurfaceCreateInfoQNX*)	{}
 #endif // CTS_USES_VULKANSC
+										SurfaceKHR		(VkInstance, const VkDisplaySurfaceCreateInfoKHR*)	{}
+										SurfaceKHR		(VkInstance, const VkHeadlessSurfaceCreateInfoEXT*)	{}
 										~SurfaceKHR		(void)												{}
 };
 
@@ -258,30 +279,6 @@ public:
 										DisplayModeKHR	(VkDisplayKHR, const VkDisplayModeCreateInfoKHR*) {}
 										~DisplayModeKHR	(void) {}
 };
-
-#ifndef CTS_USES_VULKANSC
-class DebugReportCallbackEXT
-{
-public:
-										DebugReportCallbackEXT	(VkInstance, const VkDebugReportCallbackCreateInfoEXT*) {}
-										~DebugReportCallbackEXT	(void) {}
-};
-
-class CuModuleNVX
-{
-public:
-										CuModuleNVX	(VkDevice, const VkCuModuleCreateInfoNVX*) {}
-										~CuModuleNVX(void) {}
-};
-
-class CuFunctionNVX
-{
-public:
-										CuFunctionNVX(VkDevice, const VkCuFunctionCreateInfoNVX*) {}
-										~CuFunctionNVX(void) {}
-};
-
-#endif // CTS_USES_VULKANSC
 
 class Device
 {
@@ -311,19 +308,6 @@ class RenderPass
 public:
 	RenderPass (VkDevice, const VkRenderPassCreateInfo*)		{}
 	RenderPass (VkDevice, const VkRenderPassCreateInfo2*)		{}
-};
-
-class SwapchainKHR
-{
-public:
-										SwapchainKHR	(VkDevice, const VkSwapchainCreateInfoKHR*) {}
-										~SwapchainKHR	(void) {}
-};
-
-class SamplerYcbcrConversion
-{
-public:
-	SamplerYcbcrConversion (VkDevice, const VkSamplerYcbcrConversionCreateInfo*) {}
 };
 
 class Buffer
@@ -539,35 +523,7 @@ private:
 };
 #endif // defined(USE_ANDROID_O_HARDWARE_BUFFER)
 
-class IndirectCommandsLayoutNV
-{
-public:
-						IndirectCommandsLayoutNV	(VkDevice, const VkIndirectCommandsLayoutCreateInfoNV*)
-						{}
-};
-
-class AccelerationStructureNV
-{
-public:
-						AccelerationStructureNV		(VkDevice, const VkAccelerationStructureCreateInfoNV*)
-						{}
-};
-
-class AccelerationStructureKHR
-{
-public:
-						AccelerationStructureKHR	(VkDevice, const VkAccelerationStructureCreateInfoKHR*)
-						{}
-};
-
 #endif // CTS_USES_VULKANSC
-
-class DebugUtilsMessengerEXT
-{
-public:
-	DebugUtilsMessengerEXT(VkInstance, const VkDebugUtilsMessengerCreateInfoEXT*)
-	{}
-};
 
 class DeferredOperationKHR
 {
@@ -576,62 +532,12 @@ public:
 						{}
 };
 
-#ifndef CTS_USES_VULKANSC
-
-class VideoSessionKHR
-{
-public:
-						VideoSessionKHR				(VkDevice, const VkVideoSessionCreateInfoKHR*)
-						{}
-};
-
-class VideoSessionParametersKHR
-{
-public:
-						VideoSessionParametersKHR	(VkDevice, const VkVideoSessionParametersCreateInfoKHR*)
-						{}
-};
-
-class ValidationCacheEXT
-{
-public:
-						ValidationCacheEXT			(VkDevice, const VkValidationCacheCreateInfoEXT*)
-						{}
-};
-
-#endif // CTS_USES_VULKANSC
-
 class CommandBuffer
 {
 public:
 						CommandBuffer				(VkDevice, VkCommandPool, VkCommandBufferLevel)
 						{}
 };
-
-#ifndef CTS_USES_VULKANSC
-
-class DescriptorUpdateTemplate
-{
-public:
-						DescriptorUpdateTemplate	(VkDevice, const VkDescriptorUpdateTemplateCreateInfo*)
-						{}
-};
-
-class PrivateDataSlot
-{
-public:
-						PrivateDataSlot				(VkDevice, const VkPrivateDataSlotCreateInfo*)
-						{}
-};
-
-class BufferCollectionFUCHSIA
-{
-public:
-						BufferCollectionFUCHSIA		(VkDevice, const VkBufferCollectionCreateInfoFUCHSIA*)
-						{}
-};
-
-#endif // CTS_USES_VULKANSC
 
 class CommandPool
 {

@@ -142,6 +142,8 @@ public:
 #endif // CTS_USES_VULKANSC
 
 	void checkPipelineLibraryRequirements (const vk::PipelineConstructionType		pipelineConstructionType);
+	void resetCommandPoolForVKSC													(const vk::VkDevice			device,
+																					 const vk::VkCommandPool	commandPool);
 
 protected:
 	tcu::TestContext&								m_testCtx;

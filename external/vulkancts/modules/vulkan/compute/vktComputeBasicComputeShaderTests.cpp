@@ -2964,6 +2964,7 @@ tcu::TestStatus DeviceIndexTestInstance::iterate (void)
 
 		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer, true, physDevMask);
+		m_context.resetCommandPoolForVKSC(device, *cmdPool);
 
 		// Validate the results on all physical devices where compute shader was launched
 		const VkBufferMemoryBarrier srcBufferBarrier = makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT , *sboBuffer, 0ull, bufferSizeBytes);
@@ -3924,6 +3925,7 @@ tcu::TestCaseGroup* createBasicComputeShaderTests (tcu::TestContext& testCtx)
 
 #ifndef CTS_USES_VULKANSC
 	basicComputeTests->addChild(cts_amber::createAmberTestCase(testCtx, "write_ssbo_array", "", "compute", "write_ssbo_array.amber"));
+	basicComputeTests->addChild(cts_amber::createAmberTestCase(testCtx, "branch_past_barrier", "", "compute", "branch_past_barrier.amber"));
 #endif
 
 	return basicComputeTests.release();

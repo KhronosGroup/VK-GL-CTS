@@ -305,6 +305,16 @@ vk::Move<vk::VkDevice> createTestDevice (const Context&									context,
 		useExternalFence = true;
 	}
 
+	if (externalMemoryTypes & vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA)
+	{
+		deviceExtensions.push_back("VK_FUCHSIA_external_memory");
+	}
+
+	if (externalSemaphoreTypes & vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA)
+	{
+		deviceExtensions.push_back("VK_FUCHSIA_external_semaphore");
+	}
+
 	if ((externalMemoryTypes
 			& (vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT
 			   | vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT
@@ -609,7 +619,7 @@ void submitEmptySignalAndGetSemaphoreNative (	const vk::DeviceInterface&						vk
 		is already signalled, instead of a file descriptor, . In order to make sure that a valid file descriptor is returned
 		we use vkCmdWaitEvents to make sure that vkQueueSubmit doesn't signal the fence.
 	*/
-	vk.cmdWaitEvents(*cmdBuffer, 1, &event.get(), vk::VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, DE_NULL, 0, DE_NULL, 0, DE_NULL);
+	vk.cmdWaitEvents(*cmdBuffer, 1, &event.get(), vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, DE_NULL, 0, DE_NULL, 0, DE_NULL);
 	vk.endCommandBuffer(*cmdBuffer);
 
 	const vk::VkSubmitInfo submit =
@@ -722,7 +732,7 @@ void submitEmptySignalAndGetFenceNative (	const vk::DeviceInterface&					vk,
 		file descriptor, if the fence is already signalled. In order to make sure that a valid file descriptor is returned
 		we use vkCmdWaitEvents to make sure that vkQueueSubmit doesn't signal the fence.
 	*/
-	vk.cmdWaitEvents(*cmdBuffer, 1, &event.get(), vk::VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, DE_NULL, 0, DE_NULL, 0, DE_NULL);
+	vk.cmdWaitEvents(*cmdBuffer, 1, &event.get(), vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, DE_NULL, 0, DE_NULL, 0, DE_NULL);
 	vk.endCommandBuffer(*cmdBuffer);
 
 	const vk::VkSubmitInfo submit =
@@ -4534,6 +4544,7 @@ de::MovePtr<tcu::TestCaseGroup> createSemaphoreTests (tcu::TestContext& testCtx)
 	semaphoreGroup->addChild(createSemaphoreTests(testCtx, vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT).release());
 	semaphoreGroup->addChild(createSemaphoreTests(testCtx, vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT).release());
 	semaphoreGroup->addChild(createSemaphoreTests(testCtx, vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT).release());
+	semaphoreGroup->addChild(createSemaphoreTests(testCtx, vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA).release());
 
 	return semaphoreGroup;
 }
@@ -4652,6 +4663,7 @@ de::MovePtr<tcu::TestCaseGroup> createMemoryTests (tcu::TestContext& testCtx)
 	group->addChild(createMemoryTests(testCtx, vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT).release());
 	group->addChild(createMemoryTests(testCtx, vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID).release());
 	group->addChild(createMemoryTests(testCtx, vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT).release());
+	group->addChild(createMemoryTests(testCtx, vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA).release());
 
 	return group;
 }

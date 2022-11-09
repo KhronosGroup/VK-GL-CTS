@@ -29,6 +29,7 @@
 #include "tcuDefs.hpp"
 #include "deSharedPtr.hpp"
 #include <vector>
+#include <stdexcept>
 
 namespace vk
 {
@@ -36,7 +37,7 @@ namespace vk
 enum PipelineConstructionType
 {
 	PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC			= 0,	// Construct legacy - monolithic pipeline
-	PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY,	// Use VK_EXT_graphics_pipeline_library and construc pipeline out of 4 pipeline parts
+	PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY,	// Use VK_EXT_graphics_pipeline_library and construct pipeline out of several pipeline parts.
 	PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY			// Same as PIPELINE_CONSTRUCTION_TYPE_OPTIMISED_LIBRARY but with fast linking
 };
 
@@ -44,24 +45,44 @@ void checkPipelineLibraryRequirements (const InstanceInterface&		vki,
 									   VkPhysicalDevice				physicalDevice,
 									   PipelineConstructionType		pipelineConstructionType);
 
+// This exception may be raised in one of the intermediate steps when using shader module IDs instead of normal module objects.
+class PipelineCompileRequiredError : public std::runtime_error
+{
+public:
+	PipelineCompileRequiredError (const std::string& msg)
+		: std::runtime_error(msg)
+		{}
+};
+
 // PointerWrapper template is used to hide structures that should not be visible for Vulkan SC
 template <typename T>
 class PointerWrapper
 {
 public:
-
 	PointerWrapper(): ptr(DE_NULL)	{}
+	PointerWrapper(T* p0) : ptr(p0) {}
 	T* ptr;
+};
+
+template <typename T>
+class ConstPointerWrapper
+{
+public:
+	ConstPointerWrapper(): ptr(DE_NULL)  {}
+	ConstPointerWrapper(const T* p0) : ptr(p0) {}
+	const T* ptr;
 };
 
 #ifndef CTS_USES_VULKANSC
 typedef PointerWrapper<VkPipelineViewportDepthClipControlCreateInfoEXT> PipelineViewportDepthClipControlCreateInfoWrapper;
 typedef PointerWrapper<VkPipelineRenderingCreateInfoKHR> PipelineRenderingCreateInfoWrapper;
 typedef PointerWrapper<VkPipelineCreationFeedbackCreateInfoEXT> PipelineCreationFeedbackCreateInfoWrapper;
+typedef ConstPointerWrapper<VkPipelineShaderStageModuleIdentifierCreateInfoEXT> PipelineShaderStageModuleIdentifierCreateInfoWrapper;
 #else
 typedef PointerWrapper<void> PipelineViewportDepthClipControlCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineRenderingCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineCreationFeedbackCreateInfoWrapper;
+typedef ConstPointerWrapper<void> PipelineShaderStageModuleIdentifierCreateInfoWrapper;
 #endif
 
 // Class that can build monolithic pipeline or fully separated pipeline libraries
@@ -143,9 +164,71 @@ public:
 																	 const VkShaderModule								tessellationEvalShaderModule = DE_NULL,
 																	 const VkShaderModule								geometryShaderModule = DE_NULL,
 																	 const VkSpecializationInfo*						specializationInfo = DE_NULL,
+																	 VkPipelineFragmentShadingRateStateCreateInfoKHR*	fragmentShadingRateState = nullptr,
 																	 PipelineRenderingCreateInfoWrapper					rendering = PipelineRenderingCreateInfoWrapper(),
 																	 const VkPipelineCache								partPipelineCache = DE_NULL,
 																	 PipelineCreationFeedbackCreateInfoWrapper			partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
+
+	GraphicsPipelineWrapper&	setupPreRasterizationShaderState2	(const std::vector<VkViewport>&						viewports,
+																	 const std::vector<VkRect2D>&						scissors,
+																	 const VkPipelineLayout								layout,
+																	 const VkRenderPass									renderPass,
+																	 const deUint32										subpass,
+																	 const VkShaderModule								vertexShaderModule,
+																	 const VkPipelineRasterizationStateCreateInfo*		rasterizationState = nullptr,
+																	 const VkShaderModule								tessellationControlShaderModulnullptre = DE_NULL,
+																	 const VkShaderModule								tessellationEvalShaderModule = DE_NULL,
+																	 const VkShaderModule								geometryShaderModule = DE_NULL,
+																	 const VkSpecializationInfo*						vertSpecializationInfo = nullptr,
+																	 const VkSpecializationInfo*						tescSpecializationInfo = nullptr,
+																	 const VkSpecializationInfo*						teseSpecializationInfo = nullptr,
+																	 const VkSpecializationInfo*						geomSpecializationInfo = nullptr,
+																	 VkPipelineFragmentShadingRateStateCreateInfoKHR*	fragmentShadingRateState = nullptr,
+																	 PipelineRenderingCreateInfoWrapper					rendering = PipelineRenderingCreateInfoWrapper(),
+																	 const VkPipelineCache								partPipelineCache = DE_NULL,
+																	 PipelineCreationFeedbackCreateInfoWrapper			partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
+
+	// Note: VkPipelineShaderStageModuleIdentifierCreateInfoEXT::pIdentifier will not be copied. They need to continue to exist outside this wrapper.
+	GraphicsPipelineWrapper&	setupPreRasterizationShaderState3	(const std::vector<VkViewport>&								viewports,
+																	 const std::vector<VkRect2D>&								scissors,
+																	 const VkPipelineLayout										layout,
+																	 const VkRenderPass											renderPass,
+																	 const deUint32												subpass,
+																	 const VkShaderModule										vertexShaderModule,
+																	 PipelineShaderStageModuleIdentifierCreateInfoWrapper		vertShaderModuleId = PipelineShaderStageModuleIdentifierCreateInfoWrapper(),
+																	 const VkPipelineRasterizationStateCreateInfo*				rasterizationState = nullptr,
+																	 const VkShaderModule										tessellationControlShaderModule = DE_NULL,
+																	 PipelineShaderStageModuleIdentifierCreateInfoWrapper		tescShaderModuleId = PipelineShaderStageModuleIdentifierCreateInfoWrapper(),
+																	 const VkShaderModule										tessellationEvalShaderModule = DE_NULL,
+																	 PipelineShaderStageModuleIdentifierCreateInfoWrapper		teseShaderModuleId = PipelineShaderStageModuleIdentifierCreateInfoWrapper(),
+																	 const VkShaderModule										geometryShaderModule = DE_NULL,
+																	 PipelineShaderStageModuleIdentifierCreateInfoWrapper		geomShaderModuleId = PipelineShaderStageModuleIdentifierCreateInfoWrapper(),
+																	 const VkSpecializationInfo*								vertSpecializationInfo = nullptr,
+																	 const VkSpecializationInfo*								tescSpecializationInfo = nullptr,
+																	 const VkSpecializationInfo*								teseSpecializationInfo = nullptr,
+																	 const VkSpecializationInfo*								geomSpecializationInfo = nullptr,
+																	 VkPipelineFragmentShadingRateStateCreateInfoKHR*			fragmentShadingRateState = nullptr,
+																	 PipelineRenderingCreateInfoWrapper							rendering = PipelineRenderingCreateInfoWrapper(),
+																	 const VkPipelineCache										partPipelineCache = DE_NULL,
+																	 PipelineCreationFeedbackCreateInfoWrapper					partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
+
+#ifndef CTS_USES_VULKANSC
+	// Setup pre-rasterization shader state, mesh shading version.
+	GraphicsPipelineWrapper&	setupPreRasterizationMeshShaderState(const std::vector<VkViewport>&						viewports,
+																	 const std::vector<VkRect2D>&						scissors,
+																	 const VkPipelineLayout								layout,
+																	 const VkRenderPass									renderPass,
+																	 const deUint32										subpass,
+																	 const VkShaderModule								taskShaderModule,
+																	 const VkShaderModule								meshShaderModule,
+																	 const VkPipelineRasterizationStateCreateInfo*		rasterizationState = nullptr,
+																	 const VkSpecializationInfo*						taskSpecializationInfo = nullptr,
+																	 const VkSpecializationInfo*						meshSpecializationInfo = nullptr,
+																	 VkPipelineFragmentShadingRateStateCreateInfoKHR*	fragmentShadingRateState = nullptr,
+																	 PipelineRenderingCreateInfoWrapper					rendering = PipelineRenderingCreateInfoWrapper(),
+																	 const VkPipelineCache								partPipelineCache = DE_NULL,
+																	 VkPipelineCreationFeedbackCreateInfoEXT*			partCreationFeedback = nullptr);
+#endif // CTS_USES_VULKANSC
 
 	// Setup fragment shader state.
 	GraphicsPipelineWrapper&	setupFragmentShaderState			(const VkPipelineLayout								layout,
@@ -154,10 +237,21 @@ public:
 																	 const VkShaderModule								fragmentShaderModule,
 																	 const VkPipelineDepthStencilStateCreateInfo*		depthStencilState = DE_NULL,
 																	 const VkPipelineMultisampleStateCreateInfo*		multisampleState = DE_NULL,
-																	 VkPipelineFragmentShadingRateStateCreateInfoKHR*	fragmentShadingRateState = DE_NULL,
 																	 const VkSpecializationInfo*						specializationInfo = DE_NULL,
 																	 const VkPipelineCache								partPipelineCache = DE_NULL,
 																	 PipelineCreationFeedbackCreateInfoWrapper			partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
+
+	// Note: VkPipelineShaderStageModuleIdentifierCreateInfoEXT::pIdentifier will not be copied. They need to continue to exist outside this wrapper.
+	GraphicsPipelineWrapper&	setupFragmentShaderState2			(const VkPipelineLayout										layout,
+																	 const VkRenderPass											renderPass,
+																	 const deUint32												subpass,
+																	 const VkShaderModule										fragmentShaderModule,
+																	 PipelineShaderStageModuleIdentifierCreateInfoWrapper		fragmentShaderModuleId = PipelineShaderStageModuleIdentifierCreateInfoWrapper(),
+																	 const VkPipelineDepthStencilStateCreateInfo*				depthStencilState = nullptr,
+																	 const VkPipelineMultisampleStateCreateInfo*				multisampleState = nullptr,
+																	 const VkSpecializationInfo*								specializationInfo = nullptr,
+																	 const VkPipelineCache										partPipelineCache = DE_NULL,
+																	 PipelineCreationFeedbackCreateInfoWrapper					partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
 
 	// Setup fragment output state.
 	GraphicsPipelineWrapper&	setupFragmentOutputState			(const VkRenderPass									renderPass,
@@ -191,8 +285,10 @@ protected:
 
 protected:
 
+	static constexpr size_t kMaxPipelineParts = 4u;
+
 	// Store partial pipelines when non monolithic construction was used.
-	Move<VkPipeline>				m_pipelineParts[4];
+	Move<VkPipeline>				m_pipelineParts[kMaxPipelineParts];
 
 	// Store monolithic pipeline or linked pipeline libraries.
 	Move<VkPipeline>				m_pipelineFinal;

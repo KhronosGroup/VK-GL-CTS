@@ -331,7 +331,7 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 			if (m_data.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
 			{
 				beginSecondaryCmdBuffer(*secCmdBuffer, targetImageFormat, VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
-				beginRendering(vk, *secCmdBuffer, *colorTargetView, renderArea, clearColor, VK_IMAGE_LAYOUT_GENERAL, VK_ATTACHMENT_LOAD_OP_LOAD, VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+				beginRendering(vk, *secCmdBuffer, *colorTargetView, renderArea, clearColor, VK_IMAGE_LAYOUT_GENERAL, VK_ATTACHMENT_LOAD_OP_LOAD, 0u);
 			}
 			else
 				beginSecondaryCmdBuffer(*secCmdBuffer, targetImageFormat);
@@ -349,7 +349,7 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 			preRenderCommands(*cmdBuffer, colorTargetImages[frameIdx]->object(), clearColor);
 
 			if (!m_data.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
-				beginRendering(vk, *cmdBuffer, *colorTargetView, renderArea, clearColor, VK_IMAGE_LAYOUT_GENERAL, VK_ATTACHMENT_LOAD_OP_LOAD, VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+				beginRendering(vk, *cmdBuffer, *colorTargetView, renderArea, clearColor, VK_IMAGE_LAYOUT_GENERAL, VK_ATTACHMENT_LOAD_OP_LOAD, 0u);
 
 			vk.cmdExecuteCommands(*cmdBuffer, 1u, &*secCmdBuffer);
 
@@ -459,7 +459,7 @@ void DrawTestInstance::beginSecondaryCmdBuffer(VkCommandBuffer cmdBuffer, VkForm
 	};
 
 	const DeviceInterface& vk = m_context.getDeviceInterface();
-	vk.beginCommandBuffer(cmdBuffer, &commandBufBeginParams);
+	VK_CHECK(vk.beginCommandBuffer(cmdBuffer, &commandBufBeginParams));
 }
 #endif // CTS_USES_VULKANSC
 

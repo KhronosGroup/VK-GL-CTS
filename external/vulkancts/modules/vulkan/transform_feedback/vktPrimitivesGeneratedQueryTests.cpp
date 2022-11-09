@@ -87,6 +87,18 @@ enum ShaderStage
 	SHADER_STAGE_LAST
 };
 
+enum RasterizationCase
+{
+	RAST_CASE_DEFAULT,
+	RAST_CASE_DISCARD,
+	RAST_CASE_EMPTY_FRAG,
+	RAST_CASE_NO_ATTACHMENT,
+	RAST_CASE_COLOR_WRITE_DISABLE_STATIC,
+	RAST_CASE_COLOR_WRITE_DISABLE_DYNAMIC,
+
+	RAST_CASE_LAST
+};
+
 enum VertexStream
 {
 	VERTEX_STREAM_DEFAULT	= -1,
@@ -108,18 +120,24 @@ struct TestParameters
 	QueryResultType		queryResultType;
 	ShaderStage			shaderStage;
 	deBool				transformFeedback;
-	deBool				rasterization;
+	RasterizationCase	rastCase;
+	deBool				depthStencilAttachment;
 	VkPrimitiveTopology	primitiveTopology;
 	VertexStream		pgqStream;
 	VertexStream		xfbStream;
 	CommandBufferCase	cmdBufCase;
 
-	bool		pgqDefault		(void)	const	{ return pgqStream == VERTEX_STREAM_DEFAULT;					}
-	bool		xfbDefault		(void)	const	{ return xfbStream == VERTEX_STREAM_DEFAULT;					}
-	deUint32	pgqStreamIndex	(void)	const	{ return pgqDefault() ? 0 : static_cast<deUint32>(pgqStream);	}
-	deUint32	xfbStreamIndex	(void)	const	{ return xfbDefault() ? 0 : static_cast<deUint32>(xfbStream);	}
-	bool		multipleStreams	(void)	const	{ return pgqStreamIndex() != xfbStreamIndex();					}
-	bool		nonZeroStreams	(void)	const	{ return (pgqStreamIndex() != 0) || (xfbStreamIndex() != 0);	}
+	bool		pgqDefault					(void)	const	{ return pgqStream == VERTEX_STREAM_DEFAULT;						}
+	bool		xfbDefault					(void)	const	{ return xfbStream == VERTEX_STREAM_DEFAULT;						}
+	deUint32	pgqStreamIndex				(void)	const	{ return pgqDefault() ? 0 : static_cast<deUint32>(pgqStream);		}
+	deUint32	xfbStreamIndex				(void)	const	{ return xfbDefault() ? 0 : static_cast<deUint32>(xfbStream);		}
+	bool		multipleStreams				(void)	const	{ return pgqStreamIndex() != xfbStreamIndex();						}
+	bool		nonZeroStreams				(void)	const	{ return (pgqStreamIndex() != 0) || (xfbStreamIndex() != 0);		}
+	bool		rastDiscard					(void)	const	{ return rastCase == RAST_CASE_DISCARD;								}
+	bool		colorAttachment				(void)	const	{ return !rastDiscard() && rastCase != RAST_CASE_NO_ATTACHMENT;		}
+	bool		staticColorWriteDisable		(void)	const	{ return rastCase == RAST_CASE_COLOR_WRITE_DISABLE_STATIC;			}
+	bool		dynamicColorWriteDisable	(void)	const	{ return rastCase == RAST_CASE_COLOR_WRITE_DISABLE_DYNAMIC;			}
+	bool		colorWriteDisable			(void)	const	{ return staticColorWriteDisable() || dynamicColorWriteDisable();	}
 };
 
 struct TopologyInfo
@@ -158,10 +176,12 @@ public:
 
 private:
 	tcu::TestStatus			iterate									(void);
+	VkFormat				selectDepthStencilFormat				(void);
 	Move<VkPipeline>		makeGraphicsPipeline					(const DeviceInterface&	vk,
 																	 const VkDevice device,
 																	 const VkRenderPass renderPass);
-
+	void					fillVertexBuffer						(tcu::Vec2* vertices,
+																	 const deUint64 primitivesGenerated);
 	const TestParameters	m_parameters;
 };
 
@@ -173,19 +193,19 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 	const VkQueue					queue				= m_context.getUniversalQueue();
 	Allocator&						allocator			= m_context.getDefaultAllocator();
 
-	const VkFormat					format				= m_parameters.rasterization ? VK_FORMAT_R8G8B8A8_UNORM : VK_FORMAT_UNDEFINED;
-	Move<VkImage>					image;
-	de::MovePtr<Allocation>			imageAllocation;
+	const VkFormat					colorFormat			= m_parameters.colorAttachment() ? VK_FORMAT_R8G8B8A8_UNORM : VK_FORMAT_UNDEFINED;
+	Move<VkImage>					colorImage;
+	de::MovePtr<Allocation>			colorImageAllocation;
 
-	if (m_parameters.rasterization)
+	if (m_parameters.colorAttachment())
 	{
-		const VkImageCreateInfo imageCreateInfo =
+		const VkImageCreateInfo colorImageCreateInfo =
 		{
 			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,		// VkStructureType			sType
 			DE_NULL,									// const void*				pNext
 			0u,											// VkImageCreateFlags		flags
 			VK_IMAGE_TYPE_2D,							// VkImageType				imageType
-			format,										// VkFormat					format
+			colorFormat,								// VkFormat					format
 			makeExtent3D(IMAGE_WIDTH, IMAGE_HEIGHT, 1),	// VkExtent3D				extent
 			1u,											// deUint32					mipLevels
 			1u,											// deUint32					arrayLayers
@@ -198,24 +218,82 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 			VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout			initialLayout
 		};
 
-		image			= makeImage(vk, device, imageCreateInfo);
-		imageAllocation	= bindImage(vk, device, allocator, *image, MemoryRequirement::Any);
+		colorImage				= makeImage(vk, device, colorImageCreateInfo);
+		colorImageAllocation	= bindImage(vk, device, allocator, *colorImage, MemoryRequirement::Any);
 	}
 
+	const VkFormat					dsFormat			= m_parameters.depthStencilAttachment ? PrimitivesGeneratedQueryTestInstance::selectDepthStencilFormat() : VK_FORMAT_UNDEFINED;
+
+	if (m_parameters.depthStencilAttachment && dsFormat == VK_FORMAT_UNDEFINED)
+		return tcu::TestStatus::fail("VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT feature must be supported for at least one of VK_FORMAT_D24_UNORM_S8_UINT and VK_FORMAT_D32_SFLOAT_S8_UINT.");
+
+	Move<VkImage>					dsImage;
+	de::MovePtr<Allocation>			dsImageAllocation;
+
+	if (m_parameters.depthStencilAttachment)
+	{
+		const VkImageCreateInfo dsImageCreateInfo =
+		{
+			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,			// VkStructureType			sType
+			DE_NULL,										// const void*				pNext
+			0u,												// VkImageCreateFlags		flags
+			VK_IMAGE_TYPE_2D,								// VkImageType				imageType
+			dsFormat,										// VkFormat					format
+			makeExtent3D(IMAGE_WIDTH, IMAGE_HEIGHT, 1),		// VkExtent3D				extent
+			1u,												// deUint32					mipLevels
+			1u,												// deUint32					arrayLayers
+			VK_SAMPLE_COUNT_1_BIT,							// VkSampleCountFlagBits	samples
+			VK_IMAGE_TILING_OPTIMAL,						// VkImageTiling			tiling
+			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,	// VkImageUsageFlags		usage
+			VK_SHARING_MODE_EXCLUSIVE,						// VkSharingMode			sharingMode
+			0u,												// deUint32					queueFamilyIndexCount
+			DE_NULL,										// const deUint32*			pQueueFamilyIndices
+			VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout			initialLayout
+		};
+
+		dsImage				= makeImage(vk, device, dsImageCreateInfo);
+		dsImageAllocation	= bindImage(vk, device, allocator, *dsImage, MemoryRequirement::Any);
+	}
+
+	const VkDeviceSize				primitivesGenerated = 32;
 	const deUint32					baseMipLevel		= 0;
 	const deUint32					levelCount			= 1;
 	const deUint32					baseArrayLayer		= 0;
 	const deUint32					layerCount			= 1;
-	const VkImageSubresourceRange	subresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel, levelCount, baseArrayLayer, layerCount);
-	const deUint32					imageViewCount		= m_parameters.rasterization ? 1u : 0u;
-	Move<VkImageView>				imageView;
 
-	if (m_parameters.rasterization)
-		imageView = makeImageView(vk, device, *image, VK_IMAGE_VIEW_TYPE_2D, format, subresourceRange);
+	Move<VkImageView>				colorImageView;
+	Move<VkImageView>				dsImageView;
+	std::vector<VkImageView>		imageViews;
 
-	const Unique<VkRenderPass>		renderPass			(makeRenderPass(vk, device, format, VK_FORMAT_UNDEFINED, VK_ATTACHMENT_LOAD_OP_DONT_CARE));
-	const Unique<VkFramebuffer>		framebuffer			(makeFramebuffer(vk, device, *renderPass, imageViewCount, &*imageView, IMAGE_WIDTH, IMAGE_HEIGHT));
+	if (m_parameters.colorAttachment())
+	{
+		const VkImageSubresourceRange colorSubresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel, levelCount, baseArrayLayer, layerCount);
+		colorImageView = makeImageView(vk, device, *colorImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresourceRange);
+		imageViews.push_back(*colorImageView);
+	}
+
+	if (m_parameters.depthStencilAttachment)
+	{
+		const VkImageSubresourceRange dsSubresourceRange = makeImageSubresourceRange((VK_IMAGE_ASPECT_DEPTH_BIT | vk::VK_IMAGE_ASPECT_STENCIL_BIT), baseMipLevel, levelCount, baseArrayLayer, layerCount);
+		dsImageView = makeImageView(vk, device, *dsImage, VK_IMAGE_VIEW_TYPE_2D, dsFormat, dsSubresourceRange);
+		imageViews.push_back(*dsImageView);
+	}
+
+	const Unique<VkRenderPass>		renderPass			(makeRenderPass(vk, device, colorFormat, dsFormat, VK_ATTACHMENT_LOAD_OP_DONT_CARE));
+	const Unique<VkFramebuffer>		framebuffer			(makeFramebuffer(vk, device, *renderPass, (deUint32)imageViews.size(), imageViews.data(), IMAGE_WIDTH, IMAGE_HEIGHT));
 	const Unique<VkPipeline>		pipeline			(PrimitivesGeneratedQueryTestInstance::makeGraphicsPipeline(vk, device, *renderPass));
+	Move<VkBuffer>					vtxBuffer;
+	de::MovePtr<Allocation>			vtxBufferAlloc;
+
+	{
+		const VkBufferUsageFlags		usage				= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		const std::vector<deUint32>		queueFamilyIndices	(1, queueFamilyIndex);
+		const VkDeviceSize				vtxBufferSize		= topologyData.at(m_parameters.primitiveTopology).getNumVertices(primitivesGenerated) * sizeof(tcu::Vec2);
+		const VkBufferCreateInfo		createInfo			= makeBufferCreateInfo(vtxBufferSize, usage, queueFamilyIndices);
+
+		vtxBuffer			= createBuffer(vk, device, &createInfo);
+		vtxBufferAlloc		= allocator.allocate(getBufferMemoryRequirements(vk, device, *vtxBuffer), MemoryRequirement::HostVisible);
+	}
 
 	const VkCommandPoolCreateFlags	cmdPoolCreateFlags	= VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 	const VkCommandBufferLevel		cmdBufferLevel		= VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -294,7 +372,6 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 		}
 	}
 
-	const VkDeviceSize				primitivesGenerated	= 32;
 	const VkDeviceSize				primitivesWritten	= primitivesGenerated - 3;
 	const VkDeviceSize				verticesWritten		= topologyData.at(m_parameters.primitiveTopology).getNumVertices(primitivesWritten);
 	const VkDeviceSize				primitiveSize		= m_parameters.nonZeroStreams() ? 1 : topologyData.at(m_parameters.primitiveTopology).primitiveSize;
@@ -315,8 +392,14 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 		VK_CHECK(vk.bindBufferMemory(device, *xfbBuffer, xfbBufferAlloc->getMemory(), xfbBufferAlloc->getOffset()));
 	}
 
+	fillVertexBuffer(static_cast<tcu::Vec2*>(vtxBufferAlloc.get()->getHostPtr()), primitivesGenerated);
+
+	VK_CHECK(vk.bindBufferMemory(device, *vtxBuffer, vtxBufferAlloc->getMemory(), vtxBufferAlloc->getOffset()));
+
 	beginCommandBuffer(vk, *cmdBuffer);
 	{
+		const VkDeviceSize	vertexBufferOffset	= static_cast<VkDeviceSize>(0);
+
 		// After query pool creation, each query must be reset before it is used.
 		if (m_parameters.queryResetType == QUERY_RESET_TYPE_QUEUE)
 		{
@@ -327,6 +410,8 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 		}
 
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+
+		vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vtxBuffer.get(), &vertexBufferOffset);
 
 		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(makeExtent2D(IMAGE_WIDTH, IMAGE_HEIGHT)));
 		{
@@ -356,6 +441,14 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 					vk.cmdBeginQueryIndexedEXT(*cmdBuffer, *xfbPool, queryIndex, queryControlFlags, m_parameters.xfbStreamIndex());
 
 				vk.cmdBeginTransformFeedbackEXT(*cmdBuffer, firstCounterBuffer, counterBufferCount, counterBuffers, counterBufferOffsets);
+			}
+
+			if (m_parameters.dynamicColorWriteDisable())
+			{
+				const deUint32	attachmentCount		= 1;
+				const VkBool32	colorWriteEnables	= VK_FALSE;
+
+				vk.cmdSetColorWriteEnableEXT(*cmdBuffer, attachmentCount, &colorWriteEnables);
 			}
 
 			const deUint32				vertexCount				= static_cast<deUint32>(topologyData.at(m_parameters.primitiveTopology).getNumVertices(primitivesGenerated));
@@ -492,6 +585,28 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 	return tcu::TestStatus::pass("Counters OK");
 }
 
+VkFormat PrimitivesGeneratedQueryTestInstance::selectDepthStencilFormat (void)
+{
+	constexpr VkFormat			formats[]		=
+	{
+		VK_FORMAT_D32_SFLOAT_S8_UINT,
+		VK_FORMAT_D24_UNORM_S8_UINT
+	};
+
+	const InstanceInterface&	vki				= m_context.getInstanceInterface();
+	const VkPhysicalDevice		physicalDevice	= m_context.getPhysicalDevice();
+
+	for (VkFormat format : formats)
+	{
+		const VkFormatFeatureFlags features = getPhysicalDeviceFormatProperties(vki, physicalDevice, format).optimalTilingFeatures;
+
+		if (features & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+			return format;
+	}
+
+	return VK_FORMAT_UNDEFINED;
+}
+
 Move<VkPipeline> PrimitivesGeneratedQueryTestInstance::makeGraphicsPipeline (const DeviceInterface&	vk, const VkDevice device, const VkRenderPass renderPass)
 {
 	const VkDescriptorSetLayout						descriptorSetLayout				= DE_NULL;
@@ -505,6 +620,8 @@ Move<VkPipeline> PrimitivesGeneratedQueryTestInstance::makeGraphicsPipeline (con
 	Move<VkShaderModule>							teseModule;
 	Move<VkShaderModule>							geomModule;
 	Move<VkShaderModule>							fragModule;
+	VkVertexInputBindingDescription					bindingDescription;
+	VkVertexInputAttributeDescription				attributeDescription;
 
 	if (m_parameters.shaderStage == SHADER_STAGE_TESSELLATION_EVALUATION)
 	{
@@ -515,18 +632,27 @@ Move<VkPipeline> PrimitivesGeneratedQueryTestInstance::makeGraphicsPipeline (con
 	if (m_parameters.shaderStage == SHADER_STAGE_GEOMETRY)
 		geomModule = createShaderModule(vk, device, m_context.getBinaryCollection().get("geom"), 0u);
 
-	if (m_parameters.rasterization)
+	if (!m_parameters.rastDiscard())
 		fragModule = createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0u);
+
+	bindingDescription.binding		= 0;
+	bindingDescription.stride		= sizeof(tcu::Vec2);
+	bindingDescription.inputRate	= VK_VERTEX_INPUT_RATE_VERTEX;
+
+	attributeDescription.binding	= 0;
+	attributeDescription.location	= 0;
+	attributeDescription.format		= VK_FORMAT_R32G32_SFLOAT;
+	attributeDescription.offset		= 0;
 
 	const VkPipelineVertexInputStateCreateInfo		vertexInputStateCreateInfo		=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType							sType
 		DE_NULL,													// const void*								pNext
 		0u,															// VkPipelineVertexInputStateCreateFlags	flags
-		0u,															// deUint32									vertexBindingDescriptionCount
-		DE_NULL,													// const VkVertexInputBindingDescription*	pVertexBindingDescriptions
-		0u,															// deUint32									vertexAttributeDescriptionCount
-		DE_NULL,													// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions
+		1u,															// deUint32									vertexBindingDescriptionCount
+		&bindingDescription,										// const VkVertexInputBindingDescription*	pVertexBindingDescriptions
+		1u,															// deUint32									vertexAttributeDescriptionCount
+		&attributeDescription,										// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions
 	};
 
 	const VkPipelineRasterizationStateCreateInfo	rasterizationStateCreateInfo	=
@@ -535,7 +661,7 @@ Move<VkPipeline> PrimitivesGeneratedQueryTestInstance::makeGraphicsPipeline (con
 		DE_NULL,													// const void*								pNext
 		0,															// VkPipelineRasterizationStateCreateFlags	flags
 		VK_FALSE,													// VkBool32									depthClampEnable
-		(m_parameters.rasterization ? VK_FALSE : VK_TRUE),			// VkBool32									rasterizerDiscardEnable
+		(m_parameters.rastDiscard() ? VK_TRUE : VK_FALSE),			// VkBool32									rasterizerDiscardEnable
 		VK_POLYGON_MODE_FILL,										// VkPolygonMode							polygonMode
 		VK_CULL_MODE_NONE,											// VkCullModeFlags							cullMode
 		VK_FRONT_FACE_COUNTER_CLOCKWISE,							// VkFrontFace								frontFace
@@ -544,6 +670,94 @@ Move<VkPipeline> PrimitivesGeneratedQueryTestInstance::makeGraphicsPipeline (con
 		0.0f,														// float									depthBiasClamp
 		0.0f,														// float									depthBiasSlopeFactor
 		1.0f														// float									lineWidth
+	};
+
+	const VkStencilOpState							stencilOpState					=
+	{
+		VK_STENCIL_OP_KEEP,		// VkStencilOp	failOp
+		VK_STENCIL_OP_KEEP,		// VkStencilOp	passOp
+		VK_STENCIL_OP_KEEP,		// VkStencilOp	depthFailOp
+		VK_COMPARE_OP_ALWAYS,	// VkCompareOp	compareOp
+		0xFFu,					// deUint32		compareMask
+		0xFFu,					// deUint32		writeMask
+		0,						// deUint32		reference
+	};
+
+	const VkPipelineDepthStencilStateCreateInfo		depthStencilStateCreateInfo		=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	//	VkStructureType							sType
+		DE_NULL,													//	const void*								pNext
+		0,															//	VkPipelineDepthStencilStateCreateFlags	flags
+		VK_TRUE,													//	VkBool32								depthTestEnable
+		VK_TRUE,													//	VkBool32								depthWriteEnable
+		VK_COMPARE_OP_LESS,											//	VkCompareOp								depthCompareOp
+		VK_FALSE,													//	VkBool32								depthBoundsTestEnable
+		VK_FALSE,													//	VkBool32								stencilTestEnable
+		stencilOpState,												//	VkStencilOpState						front
+		stencilOpState,												//	VkStencilOpState						back
+		0.0f,														//	float									minDepthBounds
+		1.0f,														//	float									maxDepthBounds
+	};
+
+	const VkBool32									colorWriteEnables				= VK_FALSE;
+
+	const VkPipelineColorWriteCreateInfoEXT			colorWriteCreateInfo			=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT,	// VkStructureType	sType;
+		DE_NULL,												// const void*		pNext;
+		1,														// deUint32			attachmentCount;
+		&colorWriteEnables										// const VkBool32*	pColorWriteEnables;
+	};
+
+	const VkPipelineColorBlendAttachmentState		colorBlendAttachmentState		=
+	{
+		VK_FALSE,					// VkBool32					blendEnable
+		VK_BLEND_FACTOR_ZERO,		// VkBlendFactor			srcColorBlendFactor
+		VK_BLEND_FACTOR_ZERO,		// VkBlendFactor			dstColorBlendFactor
+		VK_BLEND_OP_ADD,			// VkBlendOp				colorBlendOp
+		VK_BLEND_FACTOR_ZERO,		// VkBlendFactor			srcAlphaBlendFactor
+		VK_BLEND_FACTOR_ZERO,		// VkBlendFactor			dstAlphaBlendFactor
+		VK_BLEND_OP_ADD,			// VkBlendOp				alphaBlendOp
+		VK_COLOR_COMPONENT_R_BIT	// VkColorComponentFlags	colorWriteMask
+		| VK_COLOR_COMPONENT_G_BIT
+		| VK_COLOR_COMPONENT_B_BIT
+		| VK_COLOR_COMPONENT_A_BIT
+	};
+
+	const VkPipelineColorBlendStateCreateInfo		colorBlendStateCreateInfo		=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType
+		&colorWriteCreateInfo,										// const void*									pNext
+		0,															// VkPipelineColorBlendStateCreateFlags			flags
+		VK_FALSE,													// VkBool32										logicOpEnable
+		VK_LOGIC_OP_NO_OP,											// VkLogicOp									logicOp
+		1,															// deUint32										attachmentCount
+		&colorBlendAttachmentState,									// const VkPipelineColorBlendAttachmentState*	pAttachments
+		{ 0.0f, 0.0f, 0.0f, 0.0f }									// float										blendConstants[4]
+	};
+
+	const VkDynamicState							dynamicStates					= VK_DYNAMIC_STATE_COLOR_WRITE_ENABLE_EXT;
+
+	const VkPipelineDynamicStateCreateInfo			pipelineDynamicStateCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,	// VkStructureType						sType
+		DE_NULL,												// const void*							pNext
+		0u,														// VkPipelineDynamicStateCreateFlags	flags
+		1u,														// deUint32								dynamicStateCount
+		&dynamicStates											// const VkDynamicState*				pDynamicStates
+	};
+
+	const VkPipelineMultisampleStateCreateInfo		multisampleStateCreateInfo		=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	//	VkStructureType							sType;
+		nullptr,													//	const void*								pNext;
+		0u,															//	VkPipelineMultisampleStateCreateFlags	flags;
+		VK_SAMPLE_COUNT_1_BIT,										//	VkSampleCountFlagBits					rasterizationSamples;
+		VK_FALSE,													//	VkBool32								sampleShadingEnable;
+		1.0f,														//	float									minSampleShading;
+		nullptr,													//	const VkSampleMask*						pSampleMask;
+		VK_FALSE,													//	VkBool32								alphaToCoverageEnable;
+		VK_FALSE,													//	VkBool32								alphaToOneEnable;
 	};
 
 	return vk::makeGraphicsPipeline(vk,
@@ -562,10 +776,187 @@ Move<VkPipeline> PrimitivesGeneratedQueryTestInstance::makeGraphicsPipeline (con
 									patchControlPoints,
 									&vertexInputStateCreateInfo,
 									&rasterizationStateCreateInfo,
-									DE_NULL,	// multisampleStateCreateInfo
-									DE_NULL,	// depthStencilStateCreateInfo
-									DE_NULL,	// colorBlendStateCreateInfo
-									DE_NULL);	// dynamicStateCreateInfo
+									&multisampleStateCreateInfo,
+									m_parameters.depthStencilAttachment ? &depthStencilStateCreateInfo : DE_NULL,
+									m_parameters.staticColorWriteDisable() ? &colorBlendStateCreateInfo : DE_NULL,
+									m_parameters.dynamicColorWriteDisable() ? &pipelineDynamicStateCreateInfo : DE_NULL);
+}
+
+void PrimitivesGeneratedQueryTestInstance::fillVertexBuffer(tcu::Vec2* vertices, const deUint64 primitivesGenerated)
+{
+	const float step = 1.0f / static_cast<float>(primitivesGenerated);
+
+	switch (m_parameters.primitiveTopology)
+	{
+		case VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
+		{
+			for (deUint32 prim = 0; prim < primitivesGenerated; ++prim)
+			{
+				vertices[prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, 0.0f);
+			}
+			break;
+		}
+		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+		{
+			for (deUint32 prim = 0; prim < primitivesGenerated; ++prim)
+			{
+				vertices[2* prim + 0] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step,  1.0f);
+				vertices[2* prim + 1] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -1.0f);
+			}
+			break;
+		}
+		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
+		{
+			vertices[0] = tcu::Vec2(-1.0f,-1.0f);
+			vertices[1] = tcu::Vec2(-1.0f, 1.0f);
+
+			for (deUint32 prim = 1; prim < primitivesGenerated; ++prim)
+			{
+				if (prim % 2 == 0)
+				{
+					vertices[1 + prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step,  1.0f);
+				}
+				else
+				{
+					vertices[1 + prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -1.0f);
+				}
+			}
+			break;
+		}
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
+		{
+			vertices[0] = tcu::Vec2(-1.0f,				 1.0f);
+			vertices[1] = tcu::Vec2(-1.0f,				-1.0f);
+			vertices[2] = tcu::Vec2(-1.0f + 2.0f * step, 1.0f);
+
+			for (deUint32 prim = 1; prim < primitivesGenerated; ++prim)
+			{
+				if (prim % 2 == 0)
+				{
+					vertices[3 + prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, 1.0f);
+				}
+				else
+				{
+					vertices[3 + prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -1.0f);
+				}
+			}
+			break;
+		}
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
+		{
+			vertices[0] = tcu::Vec2(0.0f, -1.0f);
+
+			for (deUint32 prim = 0; prim < primitivesGenerated+1; ++prim)
+			{
+				vertices[1 + prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -1.0f + 2.0f * (float)prim * step);
+			}
+			break;
+		}
+		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
+		{
+			for (deUint32 prim = 0; prim < primitivesGenerated; ++prim)
+			{
+				vertices[4 * prim + 0] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step,  1.0f);
+				vertices[4 * prim + 1] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step,  0.5f);
+				vertices[4 * prim + 2] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -0.5f);
+				vertices[4 * prim + 3] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -1.0f);
+			}
+			break;
+		}
+		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
+		{
+			vertices[0] = tcu::Vec2(-1.0f,  0.0f);
+			vertices[1] = tcu::Vec2(-1.0f, -1.0f);
+			vertices[2] = tcu::Vec2(-1.0f,  1.0f);
+
+			for (deUint32 prim = 1; prim < primitivesGenerated; ++prim)
+			{
+				if (prim % 2 == 0)
+				{
+					vertices[2 + prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step,  1.0f);
+				}
+				else
+				{
+					vertices[2 + prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -1.0f);
+				}
+			}
+
+			vertices[2 + primitivesGenerated] = tcu::Vec2(1.0f, 0.0f);
+
+			break;
+		}
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
+		case VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
+		{
+			for (deUint32 prim = 0; prim < primitivesGenerated; ++prim)
+			{
+				if (prim % 2 == 0)
+				{
+					vertices[3 * prim + 0] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step,  1.0f);
+					vertices[3 * prim + 1] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step, -1.0f);
+					vertices[3 * prim + 2] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 1) * step, -1.0f);
+				}
+				else
+				{
+					vertices[3 * prim + 0] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 1) * step, -1.0f);
+					vertices[3 * prim + 1] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 1) * step,  1.0f);
+					vertices[3 * prim + 2] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step,  1.0f);
+				}
+			}
+			break;
+		}
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
+		{
+			for (deUint32 prim = 0; prim < primitivesGenerated; ++prim)
+			{
+				if (prim % 2 == 0)
+				{
+					vertices[6 * prim + 0] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step,  1.0f);
+					vertices[6 * prim + 1] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step,  1.0f);
+					vertices[6 * prim + 2] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step, -1.0f);
+					vertices[6 * prim + 3] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step, -1.0f);
+					vertices[6 * prim + 4] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 1) * step, -1.0f);
+					vertices[6 * prim + 5] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 1) * step, -1.0f);
+				}
+				else
+				{
+					vertices[6 * prim + 0] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 1) * step, -1.0f);
+					vertices[6 * prim + 1] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 1) * step, -1.0f);
+					vertices[6 * prim + 2] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 1) * step,  1.0f);
+					vertices[6 * prim + 3] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 1) * step,  1.0f);
+					vertices[6 * prim + 4] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step,  1.0f);
+					vertices[6 * prim + 5] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step,  1.0f);
+				}
+			}
+			break;
+		}
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
+		{
+			vertices[0] = tcu::Vec2(-1.0f,  1.0f);
+			vertices[1] = tcu::Vec2(-1.0f,  1.0f);
+			vertices[2] = tcu::Vec2(-1.0f, -1.0f);
+			vertices[3] = tcu::Vec2(-1.0f, -1.0f);
+			vertices[4] = tcu::Vec2(-1.0f + 2.0f * step, 1.0f);
+			vertices[5] = tcu::Vec2(-1.0f + 2.0f * step, 1.0f);
+
+			for (deUint32 prim = 1; prim < primitivesGenerated; ++prim)
+			{
+				if (prim % 2 == 0)
+				{
+					vertices[6 + prim + 0] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, 1.0f);
+					vertices[6 + prim + 1] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, 1.0f);
+				}
+				else
+				{
+					vertices[6 + prim + 0] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -1.0f);
+					vertices[6 + prim + 1] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -1.0f);
+				}
+			}
+			break;
+		}
+		default:
+			TCU_THROW(InternalError, "Unrecognized primitive topology");
+	}
 }
 
 class PrimitivesGeneratedQueryTestCase : public vkt::TestCase
@@ -597,7 +988,7 @@ void PrimitivesGeneratedQueryTestCase::checkSupport (vkt::Context& context) cons
 	if (pgqFeatures.primitivesGeneratedQuery != VK_TRUE)
 		TCU_THROW(NotSupportedError, "VK_QUERY_TYPE_PRIMITIVES_GENERATED_EXT not supported");
 
-	if (!m_parameters.rasterization && (pgqFeatures.primitivesGeneratedQueryWithRasterizerDiscard != VK_TRUE))
+	if (m_parameters.rastDiscard() && (pgqFeatures.primitivesGeneratedQueryWithRasterizerDiscard != VK_TRUE))
 		TCU_THROW(NotSupportedError, "primitivesGeneratedQueryWithRasterizerDiscard not supported");
 
 	if (m_parameters.queryResetType == QUERY_RESET_TYPE_HOST)
@@ -628,6 +1019,14 @@ void PrimitivesGeneratedQueryTestCase::checkSupport (vkt::Context& context) cons
 		if (xfbProperties.transformFeedbackQueries != VK_TRUE)
 			TCU_THROW(NotSupportedError, "transformFeedbackQueries not supported");
 	}
+
+	if (m_parameters.colorWriteDisable())
+	{
+		context.requireDeviceFunctionality("VK_EXT_color_write_enable");
+
+		if (context.getColorWriteEnableFeaturesEXT().colorWriteEnable != VK_TRUE)
+			TCU_THROW(NotSupportedError, "colorWriteEnable not supported");
+	}
 }
 
 void PrimitivesGeneratedQueryTestCase::initPrograms (vk::SourceCollections& programCollection) const
@@ -638,6 +1037,7 @@ void PrimitivesGeneratedQueryTestCase::initPrograms (vk::SourceCollections& prog
 		std::ostringstream	src;
 
 		src	<<	"#version 450\n";
+		src << "layout(location=0) in vec2 inPosition;\n";
 
 		if (vertXfb)
 			src	<<	"layout(xfb_buffer = 0, xfb_offset = 0, xfb_stride = 16, location = 0) out vec4 out0;\n";
@@ -647,6 +1047,8 @@ void PrimitivesGeneratedQueryTestCase::initPrograms (vk::SourceCollections& prog
 
 		if (m_parameters.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_POINT_LIST && m_parameters.shaderStage == SHADER_STAGE_VERTEX)
 			src	<<	"    gl_PointSize = 1.0;\n";
+
+		src << "	 gl_Position = vec4(inPosition, 0, 1);\n";
 
 		if (vertXfb)
 			src	<<	"    out0 = vec4(42);\n";
@@ -748,16 +1150,24 @@ void PrimitivesGeneratedQueryTestCase::initPrograms (vk::SourceCollections& prog
 	}
 
 	// Fragment shader.
-	if (m_parameters.rasterization)
+	if (!m_parameters.rastDiscard())
 	{
 		std::ostringstream src;
 
-		src	<<	"#version 450\n"
-				"layout(location = 0) out vec4 out0;\n"
-				"void main (void)\n"
-				"{\n"
-				"    out0 = vec4(0.0, 1.0, 0.0, 1.0);\n"
-				"}\n";
+		if (m_parameters.rastCase == RAST_CASE_EMPTY_FRAG)
+		{
+			src	<<	"#version 450\n"
+					"void main (void) {}\n";
+		}
+		else
+		{
+			src	<<	"#version 450\n"
+					"layout(location = 0) out vec4 out0;\n"
+					"void main (void)\n"
+					"{\n"
+					"    out0 = vec4(0.0, 1.0, 0.0, 1.0);\n"
+					"}\n";
+		}
 
 		programCollection.glslSources.add("frag") << glu::FragmentSource(src.str());
 	}
@@ -827,15 +1237,22 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 		{ DE_TRUE,	"xfb",		"Tests for comparing PGQ results against transform feedback query results"	},
 	};
 
-	constexpr struct RasterizationState
+	constexpr struct RastCase
 	{
-		deBool		enable;
-		const char*	name;
-		const char* desc;
-	} rasterizationStates[] =
+		RasterizationCase	type;
+		deBool				dsAttachment;
+		const char*			name;
+		const char*			desc;
+	} rastCases[] =
 	{
-		{ DE_FALSE,	"no_rast",	"Tests with rasterizer discard"		},
-		{ DE_TRUE,	"rast",		"Tests without rasterizer discard"	},
+		{ RAST_CASE_DISCARD,						DE_FALSE,	"no_rast",							"Tests with rasterizer discard"																			},
+		{ RAST_CASE_DEFAULT,						DE_FALSE,	"rast",								"Tests without rasterizer discard"																		},
+		{ RAST_CASE_EMPTY_FRAG,						DE_FALSE,	"empty_frag",						"Tests with an empty fragment shader"																	},
+		{ RAST_CASE_NO_ATTACHMENT,					DE_FALSE,	"no_attachment",					"Tests with an attachmentless render pass"																},
+		{ RAST_CASE_COLOR_WRITE_DISABLE_STATIC,		DE_FALSE,	"color_write_disable_static",		"Tests disabling color output using VkPipelineColorWriteCreateInfoEXT"									},
+		{ RAST_CASE_COLOR_WRITE_DISABLE_STATIC,		DE_TRUE,	"color_write_disable_static_ds",	"Tests disabling color output using VkPipelineColorWriteCreateInfoEXT with a depth stencil attachment"	},
+		{ RAST_CASE_COLOR_WRITE_DISABLE_DYNAMIC,	DE_FALSE,	"color_write_disable_dynamic",		"Tests disabling color output using vkCmdSetColorWriteEnableEXT"										},
+		{ RAST_CASE_COLOR_WRITE_DISABLE_DYNAMIC,	DE_TRUE,	"color_write_disable_dynamic_ds",	"Tests disabling color output using vkCmdSetColorWriteEnableEXT with a depth stencil attachment"		},
 	};
 
 	constexpr struct Topology
@@ -907,9 +1324,18 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 						if ((result.type == QUERY_RESULT_TYPE_PGQ_32_XFB_64 || result.type == QUERY_RESULT_TYPE_PGQ_64_XFB_32) && !xfbState.enable)
 							continue;
 
-						for (const RasterizationState& rastState : rasterizationStates)
+						for (const RastCase& rastCase : rastCases)
 						{
-							tcu::TestCaseGroup* const rastGroup = new tcu::TestCaseGroup(testCtx, rastState.name, rastState.desc);
+							tcu::TestCaseGroup* const rastGroup = new tcu::TestCaseGroup(testCtx, rastCase.name, rastCase.desc);
+
+							// Skip uninteresting cases
+							if ((rastCase.type > RAST_CASE_DISCARD)
+								&& ((read.type != QUERY_READ_TYPE_GET)
+								|| (reset.type != QUERY_RESET_TYPE_QUEUE)
+								|| (result.type != QUERY_RESULT_TYPE_32_BIT)))
+							{
+								continue;
+							}
 
 							for (const Topology& topology : topologies)
 							{
@@ -950,16 +1376,17 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 										{
 											const TestParameters	parameters	=
 											{
-												read.type,			// QueryReadType		queryReadType
-												reset.type,			// QueryResetType		queryResetType
-												result.type,		// QueryResultType		queryResultType
-												shader.stage,		// ShaderStage			shaderStage
-												xfbState.enable,	// deBool				transformFeedback
-												rastState.enable,	// deBool				rasterization
-												topology.type,		// VkPrimitiveTopology	primitiveTopology
-												pgqStream.index,	// VertexStreamIndex	pgqStreamIndex
-												xfbStream.index,	// VertexStreamIndex	xfbStreamIndex
-												cmdBufCase.type,	// CommandBufferCase	cmdBufCase
+												read.type,				// QueryReadType		queryReadType
+												reset.type,				// QueryResetType		queryResetType
+												result.type,			// QueryResultType		queryResultType
+												shader.stage,			// ShaderStage			shaderStage
+												xfbState.enable,		// deBool				transformFeedback
+												rastCase.type,			// RasterizationCase	rastCase
+												rastCase.dsAttachment,	// deBool				depthStencilAttachment
+												topology.type,			// VkPrimitiveTopology	primitiveTopology
+												pgqStream.index,		// VertexStreamIndex	pgqStreamIndex
+												xfbStream.index,		// VertexStreamIndex	xfbStreamIndex
+												cmdBufCase.type,		// CommandBufferCase	cmdBufCase
 											};
 
 											streamGroup->addChild(new PrimitivesGeneratedQueryTestCase(testCtx, cmdBufCase.name, cmdBufCase.desc, parameters));

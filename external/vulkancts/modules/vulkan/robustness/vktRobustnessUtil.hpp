@@ -97,7 +97,8 @@ public:
 															 vk::VkDescriptorSet			descriptorSet,
 															 const VertexBindings&			vertexBindings,
 															 const VertexAttributes&		vertexAttributes,
-															 const DrawConfig&				drawConfig);
+															 const DrawConfig&				drawConfig,
+															 bool							testPipelineRobustness = false);
 
 	virtual							~GraphicsEnvironment	(void) {}
 
@@ -129,7 +130,8 @@ public:
 															 const vk::InstanceInterface&	instanceInterface,
 															 vk::VkDevice					device,
 															 vk::VkDescriptorSetLayout		descriptorSetLayout,
-															 vk::VkDescriptorSet			descriptorSet);
+															 vk::VkDescriptorSet			descriptorSet,
+															 bool							testPipelineRobustness = false);
 
 	virtual							~ComputeEnvironment		(void) {}
 

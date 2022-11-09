@@ -323,10 +323,10 @@ CustomInstance createCustomInstanceWithExtensions (Context& context, const std::
 	// Create custom instance.
 	const vector<string> usedExtensionsVec(begin(usedExtensions), end(usedExtensions));
 #ifndef CTS_USES_VULKANSC
-	Move<VkInstance> instance = vk::createDefaultInstance(vkp, apiVersion, enabledLayersStr, usedExtensionsVec, debugReportRecorder.get(), pAllocator);
+	Move<VkInstance> instance = vk::createDefaultInstance(vkp, apiVersion, enabledLayersStr, usedExtensionsVec, cmdLine, debugReportRecorder.get(), pAllocator);
 	return CustomInstance(context, instance, debugReportRecorder);
 #else
-	Move<VkInstance> instance = vk::createDefaultInstance(vkp, apiVersion, enabledLayersStr, usedExtensionsVec, pAllocator);
+	Move<VkInstance> instance = vk::createDefaultInstance(vkp, apiVersion, enabledLayersStr, usedExtensionsVec, cmdLine, pAllocator);
 	return CustomInstance(context, instance);
 #endif // CTS_USES_VULKANSC
 }
@@ -493,11 +493,14 @@ vk::VkResult createUncheckedDevice (bool validationEnabled, const vk::InstanceIn
 	return vki.createDevice(physicalDevice, &createInfo, pAllocator, pDevice);
 }
 
-CustomInstanceWrapper::CustomInstanceWrapper (Context& context)
+CustomInstanceWrapper::CustomInstanceWrapper(Context& context)
 	: instance(vkt::createCustomInstanceFromContext(context))
 {
 }
 
-
+CustomInstanceWrapper::CustomInstanceWrapper(Context& context, const std::vector<std::string> extensions)
+	: instance(vkt::createCustomInstanceWithExtensions(context, extensions))
+{
+}
 
 }

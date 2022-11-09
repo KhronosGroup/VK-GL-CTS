@@ -35,6 +35,7 @@
 
 #include <vector>
 #include <limits>
+#include <stdexcept>
 
 namespace vk
 {
@@ -60,18 +61,6 @@ template<typename T>
 inline de::SharedPtr<de::MovePtr<T> > makeVkSharedPtr(de::MovePtr<T> movePtr)
 {
 	return de::SharedPtr<de::MovePtr<T> >(new de::MovePtr<T>(movePtr));
-}
-
-template<typename T>
-inline const T* dataOrNullPtr(const std::vector<T>& v)
-{
-	return (v.empty() ? DE_NULL : v.data());
-}
-
-template<typename T>
-inline T* dataOrNullPtr(std::vector<T>& v)
-{
-	return (v.empty() ? DE_NULL : v.data());
 }
 
 inline std::string updateRayTracingGLSL (const std::string& str)
@@ -582,6 +571,7 @@ public:
 																								 const VkGeometryFlagsKHR						geometryFlags			= 0u );
 
 	virtual void										setBuildType							(const VkAccelerationStructureBuildTypeKHR		buildType) = DE_NULL;
+	virtual VkAccelerationStructureBuildTypeKHR			getBuildType							() const = 0;
 	virtual void										setCreateFlags							(const VkAccelerationStructureCreateFlagsKHR	createFlags) = DE_NULL;
 	virtual void										setCreateGeneric						(bool											createGeneric) = 0;
 	virtual void										setBuildFlags							(const VkBuildAccelerationStructureFlagsKHR		buildFlags) = DE_NULL;
@@ -665,37 +655,60 @@ public:
 	BottomLevelAccelerationStructurePool();
 	virtual ~BottomLevelAccelerationStructurePool();
 
-	BlasPtr	at					(deUint32 index) const	{ return m_structs[index]; }
-	BlasPtr	operator[]			(deUint32 index) const	{ return m_structs[index]; }
-	auto	structures			() const -> const std::vector<BlasPtr>& { return m_structs; }
-	size_t	structCount			() const { return m_structs.size(); }
+	BlasPtr		at					(deUint32 index) const	{ return m_structs[index]; }
+	BlasPtr		operator[]			(deUint32 index) const	{ return m_structs[index]; }
+	auto		structures			() const -> const std::vector<BlasPtr>& { return m_structs; }
+	deUint32	structCount			() const { return static_cast<deUint32>(m_structs.size()); }
 
-	size_t	batchStructCount	() const {return m_batchStructCount; }
-	void	batchStructCount	(const	size_t& value);
+	// defines how many structures will be packet in single buffer
+	deUint32	batchStructCount	() const {return m_batchStructCount; }
+	void		batchStructCount	(const	deUint32& value);
 
-	size_t	batchGeomCount		() const {return m_batchGeomCount; }
-	void	batchGeomCount		(const	size_t& value) { m_batchGeomCount = value; }
+	// defines how many geometries (vertices and/or indices) will be packet in single buffer
+	deUint32	batchGeomCount		() const {return m_batchGeomCount; }
+	void		batchGeomCount		(const	deUint32& value) { m_batchGeomCount = value; }
 
-	BlasPtr	add					(VkDeviceSize			structureSize = 0,
-								 VkDeviceAddress		deviceAddress = 0);
+	bool		tryCachedMemory		() const { return m_tryCachedMemory; }
+	void		tryCachedMemory		(const bool	cachedMemory) { m_tryCachedMemory = cachedMemory; }
+
+	BlasPtr		add					(VkDeviceSize			structureSize = 0,
+									 VkDeviceAddress		deviceAddress = 0);
 	/**
 	 * @brief Creates previously added bottoms at a time.
 	 * @note  All geometries must be known before call this method.
 	 */
-	void	batchCreate			(const DeviceInterface& vk,
-								 const VkDevice			device,
-								 Allocator&				allocator);
-	void	batchBuild			(const DeviceInterface& vk,
-								 const VkDevice			device,
-								 VkCommandBuffer		cmdBuffer);
-	size_t	getAllocationCount	() const;
-
+	void		batchCreate			(const DeviceInterface&		vkd,
+									 const VkDevice				device,
+									 Allocator&					allocator);
+	void		batchCreateAdjust	(const DeviceInterface&		vkd,
+									 const VkDevice				device,
+									 Allocator&					allocator,
+									 const VkDeviceSize			maxBufferSize);
+	void		batchBuild			(const DeviceInterface&		vk,
+									 const VkDevice				device,
+									 VkCommandBuffer			cmdBuffer);
+	void		batchBuild			(const DeviceInterface&		vk,
+									 const VkDevice				device,
+									 VkCommandPool				cmdPool,
+									 VkQueue					queue);
+	size_t		getAllocationCount	() const;
+	size_t		getAllocationCount	(const DeviceInterface&		vk,
+									 const VkDevice				device,
+									 const VkDeviceSize			maxBufferSize) const;
+	auto		getAllocationSizes	(const DeviceInterface&		vk,	// (strBuff, scratchBuff, vertBuff, indexBuff)
+									 const VkDevice				device) const -> tcu::Vector<VkDeviceSize, 4>;
 protected:
-	size_t					m_batchStructCount; // default is 4
-	size_t					m_batchGeomCount; // default is 0, if zero then batchStructCount is used
+	deUint32				m_batchStructCount; // default is 4
+	deUint32				m_batchGeomCount; // default is 0, if zero then batchStructCount is used
 	std::vector<BlasInfo>	m_infos;
 	std::vector<BlasPtr>	m_structs;
 	bool					m_createOnce;
+	bool					m_tryCachedMemory;
+	VkDeviceSize			m_structsBuffSize;
+	VkDeviceSize			m_updatesScratchSize;
+	VkDeviceSize			m_buildsScratchSize;
+	VkDeviceSize			m_verticesSize;
+	VkDeviceSize			m_indicesSize;
 
 protected:
 	struct Impl;
@@ -722,6 +735,16 @@ struct InstanceData
 class TopLevelAccelerationStructure
 {
 public:
+	struct CreationSizes
+	{
+		VkDeviceSize	structure;
+		VkDeviceSize	updateScratch;
+		VkDeviceSize	buildScratch;
+		VkDeviceSize	instancePointers;
+		VkDeviceSize	instancesBuffer;
+		VkDeviceSize	sum () const;
+	};
+
 	static deUint32													getRequiredAllocationCount			(void);
 
 																	TopLevelAccelerationStructure		();
@@ -749,10 +772,15 @@ public:
 																										 const VkDeviceSize									indirectBufferOffset,
 																										 const deUint32										indirectBufferStride) = DE_NULL;
 	virtual void													setUsePPGeometries					(const bool											usePPGeometries) = 0;
+	virtual void													setTryCachedMemory					(const bool											tryCachedMemory) = 0;
 	virtual VkBuildAccelerationStructureFlagsKHR					getBuildFlags						() const = DE_NULL;
 	VkDeviceSize													getStructureSize					() const;
 
 	// methods specific for each acceleration structure
+	virtual void													getCreationSizes					(const DeviceInterface&						vk,
+																										 const VkDevice								device,
+																										 const VkDeviceSize							structureSize,
+																										 CreationSizes&								sizes) = 0;
 	virtual void													create								(const DeviceInterface&						vk,
 																										 const VkDevice								device,
 																										 Allocator&									allocator,
@@ -844,6 +872,14 @@ bool queryAccelerationStructureSize (const DeviceInterface&							vk,
 class RayTracingPipeline
 {
 public:
+	class CompileRequiredError : public std::runtime_error
+	{
+	public:
+		CompileRequiredError (const std::string& error)
+			: std::runtime_error(error)
+			{}
+	};
+
 																RayTracingPipeline			();
 																~RayTracingPipeline			();
 
@@ -870,6 +906,11 @@ public:
 																							 const VkDevice											device,
 																							 const VkPipelineLayout									pipelineLayout,
 																							 const std::vector<de::SharedPtr<Move<VkPipeline>>>&	pipelineLibraries			= std::vector<de::SharedPtr<Move<VkPipeline>>>());
+	Move<VkPipeline>											createPipeline				(const DeviceInterface&									vk,
+																							 const VkDevice											device,
+																							 const VkPipelineLayout									pipelineLayout,
+																							 const std::vector<VkPipeline>&							pipelineLibraries,
+																							 const VkPipelineCache									pipelineCache);
 	std::vector<de::SharedPtr<Move<VkPipeline>>>				createPipelineWithLibraries	(const DeviceInterface&									vk,
 																							 const VkDevice											device,
 																							 const VkPipelineLayout									pipelineLayout);
@@ -899,10 +940,11 @@ public:
 
 
 protected:
-	Move<VkPipeline>											createPipelineKHR			(const DeviceInterface&									vk,
-																							 const VkDevice											device,
-																							 const VkPipelineLayout									pipelineLayout,
-																							 const std::vector<de::SharedPtr<Move<VkPipeline>>>&	pipelineLibraries);
+	Move<VkPipeline>											createPipelineKHR			(const DeviceInterface&			vk,
+																							 const VkDevice					device,
+																							 const VkPipelineLayout			pipelineLayout,
+																							 const std::vector<VkPipeline>&	pipelineLibraries,
+																							 const VkPipelineCache			pipelineCache = DE_NULL);
 
 	std::vector<de::SharedPtr<Move<VkShaderModule> > >			m_shadersModules;
 	std::vector<de::SharedPtr<de::MovePtr<RayTracingPipeline>>>	m_pipelineLibraries;
@@ -938,6 +980,7 @@ public:
 	virtual uint32_t				getMaxDescriptorSetAccelerationStructures	(void)	= 0;
 	virtual uint32_t				getMaxRayDispatchInvocationCount			(void)	= 0;
 	virtual uint32_t				getMaxRayHitAttributeSize					(void)	= 0;
+	virtual uint32_t				getMaxMemoryAllocationCount					(void)	= 0;
 };
 
 de::MovePtr<RayTracingProperties> makeRayTracingProperties (const InstanceInterface&	vki,

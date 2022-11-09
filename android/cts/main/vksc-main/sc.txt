@@ -17,7 +17,8 @@ dEQP-VKSC.sc.object_refresh.refresh_individual_objects
 dEQP-VKSC.sc.object_refresh.refresh_all_objects
 dEQP-VKSC.sc.fault_handling.get_fault_data.get_and_clear_all_faults.null
 dEQP-VKSC.sc.fault_handling.get_fault_data.get_and_clear_all_faults.array
-dEQP-VKSC.sc.fault_handling.fault_callback_info.create_device_with_callback
+dEQP-VKSC.sc.fault_handling.fault_callback_info.create_device_with_callback_with_fault_data
+dEQP-VKSC.sc.fault_handling.fault_callback_info.create_device_with_callback_without_fault_data
 dEQP-VKSC.sc.device_object_reservation.basic.create_device
 dEQP-VKSC.sc.device_object_reservation.basic.multiple_device_object_reservation
 dEQP-VKSC.sc.device_object_reservation.limits.max_values.descriptor_set_layout_binding_limit
@@ -144,6 +145,16 @@ dEQP-VKSC.sc.command_pool_memory_reservation.memory_consumption.cb_above_min_lim
 dEQP-VKSC.sc.command_pool_memory_reservation.memory_consumption.cb_above_min_limit.size_big.multiple_recording.allocated_size_2
 dEQP-VKSC.sc.command_pool_memory_reservation.memory_consumption.cb_above_min_limit.size_big.multiple_recording.allocated_size_8
 dEQP-VKSC.sc.command_pool_memory_reservation.memory_consumption.cb_above_min_limit.size_big.multiple_recording.allocated_size_16
+dEQP-VKSC.sc.application_parameters.create_instance.invalid_vendor_id
+dEQP-VKSC.sc.application_parameters.create_instance.invalid_device_id
+dEQP-VKSC.sc.application_parameters.create_instance.invalid_parameter_key
+dEQP-VKSC.sc.application_parameters.create_instance.invalid_parameter_value
+dEQP-VKSC.sc.application_parameters.create_instance.valid
+dEQP-VKSC.sc.application_parameters.create_device.invalid_vendor_id
+dEQP-VKSC.sc.application_parameters.create_device.invalid_device_id
+dEQP-VKSC.sc.application_parameters.create_device.invalid_parameter_key
+dEQP-VKSC.sc.application_parameters.create_device.invalid_parameter_value
+dEQP-VKSC.sc.application_parameters.create_device.valid
 dEQP-VKSC.sc.api.forbidden_core_commands
 dEQP-VKSC.sc.api.forbidden_core_extensions
 dEQP-VKSC.sc.api.forbidden_promoted_commands
