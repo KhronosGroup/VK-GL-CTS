@@ -2375,6 +2375,7 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, RenderingType renderin
 						if (view.viewCount < 3)
 						{
 							params.nonSubsampledImages	= true;
+							params.dynamicDensityMap	= false;
 							sampleGroup->addChild(new FragmentDensityMapTest(testCtx, std::string("static_nonsubsampled") + str.str(), "", params));
 							params.deferredDensityMap	= true;
 							sampleGroup->addChild(new FragmentDensityMapTest(testCtx, std::string("deferred_nonsubsampled") + str.str(), "", params));
