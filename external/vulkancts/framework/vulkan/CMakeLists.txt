@@ -37,6 +37,7 @@ set(DEQP_VULKAN_INL_GEN_OUTPUTS
 	${DEQP_VULKAN_INL_GEN_OUTPUTS_DIR}/vkDevicePropertiesForDefaultDeviceDefs.inl
 	${DEQP_VULKAN_INL_GEN_OUTPUTS_DIR}/vkExtensionFunctions.inl
 	${DEQP_VULKAN_INL_GEN_OUTPUTS_DIR}/vkFunctionPointerTypes.inl
+	${DEQP_VULKAN_INL_GEN_OUTPUTS_DIR}/vkGetDeviceProcAddr.inl
 	${DEQP_VULKAN_INL_GEN_OUTPUTS_DIR}/vkGetStructureTypeImpl.inl
 	${DEQP_VULKAN_INL_GEN_OUTPUTS_DIR}/vkHandleType.inl
 	${DEQP_VULKAN_INL_GEN_OUTPUTS_DIR}/vkInitDeviceFunctionPointers.inl
