@@ -1908,7 +1908,7 @@ public:
 		}
 	}
 
-	void recordBarrier (const DeviceInterface&	vk, VkCommandBuffer cmdBuffer, const QueueTimelineIteration& inIter, const QueueTimelineIteration& outIter, const Resource& resource)
+	void recordBarrier (const DeviceInterface&	vk, VkCommandBuffer cmdBuffer, const QueueTimelineIteration& inIter, const QueueTimelineIteration& outIter, const Resource& resource, bool originalLayout)
 	{
 		const SyncInfo				writeSync				= inIter.op->getOutSyncInfo();
 		const SyncInfo				readSync				= outIter.op->getInSyncInfo();
@@ -1920,16 +1920,16 @@ public:
 			DE_ASSERT(readSync.imageLayout != VK_IMAGE_LAYOUT_UNDEFINED);
 
 			const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
-				writeSync.stageMask,							// VkPipelineStageFlags2KHR			srcStageMask
-				writeSync.accessMask,							// VkAccessFlags2KHR				srcAccessMask
-				readSync.stageMask,								// VkPipelineStageFlags2KHR			dstStageMask
-				readSync.accessMask,							// VkAccessFlags2KHR				dstAccessMask
-				writeSync.imageLayout,							// VkImageLayout					oldLayout
-				readSync.imageLayout,							// VkImageLayout					newLayout
-				resource.getImage().handle,						// VkImage							image
-				resource.getImage().subresourceRange,			// VkImageSubresourceRange			subresourceRange
-				inIter.queueFamilyIdx,							// deUint32							srcQueueFamilyIndex
-				outIter.queueFamilyIdx							// deUint32							destQueueFamilyIndex
+				writeSync.stageMask,											// VkPipelineStageFlags2KHR			srcStageMask
+				writeSync.accessMask,											// VkAccessFlags2KHR				srcAccessMask
+				readSync.stageMask,												// VkPipelineStageFlags2KHR			dstStageMask
+				readSync.accessMask,											// VkAccessFlags2KHR				dstAccessMask
+				originalLayout ? writeSync.imageLayout : readSync.imageLayout,	// VkImageLayout					oldLayout
+				readSync.imageLayout,											// VkImageLayout					newLayout
+				resource.getImage().handle,										// VkImage							image
+				resource.getImage().subresourceRange,							// VkImageSubresourceRange			subresourceRange
+				inIter.queueFamilyIdx,											// deUint32							srcQueueFamilyIndex
+				outIter.queueFamilyIdx											// deUint32							destQueueFamilyIndex
 			);
 			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
 			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
@@ -2025,7 +2025,7 @@ public:
 			for (deUint32 copyOpIdx = 0; copyOpIdx < m_copyIterations.size(); copyOpIdx++)
 			{
 				beginCommandBuffer(vk, **copyPtrCmdBuffers[copyOpIdx]);
-				recordBarrier(vk, **copyPtrCmdBuffers[copyOpIdx], *m_writeIteration, *m_copyIterations[copyOpIdx], *m_writeResource);
+				recordBarrier(vk, **copyPtrCmdBuffers[copyOpIdx], *m_writeIteration, *m_copyIterations[copyOpIdx], *m_writeResource, copyOpIdx == 0);
 				m_copyIterations[copyOpIdx]->op->recordCommands(**copyPtrCmdBuffers[copyOpIdx]);
 				endCommandBuffer(vk, **copyPtrCmdBuffers[copyOpIdx]);
 			}
@@ -2033,7 +2033,7 @@ public:
 			for (deUint32 readOpIdx = 0; readOpIdx < m_readIterations.size(); readOpIdx++)
 			{
 				beginCommandBuffer(vk, **readPtrCmdBuffers[readOpIdx]);
-				recordBarrier(vk, **readPtrCmdBuffers[readOpIdx], *m_copyIterations[readOpIdx], *m_readIterations[readOpIdx], *m_copyResources[readOpIdx]);
+				recordBarrier(vk, **readPtrCmdBuffers[readOpIdx], *m_copyIterations[readOpIdx], *m_readIterations[readOpIdx], *m_copyResources[readOpIdx], true);
 				m_readIterations[readOpIdx]->op->recordCommands(**readPtrCmdBuffers[readOpIdx]);
 				endCommandBuffer(vk, **readPtrCmdBuffers[readOpIdx]);
 			}

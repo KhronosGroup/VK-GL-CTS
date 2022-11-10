@@ -980,7 +980,7 @@ public:
 		static const auto kMandatoryMutableTypeFlags = toDescriptorTypeFlags(getMandatoryMutableTypes());
 		if (type == VK_DESCRIPTOR_TYPE_MUTABLE_VALVE)
 		{
-			const auto descFlags = (toDescriptorTypeFlags(mutableTypesVec) | kMandatoryMutableTypeFlags);
+			const auto descFlags = toDescriptorTypeFlags(mutableTypesVec);
 			return de::MovePtr<BindingInterface>(new SingleBinding(type, toDescriptorTypeVector(descFlags)));
 		}
 
