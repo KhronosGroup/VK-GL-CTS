@@ -2121,10 +2121,95 @@ def writeDeviceFeatures2(api, filename):
 		stream.append('\treturn tcu::TestStatus::pass("Querying succeeded");')
 		stream.append("}\n")
 
+	allApiVersions = [f.number for f in api.features]
+	promotedTests = []
+	for version in allApiVersions:
+		major = version[0]
+		minor = version[-1]
+		promotedFeatures = []
+		for ext in api.extensions:
+			if ext.promotedto == "VK_VERSION_" + version.replace('.', '_'):
+				for req in ext.requirementsList:
+					for type in req.newTypes:
+						matchedStructType = re.search(f'VkPhysicalDevice(\w+)Features(\w+)', type.name, re.IGNORECASE)
+						if matchedStructType:
+							promotedFeatures.append(type)
+							break
+
+		if promotedFeatures:
+			testName = "createDeviceWithPromoted" + version.replace('.', '') + "Structures"
+			promotedTests.append(testName)
+			stream.append("tcu::TestStatus " + testName + " (Context& context)")
+			stream.append("{")
+			stream.append(
+			'	if (!context.contextSupports(vk::ApiVersion(0, ' + major + ', ' + minor + ', 0)))\n'
+			'		TCU_THROW(NotSupportedError, "Vulkan ' + major + '.' + minor + ' is not supported");')
+			stream.append("""
+	const PlatformInterface&		platformInterface	= context.getPlatformInterface();
+	const CustomInstance			instance			(createCustomInstanceFromContext(context));
+	const InstanceDriver&			instanceDriver		(instance.getDriver());
+	const VkPhysicalDevice			physicalDevice		= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32					queueFamilyIndex	= 0;
+	const deUint32					queueCount			= 1;
+	const deUint32					queueIndex			= 0;
+	const float						queuePriority		= 1.0f;
+
+	const vector<VkQueueFamilyProperties> queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
+
+	const VkDeviceQueueCreateInfo	deviceQueueCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+		DE_NULL,
+		(VkDeviceQueueCreateFlags)0u,
+		queueFamilyIndex,						//queueFamilyIndex;
+		queueCount,								//queueCount;
+		&queuePriority,							//pQueuePriorities;
+	};
+""")
+			lastFeature = ''
+			for feature in promotedFeatures:
+				for struct in testedStructureDetail:
+					if feature.name in struct.nameList:
+						if lastFeature:
+							stream.append("\t" + feature.name + " " + struct.instanceName + " = initVulkanStructure(&" + lastFeature + ");")
+						else:
+							stream.append("\t" + feature.name + " " + struct.instanceName + " = initVulkanStructure();")
+						lastFeature = struct.instanceName
+						break
+			stream.append("\tVkPhysicalDeviceFeatures2 extFeatures = initVulkanStructure(&" + lastFeature + ");")
+			stream.append("""
+	instanceDriver.getPhysicalDeviceFeatures2 (physicalDevice, &extFeatures);
+
+	const VkDeviceCreateInfo		deviceCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,	//sType;
+		&extFeatures,							//pNext;
+		(VkDeviceCreateFlags)0u,
+		1,										//queueRecordCount;
+		&deviceQueueCreateInfo,					//pRequestedQueues;
+		0,										//layerCount;
+		DE_NULL,								//ppEnabledLayerNames;
+		0,										//extensionCount;
+		DE_NULL,								//ppEnabledExtensionNames;
+		DE_NULL,								//pEnabledFeatures;
+	};
+
+	const Unique<VkDevice>			device			(createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+	const DeviceDriver				deviceDriver	(platformInterface, instance, device.get());
+	const VkQueue					queue			= getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
+
+	VK_CHECK(deviceDriver.queueWaitIdle(queue));
+
+	return tcu::TestStatus::pass("Pass");
+}
+""")
+
 	# function to create tests
 	stream.append("void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)\n{")
 	for x in testedStructureDetail:
 		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x.instanceName[len('device'):]) + '", "' + x.nameList[0] + '", testPhysicalDeviceFeature' + x.instanceName[len('device'):] + ');')
+	for x in promotedTests:
+		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x) + '", "", ' + x + ');')
 	stream.append('}\n')
 
 	# write out

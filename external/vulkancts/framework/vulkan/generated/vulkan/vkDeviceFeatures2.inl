@@ -4263,6 +4263,200 @@ tcu::TestStatus testPhysicalDeviceFeatureFaultFeaturesEXT (Context& context)
 	return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus createDeviceWithPromoted11Structures (Context& context)
+{
+	if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
+		TCU_THROW(NotSupportedError, "Vulkan 1.1 is not supported");
+
+	const PlatformInterface&		platformInterface	= context.getPlatformInterface();
+	const CustomInstance			instance			(createCustomInstanceFromContext(context));
+	const InstanceDriver&			instanceDriver		(instance.getDriver());
+	const VkPhysicalDevice			physicalDevice		= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32					queueFamilyIndex	= 0;
+	const deUint32					queueCount			= 1;
+	const deUint32					queueIndex			= 0;
+	const float						queuePriority		= 1.0f;
+
+	const vector<VkQueueFamilyProperties> queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
+
+	const VkDeviceQueueCreateInfo	deviceQueueCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+		DE_NULL,
+		(VkDeviceQueueCreateFlags)0u,
+		queueFamilyIndex,						//queueFamilyIndex;
+		queueCount,								//queueCount;
+		&queuePriority,							//pQueuePriorities;
+	};
+
+	VkPhysicalDeviceMultiviewFeaturesKHR deviceMultiviewFeatures = initVulkanStructure();
+	VkPhysicalDevice16BitStorageFeaturesKHR device16BitStorageFeatures = initVulkanStructure(&deviceMultiviewFeatures);
+	VkPhysicalDeviceVariablePointerFeaturesKHR deviceVariablePointersFeatures = initVulkanStructure(&device16BitStorageFeatures);
+	VkPhysicalDeviceSamplerYcbcrConversionFeaturesKHR deviceSamplerYcbcrConversionFeatures = initVulkanStructure(&deviceVariablePointersFeatures);
+	VkPhysicalDeviceFeatures2 extFeatures = initVulkanStructure(&deviceSamplerYcbcrConversionFeatures);
+
+	instanceDriver.getPhysicalDeviceFeatures2 (physicalDevice, &extFeatures);
+
+	const VkDeviceCreateInfo		deviceCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,	//sType;
+		&extFeatures,							//pNext;
+		(VkDeviceCreateFlags)0u,
+		1,										//queueRecordCount;
+		&deviceQueueCreateInfo,					//pRequestedQueues;
+		0,										//layerCount;
+		DE_NULL,								//ppEnabledLayerNames;
+		0,										//extensionCount;
+		DE_NULL,								//ppEnabledExtensionNames;
+		DE_NULL,								//pEnabledFeatures;
+	};
+
+	const Unique<VkDevice>			device			(createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+	const DeviceDriver				deviceDriver	(platformInterface, instance, device.get());
+	const VkQueue					queue			= getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
+
+	VK_CHECK(deviceDriver.queueWaitIdle(queue));
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+tcu::TestStatus createDeviceWithPromoted12Structures (Context& context)
+{
+	if (!context.contextSupports(vk::ApiVersion(0, 1, 2, 0)))
+		TCU_THROW(NotSupportedError, "Vulkan 1.2 is not supported");
+
+	const PlatformInterface&		platformInterface	= context.getPlatformInterface();
+	const CustomInstance			instance			(createCustomInstanceFromContext(context));
+	const InstanceDriver&			instanceDriver		(instance.getDriver());
+	const VkPhysicalDevice			physicalDevice		= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32					queueFamilyIndex	= 0;
+	const deUint32					queueCount			= 1;
+	const deUint32					queueIndex			= 0;
+	const float						queuePriority		= 1.0f;
+
+	const vector<VkQueueFamilyProperties> queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
+
+	const VkDeviceQueueCreateInfo	deviceQueueCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+		DE_NULL,
+		(VkDeviceQueueCreateFlags)0u,
+		queueFamilyIndex,						//queueFamilyIndex;
+		queueCount,								//queueCount;
+		&queuePriority,							//pQueuePriorities;
+	};
+
+	VkPhysicalDeviceShaderFloat16Int8FeaturesKHR deviceShaderFloat16Int8Features = initVulkanStructure();
+	VkPhysicalDeviceImagelessFramebufferFeaturesKHR deviceImagelessFramebufferFeatures = initVulkanStructure(&deviceShaderFloat16Int8Features);
+	VkPhysicalDeviceDescriptorIndexingFeaturesEXT deviceDescriptorIndexingFeatures = initVulkanStructure(&deviceImagelessFramebufferFeatures);
+	VkPhysicalDeviceShaderSubgroupExtendedTypesFeaturesKHR deviceShaderSubgroupExtendedTypesFeatures = initVulkanStructure(&deviceDescriptorIndexingFeatures);
+	VkPhysicalDevice8BitStorageFeaturesKHR device8BitStorageFeatures = initVulkanStructure(&deviceShaderSubgroupExtendedTypesFeatures);
+	VkPhysicalDeviceShaderAtomicInt64FeaturesKHR deviceShaderAtomicInt64Features = initVulkanStructure(&device8BitStorageFeatures);
+	VkPhysicalDeviceTimelineSemaphoreFeaturesKHR deviceTimelineSemaphoreFeatures = initVulkanStructure(&deviceShaderAtomicInt64Features);
+	VkPhysicalDeviceVulkanMemoryModelFeaturesKHR deviceVulkanMemoryModelFeatures = initVulkanStructure(&deviceTimelineSemaphoreFeatures);
+	VkPhysicalDeviceScalarBlockLayoutFeaturesEXT deviceScalarBlockLayoutFeatures = initVulkanStructure(&deviceVulkanMemoryModelFeatures);
+	VkPhysicalDeviceSeparateDepthStencilLayoutsFeaturesKHR deviceSeparateDepthStencilLayoutsFeatures = initVulkanStructure(&deviceScalarBlockLayoutFeatures);
+	VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR deviceUniformBufferStandardLayoutFeatures = initVulkanStructure(&deviceSeparateDepthStencilLayoutsFeatures);
+	VkPhysicalDeviceBufferDeviceAddressFeaturesKHR deviceBufferDeviceAddressFeatures = initVulkanStructure(&deviceUniformBufferStandardLayoutFeatures);
+	VkPhysicalDeviceHostQueryResetFeaturesEXT deviceHostQueryResetFeatures = initVulkanStructure(&deviceBufferDeviceAddressFeatures);
+	VkPhysicalDeviceFeatures2 extFeatures = initVulkanStructure(&deviceHostQueryResetFeatures);
+
+	instanceDriver.getPhysicalDeviceFeatures2 (physicalDevice, &extFeatures);
+
+	const VkDeviceCreateInfo		deviceCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,	//sType;
+		&extFeatures,							//pNext;
+		(VkDeviceCreateFlags)0u,
+		1,										//queueRecordCount;
+		&deviceQueueCreateInfo,					//pRequestedQueues;
+		0,										//layerCount;
+		DE_NULL,								//ppEnabledLayerNames;
+		0,										//extensionCount;
+		DE_NULL,								//ppEnabledExtensionNames;
+		DE_NULL,								//pEnabledFeatures;
+	};
+
+	const Unique<VkDevice>			device			(createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+	const DeviceDriver				deviceDriver	(platformInterface, instance, device.get());
+	const VkQueue					queue			= getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
+
+	VK_CHECK(deviceDriver.queueWaitIdle(queue));
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+tcu::TestStatus createDeviceWithPromoted13Structures (Context& context)
+{
+	if (!context.contextSupports(vk::ApiVersion(0, 1, 3, 0)))
+		TCU_THROW(NotSupportedError, "Vulkan 1.3 is not supported");
+
+	const PlatformInterface&		platformInterface	= context.getPlatformInterface();
+	const CustomInstance			instance			(createCustomInstanceFromContext(context));
+	const InstanceDriver&			instanceDriver		(instance.getDriver());
+	const VkPhysicalDevice			physicalDevice		= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32					queueFamilyIndex	= 0;
+	const deUint32					queueCount			= 1;
+	const deUint32					queueIndex			= 0;
+	const float						queuePriority		= 1.0f;
+
+	const vector<VkQueueFamilyProperties> queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
+
+	const VkDeviceQueueCreateInfo	deviceQueueCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+		DE_NULL,
+		(VkDeviceQueueCreateFlags)0u,
+		queueFamilyIndex,						//queueFamilyIndex;
+		queueCount,								//queueCount;
+		&queuePriority,							//pQueuePriorities;
+	};
+
+	VkPhysicalDeviceDynamicRenderingFeaturesKHR deviceDynamicRenderingFeatures = initVulkanStructure();
+	VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT deviceTextureCompressionASTCHDRFeatures = initVulkanStructure(&deviceDynamicRenderingFeatures);
+	VkPhysicalDeviceInlineUniformBlockFeaturesEXT deviceInlineUniformBlockFeatures = initVulkanStructure(&deviceTextureCompressionASTCHDRFeatures);
+	VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR deviceShaderTerminateInvocationFeatures = initVulkanStructure(&deviceInlineUniformBlockFeatures);
+	VkPhysicalDeviceSubgroupSizeControlFeaturesEXT deviceSubgroupSizeControlFeatures = initVulkanStructure(&deviceShaderTerminateInvocationFeatures);
+	VkPhysicalDeviceExtendedDynamicStateFeaturesEXT deviceExtendedDynamicStateFeaturesEXT = initVulkanStructure(&deviceSubgroupSizeControlFeatures);
+	VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT deviceShaderDemoteToHelperInvocationFeatures = initVulkanStructure(&deviceExtendedDynamicStateFeaturesEXT);
+	VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR deviceShaderIntegerDotProductFeatures = initVulkanStructure(&deviceShaderDemoteToHelperInvocationFeatures);
+	VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT deviceTexelBufferAlignmentFeaturesEXT = initVulkanStructure(&deviceShaderIntegerDotProductFeatures);
+	VkPhysicalDevicePrivateDataFeaturesEXT devicePrivateDataFeatures = initVulkanStructure(&deviceTexelBufferAlignmentFeaturesEXT);
+	VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT devicePipelineCreationCacheControlFeatures = initVulkanStructure(&devicePrivateDataFeatures);
+	VkPhysicalDeviceSynchronization2FeaturesKHR deviceSynchronization2Features = initVulkanStructure(&devicePipelineCreationCacheControlFeatures);
+	VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR deviceZeroInitializeWorkgroupMemoryFeatures = initVulkanStructure(&deviceSynchronization2Features);
+	VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT deviceYcbcr2Plane444FormatsFeaturesEXT = initVulkanStructure(&deviceZeroInitializeWorkgroupMemoryFeatures);
+	VkPhysicalDeviceImageRobustnessFeaturesEXT deviceImageRobustnessFeatures = initVulkanStructure(&deviceYcbcr2Plane444FormatsFeaturesEXT);
+	VkPhysicalDevice4444FormatsFeaturesEXT device4444FormatsFeaturesEXT = initVulkanStructure(&deviceImageRobustnessFeatures);
+	VkPhysicalDeviceExtendedDynamicState2FeaturesEXT deviceExtendedDynamicState2FeaturesEXT = initVulkanStructure(&device4444FormatsFeaturesEXT);
+	VkPhysicalDeviceMaintenance4FeaturesKHR deviceMaintenance4Features = initVulkanStructure(&deviceExtendedDynamicState2FeaturesEXT);
+	VkPhysicalDeviceFeatures2 extFeatures = initVulkanStructure(&deviceMaintenance4Features);
+
+	instanceDriver.getPhysicalDeviceFeatures2 (physicalDevice, &extFeatures);
+
+	const VkDeviceCreateInfo		deviceCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,	//sType;
+		&extFeatures,							//pNext;
+		(VkDeviceCreateFlags)0u,
+		1,										//queueRecordCount;
+		&deviceQueueCreateInfo,					//pRequestedQueues;
+		0,										//layerCount;
+		DE_NULL,								//ppEnabledLayerNames;
+		0,										//extensionCount;
+		DE_NULL,								//ppEnabledExtensionNames;
+		DE_NULL,								//pEnabledFeatures;
+	};
+
+	const Unique<VkDevice>			device			(createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+	const DeviceDriver				deviceDriver	(platformInterface, instance, device.get());
+	const VkQueue					queue			= getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
+
+	VK_CHECK(deviceDriver.queueWaitIdle(queue));
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 {
 	addFunctionCase(testGroup, "private_data_features", "VkPhysicalDevicePrivateDataFeatures", testPhysicalDeviceFeaturePrivateDataFeatures);
@@ -4374,5 +4568,8 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "depth_clamp_zero_one_features_ext", "VkPhysicalDeviceDepthClampZeroOneFeaturesEXT", testPhysicalDeviceFeatureDepthClampZeroOneFeaturesEXT);
 	addFunctionCase(testGroup, "address_binding_report_features_ext", "VkPhysicalDeviceAddressBindingReportFeaturesEXT", testPhysicalDeviceFeatureAddressBindingReportFeaturesEXT);
 	addFunctionCase(testGroup, "fault_features_ext", "VkPhysicalDeviceFaultFeaturesEXT", testPhysicalDeviceFeatureFaultFeaturesEXT);
+	addFunctionCase(testGroup, "create_device_with_promoted11_structures", "", createDeviceWithPromoted11Structures);
+	addFunctionCase(testGroup, "create_device_with_promoted12_structures", "", createDeviceWithPromoted12Structures);
+	addFunctionCase(testGroup, "create_device_with_promoted13_structures", "", createDeviceWithPromoted13Structures);
 }
 
