@@ -177,6 +177,7 @@ protected:
 	Move<VkBuffer>						m_outBuffer; // SSBO
 	VkDeviceSize						m_outBufferSize;
 	de::MovePtr<Allocation>				m_outBufferAlloc;
+	VkDeviceSize						m_outBufferAllocSize;
 
 	Move<VkDescriptorPool>				m_descriptorPool;
 	Move<VkDescriptorSetLayout>			m_descriptorSetLayout;
@@ -657,8 +658,10 @@ VertexAccessInstance::VertexAccessInstance (Context&						context,
 			&queueFamilyIndex							// const deUint32*		pQueueFamilyIndices;
 		};
 
-		m_outBuffer			= createBuffer(vk, *m_device, &outBufferParams);
-		m_outBufferAlloc	= memAlloc.allocate(getBufferMemoryRequirements(vk, *m_device, *m_outBuffer), MemoryRequirement::HostVisible);
+		m_outBuffer								= createBuffer(vk, *m_device, &outBufferParams);
+		const VkMemoryRequirements requirements = getBufferMemoryRequirements(vk, *m_device, *m_outBuffer);
+		m_outBufferAlloc						= memAlloc.allocate(requirements, MemoryRequirement::HostVisible);
+		m_outBufferAllocSize					= requirements.size;
 
 		VK_CHECK(vk.bindBufferMemory(*m_device, *m_outBuffer, m_outBufferAlloc->getMemory(), m_outBufferAlloc->getOffset()));
 		deMemset(m_outBufferAlloc->getHostPtr(), 0xFF, (size_t)m_outBufferSize);
@@ -774,7 +777,7 @@ tcu::TestStatus VertexAccessInstance::iterate (void)
 			DE_NULL,								//  const void*		pNext;
 			m_outBufferAlloc->getMemory(),			//  VkDeviceMemory	mem;
 			0ull,									//  VkDeviceSize	offset;
-			m_outBufferSize,						//  VkDeviceSize	size;
+			m_outBufferAllocSize,					//  VkDeviceSize	size;
 		};
 
 		VK_CHECK(vk.invalidateMappedMemoryRanges(*m_device, 1u, &outBufferRange));
@@ -804,7 +807,7 @@ bool VertexAccessInstance::verifyResult (void)
 		DE_NULL,								// const void*		pNext;
 		m_outBufferAlloc->getMemory(),			// VkDeviceMemory	mem;
 		m_outBufferAlloc->getOffset(),			// VkDeviceSize		offset;
-		m_outBufferSize,						// VkDeviceSize		size;
+		m_outBufferAllocSize,					// VkDeviceSize		size;
 	};
 
 	VK_CHECK(vk.invalidateMappedMemoryRanges(*m_device, 1u, &outBufferRange));
