@@ -661,6 +661,32 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 			de::dataOrNull(dynamicStates),							//	const VkDynamicState*				pDynamicStates;
 		};
 
+		const vk::VkPipelineColorBlendAttachmentState blendState
+		{
+			VK_FALSE,
+			VK_BLEND_FACTOR_ONE,
+			VK_BLEND_FACTOR_ONE,
+			VK_BLEND_OP_ADD,
+			VK_BLEND_FACTOR_ONE,
+			VK_BLEND_FACTOR_ONE,
+			VK_BLEND_OP_ADD,
+			VK_COLOR_COMPONENT_R_BIT |
+			VK_COLOR_COMPONENT_G_BIT |
+			VK_COLOR_COMPONENT_B_BIT |
+			VK_COLOR_COMPONENT_A_BIT,
+		};
+		const VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,		// VkStructureType								sType
+			DE_NULL,														// const void*									pNext
+			0u,																// VkPipelineColorBlendStateCreateFlags			flags
+			VK_FALSE,														// VkBool32										logicOpEnable
+			VK_LOGIC_OP_CLEAR,												// VkLogicOp									logicOp
+			1u,																// deUint32										attachmentCount
+			&blendState,													// const VkPipelineColorBlendAttachmentState*	pAttachments
+			{ 0.0f, 0.0f, 0.0f, 0.0f }										// float										blendConstants[4]
+		};
+
 		for (int quadNdx = 0; quadNdx < DepthTest::QUAD_COUNT; quadNdx++)
 		{
 			depthStencilStateParams.depthCompareOp	= depthCompareOps[quadNdx];
@@ -682,7 +708,7 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 																	0u,
 																	*m_fragmentShaderModule,
 																	&depthStencilStateParams)
-										.setupFragmentOutputState(*m_renderPass)
+										.setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateCreateInfo)
 										.setMonolithicPipelineLayout(*m_pipelineLayout)
 										.buildPipeline();
 
@@ -705,7 +731,7 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 																				0u,
 																				*m_fragmentShaderModule,
 																				&depthStencilStateParams)
-											   .setupFragmentOutputState(*m_renderPass)
+											   .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateCreateInfo)
 											   .setMonolithicPipelineLayout(*m_pipelineLayout)
 											   .buildPipeline();
 			}
