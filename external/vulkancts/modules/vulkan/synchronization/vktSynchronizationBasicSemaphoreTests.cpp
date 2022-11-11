@@ -124,6 +124,79 @@ tcu::TestStatus basicOneQueueCase (Context& context, const TestConfig config)
 	return tcu::TestStatus::pass("Basic semaphore tests with one queue passed");
 }
 
+tcu::TestStatus noneWaitSubmitTest (Context& context, const TestConfig config)
+{
+	const DeviceInterface&			vk										= context.getDeviceInterface();
+	const VkDevice							device								= context.getDevice();
+	const VkQueue								queue									= context.getUniversalQueue();
+	const deUint32							queueFamilyIndex			= context.getUniversalQueueFamilyIndex();
+
+	const Unique<VkSemaphore>			semaphore					(createTestSemaphore(context, vk, device, config));
+	const Unique<VkCommandPool>		cmdPool						(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+
+		const Unique<VkCommandBuffer>	firstbuffer					(makeCommandBuffer(vk, device, *cmdPool));
+	const Unique<VkCommandBuffer>	secondBuffer				(makeCommandBuffer(vk, device, *cmdPool));
+
+	const VkCommandBufferBeginInfo	info						{
+																	VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType                          sType;
+																	DE_NULL,																			// const void*                              pNext;
+																	VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,	// VkCommandBufferUsageFlags                flags;
+																	DE_NULL,																			// const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
+																};
+	const Unique<VkFence>			fence1					(createFence(vk, device));
+	const Unique<VkFence>			fence2					(createFence(vk, device));
+	const Unique<VkEvent>			event						(createEvent(vk, device));
+
+	VK_CHECK(vk.beginCommandBuffer(*firstbuffer, &info));
+	endCommandBuffer(vk, *firstbuffer);
+
+	const VkSubmitInfo firstSubmitInfo {
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,	//VkStructureType sType
+		DE_NULL,												//const void* pNext
+		0u,															//uint32_t waitSemaphoreCount
+		DE_NULL,												//const VkSemaphore* pWaitSemaphores
+		DE_NULL,												//const VkPipelineStageFlags* pWaitDstStageMask
+		1u,															//uint32_t commandBufferCount
+		&firstbuffer.get(),							//const VkCommandBuffer* pCommandBuffers
+		1,															//uint32_t signalSemaphoreCount
+		&semaphore.get()								//const VkSemaphore* pSignalSemaphores
+	};
+
+	//check if waiting on an event in the none stage works as expected
+	VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_NONE_KHR};
+
+	const VkSubmitInfo secondSubmitInfo {
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,  //VkStructureType sType
+		DE_NULL,												//const void* pNext
+		1u,															//uint32_t waitSemaphoreCount
+		&semaphore.get(),								//const VkSemaphore* pWaitSemaphores
+		waitStages,											//const VkPipelineStageFlags* pWaitDstStageMask
+		1u,															//uint32_t commandBufferCount
+		&secondBuffer.get(),							//const VkCommandBuffer* pCommandBuffers
+		0,															//uint32_t signalSemaphoreCount
+		DE_NULL													//const VkSemaphore* pSignalSemaphores
+	};
+
+	VK_CHECK(vk.beginCommandBuffer(*secondBuffer, &info));
+	vk.cmdSetEvent(*secondBuffer, event.get(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+	endCommandBuffer(vk, *secondBuffer);
+
+	VK_CHECK(vk.queueSubmit(queue, 1, &firstSubmitInfo,  fence1.get()));
+	VK_CHECK(vk.queueSubmit(queue, 1, &secondSubmitInfo, fence2.get()));
+	VK_CHECK(vk.queueWaitIdle(queue));
+
+	if (VK_SUCCESS != vk.waitForFences(device, 1u, &fence1.get(), DE_TRUE, FENCE_WAIT))
+		return tcu::TestStatus::fail("None stage test failed, failed to wait for fence");
+
+	if (VK_SUCCESS != vk.waitForFences(device, 1u, &fence2.get(), DE_TRUE, FENCE_WAIT))
+		return tcu::TestStatus::fail("None stage test failed, failed to wait for the second fence");
+
+	if (vk.getEventStatus(device, event.get()) != VK_EVENT_SET)
+		return tcu::TestStatus::fail("None stage test failed, event isn't set");
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 tcu::TestStatus basicChainCase(Context & context, TestConfig config)
 {
 	VkResult								err							= VK_SUCCESS;
@@ -646,6 +719,9 @@ tcu::TestCaseGroup* createBasicBinarySemaphoreTests (tcu::TestContext& testCtx, 
 		addFunctionCase(basicTests.get(), "one_queue" + createName,		"Basic binary semaphore tests with one queue",		checkCommandBufferSimultaneousUseSupport,	basicOneQueueCase, config);
 		addFunctionCase(basicTests.get(), "multi_queue" + createName,	"Basic binary semaphore tests with multi queue",	checkCommandBufferSimultaneousUseSupport,	basicMultiQueueCase, config);
 	}
+
+	if (type == SynchronizationType::SYNCHRONIZATION2)
+		addFunctionCase(basicTests.get(), "none_wait_submit", "Test waiting on the none pipeline stage",	checkCommandBufferSimultaneousUseSupport, noneWaitSubmitTest, config);
 
 	addFunctionCase(basicTests.get(), "chain", "Binary semaphore chain test", checkSupport, basicChainCase, config);
 
