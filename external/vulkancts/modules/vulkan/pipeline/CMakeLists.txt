@@ -135,6 +135,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineAttachmentFeedbackLoopLayoutTests.hpp
 	vktPipelineMultisampledRenderToSingleSampledTests.cpp
 	vktPipelineMultisampledRenderToSingleSampledTests.hpp
+	vktPipelineImageSlicedViewOf3DTests.cpp
+	vktPipelineImageSlicedViewOf3DTests.hpp
 	)
 
 #vktPipelinePushDescriptorTests.cpp				- missing VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR

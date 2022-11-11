@@ -2111,6 +2111,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES";
 		case VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS:									return "VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS";
 		case VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS:									return "VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_SLICED_VIEW_OF_3D_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_SLICED_VIEW_OF_3D_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_IMAGE_VIEW_SLICED_CREATE_INFO_EXT:									return "VK_STRUCTURE_TYPE_IMAGE_VIEW_SLICED_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_SET_HOST_MAPPING_FEATURES_VALVE:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_SET_HOST_MAPPING_FEATURES_VALVE";
 		case VK_STRUCTURE_TYPE_DESCRIPTOR_SET_BINDING_REFERENCE_VALVE:								return "VK_STRUCTURE_TYPE_DESCRIPTOR_SET_BINDING_REFERENCE_VALVE";
 		case VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_HOST_MAPPING_INFO_VALVE:						return "VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_HOST_MAPPING_INFO_VALVE";
@@ -8735,6 +8737,17 @@ std::ostream& operator<< (std::ostream& s, const VkImageViewUsageCreateInfo& val
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkImageViewSlicedCreateInfoEXT& value)
+{
+	s << "VkImageViewSlicedCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsliceOffset = " << value.sliceOffset << '\n';
+	s << "\tsliceCount = " << value.sliceCount << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPipelineTessellationDomainOriginStateCreateInfo& value)
 {
 	s << "VkPipelineTessellationDomainOriginStateCreateInfo = {\n";
@@ -12961,6 +12974,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImage2DViewOf3D
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\timage2DViewOf3D = " << value.image2DViewOf3D << '\n';
 	s << "\tsampler2DViewOf3D = " << value.sampler2DViewOf3D << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timageSlicedViewOf3D = " << value.imageSlicedViewOf3D << '\n';
 	s << '}';
 	return s;
 }

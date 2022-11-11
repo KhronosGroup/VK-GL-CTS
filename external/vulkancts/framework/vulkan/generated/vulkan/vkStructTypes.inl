@@ -2765,6 +2765,14 @@ struct VkImageViewUsageCreateInfo
 	VkImageUsageFlags	usage;
 };
 
+struct VkImageViewSlicedCreateInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		sliceOffset;
+	uint32_t		sliceCount;
+};
+
 struct VkPipelineTessellationDomainOriginStateCreateInfo
 {
 	VkStructureType				sType;
@@ -5982,6 +5990,13 @@ struct VkPhysicalDeviceImage2DViewOf3DFeaturesEXT
 	void*			pNext;
 	VkBool32		image2DViewOf3D;
 	VkBool32		sampler2DViewOf3D;
+};
+
+struct VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		imageSlicedViewOf3D;
 };
 
 struct VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT

@@ -1023,6 +1023,11 @@ template<> VkStructureType getStructureType<VkImageViewUsageCreateInfo> (void)
 	return VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO;
 }
 
+template<> VkStructureType getStructureType<VkImageViewSlicedCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_VIEW_SLICED_CREATE_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPipelineTessellationDomainOriginStateCreateInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_DOMAIN_ORIGIN_STATE_CREATE_INFO;
@@ -2556,6 +2561,11 @@ template<> VkStructureType getStructureType<VkAccelerationStructureBuildSizesInf
 template<> VkStructureType getStructureType<VkPhysicalDeviceImage2DViewOf3DFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_SLICED_VIEW_OF_3D_FEATURES_EXT;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT> (void)

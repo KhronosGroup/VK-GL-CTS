@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": ""
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT":
+		[
+			{ "features": ["imageSlicedViewOf3D"], "requirements": ["VK_EXT_image_sliced_view_of_3d"], "mandatory_variant": ["vulkan"]}
+		]
+	}
+}
