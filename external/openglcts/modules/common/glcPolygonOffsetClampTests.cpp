@@ -355,6 +355,12 @@ void PolygonOffsetClampValueTestCaseBase::test(const glw::Functions& gl)
 	gl.bindFramebuffer(GL_FRAMEBUFFER, m_fbo);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindFramebuffer");
 
+	/* Calculate number of depth units from depth bits. */
+	GLint depth_bits = 0;
+	gl.getIntegerv(GL_DEPTH_BITS, &depth_bits);
+	float num_units = (float)(1 << depth_bits);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv");
+
 	bool result = true;
 	for (GLuint i = 0; i < m_testValues.size(); ++i)
 	{
@@ -383,7 +389,7 @@ void PolygonOffsetClampValueTestCaseBase::test(const glw::Functions& gl)
 		gl.bindFramebuffer(GL_FRAMEBUFFER, m_fbo);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glBindFramebuffer");
 
-		gl.polygonOffset(m_testValues[i].factor, m_testValues[i].units);
+		gl.polygonOffset(m_testValues[i].factor, m_testValues[i].units * num_units);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glPolygonOffset");
 
 		gl.drawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -408,7 +414,7 @@ void PolygonOffsetClampValueTestCaseBase::test(const glw::Functions& gl)
 		gl.enable(GL_POLYGON_OFFSET_FILL);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glEnable");
 
-		gl.polygonOffsetClamp(m_testValues[i].factor, m_testValues[i].units, m_testValues[i].clamp);
+		gl.polygonOffsetClamp(m_testValues[i].factor, m_testValues[i].units * num_units, m_testValues[i].clamp);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glPolygonOffsetClamp");
 
 		gl.drawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -514,8 +520,8 @@ void PolygonOffsetClampMinMaxTestCase::init()
 	PolygonOffsetClampValueTestCaseBase::init();
 
 	m_testValues.clear();
-	m_testValues.push_back(PolygonOffsetClampValues(0.0f, -1000.0f, -0.0001f)); // Min offset case
-	m_testValues.push_back(PolygonOffsetClampValues(0.0f, 1000.0f, 0.0001f));   // Max offset case
+	m_testValues.push_back(PolygonOffsetClampValues(0.0f, -1000.0f / 65536.0f, -0.0001f)); // Min offset case
+	m_testValues.push_back(PolygonOffsetClampValues(0.0f, 1000.0f / 65536.0f, 0.0001f));   // Max offset case
 }
 
 /** Verification method that determines if depth values are as expected
@@ -581,10 +587,10 @@ void PolygonOffsetClampZeroInfinityTestCase::init()
 	PolygonOffsetClampValueTestCaseBase::init();
 
 	m_testValues.clear();
-	m_testValues.push_back(PolygonOffsetClampValues(0.0f, -1000.0f, 0.0f));		 // Min offset, zero clamp case
-	m_testValues.push_back(PolygonOffsetClampValues(0.0f, -1000.0f, -INFINITY)); // Min Offset, infinity clamp case
-	m_testValues.push_back(PolygonOffsetClampValues(0.0f, 1000.0f, 0.0f));		 // Max offset, zero clamp case
-	m_testValues.push_back(PolygonOffsetClampValues(0.0f, 1000.0f, INFINITY));   // Max Offset, infinity clamp case
+	m_testValues.push_back(PolygonOffsetClampValues(0.0f, -1000.0f / 65536.0f, 0.0f));		 // Min offset, zero clamp case
+	m_testValues.push_back(PolygonOffsetClampValues(0.0f, -1000.0f / 65536.0f, -INFINITY)); // Min Offset, infinity clamp case
+	m_testValues.push_back(PolygonOffsetClampValues(0.0f, 1000.0f / 65536.0f, 0.0f));		 // Max offset, zero clamp case
+	m_testValues.push_back(PolygonOffsetClampValues(0.0f, 1000.0f / 65536.0f, INFINITY));   // Max Offset, infinity clamp case
 }
 
 bool PolygonOffsetClampZeroInfinityTestCase::verify(GLuint caseNo, GLfloat depth, GLfloat offsetDepth,
