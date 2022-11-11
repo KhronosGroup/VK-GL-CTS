@@ -795,10 +795,17 @@ void BottomLevelAccelerationStructure::addGeometry (const std::vector<tcu::Vec3>
 	addGeometry(geometry);
 }
 
-VkDeviceSize BottomLevelAccelerationStructure::getStructureSize() const
+VkAccelerationStructureBuildSizesInfoKHR BottomLevelAccelerationStructure::getStructureBuildSizes () const
 {
-	return m_structureSize;
-}
+	return
+	{
+		VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR,	//  VkStructureType	sType;
+		DE_NULL,														//  const void*		pNext;
+		m_structureSize,												//  VkDeviceSize	accelerationStructureSize;
+		m_updateScratchSize,											//  VkDeviceSize	updateScratchSize;
+		m_buildScratchSize												//  VkDeviceSize	buildScratchSize;
+	};
+};
 
 VkDeviceSize getVertexBufferSize (const std::vector<de::SharedPtr<RaytracedGeometryBase>>&	geometriesData)
 {
@@ -1554,7 +1561,7 @@ void BottomLevelAccelerationStructure::createAndCopyFrom (const DeviceInterface&
 														  VkDeviceAddress						deviceAddress)
 {
 	DE_ASSERT(accelerationStructure != NULL);
-	VkDeviceSize copiedSize = compactCopySize > 0u ? compactCopySize : accelerationStructure->getStructureSize();
+	VkDeviceSize copiedSize = compactCopySize > 0u ? compactCopySize : accelerationStructure->getStructureBuildSizes().accelerationStructureSize;
 	DE_ASSERT(copiedSize != 0u);
 
 	create(vk, device, allocator, copiedSize, deviceAddress);
@@ -2285,9 +2292,16 @@ void TopLevelAccelerationStructure::addInstance (de::SharedPtr<BottomLevelAccele
 	m_instanceData.push_back(InstanceData(matrix, instanceCustomIndex, mask, instanceShaderBindingTableRecordOffset, flags));
 }
 
-VkDeviceSize TopLevelAccelerationStructure::getStructureSize () const
+VkAccelerationStructureBuildSizesInfoKHR TopLevelAccelerationStructure::getStructureBuildSizes () const
 {
-	return m_structureSize;
+	return
+	{
+		VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR,	//  VkStructureType	sType;
+		DE_NULL,														//  const void*		pNext;
+		m_structureSize,												//  VkDeviceSize	accelerationStructureSize;
+		m_updateScratchSize,											//  VkDeviceSize	updateScratchSize;
+		m_buildScratchSize												//  VkDeviceSize	buildScratchSize;
+	};
 }
 
 void TopLevelAccelerationStructure::createAndBuild (const DeviceInterface&	vk,
@@ -2309,7 +2323,7 @@ void TopLevelAccelerationStructure::createAndCopyFrom (const DeviceInterface&			
 													   VkDeviceAddress						deviceAddress)
 {
 	DE_ASSERT(accelerationStructure != NULL);
-	VkDeviceSize copiedSize = compactCopySize > 0u ? compactCopySize : accelerationStructure->getStructureSize();
+	VkDeviceSize copiedSize = compactCopySize > 0u ? compactCopySize : accelerationStructure->getStructureBuildSizes().accelerationStructureSize;
 	DE_ASSERT(copiedSize != 0u);
 
 	create(vk, device, allocator, copiedSize, deviceAddress);
