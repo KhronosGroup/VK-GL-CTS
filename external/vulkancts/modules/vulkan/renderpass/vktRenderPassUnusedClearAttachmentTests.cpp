@@ -906,7 +906,10 @@ void UnusedClearAttachmentTestInstance::createCommandBuffer (const DeviceInterfa
 	RenderpassSubpass::cmdBeginRenderPass(vk, *m_cmdBuffer, &renderPassBeginInfo, &subpassBeginInfo);
 
 	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipeline);
-	vk.cmdClearAttachments(*m_cmdBuffer, static_cast<deUint32>(clearAttachments.size()), (clearAttachments.empty() ? DE_NULL : clearAttachments.data()), 1u, &clearRect);
+	if (!clearAttachments.empty())
+	{
+		vk.cmdClearAttachments(*m_cmdBuffer, static_cast<deUint32>(clearAttachments.size()), clearAttachments.data(), 1u, &clearRect);
+	}
 
 	const typename RenderpassSubpass::SubpassEndInfo subpassEndInfo(DE_NULL);
 	RenderpassSubpass::cmdEndRenderPass(vk, *m_cmdBuffer, &subpassEndInfo);
@@ -980,10 +983,10 @@ void UnusedClearAttachmentTestInstance::createCommandBufferDynamicRendering(cons
 		m_clearColorDepth														// VkClearValue							clearValue;
 	};
 
-	const bool hasDepth		= m_testParams.depthStencilType == DEPTH_STENCIL_BOTH ||
-							  m_testParams.depthStencilType == DEPTH_STENCIL_DEPTH_ONLY;
-	const bool hasStencil	= m_testParams.depthStencilType == DEPTH_STENCIL_BOTH ||
-							  m_testParams.depthStencilType == DEPTH_STENCIL_STENCIL_ONLY;
+	const bool hasDepth		= (m_testParams.depthStencilType == DEPTH_STENCIL_BOTH ||
+							  m_testParams.depthStencilType == DEPTH_STENCIL_DEPTH_ONLY) && m_testParams.depthStencilUsed;
+	const bool hasStencil	= (m_testParams.depthStencilType == DEPTH_STENCIL_BOTH ||
+							  m_testParams.depthStencilType == DEPTH_STENCIL_STENCIL_ONLY) && m_testParams.depthStencilUsed;
 
 	std::vector<VkFormat> colorAttachmentFormats(m_testParams.colorUsed.size(), VK_FORMAT_UNDEFINED);
 	for (size_t i = 0; i < m_testParams.colorUsed.size(); ++i)
@@ -1046,7 +1049,10 @@ void UnusedClearAttachmentTestInstance::createCommandBufferDynamicRendering(cons
 		}
 
 		vk.cmdBindPipeline(*m_secCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipeline);
-		vk.cmdClearAttachments(*m_secCmdBuffer, static_cast<deUint32>(clearAttachments.size()), (clearAttachments.empty() ? DE_NULL : clearAttachments.data()), 1u, &clearRect);
+		if (!clearAttachments.empty())
+		{
+			vk.cmdClearAttachments(*m_secCmdBuffer, static_cast<deUint32>(clearAttachments.size()), clearAttachments.data(), 1u, &clearRect);
+		}
 
 		if (m_testParams.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
 			vk.cmdEndRendering(*m_secCmdBuffer);
