@@ -800,6 +800,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_shader_quad_scope")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_spirv_1_4")
 	{
 		return;
@@ -1284,10 +1288,6 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_EXT_mutable_descriptor_type")
-	{
-		return;
-	}
-	if (extName == "VK_ARM_shader_core_builtins")
 	{
 		return;
 	}
@@ -2213,6 +2213,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_shader_quad_scope")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_spirv_1_4")
 	{
 		return;
@@ -2784,10 +2788,6 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
-	if (extName == "VK_ARM_shader_core_builtins")
-	{
-		return;
-	}
 	if (extName == "vulkan_video_codecs_common")
 	{
 		return;
@@ -3017,6 +3017,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_AMD_shader_core_properties2",
 	"VK_AMD_device_coherent_memory",
 	"VK_EXT_shader_image_atomic_int64",
+	"VK_KHR_shader_quad_scope",
 	"VK_KHR_spirv_1_4",
 	"VK_EXT_memory_budget",
 	"VK_EXT_memory_priority",
@@ -3129,5 +3130,4 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_QCOM_tile_properties",
 	"VK_SEC_amigo_profiling",
 	"VK_EXT_mutable_descriptor_type",
-	"VK_ARM_shader_core_builtins",
 };

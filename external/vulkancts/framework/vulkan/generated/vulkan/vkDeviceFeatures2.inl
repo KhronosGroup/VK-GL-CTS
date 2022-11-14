@@ -4223,6 +4223,43 @@ tcu::TestStatus testPhysicalDeviceFeatureFaultFeaturesEXT (Context& context)
 	return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureShaderQuadScopeFeaturesKHR (Context& context)
+{
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+	const InstanceDriver&		vki				(instance.getDriver());
+	const int					count			= 2u;
+	TestLog&					log				= context.getTestContext().getLog();
+	VkPhysicalDeviceFeatures2	extFeatures;
+	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+
+	VkPhysicalDeviceShaderQuadScopeFeaturesKHR	deviceShaderQuadScopeFeaturesKHR[count];
+	const bool									isShaderQuadScopeFeaturesKHR = checkExtension(properties, "VK_KHR_shader_quad_scope");
+
+	for (int ndx = 0; ndx < count; ++ndx)
+	{
+		deMemset(&deviceShaderQuadScopeFeaturesKHR[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceShaderQuadScopeFeaturesKHR));
+		deviceShaderQuadScopeFeaturesKHR[ndx].sType = isShaderQuadScopeFeaturesKHR ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_QUAD_SCOPE_FEATURES_KHR : VK_STRUCTURE_TYPE_MAX_ENUM;
+		deviceShaderQuadScopeFeaturesKHR[ndx].pNext = DE_NULL;
+
+		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		extFeatures.pNext = &deviceShaderQuadScopeFeaturesKHR[ndx];
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+	}
+
+	if (isShaderQuadScopeFeaturesKHR)
+		log << TestLog::Message << deviceShaderQuadScopeFeaturesKHR[0] << TestLog::EndMessage;
+
+	if (isShaderQuadScopeFeaturesKHR &&
+		(deviceShaderQuadScopeFeaturesKHR[0].shaderQuadScope != deviceShaderQuadScopeFeaturesKHR[1].shaderQuadScope))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceShaderQuadScopeFeaturesKHR");
+	}
+	return tcu::TestStatus::pass("Querying succeeded");
+}
+
 void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 {
 	addFunctionCase(testGroup, "private_data_features", "VkPhysicalDevicePrivateDataFeatures", testPhysicalDeviceFeaturePrivateDataFeatures);
@@ -4333,5 +4370,6 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "depth_clamp_zero_one_features_ext", "VkPhysicalDeviceDepthClampZeroOneFeaturesEXT", testPhysicalDeviceFeatureDepthClampZeroOneFeaturesEXT);
 	addFunctionCase(testGroup, "address_binding_report_features_ext", "VkPhysicalDeviceAddressBindingReportFeaturesEXT", testPhysicalDeviceFeatureAddressBindingReportFeaturesEXT);
 	addFunctionCase(testGroup, "fault_features_ext", "VkPhysicalDeviceFaultFeaturesEXT", testPhysicalDeviceFeatureFaultFeaturesEXT);
+	addFunctionCase(testGroup, "shader_quad_scope_features_khr", "VkPhysicalDeviceShaderQuadScopeFeaturesKHR", testPhysicalDeviceFeatureShaderQuadScopeFeaturesKHR);
 }
 

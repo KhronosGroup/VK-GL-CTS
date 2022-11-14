@@ -61,6 +61,5 @@ const vk::VkPhysicalDeviceImageProcessingPropertiesQCOM&			getImageProcessingPro
 const vk::VkPhysicalDeviceExtendedDynamicState3PropertiesEXT&		getExtendedDynamicState3PropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT&		getShaderModuleIdentifierPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceOpticalFlowPropertiesNV&					getOpticalFlowProperties					(void) const;
-const vk::VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM&			getShaderCoreBuiltinsPropertiesARM			(void) const;
 const vk::VkPhysicalDeviceSubgroupProperties&						getSubgroupProperties						(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryProperties&				getProtectedMemoryProperties				(void) const;

@@ -61,6 +61,5 @@ const vk::VkPhysicalDeviceImageProcessingPropertiesQCOM&			Context::getImageProc
 const vk::VkPhysicalDeviceExtendedDynamicState3PropertiesEXT&		Context::getExtendedDynamicState3PropertiesEXT		(void) const { return m_device->getExtendedDynamicState3PropertiesEXT();		}
 const vk::VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT&		Context::getShaderModuleIdentifierPropertiesEXT		(void) const { return m_device->getShaderModuleIdentifierPropertiesEXT();		}
 const vk::VkPhysicalDeviceOpticalFlowPropertiesNV&					Context::getOpticalFlowProperties					(void) const { return m_device->getOpticalFlowProperties();						}
-const vk::VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM&			Context::getShaderCoreBuiltinsPropertiesARM			(void) const { return m_device->getShaderCoreBuiltinsPropertiesARM();			}
 const vk::VkPhysicalDeviceSubgroupProperties&						Context::getSubgroupProperties						(void) const { return m_device->getSubgroupProperties();						}
 const vk::VkPhysicalDeviceProtectedMemoryProperties&				Context::getProtectedMemoryProperties				(void) const { return m_device->getProtectedMemoryProperties();					}

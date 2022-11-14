@@ -48,6 +48,7 @@ const vk::VkPhysicalDeviceSubgroupSizeControlFeatures&						Context::getSubgroup
 const vk::VkPhysicalDeviceFragmentShadingRateFeaturesKHR&					Context::getFragmentShadingRateFeatures						(void) const { return m_device->getFragmentShadingRateFeatures();					}
 const vk::VkPhysicalDeviceCoherentMemoryFeaturesAMD&						Context::getCoherentMemoryFeaturesAMD						(void) const { return m_device->getCoherentMemoryFeaturesAMD();						}
 const vk::VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT&				Context::getShaderImageAtomicInt64FeaturesEXT				(void) const { return m_device->getShaderImageAtomicInt64FeaturesEXT();				}
+const vk::VkPhysicalDeviceShaderQuadScopeFeaturesKHR&						Context::getShaderQuadScopeFeatures							(void) const { return m_device->getShaderQuadScopeFeatures();						}
 const vk::VkPhysicalDeviceMemoryPriorityFeaturesEXT&						Context::getMemoryPriorityFeaturesEXT						(void) const { return m_device->getMemoryPriorityFeaturesEXT();						}
 const vk::VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV&		Context::getDedicatedAllocationImageAliasingFeatures		(void) const { return m_device->getDedicatedAllocationImageAliasingFeatures();		}
 const vk::VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures&				Context::getSeparateDepthStencilLayoutsFeatures				(void) const { return m_device->getSeparateDepthStencilLayoutsFeatures();			}
@@ -135,6 +136,5 @@ const vk::VkPhysicalDevicePipelineProtectedAccessFeaturesEXT&				Context::getPip
 const vk::VkPhysicalDeviceTilePropertiesFeaturesQCOM&						Context::getTilePropertiesFeaturesQCOM						(void) const { return m_device->getTilePropertiesFeaturesQCOM();					}
 const vk::VkPhysicalDeviceAmigoProfilingFeaturesSEC&						Context::getAmigoProfilingFeaturesSEC						(void) const { return m_device->getAmigoProfilingFeaturesSEC();						}
 const vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT&					Context::getMutableDescriptorTypeFeaturesEXT				(void) const { return m_device->getMutableDescriptorTypeFeaturesEXT();				}
-const vk::VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM&					Context::getShaderCoreBuiltinsFeaturesARM					(void) const { return m_device->getShaderCoreBuiltinsFeaturesARM();					}
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&							Context::getProtectedMemoryFeatures							(void) const { return m_device->getProtectedMemoryFeatures();						}
 const vk::VkPhysicalDeviceShaderDrawParametersFeatures&						Context::getShaderDrawParametersFeatures					(void) const { return m_device->getShaderDrawParametersFeatures();					}

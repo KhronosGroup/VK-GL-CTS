@@ -3558,13 +3558,8 @@ template<> VkStructureType getStructureType<VkDeviceFaultInfoEXT> (void)
 	return VK_STRUCTURE_TYPE_DEVICE_FAULT_INFO_EXT;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM> (void)
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderQuadScopeFeaturesKHR> (void)
 {
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM;
-}
-
-template<> VkStructureType getStructureType<VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM> (void)
-{
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM;
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_QUAD_SCOPE_FEATURES_KHR;
 }
 

@@ -7794,19 +7794,11 @@ struct VkDeviceFaultVendorBinaryHeaderVersionOneEXT
 	uint32_t									engineNameOffset;
 };
 
-struct VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM
+struct VkPhysicalDeviceShaderQuadScopeFeaturesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
-	uint32_t		shaderCoreCount;
-	uint32_t		shaderWarpsPerCore;
-};
-
-struct VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM
-{
-	VkStructureType	sType;
-	void*			pNext;
-	VkBool32		shaderCoreBuiltins;
+	VkBool32		shaderQuadScope;
 };
 
 struct StdVideoH264SpsVuiFlags

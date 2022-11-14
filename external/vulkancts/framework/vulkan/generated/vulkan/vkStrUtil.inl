@@ -1440,8 +1440,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultVendorInfoEXT& val
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultCountsEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultVendorBinaryHeaderVersionOneEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderQuadScopeFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SpsVuiFlags& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264HrdParameters& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SequenceParameterSetVui& value);

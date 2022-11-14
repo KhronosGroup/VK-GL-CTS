@@ -48,6 +48,7 @@ const vk::VkPhysicalDeviceSubgroupSizeControlFeatures&						getSubgroupSizeContr
 const vk::VkPhysicalDeviceFragmentShadingRateFeaturesKHR&					getFragmentShadingRateFeatures						(void) const;
 const vk::VkPhysicalDeviceCoherentMemoryFeaturesAMD&						getCoherentMemoryFeaturesAMD						(void) const;
 const vk::VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT&				getShaderImageAtomicInt64FeaturesEXT				(void) const;
+const vk::VkPhysicalDeviceShaderQuadScopeFeaturesKHR&						getShaderQuadScopeFeatures							(void) const;
 const vk::VkPhysicalDeviceMemoryPriorityFeaturesEXT&						getMemoryPriorityFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV&		getDedicatedAllocationImageAliasingFeatures			(void) const;
 const vk::VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures&				getSeparateDepthStencilLayoutsFeatures				(void) const;
@@ -135,6 +136,5 @@ const vk::VkPhysicalDevicePipelineProtectedAccessFeaturesEXT&				getPipelineProt
 const vk::VkPhysicalDeviceTilePropertiesFeaturesQCOM&						getTilePropertiesFeaturesQCOM						(void) const;
 const vk::VkPhysicalDeviceAmigoProfilingFeaturesSEC&						getAmigoProfilingFeaturesSEC						(void) const;
 const vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT&					getMutableDescriptorTypeFeaturesEXT					(void) const;
-const vk::VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM&					getShaderCoreBuiltinsFeaturesARM					(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&							getProtectedMemoryFeatures							(void) const;
 const vk::VkPhysicalDeviceShaderDrawParametersFeatures&						getShaderDrawParametersFeatures						(void) const;

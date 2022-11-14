@@ -6677,7 +6677,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFaultFeaturesEXT (Context
 }
 
 
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderCoreBuiltinsFeaturesARM (Context& context)
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderQuadScopeFeaturesKHR (Context& context)
 {
 	const PlatformInterface&				vkp						= context.getPlatformInterface();
 	tcu::TestLog&							log						= context.getTestContext().getLog();
@@ -6707,13 +6707,13 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderCoreBuiltinsFeature
 	for (const string& extension : nonCoreExtensions)
 		extensionNames.push_back(extension.c_str());
 
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM>()))
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderQuadScopeFeaturesKHR>()))
 	{
 		static const Feature features[] =
 		{
-		FEATURE_ITEM (VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM, shaderCoreBuiltins),
+		FEATURE_ITEM (VkPhysicalDeviceShaderQuadScopeFeaturesKHR, shaderQuadScope),
 		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM*>(featuresStruct);
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderQuadScopeFeaturesKHR*>(featuresStruct);
 		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess);
 	}
 
@@ -6864,6 +6864,6 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "address_binding_report_features_ext", "createDeviceWithUnsupportedFeaturesTestAddressBindingReportFeaturesEXT", createDeviceWithUnsupportedFeaturesTestAddressBindingReportFeaturesEXT);
 	addFunctionCase(testGroup, "optical_flow_features_nv", "createDeviceWithUnsupportedFeaturesTestOpticalFlowFeaturesNV", createDeviceWithUnsupportedFeaturesTestOpticalFlowFeaturesNV);
 	addFunctionCase(testGroup, "fault_features_ext", "createDeviceWithUnsupportedFeaturesTestFaultFeaturesEXT", createDeviceWithUnsupportedFeaturesTestFaultFeaturesEXT);
-	addFunctionCase(testGroup, "shader_core_builtins_features_arm", "createDeviceWithUnsupportedFeaturesTestShaderCoreBuiltinsFeaturesARM", createDeviceWithUnsupportedFeaturesTestShaderCoreBuiltinsFeaturesARM);
+	addFunctionCase(testGroup, "shader_quad_scope_features_khr", "createDeviceWithUnsupportedFeaturesTestShaderQuadScopeFeaturesKHR", createDeviceWithUnsupportedFeaturesTestShaderQuadScopeFeaturesKHR);
 }
 

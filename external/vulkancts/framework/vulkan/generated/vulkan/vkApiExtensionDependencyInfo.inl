@@ -748,6 +748,7 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_AMD_shader_core_properties2"),
 	std::make_tuple(1, 0, "VK_AMD_device_coherent_memory"),
 	std::make_tuple(1, 0, "VK_EXT_shader_image_atomic_int64"),
+	std::make_tuple(1, 1, "VK_KHR_shader_quad_scope"),
 	std::make_tuple(1, 1, "VK_KHR_spirv_1_4"),
 	std::make_tuple(1, 0, "VK_EXT_memory_budget"),
 	std::make_tuple(1, 0, "VK_EXT_memory_priority"),
@@ -867,5 +868,4 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_QCOM_tile_properties"),
 	std::make_tuple(1, 0, "VK_SEC_amigo_profiling"),
 	std::make_tuple(1, 0, "VK_EXT_mutable_descriptor_type"),
-	std::make_tuple(1, 0, "VK_ARM_shader_core_builtins"),
 };
