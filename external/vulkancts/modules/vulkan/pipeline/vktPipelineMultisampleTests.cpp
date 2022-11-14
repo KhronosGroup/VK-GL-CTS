@@ -4159,7 +4159,7 @@ void MultisampleRenderer::initialize (Context&									context,
 			{
 				m_graphicsPipelines.emplace_back(vk, vkDevice, m_pipelineConstructionType);
 				m_graphicsPipelines.back().setDefaultTopology(pTopology[i])
-										  .setupVertexInputStete(&vertexInputStateParams)
+										  .setupVertexInputState(&vertexInputStateParams)
 										  .setupPreRasterizationShaderState(viewports,
 																			scissors,
 																			*m_pipelineLayout,
@@ -4223,7 +4223,7 @@ void MultisampleRenderer::initialize (Context&									context,
 											.setDefaultRasterizationState()
 											.setDefaultMultisampleState()
 											.setDefaultDepthStencilState()
-											.setupVertexInputStete(&vertexInputStateParams)
+											.setupVertexInputState(&vertexInputStateParams)
 											.setupPreRasterizationShaderState(viewports,
 																			scissors,
 																			*m_copySamplePipelineLayout,
@@ -4958,7 +4958,7 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 		outputPipelines.back()
 			.setDefaultDepthStencilState()
 			.setDefaultRasterizationState()
-			.setupVertexInputStete(&vertexInputStateCreateInfo)
+			.setupVertexInputState(&vertexInputStateCreateInfo)
 			.setupPreRasterizationShaderState(viewport,
 				scissor,
 				*pipelineLayout,
@@ -4983,7 +4983,7 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 		referencePipelines.back()
 			.setDefaultDepthStencilState()
 			.setDefaultRasterizationState()
-			.setupVertexInputStete(&vertexInputStateCreateInfo)
+			.setupVertexInputState(&vertexInputStateCreateInfo)
 			.setupPreRasterizationShaderState(viewport,
 				scissor,
 				*pipelineLayout,

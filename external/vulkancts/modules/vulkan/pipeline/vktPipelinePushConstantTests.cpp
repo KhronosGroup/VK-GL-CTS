@@ -532,7 +532,7 @@ void PushConstantGraphicsTestInstance::init (void)
 						  .setDefaultMultisampleState()
 						  .setDefaultColorBlendState()
 						  .setDefaultTopology(topology)
-						  .setupVertexInputStete(&vertexInputStateParams)
+						  .setupVertexInputState(&vertexInputStateParams)
 						  .setupPreRasterizationShaderState(viewports,
 															scissors,
 															*m_preRasterizationStatePipelineLayout,
@@ -2365,7 +2365,7 @@ void PushConstantLifetimeTestInstance::init (void)
 							 .setDefaultMultisampleState()
 							 .setDefaultColorBlendState()
 							 .setDefaultTopology(topology)
-							 .setupVertexInputStete(&vertexInputStateParams)
+							 .setupVertexInputState(&vertexInputStateParams)
 							 .setupPreRasterizationShaderState(viewports,
 															   scissors,
 															   *(m_pipelineLayout[0]),
@@ -2382,7 +2382,7 @@ void PushConstantLifetimeTestInstance::init (void)
 							 .setDefaultMultisampleState()
 							 .setDefaultColorBlendState()
 							 .setDefaultTopology(topology)
-							 .setupVertexInputStete(&vertexInputStateParams)
+							 .setupVertexInputState(&vertexInputStateParams)
 							 .setupPreRasterizationShaderState(viewports,
 															   scissors,
 															   *(m_pipelineLayout[1]),
@@ -2923,7 +2923,7 @@ tcu::TestStatus OverwriteTestInstance::iterate (void)
 					   .setDefaultColorBlendState()
 					   .setDefaultDepthStencilState()
 					   .setDefaultMultisampleState()
-					   .setupVertexInputStete(&inputState)
+					   .setupVertexInputState(&inputState)
 					   .setupPreRasterizationShaderState(viewports,
 														 scissors,
 														 *pipelineLayout,

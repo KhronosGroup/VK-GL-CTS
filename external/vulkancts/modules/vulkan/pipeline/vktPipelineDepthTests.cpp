@@ -729,7 +729,7 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 										.setDefaultColorBlendState()
 										.setDepthClipControl(depthClipControlWrapper)
 										.setDynamicState(&dynamicStateCreateInfo)
-										.setupVertexInputStete(&vertexInputStateParams, &inputAssemblyStateParams)
+										.setupVertexInputState(&vertexInputStateParams, &inputAssemblyStateParams)
 										.setupPreRasterizationShaderState((dynamicViewport ? badViewports : viewports),
 																	scissors,
 																	*m_pipelineLayout,
@@ -754,7 +754,7 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 												   .setDefaultColorBlendState()
 												   .setDepthClipControl(depthClipControl01Wrapper)
 												   .setDynamicState(&dynamicStateCreateInfo)
-												   .setupVertexInputStete(&vertexInputStateParams, &inputAssemblyStateParams)
+												   .setupVertexInputState(&vertexInputStateParams, &inputAssemblyStateParams)
 												   .setupPreRasterizationShaderState((dynamicViewport ? badViewports : viewports),
 																				scissors,
 																				*m_pipelineLayout,
@@ -777,7 +777,7 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 												   .setDefaultColorBlendState()
 												   .setDepthClipControl(depthClipControl01Wrapper)
 												   .setDynamicState(&dynamicStateCreateInfo)
-												   .setupVertexInputStete(&vertexInputStateParams)
+												   .setupVertexInputState(&vertexInputStateParams)
 												   .setupPreRasterizationShaderState((dynamicViewport ? badViewports : viewports),
 																					scissors,
 																					*m_pipelineLayout,

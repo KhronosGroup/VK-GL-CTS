@@ -909,7 +909,7 @@ tcu::TestStatus BorderSwizzleInstance::iterate (void)
 					.setDefaultDepthStencilState()
 					.setDefaultRasterizationState()
 					.setDefaultMultisampleState()
-					.setupVertexInputStete(&vertexInputInfo)
+					.setupVertexInputState(&vertexInputInfo)
 					.setupPreRasterizationShaderState(viewport,
 									scissor,
 									*pipelineLayout,

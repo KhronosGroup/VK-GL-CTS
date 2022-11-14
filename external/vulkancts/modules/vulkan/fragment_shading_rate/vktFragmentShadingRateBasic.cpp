@@ -2841,7 +2841,7 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 		else
 		{
 			pipeline
-				.setupVertexInputStete(vertexInputState)
+				.setupVertexInputState(vertexInputState)
 				.setupPreRasterizationShaderState(viewports,
 												  scissors,
 												  pipelineLayout,
@@ -2930,7 +2930,7 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 			else
 			{
 				pipeline
-					.setupVertexInputStete(vertexInputState)
+					.setupVertexInputState(vertexInputState)
 					.setupPreRasterizationShaderState(viewports,
 													  scissors,
 													  pipelineLayout,

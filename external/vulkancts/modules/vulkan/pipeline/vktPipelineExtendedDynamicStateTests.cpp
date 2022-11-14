@@ -2747,7 +2747,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		else
 #endif // CTS_USES_VULKANSC
 		{
-			staticPipeline.setupVertexInputStete(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
+			staticPipeline.setupVertexInputState(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
 						  .setupPreRasterizationShaderState(
 												viewports,
 												scissors,
@@ -2819,7 +2819,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		else
 #endif // CTS_USES_VULKANSC
 		{
-			graphicsPipeline.setupVertexInputStete(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
+			graphicsPipeline.setupVertexInputState(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
 							.setupPreRasterizationShaderState(
 												viewports,
 												scissors,

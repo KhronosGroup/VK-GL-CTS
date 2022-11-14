@@ -713,7 +713,7 @@ tcu::TestStatus GraphicsTestInstance::iterate (void)
 					.setDefaultMultisampleState()
 					.setDefaultColorBlendState()
 					.setDefaultTopology(topology)
-					.setupVertexInputStete()
+					.setupVertexInputState()
 					.setupPreRasterizationShaderState(viewport,
 													  scissor,
 													  *pipelineLayout,

@@ -594,7 +594,7 @@ MovePtr<GraphicsPipelineWrapper> makeGraphicsPipeline (const DeviceInterface&			
 
 	MovePtr<GraphicsPipelineWrapper> graphicsPipeline = MovePtr<GraphicsPipelineWrapper>(new GraphicsPipelineWrapper(vk, device, pipelineConstructionType, 0u));
 	graphicsPipeline.get()->setMonolithicPipelineLayout(pipelineLayout)
-			.setupVertexInputStete(&vertexInputStateInfo,
+			.setupVertexInputState(&vertexInputStateInfo,
 								   &pipelineInputAssemblyStateInfo)
 			.setupPreRasterizationShaderState(viewports,
 											  scissors,

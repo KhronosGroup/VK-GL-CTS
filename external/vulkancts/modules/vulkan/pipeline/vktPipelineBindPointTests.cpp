@@ -524,7 +524,7 @@ tcu::TestStatus BindPointInstance::iterate (void)
 						.setDefaultMultisampleState()
 						.setDefaultDepthStencilState()
 						.setDefaultColorBlendState()
-						.setupVertexInputStete(&vertexInputState)
+						.setupVertexInputState(&vertexInputState)
 						.setupPreRasterizationShaderState(
 							viewports,
 							scissors,

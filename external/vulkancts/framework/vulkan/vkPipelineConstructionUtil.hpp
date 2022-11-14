@@ -112,7 +112,7 @@ public:
 	GraphicsPipelineWrapper&	setDynamicState						(const VkPipelineDynamicStateCreateInfo* dynamicState);
 
 	// Specify topology that is used by default InputAssemblyState in vertex input state. This needs to be
-	// specified only when there is no custom InputAssemblyState provided in setupVertexInputStete and when
+	// specified only when there is no custom InputAssemblyState provided in setupVertexInputState and when
 	// topology is diferent then VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST which is used by default.
 	GraphicsPipelineWrapper&	setDefaultTopology					(const VkPrimitiveTopology topology);
 
@@ -151,7 +151,7 @@ public:
 
 
 	// Setup vertex input state. When VertexInputState or InputAssemblyState are not provided then default structures will be used.
-	GraphicsPipelineWrapper&	setupVertexInputStete				(const VkPipelineVertexInputStateCreateInfo*		vertexInputState = DE_NULL,
+	GraphicsPipelineWrapper&	setupVertexInputState				(const VkPipelineVertexInputStateCreateInfo*		vertexInputState = DE_NULL,
 																	 const VkPipelineInputAssemblyStateCreateInfo*		inputAssemblyState = DE_NULL,
 																	 const VkPipelineCache								partPipelineCache = DE_NULL,
 																	 PipelineCreationFeedbackCreateInfoWrapper			partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());

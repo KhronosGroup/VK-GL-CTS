@@ -254,7 +254,7 @@ void preparePipelineWrapper(GraphicsPipelineWrapper&	gpw,
 	gpw.setDefaultTopology(topology)
 	   .setDefaultRasterizationState()
 	   .setDefaultDepthStencilState()
-	   .setupVertexInputStete()
+	   .setupVertexInputState()
 	   .setupPreRasterizationShaderState(viewports,
 										 scissors,
 										 pipelineLayout,

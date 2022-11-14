@@ -484,7 +484,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::disableViewportState()
 	return *this;
 }
 
-GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupVertexInputStete(const VkPipelineVertexInputStateCreateInfo*		vertexInputState,
+GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupVertexInputState(const VkPipelineVertexInputStateCreateInfo*		vertexInputState,
 																		const VkPipelineInputAssemblyStateCreateInfo*	inputAssemblyState,
 																		const VkPipelineCache							partPipelineCache,
 																		PipelineCreationFeedbackCreateInfoWrapper		partCreationFeedback)

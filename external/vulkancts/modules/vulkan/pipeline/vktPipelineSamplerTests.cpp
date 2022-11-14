@@ -1750,7 +1750,7 @@ tcu::TestStatus ExactSamplingInstance::iterate (void)
 			.setDefaultRasterizationState()
 			.setDefaultMultisampleState()
 			.setDefaultColorBlendState()
-			.setupVertexInputStete(&vertexInputInfo)
+			.setupVertexInputState(&vertexInputInfo)
 			.setupPreRasterizationShaderState(viewports,
 							scissors,
 							*pipelineLayout,

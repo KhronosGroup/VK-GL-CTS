@@ -1148,7 +1148,7 @@ VertexInputInstance::VertexInputInstance (Context&												context,
 						  .setDefaultDepthStencilState()
 						  .setDefaultMultisampleState()
 						  .setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
-						  .setupVertexInputStete(&vertexInputStateParams)
+						  .setupVertexInputState(&vertexInputStateParams)
 						  .setupPreRasterizationShaderState(viewport,
 										scissor,
 										*m_pipelineLayout,
