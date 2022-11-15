@@ -26,13 +26,14 @@
 
 #include "tcuDefs.hpp"
 #include "tcuTestCase.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 
 namespace vkt
 {
 namespace pipeline
 {
 
-tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx);
+void createMiscTests (tcu::TestCaseGroup* miscTests, vk::PipelineConstructionType pipelineConstructionType);
 
 } // pipeline
 } // vkt
