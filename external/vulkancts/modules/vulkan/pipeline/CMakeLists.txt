@@ -106,6 +106,8 @@ set(DEQP_VK_VKSC_PIPELINE_SRCS
 	vktPipelineExtendedDynamicStateTests.hpp
 	vktPipelineNoPositionTests.cpp
 	vktPipelineNoPositionTests.hpp
+	vktPipelineDynamicControlPoints.cpp
+	vktPipelineDynamicControlPoints.hpp
 	)
 
 set(DEQP_VK_PIPELINE_SRCS

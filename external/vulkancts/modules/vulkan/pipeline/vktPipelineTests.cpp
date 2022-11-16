@@ -57,6 +57,7 @@
 #include "vktPipelineMaxVaryingsTests.hpp"
 #include "vktPipelineBlendOperationAdvancedTests.hpp"
 #include "vktPipelineExtendedDynamicStateTests.hpp"
+#include "vktPipelineDynamicControlPoints.hpp"
 #ifndef CTS_USES_VULKANSC
 #include "vktPipelineCreationCacheControlTests.hpp"
 #include "vktPipelineBindPointTests.hpp"
@@ -83,6 +84,7 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 {
 	tcu::TestContext& testCtx = group->getTestContext();
 
+	group->addChild(createDynamicControlPointTests (testCtx, pipelineConstructionType));
 	group->addChild(createStencilTests					(testCtx, pipelineConstructionType));
 	group->addChild(createBlendTests					(testCtx, pipelineConstructionType));
 	group->addChild(createDepthTests					(testCtx, pipelineConstructionType));
