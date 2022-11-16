@@ -414,6 +414,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDevicePipelineExecutablePropertiesFeaturesKHR.pNext;
 	}
 
+	vk::VkPhysicalDevicePipelineProtectedAccessFeaturesEXT physicalDevicePipelineProtectedAccessFeaturesEXT;
+	deMemset(&physicalDevicePipelineProtectedAccessFeaturesEXT, 0, sizeof(physicalDevicePipelineProtectedAccessFeaturesEXT));
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_pipeline_protected_access")) )
+	{
+		physicalDevicePipelineProtectedAccessFeaturesEXT.sType = getStructureType<VkPhysicalDevicePipelineProtectedAccessFeaturesEXT>();
+		*nextPtr = &physicalDevicePipelineProtectedAccessFeaturesEXT;
+		nextPtr  = &physicalDevicePipelineProtectedAccessFeaturesEXT.pNext;
+	}
+
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDevicePresentIdFeaturesKHR physicalDevicePresentIdFeaturesKHR;
 	deMemset(&physicalDevicePresentIdFeaturesKHR, 0, sizeof(physicalDevicePresentIdFeaturesKHR));
@@ -1389,6 +1399,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 #endif // defined(CTS_USES_VULKAN)
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_pipeline_protected_access")) )
+	{
+		if ( physicalDevicePipelineProtectedAccessFeaturesEXT.pipelineProtectedAccess == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature pipelineProtectedAccess not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
 
 #if defined(CTS_USES_VULKAN)
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_primitive_topology_list_restart")) )
