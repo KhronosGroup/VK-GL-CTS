@@ -340,7 +340,16 @@ void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceP
 			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Implementation does not support remapping format components");
 		}
 	}
+
+	bool formatRgba10x6WithoutYCbCrSampler = context.getRGBA10X6FormatsFeaturesEXT().formatRgba10x6WithoutYCbCrSampler;
+#else
+	bool formatRgba10x6WithoutYCbCrSampler = VK_FALSE;
 #endif // CTS_USES_VULKANSC
+
+	if ((params.imageFormat == VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16) && (params.subresourceRange.levelCount > 1) && (formatRgba10x6WithoutYCbCrSampler == VK_FALSE))
+	{
+		TCU_THROW(NotSupportedError, "formatRgba10x6WithoutYCbCrSampler not supported");
+	}
 }
 
 ImageSamplingInstance::ImageSamplingInstance (Context&						context,
