@@ -964,8 +964,8 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest (Context& context, bool useKh
 			&queueCreateInfo,						//pRequestedQueues;
 			0,										//layerCount;
 			DE_NULL,								//ppEnabledLayerNames;
-			0,										//extensionCount;
-			DE_NULL,								//ppEnabledExtensionNames;
+			(deUint32)enabledExtensions.size(),		//extensionCount;
+			enabledExtensions.data(),				//ppEnabledExtensionNames;
 			DE_NULL,								//pEnabledFeatures;
 		};
 
