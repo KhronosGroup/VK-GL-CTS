@@ -486,6 +486,7 @@ enum
 	MAX_CONCURRENT_DEVICES			= 32,
 	MAX_CONCURRENT_SYNC_PRIMITIVES	= 100,
 	MAX_CONCURRENT_PIPELINE_CACHES	= 128,
+	MAX_CONCURRENT_QUERY_POOLS		= 8192,
 	DEFAULT_MAX_CONCURRENT_OBJECTS	= 16*1024,
 };
 
@@ -1309,7 +1310,7 @@ struct QueryPool
 
 	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
 	{
-		return getSafeObjectCount<QueryPool>(context, params, DEFAULT_MAX_CONCURRENT_OBJECTS);
+		return getSafeObjectCount<QueryPool>(context, params, MAX_CONCURRENT_QUERY_POOLS);
 	}
 
 	static Move<VkQueryPool> create (const Environment& env, const Resources&, const Parameters& params)
