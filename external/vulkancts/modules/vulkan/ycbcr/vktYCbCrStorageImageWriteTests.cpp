@@ -375,8 +375,8 @@ tcu::TestStatus testStorageImageWrite (Context& context, TestParameters params)
 						fReferenceValue = static_cast<float>(iReferenceValue) / 127.f;
 						break;
 					case 3:
-						iReferenceValue = 0u;
-						fReferenceValue = 0.f;
+						iReferenceValue = 1u;
+						fReferenceValue = 1.f;
 						break;
 					default:	DE_FATAL("Unexpected channel index");	break;
 				}
