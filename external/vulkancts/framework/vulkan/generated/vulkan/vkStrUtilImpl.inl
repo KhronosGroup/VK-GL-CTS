@@ -236,6 +236,7 @@ tcu::Format::Bitfield<32> getSamplerCreateFlagsStr (VkSamplerCreateFlags value)
 		tcu::Format::BitDesc(VK_SAMPLER_CREATE_SUBSAMPLED_BIT_EXT,							"VK_SAMPLER_CREATE_SUBSAMPLED_BIT_EXT"),
 		tcu::Format::BitDesc(VK_SAMPLER_CREATE_SUBSAMPLED_COARSE_RECONSTRUCTION_BIT_EXT,	"VK_SAMPLER_CREATE_SUBSAMPLED_COARSE_RECONSTRUCTION_BIT_EXT"),
 		tcu::Format::BitDesc(VK_SAMPLER_CREATE_NON_SEAMLESS_CUBE_MAP_BIT_EXT,				"VK_SAMPLER_CREATE_NON_SEAMLESS_CUBE_MAP_BIT_EXT"),
+		tcu::Format::BitDesc(VK_SAMPLER_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT,	"VK_SAMPLER_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT"),
 		tcu::Format::BitDesc(VK_SAMPLER_CREATE_IMAGE_PROCESSING_BIT_QCOM,					"VK_SAMPLER_CREATE_IMAGE_PROCESSING_BIT_QCOM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
@@ -273,9 +274,11 @@ tcu::Format::Bitfield<32> getDescriptorSetLayoutCreateFlagsStr (VkDescriptorSetL
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR,		"VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR"),
-		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT,	"VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT"),
-		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_EXT,		"VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_EXT"),
+		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR,				"VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR"),
+		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT,			"VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT"),
+		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_EXT,				"VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_EXT"),
+		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT,				"VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT"),
+		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_EMBEDDED_IMMUTABLE_SAMPLERS_BIT_EXT,	"VK_DESCRIPTOR_SET_LAYOUT_CREATE_EMBEDDED_IMMUTABLE_SAMPLERS_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -302,11 +305,12 @@ tcu::Format::Bitfield<32> getBufferCreateFlagsStr (VkBufferCreateFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_BUFFER_CREATE_SPARSE_BINDING_BIT,					"VK_BUFFER_CREATE_SPARSE_BINDING_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT,					"VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_CREATE_SPARSE_ALIASED_BIT,					"VK_BUFFER_CREATE_SPARSE_ALIASED_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_CREATE_PROTECTED_BIT,						"VK_BUFFER_CREATE_PROTECTED_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT,	"VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_CREATE_SPARSE_BINDING_BIT,						"VK_BUFFER_CREATE_SPARSE_BINDING_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT,						"VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_CREATE_SPARSE_ALIASED_BIT,						"VK_BUFFER_CREATE_SPARSE_ALIASED_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_CREATE_PROTECTED_BIT,							"VK_BUFFER_CREATE_PROTECTED_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT,		"VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT,	"VK_BUFFER_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -335,8 +339,11 @@ tcu::Format::Bitfield<32> getBufferUsageFlagsStr (VkBufferUsageFlags value)
 		tcu::Format::BitDesc(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,								"VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT"),
 		tcu::Format::BitDesc(VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,	"VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR"),
 		tcu::Format::BitDesc(VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR,				"VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_SAMPLER_DESCRIPTOR_BUFFER_BIT_EXT,						"VK_BUFFER_USAGE_SAMPLER_DESCRIPTOR_BUFFER_BIT_EXT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT,					"VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT"),
 		tcu::Format::BitDesc(VK_BUFFER_USAGE_MICROMAP_BUILD_INPUT_READ_ONLY_BIT_EXT,				"VK_BUFFER_USAGE_MICROMAP_BUILD_INPUT_READ_ONLY_BIT_EXT"),
 		tcu::Format::BitDesc(VK_BUFFER_USAGE_MICROMAP_STORAGE_BIT_EXT,								"VK_BUFFER_USAGE_MICROMAP_STORAGE_BIT_EXT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_PUSH_DESCRIPTORS_DESCRIPTOR_BUFFER_BIT_EXT,			"VK_BUFFER_USAGE_PUSH_DESCRIPTORS_DESCRIPTOR_BUFFER_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -913,6 +920,7 @@ tcu::Format::Bitfield<32> getImageCreateFlagsStr (VkImageCreateFlags value)
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_CORNER_SAMPLED_BIT_NV,							"VK_IMAGE_CREATE_CORNER_SAMPLED_BIT_NV"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT,							"VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_QCOM,			"VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_QCOM"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT,		"VK_IMAGE_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT,					"VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT,	"VK_IMAGE_CREATE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT"),
 	};
@@ -1011,6 +1019,7 @@ tcu::Format::Bitfield<32> getImageViewCreateFlagsStr (VkImageViewCreateFlags val
 	{
 		tcu::Format::BitDesc(VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DYNAMIC_BIT_EXT,		"VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DYNAMIC_BIT_EXT"),
 		tcu::Format::BitDesc(VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DEFERRED_BIT_EXT,	"VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DEFERRED_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_VIEW_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT,	"VK_IMAGE_VIEW_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1197,6 +1206,7 @@ tcu::Format::Bitfield<32> getPipelineCreateFlagsStr (VkPipelineCreateFlags value
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_COLOR_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT,					"VK_PIPELINE_CREATE_COLOR_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DEPTH_STENCIL_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT,			"VK_PIPELINE_CREATE_DEPTH_STENCIL_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_NO_PROTECTED_ACCESS_BIT_EXT,							"VK_PIPELINE_CREATE_NO_PROTECTED_ACCESS_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT,								"VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_PROTECTED_ACCESS_ONLY_BIT_EXT,							"VK_PIPELINE_CREATE_PROTECTED_ACCESS_ONLY_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
@@ -1995,6 +2005,19 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES";
 		case VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_2_NV:								return "VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_2_NV";
 		case VK_STRUCTURE_TYPE_CHECKPOINT_DATA_2_NV:												return "VK_STRUCTURE_TYPE_CHECKPOINT_DATA_2_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_PROPERTIES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_DENSITY_MAP_PROPERTIES_EXT:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_DENSITY_MAP_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_DESCRIPTOR_ADDRESS_INFO_EXT:											return "VK_STRUCTURE_TYPE_DESCRIPTOR_ADDRESS_INFO_EXT";
+		case VK_STRUCTURE_TYPE_DESCRIPTOR_GET_INFO_EXT:												return "VK_STRUCTURE_TYPE_DESCRIPTOR_GET_INFO_EXT";
+		case VK_STRUCTURE_TYPE_BUFFER_CAPTURE_DESCRIPTOR_DATA_INFO_EXT:								return "VK_STRUCTURE_TYPE_BUFFER_CAPTURE_DESCRIPTOR_DATA_INFO_EXT";
+		case VK_STRUCTURE_TYPE_IMAGE_CAPTURE_DESCRIPTOR_DATA_INFO_EXT:								return "VK_STRUCTURE_TYPE_IMAGE_CAPTURE_DESCRIPTOR_DATA_INFO_EXT";
+		case VK_STRUCTURE_TYPE_IMAGE_VIEW_CAPTURE_DESCRIPTOR_DATA_INFO_EXT:							return "VK_STRUCTURE_TYPE_IMAGE_VIEW_CAPTURE_DESCRIPTOR_DATA_INFO_EXT";
+		case VK_STRUCTURE_TYPE_SAMPLER_CAPTURE_DESCRIPTOR_DATA_INFO_EXT:							return "VK_STRUCTURE_TYPE_SAMPLER_CAPTURE_DESCRIPTOR_DATA_INFO_EXT";
+		case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CAPTURE_DESCRIPTOR_DATA_INFO_EXT:				return "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CAPTURE_DESCRIPTOR_DATA_INFO_EXT";
+		case VK_STRUCTURE_TYPE_OPAQUE_CAPTURE_DESCRIPTOR_DATA_CREATE_INFO_EXT:						return "VK_STRUCTURE_TYPE_OPAQUE_CAPTURE_DESCRIPTOR_DATA_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_INFO_EXT:									return "VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_INFO_EXT";
+		case VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_PUSH_DESCRIPTOR_BUFFER_HANDLE_EXT:			return "VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_PUSH_DESCRIPTOR_BUFFER_HANDLE_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_PROPERTIES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_LIBRARY_CREATE_INFO_EXT:							return "VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_LIBRARY_CREATE_INFO_EXT";
@@ -2119,6 +2142,10 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_QCOM:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_QCOM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_QCOM:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_QCOM";
 		case VK_STRUCTURE_TYPE_SUBPASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_QCOM:					return "VK_STRUCTURE_TYPE_SUBPASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_QCOM";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_DECOMPRESSION_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_DECOMPRESSION_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_DECOMPRESSION_PROPERTIES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_DECOMPRESSION_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINEAR_COLOR_ATTACHMENT_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINEAR_COLOR_ATTACHMENT_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN_FEATURES_EXT:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_FEATURES_QCOM:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_FEATURES_QCOM";
@@ -2147,6 +2174,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_TILE_PROPERTIES_QCOM:												return "VK_STRUCTURE_TYPE_TILE_PROPERTIES_QCOM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_AMIGO_PROFILING_FEATURES_SEC:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_AMIGO_PROFILING_FEATURES_SEC";
 		case VK_STRUCTURE_TYPE_AMIGO_PROFILING_SUBMIT_INFO_SEC:										return "VK_STRUCTURE_TYPE_AMIGO_PROFILING_SUBMIT_INFO_SEC";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_NV:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM";
 		default:																					return DE_NULL;
@@ -2384,6 +2413,16 @@ tcu::Format::Bitfield<32> getPipelineLayoutCreateFlagsStr (VkPipelineLayoutCreat
 		tcu::Format::BitDesc(VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT,	"VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+const char* getRayTracingInvocationReorderModeNVName (VkRayTracingInvocationReorderModeNV value)
+{
+	switch (value)
+	{
+		case VK_RAY_TRACING_INVOCATION_REORDER_MODE_NONE_NV:	return "VK_RAY_TRACING_INVOCATION_REORDER_MODE_NONE_NV";
+		case VK_RAY_TRACING_INVOCATION_REORDER_MODE_REORDER_NV:	return "VK_RAY_TRACING_INVOCATION_REORDER_MODE_REORDER_NV";
+		default:												return DE_NULL;
+	}
 }
 
 tcu::Format::Bitfield<32> getIndirectCommandsLayoutUsageFlagsNVStr (VkIndirectCommandsLayoutUsageFlagsNV value)
@@ -2653,6 +2692,7 @@ tcu::Format::Bitfield<32> getAccelerationStructureCreateFlagsKHRStr (VkAccelerat
 	{
 		tcu::Format::BitDesc(VK_ACCELERATION_STRUCTURE_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR,	"VK_ACCELERATION_STRUCTURE_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR"),
 		tcu::Format::BitDesc(VK_ACCELERATION_STRUCTURE_CREATE_MOTION_BIT_NV,							"VK_ACCELERATION_STRUCTURE_CREATE_MOTION_BIT_NV"),
+		tcu::Format::BitDesc(VK_ACCELERATION_STRUCTURE_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT,	"VK_ACCELERATION_STRUCTURE_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3056,6 +3096,7 @@ tcu::Format::Bitfield<64> getAccessFlags2Str (VkAccessFlags2 value)
 		tcu::Format::BitDesc(VK_ACCESS_2_VIDEO_ENCODE_WRITE_BIT_KHR,					"VK_ACCESS_2_VIDEO_ENCODE_WRITE_BIT_KHR"),
 		tcu::Format::BitDesc(VK_ACCESS_2_INVOCATION_MASK_READ_BIT_HUAWEI,				"VK_ACCESS_2_INVOCATION_MASK_READ_BIT_HUAWEI"),
 		tcu::Format::BitDesc(VK_ACCESS_2_SHADER_BINDING_TABLE_READ_BIT_KHR,				"VK_ACCESS_2_SHADER_BINDING_TABLE_READ_BIT_KHR"),
+		tcu::Format::BitDesc(VK_ACCESS_2_DESCRIPTOR_BUFFER_READ_BIT_EXT,				"VK_ACCESS_2_DESCRIPTOR_BUFFER_READ_BIT_EXT"),
 		tcu::Format::BitDesc(VK_ACCESS_2_OPTICAL_FLOW_READ_BIT_NV,						"VK_ACCESS_2_OPTICAL_FLOW_READ_BIT_NV"),
 		tcu::Format::BitDesc(VK_ACCESS_2_OPTICAL_FLOW_WRITE_BIT_NV,						"VK_ACCESS_2_OPTICAL_FLOW_WRITE_BIT_NV"),
 		tcu::Format::BitDesc(VK_ACCESS_2_MICROMAP_READ_BIT_EXT,							"VK_ACCESS_2_MICROMAP_READ_BIT_EXT"),
@@ -3398,6 +3439,15 @@ const char* getDeviceFaultVendorBinaryHeaderVersionEXTName (VkDeviceFaultVendorB
 		case VK_DEVICE_FAULT_VENDOR_BINARY_HEADER_VERSION_ONE_EXT:	return "VK_DEVICE_FAULT_VENDOR_BINARY_HEADER_VERSION_ONE_EXT";
 		default:													return DE_NULL;
 	}
+}
+
+tcu::Format::Bitfield<64> getMemoryDecompressionMethodFlagsNVStr (VkMemoryDecompressionMethodFlagsNV value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_MEMORY_DECOMPRESSION_METHOD_GDEFLATE_1_0_BIT_NV,	"VK_MEMORY_DECOMPRESSION_METHOD_GDEFLATE_1_0_BIT_NV"),
+	};
+	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
 const char* getColorSpaceKHRName (VkColorSpaceKHR value)
@@ -4110,6 +4160,7 @@ const char* getDriverIdName (VkDriverId value)
 		case VK_DRIVER_ID_SAMSUNG_PROPRIETARY:			return "VK_DRIVER_ID_SAMSUNG_PROPRIETARY";
 		case VK_DRIVER_ID_MESA_VENUS:					return "VK_DRIVER_ID_MESA_VENUS";
 		case VK_DRIVER_ID_MESA_DOZEN:					return "VK_DRIVER_ID_MESA_DOZEN";
+		case VK_DRIVER_ID_MESA_NVK:						return "VK_DRIVER_ID_MESA_NVK";
 		default:										return DE_NULL;
 	}
 }
@@ -5734,6 +5785,29 @@ std::ostream& operator<< (std::ostream& s, const VkBufferImageCopy& value)
 {
 	s << "VkBufferImageCopy = {\n";
 	s << "\tbufferOffset = " << value.bufferOffset << '\n';
+	s << "\tbufferRowLength = " << value.bufferRowLength << '\n';
+	s << "\tbufferImageHeight = " << value.bufferImageHeight << '\n';
+	s << "\timageSubresource = " << value.imageSubresource << '\n';
+	s << "\timageOffset = " << value.imageOffset << '\n';
+	s << "\timageExtent = " << value.imageExtent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCopyMemoryIndirectCommandNV& value)
+{
+	s << "VkCopyMemoryIndirectCommandNV = {\n";
+	s << "\tsrcAddress = " << value.srcAddress << '\n';
+	s << "\tdstAddress = " << value.dstAddress << '\n';
+	s << "\tsize = " << value.size << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCopyMemoryToImageIndirectCommandNV& value)
+{
+	s << "VkCopyMemoryToImageIndirectCommandNV = {\n";
+	s << "\tsrcAddress = " << value.srcAddress << '\n';
 	s << "\tbufferRowLength = " << value.bufferRowLength << '\n';
 	s << "\tbufferImageHeight = " << value.bufferImageHeight << '\n';
 	s << "\timageSubresource = " << value.imageSubresource << '\n';
@@ -10179,6 +10253,47 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDedicatedAlloca
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCopyMemoryIndirectFeaturesNV& value)
+{
+	s << "VkPhysicalDeviceCopyMemoryIndirectFeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tindirectCopy = " << value.indirectCopy << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCopyMemoryIndirectPropertiesNV& value)
+{
+	s << "VkPhysicalDeviceCopyMemoryIndirectPropertiesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsupportedQueues = " << getQueueFlagsStr(value.supportedQueues) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMemoryDecompressionFeaturesNV& value)
+{
+	s << "VkPhysicalDeviceMemoryDecompressionFeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmemoryDecompression = " << value.memoryDecompression << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMemoryDecompressionPropertiesNV& value)
+{
+	s << "VkPhysicalDeviceMemoryDecompressionPropertiesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdecompressionMethods = " << getMemoryDecompressionMethodFlagsNVStr(value.decompressionMethods) << '\n';
+	s << "\tmaxDecompressionIndirectCount = " << value.maxDecompressionIndirectCount << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkShadingRatePaletteNV& value)
 {
 	s << "VkShadingRatePaletteNV = {\n";
@@ -14201,6 +14316,193 @@ std::ostream& operator<< (std::ostream& s, const VkCuLaunchInfoNVX& value)
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDescriptorBufferFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceDescriptorBufferFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdescriptorBuffer = " << value.descriptorBuffer << '\n';
+	s << "\tdescriptorBufferCaptureReplay = " << value.descriptorBufferCaptureReplay << '\n';
+	s << "\tdescriptorBufferImageLayoutIgnored = " << value.descriptorBufferImageLayoutIgnored << '\n';
+	s << "\tdescriptorBufferPushDescriptors = " << value.descriptorBufferPushDescriptors << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDescriptorBufferPropertiesEXT& value)
+{
+	s << "VkPhysicalDeviceDescriptorBufferPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcombinedImageSamplerDescriptorSingleArray = " << value.combinedImageSamplerDescriptorSingleArray << '\n';
+	s << "\tbufferlessPushDescriptors = " << value.bufferlessPushDescriptors << '\n';
+	s << "\tallowSamplerImageViewPostSubmitCreation = " << value.allowSamplerImageViewPostSubmitCreation << '\n';
+	s << "\tdescriptorBufferOffsetAlignment = " << value.descriptorBufferOffsetAlignment << '\n';
+	s << "\tmaxDescriptorBufferBindings = " << value.maxDescriptorBufferBindings << '\n';
+	s << "\tmaxResourceDescriptorBufferBindings = " << value.maxResourceDescriptorBufferBindings << '\n';
+	s << "\tmaxSamplerDescriptorBufferBindings = " << value.maxSamplerDescriptorBufferBindings << '\n';
+	s << "\tmaxEmbeddedImmutableSamplerBindings = " << value.maxEmbeddedImmutableSamplerBindings << '\n';
+	s << "\tmaxEmbeddedImmutableSamplers = " << value.maxEmbeddedImmutableSamplers << '\n';
+	s << "\tbufferCaptureReplayDescriptorDataSize = " << value.bufferCaptureReplayDescriptorDataSize << '\n';
+	s << "\timageCaptureReplayDescriptorDataSize = " << value.imageCaptureReplayDescriptorDataSize << '\n';
+	s << "\timageViewCaptureReplayDescriptorDataSize = " << value.imageViewCaptureReplayDescriptorDataSize << '\n';
+	s << "\tsamplerCaptureReplayDescriptorDataSize = " << value.samplerCaptureReplayDescriptorDataSize << '\n';
+	s << "\taccelerationStructureCaptureReplayDescriptorDataSize = " << value.accelerationStructureCaptureReplayDescriptorDataSize << '\n';
+	s << "\tsamplerDescriptorSize = " << value.samplerDescriptorSize << '\n';
+	s << "\tcombinedImageSamplerDescriptorSize = " << value.combinedImageSamplerDescriptorSize << '\n';
+	s << "\tsampledImageDescriptorSize = " << value.sampledImageDescriptorSize << '\n';
+	s << "\tstorageImageDescriptorSize = " << value.storageImageDescriptorSize << '\n';
+	s << "\tuniformTexelBufferDescriptorSize = " << value.uniformTexelBufferDescriptorSize << '\n';
+	s << "\trobustUniformTexelBufferDescriptorSize = " << value.robustUniformTexelBufferDescriptorSize << '\n';
+	s << "\tstorageTexelBufferDescriptorSize = " << value.storageTexelBufferDescriptorSize << '\n';
+	s << "\trobustStorageTexelBufferDescriptorSize = " << value.robustStorageTexelBufferDescriptorSize << '\n';
+	s << "\tuniformBufferDescriptorSize = " << value.uniformBufferDescriptorSize << '\n';
+	s << "\trobustUniformBufferDescriptorSize = " << value.robustUniformBufferDescriptorSize << '\n';
+	s << "\tstorageBufferDescriptorSize = " << value.storageBufferDescriptorSize << '\n';
+	s << "\trobustStorageBufferDescriptorSize = " << value.robustStorageBufferDescriptorSize << '\n';
+	s << "\tinputAttachmentDescriptorSize = " << value.inputAttachmentDescriptorSize << '\n';
+	s << "\taccelerationStructureDescriptorSize = " << value.accelerationStructureDescriptorSize << '\n';
+	s << "\tmaxSamplerDescriptorBufferRange = " << value.maxSamplerDescriptorBufferRange << '\n';
+	s << "\tmaxResourceDescriptorBufferRange = " << value.maxResourceDescriptorBufferRange << '\n';
+	s << "\tsamplerDescriptorBufferAddressSpaceSize = " << value.samplerDescriptorBufferAddressSpaceSize << '\n';
+	s << "\tresourceDescriptorBufferAddressSpaceSize = " << value.resourceDescriptorBufferAddressSpaceSize << '\n';
+	s << "\tdescriptorBufferAddressSpaceSize = " << value.descriptorBufferAddressSpaceSize << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDescriptorBufferDensityMapPropertiesEXT& value)
+{
+	s << "VkPhysicalDeviceDescriptorBufferDensityMapPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcombinedImageSamplerDensityMapDescriptorSize = " << value.combinedImageSamplerDensityMapDescriptorSize << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDescriptorAddressInfoEXT& value)
+{
+	s << "VkDescriptorAddressInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\taddress = " << value.address << '\n';
+	s << "\trange = " << value.range << '\n';
+	s << "\tformat = " << value.format << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDescriptorBufferBindingInfoEXT& value)
+{
+	s << "VkDescriptorBufferBindingInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\taddress = " << value.address << '\n';
+	s << "\tusage = " << getBufferUsageFlagsStr(value.usage) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDescriptorBufferBindingPushDescriptorBufferHandleEXT& value)
+{
+	s << "VkDescriptorBufferBindingPushDescriptorBufferHandleEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tbuffer = " << value.buffer << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDescriptorDataEXT& value)
+{
+	s << "VkDescriptorDataEXT = {\n";
+	s << "\tpSampler = " << value.pSampler << '\n';
+	s << "\tpCombinedImageSampler = " << value.pCombinedImageSampler << '\n';
+	s << "\tpInputAttachmentImage = " << value.pInputAttachmentImage << '\n';
+	s << "\tpSampledImage = " << value.pSampledImage << '\n';
+	s << "\tpStorageImage = " << value.pStorageImage << '\n';
+	s << "\tpUniformTexelBuffer = " << value.pUniformTexelBuffer << '\n';
+	s << "\tpStorageTexelBuffer = " << value.pStorageTexelBuffer << '\n';
+	s << "\tpUniformBuffer = " << value.pUniformBuffer << '\n';
+	s << "\tpStorageBuffer = " << value.pStorageBuffer << '\n';
+	s << "\taccelerationStructure = " << value.accelerationStructure << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDescriptorGetInfoEXT& value)
+{
+	s << "VkDescriptorGetInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\ttype = " << value.type << '\n';
+	s << "\tdata = " << value.data << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkBufferCaptureDescriptorDataInfoEXT& value)
+{
+	s << "VkBufferCaptureDescriptorDataInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tbuffer = " << value.buffer << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageCaptureDescriptorDataInfoEXT& value)
+{
+	s << "VkImageCaptureDescriptorDataInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timage = " << value.image << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageViewCaptureDescriptorDataInfoEXT& value)
+{
+	s << "VkImageViewCaptureDescriptorDataInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timageView = " << value.imageView << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSamplerCaptureDescriptorDataInfoEXT& value)
+{
+	s << "VkSamplerCaptureDescriptorDataInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsampler = " << value.sampler << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureCaptureDescriptorDataInfoEXT& value)
+{
+	s << "VkAccelerationStructureCaptureDescriptorDataInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\taccelerationStructure = " << value.accelerationStructure << '\n';
+	s << "\taccelerationStructureNV = " << value.accelerationStructureNV << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkOpaqueCaptureDescriptorDataCreateInfoEXT& value)
+{
+	s << "VkOpaqueCaptureDescriptorDataCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\topaqueCaptureDescriptorData = " << value.opaqueCaptureDescriptorData << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderIntegerDotProductFeatures& value)
 {
 	s << "VkPhysicalDeviceShaderIntegerDotProductFeatures = {\n";
@@ -15619,11 +15921,24 @@ std::ostream& operator<< (std::ostream& s, const VkDeviceFaultVendorBinaryHeader
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkDecompressMemoryRegionNV& value)
+{
+	s << "VkDecompressMemoryRegionNV = {\n";
+	s << "\tsrcAddress = " << value.srcAddress << '\n';
+	s << "\tdstAddress = " << value.dstAddress << '\n';
+	s << "\tcompressedSize = " << value.compressedSize << '\n';
+	s << "\tdecompressedSize = " << value.decompressedSize << '\n';
+	s << "\tdecompressionMethod = " << getMemoryDecompressionMethodFlagsNVStr(value.decompressionMethod) << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM& value)
 {
 	s << "VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderCoreMask = " << value.shaderCoreMask << '\n';
 	s << "\tshaderCoreCount = " << value.shaderCoreCount << '\n';
 	s << "\tshaderWarpsPerCore = " << value.shaderWarpsPerCore << '\n';
 	s << '}';
@@ -15636,6 +15951,26 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderCoreBuilt
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tshaderCoreBuiltins = " << value.shaderCoreBuiltins << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV& value)
+{
+	s << "VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\trayTracingInvocationReorder = " << value.rayTracingInvocationReorder << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV& value)
+{
+	s << "VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\trayTracingInvocationReorderReorderingHint = " << value.rayTracingInvocationReorderReorderingHint << '\n';
 	s << '}';
 	return s;
 }

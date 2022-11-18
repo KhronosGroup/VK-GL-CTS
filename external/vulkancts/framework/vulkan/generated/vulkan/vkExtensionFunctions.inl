@@ -1006,6 +1006,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_descriptor_buffer")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_graphics_pipeline_library")
 	{
 		return;
@@ -1230,6 +1234,14 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_NV_copy_memory_indirect")
+	{
+		return;
+	}
+	if (extName == "VK_NV_memory_decompression")
+	{
+		return;
+	}
 	if (extName == "VK_NV_linear_color_attachment")
 	{
 		return;
@@ -1280,6 +1292,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_SEC_amigo_profiling")
+	{
+		return;
+	}
+	if (extName == "VK_NV_ray_tracing_invocation_reorder")
 	{
 		return;
 	}
@@ -2435,6 +2451,21 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_descriptor_buffer")
+	{
+		functions.push_back("vkGetDescriptorSetLayoutSizeEXT");
+		functions.push_back("vkGetDescriptorSetLayoutBindingOffsetEXT");
+		functions.push_back("vkGetDescriptorEXT");
+		functions.push_back("vkCmdBindDescriptorBuffersEXT");
+		functions.push_back("vkCmdSetDescriptorBufferOffsetsEXT");
+		functions.push_back("vkCmdBindDescriptorBufferEmbeddedSamplersEXT");
+		functions.push_back("vkGetBufferOpaqueCaptureDescriptorDataEXT");
+		functions.push_back("vkGetImageOpaqueCaptureDescriptorDataEXT");
+		functions.push_back("vkGetImageViewOpaqueCaptureDescriptorDataEXT");
+		functions.push_back("vkGetSamplerOpaqueCaptureDescriptorDataEXT");
+		functions.push_back("vkGetAccelerationStructureOpaqueCaptureDescriptorDataEXT");
+		return;
+	}
 	if (extName == "VK_EXT_graphics_pipeline_library")
 	{
 		return;
@@ -2699,6 +2730,18 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_NV_copy_memory_indirect")
+	{
+		functions.push_back("vkCmdCopyMemoryIndirectNV");
+		functions.push_back("vkCmdCopyMemoryToImageIndirectNV");
+		return;
+	}
+	if (extName == "VK_NV_memory_decompression")
+	{
+		functions.push_back("vkCmdDecompressMemoryNV");
+		functions.push_back("vkCmdDecompressMemoryIndirectCountNV");
+		return;
+	}
 	if (extName == "VK_NV_linear_color_attachment")
 	{
 		return;
@@ -2777,6 +2820,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_SEC_amigo_profiling")
+	{
+		return;
+	}
+	if (extName == "VK_NV_ray_tracing_invocation_reorder")
 	{
 		return;
 	}
@@ -3063,6 +3110,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_QCOM_render_pass_store_ops",
 	"VK_EXT_metal_objects",
 	"VK_KHR_synchronization2",
+	"VK_EXT_descriptor_buffer",
 	"VK_EXT_graphics_pipeline_library",
 	"VK_AMD_shader_early_and_late_fragment_tests",
 	"VK_KHR_fragment_shader_barycentric",
@@ -3116,6 +3164,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_depth_clamp_zero_one",
 	"VK_EXT_non_seamless_cube_map",
 	"VK_QCOM_fragment_density_map_offset",
+	"VK_NV_copy_memory_indirect",
+	"VK_NV_memory_decompression",
 	"VK_NV_linear_color_attachment",
 	"VK_EXT_image_compression_control_swapchain",
 	"VK_QCOM_image_processing",
@@ -3128,6 +3178,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_pipeline_protected_access",
 	"VK_QCOM_tile_properties",
 	"VK_SEC_amigo_profiling",
+	"VK_NV_ray_tracing_invocation_reorder",
 	"VK_EXT_mutable_descriptor_type",
 	"VK_ARM_shader_core_builtins",
 };

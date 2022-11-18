@@ -1583,6 +1583,26 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceDedicatedAllocationI
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEDICATED_ALLOCATION_IMAGE_ALIASING_FEATURES_NV;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceCopyMemoryIndirectFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceCopyMemoryIndirectPropertiesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceMemoryDecompressionFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_DECOMPRESSION_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceMemoryDecompressionPropertiesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_DECOMPRESSION_PROPERTIES_NV;
+}
+
 template<> VkStructureType getStructureType<VkPipelineViewportShadingRateImageStateCreateInfoNV> (void)
 {
 	return VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_SHADING_RATE_IMAGE_STATE_CREATE_INFO_NV;
@@ -3028,6 +3048,71 @@ template<> VkStructureType getStructureType<VkCuLaunchInfoNVX> (void)
 	return VK_STRUCTURE_TYPE_CU_LAUNCH_INFO_NVX;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceDescriptorBufferFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDescriptorBufferPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDescriptorBufferDensityMapPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_DENSITY_MAP_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkDescriptorAddressInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_DESCRIPTOR_ADDRESS_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkDescriptorBufferBindingInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkDescriptorBufferBindingPushDescriptorBufferHandleEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_PUSH_DESCRIPTOR_BUFFER_HANDLE_EXT;
+}
+
+template<> VkStructureType getStructureType<VkDescriptorGetInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_DESCRIPTOR_GET_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkBufferCaptureDescriptorDataInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_BUFFER_CAPTURE_DESCRIPTOR_DATA_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkImageCaptureDescriptorDataInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_CAPTURE_DESCRIPTOR_DATA_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkImageViewCaptureDescriptorDataInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_VIEW_CAPTURE_DESCRIPTOR_DATA_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkSamplerCaptureDescriptorDataInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_SAMPLER_CAPTURE_DESCRIPTOR_DATA_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkAccelerationStructureCaptureDescriptorDataInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CAPTURE_DESCRIPTOR_DATA_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkOpaqueCaptureDescriptorDataCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_OPAQUE_CAPTURE_DESCRIPTOR_DATA_CREATE_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceShaderIntegerDotProductFeatures> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_FEATURES;
@@ -3566,5 +3651,15 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceShaderCoreBuiltinsPr
 template<> VkStructureType getStructureType<VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_NV;
 }
 

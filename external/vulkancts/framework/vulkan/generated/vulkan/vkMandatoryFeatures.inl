@@ -142,6 +142,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceDepthClipEnableFeaturesEXT.pNext;
 	}
 
+	vk::VkPhysicalDeviceDescriptorBufferFeaturesEXT physicalDeviceDescriptorBufferFeaturesEXT;
+	deMemset(&physicalDeviceDescriptorBufferFeaturesEXT, 0, sizeof(physicalDeviceDescriptorBufferFeaturesEXT));
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_descriptor_buffer")) )
+	{
+		physicalDeviceDescriptorBufferFeaturesEXT.sType = getStructureType<VkPhysicalDeviceDescriptorBufferFeaturesEXT>();
+		*nextPtr = &physicalDeviceDescriptorBufferFeaturesEXT;
+		nextPtr  = &physicalDeviceDescriptorBufferFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDeviceDescriptorIndexingFeatures physicalDeviceDescriptorIndexingFeatures;
 	deMemset(&physicalDeviceDescriptorIndexingFeatures, 0, sizeof(physicalDeviceDescriptorIndexingFeatures));
 
@@ -934,6 +944,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceDepthClipEnableFeaturesEXT.depthClipEnable == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature depthClipEnable not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_descriptor_buffer")) )
+	{
+		if ( physicalDeviceDescriptorBufferFeaturesEXT.descriptorBuffer == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature descriptorBuffer not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

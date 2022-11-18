@@ -32,6 +32,7 @@
 #ifndef CTS_USES_VULKANSC
 #include "vktBindingDynamicOffsetTests.hpp"
 #include "vktBindingValveMutableTests.hpp"
+#include "vktBindingDescriptorBufferTests.hpp"
 #endif // CTS_USES_VULKANSC
 
 namespace vkt
@@ -54,6 +55,7 @@ void createChildren (tcu::TestCaseGroup* group)
 #ifndef CTS_USES_VULKANSC
 	group->addChild(createDynamicOffsetTests(testCtx));
 	group->addChild(createDescriptorValveMutableTests(testCtx));
+	group->addChild(createDescriptorBufferTests(testCtx));
 #endif
 
 	// \todo [2015-07-30 jarkko] .change_binding.{between_renderpasses, within_pass}
