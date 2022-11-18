@@ -25,6 +25,7 @@
 #include "vktMemoryModelTests.hpp"
 #include "vktMemoryModelPadding.hpp"
 #include "vktMemoryModelSharedLayout.hpp"
+#include "vktAmberTestCase.hpp"
 
 #include "vkBufferWithMemory.hpp"
 #include "vkImageWithMemory.hpp"
@@ -176,7 +177,7 @@ MemoryModelTestCase::~MemoryModelTestCase	(void)
 
 void MemoryModelTestCase::checkSupport(Context& context) const
 {
-	if (!context.contextSupports(vk::ApiVersion(1, 1, 0)))
+	if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
 	{
 		TCU_THROW(NotSupportedError, "Vulkan 1.1 not supported");
 	}
@@ -1659,25 +1660,15 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 
 		if (m_data.payloadSC == SC_PHYSBUFFER)
 		{
-			const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 			addrInfo.buffer = **buffers[0];
-			VkDeviceAddress addr;
-			if (useKHR)
-				addr = vk.getBufferDeviceAddress(device, &addrInfo);
-			else
-				addr = vk.getBufferDeviceAddressEXT(device, &addrInfo);
+			VkDeviceAddress addr = vk.getBufferDeviceAddress(device, &addrInfo);
 			vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, allShaderStages,
 								0, sizeof(VkDeviceSize), &addr);
 		}
 		if (m_data.guardSC == SC_PHYSBUFFER)
 		{
-			const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 			addrInfo.buffer = **buffers[1];
-			VkDeviceAddress addr;
-			if (useKHR)
-				addr = vk.getBufferDeviceAddress(device, &addrInfo);
-			else
-				addr = vk.getBufferDeviceAddressEXT(device, &addrInfo);
+			VkDeviceAddress addr = vk.getBufferDeviceAddress(device, &addrInfo);
 			vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, allShaderStages,
 								8, sizeof(VkDeviceSize), &addr);
 		}
@@ -1737,7 +1728,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 
 		submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 
-		vk.resetCommandBuffer(*cmdBuffer, 0x00000000);
+		m_context.resetCommandPoolForVKSC(device, *cmdPool);
 	}
 
 	tcu::TestLog& log = m_context.getTestContext().getLog();
@@ -1767,6 +1758,48 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 
 	return tcu::TestStatus(res, qpGetTestResultName(res));
 }
+
+#ifndef CTS_USES_VULKANSC
+void checkPermutedIndexTestSupport (Context& context, std::string testName)
+{
+	DE_UNREF(testName);
+
+	const auto		maxComputeWorkGroupCount		= context.getDeviceProperties().limits.maxComputeWorkGroupCount;
+	const auto		maxComputeWorkGroupSize			= context.getDeviceProperties().limits.maxComputeWorkGroupSize;
+	const auto		maxComputeWorkGroupInvocations	= context.getDeviceProperties().limits.maxComputeWorkGroupInvocations;
+
+	if (maxComputeWorkGroupCount[0] < 256u)
+		TCU_THROW(NotSupportedError, "Minimum of 256 required for maxComputeWorkGroupCount.x");
+
+	if (maxComputeWorkGroupSize[0] < 256u)
+		TCU_THROW(NotSupportedError, "Minimum of 256 required for maxComputeWorkGroupSize.x");
+
+	if (maxComputeWorkGroupInvocations < 256u)
+		TCU_THROW(NotSupportedError, "Minimum of 256 required for maxComputeWorkGroupInvocations");
+}
+
+tcu::TestCaseGroup* createPermutedIndexTests (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> permutedIndex (new tcu::TestCaseGroup(testCtx, "permuted_index", "Permuted index"));
+	static const char			dataDir[]	= "memory_model/message_passing/permuted_index";
+	static const std::string	cases[]		=
+	{
+		"barrier",
+		"release_acquire",
+		"release_acquire_atomic_payload"
+	};
+
+	for (const auto& test : cases)
+	{
+		cts_amber::AmberTestCase* testCase = cts_amber::createAmberTestCase(testCtx, test.c_str(), "", dataDir, (test + ".amber").c_str());
+		testCase->setCheckSupportCallback(checkPermutedIndexTestSupport);
+
+		permutedIndex->addChild(testCase);
+	}
+
+	return permutedIndex.release();
+}
+#endif // CTS_USES_VULKANSC
 
 }	// anonymous
 
@@ -1867,10 +1900,16 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 		{ STAGE_FRAGMENT,	"frag",		"fragment shader"			},
 	};
 
-
 	for (int ttNdx = 0; ttNdx < DE_LENGTH_OF_ARRAY(ttCases); ttNdx++)
 	{
 		de::MovePtr<tcu::TestCaseGroup> ttGroup(new tcu::TestCaseGroup(testCtx, ttCases[ttNdx].name, ttCases[ttNdx].description));
+
+#ifndef CTS_USES_VULKANSC
+		// Permuted index tests for message passing.
+		if (ttCases[ttNdx].value == TT_MP)
+			ttGroup->addChild(createPermutedIndexTests(testCtx));
+#endif // CTS_USES_VULKANSC
+
 		for (int core11Ndx = 0; core11Ndx < DE_LENGTH_OF_ARRAY(core11Cases); core11Ndx++)
 		{
 			de::MovePtr<tcu::TestCaseGroup> core11Group(new tcu::TestCaseGroup(testCtx, core11Cases[core11Ndx].name, core11Cases[core11Ndx].description));

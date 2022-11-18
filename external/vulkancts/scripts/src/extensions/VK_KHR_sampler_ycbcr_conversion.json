@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": "0.1.1.0"
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceSamplerYcbcrConversionFeaturesKHR":
+		[
+			{ "features": ["samplerYcbcrConversion"],	"requirements": ["VK_KHR_sampler_ycbcr_conversion"] }
+		]
+	}
+}

@@ -1,0 +1,14 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceFeatures":
+		[
+			{ "features": ["shaderInt64"],						"requirements": ["VK_EXT_shader_image_atomic_int64"] }
+		],
+		"VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT":
+		[
+			{ "features": ["shaderImageInt64Atomics"],			"requirements": ["VK_EXT_shader_image_atomic_int64"] },
+			{ "features": ["shaderImageInt64Atomics"],			"requirements": ["VK_EXT_shader_image_atomic_int64", "physicalDeviceShaderImageAtomicInt64FeaturesEXT.sparseImageInt64Atomics"] }
+		]
+	}
+}

@@ -75,7 +75,7 @@ void checkAllSupported (const Extensions& supportedExtensions, const vector<stri
 		 requiredExtName != requiredExtensions.end();
 		 ++requiredExtName)
 	{
-		if (!isExtensionSupported(supportedExtensions, vk::RequiredExtension(*requiredExtName)))
+		if (!isExtensionStructSupported(supportedExtensions, vk::RequiredExtension(*requiredExtName)))
 			TCU_THROW(NotSupportedError, (*requiredExtName + " is not supported").c_str());
 	}
 }
@@ -95,6 +95,8 @@ CustomInstance createInstanceWithWsi (Context&							context,
 	// Required for device extension to expose new physical device bits (in this
 	// case, presentation mode enums)
 	extensions.push_back(getExtensionName(wsiType));
+	if (isDisplaySurface(wsiType))
+		extensions.push_back("VK_KHR_display");
 
 	checkAllSupported(supportedExtensions, extensions);
 
@@ -153,7 +155,7 @@ vk::Move<vk::VkDevice> createDeviceWithWsi (const vk::PlatformInterface&		vkp,
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(extensions); ++ndx)
 	{
-		if (!isExtensionSupported(supportedExtensions, vk::RequiredExtension(extensions[ndx])))
+		if (!isExtensionStructSupported(supportedExtensions, vk::RequiredExtension(extensions[ndx])))
 			TCU_THROW(NotSupportedError, (string(extensions[ndx]) + " is not supported").c_str());
 	}
 
@@ -170,7 +172,7 @@ de::MovePtr<vk::wsi::Display> createDisplay (const vk::Platform&	platform,
 	}
 	catch (const tcu::NotSupportedError& e)
 	{
-		if (isExtensionSupported(supportedExtensions, vk::RequiredExtension(getExtensionName(wsiType))) &&
+		if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension(getExtensionName(wsiType))) &&
 		    platform.hasDisplay(wsiType))
 		{
 			// If VK_KHR_{platform}_surface was supported, vk::Platform implementation
@@ -588,7 +590,9 @@ private:
 	void											render						(void);
 };
 
-std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs (vk::VkSurfaceKHR						surface,
+std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs (const vk::InstanceDriver&				vki,
+																	const vk::VkPhysicalDevice				physicalDevice,
+																	vk::VkSurfaceKHR						surface,
 																	deUint32								queueFamilyIndex,
 																	Scaling									scaling,
 																	const vk::VkSurfaceCapabilitiesKHR&		properties,
@@ -670,6 +674,17 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs (vk::VkSurfac
 			(vk::VkSwapchainKHR)0
 		};
 
+		{
+			vk::VkImageFormatProperties			imageFormatProperties;
+
+			deMemset(&imageFormatProperties, 0, sizeof(imageFormatProperties));
+
+			vk::VkResult result = vki.getPhysicalDeviceImageFormatProperties(physicalDevice, imageFormat, vk::VK_IMAGE_TYPE_2D, vk::VK_IMAGE_TILING_OPTIMAL, imageUsage, 0, &imageFormatProperties);
+
+			if (result == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+				continue;
+		}
+
 		createInfos.push_back(createInfo);
 	}
 
@@ -716,7 +731,7 @@ SharedPresentableImageTestInstance::SharedPresentableImageTestInstance (Context&
 	, m_physicalDevice			(vk::chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
 	, m_nativeDisplay			(createDisplay(context.getTestContext().getPlatform().getVulkanPlatform(), m_instanceExtensions, testConfig.wsiType))
 	, m_nativeWindow			(createWindow(*m_nativeDisplay, tcu::Nothing))
-	, m_surface					(vk::wsi::createSurface(m_vki, m_instance, testConfig.wsiType, *m_nativeDisplay, *m_nativeWindow))
+	, m_surface					(vk::wsi::createSurface(m_vki, m_instance, testConfig.wsiType, *m_nativeDisplay, *m_nativeWindow, context.getTestContext().getCommandLine()))
 
 	, m_queueFamilyIndex		(vk::wsi::chooseQueueFamilyIndex(m_vki, m_physicalDevice, *m_surface))
 	, m_deviceExtensions		(vk::enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
@@ -734,7 +749,7 @@ SharedPresentableImageTestInstance::SharedPresentableImageTestInstance (Context&
 	, m_surfaceFormats			(vk::wsi::getPhysicalDeviceSurfaceFormats(m_vki, m_physicalDevice, *m_surface))
 	, m_presentModes			(vk::wsi::getPhysicalDeviceSurfacePresentModes(m_vki, m_physicalDevice, *m_surface))
 
-	, m_swapchainConfigs		(generateSwapchainConfigs(*m_surface, m_queueFamilyIndex, testConfig.scaling, m_surfaceProperties, m_surfaceFormats, m_presentModes, testConfig.presentMode, m_supportedUsageFlags, testConfig.transform, testConfig.alpha))
+	, m_swapchainConfigs		(generateSwapchainConfigs(m_vki, m_physicalDevice, *m_surface, m_queueFamilyIndex, testConfig.scaling, m_surfaceProperties, m_surfaceFormats, m_presentModes, testConfig.presentMode, m_supportedUsageFlags, testConfig.transform, testConfig.alpha))
 	, m_swapchainConfigNdx		(0u)
 
 	, m_frameCount				(60u * 5u)
@@ -968,7 +983,7 @@ tcu::TestStatus SharedPresentableImageTestInstance::iterate (void)
 	{
 		if (error.getError() == vk::VK_ERROR_OUT_OF_DATE_KHR)
 		{
-			m_swapchainConfigs = generateSwapchainConfigs(*m_surface, m_queueFamilyIndex, m_testConfig.scaling, m_surfaceProperties, m_surfaceFormats, m_presentModes, m_testConfig.presentMode, m_supportedUsageFlags, m_testConfig.transform, m_testConfig.alpha);
+			m_swapchainConfigs = generateSwapchainConfigs(m_vki, m_physicalDevice, *m_surface, m_queueFamilyIndex, m_testConfig.scaling, m_surfaceProperties, m_surfaceFormats, m_presentModes, m_testConfig.presentMode, m_supportedUsageFlags, m_testConfig.transform, m_testConfig.alpha);
 
 			if (m_outOfDateCount < m_maxOutOfDateCount)
 			{

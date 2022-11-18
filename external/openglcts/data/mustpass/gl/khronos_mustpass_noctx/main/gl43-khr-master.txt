@@ -1,0 +1,12 @@
+KHR-NoContext.gl43.robust_buffer_access_behavior.vertex_buffer_objects
+KHR-NoContext.gl43.robust_buffer_access_behavior.texel_fetch
+KHR-NoContext.gl43.robust_buffer_access_behavior.image_load_store
+KHR-NoContext.gl43.robust_buffer_access_behavior.storage_buffer
+KHR-NoContext.gl43.robust_buffer_access_behavior.uniform_buffer
+KHR-NoContext.gl43.khr_debug.api_errors_non_debug
+KHR-NoContext.gl43.khr_debug.labels_non_debug
+KHR-NoContext.gl43.khr_debug.receiving_messages
+KHR-NoContext.gl43.khr_debug.groups
+KHR-NoContext.gl43.khr_debug.api_errors_debug
+KHR-NoContext.gl43.khr_debug.labels_debug
+KHR-NoContext.gl43.khr_debug.synchronous_calls

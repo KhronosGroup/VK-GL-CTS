@@ -52,7 +52,7 @@ struct SpirVAsmBuildOptions
 	{}
 
 	SpirVAsmBuildOptions (void)
-		: vulkanVersion					(VK_MAKE_VERSION(1, 0, 0))
+		: vulkanVersion					(VK_MAKE_API_VERSION(0, 1, 0, 0))
 		, targetVersion					(SPIRV_VERSION_1_0)
 		, supports_VK_KHR_spirv_1_4		(false)
 		, supports_VK_KHR_maintenance4	(false)

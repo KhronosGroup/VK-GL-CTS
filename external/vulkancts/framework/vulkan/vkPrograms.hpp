@@ -74,6 +74,10 @@ public:
 								ProgramCollection	(const BuildOptions defaultBuildOptions);
 								~ProgramCollection	(void);
 
+	// Forbid copy and assignment.
+	ProgramCollection (const ProgramCollection<Program, BuildOptions>& other) = delete;
+	ProgramCollection<Program, BuildOptions>& operator=(const ProgramCollection<Program, BuildOptions>& other) = delete;
+
 	void						clear				(void);
 
 	Program&					add					(const std::string& name);
@@ -217,7 +221,11 @@ ProgramBinary*			assembleProgram		(const vk::SpirVAsmSource& program, SpirVProgr
 void					disassembleProgram	(const ProgramBinary& program, std::ostream* dst);
 bool					validateProgram		(const ProgramBinary& program, std::ostream* dst, const SpirvValidatorOptions&);
 
-Move<VkShaderModule>	createShaderModule	(const DeviceInterface& deviceInterface, VkDevice device, const ProgramBinary& binary, VkShaderModuleCreateFlags flags);
+#ifdef CTS_USES_VULKANSC
+	typedef deUint32 VkShaderModuleCreateFlags;
+#endif // CTS_USES_VULKANSC
+
+Move<VkShaderModule>	createShaderModule	(const DeviceInterface& deviceInterface, VkDevice device, const ProgramBinary& binary, VkShaderModuleCreateFlags flags = 0u);
 
 glu::ShaderType			getGluShaderType	(VkShaderStageFlagBits shaderStage);
 VkShaderStageFlagBits	getVkShaderStage	(glu::ShaderType shaderType);

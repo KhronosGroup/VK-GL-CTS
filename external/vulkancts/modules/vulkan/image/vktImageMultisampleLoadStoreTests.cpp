@@ -40,6 +40,7 @@
 #include "vkImageUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -259,11 +260,11 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 
 	// Buffer used to pass constants to the shader.
 
-	const int			numLayers					= caseDef.texture.numLayers();
-	const VkDeviceSize	bufferChunkSize				= getOptimalUniformBufferChunkSize(vki, physDevice, sizeof(deInt32));
-	const VkDeviceSize	constantsBufferSizeBytes	= numLayers * bufferChunkSize;
-	UniquePtr<Buffer>	constantsBuffer				(new Buffer(vk, device, allocator, makeBufferCreateInfo(constantsBufferSizeBytes, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT),
-													 MemoryRequirement::HostVisible));
+	const int					numLayers					= caseDef.texture.numLayers();
+	const VkDeviceSize			bufferChunkSize				= getOptimalUniformBufferChunkSize(vki, physDevice, sizeof(deInt32));
+	const VkDeviceSize			constantsBufferSizeBytes	= numLayers * bufferChunkSize;
+	UniquePtr<BufferWithMemory>	constantsBuffer				(new BufferWithMemory(vk, device, allocator, makeBufferCreateInfo(constantsBufferSizeBytes, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT),
+															 MemoryRequirement::HostVisible));
 
 	{
 		const Allocation&	alloc	= constantsBuffer->getAllocation();
@@ -280,9 +281,9 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 		flushAlloc(vk, device, alloc);
 	}
 
-	const VkDeviceSize	resultBufferSizeBytes	= getImageSizeBytes(caseDef.texture.size(), CHECKSUM_IMAGE_FORMAT);
-	UniquePtr<Buffer>	resultBuffer			(new Buffer(vk, device, allocator, makeBufferCreateInfo(resultBufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT),
-												 MemoryRequirement::HostVisible));
+	const VkDeviceSize			resultBufferSizeBytes	= getImageSizeBytes(caseDef.texture.size(), CHECKSUM_IMAGE_FORMAT);
+	UniquePtr<BufferWithMemory>	resultBuffer			(new BufferWithMemory(vk, device, allocator, makeBufferCreateInfo(resultBufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT),
+														 MemoryRequirement::HostVisible));
 
 	{
 		const Allocation& alloc = resultBuffer->getAllocation();
@@ -358,6 +359,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 
 		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+		context.resetCommandPoolForVKSC(device, *cmdPool);
 	}
 
 	// Pass 2: "Resolve" MS image in compute shader
@@ -397,6 +399,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 
 		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+		context.resetCommandPoolForVKSC(device, *cmdPool);
 	}
 
 	// Retrieve result

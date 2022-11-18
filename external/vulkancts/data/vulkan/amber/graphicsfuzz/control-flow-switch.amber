@@ -89,7 +89,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Khronos SPIR-V Tools Assembler; 0
-; Bound: 72
+; Bound: 73
 ; Schema: 0
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -153,20 +153,22 @@ SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
                OpLoopMerge %40 %41 None
                OpBranch %42
          %42 = OpLabel
-         %43 = OpPhi %8 %28 %39 %44 %45
-         %46 = OpPhi %11 %12 %39 %47 %45
+         %43 = OpPhi %8 %28 %39 %44 %72
+         %46 = OpPhi %11 %12 %39 %47 %72
          %48 = OpSLessThan %8 %46 %13
-               OpLoopMerge %49 %45 None
+               OpLoopMerge %49 %72 None
                OpBranchConditional %48 %50 %49
          %50 = OpLabel
          %51 = OpConvertFToS %11 %35
                OpSelectionMerge %52 None
                OpSwitch %51 %45 9 %53 42 %54
          %52 = OpLabel
-               OpBranch %45
+               OpBranch %72
          %45 = OpLabel
-         %44 = OpPhi %8 %43 %50 %55 %56 %27 %52
+         %44 = OpPhi %8 %43 %50 %55 %56
          %47 = OpIAdd %11 %46 %13
+               OpBranch %72
+         %72 = OpLabel
                OpBranch %42
          %53 = OpLabel
                OpBranch %54

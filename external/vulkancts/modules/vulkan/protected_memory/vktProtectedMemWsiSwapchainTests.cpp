@@ -74,7 +74,7 @@ void checkAllSupported (const Extensions& supportedExtensions, const std::vector
 		 requiredExtName != requiredExtensions.end();
 		 ++requiredExtName)
 	{
-		if (!isExtensionSupported(supportedExtensions, vk::RequiredExtension(*requiredExtName)))
+		if (!isExtensionStructSupported(supportedExtensions, vk::RequiredExtension(*requiredExtName)))
 			TCU_THROW(NotSupportedError, (*requiredExtName + " is not supported").c_str());
 	}
 }
@@ -86,6 +86,8 @@ std::vector<std::string> getRequiredWsiExtensions (const Extensions&	supportedEx
 
 	extensions.push_back("VK_KHR_surface");
 	extensions.push_back(getExtensionName(wsiType));
+	if (isDisplaySurface(wsiType))
+		extensions.push_back("VK_KHR_display");
 
 	// VK_EXT_swapchain_colorspace adds new surface formats. Driver can enumerate
 	// the formats regardless of whether VK_EXT_swapchain_colorspace was enabled,
@@ -97,7 +99,7 @@ std::vector<std::string> getRequiredWsiExtensions (const Extensions&	supportedEx
 	// 2) Enable VK_EXT_swapchain colorspace if advertised by the driver.
 	//
 	// We opt for (2) as it provides basic coverage for the extension as a bonus.
-	if (isExtensionSupported(supportedExtensions, vk::RequiredExtension("VK_EXT_swapchain_colorspace")))
+	if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension("VK_EXT_swapchain_colorspace")))
 		extensions.push_back("VK_EXT_swapchain_colorspace");
 
 	// VK_KHR_surface_protected_capabilities adds a way to check if swapchain can be
@@ -105,7 +107,7 @@ std::vector<std::string> getRequiredWsiExtensions (const Extensions&	supportedEx
 	// check for that capability.
 	// To check this capability, vkGetPhysicalDeviceSurfaceCapabilities2KHR needs
 	// to be called so add VK_KHR_get_surface_capabilities2 for this.
-	if (isExtensionSupported(supportedExtensions, vk::RequiredExtension("VK_KHR_surface_protected_capabilities")))
+	if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension("VK_KHR_surface_protected_capabilities")))
 	{
 		extensions.push_back("VK_KHR_get_surface_capabilities2");
 		extensions.push_back("VK_KHR_surface_protected_capabilities");
@@ -126,7 +128,7 @@ de::MovePtr<vk::wsi::Display> createDisplay (const vk::Platform&	platform,
 	}
 	catch (const tcu::NotSupportedError& e)
 	{
-		if (isExtensionSupported(supportedExtensions, vk::RequiredExtension(getExtensionName(wsiType))) &&
+		if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension(getExtensionName(wsiType))) &&
 		    platform.hasDisplay(wsiType))
 		{
 			// If VK_KHR_{platform}_surface was supported, vk::Platform implementation
@@ -317,7 +319,6 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 			// Determine the maximum memory heap space available for protected images
 			vk::VkPhysicalDeviceMemoryProperties	memoryProperties	= vk::getPhysicalDeviceMemoryProperties(context.getInstanceDriver(), context.getPhysicalDevice());
 			vk::VkDeviceSize						protectedHeapSize	= 0;
-			vk::VkDeviceSize						maxMemoryUsage		= 0;
 			deUint32								protectedHeapMask	= 0;
 
 			for (deUint32 memType = 0; memType < memoryProperties.memoryTypeCount; memType++)
@@ -330,15 +331,14 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 					(protectedHeapMask & (1u << heapIndex)) == 0)
 				{
 					protectedHeapSize = de::max(protectedHeapSize, memoryProperties.memoryHeaps[heapIndex].size);
-					maxMemoryUsage    = protectedHeapSize / 4 ; /* Use at maximum 25% of heap */
 					protectedHeapMask |= 1u << heapIndex;
 				}
 			}
 
 			// If the implementation doesn't have a max image count, min+16 means we won't clamp.
-			// Limit it to how many protected images we estimate can be allocated - 25% of heap size
+			// Limit it to how many protected images we estimate can be allocated
 			const deUint32	maxImageCount		= de::min((capabilities.maxImageCount > 0) ? capabilities.maxImageCount : capabilities.minImageCount + 16u,
-														  deUint32(maxMemoryUsage / memoryRequirements.size));
+														  deUint32(protectedHeapSize / memoryRequirements.size));
 			if (maxImageCount < capabilities.minImageCount)
 				TCU_THROW(NotSupportedError, "Memory heap doesn't have enough memory!.");
 
@@ -358,7 +358,6 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 			vk::VkDevice							device				= context.getDevice();
 			vk::VkPhysicalDeviceMemoryProperties	memoryProperties	= vk::getPhysicalDeviceMemoryProperties(context.getInstanceDriver(), context.getPhysicalDevice());
 			vk::VkDeviceSize						protectedHeapSize	= 0;
-			vk::VkDeviceSize						maxMemoryUsage		= 0;
 
 			for (deUint32 memType = 0; memType < memoryProperties.memoryTypeCount; memType++)
 			{
@@ -368,7 +367,6 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 #endif
 				{
 					protectedHeapSize = de::max(protectedHeapSize, memoryProperties.memoryHeaps[heapIndex].size);
-					maxMemoryUsage	  = protectedHeapSize / 4 ; /* Use at maximum 25% of heap */
 				}
 			}
 
@@ -407,7 +405,7 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 					}
 
 					// Check for the image size requirement based on double/triple buffering
-					if (memoryRequirements.size  * capabilities.minImageCount < maxMemoryUsage)
+					if (memoryRequirements.size  * capabilities.minImageCount < protectedHeapSize)
 					{
 						cases.push_back(baseParameters);
 						cases.back().imageFormat		= curFmt->format;
@@ -433,7 +431,6 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 			vk::VkDevice							device				= context.getDevice();
 			vk::VkPhysicalDeviceMemoryProperties	memoryProperties	= vk::getPhysicalDeviceMemoryProperties(context.getInstanceDriver(), context.getPhysicalDevice());
 			vk::VkDeviceSize						protectedHeapSize	= 0;
-			vk::VkDeviceSize						maxMemoryUsage		= 0;
 
 			for (deUint32 memType = 0; memType < memoryProperties.memoryTypeCount; memType++)
 			{
@@ -443,7 +440,6 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 #endif
 				{
 					protectedHeapSize = de::max(protectedHeapSize, memoryProperties.memoryHeaps[heapIndex].size);
-					maxMemoryUsage    = protectedHeapSize / 4 ; /* Use at maximum 25% of heap */
 				}
 			}
 
@@ -483,7 +479,7 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 					}
 
 					// Check for the image size requirement based on double/triple buffering
-					if (memoryRequirements.size  * capabilities.minImageCount < maxMemoryUsage)
+					if (memoryRequirements.size  * capabilities.minImageCount < protectedHeapSize)
 					{
 						cases.push_back(baseParameters);
 						cases.back().imageExtent.width	= de::clamp(s_testSizes[ndx].width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
@@ -525,7 +521,7 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 				}
 
 				// Check for the image size requirement based on double/triple buffering
-				if (memoryRequirements.size  * capabilities.minImageCount < maxMemoryUsage)
+				if (memoryRequirements.size  * capabilities.minImageCount < protectedHeapSize)
 				{
 					cases.push_back(baseParameters);
 					cases.back().imageExtent = capabilities.currentExtent;
@@ -573,7 +569,7 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 					}
 
 					// Check for the image size requirement based on double/triple buffering
-					if (memoryRequirements.size  * capabilities.minImageCount < maxMemoryUsage)
+					if (memoryRequirements.size  * capabilities.minImageCount < protectedHeapSize)
 					{
 						cases.push_back(baseParameters);
 						cases.back().imageExtent =s_testExtentSizes[ndx];
@@ -1175,7 +1171,7 @@ tcu::TestStatus basicRenderTest (Context& baseCtx, vk::wsi::Type wsiType)
 																								vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,
 																								maxQueuedFrames));
 
-	if (isExtensionSupported(supportedExtensions, vk::RequiredExtension("VK_KHR_surface_protected_capabilities")))
+	if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension("VK_KHR_surface_protected_capabilities")))
 	{
 		// Check if swapchain can be created for protected surface
 		const vk::InstanceInterface&			vki			= context.getInstanceDriver();

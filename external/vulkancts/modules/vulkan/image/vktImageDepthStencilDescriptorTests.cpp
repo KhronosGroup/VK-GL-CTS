@@ -82,12 +82,12 @@ tcu::Maybe<std::string> layoutExtension (VkImageLayout layout)
 
 	switch (layout)
 	{
-	case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR:
-	case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR:
+	case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL:
+	case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL:
 		extension = "VK_KHR_maintenance2";
 		break;
-	case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL_KHR:
-	case VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL_KHR:
+	case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL:
+	case VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL:
 		// Note: we will not be using separate depth/stencil layouts. There's a separate group of tests for that.
 		extension = "VK_KHR_separate_depth_stencil_layouts";
 		break;
@@ -142,13 +142,13 @@ AspectAccess getLegalAccess (VkImageLayout layout, VkImageAspectFlagBits aspect)
 {
 	DE_ASSERT(aspect == VK_IMAGE_ASPECT_DEPTH_BIT || aspect == VK_IMAGE_ASPECT_STENCIL_BIT);
 
-	if (layout == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR)
+	if (layout == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
 		return ((aspect == VK_IMAGE_ASPECT_STENCIL_BIT) ? AspectAccess::RW : AspectAccess::RO);
-	else if (layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR)
+	else if (layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
 		return ((aspect == VK_IMAGE_ASPECT_DEPTH_BIT) ? AspectAccess::RW : AspectAccess::RO);
-	else if (layout == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL_KHR)
+	else if (layout == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL)
 		return ((aspect == VK_IMAGE_ASPECT_DEPTH_BIT) ? AspectAccess::RO : AspectAccess::NONE);
-	else if (layout == VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL_KHR)
+	else if (layout == VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL)
 		return ((aspect == VK_IMAGE_ASPECT_STENCIL_BIT) ? AspectAccess::RO : AspectAccess::NONE);
 
 	DE_ASSERT(false);
@@ -1065,11 +1065,16 @@ tcu::TestStatus	DepthStencilDescriptorInstance::iterate ()
 	vkd.cmdClearColorImage(cmdBuffer, colorBuffer.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &colorClearValue.color, 1u, &colorSRR);
 	vkd.cmdClearDepthStencilImage(cmdBuffer, dsImage.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &dsClearValue.depthStencil, 1u, &depthStencilSRR);
 
-	const auto colorPostTransferBarrier	= makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, 0u, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, colorLayout, colorBuffer.get(), colorSRR);
-	const auto dsPostTransferBarrier	= makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, 0u, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_params.layout, dsImage.get(), depthStencilSRR);
+	const auto graphicsAccesses			=	( VK_ACCESS_COLOR_ATTACHMENT_READ_BIT
+											| VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
+											| VK_ACCESS_INPUT_ATTACHMENT_READ_BIT
+											| VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT
+											| VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT );
+	const auto colorPostTransferBarrier	= makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, graphicsAccesses, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, colorLayout, colorBuffer.get(), colorSRR);
+	const auto dsPostTransferBarrier	= makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, graphicsAccesses, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_params.layout, dsImage.get(), depthStencilSRR);
 	const std::vector<VkImageMemoryBarrier> postTransferBarriers = { colorPostTransferBarrier, dsPostTransferBarrier };
 
-	vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0u, 0u, nullptr, 0u, nullptr,
+	vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0u, 0u, nullptr, 0u, nullptr,
 		static_cast<uint32_t>(postTransferBarriers.size()), de::dataOrNull(postTransferBarriers));
 
 	// Render pass.
@@ -1279,10 +1284,10 @@ tcu::TestCaseGroup* createImageDepthStencilDescriptorTests (tcu::TestContext& te
 	// Layouts used in these tests as VkDescriptorImageInfo::imageLayout.
 	const VkImageLayout kTestedLayouts[] =
 	{
-		VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR,
-		VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR,
-		VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL_KHR,
-		VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL_KHR,
+		VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL,
+		VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL,
+		VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL,
+		VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL,
 	};
 
 	// Types of read-only combinations to test.

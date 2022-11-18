@@ -46,6 +46,19 @@ private:
 	FunctionalTests&	operator=			(const FunctionalTests& other);
 };
 
+class GL45ES3FunctionalTests : public TestCaseGroup
+{
+public:
+							GL45ES3FunctionalTests	(Context& context);
+							~GL45ES3FunctionalTests	(void);
+
+	void					init					(void);
+
+private:
+							GL45ES3FunctionalTests	(const GL45ES3FunctionalTests& other);
+	GL45ES3FunctionalTests&	operator=				(const GL45ES3FunctionalTests& other);
+};
+
 } // Functional
 } // gles3
 } // deqp

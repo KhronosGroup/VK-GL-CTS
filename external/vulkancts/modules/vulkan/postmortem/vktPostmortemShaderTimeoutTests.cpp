@@ -69,45 +69,6 @@ private:
 	deUint32			m_iterations;
 };
 
-
-Move<VkPipeline> makeComputePipeline(const DeviceInterface&					vk,
-									 const VkDevice							device,
-									 const VkPipelineLayout					pipelineLayout,
-									 const VkPipelineCreateFlags			pipelineFlags,
-									 const VkShaderModule					shaderModule,
-									 const VkPipelineShaderStageCreateFlags	shaderFlags)
-{
-	const VkPipelineShaderStageCreateInfo pipelineShaderStageParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
-		DE_NULL,												// const void*							pNext;
-		shaderFlags,											// VkPipelineShaderStageCreateFlags		flags;
-		VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits				stage;
-		shaderModule,											// VkShaderModule						module;
-		"main",													// const char*							pName;
-		DE_NULL,												// const VkSpecializationInfo*			pSpecializationInfo;
-	};
-	const VkComputePipelineCreateInfo pipelineCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,		// VkStructureType					sType;
-		DE_NULL,											// const void*						pNext;
-		pipelineFlags,										// VkPipelineCreateFlags			flags;
-		pipelineShaderStageParams,							// VkPipelineShaderStageCreateInfo	stage;
-		pipelineLayout,										// VkPipelineLayout					layout;
-		DE_NULL,											// VkPipeline						basePipelineHandle;
-		0,													// deInt32							basePipelineIndex;
-	};
-	return createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo);
-}
-
-Move<VkPipeline> makeComputePipeline(const DeviceInterface&		vk,
-									 const VkDevice				device,
-									 const VkPipelineLayout		pipelineLayout,
-									 const VkShaderModule		shaderModule)
-{
-	return makeComputePipeline(vk, device, pipelineLayout, static_cast<VkPipelineCreateFlags>(0u), shaderModule, static_cast<VkPipelineShaderStageCreateFlags>(0u));
-}
-
 ShaderTimeoutInstance::ShaderTimeoutInstance(Context& context, deUint32 iterations)
 	: PostmortemTestInstance(context), m_iterations(iterations)
 {

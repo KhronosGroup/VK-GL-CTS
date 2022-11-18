@@ -2,7 +2,7 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2021 Google LLC.
+ * Copyright (c) 2021-2022 Google LLC.
  *
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,6 +32,7 @@
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
 
+#include "tcuCompressedTexture.hpp"
 #include "tcuVectorType.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuImageCompare.hpp"
@@ -70,24 +71,30 @@ using tcu::Vec4;
 using std::vector;
 using de::MovePtr;
 using tcu::TextureLevel;
-using tcu::PixelBufferAccess;
 using tcu::ConstPixelBufferAccess;
 
 const VkDeviceSize	BUFFERSIZE	= 100u * 1024;
 const int			WIDTH		= 80;
 const int			HEIGHT		= 80;
+const int			FACES		= 6;
 
-inline VkImageCreateInfo makeImageCreateInfo (const IVec3& size, const VkFormat& format, bool storageImage)
+uint32_t getLayerCount (const bool cubemap)
+{
+	return (cubemap ? static_cast<uint32_t>(FACES) : 1u);
+}
+
+inline VkImageCreateInfo makeImageCreateInfo (const IVec3& size, const VkFormat& format, bool storageImage, bool cubemap)
 {
 	VkImageUsageFlags	usageFlags	= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
 									  | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-	VkImageCreateFlags	createFlags	= DE_NULL;
+	VkImageCreateFlags	createFlags	= cubemap ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : DE_NULL;
+	const deUint32		layerCount	= getLayerCount(cubemap);
 
 	if (storageImage)
 	{
 		usageFlags	= VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
 					  | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-		createFlags	= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT
+		createFlags	|= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT
 					  | VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT;
 	}
 
@@ -100,7 +107,7 @@ inline VkImageCreateInfo makeImageCreateInfo (const IVec3& size, const VkFormat&
 		format,									//  VkFormat                format;
 		makeExtent3D(size.x(), size.y(), 1u),	//  VkExtent3D              extent;
 		1u,										//  deUint32                mipLevels;
-		1u,										//  deUint32                arrayLayers;
+		layerCount,								//  deUint32                arrayLayers;
 		VK_SAMPLE_COUNT_1_BIT,					//  VkSampleCountFlagBits   samples;
 		VK_IMAGE_TILING_OPTIMAL,				//  VkImageTiling           tiling;
 		usageFlags,								//  VkImageUsageFlags       usage;
@@ -115,49 +122,48 @@ inline VkImageCreateInfo makeImageCreateInfo (const IVec3& size, const VkFormat&
 
 Move<VkBuffer> makeVertexBuffer (const DeviceInterface& vk, const VkDevice device, const deUint32 queueFamilyIndex)
 {
-	const VkBufferCreateInfo vertexBufferParams =
+	const VkBufferCreateInfo	vertexBufferParams =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType      sType;
 		DE_NULL,								// const void*          pNext;
 		0u,										// VkBufferCreateFlags  flags;
-		BUFFERSIZE,									// VkDeviceSize         size;
+		BUFFERSIZE,								// VkDeviceSize         size;
 		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,		// VkBufferUsageFlags   usage;
 		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode        sharingMode;
 		1u,										// deUint32             queueFamilyIndexCount;
 		&queueFamilyIndex						// const deUint32*      pQueueFamilyIndices;
 	};
 
-	Move<VkBuffer>			vertexBuffer		= createBuffer(vk, device, &vertexBufferParams);;
+	Move<VkBuffer>				vertexBuffer		= createBuffer(vk, device, &vertexBufferParams);
 	return vertexBuffer;
 }
 
 class SampleDrawnTextureTestInstance : public TestInstance
 {
 public:
-					SampleDrawnTextureTestInstance (Context&		context,
-													const VkFormat	imageFormat,
-													const VkFormat	imageViewFormat,
-													const bool		twoSamplers);
-	tcu::TestStatus	iterate							(void);
+	SampleDrawnTextureTestInstance (Context&			context,
+									const VkFormat	imageFormat,
+									const VkFormat	imageViewFormat,
+									const bool		twoSamplers,
+									const bool		cubemap);
+
+	tcu::TestStatus iterate			(void);
 
 private:
-	const VkFormat		m_imageFormat;
-	const VkFormat		m_imageViewFormat;
-	const bool			m_twoSamplers;
+	const VkFormat	m_imageFormat;
+	const VkFormat	m_imageViewFormat;
+	const bool		m_twoSamplers;
+	const bool		m_cubemap;
 };
 
-SampleDrawnTextureTestInstance::SampleDrawnTextureTestInstance (Context& context, const VkFormat imageFormat, const VkFormat imageViewFormat, const bool twoSamplers)
+SampleDrawnTextureTestInstance::SampleDrawnTextureTestInstance (Context& context, const VkFormat imageFormat, const VkFormat imageViewFormat,
+																const bool twoSamplers, const bool cubemap)
 	: TestInstance											   (context)
 	, m_imageFormat		(imageFormat)
 	, m_imageViewFormat	(imageViewFormat)
 	, m_twoSamplers		(twoSamplers)
+	, m_cubemap			(cubemap)
 {
-}
-
-template<typename T>
-inline size_t sizeInBytes (const vector<T>& vec)
-{
-	return vec.size() * sizeof(vec[0]);
 }
 
 Move<VkSampler> makeSampler (const DeviceInterface& vk, const VkDevice& device)
@@ -230,7 +236,7 @@ vector<VkVertexInputAttributeDescription> Vertex::getAttributeDescriptions (void
 	return desc;
 }
 
-// Generates the vertices of a full quad and texture coordinates of each vertex
+// Generates the vertices of a full quad and texture coordinates of each vertex.
 vector<Vertex> generateVertices (void)
 {
 	vector<Vertex> vertices;
@@ -244,8 +250,8 @@ vector<Vertex> generateVertices (void)
 	return vertices;
 }
 
-// Generates a reference image filled with pure blue
-TextureLevel makeReferenceImage(const VkFormat format, int width, int height)
+// Generates a reference image filled with pure blue.
+TextureLevel makeReferenceImage (const VkFormat format, int width, int height)
 {
 	TextureLevel referenceImage(mapVkFormat(format), width, height, 1);
 	for (int y = 0; y < height; y++)
@@ -274,31 +280,67 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate (void)
 	const Move<VkCommandPool>		cmdPool					= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
 	const Move<VkCommandBuffer>		cmdBuffer				= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-	const Unique<VkDescriptorPool>	descriptorPool			(DescriptorPoolBuilder().addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
-																					.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-																					.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-																					.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 3u));
+	const Unique<VkDescriptorPool>	descriptorPool			(DescriptorPoolBuilder()
+															 .addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 6)
+															 .addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 12)
+															 .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 21u));
+
 	const VkFormat					renderedImageFormat		= VK_FORMAT_R8G8B8A8_UNORM;
+	tcu::CompressedTexFormat		compressedFormat		(mapVkCompressedFormat(m_imageFormat));
+	IVec3							blockSize				= tcu::getBlockPixelSize(compressedFormat);
 
-	// Create a storage image. The first pipeline fills it with pure blue and the second pipeline
+	DE_ASSERT(blockSize.z() == 1);
+
+	IVec3							storageImageViewSize = imageSize / blockSize;
+
+	// Create a storage image. The first pipeline fills it and the second pipeline
 	// uses it as a sampling source.
-	const VkImageCreateInfo			imageCreateInfo			= makeImageCreateInfo(imageSize, m_imageFormat, true);
-	const VkImageSubresourceRange	imageSubresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1, 0, 1);
+	const VkImageCreateInfo			imageCreateInfo			= makeImageCreateInfo(imageSize, m_imageFormat, true, m_cubemap);
+	const auto						layerCount				= getLayerCount(m_cubemap);
+	const VkImageSubresourceRange	imageSubresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1, 0, layerCount);
 	const ImageWithMemory			storageImage			(vk, device, m_context.getDefaultAllocator(), imageCreateInfo, MemoryRequirement::Any);
-	Move<VkImageView>				storageImageImageView	= makeImageView(vk, device, *storageImage, VK_IMAGE_VIEW_TYPE_2D, m_imageViewFormat, imageSubresourceRange);
 
-	Move<VkShaderModule>			computeShader			= createShaderModule (vk, device, m_context.getBinaryCollection().get("comp"), 0u);
+	// Create image views and descriptor sets for the first pipeline
+	Move<VkDescriptorSetLayout>		descriptorSetLayout		= DescriptorSetLayoutBuilder()
+			.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
+			.build(vk, device);
 
-	// Build descriptors for the storage image
-	const auto						descriptorSetLayout1	(DescriptorSetLayoutBuilder().addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
-																						 .build(vk, device));
-	const Unique<VkDescriptorSet>	descriptorSet1			(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout1));
+	Move<VkImageView>				storageImageImageView;
+	VkDescriptorImageInfo			storageImageDscrInfo;
+	Move<VkDescriptorSet>			storageImageDescriptorSet;
 
-	const VkDescriptorImageInfo		storageImageDscrInfo	= makeDescriptorImageInfo(DE_NULL, *storageImageImageView, VK_IMAGE_LAYOUT_GENERAL);
-	DescriptorSetUpdateBuilder().writeSingle(*descriptorSet1, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &storageImageDscrInfo)
-								.update(vk, device);
+	// Cubemap tests use separate image views for each side of a cubemap.
+	vector<VkImageSubresourceRange>	cubeSubresourceRanges;
+	vector<Move<VkImageView>>		cubeStorageImageViews;
+	vector<VkDescriptorImageInfo>	cubeStorageDscrImageInfos;
+	vector<Move<VkDescriptorSet>>	cubeStorageDscrSets;
 
-	// Create a compute pipeline
+	if (m_cubemap)
+	{
+		DescriptorSetUpdateBuilder updateBuilder;
+		for (int i = 0; i < FACES; i++)
+		{
+			cubeSubresourceRanges.emplace_back(makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1, i, 1));
+			cubeStorageImageViews.emplace_back(makeImageView(vk, device, *storageImage, VK_IMAGE_VIEW_TYPE_2D, m_imageViewFormat, cubeSubresourceRanges[i]));
+			cubeStorageDscrImageInfos.emplace_back(makeDescriptorImageInfo(DE_NULL, *cubeStorageImageViews[i], VK_IMAGE_LAYOUT_GENERAL));
+			cubeStorageDscrSets.emplace_back(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+			updateBuilder.writeSingle(*cubeStorageDscrSets[i], DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &cubeStorageDscrImageInfos[i]);
+		}
+		updateBuilder.update(vk, device);
+	}
+	else
+	{
+		storageImageImageView		= makeImageView(vk, device, *storageImage, VK_IMAGE_VIEW_TYPE_2D, m_imageViewFormat, imageSubresourceRange);
+		storageImageDscrInfo		= makeDescriptorImageInfo(DE_NULL, *storageImageImageView, VK_IMAGE_LAYOUT_GENERAL);
+		storageImageDescriptorSet	= makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
+
+		DescriptorSetUpdateBuilder()
+			.writeSingle(*storageImageDescriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &storageImageDscrInfo)
+			.update(vk, device);
+	}
+
+	// Create a compute pipeline.
+	Move<VkShaderModule>			computeShader			= createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0u);
 	const VkPushConstantRange		pushConstantRange		=
 	{
 		VK_SHADER_STAGE_COMPUTE_BIT,	// VkShaderStageFlags    stageFlags;
@@ -306,77 +348,120 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate (void)
 		(deUint32)sizeof(deUint32),		// uint32_t              size;
 	};
 
-	const Move<VkPipelineLayout>	computePipelineLayout	= makePipelineLayout (vk, device, 1, &(*descriptorSetLayout1), 1, &pushConstantRange);
+	const Move<VkPipelineLayout>	computePipelineLayout	= makePipelineLayout(vk, device, 1, &(*descriptorSetLayout), 1, &pushConstantRange);
 	Move<VkPipeline>				computePipeline			= makeComputePipeline(vk, device, *computePipelineLayout, *computeShader);
 
-	// The first sampler uses an uncompressed format
-	const Unique<VkSampler>			sampler					(makeSampler(vk, device));
-	Move<VkImageView>				sampledImageView		= makeImageView(vk, device, *storageImage, VK_IMAGE_VIEW_TYPE_2D, m_imageViewFormat, imageSubresourceRange);
 
-	// The second sampler uses the same format as the image
+	// Create a graphics pipeline and all the necessary components for sampling the storage image
+
+	// The first sampler uses an uncompressed format.
+	const Unique<VkSampler>			sampler					(makeSampler(vk, device));
+
+	// The second sampler uses the same format as the image.
 	const Unique<VkSampler>			sampler2				(makeSampler(vk, device));
 
-	VkImageUsageFlags				usageFlags				= VK_IMAGE_USAGE_TRANSFER_SRC_BIT  | VK_IMAGE_USAGE_SAMPLED_BIT;
+	// Image views implicitly derive the usage flags from the image. Drop the storage image flag since it's incompatible
+	// with the compressed format and unnecessary in sampling.
+	VkImageUsageFlags				usageFlags				= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 	VkImageViewUsageCreateInfo		imageViewUsageInfo		=
 	{
-		VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,	//VkStructureType		sType;
+		VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,		//VkStructureType		sType;
 		DE_NULL,											//const void*			pNext;
 		usageFlags,											//VkImageUsageFlags		usage;
 	};
 
-	Move<VkImageView>				sampledImageView2		= makeImageView(vk, device, *storageImage, VK_IMAGE_VIEW_TYPE_2D, m_imageFormat, imageSubresourceRange, &imageViewUsageInfo);
+	Move<VkImageView>				sampledImageView;
+	Move<VkImageView>				sampledImageView2;
+	VkDescriptorImageInfo			samplerDscrImageInfo;
+	VkDescriptorImageInfo			samplerDscrImageInfo2;
+	Move<VkDescriptorSet>			graphicsDescriptorSet;
 
-	// Sampled values will be rendered on this image
-	const VkImageSubresourceRange	targetSubresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1, 0, 1);
-	const VkImageCreateInfo			targetImageCreateInfo	= makeImageCreateInfo(imageSize, renderedImageFormat, false);
-	const ImageWithMemory			targetImage				(vk, device, m_context.getDefaultAllocator(), targetImageCreateInfo, MemoryRequirement::Any);
-	Move<VkImageView>				targetImageView			= makeImageView(vk, device, *targetImage, VK_IMAGE_VIEW_TYPE_2D, renderedImageFormat, targetSubresourceRange);
+	// Cubemap tests use separate image views for each side of a cubemap.
+	vector<Move<VkImageView>>		cubeSamplerImageViews;
+	vector<Move<VkImageView>>		cubeSampler2ImageViews;
+	vector<VkDescriptorImageInfo>	cubeSamplerDscrImageInfos;
+	vector<VkDescriptorImageInfo>	cubeSampler2DscrImageInfos;
+	vector<Move<VkDescriptorSet>>	cubeSamplerDescriptorSets;
 
-	// Clear the render target image as black and do a layout transition
-	clearColorImage(vk, device, m_context.getUniversalQueue(), m_context.getUniversalQueueFamilyIndex(), targetImage.get(),
-					Vec4(0, 0, 0, 0), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+	const auto						graphicsDscrSetLayout	(DescriptorSetLayoutBuilder()
+											.addSingleSamplerBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, &sampler2.get())
+											.addSingleSamplerBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, &sampler.get())
+											.build(vk, device));
 
-	// Build descriptors for the samplers
-	const VkDescriptorImageInfo		samplerDscrImageInfo	= makeDescriptorImageInfo(sampler.get(), *sampledImageView, VK_IMAGE_LAYOUT_GENERAL);
-	const VkDescriptorImageInfo		samplerDscrImageInfo2	= makeDescriptorImageInfo(sampler2.get(), *sampledImageView2, VK_IMAGE_LAYOUT_GENERAL);
-
-	const auto						descriptorSetLayout2	(DescriptorSetLayoutBuilder()
-										.addSingleSamplerBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, &sampler.get())
-										.addSingleSamplerBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, &sampler2.get())
-										.build(vk, device));
-
-	const Unique<VkDescriptorSet>	descriptorSet2			(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout2));
-
-	if (m_twoSamplers)
+	if (m_cubemap)
 	{
-		DescriptorSetUpdateBuilder()
-			.writeSingle(*descriptorSet2, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &samplerDscrImageInfo2)
-			.writeSingle(*descriptorSet2, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &samplerDscrImageInfo)
-			.update(vk, device);
+		DescriptorSetUpdateBuilder updateBuilder;
+		for (int i = 0; i < FACES; i++)
+		{
+			cubeSamplerImageViews.emplace_back(makeImageView(vk, device, *storageImage, VK_IMAGE_VIEW_TYPE_2D, m_imageFormat, cubeSubresourceRanges[i], &imageViewUsageInfo));
+			cubeSamplerDscrImageInfos.emplace_back(makeDescriptorImageInfo(sampler2.get(), *cubeSamplerImageViews[i], VK_IMAGE_LAYOUT_GENERAL));
+			cubeSamplerDescriptorSets.emplace_back(makeDescriptorSet(vk, device, *descriptorPool, *graphicsDscrSetLayout));
+			updateBuilder.writeSingle(*cubeSamplerDescriptorSets[i], DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &cubeSamplerDscrImageInfos[i]);
+		}
+
+		if (m_twoSamplers)
+		{
+			for (int i = 0; i < FACES; i++)
+			{
+				cubeSampler2ImageViews.emplace_back(makeImageView(vk, device, *storageImage, VK_IMAGE_VIEW_TYPE_2D, m_imageViewFormat, cubeSubresourceRanges[i]));
+				cubeSampler2DscrImageInfos.emplace_back(makeDescriptorImageInfo(sampler.get(), *cubeSampler2ImageViews[i], VK_IMAGE_LAYOUT_GENERAL));
+				updateBuilder.writeSingle(*cubeSamplerDescriptorSets[i], DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &cubeSampler2DscrImageInfos[i]);
+			}
+		}
+		updateBuilder.update(vk, device);
 	}
 	else
 	{
-		DescriptorSetUpdateBuilder()
-			.writeSingle(*descriptorSet2, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &samplerDscrImageInfo2)
-			.update(vk, device);
+		const VkImageSubresourceRange	subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1, 0, 1);
+		DescriptorSetUpdateBuilder		updateBuilder;
+
+		sampledImageView2 = makeImageView(vk, device, *storageImage, VK_IMAGE_VIEW_TYPE_2D, m_imageFormat, subresourceRange, &imageViewUsageInfo);
+		samplerDscrImageInfo2 = makeDescriptorImageInfo(sampler2.get(), *sampledImageView2, VK_IMAGE_LAYOUT_GENERAL);
+		graphicsDescriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *graphicsDscrSetLayout);
+
+		if (m_twoSamplers)
+		{
+			sampledImageView = makeImageView(vk, device, *storageImage, VK_IMAGE_VIEW_TYPE_2D, m_imageViewFormat, subresourceRange);
+			samplerDscrImageInfo = makeDescriptorImageInfo(sampler.get(), *sampledImageView, VK_IMAGE_LAYOUT_GENERAL);
+		}
+
+		updateBuilder.writeSingle(*graphicsDescriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &samplerDscrImageInfo2);
+		if (m_twoSamplers)
+			updateBuilder.writeSingle(*graphicsDescriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &samplerDscrImageInfo);
+
+		updateBuilder.update(vk, device);
 	}
 
-	// Create a graphics pipeline layout
+	// Sampled values will be rendered on this image.
+	const VkImageSubresourceRange	targetSubresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1, 0, 1);
+	const VkImageCreateInfo			targetImageCreateInfo	= makeImageCreateInfo(imageSize, renderedImageFormat, false, false);
+
+	const ImageWithMemory			targetImage				(vk, device, m_context.getDefaultAllocator(), targetImageCreateInfo, MemoryRequirement::Any);
+	Move<VkImageView>				targetImageView			= makeImageView(vk, device, *targetImage, VK_IMAGE_VIEW_TYPE_2D, renderedImageFormat, targetSubresourceRange);
+
+	// Clear the render target image as black and do a layout transition.
+	const auto clearColor = makeClearValueColor(Vec4(0.0f, 0.0f, 0.0f, 0.0f)).color;
+	clearColorImage(vk, device, m_context.getUniversalQueue(), m_context.getUniversalQueueFamilyIndex(), targetImage.get(),
+					clearColor, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+					(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
+					VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
 	const VkPushConstantRange		pushConstantRange2		=
 	{
-			VK_SHADER_STAGE_FRAGMENT_BIT,		// VkShaderStageFlags    stageFlags;
-			0u,									// uint32_t              offset;
-			(deUint32)sizeof(deUint32),			// uint32_t              size;
+		VK_SHADER_STAGE_FRAGMENT_BIT,	// VkShaderStageFlags    stageFlags;
+		0u,								// uint32_t              offset;
+		(deUint32)sizeof(deUint32),		// uint32_t              size;
 	};
 
-	const Move<VkPipelineLayout>	graphicsPipelineLayout	= makePipelineLayout (vk, device, 1, &(*descriptorSetLayout2), 1, &pushConstantRange2);
+	const Move<VkPipelineLayout>	graphicsPipelineLayout	= makePipelineLayout(vk, device, 1, &(*graphicsDscrSetLayout), 1, &pushConstantRange2);
 
-	// Vertices for a full quad and texture coordinates for each vertex
-	vector<Vertex>					vertices				= generateVertices();
+	// Vertices for a full quad and texture coordinates for each vertex.
+	const vector<Vertex>			vertices				= generateVertices();
+	const uint32_t					vertexCount				= static_cast<uint32_t>(vertices.size());
 	Move<VkBuffer>					vertexBuffer			= makeVertexBuffer(vk, device, queueFamilyIndex);
 	de::MovePtr<Allocation>			vertexBufferAlloc		= bindBuffer(vk, device, allocator, *vertexBuffer, MemoryRequirement::HostVisible);
 	const VkDeviceSize				vertexBufferOffset		= 0ull;
-	deMemcpy(vertexBufferAlloc->getHostPtr(), &vertices[0], sizeInBytes(vertices));
+	deMemcpy(vertexBufferAlloc->getHostPtr(), de::dataOrNull(vertices), de::dataSize(vertices));
 	flushAlloc(vk, device, *vertexBufferAlloc);
 
 	const auto						vtxBindingDescription	= Vertex::getBindingDescription();
@@ -396,7 +481,7 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate (void)
 	Move<VkShaderModule>			vertexShader			= createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0u);
 	Move<VkShaderModule>			fragmentShader			= createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0u);
 
-	// Create a render pass, a framebuffer, and the second pipeline
+	// Create a render pass, a framebuffer, and the second pipeline.
 	Move<VkRenderPass>				renderPass				= makeRenderPass(vk, device, renderedImageFormat, VK_FORMAT_UNDEFINED, VK_ATTACHMENT_LOAD_OP_LOAD,
 																			 VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 	Move<VkFramebuffer>				framebuffer				= makeFramebuffer(vk, device, *renderPass, targetImageView.get(), renderSize.width, renderSize.height);
@@ -404,41 +489,52 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate (void)
 																				   DE_NULL, DE_NULL, fragmentShader.get(), renderPass.get(), viewports, scissors,
 																				   VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, &vtxInputInfo);
 
-	// Create a result buffer
+	// Create a result buffer.
 	const VkBufferCreateInfo		resultBufferCreateInfo	= makeBufferCreateInfo(BUFFERSIZE, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 	Move<VkBuffer>					resultBuffer			= createBuffer(vk, device, &resultBufferCreateInfo);
 	MovePtr<Allocation>				resultBufferMemory		= allocator.allocate(getBufferMemoryRequirements(vk, device, *resultBuffer), MemoryRequirement::HostVisible);
 	TextureLevel					resultImage				(mapVkFormat(renderedImageFormat), renderSize.width, renderSize.height, 1);
 	VK_CHECK(vk.bindBufferMemory(device, *resultBuffer, resultBufferMemory->getMemory(), resultBufferMemory->getOffset()));
 
-	// Generate a reference image
+	// Generate a reference image.
 	TextureLevel					expectedImage			= makeReferenceImage(renderedImageFormat, WIDTH, HEIGHT);
 
 	beginCommandBuffer(vk, *cmdBuffer);
 
-	// Do a layout transition for the storage image
-	const auto						barrier1				= makeImageMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_WRITE_BIT,
+	// Do a layout transition for the storage image.
+	const auto						barrier1				= makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_WRITE_BIT,
 																					 VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
 																					 storageImage.get(), imageSubresourceRange);
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1u, &barrier1);
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1u, &barrier1);
 
-	// Bind the descriptors and vertices
-	vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipelineLayout, 0u, 1u, &descriptorSet1.get(), 0u, DE_NULL);
-	vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipelineLayout, 0u, 1u, &descriptorSet2.get(), 0u, DE_NULL);
+	// Bind the vertices and the descriptors used in the graphics pipeline.
 	vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 
-	// Fill the storage image and sample it. The second pass should sample pure blue.
+	// Fill the storage image and sample it twice.
 	for (int pass = 0; pass < 2; pass++)
 	{
 		// If both samplers are enabled, it's not necessary to run the compute shader twice since it already writes
-		// pure blue on the first pass. The first sampler uses an uncompressed image format so the result image
-		// will contain garbage if the second sampler doesn't work properly.
+		// the expected values on the first pass. The first sampler uses an uncompressed image format so the result
+		// image will contain garbage if the second sampler doesn't work properly.
 		if (!m_twoSamplers || pass == 0)
 		{
 			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
 			vk.cmdPushConstants(*cmdBuffer, *computePipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(deInt32), &pass);
 
-			vk.cmdDispatch(*cmdBuffer, WIDTH, HEIGHT, 1u);
+			// If cubemaps are enabled, loop over six times and bind the next face of the cubemap image on each iteration.
+			if (m_cubemap)
+			{
+				for (int face = 0; face < FACES; face++)
+				{
+					vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipelineLayout, 0u, 1u, &(cubeStorageDscrSets[face].get()), 0u, DE_NULL);
+					vk.cmdDispatch(*cmdBuffer, storageImageViewSize.x(), storageImageViewSize.y(), 1u);
+				}
+			}
+			else
+			{
+				vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipelineLayout, 0u, 1u, &storageImageDescriptorSet.get(), 0u, DE_NULL);
+				vk.cmdDispatch(*cmdBuffer, storageImageViewSize.x(), storageImageViewSize.y(), 1u);
+			}
 
 			const auto barrier2 = makeImageMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL,
 														 VK_IMAGE_LAYOUT_GENERAL, storageImage.get(), imageSubresourceRange);
@@ -449,9 +545,35 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate (void)
 
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
 
-		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, imageSize.x(), imageSize.y()), 0u, DE_NULL);
-		vk.cmdDraw(*cmdBuffer, 6u, 1u, 0u, 0u);
-		endRenderPass(vk, *cmdBuffer);
+		// If cubemaps are enabled, loop over six times and bind the next face of the cubemap image on each iteration.
+		if (m_cubemap)
+		{
+			for (int face = 0; face < FACES; face++)
+			{
+				vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipelineLayout, 0u, 1u, &(cubeSamplerDescriptorSets[face].get()), 0u, DE_NULL);
+
+				beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, imageSize.x(), imageSize.y()),0u, DE_NULL);
+				vk.cmdDraw(*cmdBuffer, vertexCount, 1u, 0u, 0u);
+				endRenderPass(vk, *cmdBuffer);
+
+				if (face < FACES-1)
+				{
+					const auto barrier4 = makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT),
+																 VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+																 targetImage.get(), targetSubresourceRange);
+					vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+										  0, 0, DE_NULL, 0, DE_NULL, 1u, &barrier4);
+				}
+			}
+		}
+		else
+		{
+			vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipelineLayout, 0u, 1u, &(graphicsDescriptorSet.get()), 0u, DE_NULL);
+
+			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, imageSize.x(), imageSize.y()),0u, DE_NULL);
+			vk.cmdDraw(*cmdBuffer, vertexCount, 1u, 0u, 0u);
+			endRenderPass(vk, *cmdBuffer);
+		}
 
 		if (pass == 0)
 		{
@@ -459,13 +581,14 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate (void)
 														 VK_IMAGE_LAYOUT_GENERAL, storageImage.get(), imageSubresourceRange);
 			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1u, &barrier3);
 
-			const auto barrier4 = makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-														 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, targetImage.get(), targetSubresourceRange);
+			const auto barrier4 = makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT),
+														 VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+														 targetImage.get(), targetSubresourceRange);
 			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1u, &barrier4);
 		}
 	}
 
-	// Copy the sampled values from the target image into the result image
+	// Copy the sampled values from the target image into the result image.
 	copyImageToBuffer(vk, *cmdBuffer, *targetImage, *resultBuffer, tcu::IVec2(WIDTH, HEIGHT), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
 	endCommandBuffer(vk, *cmdBuffer);
@@ -473,13 +596,38 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate (void)
 
 	invalidateAlloc(vk, device, *resultBufferMemory);
 
-	clear(resultImage.getAccess(), tcu::IVec4(0.));
+	clear(resultImage.getAccess(), tcu::IVec4(0));
 	copy(resultImage.getAccess(), ConstPixelBufferAccess(resultImage.getFormat(), resultImage.getSize(), resultBufferMemory->getHostPtr()));
 
+	bool							result					= true;
 
-	// Each test case should render pure blue as the result
-	bool result = tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Image Comparison", "", expectedImage.getAccess(),
-											 resultImage.getAccess(), tcu::Vec4(0.01f), tcu::COMPARE_LOG_RESULT);
+	if (m_cubemap)
+	{
+		// The first pass draws pure red on the faces and the second pass redraws them with pure blue.
+		// Sampling anywhere should produce colors with a 0.0 red component and > 0.0 blue and alpha components.
+		for (deUint32 y = 0; y < renderSize.height; y++)
+		{
+			for (deUint32 x = 0; x < renderSize.width; x++)
+			{
+				const deUint8* ptr = static_cast<const deUint8 *>(resultImage.getAccess().getPixelPtr(x, y, 0));
+				const tcu::IVec4 val = tcu::IVec4(ptr[0], ptr[1], ptr[2], ptr[3]);
+				if (!(val[0] == 0 && val[2] > 0 && val[3] > 0))
+					result = false;
+			}
+		}
+
+		// Log attachment contents.
+		m_context.getTestContext().getLog() << tcu::TestLog::ImageSet("Attachment ", "")
+											<< tcu::TestLog::Image("Rendered image", "Rendered image", resultImage.getAccess())
+											<< tcu::TestLog::EndImageSet;
+	}
+	else
+	{
+		// Each test case should render pure blue as the result.
+		result = tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Image Comparison", "",
+											expectedImage.getAccess(), resultImage.getAccess(),
+											tcu::Vec4(0.01f), tcu::COMPARE_LOG_RESULT);
+	}
 
 	if (result)
 		return tcu::TestStatus::pass("pass");
@@ -495,7 +643,8 @@ public:
 												 const std::string&	description,
 												 const VkFormat		imageFormat,
 												 const VkFormat		imageViewFormat,
-												 const bool			twoSamplers);
+												 const bool			twoSamplers,
+												 const bool			cubemap);
 
 	void				initPrograms			(SourceCollections& programCollection) const;
 	TestInstance*		createInstance			(Context&			context) const;
@@ -505,6 +654,7 @@ private:
 	const VkFormat		m_imageFormat;
 	const VkFormat		m_imageViewFormat;
 	const bool			m_twoSamplers;
+	const bool			m_cubemap;
 };
 
 SampleDrawnTextureTest::SampleDrawnTextureTest (tcu::TestContext&	testCtx,
@@ -512,87 +662,93 @@ SampleDrawnTextureTest::SampleDrawnTextureTest (tcu::TestContext&	testCtx,
 												const std::string&	description,
 												const VkFormat		imageFormat,
 												const VkFormat		imageViewFormat,
-												const bool			twoSamplers)
+												const bool			twoSamplers,
+												const bool			cubemap)
 	: TestCase	(testCtx, name, description)
 	, m_imageFormat	(imageFormat)
 	, m_imageViewFormat	(imageViewFormat)
 	, m_twoSamplers (twoSamplers)
+	, m_cubemap (cubemap)
 {
 }
 
 void SampleDrawnTextureTest::checkSupport(Context& context) const
 {
 	const auto&				vki					= context.getInstanceInterface();
-	const auto				physicalDevice		= context.getPhysicalDevice();
 	const auto				usageFlags			= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT
-												  | VK_IMAGE_USAGE_SAMPLED_BIT;
-	const bool				haveMaintenance2	= context.isDeviceFunctionalitySupported("VK_KHR_maintenance2");
+												  | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+	auto					creationFlags		= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT
+												  | VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT;
+	if (m_cubemap)
+		creationFlags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 
 	// Check that:
-	// - An image can be created with usage flags that are not supported by the image format
-	//   but are supported by an image view created for the image.
 	// - VkImageViewUsageCreateInfo can be used to override implicit usage flags derived from the image.
-	if (!haveMaintenance2)
+	// - A compressed image can be created with usage flags that are not supported for the format but are
+	//   supported by an image view that is using uncompressed format where each texel corresponds to
+	//   a compressed texel block of the image.
+
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_maintenance2"))
 		TCU_THROW(NotSupportedError, "Device does not support extended image usage flags nor overriding implicit usage flags");
 
 	VkImageFormatProperties	imageFormatProperties;
 
-	if (vki.getPhysicalDeviceImageFormatProperties(physicalDevice, VK_FORMAT_BC1_RGB_UNORM_BLOCK, VK_IMAGE_TYPE_2D,
-												   VK_IMAGE_TILING_OPTIMAL, usageFlags, (VkImageCreateFlags)0,
-												   &imageFormatProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
-		TCU_THROW(NotSupportedError, "BC1 compressed texture formats not supported.");
+	if (vki.getPhysicalDeviceImageFormatProperties(context.getPhysicalDevice(), m_imageFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
+												   usageFlags, creationFlags, &imageFormatProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
+	{
+		std::string	algorithmName	= (m_imageFormat == vk::VK_FORMAT_BC3_UNORM_BLOCK) ?  "BC3" : "BC1";
+		std::string	errorMsg		= algorithmName;
 
-	if (vki.getPhysicalDeviceImageFormatProperties(physicalDevice, VK_FORMAT_BC3_UNORM_BLOCK, VK_IMAGE_TYPE_2D,
-												   VK_IMAGE_TILING_OPTIMAL, usageFlags, (VkImageCreateFlags)0,
-												   &imageFormatProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
-		TCU_THROW(NotSupportedError, "BC3 compressed texture formats not supported.");
+		errorMsg += m_cubemap ? " compressed cubemap images" : " compressed images";
+		errorMsg += " created with VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT, VK_IMAGE_CREATE_EXTENDED_USAGE_BIT";
+		errorMsg += " and VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT flags not supported.";
+		TCU_THROW(NotSupportedError, errorMsg);
+	}
 }
 
 void SampleDrawnTextureTest::initPrograms (SourceCollections& programCollection) const
 {
-	// Pure blue and pure red compressed with the BC1 and BC3 algorithms.
-	std::string bc1_red = " uvec4(4160813056u, 0u, 4160813056u, 0u);\n";
-	std::string bc1_blue = "uvec4(2031647, 0u, 2031647, 0u);\n";
-	std::string bc3_red = " uvec4(4294967295u, 4294967295u, 4160813056u, 0u);\n";
-	std::string bc3_blue = "uvec4(4294967295u, 4294967295u, 2031647, 0u);\n";
+	// Pure red, green, and blue compressed with the BC1 and BC3 algorithms.
+	std::string					bc1_red				= "uvec4(4160813056u, 0u, 4160813056u, 0u);\n";
+	std::string					bc1_blue			= "uvec4(2031647, 0u, 2031647, 0u);\n";
+	std::string					bc3_red				= "uvec4(4294967295u, 4294967295u, 4160813056u, 0u);\n";
+	std::string					bc3_blue			= "uvec4(4294967295u, 4294967295u, 2031647, 0u);\n";
 
-	std::ostringstream computeSrc;
-	computeSrc
-		<< glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
-		<< "layout(set = 0, binding = 0, rgba32ui) uniform highp uimage2D img;\n"
-		<< "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n";
-		if (!m_twoSamplers)
-		{
-			computeSrc
-			<< "layout(push_constant) uniform constants {\n"
-			<< "     int pass;\n"
-			<< "} pc;\n";
-		}
-		computeSrc << "void main() {\n";
-		if (m_twoSamplers)
-		{
-			computeSrc << "    uvec4 color = ";
-			m_imageFormat == VK_FORMAT_BC1_RGB_UNORM_BLOCK ? computeSrc << bc1_blue : computeSrc << bc3_blue;
-		}
-		else
-		{
-			computeSrc << "    uvec4 color = ";
-			m_imageFormat == VK_FORMAT_BC1_RGB_UNORM_BLOCK ? computeSrc << bc1_red : computeSrc << bc3_red;
+	std::string					red					= (m_imageFormat == VK_FORMAT_BC1_RGB_UNORM_BLOCK) ? bc1_red : bc3_red;
+	std::string					blue				= (m_imageFormat == VK_FORMAT_BC1_RGB_UNORM_BLOCK) ? bc1_blue : bc3_blue;
 
-			computeSrc << "     if (pc.pass == 1) { \n";
-			computeSrc << "        color = ";
-			m_imageFormat == VK_FORMAT_BC1_RGB_UNORM_BLOCK ? computeSrc << bc1_blue : computeSrc << bc3_blue;
-			computeSrc << "    }\n";
-		}
+	std::ostringstream			computeSrc;
+
+	// Generate the compute shader.
+	computeSrc << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n";
+	computeSrc << "layout(set = 0, binding = 0, rgba32ui) uniform highp uimage2D img;\n";
+	computeSrc << "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n";
+
+	if (!m_twoSamplers)
+	{
 		computeSrc
-		<< "    for (int x = 0; x < " << WIDTH << "; x++) {\n"
-		<< "        for (int y = 0; y < " << HEIGHT << "; y++) {\n"
-		<< "            imageStore(img, ivec2(x, y), color);\n"
-		<< "        }\n"
-		<< "    }\n"
-		<< "}\n";
+			<< "layout(push_constant) uniform constants {\n"
+			<< "    int pass;\n"
+			<< "} pc;\n";
+	}
 
-	std::ostringstream vertexSrc;
+	computeSrc << "void main() {\n";
+
+	if (m_twoSamplers)
+		computeSrc << "    uvec4 color = " << blue;
+	else
+	{
+		computeSrc << "    uvec4 color = " << red;
+		computeSrc << "    if (pc.pass == 1)\n";
+		computeSrc << "        color = " << blue;
+	}
+
+	computeSrc
+	<< "    imageStore(img, ivec2(gl_GlobalInvocationID.xy), color);\n"
+	<< "}\n";
+
+	// Generate the vertex shader.
+	std::ostringstream			vertexSrc;
 	vertexSrc
 		<< glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
 		<< "layout(location = 0) in highp vec4 a_position;\n"
@@ -603,31 +759,34 @@ void SampleDrawnTextureTest::initPrograms (SourceCollections& programCollection)
 		<< "    fragTexCoord = inTexCoord;\n"
 		<< "}\n";
 
-	std::ostringstream fragmentSrc;
+	// Generate the fragment shader.
+	std::ostringstream			fragmentSrc;
 	fragmentSrc
 		<< glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
 		<< "layout(location = 0) out vec4 outColor;\n"
-		<< "layout(location = 1) in vec2 fragTexCoord;\n"
-		<< "layout(binding = 0) uniform sampler2D compressedTexSampler;\n";
-		if (m_twoSamplers)
-		{
-			fragmentSrc
-					<< "layout(binding = 1) uniform usampler2D texSampler;\n"
-					<< "layout(push_constant) uniform constants {\n"
-					<< "     int pass;\n"
-					<< "} pc;\n";
-		}
-		fragmentSrc << "void main() {\n";
-		if (m_twoSamplers)
-		{
-			fragmentSrc
-			<< "     if (pc.pass == 1) { \n"
-			<< "         outColor = texture(compressedTexSampler, fragTexCoord);\n"
-			<< "     } else {\n"
-			<< "         outColor = texture(texSampler, fragTexCoord);\n"
-			<< "     }";
-		} else
-			fragmentSrc << "outColor = texture(compressedTexSampler, fragTexCoord);\n";
+		<< "layout(location = 1) in vec2 fragTexCoord;\n";
+
+	fragmentSrc << "layout(binding = 0) uniform sampler2D compTexSampler;\n";
+
+	if (m_twoSamplers)
+	{
+		fragmentSrc
+			<< "layout(binding = 1) uniform usampler2D texSampler;\n"
+			<< "layout(push_constant) uniform constants {\n"
+			<< "    int pass;\n"
+			<< "} pc;\n"
+			<< "void main() {\n"
+			<< "    if (pc.pass == 1)\n"
+			<< "        outColor = texture(compTexSampler, fragTexCoord);\n"
+			<< "    else"
+			<< "        outColor = texture(texSampler, fragTexCoord);\n";
+	}
+	else
+	{
+		fragmentSrc
+			<< "void main() {\n"
+			<< "    outColor = texture(compTexSampler, fragTexCoord);\n";
+	}
 
 	fragmentSrc << "}\n";
 
@@ -638,7 +797,7 @@ void SampleDrawnTextureTest::initPrograms (SourceCollections& programCollection)
 
 TestInstance* SampleDrawnTextureTest::createInstance (Context& context) const
 {
-	return new SampleDrawnTextureTestInstance(context, m_imageFormat, m_imageViewFormat, m_twoSamplers);
+	return new SampleDrawnTextureTestInstance(context, m_imageFormat, m_imageViewFormat, m_twoSamplers, m_cubemap);
 }
 
 } // anonymous ns
@@ -669,18 +828,34 @@ tcu::TestCaseGroup* createImageSampleDrawnTextureTests	(tcu::TestContext& testCt
 	 * Pass 1:
 	 * - Compute shader fills the storage image with values that are pure blue compressed
 	 *   with the same algorithm as on the previous pass.
-	 * - Fragment shader samples the image through a image view which interprets the values
+	 * - Fragment shader samples the image through an image view which interprets the values
 	 *   correctly. The values are drawn on the target image and the test passes.
+	 *
+	 * If cubemaps are enabled:
+	 * Pass 0:
+	 * - If both samplers are enabled, draw compressed pure blue on the faces. Otherwise pure red.
+	 * - Sample the image through an image view with or without compressed format as in the cases
+	 *   without cubemaps.
+	 * Pass 1:
+	 * - If only one sampler is enabled, redraw the faces with pure blue
+	 * - Sample the image. Sampling should produce colors with a 0.0 red component and with > 0.0
+	 *   blue and alpha components.
 	 */
 
-	const bool twoSamplers = true;
+	const bool twoSamplers	= true;
+	const bool cubemap		= true;
 
 	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "sample_texture", "Sample texture that has been rendered to tests"));
 
-	testGroup->addChild(new SampleDrawnTextureTest(testCtx, "64_bit_compressed_format", "", VK_FORMAT_BC1_RGB_UNORM_BLOCK, VK_FORMAT_R32G32_UINT, !twoSamplers));
-	testGroup->addChild(new SampleDrawnTextureTest(testCtx, "64_bit_compressed_format_two_samplers", "", VK_FORMAT_BC1_RGB_UNORM_BLOCK, VK_FORMAT_R32G32_UINT, twoSamplers));
-	testGroup->addChild(new SampleDrawnTextureTest(testCtx, "128_bit_compressed_format", "", VK_FORMAT_BC3_UNORM_BLOCK, VK_FORMAT_R32G32B32A32_UINT, !twoSamplers));
-	testGroup->addChild(new SampleDrawnTextureTest(testCtx, "128_bit_compressed_format_two_samplers", "", VK_FORMAT_BC3_UNORM_BLOCK, VK_FORMAT_R32G32B32A32_UINT, twoSamplers));
+	testGroup->addChild(new SampleDrawnTextureTest(testCtx, "128_bit_compressed_format_cubemap", "", VK_FORMAT_BC3_UNORM_BLOCK, VK_FORMAT_R32G32B32A32_UINT, !twoSamplers, cubemap));
+	testGroup->addChild(new SampleDrawnTextureTest(testCtx, "64_bit_compressed_format_cubemap", "", VK_FORMAT_BC1_RGB_UNORM_BLOCK, VK_FORMAT_R32G32_UINT, !twoSamplers, cubemap));
+	testGroup->addChild(new SampleDrawnTextureTest(testCtx, "64_bit_compressed_format_two_samplers_cubemap", "", VK_FORMAT_BC1_RGB_UNORM_BLOCK, VK_FORMAT_R32G32_UINT, twoSamplers, cubemap));
+	testGroup->addChild(new SampleDrawnTextureTest(testCtx, "128_bit_compressed_format_two_samplers_cubemap", "", VK_FORMAT_BC3_UNORM_BLOCK, VK_FORMAT_R32G32B32A32_UINT, twoSamplers, cubemap));
+
+	testGroup->addChild(new SampleDrawnTextureTest(testCtx, "64_bit_compressed_format", "", VK_FORMAT_BC1_RGB_UNORM_BLOCK, VK_FORMAT_R32G32_UINT, !twoSamplers, false));
+	testGroup->addChild(new SampleDrawnTextureTest(testCtx, "64_bit_compressed_format_two_samplers", "", VK_FORMAT_BC1_RGB_UNORM_BLOCK, VK_FORMAT_R32G32_UINT, twoSamplers, false));
+	testGroup->addChild(new SampleDrawnTextureTest(testCtx, "128_bit_compressed_format", "", VK_FORMAT_BC3_UNORM_BLOCK, VK_FORMAT_R32G32B32A32_UINT, !twoSamplers, false));
+	testGroup->addChild(new SampleDrawnTextureTest(testCtx, "128_bit_compressed_format_two_samplers", "", VK_FORMAT_BC3_UNORM_BLOCK, VK_FORMAT_R32G32B32A32_UINT, twoSamplers, false));
 
 	return testGroup.release();
 }

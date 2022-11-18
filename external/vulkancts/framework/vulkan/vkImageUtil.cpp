@@ -266,6 +266,51 @@ bool isYCbCrExtensionFormat (VkFormat format)
 	}
 }
 
+bool isYCbCrConversionFormat (VkFormat format)
+{
+	switch (format)
+	{
+		case VK_FORMAT_G8B8G8R8_422_UNORM:
+		case VK_FORMAT_B8G8R8G8_422_UNORM:
+		case VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM:
+		case VK_FORMAT_G8_B8R8_2PLANE_420_UNORM:
+		case VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM:
+		case VK_FORMAT_G8_B8R8_2PLANE_422_UNORM:
+		case VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM:
+		case VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16:
+		case VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16:
+		case VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16:
+		case VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16:
+		case VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16:
+		case VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16:
+		case VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16:
+		case VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16:
+		case VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16:
+		case VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16:
+		case VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16:
+		case VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16:
+		case VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16:
+		case VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16:
+		case VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16:
+		case VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16:
+		case VK_FORMAT_G16B16G16R16_422_UNORM:
+		case VK_FORMAT_B16G16R16G16_422_UNORM:
+		case VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM:
+		case VK_FORMAT_G16_B16R16_2PLANE_420_UNORM:
+		case VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM:
+		case VK_FORMAT_G16_B16R16_2PLANE_422_UNORM:
+		case VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM:
+		case VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16_EXT:
+		case VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16_EXT:
+		case VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT:
+		case VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
 bool isYCbCr420Format (VkFormat format)
 {
 	switch (format)
@@ -2827,12 +2872,16 @@ VkFormat mapTextureFormat (const tcu::TextureFormat& format)
 		case FMT_CASE(BGR, SNORM_INT8):						return VK_FORMAT_B8G8R8_SNORM;
 		case FMT_CASE(BGR, UNSIGNED_INT8):					return VK_FORMAT_B8G8R8_UINT;
 		case FMT_CASE(BGR, SIGNED_INT8):					return VK_FORMAT_B8G8R8_SINT;
+		case FMT_CASE(BGR, USCALED_INT8):					return VK_FORMAT_B8G8R8_USCALED;
+		case FMT_CASE(BGR, SSCALED_INT8):					return VK_FORMAT_B8G8R8_SSCALED;
 		case FMT_CASE(sBGR, UNORM_INT8):					return VK_FORMAT_B8G8R8_SRGB;
 
 		case FMT_CASE(BGRA, UNORM_INT8):					return VK_FORMAT_B8G8R8A8_UNORM;
 		case FMT_CASE(BGRA, SNORM_INT8):					return VK_FORMAT_B8G8R8A8_SNORM;
 		case FMT_CASE(BGRA, UNSIGNED_INT8):					return VK_FORMAT_B8G8R8A8_UINT;
 		case FMT_CASE(BGRA, SIGNED_INT8):					return VK_FORMAT_B8G8R8A8_SINT;
+		case FMT_CASE(BGRA, USCALED_INT8):					return VK_FORMAT_B8G8R8A8_USCALED;
+		case FMT_CASE(BGRA, SSCALED_INT8):					return VK_FORMAT_B8G8R8A8_SSCALED;
 		case FMT_CASE(sBGRA, UNORM_INT8):					return VK_FORMAT_B8G8R8A8_SRGB;
 
 		case FMT_CASE(BGRA, UNORM_INT_1010102_REV):			return VK_FORMAT_A2R10G10B10_UNORM_PACK32;
@@ -2843,6 +2892,7 @@ VkFormat mapTextureFormat (const tcu::TextureFormat& format)
 		case FMT_CASE(D, UNORM_INT16):						return VK_FORMAT_D16_UNORM;
 		case FMT_CASE(D, UNSIGNED_INT_24_8_REV):			return VK_FORMAT_X8_D24_UNORM_PACK32;
 		case FMT_CASE(D, FLOAT):							return VK_FORMAT_D32_SFLOAT;
+		case FMT_CASE(D, UNORM_INT24):						return VK_FORMAT_D24_UNORM_S8_UINT;
 
 		case FMT_CASE(S, UNSIGNED_INT8):					return VK_FORMAT_S8_UINT;
 
@@ -2880,6 +2930,9 @@ VkFormat mapTextureFormat (const tcu::TextureFormat& format)
 
 		case FMT_CASE(RGBA, USCALED_INT_1010102_REV):		return VK_FORMAT_A2B10G10R10_USCALED_PACK32;
 		case FMT_CASE(RGBA, SSCALED_INT_1010102_REV):		return VK_FORMAT_A2B10G10R10_SSCALED_PACK32;
+
+		case FMT_CASE(BGRA, USCALED_INT_1010102_REV):		return VK_FORMAT_A2R10G10B10_USCALED_PACK32;
+		case FMT_CASE(BGRA, SSCALED_INT_1010102_REV):		return VK_FORMAT_A2R10G10B10_SSCALED_PACK32;
 
 		case FMT_CASE(ARGB, UNORM_SHORT_4444):				return VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT;
 		case FMT_CASE(ABGR, UNORM_SHORT_4444):				return VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT;
@@ -3825,12 +3878,17 @@ VkSamplerCreateInfo mapSampler (const tcu::Sampler& sampler, const tcu::TextureF
 	const VkCompareOp	compareOp		= (compareEnabled) ? (mapCompareMode(sampler.compare)) : (VK_COMPARE_OP_ALWAYS);
 	const VkBorderColor	borderColor		= mapBorderColor(getTextureChannelClass(format.type), sampler.borderColor);
 	const bool			isMipmapEnabled = (sampler.minFilter != tcu::Sampler::NEAREST && sampler.minFilter != tcu::Sampler::LINEAR && sampler.minFilter != tcu::Sampler::CUBIC);
+#ifndef CTS_USES_VULKANSC
+	const VkSamplerCreateFlags flags	= sampler.seamlessCubeMap ? 0u : (VkSamplerCreateFlags)VK_SAMPLER_CREATE_NON_SEAMLESS_CUBE_MAP_BIT_EXT;
+#else
+	const VkSamplerCreateFlags flags	= 0u;
+#endif // CTS_USES_VULKANSC
 
 	const VkSamplerCreateInfo	createInfo		=
 	{
 		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
 		DE_NULL,
-		(VkSamplerCreateFlags)0,
+		flags,
 		mapFilterMode(sampler.magFilter),							// magFilter
 		mapFilterMode(sampler.minFilter),							// minFilter
 		mapMipmapMode(sampler.minFilter),							// mipMode
@@ -3918,7 +3976,11 @@ tcu::Sampler mapVkSampler (const VkSamplerCreateInfo& samplerCreateInfo)
 														 : tcu::Sampler::COMPAREMODE_NONE,
 						 0,
 						 tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),
+#ifndef CTS_USES_VULKANSC
+						 !(samplerCreateInfo.flags & VK_SAMPLER_CREATE_NON_SEAMLESS_CUBE_MAP_BIT_EXT),
+#else
 						 true,
+#endif // CTS_USES_VULKANSC
 						 tcu::Sampler::MODE_DEPTH,
 						 reductionMode);
 
@@ -4160,7 +4222,8 @@ void copyBufferToImage (const DeviceInterface&					vk,
 						deUint32								arrayLayers,
 						VkImage									destImage,
 						VkImageLayout							destImageLayout,
-						VkPipelineStageFlags					destImageDstStageFlags)
+						VkPipelineStageFlags					destImageDstStageFlags,
+						deUint32								baseMipLevel)
 {
 	// Barriers for copying buffer to image
 	const VkBufferMemoryBarrier preBufferBarrier =
@@ -4189,7 +4252,7 @@ void copyBufferToImage (const DeviceInterface&					vk,
 		destImage,										// VkImage					image;
 		{												// VkImageSubresourceRange	subresourceRange;
 			imageAspectFlags,							// VkImageAspectFlags		aspect;
-			0u,											// deUint32					baseMipLevel;
+			baseMipLevel,								// deUint32					baseMipLevel;
 			mipLevels,									// deUint32					mipLevels;
 			0u,											// deUint32					baseArraySlice;
 			arrayLayers									// deUint32					arraySize;
@@ -4209,7 +4272,7 @@ void copyBufferToImage (const DeviceInterface&					vk,
 		destImage,										// VkImage					image;
 		{												// VkImageSubresourceRange	subresourceRange;
 			imageAspectFlags,							// VkImageAspectFlags		aspect;
-			0u,											// deUint32					baseMipLevel;
+			baseMipLevel,								// deUint32					baseMipLevel;
 			mipLevels,									// deUint32					mipLevels;
 			0u,											// deUint32					baseArraySlice;
 			arrayLayers									// deUint32					arraySize;
@@ -4235,10 +4298,25 @@ void copyBufferToImage (const DeviceInterface&					vk,
 						deUint32								arrayLayers,
 						VkImage									destImage,
 						VkImageLayout							destImageLayout,
-						VkPipelineStageFlags					destImageDstStageFlags)
+						VkPipelineStageFlags					destImageDstStageFlags,
+						const VkCommandPool*					externalCommandPool,
+						deUint32								baseMipLevel)
 {
-	Move<VkCommandPool>		cmdPool		= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
-	Move<VkCommandBuffer>	cmdBuffer	= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	Move<VkCommandPool>		cmdPool;
+	VkCommandPool			activeCmdPool;
+	if (externalCommandPool == DE_NULL)
+	{
+		// Create local command pool
+		cmdPool = createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+		activeCmdPool = *cmdPool;
+	}
+	else
+	{
+		// Use external command pool if available
+		activeCmdPool = *externalCommandPool;
+	}
+
+	Move<VkCommandBuffer>	cmdBuffer	= allocateCommandBuffer(vk, device, activeCmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 	Move<VkFence>			fence		= createFence(vk, device);
 
 	const VkCommandBufferBeginInfo cmdBufferBeginInfo =
@@ -4250,7 +4328,7 @@ void copyBufferToImage (const DeviceInterface&					vk,
 	};
 
 	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
-	copyBufferToImage(vk, *cmdBuffer, buffer, bufferSize, copyRegions, imageAspectFlags, mipLevels, arrayLayers, destImage, destImageLayout, destImageDstStageFlags);
+	copyBufferToImage(vk, *cmdBuffer, buffer, bufferSize, copyRegions, imageAspectFlags, mipLevels, arrayLayers, destImage, destImageLayout, destImageDstStageFlags, baseMipLevel);
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
 	const VkPipelineStageFlags pipelineStageFlags = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
@@ -4429,25 +4507,26 @@ void clearColorImage (const DeviceInterface&	vk,
 					  const VkQueue				queue,
 					  deUint32					queueFamilyIndex,
 					  VkImage					image,
-					  tcu::Vec4					clearColor,
+					  VkClearColorValue			clearColor,
 					  VkImageLayout				oldLayout,
 					  VkImageLayout				newLayout,
+					  VkAccessFlags				dstAccessFlags,
 					  VkPipelineStageFlags		dstStageFlags,
 					  deUint32					baseArrayLayer,
-					  deUint32					layerCount)
+					  deUint32					layerCount,
+					  deUint32					baseMipLevel,
+					  deUint32					levelCount)
 {
 	Move<VkCommandPool>				cmdPool				= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 	Move<VkCommandBuffer>			cmdBuffer			= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-	const VkClearColorValue			clearColorValue		= makeClearValueColor(clearColor).color;
-
 	const VkImageSubresourceRange	subresourceRange	=
 	{
 		VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask
-		0u,							// deUint32				baseMipLevel
-		1u,							// deUint32				levelCount
-		baseArrayLayer,							// deUint32				baseArrayLayer
-		layerCount,							// deUint32				layerCount
+		baseMipLevel,				// deUint32				baseMipLevel
+		levelCount,					// deUint32				levelCount
+		baseArrayLayer,				// deUint32				baseArrayLayer
+		layerCount,					// deUint32				layerCount
 	};
 
 	const VkImageMemoryBarrier		preImageBarrier		=
@@ -4469,7 +4548,7 @@ void clearColorImage (const DeviceInterface&	vk,
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
 		DE_NULL,									// const void*				pNext;
 		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
-		VK_ACCESS_SHADER_WRITE_BIT,					// VkAccessFlags			dstAccessMask;
+		dstAccessFlags,								// VkAccessFlags			dstAccessMask;
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			oldLayout;
 		newLayout,									// VkImageLayout			newLayout;
 		queueFamilyIndex,							// deUint32					srcQueueFamilyIndex;
@@ -4486,7 +4565,7 @@ void clearColorImage (const DeviceInterface&	vk,
 						  0, (const VkMemoryBarrier*)DE_NULL,
 						  0, (const VkBufferMemoryBarrier*)DE_NULL,
 						  1, &preImageBarrier);
-	vk.cmdClearColorImage(*cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColorValue, 1, &subresourceRange);
+	vk.cmdClearColorImage(*cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1, &subresourceRange);
 	vk.cmdPipelineBarrier(*cmdBuffer,
 						  VK_PIPELINE_STAGE_TRANSFER_BIT,
 						  dstStageFlags,
@@ -4497,6 +4576,23 @@ void clearColorImage (const DeviceInterface&	vk,
 	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+}
+
+void clearColorImage (const DeviceInterface&	vk,
+					  const VkDevice			device,
+					  const VkQueue				queue,
+					  deUint32					queueFamilyIndex,
+					  VkImage					image,
+					  tcu::Vec4					clearColor,
+					  VkImageLayout				oldLayout,
+					  VkImageLayout				newLayout,
+					  VkPipelineStageFlags		dstStageFlags,
+					  deUint32					baseArrayLayer,
+					  deUint32					layerCount,
+					  deUint32					baseMipLevel,
+					  deUint32					levelCount)
+{
+	clearColorImage(vk, device, queue, queueFamilyIndex, image, makeClearValueColor(clearColor).color, oldLayout, newLayout, VK_ACCESS_SHADER_WRITE_BIT, dstStageFlags, baseArrayLayer, layerCount, baseMipLevel, levelCount);
 }
 
 std::vector<VkBufferImageCopy> generateChessboardCopyRegions (deUint32				tileSize,
@@ -4775,24 +4871,27 @@ void clearDepthStencilImage (const DeviceInterface&	vk,
 							 const VkQueue			queue,
 							 deUint32				queueFamilyIndex,
 							 VkImage				image,
+							 VkFormat				format,
 							 float					depthValue,
 							 deUint32				stencilValue,
 							 VkImageLayout			oldLayout,
 							 VkImageLayout			newLayout,
+							 VkAccessFlags			dstAccessFlags,
 							 VkPipelineStageFlags	dstStageFlags)
 {
 	Move<VkCommandPool>				cmdPool				= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 	Move<VkCommandBuffer>			cmdBuffer			= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	const VkClearDepthStencilValue	clearValue			= makeClearValueDepthStencil(depthValue, stencilValue).depthStencil;
+	const auto						aspectMask			= getImageAspectFlags(mapVkFormat(format));
 
 	const VkImageSubresourceRange	subresourceRange	=
 	{
-		VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,	// VkImageAspectFlags	aspectMask
-		0u,															// deUint32				baseMipLevel
-		1u,															// deUint32				levelCount
-		0u,															// deUint32				baseArrayLayer
-		1u															// deUint32				layerCount
+		aspectMask,	// VkImageAspectFlags	aspectMask
+		0u,			// deUint32				baseMipLevel
+		1u,			// deUint32				levelCount
+		0u,			// deUint32				baseArrayLayer
+		1u			// deUint32				layerCount
 	};
 
 	const VkImageMemoryBarrier		preImageBarrier		=
@@ -4814,7 +4913,7 @@ void clearDepthStencilImage (const DeviceInterface&	vk,
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
 		DE_NULL,									// const void*				pNext;
 		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
-		VK_ACCESS_SHADER_WRITE_BIT,					// VkAccessFlags			dstAccessMask;
+		dstAccessFlags,								// VkAccessFlags			dstAccessMask;
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			oldLayout;
 		newLayout,									// VkImageLayout			newLayout;
 		queueFamilyIndex,							// deUint32					srcQueueFamilyIndex;
@@ -5001,6 +5100,8 @@ void initDepthStencilImageChessboardPattern (const DeviceInterface&	vk,
 
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 }
+
+#ifndef CTS_USES_VULKANSC
 
 void allocateAndBindSparseImage (const DeviceInterface&						vk,
 								 VkDevice									device,
@@ -5262,5 +5363,6 @@ bool checkSparseImageFormatSupport (const VkPhysicalDevice		physicalDevice,
 {
 	return checkSparseImageFormatSupport(physicalDevice, instance, imageCreateInfo.format, imageCreateInfo.imageType, imageCreateInfo.samples, imageCreateInfo.usage, imageCreateInfo.tiling);
 }
+#endif // CTS_USES_VULKANSC
 
 } // vk

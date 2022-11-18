@@ -21,6 +21,7 @@
  * \brief Windowing System Integration (WSI) Utilities.
  *//*--------------------------------------------------------------------*/
 
+#include "vkDeviceUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkObjUtil.hpp"
@@ -71,7 +72,8 @@ const char* getName (Type wsiType)
 		"android",
 		"win32",
 		"macos",
-		"headless"
+		"headless",
+		"direct_drm",
 	};
 	return de::getSizedArrayElement<TYPE_LAST>(s_names, wsiType);
 }
@@ -86,7 +88,8 @@ const char* getExtensionName (Type wsiType)
 		"VK_KHR_android_surface",
 		"VK_KHR_win32_surface",
 		"VK_MVK_macos_surface",
-		"VK_EXT_headless_surface"
+		"VK_EXT_headless_surface",
+		"VK_EXT_acquire_drm_display",
 	};
 	return de::getSizedArrayElement<TYPE_LAST>(s_extNames, wsiType);
 }
@@ -152,22 +155,112 @@ const PlatformProperties& getPlatformProperties (Type wsiType)
 			noDisplayLimit,
 			noWindowLimit,
 		},
+		// VK_EXT_acquire_drm_display
+		{
+			0u,
+			PlatformProperties::SWAPCHAIN_EXTENT_MUST_MATCH_WINDOW_SIZE,
+			1u,
+			1u,
+		},
 	};
 
 	return de::getSizedArrayElement<TYPE_LAST>(s_properties, wsiType);
 }
+
+#ifndef CTS_USES_VULKANSC
+static VkResult createDisplaySurface (const InstanceInterface&		vki,
+									  VkInstance					instance,
+									  VkDisplayKHR					display,
+									  const tcu::CommandLine&		cmdLine,
+									  const VkAllocationCallbacks*	pAllocator,
+									  VkSurfaceKHR*					pSurface)
+{
+	VkPhysicalDevice physDevice = chooseDevice(vki, instance, cmdLine);
+
+	vector<VkDisplayPlanePropertiesKHR>	planeProperties;
+	deUint32							planeCount = 0u;
+	deUint32							planeIndex = 0u;
+	bool								planeFound = false;
+	VK_CHECK_SUPPORTED(vki.getPhysicalDeviceDisplayPlanePropertiesKHR(physDevice, &planeCount, DE_NULL));
+
+	planeProperties.resize(planeCount);
+	VK_CHECK_SUPPORTED(vki.getPhysicalDeviceDisplayPlanePropertiesKHR(physDevice, &planeCount, &planeProperties[0]));
+
+	for (deUint32 i = 0; i < planeCount; ++i)
+	{
+		vector<VkDisplayKHR>	supportedDisplays;
+		deUint32				supportedDisplayCount	=	0u;
+		VK_CHECK_SUPPORTED(vki.getDisplayPlaneSupportedDisplaysKHR(physDevice, i, &supportedDisplayCount, DE_NULL));
+
+		supportedDisplays.resize(supportedDisplayCount);
+		VK_CHECK_SUPPORTED(vki.getDisplayPlaneSupportedDisplaysKHR(physDevice, i, &supportedDisplayCount, &supportedDisplays[0]));
+
+		for (deUint32 j = 0; j < supportedDisplayCount; ++j)
+		{
+			if (display == supportedDisplays[i])
+			{
+				planeIndex = i;
+				planeFound = true;
+				break;
+			}
+		}
+
+		if (planeFound)
+			break;
+	}
+	if (!planeFound)
+		TCU_THROW(NotSupportedError, "No supported displays for planes.");
+
+	vector<VkDisplayModePropertiesKHR>			displayModeProperties;
+	deUint32									displayModeCount = 0u;
+	VK_CHECK_SUPPORTED(vki.getDisplayModePropertiesKHR(physDevice, display, &displayModeCount, DE_NULL));
+	if (displayModeCount < 1)
+		TCU_THROW(NotSupportedError, "No display modes defined.");
+
+	displayModeProperties.resize(displayModeCount);
+	VK_CHECK_SUPPORTED(vki.getDisplayModePropertiesKHR(physDevice, display, &displayModeCount, &displayModeProperties[0]));
+
+    const VkDisplaySurfaceCreateInfoKHR createInfo = {
+        VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR,	// VkStructureType					sType
+		DE_NULL,											// const void*						pNext
+        0,													// VkDisplaySurfaceCreateFlagsKHR	flags
+		displayModeProperties[0].displayMode,				// VkDisplayModeKHR					displayMode
+		planeIndex,											// uint32_t							planeIndex
+		planeProperties[planeIndex].currentStackIndex,		// uint32_t							planeStackIndex
+		VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,				// VkSurfaceTransformFlagBitsKHR	transform
+		1.0f,												// float							globalAlpha
+		VK_DISPLAY_PLANE_ALPHA_OPAQUE_BIT_KHR,				// VkDisplayPlaneAlphaFlagBitsKHR	alphaMode
+		displayModeProperties[0].parameters.visibleRegion,	// VkExtent2D						imageExtent
+	};
+
+    return vki.createDisplayPlaneSurfaceKHR(instance, &createInfo, pAllocator, pSurface);
+}
+#endif // CTS_USES_VULKANSC
 
 VkResult createSurface (const InstanceInterface&		vki,
 						VkInstance						instance,
 						Type							wsiType,
 						const Display&					nativeDisplay,
 						const Window&					nativeWindow,
+						const tcu::CommandLine&			cmdLine,
 						const VkAllocationCallbacks*	pAllocator,
 						VkSurfaceKHR*					pSurface)
 {
 	// Update this function if you add more WSI implementations
-	DE_STATIC_ASSERT(TYPE_LAST == 7);
+	DE_STATIC_ASSERT(TYPE_LAST == 8);
 
+#ifdef CTS_USES_VULKANSC
+	DE_UNREF(vki);
+	DE_UNREF(instance);
+	DE_UNREF(wsiType);
+	DE_UNREF(nativeDisplay);
+	DE_UNREF(nativeWindow);
+	DE_UNREF(cmdLine);
+	DE_UNREF(pAllocator);
+	DE_UNREF(pSurface);
+
+	TCU_THROW(NotSupportedError, "Vulkan SC does not support createSurface");
+#else // CTS_USES_VULKANSC
 	switch (wsiType)
 	{
 		case TYPE_XLIB:
@@ -274,10 +367,19 @@ VkResult createSurface (const InstanceInterface&		vki,
 			return vki.createHeadlessSurfaceEXT(instance, &createInfo, pAllocator, pSurface);
 		}
 
+		case TYPE_DIRECT_DRM:
+		{
+			DirectDrmDisplayInterface &drmDisplay = dynamic_cast<DirectDrmDisplayInterface &>(const_cast<Display&>(nativeDisplay));
+			drmDisplay.initializeDisplay(vki, instance, cmdLine);
+			return createDisplaySurface(vki, instance, drmDisplay.getNative(), cmdLine, pAllocator, pSurface);
+		}
+
 		default:
 			DE_FATAL("Unknown WSI type");
 			return VK_ERROR_SURFACE_LOST_KHR;
 	}
+#endif // CTS_USES_VULKANSC
+	return VK_ERROR_SURFACE_LOST_KHR;
 }
 
 Move<VkSurfaceKHR> createSurface (const InstanceInterface&		vki,
@@ -285,10 +387,11 @@ Move<VkSurfaceKHR> createSurface (const InstanceInterface&		vki,
 								  Type							wsiType,
 								  const Display&				nativeDisplay,
 								  const Window&					nativeWindow,
+								  const tcu::CommandLine&		cmdLine,
 								  const VkAllocationCallbacks*	pAllocator)
 {
 	VkSurfaceKHR object = 0;
-	VK_CHECK(createSurface(vki, instance, wsiType, nativeDisplay, nativeWindow, pAllocator, &object));
+	VK_CHECK(createSurface(vki, instance, wsiType, nativeDisplay, nativeWindow, cmdLine, pAllocator, &object));
 	return Move<VkSurfaceKHR>(check<VkSurfaceKHR>(object), Deleter<VkSurfaceKHR>(vki, instance, pAllocator));
 }
 
@@ -310,6 +413,14 @@ VkBool32 getPhysicalDevicePresentationSupport (const InstanceInterface&	vki,
 											   Type						wsiType,
 											   const Display&			nativeDisplay)
 {
+#ifdef CTS_USES_VULKANSC
+	DE_UNREF(vki);
+	DE_UNREF(physicalDevice);
+	DE_UNREF(queueFamilyIndex);
+	DE_UNREF(wsiType);
+	DE_UNREF(nativeDisplay);
+	TCU_THROW(NotSupportedError, "Vulkan SC does not support getPhysicalDevicePresentationSupport");
+#else // CTS_USES_VULKANSC
 	switch (wsiType)
 	{
 		case TYPE_XLIB:
@@ -345,6 +456,7 @@ VkBool32 getPhysicalDevicePresentationSupport (const InstanceInterface&	vki,
 		case TYPE_HEADLESS:
 		case TYPE_ANDROID:
 		case TYPE_MACOS:
+		case TYPE_DIRECT_DRM:
 		{
 			return 1;
 		}
@@ -352,6 +464,7 @@ VkBool32 getPhysicalDevicePresentationSupport (const InstanceInterface&	vki,
 			DE_FATAL("Unknown WSI type");
 			return 0;
 	}
+#endif // CTS_USES_VULKANSC
 	return 1;
 }
 
@@ -593,6 +706,26 @@ tcu::UVec2 getFullScreenSize (const vk::wsi::Type wsiType, const vk::wsi::Displa
 
 	DE_UNREF(display);
 	return result;
+}
+
+VkBool32 isDisplaySurface (Type wsiType)
+{
+	switch (wsiType)
+	{
+		case TYPE_XLIB:
+		case TYPE_XCB:
+		case TYPE_WAYLAND:
+		case TYPE_ANDROID:
+		case TYPE_WIN32:
+		case TYPE_MACOS:
+		case TYPE_HEADLESS:
+			return 0;
+		case TYPE_DIRECT_DRM:
+			return 1;
+		default:
+			DE_FATAL("Unknown WSI type");
+			return 0;
+	}
 }
 
 Move<VkRenderPass> WsiTriangleRenderer::createRenderPass (const DeviceInterface&	vkd,

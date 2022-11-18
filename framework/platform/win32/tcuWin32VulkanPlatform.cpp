@@ -93,8 +93,8 @@ public:
 class VulkanLibrary : public vk::Library
 {
 public:
-	VulkanLibrary (void)
-		: m_library	("vulkan-1.dll")
+	VulkanLibrary (const char* libraryPath)
+		: m_library	(libraryPath != DE_NULL ? libraryPath : "vulkan-1.dll")
 		, m_driver	(m_library)
 	{
 	}
@@ -122,9 +122,9 @@ VulkanPlatform::~VulkanPlatform (void)
 {
 }
 
-vk::Library* VulkanPlatform::createLibrary (void) const
+vk::Library* VulkanPlatform::createLibrary (const char* libraryPath) const
 {
-	return new VulkanLibrary();
+	return new VulkanLibrary(libraryPath);
 }
 
 ULONG getStringRegKey (const std::string& regKey, const std::string& strValueName, std::string& strValue)
@@ -282,16 +282,6 @@ void VulkanPlatform::describePlatform (std::ostream& dst) const
 	dst << "CPU: ";
 	getProcessorInfo(dst);
 	dst << "\n";
-}
-
-void VulkanPlatform::getMemoryLimits (vk::PlatformMemoryLimits& limits) const
-{
-	limits.totalSystemMemory					= 256*1024*1024;
-	limits.totalDeviceLocalMemory				= 128*1024*1024;
-	limits.deviceMemoryAllocationGranularity	= 64*1024;
-	limits.devicePageSize						= 4096;
-	limits.devicePageTableEntrySize				= 8;
-	limits.devicePageTableHierarchyLevels		= 3;
 }
 
 vk::wsi::Display* VulkanPlatform::createWsiDisplay (vk::wsi::Type wsiType) const

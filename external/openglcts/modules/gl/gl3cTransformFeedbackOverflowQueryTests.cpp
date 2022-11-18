@@ -973,8 +973,8 @@ protected:
 		}
 	}
 
-	/* Dummy vertex shader. */
-	const char* dummyVsh()
+	/* Minimal vertex shader. */
+	const char* minimalVsh()
 	{
 		return "#version 150 core\n"
 			   "void main() {\n"
@@ -982,8 +982,8 @@ protected:
 			   "}\n";
 	}
 
-	/* Dummy fragment shader */
-	const char* dummyFsh()
+	/* Minimal fragment shader */
+	const char* minimalFsh()
 	{
 		return "#version 150 core\n"
 			   "void main() {}\n";
@@ -1014,7 +1014,7 @@ protected:
 
 			// Setup checker program
 			m_checker_program =
-				new glu::ShaderProgram(m_context.getRenderContext(), glu::makeVtxFragSources(dummyVsh(), dummyFsh()));
+				new glu::ShaderProgram(m_context.getRenderContext(), glu::makeVtxFragSources(minimalVsh(), minimalFsh()));
 			if (!m_checker_program->isOk())
 			{
 				TCU_FAIL("Checker program compilation failed");

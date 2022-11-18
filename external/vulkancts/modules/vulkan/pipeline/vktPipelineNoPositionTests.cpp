@@ -75,11 +75,12 @@ static_assert((1u << kStageCount) == static_cast<deUint32>(STAGE_MASK_COUNT),
 
 struct TestParams
 {
-	ShaderStageFlags	selectedStages;			// Stages that will be present in the pipeline.
-	ShaderStageFlags	writeStages;			// Subset of selectedStages that will write to the Position built-in.
-	deUint32			numViews;				// Number of views for multiview.
-	bool				explicitDeclarations;	// Explicitly declare the input and output blocks or not.
-	bool				useSSBO;				// Write to an SSBO from the selected stages.
+	vk::PipelineConstructionType	pipelineConstructionType;	// The way pipeline is constructed
+	ShaderStageFlags				selectedStages;				// Stages that will be present in the pipeline.
+	ShaderStageFlags				writeStages;				// Subset of selectedStages that will write to the Position built-in.
+	deUint32						numViews;					// Number of views for multiview.
+	bool							explicitDeclarations;		// Explicitly declare the input and output blocks or not.
+	bool							useSSBO;					// Write to an SSBO from the selected stages.
 
 	// Commonly used checks.
 	bool tessellation	(void) const { return (selectedStages & (STAGE_TESS_CONTROL | STAGE_TESS_EVALUATION));	}
@@ -355,6 +356,9 @@ void NoPositionCase::checkSupport (Context& context) const
 
 		if (hasGeom && !multiviewFeatures.multiviewGeometryShader)
 			TCU_THROW(NotSupportedError, "Multiview not supported with geometry shaders");
+
+		if (m_params.numViews > context.getMultiviewProperties().maxMultiviewViewCount)
+			TCU_THROW(NotSupportedError, "Not enough views supported");
 	}
 
 	if (m_params.useSSBO)
@@ -362,6 +366,7 @@ void NoPositionCase::checkSupport (Context& context) const
 		if (!features.vertexPipelineStoresAndAtomics)
 			TCU_THROW(NotSupportedError, "Vertex pipeline stores and atomics not supported");
 	}
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 
 NoPositionInstance::NoPositionInstance (Context& context, const TestParams& params)
@@ -544,17 +549,31 @@ tcu::TestStatus NoPositionInstance::iterate (void)
 	const auto pipelineLayout		= makePipelineLayout(vkd, device, descriptorSetLayout.get());
 
 	// Pipeline.
-	const std::vector<VkViewport>	viewports		(1u, makeViewport(extent));
-	const std::vector<VkRect2D>		scissors		(1u, makeRect2D(extent));
+	const std::vector<VkViewport>	viewports		{ makeViewport(extent) };
+	const std::vector<VkRect2D>		scissors		{ makeRect2D(extent) };
 
-	const deUint32	patchControlPoints	= (tess ? 3u : 0u);
-	const auto		primitiveTopology	= (tess ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-
-	const auto pipeline = makeGraphicsPipeline(
-		vkd, device, pipelineLayout.get(),
-		vert.get(), tesc.get(), tese.get(), geom.get(), frag.get(),
-		renderPass.get(), viewports, scissors, primitiveTopology,
-		0u /* Subpass */, patchControlPoints);
+	const auto				primitiveTopology	(tess ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+	GraphicsPipelineWrapper	pipeline			(vkd, device, m_params.pipelineConstructionType);
+	pipeline.setDefaultTopology(primitiveTopology)
+			.setDefaultRasterizationState()
+			.setDefaultMultisampleState()
+			.setDefaultDepthStencilState()
+			.setDefaultColorBlendState()
+			.setupVertexInputState()
+			.setupPreRasterizationShaderState(viewports,
+				scissors,
+				*pipelineLayout,
+				*renderPass,
+				0u,
+				*vert,
+				DE_NULL,
+				*tesc,
+				*tese,
+				*geom)
+			.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *frag)
+			.setupFragmentOutputState(*renderPass)
+			.setMonolithicPipelineLayout(*pipelineLayout)
+			.buildPipeline();
 
 	// Descriptor set and output SSBO if needed.
 	Move<VkDescriptorPool>			descriptorPool;
@@ -605,7 +624,7 @@ tcu::TestStatus NoPositionInstance::iterate (void)
 	// Render triangle.
 	beginCommandBuffer(vkd, cmdBuffer);
 	beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.front(), color);
-	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
+	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getPipeline());
 	vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 	if (m_params.useSSBO)
 		vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
@@ -722,7 +741,7 @@ tcu::TestStatus NoPositionInstance::iterate (void)
 
 } // anonymous
 
-tcu::TestCaseGroup*	createNoPositionTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup*	createNoPositionTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
 {
 	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "no_position", "Tests with shaders that do not write to the Position built-in"));
 
@@ -762,7 +781,7 @@ tcu::TestCaseGroup*	createNoPositionTests (tcu::TestContext& testCtx)
 						if (stages & STAGE_TESS_EVALUATION)	testName += (testName.empty() ? "" : "_") + std::string("e") + ((writeMask & STAGE_TESS_EVALUATION)	? "1" : "0");
 						if (stages & STAGE_GEOMETRY)		testName += (testName.empty() ? "" : "_") + std::string("g") + ((writeMask & STAGE_GEOMETRY)		? "1" : "0");
 
-						TestParams params = { stages, writeMask, viewCount, explicitDeclarations, true };
+						TestParams params = { pipelineConstructionType, stages, writeMask, viewCount, explicitDeclarations, true };
 						viewGroup->addChild(new NoPositionCase(testCtx, testName, "", params));
 					}
 				}

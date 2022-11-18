@@ -24,6 +24,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "deDefs.h"
+#include "deInt32.h"
 
 #if !defined(__cplusplus)
 #	error "C++ is required"
@@ -130,6 +131,24 @@ size_t alignOf (void)
 //! Similar to DE_LENGTH_OF_ARRAY but constexpr and without auxiliar helpers.
 template <typename T, size_t N>
 constexpr size_t arrayLength (const T (&)[N]) { return N; }
+
+//! Get least significant bit index
+inline int findLSB (deUint32 value)
+{
+	return value ? deCtz32(value) : (-1);
+}
+
+//! Get most significant bit index
+inline int findMSB (deUint32 value)
+{
+	return 31 - deClz32(value);
+}
+
+//! Get most significant bit index
+inline int findMSB (deInt32 value)
+{
+	return (value < 0) ? findMSB(~(deUint32)value) : findMSB((deUint32)value);
+}
 
 } // de
 

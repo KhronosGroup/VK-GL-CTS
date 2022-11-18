@@ -57,15 +57,20 @@ namespace
 class DepthBiasBaseCase : public TestInstance
 {
 public:
-	DepthBiasBaseCase (Context& context, const char* vertexShaderName, const char* fragmentShaderName)
+	DepthBiasBaseCase (Context& context, vk::PipelineConstructionType pipelineConstructionType, const char* vertexShaderName, const char* fragmentShaderName, const char* meshShaderName)
 		: TestInstance						(context)
 		, m_colorAttachmentFormat			(vk::VK_FORMAT_R8G8B8A8_UNORM)
 		, m_depthStencilAttachmentFormat	(vk::VK_FORMAT_UNDEFINED)
 		, m_topology						(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
 		, m_vk								(context.getDeviceInterface())
-		, m_vertexShaderName				(vertexShaderName)
+		, m_pipeline						(m_vk, context.getDevice(), pipelineConstructionType)
+		, m_vertexShaderName				(vertexShaderName ? vertexShaderName : "")
 		, m_fragmentShaderName				(fragmentShaderName)
+		, m_meshShaderName					(meshShaderName ? meshShaderName : "")
+		, m_isMesh							(meshShaderName != nullptr)
 	{
+		// Either mesh or vertex shader, but not both or none.
+		DE_ASSERT((vertexShaderName != nullptr) != (meshShaderName != nullptr));
 	}
 
 protected:
@@ -83,8 +88,11 @@ protected:
 
 	const vk::DeviceInterface&						m_vk;
 
-	vk::Move<vk::VkPipeline>						m_pipeline;
+	vk::Move<vk::VkDescriptorPool>					m_descriptorPool;
+	vk::Move<vk::VkDescriptorSetLayout>				m_setLayout;
 	vk::Move<vk::VkPipelineLayout>					m_pipelineLayout;
+	vk::Move<vk::VkDescriptorSet>					m_descriptorSet;
+	vk::GraphicsPipelineWrapper						m_pipeline;
 
 	de::SharedPtr<Image>							m_colorTargetImage;
 	vk::Move<vk::VkImageView>						m_colorTargetView;
@@ -103,14 +111,19 @@ protected:
 
 	std::string										m_vertexShaderName;
 	std::string										m_fragmentShaderName;
+	std::string										m_meshShaderName;
 
 	std::vector<PositionColorVertex>				m_data;
 
 	PipelineCreateInfo::DepthStencilState			m_depthStencilState;
 
+	const bool										m_isMesh;
+
 	void initialize (void)
 	{
-		const vk::VkDevice device	= m_context.getDevice();
+		const vk::VkDevice						device				= m_context.getDevice();
+		const auto								vertDescType		= (m_isMesh ? vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER : vk::VK_DESCRIPTOR_TYPE_MAX_ENUM);
+		std::vector<vk::VkPushConstantRange>	pcRanges;
 
 		vk::VkFormatProperties formatProperties;
 		// check for VK_FORMAT_D24_UNORM_S8_UINT support
@@ -131,11 +144,25 @@ protected:
 				throw tcu::NotSupportedError("No valid depth stencil attachment available");
 		}
 
-		const PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
-		m_pipelineLayout			= vk::createPipelineLayout(m_vk, device, &pipelineLayoutCreateInfo);
+		// The mesh shading pipeline will contain a set with vertex data.
+#ifndef CTS_USES_VULKANSC
+		if (m_isMesh)
+		{
+			vk::DescriptorSetLayoutBuilder	setLayoutBuilder;
+			vk::DescriptorPoolBuilder		poolBuilder;
 
-		const vk::Unique<vk::VkShaderModule> vs(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_vertexShaderName), 0));
-		const vk::Unique<vk::VkShaderModule> fs(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0));
+			setLayoutBuilder.addSingleBinding(vertDescType, vk::VK_SHADER_STAGE_MESH_BIT_EXT);
+			m_setLayout = setLayoutBuilder.build(m_vk, device);
+
+			poolBuilder.addType(vertDescType);
+			m_descriptorPool = poolBuilder.build(m_vk, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+			m_descriptorSet = vk::makeDescriptorSet(m_vk, device, m_descriptorPool.get(), m_setLayout.get());
+			pcRanges.push_back(vk::makePushConstantRange(vk::VK_SHADER_STAGE_MESH_BIT_EXT, 0u, static_cast<uint32_t>(sizeof(uint32_t))));
+		}
+#endif // CTS_USES_VULKANSC
+
+		m_pipelineLayout = vk::makePipelineLayout(m_vk, device, m_setLayout.get(), de::dataOrNull(pcRanges));
 
 		const vk::VkExtent3D imageExtent = { WIDTH, HEIGHT, 1 };
 		ImageCreateInfo targetImageCreateInfo(vk::VK_IMAGE_TYPE_2D, m_colorAttachmentFormat, imageExtent, 1, 1, vk::VK_SAMPLE_COUNT_1_BIT, vk::VK_IMAGE_TILING_OPTIMAL,
@@ -227,21 +254,56 @@ protected:
 																  2,
 																  vertexInputAttributeDescriptions);
 
-		const PipelineCreateInfo::ColorBlendState::Attachment vkCbAttachmentState;
+		std::vector<vk::VkViewport>		viewports	{ { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } };
+		std::vector<vk::VkRect2D>		scissors	{ { { 0u, 0u }, { 0u, 0u } } };
 
-		PipelineCreateInfo pipelineCreateInfo(*m_pipelineLayout, *m_renderPass, 0, 0);
-		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", vk::VK_SHADER_STAGE_VERTEX_BIT));
-		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, "main", vk::VK_SHADER_STAGE_FRAGMENT_BIT));
-		pipelineCreateInfo.addState(PipelineCreateInfo::VertexInputState(m_vertexInputState));
-		pipelineCreateInfo.addState(PipelineCreateInfo::InputAssemblerState(m_topology));
-		pipelineCreateInfo.addState(PipelineCreateInfo::ColorBlendState(1, &vkCbAttachmentState));
-		pipelineCreateInfo.addState(PipelineCreateInfo::ViewportState(1));
-		pipelineCreateInfo.addState(m_depthStencilState);
-		pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
-		pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState());
-		pipelineCreateInfo.addState(PipelineCreateInfo::DynamicState());
+		// Shader modules.
+		const auto&							binaries = m_context.getBinaryCollection();
+		const vk::Move<vk::VkShaderModule>	vs = (m_isMesh ? vk::Move<vk::VkShaderModule>() : vk::createShaderModule(m_vk, device, binaries.get(m_vertexShaderName)));
+		const vk::Move<vk::VkShaderModule>	ms = (m_isMesh ? vk::createShaderModule(m_vk, device, binaries.get(m_meshShaderName)) : vk::Move<vk::VkShaderModule>());
+		const vk::Move<vk::VkShaderModule>	fs = vk::createShaderModule(m_vk, device, binaries.get(m_fragmentShaderName));
 
-		m_pipeline = vk::createGraphicsPipeline(m_vk, device, DE_NULL, &pipelineCreateInfo);
+		const PipelineCreateInfo::ColorBlendState::Attachment	attachmentState;
+		const PipelineCreateInfo::ColorBlendState				colorBlendState(1u, static_cast<const vk::VkPipelineColorBlendAttachmentState*>(&attachmentState));
+		const PipelineCreateInfo::RasterizerState				rasterizerState;
+		PipelineCreateInfo::DynamicState						dynamicState;
+
+		m_pipeline.setDefaultTopology(m_topology)
+				  .setDynamicState(static_cast<const vk::VkPipelineDynamicStateCreateInfo*>(&dynamicState))
+				  .setDefaultMultisampleState();
+
+#ifndef CTS_USES_VULKANSC
+		if (m_isMesh)
+		{
+			m_pipeline
+				  .setupPreRasterizationMeshShaderState(viewports,
+														scissors,
+														*m_pipelineLayout,
+														*m_renderPass,
+														0u,
+														DE_NULL,
+														*ms,
+														static_cast<const vk::VkPipelineRasterizationStateCreateInfo*>(&rasterizerState));
+		}
+		else
+#endif // CTS_USES_VULKANSC
+		{
+			m_pipeline
+				  .setupVertexInputState(&m_vertexInputState)
+				  .setupPreRasterizationShaderState(viewports,
+													scissors,
+													*m_pipelineLayout,
+													*m_renderPass,
+													0u,
+													*vs,
+													static_cast<const vk::VkPipelineRasterizationStateCreateInfo*>(&rasterizerState));
+		}
+
+		m_pipeline.setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fs, static_cast<const vk::VkPipelineDepthStencilStateCreateInfo*>(&m_depthStencilState))
+				  .setupFragmentOutputState(*m_renderPass, 0u, static_cast<const vk::VkPipelineColorBlendStateCreateInfo*>(&colorBlendState))
+				  .setMonolithicPipelineLayout(*m_pipelineLayout)
+				  .buildPipeline();
+
 
 		std::vector<vk::VkImageView> attachments(2);
 		attachments[0] = *m_colorTargetView;
@@ -251,15 +313,26 @@ protected:
 
 		m_framebuffer = vk::createFramebuffer(m_vk, device, &framebufferCreateInfo);
 
-		const vk::VkDeviceSize dataSize = m_data.size() * sizeof(PositionColorVertex);
-		m_vertexBuffer = Buffer::createAndAlloc(m_vk, device, BufferCreateInfo(dataSize,
-			vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT),
+		const vk::VkDeviceSize			dataSize	= m_data.size() * sizeof(PositionColorVertex);
+		const vk::VkBufferUsageFlags	bufferUsage	= (m_isMesh ? vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+		m_vertexBuffer = Buffer::createAndAlloc(m_vk, device, BufferCreateInfo(dataSize, bufferUsage),
 			m_context.getDefaultAllocator(), vk::MemoryRequirement::HostVisible);
 
 		deUint8* ptr = reinterpret_cast<unsigned char *>(m_vertexBuffer->getBoundMemory().getHostPtr());
 		deMemcpy(ptr, &m_data[0], static_cast<size_t>(dataSize));
 
 		vk::flushAlloc(m_vk, device, m_vertexBuffer->getBoundMemory());
+
+		// Update descriptor set for mesh shaders.
+		if (m_isMesh)
+		{
+			vk::DescriptorSetUpdateBuilder	updateBuilder;
+			const auto						location		= vk::DescriptorSetUpdateBuilder::Location::binding(0u);
+			const auto						bufferInfo		= vk::makeDescriptorBufferInfo(m_vertexBuffer->object(), 0ull, dataSize);
+
+			updateBuilder.writeSingle(m_descriptorSet.get(), location, vertDescType, &bufferInfo);
+			updateBuilder.update(m_vk, device);
+		}
 
 		const CmdPoolCreateInfo cmdPoolCreateInfo(m_context.getUniversalQueueFamilyIndex());
 		m_cmdPool = vk::createCommandPool(m_vk, device, &cmdPoolCreateInfo);
@@ -351,7 +424,7 @@ protected:
 		m_vk.cmdSetBlendConstants(*m_cmdBuffer, blendConstantsants);
 	}
 
-	void setDynamicDepthStencilState (const float minDepthBounds = -1.0f, const float maxDepthBounds = 1.0f,
+	void setDynamicDepthStencilState (const float minDepthBounds = 0.0f, const float maxDepthBounds = 1.0f,
 		const deUint32 stencilFrontCompareMask = 0xffffffffu, const deUint32 stencilFrontWriteMask = 0xffffffffu,
 		const deUint32 stencilFrontReference = 0, const deUint32 stencilBackCompareMask = 0xffffffffu,
 		const deUint32 stencilBackWriteMask = 0xffffffffu, const deUint32 stencilBackReference = 0)
@@ -364,13 +437,21 @@ protected:
 		m_vk.cmdSetStencilWriteMask(*m_cmdBuffer, vk::VK_STENCIL_FACE_BACK_BIT, stencilBackWriteMask);
 		m_vk.cmdSetStencilReference(*m_cmdBuffer, vk::VK_STENCIL_FACE_BACK_BIT, stencilBackReference);
 	}
+
+#ifndef CTS_USES_VULKANSC
+	void pushVertexOffset (const uint32_t				vertexOffset,
+						   const vk::VkShaderStageFlags	stageFlags = vk::VK_SHADER_STAGE_MESH_BIT_EXT)
+	{
+		m_vk.cmdPushConstants(*m_cmdBuffer, *m_pipelineLayout, stageFlags, 0u, static_cast<uint32_t>(sizeof(uint32_t)), &vertexOffset);
+	}
+#endif // CTS_USES_VULKANSC
 };
 
 class DepthBiasParamTestInstance : public DepthBiasBaseCase
 {
 public:
-	DepthBiasParamTestInstance (Context& context, ShaderMap shaders)
-		: DepthBiasBaseCase (context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
+	DepthBiasParamTestInstance (Context& context, vk::PipelineConstructionType pipelineConstructionType, const ShaderMap& shaders)
+		: DepthBiasBaseCase (context, pipelineConstructionType, shaders.at(glu::SHADERTYPE_VERTEX), shaders.at(glu::SHADERTYPE_FRAGMENT), shaders.at(glu::SHADERTYPE_MESH))
 	{
 		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, 1.0f, 0.5f, 1.0f), tcu::RGBA::blue().toVec()));
 		m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, 1.0f, 0.5f, 1.0f), tcu::RGBA::blue().toVec()));
@@ -407,18 +488,34 @@ public:
 		setDynamicBlendState();
 		setDynamicDepthStencilState();
 
-		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.getPipeline());
 
-		const vk::VkDeviceSize vertexBufferOffset	= 0;
-		const vk::VkBuffer vertexBuffer				= m_vertexBuffer->object();
-		m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+#ifndef CTS_USES_VULKANSC
+		if (m_isMesh)
+		{
+			m_vk.cmdBindDescriptorSets(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout.get(), 0u, 1u, &m_descriptorSet.get(), 0u, nullptr);
 
-		setDynamicRasterizationState(1.0f, 0.0f);
-		m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 0, 0);
-		m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 4, 0);
+			setDynamicRasterizationState(1.0f, 0.0f);
+			pushVertexOffset(0u); m_vk.cmdDrawMeshTasksEXT(*m_cmdBuffer, 2u, 1u, 1u);
+			pushVertexOffset(4u); m_vk.cmdDrawMeshTasksEXT(*m_cmdBuffer, 2u, 1u, 1u);
 
-		setDynamicRasterizationState(1.0f, -1.0f);
-		m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 8, 0);
+			setDynamicRasterizationState(1.0f, -1.0f);
+			pushVertexOffset(8u); m_vk.cmdDrawMeshTasksEXT(*m_cmdBuffer, 2u, 1u, 1u);
+		}
+		else
+#endif // CTS_USES_VULKANSC
+		{
+			const vk::VkDeviceSize vertexBufferOffset	= 0;
+			const vk::VkBuffer vertexBuffer				= m_vertexBuffer->object();
+			m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+
+			setDynamicRasterizationState(1.0f, 0.0f);
+			m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 0, 0);
+			m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 4, 0);
+
+			setDynamicRasterizationState(1.0f, -1.0f);
+			m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 8, 0);
+		}
 
 		endRenderPass(m_vk, *m_cmdBuffer);
 		endCommandBuffer(m_vk, *m_cmdBuffer);
@@ -471,8 +568,8 @@ public:
 class DepthBiasClampParamTestInstance : public DepthBiasBaseCase
 {
 public:
-	DepthBiasClampParamTestInstance (Context& context, ShaderMap shaders)
-		: DepthBiasBaseCase (context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
+	DepthBiasClampParamTestInstance (Context& context, vk::PipelineConstructionType pipelineConstructionType, const ShaderMap& shaders)
+		: DepthBiasBaseCase (context, pipelineConstructionType, shaders.at(glu::SHADERTYPE_VERTEX), shaders.at(glu::SHADERTYPE_FRAGMENT), shaders.at(glu::SHADERTYPE_MESH))
 	{
 		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, 1.0f, 0.0f, 1.0f), tcu::RGBA::blue().toVec()));
 		m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f), tcu::RGBA::blue().toVec()));
@@ -503,17 +600,32 @@ public:
 		setDynamicBlendState();
 		setDynamicDepthStencilState();
 
-		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.getPipeline());
 
-		const vk::VkDeviceSize vertexBufferOffset = 0;
-		const vk::VkBuffer vertexBuffer = m_vertexBuffer->object();
-		m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+#ifndef CTS_USES_VULKANSC
+		if (m_isMesh)
+		{
+			m_vk.cmdBindDescriptorSets(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout.get(), 0u, 1u, &m_descriptorSet.get(), 0u, nullptr);
 
-		setDynamicRasterizationState(1.0f, 1000.0f, 0.005f);
-		m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 0, 0);
+			setDynamicRasterizationState(1.0f, 1000.0f, 0.005f);
+			pushVertexOffset(0u); m_vk.cmdDrawMeshTasksEXT(*m_cmdBuffer, 2u, 1u, 1u);
 
-		setDynamicRasterizationState(1.0f, 0.0f);
-		m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 4, 0);
+			setDynamicRasterizationState(1.0f, 0.0f);
+			pushVertexOffset(4u); m_vk.cmdDrawMeshTasksEXT(*m_cmdBuffer, 2u, 1u, 1u);
+		}
+		else
+#endif // CTS_USES_VULKANSC
+		{
+			const vk::VkDeviceSize vertexBufferOffset = 0;
+			const vk::VkBuffer vertexBuffer = m_vertexBuffer->object();
+			m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+
+			setDynamicRasterizationState(1.0f, 1000.0f, 0.005f);
+			m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 0, 0);
+
+			setDynamicRasterizationState(1.0f, 0.0f);
+			m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 4, 0);
+		}
 
 		endRenderPass(m_vk, *m_cmdBuffer);
 		endCommandBuffer(m_vk, *m_cmdBuffer);
@@ -564,8 +676,8 @@ public:
 class LineWidthParamTestInstance : public DynamicStateBaseClass
 {
 public:
-	LineWidthParamTestInstance (Context& context, ShaderMap shaders)
-		: DynamicStateBaseClass (context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
+	LineWidthParamTestInstance (Context& context, vk::PipelineConstructionType pipelineConstructionType, const ShaderMap& shaders)
+		: DynamicStateBaseClass (context, pipelineConstructionType, shaders.at(glu::SHADERTYPE_VERTEX), shaders.at(glu::SHADERTYPE_FRAGMENT), shaders.at(glu::SHADERTYPE_MESH))
 	{
 		m_topology = vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 
@@ -592,13 +704,27 @@ public:
 		setDynamicDepthStencilState();
 		setDynamicRasterizationState(deFloatFloor(deviceProperties.limits.lineWidthRange[1]));
 
-		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.getPipeline());
 
-		const vk::VkDeviceSize vertexBufferOffset	= 0;
-		const vk::VkBuffer vertexBuffer				= m_vertexBuffer->object();
-		m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+#ifndef CTS_USES_VULKANSC
+		if (m_isMesh)
+		{
+			const auto numVert = static_cast<uint32_t>(m_data.size());
+			DE_ASSERT(numVert >= 1u);
 
-		m_vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_data.size()), 1, 0, 0);
+			m_vk.cmdBindDescriptorSets(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout.get(), 0u, 1u, &m_descriptorSet.get(), 0u, nullptr);
+			pushVertexOffset(0u, *m_pipelineLayout);
+			m_vk.cmdDrawMeshTasksEXT(*m_cmdBuffer, numVert - 1u, 1u, 1u);
+		}
+		else
+#endif // CTS_USES_VULKANSC
+		{
+			const vk::VkDeviceSize vertexBufferOffset	= 0;
+			const vk::VkBuffer vertexBuffer				= m_vertexBuffer->object();
+			m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+
+			m_vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_data.size()), 1, 0, 0);
+		}
 
 		endRenderPass(m_vk, *m_cmdBuffer);
 		endCommandBuffer(m_vk, *m_cmdBuffer);
@@ -646,16 +772,6 @@ public:
 	}
 };
 
-void checkDepthBiasClampSupport (Context& context)
-{
-	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_DEPTH_BIAS_CLAMP);
-}
-
-void checkWideLinesSupport (Context& context)
-{
-	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_WIDE_LINES);
-}
-
 // Tests that fail if both the depth bias clamp or depth constant factor stay at 0.0f instead of applying the real values.
 struct DepthBiasNonZeroPushConstants
 {
@@ -666,9 +782,11 @@ struct DepthBiasNonZeroPushConstants
 
 struct DepthBiasNonZeroParams
 {
+	vk::PipelineConstructionType	pipelineConstructionType;
 	float							depthBiasConstant;
 	float							depthBiasClamp;
 	DepthBiasNonZeroPushConstants	pushConstants;
+	bool							useMeshShaders;
 };
 
 class DepthBiasNonZeroCase : public vkt::TestCase
@@ -716,33 +834,74 @@ DepthBiasNonZeroInstance::DepthBiasNonZeroInstance (Context& context, const Dept
 
 void DepthBiasNonZeroCase::checkSupport (Context& context) const
 {
-	const auto& features = context.getDeviceFeatures();
-	if (m_params.depthBiasClamp != 0.0f && !features.depthBiasClamp)
-		TCU_THROW(NotSupportedError, "Depth bias clamping not supported");
+	if (m_params.depthBiasClamp != 0.0f)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_DEPTH_BIAS_CLAMP);
+
+	if (m_params.useMeshShaders)
+		context.requireDeviceFunctionality("VK_EXT_mesh_shader");
+
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 
 void DepthBiasNonZeroCase::initPrograms (vk::SourceCollections& programCollection) const
 {
-	std::ostringstream vert;
-	vert
-		<< "#version 450\n"
-		<< "\n"
-		<< "layout (push_constant, std430) uniform PushConstantBlock {\n"
-		<< "	float geometryDepth;\n"
-		<< "	float minDepth;\n"
-		<< "	float maxDepth;\n"
-		<< "} pc;\n"
-		<< "\n"
-		<< "vec2 positions[3] = vec2[](\n"
-		<< "    vec2(-1.0, -1.0),\n"
-		<< "    vec2(3.0, -1.0),\n"
-		<< "    vec2(-1.0, 3.0)\n"
-		<< ");\n"
-		<< "\n"
-		<< "void main() {\n"
-		<< "    gl_Position = vec4(positions[gl_VertexIndex], pc.geometryDepth, 1.0);\n"
-		<< "}\n"
-		;
+	if (m_params.useMeshShaders)
+	{
+		std::ostringstream mesh;
+		mesh
+			<< "#version 450\n"
+			<< "#extension GL_EXT_mesh_shader : enable\n"
+			<< "\n"
+			<< "layout (push_constant, std430) uniform PushConstantBlock {\n"
+			<< "	float geometryDepth;\n"
+			<< "	float minDepth;\n"
+			<< "	float maxDepth;\n"
+			<< "} pc;\n"
+			<< "\n"
+			<< "vec2 positions[3] = vec2[](\n"
+			<< "    vec2(-1.0, -1.0),\n"
+			<< "    vec2(3.0, -1.0),\n"
+			<< "    vec2(-1.0, 3.0)\n"
+			<< ");\n"
+			<< "\n"
+			<< "layout(local_size_x=3) in;\n"
+			<< "layout(triangles) out;\n"
+			<< "layout(max_vertices=3, max_primitives=1) out;\n"
+			<< "\n"
+			<< "void main() {\n"
+			<< "    SetMeshOutputsEXT(3u, 1u);\n"
+			<< "    gl_MeshVerticesEXT[gl_LocalInvocationIndex].gl_Position = vec4(positions[gl_LocalInvocationIndex], pc.geometryDepth, 1.0);\n"
+			<< "    gl_PrimitiveTriangleIndicesEXT[0] = uvec3(0, 1, 2);\n"
+			<< "}\n"
+			;
+
+		const vk::ShaderBuildOptions buildOptions (programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+		programCollection.glslSources.add("mesh") << glu::MeshSource(mesh.str()) << buildOptions;
+	}
+	else
+	{
+		std::ostringstream vert;
+		vert
+			<< "#version 450\n"
+			<< "\n"
+			<< "layout (push_constant, std430) uniform PushConstantBlock {\n"
+			<< "	float geometryDepth;\n"
+			<< "	float minDepth;\n"
+			<< "	float maxDepth;\n"
+			<< "} pc;\n"
+			<< "\n"
+			<< "vec2 positions[3] = vec2[](\n"
+			<< "    vec2(-1.0, -1.0),\n"
+			<< "    vec2(3.0, -1.0),\n"
+			<< "    vec2(-1.0, 3.0)\n"
+			<< ");\n"
+			<< "\n"
+			<< "void main() {\n"
+			<< "    gl_Position = vec4(positions[gl_VertexIndex], pc.geometryDepth, 1.0);\n"
+			<< "}\n"
+			;
+		programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+	}
 
 	const auto outColor = getExpectedColor();
 	std::ostringstream frag;
@@ -766,7 +925,6 @@ void DepthBiasNonZeroCase::initPrograms (vk::SourceCollections& programCollectio
 		<< "}\n"
 		;
 
-	programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
 	programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
 }
 
@@ -785,7 +943,14 @@ tcu::TestStatus DepthBiasNonZeroInstance::iterate (void)
 	const auto	extent		= vk::makeExtent3D(8u, 8u, 1u);
 	const auto&	pcData		= m_params.pushConstants;
 	const auto	pcDataSize	= static_cast<deUint32>(sizeof(pcData));
-	const auto	pcStages	= (vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT);
+	const auto	pcStages	= ((m_params.useMeshShaders
+#ifndef CTS_USES_VULKANSC
+								? vk::VK_SHADER_STAGE_MESH_BIT_EXT
+#else
+								? 0
+#endif // CTS_USES_VULKANSC
+								: vk::VK_SHADER_STAGE_VERTEX_BIT)
+							   | vk::VK_SHADER_STAGE_FRAGMENT_BIT);
 	const auto	pcRange		= vk::makePushConstantRange(pcStages, 0u, pcDataSize);
 	const auto	renderPass	= vk::makeRenderPass(vkd, device, colorFormat, depthFormat, vk::VK_ATTACHMENT_LOAD_OP_CLEAR, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 	const auto	stencilOp	= vk::makeStencilOpState(vk::VK_STENCIL_OP_KEEP, vk::VK_STENCIL_OP_KEEP, vk::VK_STENCIL_OP_KEEP, vk::VK_COMPARE_OP_NEVER, 0u, 0u, 0u);
@@ -839,7 +1004,7 @@ tcu::TestStatus DepthBiasNonZeroInstance::iterate (void)
 	const auto depthView				= vk::makeImageView(vkd, device, depthBuffer->object(), vk::VK_IMAGE_VIEW_TYPE_2D, depthFormat, depthSubresourceRange);
 
 	// Create framebuffer.
-	const std::vector<vk::VkImageView>	attachments	= { colorView.get(), depthView.get() };
+	const std::vector<vk::VkImageView>	attachments	{ colorView.get(), depthView.get() };
 	const auto							framebuffer	= vk::makeFramebuffer(vkd, device, renderPass.get(), static_cast<deUint32>(attachments.size()), de::dataOrNull(attachments), extent.width, extent.height);
 
 	// Descriptor set and pipeline layout.
@@ -848,11 +1013,19 @@ tcu::TestStatus DepthBiasNonZeroInstance::iterate (void)
 	const auto pipelineLayout	= vk::makePipelineLayout(vkd, device, 1u, &dsLayout.get(), 1u, &pcRange);
 
 	// Shader modules.
-	const auto vertModule = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
-	const auto fragModule = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
+	vk::Move<vk::VkShaderModule>	vertModule;
+	vk::Move<vk::VkShaderModule>	meshModule;
+	vk::Move<vk::VkShaderModule>	fragModule;
+	const auto&						binaries	= m_context.getBinaryCollection();
 
-	const std::vector<vk::VkViewport>	viewports	= { vk::makeViewport(extent) };
-	const std::vector<vk::VkRect2D>		scissors	= { vk::makeRect2D(extent) };
+	if (binaries.contains("vert"))
+		vertModule = vk::createShaderModule(vkd, device, binaries.get("vert"));
+	if (binaries.contains("mesh"))
+		meshModule = vk::createShaderModule(vkd, device, binaries.get("mesh"));
+	fragModule = vk::createShaderModule(vkd, device, binaries.get("frag"), 0u);
+
+	const std::vector<vk::VkViewport>	viewports	{ vk::makeViewport(extent) };
+	const std::vector<vk::VkRect2D>		scissors	{ vk::makeRect2D(extent) };
 
 	// Vertex input state without bindings and attributes.
 	const vk::VkPipelineVertexInputStateCreateInfo vertexInputInfo =
@@ -914,10 +1087,24 @@ tcu::TestStatus DepthBiasNonZeroInstance::iterate (void)
 	};
 
 	// Graphics pipeline.
-	const auto pipeline = vk::makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
-		vertModule.get(), DE_NULL, DE_NULL, DE_NULL, fragModule.get(), // shaders
-		renderPass.get(), viewports, scissors, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u/*subpass*/, 0u/*patchControlPoints*/,
-		&vertexInputInfo, &rasterizationInfo, nullptr, &depthStencilStateInfo, nullptr, &dynamicStateInfo);
+	vk::Move<vk::VkPipeline> pipeline;
+
+#ifndef CTS_USES_VULKANSC
+	if (m_params.useMeshShaders)
+	{
+		pipeline = vk::makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
+			DE_NULL, meshModule.get(), fragModule.get(),
+			renderPass.get(), viewports, scissors, 0u /*subpass*/,
+			&rasterizationInfo, nullptr, &depthStencilStateInfo, nullptr, &dynamicStateInfo);
+	}
+	else
+#endif // CTS_USES_VULKANSC
+	{
+		pipeline = vk::makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
+			vertModule.get(), DE_NULL, DE_NULL, DE_NULL, fragModule.get(), // shaders
+			renderPass.get(), viewports, scissors, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u/*subpass*/, 0u/*patchControlPoints*/,
+			&vertexInputInfo, &rasterizationInfo, nullptr, &depthStencilStateInfo, nullptr, &dynamicStateInfo);
+	}
 
 	// Command pool and buffer.
 	const auto cmdPool		= vk::makeCommandPool(vkd, device, qIndex);
@@ -936,7 +1123,16 @@ tcu::TestStatus DepthBiasNonZeroInstance::iterate (void)
 	vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
 	vkd.cmdSetDepthBias(cmdBuffer, m_params.depthBiasConstant, m_params.depthBiasClamp, 0.0f);
 	vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), pcStages, 0u, pcDataSize, &pcData);
-	vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
+#ifndef CTS_USES_VULKANSC
+	if (m_params.useMeshShaders)
+	{
+		vkd.cmdDrawMeshTasksEXT(cmdBuffer, 1u, 1u, 1u);
+	}
+	else
+#endif // CTS_USES_VULKANSC
+	{
+		vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
+	}
 	vk::endRenderPass(vkd, cmdBuffer);
 	vk::endCommandBuffer(vkd, cmdBuffer);
 	vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
@@ -956,10 +1152,41 @@ tcu::TestStatus DepthBiasNonZeroInstance::iterate (void)
 	return tcu::TestStatus::pass("Pass");
 }
 
+void checkDepthBiasClampSupport (Context& context)
+{
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_DEPTH_BIAS_CLAMP);
+}
+
+void checkWideLinesSupport (Context& context)
+{
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_WIDE_LINES);
+}
+
+void checkMeshShaderSupport (Context& context)
+{
+	context.requireDeviceFunctionality("VK_EXT_mesh_shader");
+}
+
+void checkMeshAndBiasClampSupport(Context& context)
+{
+	checkMeshShaderSupport(context);
+	checkDepthBiasClampSupport(context);
+}
+
+void checkMeshAndWideLinesSupport(Context& context)
+{
+	checkMeshShaderSupport(context);
+	checkWideLinesSupport(context);
+}
+
+void checkNothing (Context&)
+{}
+
 } //anonymous
 
-DynamicStateRSTests::DynamicStateRSTests (tcu::TestContext& testCtx)
-	: TestCaseGroup (testCtx, "rs_state", "Tests for rasterizer state")
+DynamicStateRSTests::DynamicStateRSTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
+	: TestCaseGroup					(testCtx, "rs_state", "Tests for rasterizer state")
+	, m_pipelineConstructionType	(pipelineConstructionType)
 {
 	/* Left blank on purpose */
 }
@@ -970,39 +1197,69 @@ DynamicStateRSTests::~DynamicStateRSTests ()
 
 void DynamicStateRSTests::init (void)
 {
-	ShaderMap shaderPaths;
-	shaderPaths[glu::SHADERTYPE_VERTEX]		= "vulkan/dynamic_state/VertexFetch.vert";
-	shaderPaths[glu::SHADERTYPE_FRAGMENT]	= "vulkan/dynamic_state/VertexFetch.frag";
+	ShaderMap basePaths;
+	basePaths[glu::SHADERTYPE_FRAGMENT]	= "vulkan/dynamic_state/VertexFetch.frag";
+	basePaths[glu::SHADERTYPE_VERTEX]	= nullptr;
+	basePaths[glu::SHADERTYPE_MESH]		= nullptr;
 
-	addChild(new InstanceFactory<DepthBiasParamTestInstance>(m_testCtx, "depth_bias", "Test depth bias functionality", shaderPaths));
-	addChild(new InstanceFactory<DepthBiasClampParamTestInstance, FunctionSupport0>(m_testCtx, "depth_bias_clamp", "Test depth bias clamp functionality", shaderPaths, checkDepthBiasClampSupport));
-	addChild(new InstanceFactory<LineWidthParamTestInstance, FunctionSupport0>(m_testCtx, "line_width", "Draw a line with width set to max defined by physical device", shaderPaths, checkWideLinesSupport));
+	for (int i = 0; i < 2; ++i)
+	{
+		ShaderMap shaderPaths(basePaths);
+		const bool isMesh = (i > 0);
+		std::string nameSuffix;
+		std::string descSuffix;
 
-	{
-		const DepthBiasNonZeroParams params =
+		if (isMesh)
 		{
-			16384.0f,	//	float							depthBiasConstant;
-			0.0f,		//	float							depthBiasClamp;
-			{			//	DepthBiasNonZeroPushConstants	pushConstants;
-				0.375f,	//		float geometryDepth;
-				0.5f,	//		float minDepth;
-				1.0f,	//		float maxDepth;
-			},
-		};
-		addChild(new DepthBiasNonZeroCase(m_testCtx, "nonzero_depth_bias_constant", "", params));
-	}
-	{
-		const DepthBiasNonZeroParams params =
+#ifndef CTS_USES_VULKANSC
+			nameSuffix = "_mesh";
+			descSuffix = " using mesh shaders";
+			shaderPaths[glu::SHADERTYPE_MESH] = "vulkan/dynamic_state/VertexFetch.mesh";
+#else
+			continue;
+#endif // CTS_USES_VULKANSC
+		}
+		else
 		{
-			16384.0f,		//	float							depthBiasConstant;
-			0.125f,			//	float							depthBiasClamp;
-			{				//	DepthBiasNonZeroPushConstants	pushConstants;
-				0.375f,		//		float geometryDepth;
-				0.46875f,	//		float minDepth;
-				0.53125f,	//		float maxDepth;
-			},
-		};
-		addChild(new DepthBiasNonZeroCase(m_testCtx, "nonzero_depth_bias_clamp", "", params));
+			shaderPaths[glu::SHADERTYPE_VERTEX] = "vulkan/dynamic_state/VertexFetch.vert";
+		}
+
+		addChild(new InstanceFactory<DepthBiasParamTestInstance, FunctionSupport0>(m_testCtx, "depth_bias" + nameSuffix, "Test depth bias functionality" + descSuffix, m_pipelineConstructionType, shaderPaths, (isMesh ? checkMeshShaderSupport : checkNothing)));
+		addChild(new InstanceFactory<DepthBiasClampParamTestInstance, FunctionSupport0>(m_testCtx, "depth_bias_clamp" + nameSuffix, "Test depth bias clamp functionality" + descSuffix, m_pipelineConstructionType, shaderPaths, (isMesh ? checkMeshAndBiasClampSupport : checkDepthBiasClampSupport)));
+		if (isMesh)
+			shaderPaths[glu::SHADERTYPE_MESH] = "vulkan/dynamic_state/VertexFetchLines.mesh";
+		addChild(new InstanceFactory<LineWidthParamTestInstance, FunctionSupport0>(m_testCtx, "line_width" + nameSuffix, "Draw a line with width set to max defined by physical device" + descSuffix, m_pipelineConstructionType, shaderPaths, (isMesh ? checkMeshAndWideLinesSupport : checkWideLinesSupport)));
+
+		{
+			const DepthBiasNonZeroParams params =
+			{
+				m_pipelineConstructionType,
+				16384.0f,	//	float							depthBiasConstant;
+				0.0f,		//	float							depthBiasClamp;
+				{			//	DepthBiasNonZeroPushConstants	pushConstants;
+					0.375f,	//		float geometryDepth;
+					0.5f,	//		float minDepth;
+					1.0f,	//		float maxDepth;
+				},
+				isMesh,
+			};
+			addChild(new DepthBiasNonZeroCase(m_testCtx, "nonzero_depth_bias_constant" + nameSuffix, "", params));
+		}
+		{
+			const DepthBiasNonZeroParams params =
+			{
+				m_pipelineConstructionType,
+				16384.0f,		//	float							depthBiasConstant;
+				0.125f,			//	float							depthBiasClamp;
+				{				//	DepthBiasNonZeroPushConstants	pushConstants;
+					0.375f,		//		float geometryDepth;
+					0.46875f,	//		float minDepth;
+					0.53125f,	//		float maxDepth;
+				},
+				isMesh,
+			};
+			addChild(new DepthBiasNonZeroCase(m_testCtx, "nonzero_depth_bias_clamp" + nameSuffix, "", params));
+		}
 	}
 }
 

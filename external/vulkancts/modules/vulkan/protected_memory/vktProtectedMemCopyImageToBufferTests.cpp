@@ -60,10 +60,11 @@ template<typename T>
 class CopyImageToBufferTestInstance : public ProtectedTestInstance
 {
 public:
-									CopyImageToBufferTestInstance	(Context&						ctx,
-																	 const vk::VkClearColorValue	fillValue,
-																	 const BufferValidator<T>&		validator,
-																	 const CmdBufferType			cmdBufferType);
+									CopyImageToBufferTestInstance	(Context&							ctx,
+																	 const vk::VkClearColorValue		fillValue,
+																	 const BufferValidator<T>&			validator,
+																	 const CmdBufferType				cmdBufferType,
+																	 const std::vector<std::string>&	extensions);
 	virtual tcu::TestStatus			iterate							(void);
 
 private:
@@ -83,18 +84,24 @@ public:
 														 vk::VkClearColorValue	fillValue,
 														 ValidationData<T>		data,
 														 CmdBufferType			cmdBufferType,
-														 vk::VkFormat			format)
-								: TestCase				(testCtx, name, "Copy image to buffer.")
-								, m_fillValue			(fillValue)
-								, m_validator			(data, format)
-								, m_cmdBufferType		(cmdBufferType)
+														 vk::VkFormat			format,
+														 bool					pipelineProtectedAccess)
+								: TestCase					(testCtx, name, "Copy image to buffer.")
+								, m_fillValue				(fillValue)
+								, m_validator				(data, format)
+								, m_cmdBufferType			(cmdBufferType)
+								, m_pipelineProtectedAccess	(pipelineProtectedAccess)
 							{
 							}
 
 	virtual					~CopyImageToBufferTestCase	(void) {}
 	virtual TestInstance*	createInstance				(Context& ctx) const
 							{
-								return new CopyImageToBufferTestInstance<T>(ctx, m_fillValue, m_validator, m_cmdBufferType);
+								std::vector<std::string> extensions;
+								if (m_pipelineProtectedAccess) {
+									extensions.push_back("VK_EXT_pipeline_protected_access");
+								}
+								return new CopyImageToBufferTestInstance<T>(ctx, m_fillValue, m_validator, m_cmdBufferType, extensions);
 							}
 	virtual void			initPrograms				(vk::SourceCollections&	programCollection) const
 							{
@@ -103,19 +110,25 @@ public:
 	virtual void			checkSupport				(Context& context) const
 							{
 								checkProtectedQueueSupport(context);
+#ifdef CTS_USES_VULKANSC
+								if (m_cmdBufferType == CMD_BUFFER_SECONDARY && context.getDeviceVulkanSC10Properties().secondaryCommandBufferNullOrImagelessFramebuffer == VK_FALSE)
+									TCU_THROW(NotSupportedError, "secondaryCommandBufferNullFramebuffer is not supported");
+#endif // CTS_USES_VULKANSC
 							}
 private:
 	vk::VkClearColorValue	m_fillValue;
 	BufferValidator<T>		m_validator;
 	CmdBufferType			m_cmdBufferType;
+	bool					m_pipelineProtectedAccess;
 };
 
 template<typename T>
 CopyImageToBufferTestInstance<T>::CopyImageToBufferTestInstance	(Context&						ctx,
 																 const vk::VkClearColorValue	fillValue,
 																 const BufferValidator<T>&		validator,
-																 const CmdBufferType			cmdBufferType)
-	: ProtectedTestInstance	(ctx)
+																 const CmdBufferType			cmdBufferType,
+																 const std::vector<std::string>& extensions)
+	: ProtectedTestInstance	(ctx, extensions)
 	, m_imageFormat			(vk::VK_FORMAT_R32G32B32A32_UINT)
 	, m_fillValue			(fillValue)
 	, m_validator			(validator)
@@ -356,17 +369,26 @@ tcu::TestCaseGroup*	createCopyImageToFloatBufferTests(tcu::TestContext& testCtx,
 		},
 	};
 
+	bool pipelineProtectedAccess[] = {
+		false,
+#ifndef CTS_USES_VULKANSC
+		true,
+#endif
+	};
+
 	de::MovePtr<tcu::TestCaseGroup>	copyStaticTests		(new tcu::TestCaseGroup(testCtx, "static", "Copy Image to Buffer Tests with static input"));
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(testData); ++ndx)
 	{
-		DE_ASSERT(testData[ndx].data.positions[0].x() < MAX_POSITION);
-		DE_ASSERT(testData[ndx].data.positions[1].x() < MAX_POSITION);
-		DE_ASSERT(testData[ndx].data.positions[2].x() < MAX_POSITION);
-		DE_ASSERT(testData[ndx].data.positions[3].x() < MAX_POSITION);
+		for (int ppa = 0; ppa < DE_LENGTH_OF_ARRAY(pipelineProtectedAccess); ++ppa) {
+			DE_ASSERT(testData[ndx].data.positions[0].x() < MAX_POSITION);
+			DE_ASSERT(testData[ndx].data.positions[1].x() < MAX_POSITION);
+			DE_ASSERT(testData[ndx].data.positions[2].x() < MAX_POSITION);
+			DE_ASSERT(testData[ndx].data.positions[3].x() < MAX_POSITION);
 
-		const std::string name = "copy_" + de::toString(ndx + 1);
-		copyStaticTests->addChild(new CopyImageToBufferTestCase<tcu::Vec4>(testCtx, name.c_str(), testData[ndx].fillValue, testData[ndx].data, cmdBufferType, vk::VK_FORMAT_R32G32B32A32_SFLOAT));
+			const std::string name = "copy_" + de::toString(ndx + 1) + (pipelineProtectedAccess[ppa] ? "_protected_access" : "");;
+			copyStaticTests->addChild(new CopyImageToBufferTestCase<tcu::Vec4>(testCtx, name.c_str(), testData[ndx].fillValue, testData[ndx].data, cmdBufferType, vk::VK_FORMAT_R32G32B32A32_SFLOAT, pipelineProtectedAccess[ppa]));
+		}
 	}
 
 	/* Add a few randomized tests */
@@ -375,26 +397,28 @@ tcu::TestCaseGroup*	createCopyImageToFloatBufferTests(tcu::TestContext& testCtx,
 	de::Random						rnd					(testCtx.getCommandLine().getBaseSeed());
 	for (int ndx = 0; ndx < testCount; ++ndx)
 	{
-		const std::string	name		= "copy_" + de::toString(ndx + 1);
-		vk::VkClearValue	clearValue	= vk::makeClearValueColorVec4(tcu::randomVec4(rnd));
-		const tcu::Vec4		refValue	(clearValue.color.float32[0], clearValue.color.float32[1], clearValue.color.float32[2], clearValue.color.float32[3]);
-		const tcu::IVec4	vec0		= tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1));
-		const tcu::IVec4	vec1		= tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1));
-		const tcu::IVec4	vec2		= tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1));
-		const tcu::IVec4	vec3		= tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1));
+		for (int ppa = 0; ppa < DE_LENGTH_OF_ARRAY(pipelineProtectedAccess); ++ppa) {
+			const std::string	name = "copy_" + de::toString(ndx + 1) + (pipelineProtectedAccess[ppa] ? "_protected_access" : "");
+			vk::VkClearValue	clearValue = vk::makeClearValueColorVec4(tcu::randomVec4(rnd));
+			const tcu::Vec4		refValue(clearValue.color.float32[0], clearValue.color.float32[1], clearValue.color.float32[2], clearValue.color.float32[3]);
+			const tcu::IVec4	vec0 = tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1));
+			const tcu::IVec4	vec1 = tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1));
+			const tcu::IVec4	vec2 = tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1));
+			const tcu::IVec4	vec3 = tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1));
 
-		ValidationDataVec4	data		=
-		{
-			{ vec0, vec1, vec2, vec3 },
-			{ refValue, refValue, refValue, refValue }
-		};
+			ValidationDataVec4	data =
+			{
+				{ vec0, vec1, vec2, vec3 },
+				{ refValue, refValue, refValue, refValue }
+			};
 
-		DE_ASSERT(data.positions[0].x() < MAX_POSITION);
-		DE_ASSERT(data.positions[1].x() < MAX_POSITION);
-		DE_ASSERT(data.positions[2].x() < MAX_POSITION);
-		DE_ASSERT(data.positions[3].x() < MAX_POSITION);
+			DE_ASSERT(data.positions[0].x() < MAX_POSITION);
+			DE_ASSERT(data.positions[1].x() < MAX_POSITION);
+			DE_ASSERT(data.positions[2].x() < MAX_POSITION);
+			DE_ASSERT(data.positions[3].x() < MAX_POSITION);
 
-		copyRandomTests->addChild(new CopyImageToBufferTestCase<tcu::Vec4>(testCtx, name.c_str(), clearValue.color, data, cmdBufferType, vk::VK_FORMAT_R32G32B32A32_SFLOAT));
+			copyRandomTests->addChild(new CopyImageToBufferTestCase<tcu::Vec4>(testCtx, name.c_str(), clearValue.color, data, cmdBufferType, vk::VK_FORMAT_R32G32B32A32_SFLOAT, pipelineProtectedAccess[ppa]));
+		}
 	}
 
 	std::string groupName = getCmdBufferTypeStr(cmdBufferType);

@@ -1072,24 +1072,6 @@ BufferWithMemory createStorageBuffer(const vk::DeviceInterface&	vkdi,
 	return bufmem;
 }
 
-vk::Move<vk::VkShaderModule> createShaderModule (const vk::DeviceInterface&	deviceInterface,
-												 vk::VkDevice				device,
-												 const vk::ProgramBinary&	binary)
-{
-	DE_ASSERT(binary.getFormat() == vk::PROGRAM_FORMAT_SPIRV);
-
-	const struct vk::VkShaderModuleCreateInfo shaderModuleInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-		DE_NULL,
-		0,
-		static_cast<deUintptr>(binary.getSize()),
-		reinterpret_cast<const deUint32*>(binary.getBinary()),
-	};
-
-	return createShaderModule(deviceInterface, device, &shaderModuleInfo);
-}
-
 // Make sure the length of the following vectors is a multiple of 4. This will make sure operands can be reused for vectorized tests.
 const OperandsVector<double>	DOUBLE_OPERANDS		=
 {

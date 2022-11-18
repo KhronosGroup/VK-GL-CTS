@@ -449,7 +449,7 @@ tcu::TestCaseGroup* createImageBlockShapesTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "image_block_shapes", "Standard block shape"));
 
-	const std::vector<TestImageParameters> imageParameters =
+	const std::vector<TestImageParameters> imageParameters
 	{
 		{ IMAGE_TYPE_2D,			{ tcu::UVec3(512u, 256u, 1u) },		getTestFormats(IMAGE_TYPE_2D) },
 		{ IMAGE_TYPE_2D_ARRAY,		{ tcu::UVec3(512u, 256u, 6u) },		getTestFormats(IMAGE_TYPE_2D_ARRAY) },

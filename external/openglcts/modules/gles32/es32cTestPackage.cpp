@@ -31,6 +31,7 @@
 #include "glcInternalformatTests.hpp"
 #include "glcSeparableProgramsTransformFeedbackTests.hpp"
 #include "glcShaderConstExprTests.hpp"
+#include "glcShaderFunctionTests.hpp"
 #include "glcShaderIndexingTests.hpp"
 #include "glcShaderIntegerMixTests.hpp"
 #include "glcShaderLibrary.hpp"
@@ -91,6 +92,8 @@ void TestCaseWrapper::init(tcu::TestCase* testCase, const std::string& path)
 	if (m_waiverMechanism->isOnWaiverList(path))
 		throw tcu::TestException("Waived test", QP_TEST_RESULT_WAIVER);
 
+	glu::resetState(m_testPackage.getContext().getRenderContext(), m_testPackage.getContext().getContextInfo());
+
 	testCase->init();
 }
 
@@ -107,7 +110,7 @@ tcu::TestNode::IterateResult TestCaseWrapper::iterate(tcu::TestCase* testCase)
 	glu::RenderContext&			 renderCtx = m_testPackage.getContext().getRenderContext();
 	tcu::TestCase::IterateResult result;
 
-	// Clear to surrender-blue
+	// Clear to black
 	{
 		const glw::Functions& gl = renderCtx.getFunctions();
 		gl.clearColor(0.0f, 0.0f, 0.0f, 1.f);
@@ -157,8 +160,10 @@ void ES32TestPackage::init(void)
 		addChild(new deqp::InfoTests(getContext()));
 
 		tcu::TestCaseGroup* shadersGroup = new tcu::TestCaseGroup(getTestContext(), "shaders", "");
+		shadersGroup->addChild(new deqp::ShaderFunctionTests(getContext(), glu::GLSL_VERSION_320_ES));
 		shadersGroup->addChild(new deqp::ShaderIntegerMixTests(getContext(), glu::GLSL_VERSION_320_ES));
 		shadersGroup->addChild(new deqp::ShaderNegativeTests(getContext(), glu::GLSL_VERSION_320_ES));
+		shadersGroup->addChild(new deqp::ShaderStructTests(getContext(), glu::GLSL_VERSION_320_ES));
 		shadersGroup->addChild(new glcts::AggressiveShaderOptimizationsTests(getContext()));
 		addChild(shadersGroup);
 

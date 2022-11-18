@@ -1,0 +1,8 @@
+# Excluded sparse version of texture function tests according to the Android GLES3 issue list
+dEQP-VK.glsl.texture_functions.texturegrad.sparse_samplercubeshadow_fragment
+dEQP-VK.glsl.texture_functions.texturegrad.sparse_samplercubeshadow_vertex
+
+# VK-GL-CTS 3005
+dEQP-VK.ray_tracing_pipeline.build.cpuht*1048576_1_1
+dEQP-VK.ray_tracing_pipeline.build.cpuht*65536_4_4
+

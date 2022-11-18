@@ -438,7 +438,7 @@ TextureFormatInfo getTextureFormatInfo (const TextureFormat& format)
 								 Vec4(	     0.5f,		    0.5f,		    0.5f,		 0.5f));
 	else if (format.order == TextureFormat::D || format.order == TextureFormat::DS)
 		return TextureFormatInfo(Vec4(0.0f,	0.0f,	0.0f,	0.0f),
-								 Vec4(1.0f,	1.0f,	1.0f,	0.0f),
+								 Vec4(1.0f,	1.0f,	1.0f,	255.0f),
 								 Vec4(1.0f,	1.0f,	1.0f,	1.0f),
 								 Vec4(0.0f,	0.0f,	0.0f,	0.0f)); // Depth / stencil formats.
 	else if (format == TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_SHORT_5551))
@@ -1545,7 +1545,7 @@ ViewType getEffectiveTView (const ViewType& src, std::vector<tcu::ConstPixelBuff
 {
 	storage.resize(src.getNumLevels());
 
-	ViewType view = ViewType(src.getNumLevels(), &storage[0], src.isES2());
+	ViewType view = ViewType(src.getNumLevels(), &storage[0], src.isES2(), src.getImageViewMinLodParams());
 
 	for (int levelNdx = 0; levelNdx < src.getNumLevels(); ++levelNdx)
 		storage[levelNdx] = tcu::getEffectiveDepthStencilAccess(src.getLevel(levelNdx), sampler.depthStencilMode);
@@ -1567,7 +1567,7 @@ tcu::TextureCubeView getEffectiveTView (const tcu::TextureCubeView& src, std::ve
 		&storage[5 * src.getNumLevels()],
 	};
 
-	tcu::TextureCubeView view = tcu::TextureCubeView(src.getNumLevels(), storagePtrs, false);
+	tcu::TextureCubeView view = tcu::TextureCubeView(src.getNumLevels(), storagePtrs, false, src.getImageViewMinLodParams());
 
 	for (int faceNdx = 0; faceNdx < tcu::CUBEFACE_LAST; ++faceNdx)
 	for (int levelNdx = 0; levelNdx < src.getNumLevels(); ++levelNdx)

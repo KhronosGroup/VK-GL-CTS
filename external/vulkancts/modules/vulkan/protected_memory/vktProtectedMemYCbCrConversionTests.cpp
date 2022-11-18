@@ -572,7 +572,7 @@ bool validateImage (ProtectedContext&							ctx,
 	// Reset helper SSBO
 	{
 		const vk::Unique<vk::VkFence>			fence				(vk::createFence(vk, device));
-		const vk::Unique<vk::VkPipeline>		resetSSBOPipeline	(makeComputePipeline(vk, device, *pipelineLayout, *resetSSBOShader, DE_NULL));
+		const vk::Unique<vk::VkPipeline>		resetSSBOPipeline	(makeComputePipeline(vk, device, *pipelineLayout, *resetSSBOShader));
 		const vk::Unique<vk::VkCommandBuffer>	resetCmdBuffer		(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 		beginCommandBuffer(vk, *resetCmdBuffer);
 
@@ -588,7 +588,7 @@ bool validateImage (ProtectedContext&							ctx,
 	vk::VkResult							queueSubmitResult;
 	{
 		const vk::Unique<vk::VkFence>			fence				(vk::createFence(vk, device));
-		const vk::Unique<vk::VkPipeline>		validationPipeline	(makeComputePipeline(vk, device, *pipelineLayout, *validatorShader, DE_NULL));
+		const vk::Unique<vk::VkPipeline>		validationPipeline	(makeComputePipeline(vk, device, *pipelineLayout, *validatorShader));
 		const vk::Unique<vk::VkCommandBuffer>	cmdBuffer			(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 		beginCommandBuffer(vk, *cmdBuffer);
@@ -646,13 +646,13 @@ void testShaders (vk::SourceCollections& dst, const TestConfig config)
 		"layout(std140, set = 0, binding = 2) buffer ProtectedHelper\n"
 		"{\n"
 		"    highp uint zero;\n"
-		"    highp uint dummyOut;\n"
+		"    highp uint unusedOut;\n"
 		"} helper;\n"
 		"\n"
 		"void error()\n"
 		"{\n"
 		"    for (uint x = 0u; x < 10u; x += helper.zero)\n"
-		"        atomicAdd(helper.dummyOut, 1u);\n"
+		"        atomicAdd(helper.unusedOut, 1u);\n"
 		"}\n"
 		"\n"
 		"${COMPARE_FUNCTION}"
@@ -674,13 +674,13 @@ void testShaders (vk::SourceCollections& dst, const TestConfig config)
 		"layout(std140, set=0, binding=2) buffer ProtectedHelper\n"
 		"{\n"
 		"    highp uint zero; // set to 0\n"
-		"    highp uint dummyOut;\n"
+		"    highp uint unusedOut;\n"
 		"} helper;\n"
 		"\n"
 		"void main (void)\n"
 		"{\n"
 		"    helper.zero = 0;\n"
-		"    helper.dummyOut = 0;\n"
+		"    helper.unusedOut = 0;\n"
 		"}\n";
 
 	dst.glslSources.add("ResetSSBO") << glu::ComputeSource(resetSSBOShader);
@@ -1021,7 +1021,7 @@ void generateYCbCrImage (ProtectedContext&				ctx,
 	ycbcr::ChannelAccess				bChannelAccess			(planeInfo.hasChannelNdx(2) ? getChannelAccess(ycbcrSrc, planeInfo, size, 2) : nullAccess);
 	ycbcr::ChannelAccess				aChannelAccess			(planeInfo.hasChannelNdx(3) ? getChannelAccess(ycbcrSrc, planeInfo, size, 3) : nullAccessAlpha);
 	const bool							implicitNearestCosited	((config.chromaFilter == vk::VK_FILTER_NEAREST && !explicitReconstruction) &&
-																 (config.xChromaOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN_KHR || config.yChromaOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN_KHR));
+																 (config.xChromaOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN || config.yChromaOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN));
 
 	for (deUint32 planeNdx = 0; planeNdx < planeInfo.numPlanes; planeNdx++)
 		deMemset(ycbcrSrc.getPlanePtr(planeNdx), 0u, ycbcrSrc.getPlaneSize(planeNdx));
@@ -1065,7 +1065,7 @@ void generateYCbCrImage (ProtectedContext&				ctx,
 		std::vector<tcu::Vec4>			relaxedYcbcrMinBounds;
 		std::vector<tcu::Vec4>			relaxedYcbcrMaxBounds;
 
-		ycbcr::calculateBounds(rChannelAccess, gChannelAccess, bChannelAccess, aChannelAccess, bitDepth, texCoords, filteringPrecision, conversionPrecision, subTexelPrecisionBits, config.textureFilter, config.colorModel, config.colorRange, config.chromaFilter, vk::VK_CHROMA_LOCATION_MIDPOINT_KHR, vk::VK_CHROMA_LOCATION_MIDPOINT_KHR, config.componentMapping, explicitReconstruction, config.addressModeU, config.addressModeV, relaxedYcbcrMinBounds, relaxedYcbcrMaxBounds, uvBounds, ijBounds);
+		ycbcr::calculateBounds(rChannelAccess, gChannelAccess, bChannelAccess, aChannelAccess, bitDepth, texCoords, filteringPrecision, conversionPrecision, subTexelPrecisionBits, config.textureFilter, config.colorModel, config.colorRange, config.chromaFilter, vk::VK_CHROMA_LOCATION_MIDPOINT, vk::VK_CHROMA_LOCATION_MIDPOINT, config.componentMapping, explicitReconstruction, config.addressModeU, config.addressModeV, relaxedYcbcrMinBounds, relaxedYcbcrMaxBounds, uvBounds, ijBounds);
 
 		DE_ASSERT(relaxedYcbcrMinBounds.size() == ycbcrMinBounds.size());
 		DE_ASSERT(relaxedYcbcrMaxBounds.size() == ycbcrMaxBounds.size());

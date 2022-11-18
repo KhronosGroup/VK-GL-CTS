@@ -1,0 +1,9 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceLineRasterizationFeaturesEXT":
+		[
+			{ "features": ["rectangularLines", "bresenhamLines", "smoothLines", "stippledRectangularLines", "stippledBresenhamLines", "stippledSmoothLines"],	"requirements": ["VK_EXT_line_rasterization"] }
+		]
+	}
+}

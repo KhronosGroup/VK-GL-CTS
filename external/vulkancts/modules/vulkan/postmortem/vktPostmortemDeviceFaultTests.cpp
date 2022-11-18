@@ -233,8 +233,6 @@ public:
 			applicationNameOffset	= deUint32(sizeof(VkDeviceFaultVendorBinaryHeaderVersionOneEXT));
 			applicationVersion		= VK_MAKE_API_VERSION(1,7,3,11);
 			engineNameOffset		= deUint32(applicationNameOffset + sizeof(applicationName));
-			engineVersion			= VK_MAKE_VERSION(3,4,5);
-			apiVersion				= VK_MAKE_API_VERSION(1,7,3,11);
 
 			strcpy(applicationName, "application.exe");
 			strcpy(engineName, "driver.so.3.4.5");

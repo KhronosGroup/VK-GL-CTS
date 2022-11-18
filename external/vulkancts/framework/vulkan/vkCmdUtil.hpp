@@ -33,6 +33,14 @@ void beginCommandBuffer		(const DeviceInterface&		vk,
 							 const VkCommandBuffer		commandBuffer,
 							 VkCommandBufferUsageFlags	flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
+// Begins a secondary command buffer.
+// Note if renderPass is not DE_NULL, VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT will be added to the flags.
+void beginSecondaryCommandBuffer	(const DeviceInterface&				vk,
+									 const VkCommandBuffer				commandBuffer,
+									 const VkRenderPass					renderPass		= DE_NULL,
+									 const VkFramebuffer				framebuffer		= DE_NULL,
+									 const VkCommandBufferUsageFlags	flags			= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
 void endCommandBuffer		(const DeviceInterface&	vk,
 							 const VkCommandBuffer	commandBuffer);
 
@@ -109,6 +117,37 @@ void beginRenderPass (const DeviceInterface&	vk,
 
 void endRenderPass (const DeviceInterface&	vk,
 					const VkCommandBuffer	commandBuffer);
+
+#ifndef CTS_USES_VULKANSC
+void beginRendering (const DeviceInterface&		vk,
+					 const VkCommandBuffer		commandBuffer,
+					 const VkImageView			colorImageView,
+					 const VkRect2D&			renderArea,
+					 const VkClearValue&		clearValue,
+					 const VkImageLayout		imageLayout = VK_IMAGE_LAYOUT_GENERAL,
+					 const VkAttachmentLoadOp	loadOperation = VK_ATTACHMENT_LOAD_OP_LOAD,
+					 VkRenderingFlagsKHR		renderingFlags = 0,
+					 const deUint32				layerCount = 1u,
+					 const deUint32				viewMask = 0u);
+
+void beginRendering (const DeviceInterface&		vk,
+					 const VkCommandBuffer		commandBuffer,
+					 const VkImageView			colorImageView,
+					 const VkImageView			depthStencilImageView,
+					 const bool					useStencilAttachment,
+					 const VkRect2D&			renderArea,
+					 const VkClearValue&		clearColorValue,
+					 const VkClearValue&		clearDepthValue,
+					 const VkImageLayout		colorImageLayout = VK_IMAGE_LAYOUT_GENERAL,
+					 const VkImageLayout		depthImageLayout = VK_IMAGE_LAYOUT_GENERAL,
+					 const VkAttachmentLoadOp	loadOperation = VK_ATTACHMENT_LOAD_OP_LOAD,
+					 VkRenderingFlagsKHR		renderingFlags = 0,
+					 const deUint32				layerCount = 1u,
+					 const deUint32				viewMask = 0u);
+
+void endRendering (const DeviceInterface&		vk,
+				   const VkCommandBuffer		commandBuffer);
+#endif // CTS_USES_VULKANSC
 
 void submitCommandsAndWait	(const DeviceInterface&			vk,
 							 const VkDevice					device,

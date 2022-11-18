@@ -31,13 +31,14 @@
 #include "vkMemUtil.hpp"
 #include "deUniquePtr.hpp"
 #include "tcuVectorUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 
 namespace vkt
 {
 namespace robustness
 {
 
-vk::Move<vk::VkDevice>	createRobustBufferAccessDevice		(Context& context, const vk::VkPhysicalDeviceFeatures2* enabledFeatures2 = DE_NULL);
+vk::Move<vk::VkDevice>	createRobustBufferAccessDevice		(Context& context, vk::VkInstance instance, const vk::InstanceInterface& vki, const vk::VkPhysicalDeviceFeatures2* enabledFeatures2 = DE_NULL);
 bool					areEqual							(float a, float b);
 bool					isValueZero							(const void* valuePtr, size_t valueSize);
 bool					isValueWithinBuffer					(const void* buffer, vk::VkDeviceSize bufferSize, const void* valuePtr, size_t valueSizeInBytes);
@@ -49,10 +50,12 @@ void					logValue							(std::ostringstream& logMsg, const void* valuePtr, vk::V
 class TestEnvironment
 {
 public:
-									TestEnvironment		(Context&					context,
-														 vk::VkDevice				device,
-														 vk::VkDescriptorSetLayout	descriptorSetLayout,
-														 vk::VkDescriptorSet		descriptorSet);
+									TestEnvironment		(Context&						context,
+														 vk::VkInstance					instance,
+														 const vk::InstanceInterface&	instanceInterface,
+														 vk::VkDevice					device,
+														 vk::VkDescriptorSetLayout		descriptorSetLayout,
+														 vk::VkDescriptorSet			descriptorSet);
 
 	virtual							~TestEnvironment	(void) {}
 
@@ -60,6 +63,8 @@ public:
 
 protected:
 	Context&						m_context;
+	vk::VkInstance					m_instance;
+	const vk::InstanceInterface&	m_instanceInterface;
 	vk::VkDevice					m_device;
 	vk::VkDescriptorSetLayout		m_descriptorSetLayout;
 	vk::VkDescriptorSet				m_descriptorSet;
@@ -84,13 +89,16 @@ public:
 		deUint32					indexCount;
 	};
 
-									GraphicsEnvironment		(Context&					context,
-															 vk::VkDevice				device,
-															 vk::VkDescriptorSetLayout	descriptorSetLayout,
-															 vk::VkDescriptorSet		descriptorSet,
-															 const VertexBindings&		vertexBindings,
-															 const VertexAttributes&	vertexAttributes,
-															 const DrawConfig&			drawConfig);
+									GraphicsEnvironment		(Context&						context,
+															 vk::VkInstance					instance,
+															 const vk::InstanceInterface&	instanceInterface,
+															 vk::VkDevice					device,
+															 vk::VkDescriptorSetLayout		descriptorSetLayout,
+															 vk::VkDescriptorSet			descriptorSet,
+															 const VertexBindings&			vertexBindings,
+															 const VertexAttributes&		vertexAttributes,
+															 const DrawConfig&				drawConfig,
+															 bool							testPipelineRobustness = false);
 
 	virtual							~GraphicsEnvironment	(void) {}
 
@@ -117,10 +125,13 @@ private:
 class ComputeEnvironment: public TestEnvironment
 {
 public:
-									ComputeEnvironment		(Context&					context,
-															 vk::VkDevice				device,
-															 vk::VkDescriptorSetLayout	descriptorSetLayout,
-															 vk::VkDescriptorSet		descriptorSet);
+									ComputeEnvironment		(Context&						context,
+															 vk::VkInstance					instance,
+															 const vk::InstanceInterface&	instanceInterface,
+															 vk::VkDevice					device,
+															 vk::VkDescriptorSetLayout		descriptorSetLayout,
+															 vk::VkDescriptorSet			descriptorSet,
+															 bool							testPipelineRobustness = false);
 
 	virtual							~ComputeEnvironment		(void) {}
 

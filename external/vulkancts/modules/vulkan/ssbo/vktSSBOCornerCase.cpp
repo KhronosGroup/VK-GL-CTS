@@ -113,13 +113,17 @@ struct Buffer
 	Buffer		(void)							: buffer(0), size(0) {}
 };
 
-de::MovePtr<vk::Allocation> allocateAndBindMemory (Context &context, vk::VkBuffer buffer, vk::MemoryRequirement memReqs)
+de::MovePtr<vk::Allocation> allocateAndBindMemory (Context &context, vk::VkBuffer buffer, vk::MemoryRequirement memReqs, vk::VkDeviceSize* allocationSize = DE_NULL)
 {
 	const vk::DeviceInterface		&vkd	= context.getDeviceInterface();
 	const vk::VkMemoryRequirements	bufReqs	= vk::getBufferMemoryRequirements(vkd, context.getDevice(), buffer);
 	de::MovePtr<vk::Allocation>		memory	= context.getDefaultAllocator().allocate(bufReqs, memReqs);
 
 	vkd.bindBufferMemory(context.getDevice(), buffer, memory->getMemory(), memory->getOffset());
+	if (allocationSize)
+	{
+		*allocationSize = bufReqs.size;
+	}
 
 	return memory;
 }
@@ -176,10 +180,11 @@ tcu::TestStatus SSBOCornerCaseInstance::iterate (void)
 	// Create descriptor set
 	const deUint32					acBufferSize		= 4;
 	vk::Move<vk::VkBuffer>			acBuffer			(createBuffer(m_context, acBufferSize, vk:: VK_BUFFER_USAGE_STORAGE_BUFFER_BIT));
-	de::UniquePtr<vk::Allocation>	acBufferAlloc		(allocateAndBindMemory(m_context, *acBuffer, vk::MemoryRequirement::HostVisible));
+	vk::VkDeviceSize				acMemorySize		= 0;
+	de::UniquePtr<vk::Allocation>	acBufferAlloc		(allocateAndBindMemory(m_context, *acBuffer, vk::MemoryRequirement::HostVisible, &acMemorySize));
 
 	deMemset(acBufferAlloc->getHostPtr(), 0, acBufferSize);
-	flushMappedMemoryRange(vk, device, acBufferAlloc->getMemory(), acBufferAlloc->getOffset(), acBufferSize);
+	flushMappedMemoryRange(vk, device, acBufferAlloc->getMemory(), acBufferAlloc->getOffset(), acMemorySize);
 
 	vk::DescriptorSetLayoutBuilder	setLayoutBuilder;
 	vk::DescriptorPoolBuilder		poolBuilder;
@@ -227,22 +232,14 @@ tcu::TestStatus SSBOCornerCaseInstance::iterate (void)
 		descriptor	= makeDescriptorBufferInfo(*buffer, 0, bufferSize);
 	}
 
-	// Query the buffer device address and push them via push constants
-	const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
-
-	vk::VkBufferDeviceAddressInfo info =
+	vk::VkBufferDeviceAddressInfo info
 	{
 		vk::VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,	// VkStructureType	sType;
 		DE_NULL,											// const void*		pNext;
-		0,													// VkBuffer			buffer
+		descriptor.buffer									// VkBuffer			buffer
 	};
 
-	info.buffer = descriptor.buffer;
-	vk::VkDeviceAddress	addr;
-	if (useKHR)
-		addr = vk.getBufferDeviceAddress(device, &info);
-	else
-		addr = vk.getBufferDeviceAddressEXT(device, &info);
+	vk::VkDeviceAddress addr = vk.getBufferDeviceAddress(device, &info);
 
 	setUpdateBuilder.update(vk, device);
 

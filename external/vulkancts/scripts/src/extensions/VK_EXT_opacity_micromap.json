@@ -1,0 +1,9 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceOpacityMicromapFeaturesEXT":
+		[
+			{ "features": ["micromap"],				"requirements": ["VK_EXT_opacity_micromap"],		"mandatory_variant": ["vulkan"]  }
+		]
+	}
+}

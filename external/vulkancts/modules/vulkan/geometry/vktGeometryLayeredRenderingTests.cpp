@@ -270,7 +270,7 @@ Move<VkRenderPass> makeRenderPassWithSelfDependency (const DeviceInterface&	vk,
 		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,	// VkPipelineStageFlags	dstStageMask
 		VK_ACCESS_SHADER_WRITE_BIT,				// VkAccessFlags		srcAccessMask
 		VK_ACCESS_SHADER_READ_BIT,				// VkAccessFlags		dstAccessMask
-		0u,										// VkDependencyFlags	dependencyFlags
+		VK_DEPENDENCY_BY_REGION_BIT,			// VkDependencyFlags	dependencyFlags
 	};
 
 	const VkRenderPassCreateInfo	renderPassInfo			=
@@ -1235,7 +1235,7 @@ tcu::TestStatus test (Context& context, const TestParams params)
 	const deUint32					colorImagePixelSize		= static_cast<deUint32>(tcu::getPixelSize(mapVkFormat(colorFormat)));
 	const VkDeviceSize				colorBufferSize			= static_cast<VkDeviceSize>(deAlignSize(params.image.size.width * params.image.size.height * colorImagePixelSize, static_cast<std::size_t>(alignmentSize)) * params.image.size.depth * params.image.numLayers);
 	const VkImageCreateFlags		imageCreateFlags		= (isCubeImageViewType(params.image.viewType) ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : (VkImageCreateFlagBits)0) |
-															  (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType ? VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT_KHR : (VkImageCreateFlagBits)0);
+															  (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType ? VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT : (VkImageCreateFlagBits)0);
 	const VkImageViewType			viewType				= (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : params.image.viewType);
 
 	const Unique<VkImage>			colorImage				(makeImage				(vk, device, makeImageCreateInfo(imageCreateFlags, getImageType(params.image.viewType), colorFormat, params.image.size,
@@ -1297,7 +1297,7 @@ tcu::TestStatus testLayeredReadBack (Context& context, const TestParams params)
 	const size_t						passCount			= 2;
 	const deUint32						numLayers			= (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType ? params.image.size.depth : params.image.numLayers);
 	const VkImageCreateFlags			imageCreateFlags	= (isCubeImageViewType(params.image.viewType) ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : (VkImageCreateFlagBits)0) |
-															  (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType ? VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT_KHR : (VkImageCreateFlagBits)0);
+															  (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType ? VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT : (VkImageCreateFlagBits)0);
 	const VkImageViewType				viewType			= (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : params.image.viewType);
 	const VkImageType					imageType			= getImageType(params.image.viewType);
 	const VkExtent2D					imageExtent2D		= makeExtent2D(params.image.size.width, params.image.size.height);
@@ -1584,7 +1584,7 @@ tcu::TestStatus testSecondaryCmdBuffer (Context& context, const TestParams param
 	const VkDeviceSize					colorBufferSize		= static_cast<VkDeviceSize>(deAlignSize(params.image.size.width * params.image.size.height * colorImagePixelSize, static_cast<std::size_t>(alignmentSize)) * params.image.size.depth * params.image.numLayers);
 
 	const VkImageCreateFlags			imageCreateFlags	= (isCubeImageViewType(params.image.viewType) ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : (VkImageCreateFlagBits)0) |
-															  (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType ? VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT_KHR : (VkImageCreateFlagBits)0);
+															  (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType ? VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT : (VkImageCreateFlagBits)0);
 	const VkImageViewType				viewType			= (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : params.image.viewType);
 
 	const Unique<VkImage>				colorImage			(makeImage(vk, device, makeImageCreateInfo(imageCreateFlags, getImageType(params.image.viewType), colorFormat, params.image.size,
@@ -1782,7 +1782,7 @@ tcu::TestStatus testSecondaryCmdBuffer (Context& context, const TestParams param
 			VK_ACCESS_SHADER_READ_BIT			// VkAccessFlags	dstAccessMask
 		};
 
-		vk.cmdPipelineBarrier(*secondaryCmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 1u, &barrier, 0u, DE_NULL, 0u, DE_NULL);
+		vk.cmdPipelineBarrier(*secondaryCmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_DEPENDENCY_BY_REGION_BIT, 1u, &barrier, 0u, DE_NULL, 0u, DE_NULL);
 	}
 	vk.cmdDraw(*secondaryCmdBuffer, 1u, 1u, 0u, 0u);
 	endCommandBuffer(vk, *secondaryCmdBuffer);
@@ -1813,15 +1813,23 @@ void checkSupport (Context& context, const TestParams params)
 	{
 		context.requireDeviceFunctionality("VK_KHR_maintenance1");
 
+#ifndef CTS_USES_VULKANSC
 		if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 			!context.getPortabilitySubsetFeatures().imageView2DOn3DImage)
 		{
 			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Implementation does not support 2D or 2D array image view to be created on a 3D VkImage");
 		}
+#endif // CTS_USES_VULKANSC
 	}
 
 	if (params.testType == TEST_TYPE_SECONDARY_CMD_BUFFER)
+	{
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);
+#ifdef CTS_USES_VULKANSC
+		if (!params.inheritFramebuffer && context.getDeviceVulkanSC10Properties().secondaryCommandBufferNullOrImagelessFramebuffer == VK_FALSE)
+			TCU_THROW(NotSupportedError, "secondaryCommandBufferNullFramebuffer is not supported");
+#endif
+	}
 }
 
 } // anonymous

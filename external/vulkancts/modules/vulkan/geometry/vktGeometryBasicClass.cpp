@@ -36,6 +36,8 @@
 #include "vkMemUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkImageWithMemory.hpp"
 
 #include <string>
 
@@ -75,7 +77,7 @@ tcu::TestStatus GeometryExpanderRenderTestInstance::iterate (void)
 	Allocator&						memAlloc				= m_context.getDefaultAllocator();
 	const IVec2						resolution				= IVec2(TEST_CANVAS_SIZE, TEST_CANVAS_SIZE);
 	const VkFormat					colorFormat				= VK_FORMAT_R8G8B8A8_UNORM;
-	const Image						colorAttachmentImage	(
+	const ImageWithMemory			colorAttachmentImage	(
 																vk,
 																device,
 																memAlloc,
@@ -109,9 +111,9 @@ tcu::TestStatus GeometryExpanderRenderTestInstance::iterate (void)
 																.build					(vk, device, *pipelineLayout, *renderPass));
 
 	const VkDeviceSize				colorBufferSizeBytes	= resolution.x()*resolution.y() * tcu::getPixelSize(mapVkFormat(colorFormat));
-	const Buffer					colorBuffer				(vk, device, memAlloc, makeBufferCreateInfo(colorBufferSizeBytes,
+	const BufferWithMemory			colorBuffer				(vk, device, memAlloc, makeBufferCreateInfo(colorBufferSizeBytes,
 																VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible);
-	const Buffer					vertexBuffer			(vk, device, memAlloc, makeBufferCreateInfo(vertexDataSizeBytes,
+	const BufferWithMemory			vertexBuffer			(vk, device, memAlloc, makeBufferCreateInfo(vertexDataSizeBytes,
 																VK_BUFFER_USAGE_VERTEX_BUFFER_BIT ), MemoryRequirement::HostVisible);
 	{
 		const Allocation& alloc = vertexBuffer.getAllocation();

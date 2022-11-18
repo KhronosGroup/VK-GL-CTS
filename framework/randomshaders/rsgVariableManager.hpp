@@ -116,9 +116,15 @@ public:
 
 // \todo [2011-05-26 pyry] Clean up this a bit, separate const variant.
 template <typename Item, typename Iterator, class Filter>
-class FilteredIterator : public std::iterator<std::input_iterator_tag, Item>
+class FilteredIterator
 {
 public:
+	using iterator_category = std::input_iterator_tag;
+	using value_type = Item;
+	using difference_type = std::ptrdiff_t;
+	using pointer = Item*;
+	using reference = Item&;
+
 	FilteredIterator (Iterator iter, Iterator end, Filter filter)
 		: m_iter	(iter)
 		, m_end		(end)

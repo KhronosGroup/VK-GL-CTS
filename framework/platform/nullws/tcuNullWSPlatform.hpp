@@ -39,8 +39,8 @@ namespace nullws
 class VulkanLibrary : public vk::Library
 {
 public:
-	VulkanLibrary (void)
-		: m_library	("libvulkan.so.1")
+	VulkanLibrary (const char* libraryPath)
+		: m_library	(libraryPath != DE_NULL ? libraryPath : "libvulkan.so.1")
 		, m_driver	(m_library)
 	{
 	}
@@ -69,24 +69,10 @@ public:
 	virtual const eglu::Platform&	getEGLPlatform	()	const { return static_cast<const eglu::Platform&>(*this); }
   virtual const vk::Platform&   getVulkanPlatform() const { return static_cast<const vk::Platform&>(*this); }
 
-	vk::Library* createLibrary (void) const
+	vk::Library* createLibrary (const char* libraryPath) const
 	{
-		return new VulkanLibrary();
+		return new VulkanLibrary(libraryPath);
 	}
-	// FINISHME: Query actual memory limits.
-	//
-	// These hard-coded memory limits were copied from tcuX11Platform.cpp,
-	// and they work well enough for Intel platforms.
-	void getMemoryLimits (vk::PlatformMemoryLimits& limits) const
-	{
-		limits.totalSystemMemory					= 256*1024*1024;
-		limits.totalDeviceLocalMemory				= 128*1024*1024;
-		limits.deviceMemoryAllocationGranularity	= 64*1024;
-		limits.devicePageSize						= 4096;
-		limits.devicePageTableEntrySize				= 8;
-		limits.devicePageTableHierarchyLevels		= 3;
-	}
-
 };
 
 } // nullws

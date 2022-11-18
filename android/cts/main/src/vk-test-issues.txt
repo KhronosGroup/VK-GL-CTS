@@ -1,0 +1,17 @@
+# Issue 340: Cube map corner texel selection
+dEQP-VK.pipeline.monolithic.sampler.view_type.cube.format.r5g6b5_unorm_pack16.mag_filter.linear
+dEQP-VK.pipeline.pipeline_library.sampler.view_type.cube.format.r5g6b5_unorm_pack16.mag_filter.linear
+dEQP-VK.pipeline.fast_linked_library.sampler.view_type.cube.format.r5g6b5_unorm_pack16.mag_filter.linear
+
+# b/112540895: Compile time is still unreasonable on low-end parts, revisit for Q
+dEQP-VK.ubo.random.all_shared_buffer.48
+
+# Not in 1.1.3 khronos mustpass
+dEQP-VK.glsl.texture_functions.texturegrad.sparse_samplercubeshadow_fragment
+dEQP-VK.glsl.texture_functions.texturegrad.sparse_samplercubeshadow_vertex
+
+# b/135200048: Compile time is unreasonable on low-end parts, revisit for R
+dEQP-VK.ssbo.layout.random.scalar.75
+
+# b/156595708: Randomly generated shader is unusually large compared to the others.
+dEQP-VK.ssbo.phys.layout.random.16bit.scalar.13

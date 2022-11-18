@@ -183,7 +183,7 @@ private:
 							ShaderSwitchTests		(const ShaderSwitchTests&);		// not allowed!
 	ShaderSwitchTests&		operator=				(const ShaderSwitchTests&);		// not allowed!
 
-	void					makeSwitchCases			(const string& name, const string& desc, const LineStream& switchBody);
+	void					makeSwitchCases			(const string& name, const string& desc, const LineStream& switchBody, const bool skipDynamicType = false);
 };
 
 ShaderSwitchTests::ShaderSwitchTests (tcu::TestContext& testCtx)
@@ -195,13 +195,16 @@ ShaderSwitchTests::~ShaderSwitchTests (void)
 {
 }
 
-void ShaderSwitchTests::makeSwitchCases (const string& name, const string& desc, const LineStream& switchBody)
+void ShaderSwitchTests::makeSwitchCases (const string& name, const string& desc, const LineStream& switchBody, const bool skipDynamicType)
 {
 	static const char* switchTypeNames[] = { "static", "uniform", "dynamic" };
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(switchTypeNames) == SWITCHTYPE_LAST);
 
 	for (int type = 0; type < SWITCHTYPE_LAST; type++)
 	{
+		if (skipDynamicType && (type == SWITCHTYPE_DYNAMIC))
+			continue;
+
 		addChild(makeSwitchCase(m_testCtx, (name + "_" + switchTypeNames[type] + "_vertex"),	desc, (SwitchType)type, true,	switchBody).release());
 		addChild(makeSwitchCase(m_testCtx, (name + "_" + switchTypeNames[type] + "_fragment"),	desc, (SwitchType)type, false,	switchBody).release());
 	}
@@ -265,6 +268,23 @@ void ShaderSwitchTests::init (void)
 		<< "	case 1:		res = coords.wzy;	break;"
 		<< "	case 3:		res = coords.zyx;	break;"
 		<< "}");
+
+	makeSwitchCases("default_only", "Default case only",
+		LineStream(1)
+		<< "switch (${CONDITION})"
+		<< "{"
+		<< "	default:"
+		<< "		res = coords.yzw;"
+		<< "}", true);
+
+	makeSwitchCases("empty_case_default", "Empty case and default",
+		LineStream(1)
+		<< "switch (${CONDITION})"
+		<< "{"
+		<< "	case 2:"
+		<< "	default:"
+		<< "		res = coords.yzw;"
+		<< "}", true);
 
 	makeSwitchCases("fall_through", "Fall-through",
 		LineStream(1)

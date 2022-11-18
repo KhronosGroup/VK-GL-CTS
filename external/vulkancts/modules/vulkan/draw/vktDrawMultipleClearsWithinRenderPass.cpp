@@ -37,6 +37,7 @@
 #include "vkImageUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuCommandLine.hpp"
 #include "vktDrawTestCaseUtil.hpp"
 
 #include "deStringUtil.hpp"
@@ -176,6 +177,7 @@ struct TestParams
 	float					depthEpsilon;
 	deUint32				repeatCount;
 	bool					enableBlend;
+	const SharedGroupParams	groupParams;
 	vector<ClearStep>		steps;
 };
 
@@ -184,8 +186,16 @@ class MultipleClearsTest : public TestInstance
 public:
 							MultipleClearsTest		(Context& context, const TestParams& params);
 	virtual tcu::TestStatus	iterate					(void);
+
 private:
-	void					clearAttachments		(const DeviceInterface& vk, VkCommandBuffer cmdBuffer, const ClearOp clearOp, const size_t stepIndex);
+	void					preRenderCommands		(VkCommandBuffer cmdBuffer) const;
+	void					beginLegacyRender		(VkCommandBuffer cmdBuffer) const;
+	void					drawCommands			(VkCommandBuffer cmdBuffer) const;
+
+#ifndef CTS_USES_VULKANSC
+	void					beginSecondaryCmdBuffer	(VkCommandBuffer cmdBuffer, VkRenderingFlagsKHR renderingFlags = 0u) const;
+	void					beginDynamicRender		(VkCommandBuffer cmdBuffer, VkRenderingFlagsKHR renderingFlags = 0u) const;
+#endif // CTS_USES_VULKANSC
 
 	SharedPtr<Image>		m_colorTargetImage;
 	SharedPtr<Image>		m_depthTargetImage;
@@ -233,16 +243,31 @@ MultipleClearsTest::MultipleClearsTest (Context &context, const TestParams& para
 		deMemcpy(m_vertexBuffer->getBoundMemory().getHostPtr(), m_vertices, static_cast<std::size_t>(totalDataSize));
 		flushMappedMemoryRange(vk, device, m_vertexBuffer->getBoundMemory().getMemory(), m_vertexBuffer->getBoundMemory().getOffset(), VK_WHOLE_SIZE);
 	}
+
+	if (hasColor)
+	{
+		const VkImageUsageFlags		targetImageUsageFlags		= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		const ImageCreateInfo		targetImageCreateInfo		(VK_IMAGE_TYPE_2D, m_params.colorFormat, { WIDTH, HEIGHT, 1u }, 1u,	1u,	VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, targetImageUsageFlags);
+		m_colorTargetImage										= Image::createAndAlloc(vk, device, targetImageCreateInfo, m_context.getDefaultAllocator(), queueFamilyIndex);
+		const ImageViewCreateInfo	colorTargetViewInfo			(m_colorTargetImage->object(), VK_IMAGE_VIEW_TYPE_2D, m_params.colorFormat);
+		m_colorTargetView										= createImageView(vk, device, &colorTargetViewInfo);
+	}
+
+	if (hasDepth)
+	{
+		const VkImageUsageFlags		depthImageUsageFlags		= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		const ImageCreateInfo		depthImageCreateInfo		(VK_IMAGE_TYPE_2D, m_params.depthFormat, { WIDTH, HEIGHT, 1u }, 1u,	1u,	VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, depthImageUsageFlags);
+		m_depthTargetImage										= Image::createAndAlloc(vk, device, depthImageCreateInfo, m_context.getDefaultAllocator(), queueFamilyIndex);
+		const ImageViewCreateInfo	depthTargetViewInfo			(m_depthTargetImage->object(), VK_IMAGE_VIEW_TYPE_2D, m_params.depthFormat);
+		m_depthTargetView										= createImageView(vk, device, &depthTargetViewInfo);
+	}
+
 	// Render pass
-	std::vector<VkImageView>			attachments;
+	if (!m_params.groupParams->useDynamicRendering)
 	{
 		RenderPassCreateInfo			renderPassCreateInfo;
 		if (hasColor)
 		{
-			const VkImageUsageFlags		targetImageUsageFlags		= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-			const ImageCreateInfo		targetImageCreateInfo		(VK_IMAGE_TYPE_2D, m_params.colorFormat, { WIDTH, HEIGHT, 1u }, 1u,	1u,	VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, targetImageUsageFlags);
-			m_colorTargetImage										= Image::createAndAlloc(vk, device, targetImageCreateInfo, m_context.getDefaultAllocator(), queueFamilyIndex);
-
 			renderPassCreateInfo.addAttachment(AttachmentDescription(
 				 m_params.colorFormat,								// format
 				 VK_SAMPLE_COUNT_1_BIT,								// samples
@@ -252,17 +277,9 @@ MultipleClearsTest::MultipleClearsTest (Context &context, const TestParams& para
 				 VK_ATTACHMENT_STORE_OP_DONT_CARE,					// stencilStoreOp
 				 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// initialLayout
 				 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));		// finalLayout
-
-			const ImageViewCreateInfo	colorTargetViewInfo			(m_colorTargetImage->object(), VK_IMAGE_VIEW_TYPE_2D, m_params.colorFormat);
-			m_colorTargetView										= createImageView(vk, device, &colorTargetViewInfo);
-			attachments.push_back(*m_colorTargetView);
 		}
 		if (hasDepth)
 		{
-			const VkImageUsageFlags		depthImageUsageFlags		= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-			const ImageCreateInfo		depthImageCreateInfo		(VK_IMAGE_TYPE_2D, m_params.depthFormat, { WIDTH, HEIGHT, 1u }, 1u,	1u,	VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, depthImageUsageFlags);
-			m_depthTargetImage										= Image::createAndAlloc(vk, device, depthImageCreateInfo, m_context.getDefaultAllocator(), queueFamilyIndex);
-
 			renderPassCreateInfo.addAttachment(AttachmentDescription(
 				m_params.depthFormat,								// format
 				VK_SAMPLE_COUNT_1_BIT,								// samples
@@ -272,10 +289,6 @@ MultipleClearsTest::MultipleClearsTest (Context &context, const TestParams& para
 				VK_ATTACHMENT_STORE_OP_DONT_CARE,					// stencilStoreOp
 				VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	// initialLayout
 				VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));	// finalLayout
-
-			const ImageViewCreateInfo	depthTargetViewInfo			(m_depthTargetImage->object(), VK_IMAGE_VIEW_TYPE_2D, m_params.depthFormat);
-			m_depthTargetView										= createImageView(vk, device, &depthTargetViewInfo);
-			attachments.push_back(*m_depthTargetView);
 		}
 		const VkAttachmentReference colorAttachmentReference		= hasColor ? makeAttachmentReference(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) : AttachmentReference();
 		const VkAttachmentReference depthAttachmentReference		= hasDepth ? makeAttachmentReference(hasColor ? 1u : 0u, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) : AttachmentReference();
@@ -291,9 +304,15 @@ MultipleClearsTest::MultipleClearsTest (Context &context, const TestParams& para
 			0u,														// preserveAttachmentCount
 			DE_NULL));												// preserveAttachments
 		m_renderPass												= createRenderPass(vk, device, &renderPassCreateInfo);
+
+		std::vector<VkImageView> attachments;
+		if (hasColor)
+			attachments.push_back(*m_colorTargetView);
+		if (hasDepth)
+			attachments.push_back(*m_depthTargetView);
+		const FramebufferCreateInfo framebufferCreateInfo(*m_renderPass, attachments, WIDTH, HEIGHT, 1);
+		m_framebuffer = createFramebuffer(vk, device, &framebufferCreateInfo);
 	}
-	const FramebufferCreateInfo					framebufferCreateInfo			(*m_renderPass, attachments, WIDTH, HEIGHT, 1);
-	m_framebuffer																= createFramebuffer(vk, device, &framebufferCreateInfo);
 
 	// Vertex input
 	const VkVertexInputBindingDescription		vertexInputBindingDescription	=
@@ -347,60 +366,213 @@ MultipleClearsTest::MultipleClearsTest (Context &context, const TestParams& para
 	pipelineCreateInfo.addState (PipelineCreateInfo::DepthStencilState	(hasDepth, hasDepth, VK_COMPARE_OP_ALWAYS, VK_FALSE, VK_FALSE));
 	pipelineCreateInfo.addState (PipelineCreateInfo::RasterizerState	());
 	pipelineCreateInfo.addState (PipelineCreateInfo::MultiSampleState	());
-	m_pipeline																	= createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+
+#ifndef CTS_USES_VULKANSC
+	vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+		DE_NULL,
+		0u,
+		hasColor,
+		(hasColor ? &m_params.colorFormat : DE_NULL),
+		m_params.depthFormat,
+		m_params.depthFormat
+	};
+
+	if (m_params.groupParams->useDynamicRendering)
+		pipelineCreateInfo.pNext = &renderingCreateInfo;
+#endif // CTS_USES_VULKANSC
+
+	m_pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 }
 
-void MultipleClearsTest::clearAttachments (const DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, const ClearOp clearOp, const size_t stepIndex)
+void MultipleClearsTest::preRenderCommands(VkCommandBuffer cmdBuffer) const
 {
-	const Vec4& color = m_params.steps[stepIndex].color;
-	const float depth = m_params.steps[stepIndex].depth;
-	switch(clearOp) {
-	case ClearOp::LOAD:
-		break;
-	case ClearOp::DRAW:
+	const DeviceInterface& vk = m_context.getDeviceInterface();
+	if (m_params.colorFormat)
+		initialTransitionColor2DImage(vk, cmdBuffer, m_colorTargetImage->object(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+	if (m_params.depthFormat)
+		initialTransitionDepth2DImage(vk, cmdBuffer, m_depthTargetImage->object(), VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+}
+
+void MultipleClearsTest::beginLegacyRender(VkCommandBuffer cmdBuffer) const
+{
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkRect2D			renderArea	= makeRect2D(0, 0, WIDTH, HEIGHT);
+
+	if (!m_params.steps.empty() && m_params.steps[0].clearOp == ClearOp::LOAD)
+		beginRenderPass(vk, cmdBuffer, *m_renderPass, *m_framebuffer, renderArea, m_params.steps[0].color, m_params.steps[0].depth, 0);
+	else
+		beginRenderPass(vk, cmdBuffer, *m_renderPass, *m_framebuffer, renderArea);
+}
+
+void MultipleClearsTest::drawCommands(vk::VkCommandBuffer cmdBuffer) const
+{
+	const DeviceInterface&	vk		= m_context.getDeviceInterface();
+
+	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+	{
+		const VkDeviceSize	offset = 0;
+		const VkBuffer		buffer = m_vertexBuffer->object();
+		vk.cmdBindVertexBuffers(cmdBuffer, 0, 1, &buffer, &offset);
+	}
+
+	for (deUint32 i = 0; i < m_params.repeatCount; ++i)
+	for (size_t stepIndex = 0; stepIndex < m_params.steps.size(); ++stepIndex)
+	{
+		const auto& step = m_params.steps[stepIndex];
+
+		// ClearOp::LOAD only supported for first step
+		DE_ASSERT(stepIndex == 0 || step.clearOp != ClearOp::LOAD);
+
+		const Vec4& color = step.color;
+		const float depth = step.depth;
+
+		switch(step.clearOp)
 		{
-			const auto&		vertexData		= verticesByTopology[(size_t)m_params.topology];
-			const deUint32	verticesCount	= vertexData.verticesCount;
-			vk.cmdPushConstants(cmdBuffer, *m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(color), color.getPtr());
-			vk.cmdDraw(cmdBuffer, verticesCount, 1, static_cast<deUint32>(verticesCount * stepIndex), 0);
-		}
-		break;
-	case ClearOp::CLEAR:
-		{
-			vector<VkClearAttachment>	clearAttachments;
-			if (m_params.colorFormat != VK_FORMAT_UNDEFINED)
+		case ClearOp::LOAD:
+			break;
+		case ClearOp::DRAW:
 			{
-				const VkClearAttachment	clearAttachment	=
-				{
-					VK_IMAGE_ASPECT_COLOR_BIT,						// VkImageAspectFlags	 aspectMask
-					static_cast<deUint32>(clearAttachments.size()),	// uint32_t				 colorAttachment
-					makeClearValueColor(color)						// VkClearValue			 clearValue
-				};
-				clearAttachments.push_back(clearAttachment);
+				const auto&		vertexData		= verticesByTopology[(size_t)m_params.topology];
+				const deUint32	verticesCount	= vertexData.verticesCount;
+				vk.cmdPushConstants(cmdBuffer, *m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(color), color.getPtr());
+				vk.cmdDraw(cmdBuffer, verticesCount, 1, static_cast<deUint32>(verticesCount * stepIndex), 0);
 			}
-			if (m_params.depthFormat != VK_FORMAT_UNDEFINED)
+			break;
+		case ClearOp::CLEAR:
 			{
-				const VkClearAttachment	clearAttachment	=
+				vector<VkClearAttachment>	clearAttachments;
+				if (m_params.colorFormat != VK_FORMAT_UNDEFINED)
 				{
-					VK_IMAGE_ASPECT_DEPTH_BIT,						// VkImageAspectFlags	 aspectMask
-					static_cast<deUint32>(clearAttachments.size()),	// uint32_t				 colorAttachment
-					makeClearValueDepthStencil(depth, 0)			// VkClearValue			 clearValue
+					const VkClearAttachment	clearAttachment
+					{
+						VK_IMAGE_ASPECT_COLOR_BIT,						// VkImageAspectFlags	 aspectMask
+						static_cast<deUint32>(clearAttachments.size()),	// uint32_t				 colorAttachment
+						makeClearValueColor(color)						// VkClearValue			 clearValue
+					};
+					clearAttachments.push_back(clearAttachment);
+				}
+				if (m_params.depthFormat != VK_FORMAT_UNDEFINED)
+				{
+					const VkClearAttachment	clearAttachment
+					{
+						VK_IMAGE_ASPECT_DEPTH_BIT,						// VkImageAspectFlags	 aspectMask
+						static_cast<deUint32>(clearAttachments.size()),	// uint32_t				 colorAttachment
+						makeClearValueDepthStencil(depth, 0)			// VkClearValue			 clearValue
+					};
+					clearAttachments.push_back(clearAttachment);
+				}
+				const VkClearRect clearRect
+				{
+					makeRect2D(WIDTH, HEIGHT),							// VkRect2D	   rect
+					0,													// uint32_t	   baseArrayLayer
+					1													// uint32_t	   layerCount
 				};
-				clearAttachments.push_back(clearAttachment);
+				vk.cmdClearAttachments(cmdBuffer, static_cast<deUint32>(clearAttachments.size()), clearAttachments.data(), 1, &clearRect);
 			}
-			const VkClearRect			clearRect		=
-			{
-				makeRect2D(WIDTH, HEIGHT),							// VkRect2D	   rect
-				0,													// uint32_t	   baseArrayLayer
-				1													// uint32_t	   layerCount
-			};
-			vk.cmdClearAttachments(cmdBuffer, static_cast<deUint32>(clearAttachments.size()), clearAttachments.data(), 1, &clearRect);
+			break;
+		default:
+			break;
 		}
-		break;
-	default:
-		break;
 	}
 }
+
+#ifndef CTS_USES_VULKANSC
+void MultipleClearsTest::beginSecondaryCmdBuffer(VkCommandBuffer cmdBuffer, VkRenderingFlagsKHR renderingFlags) const
+{
+	VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,		// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		renderingFlags,															// VkRenderingFlagsKHR				flags;
+		0u,																		// uint32_t							viewMask;
+		(m_params.colorFormat != VK_FORMAT_UNDEFINED),							// uint32_t							colorAttachmentCount;
+		&m_params.colorFormat,													// const VkFormat*					pColorAttachmentFormats;
+		m_params.depthFormat,													// VkFormat							depthAttachmentFormat;
+		VK_FORMAT_UNDEFINED,													// VkFormat							stencilAttachmentFormat;
+		VK_SAMPLE_COUNT_1_BIT,													// VkSampleCountFlagBits			rasterizationSamples;
+	};
+
+	const VkCommandBufferInheritanceInfo bufferInheritanceInfo = initVulkanStructure(&inheritanceRenderingInfo);
+
+	VkCommandBufferUsageFlags usageFlags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	if (!m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+		usageFlags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+
+	const VkCommandBufferBeginInfo commandBufBeginParams
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,							// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		usageFlags,																// VkCommandBufferUsageFlags		flags;
+		&bufferInheritanceInfo
+	};
+
+	const DeviceInterface& vk = m_context.getDeviceInterface();
+	VK_CHECK(vk.beginCommandBuffer(cmdBuffer, &commandBufBeginParams));
+}
+
+void MultipleClearsTest::beginDynamicRender(VkCommandBuffer cmdBuffer, VkRenderingFlagsKHR renderingFlags) const
+{
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkRect2D			renderArea	= makeRect2D(0, 0, WIDTH, HEIGHT);
+
+	VkClearValue clearColorValue = makeClearValueColor(tcu::Vec4(0.0f));
+	VkClearValue clearDepthValue = makeClearValueDepthStencil(0.0f, 0u);
+	if (!m_params.steps.empty() && m_params.steps[0].clearOp == ClearOp::LOAD)
+	{
+		clearColorValue = makeClearValueColor(m_params.steps[0].color);
+		clearDepthValue = makeClearValueDepthStencil(m_params.steps[0].depth, 0u);
+	}
+
+	vk::VkRenderingAttachmentInfoKHR colorAttachment
+	{
+		vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,	// VkStructureType						sType;
+		DE_NULL,												// const void*							pNext;
+		*m_colorTargetView,										// VkImageView							imageView;
+		vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout						imageLayout;
+		vk::VK_RESOLVE_MODE_NONE,								// VkResolveModeFlagBits				resolveMode;
+		DE_NULL,												// VkImageView							resolveImageView;
+		vk::VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout						resolveImageLayout;
+		vk::VK_ATTACHMENT_LOAD_OP_LOAD,							// VkAttachmentLoadOp					loadOp;
+		vk::VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp					storeOp;
+		clearColorValue											// VkClearValue							clearValue;
+	};
+
+	vk::VkRenderingAttachmentInfoKHR depthAttachment
+	{
+		vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,	// VkStructureType						sType;
+		DE_NULL,												// const void*							pNext;
+		*m_depthTargetView,										// VkImageView							imageView;
+		vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	// VkImageLayout						imageLayout;
+		vk::VK_RESOLVE_MODE_NONE,								// VkResolveModeFlagBits				resolveMode;
+		DE_NULL,												// VkImageView							resolveImageView;
+		vk::VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout						resolveImageLayout;
+		vk::VK_ATTACHMENT_LOAD_OP_LOAD,							// VkAttachmentLoadOp					loadOp;
+		vk::VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp					storeOp;
+		clearDepthValue											// VkClearValue							clearValue;
+	};
+
+	const bool hasColor = m_params.colorFormat != VK_FORMAT_UNDEFINED;
+	const bool hasDepth = m_params.depthFormat != VK_FORMAT_UNDEFINED;
+
+	vk::VkRenderingInfoKHR renderingInfo
+	{
+		vk::VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+		DE_NULL,
+		renderingFlags,											// VkRenderingFlagsKHR					flags;
+		renderArea,												// VkRect2D								renderArea;
+		1u,														// deUint32								layerCount;
+		0u,														// deUint32								viewMask;
+		hasColor,												// deUint32								colorAttachmentCount;
+		(hasColor ? &colorAttachment : DE_NULL),				// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
+		(hasDepth ? &depthAttachment : DE_NULL),				// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
+		DE_NULL,												// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
+	};
+
+	vk.cmdBeginRendering(cmdBuffer, &renderingInfo);
+}
+#endif // CTS_USES_VULKANSC
 
 tcu::TestStatus MultipleClearsTest::iterate (void)
 {
@@ -412,36 +584,62 @@ tcu::TestStatus MultipleClearsTest::iterate (void)
 	const CmdPoolCreateInfo			cmdPoolCreateInfo	(queueFamilyIndex);
 	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, &cmdPoolCreateInfo));
 	const Unique<VkCommandBuffer>	cmdBuffer			(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	Move<VkCommandBuffer>			secCmdBuffer;
 
 	const bool						hasColor			= m_params.colorFormat != VK_FORMAT_UNDEFINED;
 	const bool						hasDepth			= m_params.depthFormat != VK_FORMAT_UNDEFINED;
 
-	beginCommandBuffer(vk, *cmdBuffer);
-	if (hasColor)
-		initialTransitionColor2DImage(vk, *cmdBuffer, m_colorTargetImage->object(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
-	if (hasDepth)
-		initialTransitionDepth2DImage(vk, *cmdBuffer, m_depthTargetImage->object(), VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
-
-	if (!m_params.steps.empty() && m_params.steps[0].clearOp == ClearOp::LOAD)
-		beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT), m_params.steps[0].color, m_params.steps[0].depth, 0);
-	else
-		beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT));
-	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+#ifndef CTS_USES_VULKANSC
+	if (m_params.groupParams->useSecondaryCmdBuffer)
 	{
-		const VkDeviceSize	offset	= 0;
-		const VkBuffer		buffer	= m_vertexBuffer->object();
-		vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &buffer, &offset);
-	}
-	for(deUint32 i = 0; i < m_params.repeatCount; ++i)
-		for(size_t j = 0; j < m_params.steps.size(); ++j)
-		{
-			const auto& step = m_params.steps[j];
-			// ClearOp::LOAD only supported for first step
-			DE_ASSERT(j == 0 || step.clearOp != ClearOp::LOAD);
-			clearAttachments(vk, *cmdBuffer, step.clearOp, j);
-		}
+		secCmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 
-	endRenderPass(vk, *cmdBuffer);
+		// record secondary command buffer
+		if (m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+		{
+			beginSecondaryCmdBuffer(*secCmdBuffer, VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+			beginDynamicRender(*secCmdBuffer);
+		}
+		else
+			beginSecondaryCmdBuffer(*secCmdBuffer);
+
+		drawCommands(*secCmdBuffer);
+
+		if (m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			endRendering(vk, *secCmdBuffer);
+
+		endCommandBuffer(vk, *secCmdBuffer);
+
+		// record primary command buffer
+		beginCommandBuffer(vk, *cmdBuffer, 0u);
+		preRenderCommands(*cmdBuffer);
+
+		if (!m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			beginDynamicRender(*cmdBuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+
+		vk.cmdExecuteCommands(*cmdBuffer, 1u, &*secCmdBuffer);
+
+		if (!m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			endRendering(vk, *cmdBuffer);
+	}
+	else if (m_params.groupParams->useDynamicRendering)
+	{
+		beginCommandBuffer(vk, *cmdBuffer);
+		preRenderCommands(*cmdBuffer);
+		beginDynamicRender(*cmdBuffer);
+		drawCommands(*cmdBuffer);
+		endRendering(vk, *cmdBuffer);
+	}
+#endif // CTS_USES_VULKANSC
+
+	if (!m_params.groupParams->useDynamicRendering)
+	{
+		beginCommandBuffer(vk, *cmdBuffer);
+		preRenderCommands(*cmdBuffer);
+		beginLegacyRender(*cmdBuffer);
+		drawCommands(*cmdBuffer);
+		endRenderPass(vk, *cmdBuffer);
+	}
 
 	if (hasDepth)
 	{
@@ -474,16 +672,21 @@ tcu::TestStatus MultipleClearsTest::iterate (void)
 	{
 		const auto		resultImage	= m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, { 0, 0, 0 }, WIDTH, HEIGHT, VK_IMAGE_ASPECT_COLOR_BIT);
 
-		for(int z = 0; z < resultImage.getDepth(); ++z)
-		for(int y = 0; y < resultImage.getHeight(); ++y)
-		for(int x = 0; x < resultImage.getWidth(); ++x)
+#ifdef CTS_USES_VULKANSC
+		if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 		{
-			const Vec4	difference	= m_params.expectedColor - resultImage.getPixel(x,y,z);
-			if (abs(difference.x()) >= m_params.colorEpsilon || abs(difference.y()) >= m_params.colorEpsilon || abs(difference.z()) >= m_params.colorEpsilon)
+			for(int z = 0; z < resultImage.getDepth(); ++z)
+			for(int y = 0; y < resultImage.getHeight(); ++y)
+			for(int x = 0; x < resultImage.getWidth(); ++x)
 			{
-				ostringstream msg;
-				msg << "Color value mismatch, expected: " << m_params.expectedColor << ", got: " << resultImage.getPixel(x,y,z) << " at " << "(" << x << ", " << y << ", " << z << ")";
-				return tcu::TestStatus::fail(msg.str());
+				const Vec4	difference	= m_params.expectedColor - resultImage.getPixel(x,y,z);
+				if (abs(difference.x()) >= m_params.colorEpsilon || abs(difference.y()) >= m_params.colorEpsilon || abs(difference.z()) >= m_params.colorEpsilon)
+				{
+					ostringstream msg;
+					msg << "Color value mismatch, expected: " << m_params.expectedColor << ", got: " << resultImage.getPixel(x,y,z) << " at " << "(" << x << ", " << y << ", " << z << ")";
+					return tcu::TestStatus::fail(msg.str());
+				}
 			}
 		}
 	}
@@ -491,16 +694,21 @@ tcu::TestStatus MultipleClearsTest::iterate (void)
 	{
 		const auto		resultImage	= m_depthTargetImage->readSurface(queue, m_context.getDefaultAllocator(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, { 0, 0, 0 }, WIDTH, HEIGHT, VK_IMAGE_ASPECT_DEPTH_BIT);
 
-		for(int z = 0; z < resultImage.getDepth(); ++z)
-		for(int y = 0; y < resultImage.getHeight(); ++y)
-		for(int x = 0; x < resultImage.getWidth(); ++x)
+#ifdef CTS_USES_VULKANSC
+		if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 		{
-			const float	difference	= m_params.expectedDepth - resultImage.getPixDepth(x,y,z);
-			if (abs(difference) >= m_params.depthEpsilon)
+			for(int z = 0; z < resultImage.getDepth(); ++z)
+			for(int y = 0; y < resultImage.getHeight(); ++y)
+			for(int x = 0; x < resultImage.getWidth(); ++x)
 			{
-				ostringstream msg;
-				msg << "Depth value mismatch, expected: " << m_params.expectedDepth << ", got: " << resultImage.getPixDepth(x,y,z) << " at " << "(" << x << ", " << y << ", " << z << ")";
-				return tcu::TestStatus::fail(msg.str());
+				const float	difference	= m_params.expectedDepth - resultImage.getPixDepth(x,y,z);
+				if (abs(difference) >= m_params.depthEpsilon)
+				{
+					ostringstream msg;
+					msg << "Depth value mismatch, expected: " << m_params.expectedDepth << ", got: " << resultImage.getPixDepth(x,y,z) << " at " << "(" << x << ", " << y << ", " << z << ")";
+					return tcu::TestStatus::fail(msg.str());
+				}
 			}
 		}
 	}
@@ -578,6 +786,9 @@ public:
 			if (vki.getPhysicalDeviceImageFormatProperties(vkd, m_params.depthFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, depthUsage, 0u, &imageFormatProperties) != VK_SUCCESS)
 				TCU_THROW(NotSupportedError, "Depth format not supported");
 		}
+
+		if (m_params.groupParams->useDynamicRendering)
+			context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 	}
 
 	virtual TestInstance* createInstance (Context& context) const
@@ -591,8 +802,9 @@ private:
 
 }	// anonymous
 
-MultipleClearsWithinRenderPassTests::MultipleClearsWithinRenderPassTests (tcu::TestContext &testCtx)
+MultipleClearsWithinRenderPassTests::MultipleClearsWithinRenderPassTests (tcu::TestContext &testCtx, const SharedGroupParams groupParams)
 	: TestCaseGroup	(testCtx, "multiple_clears_within_render_pass", "Tests for multiple clears within render pass")
+	, m_groupParams	(groupParams)
 {
 }
 
@@ -611,9 +823,13 @@ void MultipleClearsWithinRenderPassTests::init ()
 			formatSuffix << "_d" << de::toLower(string(getFormatName(formatPair.depthFormat)).substr(9));
 		for(const auto &topology : topologiesToTest)
 		{
+			// reduce number of tests for dynamic rendering cases where secondary command buffer is used
+			if (m_groupParams->useSecondaryCmdBuffer && (topology != Topology::TRIANGLE_STRIP))
+				continue;
+
 			const string	testNameSuffix	= formatSuffix.str() + verticesByTopology[(deUint32)topology].testNameSuffix;
 			{
-				const TestParams params	=
+				const TestParams params
 				{
 					formatPair.colorFormat,			// VkFormat				colorFormat;
 					formatPair.depthFormat,			// VkFormat				depthFormat;
@@ -624,6 +840,7 @@ void MultipleClearsWithinRenderPassTests::init ()
 					0.01f,							// float				depthEpsilon;
 					1u,								// deUint32				repeatCount;
 					true,							// bool					enableBlend;
+					m_groupParams,					// SharedGroupParams	groupParams;
 					{								// vector<ClearStep>	steps;
 						{ ClearOp::LOAD		, Vec4(1.0f, 0.0f, 0.0f, 1.0f)	, 0.7f },
 						{ ClearOp::CLEAR	, Vec4(0.0f, 1.0f, 0.0f, 1.0f)	, 0.3f },
@@ -633,7 +850,7 @@ void MultipleClearsWithinRenderPassTests::init ()
 				addChild(new MultipleClearsWithinRenderPassTest(m_testCtx, "load_clear_draw" + testNameSuffix, "Multiple clears within same render pass, methods: load, clear, draw", params));
 			}
 			{
-				const TestParams params	=
+				const TestParams params
 				{
 					formatPair.colorFormat,			// VkFormat				format;
 					formatPair.depthFormat,			// VkFormat				depthFormat;
@@ -644,6 +861,7 @@ void MultipleClearsWithinRenderPassTests::init ()
 					0.01f,							// float				depthEpsilon;
 					1u,								// deUint32				repeatCount;
 					true,							// bool					enableBlend;
+					m_groupParams,					// SharedGroupParams	groupParams;
 					{								// vector<ClearStep>	steps;
 						{ ClearOp::DRAW		, Vec4(1.0f, 0.0f, 0.0f, 1.0f)	, 0.7f },
 						{ ClearOp::CLEAR	, Vec4(0.0f, 1.0f, 0.0f, 1.0f)	, 0.3f },
@@ -653,7 +871,7 @@ void MultipleClearsWithinRenderPassTests::init ()
 				addChild(new MultipleClearsWithinRenderPassTest(m_testCtx, "draw_clear_draw" + testNameSuffix, "Multiple clears within same render pass, methods: draw, clear, draw", params));
 			}
 			{
-				const TestParams params	=
+				const TestParams params
 				{
 					formatPair.colorFormat,			// VkFormat				format;
 					formatPair.depthFormat,			// VkFormat				depthFormat;
@@ -664,6 +882,7 @@ void MultipleClearsWithinRenderPassTests::init ()
 					0.01f,							// float				depthEpsilon;
 					1u,								// deUint32				repeatCount;
 					true,							// bool					enableBlend;
+					m_groupParams,					// SharedGroupParams	groupParams;
 					{								// vector<ClearStep>	steps;
 						{ ClearOp::CLEAR	, Vec4(1.0f, 0.0f, 0.0f, 1.0f)	, 0.7f },
 						{ ClearOp::CLEAR	, Vec4(0.0f, 1.0f, 0.0f, 1.0f)	, 0.3f },
@@ -673,7 +892,7 @@ void MultipleClearsWithinRenderPassTests::init ()
 				addChild(new MultipleClearsWithinRenderPassTest(m_testCtx, "clear_clear_draw" + testNameSuffix, "Multiple clears within same render pass, methods: clear, clear, draw", params));
 			}
 			{
-				const TestParams params	=
+				const TestParams params
 				{
 					formatPair.colorFormat,			// VkFormat				format;
 					formatPair.depthFormat,			// VkFormat				depthFormat;
@@ -684,6 +903,7 @@ void MultipleClearsWithinRenderPassTests::init ()
 					0.01f,							// float				depthEpsilon;
 					1u,								// deUint32				repeatCount;
 					false,							// bool					enableBlend;
+					m_groupParams,					// SharedGroupParams	groupParams;
 					{								// vector<ClearStep>	steps;
 						{ ClearOp::LOAD		, Vec4(1.0f, 0.0f, 0.0f, 1.0f)	, 0.3f },
 						{ ClearOp::CLEAR	, Vec4(0.0f, 1.0f, 0.0f, 1.0f)	, 0.9f }
@@ -692,7 +912,7 @@ void MultipleClearsWithinRenderPassTests::init ()
 				addChild(new MultipleClearsWithinRenderPassTest(m_testCtx, "load_clear" + testNameSuffix, "Multiple clears within same render pass, methods: load, clear", params));
 			}
 			{
-				const TestParams params	=
+				const TestParams params
 				{
 					formatPair.colorFormat,			// VkFormat				format;
 					formatPair.depthFormat,			// VkFormat				depthFormat;
@@ -703,6 +923,7 @@ void MultipleClearsWithinRenderPassTests::init ()
 					0.01f,							// float				depthEpsilon;
 					1u,								// deUint32				repeatCount;
 					false,							// bool					enableBlend;
+					m_groupParams,					// SharedGroupParams	groupParams;
 					{								// vector<ClearStep>	steps;
 						{ ClearOp::DRAW		, Vec4(1.0f, 0.0f, 0.0f, 1.0f)	, 0.3f },
 						{ ClearOp::CLEAR	, Vec4(0.0f, 1.0f, 0.0f, 1.0f)	, 0.9f }
@@ -711,7 +932,7 @@ void MultipleClearsWithinRenderPassTests::init ()
 				addChild(new MultipleClearsWithinRenderPassTest(m_testCtx, "draw_clear" + testNameSuffix, "Multiple clears within same render pass, methods: draw, clear", params));
 			}
 			{
-				const TestParams params	=
+				const TestParams params
 				{
 					formatPair.colorFormat,			// VkFormat				format;
 					formatPair.depthFormat,			// VkFormat				depthFormat;
@@ -722,6 +943,7 @@ void MultipleClearsWithinRenderPassTests::init ()
 					0.01f,							// float				depthEpsilon;
 					1u,								// deUint32				repeatCount;
 					false,							// bool					enableBlend;
+					m_groupParams,					// SharedGroupParams	groupParams;
 					{								// vector<ClearStep>	steps;
 						{ ClearOp::CLEAR	, Vec4(1.0f, 0.0f, 0.0f, 1.0f)	, 0.3f },
 						{ ClearOp::CLEAR	, Vec4(0.0f, 1.0f, 0.0f, 1.0f)	, 0.9f }

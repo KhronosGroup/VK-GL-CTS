@@ -26,7 +26,6 @@
 #include "vktFragmentOperationsScissorMultiViewportTests.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
-#include "vktFragmentOperationsMakeUtil.hpp"
 
 #include "vkDefs.hpp"
 #include "vkRefUtil.hpp"
@@ -405,6 +404,7 @@ public:
 
 		endCommandBuffer(vk, *m_cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
+		context.resetCommandPoolForVKSC(device, *m_cmdPool);
 	}
 
 private:

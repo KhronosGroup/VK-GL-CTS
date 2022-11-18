@@ -90,7 +90,7 @@ SSBOArrayLengthCase::~SSBOArrayLengthCase (void)
 void SSBOArrayLengthCase::init (void)
 {
 	const glw::Functions&	gl				= m_context.getRenderContext().getFunctions();
-	const deUint32			invalidValue	= 0xFFFFFFFFUL;
+	const deUint32			invalidValues[]	= { 0xFFFFFFFFUL, 0xAAAAAAAAUL };
 
 	// program
 	m_shader = new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::ComputeSource(genComputeSource()));
@@ -102,7 +102,7 @@ void SSBOArrayLengthCase::init (void)
 	// gen and attach buffers
 	gl.genBuffers(1, &m_outputBufferID);
 	gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, m_outputBufferID);
-	gl.bufferData(GL_SHADER_STORAGE_BUFFER, 2 * (int)sizeof(deUint32), &invalidValue, GL_DYNAMIC_COPY);
+	gl.bufferData(GL_SHADER_STORAGE_BUFFER, 2 * (int)sizeof(deUint32), invalidValues, GL_DYNAMIC_COPY);
 
 	gl.genBuffers(1, &m_targetBufferID);
 	gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, m_targetBufferID);

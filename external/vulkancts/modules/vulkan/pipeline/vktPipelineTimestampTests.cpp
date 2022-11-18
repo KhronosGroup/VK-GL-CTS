@@ -139,6 +139,7 @@ enum TransferMethod
 	TRANSFER_METHOD_CLEAR_DEPTH_STENCIL_IMAGE,
 	TRANSFER_METHOD_RESOLVE_IMAGE,
 	TRANSFER_METHOD_COPY_QUERY_POOL_RESULTS,
+	TRANSFER_METHOD_COPY_QUERY_POOL_RESULTS_STRIDE_ZERO,
 	TRANSFER_METHOD_LAST
 };
 
@@ -167,6 +168,7 @@ std::string getTransferMethodStr (const TransferMethod	method,
 	  METHOD_CASE(CLEAR_DEPTH_STENCIL_IMAGE)
 	  METHOD_CASE(RESOLVE_IMAGE)
 	  METHOD_CASE(COPY_QUERY_POOL_RESULTS)
+	  METHOD_CASE(COPY_QUERY_POOL_RESULTS_STRIDE_ZERO)
 #undef METHOD_CASE
 	  default:
 		desc << "unknown method!";
@@ -233,37 +235,41 @@ void checkTimestampBits (deUint64 timestamp, deUint64 mask)
 class TimestampTestParam
 {
 public:
-								TimestampTestParam		(const VkPipelineStageFlagBits*	stages,
+								TimestampTestParam		(const PipelineConstructionType	pipelineConstructionType,
+														 const VkPipelineStageFlagBits*	stages,
 														 const deUint32					stageCount,
 														 const bool						inRenderPass,
 														 const bool						hostQueryReset,
 														 const VkQueryResultFlags		queryResultFlags);
-								~TimestampTestParam		(void);
-	virtual const std::string	generateTestName		(void) const;
-	virtual const std::string	generateTestDescription	(void) const;
-	StageFlagVector				getStageVector			(void) const	{ return m_stageVec; }
-	bool						getInRenderPass			(void) const	{ return m_inRenderPass; }
-	bool						getHostQueryReset		(void) const	{ return m_hostQueryReset; }
-	VkQueryResultFlags			getQueryResultFlags		(void) const	{ return m_queryResultFlags; }
-	void						toggleInRenderPass		(void)			{ m_inRenderPass = !m_inRenderPass; }
-	void						toggleHostQueryReset	(void)			{ m_hostQueryReset = !m_hostQueryReset; }
+								~TimestampTestParam			(void);
+	virtual const std::string	generateTestName			(void) const;
+	virtual const std::string	generateTestDescription		(void) const;
+	PipelineConstructionType	getPipelineConstructionType	(void) const	{ return m_pipelineConstructionType; }
+	StageFlagVector				getStageVector				(void) const	{ return m_stageVec; }
+	bool						getInRenderPass				(void) const	{ return m_inRenderPass; }
+	bool						getHostQueryReset			(void) const	{ return m_hostQueryReset; }
+	VkQueryResultFlags			getQueryResultFlags			(void) const	{ return m_queryResultFlags; }
+	void						toggleInRenderPass			(void)			{ m_inRenderPass = !m_inRenderPass; }
+	void						toggleHostQueryReset		(void)			{ m_hostQueryReset = !m_hostQueryReset; }
 
 	void						setQueryResultFlags		(VkQueryResultFlags flags)	{ m_queryResultFlags = flags; }
 
 protected:
-	StageFlagVector			m_stageVec;
-	bool					m_inRenderPass;
-	bool					m_hostQueryReset;
-	VkQueryResultFlags	m_queryResultFlags;
-
+	const PipelineConstructionType	m_pipelineConstructionType;
+	StageFlagVector					m_stageVec;
+	bool							m_inRenderPass;
+	bool							m_hostQueryReset;
+	VkQueryResultFlags				m_queryResultFlags;
 };
 
-TimestampTestParam::TimestampTestParam (const VkPipelineStageFlagBits*	stages,
+TimestampTestParam::TimestampTestParam (const PipelineConstructionType	pipelineConstructionType,
+									    const VkPipelineStageFlagBits*	stages,
 									    const deUint32					stageCount,
 									    const bool						inRenderPass,
 									    const bool						hostQueryReset,
 										const VkQueryResultFlags		queryResultFlags)
-	: m_inRenderPass(inRenderPass)
+	: m_pipelineConstructionType(pipelineConstructionType)
+	, m_inRenderPass(inRenderPass)
 	, m_hostQueryReset(hostQueryReset)
 	, m_queryResultFlags(queryResultFlags)
 {
@@ -327,7 +333,8 @@ const std::string TimestampTestParam::generateTestDescription (void) const
 class TransferTimestampTestParam : public TimestampTestParam
 {
 public:
-						TransferTimestampTestParam	(const VkPipelineStageFlagBits*	stages,
+						TransferTimestampTestParam	(const PipelineConstructionType	pipelineConstructionType,
+													 const VkPipelineStageFlagBits*	stages,
 													 const deUint32					stageCount,
 													 const bool						inRenderPass,
 													 const bool						hostQueryReset,
@@ -341,13 +348,14 @@ protected:
 	TransferMethod		m_method;
 };
 
-TransferTimestampTestParam::TransferTimestampTestParam (const VkPipelineStageFlagBits*	stages,
+TransferTimestampTestParam::TransferTimestampTestParam (const PipelineConstructionType	pipelineConstructionType,
+													    const VkPipelineStageFlagBits*	stages,
 													    const deUint32					stageCount,
 													    const bool						inRenderPass,
 													    const bool						hostQueryReset,
 													    const deUint32					methodNdx,
 														const VkQueryResultFlags		flags)
-	: TimestampTestParam(stages, stageCount, inRenderPass, hostQueryReset, flags)
+	: TimestampTestParam(pipelineConstructionType, stages, stageCount, inRenderPass, hostQueryReset, flags)
 {
 	DE_ASSERT(methodNdx < (deUint32)TRANSFER_METHOD_LAST);
 
@@ -400,7 +408,8 @@ const std::string TransferTimestampTestParam::generateTestDescription (void) con
 class TwoCmdBuffersTestParam : public TimestampTestParam
 {
 public:
-							TwoCmdBuffersTestParam	(const VkPipelineStageFlagBits*	stages,
+							TwoCmdBuffersTestParam	(const PipelineConstructionType	pipelineConstructionType,
+													 const VkPipelineStageFlagBits*	stages,
 													 const deUint32					stageCount,
 													 const bool						inRenderPass,
 													 const bool						hostQueryReset,
@@ -412,217 +421,16 @@ protected:
 	VkCommandBufferLevel	m_cmdBufferLevel;
 };
 
-TwoCmdBuffersTestParam::TwoCmdBuffersTestParam	(const VkPipelineStageFlagBits*	stages,
+TwoCmdBuffersTestParam::TwoCmdBuffersTestParam	(const PipelineConstructionType	pipelineConstructionType,
+												 const VkPipelineStageFlagBits*	stages,
 												 const deUint32					stageCount,
 												 const bool						inRenderPass,
 												 const bool						hostQueryReset,
 												 const VkCommandBufferLevel		cmdBufferLevel,
 												 const VkQueryResultFlags		queryPoolResultFlags)
-: TimestampTestParam(stages, stageCount, inRenderPass, hostQueryReset, queryPoolResultFlags), m_cmdBufferLevel(cmdBufferLevel)
+	: TimestampTestParam(pipelineConstructionType, stages, stageCount, inRenderPass, hostQueryReset, queryPoolResultFlags)
+	, m_cmdBufferLevel(cmdBufferLevel)
 {
-}
-
-class SimpleGraphicsPipelineBuilder
-{
-public:
-						 SimpleGraphicsPipelineBuilder  (Context& context);
-						 ~SimpleGraphicsPipelineBuilder (void) { }
-
-	void				bindShaderStage					(VkShaderStageFlagBits	stage,
-														 const char*			source_name);
-
-	void				enableTessellationStage			(deUint32              patchControlPoints);
-
-	Move<VkPipeline>	buildPipeline					(tcu::UVec2            renderSize,
-														 VkRenderPass          renderPass);
-protected:
-	enum
-	{
-		VK_MAX_SHADER_STAGES = 6,
-	};
-
-	Context&				m_context;
-
-	Move<VkShaderModule>	m_shaderModules[VK_MAX_SHADER_STAGES];
-	deUint32				m_shaderStageCount;
-	VkShaderStageFlagBits	m_shaderStages[VK_MAX_SHADER_STAGES];
-
-	deUint32				m_patchControlPoints;
-
-	Move<VkPipelineLayout>	m_pipelineLayout;
-	Move<VkPipeline>		m_graphicsPipelines;
-
-};
-
-SimpleGraphicsPipelineBuilder::SimpleGraphicsPipelineBuilder(Context& context)
-	: m_context(context)
-{
-	m_patchControlPoints = 0;
-	m_shaderStageCount   = 0;
-}
-
-void SimpleGraphicsPipelineBuilder::bindShaderStage (VkShaderStageFlagBits	stage,
-													 const char*			source_name)
-{
-	const DeviceInterface&	vk			= m_context.getDeviceInterface();
-	const VkDevice			vkDevice	= m_context.getDevice();
-
-	// Create shader module
-	deUint32*				pCode		= (deUint32*)m_context.getBinaryCollection().get(source_name).getBinary();
-	deUint32				codeSize	= (deUint32)m_context.getBinaryCollection().get(source_name).getSize();
-
-	const VkShaderModuleCreateInfo moduleCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,	// VkStructureType             sType;
-		DE_NULL,										// const void*                 pNext;
-		0u,												// VkShaderModuleCreateFlags   flags;
-		codeSize,										// deUintptr                   codeSize;
-		pCode,											// const deUint32*             pCode;
-	};
-
-	m_shaderModules[m_shaderStageCount] = createShaderModule(vk, vkDevice, &moduleCreateInfo);
-	m_shaderStages[m_shaderStageCount] = stage;
-
-	m_shaderStageCount++;
-}
-
-Move<VkPipeline> SimpleGraphicsPipelineBuilder::buildPipeline (tcu::UVec2 renderSize, VkRenderPass renderPass)
-{
-	const DeviceInterface&	vk						= m_context.getDeviceInterface();
-	const VkDevice			vkDevice				= m_context.getDevice();
-	VkShaderModule			vertShaderModule		= DE_NULL;
-	VkShaderModule			tessControlShaderModule	= DE_NULL;
-	VkShaderModule			tessEvalShaderModule	= DE_NULL;
-	VkShaderModule			geomShaderModule		= DE_NULL;
-	VkShaderModule			fragShaderModule		= DE_NULL;
-
-	for (deUint32 i = 0; i < m_shaderStageCount; i++)
-	{
-		if (m_shaderStages[i] == VK_SHADER_STAGE_VERTEX_BIT)
-			vertShaderModule = *m_shaderModules[i];
-		else if (m_shaderStages[i] == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
-			tessControlShaderModule = *m_shaderModules[i];
-		else if (m_shaderStages[i] == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
-			tessEvalShaderModule = *m_shaderModules[i];
-		else if (m_shaderStages[i] == VK_SHADER_STAGE_GEOMETRY_BIT)
-			geomShaderModule = *m_shaderModules[i];
-		else if (m_shaderStages[i] == VK_SHADER_STAGE_FRAGMENT_BIT)
-			fragShaderModule = *m_shaderModules[i];
-	}
-
-	// Create pipeline layout
-	{
-		const VkPipelineLayoutCreateInfo pipelineLayoutParams =
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// VkStructureType                  sType;
-			DE_NULL,										// const void*                      pNext;
-			0u,												// VkPipelineLayoutCreateFlags      flags;
-			0u,												// deUint32                         setLayoutCount;
-			DE_NULL,										// const VkDescriptorSetLayout*     pSetLayouts;
-			0u,												// deUint32                         pushConstantRangeCount;
-			DE_NULL											// const VkPushConstantRange*       pPushConstantRanges;
-		};
-
-		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
-	}
-
-	// Create pipeline
-	const VkVertexInputBindingDescription vertexInputBindingDescription =
-	{
-		0u,								// deUint32                 binding;
-		sizeof(Vertex4RGBA),			// deUint32                 strideInBytes;
-		VK_VERTEX_INPUT_RATE_VERTEX,	// VkVertexInputRate        inputRate;
-	};
-
-	const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[2] =
-	{
-		{
-			0u,									// deUint32 location;
-			0u,									// deUint32 binding;
-			VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat format;
-			0u									// deUint32 offsetInBytes;
-		},
-		{
-			1u,									// deUint32 location;
-			0u,									// deUint32 binding;
-			VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat format;
-			DE_OFFSET_OF(Vertex4RGBA, color),	// deUint32 offsetInBytes;
-		}
-	};
-
-	const VkPipelineVertexInputStateCreateInfo vertexInputStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType                          sType;
-		DE_NULL,													// const void*                              pNext;
-		0u,															// VkPipelineVertexInputStateCreateFlags    flags;
-		1u,															// deUint32                                 vertexBindingDescriptionCount;
-		&vertexInputBindingDescription,								// const VkVertexInputBindingDescription*   pVertexBindingDescriptions;
-		2u,															// deUint32                                 vertexAttributeDescriptionCount;
-		vertexInputAttributeDescriptions,							// const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
-	};
-
-	VkPrimitiveTopology primitiveTopology = (m_patchControlPoints > 0) ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-
-	const std::vector<VkViewport>	viewports	(1, makeViewport(renderSize));
-	const std::vector<VkRect2D>		scissors	(1, makeRect2D(renderSize));
-
-	VkPipelineDepthStencilStateCreateInfo depthStencilStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType                          sType;
-		DE_NULL,													// const void*                              pNext;
-		0u,															// VkPipelineDepthStencilStateCreateFlags   flags;
-		VK_TRUE,													// VkBool32                                 depthTestEnable;
-		VK_TRUE,													// VkBool32                                 depthWriteEnable;
-		VK_COMPARE_OP_LESS_OR_EQUAL,								// VkCompareOp                              depthCompareOp;
-		VK_FALSE,													// VkBool32                                 depthBoundsTestEnable;
-		VK_FALSE,													// VkBool32                                 stencilTestEnable;
-		// VkStencilOpState front;
-		{
-			VK_STENCIL_OP_KEEP,		// VkStencilOp  failOp;
-			VK_STENCIL_OP_KEEP,		// VkStencilOp  passOp;
-			VK_STENCIL_OP_KEEP,		// VkStencilOp  depthFailOp;
-			VK_COMPARE_OP_NEVER,	// VkCompareOp  compareOp;
-			0u,						// deUint32     compareMask;
-			0u,						// deUint32     writeMask;
-			0u,						// deUint32     reference;
-		},
-		// VkStencilOpState back;
-		{
-			VK_STENCIL_OP_KEEP,		// VkStencilOp  failOp;
-			VK_STENCIL_OP_KEEP,		// VkStencilOp  passOp;
-			VK_STENCIL_OP_KEEP,		// VkStencilOp  depthFailOp;
-			VK_COMPARE_OP_NEVER,	// VkCompareOp  compareOp;
-			0u,						// deUint32     compareMask;
-			0u,						// deUint32     writeMask;
-			0u,						// deUint32     reference;
-		},
-		0.0f,														// float                                    minDepthBounds;
-		1.0f,														// float                                    maxDepthBounds;
-	};
-
-	return makeGraphicsPipeline(vk,							// const DeviceInterface&                        vk
-								vkDevice,					// const VkDevice                                device
-								*m_pipelineLayout,			// const VkPipelineLayout                        pipelineLayout
-								vertShaderModule,			// const VkShaderModule                          vertexShaderModule
-								tessControlShaderModule,	// const VkShaderModule                          tessellationControlModule
-								tessEvalShaderModule,		// const VkShaderModule                          tessellationEvalModule
-								geomShaderModule,			// const VkShaderModule                          geometryShaderModule
-								fragShaderModule,			// const VkShaderModule                          fragmentShaderModule
-								renderPass,					// const VkRenderPass                            renderPass
-								viewports,					// const std::vector<VkViewport>&                viewports
-								scissors,					// const std::vector<VkRect2D>&                  scissors
-								primitiveTopology,			// const VkPrimitiveTopology                     topology
-								0u,							// const deUint32                                subpass
-								m_patchControlPoints,		// const deUint32                                patchControlPoints
-								&vertexInputStateParams,	// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-								DE_NULL,					// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
-								DE_NULL,					// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
-								&depthStencilStateParams);	// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
-}
-
-void SimpleGraphicsPipelineBuilder::enableTessellationStage (deUint32 patchControlPoints)
-{
-	m_patchControlPoints = patchControlPoints;
 }
 
 template <class Test>
@@ -648,17 +456,19 @@ public:
 											 const std::string&			name,
 											 const std::string&			description,
 											 const TimestampTestParam*	param)
-											 : vkt::TestCase		(testContext, name, description)
-											 , m_stages				(param->getStageVector())
-											 , m_inRenderPass		(param->getInRenderPass())
-											 , m_hostQueryReset		(param->getHostQueryReset())
-											 , m_queryResultFlags	(param->getQueryResultFlags())
+											 : vkt::TestCase				(testContext, name, description)
+											 , m_pipelineConstructionType	(param->getPipelineConstructionType())
+											 , m_stages						(param->getStageVector())
+											 , m_inRenderPass				(param->getInRenderPass())
+											 , m_hostQueryReset				(param->getHostQueryReset())
+											 , m_queryResultFlags			(param->getQueryResultFlags())
 											 { }
 	virtual					~TimestampTest	(void) { }
 	virtual void			initPrograms	(SourceCollections& programCollection) const;
 	virtual TestInstance*	createInstance	(Context& context) const;
 	virtual void			checkSupport	(Context& context) const;
 protected:
+	const PipelineConstructionType	m_pipelineConstructionType;
 	const StageFlagVector			m_stages;
 	const bool						m_inRenderPass;
 	const bool						m_hostQueryReset;
@@ -679,7 +489,8 @@ public:
 
 protected:
 	virtual tcu::TestStatus	verifyTimestamp				(void);
-	virtual void            configCommandBuffer			(void);
+	virtual void			buildPipeline				(void);
+	virtual void			configCommandBuffer			(void);
 
 	Move<VkBuffer>			createBufferAndBindMemory	(VkDeviceSize				size,
 														 VkBufferUsageFlags			usage,
@@ -732,6 +543,7 @@ void TimestampTest::checkSupport (Context& context) const
 		if(context.getHostQueryResetFeatures().hostQueryReset == VK_FALSE)
 			throw tcu::NotSupportedError("Implementation doesn't support resetting queries from the host");
 	}
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 }
 
 TestInstance* TimestampTest::createInstance (Context& context) const
@@ -795,6 +607,10 @@ TimestampTestInstance::~TimestampTestInstance (void)
 	m_timestampValuesHostQueryReset = NULL;
 }
 
+void TimestampTestInstance::buildPipeline (void)
+{
+}
+
 void TimestampTestInstance::configCommandBuffer (void)
 {
 	const DeviceInterface& vk = m_context.getDeviceInterface();
@@ -820,8 +636,9 @@ tcu::TestStatus TimestampTestInstance::iterate (void)
 	const VkQueue			queue				= m_context.getUniversalQueue();
 	const bool				availabilityBit		= m_queryResultFlags & VK_QUERY_RESULT_WITH_AVAILABILITY_BIT;
 	const deUint32			stageSize			= (deUint32)m_stages.size();
-	const deUint32			queryDataSize		= sizeof(deUint64) * (availabilityBit ? 2u : 1u);
+	const deUint32			queryDataSize		= deUint32(sizeof(deUint64) * (availabilityBit ? 2u : 1u));
 
+	buildPipeline();
 	configCommandBuffer();
 	if (m_hostQueryReset)
 	{
@@ -1009,7 +826,7 @@ class CalibratedTimestampTestInstance : public vkt::TestInstance
 {
 public:
 							CalibratedTimestampTestInstance		(Context& context);
-	virtual                 ~CalibratedTimestampTestInstance	(void) override { }
+	virtual					~CalibratedTimestampTestInstance	(void) override { }
 	virtual tcu::TestStatus iterate								(void) override;
 	virtual tcu::TestStatus runTest								(void) = 0;
 protected:
@@ -1041,7 +858,7 @@ protected:
 	static constexpr deUint64		kDefaultToleranceNanos		=  100000000u;	// 100 ms.
 
 #if (DE_OS == DE_OS_WIN32)
-    // Preprocessor used to avoid warning about unused variable.
+	// Preprocessor used to avoid warning about unused variable.
 	static constexpr deUint64		kNanosecondsPerSecond		= 1000000000u;
 #endif
 	static constexpr deUint64		kNanosecondsPerMillisecond	=    1000000u;
@@ -1067,7 +884,7 @@ public:
 								: CalibratedTimestampTestInstance{context}
 								{ }
 
-	virtual                 ~CalibratedTimestampDevDomainTestInstance	(void) { }
+	virtual					~CalibratedTimestampDevDomainTestInstance	(void) { }
 	virtual tcu::TestStatus runTest										(void) override;
 };
 
@@ -1078,7 +895,7 @@ public:
 								: CalibratedTimestampTestInstance{context}
 								{ }
 
-	virtual                 ~CalibratedTimestampHostDomainTestInstance	(void) { }
+	virtual					~CalibratedTimestampHostDomainTestInstance	(void) { }
 	virtual tcu::TestStatus runTest										(void) override;
 };
 
@@ -1089,7 +906,7 @@ public:
 								: CalibratedTimestampTestInstance{context}
 								{ }
 
-	virtual                 ~CalibratedTimestampCalibrationTestInstance	(void) { }
+	virtual					~CalibratedTimestampCalibrationTestInstance	(void) { }
 	virtual tcu::TestStatus runTest										(void) override;
 };
 
@@ -1534,14 +1351,16 @@ public:
 	{
 		VK_MAX_SHADER_STAGES = 6,
 	};
-					BasicGraphicsTestInstance	(Context&					context,
-												 const StageFlagVector		stages,
-												 const bool					inRenderPass,
-												 const bool					hostQueryReset,
-												 const VkQueryResultFlags	queryResultFlags);
+					BasicGraphicsTestInstance	(Context&						context,
+												 const PipelineConstructionType	pipelineConstructionType,
+												 const StageFlagVector			stages,
+												 const bool						inRenderPass,
+												 const bool						hostQueryReset,
+												 const VkQueryResultFlags		queryResultFlags);
 
 	virtual			~BasicGraphicsTestInstance	(void);
 protected:
+	virtual void	buildPipeline				(void);
 	virtual void	configCommandBuffer			(void);
 	virtual void	buildVertexBuffer			(void);
 	virtual void	buildRenderPass				(VkFormat	colorFormat,
@@ -1570,8 +1389,8 @@ protected:
 	Move<VkBuffer>					m_vertexBuffer;
 	std::vector<Vertex4RGBA>		m_vertices;
 
-	SimpleGraphicsPipelineBuilder	m_pipelineBuilder;
-	Move<VkPipeline>				m_graphicsPipelines;
+	Move<VkPipelineLayout>			m_pipelineLayout;
+	GraphicsPipelineWrapper			m_graphicsPipeline;
 };
 
 void BasicGraphicsTest::initPrograms (SourceCollections& programCollection) const
@@ -1599,7 +1418,7 @@ void BasicGraphicsTest::initPrograms (SourceCollections& programCollection) cons
 
 TestInstance* BasicGraphicsTest::createInstance (Context& context) const
 {
-	return new BasicGraphicsTestInstance(context, m_stages, m_inRenderPass, m_hostQueryReset, m_queryResultFlags);
+	return new BasicGraphicsTestInstance(context, m_pipelineConstructionType, m_stages, m_inRenderPass, m_hostQueryReset, m_queryResultFlags);
 }
 
 void BasicGraphicsTestInstance::buildVertexBuffer (void)
@@ -1746,16 +1565,17 @@ void BasicGraphicsTestInstance::buildFrameBuffer (tcu::UVec2 renderSize, VkForma
 
 }
 
-BasicGraphicsTestInstance::BasicGraphicsTestInstance (Context&					context,
-													  const StageFlagVector		stages,
-													  const bool				inRenderPass,
-													  const bool				hostQueryReset,
-													  const VkQueryResultFlags	queryResultFlags)
+BasicGraphicsTestInstance::BasicGraphicsTestInstance (Context&							context,
+													  const PipelineConstructionType	pipelineConstructionType,
+													  const StageFlagVector				stages,
+													  const bool						inRenderPass,
+													  const bool						hostQueryReset,
+													  const VkQueryResultFlags			queryResultFlags)
 													  : TimestampTestInstance (context,stages,inRenderPass, hostQueryReset, queryResultFlags)
 													  , m_renderSize		(32, 32)
 													  , m_colorFormat		(VK_FORMAT_R8G8B8A8_UNORM)
 													  , m_depthFormat		(VK_FORMAT_D16_UNORM)
-													  , m_pipelineBuilder	(context)
+													  , m_graphicsPipeline	(context.getDeviceInterface(), context.getDevice(), pipelineConstructionType)
 {
 	buildVertexBuffer();
 
@@ -1763,15 +1583,109 @@ BasicGraphicsTestInstance::BasicGraphicsTestInstance (Context&					context,
 
 	buildFrameBuffer(m_renderSize, m_colorFormat, m_depthFormat);
 
-	m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_VERTEX_BIT, "color_vert");
-	m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_FRAGMENT_BIT, "color_frag");
-
-	m_graphicsPipelines = m_pipelineBuilder.buildPipeline(m_renderSize, *m_renderPass);
-
+	// Create pipeline layout
+	const DeviceInterface&				vk						= m_context.getDeviceInterface();
+	const VkDevice						vkDevice				= m_context.getDevice();
+	const VkPipelineLayoutCreateInfo	pipelineLayoutParams	= initVulkanStructure();
+	m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
 }
 
 BasicGraphicsTestInstance::~BasicGraphicsTestInstance (void)
 {
+}
+
+static const VkVertexInputBindingDescription defaultVertexInputBindingDescription
+{
+	0u,																// deUint32				binding;
+	sizeof(Vertex4RGBA),											// deUint32				strideInBytes;
+	VK_VERTEX_INPUT_RATE_VERTEX,									// VkVertexInputRate	inputRate;
+};
+
+static const VkVertexInputAttributeDescription defaultVertexInputAttributeDescriptions[2]
+{
+	{
+		0u,															// deUint32				location;
+		0u,															// deUint32				binding;
+		VK_FORMAT_R32G32B32A32_SFLOAT,								// VkFormat				format;
+		0u															// deUint32				offsetInBytes;
+	},
+	{
+		1u,															// deUint32				location;
+		0u,															// deUint32				binding;
+		VK_FORMAT_R32G32B32A32_SFLOAT,								// VkFormat				format;
+		DE_OFFSET_OF(Vertex4RGBA, color),							// deUint32				offsetInBytes;
+	}
+};
+
+static const VkPipelineVertexInputStateCreateInfo defaultVertexInputStateParams
+{
+	VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,		// VkStructureType								sType;
+	DE_NULL,														// const void*									pNext;
+	0u,																// VkPipelineVertexInputStateCreateFlags		flags;
+	1u,																// deUint32										vertexBindingDescriptionCount;
+	&defaultVertexInputBindingDescription,							// const VkVertexInputBindingDescription*		pVertexBindingDescriptions;
+	2u,																// deUint32										vertexAttributeDescriptionCount;
+	defaultVertexInputAttributeDescriptions,						// const VkVertexInputAttributeDescription*		pVertexAttributeDescriptions;
+};
+
+static const VkPipelineDepthStencilStateCreateInfo defaultDepthStencilStateParams
+{
+	VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,		// VkStructureType								sType;
+	DE_NULL,														// const void*									pNext;
+	0u,																// VkPipelineDepthStencilStateCreateFlags		flags;
+	VK_TRUE,														// VkBool32										depthTestEnable;
+	VK_TRUE,														// VkBool32										depthWriteEnable;
+	VK_COMPARE_OP_LESS_OR_EQUAL,									// VkCompareOp									depthCompareOp;
+	VK_FALSE,														// VkBool32										depthBoundsTestEnable;
+	VK_FALSE,														// VkBool32										stencilTestEnable;
+	{																// VkStencilOpState								front;
+		VK_STENCIL_OP_KEEP,												// VkStencilOp								failOp
+		VK_STENCIL_OP_KEEP,												// VkStencilOp								passOp
+		VK_STENCIL_OP_KEEP,												// VkStencilOp								depthFailOp
+		VK_COMPARE_OP_NEVER,											// VkCompareOp								compareOp
+		0u,																// deUint32									compareMask
+		0u,																// deUint32									writeMask
+		0u																// deUint32									reference
+	},
+	{																// VkStencilOpState								back;
+		VK_STENCIL_OP_KEEP,												// VkStencilOp								failOp
+		VK_STENCIL_OP_KEEP,												// VkStencilOp								passOp
+		VK_STENCIL_OP_KEEP,												// VkStencilOp								depthFailOp
+		VK_COMPARE_OP_NEVER,											// VkCompareOp								compareOp
+		0u,																// deUint32									compareMask
+		0u,																// deUint32									writeMask
+		0u																// deUint32									reference
+	},
+	0.0f,															// float										minDepthBounds;
+	1.0f,															// float										maxDepthBounds;
+};
+
+void BasicGraphicsTestInstance::buildPipeline(void)
+{
+	const DeviceInterface&		vk			= m_context.getDeviceInterface();
+	const VkDevice				vkDevice	= m_context.getDevice();
+
+	auto vertexShaderModule		= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_vert"), 0);
+	auto fragmentShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_frag"), 0);
+
+	const std::vector<VkViewport>	viewports	{ makeViewport(m_renderSize) };
+	const std::vector<VkRect2D>		scissors	{ makeRect2D(m_renderSize) };
+
+	// Create pipeline
+	m_graphicsPipeline.setDefaultRasterizationState()
+					  .setDefaultColorBlendState()
+					  .setDefaultMultisampleState()
+					  .setupVertexInputState(&defaultVertexInputStateParams)
+					  .setupPreRasterizationShaderState(viewports,
+														scissors,
+														*m_pipelineLayout,
+														*m_renderPass,
+														0u,
+														*vertexShaderModule)
+					  .setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fragmentShaderModule, &defaultDepthStencilStateParams)
+					  .setupFragmentOutputState(*m_renderPass)
+					  .setMonolithicPipelineLayout(*m_pipelineLayout)
+					  .buildPipeline();
 }
 
 void BasicGraphicsTestInstance::configCommandBuffer (void)
@@ -1794,7 +1708,7 @@ void BasicGraphicsTestInstance::configCommandBuffer (void)
 
 	beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), 2u, attachmentClearValues);
 
-	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelines);
+	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.getPipeline());
 	VkDeviceSize offsets = 0u;
 	vk.cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &m_vertexBuffer.get(), &offsets);
 	vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1u, 0u, 0u);
@@ -1834,21 +1748,23 @@ public:
 							  : BasicGraphicsTest(testContext, name, description, param)
 							  { }
 
-	virtual               ~AdvGraphicsTest (void) { }
-	virtual void          initPrograms     (SourceCollections& programCollection) const;
-	virtual TestInstance* createInstance   (Context& context) const;
+	virtual              ~AdvGraphicsTest (void) { }
+	virtual void         initPrograms     (SourceCollections& programCollection) const;
+	virtual TestInstance*createInstance   (Context& context) const;
 };
 
 class AdvGraphicsTestInstance : public BasicGraphicsTestInstance
 {
 public:
-				 AdvGraphicsTestInstance	(Context&					context,
-											 const StageFlagVector		stages,
-											 const bool					inRenderPass,
-											 const bool					hostQueryReset,
-											 const VkQueryResultFlags	queryResultFlags);
+				 AdvGraphicsTestInstance	(Context&							context,
+											 const PipelineConstructionType		pipelineConstructionType,
+											 const StageFlagVector				stages,
+											 const bool							inRenderPass,
+											 const bool							hostQueryReset,
+											 const VkQueryResultFlags			queryResultFlags);
 
 	virtual      ~AdvGraphicsTestInstance	(void);
+	virtual void buildPipeline				(void);
 	virtual void configCommandBuffer		(void);
 
 protected:
@@ -1865,7 +1781,7 @@ void AdvGraphicsTest::initPrograms (SourceCollections& programCollection) const
 {
 	BasicGraphicsTest::initPrograms(programCollection);
 
-	programCollection.glslSources.add("dummy_geo") << glu::GeometrySource(
+	programCollection.glslSources.add("unused_geo") << glu::GeometrySource(
 		"#version 310 es\n"
 		"#extension GL_EXT_geometry_shader : enable\n"
 		"layout(triangles) in;\n"
@@ -1927,7 +1843,7 @@ void AdvGraphicsTest::initPrograms (SourceCollections& programCollection) const
 
 TestInstance* AdvGraphicsTest::createInstance (Context& context) const
 {
-	return new AdvGraphicsTestInstance(context, m_stages, m_inRenderPass, m_hostQueryReset, m_queryResultFlags);
+	return new AdvGraphicsTestInstance(context, m_pipelineConstructionType, m_stages, m_inRenderPass, m_hostQueryReset, m_queryResultFlags);
 }
 
 void AdvGraphicsTestInstance::featureSupportCheck (void)
@@ -1956,36 +1872,23 @@ void AdvGraphicsTestInstance::featureSupportCheck (void)
 	}
 }
 
-AdvGraphicsTestInstance::AdvGraphicsTestInstance (Context&					context,
-												  const StageFlagVector		stages,
-												  const bool				inRenderPass,
-												  const bool				hostQueryReset,
-												  const VkQueryResultFlags	queryResultFlags)
-	: BasicGraphicsTestInstance(context, stages, inRenderPass, hostQueryReset, queryResultFlags)
+AdvGraphicsTestInstance::AdvGraphicsTestInstance (Context&							context,
+												  const PipelineConstructionType	pipelineConstructionType,
+												  const StageFlagVector				stages,
+												  const bool						inRenderPass,
+												  const bool						hostQueryReset,
+												  const VkQueryResultFlags			queryResultFlags)
+	: BasicGraphicsTestInstance	(context, pipelineConstructionType, stages, inRenderPass, hostQueryReset, queryResultFlags)
+	, m_features				(context.getDeviceFeatures())
 {
-	m_features = m_context.getDeviceFeatures();
+
+	const DeviceInterface&	vk = m_context.getDeviceInterface();
+	const VkDevice			vkDevice = m_context.getDevice();
 
 	// If necessary feature is not supported, throw error and fail current test
 	featureSupportCheck();
 
-	if(m_features.geometryShader == VK_TRUE)
-	{
-		m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_GEOMETRY_BIT, "dummy_geo");
-	}
-
-	if(m_features.tessellationShader == VK_TRUE)
-	{
-		m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "basic_tcs");
-		m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "basic_tes");
-		m_pipelineBuilder.enableTessellationStage(3);
-	}
-
-	m_graphicsPipelines = m_pipelineBuilder.buildPipeline(m_renderSize, *m_renderPass);
-
 	// Prepare the indirect draw buffer
-	const DeviceInterface&	vk			= m_context.getDeviceInterface();
-	const VkDevice			vkDevice	= m_context.getDevice();
-
 	if(m_features.multiDrawIndirect == VK_TRUE)
 	{
 		m_draw_count = 2;
@@ -2016,11 +1919,55 @@ AdvGraphicsTestInstance::AdvGraphicsTestInstance (Context&					context,
 	// Load data into indirect draw buffer
 	deMemcpy(m_indirectBufferAlloc->getHostPtr(), indirectCmds, m_draw_count * sizeof(VkDrawIndirectCommand));
 	flushAlloc(vk, vkDevice, *m_indirectBufferAlloc);
-
 }
 
 AdvGraphicsTestInstance::~AdvGraphicsTestInstance (void)
 {
+}
+
+void AdvGraphicsTestInstance::buildPipeline(void)
+{
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			vkDevice	= m_context.getDevice();
+
+	const std::vector<VkViewport>	viewports	{ makeViewport(m_renderSize) };
+	const std::vector<VkRect2D>		scissors	{ makeRect2D(m_renderSize) };
+
+	Move<VkShaderModule> vertShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_vert"), 0);
+	Move<VkShaderModule> fragShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_frag"), 0);
+	Move<VkShaderModule> tescShaderModule;
+	Move<VkShaderModule> teseShaderModule;
+	Move<VkShaderModule> geomShaderModule;
+
+	if (m_features.tessellationShader)
+	{
+		tescShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("basic_tcs"), 0);
+		teseShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("basic_tes"), 0);
+	}
+
+	if (m_features.geometryShader)
+		geomShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("unused_geo"), 0);
+
+	// Create pipeline
+	m_graphicsPipeline.setDefaultTopology(m_features.tessellationShader ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+					  .setDefaultRasterizationState()
+					  .setDefaultColorBlendState()
+					  .setDefaultMultisampleState()
+					  .setupVertexInputState(&defaultVertexInputStateParams)
+					  .setupPreRasterizationShaderState(viewports,
+														scissors,
+														*m_pipelineLayout,
+														*m_renderPass,
+														0u,
+														*vertShaderModule,
+														DE_NULL,
+														*tescShaderModule,
+														*teseShaderModule,
+														*geomShaderModule)
+					  .setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fragShaderModule, &defaultDepthStencilStateParams)
+					  .setupFragmentOutputState(*m_renderPass)
+					  .setMonolithicPipelineLayout(*m_pipelineLayout)
+					  .buildPipeline();
 }
 
 void AdvGraphicsTestInstance::configCommandBuffer (void)
@@ -2043,7 +1990,7 @@ void AdvGraphicsTestInstance::configCommandBuffer (void)
 
 	beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), 2u, attachmentClearValues);
 
-	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelines);
+	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.getPipeline());
 
 	VkDeviceSize offsets = 0u;
 	vk.cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &m_vertexBuffer.get(), &offsets);
@@ -2591,9 +2538,11 @@ void TransferTestInstance::configCommandBuffer (void)
 				break;
 			}
 		case TRANSFER_METHOD_COPY_QUERY_POOL_RESULTS:
+		case TRANSFER_METHOD_COPY_QUERY_POOL_RESULTS_STRIDE_ZERO:
 			{
 				vk.cmdWriteTimestamp(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, *m_queryPool, 0u);
-				vk.cmdCopyQueryPoolResults(*m_cmdBuffer, *m_queryPool, 0u, 1u, *m_dstBuffer, 0u, 8u, VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+				VkDeviceSize copyStride = m_method == TRANSFER_METHOD_COPY_QUERY_POOL_RESULTS_STRIDE_ZERO ? 0u : 8u;
+				vk.cmdCopyQueryPoolResults(*m_cmdBuffer, *m_queryPool, 0u, 1u, *m_dstBuffer, 0u, copyStride, VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
 
 				const vk::VkBufferMemoryBarrier bufferBarrier =
 				{
@@ -2800,7 +2749,7 @@ public:
 : TimestampTest (testContext, name, description, param), m_cmdBufferLevel(param->getCmdBufferLevel()) { }
 	virtual					~TwoCmdBuffersTest	(void) { }
 	virtual TestInstance*	createInstance		(Context&						context) const;
-
+	virtual void			checkSupport		(Context& context) const;
 protected:
 	VkCommandBufferLevel	m_cmdBufferLevel;
 };
@@ -2829,6 +2778,15 @@ protected:
 TestInstance* TwoCmdBuffersTest::createInstance (Context& context) const
 {
 	return new TwoCmdBuffersTestInstance(context, m_stages, m_inRenderPass, m_hostQueryReset, m_cmdBufferLevel, m_queryResultFlags);
+}
+
+void TwoCmdBuffersTest::checkSupport(Context& context) const
+{
+	TimestampTest::checkSupport(context);
+#ifdef CTS_USES_VULKANSC
+	if (m_cmdBufferLevel == VK_COMMAND_BUFFER_LEVEL_SECONDARY && context.getDeviceVulkanSC10Properties().secondaryCommandBufferNullOrImagelessFramebuffer == VK_FALSE)
+		TCU_THROW(NotSupportedError, "secondaryCommandBufferNullFramebuffer is not supported");
+#endif
 }
 
 TwoCmdBuffersTestInstance::TwoCmdBuffersTestInstance (Context&					context,
@@ -3082,9 +3040,9 @@ ConsistentQueryResultsTestInstance::ConsistentQueryResultsTestInstance(Context& 
 
 tcu::TestStatus ConsistentQueryResultsTestInstance::iterate(void)
 {
-	const DeviceInterface&      vk          = m_context.getDeviceInterface();
-	const VkDevice              vkDevice    = m_context.getDevice();
-	const VkQueue               queue       = m_context.getUniversalQueue();
+	const DeviceInterface&		vk			= m_context.getDeviceInterface();
+	const VkDevice				vkDevice	= m_context.getDevice();
+	const VkQueue				queue		= m_context.getUniversalQueue();
 
 	deUint32					tsBuffer32Bits;
 	deUint64					tsBuffer64Bits;
@@ -3129,7 +3087,7 @@ tcu::TestStatus ConsistentQueryResultsTestInstance::iterate(void)
 
 } // anonymous
 
-tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
 	de::MovePtr<tcu::TestCaseGroup> timestampTests (new tcu::TestCaseGroup(testCtx, "timestamp", "timestamp tests"));
 	const VkQueryResultFlags queryResultFlagsTimestampTest[] =
@@ -3157,7 +3115,7 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
 		{
 			for (deUint32 flagsIdx = 0u; flagsIdx < DE_LENGTH_OF_ARRAY(queryResultFlagsTimestampTest); flagsIdx++)
 			{
-				TimestampTestParam param(basicGraphicsStages0[stageNdx], 2u, true, false, queryResultFlagsTimestampTest[flagsIdx]);
+				TimestampTestParam param(pipelineConstructionType, basicGraphicsStages0[stageNdx], 2u, true, false, queryResultFlagsTimestampTest[flagsIdx]);
 				basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
 				param.toggleInRenderPass();
 				basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
@@ -3178,7 +3136,7 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
 		{
 			for (deUint32 flagsIdx = 0u; flagsIdx < DE_LENGTH_OF_ARRAY(queryResultFlagsTimestampTest); flagsIdx++)
 			{
-				TimestampTestParam param(basicGraphicsStages1[stageNdx], 3u, true, false, queryResultFlagsTimestampTest[flagsIdx]);
+				TimestampTestParam param(pipelineConstructionType, basicGraphicsStages1[stageNdx], 3u, true, false, queryResultFlagsTimestampTest[flagsIdx]);
 				basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
 				param.toggleInRenderPass();
 				basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
@@ -3208,7 +3166,7 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
 		{
 			for (deUint32 flagsIdx = 0u; flagsIdx < DE_LENGTH_OF_ARRAY(queryResultFlagsTimestampTest); flagsIdx++)
 			{
-				TimestampTestParam param(advGraphicsStages[stageNdx], 2u, true, false, queryResultFlagsTimestampTest[flagsIdx]);
+				TimestampTestParam param(pipelineConstructionType, advGraphicsStages[stageNdx], 2u, true, false, queryResultFlagsTimestampTest[flagsIdx]);
 				advGraphicsTests->addChild(newTestCase<AdvGraphicsTest>(testCtx, &param));
 				param.toggleInRenderPass();
 				advGraphicsTests->addChild(newTestCase<AdvGraphicsTest>(testCtx, &param));
@@ -3223,7 +3181,8 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
 		timestampTests->addChild(advGraphicsTests.release());
 	}
 
-	// Basic Compute Tests
+	// Basic Compute Tests - don't repeat those tests for graphics pipeline library
+	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
 		de::MovePtr<tcu::TestCaseGroup> basicComputeTests (new tcu::TestCaseGroup(testCtx, "basic_compute_tests", "Record timestamp for compute stages"));
 
@@ -3236,7 +3195,7 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
 		{
 			for (deUint32 flagsIdx = 0u; flagsIdx < DE_LENGTH_OF_ARRAY(queryResultFlagsTimestampTest); flagsIdx++)
 			{
-				TimestampTestParam param(basicComputeStages[stageNdx], 2u, false, false, queryResultFlagsTimestampTest[flagsIdx]);
+				TimestampTestParam param(pipelineConstructionType, basicComputeStages[stageNdx], 2u, false, false, queryResultFlagsTimestampTest[flagsIdx]);
 				basicComputeTests->addChild(newTestCase<BasicComputeTest>(testCtx, &param));
 				// Host Query reset test
 				param.toggleHostQueryReset();
@@ -3247,7 +3206,8 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
 		timestampTests->addChild(basicComputeTests.release());
 	}
 
-	// Transfer Tests
+	// Transfer Tests - don't repeat those tests for graphics pipeline library
+	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
 		de::MovePtr<tcu::TestCaseGroup> transferTests (new tcu::TestCaseGroup(testCtx, "transfer_tests", "Record timestamp for transfer stages"));
 
@@ -3263,7 +3223,7 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
 			{
 				for (deUint32 flagsIdx = 0u; flagsIdx < DE_LENGTH_OF_ARRAY(queryResultFlagsTimestampTest); flagsIdx++)
 				{
-					TransferTimestampTestParam param(transferStages[stageNdx], 2u, false, false, method, queryResultFlagsTimestampTest[flagsIdx]);
+					TransferTimestampTestParam param(pipelineConstructionType, transferStages[stageNdx], 2u, false, false, method, queryResultFlagsTimestampTest[flagsIdx]);
 					transferTests->addChild(newTestCase<TransferTest>(testCtx, &param));
 					// Host Query reset test
 					param.toggleHostQueryReset();
@@ -3275,7 +3235,8 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
 		timestampTests->addChild(transferTests.release());
 	}
 
-	// Calibrated Timestamp Tests.
+	// Calibrated Timestamp Tests - don't repeat those tests for graphics pipeline library
+	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
 		de::MovePtr<tcu::TestCaseGroup> calibratedTimestampTests (new tcu::TestCaseGroup(testCtx, "calibrated", "VK_EXT_calibrated_timestamps tests"));
 
@@ -3286,7 +3247,8 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
 		timestampTests->addChild(calibratedTimestampTests.release());
 	}
 
-	// Misc Tests
+	// Misc Tests - don't repeat those tests for graphics pipeline library
+	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
 		const VkQueryResultFlags queryResultFlagsMiscTests[] =
 		{
@@ -3300,22 +3262,20 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
 
 		for (deUint32 flagsIdx = 0u; flagsIdx < DE_LENGTH_OF_ARRAY(queryResultFlagsMiscTests); flagsIdx++)
 		{
-
-
 			const VkPipelineStageFlagBits miscStages[] = {VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT};
-			TimestampTestParam param(miscStages, 1u, false, false, queryResultFlagsTimestampTest[flagsIdx]);
+			TimestampTestParam param(pipelineConstructionType, miscStages, 1u, false, false, queryResultFlagsTimestampTest[flagsIdx]);
 			miscTests->addChild(new TimestampTest(testCtx,
 												"timestamp_only" + queryResultsFlagsMiscTestsStr[flagsIdx],
 												"Only write timestamp command in the commmand buffer",
 												&param));
 
-			TwoCmdBuffersTestParam twoCmdBuffersParamPrimary(miscStages, 1u, false, false, VK_COMMAND_BUFFER_LEVEL_PRIMARY, queryResultFlagsMiscTests[flagsIdx]);
+			TwoCmdBuffersTestParam twoCmdBuffersParamPrimary(pipelineConstructionType, miscStages, 1u, false, false, VK_COMMAND_BUFFER_LEVEL_PRIMARY, queryResultFlagsMiscTests[flagsIdx]);
 			miscTests->addChild(new TwoCmdBuffersTest(testCtx,
 													"two_cmd_buffers_primary" + queryResultsFlagsMiscTestsStr[flagsIdx],
 													"Issue query in a command buffer and copy it on another primary command buffer",
 													&twoCmdBuffersParamPrimary));
 
-			TwoCmdBuffersTestParam twoCmdBuffersParamSecondary(miscStages, 1u, false, false, VK_COMMAND_BUFFER_LEVEL_SECONDARY, queryResultFlagsMiscTests[flagsIdx]);
+			TwoCmdBuffersTestParam twoCmdBuffersParamSecondary(pipelineConstructionType, miscStages, 1u, false, false, VK_COMMAND_BUFFER_LEVEL_SECONDARY, queryResultFlagsMiscTests[flagsIdx]);
 			miscTests->addChild(new TwoCmdBuffersTest(testCtx,
 													"two_cmd_buffers_secondary" + queryResultsFlagsMiscTestsStr[flagsIdx],
 													"Issue query in a secondary command buffer and copy it on a primary command buffer",
@@ -3326,13 +3286,13 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
 												"timestamp_only_host_query_reset" + queryResultsFlagsMiscTestsStr[flagsIdx],
 												"Only write timestamp command in the commmand buffer",
 												&param));
-			TwoCmdBuffersTestParam twoCmdBuffersParamPrimaryHostQueryReset(miscStages, 1u, false, true, VK_COMMAND_BUFFER_LEVEL_PRIMARY, queryResultFlagsMiscTests[flagsIdx]);
+			TwoCmdBuffersTestParam twoCmdBuffersParamPrimaryHostQueryReset(pipelineConstructionType, miscStages, 1u, false, true, VK_COMMAND_BUFFER_LEVEL_PRIMARY, queryResultFlagsMiscTests[flagsIdx]);
 			miscTests->addChild(new TwoCmdBuffersTest(testCtx,
 													"two_cmd_buffers_primary_host_query_reset" + queryResultsFlagsMiscTestsStr[flagsIdx],
 													"Issue query in a command buffer and copy it on another primary command buffer",
 													&twoCmdBuffersParamPrimaryHostQueryReset));
 
-			TwoCmdBuffersTestParam twoCmdBuffersParamSecondaryHostQueryReset(miscStages, 1u, false, true, VK_COMMAND_BUFFER_LEVEL_SECONDARY, queryResultFlagsMiscTests[flagsIdx]);
+			TwoCmdBuffersTestParam twoCmdBuffersParamSecondaryHostQueryReset(pipelineConstructionType, miscStages, 1u, false, true, VK_COMMAND_BUFFER_LEVEL_SECONDARY, queryResultFlagsMiscTests[flagsIdx]);
 			miscTests->addChild(new TwoCmdBuffersTest(testCtx,
 													"two_cmd_buffers_secondary_host_query_reset" + queryResultsFlagsMiscTestsStr[flagsIdx],
 													"Issue query in a secondary command buffer and copy it on a primary command buffer",

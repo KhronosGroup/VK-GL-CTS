@@ -70,11 +70,11 @@ typedef u::BitsSet<BufferFateFlags, BufferFateFlagBits, cstr> BufferFateBits;
 
 const BufferFateBits	AvailableBufferFateBits
 {
-	{ Transfer,		"transfer_usage_bits"	},
-	{ Storage,		"storage_usage_bits"	},
-	{ Other,		"other_usage_bits"		},
-	{ AccStructure,	"acc_struct_usage_bits"	},
-	{ Video,		"video_usage_bits"		}
+	std::make_tuple(Transfer,		"transfer_usage_bits"	),
+	std::make_tuple(Storage,		"storage_usage_bits"	),
+	std::make_tuple(Other,			"other_usage_bits"		),
+	std::make_tuple(AccStructure,	"acc_struct_usage_bits"	),
+	std::make_tuple(Video,			"video_usage_bits"		),
 };
 
 typedef u::BitsSet<VkBufferCreateFlags, VkBufferCreateFlagBits, cstr>				BufferCreateBits;
@@ -91,6 +91,9 @@ struct TestConfig
 	SharedPtr<BufferCreateBits>	createBits;
 	SharedPtr<BufferFateBits>	fateBits;
 	bool						incExtMemTypeFlags;
+	// Tests the buffer memory size requirement is less than or equal to the aligned size of the buffer.
+	// Requires VK_KHR_maintenance4 extension.
+	bool						testSizeRequirements;
 };
 struct InstanceConfig
 {
@@ -100,6 +103,7 @@ struct InstanceConfig
 	SharedPtr<std::vector<BufferUsageBitsPtr>>			usageFlags;
 	bool												incExtMemTypeFlags;
 	SharedPtr<std::vector<ExternalMemoryHandleBitsPtr>>	extMemHandleFlags;
+	bool												testSizeRequirements;
 
 	InstanceConfig(const TestConfig& conf)
 		: useMethod2			(conf.useMethod2)
@@ -107,59 +111,68 @@ struct InstanceConfig
 		, fateBits				(conf.fateBits)
 		, usageFlags			(new std::vector<SharedPtr<BufferUsageBits>>)
 		, incExtMemTypeFlags	(conf.incExtMemTypeFlags)
-		, extMemHandleFlags		(new std::vector<SharedPtr<ExternalMemoryHandleBits>>) {}
+		, extMemHandleFlags		(new std::vector<SharedPtr<ExternalMemoryHandleBits>>)
+		, testSizeRequirements	(conf.testSizeRequirements) {}
 };
 
 const BufferCreateBits	AvailableBufferCreateBits
 {
-	{ VkBufferCreateFlagBits(0),				"no_flags"			},
-	{ VK_BUFFER_CREATE_PROTECTED_BIT,			"protected"			},
-	{ VK_BUFFER_CREATE_SPARSE_BINDING_BIT,		"sparse_binding"	},
-	{ VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT,	"sparse_residency"	},
-	{ VK_BUFFER_CREATE_SPARSE_ALIASED_BIT,		"sparse_aliased"	},
+	std::make_tuple( VkBufferCreateFlagBits(0),				"no_flags"				),
+	std::make_tuple( VK_BUFFER_CREATE_PROTECTED_BIT,			"protected"			),
+#ifndef CTS_USES_VULKANSC
+	std::make_tuple( VK_BUFFER_CREATE_SPARSE_BINDING_BIT,		"sparse_binding"	),
+	std::make_tuple( VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT,	"sparse_residency"		),
+	std::make_tuple( VK_BUFFER_CREATE_SPARSE_ALIASED_BIT,		"sparse_aliased"	),
+#endif // CTS_USES_VULKANSC
 };
 
 const BufferUsageBits	AvailableBufferUsageBits
 {
-	{ VK_BUFFER_USAGE_TRANSFER_SRC_BIT										, Transfer		},
-	{ VK_BUFFER_USAGE_TRANSFER_DST_BIT										, Transfer		},
-	{ VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT								, Storage		},
-	{ VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT								, Storage		},
-	{ VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT									, Storage		},
-	{ VK_BUFFER_USAGE_STORAGE_BUFFER_BIT									, Storage		},
-	{ VK_BUFFER_USAGE_INDEX_BUFFER_BIT										, Storage		},
-	{ VK_BUFFER_USAGE_VERTEX_BUFFER_BIT										, Storage		},
-	{ VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT									, Other			},
-	{ VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT								, Other			},
-	{ VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR								, Video			},
-	{ VK_BUFFER_USAGE_VIDEO_DECODE_DST_BIT_KHR								, Video			},
-	{ VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT						, Other			},
-	{ VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_COUNTER_BUFFER_BIT_EXT				, Other			},
-	{ VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT							, Other			},
-	{ VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR	, AccStructure	},
-	{ VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR				, AccStructure	},
-	{ VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR							, AccStructure	},
-	{ VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR								, Video			},
-	{ VK_BUFFER_USAGE_VIDEO_ENCODE_SRC_BIT_KHR								, Video			},
+	std::make_tuple( VK_BUFFER_USAGE_TRANSFER_SRC_BIT										, Transfer		),
+	std::make_tuple( VK_BUFFER_USAGE_TRANSFER_DST_BIT										, Transfer		),
+	std::make_tuple( VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT								, Storage		),
+	std::make_tuple( VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT								, Storage		),
+	std::make_tuple( VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT										, Storage		),
+	std::make_tuple( VK_BUFFER_USAGE_STORAGE_BUFFER_BIT										, Storage		),
+	std::make_tuple( VK_BUFFER_USAGE_INDEX_BUFFER_BIT										, Storage		),
+	std::make_tuple( VK_BUFFER_USAGE_VERTEX_BUFFER_BIT										, Storage		),
+	std::make_tuple( VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT									, Other			),
+	std::make_tuple( VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT								, Other			),
+#ifndef CTS_USES_VULKANSC
+	std::make_tuple( VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR								, Video			),
+	std::make_tuple( VK_BUFFER_USAGE_VIDEO_DECODE_DST_BIT_KHR								, Video			),
+	std::make_tuple( VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT						, Other			),
+	std::make_tuple( VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_COUNTER_BUFFER_BIT_EXT				, Other			),
+	std::make_tuple( VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT							, Other			),
+	std::make_tuple( VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR	, AccStructure	),
+	std::make_tuple( VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR					, AccStructure	),
+	std::make_tuple( VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR							, AccStructure	),
+	std::make_tuple( VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR								, Video			),
+	std::make_tuple( VK_BUFFER_USAGE_VIDEO_ENCODE_SRC_BIT_KHR								, Video			),
+#endif // CTS_USES_VULKANSC
 };
 
 #define INTERNALTEST_EXTERNAL_MEMORY_HANDLE_TYPE_NO_BITS VkExternalMemoryHandleTypeFlagBits(0)
 const ExternalMemoryHandleBits	AvailableExternalMemoryHandleBits
 {
-	{ INTERNALTEST_EXTERNAL_MEMORY_HANDLE_TYPE_NO_BITS						, "no_flags",			false },
-	{ VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT							, "opaque_fd",			false },
-	{ VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT						, "opaque_win32",		false },
-	{ VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT					, "opaque_win32_kmt",	false },
-	{ VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT						, "d3d11_tex",			false },
-	{ VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_KMT_BIT					, "d3d11_tex_kmt",		false },
-	{ VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_HEAP_BIT							, "d3d12_heap",			false },
-	{ VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT						, "d3d12_rsrc",			false },
-	{ VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT						, "dma_buf",			false },
-	{ VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID	, "android_hw",			false },
-	{ VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT				, "host_alloc",			true  },
-	{ VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_MAPPED_FOREIGN_MEMORY_BIT_EXT		, "host_mapped",		true  },
-	{ VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA					, "zircon_vmo",			false },
-	{ VK_EXTERNAL_MEMORY_HANDLE_TYPE_RDMA_ADDRESS_BIT_NV					, "roma_addr",			false },
+	std::make_tuple( INTERNALTEST_EXTERNAL_MEMORY_HANDLE_TYPE_NO_BITS						, "no_flags",			false ),
+	std::make_tuple( VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT							, "opaque_fd",			false ),
+	std::make_tuple( VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT						, "opaque_win32",		false ),
+	std::make_tuple( VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT					, "opaque_win32_kmt",	false ),
+	std::make_tuple( VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT						, "d3d11_tex",			false ),
+	std::make_tuple( VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_KMT_BIT					, "d3d11_tex_kmt",		false ),
+	std::make_tuple( VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_HEAP_BIT							, "d3d12_heap",			false ),
+	std::make_tuple( VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT						, "d3d12_rsrc",			false ),
+	std::make_tuple( VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT							, "dma_buf",			false ),
+#ifndef CTS_USES_VULKANSC
+	std::make_tuple( VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID		, "android_hw",			false ),
+#endif // CTS_USES_VULKANSC
+	std::make_tuple( VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT					, "host_alloc",			true  ),
+	std::make_tuple( VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_MAPPED_FOREIGN_MEMORY_BIT_EXT		, "host_mapped",		true  ),
+#ifndef CTS_USES_VULKANSC
+	std::make_tuple( VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA					, "zircon_vmo",			false ),
+	std::make_tuple( VK_EXTERNAL_MEMORY_HANDLE_TYPE_RDMA_ADDRESS_BIT_NV						, "roma_addr",			false ),
+#endif // CTS_USES_VULKANSC
 };
 
 template<class Flag, class Bit, class Str, class... Ignored>
@@ -180,12 +193,15 @@ std::string bitsToString (const u::BitsSet<Flag, Bit, Str, Ignored...>& bits,
 
 void updateBufferCreateFlags(std::vector<BufferCreateBits>& flags)
 {
+#ifndef CTS_USES_VULKANSC
 	const auto&	residencyBit	= AvailableBufferCreateBits.get(VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT);
 	const auto&	aliasedBit		= AvailableBufferCreateBits.get(VK_BUFFER_CREATE_SPARSE_ALIASED_BIT);
 	const auto&	bindingBit		= AvailableBufferCreateBits.get(VK_BUFFER_CREATE_SPARSE_BINDING_BIT);
 	const auto&	protectedBit	= AvailableBufferCreateBits.get(VK_BUFFER_CREATE_PROTECTED_BIT);
+#endif // CTS_USES_VULKANSC
 	const auto&	noneBit			= AvailableBufferCreateBits.get(VkBufferCreateFlagBits(0));
 
+#ifndef CTS_USES_VULKANSC
 	// VUID-VkBufferCreateInfo-flags-00918 { if sparse residency or sparse aliased include sparse binding }
 	for (auto& bits : flags)
 	{
@@ -209,6 +225,7 @@ void updateBufferCreateFlags(std::vector<BufferCreateBits>& flags)
 		}
 		i = bits.empty() ? flags.erase(i) : std::next(i);
 	}
+#endif // CTS_USES_VULKANSC
 
 	// since 0 is a valid VkBufferCreateFlagBits flag then remove it flags where it exists along with other non-zero flags
 	for (auto i = flags.begin(); i != flags.end(); ++i)
@@ -298,12 +315,12 @@ struct Info
 	friend std::ostringstream& operator<<(std::ostringstream& str, const Info& info) {
 		switch (info.m_type) {
 		case Create:
-			str << "  Info (Create buffer with " << info.m_str.str() << " not supported by device at "
-				<< de::FilePath(info.m_file).getBaseName() << ":" << info.m_line << ")";
+			str << "Create buffer with " << info.m_str.str() << " not supported by device at "
+				<< de::FilePath(info.m_file).getBaseName() << ":" << info.m_line;
 			break;
 		case Usage:
-			str << "  Info (Create buffer with " << info.m_str.str() << " not supported by device at "
-				<< de::FilePath(info.m_file).getBaseName() << ":" << info.m_line << ")";
+			str << info.m_str.str() << " at "
+				<< de::FilePath(info.m_file).getBaseName() << ":" << info.m_line;
 			break;
 		}
 		return str;
@@ -312,14 +329,52 @@ struct Info
 #define INFOCREATE(msg_) Info(Info::Create, (msg_), __FILE__, __LINE__)
 #define INFOUSAGE(msg_) Info(Info::Usage, (msg_), __FILE__, __LINE__)
 
+#ifndef CTS_USES_VULKANSC
+VkVideoCodecOperationFlagsKHR readVideoCodecOperationFlagsKHR (const InstanceInterface& vki, const VkPhysicalDevice& device)
+{
+	uint32_t	queueFamilyPropertyCount = 0;
+	vki.getPhysicalDeviceQueueFamilyProperties2(device, &queueFamilyPropertyCount, nullptr);
+	DE_ASSERT(queueFamilyPropertyCount);
+
+	std::vector<VkQueueFamilyVideoPropertiesKHR>	videoQueueFamilyProperties(
+														queueFamilyPropertyCount,
+														{
+														   VK_STRUCTURE_TYPE_QUEUE_FAMILY_VIDEO_PROPERTIES_KHR,		// VkStructureType					sType
+														   nullptr,													// void*							pNext
+														   0														// VkVideoCodecOperationFlagsKHR	videoCodecOperations
+														});
+	std::vector<VkQueueFamilyProperties2>			queueFamilyProperties(
+														queueFamilyPropertyCount,
+														{
+															VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2,			// VkStructureType					sType
+															nullptr,												// void*							pNext
+															{}														// VkQueueFamilyProperties			queueFamilyProperties
+														});
+	for (auto begin = queueFamilyProperties.begin(), i = begin, end = queueFamilyProperties.end(); i != end; ++i)
+	{
+		i->pNext = &videoQueueFamilyProperties.data()[std::distance(begin, i)];
+	}
+
+	vki.getPhysicalDeviceQueueFamilyProperties2(device, &queueFamilyPropertyCount, queueFamilyProperties.data());
+
+	VkVideoCodecOperationFlagsKHR	codecOperationFlags = VK_VIDEO_CODEC_OPERATION_NONE_KHR;
+	for (const VkQueueFamilyVideoPropertiesKHR& props : videoQueueFamilyProperties)
+	{
+		codecOperationFlags |= props.videoCodecOperations;
+	}
+
+	return codecOperationFlags;
+}
+#endif // CTS_USES_VULKANSC
+
 void MemoryRequirementsTest::checkSupport (Context& context) const
 {
-	//const DeviceInterface&							vkd					= context.getDeviceInterface();
-	//const VkDevice									device				= context.getDevice();
-
 	const InstanceInterface&						intf				= context.getInstanceInterface();
 	const VkPhysicalDevice							physDevice			= context.getPhysicalDevice();
-	const std::vector<VkExtensionProperties>		supportedExtensions = enumerateDeviceExtensionProperties(intf, physDevice, nullptr);
+	auto&											log					= context.getTestContext().getLog();
+
+	if (m_testConfig.useMethod2)
+		context.requireDeviceFunctionality("VK_KHR_get_memory_requirements2");
 
 	VkPhysicalDeviceProtectedMemoryFeatures			protectedMemFeatures
 	{
@@ -338,7 +393,6 @@ void MemoryRequirementsTest::checkSupport (Context& context) const
 	const VkPhysicalDeviceFeatures&	features					= extFeatures.features;
 	const VkBool32&					protectedMemFeatureEnabled	= protectedMemFeatures.protectedMemory;
 
-
 	// check the creating bits
 	{
 		std::ostringstream			str;
@@ -347,7 +401,6 @@ void MemoryRequirementsTest::checkSupport (Context& context) const
 
 		if (createBits.contains(VK_BUFFER_CREATE_SPARSE_BINDING_BIT) && (VK_FALSE == features.sparseBinding))
 		{
-			if (notSupported) str << std::endl;
 			str << INFOCREATE(getBufferCreateFlagsStr(VK_BUFFER_CREATE_SPARSE_BINDING_BIT));
 			notSupported = true;
 		}
@@ -371,8 +424,8 @@ void MemoryRequirementsTest::checkSupport (Context& context) const
 		}
 		if (notSupported)
 		{
-			std::cout << str.str() << std::endl;
-			TCU_THROW(NotSupportedError, "One or more create buffer flags not supported by device");
+			log << tcu::TestLog::Message << str.str() << tcu::TestLog::EndMessage;
+			TCU_THROW(NotSupportedError, "One or more create buffer flags not supported by device (check log for details)");
 		}
 	}
 
@@ -389,7 +442,7 @@ void MemoryRequirementsTest::checkSupport (Context& context) const
 		}
 
 		std::ostringstream str;
-		std::array<bool, 5> msgs;
+		std::array<bool, 7> msgs;
 		bool notSupported	= false;
 		int  entryCount		= 0;
 		msgs.fill(false);
@@ -398,9 +451,10 @@ void MemoryRequirementsTest::checkSupport (Context& context) const
 		{
 			notSupported = false;
 
+#ifndef CTS_USES_VULKANSC
 			if (i->any({VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
 					   VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR, VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR})
-					&& !isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_acceleration_structure")))
+					&& !context.isDeviceFunctionalitySupported("VK_KHR_acceleration_structure"))
 			{
 				if (!msgs[0])
 				{
@@ -410,9 +464,10 @@ void MemoryRequirementsTest::checkSupport (Context& context) const
 				}
 				notSupported = true;
 			}
+#endif // CTS_USES_VULKANSC
 
 			if (i->contains(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT)
-					&& !isExtensionSupported(supportedExtensions, RequiredExtension("VK_EXT_buffer_device_address")))
+					&& !context.isBufferDeviceAddressSupported())
 			{
 				if (!msgs[1])
 				{
@@ -423,11 +478,73 @@ void MemoryRequirementsTest::checkSupport (Context& context) const
 				notSupported = true;
 			}
 
+#ifndef CTS_USES_VULKANSC
 			if (i->any({VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR, VK_BUFFER_USAGE_VIDEO_DECODE_DST_BIT_KHR,
 					   VK_BUFFER_USAGE_VIDEO_ENCODE_SRC_BIT_KHR, VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR}))
 			{
+				if (!context.isDeviceFunctionalitySupported(VK_KHR_VIDEO_QUEUE_EXTENSION_NAME))
+				{
+					if (!msgs[2])
+					{
+						if (entryCount++) str << std::endl;
+						str << INFOUSAGE("VK_EXT_video_queue not supported by device");
+						msgs[2] = true;
+					}
+					notSupported = true;
+				}
+				else
+				{
+					const VkVideoCodecOperationFlagsKHR videoFlags = readVideoCodecOperationFlagsKHR(intf, physDevice);
 
+					if (i->any({VK_BUFFER_USAGE_VIDEO_ENCODE_SRC_BIT_KHR, VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR}))
+					{
+						if (!context.isDeviceFunctionalitySupported(VK_EXT_VIDEO_ENCODE_H264_EXTENSION_NAME))
+						{
+							if (!msgs[3])
+							{
+								if (entryCount++) str << std::endl;
+								str << INFOUSAGE("VK_EXT_video_encode_h264 not supported by device");
+								msgs[3] = true;
+							}
+							notSupported = true;
+						}
+						if (!(videoFlags & VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT))
+						{
+							if (!msgs[4])
+							{
+								if (entryCount++) str << std::endl;
+								str << INFOUSAGE("Could not find a queue that supports VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT on device");
+								msgs[4] = true;
+							}
+							notSupported = true;
+						}
+					}
+					if (i->any({VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR, VK_BUFFER_USAGE_VIDEO_DECODE_DST_BIT_KHR}))
+					{
+						if (!context.isDeviceFunctionalitySupported(VK_EXT_VIDEO_DECODE_H264_EXTENSION_NAME))
+						{
+							if (!msgs[5])
+							{
+								if (entryCount++) str << std::endl;
+								str << INFOUSAGE("VK_EXT_video_decode_h264 not supported by device");
+								msgs[5] = true;
+							}
+							notSupported = true;
+						}
+						if (!(videoFlags & VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_EXT))
+						{
+							if (!msgs[6])
+							{
+								if (entryCount++) str << std::endl;
+								str << INFOUSAGE("Could not find a queue that supports VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_EXT on device");
+								msgs[6] = true;
+							}
+							notSupported = true;
+						}
+					}
+				}
 			}
+#endif // CTS_USES_VULKANSC
 
 			i = notSupported ? usageFlags.erase(i) : std::next(i);
 		}
@@ -441,14 +558,14 @@ void MemoryRequirementsTest::checkSupport (Context& context) const
 
 		if (usageFlags.empty())
 		{
-			std::cout << str.str() << std::endl;
-			TCU_THROW(NotSupportedError, "One or more buffer usage flags not supported by device");
+			log << tcu::TestLog::Message << str.str() << tcu::TestLog::EndMessage;
+			TCU_THROW(NotSupportedError, "One or more buffer usage flags not supported by device (check log for details)");
 		}
 		else
 		{
 			if (entryCount > 0)
 			{
-				std::cout << str.str() << std::endl;
+				log << tcu::TestLog::Message << str.str() << tcu::TestLog::EndMessage;
 			}
 			DE_ASSERT(m_instConfig.usageFlags.get());
 			m_instConfig.usageFlags->resize(usageFlags.size());
@@ -474,6 +591,12 @@ void MemoryRequirementsTest::checkSupport (Context& context) const
 		m_instConfig.extMemHandleFlags->resize(extMemHandleFlags.size());
 		std::transform(extMemHandleFlags.begin(), extMemHandleFlags.end(), m_instConfig.extMemHandleFlags->begin(),
 					   [](ExternalMemoryHandleBits& bits){ return ExternalMemoryHandleBits::makeShared(std::move(bits)); });
+	}
+
+	if (m_testConfig.testSizeRequirements)
+	{
+		if (!context.isDeviceFunctionalitySupported("VK_KHR_maintenance4"))
+			TCU_THROW(NotSupportedError, "VK_KHR_maintenance4 not supported");
 	}
 }
 
@@ -585,26 +708,69 @@ BufferMemoryRequirementsInstance::chainVkStructure<VkExternalMemoryBufferCreateI
 	return &memInfo;
 }
 
-template<> void* BufferMemoryRequirementsInstance::chainVkStructure<VkVideoProfilesKHR> (void* pNext) const
+#ifndef CTS_USES_VULKANSC
+template<> void* BufferMemoryRequirementsInstance::chainVkStructure<VkVideoProfileListInfoKHR> (void* pNext, const VkBufferUsageFlags& videoCodecUsage) const
 {
-	static const VkVideoProfileKHR		videoProfile
+	const bool encode = (videoCodecUsage & VK_BUFFER_USAGE_VIDEO_ENCODE_SRC_BIT_KHR) || (videoCodecUsage & VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR);
+	const bool decode = (videoCodecUsage & VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR) || (videoCodecUsage & VK_BUFFER_USAGE_VIDEO_DECODE_DST_BIT_KHR);
+
+	static VkVideoEncodeH264ProfileInfoEXT	encodeProfile
 	{
-		VK_STRUCTURE_TYPE_VIDEO_PROFILE_KHR,					// VkStructureType					sType;
-		nullptr,												// void*							pNext;
-		VK_VIDEO_CODEC_OPERATION_INVALID_BIT_KHR,				// VkVideoCodecOperationFlagBitsKHR	videoCodecOperation;
-		VK_VIDEO_CHROMA_SUBSAMPLING_MONOCHROME_BIT_KHR,			// VkVideoChromaSubsamplingFlagsKHR	chromaSubsampling;
-		VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,					// VkVideoComponentBitDepthFlagsKHR	lumaBitDepth;
-		VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR					// VkVideoComponentBitDepthFlagsKHR	chromaBitDepth;
+		VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_INFO_EXT,	// VkStructureType						sType;
+		nullptr,												// const void*							pNext;
+		STD_VIDEO_H264_PROFILE_IDC_BASELINE						// StdVideoH264ProfileIdc				stdProfileIdc;
 	};
 
-	 static VkVideoProfilesKHR	profiles;
-	 profiles.sType			= VK_STRUCTURE_TYPE_VIDEO_PROFILES_KHR;
-	 profiles.pNext			= pNext;
-	 profiles.profileCount	= 1u;
-	 profiles.pProfiles		= &videoProfile;
+	static VkVideoDecodeH264ProfileInfoEXT	decodeProfile
+	{
+		VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_EXT,	// VkStructureType						sType;
+		nullptr,												// const void*							pNext;
+		STD_VIDEO_H264_PROFILE_IDC_BASELINE,					// StdVideoH264ProfileIdc				stdProfileIdc;
+		VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_PROGRESSIVE_EXT		// VkVideoDecodeH264FieldLayoutFlagsEXT	fieldLayout;
+	};
 
-	 return &profiles;
+	static const VkVideoProfileInfoKHR	videoProfiles[]
+	{
+		// encode profile
+		{
+			VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR,			// VkStructureType						sType;
+			&encodeProfile,										// void*								pNext;
+			VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT,		// VkVideoCodecOperationFlagBitsKHR		videoCodecOperation;
+			VK_VIDEO_CHROMA_SUBSAMPLING_MONOCHROME_BIT_KHR,		// VkVideoChromaSubsamplingFlagsKHR		chromaSubsampling;
+			VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,				// VkVideoComponentBitDepthFlagsKHR		lumaBitDepth;
+			VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR				// VkVideoComponentBitDepthFlagsKHR		chromaBitDepth;
+		},
+		// decode profile
+		{
+			VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR,			// VkStructureType						sType;
+			&decodeProfile,										// void*								pNext;
+			VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_EXT,		// VkVideoCodecOperationFlagBitsKHR		videoCodecOperation;
+			VK_VIDEO_CHROMA_SUBSAMPLING_MONOCHROME_BIT_KHR,		// VkVideoChromaSubsamplingFlagsKHR		chromaSubsampling;
+			VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,				// VkVideoComponentBitDepthFlagsKHR		lumaBitDepth;
+			VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR				// VkVideoComponentBitDepthFlagsKHR		chromaBitDepth;
+		}
+	};
+	static VkVideoProfileListInfoKHR	profiles;
+	profiles.sType			= VK_STRUCTURE_TYPE_VIDEO_PROFILE_LIST_INFO_KHR;
+	profiles.pNext			= pNext;
+	if (encode && decode)
+	{
+		profiles.profileCount	= 2u;
+		profiles.pProfiles		= videoProfiles;
+	}
+	else if (encode)
+	{
+		profiles.profileCount	= 1u;
+		profiles.pProfiles		= &videoProfiles[0];
+	}
+	else
+	{
+		profiles.profileCount	= 1u;
+		profiles.pProfiles		= &videoProfiles[1];
+	}
+	return &profiles;
 }
+#endif // CTS_USES_VULKANSC
 
 TestStatus	BufferMemoryRequirementsInstance::iterate (void)
 {
@@ -627,24 +793,26 @@ TestStatus	BufferMemoryRequirementsInstance::iterate (void)
 		DE_ASSERT(!m_config.usageFlags->empty());
 		for (auto u = m_config.usageFlags->cbegin(); u != m_config.usageFlags->cend(); ++u)
 		{
-			const VkBufferUsageFlags infoUsageFlags = *u;
+			const VkBufferUsageFlags infoUsageFlags = *(u->get());
 
 			DE_ASSERT(!m_config.extMemHandleFlags->empty());
 			for (auto m = m_config.extMemHandleFlags->cbegin(); m != m_config.extMemHandleFlags->cend(); ++m)
 			{
-				const VkExternalMemoryHandleTypeFlags handleFlags = *m;
+				const VkExternalMemoryHandleTypeFlags handleFlags = *(m->get());
 
 				void* pNext = nullptr;
 
+#ifndef CTS_USES_VULKANSC
 				if (m_config.fateBits->contains(BufferFateFlagBits::Video))
 				{
-					pNext = chainVkStructure<VkVideoProfilesKHR>(pNext);
+					pNext = chainVkStructure<VkVideoProfileListInfoKHR>(pNext, infoUsageFlags);
 				}
+#endif // CTS_USES_VULKANSC
 				if (m_config.incExtMemTypeFlags)
 				{
 					pNext = chainVkStructure<VkExternalMemoryBufferCreateInfo>(pNext, handleFlags);
 				}
-				const VkBufferCreateInfo	createInfo
+				VkBufferCreateInfo	createInfo
 				{
 					VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,					// VkStructureType					sType;
 					pNext,													// const void*						pNext;
@@ -656,18 +824,78 @@ TestStatus	BufferMemoryRequirementsInstance::iterate (void)
 					&queueFamilyIndex,										// const uint32_t*					pQueueFamilyIndices;
 				};
 
-				Move<VkBuffer> buffer = createBuffer(vkd, device, &createInfo);
-
-				VkMemoryRequirements		reqs{};
-				(this->*method)(reqs, vkd, device, *buffer);
-				if (reqs.memoryTypeBits)
-					++passCount;
-				else
+#ifndef CTS_USES_VULKANSC
+				if (m_config.testSizeRequirements)
 				{
-					++failCount;
-					failCreateBits.emplace_back(m_config.createBits);
-					failUsageBits.emplace_back(*u);
-					failExtMemHandleBits.emplace_back(*m);
+					VkPhysicalDeviceMaintenance4PropertiesKHR	maintenance4Properties		=
+					{
+						VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES_KHR,	// VkStructureType	sType;
+						DE_NULL,														// void*			pNext;
+						0u																// VkDeviceSize		maxBufferSize;
+					};
+
+					VkPhysicalDeviceProperties2					physicalDeviceProperties2	=
+					{
+						VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,	// VkStructureType				sType;
+						&maintenance4Properties,						// void*						pNext;
+						{},												// VkPhysicalDeviceProperties	properties;
+					};
+
+					m_context.getInstanceInterface().getPhysicalDeviceProperties2(m_context.getPhysicalDevice(), &physicalDeviceProperties2);
+
+					const VkDeviceSize							maxBufferSize				= maintenance4Properties.maxBufferSize;
+					DE_ASSERT(maxBufferSize > 0);
+					VkDeviceSize								N							= 0;
+
+					while ((1ull << N) + 1 < maxBufferSize)
+					{
+						createInfo.size = (1ull << N) + 1;
+
+						try
+						{
+							Move<VkBuffer> buffer = createBuffer(vkd, device, &createInfo);
+
+							VkMemoryRequirements reqs{};
+							(this->*method)(reqs, vkd, device, *buffer);
+
+							if (reqs.size <= static_cast<VkDeviceSize>(deAlign64(static_cast<deInt64>(createInfo.size), static_cast<deInt64>(reqs.alignment))))
+							{
+								++passCount;
+							} else
+							{
+								++failCount;
+								failCreateBits.emplace_back(m_config.createBits);
+								failUsageBits.emplace_back(*u);
+								failExtMemHandleBits.emplace_back(*m);
+							}
+
+							N++;
+						}
+						catch (const vk::OutOfMemoryError&)
+						{
+							break;
+						}
+					}
+
+					if (m_context.getTestContext().getWatchDog())
+						qpWatchDog_reset(m_context.getTestContext().getWatchDog());
+				}
+				else
+#endif // CTS_USES_VULKANSC
+				{
+					Move<VkBuffer> buffer = createBuffer(vkd, device, &createInfo);
+
+					VkMemoryRequirements reqs{};
+					(this->*method)(reqs, vkd, device, *buffer);
+					if (reqs.memoryTypeBits)
+						++passCount;
+					else
+					{
+						++failCount;
+						failCreateBits.emplace_back(m_config.createBits);
+						failUsageBits.emplace_back(*u);
+						failExtMemHandleBits.emplace_back(*m);
+					}
 				}
 			}
 		}
@@ -698,7 +926,11 @@ tcu::TestCaseGroup* createBufferMemoryRequirementsTests (tcu::TestContext& testC
 	{
 		bool		method;
 		cstr		name;
-	} const methods[] { { false, "method1" }, { true, "mothod2" } };
+	} const methods[]
+	{
+		{ false, "method1" },
+		{ true, "method2" }
+	};
 
 	std::vector<SharedPtr<BufferCreateBits>>	createBitPtrs;
 	{
@@ -741,12 +973,20 @@ tcu::TestCaseGroup* createBufferMemoryRequirementsTests (tcu::TestContext& testC
 				auto groupMethod = new TestCaseGroup(testCtx, method.name, nilstr);
 				for (const auto& fateBits : fateBitPtrs)
 				{
-					TestConfig	config;
-					config.fateBits				= fateBits;
-					config.incExtMemTypeFlags	= extMemTypeFlag.include;
-					config.createBits			= createBits;
-					config.useMethod2			= method.method;
-					groupMethod->addChild(new MemoryRequirementsTest(testCtx, bitsToString(*fateBits).c_str(), config));
+#ifndef CTS_USES_VULKANSC
+					for (const auto testSizeReq : {false, true})
+#else
+					const bool testSizeReq = false;
+#endif // CTS_USES_VULKANSC
+					{
+						TestConfig	config;
+						config.fateBits				= fateBits;
+						config.incExtMemTypeFlags	= extMemTypeFlag.include;
+						config.createBits			= createBits;
+						config.useMethod2			= method.method;
+						config.testSizeRequirements	= testSizeReq;
+						groupMethod->addChild(new MemoryRequirementsTest(testCtx, ((testSizeReq ? "size_req_" : "") + bitsToString(*fateBits)).c_str(), config));
+					}
 				}
 				groupExtMemTypeFlags->addChild(groupMethod);
 			}

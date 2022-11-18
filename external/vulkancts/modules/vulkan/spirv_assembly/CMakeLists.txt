@@ -1,8 +1,11 @@
 # SPIR-V assembly tests
 
-include_directories(..)
+include_directories(
+	..
+	${DEQP_INL_DIR}
+)
 
-set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
+set(DEQP_VK_VKSC_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsm8bitStorageTests.cpp
 	vktSpvAsm8bitStorageTests.hpp
 	vktSpvAsmCrossStageInterfaceTests.cpp
@@ -75,6 +78,11 @@ set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmFloatControlsExtensionlessTests.hpp
 	vktSpvAsmTrinaryMinMaxTests.cpp
 	vktSpvAsmTrinaryMinMaxTests.hpp
+	vktSpvAsmPhysicalStorageBufferPointerTests.cpp
+	vktSpvAsmPhysicalStorageBufferPointerTests.hpp
+	)
+
+set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmIntegerDotProductTests.cpp
 	vktSpvAsmIntegerDotProductTests.hpp
 	)
@@ -96,5 +104,9 @@ endif()
 include_directories("../../../../amber/src/include")
 include_directories("../amber")
 
-add_library(deqp-vk-spirv-assembly STATIC ${DEQP_VK_SPIRV_ASSEMBLY_SRCS})
+add_library(deqp-vk-spirv-assembly STATIC ${DEQP_VK_VKSC_SPIRV_ASSEMBLY_SRCS} ${DEQP_VK_SPIRV_ASSEMBLY_SRCS})
 target_link_libraries(deqp-vk-spirv-assembly ${DEQP_VK_SPIRV_ASSEMBLY_LIBS})
+
+add_library(deqp-vksc-spirv-assembly STATIC ${DEQP_VK_VKSC_SPIRV_ASSEMBLY_SRCS})
+target_include_directories(deqp-vksc-spirv-assembly BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
+target_link_libraries(deqp-vksc-spirv-assembly PUBLIC deqp-vksc-util tcutil vkscutil)

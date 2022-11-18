@@ -579,7 +579,7 @@ FramebufferNoAttachmentsRenderCase::IterateResult FramebufferNoAttachmentsRender
 
 	// Create texture and clear it, temporarily attaching to FBO
 	{
-		GLuint zero = 0;
+		GLuint zero[] = { 0, 0, 0, 0 };
 		gl.genTextures(1, &m_texture);
 		gl.bindTexture(GL_TEXTURE_2D, m_texture);
 		gl.texStorage2D(GL_TEXTURE_2D, 1, GL_R32UI, 64, 64);
@@ -587,7 +587,7 @@ FramebufferNoAttachmentsRenderCase::IterateResult FramebufferNoAttachmentsRender
 		gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		gl.framebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_texture, 0);
 		gl.viewport(0, 0, 64, 64);
-		gl.clearBufferuiv(GL_COLOR, 0, &zero);
+		gl.clearBufferuiv(GL_COLOR, 0, zero);
 		gl.framebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Creating and clearing texture");
 	}

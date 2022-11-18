@@ -39,6 +39,8 @@
 #include "vktImageSampleDrawnCubeFaceTests.hpp"
 #include "vktImageDepthStencilDescriptorTests.hpp"
 #include "vktImageSampleCompressedTextureTests.hpp"
+#include "vktImageExtendedUsageBitTests.hpp"
+#include "vktImageTransfer.hpp"
 
 namespace vkt
 {
@@ -64,6 +66,9 @@ void createChildren (tcu::TestCaseGroup* imageTests)
 	imageTests->addChild(createImageCompressionTranscodingTests(testCtx));
 	imageTests->addChild(createImageTranscodingSupportTests(testCtx));
 	imageTests->addChild(createImageExtendOperandsTests(testCtx));
+#ifndef CTS_USES_VULKANSC
+	imageTests->addChild(createImageNontemporalOperandTests(testCtx));
+#endif // CTS_USES_VULKANSC
 	imageTests->addChild(createImageAstcDecodeModeTests(testCtx));
 	imageTests->addChild(createMisalignedCubeTests(testCtx));
 	imageTests->addChild(createImageLoadStoreLodAMDTests(testCtx));
@@ -73,6 +78,8 @@ void createChildren (tcu::TestCaseGroup* imageTests)
 	imageTests->addChild(createImageSampleDrawnCubeFaceTests(testCtx));
 	imageTests->addChild(createImageDepthStencilDescriptorTests(testCtx));
 	imageTests->addChild(createImageSampleDrawnTextureTests(testCtx));
+	imageTests->addChild(createImageExtendedUsageBitTests(testCtx));
+	imageTests->addChild(createTransferQueueImageTests(testCtx));
 }
 
 } // anonymous

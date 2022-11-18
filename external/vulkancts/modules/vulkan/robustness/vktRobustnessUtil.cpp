@@ -32,7 +32,9 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkSafetyCriticalUtil.hpp"
 #include "tcuCommandLine.hpp"
+#include "vkDeviceUtil.hpp"
 #include "deMath.h"
 #include <iomanip>
 #include <limits>
@@ -64,7 +66,7 @@ vector<string> removeExtensions (const vector<string>& a, const vector<const cha
 	return res;
 }
 
-Move<VkDevice> createRobustBufferAccessDevice (Context& context, const VkPhysicalDeviceFeatures2* enabledFeatures2)
+Move<VkDevice> createRobustBufferAccessDevice (Context& context, VkInstance instance, const InstanceInterface& vki, const VkPhysicalDeviceFeatures2* enabledFeatures2)
 {
 	const float queuePriority = 1.0f;
 
@@ -84,20 +86,58 @@ Move<VkDevice> createRobustBufferAccessDevice (Context& context, const VkPhysica
 
 	// \note Extensions in core are not explicitly enabled even though
 	//		 they are in the extension list advertised to tests.
-    std::vector<const char*>	extensionPtrs;
+	std::vector<const char*>	extensionPtrs;
 	std::vector<const char*>	coreExtensions;
 	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-    std::vector<std::string>	nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
+	std::vector<std::string>	nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
 
 	extensionPtrs.resize(nonCoreExtensions.size());
 
 	for (size_t ndx = 0; ndx < nonCoreExtensions.size(); ++ndx)
 		extensionPtrs[ndx] = nonCoreExtensions[ndx].c_str();
 
+	void* pNext												= (void*)enabledFeatures2;
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext								= pNext;
+	pNext													= &memReservationInfo;
+
+	VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+	sc10Features.pNext										= pNext;
+	pNext													= &sc10Features;
+
+	VkPipelineCacheCreateInfo			pcCI;
+	std::vector<VkPipelinePoolSize>		poolSizes;
+	if (context.getTestContext().getCommandLine().isSubProcess())
+	{
+		if (context.getResourceInterface()->getCacheDataSize() > 0)
+		{
+			pcCI =
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,		// VkStructureType				sType;
+				DE_NULL,											// const void*					pNext;
+				VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+					VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+				context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
+				context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
+			};
+			memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+			memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+		}
+
+		poolSizes							= context.getResourceInterface()->getPipelinePoolSizes();
+		if (!poolSizes.empty())
+		{
+			memReservationInfo.pipelinePoolSizeCount			= deUint32(poolSizes.size());
+			memReservationInfo.pPipelinePoolSizes				= poolSizes.data();
+		}
+	}
+#endif
+
 	const VkDeviceCreateInfo		deviceParams =
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,	// VkStructureType					sType;
-		enabledFeatures2,						// const void*						pNext;
+		pNext,									// const void*						pNext;
 		0u,										// VkDeviceCreateFlags				flags;
 		1u,										// deUint32							queueCreateInfoCount;
 		&queueParams,							// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
@@ -105,11 +145,13 @@ Move<VkDevice> createRobustBufferAccessDevice (Context& context, const VkPhysica
 		DE_NULL,								// const char* const*				ppEnabledLayerNames;
 		(deUint32)extensionPtrs.size(),			// deUint32							enabledExtensionCount;
 		(extensionPtrs.empty() ? DE_NULL : &extensionPtrs[0]),	// const char* const*				ppEnabledExtensionNames;
-        enabledFeatures2 ? NULL : &enabledFeatures	// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+		enabledFeatures2 ? NULL : &enabledFeatures	// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 
+	const VkPhysicalDevice			physicalDevice = chooseDevice(vki, instance, context.getTestContext().getCommandLine());
+
 	return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(),
-							  context.getInstance(), context.getInstanceInterface(), context.getPhysicalDevice(), &deviceParams);
+							  instance, vki, physicalDevice, &deviceParams);
 }
 
 bool areEqual (float a, float b)
@@ -261,11 +303,15 @@ void logValue (std::ostringstream& logMsg, const void* valuePtr, VkFormat valueF
 
 // TestEnvironment
 
-TestEnvironment::TestEnvironment (Context&				context,
-								  VkDevice				device,
-								  VkDescriptorSetLayout	descriptorSetLayout,
-								  VkDescriptorSet		descriptorSet)
+TestEnvironment::TestEnvironment (Context&					context,
+								  VkInstance				instance,
+								  const InstanceInterface&	instanceInterface,
+								  VkDevice					device,
+								  VkDescriptorSetLayout		descriptorSetLayout,
+								  VkDescriptorSet			descriptorSet)
 	: m_context				(context)
+	, m_instance			(instance)
+	, m_instanceInterface	(instanceInterface)
 	, m_device				(device)
 	, m_descriptorSetLayout	(descriptorSetLayout)
 	, m_descriptorSet		(descriptorSet)
@@ -308,21 +354,25 @@ VkCommandBuffer TestEnvironment::getCommandBuffer (void)
 // GraphicsEnvironment
 
 GraphicsEnvironment::GraphicsEnvironment (Context&					context,
+										  VkInstance				instance,
+										  const InstanceInterface&	instanceInterface,
 										  VkDevice					device,
 										  VkDescriptorSetLayout		descriptorSetLayout,
 										  VkDescriptorSet			descriptorSet,
 										  const VertexBindings&		vertexBindings,
 										  const VertexAttributes&	vertexAttributes,
-										  const DrawConfig&			drawConfig)
+										  const DrawConfig&			drawConfig,
+										  bool						testPipelineRobustness)
 
-	: TestEnvironment		(context, device, descriptorSetLayout, descriptorSet)
+	: TestEnvironment		(context, instance, instanceInterface, device, descriptorSetLayout, descriptorSet)
 	, m_renderSize			(16, 16)
 	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
 {
 	const DeviceInterface&		vk						= context.getDeviceInterface();
 	const deUint32				queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
 	const VkComponentMapping	componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-	SimpleAllocator				memAlloc				(vk, m_device, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
+	const VkPhysicalDevice		physicalDevice			= chooseDevice(m_instanceInterface, instance, context.getTestContext().getCommandLine());
+	SimpleAllocator				memAlloc				(vk, m_device, getPhysicalDeviceMemoryProperties(m_instanceInterface, physicalDevice));
 
 	// Create color image and view
 	{
@@ -420,21 +470,43 @@ GraphicsEnvironment::GraphicsEnvironment (Context&					context,
 		const std::vector<VkViewport>	viewports	(1, makeViewport(m_renderSize));
 		const std::vector<VkRect2D>		scissors	(1, makeRect2D(m_renderSize));
 
-		m_graphicsPipeline = makeGraphicsPipeline(vk,									// const DeviceInterface&                        vk
-												  m_device,								// const VkDevice                                device
-												  *m_pipelineLayout,					// const VkPipelineLayout                        pipelineLayout
-												  *m_vertexShaderModule,				// const VkShaderModule                          vertexShaderModule
-												  DE_NULL,								// const VkShaderModule                          tessellationControlShaderModule
-												  DE_NULL,								// const VkShaderModule                          tessellationEvalShaderModule
-												  DE_NULL,								// const VkShaderModule                          geometryShaderModule
-												  *m_fragmentShaderModule,				// const VkShaderModule                          fragmentShaderModule
-												  *m_renderPass,						// const VkRenderPass                            renderPass
-												  viewports,							// const std::vector<VkViewport>&                viewports
-												  scissors,								// const std::vector<VkRect2D>&                  scissors
-												  VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,	// const VkPrimitiveTopology                     topology
-												  0u,									// const deUint32                                subpass
-												  0u,									// const deUint32                                patchControlPoints
-												  &vertexInputStateParams);				// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+		const void* pNext = DE_NULL;
+#ifndef CTS_USES_VULKANSC
+		VkPipelineRobustnessCreateInfoEXT pipelineRobustnessInfo = initVulkanStructure();
+
+		if (testPipelineRobustness)
+		{
+			pipelineRobustnessInfo.storageBuffers	= VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_EXT;
+			pipelineRobustnessInfo.uniformBuffers	= VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_EXT;
+			pipelineRobustnessInfo.vertexInputs		= VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_EXT;
+			pipelineRobustnessInfo.images			= VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_DISABLED_EXT;
+			pNext									= &pipelineRobustnessInfo;
+		}
+#else
+		DE_UNREF(testPipelineRobustness);
+#endif
+
+		m_graphicsPipeline = makeGraphicsPipeline(vk,															// const DeviceInterface&                        vk
+												  m_device,														// const VkDevice                                device
+												  *m_pipelineLayout,											// const VkPipelineLayout                        pipelineLayout
+												  *m_vertexShaderModule,										// const VkShaderModule                          vertexShaderModule
+												  DE_NULL,														// const VkShaderModule                          tessellationControlShaderModule
+												  DE_NULL,														// const VkShaderModule                          tessellationEvalShaderModule
+												  DE_NULL,														// const VkShaderModule                          geometryShaderModule
+												  *m_fragmentShaderModule,										// const VkShaderModule                          fragmentShaderModule
+												  *m_renderPass,												// const VkRenderPass                            renderPass
+												  viewports,													// const std::vector<VkViewport>&                viewports
+												  scissors,														// const std::vector<VkRect2D>&                  scissors
+												  VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,							// const VkPrimitiveTopology                     topology
+												  0u,															// const deUint32                                subpass
+												  0u,															// const deUint32                                patchControlPoints
+												  &vertexInputStateParams,										// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+												  DE_NULL,														// const VkPipelineRasterizationStateCreateInfo*	rasterizationStateCreateInfo
+												  DE_NULL,														// const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo
+												  DE_NULL,														// const VkPipelineDepthStencilStateCreateInfo*		depthStencilStateCreateInfo
+												  DE_NULL,														// const VkPipelineColorBlendStateCreateInfo*		colorBlendStateCreateInfo
+												  DE_NULL,														// const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfo
+												  pNext);														// void* pNext
 	}
 
 	// Record commands
@@ -489,12 +561,15 @@ GraphicsEnvironment::GraphicsEnvironment (Context&					context,
 
 // ComputeEnvironment
 
-ComputeEnvironment::ComputeEnvironment (Context&				context,
-										VkDevice				device,
-										VkDescriptorSetLayout	descriptorSetLayout,
-										VkDescriptorSet			descriptorSet)
+ComputeEnvironment::ComputeEnvironment (Context&					context,
+										VkInstance					instance,
+										const InstanceInterface&	instanceInterface,
+										VkDevice					device,
+										VkDescriptorSetLayout		descriptorSetLayout,
+										VkDescriptorSet				descriptorSet,
+										bool						testPipelineRobustness)
 
-	: TestEnvironment	(context, device, descriptorSetLayout, descriptorSet)
+	: TestEnvironment	(context, instance, instanceInterface, device, descriptorSetLayout, descriptorSet)
 {
 	const DeviceInterface& vk = context.getDeviceInterface();
 
@@ -529,15 +604,31 @@ ComputeEnvironment::ComputeEnvironment (Context&				context,
 			DE_NULL,												// const VkSpecializationInfo*			pSpecializationInfo;
 		};
 
+		const void* pNext = DE_NULL;
+#ifndef CTS_USES_VULKANSC
+		VkPipelineRobustnessCreateInfoEXT pipelineRobustnessInfo = initVulkanStructure();
+
+		if (testPipelineRobustness)
+		{
+			pipelineRobustnessInfo.storageBuffers	= VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_EXT;
+			pipelineRobustnessInfo.uniformBuffers	= VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_EXT;
+			pipelineRobustnessInfo.vertexInputs		= VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_DISABLED_EXT;
+			pipelineRobustnessInfo.images			= VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_DISABLED_EXT;
+			pNext									= &pipelineRobustnessInfo;
+		}
+#else
+		DE_UNREF(testPipelineRobustness);
+#endif
+
 		const VkComputePipelineCreateInfo computePipelineParams =
 		{
-			VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,			// VkStructureType						sType;
-			DE_NULL,												// const void*							pNext;
-			0u,														// VkPipelineCreateFlags				flags;
-			computeStageParams,										// VkPipelineShaderStageCreateInfo		stage;
-			*m_pipelineLayout,										// VkPipelineLayout						layout;
-			DE_NULL,												// VkPipeline							basePipelineHandle;
-			0u														// deInt32								basePipelineIndex;
+			VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,				// VkStructureType						sType;
+			pNext,														// const void*							pNext;
+			0u,															// VkPipelineCreateFlags				flags;
+			computeStageParams,											// VkPipelineShaderStageCreateInfo		stage;
+			*m_pipelineLayout,											// VkPipelineLayout						layout;
+			DE_NULL,													// VkPipeline							basePipelineHandle;
+			0u															// deInt32								basePipelineIndex;
 		};
 
 		m_computePipeline = createComputePipeline(vk, m_device, DE_NULL, &computePipelineParams);
