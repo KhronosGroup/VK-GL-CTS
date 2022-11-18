@@ -1393,6 +1393,7 @@ void addNullptrVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 
 void addDynamicOffsetComputeGroup (tcu::TestCaseGroup* group)
 {
+#ifndef CTS_USES_VULKANSC
 	tcu::TestContext &testCtx = group->getTestContext();
 
 	static const char dataDir[] = "spirv_assembly/instruction/compute/variable_pointer/dynamic_offset";
@@ -1414,6 +1415,9 @@ void addDynamicOffsetComputeGroup (tcu::TestCaseGroup* group)
 
 		group->addChild(cts_amber::createAmberTestCase(testCtx, testCase.name.c_str(), testCase.desc.c_str(), dataDir, fileName, {"VK_KHR_variable_pointers", "VK_KHR_storage_buffer_storage_class", "VariablePointerFeatures.variablePointers", "VariablePointerFeatures.variablePointersStorageBuffer"}));
 	}
+#else
+	DE_UNREF(group);
+#endif // CTS_USES_VULKANSC
 }
 
 void addVariablePointersGraphicsGroup (tcu::TestCaseGroup* testGroup)

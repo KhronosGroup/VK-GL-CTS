@@ -914,7 +914,8 @@ bool verifyMultisampleLineGroupRasterization (const tcu::Surface&						surface,
 											  ClipMode									clipMode,
 											  VerifyTriangleGroupRasterizationLogStash*	logStash,
 											  const bool								vulkanLinesTest,
-											  const bool								strictMode)
+											  const bool								strictMode,
+											  const bool								carryRemainder)
 {
 	// Multisampled line == 2 triangles
 
@@ -969,29 +970,37 @@ bool verifyMultisampleLineGroupRasterization (const tcu::Surface&						surface,
 				float d0 = (float)lineOffset;
 				float d1 = d0 + 1.0f;
 
-				// "leftoverPhase" carries over a fractional stipple phase that was "unused"
-				// by the last line segment in the strip, if it wasn't an integer length.
-				if (leftoverPhase > lineLength)
+				if (carryRemainder)
 				{
-					DE_ASSERT(d0 == 0.0f);
-					d1 = lineLength;
-					leftoverPhase -= lineLength;
-				}
-				else if (leftoverPhase != 0.0f)
-				{
-					DE_ASSERT(d0 == 0.0f);
-					d1 = leftoverPhase;
-					leftoverPhase = 0.0f;
+					// "leftoverPhase" carries over a fractional stipple phase that was "unused"
+					// by the last line segment in the strip, if it wasn't an integer length.
+					if (leftoverPhase > lineLength)
+					{
+						DE_ASSERT(d0 == 0.0f);
+						d1 = lineLength;
+						leftoverPhase -= lineLength;
+					}
+					else if (leftoverPhase != 0.0f)
+					{
+						DE_ASSERT(d0 == 0.0f);
+						d1 = leftoverPhase;
+						leftoverPhase = 0.0f;
+					}
+					else
+					{
+						if (d0 + 1.0f > lineLength)
+						{
+							d1 = lineLength;
+							leftoverPhase = d0 + 1.0f - lineLength;
+						}
+						else
+							d1 = d0 + 1.0f;
+					}
 				}
 				else
 				{
-					if (d0 + 1.0f > lineLength)
-					{
+					if (d1 > lineLength)
 						d1 = lineLength;
-						leftoverPhase = d0 + 1.0f - lineLength;
-					}
-					else
-						d1 = d0 + 1.0f;
 				}
 
 				// set offset for next iteration
@@ -1076,6 +1085,22 @@ bool verifyMultisampleLineGroupRasterization (const tcu::Surface&						surface,
 	}
 
 	return verifyTriangleGroupRasterization(surface, triangleScene, args, log, scene.verificationMode, logStash, vulkanLinesTest);
+}
+
+bool verifyMultisampleLineGroupRasterization (const tcu::Surface&						surface,
+											  const LineSceneSpec&						scene,
+											  const RasterizationArguments&				args,
+											  tcu::TestLog&								log,
+											  ClipMode									clipMode,
+											  VerifyTriangleGroupRasterizationLogStash*	logStash,
+											  const bool								vulkanLinesTest,
+											  const bool								strictMode)
+{
+	if (scene.stippleEnable)
+		return verifyMultisampleLineGroupRasterization(surface, scene, args, log, clipMode, logStash, vulkanLinesTest, strictMode, true) ||
+		       verifyMultisampleLineGroupRasterization(surface, scene, args, log, clipMode, logStash, vulkanLinesTest, strictMode, false);
+	else
+		return verifyMultisampleLineGroupRasterization(surface, scene, args, log, clipMode, logStash, vulkanLinesTest, strictMode, true);
 }
 
 static bool verifyMultisampleLineGroupInterpolationInternal (const tcu::Surface&						surface,
@@ -1969,6 +1994,11 @@ bool verifyLineGroupPixelIndependentInterpolation (const tcu::Surface&				surfac
 bool verifySinglesampleNarrowLineGroupInterpolation (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log)
 {
 	DE_ASSERT(scene.lineWidth == 1.0f);
+	return verifyLineGroupPixelIndependentInterpolation(surface, scene, args, log, LINEINTERPOLATION_STRICTLY_CORRECT);
+}
+
+bool verifyLineGroupInterpolationWithNonProjectedWeights (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log)
+{
 	return verifyLineGroupPixelIndependentInterpolation(surface, scene, args, log, LINEINTERPOLATION_STRICTLY_CORRECT);
 }
 
@@ -2978,6 +3008,10 @@ LineInterpolationMethod verifyLineGroupInterpolation (const tcu::Surface& surfac
 		else
 		{
 			if (verifySinglesampleWideLineGroupInterpolation(surface, scene, args, log))
+				return LINEINTERPOLATION_STRICTLY_CORRECT;
+
+			if (scene.allowNonProjectedInterpolation &&
+			    verifyLineGroupInterpolationWithNonProjectedWeights(surface, scene, args, log))
 				return LINEINTERPOLATION_STRICTLY_CORRECT;
 		}
 

@@ -35,42 +35,74 @@ namespace vkt
 namespace conditional
 {
 
+enum ConditionalBufferMemory { LOCAL, HOST };
+
 struct ConditionalData
 {
-	bool		conditionInPrimaryCommandBuffer;
-	bool		conditionInSecondaryCommandBuffer;
-	bool		conditionInverted;
-	bool		conditionInherited;
-	deUint32	conditionValue;
-	bool		padConditionValue;
+	bool						conditionInPrimaryCommandBuffer;
+	bool						conditionInSecondaryCommandBuffer;
+	bool						conditionInverted;
+	bool						conditionInherited;
+	deUint32					conditionValue;
+	bool						padConditionValue;
+	bool						allocationOffset;	// Apply an offset to the condition variable buffer allocation.
+	bool						clearInRenderPass;	// Clear the color attachment as part of beginning the render pass instead of outside.
 
-	bool		expectCommandExecution;
+	bool						expectCommandExecution;
+
+	ConditionalBufferMemory		memoryType;
 };
 
 static const ConditionalData s_testsData[] =
 {
-	//	CONDPRI	CONDSEC	INV		INH		V	PAD		RES
-	{	true,	false,	false,	false,	1,	false,	true	},
-	{	true,	false,	false,	false,	0,	false,	false	},
-	{	true,	false,	true,	false,	0,	false,	true	},
-	{	true,	false,	true,	false,	1,	false,	false	},
-	{	true,	false,	false,	true,	1,	false,	true	},
-	{	true,	false,	false,	true,	0,	false,	false	},
-	{	true,	false,	true,	true,	0,	false,	true	},
-	{	true,	false,	true,	true,	1,	false,	false	},
+	//	CONDPRI	CONDSEC	INV		INH		V	PAD		ALLOCOFFSET	RP_CLEAR	RES		MEM
+	{	true,	false,	false,	false,	1,	false,	false,		false,		true,	HOST	},
+	{	true,	false,	false,	false,	0,	false,	false,		false,		false,	HOST	},
+	{	true,	false,	true,	false,	0,	false,	false,		false,		true,	HOST	},
+	{	true,	false,	true,	false,	1,	false,	false,		false,		false,	HOST	},
+	{	true,	false,	false,	true,	1,	false,	false,		false,		true,	HOST	},
+	{	true,	false,	false,	true,	0,	false,	false,		false,		false,	HOST	},
+	{	true,	false,	true,	true,	0,	false,	false,		false,		true,	HOST	},
+	{	true,	false,	true,	true,	1,	false,	false,		false,		false,	HOST	},
 
-	{	false,	true,	false,	false,	1,	false,	true	},
-	{	false,	true,	false,	false,	0,	false,	false	},
-	{	false,	true,	true,	false,	0,	false,	true	},
-	{	false,	true,	true,	false,	1,	false,	false	},
+	{	true,	false,	false,	false,	1,	false,	false,		false,		true,	LOCAL	},
+	{	true,	false,	false,	false,	0,	false,	false,		false,		false,	LOCAL	},
+	{	true,	false,	true,	false,	0,	false,	false,		false,		true,	LOCAL	},
+	{	true,	false,	true,	false,	1,	false,	false,		false,		false,	LOCAL	},
+	{	true,	false,	false,	true,	1,	false,	false,		false,		true,	LOCAL	},
+	{	true,	false,	false,	true,	0,	false,	false,		false,		false,	LOCAL	},
+	{	true,	false,	true,	true,	0,	false,	false,		false,		true,	LOCAL	},
+	{	true,	false,	true,	true,	1,	false,	false,		false,		false,	LOCAL	},
+
+	{	false,	true,	false,	false,	1,	false,	false,		false,		true,	HOST	},
+	{	false,	true,	false,	false,	0,	false,	false,		false,		false,	HOST	},
+	{	false,	true,	true,	false,	0,	false,	false,		false,		true,	HOST	},
+	{	false,	true,	true,	false,	1,	false,	false,		false,		false,	HOST	},
+
+	{	false,	true,	false,	false,	1,	false,	false,		false,		true,	LOCAL	},
+	{	false,	true,	false,	false,	0,	false,	false,		false,		false,	LOCAL	},
+	{	false,	true,	true,	false,	0,	false,	false,		false,		true,	LOCAL	},
+	{	false,	true,	true,	false,	1,	false,	false,		false,		false,	LOCAL	},
 
 	// Test that inheritance does not affect outcome of secondary command buffer with conditional rendering or not.
-	{	false,	false,	false,	true,	0,	false,	true	},
+	{	false,	false,	false,	true,	0,	false,	false,		false,		true,	HOST	},
+	{	false,	false,	false,	true,	0,	false,	false,		false,		true,	LOCAL	},
 
-	{	false,	true,	false,	true,	1,	false,	true	},
-	{	false,	true,	false,	true,	0,	false,	false	},
-	{	false,	true,	true,	true,	1,	false,	false	},
-	{	false,	true,	true,	true,	0,	false,	true	},
+	{	false,	true,	false,	true,	1,	false,	false,		false,		true,	HOST	},
+	{	false,	true,	false,	true,	0,	false,	false,		false,		false,	HOST	},
+	{	false,	true,	true,	true,	1,	false,	false,		false,		false,	HOST	},
+	{	false,	true,	true,	true,	0,	false,	false,		false,		true,	HOST	},
+
+	{	false,	true,	false,	true,	1,	false,	false,		false,		true,	LOCAL	},
+	{	false,	true,	false,	true,	0,	false,	false,		false,		false,	LOCAL	},
+	{	false,	true,	true,	true,	1,	false,	false,		false,		false,	LOCAL	},
+	{	false,	true,	true,	true,	0,	false,	false,		false,		true,	LOCAL	},
+
+	// Test clearing the attachment when beginning the render pass.
+	{	true,	false,	false,	false,	1,	false,	false,		true,		true,	HOST	},
+	{	true,	false,	false,	false,	0,	false,	false,		true,		false,	HOST	},
+	{	true,	false,	true,	false,	0,	false,	false,		true,		true,	HOST	},
+	{	true,	false,	true,	false,	1,	false,	false,		true,		false,	HOST	},
 };
 
 std::ostream&				operator<< (std::ostream& str, ConditionalData const& c);

@@ -2015,7 +2015,7 @@ void texparameterf (NegativeTestContext& ctx)
 
 void texparameteriv (NegativeTestContext& ctx)
 {
-	GLint params[1] = {GL_LINEAR};
+	GLint params[4] = { GL_LINEAR, GL_INVALID_ENUM, GL_INVALID_ENUM, GL_INVALID_ENUM };
 
 	GLuint texture = 0x1234;
 	ctx.glGenTextures(1, &texture);
@@ -2132,7 +2132,7 @@ void texparameteriv (NegativeTestContext& ctx)
 
 void texparameterfv (NegativeTestContext& ctx)
 {
-	GLfloat params[1] = {GL_LINEAR};
+	GLfloat params[4] = { GL_LINEAR, GL_INVALID_ENUM, GL_INVALID_ENUM, GL_INVALID_ENUM };
 	GLuint texture = 0x1234;
 	ctx.glGenTextures(1, &texture);
 	ctx.glBindTexture(GL_TEXTURE_2D, texture);
@@ -2252,7 +2252,7 @@ void texparameterIiv (NegativeTestContext& ctx)
 	if (!supportsES32orGL45(ctx))
 		throw tcu::NotSupportedError("glTexParameterIiv is not supported.", DE_NULL, __FILE__, __LINE__);
 
-	GLint textureMode[] = { GL_DEPTH_COMPONENT, GL_STENCIL_INDEX };
+	GLint textureMode[] = { GL_DEPTH_COMPONENT, GL_STENCIL_INDEX, GL_INVALID_ENUM, GL_INVALID_ENUM };
 	ctx.beginSection("GL_INVALID_ENUM is generated if target is not a valid target.");
 	ctx.glTexParameterIiv(0, GL_DEPTH_STENCIL_TEXTURE_MODE, textureMode);
 	ctx.expectError(GL_INVALID_ENUM);
@@ -2362,7 +2362,7 @@ void texparameterIuiv (NegativeTestContext& ctx)
 	if (!supportsES32orGL45(ctx))
 		throw tcu::NotSupportedError("glTexParameterIuiv is not supported.", DE_NULL, __FILE__, __LINE__);
 
-	GLuint textureMode[] = { GL_DEPTH_COMPONENT, GL_STENCIL_INDEX };
+	GLuint textureMode[] = { GL_DEPTH_COMPONENT, GL_STENCIL_INDEX, GL_INVALID_ENUM, GL_INVALID_ENUM };
 	ctx.beginSection("GL_INVALID_ENUM is generated if target is not a valid target.");
 	ctx.glTexParameterIuiv(0, GL_DEPTH_STENCIL_TEXTURE_MODE, textureMode);
 	ctx.expectError(GL_INVALID_ENUM);

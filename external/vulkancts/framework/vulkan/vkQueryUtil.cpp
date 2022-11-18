@@ -101,12 +101,7 @@ vector<VkPhysicalDeviceGroupProperties> enumeratePhysicalDeviceGroups(const Inst
 
 	if (numDeviceGroups > 0)
 	{
-		properties.resize(numDeviceGroups);
-		for (deUint32 i = 0; i < numDeviceGroups; i++)
-		{
-			properties[i].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GROUP_PROPERTIES;
-			properties[i].pNext = DE_NULL;
-		}
+		properties.resize(numDeviceGroups, initVulkanStructure());
 		VK_CHECK(vk.enumeratePhysicalDeviceGroups(instance, &numDeviceGroups, &properties[0]));
 
 		if ((size_t)numDeviceGroups != properties.size())
@@ -209,6 +204,35 @@ VkPhysicalDeviceVulkan12Properties getPhysicalDeviceVulkan12Properties (const In
 	return vulkan12properties;
 }
 
+#ifdef CTS_USES_VULKANSC
+VkPhysicalDeviceVulkanSC10Features getPhysicalDeviceVulkanSC10Features (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
+{
+	VkPhysicalDeviceFeatures2			features;
+	VkPhysicalDeviceVulkanSC10Features	vulkanSC10Features;
+
+	deMemset(&features, 0, sizeof(features));
+	features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+
+	deMemset(&vulkanSC10Features, 0, sizeof(vulkanSC10Features));
+	vulkanSC10Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_FEATURES;
+
+	features.pNext = &vulkanSC10Features;
+
+	vk.getPhysicalDeviceFeatures2(physicalDevice, &features);
+	return vulkanSC10Features;
+}
+
+VkPhysicalDeviceVulkanSC10Properties getPhysicalDeviceVulkanSC10Properties (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
+{
+	VkPhysicalDeviceVulkanSC10Properties	vulkanSC10properties	= initVulkanStructure();
+	VkPhysicalDeviceProperties2				properties				= initVulkanStructure(&vulkanSC10properties);
+
+	vk.getPhysicalDeviceProperties2(physicalDevice, &properties);
+
+	return vulkanSC10properties;
+}
+#endif // CTS_USES_VULKANSC
+
 VkPhysicalDeviceProperties getPhysicalDeviceProperties (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
 {
 	VkPhysicalDeviceProperties	properties;
@@ -266,6 +290,7 @@ VkImageFormatProperties getPhysicalDeviceImageFormatProperties (const InstanceIn
 	return properties;
 }
 
+#ifndef CTS_USES_VULKANSC
 std::vector<VkSparseImageFormatProperties> getPhysicalDeviceSparseImageFormatProperties(const InstanceInterface& vk, VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkSampleCountFlagBits samples, VkImageUsageFlags usage, VkImageTiling tiling)
 {
 	deUint32								numProp = 0;
@@ -303,6 +328,7 @@ std::vector<VkSparseImageMemoryRequirements> getImageSparseMemoryRequirements(co
 
 	return requirements;
 }
+#endif // CTS_USES_VULKANSC
 
 VkMemoryRequirements getBufferMemoryRequirements (const DeviceInterface& vk, VkDevice device, VkBuffer buffer)
 {
@@ -457,12 +483,12 @@ bool isCompatible (const VkLayerProperties& layerProperties, const RequiredLayer
 	return true;
 }
 
-bool isExtensionSupported (const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required)
+bool isExtensionStructSupported (const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required)
 {
-	return isExtensionSupported(extensions.begin(), extensions.end(), required);
+	return isExtensionStructSupported(extensions.begin(), extensions.end(), required);
 }
 
-bool isExtensionSupported (const vector<std::string>& extensionStrings, const std::string& extensionName)
+bool isExtensionStructSupported (const vector<std::string>& extensionStrings, const std::string& extensionName)
 {
 	return de::contains(extensionStrings.begin(), extensionStrings.end(), extensionName);
 }

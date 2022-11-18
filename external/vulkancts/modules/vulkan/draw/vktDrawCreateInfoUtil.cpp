@@ -1155,9 +1155,12 @@ PipelineCreateInfo& PipelineCreateInfo::addState (const vk::VkPipelineMultisampl
 {
 
 	const size_t sampleMaskArrayLen = (sizeof(vk::VkSampleMask) * 8 + state.rasterizationSamples) / ( sizeof(vk::VkSampleMask) * 8 );
-	m_multisampleStateSampleMask	= std::vector<vk::VkSampleMask>(state.pSampleMask, state.pSampleMask + sampleMaskArrayLen);
 	m_multisampleState				= state;
-	m_multisampleState.pSampleMask	= &m_multisampleStateSampleMask[0];
+	if (state.pSampleMask != DE_NULL)
+	{
+		m_multisampleStateSampleMask	= std::vector<vk::VkSampleMask>(state.pSampleMask, state.pSampleMask + sampleMaskArrayLen);
+		m_multisampleState.pSampleMask	= &m_multisampleStateSampleMask[0];
+	}
 	pMultisampleState				= &m_multisampleState;
 
 	return *this;

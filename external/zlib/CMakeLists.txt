@@ -64,6 +64,10 @@ if (DE_OS_IS_UNIX OR DE_OS_IS_QNX)
 	add_definitions(-D_XOPEN_SOURCE=600)
 endif ()
 
+if (DE_OS_IS_FUCHSIA)
+	add_definitions(-DZ_HAVE_UNISTD_H)
+endif ()
+
 set(CMAKE_C_FLAGS ${DE_3RD_PARTY_C_FLAGS})
 
 add_library(z STATIC ${ZLIB_SRCS})

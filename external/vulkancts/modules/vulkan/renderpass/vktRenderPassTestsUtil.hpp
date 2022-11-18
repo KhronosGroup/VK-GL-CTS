@@ -28,6 +28,8 @@
 #include "vkDefs.hpp"
 #include "vkMemUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkTypeUtil.hpp"
+#include "vktRenderPassGroupParams.hpp"
 
 #include <vector>
 
@@ -37,18 +39,6 @@ namespace renderpass
 {
 
 using namespace vk;
-
-enum RenderPassType
-{
-	RENDERPASS_TYPE_LEGACY = 0,
-	RENDERPASS_TYPE_RENDERPASS2,
-};
-
-enum SynchronizationType
-{
-	SYNCHRONIZATION_TYPE_LEGACY = 0,
-	SYNCHRONIZATION_TYPE_SYNCHRONIZATION2,
-};
 
 class AttachmentDescription1 : public vk::VkAttachmentDescription
 {
@@ -421,7 +411,7 @@ private:
 Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
 									 VkDevice				device,
 									 const RenderPass&		renderPassInfo,
-									 RenderPassType			renderPassType,
+									 RenderingType			renderingType,
 									 SynchronizationType	synchronizationType = SYNCHRONIZATION_TYPE_LEGACY);
 
 } // renderpass

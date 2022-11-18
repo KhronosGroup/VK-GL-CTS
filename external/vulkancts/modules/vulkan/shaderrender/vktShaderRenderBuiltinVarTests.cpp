@@ -260,12 +260,16 @@ void BuiltinGlFrontFacingCase::initPrograms (SourceCollections& programCollectio
 
 void BuiltinGlFrontFacingCase::checkSupport (Context& context) const
 {
+#ifndef CTS_USES_VULKANSC
 	if (m_topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN &&
 		context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		!context.getPortabilitySubsetFeatures().triangleFans)
 	{
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
 	}
+#else
+	DE_UNREF(context);
+#endif // CTS_USES_VULKANSC
 }
 
 TestInstance* BuiltinGlFrontFacingCase::createInstance (Context& context) const
@@ -701,6 +705,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 		endCommandBuffer(vk, *transferCmdBuffer);
 
 		submitCommandsAndWait(vk, device, queue, transferCmdBuffer.get());
+		m_context.resetCommandPoolForVKSC(device, *cmdPool);
 	}
 
 
@@ -844,6 +849,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 		endCommandBuffer(vk, *transferCmdBuffer);
 
 		submitCommandsAndWait(vk, device, queue, transferCmdBuffer.get());
+		m_context.resetCommandPoolForVKSC(device, *cmdPool);
 	}
 
 	// Resolve Depth Buffer
@@ -926,6 +932,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 		endCommandBuffer(vk, *transferCmdBuffer);
 
 		submitCommandsAndWait(vk, device, queue, transferCmdBuffer.get());
+		m_context.resetCommandPoolForVKSC(device, *cmdPool);
 	}
 
 	// Verify depth buffer
@@ -937,6 +944,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 		endCommandBuffer(vk, *transferCmdBuffer);
 
 		submitCommandsAndWait(vk, device, queue, transferCmdBuffer.get());
+		m_context.resetCommandPoolForVKSC(device, *cmdPool);
 
 		invalidateMappedMemoryRange(vk, device, validationAlloc->getMemory(), validationAlloc->getOffset(), VK_WHOLE_SIZE);
 		invalidateMappedMemoryRange(vk, device, markerBufferAllocation->getMemory(), markerBufferAllocation->getOffset(), VK_WHOLE_SIZE);
@@ -1239,6 +1247,7 @@ TestStatus BuiltinFragCoordMsaaCaseInstance::iterate (void)
 		endCommandBuffer(vk, *transferCmdBuffer);
 
 		submitCommandsAndWait(vk, device, queue, transferCmdBuffer.get());
+		m_context.resetCommandPoolForVKSC(device, *cmdPool);
 	}
 
 	// Perform draw
@@ -1286,6 +1295,7 @@ TestStatus BuiltinFragCoordMsaaCaseInstance::iterate (void)
 		endCommandBuffer(vk, *transferCmdBuffer);
 
 		submitCommandsAndWait(vk, device, queue, transferCmdBuffer.get());
+		m_context.resetCommandPoolForVKSC(device, *cmdPool);
 
 		invalidateAlloc(vk, device, *sampleLocationBufferAllocation);
 	}

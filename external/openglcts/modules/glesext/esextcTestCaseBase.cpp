@@ -171,6 +171,11 @@ void TestCaseBase::initExtensions()
 			m_is_texture_cube_map_array_supported		  = isExtensionSupported("GL_EXT_texture_cube_map_array");
 			m_is_texture_border_clamp_supported			  = isExtensionSupported("GL_EXT_texture_border_clamp");
 			m_is_texture_buffer_supported				  = isExtensionSupported("GL_EXT_texture_buffer");
+			m_is_fragment_shading_rate_supported		  = isExtensionSupported("GL_EXT_fragment_shading_rate");
+			m_is_fragment_shading_rate_primitive_supported =
+				isExtensionSupported("GL_EXT_fragment_shading_rate_primitive");
+			m_is_fragment_shading_rate_attachment_supported =
+				isExtensionSupported("GL_EXT_fragment_shading_rate_attachment");
 		}
 
 		/* other ES 3.1 extensions */
@@ -178,6 +183,7 @@ void TestCaseBase::initExtensions()
 		m_is_texture_storage_multisample_2d_array_supported =
 			isExtensionSupported("GL_OES_texture_storage_multisample_2d_array");
 		m_is_viewport_array_supported = isExtensionSupported("GL_OES_viewport_array");
+		m_is_multiview_ovr_supported  = isExtensionSupported("GL_OVR_multiview");
 	}
 }
 

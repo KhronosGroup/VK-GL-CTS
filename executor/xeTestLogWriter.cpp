@@ -30,8 +30,6 @@
 namespace xe
 {
 
-static const char* TEST_LOG_VERSION = "0.3.3";
-
 /* Batch result writer. */
 
 struct ContainerValue
@@ -308,6 +306,8 @@ static void writeResultItem (const ri::Item& item, xml::Writer& dst)
 				case ri::Shader::SHADERTYPE_MISS:				tagName = "MissShader";				break;
 				case ri::Shader::SHADERTYPE_INTERSECTION:		tagName = "IntersectionShader";		break;
 				case ri::Shader::SHADERTYPE_CALLABLE:			tagName = "CallableShader";			break;
+				case ri::Shader::SHADERTYPE_TASK:				tagName = "TaskShader";				break;
+				case ri::Shader::SHADERTYPE_MESH:				tagName = "MeshShader";				break;
 
 				default:
 					throw Error("Unknown shader type");
@@ -502,7 +502,7 @@ void writeTestResult (const TestCaseResult& result, xe::xml::Writer& xmlWriter)
 	using xml::Writer;
 
 	xmlWriter << Writer::BeginElement("TestCaseResult")
-			  << Writer::Attribute("Version", TEST_LOG_VERSION)
+			  << Writer::Attribute("Version", result.caseVersion)
 			  << Writer::Attribute("CasePath", result.casePath)
 			  << Writer::Attribute("CaseType", getTestCaseTypeName(result.caseType));
 

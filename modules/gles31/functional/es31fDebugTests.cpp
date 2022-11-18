@@ -310,7 +310,7 @@ struct MessageData
 	MessageData (const MessageID& id_, GLenum severity_, const string& message_) : id(id_) , severity(severity_) , message(message_) {}
 };
 
-extern "C" typedef void GLW_APIENTRY DebugCallbackFunc(GLenum, GLenum, GLuint, GLenum, GLsizei, const char*, const void*);
+extern "C" typedef void GLW_APIENTRY DebugCallbackFunc(GLenum, GLenum, GLuint, GLenum, GLsizei, const char*, void*);
 
 // Base class
 class BaseCase : public NegativeTestShared::ErrorCase
@@ -356,7 +356,7 @@ protected:
 	tcu::ResultCollector		m_results;
 };
 
-void BaseCase::callbackHandle (GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const char* message, const void* userParam)
+void BaseCase::callbackHandle (GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const char* message, void* userParam)
 {
 	static_cast<BaseCase*>(const_cast<void*>(userParam))->callback(source, type, id, severity, string(message, &message[length]));
 }
@@ -2804,9 +2804,9 @@ GroupStackDepthQueryCase::IterateResult GroupStackDepthQueryCase::iterate (void)
 	return STOP;
 }
 
-extern "C" void GLW_APIENTRY dummyCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const char*, const void*)
+extern "C" void GLW_APIENTRY emptyCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const char*, void*)
 {
-	// dummy
+	// empty
 }
 
 class DebugCallbackFunctionCase : public TestCase
@@ -2840,8 +2840,8 @@ DebugCallbackFunctionCase::IterateResult DebugCallbackFunctionCase::iterate (voi
 	{
 		const tcu::ScopedLogSection	section(m_testCtx.getLog(), "Set", "Set");
 
-		gl.glDebugMessageCallback(dummyCallback, DE_NULL);
-		verifyStatePointer(result, gl, GL_DEBUG_CALLBACK_FUNCTION, (const void*)dummyCallback, QUERY_POINTER);
+		gl.glDebugMessageCallback(emptyCallback, DE_NULL);
+		verifyStatePointer(result, gl, GL_DEBUG_CALLBACK_FUNCTION, (const void*)emptyCallback, QUERY_POINTER);
 	}
 
 	result.setTestContextResult(m_testCtx);
@@ -2881,7 +2881,7 @@ DebugCallbackUserParamCase::IterateResult DebugCallbackUserParamCase::iterate (v
 		const tcu::ScopedLogSection	section	(m_testCtx.getLog(), "Set", "Set");
 		const void*					param	= (void*)(int*)0x123;
 
-		gl.glDebugMessageCallback(dummyCallback, param);
+		gl.glDebugMessageCallback(emptyCallback, param);
 		verifyStatePointer(result, gl, GL_DEBUG_CALLBACK_USER_PARAM, param, QUERY_POINTER);
 	}
 

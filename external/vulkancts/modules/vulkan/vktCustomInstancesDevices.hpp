@@ -52,7 +52,11 @@ class CustomInstance
 {
 public:
 								CustomInstance			();
+#ifndef CTS_USES_VULKANSC
 								CustomInstance			(Context& context, vk::Move<vk::VkInstance> instance, std::unique_ptr<vk::DebugReportRecorder>& recorder);
+#else
+								CustomInstance			(Context& context, vk::Move<vk::VkInstance> instance);
+#endif // CTS_USES_VULKANSC
 								CustomInstance			(CustomInstance&& other);
 								~CustomInstance			();
 	CustomInstance&				operator=				(CustomInstance&& other);
@@ -65,17 +69,27 @@ public:
 	CustomInstance&				operator=				(const CustomInstance& other) = delete;
 private:
 	Context*									m_context;
+#ifndef CTS_USES_VULKANSC
 	std::unique_ptr<vk::DebugReportRecorder>	m_recorder;
+#endif // CTS_USES_VULKANSC
 	vk::Move<vk::VkInstance>					m_instance;
+#ifndef CTS_USES_VULKANSC
 	std::unique_ptr<vk::InstanceDriver>			m_driver;
 	vk::Move<vk::VkDebugReportCallbackEXT>		m_callback;
+#else
+	std::unique_ptr<vk::InstanceDriverSC>		m_driver;
+#endif // CTS_USES_VULKANSC
 };
 
 class UncheckedInstance
 {
 public:
 						UncheckedInstance		();
+#ifndef CTS_USES_VULKANSC
 						UncheckedInstance		(Context& context, vk::VkInstance instance, const vk::VkAllocationCallbacks* pAllocator, std::unique_ptr<vk::DebugReportRecorder>& recorder);
+#else
+						UncheckedInstance		(Context& context, vk::VkInstance instance, const vk::VkAllocationCallbacks* pAllocator);
+#endif // CTS_USES_VULKANSC
 						UncheckedInstance		(UncheckedInstance&& other);
 						~UncheckedInstance		();
 	UncheckedInstance&	operator=				(UncheckedInstance&& other);
@@ -87,11 +101,17 @@ public:
 	UncheckedInstance&	operator=				(const UncheckedInstance& other) = delete;
 private:
 	Context*									m_context;
+#ifndef CTS_USES_VULKANSC
 	std::unique_ptr<vk::DebugReportRecorder>	m_recorder;
+#endif // CTS_USES_VULKANSC
 	const vk::VkAllocationCallbacks*			m_allocator;
 	vk::VkInstance								m_instance;
+#ifndef CTS_USES_VULKANSC
 	std::unique_ptr<vk::InstanceDriver>			m_driver;
 	vk::Move<vk::VkDebugReportCallbackEXT>		m_callback;
+#else
+	std::unique_ptr<vk::InstanceDriverSC>		m_driver;
+#endif // CTS_USES_VULKANSC
 };
 
 // Custom instances.
@@ -115,6 +135,14 @@ vk::Move<vk::VkDevice> createCustomDevice (bool validationEnabled, const vk::Pla
 // Unchecked device: creation allowed to fail.
 
 vk::VkResult createUncheckedDevice (bool validationEnabled, const vk::InstanceInterface& vki, vk::VkPhysicalDevice physicalDevice, const vk::VkDeviceCreateInfo* pCreateInfo, const vk::VkAllocationCallbacks* pAllocator, vk::VkDevice* pDevice);
+
+class CustomInstanceWrapper
+{
+public:
+	CustomInstanceWrapper(Context& context);
+	CustomInstanceWrapper(Context& context, const std::vector<std::string> extensions);
+	vkt::CustomInstance instance;
+};
 
 }
 

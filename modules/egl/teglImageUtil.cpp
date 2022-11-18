@@ -518,16 +518,16 @@ MovePtr<ClientBuffer> RenderbufferImageSource::createBuffer (const eglw::Library
 class UnsupportedImageSource : public ImageSource
 {
 public:
-							UnsupportedImageSource	(const string& message, GLenum format) : m_message(message), m_format(format) {}
+							UnsupportedImageSource	(const string& message, GLenum format, bool isYUV) : m_message(message), m_format(format), m_isY8Cb8Cr8_420(isYUV) {}
 	string					getRequiredExtension	(void) const { fail(); return ""; }
 	MovePtr<ClientBuffer>	createBuffer			(const eglw::Library& egl, const glw::Functions&, tcu::Texture2D*) const { DE_UNREF(egl); fail(); return de::MovePtr<ClientBuffer>(); }
 	EGLImageKHR				createImage				(const Library& egl, EGLDisplay dpy, EGLContext ctx, EGLClientBuffer clientBuffer) const;
 	GLenum					getEffectiveFormat		(void) const { return m_format; }
-
+	bool					isYUVFormatImage		(void) const {return m_isY8Cb8Cr8_420;};
 private:
 	const string			m_message;
 	GLenum					m_format;
-
+	bool					m_isY8Cb8Cr8_420;
 	void					fail					(void) const { TCU_THROW(NotSupportedError, m_message.c_str()); }
 };
 
@@ -550,9 +550,9 @@ MovePtr<ImageSource> createRenderbufferImageSource (GLenum format)
 	return MovePtr<ImageSource>(new RenderbufferImageSource(format));
 }
 
-MovePtr<ImageSource> createUnsupportedImageSource (const string& message, GLenum format)
+MovePtr<ImageSource> createUnsupportedImageSource (const string& message, GLenum format, bool isYUV)
 {
-	return MovePtr<ImageSource>(new UnsupportedImageSource(message, format));
+	return MovePtr<ImageSource>(new UnsupportedImageSource(message, format, isYUV));
 }
 
 } // Image

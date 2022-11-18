@@ -28,6 +28,12 @@
 namespace tcu
 {
 
+// Empty struct used to initialize Maybe objects without providing the type explicitly.
+struct Nothing_T {
+	explicit constexpr Nothing_T (int) {}
+};
+constexpr Nothing_T Nothing (0);
+
 // \note Type T is always aligned to same alignment as deUint64.
 // \note This type always uses at least sizeof(T*) + sizeof(deUint64) of memory.
 template<typename T>
@@ -35,6 +41,7 @@ class Maybe
 {
 public:
 				Maybe			(void);
+				Maybe			(const Nothing_T&);
 				~Maybe			(void);
 
 				Maybe			(const T& val);
@@ -76,7 +83,13 @@ Maybe<T> just (const T& value)
 
 template<typename T>
 Maybe<T>::Maybe (void)
-	: m_ptr (DE_NULL)
+	: m_ptr (nullptr)
+{
+}
+
+template<typename T>
+Maybe<T>::Maybe (const Nothing_T&)
+	: m_ptr (nullptr)
 {
 }
 
@@ -89,7 +102,7 @@ Maybe<T>::~Maybe (void)
 
 template<typename T>
 Maybe<T>::Maybe (const T& val)
-	: m_ptr (DE_NULL)
+	: m_ptr (nullptr)
 {
 	m_ptr = new(m_data)T(val);
 }
@@ -107,7 +120,7 @@ Maybe<T>& Maybe<T>::operator= (const T& val)
 
 template<typename T>
 Maybe<T>::Maybe (const Maybe<T>& other)
-	: m_ptr (DE_NULL)
+	: m_ptr (nullptr)
 {
 	if (other.m_ptr)
 		m_ptr = new(m_data)T(*other.m_ptr);
@@ -125,7 +138,7 @@ Maybe<T>& Maybe<T>::operator= (const Maybe<T>& other)
 	if (other.m_ptr)
 		m_ptr = new(m_data)T(*other.m_ptr);
 	else
-		m_ptr = DE_NULL;
+		m_ptr = nullptr;
 
 	return *this;
 }

@@ -56,14 +56,19 @@ typedef vk::VkPhysicalDeviceProperties						DevProp1;
 typedef vk::VkPhysicalDeviceProperties2						DevProp2;
 typedef vk::VkPhysicalDeviceMaintenance3Properties			MaintDevProp3;
 typedef vk::VkPhysicalDeviceFeatures2						DevFeat2;
+#ifndef CTS_USES_VULKANSC
 typedef vk::VkPhysicalDeviceInlineUniformBlockFeaturesEXT	DevIubFeat;
 typedef vk::VkPhysicalDeviceInlineUniformBlockPropertiesEXT	DevIubProp;
+#endif // CTS_USES_VULKANSC
 
 // These variables are equal to minimal values for maxMemoryAllocationSize and maxPerSetDescriptors
 constexpr deUint32 maxMemoryAllocationSize			= 1073741824u;
 constexpr deUint32 maxDescriptorsInSet				= 1024u;
+#ifndef CTS_USES_VULKANSC
 constexpr deUint32 maxReasonableInlineUniformBlocks	= 64u;
-
+#else
+constexpr deUint32 maxReasonableBindingCounts		= 1024u;
+#endif // CTS_USES_VULKANSC
 using TypeSet		= set<vk::VkDescriptorType>;
 
 // Structure representing an implementation limit, like maxPerStageDescriptorSamplers. It has a maximum value
@@ -217,7 +222,11 @@ void distributeCounts (LimitsVector& limits, TypeCounts& typeCounts)
 }
 
 // Create a limits vector based on runtime limit information for the device.
-LimitsVector buildLimitsVector (const DevProp1& prop1, const DevIubProp& iubProp, const MaintDevProp3& maintProp3)
+LimitsVector buildLimitsVector ( const DevProp1&		prop1,
+#ifndef CTS_USES_VULKANSC
+								 const DevIubProp&		iubProp,
+#endif // CTS_USES_VULKANSC
+								 const MaintDevProp3&	maintProp3)
 {
 	static const TypeSet samplerTypes				= { vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, vk::VK_DESCRIPTOR_TYPE_SAMPLER };
 	static const TypeSet sampledImageTypes			= { vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, vk::VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER };
@@ -225,7 +234,9 @@ LimitsVector buildLimitsVector (const DevProp1& prop1, const DevIubProp& iubProp
 	static const TypeSet storageBufferTypes			= { vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC };
 	static const TypeSet storageImageTypes			= { vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, vk::VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER };
 	static const TypeSet inputAttachmentTypes		= { vk::VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT };
+#ifndef CTS_USES_VULKANSC
 	static const TypeSet inlineUniformBlockTypes	= { vk::VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT };
+#endif // CTS_USES_VULKANSC
 	static const TypeSet dynamicUniformBuffer		= { vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC };
 	static const TypeSet dynamicStorageBuffer		= { vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC };
 	static const TypeSet allTypesButIUB				= {
@@ -252,8 +263,10 @@ LimitsVector buildLimitsVector (const DevProp1& prop1, const DevIubProp& iubProp
 														vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
 														vk::VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
 														vk::VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+#ifndef CTS_USES_VULKANSC
 														vk::VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT,
-													};
+#endif // CTS_USES_VULKANSC
+	};
 
 	LimitsVector limits = {
 		{
@@ -326,6 +339,8 @@ LimitsVector buildLimitsVector (const DevProp1& prop1, const DevIubProp& iubProp
 			prop1.limits.maxDescriptorSetStorageBuffersDynamic,
 			dynamicStorageBuffer
 		},
+#ifndef CTS_USES_VULKANSC
+		// Removed from Vulkan SC test set: VK_EXT_inline_uniform_block extension removed from Vulkan SC
 		{
 			"maxPerStageDescriptorInlineUniformBlocks",
 			iubProp.maxPerStageDescriptorInlineUniformBlocks,
@@ -336,6 +351,7 @@ LimitsVector buildLimitsVector (const DevProp1& prop1, const DevIubProp& iubProp
 			iubProp.maxDescriptorSetInlineUniformBlocks,
 			inlineUniformBlockTypes
 		},
+#endif // CTS_USES_VULKANSC
 		{
 			"maxPerStageResources",
 			prop1.limits.maxPerStageResources,
@@ -352,9 +368,19 @@ LimitsVector buildLimitsVector (const DevProp1& prop1, const DevIubProp& iubProp
 }
 
 // Create a vector of bindings by constructing the system limits and distributing descriptor counts.
-vector<vk::VkDescriptorSetLayoutBinding> calculateBindings(const DevProp1& prop1, const DevIubProp& iubProp, const MaintDevProp3& maintProp3, const vector<vk::VkDescriptorType> &types)
+vector<vk::VkDescriptorSetLayoutBinding> calculateBindings( const DevProp1&						prop1,
+#ifndef CTS_USES_VULKANSC
+															const DevIubProp&					iubProp,
+#endif // CTS_USES_VULKANSC
+															const MaintDevProp3&				maintProp3,
+															const vector<vk::VkDescriptorType>	&types)
 {
-	LimitsVector limits = buildLimitsVector(prop1, iubProp, maintProp3);
+	LimitsVector limits = buildLimitsVector(prop1,
+#ifndef CTS_USES_VULKANSC
+		iubProp,
+#endif // CTS_USES_VULKANSC
+		maintProp3);
+
 	TypeCounts typeCounts;
 
 	for (const auto& type : types)
@@ -362,11 +388,21 @@ vector<vk::VkDescriptorSetLayoutBinding> calculateBindings(const DevProp1& prop1
 
 	distributeCounts(limits, typeCounts);
 
+#ifdef CTS_USES_VULKANSC
+	// limit the number of binding counts, so that descriptorSetLayoutBindingRequestCount and descriptorSetLayoutBindingLimit won't be too big
+	for (auto& tc : typeCounts)
+		tc.second.count = de::min(tc.second.count, maxReasonableBindingCounts);
+#endif // CTS_USES_VULKANSC
+
 	deUint32 bindingNumber = 0u;
 	vector<vk::VkDescriptorSetLayoutBinding> bindings;
 	for (const auto& tc : typeCounts)
 	{
+#ifndef CTS_USES_VULKANSC
 		if (tc.first != VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
+#else
+		if (true)
+#endif // CTS_USES_VULKANSC
 		{
 			vk::VkDescriptorSetLayoutBinding b;
 			b.binding = bindingNumber;
@@ -410,7 +446,11 @@ string getBindingsDescription (const vector<VkDescriptorSetLayoutBinding>& bindi
 		auto iter = typeCount.find(b.descriptorType);
 		if (iter == typeCount.end())
 			iter = typeCount.insert(make_pair(b.descriptorType, (deUint32)0)).first;
+#ifndef CTS_USES_VULKANSC
 		count = ((b.descriptorType == vk::VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT) ? 1u : b.descriptorCount);
+#else
+		count = b.descriptorCount;
+#endif // CTS_USES_VULKANSC
 		iter->second += count;
 		totalCount += count;
 	}
@@ -498,7 +538,9 @@ public:
 		const auto& physicalDevice	= m_context.getPhysicalDevice();
 		const auto&	device			= m_context.getDevice();
 		auto&		log				= m_context.getTestContext().getLog();
-		bool		iubSupported	= false;
+
+#ifndef CTS_USES_VULKANSC
+		bool		iubSupported = false;
 
 		if (m_context.isDeviceFunctionalitySupported("VK_EXT_inline_uniform_block"))
 		{
@@ -531,11 +573,16 @@ public:
 			0u,																		// deUint32			maxDescriptorSetInlineUniformBlocks;
 			0u																		// deUint32			maxDescriptorSetUpdateAfterBindInlineUniformBlocks;
 		};
+#endif // CTS_USES_VULKANSC
 
 		MaintDevProp3						maintProp3								=
 		{
 			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES,				//VkStructureType						sType;
+#ifndef CTS_USES_VULKANSC
 			(iubSupported ? &devIubProp : DE_NULL),									//void*									pNext;
+#else
+			DE_NULL,																//void*									pNext;
+#endif // CTS_USES_VULKANSC
 			maxDescriptorsInSet,													//deUint32								maxPerSetDescriptors;
 			maxMemoryAllocationSize													//VkDeviceSize							maxMemoryAllocationSize;
 		};
@@ -562,8 +609,10 @@ public:
 			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,
 			VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
 		};
+#ifndef CTS_USES_VULKANSC
 		if (iubSupported)
 			descriptorTypes.push_back(VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT);
+#endif // CTS_USES_VULKANSC
 
 		// VkDescriptorSetLayoutCreateInfo setup
 		vk::VkDescriptorSetLayoutCreateInfo	pCreateInfo								=
@@ -600,6 +649,7 @@ public:
 						types.push_back(descriptorTypes[i]);
 				}
 
+#ifndef CTS_USES_VULKANSC
 				// Due to inline uniform blocks being unable to form arrays and each one of them needing its own
 				// VkDescriptorSetLayoutBinding structure, we will limit when to test them.
 				if (std::find(begin(types), end(types), VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT) != types.end() &&
@@ -608,9 +658,13 @@ public:
 				{
 					continue;
 				}
+#endif // CTS_USES_VULKANSC
 
-				vector<vk::VkDescriptorSetLayoutBinding> bindings = calculateBindings(prop2.properties, devIubProp, maintProp3, types);
-
+				vector<vk::VkDescriptorSetLayoutBinding> bindings = calculateBindings(prop2.properties,
+#ifndef CTS_USES_VULKANSC
+					devIubProp,
+#endif
+					maintProp3, types);
 				string description = getBindingsDescription(bindings);
 				log << tcu::TestLog::Message << "Testing combination: " << description << tcu::TestLog::EndMessage;
 

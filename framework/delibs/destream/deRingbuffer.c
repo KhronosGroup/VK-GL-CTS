@@ -270,7 +270,7 @@ static deStreamResult consumerStream_deinit (deStreamData* stream)
 }
 
 /* There are no sensible errors so status is always good */
-deStreamStatus dummy_getStatus (deStreamData* stream)
+deStreamStatus empty_getStatus (deStreamData* stream)
 {
 	DE_UNREF(stream);
 
@@ -278,7 +278,7 @@ deStreamStatus dummy_getStatus (deStreamData* stream)
 }
 
 /* There are no sensible errors in ringbuffer */
-static const char* dummy_getError (deStreamData* stream)
+static const char* empty_getError (deStreamData* stream)
 {
 	DE_ASSERT(stream);
 	DE_UNREF(stream);
@@ -288,19 +288,19 @@ static const char* dummy_getError (deStreamData* stream)
 static const deIOStreamVFTable producerStreamVFTable = {
 	DE_NULL,
 	producerStream_write,
-	dummy_getError,
+	empty_getError,
 	producerStream_flush,
 	producerStream_deinit,
-	dummy_getStatus
+	empty_getStatus
 };
 
 static const deIOStreamVFTable consumerStreamVFTable = {
 	consumerStream_read,
 	DE_NULL,
-	dummy_getError,
+	empty_getError,
 	DE_NULL,
 	consumerStream_deinit,
-	dummy_getStatus
+	empty_getStatus
 };
 
 void deProducerStream_init (deOutStream* stream, deRingbuffer* buffer)

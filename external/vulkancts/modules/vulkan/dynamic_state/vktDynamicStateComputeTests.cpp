@@ -22,6 +22,7 @@
  * \brief Dynamic State tests mixing it with compute and transfer.
  *//*--------------------------------------------------------------------*/
 #include "vktDynamicStateComputeTests.hpp"
+#include "vktCustomInstancesDevices.hpp"
 
 #include "vkBufferWithMemory.hpp"
 #include "vkObjUtil.hpp"
@@ -30,6 +31,7 @@
 #include "vkBuilderUtil.hpp"
 #include "vkTypeUtil.hpp"
 
+#include "tcuCommandLine.hpp"
 #include "tcuVector.hpp"
 
 #include <vector>
@@ -40,6 +42,7 @@
 #include <cstring>
 #include <iterator>
 #include <numeric>
+#include <memory>
 
 namespace vkt
 {
@@ -76,7 +79,7 @@ private:
 	}
 
 public:
-	BindVertexBuffersData(Context& ctx)
+	BindVertexBuffersData(Context& ctx, VkDevice device)
 		: m_vertexBuffer		()
 		, m_dataSize			(0u)
 		, m_vertexBufferSize	(0ull)
@@ -88,7 +91,6 @@ public:
 		const auto&	vki			= ctx.getInstanceInterface();
 		const auto	phyDev		= ctx.getPhysicalDevice();
 		const auto&	vkd			= ctx.getDeviceInterface();
-		const auto	device		= ctx.getDevice();
 		auto&		alloc		= ctx.getDefaultAllocator();
 
 		// Vertex buffer.
@@ -255,10 +257,12 @@ void setSampleLocations (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, 
 	vkd->cmdSetSampleLocationsEXT(cmdBuffer, &info);
 }
 
+#ifndef CTS_USES_VULKANSC
 void setRTPipelineStatckSize (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
 	vkd->cmdSetRayTracingPipelineStackSizeKHR(cmdBuffer, 4096u);
 }
+#endif // CTS_USES_VULKANSC
 
 void setFragmentShadingRage (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
@@ -278,17 +282,29 @@ void setLineStipple (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, cons
 
 void setCullMode (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
+#ifndef CTS_USES_VULKANSC
+	vkd->cmdSetCullMode(cmdBuffer, VK_CULL_MODE_FRONT_AND_BACK);
+#else
 	vkd->cmdSetCullModeEXT(cmdBuffer, VK_CULL_MODE_FRONT_AND_BACK);
+#endif // CTS_USES_VULKANSC
 }
 
 void setFrontFace (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
+#ifndef CTS_USES_VULKANSC
+	vkd->cmdSetFrontFace(cmdBuffer, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+#else
 	vkd->cmdSetFrontFaceEXT(cmdBuffer, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+#endif // CTS_USES_VULKANSC
 }
 
 void setPrimitiveTopology (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
+#ifndef CTS_USES_VULKANSC
+	vkd->cmdSetPrimitiveTopology(cmdBuffer, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+#else
 	vkd->cmdSetPrimitiveTopologyEXT(cmdBuffer, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+#endif // CTS_USES_VULKANSC
 }
 
 void setViewportWithCount (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
@@ -302,7 +318,11 @@ void setViewportWithCount (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer
 		0.0f,	//	float	minDepth;
 		1.0f,	//	float	maxDepth;
 	};
+#ifndef CTS_USES_VULKANSC
+	vkd->cmdSetViewportWithCount(cmdBuffer, 1u, &viewport);
+#else
 	vkd->cmdSetViewportWithCountEXT(cmdBuffer, 1u, &viewport);
+#endif // CTS_USES_VULKANSC
 }
 
 void setScissorWithCount (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
@@ -312,7 +332,11 @@ void setScissorWithCount (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer,
 		{ 0, 0 },	//	VkOffset2D	offset;
 		{ 1u, 1u },	//	VkExtent2D	extent;
 	};
+#ifndef CTS_USES_VULKANSC
+	vkd->cmdSetScissorWithCount(cmdBuffer, 1u, &scissor);
+#else
 	vkd->cmdSetScissorWithCountEXT(cmdBuffer, 1u, &scissor);
+#endif // CTS_USES_VULKANSC
 }
 
 void bindVertexBuffers (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData* data)
@@ -326,38 +350,68 @@ void bindVertexBuffers (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, c
 	const auto pipeline			= bindData->getPipeline();
 
 	vkd->cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+#ifndef CTS_USES_VULKANSC
+	vkd->cmdBindVertexBuffers2(cmdBuffer, 0u, 1u, &vertexBuffer->get(), &bufferOffset, &dataSize, &stride);
+#else
 	vkd->cmdBindVertexBuffers2EXT(cmdBuffer, 0u, 1u, &vertexBuffer->get(), &bufferOffset, &dataSize, &stride);
+#endif // CTS_USES_VULKANSC
 }
 
 void setDepthTestEnable (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
+#ifndef CTS_USES_VULKANSC
+	vkd->cmdSetDepthTestEnable(cmdBuffer, VK_TRUE);
+#else
 	vkd->cmdSetDepthTestEnableEXT(cmdBuffer, VK_TRUE);
+#endif // CTS_USES_VULKANSC
 }
 
 void setDepthWriteEnable (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
+#ifndef CTS_USES_VULKANSC
+	vkd->cmdSetDepthWriteEnable(cmdBuffer, VK_TRUE);
+#else
 	vkd->cmdSetDepthWriteEnableEXT(cmdBuffer, VK_TRUE);
+#endif // CTS_USES_VULKANSC
 }
 
 void setDepthCompareOp (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
+#ifndef CTS_USES_VULKANSC
+	vkd->cmdSetDepthCompareOp(cmdBuffer, VK_COMPARE_OP_LESS);
+#else
 	vkd->cmdSetDepthCompareOpEXT(cmdBuffer, VK_COMPARE_OP_LESS);
+#endif // CTS_USES_VULKANSC
 }
 
 void setDepthBoundsTestEnable (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
+#ifndef CTS_USES_VULKANSC
+	vkd->cmdSetDepthBoundsTestEnable(cmdBuffer, VK_TRUE);
+#else
 	vkd->cmdSetDepthBoundsTestEnableEXT(cmdBuffer, VK_TRUE);
+#endif // CTS_USES_VULKANSC
 }
 
 void setStencilTestEnable (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
+#ifndef CTS_USES_VULKANSC
+	vkd->cmdSetStencilTestEnable(cmdBuffer, VK_TRUE);
+#else
 	vkd->cmdSetStencilTestEnableEXT(cmdBuffer, VK_TRUE);
+#endif // CTS_USES_VULKANSC
 }
 
 void setStencilOp (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
-	vkd->cmdSetStencilOpEXT(cmdBuffer, VK_STENCIL_FRONT_AND_BACK, VK_STENCIL_OP_ZERO, VK_STENCIL_OP_INCREMENT_AND_CLAMP, VK_STENCIL_OP_KEEP, VK_COMPARE_OP_ALWAYS);
+#ifndef CTS_USES_VULKANSC
+	vkd->cmdSetStencilOp(cmdBuffer, VK_STENCIL_FACE_FRONT_AND_BACK, VK_STENCIL_OP_ZERO, VK_STENCIL_OP_INCREMENT_AND_CLAMP, VK_STENCIL_OP_KEEP, VK_COMPARE_OP_ALWAYS);
+#else
+	vkd->cmdSetStencilOpEXT(cmdBuffer, VK_STENCIL_FACE_FRONT_AND_BACK, VK_STENCIL_OP_ZERO, VK_STENCIL_OP_INCREMENT_AND_CLAMP, VK_STENCIL_OP_KEEP, VK_COMPARE_OP_ALWAYS);
+#endif // CTS_USES_VULKANSC
 }
+
+#ifndef CTS_USES_VULKANSC
 
 void setViewportWScaling (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
@@ -382,18 +436,25 @@ void setViewportShadingRatePalette (const DeviceInterface* vkd, VkCommandBuffer 
 
 void setCoarseSamplingOrder (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
-	const VkCoarseSampleLocationNV location =
+	const VkCoarseSampleLocationNV locations[2] =
 	{
-		0u,	//	deUint32	pixelX;
-		0u,	//	deUint32	pixelY;
-		0u,	//	deUint32	sample;
+		{
+			0u,	//	deUint32	pixelX;
+			0u,	//	deUint32	pixelY;
+			0u,	//	deUint32	sample;
+		},
+		{
+			0u,	//	deUint32	pixelX;
+			1u,	//	deUint32	pixelY;
+			0u,	//	deUint32	sample;
+		},
 	};
 	const VkCoarseSampleOrderCustomNV order =
 	{
-		VK_SHADING_RATE_PALETTE_ENTRY_1_INVOCATION_PER_PIXEL_NV,	//	VkShadingRatePaletteEntryNV		shadingRate;
-		1u,															//	deUint32						sampleCount;
-		1u,															//	deUint32						sampleLocationCount;
-		&location													//	const VkCoarseSampleLocationNV*	pSampleLocations;
+		VK_SHADING_RATE_PALETTE_ENTRY_1_INVOCATION_PER_1X2_PIXELS_NV,	//	VkShadingRatePaletteEntryNV		shadingRate;
+		1u,																//	deUint32						sampleCount;
+		2u,																//	deUint32						sampleLocationCount;
+		locations														//	const VkCoarseSampleLocationNV*	pSampleLocations;
 	};
 	vkd->cmdSetCoarseSampleOrderNV(cmdBuffer, VK_COARSE_SAMPLE_ORDER_TYPE_CUSTOM_NV, 1u, &order);
 }
@@ -408,6 +469,8 @@ void setExclusiveScissor (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer,
 	vkd->cmdSetExclusiveScissorNV(cmdBuffer, 0u, 1u, &scissor);
 }
 
+#endif // CTS_USES_VULKANSC
+
 const VkDynamicState dynamicStateList[] =
 {
 	VK_DYNAMIC_STATE_VIEWPORT,
@@ -421,7 +484,9 @@ const VkDynamicState dynamicStateList[] =
 	VK_DYNAMIC_STATE_STENCIL_REFERENCE,
 	VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT,
 	VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_EXT,
+#ifndef CTS_USES_VULKANSC
 	VK_DYNAMIC_STATE_RAY_TRACING_PIPELINE_STACK_SIZE_KHR,
+#endif // CTS_USES_VULKANSC
 	VK_DYNAMIC_STATE_FRAGMENT_SHADING_RATE_KHR,
 	VK_DYNAMIC_STATE_LINE_STIPPLE_EXT,
 	VK_DYNAMIC_STATE_CULL_MODE_EXT,
@@ -436,10 +501,12 @@ const VkDynamicState dynamicStateList[] =
 	VK_DYNAMIC_STATE_DEPTH_BOUNDS_TEST_ENABLE_EXT,
 	VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE_EXT,
 	VK_DYNAMIC_STATE_STENCIL_OP_EXT,
+#ifndef CTS_USES_VULKANSC
 	VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_NV,
 	VK_DYNAMIC_STATE_VIEWPORT_SHADING_RATE_PALETTE_NV,
 	VK_DYNAMIC_STATE_VIEWPORT_COARSE_SAMPLE_ORDER_NV,
 	VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV,
+#endif // CTS_USES_VULKANSC
 };
 
 // Information about a dynamic state.
@@ -468,7 +535,9 @@ const StateInfo& getDynamicStateInfo (VkDynamicState state)
 		{	VK_DYNAMIC_STATE_STENCIL_REFERENCE,						{	{},										setStencilReference				}	},
 		{	VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT,					{	{ "VK_EXT_discard_rectangles" },		setDiscardRectangle				}	},
 		{	VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_EXT,					{	{ "VK_EXT_sample_locations" },			setSampleLocations				}	},
+#ifndef CTS_USES_VULKANSC
 		{	VK_DYNAMIC_STATE_RAY_TRACING_PIPELINE_STACK_SIZE_KHR,	{	{ "VK_KHR_ray_tracing_pipeline" },		setRTPipelineStatckSize			}	},
+#endif // CTS_USES_VULKANSC
 		{	VK_DYNAMIC_STATE_FRAGMENT_SHADING_RATE_KHR,				{	{ "VK_KHR_fragment_shading_rate" },		setFragmentShadingRage			}	},
 		{	VK_DYNAMIC_STATE_LINE_STIPPLE_EXT,						{	{ "VK_EXT_line_rasterization" },		setLineStipple					}	},
 		{	VK_DYNAMIC_STATE_CULL_MODE_EXT,							{	{ "VK_EXT_extended_dynamic_state" },	setCullMode						}	},
@@ -483,10 +552,12 @@ const StateInfo& getDynamicStateInfo (VkDynamicState state)
 		{	VK_DYNAMIC_STATE_DEPTH_BOUNDS_TEST_ENABLE_EXT,			{	{ "VK_EXT_extended_dynamic_state" },	setDepthBoundsTestEnable		}	},
 		{	VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE_EXT,				{	{ "VK_EXT_extended_dynamic_state" },	setStencilTestEnable			}	},
 		{	VK_DYNAMIC_STATE_STENCIL_OP_EXT,						{	{ "VK_EXT_extended_dynamic_state" },	setStencilOp					}	},
+#ifndef CTS_USES_VULKANSC
 		{	VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_NV,					{	{ "VK_NV_clip_space_w_scaling" },		setViewportWScaling				}	},
 		{	VK_DYNAMIC_STATE_VIEWPORT_SHADING_RATE_PALETTE_NV,		{	{ "VK_NV_shading_rate_image"},			setViewportShadingRatePalette	}	},
 		{	VK_DYNAMIC_STATE_VIEWPORT_COARSE_SAMPLE_ORDER_NV,		{	{ "VK_NV_shading_rate_image"},			setCoarseSamplingOrder			}	},
 		{	VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV,					{	{ "VK_NV_scissor_exclusive"},			setExclusiveScissor				}	},
+#endif // CTS_USES_VULKANSC
 	};
 
 	const auto itr = result.find(state);
@@ -495,12 +566,149 @@ const StateInfo& getDynamicStateInfo (VkDynamicState state)
 	return itr->second;
 }
 
+// Device helper: this is needed in some tests when we create custom devices.
+class DeviceHelper
+{
+public:
+	virtual ~DeviceHelper () {}
+	virtual const DeviceInterface&	getDeviceInterface	(void) const = 0;
+	virtual VkDevice				getDevice			(void) const = 0;
+	virtual uint32_t				getQueueFamilyIndex	(void) const = 0;
+	virtual VkQueue					getQueue			(void) const = 0;
+	virtual Allocator&				getAllocator		(void) const = 0;
+};
+
+// This one just reuses the default device from the context.
+class ContextDeviceHelper : public DeviceHelper
+{
+public:
+	ContextDeviceHelper (Context& context)
+		: m_deviceInterface		(context.getDeviceInterface())
+		, m_device				(context.getDevice())
+		, m_queueFamilyIndex	(context.getUniversalQueueFamilyIndex())
+		, m_queue				(context.getUniversalQueue())
+		, m_allocator			(context.getDefaultAllocator())
+		{}
+
+	virtual ~ContextDeviceHelper () {}
+
+	const DeviceInterface&	getDeviceInterface	(void) const override	{ return m_deviceInterface;		}
+	VkDevice				getDevice			(void) const override	{ return m_device;				}
+	uint32_t				getQueueFamilyIndex	(void) const override	{ return m_queueFamilyIndex;	}
+	VkQueue					getQueue			(void) const override	{ return m_queue;				}
+	Allocator&				getAllocator		(void) const override	{ return m_allocator;			}
+
+protected:
+	const DeviceInterface&	m_deviceInterface;
+	const VkDevice			m_device;
+	const uint32_t			m_queueFamilyIndex;
+	const VkQueue			m_queue;
+	Allocator&				m_allocator;
+};
+
+// This one creates a new device with VK_NV_shading_rate_image.
+class ShadingRateImageDeviceHelper : public DeviceHelper
+{
+public:
+	ShadingRateImageDeviceHelper (Context& context)
+	{
+		const auto&	vkp				= context.getPlatformInterface();
+		const auto&	vki				= context.getInstanceInterface();
+		const auto	instance		= context.getInstance();
+		const auto	physicalDevice	= context.getPhysicalDevice();
+		const auto	queuePriority	= 1.0f;
+
+		// Queue index first.
+		m_queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+
+		// Create a universal queue that supports graphics and compute.
+		const VkDeviceQueueCreateInfo queueParams =
+		{
+			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,	// VkStructureType				sType;
+			DE_NULL,									// const void*					pNext;
+			0u,											// VkDeviceQueueCreateFlags		flags;
+			m_queueFamilyIndex,							// deUint32						queueFamilyIndex;
+			1u,											// deUint32						queueCount;
+			&queuePriority								// const float*					pQueuePriorities;
+		};
+
+		const char* extensions[] =
+		{
+			"VK_NV_shading_rate_image",
+		};
+
+#ifndef CTS_USES_VULKANSC
+		VkPhysicalDeviceShadingRateImageFeaturesNV	shadingRateImageFeatures	= initVulkanStructure();
+		VkPhysicalDeviceFeatures2					features2					= initVulkanStructure(&shadingRateImageFeatures);
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
+#endif // CTS_USES_VULKANSC
+
+		const VkDeviceCreateInfo deviceCreateInfo =
+		{
+			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,					//sType;
+#ifndef CTS_USES_VULKANSC
+			&features2,												//pNext;
+#else
+			DE_NULL,
+#endif // CTS_USES_VULKANSC
+			0u,														//flags
+			1u,														//queueRecordCount;
+			&queueParams,											//pRequestedQueues;
+			0u,														//layerCount;
+			nullptr,												//ppEnabledLayerNames;
+			static_cast<uint32_t>(de::arrayLength(extensions)),		// deUint32							enabledExtensionCount;
+			extensions,												// const char* const*				ppEnabledExtensionNames;
+			nullptr,												//pEnabledFeatures;
+		};
+
+		m_device	= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &deviceCreateInfo);
+		m_vkd		.reset(new DeviceDriver(vkp, instance, m_device.get()));
+		m_queue		= getDeviceQueue(*m_vkd, *m_device, m_queueFamilyIndex, 0u);
+		m_allocator	.reset(new SimpleAllocator(*m_vkd, m_device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
+	}
+
+	virtual ~ShadingRateImageDeviceHelper () {}
+
+	const DeviceInterface&	getDeviceInterface	(void) const override	{ return *m_vkd;				}
+	VkDevice				getDevice			(void) const override	{ return m_device.get();		}
+	uint32_t				getQueueFamilyIndex	(void) const override	{ return m_queueFamilyIndex;	}
+	VkQueue					getQueue			(void) const override	{ return m_queue;				}
+	Allocator&				getAllocator		(void) const override	{ return *m_allocator;			}
+
+protected:
+	Move<VkDevice>						m_device;
+	std::unique_ptr<DeviceDriver>		m_vkd;
+	deUint32							m_queueFamilyIndex;
+	VkQueue								m_queue;
+	std::unique_ptr<SimpleAllocator>	m_allocator;
+};
+
+std::unique_ptr<DeviceHelper> g_shadingRateDeviceHelper;
+std::unique_ptr<DeviceHelper> g_contextDeviceHelper;
+
+DeviceHelper& getDeviceHelper(Context& context, VkDynamicState dynamicState)
+{
+	const auto& stateInfo = getDynamicStateInfo(dynamicState);
+
+	if (de::contains(stateInfo.requirements.begin(), stateInfo.requirements.end(), "VK_NV_shading_rate_image"))
+	{
+		if (!g_shadingRateDeviceHelper)
+			g_shadingRateDeviceHelper.reset(new ShadingRateImageDeviceHelper(context));
+		return *g_shadingRateDeviceHelper;
+	}
+
+	if (!g_contextDeviceHelper)
+		g_contextDeviceHelper.reset(new ContextDeviceHelper(context));
+	return *g_contextDeviceHelper;
+}
+
 // Returns the set of auxiliary data needed to set a given state.
-de::MovePtr<DynamicStateData> getDynamicStateData (Context& ctx, VkDynamicState state)
+de::MovePtr<DynamicStateData> getDynamicStateData (Context& ctx, VkDevice device, VkDynamicState state)
 {
 	// Create vertex buffer for VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE_EXT.
 	if (state == VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE_EXT)
-		return de::MovePtr<DynamicStateData>(new BindVertexBuffersData(ctx));
+		return de::MovePtr<DynamicStateData>(new BindVertexBuffersData(ctx, device));
 
 	// null pointer normally.
 	return de::MovePtr<DynamicStateData>();
@@ -634,13 +842,14 @@ void fillBuffer(const DeviceInterface& vkd, VkDevice device, BufferWithMemory& b
 
 tcu::TestStatus DynamicStateComputeInstance::iterateTransfer (void)
 {
-	const auto&	vki		= m_context.getInstanceInterface();
-	const auto	phyDev	= m_context.getPhysicalDevice();
-	const auto&	vkd		= m_context.getDeviceInterface();
-	const auto	device	= m_context.getDevice();
-	auto&		alloc	= m_context.getDefaultAllocator();
-	const auto	qIndex	= m_context.getUniversalQueueFamilyIndex();
-	const auto	queue	= m_context.getUniversalQueue();
+	const auto&	vki			= m_context.getInstanceInterface();
+	const auto	phyDev		= m_context.getPhysicalDevice();
+	auto&		devHelper	= getDeviceHelper(m_context, m_params.states.at(0));
+	const auto&	vkd			= devHelper.getDeviceInterface();
+	const auto	device		= devHelper.getDevice();
+	const auto	qIndex		= devHelper.getQueueFamilyIndex();
+	const auto	queue		= devHelper.getQueue();
+	auto&		alloc		= devHelper.getAllocator();
 
 	const auto	cmdPool			= makeCommandPool(vkd, device, qIndex);
 	const auto	cmdBufferPtr	= allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -677,7 +886,7 @@ tcu::TestStatus DynamicStateComputeInstance::iterateTransfer (void)
 		const auto	offset		= elemSize * stateIdx;
 		const auto&	state		= m_params.states[stateIdx];
 		const auto	stateInfo	= getDynamicStateInfo(state);
-		statesData.push_back(getDynamicStateData(m_context, state));
+		statesData.push_back(getDynamicStateData(m_context, device, state));
 
 		// Record command if before.
 		if (m_params.whenToSet == WhenToSet::BEFORE)
@@ -723,13 +932,14 @@ tcu::TestStatus DynamicStateComputeInstance::iterateTransfer (void)
 
 tcu::TestStatus DynamicStateComputeInstance::iterateCompute (void)
 {
-	const auto&	vki		= m_context.getInstanceInterface();
-	const auto	phyDev	= m_context.getPhysicalDevice();
-	const auto&	vkd		= m_context.getDeviceInterface();
-	const auto	device	= m_context.getDevice();
-	auto&		alloc	= m_context.getDefaultAllocator();
-	const auto	qIndex	= m_context.getUniversalQueueFamilyIndex();
-	const auto	queue	= m_context.getUniversalQueue();
+	const auto&	vki			= m_context.getInstanceInterface();
+	const auto	phyDev		= m_context.getPhysicalDevice();
+	auto&		devHelper	= getDeviceHelper(m_context, m_params.states.at(0));
+	const auto&	vkd			= devHelper.getDeviceInterface();
+	const auto	device		= devHelper.getDevice();
+	const auto	qIndex		= devHelper.getQueueFamilyIndex();
+	const auto	queue		= devHelper.getQueue();
+	auto&		alloc		= devHelper.getAllocator();
 
 	const auto	cmdPool			= makeCommandPool(vkd, device, qIndex);
 	const auto	cmdBufferPtr	= allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -819,7 +1029,7 @@ tcu::TestStatus DynamicStateComputeInstance::iterateCompute (void)
 		// Objects needed to set the dynamic state.
 		const auto&	state		= m_params.states[stateIdx];
 		const auto	stateInfo	= getDynamicStateInfo(state);
-		statesData.push_back(getDynamicStateData(m_context, state));
+		statesData.push_back(getDynamicStateData(m_context, device, state));
 
 		if (m_params.whenToSet == WhenToSet::BEFORE)
 			stateInfo.recorder(&vkd, cmdBuffer, statesData.back().get());
@@ -968,6 +1178,12 @@ tcu::TestCaseGroup* createDynamicStateComputeTests (tcu::TestContext& testCtx)
 	}
 
 	return mainGroup.release();
+}
+
+void cleanupDevice()
+{
+	g_shadingRateDeviceHelper.reset(nullptr);
+	g_contextDeviceHelper.reset(nullptr);
 }
 
 } // DynamicState

@@ -40,10 +40,12 @@
 #include "vkBuilderUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
 #include "tcuVectorUtil.hpp"
+#include "tcuCommandLine.hpp"
 
 #include "gluShaderUtil.hpp"
 
@@ -441,8 +443,8 @@ tcu::TestStatus	ComputeBuiltinVarInstance::iterate (void)
 	const deUint32				resultBufferSize	= numInvocations * resultBufferStride;
 
 	// Create result buffer
-	Buffer uniformBuffer(m_vki, m_device, m_context.getDefaultAllocator(), makeBufferCreateInfo(sizeOfUniformBuffer, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT), MemoryRequirement::HostVisible);
-	Buffer resultBuffer(m_vki, m_device, m_context.getDefaultAllocator(), makeBufferCreateInfo(resultBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
+	vk::BufferWithMemory uniformBuffer(m_vki, m_device, m_context.getDefaultAllocator(), makeBufferCreateInfo(sizeOfUniformBuffer, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT), MemoryRequirement::HostVisible);
+	vk::BufferWithMemory resultBuffer(m_vki, m_device, m_context.getDefaultAllocator(), makeBufferCreateInfo(resultBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	{
 		const Allocation& alloc = uniformBuffer.getAllocation();
@@ -515,37 +517,42 @@ tcu::TestStatus	ComputeBuiltinVarInstance::iterate (void)
 
 	tcu::TestContext& testCtx	= m_context.getTestContext();
 
-	for (deUint32 groupZ = 0; groupZ < subCase.numWorkGroups().z(); groupZ++)
-	for (deUint32 groupY = 0; groupY < subCase.numWorkGroups().y(); groupY++)
-	for (deUint32 groupX = 0; groupX < subCase.numWorkGroups().x(); groupX++)
-	for (deUint32 localZ = 0; localZ < subCase.localSize().z(); localZ++)
-	for (deUint32 localY = 0; localY < subCase.localSize().y(); localY++)
-	for (deUint32 localX = 0; localX < subCase.localSize().x(); localX++)
+#ifdef CTS_USES_VULKANSC
+	if(testCtx.getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 	{
-		const UVec3			refGroupID(groupX, groupY, groupZ);
-		const UVec3			refLocalID(localX, localY, localZ);
-		const UVec3			refGlobalID = refGroupID * subCase.localSize() + refLocalID;
-
-		const deUint32		refOffset = stride.x()*refGlobalID.z() + stride.y()*refGlobalID.y() + refGlobalID.x();
-
-		const UVec3			refValue = m_builtin_var_case->computeReference(subCase.numWorkGroups(), subCase.localSize(), refGroupID, refLocalID);
-
-		const deUint32*		resPtr = (const deUint32*)(ptr + refOffset * resultBufferStride);
-		const UVec3			resValue = readResultVec(resPtr, numScalars);
-
-		if (!compareNumComponents(refValue, resValue, numScalars))
+		for (deUint32 groupZ = 0; groupZ < subCase.numWorkGroups().z(); groupZ++)
+		for (deUint32 groupY = 0; groupY < subCase.numWorkGroups().y(); groupY++)
+		for (deUint32 groupX = 0; groupX < subCase.numWorkGroups().x(); groupX++)
+		for (deUint32 localZ = 0; localZ < subCase.localSize().z(); localZ++)
+		for (deUint32 localY = 0; localY < subCase.localSize().y(); localY++)
+		for (deUint32 localX = 0; localX < subCase.localSize().x(); localX++)
 		{
-			if (numFailed < maxLogPrints)
-				testCtx.getLog()
-				<< TestLog::Message
-				<< "ERROR: comparison failed at offset " << refOffset
-				<< ": expected " << LogComps(refValue, numScalars)
-				<< ", got " << LogComps(resValue, numScalars)
-				<< TestLog::EndMessage;
-			else if (numFailed == maxLogPrints)
-				testCtx.getLog() << TestLog::Message << "..." << TestLog::EndMessage;
+			const UVec3			refGroupID(groupX, groupY, groupZ);
+			const UVec3			refLocalID(localX, localY, localZ);
+			const UVec3			refGlobalID = refGroupID * subCase.localSize() + refLocalID;
 
-			numFailed += 1;
+			const deUint32		refOffset = stride.x()*refGlobalID.z() + stride.y()*refGlobalID.y() + refGlobalID.x();
+
+			const UVec3			refValue = m_builtin_var_case->computeReference(subCase.numWorkGroups(), subCase.localSize(), refGroupID, refLocalID);
+
+			const deUint32*		resPtr = (const deUint32*)(ptr + refOffset * resultBufferStride);
+			const UVec3			resValue = readResultVec(resPtr, numScalars);
+
+			if (!compareNumComponents(refValue, resValue, numScalars))
+			{
+				if (numFailed < maxLogPrints)
+					testCtx.getLog()
+					<< TestLog::Message
+					<< "ERROR: comparison failed at offset " << refOffset
+					<< ": expected " << LogComps(refValue, numScalars)
+					<< ", got " << LogComps(resValue, numScalars)
+					<< TestLog::EndMessage;
+				else if (numFailed == maxLogPrints)
+					testCtx.getLog() << TestLog::Message << "..." << TestLog::EndMessage;
+
+				numFailed += 1;
+			}
 		}
 	}
 

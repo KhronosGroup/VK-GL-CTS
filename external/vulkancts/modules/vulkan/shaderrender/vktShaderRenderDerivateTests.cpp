@@ -681,7 +681,7 @@ tcu::TestStatus TriangleDerivateCaseInstance::iterate (void)
 
 	if (m_definitions.inNonUniformControlFlow)
 	{
-		if (!m_context.contextSupports(vk::ApiVersion(1, 1, 0)))
+		if (!m_context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
 			throw tcu::NotSupportedError("Derivatives in dynamic control flow requires Vulkan 1.1");
 
 		vk::VkPhysicalDeviceSubgroupProperties subgroupProperties;
@@ -1275,7 +1275,13 @@ TextureDerivateCaseInstance::TextureDerivateCaseInstance (Context&							context
 																					 tcu::Sampler::CLAMP_TO_EDGE,
 																					 tcu::Sampler::CLAMP_TO_EDGE,
 																					 tcu::Sampler::NEAREST,
-																					 tcu::Sampler::NEAREST)));
+																					 tcu::Sampler::NEAREST,
+																					 0.0f,
+																					 true,
+																					 tcu::Sampler::COMPAREMODE_NONE,
+																					 0,
+																					 tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),
+																					 true)));
 	m_textures.push_back(testTexture);
 }
 

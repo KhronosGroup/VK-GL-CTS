@@ -292,6 +292,9 @@ protected:
 															   const std::string& compute_shader_source,
 															   bool delete_generated_objects, bool require_gpu_shader5);
 
+	virtual tcu::TestNode::IterateResult limit_active_shader_storage_block_number(
+		typename TestCaseBase<API>::TestShaderType tested_shader_type, size_t number_of_blocks);
+
 	virtual void test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type) = 0;
 
 	/* Protected fields */

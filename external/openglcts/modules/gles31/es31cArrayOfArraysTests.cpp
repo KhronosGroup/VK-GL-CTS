@@ -68,7 +68,7 @@ const char* GL::shader_version_gpu5 = "#version 430 core\n\n";
 const char* GL::shader_version		= "#version 430 core\n\n";
 } /* namespace Interface */
 
-/* Dummy fragment shader source code.
+/* Minimal fragment shader source code.
  * Used when testing the vertex shader. */
 const std::string default_fragment_shader_source = "//default fragment shader\n"
 												   "out vec4 color;\n"
@@ -77,7 +77,7 @@ const std::string default_fragment_shader_source = "//default fragment shader\n"
 												   "    color = vec4(1.0);\n"
 												   "}\n";
 
-/* Dummy vertex shader source code.
+/* Minimal vertex shader source code.
  * Used when testing the fragment shader. */
 const std::string default_vertex_shader_source = "//default vertex shader\n"
 												 "\n"
@@ -86,7 +86,7 @@ const std::string default_vertex_shader_source = "//default vertex shader\n"
 												 "    gl_Position = vec4(0.0,0.0,0.0,1.0);\n"
 												 "}\n";
 
-/* Dummy geometry shader source code.
+/* Simple geometry shader source code.
  * Used when testing the other shaders. */
 const std::string default_geometry_shader_source = "//default geometry\n"
 												   "\n"
@@ -102,7 +102,7 @@ const std::string default_geometry_shader_source = "//default geometry\n"
 												   "    EmitVertex();\n"
 												   "}\n";
 
-/* Dummy tesselation control shader source code.
+/* Simple tesselation control shader source code.
  * Used when testing the other shaders. */
 const std::string default_tc_shader_source = "//default tcs\n"
 											 "\n"
@@ -116,7 +116,7 @@ const std::string default_tc_shader_source = "//default tcs\n"
 											 "    gl_TessLevelInner[1] = 1.0;\n"
 											 "}\n";
 
-/* Dummy tesselation evaluation shader source code.
+/* Minimal tesselation evaluation shader source code.
  * Used when testing the other shaders. */
 const std::string default_te_shader_source = "//default tes\n"
 											 "\n"
@@ -1000,6 +1000,68 @@ tcu::TestNode::IterateResult TestCaseBase<API>::execute_positive_test(const std:
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 	}
 
+	return CONTINUE;
+}
+
+/** Check that the shader supports the number of SSBOs used in the test.
+ *  The number of active shader storage blocks referenced by the shaders in a program implementation dependent and cannot exceeds
+ *  implementation-dependent limits. The limits for vertex, tessellation control, tessellation evaluation and geometry can be obtained
+ *  by calling GetIntegerv with pname values of MAX_VERTEX_SHADER_STORAGE_BLOCKS, MAX_TESS_CONTROL_SHADER_STORAGE_BLOCKS,
+ *  MAX_TESS_EVALUATION_SHADER_STORAGE_BLOCKS and MAX_GEOMETRY_SHADER_STORAGE_BLOCKS, respectively.
+ *
+ * @tparam API                  Tested API descriptor
+ *
+ * @param tested_shader_type    The type of shader used.
+ * @param num                   The number of SSBOs used in shader.
+ *
+ *  @return STOP     - test is not supported by the implementation;
+ *          CONTINUE - test is supported by the implementation;
+ **/
+template <class API>
+tcu::TestNode::IterateResult TestCaseBase<API>::limit_active_shader_storage_block_number(
+	typename TestCaseBase<API>::TestShaderType tested_shader_type, size_t num)
+{
+	const glw::Functions& gl = context_id.getRenderContext().getFunctions();
+	glw::GLint res;
+
+	switch (tested_shader_type)
+	{
+	case TestCaseBase<API>::VERTEX_SHADER_TYPE:
+		gl.getIntegerv(GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS, &res);
+		if (static_cast<size_t>(res) < num)
+		{
+			tcu::NotSupportedError(
+				"The number of active vertex shader storage blocks exceeds implementation-dependent limits.");
+			return STOP;
+		}
+		break;
+	case TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE:
+		gl.getIntegerv(GL_MAX_TESS_CONTROL_SHADER_STORAGE_BLOCKS, &res);
+		if (static_cast<size_t>(res) < num)
+		{
+			tcu::NotSupportedError("The number of active TC shader storage blocks exceeds implementation-dependent limits.");
+			return STOP;
+		}
+		break;
+	case TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE:
+		gl.getIntegerv(GL_MAX_TESS_EVALUATION_SHADER_STORAGE_BLOCKS, &res);
+		if (static_cast<size_t>(res) < num)
+		{
+			tcu::NotSupportedError("The number of active TE shader storage blocks exceeds implementation-dependent limits.");
+			return STOP;
+		}
+		break;
+	case TestCaseBase<API>::GEOMETRY_SHADER_TYPE:
+		gl.getIntegerv(GL_MAX_GEOMETRY_SHADER_STORAGE_BLOCKS, &res);
+		if (static_cast<size_t>(res) < num)
+		{
+			tcu::NotSupportedError("The number of active geometry shader storage blocks exceeds implementation-dependent limits.");
+			return STOP;
+		}
+		break;
+	default:
+		break;
+	}
 	return CONTINUE;
 }
 
@@ -8895,10 +8957,13 @@ void AtomicUsageTest<API>::execute(typename TestCaseBase<API>::TestShaderType te
 	int diff = 0;
 	for (size_t i = 0; i < n_entries; ++i)
 	{
-		/* Tesselation evaluation can be called several times
-		 In here, check the increment is consistent over all results.
+		/* Any vertex processing shader could be called an implementation defined
+		 * number of times. In here, check the increment is consistent over all results.
 		 */
-		if (tested_shader_type == TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE)
+		if (tested_shader_type == TestCaseBase<API>::VERTEX_SHADER_TYPE ||
+			tested_shader_type == TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE ||
+			tested_shader_type == TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE ||
+			tested_shader_type == TestCaseBase<API>::GEOMETRY_SHADER_TYPE)
 		{
 			if (i == 0)
 			{

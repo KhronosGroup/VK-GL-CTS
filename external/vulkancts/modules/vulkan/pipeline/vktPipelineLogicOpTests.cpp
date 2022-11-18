@@ -65,11 +65,12 @@ bool isSupportedColorAttachmentFormat (const InstanceInterface& instanceInterfac
 
 struct TestParams
 {
-	VkLogicOp	logicOp;	// Operation.
-	tcu::UVec4	fbColor;	// Framebuffer color.
-	tcu::UVec4	quadColor;	// Geometry color.
-	VkFormat	format;		// Framebuffer format.
-	std::string	name;		// Logic operator test name.
+	VkLogicOp					logicOp;					// Operation.
+	PipelineConstructionType	pipelineConstructionType;	// Use monolithic pipeline or pipeline_library
+	tcu::UVec4					fbColor;					// Framebuffer color.
+	tcu::UVec4					quadColor;					// Geometry color.
+	VkFormat					format;						// Framebuffer format.
+	std::string					name;						// Logic operator test name.
 };
 
 deUint32 calcOpResult(VkLogicOp op, deUint32 src, deUint32 dst)
@@ -167,6 +168,8 @@ void LogicOpTest::checkSupport (Context &ctx) const
 	if (!features.logicOp)
 		TCU_THROW(NotSupportedError, "Logic operations not supported");
 
+	checkPipelineLibraryRequirements(ctx.getInstanceInterface(), ctx.getPhysicalDevice(), m_params.pipelineConstructionType);
+
 	if (!isSupportedColorAttachmentFormat(ctx.getInstanceInterface(), ctx.getPhysicalDevice(), m_params.format))
 		TCU_THROW(NotSupportedError, "Unsupported color attachment format: " + std::string(getFormatName(m_params.format)));
 }
@@ -228,21 +231,23 @@ private:
 	Move<VkShaderModule>				m_vertexShaderModule;
 	Move<VkShaderModule>				m_fragmentShaderModule;
 
-	Move<VkPipelineLayout>				m_pipelineLayout;
-	Move<VkPipeline>					m_graphicsPipeline;
+	Move<VkPipelineLayout>				m_preRasterizationStatePipelineLayout;
+	Move<VkPipelineLayout>				m_fragmentStatePipelineLayout;
+	GraphicsPipelineWrapper				m_graphicsPipeline;
 
 	Move<VkCommandPool>					m_cmdPool;
 	Move<VkCommandBuffer>				m_cmdBuffer;
 };
 
 LogicOpTestInstance::LogicOpTestInstance (Context &ctx, const TestParams &testParams)
-	: vkt::TestInstance	(ctx)
-	, m_params			(testParams)
-	, m_tcuFormat		(mapVkFormat(m_params.format))
-	, m_numChannels		(tcu::getNumUsedChannels(m_tcuFormat.order))
-	, m_channelSize		(tcu::getChannelSize(m_tcuFormat.type))
-	, m_channelMask		(getChannelMask(m_channelSize))
-	, m_renderSize		(32u, 32u)
+	: vkt::TestInstance		(ctx)
+	, m_params				(testParams)
+	, m_tcuFormat			(mapVkFormat(m_params.format))
+	, m_numChannels			(tcu::getNumUsedChannels(m_tcuFormat.order))
+	, m_channelSize			(tcu::getChannelSize(m_tcuFormat.type))
+	, m_channelMask			(getChannelMask(m_channelSize))
+	, m_renderSize			(32u, 32u)
+	, m_graphicsPipeline	(m_context.getDeviceInterface(), m_context.getDevice(), testParams.pipelineConstructionType)
 {
 	DE_ASSERT(isUintFormat(m_params.format));
 
@@ -307,18 +312,27 @@ LogicOpTestInstance::LogicOpTestInstance (Context &ctx, const TestParams &testPa
 			kPushConstantSize,					// deUint32							size;
 		};
 
-		const VkPipelineLayoutCreateInfo pipelineLayoutParams =
+#ifndef CTS_USES_VULKANSC
+		VkPipelineLayoutCreateFlags pipelineLayoutFlags = (m_params.pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC) ? 0u : deUint32(VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT);
+#else
+		VkPipelineLayoutCreateFlags pipelineLayoutFlags = 0u;
+#endif // CTS_USES_VULKANSC
+
+		VkPipelineLayoutCreateInfo pipelineLayoutParams
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType					sType;
 			DE_NULL,											// const void*						pNext;
-			0u,													// VkPipelineLayoutCreateFlags		flags;
+			pipelineLayoutFlags,								// VkPipelineLayoutCreateFlags		flags;
 			0u,													// deUint32							setLayoutCount;
 			DE_NULL,											// const VkDescriptorSetLayout*		pSetLayouts;
-			1u,													// deUint32							pushConstantRangeCount;
-			&pcRange,											// const VkPushConstantRange*		pPushConstantRanges;
+			0u,													// deUint32							pushConstantRangeCount;
+			DE_NULL,											// const VkPushConstantRange*		pPushConstantRanges;
 		};
 
-		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		m_preRasterizationStatePipelineLayout		= createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		pipelineLayoutParams.pushConstantRangeCount = 1u;
+		pipelineLayoutParams.pPushConstantRanges	= &pcRange;
+		m_fragmentStatePipelineLayout				= createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
 	}
 
 	m_vertexShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_vert"), 0);
@@ -328,8 +342,8 @@ LogicOpTestInstance::LogicOpTestInstance (Context &ctx, const TestParams &testPa
 	{
 		const VkPipelineVertexInputStateCreateInfo	vertexInputStateParams	= initVulkanStructure();
 
-		const std::vector<VkViewport>				viewports				(1, makeViewport(m_renderSize));
-		const std::vector<VkRect2D>					scissors				(1, makeRect2D(m_renderSize));
+		const std::vector<VkViewport>				viewports				{ makeViewport(m_renderSize) };
+		const std::vector<VkRect2D>					scissors				{ makeRect2D(m_renderSize) };
 
 		VkColorComponentFlags						colorWriteMask		=	VK_COLOR_COMPONENT_R_BIT |
 																			VK_COLOR_COMPONENT_G_BIT |
@@ -360,25 +374,21 @@ LogicOpTestInstance::LogicOpTestInstance (Context &ctx, const TestParams &testPa
 			{ 0.0f, 0.0f, 0.0f, 0.0f },									//	float										blendConstants[4];
 		};
 
-		m_graphicsPipeline = makeGraphicsPipeline(vk,
-												  vkDevice,								// const VkDevice								 device
-												  *m_pipelineLayout,					// const VkPipelineLayout						 pipelineLayout
-												  *m_vertexShaderModule,				// const VkShaderModule							 vertexShaderModule
-												  DE_NULL,								// const VkShaderModule							 tessellationControlModule
-												  DE_NULL,								// const VkShaderModule							 tessellationEvalModule
-												  DE_NULL,								// const VkShaderModule							 geometryShaderModule
-												  *m_fragmentShaderModule,				// const VkShaderModule							 fragmentShaderModule
-												  *m_renderPass,						// const VkRenderPass							 renderPass
-												  viewports,							// const std::vector<VkViewport>&				 viewports
-												  scissors,								// const std::vector<VkRect2D>&					 scissors
-												  VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,	// const VkPrimitiveTopology					 topology
-												  0u,									// const deUint32								 subpass
-												  0u,									// const deUint32								 patchControlPoints
-												  &vertexInputStateParams,				// const VkPipelineVertexInputStateCreateInfo*	 vertexInputStateCreateInfo
-												  DE_NULL,								// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
-												  DE_NULL,								// const VkPipelineMultisampleStateCreateInfo*	 multisampleStateCreateInfo
-												  DE_NULL,								// const VkPipelineDepthStencilStateCreateInfo*	 depthStencilStateCreateInfo
-												  &colorBlendStateParams);				// const VkPipelineColorBlendStateCreateInfo*	 colorBlendStateCreateInfo
+		m_graphicsPipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+						  .setDefaultDepthStencilState()
+						  .setDefaultRasterizationState()
+						  .setDefaultMultisampleState()
+						  .setMonolithicPipelineLayout(*m_fragmentStatePipelineLayout)
+						  .setupVertexInputState(&vertexInputStateParams)
+						  .setupPreRasterizationShaderState(viewports,
+															scissors,
+															*m_preRasterizationStatePipelineLayout,
+															*m_renderPass,
+															0u,
+															*m_vertexShaderModule)
+						  .setupFragmentShaderState(*m_fragmentStatePipelineLayout, *m_renderPass, 0u, *m_fragmentShaderModule)
+						  .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
+						  .buildPipeline();
 	}
 
 	// create command pool
@@ -403,9 +413,9 @@ LogicOpTestInstance::LogicOpTestInstance (Context &ctx, const TestParams &testPa
 		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
 
 		// Update push constant values
-		vk.cmdPushConstants(*m_cmdBuffer, *m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, kPushConstantSize, &quadColor);
+		vk.cmdPushConstants(*m_cmdBuffer, *m_fragmentStatePipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, kPushConstantSize, &quadColor);
 
-		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipeline);
+		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.getPipeline());
 		vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 0u, 0u);
 		endRenderPass(vk, *m_cmdBuffer);
 		endCommandBuffer(vk, *m_cmdBuffer);
@@ -476,7 +486,7 @@ std::string getSimpleFormatName (VkFormat format)
 
 } // anonymous namespace
 
-tcu::TestCaseGroup* createLogicOpTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createLogicOpTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineType)
 {
 	de::MovePtr<tcu::TestCaseGroup>	logicOpTests (new tcu::TestCaseGroup(testCtx, "logic_op", "Logical Operations tests"));
 
@@ -499,24 +509,24 @@ tcu::TestCaseGroup* createLogicOpTests (tcu::TestContext& testCtx)
 	const tcu::UVec4 kFbColor	= { 0x53caU, 0x3ca5U, 0xca53U, 0xa53cU };
 
 	// Note: the format will be chosen and changed later.
-	std::vector<TestParams> logicOpTestParams =
+	std::vector<TestParams> logicOpTestParams
 	{
-		{ VK_LOGIC_OP_CLEAR,			kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"clear"			},
-		{ VK_LOGIC_OP_AND,				kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"and"			},
-		{ VK_LOGIC_OP_AND_REVERSE,		kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"and_reverse"	},
-		{ VK_LOGIC_OP_COPY,				kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"copy"			},
-		{ VK_LOGIC_OP_AND_INVERTED,		kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"and_inverted"	},
-		{ VK_LOGIC_OP_NO_OP,			kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"no_op"			},
-		{ VK_LOGIC_OP_XOR,				kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"xor"			},
-		{ VK_LOGIC_OP_OR,				kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"or"			},
-		{ VK_LOGIC_OP_NOR,				kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"nor"			},
-		{ VK_LOGIC_OP_EQUIVALENT,		kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"equivalent"	},
-		{ VK_LOGIC_OP_INVERT,			kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"invert"		},
-		{ VK_LOGIC_OP_OR_REVERSE,		kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"or_reverse"	},
-		{ VK_LOGIC_OP_COPY_INVERTED,	kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"copy_inverted"	},
-		{ VK_LOGIC_OP_OR_INVERTED,		kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"or_inverted"	},
-		{ VK_LOGIC_OP_NAND,				kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"nand"			},
-		{ VK_LOGIC_OP_SET,				kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"set"			},
+		{ VK_LOGIC_OP_CLEAR,			pipelineType,	kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"clear"			},
+		{ VK_LOGIC_OP_AND,				pipelineType,	kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"and"			},
+		{ VK_LOGIC_OP_AND_REVERSE,		pipelineType,	kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"and_reverse"	},
+		{ VK_LOGIC_OP_COPY,				pipelineType,	kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"copy"			},
+		{ VK_LOGIC_OP_AND_INVERTED,		pipelineType,	kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"and_inverted"	},
+		{ VK_LOGIC_OP_NO_OP,			pipelineType,	kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"no_op"			},
+		{ VK_LOGIC_OP_XOR,				pipelineType,	kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"xor"			},
+		{ VK_LOGIC_OP_OR,				pipelineType,	kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"or"			},
+		{ VK_LOGIC_OP_NOR,				pipelineType,	kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"nor"			},
+		{ VK_LOGIC_OP_EQUIVALENT,		pipelineType,	kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"equivalent"	},
+		{ VK_LOGIC_OP_INVERT,			pipelineType,	kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"invert"		},
+		{ VK_LOGIC_OP_OR_REVERSE,		pipelineType,	kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"or_reverse"	},
+		{ VK_LOGIC_OP_COPY_INVERTED,	pipelineType,	kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"copy_inverted"	},
+		{ VK_LOGIC_OP_OR_INVERTED,		pipelineType,	kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"or_inverted"	},
+		{ VK_LOGIC_OP_NAND,				pipelineType,	kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"nand"			},
+		{ VK_LOGIC_OP_SET,				pipelineType,	kFbColor,	kQuadColor,		VK_FORMAT_UNDEFINED,	"set"			},
 	};
 
 	const VkFormat formatList[] =

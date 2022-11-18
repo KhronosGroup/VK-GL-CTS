@@ -24,6 +24,7 @@
 #include "es3fNegativeFragmentApiTests.hpp"
 #include "es3fApiCase.hpp"
 
+#include "gluContextInfo.hpp"
 #include "glwDefs.hpp"
 #include "glwEnums.hpp"
 
@@ -37,6 +38,13 @@ namespace Functional
 {
 
 using tcu::TestLog;
+
+static bool checkDrawBuffersIndexedSupport(Context& ctx)
+{
+	return contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
+		   contextSupports(ctx.getRenderContext().getType(), glu::ApiType::core(4, 5)) ||
+		   ctx.getContextInfo().isExtensionSupported("GL_EXT_draw_buffers_indexed");
+}
 
 NegativeFragmentApiTests::NegativeFragmentApiTests (Context& context)
 	: TestCaseGroup(context, "fragment", "Negative Fragment API Cases")
@@ -177,6 +185,86 @@ void NegativeFragmentApiTests::init (void)
 			expectError(GL_INVALID_ENUM);
 			m_log << TestLog::EndSection;
 		});
+	ES3F_ADD_API_CASE(blend_equationi, "Invalid glBlendEquationi() usage",
+		{
+			glw::GLint maxDrawBuffers = -1;
+			glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
+			if (!checkDrawBuffersIndexedSupport(m_context))
+				throw tcu::NotSupportedError("GL_EXT_draw_buffers_indexed is not supported", DE_NULL, __FILE__, __LINE__);
+			m_log << TestLog::Section("", "GL_INVALID_ENUM is generated if mode is not GL_FUNC_ADD, GL_FUNC_SUBTRACT, GL_FUNC_REVERSE_SUBTRACT, GL_MAX or GL_MIN.");
+			glBlendEquationi(0, -1);
+			expectError(GL_INVALID_ENUM);
+			m_log << TestLog::EndSection;
+			m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if buf is not in the range zero to the value of MAX_DRAW_BUFFERS minus one.");
+			glBlendEquationi(-1, GL_FUNC_ADD);
+			expectError(GL_INVALID_VALUE);
+			glBlendEquationi(maxDrawBuffers, GL_FUNC_ADD);
+			expectError(GL_INVALID_VALUE);
+			m_log << TestLog::EndSection;
+		});
+	ES3F_ADD_API_CASE(blend_equation_separatei, "Invalid glBlendEquationSeparatei() usage",
+		{
+			glw::GLint maxDrawBuffers = -1;
+			glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
+			if (!checkDrawBuffersIndexedSupport(m_context))
+				throw tcu::NotSupportedError("GL_EXT_draw_buffers_indexed is not supported", DE_NULL, __FILE__, __LINE__);
+			m_log << TestLog::Section("", "GL_INVALID_ENUM is generated if modeRGB is not GL_FUNC_ADD, GL_FUNC_SUBTRACT, GL_FUNC_REVERSE_SUBTRACT, GL_MAX or GL_MIN.");
+			glBlendEquationSeparatei(0, -1, GL_FUNC_ADD);
+			expectError(GL_INVALID_ENUM);
+			m_log << TestLog::EndSection;
+			m_log << TestLog::Section("", "GL_INVALID_ENUM is generated if modeAlpha is not GL_FUNC_ADD, GL_FUNC_SUBTRACT, GL_FUNC_REVERSE_SUBTRACT, GL_MAX or GL_MIN.");
+			glBlendEquationSeparatei(0, GL_FUNC_ADD, -1);
+			expectError(GL_INVALID_ENUM);
+			m_log << TestLog::EndSection;
+			m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if buf is not in the range zero to the value of MAX_DRAW_BUFFERS minus one.");
+			glBlendEquationSeparatei(-1, GL_FUNC_ADD, GL_FUNC_ADD);
+			expectError(GL_INVALID_VALUE);
+			glBlendEquationSeparatei(maxDrawBuffers, GL_FUNC_ADD, GL_FUNC_ADD);
+			expectError(GL_INVALID_VALUE);
+			m_log << TestLog::EndSection;
+		});
+	ES3F_ADD_API_CASE(blend_funci, "Invalid glBlendFunci() usage",
+		{
+			glw::GLint maxDrawBuffers = -1;
+			glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
+			if (!checkDrawBuffersIndexedSupport(m_context))
+				  throw tcu::NotSupportedError("GL_EXT_draw_buffers_indexed is not supported", DE_NULL, __FILE__, __LINE__);
+			m_log << TestLog::Section("", "GL_INVALID_ENUM is generated if either sfactor or dfactor is not an accepted value.");
+			glBlendFunci(0, -1, GL_ONE);
+			expectError(GL_INVALID_ENUM);
+			glBlendFunci(0, GL_ONE, -1);
+			expectError(GL_INVALID_ENUM);
+			m_log << TestLog::EndSection;
+			m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if buf is not in the range zero to the value of MAX_DRAW_BUFFERS minus one.");
+			glBlendFunci(-1, GL_ONE, GL_ONE);
+			expectError(GL_INVALID_VALUE);
+			glBlendFunci(maxDrawBuffers, GL_ONE, GL_ONE);
+			expectError(GL_INVALID_VALUE);
+			m_log << TestLog::EndSection;
+		});
+	ES3F_ADD_API_CASE(blend_func_separatei, "Invalid glBlendFuncSeparatei() usage",
+		{
+			glw::GLint maxDrawBuffers = -1;
+			glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
+			if (!checkDrawBuffersIndexedSupport(m_context))
+				throw tcu::NotSupportedError("GL_EXT_draw_buffers_indexed is not supported", DE_NULL, __FILE__, __LINE__);
+			m_log << TestLog::Section("", "GL_INVALID_ENUM is generated if srcRGB, dstRGB, srcAlpha, or dstAlpha is not an accepted value.");
+			glBlendFuncSeparatei(0, -1, GL_ONE, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
+			expectError(GL_INVALID_ENUM);
+			glBlendFuncSeparatei(0, GL_ZERO, -1, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
+			expectError(GL_INVALID_ENUM);
+			glBlendFuncSeparatei(0, GL_ZERO, GL_ONE, -1, GL_ONE_MINUS_SRC_COLOR);
+			expectError(GL_INVALID_ENUM);
+			glBlendFuncSeparatei(0, GL_ZERO, GL_ONE, GL_SRC_COLOR, -1);
+			expectError(GL_INVALID_ENUM);
+			m_log << TestLog::EndSection;
+			m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if buf is not in the range zero to the value of MAX_DRAW_BUFFERS minus one.");
+			glBlendFuncSeparatei(-1, GL_ONE, GL_ONE, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
+			expectError(GL_INVALID_VALUE);
+			glBlendFuncSeparatei(maxDrawBuffers, GL_ONE, GL_ONE, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
+			expectError(GL_INVALID_VALUE);
+			m_log << TestLog::EndSection;
+	});
 
 	// Rasterization API functions
 

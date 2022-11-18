@@ -1,4 +1,7 @@
-include_directories(..)
+include_directories(
+	..
+	${DEQP_INL_DIR}
+)
 
 set(DEQP_VK_RAY_QUERY_SRCS
 	vktRayQueryTests.cpp
@@ -23,6 +26,8 @@ set(DEQP_VK_RAY_QUERY_SRCS
 	vktRayQueryDirectionTests.hpp
 	vktRayQueryNonUniformArgsTests.cpp
 	vktRayQueryNonUniformArgsTests.hpp
+	vktRayQueryOpacityMicromapTests.cpp
+	vktRayQueryOpacityMicromapTests.hpp
 	)
 
 set(DEQP_VK_RAY_QUERY_LIBS

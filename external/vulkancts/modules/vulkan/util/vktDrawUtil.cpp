@@ -542,6 +542,8 @@ void VulkanDrawContext::registerDrawObject(const PipelineState& pipelineState, c
 			}
 		}
 
+		DE_UNREF(stageFlags); // For release builds.
+
 		DE_ASSERT(
 			(drawCallData.topology != VK_PRIMITIVE_TOPOLOGY_PATCH_LIST) ||
 			(stageFlags & (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)));

@@ -1,0 +1,98 @@
+#!amber
+
+# Test barriers insude control-flow which is sometimes uniform and sometimes non-uniform. This is
+# valid provided the barrier is never executed when the control-flow is non-uniform. To do this we
+# have 2 conditions, which generate 3 possible paths. The first workgroup chooses non-uniformly
+# between the two paths which don't reach the barrier, while the second workgroup uniformly chooses
+# the path with the barrier. The barrier path does some simple operations through shared memory in
+# order to prevent compilers removing the barrier altogether.
+#
+# TODO: On implementations that use a subgroup size of 128 the barrier is still equivalent to a subgroup
+# barrier, so the difference between uniform and non-uniform control won't make a difference. We should
+# force the minimum subgroup size or something.
+
+SHADER compute compute_shader GLSL
+#version 310 es
+
+layout(local_size_x = 128) in;
+
+layout(set=0, binding = 0) buffer B {
+   uint a1[64];
+   uint a2[64];
+
+   uint x;
+} b;
+
+layout(set=0, binding=1) buffer C {
+   uint y[256];
+} c;
+
+shared uint s[128];
+
+void main() {
+   uint l = b.x;
+
+   /* To save us having enormous buffers, force each workgroup to consume only 32 slots */
+   uint a_idx = (gl_LocalInvocationIndex & 31u) + 32u * gl_WorkGroupID.x;
+
+   if (b.a1[a_idx] == 0u) {
+      l = 2u;
+   } else {
+      if (b.a2[a_idx] == 0u) {
+         l = 3u;
+      } else {
+         /* In order for the barrier to be required, reverse the values of a2 through shared memory.
+            If the subgroup is as large as the workgroup here then the barrier can still be removed,
+            so the test should make sure that doesn't happen. */
+         s[gl_LocalInvocationIndex] = l + b.a2[a_idx];
+
+         barrier();
+
+         l = s[127u - gl_LocalInvocationIndex];
+      }
+   }
+
+   c.y[gl_GlobalInvocationID.x] = l;
+}
+END
+
+BUFFER input_buf DATA_TYPE uint32 DATA
+# First 32 values are used by WG 0 to select the non-uniform path. Second 32 are uniform for WG 1.
+0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1    1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+0 0 0 0 2 0 0 0 7 0 3 0 9 0 1 0 0 0 5 0 0 0 0 0 8 0 2 0 7 0 0 0    1 1 1 1 2 1 1 1 7 1 3 1 9 1 1 1 1 1 5 1 1 1 1 1 8 1 2 1 7 1 1 1
+# b.x at the end. A random number.
+42
+END
+
+BUFFER res_buf DATA_TYPE uint32 DATA
+# Initialise result to a value not stored in the test so that every lane must write the correct value to pass.
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+END
+
+BUFFER reference_buffer DATA_TYPE uint32 DATA
+# First workgroup hits either the l = 2 or l = 3 paths non-uniformly.
+2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3
+2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3
+2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3
+2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3 2 3
+# Second workgroup has uniform control flow past the barrier. Result is 42 + b.a2, reversed through shared memory.
+43 43 43 49 43 44 43 50 43 43 43 43 43 47 43 43 43 43 43 51 43 45 43 49 43 43 43 44 43 43 43 43
+43 43 43 49 43 44 43 50 43 43 43 43 43 47 43 43 43 43 43 51 43 45 43 49 43 43 43 44 43 43 43 43
+43 43 43 49 43 44 43 50 43 43 43 43 43 47 43 43 43 43 43 51 43 45 43 49 43 43 43 44 43 43 43 43
+43 43 43 49 43 44 43 50 43 43 43 43 43 47 43 43 43 43 43 51 43 45 43 49 43 43 43 44 43 43 43 43
+END
+
+PIPELINE compute pipeline
+    ATTACH compute_shader
+
+    BIND BUFFER input_buf AS storage DESCRIPTOR_SET 0 BINDING 0
+    BIND BUFFER res_buf AS storage DESCRIPTOR_SET 0 BINDING 1
+END
+
+# Spawn 2 workgroups, one with non-uniform control flow, the other with a barrier.
+RUN pipeline 2 1 1
+
+EXPECT res_buf EQ_BUFFER reference_buffer

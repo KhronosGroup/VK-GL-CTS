@@ -3744,7 +3744,7 @@ tcu::TestNode::IterateResult DispatchBindTexturesTest::iterate()
 	for (GLint i = 0; i < max_textures; ++i)
 	{
 		GLenum target = getTarget(i);
-		if (target >= GL_TEXTURE_2D_MULTISAMPLE && max_image_samples == 0)
+		if (target >= GL_TEXTURE_2D_MULTISAMPLE && max_image_samples < 2)
 			target = GL_TEXTURE_2D;
 
 		GLuint data[width * height * depth];
@@ -3803,7 +3803,7 @@ tcu::TestNode::IterateResult DispatchBindTexturesTest::iterate()
 	size_t		sam_position	 = 0;
 	size_t		sum_position	 = 0;
 	std::string cs_source		 = cs;
-	GLint		max_target_index = (GLint)(max_image_samples > 0 ? s_n_texture_tragets : s_n_texture_tragets - 2);
+	GLint		max_target_index = (GLint)(max_image_samples >= 2 ? s_n_texture_tragets : s_n_texture_tragets - 2);
 	for (GLint i = 0; i < max_textures; ++i)
 	{
 		size_t sam_start_position = sam_position;

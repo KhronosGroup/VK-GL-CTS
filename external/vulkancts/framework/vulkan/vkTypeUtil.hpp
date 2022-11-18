@@ -236,6 +236,7 @@ inline bool isAllGraphicsStages (const VkShaderStageFlags shaderStageFlags)
 	return isAllInStage(shaderStageFlags, VK_SHADER_STAGE_ALL_GRAPHICS);
 }
 
+#ifndef CTS_USES_VULKANSC
 inline bool isAllRayTracingStages (const VkShaderStageFlags shaderStageFlags)
 {
 	const VkShaderStageFlags	rayTracingStageFlags	= VK_SHADER_STAGE_RAYGEN_BIT_KHR
@@ -248,6 +249,13 @@ inline bool isAllRayTracingStages (const VkShaderStageFlags shaderStageFlags)
 	return isAllInStage(shaderStageFlags, rayTracingStageFlags);
 }
 
+inline bool isAllMeshShadingStages (const VkShaderStageFlags shaderStageFlags)
+{
+	const VkShaderStageFlags meshStages = (VK_SHADER_STAGE_MESH_BIT_EXT | VK_SHADER_STAGE_TASK_BIT_EXT);
+	return isAllInStage(shaderStageFlags, meshStages);
+}
+
+#endif // CTS_USES_VULKANSC
 } // vk
 
 #endif // _VKTYPEUTIL_HPP

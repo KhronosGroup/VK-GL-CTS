@@ -66,6 +66,13 @@ if (NOT ZLIB_INCLUDE_PATH OR NOT ZLIB_LIBRARY)
 	# \note ZLIB_LIBRARY and ZLIB_INCLUDE_PATH are promoted from external/zlib/CMakeLists.txt
 endif ()
 
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/renderdoc/src/renderdoc_app.h")
+	message(STATUS "Renderdoc header found, integration enabled")
+	set(DEQP_HAVE_RENDERDOC_HEADER 1)
+else ()
+	message(STATUS "Renderdoc header not found, integration will not work")
+endif ()
+
 include_directories(${ZLIB_INCLUDE_PATH})
 
 # libpng
@@ -100,6 +107,10 @@ include_directories(${SPIRV_INCLUDE_PATH})
 # Amber
 add_subdirectory(external/amber)
 include_directories(external/amber)
+
+# jsoncpp
+add_subdirectory(external/jsoncpp)
+include_directories(external/jsoncpp/src/include)
 
 # RenderDoc API
 include_directories(external/renderdoc/src)
@@ -226,6 +237,7 @@ include_directories(
 	framework/egl/wrapper
 	framework/xexml
 	external/vulkancts/framework/vulkan
+	external/vulkancts/framework/vulkan/generated/vulkan
 	)
 
 if (DE_OS_IS_ANDROID OR DE_OS_IS_IOS)
@@ -259,7 +271,7 @@ set(MODULE_DATA_TARGET_POSTFIX	"-data")
 #	${MODULE_NAME}-package:		Static library that contains all SRCS and links to LIBS
 #	${MODULE_NAME}-data:		Custom target that is used for data file copies
 #	${MODULE_NAME}:				Executable binary (if supported by the platform)
-macro (add_deqp_module MODULE_NAME SRCS LIBS ENTRY)
+macro (add_deqp_module MODULE_NAME SRCS LIBS EXECLIBS ENTRY)
 
 	# Library target
 	add_library("${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}" STATIC ${SRCS})
@@ -275,7 +287,7 @@ macro (add_deqp_module MODULE_NAME SRCS LIBS ENTRY)
 	if (NOT DE_OS_IS_ANDROID AND NOT DE_OS_IS_IOS)
 		# Executable target
 		add_executable(${MODULE_NAME} ${PROJECT_SOURCE_DIR}/framework/platform/tcuMain.cpp ${ENTRY})
-		target_link_libraries(${MODULE_NAME} tcutil-platform "${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}")
+		target_link_libraries(${MODULE_NAME} PUBLIC "${EXECLIBS}" "${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}")
 		target_copy_files(${MODULE_NAME} platform-libs-${MODULE_NAME} "${DEQP_PLATFORM_COPY_LIBRARIES}")
 	endif ()
 
@@ -283,6 +295,28 @@ macro (add_deqp_module MODULE_NAME SRCS LIBS ENTRY)
 	add_custom_target("${MODULE_NAME}${MODULE_DATA_TARGET_POSTFIX}")
 	add_dependencies("${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}" "${MODULE_NAME}${MODULE_DATA_TARGET_POSTFIX}")
 endmacro (add_deqp_module)
+
+# Macro add_deqp_module_skip_android does not add module to DEQP_MODULE_LIBRARIES, so that it is not created on Android.
+# It's a temporary solution to disable Vulkan SC tests on Android, because later defined deqp library
+# uses both deqp-vk and deqp-vksc and this means that definitions CTS_USES_VULKAN and CTS_USES_VULKANSC
+# exist in deqp library at the same time which causes code to not compile.
+macro (add_deqp_module_skip_android MODULE_NAME SRCS LIBS EXECLIBS ENTRY)
+
+	# Library target
+	add_library("${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}" STATIC ${SRCS})
+	target_link_libraries("${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}" ${LIBS})
+
+	if (NOT DE_OS_IS_ANDROID AND NOT DE_OS_IS_IOS)
+		# Executable target
+		add_executable(${MODULE_NAME} ${PROJECT_SOURCE_DIR}/framework/platform/tcuMain.cpp ${ENTRY})
+		target_link_libraries(${MODULE_NAME} PUBLIC "${EXECLIBS}" "${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}")
+		target_copy_files(${MODULE_NAME} platform-libs-${MODULE_NAME} "${DEQP_PLATFORM_COPY_LIBRARIES}")
+	endif ()
+
+	# Data file target
+	add_custom_target("${MODULE_NAME}${MODULE_DATA_TARGET_POSTFIX}")
+	add_dependencies("${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}" "${MODULE_NAME}${MODULE_DATA_TARGET_POSTFIX}")
+endmacro (add_deqp_module_skip_android)
 
 # Macro for adding data dirs to module
 macro (add_data_dir MODULE_NAME SRC_DIR DST_DIR)
@@ -319,11 +353,14 @@ endif ()
 
 add_subdirectory(modules)
 add_subdirectory(external/vulkancts/modules/vulkan)
+add_subdirectory(external/vulkancts/vkscserver)
+add_subdirectory(external/vulkancts/vkscpc)
 add_subdirectory(external/openglcts)
 
 # Single-binary targets
 if (DE_OS_IS_ANDROID)
 	include_directories(executor)
+	include_directories(${PROJECT_BINARY_DIR}/external/vulkancts/framework/vulkan)
 
 	set(DEQP_SRCS
 		framework/platform/android/tcuAndroidMain.cpp
@@ -374,4 +411,10 @@ elseif (DE_OS_IS_IOS)
 	target_link_libraries(deqp tcutil-platform xscore ${DEQP_MODULE_LIBRARIES})
 	set_target_properties(deqp PROPERTIES XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2")
 	set_target_properties(deqp PROPERTIES XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "iPhone Developer: ${DEQP_IOS_CODE_SIGN_IDENTITY}")
+endif ()
+
+if (DE_OS_IS_FUCHSIA)
+	# The default Fuchsia stack is small, so the size needs to be increased to at
+	# least 2**20 bytes, but 2**24 is chosen for safety.
+	set_target_properties(deqp-vk PROPERTIES LINK_FLAGS "-Wl,-z,stack-size=0x1000000")
 endif ()

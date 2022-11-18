@@ -105,7 +105,7 @@ public:
 	static const char*						getPatternTypeName			(PatternType type);
 
 private:
-	bool									checkColor					(const tcu::Vec4& inputClr, const tcu::RGBA& renderedClr, bool logErrors) const;
+	bool									checkColor					(const tcu::Vec4& inputClr, const tcu::RGBA& renderedClr, bool logErrors, const bool incTol) const;
 
 	bool									drawAndCheckGradient		(bool isVerticallyIncreasing, const tcu::Vec4& highColor) const;
 	bool									drawAndCheckUnicoloredQuad	(const tcu::Vec4& color) const;
@@ -165,7 +165,7 @@ void DitheringCase::deinit (void)
 	m_renderer = DE_NULL;
 }
 
-bool DitheringCase::checkColor (const Vec4& inputClr, const tcu::RGBA& renderedClr, const bool logErrors) const
+bool DitheringCase::checkColor (const Vec4& inputClr, const tcu::RGBA& renderedClr, const bool logErrors, const bool incTol) const
 {
 	const IVec4		channelBits		= pixelFormatToIVec4(m_renderFormat);
 	bool			allChannelsOk	= true;
@@ -182,6 +182,12 @@ bool DitheringCase::checkColor (const Vec4& inputClr, const tcu::RGBA& renderedC
 
 		channelChoices.push_back(de::min(channelMax,	(int)deFloatCeil(scaledInput)));
 		channelChoices.push_back(de::max(0,				(int)deFloatCeil(scaledInput) - 1));
+		// Allow for more tolerance for small dimension render targets
+		if (incTol)
+		{
+			channelChoices.push_back(de::max(0,(int)deFloatCeil(scaledInput) - 2));
+			channelChoices.push_back(de::max(0,(int)deFloatCeil(scaledInput) + 1));
+		}
 
 		// If the input color results in a scaled value that is very close to an integer, account for a little bit of possible inaccuracy.
 		if (useRoundingMargin)
@@ -288,8 +294,9 @@ bool DitheringCase::drawAndCheckGradient (const bool isVerticallyIncreasing, con
 			{
 				const float		inputF		= ((float)(isVerticallyIncreasing ? y : x) + 0.5f) / (float)(isVerticallyIncreasing ? renderedImg.getHeight() : renderedImg.getWidth());
 				const Vec4		inputClr	= (1.0f-inputF)*quadClr0 + inputF*quadClr1;
+				const bool              increaseTol     = ((renderedImg.getWidth() < 300) || (renderedImg.getHeight() < 300)) ? true : false;
 
-				if (!checkColor(inputClr, renderedImg.getPixel(x, y), colorChoicesOk))
+				if (!checkColor(inputClr, renderedImg.getPixel(x, y), colorChoicesOk, increaseTol))
 				{
 					errorMask.setPixel(x, y, tcu::RGBA::red());
 
@@ -399,7 +406,7 @@ bool DitheringCase::drawAndCheckUnicoloredQuad (const Vec4& quadColor) const
 		{
 			for (int x = 0; x < renderedImg.getWidth(); x++)
 			{
-				if (!checkColor(quadColor, renderedImg.getPixel(x, y), colorChoicesOk))
+				if (!checkColor(quadColor, renderedImg.getPixel(x, y), colorChoicesOk, false))
 				{
 					errorMask.setPixel(x, y, tcu::RGBA::red());
 

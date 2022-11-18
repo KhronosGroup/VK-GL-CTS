@@ -2266,7 +2266,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	// Query the buffer device addresses and push them via push constants
 	if (m_usePhysStorageBuffer)
 	{
-		const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
+		//const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 
 		vk::VkBufferDeviceAddressInfo info =
 		{
@@ -2279,10 +2279,10 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 		{
 			info.buffer = descriptors[i].buffer;
 			vk::VkDeviceAddress addr;
-			if (useKHR)
+			//if (useKHR)
 				addr = vk.getBufferDeviceAddress(device, &info);
-			else
-				addr = vk.getBufferDeviceAddressEXT(device, &info);
+			//else
+			//	addr = vk.getBufferDeviceAddressEXT(device, &info);
 			addr += descriptors[i].offset;
 			gpuAddrs.push_back(addr);
 		}
@@ -2493,7 +2493,8 @@ void SSBOLayoutCase::checkSupport(Context& context) const
 		TCU_THROW(NotSupportedError, "scalarBlockLayout not supported");
 	if (m_usePhysStorageBuffer && !context.isBufferDeviceAddressSupported())
 		TCU_THROW(NotSupportedError, "Physical storage buffer pointers not supported");
-	if (!context.getDescriptorIndexingFeatures().shaderStorageBufferArrayNonUniformIndexing && usesDescriptorIndexing(m_interface))
+	if (usesDescriptorIndexing(m_interface) && (	!context.getDescriptorIndexingFeatures().shaderStorageBufferArrayNonUniformIndexing ||
+													!context.getDescriptorIndexingFeatures().runtimeDescriptorArray ) )
 		TCU_THROW(NotSupportedError, "Descriptor indexing over storage buffer not supported");
 
 	const vk::VkPhysicalDeviceProperties &properties = context.getDeviceProperties();

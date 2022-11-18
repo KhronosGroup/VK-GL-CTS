@@ -24,7 +24,7 @@ OpCapability WorkgroupMemoryExplicitLayoutKHR
 OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
 OpMemoryModel Logical GLSL450
 OpEntryPoint GLCompute %main "main" %index %push_constants %output_buffer %wg %other_wg
-OpExecutionMode %main LocalSize 128 4 1
+OpExecutionMode %main LocalSize 32 4 1
 
 OpDecorate %index BuiltIn LocalInvocationIndex
 OpDecorate %buffer_type Block
@@ -106,6 +106,6 @@ PIPELINE compute pipeline
   BIND BUFFER output_buffer AS storage DESCRIPTOR_SET 0 BINDING 1
 END
 
-RUN pipeline 1 1 1
+RUN pipeline 4 1 1
 
 EXPECT output_buffer EQ_BUFFER expected_buffer

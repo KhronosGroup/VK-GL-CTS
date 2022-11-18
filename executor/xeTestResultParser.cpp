@@ -161,7 +161,9 @@ static const EnumMapEntry s_shaderTypeFromTagMap[] =
 	{ 0x8c64a6be,	"ClosestHitShader",		ri::Shader::SHADERTYPE_CLOSEST_HIT		},
 	{ 0xb30ed398,	"MissShader",			ri::Shader::SHADERTYPE_MISS				},
 	{ 0x26150e53,	"IntersectionShader",	ri::Shader::SHADERTYPE_INTERSECTION		},
-	{ 0x7e50944c,	"CallableShader",		ri::Shader::SHADERTYPE_CALLABLE			}
+	{ 0x7e50944c,	"CallableShader",		ri::Shader::SHADERTYPE_CALLABLE			},
+	{ 0xc3a35d6f,	"TaskShader",			ri::Shader::SHADERTYPE_TASK				},
+	{ 0x925c7349,	"MeshShader",			ri::Shader::SHADERTYPE_MESH				},
 };
 
 static const EnumMapEntry s_testTypeMap[] =
@@ -465,8 +467,9 @@ void TestResultParser::handleElementStart (void)
 		m_logVersion = getTestLogVersion(version);
 		// \note Currently assumed that all known log versions are supported.
 
-		m_result->casePath	= getAttribute("CasePath");
-		m_result->caseType	= TESTCASETYPE_SELF_VALIDATE;
+		m_result->caseVersion	= version;
+		m_result->casePath		= getAttribute("CasePath");
+		m_result->caseType		= TESTCASETYPE_SELF_VALIDATE;
 
 		if (m_xmlParser.hasAttribute("CaseType"))
 			m_result->caseType = getTestCaseType(m_xmlParser.getAttribute("CaseType"));

@@ -60,11 +60,13 @@
 #include "es3fScissorTests.hpp"
 #include "es3fLifetimeTests.hpp"
 #include "es3fDefaultVertexArrayObjectTests.hpp"
+#include "es3fDrawBuffersIndexedTests.hpp"
 
 // Shader tests
 #include "es3fShaderApiTests.hpp"
 #include "es3fShaderConstExprTests.hpp"
 #include "es3fShaderDiscardTests.hpp"
+#include "es3fShaderFunctionTests.hpp"
 #include "es3fShaderIndexingTests.hpp"
 #include "es3fShaderLoopTests.hpp"
 #include "es3fShaderMatrixTests.hpp"
@@ -212,6 +214,7 @@ public:
 		addChild(new ShaderLibraryTest			(m_context, "invalid_implicit_conversions",	"Invalid Implicit Conversions"));
 
 		addChild(new ShaderDiscardTests			(m_context));
+		addChild(new ShaderFunctionTests		(m_context));
 		addChild(new ShaderIndexingTests		(m_context));
 		addChild(new ShaderLoopTests			(m_context));
 		addChild(new ShaderOperatorTests		(m_context));
@@ -413,6 +416,23 @@ void FunctionalTests::init (void)
 	addChild(new DefaultVertexAttributeTests	(m_context));
 	addChild(createLifetimeTests				(m_context));
 	addChild(new DefaultVertexArrayObjectTests	(m_context));
+	addChild(createDrawBuffersIndexedTests		(m_context));
+}
+
+GL45ES3FunctionalTests::GL45ES3FunctionalTests (Context& context)
+	: TestCaseGroup(context, "functional", "Functionality Tests")
+{
+}
+
+GL45ES3FunctionalTests::~GL45ES3FunctionalTests (void)
+{
+}
+
+void GL45ES3FunctionalTests::init (void)
+{
+	addChild(createDrawBuffersIndexedTests	(m_context));
+	addChild(new StateQueryTests				(m_context));
+	addChild(new NegativeApiTestGroup			(m_context));
 }
 
 } // Functional

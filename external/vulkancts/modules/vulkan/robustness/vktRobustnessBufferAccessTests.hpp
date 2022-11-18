@@ -33,6 +33,7 @@ namespace robustness
 {
 
 tcu::TestCaseGroup* createBufferAccessTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createPipelineRobustnessBufferAccessTests (tcu::TestContext& testCtx);
 
 } // robustness
 } // vkt

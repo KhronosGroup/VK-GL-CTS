@@ -102,15 +102,15 @@ static bool checkFragmentPipelineStages (const void*			internalData,
 	return true;
 }
 
-static bool checkCompute (const void*			internalData,
-						  vector<const void*>	datas,
-						  const deUint32		numWorkgroups[3],
-						  const deUint32		localSize[3],
-						  deUint32)
+static bool checkComputeOrMesh (const void*			internalData,
+								vector<const void*>	datas,
+								const deUint32		numWorkgroups[3],
+								const deUint32		localSize[3],
+								deUint32)
 {
 	DE_UNREF(internalData);
 
-	return subgroups::checkCompute(datas, numWorkgroups, localSize, 0x1F);
+	return subgroups::checkComputeOrMesh(datas, numWorkgroups, localSize, 0x1F);
 }
 
 string getOpTypeName (int opType)
@@ -175,7 +175,12 @@ const string getStageTestSource (const CaseDefinition& caseDef)
 
 void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
 {
-	const SpirvVersion			spirvVersion	= isAllRayTracingStages(caseDef.shaderStage) ? SPIRV_VERSION_1_4 : SPIRV_VERSION_1_3;
+#ifndef CTS_USES_VULKANSC
+	const bool					spirv14required	= isAllRayTracingStages(caseDef.shaderStage);
+#else
+	const bool					spirv14required	= false;
+#endif // CTS_USES_VULKANSC
+	const SpirvVersion			spirvVersion	= spirv14required ? SPIRV_VERSION_1_4 : SPIRV_VERSION_1_3;
 	const ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, spirvVersion, 0u);
 	const bool					arbFunctions	= caseDef.opType > OPTYPE_LAST_NON_ARB;
 	const string				extensions		= getExtensions(arbFunctions) + subgroups::getAdditionalExtensionForFormat(caseDef.format);
@@ -216,7 +221,12 @@ const string getStageTestSourceFrag (const CaseDefinition& caseDef)
 
 void initFrameBufferProgramsFrag (SourceCollections& programCollection, CaseDefinition caseDef)
 {
-	const SpirvVersion			spirvVersion	= isAllRayTracingStages(caseDef.shaderStage) ? SPIRV_VERSION_1_4 : SPIRV_VERSION_1_3;
+#ifndef CTS_USES_VULKANSC
+	const bool					spirv14required	= isAllRayTracingStages(caseDef.shaderStage);
+#else
+	const bool					spirv14required	= false;
+#endif // CTS_USES_VULKANSC
+	const SpirvVersion			spirvVersion	= spirv14required ? SPIRV_VERSION_1_4 : SPIRV_VERSION_1_3;
 	const ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, spirvVersion, 0u);
 	const bool					arbFunctions	= caseDef.opType > OPTYPE_LAST_NON_ARB;
 	const string				extensions		= getExtensions(arbFunctions) + subgroups::getAdditionalExtensionForFormat(caseDef.format);
@@ -271,8 +281,13 @@ void initFrameBufferProgramsFrag (SourceCollections& programCollection, CaseDefi
 
 void initPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
 {
-	const SpirvVersion			spirvVersion	= isAllRayTracingStages(caseDef.shaderStage) ? SPIRV_VERSION_1_4 : SPIRV_VERSION_1_3;
-	const ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, spirvVersion, 0u);
+#ifndef CTS_USES_VULKANSC
+	const bool					spirv14required	= (isAllRayTracingStages(caseDef.shaderStage) || isAllMeshShadingStages(caseDef.shaderStage));
+#else
+	const bool					spirv14required	= false;
+#endif // CTS_USES_VULKANSC
+	const SpirvVersion			spirvVersion	= spirv14required ? SPIRV_VERSION_1_4 : SPIRV_VERSION_1_3;
+	const ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, spirvVersion, 0u, spirv14required);
 	const bool					arbFunctions	= caseDef.opType > OPTYPE_LAST_NON_ARB;
 	const string				extensions		= getExtensions(arbFunctions) + subgroups::getAdditionalExtensionForFormat(caseDef.format);
 	const bool					pointSize		= *caseDef.geometryPointSizeSupported;
@@ -318,8 +333,13 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 	{
 		context.requireDeviceFunctionality("VK_EXT_subgroup_size_control");
 
-		const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT&	subgroupSizeControlFeatures		= context.getSubgroupSizeControlFeaturesEXT();
+#ifndef CTS_USES_VULKANSC
+		const VkPhysicalDeviceSubgroupSizeControlFeatures&		subgroupSizeControlFeatures		= context.getSubgroupSizeControlFeatures();
+		const VkPhysicalDeviceSubgroupSizeControlProperties&	subgroupSizeControlProperties	= context.getSubgroupSizeControlProperties();
+#else
+		const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT&		subgroupSizeControlFeatures	= context.getSubgroupSizeControlFeaturesEXT();
 		const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties	= context.getSubgroupSizeControlPropertiesEXT();
+#endif // CTS_USES_VULKANSC
 
 		if (subgroupSizeControlFeatures.subgroupSizeControl == DE_FALSE)
 			TCU_THROW(NotSupportedError, "Device does not support varying subgroup sizes nor required subgroup size");
@@ -333,10 +353,25 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 
 	*caseDef.geometryPointSizeSupported = subgroups::isTessellationAndGeometryPointSizeSupported(context);
 
+#ifndef CTS_USES_VULKANSC
 	if (isAllRayTracingStages(caseDef.shaderStage))
 	{
 		context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
 	}
+	else if (isAllMeshShadingStages(caseDef.shaderStage))
+	{
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
+		context.requireDeviceFunctionality("VK_EXT_mesh_shader");
+
+		if ((caseDef.shaderStage & VK_SHADER_STAGE_TASK_BIT_EXT) != 0u)
+		{
+			const auto& features = context.getMeshShaderFeaturesEXT();
+			if (!features.taskShader)
+				TCU_THROW(NotSupportedError, "Task shaders not supported");
+		}
+	}
+
+#endif // CTS_USES_VULKANSC
 
 	subgroups::supportedCheckShader(context, caseDef.shaderStage);
 }
@@ -357,6 +392,7 @@ TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 		subgroups::SSBOData::LayoutStd140,		//  InputDataLayoutType			layout;
 		caseDef.format,							//  vk::VkFormat				format;
 		subgroups::maxSupportedSubgroupSize(),	//  vk::VkDeviceSize			numElements;
+		subgroups::SSBOData::BindingUBO,		//  BindingType					bindingType;
 	};
 
 	switch (caseDef.shaderStage)
@@ -376,9 +412,21 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 																		? subgroups::SSBOData::InitializeZero
 																		: subgroups::SSBOData::InitializeNonZero;
 
-	if (isAllComputeStages(caseDef.shaderStage))
+	const bool isCompute	= isAllComputeStages(caseDef.shaderStage);
+#ifndef CTS_USES_VULKANSC
+	const bool isMesh		= isAllMeshShadingStages(caseDef.shaderStage);
+#else
+	const bool isMesh		= false;
+#endif // CTS_USES_VULKANSC
+	DE_ASSERT(!(isCompute && isMesh));
+
+	if (isCompute || isMesh)
 	{
+#ifndef CTS_USES_VULKANSC
+		const VkPhysicalDeviceSubgroupSizeControlProperties&	subgroupSizeControlProperties	= context.getSubgroupSizeControlProperties();
+#else
 		const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties	= context.getSubgroupSizeControlPropertiesEXT();
+#endif // CTS_USES_VULKANSC
 		TestLog&												log								= context.getTestContext().getLog();
 		const subgroups::SSBOData								inputData
 		{
@@ -389,7 +437,12 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 		};
 
 		if (caseDef.requiredSubgroupSize == DE_FALSE)
-			return subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkCompute);
+		{
+			if (isCompute)
+				return subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkComputeOrMesh);
+			else
+				return subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkComputeOrMesh);
+		}
 
 		log << TestLog::Message << "Testing required subgroup size range [" <<  subgroupSizeControlProperties.minSubgroupSize << ", "
 			<< subgroupSizeControlProperties.maxSubgroupSize << "]" << TestLog::EndMessage;
@@ -397,7 +450,12 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 		// According to the spec, requiredSubgroupSize must be a power-of-two integer.
 		for (deUint32 size = subgroupSizeControlProperties.minSubgroupSize; size <= subgroupSizeControlProperties.maxSubgroupSize; size *= 2)
 		{
-			TestStatus result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkCompute, size, VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT);
+			TestStatus result (QP_TEST_RESULT_INTERNAL_ERROR, "Internal Error");
+
+			if (isCompute)
+				result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkComputeOrMesh, size);
+			else
+				result = subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkComputeOrMesh, size);
 
 			if (result.getCode() != QP_TEST_RESULT_PASS)
 			{
@@ -417,13 +475,14 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 			subgroups::SSBOData::LayoutStd430,		//  InputDataLayoutType			layout;
 			caseDef.format,							//  vk::VkFormat				format;
 			subgroups::maxSupportedSubgroupSize(),	//  vk::VkDeviceSize			numElements;
-			false,									//  bool						isImage;
+			subgroups::SSBOData::BindingSSBO,		//  bool						isImage;
 			4u,										//  deUint32					binding;
 			stages,									//  vk::VkShaderStageFlags		stages;
 		};
 
 		return subgroups::allStages(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkVertexPipelineStages, stages);
 	}
+#ifndef CTS_USES_VULKANSC
 	else if (isAllRayTracingStages(caseDef.shaderStage))
 	{
 		const VkShaderStageFlags	stages		= subgroups::getPossibleRayTracingSubgroupStages(context, caseDef.shaderStage);
@@ -433,13 +492,14 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 			subgroups::SSBOData::LayoutStd430,		//  InputDataLayoutType			layout;
 			caseDef.format,							//  vk::VkFormat				format;
 			subgroups::maxSupportedSubgroupSize(),	//  vk::VkDeviceSize			numElements;
-			false,									//  bool						isImage;
+			subgroups::SSBOData::BindingSSBO,		//  bool						isImage;
 			6u,										//  deUint32					binding;
 			stages,									//  vk::VkShaderStageFlags		stages;
 		};
 
 		return subgroups::allRayTracingStages(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkVertexPipelineStages, stages);
 	}
+#endif // CTS_USES_VULKANSC
 	else
 		TCU_THROW(InternalError, "Unknown stage or invalid stage set");
 }
@@ -456,7 +516,11 @@ TestCaseGroup* createSubgroupsVoteTests (TestContext& testCtx)
 	de::MovePtr<TestCaseGroup>	computeGroup		(new TestCaseGroup(testCtx, "compute", "Subgroup vote category tests: compute"));
 	de::MovePtr<TestCaseGroup>	framebufferGroup	(new TestCaseGroup(testCtx, "framebuffer", "Subgroup vote category tests: framebuffer"));
 	de::MovePtr<TestCaseGroup>	fragHelperGroup		(new TestCaseGroup(testCtx, "frag_helper", "Subgroup vote category tests: fragment helper invocation"));
+#ifndef CTS_USES_VULKANSC
 	de::MovePtr<TestCaseGroup>	raytracingGroup		(new TestCaseGroup(testCtx, "ray_tracing", "Subgroup vote category tests: raytracing"));
+	de::MovePtr<TestCaseGroup>	meshGroup			(new TestCaseGroup(testCtx, "mesh", "Subgroup vote category tests: mesh shading"));
+	de::MovePtr<TestCaseGroup>	meshGroupARB		(new TestCaseGroup(testCtx, "mesh", "Subgroup vote category tests: mesh shading"));
+#endif // CTS_USES_VULKANSC
 
 	de::MovePtr<TestCaseGroup>	groupARB			(new TestCaseGroup(testCtx, "ext_shader_subgroup_vote", "VK_EXT_shader_subgroup_vote category tests"));
 	de::MovePtr<TestCaseGroup>	graphicGroupARB		(new TestCaseGroup(testCtx, "graphics", "Subgroup vote category tests: graphics"));
@@ -470,13 +534,20 @@ TestCaseGroup* createSubgroupsVoteTests (TestContext& testCtx)
 	};
 
 	{
-		const VkShaderStageFlags	stages[]	=
+		const VkShaderStageFlags	fbStages[]		=
 		{
 			VK_SHADER_STAGE_VERTEX_BIT,
 			VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
 			VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
 			VK_SHADER_STAGE_GEOMETRY_BIT,
 		};
+#ifndef CTS_USES_VULKANSC
+		const VkShaderStageFlags	meshStages[]	=
+		{
+			VK_SHADER_STAGE_MESH_BIT_EXT,
+			VK_SHADER_STAGE_TASK_BIT_EXT,
+		};
+#endif // CTS_USES_VULKANSC
 		const vector<VkFormat>		formats		= subgroups::getAllFormats();
 
 		for (size_t formatIndex = 0; formatIndex < formats.size(); ++formatIndex)
@@ -516,10 +587,14 @@ TestCaseGroup* createSubgroupsVoteTests (TestContext& testCtx)
 
 				const string	op					= de::toLower(getOpTypeName(opType));
 				const string	name				= op + "_" + subgroups::getFormatNameForGLSL(format);
-				TestCaseGroup*	computeGroupPtr		= (opType < OPTYPE_LAST_NON_ARB) ? computeGroup.get() : computeGroupARB.get();
-				TestCaseGroup*	graphicGroupPtr		= (opType < OPTYPE_LAST_NON_ARB) ? graphicGroup.get() : graphicGroupARB.get();
-				TestCaseGroup*	framebufferGroupPtr	= (opType < OPTYPE_LAST_NON_ARB) ? framebufferGroup.get() : framebufferGroupARB.get();
-				TestCaseGroup*	fragHelperGroupPtr	= (opType < OPTYPE_LAST_NON_ARB) ? fragHelperGroup.get() : fragHelperGroupARB.get();
+				const bool		opNonARB			= (opType < OPTYPE_LAST_NON_ARB);
+				TestCaseGroup*	computeGroupPtr		= opNonARB ? computeGroup.get() : computeGroupARB.get();
+				TestCaseGroup*	graphicGroupPtr		= opNonARB ? graphicGroup.get() : graphicGroupARB.get();
+				TestCaseGroup*	framebufferGroupPtr	= opNonARB ? framebufferGroup.get() : framebufferGroupARB.get();
+				TestCaseGroup*	fragHelperGroupPtr	= opNonARB ? fragHelperGroup.get() : fragHelperGroupARB.get();
+#ifndef CTS_USES_VULKANSC
+				TestCaseGroup*	meshGroupPtr		= opNonARB ? meshGroup.get() : meshGroupARB.get();
+#endif // CTS_USES_VULKANSC
 
 				for (size_t groupSizeNdx = 0; groupSizeNdx < DE_LENGTH_OF_ARRAY(boolValues); ++groupSizeNdx)
 				{
@@ -539,6 +614,29 @@ TestCaseGroup* createSubgroupsVoteTests (TestContext& testCtx)
 					addFunctionCaseWithPrograms(computeGroupPtr, testName, "", supportedCheck, initPrograms, test, caseDef);
 				}
 
+#ifndef CTS_USES_VULKANSC
+				for (size_t groupSizeNdx = 0; groupSizeNdx < DE_LENGTH_OF_ARRAY(boolValues); ++groupSizeNdx)
+				{
+					for (const auto& stage : meshStages)
+					{
+						const deBool			requiredSubgroupSize	= boolValues[groupSizeNdx];
+						const string			testName				= name + (requiredSubgroupSize ? "_requiredsubgroupsize" : "") + "_" + getShaderStageName(stage);
+						const CaseDefinition	caseDef					=
+						{
+							opType,							//  OpType				opType;
+							stage,							//  VkShaderStageFlags	shaderStage;
+							format,							//  VkFormat			format;
+							de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
+							requiredSubgroupSize,			//  deBool				requiredSubgroupSize;
+							deBool(false),					//  deBool				requires8BitUniformBuffer;
+							deBool(false)					//  deBool				requires16BitUniformBuffer;
+						};
+
+						addFunctionCaseWithPrograms(meshGroupPtr, testName, "", supportedCheck, initPrograms, test, caseDef);
+					}
+				}
+#endif // CTS_USES_VULKANSC
+
 				{
 					const CaseDefinition	caseDef		=
 					{
@@ -554,12 +652,12 @@ TestCaseGroup* createSubgroupsVoteTests (TestContext& testCtx)
 					addFunctionCaseWithPrograms(graphicGroupPtr, name, "", supportedCheck, initPrograms, test, caseDef);
 				}
 
-				for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
+				for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(fbStages); ++stageIndex)
 				{
 					const CaseDefinition	caseDef		=
 					{
 						opType,							//  OpType				opType;
-						stages[stageIndex],				//  VkShaderStageFlags	shaderStage;
+						fbStages[stageIndex],			//  VkShaderStageFlags	shaderStage;
 						format,							//  VkFormat			format;
 						de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
 						DE_FALSE,						//  deBool				requiredSubgroupSize;
@@ -590,6 +688,7 @@ TestCaseGroup* createSubgroupsVoteTests (TestContext& testCtx)
 		}
 	}
 
+#ifndef CTS_USES_VULKANSC
 	{
 		const vector<VkFormat>	formats		= subgroups::getAllRayTracingFormats();
 
@@ -624,6 +723,7 @@ TestCaseGroup* createSubgroupsVoteTests (TestContext& testCtx)
 			}
 		}
 	}
+#endif // CTS_USES_VULKANSC
 
 	groupARB->addChild(graphicGroupARB.release());
 	groupARB->addChild(computeGroupARB.release());
@@ -634,7 +734,11 @@ TestCaseGroup* createSubgroupsVoteTests (TestContext& testCtx)
 	group->addChild(computeGroup.release());
 	group->addChild(framebufferGroup.release());
 	group->addChild(fragHelperGroup.release());
+#ifndef CTS_USES_VULKANSC
 	group->addChild(raytracingGroup.release());
+	group->addChild(meshGroup.release());
+	groupARB->addChild(meshGroupARB.release());
+#endif // CTS_USES_VULKANSC
 
 	group->addChild(groupARB.release());
 

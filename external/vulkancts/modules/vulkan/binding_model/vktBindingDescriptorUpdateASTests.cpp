@@ -239,35 +239,6 @@ static VkImageCreateInfo makeImageCreateInfo (VkFormat			format,
 	return imageCreateInfo;
 }
 
-static Move<VkPipeline> makeComputePipeline (const DeviceInterface&		vk,
-											 const VkDevice				device,
-											 const VkPipelineLayout		pipelineLayout,
-											 const VkShaderModule		shaderModule)
-{
-	const VkPipelineShaderStageCreateInfo pipelineShaderStageParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
-		DE_NULL,												// const void*							pNext;
-		0u,														// VkPipelineShaderStageCreateFlags		flags;
-		VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits				stage;
-		shaderModule,											// VkShaderModule						module;
-		"main",													// const char*							pName;
-		DE_NULL,												// const VkSpecializationInfo*			pSpecializationInfo;
-	};
-	const VkComputePipelineCreateInfo pipelineCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,		// VkStructureType					sType;
-		DE_NULL,											// const void*						pNext;
-		0u,													// VkPipelineCreateFlags			flags;
-		pipelineShaderStageParams,							// VkPipelineShaderStageCreateInfo	stage;
-		pipelineLayout,										// VkPipelineLayout					layout;
-		DE_NULL,											// VkPipeline						basePipelineHandle;
-		0,													// deInt32							basePipelineIndex;
-	};
-
-	return createComputePipeline(vk, device, DE_NULL , &pipelineCreateInfo);
-}
-
 static const std::string getMissPassthrough (void)
 {
 	std::ostringstream src;
@@ -1891,6 +1862,9 @@ void BindingAcceleratioStructureRayTracingRayTracingTestInstance::checkSupport (
 
 	if (rayTracingPipelineFeaturesKHR.rayTracingPipeline == DE_FALSE)
 		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
+	const VkPhysicalDeviceRayTracingPipelinePropertiesKHR&	rayTracingPipelinePropertiesKHR = context.getRayTracingPipelineProperties();
+	if (rayTracingPipelinePropertiesKHR.maxRayRecursionDepth < 2 && testParams.testType == TEST_TYPE_USING_RAY_TRACING && (testParams.stage == VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR || testParams.stage == VK_SHADER_STAGE_MISS_BIT_KHR))
+		TCU_THROW(NotSupportedError, "rayTracingPipelinePropertiesKHR.maxRayRecursionDepth is smaller than required");
 }
 
 void BindingAcceleratioStructureRayTracingRayTracingTestInstance::initPrograms (SourceCollections&	programCollection,

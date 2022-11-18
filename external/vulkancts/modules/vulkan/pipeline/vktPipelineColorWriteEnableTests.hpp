@@ -24,13 +24,15 @@
  *//*--------------------------------------------------------------------*/
 
 #include "tcuTestCase.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 
 namespace vkt
 {
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createColorWriteEnableTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createColorWriteEnableTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
+tcu::TestCaseGroup* createColorWriteEnable2Tests (tcu::TestContext& testCtx, vk::PipelineConstructionType pct);
 
 } // pipeline
 } // vkt

@@ -44,6 +44,8 @@
 #include "deMemory.h"
 #include "deUniquePtr.hpp"
 #include "tcuTestLog.hpp"
+#include <array>
+#include <cmath>
 #include <vector>
 #include <sstream>
 
@@ -54,6 +56,7 @@ namespace pipeline
 
 using namespace vk;
 using namespace std;
+using de::UniquePtr;
 
 namespace
 {
@@ -62,7 +65,6 @@ typedef de::SharedPtr<Allocation>				AllocationSp;
 typedef de::SharedPtr<Unique<VkCommandBuffer> >	VkCommandBufferSp;
 typedef de::SharedPtr<Unique<VkRenderPass> >	VkRenderPassSp;
 typedef de::SharedPtr<Unique<VkFramebuffer> >	VkFramebufferSp;
-typedef de::SharedPtr<Unique<VkPipeline> >		VkPipelineSp;
 
 enum class GroupingStrategy
 {
@@ -73,15 +75,16 @@ enum class GroupingStrategy
 
 struct TestParams
 {
-	VkDescriptorType	descriptorType;
-	deUint32			numCmdBuffers;
-	bool				reverseOrder;
-	deUint32			numDescriptorSetBindings;
-	deUint32			numDynamicBindings;
-	deUint32			numNonDynamicBindings;
-	GroupingStrategy	groupingStrategy;
+	PipelineConstructionType	pipelineConstructionType;
+	VkDescriptorType			descriptorType;
+	deUint32					numCmdBuffers;
+	bool						reverseOrder;
+	deUint32					numDescriptorSetBindings;
+	deUint32					numDynamicBindings;
+	deUint32					numNonDynamicBindings;
+	GroupingStrategy			groupingStrategy;
 };
-
+#ifndef CTS_USES_VULKANSC
 vector<Vertex4RGBA> createQuads (deUint32 numQuads, float size)
 {
 	vector<Vertex4RGBA>	vertices;
@@ -105,6 +108,7 @@ vector<Vertex4RGBA> createQuads (deUint32 numQuads, float size)
 
 	return vertices;
 }
+#endif // CTS_USES_VULKANSC
 
 static const tcu::Vec4			testColors[]	=
 {
@@ -117,6 +121,41 @@ static const tcu::Vec4			testColors[]	=
 };
 static constexpr VkDeviceSize	kColorSize		= static_cast<VkDeviceSize>(sizeof(testColors[0]));
 static constexpr deUint32		kNumTestColors	= static_cast<deUint32>(DE_LENGTH_OF_ARRAY(testColors));
+
+bool compareVectors (const tcu::Vec4 firstVector, const tcu::Vec4 secondVector, const float tolerance)
+{
+	for (auto i = 0; i < firstVector.SIZE; i++)
+	{
+		if (abs(firstVector[i] - secondVector[i]) > tolerance)
+			return false;
+	}
+
+	return true;
+}
+
+inline VkImageCreateInfo makeImageCreateInfo (const tcu::IVec2& size, const VkFormat format, const VkImageUsageFlags usage)
+{
+	const VkImageCreateInfo imageParams =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType			sType;
+		DE_NULL,								// const void*				pNext;
+		(VkImageCreateFlags)0,					// VkImageCreateFlags		flags;
+		VK_IMAGE_TYPE_2D,						// VkImageType				imageType;
+		format,									// VkFormat					format;
+		makeExtent3D(size.x(), size.y(), 1),	// VkExtent3D				extent;
+		1u,										// deUint32					mipLevels;
+		1u,										// deUint32					arrayLayers;
+		VK_SAMPLE_COUNT_1_BIT,					// VkSampleCountFlagBits	samples;
+		VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling			tiling;
+		usage,									// VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode			sharingMode;
+		0u,										// deUint32					queueFamilyIndexCount;
+		DE_NULL,								// const deUint32*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout			initialLayout;
+	};
+
+	return imageParams;
+}
 
 class DynamicOffsetTestInstance : public vkt::TestInstance
 {
@@ -160,12 +199,12 @@ private:
 	Move<VkDescriptorPool>				m_descriptorPool;
 	vector<Move<VkDescriptorSet>>		m_descriptorSets;
 	Move<VkPipelineLayout>				m_pipelineLayout;
-	vector<VkPipelineSp>				m_graphicsPipelines;
+	vector<GraphicsPipelineWrapper>		m_graphicsPipelines;
 	Move<VkCommandPool>					m_cmdPool;
 	vector<VkCommandBufferSp>			m_cmdBuffers;
 	vector<Vertex4RGBA>					m_vertices;
 };
-
+#ifndef CTS_USES_VULKANSC
 DynamicOffsetGraphicsTestInstance::DynamicOffsetGraphicsTestInstance (Context& context, const TestParams& params)
 	: DynamicOffsetTestInstance	(context, params)
 	, m_renderSize				(32, 32)
@@ -173,6 +212,7 @@ DynamicOffsetGraphicsTestInstance::DynamicOffsetGraphicsTestInstance (Context& c
 	, m_vertices				(createQuads(m_params.numDescriptorSetBindings * m_params.numCmdBuffers, 0.25f))
 {
 }
+#endif // CTS_USES_VULKANSC
 
 void DynamicOffsetGraphicsTestInstance::init (void)
 {
@@ -523,6 +563,7 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 	}
 
 	// Create pipelines
+	m_graphicsPipelines.reserve(m_params.numCmdBuffers);
 	for (deUint32 pipelineIdx = 0; pipelineIdx < m_params.numCmdBuffers; pipelineIdx++)
 	{
 		const VkVertexInputBindingDescription		vertexInputBindingDescription		=
@@ -548,7 +589,7 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 			}
 		};
 
-		const VkPipelineVertexInputStateCreateInfo	vertexInputStateParams				=
+		const VkPipelineVertexInputStateCreateInfo	vertexInputStateParams
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType							sType;
 			DE_NULL,													// const void*								pNext;
@@ -559,26 +600,25 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 			vertexInputAttributeDescriptions							// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 		};
 
-		const VkPrimitiveTopology					topology							= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		const vector<VkViewport>	viewports	{ makeViewport(m_renderSize) };
+		const vector<VkRect2D>		scissors	{ makeRect2D(m_renderSize) };
 
-		const vector<VkViewport>					viewports							(1, makeViewport(m_renderSize));
-		const vector<VkRect2D>						scissors							(1, makeRect2D(m_renderSize));
-
-		m_graphicsPipelines.push_back(VkPipelineSp(new Unique<VkPipeline>(makeGraphicsPipeline(vk,								// const DeviceInterface&						vk
-																							   vkDevice,						// const VkDevice								device
-																							   *m_pipelineLayout,				// const VkPipelineLayout						pipelineLayout
-																							   *m_vertexShaderModule,			// const VkShaderModule							vertexShaderModule
-																							   DE_NULL,							// const VkShaderModule							tessellationControlShaderModule
-																							   DE_NULL,							// const VkShaderModule							tessellationEvalShaderModule
-																							   DE_NULL,							// const VkShaderModule							geometryShaderModule
-																							   *m_fragmentShaderModule,			// const VkShaderModule							fragmentShaderModule
-																							   **m_renderPasses[pipelineIdx],	// const VkRenderPass							renderPass
-																							   viewports,						// const std::vector<VkViewport>&				viewports
-																							   scissors,						// const std::vector<VkRect2D>&					scissors
-																							   topology,						// const VkPrimitiveTopology					topology
-																							   0u,								// const deUint32								subpass
-																							   0u,								// const deUint32								patchControlPoints
-																							   &vertexInputStateParams))));		// const VkPipelineVertexInputStateCreateInfo*	vertexInputStateCreateInfo
+		m_graphicsPipelines.emplace_back(vk, vkDevice, m_params.pipelineConstructionType);
+		m_graphicsPipelines.back().setMonolithicPipelineLayout(*m_pipelineLayout)
+								  .setDefaultRasterizationState()
+								  .setDefaultDepthStencilState()
+								  .setDefaultColorBlendState()
+								  .setDefaultMultisampleState()
+								  .setupVertexInputState(&vertexInputStateParams)
+								  .setupPreRasterizationShaderState(viewports,
+																	scissors,
+																	*m_pipelineLayout,
+																	**m_renderPasses[pipelineIdx],
+																	0u,
+																	*m_vertexShaderModule)
+								  .setupFragmentShaderState(*m_pipelineLayout, **m_renderPasses[pipelineIdx], 0u, *m_fragmentShaderModule)
+								  .setupFragmentOutputState(**m_renderPasses[pipelineIdx])
+								  .buildPipeline();
 	}
 
 	// Create vertex buffer
@@ -620,7 +660,7 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 
 		beginCommandBuffer(vk, **m_cmdBuffers[idx], 0u);
 		beginRenderPass(vk, **m_cmdBuffers[idx], **m_renderPasses[idx], **m_framebuffers[idx], makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
-		vk.cmdBindPipeline(**m_cmdBuffers[idx], VK_PIPELINE_BIND_POINT_GRAPHICS, **m_graphicsPipelines[idx]);
+		vk.cmdBindPipeline(**m_cmdBuffers[idx], VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipelines[idx].getPipeline());
 		vk.cmdBindVertexBuffers(**m_cmdBuffers[idx], 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
 
 		for (deUint32 i = 0; i < m_params.numDescriptorSetBindings; i++)
@@ -711,7 +751,7 @@ tcu::TestStatus DynamicOffsetGraphicsTestInstance::verifyImage (void)
 	else
 		return tcu::TestStatus::fail("Image mismatch");
 }
-
+#ifndef CTS_USES_VULKANSC
 class DynamicOffsetGraphicsTest : public vkt::TestCase
 {
 public:
@@ -722,6 +762,7 @@ public:
 						~DynamicOffsetGraphicsTest	(void);
 	void				initPrograms				(SourceCollections& sourceCollections) const;
 	TestInstance*		createInstance				(Context& context) const;
+	void				checkSupport				(Context& context) const;
 
 protected:
 	const TestParams	m_params;
@@ -743,6 +784,11 @@ DynamicOffsetGraphicsTest::~DynamicOffsetGraphicsTest (void)
 TestInstance* DynamicOffsetGraphicsTest::createInstance (Context& context) const
 {
 	return new DynamicOffsetGraphicsTestInstance(context, m_params);
+}
+
+void DynamicOffsetGraphicsTest::checkSupport(Context& context) const
+{
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 
 void DynamicOffsetGraphicsTest::initPrograms (SourceCollections& sourceCollections) const
@@ -829,7 +875,7 @@ void DynamicOffsetGraphicsTest::initPrograms (SourceCollections& sourceCollectio
 	sourceCollections.glslSources.add("vert") << glu::VertexSource(vertexSrc);
 	sourceCollections.glslSources.add("frag") << glu::FragmentSource(fragmentSrc);
 }
-
+#endif // CTS_USES_VULKANSC
 class DynamicOffsetComputeTestInstance : public DynamicOffsetTestInstance
 {
 public:
@@ -1407,9 +1453,803 @@ void DynamicOffsetComputeTest::initPrograms (SourceCollections& sourceCollection
 	sourceCollections.glslSources.add("compute") << glu::ComputeSource(computeSrc);
 }
 
+class DynamicOffsetMixedTestInstance : public vkt::TestInstance
+{
+public:
+								DynamicOffsetMixedTestInstance	(Context&			context,
+																 const tcu::IVec2	renderSize,
+																 const deUint32		numInstances,
+																 const bool			testAllOffsets,
+																 const bool			reverseOrder,
+																 const bool			runComputeFirst,
+																 const deUint32		vertexOffset,
+																 const deUint32		sharedUboOffset,
+																 const deUint32		fragUboOffset,
+																 const deUint32		ssboReadOffset,
+																 const deUint32		ssboWriteOffset)
+																: vkt::TestInstance	(context)
+																, m_renderSize		(renderSize)
+																, m_numInstances	(numInstances)
+																, m_testAllOffsets	(testAllOffsets)
+																, m_reverseOrder	(reverseOrder)
+																, m_runComputeFirst	(runComputeFirst)
+																, m_vertexOffset	(vertexOffset)
+																, m_sharedUboOffset	(sharedUboOffset)
+																, m_fragUboOffset	(fragUboOffset)
+																, m_ssboReadOffset	(ssboReadOffset)
+																, m_ssboWriteOffset	(ssboWriteOffset)
+																{}
+
+								~DynamicOffsetMixedTestInstance	();
+
+	virtual tcu::TestStatus		iterate							(void);
+
+private:
+	struct VertexInfo
+	{
+		tcu::Vec4	position;
+		tcu::Vec4	color;
+	};
+
+	const VkFormat		OUTPUT_COLOR_FORMAT		= VK_FORMAT_R8G8B8A8_UNORM;
+
+	const tcu::IVec2	m_renderSize;
+	const deUint32		m_numInstances;
+	const bool			m_testAllOffsets;
+	const bool			m_reverseOrder;
+	const bool			m_runComputeFirst;
+	const deUint32		m_vertexOffset;
+	const deUint32		m_sharedUboOffset;
+	const deUint32		m_fragUboOffset;
+	const deUint32		m_ssboReadOffset;
+	const deUint32		m_ssboWriteOffset;
+};
+
+DynamicOffsetMixedTestInstance::~DynamicOffsetMixedTestInstance ()
+{
+}
+
+tcu::TestStatus DynamicOffsetMixedTestInstance::iterate (void)
+{
+	tcu::TestLog&											log						= m_context.getTestContext().getLog();
+	const DeviceInterface&									vk						= m_context.getDeviceInterface();
+	const VkDevice											device					= m_context.getDevice();
+	Allocator&												allocator				= m_context.getDefaultAllocator();
+	const deUint32											queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
+
+	// Create shaders
+	const Move<VkShaderModule>								vertexShaderModule		= createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0u);
+	const Move<VkShaderModule>								fragmentShaderModule	= createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0u);
+	const Move<VkShaderModule>								computeShaderModule		= createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0u);
+
+	const deUint32											vertexBufferBindId		= 0u;
+
+	// Vertex input state and binding
+	VkVertexInputBindingDescription							bindingDescription
+	{
+		vertexBufferBindId,			// uint32_t				binding;
+		sizeof(VertexInfo),			// uint32_t				stride;
+		VK_VERTEX_INPUT_RATE_VERTEX	// VkVertexInputRate	inputRate;
+	};
+
+	const std::array<VkVertexInputAttributeDescription, 2>	vertexAttributeDescs
+	{ {
+		VkVertexInputAttributeDescription
+		{
+			0u,								// uint32_t	location;
+			vertexBufferBindId,				// uint32_t	binding;
+			VK_FORMAT_R32G32B32A32_SFLOAT,	// VkFormat	format;
+			0u								// uint32_t	offset;
+		},
+
+		VkVertexInputAttributeDescription
+		{
+			1u,								// uint32_t	location;
+			vertexBufferBindId,				// uint32_t	binding;
+			VK_FORMAT_R32G32B32A32_SFLOAT,	// VkFormat	format;
+			deUint32(sizeof(float)) * 4u	// uint32_t	offset;
+		}
+	} };
+
+	const VkPipelineVertexInputStateCreateInfo				vertexInputStateCreateInfo
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType							sType;
+		DE_NULL,													// const void*								pNext;
+		0u,															// VkPipelineVertexInputStateCreateFlags	flags;
+		1u,															// uint32_t									vertexBindingDescriptionCount;
+		&bindingDescription,										// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
+		static_cast<uint32_t>(vertexAttributeDescs.size()),			// uint32_t									vertexAttributeDescriptionCount;
+		vertexAttributeDescs.data()									// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
+	};
+
+	// Descriptor pool and descriptor set
+	DescriptorPoolBuilder									poolBuilder;
+
+	poolBuilder.addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 3u);
+	poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 2u);
+
+	const Move<VkDescriptorPool>							descriptorPool			= poolBuilder.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+	DescriptorSetLayoutBuilder								layoutBuilderAttachments;
+	{
+		if (!m_reverseOrder)
+		{
+			layoutBuilderAttachments.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT);
+			layoutBuilderAttachments.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT);
+			layoutBuilderAttachments.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, VK_SHADER_STAGE_COMPUTE_BIT);
+			layoutBuilderAttachments.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_FRAGMENT_BIT);
+			layoutBuilderAttachments.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, VK_SHADER_STAGE_COMPUTE_BIT);
+		}
+		else
+		{
+			layoutBuilderAttachments.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, VK_SHADER_STAGE_COMPUTE_BIT);
+			layoutBuilderAttachments.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_FRAGMENT_BIT);
+			layoutBuilderAttachments.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, VK_SHADER_STAGE_COMPUTE_BIT);
+			layoutBuilderAttachments.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT);
+			layoutBuilderAttachments.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT);
+		}
+	}
+
+	const Move<VkDescriptorSetLayout>						descriptorSetLayout		= layoutBuilderAttachments.build(vk, device);
+
+	const Move<VkDescriptorSet>								descriptorSet			= makeDescriptorSet(vk, device, descriptorPool.get(), descriptorSetLayout.get());
+
+	Move<VkImage>											colorImage				= (makeImage(vk, device, makeImageCreateInfo(m_renderSize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)));
+
+	// Allocate and bind color image memory
+	const VkImageSubresourceRange							colorSubresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	const UniquePtr<Allocation>								colorImageAlloc			(bindImage(vk, device, allocator, *colorImage, MemoryRequirement::Any));
+	Move<VkImageView>										colorImageView			= (makeImageView(vk, device, *colorImage, VK_IMAGE_VIEW_TYPE_2D, OUTPUT_COLOR_FORMAT, colorSubresourceRange));
+
+	// Create renderpass
+	const VkAttachmentDescription							attachmentDescription	=
+	{
+		(VkAttachmentDescriptionFlags)0,			// VkAttachmentDescriptionFlags	flags
+		OUTPUT_COLOR_FORMAT,						// VkFormat						format
+		VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits		samples
+		VK_ATTACHMENT_LOAD_OP_CLEAR,				// VkAttachmentLoadOp			loadOp
+		VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp			storeOp
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp			stencilLoadOp
+		VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp			stencilStoreOp
+		VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout				initialLayout
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout				finalLayout
+	};
+
+	const VkAttachmentReference								attachmentReference		=
+	{
+		0u,											// deUint32			attachment
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout	layout
+	};
+
+	const VkSubpassDescription								subpassDescription		=
+	{
+		(VkSubpassDescriptionFlags)0,		// VkSubpassDescriptionFlags	flags
+		VK_PIPELINE_BIND_POINT_GRAPHICS,	// VkPipelineBindPoint			pipelineBindPoint
+		0u,									// deUint32						inputAttachmentCount
+		DE_NULL,							// const VkAttachmentReference*	pInputAttachments
+		1u,									// deUint32						colorAttachmentCount
+		&attachmentReference,				// const VkAttachmentReference*	pColorAttachments
+		DE_NULL,							// const VkAttachmentReference*	pResolveAttachments
+		DE_NULL,							// const VkAttachmentReference*	pDepthStencilAttachment
+		0u,									// deUint32						preserveAttachmentCount
+		DE_NULL								// const deUint32*				pPreserveAttachments
+	};
+
+	const VkRenderPassCreateInfo							renderPassInfo			=
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	// VkStructureTypei					sType
+		DE_NULL,									// const void*						pNext
+		(VkRenderPassCreateFlags)0,					// VkRenderPassCreateFlags			flags
+		1u,											// deUint32							attachmentCount
+		&attachmentDescription,						// const VkAttachmentDescription*	pAttachments
+		1u,											// deUint32							subpassCount
+		&subpassDescription,						// const VkSubpassDescription*		pSubpasses
+		0u,											// deUint32							dependencyCount
+		DE_NULL										// const VkSubpassDependency*		pDependencies
+	};
+
+	Move<VkRenderPass>										renderPass				= createRenderPass(vk, device, &renderPassInfo);
+
+	// Create framebuffer
+	const VkImageView										attachmentBindInfos[]	=
+	{
+		*colorImageView
+	};
+
+	const VkFramebufferCreateInfo							framebufferCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,	// VkStructureType				sType;
+		DE_NULL,									// const void*					pNext;
+		VkFramebufferCreateFlags(0),				// VkFramebufferCreateFlags		flags;
+		*renderPass,								// VkRenderPass					renderPass;
+		1u,											// deUint32						attachmentCount;
+		attachmentBindInfos,						// const VkImageView*			pAttachments;
+		(deUint32)m_renderSize.x(),					// deUint32						width;
+		(deUint32)m_renderSize.y(),					// deUint32						height;
+		1u											// deUint32						layers;
+	};
+
+	Move<VkFramebuffer>										framebuffer				= createFramebuffer(vk, device, &framebufferCreateInfo);
+
+	// Create pipeline layout
+	const VkPipelineLayoutCreateInfo						pipelineLayoutInfo		=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,			// VkStructureType				sType;
+		DE_NULL,												// const void*					pNext;
+		0u,														// VkPipelineLayoutCreateFlags	flags;
+		1u,														// deUint32						descriptorSetCount;
+		&descriptorSetLayout.get(),								// const VkDescriptorSetLayout*	pSetLayouts;
+		0u,														// deUint32						pushConstantRangeCount;
+		DE_NULL													// const VkPushDescriptorRange*	pPushDescriptorRanges;
+	};
+
+	Move<VkPipelineLayout>									pipelineLayout			= createPipelineLayout(vk, device, &pipelineLayoutInfo);
+
+	// Create graphics pipeline
+	const std::vector<VkViewport>							viewports(1, makeViewport(m_renderSize));
+	const std::vector<VkRect2D>								scissors(1, makeRect2D(m_renderSize));
+
+	Move<VkPipeline>										graphicsPipeline		= makeGraphicsPipeline(
+		vk,										// const DeviceInterface&						vk
+		device,									// const VkDevice								device
+		*pipelineLayout,						// const VkPipelineLayout						pipelineLayout
+		*vertexShaderModule,					// const VkShaderModule							vertexShaderModule
+		DE_NULL,								// const VkShaderModule							tessellationControlShaderModule
+		DE_NULL,								// const VkShaderModule							tessellationEvalShaderModule
+		DE_NULL,								// const VkShaderModule							geometryShaderModule
+		*fragmentShaderModule,					// const VkShaderModule							fragmentShaderModule
+		*renderPass,							// const VkRenderPass							renderPass
+		viewports,								// const std::vector<VkViewport>&				viewports
+		scissors,								// const std::vector<VkRect2D>&					scissors
+		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	// const VkPrimitiveTopology					topology
+		0u,										// const deUint32								subpass
+		0u,										// const deUint32								patchControlPoints
+		&vertexInputStateCreateInfo);			// const VkPipelineVertexInputStateCreateInfo*	vertexInputStateCreateInfo
+
+	// Create compute pipeline
+	const VkPipelineShaderStageCreateInfo					compPipStageCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
+		DE_NULL,												// const void*							pNext;
+		0u,														// VkPipelineShaderStageCreateFlags		flags;
+		VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits				stage;
+		*computeShaderModule,									// VkShaderModule						module;
+		"main",													// const char*							pName;
+		DE_NULL													// const VkSpecializationInfo*			pSpecializationInfo;
+	};
+
+	const VkComputePipelineCreateInfo						compPipelinecreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,			// VkStructureType					sType;
+		DE_NULL,												// const void*						pNext;
+		0u,														// VkPipelineCreateFlags			flags;
+		compPipStageCreateInfo,									// VkPipelineShaderStageCreateInfo	stage;
+		*pipelineLayout,										// VkPipelineLayout					layout;
+		(VkPipeline)0,											// VkPipeline						basePipelineHandle;
+		0u,														// int32_t							basePipelineIndex;
+	};
+
+	Move<VkPipeline>										computePipeline			= createComputePipeline(vk, device, (vk::VkPipelineCache)0u, &compPipelinecreateInfo);
+
+	const VkQueue											queue					= m_context.getUniversalQueue();
+	const VkPhysicalDeviceLimits							deviceLimits			= getPhysicalDeviceProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()).limits;
+
+	// Create vertex buffer
+	const deUint32											numVertices				= 6;
+	const VkDeviceSize										vertexBufferSizeBytes	= 256;
+	const Unique<VkBuffer>									vertexBuffer			(makeBuffer(vk, device, vertexBufferSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
+	const de::UniquePtr<Allocation>							vertexBufferAlloc		(bindBuffer(vk, device, allocator, *vertexBuffer, MemoryRequirement::HostVisible));
+
+	const deUint32											instanceSize			= (deUint32)std::sqrt(m_numInstances);
+	const float												posIncrement			= 1.0f / (float)m_numInstances * float(instanceSize);
+
+	// Result image has to be a square and multiple of 16.
+	DE_ASSERT(instanceSize * instanceSize == m_numInstances && m_numInstances % 16u == 0);
+
+	{
+		tcu::Vec4			vertexColor	= tcu::Vec4(0.0f, 0.5f, 0.0f, 1.0f);
+		VertexInfo*	const	pVertices	= reinterpret_cast<VertexInfo*>(vertexBufferAlloc->getHostPtr());
+
+		pVertices[0]	= { tcu::Vec4(posIncrement, -posIncrement, 0.0f, 1.0f),		vertexColor };
+		pVertices[1]	= { tcu::Vec4(-posIncrement, -posIncrement, 0.0f, 1.0f),	vertexColor };
+		pVertices[2]	= { tcu::Vec4(-posIncrement, posIncrement, 0.0f, 1.0f),		vertexColor };
+		pVertices[3]	= { tcu::Vec4(-posIncrement, posIncrement, 1.0f, 1.0f),		vertexColor };
+		pVertices[4]	= { tcu::Vec4(posIncrement, posIncrement, 1.0f, 1.0f),		vertexColor };
+		pVertices[5]	= { tcu::Vec4(posIncrement, -posIncrement, 1.0f, 1.0f),		vertexColor };
+
+		flushAlloc(vk, device, *vertexBufferAlloc);
+	}
+
+	// Prepare buffers
+	const vk::VkDeviceSize									minUboAlignment			= deviceLimits.minUniformBufferOffsetAlignment;
+	const deUint32											bufferElementSizeVec4	= (deUint32)sizeof(tcu::Vec4);
+	const deUint32											bufferElementSizeMat4	= (deUint32)sizeof(tcu::Mat4);
+	deUint32												dynamicAlignmentVec4	= bufferElementSizeVec4;
+	deUint32												dynamicAlignmentMat4	= bufferElementSizeMat4;
+
+	if (minUboAlignment > 0)
+	{
+		dynamicAlignmentVec4	= (dynamicAlignmentVec4 + (deUint32)minUboAlignment - 1) & ~((deUint32)minUboAlignment - 1);
+		dynamicAlignmentMat4	= (dynamicAlignmentMat4 + (deUint32)minUboAlignment - 1) & ~((deUint32)minUboAlignment - 1);
+	}
+
+	const deUint32											bufferSizeVec4			= m_numInstances * dynamicAlignmentVec4;
+	const deUint32											bufferSizeMat4			= m_numInstances * dynamicAlignmentMat4;
+
+	const Unique<VkBuffer>									uboBufferVertex			(makeBuffer(vk, device, bufferSizeVec4, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
+	const Unique<VkBuffer>									uboBufferShared			(makeBuffer(vk, device, bufferSizeVec4, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
+	const Unique<VkBuffer>									ssboBufferWrite			(makeBuffer(vk, device, bufferSizeVec4, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT));
+	const Unique<VkBuffer>									uboBufferFrag			(makeBuffer(vk, device, bufferSizeMat4, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
+	const Unique<VkBuffer>									ssboBufferRead			(makeBuffer(vk, device, bufferSizeMat4, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT));
+
+	const UniquePtr<Allocation>								uboBufferAllocVertex	(bindBuffer(vk, device, allocator, *uboBufferVertex, MemoryRequirement::HostVisible));
+	const UniquePtr<Allocation>								uboBufferAllocShared	(bindBuffer(vk, device, allocator, *uboBufferShared, MemoryRequirement::HostVisible));
+	const UniquePtr<Allocation>								ssboBufferAllocWrite	(bindBuffer(vk, device, allocator, *ssboBufferWrite, MemoryRequirement::HostVisible));
+	const UniquePtr<Allocation>								uboBufferAllocFrag		(bindBuffer(vk, device, allocator, *uboBufferFrag, MemoryRequirement::HostVisible));
+	const UniquePtr<Allocation>								ssboBufferAllocRead		(bindBuffer(vk, device, allocator, *ssboBufferRead, MemoryRequirement::HostVisible));
+
+	const float												colorIncrement			= 1.0f / float(m_numInstances);
+
+	std::vector<tcu::Vec4>									constVertexOffsets;
+
+	deUint32												columnCount				= 0u;
+	float													columnOffset			= posIncrement;
+	float													rowOffset				= -1.0f + posIncrement;
+
+	for (deUint32 posId = 0; posId < m_numInstances; posId++)
+	{
+		constVertexOffsets.push_back(tcu::Vec4(-1.0f + columnOffset, rowOffset, 0.0f, 0.0f));
+
+		columnOffset += 2 * posIncrement;
+		columnCount++;
+
+		if (columnCount >= instanceSize)
+		{
+			columnCount		= 0;
+			columnOffset	= posIncrement;
+			rowOffset		 += 2 * posIncrement;
+		}
+	}
+
+	// Fill buffers
+	{
+		char*	pPosUboVertex	= static_cast<char*>(uboBufferAllocVertex->getHostPtr());
+		char*	pPosUboShared	= static_cast<char*>(uboBufferAllocShared->getHostPtr());
+		char*	pPosSsboWrite	= static_cast<char*>(ssboBufferAllocWrite->getHostPtr());
+		char*	pPosUboFrag		= static_cast<char*>(uboBufferAllocFrag->getHostPtr());
+		char*	pPosSsboRead	= static_cast<char*>(ssboBufferAllocRead->getHostPtr());
+
+		if (m_testAllOffsets)
+		{
+			for (deUint32 posId = 0; posId < m_numInstances; posId++)
+			{
+				const float	constFragMat[]		=
+				{
+					colorIncrement, colorIncrement, colorIncrement, colorIncrement,
+					colorIncrement, colorIncrement, colorIncrement, colorIncrement,
+					colorIncrement, colorIncrement, colorIncrement, colorIncrement,
+					colorIncrement, colorIncrement, colorIncrement, colorIncrement * float(posId + 1u)
+				};
+
+				const float	constReadMat[]		=
+				{
+					1.0f, 0.0f, 1.0f, 0.0f,
+					0.0f, 1.0f, 0.0f, 1.0f - colorIncrement * float(posId + 1u),
+					1.0f, 0.0f, 1.0f, 0.17f,
+					0.0f, 1.0f, 0.0f, 1.0f
+				};
+
+				*((tcu::Vec4*)pPosUboVertex)	= constVertexOffsets[posId];
+				*((tcu::Vec4*)pPosUboShared)	= tcu::Vec4(colorIncrement * float(posId + 1u), 0.0f, 0.0f, 1.0f);
+				*((tcu::Vec4*)pPosSsboWrite)	= tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+				*((tcu::Mat4*)pPosUboFrag)		= tcu::Mat4(constFragMat);
+				*((tcu::Mat4*)pPosSsboRead)		= tcu::Mat4(constReadMat);
+				pPosUboVertex					+= dynamicAlignmentVec4;
+				pPosUboShared					+= dynamicAlignmentVec4;
+				pPosSsboWrite					+= dynamicAlignmentVec4;
+				pPosUboFrag						+= dynamicAlignmentMat4;
+				pPosSsboRead					+= dynamicAlignmentMat4;
+			}
+		}
+		else
+		{
+			for (deUint32 posId = 0; posId < m_numInstances; posId++)
+			{
+				const float	constFragMat[]		=
+				{
+					0.0f, 0.0f, 0.0f, 0.0f,
+					0.0f, 0.0f, 0.0f, 0.0f,
+					0.0f, 0.0f, 0.0f, 0.0f,
+					0.0f, 0.0f, 0.0f, m_fragUboOffset == posId ? 1.0f : 0.0f
+				};
+
+				const float	constReadMat[]		=
+				{
+					0.0f, 0.0f, 0.0f, 0.0f,
+					0.0f, 0.0f, 0.0f, m_ssboReadOffset == posId ? 0.25f : 0.0f,
+					0.0f, 0.0f, 0.0f, m_ssboReadOffset == posId ? 0.17f : 0.0f,
+					0.0f, 0.0f, 0.0f, 0.0f
+				};
+
+				*((tcu::Vec4*)pPosUboVertex)	= constVertexOffsets[posId];
+				*((tcu::Vec4*)pPosUboShared)	= m_sharedUboOffset == posId ? tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f) : tcu::Vec4(0);
+				*((tcu::Vec4*)pPosSsboWrite)	= tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+				*((tcu::Mat4*)pPosUboFrag)		= tcu::Mat4(constFragMat);
+				*((tcu::Mat4*)pPosSsboRead)		= tcu::Mat4(constReadMat);
+				pPosUboVertex					+= dynamicAlignmentVec4;
+				pPosUboShared					+= dynamicAlignmentVec4;
+				pPosSsboWrite					+= dynamicAlignmentVec4;
+				pPosUboFrag						+= dynamicAlignmentMat4;
+				pPosSsboRead					+= dynamicAlignmentMat4;
+			}
+		}
+
+		flushAlloc(vk, device, *uboBufferAllocVertex);
+		flushAlloc(vk, device, *uboBufferAllocShared);
+		flushAlloc(vk, device, *ssboBufferAllocWrite);
+		flushAlloc(vk, device, *uboBufferAllocFrag);
+		flushAlloc(vk, device, *ssboBufferAllocRead);
+	}
+
+	const vk::VkDescriptorBufferInfo						uboInfoVertexVec		= makeDescriptorBufferInfo(*uboBufferVertex, 0u, bufferElementSizeVec4);
+	const vk::VkDescriptorBufferInfo						uboInfoVec				= makeDescriptorBufferInfo(*uboBufferShared, 0u, bufferElementSizeVec4);
+	const vk::VkDescriptorBufferInfo						ssboInfoVec				= makeDescriptorBufferInfo(*ssboBufferWrite, 0u, bufferElementSizeVec4);
+	const vk::VkDescriptorBufferInfo						uboInfoMat				= makeDescriptorBufferInfo(*uboBufferFrag, 0u, bufferElementSizeMat4);
+	const vk::VkDescriptorBufferInfo						ssboInfoMat				= makeDescriptorBufferInfo(*ssboBufferRead, 0u, bufferElementSizeMat4);
+
+	// Update descriptors
+	DescriptorSetUpdateBuilder								builder;
+
+	builder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(m_reverseOrder ? 4u : 0u), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, &uboInfoVertexVec);
+	builder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(m_reverseOrder ? 3u : 1u), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, &uboInfoVec);
+	builder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(						2u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, &ssboInfoVec);
+	builder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(m_reverseOrder ? 1u : 3u), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, &uboInfoMat);
+	builder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(m_reverseOrder ? 0u : 4u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, &ssboInfoMat);
+	builder.update(vk, device);
+
+	// Command buffer
+	const Unique<VkCommandPool>								cmdPool					(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandBuffer>							cmdBuffer				(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+	const VkDeviceSize										vertexBufferOffset		= 0u;
+
+	// Render result buffer
+	const VkDeviceSize										colorBufferSizeBytes	= tcu::getPixelSize(mapVkFormat(OUTPUT_COLOR_FORMAT)) * static_cast<VkDeviceSize>(m_renderSize.x()) * static_cast<VkDeviceSize>(m_renderSize.y());
+	const Unique<VkBuffer>									colorBuffer				(makeBuffer(vk, device, colorBufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
+	const UniquePtr<Allocation>								colorBufferAlloc		(bindBuffer(vk, device, allocator, *colorBuffer, MemoryRequirement::HostVisible));
+
+	const VkClearValue										clearColorValue			= defaultClearValue(OUTPUT_COLOR_FORMAT);
+
+	bool													runGraphics				= !m_runComputeFirst;
+
+	for (int i = 0; i < 2; i++)
+	{
+		beginCommandBuffer(vk, *cmdBuffer);
+
+		if (runGraphics)
+		{
+			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), clearColorValue);
+			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
+			vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+		}
+		else
+		{
+			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
+		}
+
+		if (m_testAllOffsets)
+		{
+			for (deUint32 instance = 0; instance < m_numInstances; instance++)
+			{
+				deUint32				offsetVec4 = dynamicAlignmentVec4 * instance;
+				deUint32				offsetMat4 = dynamicAlignmentMat4 * instance;
+				std::vector<deUint32>	offsets;
+
+				offsets.push_back(m_reverseOrder ? offsetMat4 : offsetVec4);
+				offsets.push_back(m_reverseOrder ? offsetMat4 : offsetVec4);
+				offsets.push_back(offsetVec4);
+				offsets.push_back(m_reverseOrder ? offsetVec4 : offsetMat4);
+				offsets.push_back(m_reverseOrder ? offsetVec4 : offsetMat4);
+
+				if (runGraphics)
+				{
+					vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet.get(), (deUint32)offsets.size(), offsets.data());
+					vk.cmdDraw(*cmdBuffer, numVertices, 1u, 0u, 0u);
+				}
+				else
+				{
+					vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), (deUint32)offsets.size(), offsets.data());
+					vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
+				}
+			}
+		}
+		else
+		{
+			std::vector<deUint32>	offsets;
+
+			offsets.push_back(m_reverseOrder ? dynamicAlignmentMat4 * m_ssboReadOffset : dynamicAlignmentVec4 * m_vertexOffset);
+			offsets.push_back(m_reverseOrder ? dynamicAlignmentMat4 * m_fragUboOffset : dynamicAlignmentVec4 * m_sharedUboOffset);
+			offsets.push_back(dynamicAlignmentVec4 * m_ssboWriteOffset);
+			offsets.push_back(m_reverseOrder ? dynamicAlignmentVec4 * m_sharedUboOffset : dynamicAlignmentMat4 * m_fragUboOffset);
+			offsets.push_back(m_reverseOrder ? dynamicAlignmentVec4 * m_vertexOffset : dynamicAlignmentMat4 * m_ssboReadOffset);
+
+			if (runGraphics)
+			{
+				vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet.get(), (deUint32)offsets.size(), offsets.data());
+				vk.cmdDraw(*cmdBuffer, numVertices, 1u, 0u, 0u);
+			}
+			else
+			{
+				vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), (deUint32)offsets.size(), offsets.data());
+				vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
+			}
+		}
+
+		if (runGraphics)
+		{
+			endRenderPass(vk, *cmdBuffer);
+			copyImageToBuffer(vk, *cmdBuffer, *colorImage, *colorBuffer, m_renderSize, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+		}
+
+		runGraphics = !runGraphics;
+
+		endCommandBuffer(vk, *cmdBuffer);
+
+		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+		m_context.resetCommandPoolForVKSC(device, *cmdPool);
+	}
+
+	// Check result image
+	{
+		tcu::TextureLevel				referenceTexture	(mapVkFormat(OUTPUT_COLOR_FORMAT), m_renderSize.x(), m_renderSize.y());
+		const tcu::PixelBufferAccess	referenceAccess		= referenceTexture.getAccess();
+		const deUint32					segmentSize			= m_renderSize.x() / instanceSize;
+
+		// Create reference image
+		if (m_testAllOffsets)
+		{
+			for (int y = 0; y < m_renderSize.y(); ++y)
+			{
+				for (int x = 0; x < m_renderSize.x(); ++x)
+				{
+					// While running test for all offsets, we create a nice gradient-like color for the pixels.
+					float colorValue = (float)(y / segmentSize * instanceSize + x / segmentSize + 1u) * colorIncrement;
+
+					referenceAccess.setPixel(tcu::Vec4(colorValue, 0.5f, colorValue, 1.0f), x, y);
+				}
+			}
+		}
+		else
+		{
+			// At first we have to find a correct location for the drawn square.
+			const deUint32	segmentCountPerRow	= (deUint32)m_renderSize.x() / segmentSize;
+			const deUint32	offsetY				= m_vertexOffset > segmentCountPerRow ? m_vertexOffset / segmentCountPerRow : 0u;
+			const deUint32	offsetX				= offsetY > 0 ? m_vertexOffset - (segmentCountPerRow * offsetY) : m_vertexOffset;
+			const deUint32	pixelOffsetY		= segmentSize * offsetY;
+			const deUint32	pixelOffsetX		= segmentSize * offsetX;
+
+			for (int y = 0; y < m_renderSize.y(); ++y)
+			{
+				for (int x = 0; x < m_renderSize.x(); ++x)
+				{
+					float colorValueRed		= clearColorValue.color.float32[0];
+					float colorValueGreen	= clearColorValue.color.float32[1];
+					float colorValueBlue	= clearColorValue.color.float32[2];
+
+					// Next, we fill the correct number of pixels with test color.
+					if (x >= (int)pixelOffsetX && x < int(pixelOffsetX + segmentSize) && y >= (int)pixelOffsetY && y < int(pixelOffsetY + segmentSize))
+					{
+						// While running test only for one offset, the result color for pixel is constant.
+						colorValueRed	= 1.0f;
+						colorValueGreen	= 0.5f;
+						colorValueBlue	= colorValueRed;
+					}
+
+					referenceAccess.setPixel(tcu::Vec4(colorValueRed, colorValueGreen, colorValueBlue, 1.0f), x, y);
+				}
+			}
+		}
+
+		invalidateAlloc(vk, device, *colorBufferAlloc);
+
+		const tcu::ConstPixelBufferAccess resultPixelAccess(mapVkFormat(OUTPUT_COLOR_FORMAT), m_renderSize.x(), m_renderSize.y(), 1, colorBufferAlloc->getHostPtr());
+
+		if (!tcu::floatThresholdCompare(log, "color", "Image compare", referenceAccess, resultPixelAccess, tcu::Vec4(0.01f), tcu::COMPARE_LOG_RESULT))
+			return tcu::TestStatus::fail("Rendered image is not correct");
+	}
+
+	// Check result buffer values
+	{
+		invalidateAlloc(vk, device, *ssboBufferAllocWrite);
+
+		std::vector<tcu::Vec4>	refColors;
+		std::vector<tcu::Vec4>	outColors;
+
+			for (deUint32 i = 0; i < m_numInstances; i++)
+			{
+				if (m_testAllOffsets)
+				{
+					refColors.push_back(tcu::Vec4(float(i + 1) * colorIncrement, 1.0f - float(i + 1) * colorIncrement, 0.17f, 1.0f));
+				}
+				else
+				{
+					refColors.push_back(m_ssboWriteOffset == i ? tcu::Vec4(1.0f, 0.25f, 0.17f, 1.0f) : tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+				}
+
+				outColors.push_back(*(tcu::Vec4*)((deUint8*)ssboBufferAllocWrite->getHostPtr() + dynamicAlignmentVec4 * i));
+
+				if (!compareVectors(outColors[i], refColors[i], 0.01f))
+				{
+					log << tcu::TestLog::Message << "Reference: " << refColors[i].x() << ", " << refColors[i].y() << ", " << refColors[i].z() << ", " << refColors[i].w() << ", " << tcu::TestLog::EndMessage;
+					log << tcu::TestLog::Message << "Result   : " << outColors[i].x() << ", " << outColors[i].y() << ", " << outColors[i].z() << ", " << outColors[i].w() << ", " << tcu::TestLog::EndMessage;
+
+					return tcu::TestStatus::fail("Result value is not correct");
+				}
+			}
+		}
+
+	return tcu::TestStatus::pass("Success");
+}
+
+class DynamicOffsetMixedTest : public vkt::TestCase
+{
+public:
+							DynamicOffsetMixedTest	(tcu::TestContext&	testContext,
+													 const std::string&	name,
+													 const std::string&	description,
+													 const tcu::IVec2	renderSize,
+													 const deUint32		numInstances,
+													 const bool			testAllOffsets,
+													 const bool			reverseOrder,
+													 const bool			runComputeFirst	= false,
+													 const deUint32		vertexOffset	= 0u,
+													 const deUint32		sharedUboOffset	= 0u,
+													 const deUint32		fragUboOffset	= 0u,
+													 const deUint32		ssboReadOffset	= 0u,
+													 const deUint32		ssboWriteOffset	= 0u)
+													: vkt::TestCase		(testContext, name, description)
+													, m_renderSize		(renderSize)
+													, m_numInstances	(numInstances)
+													, m_testAllOffsets	(testAllOffsets)
+													, m_reverseOrder	(reverseOrder)
+													, m_runComputeFirst	(runComputeFirst)
+													, m_vertexOffset	(vertexOffset)
+													, m_sharedUboOffset	(sharedUboOffset)
+													, m_fragUboOffset	(fragUboOffset)
+													, m_ssboReadOffset	(ssboReadOffset)
+													, m_ssboWriteOffset	(ssboWriteOffset)
+													{}
+
+						~DynamicOffsetMixedTest		(void);
+
+	void				initPrograms				(SourceCollections& sourceCollections) const;
+	TestInstance		*createInstance				(Context& context) const;
+private:
+	const tcu::IVec2	m_renderSize;
+	const deUint32		m_numInstances;
+	const bool			m_testAllOffsets;
+	const bool			m_reverseOrder;
+	const bool			m_runComputeFirst;
+	const deUint32		m_vertexOffset;
+	const deUint32		m_sharedUboOffset;
+	const deUint32		m_fragUboOffset;
+	const deUint32		m_ssboReadOffset;
+	const deUint32		m_ssboWriteOffset;
+};
+
+DynamicOffsetMixedTest::~DynamicOffsetMixedTest (void)
+{
+}
+
+void DynamicOffsetMixedTest::initPrograms (SourceCollections& sourceCollections) const
+{
+	// Vertex
+	{
+		std::ostringstream src;
+
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< "\n"
+			<< "layout(set = 0, binding = " << (m_reverseOrder ? "4" : "0") << ") uniform uboVertexData\n"
+			<< "{\n"
+			<< "	vec4 position;\n"
+			<< "} inputPosData;\n"
+			<< "\n"
+			<< "layout(location = 0) in vec4 inPosition;\n"
+			<< "layout(location = 1) in vec4 inColor;\n"
+			<< "layout(location = 0) out vec4 outColor;\n"
+			<< "\n"
+			<< "out gl_PerVertex\n"
+			<< "{\n"
+			<< "	vec4 gl_Position;\n"
+			<< "};\n"
+			<< "\n"
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "	gl_Position = inPosition + inputPosData.position;\n"
+			<< "	outColor = inColor;\n"
+			<< "}\n";
+
+		sourceCollections.glslSources.add("vert") << glu::VertexSource(src.str());
+	}
+
+	// Fragment
+	{
+		std::ostringstream src;
+
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< "\n"
+			<< "layout(set = 0, binding = " << (m_reverseOrder ? "3" : "1") << ") uniform uboSharedData\n"
+			<< "{\n"
+			<< "	vec4 color;\n"
+			<< "} inputData0;\n"
+			<< "\n"
+			<< "layout(set = 0, binding = " << (m_reverseOrder ? "1" : "3") << ") uniform uboFragOnly\n"
+			<< "{\n"
+			<< "	mat4 color;\n"
+			<< "} inputData1;\n"
+			<< "\n"
+			<< "layout(location = 0) in vec4 inColor;\n"
+			<< "layout(location = 0) out vec4 outColor;\n"
+			<< "\n"
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "	outColor = inColor + inputData0.color;\n"
+			<< "	outColor.b = inputData1.color[3][3];\n"
+			<< "}\n";
+
+		sourceCollections.glslSources.add("frag") << glu::FragmentSource(src.str());
+	}
+
+	// Compute
+	{
+		std::ostringstream src;
+
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< "\n"
+			<< "layout(set = 0, binding = " << (m_reverseOrder ? "3" : "1") << ") uniform uboSharedData\n"
+			<< "{\n"
+			<< "	vec4 color;\n"
+			<< "} inputData;\n"
+			<< "\n"
+			<< "layout(set = 0, binding = 2) writeonly buffer ssboOutput\n"
+			<< "{\n"
+			<< "	vec4 color;\n"
+			<< "} outData;\n"
+			<< "\n"
+			<< "layout(set = 0, binding = " << (m_reverseOrder ? "0" : "4") << ") readonly buffer ssboInput\n"
+			<< "{\n"
+			<< "	mat4 color;\n"
+			<< "} readData;\n"
+			<< "\n"
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "	outData.color = inputData.color;\n"
+			<< "	outData.color.g = readData.color[3][1];\n"
+			<< "	outData.color.b = readData.color[3][2];\n"
+			<< "}\n";
+
+		sourceCollections.glslSources.add("comp") << glu::ComputeSource(src.str());
+	}
+}
+
+TestInstance* DynamicOffsetMixedTest::createInstance (Context& context) const
+{
+	return new DynamicOffsetMixedTestInstance	(context,
+												 m_renderSize,
+												 m_numInstances,
+												 m_testAllOffsets,
+												 m_reverseOrder,
+												 m_runComputeFirst,
+												 m_vertexOffset,
+												 m_sharedUboOffset,
+												 m_fragUboOffset,
+												 m_ssboReadOffset,
+												 m_ssboWriteOffset);
+}
+
 } // anonymous
 
-tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
 	const char*	pipelineTypes[]			= { "graphics", "compute" };
 
@@ -1495,6 +2335,10 @@ tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx)
 
 	for (deUint32 pipelineTypeIdx = 0; pipelineTypeIdx < DE_LENGTH_OF_ARRAY(pipelineTypes); pipelineTypeIdx++)
 	{
+		// VK_EXT_graphics_pipeline_library can't be tested with compute pipeline
+		if ((pipelineTypeIdx == 1) && (pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC))
+			continue;
+
 		de::MovePtr<tcu::TestCaseGroup>	pipelineTypeGroup	(new tcu::TestCaseGroup(testCtx, pipelineTypes[pipelineTypeIdx], ""));
 
 		for (deUint32 groupingTypeIdx = 0; groupingTypeIdx < DE_LENGTH_OF_ARRAY(groupingTypes); ++groupingTypeIdx)
@@ -1528,18 +2372,22 @@ tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx)
 
 								for (deUint32 numNonDynamicBindingsIdx = 0; numNonDynamicBindingsIdx < DE_LENGTH_OF_ARRAY(numNonDynamicBindings); numNonDynamicBindingsIdx++)
 								{
-									TestParams params;
-									params.descriptorType			= descriptorTypes[descriptorTypeIdx].type;
-									params.numCmdBuffers			= numCmdBuffers[numCmdBuffersIdx].num;
-									params.reverseOrder				= reverseOrders[reverseOrderIdx].reverse;
-									params.numDescriptorSetBindings	= numDescriptorSetBindings[numDescriptorSetBindingsIdx].num;
-									params.numDynamicBindings		= numDynamicBindings[numDynamicBindingsIdx].num;
-									params.numNonDynamicBindings	= numNonDynamicBindings[numNonDynamicBindingsIdx].num;
-									params.groupingStrategy			= groupingTypes[groupingTypeIdx].strategy;
-
+									TestParams params
+									{
+										pipelineConstructionType,
+										descriptorTypes[descriptorTypeIdx].type,
+										numCmdBuffers[numCmdBuffersIdx].num,
+										reverseOrders[reverseOrderIdx].reverse,
+										numDescriptorSetBindings[numDescriptorSetBindingsIdx].num,
+										numDynamicBindings[numDynamicBindingsIdx].num,
+										numNonDynamicBindings[numNonDynamicBindingsIdx].num,
+										groupingTypes[groupingTypeIdx].strategy
+									};
+#ifndef CTS_USES_VULKANSC
 									if (strcmp(pipelineTypes[pipelineTypeIdx], "graphics") == 0)
 										numDynamicBindingsGroup->addChild(new DynamicOffsetGraphicsTest(testCtx, numNonDynamicBindings[numNonDynamicBindingsIdx].name, "", params));
 									else
+#endif // CTS_USES_VULKANSC
 										numDynamicBindingsGroup->addChild(new DynamicOffsetComputeTest(testCtx, numNonDynamicBindings[numNonDynamicBindingsIdx].name, "", params));
 								}
 
@@ -1562,6 +2410,89 @@ tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx)
 		}
 
 		dynamicOffsetTests->addChild(pipelineTypeGroup.release());
+	}
+
+	// Dynamic descriptor offset test for combined descriptor sets.
+	{
+		de::MovePtr<tcu::TestCaseGroup>	combinedDescriptorsTests(new tcu::TestCaseGroup(testCtx, "combined_descriptors", ""));
+
+		struct
+		{
+			const char* name;
+			const bool	reverseDescriptors;
+		}
+		const orders[] =
+		{
+			{	"same_order",		false	},
+			{	"reverse_order",	true	}
+		};
+
+		struct
+		{
+			const char* name;
+			const deUint32	offsetCount;
+			const deUint32	offsets[5];
+		}
+		const numOffsets[] =
+		{
+			{	"16",		16u,	{ 15u, 7u, 2u, 3u, 5u			}	},
+			{	"64",		64u,	{ 27u, 22u, 45u, 19u, 59u		}	},
+			{	"256",		256u,	{ 197u, 244u, 110u, 238u, 88u	}	}
+		};
+
+		struct
+		{
+			const char* name;
+			const bool	computeFirst;
+		}
+		const pipelineOrders[] =
+		{
+			{	"graphics_first",	false	},
+			{	"compute_first",	true	}
+		};
+
+		// Run tests for all offsets
+		{
+			de::MovePtr<tcu::TestCaseGroup>	allOffsetsGroup(new tcu::TestCaseGroup(testCtx, "all_offsets", ""));
+			de::MovePtr<tcu::TestCaseGroup>	singleOffsetGroup(new tcu::TestCaseGroup(testCtx, "single_offset", ""));
+
+			for (const auto& order : orders)
+			{
+				for (const auto& offsets : numOffsets)
+				{
+					for (const auto& pipeline : pipelineOrders)
+					{
+						allOffsetsGroup->addChild(new DynamicOffsetMixedTest(
+							testCtx,
+							std::string(order.name) + "_" + std::string(offsets.name) + "_" + pipeline.name,
+							"",
+							tcu::IVec2(32, 32),		// Render size
+							offsets.offsetCount,
+							true,					// All offsets
+							order.reverseDescriptors,
+							pipeline.computeFirst));
+						singleOffsetGroup->addChild(new DynamicOffsetMixedTest(
+							testCtx,
+							std::string(order.name) + "_" + std::string(offsets.name) + "_" + pipeline.name,
+							"",
+							tcu::IVec2(32, 32),		// Render size
+							offsets.offsetCount,
+							false,					// Single offset only
+							order.reverseDescriptors,
+							pipeline.computeFirst,
+							offsets.offsets[0],		// For vertex ubo
+							offsets.offsets[1],		// For shared ubo (fragment & compute)
+							offsets.offsets[2],		// For fragment ubo
+							offsets.offsets[3],		// For ssbo read only
+							offsets.offsets[4]));	// For ssbo write only
+					}
+				}
+			}
+			combinedDescriptorsTests->addChild(allOffsetsGroup.release());
+			combinedDescriptorsTests->addChild(singleOffsetGroup.release());
+		}
+
+		dynamicOffsetTests->addChild(combinedDescriptorsTests.release());
 	}
 
 	return dynamicOffsetTests.release();

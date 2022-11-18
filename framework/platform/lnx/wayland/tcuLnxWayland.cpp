@@ -36,7 +36,7 @@ namespace lnx
 namespace wayland
 {
 
-const struct wl_registry_listener Display::s_registryListener =
+const struct wl_registry_listener Display::s_registryListener
 {
 	Display::handleGlobal,
 	Display::handleGlobalRemove
@@ -44,11 +44,16 @@ const struct wl_registry_listener Display::s_registryListener =
 
 Display::DisplayState Display::s_displayState = Display::DISPLAY_STATE_UNKNOWN;
 
-const struct wl_shell_surface_listener Window::s_shellSurfaceListener =
+bool Window::s_addWMBaseListener = true;
+
+const struct xdg_surface_listener Window::s_xdgSurfaceListener
 {
-	Window::handlePing,
-	Window::handleConfigure,
-	Window::handlePopupDone,
+	Window::handleConfigure
+};
+
+const struct xdg_wm_base_listener Window::s_wmBaseListener
+{
+	Window::handlePing
 };
 
 void Display::handleGlobal (void* data, struct wl_registry* registry, uint32_t id, const char* interface, uint32_t version)
@@ -58,9 +63,8 @@ void Display::handleGlobal (void* data, struct wl_registry* registry, uint32_t i
 
 	if (!strcmp(interface, "wl_compositor"))
 		_this->m_compositor = static_cast<struct wl_compositor*>(wl_registry_bind(registry, id, &wl_compositor_interface, version > 3 ? version : 3));
-	/* Todo: when the xdg_shell protocol has stablized, we should move wl_shell to xdg_shell. */
-	if (!strcmp(interface, "wl_shell"))
-		_this->m_shell = static_cast<struct wl_shell*>(wl_registry_bind(registry, id, &wl_shell_interface, 1));
+	if (!strcmp(interface, "xdg_wm_base"))
+		_this->m_shell = static_cast<struct xdg_wm_base*>(wl_registry_bind(registry, id, &xdg_wm_base_interface, 1));
 }
 
 void Display::handleGlobalRemove (void* data, struct wl_registry* registry, uint32_t name)
@@ -112,7 +116,7 @@ Display::Display (EventState& eventState, const char* name)
 	catch (...)
 	{
 		if (m_shell)
-			wl_shell_destroy(m_shell);
+			xdg_wm_base_destroy(m_shell);
 
 		if (m_compositor)
 			wl_compositor_destroy(m_compositor);
@@ -130,7 +134,7 @@ Display::Display (EventState& eventState, const char* name)
 Display::~Display (void)
 {
 	if (m_shell)
-		wl_shell_destroy(m_shell);
+		xdg_wm_base_destroy(m_shell);
 
 	if (m_compositor)
 		wl_compositor_destroy(m_compositor);
@@ -155,13 +159,34 @@ Window::Window (Display& display, int width, int height)
 		if (!m_surface)
 			throw ResourceError("Failed to create ", "surface", __FILE__, __LINE__);
 
-		m_shellSurface = wl_shell_get_shell_surface(display.getShell(), m_surface);
-		if (!m_shellSurface)
+		m_xdgSurface = xdg_wm_base_get_xdg_surface(display.getShell(), m_surface);
+		if (!m_xdgSurface)
 			throw ResourceError("Failed to create ", "shell_surface", __FILE__, __LINE__);
 
-		wl_shell_surface_add_listener(m_shellSurface, &s_shellSurfaceListener, this);
-		wl_shell_surface_set_title(m_shellSurface, "CTS for OpenGL (ES)");
-		wl_shell_surface_set_toplevel(m_shellSurface);
+		// add wm base listener once
+		if (s_addWMBaseListener)
+		{
+			xdg_wm_base_add_listener(display.getShell(), &s_wmBaseListener, this);
+			s_addWMBaseListener = false;
+		}
+		xdg_surface_add_listener(m_xdgSurface, &s_xdgSurfaceListener, this);
+
+		// select xdg surface role
+		m_topLevel = xdg_surface_get_toplevel(m_xdgSurface);
+		xdg_toplevel_set_title(m_topLevel, "CTS for OpenGL (ES)");
+
+		// configure xdg surface
+		m_configured = false;
+		wl_surface_commit(m_surface);
+
+		// wait till xdg surface is configured
+		int dispatchedEvents = 0;
+		while(dispatchedEvents != -1)
+		{
+			dispatchedEvents = wl_display_dispatch(display.getDisplay());
+			if (m_configured)
+				break;
+		}
 
 		if (width == glu::RenderConfig::DONT_CARE)
 			width = DEFAULT_WINDOW_WIDTH;
@@ -198,33 +223,28 @@ void Window::processEvents (void)
 {
 }
 
-void Window::handlePing (void* data, struct wl_shell_surface* shellSurface, uint32_t serial)
+void Window::handlePing (void* data, struct xdg_wm_base* shell, uint32_t serial)
 {
 	DE_UNREF(data);
-	wl_shell_surface_pong(shellSurface, serial);
+	xdg_wm_base_pong(shell, serial);
 }
 
-void Window::handleConfigure (void* data, struct wl_shell_surface* shellSurface, uint32_t edges, int32_t width, int32_t height)
+void Window::handleConfigure (void* data, struct xdg_surface* xdgSurface, uint32_t serial)
 {
-	DE_UNREF(data);
-	DE_UNREF(shellSurface);
-	DE_UNREF(edges);
-	DE_UNREF(width);
-	DE_UNREF(height);
-}
+	Window* window = reinterpret_cast<Window*>(data);
+	window->m_configured = true;
 
-void Window::handlePopupDone (void* data, struct wl_shell_surface* shellSurface)
-{
-	DE_UNREF(data);
-	DE_UNREF(shellSurface);
+	xdg_surface_ack_configure(xdgSurface, serial);
 }
 
 Window::~Window (void)
 {
 	if (m_window)
 		wl_egl_window_destroy(m_window);
-	if (m_shellSurface)
-		wl_shell_surface_destroy(m_shellSurface);
+	if (m_topLevel)
+		xdg_toplevel_destroy(m_topLevel);
+	if (m_xdgSurface)
+		xdg_surface_destroy(m_xdgSurface);
 	if (m_surface)
 		wl_surface_destroy(m_surface);
 }

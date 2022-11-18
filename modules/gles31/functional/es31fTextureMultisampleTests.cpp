@@ -888,7 +888,7 @@ void SampleMaskCase::updateTexture (int sample)
 	}
 	else
 	{
-		const std::vector<deUint32> bitmask = genSetNthBitSampleMask(sample);
+		const std::vector<deUint32> bitmask = sample < 0 ? std::vector<deUint32>(m_effectiveSampleMaskWordCount, 0) : genSetNthBitSampleMask(sample);
 		DE_ASSERT((int)bitmask.size() <= m_effectiveSampleMaskWordCount);
 
 		m_testCtx.getLog() << tcu::TestLog::Message << "Setting sample mask to 0b" << sampleMaskToString(bitmask, m_samples) << tcu::TestLog::EndMessage;

@@ -80,6 +80,12 @@ struct TestImageParameters
 	ImageType				imageType;
 	std::vector<tcu::UVec3>	imageSizes;
 	std::vector<TestFormat>	formats;
+
+	TestImageParameters (ImageType imageType_, const std::vector<tcu::UVec3>& imageSizes_, const std::vector<TestFormat>& formats_)
+		: imageType		(imageType_)
+		, imageSizes	(imageSizes_)
+		, formats		(formats_)
+		{}
 };
 
 bool							formatIsR64							(const vk::VkFormat& format);
@@ -167,12 +173,6 @@ deUint32						getImageSizeInBytes					(const vk::VkExtent3D&				baseExtents,
 																	 const deUint32						planeNdx,
 																	 const deUint32						mipmapLevelsCount		=1u,
 																	 const deUint32						mipmapMemoryAlignment	=1u);
-
-vk::Move<vk::VkPipeline>		makeComputePipeline					(const vk::DeviceInterface&			vk,
-																	 const vk::VkDevice					device,
-																	 const vk::VkPipelineLayout			pipelineLayout,
-																	 const vk::VkShaderModule			shaderModule,
-																	 const vk::VkSpecializationInfo*	specializationInfo	= 0);
 
 vk::VkBufferImageCopy			makeBufferImageCopy					(const vk::VkExtent3D				extent,
 																	 const deUint32						layersCount,

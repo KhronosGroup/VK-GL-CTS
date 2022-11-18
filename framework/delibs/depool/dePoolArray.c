@@ -164,7 +164,7 @@ void dePoolArray_selfTest (void)
 	/* Test pushBack(). */
 	for (i = 0; i < 5000; i++)
 	{
-		/* Dummy alloc to try to break alignments. */
+		/* Unused alloc to try to break alignments. */
 		deMemPool_alloc(pool, 1);
 
 		dePoolIntArray_pushBack(arr, i);

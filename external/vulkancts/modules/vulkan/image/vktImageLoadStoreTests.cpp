@@ -40,6 +40,7 @@
 #include "vkImageUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
 
 #include "deMath.h"
 #include "deUniquePtr.hpp"
@@ -50,7 +51,9 @@
 #include "tcuTexture.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuFloat.hpp"
+#include "tcuFloatFormat.hpp"
 #include "tcuStringTemplate.hpp"
+#include "tcuVectorUtil.hpp"
 
 #include <string>
 #include <vector>
@@ -171,7 +174,10 @@ bool comparePixelBuffers (tcu::TestLog&						log,
 			case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
 			{
 				// Allow error of minimum representable difference
-				const tcu::Vec4 threshold (1.0f / ((tcu::UVec4(1u) << tcu::getTextureFormatMantissaBitDepth(mapVkFormat(format)).cast<deUint32>()) - 1u).cast<float>());
+				tcu::Vec4 threshold(1.0f / ((tcu::UVec4(1u) << tcu::getTextureFormatMantissaBitDepth(mapVkFormat(format)).cast<deUint32>()) - 1u).cast<float>());
+
+				// Add 1 ULP of fp32 imprecision to account for image comparison fp32 math with unorm->float conversions.
+				threshold += tcu::Vec4(std::numeric_limits<float>::epsilon());
 
 				ok = tcu::floatThresholdCompare(log, comparisonName.c_str(), comparisonDesc.c_str(), refLayer, resultLayer, threshold, tcu::COMPARE_LOG_RESULT);
 				break;
@@ -179,8 +185,12 @@ bool comparePixelBuffers (tcu::TestLog&						log,
 
 			case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
 			{
+				const tcu::UVec4 bitDepth = tcu::getTextureFormatMantissaBitDepth(mapVkFormat(format)).cast<deUint32>() - 1u;
+				// To avoid bit-shifting with negative value, which is undefined behaviour.
+				const tcu::UVec4 fixedBitDepth = tcu::select(bitDepth, tcu::UVec4(0u, 0u, 0u, 0u), tcu::greaterThanEqual(bitDepth.cast<deInt32>(), tcu::IVec4(0, 0, 0, 0)));
+
 				// Allow error of minimum representable difference
-				const tcu::Vec4 threshold (1.0f / ((tcu::UVec4(1u) << (tcu::getTextureFormatMantissaBitDepth(mapVkFormat(format)).cast<deUint32>() - 1u)) - 1u).cast<float>());
+				const tcu::Vec4 threshold (1.0f / ((tcu::UVec4(1u) << fixedBitDepth) - 1u).cast<float>());
 
 				ok = tcu::floatThresholdCompare(log, comparisonName.c_str(), comparisonDesc.c_str(), refLayer, resultLayer, threshold, tcu::COMPARE_LOG_RESULT);
 				break;
@@ -262,7 +272,19 @@ void replaceSnormReinterpretValues (const tcu::PixelBufferAccess access)
 	}
 }
 
-tcu::TextureLevel generateReferenceImage (const tcu::IVec3& imageSize, const VkFormat imageFormat, const VkFormat readFormat)
+tcu::Vec4 getMiddleValue(VkFormat imageFormat)
+{
+	tcu::TextureFormat		format	= mapVkFormat(imageFormat);
+	tcu::TextureFormatInfo	fmtInfo	= tcu::getTextureFormatInfo(format);
+	tcu::Vec4				val		= (fmtInfo.valueMax - fmtInfo.valueMin) * tcu::Vec4(0.5f);
+
+	if (isIntegerFormat(imageFormat))
+		val = floor(val);
+
+	return val;
+}
+
+tcu::TextureLevel generateReferenceImage (const tcu::IVec3& imageSize, const VkFormat imageFormat, const VkFormat readFormat, bool constantValue = false)
 {
 	// Generate a reference image data using the storage format
 
@@ -272,6 +294,7 @@ tcu::TextureLevel generateReferenceImage (const tcu::IVec3& imageSize, const VkF
 	const float storeColorScale = computeStoreColorScale(imageFormat, imageSize);
 	const float storeColorBias = computeStoreColorBias(imageFormat);
 
+	const bool srgbFormat = isSrgbFormat(imageFormat);
 	const bool intFormat = isIntegerFormat(imageFormat);
 	const bool storeNegativeValues = isSignedFormat(imageFormat) && (storeColorBias == 0);
 	const int xMax = imageSize.x() - 1;
@@ -281,15 +304,27 @@ tcu::TextureLevel generateReferenceImage (const tcu::IVec3& imageSize, const VkF
 	for (int y = 0; y < imageSize.y(); ++y)
 	for (int x = 0; x < imageSize.x(); ++x)
 	{
-		tcu::IVec4 color(x^y^z, (xMax - x)^y^z, x^(yMax - y)^z, (xMax - x)^(yMax - y)^z);
-
-		if (storeNegativeValues)
-			color -= tcu::IVec4(deRoundFloatToInt32((float)de::max(xMax, yMax) / 2.0f));
-
-		if (intFormat)
-			access.setPixel(color, x, y, z);
+		if (constantValue)
+		{
+			access.setPixel(getMiddleValue(imageFormat), x, y, z);
+		}
 		else
-			access.setPixel(color.asFloat()*storeColorScale + storeColorBias, x, y, z);
+		{
+			tcu::IVec4 color = tcu::IVec4(x ^ y ^ z, (xMax - x) ^ y ^ z, x ^ (yMax - y) ^ z, (xMax - x) ^ (yMax - y) ^ z);
+
+			if (storeNegativeValues)
+				color -= tcu::IVec4(deRoundFloatToInt32((float)de::max(xMax, yMax) / 2.0f));
+
+			if (intFormat)
+				access.setPixel(color, x, y, z);
+			else
+			{
+				if (srgbFormat)
+					access.setPixel(tcu::linearToSRGB(color.asFloat() * storeColorScale + storeColorBias), x, y, z);
+				else
+					access.setPixel(color.asFloat() * storeColorScale + storeColorBias, x, y, z);
+			}
+		}
 	}
 
 	// If the image is to be accessed as a float texture, get rid of invalid values
@@ -302,9 +337,9 @@ tcu::TextureLevel generateReferenceImage (const tcu::IVec3& imageSize, const VkF
 	return reference;
 }
 
-inline tcu::TextureLevel generateReferenceImage (const tcu::IVec3& imageSize, const VkFormat imageFormat)
+inline tcu::TextureLevel generateReferenceImage (const tcu::IVec3& imageSize, const VkFormat imageFormat, bool constantValue = false)
 {
-	return generateReferenceImage(imageSize, imageFormat, imageFormat);
+	return generateReferenceImage(imageSize, imageFormat, imageFormat, constantValue);
 }
 
 void flipHorizontally (const tcu::PixelBufferAccess access)
@@ -439,6 +474,7 @@ public:
 		FLAG_SINGLE_LAYER_BIND				= 0x1,	//!< Run the shader multiple times, each time binding a different layer.
 		FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER	= 0x2,	//!< Declare the format of the images in the shader code
 		FLAG_MINALIGN						= 0x4,	//!< Use bufferview offset that matches the advertised minimum alignment
+		FLAG_STORE_CONSTANT_VALUE			= 0x8,	//!< Store constant value
 	};
 
 							StoreTest			(tcu::TestContext&	testCtx,
@@ -446,6 +482,7 @@ public:
 												 const std::string&	description,
 												 const Texture&		texture,
 												 const VkFormat		format,
+                                                 const VkImageTiling   tiling,
 												 const deUint32		flags = FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER);
 
 	virtual void			checkSupport		(Context&			context) const;
@@ -455,9 +492,11 @@ public:
 private:
 	const Texture			m_texture;
 	const VkFormat			m_format;
+    const VkImageTiling     m_tiling;
 	const bool				m_declareImageFormatInShader;
 	const bool				m_singleLayerBind;
 	const bool				m_minalign;
+	const bool				m_storeConstantValue;
 };
 
 StoreTest::StoreTest (tcu::TestContext&		testCtx,
@@ -465,13 +504,16 @@ StoreTest::StoreTest (tcu::TestContext&		testCtx,
 					  const std::string&	description,
 					  const Texture&		texture,
 					  const VkFormat		format,
+                      const VkImageTiling   tiling,
 					  const deUint32		flags)
 	: TestCase						(testCtx, name, description)
 	, m_texture						(texture)
 	, m_format						(format)
+    , m_tiling                      (tiling)
 	, m_declareImageFormatInShader	((flags & FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER) != 0)
 	, m_singleLayerBind				((flags & FLAG_SINGLE_LAYER_BIND) != 0)
 	, m_minalign					((flags & FLAG_MINALIGN) != 0)
+	, m_storeConstantValue			((flags & FLAG_STORE_CONSTANT_VALUE) != 0)
 {
 	if (m_singleLayerBind)
 		DE_ASSERT(m_texture.numLayers() > 1);
@@ -479,19 +521,60 @@ StoreTest::StoreTest (tcu::TestContext&		testCtx,
 
 void StoreTest::checkSupport (Context& context) const
 {
-	const VkFormatPropertiesExtendedKHR formatProperties (context.getFormatProperties(m_format));
+#ifndef CTS_USES_VULKANSC
+	const VkFormatProperties3 formatProperties (context.getFormatProperties(m_format));
 
-	if (!m_declareImageFormatInShader && !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR))
+	const auto tilingFeatures = (m_tiling == vk::VK_IMAGE_TILING_OPTIMAL) ? formatProperties.optimalTilingFeatures : formatProperties.linearTilingFeatures;
+
+	if (!m_declareImageFormatInShader && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR))
+		TCU_THROW(NotSupportedError, "Format not supported for unformatted stores via storage buffer");
+
+	if (!m_declareImageFormatInShader && !(tilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR))
 		TCU_THROW(NotSupportedError, "Format not supported for unformatted stores via storage images");
 
 	if (m_texture.type() == IMAGE_TYPE_CUBE_ARRAY)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
 
-	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(tilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
 		TCU_THROW(NotSupportedError, "Format not supported for storage images");
 
 	if (m_texture.type() == IMAGE_TYPE_BUFFER && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
 		TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
+#else
+	const VkFormatProperties formatProperties(getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), m_format));
+	const auto tilingFeatures = (m_tiling == vk::VK_IMAGE_TILING_OPTIMAL) ? formatProperties.optimalTilingFeatures : formatProperties.linearTilingFeatures;
+
+	if (!m_declareImageFormatInShader)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_STORAGE_IMAGE_WRITE_WITHOUT_FORMAT);
+
+	if (m_texture.type() == IMAGE_TYPE_CUBE_ARRAY)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
+
+	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(tilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+		TCU_THROW(NotSupportedError, "Format not supported for storage images");
+
+	if (m_texture.type() == IMAGE_TYPE_BUFFER && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
+		TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
+#endif // CTS_USES_VULKANSC
+    const auto& vki				= context.getInstanceInterface();
+	const auto	physicalDevice	= context.getPhysicalDevice();
+
+	VkImageFormatProperties	imageFormatProperties;
+	const auto result = vki.getPhysicalDeviceImageFormatProperties(physicalDevice, m_format, mapImageType(m_texture.type()), m_tiling, (VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT), 0, &imageFormatProperties);
+	if (result != VK_SUCCESS) {
+		if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
+			TCU_THROW(NotSupportedError, "Format unsupported for tiling");
+		else
+			TCU_FAIL("vkGetPhysicalDeviceImageFormatProperties returned unexpected error");
+	}
+
+	if (imageFormatProperties.maxArrayLayers < (uint32_t)m_texture.numLayers()) {
+		TCU_THROW(NotSupportedError, "This format and tiling combination does not support this number of aray layers");
+	}
+
+	if (imageFormatProperties.maxMipLevels < (uint32_t)m_texture.numMipmapLevels()) {
+		TCU_THROW(NotSupportedError, "This format and tiling combination does not support this number of miplevels");
+	}
 }
 
 void StoreTest::initPrograms (SourceCollections& programCollection) const
@@ -505,59 +588,87 @@ void StoreTest::initPrograms (SourceCollections& programCollection) const
 	const std::string signednessPrefix = isUintFormat(m_format) ? "u" : isIntFormat(m_format) ? "i" : "";
 	const bool storeNegativeValues = isSignedFormat(m_format) && (storeColorBias == 0);
 	bool useClamp = false;
-	std::string colorBaseExpr = signednessPrefix + "vec4("
-		+ "gx^gy^gz, "
-		+ "(" + de::toString(xMax) + "-gx)^gy^gz, "
-		+ "gx^(" + de::toString(yMax) + "-gy)^gz, "
-		+ "(" + de::toString(xMax) + "-gx)^(" + de::toString(yMax) + "-gy)^gz)";
+	std::string colorBaseExpr = signednessPrefix + "vec4(";
 
-	// Large integer values may not be represented with formats with low bit depths
-	if (isIntegerFormat(m_format))
+	std::string colorExpr;
+
+	if (m_storeConstantValue)
 	{
-		const deInt64 minStoreValue = storeNegativeValues ? 0 - deRoundFloatToInt64((float)de::max(xMax, yMax) / 2.0f) : 0;
-		const deInt64 maxStoreValue = storeNegativeValues ? deRoundFloatToInt64((float)de::max(xMax, yMax) / 2.0f) : de::max(xMax, yMax);
+		tcu::Vec4 val = getMiddleValue(m_format);
 
-		useClamp = !isRepresentableIntegerValue(tcu::Vector<deInt64, 4>(minStoreValue), mapVkFormat(m_format)) ||
-				   !isRepresentableIntegerValue(tcu::Vector<deInt64, 4>(maxStoreValue), mapVkFormat(m_format));
-	}
-
-	// Clamp if integer value cannot be represented with the current format
-	if (useClamp)
-	{
-		const tcu::IVec4 bitDepths = tcu::getTextureFormatBitDepth(mapVkFormat(m_format));
-		tcu::IVec4 minRepresentableValue;
-		tcu::IVec4 maxRepresentableValue;
-
-		switch (tcu::getTextureChannelClass(mapVkFormat(m_format).type))
+		if (isIntegerFormat(m_format))
 		{
-			case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
-			{
-				minRepresentableValue = tcu::IVec4(0);
-				maxRepresentableValue = (tcu::IVec4(1) << bitDepths) - tcu::IVec4(1);
-				break;
-			}
+			colorExpr = colorBaseExpr
+						+ de::toString(static_cast<deInt64>(val.x())) + ", "
+						+ de::toString(static_cast<deInt64>(val.y())) + ", "
+						+ de::toString(static_cast<deInt64>(val.z())) + ", "
+						+ de::toString(static_cast<deInt64>(val.w())) + ")";
+		}
+		else
+		{
+			colorExpr = colorBaseExpr
+						+ de::toString(val.x()) + ", "
+						+ de::toString(val.y()) + ", "
+						+ de::toString(val.z()) + ", "
+						+ de::toString(val.w()) + ")";
+		}
+	}
+	else
+	{
+		colorBaseExpr = colorBaseExpr
+						+ "gx^gy^gz, "
+						+ "(" + de::toString(xMax) + "-gx)^gy^gz, "
+						+ "gx^(" + de::toString(yMax) + "-gy)^gz, "
+						+ "(" + de::toString(xMax) + "-gx)^(" + de::toString(yMax) + "-gy)^gz)";
 
-			case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
-			{
-				minRepresentableValue = -(tcu::IVec4(1) << bitDepths - tcu::IVec4(1));
-				maxRepresentableValue = (tcu::IVec4(1) << (bitDepths - tcu::IVec4(1))) - tcu::IVec4(1);
-				break;
-			}
+		// Large integer values may not be represented with formats with low bit depths
+		if (isIntegerFormat(m_format))
+		{
+			const deInt64 minStoreValue = storeNegativeValues ? 0 - deRoundFloatToInt64((float)de::max(xMax, yMax) / 2.0f) : 0;
+			const deInt64 maxStoreValue = storeNegativeValues ? deRoundFloatToInt64((float)de::max(xMax, yMax) / 2.0f) : de::max(xMax, yMax);
 
-			default:
-				DE_ASSERT(isIntegerFormat(m_format));
+			useClamp = !isRepresentableIntegerValue(tcu::Vector<deInt64, 4>(minStoreValue), mapVkFormat(m_format)) ||
+					   !isRepresentableIntegerValue(tcu::Vector<deInt64, 4>(maxStoreValue), mapVkFormat(m_format));
 		}
 
-		colorBaseExpr = "clamp(" + colorBaseExpr + ", "
-						+ signednessPrefix + "vec4" + de::toString(minRepresentableValue) + ", "
-						+ signednessPrefix + "vec4" + de::toString(maxRepresentableValue) + ")";
+		// Clamp if integer value cannot be represented with the current format
+		if (useClamp)
+		{
+			const tcu::IVec4 bitDepths = tcu::getTextureFormatBitDepth(mapVkFormat(m_format));
+			tcu::IVec4 minRepresentableValue;
+			tcu::IVec4 maxRepresentableValue;
+
+			switch (tcu::getTextureChannelClass(mapVkFormat(m_format).type))
+			{
+				case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
+				{
+					minRepresentableValue = tcu::IVec4(0);
+					maxRepresentableValue = (tcu::IVec4(1) << bitDepths) - tcu::IVec4(1);
+					break;
+				}
+
+				case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
+				{
+					minRepresentableValue = -(tcu::IVec4(1) << bitDepths - tcu::IVec4(1));
+					maxRepresentableValue = (tcu::IVec4(1) << (bitDepths - tcu::IVec4(1))) - tcu::IVec4(1);
+					break;
+				}
+
+				default:
+					DE_ASSERT(isIntegerFormat(m_format));
+			}
+
+			colorBaseExpr = "clamp(" + colorBaseExpr + ", "
+							+ signednessPrefix + "vec4" + de::toString(minRepresentableValue) + ", "
+							+ signednessPrefix + "vec4" + de::toString(maxRepresentableValue) + ")";
+		}
+
+		colorExpr = colorBaseExpr + (storeColorScale == 1.0f ? "" : "*" + de::toString(storeColorScale))
+					+ (storeColorBias == 0.0f ? "" : " + float(" + de::toString(storeColorBias) + ")");
+
+		if (storeNegativeValues)
+			colorExpr += "-" + de::toString(deRoundFloatToInt32((float)deMax32(xMax, yMax) / 2.0f));
 	}
-
-	std::string colorExpr = colorBaseExpr + (storeColorScale == 1.0f ? "" : "*" + de::toString(storeColorScale))
-							+ (storeColorBias == 0.0f ? "" : " + float(" + de::toString(storeColorBias) + ")");
-
-	if (storeNegativeValues)
-		colorExpr += "-" + de::toString(deRoundFloatToInt32((float)deMax32(xMax, yMax) / 2.0f));
 
 	const int dimension = (m_singleLayerBind ? m_texture.layerDimension() : m_texture.dimension());
 	const std::string texelCoordStr = (dimension == 1 ? "gx" : dimension == 2 ? "ivec2(gx, gy)" : dimension == 3 ? "ivec3(gx, gy, gz)" : "");
@@ -565,17 +676,13 @@ void StoreTest::initPrograms (SourceCollections& programCollection) const
 	const ImageType usedImageType = (m_singleLayerBind ? getImageTypeForSingleLayer(m_texture.type()) : m_texture.type());
 	const std::string imageTypeStr = getShaderImageType(mapVkFormat(m_format), usedImageType);
 
+	std::string maybeFmtQualStr = m_declareImageFormatInShader ? ", " + getShaderImageFormatQualifier(mapVkFormat(m_format)) : "";
+
 	std::ostringstream src;
 	src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
 		<< "\n"
-		<< "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n";
-	if (m_declareImageFormatInShader)
-	{
-		const std::string formatQualifierStr = getShaderImageFormatQualifier(mapVkFormat(m_format));
-		src << "layout (binding = 0, " << formatQualifierStr << ") writeonly uniform " << imageTypeStr << " u_image;\n";
-	}
-	else
-		src << "layout (binding = 0) writeonly uniform " << imageTypeStr << " u_image;\n";
+		<< "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+		<< "layout (binding = 0" << maybeFmtQualStr << ") writeonly uniform " << imageTypeStr << " u_image;\n";
 
 	if (m_singleLayerBind)
 		src << "layout (binding = 1) readonly uniform Constants {\n"
@@ -699,7 +806,8 @@ public:
 																			 const VkFormat	format,
 																			 const bool		declareImageFormatInShader,
 																			 const bool		singleLayerBind,
-																			 const bool		minalign);
+																			 const bool		minalign,
+																			 const bool		storeConstantValue);
 
 protected:
 	virtual tcu::TestStatus			verifyResult							(void);
@@ -709,8 +817,9 @@ protected:
 	void							commandBetweenShaderInvocations			(const VkCommandBuffer) {}
 	void							commandAfterCompute						(const VkCommandBuffer) {}
 
-	de::MovePtr<Buffer>				m_imageBuffer;
+	de::MovePtr<BufferWithMemory>	m_imageBuffer;
 	const VkDeviceSize				m_imageSizeBytes;
+	bool							m_storeConstantValue;
 };
 
 deUint32 BaseTestInstance::getViewOffset(Context&			context,
@@ -749,9 +858,10 @@ deUint32 BaseTestInstance::getViewOffset(Context&			context,
 	return 0;
 }
 
-StoreTestInstance::StoreTestInstance (Context& context, const Texture& texture, const VkFormat format, const bool declareImageFormatInShader, const bool singleLayerBind, const bool minalign)
+StoreTestInstance::StoreTestInstance (Context& context, const Texture& texture, const VkFormat format, const bool declareImageFormatInShader, const bool singleLayerBind, const bool minalign, const bool storeConstantValue)
 	: BaseTestInstance		(context, texture, format, declareImageFormatInShader, singleLayerBind, minalign, false)
 	, m_imageSizeBytes		(getImageSizeBytes(texture.size(), format))
+	, m_storeConstantValue	(storeConstantValue)
 {
 	const DeviceInterface&	vk			= m_context.getDeviceInterface();
 	const VkDevice			device		= m_context.getDevice();
@@ -759,7 +869,7 @@ StoreTestInstance::StoreTestInstance (Context& context, const Texture& texture, 
 
 	// A helper buffer with enough space to hold the whole image. Usage flags accommodate all derived test instances.
 
-	m_imageBuffer = de::MovePtr<Buffer>(new Buffer(
+	m_imageBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
 		vk, device, allocator,
 		makeBufferCreateInfo(m_imageSizeBytes + m_dstViewOffset, VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT),
 		MemoryRequirement::HostVisible));
@@ -771,7 +881,7 @@ tcu::TestStatus StoreTestInstance::verifyResult	(void)
 	const VkDevice			device	= m_context.getDevice();
 
 	const tcu::IVec3 imageSize = m_texture.size();
-	const tcu::TextureLevel reference = generateReferenceImage(imageSize, m_format);
+	const tcu::TextureLevel reference = generateReferenceImage(imageSize, m_format, m_storeConstantValue);
 
 	const Allocation& alloc = m_imageBuffer->getAllocation();
 	invalidateAlloc(vk, device, alloc);
@@ -790,9 +900,11 @@ public:
 										ImageStoreTestInstance					(Context&				context,
 																				 const Texture&			texture,
 																				 const VkFormat			format,
+                                                                                 const VkImageTiling    tiling,
 																				 const bool				declareImageFormatInShader,
 																				 const bool				singleLayerBind,
-																				 const bool				minalign);
+																				 const bool				minalign,
+																				 const bool				storeConstantValue);
 
 protected:
 	VkDescriptorSetLayout				prepareDescriptors						(void);
@@ -805,7 +917,7 @@ protected:
 																				 const int				layerNdx);
 
 	de::MovePtr<Image>					m_image;
-	de::MovePtr<Buffer>					m_constantsBuffer;
+	de::MovePtr<BufferWithMemory>		m_constantsBuffer;
 	const VkDeviceSize					m_constantsBufferChunkSizeBytes;
 	Move<VkDescriptorSetLayout>			m_descriptorSetLayout;
 	Move<VkDescriptorPool>				m_descriptorPool;
@@ -816,10 +928,12 @@ protected:
 ImageStoreTestInstance::ImageStoreTestInstance (Context&		context,
 												const Texture&	texture,
 												const VkFormat	format,
+                                                const VkImageTiling tiling,
 												const bool		declareImageFormatInShader,
 												const bool		singleLayerBind,
-												const bool		minalign)
-	: StoreTestInstance					(context, texture, format, declareImageFormatInShader, singleLayerBind, minalign)
+												const bool		minalign,
+												const bool		storeConstantValue)
+	: StoreTestInstance					(context, texture, format, declareImageFormatInShader, singleLayerBind, minalign, storeConstantValue)
 	, m_constantsBufferChunkSizeBytes	(getOptimalUniformBufferChunkSize(context.getInstanceInterface(), context.getPhysicalDevice(), sizeof(deUint32)))
 	, m_allDescriptorSets				(texture.numLayers())
 	, m_allImageViews					(texture.numLayers())
@@ -830,14 +944,14 @@ ImageStoreTestInstance::ImageStoreTestInstance (Context&		context,
 
 	m_image = de::MovePtr<Image>(new Image(
 		vk, device, allocator,
-		makeImageCreateInfo(m_texture, m_format, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0u),
+		makeImageCreateInfo(m_texture, m_format, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0u, tiling),
 		MemoryRequirement::Any));
 
 	// This buffer will be used to pass constants to the shader
 
 	const int numLayers = m_texture.numLayers();
 	const VkDeviceSize constantsBufferSizeBytes = numLayers * m_constantsBufferChunkSizeBytes;
-	m_constantsBuffer = de::MovePtr<Buffer>(new Buffer(
+	m_constantsBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
 		vk, device, allocator,
 		makeBufferCreateInfo(constantsBufferSizeBytes, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT),
 		MemoryRequirement::HostVisible));
@@ -952,7 +1066,8 @@ public:
 																			 const Texture&			texture,
 																			 const VkFormat			format,
 																			 const bool				declareImageFormatInShader,
-																			 const bool				minalign);
+																			 const bool				minalign,
+																			 const bool				storeConstantValue);
 
 protected:
 	VkDescriptorSetLayout			prepareDescriptors						(void);
@@ -972,8 +1087,9 @@ BufferStoreTestInstance::BufferStoreTestInstance (Context&			context,
 												  const Texture&	texture,
 												  const VkFormat	format,
 												  const bool		declareImageFormatInShader,
-												  const bool		minalign)
-	: StoreTestInstance(context, texture, format, declareImageFormatInShader, false, minalign)
+												  const bool		minalign,
+												  const bool		storeConstantValue)
+	: StoreTestInstance(context, texture, format, declareImageFormatInShader, false, minalign, storeConstantValue)
 {
 }
 
@@ -1033,6 +1149,7 @@ public:
 													 const Texture&			texture,
 													 const VkFormat			format,
 													 const VkFormat			imageFormat,
+													 const VkImageTiling    tiling,
 													 const deUint32			flags = FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER,
 													 const deBool			imageLoadStoreLodAMD = DE_FALSE);
 
@@ -1044,6 +1161,7 @@ private:
 	const Texture			m_texture;
 	const VkFormat			m_format;						//!< Format as accessed in the shader
 	const VkFormat			m_imageFormat;					//!< Storage format
+	const VkImageTiling		m_tiling;						//!< Image Tiling
 	const bool				m_declareImageFormatInShader;	//!< Whether the shader will specify the format layout qualifier of the images
 	const bool				m_singleLayerBind;
 	const bool				m_restrictImages;
@@ -1058,12 +1176,14 @@ LoadStoreTest::LoadStoreTest (tcu::TestContext&		testCtx,
 							  const Texture&		texture,
 							  const VkFormat		format,
 							  const VkFormat		imageFormat,
+							  const VkImageTiling   tiling,
 							  const deUint32		flags,
 							  const deBool			imageLoadStoreLodAMD)
 	: TestCase						(testCtx, name, description)
 	, m_texture						(texture)
 	, m_format						(format)
 	, m_imageFormat					(imageFormat)
+	, m_tiling                      (tiling)
 	, m_declareImageFormatInShader	((flags & FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER) != 0)
 	, m_singleLayerBind				((flags & FLAG_SINGLE_LAYER_BIND) != 0)
 	, m_restrictImages				((flags & FLAG_RESTRICT_IMAGES) != 0)
@@ -1079,25 +1199,34 @@ LoadStoreTest::LoadStoreTest (tcu::TestContext&		testCtx,
 
 void LoadStoreTest::checkSupport (Context& context) const
 {
-	const VkFormatPropertiesExtendedKHR formatProperties (context.getFormatProperties(m_format));
-	const VkFormatPropertiesExtendedKHR imageFormatProperties (context.getFormatProperties(m_imageFormat));
+#ifndef CTS_USES_VULKANSC
+	const VkFormatProperties3 formatProperties (context.getFormatProperties(m_format));
+	const VkFormatProperties3 imageFormatProperties (context.getFormatProperties(m_imageFormat));
 
-	if (m_imageLoadStoreLodAMD)
+	const auto tilingFeatures = (m_tiling == vk::VK_IMAGE_TILING_OPTIMAL) ? formatProperties.optimalTilingFeatures : formatProperties.linearTilingFeatures;
+	const auto imageTilingFeatures = (m_tiling == vk::VK_IMAGE_TILING_OPTIMAL) ? imageFormatProperties.optimalTilingFeatures : imageFormatProperties.linearTilingFeatures;
+
+		if (m_imageLoadStoreLodAMD)
 		context.requireDeviceFunctionality("VK_AMD_shader_image_load_store_lod");
 
-	if (!m_bufferLoadUniform && !m_declareImageFormatInShader && !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR))
+	if (!m_bufferLoadUniform && !m_declareImageFormatInShader && !(tilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR))
 		TCU_THROW(NotSupportedError, "Format not supported for unformatted loads via storage images");
+	if (m_texture.type() == IMAGE_TYPE_BUFFER && !m_declareImageFormatInShader && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR))
+    TCU_THROW(NotSupportedError, "Format not supported for unformatted loads via buffers");
 
 	if (m_texture.type() == IMAGE_TYPE_CUBE_ARRAY)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
 
-	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(tilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+		TCU_THROW(NotSupportedError, "Format not supported for storage images");
+
+	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(imageTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
 		TCU_THROW(NotSupportedError, "Format not supported for storage images");
 
 	if (m_texture.type() == IMAGE_TYPE_BUFFER && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
 		TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
 
-	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(imageFormatProperties.optimalTilingFeatures))
+	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(imageTilingFeatures))
 		TCU_THROW(NotSupportedError, "Underlying format not supported at all for images");
 
 	if ((m_texture.type() == IMAGE_TYPE_BUFFER) && !(imageFormatProperties.bufferFeatures))
@@ -1107,7 +1236,7 @@ void LoadStoreTest::checkSupport (Context& context) const
 	{
 		// When the source buffer is three-component, the destination buffer is single-component.
 		VkFormat dstFormat = getSingleComponentFormat(m_format);
-		const VkFormatPropertiesExtendedKHR dstFormatProperties (context.getFormatProperties(dstFormat));
+		const VkFormatProperties3 dstFormatProperties (context.getFormatProperties(dstFormat));
 
 		if (m_texture.type() == IMAGE_TYPE_BUFFER && !(dstFormatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
 			TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
@@ -1118,6 +1247,78 @@ void LoadStoreTest::checkSupport (Context& context) const
 
 	if (m_bufferLoadUniform && m_texture.type() == IMAGE_TYPE_BUFFER && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT))
 		TCU_THROW(NotSupportedError, "Format not supported for uniform texel buffers");
+#else
+	const vk::VkFormatProperties	formatProperties	(vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
+																							   context.getPhysicalDevice(),
+																							   m_format));
+	const vk::VkFormatProperties imageFormatProperties  (vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
+																							   context.getPhysicalDevice(),
+																							   m_imageFormat));
+
+	const auto tilingFeatures = (m_tiling == vk::VK_IMAGE_TILING_OPTIMAL) ? formatProperties.optimalTilingFeatures : formatProperties.linearTilingFeatures;
+	const auto imageTilingFeatures = (m_tiling == vk::VK_IMAGE_TILING_OPTIMAL) ? imageFormatProperties.optimalTilingFeatures : imageFormatProperties.linearTilingFeatures;
+
+		if (m_imageLoadStoreLodAMD)
+		context.requireDeviceFunctionality("VK_AMD_shader_image_load_store_lod");
+
+	if (!m_bufferLoadUniform && !m_declareImageFormatInShader)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_STORAGE_IMAGE_READ_WITHOUT_FORMAT);
+
+	if (m_texture.type() == IMAGE_TYPE_CUBE_ARRAY)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
+
+	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(tilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+		TCU_THROW(NotSupportedError, "Format not supported for storage images");
+
+	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(imageTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+		TCU_THROW(NotSupportedError, "Format not supported for storage images");
+
+	if (m_texture.type() == IMAGE_TYPE_BUFFER && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
+		TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
+
+	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(imageTilingFeatures))
+		TCU_THROW(NotSupportedError, "Underlying format not supported at all for images");
+
+	if ((m_texture.type() == IMAGE_TYPE_BUFFER) && !(imageFormatProperties.bufferFeatures))
+		TCU_THROW(NotSupportedError, "Underlying format not supported at all for buffers");
+
+    if (formatHasThreeComponents(m_format))
+	{
+		// When the source buffer is three-component, the destination buffer is single-component.
+		VkFormat dstFormat = getSingleComponentFormat(m_format);
+		const vk::VkFormatProperties	dstFormatProperties	(vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
+																								   context.getPhysicalDevice(),
+																								   dstFormat));
+
+		if (m_texture.type() == IMAGE_TYPE_BUFFER && !(dstFormatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
+			TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
+	}
+	else
+		if (m_texture.type() == IMAGE_TYPE_BUFFER && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
+			TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
+
+	if (m_bufferLoadUniform && m_texture.type() == IMAGE_TYPE_BUFFER && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT))
+		TCU_THROW(NotSupportedError, "Format not supported for uniform texel buffers");
+#endif // CTS_USES_VULKANSC
+    const auto& vki				= context.getInstanceInterface();
+	const auto	physicalDevice	= context.getPhysicalDevice();
+
+	VkImageFormatProperties	vkImageFormatProperties;
+	const auto result = vki.getPhysicalDeviceImageFormatProperties(physicalDevice, m_imageFormat, mapImageType(m_texture.type()), m_tiling, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0, &vkImageFormatProperties);
+	if (result != VK_SUCCESS) {
+		if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
+			TCU_THROW(NotSupportedError, "Format unsupported for tiling");
+		else
+			TCU_FAIL("vkGetPhysicalDeviceImageFormatProperties returned unexpected error");
+	}
+
+	if (vkImageFormatProperties.maxArrayLayers < (uint32_t)m_texture.numLayers()) {
+		TCU_THROW(NotSupportedError, "This format and tiling combination does not support this number of aray layers");
+	}
+
+	if (vkImageFormatProperties.maxMipLevels < (uint32_t)m_texture.numMipmapLevels()) {
+		TCU_THROW(NotSupportedError, "This format and tiling combination does not support this number of miplevels");
+	}
 }
 
 void LoadStoreTest::initPrograms (SourceCollections& programCollection) const
@@ -1144,14 +1345,16 @@ void LoadStoreTest::initPrograms (SourceCollections& programCollection) const
 		src << "#extension GL_AMD_shader_image_load_store_lod : require\n";
 	}
 
+	const std::string maybeFmtQualStr = m_declareImageFormatInShader ? ", " + formatQualifierStr : "";
+
 	src << "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n";
 	if (m_bufferLoadUniform)
 		src << "layout (binding = 0) uniform " << uniformTypeStr << " u_image0;\n";
-	else if (m_declareImageFormatInShader)
-		src << "layout (binding = 0, " << formatQualifierStr << ") " << maybeRestrictStr << "readonly uniform " << imageTypeStr << " u_image0;\n";
 	else
-		src << "layout (binding = 0) " << maybeRestrictStr << "readonly uniform " << imageTypeStr << " u_image0;\n";
+		src << "layout (binding = 0" << maybeFmtQualStr << ") " << maybeRestrictStr << "readonly uniform " << imageTypeStr << " u_image0;\n";
 
+	// For three-component formats, the dst buffer is single-component and the shader expands the store into 3 component-wise stores.
+	// We always use the format qualifier for the dst buffer, except when splitting it up.
 	if (formatHasThreeComponents(m_format))
 		src << "layout (binding = 1) " << maybeRestrictStr << "writeonly uniform " << imageTypeStr << " u_image1;\n";
 	else
@@ -1166,8 +1369,7 @@ void LoadStoreTest::initPrograms (SourceCollections& programCollection) const
 	case 1:
 		if (m_bufferLoadUniform)
 		{
-			// for three-component formats, the dst buffer is single-component and the shader
-			// expands the store into 3 component-wise stores.
+			// Expand the store into 3 component-wise stores.
 			std::string type = getFormatPrefix(texFormat) + "vec4";
 			src << "    int pos = int(gl_GlobalInvocationID.x);\n"
 				   "    " << type << " t = texelFetch(u_image0, " + xMax + "-pos);\n";
@@ -1255,7 +1457,7 @@ public:
 																		 const bool			bufferLoadUniform);
 
 protected:
-	virtual Buffer*					getResultBuffer						(void) const = 0;	//!< Get the buffer that contains the result image
+	virtual BufferWithMemory*					getResultBuffer						(void) const = 0;	//!< Get the buffer that contains the result image
 
 	tcu::TestStatus					verifyResult						(void);
 
@@ -1264,7 +1466,7 @@ protected:
 	void							commandBetweenShaderInvocations		(const VkCommandBuffer) {}
 	void							commandAfterCompute					(const VkCommandBuffer) {}
 
-	de::MovePtr<Buffer>				m_imageBuffer;		//!< Source data and helper buffer
+	de::MovePtr<BufferWithMemory>	m_imageBuffer;		//!< Source data and helper buffer
 	const VkDeviceSize				m_imageSizeBytes;
 	const VkFormat					m_imageFormat;		//!< Image format (for storage, may be different than texture format)
 	tcu::TextureLevel				m_referenceImage;	//!< Used as input data and later to verify result image
@@ -1297,7 +1499,7 @@ LoadStoreTestInstance::LoadStoreTestInstance (Context&			context,
 
 	// A helper buffer with enough space to hold the whole image.
 
-	m_imageBuffer = de::MovePtr<Buffer>(new Buffer(
+	m_imageBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
 		vk, device, allocator,
 		makeBufferCreateInfo(m_imageSizeBytes + m_srcViewOffset, m_bufferLoadUsageBit | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
 		MemoryRequirement::HostVisible));
@@ -1336,6 +1538,7 @@ public:
 																			 const Texture&			texture,
 																			 const VkFormat			format,
 																			 const VkFormat			imageFormat,
+																			 const VkImageTiling    tiling,
 																			 const bool				declareImageFormatInShader,
 																			 const bool				singleLayerBind,
 																			 const bool				minalign,
@@ -1351,21 +1554,22 @@ protected:
 																			 const VkPipelineLayout pipelineLayout,
 																			 const int				layerNdx);
 
-	Buffer*								getResultBuffer						(void) const { return m_imageBuffer.get(); }
+	BufferWithMemory*					getResultBuffer						(void) const { return m_imageBuffer.get(); }
 
 	de::MovePtr<Image>					m_imageSrc;
 	de::MovePtr<Image>					m_imageDst;
 	Move<VkDescriptorSetLayout>			m_descriptorSetLayout;
 	Move<VkDescriptorPool>				m_descriptorPool;
-	std::vector<SharedVkDescriptorSet>	m_allDescriptorSets;
-	std::vector<SharedVkImageView>		m_allSrcImageViews;
-	std::vector<SharedVkImageView>		m_allDstImageViews;
+	std::vector<SharedVkDescriptorSet> m_allDescriptorSets;
+	std::vector<SharedVkImageView>     m_allSrcImageViews;
+	std::vector<SharedVkImageView>     m_allDstImageViews;
 };
 
 ImageLoadStoreTestInstance::ImageLoadStoreTestInstance (Context&		context,
 														const Texture&	texture,
 														const VkFormat	format,
 														const VkFormat	imageFormat,
+														const VkImageTiling tiling,
 														const bool		declareImageFormatInShader,
 														const bool		singleLayerBind,
 														const bool		minalign,
@@ -1382,12 +1586,12 @@ ImageLoadStoreTestInstance::ImageLoadStoreTestInstance (Context&		context,
 
 	m_imageSrc = de::MovePtr<Image>(new Image(
 		vk, device, allocator,
-		makeImageCreateInfo(m_texture, m_imageFormat, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, imageFlags),
+		makeImageCreateInfo(m_texture, m_imageFormat, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, imageFlags, tiling),
 		MemoryRequirement::Any));
 
 	m_imageDst = de::MovePtr<Image>(new Image(
 		vk, device, allocator,
-		makeImageCreateInfo(m_texture, m_imageFormat, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, imageFlags),
+		makeImageCreateInfo(m_texture, m_imageFormat, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, imageFlags, tiling),
 		MemoryRequirement::Any));
 }
 
@@ -1522,10 +1726,10 @@ protected:
 																			 const VkPipelineLayout pipelineLayout,
 																			 const int				layerNdx);
 
-	Buffer*								getResultBuffer						(void) const { return m_imageBuffer.get(); }
+	BufferWithMemory*					getResultBuffer						(void) const { return m_imageBuffer.get(); }
 	tcu::TestStatus						verifyResult						(void);
 
-	de::MovePtr<Buffer>					m_imageBuffer;		//!< Source data and helper buffer
+	de::MovePtr<BufferWithMemory>		m_imageBuffer;		//!< Source data and helper buffer
 	const VkDeviceSize					m_imageSizeBytes;
 	const VkFormat						m_imageFormat;		//!< Image format (for storage, may be different than texture format)
 	std::vector<tcu::TextureLevel>		m_referenceImages;	//!< Used as input data and later to verify result image
@@ -1538,9 +1742,9 @@ protected:
 	de::MovePtr<Image>					m_imageDst;
 	Move<VkDescriptorSetLayout>			m_descriptorSetLayout;
 	Move<VkDescriptorPool>				m_descriptorPool;
-	std::vector<SharedVkDescriptorSet>  m_allDescriptorSets;
-	std::vector<SharedVkImageView>      m_allSrcImageViews;
-	std::vector<SharedVkImageView>      m_allDstImageViews;
+	std::vector<SharedVkDescriptorSet>	m_allDescriptorSets;
+	std::vector<SharedVkImageView>		m_allSrcImageViews;
+	std::vector<SharedVkImageView>		m_allDstImageViews;
 
 };
 
@@ -1556,9 +1760,9 @@ ImageLoadStoreLodAMDTestInstance::ImageLoadStoreLodAMDTestInstance (Context&		co
 	, m_imageSizeBytes			(getMipmapImageTotalSizeBytes(texture, format))
 	, m_imageFormat				(imageFormat)
 	, m_bufferLoadUniform		(bufferLoadUniform)
-	, m_allDescriptorSets       (texture.numLayers())
-	, m_allSrcImageViews        (texture.numLayers())
-	, m_allDstImageViews        (texture.numLayers())
+	, m_allDescriptorSets		(texture.numLayers())
+	, m_allSrcImageViews		(texture.numLayers())
+	, m_allDstImageViews		(texture.numLayers())
 {
 	const DeviceInterface&		vk					= m_context.getDeviceInterface();
 	const VkDevice				device				= m_context.getDevice();
@@ -1577,7 +1781,7 @@ ImageLoadStoreLodAMDTestInstance::ImageLoadStoreLodAMDTestInstance (Context&		co
 	m_bufferLoadUsageBit = m_bufferLoadUniform ? VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
 
 	// A helper buffer with enough space to hold the whole image.
-	m_imageBuffer = de::MovePtr<Buffer>(new Buffer(
+	m_imageBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
 												   vk, device, allocator,
 												   makeBufferCreateInfo(m_imageSizeBytes + m_srcViewOffset, m_bufferLoadUsageBit | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
 												   MemoryRequirement::HostVisible));
@@ -1633,7 +1837,7 @@ ImageLoadStoreLodAMDTestInstance::ImageLoadStoreLodAMDTestInstance (Context&		co
 			(deUint32)m_texture.numLayers(),																	// deUint32					arrayLayers;
 			samples,																							// VkSampleCountFlagBits	samples;
 			VK_IMAGE_TILING_OPTIMAL,																			// VkImageTiling			tiling;
-		    VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,										// VkImageUsageFlags		usage;
+			VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,										// VkImageUsageFlags		usage;
 			VK_SHARING_MODE_EXCLUSIVE,																			// VkSharingMode			sharingMode;
 			0u,																									// deUint32					queueFamilyIndexCount;
 			DE_NULL,																							// const deUint32*			pQueueFamilyIndices;
@@ -1818,9 +2022,9 @@ protected:
 																	 const VkPipelineLayout pipelineLayout,
 																	 const int				layerNdx);
 
-	Buffer*							getResultBuffer					(void) const { return m_imageBufferDst.get(); }
+	BufferWithMemory*				getResultBuffer					(void) const { return m_imageBufferDst.get(); }
 
-	de::MovePtr<Buffer>				m_imageBufferDst;
+	de::MovePtr<BufferWithMemory>	m_imageBufferDst;
 	Move<VkDescriptorSetLayout>		m_descriptorSetLayout;
 	Move<VkDescriptorPool>			m_descriptorPool;
 	Move<VkDescriptorSet>			m_descriptorSet;
@@ -1843,7 +2047,7 @@ BufferLoadStoreTestInstance::BufferLoadStoreTestInstance (Context&			context,
 
 	// Create a destination buffer.
 
-	m_imageBufferDst = de::MovePtr<Buffer>(new Buffer(
+	m_imageBufferDst = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
 		vk, device, allocator,
 		makeBufferCreateInfo(m_imageSizeBytes + m_dstViewOffset, VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT),
 		MemoryRequirement::HostVisible));
@@ -1896,9 +2100,9 @@ void BufferLoadStoreTestInstance::commandAfterCompute (const VkCommandBuffer cmd
 TestInstance* StoreTest::createInstance (Context& context) const
 {
 	if (m_texture.type() == IMAGE_TYPE_BUFFER)
-		return new BufferStoreTestInstance(context, m_texture, m_format, m_declareImageFormatInShader, m_minalign);
+		return new BufferStoreTestInstance(context, m_texture, m_format, m_declareImageFormatInShader, m_minalign, m_storeConstantValue);
 	else
-		return new ImageStoreTestInstance(context, m_texture, m_format, m_declareImageFormatInShader, m_singleLayerBind, m_minalign);
+		return new ImageStoreTestInstance(context, m_texture, m_format, m_tiling, m_declareImageFormatInShader, m_singleLayerBind, m_minalign, m_storeConstantValue);
 }
 
 TestInstance* LoadStoreTest::createInstance (Context& context) const
@@ -1909,7 +2113,7 @@ TestInstance* LoadStoreTest::createInstance (Context& context) const
 	if (m_texture.type() == IMAGE_TYPE_BUFFER)
 		return new BufferLoadStoreTestInstance(context, m_texture, m_format, m_imageFormat, m_declareImageFormatInShader, m_minalign, m_bufferLoadUniform);
 	else
-		return new ImageLoadStoreTestInstance(context, m_texture, m_format, m_imageFormat, m_declareImageFormatInShader, m_singleLayerBind, m_minalign, m_bufferLoadUniform);
+		return new ImageLoadStoreTestInstance(context, m_texture, m_format, m_imageFormat, m_tiling, m_declareImageFormatInShader, m_singleLayerBind, m_minalign, m_bufferLoadUniform);
 }
 
 class ImageExtendOperandTestInstance : public BaseTestInstance
@@ -1950,7 +2154,7 @@ protected:
 	VkFormat						m_imageDstFormat;
 	VkDeviceSize					m_imageDstSize;
 
-	de::MovePtr<Buffer>				m_buffer;				// result buffer
+	de::MovePtr<BufferWithMemory>	m_buffer;				// result buffer
 
 	Move<VkDescriptorSetLayout>		m_descriptorSetLayout;
 	Move<VkDescriptorPool>			m_descriptorPool;
@@ -2007,7 +2211,7 @@ ImageExtendOperandTestInstance::ImageExtendOperandTestInstance (Context& context
 	VkDeviceSize bufferSizeBytes	= de::max(m_imageSrcSize, m_imageDstSize);
 
 	// Create helper buffer able to store input data and image write result
-	m_buffer = de::MovePtr<Buffer>(new Buffer(
+	m_buffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
 		vk, device, allocator,
 		makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT),
 		MemoryRequirement::HostVisible));
@@ -2159,8 +2363,9 @@ tcu::TestStatus ImageExtendOperandTestInstance::verifyResult (void)
 
 enum class ExtendTestType
 {
-	READ  = 0,
-	WRITE = 1,
+	READ				= 0,
+	WRITE,
+	WRITE_NONTEMPORAL,
 };
 
 enum class ExtendOperand
@@ -2186,7 +2391,8 @@ public:
 	TestInstance*			createInstance			(Context&				context) const;
 
 private:
-	bool					isWriteTest				() const { return (m_extendTestType == ExtendTestType::WRITE); }
+	bool					isWriteTest				() const { return (m_extendTestType == ExtendTestType::WRITE) ||
+																	  (m_extendTestType == ExtendTestType::WRITE_NONTEMPORAL); }
 
 	const Texture			m_texture;
 	VkFormat				m_readFormat;
@@ -2214,12 +2420,19 @@ ImageExtendOperandTest::ImageExtendOperandTest (tcu::TestContext&				testCtx,
 {
 }
 
-void checkFormatProperties (Context& context, VkFormat format)
+void checkFormatProperties (const Context& context, VkFormat format)
 {
-	const VkFormatPropertiesExtendedKHR formatProperties (context.getFormatProperties(format));
+#ifndef CTS_USES_VULKANSC
+	const VkFormatProperties3 formatProperties (context.getFormatProperties(format));
 
 	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
 		TCU_THROW(NotSupportedError, "Format not supported for storage images");
+#else
+	const VkFormatProperties formatProperties(getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format));
+
+	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+		TCU_THROW(NotSupportedError, "Format not supported for storage images");
+#endif // CTS_USES_VULKANSC
 }
 
 void check64BitSupportIfNeeded (Context& context, VkFormat readFormat, VkFormat writeFormat)
@@ -2236,6 +2449,12 @@ void ImageExtendOperandTest::checkSupport (Context& context) const
 {
 	if (!context.requireDeviceFunctionality("VK_KHR_spirv_1_4"))
 		TCU_THROW(NotSupportedError, "VK_KHR_spirv_1_4 not supported");
+
+#ifndef CTS_USES_VULKANSC
+	if ((m_extendTestType == ExtendTestType::WRITE_NONTEMPORAL) &&
+		(context.getUsedApiVersion() < VK_API_VERSION_1_3))
+		TCU_THROW(NotSupportedError, "Vulkan 1.3 or higher is required for this test to run");
+#endif // CTS_USES_VULKANSC
 
 	check64BitSupportIfNeeded(context, m_readFormat, m_writeFormat);
 
@@ -2351,7 +2570,7 @@ void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection)
 	const std::string	sampledTypePostfix	= (signedSampleType ? "i" : "u") + bits;
 	const std::string	extendOperandStr	= (isSigned ? "SignExtend" : "ZeroExtend");
 
-	std::map<std::string, std::string> specializations =
+	std::map<std::string, std::string> specializations
 	{
 		{ "image_type_id",			"%type_image" },
 		{ "image_uni_ptr_type_id",	"%type_ptr_uniform_const_image" },
@@ -2367,6 +2586,15 @@ void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection)
 		{ "read_extend_operand",	(!isWriteTest() ? extendOperandStr : "") },
 		{ "write_extend_operand",	(isWriteTest()  ? extendOperandStr : "") },
 	};
+
+	SpirvVersion	spirvVersion	= SPIRV_VERSION_1_4;
+	bool			allowSpirv14	= true;
+	if (m_extendTestType == ExtendTestType::WRITE_NONTEMPORAL)
+	{
+		spirvVersion	= SPIRV_VERSION_1_6;
+		allowSpirv14	= false;
+		specializations["write_extend_operand"] = "Nontemporal";
+	}
 
 	// Addidtional parametrization is needed for a case when source and destination textures have same format
 	tcu::StringTemplate imageTypeTemplate(
@@ -2423,7 +2651,7 @@ void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection)
 
 	// Specialize whole shader and add it to program collection
 	programCollection.spirvAsmSources.add("comp") << shaderTemplate.specialize(specializations)
-		<< vk::SpirVAsmBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, true);
+		<< vk::SpirVAsmBuildOptions(programCollection.usedVulkanVersion, spirvVersion, allowSpirv14);
 }
 
 TestInstance* ImageExtendOperandTest::createInstance(Context& context) const
@@ -2506,7 +2734,43 @@ static const VkFormat s_formats[] =
 	VK_FORMAT_R16G16_SNORM,
 	VK_FORMAT_R16_SNORM,
 	VK_FORMAT_R8G8_SNORM,
-	VK_FORMAT_R8_SNORM
+	VK_FORMAT_R8_SNORM,
+
+	VK_FORMAT_R10X6_UNORM_PACK16,
+	VK_FORMAT_R10X6G10X6_UNORM_2PACK16,
+	VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16,
+
+	VK_FORMAT_R4G4_UNORM_PACK8,
+	VK_FORMAT_R4G4B4A4_UNORM_PACK16,
+	VK_FORMAT_B4G4R4A4_UNORM_PACK16,
+	VK_FORMAT_R5G6B5_UNORM_PACK16,
+	VK_FORMAT_B5G6R5_UNORM_PACK16,
+	VK_FORMAT_R5G5B5A1_UNORM_PACK16,
+	VK_FORMAT_B5G5R5A1_UNORM_PACK16,
+	VK_FORMAT_A1R5G5B5_UNORM_PACK16,
+	VK_FORMAT_B8G8R8A8_SNORM,
+	VK_FORMAT_B8G8R8A8_SINT,
+	VK_FORMAT_A8B8G8R8_UNORM_PACK32,
+	VK_FORMAT_A8B8G8R8_SNORM_PACK32,
+	VK_FORMAT_A8B8G8R8_UINT_PACK32,
+	VK_FORMAT_A8B8G8R8_SINT_PACK32,
+	VK_FORMAT_A2R10G10B10_UNORM_PACK32,
+	VK_FORMAT_A2R10G10B10_SNORM_PACK32,
+	VK_FORMAT_A2R10G10B10_UINT_PACK32,
+	VK_FORMAT_A2R10G10B10_SINT_PACK32,
+	VK_FORMAT_A2B10G10R10_SNORM_PACK32,
+	VK_FORMAT_A2B10G10R10_SINT_PACK32,
+	VK_FORMAT_R32G32B32_UINT,
+	VK_FORMAT_R32G32B32_SINT,
+	VK_FORMAT_R32G32B32_SFLOAT,
+	VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
+
+	VK_FORMAT_R8G8_SRGB,
+	VK_FORMAT_R8G8B8_SRGB,
+	VK_FORMAT_B8G8R8_SRGB,
+	VK_FORMAT_R8G8B8A8_SRGB,
+	VK_FORMAT_B8G8R8A8_SRGB,
+	VK_FORMAT_A8B8G8R8_SRGB_PACK32
 };
 
 static const VkFormat s_formatsThreeComponent[] =
@@ -2525,6 +2789,22 @@ static const VkFormat s_formatsThreeComponent[] =
 	VK_FORMAT_R32G32B32_SFLOAT,
 };
 
+static const VkImageTiling s_tilings[] = {
+    VK_IMAGE_TILING_OPTIMAL,
+    VK_IMAGE_TILING_LINEAR,
+};
+
+const char* tilingSuffix(VkImageTiling tiling) {
+    switch (tiling) {
+        case VK_IMAGE_TILING_OPTIMAL:
+            return "";
+        case VK_IMAGE_TILING_LINEAR:
+            return "_linear";
+        default:
+            return "unknown";
+    }
+}
+
 } // anonymous ns
 
 tcu::TestCaseGroup* createImageStoreTests (tcu::TestContext& testCtx)
@@ -2542,24 +2822,31 @@ tcu::TestCaseGroup* createImageStoreTests (tcu::TestContext& testCtx)
 
 		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_formats); ++formatNdx)
 		{
-			const bool hasSpirvFmt = hasSpirvFormat(s_formats[formatNdx]);
+            for (int tilingNdx = 0; tilingNdx < DE_LENGTH_OF_ARRAY(s_tilings); tilingNdx++) {
+                const bool hasSpirvFmt = hasSpirvFormat(s_formats[formatNdx]);
+                const char* suffix = tilingSuffix(s_tilings[tilingNdx]);
 
-			if (hasSpirvFmt)
-				groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "", texture, s_formats[formatNdx]));
-			groupWithoutFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "", texture, s_formats[formatNdx], 0));
+                if (hasSpirvFmt)
+                {
+                    groupWithFormatByImageViewType->addChild( new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + suffix, "", texture, s_formats[formatNdx], s_tilings[tilingNdx]));
+                    // Additional tests where the shader uses constant data for imageStore.
+                    groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_constant" + suffix, "", texture, s_formats[formatNdx], s_tilings[tilingNdx], StoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER | StoreTest::FLAG_STORE_CONSTANT_VALUE));
+                }
+                groupWithoutFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + suffix, "", texture, s_formats[formatNdx], s_tilings[tilingNdx], 0));
 
-			if (isLayered && hasSpirvFmt)
-				groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_single_layer", "",
-														 texture, s_formats[formatNdx],
-														 StoreTest::FLAG_SINGLE_LAYER_BIND | StoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER));
+                if (isLayered && hasSpirvFmt)
+                    groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_single_layer" + suffix, "",
+                                                             texture, s_formats[formatNdx], VK_IMAGE_TILING_OPTIMAL,
+                                                             StoreTest::FLAG_SINGLE_LAYER_BIND | StoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER));
 
-			if (texture.type() == IMAGE_TYPE_BUFFER)
-			{
-				if (hasSpirvFmt)
-					groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_minalign", "", texture, s_formats[formatNdx], StoreTest::FLAG_MINALIGN | StoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER));
-				groupWithoutFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_minalign", "", texture, s_formats[formatNdx], StoreTest::FLAG_MINALIGN));
-			}
-		}
+                if (texture.type() == IMAGE_TYPE_BUFFER)
+                {
+                    if (hasSpirvFmt)
+                        groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_minalign" + suffix, "", texture, s_formats[formatNdx], s_tilings[tilingNdx], StoreTest::FLAG_MINALIGN | StoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER));
+                    groupWithoutFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_minalign" + suffix, "", texture, s_formats[formatNdx], s_tilings[tilingNdx], StoreTest::FLAG_MINALIGN));
+                }
+            }
+        }
 
 		testGroupWithFormat->addChild(groupWithFormatByImageViewType.release());
 		testGroupWithoutFormat->addChild(groupWithoutFormatByImageViewType.release());
@@ -2586,24 +2873,27 @@ tcu::TestCaseGroup* createImageLoadStoreTests (tcu::TestContext& testCtx)
 
 		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_formats); ++formatNdx)
 		{
-			// These tests always require a SPIR-V format for the write image, even if the read
-			// image is being used without a format.
-			if (!hasSpirvFormat(s_formats[formatNdx]))
-				continue;
+			for (int tilingNdx = 0; tilingNdx < DE_LENGTH_OF_ARRAY(s_tilings); tilingNdx++) {
+				// These tests always require a SPIR-V format for the write image, even if the read
+				// image is being used without a format.
+				const char* suffix = tilingSuffix(s_tilings[tilingNdx]);
+				if (!hasSpirvFormat(s_formats[formatNdx]))
+					continue;
 
-			groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "", texture, s_formats[formatNdx], s_formats[formatNdx]));
-			groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "", texture, s_formats[formatNdx], s_formats[formatNdx], 0));
+				groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + suffix, "", texture, s_formats[formatNdx], s_formats[formatNdx], s_tilings[tilingNdx]));
+				groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + suffix, "", texture, s_formats[formatNdx], s_formats[formatNdx], s_tilings[tilingNdx], 0));
 
-			if (isLayered)
-				groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_single_layer", "",
-														 texture, s_formats[formatNdx], s_formats[formatNdx],
-														 LoadStoreTest::FLAG_SINGLE_LAYER_BIND | LoadStoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER));
-			if (texture.type() == IMAGE_TYPE_BUFFER)
-			{
-				groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_minalign", "", texture, s_formats[formatNdx], s_formats[formatNdx], LoadStoreTest::FLAG_MINALIGN | LoadStoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER));
-				groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_minalign_uniform", "", texture, s_formats[formatNdx], s_formats[formatNdx], LoadStoreTest::FLAG_MINALIGN | LoadStoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER | LoadStoreTest::FLAG_UNIFORM_TEXEL_BUFFER));
-				groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_minalign", "", texture, s_formats[formatNdx], s_formats[formatNdx], LoadStoreTest::FLAG_MINALIGN));
-				groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_minalign_uniform", "", texture, s_formats[formatNdx], s_formats[formatNdx], LoadStoreTest::FLAG_MINALIGN | LoadStoreTest::FLAG_UNIFORM_TEXEL_BUFFER));
+				if (isLayered)
+					groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_single_layer" + suffix, "",
+															 texture, s_formats[formatNdx], s_formats[formatNdx], s_tilings[tilingNdx],
+															 LoadStoreTest::FLAG_SINGLE_LAYER_BIND | LoadStoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER));
+				if (texture.type() == IMAGE_TYPE_BUFFER)
+				{
+					groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_minalign" + suffix, "", texture, s_formats[formatNdx], s_formats[formatNdx], s_tilings[tilingNdx], LoadStoreTest::FLAG_MINALIGN | LoadStoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER));
+					groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_minalign_uniform" + suffix, "", texture, s_formats[formatNdx], s_formats[formatNdx], s_tilings[tilingNdx], LoadStoreTest::FLAG_MINALIGN | LoadStoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER | LoadStoreTest::FLAG_UNIFORM_TEXEL_BUFFER));
+					groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_minalign" + suffix, "", texture, s_formats[formatNdx], s_formats[formatNdx], s_tilings[tilingNdx], LoadStoreTest::FLAG_MINALIGN));
+					groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_minalign_uniform" + suffix, "", texture, s_formats[formatNdx], s_formats[formatNdx], s_tilings[tilingNdx], LoadStoreTest::FLAG_MINALIGN | LoadStoreTest::FLAG_UNIFORM_TEXEL_BUFFER));
+				}
 			}
 		}
 
@@ -2611,8 +2901,12 @@ tcu::TestCaseGroup* createImageLoadStoreTests (tcu::TestContext& testCtx)
 		{
 			for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_formatsThreeComponent); ++formatNdx)
 			{
-				groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formatsThreeComponent[formatNdx]) + "_uniform", "", texture, s_formatsThreeComponent[formatNdx], s_formatsThreeComponent[formatNdx], LoadStoreTest::FLAG_UNIFORM_TEXEL_BUFFER));
-				groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formatsThreeComponent[formatNdx]) + "_minalign_uniform", "", texture, s_formatsThreeComponent[formatNdx], s_formatsThreeComponent[formatNdx], LoadStoreTest::FLAG_MINALIGN | LoadStoreTest::FLAG_UNIFORM_TEXEL_BUFFER));
+				for (int tilingNdx = 0; tilingNdx < DE_LENGTH_OF_ARRAY(s_tilings); tilingNdx++) {
+					const char* suffix = tilingSuffix(s_tilings[tilingNdx]);
+
+					groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formatsThreeComponent[formatNdx]) + "_uniform" + suffix, "", texture, s_formatsThreeComponent[formatNdx], s_formatsThreeComponent[formatNdx], s_tilings[tilingNdx], LoadStoreTest::FLAG_UNIFORM_TEXEL_BUFFER));
+					groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formatsThreeComponent[formatNdx]) + "_minalign_uniform" + suffix, "", texture, s_formatsThreeComponent[formatNdx], s_formatsThreeComponent[formatNdx], s_tilings[tilingNdx], LoadStoreTest::FLAG_MINALIGN | LoadStoreTest::FLAG_UNIFORM_TEXEL_BUFFER));
+				}
 			}
 		}
 
@@ -2660,12 +2954,12 @@ tcu::TestCaseGroup* createImageLoadStoreLodAMDTests (tcu::TestContext& testCtx)
 			if (!hasSpirvFormat(s_formats[formatNdx]))
 				continue;
 
-			groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "", texture, s_formats[formatNdx], s_formats[formatNdx], LoadStoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER, DE_TRUE));
-			groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "", texture, s_formats[formatNdx], s_formats[formatNdx], 0, DE_TRUE));
+			groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "", texture, s_formats[formatNdx], s_formats[formatNdx], VK_IMAGE_TILING_OPTIMAL, LoadStoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER, DE_TRUE));
+			groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "", texture, s_formats[formatNdx], s_formats[formatNdx], VK_IMAGE_TILING_OPTIMAL, 0, DE_TRUE));
 
 			if (isLayered)
 				groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_single_layer", "",
-														 texture, s_formats[formatNdx], s_formats[formatNdx],
+														 texture, s_formats[formatNdx], s_formats[formatNdx], VK_IMAGE_TILING_OPTIMAL,
 														 LoadStoreTest::FLAG_SINGLE_LAYER_BIND | LoadStoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER, DE_TRUE));
 		}
 
@@ -2696,7 +2990,7 @@ tcu::TestCaseGroup* createImageFormatReinterpretTests (tcu::TestContext& testCtx
 
 			const std::string caseName = getFormatShortString(s_formats[imageFormatNdx]) + "_" + getFormatShortString(s_formats[formatNdx]);
 			if (imageFormatNdx != formatNdx && formatsAreCompatible(s_formats[imageFormatNdx], s_formats[formatNdx]))
-				groupByImageViewType->addChild(new LoadStoreTest(testCtx, caseName, "", texture, s_formats[formatNdx], s_formats[imageFormatNdx]));
+				groupByImageViewType->addChild(new LoadStoreTest(testCtx, caseName, "", texture, s_formats[formatNdx], s_formats[imageFormatNdx], VK_IMAGE_TILING_OPTIMAL));
 		}
 		testGroup->addChild(groupByImageViewType.release());
 	}
@@ -2708,7 +3002,7 @@ de::MovePtr<TestCase> createImageQualifierRestrictCase (tcu::TestContext& testCt
 {
 	const VkFormat format = VK_FORMAT_R32G32B32A32_UINT;
 	const Texture& texture = getTestTexture(imageType);
-	return de::MovePtr<TestCase>(new LoadStoreTest(testCtx, name, "", texture, format, format, LoadStoreTest::FLAG_RESTRICT_IMAGES | LoadStoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER));
+	return de::MovePtr<TestCase>(new LoadStoreTest(testCtx, name, "", texture, format, format, VK_IMAGE_TILING_OPTIMAL,LoadStoreTest::FLAG_RESTRICT_IMAGES | LoadStoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER));
 }
 
 namespace
@@ -2772,8 +3066,8 @@ tcu::TestCaseGroup* createImageExtendOperandsTests(tcu::TestContext& testCtx)
 		const char*		name;
 	} testTypes[] =
 	{
-		{ ExtendTestType::READ,		"read"	},
-		{ ExtendTestType::WRITE,	"write"	},
+		{ ExtendTestType::READ,					"read"	},
+		{ ExtendTestType::WRITE,				"write"	},
 	};
 
 	const auto texture		= Texture(IMAGE_TYPE_2D, tcu::IVec3(8, 8, 1), 1);
@@ -2830,6 +3124,32 @@ tcu::TestCaseGroup* createImageExtendOperandsTests(tcu::TestContext& testCtx)
 		}
 
 		testGroup->addChild(formatGroup.release());
+	}
+
+	return testGroup.release();
+}
+
+tcu::TestCaseGroup* createImageNontemporalOperandTests(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "nontemporal_operand", "Cases with Nontemporal image operand for SPOIR-V 1.6"));
+
+	const auto texture = Texture(IMAGE_TYPE_2D, tcu::IVec3(8, 8, 1), 1);
+
+	// using just integer formats for tests so that ImageExtendOperandTest could be reused
+	const auto formatList = getExtensionOperandFormatList();
+
+	for (const auto format : formatList)
+	{
+		const std::string	caseName	= getFormatShortString(format);
+		const auto			readFormat	= format;
+		const auto			writeFormat	= getShaderExtensionOperandFormat(isIntFormat(format), is64BitIntegerFormat(format));
+
+		if (!hasSpirvFormat(readFormat) || !hasSpirvFormat(writeFormat))
+			continue;
+
+		// note: just testing OpImageWrite as OpImageRead is tested with addComputeImageSamplerTest
+		testGroup->addChild(new ImageExtendOperandTest(testCtx, caseName, texture,
+			readFormat, writeFormat, false, false, ExtendTestType::WRITE_NONTEMPORAL));
 	}
 
 	return testGroup.release();

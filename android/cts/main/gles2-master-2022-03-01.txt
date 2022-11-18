@@ -1,0 +1,4 @@
+dEQP-GLES2.functional.shaders.function.local_variable_aliasing_vertex
+dEQP-GLES2.functional.shaders.function.local_variable_aliasing_fragment
+dEQP-GLES2.functional.shaders.function.global_variable_aliasing_vertex
+dEQP-GLES2.functional.shaders.function.global_variable_aliasing_fragment

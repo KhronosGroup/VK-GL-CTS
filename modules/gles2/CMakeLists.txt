@@ -38,7 +38,7 @@ set(DEQP_GLES2_LIBS
 	${DEQP_GLES2_LIBRARIES}
 	)
 
-add_deqp_module(deqp-gles2 "${DEQP_GLES2_SRCS}" "${DEQP_GLES2_LIBS}" tes2TestPackageEntry.cpp)
+add_deqp_module(deqp-gles2 "${DEQP_GLES2_SRCS}" "${DEQP_GLES2_LIBS}" "tcutil-platform" tes2TestPackageEntry.cpp)
 
 # Data directories
 add_data_dir(deqp-gles2 ../../data/gles2/data		gles2/data)

@@ -96,6 +96,12 @@ static const FormatKey s_oesTextureHalfFloatFormats[] =
 	GLS_UNSIZED_FORMATKEY(GL_RGB,	GL_HALF_FLOAT_OES),
 };
 
+// GL_EXT_color_buffer_half_float
+static const FormatKey s_extColorBufferHalfFloatUnsized[] =
+{
+	GLS_UNSIZED_FORMATKEY(GL_RGBA,	GL_HALF_FLOAT_OES),
+};
+
 // GL_EXT_sRGB_write_control
 static const FormatKey s_extSrgbWriteControlFormats[] =
 {
@@ -168,6 +174,13 @@ static const FormatExtEntry s_es2ExtFormats[] =
 		(deUint32)TEXTURE_VALID,
 		GLS_ARRAY_RANGE(s_oesTextureHalfFloatFormats)
 	},
+        // However GL_EXT_color_buffer_half_float does say explicitly
+        // that the RGBA variant should be renderable.
+	{
+		"GL_OES_texture_half_float GL_EXT_color_buffer_half_float",
+		(deUint32)(REQUIRED_RENDERABLE | COLOR_RENDERABLE),
+		GLS_ARRAY_RANGE(s_extColorBufferHalfFloatUnsized)
+	},
 
 	// GL_EXT_sRGB_write_control makes SRGB8_ALPHA8 color-renderable
 	{
@@ -230,7 +243,7 @@ static const FormatExtEntry s_es2ExtFormats[] =
 class ES2Checker : public Checker
 {
 public:
-			ES2Checker				(const glu::RenderContext& ctx);
+			ES2Checker				(const glu::RenderContext& ctx, const FormatDB& formats);
 	void	check					(GLenum attPoint, const Attachment& att,
 									 const Image* image);
 private:
@@ -238,8 +251,8 @@ private:
 	GLsizei	m_height;	//< The common height of images
 };
 
-ES2Checker::ES2Checker (const glu::RenderContext& ctx)\
-	: Checker		(ctx)
+ES2Checker::ES2Checker (const glu::RenderContext& ctx, const FormatDB& formats)\
+	: Checker		(ctx, formats)
 	, m_width		(-1)
 	, m_height		(-1)
 {
@@ -373,7 +386,7 @@ IterateResult SupportedCombinationTest::iterate (void)
 class ES2CheckerFactory : public CheckerFactory
 {
 public:
-	Checker*			createChecker	(const glu::RenderContext& ctx) { return new ES2Checker(ctx); }
+	Checker*			createChecker	(const glu::RenderContext& ctx, const FormatDB& formats) { return new ES2Checker(ctx, formats); }
 };
 
 class TestGroup : public TestCaseGroup

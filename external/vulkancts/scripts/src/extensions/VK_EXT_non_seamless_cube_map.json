@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": ""
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT":
+		[
+			{ "features": ["nonSeamlessCubeMap"],				"requirements": ["VK_EXT_non_seamless_cube_map"],						"mandatory_variant": ["vulkan"]}
+		]
+	}
+}

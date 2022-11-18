@@ -180,7 +180,7 @@ const T& instance (void)
 }
 
 /*--------------------------------------------------------------------*//*!
- * \brief Dummy placeholder type for unused template parameters.
+ * \brief Empty placeholder type for unused template parameters.
  *
  * In the precision tests we are dealing with functions of different arities.
  * To minimize code duplication, we only define templates with the maximum
@@ -294,7 +294,7 @@ typename Traits<T>::IVal unionIVal (const typename Traits<T>::IVal& a,
 
 //! Returns true iff every element of `ival` contains the corresponding element of `value`.
 template <typename T, typename U = Void>
-bool contains (const typename Traits<T>::IVal& ival, const T& value, bool is16Bit = false, const tcu::Maybe<U>& modularDivisor = tcu::nothing<U>())
+bool contains (const typename Traits<T>::IVal& ival, const T& value, bool is16Bit = false, const tcu::Maybe<U>& modularDivisor = tcu::Nothing)
 {
 	return Traits<T>::doContains(ival, value, is16Bit, modularDivisor);
 }
@@ -698,7 +698,7 @@ struct Traits<deFloat16> : ScalarTraits<deFloat16>
 	{
 		DE_UNREF(is16Bit);
 		float res0 = deFloat16To32(value);
-		const tcu::Maybe<float> convertedDivisor = (modularDivisor ? tcu::just(deFloat16To32(modularDivisor.get())) : tcu::nothing<float>());
+		const tcu::Maybe<float> convertedDivisor = (modularDivisor ? tcu::just(deFloat16To32(modularDivisor.get())) : tcu::Nothing);
 		return intervalContains(a, res0, convertedDivisor);
 	}
 
@@ -828,7 +828,7 @@ struct ContainerTraits
 
 		for (int ndx = 0; ndx < T::SIZE; ++ndx)
 		{
-			const tcu::Maybe<DivisorElement> divisorElement = (modularDivisor ? tcu::just((*modularDivisor)[ndx]) : tcu::nothing<DivisorElement>());
+			const tcu::Maybe<DivisorElement> divisorElement = (modularDivisor ? tcu::just((*modularDivisor)[ndx]) : tcu::Nothing);
 			if (!contains(ival[ndx], value[ndx], is16Bit, divisorElement))
 				return false;
 		}
@@ -1424,7 +1424,7 @@ public:
 template <typename T>
 class ExprP : public ExprPBase<T> {};
 
-// We treat Voids as containers since the dummy parameters in generalized
+// We treat Voids as containers since the unused parameters in generalized
 // vector functions are represented as Voids.
 template <>
 class ExprP<Void> : public ContainerExprPBase<Void> {};
@@ -2558,7 +2558,7 @@ public:
 							 const typename Signature<typename T::Ret, typename T::Arg0, typename T::Arg1>::IArgs& iargs) const
 	{
 		// Fast-path for common case
-		if (iargs.a.isOrdinary() && iargs.b.isOrdinary())
+		if (iargs.a.isOrdinary(ctx.format.getMaxValue()) && iargs.b.isOrdinary(ctx.format.getMaxValue()))
 		{
 			Interval ret;
 			TCU_SET_INTERVAL_BOUNDS(ret, sum,
@@ -2586,7 +2586,7 @@ public:
 		Interval b = iargs.b;
 
 		// Fast-path for common case
-		if (a.isOrdinary() && b.isOrdinary())
+		if (a.isOrdinary(ctx.format.getMaxValue()) && b.isOrdinary(ctx.format.getMaxValue()))
 		{
 			Interval ret;
 			if (a.hi() < 0)
@@ -2635,7 +2635,7 @@ public:
 	Interval	doApply		(const EvalContext&	ctx, const typename Signature<typename T::Ret, typename T::Arg0, typename T::Arg1>::IArgs& iargs) const
 	{
 		// Fast-path for common case
-		if (iargs.a.isOrdinary() && iargs.b.isOrdinary())
+		if (iargs.a.isOrdinary(ctx.format.getMaxValue()) && iargs.b.isOrdinary(ctx.format.getMaxValue()))
 		{
 			Interval ret;
 
@@ -3252,7 +3252,7 @@ protected:
 				ret |= ctx.format.roundOut(Interval(-DE_PI_DOUBLE, DE_PI_DOUBLE), true);
 		}
 
-		if (!yi.isFinite() || !xi.isFinite())
+		if (!yi.isFinite(ctx.format.getMaxValue()) || !xi.isFinite(ctx.format.getMaxValue()))
 		{
 			// Infinities may not be supported, allow anything, including NaN
 			ret |= TCU_NAN;
@@ -4103,6 +4103,39 @@ protected:
 	}
 };
 
+template <class T>
+class Reflect<1, T> : public DerivedFunc<
+	Signature<T, T, T> >
+{
+public:
+	typedef typename	Reflect::Ret		Ret;
+	typedef typename	Reflect::Arg0		Arg0;
+	typedef typename	Reflect::Arg1		Arg1;
+	typedef typename	Reflect::ArgExprs	ArgExprs;
+
+	string		getName		(void) const
+	{
+		return "reflect";
+	}
+
+protected:
+	ExprP<Ret>	doExpand	(ExpandContext& ctx, const ArgExprs& args) const
+	{
+		const ExprP<Arg0>&	i		= args.a;
+		const ExprP<Arg1>&	n		= args.b;
+		const ExprP<T>	dotNI	= bindExpression("dotNI", ctx, dot(n, i));
+
+		return i - alternatives((n * dotNI) * getConstTwo<T>(),
+								   alternatives( n * (dotNI * getConstTwo<T>()),
+												alternatives(n * dot(i * getConstTwo<T>(), n),
+															 alternatives(n * dot(i, n * getConstTwo<T>()),
+																	dot(n * n, i * getConstTwo<T>()))
+												)
+									)
+								);
+	}
+};
+
 template <int Size, class T>
 class Refract : public DerivedFunc<
 	Signature<typename ContainerOf<T, Size>::Container,
@@ -4256,7 +4289,7 @@ public:
 	}
 
 protected:
-	TIRet	doApply				(const EvalContext&, const TIArgs& iargs) const
+	TIRet	doApply				(const EvalContext& ctx, const TIArgs& iargs) const
 	{
 		Interval	fracIV;
 		Interval&	wholeIV		= const_cast<Interval&>(iargs.b);
@@ -4266,7 +4299,7 @@ protected:
 		TCU_INTERVAL_APPLY_MONOTONE1(wholeIV, x, iargs.a, whole,
 									 deModf(x, &intPart); whole = intPart);
 
-		if (!iargs.a.isFinite())
+		if (!iargs.a.isFinite(ctx.format.getMaxValue()))
 		{
 			// Behavior on modf(Inf) not well-defined, allow anything as a fractional part
 			// See Khronos bug 13907
@@ -4543,7 +4576,7 @@ protected:
 		bool any = iargs.a.hasNaN() || iargs.b.hi() > (maxExp + 1);
 		Interval ret(any, ldexp(iargs.a.lo(), (int)iargs.b.lo()), ldexp(iargs.a.hi(), (int)iargs.b.hi()));
 		if (iargs.b.lo() < minExp) ret |= 0.0;
-		if (!ret.isFinite()) ret |= TCU_NAN;
+		if (!ret.isFinite(ctx.format.getMaxValue())) ret |= TCU_NAN;
 		return ctx.format.convert(ret);
 	}
 };
@@ -4560,7 +4593,7 @@ Interval LdExp <Signature<double, double, int>>::doApply(const EvalContext& ctx,
 	// Add 1ULP precision tolerance to account for differing rounding modes between the GPU and deLdExp.
 	ret += Interval(-ctx.format.ulp(ret.lo()), ctx.format.ulp(ret.hi()));
 	if (iargs.b.lo() < minExp) ret |= 0.0;
-	if (!ret.isFinite()) ret |= TCU_NAN;
+	if (!ret.isFinite(ctx.format.getMaxValue())) ret |= TCU_NAN;
 	return ctx.format.convert(ret);
 }
 
@@ -6236,7 +6269,7 @@ tcu::TestStatus BuiltinPrecisionCaseTestInstance<In, Out>::iterate (void)
 
 	m_executor->execute(int(numValues), inputArr, outputArr);
 
-	// Initialize environment with dummy values so we don't need to bind in inner loop.
+	// Initialize environment with unused values so we don't need to bind in inner loop.
 	{
 		const typename Traits<In0>::IVal		in0;
 		const typename Traits<In1>::IVal		in1;
@@ -6288,7 +6321,7 @@ tcu::TestStatus BuiltinPrecisionCaseTestInstance<In, Out>::iterate (void)
 				case 1:
 					{
 						// Pass b from mod(a, b) if we are in the modulo operation.
-						const tcu::Maybe<In1> modularDivisor = (m_modularOp ? tcu::just(inputs.in1[valueNdx]) : tcu::nothing<In1>());
+						const tcu::Maybe<In1> modularDivisor = (m_modularOp ? tcu::just(inputs.in1[valueNdx]) : tcu::Nothing);
 
 						reference0 = convert<Out0>(highpFmt, env.lookup(*m_variables.out0));
 						if (!status.check(contains(reference0, outputs.out0[valueNdx], m_caseCtx.isPackFloat16b, modularDivisor), "Shader output 0 is outside acceptable range"))
@@ -6853,6 +6886,7 @@ public:
 	const FuncBase&		getFunc			(void) const { return instance<GenF<1, T> >(); }
 };
 
+#ifndef CTS_USES_VULKANSC
 template <template <int> class GenF>
 class SquareMatrixFuncCaseFactory : public FuncCaseFactory
 {
@@ -6880,12 +6914,17 @@ public:
 				else
 				{
 					requirements.push_back("Float16Int8Features.shaderFloat16");
+					requirements.push_back("VK_KHR_16bit_storage");
+					requirements.push_back("VK_KHR_storage_buffer_storage_class");
 					fileName += "_fp16";
 
 					if (ctx.isPackFloat16b == true)
 					{
-						requirements.push_back("Storage16BitFeatures.storageBuffer16BitAccess");
 						fileName += "_32bit";
+					}
+					else
+					{
+						requirements.push_back("Storage16BitFeatures.storageBuffer16BitAccess");
 					}
 				}
 			}
@@ -6899,6 +6938,7 @@ public:
 
 	const FuncBase&		getFunc			(void) const { return instance<GenF<2> >(); }
 };
+#endif // CTS_USES_VULKANSC
 
 template <template <int, int, class> class GenF, typename T>
 class MatrixFuncCaseFactory : public FuncCaseFactory
@@ -7056,8 +7096,10 @@ MovePtr<const CaseFactories> createBuiltinCases ()
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<MatrixCompMult, float>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<OuterProduct, float>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<Transpose, float>()));
+#ifndef CTS_USES_VULKANSC
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Determinant>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Inverse>()));
+#endif // CTS_USES_VULKANSC
 
 	addScalarFactory<Frexp32Bit>(*funcs);
 	addScalarFactory<FrexpStruct32Bit>(*funcs);
@@ -7139,8 +7181,10 @@ MovePtr<const CaseFactories> createBuiltinDoubleCases ()
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<MatrixCompMult, double>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<OuterProduct, double>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<Transpose, double>()));
+#ifndef CTS_USES_VULKANSC
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Determinant64bit>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Inverse64bit>()));
+#endif // CTS_USES_VULKANSC
 
 	addScalarFactory<Frexp64Bit>(*funcs);
 	addScalarFactory<FrexpStruct64Bit>(*funcs);
@@ -7218,8 +7262,10 @@ MovePtr<const CaseFactories> createBuiltinCases16Bit(void)
 
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<OuterProduct, deFloat16>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<Transpose, deFloat16>()));
+#ifndef CTS_USES_VULKANSC
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Determinant16bit>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Inverse16bit>()));
+#endif // CTS_USES_VULKANSC
 
 	addScalarFactory<Frexp16Bit>(*funcs);
 	addScalarFactory<FrexpStruct16Bit>(*funcs);

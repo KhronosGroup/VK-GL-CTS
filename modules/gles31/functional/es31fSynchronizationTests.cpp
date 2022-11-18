@@ -388,6 +388,7 @@ bool InterInvocationTestCase::verifyResults (void)
 	bool					error				= false;
 
 	gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, m_resultBuf);
+	gl.memoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
 	mapped = gl.mapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, m_workWidth * m_workHeight * sizeof(deInt32), GL_MAP_READ_BIT);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "map buffer");
 
@@ -3117,14 +3118,14 @@ std::string ConcurrentSSBOAtomicCounterMixedCase::genSSBOComputeSource (void) co
 		<< "layout (binding = 1, std430) volatile buffer WorkBuffer\n"
 		<< "{\n"
 		<< "	highp uint targetValue;\n"
-		<< "	highp uint dummy;\n"
+		<< "	highp uint unused;\n"
 		<< "} sb_work;\n"
 		<< "\n"
 		<< "void main ()\n"
 		<< "{\n"
 		<< "	// flip high bits\n"
 		<< "	highp uint mask = uint(1) << (24u + (gl_GlobalInvocationID.x % 8u));\n"
-		<< "	sb_work.dummy = atomicXor(sb_work.targetValue, mask);\n"
+		<< "	sb_work.unused = atomicXor(sb_work.targetValue, mask);\n"
 		<< "}";
 
 	return specializeShader(m_context, buf.str().c_str());

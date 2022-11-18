@@ -1,4 +1,7 @@
-include_directories(..)
+include_directories(
+	..
+	${DEQP_INL_DIR}
+	)
 
 set(DEQP_VK_SPARSE_RESOURCES_SRCS
 	vktSparseResourcesBase.cpp
@@ -39,12 +42,7 @@ set(DEQP_VK_SPARSE_RESOURCES_SRCS
 	vktSparseResourcesTestsUtil.hpp
 	)
 
-set(DEQP_VK_SPARSE_RESOURCES_LIBS
-	tcutil
-	vkutil
-	)
-
 PCH(DEQP_VK_SPARSE_RESOURCES_SRCS ../pch.cpp)
 
 add_library(deqp-vk-sparse-resources STATIC ${DEQP_VK_SPARSE_RESOURCES_SRCS})
-target_link_libraries(deqp-vk-sparse-resources ${DEQP_VK_SPARSE_RESOURCES_LIBS})
+target_link_libraries(deqp-vk-sparse-resources tcutil vkutil)

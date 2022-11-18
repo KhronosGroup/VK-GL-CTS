@@ -38,6 +38,7 @@
 #include "glcInfoTests.hpp"
 #include "glcPackedDepthStencilTests.hpp"
 #include "glcPackedPixelsTests.hpp"
+#include "glcShaderFunctionTests.hpp"
 #include "glcShaderIndexingTests.hpp"
 #include "glcShaderIntegerMixTests.hpp"
 #include "glcShaderLibrary.hpp"
@@ -256,6 +257,7 @@ public:
 		addChild(new deqp::ShaderLoopTests(m_context, glu::GLSL_VERSION_330));
 		addChild(
 			new deqp::ShaderLibraryGroup(m_context, "preprocessor", "Preprocessor Tests", "gl33/preprocessor.test"));
+		addChild(new deqp::ShaderFunctionTests(m_context, glu::GLSL_VERSION_330));
 		addChild(new deqp::ShaderStructTests(m_context, glu::GLSL_VERSION_330));
 		addChild(new deqp::UniformBlockTests(m_context, glu::GLSL_VERSION_330));
 		addChild(new deqp::ShaderIntegerMixTests(m_context, glu::GLSL_VERSION_330));

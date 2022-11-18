@@ -25,14 +25,15 @@
 
 #include "vkDefs.hpp"
 #include "vktTestCase.hpp"
+#include "vktDrawGroupParams.hpp"
 
 namespace vkt
 {
 namespace Draw
 {
 
-tcu::TestCaseGroup*	createNegativeViewportHeightTests	(tcu::TestContext& testCtx);
-tcu::TestCaseGroup*	createZeroViewportHeightTests		(tcu::TestContext& testCtx);
+tcu::TestCaseGroup*	createNegativeViewportHeightTests	(tcu::TestContext& testCtx, const SharedGroupParams groupParams);
+tcu::TestCaseGroup*	createZeroViewportHeightTests		(tcu::TestContext& testCtx, const SharedGroupParams groupParams);
 
 }	// Draw
 }	// vkt

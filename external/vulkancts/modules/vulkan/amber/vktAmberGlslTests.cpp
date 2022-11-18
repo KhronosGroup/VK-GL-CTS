@@ -51,5 +51,32 @@ tcu::TestCaseGroup*	createCombinedOperationsGroup (tcu::TestContext& testCtx)
 	return group.release();
 }
 
+tcu::TestCaseGroup*	createCrashTestGroup (tcu::TestContext& testCtx)
+{
+	struct TestParameters
+	{
+		std::string					name;
+		std::string					description;
+		std::vector<std::string>	requirements;
+	};
+	static const std::string					kGroupName				= "crash_test";
+	static const std::vector<TestParameters>	crashTestParameters	=
+	{
+		{ "divbyzero_vert",		"Vertex shader division by zero tests",						{}								},
+		{ "divbyzero_tesc",		"Tessellation control shader division by zero tests",		{ "Features.tessellationShader"	}},
+		{ "divbyzero_tese",		"Tessellation evaluation shader division by zero tests",	{ "Features.tessellationShader"	}},
+		{ "divbyzero_geom",		"Geoemtry shader division by zero tests",					{ "Features.geometryShader"		}},
+		{ "divbyzero_frag",		"Fragment shader division by zero tests",					{}								},
+		{ "divbyzero_comp",		"Compute shader division by zero tests",					{}								},
+	};
+
+	de::MovePtr<tcu::TestCaseGroup>				group{new tcu::TestCaseGroup{testCtx, kGroupName.c_str(), "Crash test group"}};
+	for (const auto& params : crashTestParameters)
+	{
+		group->addChild(createAmberTestCase(testCtx, params.name.c_str(), params.description.c_str(), kGroupName.c_str(), params.name + ".amber", params.requirements));
+	}
+	return group.release();
+}
+
 } // cts_amber
 } // vkt

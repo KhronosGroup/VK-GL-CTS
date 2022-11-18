@@ -229,54 +229,15 @@ class SourceFile (Source):
 		writeBinaryFile(dstPath, data)
 
 class GitRepo (Source):
-	def __init__(self, httpsUrl, sshUrl, revision, baseDir, extractDir = "src", removeTags = []):
+	def __init__(self, httpsUrl, sshUrl, revision, baseDir, extractDir = "src", removeTags = [], patch = ""):
 		Source.__init__(self, baseDir, extractDir)
 		self.httpsUrl	= httpsUrl
 		self.sshUrl		= sshUrl
 		self.revision	= revision
 		self.removeTags	= removeTags
+		self.patch		= patch
 
-	def detectProtocol(self, cmdProtocol = None):
-		# reuse parent repo protocol
-		proc = subprocess.Popen(['git', 'ls-remote', '--get-url', 'origin'], stdout=subprocess.PIPE, universal_newlines=True)
-		(stdout, stderr) = proc.communicate()
-
-		if proc.returncode != 0:
-			raise Exception("Failed to execute 'git ls-remote origin', got %d" % proc.returncode)
-		if (stdout[:3] == 'ssh') or (stdout[:3] == 'git'):
-			protocol = 'ssh'
-		else:
-			# remote 'origin' doesn't exist, assume 'https' as checkout protocol
-			protocol = 'https'
-		return protocol
-
-	def selectUrl(self, cmdProtocol = None):
-		try:
-			if cmdProtocol == None:
-				protocol = self.detectProtocol(cmdProtocol)
-			else:
-				protocol = cmdProtocol
-		except:
-			# fallback to https on any issues
-			protocol = 'https'
-
-		if protocol == 'ssh':
-			if self.sshUrl != None:
-				url = self.sshUrl
-			else:
-				assert self.httpsUrl != None
-				url = self.httpsUrl
-		else:
-			assert protocol == 'https'
-			url = self.httpsUrl
-
-		assert url != None
-		return url
-
-	def update (self, cmdProtocol = None, force = False):
-		fullDstPath = os.path.join(EXTERNAL_DIR, self.baseDir, self.extractDir)
-
-		url = self.selectUrl(cmdProtocol)
+	def checkout(self, url, fullDstPath, force):
 		if not os.path.exists(os.path.join(fullDstPath, '.git')):
 			execute(["git", "clone", "--no-checkout", url, fullDstPath])
 
@@ -285,13 +246,34 @@ class GitRepo (Source):
 			for tag in self.removeTags:
 				proc = subprocess.Popen(['git', 'tag', '-l', tag], stdout=subprocess.PIPE)
 				(stdout, stderr) = proc.communicate()
-				if proc.returncode == 0:
+				if len(stdout) > 0:
 					execute(["git", "tag", "-d",tag])
 			force_arg = ['--force'] if force else []
 			execute(["git", "fetch"] + force_arg + ["--tags", url, "+refs/heads/*:refs/remotes/origin/*"])
 			execute(["git", "checkout"] + force_arg + [self.revision])
+
+			if(self.patch != ""):
+				patchFile = os.path.join(EXTERNAL_DIR, self.patch)
+				execute(["git", "reset", "--hard", "HEAD"])
+				execute(["git", "apply", patchFile])
 		finally:
 			popWorkingDir()
+
+	def update (self, cmdProtocol, force = False):
+		fullDstPath = os.path.join(EXTERNAL_DIR, self.baseDir, self.extractDir)
+		url         = self.httpsUrl
+		backupUrl   = self.sshUrl
+
+		# If url is none then start with ssh
+		if cmdProtocol == 'ssh' or url == None:
+			url       = self.sshUrl
+			backupUrl = self.httpsUrl
+
+		try:
+			self.checkout(url, fullDstPath, force)
+		except:
+			if backupUrl != None:
+				self.checkout(backupUrl, fullDstPath, force)
 
 def postExtractLibpng (path):
 	shutil.copy(os.path.join(path, "scripts", "pnglibconf.h.prebuilt"),
@@ -299,9 +281,9 @@ def postExtractLibpng (path):
 
 PACKAGES = [
 	SourcePackage(
-		"http://zlib.net/zlib-1.2.12.tar.gz",
-		"zlib-1.2.12.tar.gz",
-		"91844808532e5ce316b3c010929493c0244f3d37593afd6de04f71821d5136d9",
+		"http://zlib.net/fossils/zlib-1.2.13.tar.gz",
+		"zlib-1.2.13.tar.gz",
+		"b3a24de97a8fdbc835b9833169501030b8977031bcb54b3b3ac13740f846ab30",
 		"zlib"),
 	SourcePackage(
 		"http://prdownloads.sourceforge.net/libpng/libpng-1.6.27.tar.gz",
@@ -316,25 +298,35 @@ PACKAGES = [
 		"renderdoc"),
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Tools.git",
-		None,
-		"ee30773650eca50b1cd3c913babcc2b50d7b91fd",
+		"git@github.com:KhronosGroup/SPIRV-Tools.git",
+		"f98473ceeb1d33700d01e20910433583e5256030",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
-		None,
-		"9158061398a96033c990e69156bd28c67114544b",
+		"git@github.com:KhronosGroup/glslang.git",
+		"a0ad0d7067521fff880e36acfb8ce453421c3f25",
 		"glslang",
 		removeTags = ["master-tot"]),
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Headers.git",
-		None,
-		"449bc986ba6f4c5e10e32828783f9daef2a77644",
+		"git@github.com:KhronosGroup/SPIRV-Headers.git",
+		"87d5b782bec60822aa878941e6b13c0a9a954c9b",
 		"spirv-headers"),
 	GitRepo(
+		"https://github.com/KhronosGroup/Vulkan-Docs.git",
+		"git@github.com:KhronosGroup/Vulkan-Docs.git",
+		"7a319840243ea33aa4caa42cdce0143b150e02bb",
+		"vulkan-docs"),
+	GitRepo(
 		"https://github.com/google/amber.git",
-		None,
-		"3e22a7d6694983df7bf575b0c0ae829b8333a5bf",
+		"git@github.com:google/amber.git",
+		"8b145a6c89dcdb4ec28173339dd176fb7b6f43ed",
 		"amber"),
+	GitRepo(
+		"https://github.com/open-source-parsers/jsoncpp.git",
+		"git@github.com:open-source-parsers/jsoncpp.git",
+		"9059f5cad030ba11d37818847443a53918c327b1",
+		"jsoncpp"),
 ]
 
 def parseArgs ():
@@ -347,7 +339,7 @@ def parseArgs ():
 	parser.add_argument('--insecure', dest='insecure', action='store_true', default=False,
 						help="Disable certificate check for external sources."
 						" Minimum python version required " + versionsForInsecureStr)
-	parser.add_argument('--protocol', dest='protocol', default=None, choices=['ssh', 'https'],
+	parser.add_argument('--protocol', dest='protocol', default='https', choices=['ssh', 'https'],
 						help="Select protocol to checkout git repositories.")
 	parser.add_argument('--force', dest='force', action='store_true', default=False,
 						help="Pass --force to git fetch and checkout commands")

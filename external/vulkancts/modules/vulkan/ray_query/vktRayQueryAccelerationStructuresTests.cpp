@@ -1196,14 +1196,16 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> CheckerboardSceneBu
 	tcu::Vec3 v2(1.0, 1.0, 0.0);
 	tcu::Vec3 v3(1.0, 0.0, 0.0);
 
-	if (testParams.emptyASCase == EmptyAccelerationStructureCase::INACTIVE_TRIANGLES)
+	// Different vertex configurations of a triangle whose parameter x is set to NaN during inactive_triangles tests
+	const bool nanConfig[4][4] =
 	{
-		const auto nanValue = tcu::Float32::nan().asFloat();
-		v0.x() = nanValue;
-		v1.x() = nanValue;
-		v2.x() = nanValue;
-		v3.x() = nanValue;
-	}
+		{ true,		true,		true,		true	},
+		{ false,	true,		true,		false	},
+		{ false,	false,		true,		false	},
+		{ false,	true,		false,		false	},
+	};
+
+	unsigned int geometryCount = testParams.emptyASCase == EmptyAccelerationStructureCase::INACTIVE_TRIANGLES ? 4U : 1U;
 
 	if (testParams.topTestType == TTT_DIFFERENT_INSTANCES)
 	{
@@ -1309,62 +1311,84 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> CheckerboardSceneBu
 			tcu::Vec3 xyz((float)x, (float)y, 0.0f);
 
 			de::MovePtr<BottomLevelAccelerationStructure>	bottomLevelAccelerationStructure = makeBottomLevelAccelerationStructure();
-			bottomLevelAccelerationStructure->setGeometryCount(1u);
+			bottomLevelAccelerationStructure->setGeometryCount(geometryCount);
 
-			de::SharedPtr<RaytracedGeometryBase> geometry;
 			if (testParams.bottomTestType == BTT_TRIANGLES)
 			{
-				geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType, testParams.padVertices);
-				if (testParams.indexType == VK_INDEX_TYPE_NONE_KHR)
+				for (unsigned int i = 0; i < geometryCount; i++)
 				{
-					if (instanceFlags == 0u)
-					{
-						geometry->addVertex(scale * (xyz + v0));
-						geometry->addVertex(scale * (xyz + v1));
-						geometry->addVertex(scale * (xyz + v2));
-						geometry->addVertex(scale * (xyz + v2));
-						geometry->addVertex(scale * (xyz + v1));
-						geometry->addVertex(scale * (xyz + v3));
-					}
-					else // Counterclockwise so the flags will be needed for the geometry to be visible.
-					{
-						geometry->addVertex(scale * (xyz + v2));
-						geometry->addVertex(scale * (xyz + v1));
-						geometry->addVertex(scale * (xyz + v0));
-						geometry->addVertex(scale * (xyz + v3));
-						geometry->addVertex(scale * (xyz + v1));
-						geometry->addVertex(scale * (xyz + v2));
-					}
-				}
-				else
-				{
-					geometry->addVertex(scale * (xyz + v0));
-					geometry->addVertex(scale * (xyz + v1));
-					geometry->addVertex(scale * (xyz + v2));
-					geometry->addVertex(scale * (xyz + v3));
+					de::SharedPtr<RaytracedGeometryBase> geometry;
+					geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType, testParams.padVertices);
 
-					if (instanceFlags == 0u)
+					if (testParams.emptyASCase == EmptyAccelerationStructureCase::INACTIVE_TRIANGLES)
 					{
-						geometry->addIndex(0);
-						geometry->addIndex(1);
-						geometry->addIndex(2);
-						geometry->addIndex(2);
-						geometry->addIndex(1);
-						geometry->addIndex(3);
+						const auto nanValue = tcu::Float32::nan().asFloat();
+
+						if (nanConfig[i][0])
+							v0.x() = nanValue;
+						if (nanConfig[i][1])
+							v1.x() = nanValue;
+						if (nanConfig[i][2])
+							v2.x() = nanValue;
+						if (nanConfig[i][3])
+							v3.x() = nanValue;
 					}
-					else // Counterclockwise so the flags will be needed for the geometry to be visible.
+
+					if (testParams.indexType == VK_INDEX_TYPE_NONE_KHR)
 					{
-						geometry->addIndex(2);
-						geometry->addIndex(1);
-						geometry->addIndex(0);
-						geometry->addIndex(3);
-						geometry->addIndex(1);
-						geometry->addIndex(2);
+						if (instanceFlags == 0u)
+						{
+							geometry->addVertex(scale * (xyz + v0));
+							geometry->addVertex(scale * (xyz + v1));
+							geometry->addVertex(scale * (xyz + v2));
+							geometry->addVertex(scale * (xyz + v2));
+							geometry->addVertex(scale * (xyz + v1));
+							geometry->addVertex(scale * (xyz + v3));
+						}
+						else // Counterclockwise so the flags will be needed for the geometry to be visible.
+						{
+							geometry->addVertex(scale * (xyz + v2));
+							geometry->addVertex(scale * (xyz + v1));
+							geometry->addVertex(scale * (xyz + v0));
+							geometry->addVertex(scale * (xyz + v3));
+							geometry->addVertex(scale * (xyz + v1));
+							geometry->addVertex(scale * (xyz + v2));
+						}
 					}
+
+					else
+					{
+						geometry->addVertex(scale * (xyz + v0));
+						geometry->addVertex(scale * (xyz + v1));
+						geometry->addVertex(scale * (xyz + v2));
+						geometry->addVertex(scale * (xyz + v3));
+
+						if (instanceFlags == 0u)
+						{
+							geometry->addIndex(0);
+							geometry->addIndex(1);
+							geometry->addIndex(2);
+							geometry->addIndex(2);
+							geometry->addIndex(1);
+							geometry->addIndex(3);
+						}
+						else // Counterclockwise so the flags will be needed for the geometry to be visible.
+						{
+							geometry->addIndex(2);
+							geometry->addIndex(1);
+							geometry->addIndex(0);
+							geometry->addIndex(3);
+							geometry->addIndex(1);
+							geometry->addIndex(2);
+						}
+					}
+
+					bottomLevelAccelerationStructure->addGeometry(geometry);
 				}
 			}
 			else // testParams.bottomTestType == BTT_AABBS
 			{
+				de::SharedPtr<RaytracedGeometryBase> geometry;
 				geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_AABBS_KHR, testParams.vertexFormat, testParams.indexType, testParams.padVertices);
 
 				if (!testParams.padVertices)
@@ -1388,9 +1412,10 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> CheckerboardSceneBu
 					geometry->addVertex(scale * (xyz + tcu::Vec3(0.5f, 0.0f, -0.1f)));
 					geometry->addVertex(scale * (xyz + tcu::Vec3(1.0f, 0.5f,  0.1f)));
 				}
+
+				bottomLevelAccelerationStructure->addGeometry(geometry);
 			}
 
-			bottomLevelAccelerationStructure->addGeometry(geometry);
 			result.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release()));
 		}
 	}
@@ -2764,29 +2789,16 @@ bool RayQueryASBasicTestInstance::iterateWithWorkers (void)
 	de::SharedPtr<SceneBuilder> sceneBuilder = de::SharedPtr<SceneBuilder>(new CheckerboardSceneBuilder());
 
 	de::SharedPtr<TestConfiguration> testConfigurationS		= createTestConfiguration(m_data.shaderSourcePipeline);
-	const deUint64					singleThreadTimeStart	= deGetMicroseconds();
 	de::MovePtr<BufferWithMemory>	singleThreadBufferCPU	= runTest(testConfigurationS.get(), sceneBuilder.get(), 0);
 	const bool						singleThreadValidation	= testConfigurationS->verifyImage(singleThreadBufferCPU.get(), m_context, m_data);
-	const deUint64					singleThreadTime		= deGetMicroseconds() - singleThreadTimeStart;
 	testConfigurationS.clear();
 
 	de::SharedPtr<TestConfiguration> testConfigurationM		= createTestConfiguration(m_data.shaderSourcePipeline);
-	deUint64						multiThreadTimeStart	= deGetMicroseconds();
 	de::MovePtr<BufferWithMemory>	multiThreadBufferCPU	= runTest(testConfigurationM.get(), sceneBuilder.get(), m_data.workerThreadsCount);
 	const bool						multiThreadValidation	= testConfigurationM->verifyImage(multiThreadBufferCPU.get(), m_context, m_data);
-	deUint64						multiThreadTime			= deGetMicroseconds() - multiThreadTimeStart;
-	const deUint64					multiThreadTimeOut		= 10 * singleThreadTime;
 	testConfigurationM.clear();
 
 	const deUint32					result					= singleThreadValidation && multiThreadValidation;
-
-	if (multiThreadTime > multiThreadTimeOut)
-	{
-		std::string failMsg	= "Time of multithreaded test execution " + de::toString(multiThreadTime) +
-							  " that is longer than expected execution time " + de::toString(multiThreadTimeOut);
-
-		TCU_FAIL(failMsg);
-	}
 
 	return result;
 }
@@ -2846,12 +2858,11 @@ void RayQueryASDynamicIndexingTestCase::initPrograms(SourceCollections& programC
 	// #version 460 core
 	// #extension GL_EXT_ray_query : require
 	// #extension GL_EXT_nonuniform_qualifier : enable
-	// #extension GL_ARB_gpu_shader_int64 : enable			// needed only to generate spir-v
 
 	// #define ARRAY_SIZE 500
 	// layout(set = 0, binding = 0) uniform accelerationStructureEXT tlasArray[ARRAY_SIZE];
 	// layout(set = 0, binding = 1) readonly buffer topLevelASPointers {
-	//     uint64_t ptr[];
+	//     uvec2 ptr[];
 	// } tlasPointers;
 	// layout(set = 0, binding = 2) readonly buffer topLevelASIndices {
 	//     uint idx[];
@@ -2890,7 +2901,6 @@ void RayQueryASDynamicIndexingTestCase::initPrograms(SourceCollections& programC
 	// }
 
 	const std::string compSource =
-		"OpCapability Int64\n"
 		"OpCapability Shader\n"
 		"OpCapability RayQueryKHR\n"
 		"OpCapability ShaderNonUniform\n"
@@ -2986,12 +2996,12 @@ void RayQueryASDynamicIndexingTestCase::initPrograms(SourceCollections& programC
 		"%124						= OpConstant %type_uint32 7\n"
 
 		// <changed_section>
-		"%type_uint64				= OpTypeInt 64 0\n"
-		"%127						= OpTypeRuntimeArray %type_uint64\n"
+		"%v2uint					= OpTypeVector %type_uint32 2\n"
+		"%127						= OpTypeRuntimeArray %v2uint\n"
 		"%128						= OpTypeStruct %127\n"
 		"%129						= OpTypePointer StorageBuffer %128\n"
 		"%var_as_pointers_ssbo		= OpVariable %129 StorageBuffer\n"
-		"%type_uint64_ssbo_ptr		= OpTypePointer StorageBuffer %type_uint64\n"
+		"%type_uint64_ssbo_ptr		= OpTypePointer StorageBuffer %v2uint\n"
 		// </changed_section>
 
 		// void main()
@@ -3060,7 +3070,7 @@ void RayQueryASDynamicIndexingTestCase::initPrograms(SourceCollections& programC
 
 		// <changed_section>
 		"%as_device_addres_ptr		= OpAccessChain %type_uint64_ssbo_ptr %var_as_pointers_ssbo %c_int32_0 %as_index\n"
-		"%as_device_addres			= OpLoad %type_uint64 %as_device_addres_ptr Aligned 8\n"
+		"%as_device_addres			= OpLoad %v2uint %as_device_addres_ptr\n"
 		"%as_to_use					= OpConvertUToAccelerationStructureKHR %type_as %as_device_addres\n"
 		// </changed_section>
 

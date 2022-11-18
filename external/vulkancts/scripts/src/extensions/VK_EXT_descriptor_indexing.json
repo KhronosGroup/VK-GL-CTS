@@ -1,0 +1,46 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": "0.1.2.0"
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceFeatures":
+		[
+			{ "features": ["shaderSampledImageArrayDynamicIndexing"],				"requirements": ["VK_EXT_descriptor_indexing"] },
+			{ "features": ["shaderStorageBufferArrayDynamicIndexing"],				"requirements": ["VK_EXT_descriptor_indexing"] },
+			{ "features": ["shaderSampledImageArrayDynamicIndexing"],				"requirements": ["ApiVersion(0, 1, 1, 0)", "VK_KHR_acceleration_structure"] },
+			{ "features": ["shaderStorageBufferArrayDynamicIndexing"],				"requirements": ["ApiVersion(0, 1, 1, 0)", "VK_KHR_acceleration_structure"] }
+		],
+		"VkPhysicalDeviceDescriptorIndexingFeatures":
+		[
+			{ "features": ["shaderUniformTexelBufferArrayDynamicIndexing"],			"requirements": ["VK_EXT_descriptor_indexing"] },
+			{ "features": ["shaderStorageTexelBufferArrayDynamicIndexing"],			"requirements": ["VK_EXT_descriptor_indexing"] },
+			{ "features": ["shaderSampledImageArrayNonUniformIndexing"],			"requirements": ["VK_EXT_descriptor_indexing"] },
+			{ "features": ["shaderStorageBufferArrayNonUniformIndexing"],			"requirements": ["VK_EXT_descriptor_indexing"] },
+			{ "features": ["shaderUniformTexelBufferArrayNonUniformIndexing"],		"requirements": ["VK_EXT_descriptor_indexing"] },
+			{ "features": ["descriptorBindingSampledImageUpdateAfterBind"],			"requirements": ["VK_EXT_descriptor_indexing"] },
+			{ "features": ["descriptorBindingStorageImageUpdateAfterBind"],			"requirements": ["VK_EXT_descriptor_indexing"] },
+			{ "features": ["descriptorBindingStorageBufferUpdateAfterBind"],		"requirements": ["VK_EXT_descriptor_indexing"] },
+			{ "features": ["descriptorBindingUniformTexelBufferUpdateAfterBind"],	"requirements": ["VK_EXT_descriptor_indexing"] },
+			{ "features": ["descriptorBindingStorageTexelBufferUpdateAfterBind"],	"requirements": ["VK_EXT_descriptor_indexing"] },
+			{ "features": ["descriptorBindingUpdateUnusedWhilePending"],			"requirements": ["VK_EXT_descriptor_indexing"] },
+			{ "features": ["descriptorBindingPartiallyBound"],						"requirements": ["VK_EXT_descriptor_indexing"] },
+			{ "features": ["runtimeDescriptorArray"],								"requirements": ["VK_EXT_descriptor_indexing"] },
+			{ "features": ["shaderUniformTexelBufferArrayDynamicIndexing"],			"requirements": ["ApiVersion(0, 1, 1, 0)", "VK_KHR_acceleration_structure"] },
+			{ "features": ["shaderStorageTexelBufferArrayDynamicIndexing"],			"requirements": ["ApiVersion(0, 1, 1, 0)", "VK_KHR_acceleration_structure"] },
+			{ "features": ["shaderSampledImageArrayNonUniformIndexing"],			"requirements": ["ApiVersion(0, 1, 1, 0)", "VK_KHR_acceleration_structure"] },
+			{ "features": ["shaderStorageBufferArrayNonUniformIndexing"],			"requirements": ["ApiVersion(0, 1, 1, 0)", "VK_KHR_acceleration_structure"] },
+			{ "features": ["shaderUniformTexelBufferArrayNonUniformIndexing"],		"requirements": ["ApiVersion(0, 1, 1, 0)", "VK_KHR_acceleration_structure"] },
+			{ "features": ["descriptorBindingSampledImageUpdateAfterBind"],			"requirements": ["ApiVersion(0, 1, 1, 0)", "VK_KHR_acceleration_structure"] },
+			{ "features": ["descriptorBindingStorageImageUpdateAfterBind"],			"requirements": ["ApiVersion(0, 1, 1, 0)", "VK_KHR_acceleration_structure"] },
+			{ "features": ["descriptorBindingStorageBufferUpdateAfterBind"],		"requirements": ["ApiVersion(0, 1, 1, 0)", "VK_KHR_acceleration_structure"] },
+			{ "features": ["descriptorBindingUniformTexelBufferUpdateAfterBind"],	"requirements": ["ApiVersion(0, 1, 1, 0)", "VK_KHR_acceleration_structure"] },
+			{ "features": ["descriptorBindingStorageTexelBufferUpdateAfterBind"],	"requirements": ["ApiVersion(0, 1, 1, 0)", "VK_KHR_acceleration_structure"] },
+			{ "features": ["descriptorBindingUpdateUnusedWhilePending"],			"requirements": ["ApiVersion(0, 1, 1, 0)", "VK_KHR_acceleration_structure"] },
+			{ "features": ["descriptorBindingPartiallyBound"],						"requirements": ["ApiVersion(0, 1, 1, 0)", "VK_KHR_acceleration_structure"] },
+			{ "features": ["runtimeDescriptorArray"],								"requirements": ["ApiVersion(0, 1, 1, 0)", "VK_KHR_acceleration_structure"] }
+		]
+	}
+}
