@@ -311,6 +311,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineTimestampTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineVertexInputTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineVertexUtil.cpp \
+	external/vulkancts/modules/vulkan/postmortem/vktPostmortemDeviceFaultTests.cpp \
 	external/vulkancts/modules/vulkan/postmortem/vktPostmortemShaderTimeoutTests.cpp \
 	external/vulkancts/modules/vulkan/postmortem/vktPostmortemTests.cpp \
 	external/vulkancts/modules/vulkan/postmortem/vktPostmortemUseAfterFreeTests.cpp \
