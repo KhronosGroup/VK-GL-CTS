@@ -370,7 +370,6 @@ static tcu::TestStatus ahbImageCreateTest(Context& context, TestParams testParam
 												   &queueFamilyIndex,
 												   vk::VK_IMAGE_LAYOUT_UNDEFINED };
 
-
 		checkAhbImageSupport(context, testParams, width, height, vkUsage);
 
 		Move<VkImage>			   image		= vk::createImage(vkd, device, &createInfo);
@@ -492,6 +491,7 @@ CustomInstance createInstanceWithWsi(Context& context, Type wsiType, const vecto
 
 	extensions.push_back("VK_KHR_surface");
 	extensions.push_back(getExtensionName(wsiType));
+	extensions.push_back("VK_KHR_get_surface_capabilities2");
 
 	vector<string> instanceExtensions;
 	for (const auto& ext : extensions)
@@ -556,7 +556,9 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface& vkp, deUint32 apiVer
 			TCU_THROW(NotSupportedError, extName + " is not supported");
 	}
 
-	const void*					   pNext	= nullptr;
+	vk::VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT imageCompressionSwapchain = initVulkanStructure();
+	imageCompressionSwapchain.imageCompressionControlSwapchain = VK_TRUE;
+
 	const VkPhysicalDeviceFeatures features = {};
 
 	// Convert from std::vector<std::string> to std::vector<const char*>.
@@ -566,7 +568,7 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface& vkp, deUint32 apiVer
 				   [](const std::string& s) { return s.c_str(); });
 
 	const VkDeviceCreateInfo deviceParams = { VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-											  pNext,
+											  &imageCompressionSwapchain,
 											  (VkDeviceCreateFlags)0,
 											  1u,
 											  &queueInfo,
@@ -618,14 +620,16 @@ static tcu::TestStatus swapchainCreateTest(Context& context, TestParams testPara
 
 	const InstanceHelper	 instHelper(context, testParams.wsiType);
 	const wsi::NativeObjects native(context, instHelper.supportedExtensions, testParams.wsiType);
+	const bool				 is_fixed_rate_ex = testParams.control.flags == VK_IMAGE_COMPRESSION_FIXED_RATE_EXPLICIT_EXT;
 
 	VkExtent2D							extent2d = { 16, 16 };
 	VkImageCompressionFixedRateFlagsEXT planeFlags[3]{};
 
-	for (unsigned i{}; i < (testParams.control.flags == VK_IMAGE_COMPRESSION_FIXED_RATE_EXPLICIT_EXT ? 24 : 1); i++)
+	for (unsigned i{}; i < (is_fixed_rate_ex ? 24 : 1); i++)
 	{
 		planeFlags[0] ^= 3 << i;
-		if (testParams.control.flags == VK_IMAGE_COMPRESSION_FIXED_RATE_EXPLICIT_EXT)
+
+		if (is_fixed_rate_ex)
 		{
 			testParams.control.pFixedRateFlags = planeFlags;
 		}
@@ -659,6 +663,9 @@ static tcu::TestStatus swapchainCreateTest(Context& context, TestParams testPara
 		for (auto& format : formats)
 		{
 			testParams.format = format.surfaceFormat.format;
+
+			const uint32_t numPlanes = isYCbCrFormat(testParams.format) ? getPlaneCount(testParams.format) : 1;
+			testParams.control.compressionControlPlaneCount = is_fixed_rate_ex ? numPlanes : 0;
 
 			VkSwapchainCreateInfoKHR swapchainInfo = initVulkanStructure();
 			swapchainInfo.surface				   = surface.get();
