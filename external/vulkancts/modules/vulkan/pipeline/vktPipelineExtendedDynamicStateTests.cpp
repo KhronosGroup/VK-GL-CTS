@@ -1521,6 +1521,15 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 			TCU_THROW(NotSupportedError, "Depth bias clamp not supported");
 	}
 
+	if (m_testConfig.useMeshShaders || m_testConfig.bindUnusedMeshShadingPipeline)
+	{
+		context.requireDeviceFunctionality("VK_EXT_mesh_shader");
+	}
+	if (m_testConfig.needsIndexBuffer())
+	{
+		context.requireDeviceFunctionality("VK_EXT_index_type_uint8");
+	}
+
 	// Check color image format support (depth/stencil will be chosen at runtime).
 	const vk::VkFormatFeatureFlags	kColorFeatures	= (vk::VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | vk::VK_FORMAT_FEATURE_TRANSFER_SRC_BIT);
 
