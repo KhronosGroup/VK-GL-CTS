@@ -1267,6 +1267,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_shader_subgroup_rotate")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_image_sliced_view_of_3d")
 	{
 		return;
@@ -2924,6 +2928,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_shader_subgroup_rotate")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_image_sliced_view_of_3d")
 	{
 		return;
@@ -3475,6 +3483,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_pageable_device_local_memory",
 	"VK_KHR_maintenance4",
 	"VK_ARM_shader_core_properties",
+	"VK_KHR_shader_subgroup_rotate",
 	"VK_EXT_image_sliced_view_of_3d",
 	"VK_VALVE_descriptor_set_host_mapping",
 	"VK_EXT_depth_clamp_zero_one",

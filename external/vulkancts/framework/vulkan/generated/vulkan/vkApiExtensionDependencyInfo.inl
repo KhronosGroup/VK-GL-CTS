@@ -3728,6 +3728,7 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_pageable_device_local_memory"),
 	std::make_tuple(1, 1, "VK_KHR_maintenance4"),
 	std::make_tuple(1, 1, "VK_ARM_shader_core_properties"),
+	std::make_tuple(1, 0, "VK_KHR_shader_subgroup_rotate"),
 	std::make_tuple(1, 0, "VK_EXT_image_sliced_view_of_3d"),
 	std::make_tuple(1, 0, "VK_VALVE_descriptor_set_host_mapping"),
 	std::make_tuple(1, 0, "VK_EXT_depth_clamp_zero_one"),

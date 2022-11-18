@@ -8549,6 +8549,14 @@ struct VkPhysicalDeviceCooperativeMatrixPropertiesKHR
 	VkShaderStageFlags	cooperativeMatrixSupportedStages;
 };
 
+struct VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderSubgroupRotate;
+	VkBool32		shaderSubgroupRotateClustered;
+};
+
 struct StdVideoH264SpsVuiFlags
 {
 	uint32_t	aspect_ratio_info_present_flag:1;
