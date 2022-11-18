@@ -58,6 +58,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceAccelerationStructureFeaturesKHR.pNext;
 	}
 
+	vk::VkPhysicalDeviceAddressBindingReportFeaturesEXT physicalDeviceAddressBindingReportFeaturesEXT;
+	deMemset(&physicalDeviceAddressBindingReportFeaturesEXT, 0, sizeof(physicalDeviceAddressBindingReportFeaturesEXT));
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_device_address_binding_report")) )
+	{
+		physicalDeviceAddressBindingReportFeaturesEXT.sType = getStructureType<VkPhysicalDeviceAddressBindingReportFeaturesEXT>();
+		*nextPtr = &physicalDeviceAddressBindingReportFeaturesEXT;
+		nextPtr  = &physicalDeviceAddressBindingReportFeaturesEXT.pNext;
+	}
+
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT physicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT;
 	deMemset(&physicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT, 0, sizeof(physicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT));
@@ -160,6 +170,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		physicalDeviceExtendedDynamicState2FeaturesEXT.sType = getStructureType<VkPhysicalDeviceExtendedDynamicState2FeaturesEXT>();
 		*nextPtr = &physicalDeviceExtendedDynamicState2FeaturesEXT;
 		nextPtr  = &physicalDeviceExtendedDynamicState2FeaturesEXT.pNext;
+	}
+
+	vk::VkPhysicalDeviceFaultFeaturesEXT physicalDeviceFaultFeaturesEXT;
+	deMemset(&physicalDeviceFaultFeaturesEXT, 0, sizeof(physicalDeviceFaultFeaturesEXT));
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_device_fault")) )
+	{
+		physicalDeviceFaultFeaturesEXT.sType = getStructureType<VkPhysicalDeviceFaultFeaturesEXT>();
+		*nextPtr = &physicalDeviceFaultFeaturesEXT;
+		nextPtr  = &physicalDeviceFaultFeaturesEXT.pNext;
 	}
 
 	vk::VkPhysicalDeviceFragmentDensityMapFeaturesEXT physicalDeviceFragmentDensityMapFeaturesEXT;
@@ -1204,6 +1224,24 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( coreFeatures.features.shaderStorageBufferArrayDynamicIndexing == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature shaderStorageBufferArrayDynamicIndexing not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_device_address_binding_report")) )
+	{
+		if ( physicalDeviceAddressBindingReportFeaturesEXT.reportAddressBinding == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature reportAddressBinding not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_device_fault")) )
+	{
+		if ( physicalDeviceFaultFeaturesEXT.deviceFault == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature deviceFault not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

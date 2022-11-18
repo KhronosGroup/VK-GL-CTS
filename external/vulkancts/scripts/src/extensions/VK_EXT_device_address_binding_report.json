@@ -1,0 +1,9 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceAddressBindingReportFeaturesEXT":
+		[
+			{ "features": ["reportAddressBinding"],	"requirements": ["VK_EXT_device_address_binding_report"] }
+		]
+	}
+}
