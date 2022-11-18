@@ -112,7 +112,7 @@ public:
 	GraphicsPipelineWrapper&	setDynamicState						(const VkPipelineDynamicStateCreateInfo* dynamicState);
 
 	// Specify topology that is used by default InputAssemblyState in vertex input state. This needs to be
-	// specified only when there is no custom InputAssemblyState provided in setupVertexInputStete and when
+	// specified only when there is no custom InputAssemblyState provided in setupVertexInputState and when
 	// topology is diferent then VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST which is used by default.
 	GraphicsPipelineWrapper&	setDefaultTopology					(const VkPrimitiveTopology topology);
 
@@ -141,13 +141,17 @@ public:
 	// Pre-rasterization shader state uses default ViewportState, this method extends it with VkPipelineViewportDepthClipControlCreateInfoEXT.
 	GraphicsPipelineWrapper&	setDepthClipControl					(PipelineViewportDepthClipControlCreateInfoWrapper& depthClipControlCreateInfo);
 
+#ifndef CTS_USES_VULKANSC
+	GraphicsPipelineWrapper&	setRenderingColorAttachmentsInfo	(PipelineRenderingCreateInfoWrapper pipelineRenderingCreateInfo);
+#endif
+
 	// Pre-rasterization shader state uses provieded viewports and scissors to create ViewportState. When disableViewportState
 	// is used then ViewportState won't be constructed and NULL will be used.
 	GraphicsPipelineWrapper&	disableViewportState				(void);
 
 
 	// Setup vertex input state. When VertexInputState or InputAssemblyState are not provided then default structures will be used.
-	GraphicsPipelineWrapper&	setupVertexInputStete				(const VkPipelineVertexInputStateCreateInfo*		vertexInputState = DE_NULL,
+	GraphicsPipelineWrapper&	setupVertexInputState				(const VkPipelineVertexInputStateCreateInfo*		vertexInputState = DE_NULL,
 																	 const VkPipelineInputAssemblyStateCreateInfo*		inputAssemblyState = DE_NULL,
 																	 const VkPipelineCache								partPipelineCache = DE_NULL,
 																	 PipelineCreationFeedbackCreateInfoWrapper			partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());

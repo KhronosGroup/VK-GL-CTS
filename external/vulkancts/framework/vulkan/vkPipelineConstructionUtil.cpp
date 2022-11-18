@@ -454,6 +454,26 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setDepthClipControl(PipelineVi
 	return *this;
 }
 
+#ifndef CTS_USES_VULKANSC
+GraphicsPipelineWrapper& GraphicsPipelineWrapper::setRenderingColorAttachmentsInfo(PipelineRenderingCreateInfoWrapper pipelineRenderingCreateInfo)
+{
+	/* When both graphics pipeline library and dynamic rendering enabled, we just need only viewMask of VkPipelineRenderingCreateInfo
+	 * on non-fragment stages. But we need the rest info for setting up fragment output states.
+	 * This method provides a way to verify this condition.
+	 */
+	if (!m_internalData->pRenderingState.ptr || m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+		return *this;
+
+	DE_ASSERT(m_internalData && (m_internalData->setupState > PSS_VERTEX_INPUT_INTERFACE) &&
+								(m_internalData->setupState < PSS_FRAGMENT_OUTPUT_INTERFACE) &&
+								(m_internalData->pRenderingState.ptr->viewMask == pipelineRenderingCreateInfo.ptr->viewMask));
+
+	m_internalData->pRenderingState.ptr = pipelineRenderingCreateInfo.ptr;
+
+	return *this;
+}
+#endif
+
 GraphicsPipelineWrapper& GraphicsPipelineWrapper::disableViewportState()
 {
 	// ViewportState is used in pre-rasterization shader state, make sure pre-rasterization state was not setup yet
@@ -464,7 +484,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::disableViewportState()
 	return *this;
 }
 
-GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupVertexInputStete(const VkPipelineVertexInputStateCreateInfo*		vertexInputState,
+GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupVertexInputState(const VkPipelineVertexInputStateCreateInfo*		vertexInputState,
 																		const VkPipelineInputAssemblyStateCreateInfo*	inputAssemblyState,
 																		const VkPipelineCache							partPipelineCache,
 																		PipelineCreationFeedbackCreateInfoWrapper		partCreationFeedback)

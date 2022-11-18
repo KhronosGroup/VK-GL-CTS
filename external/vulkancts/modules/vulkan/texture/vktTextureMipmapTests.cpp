@@ -1534,7 +1534,7 @@ Texture3DLodControlTestInstance::Texture3DLodControlTestInstance (Context& conte
 	, m_testParameters	(testParameters)
 	, m_minFilter		(testParameters.minFilter)
 	, m_texture			(DE_NULL)
-	, m_renderer		(context, testParameters.sampleCount, m_texWidth*4, m_texHeight*4, vk::makeComponentMappingRGBA(), testParameters.testType > util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD)
+	, m_renderer		(context, testParameters.sampleCount, m_texWidth*4, m_texHeight*4, vk::makeComponentMappingRGBA(), testParameters.testType > util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD, testParameters.testType >= util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD)
 {
 	const VkFormat			format		= VK_FORMAT_R8G8B8A8_UNORM;
 	tcu::TextureFormatInfo	fmtInfo		= tcu::getTextureFormatInfo(mapVkFormat(format));

@@ -359,7 +359,7 @@ static bool validateTexture (tcu::TestLog& log, const tcu::Surface& rendered, co
 	}
 
 
-	return true;
+	return isOk;
 }
 
 tcu::TestStatus Compressed2DTestInstance::iterate (void)

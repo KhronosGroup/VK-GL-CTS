@@ -301,7 +301,7 @@ protected:
 #endif // CTS_USES_VULKANSC
 		{
 			m_pipeline_1
-					.setupVertexInputStete(&m_vertexInputState)
+					.setupVertexInputState(&m_vertexInputState)
 					.setupPreRasterizationShaderState(viewports,
 													  scissors,
 													  *m_pipelineLayout,
@@ -337,7 +337,7 @@ protected:
 #endif // CTS_USES_VULKANSC
 		{
 			m_pipeline_2
-					.setupVertexInputStete(&m_vertexInputState)
+					.setupVertexInputState(&m_vertexInputState)
 					.setupPreRasterizationShaderState(viewports,
 													  scissors,
 													  *m_pipelineLayout,
@@ -764,7 +764,7 @@ void DepthBoundsTestInstance::initPipeline (const vk::VkDevice device)
 #endif // CTS_USES_VULKANSC
 	{
 		m_pipeline
-			  .setupVertexInputStete(&m_vertexInputState)
+			  .setupVertexInputState(&m_vertexInputState)
 			  .setupPreRasterizationShaderState(viewports,
 												scissors,
 												*m_pipelineLayout,

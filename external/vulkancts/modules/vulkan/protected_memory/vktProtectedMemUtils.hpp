@@ -143,18 +143,8 @@ vk::Move<vk::VkPipeline>			makeGraphicsPipeline				(const vk::DeviceInterface&		
 																		 const VertexBindings&				vertexBindings,
 																		 const VertexAttribs&				vertexAttribs,
 																		 const tcu::UVec2&					renderSize,
-																		 const vk::VkPrimitiveTopology		topology);
-
-vk::Move<vk::VkPipeline>			makeGraphicsPipeline				(const vk::DeviceInterface&			vk,
-																		 const vk::VkDevice					device,
-																		 const vk::VkPipelineLayout			pipelineLayout,
-																		 const vk::VkRenderPass				renderPass,
-																		 const vk::VkShaderModule			vertexShaderModule,
-																		 const vk::VkShaderModule			fragmentShaderModule,
-																		 const VertexBindings&				vertexBindings,
-																		 const VertexAttribs&				vertexAttribs,
-																		 const tcu::UVec2&					renderSize,
-																		 const vk::VkPrimitiveTopology		topology);
+																		 const vk::VkPrimitiveTopology		topology,
+																		 const vk::VkPipelineCreateFlags	flags = 0);
 
 void								clearImage							(ProtectedContext&					ctx,
 																		 vk::VkImage						image);
@@ -168,7 +158,8 @@ void								copyToProtectedImage				(ProtectedContext&					ctx,
 																		 vk::VkImage						dstImage,
 																		 vk::VkImageLayout					dstImageLayout,
 																		 deUint32							width,
-																		 deUint32							height);
+																		 deUint32							height,
+																		 ProtectionMode						protectionMode = PROTECTION_ENABLED);
 
 void								fillWithRandomColorTiles			(const tcu::PixelBufferAccess&		dst,
 																		 const tcu::Vec4&					minVal,

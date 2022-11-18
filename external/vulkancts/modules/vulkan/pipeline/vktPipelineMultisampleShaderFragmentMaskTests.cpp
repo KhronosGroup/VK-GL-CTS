@@ -705,7 +705,7 @@ void drawAndSampleInputAttachment (Context& context, const TestParams& params, W
 
 		pipelineDraw.setDefaultRasterizationState()
 					.setDefaultDepthStencilState()
-					.setupVertexInputStete(&vertexInputStateInfo)
+					.setupVertexInputState(&vertexInputStateInfo)
 					.setupPreRasterizationShaderState(viewports,
 									scissors,
 									*pipelineLayout,
@@ -734,7 +734,7 @@ void drawAndSampleInputAttachment (Context& context, const TestParams& params, W
 
 		pipelineSample.setDefaultRasterizationState()
 					  .setDefaultDepthStencilState()
-					  .setupVertexInputStete(&vertexInputStateInfo)
+					  .setupVertexInputState(&vertexInputStateInfo)
 					  .setupPreRasterizationShaderState(viewports,
 									scissors,
 									*pipelineLayout,
@@ -970,7 +970,7 @@ void draw (Context& context, const TestParams& params, WorkingData& wd)
 		pipelines.back().setDefaultRasterizationState()
 						.setDefaultColorBlendState()
 						.setDefaultDepthStencilState()
-						.setupVertexInputStete(&vertexInputStateInfo)
+						.setupVertexInputState(&vertexInputStateInfo)
 						.setupPreRasterizationShaderState(viewports,
 												scissors,
 												*pipelineLayout,

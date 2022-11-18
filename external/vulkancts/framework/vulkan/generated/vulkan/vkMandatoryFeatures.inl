@@ -186,7 +186,7 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	vk::VkPhysicalDeviceFragmentShadingRateFeaturesKHR physicalDeviceFragmentShadingRateFeaturesKHR;
 	deMemset(&physicalDeviceFragmentShadingRateFeaturesKHR, 0, sizeof(physicalDeviceFragmentShadingRateFeaturesKHR));
 
-	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("physicalDeviceMeshShaderFeaturesEXT.primitiveFragmentShadingRateMeshShader")) )
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_fragment_shading_rate")) )
 	{
 		physicalDeviceFragmentShadingRateFeaturesKHR.sType = getStructureType<VkPhysicalDeviceFragmentShadingRateFeaturesKHR>();
 		*nextPtr = &physicalDeviceFragmentShadingRateFeaturesKHR;
@@ -371,6 +371,18 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 #endif // defined(CTS_USES_VULKAN)
 
 #if defined(CTS_USES_VULKAN)
+	vk::VkPhysicalDeviceOpacityMicromapFeaturesEXT physicalDeviceOpacityMicromapFeaturesEXT;
+	deMemset(&physicalDeviceOpacityMicromapFeaturesEXT, 0, sizeof(physicalDeviceOpacityMicromapFeaturesEXT));
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_opacity_micromap")) )
+	{
+		physicalDeviceOpacityMicromapFeaturesEXT.sType = getStructureType<VkPhysicalDeviceOpacityMicromapFeaturesEXT>();
+		*nextPtr = &physicalDeviceOpacityMicromapFeaturesEXT;
+		nextPtr  = &physicalDeviceOpacityMicromapFeaturesEXT.pNext;
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT physicalDevicePageableDeviceLocalMemoryFeaturesEXT;
 	deMemset(&physicalDevicePageableDeviceLocalMemoryFeaturesEXT, 0, sizeof(physicalDevicePageableDeviceLocalMemoryFeaturesEXT));
 
@@ -400,6 +412,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		physicalDevicePipelineExecutablePropertiesFeaturesKHR.sType = getStructureType<VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR>();
 		*nextPtr = &physicalDevicePipelineExecutablePropertiesFeaturesKHR;
 		nextPtr  = &physicalDevicePipelineExecutablePropertiesFeaturesKHR.pNext;
+	}
+
+	vk::VkPhysicalDevicePipelineProtectedAccessFeaturesEXT physicalDevicePipelineProtectedAccessFeaturesEXT;
+	deMemset(&physicalDevicePipelineProtectedAccessFeaturesEXT, 0, sizeof(physicalDevicePipelineProtectedAccessFeaturesEXT));
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_pipeline_protected_access")) )
+	{
+		physicalDevicePipelineProtectedAccessFeaturesEXT.sType = getStructureType<VkPhysicalDevicePipelineProtectedAccessFeaturesEXT>();
+		*nextPtr = &physicalDevicePipelineProtectedAccessFeaturesEXT;
+		nextPtr  = &physicalDevicePipelineProtectedAccessFeaturesEXT.pNext;
 	}
 
 #if defined(CTS_USES_VULKAN)
@@ -1306,7 +1328,7 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	}
 
 #if defined(CTS_USES_VULKAN)
-	if ( physicalDeviceMeshShaderFeaturesEXT.primitiveFragmentShadingRateMeshShader )
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_fragment_shading_rate")) && physicalDeviceMeshShaderFeaturesEXT.primitiveFragmentShadingRateMeshShader )
 	{
 		if ( physicalDeviceFragmentShadingRateFeaturesKHR.primitiveFragmentShadingRate == VK_FALSE )
 		{
@@ -1357,6 +1379,17 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 #endif // defined(CTS_USES_VULKAN)
 
 #if defined(CTS_USES_VULKAN)
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_opacity_micromap")) )
+	{
+		if ( physicalDeviceOpacityMicromapFeaturesEXT.micromap == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature micromap not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_pageable_device_local_memory")) )
 	{
 		if ( physicalDevicePageableDeviceLocalMemoryFeaturesEXT.pageableDeviceLocalMemory == VK_FALSE )
@@ -1366,6 +1399,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 #endif // defined(CTS_USES_VULKAN)
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_pipeline_protected_access")) )
+	{
+		if ( physicalDevicePipelineProtectedAccessFeaturesEXT.pipelineProtectedAccess == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature pipelineProtectedAccess not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
 
 #if defined(CTS_USES_VULKAN)
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_primitive_topology_list_restart")) )

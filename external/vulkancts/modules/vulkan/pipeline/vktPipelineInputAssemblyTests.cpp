@@ -1366,7 +1366,7 @@ InputAssemblyInstance::InputAssemblyInstance (Context&							context,
 
 		m_graphicsPipeline.setDefaultRasterizationState()
 						  .setDefaultMultisampleState()
-						  .setupVertexInputStete(&vertexInputStateParams, &inputAssemblyStateParams)
+						  .setupVertexInputState(&vertexInputStateParams, &inputAssemblyStateParams)
 						  .setupPreRasterizationShaderState(viewport,
 											scissor,
 											*m_pipelineLayout,

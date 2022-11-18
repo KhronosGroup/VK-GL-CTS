@@ -980,7 +980,7 @@ void checkGlobalPrioritySupport (Context& context, bool useKhrGlobalPriority)
 	context.requireDeviceFunctionality(extName);
 }
 
-tcu::TestStatus createDeviceWithGlobalPriorityTest (Context& context, bool)
+tcu::TestStatus createDeviceWithGlobalPriorityTest (Context& context, bool useKhrGlobalPriority)
 {
 	tcu::TestLog&							log						= context.getTestContext().getLog();
 	const PlatformInterface&				platformInterface		= context.getPlatformInterface();
@@ -1009,7 +1009,20 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest (Context& context, bool)
 
 	instanceDriver.getPhysicalDeviceQueueFamilyProperties2(physicalDevice, &queueFamilyPropertyCount, queueFamilyProperties2.data());
 	TCU_CHECK((size_t)queueFamilyPropertyCount == queueFamilyProperties2.size());
+
+	std::vector<const char*> enabledExtensions = { "VK_EXT_global_priority", "VK_EXT_global_priority_query" };
+
+	if (useKhrGlobalPriority)
+		enabledExtensions = { "VK_KHR_global_priority" };
+#else
+	(void)useKhrGlobalPriority;
+	std::vector<const char*> enabledExtensions = { "VK_EXT_global_priority" };
 #endif // CTS_USES_VULKANSC
+
+	if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
+	{
+		enabledExtensions.emplace_back("VK_KHR_get_physical_device_properties2");
+	}
 
 	for (VkQueueGlobalPriorityEXT globalPriority : globalPriorities)
 	{
@@ -1050,8 +1063,8 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest (Context& context, bool)
 			&queueCreateInfo,						//pRequestedQueues;
 			0,										//layerCount;
 			DE_NULL,								//ppEnabledLayerNames;
-			0,										//extensionCount;
-			DE_NULL,								//ppEnabledExtensionNames;
+			(deUint32)enabledExtensions.size(),		//extensionCount;
+			enabledExtensions.data(),				//ppEnabledExtensionNames;
 			DE_NULL,								//pEnabledFeatures;
 		};
 

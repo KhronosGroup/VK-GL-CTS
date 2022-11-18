@@ -70,7 +70,7 @@ inline bool colorScaleAndBiasAreValid (const vk::VkFormat format, const float co
 
 float					computeStoreColorScale				(const vk::VkFormat format, const tcu::IVec3 imageSize);
 ImageType				getImageTypeForSingleLayer			(const ImageType imageType);
-vk::VkImageCreateInfo	makeImageCreateInfo					(const Texture& texture, const vk::VkFormat format, const vk::VkImageUsageFlags usage, const vk::VkImageCreateFlags flags);
+vk::VkImageCreateInfo	makeImageCreateInfo					(const Texture& texture, const vk::VkFormat format, const vk::VkImageUsageFlags usage, const vk::VkImageCreateFlags flags, const vk::VkImageTiling tiling = vk::VK_IMAGE_TILING_OPTIMAL);
 vk::VkDeviceSize		getOptimalUniformBufferChunkSize	(const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physDevice, vk::VkDeviceSize minimumRequiredChunkSizeBytes);
 bool					isRepresentableIntegerValue			(const tcu::Vector<deInt64, 4> value, tcu::TextureFormat format);
 

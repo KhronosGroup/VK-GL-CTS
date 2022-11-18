@@ -652,7 +652,7 @@ void DepthRangeUnrestrictedTestInstance::preparePipelineWrapper (GraphicsPipelin
 	gpw.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_POINT_LIST)
 	   .setDefaultMultisampleState()
 	   .setDynamicState(&dynamicStateParams)
-	   .setupVertexInputStete(&vertexInputStateParams)
+	   .setupVertexInputState(&vertexInputStateParams)
 	   .setupPreRasterizationShaderState(viewport,
 			scissor,
 			*m_pipelineLayout,

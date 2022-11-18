@@ -249,7 +249,7 @@ void DiscardTestInstance::initPipeline(const vk::VkDevice device)
 	m_pipeline.setDefaultTopology(m_topology)
 		.setDynamicState(static_cast<const vk::VkPipelineDynamicStateCreateInfo*>(&dynamicState))
 		.setDefaultMultisampleState()
-		.setupVertexInputStete(&m_vertexInputState)
+		.setupVertexInputState(&m_vertexInputState)
 		.setupPreRasterizationShaderState(viewports,
 			scissors,
 			*m_pipelineLayout,

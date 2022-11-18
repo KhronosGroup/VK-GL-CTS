@@ -325,7 +325,7 @@ public:
 		m_pipeline.setDefaultTopology(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
 				  .setDynamicState(static_cast<const vk::VkPipelineDynamicStateCreateInfo*>(&dynamicState))
 				  .setDefaultMultisampleState()
-				  .setupVertexInputStete(&m_vertexInputState)
+				  .setupVertexInputState(&m_vertexInputState)
 				  .setupPreRasterizationShaderState(viewports,
 													scissors,
 													*m_pipelineLayout,
@@ -341,7 +341,7 @@ public:
 		m_pipelineAdditional.setDefaultTopology(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
 				  .setDynamicState(static_cast<const vk::VkPipelineDynamicStateCreateInfo*>(&dynamicState))
 				  .setDefaultMultisampleState()
-				  .setupVertexInputStete(&m_vertexInputState)
+				  .setupVertexInputState(&m_vertexInputState)
 				  .setupPreRasterizationShaderState(viewports,
 													scissors,
 													*m_pipelineLayout,

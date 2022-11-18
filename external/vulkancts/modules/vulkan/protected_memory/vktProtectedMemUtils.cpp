@@ -154,6 +154,9 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::PlatformInterface&		vkp
 		TCU_THROW(NotSupportedError, "Vulkan 1.1 is not supported");
 
 	bool								useYCbCr			= de::contains(extensions.begin(), extensions.end(), std::string("VK_KHR_sampler_ycbcr_conversion"));
+#ifndef CTS_USES_VULKANSC
+	bool								useProtectedAccess	= de::contains(extensions.begin(), extensions.end(), std::string("VK_EXT_pipeline_protected_access"));
+#endif
 
 	// Check if the physical device supports the protected memory extension name
 	for (deUint32 ndx = 0; ndx < extensions.size(); ++ndx)
@@ -172,10 +175,23 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::PlatformInterface&		vkp
 		enabledExts[idx] = requiredExtensions[idx].c_str();
 	}
 
+#ifndef CTS_USES_VULKANSC
+	vk::VkPhysicalDevicePipelineProtectedAccessFeaturesEXT	protectedAccessFeature =
+	{
+		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROTECTED_ACCESS_FEATURES_EXT,
+		DE_NULL,
+		VK_FALSE
+	};
+#endif
+
 	vk::VkPhysicalDeviceSamplerYcbcrConversionFeatures		ycbcrFeature	=
 	{
 		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES,
+#ifndef CTS_USES_VULKANSC
+		&protectedAccessFeature,
+#else
 		DE_NULL,
+#endif
 		VK_FALSE
 	};
 	// Check if the protected memory can be enabled on the physical device.
@@ -204,6 +220,11 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::PlatformInterface&		vkp
 
 	if (useYCbCr && !ycbcrFeature.samplerYcbcrConversion)
 		TCU_THROW(NotSupportedError, "VK_KHR_sampler_ycbcr_conversion is not supported");
+
+#ifndef CTS_USES_VULKANSC
+	if (useProtectedAccess && !protectedAccessFeature.pipelineProtectedAccess)
+		TCU_THROW(NotSupportedError, "VK_EXT_pipeline_protected_access is not supported");
+#endif
 
 	const float							queuePriorities[]	= { 1.0f };
 	const vk::VkDeviceQueueCreateInfo	queueInfos[]		=
@@ -575,7 +596,8 @@ vk::Move<vk::VkPipeline> makeGraphicsPipeline (const vk::DeviceInterface&		vk,
 											   const VertexBindings&			vertexBindings,
 											   const VertexAttribs&				vertexAttribs,
 											   const tcu::UVec2&				renderSize,
-											   const vk::VkPrimitiveTopology	topology)
+											   const vk::VkPrimitiveTopology	topology,
+											   const vk::VkPipelineCreateFlags	flags)
 {
 	const std::vector<VkViewport>				viewports					(1, makeViewport(renderSize));
 	const std::vector<VkRect2D>					scissors					(1, makeRect2D(renderSize));
@@ -605,7 +627,14 @@ vk::Move<vk::VkPipeline> makeGraphicsPipeline (const vk::DeviceInterface&		vk,
 									topology,							// const VkPrimitiveTopology                     topology
 									0u,									// const deUint32                                subpass
 									0u,									// const deUint32                                patchControlPoints
-									&vertexInputStateCreateInfo);		// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+									&vertexInputStateCreateInfo,		// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+									DE_NULL,							// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+									DE_NULL,							// const VkPipelineMultisampleStateCreateInfo* multisampleStateCreateInfo
+									DE_NULL,							// const VkPipelineDepthStencilStateCreateInfo* depthStencilStateCreateInfo
+									DE_NULL,							// const VkPipelineColorBlendStateCreateInfo* colorBlendStateCreateInfo
+									DE_NULL,							// const VkPipelineDynamicStateCreateInfo* dynamicStateCreateInfo
+									DE_NULL,							// const void* pNext
+									flags);
 }
 
 const char* getCmdBufferTypeStr (const CmdBufferType cmdBufferType)
@@ -801,14 +830,14 @@ void uploadImage (ProtectedContext& ctx, vk::VkImage image, const tcu::Texture2D
 	}
 }
 
-void copyToProtectedImage (ProtectedContext& ctx, vk::VkImage srcImage, vk::VkImage dstImage, vk::VkImageLayout dstImageLayout, deUint32 width, deUint32 height)
+void copyToProtectedImage (ProtectedContext& ctx, vk::VkImage srcImage, vk::VkImage dstImage, vk::VkImageLayout dstImageLayout, deUint32 width, deUint32 height, ProtectionMode protectionMode)
 {
 	const vk::DeviceInterface&			vk					= ctx.getDeviceInterface();
 	const vk::VkDevice					device				= ctx.getDevice();
 	const vk::VkQueue					queue				= ctx.getQueue();
 	const deUint32						queueFamilyIndex	= ctx.getQueueFamilyIndex();
 
-	vk::Unique<vk::VkCommandPool>		cmdPool				(makeCommandPool(vk, device, PROTECTION_ENABLED, queueFamilyIndex));
+	vk::Unique<vk::VkCommandPool>		cmdPool				(makeCommandPool(vk, device, protectionMode, queueFamilyIndex));
 	vk::Unique<vk::VkCommandBuffer>		cmdBuffer			(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const vk::VkImageSubresourceRange	subresourceRange	=
@@ -901,7 +930,7 @@ void copyToProtectedImage (ProtectedContext& ctx, vk::VkImage srcImage, vk::VkIm
 
 	{
 		const vk::Unique<vk::VkFence>	fence		(createFence(vk, device));
-		VK_CHECK(queueSubmit(ctx, PROTECTION_ENABLED, queue, *cmdBuffer, *fence, ~0ull));
+		VK_CHECK(queueSubmit(ctx, protectionMode, queue, *cmdBuffer, *fence, ~0ull));
 	}
 }
 

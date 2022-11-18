@@ -309,7 +309,7 @@ tcu::TestStatus InterfaceMatchingTestInstance::iterate(void)
 					  .setDefaultDepthStencilState()
 					  .setDefaultMultisampleState()
 					  .setDefaultColorBlendState()
-					  .setupVertexInputStete()
+					  .setupVertexInputState()
 					  .setupPreRasterizationShaderState(viewports,
 														scissors,
 														*m_pipelineLayout,

@@ -605,7 +605,7 @@ tcu::TestStatus DescriptorLimitTestInstance::iterate (void)
 		graphicsPipelineWrapper.setDefaultDepthStencilState()
 			.setDefaultColorBlendState()
 			.setDefaultRasterizationState()
-			.setupVertexInputStete()
+			.setupVertexInputState()
 			.setupPreRasterizationShaderState(viewports,
 				scissors,
 				pipelineLayout.get(),

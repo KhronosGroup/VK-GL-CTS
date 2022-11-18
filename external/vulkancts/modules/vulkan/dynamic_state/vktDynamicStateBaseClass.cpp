@@ -249,7 +249,7 @@ void DynamicStateBaseClass::initPipeline (const vk::VkDevice device)
 #endif // CTS_USES_VULKANSC
 	{
 		m_pipeline
-			  .setupVertexInputStete(&m_vertexInputState)
+			  .setupVertexInputState(&m_vertexInputState)
 			  .setupPreRasterizationShaderState(viewports,
 												scissors,
 												*m_pipelineLayout,
