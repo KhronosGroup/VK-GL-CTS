@@ -329,18 +329,6 @@ struct Info
 #define INFOCREATE(msg_) Info(Info::Create, (msg_), __FILE__, __LINE__)
 #define INFOUSAGE(msg_) Info(Info::Usage, (msg_), __FILE__, __LINE__)
 
-#ifndef VK_KHR_VIDEO_QUEUE_EXTENSION_NAME
-#define VK_KHR_VIDEO_QUEUE_EXTENSION_NAME "VK_KHR_video_queue"
-#endif
-
-#ifndef VK_EXT_VIDEO_ENCODE_H264_EXTENSION_NAME
-#define VK_EXT_VIDEO_ENCODE_H264_EXTENSION_NAME "VK_EXT_video_encode_h264"
-#endif
-
-#ifndef VK_EXT_VIDEO_DECODE_H264_EXTENSION_NAME
-#define VK_EXT_VIDEO_DECODE_H264_EXTENSION_NAME "VK_EXT_video_decode_h264"
-#endif
-
 #ifndef CTS_USES_VULKANSC
 VkVideoCodecOperationFlagsKHR readVideoCodecOperationFlagsKHR (const InstanceInterface& vki, const VkPhysicalDevice& device)
 {
@@ -351,9 +339,9 @@ VkVideoCodecOperationFlagsKHR readVideoCodecOperationFlagsKHR (const InstanceInt
 	std::vector<VkQueueFamilyVideoPropertiesKHR>	videoQueueFamilyProperties(
 														queueFamilyPropertyCount,
 														{
-														   VK_STRUCTURE_TYPE_QUEUE_FAMILY_VIDEO_PROPERTIES_KHR,	// VkStructureType					sType
-														   nullptr,												// void*							pNext
-														   0													// VkVideoCodecOperationFlagsKHR	videoCodecOperations
+														   VK_STRUCTURE_TYPE_QUEUE_FAMILY_VIDEO_PROPERTIES_KHR,		// VkStructureType					sType
+														   nullptr,													// void*							pNext
+														   0														// VkVideoCodecOperationFlagsKHR	videoCodecOperations
 														});
 	std::vector<VkQueueFamilyProperties2>			queueFamilyProperties(
 														queueFamilyPropertyCount,
@@ -728,17 +716,17 @@ template<> void* BufferMemoryRequirementsInstance::chainVkStructure<VkVideoProfi
 
 	static VkVideoEncodeH264ProfileInfoEXT	encodeProfile
 	{
-		VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_INFO_EXT,		// VkStructureType						sType;
-		nullptr,													// const void*							pNext;
-		STD_VIDEO_H264_PROFILE_IDC_BASELINE							// StdVideoH264ProfileIdc				stdProfileIdc;
+		VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_INFO_EXT,	// VkStructureType						sType;
+		nullptr,												// const void*							pNext;
+		STD_VIDEO_H264_PROFILE_IDC_BASELINE						// StdVideoH264ProfileIdc				stdProfileIdc;
 	};
 
 	static VkVideoDecodeH264ProfileInfoEXT	decodeProfile
 	{
-		VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_EXT,		// VkStructureType						sType;
-		nullptr,													// const void*							pNext;
-		STD_VIDEO_H264_PROFILE_IDC_BASELINE,						// StdVideoH264ProfileIdc				stdProfileIdc;
-		VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_PROGRESSIVE_EXT			// VkVideoDecodeH264FieldLayoutFlagsEXT	fieldLayout;
+		VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_EXT,	// VkStructureType						sType;
+		nullptr,												// const void*							pNext;
+		STD_VIDEO_H264_PROFILE_IDC_BASELINE,					// StdVideoH264ProfileIdc				stdProfileIdc;
+		VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_PROGRESSIVE_EXT		// VkVideoDecodeH264FieldLayoutFlagsEXT	fieldLayout;
 	};
 
 	static const VkVideoProfileInfoKHR	videoProfiles[]

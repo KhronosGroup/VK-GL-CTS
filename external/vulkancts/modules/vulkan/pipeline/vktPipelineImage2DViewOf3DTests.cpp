@@ -288,7 +288,7 @@ void Image2DView3DImageInstance::runGraphicsPipeline (const VkDescriptorSet&		de
 			.setDefaultDepthStencilState()
 			.setDefaultRasterizationState()
 			.setDefaultMultisampleState()
-			.setupVertexInputStete(&vertexInputStateCreateInfoDefault, &inputAssemblyStateCreateInfo)
+			.setupVertexInputState(&vertexInputStateCreateInfoDefault, &inputAssemblyStateCreateInfo)
 			.setupPreRasterizationShaderState(viewport,
 											  scissor,
 											  *pipelineLayout,

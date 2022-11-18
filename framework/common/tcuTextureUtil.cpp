@@ -438,7 +438,7 @@ TextureFormatInfo getTextureFormatInfo (const TextureFormat& format)
 								 Vec4(	     0.5f,		    0.5f,		    0.5f,		 0.5f));
 	else if (format.order == TextureFormat::D || format.order == TextureFormat::DS)
 		return TextureFormatInfo(Vec4(0.0f,	0.0f,	0.0f,	0.0f),
-								 Vec4(1.0f,	1.0f,	1.0f,	0.0f),
+								 Vec4(1.0f,	1.0f,	1.0f,	255.0f),
 								 Vec4(1.0f,	1.0f,	1.0f,	1.0f),
 								 Vec4(0.0f,	0.0f,	0.0f,	0.0f)); // Depth / stencil formats.
 	else if (format == TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_SHORT_5551))

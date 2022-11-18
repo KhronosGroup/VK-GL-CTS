@@ -132,7 +132,7 @@ Move<VkDevice> createRobustBufferAccessDevice (Context& context, VkInstance inst
 			memReservationInfo.pPipelinePoolSizes				= poolSizes.data();
 		}
 	}
-#endif // CTS_USES_VULKANSC
+#endif
 
 	const VkDeviceCreateInfo		deviceParams =
 	{
@@ -361,7 +361,8 @@ GraphicsEnvironment::GraphicsEnvironment (Context&					context,
 										  VkDescriptorSet			descriptorSet,
 										  const VertexBindings&		vertexBindings,
 										  const VertexAttributes&	vertexAttributes,
-										  const DrawConfig&			drawConfig)
+										  const DrawConfig&			drawConfig,
+										  bool						testPipelineRobustness)
 
 	: TestEnvironment		(context, instance, instanceInterface, device, descriptorSetLayout, descriptorSet)
 	, m_renderSize			(16, 16)
@@ -469,21 +470,43 @@ GraphicsEnvironment::GraphicsEnvironment (Context&					context,
 		const std::vector<VkViewport>	viewports	(1, makeViewport(m_renderSize));
 		const std::vector<VkRect2D>		scissors	(1, makeRect2D(m_renderSize));
 
-		m_graphicsPipeline = makeGraphicsPipeline(vk,									// const DeviceInterface&                        vk
-												  m_device,								// const VkDevice                                device
-												  *m_pipelineLayout,					// const VkPipelineLayout                        pipelineLayout
-												  *m_vertexShaderModule,				// const VkShaderModule                          vertexShaderModule
-												  DE_NULL,								// const VkShaderModule                          tessellationControlShaderModule
-												  DE_NULL,								// const VkShaderModule                          tessellationEvalShaderModule
-												  DE_NULL,								// const VkShaderModule                          geometryShaderModule
-												  *m_fragmentShaderModule,				// const VkShaderModule                          fragmentShaderModule
-												  *m_renderPass,						// const VkRenderPass                            renderPass
-												  viewports,							// const std::vector<VkViewport>&                viewports
-												  scissors,								// const std::vector<VkRect2D>&                  scissors
-												  VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,	// const VkPrimitiveTopology                     topology
-												  0u,									// const deUint32                                subpass
-												  0u,									// const deUint32                                patchControlPoints
-												  &vertexInputStateParams);				// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+		const void* pNext = DE_NULL;
+#ifndef CTS_USES_VULKANSC
+		VkPipelineRobustnessCreateInfoEXT pipelineRobustnessInfo = initVulkanStructure();
+
+		if (testPipelineRobustness)
+		{
+			pipelineRobustnessInfo.storageBuffers	= VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_EXT;
+			pipelineRobustnessInfo.uniformBuffers	= VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_EXT;
+			pipelineRobustnessInfo.vertexInputs		= VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_EXT;
+			pipelineRobustnessInfo.images			= VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_DISABLED_EXT;
+			pNext									= &pipelineRobustnessInfo;
+		}
+#else
+		DE_UNREF(testPipelineRobustness);
+#endif
+
+		m_graphicsPipeline = makeGraphicsPipeline(vk,															// const DeviceInterface&                        vk
+												  m_device,														// const VkDevice                                device
+												  *m_pipelineLayout,											// const VkPipelineLayout                        pipelineLayout
+												  *m_vertexShaderModule,										// const VkShaderModule                          vertexShaderModule
+												  DE_NULL,														// const VkShaderModule                          tessellationControlShaderModule
+												  DE_NULL,														// const VkShaderModule                          tessellationEvalShaderModule
+												  DE_NULL,														// const VkShaderModule                          geometryShaderModule
+												  *m_fragmentShaderModule,										// const VkShaderModule                          fragmentShaderModule
+												  *m_renderPass,												// const VkRenderPass                            renderPass
+												  viewports,													// const std::vector<VkViewport>&                viewports
+												  scissors,														// const std::vector<VkRect2D>&                  scissors
+												  VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,							// const VkPrimitiveTopology                     topology
+												  0u,															// const deUint32                                subpass
+												  0u,															// const deUint32                                patchControlPoints
+												  &vertexInputStateParams,										// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+												  DE_NULL,														// const VkPipelineRasterizationStateCreateInfo*	rasterizationStateCreateInfo
+												  DE_NULL,														// const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo
+												  DE_NULL,														// const VkPipelineDepthStencilStateCreateInfo*		depthStencilStateCreateInfo
+												  DE_NULL,														// const VkPipelineColorBlendStateCreateInfo*		colorBlendStateCreateInfo
+												  DE_NULL,														// const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfo
+												  pNext);														// void* pNext
 	}
 
 	// Record commands
@@ -543,7 +566,8 @@ ComputeEnvironment::ComputeEnvironment (Context&					context,
 										const InstanceInterface&	instanceInterface,
 										VkDevice					device,
 										VkDescriptorSetLayout		descriptorSetLayout,
-										VkDescriptorSet				descriptorSet)
+										VkDescriptorSet				descriptorSet,
+										bool						testPipelineRobustness)
 
 	: TestEnvironment	(context, instance, instanceInterface, device, descriptorSetLayout, descriptorSet)
 {
@@ -580,15 +604,31 @@ ComputeEnvironment::ComputeEnvironment (Context&					context,
 			DE_NULL,												// const VkSpecializationInfo*			pSpecializationInfo;
 		};
 
+		const void* pNext = DE_NULL;
+#ifndef CTS_USES_VULKANSC
+		VkPipelineRobustnessCreateInfoEXT pipelineRobustnessInfo = initVulkanStructure();
+
+		if (testPipelineRobustness)
+		{
+			pipelineRobustnessInfo.storageBuffers	= VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_EXT;
+			pipelineRobustnessInfo.uniformBuffers	= VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_EXT;
+			pipelineRobustnessInfo.vertexInputs		= VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_DISABLED_EXT;
+			pipelineRobustnessInfo.images			= VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_DISABLED_EXT;
+			pNext									= &pipelineRobustnessInfo;
+		}
+#else
+		DE_UNREF(testPipelineRobustness);
+#endif
+
 		const VkComputePipelineCreateInfo computePipelineParams =
 		{
-			VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,			// VkStructureType						sType;
-			DE_NULL,												// const void*							pNext;
-			0u,														// VkPipelineCreateFlags				flags;
-			computeStageParams,										// VkPipelineShaderStageCreateInfo		stage;
-			*m_pipelineLayout,										// VkPipelineLayout						layout;
-			DE_NULL,												// VkPipeline							basePipelineHandle;
-			0u														// deInt32								basePipelineIndex;
+			VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,				// VkStructureType						sType;
+			pNext,														// const void*							pNext;
+			0u,															// VkPipelineCreateFlags				flags;
+			computeStageParams,											// VkPipelineShaderStageCreateInfo		stage;
+			*m_pipelineLayout,											// VkPipelineLayout						layout;
+			DE_NULL,													// VkPipeline							basePipelineHandle;
+			0u															// deInt32								basePipelineIndex;
 		};
 
 		m_computePipeline = createComputePipeline(vk, m_device, DE_NULL, &computePipelineParams);

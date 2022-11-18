@@ -106,7 +106,10 @@ enum RenderType
 	RENDER_TYPE_DEPTHSTENCIL_ONLY	= 2u,
 
 	// render using color attachment at location 1 and location 0 set as unused
-	RENDER_TYPE_UNUSED_ATTACHMENT	= 3u
+	RENDER_TYPE_UNUSED_ATTACHMENT	= 3u,
+
+	// render using color attachment with single sample, required by alpha_to_one tests.
+	RENDER_TYPE_SINGLE_SAMPLE		= 4u
 };
 
 enum ImageBackingMode
@@ -2503,9 +2506,11 @@ tcu::TestStatus AlphaToOneInstance::iterate	(void)
 	de::MovePtr<tcu::TextureLevel>	alphaOneImage;
 	de::MovePtr<tcu::TextureLevel>	noAlphaOneImage;
 
+	RenderType renderType = m_multisampleStateParams.rasterizationSamples == vk::VK_SAMPLE_COUNT_1_BIT ? RENDER_TYPE_SINGLE_SAMPLE : RENDER_TYPE_RESOLVE;
+
 	// Render with blend enabled and alpha to one on
 	{
-		MultisampleRenderer renderer (m_context, m_pipelineConstructionType, m_colorFormat, m_renderSize, m_primitiveTopology, m_vertices, m_multisampleStateParams, m_colorBlendState, RENDER_TYPE_RESOLVE, m_backingMode, m_useFragmentShadingRate);
+		MultisampleRenderer renderer (m_context, m_pipelineConstructionType, m_colorFormat, m_renderSize, m_primitiveTopology, m_vertices, m_multisampleStateParams, m_colorBlendState, renderType, m_backingMode, m_useFragmentShadingRate);
 		alphaOneImage = renderer.render();
 	}
 
@@ -2514,7 +2519,7 @@ tcu::TestStatus AlphaToOneInstance::iterate	(void)
 		VkPipelineMultisampleStateCreateInfo	multisampleParams	= m_multisampleStateParams;
 		multisampleParams.alphaToOneEnable = false;
 
-		MultisampleRenderer renderer (m_context, m_pipelineConstructionType, m_colorFormat, m_renderSize, m_primitiveTopology, m_vertices, multisampleParams, m_colorBlendState, RENDER_TYPE_RESOLVE, m_backingMode, m_useFragmentShadingRate);
+		MultisampleRenderer renderer (m_context, m_pipelineConstructionType, m_colorFormat, m_renderSize, m_primitiveTopology, m_vertices, multisampleParams, m_colorBlendState, renderType, m_backingMode, m_useFragmentShadingRate);
 		noAlphaOneImage = renderer.render();
 	}
 
@@ -3378,6 +3383,9 @@ void MultisampleRenderer::initialize (Context&									context,
 		bool sparseSamplesSupported = false;
 		switch(m_multisampleStateParams.rasterizationSamples)
 		{
+			case VK_SAMPLE_COUNT_1_BIT:
+				sparseSamplesSupported = features.sparseResidencyImage2D;
+				break;
 			case VK_SAMPLE_COUNT_2_BIT:
 				sparseSamplesSupported = features.sparseResidency2Samples;
 				break;
@@ -4067,7 +4075,7 @@ void MultisampleRenderer::initialize (Context&									context,
 		for (deUint32 attachmentIdx = 0; attachmentIdx < attachmentCount; attachmentIdx++)
 			attachments.push_back(m_colorBlendState);
 
-		const VkPipelineColorBlendStateCreateInfo colorBlendStateParams =
+		VkPipelineColorBlendStateCreateInfo colorBlendStateParams =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType;
 			DE_NULL,													// const void*									pNext;
@@ -4135,28 +4143,42 @@ void MultisampleRenderer::initialize (Context&									context,
 
 		m_graphicsPipelines.reserve(numSubpasses * numTopologies);
 		for (deUint32 subpassIdx = 0; subpassIdx < numSubpasses; subpassIdx++)
+		{
+			if (m_renderType == RENDER_TYPE_DEPTHSTENCIL_ONLY)
+			{
+				if (subpassIdx == 0)
+				{
+					colorBlendStateParams.attachmentCount = 0;
+				}
+				else
+				{
+					colorBlendStateParams.attachmentCount = 1;
+				}
+			}
 			for (deUint32 i = 0u; i < numTopologies; ++i)
 			{
 				m_graphicsPipelines.emplace_back(vk, vkDevice, m_pipelineConstructionType);
 				m_graphicsPipelines.back().setDefaultTopology(pTopology[i])
-										  .setupVertexInputStete(&vertexInputStateParams)
+										  .setupVertexInputState(&vertexInputStateParams)
 										  .setupPreRasterizationShaderState(viewports,
 																			scissors,
 																			*m_pipelineLayout,
 																			*m_renderPass,
 																			subpassIdx,
 																			*m_vertexShaderModule,
-																			&rasterizationStateCreateInfo)
+																			&rasterizationStateCreateInfo,
+																			DE_NULL, DE_NULL, DE_NULL, DE_NULL,
+																			(m_useFragmentShadingRate ? &shadingRateStateCreateInfo : nullptr))
 										  .setupFragmentShaderState(*m_pipelineLayout,
 																	*m_renderPass,
 																	subpassIdx,
 																	*m_fragmentShaderModule,
 																	&depthStencilStateParams,
-																	&m_multisampleStateParams,
-																	m_useFragmentShadingRate ? &shadingRateStateCreateInfo : DE_NULL)
+																	&m_multisampleStateParams)
 										  .setupFragmentOutputState(*m_renderPass, subpassIdx, &colorBlendStateParams, &m_multisampleStateParams)
 										  .setMonolithicPipelineLayout(*m_pipelineLayout)
 										  .buildPipeline();
+			}
 			}
 	}
 
@@ -4201,7 +4223,7 @@ void MultisampleRenderer::initialize (Context&									context,
 											.setDefaultRasterizationState()
 											.setDefaultMultisampleState()
 											.setDefaultDepthStencilState()
-											.setupVertexInputStete(&vertexInputStateParams)
+											.setupVertexInputState(&vertexInputStateParams)
 											.setupPreRasterizationShaderState(viewports,
 																			scissors,
 																			*m_copySamplePipelineLayout,
@@ -4507,6 +4529,10 @@ de::MovePtr<tcu::TextureLevel> MultisampleRenderer::render (void)
 	if (m_renderType == RENDER_TYPE_RESOLVE || m_renderType == RENDER_TYPE_DEPTHSTENCIL_ONLY || m_renderType == RENDER_TYPE_UNUSED_ATTACHMENT)
 	{
 		return readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, m_context.getDefaultAllocator(), *m_resolveImage, m_colorFormat, m_renderSize.cast<deUint32>());
+	}
+	else if(m_renderType == RENDER_TYPE_SINGLE_SAMPLE)
+	{
+		return readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, m_context.getDefaultAllocator(), *m_colorImage, m_colorFormat, m_renderSize.cast<deUint32>());
 	}
 	else
 	{
@@ -4897,6 +4923,18 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 	const std::vector<VkViewport>	viewport	{ vk::makeViewport(kWidth32, kHeight32) };
 	const std::vector<VkRect2D>		scissor		{ vk::makeRect2D(kWidth32, kHeight32) };
 
+	const vk::VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType;
+		DE_NULL,														// const void*									pNext;
+		0u,																// VkPipelineColorBlendStateCreateFlags			flags;
+		false,															// VkBool32										logicOpEnable;
+		vk::VK_LOGIC_OP_CLEAR,											// VkLogicOp									logicOp;
+		0,																// deUint32										attachmentCount;
+		DE_NULL,														// const VkPipelineColorBlendAttachmentState*	pAttachments;
+		{ 0.0f, 0.0f, 0.0f, 0.0f }										// float										blendConstants[4];
+	};
+
 	vk::VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	//	VkStructureType							sType;
@@ -4918,10 +4956,9 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 
 		outputPipelines.emplace_back(vkd, device, m_params.pipelineConstructionType);
 		outputPipelines.back()
-			.setDefaultColorBlendState()
 			.setDefaultDepthStencilState()
 			.setDefaultRasterizationState()
-			.setupVertexInputStete(&vertexInputStateCreateInfo)
+			.setupVertexInputState(&vertexInputStateCreateInfo)
 			.setupPreRasterizationShaderState(viewport,
 				scissor,
 				*pipelineLayout,
@@ -4929,7 +4966,7 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 				0u,
 				*vertModule)
 			.setupFragmentShaderState(*pipelineLayout, *renderPassSingleSubpass, 0u, *fragModule)
-			.setupFragmentOutputState(*renderPassSingleSubpass, 0u, DE_NULL, &multisampleStateCreateInfo)
+			.setupFragmentOutputState(*renderPassSingleSubpass, 0u, &colorBlendStateCreateInfo, &multisampleStateCreateInfo)
 			.setMonolithicPipelineLayout(*pipelineLayout)
 			.buildPipeline();
 	}
@@ -4944,10 +4981,9 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 		deUint32 subpass = static_cast<deUint32>(i);
 		referencePipelines.emplace_back(vkd, device, m_params.pipelineConstructionType);
 		referencePipelines.back()
-			.setDefaultColorBlendState()
 			.setDefaultDepthStencilState()
 			.setDefaultRasterizationState()
-			.setupVertexInputStete(&vertexInputStateCreateInfo)
+			.setupVertexInputState(&vertexInputStateCreateInfo)
 			.setupPreRasterizationShaderState(viewport,
 				scissor,
 				*pipelineLayout,
@@ -4955,7 +4991,7 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 				subpass,
 				*vertModule)
 			.setupFragmentShaderState(*pipelineLayout, *renderPassMultiplePasses, subpass, *fragModule)
-			.setupFragmentOutputState(*renderPassMultiplePasses, subpass, DE_NULL, &multisampleStateCreateInfo)
+			.setupFragmentOutputState(*renderPassMultiplePasses, subpass, &colorBlendStateCreateInfo, &multisampleStateCreateInfo)
 			.setMonolithicPipelineLayout(*pipelineLayout)
 			.buildPipeline();
 	}
@@ -5387,17 +5423,27 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx, PipelineC
 
 	// AlphaToOne tests
 	{
+		const VkSampleCountFlagBits samplesForAlphaToOne[] =
+		{
+			VK_SAMPLE_COUNT_1_BIT,
+			VK_SAMPLE_COUNT_2_BIT,
+			VK_SAMPLE_COUNT_4_BIT,
+			VK_SAMPLE_COUNT_8_BIT,
+			VK_SAMPLE_COUNT_16_BIT,
+			VK_SAMPLE_COUNT_32_BIT,
+			VK_SAMPLE_COUNT_64_BIT
+		};
 		de::MovePtr<tcu::TestCaseGroup> alphaToOneTests(new tcu::TestCaseGroup(testCtx, "alpha_to_one", ""));
 
-		for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(samples); samplesNdx++)
+		for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(samplesForAlphaToOne); samplesNdx++)
 		{
 			std::ostringstream caseName;
-			caseName << "samples_" << samples[samplesNdx];
+			caseName << "samples_" << samplesForAlphaToOne[samplesNdx];
 
-			alphaToOneTests->addChild(new AlphaToOneTest(testCtx, caseName.str(), "", pipelineConstructionType, samples[samplesNdx], IMAGE_BACKING_MODE_REGULAR, useFragmentShadingRate));
+			alphaToOneTests->addChild(new AlphaToOneTest(testCtx, caseName.str(), "", pipelineConstructionType, samplesForAlphaToOne[samplesNdx], IMAGE_BACKING_MODE_REGULAR, useFragmentShadingRate));
 #ifndef CTS_USES_VULKANSC
 			caseName << "_sparse";
-			alphaToOneTests->addChild(new AlphaToOneTest(testCtx, caseName.str(), "", pipelineConstructionType, samples[samplesNdx], IMAGE_BACKING_MODE_SPARSE, useFragmentShadingRate));
+			alphaToOneTests->addChild(new AlphaToOneTest(testCtx, caseName.str(), "", pipelineConstructionType, samplesForAlphaToOne[samplesNdx], IMAGE_BACKING_MODE_SPARSE, useFragmentShadingRate));
 #endif // CTS_USES_VULKANSC
 		}
 

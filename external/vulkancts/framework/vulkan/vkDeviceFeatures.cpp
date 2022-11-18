@@ -147,6 +147,32 @@ namespace vk
 					}
 					m_features.push_back(p);
 				}
+				else
+				{
+#ifndef CTS_USES_VULKANSC
+					// Some non-standard promotions may need feature structs filled in anyway.
+					if (!strcmp(featureName, "VK_EXT_extended_dynamic_state") && vk13Supported)
+					{
+						FeatureStructWrapperBase *p = (*featureStructCreationData.creatorFunction)();
+						if (p == DE_NULL)
+							continue;
+
+						auto f = reinterpret_cast<VkPhysicalDeviceExtendedDynamicStateFeaturesEXT *>(p->getFeatureTypeRaw());
+						f->extendedDynamicState = true;
+						m_features.push_back(p);
+					}
+					if (!strcmp(featureName, "VK_EXT_extended_dynamic_state2") && vk13Supported)
+					{
+						FeatureStructWrapperBase *p = (*featureStructCreationData.creatorFunction)();
+						if (p == DE_NULL)
+							continue;
+
+						auto f = reinterpret_cast<VkPhysicalDeviceExtendedDynamicState2FeaturesEXT *>(p->getFeatureTypeRaw());
+						f->extendedDynamicState2 = true;
+						m_features.push_back(p);
+					}
+#endif	// CTS_USES_VULKANSC
+				}
 			}
 
 			vki.getPhysicalDeviceFeatures2(physicalDevice, &m_coreFeatures2);

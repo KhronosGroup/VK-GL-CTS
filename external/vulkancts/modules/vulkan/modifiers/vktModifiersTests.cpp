@@ -58,6 +58,13 @@ using namespace vk;
 using tcu::UVec2;
 using tcu::TestLog;
 
+struct ExplicitModifier
+{
+	uint64_t				modifier;
+	uint32_t				modifierPlaneCount;
+	VkSubresourceLayout*	pPlaneLayouts;
+};
+
 void checkModifiersSupported (Context& context, VkFormat)
 {
 	if (!context.isDeviceFunctionalitySupported("VK_EXT_image_drm_format_modifier"))
@@ -181,7 +188,10 @@ std::vector<deUint64> getExportImportCompatibleModifiers (Context& context, VkFo
 	if (drmFormatModifiers.empty())
 		return compatibleModifiers;
 
-	const VkFormatFeatureFlags testFeatures = (VK_FORMAT_FEATURE_TRANSFER_SRC_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT);
+	const VkFormatFeatureFlags testFeatures = (VK_FORMAT_FEATURE_TRANSFER_SRC_BIT |
+									VK_FORMAT_FEATURE_BLIT_SRC_BIT |
+									VK_FORMAT_FEATURE_BLIT_DST_BIT |
+									VK_FORMAT_FEATURE_TRANSFER_DST_BIT);
 
 	for (const auto& modifierProps : drmFormatModifiers)
 	{
@@ -245,14 +255,15 @@ void checkExportImportExtensions (Context& context, VkFormat format)
 		TCU_THROW(NotSupportedError, "Could not find a format modifier supporting required transfer features for " + de::toString(format));
 }
 
-deBool isModifierCompatibleWithImageProperties (const InstanceInterface&	vki,
-												VkPhysicalDevice			physicalDevice,
-												const VkFormat*				formats,
-												const deUint32				nFormats,
-												const VkImageType			imageType,
-												const VkImageUsageFlags		imageUsages,
-												const deUint64				drmFormatModifier,
-												VkImageFormatProperties2&	imageProperties)
+deBool isModifierCompatibleWithImageProperties (const InstanceInterface&				vki,
+												VkPhysicalDevice						physicalDevice,
+												const VkFormat*							formats,
+												const deUint32							nFormats,
+												const VkImageType						imageType,
+												const VkImageUsageFlags					imageUsages,
+												const VkExternalMemoryHandleTypeFlags	handleType,
+												const deUint64							drmFormatModifier,
+												VkImageFormatProperties2&				imageProperties)
 {
 	const VkPhysicalDeviceImageDrmFormatModifierInfoEXT	imageFormatModifierInfo	=
 	{
@@ -263,14 +274,23 @@ deBool isModifierCompatibleWithImageProperties (const InstanceInterface&	vki,
 		0,
 		DE_NULL,
 	};
+
+	const VkPhysicalDeviceExternalImageFormatInfo	externalImageFormatInfo =
+	{
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO,
+		&imageFormatModifierInfo,
+		(VkExternalMemoryHandleTypeFlagBits)handleType,
+	};
+
 	const VkImageFormatListCreateInfo				imageFormatListInfo		=
 	{
 		VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO,
-		&imageFormatModifierInfo,
+		&externalImageFormatInfo,
 		nFormats,
 		formats,
 	};
-	const VkPhysicalDeviceImageFormatInfo2				imageFormatInfo			=
+
+	const VkPhysicalDeviceImageFormatInfo2			imageFormatInfo			=
 	{
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
 		&imageFormatListInfo,
@@ -281,9 +301,17 @@ deBool isModifierCompatibleWithImageProperties (const InstanceInterface&	vki,
 		0,
 	};
 
+	VkExternalImageFormatProperties	externalImageProperties	= initVulkanStructure();
 	imageProperties.sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
+	imageProperties.pNext = &externalImageProperties;
 
-	return vki.getPhysicalDeviceImageFormatProperties2(physicalDevice, &imageFormatInfo, &imageProperties) != VK_ERROR_FORMAT_NOT_SUPPORTED;
+	if (vki.getPhysicalDeviceImageFormatProperties2(physicalDevice, &imageFormatInfo, &imageProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
+		return false;
+
+	if ((externalImageProperties.externalMemoryProperties.compatibleHandleTypes & handleType) != handleType)
+		return false;
+
+	return true;
 }
 
 template <typename ModifierList, typename ModifierProps, VkStructureType modifierListSType>
@@ -302,6 +330,7 @@ tcu::TestStatus listModifiersCase (Context& context, VkFormat format)
 		deBool						isCompatible	= isModifierCompatibleWithImageProperties(vki, context.getPhysicalDevice(),
 																							  &format, 1u, VK_IMAGE_TYPE_2D,
 																							  (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT),
+																							  VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT,
 																							  drmFormatModifiers[m].drmFormatModifier, imageProperties);
 
 		if (drmFormatModifiers[m].drmFormatModifierTilingFeatures == 0)
@@ -350,6 +379,67 @@ Move<VkImage> createImageNoModifiers (const DeviceInterface&			vkd,
 		0u,
 		(const deUint32*)DE_NULL,
 		VK_IMAGE_LAYOUT_PREINITIALIZED,
+	};
+
+	return createImage(vkd, device, &createInfo);
+}
+
+Move<VkImage> createImageWithDrmFormatExplicitModifier (const DeviceInterface&					vkd,
+														const VkDevice							device,
+														const VkImageType						imageType,
+														const VkImageUsageFlags					imageUsages,
+														const VkExternalMemoryHandleTypeFlags	externalMemoryHandleTypeFlags,
+														const std::vector<VkFormat>&			formats,
+														const UVec2&							size,
+														const ExplicitModifier					drmFormatModifier)
+{
+	const VkImageDrmFormatModifierExplicitCreateInfoEXT	modifierExplicitCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_EXPLICIT_CREATE_INFO_EXT,
+		DE_NULL,
+		drmFormatModifier.modifier,
+		drmFormatModifier.modifierPlaneCount,
+		drmFormatModifier.pPlaneLayouts,
+	};
+
+	const VkExternalMemoryImageCreateInfo externalMemoryCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO,
+		&modifierExplicitCreateInfo,
+		externalMemoryHandleTypeFlags,
+	};
+
+	const void* pNext = &externalMemoryCreateInfo;
+	if (!externalMemoryHandleTypeFlags)
+	{
+		pNext = &modifierExplicitCreateInfo;
+	}
+
+	const VkImageFormatListCreateInfo			imageFormatListInfo			=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO,
+		pNext,
+		de::sizeU32(formats),
+		de::dataOrNull(formats),
+	};
+
+	const VkImageCreateInfo							createInfo	=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+		&imageFormatListInfo,
+		0,
+		imageType,
+		formats.front(),
+		makeExtent3D(size.x(), size.y(), 1u),
+		1u,		// mipLevels
+		1u,		// arrayLayers
+		VK_SAMPLE_COUNT_1_BIT,
+		VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT,
+		imageUsages,
+		VK_SHARING_MODE_EXCLUSIVE,
+		0u,
+		nullptr,
+		VK_IMAGE_LAYOUT_UNDEFINED,
 	};
 
 	return createImage(vkd, device, &createInfo);
@@ -434,6 +524,7 @@ tcu::TestStatus createImageListModifiersCase (Context& context, const VkFormat f
 		VkImageFormatProperties2	imgFormatProperties	= initVulkanStructure();
 		const auto					isCompatible		= isModifierCompatibleWithImageProperties(vki, context.getPhysicalDevice(), &format, 1u, VK_IMAGE_TYPE_2D,
 																								  (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT),
+																								  VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT,
 																								  modProps.drmFormatModifier, imgFormatProperties);
 		if (isCompatible)
 			modifiers.push_back(modProps.drmFormatModifier);
@@ -464,6 +555,99 @@ tcu::TestStatus createImageListModifiersCase (Context& context, const VkFormat f
 
 		if (!de::contains(begin(creationModifiers), end(creationModifiers), properties.drmFormatModifier))
 			return tcu::TestStatus::fail("Image created with modifier not specified in the create list");
+	}
+
+	return tcu::TestStatus::pass("OK");
+}
+
+template <typename ModifierList, typename ModifierProps, VkStructureType modifierListSType>
+tcu::TestStatus createImageModifierExplicitCase (Context& context, const VkFormat format)
+{
+	const InstanceInterface&	vki					= context.getInstanceInterface();
+	const DeviceInterface&		vkd					= context.getDeviceInterface();
+	const VkDevice				device				= context.getDevice();
+	const auto					drmFormatModifiers	= getDrmFormatModifiers<ModifierList, ModifierProps, modifierListSType>(vki, context.getPhysicalDevice(), format);
+
+	if (drmFormatModifiers.empty())
+		TCU_THROW(NotSupportedError, de::toString(format) + " does not support any DRM modifiers");
+
+	// Get the list of modifiers supported for some specific image parameters.
+	std::vector<ExplicitModifier> modifiers;
+
+	for (const auto& modProps : drmFormatModifiers)
+	{
+		if (modProps.drmFormatModifierTilingFeatures == 0)
+			TCU_FAIL(de::toString(format) + " does not support any DRM modifier tiling features");
+
+		VkImageFormatProperties2	imgFormatProperties	= initVulkanStructure();
+		const auto					isCompatible		= isModifierCompatibleWithImageProperties(vki, context.getPhysicalDevice(), &format, 1u, VK_IMAGE_TYPE_2D,
+																								  (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT),
+																								  VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT,
+																								  modProps.drmFormatModifier, imgFormatProperties);
+		if (isCompatible)
+		{
+			const ExplicitModifier modifier =
+			{
+				modProps.drmFormatModifier,				// modifier
+				modProps.drmFormatModifierPlaneCount,	// modifierPlaneCount
+				DE_NULL,								// pPlaneLayouts
+			};
+
+			modifiers.push_back(modifier);
+		}
+	}
+
+	if (modifiers.empty())
+		TCU_THROW(NotSupportedError, de::toString(format) + " does not support any DRM modifiers for the requested image features");
+
+	for (auto& modifier : modifiers)
+	{
+		std::vector<VkFormat> formats			(1u, format);
+		std::vector<uint64_t> creationModifier	(1u, modifier.modifier);
+
+		VkImageDrmFormatModifierPropertiesEXT properties = initVulkanStructure();
+
+		const auto imageRef = createImageWithDrmFormatModifiers(vkd, device, VK_IMAGE_TYPE_2D,
+																(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT),
+																0, formats, UVec2(64, 64), creationModifier);
+
+		std::vector<VkSubresourceLayout>	planeLayouts;
+		for (uint32_t i = 0; i < modifier.modifierPlaneCount; i++)
+		{
+			VkImageSubresource imageSubresource;
+			VkSubresourceLayout subresourceLayout;
+
+			deMemset(&imageSubresource, 0, sizeof(imageSubresource));
+
+			imageSubresource.aspectMask = VK_IMAGE_ASPECT_MEMORY_PLANE_0_BIT_EXT << i;
+
+			vkd.getImageSubresourceLayout(device, *imageRef, &imageSubresource, &subresourceLayout);
+
+			// From the spec:
+			//   VUID-VkImageDrmFormatModifierExplicitCreateInfoEXT-size-02267
+			//   For each element of pPlaneLayouts, size must be 0
+			//
+			//   VUID-VkImageDrmFormatModifierExplicitCreateInfoEXT-arrayPitch-02268
+			//   For each element of pPlaneLayouts, arrayPitch must be 0 if VkImageCreateInfo::arrayLayers is 1
+			//
+			//   VUID-VkImageDrmFormatModifierExplicitCreateInfoEXT-depthPitch-02269
+			//   For each element of pPlaneLayouts, depthPitch must be 0 if VkImageCreateInfo::extent.depth is 1
+			subresourceLayout.size = 0;
+			subresourceLayout.arrayPitch = 0;
+			subresourceLayout.depthPitch = 0;
+
+			planeLayouts.push_back(subresourceLayout);
+
+		}
+		modifier.pPlaneLayouts = planeLayouts.data();
+
+		const auto image = createImageWithDrmFormatExplicitModifier(vkd, device, VK_IMAGE_TYPE_2D,
+																    (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT),
+																    0, formats, UVec2(64, 64), modifier);
+		VK_CHECK(vkd.getImageDrmFormatModifierPropertiesEXT(device, *image, &properties));
+
+		if (modifier.modifier != properties.drmFormatModifier)
+			return tcu::TestStatus::fail("The created image's modifier with an explicit modifier not matched");
 	}
 
 	return tcu::TestStatus::pass("OK");
@@ -926,6 +1110,20 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 		{
 			addFunctionCase(group.get(), getFormatCaseName(formats[formatNdx]), "Check that creating images with modifier list is functional", checkModifiersSupported, createImageListModifiersCase<VkDrmFormatModifierPropertiesListEXT, VkDrmFormatModifierPropertiesEXT, VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_EXT>, formats[formatNdx]);
 			addFunctionCase(group2.get(), getFormatCaseName(formats[formatNdx]), "Check that creating images with modifier list is functional", checkModifiersList2Supported, createImageListModifiersCase<VkDrmFormatModifierPropertiesList2EXT, VkDrmFormatModifierProperties2EXT, VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT>, formats[formatNdx]);
+		}
+
+		drmFormatModifiersGroup->addChild(group.release());
+		drmFormatModifiersGroup->addChild(group2.release());
+	}
+
+	{
+		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "create_explicit_modifier", "Check that creating images with an explicit modifier is functional"));
+		de::MovePtr<tcu::TestCaseGroup> group2(new tcu::TestCaseGroup(testCtx, "create_explicit_modifier_fmt_features2", "Check that creating images with an explicit modifier is functional with VK_KHR_format_feature_flags2"));
+
+		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
+		{
+			addFunctionCase(group.get(), getFormatCaseName(formats[formatNdx]), "Check that creating images with an explicit modifier is functional", checkModifiersSupported, createImageModifierExplicitCase<VkDrmFormatModifierPropertiesListEXT, VkDrmFormatModifierPropertiesEXT, VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_EXT>, formats[formatNdx]);
+			addFunctionCase(group2.get(), getFormatCaseName(formats[formatNdx]), "Check that creating images with an explicit modifier is functional", checkModifiersList2Supported, createImageModifierExplicitCase<VkDrmFormatModifierPropertiesList2EXT, VkDrmFormatModifierProperties2EXT, VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT>, formats[formatNdx]);
 		}
 
 		drmFormatModifiersGroup->addChild(group.release());

@@ -2892,6 +2892,7 @@ VkFormat mapTextureFormat (const tcu::TextureFormat& format)
 		case FMT_CASE(D, UNORM_INT16):						return VK_FORMAT_D16_UNORM;
 		case FMT_CASE(D, UNSIGNED_INT_24_8_REV):			return VK_FORMAT_X8_D24_UNORM_PACK32;
 		case FMT_CASE(D, FLOAT):							return VK_FORMAT_D32_SFLOAT;
+		case FMT_CASE(D, UNORM_INT24):						return VK_FORMAT_D24_UNORM_S8_UINT;
 
 		case FMT_CASE(S, UNSIGNED_INT8):					return VK_FORMAT_S8_UINT;
 

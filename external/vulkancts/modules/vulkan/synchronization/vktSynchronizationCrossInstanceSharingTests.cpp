@@ -87,15 +87,6 @@ struct TestConfig
 	const bool											dedicated;
 };
 
-// A helper function to choose tiling type for cross instance sharing tests.
-// On Linux, DMABUF requires VK_EXT_image_drm_format_modifier support when
-// VK_IMAGE_TILING_OPTIMAL is used, therefore we choose to use linear with these tests.
-vk::VkImageTiling chooseTiling(VkExternalMemoryHandleTypeFlagBits memoryHandleType)
-{
-	// Choose tiling depending on memory handle type
-	return memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT ? vk::VK_IMAGE_TILING_LINEAR : vk::VK_IMAGE_TILING_OPTIMAL;
-}
-
 // A helper class to test for extensions upfront and throw not supported to speed up test runtimes compared to failing only
 // after creating unnecessary vkInstances.  A common example of this is win32 platforms taking a long time to run _fd tests.
 class NotSupportedChecker
@@ -151,6 +142,13 @@ public:
 			m_context.requireDeviceFunctionality("VK_KHR_external_memory_win32");
 		}
 
+		if (config.memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA
+			|| config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA)
+		{
+			m_context.requireDeviceFunctionality("VK_FUCHSIA_external_semaphore");
+			m_context.requireDeviceFunctionality("VK_FUCHSIA_external_memory");
+		}
+
 		TestLog&						log				= context.getTestContext().getLog();
 		const vk::InstanceInterface&	vki				= context.getInstanceInterface();
 		const vk::VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
@@ -170,7 +168,7 @@ public:
 				&externalInfo,
 				config.resource.imageFormat,
 				config.resource.imageType,
-				chooseTiling(config.memoryHandleType),
+				vk::VK_IMAGE_TILING_OPTIMAL,
 				readOp.getInResourceUsageFlags() | writeOp.getOutResourceUsageFlags(),
 				0u
 			};
@@ -376,6 +374,11 @@ vk::Move<vk::VkDevice> createTestDevice (const Context&					context,
 		extensions.push_back("VK_KHR_external_semaphore_win32");
 	if (context.isDeviceFunctionalitySupported("VK_KHR_external_memory_win32"))
 		extensions.push_back("VK_KHR_external_memory_win32");
+
+	if (context.isDeviceFunctionalitySupported("VK_FUCHSIA_external_semaphore"))
+		extensions.push_back("VK_FUCHSIA_external_semaphore");
+	if (context.isDeviceFunctionalitySupported("VK_FUCHSIA_external_memory"))
+		extensions.push_back("VK_FUCHSIA_external_memory");
 
 	if (context.isDeviceFunctionalitySupported("VK_KHR_timeline_semaphore"))
 	{
@@ -682,7 +685,7 @@ Move<VkImage> createImage(const vk::DeviceInterface&				vkd,
 		1u,
 		1u,
 		resourceDesc.imageSamples,
-		chooseTiling(externalType),
+		vk::VK_IMAGE_TILING_OPTIMAL,
 		readOp.getInResourceUsageFlags() | writeOp.getOutResourceUsageFlags(),
 		vk::VK_SHARING_MODE_EXCLUSIVE,
 
@@ -797,7 +800,7 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 			DE_NULL,
 			(vk::VkExternalMemoryHandleTypeFlags)externalType
 		};
-		const vk::VkImageTiling				tiling					= chooseTiling(externalType);
+		const vk::VkImageTiling				tiling					= vk::VK_IMAGE_TILING_OPTIMAL;
 		const vk::VkImageCreateInfo			createInfo				=
 		{
 			vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -1083,7 +1086,7 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 
 			vk::Move<vk::VkImage>			image					= createImage(m_vkdA, *m_deviceA, resourceDesc, extent, m_queueFamilyIndicesA,
 																				  *m_supportReadOp, *m_supportWriteOp, m_memoryHandleType);
-			const vk::VkImageTiling			tiling					= chooseTiling(m_memoryHandleType);
+			const vk::VkImageTiling			tiling					= vk::VK_IMAGE_TILING_OPTIMAL;
 			const vk::VkMemoryRequirements	requirements			= getMemoryRequirements(m_vkdA, *m_deviceA, *image, m_config.dedicated, m_getMemReq2Supported);
 											exportedMemoryTypeIndex = chooseMemoryType(requirements.memoryTypeBits);
 			vk::Move<vk::VkDeviceMemory>	memory					= allocateExportableMemory(m_vkdA, *m_deviceA, requirements.size, exportedMemoryTypeIndex, m_memoryHandleType, m_config.dedicated ? *image : (vk::VkImage)0);
@@ -1169,10 +1172,11 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 			VK_CHECK(synchronizationWrapperA->queueSubmit(queueA, DE_NULL));
 
 			{
-				NativeHandle	nativeSemaphoreHandle;
+				NativeHandle						nativeSemaphoreHandle;
+				const vk::VkSemaphoreImportFlags	flags = isSupportedPermanence(m_semaphoreHandleType, PERMANENCE_PERMANENT) ? (vk::VkSemaphoreImportFlagBits)0u : vk::VK_SEMAPHORE_IMPORT_TEMPORARY_BIT;
 
 				getSemaphoreNative(m_vkdA, *m_deviceA, *semaphoreA, m_semaphoreHandleType, nativeSemaphoreHandle);
-				importSemaphore(m_vkdB, *m_deviceB, *semaphoreB, m_semaphoreHandleType, nativeSemaphoreHandle, 0u);
+				importSemaphore(m_vkdB, *m_deviceB, *semaphoreB, m_semaphoreHandleType, nativeSemaphoreHandle, flags);
 			}
 		}
 		{
@@ -1360,6 +1364,11 @@ static void createTests (tcu::TestCaseGroup* group, SynchronizationType type)
 			vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT,
 			vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT,
 			"_dma_buf"
+		},
+		{
+			vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA,
+			vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA,
+			"_zircon_handle"
 		},
 	};
 

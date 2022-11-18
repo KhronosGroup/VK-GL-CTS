@@ -56,11 +56,9 @@ namespace
 class StateSwitchTestInstance : public DynamicStateBaseClass
 {
 public:
-	StateSwitchTestInstance (Context &context, vk::PipelineConstructionType pipelineConstructionType, ShaderMap shaders)
-		: DynamicStateBaseClass (context, pipelineConstructionType, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
+	StateSwitchTestInstance (Context &context, vk::PipelineConstructionType pipelineConstructionType, const ShaderMap& shaders)
+		: DynamicStateBaseClass (context, pipelineConstructionType, shaders.at(glu::SHADERTYPE_VERTEX), shaders.at(glu::SHADERTYPE_FRAGMENT), shaders.at(glu::SHADERTYPE_MESH))
 	{
-		m_topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-
 		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
 		m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
 		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
@@ -88,17 +86,38 @@ public:
 
 		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.getPipeline());
 
-		const vk::VkDeviceSize vertexBufferOffset	= 0;
-		const vk::VkBuffer vertexBuffer				= m_vertexBuffer->object();
-		m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+#ifndef CTS_USES_VULKANSC
+		if (m_isMesh)
+		{
+			const auto numVert = static_cast<uint32_t>(m_data.size());
+			DE_ASSERT(numVert >= 2u);
 
-		// bind first state
-		setDynamicViewportState(1, &viewport, &scissor_1);
-		m_vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_data.size()), 1, 0, 0);
+			m_vk.cmdBindDescriptorSets(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout.get(), 0u, 1u, &m_descriptorSet.get(), 0u, nullptr);
+			pushVertexOffset(0u, *m_pipelineLayout);
 
-		// bind second state
-		setDynamicViewportState(1, &viewport, &scissor_2);
-		m_vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_data.size()), 1, 0, 0);
+			// bind first state
+			setDynamicViewportState(1, &viewport, &scissor_1);
+			m_vk.cmdDrawMeshTasksEXT(*m_cmdBuffer, numVert - 2u, 1u, 1u);
+
+			// bind second state
+			setDynamicViewportState(1, &viewport, &scissor_2);
+			m_vk.cmdDrawMeshTasksEXT(*m_cmdBuffer, numVert - 2u, 1u, 1u);
+		}
+		else
+#endif // CTS_USES_VULKANSC
+		{
+			const vk::VkDeviceSize vertexBufferOffset	= 0;
+			const vk::VkBuffer vertexBuffer				= m_vertexBuffer->object();
+			m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+
+			// bind first state
+			setDynamicViewportState(1, &viewport, &scissor_1);
+			m_vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_data.size()), 1, 0, 0);
+
+			// bind second state
+			setDynamicViewportState(1, &viewport, &scissor_2);
+			m_vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_data.size()), 1, 0, 0);
+		}
 
 		endRenderPass(m_vk, *m_cmdBuffer);
 		endCommandBuffer(m_vk, *m_cmdBuffer);
@@ -148,11 +167,9 @@ public:
 class BindOrderTestInstance : public DynamicStateBaseClass
 {
 public:
-	BindOrderTestInstance (Context& context, vk::PipelineConstructionType pipelineConstructionType, ShaderMap shaders)
-		: DynamicStateBaseClass (context, pipelineConstructionType, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
+	BindOrderTestInstance (Context& context, vk::PipelineConstructionType pipelineConstructionType, const ShaderMap& shaders)
+		: DynamicStateBaseClass (context, pipelineConstructionType, shaders.at(glu::SHADERTYPE_VERTEX), shaders.at(glu::SHADERTYPE_FRAGMENT), shaders.at(glu::SHADERTYPE_MESH))
 	{
-		m_topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-
 		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
 		m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
 		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
@@ -181,21 +198,46 @@ public:
 
 		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.getPipeline());
 
-		const vk::VkDeviceSize vertexBufferOffset = 0;
-		const vk::VkBuffer vertexBuffer = m_vertexBuffer->object();
-		m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+#ifndef CTS_USES_VULKANSC
+		if (m_isMesh)
+		{
+			const auto numVert = static_cast<uint32_t>(m_data.size());
+			DE_ASSERT(numVert >= 2u);
 
-		// rebind in different order
-		setDynamicBlendState();
-		setDynamicRasterizationState();
-		setDynamicDepthStencilState();
+			m_vk.cmdBindDescriptorSets(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout.get(), 0u, 1u, &m_descriptorSet.get(), 0u, nullptr);
+			pushVertexOffset(0u, *m_pipelineLayout);
 
-		// bind first state
-		setDynamicViewportState(1, &viewport, &scissor_1);
-		m_vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_data.size()), 1, 0, 0);
+			// rebind in different order
+			setDynamicBlendState();
+			setDynamicRasterizationState();
+			setDynamicDepthStencilState();
 
-		setDynamicViewportState(1, &viewport, &scissor_2);
-		m_vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_data.size()), 1, 0, 0);
+			// bind first state
+			setDynamicViewportState(1, &viewport, &scissor_1);
+			m_vk.cmdDrawMeshTasksEXT(*m_cmdBuffer, numVert - 2u, 1u, 1u);
+
+			setDynamicViewportState(1, &viewport, &scissor_2);
+			m_vk.cmdDrawMeshTasksEXT(*m_cmdBuffer, numVert - 2u, 1u, 1u);
+		}
+		else
+#endif // CTS_USES_VULKANSC
+		{
+			const vk::VkDeviceSize vertexBufferOffset = 0;
+			const vk::VkBuffer vertexBuffer = m_vertexBuffer->object();
+			m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+
+			// rebind in different order
+			setDynamicBlendState();
+			setDynamicRasterizationState();
+			setDynamicDepthStencilState();
+
+			// bind first state
+			setDynamicViewportState(1, &viewport, &scissor_1);
+			m_vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_data.size()), 1, 0, 0);
+
+			setDynamicViewportState(1, &viewport, &scissor_2);
+			m_vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_data.size()), 1, 0, 0);
+		}
 
 		endRenderPass(m_vk, *m_cmdBuffer);
 		endCommandBuffer(m_vk, *m_cmdBuffer);
@@ -246,10 +288,13 @@ protected:
 	vk::GraphicsPipelineWrapper	m_pipelineAdditional;
 
 public:
-	StatePersistenceTestInstance (Context& context, vk::PipelineConstructionType pipelineConstructionType, ShaderMap shaders)
-		: DynamicStateBaseClass	(context, pipelineConstructionType, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
+	StatePersistenceTestInstance (Context& context, vk::PipelineConstructionType pipelineConstructionType, const ShaderMap& shaders)
+		: DynamicStateBaseClass (context, pipelineConstructionType, shaders.at(glu::SHADERTYPE_VERTEX), shaders.at(glu::SHADERTYPE_FRAGMENT), shaders.at(glu::SHADERTYPE_MESH))
 		, m_pipelineAdditional	(context.getDeviceInterface(), context.getDevice(), pipelineConstructionType)
 	{
+		// This test does not make sense for mesh shader variants.
+		DE_ASSERT(!m_isMesh);
+
 		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
 		m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
 		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
@@ -280,7 +325,7 @@ public:
 		m_pipeline.setDefaultTopology(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
 				  .setDynamicState(static_cast<const vk::VkPipelineDynamicStateCreateInfo*>(&dynamicState))
 				  .setDefaultMultisampleState()
-				  .setupVertexInputStete(&m_vertexInputState)
+				  .setupVertexInputState(&m_vertexInputState)
 				  .setupPreRasterizationShaderState(viewports,
 													scissors,
 													*m_pipelineLayout,
@@ -296,7 +341,7 @@ public:
 		m_pipelineAdditional.setDefaultTopology(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
 				  .setDynamicState(static_cast<const vk::VkPipelineDynamicStateCreateInfo*>(&dynamicState))
 				  .setDefaultMultisampleState()
-				  .setupVertexInputStete(&m_vertexInputState)
+				  .setupVertexInputState(&m_vertexInputState)
 				  .setupPreRasterizationShaderState(viewports,
 													scissors,
 													*m_pipelineLayout,
@@ -389,6 +434,17 @@ public:
 	}
 };
 
+#ifndef CTS_USES_VULKANSC
+void checkMeshShaderSupport (Context& context)
+{
+	context.requireDeviceFunctionality("VK_EXT_mesh_shader");
+}
+#endif // CTS_USES_VULKANSC
+
+void checkNothing (Context&)
+{
+}
+
 } //anonymous
 
 DynamicStateGeneralTests::DynamicStateGeneralTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
@@ -402,13 +458,41 @@ DynamicStateGeneralTests::~DynamicStateGeneralTests (void) {}
 
 void DynamicStateGeneralTests::init (void)
 {
-	ShaderMap shaderPaths;
-	shaderPaths[glu::SHADERTYPE_VERTEX] = "vulkan/dynamic_state/VertexFetch.vert";
-	shaderPaths[glu::SHADERTYPE_FRAGMENT] = "vulkan/dynamic_state/VertexFetch.frag";
+	ShaderMap basePaths;
+	basePaths[glu::SHADERTYPE_FRAGMENT]	= "vulkan/dynamic_state/VertexFetch.frag";
+	basePaths[glu::SHADERTYPE_MESH]		= nullptr;
+	basePaths[glu::SHADERTYPE_VERTEX]	= nullptr;
 
-	addChild(new InstanceFactory<StateSwitchTestInstance>(m_testCtx, "state_switch", "Perform multiple draws with different VP states (scissor test)", m_pipelineConstructionType, shaderPaths));
-	addChild(new InstanceFactory<BindOrderTestInstance>(m_testCtx, "bind_order", "Check if binding order is not important for pipeline configuration", m_pipelineConstructionType, shaderPaths));
-	addChild(new InstanceFactory<StatePersistenceTestInstance>(m_testCtx, "state_persistence", "Check if bound states are persistent across pipelines", m_pipelineConstructionType, shaderPaths));
+	for (int i = 0; i < 2; ++i)
+	{
+		const bool					isMesh				= (i > 0);
+		ShaderMap					shaderPaths			(basePaths);
+		std::string					nameSuffix;
+		std::string					descSuffix;
+		FunctionSupport0::Function	checkSupportFunc;
+
+		if (isMesh)
+		{
+#ifndef CTS_USES_VULKANSC
+			shaderPaths[glu::SHADERTYPE_MESH] = "vulkan/dynamic_state/VertexFetch.mesh";
+			nameSuffix = "_mesh";
+			descSuffix = " using mesh shaders";
+			checkSupportFunc = checkMeshShaderSupport;
+#else
+			continue;
+#endif // CTS_USES_VULKANSC
+		}
+		else
+		{
+			shaderPaths[glu::SHADERTYPE_VERTEX] = "vulkan/dynamic_state/VertexFetch.vert";
+			checkSupportFunc = checkNothing;
+		}
+
+		addChild(new InstanceFactory<StateSwitchTestInstance, FunctionSupport0>(m_testCtx, "state_switch" + nameSuffix, "Perform multiple draws with different VP states (scissor test)" + descSuffix, m_pipelineConstructionType, shaderPaths, checkSupportFunc));
+		addChild(new InstanceFactory<BindOrderTestInstance, FunctionSupport0>(m_testCtx, "bind_order" + nameSuffix, "Check if binding order is not important for pipeline configuration" + descSuffix, m_pipelineConstructionType, shaderPaths, checkSupportFunc));
+		if (!isMesh)
+			addChild(new InstanceFactory<StatePersistenceTestInstance>(m_testCtx, "state_persistence" + nameSuffix, "Check if bound states are persistent across pipelines" + descSuffix, m_pipelineConstructionType, shaderPaths));
+	}
 }
 
 } // DynamicState

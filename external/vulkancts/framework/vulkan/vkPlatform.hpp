@@ -24,6 +24,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkDefs.hpp"
+#include "deUniquePtr.hpp"
 
 #include <ostream>
 #include <deSharedPtr.hpp>
@@ -367,6 +368,13 @@ private:
 	VkDevice			m_device;
 };
 
+#endif // CTS_USES_VULKANSC
+
+// Single device driver pointer type which will differ in SC and non-SC mode helping clearing the code
+#ifndef CTS_USES_VULKANSC
+typedef de::MovePtr<DeviceDriver> DeviceDriverPtr;
+#else
+typedef de::MovePtr<DeviceDriverSC, vk::DeinitDeviceDeleter> DeviceDriverPtr;
 #endif // CTS_USES_VULKANSC
 
 // Defined in vkWsiPlatform.hpp

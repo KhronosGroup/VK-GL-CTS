@@ -126,7 +126,7 @@ public:
 		const vk::VkBuffer		vertexBuffer		= m_vertexBuffer->object();
 		m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
 
-		m_vk.cmdDraw(*m_cmdBuffer, 6, 1, 0, 0);
+		m_vk.cmdDraw(*m_cmdBuffer, 2, 1, 0, 0);
 
 		endRenderPass(m_vk, *m_cmdBuffer);
 		endCommandBuffer(m_vk, *m_cmdBuffer);

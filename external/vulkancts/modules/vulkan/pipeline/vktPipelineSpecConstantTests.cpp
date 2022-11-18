@@ -713,7 +713,7 @@ tcu::TestStatus GraphicsTestInstance::iterate (void)
 					.setDefaultMultisampleState()
 					.setDefaultColorBlendState()
 					.setDefaultTopology(topology)
-					.setupVertexInputStete()
+					.setupVertexInputState()
 					.setupPreRasterizationShaderState(viewport,
 													  scissor,
 													  *pipelineLayout,
@@ -725,7 +725,7 @@ tcu::TestStatus GraphicsTestInstance::iterate (void)
 													  *teseShaderModule,
 													  *geomShaderModule,
 													  pSpecInfo)
-					.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragShaderModule, DE_NULL, DE_NULL, DE_NULL, pSpecInfo)
+					.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragShaderModule, DE_NULL, DE_NULL, pSpecInfo)
 					.setupFragmentOutputState(*renderPass)
 					.setMonolithicPipelineLayout(*pipelineLayout)
 					.buildPipeline();

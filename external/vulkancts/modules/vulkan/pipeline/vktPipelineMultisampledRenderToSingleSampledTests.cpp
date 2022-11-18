@@ -182,6 +182,7 @@ struct TestParams
 	bool renderToWholeFramebuffer;						//!< Whether the test should render to the whole framebuffer.
 	bool testBlendsColors;								//!< Whether the test blends colors or overwrites them.  Tests don't adapt to this automatically, it's informative for shader generation.
 	bool dynamicRendering;								//!< Whether the test should use dynamic rendering.
+	bool useGarbageAttachment;							//!< Whether the test uese garbage attachments.
 
 	struct PerPass
 	{
@@ -432,7 +433,8 @@ MovePtr<GraphicsPipelineWrapper> makeGraphicsPipeline (const DeviceInterface&			
 													   const deInt32							integerAttachmentLocation,
 													   const UVec4&								viewportIn,
 													   const UVec4&								scissorIn,
-													   const VkSampleCountFlagBits				numSamples)
+													   const VkSampleCountFlagBits				numSamples,
+													   const bool								garbageAttachment)
 {
 	std::vector<VkVertexInputBindingDescription>	vertexInputBindingDescriptions;
 	std::vector<VkVertexInputAttributeDescription>	vertexInputAttributeDescriptions;
@@ -580,9 +582,19 @@ MovePtr<GraphicsPipelineWrapper> makeGraphicsPipeline (const DeviceInterface&			
 		{ 0.0f, 0.0f, 0.0f, 0.0f },									// float										blendConstants[4];
 	};
 
+	VkPipelineRenderingCreateInfo pipelineRenderingCreateInfoWithGarbage;
+	if (garbageAttachment)
+	{
+		DE_ASSERT(pipelineRenderingCreateInfo);
+
+		pipelineRenderingCreateInfoWithGarbage = *pipelineRenderingCreateInfo;
+		pipelineRenderingCreateInfoWithGarbage.colorAttachmentCount		= 99999u;
+		pipelineRenderingCreateInfoWithGarbage.pColorAttachmentFormats	= reinterpret_cast<VkFormat *>(0x11);
+	}
+
 	MovePtr<GraphicsPipelineWrapper> graphicsPipeline = MovePtr<GraphicsPipelineWrapper>(new GraphicsPipelineWrapper(vk, device, pipelineConstructionType, 0u));
 	graphicsPipeline.get()->setMonolithicPipelineLayout(pipelineLayout)
-			.setupVertexInputStete(&vertexInputStateInfo,
+			.setupVertexInputState(&vertexInputStateInfo,
 								   &pipelineInputAssemblyStateInfo)
 			.setupPreRasterizationShaderState(viewports,
 											  scissors,
@@ -595,13 +607,15 @@ MovePtr<GraphicsPipelineWrapper> makeGraphicsPipeline (const DeviceInterface&			
 											  DE_NULL,
 											  DE_NULL,
 											  DE_NULL,
-											  pipelineRenderingCreateInfo)
+											  nullptr,
+											  garbageAttachment ? &pipelineRenderingCreateInfoWithGarbage : pipelineRenderingCreateInfo)
 			.setupFragmentShaderState(pipelineLayout,
 									  renderPass,
 									  subpassNdx,
 									  fragmentModule,
 									  &pipelineDepthStencilStateInfo,
 									  &pipelineMultisampleStateInfo)
+			.setRenderingColorAttachmentsInfo(pipelineRenderingCreateInfo)
 			.setupFragmentOutputState(renderPass,
 									  subpassNdx,
 									  &pipelineColorBlendStateInfo,
@@ -3046,7 +3060,8 @@ void drawBasic (Context& context, const TestParams& params, WorkingData& wd, Tes
 										   params.perPass[0].intColorLocation,
 										   wd.renderArea,
 										   wd.renderArea,
-										   params.perPass[0].numSamples));
+										   params.perPass[0].numSamples,
+										   params.useGarbageAttachment));
 
 		if (params.dynamicRendering)
 		{
@@ -3382,7 +3397,8 @@ void drawClearAttachments (Context& context, const TestParams& params, WorkingDa
 										   params.perPass[0].intColorLocation,
 										   regions[0],
 										   regions[0],
-										   params.perPass[0].numSamples));
+										   params.perPass[0].numSamples,
+										   params.useGarbageAttachment));
 
 		const VkDeviceSize vertexBufferOffset = 0;
 		vk.cmdBindVertexBuffers(*testObjects.cmdBuffer, 0u, 1u, &wd.vertexBuffer.get(), &vertexBufferOffset);
@@ -3432,7 +3448,8 @@ void drawClearAttachments (Context& context, const TestParams& params, WorkingDa
 								 params.perPass[0].intColorLocation,
 								 regions[1],
 								 regions[1],
-								 params.perPass[0].numSamples));
+								 params.perPass[0].numSamples,
+								 params.useGarbageAttachment));
 
 		vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4), &regions[1]);
 		vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (*testObjects.graphicsPipelines.back()).getPipeline());
@@ -3522,7 +3539,8 @@ void drawOnePass(Context& context, const TestParams& params, WorkingData& wd, Te
 										   perPass.intColorLocation,
 										   regions[regionNdx],
 										   regions[regionNdx],
-										   perPass.numSamples));
+										   perPass.numSamples,
+										   params.useGarbageAttachment));
 
 		vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4), &regions[regionNdx]);
 		vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(UVec4), sizeof(perPass.drawConstantsWithDepthWrite[regionNdx]), &perPass.drawConstantsWithDepthWrite[regionNdx]);
@@ -3548,7 +3566,8 @@ void drawOnePass(Context& context, const TestParams& params, WorkingData& wd, Te
 											   perPass.intColorLocation,
 											   regions[regionNdx],
 											   regions[regionNdx],
-											   perPass.numSamples));
+											   perPass.numSamples,
+											   params.useGarbageAttachment));
 
 			vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4), &regions[regionNdx]);
 			vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(UVec4), sizeof(perPass.drawConstantsWithDepthTest[regionNdx]), &perPass.drawConstantsWithDepthTest[regionNdx]);
@@ -4573,7 +4592,7 @@ void drawInputAttachments (Context& context, const TestParams& params, WorkingDa
 		{
 			testObjects.graphicsPipelines.push_back(
 				pipeline::makeGraphicsPipeline(vk, device, params.pipelineConstructionType, *pipelineLayout, *testObjects.renderPasses.back(), DE_NULL, *vertexModule, *fragmentModule0, false, true, false, 0, 0,
-									 params.perPass[0].intColorLocation, regions[regionNdx], regions[regionNdx], params.perPass[0].numSamples));
+									 params.perPass[0].intColorLocation, regions[regionNdx], regions[regionNdx], params.perPass[0].numSamples, params.useGarbageAttachment));
 
 			vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4), &regions[regionNdx]);
 			vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(UVec4), sizeof(params.perPass[0].drawConstantsWithDepthWrite[regionNdx]), &params.perPass[0].drawConstantsWithDepthWrite[regionNdx]);
@@ -4588,7 +4607,7 @@ void drawInputAttachments (Context& context, const TestParams& params, WorkingDa
 		{
 			testObjects.graphicsPipelines.push_back(
 				pipeline::makeGraphicsPipeline(vk, device, params.pipelineConstructionType, *inputPipelineLayout, *testObjects.renderPasses.back(), DE_NULL, *vertexModule, *fragmentModuleIn, false, false, false, 0, 1,
-									 params.perPass[1].intColorLocation, regions[regionNdx], regions[regionNdx], params.perPass[1].numSamples));
+									 params.perPass[1].intColorLocation, regions[regionNdx], regions[regionNdx], params.perPass[1].numSamples, params.useGarbageAttachment));
 
 			vk.cmdPushConstants(*testObjects.cmdBuffer, *inputPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4), &regions[regionNdx]);
 			vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (*testObjects.graphicsPipelines.back()).getPipeline());
@@ -4600,7 +4619,7 @@ void drawInputAttachments (Context& context, const TestParams& params, WorkingDa
 		{
 			testObjects.graphicsPipelines.push_back(
 				pipeline::makeGraphicsPipeline(vk, device, params.pipelineConstructionType, *pipelineLayout, *testObjects.renderPasses.back(), DE_NULL, *vertexModule, *fragmentModule1, true, false, false, 0xC, 1,
-									 params.perPass[1].intColorLocation, regions[regionNdx], regions[regionNdx], params.perPass[1].numSamples));
+									 params.perPass[1].intColorLocation, regions[regionNdx], regions[regionNdx], params.perPass[1].numSamples, params.useGarbageAttachment));
 
 			vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4), &regions[regionNdx]);
 			vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(UVec4), sizeof(params.perPass[1].drawConstantsWithDepthWrite[regionNdx]), &params.perPass[1].drawConstantsWithDepthWrite[regionNdx]);
@@ -4986,6 +5005,7 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 					for (const bool renderToWholeFramebuffer : boolRange)
 					{
 						TestParams testParams;
+						deMemset(&testParams, 0, sizeof(testParams));
 
 						testParams.pipelineConstructionType				= pipelineConstructionType;
 						testParams.isMultisampledRenderToSingleSampled	= isMultisampledRenderToSingleSampled;
@@ -4994,6 +5014,7 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 						testParams.intColorFormat						= color3Format;
 						testParams.depthStencilFormat					= depthStencilFormat;
 						testParams.dynamicRendering						= dynamicRendering;
+						testParams.useGarbageAttachment					= false;
 
 						generateBasicTest(rng, testParams, sampleCount, resolveMode, renderToWholeFramebuffer);
 
@@ -5006,6 +5027,7 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 								testBasic,
 								testParams);
 					}
+
 					sampleGroup->addChild(resolveGroup.release());
 				}
 				formatGroup->addChild(sampleGroup.release());
@@ -5043,6 +5065,7 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 					for (const bool renderToWholeFramebuffer : boolRange)
 					{
 						TestParams testParams;
+						deMemset(&testParams, 0, sizeof(testParams));
 
 						testParams.pipelineConstructionType				= pipelineConstructionType;
 						testParams.isMultisampledRenderToSingleSampled	= isMultisampledRenderToSingleSampled;
@@ -5050,6 +5073,8 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 						testParams.floatColor2Format					= color2Format;
 						testParams.intColorFormat						= color3Format;
 						testParams.depthStencilFormat					= depthStencilFormat;
+						testParams.dynamicRendering						= dynamicRendering;
+						testParams.useGarbageAttachment					= false;
 
 						generateBasicTest(rng, testParams, sampleCount, resolveMode, renderToWholeFramebuffer);
 
@@ -5097,6 +5122,7 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 		for (deUint32 iteration = 0; iteration < (isMultisampledRenderToSingleSampled ? 1000 : 250); ++iteration)
 		{
 			TestParams testParams;
+			deMemset(&testParams, 0, sizeof(testParams));
 
 			const deUint32 color1FormatNdx = iteration % color1FormatCount;
 			const deUint32 color2FormatNdx = iteration % color2FormatCount;
@@ -5110,6 +5136,7 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 			testParams.intColorFormat						= color3FormatRange[color3FormatNdx];
 			testParams.depthStencilFormat					= depthStencilFormatRange[depthStencilFormatNdx];
 			testParams.dynamicRendering						= false;
+			testParams.useGarbageAttachment					= false;
 
 			generateMultiPassTest(rng, testParams);
 
@@ -5160,6 +5187,7 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 		for (deUint32 iteration = 0; iteration < (isMultisampledRenderToSingleSampled ? 1000 : 250); ++iteration)
 		{
 			TestParams testParams;
+			deMemset(&testParams, 0, sizeof(testParams));
 
 			const deUint32 color1FormatNdx = iteration % color1FormatCount;
 			const deUint32 color2FormatNdx = iteration % color2FormatCount;
@@ -5173,6 +5201,7 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 			testParams.intColorFormat						= color3FormatRange[color3FormatNdx];
 			testParams.depthStencilFormat					= depthStencilFormatRange[depthStencilFormatNdx];
 			testParams.dynamicRendering						= dynamicRendering;
+			testParams.useGarbageAttachment					= false;
 
 			generateMultiPassTest(rng, testParams);
 
@@ -5229,6 +5258,7 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 					for (const bool renderToWholeFramebuffer : boolRange)
 					{
 						TestParams testParams;
+						deMemset(&testParams, 0, sizeof(testParams));
 
 						testParams.pipelineConstructionType				= pipelineConstructionType;
 						testParams.isMultisampledRenderToSingleSampled	= isMultisampledRenderToSingleSampled;
@@ -5237,6 +5267,7 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 						testParams.intColorFormat						= color3Format;
 						testParams.depthStencilFormat					= depthStencilFormat;
 						testParams.dynamicRendering						= false;
+						testParams.useGarbageAttachment					= false;
 
 						generateInputAttachmentsTest(rng, testParams, sampleCount, resolveMode, renderToWholeFramebuffer);
 
@@ -5308,6 +5339,45 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 					checkHasMsrtss,
 					testPerfQuery,
 					format);
+		}
+
+		rootGroup->addChild(group.release());
+	}
+
+	// Test 7: Test that work with garbage color attachments
+	if (dynamicRendering && pipelineConstructionType != vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+	{
+		MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(rootGroup->getTestContext(), "garbage_color_attachment", "Tests that work with garbage color attachments"));
+
+		de::Random	rng(0x12348765);
+
+		for (const VkFormat color1Format		: color1FormatRange)
+		for (const VkFormat color2Format		: color2FormatRange)
+		for (const VkFormat color3Format		: color3FormatRange)
+		for (const VkFormat depthStencilFormat	: depthStencilFormatRange)
+		{
+			TestParams testParams;
+			deMemset(&testParams, 0, sizeof(testParams));
+
+			testParams.pipelineConstructionType				= pipelineConstructionType;
+			testParams.isMultisampledRenderToSingleSampled	= isMultisampledRenderToSingleSampled;
+			testParams.floatColor1Format					= color1Format;
+			testParams.floatColor2Format					= color2Format;
+			testParams.intColorFormat						= color3Format;
+			testParams.depthStencilFormat					= depthStencilFormat;
+			testParams.dynamicRendering						= dynamicRendering;
+			testParams.useGarbageAttachment					= true;
+
+			generateBasicTest(rng, testParams, VK_SAMPLE_COUNT_2_BIT, VK_RESOLVE_MODE_SAMPLE_ZERO_BIT, DE_TRUE);
+
+			addFunctionCaseWithPrograms(
+					group.get(),
+					getFormatCaseName(color1Format, color2Format, color3Format, depthStencilFormat).c_str(),
+					"Combination of framebuffer attachment formats",
+					checkRequirements,
+					initBasicPrograms,
+					testBasic,
+					testParams);
 		}
 
 		rootGroup->addChild(group.release());

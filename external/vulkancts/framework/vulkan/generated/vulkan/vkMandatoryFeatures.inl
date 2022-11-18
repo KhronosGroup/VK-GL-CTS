@@ -59,6 +59,18 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	}
 
 #if defined(CTS_USES_VULKAN)
+	vk::VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT physicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT;
+	deMemset(&physicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT, 0, sizeof(physicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT));
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_attachment_feedback_loop_layout")) )
+	{
+		physicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT.sType = getStructureType<VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT>();
+		*nextPtr = &physicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT;
+		nextPtr  = &physicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT.pNext;
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceBorderColorSwizzleFeaturesEXT physicalDeviceBorderColorSwizzleFeaturesEXT;
 	deMemset(&physicalDeviceBorderColorSwizzleFeaturesEXT, 0, sizeof(physicalDeviceBorderColorSwizzleFeaturesEXT));
 
@@ -98,6 +110,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		physicalDeviceConditionalRenderingFeaturesEXT.sType = getStructureType<VkPhysicalDeviceConditionalRenderingFeaturesEXT>();
 		*nextPtr = &physicalDeviceConditionalRenderingFeaturesEXT;
 		nextPtr  = &physicalDeviceConditionalRenderingFeaturesEXT.pNext;
+	}
+
+	vk::VkPhysicalDeviceDepthClampZeroOneFeaturesEXT physicalDeviceDepthClampZeroOneFeaturesEXT;
+	deMemset(&physicalDeviceDepthClampZeroOneFeaturesEXT, 0, sizeof(physicalDeviceDepthClampZeroOneFeaturesEXT));
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_depth_clamp_zero_one")) )
+	{
+		physicalDeviceDepthClampZeroOneFeaturesEXT.sType = getStructureType<VkPhysicalDeviceDepthClampZeroOneFeaturesEXT>();
+		*nextPtr = &physicalDeviceDepthClampZeroOneFeaturesEXT;
+		nextPtr  = &physicalDeviceDepthClampZeroOneFeaturesEXT.pNext;
 	}
 
 	vk::VkPhysicalDeviceDepthClipControlFeaturesEXT physicalDeviceDepthClipControlFeaturesEXT;
@@ -159,6 +181,18 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceFragmentShaderInterlockFeaturesEXT;
 		nextPtr  = &physicalDeviceFragmentShaderInterlockFeaturesEXT.pNext;
 	}
+
+#if defined(CTS_USES_VULKAN)
+	vk::VkPhysicalDeviceFragmentShadingRateFeaturesKHR physicalDeviceFragmentShadingRateFeaturesKHR;
+	deMemset(&physicalDeviceFragmentShadingRateFeaturesKHR, 0, sizeof(physicalDeviceFragmentShadingRateFeaturesKHR));
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_fragment_shading_rate")) )
+	{
+		physicalDeviceFragmentShadingRateFeaturesKHR.sType = getStructureType<VkPhysicalDeviceFragmentShadingRateFeaturesKHR>();
+		*nextPtr = &physicalDeviceFragmentShadingRateFeaturesKHR;
+		nextPtr  = &physicalDeviceFragmentShadingRateFeaturesKHR.pNext;
+	}
+#endif // defined(CTS_USES_VULKAN)
 
 	vk::VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR physicalDeviceGlobalPriorityQueryFeaturesKHR;
 	deMemset(&physicalDeviceGlobalPriorityQueryFeaturesKHR, 0, sizeof(physicalDeviceGlobalPriorityQueryFeaturesKHR));
@@ -242,6 +276,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceInlineUniformBlockFeaturesEXT.pNext;
 	}
 
+	vk::VkPhysicalDeviceLegacyDitheringFeaturesEXT physicalDeviceLegacyDitheringFeaturesEXT;
+	deMemset(&physicalDeviceLegacyDitheringFeaturesEXT, 0, sizeof(physicalDeviceLegacyDitheringFeaturesEXT));
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_legacy_dithering")) )
+	{
+		physicalDeviceLegacyDitheringFeaturesEXT.sType = getStructureType<VkPhysicalDeviceLegacyDitheringFeaturesEXT>();
+		*nextPtr = &physicalDeviceLegacyDitheringFeaturesEXT;
+		nextPtr  = &physicalDeviceLegacyDitheringFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDeviceLineRasterizationFeaturesEXT physicalDeviceLineRasterizationFeaturesEXT;
 	deMemset(&physicalDeviceLineRasterizationFeaturesEXT, 0, sizeof(physicalDeviceLineRasterizationFeaturesEXT));
 
@@ -261,6 +305,18 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceMemoryPriorityFeaturesEXT;
 		nextPtr  = &physicalDeviceMemoryPriorityFeaturesEXT.pNext;
 	}
+
+#if defined(CTS_USES_VULKAN)
+	vk::VkPhysicalDeviceMeshShaderFeaturesEXT physicalDeviceMeshShaderFeaturesEXT;
+	deMemset(&physicalDeviceMeshShaderFeaturesEXT, 0, sizeof(physicalDeviceMeshShaderFeaturesEXT));
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_mesh_shader")) )
+	{
+		physicalDeviceMeshShaderFeaturesEXT.sType = getStructureType<VkPhysicalDeviceMeshShaderFeaturesEXT>();
+		*nextPtr = &physicalDeviceMeshShaderFeaturesEXT;
+		nextPtr  = &physicalDeviceMeshShaderFeaturesEXT.pNext;
+	}
+#endif // defined(CTS_USES_VULKAN)
 
 	vk::VkPhysicalDeviceMultiDrawFeaturesEXT physicalDeviceMultiDrawFeaturesEXT;
 	deMemset(&physicalDeviceMultiDrawFeaturesEXT, 0, sizeof(physicalDeviceMultiDrawFeaturesEXT));
@@ -315,6 +371,18 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 #endif // defined(CTS_USES_VULKAN)
 
 #if defined(CTS_USES_VULKAN)
+	vk::VkPhysicalDeviceOpacityMicromapFeaturesEXT physicalDeviceOpacityMicromapFeaturesEXT;
+	deMemset(&physicalDeviceOpacityMicromapFeaturesEXT, 0, sizeof(physicalDeviceOpacityMicromapFeaturesEXT));
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_opacity_micromap")) )
+	{
+		physicalDeviceOpacityMicromapFeaturesEXT.sType = getStructureType<VkPhysicalDeviceOpacityMicromapFeaturesEXT>();
+		*nextPtr = &physicalDeviceOpacityMicromapFeaturesEXT;
+		nextPtr  = &physicalDeviceOpacityMicromapFeaturesEXT.pNext;
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT physicalDevicePageableDeviceLocalMemoryFeaturesEXT;
 	deMemset(&physicalDevicePageableDeviceLocalMemoryFeaturesEXT, 0, sizeof(physicalDevicePageableDeviceLocalMemoryFeaturesEXT));
 
@@ -344,6 +412,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		physicalDevicePipelineExecutablePropertiesFeaturesKHR.sType = getStructureType<VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR>();
 		*nextPtr = &physicalDevicePipelineExecutablePropertiesFeaturesKHR;
 		nextPtr  = &physicalDevicePipelineExecutablePropertiesFeaturesKHR.pNext;
+	}
+
+	vk::VkPhysicalDevicePipelineProtectedAccessFeaturesEXT physicalDevicePipelineProtectedAccessFeaturesEXT;
+	deMemset(&physicalDevicePipelineProtectedAccessFeaturesEXT, 0, sizeof(physicalDevicePipelineProtectedAccessFeaturesEXT));
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_pipeline_protected_access")) )
+	{
+		physicalDevicePipelineProtectedAccessFeaturesEXT.sType = getStructureType<VkPhysicalDevicePipelineProtectedAccessFeaturesEXT>();
+		*nextPtr = &physicalDevicePipelineProtectedAccessFeaturesEXT;
+		nextPtr  = &physicalDevicePipelineProtectedAccessFeaturesEXT.pNext;
 	}
 
 #if defined(CTS_USES_VULKAN)
@@ -494,6 +572,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderDemoteToHelperInvocationFeaturesEXT.pNext;
 	}
 
+	vk::VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD physicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD;
+	deMemset(&physicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD, 0, sizeof(physicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD));
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_AMD_shader_early_and_late_fragment_tests")) )
+	{
+		physicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD.sType = getStructureType<VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD>();
+		*nextPtr = &physicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD;
+		nextPtr  = &physicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD.pNext;
+	}
+
 	vk::VkPhysicalDeviceShaderFloat16Int8Features physicalDeviceShaderFloat16Int8Features;
 	deMemset(&physicalDeviceShaderFloat16Int8Features, 0, sizeof(physicalDeviceShaderFloat16Int8Features));
 
@@ -579,7 +667,7 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	vk::VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT physicalDeviceSubpassMergeFeedbackFeaturesEXT;
 	deMemset(&physicalDeviceSubpassMergeFeedbackFeaturesEXT, 0, sizeof(physicalDeviceSubpassMergeFeedbackFeaturesEXT));
 
-	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_create_renderpass2")) )
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_subpass_merge_feedback")) )
 	{
 		physicalDeviceSubpassMergeFeedbackFeaturesEXT.sType = getStructureType<VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT>();
 		*nextPtr = &physicalDeviceSubpassMergeFeedbackFeaturesEXT;
@@ -765,6 +853,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &coreFeatures);
 	bool result = true;
 
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_AMD_shader_early_and_late_fragment_tests")) )
+	{
+		if ( physicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD.shaderEarlyAndLateFragmentTests == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderEarlyAndLateFragmentTests not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_4444_formats")) )
 	{
 		if ( physicalDevice4444FormatsFeaturesEXT.formatA4R4G4B4 == VK_FALSE )
@@ -773,6 +870,17 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 			result = false;
 		}
 	}
+
+#if defined(CTS_USES_VULKAN)
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_attachment_feedback_loop_layout")) )
+	{
+		if ( physicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT.attachmentFeedbackLoopLayout == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature attachmentFeedbackLoopLayout not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
 
 #if defined(CTS_USES_VULKAN)
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_border_color_swizzle")) )
@@ -799,6 +907,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceConditionalRenderingFeaturesEXT.conditionalRendering == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature conditionalRendering not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_depth_clamp_zero_one")) )
+	{
+		if ( physicalDeviceDepthClampZeroOneFeaturesEXT.depthClampZeroOne == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature depthClampZeroOne not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
@@ -1183,6 +1300,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_legacy_dithering")) )
+	{
+		if ( physicalDeviceLegacyDitheringFeaturesEXT.legacyDithering == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature legacyDithering not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_line_rasterization")) )
 	{
 		if ( ( physicalDeviceLineRasterizationFeaturesEXT.rectangularLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesEXT.bresenhamLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesEXT.smoothLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesEXT.stippledRectangularLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesEXT.stippledBresenhamLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesEXT.stippledSmoothLines == VK_FALSE ) )
@@ -1200,6 +1326,28 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 			result = false;
 		}
 	}
+
+#if defined(CTS_USES_VULKAN)
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_fragment_shading_rate")) && physicalDeviceMeshShaderFeaturesEXT.primitiveFragmentShadingRateMeshShader )
+	{
+		if ( physicalDeviceFragmentShadingRateFeaturesKHR.primitiveFragmentShadingRate == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature primitiveFragmentShadingRate not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_mesh_shader")) )
+	{
+		if ( ( physicalDeviceMeshShaderFeaturesEXT.meshShader == VK_FALSE ) && ( physicalDeviceMeshShaderFeaturesEXT.taskShader == VK_FALSE ) )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature meshShader or taskShader not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
 
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_multi_draw")) )
 	{
@@ -1231,6 +1379,17 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 #endif // defined(CTS_USES_VULKAN)
 
 #if defined(CTS_USES_VULKAN)
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_opacity_micromap")) )
+	{
+		if ( physicalDeviceOpacityMicromapFeaturesEXT.micromap == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature micromap not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_pageable_device_local_memory")) )
 	{
 		if ( physicalDevicePageableDeviceLocalMemoryFeaturesEXT.pageableDeviceLocalMemory == VK_FALSE )
@@ -1240,6 +1399,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 #endif // defined(CTS_USES_VULKAN)
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_pipeline_protected_access")) )
+	{
+		if ( physicalDevicePipelineProtectedAccessFeaturesEXT.pipelineProtectedAccess == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature pipelineProtectedAccess not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
 
 #if defined(CTS_USES_VULKAN)
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_primitive_topology_list_restart")) )
@@ -1353,7 +1521,7 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
-	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_create_renderpass2")) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_subpass_merge_feedback")) )
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_subpass_merge_feedback")) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_create_renderpass2")) )
 	{
 		if ( physicalDeviceSubpassMergeFeedbackFeaturesEXT.subpassMergeFeedback == VK_FALSE )
 		{

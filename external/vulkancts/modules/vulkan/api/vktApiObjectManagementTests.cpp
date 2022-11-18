@@ -486,6 +486,7 @@ enum
 	MAX_CONCURRENT_DEVICES			= 32,
 	MAX_CONCURRENT_SYNC_PRIMITIVES	= 100,
 	MAX_CONCURRENT_PIPELINE_CACHES	= 128,
+	MAX_CONCURRENT_QUERY_POOLS		= 8192,
 	DEFAULT_MAX_CONCURRENT_OBJECTS	= 16*1024,
 };
 
@@ -679,6 +680,8 @@ struct Device
 		}
 #endif // CTS_USES_VULKANSC
 
+		VkPhysicalDeviceFeatures enabledFeatures = getPhysicalDeviceFeatures(res.vki, res.physicalDevice);
+
 		const VkDeviceCreateInfo		deviceInfo	=
 		{
 			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
@@ -690,7 +693,7 @@ struct Device
 			DE_NULL,								// ppEnabledLayerNames
 			0u,										// enabledExtensionNameCount
 			DE_NULL,								// ppEnabledExtensionNames
-			DE_NULL,								// pEnabledFeatures
+			&enabledFeatures,						// pEnabledFeatures
 		};
 
 		return createCustomDevice(env.commandLine.isValidationEnabled(), env.vkp, env.instance, res.vki, res.physicalDevice, &deviceInfo, env.allocationCallbacks);
@@ -838,6 +841,8 @@ struct DeviceGroup
 		}
 #endif // CTS_USES_VULKANSC
 
+		VkPhysicalDeviceFeatures enabledFeatures = getPhysicalDeviceFeatures(res.vki, res.physicalDevices[params.deviceIndex]);
+
 		const VkDeviceCreateInfo			deviceGroupCreateInfo =
 		{
 			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
@@ -849,7 +854,7 @@ struct DeviceGroup
 			DE_NULL,											// ppEnabledLayerNames
 			0u,													// enabledExtensionNameCount
 			DE_NULL,											// ppEnabledExtensionNames
-			DE_NULL,											// pEnabledFeatures
+			&enabledFeatures,									// pEnabledFeatures
 		};
 
 		return createCustomDevice(env.commandLine.isValidationEnabled(), env.vkp, env.instance, res.vki, res.physicalDevices[params.deviceIndex], &deviceGroupCreateInfo, env.allocationCallbacks);
@@ -1305,7 +1310,7 @@ struct QueryPool
 
 	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
 	{
-		return getSafeObjectCount<QueryPool>(context, params, DEFAULT_MAX_CONCURRENT_OBJECTS);
+		return getSafeObjectCount<QueryPool>(context, params, MAX_CONCURRENT_QUERY_POOLS);
 	}
 
 	static Move<VkQueryPool> create (const Environment& env, const Resources&, const Parameters& params)
@@ -2603,6 +2608,8 @@ class SingletonDevice
 
 		const char *extName = "VK_EXT_private_data";
 
+		VkPhysicalDeviceFeatures enabledFeatures = getPhysicalDeviceFeatures(context.getInstanceInterface(), context.getPhysicalDevice());
+
 		const VkDeviceCreateInfo		deviceInfo	=
 		{
 			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
@@ -2614,7 +2621,7 @@ class SingletonDevice
 			DE_NULL,								// ppEnabledLayerNames
 			1u,										// enabledExtensionNameCount
 			&extName,								// ppEnabledExtensionNames
-			DE_NULL,								// pEnabledFeatures
+			&enabledFeatures,						// pEnabledFeatures
 		};
 
 		Move<VkDevice> device = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
@@ -3371,6 +3378,11 @@ void addCases (tcu::TestCaseGroup *group, const CaseDescription<Object>& cases)
 	}
 }
 
+void checkImageCubeArraySupport (Context& context, const ImageView::Parameters params) {
+	if (params.viewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY && !context.getDeviceFeatures().imageCubeArray)
+		TCU_THROW(NotSupportedError, "imageCubeArray feature is not supported by this implementation");
+}
+
 void checkEventSupport (Context& context, const Event::Parameters)
 {
 #ifndef CTS_USES_VULKANSC
@@ -3604,7 +3616,7 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(createSingleTest	<Buffer>,					s_bufferCases,				DE_NULL),
 		CASE_DESC(createSingleTest	<BufferView>,				s_bufferViewCases,			DE_NULL),
 		CASE_DESC(createSingleTest	<Image>,					s_imageCases,				DE_NULL),
-		CASE_DESC(createSingleTest	<ImageView>,				s_imageViewCases,			DE_NULL),
+		CASE_DESC(createSingleTest	<ImageView>,				s_imageViewCases,			checkImageCubeArraySupport),
 		CASE_DESC(createSingleTest	<Semaphore>,				s_semaphoreCases,			DE_NULL),
 		CASE_DESC(createSingleTest	<Event>,					s_eventCases,				checkEventSupport),
 		CASE_DESC(createSingleTest	<Fence>,					s_fenceCases,				DE_NULL),
@@ -3639,7 +3651,7 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(createMultipleUniqueResourcesTest	<Buffer>,					s_bufferCases,				DE_NULL),
 		CASE_DESC(createMultipleUniqueResourcesTest	<BufferView>,				s_bufferViewCases,			DE_NULL),
 		CASE_DESC(createMultipleUniqueResourcesTest	<Image>,					s_imageCases,				DE_NULL),
-		CASE_DESC(createMultipleUniqueResourcesTest	<ImageView>,				s_imageViewCases,			DE_NULL),
+		CASE_DESC(createMultipleUniqueResourcesTest	<ImageView>,				s_imageViewCases,			checkImageCubeArraySupport),
 		CASE_DESC(createMultipleUniqueResourcesTest	<Semaphore>,				s_semaphoreCases,			DE_NULL),
 		CASE_DESC(createMultipleUniqueResourcesTest	<Event>,					s_eventCases,				checkEventSupport),
 		CASE_DESC(createMultipleUniqueResourcesTest	<Fence>,					s_fenceCases,				DE_NULL),
@@ -3674,7 +3686,7 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(createMultipleSharedResourcesTest	<Buffer>,					s_bufferCases,				DE_NULL),
 		CASE_DESC(createMultipleSharedResourcesTest	<BufferView>,				s_bufferViewCases,			DE_NULL),
 		CASE_DESC(createMultipleSharedResourcesTest	<Image>,					s_imageCases,				DE_NULL),
-		CASE_DESC(createMultipleSharedResourcesTest	<ImageView>,				s_imageViewCases,			DE_NULL),
+		CASE_DESC(createMultipleSharedResourcesTest	<ImageView>,				s_imageViewCases,			checkImageCubeArraySupport),
 		CASE_DESC(createMultipleSharedResourcesTest	<Semaphore>,				s_semaphoreCases,			DE_NULL),
 		CASE_DESC(createMultipleSharedResourcesTest	<Event>,					s_eventCases,				checkEventSupport),
 		CASE_DESC(createMultipleSharedResourcesTest	<Fence>,					s_fenceCases,				DE_NULL),
@@ -3706,7 +3718,7 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(createMaxConcurrentTest	<Buffer>,					s_bufferCases,				DE_NULL),
 		CASE_DESC(createMaxConcurrentTest	<BufferView>,				s_bufferViewCases,			DE_NULL),
 		CASE_DESC(createMaxConcurrentTest	<Image>,					s_imageCases,				DE_NULL),
-		CASE_DESC(createMaxConcurrentTest	<ImageView>,				s_imageViewCases,			DE_NULL),
+		CASE_DESC(createMaxConcurrentTest	<ImageView>,				s_imageViewCases,			checkImageCubeArraySupport),
 		CASE_DESC(createMaxConcurrentTest	<Semaphore>,				s_semaphoreCases,			DE_NULL),
 		CASE_DESC(createMaxConcurrentTest	<Event>,					s_eventCases,				checkEventSupport),
 		CASE_DESC(createMaxConcurrentTest	<Fence>,					s_fenceCases,				DE_NULL),
@@ -3737,7 +3749,7 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<Buffer>,					s_bufferCases,				DE_NULL),
 		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<BufferView>,				s_bufferViewCases,			DE_NULL),
 		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<Image>,					s_imageCases,				DE_NULL),
-		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<ImageView>,				s_imageViewCases,			DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<ImageView>,				s_imageViewCases,			checkImageCubeArraySupport),
 		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<Semaphore>,				s_semaphoreCases,			DE_NULL),
 		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<Event>,					s_eventCases,				checkEventSupport),
 		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<Fence>,					s_fenceCases,				DE_NULL),
@@ -3767,7 +3779,7 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Buffer>,					s_bufferCases,				DE_NULL),
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<BufferView>,				s_bufferViewCases,			DE_NULL),
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Image>,					s_imageCases,				DE_NULL),
-		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<ImageView>,				s_imageViewCases,			DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<ImageView>,				s_imageViewCases,			checkImageCubeArraySupport),
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Semaphore>,				s_semaphoreCases,			DE_NULL),
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Event>,					s_eventCases,				checkEventSupport),
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Fence>,					s_fenceCases,				DE_NULL),
@@ -3802,7 +3814,7 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<Buffer>,					s_bufferCases,				DE_NULL),
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<BufferView>,				s_bufferViewCases,			DE_NULL),
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<Image>,					s_imageCases,				DE_NULL),
-		CASE_DESC(multithreadedCreateSharedResourcesTest	<ImageView>,				s_imageViewCases,			DE_NULL),
+		CASE_DESC(multithreadedCreateSharedResourcesTest	<ImageView>,				s_imageViewCases,			checkImageCubeArraySupport),
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<Semaphore>,				s_semaphoreCases,			DE_NULL),
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<Event>,					s_eventCases,				checkEventSupport),
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<Fence>,					s_fenceCases,				DE_NULL),
@@ -3835,7 +3847,7 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(createSingleAllocCallbacksTest	<Buffer>,					s_bufferCases,				DE_NULL),
 		CASE_DESC(createSingleAllocCallbacksTest	<BufferView>,				s_bufferViewCases,			DE_NULL),
 		CASE_DESC(createSingleAllocCallbacksTest	<Image>,					s_imageCases,				DE_NULL),
-		CASE_DESC(createSingleAllocCallbacksTest	<ImageView>,				s_imageViewCases,			DE_NULL),
+		CASE_DESC(createSingleAllocCallbacksTest	<ImageView>,				s_imageViewCases,			checkImageCubeArraySupport),
 		CASE_DESC(createSingleAllocCallbacksTest	<Semaphore>,				s_semaphoreCases,			DE_NULL),
 		CASE_DESC(createSingleAllocCallbacksTest	<Event>,					s_eventCases,				checkEventSupport),
 		CASE_DESC(createSingleAllocCallbacksTest	<Fence>,					s_fenceCases,				DE_NULL),
@@ -3870,7 +3882,7 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(allocCallbackFailTest	<Buffer>,					s_bufferCases,				DE_NULL),
 		CASE_DESC(allocCallbackFailTest	<BufferView>,				s_bufferViewCases,			DE_NULL),
 		CASE_DESC(allocCallbackFailTest	<Image>,					s_imageCases,				DE_NULL),
-		CASE_DESC(allocCallbackFailTest	<ImageView>,				s_imageViewCases,			DE_NULL),
+		CASE_DESC(allocCallbackFailTest	<ImageView>,				s_imageViewCases,			checkImageCubeArraySupport),
 		CASE_DESC(allocCallbackFailTest	<Semaphore>,				s_semaphoreCases,			DE_NULL),
 		CASE_DESC(allocCallbackFailTest	<Event>,					s_eventCases,				checkEventSupport),
 		CASE_DESC(allocCallbackFailTest	<Fence>,					s_fenceCases,				DE_NULL),
@@ -3937,7 +3949,7 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(createPrivateDataTest	<Buffer>,					s_bufferCases,				DE_NULL),
 		CASE_DESC(createPrivateDataTest	<BufferView>,				s_bufferViewCases,			DE_NULL),
 		CASE_DESC(createPrivateDataTest	<Image>,					s_imageCases,				DE_NULL),
-		CASE_DESC(createPrivateDataTest	<ImageView>,				s_imageViewCases,			DE_NULL),
+		CASE_DESC(createPrivateDataTest	<ImageView>,				s_imageViewCases,			checkImageCubeArraySupport),
 		CASE_DESC(createPrivateDataTest	<Semaphore>,				s_semaphoreCases,			DE_NULL),
 		CASE_DESC(createPrivateDataTest	<Event>,					s_eventCases,				checkEventSupport),
 		CASE_DESC(createPrivateDataTest	<Fence>,					s_fenceCases,				DE_NULL),

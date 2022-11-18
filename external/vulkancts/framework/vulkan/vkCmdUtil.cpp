@@ -41,6 +41,39 @@ void beginCommandBuffer (const DeviceInterface& vk, const VkCommandBuffer comman
 	VK_CHECK(vk.beginCommandBuffer(commandBuffer, &commandBufBeginParams));
 }
 
+void beginSecondaryCommandBuffer	(const DeviceInterface&				vkd,
+									 const VkCommandBuffer				cmdBuffer,
+									 const VkRenderPass					renderPass,
+									 const VkFramebuffer				framebuffer,
+									 const VkCommandBufferUsageFlags	flags)
+{
+	const VkCommandBufferInheritanceInfo inheritanceInfo =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,	//	VkStructureType					sType;
+		nullptr,											//	const void*						pNext;
+		renderPass,											//	VkRenderPass					renderPass;
+		0u,													//	deUint32						subpass;
+		framebuffer,										//	VkFramebuffer					framebuffer;
+		VK_FALSE,											//	VkBool32						occlusionQueryEnable;
+		0u,													//	VkQueryControlFlags				queryFlags;
+		0u,													//	VkQueryPipelineStatisticFlags	pipelineStatistics;
+	};
+
+	const VkCommandBufferUsageFlags	extraFlags	= ((renderPass == DE_NULL)
+												? static_cast<VkCommandBufferUsageFlagBits>(0)
+												: VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT);
+	const VkCommandBufferUsageFlags	usageFlags	= (flags | extraFlags);
+	const VkCommandBufferBeginInfo	beginInfo	=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	//	VkStructureType							sType;
+		nullptr,										//	const void*								pNext;
+		usageFlags,										//	VkCommandBufferUsageFlags				flags;
+		&inheritanceInfo,								//	const VkCommandBufferInheritanceInfo*	pInheritanceInfo;
+	};
+
+	vkd.beginCommandBuffer(cmdBuffer, &beginInfo);
+}
+
 void endCommandBuffer (const DeviceInterface& vk, const VkCommandBuffer commandBuffer)
 {
 	VK_CHECK(vk.endCommandBuffer(commandBuffer));

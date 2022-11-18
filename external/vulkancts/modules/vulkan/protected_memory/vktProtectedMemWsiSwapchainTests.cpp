@@ -86,6 +86,8 @@ std::vector<std::string> getRequiredWsiExtensions (const Extensions&	supportedEx
 
 	extensions.push_back("VK_KHR_surface");
 	extensions.push_back(getExtensionName(wsiType));
+	if (isDisplaySurface(wsiType))
+		extensions.push_back("VK_KHR_display");
 
 	// VK_EXT_swapchain_colorspace adds new surface formats. Driver can enumerate
 	// the formats regardless of whether VK_EXT_swapchain_colorspace was enabled,

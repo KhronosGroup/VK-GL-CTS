@@ -1782,6 +1782,8 @@ CustomInstance createInstanceWithWsi(Context&						context,
 
 	extensions.push_back("VK_KHR_surface");
 	extensions.push_back(getExtensionName(wsiType));
+	if (isDisplaySurface(wsiType))
+		extensions.push_back("VK_KHR_display");
 
 	// VK_EXT_swapchain_colorspace adds new surface formats. Driver can enumerate
 	// the formats regardless of whether VK_EXT_swapchain_colorspace was enabled,
@@ -2054,7 +2056,7 @@ tcu::TestStatus testSwapchainMutable(Context& context, CaseDef caseDef)
 	const tcu::UVec2				desiredSize(256, 256);
 	const InstanceHelper			instHelper(context, wsiType);
 	const NativeObjects				native(context, instHelper.supportedExtensions, wsiType, tcu::just(desiredSize));
-	const Unique<VkSurfaceKHR>		surface(createSurface(instHelper.vki, instHelper.instance, wsiType, *native.display, *native.window));
+	const Unique<VkSurfaceKHR>		surface(createSurface(instHelper.vki, instHelper.instance, wsiType, *native.display, *native.window, context.getTestContext().getCommandLine()));
 	const DeviceHelper				devHelper(context, instHelper.vki, instHelper.instance, *surface);
 	const DeviceInterface&			vk = devHelper.vkd;
 	const InstanceDriver&			vki = instHelper.vki;

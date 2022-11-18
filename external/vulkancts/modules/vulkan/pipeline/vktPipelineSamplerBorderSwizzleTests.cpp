@@ -909,7 +909,7 @@ tcu::TestStatus BorderSwizzleInstance::iterate (void)
 					.setDefaultDepthStencilState()
 					.setDefaultRasterizationState()
 					.setDefaultMultisampleState()
-					.setupVertexInputStete(&vertexInputInfo)
+					.setupVertexInputState(&vertexInputInfo)
 					.setupPreRasterizationShaderState(viewport,
 									scissor,
 									*pipelineLayout,
@@ -920,7 +920,6 @@ tcu::TestStatus BorderSwizzleInstance::iterate (void)
 									*renderPass,
 									0u,
 									*fragShader,
-									DE_NULL,
 									DE_NULL,
 									DE_NULL,
 									&specializationInfo)

@@ -78,8 +78,14 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 
 	robustnessTests->addChild(createRobustness2Tests(testCtx));
 	robustnessTests->addChild(createImageRobustnessTests(testCtx));
+#ifndef CTS_USES_VULKANSC
+	robustnessTests->addChild(createPipelineRobustnessTests(testCtx));
+#endif
 	robustnessTests->addChild(createNonRobustBufferAccessTests(testCtx));
 
+#ifndef CTS_USES_VULKANSC
+	robustnessTests->addChild(createPipelineRobustnessBufferAccessTests(testCtx));
+#endif
 	robustnessTests->addChild(createRobustness1VertexAccessTests(testCtx));
 
 	return robustnessTests.release();

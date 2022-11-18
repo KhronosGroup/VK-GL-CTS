@@ -59,7 +59,7 @@ ProtectedContext::ProtectedContext	(Context&						ctx,
 	, m_instance			(makeProtectedMemInstance(m_context, instanceExtensions))
 	, m_vki					(m_instance.getDriver())
 	, m_phyDevice			(vk::chooseDevice(m_vki, m_instance, m_context.getTestContext().getCommandLine()))
-	, m_surface				(vk::wsi::createSurface(m_vki, m_instance, wsiType, display, window))
+	, m_surface				(vk::wsi::createSurface(m_vki, m_instance, wsiType, display, window, m_context.getTestContext().getCommandLine()))
 	, m_queueFamilyIndex	(chooseProtectedMemQueueFamilyIndex(m_vki, m_phyDevice, *m_surface))
 	, m_device				(makeProtectedMemDevice(m_interface, m_instance, m_vki, m_phyDevice, m_queueFamilyIndex, ctx.getUsedApiVersion(), deviceExtensions,
 #ifdef CTS_USES_VULKANSC

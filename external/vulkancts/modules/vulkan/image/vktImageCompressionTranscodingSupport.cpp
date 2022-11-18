@@ -650,13 +650,13 @@ TestStatus BasicComputeTestInstance::iterate (void)
 													imageData[resultImageNdx].getImageInfo(imageNdx).extent.height,
 													imageData[resultImageNdx].getImageInfo(imageNdx).extent.depth);
 				if (!copyResultAndCompare(*cmdPool, *cmdBuffer, imageData[resultImageNdx].getImage(imageNdx), offset, size))
-					return TestStatus::fail("Fail");
+					return TestStatus::fail("Uncompressed output mismatch at offset " + de::toString(offset) + " even before executing decompression");
 				offset += getCompressedImageSizeInBytes(m_parameters.formatCompressed, mipMapSizes[mipNdx]);
 			}
 		}
 	}
 	if (!decompressImage(*cmdPool, *cmdBuffer, imageData, mipMapSizes))
-			return TestStatus::fail("Fail");
+			return TestStatus::fail("Decompression failed");
 
 	if (m_bASTCErrorColourMismatch)
 	{
@@ -1106,8 +1106,12 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandPool&				cmdPool,
 																	makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, decompressedImageInfo.extent.depth, 0u, decompressedImageInfo.arrayLayers));
 		Move<VkImageView>				uncompressedView		= makeImageView(vk, device, uncompressedImage.get(), imageViewType, m_parameters.formatCompressed,
 																	makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, compressedImageInfo.extent.depth, 0u, compressedImageInfo.arrayLayers));
-		Move<VkImageView>				compressedView			= makeImageView(vk, device, compressed, imageViewType, m_parameters.formatCompressed,
-																	makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, mipNdx, 1u, layerNdx, 1u), &compressedViewUsageCI);
+		bool const						useMultiLayer			= m_parameters.imageType == IMAGE_TYPE_2D && m_parameters.layers > 1u;
+		Move<VkImageView>				compressedView			= (useMultiLayer) ?
+																	makeImageView(vk, device, compressed, VK_IMAGE_VIEW_TYPE_2D_ARRAY, m_parameters.formatCompressed,
+																		makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, static_cast<uint32_t>(mipMapSizes.size()), 0u, m_parameters.layers), &compressedViewUsageCI) :
+																	makeImageView(vk, device, compressed, imageViewType, m_parameters.formatCompressed,
+																		makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, mipNdx, 1u, layerNdx, 1u), &compressedViewUsageCI);
 		Move<VkDescriptorSetLayout>		descriptorSetLayout		= DescriptorSetLayoutBuilder()
 																	.addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT)
 																	.addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT)
@@ -1122,7 +1126,10 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandPool&				cmdPool,
 																	.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, decompressedImageInfo.arrayLayers);
 
 		Move<VkDescriptorSet>			descriptorSet			= makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
-		const Unique<VkPipelineLayout>	pipelineLayout			(makePipelineLayout(vk, device, *descriptorSetLayout));
+		const struct PushData { uint32_t layer; uint32_t level; }	pushData
+																= { layerNdx, mipNdx };
+		const VkPushConstantRange		pushConstantRange		= { VK_SHADER_STAGE_COMPUTE_BIT, 0u, static_cast<uint32_t>(sizeof pushData) };
+		const Unique<VkPipelineLayout>	pipelineLayout			(makePipelineLayout(vk, device, 1u, &descriptorSetLayout.get(), 1u, &pushConstantRange));
 		const Unique<VkPipeline>		pipeline				(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
 		const VkDeviceSize				bufferSize				= getImageSizeBytes(IVec3((int)extentCompressed.width, (int)extentCompressed.height, (int)extentCompressed.depth), m_parameters.formatForVerify);
 		BufferWithMemory				resultBuffer			(vk, device, allocator,
@@ -1150,7 +1157,7 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandPool&				cmdPool,
 				VK_FALSE,														//VkBool32				compareEnable;
 				VK_COMPARE_OP_EQUAL,											//VkCompareOp			compareOp;
 				0.0f,															//float					minLod;
-				1.0f,															//float					maxLod;
+				(float)mipMapSizes.size(),										//float					maxLod;
 				VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,						//VkBorderColor			borderColor;
 				VK_FALSE,														//VkBool32				unnormalizedCoordinates;
 			};
@@ -1186,10 +1193,10 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandPool&				cmdPool,
 			const VkImageSubresourceRange	subresourceRangeComp	=
 			{
 				VK_IMAGE_ASPECT_COLOR_BIT,											//VkImageAspectFlags			aspectMask
-				mipNdx,																//deUint32						baseMipLevel
-				1u,																	//deUint32						levelCount
-				layerNdx,															//deUint32						baseArrayLayer
-				1u																	//deUint32						layerCount
+				(useMultiLayer) ? 0u : mipNdx,										//deUint32						baseMipLevel
+				(useMultiLayer) ? static_cast<uint32_t>(mipMapSizes.size()) : 1u,	//deUint32						levelCount
+				(useMultiLayer) ? 0u : layerNdx,									//deUint32						baseArrayLayer
+				(useMultiLayer) ? m_parameters.layers : 1u							//deUint32						layerCount
 			};
 
 			const VkBufferImageCopy			copyRegion				=
@@ -1248,7 +1255,7 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandPool&				cmdPool,
 						uncompressedImage.get(), subresourceRange),
 
 					makeImageMemoryBarrier(0, VK_ACCESS_SHADER_READ_BIT,
-						VK_IMAGE_LAYOUT_GENERAL, layoutShaderReadOnly ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL,
+						(useMultiLayer && !layoutShaderReadOnly && layerNdx) ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL, layoutShaderReadOnly ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL,
 						compressed, subresourceRangeComp),
 
 					makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_WRITE_BIT,
@@ -1265,6 +1272,7 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandPool&				cmdPool,
 					DE_LENGTH_OF_ARRAY(preShaderImageBarriers), preShaderImageBarriers);
 			}
 
+			vk.cmdPushConstants(cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0u, sizeof pushData, &pushData);
 			vk.cmdDispatch(cmdBuffer, extentCompressed.width, extentCompressed.height, extentCompressed.depth);
 
 			{
@@ -2685,6 +2693,7 @@ void TexelViewCompatibleCase::initPrograms (vk::SourceCollections&	programCollec
 					DE_ASSERT(false);
 			}
 
+			const ImageType compressedReferenceImageType = (m_parameters.imageType == IMAGE_TYPE_2D && m_parameters.layers > 1u) ? IMAGE_TYPE_2D_ARRAY : m_parameters.imageType;
 			const char* cordDefinitions[3] =
 			{
 				// IMAGE_TYPE_1D
@@ -2699,16 +2708,20 @@ void TexelViewCompatibleCase::initPrograms (vk::SourceCollections&	programCollec
 				"    const ivec3 pos = ivec3(gl_GlobalInvocationID); \n",
 			};
 			src_decompress	<< "layout (binding = 0) uniform "<<getGlslSamplerType(mapVkFormat(m_parameters.formatForVerify), mapImageViewType(m_parameters.imageType))<<" compressed_result;\n"
-							<< "layout (binding = 1) uniform "<<getGlslSamplerType(mapVkFormat(m_parameters.formatForVerify), mapImageViewType(m_parameters.imageType))<<" compressed_reference;\n"
+							<< "layout (binding = 1) uniform "<<getGlslSamplerType(mapVkFormat(m_parameters.formatForVerify), mapImageViewType(compressedReferenceImageType))<<" compressed_reference;\n"
 							<< "layout (binding = 2, "<<getShaderImageFormatQualifier(mapVkFormat(m_parameters.formatForVerify))<<") writeonly uniform "<<getShaderImageType(mapVkFormat(m_parameters.formatForVerify), m_parameters.imageType)<<" decompressed_result;\n"
-							<< "layout (binding = 3, "<<getShaderImageFormatQualifier(mapVkFormat(m_parameters.formatForVerify))<<") writeonly uniform "<<getShaderImageType(mapVkFormat(m_parameters.formatForVerify), m_parameters.imageType)<<" decompressed_reference;\n\n"
+							<< "layout (binding = 3, "<<getShaderImageFormatQualifier(mapVkFormat(m_parameters.formatForVerify))<<") writeonly uniform "<<getShaderImageType(mapVkFormat(m_parameters.formatForVerify), m_parameters.imageType)<<" decompressed_reference;\n"
+							<< "layout (push_constant, std430) uniform PushConstants { uint layer; uint level; };\n\n"
 							<< "void main (void)\n"
 							<< "{\n"
 							<< "    const vec2 pixels_resolution = vec2(gl_NumWorkGroups.xy);\n"
 							<< cordDefinitions[imageTypeIndex]
-							<< "    imageStore(decompressed_result, pos, texture(compressed_result, cord));\n"
-							<< "    imageStore(decompressed_reference, pos, texture(compressed_reference, cord));\n"
-							<< "}\n";
+							<< "    imageStore(decompressed_result, pos, texture(compressed_result, cord));\n";
+			if (compressedReferenceImageType == IMAGE_TYPE_2D_ARRAY)
+				src_decompress	<< "    imageStore(decompressed_reference, pos, textureLod(compressed_reference, vec3(cord, layer), level));\n";
+			else
+				src_decompress	<< "    imageStore(decompressed_reference, pos, texture(compressed_reference, cord));\n";
+			src_decompress	<< "}\n";
 			programCollection.glslSources.add("comp") << glu::ComputeSource(src.str());
 			programCollection.glslSources.add("decompress") << glu::ComputeSource(src_decompress.str());
 
@@ -3030,18 +3043,7 @@ tcu::TestCaseGroup* createImageCompressionTranscodingTests (tcu::TestContext& te
 	{
 		{ IMAGE_TYPE_1D, "1d_image" },
 		{ IMAGE_TYPE_2D, "2d_image" },
-
-		// See issue: https://gitlab.khronos.org/vulkan/vulkan/-/issues/3164
-		//   Removed 3D because you can't take an uncompressed 3D view of a VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT image
-		// see VUID-VkImageViewCreateInfo-image-04739. This VUID came from https://gitlab.khronos.org/vulkan/vulkan/-/merge_requests/4350
-		// to resolve https://gitlab.khronos.org/vulkan/vulkan/-/issues/2501.
-		//   It is possible to take a 2D view of a compressed 3D image created
-		// with VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT, but then it also needs to be created with
-		// VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT from VK_EXT_image_2d_view_of_3d, and the implementation needs to support
-		// image2DViewOf3D or sampler2DViewOf3D depending on the test variant.
-		//   For this test to support VK_EXT_image_2d_view_of_3d there needs to be quite a few changes to the shader generation
-		// code, the descriptor set code and several other things, which isn't a trivial amount of work.
-		// { IMAGE_TYPE_3D, "3d_image" },
+		{ IMAGE_TYPE_3D, "3d_image" },
 	};
 
 	const VkImageUsageFlags		baseImageUsageFlagSet							= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;

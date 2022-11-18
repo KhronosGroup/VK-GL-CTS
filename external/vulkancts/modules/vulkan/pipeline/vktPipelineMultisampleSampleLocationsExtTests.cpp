@@ -691,20 +691,21 @@ void preparePipelineWrapper (GraphicsPipelineWrapper&			gpw,
 	gpw.setDefaultTopology(topology)
 	   .setDynamicState(&dynamicStateCreateInfo)
 	   .setDefaultRasterizationState()
-	   .setupVertexInputStete(&vertexInputStateInfo)
+	   .setupVertexInputState(&vertexInputStateInfo)
 	   .setupPreRasterizationShaderState(viewports,
 								scissors,
 								pipelineLayout,
 								renderPass,
 								subpassIndex,
-								vertexModule)
+								vertexModule,
+								nullptr, DE_NULL, DE_NULL, DE_NULL, DE_NULL,
+								(useFragmentShadingRate ? &shadingRateStateCreateInfo : nullptr))
 	   .setupFragmentShaderState(pipelineLayout,
 								renderPass,
 								subpassIndex,
 								fragmentModule,
 								&pipelineDepthStencilStateInfo,
-								&pipelineMultisampleStateInfo,
-								(useFragmentShadingRate ? &shadingRateStateCreateInfo : DE_NULL))
+								&pipelineMultisampleStateInfo)
 	   .setupFragmentOutputState(renderPass, subpassIndex, &colorBlendStateCreateInfoDefault, &pipelineMultisampleStateInfo)
 	   .setMonolithicPipelineLayout(pipelineLayout)
 	   .buildPipeline();

@@ -340,7 +340,16 @@ void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceP
 			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Implementation does not support remapping format components");
 		}
 	}
+
+	bool formatRgba10x6WithoutYCbCrSampler = context.getRGBA10X6FormatsFeaturesEXT().formatRgba10x6WithoutYCbCrSampler;
+#else
+	bool formatRgba10x6WithoutYCbCrSampler = VK_FALSE;
 #endif // CTS_USES_VULKANSC
+
+	if ((params.imageFormat == VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16) && (params.subresourceRange.levelCount > 1) && (formatRgba10x6WithoutYCbCrSampler == VK_FALSE))
+	{
+		TCU_THROW(NotSupportedError, "formatRgba10x6WithoutYCbCrSampler not supported");
+	}
 }
 
 ImageSamplingInstance::ImageSamplingInstance (Context&						context,
@@ -361,15 +370,21 @@ ImageSamplingInstance::ImageSamplingInstance (Context&						context,
 	, m_renderSize					(params.renderSize)
 	, m_colorFormat					(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_vertices					(params.vertices)
-	, m_graphicsPipeline			(context.getDeviceInterface(), context.getDevice(), params.pipelineConstructionType)
+	, m_graphicsPipeline			(context.getDeviceInterface(), context.getDevice(), params.pipelineConstructionType, params.pipelineCreateFlags)
+	, m_pipelineConstructionType	(params.pipelineConstructionType)
+	, m_imageLayout					(params.imageLayout)
 {
-	const InstanceInterface&				vki						= context.getInstanceInterface();
-	const DeviceInterface&					vk						= context.getDeviceInterface();
-	const VkPhysicalDevice					physDevice				= context.getPhysicalDevice();
-	const VkDevice							vkDevice				= context.getDevice();
-	const VkQueue							queue					= context.getUniversalQueue();
-	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
-	SimpleAllocator							memAlloc				(vk, vkDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
+}
+
+void ImageSamplingInstance::setup ()
+{
+	const InstanceInterface&				vki						= m_context.getInstanceInterface();
+	const DeviceInterface&					vk						= m_context.getDeviceInterface();
+	const VkPhysicalDevice					physDevice				= m_context.getPhysicalDevice();
+	const VkDevice							vkDevice				= m_context.getDevice();
+	const VkQueue							queue					= m_context.getUniversalQueue();
+	const deUint32							queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
+	SimpleAllocator							memAlloc				(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
 	const VkComponentMapping				componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 
 	void const* pNext = m_samplerParams.pNext;
@@ -391,7 +406,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&						context,
 				physicalDeviceProperties.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 				physicalDeviceProperties.pNext	= &physicalDeviceSamplerMinMaxProperties;
 
-				vki.getPhysicalDeviceProperties2(context.getPhysicalDevice(), &physicalDeviceProperties);
+				vki.getPhysicalDeviceProperties2(m_context.getPhysicalDevice(), &physicalDeviceProperties);
 
 				if (physicalDeviceSamplerMinMaxProperties.filterMinmaxImageComponentMapping != VK_TRUE)
 				{
@@ -428,7 +443,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&						context,
 				physicalDeviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 				physicalDeviceFeatures.pNext = &physicalDeviceCustomBorderColorFeatures;
 
-				vki.getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &physicalDeviceFeatures);
+				vki.getPhysicalDeviceFeatures2(m_context.getPhysicalDevice(), &physicalDeviceFeatures);
 
 				if (physicalDeviceCustomBorderColorFeatures.customBorderColors != VK_TRUE)
 				{
@@ -692,7 +707,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&						context,
 	// Create pipeline layout
 	{
 #ifndef CTS_USES_VULKANSC
-		VkPipelineLayoutCreateFlags pipelineLayoutFlags = (params.pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC) ? 0u : deUint32(VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT);
+		VkPipelineLayoutCreateFlags pipelineLayoutFlags = (m_pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC) ? 0u : deUint32(VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT);
 #else
 		VkPipelineLayoutCreateFlags pipelineLayoutFlags = 0u;
 #endif // CTS_USES_VULKANSC
@@ -786,7 +801,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&						context,
 						  .setDefaultDepthStencilState()
 						  .setDefaultRasterizationState()
 						  .setDefaultMultisampleState()
-						  .setupVertexInputStete(&vertexInputStateParams)
+						  .setupVertexInputState(&vertexInputStateParams)
 						  .setupPreRasterizationShaderState(viewports,
 														scissors,
 														*m_preRasterizationStatePipelineLayout,
@@ -882,6 +897,8 @@ tcu::TestStatus ImageSamplingInstance::iterate (void)
 	const DeviceInterface&		vk			= m_context.getDeviceInterface();
 	const VkDevice				vkDevice	= m_context.getDevice();
 	const VkQueue				queue		= m_context.getUniversalQueue();
+
+	setup();
 
 	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
 
@@ -1463,13 +1480,14 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 	const CoordinateCaptureProgram		coordCaptureProgram;
 	const rr::Program					rrProgram				= coordCaptureProgram.getReferenceProgram();
 	ReferenceRenderer					refRenderer				(m_renderSize.x(), m_renderSize.y(), 1, colorFormat, depthStencilFormat, &rrProgram);
+	const bool							useStencilAspect		= (m_subresourceRange.aspectMask == VK_IMAGE_ASPECT_STENCIL_BIT);
 
 	bool								compareOkAll			= true;
 
 	tcu::Vec4							lookupScale				(1.0f);
 	tcu::Vec4							lookupBias				(0.0f);
 
-	getLookupScaleBias(m_imageFormat, lookupScale, lookupBias);
+	getLookupScaleBias(m_imageFormat, lookupScale, lookupBias, useStencilAspect);
 
 	// Render out coordinates
 	{
@@ -1511,24 +1529,36 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 			// Verification loop does not support reading from combined depth stencil texture levels.
 			// Get rid of stencil component.
 
-			tcu::TextureFormat::ChannelType depthChannelType = tcu::TextureFormat::CHANNELTYPE_LAST;
+			tcu::TextureFormat::ChannelOrder	channelOrder	= tcu::TextureFormat::CHANNELORDER_LAST;
+			tcu::TextureFormat::ChannelType		channelType		= tcu::TextureFormat::CHANNELTYPE_LAST;
 
-			switch (m_texture->getTextureFormat().type)
+			if (subresource.aspectMask == VK_IMAGE_ASPECT_STENCIL_BIT)
 			{
-			case tcu::TextureFormat::UNSIGNED_INT_16_8_8:
-				depthChannelType = tcu::TextureFormat::UNORM_INT16;
-				break;
-			case tcu::TextureFormat::UNSIGNED_INT_24_8:
-			case tcu::TextureFormat::UNSIGNED_INT_24_8_REV:
-				depthChannelType = tcu::TextureFormat::UNORM_INT24;
-				break;
-			case tcu::TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
-				depthChannelType = tcu::TextureFormat::FLOAT;
-				break;
-			default:
-				DE_FATAL("Unhandled texture format type in switch");
+				channelOrder	= tcu::TextureFormat::S;
+				channelType		= tcu::TextureFormat::UNSIGNED_INT8;
 			}
-			textureCopy	= m_texture->copy(tcu::TextureFormat(tcu::TextureFormat::D, depthChannelType));
+			else
+			{
+				channelOrder = tcu::TextureFormat::D;
+
+				switch (m_texture->getTextureFormat().type)
+				{
+				case tcu::TextureFormat::UNSIGNED_INT_16_8_8:
+					channelType = tcu::TextureFormat::UNORM_INT16;
+					break;
+				case tcu::TextureFormat::UNSIGNED_INT_24_8:
+				case tcu::TextureFormat::UNSIGNED_INT_24_8_REV:
+					channelType = tcu::TextureFormat::UNORM_INT24;
+					break;
+				case tcu::TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
+					channelType = tcu::TextureFormat::FLOAT;
+					break;
+				default:
+					DE_FATAL("Unhandled texture format type in switch");
+				}
+			}
+
+			textureCopy	= m_texture->copy(tcu::TextureFormat(channelOrder, channelType));
 			texture		= textureCopy.get();
 		}
 		else

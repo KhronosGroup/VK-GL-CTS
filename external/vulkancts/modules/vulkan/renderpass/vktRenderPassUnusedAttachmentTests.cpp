@@ -25,6 +25,7 @@
 
 #include "vktRenderPassUnusedAttachmentTests.hpp"
 #include "pipeline/vktPipelineImageUtil.hpp"
+#include "vktRenderPassTestsUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"

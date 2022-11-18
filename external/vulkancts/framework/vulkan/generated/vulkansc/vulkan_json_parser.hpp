@@ -41,9 +41,9 @@ namespace vk_json_parser {
 
 template <typename T1, typename T2>
 class GlobalMem {
-    void grow() {
+    void grow(T1 size = 0) {
         //push_back new single vector of size m_tabSize onto vec
-        void * p = calloc(m_tabSize, sizeof(T2));
+        void * p = calloc(size > m_tabSize ? size : m_tabSize, sizeof(T2));
         assert(p);
         m_vec.push_back(p);
         m_pointer = 0U;
@@ -74,7 +74,7 @@ public:
         T1 totalSize = count * size;
         if (m_pointer+totalSize >= m_tabSize)
         {
-            grow();
+            grow(totalSize);
         }
         return alloc(totalSize);
     }

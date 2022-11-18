@@ -87,36 +87,48 @@ class CacheTestParam
 public:
 								CacheTestParam				(PipelineConstructionType		pipelineConstructionType,
 															 const VkShaderStageFlags		shaders,
-															 bool							compileCacheMissShaders);
+															 bool							compileCacheMissShaders,
+															 VkPipelineCacheCreateFlags		pipelineCacheCreateFlags = 0u);
 	virtual						~CacheTestParam				(void) = default;
 	virtual const std::string	generateTestName			(void)	const;
 	virtual const std::string	generateTestDescription		(void)	const;
-	PipelineConstructionType	getPipelineConstructionType	(void)	const	{ return m_pipelineConstructionType; };
+	PipelineConstructionType	getPipelineConstructionType	(void)	const	{ return m_pipelineConstructionType; }
 	VkShaderStageFlags			getShaderFlags				(void)	const	{ return m_shaders; }
+	VkPipelineCacheCreateFlags	getPipelineCacheCreateFlags	(void)  const   { return m_pipelineCacheCreateFlags; }
 	bool						getCompileMissShaders		(void)	const	{ return m_compileCacheMissShaders;	}
 
 protected:
 
 	PipelineConstructionType	m_pipelineConstructionType;
 	VkShaderStageFlags			m_shaders;
+	VkPipelineCacheCreateFlags	m_pipelineCacheCreateFlags;
 	bool						m_compileCacheMissShaders;
 };
 
-CacheTestParam::CacheTestParam (PipelineConstructionType pipelineConstructionType, const VkShaderStageFlags shaders, bool compileCacheMissShaders)
+CacheTestParam::CacheTestParam (PipelineConstructionType pipelineConstructionType, const VkShaderStageFlags shaders, bool compileCacheMissShaders, VkPipelineCacheCreateFlags pipelineCacheCreateFlags)
 	: m_pipelineConstructionType	(pipelineConstructionType)
 	, m_shaders						(shaders)
+	, m_pipelineCacheCreateFlags(pipelineCacheCreateFlags)
 	, m_compileCacheMissShaders		(compileCacheMissShaders)
 {
 }
 
 const std::string CacheTestParam::generateTestName (void) const
 {
-	return getShaderFlagStr(m_shaders, false);
+	std::string name = getShaderFlagStr(m_shaders, false);
+	if (m_pipelineCacheCreateFlags == VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT) {
+		name += "_externally_synchronized";
+	}
+	return name;
 }
 
 const std::string CacheTestParam::generateTestDescription (void) const
 {
-	return getShaderFlagStr(m_shaders, true);
+	std::string description = getShaderFlagStr(m_shaders, true);
+	if (m_pipelineCacheCreateFlags == VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT) {
+		description += "with externally synchronized bit";
+	}
+	return description;
 }
 
 template <class Test>
@@ -254,7 +266,7 @@ CacheTestInstance::CacheTestInstance (Context&				context,
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,	// VkStructureType             sType;
 			DE_NULL,										// const void*                 pNext;
-			0u,												// VkPipelineCacheCreateFlags  flags;
+			m_param->getPipelineCacheCreateFlags(),			// VkPipelineCacheCreateFlags  flags;
 			0u,												// deUintptr                   initialDataSize;
 			DE_NULL,										// const void*                 pInitialData;
 		};
@@ -744,7 +756,7 @@ void GraphicsCacheTestInstance::preparePipelineWrapper(GraphicsPipelineWrapper&	
 		.setDefaultRasterizationState()
 		.setDefaultColorBlendState()
 		.setDefaultMultisampleState()
-		.setupVertexInputStete(&defaultVertexInputStateParams)
+		.setupVertexInputState(&defaultVertexInputStateParams)
 		.setupPreRasterizationShaderState(viewport,
 										  scissor,
 										  *m_pipelineLayout,
@@ -1827,6 +1839,9 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx, PipelineConstru
 			CacheTestParam(pipelineConstructionType, vertFragStages,		false),
 			CacheTestParam(pipelineConstructionType, vertGeomFragStages,	false),
 			CacheTestParam(pipelineConstructionType, vertTesFragStages,		false),
+			CacheTestParam(pipelineConstructionType, vertFragStages,		false, VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT),
+			CacheTestParam(pipelineConstructionType, vertGeomFragStages,	false, VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT),
+			CacheTestParam(pipelineConstructionType, vertTesFragStages,		false, VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT),
 		};
 
 		for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(testParams); i++)

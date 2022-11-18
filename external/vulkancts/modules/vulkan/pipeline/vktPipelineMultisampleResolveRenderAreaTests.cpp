@@ -224,7 +224,7 @@ void MultisampleRenderAreaTestInstance::preparePipelineWrapper (GraphicsPipeline
 	gpw.setDefaultDepthStencilState()
 	   .setDefaultColorBlendState()
 	   .setDefaultRasterizationState()
-	   .setupVertexInputStete()
+	   .setupVertexInputState()
 	   .setupPreRasterizationShaderState(viewports,
 			scissors,
 			pipelineLayout,

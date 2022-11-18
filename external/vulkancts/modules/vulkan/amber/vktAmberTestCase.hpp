@@ -49,15 +49,17 @@ class AmberTestInstance : public TestInstance
 {
 public:
 	AmberTestInstance	(Context&		context,
-						 amber::Recipe*	recipe)
-		: TestInstance(context), m_recipe(recipe)
+						 amber::Recipe*	recipe,
+						 vk::VkDevice	customDevice)
+		: TestInstance(context), m_recipe(recipe), m_customDevice(customDevice)
 	{
 	}
 
 	virtual tcu::TestStatus iterate (void);
 
 private:
-	amber::Recipe* m_recipe;
+	amber::Recipe*	m_recipe;
+	vk::VkDevice	m_customDevice;
 };
 
 class AmberTestCase : public TestCase
@@ -105,7 +107,7 @@ public:
 
 	tcu::TestRunnerType getRunnerType (void) const override { return tcu::RUNNERTYPE_AMBER; }
 
-private:
+protected:
 	bool parse (const std::string& readFilename);
 
 	amber::Recipe*								m_recipe;

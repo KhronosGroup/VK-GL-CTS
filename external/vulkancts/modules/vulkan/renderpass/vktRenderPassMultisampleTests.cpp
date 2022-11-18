@@ -2177,14 +2177,12 @@ void initTests (tcu::TestCaseGroup* group, RenderingType renderingType)
 	tcu::TestContext&				testCtx		(group->getTestContext());
 	de::MovePtr<tcu::TestCaseGroup>	extGroup	(new tcu::TestCaseGroup(testCtx, "separate_stencil_usage", "test VK_EXT_separate_stencil_usage"));
 
-
 	for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 	{
 		const VkFormat					format			(formats[formatNdx]);
 		const std::string				formatName		(formatToName(format));
 		de::MovePtr<tcu::TestCaseGroup>	formatGroup		(new tcu::TestCaseGroup(testCtx, formatName.c_str(), formatName.c_str()));
 		de::MovePtr<tcu::TestCaseGroup>	extFormatGroup	(new tcu::TestCaseGroup(testCtx, formatName.c_str(), formatName.c_str()));
-
 
 		for (size_t sampleCountNdx = 0; sampleCountNdx < DE_LENGTH_OF_ARRAY(sampleCounts); sampleCountNdx++)
 		{

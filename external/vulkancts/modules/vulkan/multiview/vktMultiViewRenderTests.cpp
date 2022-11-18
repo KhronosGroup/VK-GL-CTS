@@ -111,6 +111,13 @@ struct TestParameters
 	VkSampleCountFlagBits	samples;
 	VkFormat				colorFormat;
 	RenderingType			renderingType;
+
+	bool geometryShaderNeeded (void) const
+	{
+		return ((TEST_TYPE_VIEW_INDEX_IN_GEOMETRY == viewIndex) ||
+				(TEST_TYPE_INPUT_ATTACHMENTS_GEOMETRY == viewIndex) ||
+				(TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY == viewIndex));
+	}
 };
 
 const int	TEST_POINT_SIZE_SMALL	= 2;
@@ -771,11 +778,7 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 	if (!multiviewFeatures.multiview)
 		TCU_THROW(NotSupportedError, "MultiView not supported");
 
-	bool requiresGeomShader = (TEST_TYPE_VIEW_INDEX_IN_GEOMETRY == m_parameters.viewIndex) ||
-								(TEST_TYPE_INPUT_ATTACHMENTS_GEOMETRY == m_parameters.viewIndex) ||
-								(TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY == m_parameters.viewIndex);
-
-	if (requiresGeomShader && !multiviewFeatures.multiviewGeometryShader)
+	if (m_parameters.geometryShaderNeeded() && !multiviewFeatures.multiviewGeometryShader)
 		TCU_THROW(NotSupportedError, "Geometry shader is not supported");
 
 	if (TEST_TYPE_VIEW_INDEX_IN_TESELLATION == m_parameters.viewIndex && !multiviewFeatures.multiviewTessellationShader)
@@ -2470,7 +2473,7 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 		{
 			VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,	// VkStructureType							sType;
 			DE_NULL,															// const void*								pNext;
-			VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR,			// VkRenderingFlagsKHR						flags;
+			0u,																	// VkRenderingFlagsKHR						flags;
 			m_parameters.viewMasks[subpassNdx],									// uint32_t									viewMask;
 			1u,																	// uint32_t									colorAttachmentCount;
 			&m_parameters.colorFormat,											// const VkFormat*							pColorAttachmentFormats;
@@ -4087,6 +4090,9 @@ private:
 
 	virtual void		checkSupport		(Context& context) const
 	{
+		if (m_parameters.geometryShaderNeeded())
+			context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+
 		if (m_parameters.renderingType == RENDERING_TYPE_RENDERPASS2)
 			context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
 
@@ -4255,9 +4261,7 @@ private:
 			programCollection.glslSources.add("tessellation_evaluation") << glu::TessellationEvaluationSource(source_te.str());
 		}
 
-		if (TEST_TYPE_VIEW_INDEX_IN_GEOMETRY		== m_parameters.viewIndex ||
-			TEST_TYPE_INPUT_ATTACHMENTS_GEOMETRY	== m_parameters.viewIndex ||
-			TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY	== m_parameters.viewIndex)
+		if (m_parameters.geometryShaderNeeded())
 		{// Geometry Shader
 			std::ostringstream	source;
 			source	<< glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"

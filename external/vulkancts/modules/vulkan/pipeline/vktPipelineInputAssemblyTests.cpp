@@ -129,7 +129,8 @@ public:
 																 const std::string&					description,
 																 const PipelineConstructionType		pipelineConstructionType,
 																 VkPrimitiveTopology				primitiveTopology,
-																 VkIndexType						indexType);
+																 VkIndexType						indexType,
+																 bool								useRestartPrimitives);
 	virtual								~PrimitiveRestartTest	(void) {}
 	virtual void						checkSupport			(Context& context) const;
 
@@ -733,13 +734,14 @@ PrimitiveRestartTest::PrimitiveRestartTest (tcu::TestContext&			testContext,
 											const std::string&			description,
 											PipelineConstructionType	pipelineConstructionType,
 											VkPrimitiveTopology			primitiveTopology,
-											VkIndexType					indexType)
+											VkIndexType					indexType,
+											bool						useRestartPrimitives)
 
 	: InputAssemblyTest	(testContext, name, description, pipelineConstructionType, primitiveTopology, 10, true, indexType)
 {
 	deUint32 restartPrimitives[] = { 1, 5 };
 
-	m_restartPrimitives = std::vector<deUint32>(restartPrimitives, restartPrimitives + sizeof(restartPrimitives) / sizeof(deUint32));
+	m_restartPrimitives = useRestartPrimitives ? std::vector<deUint32>(restartPrimitives, restartPrimitives + sizeof(restartPrimitives) / sizeof(deUint32)) : std::vector<deUint32>{};
 }
 
 void PrimitiveRestartTest::checkSupport (Context& context) const
@@ -1364,7 +1366,7 @@ InputAssemblyInstance::InputAssemblyInstance (Context&							context,
 
 		m_graphicsPipeline.setDefaultRasterizationState()
 						  .setDefaultMultisampleState()
-						  .setupVertexInputStete(&vertexInputStateParams, &inputAssemblyStateParams)
+						  .setupVertexInputState(&vertexInputStateParams, &inputAssemblyStateParams)
 						  .setupPreRasterizationShaderState(viewport,
 											scissor,
 											*m_pipelineLayout,
@@ -1674,30 +1676,39 @@ de::MovePtr<tcu::TestCaseGroup> createPrimitiveRestartTests (tcu::TestContext& t
 	de::MovePtr<tcu::TestCaseGroup> indexUint32Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint32", ""));
 	de::MovePtr<tcu::TestCaseGroup> indexUint8Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint8", ""));
 
+	bool useRestartPrimitives[] = { true, false };
+
 	for (int topologyNdx = 0; topologyNdx < DE_LENGTH_OF_ARRAY(primitiveRestartTopologies); topologyNdx++)
 	{
 		const VkPrimitiveTopology topology = primitiveRestartTopologies[topologyNdx];
 
-		indexUint16Tests->addChild(new PrimitiveRestartTest(testCtx,
-															getPrimitiveTopologyCaseName(topology),
-															"",
-															pipelineConstructionType,
-															topology,
-															VK_INDEX_TYPE_UINT16));
+		for (int useRestartNdx = 0; useRestartNdx < DE_LENGTH_OF_ARRAY(useRestartPrimitives); useRestartNdx++)
+		{
+			std::string restartName = useRestartPrimitives[useRestartNdx] ? "" : "no_restart_";
+			indexUint16Tests->addChild(new PrimitiveRestartTest(testCtx,
+																restartName + getPrimitiveTopologyCaseName(topology),
+																"",
+																pipelineConstructionType,
+																topology,
+																VK_INDEX_TYPE_UINT16,
+																useRestartPrimitives[useRestartNdx]));
 
-		indexUint32Tests->addChild(new PrimitiveRestartTest(testCtx,
-															getPrimitiveTopologyCaseName(topology),
-															"",
-															pipelineConstructionType,
-															topology,
-															VK_INDEX_TYPE_UINT32));
+			indexUint32Tests->addChild(new PrimitiveRestartTest(testCtx,
+																restartName + getPrimitiveTopologyCaseName(topology),
+																"",
+																pipelineConstructionType,
+																topology,
+																VK_INDEX_TYPE_UINT32,
+																useRestartPrimitives[useRestartNdx]));
 
-		indexUint8Tests->addChild(new PrimitiveRestartTest(testCtx,
-															getPrimitiveTopologyCaseName(topology),
-															"",
-															pipelineConstructionType,
-															topology,
-															VK_INDEX_TYPE_UINT8_EXT));
+			indexUint8Tests->addChild(new PrimitiveRestartTest(testCtx,
+																restartName + getPrimitiveTopologyCaseName(topology),
+																"",
+																pipelineConstructionType,
+																topology,
+																VK_INDEX_TYPE_UINT8_EXT,
+																useRestartPrimitives[useRestartNdx]));
+		}
 	}
 
 	// Tests that have primitive restart disabled, but have indices with restart index value.

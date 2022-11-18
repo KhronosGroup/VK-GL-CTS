@@ -273,24 +273,35 @@ class Feature:
 		self.requirementsList	= requirementsList		# list of FeatureRequirement objects
 
 class ExtensionEnumerator:
-	def __init__ (self, name, extends, alias, value, extnumber, offset):
+	def __init__ (self, name, extends, alias, value, extnumber, offset, comment):
 		self.name		= name
 		self.extends	= extends
 		self.alias		= alias
 		self.value		= value
 		self.extnumber	= extnumber
 		self.offset		= offset
+		self.comment	= comment						# note: comment is used to mark not promoted features for partially promoted extensions
+
+class ExtensionCommand:
+	def __init__ (self, name, comment):
+		self.name		= name
+		self.comment	= comment
+
+class ExtensionType:
+	def __init__ (self, name, comment):
+		self.name		= name
+		self.comment	= comment
 
 class ExtensionRequirements:
 	def __init__ (self, extensionName, extendedEnums, newCommands, newTypes):
 		self.extensionName	= extensionName					# None when requirements apply to all implementations of extension;
 															# string with extension name when requirements apply to implementations that also support given extension
 		self.extendedEnums	= extendedEnums					# list of ExtensionEnumerator objects
-		self.newCommands	= newCommands					# list of new command names
-		self.newTypes		= newTypes						# list of new type names
+		self.newCommands	= newCommands					# list of ExtensionCommand objects
+		self.newTypes		= newTypes						# list of ExtensionType objects
 
 class Extension:
-	def __init__ (self, name, number, type, requiresCore, requiredExtensions, platform, promotedto, requirementsList):
+	def __init__ (self, name, number, type, requiresCore, requiredExtensions, platform, promotedto, partiallyPromoted, requirementsList):
 		self.name				= name						# extension name
 		self.number				= number					# extension version
 		self.type				= type						# extension type - "device" or "instance"
@@ -298,6 +309,7 @@ class Extension:
 		self.requiredExtensions	= requiredExtensions		# list of extensions names that also need to be available on implementation or None
 		self.platform			= platform					# None, "win32", "ios", "android" etc.
 		self.promotedto			= promotedto				# vulkan version, other extension or None
+		self.partiallyPromoted	= partiallyPromoted			# when True then some of requirements were not promoted
 		self.requirementsList	= requirementsList			# list of ExtensionRequirements objects
 
 class API:
@@ -335,7 +347,7 @@ class API:
 		# if enumerator node has alias atribute then update existing enumerator
 		if alias is not None:
 			for e in reversed(enumDefinition.enumeratorList):
-				if alias == e.name:
+				if alias == e.name or alias in e.aliasList:
 					# make sure same alias is not already on the list; this handles special case like
 					# VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES_KHR alais which is defined in three places
 					if name not in e.aliasList:
@@ -402,11 +414,14 @@ class API:
 		alias = commandNode.get("alias")
 		# if node is alias then use the fact that alias definition follows aliased structure
 		if alias is not None:
-			lastFunction = self.functions[-1]
-			# make sure last structure that was added to list is beeing aliased now
-			# if this assert fails use same workaround as for structures
-			assert(alias == lastFunction.name)
-			lastFunction.aliasList.append(commandNode.get("name"))
+			# aliased command has usually been added recently, so we iterate in reverse order
+			found = False
+			for f in reversed(self.functions):
+				found = (f.name == alias)
+				if found:
+					f.aliasList.append(commandNode.get("name"))
+					break
+			assert found
 			# go to next node
 			return
 		# memorize all parameters
@@ -441,8 +456,9 @@ class API:
 		# skip disabled extensions
 		if extensionNode.get("supported") == "disabled":
 			return
-		extensionName	= extensionNode.get("name")
-		extensionNumber	= extensionNode.get("number")
+		extensionName		= extensionNode.get("name")
+		extensionNumber		= extensionNode.get("number")
+		partiallyPromoted	= False
 		# before reading extension data first read extension
 		# requirements by iterating over all require tags
 		requirementsList = []
@@ -450,10 +466,16 @@ class API:
 			extendedEnums	= []
 			newCommands		= []
 			newTypes		= []
-			# iterate over all chilren in current require tag
+			# iterate over all children in current require tag
 			# and add them to proper list
 			for individualRequirement in requireItem:
 				requirementName = individualRequirement.get("name")
+				requirementComment = individualRequirement.get("comment")
+				# check if this requirement was not promoted and mark
+				# this extension as not fully promoted
+				if requirementComment is not None and "Not promoted to" in requirementComment:
+					partiallyPromoted = True
+				# check if this requirement describes enum, command or type
 				if individualRequirement.tag == "enum":
 					extendedEnumName = individualRequirement.get("extends")
 					extendedEnums.append(ExtensionEnumerator(
@@ -462,7 +484,8 @@ class API:
 						individualRequirement.get("alias"),
 						individualRequirement.get("value"),
 						individualRequirement.get("extnumber"),
-						individualRequirement.get("offset")))
+						individualRequirement.get("offset"),
+						requirementComment))
 					# add enumerator to proper enum from api.enums
 					if extendedEnumName is not None:
 						newEnumerator = individualRequirement.get("name")
@@ -472,11 +495,13 @@ class API:
 						if len([e for e in matchedEnum.enumeratorList if e.name == newEnumerator]) == 0:
 							self.addOrUpdateEnumerator(individualRequirement, matchedEnum, extensionNumber)
 				elif individualRequirement.tag == "command":
-					newCommands.append(requirementName)
+					newCommands.append(ExtensionCommand(requirementName, requirementComment))
 				elif individualRequirement.tag == "type":
-					newTypes.append(requirementName)
-				else:
-					assert("Unhandled tag")
+					newTypes.append(ExtensionType(requirementName, requirementComment))
+				elif individualRequirement.tag == "comment" and "not promoted to" in individualRequirement.text:
+					# partial promotion of VK_EXT_ycbcr_2plane_444_formats and VK_EXT_4444_formats
+					# is marked with comment tag in first require section
+					partiallyPromoted = True
 			# construct requirement object and add it to the list
 			requirementsList.append(ExtensionRequirements(
 				requireItem.get("extension"),	# extensionName
@@ -498,6 +523,7 @@ class API:
 			requiredExtensions,					# requiredExtensions
 			extensionNode.get("platform"),		# platform
 			extensionNode.get("promotedto"),	# promotedto
+			partiallyPromoted,					# partiallyPromoted
 			requirementsList					# requirementsList
 		))
 
@@ -1654,6 +1680,7 @@ def writeTypeUtil (api, filename):
 			"StdVideoDecodeH264MvcElementFlags",
 			"StdVideoEncodeH264SliceHeaderFlags",
 			"StdVideoEncodeH264PictureInfoFlags",
+			"StdVideoEncodeH264ReferenceInfoFlags",
 			"StdVideoEncodeH264RefMgmtFlags",
 			"StdVideoEncodeH264ReferenceInfoFlags",
 			"StdVideoH265HrdFlags",
@@ -1664,10 +1691,11 @@ def writeTypeUtil (api, filename):
 			"StdVideoDecodeH265PictureInfoFlags",
 			"StdVideoDecodeH265ReferenceInfoFlags",
 			"StdVideoEncodeH265PictureInfoFlags",
-			"StdVideoEncodeH265SliceHeaderFlags",
+			"StdVideoEncodeH265SliceSegmentHeaderFlags",
 			"StdVideoEncodeH265ReferenceModificationFlags",
 			"StdVideoEncodeH265ReferenceInfoFlags",
-			"StdVideoEncodeH265SliceSegmentHeaderFlags",
+			"StdVideoH265ProfileTierLevelFlags",
+			"StdVideoH265ShortTermRefPicSetFlags"
 		])
 
 	def isSimpleStruct (type):
@@ -1752,6 +1780,9 @@ def writeSupportedExtensions(apiName, api, filename):
 	for ext in api.extensions:
 		if ext.promotedto is None or "VK_VERSION" not in ext.promotedto:
 			continue
+		# skip partialy promoted extensions
+		if ext.partiallyPromoted is True:
+			continue
 		major		= int(ext.promotedto[-3])
 		minor		= int(ext.promotedto[-1])
 		currVersion = "VK_API_VERSION_" + ext.promotedto[-3:]
@@ -1826,7 +1857,8 @@ def writeExtensionFunctions (api, filename):
 		for ext in api.extensions:
 			funcNames = []
 			for requirement in ext.requirementsList:
-				for commandName in requirement.newCommands:
+				for requiredCommand in requirement.newCommands:
+					commandName = requiredCommand.name
 					# find function that has specified name
 					func		= None
 					funcList	= [f for f in api.functions if f.name == commandName]
@@ -1941,7 +1973,7 @@ def writeDeviceFeatures2(api, filename):
 	# helper class used to encapsulate all data needed during generation
 	class StructureDetail:
 		def __init__ (self, compositeObject):
-			self.name			= compositeObject.name
+			self.nameList		= [compositeObject.name] + compositeObject.aliasList
 			self.sType			= compositeObject.members[0].values
 			self.instanceName	= 'd' + compositeObject.name[11:]
 			self.flagName		= 'is' + compositeObject.name[16:]
@@ -1973,13 +2005,17 @@ def writeDeviceFeatures2(api, filename):
 			for extension in api.extensions:
 				for requirement in extension.requirementsList:
 					for extensionStructure in requirement.newTypes:
-						if structureDetail.name == extensionStructure:
+						if extensionStructure.name in structureDetail.nameList:
 							structureDetail.extension = extension.name
-							if extension.promotedto is not None:
-								versionSplit = extension.promotedto.split('_')
-								structureDetail.api		= 0					# TODO handle this for Vulkan SC
-								structureDetail.major	= versionSplit[-2]
-								structureDetail.minor	= versionSplit[-1]
+							if extension.promotedto is not None and extension.partiallyPromoted is False:
+								# check if extension was promoted to vulkan version or other extension
+								if 'VK_VERSION' in extension.promotedto:
+									versionSplit = extension.promotedto.split('_')
+									structureDetail.api		= 0					# TODO handle this for Vulkan SC
+									structureDetail.major	= versionSplit[-2]
+									structureDetail.minor	= versionSplit[-1]
+								else:
+									structureDetail.extension = extension.promotedto
 							raise StructureFoundContinueToNextOne
 		except StructureFoundContinueToNextOne:
 			continue
@@ -1988,9 +2024,10 @@ def writeDeviceFeatures2(api, filename):
 			continue
 		# if structure was not added with extension then check if
 		# it was added directly with one of vulkan versions
+		structureName = structureDetail.nameList[0]
 		for feature in api.features:
 			for requirement in feature.requirementsList:
-				if structureDetail.name in requirement.typeList:
+				if structureName in requirement.typeList:
 					versionSplit = feature.name.split('_')
 					structureDetail.api		= 0							# TODO handle this for Vulkan SC
 					structureDetail.major	= versionSplit[-2]
@@ -2006,9 +2043,10 @@ def writeDeviceFeatures2(api, filename):
 	logStructures = []
 	verifyStructures = []
 	for index, structureDetail in enumerate(testedStructureDetail):
+		structureName = structureDetail.nameList[0]
 		# create two instances of each structure
 		nameSpacing = '\t'
-		structureDefinitions.append(structureDetail.name + nameSpacing + structureDetail.instanceName + '[count];')
+		structureDefinitions.append(structureName + nameSpacing + structureDetail.instanceName + '[count];')
 		# create flags that check if proper extension or vulkan version is available
 		condition	= ''
 		extension	= structureDetail.extension
@@ -2016,18 +2054,15 @@ def writeDeviceFeatures2(api, filename):
 		if extension is not None:
 			condition = ' checkExtension(properties, "' + extension + '")'
 		if major is not None:
-			if condition != '':
-				condition += ' || '
-			else:
-				condition += ' '
+			condition = ' ' if condition == '' else condition + ' || '
 			condition += 'context.contextSupports(vk::ApiVersion(' + str(structureDetail.api) + ', ' + str(major) + ', ' + str(structureDetail.minor) + ', 0))'
 		if condition == '':
 			condition = 'true'
 		condition += ';'
-		nameSpacing = '\t' * int((len(structureDetail.name) - 4) / 4)
+		nameSpacing = '\t' * int((len(structureName) - 4) / 4)
 		featureEnabledFlags.append('const bool' + nameSpacing + structureDetail.flagName + ' =' + condition)
 		# clear memory of each structure
-		clearStructures.append('\tdeMemset(&' + structureDetail.instanceName + '[ndx], 0xFF * ndx, sizeof(' + structureDetail.name + '));')
+		clearStructures.append('\tdeMemset(&' + structureDetail.instanceName + '[ndx], 0xFF * ndx, sizeof(' + structureName + '));')
 		# construct structure chain
 		nextInstanceName = 'DE_NULL';
 		if index < len(testedStructureDetail)-1:
@@ -2049,7 +2084,7 @@ def writeDeviceFeatures2(api, filename):
 			verifyStructure.append(prefix + structureDetail.instanceName + '[0].' + m + ' != ' + structureDetail.instanceName + '[1].' + m + postfix)
 		if len(structureDetail.members) == 0:
 			verifyStructure.append('\t\tfalse)')
-		verifyStructure.append('\t{\n\t\tTCU_FAIL("Mismatch between ' + structureDetail.name + '");\n\t}')
+		verifyStructure.append('\t{\n\t\tTCU_FAIL("Mismatch between ' + structureName + '");\n\t}')
 		verifyStructures.append(verifyStructure)
 
 	# construct file content
@@ -2087,12 +2122,9 @@ def writeDeviceFeatures2(api, filename):
 		stream.append("}\n")
 
 	# function to create tests
-	stream.append("""
-void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
-{
-""")
+	stream.append("void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)\n{")
 	for x in testedStructureDetail:
-		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x.instanceName[len('device'):]) + '", "' + x.name + '", testPhysicalDeviceFeature' + x.instanceName[len('device'):] + ');')
+		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x.instanceName[len('device'):]) + '", "' + x.nameList[0] + '", testPhysicalDeviceFeature' + x.instanceName[len('device'):] + ');')
 	stream.append('}\n')
 
 	# write out
@@ -2120,7 +2152,8 @@ def generateDeviceFeaturesOrPropertiesDefs(api, FeaturesOrProperties):
 			if matchedStructEnum:
 				# find feature/property structure type name
 				structureTypeName = ""
-				for stName in ext.requirementsList[0].newTypes:
+				for stRequirement in ext.requirementsList[0].newTypes:
+					stName = stRequirement.name
 					matchedStructType = re.search(structureTypePattern, stName, re.IGNORECASE)
 					if matchedStructType:
 						structureTypeName = stName
@@ -2293,10 +2326,6 @@ def writeDeviceFeatures(api, dfDefs, filename):
 		extensionNameDefinition = extNameDef
 		if not extensionNameDefinition:
 			extensionNameDefinition = 'DECL{0}_{1}_EXTENSION_NAME'.format((sExtSuffix if sExtSuffix else ''), sType)
-		# construct defines with names
-		if extName:
-			extensionDefines.append(f'#define {extNameDef} \"{extName}\"')
-		else:
 			extensionDefines.append(f'#define {extensionNameDefinition} "not_existent_feature"')
 		# construct makeFeatureDesc template function definitions
 		sTypeName = "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_{0}_FEATURES{1}".format(sType, sVerSuffix + sExtSuffix)
@@ -2509,10 +2538,6 @@ def writeDeviceProperties(api, dpDefs, filename):
 		extensionNameDefinition = extNameDef
 		if not extensionNameDefinition:
 			extensionNameDefinition = 'DECL{0}_{1}_EXTENSION_NAME'.format((sExtSuffix if sExtSuffix else ''), sType)
-		# construct defines with names
-		if extName:
-			extensionDefines.append(f'#define {extNameDef} \"{extName}\"')
-		else:
 			extensionDefines.append(f'#define {extensionNameDefinition} "core_property"')
 		# construct makePropertyDesc template function definitions
 		sTypeName = "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_{0}_PROPERTIES{1}".format(sType, sVerSuffix + sExtSuffix)

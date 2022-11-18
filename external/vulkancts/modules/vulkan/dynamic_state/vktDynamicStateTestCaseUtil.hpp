@@ -60,7 +60,7 @@ class InstanceFactory : public TestCase
 public:
 	InstanceFactory (tcu::TestContext& testCtx, const std::string& name, const std::string& desc,
 		const vk::PipelineConstructionType pipelineConstructionType,
-		const std::map<glu::ShaderType, const char*> shaderPaths)
+		const ShaderMap& shaderPaths)
 		: TestCase						(testCtx, name, desc)
 		, m_pipelineConstructionType	(pipelineConstructionType)
 		, m_shaderPaths					(shaderPaths)
@@ -70,11 +70,11 @@ public:
 
 	InstanceFactory (tcu::TestContext& testCtx, const std::string& name, const std::string& desc,
 		const vk::PipelineConstructionType pipelineConstructionType,
-		const std::map<glu::ShaderType, const char*> shaderPaths, const Support& support)
-		: TestCase							(testCtx, name, desc)
-		, m_pipelineConstructionType		(pipelineConstructionType)
-		, m_shaderPaths						(shaderPaths)
-		, m_support							(support)
+		const ShaderMap& shaderPaths, const Support& support)
+		: TestCase						(testCtx, name, desc)
+		, m_pipelineConstructionType	(pipelineConstructionType)
+		, m_shaderPaths					(shaderPaths)
+		, m_support						(support)
 	{
 	}
 
@@ -85,10 +85,17 @@ public:
 
 	virtual void	initPrograms	(vk::SourceCollections& programCollection) const
 	{
+		const vk::ShaderBuildOptions	defaultOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_0, 0u);
+		const vk::ShaderBuildOptions	spv14Options	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
 		for (ShaderMap::const_iterator i = m_shaderPaths.begin(); i != m_shaderPaths.end(); ++i)
 		{
-			programCollection.glslSources.add(i->second) <<
-				glu::ShaderSource(i->first, ShaderSourceProvider::getSource(m_testCtx.getArchive(), i->second));
+			if (i->second)
+			{
+				programCollection.glslSources.add(i->second)
+					<< glu::ShaderSource(i->first, ShaderSourceProvider::getSource(m_testCtx.getArchive(), i->second))
+					<< ((i->first == glu::SHADERTYPE_TASK || i->first == glu::SHADERTYPE_MESH) ? spv14Options : defaultOptions);
+			}
 		}
 	}
 

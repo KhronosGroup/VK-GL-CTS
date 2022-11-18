@@ -112,6 +112,9 @@ enum TestType
 	// use CONTENTS_SECONDARY_COMMAND_BUFFER_BIT_KHR, draw the first triangle in a secondary command buffer, and execute it in that first
 	// render pass instance.In the second, draw one triangle directly in the primary command buffer.
 	TEST_TYPE_CONTENTS_SECONDARY_2_PRIMARY_COMDBUF_RESUMING,
+	// Draw triangles inside rendering of secondary command buffer, and after rendering is ended copy results on secondary buffer.
+	// Tests mixing inside & outside render pass commands in secondary command buffers
+	TEST_TYPE_SECONDARY_CMDBUF_OUT_OF_RENDERING_COMMANDS,
 	TEST_TYPE_LAST
 };
 
@@ -137,6 +140,8 @@ struct TestParameters
 {
 	TestType		testType;
 	const Vec4		clearColor;
+	float			depthClearValue;
+	deUint32		stencilClearValue;
 	const VkFormat	imageFormat;
 	const UVec2		renderSize;
 };
@@ -297,7 +302,8 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&	vk,
 									   const UVec2				renderSize,
 									   const deUint32			colorAttachmentCount,
 									   const VkFormat*			pColorAttachmentFormats,
-									   const VkFormat			depthStencilAttachmentFormat)
+									   const VkFormat			depthAttachmentFormat,
+									   const VkFormat			stencilAttachmentFormat)
 {
 	const VkVertexInputBindingDescription vertexInputBindingDescription =
 	{
@@ -470,8 +476,8 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&	vk,
 		0u,																// deUint32			viewMask;
 		colorAttachmentCount,											// deUint32			colorAttachmentCount;
 		pColorAttachmentFormats,										// const VkFormat*	pColorAttachmentFormats;
-		depthStencilAttachmentFormat,									// VkFormat			depthAttachmentFormat;
-		depthStencilAttachmentFormat,									// VkFormat			stencilAttachmentFormat;
+		depthAttachmentFormat,											// VkFormat			depthAttachmentFormat;
+		stencilAttachmentFormat,										// VkFormat			stencilAttachmentFormat;
 	};
 
 	const VkGraphicsPipelineCreateInfo graphicsPipelineInfo =
@@ -549,11 +555,12 @@ tcu::TextureLevel generateColroImage (const tcu::TextureFormat	format,
 }
 
 tcu::TextureLevel generateDepthImage (const tcu::TextureFormat	format,
-									  const UVec2&				renderSize)
+									  const UVec2&				renderSize,
+									  float						depthClearValue)
 {
 	tcu::TextureLevel	image	(format, renderSize.x(), renderSize.y());
 	const float			value1	= 0.0f;
-	const float			value2	= 0.2f;
+	const float			value2	= depthClearValue;
 
 	for (deUint32 y = 0; y < renderSize.y(); ++y)
 	{
@@ -571,11 +578,12 @@ tcu::TextureLevel generateDepthImage (const tcu::TextureFormat	format,
 }
 
 tcu::TextureLevel generateStencilImage (const tcu::TextureFormat	format,
-										const UVec2&				renderSize)
+										const UVec2&				renderSize,
+										deUint32					stencilClearValue)
 {
 	tcu::TextureLevel	image	(format, renderSize.x(), renderSize.y());
 	const IVec4			value1	= IVec4(1,0,0,0);
-	const IVec4			value2	= IVec4(2,0,0,0);
+	const IVec4			value2	= IVec4(stencilClearValue,0,0,0);
 
 	for (deUint32 x = 0; x < renderSize.x(); ++x)
 	{
@@ -624,8 +632,6 @@ void beginSecondaryCmdBuffer (const DeviceInterface&	vk,
 							  const deUint32			colorAttachmentCount,
 							  const ImagesFormat&		imagesFormat)
 {
-	const VkFormat depthStencilFormat = (imagesFormat.depth != VK_FORMAT_UNDEFINED) ?
-		imagesFormat.depth : imagesFormat.stencil;
 	const VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,	// VkStructureType			sType;
@@ -634,8 +640,8 @@ void beginSecondaryCmdBuffer (const DeviceInterface&	vk,
 		0u,																	// uint32_t					viewMask;
 		colorAttachmentCount,												// uint32_t					colorAttachmentCount;
 		(colorAttachmentCount > 0) ? imagesFormat.colors : DE_NULL,			// const VkFormat*			pColorAttachmentFormats;
-		depthStencilFormat,													// VkFormat					depthAttachmentFormat;
-		depthStencilFormat,													// VkFormat					stencilAttachmentFormat;
+		imagesFormat.depth,													// VkFormat					depthAttachmentFormat;
+		imagesFormat.stencil,												// VkFormat					stencilAttachmentFormat;
 		VK_SAMPLE_COUNT_1_BIT,												// VkSampleCountFlagBits	rasterizationSamples;
 	};
 
@@ -701,7 +707,8 @@ protected:
 																	 const deUint32						colorAtchCount,
 																	 ImagesLayout&						imagesLayout,
 																	 const ImagesFormat&				imagesFormat);
-	void							preBarier						(const deUint32						colorAtchCount,
+	void							preBarier						(VkCommandBuffer					cmdBuffer,
+																	 const deUint32						colorAtchCount,
 																	 ImagesLayout&						imagesLayout,
 																	 const ImagesFormat&				imagesFormat);
 	void							beginRendering					(VkCommandBuffer					cmdBuffer,
@@ -847,7 +854,7 @@ tcu::TestStatus DynamicRenderingTestInstance::iterate (void)
 		Move<VkPipeline>	pipeline	= makeGraphicsPipeline(vk, device, *m_pipelineLayout,
 															  *m_vertexModule, *m_fragmentModule,
 															   m_parameters.renderSize, colorAtchCount, imagesFormat.colors,
-															   ((imagesFormat.depth == VK_FORMAT_UNDEFINED) ? imagesFormat.stencil : imagesFormat.depth));
+															   imagesFormat.depth, imagesFormat.stencil);
 
 		rendering(*pipeline, attachmentBindInfos, colorAtchCount, imagesLayout, imagesFormat);
 	}
@@ -974,10 +981,10 @@ void DynamicRenderingTestInstance::initialize (void)
 	}
 
 	m_referenceImages.push_back(generateDepthImage(getDepthTextureFormat(m_formatStencilDepthImage),
-		m_parameters.renderSize));
+		m_parameters.renderSize, 0.2f));
 
 	m_referenceImages.push_back(generateStencilImage(mapVkFormat(VK_FORMAT_S8_UINT),
-		m_parameters.renderSize));
+		m_parameters.renderSize, 2U));
 }
 
 void DynamicRenderingTestInstance::createCmdBuffer (void)
@@ -1007,7 +1014,7 @@ void DynamicRenderingTestInstance::rendering (const VkPipeline					pipeline,
 	{
 
 		beginCommandBuffer(vk, *m_cmdBuffer);
-		preBarier(colorAtchCount, imagesLayout, imagesFormat);
+		preBarier(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
 		beginRendering(*m_cmdBuffer,
 					   attachmentBindInfos,
@@ -1044,7 +1051,7 @@ void DynamicRenderingTestInstance::rendering (const VkPipeline					pipeline,
 			const ClearAttachmentData clearData(colorAtchCount, imagesFormat.depth, imagesFormat.stencil);
 
 			beginCommandBuffer(vk, *m_cmdBuffer);
-			preBarier(colorAtchCount, imagesLayout, imagesFormat);
+			preBarier(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
 			beginRendering(*m_cmdBuffer,
 						   attachmentBindInfos,
@@ -1088,7 +1095,8 @@ void DynamicRenderingTestInstance::rendering (const VkPipeline					pipeline,
 	}
 }
 
-void DynamicRenderingTestInstance::preBarier (const deUint32		colorAtchCount,
+void DynamicRenderingTestInstance::preBarier (VkCommandBuffer		cmdBuffer,
+											  const deUint32		colorAtchCount,
 											  ImagesLayout&			imagesLayout,
 											  const ImagesFormat&	imagesFormat)
 {
@@ -1136,7 +1144,7 @@ void DynamicRenderingTestInstance::preBarier (const deUint32		colorAtchCount,
 	}
 
 	cmdPipelineImageMemoryBarrier(vk,
-								  *m_cmdBuffer,
+								  cmdBuffer,
 								  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 								  VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
 								  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -1146,15 +1154,17 @@ void DynamicRenderingTestInstance::preBarier (const deUint32		colorAtchCount,
 
 void DynamicRenderingTestInstance::beginRendering (VkCommandBuffer					cmdBuffer,
 												   const std::vector<VkImageView>&	attachmentBindInfos,
-												   const VkRenderingFlagsKHR			flags,
+												   const VkRenderingFlagsKHR		flags,
 												   const deUint32					colorAtchCount,
 												   const ImagesFormat&				imagesFormat,
 												   const VkAttachmentLoadOp			loadOp,
-												   const VkAttachmentStoreOp			storeOp)
+												   const VkAttachmentStoreOp		storeOp)
 {
-	const DeviceInterface&	vk			= m_context.getDeviceInterface();
-	const VkClearValue		clearValue	= makeClearValueColor(m_parameters.clearColor);
-	const VkRect2D			renderArea	=
+	const DeviceInterface&	vk						= m_context.getDeviceInterface();
+	const VkClearValue		clearValue				= makeClearValueColor(m_parameters.clearColor);
+	const VkClearValue		depthStencilClearValue	= makeClearValueDepthStencil(m_parameters.depthClearValue, m_parameters.stencilClearValue);
+
+	const VkRect2D			renderArea				=
 	{
 		makeOffset2D(0, 0),
 		makeExtent2D(m_parameters.renderSize.x(), m_parameters.renderSize.y()),
@@ -1194,7 +1204,7 @@ void DynamicRenderingTestInstance::beginRendering (VkCommandBuffer					cmdBuffer
 			VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout			resolveImageLayout;
 			loadOp,												// VkAttachmentLoadOp		loadOp;
 			storeOp,											// VkAttachmentStoreOp		storeOp;
-			clearValue,											// VkClearValue				clearValue;
+			depthStencilClearValue,								// VkClearValue				clearValue;
 		};
 
 		attachments.push_back(renderingAtachInfo);
@@ -1215,7 +1225,7 @@ void DynamicRenderingTestInstance::beginRendering (VkCommandBuffer					cmdBuffer
 			VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout			resolveImageLayout;
 			loadOp,												// VkAttachmentLoadOp		loadOp;
 			storeOp,											// VkAttachmentStoreOp		storeOp;
-			clearValue,											// VkClearValue				clearValue;
+			depthStencilClearValue,								// VkClearValue				clearValue;
 		};
 
 		attachments.push_back(renderingAtachInfo);
@@ -1388,7 +1398,7 @@ void	SingleCmdBufferResuming::rendering (const VkPipeline				pipeline,
 	for (deUint32 attachmentStoreOp = 0; attachmentStoreOp < TEST_ATTACHMENT_STORE_OP_LAST; ++attachmentStoreOp)
 	{
 		beginCommandBuffer(vk, *m_cmdBuffer);
-		preBarier(colorAtchCount, imagesLayout, imagesFormat);
+		preBarier(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
 		beginRendering(*m_cmdBuffer,
 					   attachmentBindInfos,
@@ -1435,7 +1445,7 @@ void	SingleCmdBufferResuming::rendering (const VkPipeline				pipeline,
 			const ClearAttachmentData clearData(colorAtchCount, imagesFormat.depth, imagesFormat.stencil);
 
 			beginCommandBuffer(vk, *m_cmdBuffer);
-			preBarier(colorAtchCount, imagesLayout, imagesFormat);
+			preBarier(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
 			beginRendering(*m_cmdBuffer,
 						   attachmentBindInfos,
@@ -1529,7 +1539,7 @@ void	TwoPrimaryCmdBufferResuming::rendering (const VkPipeline				pipeline,
 	{
 		// First Primary CommandBuffer
 		beginCommandBuffer(vk, *m_cmdBuffer);
-		preBarier(colorAtchCount, imagesLayout, imagesFormat);
+		preBarier(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
 		beginRendering(*m_cmdBuffer,
 					   attachmentBindInfos,
@@ -1592,7 +1602,7 @@ void	TwoPrimaryCmdBufferResuming::rendering (const VkPipeline				pipeline,
 
 			// First Primary CommandBuffer
 			beginCommandBuffer(vk, *m_cmdBuffer);
-			preBarier(colorAtchCount, imagesLayout, imagesFormat);
+			preBarier(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
 			beginRendering(*m_cmdBuffer,
 						   attachmentBindInfos,
@@ -1739,7 +1749,7 @@ void	TwoSecondaryCmdBufferResuming::rendering (const VkPipeline					pipeline,
 
 		// Primary commandBuffer
 		beginCommandBuffer(vk, *m_cmdBuffer);
-		preBarier(colorAtchCount, imagesLayout, imagesFormat);
+		preBarier(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
 		vk.cmdExecuteCommands(*m_cmdBuffer, 2u, secCmdBuffers);
 
@@ -1807,7 +1817,7 @@ void	TwoSecondaryCmdBufferResuming::rendering (const VkPipeline					pipeline,
 
 			// Primary commandBuffer
 			beginCommandBuffer(vk, *m_cmdBuffer);
-			preBarier(colorAtchCount, imagesLayout, imagesFormat);
+			preBarier(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
 			vk.cmdExecuteCommands(*m_cmdBuffer, 2u, secCmdBuffers);
 
@@ -1911,7 +1921,7 @@ void	TwoSecondaryTwoPrimaryCmdBufferResuming::rendering (const VkPipeline				pip
 
 		// Primary commandBuffer
 		beginCommandBuffer(vk, *m_cmdBuffer);
-		preBarier(colorAtchCount, imagesLayout, imagesFormat);
+		preBarier(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
 		vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &secCmdBuffers[0]);
 
@@ -1986,7 +1996,7 @@ void	TwoSecondaryTwoPrimaryCmdBufferResuming::rendering (const VkPipeline				pip
 
 			// Primary commandBuffer
 			beginCommandBuffer(vk, *m_cmdBuffer);
-			preBarier(colorAtchCount, imagesLayout, imagesFormat);
+			preBarier(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
 			vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &secCmdBuffers[0]);
 
@@ -2062,7 +2072,7 @@ void	ContentsSecondaryCmdBuffer::rendering (const VkPipeline					pipeline,
 
 		// Primary commandBuffer
 		beginCommandBuffer(vk, *m_cmdBuffer);
-		preBarier(colorAtchCount, imagesLayout, imagesFormat);
+		preBarier(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
 		beginRendering(*m_cmdBuffer,
 					   attachmentBindInfos,
@@ -2117,7 +2127,7 @@ void	ContentsSecondaryCmdBuffer::rendering (const VkPipeline					pipeline,
 
 			// Primary commandBuffer
 			beginCommandBuffer(vk, *m_cmdBuffer);
-			preBarier(colorAtchCount, imagesLayout, imagesFormat);
+			preBarier(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
 			beginRendering(*m_cmdBuffer,
 						   attachmentBindInfos,
@@ -2211,7 +2221,7 @@ void	ContentsTwoSecondaryCmdBuffer::rendering (const VkPipeline					pipeline,
 
 		// Primary commandBuffer
 		beginCommandBuffer(vk, *m_cmdBuffer);
-		preBarier(colorAtchCount, imagesLayout, imagesFormat);
+		preBarier(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
 		beginRendering(*m_cmdBuffer,
 					   attachmentBindInfos,
@@ -2271,7 +2281,7 @@ void	ContentsTwoSecondaryCmdBuffer::rendering (const VkPipeline					pipeline,
 
 			// Primary commandBuffer
 			beginCommandBuffer(vk, *m_cmdBuffer);
-			preBarier(colorAtchCount, imagesLayout, imagesFormat);
+			preBarier(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
 			beginRendering(*m_cmdBuffer,
 						   attachmentBindInfos,
@@ -2365,7 +2375,7 @@ void	ContentsTwoSecondaryCmdBufferResuming::rendering (const VkPipeline					pipe
 
 		// Primary commandBuffer
 		beginCommandBuffer(vk, *m_cmdBuffer);
-		preBarier(colorAtchCount, imagesLayout, imagesFormat);
+		preBarier(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
 		beginRendering(*m_cmdBuffer,
 					   attachmentBindInfos,
@@ -2439,7 +2449,7 @@ void	ContentsTwoSecondaryCmdBufferResuming::rendering (const VkPipeline					pipe
 
 			// Primary commandBuffer
 			beginCommandBuffer(vk, *m_cmdBuffer);
-			preBarier(colorAtchCount, imagesLayout, imagesFormat);
+			preBarier(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
 			beginRendering(*m_cmdBuffer,
 						   attachmentBindInfos,
@@ -2549,7 +2559,7 @@ void	ContentsTwoSecondaryTwoPrimaryCmdBufferResuming::rendering (const VkPipelin
 
 		// Primary commandBuffer
 		beginCommandBuffer(vk, *m_cmdBuffer);
-		preBarier(colorAtchCount, imagesLayout, imagesFormat);
+		preBarier(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
 		beginRendering(*m_cmdBuffer,
 					   attachmentBindInfos,
@@ -2629,7 +2639,7 @@ void	ContentsTwoSecondaryTwoPrimaryCmdBufferResuming::rendering (const VkPipelin
 
 			// Primary commandBuffer
 			beginCommandBuffer(vk, *m_cmdBuffer);
-			preBarier(colorAtchCount, imagesLayout, imagesFormat);
+			preBarier(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
 			beginRendering(*m_cmdBuffer,
 						   attachmentBindInfos,
@@ -2726,7 +2736,7 @@ void	ContentsPrimarySecondaryCmdBufferResuming::rendering (const VkPipeline					
 
 		// Primary commandBuffer
 		beginCommandBuffer(vk, *m_cmdBuffer);
-		preBarier(colorAtchCount, imagesLayout, imagesFormat);
+		preBarier(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
 		beginRendering(*m_cmdBuffer,
 					   attachmentBindInfos,
@@ -2788,7 +2798,7 @@ void	ContentsPrimarySecondaryCmdBufferResuming::rendering (const VkPipeline					
 
 			// Primary commandBuffer
 			beginCommandBuffer(vk, *m_cmdBuffer);
-			preBarier(colorAtchCount, imagesLayout, imagesFormat);
+			preBarier(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
 			beginRendering(*m_cmdBuffer,
 						   attachmentBindInfos,
@@ -2889,7 +2899,7 @@ void	ContentsSecondaryPrimaryCmdBufferResuming::rendering (const VkPipeline					
 
 		// Primary commandBuffer
 		beginCommandBuffer(vk, *m_cmdBuffer);
-		preBarier(colorAtchCount, imagesLayout, imagesFormat);
+		preBarier(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
 		beginRendering(*m_cmdBuffer,
 					   attachmentBindInfos,
@@ -2950,7 +2960,7 @@ void	ContentsSecondaryPrimaryCmdBufferResuming::rendering (const VkPipeline					
 
 			// Primary commandBuffer
 			beginCommandBuffer(vk, *m_cmdBuffer);
-			preBarier(colorAtchCount, imagesLayout, imagesFormat);
+			preBarier(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
 			beginRendering(*m_cmdBuffer,
 						   attachmentBindInfos,
@@ -3052,7 +3062,7 @@ void	ContentsTwoPrimarySecondaryCmdBufferResuming::rendering (const VkPipeline		
 
 		// Primary commandBuffer
 		beginCommandBuffer(vk, *m_cmdBuffer);
-		preBarier(colorAtchCount, imagesLayout, imagesFormat);
+		preBarier(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
 		beginRendering(*m_cmdBuffer,
 					   attachmentBindInfos,
@@ -3118,7 +3128,7 @@ void	ContentsTwoPrimarySecondaryCmdBufferResuming::rendering (const VkPipeline		
 
 			// Primary commandBuffer
 			beginCommandBuffer(vk, *m_cmdBuffer);
-			preBarier(colorAtchCount, imagesLayout, imagesFormat);
+			preBarier(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
 			beginRendering(*m_cmdBuffer,
 						   attachmentBindInfos,
@@ -3225,7 +3235,7 @@ void	ContentsSecondaryTwoPrimaryCmdBufferResuming::rendering (const VkPipeline		
 
 		// Primary commandBuffer
 		beginCommandBuffer(vk, *m_cmdBuffer);
-		preBarier(colorAtchCount, imagesLayout, imagesFormat);
+		preBarier(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
 		beginRendering(*m_cmdBuffer,
 					   attachmentBindInfos,
@@ -3290,7 +3300,7 @@ void	ContentsSecondaryTwoPrimaryCmdBufferResuming::rendering (const VkPipeline		
 
 			// Primary commandBuffer
 			beginCommandBuffer(vk, *m_cmdBuffer);
-			preBarier(colorAtchCount, imagesLayout, imagesFormat);
+			preBarier(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
 			beginRendering(*m_cmdBuffer,
 						   attachmentBindInfos,
@@ -3335,6 +3345,144 @@ void	ContentsSecondaryTwoPrimaryCmdBufferResuming::rendering (const VkPipeline		
 			VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer2));
 
 			submitCommandsAndWait(vk, device, queue, *m_cmdBuffer, *m_cmdBuffer2);
+
+			verifyResults(colorAtchCount, imagesFormat);
+		}
+	}
+}
+
+class SecondaryCmdBufferOutOfRenderingCommands : public DynamicRenderingTestInstance
+{
+public:
+			SecondaryCmdBufferOutOfRenderingCommands	(Context&							context,
+														 const TestParameters&				parameters);
+protected:
+	void	rendering										(const VkPipeline					pipeline,
+															 const std::vector<VkImageView>&	attachmentBindInfos,
+															 const deUint32						colorAtchCount,
+															 ImagesLayout&						imagesLayout,
+															 const ImagesFormat&				imagesFormat) override;
+
+	Move<VkCommandBuffer>	m_secCmdBuffer;
+};
+
+SecondaryCmdBufferOutOfRenderingCommands::SecondaryCmdBufferOutOfRenderingCommands (Context&				context,
+																					const TestParameters&	parameters)
+	: DynamicRenderingTestInstance(context, parameters)
+{
+	const DeviceInterface&	vk		= m_context.getDeviceInterface();
+	const VkDevice			device	= m_context.getDevice();
+
+	m_secCmdBuffer	= allocateCommandBuffer(vk, device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+}
+
+void	SecondaryCmdBufferOutOfRenderingCommands::rendering (const VkPipeline					pipeline,
+															 const std::vector<VkImageView>&	attachmentBindInfos,
+															 const deUint32						colorAtchCount,
+															 ImagesLayout&						imagesLayout,
+															 const ImagesFormat&				imagesFormat)
+{
+	const DeviceInterface&	vk		= m_context.getDeviceInterface();
+	const VkDevice			device	= m_context.getDevice();
+	const VkQueue			queue	= m_context.getUniversalQueue();
+
+	for (deUint32 attachmentLoadOp  = 0; attachmentLoadOp  < TEST_ATTACHMENT_LOAD_OP_LAST;  ++attachmentLoadOp)
+	for (deUint32 attachmentStoreOp = 0; attachmentStoreOp < TEST_ATTACHMENT_STORE_OP_LAST; ++attachmentStoreOp)
+	{
+		const VkBuffer		vertexBuffer		= m_vertexBuffer->object();
+		const VkDeviceSize	vertexBufferOffset	= 0ull;
+
+		// Secondary command buffer
+		beginSecondaryCmdBuffer(vk, *m_secCmdBuffer);
+
+		preBarier(*m_secCmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
+
+		beginRendering(*m_secCmdBuffer,
+					   attachmentBindInfos,
+					   0u,
+					   colorAtchCount,
+					   imagesFormat,
+					   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+					   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+		vk.cmdBindPipeline(*m_secCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+		vk.cmdBindVertexBuffers(*m_secCmdBuffer, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
+
+		vk.cmdDraw(*m_secCmdBuffer, 4u, 1u, 8u, 0u);
+		vk.cmdDraw(*m_secCmdBuffer, 4u, 1u, 0u, 0u);
+		vk.cmdDraw(*m_secCmdBuffer, 4u, 1u, 4u, 0u);
+
+		vk.cmdEndRendering(*m_secCmdBuffer);
+
+		copyImgToBuff(*m_secCmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
+
+		VK_CHECK(vk.endCommandBuffer(*m_secCmdBuffer));
+
+		// Primary command buffer
+		beginCommandBuffer(vk, *m_cmdBuffer);
+
+		vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &(*m_secCmdBuffer));
+
+		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+
+		submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
+
+		if ((static_cast<VkAttachmentLoadOp>(attachmentLoadOp)   == VK_ATTACHMENT_LOAD_OP_CLEAR) &&
+			(static_cast<VkAttachmentStoreOp>(attachmentStoreOp) == VK_ATTACHMENT_STORE_OP_STORE))
+		{
+			verifyResults(colorAtchCount, imagesFormat);
+
+			const ClearAttachmentData clearData(colorAtchCount, imagesFormat.depth, imagesFormat.stencil);
+
+			// secCmdBuffers
+			beginSecondaryCmdBuffer(vk, *m_secCmdBuffer);
+
+			preBarier(*m_secCmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
+
+			beginRendering(*m_secCmdBuffer,
+						   attachmentBindInfos,
+						   0u,
+						   colorAtchCount,
+						   imagesFormat,
+						   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+			if (clearData.colorDepthClear1.size() != 0)
+			{
+				vk.cmdClearAttachments(*m_secCmdBuffer,
+									   static_cast<deUint32>(clearData.colorDepthClear1.size()),
+									   clearData.colorDepthClear1.data(),
+									   1, &clearData.rectColorDepth1);
+			}
+
+			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
+				vk.cmdClearAttachments(*m_secCmdBuffer, 1u, &clearData.stencilClear1, 1, &clearData.rectStencil1);
+
+			if (clearData.colorDepthClear2.size() != 0)
+			{
+				vk.cmdClearAttachments(*m_secCmdBuffer,
+										static_cast<deUint32>(clearData.colorDepthClear2.size()),
+										clearData.colorDepthClear2.data(),
+										1, &clearData.rectColorDepth2);
+			}
+
+			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
+				vk.cmdClearAttachments(*m_secCmdBuffer, 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
+
+			vk.cmdEndRendering(*m_secCmdBuffer);
+
+			copyImgToBuff(*m_secCmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
+
+			VK_CHECK(vk.endCommandBuffer(*m_secCmdBuffer));
+
+			// Primary commandBuffer
+			beginCommandBuffer(vk, *m_cmdBuffer);
+
+			vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &(*m_secCmdBuffer));
+
+			VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+
+			submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
 
 			verifyResults(colorAtchCount, imagesFormat);
 		}
@@ -3479,6 +3627,10 @@ TestInstance*	BaseTestCase::createInstance (Context& context) const
 		{
 			return new ContentsSecondaryTwoPrimaryCmdBufferResuming(context, m_parameters);
 		}
+		case TEST_TYPE_SECONDARY_CMDBUF_OUT_OF_RENDERING_COMMANDS:
+		{
+			return new SecondaryCmdBufferOutOfRenderingCommands(context, m_parameters);
+		}
 		default:
 			DE_FATAL("Impossible");
 	}
@@ -3502,6 +3654,7 @@ tcu::TestNode* dynamicRenderingTests (tcu::TestContext& testCtx, const TestParam
 		"contents_secondary_primary_cmdbuffers_resuming",
 		"contents_2_primary_secondary_cmdbuffers_resuming",
 		"contents_secondary_2_primary_cmdbuffers_resuming",
+		"secondary_cmdbuffer_out_of_rendering_commands"
 	};
 
 	return new BaseTestCase(testCtx, testName[parameters.testType], "Dynamic Rendering tests", parameters);
@@ -3519,6 +3672,8 @@ tcu::TestCaseGroup* createDynamicRenderingBasicTests(tcu::TestContext& testCtx)
 		{
 			static_cast<TestType>(testType),	// TestType			testType;
 			Vec4(0.0f, 0.0f, 0.0f, 1.0f),		// const Vec4		clearColor;
+			1.0f,								// float			depthClearValue;
+			0U,									// deUint32			stencilClearValue;
 			VK_FORMAT_R8G8B8A8_UNORM,			// const VkFormat	imageFormat;
 			(UVec2(32, 32))						// const UVec2		renderSize;
 		};

@@ -1598,6 +1598,13 @@ void DescriptorCommands::checkSupport(Context& context) const
 		deUint32	numPerStageInputAttachments		= 0;
 		deUint32	numPerStageTotalResources		= 0;
 
+		bool	usesUniformBuffer		= false;
+		bool	usesSampledImage		= false;
+		bool	usesStorageImage		= false;
+		bool	usesStorageBuffer		= false;
+		bool	usesUniformTexelBuffer	= false;
+		bool	usesStorageTexelBuffer	= false;
+
 		for (size_t descriptorSetIdx = 0; descriptorSetIdx < m_descriptorSets.size(); descriptorSetIdx++)
 		{
 			deUint32	numSamplers					= 0;
@@ -1644,6 +1651,7 @@ void DescriptorCommands::checkSupport(Context& context) const
 				{
 				case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
 					numUniformBuffers += arraySize;
+					usesUniformBuffer = true;
 					break;
 
 				case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
@@ -1653,6 +1661,7 @@ void DescriptorCommands::checkSupport(Context& context) const
 
 				case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
 					numStorageBuffers += arraySize;
+					usesStorageBuffer = true;
 					break;
 
 				case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
@@ -1663,24 +1672,36 @@ void DescriptorCommands::checkSupport(Context& context) const
 				case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
 					numSamplers += arraySize;
 					numSampledImages += arraySize;
+					usesSampledImage = true;
 					break;
 
 				case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+					numStorageImages += arraySize;
+					usesStorageImage = true;
+					break;
+
 				case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
 					numStorageImages += arraySize;
+					usesStorageTexelBuffer = true;
 					break;
 
 				case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
 					numInputAttachments += arraySize;
 					break;
 
-				case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
 				case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
 					numSampledImages += arraySize;
+					usesSampledImage = true;
+					break;
+
+				case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+					numSampledImages += arraySize;
+					usesUniformTexelBuffer = true;
 					break;
 
 				case VK_DESCRIPTOR_TYPE_SAMPLER:
 					numSamplers += arraySize;
+					usesSampledImage = true;
 					break;
 
 #ifndef CTS_USES_VULKANSC
@@ -1755,6 +1776,26 @@ void DescriptorCommands::checkSupport(Context& context) const
 			TCU_THROW(NotSupportedError, "Number of per stage inline uniform blocks exceeds limits.");
 		}
 #endif
+		if (m_useUpdateAfterBind)
+		{
+			if (usesUniformBuffer && !context.getDescriptorIndexingFeatures().descriptorBindingUniformBufferUpdateAfterBind)
+				TCU_THROW(NotSupportedError, "descriptorBindingUniformBufferUpdateAfterBind not supported.");
+
+			if (usesSampledImage && !context.getDescriptorIndexingFeatures().descriptorBindingSampledImageUpdateAfterBind)
+				TCU_THROW(NotSupportedError, "descriptorBindingSampledImageUpdateAfterBind not supported.");
+
+			if (usesStorageImage && !context.getDescriptorIndexingFeatures().descriptorBindingStorageImageUpdateAfterBind)
+				TCU_THROW(NotSupportedError, "descriptorBindingStorageImageUpdateAfterBind not supported.");
+
+			if (usesStorageBuffer && !context.getDescriptorIndexingFeatures().descriptorBindingStorageBufferUpdateAfterBind)
+				TCU_THROW(NotSupportedError, "descriptorBindingStorageBufferUpdateAfterBind not supported.");
+
+			if (usesUniformTexelBuffer && !context.getDescriptorIndexingFeatures().descriptorBindingUniformTexelBufferUpdateAfterBind)
+				TCU_THROW(NotSupportedError, "descriptorBindingUniformTexelBufferUpdateAfterBind not supported.");
+
+			if (usesStorageTexelBuffer && !context.getDescriptorIndexingFeatures().descriptorBindingStorageTexelBufferUpdateAfterBind)
+				TCU_THROW(NotSupportedError, "descriptorBindingStorageTexelBufferUpdateAfterBind not supported.");
+		}
 	}
 }
 

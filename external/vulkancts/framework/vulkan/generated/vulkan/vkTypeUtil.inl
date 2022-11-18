@@ -605,6 +605,15 @@ inline VkDrawMeshTasksIndirectCommandNV makeDrawMeshTasksIndirectCommandNV (uint
 	return res;
 }
 
+inline VkDrawMeshTasksIndirectCommandEXT makeDrawMeshTasksIndirectCommandEXT (uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+{
+	VkDrawMeshTasksIndirectCommandEXT res;
+	res.groupCountX	= groupCountX;
+	res.groupCountY	= groupCountY;
+	res.groupCountZ	= groupCountZ;
+	return res;
+}
+
 inline VkStridedDeviceAddressRegionKHR makeStridedDeviceAddressRegionKHR (VkDeviceAddress deviceAddress, VkDeviceSize stride, VkDeviceSize size)
 {
 	VkStridedDeviceAddressRegionKHR res;
@@ -679,6 +688,29 @@ inline VkAabbPositionsKHR makeAabbPositionsKHR (float minX, float minY, float mi
 	res.maxX	= maxX;
 	res.maxY	= maxY;
 	res.maxZ	= maxZ;
+	return res;
+}
+
+inline VkColorBlendEquationEXT makeColorBlendEquationEXT (VkBlendFactor srcColorBlendFactor, VkBlendFactor dstColorBlendFactor, VkBlendOp colorBlendOp, VkBlendFactor srcAlphaBlendFactor, VkBlendFactor dstAlphaBlendFactor, VkBlendOp alphaBlendOp)
+{
+	VkColorBlendEquationEXT res;
+	res.srcColorBlendFactor	= srcColorBlendFactor;
+	res.dstColorBlendFactor	= dstColorBlendFactor;
+	res.colorBlendOp		= colorBlendOp;
+	res.srcAlphaBlendFactor	= srcAlphaBlendFactor;
+	res.dstAlphaBlendFactor	= dstAlphaBlendFactor;
+	res.alphaBlendOp		= alphaBlendOp;
+	return res;
+}
+
+inline VkColorBlendAdvancedEXT makeColorBlendAdvancedEXT (VkBlendOp advancedBlendOp, VkBool32 srcPremultiplied, VkBool32 dstPremultiplied, VkBlendOverlapEXT blendOverlap, VkBool32 clampResults)
+{
+	VkColorBlendAdvancedEXT res;
+	res.advancedBlendOp		= advancedBlendOp;
+	res.srcPremultiplied	= srcPremultiplied;
+	res.dstPremultiplied	= dstPremultiplied;
+	res.blendOverlap		= blendOverlap;
+	res.clampResults		= clampResults;
 	return res;
 }
 
@@ -764,12 +796,30 @@ inline VkRenderPassCreationFeedbackInfoEXT makeRenderPassCreationFeedbackInfoEXT
 	return res;
 }
 
-inline StdVideoDecodeH264Mvc makeStdVideoDecodeH264Mvc (uint32_t viewId0, uint32_t mvcElementCount, const StdVideoDecodeH264MvcElement* pMvcElements)
+inline VkMicromapUsageEXT makeMicromapUsageEXT (uint32_t count, uint32_t subdivisionLevel, uint32_t format)
 {
-	StdVideoDecodeH264Mvc res;
-	res.viewId0			= viewId0;
-	res.mvcElementCount	= mvcElementCount;
-	res.pMvcElements	= pMvcElements;
+	VkMicromapUsageEXT res;
+	res.count				= count;
+	res.subdivisionLevel	= subdivisionLevel;
+	res.format				= format;
+	return res;
+}
+
+inline VkMicromapTriangleEXT makeMicromapTriangleEXT (uint32_t dataOffset, uint16_t subdivisionLevel, uint16_t format)
+{
+	VkMicromapTriangleEXT res;
+	res.dataOffset			= dataOffset;
+	res.subdivisionLevel	= subdivisionLevel;
+	res.format				= format;
+	return res;
+}
+
+inline VkDeviceFaultAddressInfoEXT makeDeviceFaultAddressInfoEXT (VkDeviceFaultAddressTypeEXT addressType, VkDeviceAddress reportedAddress, VkDeviceSize addressPrecision)
+{
+	VkDeviceFaultAddressInfoEXT res;
+	res.addressType			= addressType;
+	res.reportedAddress		= reportedAddress;
+	res.addressPrecision	= addressPrecision;
 	return res;
 }
 

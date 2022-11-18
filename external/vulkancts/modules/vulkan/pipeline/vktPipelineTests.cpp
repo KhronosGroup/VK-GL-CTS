@@ -27,6 +27,7 @@
 #include "vktPipelineStencilTests.hpp"
 #include "vktPipelineBlendTests.hpp"
 #include "vktPipelineDepthTests.hpp"
+#include "vktPipelineDescriptorLimitsTests.hpp"
 #include "vktPipelineDynamicOffsetTests.hpp"
 #include "vktPipelineEarlyDestroyTests.hpp"
 #include "vktPipelineLogicOpTests.hpp"
@@ -64,6 +65,7 @@
 #include "vktPipelineNoPositionTests.hpp"
 #include "vktPipelineColorWriteEnableTests.hpp"
 #include "vktPipelineLibraryTests.hpp"
+#include "vktPipelineAttachmentFeedbackLoopLayoutTests.hpp"
 #include "vktPipelineShaderModuleIdentifierTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
@@ -84,6 +86,7 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 	group->addChild(createStencilTests					(testCtx, pipelineConstructionType));
 	group->addChild(createBlendTests					(testCtx, pipelineConstructionType));
 	group->addChild(createDepthTests					(testCtx, pipelineConstructionType));
+	group->addChild(createDescriptorLimitsTests			(testCtx, pipelineConstructionType));
 	group->addChild(createDynamicOffsetTests			(testCtx, pipelineConstructionType));
 #ifndef CTS_USES_VULKANSC
 	group->addChild(createEarlyDestroyTests				(testCtx, pipelineConstructionType));
@@ -131,6 +134,7 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 #endif // CTS_USES_VULKANSC
 	group->addChild(createColorWriteEnableTests			(testCtx, pipelineConstructionType));
 #ifndef CTS_USES_VULKANSC
+	group->addChild(createAttachmentFeedbackLoopLayoutTests (testCtx, pipelineConstructionType));
 	group->addChild(createShaderModuleIdentifierTests	(testCtx, pipelineConstructionType));
 #endif // CTS_USES_VULKANSC
 	group->addChild(createColorWriteEnable2Tests		(testCtx, pipelineConstructionType));

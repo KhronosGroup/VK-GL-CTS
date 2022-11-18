@@ -88,6 +88,8 @@ CustomInstance createInstanceWithWsi (Context&							context,
 
 	extensions.push_back("VK_KHR_surface");
 	extensions.push_back(getExtensionName(wsiType));
+	if (isDisplaySurface(wsiType))
+		extensions.push_back("VK_KHR_display");
 
 	checkAllSupported(supportedExtensions, extensions);
 
@@ -804,7 +806,7 @@ IncrementalPresentTestInstance::IncrementalPresentTestInstance (Context& context
 	, m_physicalDevice			(vk::chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
 	, m_nativeDisplay			(createDisplay(context.getTestContext().getPlatform().getVulkanPlatform(), m_instanceExtensions, testConfig.wsiType))
 	, m_nativeWindow			(createWindow(*m_nativeDisplay, tcu::Nothing))
-	, m_surface					(vk::wsi::createSurface(m_vki, m_instance, testConfig.wsiType, *m_nativeDisplay, *m_nativeWindow))
+	, m_surface					(vk::wsi::createSurface(m_vki, m_instance, testConfig.wsiType, *m_nativeDisplay, *m_nativeWindow, context.getTestContext().getCommandLine()))
 
 	, m_queueFamilyIndex		(vk::wsi::chooseQueueFamilyIndex(m_vki, m_physicalDevice, *m_surface))
 	, m_deviceExtensions		(vk::enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))

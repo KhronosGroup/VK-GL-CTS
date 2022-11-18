@@ -101,3 +101,4 @@ GetPhysicalDeviceVideoCapabilitiesKHRFunc							getPhysicalDeviceVideoCapabiliti
 GetPhysicalDeviceVideoFormatPropertiesKHRFunc						getPhysicalDeviceVideoFormatPropertiesKHR;
 AcquireDrmDisplayEXTFunc											acquireDrmDisplayEXT;
 GetDrmDisplayEXTFunc												getDrmDisplayEXT;
+GetPhysicalDeviceOpticalFlowImageFormatsNVFunc						getPhysicalDeviceOpticalFlowImageFormatsNV;

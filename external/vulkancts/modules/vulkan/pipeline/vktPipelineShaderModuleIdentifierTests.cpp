@@ -1427,19 +1427,20 @@ tcu::TestStatus ConstantModuleIdentifiersInstance::runTest (const DeviceInterfac
 		++binaryCount;
 		binary.setUsed();
 
-		const auto binSize		= binary.getSize();
-		const auto binData		= reinterpret_cast<const uint32_t*>(binary.getBinary());
-		const auto shaderModule	= (m_params->needsVkModule() ? createShaderModule(vkd1, device1, binary) : Move<VkShaderModule>());
+		const auto binSize			= binary.getSize();
+		const auto binData			= reinterpret_cast<const uint32_t*>(binary.getBinary());
+		const auto shaderModule1	= (m_params->needsVkModule() ? createShaderModule(vkd1, device1, binary) : Move<VkShaderModule>());
+		const auto shaderModule2	= (m_params->needsVkModule() ? createShaderModule(vkd2, device2, binary) : Move<VkShaderModule>());
 
 		// The first one will be a VkShaderModule if needed.
-		const auto id1			= (m_params->needsVkModule()
-								? getShaderModuleIdentifier(vkd1, device1, shaderModule.get())
-								: getShaderModuleIdentifier(vkd1, device1, makeShaderModuleCreateInfo(binSize, binData)));
+		const auto id1				= (m_params->needsVkModule()
+									? getShaderModuleIdentifier(vkd1, device1, shaderModule1.get())
+									: getShaderModuleIdentifier(vkd1, device1, makeShaderModuleCreateInfo(binSize, binData)));
 
 		// The second one will be a VkShaderModule only when comparing shader modules.
-		const auto id2			= ((m_params->apiCall == APICall::MODULE)
-								? getShaderModuleIdentifier(vkd2, device2, shaderModule.get())
-								: getShaderModuleIdentifier(vkd2, device2, makeShaderModuleCreateInfo(binSize, binData)));
+		const auto id2				= ((m_params->apiCall == APICall::MODULE)
+									? getShaderModuleIdentifier(vkd2, device2, shaderModule2.get())
+									: getShaderModuleIdentifier(vkd2, device2, makeShaderModuleCreateInfo(binSize, binData)));
 
 		if (id1 != id2)
 			pass = false;
@@ -1682,6 +1683,12 @@ void CreateAndUseIdsCase::checkSupport (Context &context) const
 
 	if (m_createAndUseIdsParams->capturedProperties != 0u)
 		context.requireDeviceFunctionality("VK_KHR_pipeline_executable_properties");
+
+	if ((m_params->pipelineType == PipelineType::COMPUTE || m_params->hasRayTracing()) && static_cast<bool>(m_params->pipelineToRun)) {
+		const auto features = context.getPipelineCreationCacheControlFeatures();
+		if (features.pipelineCreationCacheControl == DE_FALSE)
+			TCU_THROW(NotSupportedError, "Feature 'pipelineCreationCacheControl' is not enabled");
+	}
 }
 
 TestInstance* CreateAndUseIdsCase::createInstance (Context &context) const
@@ -2187,7 +2194,7 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 			const auto rasterizationState = makeRasterizationState(fragModule == DE_NULL);
 
 			wrapper	.setDefaultPatchControlPoints(patchCPs)
-					.setupVertexInputStete(&vertexInputState, &inputAssemblyState, pipelineCache.get())
+					.setupVertexInputState(&vertexInputState, &inputAssemblyState, pipelineCache.get())
 					.setupPreRasterizationShaderState2(
 						viewports,
 						scissors,
@@ -2203,6 +2210,7 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 						tescSpecInfo.get(),
 						teseSpecInfo.get(),
 						geomSpecInfo.get(),
+						nullptr,
 						PipelineRenderingCreateInfoWrapper(),
 						pipelineCache.get())
 					.setupFragmentShaderState(
@@ -2212,7 +2220,6 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 						fragModule,
 						&depthStencilState,
 						&multisampleState,
-						nullptr,
 						fragSpecInfo.get(),
 						pipelineCache.get())
 					.setupFragmentOutputState(*renderPass, 0u, &colorBlendState, &multisampleState, pipelineCache.get())
@@ -2268,7 +2275,7 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 			try
 			{
 				wrapper	.setDefaultPatchControlPoints(patchCPs)
-						.setupVertexInputStete(&vertexInputState, &inputAssemblyState, pipelineCache.get())
+						.setupVertexInputState(&vertexInputState, &inputAssemblyState, pipelineCache.get())
 						.setupPreRasterizationShaderState3(
 							viewports,
 							scissors,
@@ -2288,6 +2295,7 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 							tescToRun.getSpecInfo(),
 							teseToRun.getSpecInfo(),
 							geomToRun.getSpecInfo(),
+							nullptr,
 							PipelineRenderingCreateInfoWrapper(),
 							pipelineCache.get())
 						.setupFragmentShaderState2(
@@ -2298,7 +2306,6 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 							fragToRun.getModuleIdCreateInfo(),
 							&depthStencilState,
 							&multisampleState,
-							nullptr,
 							fragToRun.getSpecInfo(),
 							pipelineCache.get())
 						.setupFragmentOutputState(*renderPass, 0u, &colorBlendState, &multisampleState, pipelineCache.get())
@@ -3276,7 +3283,7 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 			try
 			{
 				wrapper->setDefaultPatchControlPoints(patchCPs)
-						.setupVertexInputStete(&vertexInputState, &inputAssemblyState, pipelineCache.get())
+						.setupVertexInputState(&vertexInputState, &inputAssemblyState, pipelineCache.get())
 						.setupPreRasterizationShaderState2(
 							rpViewports,
 							rpScissors,
@@ -3292,6 +3299,7 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 							nullptr,
 							nullptr,
 							nullptr,
+							nullptr,
 							PipelineRenderingCreateInfoWrapper(),
 							pipelineCache.get())
 						.setupFragmentShaderState(
@@ -3301,7 +3309,6 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 							fragModule.get(),
 							&depthStencilState,
 							&multisampleState,
-							nullptr,
 							nullptr,
 							pipelineCache.get())
 						.setupFragmentOutputState(
@@ -3346,7 +3353,7 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 		try
 		{
 			wrapper->setDefaultPatchControlPoints(patchCPs)
-					.setupVertexInputStete(&vertexInputState, &inputAssemblyState, pipelineCache.get())
+					.setupVertexInputState(&vertexInputState, &inputAssemblyState, pipelineCache.get())
 					.setupPreRasterizationShaderState3(
 						std::vector<VkViewport>(1u, viewports.back()),
 						std::vector<VkRect2D>(1u, scissors.back()),
@@ -3366,6 +3373,7 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 						nullptr,
 						nullptr,
 						nullptr,
+						nullptr,
 						PipelineRenderingCreateInfoWrapper(),
 						pipelineCache.get())
 					.setupFragmentShaderState2(
@@ -3376,7 +3384,6 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 						PipelineShaderStageModuleIdentifierCreateInfoWrapper(fragIdInfo.get()),
 						&depthStencilState,
 						&multisampleState,
-						nullptr,
 						nullptr,
 						pipelineCache.get())
 					.setupFragmentOutputState(

@@ -99,6 +99,10 @@ public:
 					: TestInstance			(ctx)
 					, m_protectedContext	(ctx)
 				{}
+				ProtectedTestInstance	(Context& ctx, const std::vector<std::string>& deviceExtensions)
+					: TestInstance			(ctx)
+					, m_protectedContext	(ctx, {}, deviceExtensions)
+				{}
 protected:
 	ProtectedContext	m_protectedContext;
 };

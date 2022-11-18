@@ -609,7 +609,7 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 								  .setDefaultDepthStencilState()
 								  .setDefaultColorBlendState()
 								  .setDefaultMultisampleState()
-								  .setupVertexInputStete(&vertexInputStateParams)
+								  .setupVertexInputState(&vertexInputStateParams)
 								  .setupPreRasterizationShaderState(viewports,
 																	scissors,
 																	*m_pipelineLayout,

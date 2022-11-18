@@ -596,6 +596,33 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 			1.0f,															//	float									lineWidth;
 		};
 
+		const vk::VkPipelineColorBlendAttachmentState blendState
+		{
+			VK_FALSE,
+			VK_BLEND_FACTOR_ONE,
+			VK_BLEND_FACTOR_ONE,
+			VK_BLEND_OP_ADD,
+			VK_BLEND_FACTOR_ONE,
+			VK_BLEND_FACTOR_ONE,
+			VK_BLEND_OP_ADD,
+			VK_COLOR_COMPONENT_R_BIT |
+			VK_COLOR_COMPONENT_G_BIT |
+			VK_COLOR_COMPONENT_B_BIT |
+			VK_COLOR_COMPONENT_A_BIT,
+
+		};
+		const vk::VkPipelineColorBlendStateCreateInfo colorBlendStateParams
+		{
+			vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType
+			DE_NULL,														// const void*									pNext
+			0u,																// VkPipelineColorBlendStateCreateFlags			flags
+			VK_FALSE,														// VkBool32										logicOpEnable
+			vk::VK_LOGIC_OP_CLEAR,											// VkLogicOp									logicOp
+			1u,																// deUint32										attachmentCount
+			&blendState,													// const VkPipelineColorBlendAttachmentState*	pAttachments
+			{ 1.0f, 1.0f, 1.0f, 1.0f }										// float										blendConstants[4]
+		};
+
 		// Setup different stencil masks and refs in each quad
 		for (int quadNdx = 0; quadNdx < StencilTest::QUAD_COUNT; quadNdx++)
 		{
@@ -614,7 +641,7 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 			m_graphicsPipelines[quadNdx].setDefaultRasterizerDiscardEnable(!m_colorAttachmentEnable)
 										.setDefaultMultisampleState()
 										.setDefaultColorBlendState()
-										.setupVertexInputStete(&vertexInputStateParams)
+										.setupVertexInputState(&vertexInputStateParams)
 										.setupPreRasterizationShaderState(viewports,
 																		  scissors,
 																		  *m_pipelineLayout,
@@ -623,7 +650,7 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 																		  *m_vertexShaderModule,
 																		  &rasterizationStateParams)
 										.setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *m_fragmentShaderModule, &depthStencilStateParams)
-										.setupFragmentOutputState(*m_renderPass)
+										.setupFragmentOutputState(*m_renderPass, 0, (m_colorAttachmentEnable ? &colorBlendStateParams : DE_NULL))
 										.setMonolithicPipelineLayout(*m_pipelineLayout)
 										.buildPipeline();
 		}

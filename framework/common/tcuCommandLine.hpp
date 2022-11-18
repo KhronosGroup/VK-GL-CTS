@@ -322,6 +322,9 @@ public:
 	//! Path to Vulkan library (e.g. loader library vulkan-1.dll)
 	const char*						getVkLibraryPath			(void) const;
 
+	//! File that provides a default set of application parameters
+	const char*						getAppParamsInputFilePath(void) const;
+
 	/*--------------------------------------------------------------------*//*!
 	 * \brief Creates case list filter
 	 * \param archive Resources

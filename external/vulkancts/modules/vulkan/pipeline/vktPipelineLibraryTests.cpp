@@ -33,6 +33,7 @@
 #include "vkBufferWithMemory.hpp"
 #include "vkImageWithMemory.hpp"
 #include "vkBuilderUtil.hpp"
+#include "vkRayTracingUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "tcuCommandLine.hpp"
@@ -1231,7 +1232,10 @@ enum class MiscTestMode
 	INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_UNION_HANDLE,
 	BIND_NULL_DESCRIPTOR_SET,
 	BIND_NULL_DESCRIPTOR_SET_IN_MONOLITHIC_PIPELINE,
-	COMPARE_LINK_TIMES
+	COMPARE_LINK_TIMES,
+	SHADER_MODULE_CREATE_INFO_COMP,
+	SHADER_MODULE_CREATE_INFO_RT,
+	SHADER_MODULE_CREATE_INFO_RT_LIB,
 };
 
 struct MiscTestParams
@@ -1992,6 +1996,324 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::verifyResult(const std::vector<
 	return tcu::TestStatus::pass("Pass");
 }
 
+class PipelineLibraryShaderModuleInfoInstance : public TestInstance
+{
+public:
+					PipelineLibraryShaderModuleInfoInstance		(Context& context)
+						: TestInstance	(context)
+						, m_vkd			(m_context.getDeviceInterface())
+						, m_device		(m_context.getDevice())
+						, m_alloc		(m_context.getDefaultAllocator())
+						, m_queueIndex	(m_context.getUniversalQueueFamilyIndex())
+						, m_queue		(m_context.getUniversalQueue())
+						, m_outVector	(kOutputBufferElements, std::numeric_limits<uint32_t>::max())
+						, m_cmdBuffer	(DE_NULL)
+						{}
+	virtual			~PipelineLibraryShaderModuleInfoInstance	(void) {}
+
+	static constexpr size_t kOutputBufferElements = 64u;
+
+protected:
+	void			prepareOutputBuffer							(VkShaderStageFlags stages);
+	void			allocateCmdBuffers							(void);
+	void			addModule									(const std::string& moduleName, VkShaderStageFlagBits stage);
+	void			recordShaderToHostBarrier					(VkPipelineStageFlagBits pipelineStage) const;
+	void			verifyOutputBuffer							(void);
+
+	using BufferWithMemoryPtr = de::MovePtr<BufferWithMemory>;
+
+	// From the context.
+	const DeviceInterface&		m_vkd;
+	const VkDevice				m_device;
+	Allocator&					m_alloc;
+	const uint32_t				m_queueIndex;
+	const VkQueue				m_queue;
+
+	Move<VkDescriptorSetLayout>	m_setLayout;
+	Move<VkDescriptorPool>		m_descriptorPool;
+	Move<VkDescriptorSet>		m_descriptorSet;
+	std::vector<uint32_t>		m_outVector;
+	BufferWithMemoryPtr			m_outputBuffer;
+
+	Move<VkCommandPool>			m_cmdPool;
+	Move<VkCommandBuffer>		m_cmdBufferPtr;
+	VkCommandBuffer				m_cmdBuffer;
+
+	std::vector<VkPipelineShaderStageCreateInfo>	m_pipelineStageInfos;
+	std::vector<VkShaderModuleCreateInfo>			m_shaderModuleInfos;
+};
+
+void PipelineLibraryShaderModuleInfoInstance::prepareOutputBuffer (VkShaderStageFlags stages)
+{
+	const auto	descriptorType	= VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	const auto	poolFlags		= VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+
+	// Create set layout.
+	DescriptorSetLayoutBuilder layoutBuilder;
+	layoutBuilder.addSingleBinding(descriptorType, stages);
+	m_setLayout = layoutBuilder.build(m_vkd, m_device);
+
+	// Create pool and set.
+	DescriptorPoolBuilder poolBuilder;
+	poolBuilder.addType(descriptorType);
+	m_descriptorPool	= poolBuilder.build(m_vkd, m_device, poolFlags, 1u);
+	m_descriptorSet		= makeDescriptorSet(m_vkd, m_device, m_descriptorPool.get(), m_setLayout.get());
+
+	// Create buffer.
+	const auto outputBufferSize			= static_cast<VkDeviceSize>(de::dataSize(m_outVector));
+	const auto outputBufferCreateInfo	= makeBufferCreateInfo(outputBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	m_outputBuffer = BufferWithMemoryPtr(new BufferWithMemory(m_vkd, m_device, m_alloc, outputBufferCreateInfo, MemoryRequirement::HostVisible));
+
+	// Update set.
+	const auto outputBufferDescInfo = makeDescriptorBufferInfo(m_outputBuffer->get(), 0ull, outputBufferSize);
+	DescriptorSetUpdateBuilder updateBuilder;
+	updateBuilder.writeSingle(m_descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType, &outputBufferDescInfo);
+	updateBuilder.update(m_vkd, m_device);
+}
+
+void PipelineLibraryShaderModuleInfoInstance::addModule (const std::string& moduleName, VkShaderStageFlagBits stage)
+{
+	const auto& binary = m_context.getBinaryCollection().get(moduleName);
+
+	const VkShaderModuleCreateInfo modInfo =
+	{
+		VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,			//	VkStructureType				sType;
+		nullptr,												//	const void*					pNext;
+		0u,														//	VkShaderModuleCreateFlags	flags;
+		binary.getSize(),										//	size_t						codeSize;
+		reinterpret_cast<const uint32_t*>(binary.getBinary()),	//	const uint32_t*				pCode;
+	};
+	m_shaderModuleInfos.push_back(modInfo);
+
+	// Note: the pNext pointer will be updated below.
+	const VkPipelineShaderStageCreateInfo stageInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	//	VkStructureType						sType;
+		nullptr,												//	const void*							pNext;
+		0u,														//	VkPipelineShaderStageCreateFlags	flags;
+		stage,													//	VkShaderStageFlagBits				stage;
+		DE_NULL,												//	VkShaderModule						module;
+		"main",													//	const char*							pName;
+		nullptr,												//	const VkSpecializationInfo*			pSpecializationInfo;
+	};
+	m_pipelineStageInfos.push_back(stageInfo);
+
+	DE_ASSERT(m_shaderModuleInfos.size() == m_pipelineStageInfos.size());
+
+	// Update pNext pointers after possible reallocation.
+	for (size_t i = 0u; i < m_shaderModuleInfos.size(); ++i)
+		m_pipelineStageInfos[i].pNext = &(m_shaderModuleInfos[i]);
+}
+
+void PipelineLibraryShaderModuleInfoInstance::recordShaderToHostBarrier (VkPipelineStageFlagBits pipelineStage) const
+{
+	const auto postWriteBarrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+	cmdPipelineMemoryBarrier(m_vkd, m_cmdBuffer, pipelineStage, VK_PIPELINE_STAGE_HOST_BIT, &postWriteBarrier);
+}
+
+void PipelineLibraryShaderModuleInfoInstance::verifyOutputBuffer (void)
+{
+	auto& allocation	= m_outputBuffer->getAllocation();
+
+	invalidateAlloc(m_vkd, m_device, allocation);
+	deMemcpy(m_outVector.data(), allocation.getHostPtr(), de::dataSize(m_outVector));
+
+	for (uint32_t i = 0; i < static_cast<uint32_t>(m_outVector.size()); ++i)
+	{
+		if (m_outVector[i] != i)
+		{
+			std::ostringstream msg;
+			msg << "Unexpected value found at position " << i << ": " << m_outVector[i];
+			TCU_FAIL(msg.str());
+		}
+	}
+}
+
+void PipelineLibraryShaderModuleInfoInstance::allocateCmdBuffers (void)
+{
+	m_cmdPool		= makeCommandPool(m_vkd, m_device, m_queueIndex);
+	m_cmdBufferPtr	= allocateCommandBuffer(m_vkd, m_device, m_cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	m_cmdBuffer		= m_cmdBufferPtr.get();
+}
+
+class PipelineLibraryShaderModuleInfoCompInstance : public PipelineLibraryShaderModuleInfoInstance
+{
+public:
+					PipelineLibraryShaderModuleInfoCompInstance		(Context& context)
+						: PipelineLibraryShaderModuleInfoInstance(context)
+						{}
+	virtual			~PipelineLibraryShaderModuleInfoCompInstance	(void) {}
+
+	tcu::TestStatus	iterate											(void) override;
+};
+
+tcu::TestStatus	PipelineLibraryShaderModuleInfoCompInstance::iterate (void)
+{
+	const auto stage		= VK_SHADER_STAGE_COMPUTE_BIT;
+	const auto bindPoint	= VK_PIPELINE_BIND_POINT_COMPUTE;
+
+	prepareOutputBuffer(stage);
+	addModule("comp", stage);
+	allocateCmdBuffers();
+
+	const auto pipelineLayout = makePipelineLayout(m_vkd, m_device, m_setLayout.get());
+
+	const VkComputePipelineCreateInfo pipelineCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,	//	VkStructureType					sType;
+		nullptr,										//	const void*						pNext;
+		0u,												//	VkPipelineCreateFlags			flags;
+		m_pipelineStageInfos.at(0u),					//	VkPipelineShaderStageCreateInfo	stage;
+		pipelineLayout.get(),							//	VkPipelineLayout				layout;
+		DE_NULL,										//	VkPipeline						basePipelineHandle;
+		0,												//	int32_t							basePipelineIndex;
+	};
+
+	const auto pipeline = createComputePipeline(m_vkd, m_device, DE_NULL, &pipelineCreateInfo);
+
+	beginCommandBuffer(m_vkd, m_cmdBuffer);
+	m_vkd.cmdBindDescriptorSets(m_cmdBuffer, bindPoint, pipelineLayout.get(), 0u, 1u, &m_descriptorSet.get(), 0u, nullptr);
+	m_vkd.cmdBindPipeline(m_cmdBuffer, bindPoint, pipeline.get());
+	m_vkd.cmdDispatch(m_cmdBuffer, 1u, 1u, 1u);
+	recordShaderToHostBarrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+	endCommandBuffer(m_vkd, m_cmdBuffer);
+	submitCommandsAndWait(m_vkd, m_device, m_queue, m_cmdBuffer);
+	verifyOutputBuffer();
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+class PipelineLibraryShaderModuleInfoRTInstance : public PipelineLibraryShaderModuleInfoInstance
+{
+public:
+					PipelineLibraryShaderModuleInfoRTInstance		(Context& context, bool withLibrary)
+						: PipelineLibraryShaderModuleInfoInstance	(context)
+						, m_withLibrary								(withLibrary)
+						{}
+	virtual			~PipelineLibraryShaderModuleInfoRTInstance		(void) {}
+
+	tcu::TestStatus	iterate											(void) override;
+
+protected:
+	bool m_withLibrary;
+};
+
+tcu::TestStatus	PipelineLibraryShaderModuleInfoRTInstance::iterate (void)
+{
+	const auto stage		= VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+	const auto bindPoint	= VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
+
+	prepareOutputBuffer(stage);
+	addModule("rgen", stage);
+	allocateCmdBuffers();
+
+	const auto pipelineLayout = makePipelineLayout(m_vkd, m_device, m_setLayout.get());
+
+	const VkRayTracingShaderGroupCreateInfoKHR shaderGroupInfo =
+	{
+		VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR,	//	VkStructureType					sType;
+		nullptr,													//	const void*						pNext;
+		VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,				//	VkRayTracingShaderGroupTypeKHR	type;
+		0u,															//	uint32_t						generalShader;
+		VK_SHADER_UNUSED_KHR,										//	uint32_t						closestHitShader;
+		VK_SHADER_UNUSED_KHR,										//	uint32_t						anyHitShader;
+		VK_SHADER_UNUSED_KHR,										//	uint32_t						intersectionShader;
+		nullptr,													//	const void*						pShaderGroupCaptureReplayHandle;
+	};
+
+	const VkPipelineCreateFlags							createFlags		= (m_withLibrary ? static_cast<VkPipelineCreateFlags>(VK_PIPELINE_CREATE_LIBRARY_BIT_KHR) : 0u);
+	const VkRayTracingPipelineInterfaceCreateInfoKHR	libIfaceInfo	= initVulkanStructure();
+	const VkRayTracingPipelineInterfaceCreateInfoKHR*	pLibraryIface	= (m_withLibrary ? &libIfaceInfo : nullptr);
+
+	const VkRayTracingPipelineCreateInfoKHR pipelineCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,	//	VkStructureType										sType;
+		nullptr,												//	const void*											pNext;
+		createFlags,											//	VkPipelineCreateFlags								flags;
+		de::sizeU32(m_pipelineStageInfos),						//	uint32_t											stageCount;
+		de::dataOrNull(m_pipelineStageInfos),					//	const VkPipelineShaderStageCreateInfo*				pStages;
+		1u,														//	uint32_t											groupCount;
+		&shaderGroupInfo,										//	const VkRayTracingShaderGroupCreateInfoKHR*			pGroups;
+		1u,														//	uint32_t											maxPipelineRayRecursionDepth;
+		nullptr,												//	const VkPipelineLibraryCreateInfoKHR*				pLibraryInfo;
+		pLibraryIface,											//	const VkRayTracingPipelineInterfaceCreateInfoKHR*	pLibraryInterface;
+		nullptr,												//	const VkPipelineDynamicStateCreateInfo*				pDynamicState;
+		pipelineLayout.get(),									//	VkPipelineLayout									layout;
+		DE_NULL,												//	VkPipeline											basePipelineHandle;
+		0,														//	int32_t												basePipelineIndex;
+	};
+
+	Move<VkPipeline> pipelineLib;
+	Move<VkPipeline> pipeline;
+
+	if (m_withLibrary)
+	{
+		pipelineLib = createRayTracingPipelineKHR(m_vkd, m_device, DE_NULL, DE_NULL, &pipelineCreateInfo);
+
+		const VkPipelineLibraryCreateInfoKHR libraryInfo =
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR,	//	VkStructureType		sType;
+			nullptr,											//	const void*			pNext;
+			1u,													//	uint32_t			libraryCount;
+			&pipelineLib.get(),									//	const VkPipeline*	pLibraries;
+		};
+
+		const VkRayTracingPipelineCreateInfoKHR nonLibCreateInfo =
+		{
+			VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,	//	VkStructureType										sType;
+			nullptr,												//	const void*											pNext;
+			0u,														//	VkPipelineCreateFlags								flags;
+			0u,														//	uint32_t											stageCount;
+			nullptr,												//	const VkPipelineShaderStageCreateInfo*				pStages;
+			0u,														//	uint32_t											groupCount;
+			nullptr,												//	const VkRayTracingShaderGroupCreateInfoKHR*			pGroups;
+			1u,														//	uint32_t											maxPipelineRayRecursionDepth;
+			&libraryInfo,											//	const VkPipelineLibraryCreateInfoKHR*				pLibraryInfo;
+			pLibraryIface,											//	const VkRayTracingPipelineInterfaceCreateInfoKHR*	pLibraryInterface;
+			nullptr,												//	const VkPipelineDynamicStateCreateInfo*				pDynamicState;
+			pipelineLayout.get(),									//	VkPipelineLayout									layout;
+			DE_NULL,												//	VkPipeline											basePipelineHandle;
+			0,														//	int32_t												basePipelineIndex;
+		};
+		pipeline = createRayTracingPipelineKHR(m_vkd, m_device, DE_NULL, DE_NULL, &nonLibCreateInfo);
+	}
+	else
+	{
+		pipeline = createRayTracingPipelineKHR(m_vkd, m_device, DE_NULL, DE_NULL, &pipelineCreateInfo);
+	}
+
+	// Make shader binding table.
+	const auto			rtProperties	= makeRayTracingProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
+	const auto			rtHandleSize	= rtProperties->getShaderGroupHandleSize();
+	const auto			sbtSize			= static_cast<VkDeviceSize>(rtHandleSize);
+	const auto			sbtMemReqs		= (MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+	const auto			sbtCreateInfo	= makeBufferCreateInfo(sbtSize, VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+	BufferWithMemoryPtr	sbt				= BufferWithMemoryPtr(new BufferWithMemory(m_vkd, m_device, m_alloc, sbtCreateInfo, sbtMemReqs));
+	auto&				sbtAlloc		= sbt->getAllocation();
+	void*				sbtData			= sbtAlloc.getHostPtr();
+
+	// Copy ray gen shader group handle to the start of  the buffer.
+	VK_CHECK(m_vkd.getRayTracingShaderGroupHandlesKHR(m_device, pipeline.get(), 0u, 1u, static_cast<size_t>(sbtSize), sbtData));
+	flushAlloc(m_vkd, m_device, sbtAlloc);
+
+	// Strided device address regions.
+	VkStridedDeviceAddressRegionKHR rgenSBTRegion	= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(m_vkd, m_device, sbt->get(), 0), rtHandleSize, rtHandleSize);
+	VkStridedDeviceAddressRegionKHR	missSBTRegion	= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+	VkStridedDeviceAddressRegionKHR	hitsSBTRegion	= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+	VkStridedDeviceAddressRegionKHR	callSBTRegion	= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+
+	beginCommandBuffer(m_vkd, m_cmdBuffer);
+	m_vkd.cmdBindDescriptorSets(m_cmdBuffer, bindPoint, pipelineLayout.get(), 0u, 1u, &m_descriptorSet.get(), 0u, nullptr);
+	m_vkd.cmdBindPipeline(m_cmdBuffer, bindPoint, pipeline.get());
+	m_vkd.cmdTraceRaysKHR(m_cmdBuffer, &rgenSBTRegion, &missSBTRegion, &hitsSBTRegion, &callSBTRegion, kOutputBufferElements, 1u, 1u);
+	recordShaderToHostBarrier(VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
+	endCommandBuffer(m_vkd, m_cmdBuffer);
+	submitCommandsAndWait(m_vkd, m_device, m_queue, m_cmdBuffer);
+	verifyOutputBuffer();
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 class PipelineLibraryMiscTestCase : public TestCase
 {
 public:
@@ -2025,6 +2347,12 @@ void PipelineLibraryMiscTestCase::checkSupport(Context& context) const
 	if ((m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_FAST_LINKED) &&
 		!context.getGraphicsPipelineLibraryPropertiesEXT().graphicsPipelineLibraryFastLinking)
 		TCU_THROW(NotSupportedError, "graphicsPipelineLibraryFastLinking is not supported");
+
+	if (m_testParams.mode == MiscTestMode::SHADER_MODULE_CREATE_INFO_RT || m_testParams.mode == MiscTestMode::SHADER_MODULE_CREATE_INFO_RT_LIB)
+		context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
+
+	if (m_testParams.mode == MiscTestMode::SHADER_MODULE_CREATE_INFO_RT_LIB)
+		context.requireDeviceFunctionality("VK_KHR_pipeline_library");
 }
 
 void PipelineLibraryMiscTestCase::initPrograms(SourceCollections& programCollection) const
@@ -2154,7 +2482,7 @@ void PipelineLibraryMiscTestCase::initPrograms(SourceCollections& programCollect
 			"  o_color = valueA * valueB;\n"
 			"}\n");
 	}
-	if (m_testParams.mode == MiscTestMode::COMPARE_LINK_TIMES)
+	else if (m_testParams.mode == MiscTestMode::COMPARE_LINK_TIMES)
 	{
 		programCollection.glslSources.add("vert") << glu::VertexSource(
 			"#version 450\n"
@@ -2179,10 +2507,56 @@ void PipelineLibraryMiscTestCase::initPrograms(SourceCollections& programCollect
 			"  o_color = vec4(0.0, 1.0, 0.5, 1.0);\n"
 			"}\n");
 	}
+	else if (m_testParams.mode == MiscTestMode::SHADER_MODULE_CREATE_INFO_COMP)
+	{
+		std::ostringstream comp;
+		comp
+			<< "#version 450\n"
+			<< "layout (set=0, binding=0, std430) buffer BufferBlock {\n"
+			<< "    uint values[" << PipelineLibraryShaderModuleInfoInstance::kOutputBufferElements << "];\n"
+			<< "} outBuffer;\n"
+			<< "layout (local_size_x=" << PipelineLibraryShaderModuleInfoInstance::kOutputBufferElements << ", local_size_y=1, local_size_z=1) in;\n"
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "    outBuffer.values[gl_LocalInvocationIndex] = gl_LocalInvocationIndex;\n"
+			<< "}\n"
+			;
+		programCollection.glslSources.add("comp") << glu::ComputeSource(comp.str());
+	}
+	else if (m_testParams.mode == MiscTestMode::SHADER_MODULE_CREATE_INFO_RT || m_testParams.mode == MiscTestMode::SHADER_MODULE_CREATE_INFO_RT_LIB)
+	{
+		const vk::ShaderBuildOptions	buildOptions (programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+		std::ostringstream				rgen;
+		rgen
+			<< "#version 460 core\n"
+			<< "#extension GL_EXT_ray_tracing : require\n"
+			<< "layout (set=0, binding=0, std430) buffer BufferBlock {\n"
+			<< "    uint values[" << PipelineLibraryShaderModuleInfoInstance::kOutputBufferElements << "];\n"
+			<< "} outBuffer;\n"
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "    outBuffer.values[gl_LaunchIDEXT.x] = gl_LaunchIDEXT.x;\n"
+			<< "}\n"
+			;
+		programCollection.glslSources.add("rgen") << glu::RaygenSource(rgen.str()) << buildOptions;
+	}
+	else
+	{
+		DE_ASSERT(false);
+	}
 }
 
 TestInstance* PipelineLibraryMiscTestCase::createInstance(Context& context) const
 {
+	if (m_testParams.mode == MiscTestMode::SHADER_MODULE_CREATE_INFO_COMP)
+		return new PipelineLibraryShaderModuleInfoCompInstance(context);
+
+	if (m_testParams.mode == MiscTestMode::SHADER_MODULE_CREATE_INFO_RT)
+		return new PipelineLibraryShaderModuleInfoRTInstance(context, false/*withLibrary*/);
+
+	if (m_testParams.mode == MiscTestMode::SHADER_MODULE_CREATE_INFO_RT_LIB)
+		return new PipelineLibraryShaderModuleInfoRTInstance(context, true/*withLibrary*/);
+
 	return new PipelineLibraryMiscTestInstance(context, m_testParams);
 }
 
@@ -2361,10 +2735,20 @@ tcu::TestCaseGroup*	createPipelineLibraryTests(tcu::TestContext& testCtx)
 	}
 	miscTests->addChild(bindNullDescriptorCombinationsTests.release());
 
-	de::MovePtr<tcu::TestCaseGroup> otherTests(new tcu::TestCaseGroup(testCtx, "other", ""));
-	otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "compare_link_times", { MiscTestMode::COMPARE_LINK_TIMES, 0u, 0u }));
-	otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "null_descriptor_set_in_monolithic_pipeline", { MiscTestMode::BIND_NULL_DESCRIPTOR_SET_IN_MONOLITHIC_PIPELINE, 0u, 0u }));
-	miscTests->addChild(otherTests.release());
+	{
+		de::MovePtr<tcu::TestCaseGroup> otherTests(new tcu::TestCaseGroup(testCtx, "other", ""));
+		otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "compare_link_times", { MiscTestMode::COMPARE_LINK_TIMES, 0u, 0u }));
+		otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "null_descriptor_set_in_monolithic_pipeline", { MiscTestMode::BIND_NULL_DESCRIPTOR_SET_IN_MONOLITHIC_PIPELINE, 0u, 0u }));
+		miscTests->addChild(otherTests.release());
+	}
+
+	{
+		de::MovePtr<tcu::TestCaseGroup> nonGraphicsTests(new tcu::TestCaseGroup(testCtx, "non_graphics", "Tests that do not use graphics pipelines"));
+		nonGraphicsTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "shader_module_info_comp",		{ MiscTestMode::SHADER_MODULE_CREATE_INFO_COMP, 0u, 0u }));
+		nonGraphicsTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "shader_module_info_rt",		{ MiscTestMode::SHADER_MODULE_CREATE_INFO_RT, 0u, 0u }));
+		nonGraphicsTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "shader_module_info_rt_lib",	{ MiscTestMode::SHADER_MODULE_CREATE_INFO_RT_LIB, 0u, 0u }));
+		miscTests->addChild(nonGraphicsTests.release());
+	}
 
 	group->addChild(miscTests.release());
 

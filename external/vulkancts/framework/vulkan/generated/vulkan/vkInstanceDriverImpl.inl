@@ -488,3 +488,8 @@ VkResult InstanceDriver::getDrmDisplayEXT (VkPhysicalDevice physicalDevice, int3
 {
 	return m_vk.getDrmDisplayEXT(physicalDevice, drmFd, connectorId, display);
 }
+
+VkResult InstanceDriver::getPhysicalDeviceOpticalFlowImageFormatsNV (VkPhysicalDevice physicalDevice, const VkOpticalFlowImageFormatInfoNV* pOpticalFlowImageFormatInfo, uint32_t* pFormatCount, VkOpticalFlowImageFormatPropertiesNV* pImageFormatProperties) const
+{
+	return m_vk.getPhysicalDeviceOpticalFlowImageFormatsNV(physicalDevice, pOpticalFlowImageFormatInfo, pFormatCount, pImageFormatProperties);
+}
