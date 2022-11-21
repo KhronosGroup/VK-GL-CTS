@@ -378,6 +378,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceMultiviewFeatures.pNext;
 	}
 
+	vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT physicalDeviceMutableDescriptorTypeFeaturesEXT;
+	deMemset(&physicalDeviceMutableDescriptorTypeFeaturesEXT, 0, sizeof(physicalDeviceMutableDescriptorTypeFeaturesEXT));
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_mutable_descriptor_type")) )
+	{
+		physicalDeviceMutableDescriptorTypeFeaturesEXT.sType = getStructureType<VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT>();
+		*nextPtr = &physicalDeviceMutableDescriptorTypeFeaturesEXT;
+		nextPtr  = &physicalDeviceMutableDescriptorTypeFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE physicalDeviceMutableDescriptorTypeFeaturesVALVE;
 	deMemset(&physicalDeviceMutableDescriptorTypeFeaturesVALVE, 0, sizeof(physicalDeviceMutableDescriptorTypeFeaturesVALVE));
 
@@ -1420,6 +1430,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceMultisampledRenderToSingleSampledFeaturesEXT.multisampledRenderToSingleSampled == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature multisampledRenderToSingleSampled not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_mutable_descriptor_type")) )
+	{
+		if ( physicalDeviceMutableDescriptorTypeFeaturesEXT.mutableDescriptorType == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature mutableDescriptorType not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

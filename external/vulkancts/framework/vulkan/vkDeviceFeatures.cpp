@@ -40,6 +40,7 @@ namespace vk
 		VkPhysicalDeviceShadingRateImageFeaturesNV *shadingRateImageFeatures = nullptr;
 		VkPhysicalDeviceFragmentDensityMapFeaturesEXT *fragmentDensityMapFeatures = nullptr;
 		VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT *pageableDeviceLocalMemoryFeatures = nullptr;
+		VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT *mutableDescriptorTypeFeatures = nullptr;
 #endif // CTS_USES_VULKANSC
 
 		m_coreFeatures2 = initVulkanStructure();
@@ -137,6 +138,8 @@ namespace vk
 							fragmentDensityMapFeatures = reinterpret_cast<VkPhysicalDeviceFragmentDensityMapFeaturesEXT *>(rawStructPtr);
 						else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PAGEABLE_DEVICE_LOCAL_MEMORY_FEATURES_EXT)
 							pageableDeviceLocalMemoryFeatures = reinterpret_cast<VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT *>(rawStructPtr);
+						else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_EXT)
+							mutableDescriptorTypeFeatures = reinterpret_cast<VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT *>(rawStructPtr);
 #endif // CTS_USES_VULKANSC
 	   // add to chain
 						*nextPtr = rawStructPtr;
@@ -229,6 +232,11 @@ namespace vk
 			// pageableDeviceLocalMemory will use targetted testing on a custom device.
 			if (pageableDeviceLocalMemoryFeatures)
 				pageableDeviceLocalMemoryFeatures->pageableDeviceLocalMemory = false;
+
+			// Disable mutableDescriptorTypeFeatures by default because it can
+			// impact performance on some hardware.
+			if (mutableDescriptorTypeFeatures)
+				mutableDescriptorTypeFeatures->mutableDescriptorType = false;
 #endif // CTS_USES_VULKANSC
 		}
 	}
