@@ -1,6 +1,3 @@
-# Bug 19641084
-dEQP-GLES31.functional.image_load_store.*.atomic.comp_swap_*_return_value
-
 # Bug 18323265
 dEQP-GLES31.functional.shaders.builtin_functions.precision.smoothstep.mediump_compute.scalar
 dEQP-GLES31.functional.shaders.builtin_functions.precision.smoothstep.mediump_compute.vec2

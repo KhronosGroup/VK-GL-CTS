@@ -13,3 +13,13 @@ dEQP-GLES31.functional.texture.filtering.cube_array.formats.srg8_nearest_mipmap_
 dEQP-GLES31.functional.texture.filtering.cube_array.formats.srg8_linear_mipmap_linear
 dEQP-GLES31.functional.texture.format.sized.cube_array.srgb_rg8_pot
 dEQP-GLES31.functional.texture.format.sized.cube_array.srgb_rg8_npot
+dEQP-GLES31.functional.image_load_store.2d.atomic.comp_swap_r32ui_return_value
+dEQP-GLES31.functional.image_load_store.2d.atomic.comp_swap_r32i_return_value
+dEQP-GLES31.functional.image_load_store.cube.atomic.comp_swap_r32ui_return_value
+dEQP-GLES31.functional.image_load_store.cube.atomic.comp_swap_r32i_return_value
+dEQP-GLES31.functional.image_load_store.3d.atomic.comp_swap_r32ui_return_value
+dEQP-GLES31.functional.image_load_store.3d.atomic.comp_swap_r32i_return_value
+dEQP-GLES31.functional.image_load_store.2d_array.atomic.comp_swap_r32ui_return_value
+dEQP-GLES31.functional.image_load_store.2d_array.atomic.comp_swap_r32i_return_value
+dEQP-GLES31.functional.image_load_store.buffer.atomic.comp_swap_r32ui_return_value
+dEQP-GLES31.functional.image_load_store.buffer.atomic.comp_swap_r32i_return_value

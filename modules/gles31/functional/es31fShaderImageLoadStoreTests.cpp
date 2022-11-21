@@ -2326,10 +2326,8 @@ public:
 			// among the different invocations contributing to the same pixel -- i.e. one invocation
 			// compares to A and assigns B, another compares to B and assigns C, and so on, where
 			// A<B<C etc -- the first value in the return value sequence must be A, and each following
-			// value must be either the same as or the smallest value (among A, B, C, ...) bigger than
-			// the one just before it. E.g. sequences A A A A A A A A, A B C D E F G H and
-			// A A B B B C D E are all valid sequences (if there were 8 invocations contributing
-			// to each pixel).
+			// value must be the smallest value (among A, B, C, ...) bigger than the one just before it.
+			// The only valid sequence being: A B C D E F G H
 
 			{
 				int failingNdx = -1;
@@ -2500,10 +2498,11 @@ AtomicCompSwapCase::IterateResult AtomicCompSwapCase::iterate (void)
 														+ (m_caseType == ATOMIC_OPERATION_CASE_TYPE_RETURN_VALUES ?
 															  "layout (" + shaderImageFormatStr + ", binding=1) writeonly uniform " + shaderImageTypeStr + " u_returnValues;\n"
 															: "") +
+														"uniform int offset;"
 														"\n"
 														"void main (void)\n"
 														"{\n"
-														"	int gx = int(gl_GlobalInvocationID.x);\n"
+														"	int gx = int(gl_GlobalInvocationID.x) + offset * " + std::to_string(imageSize.x()) + ";\n"
 														"	int gy = int(gl_GlobalInvocationID.y);\n"
 														"	int gz = int(gl_GlobalInvocationID.z);\n"
 														"	" + colorScalarTypeName + " compare = " + colorScalarTypeName + getCompareArgShaderStr("gx", "gy", "gz", imageSize.x()) + ";\n"
@@ -2511,7 +2510,8 @@ AtomicCompSwapCase::IterateResult AtomicCompSwapCase::iterate (void)
 														"	" + colorScalarTypeName + " status  = " + colorScalarTypeName + "(-1);\n"
 														"	status = imageAtomicCompSwap(u_results, " + atomicCoord + ", compare, data);\n"
 														+ (m_caseType == ATOMIC_OPERATION_CASE_TYPE_RETURN_VALUES ?
-															"	imageStore(u_returnValues, " + invocationCoord + ", " + colorVecTypeName + "(status));\n" :
+															// Ensure there's an ordered ascending pattern to correctly check values are being stored in order
+															"	if(compare == status) imageStore(u_returnValues, " + invocationCoord + ", " + colorVecTypeName + "(status));\n" :
 															"") +
 														"}\n"));
 
@@ -2529,8 +2529,18 @@ AtomicCompSwapCase::IterateResult AtomicCompSwapCase::iterate (void)
 
 		glLog.glUseProgram(program.getProgram());
 
-		glLog.glDispatchCompute(m_numInvocationsPerPixel*imageSize.x(), imageSize.y(), numSlicesOrFaces);
-		GLU_EXPECT_NO_ERROR(renderCtx.getFunctions().getError(), "glDispatchCompute");
+		{
+			deUint32 offsetLocation = glLog.glGetUniformLocation(program.getProgram(), "offset");
+			int dispatchCount = m_caseType == ATOMIC_OPERATION_CASE_TYPE_RETURN_VALUES ? m_numInvocationsPerPixel : 1u;
+
+			for (int i = 0; i < dispatchCount; ++i)
+			{
+				// Ensure we get correct values for output
+				glLog.glUniform1i(offsetLocation, i);
+				glLog.glDispatchCompute((dispatchCount - i)*imageSize.x(), imageSize.y(), numSlicesOrFaces);
+				GLU_EXPECT_NO_ERROR(renderCtx.getFunctions().getError(), "glDispatchCompute");
+			}
+		}
 	}
 
 	// Create reference, read texture and compare.
