@@ -2652,6 +2652,7 @@ def writeMandatoryFeatures(api, filename):
 
 	dictStructs = {}
 	dictData = []
+	usedFeatureStructs = {}
 	for _, data in api.additionalExtensionData:
 		if 'mandatory_features' not in data.keys():
 			continue
@@ -2674,6 +2675,7 @@ def writeMandatoryFeatures(api, filename):
 
 				if structure == 'VkPhysicalDeviceFeatures':
 					continue
+
 				# if structure is not in dict construct name of variable and add is as a first item
 				if (structure not in dictStructs):
 					dictStructs[structure] = ([structure[2:3].lower() + structure[3:]], mandatory_variant)
@@ -2681,14 +2683,28 @@ def writeMandatoryFeatures(api, filename):
 				if requirements and (requirements[0] not in dictStructs[structure][0]):
 					dictStructs[structure][0].append(requirements[0])
 
+				usedFeatureStructs[structure] = []
 
-	stream.extend(['bool checkMandatoryFeatures(const vkt::Context& context)\n{',
+				if requirements:
+					for req in requirements:
+						if '.' in req:
+							reqStruct = 'Vk' + req[0].upper() + req[1:]
+							usedFeatureStructs[reqStruct] = []
+
+	stream.extend(['bool canUseFeaturesStruct (const vector<VkExtensionProperties>& deviceExtensions, uint32_t usedApiVersion, const char* extension)',
+				   '{',
+				   '\treturn (isExtensionStructSupported(deviceExtensions, RequiredExtension(extension))',
+				   '\t\t\t|| isCoreDeviceExtension(usedApiVersion, extension));',
+				   '}',
+				   '',
+				   'bool checkMandatoryFeatures(const vkt::Context& context)\n{',
 				   '\tif (!context.isInstanceFunctionalitySupported("VK_KHR_get_physical_device_properties2"))',
 				   '\t\tTCU_THROW(NotSupportedError, "Extension VK_KHR_get_physical_device_properties2 is not present");',
 				   '',
 				   '\tVkPhysicalDevice\t\t\t\t\tphysicalDevice\t\t= context.getPhysicalDevice();',
 				   '\tconst InstanceInterface&\t\t\tvki\t\t\t\t\t= context.getInstanceInterface();',
 				   '\tconst vector<VkExtensionProperties>\tdeviceExtensions\t= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);',
+				   '\tconst uint32_t\t\t\t\t\t\tusedApiVersion\t\t= context.getUsedApiVersion();',
 				   '',
 				   '\ttcu::TestLog& log = context.getTestContext().getLog();',
 				   '\tvk::VkPhysicalDeviceFeatures2 coreFeatures;',
@@ -2697,43 +2713,76 @@ def writeMandatoryFeatures(api, filename):
 				   '\tvoid** nextPtr = &coreFeatures.pNext;',
 				   ''])
 
-	listStruct = sorted(dictStructs.items(), key=lambda tup: tup[0]) # sort to have same results for py2 and py3
-	apiStruct	= list( filter(lambda x : structInAPI(x[0]), listStruct)) # remove items not defined in current A
+	# Find the extensions that added the required feature structs.
+	class StructFoundContinue(Exception):
+		pass
 
-	for k, v in apiStruct:
+	for usedStruct in usedFeatureStructs:
+		for compType in api.compositeTypes:
+			nameList = [compType.name] + compType.aliasList
+			if usedStruct in nameList:
+				# Found the official name list for the struct.
+				for extension in api.extensions:
+					try:
+						for requirement in extension.requirementsList:
+							for extensionStructure in requirement.newTypes:
+								if extensionStructure.name in nameList:
+									# Found extension for the struct.
+									usedFeatureStructs[usedStruct].append(extension.name)
+									raise StructFoundContinue
+					except StructFoundContinue:
+						pass
+
+	structList = sorted(usedFeatureStructs.items(), key=lambda tup: tup[0]) # sort to have same results for py2 and py3
+	apiStructs = list( filter(lambda x : structInAPI(x[0]), structList)) # remove items not defined in current API
+
+	for structName, extensions in apiStructs:
 		metaCondition = ''
-		if v[1] != '':
-			metaCondition = metaCondition + ' || defined(CTS_USES_' + v[1][0].upper() + ')'
-			stream.extend(['#if ' + metaCondition[4:]])
-		if (v[0][1].startswith("ApiVersion")):
-			cond = '\tif (context.contextSupports(vk::' + v[0][1] + '))'
-		else:
-			cond = '\tif (vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "' + v[0][1] + '"))'
-		stream.extend(['\tvk::' + k + ' ' + v[0][0]+ ';',
-					'\tdeMemset(&' + v[0][0] + ', 0, sizeof(' + v[0][0] + '));',
+		if structName in dictStructs:
+			mandatoryVariantList = dictStructs[structName][1]
+			if len(mandatoryVariantList) > 0:
+				mandatoryVariant = mandatoryVariantList[0]
+				metaCondition = 'defined(CTS_USES_' + mandatoryVariant.upper() + ')'
+				stream.append('#if ' + metaCondition)
+
+		# The variable name will be the structure name without the Vk prefix and starting in lowercase.
+		newVar = structName[2].lower() + structName[3:]
+
+		stream.extend(['\tvk::' + structName + ' ' + newVar + ';',
+					'\tdeMemset(&' + newVar + ', 0, sizeof(' + newVar + '));',
 					''])
-		reqs = v[0][1:]
-		if len(reqs) > 0 :
-			cond = 'if ( '
-			for i, req in enumerate(reqs) :
-				if (req.startswith("ApiVersion")):
-					cond = cond + 'context.contextSupports(vk::' + req + ')'
-				else:
-					cond = cond + 'isExtensionStructSupported(deviceExtensions, RequiredExtension("' + req + '"))'
-				if i+1 < len(reqs) :
-					cond = cond + ' || '
-			cond = cond + ' )'
-			stream.append('\t' + cond)
-		stream.extend(['\t{',
-					   '\t\t' + v[0][0] + '.sType = getStructureType<' + k + '>();',
-					   '\t\t*nextPtr = &' + v[0][0] + ';',
-					   '\t\tnextPtr  = &' + v[0][0] + '.pNext;',
-					   '\t}'])
-		if metaCondition != '':
-			stream.extend(['#endif // ' + metaCondition[4:],
-						  ''])
+
+		if len(extensions) > 0:
+			canUseCond = '\tif ('
+			for (i, extName) in enumerate(extensions):
+				canUseCond += ' ' if i == 0 else ' || '
+				canUseCond += 'canUseFeaturesStruct(deviceExtensions, usedApiVersion, "' + extName + '")'
+			canUseCond += ' )'
+			stream.append(canUseCond)
 		else:
-			stream.extend([''])
+			#reqs = v[0][1:]
+			if structName in dictStructs:
+				reqs = dictStructs[structName][0][1:]
+				cond = 'if ( '
+				for i, req in enumerate(reqs):
+					if i > 0:
+						cond = cond + ' || '
+					if (req.startswith("ApiVersion")):
+						cond = cond + 'context.contextSupports(vk::' + req + ')'
+				cond = cond + ' )'
+				stream.append('\t' + cond)
+
+		stream.extend(['\t{',
+					   '\t\t' + newVar + '.sType = getStructureType<' + structName + '>();',
+					   '\t\t*nextPtr = &' + newVar + ';',
+					   '\t\tnextPtr  = &' + newVar + '.pNext;',
+					   '\t}'])
+
+		if len(metaCondition) > 0:
+			stream.append('#endif // ' + metaCondition)
+
+		stream.append('')
+
 	stream.extend(['\tcontext.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &coreFeatures);',
 				   '\tbool result = true;',
 				   ''])
@@ -2946,6 +2995,7 @@ if __name__ == "__main__":
 		# was saved as gen_framework_sc (it still parses vulkan_sc_core.h)
 		os.chdir(os.path.dirname(__file__))
 		pythonExecutable = sys.executable or "python"
+		print("Executing gen_framework_sc.py")
 		execute([pythonExecutable, "gen_framework_sc.py", "--api", "SC"])
 		exit (0)
 
