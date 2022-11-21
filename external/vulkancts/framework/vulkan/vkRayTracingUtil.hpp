@@ -597,7 +597,9 @@ public:
 																								 const VkDevice									device,
 																								 Allocator&										allocator,
 																								 VkDeviceSize									structureSize,
-																								 VkDeviceAddress								deviceAddress			= 0u) = DE_NULL;
+																								 VkDeviceAddress								deviceAddress			= 0u,
+																								 const void*									pNext					= DE_NULL,
+																								 const MemoryRequirement&						addMemoryRequirement	= MemoryRequirement::Any) = DE_NULL;
 	virtual void										build									(const DeviceInterface&							vk,
 																								 const VkDevice									device,
 																								 const VkCommandBuffer							cmdBuffer) = DE_NULL;
@@ -791,7 +793,9 @@ public:
 																										 const VkDevice								device,
 																										 Allocator&									allocator,
 																										 VkDeviceSize								structureSize			= 0u,
-																										 VkDeviceAddress							deviceAddress			= 0u ) = DE_NULL;
+																										 VkDeviceAddress							deviceAddress			= 0u,
+																										 const void*								pNext					= DE_NULL,
+																										 const MemoryRequirement&					addMemoryRequirement	= MemoryRequirement::Any) = DE_NULL;
 	virtual void													build								(const DeviceInterface&						vk,
 																										 const VkDevice								device,
 																										 const VkCommandBuffer						cmdBuffer) = DE_NULL;

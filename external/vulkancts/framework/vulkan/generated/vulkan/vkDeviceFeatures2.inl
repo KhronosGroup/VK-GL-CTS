@@ -3478,6 +3478,46 @@ tcu::TestStatus testPhysicalDeviceFeatureProvokingVertexFeaturesEXT (Context& co
 	return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureDescriptorBufferFeaturesEXT (Context& context)
+{
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+	const InstanceDriver&		vki				(instance.getDriver());
+	const int					count			= 2u;
+	TestLog&					log				= context.getTestContext().getLog();
+	VkPhysicalDeviceFeatures2	extFeatures;
+	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+
+	VkPhysicalDeviceDescriptorBufferFeaturesEXT	deviceDescriptorBufferFeaturesEXT[count];
+	const bool									isDescriptorBufferFeaturesEXT = checkExtension(properties, "VK_EXT_descriptor_buffer");
+
+	for (int ndx = 0; ndx < count; ++ndx)
+	{
+		deMemset(&deviceDescriptorBufferFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceDescriptorBufferFeaturesEXT));
+		deviceDescriptorBufferFeaturesEXT[ndx].sType = isDescriptorBufferFeaturesEXT ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT : VK_STRUCTURE_TYPE_MAX_ENUM;
+		deviceDescriptorBufferFeaturesEXT[ndx].pNext = DE_NULL;
+
+		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		extFeatures.pNext = &deviceDescriptorBufferFeaturesEXT[ndx];
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+	}
+
+	if (isDescriptorBufferFeaturesEXT)
+		log << TestLog::Message << deviceDescriptorBufferFeaturesEXT[0] << TestLog::EndMessage;
+
+	if (isDescriptorBufferFeaturesEXT &&
+		(deviceDescriptorBufferFeaturesEXT[0].descriptorBuffer != deviceDescriptorBufferFeaturesEXT[1].descriptorBuffer ||
+		 deviceDescriptorBufferFeaturesEXT[0].descriptorBufferCaptureReplay != deviceDescriptorBufferFeaturesEXT[1].descriptorBufferCaptureReplay ||
+		 deviceDescriptorBufferFeaturesEXT[0].descriptorBufferImageLayoutIgnored != deviceDescriptorBufferFeaturesEXT[1].descriptorBufferImageLayoutIgnored ||
+		 deviceDescriptorBufferFeaturesEXT[0].descriptorBufferPushDescriptors != deviceDescriptorBufferFeaturesEXT[1].descriptorBufferPushDescriptors))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceDescriptorBufferFeaturesEXT");
+	}
+	return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureShaderIntegerDotProductFeatures (Context& context)
 {
 	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
@@ -4313,6 +4353,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "pipeline_protected_access_features_ext", "VkPhysicalDevicePipelineProtectedAccessFeaturesEXT", testPhysicalDeviceFeaturePipelineProtectedAccessFeaturesEXT);
 	addFunctionCase(testGroup, "ycbcr2_plane444_formats_features_ext", "VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT", testPhysicalDeviceFeatureYcbcr2Plane444FormatsFeaturesEXT);
 	addFunctionCase(testGroup, "provoking_vertex_features_ext", "VkPhysicalDeviceProvokingVertexFeaturesEXT", testPhysicalDeviceFeatureProvokingVertexFeaturesEXT);
+	addFunctionCase(testGroup, "descriptor_buffer_features_ext", "VkPhysicalDeviceDescriptorBufferFeaturesEXT", testPhysicalDeviceFeatureDescriptorBufferFeaturesEXT);
 	addFunctionCase(testGroup, "shader_integer_dot_product_features", "VkPhysicalDeviceShaderIntegerDotProductFeatures", testPhysicalDeviceFeatureShaderIntegerDotProductFeatures);
 	addFunctionCase(testGroup, "fragment_shader_barycentric_features_khr", "VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR", testPhysicalDeviceFeatureFragmentShaderBarycentricFeaturesKHR);
 	addFunctionCase(testGroup, "rgba10_x6_formats_features_ext", "VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT", testPhysicalDeviceFeatureRGBA10X6FormatsFeaturesEXT);

@@ -105,15 +105,16 @@ void invalidateAlloc (const DeviceInterface& vkd, VkDevice device, const Allocat
 
 // MemoryRequirement
 
-const MemoryRequirement MemoryRequirement::Any				= MemoryRequirement(0x0u);
-const MemoryRequirement MemoryRequirement::HostVisible		= MemoryRequirement(MemoryRequirement::FLAG_HOST_VISIBLE);
-const MemoryRequirement MemoryRequirement::Coherent			= MemoryRequirement(MemoryRequirement::FLAG_COHERENT);
-const MemoryRequirement MemoryRequirement::LazilyAllocated	= MemoryRequirement(MemoryRequirement::FLAG_LAZY_ALLOCATION);
-const MemoryRequirement MemoryRequirement::Protected		= MemoryRequirement(MemoryRequirement::FLAG_PROTECTED);
-const MemoryRequirement MemoryRequirement::Local			= MemoryRequirement(MemoryRequirement::FLAG_LOCAL);
-const MemoryRequirement MemoryRequirement::Cached			= MemoryRequirement(MemoryRequirement::FLAG_CACHED);
-const MemoryRequirement MemoryRequirement::NonLocal			= MemoryRequirement(MemoryRequirement::FLAG_NON_LOCAL);
-const MemoryRequirement MemoryRequirement::DeviceAddress	= MemoryRequirement(MemoryRequirement::FLAG_DEVICE_ADDRESS);
+const MemoryRequirement MemoryRequirement::Any							= MemoryRequirement(0x0u);
+const MemoryRequirement MemoryRequirement::HostVisible					= MemoryRequirement(MemoryRequirement::FLAG_HOST_VISIBLE);
+const MemoryRequirement MemoryRequirement::Coherent						= MemoryRequirement(MemoryRequirement::FLAG_COHERENT);
+const MemoryRequirement MemoryRequirement::LazilyAllocated				= MemoryRequirement(MemoryRequirement::FLAG_LAZY_ALLOCATION);
+const MemoryRequirement MemoryRequirement::Protected					= MemoryRequirement(MemoryRequirement::FLAG_PROTECTED);
+const MemoryRequirement MemoryRequirement::Local						= MemoryRequirement(MemoryRequirement::FLAG_LOCAL);
+const MemoryRequirement MemoryRequirement::Cached						= MemoryRequirement(MemoryRequirement::FLAG_CACHED);
+const MemoryRequirement MemoryRequirement::NonLocal						= MemoryRequirement(MemoryRequirement::FLAG_NON_LOCAL);
+const MemoryRequirement MemoryRequirement::DeviceAddress				= MemoryRequirement(MemoryRequirement::FLAG_DEVICE_ADDRESS);
+const MemoryRequirement MemoryRequirement::DeviceAddressCaptureReplay	= MemoryRequirement(MemoryRequirement::FLAG_DEVICE_ADDRESS_CAPTURE_REPLAY);
 
 bool MemoryRequirement::matchesHeap (VkMemoryPropertyFlags heapFlags) const
 {
@@ -225,10 +226,13 @@ MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryRequirements& memRe
 	};
 
 	if (requirement & MemoryRequirement::DeviceAddress)
-	{
 		allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+
+	if (requirement & MemoryRequirement::DeviceAddressCaptureReplay)
+		allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT;
+
+	if (allocFlagsInfo.flags)
 		allocInfo.pNext = &allocFlagsInfo;
-	}
 
 	Move<VkDeviceMemory>		mem				= allocateMemory(m_vk, m_device, &allocInfo);
 	MovePtr<HostPtr>			hostPtr;

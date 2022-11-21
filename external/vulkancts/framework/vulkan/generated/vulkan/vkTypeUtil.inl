@@ -187,6 +187,15 @@ inline VkSparseImageMemoryBindInfo makeSparseImageMemoryBindInfo (VkImage image,
 	return res;
 }
 
+inline VkCopyMemoryIndirectCommandNV makeCopyMemoryIndirectCommandNV (VkDeviceAddress srcAddress, VkDeviceAddress dstAddress, VkDeviceSize size)
+{
+	VkCopyMemoryIndirectCommandNV res;
+	res.srcAddress	= srcAddress;
+	res.dstAddress	= dstAddress;
+	res.size		= size;
+	return res;
+}
+
 inline VkDescriptorSetLayoutBinding makeDescriptorSetLayoutBinding (uint32_t binding, VkDescriptorType descriptorType, uint32_t descriptorCount, VkShaderStageFlags stageFlags, const VkSampler* pImmutableSamplers)
 {
 	VkDescriptorSetLayoutBinding res;
@@ -820,6 +829,17 @@ inline VkDeviceFaultAddressInfoEXT makeDeviceFaultAddressInfoEXT (VkDeviceFaultA
 	res.addressType			= addressType;
 	res.reportedAddress		= reportedAddress;
 	res.addressPrecision	= addressPrecision;
+	return res;
+}
+
+inline VkDecompressMemoryRegionNV makeDecompressMemoryRegionNV (VkDeviceAddress srcAddress, VkDeviceAddress dstAddress, VkDeviceSize compressedSize, VkDeviceSize decompressedSize, VkMemoryDecompressionMethodFlagsNV decompressionMethod)
+{
+	VkDecompressMemoryRegionNV res;
+	res.srcAddress			= srcAddress;
+	res.dstAddress			= dstAddress;
+	res.compressedSize		= compressedSize;
+	res.decompressedSize	= decompressedSize;
+	res.decompressionMethod	= decompressionMethod;
 	return res;
 }
 
