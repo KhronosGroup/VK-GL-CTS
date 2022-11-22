@@ -138,7 +138,7 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 	group->addChild(createShaderModuleIdentifierTests	(testCtx, pipelineConstructionType));
 #endif // CTS_USES_VULKANSC
 	group->addChild(createColorWriteEnable2Tests		(testCtx, pipelineConstructionType));
-	group->addChild(createTestGroup						(testCtx, "misc", "", createMiscTests, pipelineConstructionType));
+	group->addChild(createMiscTests						(testCtx, pipelineConstructionType));
 
 	// NOTE: all new pipeline tests should use GraphicsPipelineWrapper for pipeline creation
 

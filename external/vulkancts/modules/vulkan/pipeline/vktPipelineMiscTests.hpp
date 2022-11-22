@@ -33,7 +33,7 @@ namespace vkt
 namespace pipeline
 {
 
-void createMiscTests (tcu::TestCaseGroup* miscTests, vk::PipelineConstructionType pipelineConstructionType);
+tcu::TestCaseGroup* createMiscTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
 
 } // pipeline
 } // vkt
