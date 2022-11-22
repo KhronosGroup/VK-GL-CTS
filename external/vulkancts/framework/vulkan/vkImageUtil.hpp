@@ -26,10 +26,14 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkDefs.hpp"
-#include "vkMemUtil.hpp"
 #include "tcuTexture.hpp"
 #include "tcuCompressedTexture.hpp"
 #include "deSharedPtr.hpp"
+#include "vkImageWithMemory.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkMemUtil.hpp"
+#include "vkTypeUtil.hpp"
+#include <memory>
 
 namespace vk
 {
@@ -132,6 +136,36 @@ struct PlanarFormatDescription
 		DE_ASSERT(de::inBounds(ndx, 0u, 4u));
 		return (presentChannels & (1u<<ndx)) != 0;
 	}
+};
+
+class ImageWithBuffer {
+	std::unique_ptr<ImageWithMemory>	image;
+	Move<vk::VkImageView>				imageView;
+	std::unique_ptr<BufferWithMemory>	buffer;
+	VkDeviceSize						size;
+
+	public:
+	ImageWithBuffer(
+			const DeviceInterface&		vkd,
+			const VkDevice				device,
+			Allocator&					alloc,
+			vk::VkExtent3D				extent,
+			vk::VkFormat				imageFormat,
+			vk::VkImageUsageFlags		usage,
+			vk::VkImageType				imageType,
+			vk::VkImageSubresourceRange ssr = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u),
+			uint32_t					arrayLayers = 1,
+			vk::VkSampleCountFlagBits   samples = VK_SAMPLE_COUNT_1_BIT,
+			vk::VkImageTiling			tiling = VK_IMAGE_TILING_OPTIMAL,
+			uint32_t					mipLevels = 1,
+			vk::VkSharingMode			sharingMode = VK_SHARING_MODE_EXCLUSIVE);
+
+	VkImage			getImage();
+	VkImageView		getImageView();
+	VkBuffer		getBuffer();
+	VkDeviceSize	getBufferSize();
+	Allocation&		getImageAllocation();
+	Allocation&		getBufferAllocation();
 };
 
 bool							isYCbCrFormat					(VkFormat						format);
@@ -250,7 +284,8 @@ void	copyImageToBuffer						(const DeviceInterface&							vk,
 												 vk::VkImageLayout								oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 												 deUint32										numLayers = 1u,
 												 VkImageAspectFlags								barrierAspect = VK_IMAGE_ASPECT_COLOR_BIT,
-												 VkImageAspectFlags								copyAspect = VK_IMAGE_ASPECT_COLOR_BIT);
+												 VkImageAspectFlags								copyAspect = VK_IMAGE_ASPECT_COLOR_BIT,
+												 VkPipelineStageFlags							srcMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 
 void	copyImageToBuffer						(const DeviceInterface&							vk,
 												 vk::VkCommandBuffer							cmdBuffer,
@@ -366,6 +401,13 @@ void	initDepthStencilImageChessboardPattern	(const DeviceInterface&							vk,
 												 vk::VkImageLayout								oldLayout,
 												 vk::VkImageLayout								newLayout,
 												 vk::VkPipelineStageFlags						dstStageFlags);
+
+/*--------------------------------------------------------------------*//*!
+ * Makes common image subresource structures with common defaults
+*//*--------------------------------------------------------------------*/
+vk::VkImageSubresourceRange makeDefaultImageSubresourceRange();
+
+vk::VkImageSubresourceLayers makeDefaultImageSubresourceLayers();
 
 #ifndef CTS_USES_VULKANSC
 /*--------------------------------------------------------------------*//*!

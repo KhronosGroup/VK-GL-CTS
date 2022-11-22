@@ -1018,6 +1018,18 @@ void Context::resetCommandPoolForVKSC	(const VkDevice					device,
 #endif
 }
 
+ContextCommonData Context::getContextCommonData() {
+	return ContextCommonData {
+		getInstanceInterface(),
+		getDevice(),
+		getDeviceInterface(),
+		getPhysicalDevice(),
+		getDefaultAllocator(),
+		getUniversalQueueFamilyIndex(),
+		getUniversalQueue()
+	};
+}
+
 // TestCase
 
 void TestCase::initPrograms (SourceCollections&) const

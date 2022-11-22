@@ -892,4 +892,12 @@ VkBufferImageCopy makeBufferImageCopy (const VkExtent3D					extent,
 	return copyParams;
 }
 
+CommandPoolWithBuffer::CommandPoolWithBuffer (
+										const DeviceInterface& vkd,
+										const VkDevice         device,
+										const deUint32         queueFamilyIndex) {
+	cmdPool		= makeCommandPool(vkd, device, queueFamilyIndex);
+	cmdBuffer	= allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+}
+
 } // vk

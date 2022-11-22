@@ -903,26 +903,19 @@ CopySSBOToImageTestInstance::CopySSBOToImageTestInstance (Context& context, cons
 
 tcu::TestStatus CopySSBOToImageTestInstance::iterate (void)
 {
-	const DeviceInterface&	vk					= m_context.getDeviceInterface();
-	const VkDevice			device				= m_context.getDevice();
-	const VkQueue			queue				= m_context.getUniversalQueue();
-	const deUint32			queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-	Allocator&				allocator			= m_context.getDefaultAllocator();
+	ContextCommonData		data	= m_context.getContextCommonData();
+	const DeviceInterface&	vkd		= data.vkd;
 
-	// Create an image
-
-	const VkImageCreateInfo imageParams = make2DImageCreateInfo(m_imageSize, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT);
-	const ImageWithMemory image(vk, device, allocator, imageParams, MemoryRequirement::Any);
-
+	// Create an image, a view, and the output buffer
 	const VkImageSubresourceRange subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
-	const Unique<VkImageView> imageView(makeImageView(vk, device, *image, VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R32_UINT, subresourceRange));
-
-	// Create an input buffer (data to be read in the shader)
+	ImageWithBuffer imageWithBuffer(vkd, data.device, data.allocator, vk::makeExtent3D(m_imageSize.x(), m_imageSize.y(), 1),
+		VK_FORMAT_R32_UINT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT, vk::VK_IMAGE_TYPE_2D,
+		subresourceRange);
 
 	const deUint32 imageArea = multiplyComponents(m_imageSize);
 	const VkDeviceSize bufferSizeBytes = sizeof(deUint32) * imageArea;
 
-	const BufferWithMemory inputBuffer(vk, device, allocator, makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
+	const BufferWithMemory inputBuffer(vkd, data.device, data.allocator, makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	// Populate the buffer with test data
 	{
@@ -932,82 +925,77 @@ tcu::TestStatus CopySSBOToImageTestInstance::iterate (void)
 		for (deUint32 i = 0; i < imageArea; ++i)
 			*bufferPtr++ = rnd.getUint32();
 
-		flushAlloc(vk, device, inputBufferAllocation);
+		flushAlloc(vkd, data.device, inputBufferAllocation);
 	}
 
-	// Create a buffer to store shader output (copied from image data)
-
-	const BufferWithMemory outputBuffer(vk, device, allocator, makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible);
-
 	// Create descriptor set
-
 	const Unique<VkDescriptorSetLayout> descriptorSetLayout(
 		DescriptorSetLayoutBuilder()
 		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
 		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
-		.build(vk, device));
+		.build(vkd, data.device));
 
 	const Unique<VkDescriptorPool> descriptorPool(
 		DescriptorPoolBuilder()
 		.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 		.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
-		.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+		.build(vkd, data.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 
-	const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+	const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vkd, data.device, *descriptorPool, *descriptorSetLayout));
 
 	// Set the bindings
 
-	const VkDescriptorImageInfo imageDescriptorInfo = makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+	const VkDescriptorImageInfo imageDescriptorInfo = makeDescriptorImageInfo(DE_NULL, imageWithBuffer.getImageView(), VK_IMAGE_LAYOUT_GENERAL);
 	const VkDescriptorBufferInfo bufferDescriptorInfo = makeDescriptorBufferInfo(*inputBuffer, 0ull, bufferSizeBytes);
 
 	DescriptorSetUpdateBuilder()
 		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferDescriptorInfo)
 		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &imageDescriptorInfo)
-		.update(vk, device);
+		.update(vkd, data.device);
 
 	// Perform the computation
 	{
-		const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0u));
-		const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
-		const Unique<VkPipeline> pipeline(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
+		const Unique<VkShaderModule> shaderModule(createShaderModule(vkd, data.device, m_context.getBinaryCollection().get("comp"), 0u));
+		const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vkd, data.device, *descriptorSetLayout));
+		const Unique<VkPipeline> pipeline(makeComputePipeline(vkd, data.device, *pipelineLayout, *shaderModule));
 
 		const VkBufferMemoryBarrier inputBufferPostHostWriteBarrier = makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, *inputBuffer, 0ull, bufferSizeBytes);
 
 		const VkImageMemoryBarrier imageLayoutBarrier = makeImageMemoryBarrier(
 			0u, VK_ACCESS_SHADER_WRITE_BIT,
 			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
-			*image, subresourceRange);
+			imageWithBuffer.getImage(), subresourceRange);
 
 		const tcu::IVec2 workSize = m_imageSize / m_localSize;
 
 		// Prepare the command buffer
 
-		const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
-		const Unique<VkCommandBuffer> cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+		const Unique<VkCommandPool> cmdPool(makeCommandPool(vkd, data.device, data.qfIndex));
+		const Unique<VkCommandBuffer> cmdBuffer(allocateCommandBuffer(vkd, data.device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 		// Start recording commands
 
-		beginCommandBuffer(vk, *cmdBuffer);
+		beginCommandBuffer(vkd, *cmdBuffer);
 
-		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
-		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
+		vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+		vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 
-		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &inputBufferPostHostWriteBarrier, 1, &imageLayoutBarrier);
-		vk.cmdDispatch(*cmdBuffer, workSize.x(), workSize.y(), 1u);
+		vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &inputBufferPostHostWriteBarrier, 1, &imageLayoutBarrier);
+		vkd.cmdDispatch(*cmdBuffer, workSize.x(), workSize.y(), 1u);
 
-		copyImageToBuffer(vk, *cmdBuffer, *image, *outputBuffer, m_imageSize, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL);
+		copyImageToBuffer(vkd, *cmdBuffer, imageWithBuffer.getImage(), imageWithBuffer.getBuffer(), m_imageSize, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL);
 
-		endCommandBuffer(vk, *cmdBuffer);
+		endCommandBuffer(vkd, *cmdBuffer);
 
 		// Wait for completion
 
-		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+		submitCommandsAndWait(vkd, data.device, data.queue, *cmdBuffer);
 	}
 
 	// Validate the results
 
-	const Allocation& outputBufferAllocation = outputBuffer.getAllocation();
-	invalidateAlloc(vk, device, outputBufferAllocation);
+	const Allocation& outputBufferAllocation = imageWithBuffer.getBufferAllocation();
+	invalidateAlloc(vkd, data.device, outputBufferAllocation);
 
 	const deUint32* bufferPtr = static_cast<deUint32*>(outputBufferAllocation.getHostPtr());
 	const deUint32* refBufferPtr = static_cast<deUint32*>(inputBuffer.getAllocation().getHostPtr());

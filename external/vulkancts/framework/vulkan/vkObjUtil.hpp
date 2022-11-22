@@ -24,11 +24,20 @@
  *//*--------------------------------------------------------------------*/
 
 #include <vector>
+#include <memory>
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
 
 namespace vk
 {
+
+struct CommandPoolWithBuffer {
+	Move<VkCommandPool>		cmdPool;
+	Move<VkCommandBuffer>	cmdBuffer;
+
+	CommandPoolWithBuffer(const DeviceInterface& vkd, const VkDevice device, const deUint32 queueFamilyIndex);
+};
+
 Move<VkPipeline> makeComputePipeline (const DeviceInterface&					vk,
 									  const VkDevice							device,
 									  const VkPipelineLayout					pipelineLayout,

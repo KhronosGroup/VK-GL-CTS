@@ -30,6 +30,8 @@
 #include "vkCmdUtil.hpp"
 #include "tcuTextureUtil.hpp"
 #include "deMath.h"
+#include "vkMemUtil.hpp"
+#include "vkObjUtil.hpp"
 
 #include <map>
 #include <assert.h>
@@ -4367,7 +4369,8 @@ void copyImageToBuffer (const DeviceInterface&	vk,
 						VkImageLayout			oldLayout,
 						deUint32				numLayers,
 						VkImageAspectFlags		barrierAspect,
-						VkImageAspectFlags		copyAspect)
+						VkImageAspectFlags		copyAspect,
+						VkPipelineStageFlags    srcMask)
 {
 	const VkImageMemoryBarrier	imageBarrier	=
 	{
@@ -4383,7 +4386,7 @@ void copyImageToBuffer (const DeviceInterface&	vk,
 		makeImageSubresourceRange(barrierAspect, 0u, 1u, 0, numLayers)	// VkImageSubresourceRange	subresourceRange;
 	};
 
-	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
+	vk.cmdPipelineBarrier(cmdBuffer, srcMask, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
 						  0u, DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
 
 	const VkImageSubresourceLayers	subresource	=
@@ -5099,6 +5102,120 @@ void initDepthStencilImageChessboardPattern (const DeviceInterface&	vk,
 	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+}
+
+vk::VkImageSubresourceRange makeDefaultImageSubresourceRange() {
+	return vk::makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+}
+
+vk::VkImageSubresourceLayers makeDefaultImageSubresourceLayers() {
+	return makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+}
+
+ImageWithBuffer::ImageWithBuffer(
+			const DeviceInterface&		vkd,
+			const VkDevice				device,
+			Allocator&					alloc,
+			vk::VkExtent3D				extent,
+			vk::VkFormat				imageFormat,
+			vk::VkImageUsageFlags		usage,
+			vk::VkImageType				imageType,
+			vk::VkImageSubresourceRange ssr,
+			uint32_t					arrayLayers,
+			vk::VkSampleCountFlagBits   samples,
+			vk::VkImageTiling			tiling,
+			uint32_t					mipLevels,
+			vk::VkSharingMode			sharingMode)
+{
+
+	if (imageType == VK_IMAGE_TYPE_3D) {
+		DE_ASSERT(arrayLayers == 1);
+	}
+	DE_ASSERT(extent.width > 0 && extent.height > 0 && extent.depth > 0);
+	DE_ASSERT(mipLevels > 0 && arrayLayers > 0);
+
+	// Color attachment.
+	const VkImageCreateInfo colorAttachmentCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	//	VkStructureType			sType;
+		nullptr,								//	const void*				pNext;
+		0u,										//	VkImageCreateFlags		flags;
+		imageType,								//	VkImageType				imageType;
+		imageFormat,							//	VkFormat				format;
+		extent,									//	VkExtent3D				extent;
+		mipLevels,								//	uint32_t				mipLevels;
+		arrayLayers,							//	uint32_t				arrayLayers;
+		samples,								//	VkSampleCountFlagBits	samples;
+		tiling,									//	VkImageTiling			tiling;
+		usage,									//	VkImageUsageFlags		usage;
+		sharingMode,							//	VkSharingMode			sharingMode;
+		0u,										//	uint32_t				queueFamilyIndexCount;
+		nullptr,								//	const uint32_t*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,				//	VkImageLayout			initialLayout;
+	};
+	image = std::unique_ptr<ImageWithMemory>(new ImageWithMemory (vkd, device, alloc, colorAttachmentCreateInfo, MemoryRequirement::Any));
+
+	VkMemoryRequirements reqs;
+	vkd.getImageMemoryRequirements(device, (*image).get(), &reqs);
+
+	VkImageViewType viewType;
+	switch (imageType) {
+		case VK_IMAGE_TYPE_1D:
+			if (arrayLayers == 1) {
+				viewType = VK_IMAGE_VIEW_TYPE_1D;
+			} else {
+				viewType = VK_IMAGE_VIEW_TYPE_1D_ARRAY;
+			}
+			break;
+		case VK_IMAGE_TYPE_2D:
+			if (arrayLayers == 1) {
+				viewType = VK_IMAGE_VIEW_TYPE_2D;
+			} else {
+				viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+			}
+			break;
+		case VK_IMAGE_TYPE_3D:
+			viewType = VK_IMAGE_VIEW_TYPE_3D;
+			break;
+		default:
+			viewType = VK_IMAGE_VIEW_TYPE_LAST;
+			DE_ASSERT(imageType <= VK_IMAGE_TYPE_3D);
+	}
+
+	// Color attachment view.
+	imageView = makeImageView(vkd, device, (*image).get(), viewType, imageFormat, ssr);
+
+	// Verification buffer.
+	const auto			tcuFormat						= mapVkFormat(imageFormat);
+	const auto			verificationBufferSize			= tcuFormat.getPixelSize() * extent.width * extent.height * arrayLayers * extent.depth;
+	const auto			verificationBufferCreateInfo	= makeBufferCreateInfo(verificationBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+
+	buffer	= std::unique_ptr<BufferWithMemory>(new BufferWithMemory(vkd, device, alloc, verificationBufferCreateInfo, MemoryRequirement::HostVisible));
+	size	= verificationBufferSize;
+}
+
+VkImage ImageWithBuffer::getImage() {
+	return (*image).get();
+}
+
+VkImageView ImageWithBuffer::getImageView() {
+	return imageView.get();
+}
+
+VkBuffer ImageWithBuffer::getBuffer() {
+	return (*buffer).get();
+}
+
+VkDeviceSize ImageWithBuffer::getBufferSize() {
+	return size;
+}
+
+Allocation& ImageWithBuffer::getImageAllocation() {
+	return (*image).getAllocation();
+}
+
+Allocation& ImageWithBuffer::getBufferAllocation() {
+	return (*buffer).getAllocation();
 }
 
 #ifndef CTS_USES_VULKANSC
