@@ -27,7 +27,8 @@ import argparse
 import subprocess
 
 from fetch_sources import *
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "scripts"))
+scriptPath = os.path.join(os.path.dirname(__file__), "..", "scripts")
+sys.path.insert(0, scriptPath)
 
 from ctsbuild.common import *
 

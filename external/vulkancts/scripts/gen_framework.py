@@ -31,7 +31,8 @@ from lxml import etree
 from itertools import chain
 from collections import OrderedDict
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts"))
+scriptPath = os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts")
+sys.path.insert(0, scriptPath)
 
 from ctsbuild.common import DEQP_DIR, execute
 from khr_util.format import indentLines, writeInlFile
