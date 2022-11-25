@@ -102,16 +102,23 @@ typedef enum
 	CONVERT_U64TOUVEC2,
 } Convert;
 
+typedef enum
+{
+	OFFSET_ZERO = 0,
+	OFFSET_NONZERO,
+} MemoryOffset;
+
 struct CaseDef
 {
-	deUint32 set;
-	deUint32 depth;
-	Base base;
-	Stage stage;
-	Convert convertUToPtr;
-	bool storeInLocal;
-	BufType bufType;
-	Layout layout;
+	deUint32		set;
+	deUint32		depth;
+	Base			base;
+	Stage			stage;
+	Convert			convertUToPtr;
+	bool			storeInLocal;
+	BufType			bufType;
+	Layout			layout;
+	MemoryOffset	memoryOffset;
 };
 
 class BufferAddressTestInstance : public TestInstance
@@ -724,8 +731,10 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 	};
 
 	bool multiBuffer = m_data.bufType != BT_SINGLE;
+	bool offsetNonZero = m_data.memoryOffset == OFFSET_NONZERO;
 	deUint32 numBuffers = multiBuffer ? numBindings : 1;
 	VkDeviceSize bufferSize = multiBuffer ? align : (align*numBindings);
+	VkDeviceSize memoryOffset = 0;
 
 	vector<VkBufferSp>			buffers(numBuffers);
 	vector<AllocationSp>		allocations(numBuffers);
@@ -772,7 +781,14 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 			opaqueBufferAddrs[i] = vk.getBufferOpaqueCaptureAddress(device, &bufferDeviceAddressInfo);
 		}
 
-		allocations[i] = AllocationSp(allocateExtended(vki, vk, physDevice, device, getBufferMemoryRequirements(vk, device, **buffers[i]), MemoryRequirement::HostVisible, &allocFlagsInfo));
+		VkMemoryRequirements memReq = getBufferMemoryRequirements(vk, device, **buffers[i]);
+		if (offsetNonZero)
+		{
+			memoryOffset = memReq.alignment;
+			memReq.size += memoryOffset;
+		}
+
+		allocations[i] = AllocationSp(allocateExtended(vki, vk, physDevice, device, memReq, MemoryRequirement::HostVisible, &allocFlagsInfo));
 
 		if (useKHR)
 		{
@@ -780,7 +796,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 			opaqueMemoryAddrs[i] = vk.getDeviceMemoryOpaqueCaptureAddress(device, &deviceMemoryOpaqueCaptureAddressInfo);
 		}
 
-		VK_CHECK(vk.bindBufferMemory(device, **buffers[i], allocations[i]->getMemory(), 0));
+		VK_CHECK(vk.bindBufferMemory(device, **buffers[i], allocations[i]->getMemory(), memoryOffset));
 	}
 
 	if (m_data.bufType == BT_REPLAY)
@@ -827,7 +843,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 		bufferDeviceAddressInfo.buffer = **buffers[multiBuffer ? i : 0];
 		gpuAddrs[i] = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
 
-		cpuAddrs[i] = (deUint8 *)allocations[multiBuffer ? i : 0]->getHostPtr();
+		cpuAddrs[i] = (deUint8 *)allocations[multiBuffer ? i : 0]->getHostPtr() + memoryOffset;
 		if (!multiBuffer)
 		{
 			cpuAddrs[i] = cpuAddrs[i] + align*i;
@@ -1628,6 +1644,12 @@ tcu::TestCaseGroup*	createBufferDeviceAddressTests (tcu::TestContext& testCtx)
 #endif
 	};
 
+	TestGroupCase offsetCases[] =
+	{
+		{ OFFSET_ZERO,		"offset_zero",			"offset zero"		},
+		{ OFFSET_NONZERO,	"offset_nonzero",		"offset nonzero"	},
+	};
+
 	for (int setNdx = 0; setNdx < DE_LENGTH_OF_ARRAY(setCases); setNdx++)
 	{
 		de::MovePtr<tcu::TestCaseGroup> setGroup(new tcu::TestCaseGroup(testCtx, setCases[setNdx].name, setCases[setNdx].description));
@@ -1651,23 +1673,36 @@ tcu::TestCaseGroup*	createBufferDeviceAddressTests (tcu::TestContext& testCtx)
 								de::MovePtr<tcu::TestCaseGroup> layoutGroup(new tcu::TestCaseGroup(testCtx, layoutCases[layoutNdx].name, layoutCases[layoutNdx].description));
 								for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stageCases); stageNdx++)
 								{
-									CaseDef c =
+									for (int offsetNdx = 0; offsetNdx < DE_LENGTH_OF_ARRAY(offsetCases); offsetNdx++)
 									{
-										setCases[setNdx].count,						// deUint32 set;
-										depthCases[depthNdx].count,					// deUint32 depth;
-										(Base)baseCases[baseNdx].count,				// Base base;
-										(Stage)stageCases[stageNdx].count,			// Stage stage;
-										(Convert)cvtCases[cvtNdx].count,			// Convert convertUToPtr;
-										!!storeCases[storeNdx].count,				// bool storeInLocal;
-										(BufType)btCases[btNdx].count,				// BufType bufType;
-										(Layout)layoutCases[layoutNdx].count,		// Layout layout;
-									};
+										CaseDef c =
+										{
+											setCases[setNdx].count,						// deUint32 set;
+											depthCases[depthNdx].count,					// deUint32 depth;
+											(Base)baseCases[baseNdx].count,				// Base base;
+											(Stage)stageCases[stageNdx].count,			// Stage stage;
+											(Convert)cvtCases[cvtNdx].count,			// Convert convertUToPtr;
+											!!storeCases[storeNdx].count,				// bool storeInLocal;
+											(BufType)btCases[btNdx].count,				// BufType bufType;
+											(Layout)layoutCases[layoutNdx].count,		// Layout layout;
+											(MemoryOffset)offsetCases[offsetNdx].count, // Memory Offset;
+										};
 
-									// Skip more complex test cases for most descriptor sets, to reduce runtime.
-									if (c.set != 3 && (c.depth == 3 || c.layout != LAYOUT_STD140))
-										continue;
+										// Skip more complex test cases for most descriptor sets, to reduce runtime.
+										if (c.set != 3 && (c.depth == 3 || c.layout != LAYOUT_STD140))
+											continue;
 
-									layoutGroup->addChild(new BufferAddressTestCase(testCtx, stageCases[stageNdx].name, stageCases[stageNdx].description, c));
+										// Memory offset tests are only for single buffer test cases.
+										if (c.memoryOffset == OFFSET_NONZERO && c.bufType != BT_SINGLE)
+											continue;
+
+										std::ostringstream caseName;
+										caseName << stageCases[stageNdx].name;
+										if (c.memoryOffset == OFFSET_NONZERO)
+											caseName << "_offset_nonzero";
+
+										layoutGroup->addChild(new BufferAddressTestCase(testCtx, caseName.str().c_str(), stageCases[stageNdx].description, c));
+									}
 								}
 								btGroup->addChild(layoutGroup.release());
 							}
