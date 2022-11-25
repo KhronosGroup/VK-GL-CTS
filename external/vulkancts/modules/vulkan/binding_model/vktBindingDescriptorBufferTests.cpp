@@ -2592,7 +2592,8 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(
 		if (m_params.isPushDescriptorTest())
 			extensions.push_back("VK_KHR_push_descriptor");
 	}
-	else if (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR)
+	else if (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR ||
+			 m_params.variant == TestVariant::ROBUST_BUFFER_ACCESS)
 	{
 		extensions.push_back("VK_EXT_robustness2");
 		addToChainVulkanStructure(&nextPtr, robustness2Features);
