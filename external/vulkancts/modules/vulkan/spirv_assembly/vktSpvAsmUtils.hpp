@@ -226,29 +226,39 @@ private:
 
 struct VulkanFeatures
 {
-	vk::VkPhysicalDeviceFeatures							coreFeatures;
-	vk::VkPhysicalDeviceShaderFloat16Int8Features			extFloat16Int8;
-	vk::VkPhysicalDevice8BitStorageFeatures					ext8BitStorage;
-	vk::VkPhysicalDevice16BitStorageFeatures				ext16BitStorage;
-	vk::VkPhysicalDeviceVariablePointersFeatures			extVariablePointers;
-	vk::VkPhysicalDeviceVulkanMemoryModelFeatures			extVulkanMemoryModel;
+	vk::VkPhysicalDeviceFeatures									coreFeatures;
+	vk::VkPhysicalDeviceShaderFloat16Int8Features					extFloat16Int8;
+	vk::VkPhysicalDevice8BitStorageFeatures							ext8BitStorage;
+	vk::VkPhysicalDevice16BitStorageFeatures						ext16BitStorage;
+	vk::VkPhysicalDeviceVariablePointersFeatures					extVariablePointers;
+	vk::VkPhysicalDeviceVulkanMemoryModelFeatures					extVulkanMemoryModel;
+	vk::VkPhysicalDeviceShaderAtomicInt64Features					extShaderAtomicInt64;
+	vk::VkPhysicalDeviceShaderAtomicFloatFeaturesEXT				extShaderAtomicFloat;
 #ifndef CTS_USES_VULKANSC
-	vk::VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR	extIntegerDotProduct;
+	vk::VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR			extIntegerDotProduct;
+	vk::VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR	extWorkgroupMemoryExplicitLayout;
+	vk::VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT				extShaderAtomicFloat2;
+	vk::VkPhysicalDeviceShaderUntypedPointersFeaturesKHR			extShaderUntypedPointers;
 #endif // CTS_USES_VULKANSC
-	vk::VkPhysicalDeviceFloatControlsProperties				floatControlsProperties;
+	vk::VkPhysicalDeviceFloatControlsProperties						floatControlsProperties;
 
 	VulkanFeatures				(void)
 	{
-		deMemset(&coreFeatures,				0, sizeof(coreFeatures));
-		deMemset(&extFloat16Int8,			0, sizeof(vk::VkPhysicalDeviceShaderFloat16Int8Features));
-		deMemset(&ext8BitStorage,			0, sizeof(vk::VkPhysicalDevice8BitStorageFeatures));
-		deMemset(&ext16BitStorage,			0, sizeof(vk::VkPhysicalDevice16BitStorageFeatures));
-		deMemset(&extVariablePointers,		0, sizeof(vk::VkPhysicalDeviceVariablePointersFeatures));
-		deMemset(&extVulkanMemoryModel,		0, sizeof(vk::VkPhysicalDeviceVulkanMemoryModelFeatures));
+		deMemset(&coreFeatures,						0, sizeof(coreFeatures));
+		deMemset(&extFloat16Int8,					0, sizeof(vk::VkPhysicalDeviceShaderFloat16Int8Features));
+		deMemset(&ext8BitStorage,					0, sizeof(vk::VkPhysicalDevice8BitStorageFeatures));
+		deMemset(&ext16BitStorage,					0, sizeof(vk::VkPhysicalDevice16BitStorageFeatures));
+		deMemset(&extVariablePointers,				0, sizeof(vk::VkPhysicalDeviceVariablePointersFeatures));
+		deMemset(&extVulkanMemoryModel,				0, sizeof(vk::VkPhysicalDeviceVulkanMemoryModelFeatures));
+		deMemset(&extShaderAtomicInt64,				0, sizeof(vk::VkPhysicalDeviceShaderAtomicInt64Features));
+		deMemset(&extShaderAtomicFloat,				0, sizeof(vk::VkPhysicalDeviceShaderAtomicFloatFeaturesEXT));
 #ifndef CTS_USES_VULKANSC
-		deMemset(&extIntegerDotProduct,		0, sizeof(vk::VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR));
+		deMemset(&extIntegerDotProduct,				0, sizeof(vk::VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR));
+		deMemset(&extWorkgroupMemoryExplicitLayout,	0, sizeof(vk::VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR));
+		deMemset(&extShaderAtomicFloat2,			0, sizeof(vk::VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT));
+		deMemset(&extShaderUntypedPointers,			0, sizeof(vk::VkPhysicalDeviceShaderUntypedPointersFeaturesKHR));
 #endif // CTS_USES_VULKANSC
-		deMemset(&floatControlsProperties,	0, sizeof(vk::VkPhysicalDeviceFloatControlsProperties));
+		deMemset(&floatControlsProperties,			0, sizeof(vk::VkPhysicalDeviceFloatControlsProperties));
 		floatControlsProperties.denormBehaviorIndependence	= vk::VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE;
 		floatControlsProperties.roundingModeIndependence	= vk::VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE;
 	}
@@ -292,21 +302,25 @@ Dest bitwiseCast (Src source)
 //
 // Expected count to be at least 16.
 std::vector<deInt64> getInt64s (de::Random& rnd, const deUint32 count);
+std::vector<deUint64> getUint64s (de::Random& rnd, const deUint32 count);
 
 // Generate and return 32-bit integers.
 //
 // Expected count to be at least 16.
 std::vector<deInt32> getInt32s (de::Random& rnd, const deUint32 count);
+std::vector<deUint32> getUint32s (de::Random& rnd, const deUint32 count);
 
 // Generate and return 16-bit integers.
 //
 // Expected count to be at least 8.
 std::vector<deInt16> getInt16s (de::Random& rnd, const deUint32 count);
+std::vector<deUint16> getUint16s (de::Random& rnd, const deUint32 count);
 
 // Generate and return 8-bit integers.
 //
 // Expected count to be at least 8.
 std::vector<deInt8> getInt8s (de::Random& rnd, const deUint32 count);
+std::vector<deUint8> getUint8s (de::Random& rnd, const deUint32 count);
 
 // Generate and return 64-bit floats
 //

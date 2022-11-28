@@ -70,6 +70,7 @@ extern "C" {
 #define STD_VIDEO_H264_SCALING_LIST_8X8_NUM_ELEMENTS 64
 #define STD_VIDEO_H264_MAX_NUM_LIST_REF   32
 #define STD_VIDEO_H264_MAX_CHROMA_PLANES  2
+#define STD_VIDEO_H264_NO_REFERENCE_PICTURE 0xFF
 
 typedef enum StdVideoH264ChromaFormatIdc {
     STD_VIDEO_H264_CHROMA_FORMAT_IDC_MONOCHROME = 0,
@@ -375,9 +376,9 @@ extern "C" {
 #define vulkan_video_codec_h264std_encode 1
 
 // Vulkan 0.9 provisional Vulkan video H.264 encode std specification version number
-#define VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_API_VERSION_0_9_10 VK_MAKE_VIDEO_STD_VERSION(0, 9, 10)
+#define VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_API_VERSION_0_9_11 VK_MAKE_VIDEO_STD_VERSION(0, 9, 11)
 
-#define VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_SPEC_VERSION VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_API_VERSION_0_9_10
+#define VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_SPEC_VERSION VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_API_VERSION_0_9_11
 #define VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_EXTENSION_NAME "VK_STD_vulkan_video_codec_h264_encode"
 typedef struct StdVideoEncodeH264WeightTableFlags {
     deUint32    luma_weight_l0_flag;
@@ -433,7 +434,7 @@ typedef struct StdVideoEncodeH264RefListModEntry {
 } StdVideoEncodeH264RefListModEntry;
 
 typedef struct StdVideoEncodeH264RefPicMarkingEntry {
-    StdVideoH264MemMgmtControlOp    operation;
+    StdVideoH264MemMgmtControlOp    memory_management_control_operation;
     deUint16                        difference_of_pic_nums_minus1;
     deUint16                        long_term_pic_num;
     deUint16                        long_term_frame_idx;
@@ -484,7 +485,8 @@ typedef struct StdVideoEncodeH264SliceHeader {
     StdVideoH264SliceType                     slice_type;
     deInt8                                    slice_alpha_c0_offset_div2;
     deInt8                                    slice_beta_offset_div2;
-    deUint16                                  reserved1;
+    deInt8                                    slice_qp_delta;
+    deUint8                                   reserved1;
     StdVideoH264CabacInitIdc                  cabac_init_idc;
     StdVideoH264DisableDeblockingFilterIdc    disable_deblocking_filter_idc;
     const StdVideoEncodeH264WeightTable*      pWeightTable;
@@ -542,6 +544,7 @@ extern "C" {
 #define STD_VIDEO_H265_MAX_LONG_TERM_REF_PICS_SPS 32
 #define STD_VIDEO_H265_MAX_LONG_TERM_PICS 16
 #define STD_VIDEO_H265_MAX_DELTA_POC      48
+#define STD_VIDEO_H265_NO_REFERENCE_PICTURE 0xFF
 
 typedef enum StdVideoH265ChromaFormatIdc {
     STD_VIDEO_H265_CHROMA_FORMAT_IDC_MONOCHROME = 0,
@@ -1156,7 +1159,7 @@ extern "C" {
 #define VK_API_VERSION_1_0 VK_MAKE_API_VERSION(0, 1, 0, 0)// Patch version should always be set to 0
 
 // Version of this file
-#define VK_HEADER_VERSION 260
+#define VK_HEADER_VERSION 264
 
 // Complete version of this file
 #define VK_HEADER_VERSION_COMPLETE VK_MAKE_API_VERSION(0, 1, 3, VK_HEADER_VERSION)
@@ -2079,6 +2082,8 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_RDMA_FEATURES_NV = 1000371001,
     VK_STRUCTURE_TYPE_PIPELINE_PROPERTIES_IDENTIFIER_EXT = 1000372000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROPERTIES_FEATURES_EXT = 1000372001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAME_BOUNDARY_FEATURES_EXT = 1000375000,
+    VK_STRUCTURE_TYPE_FRAME_BOUNDARY_EXT = 1000375001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_FEATURES_EXT = 1000376000,
     VK_STRUCTURE_TYPE_SUBPASS_RESOLVE_PERFORMANCE_QUERY_EXT = 1000376001,
     VK_STRUCTURE_TYPE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_INFO_EXT = 1000376002,
@@ -2088,6 +2093,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT = 1000381001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVES_GENERATED_QUERY_FEATURES_EXT = 1000382000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR = 1000386000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_UNTYPED_POINTERS_FEATURES_KHR = 1000387000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT = 1000391000,
     VK_STRUCTURE_TYPE_IMAGE_VIEW_MIN_LOD_CREATE_INFO_EXT = 1000391001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT = 1000392000,
@@ -2195,12 +2201,23 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_KHR = 1000506002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_RENDER_AREAS_FEATURES_QCOM = 1000510000,
     VK_STRUCTURE_TYPE_MULTIVIEW_PER_VIEW_RENDER_AREAS_RENDER_PASS_BEGIN_INFO_QCOM = 1000510001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_2_FEATURES_QCOM = 1000518000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_2_PROPERTIES_QCOM = 1000518001,
+    VK_STRUCTURE_TYPE_SAMPLER_BLOCK_MATCH_WINDOW_CREATE_INFO_QCOM = 1000518002,
+    VK_STRUCTURE_TYPE_SAMPLER_CUBIC_WEIGHTS_CREATE_INFO_QCOM = 1000519000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUBIC_WEIGHTS_FEATURES_QCOM = 1000519001,
+    VK_STRUCTURE_TYPE_BLIT_IMAGE_CUBIC_WEIGHTS_INFO_QCOM = 1000519002,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_YCBCR_DEGAMMA_FEATURES_QCOM = 1000520000,
+    VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_YCBCR_DEGAMMA_CREATE_INFO_QCOM = 1000520001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUBIC_CLAMP_FEATURES_QCOM = 1000521000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_FEATURES_EXT = 1000524000,
     VK_STRUCTURE_TYPE_SCREEN_BUFFER_PROPERTIES_QNX = 1000529000,
     VK_STRUCTURE_TYPE_SCREEN_BUFFER_FORMAT_PROPERTIES_QNX = 1000529001,
     VK_STRUCTURE_TYPE_IMPORT_SCREEN_BUFFER_INFO_QNX = 1000529002,
     VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_QNX = 1000529003,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCREEN_BUFFER_FEATURES_QNX = 1000529004,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_DRIVER_PROPERTIES_MSFT = 1000530000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV = 1000546000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES,
     VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
@@ -3801,6 +3818,8 @@ typedef enum VkDescriptorPoolCreateFlagBits {
     VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT = 0x00000001,
     VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT = 0x00000002,
     VK_DESCRIPTOR_POOL_CREATE_HOST_ONLY_BIT_EXT = 0x00000004,
+    VK_DESCRIPTOR_POOL_CREATE_ALLOW_OVERALLOCATION_SETS_BIT_NV = 0x00000008,
+    VK_DESCRIPTOR_POOL_CREATE_ALLOW_OVERALLOCATION_POOLS_BIT_NV = 0x00000010,
     VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT,
     VK_DESCRIPTOR_POOL_CREATE_HOST_ONLY_BIT_VALVE = VK_DESCRIPTOR_POOL_CREATE_HOST_ONLY_BIT_EXT,
     VK_DESCRIPTOR_POOL_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
@@ -6900,6 +6919,7 @@ typedef enum VkSamplerReductionMode {
     VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE = 0,
     VK_SAMPLER_REDUCTION_MODE_MIN = 1,
     VK_SAMPLER_REDUCTION_MODE_MAX = 2,
+    VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_RANGECLAMP_QCOM = 1000521000,
     VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_EXT = VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE,
     VK_SAMPLER_REDUCTION_MODE_MIN_EXT = VK_SAMPLER_REDUCTION_MODE_MIN,
     VK_SAMPLER_REDUCTION_MODE_MAX_EXT = VK_SAMPLER_REDUCTION_MODE_MAX,
@@ -9079,6 +9099,7 @@ typedef enum VkQueryResultStatusKHR {
     VK_QUERY_RESULT_STATUS_ERROR_KHR = -1,
     VK_QUERY_RESULT_STATUS_NOT_READY_KHR = 0,
     VK_QUERY_RESULT_STATUS_COMPLETE_KHR = 1,
+    VK_QUERY_RESULT_STATUS_INSUFFICIENT_BITSTREAM_BUFFER_RANGE_KHR = -1000299000,
     VK_QUERY_RESULT_STATUS_MAX_ENUM_KHR = 0x7FFFFFFF
 } VkQueryResultStatusKHR;
 
@@ -11476,6 +11497,21 @@ VKAPI_ATTR void VKAPI_CALL vkCmdTraceRaysIndirect2KHR(
 #endif
 
 
+// VK_KHR_shader_untyped_pointers is a preprocessor guard. Do not pass it to API calls.
+#define VK_KHR_shader_untyped_pointers 1
+#define VK_KHR_SHADER_UNTYPED_POINTERS_SPEC_VERSION 1
+#define VK_KHR_SHADER_UNTYPED_POINTERS_EXTENSION_NAME "VK_KHR_shader_untyped_pointers"
+typedef struct VkPhysicalDeviceShaderUntypedPointersFeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           shaderUntypedPointersStorageBuffer;
+    VkBool32           shaderUntypedPointersUniform;
+    VkBool32           shaderUntypedPointersWorkgroup;
+    VkBool32           shaderUntypedPointersPushConstant;
+} VkPhysicalDeviceShaderUntypedPointersFeaturesKHR;
+
+
+
 // VK_KHR_portability_enumeration is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_portability_enumeration 1
 #define VK_KHR_PORTABILITY_ENUMERATION_SPEC_VERSION 1
@@ -11528,16 +11564,15 @@ typedef VkFlags64 VkPipelineCreateFlagBits2KHR;
 static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_DISABLE_OPTIMIZATION_BIT_KHR = 0x00000001ULL;
 static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_ALLOW_DERIVATIVES_BIT_KHR = 0x00000002ULL;
 static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_DERIVATIVE_BIT_KHR = 0x00000004ULL;
-static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_RESERVED_BIT_28_NV = 0x10000000ULL;
 static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_VIEW_INDEX_FROM_DEVICE_INDEX_BIT_KHR = 0x00000008ULL;
 static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_DISPATCH_BASE_BIT_KHR = 0x00000010ULL;
-static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_DEFER_COMPILE_BIT_KHR = 0x00000020ULL;
+static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_DEFER_COMPILE_BIT_NV = 0x00000020ULL;
 static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_CAPTURE_STATISTICS_BIT_KHR = 0x00000040ULL;
 static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_CAPTURE_INTERNAL_REPRESENTATIONS_BIT_KHR = 0x00000080ULL;
 static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT_KHR = 0x00000100ULL;
 static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_EARLY_RETURN_ON_FAILURE_BIT_KHR = 0x00000200ULL;
-static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_LINK_TIME_OPTIMIZATION_BIT_KHR = 0x00000400ULL;
-static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_KHR = 0x00800000ULL;
+static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_LINK_TIME_OPTIMIZATION_BIT_EXT = 0x00000400ULL;
+static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT = 0x00800000ULL;
 static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_LIBRARY_BIT_KHR = 0x00000800ULL;
 static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_RAY_TRACING_SKIP_TRIANGLES_BIT_KHR = 0x00001000ULL;
 static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_RAY_TRACING_SKIP_AABBS_BIT_KHR = 0x00002000ULL;
@@ -11546,16 +11581,17 @@ static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_RAY_TRACING_NO_NU
 static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_RAY_TRACING_NO_NULL_MISS_SHADERS_BIT_KHR = 0x00010000ULL;
 static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_RAY_TRACING_NO_NULL_INTERSECTION_SHADERS_BIT_KHR = 0x00020000ULL;
 static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_RAY_TRACING_SHADER_GROUP_HANDLE_CAPTURE_REPLAY_BIT_KHR = 0x00080000ULL;
-static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_INDIRECT_BINDABLE_BIT_KHR = 0x00040000ULL;
-static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_RAY_TRACING_ALLOW_MOTION_BIT_KHR = 0x00100000ULL;
+static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_INDIRECT_BINDABLE_BIT_NV = 0x00040000ULL;
+static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_RAY_TRACING_ALLOW_MOTION_BIT_NV = 0x00100000ULL;
 static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR = 0x00200000ULL;
-static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_RENDERING_FRAGMENT_DENSITY_MAP_ATTACHMENT_BIT_KHR = 0x00400000ULL;
-static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_RAY_TRACING_OPACITY_MICROMAP_BIT_KHR = 0x01000000ULL;
-static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_COLOR_ATTACHMENT_FEEDBACK_LOOP_BIT_KHR = 0x02000000ULL;
-static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_DEPTH_STENCIL_ATTACHMENT_FEEDBACK_LOOP_BIT_KHR = 0x04000000ULL;
-static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_NO_PROTECTED_ACCESS_BIT_KHR = 0x08000000ULL;
-static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_PROTECTED_ACCESS_ONLY_BIT_KHR = 0x40000000ULL;
-static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_DESCRIPTOR_BUFFER_BIT_KHR = 0x20000000ULL;
+static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_RENDERING_FRAGMENT_DENSITY_MAP_ATTACHMENT_BIT_EXT = 0x00400000ULL;
+static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_RAY_TRACING_OPACITY_MICROMAP_BIT_EXT = 0x01000000ULL;
+static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_COLOR_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT = 0x02000000ULL;
+static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_DEPTH_STENCIL_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT = 0x04000000ULL;
+static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_NO_PROTECTED_ACCESS_BIT_EXT = 0x08000000ULL;
+static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_PROTECTED_ACCESS_ONLY_BIT_EXT = 0x40000000ULL;
+static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_RAY_TRACING_DISPLACEMENT_MICROMAP_BIT_NV = 0x10000000ULL;
+static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_DESCRIPTOR_BUFFER_BIT_EXT = 0x20000000ULL;
 
 typedef VkFlags64 VkBufferUsageFlags2KHR;
 
@@ -11571,11 +11607,11 @@ static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_INDEX_BUFFER_BIT_KHR = 
 static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_VERTEX_BUFFER_BIT_KHR = 0x00000080ULL;
 static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_INDIRECT_BUFFER_BIT_KHR = 0x00000100ULL;
 static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_EXECUTION_GRAPH_SCRATCH_BIT_AMDX = 0x02000000ULL;
-static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_CONDITIONAL_RENDERING_BIT_KHR = 0x00000200ULL;
+static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_CONDITIONAL_RENDERING_BIT_EXT = 0x00000200ULL;
 static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_SHADER_BINDING_TABLE_BIT_KHR = 0x00000400ULL;
-static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_RAY_TRACING_BIT_KHR = 0x00000400ULL;
-static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_TRANSFORM_FEEDBACK_BUFFER_BIT_KHR = 0x00000800ULL;
-static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_TRANSFORM_FEEDBACK_COUNTER_BUFFER_BIT_KHR = 0x00001000ULL;
+static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_RAY_TRACING_BIT_NV = 0x00000400ULL;
+static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT = 0x00000800ULL;
+static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_TRANSFORM_FEEDBACK_COUNTER_BUFFER_BIT_EXT = 0x00001000ULL;
 static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_VIDEO_DECODE_SRC_BIT_KHR = 0x00002000ULL;
 static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_VIDEO_DECODE_DST_BIT_KHR = 0x00004000ULL;
 #ifdef VK_ENABLE_BETA_EXTENSIONS
@@ -11587,11 +11623,11 @@ static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_VIDEO_ENCODE_SRC_BIT_KH
 static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR = 0x00020000ULL;
 static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR = 0x00080000ULL;
 static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR = 0x00100000ULL;
-static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_SAMPLER_DESCRIPTOR_BUFFER_BIT_KHR = 0x00200000ULL;
-static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_RESOURCE_DESCRIPTOR_BUFFER_BIT_KHR = 0x00400000ULL;
-static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_PUSH_DESCRIPTORS_DESCRIPTOR_BUFFER_BIT_KHR = 0x04000000ULL;
-static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_MICROMAP_BUILD_INPUT_READ_ONLY_BIT_KHR = 0x00800000ULL;
-static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_MICROMAP_STORAGE_BIT_KHR = 0x01000000ULL;
+static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_SAMPLER_DESCRIPTOR_BUFFER_BIT_EXT = 0x00200000ULL;
+static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT = 0x00400000ULL;
+static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_PUSH_DESCRIPTORS_DESCRIPTOR_BUFFER_BIT_EXT = 0x04000000ULL;
+static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_MICROMAP_BUILD_INPUT_READ_ONLY_BIT_EXT = 0x00800000ULL;
+static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_MICROMAP_STORAGE_BIT_EXT = 0x01000000ULL;
 
 typedef struct VkPhysicalDeviceMaintenance5FeaturesKHR {
     VkStructureType    sType;
@@ -16903,6 +16939,38 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPipelinePropertiesEXT(
 #endif
 
 
+// VK_EXT_frame_boundary is a preprocessor guard. Do not pass it to API calls.
+#define VK_EXT_frame_boundary 1
+#define VK_EXT_FRAME_BOUNDARY_SPEC_VERSION 1
+#define VK_EXT_FRAME_BOUNDARY_EXTENSION_NAME "VK_EXT_frame_boundary"
+
+typedef enum VkFrameBoundaryFlagBitsEXT {
+    VK_FRAME_BOUNDARY_FRAME_END_BIT_EXT = 0x00000001,
+    VK_FRAME_BOUNDARY_FLAG_BITS_MAX_ENUM_EXT = 0x7FFFFFFF
+} VkFrameBoundaryFlagBitsEXT;
+typedef VkFlags VkFrameBoundaryFlagsEXT;
+typedef struct VkPhysicalDeviceFrameBoundaryFeaturesEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           frameBoundary;
+} VkPhysicalDeviceFrameBoundaryFeaturesEXT;
+
+typedef struct VkFrameBoundaryEXT {
+    VkStructureType            sType;
+    const void*                pNext;
+    VkFrameBoundaryFlagsEXT    flags;
+    deUint64                   frameID;
+    deUint32                   imageCount;
+    const VkImage*             pImages;
+    deUint32                   bufferCount;
+    const VkBuffer*            pBuffers;
+    deUint64                   tagName;
+    deUintptr                     tagSize;
+    const void*                pTag;
+} VkFrameBoundaryEXT;
+
+
+
 // VK_EXT_multisampled_render_to_single_sampled is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_multisampled_render_to_single_sampled 1
 #define VK_EXT_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_SPEC_VERSION 1
@@ -18638,6 +18706,100 @@ typedef struct VkMultiviewPerViewRenderAreasRenderPassBeginInfoQCOM {
 
 
 
+// VK_QCOM_image_processing2 is a preprocessor guard. Do not pass it to API calls.
+#define VK_QCOM_image_processing2 1
+#define VK_QCOM_IMAGE_PROCESSING_2_SPEC_VERSION 1
+#define VK_QCOM_IMAGE_PROCESSING_2_EXTENSION_NAME "VK_QCOM_image_processing2"
+
+typedef enum VkBlockMatchWindowCompareModeQCOM {
+    VK_BLOCK_MATCH_WINDOW_COMPARE_MODE_MIN_QCOM = 0,
+    VK_BLOCK_MATCH_WINDOW_COMPARE_MODE_MAX_QCOM = 1,
+    VK_BLOCK_MATCH_WINDOW_COMPARE_MODE_MAX_ENUM_QCOM = 0x7FFFFFFF
+} VkBlockMatchWindowCompareModeQCOM;
+typedef struct VkPhysicalDeviceImageProcessing2FeaturesQCOM {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           textureBlockMatch2;
+} VkPhysicalDeviceImageProcessing2FeaturesQCOM;
+
+typedef struct VkPhysicalDeviceImageProcessing2PropertiesQCOM {
+    VkStructureType    sType;
+    void*              pNext;
+    VkExtent2D         maxBlockMatchWindow;
+} VkPhysicalDeviceImageProcessing2PropertiesQCOM;
+
+typedef struct VkSamplerBlockMatchWindowCreateInfoQCOM {
+    VkStructureType                      sType;
+    const void*                          pNext;
+    VkExtent2D                           windowExtent;
+    VkBlockMatchWindowCompareModeQCOM    windowCompareMode;
+} VkSamplerBlockMatchWindowCreateInfoQCOM;
+
+
+
+// VK_QCOM_filter_cubic_weights is a preprocessor guard. Do not pass it to API calls.
+#define VK_QCOM_filter_cubic_weights 1
+#define VK_QCOM_FILTER_CUBIC_WEIGHTS_SPEC_VERSION 1
+#define VK_QCOM_FILTER_CUBIC_WEIGHTS_EXTENSION_NAME "VK_QCOM_filter_cubic_weights"
+
+typedef enum VkCubicFilterWeightsQCOM {
+    VK_CUBIC_FILTER_WEIGHTS_CATMULL_ROM_QCOM = 0,
+    VK_CUBIC_FILTER_WEIGHTS_ZERO_TANGENT_CARDINAL_QCOM = 1,
+    VK_CUBIC_FILTER_WEIGHTS_B_SPLINE_QCOM = 2,
+    VK_CUBIC_FILTER_WEIGHTS_MITCHELL_NETRAVALI_QCOM = 3,
+    VK_CUBIC_FILTER_WEIGHTS_MAX_ENUM_QCOM = 0x7FFFFFFF
+} VkCubicFilterWeightsQCOM;
+typedef struct VkPhysicalDeviceCubicWeightsFeaturesQCOM {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           selectableCubicWeights;
+} VkPhysicalDeviceCubicWeightsFeaturesQCOM;
+
+typedef struct VkSamplerCubicWeightsCreateInfoQCOM {
+    VkStructureType             sType;
+    const void*                 pNext;
+    VkCubicFilterWeightsQCOM    cubicWeights;
+} VkSamplerCubicWeightsCreateInfoQCOM;
+
+typedef struct VkBlitImageCubicWeightsInfoQCOM {
+    VkStructureType             sType;
+    const void*                 pNext;
+    VkCubicFilterWeightsQCOM    cubicWeights;
+} VkBlitImageCubicWeightsInfoQCOM;
+
+
+
+// VK_QCOM_ycbcr_degamma is a preprocessor guard. Do not pass it to API calls.
+#define VK_QCOM_ycbcr_degamma 1
+#define VK_QCOM_YCBCR_DEGAMMA_SPEC_VERSION 1
+#define VK_QCOM_YCBCR_DEGAMMA_EXTENSION_NAME "VK_QCOM_ycbcr_degamma"
+typedef struct VkPhysicalDeviceYcbcrDegammaFeaturesQCOM {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           ycbcrDegamma;
+} VkPhysicalDeviceYcbcrDegammaFeaturesQCOM;
+
+typedef struct VkSamplerYcbcrConversionYcbcrDegammaCreateInfoQCOM {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           enableYDegamma;
+    VkBool32           enableCbCrDegamma;
+} VkSamplerYcbcrConversionYcbcrDegammaCreateInfoQCOM;
+
+
+
+// VK_QCOM_filter_cubic_clamp is a preprocessor guard. Do not pass it to API calls.
+#define VK_QCOM_filter_cubic_clamp 1
+#define VK_QCOM_FILTER_CUBIC_CLAMP_SPEC_VERSION 1
+#define VK_QCOM_FILTER_CUBIC_CLAMP_EXTENSION_NAME "VK_QCOM_filter_cubic_clamp"
+typedef struct VkPhysicalDeviceCubicClampFeaturesQCOM {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           cubicRangeClamp;
+} VkPhysicalDeviceCubicClampFeaturesQCOM;
+
+
+
 // VK_EXT_attachment_feedback_loop_dynamic_state is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_attachment_feedback_loop_dynamic_state 1
 #define VK_EXT_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_SPEC_VERSION 1
@@ -18655,6 +18817,36 @@ VKAPI_ATTR void VKAPI_CALL vkCmdSetAttachmentFeedbackLoopEnableEXT(
     VkCommandBuffer                             commandBuffer,
     VkImageAspectFlags                          aspectMask);
 #endif
+
+
+// VK_MSFT_layered_driver is a preprocessor guard. Do not pass it to API calls.
+#define VK_MSFT_layered_driver 1
+#define VK_MSFT_LAYERED_DRIVER_SPEC_VERSION 1
+#define VK_MSFT_LAYERED_DRIVER_EXTENSION_NAME "VK_MSFT_layered_driver"
+
+typedef enum VkLayeredDriverUnderlyingApiMSFT {
+    VK_LAYERED_DRIVER_UNDERLYING_API_NONE_MSFT = 0,
+    VK_LAYERED_DRIVER_UNDERLYING_API_D3D12_MSFT = 1,
+    VK_LAYERED_DRIVER_UNDERLYING_API_MAX_ENUM_MSFT = 0x7FFFFFFF
+} VkLayeredDriverUnderlyingApiMSFT;
+typedef struct VkPhysicalDeviceLayeredDriverPropertiesMSFT {
+    VkStructureType                     sType;
+    void*                               pNext;
+    VkLayeredDriverUnderlyingApiMSFT    underlyingAPI;
+} VkPhysicalDeviceLayeredDriverPropertiesMSFT;
+
+
+
+// VK_NV_descriptor_pool_overallocation is a preprocessor guard. Do not pass it to API calls.
+#define VK_NV_descriptor_pool_overallocation 1
+#define VK_NV_DESCRIPTOR_POOL_OVERALLOCATION_SPEC_VERSION 1
+#define VK_NV_DESCRIPTOR_POOL_OVERALLOCATION_EXTENSION_NAME "VK_NV_descriptor_pool_overallocation"
+typedef struct VkPhysicalDeviceDescriptorPoolOverallocationFeaturesNV {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           descriptorPoolOverallocation;
+} VkPhysicalDeviceDescriptorPoolOverallocationFeaturesNV;
+
 
 
 // VK_KHR_acceleration_structure is a preprocessor guard. Do not pass it to API calls.

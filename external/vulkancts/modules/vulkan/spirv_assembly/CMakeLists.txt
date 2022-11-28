@@ -85,6 +85,8 @@ set(DEQP_VK_VKSC_SPIRV_ASSEMBLY_SRCS
 set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmIntegerDotProductTests.cpp
 	vktSpvAsmIntegerDotProductTests.hpp
+	vktSpvAsmUntypedPointersTests.cpp
+	vktSpvAsmUntypedPointersTests.hpp
 	)
 
 set(DEQP_VK_SPIRV_ASSEMBLY_LIBS

@@ -528,6 +528,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmTrinaryMinMaxTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmTypeTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmUboMatrixPaddingTests.cpp \
+	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmUntypedPointersTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmUtils.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmVariableInitTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmVariablePointersTests.cpp \

@@ -192,7 +192,7 @@ typedef VKAPI_ATTR VkBool32	(VKAPI_CALL* PFN_vkDebugReportCallbackEXT)			(VkDebu
 																				 const char*				pMessage,
 																				 void*						pUserData);
 
-typedef VKAPI_ATTR PFN_vkVoidFunction (VKAPI_CALL* PFN_vkGetInstanceProcAddrLUNARG)	(VkInstance instance, const char pName);
+typedef VKAPI_ATTR PFN_vkVoidFunction	(VKAPI_CALL* PFN_vkGetInstanceProcAddrLUNARG)	(VkInstance instance, const char pName);
 
 #endif // CTS_USES_VULKANSC
 

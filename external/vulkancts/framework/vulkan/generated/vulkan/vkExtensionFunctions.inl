@@ -1193,6 +1193,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_frame_boundary")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_multisampled_render_to_single_sampled")
 	{
 		return;
@@ -1216,6 +1220,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_KHR_ray_tracing_maintenance1")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_shader_untyped_pointers")
 	{
 		return;
 	}
@@ -1413,11 +1421,35 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_QCOM_image_processing2")
+	{
+		return;
+	}
+	if (extName == "VK_QCOM_filter_cubic_weights")
+	{
+		return;
+	}
+	if (extName == "VK_QCOM_ycbcr_degamma")
+	{
+		return;
+	}
+	if (extName == "VK_QCOM_filter_cubic_clamp")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_attachment_feedback_loop_dynamic_state")
 	{
 		return;
 	}
 	if (extName == "VK_QNX_external_memory_screen_buffer")
+	{
+		return;
+	}
+	if (extName == "VK_MSFT_layered_driver")
+	{
+		return;
+	}
+	if (extName == "VK_NV_descriptor_pool_overallocation")
 	{
 		return;
 	}
@@ -2851,6 +2883,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkGetPipelinePropertiesEXT");
 		return;
 	}
+	if (extName == "VK_EXT_frame_boundary")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_multisampled_render_to_single_sampled")
 	{
 		return;
@@ -2880,6 +2916,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	if (extName == "VK_KHR_ray_tracing_maintenance1")
 	{
 		functions.push_back("vkCmdTraceRaysIndirect2KHR");
+		return;
+	}
+	if (extName == "VK_KHR_shader_untyped_pointers")
+	{
 		return;
 	}
 	if (extName == "VK_EXT_global_priority_query")
@@ -3181,6 +3221,22 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_QCOM_image_processing2")
+	{
+		return;
+	}
+	if (extName == "VK_QCOM_filter_cubic_weights")
+	{
+		return;
+	}
+	if (extName == "VK_QCOM_ycbcr_degamma")
+	{
+		return;
+	}
+	if (extName == "VK_QCOM_filter_cubic_clamp")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_attachment_feedback_loop_dynamic_state")
 	{
 		functions.push_back("vkCmdSetAttachmentFeedbackLoopEnableEXT");
@@ -3189,6 +3245,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	if (extName == "VK_QNX_external_memory_screen_buffer")
 	{
 		functions.push_back("vkGetScreenBufferPropertiesQNX");
+		return;
+	}
+	if (extName == "VK_MSFT_layered_driver")
+	{
+		return;
+	}
+	if (extName == "VK_NV_descriptor_pool_overallocation")
+	{
 		return;
 	}
 	if (extName == "vulkan_video_codecs_common")
@@ -3510,11 +3574,13 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_HUAWEI_invocation_mask",
 	"VK_NV_external_memory_rdma",
 	"VK_EXT_pipeline_properties",
+	"VK_EXT_frame_boundary",
 	"VK_EXT_multisampled_render_to_single_sampled",
 	"VK_EXT_extended_dynamic_state2",
 	"VK_EXT_color_write_enable",
 	"VK_EXT_primitives_generated_query",
 	"VK_KHR_ray_tracing_maintenance1",
+	"VK_KHR_shader_untyped_pointers",
 	"VK_EXT_global_priority_query",
 	"VK_EXT_image_view_min_lod",
 	"VK_EXT_multi_draw",
@@ -3560,6 +3626,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_dynamic_rendering_unused_attachments",
 	"VK_KHR_cooperative_matrix",
 	"VK_QCOM_multiview_per_view_render_areas",
+	"VK_QCOM_image_processing2",
+	"VK_QCOM_filter_cubic_weights",
+	"VK_QCOM_ycbcr_degamma",
+	"VK_QCOM_filter_cubic_clamp",
 	"VK_EXT_attachment_feedback_loop_dynamic_state",
 	"VK_QNX_external_memory_screen_buffer",
+	"VK_MSFT_layered_driver",
+	"VK_NV_descriptor_pool_overallocation",
 };

@@ -89,6 +89,7 @@
 #include "vktSpvAsmIntegerDotProductTests.hpp"
 #endif // CTS_USES_VULKANSC
 #include "vktSpvAsmPhysicalStorageBufferPointerTests.hpp"
+#include "vktSpvAsmUntypedPointersTests.hpp"
 
 #include <cmath>
 #include <limits>
@@ -20873,6 +20874,9 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 #endif // CTS_USES_VULKANSC
 	computeTests->addChild(createPhysicalStorageBufferTestGroup(testCtx));
 	computeTests->addChild(createOpMulExtendedGroup(testCtx));
+#ifndef CTS_USES_VULKANSC
+	computeTests->addChild(createUntypedPointersTestGroup(testCtx));
+#endif // CTS_USES_VULKANSC
 
 	graphicsTests->addChild(createCrossStageInterfaceTests(testCtx));
 	graphicsTests->addChild(createSpivVersionCheckTests(testCtx, !testComputePipeline));
