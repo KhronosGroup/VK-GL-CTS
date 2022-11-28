@@ -66,7 +66,7 @@ vector<string> removeExtensions (const vector<string>& a, const vector<const cha
 	return res;
 }
 
-Move<VkDevice> createRobustBufferAccessDevice (Context& context, VkInstance instance, const InstanceInterface& vki, const VkPhysicalDeviceFeatures2* enabledFeatures2)
+Move<VkDevice> createRobustBufferAccessDevice (Context& context, const VkPhysicalDeviceFeatures2* enabledFeatures2)
 {
 	const float queuePriority = 1.0f;
 
@@ -148,7 +148,12 @@ Move<VkDevice> createRobustBufferAccessDevice (Context& context, VkInstance inst
 		enabledFeatures2 ? NULL : &enabledFeatures	// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 
-	const VkPhysicalDevice			physicalDevice = chooseDevice(vki, instance, context.getTestContext().getCommandLine());
+	// We are creating a custom device with a potentially large amount of extensions and features enabled, using the default device
+	// as a reference. Some implementations may only enable certain device extensions if some instance extensions are enabled, so in
+	// this case it's important to reuse the context instance when creating the device.
+	const auto&	vki				= context.getInstanceInterface();
+	const auto	instance		= context.getInstance();
+	const auto	physicalDevice	= chooseDevice(vki, instance, context.getTestContext().getCommandLine());
 
 	return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(),
 							  instance, vki, physicalDevice, &deviceParams);
@@ -304,20 +309,15 @@ void logValue (std::ostringstream& logMsg, const void* valuePtr, VkFormat valueF
 // TestEnvironment
 
 TestEnvironment::TestEnvironment (Context&					context,
-								  VkInstance				instance,
-								  const InstanceInterface&	instanceInterface,
+								  const DeviceInterface&	vk,
 								  VkDevice					device,
 								  VkDescriptorSetLayout		descriptorSetLayout,
 								  VkDescriptorSet			descriptorSet)
 	: m_context				(context)
-	, m_instance			(instance)
-	, m_instanceInterface	(instanceInterface)
 	, m_device				(device)
 	, m_descriptorSetLayout	(descriptorSetLayout)
 	, m_descriptorSet		(descriptorSet)
 {
-	const DeviceInterface& vk = context.getDeviceInterface();
-
 	// Create command pool
 	{
 		const VkCommandPoolCreateInfo commandPoolParams =
@@ -354,8 +354,7 @@ VkCommandBuffer TestEnvironment::getCommandBuffer (void)
 // GraphicsEnvironment
 
 GraphicsEnvironment::GraphicsEnvironment (Context&					context,
-										  VkInstance				instance,
-										  const InstanceInterface&	instanceInterface,
+										  const DeviceInterface&	vk,
 										  VkDevice					device,
 										  VkDescriptorSetLayout		descriptorSetLayout,
 										  VkDescriptorSet			descriptorSet,
@@ -364,15 +363,16 @@ GraphicsEnvironment::GraphicsEnvironment (Context&					context,
 										  const DrawConfig&			drawConfig,
 										  bool						testPipelineRobustness)
 
-	: TestEnvironment		(context, instance, instanceInterface, device, descriptorSetLayout, descriptorSet)
+	: TestEnvironment		(context, vk, device, descriptorSetLayout, descriptorSet)
 	, m_renderSize			(16, 16)
 	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
 {
-	const DeviceInterface&		vk						= context.getDeviceInterface();
+	const auto&					vki						= context.getInstanceInterface();
+	const auto					instance				= context.getInstance();
 	const deUint32				queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
 	const VkComponentMapping	componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-	const VkPhysicalDevice		physicalDevice			= chooseDevice(m_instanceInterface, instance, context.getTestContext().getCommandLine());
-	SimpleAllocator				memAlloc				(vk, m_device, getPhysicalDeviceMemoryProperties(m_instanceInterface, physicalDevice));
+	const VkPhysicalDevice		physicalDevice			= chooseDevice(vki, instance, context.getTestContext().getCommandLine());
+	SimpleAllocator				memAlloc				(vk, m_device, getPhysicalDeviceMemoryProperties(vki, physicalDevice));
 
 	// Create color image and view
 	{
@@ -562,17 +562,14 @@ GraphicsEnvironment::GraphicsEnvironment (Context&					context,
 // ComputeEnvironment
 
 ComputeEnvironment::ComputeEnvironment (Context&					context,
-										VkInstance					instance,
-										const InstanceInterface&	instanceInterface,
+										const DeviceInterface&		vk,
 										VkDevice					device,
 										VkDescriptorSetLayout		descriptorSetLayout,
 										VkDescriptorSet				descriptorSet,
 										bool						testPipelineRobustness)
 
-	: TestEnvironment	(context, instance, instanceInterface, device, descriptorSetLayout, descriptorSet)
+	: TestEnvironment	(context, vk, device, descriptorSetLayout, descriptorSet)
 {
-	const DeviceInterface& vk = context.getDeviceInterface();
-
 	// Create pipeline layout
 	{
 		const VkPipelineLayoutCreateInfo pipelineLayoutParams =
