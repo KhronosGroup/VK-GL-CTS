@@ -675,6 +675,9 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 			VK_COLOR_COMPONENT_B_BIT |
 			VK_COLOR_COMPONENT_A_BIT,
 		};
+
+		deUint32 colorAttachmentCount = (m_colorFormat != VK_FORMAT_UNDEFINED) ? 1u : 0u;
+
 		const VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,		// VkStructureType								sType
@@ -682,7 +685,7 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 			0u,																// VkPipelineColorBlendStateCreateFlags			flags
 			VK_FALSE,														// VkBool32										logicOpEnable
 			VK_LOGIC_OP_CLEAR,												// VkLogicOp									logicOp
-			1u,																// deUint32										attachmentCount
+			colorAttachmentCount,											// deUint32										attachmentCount
 			&blendState,													// const VkPipelineColorBlendAttachmentState*	pAttachments
 			{ 0.0f, 0.0f, 0.0f, 0.0f }										// float										blendConstants[4]
 		};
