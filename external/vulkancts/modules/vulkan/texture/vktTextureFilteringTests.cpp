@@ -107,6 +107,11 @@ void checkTextureSupport (Context& context, const Texture2DTestCaseParameters& t
 
 	if (testParameters.wrapS == tcu::Sampler::Sampler::MIRRORED_ONCE || testParameters.wrapT == tcu::Sampler::Sampler::MIRRORED_ONCE)
 		context.requireDeviceFunctionality("VK_KHR_sampler_mirror_clamp_to_edge");
+
+#ifndef CTS_USES_VULKANSC
+	if (testParameters.format == VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16 && testParameters.mipmaps && context.getRGBA10X6FormatsFeaturesEXT().formatRgba10x6WithoutYCbCrSampler == VK_FALSE)
+		TCU_THROW(NotSupportedError, "formatRgba10x6WithoutYCbCrSampler not supported");
+#endif
 }
 
 template <>
@@ -121,6 +126,11 @@ void checkTextureSupport (Context& context, const Texture2DArrayTestCaseParamete
 {
 	if (testParameters.wrapS == tcu::Sampler::Sampler::MIRRORED_ONCE || testParameters.wrapT == tcu::Sampler::Sampler::MIRRORED_ONCE)
 		context.requireDeviceFunctionality("VK_KHR_sampler_mirror_clamp_to_edge");
+
+#ifndef CTS_USES_VULKANSC
+	if (testParameters.format == VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16 && testParameters.mipmaps && context.getRGBA10X6FormatsFeaturesEXT().formatRgba10x6WithoutYCbCrSampler == VK_FALSE)
+		TCU_THROW(NotSupportedError, "formatRgba10x6WithoutYCbCrSampler not supported");
+#endif
 }
 
 template <>
@@ -128,6 +138,11 @@ void checkTextureSupport (Context& context, const Texture3DTestCaseParameters& t
 {
 	if (testParameters.wrapS == tcu::Sampler::Sampler::MIRRORED_ONCE || testParameters.wrapT == tcu::Sampler::Sampler::MIRRORED_ONCE || testParameters.wrapR == tcu::Sampler::Sampler::MIRRORED_ONCE)
 		context.requireDeviceFunctionality("VK_KHR_sampler_mirror_clamp_to_edge");
+
+#ifndef CTS_USES_VULKANSC
+	if (testParameters.format == VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16 && context.getRGBA10X6FormatsFeaturesEXT().formatRgba10x6WithoutYCbCrSampler == VK_FALSE)
+		TCU_THROW(NotSupportedError, "formatRgba10x6WithoutYCbCrSampler not supported");
+#endif
 }
 
 } // util
@@ -1684,11 +1699,6 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 		// Formats.
 		for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(filterableFormatsByType); fmtNdx++)
 		{
-			// YCbCr conversion formats require that imageType is VK_IMAGE_TYPE_2D.
-			// Skip for 3D texture filtering tests.
-			if (isYCbCrConversionFormat(filterableFormatsByType[fmtNdx].format))
-				continue;
-
 			const string					filterGroupName = filterableFormatsByType[fmtNdx].name;
 			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str(), ""));
 
