@@ -1428,6 +1428,12 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runNullDescriptorSet(void)
 
 		fragPipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
 	}
+	else
+	{
+		pipelineLayoutCreateInfo.setLayoutCount = 0u;
+		pipelineLayoutCreateInfo.pSetLayouts	= DE_NULL;
+		fragPipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
+	}
 
 	// create descriptor pool
 	Move<VkDescriptorPool> descriptorPool = DescriptorPoolBuilder()

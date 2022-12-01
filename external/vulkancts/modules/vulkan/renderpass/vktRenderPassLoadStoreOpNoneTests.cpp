@@ -779,8 +779,10 @@ void LoadStoreOpNoneTestInstance::drawCommands(VkCommandBuffer						cmdBuffer,
 		{
 			if (att.usage & ATTACHMENT_USAGE_DEPTH_STENCIL)
 			{
-				clearAttachments.push_back({ getImageAspectFlags(mapVkFormat(m_testParams.depthStencilFormat)), 0u,
-											makeClearValueDepthStencil(0.25, 64) });
+				VkImageAspectFlags	aspectMask = 0;
+				if (att.usage & ATTACHMENT_USAGE_DEPTH) aspectMask |= VK_IMAGE_ASPECT_DEPTH_BIT;
+				if (att.usage & ATTACHMENT_USAGE_STENCIL) aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+				clearAttachments.push_back({ aspectMask, 0u, makeClearValueDepthStencil(0.25, 64) });
 			}
 			else
 			{
