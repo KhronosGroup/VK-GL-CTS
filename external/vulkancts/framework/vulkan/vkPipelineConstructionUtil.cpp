@@ -28,11 +28,15 @@
 #include "deSTLUtil.hpp"
 #include "tcuVector.hpp"
 #include "tcuVectorType.hpp"
+#include "tcuMaybe.hpp"
 #include "vkPipelineConstructionUtil.hpp"
 
 #include <memory>
 
 namespace vk
+{
+
+namespace
 {
 
 enum PipelineSetupState
@@ -43,6 +47,10 @@ enum PipelineSetupState
 	PSS_FRAGMENT_SHADER				= 0x00000004,
 	PSS_FRAGMENT_OUTPUT_INTERFACE	= 0x00000008,
 };
+
+using TessellationDomainOriginStatePtr = std::unique_ptr<VkPipelineTessellationDomainOriginStateCreateInfo>;
+
+} // anonymous namespace
 
 static const VkVertexInputBindingDescription defaultVertexInputBindingDescription
 {
@@ -189,8 +197,8 @@ void addToChain(void** structThatStartsChain, void* structToAddAtTheEnd)
 	if (structToAddAtTheEnd == DE_NULL)
 		return;
 
-	// just cast to randomly picked structure that has non const pNext pointer
-	auto* structToAddAtTheEndCasted = reinterpret_cast<VkPhysicalDevicePointClippingProperties*>(structToAddAtTheEnd);
+	// Cast to the base out structure which has a non-const pNext pointer.
+	auto* structToAddAtTheEndCasted = reinterpret_cast<VkBaseOutStructure*>(structToAddAtTheEnd);
 
 	// make sure that pNext pointer of structure that is added to chain is empty;
 	// we are construting chains on our own and there are cases that use same
@@ -210,11 +218,11 @@ void addToChain(void** structThatStartsChain, void* structToAddAtTheEnd)
 			return;
 		}
 
-		// just cast to randomly picked structure that has non const pNext pointer
-		auto* gpl = reinterpret_cast<VkPhysicalDevicePointClippingProperties*>(*structInChain);
+		// Cast to the base out structure which has a non-const pNext pointer.
+		auto* gpl = reinterpret_cast<VkBaseOutStructure*>(*structInChain);
 
 		// move structure pointer one position down the pNext chain
-		structInChain = &gpl->pNext;
+		structInChain = reinterpret_cast<void**>(&gpl->pNext);
 	}
 	while (--safetyCouter);
 
@@ -246,7 +254,9 @@ struct GraphicsPipelineWrapper::InternalData
 	VkPipelineFragmentShadingRateStateCreateInfoKHR*	pFragmentShadingRateState;
 	PipelineRenderingCreateInfoWrapper					pRenderingState;
 	const VkPipelineDynamicStateCreateInfo*				pDynamicState;
+	PipelineRepresentativeFragmentTestCreateInfoWrapper	pRepresentativeFragmentTestState;
 
+	TessellationDomainOriginStatePtr					pTessellationDomainOrigin;
 	deBool												useViewportState;
 	deBool												useDefaultRasterizationState;
 	deBool												useDefaultDepthStencilState;
@@ -306,6 +316,8 @@ struct GraphicsPipelineWrapper::InternalData
 		}
 		, pFragmentShadingRateState		(nullptr)
 		, pDynamicState					(DE_NULL)
+		, pRepresentativeFragmentTestState(nullptr)
+		, pTessellationDomainOrigin		()
 		, useViewportState				(DE_TRUE)
 		, useDefaultRasterizationState	(DE_FALSE)
 		, useDefaultDepthStencilState	(DE_FALSE)
@@ -353,6 +365,15 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setDynamicState(const VkPipeli
 	return *this;
 }
 
+GraphicsPipelineWrapper& GraphicsPipelineWrapper::setRepresentativeFragmentTestState(PipelineRepresentativeFragmentTestCreateInfoWrapper representativeFragmentTestState)
+{
+	// Representative fragment test state is needed by the fragment shader state.
+	DE_ASSERT(m_internalData && (m_internalData->setupState < PSS_FRAGMENT_SHADER));
+
+	m_internalData->pRepresentativeFragmentTestState = representativeFragmentTestState;
+	return *this;
+}
+
 GraphicsPipelineWrapper& GraphicsPipelineWrapper::setDefaultTopology(const VkPrimitiveTopology topology)
 {
 	// topology is needed by vertex input state, make sure vertex input state was not setup yet
@@ -369,6 +390,28 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setDefaultPatchControlPoints(c
 	DE_ASSERT(m_internalData && (m_internalData->setupState < PSS_PRE_RASTERIZATION_SHADERS));
 
 	m_internalData->tessellationState.patchControlPoints = patchControlPoints;
+
+	return *this;
+}
+
+GraphicsPipelineWrapper& GraphicsPipelineWrapper::setDefaultTessellationDomainOrigin (const VkTessellationDomainOrigin domainOrigin, bool forceExtStruct)
+{
+	// Tessellation domain origin is needed by pre-rasterization shader state, make sure pre-rasterization state was not setup yet
+	DE_ASSERT(m_internalData && (m_internalData->setupState < PSS_PRE_RASTERIZATION_SHADERS));
+
+	// We need the extension structure when:
+	// - We want to force it.
+	// - The domain origin is not the default value.
+	// - We have already hooked the extension structure.
+	if (forceExtStruct || domainOrigin != VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT || m_internalData->pTessellationDomainOrigin)
+	{
+		if (!m_internalData->pTessellationDomainOrigin)
+		{
+			m_internalData->pTessellationDomainOrigin.reset(new VkPipelineTessellationDomainOriginStateCreateInfo(initVulkanStructure()));
+			m_internalData->tessellationState.pNext = m_internalData->pTessellationDomainOrigin.get();
+		}
+		m_internalData->pTessellationDomainOrigin->domainOrigin = domainOrigin;
+	}
 
 	return *this;
 }
@@ -444,12 +487,12 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setDefaultScissorsCount(deUint
 	return *this;
 }
 
-GraphicsPipelineWrapper& GraphicsPipelineWrapper::setDepthClipControl(PipelineViewportDepthClipControlCreateInfoWrapper& depthClipControlCreateInfo)
+GraphicsPipelineWrapper& GraphicsPipelineWrapper::setViewportStatePnext(const void* pNext)
 {
 	// ViewportState is used in pre-rasterization shader state, make sure pre-rasterization state was not setup yet
 	DE_ASSERT(m_internalData && (m_internalData->setupState < PSS_PRE_RASTERIZATION_SHADERS));
 
-	m_internalData->viewportState.pNext = depthClipControlCreateInfo.ptr;
+	m_internalData->viewportState.pNext = pNext;
 
 	return *this;
 }
@@ -529,7 +572,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupVertexInputState(const Vk
 		if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
 			pipelinePartCreateInfo.flags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
 
-		m_pipelineParts[0] = createGraphicsPipeline(m_internalData->vk, m_internalData->device, partPipelineCache, &pipelinePartCreateInfo);
+		m_pipelineParts[0] = makeGraphicsPipeline(m_internalData->vk, m_internalData->device, partPipelineCache, &pipelinePartCreateInfo);
 	}
 #endif // CTS_USES_VULKANSC
 
@@ -1050,6 +1093,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState2(cons
 		addToChain(&firstStructInChain, m_internalData->pFragmentShadingRateState);
 		addToChain(&firstStructInChain, m_internalData->pRenderingState.ptr);
 		addToChain(&firstStructInChain, partCreationFeedback.ptr);
+		addToChain(&firstStructInChain, m_internalData->pRepresentativeFragmentTestState.ptr);
 
 		VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
 		pipelinePartCreateInfo.pNext				= firstStructInChain;
@@ -1137,7 +1181,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentOutputState(const
 		if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
 			pipelinePartCreateInfo.flags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
 
-		m_pipelineParts[3] = createGraphicsPipeline(m_internalData->vk, m_internalData->device, partPipelineCache, &pipelinePartCreateInfo);
+		m_pipelineParts[3] = makeGraphicsPipeline(m_internalData->vk, m_internalData->device, partPipelineCache, &pipelinePartCreateInfo);
 	}
 #endif // CTS_USES_VULKANSC
 
@@ -1201,6 +1245,7 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 		// note: there might be other structures in the chain already
 		void* firstStructInChain = static_cast<void*>(pointerToCreateInfo);
 		addToChain(&firstStructInChain, creationFeedback.ptr);
+		addToChain(&firstStructInChain, m_internalData->pRepresentativeFragmentTestState.ptr);
 	}
 #endif // CTS_USES_VULKANSC
 

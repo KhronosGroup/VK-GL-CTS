@@ -90,6 +90,11 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 		"VK_ARM_rasterization_order_attachment_access",
 		"VK_GOOGLE_surfaceless_query",
 		"VK_FUCHSIA_",
+		"VK_NV_fragment_coverage_to_color",
+		"VK_NV_framebuffer_mixed_samples",
+		"VK_NV_coverage_reduction_mode",
+		"VK_NV_viewport_swizzle",
+		"VK_NV_representative_fragment_test",
 	};
 
 	for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)

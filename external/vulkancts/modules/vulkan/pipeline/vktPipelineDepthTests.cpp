@@ -730,7 +730,7 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 
 			m_graphicsPipelines[quadNdx].setDefaultMultisampleState()
 										.setDefaultColorBlendState()
-										.setDepthClipControl(depthClipControlWrapper)
+										.setViewportStatePnext(depthClipControlWrapper.ptr)
 										.setDynamicState(&dynamicStateCreateInfo)
 										.setupVertexInputState(&vertexInputStateParams, &inputAssemblyStateParams)
 										.setupPreRasterizationShaderState((dynamicViewport ? badViewports : viewports),
@@ -755,7 +755,7 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 				{
 					m_altGraphicsPipelines[quadNdx].setDefaultMultisampleState()
 												   .setDefaultColorBlendState()
-												   .setDepthClipControl(depthClipControl01Wrapper)
+												   .setViewportStatePnext(depthClipControl01Wrapper.ptr)
 												   .setDynamicState(&dynamicStateCreateInfo)
 												   .setupVertexInputState(&vertexInputStateParams, &inputAssemblyStateParams)
 												   .setupPreRasterizationShaderState((dynamicViewport ? badViewports : viewports),
@@ -778,7 +778,7 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 				{
 					m_altGraphicsPipelines[quadNdx].setDefaultMultisampleState()
 												   .setDefaultColorBlendState()
-												   .setDepthClipControl(depthClipControl01Wrapper)
+												   .setViewportStatePnext(depthClipControl01Wrapper.ptr)
 												   .setDynamicState(&dynamicStateCreateInfo)
 												   .setupVertexInputState(&vertexInputStateParams)
 												   .setupPreRasterizationShaderState((dynamicViewport ? badViewports : viewports),

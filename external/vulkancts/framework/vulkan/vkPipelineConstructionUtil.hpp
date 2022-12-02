@@ -78,11 +78,13 @@ typedef PointerWrapper<VkPipelineViewportDepthClipControlCreateInfoEXT> Pipeline
 typedef PointerWrapper<VkPipelineRenderingCreateInfoKHR> PipelineRenderingCreateInfoWrapper;
 typedef PointerWrapper<VkPipelineCreationFeedbackCreateInfoEXT> PipelineCreationFeedbackCreateInfoWrapper;
 typedef ConstPointerWrapper<VkPipelineShaderStageModuleIdentifierCreateInfoEXT> PipelineShaderStageModuleIdentifierCreateInfoWrapper;
+typedef PointerWrapper<VkPipelineRepresentativeFragmentTestStateCreateInfoNV> PipelineRepresentativeFragmentTestCreateInfoWrapper;
 #else
 typedef PointerWrapper<void> PipelineViewportDepthClipControlCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineRenderingCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineCreationFeedbackCreateInfoWrapper;
 typedef ConstPointerWrapper<void> PipelineShaderStageModuleIdentifierCreateInfoWrapper;
+typedef PointerWrapper<void> PipelineRepresentativeFragmentTestCreateInfoWrapper;
 #endif
 
 // Class that can build monolithic pipeline or fully separated pipeline libraries
@@ -111,6 +113,9 @@ public:
 	// By default dynamic state has to be specified before specifying other CreateInfo structures
 	GraphicsPipelineWrapper&	setDynamicState						(const VkPipelineDynamicStateCreateInfo* dynamicState);
 
+	// Specify the representative fragment test state.
+	GraphicsPipelineWrapper&	setRepresentativeFragmentTestState	(PipelineRepresentativeFragmentTestCreateInfoWrapper representativeFragmentTestState);
+
 	// Specify topology that is used by default InputAssemblyState in vertex input state. This needs to be
 	// specified only when there is no custom InputAssemblyState provided in setupVertexInputState and when
 	// topology is diferent then VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST which is used by default.
@@ -120,6 +125,9 @@ public:
 	// This can to be specified only when there is no custom TessellationState provided in
 	// setupPreRasterizationShaderState and when patchControlPoints is diferent then 3 which is used by default.
 	GraphicsPipelineWrapper&	setDefaultPatchControlPoints		(const deUint32 patchControlPoints);
+
+	// Specify tesellation domain origin, used by the tessellation state in pre-rasterization shader state.
+	GraphicsPipelineWrapper&	setDefaultTessellationDomainOrigin	(const VkTessellationDomainOrigin domainOrigin, bool forceExtStruct = false);
 
 	// Enable discarding of primitives that is used by default RasterizationState in pre-rasterization shader state.
 	// This can be specified only when there is no custom RasterizationState provided in setupPreRasterizationShaderState.
@@ -138,8 +146,8 @@ public:
 	GraphicsPipelineWrapper&	setDefaultViewportsCount			(deUint32 viewportCount = 0u);
 	GraphicsPipelineWrapper&	setDefaultScissorsCount				(deUint32 scissorCount = 0u);
 
-	// Pre-rasterization shader state uses default ViewportState, this method extends it with VkPipelineViewportDepthClipControlCreateInfoEXT.
-	GraphicsPipelineWrapper&	setDepthClipControl					(PipelineViewportDepthClipControlCreateInfoWrapper& depthClipControlCreateInfo);
+	// Pre-rasterization shader state uses default ViewportState, this method extends the internal structure.
+	GraphicsPipelineWrapper&	setViewportStatePnext				(const void* pNext);
 
 #ifndef CTS_USES_VULKANSC
 	GraphicsPipelineWrapper&	setRenderingColorAttachmentsInfo	(PipelineRenderingCreateInfoWrapper pipelineRenderingCreateInfo);
