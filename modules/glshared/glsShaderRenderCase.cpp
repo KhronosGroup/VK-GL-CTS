@@ -59,7 +59,7 @@ using namespace std;
 using namespace tcu;
 using namespace glu;
 
-static const int			GRID_SIZE				= 64;
+static const int			GRID_SIZE				= 92;
 static const int			MAX_RENDER_WIDTH		= 128;
 static const int			MAX_RENDER_HEIGHT		= 112;
 static const tcu::Vec4		DEFAULT_CLEAR_COLOR		= tcu::Vec4(0.125f, 0.25f, 0.5f, 1.0f);
