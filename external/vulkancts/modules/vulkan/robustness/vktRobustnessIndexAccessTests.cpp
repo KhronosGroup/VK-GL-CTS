@@ -69,7 +69,6 @@ class DrawIndexedInstance : public vkt::TestInstance
 {
 public:
 								DrawIndexedInstance		(Context&										context,
-														 std::shared_ptr<CustomInstanceWrapper>			instanceWrapper,
 														 Move<VkDevice>									device,
 														 DeviceDriverPtr								deviceDriver,
 														 TestMode										mode,
@@ -81,7 +80,6 @@ public:
 
 protected:
 
-	std::shared_ptr<CustomInstanceWrapper>		m_instanceWrapper;
 	Move<VkDevice>								m_device;
 	DeviceDriverPtr								m_deviceDriver;
 	TestMode									m_mode;
@@ -89,13 +87,11 @@ protected:
 };
 
 DrawIndexedInstance::DrawIndexedInstance(Context&								context,
-										 std::shared_ptr<CustomInstanceWrapper>	instanceWrapper,
 										 Move<VkDevice>							device,
 										 DeviceDriverPtr						deviceDriver,
 										 TestMode								mode,
 										 deUint32								robustnessVersion)
 	: vkt::TestInstance			(context)
-	, m_instanceWrapper			(instanceWrapper)
 	, m_device					(device)
 	, m_deviceDriver			(deviceDriver)
 	, m_mode					(mode)
@@ -107,8 +103,9 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
 {
 	const DeviceInterface&	vk					= *m_deviceDriver;
 	const deUint32			queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-	const VkPhysicalDevice	physicalDevice		= chooseDevice(m_instanceWrapper->instance.getDriver(), m_instanceWrapper->instance, m_context.getTestContext().getCommandLine());
-	SimpleAllocator			memAlloc			(vk, *m_device, getPhysicalDeviceMemoryProperties(m_instanceWrapper->instance.getDriver(), physicalDevice));
+	const auto&				vki					= m_context.getInstanceInterface();
+	const VkPhysicalDevice	physicalDevice		= chooseDevice(vki, m_context.getInstance(), m_context.getTestContext().getCommandLine());
+	SimpleAllocator			memAlloc			(vk, *m_device, getPhysicalDeviceMemoryProperties(vki, physicalDevice));
 
 	// this is testsed - first index in index buffer is outside of bounds
 	const deUint32					oobFirstIndex = std::numeric_limits<deUint32>::max() - 100;
@@ -400,18 +397,17 @@ TestInstance* DrawIndexedTestCase::createInstance(Context& context) const
 		addToChainVulkanStructure(&nextPtr, vulkan12Features);
 	}
 
-	std::shared_ptr<CustomInstanceWrapper> instanceWrapper(new CustomInstanceWrapper(context));
-	Move<VkDevice>	device = createRobustBufferAccessDevice(context, instanceWrapper->instance, instanceWrapper->instance.getDriver(), &features2);
+	Move<VkDevice>	device = createRobustBufferAccessDevice(context, &features2);
 	DeviceDriverPtr deviceDriver =
 #ifndef CTS_USES_VULKANSC
-		DeviceDriverPtr(new DeviceDriver(context.getPlatformInterface(), instanceWrapper->instance, *device));
+		DeviceDriverPtr(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device));
 #else
-		DeviceDriverPtr(new DeviceDriverSC(context.getPlatformInterface(), instanceWrapper->instance, *device, context.getTestContext().getCommandLine(),
+		DeviceDriverPtr(new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *device, context.getTestContext().getCommandLine(),
 										   context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties()),
 						vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *device));
 #endif // CTS_USES_VULKANSC
 
-	return new DrawIndexedInstance(context, instanceWrapper, device, deviceDriver, m_testMode, m_robustnessVersion);
+	return new DrawIndexedInstance(context, device, deviceDriver, m_testMode, m_robustnessVersion);
 }
 
 void DrawIndexedTestCase::initPrograms(SourceCollections& sourceCollections) const

@@ -68,7 +68,7 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	vk::VkPhysicalDeviceAddressBindingReportFeaturesEXT physicalDeviceAddressBindingReportFeaturesEXT;
 	deMemset(&physicalDeviceAddressBindingReportFeaturesEXT, 0, sizeof(physicalDeviceAddressBindingReportFeaturesEXT));
 
-	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_device_address_binding_report")) )
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_device_address_binding_report") )
 	{
 		physicalDeviceAddressBindingReportFeaturesEXT.sType = getStructureType<VkPhysicalDeviceAddressBindingReportFeaturesEXT>();
 		*nextPtr = &physicalDeviceAddressBindingReportFeaturesEXT;
@@ -162,7 +162,7 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	vk::VkPhysicalDeviceDescriptorBufferFeaturesEXT physicalDeviceDescriptorBufferFeaturesEXT;
 	deMemset(&physicalDeviceDescriptorBufferFeaturesEXT, 0, sizeof(physicalDeviceDescriptorBufferFeaturesEXT));
 
-	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_descriptor_buffer")) )
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_descriptor_buffer") )
 	{
 		physicalDeviceDescriptorBufferFeaturesEXT.sType = getStructureType<VkPhysicalDeviceDescriptorBufferFeaturesEXT>();
 		*nextPtr = &physicalDeviceDescriptorBufferFeaturesEXT;
@@ -192,7 +192,7 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	vk::VkPhysicalDeviceFaultFeaturesEXT physicalDeviceFaultFeaturesEXT;
 	deMemset(&physicalDeviceFaultFeaturesEXT, 0, sizeof(physicalDeviceFaultFeaturesEXT));
 
-	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_device_fault")) )
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_device_fault") )
 	{
 		physicalDeviceFaultFeaturesEXT.sType = getStructureType<VkPhysicalDeviceFaultFeaturesEXT>();
 		*nextPtr = &physicalDeviceFaultFeaturesEXT;
@@ -388,7 +388,7 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT physicalDeviceMutableDescriptorTypeFeaturesEXT;
 	deMemset(&physicalDeviceMutableDescriptorTypeFeaturesEXT, 0, sizeof(physicalDeviceMutableDescriptorTypeFeaturesEXT));
 
-	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_mutable_descriptor_type")) )
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_VALVE_mutable_descriptor_type") || canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_mutable_descriptor_type") )
 	{
 		physicalDeviceMutableDescriptorTypeFeaturesEXT.sType = getStructureType<VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT>();
 		*nextPtr = &physicalDeviceMutableDescriptorTypeFeaturesEXT;
