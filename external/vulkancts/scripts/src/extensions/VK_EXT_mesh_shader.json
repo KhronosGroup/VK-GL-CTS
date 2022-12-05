@@ -12,7 +12,7 @@
 		],
 		"VkPhysicalDeviceFragmentShadingRateFeaturesKHR":
 		[
-			{ "features": ["primitiveFragmentShadingRate"],	"requirements": ["VK_KHR_fragment_shading_rate", "physicalDeviceMeshShaderFeaturesEXT.primitiveFragmentShadingRateMeshShader"],	"mandatory_variant": ["vulkan"] }
+			{ "features": ["primitiveFragmentShadingRate"],	"requirements": ["physicalDeviceMeshShaderFeaturesEXT.primitiveFragmentShadingRateMeshShader"],	"mandatory_variant": ["vulkan"] }
 		]
 	}
 }

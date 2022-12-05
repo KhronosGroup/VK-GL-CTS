@@ -2823,15 +2823,17 @@ def writeMandatoryFeatures(api, filename):
 					''])
 		reqs = v[0][1:]
 		if len(reqs) > 0 :
-			cond = 'if ( '
+			cond = ''
 			for i, req in enumerate(reqs) :
+				if len(cond) > 0:
+					cond += ' || '
 				if (req.startswith("ApiVersion")):
 					cond = cond + 'context.contextSupports(vk::' + req + ')'
-				else:
+				elif (req.startswith("VK_")):
 					cond = cond + 'isExtensionStructSupported(deviceExtensions, RequiredExtension("' + req + '"))'
-				if i+1 < len(reqs) :
-					cond = cond + ' || '
-			cond = cond + ' )'
+			if len(cond) == 0:
+				cond = 'false'
+			cond = 'if ( ' + cond + ' )'
 			stream.append('\t' + cond)
 		stream.extend(['\t{',
 					   '\t\t' + v[0][0] + '.sType = getStructureType<' + k + '>();',
