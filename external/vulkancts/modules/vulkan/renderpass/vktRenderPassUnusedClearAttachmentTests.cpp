@@ -1251,6 +1251,24 @@ tcu::TestCaseGroup* createRenderPassUnusedClearAttachmentTests (tcu::TestContext
 			for (size_t i = 0; i < DE_LENGTH_OF_ARRAY(DE_BOOL_VALUES); ++i)
 			{
 				const deBool			depthStencilUse	= DE_BOOL_VALUES[i];
+
+				if (groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING
+					&& dsType != DEPTH_STENCIL_NONE && !depthStencilUse
+					&& groupParams->useSecondaryCmdBuffer
+					&& !groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+				{
+					// In dynamic rendering, we cannot have D/S format set for attachment in secondary command buffer,
+					// while having no attachment in rendering info in primary command buffer.
+					//
+					// Spec:
+					// If vkCmdExecuteCommands is being called within a render pass instance begun with vkCmdBeginRendering and
+					// the VkRenderingInfo::pDepthAttachment->imageView parameter to vkCmdBeginRendering was VK_NULL_HANDLE,
+					// the value of the depthAttachmentFormat member of the VkCommandBufferInheritanceRenderingInfo structure included
+					// in the pNext chain of VkCommandBufferBeginInfo::pInheritanceInfo used to begin recording each element of
+					// pCommandBuffers must be VK_FORMAT_UNDEFINED
+					continue;
+				}
+
 				const std::string		dsCase			= depthStencilTypeName(dsType, dsFormat);
 				std::vector<TestParams>	testTypes;
 
