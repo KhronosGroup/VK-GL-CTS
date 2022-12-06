@@ -445,13 +445,6 @@ class API:
 				'const' in typeNode.tail,
 				nameNode.tail
 			))
-		# <temp>
-		# this temp section should be removed as this is temporary workaround
-		# for vkCreatePipelineBinariesKHR; ATM this function has pResults
-		# as a last paramter which will be removed from spec soon
-		if protoNode.find("name").text == "vkCreatePipelineBinariesKHR" and functionParams[-1].name == "pResults":
-			functionParams.pop(len(functionParams)-1)
-		# </temp>
 		# memorize whole function
 		self.functions.append(Function(
 			protoNode.find("name").text,

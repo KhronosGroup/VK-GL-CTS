@@ -41,11 +41,11 @@ PipelineBinariesWrapper::PipelineBinariesWrapper (const DeviceInterface&		vk,
 {
 }
 
-void PipelineBinariesWrapper::generatePipelineBinaryKeys (const void* pipelineCreateInfo, bool clearPrevious)
+void PipelineBinariesWrapper::generatePipelineBinaryKeys (const void* pPipelineCreateInfo, bool clearPrevious)
 {
 	// retrieve pipeline key count
 	deUint32 keyCount = 0;
-	m_vk.generatePipelineBinaryKeysKHR(m_device, &pipelineCreateInfo, &keyCount, DE_NULL);
+	m_vk.generatePipelineBinaryKeysKHR(m_device, pPipelineCreateInfo, &keyCount, DE_NULL);
 	if (clearPrevious)
 		m_pipelineKeys.clear();
 
@@ -54,7 +54,7 @@ void PipelineBinariesWrapper::generatePipelineBinaryKeys (const void* pipelineCr
 	m_pipelineKeys.resize(previousSize + keyCount);
 
 	// retrieve pipeline keys
-	m_vk.generatePipelineBinaryKeysKHR(m_device, &pipelineCreateInfo, &keyCount, m_pipelineKeys.data() + previousSize);
+	m_vk.generatePipelineBinaryKeysKHR(m_device, pPipelineCreateInfo, &keyCount, m_pipelineKeys.data() + previousSize);
 }
 
 void PipelineBinariesWrapper::createPipelineBinariesFromPipeline (VkPipeline pipeline)
