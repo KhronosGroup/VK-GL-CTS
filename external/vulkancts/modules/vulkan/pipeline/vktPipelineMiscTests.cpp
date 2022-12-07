@@ -173,6 +173,8 @@ void ImplicitPrimitiveIDPassthroughCase::checkSupport (Context &context) const
 	if (m_withTessellationPassthrough)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
 
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+
 	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 }
 
