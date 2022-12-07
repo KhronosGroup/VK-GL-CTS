@@ -4606,6 +4606,8 @@ dEQP-VK.subgroups.shape.mesh.quad_mesh
 dEQP-VK.subgroups.shape.mesh.quad_task
 dEQP-VK.subgroups.shape.mesh.quad_requiredsubgroupsize_mesh
 dEQP-VK.subgroups.shape.mesh.quad_requiredsubgroupsize_task
+dEQP-VK.subgroups.shader_quad_scope.quad_derivatives
+dEQP-VK.subgroups.shader_quad_scope.require_full_quads
 dEQP-VK.subgroups.quad.ray_tracing.subgroupquadbroadcast_i8vec3
 dEQP-VK.subgroups.quad.ray_tracing.subgroupquadbroadcast_nonconst_i8vec3
 dEQP-VK.subgroups.quad.ray_tracing.subgroupquadswaphorizontal_i8vec3

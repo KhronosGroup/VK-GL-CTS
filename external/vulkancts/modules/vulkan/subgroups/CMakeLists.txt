@@ -28,6 +28,8 @@ set(DEQP_VK_VKSC_SUBGROUPS_SRCS
   vktSubgroupsShuffleTests.hpp
   vktSubgroupsQuadTests.cpp
   vktSubgroupsQuadTests.hpp
+  vktSubgroupsQuadScopeTests.cpp
+  vktSubgroupsQuadScopeTests.hpp
   vktSubgroupsScanHelpers.cpp
   vktSubgroupsScanHelpers.hpp
   vktSubgroupsShapeTests.cpp
