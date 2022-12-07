@@ -2123,21 +2123,20 @@ def writeDeviceFeatures2(api, filename):
 
 	allApiVersions = [f.number for f in api.features]
 	promotedTests = []
-	for version in allApiVersions:
-		major = version[0]
-		minor = version[-1]
+	for feature in api.features:
+		major = feature.number[0]
+		minor = feature.number[-1]
 		promotedFeatures = []
-		for ext in api.extensions:
-			if ext.promotedto == "VK_VERSION_" + version.replace('.', '_'):
-				for req in ext.requirementsList:
-					for type in req.newTypes:
-						matchedStructType = re.search(f'VkPhysicalDevice(\w+)Features(\w+)', type.name, re.IGNORECASE)
-						if matchedStructType:
-							promotedFeatures.append(type)
-							break
+		if feature.name == 'VK_VERSION_1_0':
+			continue
+		for requirement in feature.requirementsList:
+			for type in requirement.typeList:
+				matchedStructType = re.search(f'VkPhysicalDevice(\w+)Features', type, re.IGNORECASE)
+				if matchedStructType:
+					promotedFeatures.append(type)
 
 		if promotedFeatures:
-			testName = "createDeviceWithPromoted" + version.replace('.', '') + "Structures"
+			testName = "createDeviceWithPromoted" + feature.number.replace('.', '') + "Structures"
 			promotedTests.append(testName)
 			stream.append("tcu::TestStatus " + testName + " (Context& context)")
 			stream.append("{")
@@ -2167,14 +2166,18 @@ def writeDeviceFeatures2(api, filename):
 	};
 """)
 			lastFeature = ''
+			usedFeatures = []
 			for feature in promotedFeatures:
 				for struct in testedStructureDetail:
-					if feature.name in struct.nameList:
+					if (struct.instanceName in usedFeatures):
+						continue
+					if feature in struct.nameList:
 						if lastFeature:
-							stream.append("\t" + feature.name + " " + struct.instanceName + " = initVulkanStructure(&" + lastFeature + ");")
+							stream.append("\t" + feature + " " + struct.instanceName + " = initVulkanStructure(&" + lastFeature + ");")
 						else:
-							stream.append("\t" + feature.name + " " + struct.instanceName + " = initVulkanStructure();")
+							stream.append("\t" + feature + " " + struct.instanceName + " = initVulkanStructure();")
 						lastFeature = struct.instanceName
+						usedFeatures.append(struct.instanceName)
 						break
 			stream.append("\tVkPhysicalDeviceFeatures2 extFeatures = initVulkanStructure(&" + lastFeature + ");")
 			stream.append("""
