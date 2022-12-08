@@ -803,6 +803,29 @@ Move<VkDescriptorSet> PipelineLibraryTestInstance::createDescriptorSet (const Vk
 	return descriptorSet;
 }
 
+VkFormat getSupportedDepthFormat(const InstanceInterface &vk, const VkPhysicalDevice physicalDevice)
+{
+	VkFormatProperties properties;
+
+	const VkFormat DepthFormats[] =
+	{
+		VK_FORMAT_D32_SFLOAT,
+		VK_FORMAT_X8_D24_UNORM_PACK32,
+		VK_FORMAT_D24_UNORM_S8_UINT,
+		VK_FORMAT_D32_SFLOAT_S8_UINT
+	};
+
+	for (const auto format: DepthFormats)
+	{
+		vk.getPhysicalDeviceFormatProperties(physicalDevice, format, &properties);
+
+		if (properties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+			return format;
+	}
+
+	TCU_THROW(NotSupportedError, "Depth format is not supported");
+}
+
 bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	runtimePipelineTreeConfiguration,
 										   const bool							optimize,
 										   const bool							delayedShaderCreate)
@@ -813,7 +836,7 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 	Allocator&								allocator				= m_context.getDefaultAllocator();
 	tcu::TestLog&							log						= m_context.getTestContext().getLog();
 	const VkFormat							colorFormat				= VK_FORMAT_R8G8B8A8_UNORM;
-	const VkFormat							depthFormat				= VK_FORMAT_D32_SFLOAT;
+	const VkFormat							depthFormat				= getSupportedDepthFormat(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
 	const VkGraphicsPipelineLibraryFlagsEXT	vertPipelineFlags		= static_cast<VkGraphicsPipelineLibraryFlagsEXT>(VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT);
 	const VkGraphicsPipelineLibraryFlagsEXT	fragPipelineFlags		= static_cast<VkGraphicsPipelineLibraryFlagsEXT>(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT);
 	const VkGraphicsPipelineLibraryFlagsEXT	samePipelineFlags		= vertPipelineFlags | fragPipelineFlags;
