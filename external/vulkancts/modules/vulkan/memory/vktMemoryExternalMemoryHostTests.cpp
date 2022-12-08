@@ -335,6 +335,11 @@ tcu::TestStatus ExternalMemoryHostRenderImageTestInstance::iterate ()
 	// Verify image format properties before proceeding.
 	verifyFormatProperties(m_testParams.m_format, tiling, usageFlags);
 
+	VkFormatProperties formatProperties;
+	m_vki.getPhysicalDeviceFormatProperties(m_physicalDevice, m_testParams.m_format, &formatProperties);
+	if ((formatProperties.linearTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) != VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT)
+		TCU_THROW(NotSupportedError, "Format does not support linear tiling for color attachment");
+
 	// Create image with external host memory.
 	m_image = createImage(m_testParams.m_format, tiling, usageFlags);
 
