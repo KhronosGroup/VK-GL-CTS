@@ -362,6 +362,7 @@ tcu::TestStatus SharedLayoutCaseInstance::iterate (void)
 	const vk::VkDevice							device						= m_context.getDevice();
 	const vk::VkQueue							queue						= m_context.getUniversalQueue();
 	const deUint32								queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
+	vk::Allocator&								allocator					= m_context.getDefaultAllocator();
 	const deUint32								bufferSize					= 4;
 
 	// Create descriptor set
@@ -378,12 +379,12 @@ tcu::TestStatus SharedLayoutCaseInstance::iterate (void)
 	};
 
 	vk::Move<vk::VkBuffer>						buffer						(vk::createBuffer(vk, device, &params));
-
-	de::MovePtr<vk::Allocation>					bufferAlloc					(vk::bindBuffer (m_context.getDeviceInterface(), m_context.getDevice(),
-																			m_context.getDefaultAllocator(), *buffer, vk::MemoryRequirement::HostVisible));
+	vk::VkMemoryRequirements					requirements				= getBufferMemoryRequirements(vk, device, *buffer);
+	de::MovePtr<vk::Allocation>					bufferAlloc					(allocator.allocate(requirements, vk::MemoryRequirement::HostVisible));
+	VK_CHECK(vk.bindBufferMemory(device, *buffer, bufferAlloc->getMemory(), bufferAlloc->getOffset()));
 
 	deMemset(bufferAlloc->getHostPtr(), 0, bufferSize);
-	flushMappedMemoryRange(vk, device, bufferAlloc->getMemory(), bufferAlloc->getOffset(), bufferSize);
+	flushMappedMemoryRange(vk, device, bufferAlloc->getMemory(), bufferAlloc->getOffset(), requirements.size);
 
 	vk::DescriptorSetLayoutBuilder				setLayoutBuilder;
 	vk::DescriptorPoolBuilder					poolBuilder;
