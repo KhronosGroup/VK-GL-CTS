@@ -762,6 +762,9 @@ TestInstance* RobustBufferWriteTest::createInstance (Context& context) const
 
 	VkPhysicalDeviceFeatures2							features2					= initVulkanStructure();
 
+	if (!m_testPipelineRobustness)
+		features2.features.robustBufferAccess = VK_TRUE;
+
 	if (is64BitsTest_)
 		features2.features.shaderInt64 = VK_TRUE;
 
