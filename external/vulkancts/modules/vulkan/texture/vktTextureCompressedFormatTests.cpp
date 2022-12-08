@@ -272,7 +272,7 @@ private:
 	const ParameterType&				m_testParameters;
 	const tcu::CompressedTexFormat		m_compressedFormat;
 	TestTexture3DSp						m_texture3D;
-	TextureRenderer						m_renderer3D;
+	TextureRenderer						m_renderer2D;
 };
 
 Compressed3DTestInstance::Compressed3DTestInstance (Context&				context,
@@ -281,9 +281,9 @@ Compressed3DTestInstance::Compressed3DTestInstance (Context&				context,
 	, m_testParameters		(testParameters)
 	, m_compressedFormat	(mapVkCompressedFormat(testParameters.format))
 	, m_texture3D			(TestTexture3DSp(new pipeline::TestTexture3D(m_compressedFormat, testParameters.width, testParameters.height, testParameters.depth)))
-	, m_renderer3D			(context, testParameters.sampleCount, testParameters.width, testParameters.height, testParameters.depth, makeComponentMappingRGBA(), VK_IMAGE_TYPE_3D, VK_IMAGE_VIEW_TYPE_3D)
+	, m_renderer2D			(context, testParameters.sampleCount, testParameters.width, testParameters.height, 1, makeComponentMappingRGBA(), VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D)
 {
-	m_renderer3D.add3DTexture		(m_texture3D, testParameters.aspectMask, testParameters.backingMode);
+	m_renderer2D.add3DTexture		(m_texture3D, testParameters.aspectMask, testParameters.backingMode);
 
 	VkPhysicalDeviceFeatures		physicalFeatures;
 	context.getInstanceInterface().getPhysicalDeviceFeatures(context.getPhysicalDevice(), &physicalFeatures);
@@ -312,12 +312,12 @@ Compressed3DTestInstance::Compressed3DTestInstance (Context&				context,
 tcu::TestStatus Compressed3DTestInstance::iterate (void)
 {
 	tcu::TestLog&					log				= m_context.getTestContext().getLog();
-	const pipeline::TestTexture3D&	texture			= m_renderer3D.get3DTexture(0);
+	const pipeline::TestTexture3D&	texture			= m_renderer2D.get3DTexture(0);
 	const tcu::TextureFormat		textureFormat	= texture.getTextureFormat();
 	const tcu::TextureFormatInfo	formatInfo		= tcu::getTextureFormatInfo(textureFormat);
 
 	ReferenceParams					sampleParams	(TEXTURETYPE_3D);
-	tcu::Surface					rendered		(m_renderer3D.getRenderWidth(), m_renderer3D.getRenderHeight());
+	tcu::Surface					rendered		(m_renderer2D.getRenderWidth(), m_renderer2D.getRenderHeight());
 	vector<float>					texCoord;
 
 	// Setup params for reference.
@@ -376,10 +376,10 @@ tcu::TestStatus Compressed3DTestInstance::iterate (void)
 		// Render texture.
 		z = ((float)sliceNdx + 0.5f) / (float)m_testParameters.depth;
 		computeQuadTexCoord3D(texCoord, tcu::Vec3(0.0f, 0.0f, z), tcu::Vec3(1.0f, 1.0f, z), tcu::IVec3(0,1,2));
-		m_renderer3D.renderQuad(rendered, 0, &texCoord[0], sampleParams);
+		m_renderer2D.renderQuad(rendered, 0, &texCoord[0], sampleParams);
 
 		// Compute reference.
-		tcu::Surface referenceFrame	(m_renderer3D.getRenderWidth(), m_renderer3D.getRenderHeight());
+		tcu::Surface referenceFrame	(m_renderer2D.getRenderWidth(), m_renderer2D.getRenderHeight());
 		sampleTexture(tcu::SurfaceAccess(referenceFrame, pixelFormat), m_texture3D->getTexture(), &texCoord[0], sampleParams);
 
 		// Compare and log.
