@@ -305,6 +305,7 @@ void DepthTest::initPrograms (SourceCollections& programCollection) const
 			"void main (void)\n"
 			"{\n"
 			"	gl_Position = position;\n"
+			"	gl_PointSize = 1.0f;\n"
 			"}\n");
 	}
 }
