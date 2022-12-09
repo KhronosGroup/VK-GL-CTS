@@ -20,8 +20,8 @@
 #
 #-------------------------------------------------------------------------
 
-from build.common import DEQP_DIR
-from build.config import ANY_GENERATOR
+from ctsbuild.common import DEQP_DIR
+from ctsbuild.config import ANY_GENERATOR
 from build_caselists import Module, getModuleByName, getBuildConfig, DEFAULT_BUILD_DIR, DEFAULT_TARGET
 from mustpass import Project, Package, Mustpass, Configuration, include, exclude, genMustpassLists, parseBuildConfigFromCmdLineArgs
 

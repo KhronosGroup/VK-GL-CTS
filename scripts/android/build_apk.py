@@ -39,9 +39,9 @@ import xml.etree.ElementTree
 # Import from <root>/scripts
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from build.common import *
-from build.config import *
-from build.build import *
+from ctsbuild.common import *
+from ctsbuild.config import *
+from ctsbuild.build import *
 
 class SDKEnv:
 	def __init__(self, path):

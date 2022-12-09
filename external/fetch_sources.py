@@ -32,7 +32,7 @@ import stat
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "scripts"))
 
-from build.common import *
+from ctsbuild.common import *
 
 EXTERNAL_DIR	= os.path.realpath(os.path.normpath(os.path.dirname(__file__)))
 

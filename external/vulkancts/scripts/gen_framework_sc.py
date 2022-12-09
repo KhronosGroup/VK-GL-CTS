@@ -32,7 +32,7 @@ from collections import OrderedDict
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts"))
 
-from build.common import DEQP_DIR, execute
+from ctsbuild.common import DEQP_DIR, execute
 from khr_util.format import indentLines, writeInlFile
 
 VULKAN_HEADERS_INCLUDE_DIR	= os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include")
