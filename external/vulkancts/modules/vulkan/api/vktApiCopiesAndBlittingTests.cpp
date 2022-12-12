@@ -10698,7 +10698,7 @@ void addImageToImageArrayTests (tcu::TestCaseGroup* group, AllocationKind alloca
 		paramsArrayToArray.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		paramsArrayToArray.allocationKind				= allocationKind;
 		paramsArrayToArray.extensionUse					= extensionUse;
-		paramsArrayToArray.mipLevels					= deLog2Floor32(deMinu32(defaultHalfExtent.width, defaultHalfExtent.height)) + 1u;
+		paramsArrayToArray.mipLevels					= deLog2Floor32(deMaxu32(defaultHalfExtent.width, defaultHalfExtent.height)) + 1u;
 
 		for (deUint32 mipLevelNdx = 0u; mipLevelNdx < paramsArrayToArray.mipLevels; mipLevelNdx++)
 		{
@@ -13811,7 +13811,7 @@ void addBlittingImageAllFormatsBaseLevelMipmapTests (tcu::TestCaseGroup* group, 
 	params.dst.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 	params.allocationKind		= allocationKind;
 	params.extensionUse			= extensionUse;
-	params.mipLevels			= deLog2Floor32(deMinu32(defaultExtent.width, defaultExtent.height)) + 1u;
+	params.mipLevels			= deLog2Floor32(deMaxu32(defaultExtent.width, defaultExtent.height)) + 1u;
 	params.singleCommand		= DE_TRUE;
 
 	CopyRegion	region;
@@ -13922,7 +13922,7 @@ void addBlittingImageAllFormatsPreviousLevelMipmapTests (tcu::TestCaseGroup* gro
 	params.dst.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 	params.allocationKind		= allocationKind;
 	params.extensionUse			= extensionUse;
-	params.mipLevels			= deLog2Floor32(deMinu32(defaultExtent.width, defaultExtent.height)) + 1u;
+	params.mipLevels			= deLog2Floor32(deMaxu32(defaultExtent.width, defaultExtent.height)) + 1u;
 	params.singleCommand		= DE_FALSE;
 
 	CopyRegion	region;
