@@ -9208,8 +9208,8 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, AllocationK
 {
 	if (allocationKind == ALLOCATION_KIND_DEDICATED)
 	{
-		const int numOfColorImageFormatsToTestFilter = DE_LENGTH_OF_ARRAY(colorImageFormatsToTest);
-		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfColorImageFormatsToTestFilter; ++compatibleFormatsIndex)
+		const int numOfDedicatedAllocationImageToImageFormatsToTest = DE_LENGTH_OF_ARRAY(dedicatedAllocationImageToImageFormatsToTest);
+		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfDedicatedAllocationImageToImageFormatsToTest; ++compatibleFormatsIndex)
 			dedicatedAllocationImageToImageFormatsToTestSet.insert(dedicatedAllocationImageToImageFormatsToTest[compatibleFormatsIndex]);
 	}
 
@@ -9475,7 +9475,7 @@ void addImageToImageDimensionsTests (tcu::TestCaseGroup* group, AllocationKind a
 
 	if (allocationKind == ALLOCATION_KIND_DEDICATED)
 	{
-		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(testFormats); compatibleFormatsIndex++)
+		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(dedicatedAllocationImageToImageFormatsToTest); compatibleFormatsIndex++)
 			dedicatedAllocationImageToImageFormatsToTestSet.insert(dedicatedAllocationImageToImageFormatsToTest[compatibleFormatsIndex]);
 	}
 
