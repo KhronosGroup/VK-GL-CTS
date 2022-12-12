@@ -32,6 +32,7 @@
 #include "vkPipelineConstructionUtil.hpp"
 
 #include <memory>
+#include <set>
 
 namespace vk
 {
@@ -374,6 +375,132 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setRepresentativeFragmentTestS
 	return *this;
 }
 
+std::vector<VkDynamicState> getDynamicStates(const VkPipelineDynamicStateCreateInfo* dynamicStateInfo, uint32_t setupState)
+{
+	static const std::set<VkDynamicState> vertexInputStates {
+		VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE_EXT,
+		VK_DYNAMIC_STATE_VERTEX_INPUT_EXT,
+		VK_DYNAMIC_STATE_PRIMITIVE_TOPOLOGY_EXT,
+		VK_DYNAMIC_STATE_PRIMITIVE_RESTART_ENABLE_EXT,
+	};
+
+	static const std::set<VkDynamicState> preRastStates {
+		VK_DYNAMIC_STATE_VIEWPORT,
+		VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT_EXT,
+		VK_DYNAMIC_STATE_SCISSOR,
+		VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT_EXT,
+		VK_DYNAMIC_STATE_LINE_WIDTH,
+		VK_DYNAMIC_STATE_LINE_STIPPLE_EXT,
+		VK_DYNAMIC_STATE_CULL_MODE_EXT,
+		VK_DYNAMIC_STATE_FRONT_FACE_EXT,
+		VK_DYNAMIC_STATE_PATCH_CONTROL_POINTS_EXT,
+		VK_DYNAMIC_STATE_RASTERIZER_DISCARD_ENABLE_EXT,
+		VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT,
+		VK_DYNAMIC_STATE_DEPTH_BIAS,
+		VK_DYNAMIC_STATE_DEPTH_BIAS_ENABLE_EXT,
+
+#ifndef CTS_USES_VULKANSC
+		VK_DYNAMIC_STATE_TESSELLATION_DOMAIN_ORIGIN_EXT,
+		VK_DYNAMIC_STATE_DEPTH_CLAMP_ENABLE_EXT,
+		VK_DYNAMIC_STATE_POLYGON_MODE_EXT,
+		VK_DYNAMIC_STATE_RASTERIZATION_STREAM_EXT,
+		VK_DYNAMIC_STATE_PROVOKING_VERTEX_MODE_EXT,
+		VK_DYNAMIC_STATE_DEPTH_CLIP_NEGATIVE_ONE_TO_ONE_EXT,
+		VK_DYNAMIC_STATE_DEPTH_CLIP_ENABLE_EXT,
+		VK_DYNAMIC_STATE_LINE_STIPPLE_ENABLE_EXT,
+		VK_DYNAMIC_STATE_LINE_STIPPLE_EXT,
+		VK_DYNAMIC_STATE_CONSERVATIVE_RASTERIZATION_MODE_EXT,
+		VK_DYNAMIC_STATE_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE_EXT,
+		VK_DYNAMIC_STATE_LINE_RASTERIZATION_MODE_EXT,
+		VK_DYNAMIC_STATE_VIEWPORT_SWIZZLE_NV,
+		VK_DYNAMIC_STATE_SHADING_RATE_IMAGE_ENABLE_NV,
+		VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_ENABLE_NV,
+		VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_NV,
+		VK_DYNAMIC_STATE_VIEWPORT_SHADING_RATE_PALETTE_NV,
+		VK_DYNAMIC_STATE_VIEWPORT_COARSE_SAMPLE_ORDER_NV,
+		VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV,
+#endif
+	};
+
+	static const std::set<VkDynamicState> fragShaderStates {
+		VK_DYNAMIC_STATE_DEPTH_BOUNDS,
+		VK_DYNAMIC_STATE_DEPTH_TEST_ENABLE_EXT,
+		VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE_EXT,
+		VK_DYNAMIC_STATE_DEPTH_COMPARE_OP_EXT,
+		VK_DYNAMIC_STATE_DEPTH_BOUNDS_TEST_ENABLE_EXT,
+		VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK,
+		VK_DYNAMIC_STATE_STENCIL_WRITE_MASK,
+		VK_DYNAMIC_STATE_STENCIL_REFERENCE,
+		VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE_EXT,
+		VK_DYNAMIC_STATE_STENCIL_OP_EXT,
+		// Needs MSAA info here as well as fragment output state
+		VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_EXT,
+#ifndef CTS_USES_VULKANSC
+		VK_DYNAMIC_STATE_SAMPLE_MASK_EXT,
+		VK_DYNAMIC_STATE_ALPHA_TO_COVERAGE_ENABLE_EXT,
+		VK_DYNAMIC_STATE_ALPHA_TO_ONE_ENABLE_EXT,
+		VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_ENABLE_EXT,
+		VK_DYNAMIC_STATE_RASTERIZATION_SAMPLES_EXT,
+		VK_DYNAMIC_STATE_COVERAGE_TO_COLOR_ENABLE_NV,
+		VK_DYNAMIC_STATE_COVERAGE_TO_COLOR_LOCATION_NV,
+		VK_DYNAMIC_STATE_COVERAGE_MODULATION_MODE_NV,
+		VK_DYNAMIC_STATE_COVERAGE_MODULATION_TABLE_ENABLE_NV,
+		VK_DYNAMIC_STATE_COVERAGE_MODULATION_TABLE_NV,
+		VK_DYNAMIC_STATE_COVERAGE_REDUCTION_MODE_NV,
+		VK_DYNAMIC_STATE_REPRESENTATIVE_FRAGMENT_TEST_ENABLE_NV,
+
+#endif
+	};
+
+	static const std::set<VkDynamicState> fragOutputStates {
+		VK_DYNAMIC_STATE_LOGIC_OP_EXT,
+		VK_DYNAMIC_STATE_BLEND_CONSTANTS,
+		VK_DYNAMIC_STATE_COLOR_WRITE_ENABLE_EXT,
+		VK_DYNAMIC_STATE_FRAGMENT_SHADING_RATE_KHR,
+		VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_EXT,
+#ifndef CTS_USES_VULKANSC
+		VK_DYNAMIC_STATE_COLOR_WRITE_MASK_EXT,
+		VK_DYNAMIC_STATE_COLOR_BLEND_ENABLE_EXT,
+		VK_DYNAMIC_STATE_COLOR_BLEND_ADVANCED_EXT,
+		VK_DYNAMIC_STATE_COLOR_BLEND_EQUATION_EXT,
+		VK_DYNAMIC_STATE_LOGIC_OP_ENABLE_EXT,
+		VK_DYNAMIC_STATE_SAMPLE_MASK_EXT,
+		VK_DYNAMIC_STATE_ALPHA_TO_COVERAGE_ENABLE_EXT,
+		VK_DYNAMIC_STATE_ALPHA_TO_ONE_ENABLE_EXT,
+		VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_ENABLE_EXT,
+		VK_DYNAMIC_STATE_RASTERIZATION_SAMPLES_EXT,
+		VK_DYNAMIC_STATE_COVERAGE_TO_COLOR_ENABLE_NV,
+		VK_DYNAMIC_STATE_COVERAGE_TO_COLOR_LOCATION_NV,
+		VK_DYNAMIC_STATE_COVERAGE_MODULATION_MODE_NV,
+		VK_DYNAMIC_STATE_COVERAGE_MODULATION_TABLE_ENABLE_NV,
+		VK_DYNAMIC_STATE_COVERAGE_MODULATION_TABLE_NV,
+		VK_DYNAMIC_STATE_COVERAGE_REDUCTION_MODE_NV,
+		VK_DYNAMIC_STATE_REPRESENTATIVE_FRAGMENT_TEST_ENABLE_NV,
+#endif
+	};
+
+	const std::set<VkDynamicState> dynamicStates (dynamicStateInfo->pDynamicStates,
+												  dynamicStateInfo->pDynamicStates + dynamicStateInfo->dynamicStateCount);
+
+	std::set<VkDynamicState> intersectedStates;
+
+	if (setupState & PSS_VERTEX_INPUT_INTERFACE)
+		std::set_intersection(vertexInputStates.begin(), vertexInputStates.end(), dynamicStates.begin(), dynamicStates.end(), std::inserter(intersectedStates, intersectedStates.end()));
+
+	if (setupState & PSS_PRE_RASTERIZATION_SHADERS)
+		std::set_intersection(preRastStates.begin(),	 preRastStates.end(),	  dynamicStates.begin(), dynamicStates.end(), std::inserter(intersectedStates, intersectedStates.end()));
+
+	if (setupState & PSS_FRAGMENT_SHADER)
+		std::set_intersection(fragShaderStates.begin(),  fragShaderStates.end(),  dynamicStates.begin(), dynamicStates.end(), std::inserter(intersectedStates, intersectedStates.end()));
+
+	if (setupState & PSS_FRAGMENT_OUTPUT_INTERFACE)
+		std::set_intersection(fragOutputStates.begin(),  fragOutputStates.end(),  dynamicStates.begin(), dynamicStates.end(), std::inserter(intersectedStates, intersectedStates.end()));
+
+	const std::vector<VkDynamicState> returnedStates (begin(intersectedStates), end(intersectedStates));
+
+	return returnedStates;
+}
+
 GraphicsPipelineWrapper& GraphicsPipelineWrapper::setDefaultTopology(const VkPrimitiveTopology topology)
 {
 	// topology is needed by vertex input state, make sure vertex input state was not setup yet
@@ -562,12 +689,23 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupVertexInputState(const Vk
 		void*	firstStructInChain = reinterpret_cast<void*>(&libraryCreateInfo);
 		addToChain(&firstStructInChain, partCreationFeedback.ptr);
 
+		VkPipelineDynamicStateCreateInfo pickedDynamicStateInfo = initVulkanStructure();
+		std::vector<VkDynamicState> states;
+
+		if(m_internalData->pDynamicState)
+		{
+			states = getDynamicStates(m_internalData->pDynamicState, m_internalData->setupState);
+
+			pickedDynamicStateInfo.pDynamicStates = states.data();
+			pickedDynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(states.size());
+		}
+
 		VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
 		pipelinePartCreateInfo.pNext						= firstStructInChain;
 		pipelinePartCreateInfo.flags						= (m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR) & ~VK_PIPELINE_CREATE_DERIVATIVE_BIT;
 		pipelinePartCreateInfo.pVertexInputState			= pVertexInputState;
 		pipelinePartCreateInfo.pInputAssemblyState			= pInputAssemblyState;
-		pipelinePartCreateInfo.pDynamicState				= m_internalData->pDynamicState;
+		pipelinePartCreateInfo.pDynamicState				= &pickedDynamicStateInfo;
 
 		if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
 			pipelinePartCreateInfo.flags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
@@ -835,6 +973,17 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 		addToChain(&firstStructInChain, m_internalData->pRenderingState.ptr);
 		addToChain(&firstStructInChain, partCreationFeedback.ptr);
 
+		VkPipelineDynamicStateCreateInfo pickedDynamicStateInfo = initVulkanStructure();
+		std::vector<VkDynamicState> states;
+
+		if(m_internalData->pDynamicState)
+		{
+			states = getDynamicStates(m_internalData->pDynamicState, m_internalData->setupState);
+
+			pickedDynamicStateInfo.pDynamicStates = states.data();
+			pickedDynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(states.size());
+		}
+
 		VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
 		pipelinePartCreateInfo.pNext				= firstStructInChain;
 		pipelinePartCreateInfo.flags				= (m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR | shaderModuleIdFlags) & ~VK_PIPELINE_CREATE_DERIVATIVE_BIT;
@@ -846,7 +995,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 		pipelinePartCreateInfo.stageCount			= 1u + hasTesc + hasTese + hasGeom;
 		pipelinePartCreateInfo.pStages				= m_internalData->pipelineShaderStages.data();
 		pipelinePartCreateInfo.pTessellationState	= pTessellationState;
-		pipelinePartCreateInfo.pDynamicState		= m_internalData->pDynamicState;
+		pipelinePartCreateInfo.pDynamicState		= &pickedDynamicStateInfo;
 
 		if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
 			pipelinePartCreateInfo.flags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
@@ -969,6 +1118,18 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationMeshShade
 		addToChain(&firstStructInChain, m_internalData->pRenderingState.ptr);
 		addToChain(&firstStructInChain, partCreationFeedback);
 
+		VkPipelineDynamicStateCreateInfo pickedDynamicStateInfo = initVulkanStructure();
+		std::vector<VkDynamicState> states;
+
+		if(m_internalData->pDynamicState)
+		{
+			states = getDynamicStates(m_internalData->pDynamicState, m_internalData->setupState);
+
+			pickedDynamicStateInfo.pDynamicStates = states.data();
+			pickedDynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(states.size());
+		}
+
+
 		VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
 		pipelinePartCreateInfo.pNext			= firstStructInChain;
 		pipelinePartCreateInfo.flags			= m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
@@ -980,7 +1141,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationMeshShade
 		pipelinePartCreateInfo.stageCount			= 1u + taskShaderCount;
 		pipelinePartCreateInfo.pStages				= m_internalData->pipelineShaderStages.data();
 		pipelinePartCreateInfo.pTessellationState	= pTessellationState;
-		pipelinePartCreateInfo.pDynamicState		= m_internalData->pDynamicState;
+		pipelinePartCreateInfo.pDynamicState		= &pickedDynamicStateInfo;
 
 		if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
 			pipelinePartCreateInfo.flags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
@@ -1095,6 +1256,18 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState2(cons
 		addToChain(&firstStructInChain, partCreationFeedback.ptr);
 		addToChain(&firstStructInChain, m_internalData->pRepresentativeFragmentTestState.ptr);
 
+		VkPipelineDynamicStateCreateInfo pickedDynamicStateInfo = initVulkanStructure();
+		std::vector<VkDynamicState> states;
+
+		if(m_internalData->pDynamicState)
+		{
+			states = getDynamicStates(m_internalData->pDynamicState, m_internalData->setupState);
+
+			pickedDynamicStateInfo.pDynamicStates = states.data();
+			pickedDynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(states.size());
+		}
+
+
 		VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
 		pipelinePartCreateInfo.pNext				= firstStructInChain;
 		pipelinePartCreateInfo.flags				= (m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR | shaderModuleIdFlags) & ~VK_PIPELINE_CREATE_DERIVATIVE_BIT;
@@ -1105,7 +1278,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState2(cons
 		pipelinePartCreateInfo.pMultisampleState	= pMultisampleState;
 		pipelinePartCreateInfo.stageCount			= hasFrag;
 		pipelinePartCreateInfo.pStages				= hasFrag ? &m_internalData->pipelineShaderStages[stageIndex] : DE_NULL;
-		pipelinePartCreateInfo.pDynamicState		= m_internalData->pDynamicState;
+		pipelinePartCreateInfo.pDynamicState		= &pickedDynamicStateInfo;
 
 		if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
 			pipelinePartCreateInfo.flags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
@@ -1169,6 +1342,19 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentOutputState(const
 		addToChain(&firstStructInChain, &libraryCreateInfo);
 		addToChain(&firstStructInChain, partCreationFeedback.ptr);
 
+
+		VkPipelineDynamicStateCreateInfo pickedDynamicStateInfo = initVulkanStructure();
+		std::vector<VkDynamicState> states;
+
+		if(m_internalData->pDynamicState)
+		{
+			states = getDynamicStates(m_internalData->pDynamicState, m_internalData->setupState);
+
+			pickedDynamicStateInfo.pDynamicStates = states.data();
+			pickedDynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(states.size());
+		}
+
+
 		VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
 		pipelinePartCreateInfo.pNext				= firstStructInChain;
 		pipelinePartCreateInfo.flags				= (m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR) & ~VK_PIPELINE_CREATE_DERIVATIVE_BIT;
@@ -1176,7 +1362,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentOutputState(const
 		pipelinePartCreateInfo.subpass				= subpass;
 		pipelinePartCreateInfo.pColorBlendState		= pColorBlendState;
 		pipelinePartCreateInfo.pMultisampleState	= pMultisampleState;
-		pipelinePartCreateInfo.pDynamicState		= m_internalData->pDynamicState;
+		pipelinePartCreateInfo.pDynamicState		= &pickedDynamicStateInfo;
 
 		if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
 			pipelinePartCreateInfo.flags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
