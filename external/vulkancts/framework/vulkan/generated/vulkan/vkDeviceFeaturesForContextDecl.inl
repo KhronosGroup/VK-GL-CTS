@@ -108,6 +108,7 @@ const vk::VkPhysicalDeviceSubpassShadingFeaturesHUAWEI&						getSubpassShadingFe
 const vk::VkPhysicalDeviceInvocationMaskFeaturesHUAWEI&						getInvocationMaskFeaturesHUAWEI						(void) const;
 const vk::VkPhysicalDeviceExternalMemoryRDMAFeaturesNV&						getExternalMemoryRDMAFeatures						(void) const;
 const vk::VkPhysicalDevicePipelinePropertiesFeaturesEXT&					getPipelinePropertiesFeaturesEXT					(void) const;
+const vk::VkPhysicalDeviceFrameBoundaryFeaturesEXT&							getFrameBoundaryFeaturesEXT							(void) const;
 const vk::VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT&		getMultisampledRenderToSingleSampledFeaturesEXT		(void) const;
 const vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT&					getExtendedDynamicState2FeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceColorWriteEnableFeaturesEXT&						getColorWriteEnableFeaturesEXT						(void) const;
@@ -140,6 +141,7 @@ const vk::VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT&	getRast
 const vk::VkPhysicalDeviceOpticalFlowFeaturesNV&							getOpticalFlowFeatures								(void) const;
 const vk::VkPhysicalDeviceLegacyDitheringFeaturesEXT&						getLegacyDitheringFeaturesEXT						(void) const;
 const vk::VkPhysicalDevicePipelineProtectedAccessFeaturesEXT&				getPipelineProtectedAccessFeaturesEXT				(void) const;
+const vk::VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR&				getRayTracingPositionFetchFeatures					(void) const;
 const vk::VkPhysicalDeviceShaderObjectFeaturesEXT&							getShaderObjectFeaturesEXT							(void) const;
 const vk::VkPhysicalDeviceTilePropertiesFeaturesQCOM&						getTilePropertiesFeaturesQCOM						(void) const;
 const vk::VkPhysicalDeviceAmigoProfilingFeaturesSEC&						getAmigoProfilingFeaturesSEC						(void) const;
@@ -149,5 +151,6 @@ const vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT&					getMutableDescri
 const vk::VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM&					getShaderCoreBuiltinsFeaturesARM					(void) const;
 const vk::VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT&			getPipelineLibraryGroupHandlesFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM&			getMultiviewPerViewRenderAreasFeaturesQCOM			(void) const;
+const vk::VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT&	getAttachmentFeedbackLoopDynamicStateFeaturesEXT	(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&							getProtectedMemoryFeatures							(void) const;
 const vk::VkPhysicalDeviceShaderDrawParametersFeatures&						getShaderDrawParametersFeatures						(void) const;

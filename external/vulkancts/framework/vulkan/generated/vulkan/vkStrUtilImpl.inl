@@ -559,6 +559,7 @@ const char* getDynamicStateName (VkDynamicState value)
 		case VK_DYNAMIC_STATE_SHADING_RATE_IMAGE_ENABLE_NV:				return "VK_DYNAMIC_STATE_SHADING_RATE_IMAGE_ENABLE_NV";
 		case VK_DYNAMIC_STATE_REPRESENTATIVE_FRAGMENT_TEST_ENABLE_NV:	return "VK_DYNAMIC_STATE_REPRESENTATIVE_FRAGMENT_TEST_ENABLE_NV";
 		case VK_DYNAMIC_STATE_COVERAGE_REDUCTION_MODE_NV:				return "VK_DYNAMIC_STATE_COVERAGE_REDUCTION_MODE_NV";
+		case VK_DYNAMIC_STATE_ATTACHMENT_FEEDBACK_LOOP_ENABLE_EXT:		return "VK_DYNAMIC_STATE_ATTACHMENT_FEEDBACK_LOOP_ENABLE_EXT";
 		default:														return DE_NULL;
 	}
 }
@@ -2124,6 +2125,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_RDMA_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_RDMA_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PIPELINE_PROPERTIES_IDENTIFIER_EXT:									return "VK_STRUCTURE_TYPE_PIPELINE_PROPERTIES_IDENTIFIER_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROPERTIES_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROPERTIES_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAME_BOUNDARY_FEATURES_EXT:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAME_BOUNDARY_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_FRAME_BOUNDARY_EXT:													return "VK_STRUCTURE_TYPE_FRAME_BOUNDARY_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_FEATURES_EXT:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_SUBPASS_RESOLVE_PERFORMANCE_QUERY_EXT:								return "VK_STRUCTURE_TYPE_SUBPASS_RESOLVE_PERFORMANCE_QUERY_EXT";
 		case VK_STRUCTURE_TYPE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_INFO_EXT:						return "VK_STRUCTURE_TYPE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_INFO_EXT";
@@ -2205,6 +2208,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_OPTICAL_FLOW_SESSION_CREATE_PRIVATE_DATA_INFO_NV:					return "VK_STRUCTURE_TYPE_OPTICAL_FLOW_SESSION_CREATE_PRIVATE_DATA_INFO_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_DITHERING_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_DITHERING_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROTECTED_ACCESS_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROTECTED_ACCESS_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_POSITION_FETCH_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_POSITION_FETCH_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_PROPERTIES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT:												return "VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT";
@@ -2220,6 +2224,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_RENDER_AREAS_FEATURES_QCOM:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_RENDER_AREAS_FEATURES_QCOM";
 		case VK_STRUCTURE_TYPE_MULTIVIEW_PER_VIEW_RENDER_AREAS_RENDER_PASS_BEGIN_INFO_QCOM:			return "VK_STRUCTURE_TYPE_MULTIVIEW_PER_VIEW_RENDER_AREAS_RENDER_PASS_BEGIN_INFO_QCOM";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_FEATURES_EXT:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_FEATURES_EXT";
 		default:																					return DE_NULL;
 	}
 }
@@ -2726,6 +2731,7 @@ tcu::Format::Bitfield<32> getBuildAccelerationStructureFlagsKHRStr (VkBuildAccel
 		tcu::Format::BitDesc(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DISABLE_OPACITY_MICROMAPS_EXT,		"VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DISABLE_OPACITY_MICROMAPS_EXT"),
 		tcu::Format::BitDesc(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_OPACITY_MICROMAP_DATA_UPDATE_EXT,	"VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_OPACITY_MICROMAP_DATA_UPDATE_EXT"),
 		tcu::Format::BitDesc(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DISPLACEMENT_MICROMAP_UPDATE_NV,		"VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DISPLACEMENT_MICROMAP_UPDATE_NV"),
+		tcu::Format::BitDesc(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DATA_ACCESS_KHR,						"VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DATA_ACCESS_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3485,6 +3491,15 @@ const char* getDeviceFaultVendorBinaryHeaderVersionEXTName (VkDeviceFaultVendorB
 		case VK_DEVICE_FAULT_VENDOR_BINARY_HEADER_VERSION_ONE_EXT:	return "VK_DEVICE_FAULT_VENDOR_BINARY_HEADER_VERSION_ONE_EXT";
 		default:													return DE_NULL;
 	}
+}
+
+tcu::Format::Bitfield<32> getFrameBoundaryFlagsEXTStr (VkFrameBoundaryFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_FRAME_BOUNDARY_FRAME_END_BIT_EXT,	"VK_FRAME_BOUNDARY_FRAME_END_BIT_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
 tcu::Format::Bitfield<64> getMemoryDecompressionMethodFlagsNVStr (VkMemoryDecompressionMethodFlagsNV value)
@@ -13222,6 +13237,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImageSlicedView
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tattachmentFeedbackLoopDynamicState = " << value.attachmentFeedbackLoopDynamicState << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT& value)
 {
 	s << "VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT = {\n";
@@ -16103,6 +16128,34 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderCoreBuilt
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkFrameBoundaryEXT& value)
+{
+	s << "VkFrameBoundaryEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getFrameBoundaryFlagsEXTStr(value.flags) << '\n';
+	s << "\tframeID = " << value.frameID << '\n';
+	s << "\timageCount = " << value.imageCount << '\n';
+	s << "\tpImages = " << value.pImages << '\n';
+	s << "\tbufferCount = " << value.bufferCount << '\n';
+	s << "\tpBuffers = " << value.pBuffers << '\n';
+	s << "\ttagName = " << value.tagName << '\n';
+	s << "\ttagSize = " << value.tagSize << '\n';
+	s << "\tpTag = " << value.pTag << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFrameBoundaryFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceFrameBoundaryFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tframeBoundary = " << value.frameBoundary << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkSurfacePresentModeEXT& value)
 {
 	s << "VkSurfacePresentModeEXT = {\n";
@@ -16254,6 +16307,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMultiviewPerVie
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmultiviewPerViewViewports = " << value.multiviewPerViewViewports << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\trayTracingPositionFetch = " << value.rayTracingPositionFetch << '\n';
 	s << '}';
 	return s;
 }

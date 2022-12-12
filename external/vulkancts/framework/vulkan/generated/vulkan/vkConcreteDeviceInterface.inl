@@ -83,6 +83,7 @@ virtual VkResult			beginCommandBuffer										(VkCommandBuffer commandBuffer, c
 virtual VkResult			endCommandBuffer										(VkCommandBuffer commandBuffer) const;
 virtual VkResult			resetCommandBuffer										(VkCommandBuffer commandBuffer, VkCommandBufferResetFlags flags) const;
 virtual void				cmdBindPipeline											(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline) const;
+virtual void				cmdSetAttachmentFeedbackLoopEnableEXT					(VkCommandBuffer commandBuffer, VkImageAspectFlags aspectMask) const;
 virtual void				cmdSetViewport											(VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports) const;
 virtual void				cmdSetScissor											(VkCommandBuffer commandBuffer, uint32_t firstScissor, uint32_t scissorCount, const VkRect2D* pScissors) const;
 virtual void				cmdSetLineWidth											(VkCommandBuffer commandBuffer, float lineWidth) const;

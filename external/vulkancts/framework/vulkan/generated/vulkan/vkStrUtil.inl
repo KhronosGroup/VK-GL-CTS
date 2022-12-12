@@ -578,6 +578,7 @@ tcu::Format::Bitfield<32>	getOpticalFlowGridSizeFlagsNVStr							(VkOpticalFlowG
 tcu::Format::Bitfield<32>	getOpticalFlowUsageFlagsNVStr								(VkOpticalFlowUsageFlagsNV value);
 tcu::Format::Bitfield<32>	getOpticalFlowSessionCreateFlagsNVStr						(VkOpticalFlowSessionCreateFlagsNV value);
 tcu::Format::Bitfield<32>	getOpticalFlowExecuteFlagsNVStr								(VkOpticalFlowExecuteFlagsNV value);
+tcu::Format::Bitfield<32>	getFrameBoundaryFlagsEXTStr									(VkFrameBoundaryFlagsEXT value);
 tcu::Format::Bitfield<32>	getPresentScalingFlagsEXTStr								(VkPresentScalingFlagsEXT value);
 tcu::Format::Bitfield<32>	getPresentGravityFlagsEXTStr								(VkPresentGravityFlagsEXT value);
 tcu::Format::Bitfield<32>	getShaderCreateFlagsEXTStr									(VkShaderCreateFlagsEXT value);
@@ -1248,6 +1249,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPipelineFragmentShadingRateEn
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureBuildSizesInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImage2DViewOf3DFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeListEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeCreateInfoEXT& value);
@@ -1484,6 +1486,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineLibrary
 std::ostream&	operator<<	(std::ostream& s, const VkDecompressMemoryRegionNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkFrameBoundaryEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFrameBoundaryFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSurfacePresentModeEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSurfacePresentScalingCapabilitiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSurfacePresentModeCompatibilityEXT& value);
@@ -1498,6 +1502,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayTracingInvoc
 std::ostream&	operator<<	(std::ostream& s, const VkDirectDriverLoadingInfoLUNARG& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDirectDriverLoadingListLUNARG& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderCorePropertiesARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMultiviewPerViewRenderAreasRenderPassBeginInfoQCOM& value);

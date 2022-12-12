@@ -6063,6 +6063,13 @@ struct VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT
 	VkBool32		imageSlicedViewOf3D;
 };
 
+struct VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		attachmentFeedbackLoopDynamicState;
+};
+
 struct VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT
 {
 	VkStructureType	sType;
@@ -8070,6 +8077,28 @@ struct VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM
 	VkBool32		shaderCoreBuiltins;
 };
 
+struct VkFrameBoundaryEXT
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkFrameBoundaryFlagsEXT	flags;
+	uint64_t				frameID;
+	uint32_t				imageCount;
+	const VkImage*			pImages;
+	uint32_t				bufferCount;
+	VkBuffer*				pBuffers;
+	uint64_t				tagName;
+	size_t					tagSize;
+	const void*				pTag;
+};
+
+struct VkPhysicalDeviceFrameBoundaryFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		frameBoundary;
+};
+
 struct VkSurfacePresentModeEXT
 {
 	VkStructureType		sType;
@@ -8181,6 +8210,13 @@ struct VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		multiviewPerViewViewports;
+};
+
+struct VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		rayTracingPositionFetch;
 };
 
 struct VkPhysicalDeviceShaderCorePropertiesARM
@@ -9060,11 +9096,11 @@ struct StdVideoDecodeH265PictureInfo
 
 struct VkVideoDecodeH265PictureInfoKHR
 {
-	VkStructureType					sType;
-	const void*						pNext;
-	StdVideoDecodeH265PictureInfo*	pStdPictureInfo;
-	uint32_t						sliceSegmentCount;
-	const uint32_t*					pSliceSegmentOffsets;
+	VkStructureType							sType;
+	const void*								pNext;
+	const StdVideoDecodeH265PictureInfo*	pStdPictureInfo;
+	uint32_t								sliceSegmentCount;
+	const uint32_t*							pSliceSegmentOffsets;
 };
 
 struct StdVideoDecodeH265ReferenceInfoFlags

@@ -1138,7 +1138,7 @@ extern "C" {
 #define VK_API_VERSION_1_0 VK_MAKE_API_VERSION(0, 1, 0, 0)// Patch version should always be set to 0
 
 // Version of this file
-#define VK_HEADER_VERSION 248
+#define VK_HEADER_VERSION 250
 
 // Complete version of this file
 #define VK_HEADER_VERSION_COMPLETE VK_MAKE_API_VERSION(0, 1, 3, VK_HEADER_VERSION)
@@ -1990,6 +1990,8 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_RDMA_FEATURES_NV = 1000371001,
     VK_STRUCTURE_TYPE_PIPELINE_PROPERTIES_IDENTIFIER_EXT = 1000372000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROPERTIES_FEATURES_EXT = 1000372001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAME_BOUNDARY_FEATURES_EXT = 1000375000,
+    VK_STRUCTURE_TYPE_FRAME_BOUNDARY_EXT = 1000375001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_FEATURES_EXT = 1000376000,
     VK_STRUCTURE_TYPE_SUBPASS_RESOLVE_PERFORMANCE_QUERY_EXT = 1000376001,
     VK_STRUCTURE_TYPE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_INFO_EXT = 1000376002,
@@ -2072,6 +2074,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_OPTICAL_FLOW_SESSION_CREATE_PRIVATE_DATA_INFO_NV = 1000464010,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_DITHERING_FEATURES_EXT = 1000465000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROTECTED_ACCESS_FEATURES_EXT = 1000466000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_POSITION_FETCH_FEATURES_KHR = 1000481000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT = 1000482000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_PROPERTIES_EXT = 1000482001,
     VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT = 1000482002,
@@ -2089,6 +2092,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_EXT = 1000498000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_RENDER_AREAS_FEATURES_QCOM = 1000510000,
     VK_STRUCTURE_TYPE_MULTIVIEW_PER_VIEW_RENDER_AREAS_RENDER_PASS_BEGIN_INFO_QCOM = 1000510001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_FEATURES_EXT = 1000524000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES,
     VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
@@ -2941,6 +2945,7 @@ typedef enum VkDynamicState {
     VK_DYNAMIC_STATE_SHADING_RATE_IMAGE_ENABLE_NV = 1000455030,
     VK_DYNAMIC_STATE_REPRESENTATIVE_FRAGMENT_TEST_ENABLE_NV = 1000455031,
     VK_DYNAMIC_STATE_COVERAGE_REDUCTION_MODE_NV = 1000455032,
+    VK_DYNAMIC_STATE_ATTACHMENT_FEEDBACK_LOOP_ENABLE_EXT = 1000524000,
     VK_DYNAMIC_STATE_CULL_MODE_EXT = VK_DYNAMIC_STATE_CULL_MODE,
     VK_DYNAMIC_STATE_FRONT_FACE_EXT = VK_DYNAMIC_STATE_FRONT_FACE,
     VK_DYNAMIC_STATE_PRIMITIVE_TOPOLOGY_EXT = VK_DYNAMIC_STATE_PRIMITIVE_TOPOLOGY,
@@ -10489,11 +10494,11 @@ typedef struct VkVideoDecodeH265SessionParametersCreateInfoKHR {
 } VkVideoDecodeH265SessionParametersCreateInfoKHR;
 
 typedef struct VkVideoDecodeH265PictureInfoKHR {
-    VkStructureType                   sType;
-    const void*                       pNext;
-    StdVideoDecodeH265PictureInfo*    pStdPictureInfo;
-    deUint32                          sliceSegmentCount;
-    const deUint32*                   pSliceSegmentOffsets;
+    VkStructureType                         sType;
+    const void*                             pNext;
+    const StdVideoDecodeH265PictureInfo*    pStdPictureInfo;
+    deUint32                                sliceSegmentCount;
+    const deUint32*                         pSliceSegmentOffsets;
 } VkVideoDecodeH265PictureInfoKHR;
 
 typedef struct VkVideoDecodeH265DpbSlotInfoKHR {
@@ -11298,6 +11303,17 @@ VKAPI_ATTR void VKAPI_CALL vkGetDeviceImageSparseMemoryRequirementsKHR(
     deUint32*                                   pSparseMemoryRequirementCount,
     VkSparseImageMemoryRequirements2*           pSparseMemoryRequirements);
 #endif
+
+
+#define VK_KHR_ray_tracing_position_fetch 1
+#define VK_KHR_RAY_TRACING_POSITION_FETCH_SPEC_VERSION 1
+#define VK_KHR_RAY_TRACING_POSITION_FETCH_EXTENSION_NAME "VK_KHR_ray_tracing_position_fetch"
+typedef struct VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           rayTracingPositionFetch;
+} VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR;
+
 
 
 #define VK_EXT_debug_report 1
@@ -13160,6 +13176,7 @@ typedef enum VkBuildAccelerationStructureFlagBitsKHR {
 #ifdef VK_ENABLE_BETA_EXTENSIONS
     VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DISPLACEMENT_MICROMAP_UPDATE_NV = 0x00000200,
 #endif
+    VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DATA_ACCESS_KHR = 0x00000800,
     VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV = VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR,
     VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_NV = VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR,
     VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_NV = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR,
@@ -16123,6 +16140,37 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPipelinePropertiesEXT(
 #endif
 
 
+#define VK_EXT_frame_boundary 1
+#define VK_EXT_FRAME_BOUNDARY_SPEC_VERSION 1
+#define VK_EXT_FRAME_BOUNDARY_EXTENSION_NAME "VK_EXT_frame_boundary"
+
+typedef enum VkFrameBoundaryFlagBitsEXT {
+    VK_FRAME_BOUNDARY_FRAME_END_BIT_EXT = 0x00000001,
+    VK_FRAME_BOUNDARY_FLAG_BITS_MAX_ENUM_EXT = 0x7FFFFFFF
+} VkFrameBoundaryFlagBitsEXT;
+typedef VkFlags VkFrameBoundaryFlagsEXT;
+typedef struct VkPhysicalDeviceFrameBoundaryFeaturesEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           frameBoundary;
+} VkPhysicalDeviceFrameBoundaryFeaturesEXT;
+
+typedef struct VkFrameBoundaryEXT {
+    VkStructureType            sType;
+    const void*                pNext;
+    VkFrameBoundaryFlagsEXT    flags;
+    deUint64                   frameID;
+    deUint32                   imageCount;
+    const VkImage*             pImages;
+    deUint32                   bufferCount;
+    VkBuffer*                  pBuffers;
+    deUint64                   tagName;
+    deUintptr                     tagSize;
+    const void*                pTag;
+} VkFrameBoundaryEXT;
+
+
+
 #define VK_EXT_multisampled_render_to_single_sampled 1
 #define VK_EXT_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_SPEC_VERSION 1
 #define VK_EXT_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_EXTENSION_NAME "VK_EXT_multisampled_render_to_single_sampled"
@@ -17737,6 +17785,24 @@ typedef struct VkMultiviewPerViewRenderAreasRenderPassBeginInfoQCOM {
     const VkRect2D*    pPerViewRenderAreas;
 } VkMultiviewPerViewRenderAreasRenderPassBeginInfoQCOM;
 
+
+
+#define VK_EXT_attachment_feedback_loop_dynamic_state 1
+#define VK_EXT_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_SPEC_VERSION 1
+#define VK_EXT_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_EXTENSION_NAME "VK_EXT_attachment_feedback_loop_dynamic_state"
+typedef struct VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           attachmentFeedbackLoopDynamicState;
+} VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT;
+
+typedef void (VKAPI_PTR *PFN_vkCmdSetAttachmentFeedbackLoopEnableEXT)(VkCommandBuffer commandBuffer, VkImageAspectFlags aspectMask);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR void VKAPI_CALL vkCmdSetAttachmentFeedbackLoopEnableEXT(
+    VkCommandBuffer                             commandBuffer,
+    VkImageAspectFlags                          aspectMask);
+#endif
 
 
 #define VK_KHR_acceleration_structure 1

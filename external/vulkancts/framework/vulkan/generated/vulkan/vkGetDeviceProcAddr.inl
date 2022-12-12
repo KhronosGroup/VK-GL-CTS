@@ -541,6 +541,7 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkCmdSetCoverageReductionModeNV",
 		"vkGetFramebufferTilePropertiesQCOM",
 		"vkGetDynamicRenderingTilePropertiesQCOM",
+		"vkCmdSetAttachmentFeedbackLoopEnableEXT",
 	};
 
 	bool fail = false;

@@ -3013,6 +3013,18 @@ bool check_VK_EXT_pipeline_protected_access(const tcu::UVec2& v, const ExtPropVe
 	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
 }
 
+bool check_VK_KHR_ray_tracing_position_fetch(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_ray_tracing_position_fetch"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_acceleration_structure
+	return isSupported(vDEP, "VK_KHR_acceleration_structure");
+}
+
 bool check_VK_EXT_shader_object(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -3107,6 +3119,18 @@ bool check_VK_EXT_pipeline_library_group_handles(const tcu::UVec2& v, const ExtP
 
 	// depends attribute in xml: VK_KHR_ray_tracing_pipeline+VK_KHR_pipeline_library
 	return isSupported(vDEP, "VK_KHR_ray_tracing_pipeline") && isSupported(vDEP, "VK_KHR_pipeline_library");
+}
+
+bool check_VK_EXT_attachment_feedback_loop_dynamic_state(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_attachment_feedback_loop_dynamic_state"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2+VK_EXT_attachment_feedback_loop_layout
+	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")) && isSupported(vDEP, "VK_EXT_attachment_feedback_loop_layout");
 }
 
 static const DependencyCheckVect deviceExtensionDependencies
@@ -3322,6 +3346,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_NV_optical_flow",									&check_VK_NV_optical_flow),
 	std::make_pair("VK_EXT_legacy_dithering",								&check_VK_EXT_legacy_dithering),
 	std::make_pair("VK_EXT_pipeline_protected_access",						&check_VK_EXT_pipeline_protected_access),
+	std::make_pair("VK_KHR_ray_tracing_position_fetch",						&check_VK_KHR_ray_tracing_position_fetch),
 	std::make_pair("VK_EXT_shader_object",									&check_VK_EXT_shader_object),
 	std::make_pair("VK_QCOM_tile_properties",								&check_VK_QCOM_tile_properties),
 	std::make_pair("VK_SEC_amigo_profiling",								&check_VK_SEC_amigo_profiling),
@@ -3330,6 +3355,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_mutable_descriptor_type",						&check_VK_EXT_mutable_descriptor_type),
 	std::make_pair("VK_ARM_shader_core_builtins",							&check_VK_ARM_shader_core_builtins),
 	std::make_pair("VK_EXT_pipeline_library_group_handles",					&check_VK_EXT_pipeline_library_group_handles),
+	std::make_pair("VK_EXT_attachment_feedback_loop_dynamic_state",			&check_VK_EXT_attachment_feedback_loop_dynamic_state),
 };
 
 static const std::tuple<deUint32, deUint32, deUint32, deUint32>	releasedApiVersions[]	=
@@ -3616,6 +3642,7 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 1, "VK_HUAWEI_invocation_mask"),
 	std::make_tuple(1, 0, "VK_NV_external_memory_rdma"),
 	std::make_tuple(1, 0, "VK_EXT_pipeline_properties"),
+	std::make_tuple(1, 0, "VK_EXT_frame_boundary"),
 	std::make_tuple(1, 0, "VK_EXT_multisampled_render_to_single_sampled"),
 	std::make_tuple(1, 1, "VK_EXT_extended_dynamic_state2"),
 	std::make_tuple(1, 0, "VK_QNX_screen_surface"),
@@ -3655,6 +3682,7 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 1, "VK_NV_optical_flow"),
 	std::make_tuple(1, 0, "VK_EXT_legacy_dithering"),
 	std::make_tuple(1, 0, "VK_EXT_pipeline_protected_access"),
+	std::make_tuple(1, 1, "VK_KHR_ray_tracing_position_fetch"),
 	std::make_tuple(1, 1, "VK_EXT_shader_object"),
 	std::make_tuple(1, 0, "VK_QCOM_tile_properties"),
 	std::make_tuple(1, 0, "VK_SEC_amigo_profiling"),
@@ -3664,4 +3692,5 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_ARM_shader_core_builtins"),
 	std::make_tuple(1, 0, "VK_EXT_pipeline_library_group_handles"),
 	std::make_tuple(1, 0, "VK_QCOM_multiview_per_view_render_areas"),
+	std::make_tuple(1, 0, "VK_EXT_attachment_feedback_loop_dynamic_state"),
 };

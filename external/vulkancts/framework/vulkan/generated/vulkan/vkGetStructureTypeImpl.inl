@@ -2598,6 +2598,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceImageSlicedViewOf3DF
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_SLICED_VIEW_OF_3D_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_EXT;
@@ -3678,6 +3683,16 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceShaderCoreBuiltinsFe
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM;
 }
 
+template<> VkStructureType getStructureType<VkFrameBoundaryEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_FRAME_BOUNDARY_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceFrameBoundaryFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAME_BOUNDARY_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkSurfacePresentModeEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_EXT;
@@ -3746,6 +3761,11 @@ template<> VkStructureType getStructureType<VkDirectDriverLoadingListLUNARG> (vo
 template<> VkStructureType getStructureType<VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_VIEWPORTS_FEATURES_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_POSITION_FETCH_FEATURES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceShaderCorePropertiesARM> (void)
