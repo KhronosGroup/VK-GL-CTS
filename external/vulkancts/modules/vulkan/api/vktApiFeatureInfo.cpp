@@ -2483,6 +2483,32 @@ tcu::TestStatus enumerateInstanceExtensions (Context& context)
 	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
+tcu::TestStatus validateDeviceLevelEntryPointsFromInstanceExtensions(Context& context)
+{
+
+#include "vkEntryPointValidation.inl"
+
+	TestLog&				log		(context.getTestContext().getLog());
+	tcu::ResultCollector	results	(log);
+	const DeviceInterface&	vk		(context.getDeviceInterface());
+	const VkDevice			device	(context.getDevice());
+
+	for (const auto& keyValue : instExtDeviceFun)
+	{
+		const std::string& extensionName = keyValue.first;
+		if (!context.isInstanceFunctionalitySupported(extensionName))
+			continue;
+
+		for (const auto& deviceEntryPoint : keyValue.second)
+		{
+			if (!vk.getDeviceProcAddr(device, deviceEntryPoint.c_str()))
+				results.fail("Missing " + deviceEntryPoint);
+		}
+	}
+
+	return tcu::TestStatus(results.getResult(), results.getMessage());
+}
+
 tcu::TestStatus testNoKhxExtensions (Context& context)
 {
 	VkPhysicalDevice			physicalDevice	= context.getPhysicalDevice();
@@ -6975,10 +7001,11 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 
 void createFeatureInfoInstanceTests(tcu::TestCaseGroup* testGroup)
 {
-	addFunctionCase(testGroup, "physical_devices",					"Physical devices",						enumeratePhysicalDevices);
-	addFunctionCase(testGroup, "physical_device_groups",			"Physical devices Groups",				enumeratePhysicalDeviceGroups);
-	addFunctionCase(testGroup, "instance_layers",					"Layers",								enumerateInstanceLayers);
-	addFunctionCase(testGroup, "instance_extensions",				"Extensions",							enumerateInstanceExtensions);
+	addFunctionCase(testGroup, "physical_devices",						"Physical devices",						enumeratePhysicalDevices);
+	addFunctionCase(testGroup, "physical_device_groups",				"Physical devices Groups",				enumeratePhysicalDeviceGroups);
+	addFunctionCase(testGroup, "instance_layers",						"Layers",								enumerateInstanceLayers);
+	addFunctionCase(testGroup, "instance_extensions",					"Extensions",							enumerateInstanceExtensions);
+	addFunctionCase(testGroup, "instance_extension_device_functions",	"Validates device-level entry-points",	validateDeviceLevelEntryPointsFromInstanceExtensions);
 }
 
 void createFeatureInfoDeviceTests(tcu::TestCaseGroup* testGroup)

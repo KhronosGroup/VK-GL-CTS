@@ -6,6 +6,7 @@ dEQP-VKSC.info.physical_devices
 dEQP-VKSC.info.physical_device_groups
 dEQP-VKSC.info.instance_layers
 dEQP-VKSC.info.instance_extensions
+dEQP-VKSC.info.instance_extension_device_functions
 dEQP-VKSC.info.device_features
 dEQP-VKSC.info.device_properties
 dEQP-VKSC.info.device_queue_family_properties

@@ -14,6 +14,7 @@ vk-master-2022-03-01/glsl.txt
 vk-master-2022-03-01/graphicsfuzz.txt
 vk-master-2022-03-01/image.txt
 vk-master-2022-03-01/imageless-framebuffer.txt
+vk-master-2022-03-01/info.txt
 vk-master-2022-03-01/memory-model.txt
 vk-master-2022-03-01/memory.txt
 vk-master-2022-03-01/mesh-shader.txt

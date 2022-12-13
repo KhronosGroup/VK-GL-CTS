@@ -3047,6 +3047,32 @@ def writeApiExtensionDependencyInfo(api, filename):
 
 	writeInlFile(filename, INL_HEADER, stream)
 
+def writeEntryPointValidation(api, filename):
+	# keys are instance extension names and value is list of device-level functions
+	instExtDeviceFunDict = {}
+	# iterate over all extensions and find instance extensions
+	for ext in api.extensions:
+		if ext.type == "instance":
+			# iterate over all functions instance extension adds
+			for requirement in ext.requirementsList:
+				for extCommand in requirement.newCommands:
+					# to get a type of command we need to find this command definition in list of all functions
+					for command in api.functions:
+						if extCommand.name == command.name or extCommand.name in command.aliasList:
+							# check if this is device-level entry-point
+							if command.getType() == Function.TYPE_DEVICE:
+								if ext.name not in instExtDeviceFunDict:
+									instExtDeviceFunDict[ext.name] = []
+								instExtDeviceFunDict[ext.name].append(extCommand.name)
+	stream = ['std::map<std::string, std::vector<std::string> > instExtDeviceFun', '{']
+	for extName in instExtDeviceFunDict:
+		stream.append(f'\t{{ "{extName}",\n\t\t{{')
+		for fun in instExtDeviceFunDict[extName]:
+			stream.append(f'\t\t\t"{fun}",')
+		stream.append('\t\t}\n\t},')
+	stream.append('};')
+	writeInlFile(filename, INL_HEADER, stream)
+
 def parseCmdLineArgs():
 	parser = argparse.ArgumentParser(description = "Generate Vulkan INL files",
 									 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -3146,6 +3172,7 @@ if __name__ == "__main__":
 	writeDriverIds							(api, os.path.join(outputPath, "vkKnownDriverIds.inl"))
 	writeObjTypeImpl						(api, os.path.join(outputPath, "vkObjTypeImpl.inl"))
 	writeApiExtensionDependencyInfo			(api, os.path.join(outputPath, "vkApiExtensionDependencyInfo.inl"))
+	writeEntryPointValidation				(api, os.path.join(outputPath, "vkEntryPointValidation.inl"))
 
 	# NOTE: when new files are generated then they should also be added to the
 	# vk-gl-cts\external\vulkancts\framework\vulkan\CMakeLists.txt outputs list
