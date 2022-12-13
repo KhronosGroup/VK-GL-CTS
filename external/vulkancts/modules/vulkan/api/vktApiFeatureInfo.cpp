@@ -3817,12 +3817,12 @@ tcu::TestStatus formatProperties (Context& context, VkFormat format)
 
 	TestLog&					log			= context.getTestContext().getLog();
 	const VkFormatProperties	properties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
-	bool						allOk		= true;
 
 	const VkFormatFeatureFlags reqImg	= getRequiredOptimalTilingFeatures(context, format);
 	const VkFormatFeatureFlags reqBuf	= getRequiredBufferFeatures(format);
 	const VkFormatFeatureFlags allowImg	= getAllowedOptimalTilingFeatures(context, format);
 	const VkFormatFeatureFlags allowBuf	= getAllowedBufferFeatures(context, format);
+	tcu::ResultCollector results (log, "ERROR: ");
 
 	const struct feature_req
 	{
@@ -3846,38 +3846,26 @@ tcu::TestStatus formatProperties (Context& context, VkFormat format)
 		const VkFormatFeatureFlags	required	= fields[fieldNdx].requiredFeatures;
 		const VkFormatFeatureFlags	allowed		= fields[fieldNdx].allowedFeatures;
 
-		if ((supported & required) != required)
-		{
-			log << TestLog::Message << "ERROR in " << fieldName << ":\n"
-									<< "  required: " << getFormatFeatureFlagsStr(required) << "\n  "
-									<< "  missing: " << getFormatFeatureFlagsStr(~supported & required)
-				<< TestLog::EndMessage;
-			allOk = false;
-		}
+		results.check((supported & required) == required, de::toString(fieldName) + ": required: " + de::toString(getFormatFeatureFlagsStr(required)) + "  missing: " + de::toString(getFormatFeatureFlagsStr(~supported & required)));
 
-		if ((supported & ~allowed) != 0)
-		{
-			log << TestLog::Message << "ERROR in " << fieldName << ":\n"
-									<< "  has: " << getFormatFeatureFlagsStr(supported & ~allowed)
-				<< TestLog::EndMessage;
-			allOk = false;
-		}
+		results.check((supported & ~allowed) == 0, de::toString(fieldName) + ": has: " + de::toString(getFormatFeatureFlagsStr(supported & ~allowed)));
 
 		if (((supported & VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT) != 0) &&
 			((supported & VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT) == 0))
 		{
-			log << TestLog::Message << "ERROR in " << fieldName << ":\n"
-									<< " supports VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT"
-									<< " but not VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT"
-				<< TestLog::EndMessage;
-			allOk = false;
+			results.addResult(QP_TEST_RESULT_FAIL, de::toString(fieldName) + " supports VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT but not VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT");
+		}
+
+		if (!isYCbCrFormat(format) && !isCompressedFormat(format)) {
+			const tcu::TextureFormat tcuFormat = mapVkFormat(format);
+			if (tcu::getNumUsedChannels(tcuFormat.order) != 1 && (supported & (VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT|VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT)) != 0)
+			{
+				results.addResult(QP_TEST_RESULT_QUALITY_WARNING, "VK_FORMAT_FEATURE_STORAGE_*_ATOMIC_BIT is only defined for single-component images");
+			}
 		}
 	}
 
-	if (allOk)
-		return tcu::TestStatus::pass("Query and validation passed");
-	else
-		return tcu::TestStatus::fail("Required features not supported");
+	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
 bool optimalTilingFeaturesSupported (Context& context, VkFormat format, VkFormatFeatureFlags features)
@@ -4481,7 +4469,6 @@ tcu::TestStatus imageFormatProperties (Context& context, const VkFormat format, 
 			}
 		}
 	}
-
 	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
