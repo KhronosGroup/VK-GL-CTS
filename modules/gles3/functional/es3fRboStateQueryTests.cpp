@@ -174,7 +174,11 @@ public:
 		glBindRenderbuffer(GL_RENDERBUFFER, renderbufferID);
 		expectError(GL_NO_ERROR);
 
-		checkRenderbufferParam(m_testCtx, *this, GL_RENDERBUFFER_INTERNAL_FORMAT, GL_RGBA4);
+		const glu::ContextType& contextType = m_context.getRenderContext().getType();
+		const bool isCoreGL45 = glu::contextSupports(contextType, glu::ApiType::core(4, 5));
+
+		GLenum initialValue = isCoreGL45 ? GL_RGBA : GL_RGBA4;
+		checkRenderbufferParam(m_testCtx, *this, GL_RENDERBUFFER_INTERNAL_FORMAT, initialValue);
 		expectError(GL_NO_ERROR);
 
 		const GLenum requiredColorformats[] =

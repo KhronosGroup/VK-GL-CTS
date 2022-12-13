@@ -172,7 +172,7 @@ public:
 											m_context.getRenderTarget().getPixelFormat().alphaBits > 0;
 		const GLenum	attachments[] =
 		{
-			GL_BACK,
+			(GLenum)(glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5)) ? GL_FRONT : GL_BACK),
 			GL_DEPTH,
 			GL_STENCIL
 		};
@@ -566,14 +566,15 @@ public:
 
 	void test (void)
 	{
+		const GLenum colorAttachment = (glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5)) ? GL_FRONT : GL_BACK);
 		// check default
-		if (attachmentExists(GL_BACK))
+		if (attachmentExists(colorAttachment))
 		{
 			checkAttachmentComponentSizeAtLeast(
 				m_testCtx,
 				*this,
 				GL_FRAMEBUFFER,
-				GL_BACK,
+				colorAttachment,
 				m_context.getRenderTarget().getPixelFormat().redBits,
 				m_context.getRenderTarget().getPixelFormat().greenBits,
 				m_context.getRenderTarget().getPixelFormat().blueBits,
