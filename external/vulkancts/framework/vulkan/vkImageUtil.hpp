@@ -255,6 +255,7 @@ void	copyBufferToImage						(const DeviceInterface&							vk,
 												 vk::VkImage									destImage,
 												 VkImageLayout									destImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 												 VkPipelineStageFlags							destImageDstStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+												 VkAccessFlags									destImageDstAccessMask = VK_ACCESS_SHADER_READ_BIT,
 												const VkCommandPool*							externalCommandPool = DE_NULL,
 												 deUint32										baseMipLevel = 0);
 
@@ -269,6 +270,7 @@ void	copyBufferToImage						(const DeviceInterface&							vk,
 												 VkImage										destImage,
 												 VkImageLayout									destImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 												 VkPipelineStageFlags							destImageDstStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+												 VkAccessFlags									destImageDstAccessMask = VK_ACCESS_SHADER_READ_BIT,
 												 deUint32										baseMipLevel = 0);
 
 /*--------------------------------------------------------------------*//*!

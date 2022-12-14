@@ -137,20 +137,6 @@ vector<string> addExtensions (const vector<string>& a, const vector<const char*>
 	return res;
 }
 
-vector<string> removeExtensions (const vector<string>& a, const vector<const char*>& b)
-{
-	vector<string>	res;
-	set<string>		removeExts	(b.begin(), b.end());
-
-	for (vector<string>::const_iterator aIter = a.begin(); aIter != a.end(); ++aIter)
-	{
-		if (!de::contains(removeExts, *aIter))
-			res.push_back(*aIter);
-	}
-
-	return res;
-}
-
 vector<string> addCoreInstanceExtensions (const vector<string>& extensions, deUint32 instanceVersion)
 {
 	vector<const char*> coreExtensions;
@@ -1079,5 +1065,20 @@ void collectAndReportDebugMessages(vk::DebugReportRecorder &debugReportRecorder,
 }
 
 #endif // CTS_USES_VULKANSC
+
+
+vector<string> removeExtensions (const vector<string>& a, const vector<const char*>& b)
+{
+	vector<string>	res;
+	set<string>		removeExts	(b.begin(), b.end());
+
+	for (vector<string>::const_iterator aIter = a.begin(); aIter != a.end(); ++aIter)
+	{
+		if (!de::contains(removeExts, *aIter))
+			res.push_back(*aIter);
+	}
+
+	return res;
+}
 
 } // vkt

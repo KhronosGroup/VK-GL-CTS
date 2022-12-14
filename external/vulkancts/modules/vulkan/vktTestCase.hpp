@@ -221,6 +221,7 @@ void collectAndReportDebugMessages(vk::DebugReportRecorder &debugReportRecorder,
 
 #endif // CTS_USES_VULKANSC
 
+std::vector<std::string> removeExtensions (const std::vector<std::string>& a, const std::vector<const char*>& b);
 } // vkt
 
 #endif // _VKTTESTCASE_HPP

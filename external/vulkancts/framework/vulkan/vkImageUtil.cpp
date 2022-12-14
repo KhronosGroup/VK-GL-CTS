@@ -4225,6 +4225,7 @@ void copyBufferToImage (const DeviceInterface&					vk,
 						VkImage									destImage,
 						VkImageLayout							destImageLayout,
 						VkPipelineStageFlags					destImageDstStageFlags,
+						VkAccessFlags							destImageDstAccessMask,
 						deUint32								baseMipLevel)
 {
 	// Barriers for copying buffer to image
@@ -4266,7 +4267,7 @@ void copyBufferToImage (const DeviceInterface&					vk,
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
 		DE_NULL,										// const void*				pNext;
 		VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			srcAccessMask;
-		VK_ACCESS_SHADER_READ_BIT,						// VkAccessFlags			dstAccessMask;
+		destImageDstAccessMask,							// VkAccessFlags			dstAccessMask;
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout			oldLayout;
 		destImageLayout,								// VkImageLayout			newLayout;
 		VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;
@@ -4301,6 +4302,7 @@ void copyBufferToImage (const DeviceInterface&					vk,
 						VkImage									destImage,
 						VkImageLayout							destImageLayout,
 						VkPipelineStageFlags					destImageDstStageFlags,
+						VkAccessFlags							destImageDstAccessMask,
 						const VkCommandPool*					externalCommandPool,
 						deUint32								baseMipLevel)
 {
@@ -4330,7 +4332,7 @@ void copyBufferToImage (const DeviceInterface&					vk,
 	};
 
 	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
-	copyBufferToImage(vk, *cmdBuffer, buffer, bufferSize, copyRegions, imageAspectFlags, mipLevels, arrayLayers, destImage, destImageLayout, destImageDstStageFlags, baseMipLevel);
+	copyBufferToImage(vk, *cmdBuffer, buffer, bufferSize, copyRegions, imageAspectFlags, mipLevels, arrayLayers, destImage, destImageLayout, destImageDstStageFlags, destImageDstAccessMask, baseMipLevel);
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
 	const VkPipelineStageFlags pipelineStageFlags = VK_PIPELINE_STAGE_TRANSFER_BIT;

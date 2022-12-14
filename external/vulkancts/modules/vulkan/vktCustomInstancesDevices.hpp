@@ -21,7 +21,7 @@
  *
  *//*!
  * \file
- * \brief Auxiliar functions to help create custom devices and instances.
+ * \brief Auxiliary functions to help create custom devices and instances.
  *//*--------------------------------------------------------------------*/
 
 #include "vkDefs.hpp"
