@@ -360,8 +360,7 @@ public:
 class ProvokingVertexWithPadding : public VertexWithPadding
 {
 protected:
-	static constexpr uint32_t	kExpectecdCoordCount = 3u;
-	bool						m_lastVertex;
+	bool m_lastVertex;
 
 public:
 	ProvokingVertexWithPadding (bool lastVertex)
@@ -400,6 +399,8 @@ public:
 
 	virtual std::vector<std::vector<deUint8>> createVertexData (const std::vector<tcu::Vec2>& coords, vk::VkDeviceSize dataOffset, vk::VkDeviceSize trailingPadding, const void* paddingPattern, size_t patternSize) const override
 	{
+		static constexpr uint32_t kExpectecdCoordCount = 3u;
+		DE_UNREF(kExpectecdCoordCount); // For release builds.
 		DE_ASSERT(coords.size() == kExpectecdCoordCount);
 		return VertexWithPadding::createVertexData(coords, dataOffset, trailingPadding, paddingPattern, patternSize);
 	}
