@@ -1456,7 +1456,6 @@ void vkt::subgroups::initStdPrograms (vk::SourceCollections&			programCollection
 			mesh
 				<< "#version 450\n"
 				<< "#extension GL_EXT_mesh_shader : enable\n"
-				//<< "#extension GL_NV_mesh_shader : enable\n"
 				<< extHeader
 				<< "layout (local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2) in;\n"
 				<< "layout (points) out;\n"
@@ -1467,7 +1466,6 @@ void vkt::subgroups::initStdPrograms (vk::SourceCollections&			programCollection
 				<< "void main (void)\n"
 				<< "{\n"
 				<< "  uvec3 globalSize = gl_NumWorkGroups * gl_WorkGroupSize;\n"
-				//<< "  uvec3 globalSize = uvec3(0, 0, 0)/*gl_NumWorkGroups*/ * gl_WorkGroupSize;\n"
 				<< "  highp uint offset = globalSize.x * ((globalSize.y * "
 				"gl_GlobalInvocationID.z) + gl_GlobalInvocationID.y) + "
 				"gl_GlobalInvocationID.x;\n"
@@ -1475,7 +1473,6 @@ void vkt::subgroups::initStdPrograms (vk::SourceCollections&			programCollection
 				<< testSrc
 				<< "  result[offset] = tempRes;\n"
 				<< "  SetMeshOutputsEXT(0u, 0u);\n"
-				//<< "  gl_PrimitiveCountNV = 0;\n"
 				<< "}\n";
 
 			programCollection.glslSources.add("mesh") << glu::MeshSource(mesh.str()) << buildOptions;
@@ -4318,10 +4315,6 @@ tcu::TestStatus makeComputeOrMeshTestRequiredSubgroupSize (ComputeLike							tes
 		if (!checkResult(internalData, datas, numWorkgroups, usedLocalSizes[index].getPtr(), subgroupSize))
 		{
 			failedIterations++;
-		}
-		else
-		{
-			failedIterations = failedIterations + 0;
 		}
 
 		context.resetCommandPoolForVKSC(device, *cmdPool);
