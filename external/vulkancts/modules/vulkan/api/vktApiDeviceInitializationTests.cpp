@@ -994,6 +994,13 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest (Context& context, bool useKh
 
 	if (useKhrGlobalPriority)
 		enabledExtensions = { "VK_KHR_global_priority" };
+
+	VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT	globalPriorityQueryFeatures
+	{
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES_EXT,	//sType;
+		DE_NULL,																//pNext;
+		VK_TRUE																	//globalPriorityQuery;
+	};
 #else
 	(void)useKhrGlobalPriority;
 	std::vector<const char*> enabledExtensions = { "VK_EXT_global_priority" };
@@ -1032,6 +1039,8 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest (Context& context, bool useKh
 		VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
 		sc10Features.pNext										= pNext;
 		pNext													= &sc10Features;
+#else
+		pNext = &globalPriorityQueryFeatures;
 #endif // CTS_USES_VULKANSC
 
 		const VkDeviceCreateInfo		deviceCreateInfo		=

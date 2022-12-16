@@ -175,6 +175,7 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
 	}
 
 	vk::VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT shaderImageAtomicInt64Features = m_context.getShaderImageAtomicInt64FeaturesEXT();
+	shaderImageAtomicInt64Features.pNext = DE_NULL;
 
 	const VkPhysicalDeviceFeatures	deviceFeatures	= getPhysicalDeviceFeatures(instanceDriver, physicalDevice);
 	vk::VkPhysicalDeviceFeatures2	deviceFeatures2	= getPhysicalDeviceFeatures2(instanceDriver, physicalDevice);
