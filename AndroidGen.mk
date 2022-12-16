@@ -123,6 +123,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/conditional_rendering/vktConditionalDispatchTests.cpp \
 	external/vulkancts/modules/vulkan/conditional_rendering/vktConditionalDrawAndClearTests.cpp \
 	external/vulkancts/modules/vulkan/conditional_rendering/vktConditionalDrawTests.cpp \
+	external/vulkancts/modules/vulkan/conditional_rendering/vktConditionalIgnoreTests.cpp \
 	external/vulkancts/modules/vulkan/conditional_rendering/vktConditionalRenderingTestUtil.cpp \
 	external/vulkancts/modules/vulkan/conditional_rendering/vktConditionalTests.cpp \
 	external/vulkancts/modules/vulkan/descriptor_indexing/vktDescriptorIndexingTests.cpp \
