@@ -798,7 +798,7 @@ void drawAndSampleInputAttachment (Context& context, const TestParams& params, W
 				0u,																							// uint32_t                srcSubpass;
 				1u,																							// uint32_t                dstSubpass;
 				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,		// VkPipelineStageFlags    srcStageMask;
-				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,														// VkPipelineStageFlags    dstStageMask;
+				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,		// VkPipelineStageFlags    dstStageMask;
 				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,														// VkAccessFlags           srcAccessMask;
 				dstAccessMask,																				// VkAccessFlags           dstAccessMask;
 				VK_DEPENDENCY_BY_REGION_BIT,																// VkDependencyFlags       dependencyFlags;
