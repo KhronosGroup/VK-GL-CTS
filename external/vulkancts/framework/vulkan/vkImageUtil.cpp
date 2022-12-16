@@ -4298,7 +4298,7 @@ void copyBufferToImage (const DeviceInterface&					vk,
 	copyBufferToImage(vk, *cmdBuffer, buffer, bufferSize, copyRegions, imageAspectFlags, mipLevels, arrayLayers, destImage, destImageLayout, destImageDstStageFlags);
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
-	const VkPipelineStageFlags pipelineStageFlags = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
+	const VkPipelineStageFlags pipelineStageFlags = VK_PIPELINE_STAGE_TRANSFER_BIT;
 
 	const VkSubmitInfo submitInfo =
 	{
