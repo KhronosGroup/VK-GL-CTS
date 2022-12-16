@@ -936,6 +936,13 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest (Context& context, bool useKh
 		enabledExtensions.emplace_back("VK_KHR_get_physical_device_properties2");
 	}
 
+	const VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT	globalPriorityQueryFeatures =
+	{
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES_EXT,	//sType;
+		DE_NULL,																//pNext;
+		VK_TRUE																	//globalPriorityQuery;
+	};
+
 	for (VkQueueGlobalPriorityEXT globalPriority : globalPriorities)
 	{
 		const VkDeviceQueueGlobalPriorityCreateInfoEXT	queueGlobalPriority		=
@@ -958,7 +965,7 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest (Context& context, bool useKh
 		const VkDeviceCreateInfo		deviceCreateInfo	=
 		{
 			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,	//sType;
-			DE_NULL,								//pNext;
+			&globalPriorityQueryFeatures,			//pNext;
 			(VkDeviceCreateFlags)0u,				//flags;
 			1,										//queueRecordCount;
 			&queueCreateInfo,						//pRequestedQueues;
