@@ -4953,7 +4953,7 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 				*renderPassSingleSubpass,
 				0u,
 				*vertModule)
-			.setupFragmentShaderState(*pipelineLayout, *renderPassSingleSubpass, 0u, *fragModule)
+			.setupFragmentShaderState(*pipelineLayout, *renderPassSingleSubpass, 0u, *fragModule, DE_NULL, &multisampleStateCreateInfo)
 			.setupFragmentOutputState(*renderPassSingleSubpass, 0u, &colorBlendStateCreateInfo, &multisampleStateCreateInfo)
 			.setMonolithicPipelineLayout(*pipelineLayout)
 			.buildPipeline();
@@ -4978,7 +4978,7 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 				*renderPassMultiplePasses,
 				subpass,
 				*vertModule)
-			.setupFragmentShaderState(*pipelineLayout, *renderPassMultiplePasses, subpass, *fragModule)
+			.setupFragmentShaderState(*pipelineLayout, *renderPassMultiplePasses, subpass, *fragModule, DE_NULL, &multisampleStateCreateInfo)
 			.setupFragmentOutputState(*renderPassMultiplePasses, subpass, &colorBlendStateCreateInfo, &multisampleStateCreateInfo)
 			.setMonolithicPipelineLayout(*pipelineLayout)
 			.buildPipeline();
