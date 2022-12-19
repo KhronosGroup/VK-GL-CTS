@@ -216,7 +216,6 @@ enum VkShaderModuleCreateFlagBits
 typedef deUint32 VkShaderModuleCreateFlags;
 
 #define VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO VkStructureType(16)
-#define VK_OBJECT_TYPE_SHADER_MODULE VkObjectType(15)
 
 struct VkShaderModuleCreateInfo
 {

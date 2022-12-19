@@ -109,6 +109,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_NV_private_vendor_info")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_texture_compression_astc_hdr")
 	{
 		return;
@@ -414,6 +418,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_EXT_depth_range_unrestricted")
+	{
+		return;
+	}
+	if (extName == "VK_NV_private_vendor_info")
 	{
 		return;
 	}
