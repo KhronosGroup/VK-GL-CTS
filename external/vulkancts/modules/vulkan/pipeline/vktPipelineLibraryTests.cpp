@@ -43,6 +43,8 @@
 
 #include "../draw/vktDrawCreateInfoUtil.hpp"
 #include "deMath.h"
+#include "deRandom.hpp"
+#include "deClock.h"
 
 #include <vector>
 #include <chrono>
@@ -400,7 +402,8 @@ void updateVertexInputInterface (Context&						context,
 void updatePreRasterization (Context&						context,
 							 GraphicsPipelineCreateInfo&	graphicsPipelineCreateInfo,
 							 bool							delayedShaderCreate,
-							 VkPolygonMode					polygonMode = VK_POLYGON_MODE_FILL)
+							 VkPolygonMode					polygonMode = VK_POLYGON_MODE_FILL,
+							 const VkSpecializationInfo*	specializationInfo = DE_NULL)
 {
 	const ProgramBinary&		shaderBinary			= context.getBinaryCollection().get("vert");
 	VkShaderModuleCreateInfo&	shaderModuleCreateInfo	= graphicsPipelineCreateInfo.m_shaderModuleCreateInfo[graphicsPipelineCreateInfo.m_shaderModuleCreateInfoCount];
@@ -438,7 +441,7 @@ void updatePreRasterization (Context&						context,
 		VK_SHADER_STAGE_VERTEX_BIT,								// VkShaderStageFlagBits			stage;
 		shaderModule,											// VkShaderModule					module;
 		"main",													// const char*						pName;
-		DE_NULL													// const VkSpecializationInfo*		pSpecializationInfo;
+		specializationInfo										// const VkSpecializationInfo*		pSpecializationInfo;
 	};
 
 	shaderBinary.setUsed();
@@ -483,7 +486,8 @@ void updatePreRasterization (Context&						context,
 void updatePostRasterization (Context&						context,
 							  GraphicsPipelineCreateInfo&	graphicsPipelineCreateInfo,
 							  bool							delayedShaderCreate,
-							  bool							enableDepth = true)
+							  bool							enableDepth = true,
+							  const VkSpecializationInfo*	specializationInfo = DE_NULL)
 {
 	const ProgramBinary&		shaderBinary			= context.getBinaryCollection().get("frag");
 	VkShaderModuleCreateInfo&	shaderModuleCreateInfo	= graphicsPipelineCreateInfo.m_shaderModuleCreateInfo[graphicsPipelineCreateInfo.m_shaderModuleCreateInfoCount];
@@ -521,7 +525,7 @@ void updatePostRasterization (Context&						context,
 		VK_SHADER_STAGE_FRAGMENT_BIT,							// VkShaderStageFlagBits			stage;
 		shaderModule,											// VkShaderModule					module;
 		"main",													// const char*						pName;
-		DE_NULL													// const VkSpecializationInfo*		pSpecializationInfo;
+		specializationInfo										// const VkSpecializationInfo*		pSpecializationInfo;
 	};
 
 	shaderBinary.setUsed();
@@ -1917,13 +1921,57 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runCompareLinkTimes (void)
 		{ *layout, *m_renderPass, 0, VK_PIPELINE_CREATE_LIBRARY_BIT_KHR },
 	};
 
+	de::Random rnd(static_cast<deUint32>(deGetMicroseconds()));
+
+	const uint32_t vertexRandSpecConsts[]	= { rnd.getUint32() * 2, rnd.getUint32() * 2 };
+	const uint32_t fragmentRandSpecConsts[] = { rnd.getUint32() * 2, rnd.getUint32() * 2 };
+
+	const VkSpecializationMapEntry entry =
+	{
+		0,					// uint32_t	constantID;
+		0,					// uint32_t	offset;
+		sizeof(int32_t)		// size_t	size;
+	};
+
+	const VkSpecializationInfo vertexSpecializationInfos[] =
+	{
+		{
+			1u,							// uint32_t							mapEntryCount;
+			&entry,						// const VkSpecializationMapEntry*	pMapEntries;
+			sizeof(int32_t),			// size_t							dataSize;
+			&vertexRandSpecConsts[0]	// const void*						pData;
+		},
+		{
+			1u,							// uint32_t							mapEntryCount;
+			&entry,						// const VkSpecializationMapEntry*	pMapEntries;
+			sizeof(int32_t),			// size_t							dataSize;
+			&vertexRandSpecConsts[1]	// const void*						pData;
+		}
+	};
+
+	const VkSpecializationInfo fragmentSpecializationInfos[] =
+	{
+		{
+			1u,							// uint32_t							mapEntryCount;
+			&entry,						// const VkSpecializationMapEntry*	pMapEntries;
+			sizeof(int32_t),			// size_t							dataSize;
+			&fragmentRandSpecConsts[0]	// const void*						pData;
+		},
+		{
+			1u,							// uint32_t							mapEntryCount;
+			&entry,						// const VkSpecializationMapEntry*	pMapEntries;
+			sizeof(int32_t),			// size_t							dataSize;
+			&fragmentRandSpecConsts[1]	// const void*						pData;
+		}
+	};
+
 	// fill proper portion of pipeline state - this cant be easily done in a scalable loop
 	updateVertexInputInterface		(m_context, partialPipelineCreateInfo[0], VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
 	updateVertexInputInterface		(m_context, partialPipelineCreateInfo[1], VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-	updatePreRasterization			(m_context, partialPipelineCreateInfo[2], false, VK_POLYGON_MODE_FILL);
-	updatePreRasterization			(m_context, partialPipelineCreateInfo[3], false, VK_POLYGON_MODE_LINE);
-	updatePostRasterization			(m_context, partialPipelineCreateInfo[4], false, true);
-	updatePostRasterization			(m_context, partialPipelineCreateInfo[5], false, false);
+	updatePreRasterization			(m_context, partialPipelineCreateInfo[2], false, VK_POLYGON_MODE_FILL, &vertexSpecializationInfos[0]);
+	updatePreRasterization			(m_context, partialPipelineCreateInfo[3], false, VK_POLYGON_MODE_LINE, &vertexSpecializationInfos[1]);
+	updatePostRasterization			(m_context, partialPipelineCreateInfo[4], false, true,	&fragmentSpecializationInfos[0]);
+	updatePostRasterization			(m_context, partialPipelineCreateInfo[5], false, false, &fragmentSpecializationInfos[1]);
 	updateFragmentOutputInterface	(m_context, partialPipelineCreateInfo[6], 0xf);
 	updateFragmentOutputInterface	(m_context, partialPipelineCreateInfo[7]);
 
@@ -2504,7 +2552,7 @@ void PipelineLibraryMiscTestCase::initPrograms(SourceCollections& programCollect
 			"layout(set = 1, binding = 0) uniform bufB\n"
 			"{\n"
 			"  vec4 valueB;\n"
-			"};\n\n"
+			"};\n"
 			"void main()\n"
 			"{\n"
 			// note: values in buffers were set to get vec4(0.0, 0.75, 0.5, 0.2)
@@ -2520,20 +2568,22 @@ void PipelineLibraryMiscTestCase::initPrograms(SourceCollections& programCollect
 			"out gl_PerVertex\n"
 			"{\n"
 			"  vec4 gl_Position;\n"
-			"};\n\n"
+			"};\n"
+			"layout(constant_id = 0) const int random = 0;\n\n"
 			"void main()\n"
 			"{\n"
 			"   gl_Position = vec4(float(1 - 2 * int(gl_VertexIndex != 1)),\n"
-			"                      float(1 - 2 * int(gl_VertexIndex > 0)), 0.0, 1.0);\n"
+			"                      float(1 - 2 * int(gl_VertexIndex > 0)), 0.0, 1.0) + float(random & 1);\n"
 			"}\n");
 
 		programCollection.glslSources.add("frag") << glu::FragmentSource(
 			"#version 450\n"
 			"precision mediump int; precision highp float;"
 			"layout(location = 0) out highp vec4 o_color;\n"
+			"layout(constant_id = 0) const int random = 0;\n\n"
 			"void main()\n"
 			"{\n"
-			"  o_color = vec4(0.0, 1.0, 0.5, 1.0);\n"
+			"  o_color = vec4(0.0, 1.0, 0.5, 1.0) + float(random & 1);\n"
 			"}\n");
 	}
 	else if (m_testParams.mode == MiscTestMode::SHADER_MODULE_CREATE_INFO_COMP)

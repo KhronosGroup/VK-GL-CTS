@@ -3706,7 +3706,8 @@ tcu::TestStatus testImageQueries (Context& context, vk::VkExternalMemoryHandleTy
 	{
 		const vk::VkImageViewCreateFlags						createFlag		= createFlags[createFlagNdx];
 		const vk::VkImageUsageFlags								usageFlag		= usageFlags[usageFlagNdx];
-		const vk::VkFormat										format			= vk::VK_FORMAT_R8G8B8A8_UNORM;
+		const vk::VkFormat										format			=
+				(usageFlags[usageFlagNdx] & vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) ? vk::VK_FORMAT_D16_UNORM : vk::VK_FORMAT_R8G8B8A8_UNORM;
 		const vk::VkImageType									type			= vk::VK_IMAGE_TYPE_2D;
 		const vk::VkImageTiling									tiling			= vk::VK_IMAGE_TILING_OPTIMAL;
 		const vk::VkPhysicalDeviceExternalImageFormatInfo		externalInfo	=
@@ -3757,7 +3758,9 @@ tcu::TestStatus testImageQueries (Context& context, vk::VkExternalMemoryHandleTy
 			(deviceFeatures.sparseResidencyAliased == VK_FALSE))
 			continue;
 
-		vki.getPhysicalDeviceImageFormatProperties2(physicalDevice, &info, &properties);
+		if (vki.getPhysicalDeviceImageFormatProperties2(physicalDevice, &info, &properties) == vk::VK_ERROR_FORMAT_NOT_SUPPORTED) {
+			continue;
+		}
 
 		log << TestLog::Message << externalProperties << TestLog::EndMessage;
 		TCU_CHECK(externalProperties.sType == vk::VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES);

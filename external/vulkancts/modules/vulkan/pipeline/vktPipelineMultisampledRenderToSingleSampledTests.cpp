@@ -1290,7 +1290,7 @@ void initResolveImageLayouts (Context&				context,
 
 	if (!barriers.empty())
 	{
-		vk.cmdPipelineBarrier(*testObjects.cmdBuffer, 0, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, 0u,
+		vk.cmdPipelineBarrier(*testObjects.cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, 0u,
 				0u, DE_NULL, 0u, DE_NULL, static_cast<uint32_t>(barriers.size()), barriers.data());
 	}
 }
