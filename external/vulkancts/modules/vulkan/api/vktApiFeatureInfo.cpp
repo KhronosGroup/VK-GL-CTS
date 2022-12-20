@@ -723,6 +723,7 @@ tcu::TestStatus validateLimits12 (Context& context)
 																						limits.maxPerStageDescriptorStorageImages		+
 																						limits.maxPerStageDescriptorInputAttachments	+
 																						limits.maxColorAttachments);
+	deUint32 maxFramebufferLayers = 256;
 
 	if (features.tessellationShader)
 	{
@@ -733,6 +734,14 @@ tcu::TestStatus validateLimits12 (Context& context)
 	{
 		shaderStages++;
 	}
+
+	// Vulkan SC
+#ifdef CTS_USES_VULKANSC
+	if (features.geometryShader == VK_FALSE && features12.shaderOutputLayer == VK_FALSE)
+	{
+		maxFramebufferLayers = 1;
+	}
+#endif // CTS_USES_VULKANSC
 
 	FeatureLimitTableItem featureLimitTable[] =
 	{
@@ -825,7 +834,7 @@ tcu::TestStatus validateLimits12 (Context& context)
 		{ PN(features.sampleRateShading),				PN(limits.subPixelInterpolationOffsetBits),														LIM_MIN_UINT32(4) },
 		{ PN(checkAlways),								PN(limits.maxFramebufferWidth),																	LIM_MIN_UINT32(4096) },
 		{ PN(checkAlways),								PN(limits.maxFramebufferHeight),																LIM_MIN_UINT32(4096) },
-		{ PN(checkAlways),								PN(limits.maxFramebufferLayers),																LIM_MIN_UINT32(256) },
+		{ PN(checkAlways),								PN(limits.maxFramebufferLayers),																LIM_MIN_UINT32(maxFramebufferLayers) },
 		{ PN(checkAlways),								PN(limits.framebufferColorSampleCounts),														LIM_MIN_BITI32(VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT) },
 		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.framebufferIntegerColorSampleCounts),										LIM_MIN_BITI32(VK_SAMPLE_COUNT_1_BIT) },
 		{ PN(checkAlways),								PN(limits.framebufferDepthSampleCounts),														LIM_MIN_BITI32(VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT) },
