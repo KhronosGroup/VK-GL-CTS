@@ -142,6 +142,7 @@ tcu::TestCaseGroup* createTestsInternal (tcu::TestContext& testCtx, Synchronizat
 			testGroup->addChild(createInternallySynchronizedObjects(testCtx));
 #ifndef CTS_USES_VULKANSC
 			testGroup->addChild(createWin32KeyedMutexTest(testCtx));
+			testGroup->addChild(createGlobalPriorityQueueTests(testCtx));
 #endif // CTS_USES_VULKANSC
 		}
 	}
