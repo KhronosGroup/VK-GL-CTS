@@ -1259,7 +1259,7 @@ void RectangleTest::makeGradient(Type (*unpack)(float))
 					(j < m_unpackProperties.skipRows + GRADIENT_HEIGHT) && (m_unpackProperties.skipPixels <= x) &&
 					(x < m_unpackProperties.skipPixels + GRADIENT_WIDTH))
 				{
-					float value   = static_cast<float>(x - m_unpackProperties.skipPixels) / GRADIENT_WIDTH;
+					float value   = static_cast<float>(x - m_unpackProperties.skipPixels) / static_cast<float> (GRADIENT_WIDTH);
 					int   channel = i - elementsInGroup * x;
 					value *= 1.0f - 0.25f * channel;
 					data[index] = unpack(value);
