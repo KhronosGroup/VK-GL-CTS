@@ -78,7 +78,8 @@ enum TestMode
 	TM_SETUP_RATE_WITH_COPYING_FROM_CONCURENT_IMAGE_USING_TRANSFER_QUEUE,
 	TM_SETUP_RATE_WITH_LINEAR_TILED_IMAGE,
 
-	TM_TWO_SUBPASS
+	TM_TWO_SUBPASS,
+	TM_MEMORY_ACCESS
 };
 
 struct TestParams
@@ -914,6 +915,7 @@ tcu::TestStatus AttachmentRateInstance::iterate(void)
 		{ TM_SETUP_RATE_WITH_COPYING_FROM_CONCURENT_IMAGE_USING_TRANSFER_QUEUE,	&AttachmentRateInstance::runCopyModeOnTransferQueue },
 		{ TM_SETUP_RATE_WITH_LINEAR_TILED_IMAGE,								&AttachmentRateInstance::runFillLinearTiledImage },
 		{ TM_TWO_SUBPASS,														&AttachmentRateInstance::runTwoSubpassMode },
+		{ TM_MEMORY_ACCESS,														&AttachmentRateInstance::runFragmentShaderMode },
 	};
 
 	if ((this->*modeFuncMap.at(m_params->mode))())
@@ -1236,6 +1238,7 @@ bool AttachmentRateInstance::runFragmentShaderMode(void)
 	VkDevice				device				= m_context.getDevice();
 	deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 	VkMemoryBarrier			memoryBarrier		{ VK_STRUCTURE_TYPE_MEMORY_BARRIER, DE_NULL, 0u, 0u };
+	const bool				useMemoryAccess		= (m_params->mode == TM_MEMORY_ACCESS);
 
 	Move<VkShaderModule>	vertSetupShader		= createShaderModule(vk, device, m_context.getBinaryCollection().get("vert_setup"), 0);
 	Move<VkShaderModule>	fragSetupShader		= createShaderModule(vk, device, m_context.getBinaryCollection().get("frag_setup"), 0);
@@ -1292,7 +1295,7 @@ bool AttachmentRateInstance::runFragmentShaderMode(void)
 		VkImageMemoryBarrier srImageBarrierGeneral =
 			makeImageMemoryBarrier(
 				VK_ACCESS_NONE_KHR,
-				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+				useMemoryAccess ? VK_ACCESS_MEMORY_WRITE_BIT : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
 				VK_IMAGE_LAYOUT_UNDEFINED,
 				VK_IMAGE_LAYOUT_GENERAL,
 				**m_srImage[0],
@@ -1313,8 +1316,8 @@ bool AttachmentRateInstance::runFragmentShaderMode(void)
 		dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
 		VkImageMemoryBarrier srImageBarrierShadingRate =
 			makeImageMemoryBarrier(
-				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-				VK_ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR,
+				useMemoryAccess ? VK_ACCESS_MEMORY_WRITE_BIT : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+				useMemoryAccess ? VK_ACCESS_MEMORY_READ_BIT : VK_ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR,
 				VK_IMAGE_LAYOUT_GENERAL,
 				VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR,
 				**m_srImage[0],
@@ -1327,7 +1330,7 @@ bool AttachmentRateInstance::runFragmentShaderMode(void)
 		VkImageMemoryBarrier cbImageBarrier =
 			makeImageMemoryBarrier(
 				VK_ACCESS_NONE_KHR,
-				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+				useMemoryAccess ? VK_ACCESS_MEMORY_WRITE_BIT : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
 				VK_IMAGE_LAYOUT_UNDEFINED,
 				VK_IMAGE_LAYOUT_GENERAL,
 				**m_cbImage[0],
@@ -1346,8 +1349,8 @@ bool AttachmentRateInstance::runFragmentShaderMode(void)
 		// wait till color attachment is fully written
 		srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 		dstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
-		memoryBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		memoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+		memoryBarrier.srcAccessMask = useMemoryAccess ? VK_ACCESS_MEMORY_WRITE_BIT : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		memoryBarrier.dstAccessMask = useMemoryAccess ? VK_ACCESS_MEMORY_READ_BIT : VK_ACCESS_TRANSFER_READ_BIT;
 		vk.cmdPipelineBarrier(*cmdBuffer, srcStageMask, dstStageMask, 0, 1, &memoryBarrier, 0, DE_NULL, 0, DE_NULL);
 
 		// read back color buffer image
@@ -2273,7 +2276,7 @@ void AttachmentRateTestCase::initPrograms(SourceCollections& programCollection) 
 		programCollection.glslSources.add("vert") << glu::VertexSource(vertTemplate.specialize(specializationMap));
 	}
 
-	if (m_params->mode == TM_SETUP_RATE_WITH_FRAGMENT_SHADER)
+	if ((m_params->mode == TM_SETUP_RATE_WITH_FRAGMENT_SHADER) || (m_params->mode == TM_MEMORY_ACCESS))
 	{
 		// use large triangle that will cover whole color buffer
 		specializationMap["SCALE"]		= "9.0";
@@ -2449,6 +2452,17 @@ void createAttachmentRateTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* pa
 				TM_TWO_SUBPASS,									// TestMode			mode;
 				VK_FORMAT_R8_UINT,								// VkFormat			srFormat;
 				{0, 0},											// VkExtent2D		srRate;					// not used in TM_TWO_SUBPASS
+				false,											// bool				useDynamicRendering;
+				false,											// bool				useImagelessFramebuffer;
+				false											// bool				useNullShadingRateImage;
+			}
+		)));
+		miscGroup->addChild(new AttachmentRateTestCase(testCtx, "memory_access", de::SharedPtr<TestParams>(
+			new TestParams
+			{
+				TM_MEMORY_ACCESS,								// TestMode			mode;
+				VK_FORMAT_R8_UINT,								// VkFormat			srFormat;
+				{1, 1},											// VkExtent2D		srRate;
 				false,											// bool				useDynamicRendering;
 				false,											// bool				useImagelessFramebuffer;
 				false											// bool				useNullShadingRateImage;

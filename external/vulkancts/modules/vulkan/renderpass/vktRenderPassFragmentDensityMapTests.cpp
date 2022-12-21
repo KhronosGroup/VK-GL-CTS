@@ -90,6 +90,7 @@ struct TestParams
 	bool					subsampledLoads;
 	bool					coarseReconstruction;
 	bool					imagelessFramebuffer;
+	bool					useMemoryAccess;
 	deUint32				samplersCount;
 	deUint32				viewCount;
 	bool					makeCopy;
@@ -2268,8 +2269,10 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
 	const VkImageSubresourceRange		outputSubresourceRange				{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u };
 
 	const VkImageMemoryBarrier dynamicDensitMapBarrier = makeImageMemoryBarrier(
-		VK_ACCESS_FRAGMENT_DENSITY_MAP_READ_BIT_EXT,									// VkAccessFlags			srcAccessMask;
-		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,											// VkAccessFlags			dstAccessMask;
+		m_testParams.useMemoryAccess ? VK_ACCESS_MEMORY_READ_BIT
+									 : VK_ACCESS_FRAGMENT_DENSITY_MAP_READ_BIT_EXT,		// VkAccessFlags			srcAccessMask;
+		m_testParams.useMemoryAccess ? VK_ACCESS_MEMORY_WRITE_BIT
+									 : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags			dstAccessMask;
 		VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT,								// VkImageLayout			oldLayout;
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,										// VkImageLayout			newLayout;
 		**m_densityMapImages[0],														// VkImage					image;
@@ -2277,8 +2280,10 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
 	);
 
 	const VkImageMemoryBarrier densityMapImageBarrier = makeImageMemoryBarrier(
-		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,											// VkAccessFlags			srcAccessMask;
-		VK_ACCESS_FRAGMENT_DENSITY_MAP_READ_BIT_EXT,									// VkAccessFlags			dstAccessMask;
+		m_testParams.useMemoryAccess ? VK_ACCESS_MEMORY_WRITE_BIT
+									 : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags			srcAccessMask;
+		m_testParams.useMemoryAccess ? VK_ACCESS_MEMORY_READ_BIT
+									 : VK_ACCESS_FRAGMENT_DENSITY_MAP_READ_BIT_EXT,		// VkAccessFlags			dstAccessMask;
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,										// VkImageLayout			oldLayout;
 		VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT,								// VkImageLayout			newLayout;
 		**m_densityMapImages[0],														// VkImage					image;
@@ -2287,7 +2292,8 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
 
 	std::vector<VkImageMemoryBarrier> cbImageBarrier(2, makeImageMemoryBarrier(
 		VK_ACCESS_NONE_KHR,																// VkAccessFlags			srcAccessMask;
-		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,											// VkAccessFlags			dstAccessMask;
+		m_testParams.useMemoryAccess ? VK_ACCESS_MEMORY_WRITE_BIT
+									 : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags			dstAccessMask;
 		VK_IMAGE_LAYOUT_UNDEFINED,														// VkImageLayout			oldLayout;
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,										// VkImageLayout			newLayout;
 		*m_colorImage,																	// VkImage					image;
@@ -2296,8 +2302,10 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
 	cbImageBarrier[1].image = *m_colorResolvedImage;
 
 	const VkImageMemoryBarrier subsampledImageBarrier = makeImageMemoryBarrier(
-		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT					,						// VkAccessFlags						srcAccessMask;
-		VK_ACCESS_SHADER_READ_BIT,														// VkAccessFlags						dstAccessMask;
+		m_testParams.useMemoryAccess ? VK_ACCESS_MEMORY_WRITE_BIT
+									 : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags						srcAccessMask;
+		m_testParams.useMemoryAccess ? VK_ACCESS_MEMORY_READ_BIT
+									 : VK_ACCESS_SHADER_READ_BIT,						// VkAccessFlags						dstAccessMask;
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,										// VkImageLayout						oldLayout;
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,										// VkImageLayout						newLayout;
 		*m_colorImage,																	// VkImage								image;
@@ -2306,7 +2314,8 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
 
 	const VkImageMemoryBarrier outputImageBarrier = makeImageMemoryBarrier(
 		VK_ACCESS_NONE_KHR,																// VkAccessFlags						srcAccessMask;
-		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,											// VkAccessFlags						dstAccessMask;
+		m_testParams.useMemoryAccess ? VK_ACCESS_MEMORY_WRITE_BIT
+									 : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags						dstAccessMask;
 		VK_IMAGE_LAYOUT_UNDEFINED,														// VkImageLayout						oldLayout;
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,										// VkImageLayout						newLayout;
 		*m_outputImage,																	// VkImage								image;
@@ -2841,6 +2850,7 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 							false,							// bool						subsampledLoads;
 							false,							// bool						coarseReconstruction;
 							false,							// bool						imagelessFramebuffer;
+							false,							// bool						useMemoryAccess;
 							1,								// deUint32					samplersCount;
 							view.viewCount,					// deUint32					viewCount;
 							render.makeCopy,				// bool						makeCopy;
@@ -2904,6 +2914,7 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 			false,							// bool						subsampledLoads;
 			false,							// bool						coarseReconstruction;
 			false,							// bool						imagelessFramebuffer;
+			false,							// bool						useMemoryAccess;
 			sampler.count,					// deUint32					samplersCount;
 			1,								// deUint32					viewCount;
 			false,							// bool						makeCopy;
@@ -2944,6 +2955,7 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 				false,									// bool						subsampledLoads;
 				false,									// bool						coarseReconstruction;
 				true,									// bool						imagelessFramebuffer;
+				false,									// bool						useMemoryAccess;
 				1,										// deUint32					samplersCount;
 				1,										// deUint32					viewCount;
 				false,									// bool						makeCopy;
@@ -2982,6 +2994,7 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 			true,							// bool						subsampledLoads;
 			false,							// bool						coarseReconstruction;
 			false,							// bool						imagelessFramebuffer;
+			false,							// bool						useMemoryAccess;
 			1,								// deUint32					samplersCount;
 			2,								// deUint32					viewCount;
 			false,							// bool						makeCopy;
@@ -2996,6 +3009,8 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 		params.subsampledLoads		= false;
 		params.coarseReconstruction	= true;
 		propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, "subsampled_coarse_reconstruction", "", params));
+		params.useMemoryAccess		= true;
+		propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, "memory_access", "", params));
 	}
 
 	fdmTests->addChild(propertiesGroup.release());

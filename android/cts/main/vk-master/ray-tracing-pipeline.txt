@@ -1987,6 +1987,7 @@ dEQP-VK.ray_tracing_pipeline.misc.maxrayhitattributesize_1TL1BLnG
 dEQP-VK.ray_tracing_pipeline.misc.maxrayhitattributesize_1TLnBL1G
 dEQP-VK.ray_tracing_pipeline.misc.maxrayhitattributesize_1TLnBLnG
 dEQP-VK.ray_tracing_pipeline.misc.report_intersection_result
+dEQP-VK.ray_tracing_pipeline.misc.memory_access
 dEQP-VK.ray_tracing_pipeline.misc.raypayloadin_AABB
 dEQP-VK.ray_tracing_pipeline.misc.raypayloadin_tri
 dEQP-VK.ray_tracing_pipeline.misc.shaderRecordSTD430_1
