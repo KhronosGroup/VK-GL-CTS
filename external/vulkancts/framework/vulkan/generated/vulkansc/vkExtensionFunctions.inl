@@ -305,6 +305,21 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_NV_external_sci_sync")
+	{
+		functions.push_back("vkGetPhysicalDeviceSciSyncAttributesNV");
+		return;
+	}
+	if (extName == "VK_NV_external_memory_sci_buf")
+	{
+		functions.push_back("vkGetPhysicalDeviceExternalMemorySciBufPropertiesNV");
+		functions.push_back("vkGetPhysicalDeviceSciBufAttributesNV");
+		return;
+	}
+	if (extName == "VK_NV_external_sci_sync2")
+	{
+		return;
+	}
 	DE_FATAL("Extension name not found");
 }
 
@@ -647,6 +662,26 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_NV_external_sci_sync")
+	{
+		functions.push_back("vkGetFenceSciSyncFenceNV");
+		functions.push_back("vkGetFenceSciSyncObjNV");
+		functions.push_back("vkImportFenceSciSyncFenceNV");
+		functions.push_back("vkImportFenceSciSyncObjNV");
+		functions.push_back("vkGetSemaphoreSciSyncObjNV");
+		functions.push_back("vkImportSemaphoreSciSyncObjNV");
+		return;
+	}
+	if (extName == "VK_NV_external_memory_sci_buf")
+	{
+		functions.push_back("vkGetMemorySciBufNV");
+		return;
+	}
+	if (extName == "VK_NV_external_sci_sync2")
+	{
+		functions.push_back("vkCreateSemaphoreSciSyncPoolNV");
+		return;
+	}
 	DE_FATAL("Extension name not found");
 }
 
@@ -686,5 +721,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_extended_dynamic_state",
 	"VK_EXT_vertex_input_dynamic_state",
 	"VK_EXT_extended_dynamic_state2",
-	"VK_EXT_color_write_enable"
+	"VK_EXT_color_write_enable",
+	"VK_NV_external_sci_sync",
+	"VK_NV_external_memory_sci_buf",
+	"VK_NV_external_sci_sync2"
 };

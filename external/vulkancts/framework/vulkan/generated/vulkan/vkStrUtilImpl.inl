@@ -80,6 +80,11 @@ std::ostream& operator<< (std::ostream& s, MTLBuffer_id					v) { return s << tcu
 std::ostream& operator<< (std::ostream& s, MTLTexture_id				v) { return s << tcu::toHex(v.internal); }
 std::ostream& operator<< (std::ostream& s, IOSurfaceRef					v) { return s << tcu::toHex(v.internal); }
 std::ostream& operator<< (std::ostream& s, MTLSharedEvent_id			v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, NvSciSyncAttrList			v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, NvSciSyncObj					v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, NvSciSyncFence				v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, NvSciBufAttrList				v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, NvSciBufObj					v) { return s << tcu::toHex(v.internal); }
 }
 
 const char* getResultName (VkResult value)

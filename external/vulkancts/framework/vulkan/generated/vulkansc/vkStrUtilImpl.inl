@@ -34,6 +34,7 @@ template<> const char*	getTypeName<VkSwapchainKHR>				(void) { return "VkSwapcha
 template<> const char*	getTypeName<VkDisplayKHR>				(void) { return "VkDisplayKHR";				}
 template<> const char*	getTypeName<VkDisplayModeKHR>			(void) { return "VkDisplayModeKHR";			}
 template<> const char*	getTypeName<VkDebugUtilsMessengerEXT>	(void) { return "VkDebugUtilsMessengerEXT";	}
+template<> const char*	getTypeName<VkSemaphoreSciSyncPoolNV>	(void) { return "VkSemaphoreSciSyncPoolNV";	}
 
 namespace pt
 {
@@ -66,6 +67,11 @@ std::ostream& operator<< (std::ostream& s, MTLBuffer_id					v) { return s << tcu
 std::ostream& operator<< (std::ostream& s, MTLTexture_id				v) { return s << tcu::toHex(v.internal); }
 std::ostream& operator<< (std::ostream& s, IOSurfaceRef					v) { return s << tcu::toHex(v.internal); }
 std::ostream& operator<< (std::ostream& s, MTLSharedEvent_id			v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, NvSciSyncAttrList			v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, NvSciSyncObj					v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, NvSciSyncFence				v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, NvSciBufAttrList				v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, NvSciBufObj					v) { return s << tcu::toHex(v.internal); }
 }
 
 const char* getResultName (VkResult value)
@@ -431,7 +437,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_EXPORT_MEMORY_SCI_BUF_INFO_NV:									return "VK_STRUCTURE_TYPE_EXPORT_MEMORY_SCI_BUF_INFO_NV";
 		case VK_STRUCTURE_TYPE_MEMORY_GET_SCI_BUF_INFO_NV:										return "VK_STRUCTURE_TYPE_MEMORY_GET_SCI_BUF_INFO_NV";
 		case VK_STRUCTURE_TYPE_MEMORY_SCI_BUF_PROPERTIES_NV:									return "VK_STRUCTURE_TYPE_MEMORY_SCI_BUF_PROPERTIES_NV";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SCI_BUF_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SCI_BUF_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCI_BUF_FEATURES_NV:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCI_BUF_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COLOR_WRITE_ENABLE_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COLOR_WRITE_ENABLE_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT:							return "VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT";
@@ -1708,6 +1714,29 @@ const char* getLineRasterizationModeEXTName (VkLineRasterizationModeEXT value)
 		case VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT:	return "VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT";
 		case VK_LINE_RASTERIZATION_MODE_MAX_ENUM_EXT:			return "VK_LINE_RASTERIZATION_MODE_MAX_ENUM_EXT";
 		default:												return DE_NULL;
+	}
+}
+
+const char* getSciSyncClientTypeNVName (VkSciSyncClientTypeNV value)
+{
+	switch (value)
+	{
+		case VK_SCI_SYNC_CLIENT_TYPE_SIGNALER_NV:			return "VK_SCI_SYNC_CLIENT_TYPE_SIGNALER_NV";
+		case VK_SCI_SYNC_CLIENT_TYPE_WAITER_NV:				return "VK_SCI_SYNC_CLIENT_TYPE_WAITER_NV";
+		case VK_SCI_SYNC_CLIENT_TYPE_SIGNALER_WAITER_NV:	return "VK_SCI_SYNC_CLIENT_TYPE_SIGNALER_WAITER_NV";
+		case VK_SCI_SYNC_CLIENT_TYPE_MAX_ENUM_NV:			return "VK_SCI_SYNC_CLIENT_TYPE_MAX_ENUM_NV";
+		default:											return DE_NULL;
+	}
+}
+
+const char* getSciSyncPrimitiveTypeNVName (VkSciSyncPrimitiveTypeNV value)
+{
+	switch (value)
+	{
+		case VK_SCI_SYNC_PRIMITIVE_TYPE_FENCE_NV:		return "VK_SCI_SYNC_PRIMITIVE_TYPE_FENCE_NV";
+		case VK_SCI_SYNC_PRIMITIVE_TYPE_SEMAPHORE_NV:	return "VK_SCI_SYNC_PRIMITIVE_TYPE_SEMAPHORE_NV";
+		case VK_SCI_SYNC_PRIMITIVE_TYPE_MAX_ENUM_NV:	return "VK_SCI_SYNC_PRIMITIVE_TYPE_MAX_ENUM_NV";
+		default:										return DE_NULL;
 	}
 }
 
@@ -7668,6 +7697,193 @@ std::ostream& operator<< (std::ostream& s, const VkApplicationParametersEXT& val
 	s << "\tdeviceID = " << value.deviceID << '\n';
 	s << "\tkey = " << value.key << '\n';
 	s << "\tvalue = " << value.value << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExportFenceSciSyncInfoNV& value)
+{
+	s << "VkExportFenceSciSyncInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpAttributes = " << value.pAttributes << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImportFenceSciSyncInfoNV& value)
+{
+	s << "VkImportFenceSciSyncInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tfence = " << value.fence << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << "\thandle = " << value.handle << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkFenceGetSciSyncInfoNV& value)
+{
+	s << "VkFenceGetSciSyncInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tfence = " << value.fence << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSciSyncAttributesInfoNV& value)
+{
+	s << "VkSciSyncAttributesInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tclientType = " << value.clientType << '\n';
+	s << "\tprimitiveType = " << value.primitiveType << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExportSemaphoreSciSyncInfoNV& value)
+{
+	s << "VkExportSemaphoreSciSyncInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpAttributes = " << value.pAttributes << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImportSemaphoreSciSyncInfoNV& value)
+{
+	s << "VkImportSemaphoreSciSyncInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsemaphore = " << value.semaphore << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << "\thandle = " << value.handle << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSemaphoreGetSciSyncInfoNV& value)
+{
+	s << "VkSemaphoreGetSciSyncInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsemaphore = " << value.semaphore << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExternalSciSyncFeaturesNV& value)
+{
+	s << "VkPhysicalDeviceExternalSciSyncFeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsciSyncFence = " << value.sciSyncFence << '\n';
+	s << "\tsciSyncSemaphore = " << value.sciSyncSemaphore << '\n';
+	s << "\tsciSyncImport = " << value.sciSyncImport << '\n';
+	s << "\tsciSyncExport = " << value.sciSyncExport << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExportMemorySciBufInfoNV& value)
+{
+	s << "VkExportMemorySciBufInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpAttributes = " << value.pAttributes << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImportMemorySciBufInfoNV& value)
+{
+	s << "VkImportMemorySciBufInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << "\thandle = " << value.handle << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryGetSciBufInfoNV& value)
+{
+	s << "VkMemoryGetSciBufInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmemory = " << value.memory << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemorySciBufPropertiesNV& value)
+{
+	s << "VkMemorySciBufPropertiesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmemoryTypeBits = " << value.memoryTypeBits << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExternalMemorySciBufFeaturesNV& value)
+{
+	s << "VkPhysicalDeviceExternalMemorySciBufFeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsciBufImport = " << value.sciBufImport << '\n';
+	s << "\tsciBufExport = " << value.sciBufExport << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExternalSciSync2FeaturesNV& value)
+{
+	s << "VkPhysicalDeviceExternalSciSync2FeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsciSyncFence = " << value.sciSyncFence << '\n';
+	s << "\tsciSyncSemaphore2 = " << value.sciSyncSemaphore2 << '\n';
+	s << "\tsciSyncImport = " << value.sciSyncImport << '\n';
+	s << "\tsciSyncExport = " << value.sciSyncExport << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSemaphoreSciSyncPoolCreateInfoNV& value)
+{
+	s << "VkSemaphoreSciSyncPoolCreateInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\thandle = " << value.handle << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSemaphoreSciSyncCreateInfoNV& value)
+{
+	s << "VkSemaphoreSciSyncCreateInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsemaphorePool = " << value.semaphorePool << '\n';
+	s << "\tpFence = " << value.pFence << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceSemaphoreSciSyncPoolReservationCreateInfoNV& value)
+{
+	s << "VkDeviceSemaphoreSciSyncPoolReservationCreateInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsemaphoreSciSyncPoolRequestCount = " << value.semaphoreSciSyncPoolRequestCount << '\n';
 	s << '}';
 	return s;
 }

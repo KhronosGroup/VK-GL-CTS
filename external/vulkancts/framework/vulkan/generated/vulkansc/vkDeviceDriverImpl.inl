@@ -1043,3 +1043,43 @@ void DeviceDriver::cmdSetColorWriteEnableEXT (VkCommandBuffer commandBuffer, uin
 {
 	m_vk.cmdSetColorWriteEnableEXT(commandBuffer, attachmentCount, pColorWriteEnables);
 }
+
+VkResult DeviceDriver::getFenceSciSyncFenceNV (VkDevice device, const VkFenceGetSciSyncInfoNV* pGetSciSyncHandleInfo, void* pHandle) const
+{
+	return m_vk.getFenceSciSyncFenceNV(device, pGetSciSyncHandleInfo, pHandle);
+}
+
+VkResult DeviceDriver::getFenceSciSyncObjNV (VkDevice device, const VkFenceGetSciSyncInfoNV* pGetSciSyncHandleInfo, void* pHandle) const
+{
+	return m_vk.getFenceSciSyncObjNV(device, pGetSciSyncHandleInfo, pHandle);
+}
+
+VkResult DeviceDriver::importFenceSciSyncFenceNV (VkDevice device, const VkImportFenceSciSyncInfoNV* pImportFenceSciSyncInfo) const
+{
+	return m_vk.importFenceSciSyncFenceNV(device, pImportFenceSciSyncInfo);
+}
+
+VkResult DeviceDriver::importFenceSciSyncObjNV (VkDevice device, const VkImportFenceSciSyncInfoNV* pImportFenceSciSyncInfo) const
+{
+	return m_vk.importFenceSciSyncObjNV(device, pImportFenceSciSyncInfo);
+}
+
+VkResult DeviceDriver::getSemaphoreSciSyncObjNV (VkDevice device, const VkSemaphoreGetSciSyncInfoNV* pGetSciSyncInfo, void* pHandle) const
+{
+	return m_vk.getSemaphoreSciSyncObjNV(device, pGetSciSyncInfo, pHandle);
+}
+
+VkResult DeviceDriver::importSemaphoreSciSyncObjNV (VkDevice device, const VkImportSemaphoreSciSyncInfoNV* pImportSemaphoreSciSyncInfo) const
+{
+	return m_vk.importSemaphoreSciSyncObjNV(device, pImportSemaphoreSciSyncInfo);
+}
+
+VkResult DeviceDriver::getMemorySciBufNV (VkDevice device, const VkMemoryGetSciBufInfoNV* pGetSciBufInfo, pt::NvSciBufObj* pHandle) const
+{
+	return m_vk.getMemorySciBufNV(device, pGetSciBufInfo, pHandle);
+}
+
+VkResult DeviceDriver::createSemaphoreSciSyncPoolNV (VkDevice device, const VkSemaphoreSciSyncPoolCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSemaphoreSciSyncPoolNV* pSemaphorePool) const
+{
+	return m_vk.createSemaphoreSciSyncPoolNV(device, pCreateInfo, pAllocator, pSemaphorePool);
+}

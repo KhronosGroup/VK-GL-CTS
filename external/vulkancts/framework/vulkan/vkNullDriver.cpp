@@ -562,6 +562,15 @@ public:
 
 #endif // CTS_USES_VULKANSC
 
+#ifdef CTS_USES_VULKANSC
+class SemaphoreSciSyncPoolNV
+{
+public:
+	SemaphoreSciSyncPoolNV (VkDevice, const VkSemaphoreSciSyncPoolCreateInfoNV*)
+	{}
+};
+#endif // CTS_USES_VULKANSC
+
 class DebugUtilsMessengerEXT
 {
 public:

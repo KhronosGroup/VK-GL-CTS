@@ -1032,6 +1032,7 @@ static std::map<deUint64, std::string> VkStructureType_map = {
     std::make_pair(1000044009, "VK_STRUCTURE_TYPE_MULTIVIEW_PER_VIEW_ATTRIBUTES_INFO_NVX"),
     std::make_pair(1000049000, "VK_STRUCTURE_TYPE_STREAM_DESCRIPTOR_SURFACE_CREATE_INFO_GGP"),
     std::make_pair(1000050000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CORNER_SAMPLED_IMAGE_FEATURES_NV"),
+    std::make_pair(1000051000, "VK_STRUCTURE_TYPE_PRIVATE_VENDOR_INFO_RESERVED_OFFSET_0_NV"),
     std::make_pair(1000056000, "VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_NV"),
     std::make_pair(1000056001, "VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_NV"),
     std::make_pair(1000057000, "VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_NV"),
@@ -1389,6 +1390,19 @@ static std::map<deUint64, std::string> VkStructureType_map = {
     std::make_pair(1000370000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INVOCATION_MASK_FEATURES_HUAWEI"),
     std::make_pair(1000371000, "VK_STRUCTURE_TYPE_MEMORY_GET_REMOTE_ADDRESS_INFO_NV"),
     std::make_pair(1000371001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_RDMA_FEATURES_NV"),
+    std::make_pair(1000373000, "VK_STRUCTURE_TYPE_IMPORT_FENCE_SCI_SYNC_INFO_NV"),
+    std::make_pair(1000373001, "VK_STRUCTURE_TYPE_EXPORT_FENCE_SCI_SYNC_INFO_NV"),
+    std::make_pair(1000373002, "VK_STRUCTURE_TYPE_FENCE_GET_SCI_SYNC_INFO_NV"),
+    std::make_pair(1000373003, "VK_STRUCTURE_TYPE_SCI_SYNC_ATTRIBUTES_INFO_NV"),
+    std::make_pair(1000373004, "VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_SCI_SYNC_INFO_NV"),
+    std::make_pair(1000373005, "VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_SCI_SYNC_INFO_NV"),
+    std::make_pair(1000373006, "VK_STRUCTURE_TYPE_SEMAPHORE_GET_SCI_SYNC_INFO_NV"),
+    std::make_pair(1000373007, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SCI_SYNC_FEATURES_NV"),
+    std::make_pair(1000374000, "VK_STRUCTURE_TYPE_IMPORT_MEMORY_SCI_BUF_INFO_NV"),
+    std::make_pair(1000374001, "VK_STRUCTURE_TYPE_EXPORT_MEMORY_SCI_BUF_INFO_NV"),
+    std::make_pair(1000374002, "VK_STRUCTURE_TYPE_MEMORY_GET_SCI_BUF_INFO_NV"),
+    std::make_pair(1000374003, "VK_STRUCTURE_TYPE_MEMORY_SCI_BUF_PROPERTIES_NV"),
+    std::make_pair(1000374004, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCI_BUF_FEATURES_NV"),
     std::make_pair(1000377000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT"),
     std::make_pair(1000378000, "VK_STRUCTURE_TYPE_SCREEN_SURFACE_CREATE_INFO_QNX"),
     std::make_pair(1000381000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COLOR_WRITE_ENABLE_FEATURES_EXT"),
@@ -1407,6 +1421,14 @@ static std::map<deUint64, std::string> VkStructureType_map = {
     std::make_pair(1000413002, "VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS_KHR"),
     std::make_pair(1000413003, "VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS_KHR"),
     std::make_pair(1000435000, "VK_STRUCTURE_TYPE_APPLICATION_PARAMETERS_EXT"),
+    std::make_pair(1000489000, "VK_STRUCTURE_TYPE_SEMAPHORE_SCI_SYNC_POOL_CREATE_INFO_NV"),
+    std::make_pair(1000489001, "VK_STRUCTURE_TYPE_SEMAPHORE_SCI_SYNC_CREATE_INFO_NV"),
+    std::make_pair(1000489002, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SCI_SYNC_2_FEATURES_NV"),
+    std::make_pair(1000373000, "VK_STRUCTURE_TYPE_IMPORT_FENCE_SCI_SYNC_INFO_NV"),
+    std::make_pair(1000373001, "VK_STRUCTURE_TYPE_EXPORT_FENCE_SCI_SYNC_INFO_NV"),
+    std::make_pair(1000373002, "VK_STRUCTURE_TYPE_FENCE_GET_SCI_SYNC_INFO_NV"),
+    std::make_pair(1000373003, "VK_STRUCTURE_TYPE_SCI_SYNC_ATTRIBUTES_INFO_NV"),
+    std::make_pair(1000489003, "VK_STRUCTURE_TYPE_DEVICE_SEMAPHORE_SCI_SYNC_POOL_RESERVATION_CREATE_INFO_NV"),
 };
 static void print_VkStructureType(VkStructureType obj, const std::string& str, bool commaNeeded=true) {
      PRINT_SPACE
@@ -1566,6 +1588,7 @@ static std::map<deUint64, std::string> VkObjectType_map = {
     std::make_pair(12, "VK_OBJECT_TYPE_QUERY_POOL"),
     std::make_pair(13, "VK_OBJECT_TYPE_BUFFER_VIEW"),
     std::make_pair(14, "VK_OBJECT_TYPE_IMAGE_VIEW"),
+    std::make_pair(15, "VK_OBJECT_TYPE_SHADER_MODULE"),
     std::make_pair(16, "VK_OBJECT_TYPE_PIPELINE_CACHE"),
     std::make_pair(17, "VK_OBJECT_TYPE_PIPELINE_LAYOUT"),
     std::make_pair(18, "VK_OBJECT_TYPE_RENDER_PASS"),
@@ -1595,6 +1618,7 @@ static std::map<deUint64, std::string> VkObjectType_map = {
     std::make_pair(1000277000, "VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_NV"),
     std::make_pair(1000295000, "VK_OBJECT_TYPE_PRIVATE_DATA_SLOT_EXT"),
     std::make_pair(1000366000, "VK_OBJECT_TYPE_BUFFER_COLLECTION_FUCHSIA"),
+    std::make_pair(1000489000, "VK_OBJECT_TYPE_SEMAPHORE_SCI_SYNC_POOL_NV"),
 };
 static void print_VkObjectType(VkObjectType obj, const std::string& str, bool commaNeeded=true) {
      PRINT_SPACE
@@ -2827,7 +2851,6 @@ static void print_VkCompareOp(const VkCompareOp * obj, const std::string& str, b
 
 static std::map<deUint64, std::string> VkPipelineCreateFlagBits_map = {
     std::make_pair(1ULL << 0, "VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT"),
-    std::make_pair(1ULL << 1, "VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT"),
     std::make_pair(1ULL << 3, "VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT"),
     std::make_pair(1ULL << 4, "VK_PIPELINE_CREATE_DISPATCH_BASE_BIT"),
     std::make_pair(1ULL << 21, "VK_PIPELINE_CREATE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR"),
@@ -2868,7 +2891,6 @@ static void print_VkPipelineCreateFlagBits(const VkPipelineCreateFlagBits * obj,
 }
 
 static std::map<deUint64, std::string> VkPipelineShaderStageCreateFlagBits_map = {
-    std::make_pair(1ULL << 2, "VK_PIPELINE_SHADER_STAGE_CREATE_RESERVED_2_BIT_NV"),
     std::make_pair(1ULL << 0, "VK_PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT"),
     std::make_pair(1ULL << 1, "VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT"),
     std::make_pair(1ULL << 3, "VK_PIPELINE_SHADER_STAGE_CREATE_RESERVED_3_BIT_KHR"),
@@ -6361,7 +6383,6 @@ static void print_VkPipelineCacheHeaderVersionOne(VkPipelineCacheHeaderVersionOn
      PRINT_SPACE
      _OUT << "\"pipelineCacheUUID\":" << std::endl;
      PRINT_SPACE
-     if (obj.pipelineCacheUUID) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_UUID_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_UUID_SIZE;
@@ -6369,9 +6390,6 @@ static void print_VkPipelineCacheHeaderVersionOne(VkPipelineCacheHeaderVersionOn
        }
        PRINT_SPACE
        _OUT << "]" << "" << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "" << std::endl;
-     }
 
      INDENT(-4);
      PRINT_SPACE
@@ -6396,7 +6414,6 @@ static void print_VkPipelineCacheHeaderVersionOne(const VkPipelineCacheHeaderVer
      PRINT_SPACE
      _OUT << "\"pipelineCacheUUID\":" << std::endl;
      PRINT_SPACE
-     if (obj->pipelineCacheUUID) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_UUID_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_UUID_SIZE;
@@ -6404,9 +6421,6 @@ static void print_VkPipelineCacheHeaderVersionOne(const VkPipelineCacheHeaderVer
        }
        PRINT_SPACE
        _OUT << "]" << "" << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "" << std::endl;
-     }
 
      INDENT(-4);
      PRINT_SPACE
@@ -7124,7 +7138,6 @@ static void print_VkPhysicalDeviceLimits(VkPhysicalDeviceLimits obj, const std::
      PRINT_SPACE
      _OUT << "\"maxComputeWorkGroupCount\":" << std::endl;
      PRINT_SPACE
-     if (obj.maxComputeWorkGroupCount) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 3; i++) {
            bool isCommaNeeded = (i+1) != 3;
@@ -7132,16 +7145,12 @@ static void print_VkPhysicalDeviceLimits(VkPhysicalDeviceLimits obj, const std::
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      print_uint32_t(obj.maxComputeWorkGroupInvocations, "maxComputeWorkGroupInvocations", 1);
 
      PRINT_SPACE
      _OUT << "\"maxComputeWorkGroupSize\":" << std::endl;
      PRINT_SPACE
-     if (obj.maxComputeWorkGroupSize) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 3; i++) {
            bool isCommaNeeded = (i+1) != 3;
@@ -7149,9 +7158,6 @@ static void print_VkPhysicalDeviceLimits(VkPhysicalDeviceLimits obj, const std::
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      print_uint32_t(obj.subPixelPrecisionBits, "subPixelPrecisionBits", 1);
 
@@ -7172,7 +7178,6 @@ static void print_VkPhysicalDeviceLimits(VkPhysicalDeviceLimits obj, const std::
      PRINT_SPACE
      _OUT << "\"maxViewportDimensions\":" << std::endl;
      PRINT_SPACE
-     if (obj.maxViewportDimensions) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 2; i++) {
            bool isCommaNeeded = (i+1) != 2;
@@ -7180,14 +7185,10 @@ static void print_VkPhysicalDeviceLimits(VkPhysicalDeviceLimits obj, const std::
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"viewportBoundsRange\":" << std::endl;
      PRINT_SPACE
-     if (obj.viewportBoundsRange) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 2; i++) {
            bool isCommaNeeded = (i+1) != 2;
@@ -7195,9 +7196,6 @@ static void print_VkPhysicalDeviceLimits(VkPhysicalDeviceLimits obj, const std::
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      print_uint32_t(obj.viewportSubPixelBits, "viewportSubPixelBits", 1);
 
@@ -7266,7 +7264,6 @@ static void print_VkPhysicalDeviceLimits(VkPhysicalDeviceLimits obj, const std::
      PRINT_SPACE
      _OUT << "\"pointSizeRange\":" << std::endl;
      PRINT_SPACE
-     if (obj.pointSizeRange) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 2; i++) {
            bool isCommaNeeded = (i+1) != 2;
@@ -7274,14 +7271,10 @@ static void print_VkPhysicalDeviceLimits(VkPhysicalDeviceLimits obj, const std::
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"lineWidthRange\":" << std::endl;
      PRINT_SPACE
-     if (obj.lineWidthRange) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 2; i++) {
            bool isCommaNeeded = (i+1) != 2;
@@ -7289,9 +7282,6 @@ static void print_VkPhysicalDeviceLimits(VkPhysicalDeviceLimits obj, const std::
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      print_float(obj.pointSizeGranularity, "pointSizeGranularity", 1);
 
@@ -7426,7 +7416,6 @@ static void print_VkPhysicalDeviceLimits(const VkPhysicalDeviceLimits * obj, con
      PRINT_SPACE
      _OUT << "\"maxComputeWorkGroupCount\":" << std::endl;
      PRINT_SPACE
-     if (obj->maxComputeWorkGroupCount) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 3; i++) {
            bool isCommaNeeded = (i+1) != 3;
@@ -7434,16 +7423,12 @@ static void print_VkPhysicalDeviceLimits(const VkPhysicalDeviceLimits * obj, con
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      print_uint32_t(obj->maxComputeWorkGroupInvocations, "maxComputeWorkGroupInvocations", 1);
 
      PRINT_SPACE
      _OUT << "\"maxComputeWorkGroupSize\":" << std::endl;
      PRINT_SPACE
-     if (obj->maxComputeWorkGroupSize) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 3; i++) {
            bool isCommaNeeded = (i+1) != 3;
@@ -7451,9 +7436,6 @@ static void print_VkPhysicalDeviceLimits(const VkPhysicalDeviceLimits * obj, con
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      print_uint32_t(obj->subPixelPrecisionBits, "subPixelPrecisionBits", 1);
 
@@ -7474,7 +7456,6 @@ static void print_VkPhysicalDeviceLimits(const VkPhysicalDeviceLimits * obj, con
      PRINT_SPACE
      _OUT << "\"maxViewportDimensions\":" << std::endl;
      PRINT_SPACE
-     if (obj->maxViewportDimensions) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 2; i++) {
            bool isCommaNeeded = (i+1) != 2;
@@ -7482,14 +7463,10 @@ static void print_VkPhysicalDeviceLimits(const VkPhysicalDeviceLimits * obj, con
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"viewportBoundsRange\":" << std::endl;
      PRINT_SPACE
-     if (obj->viewportBoundsRange) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 2; i++) {
            bool isCommaNeeded = (i+1) != 2;
@@ -7497,9 +7474,6 @@ static void print_VkPhysicalDeviceLimits(const VkPhysicalDeviceLimits * obj, con
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      print_uint32_t(obj->viewportSubPixelBits, "viewportSubPixelBits", 1);
 
@@ -7568,7 +7542,6 @@ static void print_VkPhysicalDeviceLimits(const VkPhysicalDeviceLimits * obj, con
      PRINT_SPACE
      _OUT << "\"pointSizeRange\":" << std::endl;
      PRINT_SPACE
-     if (obj->pointSizeRange) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 2; i++) {
            bool isCommaNeeded = (i+1) != 2;
@@ -7576,14 +7549,10 @@ static void print_VkPhysicalDeviceLimits(const VkPhysicalDeviceLimits * obj, con
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"lineWidthRange\":" << std::endl;
      PRINT_SPACE
-     if (obj->lineWidthRange) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 2; i++) {
            bool isCommaNeeded = (i+1) != 2;
@@ -7591,9 +7560,6 @@ static void print_VkPhysicalDeviceLimits(const VkPhysicalDeviceLimits * obj, con
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      print_float(obj->pointSizeGranularity, "pointSizeGranularity", 1);
 
@@ -7627,7 +7593,6 @@ static void print_VkPhysicalDeviceMemoryProperties(VkPhysicalDeviceMemoryPropert
      PRINT_SPACE
      _OUT << "\"memoryTypes\":" << std::endl;
      PRINT_SPACE
-     if (obj.memoryTypes) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_MEMORY_TYPES; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_MEMORY_TYPES;
@@ -7635,16 +7600,12 @@ static void print_VkPhysicalDeviceMemoryProperties(VkPhysicalDeviceMemoryPropert
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      print_uint32_t(obj.memoryHeapCount, "memoryHeapCount", 1);
 
      PRINT_SPACE
      _OUT << "\"memoryHeaps\":" << std::endl;
      PRINT_SPACE
-     if (obj.memoryHeaps) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_MEMORY_HEAPS; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_MEMORY_HEAPS;
@@ -7652,9 +7613,6 @@ static void print_VkPhysicalDeviceMemoryProperties(VkPhysicalDeviceMemoryPropert
        }
        PRINT_SPACE
        _OUT << "]" << "" << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "" << std::endl;
-     }
 
      INDENT(-4);
      PRINT_SPACE
@@ -7673,7 +7631,6 @@ static void print_VkPhysicalDeviceMemoryProperties(const VkPhysicalDeviceMemoryP
      PRINT_SPACE
      _OUT << "\"memoryTypes\":" << std::endl;
      PRINT_SPACE
-     if (obj->memoryTypes) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_MEMORY_TYPES; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_MEMORY_TYPES;
@@ -7681,16 +7638,12 @@ static void print_VkPhysicalDeviceMemoryProperties(const VkPhysicalDeviceMemoryP
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      print_uint32_t(obj->memoryHeapCount, "memoryHeapCount", 1);
 
      PRINT_SPACE
      _OUT << "\"memoryHeaps\":" << std::endl;
      PRINT_SPACE
-     if (obj->memoryHeaps) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_MEMORY_HEAPS; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_MEMORY_HEAPS;
@@ -7698,9 +7651,6 @@ static void print_VkPhysicalDeviceMemoryProperties(const VkPhysicalDeviceMemoryP
        }
        PRINT_SPACE
        _OUT << "]" << "" << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "" << std::endl;
-     }
 
      INDENT(-4);
      PRINT_SPACE
@@ -7773,7 +7723,6 @@ static void print_VkPhysicalDeviceProperties(VkPhysicalDeviceProperties obj, con
      PRINT_SPACE
      _OUT << "\"deviceName\":" << std::endl;
      PRINT_SPACE
-     if (obj.deviceName) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_PHYSICAL_DEVICE_NAME_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_PHYSICAL_DEVICE_NAME_SIZE;
@@ -7781,14 +7730,10 @@ static void print_VkPhysicalDeviceProperties(VkPhysicalDeviceProperties obj, con
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"pipelineCacheUUID\":" << std::endl;
      PRINT_SPACE
-     if (obj.pipelineCacheUUID) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_UUID_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_UUID_SIZE;
@@ -7796,9 +7741,6 @@ static void print_VkPhysicalDeviceProperties(VkPhysicalDeviceProperties obj, con
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"limits\": " << std::endl;
@@ -7837,7 +7779,6 @@ static void print_VkPhysicalDeviceProperties(const VkPhysicalDeviceProperties * 
      PRINT_SPACE
      _OUT << "\"deviceName\":" << std::endl;
      PRINT_SPACE
-     if (obj->deviceName) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_PHYSICAL_DEVICE_NAME_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_PHYSICAL_DEVICE_NAME_SIZE;
@@ -7845,14 +7786,10 @@ static void print_VkPhysicalDeviceProperties(const VkPhysicalDeviceProperties * 
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"pipelineCacheUUID\":" << std::endl;
      PRINT_SPACE
-     if (obj->pipelineCacheUUID) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_UUID_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_UUID_SIZE;
@@ -7860,9 +7797,6 @@ static void print_VkPhysicalDeviceProperties(const VkPhysicalDeviceProperties * 
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"limits\": " << std::endl;
@@ -8151,7 +8085,6 @@ static void print_VkExtensionProperties(VkExtensionProperties obj, const std::st
      PRINT_SPACE
      _OUT << "\"extensionName\":" << std::endl;
      PRINT_SPACE
-     if (obj.extensionName) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_EXTENSION_NAME_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_EXTENSION_NAME_SIZE;
@@ -8159,9 +8092,6 @@ static void print_VkExtensionProperties(VkExtensionProperties obj, const std::st
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      print_uint32_t(obj.specVersion, "specVersion", 0);
 
@@ -8180,7 +8110,6 @@ static void print_VkExtensionProperties(const VkExtensionProperties * obj, const
      PRINT_SPACE
      _OUT << "\"extensionName\":" << std::endl;
      PRINT_SPACE
-     if (obj->extensionName) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_EXTENSION_NAME_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_EXTENSION_NAME_SIZE;
@@ -8188,9 +8117,6 @@ static void print_VkExtensionProperties(const VkExtensionProperties * obj, const
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      print_uint32_t(obj->specVersion, "specVersion", 0);
 
@@ -8210,7 +8136,6 @@ static void print_VkLayerProperties(VkLayerProperties obj, const std::string& s,
      PRINT_SPACE
      _OUT << "\"layerName\":" << std::endl;
      PRINT_SPACE
-     if (obj.layerName) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_EXTENSION_NAME_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_EXTENSION_NAME_SIZE;
@@ -8218,9 +8143,6 @@ static void print_VkLayerProperties(VkLayerProperties obj, const std::string& s,
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      print_uint32_t(obj.specVersion, "specVersion", 1);
 
@@ -8229,7 +8151,6 @@ static void print_VkLayerProperties(VkLayerProperties obj, const std::string& s,
      PRINT_SPACE
      _OUT << "\"description\":" << std::endl;
      PRINT_SPACE
-     if (obj.description) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_DESCRIPTION_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_DESCRIPTION_SIZE;
@@ -8237,9 +8158,6 @@ static void print_VkLayerProperties(VkLayerProperties obj, const std::string& s,
        }
        PRINT_SPACE
        _OUT << "]" << "" << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "" << std::endl;
-     }
 
      INDENT(-4);
      PRINT_SPACE
@@ -8256,7 +8174,6 @@ static void print_VkLayerProperties(const VkLayerProperties * obj, const std::st
      PRINT_SPACE
      _OUT << "\"layerName\":" << std::endl;
      PRINT_SPACE
-     if (obj->layerName) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_EXTENSION_NAME_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_EXTENSION_NAME_SIZE;
@@ -8264,9 +8181,6 @@ static void print_VkLayerProperties(const VkLayerProperties * obj, const std::st
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      print_uint32_t(obj->specVersion, "specVersion", 1);
 
@@ -8275,7 +8189,6 @@ static void print_VkLayerProperties(const VkLayerProperties * obj, const std::st
      PRINT_SPACE
      _OUT << "\"description\":" << std::endl;
      PRINT_SPACE
-     if (obj->description) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_DESCRIPTION_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_DESCRIPTION_SIZE;
@@ -8283,9 +8196,6 @@ static void print_VkLayerProperties(const VkLayerProperties * obj, const std::st
        }
        PRINT_SPACE
        _OUT << "]" << "" << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "" << std::endl;
-     }
 
      INDENT(-4);
      PRINT_SPACE
@@ -10579,7 +10489,6 @@ static void print_VkPipelineColorBlendStateCreateInfo(VkPipelineColorBlendStateC
      PRINT_SPACE
      _OUT << "\"blendConstants\":" << std::endl;
      PRINT_SPACE
-     if (obj.blendConstants) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 4; i++) {
            bool isCommaNeeded = (i+1) != 4;
@@ -10587,9 +10496,6 @@ static void print_VkPipelineColorBlendStateCreateInfo(VkPipelineColorBlendStateC
        }
        PRINT_SPACE
        _OUT << "]" << "" << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "" << std::endl;
-     }
 
      INDENT(-4);
      PRINT_SPACE
@@ -10642,7 +10548,6 @@ static void print_VkPipelineColorBlendStateCreateInfo(const VkPipelineColorBlend
      PRINT_SPACE
      _OUT << "\"blendConstants\":" << std::endl;
      PRINT_SPACE
-     if (obj->blendConstants) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 4; i++) {
            bool isCommaNeeded = (i+1) != 4;
@@ -10650,9 +10555,6 @@ static void print_VkPipelineColorBlendStateCreateInfo(const VkPipelineColorBlend
        }
        PRINT_SPACE
        _OUT << "]" << "" << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "" << std::endl;
-     }
 
      INDENT(-4);
      PRINT_SPACE
@@ -13081,7 +12983,6 @@ static void print_VkClearColorValue(VkClearColorValue obj, const std::string& s,
      PRINT_SPACE
      _OUT << "\"float32\":" << std::endl;
      PRINT_SPACE
-     if (obj.float32) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 4; i++) {
            bool isCommaNeeded = (i+1) != 4;
@@ -13089,14 +12990,10 @@ static void print_VkClearColorValue(VkClearColorValue obj, const std::string& s,
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"int32\":" << std::endl;
      PRINT_SPACE
-     if (obj.int32) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 4; i++) {
            bool isCommaNeeded = (i+1) != 4;
@@ -13104,14 +13001,10 @@ static void print_VkClearColorValue(VkClearColorValue obj, const std::string& s,
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"uint32\":" << std::endl;
      PRINT_SPACE
-     if (obj.uint32) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 4; i++) {
            bool isCommaNeeded = (i+1) != 4;
@@ -13119,9 +13012,6 @@ static void print_VkClearColorValue(VkClearColorValue obj, const std::string& s,
        }
        PRINT_SPACE
        _OUT << "]" << "" << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "" << std::endl;
-     }
 
      INDENT(-4);
      PRINT_SPACE
@@ -13138,7 +13028,6 @@ static void print_VkClearColorValue(const VkClearColorValue * obj, const std::st
      PRINT_SPACE
      _OUT << "\"float32\":" << std::endl;
      PRINT_SPACE
-     if (obj->float32) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 4; i++) {
            bool isCommaNeeded = (i+1) != 4;
@@ -13146,14 +13035,10 @@ static void print_VkClearColorValue(const VkClearColorValue * obj, const std::st
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"int32\":" << std::endl;
      PRINT_SPACE
-     if (obj->int32) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 4; i++) {
            bool isCommaNeeded = (i+1) != 4;
@@ -13161,14 +13046,10 @@ static void print_VkClearColorValue(const VkClearColorValue * obj, const std::st
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"uint32\":" << std::endl;
      PRINT_SPACE
-     if (obj->uint32) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 4; i++) {
            bool isCommaNeeded = (i+1) != 4;
@@ -13176,9 +13057,6 @@ static void print_VkClearColorValue(const VkClearColorValue * obj, const std::st
        }
        PRINT_SPACE
        _OUT << "]" << "" << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "" << std::endl;
-     }
 
      INDENT(-4);
      PRINT_SPACE
@@ -13358,7 +13236,6 @@ static void print_VkImageBlit(VkImageBlit obj, const std::string& s, bool commaN
      PRINT_SPACE
      _OUT << "\"srcOffsets\":" << std::endl;
      PRINT_SPACE
-     if (obj.srcOffsets) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 2; i++) {
            bool isCommaNeeded = (i+1) != 2;
@@ -13366,9 +13243,6 @@ static void print_VkImageBlit(VkImageBlit obj, const std::string& s, bool commaN
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"dstSubresource\": " << std::endl;
@@ -13379,7 +13253,6 @@ static void print_VkImageBlit(VkImageBlit obj, const std::string& s, bool commaN
      PRINT_SPACE
      _OUT << "\"dstOffsets\":" << std::endl;
      PRINT_SPACE
-     if (obj.dstOffsets) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 2; i++) {
            bool isCommaNeeded = (i+1) != 2;
@@ -13387,9 +13260,6 @@ static void print_VkImageBlit(VkImageBlit obj, const std::string& s, bool commaN
        }
        PRINT_SPACE
        _OUT << "]" << "" << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "" << std::endl;
-     }
 
      INDENT(-4);
      PRINT_SPACE
@@ -13412,7 +13282,6 @@ static void print_VkImageBlit(const VkImageBlit * obj, const std::string& s, boo
      PRINT_SPACE
      _OUT << "\"srcOffsets\":" << std::endl;
      PRINT_SPACE
-     if (obj->srcOffsets) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 2; i++) {
            bool isCommaNeeded = (i+1) != 2;
@@ -13420,9 +13289,6 @@ static void print_VkImageBlit(const VkImageBlit * obj, const std::string& s, boo
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"dstSubresource\": " << std::endl;
@@ -13433,7 +13299,6 @@ static void print_VkImageBlit(const VkImageBlit * obj, const std::string& s, boo
      PRINT_SPACE
      _OUT << "\"dstOffsets\":" << std::endl;
      PRINT_SPACE
-     if (obj->dstOffsets) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 2; i++) {
            bool isCommaNeeded = (i+1) != 2;
@@ -13441,9 +13306,6 @@ static void print_VkImageBlit(const VkImageBlit * obj, const std::string& s, boo
        }
        PRINT_SPACE
        _OUT << "]" << "" << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "" << std::endl;
-     }
 
      INDENT(-4);
      PRINT_SPACE
@@ -13934,7 +13796,7 @@ static std::map<deUint64, std::string> VkExternalMemoryHandleTypeFlagBits_map = 
     std::make_pair(1ULL << 8, "VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_MAPPED_FOREIGN_MEMORY_BIT_EXT"),
     std::make_pair(1ULL << 11, "VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA"),
     std::make_pair(1ULL << 12, "VK_EXTERNAL_MEMORY_HANDLE_TYPE_RDMA_ADDRESS_BIT_NV"),
-    std::make_pair(1ULL << 13, "VK_EXTERNAL_MEMORY_HANDLE_TYPE_RESERVED_13_BIT_NV"),
+    std::make_pair(1ULL << 13, "VK_EXTERNAL_MEMORY_HANDLE_TYPE_SCI_BUF_BIT_NV"),
 };
 static void print_VkExternalMemoryHandleTypeFlagBits(VkExternalMemoryHandleTypeFlagBits obj, const std::string& str, bool commaNeeded=true) {
      PRINT_SPACE
@@ -13980,8 +13842,10 @@ static std::map<deUint64, std::string> VkExternalFenceHandleTypeFlagBits_map = {
     std::make_pair(1ULL << 1, "VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT"),
     std::make_pair(1ULL << 2, "VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT"),
     std::make_pair(1ULL << 3, "VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT"),
-    std::make_pair(1ULL << 4, "VK_EXTERNAL_FENCE_HANDLE_TYPE_RESERVED_4_BIT_NV"),
-    std::make_pair(1ULL << 5, "VK_EXTERNAL_FENCE_HANDLE_TYPE_RESERVED_5_BIT_NV"),
+    std::make_pair(1ULL << 4, "VK_EXTERNAL_FENCE_HANDLE_TYPE_SCI_SYNC_OBJ_BIT_NV"),
+    std::make_pair(1ULL << 5, "VK_EXTERNAL_FENCE_HANDLE_TYPE_SCI_SYNC_FENCE_BIT_NV"),
+    std::make_pair(1ULL << 4, "VK_EXTERNAL_FENCE_HANDLE_TYPE_SCI_SYNC_OBJ_BIT_NV"),
+    std::make_pair(1ULL << 5, "VK_EXTERNAL_FENCE_HANDLE_TYPE_SCI_SYNC_FENCE_BIT_NV"),
 };
 static void print_VkExternalFenceHandleTypeFlagBits(VkExternalFenceHandleTypeFlagBits obj, const std::string& str, bool commaNeeded=true) {
      PRINT_SPACE
@@ -14068,8 +13932,7 @@ static std::map<deUint64, std::string> VkExternalSemaphoreHandleTypeFlagBits_map
     std::make_pair(1ULL << 3, "VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT"),
     std::make_pair(1ULL << 4, "VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT"),
     std::make_pair(1ULL << 7, "VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA"),
-    std::make_pair(1ULL << 5, "VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_RESERVED_5_BIT_NV"),
-    std::make_pair(1ULL << 6, "VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_RESERVED_6_BIT_NV"),
+    std::make_pair(1ULL << 5, "VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SCI_SYNC_OBJ_BIT_NV"),
 };
 static void print_VkExternalSemaphoreHandleTypeFlagBits(VkExternalSemaphoreHandleTypeFlagBits obj, const std::string& str, bool commaNeeded=true) {
      PRINT_SPACE
@@ -15493,7 +15356,6 @@ static void print_VkPhysicalDeviceGroupProperties(VkPhysicalDeviceGroupPropertie
      PRINT_SPACE
      _OUT << "\"physicalDevices\":" << std::endl;
      PRINT_SPACE
-     if (obj.physicalDevices) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_DEVICE_GROUP_SIZE; i++) {
            std:: stringstream tmp;
@@ -15503,9 +15365,6 @@ static void print_VkPhysicalDeviceGroupProperties(VkPhysicalDeviceGroupPropertie
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      print_VkBool32(obj.subsetAllocation, "subsetAllocation", 0);
 
@@ -15535,7 +15394,6 @@ static void print_VkPhysicalDeviceGroupProperties(const VkPhysicalDeviceGroupPro
      PRINT_SPACE
      _OUT << "\"physicalDevices\":" << std::endl;
      PRINT_SPACE
-     if (obj->physicalDevices) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_DEVICE_GROUP_SIZE; i++) {
            std:: stringstream tmp;
@@ -15545,9 +15403,6 @@ static void print_VkPhysicalDeviceGroupProperties(const VkPhysicalDeviceGroupPro
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      print_VkBool32(obj->subsetAllocation, "subsetAllocation", 0);
 
@@ -17535,7 +17390,6 @@ static void print_VkPhysicalDeviceIDProperties(VkPhysicalDeviceIDProperties obj,
      PRINT_SPACE
      _OUT << "\"deviceUUID\":" << std::endl;
      PRINT_SPACE
-     if (obj.deviceUUID) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_UUID_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_UUID_SIZE;
@@ -17543,14 +17397,10 @@ static void print_VkPhysicalDeviceIDProperties(VkPhysicalDeviceIDProperties obj,
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"driverUUID\":" << std::endl;
      PRINT_SPACE
-     if (obj.driverUUID) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_UUID_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_UUID_SIZE;
@@ -17558,14 +17408,10 @@ static void print_VkPhysicalDeviceIDProperties(VkPhysicalDeviceIDProperties obj,
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"deviceLUID\":" << std::endl;
      PRINT_SPACE
-     if (obj.deviceLUID) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_LUID_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_LUID_SIZE;
@@ -17573,9 +17419,6 @@ static void print_VkPhysicalDeviceIDProperties(VkPhysicalDeviceIDProperties obj,
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      print_uint32_t(obj.deviceNodeMask, "deviceNodeMask", 1);
 
@@ -17605,7 +17448,6 @@ static void print_VkPhysicalDeviceIDProperties(const VkPhysicalDeviceIDPropertie
      PRINT_SPACE
      _OUT << "\"deviceUUID\":" << std::endl;
      PRINT_SPACE
-     if (obj->deviceUUID) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_UUID_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_UUID_SIZE;
@@ -17613,14 +17455,10 @@ static void print_VkPhysicalDeviceIDProperties(const VkPhysicalDeviceIDPropertie
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"driverUUID\":" << std::endl;
      PRINT_SPACE
-     if (obj->driverUUID) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_UUID_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_UUID_SIZE;
@@ -17628,14 +17466,10 @@ static void print_VkPhysicalDeviceIDProperties(const VkPhysicalDeviceIDPropertie
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"deviceLUID\":" << std::endl;
      PRINT_SPACE
-     if (obj->deviceLUID) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_LUID_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_LUID_SIZE;
@@ -17643,9 +17477,6 @@ static void print_VkPhysicalDeviceIDProperties(const VkPhysicalDeviceIDPropertie
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      print_uint32_t(obj->deviceNodeMask, "deviceNodeMask", 1);
 
@@ -18661,7 +18492,6 @@ static void print_VkPhysicalDeviceVulkan11Properties(VkPhysicalDeviceVulkan11Pro
      PRINT_SPACE
      _OUT << "\"deviceUUID\":" << std::endl;
      PRINT_SPACE
-     if (obj.deviceUUID) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_UUID_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_UUID_SIZE;
@@ -18669,14 +18499,10 @@ static void print_VkPhysicalDeviceVulkan11Properties(VkPhysicalDeviceVulkan11Pro
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"driverUUID\":" << std::endl;
      PRINT_SPACE
-     if (obj.driverUUID) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_UUID_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_UUID_SIZE;
@@ -18684,14 +18510,10 @@ static void print_VkPhysicalDeviceVulkan11Properties(VkPhysicalDeviceVulkan11Pro
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"deviceLUID\":" << std::endl;
      PRINT_SPACE
-     if (obj.deviceLUID) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_LUID_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_LUID_SIZE;
@@ -18699,9 +18521,6 @@ static void print_VkPhysicalDeviceVulkan11Properties(VkPhysicalDeviceVulkan11Pro
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      print_uint32_t(obj.deviceNodeMask, "deviceNodeMask", 1);
 
@@ -18751,7 +18570,6 @@ static void print_VkPhysicalDeviceVulkan11Properties(const VkPhysicalDeviceVulka
      PRINT_SPACE
      _OUT << "\"deviceUUID\":" << std::endl;
      PRINT_SPACE
-     if (obj->deviceUUID) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_UUID_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_UUID_SIZE;
@@ -18759,14 +18577,10 @@ static void print_VkPhysicalDeviceVulkan11Properties(const VkPhysicalDeviceVulka
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"driverUUID\":" << std::endl;
      PRINT_SPACE
-     if (obj->driverUUID) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_UUID_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_UUID_SIZE;
@@ -18774,14 +18588,10 @@ static void print_VkPhysicalDeviceVulkan11Properties(const VkPhysicalDeviceVulka
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"deviceLUID\":" << std::endl;
      PRINT_SPACE
-     if (obj->deviceLUID) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_LUID_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_LUID_SIZE;
@@ -18789,9 +18599,6 @@ static void print_VkPhysicalDeviceVulkan11Properties(const VkPhysicalDeviceVulka
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      print_uint32_t(obj->deviceNodeMask, "deviceNodeMask", 1);
 
@@ -19116,7 +18923,6 @@ static void print_VkPhysicalDeviceVulkan12Properties(VkPhysicalDeviceVulkan12Pro
      PRINT_SPACE
      _OUT << "\"driverName\":" << std::endl;
      PRINT_SPACE
-     if (obj.driverName) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_DRIVER_NAME_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_DRIVER_NAME_SIZE;
@@ -19124,14 +18930,10 @@ static void print_VkPhysicalDeviceVulkan12Properties(VkPhysicalDeviceVulkan12Pro
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"driverInfo\":" << std::endl;
      PRINT_SPACE
-     if (obj.driverInfo) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_DRIVER_INFO_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_DRIVER_INFO_SIZE;
@@ -19139,9 +18941,6 @@ static void print_VkPhysicalDeviceVulkan12Properties(VkPhysicalDeviceVulkan12Pro
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"conformanceVersion\": " << std::endl;
@@ -19271,7 +19070,6 @@ static void print_VkPhysicalDeviceVulkan12Properties(const VkPhysicalDeviceVulka
      PRINT_SPACE
      _OUT << "\"driverName\":" << std::endl;
      PRINT_SPACE
-     if (obj->driverName) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_DRIVER_NAME_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_DRIVER_NAME_SIZE;
@@ -19279,14 +19077,10 @@ static void print_VkPhysicalDeviceVulkan12Properties(const VkPhysicalDeviceVulka
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"driverInfo\":" << std::endl;
      PRINT_SPACE
-     if (obj->driverInfo) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_DRIVER_INFO_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_DRIVER_INFO_SIZE;
@@ -19294,9 +19088,6 @@ static void print_VkPhysicalDeviceVulkan12Properties(const VkPhysicalDeviceVulka
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"conformanceVersion\": " << std::endl;
@@ -20296,7 +20087,6 @@ static void print_VkPhysicalDeviceDriverProperties(VkPhysicalDeviceDriverPropert
      PRINT_SPACE
      _OUT << "\"driverName\":" << std::endl;
      PRINT_SPACE
-     if (obj.driverName) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_DRIVER_NAME_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_DRIVER_NAME_SIZE;
@@ -20304,14 +20094,10 @@ static void print_VkPhysicalDeviceDriverProperties(VkPhysicalDeviceDriverPropert
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"driverInfo\":" << std::endl;
      PRINT_SPACE
-     if (obj.driverInfo) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_DRIVER_INFO_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_DRIVER_INFO_SIZE;
@@ -20319,9 +20105,6 @@ static void print_VkPhysicalDeviceDriverProperties(VkPhysicalDeviceDriverPropert
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"conformanceVersion\": " << std::endl;
@@ -20355,7 +20138,6 @@ static void print_VkPhysicalDeviceDriverProperties(const VkPhysicalDeviceDriverP
      PRINT_SPACE
      _OUT << "\"driverName\":" << std::endl;
      PRINT_SPACE
-     if (obj->driverName) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_DRIVER_NAME_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_DRIVER_NAME_SIZE;
@@ -20363,14 +20145,10 @@ static void print_VkPhysicalDeviceDriverProperties(const VkPhysicalDeviceDriverP
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"driverInfo\":" << std::endl;
      PRINT_SPACE
-     if (obj->driverInfo) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_DRIVER_INFO_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_DRIVER_INFO_SIZE;
@@ -20378,9 +20156,6 @@ static void print_VkPhysicalDeviceDriverProperties(const VkPhysicalDeviceDriverP
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"conformanceVersion\": " << std::endl;
@@ -23572,7 +23347,6 @@ static void print_VkPipelineOfflineCreateInfo(VkPipelineOfflineCreateInfo obj, c
      PRINT_SPACE
      _OUT << "\"pipelineIdentifier\":" << std::endl;
      PRINT_SPACE
-     if (obj.pipelineIdentifier) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_UUID_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_UUID_SIZE;
@@ -23580,9 +23354,6 @@ static void print_VkPipelineOfflineCreateInfo(VkPipelineOfflineCreateInfo obj, c
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      print_VkPipelineMatchControl(obj.matchControl, "matchControl", 1);
 
@@ -23612,7 +23383,6 @@ static void print_VkPipelineOfflineCreateInfo(const VkPipelineOfflineCreateInfo 
      PRINT_SPACE
      _OUT << "\"pipelineIdentifier\":" << std::endl;
      PRINT_SPACE
-     if (obj->pipelineIdentifier) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_UUID_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_UUID_SIZE;
@@ -23620,9 +23390,6 @@ static void print_VkPipelineOfflineCreateInfo(const VkPipelineOfflineCreateInfo 
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      print_VkPipelineMatchControl(obj->matchControl, "matchControl", 1);
 
@@ -23677,7 +23444,6 @@ static void print_VkPipelineCacheSafetyCriticalIndexEntry(VkPipelineCacheSafetyC
      PRINT_SPACE
      _OUT << "\"pipelineIdentifier\":" << std::endl;
      PRINT_SPACE
-     if (obj.pipelineIdentifier) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_UUID_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_UUID_SIZE;
@@ -23685,9 +23451,6 @@ static void print_VkPipelineCacheSafetyCriticalIndexEntry(VkPipelineCacheSafetyC
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      print_uint64_t(obj.pipelineMemorySize, "pipelineMemorySize", 1);
 
@@ -23716,7 +23479,6 @@ static void print_VkPipelineCacheSafetyCriticalIndexEntry(const VkPipelineCacheS
      PRINT_SPACE
      _OUT << "\"pipelineIdentifier\":" << std::endl;
      PRINT_SPACE
-     if (obj->pipelineIdentifier) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_UUID_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_UUID_SIZE;
@@ -23724,9 +23486,6 @@ static void print_VkPipelineCacheSafetyCriticalIndexEntry(const VkPipelineCacheS
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      print_uint64_t(obj->pipelineMemorySize, "pipelineMemorySize", 1);
 
@@ -24806,7 +24565,6 @@ static void print_VkDeviceGroupPresentCapabilitiesKHR(VkDeviceGroupPresentCapabi
      PRINT_SPACE
      _OUT << "\"presentMask\":" << std::endl;
      PRINT_SPACE
-     if (obj.presentMask) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_DEVICE_GROUP_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_DEVICE_GROUP_SIZE;
@@ -24814,9 +24572,6 @@ static void print_VkDeviceGroupPresentCapabilitiesKHR(VkDeviceGroupPresentCapabi
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      print_VkDeviceGroupPresentModeFlagsKHR(obj.modes, "modes", 0);
 
@@ -24844,7 +24599,6 @@ static void print_VkDeviceGroupPresentCapabilitiesKHR(const VkDeviceGroupPresent
      PRINT_SPACE
      _OUT << "\"presentMask\":" << std::endl;
      PRINT_SPACE
-     if (obj->presentMask) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_DEVICE_GROUP_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_DEVICE_GROUP_SIZE;
@@ -24852,9 +24606,6 @@ static void print_VkDeviceGroupPresentCapabilitiesKHR(const VkDeviceGroupPresent
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      print_VkDeviceGroupPresentModeFlagsKHR(obj->modes, "modes", 0);
 
@@ -26611,7 +26362,6 @@ static void print_VkPerformanceCounterKHR(VkPerformanceCounterKHR obj, const std
      PRINT_SPACE
      _OUT << "\"uuid\":" << std::endl;
      PRINT_SPACE
-     if (obj.uuid) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_UUID_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_UUID_SIZE;
@@ -26619,9 +26369,6 @@ static void print_VkPerformanceCounterKHR(VkPerformanceCounterKHR obj, const std
        }
        PRINT_SPACE
        _OUT << "]" << "" << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "" << std::endl;
-     }
 
      INDENT(-4);
      PRINT_SPACE
@@ -26653,7 +26400,6 @@ static void print_VkPerformanceCounterKHR(const VkPerformanceCounterKHR * obj, c
      PRINT_SPACE
      _OUT << "\"uuid\":" << std::endl;
      PRINT_SPACE
-     if (obj->uuid) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_UUID_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_UUID_SIZE;
@@ -26661,9 +26407,6 @@ static void print_VkPerformanceCounterKHR(const VkPerformanceCounterKHR * obj, c
        }
        PRINT_SPACE
        _OUT << "]" << "" << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "" << std::endl;
-     }
 
      INDENT(-4);
      PRINT_SPACE
@@ -26692,7 +26435,6 @@ static void print_VkPerformanceCounterDescriptionKHR(VkPerformanceCounterDescrip
      PRINT_SPACE
      _OUT << "\"name\":" << std::endl;
      PRINT_SPACE
-     if (obj.name) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_DESCRIPTION_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_DESCRIPTION_SIZE;
@@ -26700,14 +26442,10 @@ static void print_VkPerformanceCounterDescriptionKHR(VkPerformanceCounterDescrip
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"category\":" << std::endl;
      PRINT_SPACE
-     if (obj.category) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_DESCRIPTION_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_DESCRIPTION_SIZE;
@@ -26715,14 +26453,10 @@ static void print_VkPerformanceCounterDescriptionKHR(VkPerformanceCounterDescrip
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"description\":" << std::endl;
      PRINT_SPACE
-     if (obj.description) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_DESCRIPTION_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_DESCRIPTION_SIZE;
@@ -26730,9 +26464,6 @@ static void print_VkPerformanceCounterDescriptionKHR(VkPerformanceCounterDescrip
        }
        PRINT_SPACE
        _OUT << "]" << "" << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "" << std::endl;
-     }
 
      INDENT(-4);
      PRINT_SPACE
@@ -26760,7 +26491,6 @@ static void print_VkPerformanceCounterDescriptionKHR(const VkPerformanceCounterD
      PRINT_SPACE
      _OUT << "\"name\":" << std::endl;
      PRINT_SPACE
-     if (obj->name) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_DESCRIPTION_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_DESCRIPTION_SIZE;
@@ -26768,14 +26498,10 @@ static void print_VkPerformanceCounterDescriptionKHR(const VkPerformanceCounterD
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"category\":" << std::endl;
      PRINT_SPACE
-     if (obj->category) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_DESCRIPTION_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_DESCRIPTION_SIZE;
@@ -26783,14 +26509,10 @@ static void print_VkPerformanceCounterDescriptionKHR(const VkPerformanceCounterD
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"description\":" << std::endl;
      PRINT_SPACE
-     if (obj->description) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_DESCRIPTION_SIZE; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_DESCRIPTION_SIZE;
@@ -26798,9 +26520,6 @@ static void print_VkPerformanceCounterDescriptionKHR(const VkPerformanceCounterD
        }
        PRINT_SPACE
        _OUT << "]" << "" << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "" << std::endl;
-     }
 
      INDENT(-4);
      PRINT_SPACE
@@ -27737,7 +27456,6 @@ static void print_VkPipelineFragmentShadingRateStateCreateInfoKHR(VkPipelineFrag
      PRINT_SPACE
      _OUT << "\"combinerOps\":" << std::endl;
      PRINT_SPACE
-     if (obj.combinerOps) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 2; i++) {
            bool isCommaNeeded = (i+1) != 2;
@@ -27745,9 +27463,6 @@ static void print_VkPipelineFragmentShadingRateStateCreateInfoKHR(VkPipelineFrag
        }
        PRINT_SPACE
        _OUT << "]" << "" << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "" << std::endl;
-     }
 
      INDENT(-4);
      PRINT_SPACE
@@ -27779,7 +27494,6 @@ static void print_VkPipelineFragmentShadingRateStateCreateInfoKHR(const VkPipeli
      PRINT_SPACE
      _OUT << "\"combinerOps\":" << std::endl;
      PRINT_SPACE
-     if (obj->combinerOps) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 2; i++) {
            bool isCommaNeeded = (i+1) != 2;
@@ -27787,9 +27501,6 @@ static void print_VkPipelineFragmentShadingRateStateCreateInfoKHR(const VkPipeli
        }
        PRINT_SPACE
        _OUT << "]" << "" << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "" << std::endl;
-     }
 
      INDENT(-4);
      PRINT_SPACE
@@ -29968,7 +29679,6 @@ static void print_VkImageBlit2KHR(VkImageBlit2KHR obj, const std::string& s, boo
      PRINT_SPACE
      _OUT << "\"srcOffsets\":" << std::endl;
      PRINT_SPACE
-     if (obj.srcOffsets) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 2; i++) {
            bool isCommaNeeded = (i+1) != 2;
@@ -29976,9 +29686,6 @@ static void print_VkImageBlit2KHR(VkImageBlit2KHR obj, const std::string& s, boo
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"dstSubresource\": " << std::endl;
@@ -29989,7 +29696,6 @@ static void print_VkImageBlit2KHR(VkImageBlit2KHR obj, const std::string& s, boo
      PRINT_SPACE
      _OUT << "\"dstOffsets\":" << std::endl;
      PRINT_SPACE
-     if (obj.dstOffsets) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 2; i++) {
            bool isCommaNeeded = (i+1) != 2;
@@ -29997,9 +29703,6 @@ static void print_VkImageBlit2KHR(VkImageBlit2KHR obj, const std::string& s, boo
        }
        PRINT_SPACE
        _OUT << "]" << "" << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "" << std::endl;
-     }
 
      INDENT(-4);
      PRINT_SPACE
@@ -30031,7 +29734,6 @@ static void print_VkImageBlit2KHR(const VkImageBlit2KHR * obj, const std::string
      PRINT_SPACE
      _OUT << "\"srcOffsets\":" << std::endl;
      PRINT_SPACE
-     if (obj->srcOffsets) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 2; i++) {
            bool isCommaNeeded = (i+1) != 2;
@@ -30039,9 +29741,6 @@ static void print_VkImageBlit2KHR(const VkImageBlit2KHR * obj, const std::string
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"dstSubresource\": " << std::endl;
@@ -30052,7 +29751,6 @@ static void print_VkImageBlit2KHR(const VkImageBlit2KHR * obj, const std::string
      PRINT_SPACE
      _OUT << "\"dstOffsets\":" << std::endl;
      PRINT_SPACE
-     if (obj->dstOffsets) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 2; i++) {
            bool isCommaNeeded = (i+1) != 2;
@@ -30060,9 +29758,6 @@ static void print_VkImageBlit2KHR(const VkImageBlit2KHR * obj, const std::string
        }
        PRINT_SPACE
        _OUT << "]" << "" << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "" << std::endl;
-     }
 
      INDENT(-4);
      PRINT_SPACE
@@ -31755,7 +31450,6 @@ static void print_VkDebugUtilsLabelEXT(VkDebugUtilsLabelEXT obj, const std::stri
      PRINT_SPACE
      _OUT << "\"color\":" << std::endl;
      PRINT_SPACE
-     if (obj.color) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 4; i++) {
            bool isCommaNeeded = (i+1) != 4;
@@ -31763,9 +31457,6 @@ static void print_VkDebugUtilsLabelEXT(VkDebugUtilsLabelEXT obj, const std::stri
        }
        PRINT_SPACE
        _OUT << "]" << "" << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "" << std::endl;
-     }
 
      INDENT(-4);
      PRINT_SPACE
@@ -31793,7 +31484,6 @@ static void print_VkDebugUtilsLabelEXT(const VkDebugUtilsLabelEXT * obj, const s
      PRINT_SPACE
      _OUT << "\"color\":" << std::endl;
      PRINT_SPACE
-     if (obj->color) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 4; i++) {
            bool isCommaNeeded = (i+1) != 4;
@@ -31801,9 +31491,6 @@ static void print_VkDebugUtilsLabelEXT(const VkDebugUtilsLabelEXT * obj, const s
        }
        PRINT_SPACE
        _OUT << "]" << "" << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "" << std::endl;
-     }
 
      INDENT(-4);
      PRINT_SPACE
@@ -32606,7 +32293,6 @@ static void print_VkPhysicalDeviceSampleLocationsPropertiesEXT(VkPhysicalDeviceS
      PRINT_SPACE
      _OUT << "\"sampleLocationCoordinateRange\":" << std::endl;
      PRINT_SPACE
-     if (obj.sampleLocationCoordinateRange) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 2; i++) {
            bool isCommaNeeded = (i+1) != 2;
@@ -32614,9 +32300,6 @@ static void print_VkPhysicalDeviceSampleLocationsPropertiesEXT(VkPhysicalDeviceS
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      print_uint32_t(obj.sampleLocationSubPixelBits, "sampleLocationSubPixelBits", 1);
 
@@ -32654,7 +32337,6 @@ static void print_VkPhysicalDeviceSampleLocationsPropertiesEXT(const VkPhysicalD
      PRINT_SPACE
      _OUT << "\"sampleLocationCoordinateRange\":" << std::endl;
      PRINT_SPACE
-     if (obj->sampleLocationCoordinateRange) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < 2; i++) {
            bool isCommaNeeded = (i+1) != 2;
@@ -32662,9 +32344,6 @@ static void print_VkPhysicalDeviceSampleLocationsPropertiesEXT(const VkPhysicalD
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      print_uint32_t(obj->sampleLocationSubPixelBits, "sampleLocationSubPixelBits", 1);
 
@@ -34417,7 +34096,6 @@ static void print_VkPhysicalDeviceMemoryBudgetPropertiesEXT(VkPhysicalDeviceMemo
      PRINT_SPACE
      _OUT << "\"heapBudget\":" << std::endl;
      PRINT_SPACE
-     if (obj.heapBudget) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_MEMORY_HEAPS; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_MEMORY_HEAPS;
@@ -34425,14 +34103,10 @@ static void print_VkPhysicalDeviceMemoryBudgetPropertiesEXT(VkPhysicalDeviceMemo
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"heapUsage\":" << std::endl;
      PRINT_SPACE
-     if (obj.heapUsage) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_MEMORY_HEAPS; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_MEMORY_HEAPS;
@@ -34440,9 +34114,6 @@ static void print_VkPhysicalDeviceMemoryBudgetPropertiesEXT(VkPhysicalDeviceMemo
        }
        PRINT_SPACE
        _OUT << "]" << "" << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "" << std::endl;
-     }
 
      INDENT(-4);
      PRINT_SPACE
@@ -34468,7 +34139,6 @@ static void print_VkPhysicalDeviceMemoryBudgetPropertiesEXT(const VkPhysicalDevi
      PRINT_SPACE
      _OUT << "\"heapBudget\":" << std::endl;
      PRINT_SPACE
-     if (obj->heapBudget) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_MEMORY_HEAPS; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_MEMORY_HEAPS;
@@ -34476,14 +34146,10 @@ static void print_VkPhysicalDeviceMemoryBudgetPropertiesEXT(const VkPhysicalDevi
        }
        PRINT_SPACE
        _OUT << "]" << "," << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
 
      PRINT_SPACE
      _OUT << "\"heapUsage\":" << std::endl;
      PRINT_SPACE
-     if (obj->heapUsage) {
        _OUT << "[" << std::endl;
        for (unsigned int i = 0; i < VK_MAX_MEMORY_HEAPS; i++) {
            bool isCommaNeeded = (i+1) != VK_MAX_MEMORY_HEAPS;
@@ -34491,9 +34157,6 @@ static void print_VkPhysicalDeviceMemoryBudgetPropertiesEXT(const VkPhysicalDevi
        }
        PRINT_SPACE
        _OUT << "]" << "" << std::endl;
-     } else {
-       _OUT << "\"NULL\"" << "" << std::endl;
-     }
 
      INDENT(-4);
      PRINT_SPACE
