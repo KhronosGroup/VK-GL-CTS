@@ -1,5 +1,8 @@
 include_directories(..)
-include_directories(${FFMPEG_INCLUDE_PATH})
+if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)
+	include_directories(${FFMPEG_INCLUDE_PATH})
+	add_compile_definitions(DE_BUILD_VIDEO)
+endif()
 
 set(DEQP_VK_VIDEO_SRC_TARGET_DEPENDENT
 	extFFmpegDemuxer.h
@@ -25,13 +28,13 @@ set(DEQP_VK_VIDEO_SRCS_TARGET_INDEPENDENT
 	vktVideoTests.hpp
 	)
 
-if (DE_OS_IS_ANDROID)
-	set(DEQP_VK_VIDEO_SRCS ${DEQP_VK_VIDEO_SRCS_TARGET_INDEPENDENT})
-	else()
+if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)
 	set(DEQP_VK_VIDEO_SRCS
 		${DEQP_VK_VIDEO_SRC_TARGET_DEPENDENT}
 		${DEQP_VK_VIDEO_SRCS_TARGET_INDEPENDENT}
 		)
+else()
+	set(DEQP_VK_VIDEO_SRCS ${DEQP_VK_VIDEO_SRCS_TARGET_INDEPENDENT})
 endif()
 
 set(DEQP_VK_VIDEO_LIBS
@@ -43,4 +46,5 @@ PCH(DEQP_VK_VIDEO_SRCS ../pch.cpp)
 
 add_library(deqp-vk-video STATIC ${DEQP_VK_VIDEO_SRCS})
 target_link_libraries(deqp-vk-video ${DEQP_VK_VIDEO_LIBS})
+
 
