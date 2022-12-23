@@ -120,7 +120,9 @@
 #ifdef CTS_USES_VULKANSC
 #include "vktSafetyCriticalTests.hpp"
 #endif // CTS_USES_VULKANSC
+#if (DE_OS == DE_OS_WIN32) || (DE_OS == DE_OS_UNIX)
 #include "vktVideoTests.hpp"
+#endif
 
 #include <vector>
 #include <sstream>
@@ -204,10 +206,10 @@ static void		restoreStandardOutput	()												{ qpRedirectOut(openWrite, open
 
 static MovePtr<vk::Library> createLibrary (tcu::TestContext& testCtx)
 {
-#if (DE_OS == DE_OS_ANDROID)
-	return MovePtr<vk::Library>(testCtx.getPlatform().getVulkanPlatform().createLibrary(testCtx.getCommandLine().getVkLibraryPath()));
-#else
+#if (DE_OS == DE_OS_WIN32) || (DE_OS == DE_OS_UNIX)
 	return MovePtr<vk::Library>(testCtx.getPlatform().getVulkanPlatform().createLibrary(vk::Platform::LIBRARY_TYPE_VULKAN, testCtx.getCommandLine().getVkLibraryPath()));
+#else
+	return MovePtr<vk::Library>(testCtx.getPlatform().getVulkanPlatform().createLibrary(testCtx.getCommandLine().getVkLibraryPath()));
 #endif
 }
 
@@ -1137,7 +1139,9 @@ void TestPackage::init (void)
 	addChild(FragmentShadingBarycentric::createTests(m_testCtx));
 	// Amber depth pipeline tests
 	addChild(cts_amber::createAmberDepthGroup	(m_testCtx));
+#if (DE_OS == DE_OS_WIN32) || (DE_OS == DE_OS_UNIX)
 	addChild(video::createTests					(m_testCtx));
+#endif
 }
 
 void ExperimentalTestPackage::init (void)

@@ -49,7 +49,9 @@ add_subdirectory(reconvergence)
 add_subdirectory(mesh_shader)
 add_subdirectory(fragment_shading_barycentric)
 add_subdirectory(sc)
+if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)
 add_subdirectory(video)
+endif()
 
 include_directories(
 	api
@@ -100,8 +102,11 @@ include_directories(
 	fragment_shading_barycentric
 	${DEQP_INL_DIR}
 	sc
-	video
 	)
+
+if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)
+include_directories(video)
+endif()
 
 set(DEQP_VK_SRCS
 	vktTestCaseDefs.hpp
@@ -121,7 +126,7 @@ set(DEQP_VK_SRCS
 	vktCustomInstancesDevices.hpp
 	)
 
-set(DEQP_VK_LIBS
+set(DEQP_VK_STANDARD_LIBS
 	tcutil
 	vkutil
 	glutil
@@ -170,9 +175,18 @@ set(DEQP_VK_LIBS
 	deqp-vk-reconvergence
 	deqp-vk-mesh-shader
 	deqp-vk-fragment-shading-barycentric
-	deqp-vk-video
 	)
 
+set(DEQP_VK_VIDEO_LIB deqp-vk-video)
+
+if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)
+set(DEQP_VK_LIBS
+	${DEQP_VK_STANDARD_LIBS}
+	${DEQP_VK_VIDEO_LIB}
+	)
+else()
+	set(DEQP_VK_LIBS ${DEQP_VK_STANDARD_LIBS})
+endif()
 
 set(DEQP_VKSC_LIBS
 	tcutil
@@ -253,19 +267,14 @@ ENDFOREACH()
 
 set(BINARY_COPY_DIR "./")
 
+# Video parser used in vulkan video won't be part of non supported platforms
 if (DE_OS_IS_WIN32)
 	add_data_dir(deqp-vk ../../../ffmpeg/src/bin	${BINARY_COPY_DIR})
+	add_data_dir(deqp-vk ../../../video-parser/src/vk_video_decoder/bin/libs/nv_vkvideo_parser/wddm2_amd64_release	${BINARY_COPY_DIR})
 endif()
 
-# Video parser used in vulkan video won't be part of android target
-if (NOT DE_OS_IS_ANDROID)
-	if (DE_OS_IS_WIN32)
-		add_data_dir(deqp-vk ../../../video-parser/src/vk_video_decoder/bin/libs/nv_vkvideo_parser/wddm2_amd64_release	${BINARY_COPY_DIR})
-	elseif(DE_OS_IS_UNIX)
-		add_data_dir(deqp-vk ../../../video-parser/src/vk_video_decoder/bin/libs/nv_vkvideo_parser/linux_amd64_release	${BINARY_COPY_DIR})
-	else()
-		message(FATAL_ERROR "System is not supported")
-	endif()
+if(DE_OS_IS_UNIX)
+	add_data_dir(deqp-vk ../../../video-parser/src/vk_video_decoder/bin/libs/nv_vkvideo_parser/linux_amd64_release	${BINARY_COPY_DIR})
 endif()
 
 
