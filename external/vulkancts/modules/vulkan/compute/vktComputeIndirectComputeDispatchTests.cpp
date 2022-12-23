@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2016 The Khronos Group Inc.
  * Copyright (c) 2016 The Android Open Source Project
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -268,7 +270,8 @@ public:
 																			 const deUintptr			bufferSize,
 																			 const tcu::UVec3&			workGroupSize,
 																			 const DispatchCommandsVec& dispatchCommands,
-																			 const bool					computeQueueOnly);
+																			 const bool					computeQueueOnly,
+																			 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
 	virtual							~IndirectDispatchInstanceBufferUpload	(void) {}
 
@@ -283,54 +286,57 @@ protected:
 																			 const vk::DeviceInterface&     vkdi,
 																			 const vk::VkDeviceSize			resultBlockSize) const;
 
-	Context&						m_context;
-	const std::string				m_name;
+	Context&							m_context;
+	const std::string					m_name;
 
-	vk::VkDevice					m_device;
+	vk::VkDevice						m_device;
 #ifdef CTS_USES_VULKANSC
-	const CustomInstance			m_customInstance;
+	const CustomInstance				m_customInstance;
 #endif // CTS_USES_VULKANSC
-	vk::Move<vk::VkDevice>			m_customDevice;
+	vk::Move<vk::VkDevice>				m_customDevice;
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<vk::DeviceDriver>	m_deviceDriver;
+	de::MovePtr<vk::DeviceDriver>		m_deviceDriver;
 #else
 	de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>	m_deviceDriver;
 #endif // CTS_USES_VULKANSC
 
-	vk::VkQueue						m_queue;
-	deUint32						m_queueFamilyIndex;
+	vk::VkQueue							m_queue;
+	deUint32							m_queueFamilyIndex;
 
-	const deUintptr					m_bufferSize;
-	const tcu::UVec3				m_workGroupSize;
-	const DispatchCommandsVec		m_dispatchCommands;
+	const deUintptr						m_bufferSize;
+	const tcu::UVec3					m_workGroupSize;
+	const DispatchCommandsVec			m_dispatchCommands;
 
-	de::MovePtr<vk::Allocator>		m_allocator;
+	de::MovePtr<vk::Allocator>			m_allocator;
 
-	const bool						m_computeQueueOnly;
+	const bool							m_computeQueueOnly;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 private:
 	IndirectDispatchInstanceBufferUpload (const vkt::TestInstance&);
 	IndirectDispatchInstanceBufferUpload& operator= (const vkt::TestInstance&);
 };
 
-IndirectDispatchInstanceBufferUpload::IndirectDispatchInstanceBufferUpload (Context&					context,
-																			const std::string&			name,
-																			const deUintptr				bufferSize,
-																			const tcu::UVec3&			workGroupSize,
-																			const DispatchCommandsVec&	dispatchCommands,
-																			const bool					computeQueueOnly)
-	: vkt::TestInstance		(context)
-	, m_context				(context)
-	, m_name				(name)
-	, m_device				(context.getDevice())
+IndirectDispatchInstanceBufferUpload::IndirectDispatchInstanceBufferUpload (Context&									context,
+																			const std::string&							name,
+																			const deUintptr								bufferSize,
+																			const tcu::UVec3&							workGroupSize,
+																			const DispatchCommandsVec&					dispatchCommands,
+																			const bool									computeQueueOnly,
+																			const vk::ComputePipelineConstructionType	computePipelineConstructionType)
+	: vkt::TestInstance					(context)
+	, m_context							(context)
+	, m_name							(name)
+	, m_device							(context.getDevice())
 #ifdef CTS_USES_VULKANSC
-	, m_customInstance		(createCustomInstanceFromContext(context))
+	, m_customInstance					(createCustomInstanceFromContext(context))
 #endif // CTS_USES_VULKANSC
-	, m_queue				(context.getUniversalQueue())
-	, m_queueFamilyIndex	(context.getUniversalQueueFamilyIndex())
-	, m_bufferSize			(bufferSize)
-	, m_workGroupSize		(workGroupSize)
-	, m_dispatchCommands	(dispatchCommands)
-	, m_computeQueueOnly	(computeQueueOnly)
+	, m_queue							(context.getUniversalQueue())
+	, m_queueFamilyIndex				(context.getUniversalQueueFamilyIndex())
+	, m_bufferSize						(bufferSize)
+	, m_workGroupSize					(workGroupSize)
+	, m_dispatchCommands				(dispatchCommands)
+	, m_computeQueueOnly				(computeQueueOnly)
+	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {
 }
 
@@ -432,18 +438,15 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate (void)
 		vk::flushAlloc(vkdi, m_device, alloc);
 	}
 
-	// Create verify compute shader
-	const vk::Unique<vk::VkShaderModule> verifyShader(createShaderModule(
-		vkdi, m_device, m_context.getBinaryCollection().get("indirect_dispatch_" + m_name + "_verify"), 0u));
-
 	// Create descriptorSetLayout
 	vk::DescriptorSetLayoutBuilder layoutBuilder;
 	layoutBuilder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT);
 	vk::Unique<vk::VkDescriptorSetLayout> descriptorSetLayout(layoutBuilder.build(vkdi, m_device));
 
 	// Create compute pipeline
-	const vk::Unique<vk::VkPipelineLayout> pipelineLayout(makePipelineLayout(vkdi, m_device, *descriptorSetLayout));
-	const vk::Unique<vk::VkPipeline> computePipeline(makeComputePipeline(vkdi, m_device, *pipelineLayout, *verifyShader));
+	vk::ComputePipelineWrapper			computePipeline(vkdi, m_device, m_computePipelineConstructionType, m_context.getBinaryCollection().get("indirect_dispatch_" + m_name + "_verify"));
+	computePipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+	computePipeline.buildPipeline();
 
 	// Create descriptor pool
 	const vk::Unique<vk::VkDescriptorPool> descriptorPool(
@@ -469,7 +472,7 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate (void)
 	fillIndirectBufferData(*cmdBuffer, vkdi, indirectBuffer);
 
 	// Bind compute pipeline
-	vkdi.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
+	computePipeline.bind(*cmdBuffer);
 
 	// Allocate descriptor sets
 	typedef de::SharedPtr<vk::Unique<vk::VkDescriptorSet> > SharedVkDescriptorSet;
@@ -490,7 +493,7 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate (void)
 		descriptorSetBuilder.update(vkdi, m_device);
 
 		// Bind descriptor set
-		vkdi.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &(**descriptorSets[cmdNdx]), 0u, DE_NULL);
+		vkdi.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline.getPipelineLayout(), 0u, 1u, &(**descriptorSets[cmdNdx]), 0u, DE_NULL);
 
 		// Dispatch indirect compute command
 		vkdi.cmdDispatchIndirect(*cmdBuffer, *indirectBuffer, m_dispatchCommands[cmdNdx].m_offset);
@@ -558,7 +561,8 @@ class IndirectDispatchCaseBufferUpload : public vkt::TestCase
 public:
 								IndirectDispatchCaseBufferUpload	(tcu::TestContext&			testCtx,
 																	 const DispatchCaseDesc&	caseDesc,
-																	 const glu::GLSLVersion		glslVersion);
+																	 const glu::GLSLVersion		glslVersion,
+																	 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
 	virtual						~IndirectDispatchCaseBufferUpload	(void) {}
 
@@ -567,11 +571,12 @@ public:
 	virtual void				checkSupport						(Context& context) const;
 
 protected:
-	const deUintptr				m_bufferSize;
-	const tcu::UVec3			m_workGroupSize;
-	const DispatchCommandsVec	m_dispatchCommands;
-	const glu::GLSLVersion		m_glslVersion;
-	const bool					m_computeOnlyQueue;
+	const deUintptr						m_bufferSize;
+	const tcu::UVec3					m_workGroupSize;
+	const DispatchCommandsVec			m_dispatchCommands;
+	const glu::GLSLVersion				m_glslVersion;
+	const bool							m_computeOnlyQueue;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 
 private:
 	IndirectDispatchCaseBufferUpload (const vkt::TestCase&);
@@ -580,13 +585,15 @@ private:
 
 IndirectDispatchCaseBufferUpload::IndirectDispatchCaseBufferUpload (tcu::TestContext&		testCtx,
 																	const DispatchCaseDesc& caseDesc,
-																	const glu::GLSLVersion	glslVersion)
-	: vkt::TestCase			(testCtx, caseDesc.m_name, caseDesc.m_description)
-	, m_bufferSize			(caseDesc.m_bufferSize)
-	, m_workGroupSize		(caseDesc.m_workGroupSize)
-	, m_dispatchCommands	(caseDesc.m_dispatchCommands)
-	, m_glslVersion			(glslVersion)
-	, m_computeOnlyQueue	(caseDesc.m_computeOnlyQueue)
+																	const glu::GLSLVersion	glslVersion,
+																	const vk::ComputePipelineConstructionType computePipelineConstructionType)
+	: vkt::TestCase						(testCtx, caseDesc.m_name, caseDesc.m_description)
+	, m_bufferSize						(caseDesc.m_bufferSize)
+	, m_workGroupSize					(caseDesc.m_workGroupSize)
+	, m_dispatchCommands				(caseDesc.m_dispatchCommands)
+	, m_glslVersion						(glslVersion)
+	, m_computeOnlyQueue				(caseDesc.m_computeOnlyQueue)
+	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {
 }
 
@@ -623,7 +630,7 @@ void IndirectDispatchCaseBufferUpload::initPrograms (vk::SourceCollections& prog
 
 TestInstance* IndirectDispatchCaseBufferUpload::createInstance (Context& context) const
 {
-	return new IndirectDispatchInstanceBufferUpload(context, m_name, m_bufferSize, m_workGroupSize, m_dispatchCommands, m_computeOnlyQueue);
+	return new IndirectDispatchInstanceBufferUpload(context, m_name, m_bufferSize, m_workGroupSize, m_dispatchCommands, m_computeOnlyQueue, m_computePipelineConstructionType);
 }
 
 void IndirectDispatchCaseBufferUpload::checkSupport (Context& context) const
@@ -647,6 +654,8 @@ void IndirectDispatchCaseBufferUpload::checkSupport (Context& context) const
 		if (!foundQueue)
 			TCU_THROW(NotSupportedError, "No queue family found that only supports compute queue.");
 	}
+
+	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_computePipelineConstructionType);
 }
 
 	class IndirectDispatchInstanceBufferGenerate : public IndirectDispatchInstanceBufferUpload
@@ -657,9 +666,10 @@ public:
 																			 const deUintptr			bufferSize,
 																			 const tcu::UVec3&			workGroupSize,
 																			 const DispatchCommandsVec&	dispatchCommands,
-																			 const bool					computeOnlyQueue)
+																			 const bool					computeOnlyQueue,
+																			 const vk::ComputePipelineConstructionType computePipelineConstructionType)
 
-										: IndirectDispatchInstanceBufferUpload(context, name, bufferSize, workGroupSize, dispatchCommands, computeOnlyQueue) {}
+										: IndirectDispatchInstanceBufferUpload(context, name, bufferSize, workGroupSize, dispatchCommands, computeOnlyQueue, computePipelineConstructionType) {}
 
 	virtual							~IndirectDispatchInstanceBufferGenerate	(void) {}
 
@@ -732,8 +742,9 @@ class IndirectDispatchCaseBufferGenerate : public IndirectDispatchCaseBufferUplo
 public:
 							IndirectDispatchCaseBufferGenerate	(tcu::TestContext&			testCtx,
 																 const DispatchCaseDesc&	caseDesc,
-																 const glu::GLSLVersion		glslVersion)
-								: IndirectDispatchCaseBufferUpload(testCtx, caseDesc, glslVersion) {}
+																 const glu::GLSLVersion		glslVersion,
+																 const vk::ComputePipelineConstructionType computePipelineConstructionType)
+								: IndirectDispatchCaseBufferUpload(testCtx, caseDesc, glslVersion, computePipelineConstructionType) {}
 
 	virtual					~IndirectDispatchCaseBufferGenerate	(void) {}
 
@@ -793,7 +804,7 @@ void IndirectDispatchCaseBufferGenerate::initPrograms (vk::SourceCollections& pr
 
 TestInstance* IndirectDispatchCaseBufferGenerate::createInstance (Context& context) const
 {
-	return new IndirectDispatchInstanceBufferGenerate(context, m_name, m_bufferSize, m_workGroupSize, m_dispatchCommands, m_computeOnlyQueue);
+	return new IndirectDispatchInstanceBufferGenerate(context, m_name, m_bufferSize, m_workGroupSize, m_dispatchCommands, m_computeOnlyQueue, m_computePipelineConstructionType);
 }
 
 DispatchCommandsVec commandsVec (const DispatchCommand& cmd)
@@ -839,7 +850,7 @@ DispatchCommandsVec commandsVec (const DispatchCommand& cmd0,
 
 } // anonymous ns
 
-tcu::TestCaseGroup* createIndirectComputeDispatchTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createIndirectComputeDispatchTests (tcu::TestContext& testCtx, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
 
 	static const DispatchCaseDesc s_dispatchCases[] =
@@ -894,8 +905,8 @@ tcu::TestCaseGroup* createIndirectComputeDispatchTests (tcu::TestContext& testCt
 		std::string computeName = std::string(desc.m_name) + std::string("_compute_only_queue");
 		DispatchCaseDesc computeOnlyDesc = DispatchCaseDesc(computeName.c_str(), desc.m_description, desc.m_bufferSize, desc.m_workGroupSize,
 															desc.m_dispatchCommands, true);
-		groupBufferUpload->addChild(new IndirectDispatchCaseBufferUpload(testCtx, desc, glu::GLSL_VERSION_310_ES));
-		groupBufferUpload->addChild(new IndirectDispatchCaseBufferUpload(testCtx, computeOnlyDesc, glu::GLSL_VERSION_310_ES));
+		groupBufferUpload->addChild(new IndirectDispatchCaseBufferUpload(testCtx, desc, glu::GLSL_VERSION_310_ES, computePipelineConstructionType));
+		groupBufferUpload->addChild(new IndirectDispatchCaseBufferUpload(testCtx, computeOnlyDesc, glu::GLSL_VERSION_310_ES, computePipelineConstructionType));
 	}
 
 	tcu::TestCaseGroup* const	groupBufferGenerate = new tcu::TestCaseGroup(testCtx, "gen_in_compute", "");
@@ -907,8 +918,8 @@ tcu::TestCaseGroup* createIndirectComputeDispatchTests (tcu::TestContext& testCt
 		std::string computeName = std::string(desc.m_name) + std::string("_compute_only_queue");
 		DispatchCaseDesc computeOnlyDesc = DispatchCaseDesc(computeName.c_str(), desc.m_description, desc.m_bufferSize, desc.m_workGroupSize,
 															desc.m_dispatchCommands, true);
-		groupBufferGenerate->addChild(new IndirectDispatchCaseBufferGenerate(testCtx, desc, glu::GLSL_VERSION_310_ES));
-		groupBufferGenerate->addChild(new IndirectDispatchCaseBufferGenerate(testCtx, computeOnlyDesc, glu::GLSL_VERSION_310_ES));
+		groupBufferGenerate->addChild(new IndirectDispatchCaseBufferGenerate(testCtx, desc, glu::GLSL_VERSION_310_ES, computePipelineConstructionType));
+		groupBufferGenerate->addChild(new IndirectDispatchCaseBufferGenerate(testCtx, computeOnlyDesc, glu::GLSL_VERSION_310_ES, computePipelineConstructionType));
 	}
 
 	return indirectComputeDispatchTests.release();

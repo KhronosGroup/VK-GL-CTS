@@ -3,6 +3,8 @@
  * ------------------------
  *
  * Copyright (c) 2015 Google Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -121,6 +123,8 @@
 #ifdef CTS_USES_VULKANSC
 #include "vktSafetyCriticalTests.hpp"
 #endif // CTS_USES_VULKANSC
+#include "vktVideoTests.hpp"
+#include "vktShaderObjectTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -1188,6 +1192,7 @@ void TestPackage::init (void)
 	// Amber depth pipeline tests
 	addChild(cts_amber::createAmberDepthGroup	(m_testCtx));
 	addChild(video::createTests					(m_testCtx));
+	addChild(ShaderObject::createTests(m_testCtx));
 }
 
 void ExperimentalTestPackage::init (void)

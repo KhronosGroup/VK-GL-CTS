@@ -214,20 +214,23 @@ static Move<VkRenderPass> makeRenderPass(const DeviceInterface& vk, const VkDevi
 
 using GraphicsPipelinePtr = std::unique_ptr<GraphicsPipelineWrapper>;
 
-static GraphicsPipelinePtr makeGraphicsPipeline (PipelineConstructionType		pipelineConstructionType,
-												 const DeviceInterface&			vkd,
-												 const VkDevice					device,
-												 const VkPipelineLayout			pipelineLayout,
-												 const VkRenderPass				renderPass,
-												 const VkShaderModule			vertShaderModule,
-												 const VkShaderModule			fragShaderModule,
-												 const uint32_t					width,
-												 const uint32_t					height,
-												 const VkPrimitiveTopology		topology,
-												 const VkSampleCountFlagBits	rasterizationSamples,
-												 const bool						withColor = false,
-												 const bool						provokingVertexLast = false,
-												 const bool						dynamicTopology = false)
+static GraphicsPipelinePtr makeGraphicsPipeline (PipelineConstructionType			pipelineConstructionType,
+												 const InstanceInterface&			vki,
+												 const DeviceInterface&				vkd,
+												 const VkPhysicalDevice				physicalDevice,
+												 const VkDevice						device,
+												 const std::vector<std::string>&	deviceExtensions,
+												 const PipelineLayoutWrapper&		pipelineLayout,
+												 const VkRenderPass					renderPass,
+												 const ShaderWrapper				vertShaderModule,
+												 const ShaderWrapper				fragShaderModule,
+												 const uint32_t						width,
+												 const uint32_t						height,
+												 const VkPrimitiveTopology			topology,
+												 const VkSampleCountFlagBits		rasterizationSamples,
+												 const bool							withColor = false,
+												 const bool							provokingVertexLast = false,
+												 const bool							dynamicTopology = false)
 {
 	const std::vector<VkViewport>									viewports							(1, makeViewport(width, height));
 	const std::vector<VkRect2D>										scissors							(1, makeRect2D(width, height));
@@ -312,7 +315,7 @@ static GraphicsPipelinePtr makeGraphicsPipeline (PipelineConstructionType		pipel
 	const VkPipelineDynamicStateCreateInfo*							pDynamicStateCreateInfo				= dynamicTopology ? &dynamicStateCreateInfo : DE_NULL;
 	const auto														pVertexInputStateCreateInfo			= (withColor ? &vertexInputStateInfo : nullptr);
 
-	GraphicsPipelinePtr	pipelineWrapperPtr	(new GraphicsPipelineWrapper(vkd, device, pipelineConstructionType));
+	GraphicsPipelinePtr	pipelineWrapperPtr	(new GraphicsPipelineWrapper(vki, vkd, physicalDevice, device, deviceExtensions, pipelineConstructionType));
 	auto&				pipelineWrapper		= *pipelineWrapperPtr.get();
 
 	pipelineWrapper
@@ -666,8 +669,11 @@ bool FragmentShadingBarycentricDataTestInstance::getProvokingVertexLast (void)
 
 tcu::TestStatus FragmentShadingBarycentricDataTestInstance::iterate (void)
 {
+	const InstanceInterface&		vki							= m_context.getInstanceInterface();
 	const DeviceInterface&			vkd							= m_context.getDeviceInterface();
+	const VkPhysicalDevice			physicalDevice				= m_context.getPhysicalDevice();
 	const VkDevice					device						= m_context.getDevice();
+	const auto&						deviceExtensions			= m_context.getDeviceExtensions();
 	const VkQueue					queue						= m_context.getUniversalQueue();
 	Allocator&						allocator					= m_context.getDefaultAllocator();
 	const uint32_t					queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
@@ -695,27 +701,25 @@ tcu::TestStatus FragmentShadingBarycentricDataTestInstance::iterate (void)
 	MovePtr<BufferWithMemory>		resultBuffer				= MovePtr<BufferWithMemory>(new BufferWithMemory(vkd, device, allocator, resultBufferCreateInfo, MemoryRequirement::HostVisible));
 
 	const string					shaderSuffix				= (provokingVertexLast == m_testParams.provokingVertexLast) ? "" : "-forced";
-	const Move<VkShaderModule>		vertModule					= createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert" + shaderSuffix), 0u);
-	const Move<VkShaderModule>		fragModule					= createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag" + shaderSuffix), 0u);
-	const Move<VkRenderPass>		renderPass					= makeRenderPass(vkd, device, format, VK_SAMPLE_COUNT_1_BIT);
+	const ShaderWrapper				vertModule					= ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("vert" + shaderSuffix), 0u);
+	const ShaderWrapper				fragModule					= ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("frag" + shaderSuffix), 0u);
+	RenderPassWrapper				renderPass					= RenderPassWrapper(m_testParams.pipelineConstructionType, vkd, device, format);
+	renderPass.createFramebuffer(vkd, device, **image, *imageView, width, height);
 	const deUint32					pushConstants[]				= { 0, 1, 2 };
 	const VkPushConstantRange		pushConstantRange			= makePushConstantRange(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstants));
 	const VkPushConstantRange*		pushConstantRangePtr		= m_testParams.dynamicIndexing ? &pushConstantRange : DE_NULL;
 	const deUint32					pushConstantRangeCount		= m_testParams.dynamicIndexing ? 1 : 0;
-	const Move<VkPipelineLayout>	pipelineLayout				= makePipelineLayout(vkd, device, 0, DE_NULL, pushConstantRangeCount, pushConstantRangePtr);
-	const auto						pipelineWrapper				= makeGraphicsPipeline(m_testParams.pipelineConstructionType, vkd, device, *pipelineLayout, *renderPass, *vertModule, *fragModule, width, height, topology, VK_SAMPLE_COUNT_1_BIT, withColor, provokingVertexLast);
-	const VkPipeline				pipeline					= pipelineWrapper->getPipeline();
-
-	const Move<VkFramebuffer>		framebuffer					= makeFramebuffer(vkd, device, *renderPass, *imageView, width, height);
+	const PipelineLayoutWrapper		pipelineLayout				(m_testParams.pipelineConstructionType, vkd, device, 0, DE_NULL, pushConstantRangeCount, pushConstantRangePtr);
+	const auto						pipelineWrapper				= makeGraphicsPipeline(m_testParams.pipelineConstructionType, vki, vkd, physicalDevice, device, deviceExtensions, pipelineLayout, *renderPass, vertModule, fragModule, width, height, topology, VK_SAMPLE_COUNT_1_BIT, withColor, provokingVertexLast);
 
 	const Move<VkCommandPool>		commandPool					= createCommandPool(vkd, device, 0, queueFamilyIndex);
 	const Move<VkCommandBuffer>		commandBuffer				= allocateCommandBuffer(vkd, device, *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	beginCommandBuffer(vkd, *commandBuffer);
 	{
-		beginRenderPass(vkd, *commandBuffer, *renderPass, *framebuffer, makeRect2D(width, height), clearColor);
+		renderPass.begin(vkd, *commandBuffer, makeRect2D(width, height), clearColor);
 
-		vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+		pipelineWrapper->bind(*commandBuffer);
 
 		vkd.cmdBindVertexBuffers(*commandBuffer, 0u, 1u, &vertexBuffer->get(), &offsetZero);
 
@@ -724,7 +728,7 @@ tcu::TestStatus FragmentShadingBarycentricDataTestInstance::iterate (void)
 
 		vkd.cmdDraw(*commandBuffer, vertexCount, 1u, 0u, 0u);
 
-		endRenderPass(vkd, *commandBuffer);
+		renderPass.end(vkd, *commandBuffer);
 
 		copyImageToBuffer(vkd, *commandBuffer, image->get(), resultBuffer->get(), tcu::IVec2(width, height));
 	}
@@ -1070,8 +1074,11 @@ MovePtr<BufferWithMemory> FragmentShadingBarycentricWeightTestInstance::createVe
 
 tcu::TestStatus FragmentShadingBarycentricWeightTestInstance::iterate (void)
 {
+	const InstanceInterface&		vki						= m_context.getInstanceInterface();
 	const DeviceInterface&			vkd						= m_context.getDeviceInterface();
+	const VkPhysicalDevice			physicalDevice			= m_context.getPhysicalDevice();
 	const VkDevice					device					= m_context.getDevice();
+	const auto&						deviceExtensions		= m_context.getDeviceExtensions();
 	const VkQueue					queue					= m_context.getUniversalQueue();
 	Allocator&						allocator				= m_context.getDefaultAllocator();
 	const uint32_t					queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
@@ -1103,7 +1110,7 @@ tcu::TestStatus FragmentShadingBarycentricWeightTestInstance::iterate (void)
 	MovePtr<BufferWithMemory>		referenceBuffer			= MovePtr<BufferWithMemory>(new BufferWithMemory(vkd, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible));
 	const Move<VkRenderPass>		renderPass				= makeRenderPass(vkd, device, format, m_testParams.sampleCount);
 	const Move<VkCommandPool>		commandPool				= createCommandPool(vkd, device, 0, queueFamilyIndex);
-	const Move<VkShaderModule>		vertModule				= createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
+	const ShaderWrapper				vertModule				= ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
 	const VkImageCreateInfo			imageCreateInfo			= makeImageCreateInfo(format, width, height, VK_SAMPLE_COUNT_1_BIT);
 	const VkImageCreateInfo			msImageCreateInfo		= makeImageCreateInfo(format, width, height, m_testParams.sampleCount);
 	const VkImageSubresourceRange	imageSubresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
@@ -1132,10 +1139,10 @@ tcu::TestStatus FragmentShadingBarycentricWeightTestInstance::iterate (void)
 		const Move<VkCommandBuffer>		commandBuffer		= allocateCommandBuffer(vkd, device, *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 		const BufferWithMemory*			buffer				= (ndx == 0) ? resultBuffer.get() : referenceBuffer.get();
 		const string					fragModuleName		= (ndx == 0) ? "frag_test" : "frag_reference";
-		const Move<VkShaderModule>		fragModule			= createShaderModule(vkd, device, m_context.getBinaryCollection().get(fragModuleName), 0u);
+		const ShaderWrapper				fragModule			= ShaderWrapper(vkd, device, m_context.getBinaryCollection().get(fragModuleName), 0u);
 		const VkPushConstantRange		pushConstantRange	= makePushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mvp));
-		const Move<VkPipelineLayout>	pipelineLayout		= makePipelineLayout(vkd, device, 0, DE_NULL, 1, &pushConstantRange);
-		const auto						pipelineWrapper		= makeGraphicsPipeline(m_testParams.pipelineConstructionType, vkd, device, *pipelineLayout, *renderPass, *vertModule, *fragModule, width, height, pipelineTopology, m_testParams.sampleCount, withColor, provokingVertexLast, dynamicStateTopology);
+		const PipelineLayoutWrapper		pipelineLayout		(m_testParams.pipelineConstructionType, vkd, device, 0, DE_NULL, 1, &pushConstantRange);
+		const auto						pipelineWrapper		= makeGraphicsPipeline(m_testParams.pipelineConstructionType, vki, vkd, physicalDevice, device, deviceExtensions, pipelineLayout, *renderPass, vertModule, fragModule, width, height, pipelineTopology, m_testParams.sampleCount, withColor, provokingVertexLast, dynamicStateTopology);
 		const VkPipeline				pipeline			= pipelineWrapper->getPipeline();
 
 		beginCommandBuffer(vkd, *commandBuffer);
@@ -1218,7 +1225,7 @@ void FragmentShadingBarycentricTestCase::checkSupport (Context& context) const
 	if (!fragmentShaderBarycentricFeatures.fragmentShaderBarycentric)
 		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR.fragmentShaderBarycentric");
 
-	checkPipelineLibraryRequirements(vki, physicalDevice, m_testParams.pipelineConstructionType);
+	checkPipelineConstructionRequirements(vki, physicalDevice, m_testParams.pipelineConstructionType);
 
 	if (m_testParams.provokingVertexLast)
 	{

@@ -5,6 +5,8 @@
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Imagination Technologies Ltd.
  * Copyright (c) 2017 Google Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -547,26 +549,25 @@ protected:
 	de::MovePtr<Allocation>										m_depthStencilImageAlloc;
 	Move<VkImageView>											m_depthStencilAttachmentView;
 
-	Move<VkRenderPass>											m_renderPass;
-	Move<VkFramebuffer>											m_framebuffer;
+	RenderPassWrapper											m_renderPass;
 
-	Move<VkShaderModule>										m_vertexShaderModule;
-	Move<VkShaderModule>										m_fragmentShaderModule;
+	ShaderWrapper												m_vertexShaderModule;
+	ShaderWrapper												m_fragmentShaderModule;
 
-	Move<VkShaderModule>										m_copySampleVertexShaderModule;
-	Move<VkShaderModule>										m_copySampleFragmentShaderModule;
+	ShaderWrapper												m_copySampleVertexShaderModule;
+	ShaderWrapper												m_copySampleFragmentShaderModule;
 
 	Move<VkBuffer>												m_vertexBuffer;
 	de::MovePtr<Allocation>										m_vertexBufferAlloc;
 
-	Move<VkPipelineLayout>										m_pipelineLayout;
+	PipelineLayoutWrapper										m_pipelineLayout;
 	std::vector<GraphicsPipelineWrapper>						m_graphicsPipelines;
 
 	Move<VkDescriptorSetLayout>									m_copySampleDesciptorLayout;
 	Move<VkDescriptorPool>										m_copySampleDesciptorPool;
 	Move<VkDescriptorSet>										m_copySampleDesciptorSet;
 
-	Move<VkPipelineLayout>										m_copySamplePipelineLayout;
+	PipelineLayoutWrapper										m_copySamplePipelineLayout;
 	std::vector<GraphicsPipelineWrapper>						m_copySamplePipelines;
 
 	Move<VkCommandPool>											m_cmdPool;
@@ -923,7 +924,7 @@ protected:
 
 void checkSupport (Context& context, MultisampleTestParams params)
 {
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.pipelineConstructionType);
 }
 #endif // CTS_USES_VULKANSC
 
@@ -978,6 +979,7 @@ void initSampleShadingPrograms (SourceCollections& sources, MultisampleTestParam
 			"layout(location = 0) out highp vec4 fragColor;\n"
 			"void main (void)\n"
 			"{\n"
+			"	uint sampleId = gl_SampleID;\n" // Enable sample shading for shader objects by reading gl_SampleID
 			"	fragColor = vec4(fract(gl_FragCoord.xy), 0.0, 1.0);\n"
 			"}\n";
 
@@ -1384,7 +1386,7 @@ void MultisampleTest::checkSupport (Context& context) const
 	if (m_useFragmentShadingRate && !checkFragmentShadingRateRequirements(context, m_multisampleStateParams.rasterizationSamples))
 		TCU_THROW(NotSupportedError, "Required FragmentShadingRate not supported");
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 }
 
 // RasterizationSamplesTest
@@ -1871,7 +1873,7 @@ void SampleMaskWithConservativeTest::checkSupport(Context& context) const
 		TCU_THROW(NotSupportedError, "FullyCoveredEXT input variable is not supported");
 	}
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 }
 
 void SampleMaskWithConservativeTest::initPrograms(SourceCollections& programCollection) const
@@ -1995,7 +1997,7 @@ void SampleMaskWithDepthTestTest::checkSupport (Context& context) const
 
 	context.requireDeviceFunctionality("VK_EXT_post_depth_coverage");
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 
 	if (m_useFragmentShadingRate)
 	{
@@ -3475,7 +3477,9 @@ void MultisampleRenderer::initialize (Context&									context,
 	if (!isSupportedSampleCount(context.getInstanceInterface(), context.getPhysicalDevice(), m_multisampleStateParams.rasterizationSamples))
 		throw tcu::NotSupportedError("Unsupported number of rasterization samples");
 
+	const InstanceInterface&		vki						= context.getInstanceInterface();
 	const DeviceInterface&			vk						= context.getDeviceInterface();
+	const VkPhysicalDevice			physicalDevice			= context.getPhysicalDevice();
 	const VkDevice					vkDevice				= context.getDevice();
 	const VkPhysicalDeviceFeatures	features				= context.getDeviceFeatures();
 	const deUint32					queueFamilyIndices[]	= { context.getUniversalQueueFamilyIndex(), context.getSparseQueueFamilyIndex() };
@@ -4028,27 +4032,32 @@ void MultisampleRenderer::initialize (Context&									context,
 			subpassDependencies.size() != 0 ? &subpassDependencies[0] : DE_NULL
 		};
 
-		m_renderPass = createRenderPass(vk, vkDevice, &renderPassParams);
+		m_renderPass = RenderPassWrapper(m_pipelineConstructionType, vk, vkDevice, &renderPassParams);
 	}
 
 	// Create framebuffer
 	{
+		std::vector<VkImage> images;
 		std::vector<VkImageView> attachments;
+		images.push_back(*m_colorImage);
 		attachments.push_back(*m_colorAttachmentView);
 		if (usesResolveImage)
 		{
+			images.push_back(*m_resolveImage);
 			attachments.push_back(*m_resolveAttachmentView);
 		}
 		if (m_renderType == RENDER_TYPE_COPY_SAMPLES)
 		{
 			for (size_t i = 0; i < m_perSampleImages.size(); ++i)
 			{
+				images.push_back(*m_perSampleImages[i]->m_image);
 				attachments.push_back(*m_perSampleImages[i]->m_attachmentView);
 			}
 		}
 
 		if (m_useDepth || m_useStencil)
 		{
+			images.push_back(*m_depthStencilImage);
 			attachments.push_back(*m_depthStencilAttachmentView);
 		}
 
@@ -4065,7 +4074,7 @@ void MultisampleRenderer::initialize (Context&									context,
 			1u													// deUint32							layers;
 		};
 
-		m_framebuffer = createFramebuffer(vk, vkDevice, &framebufferParams);
+		m_renderPass.createFramebuffer(vk, vkDevice, &framebufferParams, images);
 	}
 
 	// Create pipeline layout
@@ -4081,7 +4090,7 @@ void MultisampleRenderer::initialize (Context&									context,
 			DE_NULL												// const VkPushConstantRange*		pPushConstantRanges;
 		};
 
-		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		m_pipelineLayout = PipelineLayoutWrapper(m_pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
 
 		if (m_renderType == RENDER_TYPE_COPY_SAMPLES)
 		{
@@ -4124,17 +4133,17 @@ void MultisampleRenderer::initialize (Context&									context,
 				1u,															// deUint32								pushConstantRangeCount;
 				&pushConstantRange											// const VkPushConstantRange*			pPushConstantRanges;
 			};
-			m_copySamplePipelineLayout		= createPipelineLayout(vk, vkDevice, &copySamplePipelineLayoutParams);
+			m_copySamplePipelineLayout		= PipelineLayoutWrapper(m_pipelineConstructionType, vk, vkDevice, &copySamplePipelineLayoutParams);
 		}
 	}
 
-	m_vertexShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_vert"), 0);
-	m_fragmentShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_frag"), 0);
+	m_vertexShaderModule	= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("color_vert"), 0);
+	m_fragmentShaderModule	= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("color_frag"), 0);
 
 	if (m_renderType == RENDER_TYPE_COPY_SAMPLES)
 	{
-		m_copySampleVertexShaderModule		= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("quad_vert"), 0);
-		m_copySampleFragmentShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("copy_sample_frag"), 0);
+		m_copySampleVertexShaderModule		= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("quad_vert"), 0);
+		m_copySampleFragmentShaderModule	= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("copy_sample_frag"), 0);
 	}
 
 	// Create pipeline
@@ -4265,29 +4274,29 @@ void MultisampleRenderer::initialize (Context&									context,
 			}
 			for (deUint32 i = 0u; i < numTopologies; ++i)
 			{
-				m_graphicsPipelines.emplace_back(vk, vkDevice, m_pipelineConstructionType);
+				m_graphicsPipelines.emplace_back(vki, vk, physicalDevice, vkDevice, context.getDeviceExtensions(), m_pipelineConstructionType);
 				m_graphicsPipelines.back().setDefaultTopology(pTopology[i])
 										  .setupVertexInputState(&vertexInputStateParams)
 										  .setupPreRasterizationShaderState(viewports,
 																			scissors,
-																			*m_pipelineLayout,
+																			m_pipelineLayout,
 																			*m_renderPass,
 																			subpassIdx,
-																			*m_vertexShaderModule,
+																			m_vertexShaderModule,
 																			&rasterizationStateCreateInfo,
-																			DE_NULL, DE_NULL, DE_NULL, DE_NULL,
+																			ShaderWrapper(), ShaderWrapper(), ShaderWrapper(), DE_NULL,
 																			(m_useFragmentShadingRate ? &shadingRateStateCreateInfo : nullptr))
-										  .setupFragmentShaderState(*m_pipelineLayout,
+										  .setupFragmentShaderState(m_pipelineLayout,
 																	*m_renderPass,
 																	subpassIdx,
-																	*m_fragmentShaderModule,
+																	m_fragmentShaderModule,
 																	&depthStencilStateParams,
 																	&m_multisampleStateParams)
 										  .setupFragmentOutputState(*m_renderPass, subpassIdx, &colorBlendStateParams, &m_multisampleStateParams)
-										  .setMonolithicPipelineLayout(*m_pipelineLayout)
+										  .setMonolithicPipelineLayout(m_pipelineLayout)
 										  .buildPipeline();
 			}
-			}
+		}
 	}
 
 	if (m_renderType == RENDER_TYPE_COPY_SAMPLES)
@@ -4326,7 +4335,7 @@ void MultisampleRenderer::initialize (Context&									context,
 				// Pipeline is to be used in subpasses subsequent to sample-shading subpass
 
 				const deUint32 subpassIdx = 1u + (deUint32)i;
-				m_copySamplePipelines.emplace_back(vk, vkDevice, m_pipelineConstructionType);
+				m_copySamplePipelines.emplace_back(vki, vk, physicalDevice, vkDevice, m_context.getDeviceExtensions(), m_pipelineConstructionType);
 				m_copySamplePipelines.back().setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
 											.setDefaultRasterizationState()
 											.setDefaultMultisampleState()
@@ -4334,16 +4343,16 @@ void MultisampleRenderer::initialize (Context&									context,
 											.setupVertexInputState(&vertexInputStateParams)
 											.setupPreRasterizationShaderState(viewports,
 																			scissors,
-																			*m_copySamplePipelineLayout,
+																			m_copySamplePipelineLayout,
 																			*m_renderPass,
 																			subpassIdx,
-																			*m_copySampleVertexShaderModule)
-											.setupFragmentShaderState(*m_copySamplePipelineLayout,
+																			m_copySampleVertexShaderModule)
+											.setupFragmentShaderState(m_copySamplePipelineLayout,
 																	*m_renderPass,
 																	subpassIdx,
-																	*m_copySampleFragmentShaderModule)
+																	m_copySampleFragmentShaderModule)
 											.setupFragmentOutputState(*m_renderPass, subpassIdx, &colorBlendStateParams)
-											.setMonolithicPipelineLayout(*m_copySamplePipelineLayout)
+											.setMonolithicPipelineLayout(m_copySamplePipelineLayout)
 											.buildPipeline();
 			}
 		}
@@ -4580,13 +4589,13 @@ void MultisampleRenderer::initialize (Context&									context,
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dstStageMask, (VkDependencyFlags)0,
 			0u, DE_NULL, 0u, DE_NULL, (deUint32)imageLayoutBarriers.size(), &imageLayoutBarriers[0]);
 
-		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), (deUint32)clearValues.size(), &clearValues[0]);
+		m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), (deUint32)clearValues.size(), &clearValues[0]);
 
 		VkDeviceSize vertexBufferOffset = 0u;
 
 		for (deUint32 i = 0u; i < numTopologies; ++i)
 		{
-			vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipelines[i].getPipeline());
+			m_graphicsPipelines[i].bind(*m_cmdBuffer);
 			vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
 			vk.cmdDraw(*m_cmdBuffer, (deUint32)pVertices[i].size(), 1, 0, 0);
 
@@ -4596,8 +4605,8 @@ void MultisampleRenderer::initialize (Context&									context,
 		if (m_renderType == RENDER_TYPE_DEPTHSTENCIL_ONLY)
 		{
 			// The first draw was without color buffer and zero coverage. The depth buffer is expected to still have the clear value.
-			vk.cmdNextSubpass(*m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
-			vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipelines[1].getPipeline());
+			m_renderPass.nextSubpass(vk, *m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+			m_graphicsPipelines[1].bind(*m_cmdBuffer);
 			vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
 			// The depth test should pass as the first draw didn't touch the depth buffer.
 			vk.cmdDraw(*m_cmdBuffer, (deUint32)pVertices[0].size(), 1, 0, 0);
@@ -4607,15 +4616,15 @@ void MultisampleRenderer::initialize (Context&									context,
 			// Copy each sample id to single sampled image
 			for (deInt32 sampleId = 0; sampleId < (deInt32)m_perSampleImages.size(); ++sampleId)
 			{
-				vk.cmdNextSubpass(*m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
-				vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_copySamplePipelines[sampleId].getPipeline());
+				m_renderPass.nextSubpass(vk, *m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+				m_copySamplePipelines[sampleId].bind(*m_cmdBuffer);
 				vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_copySamplePipelineLayout, 0u, 1u, &m_copySampleDesciptorSet.get(), 0u, DE_NULL);
 				vk.cmdPushConstants(*m_cmdBuffer, *m_copySamplePipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(deInt32), &sampleId);
 				vk.cmdDraw(*m_cmdBuffer, 4, 1, 0, 0);
 			}
 		}
 
-		endRenderPass(vk, *m_cmdBuffer);
+		m_renderPass.end(vk, *m_cmdBuffer);
 
 		endCommandBuffer(vk, *m_cmdBuffer);
 	}
@@ -4963,7 +4972,7 @@ void VariableRateTestCase::checkSupport (Context& context) const
 	if (m_params.useFragmentShadingRate && !checkFragmentShadingRateRequirements(context, m_params.fbCount))
 		TCU_THROW(NotSupportedError, "Required FragmentShadingRate not supported");
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 
 void zeroOutAndFlush(const vk::DeviceInterface& vkd, vk::VkDevice device, vk::BufferWithMemory& buffer, vk::VkDeviceSize size)
@@ -4983,7 +4992,9 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 {
 	using PushConstants = VariableRateTestCase::PushConstants;
 
+	const auto&	vki			= m_context.getInstanceInterface();
 	const auto&	vkd			= m_context.getDeviceInterface();
+	const auto	physDevice	= m_context.getPhysicalDevice();
 	const auto	device		= m_context.getDevice();
 	auto&		allocator	= m_context.getDefaultAllocator();
 	const auto&	queue		= m_context.getUniversalQueue();
@@ -5035,7 +5046,7 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 		1u,													//	deUint32						pushConstantRangeCount;
 		&pushConstantRange,									//	const VkPushConstantRange*		pPushConstantRanges;
 	};
-	const auto pipelineLayout = vk::createPipelineLayout(vkd, device, &pipelineLayoutCreateInfo);
+	const vk::PipelineLayoutWrapper pipelineLayout (m_params.pipelineConstructionType, vkd, device, &pipelineLayoutCreateInfo);
 
 	// Subpass with no attachments.
 	const vk::VkSubpassDescription emptySubpassDescription =
@@ -5094,7 +5105,7 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 		subpassesVector.push_back(emptySubpassDescription);
 	renderPassCreateInfo.subpassCount	= static_cast<deUint32>(subpassesVector.size());
 	renderPassCreateInfo.pSubpasses		= subpassesVector.data();
-	const auto renderPassMultiplePasses = vk::createRenderPass(vkd, device, &renderPassCreateInfo);
+	RenderPassWrapper renderPassMultiplePasses (m_params.pipelineConstructionType, vkd, device, &renderPassCreateInfo);
 
 	// Render pass with single subpass.
 	const vk::VkAttachmentDescription colorAttachmentDescription =
@@ -5115,10 +5126,10 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 		renderPassCreateInfo.attachmentCount = 1u;
 		renderPassCreateInfo.pAttachments = &colorAttachmentDescription;
 	}
-	const bool unusedAttachmentSubpass	= (m_params.nonEmptyFramebuffer && m_params.unusedAttachment);
-	renderPassCreateInfo.subpassCount	= 1u;
-	renderPassCreateInfo.pSubpasses		= (unusedAttachmentSubpass ? &unusedAttachmentSubpassDescription : &emptySubpassDescription);
-	const auto renderPassSingleSubpass	= vk::createRenderPass(vkd, device, &renderPassCreateInfo);
+	const bool unusedAttachmentSubpass			= (m_params.nonEmptyFramebuffer && m_params.unusedAttachment);
+	renderPassCreateInfo.subpassCount			= 1u;
+	renderPassCreateInfo.pSubpasses				= (unusedAttachmentSubpass ? &unusedAttachmentSubpassDescription : &emptySubpassDescription);
+	RenderPassWrapper renderPassSingleSubpass	(m_params.pipelineConstructionType, vkd, device, &renderPassCreateInfo);
 
 	// Framebuffers.
 	vk::VkFramebufferCreateInfo framebufferCreateInfo =
@@ -5136,11 +5147,12 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 
 	// Framebuffer for multiple-subpasses render pass.
 	framebufferCreateInfo.renderPass		= renderPassMultiplePasses.get();
-	const auto framebufferMultiplePasses	= vk::createFramebuffer(vkd, device, &framebufferCreateInfo);
+	renderPassMultiplePasses.createFramebuffer(vkd, device, &framebufferCreateInfo, std::vector<VkImage>{});
 
 	// Framebuffer for single-subpass render pass.
 	std::unique_ptr<vk::ImageWithMemory>	imagePtr;
 	vk::Move<vk::VkImageView>				imageView;
+	std::vector<vk::VkImage>				images;
 
 	if (m_params.nonEmptyFramebuffer)
 	{
@@ -5169,13 +5181,14 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 
 		framebufferCreateInfo.attachmentCount	= 1u;
 		framebufferCreateInfo.pAttachments		= &imageView.get();
+		images.push_back(**imagePtr);
 	}
 	framebufferCreateInfo.renderPass	= renderPassSingleSubpass.get();
-	const auto framebufferSingleSubpass	= vk::createFramebuffer(vkd, device, &framebufferCreateInfo);
+	renderPassSingleSubpass.createFramebuffer(vkd, device, &framebufferCreateInfo, images);
 
 	// Shader modules and stages.
-	const auto vertModule = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
-	const auto fragModule = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
+	const auto vertModule = ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
+	const auto fragModule = ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
 
 	// Vertices, input state and assembly.
 	const std::vector<tcu::Vec2> vertices =
@@ -5262,20 +5275,20 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 
 		multisampleStateCreateInfo.rasterizationSamples = samples;
 
-		outputPipelines.emplace_back(vkd, device, m_params.pipelineConstructionType);
+		outputPipelines.emplace_back(vki, vkd, physDevice, device, m_context.getDeviceExtensions(), m_params.pipelineConstructionType);
 		outputPipelines.back()
 			.setDefaultDepthStencilState()
 			.setDefaultRasterizationState()
 			.setupVertexInputState(&vertexInputStateCreateInfo)
 			.setupPreRasterizationShaderState(viewport,
 				scissor,
-				*pipelineLayout,
+				pipelineLayout,
 				*renderPassSingleSubpass,
 				0u,
-				*vertModule)
-			.setupFragmentShaderState(*pipelineLayout, *renderPassSingleSubpass, 0u, *fragModule, DE_NULL, &multisampleStateCreateInfo)
+				vertModule)
+			.setupFragmentShaderState(pipelineLayout, *renderPassSingleSubpass, 0u, fragModule, DE_NULL, &multisampleStateCreateInfo)
 			.setupFragmentOutputState(*renderPassSingleSubpass, 0u, colorBlendStatePtr, &multisampleStateCreateInfo)
-			.setMonolithicPipelineLayout(*pipelineLayout)
+			.setMonolithicPipelineLayout(pipelineLayout)
 			.buildPipeline();
 	}
 
@@ -5287,20 +5300,20 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 		multisampleStateCreateInfo.rasterizationSamples = m_params.subpassCounts[i];
 
 		deUint32 subpass = static_cast<deUint32>(i);
-		referencePipelines.emplace_back(vkd, device, m_params.pipelineConstructionType);
+		referencePipelines.emplace_back(vki, vkd, physDevice, device, m_context.getDeviceExtensions(), m_params.pipelineConstructionType);
 		referencePipelines.back()
 			.setDefaultDepthStencilState()
 			.setDefaultRasterizationState()
 			.setupVertexInputState(&vertexInputStateCreateInfo)
 			.setupPreRasterizationShaderState(viewport,
 				scissor,
-				*pipelineLayout,
+				pipelineLayout,
 				*renderPassMultiplePasses,
 				subpass,
-				*vertModule)
-			.setupFragmentShaderState(*pipelineLayout, *renderPassMultiplePasses, subpass, *fragModule, DE_NULL, &multisampleStateCreateInfo)
+				vertModule)
+			.setupFragmentShaderState(pipelineLayout, *renderPassMultiplePasses, subpass, fragModule, DE_NULL, &multisampleStateCreateInfo)
 			.setupFragmentOutputState(*renderPassMultiplePasses, subpass, &colorBlendStateCreateInfoNoAttachments, &multisampleStateCreateInfo)
-			.setMonolithicPipelineLayout(*pipelineLayout)
+			.setMonolithicPipelineLayout(pipelineLayout)
 			.buildPipeline();
 	}
 
@@ -5374,17 +5387,17 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 	vk::beginCommandBuffer(vkd, cmdBuffer);
 
 	// Render output buffers.
-	vk::beginRenderPass(vkd, cmdBuffer, renderPassSingleSubpass.get(), framebufferSingleSubpass.get(), renderArea);
+	renderPassSingleSubpass.begin(vkd, cmdBuffer, renderArea);
 	for (size_t i = 0; i < outputBuffers.size(); ++i)
 	{
-		vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, outputPipelines[i].getPipeline());
+		outputPipelines[i].bind(cmdBuffer);
 		vkd.cmdBindDescriptorSets(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u, &outputSets[i].get(), 0u, nullptr);
 		vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 		pushConstants.samples = static_cast<int>(m_params.subpassCounts[i]);
 		vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), pushConstantRange.stageFlags, pushConstantRange.offset, pushConstantRange.size, &pushConstants);
 		vkd.cmdDraw(cmdBuffer, static_cast<deUint32>(vertices.size()), 1u, 0u, 0u);
 	}
-	vk::endRenderPass(vkd, cmdBuffer);
+	renderPassSingleSubpass.end(vkd, cmdBuffer);
 	for (size_t i = 0; i < outputBuffers.size(); ++i)
 	{
 		storageBufferDevToHostBarrier.buffer = outputBuffers[i]->get();
@@ -5392,19 +5405,19 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 	}
 
 	// Render reference buffers.
-	vk::beginRenderPass(vkd, cmdBuffer, renderPassMultiplePasses.get(), framebufferMultiplePasses.get(), renderArea);
+	renderPassMultiplePasses.begin(vkd, cmdBuffer, renderArea);
 	for (size_t i = 0; i < referenceBuffers.size(); ++i)
 	{
 		if (i > 0)
-			vkd.cmdNextSubpass(cmdBuffer, vk::VK_SUBPASS_CONTENTS_INLINE);
-		vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, referencePipelines[i].getPipeline());
+			renderPassMultiplePasses.nextSubpass(vkd, cmdBuffer, vk::VK_SUBPASS_CONTENTS_INLINE);
+		referencePipelines[i].bind(cmdBuffer);
 		vkd.cmdBindDescriptorSets(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u, &referenceSets[i].get(), 0u, nullptr);
 		vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 		pushConstants.samples = static_cast<int>(m_params.subpassCounts[i]);
 		vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), pushConstantRange.stageFlags, pushConstantRange.offset, pushConstantRange.size, &pushConstants);
 		vkd.cmdDraw(cmdBuffer, static_cast<deUint32>(vertices.size()), 1u, 0u, 0u);
 	}
-	vk::endRenderPass(vkd, cmdBuffer);
+	renderPassMultiplePasses.end(vkd, cmdBuffer);
 	for (size_t i = 0; i < referenceBuffers.size(); ++i)
 	{
 		storageBufferDevToHostBarrier.buffer = referenceBuffers[i]->get();
@@ -5577,7 +5590,7 @@ private:
 
 void ZExportCheckSupport (Context& context, const ZExportParams params)
 {
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.pipelineConstructionType);
 
 	context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
 	context.requireDeviceFunctionality("VK_KHR_depth_stencil_resolve");
@@ -5862,7 +5875,15 @@ tcu::TestStatus ZExportIterate (Context& context, const ZExportParams params)
 		nullptr,										//	const uint32_t*					pCorrelatedViewMasks;
 	};
 
-	const std::vector<VkImageView> attachmentViews
+	const std::vector<VkImage>		images
+	{
+		*colorAttachment,
+		*dsAttachment,
+		*colorResolveAttachment,
+		*dsResolveAttachment,
+	};
+
+	const std::vector<VkImageView>	attachmentViews
 	{
 		colorAttachmentView.get(),
 		dsAttachmentView.get(),
@@ -5870,17 +5891,16 @@ tcu::TestStatus ZExportIterate (Context& context, const ZExportParams params)
 		dsResolveAttachmentView.get(),
 	};
 
-	const auto renderPass	= createRenderPass2(ctx.vkd, ctx.device, &renderPassCreateInfo);
-	const auto framebuffer	= makeFramebuffer(ctx.vkd, ctx.device, renderPass.get(),
-		de::sizeU32(attachmentViews), de::dataOrNull(attachmentViews), fbExtent.width, fbExtent.height);
+	RenderPassWrapper renderPass	(params.pipelineConstructionType, ctx.vkd, ctx.device, &renderPassCreateInfo);
+	renderPass.createFramebuffer(ctx.vkd, ctx.device, de::sizeU32(attachmentViews), de::dataOrNull(images), de::dataOrNull(attachmentViews), fbExtent.width, fbExtent.height);
 
 	// Pipeline layout.
-	const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device);
+	const PipelineLayoutWrapper pipelineLayout (params.pipelineConstructionType, ctx.vkd, ctx.device);
 
 	// Shaders.
 	const auto&	binaries	= context.getBinaryCollection();
-	const auto	vertShader	= createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
-	const auto	fragShader	= createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+	const auto	vertShader	= ShaderWrapper(ctx.vkd, ctx.device, binaries.get("vert"));
+	const auto	fragShader	= ShaderWrapper(ctx.vkd, ctx.device, binaries.get("frag"));
 
 	// Viewports and scissors.
 	const std::vector<VkViewport>	viewports	(1u, makeViewport(fbExtent));
@@ -5949,7 +5969,7 @@ tcu::TestStatus ZExportIterate (Context& context, const ZExportParams params)
 		de::dataOrNull(dynamicStates),							//	const VkDynamicState*				pDynamicStates;
 	};
 
-	GraphicsPipelineWrapper pipelineWrapper (ctx.vkd, ctx.device, params.pipelineConstructionType);
+	GraphicsPipelineWrapper pipelineWrapper (ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, context.getDeviceExtensions(), params.pipelineConstructionType);
 	pipelineWrapper
 			.setDefaultRasterizationState()
 			.setDefaultColorBlendState()
@@ -5957,13 +5977,13 @@ tcu::TestStatus ZExportIterate (Context& context, const ZExportParams params)
 			.setupVertexInputState(&vertexInputStateCreateInfo)
 			.setupPreRasterizationShaderState(viewports,
 				scissors,
-				*pipelineLayout,
+				pipelineLayout,
 				*renderPass,
 				0u,
-				*vertShader)
-			.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragShader, &dsStateInfo, &multisampleStateCreateInfo)
+				vertShader)
+			.setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragShader, &dsStateInfo, &multisampleStateCreateInfo)
 			.setupFragmentOutputState(*renderPass, 0u, nullptr, &multisampleStateCreateInfo)
-			.setMonolithicPipelineLayout(*pipelineLayout)
+			.setMonolithicPipelineLayout(pipelineLayout)
 			.buildPipeline();
 
 	CommandPoolWithBuffer cmd (ctx.vkd, ctx.device, ctx.qfIndex);
@@ -5979,8 +5999,8 @@ tcu::TestStatus ZExportIterate (Context& context, const ZExportParams params)
 	};
 
 	beginCommandBuffer(ctx.vkd, cmdBuffer);
-	beginRenderPass(ctx.vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.at(0u), de::sizeU32(clearValues), de::dataOrNull(clearValues));
-	ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, pipelineWrapper.getPipeline());
+	renderPass.begin(ctx.vkd, cmdBuffer, scissors.at(0u), de::sizeU32(clearValues), de::dataOrNull(clearValues));
+	pipelineWrapper.bind(cmdBuffer);
 #ifndef CTS_USES_VULKANSC
 	if (params.dynamicAlphaToCoverage)
 		ctx.vkd.cmdSetAlphaToCoverageEnableEXT(cmdBuffer, VK_TRUE);
@@ -5988,7 +6008,7 @@ tcu::TestStatus ZExportIterate (Context& context, const ZExportParams params)
 	DE_ASSERT(false);
 #endif // CTS_USES_VULKANSC
 	ctx.vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
-	endRenderPass(ctx.vkd, cmdBuffer);
+	renderPass.end(ctx.vkd, cmdBuffer);
 	endCommandBuffer(ctx.vkd, cmdBuffer);
 	submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
 
@@ -6157,41 +6177,51 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx, PipelineC
 			{ "min_1_0",	1.0f }
 		};
 
+		// Input attachments are not supported with dynamic rendering and shader objects
+		if (!isConstructionTypeShaderObject(pipelineConstructionType))
 		{
 			TestCaseGroupPtr minSampleShadingTests(new tcu::TestCaseGroup(testCtx, "min_sample_shading", ""));
-
-			for (int configNdx = 0; configNdx < DE_LENGTH_OF_ARRAY(testConfigs); configNdx++)
 			{
-				const TestConfig&	testConfig				= testConfigs[configNdx];
-				TestCaseGroupPtr	minShadingValueTests	(new tcu::TestCaseGroup(testCtx, testConfigs[configNdx].name, ""));
-
-				for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(samples); samplesNdx++)
+				for (int configNdx = 0; configNdx < DE_LENGTH_OF_ARRAY(testConfigs); configNdx++)
 				{
-					std::ostringstream caseName;
-					caseName << "samples_" << samples[samplesNdx];
+					const TestConfig&	testConfig				= testConfigs[configNdx];
 
-					TestCaseGroupPtr samplesTests (new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
+					// minSampleShading is not supported by shader objects
+					if (testConfig.minSampleShading != 1.0f && isConstructionTypeShaderObject(pipelineConstructionType))
+						continue;
 
-					samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_triangle",	"", pipelineConstructionType, samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_TRIANGLE, 1.0f, IMAGE_BACKING_MODE_REGULAR, true, useFragmentShadingRate));
-					samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_line",		"", pipelineConstructionType, samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_LINE, 1.0f, IMAGE_BACKING_MODE_REGULAR, true, useFragmentShadingRate));
-					samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_point_1px",	"", pipelineConstructionType, samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_POINT, 1.0f, IMAGE_BACKING_MODE_REGULAR, true, useFragmentShadingRate));
-					samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_point",		"", pipelineConstructionType, samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_POINT, 3.0f, IMAGE_BACKING_MODE_REGULAR, true, useFragmentShadingRate));
-#ifndef CTS_USES_VULKANSC
-					samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_triangle_sparse",	"", pipelineConstructionType, samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_TRIANGLE, 1.0f, IMAGE_BACKING_MODE_SPARSE, true, useFragmentShadingRate));
-					samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_line_sparse",		"", pipelineConstructionType, samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_LINE, 1.0f, IMAGE_BACKING_MODE_SPARSE, true, useFragmentShadingRate));
-					samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_point_1px_sparse",	"", pipelineConstructionType, samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_POINT, 1.0f, IMAGE_BACKING_MODE_SPARSE, true, useFragmentShadingRate));
-					samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_point_sparse",		"", pipelineConstructionType, samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_POINT, 3.0f, IMAGE_BACKING_MODE_SPARSE, true, useFragmentShadingRate));
-#endif // CTS_USES_VULKANSC
+					TestCaseGroupPtr	minShadingValueTests	(new tcu::TestCaseGroup(testCtx, testConfigs[configNdx].name, ""));
 
-					minShadingValueTests->addChild(samplesTests.release());
+					for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(samples); samplesNdx++)
+					{
+						std::ostringstream caseName;
+						caseName << "samples_" << samples[samplesNdx];
+
+						TestCaseGroupPtr samplesTests (new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
+
+						samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_triangle",	"", pipelineConstructionType, samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_TRIANGLE, 1.0f, IMAGE_BACKING_MODE_REGULAR, true, useFragmentShadingRate));
+						samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_line",		"", pipelineConstructionType, samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_LINE, 1.0f, IMAGE_BACKING_MODE_REGULAR, true, useFragmentShadingRate));
+						samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_point_1px",	"", pipelineConstructionType, samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_POINT, 1.0f, IMAGE_BACKING_MODE_REGULAR, true, useFragmentShadingRate));
+						samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_point",		"", pipelineConstructionType, samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_POINT, 3.0f, IMAGE_BACKING_MODE_REGULAR, true, useFragmentShadingRate));
+	#ifndef CTS_USES_VULKANSC
+						samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_triangle_sparse",	"", pipelineConstructionType, samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_TRIANGLE, 1.0f, IMAGE_BACKING_MODE_SPARSE, true, useFragmentShadingRate));
+						samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_line_sparse",		"", pipelineConstructionType, samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_LINE, 1.0f, IMAGE_BACKING_MODE_SPARSE, true, useFragmentShadingRate));
+						samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_point_1px_sparse",	"", pipelineConstructionType, samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_POINT, 1.0f, IMAGE_BACKING_MODE_SPARSE, true, useFragmentShadingRate));
+						samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_point_sparse",		"", pipelineConstructionType, samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_POINT, 3.0f, IMAGE_BACKING_MODE_SPARSE, true, useFragmentShadingRate));
+	#endif // CTS_USES_VULKANSC
+
+						minShadingValueTests->addChild(samplesTests.release());
+					}
+
+					minSampleShadingTests->addChild(minShadingValueTests.release());
 				}
 
-				minSampleShadingTests->addChild(minShadingValueTests.release());
+				multisampleTests->addChild(minSampleShadingTests.release());
 			}
-
-			multisampleTests->addChild(minSampleShadingTests.release());
 		}
 
+		// Input attachments are not supported with dynamic rendering and shader objects
+		if (!isConstructionTypeShaderObject(pipelineConstructionType))
 		{
 			TestCaseGroupPtr minSampleShadingTests(new tcu::TestCaseGroup(testCtx, "min_sample_shading_enabled", ""));
 
@@ -6218,6 +6248,8 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx, PipelineC
 			multisampleTests->addChild(minSampleShadingTests.release());
 		}
 
+		// Input attachments are not supported with dynamic rendering and shader objects
+		if (!isConstructionTypeShaderObject(pipelineConstructionType))
 		{
 			TestCaseGroupPtr minSampleShadingTests(new tcu::TestCaseGroup(testCtx, "min_sample_shading_disabled", ""));
 
@@ -6465,6 +6497,8 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx, PipelineC
 	}
 #endif // CTS_USES_VULKANSC
 
+	// Input attachments are not supported with dynamic rendering and shader objects
+	if (!isConstructionTypeShaderObject(pipelineConstructionType))
 	{
 		//Conservative rasterization test
 		struct TestConfig

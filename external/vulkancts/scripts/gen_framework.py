@@ -1874,7 +1874,7 @@ def writeNullDriverImpl (api, filename):
 				"vkGetPhysicalDeviceExternalBufferPropertiesKHR",
 				"vkGetPhysicalDeviceImageFormatProperties2KHR",
 				"vkGetMemoryAndroidHardwareBufferANDROID",
-                "vkCreateShadersEXT",
+				"vkCreateShadersEXT",
 			]
 
 		specialFuncs		= [f for f in api.functions if f.name in specialFuncNames]
@@ -2578,7 +2578,7 @@ def generateDeviceFeaturesOrPropertiesDefs(api, FeaturesOrProperties):
 						structureTypeName = structureType.name
 						break
 				# use data in structextends to skip structures that should not be passed to vkGetPhysicalDeviceProperties(/Features)2 function
-				if structureType.structextends is None or structureExtendsPattern not in structureType.structextends:
+				if structureType is None or structureType.structextends is None or structureExtendsPattern not in structureType.structextends:
 					continue
 				# meke sure that structure was not added earlier - this handles special
 				# cases like VkPhysicalDeviceIDPropertiesKHR added by 3 extensions

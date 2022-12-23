@@ -6,6 +6,8 @@
  *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Imagination Technologies Ltd.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -156,18 +158,17 @@ protected:
 	std::vector<SharedImagePtr>					m_colorImages;
 	std::vector<SharedAllocPtr>					m_colorImageAllocs;
 	std::vector<SharedImageViewPtr>				m_colorAttachmentViews;
-	vk::Move<vk::VkRenderPass>					m_renderPass;
-	vk::Move<vk::VkFramebuffer>					m_framebuffer;
+	vk::RenderPassWrapper						m_renderPass;
 
-	vk::Move<vk::VkShaderModule>				m_vertexShaderModule;
-	vk::Move<vk::VkShaderModule>				m_fragmentShaderModule;
+	vk::ShaderWrapper							m_vertexShaderModule;
+	vk::ShaderWrapper							m_fragmentShaderModule;
 
 	vk::Move<vk::VkBuffer>						m_vertexBuffer;
 	std::vector<Vertex4Tex4>					m_vertices;
 	de::MovePtr<vk::Allocation>					m_vertexBufferAlloc;
 
-	vk::Move<vk::VkPipelineLayout>				m_preRasterizationStatePipelineLayout;
-	vk::Move<vk::VkPipelineLayout>				m_fragmentStatePipelineLayout;
+	vk::PipelineLayoutWrapper					m_preRasterizationStatePipelineLayout;
+	vk::PipelineLayoutWrapper					m_fragmentStatePipelineLayout;
 	vk::GraphicsPipelineWrapper					m_graphicsPipeline;
 	const vk::PipelineConstructionType			m_pipelineConstructionType;
 

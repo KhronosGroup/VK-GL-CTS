@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 ARM Ltd.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -580,7 +582,7 @@ void TimestampTest::checkSupport (Context& context) const
 		if(context.getHostQueryResetFeatures().hostQueryReset == VK_FALSE)
 			throw tcu::NotSupportedError("Implementation doesn't support resetting queries from the host");
 	}
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 }
 
 TestInstance* TimestampTest::createInstance (Context& context) const
@@ -1495,6 +1497,7 @@ protected:
 												 VkFormat	depthFormat);
 
 protected:
+	const PipelineConstructionType	m_pipelineConstructionType;
 	const tcu::UVec2				m_renderSize;
 	const VkFormat					m_colorFormat;
 	const VkFormat					m_depthFormat;
@@ -1505,7 +1508,7 @@ protected:
 	de::MovePtr<Allocation>			m_depthImageAlloc;
 	Move<VkImageView>				m_colorAttachmentView;
 	Move<VkImageView>				m_depthAttachmentView;
-	Move<VkRenderPass>				m_renderPass;
+	RenderPassWrapper				m_renderPass;
 	Move<VkFramebuffer>				m_framebuffer;
 	VkImageMemoryBarrier			m_imageLayoutBarriers[2];
 
@@ -1513,7 +1516,7 @@ protected:
 	Move<VkBuffer>					m_vertexBuffer;
 	std::vector<Vertex4RGBA>		m_vertices;
 
-	Move<VkPipelineLayout>			m_pipelineLayout;
+	PipelineLayoutWrapper			m_pipelineLayout;
 	GraphicsPipelineWrapper			m_graphicsPipeline;
 };
 
@@ -1565,7 +1568,7 @@ void BasicGraphicsTestInstance::buildRenderPass (VkFormat colorFormat, VkFormat 
 	const DeviceInterface&	vk			= m_context.getDeviceInterface();
 
 	// Create render pass
-	m_renderPass = makeRenderPass(vk, m_device, colorFormat, depthFormat);
+	m_renderPass = RenderPassWrapper(m_pipelineConstructionType, vk, m_device, colorFormat, depthFormat);
 }
 
 void BasicGraphicsTestInstance::buildFrameBuffer (tcu::UVec2 renderSize, VkFormat colorFormat, VkFormat depthFormat)
@@ -1662,6 +1665,11 @@ void BasicGraphicsTestInstance::buildFrameBuffer (tcu::UVec2 renderSize, VkForma
 
 	// Create framebuffer
 	{
+		const std::vector<VkImage> images =
+		{
+			*m_colorImage,
+			*m_depthImage,
+		};
 		const VkImageView attachmentBindInfos[2] =
 		{
 			*m_colorAttachmentView,
@@ -1681,7 +1689,7 @@ void BasicGraphicsTestInstance::buildFrameBuffer (tcu::UVec2 renderSize, VkForma
 			1u,											// deUint32                     layers;
 		};
 
-		m_framebuffer = createFramebuffer(vk, m_device, &framebufferParams);
+		m_renderPass.createFramebuffer(vk, m_device, &framebufferParams, images);
 	}
 
 }
@@ -1692,11 +1700,12 @@ BasicGraphicsTestInstance::BasicGraphicsTestInstance (Context&							context,
 													  const bool						inRenderPass,
 													  const bool						hostQueryReset,
 													  const VkQueryResultFlags			queryResultFlags)
-													  : TimestampTestInstance (context,stages,inRenderPass, hostQueryReset, false, queryResultFlags)
-													  , m_renderSize		(32, 32)
-													  , m_colorFormat		(VK_FORMAT_R8G8B8A8_UNORM)
-													  , m_depthFormat		(VK_FORMAT_D16_UNORM)
-													  , m_graphicsPipeline	(context.getDeviceInterface(), context.getDevice(), pipelineConstructionType)
+													  : TimestampTestInstance		(context, stages, inRenderPass, hostQueryReset, false, queryResultFlags)
+													  , m_pipelineConstructionType	(pipelineConstructionType)
+													  , m_renderSize				(32, 32)
+													  , m_colorFormat				(VK_FORMAT_R8G8B8A8_UNORM)
+													  , m_depthFormat				(VK_FORMAT_D16_UNORM)
+													  , m_graphicsPipeline			(context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType)
 {
 	buildVertexBuffer();
 
@@ -1707,7 +1716,7 @@ BasicGraphicsTestInstance::BasicGraphicsTestInstance (Context&							context,
 	// Create pipeline layout
 	const DeviceInterface&				vk						= m_context.getDeviceInterface();
 	const VkPipelineLayoutCreateInfo	pipelineLayoutParams	= initVulkanStructure();
-	m_pipelineLayout = createPipelineLayout(vk, m_device, &pipelineLayoutParams);
+	m_pipelineLayout = PipelineLayoutWrapper(pipelineConstructionType, vk, m_device, &pipelineLayoutParams);
 }
 
 BasicGraphicsTestInstance::~BasicGraphicsTestInstance (void)
@@ -1784,8 +1793,8 @@ void BasicGraphicsTestInstance::buildPipeline(void)
 {
 	const DeviceInterface&		vk			= m_context.getDeviceInterface();
 
-	auto vertexShaderModule		= createShaderModule(vk, m_device, m_context.getBinaryCollection().get("color_vert"), 0);
-	auto fragmentShaderModule	= createShaderModule(vk, m_device, m_context.getBinaryCollection().get("color_frag"), 0);
+	auto vertexShaderModule		= ShaderWrapper(vk, m_device, m_context.getBinaryCollection().get("color_vert"), 0);
+	auto fragmentShaderModule	= ShaderWrapper(vk, m_device, m_context.getBinaryCollection().get("color_frag"), 0);
 
 	const std::vector<VkViewport>	viewports	{ makeViewport(m_renderSize) };
 	const std::vector<VkRect2D>		scissors	{ makeRect2D(m_renderSize) };
@@ -1797,13 +1806,13 @@ void BasicGraphicsTestInstance::buildPipeline(void)
 					  .setupVertexInputState(&defaultVertexInputStateParams)
 					  .setupPreRasterizationShaderState(viewports,
 														scissors,
-														*m_pipelineLayout,
+														m_pipelineLayout,
 														*m_renderPass,
 														0u,
-														*vertexShaderModule)
-					  .setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fragmentShaderModule, &defaultDepthStencilStateParams)
+														vertexShaderModule)
+					  .setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, fragmentShaderModule, &defaultDepthStencilStateParams)
 					  .setupFragmentOutputState(*m_renderPass)
-					  .setMonolithicPipelineLayout(*m_pipelineLayout)
+					  .setMonolithicPipelineLayout(m_pipelineLayout)
 					  .buildPipeline();
 }
 
@@ -1825,9 +1834,9 @@ void BasicGraphicsTestInstance::configCommandBuffer (void)
 	if (!m_hostQueryReset)
 		vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
 
-	beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), 2u, attachmentClearValues);
+	m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), 2u, attachmentClearValues);
 
-	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.getPipeline());
+	m_graphicsPipeline.bind(*m_cmdBuffer);
 	VkDeviceSize offsets = 0u;
 	vk.cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &m_vertexBuffer.get(), &offsets);
 	vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1u, 0u, 0u);
@@ -1842,7 +1851,7 @@ void BasicGraphicsTestInstance::configCommandBuffer (void)
 	  }
 	}
 
-	endRenderPass(vk, *m_cmdBuffer);
+	m_renderPass.end(vk, *m_cmdBuffer);
 
 	if(!m_inRenderPass)
 	{
@@ -2050,20 +2059,20 @@ void AdvGraphicsTestInstance::buildPipeline(void)
 	const std::vector<VkViewport>	viewports	{ makeViewport(m_renderSize) };
 	const std::vector<VkRect2D>		scissors	{ makeRect2D(m_renderSize) };
 
-	Move<VkShaderModule> vertShaderModule	= createShaderModule(vk, m_device, m_context.getBinaryCollection().get("color_vert"), 0);
-	Move<VkShaderModule> fragShaderModule	= createShaderModule(vk, m_device, m_context.getBinaryCollection().get("color_frag"), 0);
-	Move<VkShaderModule> tescShaderModule;
-	Move<VkShaderModule> teseShaderModule;
-	Move<VkShaderModule> geomShaderModule;
+	ShaderWrapper vertShaderModule	= ShaderWrapper(vk, m_device, m_context.getBinaryCollection().get("color_vert"), 0);
+	ShaderWrapper fragShaderModule	= ShaderWrapper(vk, m_device, m_context.getBinaryCollection().get("color_frag"), 0);
+	ShaderWrapper tescShaderModule;
+	ShaderWrapper teseShaderModule;
+	ShaderWrapper geomShaderModule;
 
 	if (m_features.tessellationShader)
 	{
-		tescShaderModule	= createShaderModule(vk, m_device, m_context.getBinaryCollection().get("basic_tcs"), 0);
-		teseShaderModule	= createShaderModule(vk, m_device, m_context.getBinaryCollection().get("basic_tes"), 0);
+		tescShaderModule	= ShaderWrapper(vk, m_device, m_context.getBinaryCollection().get("basic_tcs"), 0);
+		teseShaderModule	= ShaderWrapper(vk, m_device, m_context.getBinaryCollection().get("basic_tes"), 0);
 	}
 
 	if (m_features.geometryShader)
-		geomShaderModule	= createShaderModule(vk, m_device, m_context.getBinaryCollection().get("unused_geo"), 0);
+		geomShaderModule	= ShaderWrapper(vk, m_device, m_context.getBinaryCollection().get("unused_geo"), 0);
 
 	// Create pipeline
 	m_graphicsPipeline.setDefaultTopology(m_features.tessellationShader ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
@@ -2073,17 +2082,17 @@ void AdvGraphicsTestInstance::buildPipeline(void)
 					  .setupVertexInputState(&defaultVertexInputStateParams)
 					  .setupPreRasterizationShaderState(viewports,
 														scissors,
-														*m_pipelineLayout,
+														m_pipelineLayout,
 														*m_renderPass,
 														0u,
-														*vertShaderModule,
+														vertShaderModule,
 														DE_NULL,
-														*tescShaderModule,
-														*teseShaderModule,
-														*geomShaderModule)
-					  .setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fragShaderModule, &defaultDepthStencilStateParams)
+														tescShaderModule,
+														teseShaderModule,
+														geomShaderModule)
+					  .setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, fragShaderModule, &defaultDepthStencilStateParams)
 					  .setupFragmentOutputState(*m_renderPass)
-					  .setMonolithicPipelineLayout(*m_pipelineLayout)
+					  .setMonolithicPipelineLayout(m_pipelineLayout)
 					  .buildPipeline();
 }
 
@@ -2105,9 +2114,9 @@ void AdvGraphicsTestInstance::configCommandBuffer (void)
 	if (!m_hostQueryReset)
 		vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
 
-	beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), 2u, attachmentClearValues);
+	m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), 2u, attachmentClearValues);
 
-	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.getPipeline());
+	m_graphicsPipeline.bind(*m_cmdBuffer);
 
 	VkDeviceSize offsets = 0u;
 	vk.cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &m_vertexBuffer.get(), &offsets);
@@ -2123,7 +2132,7 @@ void AdvGraphicsTestInstance::configCommandBuffer (void)
 	  }
 	}
 
-	endRenderPass(vk, *m_cmdBuffer);
+	m_renderPass.end(vk, *m_cmdBuffer);
 
 	if(!m_inRenderPass)
 	{

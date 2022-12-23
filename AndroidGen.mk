@@ -32,6 +32,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/framework/vulkan/vkBufferWithMemory.cpp \
 	external/vulkancts/framework/vulkan/vkBuilderUtil.cpp \
 	external/vulkancts/framework/vulkan/vkCmdUtil.cpp \
+	external/vulkancts/framework/vulkan/vkComputePipelineConstructionUtil.cpp \
 	external/vulkancts/framework/vulkan/vkDebugReportUtil.cpp \
 	external/vulkancts/framework/vulkan/vkDefs.cpp \
 	external/vulkancts/framework/vulkan/vkDeviceFeatures.cpp \
@@ -54,6 +55,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/framework/vulkan/vkRenderDocUtil.cpp \
 	external/vulkancts/framework/vulkan/vkResourceInterface.cpp \
 	external/vulkancts/framework/vulkan/vkSafetyCriticalUtil.cpp \
+	external/vulkancts/framework/vulkan/vkShaderObjectUtil.cpp \
 	external/vulkancts/framework/vulkan/vkShaderProgram.cpp \
 	external/vulkancts/framework/vulkan/vkShaderToSpirV.cpp \
 	external/vulkancts/framework/vulkan/vkSpirVAsm.cpp \
@@ -437,6 +439,17 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/sc/vktPipelineIdentifierTests.cpp \
 	external/vulkancts/modules/vulkan/sc/vktSafetyCriticalApiTests.cpp \
 	external/vulkancts/modules/vulkan/sc/vktSafetyCriticalTests.cpp \
+	external/vulkancts/modules/vulkan/shader_object/vktShaderObjectApiTests.cpp \
+	external/vulkancts/modules/vulkan/shader_object/vktShaderObjectBinaryTests.cpp \
+	external/vulkancts/modules/vulkan/shader_object/vktShaderObjectBindingTests.cpp \
+	external/vulkancts/modules/vulkan/shader_object/vktShaderObjectCreateTests.cpp \
+	external/vulkancts/modules/vulkan/shader_object/vktShaderObjectCreateUtil.cpp \
+	external/vulkancts/modules/vulkan/shader_object/vktShaderObjectLinkTests.cpp \
+	external/vulkancts/modules/vulkan/shader_object/vktShaderObjectMiscTests.cpp \
+	external/vulkancts/modules/vulkan/shader_object/vktShaderObjectPerformanceTests.cpp \
+	external/vulkancts/modules/vulkan/shader_object/vktShaderObjectPipelineInteractionTests.cpp \
+	external/vulkancts/modules/vulkan/shader_object/vktShaderObjectRenderingTests.cpp \
+	external/vulkancts/modules/vulkan/shader_object/vktShaderObjectTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktAtomicOperationTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktOpaqueTypeIndexingTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderBuiltinPrecisionTests.cpp \
@@ -1377,6 +1390,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/renderpass \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/robustness \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/sc \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/shader_object \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/shaderexecutor \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/shaderrender \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/sparse_resources \
