@@ -66,19 +66,22 @@ class SourcePackage (Source):
 		self.checksum		= checksum
 		self.archiveDir		= "packages"
 		self.postExtract	= postExtract
+		self.sysNdx			= {"Windows":0, "Linux":1, "Darwin":2}[platform.system()]
+		self.FFmpeg			= "FFmpeg" in url
 
 	def clean (self):
 		Source.clean(self)
 		self.removeArchives()
 
 	def update (self, cmdProtocol = None, force = False):
-		if not self.isArchiveUpToDate():
-			self.fetchAndVerifyArchive()
+		if self.sysNdx != 2:
+			if not self.isArchiveUpToDate():
+				self.fetchAndVerifyArchive()
 
-		if self.getExtractedChecksum() != self.checksum:
-			Source.clean(self)
-			self.extract()
-			self.storeExtractedChecksum(self.checksum)
+			if self.getExtractedChecksum() != self.checksum:
+				Source.clean(self)
+				self.extract()
+				self.storeExtractedChecksum(self.checksum)
 
 	def removeArchives (self):
 		archiveDir = os.path.join(EXTERNAL_DIR, pkg.baseDir, pkg.archiveDir)
@@ -295,8 +298,8 @@ PACKAGES = [
 		"libpng",
 		postExtract = postExtractLibpng),
 	SourcePackage(
-		{"Windows":"https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-05-31-12-34/ffmpeg-n4.4.2-1-g8e98dfc57f-win64-lgpl-shared-4.4.zip", "Linux": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-05-31-12-34/ffmpeg-n4.4.2-1-g8e98dfc57f-linux64-gpl-shared-4.4.tar.xz"}[platform.system()],
-		{"Windows":"670df8e9d2ddd5e761459b3538f64b8826566270ef1ed13bcbfc63e73aab3fd9","Linux":"817f8c93ff1ef7ede3dad15b20415d5e366bcd6848844d55046111fd3de827d0"}[platform.system()],
+        {"Windows":"https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-05-31-12-34/ffmpeg-n4.4.2-1-g8e98dfc57f-win64-lgpl-shared-4.4.zip", "Linux": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-05-31-12-34/ffmpeg-n4.4.2-1-g8e98dfc57f-linux64-gpl-shared-4.4.tar.xz", "Darwin":""}[platform.system()],
+        {"Windows":"670df8e9d2ddd5e761459b3538f64b8826566270ef1ed13bcbfc63e73aab3fd9","Linux":"817f8c93ff1ef7ede3dad15b20415d5e366bcd6848844d55046111fd3de827d0", "Darwin":""}[platform.system()],
 		"ffmpeg"),
 	SourceFile(
 		"https://raw.githubusercontent.com/baldurk/renderdoc/v1.1/renderdoc/api/app/renderdoc_app.h",
@@ -388,7 +391,7 @@ def run(*popenargs, **kwargs):
 if __name__ == "__main__":
 	# Rerun script with python3 as python2 does not have lzma (xz) decompression support
 	if sys.version_info < (3, 0):
-		cmd = {"Windows": ['py', '-3'], "Linux": ['python3']}[platform.system()]
+		cmd = {"Windows": ['py', '-3'], "Linux": ['python3'], "Darwin": ['python3']}[platform.system()]
 		cmd = cmd + sys.argv
 		run(cmd)
 	else:

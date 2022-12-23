@@ -33,6 +33,7 @@
 #include "tcuFunctionLibrary.hpp"
 #include "tcuImageCompare.hpp"
 
+#include <deDefs.h>
 #include "vkDefs.hpp"
 #include "vkBufferWithMemory.hpp"
 #include "vkImageWithMemory.hpp"
@@ -44,10 +45,10 @@
 
 #include "../ycbcr/vktYCbCrUtil.hpp"
 
-#if (DE_OS != DE_OS_ANDROID)
-#include "vktVideoSessionNvUtils.hpp"
-#include "vktVideoSessionFfmpegUtils.hpp"
-#include "vktVideoBaseDecodeUtils.hpp"
+#ifdef DE_BUILD_VIDEO
+	#include "vktVideoSessionNvUtils.hpp"
+	#include "vktVideoSessionFfmpegUtils.hpp"
+	#include "vktVideoBaseDecodeUtils.hpp"
 #endif
 
 
@@ -96,7 +97,7 @@ struct CaseDef
 
 // Vulkan video is not supported on android platform
 // all external libraries, helper functions and test instances has been excluded
-#if (DE_OS != DE_OS_ANDROID)
+#ifdef DE_BUILD_VIDEO
 DecodedFrame initDecodeFrame (void)
 {
 	DecodedFrame							frameTemplate =
@@ -1075,7 +1076,7 @@ bool DualVideoDecodeTestInstance::verifyImage (bool firstClip, int32_t frameNumb
 
 	return resultV && resultY && resultU;
 }
-#endif // DE_OS != DE_OS_ANDROID
+#endif // #ifdef DE_BUILD_VIDEO
 class VideoDecodeTestCase : public TestCase
 {
 	public:
@@ -1159,7 +1160,7 @@ TestInstance* VideoDecodeTestCase::createInstance (Context& context) const
 		case TEST_TYPE_H265_DECODE_I_P_B_13:
 		case TEST_TYPE_H265_DECODE_I_P_B_13_NOT_MATCHING_ORDER:
 		{
-#if (DE_OS != DE_OS_ANDROID)
+#ifdef DE_BUILD_VIDEO
 			return new VideoDecodeTestInstance(context, m_caseDef);
 #endif
 		}
@@ -1167,14 +1168,14 @@ TestInstance* VideoDecodeTestCase::createInstance (Context& context) const
 		case TEST_TYPE_H264_BOTH_DECODE_ENCODE_INTERLEAVED:
 		case TEST_TYPE_H264_H265_DECODE_INTERLEAVED:
 		{
-#if (DE_OS != DE_OS_ANDROID)
+#ifdef DE_BUILD_VIDEO
 			return new DualVideoDecodeTestInstance(context, m_caseDef);
 #endif
 		}
 		default:
 			TCU_THROW(InternalError, "Unknown TestType");
 	}
-#if (DE_OS == DE_OS_ANDROID)
+#ifndef DE_BUILD_VIDEO
 	DE_UNREF(context);
 #endif
 
