@@ -66,25 +66,28 @@ class SourcePackage (Source):
 		self.checksum		= checksum
 		self.archiveDir		= "packages"
 		self.postExtract	= postExtract
+		self.sysNdx			= {"Windows":0, "Linux":1, "Darwin":2}[platform.system()]
+		self.FFmpeg			= "FFmpeg" in url
 
-		if ("FFmpeg" in url):
-			ndx = {"Windows":0, "Linux":1}[platform.system()]
-			self.url = self.url.split()[ndx]
-			self.checksum =	self.checksum.split()[ndx]
-			self.filename =	self.filename.split()[ndx]
+		if self.FFmpeg:
+			if self.sysNdx != 2:
+				self.url = self.url.split()[self.sysNdx]
+				self.checksum =	self.checksum.split()[self.sysNdx]
+				self.filename =	self.filename.split()[self.sysNdx]
 
 	def clean (self):
 		Source.clean(self)
 		self.removeArchives()
 
 	def update (self, cmdProtocol = None, force = False):
-		if not self.isArchiveUpToDate():
-			self.fetchAndVerifyArchive()
+		if self.sysNdx != 2:
+			if not self.isArchiveUpToDate():
+				self.fetchAndVerifyArchive()
 
-		if self.getExtractedChecksum() != self.checksum:
-			Source.clean(self)
-			self.extract()
-			self.storeExtractedChecksum(self.checksum)
+			if self.getExtractedChecksum() != self.checksum:
+				Source.clean(self)
+				self.extract()
+				self.storeExtractedChecksum(self.checksum)
 
 	def removeArchives (self):
 		archiveDir = os.path.join(EXTERNAL_DIR, pkg.baseDir, pkg.archiveDir)
@@ -397,7 +400,7 @@ def run(*popenargs, **kwargs):
 if __name__ == "__main__":
 	# Rerun script with python3 as python2 does not have lzma (xz) decompression support
 	if sys.version_info < (3, 0):
-		cmd = {"Windows": ['py', '-3'], "Linux": ['python3']}[platform.system()]
+		cmd = {"Windows": ['py', '-3'], "Linux": ['python3'], "Darwin": ['python3']}[platform.system()]
 		cmd = cmd + sys.argv
 		run(cmd)
 	else:

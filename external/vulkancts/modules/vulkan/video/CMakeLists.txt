@@ -1,7 +1,7 @@
 include_directories(..)
 include_directories(${FFMPEG_INCLUDE_PATH})
 
-set(DEQP_VK_VIDEO_SRC_TARGET_DEPENDENT
+set(DEQP_VK_VIDEO_SRCS
 	extFFmpegDemuxer.h
 	extNvidiaVideoParserIf.hpp
 	vktVideoSessionNvUtils.cpp
@@ -10,29 +10,18 @@ set(DEQP_VK_VIDEO_SRC_TARGET_DEPENDENT
 	vktVideoSessionFfmpegUtils.hpp
 	vktVideoBaseDecodeUtils.hpp
 	vktVideoBaseDecodeUtils.cpp
-	)
-
-set(DEQP_VK_VIDEO_SRCS_TARGET_INDEPENDENT
+	vktVideoDecodeTests.cpp
+	vktVideoDecodeTests.hpp
 	vktVideoPictureUtils.cpp
 	vktVideoPictureUtils.hpp
 	vktVideoCapabilitiesTests.cpp
 	vktVideoCapabilitiesTests.hpp
-	vktVideoDecodeTests.cpp
-	vktVideoDecodeTests.hpp
 	vktVideoTestUtils.cpp
 	vktVideoTestUtils.hpp
 	vktVideoTests.cpp
 	vktVideoTests.hpp
 	)
 
-if (DE_OS_IS_ANDROID)
-	set(DEQP_VK_VIDEO_SRCS ${DEQP_VK_VIDEO_SRCS_TARGET_INDEPENDENT})
-	else()
-	set(DEQP_VK_VIDEO_SRCS
-		${DEQP_VK_VIDEO_SRC_TARGET_DEPENDENT}
-		${DEQP_VK_VIDEO_SRCS_TARGET_INDEPENDENT}
-		)
-endif()
 
 set(DEQP_VK_VIDEO_LIBS
 	tcutil
