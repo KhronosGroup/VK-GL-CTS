@@ -750,19 +750,23 @@ void verifyQueryCounter (uint64_t readVal, uint64_t expectedMinVal, uint64_t exp
 	uint64_t minVal = expectedMinVal;
 	uint64_t maxVal = expectedMaxVal;
 
+	// Resetting a query via vkCmdResetQueryPool or vkResetQueryPool sets the status to unavailable and makes the numerical results undefined.
 	const bool wasReset = (params.resetType == ResetCase::BEFORE_ACCESS);
 
-	if (!params.waitBit || wasReset)
-		minVal = 0ull;
-
-	if (wasReset)
-		maxVal = 0ull;
-
-	if (!de::inRange(readVal, minVal, maxVal))
+	if (!wasReset)
 	{
-		std::ostringstream msg;
-		msg << queryName << " not in expected range: " << readVal << " out of [" << minVal << ", " << maxVal << "]";
-		TCU_FAIL(msg.str());
+		if (!params.waitBit || wasReset)
+			minVal = 0ull;
+
+		if (wasReset)
+			maxVal = 0ull;
+
+		if (!de::inRange(readVal, minVal, maxVal))
+		{
+			std::ostringstream msg;
+			msg << queryName << " not in expected range: " << readVal << " out of [" << minVal << ", " << maxVal << "]";
+			TCU_FAIL(msg.str());
+		}
 	}
 }
 
