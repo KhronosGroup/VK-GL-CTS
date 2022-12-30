@@ -376,7 +376,7 @@ MultipleClearsTest::MultipleClearsTest (Context &context, const TestParams& para
 		hasColor,
 		(hasColor ? &m_params.colorFormat : DE_NULL),
 		m_params.depthFormat,
-		m_params.depthFormat
+		VK_FORMAT_UNDEFINED
 	};
 
 	if (m_params.groupParams->useDynamicRendering)
