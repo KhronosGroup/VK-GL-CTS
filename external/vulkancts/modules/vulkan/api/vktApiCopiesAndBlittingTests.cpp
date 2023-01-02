@@ -13636,6 +13636,7 @@ void addResolveImageWholeTests (tcu::TestCaseGroup* group, AllocationKind alloca
 
 	for (int samplesIndex = 0; samplesIndex < DE_LENGTH_OF_ARRAY(samples); ++samplesIndex)
 	{
+		params.imageOffset = false;
 		params.samples					= samples[samplesIndex];
 		const std::string description	= "With " + getSampleCountCaseName(samples[samplesIndex]);
 		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params));
@@ -13712,7 +13713,7 @@ void addResolveImageWithRegionsTests (tcu::TestCaseGroup* group, AllocationKind 
 	params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	params.allocationKind				= allocationKind;
 	params.extensionUse					= extensionUse;
-	params.imageOffset					= true;
+	params.imageOffset					= allocationKind != ALLOCATION_KIND_DEDICATED;
 
 	{
 		const VkImageSubresourceLayers	sourceLayer	=
