@@ -579,6 +579,12 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 				const std::string message = std::string("xfbWritten == ") + de::toString(xfbWritten) + ", expected " + de::toString(primitivesWritten);
 				return tcu::TestStatus::fail(message);
 			}
+
+			if (xfbWritten != (primitivesGenerated - 3))
+			{
+				const std::string message = std::string("xfbWritten == ") + de::toString(xfbWritten) + ", expected " + de::toString(primitivesGenerated - 3);
+				return tcu::TestStatus::fail(message);
+			}
 		}
 	}
 
