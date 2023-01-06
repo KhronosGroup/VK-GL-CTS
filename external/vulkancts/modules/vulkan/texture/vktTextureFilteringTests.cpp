@@ -145,6 +145,15 @@ void checkTextureSupport (Context& context, const Texture3DTestCaseParameters& t
 #endif
 }
 
+template <>
+void checkTextureSupport (Context& context, const TextureCubeFilteringTestCaseParameters& testParameters)
+{
+#ifndef CTS_USES_VULKANSC
+	if (testParameters.format == VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16 && context.getRGBA10X6FormatsFeaturesEXT().formatRgba10x6WithoutYCbCrSampler == VK_FALSE)
+		TCU_THROW(NotSupportedError, "formatRgba10x6WithoutYCbCrSampler not supported");
+#endif
+}
+
 } // util
 
 namespace
@@ -380,11 +389,6 @@ tcu::TestStatus Texture2DFilteringTestInstance::iterate (void)
 	m_caseNdx += 1;
 	return m_caseNdx < (int)m_cases.size() ? tcu::TestStatus::incomplete() : tcu::TestStatus::pass("Pass");
 }
-
-struct TextureCubeFilteringTestCaseParameters : public TextureCubeTestCaseParameters
-{
-	bool	onlySampleFaceInterior;
-};
 
 class TextureCubeFilteringTestInstance : public TestInstance
 {

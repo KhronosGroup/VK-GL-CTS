@@ -1734,6 +1734,11 @@ TextureCubeArrayTestCaseParameters::TextureCubeArrayTestCaseParameters (void)
 {
 }
 
+TextureCubeFilteringTestCaseParameters::TextureCubeFilteringTestCaseParameters (void)
+	: onlySampleFaceInterior	(false)
+{
+}
+
 } // util
 } // texture
 } // vkt
