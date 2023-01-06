@@ -109,7 +109,7 @@ void checkTextureSupport (Context& context, const Texture2DTestCaseParameters& t
 		context.requireDeviceFunctionality("VK_KHR_sampler_mirror_clamp_to_edge");
 
 #ifndef CTS_USES_VULKANSC
-	if (testParameters.format == VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16 && testParameters.mipmaps && context.getRGBA10X6FormatsFeaturesEXT().formatRgba10x6WithoutYCbCrSampler == VK_FALSE)
+	if (testParameters.format == VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16 && context.getRGBA10X6FormatsFeaturesEXT().formatRgba10x6WithoutYCbCrSampler == VK_FALSE)
 		TCU_THROW(NotSupportedError, "formatRgba10x6WithoutYCbCrSampler not supported");
 #endif
 }
