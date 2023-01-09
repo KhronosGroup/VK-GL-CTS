@@ -28,6 +28,8 @@ set(DEQP_VK_MEMORY_SRCS
 	vktMemoryAddressBindingTests.hpp
 	vktMemoryDeviceMemoryReportTests.cpp
 	vktMemoryDeviceMemoryReportTests.hpp
+	vktMemoryExternalMemoryAcquireUnmodifiedTests.cpp
+	vktMemoryExternalMemoryAcquireUnmodifiedTests.hpp
 	)
 
 PCH(DEQP_VK_MEMORY_SRCS ../pch.cpp)
