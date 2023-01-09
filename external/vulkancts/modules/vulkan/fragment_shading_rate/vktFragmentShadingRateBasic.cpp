@@ -1496,9 +1496,9 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 			VkFormat srFormat = srFillFormats[formatIdx];
 			deUint32 srFillBpp = tcu::getPixelSize(mapVkFormat(srFormat));
 
-			VkImageLayout srLayout = modeIdx == ATTACHMENT_MODE_LAYOUT_OPTIMAL ? VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR : VK_IMAGE_LAYOUT_GENERAL;
-			VkImageViewType srViewType = modeIdx == ATTACHMENT_MODE_2DARRAY ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D;
-			VkImageTiling srTiling = (modeIdx == ATTACHMENT_MODE_TILING_LINEAR) ? VK_IMAGE_TILING_LINEAR : VK_IMAGE_TILING_OPTIMAL;
+			VkImageLayout	srLayout	= modeIdx == ATTACHMENT_MODE_LAYOUT_OPTIMAL ? VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR : VK_IMAGE_LAYOUT_GENERAL;
+			VkImageViewType srViewType	= (modeIdx == ATTACHMENT_MODE_2DARRAY || numSRLayers > 1u) ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D;
+			VkImageTiling	srTiling	= (modeIdx == ATTACHMENT_MODE_TILING_LINEAR) ? VK_IMAGE_TILING_LINEAR : VK_IMAGE_TILING_OPTIMAL;
 
 			VkFormatProperties srFormatProperties;
 			m_context.getInstanceInterface().getPhysicalDeviceFormatProperties(m_context.getPhysicalDevice(), srFormat, &srFormatProperties);
@@ -1839,7 +1839,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 						srWidth,													//  deUint32			width;
 						srHeight,													//  deUint32			height;
 						numSRLayers,												//  deUint32			layerCount;
-						1u,															//  deUint32			viewFormatCount;
+						srViewType == VK_IMAGE_VIEW_TYPE_2D ? 1 : numSRLayers,		//  deUint32			viewFormatCount;
 						&srFormat													//  const VkFormat*		pViewFormats;
 					}
 					);
