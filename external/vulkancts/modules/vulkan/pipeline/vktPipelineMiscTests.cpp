@@ -982,6 +982,7 @@ tcu::TestStatus UnusedShaderStagesInstance::iterate ()
 
 	VkGraphicsPipelineCreateInfo linkedPipelineInfo	= initVulkanStructure(&linkedPipelineLibraryInfo);
 	linkedPipelineInfo.flags						= linkFlags;
+	linkedPipelineInfo.layout						= pipelineLayout.get();
 	linkedPipelineInfo.stageCount					= de::sizeU32(allBadStages);
 	linkedPipelineInfo.pStages						= de::dataOrNull(allBadStages);
 
