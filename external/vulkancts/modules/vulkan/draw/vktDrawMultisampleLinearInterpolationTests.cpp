@@ -627,6 +627,8 @@ void MultisampleLinearInterpolationTestCase::initPrograms (SourceCollections& pr
 
 void MultisampleLinearInterpolationTestCase::checkSupport (Context& context) const
 {
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
+
 	if (!(m_sampleCountFlagBits & context.getDeviceProperties().limits.framebufferColorSampleCounts))
 		TCU_THROW(NotSupportedError, "Multisampling with " + de::toString(m_sampleCountFlagBits) + " samples not supported");
 
