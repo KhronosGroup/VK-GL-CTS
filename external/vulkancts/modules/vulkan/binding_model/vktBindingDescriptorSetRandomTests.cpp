@@ -3073,7 +3073,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	if (failures == 0)
 		return tcu::TestStatus::pass("Pass");
 	else
-		return tcu::TestStatus::fail("Fail (failures=" + de::toString(failures) + ")");
+		return tcu::TestStatus::fail("failures=" + de::toString(failures));
 }
 
 }	// anonymous
