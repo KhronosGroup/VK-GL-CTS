@@ -118,26 +118,10 @@ include_directories(external/renderdoc/src)
 
 # FFmpeg used in vulkan video won't be part of android target
 if (NOT DE_OS_IS_ANDROID)
-	# FFmpeg
 	if (DE_OS_IS_WIN32)
 		add_subdirectory(external/ffmpeg)
-		include_directories(external/ffmpeg/src/include)
-	else()
-		find_package(FFmpeg REQUIRED)
-		# FFMPEG_FOUND - system has ffmpeg or libav
-		# FFMPEG_INCLUDE_DIR - the ffmpeg include directory
-		# FFMPEG_LIBRARIES
-		# FFMPEG_LIBAVCODEC
-		# FFMPEG_LIBAVFORMAT
-		# FFMPEG_LIBAVUTIL
-		if(FFMPEG_FOUND)
-			message("Found FFMPEG/LibAV libraries")
-			include_directories(${FFMPEG_INCLUDE_DIR})
-		else()
-			#add_subdirectory(external/ffmpeg)
-			include_directories(external/ffmpeg/src/include)
-		endif()
 	endif()
+	include_directories(external/ffmpeg/src/include)
 endif()
 include_directories(${PNG_INCLUDE_PATH})
 
