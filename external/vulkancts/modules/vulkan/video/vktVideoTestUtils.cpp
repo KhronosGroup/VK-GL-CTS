@@ -389,8 +389,8 @@ de::MovePtr<VkVideoSessionCreateInfoKHR> getVideoSessionCreateInfo (deUint32				
 	//FIXME: last spec version accepted by the parser function
 	//const VkExtensionProperties*				extensionProperties		= getVideoExtensionProperties(videoProfile->videoCodecOperation);
 
-	static const vk::VkExtensionProperties h264StdExtensionVersion = { VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_EXTENSION_NAME, VK_MAKE_VIDEO_STD_VERSION(0, 9, 8) };
-	static const vk::VkExtensionProperties h265StdExtensionVersion = { VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_EXTENSION_NAME, VK_MAKE_VIDEO_STD_VERSION(0, 9, 9) };
+	static const vk::VkExtensionProperties h264StdExtensionVersion = { VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_EXTENSION_NAME, VK_MAKE_VIDEO_STD_VERSION(1, 0, 0) };
+	static const vk::VkExtensionProperties h265StdExtensionVersion = { VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_EXTENSION_NAME, VK_MAKE_VIDEO_STD_VERSION(1, 0, 0) };
 
 	VkVideoSessionCreateInfoKHR*				videoSessionCreateInfo	= new VkVideoSessionCreateInfoKHR
 	{
