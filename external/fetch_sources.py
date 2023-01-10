@@ -349,7 +349,7 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/nvpro-samples/vk_video_samples.git",
 		None,
-		"68398ce672fb3b331ee6c998392951bba37e7e4d",
+		"7d68747d3524842afaf050c5e00a10f5b8c07904",
 		"video-parser"),
 ]
 
