@@ -49,13 +49,7 @@
 namespace vk_json {
 
 static thread_local int s_num_spaces    = 0;
-#if defined(USE_THREAD_LOCAL_WAR)
-// Workaround (off by default) for certain platforms that have a thread_local libc bug
-std::stringstream & TLSGetStrStream();
-#define _string_stream  TLSGetStrStream()
-#else
 static thread_local std::stringstream _string_stream;
-#endif
 
 static void dumpPNextChain(const void* pNext);
 

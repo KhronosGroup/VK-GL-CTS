@@ -109,13 +109,7 @@ private:
     T1 m_pointer;
 };
 
-#if defined(USE_THREAD_LOCAL_WAR)
-// Workaround (off by default) for certain platforms that have a thread_local libc bug
-vk_json_parser::GlobalMem<deUint32, deUint8> & TLSGetGlobalMem();
-#define s_globalMem TLSGetGlobalMem()
-#else
 static thread_local GlobalMem<deUint32, deUint8> s_globalMem(32768U);
-#endif
 
 // To make sure the generated data is consistent across platforms,
 // we typecast to 32-bit.

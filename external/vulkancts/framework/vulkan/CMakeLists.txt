@@ -171,7 +171,6 @@ set(VKSCUTILNOSHADER_INLS
 	generated/vulkansc/vkDeviceProperties.inl
 	generated/vulkansc/vulkan_json_data.hpp
 	generated/vulkansc/vulkan_json_parser.hpp
-	generated/vulkansc/tlsWrapper.hpp
 	)
 
 set(VKUTIL_SRCS
