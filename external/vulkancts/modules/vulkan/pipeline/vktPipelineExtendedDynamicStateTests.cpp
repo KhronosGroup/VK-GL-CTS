@@ -2661,8 +2661,35 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 		if (m_testConfig.coverageModTableConfig.dynamicValue && !eds3Features.extendedDynamicState3CoverageModulationTable)
 			TCU_THROW(NotSupportedError, "extendedDynamicState3CoverageModulationTable not supported");
 
-		if (m_testConfig.coverageReductionModeConfig.dynamicValue && !eds3Features.extendedDynamicState3CoverageReductionMode)
-			TCU_THROW(NotSupportedError, "extendedDynamicState3CoverageReductionMode not supported");
+		if (m_testConfig.coverageReductionModeConfig.dynamicValue)
+		{
+			if (!eds3Features.extendedDynamicState3CoverageReductionMode)
+				TCU_THROW(NotSupportedError, "extendedDynamicState3CoverageReductionMode not supported");
+
+			uint32_t combinationCount = 0U;
+			auto result = vki.getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV(physicalDevice, &combinationCount, nullptr);
+			if (result != vk::VK_SUCCESS || combinationCount == 0U)
+				TCU_THROW(NotSupportedError, "vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV supported no combinations");
+
+			std::vector<vk::VkFramebufferMixedSamplesCombinationNV> combinations(combinationCount);
+			result = vki.getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV(physicalDevice, &combinationCount, combinations.data());
+			if (result != vk::VK_SUCCESS)
+				TCU_THROW(NotSupportedError, "vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV supported no combinations");
+
+			auto findCombination = [&](vk::VkCoverageReductionModeNV const coverageReductionMode) -> bool {
+				for (uint32_t i = 0U; i < combinationCount; ++i) {
+					if (combinations[i].rasterizationSamples == m_testConfig.rasterizationSamplesConfig.staticValue &&
+						combinations[i].colorSamples == m_testConfig.getColorSampleCount() &&
+						combinations[i].coverageReductionMode == coverageReductionMode) {
+
+						return true;
+					}
+				}
+				return false;
+			};
+			if (!findCombination(m_testConfig.coverageReductionModeConfig.staticValue) || !findCombination(m_testConfig.coverageReductionModeConfig.dynamicValue.get()))
+				TCU_THROW(NotSupportedError, "vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV no matching combination found");
+		}
 
 		if (m_testConfig.viewportSwizzleConfig.dynamicValue && !eds3Features.extendedDynamicState3ViewportSwizzle)
 			TCU_THROW(NotSupportedError, "extendedDynamicState3ViewportSwizzle not supported");
@@ -3593,6 +3620,7 @@ protected:
 };
 
 // This one creates a new device with VK_NV_shading_rate_image and VK_EXT_extended_dynamic_state3.
+// It also enables VK_EXT_mesh_shader if supported, as some tests need it.
 class ShadingRateImageDeviceHelper : public DeviceHelper
 {
 public:
@@ -3618,18 +3646,26 @@ public:
 			&queuePriority									// const float*					pQueuePriorities;
 		};
 
-		const char* extensions[] =
-		{
-			"VK_EXT_extended_dynamic_state3",
-			"VK_NV_shading_rate_image",
-		};
-
 #ifndef CTS_USES_VULKANSC
-		vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT	eds3Features				= vk::initVulkanStructure();
+		const auto&	contextMeshFeatures	= context.getMeshShaderFeaturesEXT();
+		const bool	meshShaderSupport	= contextMeshFeatures.meshShader;
+
+		vk::VkPhysicalDeviceMeshShaderFeaturesEXT				meshFeatures				= vk::initVulkanStructure();
+		vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT	eds3Features				= vk::initVulkanStructure(meshShaderSupport ? &meshFeatures : nullptr);
 		vk::VkPhysicalDeviceShadingRateImageFeaturesNV			shadingRateImageFeatures	= vk::initVulkanStructure(&eds3Features);
 		vk::VkPhysicalDeviceFeatures2							features2					= vk::initVulkanStructure(&shadingRateImageFeatures);
 
 		vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
+#endif // CTS_USES_VULKANSC
+
+		std::vector<const char*> extensions
+		{
+			"VK_EXT_extended_dynamic_state3",
+			"VK_NV_shading_rate_image",
+		};
+#ifndef CTS_USES_VULKANSC
+		if (meshShaderSupport)
+			extensions.push_back("VK_EXT_mesh_shader");
 #endif // CTS_USES_VULKANSC
 
 		const vk::VkDeviceCreateInfo deviceCreateInfo =
@@ -3645,8 +3681,8 @@ public:
 			&queueParams,											//pRequestedQueues;
 			0u,														//layerCount;
 			nullptr,												//ppEnabledLayerNames;
-			static_cast<uint32_t>(de::arrayLength(extensions)),		// deUint32							enabledExtensionCount;
-			extensions,												// const char* const*				ppEnabledExtensionNames;
+			de::sizeU32(extensions),								// deUint32							enabledExtensionCount;
+			de::dataOrNull(extensions),								// const char* const*				ppEnabledExtensionNames;
 			nullptr,												//pEnabledFeatures;
 		};
 
@@ -5178,15 +5214,58 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	// Check storage buffer if used.
 	if (m_testConfig.representativeFragmentTest)
 	{
+		DE_ASSERT(m_testConfig.oversizedTriangle);
+		DE_ASSERT(m_testConfig.meshParams.size() == 1u);
+		DE_ASSERT(!m_testConfig.depthWriteEnableConfig.dynamicValue);	// No dynamic value for depth writes.
+		DE_ASSERT(!m_testConfig.depthWriteEnableConfig.staticValue);	// No depth writes.
+
+		// The expected number of invocations depends on how many draws are performed with the test enabled.
+		// Draws with the test disabled should always result in kFramebufferHeight * kFramebufferWidth invocations.
+		// Draws with the test enabled should result in at least 1 invocation, maybe more.
+		uint32_t minValue = 0u;
+
+		const uint32_t minInvocations[] = { (kFramebufferHeight * kFramebufferWidth), 1u };
+
+		if (kNumIterations == 1u)
+		{
+			const auto testEnabled	= m_testConfig.getActiveReprFragTestEnable();
+			minValue += minInvocations[testEnabled];
+		}
+		else if (kNumIterations == 2u)
+		{
+
+			for (uint32_t i = 0u; i < kNumIterations; ++i)
+			{
+				bool testEnabled = false;
+
+#ifndef CTS_USES_VULKANSC
+				// Actually varies depending on TWO_DRAWS_STATIC/_DYNAMIC, but does not affect results.
+				const bool staticDraw = (i == 0u);
+
+				if (staticDraw)
+					testEnabled = m_testConfig.reprFragTestEnableConfig.staticValue;
+				else
+				{
+					testEnabled	= (m_testConfig.reprFragTestEnableConfig.dynamicValue
+								? m_testConfig.reprFragTestEnableConfig.dynamicValue.get()
+								: m_testConfig.reprFragTestEnableConfig.staticValue);
+				}
+#endif // CTS_USES_VULKANSC
+
+				minValue += minInvocations[testEnabled];
+			}
+		}
+		else
+		{
+			DE_ASSERT(false);
+		}
+
 		auto& counterBufferAlloc	= counterBuffer->getAllocation();
 		void* counterBufferData		= counterBufferAlloc.getHostPtr();
 		vk::invalidateAlloc(vkd, device, counterBufferAlloc);
 
 		uint32_t fragCounter;
 		deMemcpy(&fragCounter, counterBufferData, sizeof(fragCounter));
-
-		const auto testEnabled	= m_testConfig.getActiveReprFragTestEnable();
-		const auto minValue		= (testEnabled ? 1u : (kFramebufferHeight * kFramebufferWidth * kNumIterations));
 
 		log << tcu::TestLog::Message << "Fragment counter minimum value: " << minValue << tcu::TestLog::EndMessage;
 		log << tcu::TestLog::Message << "Fragment counter: " << fragCounter << tcu::TestLog::EndMessage;
@@ -5255,7 +5334,7 @@ using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
 tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
 {
-	GroupPtr extendedDynamicStateGroup(new tcu::TestCaseGroup(testCtx, "extended_dynamic_state", "Tests for VK_EXT_extended_dynamic_state"));
+	GroupPtr extendedDynamicStateGroup(new TestGroupWithClean(testCtx, "extended_dynamic_state", "Tests for VK_EXT_extended_dynamic_state"));
 	GroupPtr meshShaderGroup(new tcu::TestCaseGroup(testCtx, "mesh_shader", "Extended dynamic state with mesh shading pipelines"));
 
 	// Auxiliar constants.
