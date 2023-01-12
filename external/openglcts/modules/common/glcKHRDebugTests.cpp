@@ -1797,7 +1797,7 @@ tcu::TestNode::IterateResult ReceivingMessagesTest::iterate()
  **/
 void ReceivingMessagesTest::debug_proc(glw::GLenum /* source */, glw::GLenum /* type */, glw::GLuint /* id */,
 										glw::GLenum /* severity */, glw::GLsizei /* length */,
-										const glw::GLchar* /* message */, void* info)
+										const glw::GLchar* /* message */, const void* info)
 {
 	GLuint* counter = (GLuint*)info;
 
@@ -2403,7 +2403,7 @@ SynchronousCallsTest::~SynchronousCallsTest(void)
  **/
 void SynchronousCallsTest::debug_proc(glw::GLenum /* source */, glw::GLenum /* type */, glw::GLuint /* id */,
 									  glw::GLenum /* severity */, glw::GLsizei /* length */,
-									  const glw::GLchar* /* message */, void* info)
+									  const glw::GLchar* /* message */, const void* info)
 {
 	int* callback_executed = (int*)info;
 
