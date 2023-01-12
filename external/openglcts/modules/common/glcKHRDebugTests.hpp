@@ -318,7 +318,7 @@ public:
 private:
 	/* Private routines */
 	static void GLW_APIENTRY debug_proc(glw::GLenum source, glw::GLenum type, glw::GLuint id, glw::GLenum severity,
-										glw::GLsizei length, const glw::GLchar* message, void* info);
+										glw::GLsizei length, const glw::GLchar* message, const void* info);
 
 	void inspectCallbackCounter(glw::GLuint& callback_counter, glw::GLuint expected_number_of_messages) const;
 
@@ -446,7 +446,7 @@ public:
 private:
 	/* Private routines */
 	static void GLW_APIENTRY debug_proc(glw::GLenum source, glw::GLenum type, glw::GLuint id, glw::GLenum severity,
-										glw::GLsizei length, const glw::GLchar* message, void* info);
+										glw::GLsizei length, const glw::GLchar* message, const void* info);
 
 	de::ThreadLocal m_tls;
 	deUint32		m_uid;
