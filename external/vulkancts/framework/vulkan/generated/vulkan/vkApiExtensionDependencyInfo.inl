@@ -808,6 +808,7 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_extended_dynamic_state"),
 	std::make_tuple(1, 0, "VK_KHR_deferred_host_operations"),
 	std::make_tuple(1, 0, "VK_KHR_pipeline_executable_properties"),
+	std::make_tuple(1, 0, "VK_KHR_map_memory2"),
 	std::make_tuple(1, 0, "VK_EXT_shader_atomic_float2"),
 	std::make_tuple(1, 0, "VK_EXT_surface_maintenance1"),
 	std::make_tuple(1, 0, "VK_EXT_swapchain_maintenance1"),

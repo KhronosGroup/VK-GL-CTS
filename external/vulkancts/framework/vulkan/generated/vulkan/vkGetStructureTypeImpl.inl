@@ -3723,3 +3723,13 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceMultiviewPerViewView
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_VIEWPORTS_FEATURES_QCOM;
 }
 
+template<> VkStructureType getStructureType<VkMemoryMapInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_MAP_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkMemoryUnmapInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_UNMAP_INFO_KHR;
+}
+

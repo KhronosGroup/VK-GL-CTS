@@ -452,3 +452,5 @@ BindOpticalFlowSessionImageNVFunc							bindOpticalFlowSessionImageNV;
 CmdOpticalFlowExecuteNVFunc									cmdOpticalFlowExecuteNV;
 GetDeviceFaultInfoEXTFunc									getDeviceFaultInfoEXT;
 ReleaseSwapchainImagesEXTFunc								releaseSwapchainImagesEXT;
+MapMemory2KHRFunc											mapMemory2KHR;
+UnmapMemory2KHRFunc											unmapMemory2KHR;

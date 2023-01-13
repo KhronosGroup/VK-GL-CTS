@@ -1940,6 +1940,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INFO_KHR:										return "VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_STATISTIC_KHR:									return "VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_STATISTIC_KHR";
 		case VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INTERNAL_REPRESENTATION_KHR:						return "VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INTERNAL_REPRESENTATION_KHR";
+		case VK_STRUCTURE_TYPE_MEMORY_MAP_INFO_KHR:													return "VK_STRUCTURE_TYPE_MEMORY_MAP_INFO_KHR";
+		case VK_STRUCTURE_TYPE_MEMORY_UNMAP_INFO_KHR:												return "VK_STRUCTURE_TYPE_MEMORY_UNMAP_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_EXT:											return "VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_EXT";
 		case VK_STRUCTURE_TYPE_SURFACE_PRESENT_SCALING_CAPABILITIES_EXT:							return "VK_STRUCTURE_TYPE_SURFACE_PRESENT_SCALING_CAPABILITIES_EXT";
@@ -5188,6 +5190,11 @@ tcu::Format::Bitfield<32> getVideoEncodeFlagsKHRStr (VkVideoEncodeFlagsKHR value
 }
 
 tcu::Format::Bitfield<32> getVideoEncodeRateControlFlagsKHRStr (VkVideoEncodeRateControlFlagsKHR value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
+tcu::Format::Bitfield<32> getMemoryUnmapFlagsKHRStr (VkMemoryUnmapFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
@@ -16156,6 +16163,30 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMultiviewPerVie
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmultiviewPerViewViewports = " << value.multiviewPerViewViewports << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryMapInfoKHR& value)
+{
+	s << "VkMemoryMapInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getMemoryMapFlagsStr(value.flags) << '\n';
+	s << "\tmemory = " << value.memory << '\n';
+	s << "\toffset = " << value.offset << '\n';
+	s << "\tsize = " << value.size << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryUnmapInfoKHR& value)
+{
+	s << "VkMemoryUnmapInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getMemoryUnmapFlagsKHRStr(value.flags) << '\n';
+	s << "\tmemory = " << value.memory << '\n';
 	s << '}';
 	return s;
 }

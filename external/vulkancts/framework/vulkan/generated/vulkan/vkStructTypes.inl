@@ -8123,6 +8123,24 @@ struct VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM
 	VkBool32		multiviewPerViewViewports;
 };
 
+struct VkMemoryMapInfoKHR
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkMemoryMapFlags	flags;
+	VkDeviceMemory		memory;
+	VkDeviceSize		offset;
+	VkDeviceSize		size;
+};
+
+struct VkMemoryUnmapInfoKHR
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkMemoryUnmapFlagsKHR	flags;
+	VkDeviceMemory			memory;
+};
+
 struct StdVideoH264SpsVuiFlags
 {
 	uint32_t	aspect_ratio_info_present_flag:1;
