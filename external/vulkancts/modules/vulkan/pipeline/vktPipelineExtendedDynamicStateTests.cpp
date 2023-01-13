@@ -152,6 +152,10 @@ using StrideVec = std::vector<vk::VkDeviceSize>;
 class VertexGenerator
 {
 public:
+	// Some generators may need specific features.
+	virtual void													checkSupport (Context&) const {}
+
+
 	// For GLSL.
 
 	// Vertex input/output attribute declarations in GLSL form. One sentence per element.
@@ -171,6 +175,9 @@ public:
 
 	// Get fragment output post-calculations, maybe altering the "color" output variable.
 	virtual std::vector<std::string>								getFragOutputCalc()			const { return std::vector<std::string>(); }
+
+	// GLSL extensions if needed.
+	virtual std::vector<std::string>								getGLSLExtensions()			const { return std::vector<std::string>(); }
 
 
 	// For the pipeline.
@@ -325,6 +332,122 @@ public:
 	{
 		std::vector<vk::VkVertexInputAttributeDescription2EXT> descriptions;
 		descriptions.push_back(makeVertexInputAttributeDescription2EXT(0u, 0u, vk::VK_FORMAT_R32G32_SFLOAT, 0u));
+		return descriptions;
+	}
+
+	// Vertex bindings for VkPipelineVertexInputStateCreateInfo.
+	virtual std::vector<vk::VkVertexInputBindingDescription> getBindingDescriptions(const StrideVec& strides) const override
+	{
+		std::vector<vk::VkVertexInputBindingDescription> descriptions;
+		descriptions.push_back(vk::makeVertexInputBindingDescription(0u, static_cast<deUint32>(strides.at(0)), vk::VK_VERTEX_INPUT_RATE_VERTEX));
+		return descriptions;
+	}
+
+	// Vertex bindings for VK_EXT_vertex_input_dynamic_state.
+	virtual std::vector<vk::VkVertexInputBindingDescription2EXT> getBindingDescriptions2(const StrideVec& strides) const override
+	{
+		std::vector<vk::VkVertexInputBindingDescription2EXT> descriptions;
+		descriptions.push_back(makeVertexInputBindingDescription2EXT(0u, static_cast<deUint32>(strides.at(0)), vk::VK_VERTEX_INPUT_RATE_VERTEX));
+		return descriptions;
+	}
+
+	virtual std::vector<std::vector<deUint8>> createVertexData (const std::vector<tcu::Vec2>& coords, vk::VkDeviceSize dataOffset, vk::VkDeviceSize trailingPadding, const void* paddingPattern, size_t patternSize) const override
+	{
+		return std::vector<std::vector<deUint8>>(1u, createSingleBindingVertexData<VertexData>(coords, dataOffset, trailingPadding, paddingPattern, patternSize));
+	}
+
+	virtual std::vector<vk::VkDeviceSize> getVertexDataStrides() const override
+	{
+		return std::vector<vk::VkDeviceSize>(1u, static_cast<vk::VkDeviceSize>(sizeof(VertexData)));
+	}
+};
+
+// Vertices in buffers will have 2 components and a padding. Same as VertexWithPadding but using 16-bit floats.
+class VertexWithPadding16 : public VertexGenerator
+{
+protected:
+	struct VertexData
+	{
+		VertexData(const tcu::Vec2& coords_)
+			: coords	(tcu::Float16(coords_.x()), tcu::Float16(coords_.y()))
+			, padding	(tcu::Float16(0.0f), tcu::Float16(0.0f))
+		{}
+
+		tcu::F16Vec2 coords;
+		tcu::F16Vec2 padding;
+	};
+
+public:
+	virtual void checkSupport (Context& context) const override
+	{
+		// We need shaderFloat16 and storageInputOutput16.
+		const auto& sf16i8Features = context.getShaderFloat16Int8Features();
+		if (!sf16i8Features.shaderFloat16)
+			TCU_THROW(NotSupportedError, "shaderFloat16 not supported");
+
+		const auto& storage16Features = context.get16BitStorageFeatures();
+		if (!storage16Features.storageInputOutput16)
+			TCU_THROW(NotSupportedError, "storageInputOutput16 not supported");
+	}
+
+	virtual std::vector<std::string> getGLSLExtensions() const override
+	{
+		std::vector<std::string> extensions;
+		extensions.push_back("#extension GL_EXT_shader_explicit_arithmetic_types_float16 : require");
+		return extensions;
+	}
+
+	virtual std::vector<std::string> getAttributeDeclarations() const override
+	{
+		std::vector<std::string> declarations;
+		declarations.push_back("layout(location=0) in f16vec2 position;");
+		return declarations;
+	}
+
+	virtual std::vector<std::string> getVertexCoordCalc() const override
+	{
+		std::vector<std::string> statements;
+		statements.push_back("f16vec2 vertexCoords = position;");
+		return statements;
+	}
+
+	virtual std::vector<std::string> getDescriptorDeclarations() const override
+	{
+		std::vector<std::string> declarations;
+		declarations.reserve(7u);
+		declarations.push_back("struct VertexData {");
+		declarations.push_back("    f16vec2 position;");
+		declarations.push_back("    f16vec2 padding;");
+		declarations.push_back("};");
+		declarations.push_back("layout(set=0, binding=0, std430) readonly buffer S0B0Block {");
+		declarations.push_back("    VertexData data[];");
+		declarations.push_back("} s0b0buffer;");
+		return declarations;
+	}
+
+	virtual std::vector<std::string> getDescriptorCoordCalc() const override
+	{
+		std::vector<std::string> statements;
+		statements.reserve(4u);
+		statements.push_back("uint prim = uint(gl_WorkGroupID.x);");
+		statements.push_back("uint indices[3] = uint[](prim, (prim + (1 + prim % 2)), (prim + (2 - prim % 2)));");
+		statements.push_back("uint invIndex = indices[gl_LocalInvocationIndex];");
+		statements.push_back("f16vec2 vertexCoords = s0b0buffer.data[invIndex].position;");
+		return statements;
+	}
+
+	virtual std::vector<vk::VkVertexInputAttributeDescription> getAttributeDescriptions() const override
+	{
+		std::vector<vk::VkVertexInputAttributeDescription> descriptions;
+		descriptions.push_back(vk::makeVertexInputAttributeDescription(0u, 0u, vk::VK_FORMAT_R16G16_SFLOAT, 0u));
+		return descriptions;
+	}
+
+	// Vertex attributes for VK_EXT_vertex_input_dynamic_state.
+	virtual std::vector<vk::VkVertexInputAttributeDescription2EXT> getAttributeDescriptions2() const override
+	{
+		std::vector<vk::VkVertexInputAttributeDescription2EXT> descriptions;
+		descriptions.push_back(makeVertexInputAttributeDescription2EXT(0u, 0u, vk::VK_FORMAT_R16G16_SFLOAT, 0u));
 		return descriptions;
 	}
 
@@ -1303,6 +1426,12 @@ const VertexGenerator* getVertexWithPaddingGenerator ()
 {
 	static VertexWithPadding vertexWithPadding;
 	return &vertexWithPadding;
+}
+
+const VertexGenerator* getVertexWithPadding16Generator ()
+{
+	static VertexWithPadding16 vertexWithPadding16;
+	return &vertexWithPadding16;
 }
 
 const VertexGenerator* getVertexWithExtraAttributesGenerator ()
@@ -2549,6 +2678,11 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 	for (const auto& extension : requiredExtensions)
 		context.requireDeviceFunctionality(extension);
 
+	// Check support needed for the vertex generators.
+	m_testConfig.vertexGenerator.staticValue->checkSupport(context);
+	if (m_testConfig.vertexGenerator.dynamicValue)
+		m_testConfig.vertexGenerator.dynamicValue.get()->checkSupport(context);
+
 	// Check the number of viewports needed and the corresponding limits.
 	const auto&	viewportConfig	= m_testConfig.viewportConfig;
 	auto		numViewports	= viewportConfig.staticValue.size();
@@ -2820,7 +2954,7 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 	std::ostringstream geomSource;
 	std::ostringstream tescSource;
 	std::ostringstream teseSource;
-	std::ostringstream meshSource;
+	std::ostringstream meshSourceTemplateStream;
 
 	pushSource
 		<< "layout(push_constant, std430) uniform PushConstantsBlock {\n"
@@ -2852,6 +2986,7 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 	const auto			descCalcsV	= activeGen->getDescriptorCoordCalc();
 	const auto			fragInputs	= activeGen->getFragInputAttributes();
 	const auto			fragCalcs	= activeGen->getFragOutputCalc();
+	const auto			glslExts	= activeGen->getGLSLExtensions();
 
 	// The static generator, attributes and calculations, for the static pipeline, if needed.
 	const auto			inactiveGen			= m_testConfig.getInactiveVertexGenerator();
@@ -2859,17 +2994,20 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 	const auto			staticCoordCalc		= inactiveGen->getVertexCoordCalc();
 	const auto			staticFragInputs	= inactiveGen->getFragInputAttributes();
 	const auto			staticFragCalcs		= inactiveGen->getFragOutputCalc();
+	const auto			staticGlslExts		= inactiveGen->getGLSLExtensions();
 
 	std::ostringstream	activeAttribs;
 	std::ostringstream	activeCalcs;
 	std::ostringstream	activeFragInputs;
 	std::ostringstream	activeFragCalcs;
+	std::ostringstream	activeExts;
 	std::ostringstream	inactiveAttribs;
 	std::ostringstream	inactiveCalcs;
 	std::ostringstream	descDecls;
 	std::ostringstream	descCalcs;
 	std::ostringstream	inactiveFragInputs;
 	std::ostringstream	inactiveFragCalcs;
+	std::ostringstream	inactiveExts;
 
 	for (const auto& decl : attribDecls)
 		activeAttribs << decl << "\n";
@@ -2901,8 +3039,15 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 	for (const auto& statement : staticFragCalcs)
 		inactiveFragCalcs << "    " << statement << "\n";
 
+	for (const auto& ext : glslExts)
+		activeExts << ext << "\n";
+
+	for (const auto& ext : staticGlslExts)
+		inactiveExts << ext << "\n";
+
 	vertSourceTemplateStream
 		<< "#version 450\n"
+		<< "${EXTENSIONS}"
 		<< pushConstants
 		<< "${ATTRIBUTES}"
 		<< "out gl_PerVertex\n"
@@ -2955,12 +3100,14 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 	activeMap["CALCULATIONS"]		= activeCalcs.str();
 	activeMap["FRAG_INPUTS"]		= activeFragInputs.str();
 	activeMap["FRAG_CALCULATIONS"]	= activeFragCalcs.str();
+	activeMap["EXTENSIONS"]			= activeExts.str();
 	activeMap["OUT_COLOR_VTYPE"]	= vecType;
 
 	inactiveMap["ATTRIBUTES"]			= inactiveAttribs.str();
 	inactiveMap["CALCULATIONS"]			= inactiveCalcs.str();
 	inactiveMap["FRAG_INPUTS"]			= inactiveFragInputs.str();
 	inactiveMap["FRAG_CALCULATIONS"]	= inactiveFragCalcs.str();
+	inactiveMap["EXTENSIONS"]			= inactiveExts.str();
 	inactiveMap["OUT_COLOR_VTYPE"]		= vecType;
 
 	const auto activeVertSource		= vertSourceTemplate.specialize(activeMap);
@@ -3065,8 +3212,9 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 		DE_ASSERT(m_testConfig.topologyConfig.staticValue == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
 		DE_ASSERT(!m_testConfig.singleVertex);
 
-		meshSource
+		meshSourceTemplateStream
 			<< "#version 450\n"
+			<< "${EXTENSIONS}"
 			<< "#extension GL_EXT_mesh_shader : enable\n"
 			<< "layout(local_size_x=3, local_size_y=1, local_size_z=1) in;\n"
 			<< "layout(triangles) out;\n"
@@ -3106,7 +3254,15 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 		programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(teseSource.str());
 	}
 	if (m_testConfig.useMeshShaders)
-		programCollection.glslSources.add("mesh") << glu::MeshSource(meshSource.str()) << meshBuildOptions;
+	{
+		tcu::StringTemplate meshSourceTemplate (meshSourceTemplateStream.str());
+
+		const auto activeMeshSource		= meshSourceTemplate.specialize(activeMap);
+		const auto inactiveMeshSource	= meshSourceTemplate.specialize(inactiveMap);
+
+		programCollection.glslSources.add("dynamicMesh")	<< glu::MeshSource(kReversed ? inactiveMeshSource : activeMeshSource) << meshBuildOptions;
+		programCollection.glslSources.add("staticMesh")		<< glu::MeshSource(kReversed ? activeMeshSource : inactiveMeshSource) << meshBuildOptions;
+	}
 
 	if (m_testConfig.bindUnusedMeshShadingPipeline)
 	{
@@ -4315,7 +4471,8 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	const auto	geomModule			= (m_testConfig.needsGeometryShader() ? vk::createShaderModule(vkd, device, binaries.get("geom")) : vk::Move<vk::VkShaderModule>());
 	const auto	tescModule			= (m_testConfig.needsTessellation() ? vk::createShaderModule(vkd, device, binaries.get("tesc")) : vk::Move<vk::VkShaderModule>());
 	const auto	teseModule			= (m_testConfig.needsTessellation() ? vk::createShaderModule(vkd, device, binaries.get("tese")) : vk::Move<vk::VkShaderModule>());
-	const auto	meshModule			= (m_testConfig.useMeshShaders ? vk::createShaderModule(vkd, device, binaries.get("mesh")) : vk::Move<vk::VkShaderModule>());
+	const auto	dynamicMeshModule	= (m_testConfig.useMeshShaders ? vk::createShaderModule(vkd, device, binaries.get("dynamicMesh")) : vk::Move<vk::VkShaderModule>());
+	const auto	staticMeshModule	= (m_testConfig.useMeshShaders ? vk::createShaderModule(vkd, device, binaries.get("staticMesh")) : vk::Move<vk::VkShaderModule>());
 	const auto	meshNoOutModule		= (m_testConfig.bindUnusedMeshShadingPipeline ? vk::createShaderModule(vkd, device, binaries.get("meshNoOut")) : vk::Move<vk::VkShaderModule>());
 
 	vk::Move<vk::VkShaderModule>	vertDPCPModule;
@@ -4757,7 +4914,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 												*renderPass,
 												0u,
 												VK_NULL_HANDLE,
-												*meshModule,
+												*staticMeshModule,
 												&rasterizationStateCreateInfo);
 		}
 		else
@@ -4835,7 +4992,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 												*renderPass,
 												0u,
 												DE_NULL,
-												*meshModule,
+												*dynamicMeshModule,
 												&rasterizationStateCreateInfo);
 		}
 		else
@@ -7237,6 +7394,13 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 					TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders, getVertexWithExtraAttributesGenerator(), getVertexWithMultipleBindingsGenerator());
 					config.bindUnusedMeshShadingPipeline = bindUnusedCase.bindUnusedMeshShadingPipeline;
 					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "vertex_input_multiple_bindings" + bindUnusedCase.nameSuffix, "Dynamically set vertex input with multiple bindings" + bindUnusedCase.descSuffix, config));
+				}
+
+				{
+					// Variant checking dynamic vertex inputs with 16-bit floats.
+					TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders, getVertexWithPaddingGenerator(), getVertexWithPadding16Generator());
+					config.bindUnusedMeshShadingPipeline = bindUnusedCase.bindUnusedMeshShadingPipeline;
+					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "vertex_input_float16" + bindUnusedCase.nameSuffix, "Dynamically set vertex input with float16 inputs" + bindUnusedCase.descSuffix, config));
 				}
 			}
 		}
