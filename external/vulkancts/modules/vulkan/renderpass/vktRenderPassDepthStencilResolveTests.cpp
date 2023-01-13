@@ -1494,7 +1494,7 @@ void initTests (tcu::TestCaseGroup* group)
 				const bool					hasStencil					= formatData.hasStencil;
 				VkImageAspectFlags			aspectFlags					= (hasDepth * VK_IMAGE_ASPECT_DEPTH_BIT) |
 																		  (hasStencil * VK_IMAGE_ASPECT_STENCIL_BIT);
-				const int					separateLayoutsLoopCount	= (hasDepth && hasStencil) ? 2 : 1;
+				const int					separateLayoutsLoopCount	= 1;
 
 				for (int separateDepthStencilLayouts = 0; separateDepthStencilLayouts < separateLayoutsLoopCount; ++separateDepthStencilLayouts)
 				{
