@@ -4822,8 +4822,9 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 		renderPassCreateInfo.attachmentCount = 1u;
 		renderPassCreateInfo.pAttachments = &colorAttachmentDescription;
 	}
+	const bool unusedAttachmentSubpass	= (m_params.nonEmptyFramebuffer && m_params.unusedAttachment);
 	renderPassCreateInfo.subpassCount	= 1u;
-	renderPassCreateInfo.pSubpasses		= ((m_params.nonEmptyFramebuffer && m_params.unusedAttachment) ? &unusedAttachmentSubpassDescription : &emptySubpassDescription);
+	renderPassCreateInfo.pSubpasses		= (unusedAttachmentSubpass ? &unusedAttachmentSubpassDescription : &emptySubpassDescription);
 	const auto renderPassSingleSubpass	= vk::createRenderPass(vkd, device, &renderPassCreateInfo);
 
 	// Framebuffers.
@@ -4909,15 +4910,41 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 	const std::vector<VkViewport>	viewport	{ vk::makeViewport(kWidth32, kHeight32) };
 	const std::vector<VkRect2D>		scissor		{ vk::makeRect2D(kWidth32, kHeight32) };
 
-	const vk::VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo =
+	const VkColorComponentFlags colorComponentFlags = (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
+
+	const VkPipelineColorBlendAttachmentState colorBlendAttachmentState =
+	{
+		VK_FALSE,				//	VkBool32				blendEnable;
+		VK_BLEND_FACTOR_ZERO,	//	VkBlendFactor			srcColorBlendFactor;
+		VK_BLEND_FACTOR_ZERO,	//	VkBlendFactor			dstColorBlendFactor;
+		VK_BLEND_OP_ADD,		//	VkBlendOp				colorBlendOp;
+		VK_BLEND_FACTOR_ZERO,	//	VkBlendFactor			srcAlphaBlendFactor;
+		VK_BLEND_FACTOR_ZERO,	//	VkBlendFactor			dstAlphaBlendFactor;
+		VK_BLEND_OP_ADD,		//	VkBlendOp				alphaBlendOp;
+		colorComponentFlags,	//	VkColorComponentFlags	colorWriteMask;
+	};
+
+	const vk::VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfoNoAttachments =
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType;
 		DE_NULL,														// const void*									pNext;
 		0u,																// VkPipelineColorBlendStateCreateFlags			flags;
-		false,															// VkBool32										logicOpEnable;
+		VK_FALSE,														// VkBool32										logicOpEnable;
 		vk::VK_LOGIC_OP_CLEAR,											// VkLogicOp									logicOp;
-		0,																// deUint32										attachmentCount;
-		DE_NULL,														// const VkPipelineColorBlendAttachmentState*	pAttachments;
+		0u,																// deUint32										attachmentCount;
+		nullptr,														// const VkPipelineColorBlendAttachmentState*	pAttachments;
+		{ 0.0f, 0.0f, 0.0f, 0.0f }										// float										blendConstants[4];
+	};
+
+	const vk::VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfoOneAttachment =
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType;
+		DE_NULL,														// const void*									pNext;
+		0u,																// VkPipelineColorBlendStateCreateFlags			flags;
+		VK_FALSE,														// VkBool32										logicOpEnable;
+		vk::VK_LOGIC_OP_CLEAR,											// VkLogicOp									logicOp;
+		1u,																// deUint32										attachmentCount;
+		&colorBlendAttachmentState,										// const VkPipelineColorBlendAttachmentState*	pAttachments;
 		{ 0.0f, 0.0f, 0.0f, 0.0f }										// float										blendConstants[4];
 	};
 
@@ -4938,6 +4965,8 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 	outputPipelines.reserve(m_params.subpassCounts.size());
 	for (const auto samples : m_params.subpassCounts)
 	{
+		const auto colorBlendStatePtr = (unusedAttachmentSubpass ? &colorBlendStateCreateInfoOneAttachment : &colorBlendStateCreateInfoNoAttachments);
+
 		multisampleStateCreateInfo.rasterizationSamples = samples;
 
 		outputPipelines.emplace_back(vkd, device, m_params.pipelineConstructionType);
@@ -4952,7 +4981,7 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 				0u,
 				*vertModule)
 			.setupFragmentShaderState(*pipelineLayout, *renderPassSingleSubpass, 0u, *fragModule, DE_NULL, &multisampleStateCreateInfo)
-			.setupFragmentOutputState(*renderPassSingleSubpass, 0u, &colorBlendStateCreateInfo, &multisampleStateCreateInfo)
+			.setupFragmentOutputState(*renderPassSingleSubpass, 0u, colorBlendStatePtr, &multisampleStateCreateInfo)
 			.setMonolithicPipelineLayout(*pipelineLayout)
 			.buildPipeline();
 	}
@@ -4977,7 +5006,7 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 				subpass,
 				*vertModule)
 			.setupFragmentShaderState(*pipelineLayout, *renderPassMultiplePasses, subpass, *fragModule, DE_NULL, &multisampleStateCreateInfo)
-			.setupFragmentOutputState(*renderPassMultiplePasses, subpass, &colorBlendStateCreateInfo, &multisampleStateCreateInfo)
+			.setupFragmentOutputState(*renderPassMultiplePasses, subpass, &colorBlendStateCreateInfoNoAttachments, &multisampleStateCreateInfo)
 			.setMonolithicPipelineLayout(*pipelineLayout)
 			.buildPipeline();
 	}
