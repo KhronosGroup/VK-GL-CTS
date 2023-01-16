@@ -278,10 +278,11 @@ void transition2DImage (const vk::DeviceInterface&	vk,
 						vk::VkAccessFlags			srcAccessMask,
 						vk::VkAccessFlags			dstAccessMask,
 						vk::VkPipelineStageFlags	srcStageMask,
-						vk::VkPipelineStageFlags	dstStageMask);
+						vk::VkPipelineStageFlags	dstStageMask,
+						deUint32					numLayers = 1);
 
 void initialTransitionColor2DImage (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkImageLayout layout,
-									vk::VkAccessFlags dstAccessMask, vk::VkPipelineStageFlags dstStageMask);
+									vk::VkAccessFlags dstAccessMask, vk::VkPipelineStageFlags dstStageMask, deUint32 numLayers = 1);
 
 void initialTransitionDepth2DImage (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkImageLayout layout,
 									vk::VkAccessFlags dstAccessMask, vk::VkPipelineStageFlags dstStageMask);

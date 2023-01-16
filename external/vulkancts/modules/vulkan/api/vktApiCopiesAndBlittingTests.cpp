@@ -1173,7 +1173,7 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 		}
 	}
 
-	const VkImageMemoryBarrier	imageBarriers[]		=
+	VkImageMemoryBarrier	imageBarriers[]		=
 	{
 		// source image
 		{
@@ -1228,6 +1228,8 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 		clearColor.float32[2] = 1.0f;
 		clearColor.float32[3] = 1.0f;
 		vk.cmdClearColorImage(*m_cmdBuffer, m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1u, &range);
+		imageBarriers[0].oldLayout = imageBarriers[0].newLayout;
+		imageBarriers[1].oldLayout = imageBarriers[1].newLayout;
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, DE_LENGTH_OF_ARRAY(imageBarriers), imageBarriers);
 	}
 
@@ -14120,6 +14122,7 @@ void addResolveImageWholeTests (tcu::TestCaseGroup* group, AllocationKind alloca
 
 	for (int samplesIndex = 0; samplesIndex < DE_LENGTH_OF_ARRAY(samples); ++samplesIndex)
 	{
+		params.imageOffset = false;
 		params.samples					= samples[samplesIndex];
 		const std::string description	= "With " + getSampleCountCaseName(samples[samplesIndex]);
 		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params));
@@ -14196,7 +14199,7 @@ void addResolveImageWithRegionsTests (tcu::TestCaseGroup* group, AllocationKind 
 	params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	params.allocationKind				= allocationKind;
 	params.extensionUse					= extensionUse;
-	params.imageOffset					= true;
+	params.imageOffset					= allocationKind != ALLOCATION_KIND_DEDICATED;
 
 	{
 		const VkImageSubresourceLayers	sourceLayer	=

@@ -755,7 +755,7 @@ protected:
 		{
 			const DeviceInterface& vk = context.getDeviceInterface();
 			initialTransitionColor2DImage(vk, cmdBuffer, *m_colorImage, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-										  VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+										  VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, m_colorSubresourceRange.layerCount);
 		}
 	}
 

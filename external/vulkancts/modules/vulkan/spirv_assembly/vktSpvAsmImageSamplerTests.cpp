@@ -148,6 +148,20 @@ bool isValidTestCase (TestType testType, DescriptorType descriptorType, ReadOp r
 			break;
 	}
 
+	// Check valid test type and readOp combination
+	switch (testType)
+	{
+		case TESTTYPE_OPTYPEIMAGE_MISMATCH:
+			// OPTYPEIMAGE_MISTMATCH does not test DEPTH formats
+			if (readOp == READOP_IMAGESAMPLE_DREF_IMPLICIT_LOD									||
+				readOp == READOP_IMAGESAMPLE_DREF_EXPLICIT_LOD)
+				return false;
+			break;
+
+		default:
+			break;
+	}
+
 	return true;
 }
 
