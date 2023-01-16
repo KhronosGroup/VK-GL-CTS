@@ -263,3 +263,18 @@ VkResult InstanceDriver::createHeadlessSurfaceEXT (VkInstance instance, const Vk
 {
 	return m_vk.createHeadlessSurfaceEXT(instance, pCreateInfo, pAllocator, pSurface);
 }
+
+VkResult InstanceDriver::getPhysicalDeviceSciSyncAttributesNV (VkPhysicalDevice physicalDevice, const VkSciSyncAttributesInfoNV* pSciSyncAttributesInfo, pt::NvSciSyncAttrList pAttributes) const
+{
+	return m_vk.getPhysicalDeviceSciSyncAttributesNV(physicalDevice, pSciSyncAttributesInfo, pAttributes);
+}
+
+VkResult InstanceDriver::getPhysicalDeviceExternalMemorySciBufPropertiesNV (VkPhysicalDevice physicalDevice, VkExternalMemoryHandleTypeFlagBits handleType, pt::NvSciBufObj handle, VkMemorySciBufPropertiesNV* pMemorySciBufProperties) const
+{
+	return m_vk.getPhysicalDeviceExternalMemorySciBufPropertiesNV(physicalDevice, handleType, handle, pMemorySciBufProperties);
+}
+
+VkResult InstanceDriver::getPhysicalDeviceSciBufAttributesNV (VkPhysicalDevice physicalDevice, pt::NvSciBufAttrList pAttributes) const
+{
+	return m_vk.getPhysicalDeviceSciBufAttributesNV(physicalDevice, pAttributes);
+}

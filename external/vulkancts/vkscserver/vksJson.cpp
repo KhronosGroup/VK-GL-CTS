@@ -35,22 +35,6 @@
 #include "vulkan_json_parser.hpp"
 #include "vulkan_json_data.hpp"
 
-#include "tlsWrapper.hpp"
-
-TLS_INSTANCE();
-namespace vk_json_parser {
-GlobalMem<deUint32, deUint8> &
-TLSGetGlobalMem() {
-	return TLSWrapper<GlobalMem<deUint32, deUint8>>::instance.attach();
-}
-}
-namespace vk_json {
-std::stringstream &
-TLSGetStrStream() {
-	return TLSWrapper<std::stringstream>::instance.attach();
-}
-}
-
 #ifdef __GNUC__
 	#pragma GCC diagnostic pop
 #endif // __GNUC__

@@ -37,4 +37,5 @@ template<> inline VkObjectType	getObjectType<VkSwapchainKHR>			(void) { return V
 template<> inline VkObjectType	getObjectType<VkDisplayKHR>				(void) { return VK_OBJECT_TYPE_DISPLAY_KHR;					}
 template<> inline VkObjectType	getObjectType<VkDisplayModeKHR>			(void) { return VK_OBJECT_TYPE_DISPLAY_MODE_KHR;			}
 template<> inline VkObjectType	getObjectType<VkDebugUtilsMessengerEXT>	(void) { return VK_OBJECT_TYPE_DEBUG_UTILS_MESSENGER_EXT;	}
+template<> inline VkObjectType	getObjectType<VkSemaphoreSciSyncPoolNV>	(void) { return VK_OBJECT_TYPE_SEMAPHORE_SCI_SYNC_POOL_NV;	}
 }

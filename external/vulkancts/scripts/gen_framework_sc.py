@@ -116,6 +116,13 @@ PLATFORM_TYPES		= [
 	(["MTLTexture_id"],						["MTLTexture_id"],				"void*"),
 	(["IOSurfaceRef"],						["IOSurfaceRef"],				"void*"),
 	(["MTLSharedEvent_id"],					["MTLSharedEvent_id"],			"void*"),
+
+    # VK_NV_external_sci_sync / VK_NV_external_sci_sync2 / VK_NV_external_memory_sci_buf
+    (["NvSciSyncAttrList"],                 ["NvSciSyncAttrList"],          "int32_t"),
+    (["NvSciSyncObj"],                      ["NvSciSyncObj"],               "int32_t"),
+    (["NvSciSyncFence"],                    ["NvSciSyncFence"],             "int32_t"),
+    (["NvSciBufAttrList"],                  ["NvSciBufAttrList"],           "int32_t"),
+    (["NvSciBufObj"],                       ["NvSciBufObj"],                "int32_t"),
 ]
 
 PLATFORM_TYPE_NAMESPACE	= "pt"
@@ -3035,6 +3042,7 @@ if __name__ == "__main__":
 	elif args.api=='SC':
 		# At the moment vulkan-docs does not have vulkan_sc_core.h. We will use a file from external/vulkancts/scripts/src
 		src = preprocessTopInclude(readFile(os.path.join(os.path.dirname(__file__), "src", "vulkan_sc_core.h" )), VULKAN_HEADERS_INCLUDE_DIR)
+		src += preprocessTopInclude(readFile(os.path.join(os.path.dirname(__file__), "src", "vulkan_sci.h" )), VULKAN_HEADERS_INCLUDE_DIR)
 
 	src = re.sub('\s*//[^\n]*', '', src)
 	src = re.sub('\n\n', '\n', src)

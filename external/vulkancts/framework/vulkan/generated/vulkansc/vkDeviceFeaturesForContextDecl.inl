@@ -15,6 +15,9 @@ const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&					getDepthClipEnableFeat
 const vk::VkPhysicalDeviceDescriptorIndexingFeatures&					getDescriptorIndexingFeatures					(void) const;
 const vk::VkPhysicalDeviceExtendedDynamicStateFeaturesEXT&				getExtendedDynamicStateFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT&				getExtendedDynamicState2FeaturesEXT				(void) const;
+const vk::VkPhysicalDeviceExternalMemorySciBufFeaturesNV&				getExternalMemorySciBufFeatures					(void) const;
+const vk::VkPhysicalDeviceExternalSciSyncFeaturesNV&					getExternalSciSyncFeatures						(void) const;
+const vk::VkPhysicalDeviceExternalSciSync2FeaturesNV&					getExternalSciSync2Features						(void) const;
 const vk::VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT&			getFragmentShaderInterlockFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceFragmentShadingRateFeaturesKHR&				getFragmentShadingRateFeatures					(void) const;
 const vk::VkPhysicalDeviceHostQueryResetFeatures&						getHostQueryResetFeatures						(void) const;

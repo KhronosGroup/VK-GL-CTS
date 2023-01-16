@@ -29,3 +29,4 @@ Move<VkSurfaceKHR>				createDisplayPlaneSurfaceKHR	(const InstanceInterface& vk,
 Move<VkSwapchainKHR>			createSharedSwapchainsKHR		(const DeviceInterface& vk, VkDevice device, uint32_t swapchainCount, const VkSwapchainCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkDebugUtilsMessengerEXT>	createDebugUtilsMessengerEXT	(const InstanceInterface& vk, VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkSurfaceKHR>				createHeadlessSurfaceEXT		(const InstanceInterface& vk, VkInstance instance, const VkHeadlessSurfaceCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
+Move<VkSemaphoreSciSyncPoolNV>	createSemaphoreSciSyncPoolNV	(const DeviceInterface& vk, VkDevice device, const VkSemaphoreSciSyncPoolCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);

@@ -15,6 +15,9 @@ const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&					Context::getDepthClipE
 const vk::VkPhysicalDeviceDescriptorIndexingFeatures&					Context::getDescriptorIndexingFeatures					(void) const { return m_device->getDescriptorIndexingFeatures();				}
 const vk::VkPhysicalDeviceExtendedDynamicStateFeaturesEXT&				Context::getExtendedDynamicStateFeaturesEXT				(void) const { return m_device->getExtendedDynamicStateFeaturesEXT();			}
 const vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT&				Context::getExtendedDynamicState2FeaturesEXT			(void) const { return m_device->getExtendedDynamicState2FeaturesEXT();			}
+const vk::VkPhysicalDeviceExternalMemorySciBufFeaturesNV&				Context::getExternalMemorySciBufFeatures				(void) const { return m_device->getExternalMemorySciBufFeatures();				}
+const vk::VkPhysicalDeviceExternalSciSyncFeaturesNV&					Context::getExternalSciSyncFeatures						(void) const { return m_device->getExternalSciSyncFeatures();					}
+const vk::VkPhysicalDeviceExternalSciSync2FeaturesNV&					Context::getExternalSciSync2Features					(void) const { return m_device->getExternalSciSync2Features();					}
 const vk::VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT&			Context::getFragmentShaderInterlockFeaturesEXT			(void) const { return m_device->getFragmentShaderInterlockFeaturesEXT();		}
 const vk::VkPhysicalDeviceFragmentShadingRateFeaturesKHR&				Context::getFragmentShadingRateFeatures					(void) const { return m_device->getFragmentShadingRateFeatures();				}
 const vk::VkPhysicalDeviceHostQueryResetFeatures&						Context::getHostQueryResetFeatures						(void) const { return m_device->getHostQueryResetFeatures();					}

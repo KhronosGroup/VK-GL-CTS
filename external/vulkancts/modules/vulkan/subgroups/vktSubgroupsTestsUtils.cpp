@@ -3919,9 +3919,15 @@ Move<VkPipeline> makeComputePipeline (Context&					context,
 		pipelineCreateFlags,							// VkPipelineCreateFlags			flags;
 		pipelineShaderStageParams,						// VkPipelineShaderStageCreateInfo	stage;
 		pipelineLayout,									// VkPipelineLayout					layout;
+#ifndef CTS_USES_VULKANSC
 		basePipelineHandle,								// VkPipeline						basePipelineHandle;
 		-1,												// deInt32							basePipelineIndex;
+#else
+		DE_NULL,										// VkPipeline						basePipelineHandle;
+		0,												// deInt32							basePipelineIndex;
+#endif // CTS_USES_VULKANSC
 	};
+	static_cast<void>(basePipelineHandle);
 
 	return createComputePipeline(context.getDeviceInterface(), context.getDevice(), DE_NULL, &pipelineCreateInfo);
 }

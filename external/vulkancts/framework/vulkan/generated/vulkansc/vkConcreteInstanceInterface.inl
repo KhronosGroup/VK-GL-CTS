@@ -55,3 +55,6 @@ virtual void		submitDebugUtilsMessageEXT										(VkInstance instance, VkDebugU
 virtual void		getPhysicalDeviceMultisamplePropertiesEXT						(VkPhysicalDevice physicalDevice, VkSampleCountFlagBits samples, VkMultisamplePropertiesEXT* pMultisampleProperties) const;
 virtual VkResult	getPhysicalDeviceCalibrateableTimeDomainsEXT					(VkPhysicalDevice physicalDevice, uint32_t* pTimeDomainCount, VkTimeDomainEXT* pTimeDomains) const;
 virtual VkResult	createHeadlessSurfaceEXT										(VkInstance instance, const VkHeadlessSurfaceCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface) const;
+virtual VkResult	getPhysicalDeviceSciSyncAttributesNV							(VkPhysicalDevice physicalDevice, const VkSciSyncAttributesInfoNV* pSciSyncAttributesInfo, pt::NvSciSyncAttrList pAttributes) const;
+virtual VkResult	getPhysicalDeviceExternalMemorySciBufPropertiesNV				(VkPhysicalDevice physicalDevice, VkExternalMemoryHandleTypeFlagBits handleType, pt::NvSciBufObj handle, VkMemorySciBufPropertiesNV* pMemorySciBufProperties) const;
+virtual VkResult	getPhysicalDeviceSciBufAttributesNV								(VkPhysicalDevice physicalDevice, pt::NvSciBufAttrList pAttributes) const;

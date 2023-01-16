@@ -34,6 +34,7 @@ template<> const char*	getTypeName<VkSwapchainKHR>				(void) { return "VkSwapcha
 template<> const char*	getTypeName<VkDisplayKHR>				(void) { return "VkDisplayKHR";				}
 template<> const char*	getTypeName<VkDisplayModeKHR>			(void) { return "VkDisplayModeKHR";			}
 template<> const char*	getTypeName<VkDebugUtilsMessengerEXT>	(void) { return "VkDebugUtilsMessengerEXT";	}
+template<> const char*	getTypeName<VkSemaphoreSciSyncPoolNV>	(void) { return "VkSemaphoreSciSyncPoolNV";	}
 
 namespace pt
 {
@@ -66,6 +67,11 @@ std::ostream& operator<< (std::ostream& s, MTLBuffer_id					v) { return s << tcu
 std::ostream& operator<< (std::ostream& s, MTLTexture_id				v) { return s << tcu::toHex(v.internal); }
 std::ostream& operator<< (std::ostream& s, IOSurfaceRef					v) { return s << tcu::toHex(v.internal); }
 std::ostream& operator<< (std::ostream& s, MTLSharedEvent_id			v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, NvSciSyncAttrList			v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, NvSciSyncObj					v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, NvSciSyncFence				v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, NvSciBufAttrList				v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, NvSciBufObj					v) { return s << tcu::toHex(v.internal); }
 }
 
 const char* getResultName (VkResult value)
@@ -290,6 +296,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_DISPLAY_MODE_CREATE_INFO_KHR:									return "VK_STRUCTURE_TYPE_DISPLAY_MODE_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR:									return "VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_DISPLAY_PRESENT_INFO_KHR:										return "VK_STRUCTURE_TYPE_DISPLAY_PRESENT_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PRIVATE_VENDOR_INFO_RESERVED_OFFSET_0_NV:						return "VK_STRUCTURE_TYPE_PRIVATE_VENDOR_INFO_RESERVED_OFFSET_0_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXTURE_COMPRESSION_ASTC_HDR_FEATURES_EXT:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXTURE_COMPRESSION_ASTC_HDR_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_IMAGE_VIEW_ASTC_DECODE_MODE_EXT:									return "VK_STRUCTURE_TYPE_IMAGE_VIEW_ASTC_DECODE_MODE_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ASTC_DECODE_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ASTC_DECODE_FEATURES_EXT";
@@ -418,10 +425,27 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT:							return "VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT";
 		case VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT:						return "VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT";
+		case VK_STRUCTURE_TYPE_IMPORT_FENCE_SCI_SYNC_INFO_NV:									return "VK_STRUCTURE_TYPE_IMPORT_FENCE_SCI_SYNC_INFO_NV";
+		case VK_STRUCTURE_TYPE_EXPORT_FENCE_SCI_SYNC_INFO_NV:									return "VK_STRUCTURE_TYPE_EXPORT_FENCE_SCI_SYNC_INFO_NV";
+		case VK_STRUCTURE_TYPE_FENCE_GET_SCI_SYNC_INFO_NV:										return "VK_STRUCTURE_TYPE_FENCE_GET_SCI_SYNC_INFO_NV";
+		case VK_STRUCTURE_TYPE_SCI_SYNC_ATTRIBUTES_INFO_NV:										return "VK_STRUCTURE_TYPE_SCI_SYNC_ATTRIBUTES_INFO_NV";
+		case VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_SCI_SYNC_INFO_NV:								return "VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_SCI_SYNC_INFO_NV";
+		case VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_SCI_SYNC_INFO_NV:								return "VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_SCI_SYNC_INFO_NV";
+		case VK_STRUCTURE_TYPE_SEMAPHORE_GET_SCI_SYNC_INFO_NV:									return "VK_STRUCTURE_TYPE_SEMAPHORE_GET_SCI_SYNC_INFO_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SCI_SYNC_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SCI_SYNC_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_IMPORT_MEMORY_SCI_BUF_INFO_NV:									return "VK_STRUCTURE_TYPE_IMPORT_MEMORY_SCI_BUF_INFO_NV";
+		case VK_STRUCTURE_TYPE_EXPORT_MEMORY_SCI_BUF_INFO_NV:									return "VK_STRUCTURE_TYPE_EXPORT_MEMORY_SCI_BUF_INFO_NV";
+		case VK_STRUCTURE_TYPE_MEMORY_GET_SCI_BUF_INFO_NV:										return "VK_STRUCTURE_TYPE_MEMORY_GET_SCI_BUF_INFO_NV";
+		case VK_STRUCTURE_TYPE_MEMORY_SCI_BUF_PROPERTIES_NV:									return "VK_STRUCTURE_TYPE_MEMORY_SCI_BUF_PROPERTIES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCI_BUF_FEATURES_NV:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCI_BUF_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COLOR_WRITE_ENABLE_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COLOR_WRITE_ENABLE_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT:							return "VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_APPLICATION_PARAMETERS_EXT:										return "VK_STRUCTURE_TYPE_APPLICATION_PARAMETERS_EXT";
+		case VK_STRUCTURE_TYPE_SEMAPHORE_SCI_SYNC_POOL_CREATE_INFO_NV:							return "VK_STRUCTURE_TYPE_SEMAPHORE_SCI_SYNC_POOL_CREATE_INFO_NV";
+		case VK_STRUCTURE_TYPE_SEMAPHORE_SCI_SYNC_CREATE_INFO_NV:								return "VK_STRUCTURE_TYPE_SEMAPHORE_SCI_SYNC_CREATE_INFO_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SCI_SYNC_2_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SCI_SYNC_2_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_DEVICE_SEMAPHORE_SCI_SYNC_POOL_RESERVATION_CREATE_INFO_NV:		return "VK_STRUCTURE_TYPE_DEVICE_SEMAPHORE_SCI_SYNC_POOL_RESERVATION_CREATE_INFO_NV";
 		case VK_STRUCTURE_TYPE_MAX_ENUM:														return "VK_STRUCTURE_TYPE_MAX_ENUM";
 		default:																				return DE_NULL;
 	}
@@ -475,6 +499,7 @@ const char* getObjectTypeName (VkObjectType value)
 		case VK_OBJECT_TYPE_QUERY_POOL:					return "VK_OBJECT_TYPE_QUERY_POOL";
 		case VK_OBJECT_TYPE_BUFFER_VIEW:				return "VK_OBJECT_TYPE_BUFFER_VIEW";
 		case VK_OBJECT_TYPE_IMAGE_VIEW:					return "VK_OBJECT_TYPE_IMAGE_VIEW";
+		case VK_OBJECT_TYPE_SHADER_MODULE:				return "VK_OBJECT_TYPE_SHADER_MODULE";
 		case VK_OBJECT_TYPE_PIPELINE_CACHE:				return "VK_OBJECT_TYPE_PIPELINE_CACHE";
 		case VK_OBJECT_TYPE_PIPELINE_LAYOUT:			return "VK_OBJECT_TYPE_PIPELINE_LAYOUT";
 		case VK_OBJECT_TYPE_RENDER_PASS:				return "VK_OBJECT_TYPE_RENDER_PASS";
@@ -491,6 +516,7 @@ const char* getObjectTypeName (VkObjectType value)
 		case VK_OBJECT_TYPE_DISPLAY_KHR:				return "VK_OBJECT_TYPE_DISPLAY_KHR";
 		case VK_OBJECT_TYPE_DISPLAY_MODE_KHR:			return "VK_OBJECT_TYPE_DISPLAY_MODE_KHR";
 		case VK_OBJECT_TYPE_DEBUG_UTILS_MESSENGER_EXT:	return "VK_OBJECT_TYPE_DEBUG_UTILS_MESSENGER_EXT";
+		case VK_OBJECT_TYPE_SEMAPHORE_SCI_SYNC_POOL_NV:	return "VK_OBJECT_TYPE_SEMAPHORE_SCI_SYNC_POOL_NV";
 		case VK_OBJECT_TYPE_MAX_ENUM:					return "VK_OBJECT_TYPE_MAX_ENUM";
 		default:										return DE_NULL;
 	}
@@ -1691,6 +1717,29 @@ const char* getLineRasterizationModeEXTName (VkLineRasterizationModeEXT value)
 	}
 }
 
+const char* getSciSyncClientTypeNVName (VkSciSyncClientTypeNV value)
+{
+	switch (value)
+	{
+		case VK_SCI_SYNC_CLIENT_TYPE_SIGNALER_NV:			return "VK_SCI_SYNC_CLIENT_TYPE_SIGNALER_NV";
+		case VK_SCI_SYNC_CLIENT_TYPE_WAITER_NV:				return "VK_SCI_SYNC_CLIENT_TYPE_WAITER_NV";
+		case VK_SCI_SYNC_CLIENT_TYPE_SIGNALER_WAITER_NV:	return "VK_SCI_SYNC_CLIENT_TYPE_SIGNALER_WAITER_NV";
+		case VK_SCI_SYNC_CLIENT_TYPE_MAX_ENUM_NV:			return "VK_SCI_SYNC_CLIENT_TYPE_MAX_ENUM_NV";
+		default:											return DE_NULL;
+	}
+}
+
+const char* getSciSyncPrimitiveTypeNVName (VkSciSyncPrimitiveTypeNV value)
+{
+	switch (value)
+	{
+		case VK_SCI_SYNC_PRIMITIVE_TYPE_FENCE_NV:		return "VK_SCI_SYNC_PRIMITIVE_TYPE_FENCE_NV";
+		case VK_SCI_SYNC_PRIMITIVE_TYPE_SEMAPHORE_NV:	return "VK_SCI_SYNC_PRIMITIVE_TYPE_SEMAPHORE_NV";
+		case VK_SCI_SYNC_PRIMITIVE_TYPE_MAX_ENUM_NV:	return "VK_SCI_SYNC_PRIMITIVE_TYPE_MAX_ENUM_NV";
+		default:										return DE_NULL;
+	}
+}
+
 tcu::Format::Bitfield<32> getAccessFlagsStr (VkAccessFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -2034,7 +2083,6 @@ tcu::Format::Bitfield<32> getPipelineCreateFlagsStr (VkPipelineCreateFlags value
 	static const tcu::Format::BitDesc s_desc[] =
 	{
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT,			"VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,				"VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT,	"VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISPATCH_BASE_BIT,					"VK_PIPELINE_CREATE_DISPATCH_BASE_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISPATCH_BASE,						"VK_PIPELINE_CREATE_DISPATCH_BASE"),
@@ -2285,6 +2333,7 @@ tcu::Format::Bitfield<32> getExternalMemoryHandleTypeFlagsStr (VkExternalMemoryH
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT,					"VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT,			"VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_MAPPED_FOREIGN_MEMORY_BIT_EXT,	"VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_MAPPED_FOREIGN_MEMORY_BIT_EXT"),
+		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_SCI_BUF_BIT_NV,						"VK_EXTERNAL_MEMORY_HANDLE_TYPE_SCI_BUF_BIT_NV"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_FLAG_BITS_MAX_ENUM,					"VK_EXTERNAL_MEMORY_HANDLE_TYPE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
@@ -2310,6 +2359,8 @@ tcu::Format::Bitfield<32> getExternalFenceHandleTypeFlagsStr (VkExternalFenceHan
 		tcu::Format::BitDesc(VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT,		"VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT"),
 		tcu::Format::BitDesc(VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT,	"VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT"),
 		tcu::Format::BitDesc(VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT,				"VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT"),
+		tcu::Format::BitDesc(VK_EXTERNAL_FENCE_HANDLE_TYPE_SCI_SYNC_OBJ_BIT_NV,		"VK_EXTERNAL_FENCE_HANDLE_TYPE_SCI_SYNC_OBJ_BIT_NV"),
+		tcu::Format::BitDesc(VK_EXTERNAL_FENCE_HANDLE_TYPE_SCI_SYNC_FENCE_BIT_NV,	"VK_EXTERNAL_FENCE_HANDLE_TYPE_SCI_SYNC_FENCE_BIT_NV"),
 		tcu::Format::BitDesc(VK_EXTERNAL_FENCE_HANDLE_TYPE_FLAG_BITS_MAX_ENUM,		"VK_EXTERNAL_FENCE_HANDLE_TYPE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
@@ -2355,6 +2406,7 @@ tcu::Format::Bitfield<32> getExternalSemaphoreHandleTypeFlagsStr (VkExternalSema
 		tcu::Format::BitDesc(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT,	"VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT"),
 		tcu::Format::BitDesc(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT,			"VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT"),
 		tcu::Format::BitDesc(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT,				"VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT"),
+		tcu::Format::BitDesc(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SCI_SYNC_OBJ_BIT_NV,		"VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SCI_SYNC_OBJ_BIT_NV"),
 		tcu::Format::BitDesc(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D11_FENCE_BIT,			"VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D11_FENCE_BIT"),
 		tcu::Format::BitDesc(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_FLAG_BITS_MAX_ENUM,		"VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_FLAG_BITS_MAX_ENUM"),
 	};
@@ -7645,6 +7697,193 @@ std::ostream& operator<< (std::ostream& s, const VkApplicationParametersEXT& val
 	s << "\tdeviceID = " << value.deviceID << '\n';
 	s << "\tkey = " << value.key << '\n';
 	s << "\tvalue = " << value.value << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExportFenceSciSyncInfoNV& value)
+{
+	s << "VkExportFenceSciSyncInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpAttributes = " << value.pAttributes << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImportFenceSciSyncInfoNV& value)
+{
+	s << "VkImportFenceSciSyncInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tfence = " << value.fence << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << "\thandle = " << value.handle << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkFenceGetSciSyncInfoNV& value)
+{
+	s << "VkFenceGetSciSyncInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tfence = " << value.fence << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSciSyncAttributesInfoNV& value)
+{
+	s << "VkSciSyncAttributesInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tclientType = " << value.clientType << '\n';
+	s << "\tprimitiveType = " << value.primitiveType << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExportSemaphoreSciSyncInfoNV& value)
+{
+	s << "VkExportSemaphoreSciSyncInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpAttributes = " << value.pAttributes << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImportSemaphoreSciSyncInfoNV& value)
+{
+	s << "VkImportSemaphoreSciSyncInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsemaphore = " << value.semaphore << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << "\thandle = " << value.handle << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSemaphoreGetSciSyncInfoNV& value)
+{
+	s << "VkSemaphoreGetSciSyncInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsemaphore = " << value.semaphore << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExternalSciSyncFeaturesNV& value)
+{
+	s << "VkPhysicalDeviceExternalSciSyncFeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsciSyncFence = " << value.sciSyncFence << '\n';
+	s << "\tsciSyncSemaphore = " << value.sciSyncSemaphore << '\n';
+	s << "\tsciSyncImport = " << value.sciSyncImport << '\n';
+	s << "\tsciSyncExport = " << value.sciSyncExport << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExportMemorySciBufInfoNV& value)
+{
+	s << "VkExportMemorySciBufInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpAttributes = " << value.pAttributes << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImportMemorySciBufInfoNV& value)
+{
+	s << "VkImportMemorySciBufInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << "\thandle = " << value.handle << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryGetSciBufInfoNV& value)
+{
+	s << "VkMemoryGetSciBufInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmemory = " << value.memory << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemorySciBufPropertiesNV& value)
+{
+	s << "VkMemorySciBufPropertiesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmemoryTypeBits = " << value.memoryTypeBits << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExternalMemorySciBufFeaturesNV& value)
+{
+	s << "VkPhysicalDeviceExternalMemorySciBufFeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsciBufImport = " << value.sciBufImport << '\n';
+	s << "\tsciBufExport = " << value.sciBufExport << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExternalSciSync2FeaturesNV& value)
+{
+	s << "VkPhysicalDeviceExternalSciSync2FeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsciSyncFence = " << value.sciSyncFence << '\n';
+	s << "\tsciSyncSemaphore2 = " << value.sciSyncSemaphore2 << '\n';
+	s << "\tsciSyncImport = " << value.sciSyncImport << '\n';
+	s << "\tsciSyncExport = " << value.sciSyncExport << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSemaphoreSciSyncPoolCreateInfoNV& value)
+{
+	s << "VkSemaphoreSciSyncPoolCreateInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\thandle = " << value.handle << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSemaphoreSciSyncCreateInfoNV& value)
+{
+	s << "VkSemaphoreSciSyncCreateInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsemaphorePool = " << value.semaphorePool << '\n';
+	s << "\tpFence = " << value.pFence << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceSemaphoreSciSyncPoolReservationCreateInfoNV& value)
+{
+	s << "VkDeviceSemaphoreSciSyncPoolReservationCreateInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsemaphoreSciSyncPoolRequestCount = " << value.semaphoreSciSyncPoolRequestCount << '\n';
 	s << '}';
 	return s;
 }
