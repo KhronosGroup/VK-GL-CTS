@@ -616,7 +616,7 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 			0u,																// VkPipelineColorBlendStateCreateFlags			flags
 			VK_FALSE,														// VkBool32										logicOpEnable
 			vk::VK_LOGIC_OP_CLEAR,											// VkLogicOp									logicOp
-			1u,																// deUint32										attachmentCount
+			m_colorAttachmentEnable ? 1u : 0u,								// deUint32										attachmentCount
 			&blendState,													// const VkPipelineColorBlendAttachmentState*	pAttachments
 			{ 1.0f, 1.0f, 1.0f, 1.0f }										// float										blendConstants[4]
 		};
@@ -638,7 +638,6 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 
 			m_graphicsPipelines[quadNdx].setDefaultRasterizerDiscardEnable(!m_colorAttachmentEnable)
 										.setDefaultMultisampleState()
-										.setDefaultColorBlendState()
 										.setupVertexInputStete(&vertexInputStateParams)
 										.setupPreRasterizationShaderState(viewports,
 																		  scissors,
@@ -648,7 +647,7 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 																		  *m_vertexShaderModule,
 																		  &rasterizationStateParams)
 										.setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *m_fragmentShaderModule, &depthStencilStateParams)
-										.setupFragmentOutputState(*m_renderPass, 0, (m_colorAttachmentEnable ? &colorBlendStateParams : DE_NULL))
+										.setupFragmentOutputState(*m_renderPass, 0, &colorBlendStateParams)
 										.setMonolithicPipelineLayout(*m_pipelineLayout)
 										.buildPipeline();
 		}
