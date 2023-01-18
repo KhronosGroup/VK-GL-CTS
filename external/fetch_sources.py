@@ -329,9 +329,10 @@ PACKAGES = [
 		"87d5b782bec60822aa878941e6b13c0a9a954c9b",
 		"spirv-headers"),
 	GitRepo(
-		"https://github.com/KhronosGroup/Vulkan-Docs.git",
-		"git@github.com:KhronosGroup/Vulkan-Docs.git",
-		"9a2e576a052a1e65a5d41b593e693ff02745604b",
+                # branch 2799-external-memory-acquire-unmodified
+                "https://gitlab.khronos.org/vulkan/vulkan.git",
+                "git@gitlab.khronos.org:vulkan/vulkan.git",
+                "8c0aa570a4cc0c33fb06c0deb153f1d359cd10ec",
 		"vulkan-docs"),
 	GitRepo(
 		"https://github.com/google/amber.git",

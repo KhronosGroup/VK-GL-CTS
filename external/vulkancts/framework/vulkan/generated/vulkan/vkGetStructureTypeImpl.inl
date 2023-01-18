@@ -3458,6 +3458,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceShaderEarlyAndLateFr
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_EARLY_AND_LATE_FRAGMENT_TESTS_FEATURES_AMD;
 }
 
+template<> VkStructureType getStructureType<VkExternalMemoryAcquireUnmodifiedEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_ACQUIRE_UNMODIFIED_EXT;
+}
+
 template<> VkStructureType getStructureType<VkExportMetalObjectCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECT_CREATE_INFO_EXT;

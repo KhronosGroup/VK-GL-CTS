@@ -7643,6 +7643,13 @@ struct VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD
 	VkBool32		shaderEarlyAndLateFragmentTests;
 };
 
+struct VkExternalMemoryAcquireUnmodifiedEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		acquireUnmodifiedMemory;
+};
+
 struct VkExportMetalObjectCreateInfoEXT
 {
 	VkStructureType						sType;

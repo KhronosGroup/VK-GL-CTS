@@ -1266,6 +1266,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_external_memory_acquire_unmodified")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_extended_dynamic_state3")
 	{
 		return;
@@ -2783,6 +2787,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_external_memory_acquire_unmodified")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_extended_dynamic_state3")
 	{
 		functions.push_back("vkCmdSetTessellationDomainOriginEXT");
@@ -3205,6 +3213,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_NV_linear_color_attachment",
 	"VK_EXT_image_compression_control_swapchain",
 	"VK_QCOM_image_processing",
+	"VK_EXT_external_memory_acquire_unmodified",
 	"VK_EXT_extended_dynamic_state3",
 	"VK_EXT_subpass_merge_feedback",
 	"VK_EXT_shader_module_identifier",
