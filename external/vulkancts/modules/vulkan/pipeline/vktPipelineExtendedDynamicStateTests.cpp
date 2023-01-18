@@ -1199,6 +1199,38 @@ private:
 	const uint32_t	m_width;
 };
 
+// Some tests may expect a center strip in the framebuffer having a different color.
+class CenterStripGenerator : public ReferenceColorGenerator
+{
+public:
+	CenterStripGenerator (const tcu::Vec4& sides, const tcu::Vec4& center)
+		: m_sides	(sides)
+		, m_center	(center)
+		{}
+
+	void operator()(tcu::PixelBufferAccess& access) const override
+	{
+		constexpr auto kWidth		= static_cast<int>(kFramebufferWidth);
+		constexpr auto kHeight		= static_cast<int>(kFramebufferHeight);
+
+		for (int y = 0; y < kHeight; ++y)
+			for (int x = 0; x < kWidth; ++x)
+			{
+				const auto& color = ((x >= kWidth / 4 && x < (kWidth * 3) / 4) ? m_center : m_sides);
+				access.setPixel(color, x, y);
+			}
+	}
+
+	P clone() const override
+	{
+		return P(new CenterStripGenerator(*this));
+	}
+
+private:
+	const tcu::Vec4 m_sides;
+	const tcu::Vec4 m_center;
+};
+
 // Tests using an off-center triangle may want this generator: fill the image with a solid color but leave the top and left edges in
 // a different color.
 class TopLeftBorderGenerator : public ReferenceColorGenerator
@@ -1522,6 +1554,9 @@ struct TestConfig
 	// Use representative fragment test or not.
 	bool							representativeFragmentTest;
 
+	// Insert extra indices for restarting lines.
+	bool							extraLineRestarts;
+
 	// When setting the sample mask dynamically, we can use an alternative sample count specified here.
 	OptSampleCount					dynamicSampleMaskCount;
 
@@ -1616,6 +1651,7 @@ struct TestConfig
 		, shadingRateImage				(false)
 		, viewportWScaling				(false)
 		, representativeFragmentTest	(false)
+		, extraLineRestarts				(false)
 		, dynamicSampleMaskCount		(tcu::Nothing)
 		, vertexGenerator				(makeVertexGeneratorConfig(staticVertexGenerator, dynamicVertexGenerator))
 		, cullModeConfig				(static_cast<vk::VkCullModeFlags>(vk::VK_CULL_MODE_NONE))
@@ -1711,6 +1747,7 @@ struct TestConfig
 		, shadingRateImage				(other.shadingRateImage)
 		, viewportWScaling				(other.viewportWScaling)
 		, representativeFragmentTest	(other.representativeFragmentTest)
+		, extraLineRestarts				(other.extraLineRestarts)
 		, dynamicSampleMaskCount		(other.dynamicSampleMaskCount)
 		, vertexGenerator				(other.vertexGenerator)
 		, cullModeConfig				(other.cullModeConfig)
@@ -1796,12 +1833,6 @@ struct TestConfig
 	DepthBiasParams getActiveDepthBiasParams () const
 	{
 		return ((depthBiasConfig.dynamicValue && !m_swappedValues) ? depthBiasConfig.dynamicValue.get() : depthBiasConfig.staticValue);
-	}
-
-	// Get the active primitive restart enable value.
-	bool getActivePrimitiveRestartEnable () const
-	{
-		return ((primRestartEnableConfig.dynamicValue && !m_swappedValues) ? primRestartEnableConfig.dynamicValue.get() : primRestartEnableConfig.staticValue);
 	}
 
 	vk::VkTessellationDomainOrigin getActiveTessellationDomainOrigin () const
@@ -3815,7 +3846,6 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 
 	if (topologyClass == TopologyClass::TRIANGLE)
 	{
-		// These indices are used for a subset of cases.
 		DE_ASSERT(!m_testConfig.needsIndexBuffer());
 
 		if (m_testConfig.oversizedTriangle)
@@ -3900,8 +3930,9 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 			// Draw one segmented line per output row of pixels that could be wrongly interpreted as a list of lines that would not cover the whole screen.
 			vertices.reserve(kFramebufferHeight * 4u);
 
+			const auto indicesPerRow = (m_testConfig.extraLineRestarts ? 6u : 5u);
 			if (m_testConfig.needsIndexBuffer())
-				indices.reserve(kFramebufferHeight * 5u);
+				indices.reserve(kFramebufferHeight * indicesPerRow);
 
 			for (deUint32 rowIdx = 0; rowIdx < kFramebufferHeight; ++rowIdx)
 			{
@@ -3916,6 +3947,12 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 				{
 					indices.push_back(4u * rowIdx + 0u);
 					indices.push_back(4u * rowIdx + 1u);
+
+					// When using extra line restarts, insert a primitive restart index in the middle, which will result in the
+					// center strip being skipped, as if the topology was a line list instead of a strip.
+					if (m_testConfig.extraLineRestarts)
+						indices.push_back(0xFFFFFFFFu);
+
 					indices.push_back(4u * rowIdx + 2u);
 					indices.push_back(4u * rowIdx + 3u);
 					indices.push_back(0xFFFFFFFFu); // Restart line strip.
@@ -5018,7 +5055,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 							(m_testConfig.sequenceOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC ||
 							m_testConfig.sequenceOrdering == SequenceOrdering::TWO_DRAWS_STATIC))
 						{
-							numIndices = 3u;
+							numIndices = 2u;
 						}
 						vkd.cmdDrawIndexed(cmdBuffer, numIndices, 1u, 0u, 0u, 0u);
 					}
@@ -5544,10 +5581,12 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 					continue;
 
 				TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+				config.topologyConfig.staticValue			= vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
+				config.extraLineRestarts					= true;
 				config.primRestartEnableConfig.staticValue	= false;
 				config.primRestartEnableConfig.dynamicValue	= tcu::just(true);
-				config.topologyConfig.staticValue			= vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
 				config.bindUnusedMeshShadingPipeline		= bindUnusedCase.bindUnusedMeshShadingPipeline;
+				config.referenceColor.reset					(new CenterStripGenerator(kDefaultTriangleColor, kDefaultClearColor));
 				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, std::string("prim_restart_enable") + bindUnusedCase.nameSuffix, "Dynamically enable primitiveRestart" + bindUnusedCase.descSuffix, config));
 			}
 		}
