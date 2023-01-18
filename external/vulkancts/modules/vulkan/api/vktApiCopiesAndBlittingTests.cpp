@@ -319,6 +319,7 @@ struct TestParams
 	AllocationKind	allocationKind;
 	ExtensionUse	extensionUse;
 	deUint32		mipLevels;
+	deUint32		arrayLayers;
 	deBool			singleCommand;
 	deUint32		barrierCount;
 	deBool			separateDepthStencilLayouts;
@@ -330,6 +331,7 @@ struct TestParams
 		allocationKind				= ALLOCATION_KIND_DEDICATED;
 		extensionUse				= EXTENSION_USE_NONE;
 		mipLevels					= 1u;
+		arrayLayers					= 1u;
 		singleCommand				= DE_TRUE;
 		barrierCount				= 1u;
 		separateDepthStencilLayouts	= DE_FALSE;
@@ -2567,7 +2569,7 @@ private:
 	Move<VkCommandBuffer>								m_alternativeCmdBuffer;
 
 	// Contains a randomly generated compressed texture pyramid.
-	using TestTexture2DSp = de::SharedPtr<pipeline::TestTexture2D>;
+	using TestTexture2DSp = de::SharedPtr<pipeline::TestTexture2DArray>;
 	TestTexture2DSp										m_texture;
 	de::MovePtr<ImageWithMemory>						m_source;
 	de::MovePtr<BufferWithMemory>						m_sourceBuffer;
@@ -2577,7 +2579,7 @@ private:
 CopyCompressedImageToBuffer::CopyCompressedImageToBuffer (Context& context, TestParams testParams, QueueSelectionOptions options)
 	: CopiesAndBlittingTestInstance(context, testParams)
 	, m_options(options)
-	, m_texture(TestTexture2DSp(new pipeline::TestTexture2D(mapVkCompressedFormat(testParams.src.image.format), testParams.src.image.extent.width, testParams.src.image.extent.height)))
+	, m_texture(TestTexture2DSp(new pipeline::TestTexture2DArray(mapVkCompressedFormat(testParams.src.image.format), testParams.src.image.extent.width, testParams.src.image.extent.height, testParams.arrayLayers)))
 {
 }
 
@@ -2630,7 +2632,7 @@ tcu::TestStatus CopyCompressedImageToBuffer::iterate (void)
 			m_params.src.image.format,				// VkFormat				format;
 			m_params.src.image.extent,				// VkExtent3D			extent;
 			(deUint32)m_texture->getNumLevels(),	// deUint32				mipLevels;
-			getArraySize(m_params.src.image),		// deUint32				arraySize;
+			m_params.arrayLayers,					// deUint32				arraySize;
 			VK_SAMPLE_COUNT_1_BIT,					// deUint32				samples;
 			VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling		tiling;
 			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
@@ -2663,15 +2665,16 @@ tcu::TestStatus CopyCompressedImageToBuffer::iterate (void)
 	// Copy each miplevel of the uploaded image into a buffer, and
 	// check the buffer matches the appropriate test texture level.
 	for (deUint32 mipLevelToCheckIdx = 0; mipLevelToCheckIdx < (deUint32)m_texture->getNumLevels(); mipLevelToCheckIdx++)
+	for (deUint32 arrayLayerToCheckIdx = 0; arrayLayerToCheckIdx < (deUint32)m_texture->getArraySize(); arrayLayerToCheckIdx++)
 	{
-		const tcu::CompressedTexture compressedMipLevelToCheck = m_texture->getCompressedLevel(mipLevelToCheckIdx, 0);
+		const tcu::CompressedTexture compressedMipLevelToCheck = m_texture->getCompressedLevel(mipLevelToCheckIdx, arrayLayerToCheckIdx);
 		deUint32 bufferSize = compressedMipLevelToCheck.getDataSize();
 
 		// Clear the buffer to zero before copying into it as a precaution.
 		deMemset(m_destination->getAllocation().getHostPtr(), 0, bufferSize);
 		flushAlloc(vk, vkDevice, m_destination->getAllocation());
 
-		// Barrier to get the source image's selected mip level in the right format for transfer.
+		// Barrier to get the source image's selected mip-level / layer in the right format for transfer.
 		const auto imageBarrier = makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT,
 			VK_ACCESS_TRANSFER_READ_BIT,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -2680,9 +2683,9 @@ tcu::TestStatus CopyCompressedImageToBuffer::iterate (void)
 			{											// VkImageSubresourceRange	subresourceRange;
 				VK_IMAGE_ASPECT_COLOR_BIT,				// VkImageAspectFlags	aspectMask;
 				mipLevelToCheckIdx,						// deUint32				baseMipLevel;
-				1,										// deUint32				mipLevels;
-				0u,										// deUint32				baseArraySlice;
-				getArraySize(m_params.src.image)		// deUint32				arraySize;
+				1u,										// deUint32				mipLevels;
+				arrayLayerToCheckIdx,					// deUint32				baseArraySlice;
+				1u,										// deUint32				arraySize;
 			});
 
 		// Barrier to wait for the transfer from image to buffer to complete.
@@ -2690,7 +2693,7 @@ tcu::TestStatus CopyCompressedImageToBuffer::iterate (void)
 
 		// Copy from image to buffer
 		VkBufferImageCopy copyRegion;
-		copyRegion = makeBufferImageCopy(mipLevelExtents(srcImageParams.extent, mipLevelToCheckIdx), makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, mipLevelToCheckIdx, 0, 1));
+		copyRegion = makeBufferImageCopy(mipLevelExtents(srcImageParams.extent, mipLevelToCheckIdx), makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, mipLevelToCheckIdx, arrayLayerToCheckIdx, 1));
 
 		VkBufferImageCopy		bufferImageCopy;
 #ifndef CTS_USES_VULKANSC
@@ -2751,7 +2754,7 @@ tcu::TestStatus CopyCompressedImageToBuffer::iterate (void)
 		if (result != 0)
 		{
 			std::ostringstream msg;
-			msg << "Incorrect data retrieved for mip level " << mipLevelToCheckIdx << " - extents (" << compressedMipLevelToCheck.getWidth() << ", " << compressedMipLevelToCheck.getHeight() << ")";
+			msg << "Incorrect data retrieved for mip level " << mipLevelToCheckIdx << ", layer " << arrayLayerToCheckIdx << " - extents (" << compressedMipLevelToCheck.getWidth() << ", " << compressedMipLevelToCheck.getHeight() << ")";
 			return tcu::TestStatus::fail(msg.str());
 		}
 	}
@@ -11713,11 +11716,18 @@ void add2dImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocati
 			{ 64, 192, 1 },
 		};
 
-		auto getCaseName = [](VkFormat format, VkExtent3D extent, std::string queueName) {
-			return "mip_copies_" + getFormatCaseName(format) + "_" + std::to_string(extent.width) + "x" + std::to_string(extent.height) + "_" + queueName;
+		deUint32 arrayLayers[] = { 1, 2, 5 };
+
+		auto getCaseName = [](VkFormat format, VkExtent3D extent, deUint32 numLayers, std::string queueName) {
+			std::string caseName = "mip_copies_" + getFormatCaseName(format) + "_" + std::to_string(extent.width) + "x" + std::to_string(extent.height);
+			if (numLayers > 1)
+				caseName.append("_" + std::to_string(numLayers) + "_layers");
+			caseName.append("_" + queueName);
+			return caseName;
 		};
 
 		for (const auto& extent : extents)
+		for (const auto numLayers : arrayLayers)
 		{
 			TestParams	params;
 			params.src.image.imageType			= VK_IMAGE_TYPE_2D;
@@ -11726,12 +11736,13 @@ void add2dImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocati
 			params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 			params.allocationKind				= allocationKind;
 			params.extensionUse					= extensionUse;
+			params.arrayLayers					= numLayers;
 
 			for (const VkFormat *format = compressedFormatsFloats; *format != VK_FORMAT_UNDEFINED; format++)
 			{
 				params.src.image.format				= *format;
-				group->addChild(new CopyCompressedImageToBufferTestCase(testCtx, getCaseName(*format, params.src.image.extent, "universal"), "Copy from image to buffer", params, QueueSelectionOptions::Universal));
-				group->addChild(new CopyCompressedImageToBufferTestCase(testCtx, getCaseName(*format, params.src.image.extent, "compute"), "Copy from image to buffer", params, QueueSelectionOptions::ComputeOnly));
+				group->addChild(new CopyCompressedImageToBufferTestCase(testCtx, getCaseName(*format, params.src.image.extent, numLayers, "universal"), "Copy from image to buffer", params, QueueSelectionOptions::Universal));
+				group->addChild(new CopyCompressedImageToBufferTestCase(testCtx, getCaseName(*format, params.src.image.extent, numLayers, "compute"), "Copy from image to buffer", params, QueueSelectionOptions::ComputeOnly));
 			}
 		}
 	}
