@@ -6870,7 +6870,7 @@ union VkDescriptorDataEXT
 	const VkDescriptorAddressInfoEXT*	pStorageTexelBuffer;
 	const VkDescriptorAddressInfoEXT*	pUniformBuffer;
 	const VkDescriptorAddressInfoEXT*	pStorageBuffer;
-	 VkDeviceAddress					accelerationStructure;
+	VkDeviceAddress						accelerationStructure;
 };
 
 struct VkDescriptorGetInfoEXT
@@ -8010,6 +8010,81 @@ struct VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM
 	VkBool32		shaderCoreBuiltins;
 };
 
+struct VkSurfacePresentModeEXT
+{
+	VkStructureType		sType;
+	void*				pNext;
+	VkPresentModeKHR	presentMode;
+};
+
+struct VkSurfacePresentScalingCapabilitiesEXT
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkPresentScalingFlagsEXT	supportedPresentScaling;
+	VkPresentGravityFlagsEXT	supportedPresentGravityX;
+	VkPresentGravityFlagsEXT	supportedPresentGravityY;
+	VkExtent2D					minScaledImageExtent;
+	VkExtent2D					maxScaledImageExtent;
+};
+
+struct VkSurfacePresentModeCompatibilityEXT
+{
+	VkStructureType		sType;
+	void*				pNext;
+	uint32_t			presentModeCount;
+	VkPresentModeKHR*	pPresentModes;
+};
+
+struct VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		swapchainMaintenance1;
+};
+
+struct VkSwapchainPresentFenceInfoEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		swapchainCount;
+	const VkFence*	pFences;
+};
+
+struct VkSwapchainPresentModesCreateInfoEXT
+{
+	VkStructureType			sType;
+	void*					pNext;
+	uint32_t				presentModeCount;
+	const VkPresentModeKHR*	pPresentModes;
+};
+
+struct VkSwapchainPresentModeInfoEXT
+{
+	VkStructureType			sType;
+	void*					pNext;
+	uint32_t				swapchainCount;
+	const VkPresentModeKHR*	pPresentModes;
+};
+
+struct VkSwapchainPresentScalingCreateInfoEXT
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkPresentScalingFlagsEXT	scalingBehavior;
+	VkPresentGravityFlagsEXT	presentGravityX;
+	VkPresentGravityFlagsEXT	presentGravityY;
+};
+
+struct VkReleaseSwapchainImagesInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkSwapchainKHR	swapchain;
+	uint32_t		imageIndexCount;
+	const uint32_t*	pImageIndices;
+};
+
 struct VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV
 {
 	VkStructureType	sType;
@@ -8022,6 +8097,48 @@ struct VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV
 	VkStructureType						sType;
 	void*								pNext;
 	VkRayTracingInvocationReorderModeNV	rayTracingInvocationReorderReorderingHint;
+};
+
+struct VkDirectDriverLoadingInfoLUNARG
+{
+	VkStructureType						sType;
+	void*								pNext;
+	VkDirectDriverLoadingFlagsLUNARG	flags;
+	PFN_vkGetInstanceProcAddrLUNARG		pfnGetInstanceProcAddr;
+};
+
+struct VkDirectDriverLoadingListLUNARG
+{
+	VkStructureType							sType;
+	void*									pNext;
+	VkDirectDriverLoadingModeLUNARG			mode;
+	uint32_t								driverCount;
+	const VkDirectDriverLoadingInfoLUNARG*	pDrivers;
+};
+
+struct VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		multiviewPerViewViewports;
+};
+
+struct VkPhysicalDeviceShaderTileImageFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderTileImageColorReadAccess;
+	VkBool32		shaderTileImageDepthReadAccess;
+	VkBool32		shaderTileImageStencilReadAccess;
+};
+
+struct VkPhysicalDeviceShaderTileImagePropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderTileImageCoherentReadAccelerated;
+	VkBool32		shaderTileImageReadSampleFromPixelRateInvocation;
+	VkBool32		shaderTileImageReadFromHelperInvocation;
 };
 
 struct StdVideoH264SpsVuiFlags
@@ -8807,8 +8924,8 @@ struct VkVideoDecodeH265PictureInfoEXT
 	VkStructureType					sType;
 	const void*						pNext;
 	StdVideoDecodeH265PictureInfo*	pStdPictureInfo;
-	uint32_t						sliceCount;
-	const uint32_t*					pSliceOffsets;
+	uint32_t						sliceSegmentCount;
+	const uint32_t*					pSliceSegmentOffsets;
 };
 
 struct StdVideoDecodeH265ReferenceInfoFlags

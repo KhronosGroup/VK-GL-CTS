@@ -2243,3 +2243,8 @@ VkResult DeviceDriver::getDeviceFaultInfoEXT (VkDevice device, VkDeviceFaultCoun
 {
 	return m_vk.getDeviceFaultInfoEXT(device, pFaultCounts, pFaultInfo);
 }
+
+VkResult DeviceDriver::releaseSwapchainImagesEXT (VkDevice device, const VkReleaseSwapchainImagesInfoEXT* pReleaseInfo) const
+{
+	return m_vk.releaseSwapchainImagesEXT(device, pReleaseInfo);
+}

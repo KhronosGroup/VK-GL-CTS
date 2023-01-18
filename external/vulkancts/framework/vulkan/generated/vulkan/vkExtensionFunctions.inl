@@ -916,6 +916,14 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_surface_maintenance1")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_swapchain_maintenance1")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_shader_demote_to_helper_invocation")
 	{
 		return;
@@ -1198,6 +1206,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_shader_tile_image")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_opacity_micromap")
 	{
 		return;
@@ -1266,6 +1278,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_LUNARG_direct_driver_loading")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_shader_module_identifier")
 	{
 		return;
@@ -1292,6 +1308,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_SEC_amigo_profiling")
+	{
+		return;
+	}
+	if (extName == "VK_QCOM_multiview_per_view_viewports")
 	{
 		return;
 	}
@@ -2355,6 +2375,15 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_surface_maintenance1")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_swapchain_maintenance1")
+	{
+		functions.push_back("vkReleaseSwapchainImagesEXT");
+		return;
+	}
 	if (extName == "VK_EXT_shader_demote_to_helper_invocation")
 	{
 		return;
@@ -2677,6 +2706,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_shader_tile_image")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_opacity_micromap")
 	{
 		functions.push_back("vkCreateMicromapEXT");
@@ -2787,6 +2820,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_LUNARG_direct_driver_loading")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_shader_module_identifier")
 	{
 		functions.push_back("vkGetShaderModuleIdentifierEXT");
@@ -2820,6 +2857,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_SEC_amigo_profiling")
+	{
+		return;
+	}
+	if (extName == "VK_QCOM_multiview_per_view_viewports")
 	{
 		return;
 	}
@@ -2899,10 +2940,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_KHR_surface_protected_capabilities",
 	"VK_EXT_validation_features",
 	"VK_EXT_headless_surface",
+	"VK_EXT_surface_maintenance1",
 	"VK_EXT_acquire_drm_display",
 	"VK_QNX_screen_surface",
 	"VK_KHR_portability_enumeration",
 	"VK_GOOGLE_surfaceless_query",
+	"VK_LUNARG_direct_driver_loading",
 };
 
 ::std::string deviceExtensionNames[] =
@@ -3089,6 +3132,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_KHR_deferred_host_operations",
 	"VK_KHR_pipeline_executable_properties",
 	"VK_EXT_shader_atomic_float2",
+	"VK_EXT_swapchain_maintenance1",
 	"VK_EXT_shader_demote_to_helper_invocation",
 	"VK_NV_device_generated_commands",
 	"VK_NV_inherited_viewport_scissor",
@@ -3155,6 +3199,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_image_view_min_lod",
 	"VK_EXT_multi_draw",
 	"VK_EXT_image_2d_view_of_3d",
+	"VK_EXT_shader_tile_image",
 	"VK_EXT_opacity_micromap",
 	"VK_EXT_load_store_op_none",
 	"VK_EXT_border_color_swizzle",
@@ -3178,6 +3223,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_pipeline_protected_access",
 	"VK_QCOM_tile_properties",
 	"VK_SEC_amigo_profiling",
+	"VK_QCOM_multiview_per_view_viewports",
 	"VK_NV_ray_tracing_invocation_reorder",
 	"VK_EXT_mutable_descriptor_type",
 	"VK_ARM_shader_core_builtins",

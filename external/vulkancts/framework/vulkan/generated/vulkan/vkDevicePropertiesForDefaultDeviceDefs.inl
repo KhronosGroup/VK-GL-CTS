@@ -55,6 +55,7 @@ const VkPhysicalDeviceFragmentDensityMap2PropertiesEXT&			getFragmentDensityMap2
 const VkPhysicalDeviceDrmPropertiesEXT&							getDrmPropertiesEXT							(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceDrmPropertiesEXT>();							}
 const VkPhysicalDeviceSubpassShadingPropertiesHUAWEI&			getSubpassShadingPropertiesHUAWEI			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceSubpassShadingPropertiesHUAWEI>();				}
 const VkPhysicalDeviceMultiDrawPropertiesEXT&					getMultiDrawPropertiesEXT					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceMultiDrawPropertiesEXT>();						}
+const VkPhysicalDeviceShaderTileImagePropertiesEXT&				getShaderTileImagePropertiesEXT				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceShaderTileImagePropertiesEXT>();				}
 const VkPhysicalDeviceOpacityMicromapPropertiesEXT&				getOpacityMicromapPropertiesEXT				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceOpacityMicromapPropertiesEXT>();				}
 const VkPhysicalDeviceMaintenance4Properties&					getMaintenance4Properties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceMaintenance4Properties>();						}
 const VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM&	getFragmentDensityMapOffsetPropertiesQCOM	(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM>();		}
