@@ -167,7 +167,7 @@ public:
 	// Get vertex binding declarations as part of descriptor sets, used for mesh shading.
 	virtual std::vector<std::string>								getDescriptorDeclarations()	const = 0;
 
-	// Get statements  to calculate a vec2 called "vertexCoords" using descriptor members.
+	// Get statements to calculate a vec2 called "vertexCoords" using descriptor members.
 	virtual std::vector<std::string>								getDescriptorCoordCalc()	const = 0;
 
 	// Get fragment input attribute declarations in GLSL form. One sentence per element.
@@ -475,6 +475,114 @@ public:
 	virtual std::vector<vk::VkDeviceSize> getVertexDataStrides() const override
 	{
 		return std::vector<vk::VkDeviceSize>(1u, static_cast<vk::VkDeviceSize>(sizeof(VertexData)));
+	}
+};
+
+// Two buffers (bindings): one with vertex data, stored contiguously without paddings, and one with instance data. Instance data
+// will not be stored contiguously: the stride will be twice that of the data size, and the padding space filled with "garbage".
+// Real instance data will contain a scale and an offset similar to the ones from push constants, and will be used to properly scale
+// and offset meshes to make them cover the top and bottom halves of the framebuffer.
+class VertexWithInstanceData : public VertexGenerator
+{
+protected:
+	struct InstanceData
+	{
+		InstanceData (const tcu::Vec2& scaleAndOffsetY_)
+			: scaleAndOffsetY	(scaleAndOffsetY_)
+			, garbage			(0.0f /* bad scale */, 777.0f /* bad offset */)
+		{}
+
+		tcu::Vec2 scaleAndOffsetY;
+		tcu::Vec2 garbage;
+	};
+
+public:
+	virtual std::vector<std::string> getAttributeDeclarations() const override
+	{
+		std::vector<std::string> declarations;
+		declarations.push_back("layout(location=0) in vec2 position;");
+		declarations.push_back("layout(location=1) in vec2 scaleAndOffsetY;");
+		return declarations;
+	}
+
+	virtual std::vector<std::string> getVertexCoordCalc() const override
+	{
+		std::vector<std::string> statements;
+		statements.push_back("vec2 vertexCoords = vec2(position.x, position.y * scaleAndOffsetY.x + scaleAndOffsetY.y);");
+		return statements;
+	}
+
+	virtual std::vector<std::string> getDescriptorDeclarations() const override
+	{
+		DE_ASSERT(false); // This vertex generator should not be used with mesh shaders.
+		return std::vector<std::string>();
+	}
+
+	virtual std::vector<std::string> getDescriptorCoordCalc() const override
+	{
+		DE_ASSERT(false); // This vertex generator should not be used with mesh shaders.
+		return std::vector<std::string>();
+	}
+
+	virtual std::vector<vk::VkVertexInputAttributeDescription> getAttributeDescriptions() const override
+	{
+		std::vector<vk::VkVertexInputAttributeDescription> descriptions;
+		descriptions.push_back(vk::makeVertexInputAttributeDescription(0u, 0u, vk::VK_FORMAT_R32G32_SFLOAT, 0u));
+		descriptions.push_back(vk::makeVertexInputAttributeDescription(1u, 1u, vk::VK_FORMAT_R32G32_SFLOAT, 0u));
+		return descriptions;
+	}
+
+	// Vertex attributes for VK_EXT_vertex_input_dynamic_state.
+	virtual std::vector<vk::VkVertexInputAttributeDescription2EXT> getAttributeDescriptions2() const override
+	{
+		std::vector<vk::VkVertexInputAttributeDescription2EXT> descriptions;
+		descriptions.push_back(makeVertexInputAttributeDescription2EXT(0u, 0u, vk::VK_FORMAT_R32G32_SFLOAT, 0u));
+		descriptions.push_back(makeVertexInputAttributeDescription2EXT(1u, 1u, vk::VK_FORMAT_R32G32_SFLOAT, 0u));
+		return descriptions;
+	}
+
+	// Vertex bindings for VkPipelineVertexInputStateCreateInfo.
+	virtual std::vector<vk::VkVertexInputBindingDescription> getBindingDescriptions(const StrideVec& strides) const override
+	{
+		std::vector<vk::VkVertexInputBindingDescription> descriptions;
+		descriptions.push_back(vk::makeVertexInputBindingDescription(0u, static_cast<deUint32>(strides.at(0)), vk::VK_VERTEX_INPUT_RATE_VERTEX));
+		descriptions.push_back(vk::makeVertexInputBindingDescription(1u, static_cast<deUint32>(strides.at(1)), vk::VK_VERTEX_INPUT_RATE_INSTANCE));
+		return descriptions;
+	}
+
+	// Vertex bindings for VK_EXT_vertex_input_dynamic_state.
+	virtual std::vector<vk::VkVertexInputBindingDescription2EXT> getBindingDescriptions2(const StrideVec& strides) const override
+	{
+		std::vector<vk::VkVertexInputBindingDescription2EXT> descriptions;
+		descriptions.push_back(makeVertexInputBindingDescription2EXT(0u, static_cast<deUint32>(strides.at(0)), vk::VK_VERTEX_INPUT_RATE_VERTEX));
+		descriptions.push_back(makeVertexInputBindingDescription2EXT(1u, static_cast<deUint32>(strides.at(1)), vk::VK_VERTEX_INPUT_RATE_INSTANCE));
+		return descriptions;
+	}
+
+	virtual std::vector<std::vector<deUint8>> createVertexData (const std::vector<tcu::Vec2>& coords, vk::VkDeviceSize dataOffset, vk::VkDeviceSize trailingPadding, const void* paddingPattern, size_t patternSize) const override
+	{
+		// Instance data for 2 instances. Scale and offset like we do with push constants.
+		const std::vector<tcu::Vec2> instanceIds
+		{
+			tcu::Vec2(0.5f, -0.5f),
+			tcu::Vec2(0.5f,  0.5f),
+		};
+
+		std::vector<std::vector<uint8_t>> buffers;
+		buffers.reserve(2u);
+		buffers.push_back(createSingleBindingVertexData<tcu::Vec2>(coords, dataOffset, trailingPadding, paddingPattern, patternSize));
+		buffers.push_back(createSingleBindingVertexData<InstanceData>(instanceIds, dataOffset, trailingPadding, paddingPattern, patternSize));
+
+		return buffers;
+	}
+
+	virtual std::vector<vk::VkDeviceSize> getVertexDataStrides() const override
+	{
+		std::vector<vk::VkDeviceSize> strides;
+		strides.reserve(2u);
+		strides.push_back(static_cast<vk::VkDeviceSize>(sizeof(tcu::Vec2)));
+		strides.push_back(static_cast<vk::VkDeviceSize>(sizeof(InstanceData)));
+		return strides;
 	}
 };
 
@@ -1457,6 +1565,12 @@ const VertexGenerator* getProvokingVertexWithPaddingGenerator (bool lastVertex)
 	return &provokingVertexGeneratorFirstVtx;
 }
 
+const VertexGenerator* getVertexWithInstanceDataGenerator ()
+{
+	static VertexWithInstanceData vertexWithInstanceData;
+	return &vertexWithInstanceData;
+}
+
 // Create VertexGeneratorConfig varying constructor depending on having none, only the static or both.
 VertexGeneratorConfig makeVertexGeneratorConfig (const VertexGenerator* staticGen, const VertexGenerator* dynamicGen)
 {
@@ -1671,6 +1785,9 @@ struct TestConfig
 	// Number of color attachments in the subpass. Note the fragment shader will only write to the last one.
 	uint32_t						colorAttachmentCount;
 
+	// Instance count.
+	uint32_t						instanceCount;
+
 	// Use viewport swizzle or not.
 	bool							viewportSwizzle;
 
@@ -1776,6 +1893,7 @@ struct TestConfig
 		, shaderRasterizationStream		(tcu::Nothing)
 		, sampleLocations				(0.5f, 0.5f)
 		, colorAttachmentCount			(1u)
+		, instanceCount					(1u)
 		, viewportSwizzle				(false)
 		, shadingRateImage				(false)
 		, viewportWScaling				(false)
@@ -1872,6 +1990,7 @@ struct TestConfig
 		, shaderRasterizationStream		(other.shaderRasterizationStream)
 		, sampleLocations				(other.sampleLocations)
 		, colorAttachmentCount			(other.colorAttachmentCount)
+		, instanceCount					(other.instanceCount)
 		, viewportSwizzle				(other.viewportSwizzle)
 		, shadingRateImage				(other.shadingRateImage)
 		, viewportWScaling				(other.viewportWScaling)
@@ -2982,8 +3101,8 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 	const auto			activeGen	= m_testConfig.getActiveVertexGenerator();
 	const auto			attribDecls	= activeGen->getAttributeDeclarations();
 	const auto			coordCalcs	= activeGen->getVertexCoordCalc();
-	const auto			descDeclsV	= activeGen->getDescriptorDeclarations();
-	const auto			descCalcsV	= activeGen->getDescriptorCoordCalc();
+	const auto			descDeclsV	= (m_testConfig.useMeshShaders ? activeGen->getDescriptorDeclarations() : std::vector<std::string>());
+	const auto			descCalcsV	= (m_testConfig.useMeshShaders ? activeGen->getDescriptorCoordCalc() : std::vector<std::string>());
 	const auto			fragInputs	= activeGen->getFragInputAttributes();
 	const auto			fragCalcs	= activeGen->getFragOutputCalc();
 	const auto			glslExts	= activeGen->getGLSLExtensions();
@@ -5214,7 +5333,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 						{
 							numIndices = 2u;
 						}
-						vkd.cmdDrawIndexed(cmdBuffer, numIndices, 1u, 0u, 0u, 0u);
+						vkd.cmdDrawIndexed(cmdBuffer, numIndices, m_testConfig.instanceCount, 0u, 0u, 0u);
 					}
 #ifndef CTS_USES_VULKANSC
 					else if (m_testConfig.useMeshShaders)
@@ -5223,6 +5342,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 						DE_ASSERT(vertices.size() > 2u);
 						DE_ASSERT(!m_testConfig.topologyConfig.dynamicValue);
 						DE_ASSERT(m_testConfig.topologyConfig.staticValue == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+						DE_ASSERT(m_testConfig.instanceCount == 1u);
 
 						const auto numPrimitives = static_cast<uint32_t>(vertices.size()) - 2u;
 						vkd.cmdDrawMeshTasksEXT(cmdBuffer, numPrimitives, 1u, 1u);
@@ -5230,10 +5350,10 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 #endif // CTS_USES_VULKANSC
 					else
 					{
-						deUint32 vertex_count = static_cast<deUint32>(vertices.size());
+						uint32_t vertexCount = static_cast<deUint32>(vertices.size());
 						if (m_testConfig.singleVertex)
-							vertex_count = m_testConfig.singleVertexDrawCount;
-						vkd.cmdDraw(cmdBuffer, vertex_count, 1u, 0u, 0u);
+							vertexCount = m_testConfig.singleVertexDrawCount;
+						vkd.cmdDraw(cmdBuffer, vertexCount, m_testConfig.instanceCount, 0u, 0u);
 					}
 				}
 			}
@@ -7366,20 +7486,39 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				// dynamic stride being less than the extent of the binding for the second attribute.
 				if (kOrdering != SequenceOrdering::TWO_DRAWS_STATIC)
 				{
-					const auto	staticGen	= getVertexWithPaddingGenerator();
-					const auto	dynamicGen	= getVertexWithExtraAttributesGenerator();
-					const auto	goodStrides	= dynamicGen->getVertexDataStrides();
-					StrideVec	badStrides;
+					{
+						const auto	staticGen	= getVertexWithPaddingGenerator();
+						const auto	dynamicGen	= getVertexWithExtraAttributesGenerator();
+						const auto	goodStrides	= dynamicGen->getVertexDataStrides();
+						StrideVec	badStrides;
 
-					badStrides.reserve(goodStrides.size());
-					for (const auto& stride : goodStrides)
-						badStrides.push_back(stride / 2u);
+						badStrides.reserve(goodStrides.size());
+						for (const auto& stride : goodStrides)
+							badStrides.push_back(stride / 2u);
 
-					TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders, staticGen, dynamicGen);
-					config.strideConfig.staticValue			= badStrides;
-					config.strideConfig.dynamicValue		= goodStrides;
-					config.bindUnusedMeshShadingPipeline	= bindUnusedCase.bindUnusedMeshShadingPipeline;
-					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "vertex_input" + bindUnusedCase.nameSuffix, "Dynamically set vertex input" + bindUnusedCase.descSuffix, config));
+						TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders, staticGen, dynamicGen);
+						config.strideConfig.staticValue			= badStrides;
+						config.strideConfig.dynamicValue		= goodStrides;
+						config.bindUnusedMeshShadingPipeline	= bindUnusedCase.bindUnusedMeshShadingPipeline;
+						orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "vertex_input" + bindUnusedCase.nameSuffix, "Dynamically set vertex input" + bindUnusedCase.descSuffix, config));
+					}
+					{
+						const auto	staticGen	= getVertexWithInstanceDataGenerator();
+						const auto	goodStrides	= staticGen->getVertexDataStrides();
+						StrideVec	badStrides;
+
+						DE_ASSERT(goodStrides.size() == 2u);
+						badStrides.reserve(2u);
+						badStrides.push_back(goodStrides.at(0u));
+						badStrides.push_back(goodStrides.at(1u) / 2u); // Halve instance rate stride.
+
+						TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders, staticGen);
+						config.strideConfig.staticValue			= badStrides;
+						config.strideConfig.dynamicValue		= goodStrides;
+						config.bindUnusedMeshShadingPipeline	= bindUnusedCase.bindUnusedMeshShadingPipeline;
+						config.instanceCount					= 2u;
+						orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "instance_rate_stride" + bindUnusedCase.nameSuffix, "Dynamically set instance rate stride" + bindUnusedCase.descSuffix, config));
+					}
 				}
 
 				{
