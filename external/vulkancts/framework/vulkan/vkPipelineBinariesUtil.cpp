@@ -45,7 +45,10 @@ void PipelineBinariesWrapper::generatePipelineBinaryKeys (const void* pPipelineC
 {
 	// retrieve pipeline key count
 	deUint32 keyCount = 0;
-	m_vk.generatePipelineBinaryKeysKHR(m_device, pPipelineCreateInfo, &keyCount, DE_NULL);
+	VK_CHECK(m_vk.generatePipelineBinaryKeysKHR(m_device, pPipelineCreateInfo, &keyCount, DE_NULL));
+	if (keyCount == 0)
+		TCU_FAIL("Expected number of binary keys to be greater than 0");
+
 	if (clearPrevious)
 		m_pipelineKeys.clear();
 
@@ -54,7 +57,7 @@ void PipelineBinariesWrapper::generatePipelineBinaryKeys (const void* pPipelineC
 	m_pipelineKeys.resize(previousSize + keyCount);
 
 	// retrieve pipeline keys
-	m_vk.generatePipelineBinaryKeysKHR(m_device, pPipelineCreateInfo, &keyCount, m_pipelineKeys.data() + previousSize);
+	VK_CHECK(m_vk.generatePipelineBinaryKeysKHR(m_device, pPipelineCreateInfo, &keyCount, m_pipelineKeys.data() + previousSize));
 }
 
 void PipelineBinariesWrapper::createPipelineBinariesFromPipeline (VkPipeline pipeline)
@@ -112,14 +115,14 @@ void PipelineBinariesWrapper::getPipelineBinaryData (std::vector<VkPipelineBinar
 	for (std::size_t i = 0; i < keyCount; ++i)
 	{
 		// get binary data size
-		m_vk.getPipelineBinaryDataKHR(m_device, m_pipelineBinariesRaw[i], &pipelineDataInfo[i].size, DE_NULL);
+		VK_CHECK(m_vk.getPipelineBinaryDataKHR(m_device, m_pipelineBinariesRaw[i], &pipelineDataInfo[i].size, DE_NULL));
 
 		// alocate space for data and store pointer for it
 		pipelineDataBlob[i].resize(pipelineDataInfo[i].size);
 		pipelineDataInfo[i].pData = pipelineDataBlob[i].data();
 
 		// get binary data
-		m_vk.getPipelineBinaryDataKHR(m_device, m_pipelineBinariesRaw[i], &pipelineDataInfo[i].size, pipelineDataInfo[i].pData);
+		VK_CHECK(m_vk.getPipelineBinaryDataKHR(m_device, m_pipelineBinariesRaw[i], &pipelineDataInfo[i].size, pipelineDataInfo[i].pData));
 	}
 }
 
