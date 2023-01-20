@@ -2518,6 +2518,17 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 	for (const auto& extension : requiredExtensions)
 		context.requireDeviceFunctionality(extension);
 
+	// Special requirement for rasterizationSamples tests.
+	// The first iteration of these tests puts the pipeline in a mixed samples state,
+	// where colorCount != rasterizationSamples.
+	if (m_testConfig.rasterizationSamplesConfig.dynamicValue &&
+		(m_testConfig.sequenceOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC ||
+		 m_testConfig.sequenceOrdering == SequenceOrdering::TWO_DRAWS_STATIC) &&
+		!context.isDeviceFunctionalitySupported("VK_AMD_mixed_attachment_samples") &&
+		!context.isDeviceFunctionalitySupported("VK_NV_framebuffer_mixed_samples"))
+
+		TCU_THROW(NotSupportedError, "VK_AMD_mixed_attachment_samples or VK_NV_framebuffer_mixed_samples are not supported");
+
 	// Check the number of viewports needed and the corresponding limits.
 	const auto&	viewportConfig	= m_testConfig.viewportConfig;
 	auto		numViewports	= viewportConfig.staticValue.size();
