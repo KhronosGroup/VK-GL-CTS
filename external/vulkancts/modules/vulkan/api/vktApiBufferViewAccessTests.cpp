@@ -1011,11 +1011,12 @@ void BufferViewAllFormatsTestCase::initPrograms							(SourceCollections&			prog
 	const char* const	fmtLayout		= isUniform ? "" : stringFmtLayout.c_str();
 	const char* const	opName			= isUniform ? "texelFetch" : "imageLoad";
 	const char* const	outFormat		= isIntFmt  ? "i"			   : isUintFmt ? "u" : "";
+	const char* const	inFormat		= vk::isScaledFormat(m_bufferViewTestInfo.format)? "" : outFormat;
 
 	buf << "#version 440\n"
 		<< "#extension GL_EXT_texture_buffer : require\n"
 		<< "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
-		<< "layout(set = 0, binding = 1" << fmtLayout << ") uniform highp " << extraOption << outFormat << storageType << " texelBuffer;\n"
+		<< "layout(set = 0, binding = 1" << fmtLayout << ") uniform highp " << extraOption << inFormat << storageType << " texelBuffer;\n"
 		<< "layout(set = 0, binding = 0, std140) writeonly buffer OutBuf\n"
 		<< "{\n"
 		<< "	highp " << outFormat << "vec4 read_colors[4];\n"
@@ -1026,13 +1027,13 @@ void BufferViewAllFormatsTestCase::initPrograms							(SourceCollections&			prog
 		<< "	highp " << outFormat << "vec4 result_color;\n"
 		<< "	result_color = " << outFormat << "vec4(0);\n"
 		<< "	if (quadrant_id == 0)\n"
-		<< "		result_color += " << opName << "(texelBuffer, 6);\n"
+		<< "		result_color += " << outFormat << "vec4(" << opName << "(texelBuffer, 6));\n"
 		<< "	else if (quadrant_id == 1)\n"
-		<< "		result_color += " << opName << "(texelBuffer, 51);\n"
+		<< "		result_color += " << outFormat << "vec4(" << opName << "(texelBuffer, 51));\n"
 		<< "	else if (quadrant_id == 2)\n"
-		<< "		result_color += " << opName << "(texelBuffer, 42);\n"
+		<< "		result_color += " << outFormat << "vec4(" << opName << "(texelBuffer, 42));\n"
 		<< "	else\n"
-		<< "		result_color += " << opName << "(texelBuffer, 25);\n"
+		<< "		result_color += " << outFormat << "vec4(" << opName << "(texelBuffer, 25));\n"
 		<< "	b_out.read_colors[gl_WorkGroupID.x] = result_color;\n"
 		<< "}\n";
 
