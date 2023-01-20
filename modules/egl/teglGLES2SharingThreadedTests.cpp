@@ -3057,7 +3057,7 @@ void GLES2ThreadedSharingTest::init (void)
 
 	// Create threads
 	m_threads.push_back(new GLES2ThreadTest::EGLThread(egl, m_gl, deInt32Hash(m_seed)));
-	m_threads.push_back(new GLES2ThreadTest::EGLThread(egl, m_gl, deInt32Hash(m_seed*200)));
+	m_threads.push_back(new GLES2ThreadTest::EGLThread(egl, m_gl, deInt32Hash(~m_seed)));
 
 	SharedPtr<GLES2ThreadTest::GLES2Context> contex1;
 	SharedPtr<GLES2ThreadTest::GLES2Context> contex2;
