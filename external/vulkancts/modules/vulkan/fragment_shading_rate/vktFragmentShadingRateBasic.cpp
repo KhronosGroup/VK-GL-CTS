@@ -2007,7 +2007,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 					geomShader = createShaderModule(vk, device, binaries.get("geom"), 0);
 			}
 
-			const deUint32 fragSizeWH = m_data.sampleMaskTest ? 2 : 0;
+			const deUint32 fragSizeWH = m_data.sampleMaskTest ? 2 : 1;
 
 			PipelineRenderingCreateInfoWrapper renderingCreateInfoWrapper;
 #ifndef CTS_USES_VULKANSC
