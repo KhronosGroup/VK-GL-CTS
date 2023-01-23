@@ -2306,6 +2306,18 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate (void)
 			// since the specification says 'should', the opposite behavior is allowed, but not preferred
 			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Sample count is 0 - sample counting performed after multisample coverage and fragment shading");
 		}
+		else if (sampleCounts[QUERY_INDEX_NO_EARLY_FRAG] >= minValue && sampleCounts[QUERY_INDEX_NO_EARLY_FRAG] <= maxValue &&
+					sampleCounts[QUERY_INDEX_EARLY_FRAG] >= (minValue * 2) && sampleCounts[QUERY_INDEX_EARLY_FRAG] <= (maxValue * 2))
+		{
+			// If the sample count returned is double the expected value, the sample mask test has been executed after
+			// sample counting.
+
+			// Spec says: "If there is a fragment shader and it declares the EarlyFragmentTests execution mode, ...
+			// sample mask test may: instead be performed after sample counting"
+
+			// since the specification says 'may', the opposite behavior is allowed, but not preferred
+			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Sample count is greater than expected - sample mask test performed after sample counting");
+		}
 		else
 		{
 			// Log no early frag test images
