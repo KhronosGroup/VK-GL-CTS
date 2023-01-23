@@ -791,6 +791,7 @@ tcu::TestCaseGroup* createImageCompressionControlTests(tcu::TestContext& testCtx
 		}
 		subgroup->addChild(wsi_subgroup);
 	}
+
 	group->addChild(subgroup);
 
 	return group.release();
