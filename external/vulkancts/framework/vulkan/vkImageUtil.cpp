@@ -4372,7 +4372,7 @@ void copyImageToBuffer (const DeviceInterface&	vk,
 						deUint32				numLayers,
 						VkImageAspectFlags		barrierAspect,
 						VkImageAspectFlags		copyAspect,
-						VkPipelineStageFlags    srcMask)
+						VkPipelineStageFlags	srcStageMask)
 {
 	const VkImageMemoryBarrier	imageBarrier	=
 	{
@@ -4388,7 +4388,7 @@ void copyImageToBuffer (const DeviceInterface&	vk,
 		makeImageSubresourceRange(barrierAspect, 0u, 1u, 0, numLayers)	// VkImageSubresourceRange	subresourceRange;
 	};
 
-	vk.cmdPipelineBarrier(cmdBuffer, srcMask, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
+	vk.cmdPipelineBarrier(cmdBuffer, srcStageMask, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
 						  0u, DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
 
 	const VkImageSubresourceLayers	subresource	=

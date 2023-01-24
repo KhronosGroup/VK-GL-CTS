@@ -287,7 +287,7 @@ void	copyImageToBuffer						(const DeviceInterface&							vk,
 												 deUint32										numLayers = 1u,
 												 VkImageAspectFlags								barrierAspect = VK_IMAGE_ASPECT_COLOR_BIT,
 												 VkImageAspectFlags								copyAspect = VK_IMAGE_ASPECT_COLOR_BIT,
-												 VkPipelineStageFlags							srcMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+												 VkPipelineStageFlags							srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 
 void	copyImageToBuffer						(const DeviceInterface&							vk,
 												 vk::VkCommandBuffer							cmdBuffer,

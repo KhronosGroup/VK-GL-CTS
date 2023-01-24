@@ -72,6 +72,7 @@ void createChildren (tcu::TestContext& testCtx, tcu::TestCaseGroup* group, const
 	group->addChild(new ShaderDrawParametersTests				(testCtx, groupParams));
 	group->addChild(createNegativeViewportHeightTests			(testCtx, groupParams));
 	group->addChild(createZeroViewportHeightTests				(testCtx, groupParams));
+	group->addChild(createOffScreenViewportTests				(testCtx, groupParams));
 	group->addChild(createInvertedDepthRangesTests				(testCtx, groupParams));
 	group->addChild(createDifferingInterpolationTests			(testCtx, groupParams));
 	group->addChild(createShaderLayerTests						(testCtx, groupParams));
