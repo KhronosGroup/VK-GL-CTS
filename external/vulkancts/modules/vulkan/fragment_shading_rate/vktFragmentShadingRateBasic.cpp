@@ -196,11 +196,12 @@ protected:
 	deInt32				PrimIDToPipelineShadingRate		(deInt32 primID);
 	VkExtent2D			SanitizeExtent					(VkExtent2D ext) const;
 	deInt32				SanitizeRate					(deInt32 rate) const;
-	deInt32				ShadingRateExtentToClampedMask	(VkExtent2D ext, bool allowSwap) const;
+	deInt32				ShadingRateExtentToClampedMask	(VkExtent2D ext) const;
 	deInt32				ShadingRateExtentToEnum			(VkExtent2D ext) const;
 	VkExtent2D			ShadingRateEnumToExtent			(deInt32 rate) const;
 	deInt32				Simulate						(deInt32 rate0, deInt32 rate1, deInt32 rate2);
 	VkExtent2D			Combine							(VkExtent2D ext0, VkExtent2D ext1, VkFragmentShadingRateCombinerOpKHR comb) const;
+	deInt32				CombineMasks					(deInt32 rateMask0, deInt32 rateMask1, VkFragmentShadingRateCombinerOpKHR comb, bool allowUnclampedResult) const;
 	bool				Force1x1						() const;
 };
 
@@ -689,38 +690,63 @@ VkExtent2D FSRTestInstance::Combine(VkExtent2D ext0, VkExtent2D ext1, VkFragment
 	}
 }
 
+deInt32 FSRTestInstance::CombineMasks(deInt32 rateMask0, deInt32 rateMask1, VkFragmentShadingRateCombinerOpKHR comb, bool allowUnclampedResult) const
+{
+	deInt32 combinedMask = 0;
+
+	for (int i = 0; i < 16; i++)
+	{
+		if (rateMask0 & (1 << i))
+		{
+			VkExtent2D rate0 = ShadingRateEnumToExtent(i);
+
+			for (int j = 0; j < 16; j++)
+			{
+				if (rateMask1 & (1 << j))
+				{
+					VkExtent2D	combinerResult	= Combine(rate0, ShadingRateEnumToExtent(j), comb);
+					deInt32		clampedResult	= ShadingRateExtentToClampedMask(combinerResult);
+
+					if (allowUnclampedResult)
+					{
+						combinedMask |= 1 << ShadingRateExtentToEnum(combinerResult);
+					}
+
+					combinedMask |= clampedResult;
+				}
+			}
+		}
+	}
+
+	return combinedMask;
+}
+
 deInt32 FSRTestInstance::Simulate(deInt32 rate0, deInt32 rate1, deInt32 rate2)
 {
 	deInt32 &cachedRate = m_simulateCache[(rate2*m_simulateValueCount + rate1)*m_simulateValueCount + rate0];
 	if (cachedRate != ~0)
 		return cachedRate;
 
-	VkExtent2D extent0 = ShadingRateEnumToExtent(rate0);
-	VkExtent2D extent1 = ShadingRateEnumToExtent(rate1);
-	VkExtent2D extent2 = ShadingRateEnumToExtent(rate2);
+	const VkExtent2D extent0 = ShadingRateEnumToExtent(rate0);
+	const VkExtent2D extent1 = ShadingRateEnumToExtent(rate1);
+	const VkExtent2D extent2 = ShadingRateEnumToExtent(rate2);
 
 	deInt32 finalMask = 0;
-	// Simulate once for implementations that don't allow swapping rate xy,
-	// and once for those that do. Any of those results is allowed.
-	for (deUint32 allowSwap = 0; allowSwap <= 1; ++allowSwap)
-	{
-		// Combine rate 0 and 1, get a mask of possible clamped rates
-		VkExtent2D intermed = Combine(extent0, extent1, m_data.combinerOp[0]);
-		deInt32 intermedMask = ShadingRateExtentToClampedMask(intermed, allowSwap == 1);
 
-		// For each clamped rate, combine that with rate 2 and accumulate the possible clamped rates
-		for (int i = 0; i < 16; ++i)
+	// Clamped and unclamped inputs.
+	const deInt32 extentMask0 = ShadingRateExtentToClampedMask(extent0) | (1 << rate0);
+	const deInt32 extentMask1 = ShadingRateExtentToClampedMask(extent1) | (1 << rate1);
+	const deInt32 extentMask2 = ShadingRateExtentToClampedMask(extent2) | (1 << rate2);
+
+	// Combine rate 0 and 1, get a mask of possible clamped rates
+	deInt32 intermedMask = CombineMasks(extentMask0, extentMask1, m_data.combinerOp[0], true /* allowUnclampedResult */);
+
+	// For each clamped rate, combine that with rate 2 and accumulate the possible clamped rates
+	for (int i = 0; i < 16; ++i)
+	{
+		if (intermedMask & (1<<i))
 		{
-			if (intermedMask & (1<<i))
-			{
-				VkExtent2D final = Combine(ShadingRateEnumToExtent(i), extent2, m_data.combinerOp[1]);
-				finalMask |= ShadingRateExtentToClampedMask(final, allowSwap == 1);
-			}
-		}
-		{
-			// unclamped intermediate value is also permitted
-			VkExtent2D final = Combine(intermed, extent2, m_data.combinerOp[1]);
-			finalMask |= ShadingRateExtentToClampedMask(final, allowSwap == 1);
+			finalMask |= CombineMasks(intermedMask , extentMask2, m_data.combinerOp[1], false /* allowUnclampedResult */);
 		}
 	}
 
@@ -745,11 +771,12 @@ VkExtent2D FSRTestInstance::SanitizeExtent(VkExtent2D ext) const
 }
 
 // Map an extent to a mask of all modes smaller than or equal to it in either dimension
-deInt32 FSRTestInstance::ShadingRateExtentToClampedMask(VkExtent2D ext, bool allowSwap) const
+deInt32 FSRTestInstance::ShadingRateExtentToClampedMask(VkExtent2D ext) const
 {
-	deUint32 desiredSize = ext.width * ext.height;
-
-	deInt32 mask = 0;
+	const deUint32	shadingRateBit		= (1 << ShadingRateExtentToEnum(ext));
+	deUint32		desiredSize			= ext.width * ext.height;
+	deInt32			mask				= 0;
+	deInt32			swappedSizesMask	= 0;
 
 	while (desiredSize > 0)
 	{
@@ -758,11 +785,16 @@ deInt32 FSRTestInstance::ShadingRateExtentToClampedMask(VkExtent2D ext, bool all
 		{
 			const VkPhysicalDeviceFragmentShadingRateKHR &supportedRate = m_supportedFragmentShadingRates[i];
 			if ((supportedRate.sampleCounts & m_data.samples) &&
-				supportedRate.fragmentSize.width * supportedRate.fragmentSize.height == desiredSize &&
-				((supportedRate.fragmentSize.width  <= ext.width && supportedRate.fragmentSize.height <= ext.height) ||
-				 (supportedRate.fragmentSize.height <= ext.width && supportedRate.fragmentSize.width  <= ext.height && allowSwap)))
+				supportedRate.fragmentSize.width * supportedRate.fragmentSize.height == desiredSize)
 			{
-				mask |= 1 << ShadingRateExtentToEnum(supportedRate.fragmentSize);
+				if (supportedRate.fragmentSize.width  <= ext.width && supportedRate.fragmentSize.height <= ext.height)
+				{
+					mask |= 1 << ShadingRateExtentToEnum(supportedRate.fragmentSize);
+				}
+				else if (supportedRate.fragmentSize.height <= ext.width && supportedRate.fragmentSize.width  <= ext.height)
+				{
+					swappedSizesMask |= 1 << ShadingRateExtentToEnum(supportedRate.fragmentSize);
+				}
 			}
 		}
 		if (mask)
@@ -796,6 +828,16 @@ deInt32 FSRTestInstance::ShadingRateExtentToClampedMask(VkExtent2D ext, bool all
 		desiredSize /= 2;
 	}
 
+	// Optionally include the sizes with swapped width and height.
+	mask |= swappedSizesMask;
+
+	if (mask & shadingRateBit)
+	{
+		// The given shading rate is valid. Don't clamp it.
+		return shadingRateBit;
+	}
+
+	// Return alternative shading rates.
 	return mask;
 }
 
