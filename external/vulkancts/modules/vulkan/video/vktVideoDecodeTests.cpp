@@ -1102,6 +1102,13 @@ VideoDecodeTestCase::~VideoDecodeTestCase	(void)
 
 void VideoDecodeTestCase::checkSupport (Context& context) const
 {
+#if (DE_PTR_SIZE != 8)
+	// Issue #4253: https://gitlab.khronos.org/Tracker/vk-gl-cts/-/issues/4253
+	// These tests rely on external libraries to do the video parsing,
+	// and those libraries are only available as 64-bit at this time.
+	TCU_THROW(NotSupportedError, "CTS is not built 64-bit so cannot use the 64-bit video parser library");
+#endif
+
 	context.requireDeviceFunctionality("VK_KHR_video_queue");
 	context.requireDeviceFunctionality("VK_KHR_synchronization2");
 
