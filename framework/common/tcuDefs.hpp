@@ -26,6 +26,7 @@
 #include "deDefs.hpp"
 #include "qpTestLog.h"
 
+#include <cstdint>
 #include <string>
 #include <stdexcept>
 
