@@ -4106,9 +4106,10 @@ public:
 
 	virtual void checkSupport (vkt::Context& context) const
 	{
-		context.requireDeviceFunctionality("VK_EXT_descriptor_indexing");
-
 		const vk::VkPhysicalDeviceDescriptorIndexingFeatures& feats = context.getDescriptorIndexingFeatures();
+
+		if (!feats.runtimeDescriptorArray)
+			TCU_THROW(NotSupportedError, "runtimeDescriptorArray not supported");
 
 		switch (m_testCaseParams.descriptorType)
 		{
