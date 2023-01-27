@@ -2701,59 +2701,53 @@ std::string CommonDescriptorInstance::getShaderSource				(VkShaderStageFlagBits	
 			"layout(set=1,binding=${?}) uniform isamplerBuffer iter;	\n");
 	}
 
+	std::string declType;
 	switch (testCaseParams.descriptorType)
 	{
 		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
-			s << substBinding(BINDING_TestObject,
-				"layout(set=0,binding=${?}) buffer Data { vec4 cnew, cold; } data[]; \n");
-			break;
+		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:	declType = "buffer Data { vec4 cnew, cold; }";	break;
 		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
-			s << substBinding(BINDING_TestObject,
-				"layout(set=0,binding=${?}) uniform Data { vec4 c; } data[]; \n");
-			break;
-		case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
-			s << substBinding(BINDING_TestObject,
-				"layout(set=0,binding=${?},rgba32f) uniform imageBuffer data[];\n");
-			break;
-		case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
-			s << substBinding(BINDING_TestObject,
-				"layout(set=0,binding=${?}) uniform samplerBuffer data[];\n");
-			break;
-		case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
-			// Only declare input attachments in the fragment shader. (They should only be tested in vertex/fragment
-			// combinations, but then we may still see vertex here).
-			if (shaderType == VK_SHADER_STAGE_FRAGMENT_BIT)
-			{
-				s << substBinding(BINDING_TestObject,
-					"layout(input_attachment_index=1,set=0,binding=${?}) uniform subpassInput data[];	\n");
-			}
-			break;
-		case VK_DESCRIPTOR_TYPE_SAMPLER:
-			s << substBinding(BINDING_Additional,
-				"layout(set=0,binding=${?}) uniform texture2D tex;\n");
-			s << substBinding(BINDING_TestObject,
-				"layout(set=0,binding=${?}) uniform sampler data[];\n");
-			break;
-		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-			s << substBinding(BINDING_Additional,
-				"layout(set=0,binding=${?}) uniform sampler samp;\n");
-			s << substBinding(BINDING_TestObject,
-				"layout(set=0,binding=${?}) uniform texture2D data[];\n");
-			break;
-		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-			s << substBinding(BINDING_TestObject,
-				"layout(set=0,binding=${?}) uniform sampler2D data[];\n");
-			break;
-		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-			s << substBinding(BINDING_Additional,
-				"layout(r32ui,set=0,binding=${?}) uniform uimage2D idxs;	\n");
-			s << substBinding(BINDING_TestObject,
-				"layout(r32ui,set=0,binding=${?}) uniform uimage2D data[];	\n");
-			break;
+		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:	declType = "uniform Data { vec4 c; }";			break;
+		case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:	declType = "uniform imageBuffer";				break;
+		case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:	declType = "uniform samplerBuffer";				break;
+		case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:		declType = "uniform subpassInput";				break;
+		case VK_DESCRIPTOR_TYPE_SAMPLER:				declType = "uniform sampler";					break;
+		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:			declType = "uniform texture2D";					break;
+		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:	declType = "uniform sampler2D";					break;
+		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:			declType = "uniform uimage2D";					break;
 		default:
 			TCU_THROW(InternalError, "Not implemented descriptor type");
+	}
+
+	std::string extraLayout = "";
+	switch (testCaseParams.descriptorType)
+	{
+		// Note trailing commas to fit in with layout declaration, below.
+		case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:	extraLayout = "rgba32f,";					break;
+		case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:		extraLayout = "input_attachment_index=1,";	break;
+		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:			extraLayout = "r32ui,";						break;
+		default:																					break;
+	}
+
+	// Input attachments may only be declared in fragment shaders. The tests should only be constructed to use fragment
+	// shaders, but the matching vertex shader will still pass here and must not pick up the invalid declaration.
+	if (testCaseParams.descriptorType != VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT || shaderType == VK_SHADER_STAGE_FRAGMENT_BIT)
+		s << "layout(" << extraLayout << "set=0, binding = " << BINDING_TestObject << ") " << declType << " data[];\n";
+
+	// Now make any additional declarations needed for specific descriptor types
+	switch (testCaseParams.descriptorType)
+	{
+		case VK_DESCRIPTOR_TYPE_SAMPLER:
+			s << "layout(set=0,binding=" << BINDING_Additional << ") uniform texture2D tex;\n";
+			break;
+		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+			s << "layout(set=0,binding=" << BINDING_Additional << ") uniform sampler samp;\n";
+			break;
+		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+			s << "layout(r32ui,set=0,binding=" << BINDING_Additional << ") uniform uimage2D idxs;\n";
+			break;
+		default:
+			break;
 	}
 
 	switch (shaderType)
