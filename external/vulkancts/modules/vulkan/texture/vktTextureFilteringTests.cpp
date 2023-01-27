@@ -109,7 +109,7 @@ void checkTextureSupport (Context& context, const Texture2DTestCaseParameters& t
 		context.requireDeviceFunctionality("VK_KHR_sampler_mirror_clamp_to_edge");
 
 #ifndef CTS_USES_VULKANSC
-	if (testParameters.format == VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16 && testParameters.mipmaps && context.getRGBA10X6FormatsFeaturesEXT().formatRgba10x6WithoutYCbCrSampler == VK_FALSE)
+	if (testParameters.format == VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16 && context.getRGBA10X6FormatsFeaturesEXT().formatRgba10x6WithoutYCbCrSampler == VK_FALSE)
 		TCU_THROW(NotSupportedError, "formatRgba10x6WithoutYCbCrSampler not supported");
 #endif
 }
@@ -139,6 +139,15 @@ void checkTextureSupport (Context& context, const Texture3DTestCaseParameters& t
 	if (testParameters.wrapS == tcu::Sampler::Sampler::MIRRORED_ONCE || testParameters.wrapT == tcu::Sampler::Sampler::MIRRORED_ONCE || testParameters.wrapR == tcu::Sampler::Sampler::MIRRORED_ONCE)
 		context.requireDeviceFunctionality("VK_KHR_sampler_mirror_clamp_to_edge");
 
+#ifndef CTS_USES_VULKANSC
+	if (testParameters.format == VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16 && context.getRGBA10X6FormatsFeaturesEXT().formatRgba10x6WithoutYCbCrSampler == VK_FALSE)
+		TCU_THROW(NotSupportedError, "formatRgba10x6WithoutYCbCrSampler not supported");
+#endif
+}
+
+template <>
+void checkTextureSupport (Context& context, const TextureCubeFilteringTestCaseParameters& testParameters)
+{
 #ifndef CTS_USES_VULKANSC
 	if (testParameters.format == VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16 && context.getRGBA10X6FormatsFeaturesEXT().formatRgba10x6WithoutYCbCrSampler == VK_FALSE)
 		TCU_THROW(NotSupportedError, "formatRgba10x6WithoutYCbCrSampler not supported");
@@ -380,11 +389,6 @@ tcu::TestStatus Texture2DFilteringTestInstance::iterate (void)
 	m_caseNdx += 1;
 	return m_caseNdx < (int)m_cases.size() ? tcu::TestStatus::incomplete() : tcu::TestStatus::pass("Pass");
 }
-
-struct TextureCubeFilteringTestCaseParameters : public TextureCubeTestCaseParameters
-{
-	bool	onlySampleFaceInterior;
-};
 
 class TextureCubeFilteringTestInstance : public TestInstance
 {
