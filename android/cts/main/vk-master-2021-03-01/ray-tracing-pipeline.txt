@@ -1905,8 +1905,8 @@ dEQP-VK.ray_tracing_pipeline.build.cpuht_max.level_instances.mixed_16_4_4
 dEQP-VK.ray_tracing_pipeline.build.cpuht_max.level_instances.mixed_256_4_4
 dEQP-VK.ray_tracing_pipeline.build.cpuht_max.level_instances.mixed_4096_4_4
 dEQP-VK.ray_tracing_pipeline.build.cpuht_max.level_instances.mixed_65536_4_4
-dEQP-VK.ray_tracing_pipeline.barycentric_coordinates.ahit
 dEQP-VK.ray_tracing_pipeline.barycentric_coordinates.chit
+dEQP-VK.ray_tracing_pipeline.barycentric_coordinates.ahit
 dEQP-VK.ray_tracing_pipeline.barrier.ubo.memory_barrier.from_host_to_rgen
 dEQP-VK.ray_tracing_pipeline.barrier.ubo.memory_barrier.from_host_to_isec
 dEQP-VK.ray_tracing_pipeline.barrier.ubo.memory_barrier.from_host_to_ahit

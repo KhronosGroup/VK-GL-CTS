@@ -2278,6 +2278,7 @@ dEQP-VK.ray_tracing_pipeline.build.cpu.level_instances.mixed_16_4_4
 dEQP-VK.ray_tracing_pipeline.build.cpu.level_instances.mixed_256_4_4
 dEQP-VK.ray_tracing_pipeline.build.cpu.level_instances.mixed_4096_4_4
 dEQP-VK.ray_tracing_pipeline.build.cpu.level_instances.mixed_65536_4_4
+dEQP-VK.ray_tracing_pipeline.barycentric_coordinates.ahitTerminate
 dEQP-VK.ray_tracing_pipeline.acceleration_structures.ray_cull_mask.cpu_built.ahit.4_bits
 dEQP-VK.ray_tracing_pipeline.acceleration_structures.ray_cull_mask.cpu_built.ahit.4_bits_reverse
 dEQP-VK.ray_tracing_pipeline.acceleration_structures.ray_cull_mask.cpu_built.ahit.16_bits
