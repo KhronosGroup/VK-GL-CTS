@@ -1938,17 +1938,17 @@ class BasicMax : public ComputeShaderBase
 			return false;
 		}
 		glGetInteger64v(target, &i64);
-		if (static_cast<GLint>(i64) < min_value)
+		if (i64 < static_cast<GLint64>(min_value))
 		{
-			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Is " << static_cast<GLint>(i64)
-												<< " should be at least " << min_value << tcu::TestLog::EndMessage;
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Is " << i64
+												<< " should be at least " << static_cast<GLint64>(min_value) << tcu::TestLog::EndMessage;
 			return false;
 		}
 		glGetFloatv(target, &f);
-		if (static_cast<GLint>(f) < min_value)
+		if (f < static_cast<GLfloat>(min_value))
 		{
-			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Is " << static_cast<GLint>(f)
-												<< " should be at least " << min_value << tcu::TestLog::EndMessage;
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Is " << f
+												<< " should be at least " << static_cast<GLfloat>(min_value) << tcu::TestLog::EndMessage;
 			return false;
 		}
 		glGetBooleanv(target, &b);
