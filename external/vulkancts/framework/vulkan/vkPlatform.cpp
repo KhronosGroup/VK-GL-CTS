@@ -822,6 +822,13 @@ void DeviceDriverSC::checkFramebufferSupport (const VkFramebufferCreateInfo*		pC
 
 			TCU_THROW(NotSupportedError, msg);
 		}
+		else if (pCreateInfo->layers > m_physicalDeviceProperties.limits.maxFramebufferLayers)
+		{
+			const std::string	msg = "Requested framebuffer layers (" + de::toString(pCreateInfo->layers)
+				+ ") is greater than VulkanSC limits allow (" + de::toString(m_physicalDeviceProperties.limits.maxFramebufferLayers) + ")";
+
+			TCU_THROW(NotSupportedError, msg);
+		}
 	}
 }
 
