@@ -3634,27 +3634,12 @@ def writeGetDeviceProcAddr(api, filename):
 	const Unique<VkDevice>					device			(createCustomDevice(validationEnabled, platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
 	const DeviceDriver						deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion());
 
-	const std::vector<std::string> loaderExceptions{
-		"vkSetDebugUtilsObjectNameEXT",
-		"vkSetDebugUtilsObjectTagEXT",
-		"vkQueueBeginDebugUtilsLabelEXT",
-		"vkQueueEndDebugUtilsLabelEXT",
-		"vkQueueInsertDebugUtilsLabelEXT",
-		"vkCmdBeginDebugUtilsLabelEXT",
-		"vkCmdEndDebugUtilsLabelEXT",
-		"vkCmdInsertDebugUtilsLabelEXT",
-	};
-
 	const std::vector<std::string> functions{'''
 	testBlockEnd = '''	};
 
 	bool fail = false;
 	for (const auto& function : functions)
 	{
-		if (std::find(loaderExceptions.begin(), loaderExceptions.end(), function) != loaderExceptions.end())
-		{
-			continue;
-		}
 		if (deviceDriver.getDeviceProcAddr(device.get(), function.c_str()) != DE_NULL)
 		{
 			fail = true;
