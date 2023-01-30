@@ -5632,7 +5632,7 @@ void TextureViewTestViewSampling::initParentTextureContents()
 		const unsigned int n_faces =
 			(m_iteration_parent_texture_target == GL_TEXTURE_CUBE_MAP_ARRAY) ? 6 /* faces */ : 1;
 
-		resetReferenceColorStorage(m_iteration_parent_texture_depth,			 /* n_layers */
+		resetReferenceColorStorage(m_iteration_parent_texture_depth / n_faces,	 /* n_layers */
 								   n_faces, m_iteration_parent_texture_n_levels, /* n_mipmaps */
 								   m_max_color_texture_samples_gl_value);		 /* n_samples */
 
@@ -5645,7 +5645,7 @@ void TextureViewTestViewSampling::initParentTextureContents()
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram() call failed.");
 
 		/* Iterate through all layers of the texture. */
-		for (unsigned int n_layer = 0; n_layer < m_iteration_parent_texture_depth; ++n_layer)
+		for (unsigned int n_layer = 0; n_layer < m_iteration_parent_texture_depth / n_faces; ++n_layer)
 		{
 			/* ..faces.. */
 			for (unsigned int n_face = 0; n_face < n_faces; ++n_face)
@@ -5695,7 +5695,7 @@ void TextureViewTestViewSampling::initParentTextureContents()
 					GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform4fv() call failed.");
 
 					/* Update the layer ID the program should render to */
-					const unsigned int layer_id = n_face * 6 /* faces */ + n_layer;
+					const unsigned int layer_id = n_layer * n_faces + n_face;
 
 					gl.uniform1i(m_per_sample_filler_po_layer_id_location, layer_id);
 					GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1i() call failed.");
