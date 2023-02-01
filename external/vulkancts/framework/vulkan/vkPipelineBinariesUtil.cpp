@@ -52,9 +52,13 @@ void PipelineBinariesWrapper::generatePipelineBinaryKeys (const void* pPipelineC
 	if (clearPrevious)
 		m_pipelineKeys.clear();
 
+	VkPipelineBinaryKeyKHR defaultKey;
+	defaultKey.sType = VK_STRUCTURE_TYPE_PIPELINE_BINARY_KEY_KHR;
+	defaultKey.pNext = nullptr;
+
 	// if there were keys inserted then make room for more
 	std::size_t previousSize = m_pipelineKeys.size();
-	m_pipelineKeys.resize(previousSize + keyCount);
+	m_pipelineKeys.resize(previousSize + keyCount, defaultKey);
 
 	// retrieve pipeline keys
 	VK_CHECK(m_vk.generatePipelineBinaryKeysKHR(m_device, pPipelineCreateInfo, &keyCount, m_pipelineKeys.data() + previousSize));
