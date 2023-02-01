@@ -3027,6 +3027,7 @@ dEQP-VK.glsl.texture_functions.query.texturesize.usampler1darray_vertex
 dEQP-VK.glsl.texture_functions.query.texturesize.usampler1darray_fragment
 dEQP-VK.glsl.texture_functions.query.texturesize.sampler1darrayshadow_vertex
 dEQP-VK.glsl.texture_functions.query.texturesize.sampler1darrayshadow_fragment
+dEQP-VK.glsl.texture_functions.query.texturesize.oob_lod
 dEQP-VK.glsl.texture_functions.query.texturesizems.sampler2dms_fixed_vertex
 dEQP-VK.glsl.texture_functions.query.texturesizems.sampler2dms_fixed_fragment
 dEQP-VK.glsl.texture_functions.query.texturesizems.sampler2dms_float_vertex
