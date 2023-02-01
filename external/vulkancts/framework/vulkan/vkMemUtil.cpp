@@ -247,7 +247,7 @@ MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryRequirements& memRe
 	if (requirement & MemoryRequirement::HostVisible)
 	{
 		DE_ASSERT(isHostVisibleMemory(m_memProps, allocInfo.memoryTypeIndex));
-		hostPtr = MovePtr<HostPtr>(new HostPtr(m_vk, m_device, *mem, offset, allocInfo.allocationSize, 0u));
+		hostPtr = MovePtr<HostPtr>(new HostPtr(m_vk, m_device, *mem, offset, memReqs.size, 0u));
 	}
 
 	return MovePtr<Allocation>(new SimpleAllocation(mem, hostPtr, offset));
