@@ -266,7 +266,7 @@ struct GraphicsPipelineWrapper::InternalData
 			0u,																// VkPipelineTessellationStateCreateFlags		flags
 			3u																// deUint32										patchControlPoints
 		}
-		, pFragmentShadingRateState		(DE_NULL)
+		, pFragmentShadingRateState		(nullptr)
 		, pRenderingState				(DE_NULL)
 		, pDynamicState					(DE_NULL)
 		, useViewportState				(DE_TRUE)
@@ -479,6 +479,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 																				   const VkShaderModule								tessellationEvalShaderModule,
 																				   const VkShaderModule								geometryShaderModule,
 																				   const VkSpecializationInfo*						specializationInfo,
+																				   VkPipelineFragmentShadingRateStateCreateInfoKHR*	fragmentShadingRateState,
 																				   VkPipelineRenderingCreateInfoKHR*				rendering,
 																				   const VkPipelineCache							partPipelineCache,
 																				   VkPipelineCreationFeedbackCreateInfoEXT*			partCreationFeedback)
@@ -490,9 +491,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 	DE_ASSERT(m_internalData && (m_internalData->setupStates == VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_EXT));
 	m_internalData->setupStates |= VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT;
 
-	//m_internalData->pRenderingState = rendering;
-
 	m_internalData->pRenderingState = rendering;
+	m_internalData->pFragmentShadingRateState = fragmentShadingRateState;
 
 	const bool hasTesc = (tessellationControlShaderModule != DE_NULL);
 	const bool hasTese = (tessellationEvalShaderModule != DE_NULL);
@@ -566,6 +566,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 	{
 		auto	libraryCreateInfo	= makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT);
 		void*	firstStructInChain	= reinterpret_cast<void*>(&libraryCreateInfo);
+		addToChain(&firstStructInChain, m_internalData->pFragmentShadingRateState);
 		addToChain(&firstStructInChain, m_internalData->pRenderingState);
 		addToChain(&firstStructInChain, partCreationFeedback);
 
@@ -597,7 +598,6 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState(const
 																		   const VkShaderModule									fragmentShaderModule,
 																		   const VkPipelineDepthStencilStateCreateInfo*			depthStencilState,
 																		   const VkPipelineMultisampleStateCreateInfo*			multisampleState,
-																		   VkPipelineFragmentShadingRateStateCreateInfoKHR*		fragmentShadingRateState,
 																		   const VkSpecializationInfo*							specializationInfo,
 																		   const VkPipelineCache								partPipelineCache,
 																		   VkPipelineCreationFeedbackCreateInfoEXT*				partCreationFeedback)
@@ -609,8 +609,6 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState(const
 	DE_ASSERT(m_internalData && (m_internalData->setupStates == (VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_EXT |
 																 VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT)));
 	m_internalData->setupStates |= VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT;
-
-	m_internalData->pFragmentShadingRateState = fragmentShadingRateState;
 
 	const auto pDepthStencilState	= depthStencilState ? depthStencilState
 														: (m_internalData->useDefaultDepthStencilState ? &defaultDepthStencilState : DE_NULL);

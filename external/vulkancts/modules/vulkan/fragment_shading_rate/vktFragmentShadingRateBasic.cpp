@@ -1972,6 +1972,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 						DE_NULL,
 						*geomShader,
 						DE_NULL,
+						&shadingRateStateCreateInfo,
 						pDynamicRendering)
 					.setupFragmentShaderState(
 						*pipelineLayout,
@@ -1979,8 +1980,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 						0u,
 						*fragShader,
 						&depthStencilStateParams,
-						&multisampleStateCreateInfo,
-						&shadingRateStateCreateInfo)
+						&multisampleStateCreateInfo)
 					.setupFragmentOutputState(*renderPass, 0u, DE_NULL, &multisampleStateCreateInfo)
 					.setMonolithicPipelineLayout(*pipelineLayout)
 					.buildPipeline();
@@ -2093,6 +2093,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 							DE_NULL,
 							*geomShader,
 							DE_NULL,
+							&shadingRateStateCreateInfo,
 							pDynamicRendering)
 						.setupFragmentShaderState(
 							*pipelineLayout,
@@ -2100,8 +2101,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 							0u,
 							*fragShader,
 							&depthStencilStateParams,
-							&multisampleStateCreateInfo,
-							&shadingRateStateCreateInfo)
+							&multisampleStateCreateInfo)
 						.setupFragmentOutputState(*renderPass, 0u, DE_NULL, &multisampleStateCreateInfo)
 						.setMonolithicPipelineLayout(*pipelineLayout)
 						.buildPipeline();
