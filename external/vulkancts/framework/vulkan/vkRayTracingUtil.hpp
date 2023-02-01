@@ -580,6 +580,7 @@ public:
 	virtual VkAccelerationStructureBuildTypeKHR			getBuildType							() const = 0;
 	virtual void										setCreateFlags							(const VkAccelerationStructureCreateFlagsKHR	createFlags) = DE_NULL;
 	virtual void										setCreateGeneric						(bool											createGeneric) = 0;
+	virtual void										setCreationBufferUnbounded				(bool											creationBufferUnbounded) = 0;
 	virtual void										setBuildFlags							(const VkBuildAccelerationStructureFlagsKHR		buildFlags) = DE_NULL;
 	virtual void										setBuildWithoutGeometries				(bool											buildWithoutGeometries) = 0;
 	virtual void										setBuildWithoutPrimitives				(bool											buildWithoutPrimitives) = 0;
@@ -770,6 +771,7 @@ public:
 	virtual void													setBuildType						(const VkAccelerationStructureBuildTypeKHR			buildType) = DE_NULL;
 	virtual void													setCreateFlags						(const VkAccelerationStructureCreateFlagsKHR		createFlags) = DE_NULL;
 	virtual void													setCreateGeneric					(bool												createGeneric) = 0;
+	virtual void													setCreationBufferUnbounded			(bool												creationBufferUnbounded) = 0;
 	virtual void													setBuildFlags						(const VkBuildAccelerationStructureFlagsKHR			buildFlags) = DE_NULL;
 	virtual void													setBuildWithoutPrimitives			(bool												buildWithoutPrimitives) = 0;
 	virtual void													setInactiveInstances				(bool												inactiveInstances) = 0;

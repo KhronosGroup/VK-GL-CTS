@@ -40,21 +40,37 @@ public:
 															 const vk::VkDevice				device,
 															 vk::Allocator&					allocator,
 															 const vk::VkBufferCreateInfo&	bufferCreateInfo,
-															 const vk::MemoryRequirement	memoryRequirement)
+															 const vk::MemoryRequirement	memoryRequirement,
+															 const bool						bindOnCreation = true)
 
-											: m_buffer		(createBuffer(vk, device, &bufferCreateInfo))
+											: m_vk			(vk)
+											, m_device		(device)
+											, m_buffer		(createBuffer(vk, device, &bufferCreateInfo))
 											, m_allocation	(allocator.allocate(getBufferMemoryRequirements(vk, device, *m_buffer), memoryRequirement))
+											, m_memoryBound	(false)
 										{
-											VK_CHECK(vk.bindBufferMemory(device, *m_buffer, m_allocation->getMemory(), m_allocation->getOffset()));
+											if (bindOnCreation)
+												bindMemory();
 										}
 
 	const vk::VkBuffer&					get				(void) const { return *m_buffer; }
 	const vk::VkBuffer&					operator*		(void) const { return get(); }
 	vk::Allocation&						getAllocation	(void) const { return *m_allocation; }
+	void								bindMemory		(void)
+	{
+		if (!m_memoryBound)
+		{
+			VK_CHECK(m_vk.bindBufferMemory(m_device, *m_buffer, m_allocation->getMemory(), m_allocation->getOffset()));
+			m_memoryBound = true;
+		}
+	}
 
 private:
+	const vk::DeviceInterface&			m_vk;
+	const vk::VkDevice					m_device;
 	const vk::Unique<vk::VkBuffer>		m_buffer;
 	const de::UniquePtr<vk::Allocation>	m_allocation;
+	bool								m_memoryBound;
 
 	// "deleted"
 										BufferWithMemory	(const BufferWithMemory&);
