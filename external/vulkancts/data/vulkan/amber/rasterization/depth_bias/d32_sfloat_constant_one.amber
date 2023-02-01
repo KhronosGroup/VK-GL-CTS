@@ -1,0 +1,232 @@
+#!amber
+# Copyright 2020 Google LLC.
+# Copyright 2020 The Khronos Group Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+SHADER vertex vert_shader GLSL
+#version 430
+
+layout(location = 0) in vec4 position;
+
+void main() {
+  gl_Position = position;
+}
+END
+
+SHADER fragment frag_shader GLSL
+#version 430
+
+layout(location = 0) out vec4 final_color;
+
+void main() {
+  final_color = vec4(1.0f);
+}
+END
+
+SHADER vertex vert_shader_tex GLSL
+#version 430
+layout(location = 0) in vec2 texcoords_in;
+layout(location = 0) out vec2 texcoords_out;
+void main() {
+  gl_Position = vec4(texcoords_in * 2.0f - 1.0f, 0.0f, 1.0f);
+  texcoords_out = texcoords_in;
+}
+END
+
+SHADER fragment frag_shader_tex GLSL
+#version 430
+layout(location = 0) in vec2 texcoords_in;
+layout(location = 0) out vec4 color_out;
+uniform layout(set=0, binding=0) sampler2D tex_sampler;
+void main() {
+  float f = texture(tex_sampler, texcoords_in).r;
+  color_out = vec4(f, f, f, 1);
+}
+END
+
+BUFFER position_buf1 DATA_TYPE vec4<float> DATA
+-1 -1 0.3 1.0
+ 1 -1 0.5 1.0
+-1  1 0.3 1.0
+ 1  1 0.5 1.0
+END
+
+BUFFER texcoords DATA_TYPE vec2<float> DATA
+0.0 0.0
+1.0 0.0
+0.0 1.0
+1.0 1.0
+END
+
+BUFFER depthstencil1 FORMAT D32_SFLOAT
+BUFFER depthstencil2 FORMAT D32_SFLOAT
+BUFFER depthstencil3 FORMAT D32_SFLOAT
+BUFFER ddump1 FORMAT R32_SFLOAT
+BUFFER ddump2 FORMAT R32_SFLOAT
+BUFFER ddump3 FORMAT R32_SFLOAT
+BUFFER results DATA_TYPE float SIZE 2 FILL 0
+BUFFER framebuffer FORMAT B8G8R8A8_UNORM
+
+SAMPLER sampler
+
+PIPELINE graphics pipeline1
+  ATTACH vert_shader
+  ATTACH frag_shader
+
+  VERTEX_DATA position_buf1 LOCATION 0
+
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER framebuffer AS color LOCATION 0
+  BIND BUFFER depthstencil1 AS depth_stencil
+
+  DEPTH
+    TEST on
+    WRITE on
+    COMPARE_OP less
+    CLAMP off
+    BOUNDS min 0.0 max 1.0
+    BIAS constant 0.0 clamp 0.0 slope 0.0
+  END
+END
+
+PIPELINE graphics pipeline2
+  ATTACH vert_shader
+  ATTACH frag_shader
+
+  VERTEX_DATA position_buf1 LOCATION 0
+
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER framebuffer AS color LOCATION 0
+  BIND BUFFER depthstencil2 AS depth_stencil
+
+  DEPTH
+    TEST on
+    WRITE on
+    COMPARE_OP less
+    CLAMP off
+    BOUNDS min 0.0 max 1.0
+    BIAS constant 1.0 clamp 0.0 slope 0.0
+  END
+END
+
+PIPELINE graphics pipeline3
+  ATTACH vert_shader
+  ATTACH frag_shader
+
+  VERTEX_DATA position_buf1 LOCATION 0
+
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER framebuffer AS color LOCATION 0
+  BIND BUFFER depthstencil3 AS depth_stencil
+
+  DEPTH
+    TEST on
+    WRITE on
+    COMPARE_OP less
+    CLAMP off
+    BOUNDS min 0.0 max 1.0
+    BIAS constant -1.0 clamp 0.0 slope 0.0
+  END
+END
+
+PIPELINE graphics depthdump1
+  ATTACH vert_shader_tex
+  ATTACH frag_shader_tex
+  BIND BUFFER depthstencil1 AS combined_image_sampler SAMPLER sampler DESCRIPTOR_SET 0 BINDING 0
+  VERTEX_DATA texcoords LOCATION 0
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER ddump1 AS color LOCATION 0
+END
+
+PIPELINE graphics depthdump2
+  ATTACH vert_shader_tex
+  ATTACH frag_shader_tex
+  BIND BUFFER depthstencil2 AS combined_image_sampler SAMPLER sampler DESCRIPTOR_SET 0 BINDING 0
+  VERTEX_DATA texcoords LOCATION 0
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER ddump2 AS color LOCATION 0
+END
+
+PIPELINE graphics depthdump3
+  ATTACH vert_shader_tex
+  ATTACH frag_shader_tex
+  BIND BUFFER depthstencil3 AS combined_image_sampler SAMPLER sampler DESCRIPTOR_SET 0 BINDING 0
+  VERTEX_DATA texcoords LOCATION 0
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER ddump3 AS color LOCATION 0
+END
+
+SHADER compute verification_shader GLSL
+#version 430
+layout(local_size_x=1,local_size_y=1) in;
+uniform layout (set=0, binding=0, r32f) image2D texture1;
+uniform layout (set=0, binding=1, r32f) image2D texture2;
+uniform layout (set=0, binding=2, r32f) image2D texture3;
+layout(set = 0, binding = 3) buffer Result {
+  float result0;
+  float result1;
+};
+
+void main () {
+  float r0 = 1.0f / pow(2.0f, 25.0f);
+  float r1 = 1.0f / pow(2.0f, 24.0f);
+  float depth1_1 = imageLoad(texture1, ivec2(0, 0)).r;
+  float depth1_2 = imageLoad(texture1, ivec2(255, 255)).r;
+  float depth2_1 = imageLoad(texture2, ivec2(0, 0)).r;
+  float depth2_2 = imageLoad(texture2, ivec2(255, 255)).r;
+  float depth3_1 = imageLoad(texture3, ivec2(0, 0)).r;
+  float depth3_2 = imageLoad(texture3, ivec2(255, 55)).r;
+
+  const float epsilon = 0.00001f;
+
+  if ((distance(depth1_1 + r0, depth2_1) < epsilon || distance(depth1_1 + r1, depth2_1) < epsilon) && (distance(depth1_2 + r0, depth2_2) < epsilon || distance(depth1_2 + r1, depth2_2) < epsilon))
+      result0 = 1.0;
+  else
+      result0 = 0.0;
+
+  if ((distance(depth1_1 - r0, depth3_1) < epsilon || distance(depth1_1 - r1, depth3_1) < epsilon) && (distance(depth1_2 - r0, depth3_2) < epsilon || distance(depth1_2 - r1, depth3_2) < epsilon))
+      result1 = 1.0;
+  else
+      result1 = 0.0;
+}
+END
+
+PIPELINE compute verification_pipeline
+  ATTACH verification_shader
+  BIND BUFFER ddump1 AS storage_image DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER ddump2 AS storage_image DESCRIPTOR_SET 0 BINDING 1
+  BIND BUFFER ddump3 AS storage_image DESCRIPTOR_SET 0 BINDING 2
+  BIND BUFFER results AS storage DESCRIPTOR_SET 0 BINDING 3
+  FRAMEBUFFER_SIZE 256 256
+END
+
+CLEAR_DEPTH pipeline1 1.0
+CLEAR_COLOR pipeline1 255 255 255 255
+CLEAR pipeline1
+CLEAR_DEPTH pipeline2 1.0
+CLEAR_COLOR pipeline2 255 255 255 255
+CLEAR pipeline2
+CLEAR_DEPTH pipeline3 1.0
+CLEAR_COLOR pipeline3 255 255 255 255
+CLEAR pipeline3
+RUN pipeline1 DRAW_ARRAY AS TRIANGLE_STRIP START_IDX 0 COUNT 4
+RUN pipeline2 DRAW_ARRAY AS TRIANGLE_STRIP START_IDX 0 COUNT 4
+RUN pipeline3 DRAW_ARRAY AS TRIANGLE_STRIP START_IDX 0 COUNT 4
+RUN depthdump1 DRAW_ARRAY AS TRIANGLE_STRIP START_IDX 0 COUNT 4
+RUN depthdump2 DRAW_ARRAY AS TRIANGLE_STRIP START_IDX 0 COUNT 4
+RUN depthdump3 DRAW_ARRAY AS TRIANGLE_STRIP START_IDX 0 COUNT 4
+RUN verification_pipeline 1 1 1
+
+EXPECT results IDX 0 EQ 1.0
+EXPECT results IDX 4 EQ 1.0

@@ -943,6 +943,16 @@ dEQP-VK.rasterization.discard.point_list.query_pipeline_true
 dEQP-VK.rasterization.depth_bias.d16_unorm
 dEQP-VK.rasterization.depth_bias.d32_sfloat
 dEQP-VK.rasterization.depth_bias.d24_unorm
+dEQP-VK.rasterization.depth_bias.d16_unorm_constant_one
+dEQP-VK.rasterization.depth_bias.d32_sfloat_constant_one
+dEQP-VK.rasterization.depth_bias.d24_unorm_constant_one
+dEQP-VK.rasterization.depth_bias.d16_unorm_slope
+dEQP-VK.rasterization.depth_bias.d16_unorm_constant_one_less
+dEQP-VK.rasterization.depth_bias.d16_unorm_constant_one_greater
+dEQP-VK.rasterization.depth_bias.d24_unorm_constant_one_less
+dEQP-VK.rasterization.depth_bias.d24_unorm_constant_one_greater
+dEQP-VK.rasterization.depth_bias.d32_sfloat_constant_one_less
+dEQP-VK.rasterization.depth_bias.d32_sfloat_constant_one_greater
 dEQP-VK.rasterization.culling.front_triangles
 dEQP-VK.rasterization.culling.front_triangles_line
 dEQP-VK.rasterization.culling.front_triangles_point
