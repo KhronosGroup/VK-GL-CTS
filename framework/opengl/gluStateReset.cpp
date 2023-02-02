@@ -765,7 +765,7 @@ void resetStateGLCore (const RenderContext& renderCtx, const ContextInfo& ctxInf
 			// Reset 1D texture.
 			gl.bindTexture		(GL_TEXTURE_1D, 0);
 			gl.texImage1D		(GL_TEXTURE_1D, 0, GL_RGBA, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
-			gl.texParameteri	(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER,		GL_LINEAR_MIPMAP_NEAREST);
+			gl.texParameteri	(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER,		GL_NEAREST_MIPMAP_LINEAR);
 			gl.texParameteri	(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER,		GL_LINEAR);
 			gl.texParameterfv	(GL_TEXTURE_1D, GL_TEXTURE_BORDER_COLOR,	&borderColor[0]);
 			gl.texParameteri	(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S,			GL_REPEAT);
@@ -788,7 +788,7 @@ void resetStateGLCore (const RenderContext& renderCtx, const ContextInfo& ctxInf
 			// Reset 2D texture.
 			gl.bindTexture		(GL_TEXTURE_2D, 0);
 			gl.texImage2D		(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
-			gl.texParameteri	(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,		GL_LINEAR_MIPMAP_NEAREST);
+			gl.texParameteri	(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,		GL_NEAREST_MIPMAP_LINEAR);
 			gl.texParameteri	(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,		GL_LINEAR);
 			gl.texParameterfv	(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR,	&borderColor[0]);
 			gl.texParameteri	(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,			GL_REPEAT);
@@ -817,7 +817,7 @@ void resetStateGLCore (const RenderContext& renderCtx, const ContextInfo& ctxInf
 			gl.texImage2D		(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
 			gl.texImage2D		(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
 			gl.texImage2D		(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
-			gl.texParameteri	(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER,	GL_LINEAR_MIPMAP_NEAREST);
+			gl.texParameteri	(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER,	GL_NEAREST_MIPMAP_LINEAR);
 			gl.texParameteri	(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER,	GL_LINEAR);
 			gl.texParameterfv	(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BORDER_COLOR,	&borderColor[0]);
 			gl.texParameteri	(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S,		GL_REPEAT);
@@ -863,7 +863,7 @@ void resetStateGLCore (const RenderContext& renderCtx, const ContextInfo& ctxInf
 			// Reset 1D array texture.
 			gl.bindTexture		(GL_TEXTURE_1D_ARRAY, 0);
 			gl.texImage2D		(GL_TEXTURE_1D_ARRAY, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
-			gl.texParameteri	(GL_TEXTURE_1D_ARRAY, GL_TEXTURE_MIN_FILTER,	GL_LINEAR_MIPMAP_NEAREST);
+			gl.texParameteri	(GL_TEXTURE_1D_ARRAY, GL_TEXTURE_MIN_FILTER,	GL_NEAREST_MIPMAP_LINEAR);
 			gl.texParameteri	(GL_TEXTURE_1D_ARRAY, GL_TEXTURE_MAG_FILTER,	GL_LINEAR);
 			gl.texParameterfv	(GL_TEXTURE_1D_ARRAY, GL_TEXTURE_BORDER_COLOR,	&borderColor[0]);
 			gl.texParameteri	(GL_TEXTURE_1D_ARRAY, GL_TEXTURE_WRAP_S,		GL_REPEAT);
@@ -886,7 +886,7 @@ void resetStateGLCore (const RenderContext& renderCtx, const ContextInfo& ctxInf
 			// Reset 2D array texture.
 			gl.bindTexture		(GL_TEXTURE_2D_ARRAY, 0);
 			gl.texImage3D		(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
-			gl.texParameteri	(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER,	GL_LINEAR_MIPMAP_NEAREST);
+			gl.texParameteri	(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER,	GL_NEAREST_MIPMAP_LINEAR);
 			gl.texParameteri	(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER,	GL_LINEAR);
 			gl.texParameterfv	(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR,	&borderColor[0]);
 			gl.texParameteri	(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S,		GL_REPEAT);
@@ -910,7 +910,7 @@ void resetStateGLCore (const RenderContext& renderCtx, const ContextInfo& ctxInf
 			// Reset 3D texture.
 			gl.bindTexture		(GL_TEXTURE_3D, 0);
 			gl.texImage3D		(GL_TEXTURE_3D, 0, GL_RGBA, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
-			gl.texParameteri	(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER,		GL_LINEAR_MIPMAP_NEAREST);
+			gl.texParameteri	(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER,		GL_NEAREST_MIPMAP_LINEAR);
 			gl.texParameteri	(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER,		GL_LINEAR);
 			gl.texParameterfv	(GL_TEXTURE_3D, GL_TEXTURE_BORDER_COLOR,	&borderColor[0]);
 			gl.texParameteri	(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S,			GL_REPEAT);
