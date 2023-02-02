@@ -3,6 +3,8 @@
 # Module FindGit requires cmake >= 2.8.2
 cmake_minimum_required(VERSION 3.10.2)
 
+option(GLES_ALLOW_DIRECT_LINK "Allow direct linking to GLES libraries" ON)
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/framework/delibs/cmake")
 find_package(Git)
 find_package(PythonInterp 3)
@@ -153,23 +155,23 @@ message(STATUS "DEQP_SUPPORT_DRM        = ${DEQP_SUPPORT_DRM}")
 add_definitions(-DDEQP_TARGET_NAME="${DEQP_TARGET_NAME}")
 
 # Entry points loaded directly by linking to libGL*?
-if (DEFINED DEQP_GLES2_LIBRARIES)
+if (DEFINED DEQP_GLES2_LIBRARIES AND GLES_ALLOW_DIRECT_LINK)
 	add_definitions(-DDEQP_GLES2_DIRECT_LINK=1)
 endif ()
 
-if (DEFINED DEQP_GLES3_LIBRARIES)
+if (DEFINED DEQP_GLES3_LIBRARIES AND GLES_ALLOW_DIRECT_LINK)
 	add_definitions(-DDEQP_GLES3_DIRECT_LINK=1)
 endif ()
 
-if (DEFINED DEQP_GLES31_LIBRARIES)
+if (DEFINED DEQP_GLES31_LIBRARIES AND GLES_ALLOW_DIRECT_LINK)
 	add_definitions(-DDEQP_GLES31_DIRECT_LINK=1)
 endif ()
 
-if (DEFINED DEQP_GLES32_LIBRARIES)
+if (DEFINED DEQP_GLES32_LIBRARIES AND GLES_ALLOW_DIRECT_LINK)
 	add_definitions(-DDEQP_GLES32_DIRECT_LINK=1)
 endif ()
 
-if (DEFINED DEQP_EGL_LIBRARIES)
+if (DEFINED DEQP_EGL_LIBRARIES AND GLES_ALLOW_DIRECT_LINK)
 	add_definitions(-DDEQP_EGL_DIRECT_LINK=1)
 endif ()
 
