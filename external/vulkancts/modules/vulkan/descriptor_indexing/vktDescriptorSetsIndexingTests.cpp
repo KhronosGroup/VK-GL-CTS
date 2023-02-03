@@ -384,7 +384,7 @@ private:
 
 	Move<VkPipeline>			createComputePipeline			(VkPipelineLayout							pipelineLayout);
 
-	int							constructShaderModules			(void);
+	void						constructShaderModules			(void);
 
 	static std::vector<float>	createColorScheme();
 
@@ -697,35 +697,30 @@ const char* CommonDescriptorInstance::getShaderEpilog				(void)
 	return "}											\n";
 }
 
-int	CommonDescriptorInstance::constructShaderModules				(void)
+void CommonDescriptorInstance::constructShaderModules(void)
 {
-	int								result	= 0;
-	tcu::TestLog&					log		= m_context.getTestContext().getLog();
+	tcu::TestLog& log = m_context.getTestContext().getLog();
+
+	// Must construct at least one stage.
+	DE_ASSERT(m_testParams.stageFlags & (VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT));
 
 	if (m_testParams.stageFlags & VK_SHADER_STAGE_COMPUTE_BIT)
 	{
-		++result;
 		const std::string name = ut::buildShaderName(VK_SHADER_STAGE_COMPUTE_BIT, m_testParams.descriptorType, m_testParams.updateAfterBind, m_testParams.calculateInLoop, m_testParams.minNonUniform, false);
 		m_computeModule = vk::createShaderModule(m_vki, m_vkd, m_context.getBinaryCollection().get(name), (VkShaderModuleCreateFlags)0);
 	}
 	if (m_testParams.stageFlags & VK_SHADER_STAGE_FRAGMENT_BIT)
 	{
-		++result;
 		const std::string name = ut::buildShaderName(VK_SHADER_STAGE_FRAGMENT_BIT, m_testParams.descriptorType, m_testParams.updateAfterBind, m_testParams.calculateInLoop, m_testParams.minNonUniform, m_testParams.allowVertexStoring);
 		m_fragmentModule = vk::createShaderModule(m_vki, m_vkd, m_context.getBinaryCollection().get(name), (VkShaderModuleCreateFlags)0);
 		log << tcu::TestLog::Message << "Finally used fragment shader: " << name << '\n' << tcu::TestLog::EndMessage;
 	}
 	if (m_testParams.stageFlags & VK_SHADER_STAGE_VERTEX_BIT)
 	{
-		++result;
 		const std::string name = ut::buildShaderName(VK_SHADER_STAGE_VERTEX_BIT, m_testParams.descriptorType, m_testParams.updateAfterBind, m_testParams.calculateInLoop, m_testParams.minNonUniform, m_testParams.allowVertexStoring);
 		m_vertexModule = vk::createShaderModule(m_vki, m_vkd, m_context.getBinaryCollection().get(name), (VkShaderModuleCreateFlags)0);
 		log << tcu::TestLog::Message << "Finally used vertex shader: " << name << '\n' << tcu::TestLog::EndMessage;
 	}
-
-	DE_ASSERT(result > 0);
-
-	return result;
 }
 
 Move<VkRenderPass> CommonDescriptorInstance::createRenderPass		(const IterateCommonVariables&			variables)
