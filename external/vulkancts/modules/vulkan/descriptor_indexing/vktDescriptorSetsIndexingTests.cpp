@@ -149,22 +149,22 @@ struct DescriptorEnumerator
 	Move<VkDescriptorPool>							descriptorPool;
 	Move<VkDescriptorSet>							descriptorSet;
 
-	void init(const vkt::Context& context, deUint32 vertexCount, deUint32 availableDescriptorCount);
+	void init(const vkt::Context& context, uint32_t vertexCount, uint32_t availableDescriptorCount);
 	void update(const vkt::Context& context);
 };
 
 struct IterateCommonVariables
 {
 	// An amount of descriptors of a given type available on the platform
-	deUint32										availableDescriptorCount;
+	uint32_t										availableDescriptorCount;
 	// An amount of valid descriptors that have connected a buffers to them
-	deUint32										validDescriptorCount;
+	uint32_t										validDescriptorCount;
 	// As the name suggests, sometimes it is used as invocationCount
-	deUint32										vertexCount;
+	uint32_t										vertexCount;
 	VkRect2D										renderArea;
 	VkDeviceSize									dataAlignment;
-	deUint32										lowerBound;
-	deUint32										upperBound;
+	uint32_t										lowerBound;
+	uint32_t										upperBound;
 
 	DescriptorEnumerator							descriptorEnumerator;
 
@@ -192,13 +192,13 @@ public:
 								CommonDescriptorInstance		(Context&									context,
 																const TestParams&							testParams);
 
-	deUint32					computeAvailableDescriptorCount	(VkDescriptorType							descriptorType,
+	uint32_t					computeAvailableDescriptorCount	(VkDescriptorType							descriptorType,
 																 bool										reserveUniformTexelBuffer) const;
 
 	Move<VkDescriptorSetLayout>	createDescriptorSetLayout		(bool										reserveUniformTexelBuffer,
-																 deUint32&									descriptorCount) const;
+																 uint32_t&									descriptorCount) const;
 
-	Move<VkDescriptorPool>		createDescriptorPool			(deUint32									descriptorCount) const;
+	Move<VkDescriptorPool>		createDescriptorPool			(uint32_t									descriptorCount) const;
 
 	Move<VkDescriptorSet>		createDescriptorSet				(VkDescriptorPool							dsPool,
 																 VkDescriptorSetLayout						dsLayout) const;
@@ -222,9 +222,9 @@ public:
 		}
 	};
 	void						createVertexAttributeBuffer		(ut::BufferHandleAllocSp&					buffer,
-																 deUint32									availableDescriptorCount) const;
+																 uint32_t									availableDescriptorCount) const;
 
-	static std::string			substBinding					(deUint32									binding,
+	static std::string			substBinding					(uint32_t									binding,
 																 const char*								str);
 
 	static const char*			getVertexShaderProlog			(void);
@@ -259,8 +259,8 @@ public:
 
 	struct push_constant
 	{
-		deInt32	lowerBound;
-		deInt32	upperBound;
+		int32_t	lowerBound;
+		int32_t	upperBound;
 	};
 	VkPushConstantRange			makePushConstantRange			(void) const;
 
@@ -279,8 +279,8 @@ public:
 	// Creates one big stagging buffer cutted out on chunks that can accomodate an element of elementSize size
 	VkDeviceSize				createBuffers					(std::vector<VkDescriptorBufferInfo>&		bufferInfos,
 																 ut::BufferHandleAllocSp&					buffer,
-																 deUint32									elementCount,
-																 deUint32									elementSize,
+																 uint32_t									elementCount,
+																 uint32_t									elementSize,
 																 VkDeviceSize								alignment,
 																 VkBufferUsageFlags							bufferUsage);
 
@@ -293,7 +293,7 @@ public:
 																 const VkExtent3D&							imageExtent,
 																 VkFormat									imageFormat,
 																 VkImageLayout								imageLayout,
-																 deUint32									imageCount,
+																 uint32_t									imageCount,
 																 bool										withMipMaps = false);
 
 	void						createBuffersViews				(std::vector<ut::BufferViewSp>&				views,
@@ -308,12 +308,12 @@ public:
 
 	virtual void				copyImagesToBuffers				(IterateCommonVariables&					variables);
 
-	PixelBufferAccess			getPixelAccess					(deUint32									imageIndex,
+	PixelBufferAccess			getPixelAccess					(uint32_t									imageIndex,
 																 const VkExtent3D&							imageExtent,
 																 VkFormat									imageFormat,
 																 const std::vector<VkDescriptorBufferInfo>&	bufferInfos,
 																 const ut::BufferHandleAllocSp&				buffer,
-																 deUint32									mipLevel = 0u) const;
+																 uint32_t									mipLevel = 0u) const;
 
 	virtual void				createAndPopulateDescriptors	(IterateCommonVariables&					variables) = 0;
 
@@ -348,7 +348,7 @@ public:
 	void						commandBindDescriptorSets		(VkCommandBuffer							commandBuffer,
 																 VkPipelineLayout							pipelineLayout,
 																 VkDescriptorSet							descriptorSet,
-																 deUint32									descriptorSetIndex);
+																 uint32_t									descriptorSetIndex);
 
 	void						commandReadFrameBuffer			(ut::BufferHandleAllocSp&					content,
 																 VkCommandBuffer							commandBuffer,
@@ -369,13 +369,13 @@ protected:
 	const DeviceInterface&		m_vki;
 	Allocator&					m_allocator;
 	const VkQueue				m_queue;
-	const deUint32				m_queueFamilyIndex;
+	const uint32_t				m_queueFamilyIndex;
 	const Move<VkCommandPool>	m_commandPool;
 	const VkFormat				m_colorFormat;
 	const TestParams			m_testParams;
 	static const tcu::Vec4		m_clearColor;
 	const std::vector<float>	m_colorScheme;
-	const deUint32				m_schemeSize;
+	const uint32_t				m_schemeSize;
 
 private:
 
@@ -394,7 +394,7 @@ private:
 };
 const tcu::Vec4 CommonDescriptorInstance::m_clearColor = tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
-void DescriptorEnumerator::init (const vkt::Context& context, deUint32 vertexCount, deUint32 availableDescriptorCount)
+void DescriptorEnumerator::init (const vkt::Context& context, uint32_t vertexCount, uint32_t availableDescriptorCount)
 {
 	const VkDevice					device = context.getDevice();
 	const DeviceInterface&			deviceInterface = context.getDeviceInterface();
@@ -402,12 +402,12 @@ void DescriptorEnumerator::init (const vkt::Context& context, deUint32 vertexCou
 	const VkFormat					imageFormat = VK_FORMAT_R32G32B32A32_SINT;
 	typedef ut::mapVkFormat2Type<imageFormat>::type pixelType;
 	const VkDeviceSize				dataSize = vertexCount * sizeof(pixelType);
-	const std::vector<deUint32>		primes = ut::generatePrimes(availableDescriptorCount);
-	const deUint32					primeCount = static_cast<deUint32>(primes.size());
+	const std::vector<uint32_t>		primes = ut::generatePrimes(availableDescriptorCount);
+	const uint32_t					primeCount = static_cast<uint32_t>(primes.size());
 
 	std::vector<pixelType>	data(vertexCount);
 	// e.g. 2,3,5,7,11,13,2,3,5,7,...
-	for (deUint32 idx = 0; idx < vertexCount; ++idx)
+	for (uint32_t idx = 0; idx < vertexCount; ++idx)
 	{
 		data[idx].x() = static_cast<pixelType::Element>(primes[idx % primeCount]);
 		data[idx].y() = static_cast<pixelType::Element>(idx);
@@ -419,7 +419,7 @@ void DescriptorEnumerator::init (const vkt::Context& context, deUint32 vertexCou
 	const VkBufferViewCreateInfo bufferViewCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO,		// sType
-		DE_NULL,										// pNext
+		nullptr,										// pNext
 		0u,												// flags
 		*(buffer.get()->buffer),						// buffer
 		imageFormat,									// format
@@ -435,13 +435,13 @@ void DescriptorEnumerator::init (const vkt::Context& context, deUint32 vertexCou
 		VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,		// descriptorType
 		1u,												// descriptorCount
 		VK_SHADER_STAGE_ALL,							// stageFlags
-		DE_NULL,										// pImmutableSamplers
+		nullptr,										// pImmutableSamplers
 	};
 
 	const VkDescriptorSetLayoutCreateInfo	layoutCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-		DE_NULL,										// pNext
+		nullptr,										// pNext
 		0u,												// flags
 		1u,												// bindingCount
 		&binding,										// pBindings
@@ -454,7 +454,7 @@ void DescriptorEnumerator::init (const vkt::Context& context, deUint32 vertexCou
 	const VkDescriptorSetAllocateInfo	dsAllocInfo =
 	{
 		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,	// sType
-		DE_NULL,										// pNext
+		nullptr,										// pNext
 		*descriptorPool,								// descriptorPool
 		1u,												// descriptorSetCount
 		&(*descriptorSetLayout)							// pSetLayouts
@@ -475,18 +475,18 @@ void DescriptorEnumerator::update (const vkt::Context& context)
 	const VkWriteDescriptorSet writeInfo =
 	{
 		VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-		DE_NULL,									// pNext
+		nullptr,									// pNext
 		*descriptorSet,								// dstSet
 		BINDING_DescriptorEnumerator,				// dstBinding
 		0u,											// dstArrayElement
 		1u,											// descriptorCount
 		VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,	// descriptorType
-		DE_NULL,									// pImageInfo
+		nullptr,									// pImageInfo
 		&bufferInfo,								// pBufferInfo
 		&(**bufferView),							// pTexelBufferView
 	};
 
-	context.getDeviceInterface().updateDescriptorSets(context.getDevice(), 1u, &writeInfo, 0u, DE_NULL);
+	context.getDeviceInterface().updateDescriptorSets(context.getDevice(), 1u, &writeInfo, 0u, nullptr);
 }
 
 CommonDescriptorInstance::CommonDescriptorInstance					(Context&								context,
@@ -501,21 +501,21 @@ CommonDescriptorInstance::CommonDescriptorInstance					(Context&								context,
 	, m_colorFormat		(VK_FORMAT_R32G32B32A32_SFLOAT)
 	, m_testParams		(testParams)
 	, m_colorScheme		(createColorScheme())
-	, m_schemeSize		(static_cast<deUint32>(m_colorScheme.size()))
+	, m_schemeSize		(static_cast<uint32_t>(m_colorScheme.size()))
 {
 }
 
-deUint32 CommonDescriptorInstance::computeAvailableDescriptorCount	(VkDescriptorType						descriptorType,
+uint32_t CommonDescriptorInstance::computeAvailableDescriptorCount	(VkDescriptorType						descriptorType,
 																	 bool									reserveUniformTexelBuffer) const
 {
 	DE_UNREF(descriptorType);
-	const deUint32 vertexCount = m_testParams.frameResolution.width * m_testParams.frameResolution.height;
-	const deUint32 availableDescriptorsOnDevice = ut::DeviceProperties(m_context).computeMaxPerStageDescriptorCount(m_testParams.descriptorType, m_testParams.updateAfterBind, reserveUniformTexelBuffer);
+	const uint32_t vertexCount = m_testParams.frameResolution.width * m_testParams.frameResolution.height;
+	const uint32_t availableDescriptorsOnDevice = ut::DeviceProperties(m_context).computeMaxPerStageDescriptorCount(m_testParams.descriptorType, m_testParams.updateAfterBind, reserveUniformTexelBuffer);
 	return deMinu32(deMinu32(vertexCount, availableDescriptorsOnDevice), MAX_DESCRIPTORS);
 }
 
 Move<VkDescriptorSetLayout>	CommonDescriptorInstance::createDescriptorSetLayout (bool						reserveUniformTexelBuffer,
-																				 deUint32&					descriptorCount) const
+																				 uint32_t&					descriptorCount) const
 {
 	descriptorCount = computeAvailableDescriptorCount(m_testParams.descriptorType, reserveUniformTexelBuffer);
 
@@ -531,14 +531,14 @@ Move<VkDescriptorSetLayout>	CommonDescriptorInstance::createDescriptorSetLayout 
 			m_testParams.descriptorType,				// descriptorType
 			descriptorCount,							// descriptorCount
 			bindingStageFlags,							// stageFlags
-			DE_NULL,									// pImmutableSamplers
+			nullptr,									// pImmutableSamplers
 		},
 		{
 			BINDING_Additional,							// binding
 			m_testParams.additionalDescriptorType,		// descriptorType
 			1,											// descriptorCount
 			bindingStageFlags,							// stageFlags
-			DE_NULL,									// pImmutableSamplers
+			nullptr,									// pImmutableSamplers
 		}
 	};
 
@@ -554,7 +554,7 @@ Move<VkDescriptorSetLayout>	CommonDescriptorInstance::createDescriptorSetLayout 
 	const VkDescriptorSetLayoutBindingFlagsCreateInfo	bindingCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
-		DE_NULL,
+		nullptr,
 		optional ? 2u : 1u,	// bindingCount
 		bindingFlags,		// pBindingFlags
 	};
@@ -574,7 +574,7 @@ Move<VkDescriptorSetLayout>	CommonDescriptorInstance::createDescriptorSetLayout 
 	return vk::createDescriptorSetLayout(m_vki, m_vkd, &layoutCreateInfo);
 }
 
-Move<VkDescriptorPool>	CommonDescriptorInstance::createDescriptorPool (deUint32							descriptorCount) const
+Move<VkDescriptorPool>	CommonDescriptorInstance::createDescriptorPool (uint32_t							descriptorCount) const
 {
 	const VkDescriptorPoolCreateFlags pcf = m_testParams.updateAfterBind ? VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT : 0;
 
@@ -594,7 +594,7 @@ Move<VkDescriptorSet> CommonDescriptorInstance::createDescriptorSet	(VkDescripto
 	const VkDescriptorSetAllocateInfo	dsAllocInfo =
 	{
 		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,		// sType;
-		DE_NULL,											// pNext;
+		nullptr,											// pNext;
 		dsPool,												// descriptorPool;
 		1u,													// descriptorSetCount
 		&dsLayout											// pSetLayouts
@@ -604,20 +604,20 @@ Move<VkDescriptorSet> CommonDescriptorInstance::createDescriptorSet	(VkDescripto
 }
 
 void CommonDescriptorInstance::createVertexAttributeBuffer			(ut::BufferHandleAllocSp&				buffer,
-																	 deUint32								availableDescriptorCount) const
+																	 uint32_t								availableDescriptorCount) const
 {
 	float						xSize			= 0.0f;
 	float						ySize			= 0.0f;
 
-	const deUint32				invocationCount = m_testParams.frameResolution.width * m_testParams.frameResolution.height;
+	const uint32_t				invocationCount = m_testParams.frameResolution.width * m_testParams.frameResolution.height;
 	const std::vector<Vec4>		vertices		= ut::createVertices(m_testParams.frameResolution.width, m_testParams.frameResolution.height, xSize, ySize);
-	const std::vector<deUint32>	primes			= ut::generatePrimes(availableDescriptorCount);
-	const deUint32				primeCount		= static_cast<deUint32>(primes.size());
+	const std::vector<uint32_t>	primes			= ut::generatePrimes(availableDescriptorCount);
+	const uint32_t				primeCount		= static_cast<uint32_t>(primes.size());
 
 	std::vector<attributes> data(vertices.size());
 	std::transform(vertices.begin(), vertices.end(), data.begin(), attributes());
 
-	for (deUint32 invIdx = 0; invIdx < invocationCount; ++invIdx)
+	for (uint32_t invIdx = 0; invIdx < invocationCount; ++invIdx)
 	{
 		// r: 2,3,5,7,11,13,2,3,5,7,...
 		data[invIdx].index.x() = primes[invIdx % primeCount];
@@ -628,9 +628,9 @@ void CommonDescriptorInstance::createVertexAttributeBuffer			(ut::BufferHandleAl
 	}
 
 	// g: 0,0,2,3,0,5,0,7,0,0,0,11,0,13,...
-	for (deUint32 primeIdx = 0; primeIdx < primeCount; ++primeIdx)
+	for (uint32_t primeIdx = 0; primeIdx < primeCount; ++primeIdx)
 	{
-		const deUint32 prime = primes[primeIdx];
+		const uint32_t prime = primes[primeIdx];
 		DE_ASSERT(prime < invocationCount);
 		data[prime].index.y() = prime;
 	}
@@ -644,7 +644,7 @@ void CommonDescriptorInstance::createVertexAttributeBuffer			(ut::BufferHandleAl
 	vk::flushAlloc(m_vki, m_vkd, *buffer->alloc);
 }
 
-std::string CommonDescriptorInstance::substBinding					(deUint32								binding,
+std::string CommonDescriptorInstance::substBinding					(uint32_t								binding,
 																	 const char*							str)
 {
 	std::map<std::string, std::string> vars;
@@ -740,7 +740,7 @@ VkPushConstantRange CommonDescriptorInstance::makePushConstantRange	(void) const
 	{
 		m_testParams.stageFlags,							// stageFlags
 		0u,													// offset
-		static_cast<deUint32>(sizeof(push_constant))		// size
+		static_cast<uint32_t>(sizeof(push_constant))		// size
 	};
 	return pcr;
 }
@@ -752,12 +752,12 @@ Move<VkPipelineLayout> CommonDescriptorInstance::createPipelineLayout (const std
 	const VkPipelineLayoutCreateInfo createInfo =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// sType
-		DE_NULL,											// pNext
+		nullptr,											// pNext
 		(VkPipelineLayoutCreateFlags)0,						// flags
-		static_cast<deUint32>(descriptorSetLayouts.size()),	// setLayoutCount
+		static_cast<uint32_t>(descriptorSetLayouts.size()),	// setLayoutCount
 		descriptorSetLayouts.data(),						// pSetLayouts;
 		m_testParams.calculateInLoop ? 1u : 0u,				// pushConstantRangeCount
-		m_testParams.calculateInLoop ? &pcr : DE_NULL,		// pPushConstantRanges
+		m_testParams.calculateInLoop ? &pcr : nullptr,		// pPushConstantRanges
 	};
 
 	return vk::createPipelineLayout(m_vki, m_vkd, &createInfo);
@@ -797,13 +797,13 @@ Move<VkPipeline> CommonDescriptorInstance::createComputePipeline	(VkPipelineLayo
 
 	const VkSpecializationInfo workGroupSizeInfo =
 	{
-		de::sizeU32(mapEntries),		//	uint32_t						mapEntryCount;
-		de::dataOrNull(mapEntries),		//	const VkSpecializationMapEntry*	pMapEntries;
-		sizeof(workGroupSize),			//	size_t							dataSize;
-		&workGroupSize,					//	const void*						pData;
+		static_cast<uint32_t>(mapEntries.size()),	//	uint32_t						mapEntryCount;
+		mapEntries.data(),							//	const VkSpecializationMapEntry*	pMapEntries;
+		sizeof(workGroupSize),						//	size_t							dataSize;
+		&workGroupSize,								//	const void*						pData;
 	};
 
-	const VkPipelineShaderStageCreateInfo	shaderStaegCreateInfo =
+	const VkPipelineShaderStageCreateInfo	shaderStageCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 		nullptr,								// pNext
@@ -819,7 +819,7 @@ Move<VkPipeline> CommonDescriptorInstance::createComputePipeline	(VkPipelineLayo
 		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
 		nullptr,								// pNext
 		0u,										// flags
-		shaderStaegCreateInfo,					// stage
+		shaderStageCreateInfo,					// stage
 		pipelineLayout,							// layout
 		VK_NULL_HANDLE,							// basePipelineHandle
 		0u,										// basePipelineIndex
@@ -851,13 +851,13 @@ Move<VkPipeline> CommonDescriptorInstance::createGraphicsPipeline	(VkPipelineLay
 			1u,													// location
 			0u,													// binding
 			ut::mapType2vkFormat<attributes::vec2>::value,		// format
-			static_cast<deUint32>(sizeof(attributes::vec4))		// offset
+			static_cast<uint32_t>(sizeof(attributes::vec4))		// offset
 		},														// @normalpos
 		{
 			2u,													// location
 			0u,													// binding
 			ut::mapType2vkFormat<attributes::ivec4>::value,		// format
-			static_cast<deUint32>(sizeof(attributes::vec2)
+			static_cast<uint32_t>(sizeof(attributes::vec2)
 								+ sizeof(attributes::vec4))		// offset
 		},														// @index
 	};
@@ -865,7 +865,7 @@ Move<VkPipeline> CommonDescriptorInstance::createGraphicsPipeline	(VkPipelineLay
 	const VkPipelineVertexInputStateCreateInfo		vertexInputStateCreateInfo	=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-		DE_NULL,
+		nullptr,
 		(VkPipelineVertexInputStateCreateFlags)0,	// flags
 		DE_LENGTH_OF_ARRAY(bindingDescriptions),	// vertexBindingDescriptionCount
 		bindingDescriptions,						// pVertexBindingDescriptions
@@ -881,7 +881,7 @@ Move<VkPipeline> CommonDescriptorInstance::createGraphicsPipeline	(VkPipelineLay
 	const VkPipelineDynamicStateCreateInfo			dynamicStateCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,  // sType
-		DE_NULL,											   // pNext
+		nullptr,											   // pNext
 		0u,													   // flags
 		DE_LENGTH_OF_ARRAY(dynamicStates),					   // dynamicStateCount
 		dynamicStates										   // pDynamicStates
@@ -897,9 +897,9 @@ Move<VkPipeline> CommonDescriptorInstance::createGraphicsPipeline	(VkPipelineLay
 		m_vkd,											// device
 		pipelineLayout,									// pipelineLayout
 		*m_vertexModule,								// vertexShaderModule
-		DE_NULL,										// tessellationControlModule
-		DE_NULL,										// tessellationEvalModule
-		DE_NULL,										// geometryShaderModule
+		VK_NULL_HANDLE,									// tessellationControlModule
+		VK_NULL_HANDLE,									// tessellationEvalModule
+		VK_NULL_HANDLE,									// geometryShaderModule
 		*m_fragmentModule,								// fragmentShaderModule
 		renderPass,										// renderPass
 		viewports,										// viewports
@@ -917,15 +917,15 @@ Move<VkPipeline> CommonDescriptorInstance::createGraphicsPipeline	(VkPipelineLay
 
 VkDeviceSize CommonDescriptorInstance::createBuffers				(std::vector<VkDescriptorBufferInfo>&		bufferInfos,
 																	 ut::BufferHandleAllocSp&					buffer,
-																	 deUint32									elementCount,
-																	 deUint32									elementSize,
+																	 uint32_t									elementCount,
+																	 uint32_t									elementSize,
 																	 VkDeviceSize								alignment,
 																	 VkBufferUsageFlags							bufferUsage)
 {
 	const VkDeviceSize	roundedSize = deAlign64(elementSize, alignment);
 	VkDeviceSize		bufferSize	= ut::createBufferAndBind(buffer, m_context, bufferUsage, (roundedSize * elementCount));
 
-	for (deUint32 elementIdx = 0; elementIdx < elementCount; ++elementIdx)
+	for (uint32_t elementIdx = 0; elementIdx < elementCount; ++elementIdx)
 	{
 		const VkDescriptorBufferInfo bufferInfo =
 		{
@@ -947,15 +947,15 @@ VkDeviceSize CommonDescriptorInstance::createImages					(std::vector<ut::ImageHa
 																	 const VkExtent3D&							imageExtent,
 																	 VkFormat									imageFormat,
 																	 VkImageLayout								imageLayout,
-																	 deUint32									imageCount,
+																	 uint32_t									imageCount,
 																	 bool										withMipMaps)
 
 {
-	const deUint32		imageSize	= ut::computeImageSize(imageExtent, imageFormat, withMipMaps);
+	const uint32_t		imageSize	= ut::computeImageSize(imageExtent, imageFormat, withMipMaps);
 
 	const VkDeviceSize	bufferSize	= createBuffers(bufferInfos, buffer, imageCount, imageSize, sizeof(tcu::Vec4), bufferUsage);
 
-	for (deUint32 imageIdx = 0; imageIdx < imageCount; ++imageIdx)
+	for (uint32_t imageIdx = 0; imageIdx < imageCount; ++imageIdx)
 	{
 		ut::ImageHandleAllocSp image;
 		ut::createImageAndBind(image, m_context, imageFormat, imageExtent, imageLayout, withMipMaps);
@@ -969,14 +969,14 @@ void CommonDescriptorInstance::createBuffersViews					(std::vector<ut::BufferVie
 																	 const std::vector<VkDescriptorBufferInfo>&	bufferInfos,
 																	 VkFormat									format)
 {
-	const deUint32 infoCount = static_cast<deUint32>(bufferInfos.size());
-	for (deUint32 infoIdx = 0; infoIdx < infoCount; ++infoIdx)
+	const uint32_t infoCount = static_cast<uint32_t>(bufferInfos.size());
+	for (uint32_t infoIdx = 0; infoIdx < infoCount; ++infoIdx)
 	{
 		const VkDescriptorBufferInfo&	bufferInfo = bufferInfos[infoIdx];
 		const VkBufferViewCreateInfo	bufferViewInfo =
 		{
 			VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO,	// sType
-			DE_NULL,									// pNext
+			nullptr,									// pNext
 			(VkBufferViewCreateFlags)0,					// flags
 			bufferInfo.buffer,							// buffer
 			format,										// format
@@ -991,13 +991,13 @@ void CommonDescriptorInstance::createImagesViews					(std::vector<ut::ImageViewS
 																	 const std::vector<ut::ImageHandleAllocSp>&	images,
 																	 VkFormat									format)
 {
-	const deUint32 imageCount = static_cast<deUint32>(images.size());
-	for (deUint32 imageIdx = 0; imageIdx < imageCount; ++imageIdx)
+	const uint32_t imageCount = static_cast<uint32_t>(images.size());
+	for (uint32_t imageIdx = 0; imageIdx < imageCount; ++imageIdx)
 	{
 		const VkImageViewCreateInfo createInfo =
 		{
 			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,	// sType
-			DE_NULL,									// pNext
+			nullptr,									// pNext
 			(VkImageViewCreateFlags)0,					// flags
 			*images[imageIdx]->image,					// image
 			VK_IMAGE_VIEW_TYPE_2D,						// viewType
@@ -1005,10 +1005,10 @@ void CommonDescriptorInstance::createImagesViews					(std::vector<ut::ImageViewS
 			vk::makeComponentMappingRGBA(),				// components
 			{
 				VK_IMAGE_ASPECT_COLOR_BIT,				// aspectMask
-				(deUint32)0,							// baseMipLevel
+				(uint32_t)0,							// baseMipLevel
 				images[imageIdx]->levels,				// mipLevels
-				(deUint32)0,							// baseArrayLayer
-				(deUint32)1u,							// arraySize
+				(uint32_t)0,							// baseArrayLayer
+				(uint32_t)1u,							// arraySize
 			},
 		};
 		views.push_back(ut::ImageViewSp(new Move<VkImageView>(vk::createImageView(m_vki, m_vkd, &createInfo))));
@@ -1017,12 +1017,12 @@ void CommonDescriptorInstance::createImagesViews					(std::vector<ut::ImageViewS
 
 void CommonDescriptorInstance::copyBuffersToImages					(IterateCommonVariables&					variables)
 {
-	const deUint32 infoCount = static_cast<deUint32>(variables.descriptorsBufferInfos.size());
+	const uint32_t infoCount = static_cast<uint32_t>(variables.descriptorsBufferInfos.size());
 	DE_ASSERT(variables.descriptorsImages.size() == infoCount);
 	const VkPipelineStageFlagBits dstStageMask = (m_testParams.stageFlags & VK_SHADER_STAGE_COMPUTE_BIT)
 		? VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT
 		: VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-	for (deUint32 infoIdx = 0; infoIdx < infoCount; ++infoIdx)
+	for (uint32_t infoIdx = 0; infoIdx < infoCount; ++infoIdx)
 	{
 		ut::recordCopyBufferToImage(
 			*variables.commandBuffer,						// commandBuffer
@@ -1041,13 +1041,13 @@ void CommonDescriptorInstance::copyBuffersToImages					(IterateCommonVariables&	
 
 void CommonDescriptorInstance::copyImagesToBuffers					(IterateCommonVariables&					variables)
 {
-	const deUint32 infoCount = static_cast<deUint32>(variables.descriptorsBufferInfos.size());
+	const uint32_t infoCount = static_cast<uint32_t>(variables.descriptorsBufferInfos.size());
 	DE_ASSERT(variables.descriptorsImages.size() == infoCount);
 	const VkPipelineStageFlagBits srcStageMask = (m_testParams.stageFlags & VK_SHADER_STAGE_COMPUTE_BIT)
 		? VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT
 		: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
-	for (deUint32 infoIdx = 0; infoIdx < infoCount; ++infoIdx)
+	for (uint32_t infoIdx = 0; infoIdx < infoCount; ++infoIdx)
 	{
 		ut::recordCopyImageToBuffer(
 			*variables.commandBuffer,						// commandBuffer
@@ -1063,21 +1063,21 @@ void CommonDescriptorInstance::copyImagesToBuffers					(IterateCommonVariables&	
 	}
 }
 
-PixelBufferAccess CommonDescriptorInstance::getPixelAccess			(deUint32									imageIndex,
+PixelBufferAccess CommonDescriptorInstance::getPixelAccess			(uint32_t									imageIndex,
 																	 const VkExtent3D&							imageExtent,
 																	 VkFormat									imageFormat,
 																	 const std::vector<VkDescriptorBufferInfo>&	bufferInfos,
 																	 const ut::BufferHandleAllocSp&				buffer,
-																	 deUint32									mipLevel) const
+																	 uint32_t									mipLevel) const
 {
 	DE_ASSERT(bufferInfos[imageIndex].buffer == *buffer.get()->buffer);
 	DE_ASSERT(ut::computeImageSize(imageExtent, imageFormat, true, (mipLevel ? ut::maxDeUint32 : 0)) <= bufferInfos[imageIndex].range);
 	DE_ASSERT(imageExtent.width		>> mipLevel);
 	DE_ASSERT(imageExtent.height	>> mipLevel);
 
-	deUint32 mipOffset = 0;
+	uint32_t mipOffset = 0;
 
-	for (deUint32 level = 0; mipLevel && level < mipLevel; ++level)
+	for (uint32_t level = 0; mipLevel && level < mipLevel; ++level)
 	{
 		mipOffset += ut::computeImageSize(imageExtent, imageFormat, true, level);
 	}
@@ -1089,14 +1089,14 @@ PixelBufferAccess CommonDescriptorInstance::getPixelAccess			(deUint32									i
 
 void CommonDescriptorInstance::updateDescriptors					(IterateCommonVariables&					variables)
 {
-	const std::vector<deUint32>	primes = ut::generatePrimes(variables.availableDescriptorCount);
-	const deUint32				primeCount = static_cast<deUint32>(primes.size());
+	const std::vector<uint32_t>	primes = ut::generatePrimes(variables.availableDescriptorCount);
+	const uint32_t				primeCount = static_cast<uint32_t>(primes.size());
 
-	for (deUint32 primeIdx = 0; primeIdx < primeCount; ++primeIdx)
+	for (uint32_t primeIdx = 0; primeIdx < primeCount; ++primeIdx)
 	{
-		const VkDescriptorBufferInfo*	pBufferInfo			= DE_NULL;
-		const VkDescriptorImageInfo*	pImageInfo			= DE_NULL;
-		const VkBufferView*				pTexelBufferView	= DE_NULL;
+		const VkDescriptorBufferInfo*	pBufferInfo			= nullptr;
+		const VkDescriptorImageInfo*	pImageInfo			= nullptr;
+		const VkBufferView*				pTexelBufferView	= nullptr;
 
 		VkDescriptorImageInfo		imageInfo =
 		{
@@ -1145,7 +1145,7 @@ void CommonDescriptorInstance::updateDescriptors					(IterateCommonVariables&			
 		const VkWriteDescriptorSet writeInfo =
 		{
 			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,			// sType
-			DE_NULL,										// pNext
+			nullptr,										// pNext
 			*variables.descriptorSet,						// descriptorSet
 			BINDING_TestObject,								// descriptorBinding;
 			primes[primeIdx],								// elementIndex
@@ -1156,7 +1156,7 @@ void CommonDescriptorInstance::updateDescriptors					(IterateCommonVariables&			
 			pTexelBufferView								// pTexelBufferView
 		};
 
-		m_vki.updateDescriptorSets(m_vkd, 1u, &writeInfo, 0u, DE_NULL);
+		m_vki.updateDescriptorSets(m_vkd, 1u, &writeInfo, 0u, nullptr);
 	}
 }
 
@@ -1226,7 +1226,7 @@ void CommonDescriptorInstance::iterateCommandBegin					(IterateCommonVariables&	
 			const VkImageMemoryBarrier preImageBarrier =
 			{
 				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// VkStructureType		sType
-				DE_NULL,											// const void*			pNext
+				nullptr,											// const void*			pNext
 				0u,													// VkAccessFlags		srcAccessMask
 				VK_ACCESS_TRANSFER_WRITE_BIT,						// VkAccessFlags		dstAccessMask
 				VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout		oldLayout
@@ -1245,8 +1245,8 @@ void CommonDescriptorInstance::iterateCommandBegin					(IterateCommonVariables&	
 
 			m_vki.cmdPipelineBarrier(*variables.commandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 									(VkDependencyFlags)0,
-									0, (const VkMemoryBarrier*)DE_NULL,
-									0, (const VkBufferMemoryBarrier*)DE_NULL,
+									0, (const VkMemoryBarrier*)nullptr,
+									0, (const VkBufferMemoryBarrier*)nullptr,
 									1, &preImageBarrier);
 
 			const VkClearColorValue	clearColorValue		= makeClearValueColor(m_clearColor).color;
@@ -1256,7 +1256,7 @@ void CommonDescriptorInstance::iterateCommandBegin					(IterateCommonVariables&	
 			const VkImageMemoryBarrier postImageBarrier =
 			{
 				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// VkStructureType		sType
-				DE_NULL,											// const void*			pNext
+				nullptr,											// const void*			pNext
 				VK_ACCESS_TRANSFER_WRITE_BIT,						// VkAccessFlags		srcAccessMask
 				VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, // VkAccessFlags		dstAccessMask
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,				// VkImageLayout		oldLayout
@@ -1275,8 +1275,8 @@ void CommonDescriptorInstance::iterateCommandBegin					(IterateCommonVariables&	
 
 			m_vki.cmdPipelineBarrier(*variables.commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 									(VkDependencyFlags)0,
-									0, (const VkMemoryBarrier*)DE_NULL,
-									0, (const VkBufferMemoryBarrier*)DE_NULL,
+									0, (const VkMemoryBarrier*)nullptr,
+									0, (const VkBufferMemoryBarrier*)nullptr,
 									1, &postImageBarrier);
 
 		}
@@ -1285,19 +1285,19 @@ void CommonDescriptorInstance::iterateCommandBegin					(IterateCommonVariables&	
 	if (m_testParams.calculateInLoop)
 	{
 		deRandom rnd;
-		deRandom_init(&rnd, static_cast<deUint32>(m_testParams.descriptorType));
-		const deUint32 quarter = variables.vertexCount / 4;
+		deRandom_init(&rnd, static_cast<uint32_t>(m_testParams.descriptorType));
+		const uint32_t quarter = variables.vertexCount / 4;
 
 		variables.lowerBound			= deRandom_getUint32(&rnd) % quarter;
 		variables.upperBound			= (deRandom_getUint32(&rnd) % quarter) + (3 * quarter);
 
 		const push_constant pc =
 		{
-			static_cast<deInt32>(variables.lowerBound),
-			static_cast<deInt32>(variables.upperBound)
+			static_cast<int32_t>(variables.lowerBound),
+			static_cast<int32_t>(variables.upperBound)
 		};
 
-		m_vki.cmdPushConstants(*variables.commandBuffer, *variables.pipelineLayout, m_testParams.stageFlags, 0u, static_cast<deUint32>(sizeof(pc)), &pc);
+		m_vki.cmdPushConstants(*variables.commandBuffer, *variables.pipelineLayout, m_testParams.stageFlags, 0u, static_cast<uint32_t>(sizeof(pc)), &pc);
 	}
 
 	if ((m_testParams.stageFlags & VK_SHADER_STAGE_VERTEX_BIT) || (m_testParams.stageFlags & VK_SHADER_STAGE_FRAGMENT_BIT))
@@ -1436,9 +1436,9 @@ void CommonDescriptorInstance::iterateCollectResults				(ut::UpdatablePixelBuffe
 	{
 		result = ut::UpdatablePixelBufferAccessPtr(new ut::PixelBufferAccessAllocation(vk::mapVkFormat(m_colorFormat), m_testParams.frameResolution));
 
-		for (deUint32 y = 0, pixelNum = 0; y < m_testParams.frameResolution.height; ++y)
+		for (uint32_t y = 0, pixelNum = 0; y < m_testParams.frameResolution.height; ++y)
 		{
-			for (deUint32 x = 0; x < m_testParams.frameResolution.width; ++x, ++pixelNum)
+			for (uint32_t x = 0; x < m_testParams.frameResolution.width; ++x, ++pixelNum)
 			{
 				const float component = m_colorScheme[(pixelNum % variables.validDescriptorCount) % m_schemeSize];
 				result->setPixel(tcu::Vec4(component, component, component, 1.0f), x, y);
@@ -1459,14 +1459,14 @@ Move<VkFence> CommonDescriptorInstance::commandSubmit				(VkCommandBuffer							
 	const VkSubmitInfo	submitInfo =
 	{
 		VK_STRUCTURE_TYPE_SUBMIT_INFO,						// sType
-		DE_NULL,											// pNext
+		nullptr,											// pNext
 		0u,													// waitSemaphoreCount
-		static_cast<VkSemaphore*>(DE_NULL),					// pWaitSemaphores
-		static_cast<const VkPipelineStageFlags*>(DE_NULL),	// pWaitDstStageMask
+		static_cast<VkSemaphore*>(nullptr),					// pWaitSemaphores
+		static_cast<const VkPipelineStageFlags*>(nullptr),	// pWaitDstStageMask
 		1u,													// commandBufferCount
 		&cmd,												// pCommandBuffers
 		0u,													// signalSemaphoreCount
-		static_cast<VkSemaphore*>(DE_NULL)					// pSignalSemaphores
+		static_cast<VkSemaphore*>(nullptr)					// pSignalSemaphores
 	};
 
 	VK_CHECK(m_vki.queueSubmit(m_queue, 1u, &submitInfo, *fence));
@@ -1498,10 +1498,10 @@ void CommonDescriptorInstance::commandBindVertexAttributes			(VkCommandBuffer			
 void CommonDescriptorInstance::commandBindDescriptorSets			(VkCommandBuffer							commandBuffer,
 																	 VkPipelineLayout							pipelineLayout,
 																	 VkDescriptorSet							descriptorSet,
-																	 deUint32									descriptorSetIndex)
+																	 uint32_t									descriptorSetIndex)
 {
 	const VkPipelineBindPoint pipelineBindingPoint = (m_testParams.stageFlags & VK_SHADER_STAGE_COMPUTE_BIT) ? VK_PIPELINE_BIND_POINT_COMPUTE : VK_PIPELINE_BIND_POINT_GRAPHICS;
-	m_vki.cmdBindDescriptorSets(commandBuffer, pipelineBindingPoint, pipelineLayout, descriptorSetIndex, 1u, &descriptorSet, 0u, static_cast<deUint32*>(DE_NULL));
+	m_vki.cmdBindDescriptorSets(commandBuffer, pipelineBindingPoint, pipelineLayout, descriptorSetIndex, 1u, &descriptorSet, 0u, static_cast<uint32_t*>(nullptr));
 }
 
 ut::UpdatablePixelBufferAccessPtr
@@ -1530,7 +1530,7 @@ void CommonDescriptorInstance::commandReadFrameBuffer				(ut::BufferHandleAllocS
 		const VkBufferCreateInfo bufferCreateInfo =
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// sType
-			DE_NULL,									// pNext
+			nullptr,									// pNext
 			0u,											// flags
 			bufferSize,									// size
 			VK_BUFFER_USAGE_TRANSFER_DST_BIT,			// usage
@@ -1560,7 +1560,7 @@ void CommonDescriptorInstance::commandReadFrameBuffer				(ut::BufferHandleAllocS
 	const VkImageMemoryBarrier	barrierBefore =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// sType;
-		DE_NULL,									// pNext;
+		nullptr,									// pNext;
 		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		// srcAccessMask;
 		VK_ACCESS_TRANSFER_READ_BIT,				// dstAccessMask;
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// oldLayout
@@ -1589,7 +1589,7 @@ void CommonDescriptorInstance::commandReadFrameBuffer				(ut::BufferHandleAllocS
 	const VkBufferMemoryBarrier	bufferBarrier =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// sType;
-		DE_NULL,									// pNext;
+		nullptr,									// pNext;
 		VK_ACCESS_TRANSFER_WRITE_BIT,				// srcAccessMask;
 		VK_ACCESS_HOST_READ_BIT,					// dstAccessMask;
 		VK_QUEUE_FAMILY_IGNORED,					// srcQueueFamilyIndex;
@@ -1602,7 +1602,7 @@ void CommonDescriptorInstance::commandReadFrameBuffer				(ut::BufferHandleAllocS
 	const VkImageMemoryBarrier	barrierAfter =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// sType;
-		DE_NULL,										// pNext;
+		nullptr,										// pNext;
 		VK_ACCESS_TRANSFER_READ_BIT,					// srcAccessMask;
 		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// dstAccessMask;
 		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,			// oldLayout;
@@ -1617,8 +1617,8 @@ void CommonDescriptorInstance::commandReadFrameBuffer				(ut::BufferHandleAllocS
 	m_vki.cmdPipelineBarrier(commandBuffer,												// commandBuffer
 		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,	// srcStageMask, dstStageMask
 		(VkDependencyFlags)0,															// dependencyFlags
-		0u, DE_NULL,																	// memoryBarrierCount, pMemoryBarriers
-		0u, DE_NULL,																	// bufferBarrierCount, pBufferBarriers
+		0u, nullptr,																	// memoryBarrierCount, pMemoryBarriers
+		0u, nullptr,																	// bufferBarrierCount, pBufferBarriers
 		1u, &barrierBefore);																// imageBarrierCount, pImageBarriers
 
 	m_vki.cmdCopyImageToBuffer(commandBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *buffer, 1u, &copyRegion);
@@ -1626,7 +1626,7 @@ void CommonDescriptorInstance::commandReadFrameBuffer				(ut::BufferHandleAllocS
 	m_vki.cmdPipelineBarrier(commandBuffer,
 		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT | VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
 		(VkDependencyFlags)0,
-		0u, DE_NULL,
+		0u, nullptr,
 		1u, &bufferBarrier,
 		1u, &barrierAfter);
 
@@ -2885,11 +2885,11 @@ void StorageBufferInstance::createAndPopulateDescriptors			(IterateCommonVariabl
 		ut::DeviceProperties dp(m_context);
 		vertexStores = dp.physicalDeviceFeatures().vertexPipelineStoresAndAtomics != DE_FALSE;
 	}
-	const deUint32				alignment	= static_cast<deUint32>(ut::DeviceProperties(m_context).physicalDeviceProperties().limits.minStorageBufferOffsetAlignment);
+	const uint32_t				alignment	= static_cast<uint32_t>(ut::DeviceProperties(m_context).physicalDeviceProperties().limits.minStorageBufferOffsetAlignment);
 	createBuffers(variables.descriptorsBufferInfos, variables.descriptorsBuffer, variables.validDescriptorCount, sizeof(data), alignment, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 
 	unsigned char*				buffer		= static_cast<unsigned char*>(variables.descriptorsBuffer->alloc->getHostPtr());
-	for (deUint32 infoIdx = 0; infoIdx < variables.validDescriptorCount; ++infoIdx)
+	for (uint32_t infoIdx = 0; infoIdx < variables.validDescriptorCount; ++infoIdx)
 	{
 		const float				component	= m_colorScheme[infoIdx % m_schemeSize];
 		const tcu::Vec4			color		(component, component, component, 1.0f);
@@ -2907,13 +2907,13 @@ void StorageBufferInstance::createAndPopulateDescriptors			(IterateCommonVariabl
 bool StorageBufferInstance::verifyVertexWriteResults				(IterateCommonVariables&					variables)
 {
 	const tcu::Vec4				threshold		(0.002f, 0.002f, 0.002f, 0.002f);
-	const std::vector<deUint32>	primes			= ut::generatePrimes(variables.availableDescriptorCount);
+	const std::vector<uint32_t>	primes			= ut::generatePrimes(variables.availableDescriptorCount);
 
 	unsigned char*				buffer = static_cast<unsigned char*>(variables.descriptorsBuffer->alloc->getHostPtr());
 	BindingStorageBufferData	data;
-	for (deUint32 primeIdx = 0; primeIdx < variables.validDescriptorCount; ++primeIdx)
+	for (uint32_t primeIdx = 0; primeIdx < variables.validDescriptorCount; ++primeIdx)
 	{
-		const deUint32			prime		= primes[primeIdx];
+		const uint32_t			prime		= primes[primeIdx];
 		const float				component	= m_colorScheme[(prime % variables.validDescriptorCount) % m_schemeSize];
 		const tcu::Vec4			referenceValue(component, component, component, 1.0f);
 
@@ -2953,11 +2953,11 @@ void UniformBufferInstance::createAndPopulateDescriptors			(IterateCommonVariabl
 {
 	BindingUniformBufferData data;
 
-	const deUint32				alignment	= static_cast<deUint32>(ut::DeviceProperties(m_context).physicalDeviceProperties().limits.minUniformBufferOffsetAlignment);
+	const uint32_t				alignment	= static_cast<uint32_t>(ut::DeviceProperties(m_context).physicalDeviceProperties().limits.minUniformBufferOffsetAlignment);
 	createBuffers(variables.descriptorsBufferInfos, variables.descriptorsBuffer, variables.validDescriptorCount, sizeof(data), alignment, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
 	unsigned char*				buffer		= static_cast<unsigned char*>(variables.descriptorsBuffer->alloc->getHostPtr());
-	for (deUint32 infoIdx = 0; infoIdx < variables.validDescriptorCount; ++infoIdx)
+	for (uint32_t infoIdx = 0; infoIdx < variables.validDescriptorCount; ++infoIdx)
 	{
 		const float				component	= m_colorScheme[infoIdx % m_schemeSize];
 		VkDescriptorBufferInfo& info		= variables.descriptorsBufferInfos[infoIdx];
@@ -2995,12 +2995,12 @@ StorageTexelInstance::StorageTexelInstance							(Context&									context,
 void StorageTexelInstance::createAndPopulateDescriptors			(IterateCommonVariables&					variables)
 {
 	const VkExtent3D			imageExtent			= { 4, 4, 1 };
-	const deUint32				imageSize			= ut::computeImageSize(imageExtent, m_colorFormat);
+	const uint32_t				imageSize			= ut::computeImageSize(imageExtent, m_colorFormat);
 
 	createBuffers(variables.descriptorsBufferInfos, variables.descriptorsBuffer, variables.validDescriptorCount, imageSize, sizeof(tcu::Vec4), VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT);
 	createBuffersViews(variables.descriptorsBufferViews, variables.descriptorsBufferInfos, m_colorFormat);
 
-	for (deUint32 imageIdx = 0; imageIdx < variables.validDescriptorCount; ++imageIdx)
+	for (uint32_t imageIdx = 0; imageIdx < variables.validDescriptorCount; ++imageIdx)
 	{
 		const float				component			= m_colorScheme[imageIdx % m_schemeSize];
 		const PixelBufferAccess pa					= getPixelAccess(imageIdx, imageExtent, m_colorFormat, variables.descriptorsBufferInfos, variables.descriptorsBuffer);
@@ -3015,11 +3015,11 @@ bool StorageTexelInstance::verifyVertexWriteResults(IterateCommonVariables&					
 {
 	const VkExtent3D			imageExtent		= { 4, 4, 1 };
 	const tcu::Vec4				threshold		(0.002f, 0.002f, 0.002f, 0.002f);
-	const std::vector<deUint32>	primes			= ut::generatePrimes(variables.availableDescriptorCount);
+	const std::vector<uint32_t>	primes			= ut::generatePrimes(variables.availableDescriptorCount);
 
-	for (deUint32 primeIdx = 0; primeIdx < variables.validDescriptorCount; ++primeIdx)
+	for (uint32_t primeIdx = 0; primeIdx < variables.validDescriptorCount; ++primeIdx)
 	{
-		const deUint32			prime		= primes[primeIdx];
+		const uint32_t			prime		= primes[primeIdx];
 		const float				component	= m_colorScheme[( prime % variables.validDescriptorCount ) % m_schemeSize];
 		const tcu::Vec4			referenceValue(component, component, component, 1.0f);
 
@@ -3057,12 +3057,12 @@ UniformTexelInstance::UniformTexelInstance							(Context&									context,
 void UniformTexelInstance::createAndPopulateDescriptors				(IterateCommonVariables&					variables)
 {
 	const VkExtent3D			imageExtent	= { 4, 4, 1 };
-	const deUint32				imageSize	= ut::computeImageSize(imageExtent, m_colorFormat);
+	const uint32_t				imageSize	= ut::computeImageSize(imageExtent, m_colorFormat);
 
 	createBuffers(variables.descriptorsBufferInfos, variables.descriptorsBuffer, variables.validDescriptorCount, imageSize, sizeof(tcu::Vec4), VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT);
 	createBuffersViews(variables.descriptorsBufferViews, variables.descriptorsBufferInfos, m_colorFormat);
 
-	for (deUint32 imageIdx = 0; imageIdx < variables.validDescriptorCount; ++imageIdx)
+	for (uint32_t imageIdx = 0; imageIdx < variables.validDescriptorCount; ++imageIdx)
 	{
 		const float				component	= m_colorScheme[imageIdx % m_schemeSize];
 		const PixelBufferAccess	pa			= getPixelAccess(imageIdx, imageExtent, m_colorFormat, variables.descriptorsBufferInfos, variables.descriptorsBuffer);
@@ -3098,36 +3098,36 @@ void DynamicBuffersInstance::updateDescriptors						(IterateCommonVariables&				
 	VkWriteDescriptorSet updateInfo =
 	{
 		VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,			// sType
-		DE_NULL,										// pNext
+		nullptr,										// pNext
 		*variables.descriptorSet,						// descriptorSet
 		BINDING_TestObject,								// descriptorBinding;
 		0,	// to be set in below loop					// dstArrayElement
 		1u,												// descriptorCount
 		m_testParams.descriptorType,					// descriptorType
-		DE_NULL,										// pImageInfo
+		nullptr,										// pImageInfo
 		&bufferInfo,									// pBufferInfo
-		DE_NULL											// pTexelBufferView
+		nullptr											// pTexelBufferView
 	};
 
-	deUint32 descIdx = 0;
-	const std::vector<deUint32> primes = ut::generatePrimes(variables.availableDescriptorCount);
-	for (deUint32 validIdx = 0; validIdx < variables.validDescriptorCount; ++validIdx)
+	uint32_t descIdx = 0;
+	const std::vector<uint32_t> primes = ut::generatePrimes(variables.availableDescriptorCount);
+	for (uint32_t validIdx = 0; validIdx < variables.validDescriptorCount; ++validIdx)
 	{
 		for (; descIdx < primes[validIdx]; ++descIdx)
 		{
 			updateInfo.dstArrayElement			= descIdx;
-			m_vki.updateDescriptorSets	(m_vkd, 1u, &updateInfo, 0u, DE_NULL);
+			m_vki.updateDescriptorSets	(m_vkd, 1u, &updateInfo, 0u, nullptr);
 		}
 
 		updateInfo.dstArrayElement				= primes[validIdx];
-		m_vki.updateDescriptorSets		(m_vkd, 1u, &updateInfo, 0u, DE_NULL);
+		m_vki.updateDescriptorSets		(m_vkd, 1u, &updateInfo, 0u, nullptr);
 
 		++descIdx;
 	}
 	for (; descIdx < variables.availableDescriptorCount; ++descIdx)
 	{
 		updateInfo.dstArrayElement = descIdx;
-		m_vki.updateDescriptorSets(m_vkd, 1u, &updateInfo, 0u, DE_NULL);
+		m_vki.updateDescriptorSets(m_vkd, 1u, &updateInfo, 0u, nullptr);
 	}
 }
 
@@ -3142,18 +3142,18 @@ tcu::TestStatus	DynamicBuffersInstance::iterate						(void)
 
 	DE_ASSERT(v.dataAlignment);
 
-	std::vector<deUint32> dynamicOffsets;
+	std::vector<uint32_t> dynamicOffsets;
 
-	deUint32 descIdx = 0;
-	const std::vector<deUint32> primes = ut::generatePrimes(v.availableDescriptorCount);
-	for (deUint32 validIdx = 0; validIdx < v.validDescriptorCount; ++validIdx)
+	uint32_t descIdx = 0;
+	const std::vector<uint32_t> primes = ut::generatePrimes(v.availableDescriptorCount);
+	for (uint32_t validIdx = 0; validIdx < v.validDescriptorCount; ++validIdx)
 	{
 		for (; descIdx < primes[validIdx]; ++descIdx)
 		{
 			dynamicOffsets.push_back(0);
 		}
 
-		dynamicOffsets.push_back(static_cast<deUint32>(validIdx * v.dataAlignment));
+		dynamicOffsets.push_back(static_cast<uint32_t>(validIdx * v.dataAlignment));
 
 		++descIdx;
 	}
@@ -3317,7 +3317,7 @@ void InputAttachmentInstance::createAndPopulateDescriptors			(IterateCommonVaria
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT, m_testParams.frameResolution, m_colorFormat, VK_IMAGE_LAYOUT_UNDEFINED, variables.validDescriptorCount);
 	createImagesViews(variables.descriptorImageViews, variables.descriptorsImages, m_colorFormat);
 
-	for (deUint32 descriptorIdx = 0; descriptorIdx < variables.validDescriptorCount; ++descriptorIdx)
+	for (uint32_t descriptorIdx = 0; descriptorIdx < variables.validDescriptorCount; ++descriptorIdx)
 	{
 		const float						component	= m_colorScheme[descriptorIdx % m_schemeSize];
 		const tcu::PixelBufferAccess	pa			= getPixelAccess(descriptorIdx, m_testParams.frameResolution, m_colorFormat, variables.descriptorsBufferInfos, variables.descriptorsBuffer);
@@ -3345,26 +3345,26 @@ Move<VkRenderPass> InputAttachmentInstance::createRenderPass		(const IterateComm
 	};
 	const VkAttachmentReference		colorAttachmentRef =
 	{
-		0u,												// deUint32							attachment;
+		0u,												// uint32_t							attachment;
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL		// VkImageLayout					layout;
 	};
 	attachmentDescriptions.push_back(colorAttachmentDescription);
 
 	// build input atachments
 	{
-		const std::vector<deUint32>	primes = ut::generatePrimes(variables.availableDescriptorCount);
-		const deUint32 inputCount = static_cast<deUint32>(variables.descriptorImageViews.size());
-		for (deUint32 inputIdx = 0; inputIdx < inputCount; ++inputIdx)
+		const std::vector<uint32_t>	primes = ut::generatePrimes(variables.availableDescriptorCount);
+		const uint32_t inputCount = static_cast<uint32_t>(variables.descriptorImageViews.size());
+		for (uint32_t inputIdx = 0; inputIdx < inputCount; ++inputIdx)
 		{
 			// primes holds the indices of input attachments for shader binding 10 which has input_attachment_index=1
-			deUint32 nextInputAttachmentIndex = primes[inputIdx] + 1;
+			uint32_t nextInputAttachmentIndex = primes[inputIdx] + 1;
 
 			// Fill up the subpass description's input attachments with unused attachments forming gaps to the next referenced attachment
-			for (deUint32 unusedIdx = static_cast<deUint32>(inputAttachmentRefs.size()); unusedIdx < nextInputAttachmentIndex; ++unusedIdx)
+			for (uint32_t unusedIdx = static_cast<uint32_t>(inputAttachmentRefs.size()); unusedIdx < nextInputAttachmentIndex; ++unusedIdx)
 			{
 				const VkAttachmentReference		inputAttachmentRef =
 				{
-					VK_ATTACHMENT_UNUSED,						// deUint32							attachment;
+					VK_ATTACHMENT_UNUSED,						// uint32_t							attachment;
 					VK_IMAGE_LAYOUT_GENERAL						// VkImageLayout					layout;
 				};
 
@@ -3386,7 +3386,7 @@ Move<VkRenderPass> InputAttachmentInstance::createRenderPass		(const IterateComm
 
 			const VkAttachmentReference		inputAttachmentRef =
 			{
-				inputIdx + 1,								// deUint32							attachment;
+				inputIdx + 1,								// uint32_t							attachment;
 				VK_IMAGE_LAYOUT_GENERAL						// VkImageLayout					layout;
 			};
 
@@ -3399,27 +3399,27 @@ Move<VkRenderPass> InputAttachmentInstance::createRenderPass		(const IterateComm
 	{
 		(VkSubpassDescriptionFlags)0,						// VkSubpassDescriptionFlags		flags;
 		VK_PIPELINE_BIND_POINT_GRAPHICS,					// VkPipelineBindPoint				pipelineBindPoint;
-		static_cast<deUint32>(inputAttachmentRefs.size()),	// deUint32							inputAttachmentCount;
+		static_cast<uint32_t>(inputAttachmentRefs.size()),	// uint32_t							inputAttachmentCount;
 		inputAttachmentRefs.data(),							// const VkAttachmentReference*		pInputAttachments;
-		1u,													// deUint32							colorAttachmentCount;
+		1u,													// uint32_t							colorAttachmentCount;
 		&colorAttachmentRef,								// const VkAttachmentReference*		pColorAttachments;
-		DE_NULL,											// const VkAttachmentReference*		pResolveAttachments;
-		DE_NULL,											// const VkAttachmentReference*		pDepthStencilAttachment;
-		0u,													// deUint32							preserveAttachmentCount;
-		DE_NULL												// const deUint32*					pPreserveAttachments;
+		nullptr,											// const VkAttachmentReference*		pResolveAttachments;
+		nullptr,											// const VkAttachmentReference*		pDepthStencilAttachment;
+		0u,													// uint32_t							preserveAttachmentCount;
+		nullptr												// const uint32_t*					pPreserveAttachments;
 	};
 
 	const VkRenderPassCreateInfo	renderPassInfo =
 	{
 		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,				// VkStructureType					sType;
-		DE_NULL,												// const void*						pNext;
+		nullptr,												// const void*						pNext;
 		(VkRenderPassCreateFlags)0,								// VkRenderPassCreateFlags			flags;
-		static_cast<deUint32>(attachmentDescriptions.size()),	// deUint32							attachmentCount;
+		static_cast<uint32_t>(attachmentDescriptions.size()),	// uint32_t							attachmentCount;
 		attachmentDescriptions.data(),							// const VkAttachmentDescription*	pAttachments;
-		1u,														// deUint32							subpassCount;
+		1u,														// uint32_t							subpassCount;
 		&subpassDescription,									// const VkSubpassDescription*		pSubpasses;
-		0u,														// deUint32							dependencyCount;
-		DE_NULL													// const VkSubpassDependency*		pDependencies;
+		0u,														// uint32_t							dependencyCount;
+		nullptr													// const VkSubpassDependency*		pDependencies;
 	};
 
 	return vk::createRenderPass(m_vki, m_vkd, &renderPassInfo);
@@ -3430,9 +3430,9 @@ void InputAttachmentInstance::createFramebuffer						(ut::FrameBufferSp&							f
 																	 const IterateCommonVariables&				variables)
 {
 	std::vector<VkImageView>			inputAttachments;
-	const deUint32 viewCount = static_cast<deUint32>(variables.descriptorImageViews.size());
+	const uint32_t viewCount = static_cast<uint32_t>(variables.descriptorImageViews.size());
 	inputAttachments.resize(viewCount);
-	for (deUint32 viewIdx = 0; viewIdx < viewCount; ++viewIdx)
+	for (uint32_t viewIdx = 0; viewIdx < viewCount; ++viewIdx)
 	{
 		inputAttachments[viewIdx] = **variables.descriptorImageViews[viewIdx];
 	}
@@ -3481,18 +3481,18 @@ void SamplerInstance::updateDescriptors								(IterateCommonVariables&					vari
 		const VkWriteDescriptorSet writeInfo =
 		{
 			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,			// sType
-			DE_NULL,										// pNext
+			nullptr,										// pNext
 			*variables.descriptorSet,						// descriptorSet
 			BINDING_Additional,								// descriptorBinding;
 			0,												// elementIndex
 			1u,												// descriptorCount
 			VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,				// descriptorType
 			&imageInfo,										// pImageInfo
-			DE_NULL,										// pBufferInfo
-			DE_NULL											// pTexelBufferView
+			nullptr,										// pBufferInfo
+			nullptr											// pTexelBufferView
 		};
 
-		m_vki.updateDescriptorSets(m_vkd, 1u, &writeInfo, 0u, DE_NULL);
+		m_vki.updateDescriptorSets(m_vkd, 1u, &writeInfo, 0u, nullptr);
 	}
 
 	// update samplers
@@ -3521,9 +3521,9 @@ void SamplerInstance::createAndPopulateDescriptors					(IterateCommonVariables&	
 
 		PixelBufferAccess pa = getPixelAccess(0, imageExtent, m_colorFormat, variables.descriptorsBufferInfos, variables.descriptorsBuffer, m_testParams.usesMipMaps ? 1 : 0);
 
-		for (deUint32 y = 0, pixelNum = 0; y < m_testParams.frameResolution.height; ++y)
+		for (uint32_t y = 0, pixelNum = 0; y < m_testParams.frameResolution.height; ++y)
 		{
-			for (deUint32 x = 0; x < m_testParams.frameResolution.width; ++x, ++pixelNum)
+			for (uint32_t x = 0; x < m_testParams.frameResolution.width; ++x, ++pixelNum)
 			{
 				const float		component	= m_colorScheme[(pixelNum % variables.validDescriptorCount) % m_schemeSize];
 				pa.setPixel(tcu::Vec4(component, component, component, 1.0f), x, y);
@@ -3548,7 +3548,7 @@ void SamplerInstance::createAndPopulateDescriptors					(IterateCommonVariables&	
 	const VkSamplerCreateInfo createInfo = vk::mapSampler(sampler, vk::mapVkFormat(m_colorFormat));
 	variables.descriptorSamplers.resize(variables.validDescriptorCount);
 
-	for (deUint32 samplerIdx = 0; samplerIdx < variables.validDescriptorCount; ++samplerIdx)
+	for (uint32_t samplerIdx = 0; samplerIdx < variables.validDescriptorCount; ++samplerIdx)
 	{
 		variables.descriptorSamplers[samplerIdx] = ut::SamplerSp(new Move<VkSampler>(vk::createSampler(m_vki, m_vkd, &createInfo)));
 	}
@@ -3595,18 +3595,18 @@ void SampledImageInstance::updateDescriptors						(IterateCommonVariables&					v
 		const VkWriteDescriptorSet writeInfo =
 		{
 			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,			// sType
-			DE_NULL,										// pNext
+			nullptr,										// pNext
 			*variables.descriptorSet,						// descriptorSet
 			BINDING_Additional,								// descriptorBinding;
 			0,												// elementIndex
 			1u,												// descriptorCount
 			VK_DESCRIPTOR_TYPE_SAMPLER,						// descriptorType
 			&samplerInfo,									// pImageInfo
-			DE_NULL,										// pBufferInfo
-			DE_NULL											// pTexelBufferView
+			nullptr,										// pBufferInfo
+			nullptr											// pTexelBufferView
 		};
 
-		m_vki.updateDescriptorSets(m_vkd, 1u, &writeInfo, 0u, DE_NULL);
+		m_vki.updateDescriptorSets(m_vkd, 1u, &writeInfo, 0u, nullptr);
 	}
 
 	// update images
@@ -3645,15 +3645,15 @@ void SampledImageInstance::createAndPopulateDescriptors				(IterateCommonVariabl
 	createImagesViews(variables.descriptorImageViews, variables.descriptorsImages, m_colorFormat);
 
 	PixelBufferAccess			pixelAccess;
-	for (deUint32 imageIdx = 0; imageIdx < variables.validDescriptorCount; ++imageIdx)
+	for (uint32_t imageIdx = 0; imageIdx < variables.validDescriptorCount; ++imageIdx)
 	{
 		const float				component	= m_colorScheme[imageIdx % m_schemeSize];
 
 		if (m_testParams.usesMipMaps)
 		{
-			const deUint32 mipCount = ut::computeMipMapCount(imageExtent);
+			const uint32_t mipCount = ut::computeMipMapCount(imageExtent);
 			DE_ASSERT(mipCount >= 2);
-			for (deUint32 mipIdx = 0; mipIdx < mipCount; ++mipIdx)
+			for (uint32_t mipIdx = 0; mipIdx < mipCount; ++mipIdx)
 			{
 				pixelAccess = getPixelAccess(imageIdx, imageExtent, m_colorFormat, variables.descriptorsBufferInfos, variables.descriptorsBuffer, mipIdx);
 				tcu::clear(pixelAccess, m_clearColor);
@@ -3695,15 +3695,15 @@ CombinedImageInstance::CombinedImageInstance						(Context&									context,
 
 void CombinedImageInstance::updateDescriptors						(IterateCommonVariables&					variables)
 {
-	const std::vector<deUint32>	primes = ut::generatePrimes(variables.availableDescriptorCount);
-	const deUint32				primeCount = static_cast<deUint32>(primes.size());
+	const std::vector<uint32_t>	primes = ut::generatePrimes(variables.availableDescriptorCount);
+	const uint32_t				primeCount = static_cast<uint32_t>(primes.size());
 
 	DE_ASSERT(variables.descriptorSamplers.size()		== 1);
 	DE_ASSERT(variables.descriptorsImages.size()		== primeCount);
 	DE_ASSERT(variables.descriptorImageViews.size()		== primeCount);
 	DE_ASSERT(variables.descriptorsBufferInfos.size()	== primeCount);
 
-	for (deUint32 primeIdx = 0; primeIdx < primeCount; ++primeIdx)
+	for (uint32_t primeIdx = 0; primeIdx < primeCount; ++primeIdx)
 	{
 		const VkDescriptorImageInfo imageInfo =
 		{
@@ -3715,18 +3715,18 @@ void CombinedImageInstance::updateDescriptors						(IterateCommonVariables&					
 		const VkWriteDescriptorSet writeInfo =
 		{
 			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,			// sType
-			DE_NULL,										// pNext
+			nullptr,										// pNext
 			*variables.descriptorSet,						// descriptorSet
 			BINDING_TestObject,								// descriptorBinding;
 			primes[primeIdx],								// elementIndex
 			1u,												// descriptorCount
 			m_testParams.descriptorType,					// descriptorType
 			&imageInfo,										// pImageInfo
-			DE_NULL,										// pBufferInfo
-			DE_NULL											// pTexelBufferView
+			nullptr,										// pBufferInfo
+			nullptr											// pTexelBufferView
 		};
 
-		m_vki.updateDescriptorSets(m_vkd, 1u, &writeInfo, 0u, DE_NULL);
+		m_vki.updateDescriptorSets(m_vkd, 1u, &writeInfo, 0u, nullptr);
 	}
 }
 
@@ -3759,15 +3759,15 @@ void CombinedImageInstance::createAndPopulateDescriptors			(IterateCommonVariabl
 	createImagesViews(variables.descriptorImageViews, variables.descriptorsImages, m_colorFormat);
 
 	PixelBufferAccess			pixelAccess;
-	for (deUint32 imageIdx = 0; imageIdx < variables.validDescriptorCount; ++imageIdx)
+	for (uint32_t imageIdx = 0; imageIdx < variables.validDescriptorCount; ++imageIdx)
 	{
 		const float				component = m_colorScheme[imageIdx % m_schemeSize];
 
 		if (m_testParams.usesMipMaps)
 		{
-			const deUint32	mipCount = ut::computeMipMapCount(imageExtent);
+			const uint32_t	mipCount = ut::computeMipMapCount(imageExtent);
 			DE_ASSERT(mipCount >= 2);
-			for (deUint32 mipIdx = 0; mipIdx < mipCount; ++mipIdx)
+			for (uint32_t mipIdx = 0; mipIdx < mipCount; ++mipIdx)
 			{
 				pixelAccess = getPixelAccess(imageIdx, imageExtent, m_colorFormat, variables.descriptorsBufferInfos, variables.descriptorsBuffer, mipIdx);
 				tcu::clear(pixelAccess, m_clearColor);
@@ -3799,8 +3799,8 @@ private:
 																	 const IterateCommonVariables&				variables,
 																	 bool										fromTest);
 	ut::BufferHandleAllocSp		m_buffer;
-	const deUint32				m_fillColor;
-	typedef deUint32			m_imageFormat_t;
+	const uint32_t				m_fillColor;
+	typedef uint32_t			m_imageFormat_t;
 };
 
 StorageImageInstance::StorageImageInstance							(Context&									context,
@@ -3831,18 +3831,18 @@ void StorageImageInstance::updateDescriptors						(IterateCommonVariables&					v
 		const VkWriteDescriptorSet writeInfo =
 		{
 			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,		// sType
-			DE_NULL,									// pNext
+			nullptr,									// pNext
 			*variables.descriptorSet,					// descriptorSet
 			BINDING_Additional,							// descriptorBinding;
 			0,											// elementIndex
 			1u,											// descriptorCount
 			m_testParams.additionalDescriptorType,		// descriptorType
 			&imageInfo,									// pImageInfo
-			DE_NULL,									// pBufferInfo
-			DE_NULL										// pTexelBufferView
+			nullptr,									// pBufferInfo
+			nullptr										// pTexelBufferView
 		};
 
-		m_vki.updateDescriptorSets(m_vkd, 1u, &writeInfo, 0u, DE_NULL);
+		m_vki.updateDescriptorSets(m_vkd, 1u, &writeInfo, 0u, nullptr);
 	}
 
 	// update rest images
@@ -3861,7 +3861,7 @@ void StorageImageInstance::createAndPopulateDescriptors				(IterateCommonVariabl
 		createImages(variables.descriptorsImages, variables.descriptorsBufferInfos, variables.descriptorsBuffer,
 			bufferUsage, imageExtent, imageFormat, VK_IMAGE_LAYOUT_UNDEFINED, variables.validDescriptorCount);
 
-		for (deUint32 imageIdx = 0; imageIdx < variables.validDescriptorCount; ++imageIdx)
+		for (uint32_t imageIdx = 0; imageIdx < variables.validDescriptorCount; ++imageIdx)
 		{
 			const PixelBufferAccess pa = getPixelAccess(imageIdx, imageExtent, imageFormat, variables.descriptorsBufferInfos, variables.descriptorsBuffer);
 			tcu::clear(pa, tcu::UVec4(m_fillColor));
@@ -3875,13 +3875,13 @@ void StorageImageInstance::createAndPopulateDescriptors				(IterateCommonVariabl
 			bufferUsage, m_testParams.frameResolution, imageFormat, VK_IMAGE_LAYOUT_UNDEFINED, 1);
 
 		// populate buffer
-		const std::vector<deUint32>	primes = ut::generatePrimes(variables.availableDescriptorCount);
+		const std::vector<uint32_t>	primes = ut::generatePrimes(variables.availableDescriptorCount);
 		const PixelBufferAccess pa = getPixelAccess(variables.validDescriptorCount, m_testParams.frameResolution, imageFormat, variables.descriptorsBufferInfos, m_buffer);
-		for (deUint32 y = 0, pixel = 0; y < m_testParams.frameResolution.height; ++y)
+		for (uint32_t y = 0, pixel = 0; y < m_testParams.frameResolution.height; ++y)
 		{
-			for (deUint32 x = 0; x < m_testParams.frameResolution.width; ++x, ++pixel)
+			for (uint32_t x = 0; x < m_testParams.frameResolution.width; ++x, ++pixel)
 			{
-				const deUint32 component = primes[pixel % variables.validDescriptorCount];
+				const uint32_t component = primes[pixel % variables.validDescriptorCount];
 				pa.setPixel(tcu::UVec4(component), x, y);
 			}
 		}
@@ -3933,11 +3933,11 @@ void StorageImageInstance::iterateCollectResults					(ut::UpdatablePixelBufferAc
 	if (fromTest)
 	{
 		vk::invalidateAlloc(m_vki, m_vkd, *variables.descriptorsBuffer->alloc);
-		for (deUint32 y = 0, pixelNum = 0; y < m_testParams.frameResolution.height; ++y)
+		for (uint32_t y = 0, pixelNum = 0; y < m_testParams.frameResolution.height; ++y)
 		{
-			for (deUint32 x = 0; x < m_testParams.frameResolution.width; ++x, ++pixelNum)
+			for (uint32_t x = 0; x < m_testParams.frameResolution.width; ++x, ++pixelNum)
 			{
-				const deUint32 imageIdx = pixelNum % variables.validDescriptorCount;
+				const uint32_t imageIdx = pixelNum % variables.validDescriptorCount;
 				const PixelBufferAccess src = getPixelAccess(imageIdx,
 					variables.descriptorsImages[imageIdx]->extent, variables.descriptorsImages[imageIdx]->format,
 					variables.descriptorsBufferInfos, variables.descriptorsBuffer);
@@ -3949,15 +3949,15 @@ void StorageImageInstance::iterateCollectResults					(ut::UpdatablePixelBufferAc
 	{
 		std::vector<m_imageFormat_t> inc(variables.validDescriptorCount, m_fillColor);
 
-		for (deUint32 invIdx = variables.lowerBound; invIdx < variables.upperBound; ++invIdx)
+		for (uint32_t invIdx = variables.lowerBound; invIdx < variables.upperBound; ++invIdx)
 		{
 			++inc[invIdx % variables.validDescriptorCount];
 		}
 
-		for (deUint32 invIdx = 0; invIdx < variables.vertexCount; ++invIdx)
+		for (uint32_t invIdx = 0; invIdx < variables.vertexCount; ++invIdx)
 		{
-			const deUint32 row = invIdx / m_testParams.frameResolution.width;
-			const deUint32 col = invIdx % m_testParams.frameResolution.width;
+			const uint32_t row = invIdx / m_testParams.frameResolution.width;
+			const uint32_t col = invIdx % m_testParams.frameResolution.width;
 			const m_imageFormat_t color = inc[invIdx % variables.validDescriptorCount];
 			dst.setPixel(tcu::Vector<m_imageFormat_t, 4>(color), col, row);
 		}
@@ -4003,7 +4003,7 @@ public:
 		default:
 			TCU_THROW(InternalError, "Unknown Descriptor Type");
 		}
-		return DE_NULL;
+		return nullptr;
 	}
 
 	virtual void checkSupport (vkt::Context& context) const
@@ -4103,7 +4103,7 @@ public:
 
 		std::string(*genShaderSource)(VkShaderStageFlagBits, const TestCaseParams&, bool) = &CommonDescriptorInstance::getShaderAsm;
 
-		deUint32 vulkan_version = VK_MAKE_API_VERSION(0, 1, 2, 0);
+		uint32_t vulkan_version = VK_MAKE_API_VERSION(0, 1, 2, 0);
 		vk::SpirvVersion spirv_version = vk::SPIRV_VERSION_1_4;
 		vk::SpirVAsmBuildOptions asm_options(vulkan_version, spirv_version);
 
@@ -4241,7 +4241,7 @@ void descriptorIndexingDescriptorSetsCreateTests (tcu::TestCaseGroup* group)
 		{
 			for (int usesMipMaps = 0; usesMipMaps < 2; ++usesMipMaps)
 			{
-				for (deUint32 caseIdx = 0; caseIdx < DE_LENGTH_OF_ARRAY(casesAfterBindAndLoop); ++caseIdx)
+				for (uint32_t caseIdx = 0; caseIdx < DE_LENGTH_OF_ARRAY(casesAfterBindAndLoop); ++caseIdx)
 				{
 					TestCaseInfo&	info			(casesAfterBindAndLoop[caseIdx]);
 
@@ -4293,7 +4293,7 @@ void descriptorIndexingDescriptorSetsCreateTests (tcu::TestCaseGroup* group)
 
 	for (int usesMipMaps = 0; usesMipMaps < 2; ++usesMipMaps)
 	{
-		for (deUint32 caseIdx = 0; caseIdx < DE_LENGTH_OF_ARRAY(casesMinNonUniform); ++caseIdx)
+		for (uint32_t caseIdx = 0; caseIdx < DE_LENGTH_OF_ARRAY(casesMinNonUniform); ++caseIdx)
 		{
 			TestCaseInfo&	info(casesMinNonUniform[caseIdx]);
 
