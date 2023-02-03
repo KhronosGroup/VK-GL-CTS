@@ -93,11 +93,13 @@ struct TestParams
 
 struct RuntimePipelineTreeNode
 {
-	deInt32								parentIndex;
-	VkGraphicsPipelineLibraryFlagsEXT	graphicsPipelineLibraryFlags;
-	VkGraphicsPipelineLibraryFlagsEXT	subtreeGraphicsPipelineLibraryFlags;
-	Move<VkPipeline>					pipeline;
-	std::vector<VkPipeline>				pipelineLibraries;
+	deInt32												parentIndex;
+	VkGraphicsPipelineLibraryFlagsEXT					graphicsPipelineLibraryFlags;
+	VkGraphicsPipelineLibraryFlagsEXT					subtreeGraphicsPipelineLibraryFlags;
+	Move<VkPipeline>									pipeline;
+	std::vector<VkPipeline>								pipelineLibraries;
+	// We need to track the linked libraries too, included in VkPipelineLibraryCreateInfoKHR->pLibraries
+	std::vector<VkGraphicsPipelineLibraryFlagsEXT>		linkedLibraryFlags;
 };
 
 typedef std::vector<RuntimePipelineTreeNode>	RuntimePipelineTreeConfiguration;
@@ -922,13 +924,39 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 			}
 		}
 
-		if (graphicsPipelineLibraryCreateInfo.flags != ALL_GRAPHICS_PIPELINE_LIBRARY_FLAGS)
+		VkGraphicsPipelineLibraryFlagsEXT linkedLibrariesFlags = 0;
+
+		for (auto flag : node.linkedLibraryFlags)
+			linkedLibrariesFlags |= flag;
+
+		// When pLibraries have any pipeline library with fragment shader state and current pipeline we try to create doesn't,
+		// we need to set a MS info.
+		if ((linkedLibrariesFlags & VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT) &&
+				!(node.graphicsPipelineLibraryFlags & VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT) &&
+				(graphicsPipelineCreateInfo.pMultisampleState == DE_NULL))
+		{
+			const VkPipelineMultisampleStateCreateInfo	pipelineMultisampleStateCreateInfo = makePipelineMultisampleStateCreateInfo();
+
+			graphicsPipelineCreateInfo.addState(pipelineMultisampleStateCreateInfo);
+		}
+
+
+		if (linkedLibrariesFlags != ALL_GRAPHICS_PIPELINE_LIBRARY_FLAGS  && graphicsPipelineLibraryCreateInfo.flags != 0)
 			appendStructurePtrToVulkanChain(&graphicsPipelineCreateInfo.pNext, &graphicsPipelineLibraryCreateInfo);
 
 		if (linkingInfo.libraryCount != 0)
 		{
 			appendStructurePtrToVulkanChain(&graphicsPipelineCreateInfo.pNext, &linkingInfo);
 			graphicsPipelineCreateInfo.layout = *pipelineLayoutSame;
+		}
+
+		linkedLibrariesFlags |= node.graphicsPipelineLibraryFlags;
+
+		// if current pipeline that we try to create and pLibraries have all states of pipelines, we are not allowed to create a pipeline library.
+		if (linkedLibrariesFlags == ALL_GRAPHICS_PIPELINE_LIBRARY_FLAGS)
+		{
+			DE_ASSERT(!buildLibrary);
+			graphicsPipelineCreateInfo.flags &= ~VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
 		}
 
 		node.pipeline = createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo);
@@ -938,6 +966,7 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 			DE_ASSERT(de::inBounds(node.parentIndex, 0, static_cast<deInt32>(runtimePipelineTreeConfiguration.size())));
 
 			runtimePipelineTreeConfiguration[node.parentIndex].pipelineLibraries.push_back(*node.pipeline);
+			runtimePipelineTreeConfiguration[node.parentIndex].linkedLibraryFlags.push_back(linkedLibrariesFlags);
 		}
 		else
 		{
@@ -1502,7 +1531,7 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runNullDescriptorSet(void)
 	};
 
 	// fill proper portion of pipeline state
-	updateVertexInputInterface(m_context, partialPipelineCreateInfo[0], VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+	updateVertexInputInterface(m_context, partialPipelineCreateInfo[0], VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u);
 	updatePreRasterization(m_context, partialPipelineCreateInfo[0], false);
 	updatePostRasterization(m_context, partialPipelineCreateInfo[1], false);
 	updateFragmentOutputInterface(m_context, partialPipelineCreateInfo[1]);
@@ -1552,7 +1581,7 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runNullDescriptorSet(void)
 			uniformBufferDataSize								// VkDeviceSize						size
 		));
 		initialBufferBarriers[1].buffer = uniformBuffer[1]->get();
-		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, (VkDependencyFlags)0, 0, DE_NULL, 2, initialBufferBarriers.data(), 0, DE_NULL);
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, DE_NULL, 2, initialBufferBarriers.data(), 0, DE_NULL);
 
 		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, m_renderArea, m_colorClearColor);
 
@@ -2516,8 +2545,7 @@ void PipelineLibraryMiscTestCase::initPrograms(SourceCollections& programCollect
 	{
 		programCollection.glslSources.add("vert") << glu::VertexSource(
 			"#version 450\n"
-			"precision mediump int; precision highp float;"
-			"layout(location = 0) in vec4 in_position;\n"
+			"precision mediump int; precision highp float;\n"
 			"layout(set = 0, binding = 0) uniform bufA\n"
 			"{\n"
 			"  vec4 valueA;\n"
@@ -2738,18 +2766,6 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group, bool opti
 			{ 1, 1 },									/*    1      */
 														/*   /       */
 			{ 2, 1 },									/*  1        */
-		} },
-
-		{ {
-			{ R, 0 },									/*         0 */
-														/*        /  */
-			{ 0, 1 },									/*       1   */
-														/*      /    */
-			{ 1, 1 },									/*     1     */
-														/*    /      */
-			{ 2, 1 },									/*   1       */
-														/*  /        */
-			{ 3, 1 },									/* 1         */
 		} },
 	};
 
