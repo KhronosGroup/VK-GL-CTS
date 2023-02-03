@@ -455,6 +455,15 @@ bool comparePixelToColorClearValue (const TestParams&					params,
 	const auto	channelClass	= getTextureChannelClass(textureFormat.type);
 	// We must compare all available channels in the color buffer to check RGBA conversion.
 	const auto	channelMask		= getTextureFormatChannelMask(bufferFormat);
+	// If the component mapping contains a SWIZZLE_ONE, overwrite this with a SWIZZLE_ZERO to ensure
+	// a strict tolerance when applying a swizzle of SWIZZLE_ONE to the threshold.
+	const VkComponentMapping thresholdComponentMapping =
+	{
+		(params.componentMapping.r == VK_COMPONENT_SWIZZLE_ONE ? VK_COMPONENT_SWIZZLE_ZERO : params.componentMapping.r),
+		(params.componentMapping.g == VK_COMPONENT_SWIZZLE_ONE ? VK_COMPONENT_SWIZZLE_ZERO : params.componentMapping.g),
+		(params.componentMapping.b == VK_COMPONENT_SWIZZLE_ONE ? VK_COMPONENT_SWIZZLE_ZERO : params.componentMapping.b),
+		(params.componentMapping.a == VK_COMPONENT_SWIZZLE_ONE ? VK_COMPONENT_SWIZZLE_ZERO : params.componentMapping.a),
+	};
 
 	switch (channelClass)
 	{
@@ -487,7 +496,7 @@ bool comparePixelToColorClearValue (const TestParams&					params,
 			}
 
 			// Apply swizzle and gather to thresholds.
-			threshold = applySwizzle(threshold, params.componentMapping);
+			threshold = applySwizzle(threshold, thresholdComponentMapping);
 
 			if (params.componentGather)
 				threshold = applyGather(threshold, *params.componentGather);
@@ -533,7 +542,7 @@ bool comparePixelToColorClearValue (const TestParams&					params,
 			}
 
 			// Apply swizzle and gather to thresholds.
-			threshold = applySwizzle(threshold, params.componentMapping);
+			threshold = applySwizzle(threshold, thresholdComponentMapping);
 
 			if (params.componentGather)
 				threshold = applyGather(threshold, *params.componentGather);
@@ -579,7 +588,7 @@ bool comparePixelToColorClearValue (const TestParams&					params,
 			}
 
 			// Apply swizzle and gather to thresholds.
-			threshold = applySwizzle(threshold, params.componentMapping);
+			threshold = applySwizzle(threshold, thresholdComponentMapping);
 
 			if (params.componentGather)
 				threshold = applyGather(threshold, *params.componentGather);
@@ -628,7 +637,7 @@ bool comparePixelToColorClearValue (const TestParams&					params,
 			}
 
 			// Apply swizzle and gather to thresholds.
-			threshold = applySwizzle(threshold, params.componentMapping);
+			threshold = applySwizzle(threshold, thresholdComponentMapping);
 
 			if (params.componentGather)
 				threshold = applyGather(threshold, *params.componentGather);

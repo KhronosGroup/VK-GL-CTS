@@ -4385,9 +4385,7 @@ tcu::TestStatus createDeviceWithPromoted12Structures (Context& context)
 		&queuePriority,							//pQueuePriorities;
 	};
 
-	VkPhysicalDeviceVulkan11Features deviceVulkan11Features = initVulkanStructure();
-	VkPhysicalDeviceVulkan12Features deviceVulkan12Features = initVulkanStructure(&deviceVulkan11Features);
-	VkPhysicalDevice8BitStorageFeatures device8BitStorageFeatures = initVulkanStructure(&deviceVulkan12Features);
+	VkPhysicalDevice8BitStorageFeatures device8BitStorageFeatures = initVulkanStructure();
 	VkPhysicalDeviceShaderAtomicInt64Features deviceShaderAtomicInt64Features = initVulkanStructure(&device8BitStorageFeatures);
 	VkPhysicalDeviceShaderFloat16Int8Features deviceShaderFloat16Int8Features = initVulkanStructure(&deviceShaderAtomicInt64Features);
 	VkPhysicalDeviceDescriptorIndexingFeatures deviceDescriptorIndexingFeatures = initVulkanStructure(&deviceShaderFloat16Int8Features);
@@ -4453,8 +4451,7 @@ tcu::TestStatus createDeviceWithPromoted13Structures (Context& context)
 		&queuePriority,							//pQueuePriorities;
 	};
 
-	VkPhysicalDeviceVulkan13Features deviceVulkan13Features = initVulkanStructure();
-	VkPhysicalDeviceShaderTerminateInvocationFeatures deviceShaderTerminateInvocationFeatures = initVulkanStructure(&deviceVulkan13Features);
+	VkPhysicalDeviceShaderTerminateInvocationFeatures deviceShaderTerminateInvocationFeatures = initVulkanStructure();
 	VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures deviceShaderDemoteToHelperInvocationFeatures = initVulkanStructure(&deviceShaderTerminateInvocationFeatures);
 	VkPhysicalDevicePrivateDataFeatures devicePrivateDataFeatures = initVulkanStructure(&deviceShaderDemoteToHelperInvocationFeatures);
 	VkPhysicalDevicePipelineCreationCacheControlFeatures devicePipelineCreationCacheControlFeatures = initVulkanStructure(&devicePrivateDataFeatures);

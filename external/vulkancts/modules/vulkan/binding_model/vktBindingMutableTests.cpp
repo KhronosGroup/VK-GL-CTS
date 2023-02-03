@@ -106,8 +106,13 @@ VkDevice getDevice(Context& context)
 		for (size_t ndx = 0; ndx < nonCoreExtensions.size(); ++ndx)
 			extensionPtrs[ndx] = nonCoreExtensions[ndx].c_str();
 
-		VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT	mutableDescriptorTypeFeatures	= initVulkanStructure();
-		VkPhysicalDeviceFeatures2							features2					= initVulkanStructure(&mutableDescriptorTypeFeatures);
+		VkPhysicalDeviceAccelerationStructureFeaturesKHR	accelerationStructureFeatures	= initVulkanStructure();
+		VkPhysicalDeviceBufferDeviceAddressFeatures			bufferDeviceAddressFeatures		= initVulkanStructure(&accelerationStructureFeatures);
+		VkPhysicalDeviceRayTracingPipelineFeaturesKHR		rayTracingPipelineFeatures		= initVulkanStructure(&bufferDeviceAddressFeatures);
+		VkPhysicalDeviceRayQueryFeaturesKHR					rayQueryFeatures				= initVulkanStructure(&rayTracingPipelineFeatures);
+		VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT	mutableDescriptorTypeFeatures	= initVulkanStructure(&rayQueryFeatures);
+		VkPhysicalDeviceDescriptorIndexingFeatures			descriptorIndexingFeatures		= initVulkanStructure(&mutableDescriptorTypeFeatures);
+		VkPhysicalDeviceFeatures2							features2						= initVulkanStructure(&descriptorIndexingFeatures);
 
 		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
 

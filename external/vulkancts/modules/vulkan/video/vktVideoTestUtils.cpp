@@ -153,32 +153,32 @@ de::MovePtr<vector<deUint8>> VideoBaseTestInstance::loadVideoData (const string&
 
 de::MovePtr<vector<deUint8>> VideoBaseTestInstance::loadVideoDataClipA (void)
 {
-	return loadVideoData("vulkan/video/clip-a.mp4");
+	return loadVideoData("vulkan/video/clip-a.h264");
 }
 
 de::MovePtr<vector<deUint8>> VideoBaseTestInstance::loadVideoDataClipB (void)
 {
-	return loadVideoData("vulkan/video/clip-b.mp4");
+	return loadVideoData("vulkan/video/clip-b.h264");
 }
 
 de::MovePtr<vector<deUint8>> VideoBaseTestInstance::loadVideoDataClipC (void)
 {
-	return loadVideoData("vulkan/video/clip-c.mp4");
+	return loadVideoData("vulkan/video/clip-c.h264");
 }
 
 de::MovePtr<vector<deUint8>> VideoBaseTestInstance::loadVideoDataClipD (void)
 {
-	return loadVideoData("vulkan/video/clip-d.mp4");
+	return loadVideoData("vulkan/video/clip-d.h265");
 }
 
 de::MovePtr<vector<deUint8>> VideoBaseTestInstance::loadVideoDataClipH264G13 (void)
 {
-	return loadVideoData("vulkan/video/jellyfish-250-mbps-4k-uhd-GOB-IPB13.h264.mp4");
+	return loadVideoData("vulkan/video/jellyfish-250-mbps-4k-uhd-GOB-IPB13.h264");
 }
 
 de::MovePtr<vector<deUint8>> VideoBaseTestInstance::loadVideoDataClipH265G13 (void)
 {
-	return loadVideoData("vulkan/video/jellyfish-250-mbps-4k-uhd-GOB-IPB13.h265.mp4");
+	return loadVideoData("vulkan/video/jellyfish-250-mbps-4k-uhd-GOB-IPB13.h265");
 }
 
 de::MovePtr<VkVideoDecodeCapabilitiesKHR> getVideoDecodeCapabilities (void* pNext)
@@ -389,8 +389,8 @@ de::MovePtr<VkVideoSessionCreateInfoKHR> getVideoSessionCreateInfo (deUint32				
 	//FIXME: last spec version accepted by the parser function
 	//const VkExtensionProperties*				extensionProperties		= getVideoExtensionProperties(videoProfile->videoCodecOperation);
 
-	static const vk::VkExtensionProperties h264StdExtensionVersion = { VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_EXTENSION_NAME, VK_MAKE_VIDEO_STD_VERSION(0, 9, 8) };
-	static const vk::VkExtensionProperties h265StdExtensionVersion = { VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_EXTENSION_NAME, VK_MAKE_VIDEO_STD_VERSION(0, 9, 9) };
+	static const vk::VkExtensionProperties h264StdExtensionVersion = { VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_EXTENSION_NAME, VK_MAKE_VIDEO_STD_VERSION(1, 0, 0) };
+	static const vk::VkExtensionProperties h265StdExtensionVersion = { VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_EXTENSION_NAME, VK_MAKE_VIDEO_STD_VERSION(1, 0, 0) };
 
 	VkVideoSessionCreateInfoKHR*				videoSessionCreateInfo	= new VkVideoSessionCreateInfoKHR
 	{

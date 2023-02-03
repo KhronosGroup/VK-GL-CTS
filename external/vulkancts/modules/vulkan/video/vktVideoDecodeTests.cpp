@@ -370,11 +370,8 @@ tcu::TestStatus VideoDecodeTestInstance::iterate (void)
 
 vk::VkExtensionProperties getExtensionVersion (VkVideoCodecOperationFlagBitsKHR videoCodecOperation)
 {
-	// FIXME: last spec version accepted by the parser function
-	//static const vk::VkExtensionProperties h264StdExtensionVersion = { VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_EXTENSION_NAME, VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_SPEC_VERSION };
-	static const vk::VkExtensionProperties h264StdExtensionVersion = { VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_EXTENSION_NAME, VK_MAKE_VIDEO_STD_VERSION(0, 9, 8) };
-	//static const vk::VkExtensionProperties h265StdExtensionVersion = { VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_EXTENSION_NAME, VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_SPEC_VERSION };
-	static const vk::VkExtensionProperties h265StdExtensionVersion = { VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_EXTENSION_NAME, VK_MAKE_VIDEO_STD_VERSION(0, 9, 9) };
+	static const vk::VkExtensionProperties h264StdExtensionVersion = { VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_EXTENSION_NAME, VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_SPEC_VERSION };
+	static const vk::VkExtensionProperties h265StdExtensionVersion = { VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_EXTENSION_NAME, VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_SPEC_VERSION };
 
 	if (videoCodecOperation == VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR) {
         return h264StdExtensionVersion;
@@ -1105,6 +1102,13 @@ VideoDecodeTestCase::~VideoDecodeTestCase	(void)
 
 void VideoDecodeTestCase::checkSupport (Context& context) const
 {
+#if (DE_PTR_SIZE != 8)
+	// Issue #4253: https://gitlab.khronos.org/Tracker/vk-gl-cts/-/issues/4253
+	// These tests rely on external libraries to do the video parsing,
+	// and those libraries are only available as 64-bit at this time.
+	TCU_THROW(NotSupportedError, "CTS is not built 64-bit so cannot use the 64-bit video parser library");
+#endif
+
 	context.requireDeviceFunctionality("VK_KHR_video_queue");
 	context.requireDeviceFunctionality("VK_KHR_synchronization2");
 

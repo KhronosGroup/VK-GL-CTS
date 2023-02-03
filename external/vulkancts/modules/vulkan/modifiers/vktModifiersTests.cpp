@@ -237,6 +237,7 @@ void checkExportImportExtensions (Context& context, VkFormat format)
 		VK_FORMAT_A2B10G10R10_SSCALED_PACK32,
 		VK_FORMAT_A2B10G10R10_UINT_PACK32,
 		VK_FORMAT_A2B10G10R10_SINT_PACK32,
+		VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
 	};
 
 	if (std::find(std::begin(skippedFormats), std::end(skippedFormats), format) != std::end(skippedFormats))
