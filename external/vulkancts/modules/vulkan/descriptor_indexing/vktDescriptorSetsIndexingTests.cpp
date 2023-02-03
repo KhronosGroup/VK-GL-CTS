@@ -3173,29 +3173,28 @@ tcu::TestStatus	DynamicBuffersInstance::iterate						(void)
 	for (int x = 0; x < 4; x++)
 		for (int y= 0; y < 4; y++)
 		{
-
 			v.renderArea.offset.x		= x * m_testParams.frameResolution.width/4;
 			v.renderArea.offset.y		= y * m_testParams.frameResolution.height/4;
 
 			iterateCommandBegin		(v, firstPass);
 			firstPass = false;
 
-	m_vki.cmdBindDescriptorSets(
-		*v.commandBuffer,						// commandBuffer
-		VK_PIPELINE_BIND_POINT_GRAPHICS,		// pipelineBindPoint
-		*v.pipelineLayout,						// layout
-		0u,										// firstSet
-		DE_LENGTH_OF_ARRAY(descriptorSets),		// descriptorSetCount
-		descriptorSets,							// pDescriptorSets
-		v.availableDescriptorCount,				// dynamicOffsetCount
-		dynamicOffsets.data());					// pDynamicOffsets
+			m_vki.cmdBindDescriptorSets(
+				*v.commandBuffer,						// commandBuffer
+				VK_PIPELINE_BIND_POINT_GRAPHICS,		// pipelineBindPoint
+				*v.pipelineLayout,						// layout
+				0u,										// firstSet
+				DE_LENGTH_OF_ARRAY(descriptorSets),		// descriptorSetCount
+				descriptorSets,							// pDescriptorSets
+				v.availableDescriptorCount,				// dynamicOffsetCount
+				dynamicOffsets.data());					// pDynamicOffsets
 
 			vk::VkRect2D scissor = makeRect2D(v.renderArea.offset.x, v.renderArea.offset.y, v.renderArea.extent.width, v.renderArea.extent.height);
-	m_vki.cmdSetScissor(*v.commandBuffer, 0u, 1u, &scissor);
+			m_vki.cmdSetScissor(*v.commandBuffer, 0u, 1u, &scissor);
 
-	vk::beginRenderPass	(m_vki, *v.commandBuffer, *v.renderPass, *v.frameBuffer->buffer, v.renderArea, m_clearColor);
-			m_vki.cmdDraw			(*v.commandBuffer, v.vertexCount, 1u, 0u, 0u);
-	vk::endRenderPass	(m_vki, *v.commandBuffer);
+			vk::beginRenderPass	(m_vki, *v.commandBuffer, *v.renderPass, *v.frameBuffer->buffer, v.renderArea, m_clearColor);
+			m_vki.cmdDraw		(*v.commandBuffer, v.vertexCount, 1u, 0u, 0u);
+			vk::endRenderPass	(m_vki, *v.commandBuffer);
 
 			iterateCommandEnd(v, programResult, referenceResult);
 			programResult->invalidate();
