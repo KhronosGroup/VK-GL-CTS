@@ -29,6 +29,7 @@
 #include "vktPipelineDepthTests.hpp"
 #include "vktPipelineDescriptorLimitsTests.hpp"
 #include "vktPipelineDynamicOffsetTests.hpp"
+#include "vktPipelineDynamicVertexAttributeTests.hpp"
 #include "vktPipelineEarlyDestroyTests.hpp"
 #include "vktPipelineLogicOpTests.hpp"
 #include "vktPipelineImageTests.hpp"
@@ -91,6 +92,7 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 	group->addChild(createDepthTests					(testCtx, pipelineConstructionType));
 	group->addChild(createDescriptorLimitsTests			(testCtx, pipelineConstructionType));
 	group->addChild(createDynamicOffsetTests			(testCtx, pipelineConstructionType));
+	group->addChild(createDynamicVertexAttributeTests	(testCtx, pipelineConstructionType));
 #ifndef CTS_USES_VULKANSC
 	group->addChild(createEarlyDestroyTests				(testCtx, pipelineConstructionType));
 #endif // CTS_USES_VULKANSC
