@@ -92,6 +92,7 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyFramebufferFunc)												(VkD
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateRenderPassFunc)													(VkDevice device, const VkRenderPassCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyRenderPassFunc)													(VkDevice device, VkRenderPass renderPass, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetRenderAreaGranularityFunc)											(VkDevice device, VkRenderPass renderPass, VkExtent2D* pGranularity);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetRenderingAreaGranularityKHRFunc)									(VkDevice device, const VkRenderingAreaInfoKHR* pRenderingAreaInfo, VkExtent2D* pGranularity);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateCommandPoolFunc)													(VkDevice device, const VkCommandPoolCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCommandPool* pCommandPool);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyCommandPoolFunc)												(VkDevice device, VkCommandPool commandPool, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ResetCommandPoolFunc)													(VkDevice device, VkCommandPool commandPool, VkCommandPoolResetFlags flags);
@@ -461,6 +462,7 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetViewportWithCountFunc)											
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetViewportWithCountEXTFunc)										(VkCommandBuffer commandBuffer, uint32_t viewportCount, const VkViewport* pViewports);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetScissorWithCountFunc)											(VkCommandBuffer commandBuffer, uint32_t scissorCount, const VkRect2D* pScissors);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetScissorWithCountEXTFunc)											(VkCommandBuffer commandBuffer, uint32_t scissorCount, const VkRect2D* pScissors);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindIndexBuffer2KHRFunc)											(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize size, VkIndexType indexType);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindVertexBuffers2Func)												(VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets, const VkDeviceSize* pSizes, const VkDeviceSize* pStrides);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindVertexBuffers2EXTFunc)											(VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets, const VkDeviceSize* pSizes, const VkDeviceSize* pStrides);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetDepthTestEnableFunc)												(VkCommandBuffer commandBuffer, VkBool32 depthTestEnable);
@@ -617,7 +619,8 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* GetDeviceMicromapCompatibilityEXTFunc)	
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetMicromapBuildSizesEXTFunc)											(VkDevice device, VkAccelerationStructureBuildTypeKHR buildType, const VkMicromapBuildInfoEXT* pBuildInfo, VkMicromapBuildSizesInfoEXT* pSizeInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetShaderModuleIdentifierEXTFunc)										(VkDevice device, VkShaderModule shaderModule, VkShaderModuleIdentifierEXT* pIdentifier);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetShaderModuleCreateInfoIdentifierEXTFunc)							(VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, VkShaderModuleIdentifierEXT* pIdentifier);
-typedef VKAPI_ATTR void					(VKAPI_CALL* GetImageSubresourceLayout2EXTFunc)										(VkDevice device, VkImage image, const VkImageSubresource2EXT* pSubresource, VkSubresourceLayout2EXT* pLayout);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetImageSubresourceLayout2KHRFunc)										(VkDevice device, VkImage image, const VkImageSubresource2KHR* pSubresource, VkSubresourceLayout2KHR* pLayout);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetImageSubresourceLayout2EXTFunc)										(VkDevice device, VkImage image, const VkImageSubresource2KHR* pSubresource, VkSubresourceLayout2KHR* pLayout);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPipelinePropertiesEXTFunc)											(VkDevice device, const VkPipelineInfoEXT* pPipelineInfo, VkBaseOutStructure* pPipelineProperties);
 typedef VKAPI_ATTR void					(VKAPI_CALL* ExportMetalObjectsEXTFunc)												(VkDevice device, VkExportMetalObjectsInfoEXT* pMetalObjectsInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetFramebufferTilePropertiesQCOMFunc)									(VkDevice device, VkFramebuffer framebuffer, uint32_t* pPropertiesCount, VkTilePropertiesQCOM* pProperties);
@@ -629,5 +632,10 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* BindOpticalFlowSessionImageNVFunc)		
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdOpticalFlowExecuteNVFunc)											(VkCommandBuffer commandBuffer, VkOpticalFlowSessionNV session, const VkOpticalFlowExecuteInfoNV* pExecuteInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDeviceFaultInfoEXTFunc)												(VkDevice device, VkDeviceFaultCountsEXT* pFaultCounts, VkDeviceFaultInfoEXT* pFaultInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ReleaseSwapchainImagesEXTFunc)											(VkDevice device, const VkReleaseSwapchainImagesInfoEXT* pReleaseInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetDeviceImageSubresourceLayoutKHRFunc)								(VkDevice device, const VkDeviceImageSubresourceInfoKHR* pInfo, VkSubresourceLayout2KHR* pLayout);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* MapMemory2KHRFunc)														(VkDevice device, const VkMemoryMapInfoKHR* pMemoryMapInfo, void** ppData);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* UnmapMemory2KHRFunc)													(VkDevice device, const VkMemoryUnmapInfoKHR* pMemoryUnmapInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateShadersEXTFunc)													(VkDevice device, uint32_t createInfoCount, const VkShaderCreateInfoEXT* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkShaderEXT* pShaders);
+typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyShaderEXTFunc)													(VkDevice device, VkShaderEXT shader, const VkAllocationCallbacks* pAllocator);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetShaderBinaryDataEXTFunc)											(VkDevice device, VkShaderEXT shader, size_t* pDataSize, void* pData);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindShadersEXTFunc)													(VkCommandBuffer commandBuffer, uint32_t stageCount, const VkShaderStageFlagBits* pStages, const VkShaderEXT* pShaders);

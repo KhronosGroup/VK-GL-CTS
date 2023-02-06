@@ -1682,6 +1682,7 @@ def writeNullDriverImpl (api, filename):
 				"vkGetPhysicalDeviceExternalBufferPropertiesKHR",
 				"vkGetPhysicalDeviceImageFormatProperties2KHR",
 				"vkGetMemoryAndroidHardwareBufferANDROID",
+                "vkCreateShadersEXT"
 			]
 
 		specialFuncs		= [f for f in api.functions if f.name in specialFuncNames]

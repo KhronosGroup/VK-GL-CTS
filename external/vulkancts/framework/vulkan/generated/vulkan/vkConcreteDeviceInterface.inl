@@ -74,6 +74,7 @@ virtual void				destroyFramebuffer										(VkDevice device, VkFramebuffer fram
 virtual VkResult			createRenderPass										(VkDevice device, const VkRenderPassCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass) const;
 virtual void				destroyRenderPass										(VkDevice device, VkRenderPass renderPass, const VkAllocationCallbacks* pAllocator) const;
 virtual void				getRenderAreaGranularity								(VkDevice device, VkRenderPass renderPass, VkExtent2D* pGranularity) const;
+virtual void				getRenderingAreaGranularityKHR							(VkDevice device, const VkRenderingAreaInfoKHR* pRenderingAreaInfo, VkExtent2D* pGranularity) const;
 virtual VkResult			createCommandPool										(VkDevice device, const VkCommandPoolCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCommandPool* pCommandPool) const;
 virtual void				destroyCommandPool										(VkDevice device, VkCommandPool commandPool, const VkAllocationCallbacks* pAllocator) const;
 virtual VkResult			resetCommandPool										(VkDevice device, VkCommandPool commandPool, VkCommandPoolResetFlags flags) const;
@@ -323,6 +324,7 @@ virtual void				cmdSetFrontFace											(VkCommandBuffer commandBuffer, VkFron
 virtual void				cmdSetPrimitiveTopology									(VkCommandBuffer commandBuffer, VkPrimitiveTopology primitiveTopology) const;
 virtual void				cmdSetViewportWithCount									(VkCommandBuffer commandBuffer, uint32_t viewportCount, const VkViewport* pViewports) const;
 virtual void				cmdSetScissorWithCount									(VkCommandBuffer commandBuffer, uint32_t scissorCount, const VkRect2D* pScissors) const;
+virtual void				cmdBindIndexBuffer2KHR									(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize size, VkIndexType indexType) const;
 virtual void				cmdBindVertexBuffers2									(VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets, const VkDeviceSize* pSizes, const VkDeviceSize* pStrides) const;
 virtual void				cmdSetDepthTestEnable									(VkCommandBuffer commandBuffer, VkBool32 depthTestEnable) const;
 virtual void				cmdSetDepthWriteEnable									(VkCommandBuffer commandBuffer, VkBool32 depthWriteEnable) const;
@@ -446,7 +448,7 @@ virtual void				getDeviceMicromapCompatibilityEXT						(VkDevice device, const V
 virtual void				getMicromapBuildSizesEXT								(VkDevice device, VkAccelerationStructureBuildTypeKHR buildType, const VkMicromapBuildInfoEXT* pBuildInfo, VkMicromapBuildSizesInfoEXT* pSizeInfo) const;
 virtual void				getShaderModuleIdentifierEXT							(VkDevice device, VkShaderModule shaderModule, VkShaderModuleIdentifierEXT* pIdentifier) const;
 virtual void				getShaderModuleCreateInfoIdentifierEXT					(VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, VkShaderModuleIdentifierEXT* pIdentifier) const;
-virtual void				getImageSubresourceLayout2EXT							(VkDevice device, VkImage image, const VkImageSubresource2EXT* pSubresource, VkSubresourceLayout2EXT* pLayout) const;
+virtual void				getImageSubresourceLayout2KHR							(VkDevice device, VkImage image, const VkImageSubresource2KHR* pSubresource, VkSubresourceLayout2KHR* pLayout) const;
 virtual VkResult			getPipelinePropertiesEXT								(VkDevice device, const VkPipelineInfoEXT* pPipelineInfo, VkBaseOutStructure* pPipelineProperties) const;
 virtual void				exportMetalObjectsEXT									(VkDevice device, VkExportMetalObjectsInfoEXT* pMetalObjectsInfo) const;
 virtual VkResult			getFramebufferTilePropertiesQCOM						(VkDevice device, VkFramebuffer framebuffer, uint32_t* pPropertiesCount, VkTilePropertiesQCOM* pProperties) const;
@@ -457,5 +459,10 @@ virtual VkResult			bindOpticalFlowSessionImageNV							(VkDevice device, VkOptic
 virtual void				cmdOpticalFlowExecuteNV									(VkCommandBuffer commandBuffer, VkOpticalFlowSessionNV session, const VkOpticalFlowExecuteInfoNV* pExecuteInfo) const;
 virtual VkResult			getDeviceFaultInfoEXT									(VkDevice device, VkDeviceFaultCountsEXT* pFaultCounts, VkDeviceFaultInfoEXT* pFaultInfo) const;
 virtual VkResult			releaseSwapchainImagesEXT								(VkDevice device, const VkReleaseSwapchainImagesInfoEXT* pReleaseInfo) const;
+virtual void				getDeviceImageSubresourceLayoutKHR						(VkDevice device, const VkDeviceImageSubresourceInfoKHR* pInfo, VkSubresourceLayout2KHR* pLayout) const;
 virtual VkResult			mapMemory2KHR											(VkDevice device, const VkMemoryMapInfoKHR* pMemoryMapInfo, void** ppData) const;
 virtual VkResult			unmapMemory2KHR											(VkDevice device, const VkMemoryUnmapInfoKHR* pMemoryUnmapInfo) const;
+virtual VkResult			createShadersEXT										(VkDevice device, uint32_t createInfoCount, const VkShaderCreateInfoEXT* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkShaderEXT* pShaders) const;
+virtual void				destroyShaderEXT										(VkDevice device, VkShaderEXT shader, const VkAllocationCallbacks* pAllocator) const;
+virtual VkResult			getShaderBinaryDataEXT									(VkDevice device, VkShaderEXT shader, size_t* pDataSize, void* pData) const;
+virtual void				cmdBindShadersEXT										(VkCommandBuffer commandBuffer, uint32_t stageCount, const VkShaderStageFlagBits* pStages, const VkShaderEXT* pShaders) const;

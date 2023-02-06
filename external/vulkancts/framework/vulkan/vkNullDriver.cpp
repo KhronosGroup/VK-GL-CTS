@@ -221,7 +221,9 @@ VK_NULL_DEFINE_DEVICE_OBJ(SamplerYcbcrConversion);
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, Swapchain, KHR)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkInstance, DebugUtilsMessenger, EXT)
 
-#ifndef CTS_USES_VULKANSC
+#ifdef CTS_USES_VULKANSC
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, SemaphoreSciSyncPool, NV)
+#else
 VK_NULL_DEFINE_DEVICE_OBJ(ShaderModule);
 VK_NULL_DEFINE_DEVICE_OBJ(DescriptorUpdateTemplate);
 VK_NULL_DEFINE_DEVICE_OBJ(PrivateDataSlot);
@@ -237,6 +239,7 @@ VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, VideoSession, KHR)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, VideoSessionParameters, KHR)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, ValidationCache, EXT)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, BufferCollection, FUCHSIA)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, Shader, EXT)
 #endif // CTS_USES_VULKANSC
 
 class Instance
@@ -525,15 +528,6 @@ private:
 
 #endif // CTS_USES_VULKANSC
 
-#ifdef CTS_USES_VULKANSC
-class SemaphoreSciSyncPoolNV
-{
-public:
-	SemaphoreSciSyncPoolNV (VkDevice, const VkSemaphoreSciSyncPoolCreateInfoNV*)
-	{}
-};
-#endif // CTS_USES_VULKANSC
-
 class DeferredOperationKHR
 {
 public:
@@ -798,6 +792,30 @@ VKAPI_ATTR VkResult VKAPI_CALL createRayTracingPipelinesKHR (VkDevice device, Vk
 	{
 		for (deUint32 freeNdx = 0; freeNdx < allocNdx; freeNdx++)
 			freeNonDispHandle<Pipeline, VkPipeline>(pPipelines[freeNdx], pAllocator);
+
+		return err;
+	}
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createShadersEXT (VkDevice device, uint32_t createInfoCount, const VkShaderCreateInfoEXT* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkShaderEXT* pShaders)
+{
+	deUint32 allocNdx;
+	try
+	{
+		for (allocNdx = 0; allocNdx < createInfoCount; allocNdx++)
+			pShaders[allocNdx] = allocateNonDispHandle<ShaderEXT, VkShaderEXT>(device, pCreateInfos + allocNdx, pAllocator);
+
+		return VK_SUCCESS;
+	} catch (const std::bad_alloc&)
+	{
+		for (deUint32 freeNdx = 0; freeNdx < allocNdx; freeNdx++)
+			freeNonDispHandle<ShaderEXT, VkShaderEXT>(pShaders[freeNdx], pAllocator);
+
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
+	} catch (VkResult err)
+	{
+		for (deUint32 freeNdx = 0; freeNdx < allocNdx; freeNdx++)
+			freeNonDispHandle<ShaderEXT, VkShaderEXT>(pShaders[freeNdx], pAllocator);
 
 		return err;
 	}

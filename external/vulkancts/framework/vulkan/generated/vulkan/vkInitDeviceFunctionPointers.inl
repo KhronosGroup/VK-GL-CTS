@@ -76,6 +76,7 @@ m_vk.destroyFramebuffer										= (DestroyFramebufferFunc)										GET_PROC_AD
 m_vk.createRenderPass										= (CreateRenderPassFunc)										GET_PROC_ADDR("vkCreateRenderPass");
 m_vk.destroyRenderPass										= (DestroyRenderPassFunc)										GET_PROC_ADDR("vkDestroyRenderPass");
 m_vk.getRenderAreaGranularity								= (GetRenderAreaGranularityFunc)								GET_PROC_ADDR("vkGetRenderAreaGranularity");
+m_vk.getRenderingAreaGranularityKHR							= (GetRenderingAreaGranularityKHRFunc)							GET_PROC_ADDR("vkGetRenderingAreaGranularityKHR");
 m_vk.createCommandPool										= (CreateCommandPoolFunc)										GET_PROC_ADDR("vkCreateCommandPool");
 m_vk.destroyCommandPool										= (DestroyCommandPoolFunc)										GET_PROC_ADDR("vkDestroyCommandPool");
 m_vk.resetCommandPool										= (ResetCommandPoolFunc)										GET_PROC_ADDR("vkResetCommandPool");
@@ -403,6 +404,7 @@ if (!m_vk.cmdSetViewportWithCount)
 m_vk.cmdSetScissorWithCount									= (CmdSetScissorWithCountFunc)									GET_PROC_ADDR("vkCmdSetScissorWithCount");
 if (!m_vk.cmdSetScissorWithCount)
 	m_vk.cmdSetScissorWithCount								= (CmdSetScissorWithCountFunc)									GET_PROC_ADDR("vkCmdSetScissorWithCountEXT");
+m_vk.cmdBindIndexBuffer2KHR									= (CmdBindIndexBuffer2KHRFunc)									GET_PROC_ADDR("vkCmdBindIndexBuffer2KHR");
 m_vk.cmdBindVertexBuffers2									= (CmdBindVertexBuffers2Func)									GET_PROC_ADDR("vkCmdBindVertexBuffers2");
 if (!m_vk.cmdBindVertexBuffers2)
 	m_vk.cmdBindVertexBuffers2								= (CmdBindVertexBuffers2Func)									GET_PROC_ADDR("vkCmdBindVertexBuffers2EXT");
@@ -582,7 +584,9 @@ m_vk.getDeviceMicromapCompatibilityEXT						= (GetDeviceMicromapCompatibilityEXT
 m_vk.getMicromapBuildSizesEXT								= (GetMicromapBuildSizesEXTFunc)								GET_PROC_ADDR("vkGetMicromapBuildSizesEXT");
 m_vk.getShaderModuleIdentifierEXT							= (GetShaderModuleIdentifierEXTFunc)							GET_PROC_ADDR("vkGetShaderModuleIdentifierEXT");
 m_vk.getShaderModuleCreateInfoIdentifierEXT					= (GetShaderModuleCreateInfoIdentifierEXTFunc)					GET_PROC_ADDR("vkGetShaderModuleCreateInfoIdentifierEXT");
-m_vk.getImageSubresourceLayout2EXT							= (GetImageSubresourceLayout2EXTFunc)							GET_PROC_ADDR("vkGetImageSubresourceLayout2EXT");
+m_vk.getImageSubresourceLayout2KHR							= (GetImageSubresourceLayout2KHRFunc)							GET_PROC_ADDR("vkGetImageSubresourceLayout2KHR");
+if (!m_vk.getImageSubresourceLayout2KHR)
+	m_vk.getImageSubresourceLayout2KHR						= (GetImageSubresourceLayout2KHRFunc)							GET_PROC_ADDR("vkGetImageSubresourceLayout2EXT");
 m_vk.getPipelinePropertiesEXT								= (GetPipelinePropertiesEXTFunc)								GET_PROC_ADDR("vkGetPipelinePropertiesEXT");
 m_vk.exportMetalObjectsEXT									= (ExportMetalObjectsEXTFunc)									GET_PROC_ADDR("vkExportMetalObjectsEXT");
 m_vk.getFramebufferTilePropertiesQCOM						= (GetFramebufferTilePropertiesQCOMFunc)						GET_PROC_ADDR("vkGetFramebufferTilePropertiesQCOM");
@@ -593,5 +597,10 @@ m_vk.bindOpticalFlowSessionImageNV							= (BindOpticalFlowSessionImageNVFunc)		
 m_vk.cmdOpticalFlowExecuteNV								= (CmdOpticalFlowExecuteNVFunc)									GET_PROC_ADDR("vkCmdOpticalFlowExecuteNV");
 m_vk.getDeviceFaultInfoEXT									= (GetDeviceFaultInfoEXTFunc)									GET_PROC_ADDR("vkGetDeviceFaultInfoEXT");
 m_vk.releaseSwapchainImagesEXT								= (ReleaseSwapchainImagesEXTFunc)								GET_PROC_ADDR("vkReleaseSwapchainImagesEXT");
+m_vk.getDeviceImageSubresourceLayoutKHR						= (GetDeviceImageSubresourceLayoutKHRFunc)						GET_PROC_ADDR("vkGetDeviceImageSubresourceLayoutKHR");
 m_vk.mapMemory2KHR											= (MapMemory2KHRFunc)											GET_PROC_ADDR("vkMapMemory2KHR");
 m_vk.unmapMemory2KHR										= (UnmapMemory2KHRFunc)											GET_PROC_ADDR("vkUnmapMemory2KHR");
+m_vk.createShadersEXT										= (CreateShadersEXTFunc)										GET_PROC_ADDR("vkCreateShadersEXT");
+m_vk.destroyShaderEXT										= (DestroyShaderEXTFunc)										GET_PROC_ADDR("vkDestroyShaderEXT");
+m_vk.getShaderBinaryDataEXT									= (GetShaderBinaryDataEXTFunc)									GET_PROC_ADDR("vkGetShaderBinaryDataEXT");
+m_vk.cmdBindShadersEXT										= (CmdBindShadersEXTFunc)										GET_PROC_ADDR("vkCmdBindShadersEXT");

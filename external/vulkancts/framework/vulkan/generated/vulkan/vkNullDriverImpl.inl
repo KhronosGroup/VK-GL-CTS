@@ -553,6 +553,12 @@ VKAPI_ATTR void VKAPI_CALL destroyOpticalFlowSessionNV (VkDevice device, VkOptic
 	freeNonDispHandle<OpticalFlowSessionNV, VkOpticalFlowSessionNV>(session, pAllocator);
 }
 
+VKAPI_ATTR void VKAPI_CALL destroyShaderEXT (VkDevice device, VkShaderEXT shader, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<ShaderEXT, VkShaderEXT>(shader, pAllocator);
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL enumerateInstanceVersion (uint32_t* pApiVersion)
 {
 	DE_UNREF(pApiVersion);
@@ -779,6 +785,13 @@ VKAPI_ATTR void VKAPI_CALL getRenderAreaGranularity (VkDevice device, VkRenderPa
 {
 	DE_UNREF(device);
 	DE_UNREF(renderPass);
+	DE_UNREF(pGranularity);
+}
+
+VKAPI_ATTR void VKAPI_CALL getRenderingAreaGranularityKHR (VkDevice device, const VkRenderingAreaInfoKHR* pRenderingAreaInfo, VkExtent2D* pGranularity)
+{
+	DE_UNREF(device);
+	DE_UNREF(pRenderingAreaInfo);
 	DE_UNREF(pGranularity);
 }
 
@@ -2988,6 +3001,15 @@ VKAPI_ATTR void VKAPI_CALL cmdSetScissorWithCount (VkCommandBuffer commandBuffer
 	DE_UNREF(pScissors);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdBindIndexBuffer2KHR (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize size, VkIndexType indexType)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(buffer);
+	DE_UNREF(offset);
+	DE_UNREF(size);
+	DE_UNREF(indexType);
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdBindVertexBuffers2 (VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets, const VkDeviceSize* pSizes, const VkDeviceSize* pStrides)
 {
 	DE_UNREF(commandBuffer);
@@ -3804,7 +3826,7 @@ VKAPI_ATTR void VKAPI_CALL getShaderModuleCreateInfoIdentifierEXT (VkDevice devi
 	DE_UNREF(pIdentifier);
 }
 
-VKAPI_ATTR void VKAPI_CALL getImageSubresourceLayout2EXT (VkDevice device, VkImage image, const VkImageSubresource2EXT* pSubresource, VkSubresourceLayout2EXT* pLayout)
+VKAPI_ATTR void VKAPI_CALL getImageSubresourceLayout2KHR (VkDevice device, VkImage image, const VkImageSubresource2KHR* pSubresource, VkSubresourceLayout2KHR* pLayout)
 {
 	DE_UNREF(device);
 	DE_UNREF(image);
@@ -3884,6 +3906,13 @@ VKAPI_ATTR VkResult VKAPI_CALL releaseSwapchainImagesEXT (VkDevice device, const
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR void VKAPI_CALL getDeviceImageSubresourceLayoutKHR (VkDevice device, const VkDeviceImageSubresourceInfoKHR* pInfo, VkSubresourceLayout2KHR* pLayout)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	DE_UNREF(pLayout);
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL mapMemory2KHR (VkDevice device, const VkMemoryMapInfoKHR* pMemoryMapInfo, void** ppData)
 {
 	DE_UNREF(device);
@@ -3897,6 +3926,23 @@ VKAPI_ATTR VkResult VKAPI_CALL unmapMemory2KHR (VkDevice device, const VkMemoryU
 	DE_UNREF(device);
 	DE_UNREF(pMemoryUnmapInfo);
 	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getShaderBinaryDataEXT (VkDevice device, VkShaderEXT shader, size_t* pDataSize, void* pData)
+{
+	DE_UNREF(device);
+	DE_UNREF(shader);
+	DE_UNREF(pDataSize);
+	DE_UNREF(pData);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdBindShadersEXT (VkCommandBuffer commandBuffer, uint32_t stageCount, const VkShaderStageFlagBits* pStages, const VkShaderEXT* pShaders)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(stageCount);
+	DE_UNREF(pStages);
+	DE_UNREF(pShaders);
 }
 
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
@@ -4072,6 +4118,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCreateRenderPass,											createRenderPass),
 	VK_NULL_FUNC_ENTRY(vkDestroyRenderPass,											destroyRenderPass),
 	VK_NULL_FUNC_ENTRY(vkGetRenderAreaGranularity,									getRenderAreaGranularity),
+	VK_NULL_FUNC_ENTRY(vkGetRenderingAreaGranularityKHR,							getRenderingAreaGranularityKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateCommandPool,											createCommandPool),
 	VK_NULL_FUNC_ENTRY(vkDestroyCommandPool,										destroyCommandPool),
 	VK_NULL_FUNC_ENTRY(vkResetCommandPool,											resetCommandPool),
@@ -4321,6 +4368,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdSetPrimitiveTopology,									cmdSetPrimitiveTopology),
 	VK_NULL_FUNC_ENTRY(vkCmdSetViewportWithCount,									cmdSetViewportWithCount),
 	VK_NULL_FUNC_ENTRY(vkCmdSetScissorWithCount,									cmdSetScissorWithCount),
+	VK_NULL_FUNC_ENTRY(vkCmdBindIndexBuffer2KHR,									cmdBindIndexBuffer2KHR),
 	VK_NULL_FUNC_ENTRY(vkCmdBindVertexBuffers2,										cmdBindVertexBuffers2),
 	VK_NULL_FUNC_ENTRY(vkCmdSetDepthTestEnable,										cmdSetDepthTestEnable),
 	VK_NULL_FUNC_ENTRY(vkCmdSetDepthWriteEnable,									cmdSetDepthWriteEnable),
@@ -4444,7 +4492,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetMicromapBuildSizesEXT,									getMicromapBuildSizesEXT),
 	VK_NULL_FUNC_ENTRY(vkGetShaderModuleIdentifierEXT,								getShaderModuleIdentifierEXT),
 	VK_NULL_FUNC_ENTRY(vkGetShaderModuleCreateInfoIdentifierEXT,					getShaderModuleCreateInfoIdentifierEXT),
-	VK_NULL_FUNC_ENTRY(vkGetImageSubresourceLayout2EXT,								getImageSubresourceLayout2EXT),
+	VK_NULL_FUNC_ENTRY(vkGetImageSubresourceLayout2KHR,								getImageSubresourceLayout2KHR),
 	VK_NULL_FUNC_ENTRY(vkGetPipelinePropertiesEXT,									getPipelinePropertiesEXT),
 	VK_NULL_FUNC_ENTRY(vkExportMetalObjectsEXT,										exportMetalObjectsEXT),
 	VK_NULL_FUNC_ENTRY(vkGetFramebufferTilePropertiesQCOM,							getFramebufferTilePropertiesQCOM),
@@ -4455,7 +4503,12 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdOpticalFlowExecuteNV,									cmdOpticalFlowExecuteNV),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceFaultInfoEXT,										getDeviceFaultInfoEXT),
 	VK_NULL_FUNC_ENTRY(vkReleaseSwapchainImagesEXT,									releaseSwapchainImagesEXT),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceImageSubresourceLayoutKHR,						getDeviceImageSubresourceLayoutKHR),
 	VK_NULL_FUNC_ENTRY(vkMapMemory2KHR,												mapMemory2KHR),
 	VK_NULL_FUNC_ENTRY(vkUnmapMemory2KHR,											unmapMemory2KHR),
+	VK_NULL_FUNC_ENTRY(vkCreateShadersEXT,											createShadersEXT),
+	VK_NULL_FUNC_ENTRY(vkDestroyShaderEXT,											destroyShaderEXT),
+	VK_NULL_FUNC_ENTRY(vkGetShaderBinaryDataEXT,									getShaderBinaryDataEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdBindShadersEXT,											cmdBindShadersEXT),
 };
 

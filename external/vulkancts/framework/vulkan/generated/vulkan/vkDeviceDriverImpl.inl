@@ -359,6 +359,11 @@ void DeviceDriver::getRenderAreaGranularity (VkDevice device, VkRenderPass rende
 	m_vk.getRenderAreaGranularity(device, renderPass, pGranularity);
 }
 
+void DeviceDriver::getRenderingAreaGranularityKHR (VkDevice device, const VkRenderingAreaInfoKHR* pRenderingAreaInfo, VkExtent2D* pGranularity) const
+{
+	m_vk.getRenderingAreaGranularityKHR(device, pRenderingAreaInfo, pGranularity);
+}
+
 VkResult DeviceDriver::createCommandPool (VkDevice device, const VkCommandPoolCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCommandPool* pCommandPool) const
 {
 	return m_vk.createCommandPool(device, pCreateInfo, pAllocator, pCommandPool);
@@ -1604,6 +1609,11 @@ void DeviceDriver::cmdSetScissorWithCount (VkCommandBuffer commandBuffer, uint32
 	m_vk.cmdSetScissorWithCount(commandBuffer, scissorCount, pScissors);
 }
 
+void DeviceDriver::cmdBindIndexBuffer2KHR (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize size, VkIndexType indexType) const
+{
+	m_vk.cmdBindIndexBuffer2KHR(commandBuffer, buffer, offset, size, indexType);
+}
+
 void DeviceDriver::cmdBindVertexBuffers2 (VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets, const VkDeviceSize* pSizes, const VkDeviceSize* pStrides) const
 {
 	m_vk.cmdBindVertexBuffers2(commandBuffer, firstBinding, bindingCount, pBuffers, pOffsets, pSizes, pStrides);
@@ -2219,9 +2229,9 @@ void DeviceDriver::getShaderModuleCreateInfoIdentifierEXT (VkDevice device, cons
 	m_vk.getShaderModuleCreateInfoIdentifierEXT(device, pCreateInfo, pIdentifier);
 }
 
-void DeviceDriver::getImageSubresourceLayout2EXT (VkDevice device, VkImage image, const VkImageSubresource2EXT* pSubresource, VkSubresourceLayout2EXT* pLayout) const
+void DeviceDriver::getImageSubresourceLayout2KHR (VkDevice device, VkImage image, const VkImageSubresource2KHR* pSubresource, VkSubresourceLayout2KHR* pLayout) const
 {
-	m_vk.getImageSubresourceLayout2EXT(device, image, pSubresource, pLayout);
+	m_vk.getImageSubresourceLayout2KHR(device, image, pSubresource, pLayout);
 }
 
 VkResult DeviceDriver::getPipelinePropertiesEXT (VkDevice device, const VkPipelineInfoEXT* pPipelineInfo, VkBaseOutStructure* pPipelineProperties) const
@@ -2274,6 +2284,11 @@ VkResult DeviceDriver::releaseSwapchainImagesEXT (VkDevice device, const VkRelea
 	return m_vk.releaseSwapchainImagesEXT(device, pReleaseInfo);
 }
 
+void DeviceDriver::getDeviceImageSubresourceLayoutKHR (VkDevice device, const VkDeviceImageSubresourceInfoKHR* pInfo, VkSubresourceLayout2KHR* pLayout) const
+{
+	m_vk.getDeviceImageSubresourceLayoutKHR(device, pInfo, pLayout);
+}
+
 VkResult DeviceDriver::mapMemory2KHR (VkDevice device, const VkMemoryMapInfoKHR* pMemoryMapInfo, void** ppData) const
 {
 	return m_vk.mapMemory2KHR(device, pMemoryMapInfo, ppData);
@@ -2282,4 +2297,24 @@ VkResult DeviceDriver::mapMemory2KHR (VkDevice device, const VkMemoryMapInfoKHR*
 VkResult DeviceDriver::unmapMemory2KHR (VkDevice device, const VkMemoryUnmapInfoKHR* pMemoryUnmapInfo) const
 {
 	return m_vk.unmapMemory2KHR(device, pMemoryUnmapInfo);
+}
+
+VkResult DeviceDriver::createShadersEXT (VkDevice device, uint32_t createInfoCount, const VkShaderCreateInfoEXT* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkShaderEXT* pShaders) const
+{
+	return m_vk.createShadersEXT(device, createInfoCount, pCreateInfos, pAllocator, pShaders);
+}
+
+void DeviceDriver::destroyShaderEXT (VkDevice device, VkShaderEXT shader, const VkAllocationCallbacks* pAllocator) const
+{
+	m_vk.destroyShaderEXT(device, shader, pAllocator);
+}
+
+VkResult DeviceDriver::getShaderBinaryDataEXT (VkDevice device, VkShaderEXT shader, size_t* pDataSize, void* pData) const
+{
+	return m_vk.getShaderBinaryDataEXT(device, shader, pDataSize, pData);
+}
+
+void DeviceDriver::cmdBindShadersEXT (VkCommandBuffer commandBuffer, uint32_t stageCount, const VkShaderStageFlagBits* pStages, const VkShaderEXT* pShaders) const
+{
+	m_vk.cmdBindShadersEXT(commandBuffer, stageCount, pStages, pShaders);
 }

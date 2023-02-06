@@ -254,6 +254,13 @@ struct VkCopyDescriptorSet
 	uint32_t		descriptorCount;
 };
 
+struct VkBufferUsageFlags2CreateInfoKHR
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkBufferUsageFlags2KHR	usage;
+};
+
 struct VkBufferCreateInfo
 {
 	VkStructureType		sType;
@@ -579,6 +586,13 @@ struct VkComputePipelineCreateInfo
 	VkPipelineLayout				layout;
 	VkPipeline						basePipelineHandle;
 	int32_t							basePipelineIndex;
+};
+
+struct VkPipelineCreateFlags2CreateInfoKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkPipelineCreateFlags2KHR	flags;
 };
 
 struct VkVertexInputBindingDescription
@@ -3104,6 +3118,36 @@ struct VkPhysicalDeviceMaintenance4Properties
 	VkStructureType	sType;
 	void*			pNext;
 	VkDeviceSize	maxBufferSize;
+};
+
+struct VkPhysicalDeviceMaintenance5FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		maintenance5;
+};
+
+struct VkPhysicalDeviceMaintenance5PropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		earlyFragmentMultisampleCoverageAfterSampleCounting;
+	VkBool32		earlyFragmentSampleMaskTestBeforeSampleCounting;
+	VkBool32		depthStencilSwizzleOneSupport;
+	VkBool32		polygonModePointSize;
+	VkBool32		nonStrictSinglePixelWideLinesUseParallelogram;
+	VkBool32		nonStrictWideLinesUseParallelogram;
+};
+
+struct VkRenderingAreaInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		viewMask;
+	uint32_t		colorAttachmentCount;
+	const VkFormat*	pColorAttachmentFormats;
+	VkFormat		depthAttachmentFormat;
+	VkFormat		stencilAttachmentFormat;
 };
 
 struct VkDescriptorSetLayoutSupport
@@ -7466,14 +7510,14 @@ struct VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT
 	VkBool32		imageCompressionControlSwapchain;
 };
 
-struct VkImageSubresource2EXT
+struct VkImageSubresource2KHR
 {
 	VkStructureType		sType;
 	void*				pNext;
 	VkImageSubresource	imageSubresource;
 };
 
-struct VkSubresourceLayout2EXT
+struct VkSubresourceLayout2KHR
 {
 	VkStructureType		sType;
 	void*				pNext;
@@ -7627,6 +7671,42 @@ struct VkAccelerationStructureTrianglesOpacityMicromapEXT
 {
 	VkStructureType						sType;
 	void*								pNext;
+	VkIndexType							indexType;
+	VkDeviceOrHostAddressConstKHR		indexBuffer;
+	VkDeviceSize						indexStride;
+	uint32_t							baseTriangle;
+	uint32_t							usageCountsCount;
+	const VkMicromapUsageEXT*			pUsageCounts;
+	const VkMicromapUsageEXT* const*	ppUsageCounts;
+	VkMicromapEXT						micromap;
+};
+
+struct VkPhysicalDeviceDisplacementMicromapFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		displacementMicromap;
+};
+
+struct VkPhysicalDeviceDisplacementMicromapPropertiesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxDisplacementMicromapSubdivisionLevel;
+};
+
+struct VkAccelerationStructureTrianglesDisplacementMicromapNV
+{
+	VkStructureType						sType;
+	void*								pNext;
+	VkFormat							displacementBiasAndScaleFormat;
+	VkFormat							displacementVectorFormat;
+	VkDeviceOrHostAddressConstKHR		displacementBiasAndScaleBuffer;
+	VkDeviceSize						displacementBiasAndScaleStride;
+	VkDeviceOrHostAddressConstKHR		displacementVectorBuffer;
+	VkDeviceSize						displacementVectorStride;
+	VkDeviceOrHostAddressConstKHR		displacedMicromapPrimitiveFlags;
+	VkDeviceSize						displacedMicromapPrimitiveFlagsStride;
 	VkIndexType							indexType;
 	VkDeviceOrHostAddressConstKHR		indexBuffer;
 	VkDeviceSize						indexStride;
@@ -7998,6 +8078,8 @@ struct VkDeviceFaultVendorBinaryHeaderVersionOneEXT
 	uint32_t									applicationNameOffset;
 	uint32_t									applicationVersion;
 	uint32_t									engineNameOffset;
+	uint32_t									engineVersion;
+	uint32_t									apiVersion;
 };
 
 struct VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT
@@ -8145,6 +8227,14 @@ struct VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM
 	VkBool32		multiviewPerViewViewports;
 };
 
+struct VkDeviceImageSubresourceInfoKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	const VkImageCreateInfo*		pCreateInfo;
+	const VkImageSubresource2KHR*	pSubresource;
+};
+
 struct VkPhysicalDeviceShaderCorePropertiesARM
 {
 	VkStructureType	sType;
@@ -8192,6 +8282,57 @@ struct VkMemoryUnmapInfoKHR
 	const void*				pNext;
 	VkMemoryUnmapFlagsKHR	flags;
 	VkDeviceMemory			memory;
+};
+
+struct VkPhysicalDeviceShaderObjectFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderObject;
+};
+
+struct VkPhysicalDeviceShaderObjectPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint8_t			shaderBinaryUUID[VK_UUID_SIZE];
+	uint32_t		shaderBinaryVersion;
+};
+
+struct VkShaderCreateInfoEXT
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkShaderCreateFlagsEXT			flags;
+	VkShaderStageFlagBits			stage;
+	VkShaderStageFlags				nextStage;
+	VkShaderCodeTypeEXT				codeType;
+	size_t							codeSize;
+	const void*						pCode;
+	const char*						pName;
+	uint32_t						setLayoutCount;
+	const VkDescriptorSetLayout*	pSetLayouts;
+	uint32_t						pushConstantRangeCount;
+	const VkPushConstantRange*		pPushConstantRanges;
+	const VkSpecializationInfo*		pSpecializationInfo;
+};
+
+struct VkPhysicalDeviceShaderTileImageFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderTileImageColorReadAccess;
+	VkBool32		shaderTileImageDepthReadAccess;
+	VkBool32		shaderTileImageStencilReadAccess;
+};
+
+struct VkPhysicalDeviceShaderTileImagePropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderTileImageCoherentReadAccelerated;
+	VkBool32		shaderTileImageReadSampleFromPixelRateInvocation;
+	VkBool32		shaderTileImageReadFromHelperInvocation;
 };
 
 struct StdVideoH264SpsVuiFlags
@@ -9425,6 +9566,8 @@ typedef VkPhysicalDeviceSubgroupSizeControlProperties VkPhysicalDeviceSubgroupSi
 
 typedef VkPipelineShaderStageRequiredSubgroupSizeCreateInfo VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT;
 
+typedef VkPipelineShaderStageRequiredSubgroupSizeCreateInfo VkShaderRequiredSubgroupSizeCreateInfoEXT;
+
 typedef VkMemoryOpaqueCaptureAddressAllocateInfo VkMemoryOpaqueCaptureAddressAllocateInfoKHR;
 
 typedef VkDeviceMemoryOpaqueCaptureAddressInfo VkDeviceMemoryOpaqueCaptureAddressInfoKHR;
@@ -9510,4 +9653,8 @@ typedef VkCommandBufferInheritanceRenderingInfo VkCommandBufferInheritanceRender
 typedef VkAttachmentSampleCountInfoAMD VkAttachmentSampleCountInfoNV;
 
 typedef VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM;
+
+typedef VkImageSubresource2KHR VkImageSubresource2EXT;
+
+typedef VkSubresourceLayout2KHR VkSubresourceLayout2EXT;
 

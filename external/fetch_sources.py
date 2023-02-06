@@ -68,6 +68,7 @@ class SourcePackage (Source):
 		self.archiveDir		= "packages"
 		self.postExtract	= postExtract
 		self.sysNdx			= {"Windows":0, "Linux":1, "Darwin":2}[platform.system()]
+		self.FFmpeg			= "FFmpeg" in url
 
 	def clean (self):
 		Source.clean(self)
@@ -139,7 +140,7 @@ class SourcePackage (Source):
 			raise Exception("Checksum mismatch for %s, expected %s, got %s" % (self.filename, self.checksum, checksum))
 
 		if not os.path.exists(os.path.dirname(dstPath)):
-			os.mkdir(os.path.dirname(dstPath))
+			os.makedirs(os.path.dirname(dstPath))
 
 		writeBinaryFile(dstPath, data)
 
@@ -297,6 +298,10 @@ PACKAGES = [
 		"c9d164ec247f426a525a7b89936694aefbc91fb7a50182b198898b8fc91174b4",
 		"libpng",
 		postExtract = postExtractLibpng),
+	SourcePackage(
+        {"Windows":"https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-05-31-12-34/ffmpeg-n4.4.2-1-g8e98dfc57f-win64-lgpl-shared-4.4.zip", "Linux": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-05-31-12-34/ffmpeg-n4.4.2-1-g8e98dfc57f-linux64-gpl-shared-4.4.tar.xz", "Darwin":""}[platform.system()],
+        {"Windows":"670df8e9d2ddd5e761459b3538f64b8826566270ef1ed13bcbfc63e73aab3fd9","Linux":"817f8c93ff1ef7ede3dad15b20415d5e366bcd6848844d55046111fd3de827d0", "Darwin":""}[platform.system()],
+		"ffmpeg"),
 	SourceFile(
 		"https://raw.githubusercontent.com/baldurk/renderdoc/v1.1/renderdoc/api/app/renderdoc_app.h",
 		"renderdoc_app.h",
@@ -305,23 +310,23 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Tools.git",
 		"git@github.com:KhronosGroup/SPIRV-Tools.git",
-		"01828dac778d08f4ebafd2e06bd419f6c84e5984",
+		"f98473ceeb1d33700d01e20910433583e5256030",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
 		"git@github.com:KhronosGroup/glslang.git",
-		"cd2082e0584d4e39d11e3f401184e0d558ab304f",
+		"a0ad0d7067521fff880e36acfb8ce453421c3f25",
 		"glslang",
 		removeTags = ["master-tot"]),
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Headers.git",
 		"git@github.com:KhronosGroup/SPIRV-Headers.git",
-		"1feaf4414eb2b353764d01d88f8aa4bcc67b60db",
+		"87d5b782bec60822aa878941e6b13c0a9a954c9b",
 		"spirv-headers"),
 	GitRepo(
-        "https://github.com/KhronosGroup/Vulkan-Docs.git",
-		"git@github.com:KhronosGroup/Vulkan-Docs.git",
-		"7beccb60daac498d700a09763945719c31510ab6",
+        "https://gitlab.khronos.org/vulkan/vulkan.git",
+		"git@gitlab.khronos.org:vulkan/vulkan.git",
+		"d826006528d1de16912b6ec6318f5697706f54f8",
 		"vulkan-docs"),
 	GitRepo(
 		"https://github.com/google/amber.git",
@@ -342,7 +347,7 @@ PACKAGES = [
 		"https://github.com/Igalia/ESExtractor.git",
 		"git@github.com:Igalia/ESExtractor.git",
 		"v0.2.4",
-		"ESExtractor"),
+		"ESExtractor")
 ]
 
 def parseArgs ():

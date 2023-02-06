@@ -55,7 +55,9 @@ const vk::VkPhysicalDeviceFragmentDensityMap2PropertiesEXT&			Context::getFragme
 const vk::VkPhysicalDeviceDrmPropertiesEXT&							Context::getDrmPropertiesEXT						(void) const { return m_device->getDrmPropertiesEXT();							}
 const vk::VkPhysicalDeviceSubpassShadingPropertiesHUAWEI&			Context::getSubpassShadingPropertiesHUAWEI			(void) const { return m_device->getSubpassShadingPropertiesHUAWEI();			}
 const vk::VkPhysicalDeviceMultiDrawPropertiesEXT&					Context::getMultiDrawPropertiesEXT					(void) const { return m_device->getMultiDrawPropertiesEXT();					}
+const vk::VkPhysicalDeviceShaderTileImagePropertiesEXT&				Context::getShaderTileImagePropertiesEXT			(void) const { return m_device->getShaderTileImagePropertiesEXT();				}
 const vk::VkPhysicalDeviceOpacityMicromapPropertiesEXT&				Context::getOpacityMicromapPropertiesEXT			(void) const { return m_device->getOpacityMicromapPropertiesEXT();				}
+const vk::VkPhysicalDeviceDisplacementMicromapPropertiesNV&			Context::getDisplacementMicromapProperties			(void) const { return m_device->getDisplacementMicromapProperties();			}
 const vk::VkPhysicalDeviceClusterCullingShaderPropertiesHUAWEI&		Context::getClusterCullingShaderPropertiesHUAWEI	(void) const { return m_device->getClusterCullingShaderPropertiesHUAWEI();		}
 const vk::VkPhysicalDeviceMaintenance4Properties&					Context::getMaintenance4Properties					(void) const { return m_device->getMaintenance4Properties();					}
 const vk::VkPhysicalDeviceShaderCorePropertiesARM&					Context::getShaderCorePropertiesARM					(void) const { return m_device->getShaderCorePropertiesARM();					}
@@ -66,6 +68,8 @@ const vk::VkPhysicalDeviceImageProcessingPropertiesQCOM&			Context::getImageProc
 const vk::VkPhysicalDeviceExtendedDynamicState3PropertiesEXT&		Context::getExtendedDynamicState3PropertiesEXT		(void) const { return m_device->getExtendedDynamicState3PropertiesEXT();		}
 const vk::VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT&		Context::getShaderModuleIdentifierPropertiesEXT		(void) const { return m_device->getShaderModuleIdentifierPropertiesEXT();		}
 const vk::VkPhysicalDeviceOpticalFlowPropertiesNV&					Context::getOpticalFlowProperties					(void) const { return m_device->getOpticalFlowProperties();						}
+const vk::VkPhysicalDeviceMaintenance5PropertiesKHR&				Context::getMaintenance5Properties					(void) const { return m_device->getMaintenance5Properties();					}
+const vk::VkPhysicalDeviceShaderObjectPropertiesEXT&				Context::getShaderObjectPropertiesEXT				(void) const { return m_device->getShaderObjectPropertiesEXT();					}
 const vk::VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV&	Context::getRayTracingInvocationReorderProperties	(void) const { return m_device->getRayTracingInvocationReorderProperties();		}
 const vk::VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM&			Context::getShaderCoreBuiltinsPropertiesARM			(void) const { return m_device->getShaderCoreBuiltinsPropertiesARM();			}
 const vk::VkPhysicalDeviceSubgroupProperties&						Context::getSubgroupProperties						(void) const { return m_device->getSubgroupProperties();						}
