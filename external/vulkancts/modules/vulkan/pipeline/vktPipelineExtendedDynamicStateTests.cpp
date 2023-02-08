@@ -60,6 +60,7 @@
 #include <functional>
 #include <cstddef>
 #include <set>
+#include <array>
 
 namespace vkt
 {
@@ -1131,6 +1132,7 @@ using CovModTableVec	= std::vector<float>;
 #ifndef CTS_USES_VULKANSC
 using ViewportSwzVec	= std::vector<vk::VkViewportSwizzleNV>;
 #endif // CTS_USES_VULKANSC
+using BlendConstArray	= std::array<float, 4>;
 
 // Generic, to be used with any state than can be set statically and, as an option, dynamically.
 template<typename T>
@@ -1191,11 +1193,13 @@ using PolygonModeConfig				= StaticAndDynamicPair<vk::VkPolygonMode>;
 using SampleMaskConfig				= StaticAndDynamicPair<SampleMaskVec>;
 using AlphaToCoverageConfig			= BooleanFlagConfig;
 using AlphaToOneConfig				= BooleanFlagConfig;
+using ColorWriteEnableConfig		= BooleanFlagConfig;
 using ColorWriteMaskConfig			= StaticAndDynamicPair<vk::VkColorComponentFlags>;
 using RasterizationStreamConfig		= StaticAndDynamicPair<OptRastStream>;
 using LogicOpEnableConfig			= BooleanFlagConfig;
 using ColorBlendEnableConfig		= BooleanFlagConfig;
 using ColorBlendEquationConfig		= StaticAndDynamicPair<ColorBlendEq>;
+using BlendConstantsConfig			= StaticAndDynamicPair<BlendConstArray>;
 using ProvokingVertexConfig			= StaticAndDynamicPair<OptBoolean>;	// First vertex boolean flag.
 using NegativeOneToOneConfig		= StaticAndDynamicPair<OptBoolean>;
 using DepthClipEnableConfig			= StaticAndDynamicPair<OptBoolean>;
@@ -1803,6 +1807,15 @@ struct TestConfig
 	// Insert extra indices for restarting lines.
 	bool							extraLineRestarts;
 
+	// Consider both the basic and advanced color blend states dynamic if any of them is dynamic.
+	bool							colorBlendBoth;
+
+	// Use color write enable state.
+	bool							useColorWriteEnable;
+
+	// Force UNORM color format.
+	bool							forceUnormColorFormat;
+
 	// When setting the sample mask dynamically, we can use an alternative sample count specified here.
 	OptSampleCount					dynamicSampleMaskCount;
 
@@ -1832,11 +1845,13 @@ struct TestConfig
 	SampleMaskConfig				sampleMaskConfig;
 	AlphaToCoverageConfig			alphaToCoverageConfig;
 	AlphaToOneConfig				alphaToOneConfig;
+	ColorWriteEnableConfig			colorWriteEnableConfig;
 	ColorWriteMaskConfig			colorWriteMaskConfig;
 	RasterizationStreamConfig		rasterizationStreamConfig;
 	LogicOpEnableConfig				logicOpEnableConfig;
 	ColorBlendEnableConfig			colorBlendEnableConfig;
 	ColorBlendEquationConfig		colorBlendEquationConfig;
+	BlendConstantsConfig			blendConstantsConfig;
 	ProvokingVertexConfig			provokingVertexConfig;
 	NegativeOneToOneConfig			negativeOneToOneConfig;
 	DepthClipEnableConfig			depthClipEnableConfig;
@@ -1899,6 +1914,9 @@ struct TestConfig
 		, viewportWScaling				(false)
 		, representativeFragmentTest	(false)
 		, extraLineRestarts				(false)
+		, colorBlendBoth				(false)
+		, useColorWriteEnable			(false)
+		, forceUnormColorFormat			(false)
 		, dynamicSampleMaskCount		(tcu::Nothing)
 		, vertexGenerator				(makeVertexGeneratorConfig(staticVertexGenerator, dynamicVertexGenerator))
 		, cullModeConfig				(static_cast<vk::VkCullModeFlags>(vk::VK_CULL_MODE_NONE))
@@ -1927,11 +1945,13 @@ struct TestConfig
 		, sampleMaskConfig				(SampleMaskVec())
 		, alphaToCoverageConfig			(false)
 		, alphaToOneConfig				(false)
+		, colorWriteEnableConfig		(true)
 		, colorWriteMaskConfig			(CR | CG | CB | CA)
 		, rasterizationStreamConfig		(tcu::Nothing)
 		, logicOpEnableConfig			(false)
 		, colorBlendEnableConfig		(false)
 		, colorBlendEquationConfig		(ColorBlendEq())
+		, blendConstantsConfig			(BlendConstArray{0.0f, 0.0f, 0.0f, 0.0f})
 		, provokingVertexConfig			(tcu::Nothing)
 		, negativeOneToOneConfig		(tcu::Nothing)
 		, depthClipEnableConfig			(tcu::Nothing)
@@ -1996,6 +2016,9 @@ struct TestConfig
 		, viewportWScaling				(other.viewportWScaling)
 		, representativeFragmentTest	(other.representativeFragmentTest)
 		, extraLineRestarts				(other.extraLineRestarts)
+		, colorBlendBoth				(other.colorBlendBoth)
+		, useColorWriteEnable			(other.useColorWriteEnable)
+		, forceUnormColorFormat			(other.forceUnormColorFormat)
 		, dynamicSampleMaskCount		(other.dynamicSampleMaskCount)
 		, vertexGenerator				(other.vertexGenerator)
 		, cullModeConfig				(other.cullModeConfig)
@@ -2022,11 +2045,13 @@ struct TestConfig
 		, sampleMaskConfig				(other.sampleMaskConfig)
 		, alphaToCoverageConfig			(other.alphaToCoverageConfig)
 		, alphaToOneConfig				(other.alphaToOneConfig)
+		, colorWriteEnableConfig		(other.colorWriteEnableConfig)
 		, colorWriteMaskConfig			(other.colorWriteMaskConfig)
 		, rasterizationStreamConfig		(other.rasterizationStreamConfig)
 		, logicOpEnableConfig			(other.logicOpEnableConfig)
 		, colorBlendEnableConfig		(other.colorBlendEnableConfig)
 		, colorBlendEquationConfig		(other.colorBlendEquationConfig)
+		, blendConstantsConfig			(other.blendConstantsConfig)
 		, provokingVertexConfig			(other.provokingVertexConfig)
 		, negativeOneToOneConfig		(other.negativeOneToOneConfig)
 		, depthClipEnableConfig			(other.depthClipEnableConfig)
@@ -2190,11 +2215,6 @@ struct TestConfig
 		return ((static_cast<bool>(extraPrimitiveOverEstConfig.dynamicValue) && !m_swappedValues) ? extraPrimitiveOverEstConfig.dynamicValue.get() : extraPrimitiveOverEstConfig.staticValue);
 	}
 
-	bool getActiveLogicOpEnable () const
-	{
-		return ((logicOpEnableConfig.dynamicValue && !m_swappedValues) ? logicOpEnableConfig.dynamicValue.get() : logicOpEnableConfig.staticValue);
-	}
-
 	bool getActiveNegativeOneToOneValue () const
 	{
 		const bool				staticValue		= (static_cast<bool>(negativeOneToOneConfig.staticValue) ? negativeOneToOneConfig.staticValue.get() : false);
@@ -2263,11 +2283,13 @@ struct TestConfig
 		sampleMaskConfig.swapValues();
 		alphaToCoverageConfig.swapValues();
 		alphaToOneConfig.swapValues();
+		colorWriteEnableConfig.swapValues();
 		colorWriteMaskConfig.swapValues();
 		rasterizationStreamConfig.swapValues();
 		logicOpEnableConfig.swapValues();
 		colorBlendEnableConfig.swapValues();
 		colorBlendEquationConfig.swapValues();
+		blendConstantsConfig.swapValues();
 		provokingVertexConfig.swapValues();
 		negativeOneToOneConfig.swapValues();
 		depthClipEnableConfig.swapValues();
@@ -2377,6 +2399,12 @@ struct TestConfig
 #endif // CTS_USES_VULKANSC
 	}
 
+	// Returns the active color blend enablement flag.
+	bool getActiveColorBlendEnable () const
+	{
+		return ((static_cast<bool>(colorBlendEnableConfig.dynamicValue) && !m_swappedValues) ? colorBlendEnableConfig.dynamicValue.get() : colorBlendEnableConfig.staticValue);
+	}
+
 	// Returns true if the test needs an index buffer.
 	bool needsIndexBuffer () const
 	{
@@ -2430,6 +2458,10 @@ struct TestConfig
 	// Returns the appropriate color image format for the test.
 	vk::VkFormat colorFormat () const
 	{
+		// Special case for some tests.
+		if (forceUnormColorFormat)
+			return kUnormColorFormat;
+
 		// Pick int color format when testing logic op dynamic states.
 		if (testLogicOp() || testLogicOpEnable())
 			return kIntColorFormat;
@@ -2481,13 +2513,26 @@ struct TestConfig
 		if (sampleMaskConfig.dynamicValue)				dynamicStates.push_back(vk::VK_DYNAMIC_STATE_SAMPLE_MASK_EXT);
 		if (alphaToCoverageConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_ALPHA_TO_COVERAGE_ENABLE_EXT);
 		if (alphaToOneConfig.dynamicValue)				dynamicStates.push_back(vk::VK_DYNAMIC_STATE_ALPHA_TO_ONE_ENABLE_EXT);
+		if (colorWriteEnableConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_WRITE_ENABLE_EXT);
 		if (colorWriteMaskConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_WRITE_MASK_EXT);
 		if (rasterizationStreamConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_RASTERIZATION_STREAM_EXT);
 		if (logicOpEnableConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LOGIC_OP_ENABLE_EXT);
 		if (colorBlendEnableConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_BLEND_ENABLE_EXT);
-		if (colorBlendEquationConfig.dynamicValue)		dynamicStates.push_back(colorBlendEquationConfig.staticValue.isAdvanced()
+		if (colorBlendEquationConfig.dynamicValue)
+		{
+			if (colorBlendBoth)
+			{
+														dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_BLEND_EQUATION_EXT);
+														dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_BLEND_ADVANCED_EXT);
+			}
+			else
+			{
+														dynamicStates.push_back(colorBlendEquationConfig.staticValue.isAdvanced()
 															? vk::VK_DYNAMIC_STATE_COLOR_BLEND_ADVANCED_EXT
 															: vk::VK_DYNAMIC_STATE_COLOR_BLEND_EQUATION_EXT);
+			}
+		}
+		if (blendConstantsConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_BLEND_CONSTANTS);
 		if (provokingVertexConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_PROVOKING_VERTEX_MODE_EXT);
 		if (negativeOneToOneConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_CLIP_NEGATIVE_ONE_TO_ONE_EXT);
 		if (depthClipEnableConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_CLIP_ENABLE_EXT);
@@ -2644,6 +2689,11 @@ struct TestConfig
 		if (representativeFragmentTest)
 		{
 			extensions.push_back("VK_NV_representative_fragment_test");
+		}
+
+		if (useColorWriteEnable)
+		{
+			extensions.push_back("VK_EXT_color_write_enable");
 		}
 
 		return extensions;
@@ -2865,6 +2915,15 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 
 		if ((formatProps.sampleCounts & colorSampleCount) != colorSampleCount)
 			TCU_THROW(NotSupportedError, "Required color sample count not supported");
+
+		// If blending is active, we need to check support explicitly.
+		if (m_testConfig.getActiveColorBlendEnable())
+		{
+			const auto colorFormatProps = vk::getPhysicalDeviceFormatProperties(vki, physicalDevice, colorFormat);
+			DE_ASSERT(colorImageInfo.tiling == vk::VK_IMAGE_TILING_OPTIMAL);
+			if (!(colorFormatProps.optimalTilingFeatures & vk::VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT))
+				TCU_THROW(NotSupportedError, "Color format does not support blending");
+		}
 	}
 
 	// Extended dynamic state 3 features.
@@ -2905,12 +2964,15 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 
 		if (m_testConfig.colorBlendEquationConfig.dynamicValue)
 		{
-			if (m_testConfig.colorBlendEquationConfig.staticValue.isAdvanced())
+			const auto isAdvanced = m_testConfig.colorBlendEquationConfig.staticValue.isAdvanced();
+
+			if (isAdvanced || m_testConfig.colorBlendBoth)
 			{
 				if (!eds3Features.extendedDynamicState3ColorBlendAdvanced)
 					TCU_THROW(NotSupportedError, "extendedDynamicState3ColorBlendAdvanced not supported");
 			}
-			else
+
+			if (!isAdvanced || m_testConfig.colorBlendBoth)
 			{
 				if (!eds3Features.extendedDynamicState3ColorBlendEquation)
 					TCU_THROW(NotSupportedError, "extendedDynamicState3ColorBlendEquation not supported");
@@ -3677,6 +3739,12 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 	if (testConfig.alphaToOneConfig.dynamicValue)
 		vkd.cmdSetAlphaToOneEnableEXT(cmdBuffer, makeVkBool32(testConfig.alphaToOneConfig.dynamicValue.get()));
 
+	if (testConfig.colorWriteEnableConfig.dynamicValue)
+	{
+		const std::vector<vk::VkBool32> colorWriteEnableValues (testConfig.colorAttachmentCount, makeVkBool32(testConfig.colorWriteEnableConfig.dynamicValue.get()));
+		vkd.cmdSetColorWriteEnableEXT(cmdBuffer, de::sizeU32(colorWriteEnableValues), de::dataOrNull(colorWriteEnableValues));
+	}
+
 	if (testConfig.colorWriteMaskConfig.dynamicValue)
 		vkd.cmdSetColorWriteMaskEXT(cmdBuffer, 0u, 1u, &testConfig.colorWriteMaskConfig.dynamicValue.get());
 
@@ -3694,9 +3762,10 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 
 	if (testConfig.colorBlendEquationConfig.dynamicValue)
 	{
-		const auto& configEq = testConfig.colorBlendEquationConfig.dynamicValue.get();
+		const auto&	configEq	= testConfig.colorBlendEquationConfig.dynamicValue.get();
+		const auto	isAdvanced	= testConfig.colorBlendEquationConfig.staticValue.isAdvanced();
 
-		if (testConfig.colorBlendEquationConfig.staticValue.isAdvanced())
+		if (isAdvanced || testConfig.colorBlendBoth)
 		{
 			const vk::VkColorBlendAdvancedEXT advanced =
 			{
@@ -3708,20 +3777,35 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 			};
 			vkd.cmdSetColorBlendAdvancedEXT(cmdBuffer, 0u, 1u, &advanced);
 		}
-		else
+
+		if (!isAdvanced || testConfig.colorBlendBoth)
 		{
+			// VUID-VkColorBlendEquationEXT-colorBlendOp-07361 forbids colorBlendOp and alphaBlendOp to be any advanced operation.
+			// When the advanced blend op will be set by vkCmdSetColorBlendAdvancedEXT, we use a legal placeholder in this call.
+			vk::VkBlendOp colorBlendOp = vk::VK_BLEND_OP_ADD;
+			vk::VkBlendOp alphaBlendOp = vk::VK_BLEND_OP_ADD;
+
+			if (!isAdvanced)
+			{
+				colorBlendOp = configEq.colorBlendOp;
+				alphaBlendOp = configEq.alphaBlendOp;
+			}
+
 			const vk::VkColorBlendEquationEXT equation =
 			{
 				configEq.srcColorBlendFactor,	//	VkBlendFactor	srcColorBlendFactor;
 				configEq.dstColorBlendFactor,	//	VkBlendFactor	dstColorBlendFactor;
-				configEq.colorBlendOp,			//	VkBlendOp		colorBlendOp;
+				colorBlendOp,					//	VkBlendOp		colorBlendOp;
 				configEq.srcAlphaBlendFactor,	//	VkBlendFactor	srcAlphaBlendFactor;
 				configEq.dstAlphaBlendFactor,	//	VkBlendFactor	dstAlphaBlendFactor;
-				configEq.alphaBlendOp,			//	VkBlendOp		alphaBlendOp;
+				alphaBlendOp,					//	VkBlendOp		alphaBlendOp;
 			};
 			vkd.cmdSetColorBlendEquationEXT(cmdBuffer, 0u, 1u, &equation);
 		}
 	}
+
+	if (testConfig.blendConstantsConfig.dynamicValue)
+		vkd.cmdSetBlendConstants(cmdBuffer, testConfig.blendConstantsConfig.dynamicValue.get().data());
 
 	if (testConfig.provokingVertexConfig.dynamicValue && static_cast<bool>(testConfig.provokingVertexConfig.dynamicValue.get()))
 	{
@@ -4110,6 +4194,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	if (!dsFormatInfo)
 		TCU_THROW(NotSupportedError, "Required depth/stencil image features not supported");
 	log << tcu::TestLog::Message << "Chosen depth/stencil format: " << dsFormatInfo->imageFormat << tcu::TestLog::EndMessage;
+	log << tcu::TestLog::Message << "Chosen color format: " << colorFormat << tcu::TestLog::EndMessage;
 
 	// Swap static and dynamic values in the test configuration so the static pipeline ends up with the expected values for cases
 	// where we will bind the static pipeline last before drawing.
@@ -4994,27 +5079,48 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	};
 	const std::vector<vk::VkPipelineColorBlendAttachmentState> colorBlendAttachmentStateVec (kColorAttCount, colorBlendAttachmentState);
 
+	void* colorBlendPnext = nullptr;
+
 	using ColorBlendAdvancedPtr = de::MovePtr<vk::VkPipelineColorBlendAdvancedStateCreateInfoEXT>;
 	ColorBlendAdvancedPtr pColorBlendAdvanced;
 
 	if (m_testConfig.colorBlendEquationConfig.staticValue.isAdvanced())
 	{
-		pColorBlendAdvanced = ColorBlendAdvancedPtr(new vk::VkPipelineColorBlendAdvancedStateCreateInfoEXT(vk::initVulkanStructure()));
+		pColorBlendAdvanced						= ColorBlendAdvancedPtr(new vk::VkPipelineColorBlendAdvancedStateCreateInfoEXT(vk::initVulkanStructure(colorBlendPnext)));
 		pColorBlendAdvanced->srcPremultiplied	= VK_TRUE;
 		pColorBlendAdvanced->dstPremultiplied	= VK_TRUE;
 		pColorBlendAdvanced->blendOverlap		= vk::VK_BLEND_OVERLAP_UNCORRELATED_EXT;
+		colorBlendPnext							= pColorBlendAdvanced.get();
+	}
+
+	const std::vector<vk::VkBool32> colorWriteValues (colorBlendAttachmentStateVec.size(), m_testConfig.colorWriteEnableConfig.staticValue);
+
+	using ColorWriteEnablePtr = de::MovePtr<vk::VkPipelineColorWriteCreateInfoEXT>;
+	ColorWriteEnablePtr pColorWriteEnable;
+
+	if (m_testConfig.useColorWriteEnable)
+	{
+		pColorWriteEnable						= ColorWriteEnablePtr(new vk::VkPipelineColorWriteCreateInfoEXT(vk::initVulkanStructure(colorBlendPnext)));
+		pColorWriteEnable->attachmentCount		= de::sizeU32(colorWriteValues);
+		pColorWriteEnable->pColorWriteEnables	= de::dataOrNull(colorWriteValues);
+		colorBlendPnext							= pColorWriteEnable.get();
 	}
 
 	const vk::VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo =
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType                               sType
-		pColorBlendAdvanced.get(),										// const void*                                   pNext
+		colorBlendPnext,												// const void*                                   pNext
 		0u,																// VkPipelineColorBlendStateCreateFlags          flags
 		m_testConfig.logicOpEnableConfig.staticValue,					// VkBool32                                      logicOpEnable
 		m_testConfig.logicOpConfig.staticValue,							// VkLogicOp                                     logicOp
 		static_cast<uint32_t>(colorBlendAttachmentStateVec.size()),		// deUint32                                      attachmentCount
 		de::dataOrNull(colorBlendAttachmentStateVec),					// const VkPipelineColorBlendAttachmentState*    pAttachments
-		{ 0.0f, 0.0f, 0.0f, 0.0f }										// float                                         blendConstants[4]
+		{																// float                                         blendConstants[4]
+			m_testConfig.blendConstantsConfig.staticValue[0],
+			m_testConfig.blendConstantsConfig.staticValue[1],
+			m_testConfig.blendConstantsConfig.staticValue[2],
+			m_testConfig.blendConstantsConfig.staticValue[3],
+		},
 	};
 
 	vk::GraphicsPipelineWrapper	staticPipeline		(vkd, device, m_testConfig.pipelineConstructionType);
@@ -5512,15 +5618,6 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 			}
 		}
 
-	if (!colorMatch)
-		logErrors(log, "Color", "Result color image and error mask", colorAccess, colorErrorAccess);
-
-	if (!depthMatch)
-		logErrors(log, "Depth", "Result depth image and error mask", depthAccess, depthErrorAccess);
-
-	if (!stencilMatch)
-		logErrors(log, "Stencil", "Result stencil image and error mask", stencilAccess, stencilErrorAccess);
-
 	if (!(colorMatch && depthMatch && stencilMatch))
 	{
 		if (!colorMatch)
@@ -5881,62 +5978,219 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 
 		// Color blend equation.
 		{
-			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+			for (int i = 0; i < 2; ++i)
+			{
+				const bool allCBStatesDynamic = (i > 0);
 
-			// The equation picks the old color instead of the new one if blending is enabled.
-			config.colorBlendEquationConfig.staticValue = ColorBlendEq(vk::VK_BLEND_FACTOR_ZERO,
-																	   vk::VK_BLEND_FACTOR_ONE,
-																	   vk::VK_BLEND_OP_ADD,
-																	   vk::VK_BLEND_FACTOR_ZERO,
-																	   vk::VK_BLEND_FACTOR_ONE,
-																	   vk::VK_BLEND_OP_ADD);
+				// Skip two-draws variants as this will use dynamic logic op and force UNORM color attachments, which would result in illegal operations.
+				if (allCBStatesDynamic && (kOrdering == SequenceOrdering::TWO_DRAWS_STATIC || kOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC))
+					continue;
 
-			// The dynamic value picks the new color.
-			config.colorBlendEquationConfig.dynamicValue = ColorBlendEq(vk::VK_BLEND_FACTOR_ONE,
-																		vk::VK_BLEND_FACTOR_ZERO,
-																		vk::VK_BLEND_OP_ADD,
-																		vk::VK_BLEND_FACTOR_ONE,
-																		vk::VK_BLEND_FACTOR_ZERO,
-																		vk::VK_BLEND_OP_ADD);
+				for (int j = 0; j < 2; ++j)
+				{
+					const bool enableStateValue = (j > 0);
 
-			config.colorBlendEnableConfig.staticValue	= true;
+					// Do not test statically disabling color blend.
+					if (!allCBStatesDynamic && !enableStateValue)
+						continue;
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_equation_new_color", "Dynamically set a color equation that picks the mesh color", config));
+					TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
 
-			config.colorBlendEquationConfig.swapValues();
-			config.referenceColor.reset(new SingleColorGenerator(kDefaultClearColor));
+					// The equation picks the old color instead of the new one if blending is enabled.
+					config.colorBlendEquationConfig.staticValue = ColorBlendEq(vk::VK_BLEND_FACTOR_ZERO,
+																			   vk::VK_BLEND_FACTOR_ONE,
+																			   vk::VK_BLEND_OP_ADD,
+																			   vk::VK_BLEND_FACTOR_ZERO,
+																			   vk::VK_BLEND_FACTOR_ONE,
+																			   vk::VK_BLEND_OP_ADD);
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_equation_old_color", "Dynamically set a color equation that picks the clear color", config));
+					// The dynamic value picks the new color.
+					config.colorBlendEquationConfig.dynamicValue = ColorBlendEq(vk::VK_BLEND_FACTOR_ONE,
+																				vk::VK_BLEND_FACTOR_ZERO,
+																				vk::VK_BLEND_OP_ADD,
+																				vk::VK_BLEND_FACTOR_ONE,
+																				vk::VK_BLEND_FACTOR_ZERO,
+																				vk::VK_BLEND_OP_ADD);
+
+					if (allCBStatesDynamic)
+					{
+						config.colorBlendEnableConfig.staticValue	= !enableStateValue;
+						config.colorBlendEnableConfig.dynamicValue	= enableStateValue;
+						config.colorWriteMaskConfig.staticValue		= ( 0 |  0 |  0 |  0);
+						config.colorWriteMaskConfig.dynamicValue	= (CR | CG | CB | CA);
+						config.blendConstantsConfig.staticValue		= BlendConstArray{1.0f, 1.0f, 1.0f, 1.0f};
+						config.blendConstantsConfig.dynamicValue	= BlendConstArray{0.0f, 0.0f, 0.0f, 0.0f};
+						// Note we don't set a dynamic value for alpha to coverage.
+
+						config.useColorWriteEnable					= true;
+						config.colorWriteEnableConfig.staticValue	= false;
+						config.colorWriteEnableConfig.dynamicValue	= true;
+
+						config.forceUnormColorFormat				= true;
+						config.logicOpEnableConfig.staticValue		= true;
+						config.logicOpEnableConfig.dynamicValue		= false;
+						config.logicOpConfig.staticValue			= vk::VK_LOGIC_OP_COPY;
+						config.logicOpConfig.dynamicValue			= vk::VK_LOGIC_OP_CLEAR;
+					}
+					else
+					{
+						config.colorBlendEnableConfig.staticValue	= enableStateValue;
+					}
+
+					const std::string stateStr		= (enableStateValue ? "enable" : "disable");
+					const std::string nameSuffix	= (allCBStatesDynamic ? ("_dynamic_" + stateStr) : "");
+					const std::string descSuffix	= (allCBStatesDynamic ? " and dynamically enable color blending" : "");
+
+					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_equation_new_color" + nameSuffix, "Dynamically set a color equation that picks the mesh color" + descSuffix, config));
+
+					config.colorBlendEquationConfig.swapValues();
+					config.referenceColor.reset(new SingleColorGenerator(enableStateValue ? kDefaultClearColor : kDefaultTriangleColor));
+
+					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_equation_old_color" + nameSuffix, "Dynamically set a color equation that picks the clear color" + descSuffix, config));
+				}
+			}
 		}
 
 		// Color blend advanced.
 		{
-			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+			for (int i = 0; i < 2; ++i)
+			{
+				const bool allCBStatesDynamic = (i > 0);
 
-			// This static value picks the old color instead of the new one.
-			config.colorBlendEquationConfig.staticValue = ColorBlendEq(vk::VK_BLEND_FACTOR_ZERO,
-																	   vk::VK_BLEND_FACTOR_ONE,
-																	   vk::VK_BLEND_OP_DARKEN_EXT,
-																	   vk::VK_BLEND_FACTOR_ZERO,
-																	   vk::VK_BLEND_FACTOR_ONE,
-																	   vk::VK_BLEND_OP_DARKEN_EXT);
+				// Skip two-draws variants as this will use dynamic logic op and force UNORM color attachments, which would result in illegal operations.
+				if (allCBStatesDynamic && (kOrdering == SequenceOrdering::TWO_DRAWS_STATIC || kOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC))
+					continue;
 
-			// The dynamic value picks the new color.
-			config.colorBlendEquationConfig.dynamicValue = ColorBlendEq(vk::VK_BLEND_FACTOR_ONE,
-																		vk::VK_BLEND_FACTOR_ZERO,
-																		vk::VK_BLEND_OP_LIGHTEN_EXT,
-																		vk::VK_BLEND_FACTOR_ONE,
-																		vk::VK_BLEND_FACTOR_ZERO,
-																		vk::VK_BLEND_OP_LIGHTEN_EXT);
+				for (int j = 0; j < 2; ++j)
+				{
+					const bool enableStateValue = (j > 0);
 
-			config.colorBlendEnableConfig.staticValue	= true;
+					// Do not test statically disabling color blend.
+					if (!allCBStatesDynamic && !enableStateValue)
+						continue;
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_equation_advanced_new_color", "Dynamically set an advanced color equation that picks the mesh color", config));
+					TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
 
-			config.colorBlendEquationConfig.swapValues();
-			config.referenceColor.reset(new SingleColorGenerator(kDefaultClearColor));
+					// This static value picks the old color instead of the new one.
+					config.colorBlendEquationConfig.staticValue = ColorBlendEq(vk::VK_BLEND_FACTOR_ZERO,
+																			   vk::VK_BLEND_FACTOR_ONE,
+																			   vk::VK_BLEND_OP_DARKEN_EXT,
+																			   vk::VK_BLEND_FACTOR_ZERO,
+																			   vk::VK_BLEND_FACTOR_ONE,
+																			   vk::VK_BLEND_OP_DARKEN_EXT);
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_equation_advanced_old_color", "Dynamically set an advanced color equation that picks the clear color", config));
+					// The dynamic value picks the new color.
+					config.colorBlendEquationConfig.dynamicValue = ColorBlendEq(vk::VK_BLEND_FACTOR_ONE,
+																				vk::VK_BLEND_FACTOR_ZERO,
+																				vk::VK_BLEND_OP_LIGHTEN_EXT,
+																				vk::VK_BLEND_FACTOR_ONE,
+																				vk::VK_BLEND_FACTOR_ZERO,
+																				vk::VK_BLEND_OP_LIGHTEN_EXT);
+
+					if (allCBStatesDynamic)
+					{
+						config.colorBlendEnableConfig.staticValue	= !enableStateValue;
+						config.colorBlendEnableConfig.dynamicValue	= enableStateValue;
+						config.colorWriteMaskConfig.staticValue		= ( 0 |  0 |  0 |  0);
+						config.colorWriteMaskConfig.dynamicValue	= (CR | CG | CB | CA);
+						config.blendConstantsConfig.staticValue		= BlendConstArray{1.0f, 1.0f, 1.0f, 1.0f};
+						config.blendConstantsConfig.dynamicValue	= BlendConstArray{0.0f, 0.0f, 0.0f, 0.0f};
+						// Note we don't set a dynamic value for alpha to coverage.
+
+						config.useColorWriteEnable					= true;
+						config.colorWriteEnableConfig.staticValue	= false;
+						config.colorWriteEnableConfig.dynamicValue	= true;
+
+						config.forceUnormColorFormat				= true;
+						config.logicOpEnableConfig.staticValue		= true;
+						config.logicOpEnableConfig.dynamicValue		= false;
+						config.logicOpConfig.staticValue			= vk::VK_LOGIC_OP_COPY;
+						config.logicOpConfig.dynamicValue			= vk::VK_LOGIC_OP_CLEAR;
+					}
+					else
+					{
+						config.colorBlendEnableConfig.staticValue	= true;
+					}
+
+					const std::string stateStr		= (enableStateValue ? "enable" : "disable");
+					const std::string nameSuffix	= (allCBStatesDynamic ? ("_dynamic_" + stateStr) : "");
+					const std::string descSuffix	= (allCBStatesDynamic ? " and dynamically enable color blending" : "");
+
+					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_equation_advanced_new_color" + nameSuffix, "Dynamically set an advanced color equation that picks the mesh color" + descSuffix, config));
+
+					config.colorBlendEquationConfig.swapValues();
+					config.referenceColor.reset(new SingleColorGenerator(enableStateValue ? kDefaultClearColor : kDefaultTriangleColor));
+
+					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_equation_advanced_old_color" + nameSuffix, "Dynamically set an advanced color equation that picks the clear color" + descSuffix, config));
+				}
+			}
+		}
+
+		// All color blend as dynamic, including both blend equations.
+		{
+			for (int i = 0; i < 2; ++i)
+			{
+				for (int j = 0; j < 2; ++j)
+				{
+					const bool swapEquation			= (j > 0);
+					const bool picksNew				= (!swapEquation);
+					const auto colorBlendResultName	= (picksNew ? "new" : "old");
+
+					const bool colorBlendEnableDyn		= (i > 0);
+					const bool colorBlendEnableStatic	= !colorBlendEnableDyn;
+					const auto colorBlendStateName		= (colorBlendEnableDyn ? "enabled" : "disabled");
+
+					TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+
+					// We need to apply both color blending equation states instead of deciding if it's advanced or not.
+					config.colorBlendBoth						= true;
+
+					config.colorBlendEnableConfig.staticValue	= colorBlendEnableStatic;
+					config.colorBlendEnableConfig.dynamicValue	= colorBlendEnableDyn;
+
+					config.colorWriteMaskConfig.staticValue		= ( 0 |  0 |  0 |  0);
+					config.colorWriteMaskConfig.dynamicValue	= (CR | CG | CB | CA);
+					config.blendConstantsConfig.staticValue		= BlendConstArray{1.0f, 1.0f, 1.0f, 1.0f};
+					config.blendConstantsConfig.dynamicValue	= BlendConstArray{0.0f, 0.0f, 0.0f, 0.0f};
+
+					config.useColorWriteEnable					= true;
+					config.colorWriteEnableConfig.staticValue	= false;
+					config.colorWriteEnableConfig.dynamicValue	= true;
+
+					config.forceUnormColorFormat				= true;
+					config.logicOpEnableConfig.staticValue		= true;
+					config.logicOpEnableConfig.dynamicValue		= false;
+					config.logicOpConfig.staticValue			= vk::VK_LOGIC_OP_COPY;
+					config.logicOpConfig.dynamicValue			= vk::VK_LOGIC_OP_CLEAR;
+
+					// This static value picks the new color.
+					config.colorBlendEquationConfig.staticValue = ColorBlendEq(vk::VK_BLEND_FACTOR_ONE,
+																			   vk::VK_BLEND_FACTOR_ZERO,
+																			   vk::VK_BLEND_OP_LIGHTEN_EXT,
+																			   vk::VK_BLEND_FACTOR_ONE,
+																			   vk::VK_BLEND_FACTOR_ZERO,
+																			   vk::VK_BLEND_OP_LIGHTEN_EXT);
+
+					// The dynamic value picks the old color instead of the new one.
+					config.colorBlendEquationConfig.dynamicValue = ColorBlendEq(vk::VK_BLEND_FACTOR_ZERO,
+																				vk::VK_BLEND_FACTOR_ONE,
+																				vk::VK_BLEND_OP_DARKEN_EXT,
+																				vk::VK_BLEND_FACTOR_ZERO,
+																				vk::VK_BLEND_FACTOR_ONE,
+																				vk::VK_BLEND_OP_DARKEN_EXT);
+
+					if (swapEquation)
+						config.colorBlendEquationConfig.swapValues();
+
+					// Expected result.
+					const auto expectGeomColor = (!colorBlendEnableDyn || swapEquation);
+					config.referenceColor.reset(new SingleColorGenerator(expectGeomColor ? kDefaultTriangleColor : kDefaultClearColor));
+
+					const auto testName = std::string("color_blend_all_") + colorBlendStateName + "_" + colorBlendResultName + "_color";
+					const auto testDesc = std::string(std::string("Set all color blend to dynamic and dynamically set color blend to ") + colorBlendStateName + " and pick the " + colorBlendResultName + " color");
+					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, testDesc, config));
+				}
+			}
 		}
 
 		// Dynamically enable primitive restart
