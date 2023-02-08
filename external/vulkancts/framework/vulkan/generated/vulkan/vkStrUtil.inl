@@ -494,6 +494,7 @@ tcu::Format::Bitfield<32>	getSemaphoreWaitFlagsStr									(VkSemaphoreWaitFlags
 tcu::Format::Bitfield<32>	getPipelineCompilerControlFlagsAMDStr						(VkPipelineCompilerControlFlagsAMD value);
 tcu::Format::Bitfield<32>	getShaderCorePropertiesFlagsAMDStr							(VkShaderCorePropertiesFlagsAMD value);
 tcu::Format::Bitfield<32>	getDeviceDiagnosticsConfigFlagsNVStr						(VkDeviceDiagnosticsConfigFlagsNV value);
+tcu::Format::Bitfield<32>	getRefreshObjectFlagsKHRStr									(VkRefreshObjectFlagsKHR value);
 tcu::Format::Bitfield<64>	getAccessFlags2Str											(VkAccessFlags2 value);
 tcu::Format::Bitfield<64>	getPipelineStageFlags2Str									(VkPipelineStageFlags2 value);
 tcu::Format::Bitfield<32>	getAccelerationStructureMotionInfoFlagsNVStr				(VkAccelerationStructureMotionInfoFlagsNV value);
@@ -897,6 +898,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePointClippingPr
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryDedicatedRequirements& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryDedicatedAllocateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageViewUsageCreateInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImageViewSlicedCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineTessellationDomainOriginStateCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSamplerYcbcrConversionInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSamplerYcbcrConversionCreateInfo& value);
@@ -1240,6 +1242,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentShading
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineFragmentShadingRateEnumStateCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureBuildSizesInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImage2DViewOf3DFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeListEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeCreateInfoEXT& value);
@@ -1490,6 +1493,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayTracingInvoc
 std::ostream&	operator<<	(std::ostream& s, const VkDirectDriverLoadingInfoLUNARG& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDirectDriverLoadingListLUNARG& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderCorePropertiesARM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMultiviewPerViewRenderAreasRenderPassBeginInfoQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SpsVuiFlags& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264HrdParameters& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SequenceParameterSetVui& value);

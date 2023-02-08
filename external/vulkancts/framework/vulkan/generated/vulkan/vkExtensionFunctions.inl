@@ -1230,6 +1230,14 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_ARM_shader_core_properties")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_image_sliced_view_of_3d")
+	{
+		return;
+	}
 	if (extName == "VK_VALVE_descriptor_set_host_mapping")
 	{
 		return;
@@ -1328,6 +1336,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_EXT_pipeline_library_group_handles")
+	{
+		return;
+	}
+	if (extName == "VK_QCOM_multiview_per_view_render_areas")
 	{
 		return;
 	}
@@ -1762,6 +1774,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	if (extName == "VK_EXT_discard_rectangles")
 	{
 		functions.push_back("vkCmdSetDiscardRectangleEXT");
+		functions.push_back("vkCmdSetDiscardRectangleEnableEXT");
+		functions.push_back("vkCmdSetDiscardRectangleModeEXT");
 		return;
 	}
 	if (extName == "VK_EXT_conservative_rasterization")
@@ -2161,6 +2175,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_NV_scissor_exclusive")
 	{
+		functions.push_back("vkCmdSetExclusiveScissorEnableNV");
 		functions.push_back("vkCmdSetExclusiveScissorNV");
 		return;
 	}
@@ -2751,6 +2766,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_ARM_shader_core_properties")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_image_sliced_view_of_3d")
+	{
+		return;
+	}
 	if (extName == "VK_VALVE_descriptor_set_host_mapping")
 	{
 		functions.push_back("vkGetDescriptorSetLayoutHostMappingInfoVALVE");
@@ -2883,6 +2906,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_EXT_pipeline_library_group_handles")
+	{
+		return;
+	}
+	if (extName == "VK_QCOM_multiview_per_view_render_areas")
 	{
 		return;
 	}
@@ -3215,6 +3242,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_border_color_swizzle",
 	"VK_EXT_pageable_device_local_memory",
 	"VK_KHR_maintenance4",
+	"VK_ARM_shader_core_properties",
+	"VK_EXT_image_sliced_view_of_3d",
 	"VK_VALVE_descriptor_set_host_mapping",
 	"VK_EXT_depth_clamp_zero_one",
 	"VK_EXT_non_seamless_cube_map",
@@ -3238,4 +3267,5 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_mutable_descriptor_type",
 	"VK_ARM_shader_core_builtins",
 	"VK_EXT_pipeline_library_group_handles",
+	"VK_QCOM_multiview_per_view_render_areas",
 };

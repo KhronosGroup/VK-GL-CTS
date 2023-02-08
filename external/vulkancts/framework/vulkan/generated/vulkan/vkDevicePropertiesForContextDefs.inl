@@ -58,6 +58,7 @@ const vk::VkPhysicalDeviceMultiDrawPropertiesEXT&					Context::getMultiDrawPrope
 const vk::VkPhysicalDeviceOpacityMicromapPropertiesEXT&				Context::getOpacityMicromapPropertiesEXT			(void) const { return m_device->getOpacityMicromapPropertiesEXT();				}
 const vk::VkPhysicalDeviceClusterCullingShaderPropertiesHUAWEI&		Context::getClusterCullingShaderPropertiesHUAWEI	(void) const { return m_device->getClusterCullingShaderPropertiesHUAWEI();		}
 const vk::VkPhysicalDeviceMaintenance4Properties&					Context::getMaintenance4Properties					(void) const { return m_device->getMaintenance4Properties();					}
+const vk::VkPhysicalDeviceShaderCorePropertiesARM&					Context::getShaderCorePropertiesARM					(void) const { return m_device->getShaderCorePropertiesARM();					}
 const vk::VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM&	Context::getFragmentDensityMapOffsetPropertiesQCOM	(void) const { return m_device->getFragmentDensityMapOffsetPropertiesQCOM();	}
 const vk::VkPhysicalDeviceCopyMemoryIndirectPropertiesNV&			Context::getCopyMemoryIndirectProperties			(void) const { return m_device->getCopyMemoryIndirectProperties();				}
 const vk::VkPhysicalDeviceMemoryDecompressionPropertiesNV&			Context::getMemoryDecompressionProperties			(void) const { return m_device->getMemoryDecompressionProperties();				}

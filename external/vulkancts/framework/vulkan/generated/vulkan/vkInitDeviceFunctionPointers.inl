@@ -214,6 +214,8 @@ m_vk.getRefreshCycleDurationGOOGLE							= (GetRefreshCycleDurationGOOGLEFunc)		
 m_vk.getPastPresentationTimingGOOGLE						= (GetPastPresentationTimingGOOGLEFunc)							GET_PROC_ADDR("vkGetPastPresentationTimingGOOGLE");
 m_vk.cmdSetViewportWScalingNV								= (CmdSetViewportWScalingNVFunc)								GET_PROC_ADDR("vkCmdSetViewportWScalingNV");
 m_vk.cmdSetDiscardRectangleEXT								= (CmdSetDiscardRectangleEXTFunc)								GET_PROC_ADDR("vkCmdSetDiscardRectangleEXT");
+m_vk.cmdSetDiscardRectangleEnableEXT						= (CmdSetDiscardRectangleEnableEXTFunc)							GET_PROC_ADDR("vkCmdSetDiscardRectangleEnableEXT");
+m_vk.cmdSetDiscardRectangleModeEXT							= (CmdSetDiscardRectangleModeEXTFunc)							GET_PROC_ADDR("vkCmdSetDiscardRectangleModeEXT");
 m_vk.cmdSetSampleLocationsEXT								= (CmdSetSampleLocationsEXTFunc)								GET_PROC_ADDR("vkCmdSetSampleLocationsEXT");
 m_vk.getBufferMemoryRequirements2							= (GetBufferMemoryRequirements2Func)							GET_PROC_ADDR("vkGetBufferMemoryRequirements2");
 if (!m_vk.getBufferMemoryRequirements2)
@@ -302,6 +304,7 @@ m_vk.cmdBeginQueryIndexedEXT								= (CmdBeginQueryIndexedEXTFunc)									GET_
 m_vk.cmdEndQueryIndexedEXT									= (CmdEndQueryIndexedEXTFunc)									GET_PROC_ADDR("vkCmdEndQueryIndexedEXT");
 m_vk.cmdDrawIndirectByteCountEXT							= (CmdDrawIndirectByteCountEXTFunc)								GET_PROC_ADDR("vkCmdDrawIndirectByteCountEXT");
 m_vk.cmdSetExclusiveScissorNV								= (CmdSetExclusiveScissorNVFunc)								GET_PROC_ADDR("vkCmdSetExclusiveScissorNV");
+m_vk.cmdSetExclusiveScissorEnableNV							= (CmdSetExclusiveScissorEnableNVFunc)							GET_PROC_ADDR("vkCmdSetExclusiveScissorEnableNV");
 m_vk.cmdBindShadingRateImageNV								= (CmdBindShadingRateImageNVFunc)								GET_PROC_ADDR("vkCmdBindShadingRateImageNV");
 m_vk.cmdSetViewportShadingRatePaletteNV						= (CmdSetViewportShadingRatePaletteNVFunc)						GET_PROC_ADDR("vkCmdSetViewportShadingRatePaletteNV");
 m_vk.cmdSetCoarseSampleOrderNV								= (CmdSetCoarseSampleOrderNVFunc)								GET_PROC_ADDR("vkCmdSetCoarseSampleOrderNV");

@@ -2782,6 +2782,14 @@ struct VkImageViewUsageCreateInfo
 	VkImageUsageFlags	usage;
 };
 
+struct VkImageViewSlicedCreateInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		sliceOffset;
+	uint32_t		sliceCount;
+};
+
 struct VkPipelineTessellationDomainOriginStateCreateInfo
 {
 	VkStructureType				sType;
@@ -6047,6 +6055,13 @@ struct VkPhysicalDeviceImage2DViewOf3DFeaturesEXT
 	VkBool32		sampler2DViewOf3D;
 };
 
+struct VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		imageSlicedViewOf3D;
+};
+
 struct VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT
 {
 	VkStructureType	sType;
@@ -8145,6 +8160,30 @@ struct VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		multiviewPerViewViewports;
+};
+
+struct VkPhysicalDeviceShaderCorePropertiesARM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		pixelRate;
+	uint32_t		texelRate;
+	uint32_t		fmaRate;
+};
+
+struct VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		multiviewPerViewRenderAreas;
+};
+
+struct VkMultiviewPerViewRenderAreasRenderPassBeginInfoQCOM
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		perViewRenderAreaCount;
+	const VkRect2D*	pPerViewRenderAreas;
 };
 
 struct StdVideoH264SpsVuiFlags

@@ -283,6 +283,8 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateMacOSSurfaceMVKFunc)										
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateMetalSurfaceEXTFunc)												(VkInstance instance, const VkMetalSurfaceCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetViewportWScalingNVFunc)											(VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewportWScalingNV* pViewportWScalings);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetDiscardRectangleEXTFunc)											(VkCommandBuffer commandBuffer, uint32_t firstDiscardRectangle, uint32_t discardRectangleCount, const VkRect2D* pDiscardRectangles);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetDiscardRectangleEnableEXTFunc)									(VkCommandBuffer commandBuffer, VkBool32 discardRectangleEnable);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetDiscardRectangleModeEXTFunc)										(VkCommandBuffer commandBuffer, VkDiscardRectangleModeEXT discardRectangleMode);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetSampleLocationsEXTFunc)											(VkCommandBuffer commandBuffer, const VkSampleLocationsInfoEXT* pSampleLocationsInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetPhysicalDeviceMultisamplePropertiesEXTFunc)							(VkPhysicalDevice physicalDevice, VkSampleCountFlagBits samples, VkMultisamplePropertiesEXT* pMultisampleProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceSurfaceCapabilities2KHRFunc)							(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, VkSurfaceCapabilities2KHR* pSurfaceCapabilities);
@@ -362,6 +364,7 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginQueryIndexedEXTFunc)											
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndQueryIndexedEXTFunc)												(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query, uint32_t index);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawIndirectByteCountEXTFunc)										(VkCommandBuffer commandBuffer, uint32_t instanceCount, uint32_t firstInstance, VkBuffer counterBuffer, VkDeviceSize counterBufferOffset, uint32_t counterOffset, uint32_t vertexStride);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetExclusiveScissorNVFunc)											(VkCommandBuffer commandBuffer, uint32_t firstExclusiveScissor, uint32_t exclusiveScissorCount, const VkRect2D* pExclusiveScissors);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetExclusiveScissorEnableNVFunc)									(VkCommandBuffer commandBuffer, uint32_t firstExclusiveScissor, uint32_t exclusiveScissorCount, const VkBool32* pExclusiveScissorEnables);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindShadingRateImageNVFunc)											(VkCommandBuffer commandBuffer, VkImageView imageView, VkImageLayout imageLayout);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetViewportShadingRatePaletteNVFunc)								(VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkShadingRatePaletteNV* pShadingRatePalettes);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetCoarseSampleOrderNVFunc)											(VkCommandBuffer commandBuffer, VkCoarseSampleOrderTypeNV sampleOrderType, uint32_t customSampleOrderCount, const VkCoarseSampleOrderCustomNV* pCustomSampleOrders);

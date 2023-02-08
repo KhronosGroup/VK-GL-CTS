@@ -84,6 +84,11 @@ std::ostream& operator<< (std::ostream& s, MTLBuffer_id					v) { return s << tcu
 std::ostream& operator<< (std::ostream& s, MTLTexture_id				v) { return s << tcu::toHex(v.internal); }
 std::ostream& operator<< (std::ostream& s, IOSurfaceRef					v) { return s << tcu::toHex(v.internal); }
 std::ostream& operator<< (std::ostream& s, MTLSharedEvent_id			v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, NvSciBufObj					v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, NvSciSyncObj					v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, NvSciSyncFence				v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, NvSciBufAttrList				v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, NvSciSyncAttrList			v) { return s << tcu::toHex(v.internal); }
 }
 
 const char* getAttachmentLoadOpName (VkAttachmentLoadOp value)
@@ -493,9 +498,12 @@ const char* getDynamicStateName (VkDynamicState value)
 		case VK_DYNAMIC_STATE_STENCIL_REFERENCE:						return "VK_DYNAMIC_STATE_STENCIL_REFERENCE";
 		case VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_NV:					return "VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_NV";
 		case VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT:					return "VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT";
+		case VK_DYNAMIC_STATE_DISCARD_RECTANGLE_ENABLE_EXT:				return "VK_DYNAMIC_STATE_DISCARD_RECTANGLE_ENABLE_EXT";
+		case VK_DYNAMIC_STATE_DISCARD_RECTANGLE_MODE_EXT:				return "VK_DYNAMIC_STATE_DISCARD_RECTANGLE_MODE_EXT";
 		case VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_EXT:						return "VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_EXT";
 		case VK_DYNAMIC_STATE_VIEWPORT_SHADING_RATE_PALETTE_NV:			return "VK_DYNAMIC_STATE_VIEWPORT_SHADING_RATE_PALETTE_NV";
 		case VK_DYNAMIC_STATE_VIEWPORT_COARSE_SAMPLE_ORDER_NV:			return "VK_DYNAMIC_STATE_VIEWPORT_COARSE_SAMPLE_ORDER_NV";
+		case VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_ENABLE_NV:				return "VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_ENABLE_NV";
 		case VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV:						return "VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV";
 		case VK_DYNAMIC_STATE_FRAGMENT_SHADING_RATE_KHR:				return "VK_DYNAMIC_STATE_FRAGMENT_SHADING_RATE_KHR";
 		case VK_DYNAMIC_STATE_LINE_STIPPLE_EXT:							return "VK_DYNAMIC_STATE_LINE_STIPPLE_EXT";
@@ -2147,6 +2155,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES";
 		case VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS:									return "VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS";
 		case VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS:									return "VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_ARM:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_ARM";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_SLICED_VIEW_OF_3D_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_SLICED_VIEW_OF_3D_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_IMAGE_VIEW_SLICED_CREATE_INFO_EXT:									return "VK_STRUCTURE_TYPE_IMAGE_VIEW_SLICED_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_SET_HOST_MAPPING_FEATURES_VALVE:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_SET_HOST_MAPPING_FEATURES_VALVE";
 		case VK_STRUCTURE_TYPE_DESCRIPTOR_SET_BINDING_REFERENCE_VALVE:								return "VK_STRUCTURE_TYPE_DESCRIPTOR_SET_BINDING_REFERENCE_VALVE";
 		case VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_HOST_MAPPING_INFO_VALVE:						return "VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_HOST_MAPPING_INFO_VALVE";
@@ -2195,6 +2206,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_RENDER_AREAS_FEATURES_QCOM:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_RENDER_AREAS_FEATURES_QCOM";
+		case VK_STRUCTURE_TYPE_MULTIVIEW_PER_VIEW_RENDER_AREAS_RENDER_PASS_BEGIN_INFO_QCOM:			return "VK_STRUCTURE_TYPE_MULTIVIEW_PER_VIEW_RENDER_AREAS_RENDER_PASS_BEGIN_INFO_QCOM";
 		default:																					return DE_NULL;
 	}
 }
@@ -4012,15 +4025,6 @@ const char* getShaderFloatControlsIndependenceName (VkShaderFloatControlsIndepen
 	}
 }
 
-tcu::Format::Bitfield<32> getSwapchainImageUsageFlagsANDROIDStr (VkSwapchainImageUsageFlagsANDROID value)
-{
-	static const tcu::Format::BitDesc s_desc[] =
-	{
-		tcu::Format::BitDesc(VK_SWAPCHAIN_IMAGE_USAGE_SHARED_BIT_ANDROID,	"VK_SWAPCHAIN_IMAGE_USAGE_SHARED_BIT_ANDROID"),
-	};
-	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
-}
-
 const char* getFragmentShadingRateCombinerOpKHRName (VkFragmentShadingRateCombinerOpKHR value)
 {
 	switch (value)
@@ -5004,6 +5008,11 @@ tcu::Format::Bitfield<32> getShaderCorePropertiesFlagsAMDStr (VkShaderCoreProper
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
+tcu::Format::Bitfield<32> getRefreshObjectFlagsKHRStr (VkRefreshObjectFlagsKHR value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
 tcu::Format::Bitfield<32> getAccelerationStructureMotionInfoFlagsNVStr (VkAccelerationStructureMotionInfoFlagsNV value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
@@ -5160,6 +5169,11 @@ tcu::Format::Bitfield<32> getPipelineRasterizationStateStreamCreateFlagsEXTStr (
 }
 
 tcu::Format::Bitfield<32> getPipelineRasterizationDepthClipStateCreateFlagsEXTStr (VkPipelineRasterizationDepthClipStateCreateFlagsEXT value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
+tcu::Format::Bitfield<32> getSwapchainImageUsageFlagsANDROIDStr (VkSwapchainImageUsageFlagsANDROID value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
@@ -8862,6 +8876,17 @@ std::ostream& operator<< (std::ostream& s, const VkImageViewUsageCreateInfo& val
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tusage = " << getImageUsageFlagsStr(value.usage) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageViewSlicedCreateInfoEXT& value)
+{
+	s << "VkImageViewSlicedCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsliceOffset = " << value.sliceOffset << '\n';
+	s << "\tsliceCount = " << value.sliceCount << '\n';
 	s << '}';
 	return s;
 }
@@ -13160,6 +13185,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImage2DViewOf3D
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timageSlicedViewOf3D = " << value.imageSlicedViewOf3D << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT& value)
 {
 	s << "VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT = {\n";
@@ -16196,6 +16231,39 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMultiviewPerVie
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmultiviewPerViewViewports = " << value.multiviewPerViewViewports << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderCorePropertiesARM& value)
+{
+	s << "VkPhysicalDeviceShaderCorePropertiesARM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpixelRate = " << value.pixelRate << '\n';
+	s << "\ttexelRate = " << value.texelRate << '\n';
+	s << "\tfmaRate = " << value.fmaRate << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM& value)
+{
+	s << "VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmultiviewPerViewRenderAreas = " << value.multiviewPerViewRenderAreas << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMultiviewPerViewRenderAreasRenderPassBeginInfoQCOM& value)
+{
+	s << "VkMultiviewPerViewRenderAreasRenderPassBeginInfoQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tperViewRenderAreaCount = " << value.perViewRenderAreaCount << '\n';
+	s << "\tpPerViewRenderAreas = " << value.pPerViewRenderAreas << '\n';
 	s << '}';
 	return s;
 }

@@ -194,6 +194,8 @@ virtual VkResult			getRefreshCycleDurationGOOGLE							(VkDevice device, VkSwapc
 virtual VkResult			getPastPresentationTimingGOOGLE							(VkDevice device, VkSwapchainKHR swapchain, uint32_t* pPresentationTimingCount, VkPastPresentationTimingGOOGLE* pPresentationTimings) const = 0;
 virtual void				cmdSetViewportWScalingNV								(VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewportWScalingNV* pViewportWScalings) const = 0;
 virtual void				cmdSetDiscardRectangleEXT								(VkCommandBuffer commandBuffer, uint32_t firstDiscardRectangle, uint32_t discardRectangleCount, const VkRect2D* pDiscardRectangles) const = 0;
+virtual void				cmdSetDiscardRectangleEnableEXT							(VkCommandBuffer commandBuffer, VkBool32 discardRectangleEnable) const = 0;
+virtual void				cmdSetDiscardRectangleModeEXT							(VkCommandBuffer commandBuffer, VkDiscardRectangleModeEXT discardRectangleMode) const = 0;
 virtual void				cmdSetSampleLocationsEXT								(VkCommandBuffer commandBuffer, const VkSampleLocationsInfoEXT* pSampleLocationsInfo) const = 0;
 virtual void				getBufferMemoryRequirements2							(VkDevice device, const VkBufferMemoryRequirementsInfo2* pInfo, VkMemoryRequirements2* pMemoryRequirements) const = 0;
 virtual void				getImageMemoryRequirements2								(VkDevice device, const VkImageMemoryRequirementsInfo2* pInfo, VkMemoryRequirements2* pMemoryRequirements) const = 0;
@@ -242,6 +244,7 @@ virtual void				cmdBeginQueryIndexedEXT									(VkCommandBuffer commandBuffer, 
 virtual void				cmdEndQueryIndexedEXT									(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query, uint32_t index) const = 0;
 virtual void				cmdDrawIndirectByteCountEXT								(VkCommandBuffer commandBuffer, uint32_t instanceCount, uint32_t firstInstance, VkBuffer counterBuffer, VkDeviceSize counterBufferOffset, uint32_t counterOffset, uint32_t vertexStride) const = 0;
 virtual void				cmdSetExclusiveScissorNV								(VkCommandBuffer commandBuffer, uint32_t firstExclusiveScissor, uint32_t exclusiveScissorCount, const VkRect2D* pExclusiveScissors) const = 0;
+virtual void				cmdSetExclusiveScissorEnableNV							(VkCommandBuffer commandBuffer, uint32_t firstExclusiveScissor, uint32_t exclusiveScissorCount, const VkBool32* pExclusiveScissorEnables) const = 0;
 virtual void				cmdBindShadingRateImageNV								(VkCommandBuffer commandBuffer, VkImageView imageView, VkImageLayout imageLayout) const = 0;
 virtual void				cmdSetViewportShadingRatePaletteNV						(VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkShadingRatePaletteNV* pShadingRatePalettes) const = 0;
 virtual void				cmdSetCoarseSampleOrderNV								(VkCommandBuffer commandBuffer, VkCoarseSampleOrderTypeNV sampleOrderType, uint32_t customSampleOrderCount, const VkCoarseSampleOrderCustomNV* pCustomSampleOrders) const = 0;

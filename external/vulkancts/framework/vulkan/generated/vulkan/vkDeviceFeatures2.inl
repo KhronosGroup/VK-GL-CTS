@@ -3068,6 +3068,43 @@ tcu::TestStatus testPhysicalDeviceFeatureImage2DViewOf3DFeaturesEXT (Context& co
 	return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureImageSlicedViewOf3DFeaturesEXT (Context& context)
+{
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+	const InstanceDriver&		vki				(instance.getDriver());
+	const int					count			= 2u;
+	TestLog&					log				= context.getTestContext().getLog();
+	VkPhysicalDeviceFeatures2	extFeatures;
+	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+
+	VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT	deviceImageSlicedViewOf3DFeaturesEXT[count];
+	const bool										isImageSlicedViewOf3DFeaturesEXT = checkExtension(properties, "VK_EXT_image_sliced_view_of_3d");
+
+	for (int ndx = 0; ndx < count; ++ndx)
+	{
+		deMemset(&deviceImageSlicedViewOf3DFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT));
+		deviceImageSlicedViewOf3DFeaturesEXT[ndx].sType = isImageSlicedViewOf3DFeaturesEXT ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_SLICED_VIEW_OF_3D_FEATURES_EXT : VK_STRUCTURE_TYPE_MAX_ENUM;
+		deviceImageSlicedViewOf3DFeaturesEXT[ndx].pNext = DE_NULL;
+
+		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		extFeatures.pNext = &deviceImageSlicedViewOf3DFeaturesEXT[ndx];
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+	}
+
+	if (isImageSlicedViewOf3DFeaturesEXT)
+		log << TestLog::Message << deviceImageSlicedViewOf3DFeaturesEXT[0] << TestLog::EndMessage;
+
+	if (isImageSlicedViewOf3DFeaturesEXT &&
+		(deviceImageSlicedViewOf3DFeaturesEXT[0].imageSlicedViewOf3D != deviceImageSlicedViewOf3DFeaturesEXT[1].imageSlicedViewOf3D))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT");
+	}
+	return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureMutableDescriptorTypeFeaturesEXT (Context& context)
 {
 	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
@@ -4607,6 +4644,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "fragment_shading_rate_features_khr", "VkPhysicalDeviceFragmentShadingRateFeaturesKHR", testPhysicalDeviceFeatureFragmentShadingRateFeaturesKHR);
 	addFunctionCase(testGroup, "shader_terminate_invocation_features", "VkPhysicalDeviceShaderTerminateInvocationFeatures", testPhysicalDeviceFeatureShaderTerminateInvocationFeatures);
 	addFunctionCase(testGroup, "image2_d_view_of3_d_features_ext", "VkPhysicalDeviceImage2DViewOf3DFeaturesEXT", testPhysicalDeviceFeatureImage2DViewOf3DFeaturesEXT);
+	addFunctionCase(testGroup, "image_sliced_view_of3_d_features_ext", "VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT", testPhysicalDeviceFeatureImageSlicedViewOf3DFeaturesEXT);
 	addFunctionCase(testGroup, "mutable_descriptor_type_features_ext", "VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT", testPhysicalDeviceFeatureMutableDescriptorTypeFeaturesEXT);
 	addFunctionCase(testGroup, "depth_clip_control_features_ext", "VkPhysicalDeviceDepthClipControlFeaturesEXT", testPhysicalDeviceFeatureDepthClipControlFeaturesEXT);
 	addFunctionCase(testGroup, "vertex_input_dynamic_state_features_ext", "VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT", testPhysicalDeviceFeatureVertexInputDynamicStateFeaturesEXT);
