@@ -41,6 +41,7 @@
 #define GPU_SHADER5_EXTENSION_NOT_SUPPORTED "GPU shader5 functionality not supported, skipping"
 #define TESSELLATION_SHADER_EXTENSION_NOT_SUPPORTED "Tessellation shader functionality not supported, skipping"
 #define TEXTURE_BORDER_CLAMP_NOT_SUPPORTED "Texture border clamp functionality not supported, skipping"
+#define TEXTURE_FLOAT_LINEAR_NOT_SUPPORTED "Floating point texture linear filtering functionality not supported, skipping"
 #define TEXTURE_CUBE_MAP_ARRAY_EXTENSION_NOT_SUPPORTED "Texture cube map array functionality not supported, skipping"
 #define SHADER_IMAGE_ATOMIC_EXTENSION_NOT_SUPPORTED "Shader image atomic functionality not supported, skipping"
 #define TEXTURE_BUFFER_EXTENSION_NOT_SUPPORTED "Texture buffer functionality not supported, skipping"
@@ -235,6 +236,7 @@ protected:
 	bool m_is_fragment_shading_rate_primitive_supported;
 	bool m_is_fragment_shading_rate_attachment_supported;
 	bool m_is_multiview_ovr_supported;
+	bool m_is_texture_float_linear_supported;
 
 	/* Predefined shader strings */
 	static const char* m_boilerplate_vs_code;

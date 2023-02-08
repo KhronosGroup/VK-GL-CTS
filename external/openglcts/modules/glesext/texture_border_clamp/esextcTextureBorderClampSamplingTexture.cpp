@@ -152,6 +152,13 @@ void TextureBorderClampSamplingTexture<InputType, OutputType>::initTest(void)
 		throw tcu::NotSupportedError(TEXTURE_BORDER_CLAMP_NOT_SUPPORTED, "", __FILE__, __LINE__);
 	}
 
+	if (!m_is_texture_float_linear_supported && m_test_configuration.get_filtering() == GL_LINEAR &&
+		(m_test_configuration.get_input_internal_format() == GL_RGBA32F ||
+		 m_test_configuration.get_input_internal_format() == GL_DEPTH_COMPONENT32F))
+	{
+		throw tcu::NotSupportedError(TEXTURE_FLOAT_LINEAR_NOT_SUPPORTED, "", __FILE__, __LINE__);
+	}
+
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
 	/* Generate and bind VAO */
