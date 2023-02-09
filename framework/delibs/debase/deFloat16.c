@@ -168,7 +168,7 @@ deFloat16 deFloat64To16 (double val64)
 			return (deFloat16) (sign | 0x7c00u);
 		}
 
-		return (deFloat16) (sign | ((deUint32)expotent << 10u) | (mantissa >> 13u));
+		return (deFloat16) (sign | ((deUint32)expotent << 10u) | (mantissa >> 42u));
 	}
 }
 
