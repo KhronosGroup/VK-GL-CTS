@@ -370,13 +370,13 @@ std::vector<float> genTessLevelCases (void)
 }
 
 //! Create a vector of floats from an array of floats. Offset is in bytes.
-std::vector<float> readFloatArray(const int count, const void* memory, const int offset)
+std::vector<float> readFloatArray(const int count, const void* memory)
 {
 	std::vector<float> results(count);
 
 	if (count != 0)
 	{
-		const float* pFloatData = reinterpret_cast<const float*>(static_cast<const deUint8*>(memory) + offset);
+		const float* pFloatData = reinterpret_cast<const float*>(static_cast<const deUint8*>(memory));
 		deMemcpy(&results[0], pFloatData, sizeof(float) * count);
 	}
 
@@ -429,15 +429,17 @@ void initPrograms (vk::SourceCollections& programCollection, TestParams testPara
 				<< "layout(" << getTessPrimitiveTypeShaderName(TESSPRIMITIVETYPE_ISOLINES) << ", "
 							 << getSpacingModeShaderName(testParams.spacingMode) << ", point_mode) in;\n"
 				<< "\n"
-				<< "layout(set = 0, binding = 1, std430) coherent restrict buffer Output {\n"
-				<< "    int   numInvocations;\n"
-				<< "    float tessCoord[];\n"
-				<< "} sb_out;\n"
+				<< "layout(set = 0, binding = 1, std430) restrict buffer Results {\n"
+				<< "    float data[];\n"
+				<< "} sb_out_tessCoord;\n"
+				<< "layout(set = 0, binding = 2, std430) coherent restrict buffer Counter {\n"
+				<< "    int   data;\n"
+				<< "} sb_out_numInvocations;\n"
 				<< "\n"
 				<< "void main (void)\n"
 				<< "{\n"
-				<< "    int index = atomicAdd(sb_out.numInvocations, 1);\n"
-				<< "    sb_out.tessCoord[index] = gl_TessCoord.x;\n"
+				<< "    int index = atomicAdd(sb_out_numInvocations.data, 1);\n"
+				<< "    sb_out_tessCoord.data[index] = gl_TessCoord.x;\n"
 				<< "}\n";
 
 			programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(src.str());
@@ -492,18 +494,14 @@ void initPrograms (vk::SourceCollections& programCollection, TestParams testPara
 		{
 			std::ostringstream src;
 
-			src	<< "struct OutputStruct\n"
-				<< "{\n"
-				<< "    int numInvocations;\n"
-				<< "    float tessCoord[];\n"
-				<< "};\n"
-				<< "globallycoherent RWStructuredBuffer <OutputStruct> Output : register(b1);\n"
+			src	<< "RWStructuredBuffer <float> tessCoord : register(b1);\n"
+				<< "globallycoherent RWStructuredBuffer <int> numInvocations : register(b2);\n"
 				<< "\n"
 				<< "void main(float2 tessCoords : SV_DOMAINLOCATION)\n"
 				<< "{\n"
 				<< "    int index;\n"
-				<< "    InterlockedAdd(Output[0].numInvocations, 1, index);\n"
-				<< "    Output[0].tessCoord[index] = tessCoords.x;\n"
+				<< "    InterlockedAdd(numInvocations[0], 1, index);\n"
+				<< "    tessCoord[index] = tessCoords.x;\n"
 				<< "}\n";
 
 			programCollection.hlslSources.add("tese") << glu::TessellationEvaluationSource(src.str());
@@ -527,9 +525,14 @@ tcu::TestStatus test (Context& context, TestParams testParams)
 	const std::vector<float>	tessLevelCases = genTessLevelCases();
 	const int					maxNumVertices = 1 + getClampedRoundedTessLevel(testParams.spacingMode, *std::max_element(tessLevelCases.begin(), tessLevelCases.end()));
 
+	// Counter buffer: used to calculate offset into result buffer.
+
+	const VkDeviceSize		counterBufferSizeBytes = sizeof(int);
+	const BufferWithMemory	counterBuffer(vk, device, allocator, makeBufferCreateInfo(counterBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
+
 	// Result buffer: generated tess coords go here.
 
-	const VkDeviceSize		resultBufferSizeBytes = sizeof(int) + sizeof(float) * maxNumVertices;
+	const VkDeviceSize		resultBufferSizeBytes = sizeof(float) * maxNumVertices;
 	const BufferWithMemory	resultBuffer			 (vk, device, allocator, makeBufferCreateInfo(resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	// Outer1 tessellation level constant buffer.
@@ -542,9 +545,11 @@ tcu::TestStatus test (Context& context, TestParams testParams)
 	const Unique<VkDescriptorSetLayout> descriptorSetLayout(DescriptorSetLayoutBuilder()
 		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
 		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
 		.build(vk, device));
 
 	const Unique<VkDescriptorPool> descriptorPool(DescriptorPoolBuilder()
+		.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 		.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 		.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 		.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
@@ -552,10 +557,12 @@ tcu::TestStatus test (Context& context, TestParams testParams)
 	const Unique<VkDescriptorSet> descriptorSet			(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
 	const VkDescriptorBufferInfo  tessLevelsBufferInfo	= makeDescriptorBufferInfo(tessLevelsBuffer.get(), 0ull, tessLevelsBufferSizeBytes);
 	const VkDescriptorBufferInfo  resultBufferInfo		= makeDescriptorBufferInfo(resultBuffer.get(), 0ull, resultBufferSizeBytes);
+	const VkDescriptorBufferInfo  counterBufferInfo		= makeDescriptorBufferInfo(counterBuffer.get(), 0ull, counterBufferSizeBytes);
 
 	DescriptorSetUpdateBuilder()
 		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &tessLevelsBufferInfo)
 		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &resultBufferInfo)
+		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(2u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &counterBufferInfo)
 		.update(vk, device);
 
 	// Pipeline
@@ -598,6 +605,14 @@ tcu::TestStatus test (Context& context, TestParams testParams)
 			flushAlloc(vk, device, alloc);
 		}
 
+		// Clear the counter buffer
+		{
+			const Allocation& alloc = counterBuffer.getAllocation();
+
+			deMemset(alloc.getHostPtr(), 0, static_cast<std::size_t>(counterBufferSizeBytes));
+			flushAlloc(vk, device, alloc);
+		}
+
 		beginCommandBuffer(vk, *cmdBuffer);
 
 		// Begin render pass
@@ -624,11 +639,13 @@ tcu::TestStatus test (Context& context, TestParams testParams)
 		{
 			tcu::TestLog&				log					= context.getTestContext().getLog();
 			const Allocation&			resultAlloc			= resultBuffer.getAllocation();
+			const Allocation&			counterAlloc		= counterBuffer.getAllocation();
 
 			invalidateAlloc(vk, device, resultAlloc);
+			invalidateAlloc(vk, device, counterAlloc);
 
-			const deInt32				numResults			= *static_cast<deInt32*>(resultAlloc.getHostPtr());
-			const std::vector<float>	resultTessCoords	= readFloatArray(numResults, resultAlloc.getHostPtr(), sizeof(deInt32));
+			const deInt32				numResults			= *static_cast<deInt32*>(counterAlloc.getHostPtr());
+			const std::vector<float>	resultTessCoords	= readFloatArray(numResults, resultAlloc.getHostPtr());
 
 			// Outputs
 			float						additionalSegmentLength;
