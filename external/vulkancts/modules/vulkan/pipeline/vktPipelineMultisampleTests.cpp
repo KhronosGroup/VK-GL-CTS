@@ -4157,14 +4157,14 @@ void MultisampleRenderer::initialize (Context&									context,
 																			*m_renderPass,
 																			subpassIdx,
 																			*m_vertexShaderModule,
-																			&rasterizationStateCreateInfo)
+																			&rasterizationStateCreateInfo, DE_NULL, DE_NULL, DE_NULL, DE_NULL,
+																			m_useFragmentShadingRate ? &shadingRateStateCreateInfo : nullptr)
 										  .setupFragmentShaderState(*m_pipelineLayout,
 																	*m_renderPass,
 																	subpassIdx,
 																	*m_fragmentShaderModule,
 																	&depthStencilStateParams,
-																	&m_multisampleStateParams,
-																	m_useFragmentShadingRate ? &shadingRateStateCreateInfo : DE_NULL)
+																	&m_multisampleStateParams)
 										  .setupFragmentOutputState(*m_renderPass, subpassIdx, &colorBlendStateParams, &m_multisampleStateParams)
 										  .setMonolithicPipelineLayout(*m_pipelineLayout)
 										  .buildPipeline();

@@ -697,14 +697,14 @@ void preparePipelineWrapper (GraphicsPipelineWrapper&			gpw,
 								pipelineLayout,
 								renderPass,
 								subpassIndex,
-								vertexModule)
+								vertexModule, DE_NULL, DE_NULL, DE_NULL, DE_NULL, DE_NULL,
+								(useFragmentShadingRate ? &shadingRateStateCreateInfo : nullptr))
 	   .setupFragmentShaderState(pipelineLayout,
 								renderPass,
 								subpassIndex,
 								fragmentModule,
 								&pipelineDepthStencilStateInfo,
-								&pipelineMultisampleStateInfo,
-								(useFragmentShadingRate ? &shadingRateStateCreateInfo : DE_NULL))
+								&pipelineMultisampleStateInfo)
 	   .setupFragmentOutputState(renderPass, subpassIndex, &colorBlendStateCreateInfoDefault, &pipelineMultisampleStateInfo)
 	   .setMonolithicPipelineLayout(pipelineLayout)
 	   .buildPipeline();

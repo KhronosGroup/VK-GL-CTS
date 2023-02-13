@@ -533,11 +533,12 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 																				   const VkShaderModule								tessellationControlShaderModule,
 																				   const VkShaderModule								tessellationEvalShaderModule,
 																				   const VkShaderModule								geometryShaderModule,
-																				   const VkSpecializationInfo						*specializationInfo,
+																				   const VkSpecializationInfo*						specializationInfo,
+																				   VkPipelineFragmentShadingRateStateCreateInfoKHR*	fragmentShadingRateState,
 #ifndef CTS_USES_VULKANSC
-																				   VkPipelineRenderingCreateInfoKHR					*rendering,
+																				   VkPipelineRenderingCreateInfoKHR*				rendering,
 																				   const VkPipelineCache							partPipelineCache,
-																				   VkPipelineCreationFeedbackCreateInfoEXT			*partCreationFeedback)
+																				   VkPipelineCreationFeedbackCreateInfoEXT*			partCreationFeedback)
 #else
 																				   const VkPipelineCache							partPipelineCache)
 #endif // CTS_USES_VULKANSC
@@ -551,6 +552,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 	m_internalData->setupStates |= VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT;
 	m_internalData->pRenderingState = rendering;
 #endif // CTS_USES_VULKANSC
+	m_internalData->pFragmentShadingRateState = fragmentShadingRateState;
 
 	const bool hasTesc = (tessellationControlShaderModule != DE_NULL);
 	const bool hasTese = (tessellationEvalShaderModule != DE_NULL);
@@ -625,6 +627,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 #ifndef CTS_USES_VULKANSC
 		auto	libraryCreateInfo	= makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT);
 		void*	firstStructInChain	= reinterpret_cast<void*>(&libraryCreateInfo);
+		addToChain(&firstStructInChain, m_internalData->pFragmentShadingRateState);
 		addToChain(&firstStructInChain, m_internalData->pRenderingState);
 		addToChain(&firstStructInChain, partCreationFeedback);
 #endif // CTS_USES_VULKANSC
@@ -663,7 +666,6 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState(const
 																		   const VkShaderModule									fragmentShaderModule,
 																		   const VkPipelineDepthStencilStateCreateInfo*			depthStencilState,
 																		   const VkPipelineMultisampleStateCreateInfo*			multisampleState,
-																		   VkPipelineFragmentShadingRateStateCreateInfoKHR*		fragmentShadingRateState,
 																		   const VkSpecializationInfo*							specializationInfo,
 #ifndef CTS_USES_VULKANSC
 																		   const VkPipelineCache								partPipelineCache,
@@ -681,8 +683,6 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState(const
 																 VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT)));
 	m_internalData->setupStates |= VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT;
 #endif // CTS_USES_VULKANSC
-
-	m_internalData->pFragmentShadingRateState = fragmentShadingRateState;
 
 	const auto pDepthStencilState	= depthStencilState ? depthStencilState
 														: (m_internalData->useDefaultDepthStencilState ? &defaultDepthStencilState : DE_NULL);
