@@ -47,4 +47,3 @@ PCH(DEQP_VK_VIDEO_SRCS ../pch.cpp)
 add_library(deqp-vk-video STATIC ${DEQP_VK_VIDEO_SRCS})
 target_link_libraries(deqp-vk-video ${DEQP_VK_VIDEO_LIBS})
 
-
