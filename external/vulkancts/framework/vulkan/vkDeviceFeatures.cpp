@@ -214,6 +214,8 @@ namespace vk
 			m_coreFeatures2.features.robustBufferAccess = false;
 
 #ifndef CTS_USES_VULKANSC
+			m_vulkan13Features.robustImageAccess = false;
+
 			// Disable VK_EXT_fragment_density_map and VK_NV_shading_rate_image features
 			// that must: not be enabled if KHR fragment shading rate features are enabled.
 			if (fragmentShadingRateFeatures &&
