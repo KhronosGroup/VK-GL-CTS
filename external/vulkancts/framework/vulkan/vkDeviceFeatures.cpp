@@ -149,6 +149,7 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 		{
 			imageRobustnessFeatures->robustImageAccess	= false;
 		}
+		m_vulkan13Features.robustImageAccess = false;
 		m_coreFeatures2.features.robustBufferAccess = false;
 
 		// Disable VK_EXT_fragment_density_map and VK_NV_shading_rate_image features
