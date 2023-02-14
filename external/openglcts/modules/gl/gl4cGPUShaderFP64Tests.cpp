@@ -6933,9 +6933,6 @@ bool GPUShaderFP64Test4::verifyUniformValues()
 	};
 	const unsigned int n_programs = sizeof(programs) / sizeof(programs[0]);
 
-	/* Set up rounding for the tests */
-	deSetRoundingMode(DE_ROUNDINGMODE_TO_NEAREST_EVEN);
-
 	for (unsigned int n_program = 0; n_program < n_programs; ++n_program)
 	{
 		glw::GLuint   po_id		 = programs[n_program];
