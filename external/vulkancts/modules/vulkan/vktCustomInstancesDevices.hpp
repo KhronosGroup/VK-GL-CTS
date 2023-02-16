@@ -21,7 +21,7 @@
  *
  *//*!
  * \file
- * \brief Auxiliar functions to help create custom devices and instances.
+ * \brief Auxiliary functions to help create custom devices and instances.
  *//*--------------------------------------------------------------------*/
 
 #include "vkDefs.hpp"
@@ -142,6 +142,67 @@ public:
 	CustomInstanceWrapper(Context& context);
 	CustomInstanceWrapper(Context& context, const std::vector<std::string> extensions);
 	vkt::CustomInstance instance;
+};
+
+class VideoDevice
+{
+public:
+#ifndef CTS_USES_VULKANSC
+	typedef vk::VkVideoCodecOperationFlagsKHR VideoCodecOperationFlags;
+#else
+	typedef uint32_t VideoCodecOperationFlags;
+#endif // CTS_USES_VULKANSC
+
+	enum VideoDeviceFlagBits
+	{
+		VIDEO_DEVICE_FLAG_NONE									= 0,
+		VIDEO_DEVICE_FLAG_QUERY_WITH_STATUS_FOR_DECODE_SUPPORT	= 0x00000001,
+		VIDEO_DEVICE_FLAG_REQUIRE_YCBCR_OR_NOT_SUPPORTED		= 0x00000002,
+		VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED		= 0x00000004
+	};
+	typedef uint32_t VideoDeviceFlags;
+
+	static void						checkSupport				(Context&						context,
+																 const VideoCodecOperationFlags	videoCodecOperation);
+	static vk::VkQueueFlags			getQueueFlags				(const VideoCodecOperationFlags	videoCodecOperationFlags);
+
+	static void						addVideoDeviceExtensions	(std::vector<const char*>&		deviceExtensions,
+																 const uint32_t					apiVersion,
+																 const vk::VkQueueFlags			queueFlagsRequired,
+																 const VideoCodecOperationFlags	videoCodecOperationFlags);
+	static bool						isVideoEncodeOperation		(const VideoCodecOperationFlags	videoCodecOperationFlags);
+	static bool						isVideoDecodeOperation		(const VideoCodecOperationFlags	videoCodecOperationFlags);
+	static bool						isVideoOperation			(const VideoCodecOperationFlags	videoCodecOperationFlags);
+
+									VideoDevice					(Context&						context);
+									VideoDevice					(Context&						context,
+																 const VideoCodecOperationFlags	videoCodecOperation,
+																 const VideoDeviceFlags			videoDeviceFlags = VIDEO_DEVICE_FLAG_NONE);
+	virtual							~VideoDevice				(void);
+
+	vk::VkDevice					getDeviceSupportingQueue	(const vk::VkQueueFlags			queueFlagsRequired = 0,
+																 const VideoCodecOperationFlags	videoCodecOperationFlags = 0,
+																 const VideoDeviceFlags			videoDeviceFlags = VIDEO_DEVICE_FLAG_NONE);
+	bool							createDeviceSupportingQueue	(const vk::VkQueueFlags			queueFlagsRequired,
+																 const VideoCodecOperationFlags	videoCodecOperationFlags,
+																 const VideoDeviceFlags			videoDeviceFlags = VIDEO_DEVICE_FLAG_NONE);
+	const vk::DeviceDriver&			getDeviceDriver				(void);
+	const deUint32&					getQueueFamilyIndexTransfer	(void);
+	const deUint32&					getQueueFamilyIndexDecode	(void);
+	const deUint32&					getQueueFamilyIndexEncode	(void);
+	const deUint32&					getQueueFamilyVideo			(void);
+	vk::Allocator&					getAllocator				(void);
+
+protected:
+	Context&						m_context;
+
+	vk::Move<vk::VkDevice>			m_logicalDevice;
+	de::MovePtr<vk::DeviceDriver>	m_deviceDriver;
+	de::MovePtr<vk::Allocator>		m_allocator;
+	deUint32						m_queueFamilyTransfer;
+	deUint32						m_queueFamilyDecode;
+	deUint32						m_queueFamilyEncode;
+	VideoCodecOperationFlags		m_videoCodecOperation;
 };
 
 }

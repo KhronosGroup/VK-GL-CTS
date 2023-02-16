@@ -290,7 +290,7 @@ std::vector<PipelineSp> makeGraphicsPipelines (const DeviceInterface&		vk,
 			renderPass,											// VkRenderPass										renderPass;
 			0u,													// deUint32											subpass;
 			DE_NULL,											// VkPipeline										basePipelineHandle;
-			-1,													// deInt32											basePipelineIndex;
+			0u,													// deInt32											basePipelineIndex;
 		};
 
 		graphicsPipelineInfos.push_back					(createInfo);
@@ -407,7 +407,7 @@ void preparePipelineWrapper (GraphicsPipelineWrapper&		gpw,
 	gpw.setDefaultTopology(topology)
 	   .setDefaultRasterizationState()
 	   .setDefaultDepthStencilState()
-	   .setupVertexInputStete(&vertexInputStateInfo)
+	   .setupVertexInputState(&vertexInputStateInfo)
 	   .setupPreRasterizationShaderState(viewport,
 			scissor,
 			pipelineLayout,

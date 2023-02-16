@@ -1193,5 +1193,37 @@ void PipelineCacheData::setFromPipelineCache (const vk::DeviceInterface& vk, con
 #endif
 }
 
+vk::VkDevice getSyncDevice (de::MovePtr<VideoDevice>& device, Context& context)
+{
+	if (device == DE_NULL)
+		return context.getDevice();
+	else
+		return device->getDeviceSupportingQueue();
+}
+
+const vk::DeviceInterface& getSyncDeviceInterface (de::MovePtr<VideoDevice>& device, Context& context)
+{
+	if (device == DE_NULL)
+		return context.getDeviceInterface();
+	else
+		return device->getDeviceDriver();
+}
+
+deUint32 getSyncQueueFamilyIndex (de::MovePtr<VideoDevice>& device, Context& context)
+{
+	if (device == DE_NULL)
+		return context.getUniversalQueueFamilyIndex();
+	else
+		return device->getQueueFamilyVideo();
+}
+
+vk::VkQueue getSyncQueue (de::MovePtr<VideoDevice>& device, Context& context)
+{
+	if (device == DE_NULL)
+		return context.getUniversalQueue();
+	else
+		return getDeviceQueue(device->getDeviceDriver(), device->getDeviceSupportingQueue(), device->getQueueFamilyVideo(), 0u);
+}
+
 } // synchronization
 } // vkt

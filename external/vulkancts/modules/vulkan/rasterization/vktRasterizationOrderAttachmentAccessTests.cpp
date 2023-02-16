@@ -154,7 +154,7 @@ public:
 protected:
 	virtual void			addShadersInternal(SourceCollections& programCollection, const std::map<std::string, std::string> &params) const = 0;
 	void					addSimpleVertexShader(SourceCollections& programCollection, const std::string &dest) const;
-	virtual void			checkAdditionalRasterizationFlags(VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM &rasterizationAccess) const
+	virtual void			checkAdditionalRasterizationFlags(VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT &rasterizationAccess) const
 	{
 		// unused parameter
 		DE_UNREF(rasterizationAccess);
@@ -233,7 +233,7 @@ public:
 	}
 protected:
 	virtual void			addShadersInternal(SourceCollections& programCollection, const std::map<std::string, std::string> &params) const;
-	virtual void			checkAdditionalRasterizationFlags(VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM &rasterizationAccess) const
+	virtual void			checkAdditionalRasterizationFlags(VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT &rasterizationAccess) const
 	{
 		if (!m_explicitSync && !rasterizationAccess.rasterizationOrderDepthAttachmentAccess)
 		{
@@ -280,7 +280,7 @@ public:
 	}
 protected:
 	virtual void			addShadersInternal(SourceCollections& programCollection, const std::map<std::string, std::string> &params) const;
-	virtual void			checkAdditionalRasterizationFlags(VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM &rasterizationAccess) const
+	virtual void			checkAdditionalRasterizationFlags(VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT &rasterizationAccess) const
 	{
 		if (!m_explicitSync && !rasterizationAccess.rasterizationOrderStencilAttachmentAccess)
 		{
@@ -818,7 +818,7 @@ void AttachmentAccessOrderTestCase::checkSupport (Context& context) const
 	const auto&	vki				= context.getInstanceInterface();
 	const auto	physicalDevice	= context.getPhysicalDevice();
 
-	VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM	rasterizationAccess	= initVulkanStructure();
+	VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT	rasterizationAccess	= initVulkanStructure();
 	VkPhysicalDeviceFeatures2										features2			= initVulkanStructure(m_explicitSync ? nullptr : &rasterizationAccess);
 
 	vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);

@@ -46,7 +46,7 @@ public:
 	virtual void					getMemoryLimits		(tcu::PlatformMemoryLimits& limits) const;
 
 private:
-	virtual vk::Library*			createLibrary		(const char* libraryPath) const;
+	virtual vk::Library*			createLibrary		(vk::Platform::LibraryType libraryType = vk::Platform::LIBRARY_TYPE_VULKAN, const char* libraryPath = DE_NULL) const;
 };
 
 } // null

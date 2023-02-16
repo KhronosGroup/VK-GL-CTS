@@ -723,6 +723,7 @@ tcu::TestStatus validateLimits12 (Context& context)
 																						limits.maxPerStageDescriptorStorageImages		+
 																						limits.maxPerStageDescriptorInputAttachments	+
 																						limits.maxColorAttachments);
+	deUint32 maxFramebufferLayers = 256;
 
 	if (features.tessellationShader)
 	{
@@ -733,6 +734,14 @@ tcu::TestStatus validateLimits12 (Context& context)
 	{
 		shaderStages++;
 	}
+
+	// Vulkan SC
+#ifdef CTS_USES_VULKANSC
+	if (features.geometryShader == VK_FALSE && features12.shaderOutputLayer == VK_FALSE)
+	{
+		maxFramebufferLayers = 1;
+	}
+#endif // CTS_USES_VULKANSC
 
 	FeatureLimitTableItem featureLimitTable[] =
 	{
@@ -825,7 +834,7 @@ tcu::TestStatus validateLimits12 (Context& context)
 		{ PN(features.sampleRateShading),				PN(limits.subPixelInterpolationOffsetBits),														LIM_MIN_UINT32(4) },
 		{ PN(checkAlways),								PN(limits.maxFramebufferWidth),																	LIM_MIN_UINT32(4096) },
 		{ PN(checkAlways),								PN(limits.maxFramebufferHeight),																LIM_MIN_UINT32(4096) },
-		{ PN(checkAlways),								PN(limits.maxFramebufferLayers),																LIM_MIN_UINT32(256) },
+		{ PN(checkAlways),								PN(limits.maxFramebufferLayers),																LIM_MIN_UINT32(maxFramebufferLayers) },
 		{ PN(checkAlways),								PN(limits.framebufferColorSampleCounts),														LIM_MIN_BITI32(VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT) },
 		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.framebufferIntegerColorSampleCounts),										LIM_MIN_BITI32(VK_SAMPLE_COUNT_1_BIT) },
 		{ PN(checkAlways),								PN(limits.framebufferDepthSampleCounts),														LIM_MIN_BITI32(VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT) },
@@ -2483,6 +2492,32 @@ tcu::TestStatus enumerateInstanceExtensions (Context& context)
 	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
+tcu::TestStatus validateDeviceLevelEntryPointsFromInstanceExtensions(Context& context)
+{
+
+#include "vkEntryPointValidation.inl"
+
+	TestLog&				log		(context.getTestContext().getLog());
+	tcu::ResultCollector	results	(log);
+	const DeviceInterface&	vk		(context.getDeviceInterface());
+	const VkDevice			device	(context.getDevice());
+
+	for (const auto& keyValue : instExtDeviceFun)
+	{
+		const std::string& extensionName = keyValue.first;
+		if (!context.isInstanceFunctionalitySupported(extensionName))
+			continue;
+
+		for (const auto& deviceEntryPoint : keyValue.second)
+		{
+			if (!vk.getDeviceProcAddr(device, deviceEntryPoint.c_str()))
+				results.fail("Missing " + deviceEntryPoint);
+		}
+	}
+
+	return tcu::TestStatus(results.getResult(), results.getMessage());
+}
+
 tcu::TestStatus testNoKhxExtensions (Context& context)
 {
 	VkPhysicalDevice			physicalDevice	= context.getPhysicalDevice();
@@ -3791,12 +3826,12 @@ tcu::TestStatus formatProperties (Context& context, VkFormat format)
 
 	TestLog&					log			= context.getTestContext().getLog();
 	const VkFormatProperties	properties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
-	bool						allOk		= true;
 
 	const VkFormatFeatureFlags reqImg	= getRequiredOptimalTilingFeatures(context, format);
 	const VkFormatFeatureFlags reqBuf	= getRequiredBufferFeatures(format);
 	const VkFormatFeatureFlags allowImg	= getAllowedOptimalTilingFeatures(context, format);
 	const VkFormatFeatureFlags allowBuf	= getAllowedBufferFeatures(context, format);
+	tcu::ResultCollector results (log, "ERROR: ");
 
 	const struct feature_req
 	{
@@ -3820,38 +3855,26 @@ tcu::TestStatus formatProperties (Context& context, VkFormat format)
 		const VkFormatFeatureFlags	required	= fields[fieldNdx].requiredFeatures;
 		const VkFormatFeatureFlags	allowed		= fields[fieldNdx].allowedFeatures;
 
-		if ((supported & required) != required)
-		{
-			log << TestLog::Message << "ERROR in " << fieldName << ":\n"
-									<< "  required: " << getFormatFeatureFlagsStr(required) << "\n  "
-									<< "  missing: " << getFormatFeatureFlagsStr(~supported & required)
-				<< TestLog::EndMessage;
-			allOk = false;
-		}
+		results.check((supported & required) == required, de::toString(fieldName) + ": required: " + de::toString(getFormatFeatureFlagsStr(required)) + "  missing: " + de::toString(getFormatFeatureFlagsStr(~supported & required)));
 
-		if ((supported & ~allowed) != 0)
-		{
-			log << TestLog::Message << "ERROR in " << fieldName << ":\n"
-									<< "  has: " << getFormatFeatureFlagsStr(supported & ~allowed)
-				<< TestLog::EndMessage;
-			allOk = false;
-		}
+		results.check((supported & ~allowed) == 0, de::toString(fieldName) + ": has: " + de::toString(getFormatFeatureFlagsStr(supported & ~allowed)));
 
 		if (((supported & VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT) != 0) &&
 			((supported & VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT) == 0))
 		{
-			log << TestLog::Message << "ERROR in " << fieldName << ":\n"
-									<< " supports VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT"
-									<< " but not VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT"
-				<< TestLog::EndMessage;
-			allOk = false;
+			results.addResult(QP_TEST_RESULT_FAIL, de::toString(fieldName) + " supports VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT but not VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT");
+		}
+
+		if (!isYCbCrFormat(format) && !isCompressedFormat(format)) {
+			const tcu::TextureFormat tcuFormat = mapVkFormat(format);
+			if (tcu::getNumUsedChannels(tcuFormat.order) != 1 && (supported & (VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT|VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT)) != 0)
+			{
+				results.addResult(QP_TEST_RESULT_QUALITY_WARNING, "VK_FORMAT_FEATURE_STORAGE_*_ATOMIC_BIT is only defined for single-component images");
+			}
 		}
 	}
 
-	if (allOk)
-		return tcu::TestStatus::pass("Query and validation passed");
-	else
-		return tcu::TestStatus::fail("Required features not supported");
+	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
 bool optimalTilingFeaturesSupported (Context& context, VkFormat format, VkFormatFeatureFlags features)
@@ -4455,7 +4478,6 @@ tcu::TestStatus imageFormatProperties (Context& context, const VkFormat format, 
 			}
 		}
 	}
-
 	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
@@ -6975,10 +6997,11 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 
 void createFeatureInfoInstanceTests(tcu::TestCaseGroup* testGroup)
 {
-	addFunctionCase(testGroup, "physical_devices",					"Physical devices",						enumeratePhysicalDevices);
-	addFunctionCase(testGroup, "physical_device_groups",			"Physical devices Groups",				enumeratePhysicalDeviceGroups);
-	addFunctionCase(testGroup, "instance_layers",					"Layers",								enumerateInstanceLayers);
-	addFunctionCase(testGroup, "instance_extensions",				"Extensions",							enumerateInstanceExtensions);
+	addFunctionCase(testGroup, "physical_devices",						"Physical devices",						enumeratePhysicalDevices);
+	addFunctionCase(testGroup, "physical_device_groups",				"Physical devices Groups",				enumeratePhysicalDeviceGroups);
+	addFunctionCase(testGroup, "instance_layers",						"Layers",								enumerateInstanceLayers);
+	addFunctionCase(testGroup, "instance_extensions",					"Extensions",							enumerateInstanceExtensions);
+	addFunctionCase(testGroup, "instance_extension_device_functions",	"Validates device-level entry-points",	validateDeviceLevelEntryPointsFromInstanceExtensions);
 }
 
 void createFeatureInfoDeviceTests(tcu::TestCaseGroup* testGroup)

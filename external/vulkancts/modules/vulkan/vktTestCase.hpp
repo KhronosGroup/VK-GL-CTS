@@ -52,6 +52,16 @@ struct SourceCollections;
 namespace vkt
 {
 
+struct ContextCommonData {
+	const vk::InstanceInterface&	vki;
+	vk::VkDevice					device;
+	const vk::DeviceInterface&		vkd;
+	vk::VkPhysicalDevice			physicalDevice;
+	vk::Allocator&					allocator;
+	deUint32						qfIndex;
+	vk::VkQueue						queue;
+};
+
 class DefaultDevice;
 
 class Context
@@ -144,6 +154,7 @@ public:
 	void checkPipelineLibraryRequirements (const vk::PipelineConstructionType		pipelineConstructionType);
 	void resetCommandPoolForVKSC													(const vk::VkDevice			device,
 																					 const vk::VkCommandPool	commandPool);
+	ContextCommonData getContextCommonData											();
 
 protected:
 	tcu::TestContext&								m_testCtx;
@@ -210,6 +221,7 @@ void collectAndReportDebugMessages(vk::DebugReportRecorder &debugReportRecorder,
 
 #endif // CTS_USES_VULKANSC
 
+std::vector<std::string> removeExtensions (const std::vector<std::string>& a, const std::vector<const char*>& b);
 } // vkt
 
 #endif // _VKTTESTCASE_HPP

@@ -379,7 +379,7 @@ LogicOpTestInstance::LogicOpTestInstance (Context &ctx, const TestParams &testPa
 						  .setDefaultRasterizationState()
 						  .setDefaultMultisampleState()
 						  .setMonolithicPipelineLayout(*m_fragmentStatePipelineLayout)
-						  .setupVertexInputStete(&vertexInputStateParams)
+						  .setupVertexInputState(&vertexInputStateParams)
 						  .setupPreRasterizationShaderState(viewports,
 															scissors,
 															*m_preRasterizationStatePipelineLayout,

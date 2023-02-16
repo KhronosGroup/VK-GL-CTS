@@ -219,7 +219,7 @@ static deUint32 distSquaredToNeighbor (de::Random& rnd, deUint32 pixel, const Co
 		return minDist;
 
 	// Area around (x, y)
-	static const int s_coords[][2] =
+	static const int s_coords[8][2] =
 	{
 		{-1, -1},
 		{ 0, -1},

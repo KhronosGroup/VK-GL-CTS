@@ -779,8 +779,10 @@ void LoadStoreOpNoneTestInstance::drawCommands(VkCommandBuffer						cmdBuffer,
 		{
 			if (att.usage & ATTACHMENT_USAGE_DEPTH_STENCIL)
 			{
-				clearAttachments.push_back({ getImageAspectFlags(mapVkFormat(m_testParams.depthStencilFormat)), 0u,
-											makeClearValueDepthStencil(0.25, 64) });
+				VkImageAspectFlags	aspectMask = 0;
+				if (att.usage & ATTACHMENT_USAGE_DEPTH) aspectMask |= VK_IMAGE_ASPECT_DEPTH_BIT;
+				if (att.usage & ATTACHMENT_USAGE_STENCIL) aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+				clearAttachments.push_back({ aspectMask, 0u, makeClearValueDepthStencil(0.25, 64) });
 			}
 			else
 			{
@@ -832,6 +834,7 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 	const deUint32							queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
 	SimpleAllocator							memAlloc				(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
 	const VkComponentMapping				componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+	bool									depthIsUndefined		= false;
 
 	std::vector<Move<VkImage>>				attachmentImages;
 	std::vector<de::MovePtr<Allocation>>	attachmentImageAllocs;
@@ -851,6 +854,12 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 		{
 			aspectFlags = getImageAspectFlags(mapVkFormat(format));
 			usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+			// If depth load op is NONE and the depth buffer is not initialized in the render pass
+			// then its contents during the render pass are undefined and we need to be careful
+			// when programming the depth test.
+			if (att.loadOp == VK_ATTACHMENT_LOAD_OP_NONE_EXT && !(att.init & ATTACHMENT_INIT_CMD_CLEAR))
+				depthIsUndefined = true;
 		}
 		else
 		{
@@ -1005,6 +1014,7 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 		bool		stencilWrite		= true;
 		bool		multisample			= false;
 		bool		uintColorBuffer		= false;
+		VkCompareOp	depthCompareOp		= VK_COMPARE_OP_GREATER;
 
 		// Create pipeline layout.
 		{
@@ -1037,6 +1047,11 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 						depthTest = true;
 					if (ref.usage & ATTACHMENT_USAGE_DEPTH_WRITE_OFF)
 						depthWrite = false;
+
+					// Enabling depth testing with undefined depth buffer contents. Let's make sure
+					// all samples pass the depth test.
+					if (depthIsUndefined && depthTest)
+						depthCompareOp = VK_COMPARE_OP_ALWAYS;
 				}
 				if (ref.usage & ATTACHMENT_USAGE_STENCIL)
 				{
@@ -1208,7 +1223,7 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 				0u,															// VkPipelineDepthStencilStateCreateFlags	flags
 				depthTest,													// VkBool32									depthTestEnable
 				depthWrite ? VK_TRUE : VK_FALSE,							// VkBool32									depthWriteEnable
-				VK_COMPARE_OP_GREATER,										// VkCompareOp								depthCompareOp
+				depthCompareOp,												// VkCompareOp								depthCompareOp
 				VK_FALSE,													// VkBool32									depthBoundsTestEnable
 				stencilTest,												// VkBool32									stencilTestEnable
 				stencilOpState,												// VkStencilOpState							front
@@ -2118,7 +2133,8 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 		// Preinitialize attachment 0 (color) to green and depth stencil buffer stencil aspect to 128 and depth aspect to 0.5. Draw a red rectangle
 		// using stencil reference of 255 and stencil op 'greater'. Stencil test will pass and update stencil buffer to 255. After the renderpass
 		// the color buffer should have red inside the render area and stencil should have the shader updated value of 255. Depth has load and store
-		// ops none, and depth writes are disabled. Therefore, depth should not be modified even when the stencil aspect is written.
+		// ops none, the depth buffer contents will be undefined and depth test is enabled but op will be 'always' so depth testing will pass. Depth
+		// writes are disabled, so depth should not be modified even when the stencil aspect is written.
 		if (hasDepth && hasStencil)
 		{
 			TestParams params

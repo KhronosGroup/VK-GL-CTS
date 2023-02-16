@@ -92,12 +92,14 @@ struct DrawTypedTestSpec : public TestSpecBase
 		, testFirstInstanceNdx(false)
 		, testIndirectCountExt(IndirectCountType::NONE)
 		, dataFromCompute(false)
+		, useMemoryAccess(false)
 	{}
 
 	DrawType			drawType;
 	bool				testFirstInstanceNdx;
 	IndirectCountType	testIndirectCountExt;
 	bool				dataFromCompute;
+	bool				useMemoryAccess;
 };
 
 class IndirectDraw : public DrawTestsBaseClass
@@ -115,6 +117,7 @@ protected:
 	void								setVertexBuffer					(void);
 	void								setFirstInstanceVertexBuffer	(void);
 	void								negateDataUsingCompute			(vk::VkDeviceSize indirectBufferSize, vk::VkDeviceSize countBufferSize);
+	void								countBufferBarrier				(vk::VkBuffer indirectCountBuffer, vk::VkDeviceSize indirectCountBufferSize) const;
 
 	std::vector<char>					m_indirectBufferContents;
 	de::SharedPtr<Buffer>				m_indirectBuffer;
@@ -134,6 +137,7 @@ protected:
 	deBool								m_isMultiDrawEnabled;
 	deUint32							m_drawIndirectMaxCount;
 	deBool								m_dataFromComputeShader;
+	deBool								m_useMemoryAccess;
 
 	de::SharedPtr<Buffer>				m_indexBuffer;
 
@@ -298,8 +302,14 @@ void IndirectDraw::negateDataUsingCompute(vk::VkDeviceSize indirectBufferSize, v
 	m_pipelineLayout		= vk::makePipelineLayout(m_vk, m_context.getDevice(), *m_descriptorSetLayout);
 	m_computePipeline		= makeComputePipeline(m_vk, m_context.getDevice(), *m_pipelineLayout, *m_computeShaderModule);
 
-	const vk::VkBufferMemoryBarrier		hostWriteBarrier	= vk::makeBufferMemoryBarrier(vk::VK_ACCESS_HOST_WRITE_BIT, vk::VK_ACCESS_SHADER_READ_BIT, m_indirectBuffer->object(), 0ull, indirectBufferSize);
-	const vk::VkBufferMemoryBarrier		indirectDrawBarrier	= vk::makeBufferMemoryBarrier(vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_INDIRECT_COMMAND_READ_BIT, m_indirectBuffer->object(), 0ull, indirectBufferSize);
+	const vk::VkBufferMemoryBarrier		hostWriteBarrier	= vk::makeBufferMemoryBarrier(
+																m_useMemoryAccess ? vk::VK_ACCESS_MEMORY_WRITE_BIT : vk::VK_ACCESS_HOST_WRITE_BIT,
+																m_useMemoryAccess ? vk::VK_ACCESS_MEMORY_READ_BIT : vk::VK_ACCESS_SHADER_READ_BIT,
+																m_indirectBuffer->object(), 0ull, indirectBufferSize);
+	const vk::VkBufferMemoryBarrier		indirectDrawBarrier	= vk::makeBufferMemoryBarrier(
+																m_useMemoryAccess ? vk::VK_ACCESS_MEMORY_WRITE_BIT : vk::VK_ACCESS_SHADER_WRITE_BIT,
+																m_useMemoryAccess ? vk::VK_ACCESS_MEMORY_READ_BIT : vk::VK_ACCESS_INDIRECT_COMMAND_READ_BIT,
+																m_indirectBuffer->object(), 0ull, indirectBufferSize);
 
 	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *m_computePipeline);
 	m_vk.cmdBindDescriptorSets(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0u, 1u, &m_descriptorSetIndirectBuffer.get(), 0u, DE_NULL);
@@ -323,6 +333,7 @@ IndirectDraw::IndirectDraw (Context &context, TestSpec testSpec)
 	, m_drawType						(testSpec.drawType)
 	, m_testFirstInstanceNdx			(testSpec.testFirstInstanceNdx)
 	, m_dataFromComputeShader			(testSpec.dataFromCompute)
+	, m_useMemoryAccess					(testSpec.useMemoryAccess)
 {
 	if (m_testFirstInstanceNdx)
 		setFirstInstanceVertexBuffer();
@@ -712,6 +723,8 @@ tcu::TestStatus IndirectDraw::iterate (void)
 			negateDataUsingCompute(indirectBufferSize, countBufferSize);
 
 		preRenderBarriers();
+		if (m_testIndirectCountExt != IndirectCountType::NONE)
+			countBufferBarrier(m_indirectCountBuffer->object(), countBufferSize);
 
 		if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
 			beginDynamicRender(*m_cmdBuffer, vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
@@ -731,6 +744,8 @@ tcu::TestStatus IndirectDraw::iterate (void)
 			negateDataUsingCompute(indirectBufferSize, countBufferSize);
 
 		preRenderBarriers();
+		if (m_testIndirectCountExt != IndirectCountType::NONE)
+			countBufferBarrier(m_indirectCountBuffer->object(), countBufferSize);
 		beginDynamicRender(*m_cmdBuffer);
 
 		draw(*m_cmdBuffer);
@@ -748,6 +763,8 @@ tcu::TestStatus IndirectDraw::iterate (void)
 			negateDataUsingCompute(indirectBufferSize, countBufferSize);
 
 		preRenderBarriers();
+		if (m_testIndirectCountExt != IndirectCountType::NONE)
+			countBufferBarrier(m_indirectCountBuffer->object(), countBufferSize);
 		beginLegacyRender(*m_cmdBuffer);
 
 		draw(*m_cmdBuffer);
@@ -798,6 +815,17 @@ tcu::TestStatus IndirectDraw::iterate (void)
 	}
 
 	return tcu::TestStatus(res, qpGetTestResultName(res));
+}
+
+void IndirectDraw::countBufferBarrier(vk::VkBuffer indirectCountBuffer, vk::VkDeviceSize indirectCountBufferSize) const
+{
+	const vk::VkBufferMemoryBarrier countBufferBarrier = vk::makeBufferMemoryBarrier(
+		m_useMemoryAccess ? vk::VK_ACCESS_MEMORY_WRITE_BIT : vk::VK_ACCESS_SHADER_WRITE_BIT,
+		m_useMemoryAccess ? vk::VK_ACCESS_MEMORY_READ_BIT : vk::VK_ACCESS_INDIRECT_COMMAND_READ_BIT,
+		indirectCountBuffer, 0ull, indirectCountBufferSize);
+
+	m_vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+		vk::VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, 0, 0, DE_NULL, 1, &countBufferBarrier, 0, DE_NULL);
 }
 
 template<class FirstInstanceSupport>
@@ -1061,6 +1089,8 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 			negateDataUsingCompute(indirectBufferSize, countBufferSize);
 
 		preRenderBarriers();
+		if (m_testIndirectCountExt != IndirectCountType::NONE)
+			countBufferBarrier(m_indirectCountBuffer->object(), countBufferSize);
 
 		if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
 			beginDynamicRender(*m_cmdBuffer, vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
@@ -1080,6 +1110,9 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 			negateDataUsingCompute(indirectBufferSize, countBufferSize);
 
 		preRenderBarriers();
+		if (m_testIndirectCountExt != IndirectCountType::NONE)
+			countBufferBarrier(m_indirectCountBuffer->object(), countBufferSize);
+
 		beginDynamicRender(*m_cmdBuffer);
 		draw(*m_cmdBuffer);
 		endDynamicRender(*m_cmdBuffer);
@@ -1096,6 +1129,9 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 			negateDataUsingCompute(indirectBufferSize, countBufferSize);
 
 		preRenderBarriers();
+		if (m_testIndirectCountExt != IndirectCountType::NONE)
+			countBufferBarrier(m_indirectCountBuffer->object(), countBufferSize);
+
 		beginLegacyRender(*m_cmdBuffer);
 		draw(*m_cmdBuffer);
 		endLegacyRender(*m_cmdBuffer);
@@ -1173,7 +1209,13 @@ IndirectDrawTests::~IndirectDrawTests (void) {}
 
 void IndirectDrawTests::init (void)
 {
-	for (auto dataFromCompute : {false, true})
+	struct ParamCombinations
+	{
+		bool dataFromCompute;
+		bool useMemoryAccess;
+	};
+
+	for (auto dataFromCompute : { false, true })
 	for (int drawTypeIdx = 0; drawTypeIdx < DRAWTYPE_LAST; drawTypeIdx++)
 	{
 		// reduce number of tests for dynamic rendering cases where secondary command buffer is used
@@ -1217,6 +1259,15 @@ void IndirectDrawTests::init (void)
 				indirectDrawGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
 					(m_testCtx, "triangle_strip", "Draws triangle strip", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
 
+				// test using V_ACCESSK_MEMORY_WRITE/READ_BIT - there is no need to repeat this case for different drawing options
+				if (dataFromCompute && drawTypeIdx && !m_groupParams->useDynamicRendering && !m_groupParams->useSecondaryCmdBuffer)
+				{
+					testSpec.useMemoryAccess = true;
+					indirectDrawGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
+						(m_testCtx, "triangle_strip_memory_access", "Draws triangle strip", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
+					testSpec.useMemoryAccess = false;
+				}
+
 				testSpec.testIndirectCountExt = IndirectCountType::BUFFER_LIMIT;
 				testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 				indirectDrawCountGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
@@ -1224,6 +1275,15 @@ void IndirectDrawTests::init (void)
 				testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 				indirectDrawCountGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
 					(m_testCtx, "triangle_strip", "Draws triangle strip", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
+
+				// test using V_ACCESSK_MEMORY_WRITE/READ_BIT - there is no need to repeat this case for different drawing options
+				if (dataFromCompute && drawTypeIdx && !m_groupParams->useDynamicRendering && !m_groupParams->useSecondaryCmdBuffer)
+				{
+					testSpec.useMemoryAccess = true;
+					indirectDrawCountGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
+						(m_testCtx, "triangle_strip_memory_access", "Draws triangle strip", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
+					testSpec.useMemoryAccess = false;
+				}
 
 				testSpec.testIndirectCountExt = IndirectCountType::PARAM_LIMIT;
 				testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;

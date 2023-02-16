@@ -3814,7 +3814,145 @@ struct VkApplicationParametersEXT
 	uint64_t		value;
 };
 
+struct VkExportFenceSciSyncInfoNV
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	pt::NvSciSyncAttrList	pAttributes;
+};
+
+struct VkImportFenceSciSyncInfoNV
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkFence								fence;
+	VkExternalFenceHandleTypeFlagBits	handleType;
+	void*								handle;
+};
+
+struct VkFenceGetSciSyncInfoNV
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkFence								fence;
+	VkExternalFenceHandleTypeFlagBits	handleType;
+};
+
+struct VkSciSyncAttributesInfoNV
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkSciSyncClientTypeNV		clientType;
+	VkSciSyncPrimitiveTypeNV	primitiveType;
+};
+
+struct VkExportSemaphoreSciSyncInfoNV
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	pt::NvSciSyncAttrList	pAttributes;
+};
+
+struct VkImportSemaphoreSciSyncInfoNV
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	VkSemaphore								semaphore;
+	VkExternalSemaphoreHandleTypeFlagBits	handleType;
+	void*									handle;
+};
+
+struct VkSemaphoreGetSciSyncInfoNV
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	VkSemaphore								semaphore;
+	VkExternalSemaphoreHandleTypeFlagBits	handleType;
+};
+
+struct VkPhysicalDeviceExternalSciSyncFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		sciSyncFence;
+	VkBool32		sciSyncSemaphore;
+	VkBool32		sciSyncImport;
+	VkBool32		sciSyncExport;
+};
+
+struct VkExportMemorySciBufInfoNV
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	pt::NvSciBufAttrList	pAttributes;
+};
+
+struct VkImportMemorySciBufInfoNV
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkExternalMemoryHandleTypeFlagBits	handleType;
+	pt::NvSciBufObj						handle;
+};
+
+struct VkMemoryGetSciBufInfoNV
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkDeviceMemory						memory;
+	VkExternalMemoryHandleTypeFlagBits	handleType;
+};
+
+struct VkMemorySciBufPropertiesNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		memoryTypeBits;
+};
+
+struct VkPhysicalDeviceExternalMemorySciBufFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		sciBufImport;
+	VkBool32		sciBufExport;
+};
+
+struct VkPhysicalDeviceExternalSciSync2FeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		sciSyncFence;
+	VkBool32		sciSyncSemaphore2;
+	VkBool32		sciSyncImport;
+	VkBool32		sciSyncExport;
+};
+
+struct VkSemaphoreSciSyncPoolCreateInfoNV
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	pt::NvSciSyncObj	handle;
+};
+
+struct VkSemaphoreSciSyncCreateInfoNV
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkSemaphoreSciSyncPoolNV	semaphorePool;
+	const pt::NvSciSyncFence*	pFence;
+};
+
+struct VkDeviceSemaphoreSciSyncPoolReservationCreateInfoNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		semaphoreSciSyncPoolRequestCount;
+};
+
 typedef VkPhysicalDeviceVariablePointersFeatures VkPhysicalDeviceVariablePointerFeatures;
 
 typedef VkPhysicalDeviceShaderDrawParametersFeatures VkPhysicalDeviceShaderDrawParameterFeatures;
+
+typedef VkPhysicalDeviceExternalMemorySciBufFeaturesNV VkPhysicalDeviceExternalSciBufFeaturesNV;
 

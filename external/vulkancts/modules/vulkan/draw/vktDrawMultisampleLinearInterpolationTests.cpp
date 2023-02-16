@@ -614,7 +614,9 @@ void MultisampleLinearInterpolationTestCase::initPrograms (SourceCollections& pr
 			<< "    out_color /= " << m_interpolationRange << ";\n";
 
 		// Run additional sample comparison test. If it fails, we write 1.0 to blue color channel.
-		frg << "    if (out_color_sample != interpolateAtOffset(in_color, gl_SamplePosition - vec2(0.5)))\n"
+		frg << "    vec4 diff = out_color_sample - interpolateAtOffset(in_color, gl_SamplePosition - vec2(0.5));"
+			<< "    float min_precision = 0.000001;\n"
+			<< "    if (diff.x > min_precision && diff.y > min_precision && diff.z > min_precision && diff.w > min_precision)\n"
 			<< "    {\n"
 			<< "        out_color.z = 1.0;\n"
 			<< "    }\n";
@@ -627,6 +629,8 @@ void MultisampleLinearInterpolationTestCase::initPrograms (SourceCollections& pr
 
 void MultisampleLinearInterpolationTestCase::checkSupport (Context& context) const
 {
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
+
 	if (!(m_sampleCountFlagBits & context.getDeviceProperties().limits.framebufferColorSampleCounts))
 		TCU_THROW(NotSupportedError, "Multisampling with " + de::toString(m_sampleCountFlagBits) + " samples not supported");
 

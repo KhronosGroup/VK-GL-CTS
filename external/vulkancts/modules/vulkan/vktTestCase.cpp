@@ -74,7 +74,6 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 		"VK_NV_inherited_viewport_scissor",
 		"VK_NV_mesh_shader",
 		"VK_AMD_mixed_attachment_samples",
-		"VK_AMD_shader_fragment_mask",
 		"VK_AMD_buffer_marker",
 		"VK_AMD_shader_explicit_vertex_parameter",
 		"VK_AMD_shader_image_load_store_lod",
@@ -90,6 +89,11 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 		"VK_ARM_rasterization_order_attachment_access",
 		"VK_GOOGLE_surfaceless_query",
 		"VK_FUCHSIA_",
+		"VK_NV_fragment_coverage_to_color",
+		"VK_NV_framebuffer_mixed_samples",
+		"VK_NV_coverage_reduction_mode",
+		"VK_NV_viewport_swizzle",
+		"VK_NV_representative_fragment_test",
 	};
 
 	for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
@@ -127,20 +131,6 @@ vector<string> addExtensions (const vector<string>& a, const vector<const char*>
 	{
 		if (!de::contains(res.begin(), res.end(), string(*bIter)))
 			res.push_back(string(*bIter));
-	}
-
-	return res;
-}
-
-vector<string> removeExtensions (const vector<string>& a, const vector<const char*>& b)
-{
-	vector<string>	res;
-	set<string>		removeExts	(b.begin(), b.end());
-
-	for (vector<string>::const_iterator aIter = a.begin(); aIter != a.end(); ++aIter)
-	{
-		if (!de::contains(removeExts, *aIter))
-			res.push_back(*aIter);
 	}
 
 	return res;
@@ -1013,6 +1003,18 @@ void Context::resetCommandPoolForVKSC	(const VkDevice					device,
 #endif
 }
 
+ContextCommonData Context::getContextCommonData() {
+	return ContextCommonData {
+		getInstanceInterface(),
+		getDevice(),
+		getDeviceInterface(),
+		getPhysicalDevice(),
+		getDefaultAllocator(),
+		getUniversalQueueFamilyIndex(),
+		getUniversalQueue()
+	};
+}
+
 // TestCase
 
 void TestCase::initPrograms (SourceCollections&) const
@@ -1062,5 +1064,20 @@ void collectAndReportDebugMessages(vk::DebugReportRecorder &debugReportRecorder,
 }
 
 #endif // CTS_USES_VULKANSC
+
+
+vector<string> removeExtensions (const vector<string>& a, const vector<const char*>& b)
+{
+	vector<string>	res;
+	set<string>		removeExts	(b.begin(), b.end());
+
+	for (vector<string>::const_iterator aIter = a.begin(); aIter != a.end(); ++aIter)
+	{
+		if (!de::contains(removeExts, *aIter))
+			res.push_back(*aIter);
+	}
+
+	return res;
+}
 
 } // vkt

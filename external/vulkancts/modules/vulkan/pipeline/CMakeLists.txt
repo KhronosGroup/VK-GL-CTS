@@ -59,8 +59,6 @@ set(DEQP_VK_VKSC_PIPELINE_SRCS
 	vktPipelineMultisampleResolveRenderAreaTests.hpp
 	vktPipelineMultisampleSampleLocationsExtTests.cpp
 	vktPipelineMultisampleSampleLocationsExtTests.hpp
-	vktPipelineMultisampleShaderFragmentMaskTests.cpp
-	vktPipelineMultisampleShaderFragmentMaskTests.hpp
 	vktPipelineInputAssemblyTests.cpp
 	vktPipelineInputAssemblyTests.hpp
 	vktPipelineInterfaceMatchingTests.cpp
@@ -106,6 +104,8 @@ set(DEQP_VK_VKSC_PIPELINE_SRCS
 	vktPipelineExtendedDynamicStateTests.hpp
 	vktPipelineNoPositionTests.cpp
 	vktPipelineNoPositionTests.hpp
+	vktPipelineDynamicControlPoints.cpp
+	vktPipelineDynamicControlPoints.hpp
 	)
 
 set(DEQP_VK_PIPELINE_SRCS
@@ -135,6 +135,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineAttachmentFeedbackLoopLayoutTests.hpp
 	vktPipelineMultisampledRenderToSingleSampledTests.cpp
 	vktPipelineMultisampledRenderToSingleSampledTests.hpp
+	vktPipelineMultisampleShaderFragmentMaskTests.cpp
+	vktPipelineMultisampleShaderFragmentMaskTests.hpp
 	)
 
 #vktPipelinePushDescriptorTests.cpp				- missing VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR

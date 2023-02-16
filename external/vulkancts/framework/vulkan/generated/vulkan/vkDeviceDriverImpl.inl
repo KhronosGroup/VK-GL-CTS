@@ -509,6 +509,16 @@ void DeviceDriver::cmdSubpassShadingHUAWEI (VkCommandBuffer commandBuffer) const
 	m_vk.cmdSubpassShadingHUAWEI(commandBuffer);
 }
 
+void DeviceDriver::cmdDrawClusterHUAWEI (VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const
+{
+	m_vk.cmdDrawClusterHUAWEI(commandBuffer, groupCountX, groupCountY, groupCountZ);
+}
+
+void DeviceDriver::cmdDrawClusterIndirectHUAWEI (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset) const
+{
+	m_vk.cmdDrawClusterIndirectHUAWEI(commandBuffer, buffer, offset);
+}
+
 void DeviceDriver::cmdCopyBuffer (VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t regionCount, const VkBufferCopy* pRegions) const
 {
 	m_vk.cmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, regionCount, pRegions);
@@ -532,6 +542,16 @@ void DeviceDriver::cmdCopyBufferToImage (VkCommandBuffer commandBuffer, VkBuffer
 void DeviceDriver::cmdCopyImageToBuffer (VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkBuffer dstBuffer, uint32_t regionCount, const VkBufferImageCopy* pRegions) const
 {
 	m_vk.cmdCopyImageToBuffer(commandBuffer, srcImage, srcImageLayout, dstBuffer, regionCount, pRegions);
+}
+
+void DeviceDriver::cmdCopyMemoryIndirectNV (VkCommandBuffer commandBuffer, VkDeviceAddress copyBufferAddress, uint32_t copyCount, uint32_t stride) const
+{
+	m_vk.cmdCopyMemoryIndirectNV(commandBuffer, copyBufferAddress, copyCount, stride);
+}
+
+void DeviceDriver::cmdCopyMemoryToImageIndirectNV (VkCommandBuffer commandBuffer, VkDeviceAddress copyBufferAddress, uint32_t copyCount, uint32_t stride, VkImage dstImage, VkImageLayout dstImageLayout, const VkImageSubresourceLayers* pImageSubresources) const
+{
+	m_vk.cmdCopyMemoryToImageIndirectNV(commandBuffer, copyBufferAddress, copyCount, stride, dstImage, dstImageLayout, pImageSubresources);
 }
 
 void DeviceDriver::cmdUpdateBuffer (VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize dataSize, const void* pData) const
@@ -1629,11 +1649,6 @@ void DeviceDriver::cmdSetPrimitiveRestartEnable (VkCommandBuffer commandBuffer, 
 	m_vk.cmdSetPrimitiveRestartEnable(commandBuffer, primitiveRestartEnable);
 }
 
-VkResult DeviceDriver::createPrivateDataSlot (VkDevice device, const VkPrivateDataSlotCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPrivateDataSlot* pPrivateDataSlot) const
-{
-	return m_vk.createPrivateDataSlot(device, pCreateInfo, pAllocator, pPrivateDataSlot);
-}
-
 void DeviceDriver::cmdSetTessellationDomainOriginEXT (VkCommandBuffer commandBuffer, VkTessellationDomainOrigin domainOrigin) const
 {
 	m_vk.cmdSetTessellationDomainOriginEXT(commandBuffer, domainOrigin);
@@ -1787,6 +1802,11 @@ void DeviceDriver::cmdSetCoverageReductionModeNV (VkCommandBuffer commandBuffer,
 void DeviceDriver::cmdSetRepresentativeFragmentTestEnableNV (VkCommandBuffer commandBuffer, VkBool32 representativeFragmentTestEnable) const
 {
 	m_vk.cmdSetRepresentativeFragmentTestEnableNV(commandBuffer, representativeFragmentTestEnable);
+}
+
+VkResult DeviceDriver::createPrivateDataSlot (VkDevice device, const VkPrivateDataSlotCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPrivateDataSlot* pPrivateDataSlot) const
+{
+	return m_vk.createPrivateDataSlot(device, pCreateInfo, pAllocator, pPrivateDataSlot);
 }
 
 void DeviceDriver::destroyPrivateDataSlot (VkDevice device, VkPrivateDataSlot privateDataSlot, const VkAllocationCallbacks* pAllocator) const
@@ -1959,6 +1979,16 @@ void DeviceDriver::cmdEncodeVideoKHR (VkCommandBuffer commandBuffer, const VkVid
 	m_vk.cmdEncodeVideoKHR(commandBuffer, pEncodeInfo);
 }
 
+void DeviceDriver::cmdDecompressMemoryNV (VkCommandBuffer commandBuffer, uint32_t decompressRegionCount, const VkDecompressMemoryRegionNV* pDecompressMemoryRegions) const
+{
+	m_vk.cmdDecompressMemoryNV(commandBuffer, decompressRegionCount, pDecompressMemoryRegions);
+}
+
+void DeviceDriver::cmdDecompressMemoryIndirectCountNV (VkCommandBuffer commandBuffer, VkDeviceAddress indirectCommandsAddress, VkDeviceAddress indirectCommandsCountAddress, uint32_t stride) const
+{
+	m_vk.cmdDecompressMemoryIndirectCountNV(commandBuffer, indirectCommandsAddress, indirectCommandsCountAddress, stride);
+}
+
 VkResult DeviceDriver::createCuModuleNVX (VkDevice device, const VkCuModuleCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCuModuleNVX* pModule) const
 {
 	return m_vk.createCuModuleNVX(device, pCreateInfo, pAllocator, pModule);
@@ -1982,6 +2012,61 @@ void DeviceDriver::destroyCuFunctionNVX (VkDevice device, VkCuFunctionNVX functi
 void DeviceDriver::cmdCuLaunchKernelNVX (VkCommandBuffer commandBuffer, const VkCuLaunchInfoNVX* pLaunchInfo) const
 {
 	m_vk.cmdCuLaunchKernelNVX(commandBuffer, pLaunchInfo);
+}
+
+void DeviceDriver::getDescriptorSetLayoutSizeEXT (VkDevice device, VkDescriptorSetLayout layout, VkDeviceSize* pLayoutSizeInBytes) const
+{
+	m_vk.getDescriptorSetLayoutSizeEXT(device, layout, pLayoutSizeInBytes);
+}
+
+void DeviceDriver::getDescriptorSetLayoutBindingOffsetEXT (VkDevice device, VkDescriptorSetLayout layout, uint32_t binding, VkDeviceSize* pOffset) const
+{
+	m_vk.getDescriptorSetLayoutBindingOffsetEXT(device, layout, binding, pOffset);
+}
+
+void DeviceDriver::getDescriptorEXT (VkDevice device, const VkDescriptorGetInfoEXT* pDescriptorInfo, size_t dataSize, void* pDescriptor) const
+{
+	m_vk.getDescriptorEXT(device, pDescriptorInfo, dataSize, pDescriptor);
+}
+
+void DeviceDriver::cmdBindDescriptorBuffersEXT (VkCommandBuffer commandBuffer, uint32_t bufferCount, const VkDescriptorBufferBindingInfoEXT* pBindingInfos) const
+{
+	m_vk.cmdBindDescriptorBuffersEXT(commandBuffer, bufferCount, pBindingInfos);
+}
+
+void DeviceDriver::cmdSetDescriptorBufferOffsetsEXT (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t firstSet, uint32_t setCount, const uint32_t* pBufferIndices, const VkDeviceSize* pOffsets) const
+{
+	m_vk.cmdSetDescriptorBufferOffsetsEXT(commandBuffer, pipelineBindPoint, layout, firstSet, setCount, pBufferIndices, pOffsets);
+}
+
+void DeviceDriver::cmdBindDescriptorBufferEmbeddedSamplersEXT (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t set) const
+{
+	m_vk.cmdBindDescriptorBufferEmbeddedSamplersEXT(commandBuffer, pipelineBindPoint, layout, set);
+}
+
+VkResult DeviceDriver::getBufferOpaqueCaptureDescriptorDataEXT (VkDevice device, const VkBufferCaptureDescriptorDataInfoEXT* pInfo, void* pData) const
+{
+	return m_vk.getBufferOpaqueCaptureDescriptorDataEXT(device, pInfo, pData);
+}
+
+VkResult DeviceDriver::getImageOpaqueCaptureDescriptorDataEXT (VkDevice device, const VkImageCaptureDescriptorDataInfoEXT* pInfo, void* pData) const
+{
+	return m_vk.getImageOpaqueCaptureDescriptorDataEXT(device, pInfo, pData);
+}
+
+VkResult DeviceDriver::getImageViewOpaqueCaptureDescriptorDataEXT (VkDevice device, const VkImageViewCaptureDescriptorDataInfoEXT* pInfo, void* pData) const
+{
+	return m_vk.getImageViewOpaqueCaptureDescriptorDataEXT(device, pInfo, pData);
+}
+
+VkResult DeviceDriver::getSamplerOpaqueCaptureDescriptorDataEXT (VkDevice device, const VkSamplerCaptureDescriptorDataInfoEXT* pInfo, void* pData) const
+{
+	return m_vk.getSamplerOpaqueCaptureDescriptorDataEXT(device, pInfo, pData);
+}
+
+VkResult DeviceDriver::getAccelerationStructureOpaqueCaptureDescriptorDataEXT (VkDevice device, const VkAccelerationStructureCaptureDescriptorDataInfoEXT* pInfo, void* pData) const
+{
+	return m_vk.getAccelerationStructureOpaqueCaptureDescriptorDataEXT(device, pInfo, pData);
 }
 
 void DeviceDriver::setDeviceMemoryPriorityEXT (VkDevice device, VkDeviceMemory memory, float priority) const
@@ -2167,4 +2252,9 @@ void DeviceDriver::cmdOpticalFlowExecuteNV (VkCommandBuffer commandBuffer, VkOpt
 VkResult DeviceDriver::getDeviceFaultInfoEXT (VkDevice device, VkDeviceFaultCountsEXT* pFaultCounts, VkDeviceFaultInfoEXT* pFaultInfo) const
 {
 	return m_vk.getDeviceFaultInfoEXT(device, pFaultCounts, pFaultInfo);
+}
+
+VkResult DeviceDriver::releaseSwapchainImagesEXT (VkDevice device, const VkReleaseSwapchainImagesInfoEXT* pReleaseInfo) const
+{
+	return m_vk.releaseSwapchainImagesEXT(device, pReleaseInfo);
 }

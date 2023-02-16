@@ -33,7 +33,7 @@ from collections import OrderedDict
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts"))
 
-from build.common import DEQP_DIR, execute
+from ctsbuild.common import DEQP_DIR, execute
 from khr_util.format import indentLines, writeInlFile
 
 VULKAN_XML_DIR				= os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "xml")
@@ -414,12 +414,12 @@ class API:
 		alias = commandNode.get("alias")
 		# if node is alias then use the fact that alias definition follows aliased structure
 		if alias is not None:
-			# The aliased command has usually been added recently, so we iterate in reverse order.
+			# aliased command has usually been added recently, so we iterate in reverse order
 			found = False
-			for funcObj in reversed(self.functions):
-				if funcObj.name == alias:
-					funcObj.aliasList.append(commandNode.get("name"))
-					found = True
+			for f in reversed(self.functions):
+				found = (f.name == alias)
+				if found:
+					f.aliasList.append(commandNode.get("name"))
 					break
 			assert found
 			# go to next node
@@ -669,9 +669,10 @@ class API:
 				structMembers
 			))
 		elif category == "define":
-			if typeNode.get("requires") == "VK_MAKE_API_VERSION":
+			requires = typeNode.get("requires")
+			if requires == "VK_MAKE_API_VERSION" or requires == "VK_MAKE_VIDEO_STD_VERSION":
 				value = typeNode.find("type").tail
-				value = 'VK_MAKE_API_VERSION' + value[:value.find(')')+1]
+				value = requires + value[:value.find(')')+1]
 				self.defines.append(Define(
 					typeNode.find("name").text,
 					"uint32_t",
@@ -1680,6 +1681,7 @@ def writeTypeUtil (api, filename):
 			"StdVideoDecodeH264MvcElementFlags",
 			"StdVideoEncodeH264SliceHeaderFlags",
 			"StdVideoEncodeH264PictureInfoFlags",
+			"StdVideoEncodeH264ReferenceInfoFlags",
 			"StdVideoEncodeH264RefMgmtFlags",
 			"StdVideoEncodeH264ReferenceInfoFlags",
 			"StdVideoH265HrdFlags",
@@ -1690,11 +1692,11 @@ def writeTypeUtil (api, filename):
 			"StdVideoDecodeH265PictureInfoFlags",
 			"StdVideoDecodeH265ReferenceInfoFlags",
 			"StdVideoEncodeH265PictureInfoFlags",
-			"StdVideoEncodeH265SliceSegmentHeaderFlags",
 			"StdVideoEncodeH265ReferenceModificationFlags",
 			"StdVideoEncodeH265ReferenceInfoFlags",
+			"StdVideoEncodeH265SliceSegmentHeaderFlags",
 			"StdVideoH265ProfileTierLevelFlags",
-			"StdVideoH265ShortTermRefPicSetFlags"
+			"StdVideoH265ShortTermRefPicSetFlags",
 		])
 
 	def isSimpleStruct (type):
@@ -2120,10 +2122,98 @@ def writeDeviceFeatures2(api, filename):
 		stream.append('\treturn tcu::TestStatus::pass("Querying succeeded");')
 		stream.append("}\n")
 
+	allApiVersions = [f.number for f in api.features]
+	promotedTests = []
+	for feature in api.features:
+		major = feature.number[0]
+		minor = feature.number[-1]
+		promotedFeatures = []
+		if feature.name == 'VK_VERSION_1_0':
+			continue
+		for requirement in feature.requirementsList:
+			for type in requirement.typeList:
+				matchedStructType = re.search(f'VkPhysicalDevice(\w+)Features', type, re.IGNORECASE)
+				matchedCoreStructType = re.search(f'VkPhysicalDeviceVulkan(\d+)Features', type, re.IGNORECASE)
+				if matchedStructType and not matchedCoreStructType:
+					promotedFeatures.append(type)
+		if promotedFeatures:
+			testName = "createDeviceWithPromoted" + feature.number.replace('.', '') + "Structures"
+			promotedTests.append(testName)
+			stream.append("tcu::TestStatus " + testName + " (Context& context)")
+			stream.append("{")
+			stream.append(
+			'	if (!context.contextSupports(vk::ApiVersion(0, ' + major + ', ' + minor + ', 0)))\n'
+			'		TCU_THROW(NotSupportedError, "Vulkan ' + major + '.' + minor + ' is not supported");')
+			stream.append("""
+	const PlatformInterface&		platformInterface	= context.getPlatformInterface();
+	const CustomInstance			instance			(createCustomInstanceFromContext(context));
+	const InstanceDriver&			instanceDriver		(instance.getDriver());
+	const VkPhysicalDevice			physicalDevice		= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32					queueFamilyIndex	= 0;
+	const deUint32					queueCount			= 1;
+	const deUint32					queueIndex			= 0;
+	const float						queuePriority		= 1.0f;
+
+	const vector<VkQueueFamilyProperties> queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
+
+	const VkDeviceQueueCreateInfo	deviceQueueCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+		DE_NULL,
+		(VkDeviceQueueCreateFlags)0u,
+		queueFamilyIndex,						//queueFamilyIndex;
+		queueCount,								//queueCount;
+		&queuePriority,							//pQueuePriorities;
+	};
+""")
+			lastFeature = ''
+			usedFeatures = []
+			for feature in promotedFeatures:
+				for struct in testedStructureDetail:
+					if (struct.instanceName in usedFeatures):
+						continue
+					if feature in struct.nameList:
+						if lastFeature:
+							stream.append("\t" + feature + " " + struct.instanceName + " = initVulkanStructure(&" + lastFeature + ");")
+						else:
+							stream.append("\t" + feature + " " + struct.instanceName + " = initVulkanStructure();")
+						lastFeature = struct.instanceName
+						usedFeatures.append(struct.instanceName)
+						break
+			stream.append("\tVkPhysicalDeviceFeatures2 extFeatures = initVulkanStructure(&" + lastFeature + ");")
+			stream.append("""
+	instanceDriver.getPhysicalDeviceFeatures2 (physicalDevice, &extFeatures);
+
+	const VkDeviceCreateInfo		deviceCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,	//sType;
+		&extFeatures,							//pNext;
+		(VkDeviceCreateFlags)0u,
+		1,										//queueRecordCount;
+		&deviceQueueCreateInfo,					//pRequestedQueues;
+		0,										//layerCount;
+		DE_NULL,								//ppEnabledLayerNames;
+		0,										//extensionCount;
+		DE_NULL,								//ppEnabledExtensionNames;
+		DE_NULL,								//pEnabledFeatures;
+	};
+
+	const Unique<VkDevice>			device			(createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+	const DeviceDriver				deviceDriver	(platformInterface, instance, device.get());
+	const VkQueue					queue			= getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
+
+	VK_CHECK(deviceDriver.queueWaitIdle(queue));
+
+	return tcu::TestStatus::pass("Pass");
+}
+""")
+
 	# function to create tests
 	stream.append("void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)\n{")
 	for x in testedStructureDetail:
 		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x.instanceName[len('device'):]) + '", "' + x.nameList[0] + '", testPhysicalDeviceFeature' + x.instanceName[len('device'):] + ');')
+	for x in promotedTests:
+		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x) + '", "", ' + x + ');')
 	stream.append('}\n')
 
 	# write out
@@ -2651,6 +2741,7 @@ def writeMandatoryFeatures(api, filename):
 
 	dictStructs = {}
 	dictData = []
+	usedFeatureStructs = {}
 	for _, data in api.additionalExtensionData:
 		if 'mandatory_features' not in data.keys():
 			continue
@@ -2673,6 +2764,7 @@ def writeMandatoryFeatures(api, filename):
 
 				if structure == 'VkPhysicalDeviceFeatures':
 					continue
+
 				# if structure is not in dict construct name of variable and add is as a first item
 				if (structure not in dictStructs):
 					dictStructs[structure] = ([structure[2:3].lower() + structure[3:]], mandatory_variant)
@@ -2680,14 +2772,28 @@ def writeMandatoryFeatures(api, filename):
 				if requirements and (requirements[0] not in dictStructs[structure][0]):
 					dictStructs[structure][0].append(requirements[0])
 
+				usedFeatureStructs[structure] = []
 
-	stream.extend(['bool checkMandatoryFeatures(const vkt::Context& context)\n{',
+				if requirements:
+					for req in requirements:
+						if '.' in req:
+							reqStruct = 'Vk' + req[0].upper() + req[1:]
+							usedFeatureStructs[reqStruct] = []
+
+	stream.extend(['bool canUseFeaturesStruct (const vector<VkExtensionProperties>& deviceExtensions, uint32_t usedApiVersion, const char* extension)',
+				   '{',
+				   '\treturn (isExtensionStructSupported(deviceExtensions, RequiredExtension(extension))',
+				   '\t\t\t|| isCoreDeviceExtension(usedApiVersion, extension));',
+				   '}',
+				   '',
+				   'bool checkMandatoryFeatures(const vkt::Context& context)\n{',
 				   '\tif (!context.isInstanceFunctionalitySupported("VK_KHR_get_physical_device_properties2"))',
 				   '\t\tTCU_THROW(NotSupportedError, "Extension VK_KHR_get_physical_device_properties2 is not present");',
 				   '',
 				   '\tVkPhysicalDevice\t\t\t\t\tphysicalDevice\t\t= context.getPhysicalDevice();',
 				   '\tconst InstanceInterface&\t\t\tvki\t\t\t\t\t= context.getInstanceInterface();',
 				   '\tconst vector<VkExtensionProperties>\tdeviceExtensions\t= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);',
+				   '\tconst uint32_t\t\t\t\t\t\tusedApiVersion\t\t= context.getUsedApiVersion();',
 				   '',
 				   '\ttcu::TestLog& log = context.getTestContext().getLog();',
 				   '\tvk::VkPhysicalDeviceFeatures2 coreFeatures;',
@@ -2696,43 +2802,76 @@ def writeMandatoryFeatures(api, filename):
 				   '\tvoid** nextPtr = &coreFeatures.pNext;',
 				   ''])
 
-	listStruct = sorted(dictStructs.items(), key=lambda tup: tup[0]) # sort to have same results for py2 and py3
-	apiStruct	= list( filter(lambda x : structInAPI(x[0]), listStruct)) # remove items not defined in current A
+	# Find the extensions that added the required feature structs.
+	class StructFoundContinue(Exception):
+		pass
 
-	for k, v in apiStruct:
+	for usedStruct in usedFeatureStructs:
+		for compType in api.compositeTypes:
+			nameList = [compType.name] + compType.aliasList
+			if usedStruct in nameList:
+				# Found the official name list for the struct.
+				for extension in api.extensions:
+					try:
+						for requirement in extension.requirementsList:
+							for extensionStructure in requirement.newTypes:
+								if extensionStructure.name in nameList:
+									# Found extension for the struct.
+									usedFeatureStructs[usedStruct].append(extension.name)
+									raise StructFoundContinue
+					except StructFoundContinue:
+						pass
+
+	structList = sorted(usedFeatureStructs.items(), key=lambda tup: tup[0]) # sort to have same results for py2 and py3
+	apiStructs = list( filter(lambda x : structInAPI(x[0]), structList)) # remove items not defined in current API
+
+	for structName, extensions in apiStructs:
 		metaCondition = ''
-		if v[1] != '':
-			metaCondition = metaCondition + ' || defined(CTS_USES_' + v[1][0].upper() + ')'
-			stream.extend(['#if ' + metaCondition[4:]])
-		if (v[0][1].startswith("ApiVersion")):
-			cond = '\tif (context.contextSupports(vk::' + v[0][1] + '))'
-		else:
-			cond = '\tif (vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "' + v[0][1] + '"))'
-		stream.extend(['\tvk::' + k + ' ' + v[0][0]+ ';',
-					'\tdeMemset(&' + v[0][0] + ', 0, sizeof(' + v[0][0] + '));',
+		if structName in dictStructs:
+			mandatoryVariantList = dictStructs[structName][1]
+			if len(mandatoryVariantList) > 0:
+				mandatoryVariant = mandatoryVariantList[0]
+				metaCondition = 'defined(CTS_USES_' + mandatoryVariant.upper() + ')'
+				stream.append('#if ' + metaCondition)
+
+		# The variable name will be the structure name without the Vk prefix and starting in lowercase.
+		newVar = structName[2].lower() + structName[3:]
+
+		stream.extend(['\tvk::' + structName + ' ' + newVar + ';',
+					'\tdeMemset(&' + newVar + ', 0, sizeof(' + newVar + '));',
 					''])
-		reqs = v[0][1:]
-		if len(reqs) > 0 :
-			cond = 'if ( '
-			for i, req in enumerate(reqs) :
-				if (req.startswith("ApiVersion")):
-					cond = cond + 'context.contextSupports(vk::' + req + ')'
-				else:
-					cond = cond + 'isExtensionStructSupported(deviceExtensions, RequiredExtension("' + req + '"))'
-				if i+1 < len(reqs) :
-					cond = cond + ' || '
-			cond = cond + ' )'
-			stream.append('\t' + cond)
-		stream.extend(['\t{',
-					   '\t\t' + v[0][0] + '.sType = getStructureType<' + k + '>();',
-					   '\t\t*nextPtr = &' + v[0][0] + ';',
-					   '\t\tnextPtr  = &' + v[0][0] + '.pNext;',
-					   '\t}'])
-		if metaCondition != '':
-			stream.extend(['#endif // ' + metaCondition[4:],
-						  ''])
+
+		if len(extensions) > 0:
+			canUseCond = '\tif ('
+			for (i, extName) in enumerate(extensions):
+				canUseCond += ' ' if i == 0 else ' || '
+				canUseCond += 'canUseFeaturesStruct(deviceExtensions, usedApiVersion, "' + extName + '")'
+			canUseCond += ' )'
+			stream.append(canUseCond)
 		else:
-			stream.extend([''])
+			#reqs = v[0][1:]
+			if structName in dictStructs:
+				reqs = dictStructs[structName][0][1:]
+				cond = 'if ( '
+				for i, req in enumerate(reqs):
+					if i > 0:
+						cond = cond + ' || '
+					if (req.startswith("ApiVersion")):
+						cond = cond + 'context.contextSupports(vk::' + req + ')'
+				cond = cond + ' )'
+				stream.append('\t' + cond)
+
+		stream.extend(['\t{',
+					   '\t\t' + newVar + '.sType = getStructureType<' + structName + '>();',
+					   '\t\t*nextPtr = &' + newVar + ';',
+					   '\t\tnextPtr  = &' + newVar + '.pNext;',
+					   '\t}'])
+
+		if len(metaCondition) > 0:
+			stream.append('#endif // ' + metaCondition)
+
+		stream.append('')
+
 	stream.extend(['\tcontext.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &coreFeatures);',
 				   '\tbool result = true;',
 				   ''])
@@ -2907,6 +3046,132 @@ def writeApiExtensionDependencyInfo(api, filename):
 
 	writeInlFile(filename, INL_HEADER, stream)
 
+def writeEntryPointValidation(api, filename):
+	# keys are instance extension names and value is list of device-level functions
+	instExtDeviceFunDict = {}
+	# iterate over all extensions and find instance extensions
+	for ext in api.extensions:
+		if ext.type == "instance":
+			# iterate over all functions instance extension adds
+			for requirement in ext.requirementsList:
+				for extCommand in requirement.newCommands:
+					# to get a type of command we need to find this command definition in list of all functions
+					for command in api.functions:
+						if extCommand.name == command.name or extCommand.name in command.aliasList:
+							# check if this is device-level entry-point
+							if command.getType() == Function.TYPE_DEVICE:
+								if ext.name not in instExtDeviceFunDict:
+									instExtDeviceFunDict[ext.name] = []
+								instExtDeviceFunDict[ext.name].append(extCommand.name)
+	stream = ['std::map<std::string, std::vector<std::string> > instExtDeviceFun', '{']
+	for extName in instExtDeviceFunDict:
+		stream.append(f'\t{{ "{extName}",\n\t\t{{')
+		for fun in instExtDeviceFunDict[extName]:
+			stream.append(f'\t\t\t"{fun}",')
+		stream.append('\t\t}\n\t},')
+	stream.append('};')
+
+def writeGetDeviceProcAddr(api, filename):
+	testBlockStart = '''tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
+{
+	tcu::TestLog&								log						(context.getTestContext().getLog());
+	const PlatformInterface&					platformInterface		= context.getPlatformInterface();
+	const auto									validationEnabled		= context.getTestContext().getCommandLine().isValidationEnabled();
+	const CustomInstance						instance				(createCustomInstanceFromContext(context));
+	const InstanceDriver&						instanceDriver			= instance.getDriver();
+	const VkPhysicalDevice						physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32								queueFamilyIndex		= 0;
+	const deUint32								queueCount				= 1;
+	const float									queuePriority			= 1.0f;
+	const std::vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
+
+	const VkDeviceQueueCreateInfo			deviceQueueCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,	//  VkStructureType				sType;
+		DE_NULL,									//  const void*					pNext;
+		(VkDeviceQueueCreateFlags)0u,				//  VkDeviceQueueCreateFlags	flags;
+		queueFamilyIndex,							//  deUint32					queueFamilyIndex;
+		queueCount,									//  deUint32					queueCount;
+		&queuePriority,								//  const float*				pQueuePriorities;
+	};
+
+	const VkDeviceCreateInfo				deviceCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,		//  VkStructureType					sType;
+		DE_NULL,									//  const void*						pNext;
+		(VkDeviceCreateFlags)0u,					//  VkDeviceCreateFlags				flags;
+		1u,											//  deUint32						queueCreateInfoCount;
+		&deviceQueueCreateInfo,						//  const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
+		0u,											//  deUint32						enabledLayerCount;
+		DE_NULL,									//  const char* const*				ppEnabledLayerNames;
+		0u,											//  deUint32						enabledExtensionCount;
+		DE_NULL,									//  const char* const*				ppEnabledExtensionNames;
+		DE_NULL,									//  const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+	};
+	const Unique<VkDevice>					device			(createCustomDevice(validationEnabled, platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+	const DeviceDriver						deviceDriver	(platformInterface, instance, device.get());
+
+	const std::vector<std::string> loaderExceptions{
+		"vkSetDebugUtilsObjectNameEXT",
+		"vkSetDebugUtilsObjectTagEXT",
+		"vkQueueBeginDebugUtilsLabelEXT",
+		"vkQueueEndDebugUtilsLabelEXT",
+		"vkQueueInsertDebugUtilsLabelEXT",
+		"vkCmdBeginDebugUtilsLabelEXT",
+		"vkCmdEndDebugUtilsLabelEXT",
+		"vkCmdInsertDebugUtilsLabelEXT",
+	};
+
+	const std::vector<std::string> functions{'''
+	testBlockEnd = '''	};
+
+	bool fail = false;
+	for (const auto& function : functions)
+	{
+		if (std::find(loaderExceptions.begin(), loaderExceptions.end(), function) != loaderExceptions.end())
+		{
+			continue;
+		}
+		if (deviceDriver.getDeviceProcAddr(device.get(), function.c_str()) != DE_NULL)
+		{
+			fail = true;
+			log << tcu::TestLog::Message << "Function " << function << " is not NULL" << tcu::TestLog::EndMessage;
+		}
+	}
+	if (fail)
+		return tcu::TestStatus::fail("Fail");
+	return tcu::TestStatus::pass("All functions are NULL");
+}
+'''
+
+	def functions(functionType):
+		for ext in api.extensions:
+			for requirement in ext.requirementsList:
+				for requiredCommand in requirement.newCommands:
+					yield '\t\t"' + requiredCommand.name + '",'
+	stream = []
+	stream.append('#include "tcuCommandLine.hpp"')
+	stream.append('#include "vktTestCase.hpp"')
+	stream.append('#include "vkPlatform.hpp"')
+	stream.append('#include "vkDeviceUtil.hpp"')
+	stream.append('#include "vkQueryUtil.hpp"')
+	stream.append('#include "vktCustomInstancesDevices.hpp"')
+	stream.append('#include "vktTestCase.hpp"')
+	stream.append('#include "vktTestCaseUtil.hpp"')
+	stream.append('\nnamespace vkt\n{\n')
+	stream.append('using namespace vk;\n')
+	stream.append(testBlockStart)
+	stream.extend(functions(api))
+	stream.append(testBlockEnd)
+
+	# function to create tests
+	stream.append("void addGetDeviceProcAddrTests (tcu::TestCaseGroup* testGroup)\n{")
+	stream.append('\taddFunctionCase(testGroup, "non_enabled", "GetDeviceProcAddr", testGetDeviceProcAddr);')
+	stream.append('}\n')
+	stream.append('}\n')
+
+	writeInlFile(filename, INL_HEADER, stream)
+
 def parseCmdLineArgs():
 	parser = argparse.ArgumentParser(description = "Generate Vulkan INL files",
 									 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -2945,6 +3210,7 @@ if __name__ == "__main__":
 		# was saved as gen_framework_sc (it still parses vulkan_sc_core.h)
 		os.chdir(os.path.dirname(__file__))
 		pythonExecutable = sys.executable or "python"
+		print("Executing gen_framework_sc.py")
 		execute([pythonExecutable, "gen_framework_sc.py", "--api", "SC"])
 		exit (0)
 
@@ -3005,6 +3271,8 @@ if __name__ == "__main__":
 	writeDriverIds							(api, os.path.join(outputPath, "vkKnownDriverIds.inl"))
 	writeObjTypeImpl						(api, os.path.join(outputPath, "vkObjTypeImpl.inl"))
 	writeApiExtensionDependencyInfo			(api, os.path.join(outputPath, "vkApiExtensionDependencyInfo.inl"))
+	writeEntryPointValidation				(api, os.path.join(outputPath, "vkEntryPointValidation.inl"))
+	writeGetDeviceProcAddr					(api, os.path.join(outputPath, "vkGetDeviceProcAddr.inl"))
 
 	# NOTE: when new files are generated then they should also be added to the
 	# vk-gl-cts\external\vulkancts\framework\vulkan\CMakeLists.txt outputs list

@@ -78,7 +78,8 @@ enum TestMode
 	TM_SETUP_RATE_WITH_COPYING_FROM_CONCURENT_IMAGE_USING_TRANSFER_QUEUE,
 	TM_SETUP_RATE_WITH_LINEAR_TILED_IMAGE,
 
-	TM_TWO_SUBPASS
+	TM_TWO_SUBPASS,
+	TM_MEMORY_ACCESS
 };
 
 struct TestParams
@@ -97,6 +98,27 @@ deUint32 calculateRate(deUint32 rateWidth, deUint32 rateHeight)
 {
 	return (deCtz32(rateWidth) << 2u) | deCtz32(rateHeight);
 }
+
+
+class DeviceHolder
+{
+public:
+									DeviceHolder	(Move<VkDevice>				device,
+													 de::MovePtr<DeviceDriver>	vk,
+													 de::MovePtr<Allocator>		allocator);
+
+private:
+	Move<VkDevice>					m_device;
+	de::MovePtr<DeviceDriver>		m_vk;
+	de::MovePtr<Allocator>			m_allocator;
+};
+
+DeviceHolder::DeviceHolder (Move<VkDevice> device, de::MovePtr<DeviceDriver> vk, de::MovePtr<Allocator> allocator)
+	: m_device		(device)
+	, m_vk			(vk)
+	, m_allocator	(allocator)
+{}
+
 
 class AttachmentRateInstance : public TestInstance
 {
@@ -119,42 +141,68 @@ private:
 
 private:
 
-	de::MovePtr<ImageWithMemory>	buildImageWithMemory		(VkFormat						format,
+	de::MovePtr<ImageWithMemory>	buildImageWithMemory		(VkDevice						device,
+																 const DeviceInterface&			vk,
+																 vk::Allocator&					allocator,
+																 VkFormat						format,
 																 deUint32						width,
 																 deUint32						height,
 																 VkImageUsageFlags				usage,
 																 VkImageTiling					tiling = VK_IMAGE_TILING_OPTIMAL,
 																 std::vector<deUint32>			queueFamilies = std::vector<deUint32>());
-	de::MovePtr<BufferWithMemory>	buildBufferWithMemory		(deUint32						size,
+	de::MovePtr<BufferWithMemory>	buildBufferWithMemory		(VkDevice						device,
+																 const DeviceInterface&			vk,
+																 vk::Allocator&					allocator,
+																 deUint32						size,
 																 VkBufferUsageFlags				usage);
-	Move<VkImageView>				buildImageView				(VkFormat						format,
+	Move<VkImageView>				buildImageView				(VkDevice						device,
+																 const DeviceInterface&			vk,
+																 VkFormat						format,
 																 VkImage						image);
 
-	void							buildColorBufferObjects		(deUint32						cbIindex,
+	void							buildColorBufferObjects		(VkDevice						device,
+																 const DeviceInterface&			vk,
+																 vk::Allocator&					allocator,
+																 deUint32						cbIindex,
 																 VkImageUsageFlags				cbUsage);
-	void							buildShadingRateObjects		(deUint32						srIndex,
+	void							buildShadingRateObjects		(VkDevice						device,
+																 const DeviceInterface&			vk,
+																 vk::Allocator&					allocator,
+																 deUint32						srIndex,
 																 deUint32						width,
 																 deUint32						height,
 																 VkImageUsageFlags				srUsage,
 																 VkImageTiling					srTiling = VK_IMAGE_TILING_OPTIMAL);
-	void							buildCounterBufferObjects	();
+	void							buildCounterBufferObjects	(VkDevice						device,
+																 const DeviceInterface&			vk,
+																 vk::Allocator&					allocator);
 
-	Move<VkRenderPass>				buildRenderPass				(VkFormat								cbFormat,
+	Move<VkRenderPass>				buildRenderPass				(VkDevice								device,
+																 const DeviceInterface&					vk,
+																 VkFormat								cbFormat,
 																 deUint32								sr1TileWidth = 0,
 																 deUint32								sr1TileHeight = 0,
 																 deUint32								sr2TileWidth = 0,
 																 deUint32								sr2TileHeight = 0) const;
-	Move<VkFramebuffer>				buildFramebuffer			(VkRenderPass							renderPass,
+	Move<VkFramebuffer>				buildFramebuffer			(VkDevice								device,
+																 const DeviceInterface&					vk,
+																 VkRenderPass							renderPass,
 																 const std::vector<FBAttachmentInfo>&	attachmentInfo) const;
-	Move<VkPipelineLayout>			buildPipelineLayout			(const VkDescriptorSetLayout*			setLayouts = DE_NULL) const;
-	Move<VkPipeline>				buildGraphicsPipeline		(deUint32								subpass,
+	Move<VkPipelineLayout>			buildPipelineLayout			(VkDevice								device,
+																 const DeviceInterface&					vk,
+																 const VkDescriptorSetLayout*			setLayouts = DE_NULL) const;
+	Move<VkPipeline>				buildGraphicsPipeline		(VkDevice								device,
+																 const DeviceInterface&					vk,
+																 deUint32								subpass,
 																 VkRenderPass							renderPass,
 																 VkFormat								cbFormat,
 																 VkPipelineLayout						layout,
 																 VkShaderModule							vertShader,
 																 VkShaderModule							fragShader,
 																 bool									useShadingRate = VK_TRUE) const;
-	Move<VkPipeline>				buildComputePipeline		(VkShaderModule							compShader,
+	Move<VkPipeline>				buildComputePipeline		(VkDevice								device,
+																 const DeviceInterface&					vk,
+																 VkShaderModule							compShader,
 																 VkPipelineLayout						pipelineLayout) const;
 	VkDescriptorSetAllocateInfo		makeDescriptorSetAllocInfo	(VkDescriptorPool						descriptorPool,
 																 const VkDescriptorSetLayout*			pSetLayouts) const;
@@ -183,11 +231,13 @@ private:
 
 private:
 
-	// When custom device is used then m_device and m_allocator are used in all
-	// helper methods. Otherwise default device and allocator from context are used.
-	// Those objects are used only by tests from runCopyModeOnTransferQueue.
-	Move<VkDevice>					m_device;
-	de::MovePtr<Allocator>			m_allocator;
+	// A custom device is by tests from runCopyModeOnTransferQueue.
+	// In this test the device is passed to various utils, that create
+	// Vulkan objects later assigned to various members below. To guarantee
+	// proper destruction order, below variable acts as an owner of this custom device
+	// - however, it is not to be used (the device is not accessible directly from this object
+	//   to avoid misusages of the framework device vs custom device).
+	de::MovePtr<DeviceHolder>		m_customDeviceHolder;
 
 	const de::SharedPtr<TestParams>	m_params;
 	const deUint32					m_cbWidth;
@@ -239,7 +289,10 @@ AttachmentRateInstance::AttachmentRateInstance(Context& context, const de::Share
 	m_maxAspectRatio			= srProperties.maxFragmentShadingRateAttachmentTexelSizeAspectRatio;
 }
 
-de::MovePtr<ImageWithMemory> AttachmentRateInstance::buildImageWithMemory (VkFormat					format,
+de::MovePtr<ImageWithMemory> AttachmentRateInstance::buildImageWithMemory (VkDevice					device,
+																		   const DeviceInterface&	vk,
+																		   vk::Allocator&			allocator,
+																		   VkFormat					format,
 																		   deUint32					width,
 																		   deUint32					height,
 																		   VkImageUsageFlags		usage,
@@ -271,54 +324,43 @@ de::MovePtr<ImageWithMemory> AttachmentRateInstance::buildImageWithMemory (VkFor
 		VK_IMAGE_LAYOUT_UNDEFINED					// VkImageLayout			initialLayout;
 	};
 
-	const DeviceInterface&	vk					= m_context.getDeviceInterface();
-	VkDevice				device				= m_device.get() ? *m_device : m_context.getDevice();
-	vk::Allocator&			allocator			= m_allocator.get() ? *m_allocator : m_context.getDefaultAllocator();
 	vk::MemoryRequirement	memoryRequirement	= (tiling == VK_IMAGE_TILING_LINEAR) ? MemoryRequirement::HostVisible : MemoryRequirement::Any;
 	return de::MovePtr<ImageWithMemory>(new ImageWithMemory(vk, device, allocator, imageCreateInfo, memoryRequirement));
 }
 
-de::MovePtr<BufferWithMemory> AttachmentRateInstance::buildBufferWithMemory(deUint32 size, VkBufferUsageFlags usage)
+de::MovePtr<BufferWithMemory> AttachmentRateInstance::buildBufferWithMemory(VkDevice device, const DeviceInterface& vk, vk::Allocator& allocator, deUint32 size, VkBufferUsageFlags usage)
 {
-	const DeviceInterface&		vk				= m_context.getDeviceInterface();
-	VkDevice					device			= m_device.get() ? *m_device : m_context.getDevice();
-	vk::Allocator&				allocator		= m_allocator.get() ? *m_allocator : m_context.getDefaultAllocator();
 	const VkBufferCreateInfo	readBufferInfo	= makeBufferCreateInfo(size, usage);
 
 	return de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, readBufferInfo, MemoryRequirement::HostVisible));
 }
 
-Move<VkImageView> AttachmentRateInstance::buildImageView (VkFormat format, VkImage image)
+Move<VkImageView> AttachmentRateInstance::buildImageView (VkDevice device, const DeviceInterface& vk, VkFormat format, VkImage image)
 {
-	const DeviceInterface&	vk					= m_context.getDeviceInterface();
-	VkDevice				device				= m_device.get() ? *m_device : m_context.getDevice();
 	VkImageSubresourceRange	subresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
 
 	return makeImageView(vk, device, image, VK_IMAGE_VIEW_TYPE_2D, format, subresourceRange);
 };
 
-void AttachmentRateInstance::buildColorBufferObjects(deUint32 cbIndex, VkImageUsageFlags cbUsage)
+void AttachmentRateInstance::buildColorBufferObjects (VkDevice device, const DeviceInterface& vk, vk::Allocator& allocator, deUint32 cbIndex, VkImageUsageFlags cbUsage)
 {
 	DE_ASSERT(cbIndex < 2);
 
-	m_cbImage[cbIndex]			= buildImageWithMemory(m_cbFormat, m_cbWidth, m_cbHeight, cbUsage);
-	m_cbImageView[cbIndex]		= buildImageView(m_cbFormat, m_cbImage[cbIndex]->get());
-	m_cbReadBuffer[cbIndex]		= buildBufferWithMemory(m_cbWidth * m_cbHeight * deUint32(sizeof(int)) * 4u, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	m_cbImage[cbIndex]			= buildImageWithMemory(device, vk, allocator, m_cbFormat, m_cbWidth, m_cbHeight, cbUsage);
+	m_cbImageView[cbIndex]		= buildImageView(device, vk, m_cbFormat, m_cbImage[cbIndex]->get());
+	m_cbReadBuffer[cbIndex]		= buildBufferWithMemory(device, vk, allocator, m_cbWidth * m_cbHeight * deUint32(sizeof(int)) * 4u, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 }
 
-void AttachmentRateInstance::buildShadingRateObjects(deUint32 srIndex, deUint32 width, deUint32 height, VkImageUsageFlags srUsage, VkImageTiling srTiling)
+void AttachmentRateInstance::buildShadingRateObjects (VkDevice device, const DeviceInterface& vk, vk::Allocator& allocator, deUint32 srIndex, deUint32 width, deUint32 height, VkImageUsageFlags srUsage, VkImageTiling srTiling)
 {
 	DE_ASSERT(srIndex < 2);
 
-	m_srImage[srIndex]		= buildImageWithMemory(m_params->srFormat, width, height, srUsage, srTiling);
-	m_srImageView[srIndex]	= buildImageView(m_params->srFormat, m_srImage[srIndex]->get());
+	m_srImage[srIndex]		= buildImageWithMemory(device, vk, allocator, m_params->srFormat, width, height, srUsage, srTiling);
+	m_srImageView[srIndex]	= buildImageView(device, vk, m_params->srFormat, m_srImage[srIndex]->get());
 }
 
-void AttachmentRateInstance::buildCounterBufferObjects()
+void AttachmentRateInstance::buildCounterBufferObjects (VkDevice device, const vk::DeviceInterface& vk, vk::Allocator& allocator)
 {
-	const DeviceInterface&	vk		= m_context.getDeviceInterface();
-	VkDevice				device	= m_device.get() ? *m_device : m_context.getDevice();
-
 	m_counterBufferDescriptorPool		= DescriptorPoolBuilder()
 											.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u)
 											.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
@@ -332,7 +374,7 @@ void AttachmentRateInstance::buildCounterBufferObjects()
 
 	// create ssbo buffer for atomic counter
 	deUint32 ssboSize	= deUint32(sizeof(deUint32));
-	m_counterBuffer		= buildBufferWithMemory(ssboSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	m_counterBuffer		= buildBufferWithMemory(device, vk, allocator, ssboSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 
 	const VkDescriptorBufferInfo descriptorInfo = makeDescriptorBufferInfo(**m_counterBuffer, 0, ssboSize);
 	DescriptorSetUpdateBuilder()
@@ -344,7 +386,7 @@ void AttachmentRateInstance::buildCounterBufferObjects()
 	flushAlloc(vk, device, m_counterBuffer->getAllocation());
 }
 
-Move<VkRenderPass> AttachmentRateInstance::buildRenderPass(VkFormat cbFormat,
+Move<VkRenderPass> AttachmentRateInstance::buildRenderPass (VkDevice device, const vk::DeviceInterface& vk, VkFormat cbFormat,
 														   deUint32 sr0TileWidth, deUint32 sr0TileHeight,
 														   deUint32 sr1TileWidth, deUint32 sr1TileHeight) const
 {
@@ -451,16 +493,13 @@ Move<VkRenderPass> AttachmentRateInstance::buildRenderPass(VkFormat cbFormat,
 		DE_NULL,															// const uint32_t*					pCorrelatedViewMasks;
 	};
 
-	VkDevice device = m_device.get() ? *m_device : m_context.getDevice();
-	return createRenderPass2(m_context.getDeviceInterface(), device, &renderPassParams);
+	return createRenderPass2(vk, device, &renderPassParams);
 }
 
-Move<VkFramebuffer> AttachmentRateInstance::buildFramebuffer(VkRenderPass renderPass, const std::vector<FBAttachmentInfo>& attachmentInfo) const
+Move<VkFramebuffer> AttachmentRateInstance::buildFramebuffer (VkDevice device, const vk::DeviceInterface& vk, VkRenderPass renderPass, const std::vector<FBAttachmentInfo>& attachmentInfo) const
 {
 	if (m_params->useDynamicRendering)
 		return Move<VkFramebuffer>();
-
-	VkDevice device = m_device.get() ? *m_device : m_context.getDevice();
 
 	VkFramebufferCreateInfo framebufferParams
 	{
@@ -513,7 +552,7 @@ Move<VkFramebuffer> AttachmentRateInstance::buildFramebuffer(VkRenderPass render
 		framebufferParams.pNext	= &framebufferAttachmentsCreateInfo;
 		framebufferParams.flags	= VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT;
 
-		return createFramebuffer(m_context.getDeviceInterface(), device, &framebufferParams);
+		return createFramebuffer(vk, device, &framebufferParams);
 	}
 
 	// create array containing just attachment views
@@ -523,10 +562,10 @@ Move<VkFramebuffer> AttachmentRateInstance::buildFramebuffer(VkRenderPass render
 
 	framebufferParams.pAttachments = attachments.data();
 
-	return createFramebuffer(m_context.getDeviceInterface(), device, &framebufferParams);
+	return createFramebuffer(vk, device, &framebufferParams);
 }
 
-Move<VkPipelineLayout> AttachmentRateInstance::buildPipelineLayout(const VkDescriptorSetLayout* setLayouts) const
+Move<VkPipelineLayout> AttachmentRateInstance::buildPipelineLayout (VkDevice device, const vk::DeviceInterface& vk, const VkDescriptorSetLayout* setLayouts) const
 {
 	const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo
 	{
@@ -539,11 +578,10 @@ Move<VkPipelineLayout> AttachmentRateInstance::buildPipelineLayout(const VkDescr
 		DE_NULL,											// const VkPushConstantRange*		pPushConstantRanges;
 	};
 
-	VkDevice device = m_device.get() ? *m_device : m_context.getDevice();
-	return createPipelineLayout(m_context.getDeviceInterface(), device, &pipelineLayoutCreateInfo, NULL);
+	return createPipelineLayout(vk, device, &pipelineLayoutCreateInfo, NULL);
 }
 
-Move<VkPipeline> AttachmentRateInstance::buildGraphicsPipeline(deUint32 subpass, VkRenderPass renderPass, VkFormat cbFormat, VkPipelineLayout pipelineLayout,
+Move<VkPipeline> AttachmentRateInstance::buildGraphicsPipeline (VkDevice device, const vk::DeviceInterface& vk, deUint32 subpass, VkRenderPass renderPass, VkFormat cbFormat, VkPipelineLayout pipelineLayout,
 															   VkShaderModule vertShader, VkShaderModule fragShader, bool useShadingRate) const
 {
 	std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageParams(2,
@@ -744,11 +782,10 @@ Move<VkPipeline> AttachmentRateInstance::buildGraphicsPipeline(deUint32 subpass,
 		pipelineCreateInfo.flags |= VK_PIPELINE_CREATE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
 #endif // CTS_USES_VULKANSC
 
-	VkDevice device = m_device.get() ? *m_device : m_context.getDevice();
-	return createGraphicsPipeline(m_context.getDeviceInterface(), device, DE_NULL, &pipelineCreateInfo);
+	return createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 }
 
-Move<VkPipeline> AttachmentRateInstance::buildComputePipeline(VkShaderModule compShader, VkPipelineLayout pipelineLayout) const
+Move<VkPipeline> AttachmentRateInstance::buildComputePipeline (VkDevice device, const vk::DeviceInterface& vk, VkShaderModule compShader, VkPipelineLayout pipelineLayout) const
 {
 	const VkPipelineShaderStageCreateInfo stageCreateInfo
 	{
@@ -772,8 +809,7 @@ Move<VkPipeline> AttachmentRateInstance::buildComputePipeline(VkShaderModule com
 		0u,														// int32_t								basePipelineIndex;
 	};
 
-	VkDevice device = m_device.get() ? *m_device : m_context.getDevice();
-	return createComputePipeline(m_context.getDeviceInterface(), device, (vk::VkPipelineCache)0u, &createInfo);
+	return createComputePipeline(vk, device, (vk::VkPipelineCache)0u, &createInfo);
 }
 
 VkDescriptorSetAllocateInfo AttachmentRateInstance::makeDescriptorSetAllocInfo(VkDescriptorPool descriptorPool, const VkDescriptorSetLayout* pSetLayouts) const
@@ -914,6 +950,7 @@ tcu::TestStatus AttachmentRateInstance::iterate(void)
 		{ TM_SETUP_RATE_WITH_COPYING_FROM_CONCURENT_IMAGE_USING_TRANSFER_QUEUE,	&AttachmentRateInstance::runCopyModeOnTransferQueue },
 		{ TM_SETUP_RATE_WITH_LINEAR_TILED_IMAGE,								&AttachmentRateInstance::runFillLinearTiledImage },
 		{ TM_TWO_SUBPASS,														&AttachmentRateInstance::runTwoSubpassMode },
+		{ TM_MEMORY_ACCESS,														&AttachmentRateInstance::runFragmentShaderMode },
 	};
 
 	if ((this->*modeFuncMap.at(m_params->mode))())
@@ -1107,8 +1144,8 @@ bool AttachmentRateInstance::runComputeShaderMode(void)
 
 	m_srUsage |= VK_IMAGE_USAGE_STORAGE_BIT;
 
-	buildCounterBufferObjects();
-	buildColorBufferObjects(0, m_cbUsage);
+	buildCounterBufferObjects(device, vk, m_context.getDefaultAllocator());
+	buildColorBufferObjects(device, vk, m_context.getDefaultAllocator(), 0, m_cbUsage);
 
 	// iterate over all possible tile sizes
 	for (deUint32 tileWidth  = m_minTileSize.width;  tileWidth  <= m_maxTileSize.width;  tileWidth  *= 2)
@@ -1123,25 +1160,25 @@ bool AttachmentRateInstance::runComputeShaderMode(void)
 		deUint32 srWidth  = (m_cbWidth  + tileWidth  - 1) / tileWidth;
 		deUint32 srHeight = (m_cbHeight + tileHeight - 1) / tileHeight;
 
-		buildShadingRateObjects(0, srWidth, srHeight, m_srUsage);
+		buildShadingRateObjects(device, vk, m_context.getDefaultAllocator(), 0, srWidth, srHeight, m_srUsage);
 
 		const VkDescriptorImageInfo  computeDescriptorInfo  = makeDescriptorImageInfo(DE_NULL, *m_srImageView[0], VK_IMAGE_LAYOUT_GENERAL);
 		DescriptorSetUpdateBuilder()
 			.writeSingle(*computeDescriptorSet,  DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,  &computeDescriptorInfo)
 			.update(vk, device);
 
-		Move<VkPipelineLayout>	computePipelineLayout	= buildPipelineLayout(&(*computeDescriptorSetLayout));
-		Move<VkPipelineLayout>	graphicsPipelineLayout	= buildPipelineLayout(&(*m_counterBufferDescriptorSetLayout));
-		Move<VkPipeline>		computePipeline			= buildComputePipeline(*compShader, *computePipelineLayout);
-		Move<VkRenderPass>		renderPass				= buildRenderPass(m_cbFormat, tileWidth, tileHeight);
-		Move<VkPipeline>		graphicsPipeline		= buildGraphicsPipeline(0, *renderPass, m_cbFormat, *graphicsPipelineLayout, *vertShader, *fragShader);
+		Move<VkPipelineLayout>	computePipelineLayout	= buildPipelineLayout(device, vk, &(*computeDescriptorSetLayout));
+		Move<VkPipelineLayout>	graphicsPipelineLayout	= buildPipelineLayout(device, vk, &(*m_counterBufferDescriptorSetLayout));
+		Move<VkPipeline>		computePipeline			= buildComputePipeline(device, vk, *compShader, *computePipelineLayout);
+		Move<VkRenderPass>		renderPass				= buildRenderPass(device, vk, m_cbFormat, tileWidth, tileHeight);
+		Move<VkPipeline>		graphicsPipeline		= buildGraphicsPipeline(device, vk, 0, *renderPass, m_cbFormat, *graphicsPipelineLayout, *vertShader, *fragShader);
 
 		std::vector<FBAttachmentInfo> attachmentInfo
 		{
 			{ m_cbFormat,			m_cbUsage, m_cbWidth, m_cbHeight, *m_cbImageView[0] },
 			{ m_params->srFormat,	m_srUsage, srWidth,   srHeight,   *m_srImageView[0] }
 		};
-		Move<VkFramebuffer> framebuffer = buildFramebuffer(*renderPass, attachmentInfo);
+		Move<VkFramebuffer> framebuffer = buildFramebuffer(device, vk, *renderPass, attachmentInfo);
 
 		beginCommandBuffer(vk, *cmdBuffer, 0u);
 
@@ -1236,6 +1273,7 @@ bool AttachmentRateInstance::runFragmentShaderMode(void)
 	VkDevice				device				= m_context.getDevice();
 	deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 	VkMemoryBarrier			memoryBarrier		{ VK_STRUCTURE_TYPE_MEMORY_BARRIER, DE_NULL, 0u, 0u };
+	const bool				useMemoryAccess		= (m_params->mode == TM_MEMORY_ACCESS);
 
 	Move<VkShaderModule>	vertSetupShader		= createShaderModule(vk, device, m_context.getBinaryCollection().get("vert_setup"), 0);
 	Move<VkShaderModule>	fragSetupShader		= createShaderModule(vk, device, m_context.getBinaryCollection().get("frag_setup"), 0);
@@ -1247,8 +1285,8 @@ bool AttachmentRateInstance::runFragmentShaderMode(void)
 
 	m_srUsage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-	buildCounterBufferObjects();
-	buildColorBufferObjects(0, m_cbUsage);
+	buildCounterBufferObjects(device, vk, m_context.getDefaultAllocator());
+	buildColorBufferObjects(device, vk, m_context.getDefaultAllocator(), 0, m_cbUsage);
 
 	// iterate over all possible tile sizes
 	for (deUint32 tileWidth  = m_minTileSize.width;  tileWidth  <= m_maxTileSize.width;  tileWidth  *= 2)
@@ -1263,14 +1301,14 @@ bool AttachmentRateInstance::runFragmentShaderMode(void)
 		deUint32 srWidth  = (m_cbWidth  + tileWidth  - 1) / tileWidth;
 		deUint32 srHeight = (m_cbHeight + tileHeight - 1) / tileHeight;
 
-		buildShadingRateObjects(0, srWidth, srHeight, m_srUsage);
+		buildShadingRateObjects(device, vk, m_context.getDefaultAllocator(), 0, srWidth, srHeight, m_srUsage);
 
-		Move<VkPipelineLayout>	setupPipelineLayout	= buildPipelineLayout();
-		Move<VkPipelineLayout>	ratePipelineLayout	= buildPipelineLayout(&(*m_counterBufferDescriptorSetLayout));
-		Move<VkRenderPass>		setupRenderPass		= buildRenderPass(m_params->srFormat);
-		Move<VkRenderPass>		rateRenderPass		= buildRenderPass(m_cbFormat, tileWidth, tileHeight);
-		Move<VkPipeline>		setupPipeline		= buildGraphicsPipeline(0, *setupRenderPass, m_params->srFormat, *setupPipelineLayout, *vertSetupShader, *fragSetupShader, DE_FALSE);
-		Move<VkPipeline>		ratePipeline		= buildGraphicsPipeline(0, *rateRenderPass, m_cbFormat, *ratePipelineLayout, *vertShader, *fragShader);
+		Move<VkPipelineLayout>	setupPipelineLayout	= buildPipelineLayout(device, vk);
+		Move<VkPipelineLayout>	ratePipelineLayout	= buildPipelineLayout(device, vk, &(*m_counterBufferDescriptorSetLayout));
+		Move<VkRenderPass>		setupRenderPass		= buildRenderPass(device, vk, m_params->srFormat);
+		Move<VkRenderPass>		rateRenderPass		= buildRenderPass(device, vk, m_cbFormat, tileWidth, tileHeight);
+		Move<VkPipeline>		setupPipeline		= buildGraphicsPipeline(device, vk, 0, *setupRenderPass, m_params->srFormat, *setupPipelineLayout, *vertSetupShader, *fragSetupShader, DE_FALSE);
+		Move<VkPipeline>		ratePipeline		= buildGraphicsPipeline(device, vk, 0, *rateRenderPass, m_cbFormat, *ratePipelineLayout, *vertShader, *fragShader);
 
 		std::vector<FBAttachmentInfo> setupAttachmentInfo
 		{
@@ -1281,8 +1319,8 @@ bool AttachmentRateInstance::runFragmentShaderMode(void)
 			{ m_cbFormat,			m_cbUsage, m_cbWidth, m_cbHeight, *m_cbImageView[0] },
 			{ m_params->srFormat,	m_srUsage, srWidth,   srHeight,   *m_srImageView[0] }
 		};
-		Move<VkFramebuffer> setupFramebuffer	= buildFramebuffer(*setupRenderPass, setupAttachmentInfo);
-		Move<VkFramebuffer> rateFramebuffer		= buildFramebuffer(*rateRenderPass, rateAttachmentInfo);
+		Move<VkFramebuffer> setupFramebuffer	= buildFramebuffer(device, vk, *setupRenderPass, setupAttachmentInfo);
+		Move<VkFramebuffer> rateFramebuffer		= buildFramebuffer(device, vk, *rateRenderPass, rateAttachmentInfo);
 
 		beginCommandBuffer(vk, *cmdBuffer, 0u);
 
@@ -1292,7 +1330,7 @@ bool AttachmentRateInstance::runFragmentShaderMode(void)
 		VkImageMemoryBarrier srImageBarrierGeneral =
 			makeImageMemoryBarrier(
 				VK_ACCESS_NONE_KHR,
-				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+				useMemoryAccess ? VK_ACCESS_MEMORY_WRITE_BIT : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
 				VK_IMAGE_LAYOUT_UNDEFINED,
 				VK_IMAGE_LAYOUT_GENERAL,
 				**m_srImage[0],
@@ -1313,8 +1351,8 @@ bool AttachmentRateInstance::runFragmentShaderMode(void)
 		dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
 		VkImageMemoryBarrier srImageBarrierShadingRate =
 			makeImageMemoryBarrier(
-				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-				VK_ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR,
+				useMemoryAccess ? VK_ACCESS_MEMORY_WRITE_BIT : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+				useMemoryAccess ? VK_ACCESS_MEMORY_READ_BIT : VK_ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR,
 				VK_IMAGE_LAYOUT_GENERAL,
 				VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR,
 				**m_srImage[0],
@@ -1327,7 +1365,7 @@ bool AttachmentRateInstance::runFragmentShaderMode(void)
 		VkImageMemoryBarrier cbImageBarrier =
 			makeImageMemoryBarrier(
 				VK_ACCESS_NONE_KHR,
-				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+				useMemoryAccess ? VK_ACCESS_MEMORY_WRITE_BIT : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
 				VK_IMAGE_LAYOUT_UNDEFINED,
 				VK_IMAGE_LAYOUT_GENERAL,
 				**m_cbImage[0],
@@ -1346,8 +1384,8 @@ bool AttachmentRateInstance::runFragmentShaderMode(void)
 		// wait till color attachment is fully written
 		srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 		dstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
-		memoryBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		memoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+		memoryBarrier.srcAccessMask = useMemoryAccess ? VK_ACCESS_MEMORY_WRITE_BIT : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		memoryBarrier.dstAccessMask = useMemoryAccess ? VK_ACCESS_MEMORY_READ_BIT : VK_ACCESS_TRANSFER_READ_BIT;
 		vk.cmdPipelineBarrier(*cmdBuffer, srcStageMask, dstStageMask, 0, 1, &memoryBarrier, 0, DE_NULL, 0, DE_NULL);
 
 		// read back color buffer image
@@ -1386,8 +1424,8 @@ bool AttachmentRateInstance::runCopyMode (void)
 	Move<VkCommandPool>		cmdPool				= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
 	Move<VkCommandBuffer>	cmdBuffer			= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-	buildCounterBufferObjects();
-	buildColorBufferObjects(0, m_cbUsage);
+	buildCounterBufferObjects(device, vk, m_context.getDefaultAllocator());
+	buildColorBufferObjects(device, vk, m_context.getDefaultAllocator(), 0, m_cbUsage);
 
 	// iterate over all possible tile sizes
 	for (deUint32 tileWidth  = m_minTileSize.width;  tileWidth  <= m_maxTileSize.width;  tileWidth  *= 2)
@@ -1402,21 +1440,21 @@ bool AttachmentRateInstance::runCopyMode (void)
 		deUint32 srWidth  = (m_cbWidth  + tileWidth  - 1) / tileWidth;
 		deUint32 srHeight = (m_cbHeight + tileHeight - 1) / tileHeight;
 
-		buildShadingRateObjects(0, srWidth, srHeight, m_srUsage);
+		buildShadingRateObjects(device, vk, m_context.getDefaultAllocator(), 0, srWidth, srHeight, m_srUsage);
 
 		// create image that will be source for shading rate image
-		de::MovePtr<ImageWithMemory> srSrcImage = buildImageWithMemory(m_params->srFormat, srWidth, srHeight, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+		de::MovePtr<ImageWithMemory> srSrcImage = buildImageWithMemory(device, vk, m_context.getDefaultAllocator(), m_params->srFormat, srWidth, srHeight, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
-		Move<VkPipelineLayout>	graphicsPipelineLayout	= buildPipelineLayout(&(*m_counterBufferDescriptorSetLayout));
-		Move<VkRenderPass>		renderPass				= buildRenderPass(m_cbFormat, tileWidth, tileHeight);
-		Move<VkPipeline>		graphicsPipeline		= buildGraphicsPipeline(0, *renderPass, m_cbFormat, *graphicsPipelineLayout, *vertShader, *fragShader);
+		Move<VkPipelineLayout>	graphicsPipelineLayout	= buildPipelineLayout(device, vk, &(*m_counterBufferDescriptorSetLayout));
+		Move<VkRenderPass>		renderPass				= buildRenderPass(device, vk, m_cbFormat, tileWidth, tileHeight);
+		Move<VkPipeline>		graphicsPipeline		= buildGraphicsPipeline(device, vk, 0, *renderPass, m_cbFormat, *graphicsPipelineLayout, *vertShader, *fragShader);
 
 		std::vector<FBAttachmentInfo> attachmentInfo
 		{
 			{ m_cbFormat,			m_cbUsage, m_cbWidth, m_cbHeight, *m_cbImageView[0] },
 			{ m_params->srFormat,	m_srUsage, srWidth,   srHeight,   *m_srImageView[0] }
 		};
-		Move<VkFramebuffer> framebuffer = buildFramebuffer(*renderPass, attachmentInfo);
+		Move<VkFramebuffer> framebuffer = buildFramebuffer(device, vk, *renderPass, attachmentInfo);
 
 		beginCommandBuffer(vk, *cmdBuffer, 0u);
 
@@ -1527,7 +1565,6 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
 	// the shading rate image on separate transfer queue and then use copied
 	// image to draw a basic triangle and do basic checks
 
-	const DeviceInterface&					vk							= m_context.getDeviceInterface();
 	const PlatformInterface&				vkp							= m_context.getPlatformInterface();
 	const InstanceInterface&				vki							= m_context.getInstanceInterface();
 	VkPhysicalDevice						pd							= m_context.getPhysicalDevice();
@@ -1554,6 +1591,10 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
 		queueFamilies = { graphicsQueueFamilyIndex, transferQueueFamilyIndex };
 
 	// create custom device
+	VkDevice			device;
+	DeviceInterface*	driver;
+	Allocator*			allocator;
+
 	{
 		const float queuePriorities = 1.0f;
 		std::vector<VkDeviceQueueCreateInfo> queueInfo(2,
@@ -1608,26 +1649,35 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
 			DE_NULL												// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 		};
 
-		m_device		= createDevice(vkp, m_context.getInstance(), vki, pd, &deviceInfo);
-		m_allocator		= de::MovePtr<Allocator>(new SimpleAllocator(m_context.getDeviceInterface(), *m_device, getPhysicalDeviceMemoryProperties(vki, pd)));
+		vk::Move<VkDevice>			customDevice	= createDevice(vkp, m_context.getInstance(), vki, pd, &deviceInfo);
+		de::MovePtr<DeviceDriver>	customDriver	= de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, m_context.getInstance(), *customDevice));
+		de::MovePtr<Allocator>		customAllocator	= de::MovePtr<Allocator>(new SimpleAllocator(*customDriver, *customDevice, getPhysicalDeviceMemoryProperties(vki, pd)));
+
+		device						= *customDevice;
+		driver						= &*customDriver;
+		allocator					= &*customAllocator;
+
+		m_customDeviceHolder		= de::MovePtr <DeviceHolder>(new DeviceHolder(customDevice, customDriver, customAllocator));
 	}
 
+	DeviceInterface& vk = *driver;
+
 	VkQueue transferQueue;
-	vk.getDeviceQueue(*m_device, transferQueueFamilyIndex, 0u, &transferQueue);
+	vk.getDeviceQueue(device, transferQueueFamilyIndex, 0u, &transferQueue);
 	VkQueue graphicsQueue;
-	vk.getDeviceQueue(*m_device, graphicsQueueFamilyIndex, 0u, &graphicsQueue);
+	vk.getDeviceQueue(device, graphicsQueueFamilyIndex, 0u, &graphicsQueue);
 
 	// create transfer and graphics command buffers
-	Move<VkCommandPool>		transferCmdPool		= createCommandPool(vk, *m_device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, transferQueueFamilyIndex);
-	Move<VkCommandBuffer>	transferCmdBuffer	= allocateCommandBuffer(vk, *m_device, *transferCmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-	Move<VkCommandPool>		graphicsCmdPool		= createCommandPool(vk, *m_device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, graphicsQueueFamilyIndex);
-	Move<VkCommandBuffer>	graphicsCmdBuffer	= allocateCommandBuffer(vk, *m_device, *graphicsCmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	Move<VkCommandPool>		transferCmdPool		= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, transferQueueFamilyIndex);
+	Move<VkCommandBuffer>	transferCmdBuffer	= allocateCommandBuffer(vk, device, *transferCmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	Move<VkCommandPool>		graphicsCmdPool		= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, graphicsQueueFamilyIndex);
+	Move<VkCommandBuffer>	graphicsCmdBuffer	= allocateCommandBuffer(vk, device, *graphicsCmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-	Move<VkShaderModule>	vertShader			= createShaderModule(vk, *m_device, m_context.getBinaryCollection().get("vert"), 0);
-	Move<VkShaderModule>	fragShader			= createShaderModule(vk, *m_device, m_context.getBinaryCollection().get("frag"), 0);
+	Move<VkShaderModule>	vertShader			= createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0);
+	Move<VkShaderModule>	fragShader			= createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0);
 
-	buildColorBufferObjects(0, m_cbUsage);
-	buildCounterBufferObjects();
+	buildColorBufferObjects(device, vk, *allocator, 0, m_cbUsage);
+	buildCounterBufferObjects(device, vk, *allocator);
 
 	// iterate over all possible tile sizes
 	for (deUint32 tileWidth  = m_minTileSize.width;  tileWidth  <= m_maxTileSize.width;  tileWidth  *= 2)
@@ -1643,36 +1693,36 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
 		deUint32 srHeight = (m_cbHeight + tileHeight - 1) / tileHeight;
 
 		// create image that will be source for shading rate image
-		de::MovePtr<ImageWithMemory> srSrcImage = buildImageWithMemory(m_params->srFormat, srWidth, srHeight,
+		de::MovePtr<ImageWithMemory> srSrcImage = buildImageWithMemory(device, vk, *allocator, m_params->srFormat, srWidth, srHeight,
 																	   VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
 		// create buffer that will contain shading rate source data
 		tcu::TextureFormat				srTextureFormat		= mapVkFormat(m_params->srFormat);
 		deUint32						srWriteBufferSize	= srWidth * srHeight * getNumUsedChannels(srTextureFormat.order) * getChannelSize(srTextureFormat.type);
-		de::MovePtr<BufferWithMemory>	srSrcBuffer			= buildBufferWithMemory(srWriteBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+		de::MovePtr<BufferWithMemory>	srSrcBuffer			= buildBufferWithMemory(device, vk, *allocator, srWriteBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
 
 		// fill buffer with tested shading rate
 		deUint8*	srWriteBufferHostPtr	= (deUint8*)srSrcBuffer->getAllocation().getHostPtr();
 		deUint8		value					= (deUint8)calculateRate(m_params->srRate.width, m_params->srRate.height);
 		deMemset(srWriteBufferHostPtr, value, (size_t)srWriteBufferSize);
-		flushAlloc(vk, *m_device, srSrcBuffer->getAllocation());
+		flushAlloc(vk, device, srSrcBuffer->getAllocation());
 
 		// create shading rate iamge
-		m_srImage[0]		= buildImageWithMemory(m_params->srFormat, srWidth, srHeight,
+		m_srImage[0]		= buildImageWithMemory(device, vk, *allocator, m_params->srFormat, srWidth, srHeight,
 												   VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
 												   VK_IMAGE_TILING_OPTIMAL, queueFamilies);
-		m_srImageView[0]	= buildImageView(m_params->srFormat, m_srImage[0]->get());
+		m_srImageView[0]	= buildImageView(device, vk, m_params->srFormat, m_srImage[0]->get());
 
-		Move<VkPipelineLayout>	graphicsPipelineLayout	= buildPipelineLayout(&(*m_counterBufferDescriptorSetLayout));
-		Move<VkRenderPass>		renderPass				= buildRenderPass(m_cbFormat, tileWidth, tileHeight);
-		Move<VkPipeline>		graphicsPipeline		= buildGraphicsPipeline(0, *renderPass, m_cbFormat, *graphicsPipelineLayout, *vertShader, *fragShader);
+		Move<VkPipelineLayout>	graphicsPipelineLayout	= buildPipelineLayout(device, vk, &(*m_counterBufferDescriptorSetLayout));
+		Move<VkRenderPass>		renderPass				= buildRenderPass(device, vk, m_cbFormat, tileWidth, tileHeight);
+		Move<VkPipeline>		graphicsPipeline		= buildGraphicsPipeline(device, vk, 0, *renderPass, m_cbFormat, *graphicsPipelineLayout, *vertShader, *fragShader);
 
 		std::vector<FBAttachmentInfo> attachmentInfo
 		{
 			{ m_cbFormat,			m_cbUsage, m_cbWidth, m_cbHeight, *m_cbImageView[0] },
 			{ m_params->srFormat,	m_srUsage, srWidth,   srHeight,   *m_srImageView[0] }
 		};
-		Move<VkFramebuffer> framebuffer = buildFramebuffer(*renderPass, attachmentInfo);
+		Move<VkFramebuffer> framebuffer = buildFramebuffer(device, vk, *renderPass, attachmentInfo);
 
 		beginCommandBuffer(vk, *transferCmdBuffer, 0u);
 
@@ -1786,9 +1836,9 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
 		endCommandBuffer(vk, *graphicsCmdBuffer);
 
 		// create synchronization objects
-		Move<VkSemaphore>	semaphore		= createSemaphore(vk, *m_device);
-		Move<VkFence>		transferFence	= createFence(vk, *m_device);
-		Move<VkFence>		graphicsFence	= createFence(vk, *m_device);
+		Move<VkSemaphore>	semaphore		= createSemaphore(vk, device);
+		Move<VkFence>		transferFence	= createFence(vk, device);
+		Move<VkFence>		graphicsFence	= createFence(vk, device);
 
 		const VkSubmitInfo transferSubmitInfo
 		{
@@ -1821,9 +1871,9 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
 		VK_CHECK(vk.queueSubmit(graphicsQueue, 1u, &graphicsSubmitInfo, *graphicsFence));
 
 		VkFence fences[] = { *graphicsFence, *transferFence };
-		VK_CHECK(vk.waitForFences(*m_device, 2u, fences, DE_TRUE, ~0ull));
+		VK_CHECK(vk.waitForFences(device, 2u, fences, DE_TRUE, ~0ull));
 
-		invalidateAlloc(vk, *m_device, m_cbReadBuffer[0]->getAllocation());
+		invalidateAlloc(vk, device, m_cbReadBuffer[0]->getAllocation());
 		if (!verifyUsingAtomicChecks(tileWidth, tileHeight,
 									 m_params->srRate.width, m_params->srRate.height,
 									 (deUint32*)m_cbReadBuffer[0]->getAllocation().getHostPtr()))
@@ -1852,8 +1902,8 @@ bool AttachmentRateInstance::runFillLinearTiledImage(void)
 	Move<VkCommandPool>		cmdPool				= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
 	Move<VkCommandBuffer>	cmdBuffer			= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-	buildCounterBufferObjects();
-	buildColorBufferObjects(0, m_cbUsage);
+	buildCounterBufferObjects(device, vk, m_context.getDefaultAllocator());
+	buildColorBufferObjects(device, vk, m_context.getDefaultAllocator(), 0, m_cbUsage);
 
 	// iterate over all possible tile sizes
 	for (deUint32 tileWidth  = m_minTileSize.width;  tileWidth  <= m_maxTileSize.width;  tileWidth  *= 2)
@@ -1868,7 +1918,7 @@ bool AttachmentRateInstance::runFillLinearTiledImage(void)
 		deUint32 srWidth  = (m_cbWidth  + tileWidth  - 1) / tileWidth;
 		deUint32 srHeight = (m_cbHeight + tileHeight - 1) / tileHeight;
 
-		buildShadingRateObjects(0, srWidth, srHeight, m_srUsage, VK_IMAGE_TILING_LINEAR);
+		buildShadingRateObjects(device, vk, m_context.getDefaultAllocator(), 0, srWidth, srHeight, m_srUsage, VK_IMAGE_TILING_LINEAR);
 
 		deUint8*	imagePtr	= reinterpret_cast<deUint8*>(m_srImage[0]->getAllocation().getHostPtr());
 		deUint8		value		= (deUint8)calculateRate(m_params->srRate.width, m_params->srRate.height);
@@ -1881,16 +1931,16 @@ bool AttachmentRateInstance::runFillLinearTiledImage(void)
 			deMemset(rowDst, value, (size_t)srWidth);
 		}
 
-		Move<VkPipelineLayout>	graphicsPipelineLayout	= buildPipelineLayout(&(*m_counterBufferDescriptorSetLayout));
-		Move<VkRenderPass>		renderPass				= buildRenderPass(m_cbFormat, tileWidth, tileHeight);
-		Move<VkPipeline>		graphicsPipeline		= buildGraphicsPipeline(0, *renderPass, m_cbFormat, *graphicsPipelineLayout, *vertShader, *fragShader);
+		Move<VkPipelineLayout>	graphicsPipelineLayout	= buildPipelineLayout(device, vk, &(*m_counterBufferDescriptorSetLayout));
+		Move<VkRenderPass>		renderPass				= buildRenderPass(device, vk, m_cbFormat, tileWidth, tileHeight);
+		Move<VkPipeline>		graphicsPipeline		= buildGraphicsPipeline(device, vk, 0, *renderPass, m_cbFormat, *graphicsPipelineLayout, *vertShader, *fragShader);
 
 		std::vector<FBAttachmentInfo> attachmentInfo
 		{
 			{ m_cbFormat,			m_cbUsage, m_cbWidth, m_cbHeight, *m_cbImageView[0] },
 			{ m_params->srFormat,	m_srUsage, srWidth,   srHeight,   *m_srImageView[0] }
 		};
-		Move<VkFramebuffer> framebuffer = buildFramebuffer(*renderPass, attachmentInfo);
+		Move<VkFramebuffer> framebuffer = buildFramebuffer(device, vk, *renderPass, attachmentInfo);
 
 		beginCommandBuffer(vk, *cmdBuffer, 0u);
 
@@ -1997,16 +2047,16 @@ bool AttachmentRateInstance::runTwoSubpassMode(void)
 	deUint32 sr1RateWidth	= supportedFragmentShadingRates[supportedFragmentShadingRateCount - 2].fragmentSize.width;	// smallest supported rate excluding {1, 1}
 	deUint32 sr1RateHeight	= supportedFragmentShadingRates[supportedFragmentShadingRateCount - 2].fragmentSize.height;
 
-	buildColorBufferObjects(0, m_cbUsage);
-	buildColorBufferObjects(1, m_cbUsage);
-	buildShadingRateObjects(0, sr0Width, sr0Height, m_srUsage);
-	buildShadingRateObjects(1, sr1Width, sr1Height, m_srUsage);
-	buildCounterBufferObjects();
+	buildColorBufferObjects(device, vk, m_context.getDefaultAllocator(), 0, m_cbUsage);
+	buildColorBufferObjects(device, vk, m_context.getDefaultAllocator(), 1, m_cbUsage);
+	buildShadingRateObjects(device, vk, m_context.getDefaultAllocator(), 0, sr0Width, sr0Height, m_srUsage);
+	buildShadingRateObjects(device, vk, m_context.getDefaultAllocator(), 1, sr1Width, sr1Height, m_srUsage);
+	buildCounterBufferObjects(device, vk, m_context.getDefaultAllocator());
 
-	Move<VkRenderPass>		renderPass			= buildRenderPass(m_cbFormat, m_minTileSize.width, m_minTileSize.height, m_maxTileSize.width, m_maxTileSize.height);
-	Move<VkPipelineLayout>	pipelineLayout		= buildPipelineLayout(&(*m_counterBufferDescriptorSetLayout));
-	Move<VkPipeline>		graphicsPipeline0	= buildGraphicsPipeline(0, *renderPass, m_cbFormat, *pipelineLayout, *vertShader0, *fragShader);
-	Move<VkPipeline>		graphicsPipeline1	= buildGraphicsPipeline(1, *renderPass, m_cbFormat, *pipelineLayout, *vertShader1, *fragShader);
+	Move<VkRenderPass>		renderPass			= buildRenderPass(device, vk, m_cbFormat, m_minTileSize.width, m_minTileSize.height, m_maxTileSize.width, m_maxTileSize.height);
+	Move<VkPipelineLayout>	pipelineLayout		= buildPipelineLayout(device, vk, &(*m_counterBufferDescriptorSetLayout));
+	Move<VkPipeline>		graphicsPipeline0	= buildGraphicsPipeline(device, vk, 0, *renderPass, m_cbFormat, *pipelineLayout, *vertShader0, *fragShader);
+	Move<VkPipeline>		graphicsPipeline1	= buildGraphicsPipeline(device, vk, 1, *renderPass, m_cbFormat, *pipelineLayout, *vertShader1, *fragShader);
 
 	std::vector<FBAttachmentInfo> attachmentInfo
 	{
@@ -2015,7 +2065,7 @@ bool AttachmentRateInstance::runTwoSubpassMode(void)
 		{ m_cbFormat,			m_cbUsage, m_cbWidth, m_cbHeight, *m_cbImageView[1] },
 		{ m_params->srFormat,	m_srUsage, sr1Width,  sr1Height,  *m_srImageView[1] }
 	};
-	Move<VkFramebuffer> framebuffer = buildFramebuffer(*renderPass, attachmentInfo);
+	Move<VkFramebuffer> framebuffer = buildFramebuffer(device, vk, *renderPass, attachmentInfo);
 
 	beginCommandBuffer(vk, *cmdBuffer, 0u);
 
@@ -2273,7 +2323,7 @@ void AttachmentRateTestCase::initPrograms(SourceCollections& programCollection) 
 		programCollection.glslSources.add("vert") << glu::VertexSource(vertTemplate.specialize(specializationMap));
 	}
 
-	if (m_params->mode == TM_SETUP_RATE_WITH_FRAGMENT_SHADER)
+	if ((m_params->mode == TM_SETUP_RATE_WITH_FRAGMENT_SHADER) || (m_params->mode == TM_MEMORY_ACCESS))
 	{
 		// use large triangle that will cover whole color buffer
 		specializationMap["SCALE"]		= "9.0";
@@ -2449,6 +2499,17 @@ void createAttachmentRateTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* pa
 				TM_TWO_SUBPASS,									// TestMode			mode;
 				VK_FORMAT_R8_UINT,								// VkFormat			srFormat;
 				{0, 0},											// VkExtent2D		srRate;					// not used in TM_TWO_SUBPASS
+				false,											// bool				useDynamicRendering;
+				false,											// bool				useImagelessFramebuffer;
+				false											// bool				useNullShadingRateImage;
+			}
+		)));
+		miscGroup->addChild(new AttachmentRateTestCase(testCtx, "memory_access", de::SharedPtr<TestParams>(
+			new TestParams
+			{
+				TM_MEMORY_ACCESS,								// TestMode			mode;
+				VK_FORMAT_R8_UINT,								// VkFormat			srFormat;
+				{1, 1},											// VkExtent2D		srRate;
 				false,											// bool				useDynamicRendering;
 				false,											// bool				useImagelessFramebuffer;
 				false											// bool				useNullShadingRateImage;

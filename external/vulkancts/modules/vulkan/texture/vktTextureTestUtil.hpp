@@ -462,6 +462,12 @@ struct TextureCubeArrayTestCaseParameters : public TextureCubeTestCaseParameters
 	int							numLayers;
 };
 
+struct TextureCubeFilteringTestCaseParameters : public TextureCubeTestCaseParameters
+{
+								TextureCubeFilteringTestCaseParameters	(void);
+	bool						onlySampleFaceInterior;
+};
+
 } // util
 } // texture
 } // vkt

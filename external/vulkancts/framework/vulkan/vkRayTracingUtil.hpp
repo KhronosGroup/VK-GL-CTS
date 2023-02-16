@@ -95,6 +95,9 @@ public:
 	inline bool					usesIndices						(void) const								{ return m_indexType != VK_INDEX_TYPE_NONE_KHR; }
 	inline VkGeometryFlagsKHR	getGeometryFlags				(void) const								{ return m_geometryFlags; }
 	inline void					setGeometryFlags				(const VkGeometryFlagsKHR geometryFlags)	{ m_geometryFlags = geometryFlags; }
+	inline VkAccelerationStructureTrianglesOpacityMicromapEXT&	getOpacityMicromap(void)					{ return m_opacityGeometryMicromap; }
+	inline bool					getHasOpacityMicromap			(void) const								{ return m_hasOpacityMicromap; }
+	inline void					setOpacityMicromap				(const VkAccelerationStructureTrianglesOpacityMicromapEXT* opacityGeometryMicromap) { m_hasOpacityMicromap = true; m_opacityGeometryMicromap = *opacityGeometryMicromap; }
 	virtual deUint32			getVertexCount					(void) const								= 0;
 	virtual const deUint8*		getVertexPointer				(void) const								= 0;
 	virtual VkDeviceSize		getVertexStride					(void) const								= 0;
@@ -112,6 +115,8 @@ private:
 	VkFormat					m_vertexFormat;
 	VkIndexType					m_indexType;
 	VkGeometryFlagsKHR			m_geometryFlags;
+	bool						m_hasOpacityMicromap;
+	VkAccelerationStructureTrianglesOpacityMicromapEXT	m_opacityGeometryMicromap;
 };
 
 template <typename T>
@@ -568,7 +573,8 @@ public:
 	virtual void										addGeometry								(de::SharedPtr<RaytracedGeometryBase>&			raytracedGeometry);
 	virtual void										addGeometry								(const std::vector<tcu::Vec3>&					geometryData,
 																								 const bool										triangles,
-																								 const VkGeometryFlagsKHR						geometryFlags			= 0u );
+																								 const VkGeometryFlagsKHR						geometryFlags			= 0u,
+																								 const VkAccelerationStructureTrianglesOpacityMicromapEXT *opacityGeometryMicromap = DE_NULL );
 
 	virtual void										setBuildType							(const VkAccelerationStructureBuildTypeKHR		buildType) = DE_NULL;
 	virtual VkAccelerationStructureBuildTypeKHR			getBuildType							() const = 0;
@@ -584,14 +590,16 @@ public:
 																								 const VkDeviceSize								indirectBufferOffset,
 																								 const deUint32									indirectBufferStride) = DE_NULL;
 	virtual VkBuildAccelerationStructureFlagsKHR		getBuildFlags							() const = DE_NULL;
-	VkDeviceSize										getStructureSize						() const;
+	VkAccelerationStructureBuildSizesInfoKHR			getStructureBuildSizes					() const;
 
 	// methods specific for each acceleration structure
 	virtual void										create									(const DeviceInterface&							vk,
 																								 const VkDevice									device,
 																								 Allocator&										allocator,
 																								 VkDeviceSize									structureSize,
-																								 VkDeviceAddress								deviceAddress			= 0u) = DE_NULL;
+																								 VkDeviceAddress								deviceAddress			= 0u,
+																								 const void*									pNext					= DE_NULL,
+																								 const MemoryRequirement&						addMemoryRequirement	= MemoryRequirement::Any) = DE_NULL;
 	virtual void										build									(const DeviceInterface&							vk,
 																								 const VkDevice									device,
 																								 const VkCommandBuffer							cmdBuffer) = DE_NULL;
@@ -774,7 +782,7 @@ public:
 	virtual void													setUsePPGeometries					(const bool											usePPGeometries) = 0;
 	virtual void													setTryCachedMemory					(const bool											tryCachedMemory) = 0;
 	virtual VkBuildAccelerationStructureFlagsKHR					getBuildFlags						() const = DE_NULL;
-	VkDeviceSize													getStructureSize					() const;
+	VkAccelerationStructureBuildSizesInfoKHR						getStructureBuildSizes				() const;
 
 	// methods specific for each acceleration structure
 	virtual void													getCreationSizes					(const DeviceInterface&						vk,
@@ -785,7 +793,9 @@ public:
 																										 const VkDevice								device,
 																										 Allocator&									allocator,
 																										 VkDeviceSize								structureSize			= 0u,
-																										 VkDeviceAddress							deviceAddress			= 0u ) = DE_NULL;
+																										 VkDeviceAddress							deviceAddress			= 0u,
+																										 const void*								pNext					= DE_NULL,
+																										 const MemoryRequirement&					addMemoryRequirement	= MemoryRequirement::Any) = DE_NULL;
 	virtual void													build								(const DeviceInterface&						vk,
 																										 const VkDevice								device,
 																										 const VkCommandBuffer						cmdBuffer) = DE_NULL;
@@ -1039,6 +1049,72 @@ void cmdTraceRaysIndirect2	(const DeviceInterface&					vk,
 							 VkCommandBuffer						commandBuffer,
 							 VkDeviceAddress						indirectDeviceAddress);
 
+
+static inline VkDeviceOrHostAddressConstKHR makeDeviceOrHostAddressConstKHR(const void* hostAddress)
+{
+	// VS2015: Cannot create as a const due to cannot assign hostAddress due to it is a second field. Only assigning of first field supported.
+	VkDeviceOrHostAddressConstKHR result;
+
+	deMemset(&result, 0, sizeof(result));
+
+	result.hostAddress = hostAddress;
+
+	return result;
+}
+
+static inline VkDeviceOrHostAddressKHR makeDeviceOrHostAddressKHR(void* hostAddress)
+{
+	// VS2015: Cannot create as a const due to cannot assign hostAddress due to it is a second field. Only assigning of first field supported.
+	VkDeviceOrHostAddressKHR result;
+
+	deMemset(&result, 0, sizeof(result));
+
+	result.hostAddress = hostAddress;
+
+	return result;
+}
+
+static inline VkDeviceOrHostAddressConstKHR makeDeviceOrHostAddressConstKHR(const DeviceInterface& vk,
+	const VkDevice			device,
+	VkBuffer					buffer,
+	VkDeviceSize				offset)
+{
+	// VS2015: Cannot create as a const due to cannot assign hostAddress due to it is a second field. Only assigning of first field supported.
+	VkDeviceOrHostAddressConstKHR result;
+
+	deMemset(&result, 0, sizeof(result));
+
+	VkBufferDeviceAddressInfo bufferDeviceAddressInfo =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_KHR,	// VkStructureType	 sType;
+		DE_NULL,											// const void*		 pNext;
+		buffer,												// VkBuffer			buffer
+	};
+	result.deviceAddress = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo) + offset;
+
+	return result;
+}
+
+static inline VkDeviceOrHostAddressKHR makeDeviceOrHostAddressKHR(const DeviceInterface& vk,
+	const VkDevice			device,
+	VkBuffer					buffer,
+	VkDeviceSize				offset)
+{
+	// VS2015: Cannot create as a const due to cannot assign hostAddress due to it is a second field. Only assigning of first field supported.
+	VkDeviceOrHostAddressKHR result;
+
+	deMemset(&result, 0, sizeof(result));
+
+	VkBufferDeviceAddressInfo bufferDeviceAddressInfo =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_KHR,	// VkStructureType	 sType;
+		DE_NULL,											// const void*		 pNext;
+		buffer,												// VkBuffer			buffer
+	};
+	result.deviceAddress = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo) + offset;
+
+	return result;
+}
 
 #else
 

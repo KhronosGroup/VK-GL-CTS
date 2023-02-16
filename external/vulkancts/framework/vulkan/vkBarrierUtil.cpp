@@ -199,5 +199,4 @@ void cmdPipelineImageMemoryBarrier	(const DeviceInterface&			vk,
 
 	vk.cmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, 0u, DE_NULL, 0u, DE_NULL, imageMemoryBarrierCount32, pImageMemoryBarriers);
 }
-
 } // vkt

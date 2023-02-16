@@ -28,7 +28,7 @@ from . import registry
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from build.common import *
+from ctsbuild.common import *
 
 BASE_URL = ""
 

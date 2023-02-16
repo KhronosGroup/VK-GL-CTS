@@ -1,0 +1,9 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceDescriptorBufferFeaturesEXT":
+		[
+			{ "features": ["descriptorBuffer"],	"requirements": ["VK_EXT_descriptor_buffer"] }
+		]
+	}
+}

@@ -20,9 +20,9 @@
 #
 #-------------------------------------------------------------------------
 
-from build.common import *
-from build.config import ANY_GENERATOR
-from build.build import build
+from ctsbuild.common import *
+from ctsbuild.config import ANY_GENERATOR
+from ctsbuild.build import build
 from build_caselists import Module, getModuleByName, getBuildConfig, genCaseList, getCaseListPath, DEFAULT_BUILD_DIR, DEFAULT_TARGET
 from fnmatch import fnmatch
 from copy import copy

@@ -3,6 +3,7 @@
 # Module FindGit requires cmake >= 2.8.2
 cmake_minimum_required(VERSION 3.10.2)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/framework/delibs/cmake")
 find_package(Git)
 find_package(PythonInterp 3)
 
@@ -115,6 +116,14 @@ include_directories(external/jsoncpp/src/include)
 # RenderDoc API
 include_directories(external/renderdoc/src)
 
+# FFmpeg used in vulkan video won't be part of android, fushia, or macos target
+if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)
+	# FFmpeg
+	if (DE_OS_IS_WIN32)
+		add_subdirectory(external/ffmpeg)
+	endif()
+	include_directories(external/ffmpeg/src/include)
+endif()
 include_directories(${PNG_INCLUDE_PATH})
 
 # DRM (Direct Rendering Manager) Headers

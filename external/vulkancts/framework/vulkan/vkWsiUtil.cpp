@@ -718,6 +718,7 @@ VkBool32 isDisplaySurface (Type wsiType)
 		case TYPE_ANDROID:
 		case TYPE_WIN32:
 		case TYPE_MACOS:
+		case TYPE_HEADLESS:
 			return 0;
 		case TYPE_DIRECT_DRM:
 			return 1;

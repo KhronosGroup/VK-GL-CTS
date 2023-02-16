@@ -386,7 +386,7 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 		RenderPassCreateInfo			renderPassCreateInfo;
 		renderPassCreateInfo.addAttachment(AttachmentDescription(imageFormat,
 																 VK_SAMPLE_COUNT_1_BIT,
-																 VK_ATTACHMENT_LOAD_OP_LOAD,
+																 VK_ATTACHMENT_LOAD_OP_CLEAR,
 																 VK_ATTACHMENT_STORE_OP_STORE,
 																 VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 																 VK_ATTACHMENT_STORE_OP_STORE,

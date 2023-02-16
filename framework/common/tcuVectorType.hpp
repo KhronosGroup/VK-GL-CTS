@@ -28,6 +28,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
+#include "tcuFloat.hpp"
 
 namespace tcu
 {
@@ -39,6 +40,11 @@ typedef Vector<float, 1>	Vec1;
 typedef Vector<float, 2>	Vec2;
 typedef Vector<float, 3>	Vec3;
 typedef Vector<float, 4>	Vec4;
+
+typedef Vector<tcu::Float16, 1>	F16Vec1;
+typedef Vector<tcu::Float16, 2>	F16Vec2;
+typedef Vector<tcu::Float16, 3>	F16Vec3;
+typedef Vector<tcu::Float16, 4>	F16Vec4;
 
 typedef Vector<int, 1>		IVec1;
 typedef Vector<int, 2>		IVec2;

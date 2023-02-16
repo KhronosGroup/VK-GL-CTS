@@ -80,7 +80,8 @@ template <RobustnessFeatures FEATURES>
 class SingletonDevice
 {
 	SingletonDevice	(Context& context)
-		: m_context(context), m_instanceWrapper(new CustomInstanceWrapper(context, context.getInstanceExtensions())), m_logicalDevice()
+		: m_context(context)
+		, m_logicalDevice()
 	{
 		// Note we are already checking the needed features are available in checkSupport().
 		VkPhysicalDeviceRobustness2FeaturesEXT				robustness2Features				= initVulkanStructure();
@@ -135,34 +136,23 @@ class SingletonDevice
 			features2.pNext = &shaderImageAtomicInt64Features;
 		}
 
-		const VkPhysicalDevice physicalDevice = chooseDevice(m_instanceWrapper->instance.getDriver(), m_instanceWrapper->instance, context.getTestContext().getCommandLine());
-		m_instanceWrapper->instance.getDriver().getPhysicalDeviceFeatures2(physicalDevice, &features2);
-		m_logicalDevice = createRobustBufferAccessDevice(context, m_instanceWrapper->instance, m_instanceWrapper->instance.getDriver(), &features2);
+		const auto&	vki				= m_context.getInstanceInterface();
+		const auto	instance		= m_context.getInstance();
+		const auto	physicalDevice	= chooseDevice(vki, instance, context.getTestContext().getCommandLine());
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
+		m_logicalDevice = createRobustBufferAccessDevice(context, &features2);
 
 #ifndef CTS_USES_VULKANSC
-		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), m_instanceWrapper->instance, *m_logicalDevice));
+		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), instance, *m_logicalDevice));
 #else
-		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), m_instanceWrapper->instance, *m_logicalDevice, context.getTestContext().getCommandLine(), context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_logicalDevice));
+		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), instance, *m_logicalDevice, context.getTestContext().getCommandLine(), context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_logicalDevice));
 #endif // CTS_USES_VULKANSC
 	}
 
 public:
 	~SingletonDevice()
 	{
-	}
-	static VkInstance getInstance(Context& context)
-	{
-		if (!m_singletonDevice)
-			m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context));
-		DE_ASSERT(m_singletonDevice);
-		return m_singletonDevice->m_instanceWrapper->instance;
-	}
-	static const InstanceInterface& getInstanceInterface(Context& context)
-	{
-		if (!m_singletonDevice)
-			m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context));
-		DE_ASSERT(m_singletonDevice);
-		return m_singletonDevice->m_instanceWrapper->instance.getDriver();
 	}
 
 	static VkDevice getDevice(Context& context)
@@ -187,7 +177,6 @@ public:
 
 private:
 	const Context&								m_context;
-	std::shared_ptr<CustomInstanceWrapper>		m_instanceWrapper;
 	Move<vk::VkDevice>							m_logicalDevice;
 #ifndef CTS_USES_VULKANSC
 	de::MovePtr<vk::DeviceDriver>				m_deviceDriver;
@@ -297,64 +286,6 @@ static bool formatIsR64(const VkFormat& f)
 	default:
 		return false;
 	}
-}
-
-// Returns the appropriate singleton device for the given case.
-VkInstance getInstance(Context& ctx, const CaseDef& caseDef)
-{
-	if (caseDef.needsScalarBlockLayout())
-	{
-		if (formatIsR64(caseDef.format))
-		{
-			if (caseDef.testRobustness2)
-				return Robustness2Int64AtomicsScalarSingleton::getInstance(ctx);
-			return ImageRobustnessInt64AtomicsScalarSingleton::getInstance(ctx);
-		}
-
-		if (caseDef.testRobustness2)
-			return Robustness2ScalarSingleton::getInstance(ctx);
-		return ImageRobustnessScalarSingleton::getInstance(ctx);
-	}
-
-	if (formatIsR64(caseDef.format))
-	{
-		if (caseDef.testRobustness2)
-			return Robustness2Int64AtomicsSingleton::getInstance(ctx);
-		return ImageRobustnessInt64AtomicsSingleton::getInstance(ctx);
-	}
-
-	if (caseDef.testRobustness2)
-		return Robustness2Singleton::getInstance(ctx);
-	return ImageRobustnessSingleton::getInstance(ctx);
-}
-
-// Returns the appropriate singleton device driver for the given case.
-const InstanceInterface& getInstanceInterface(Context& ctx, const CaseDef& caseDef)
-{
-	if (caseDef.needsScalarBlockLayout())
-	{
-		if (formatIsR64(caseDef.format))
-		{
-			if (caseDef.testRobustness2)
-				return Robustness2Int64AtomicsScalarSingleton::getInstanceInterface(ctx);
-			return ImageRobustnessInt64AtomicsScalarSingleton::getInstanceInterface(ctx);
-		}
-
-		if (caseDef.testRobustness2)
-			return Robustness2ScalarSingleton::getInstanceInterface(ctx);
-		return ImageRobustnessScalarSingleton::getInstanceInterface(ctx);
-	}
-
-	if (formatIsR64(caseDef.format))
-	{
-		if (caseDef.testRobustness2)
-			return Robustness2Int64AtomicsSingleton::getInstanceInterface(ctx);
-		return ImageRobustnessInt64AtomicsSingleton::getInstanceInterface(ctx);
-	}
-
-	if (caseDef.testRobustness2)
-		return Robustness2Singleton::getInstanceInterface(ctx);
-	return ImageRobustnessSingleton::getInstanceInterface(ctx);
 }
 
 // Returns the appropriate singleton device for the given case.
@@ -630,6 +561,10 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 		VkFormatProperties formatProperties;
 		vki.getPhysicalDeviceFormatProperties(physicalDevice, m_data.format, &formatProperties);
 
+#ifndef CTS_USES_VULKANSC
+		const VkFormatProperties3KHR formatProperties3 = context.getFormatProperties(m_data.format);
+#endif // CTS_USES_VULKANSC
+
 		switch (m_data.descriptorType)
 		{
 		case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
@@ -639,6 +574,10 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 		case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
 			if ((formatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT) != VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT)
 				TCU_THROW(NotSupportedError, "VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT is not supported");
+#ifndef CTS_USES_VULKANSC
+			if ((formatProperties3.bufferFeatures & VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR) != VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR)
+				TCU_THROW(NotSupportedError, "VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT is not supported");
+#endif // CTS_USES_VULKANSC
 			break;
 		case VERTEX_ATTRIBUTE_FETCH:
 			if ((formatProperties.bufferFeatures & VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT) != VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT)
@@ -1860,8 +1799,8 @@ TestInstance* RobustnessExtsTestCase::createInstance (Context& context) const
 
 tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 {
-	const VkInstance			instance			= getInstance(m_context, m_data);
-	const InstanceInterface&	vki					= getInstanceInterface(m_context, m_data);
+	const VkInstance			instance			= m_context.getInstance();
+	const InstanceInterface&	vki					= m_context.getInstanceInterface();
 	const VkDevice				device				= getLogicalDevice(m_context, m_data);
 	const vk::DeviceInterface&	vk					= getDeviceInterface(m_context, m_data);
 	const VkPhysicalDevice		physicalDevice		= chooseDevice(vki, instance, m_context.getTestContext().getCommandLine());

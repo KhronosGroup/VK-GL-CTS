@@ -25,13 +25,19 @@
 #include "vkRefUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "deSharedPtr.hpp"
+#include "deSTLUtil.hpp"
 #include "tcuVector.hpp"
 #include "tcuVectorType.hpp"
+#include "tcuMaybe.hpp"
 #include "vkPipelineConstructionUtil.hpp"
 
 #include <memory>
+#include <set>
 
 namespace vk
+{
+
+namespace
 {
 
 enum PipelineSetupState
@@ -42,6 +48,10 @@ enum PipelineSetupState
 	PSS_FRAGMENT_SHADER				= 0x00000004,
 	PSS_FRAGMENT_OUTPUT_INTERFACE	= 0x00000008,
 };
+
+using TessellationDomainOriginStatePtr = std::unique_ptr<VkPipelineTessellationDomainOriginStateCreateInfo>;
+
+} // anonymous namespace
 
 static const VkVertexInputBindingDescription defaultVertexInputBindingDescription
 {
@@ -188,8 +198,8 @@ void addToChain(void** structThatStartsChain, void* structToAddAtTheEnd)
 	if (structToAddAtTheEnd == DE_NULL)
 		return;
 
-	// just cast to randomly picked structure that has non const pNext pointer
-	auto* structToAddAtTheEndCasted = reinterpret_cast<VkPhysicalDevicePointClippingProperties*>(structToAddAtTheEnd);
+	// Cast to the base out structure which has a non-const pNext pointer.
+	auto* structToAddAtTheEndCasted = reinterpret_cast<VkBaseOutStructure*>(structToAddAtTheEnd);
 
 	// make sure that pNext pointer of structure that is added to chain is empty;
 	// we are construting chains on our own and there are cases that use same
@@ -209,11 +219,11 @@ void addToChain(void** structThatStartsChain, void* structToAddAtTheEnd)
 			return;
 		}
 
-		// just cast to randomly picked structure that has non const pNext pointer
-		auto* gpl = reinterpret_cast<VkPhysicalDevicePointClippingProperties*>(*structInChain);
+		// Cast to the base out structure which has a non-const pNext pointer.
+		auto* gpl = reinterpret_cast<VkBaseOutStructure*>(*structInChain);
 
 		// move structure pointer one position down the pNext chain
-		structInChain = &gpl->pNext;
+		structInChain = reinterpret_cast<void**>(&gpl->pNext);
 	}
 	while (--safetyCouter);
 
@@ -245,7 +255,9 @@ struct GraphicsPipelineWrapper::InternalData
 	VkPipelineFragmentShadingRateStateCreateInfoKHR*	pFragmentShadingRateState;
 	PipelineRenderingCreateInfoWrapper					pRenderingState;
 	const VkPipelineDynamicStateCreateInfo*				pDynamicState;
+	PipelineRepresentativeFragmentTestCreateInfoWrapper	pRepresentativeFragmentTestState;
 
+	TessellationDomainOriginStatePtr					pTessellationDomainOrigin;
 	deBool												useViewportState;
 	deBool												useDefaultRasterizationState;
 	deBool												useDefaultDepthStencilState;
@@ -305,6 +317,8 @@ struct GraphicsPipelineWrapper::InternalData
 		}
 		, pFragmentShadingRateState		(nullptr)
 		, pDynamicState					(DE_NULL)
+		, pRepresentativeFragmentTestState(nullptr)
+		, pTessellationDomainOrigin		()
 		, useViewportState				(DE_TRUE)
 		, useDefaultRasterizationState	(DE_FALSE)
 		, useDefaultDepthStencilState	(DE_FALSE)
@@ -328,7 +342,7 @@ GraphicsPipelineWrapper::GraphicsPipelineWrapper(GraphicsPipelineWrapper&& pw) n
 	: m_pipelineFinal	(pw.m_pipelineFinal)
 	, m_internalData	(pw.m_internalData)
 {
-	std::move(pw.m_pipelineParts, pw.m_pipelineParts + 4, m_pipelineParts);
+	std::move(pw.m_pipelineParts, pw.m_pipelineParts + de::arrayLength(pw.m_pipelineParts), m_pipelineParts);
 }
 
 GraphicsPipelineWrapper& GraphicsPipelineWrapper::setMonolithicPipelineLayout(const VkPipelineLayout layout)
@@ -352,6 +366,142 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setDynamicState(const VkPipeli
 	return *this;
 }
 
+GraphicsPipelineWrapper& GraphicsPipelineWrapper::setRepresentativeFragmentTestState(PipelineRepresentativeFragmentTestCreateInfoWrapper representativeFragmentTestState)
+{
+	// Representative fragment test state is needed by the fragment shader state.
+	DE_ASSERT(m_internalData && (m_internalData->setupState < PSS_FRAGMENT_SHADER));
+
+	m_internalData->pRepresentativeFragmentTestState = representativeFragmentTestState;
+	return *this;
+}
+
+std::vector<VkDynamicState> getDynamicStates(const VkPipelineDynamicStateCreateInfo* dynamicStateInfo, uint32_t setupState)
+{
+	static const std::set<VkDynamicState> vertexInputStates {
+		VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE_EXT,
+		VK_DYNAMIC_STATE_VERTEX_INPUT_EXT,
+		VK_DYNAMIC_STATE_PRIMITIVE_TOPOLOGY_EXT,
+		VK_DYNAMIC_STATE_PRIMITIVE_RESTART_ENABLE_EXT,
+	};
+
+	static const std::set<VkDynamicState> preRastStates {
+		VK_DYNAMIC_STATE_VIEWPORT,
+		VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT_EXT,
+		VK_DYNAMIC_STATE_SCISSOR,
+		VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT_EXT,
+		VK_DYNAMIC_STATE_LINE_WIDTH,
+		VK_DYNAMIC_STATE_LINE_STIPPLE_EXT,
+		VK_DYNAMIC_STATE_CULL_MODE_EXT,
+		VK_DYNAMIC_STATE_FRONT_FACE_EXT,
+		VK_DYNAMIC_STATE_PATCH_CONTROL_POINTS_EXT,
+		VK_DYNAMIC_STATE_RASTERIZER_DISCARD_ENABLE_EXT,
+		VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT,
+		VK_DYNAMIC_STATE_DEPTH_BIAS,
+		VK_DYNAMIC_STATE_DEPTH_BIAS_ENABLE_EXT,
+		VK_DYNAMIC_STATE_FRAGMENT_SHADING_RATE_KHR,
+#ifndef CTS_USES_VULKANSC
+		VK_DYNAMIC_STATE_TESSELLATION_DOMAIN_ORIGIN_EXT,
+		VK_DYNAMIC_STATE_DEPTH_CLAMP_ENABLE_EXT,
+		VK_DYNAMIC_STATE_POLYGON_MODE_EXT,
+		VK_DYNAMIC_STATE_RASTERIZATION_STREAM_EXT,
+		VK_DYNAMIC_STATE_PROVOKING_VERTEX_MODE_EXT,
+		VK_DYNAMIC_STATE_DEPTH_CLIP_NEGATIVE_ONE_TO_ONE_EXT,
+		VK_DYNAMIC_STATE_DEPTH_CLIP_ENABLE_EXT,
+		VK_DYNAMIC_STATE_LINE_STIPPLE_ENABLE_EXT,
+		VK_DYNAMIC_STATE_LINE_STIPPLE_EXT,
+		VK_DYNAMIC_STATE_CONSERVATIVE_RASTERIZATION_MODE_EXT,
+		VK_DYNAMIC_STATE_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE_EXT,
+		VK_DYNAMIC_STATE_LINE_RASTERIZATION_MODE_EXT,
+		VK_DYNAMIC_STATE_VIEWPORT_SWIZZLE_NV,
+		VK_DYNAMIC_STATE_SHADING_RATE_IMAGE_ENABLE_NV,
+		VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_ENABLE_NV,
+		VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_NV,
+		VK_DYNAMIC_STATE_VIEWPORT_SHADING_RATE_PALETTE_NV,
+		VK_DYNAMIC_STATE_VIEWPORT_COARSE_SAMPLE_ORDER_NV,
+		VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV,
+#endif
+	};
+
+	static const std::set<VkDynamicState> fragShaderStates {
+		VK_DYNAMIC_STATE_DEPTH_BOUNDS,
+		VK_DYNAMIC_STATE_DEPTH_TEST_ENABLE_EXT,
+		VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE_EXT,
+		VK_DYNAMIC_STATE_DEPTH_COMPARE_OP_EXT,
+		VK_DYNAMIC_STATE_DEPTH_BOUNDS_TEST_ENABLE_EXT,
+		VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK,
+		VK_DYNAMIC_STATE_STENCIL_WRITE_MASK,
+		VK_DYNAMIC_STATE_STENCIL_REFERENCE,
+		VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE_EXT,
+		VK_DYNAMIC_STATE_STENCIL_OP_EXT,
+		VK_DYNAMIC_STATE_FRAGMENT_SHADING_RATE_KHR,
+		// Needs MSAA info here as well as fragment output state
+		VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_EXT,
+#ifndef CTS_USES_VULKANSC
+		VK_DYNAMIC_STATE_SAMPLE_MASK_EXT,
+		VK_DYNAMIC_STATE_ALPHA_TO_COVERAGE_ENABLE_EXT,
+		VK_DYNAMIC_STATE_ALPHA_TO_ONE_ENABLE_EXT,
+		VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_ENABLE_EXT,
+		VK_DYNAMIC_STATE_RASTERIZATION_SAMPLES_EXT,
+		VK_DYNAMIC_STATE_COVERAGE_TO_COLOR_ENABLE_NV,
+		VK_DYNAMIC_STATE_COVERAGE_TO_COLOR_LOCATION_NV,
+		VK_DYNAMIC_STATE_COVERAGE_MODULATION_MODE_NV,
+		VK_DYNAMIC_STATE_COVERAGE_MODULATION_TABLE_ENABLE_NV,
+		VK_DYNAMIC_STATE_COVERAGE_MODULATION_TABLE_NV,
+		VK_DYNAMIC_STATE_COVERAGE_REDUCTION_MODE_NV,
+		VK_DYNAMIC_STATE_REPRESENTATIVE_FRAGMENT_TEST_ENABLE_NV,
+
+#endif
+	};
+
+	static const std::set<VkDynamicState> fragOutputStates {
+		VK_DYNAMIC_STATE_LOGIC_OP_EXT,
+		VK_DYNAMIC_STATE_BLEND_CONSTANTS,
+		VK_DYNAMIC_STATE_COLOR_WRITE_ENABLE_EXT,
+		VK_DYNAMIC_STATE_FRAGMENT_SHADING_RATE_KHR,
+		VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_EXT,
+#ifndef CTS_USES_VULKANSC
+		VK_DYNAMIC_STATE_COLOR_WRITE_MASK_EXT,
+		VK_DYNAMIC_STATE_COLOR_BLEND_ENABLE_EXT,
+		VK_DYNAMIC_STATE_COLOR_BLEND_ADVANCED_EXT,
+		VK_DYNAMIC_STATE_COLOR_BLEND_EQUATION_EXT,
+		VK_DYNAMIC_STATE_LOGIC_OP_ENABLE_EXT,
+		VK_DYNAMIC_STATE_SAMPLE_MASK_EXT,
+		VK_DYNAMIC_STATE_ALPHA_TO_COVERAGE_ENABLE_EXT,
+		VK_DYNAMIC_STATE_ALPHA_TO_ONE_ENABLE_EXT,
+		VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_ENABLE_EXT,
+		VK_DYNAMIC_STATE_RASTERIZATION_SAMPLES_EXT,
+		VK_DYNAMIC_STATE_COVERAGE_TO_COLOR_ENABLE_NV,
+		VK_DYNAMIC_STATE_COVERAGE_TO_COLOR_LOCATION_NV,
+		VK_DYNAMIC_STATE_COVERAGE_MODULATION_MODE_NV,
+		VK_DYNAMIC_STATE_COVERAGE_MODULATION_TABLE_ENABLE_NV,
+		VK_DYNAMIC_STATE_COVERAGE_MODULATION_TABLE_NV,
+		VK_DYNAMIC_STATE_COVERAGE_REDUCTION_MODE_NV,
+		VK_DYNAMIC_STATE_REPRESENTATIVE_FRAGMENT_TEST_ENABLE_NV,
+#endif
+	};
+
+	const std::set<VkDynamicState> dynamicStates (dynamicStateInfo->pDynamicStates,
+												  dynamicStateInfo->pDynamicStates + dynamicStateInfo->dynamicStateCount);
+
+	std::set<VkDynamicState> intersectedStates;
+
+	if (setupState & PSS_VERTEX_INPUT_INTERFACE)
+		std::set_intersection(vertexInputStates.begin(), vertexInputStates.end(), dynamicStates.begin(), dynamicStates.end(), std::inserter(intersectedStates, intersectedStates.end()));
+
+	if (setupState & PSS_PRE_RASTERIZATION_SHADERS)
+		std::set_intersection(preRastStates.begin(),	 preRastStates.end(),	  dynamicStates.begin(), dynamicStates.end(), std::inserter(intersectedStates, intersectedStates.end()));
+
+	if (setupState & PSS_FRAGMENT_SHADER)
+		std::set_intersection(fragShaderStates.begin(),  fragShaderStates.end(),  dynamicStates.begin(), dynamicStates.end(), std::inserter(intersectedStates, intersectedStates.end()));
+
+	if (setupState & PSS_FRAGMENT_OUTPUT_INTERFACE)
+		std::set_intersection(fragOutputStates.begin(),  fragOutputStates.end(),  dynamicStates.begin(), dynamicStates.end(), std::inserter(intersectedStates, intersectedStates.end()));
+
+	const std::vector<VkDynamicState> returnedStates (begin(intersectedStates), end(intersectedStates));
+
+	return returnedStates;
+}
+
 GraphicsPipelineWrapper& GraphicsPipelineWrapper::setDefaultTopology(const VkPrimitiveTopology topology)
 {
 	// topology is needed by vertex input state, make sure vertex input state was not setup yet
@@ -368,6 +518,28 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setDefaultPatchControlPoints(c
 	DE_ASSERT(m_internalData && (m_internalData->setupState < PSS_PRE_RASTERIZATION_SHADERS));
 
 	m_internalData->tessellationState.patchControlPoints = patchControlPoints;
+
+	return *this;
+}
+
+GraphicsPipelineWrapper& GraphicsPipelineWrapper::setDefaultTessellationDomainOrigin (const VkTessellationDomainOrigin domainOrigin, bool forceExtStruct)
+{
+	// Tessellation domain origin is needed by pre-rasterization shader state, make sure pre-rasterization state was not setup yet
+	DE_ASSERT(m_internalData && (m_internalData->setupState < PSS_PRE_RASTERIZATION_SHADERS));
+
+	// We need the extension structure when:
+	// - We want to force it.
+	// - The domain origin is not the default value.
+	// - We have already hooked the extension structure.
+	if (forceExtStruct || domainOrigin != VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT || m_internalData->pTessellationDomainOrigin)
+	{
+		if (!m_internalData->pTessellationDomainOrigin)
+		{
+			m_internalData->pTessellationDomainOrigin.reset(new VkPipelineTessellationDomainOriginStateCreateInfo(initVulkanStructure()));
+			m_internalData->tessellationState.pNext = m_internalData->pTessellationDomainOrigin.get();
+		}
+		m_internalData->pTessellationDomainOrigin->domainOrigin = domainOrigin;
+	}
 
 	return *this;
 }
@@ -443,15 +615,35 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setDefaultScissorsCount(deUint
 	return *this;
 }
 
-GraphicsPipelineWrapper& GraphicsPipelineWrapper::setDepthClipControl(PipelineViewportDepthClipControlCreateInfoWrapper& depthClipControlCreateInfo)
+GraphicsPipelineWrapper& GraphicsPipelineWrapper::setViewportStatePnext(const void* pNext)
 {
 	// ViewportState is used in pre-rasterization shader state, make sure pre-rasterization state was not setup yet
 	DE_ASSERT(m_internalData && (m_internalData->setupState < PSS_PRE_RASTERIZATION_SHADERS));
 
-	m_internalData->viewportState.pNext = depthClipControlCreateInfo.ptr;
+	m_internalData->viewportState.pNext = pNext;
 
 	return *this;
 }
+
+#ifndef CTS_USES_VULKANSC
+GraphicsPipelineWrapper& GraphicsPipelineWrapper::setRenderingColorAttachmentsInfo(PipelineRenderingCreateInfoWrapper pipelineRenderingCreateInfo)
+{
+	/* When both graphics pipeline library and dynamic rendering enabled, we just need only viewMask of VkPipelineRenderingCreateInfo
+	 * on non-fragment stages. But we need the rest info for setting up fragment output states.
+	 * This method provides a way to verify this condition.
+	 */
+	if (!m_internalData->pRenderingState.ptr || m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+		return *this;
+
+	DE_ASSERT(m_internalData && (m_internalData->setupState > PSS_VERTEX_INPUT_INTERFACE) &&
+								(m_internalData->setupState < PSS_FRAGMENT_OUTPUT_INTERFACE) &&
+								(m_internalData->pRenderingState.ptr->viewMask == pipelineRenderingCreateInfo.ptr->viewMask));
+
+	m_internalData->pRenderingState.ptr = pipelineRenderingCreateInfo.ptr;
+
+	return *this;
+}
+#endif
 
 GraphicsPipelineWrapper& GraphicsPipelineWrapper::disableViewportState()
 {
@@ -463,7 +655,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::disableViewportState()
 	return *this;
 }
 
-GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupVertexInputStete(const VkPipelineVertexInputStateCreateInfo*		vertexInputState,
+GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupVertexInputState(const VkPipelineVertexInputStateCreateInfo*		vertexInputState,
 																		const VkPipelineInputAssemblyStateCreateInfo*	inputAssemblyState,
 																		const VkPipelineCache							partPipelineCache,
 																		PipelineCreationFeedbackCreateInfoWrapper		partCreationFeedback)
@@ -498,17 +690,28 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupVertexInputStete(const Vk
 		void*	firstStructInChain = reinterpret_cast<void*>(&libraryCreateInfo);
 		addToChain(&firstStructInChain, partCreationFeedback.ptr);
 
+		VkPipelineDynamicStateCreateInfo pickedDynamicStateInfo = initVulkanStructure();
+		std::vector<VkDynamicState> states;
+
+		if(m_internalData->pDynamicState)
+		{
+			states = getDynamicStates(m_internalData->pDynamicState, m_internalData->setupState);
+
+			pickedDynamicStateInfo.pDynamicStates = states.data();
+			pickedDynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(states.size());
+		}
+
 		VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
 		pipelinePartCreateInfo.pNext						= firstStructInChain;
 		pipelinePartCreateInfo.flags						= (m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR) & ~VK_PIPELINE_CREATE_DERIVATIVE_BIT;
 		pipelinePartCreateInfo.pVertexInputState			= pVertexInputState;
 		pipelinePartCreateInfo.pInputAssemblyState			= pInputAssemblyState;
-		pipelinePartCreateInfo.pDynamicState				= m_internalData->pDynamicState;
+		pipelinePartCreateInfo.pDynamicState				= &pickedDynamicStateInfo;
 
 		if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
 			pipelinePartCreateInfo.flags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
 
-		m_pipelineParts[0] = createGraphicsPipeline(m_internalData->vk, m_internalData->device, partPipelineCache, &pipelinePartCreateInfo);
+		m_pipelineParts[0] = makeGraphicsPipeline(m_internalData->vk, m_internalData->device, partPipelineCache, &pipelinePartCreateInfo);
 	}
 #endif // CTS_USES_VULKANSC
 
@@ -771,6 +974,17 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 		addToChain(&firstStructInChain, m_internalData->pRenderingState.ptr);
 		addToChain(&firstStructInChain, partCreationFeedback.ptr);
 
+		VkPipelineDynamicStateCreateInfo pickedDynamicStateInfo = initVulkanStructure();
+		std::vector<VkDynamicState> states;
+
+		if(m_internalData->pDynamicState)
+		{
+			states = getDynamicStates(m_internalData->pDynamicState, m_internalData->setupState);
+
+			pickedDynamicStateInfo.pDynamicStates = states.data();
+			pickedDynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(states.size());
+		}
+
 		VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
 		pipelinePartCreateInfo.pNext				= firstStructInChain;
 		pipelinePartCreateInfo.flags				= (m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR | shaderModuleIdFlags) & ~VK_PIPELINE_CREATE_DERIVATIVE_BIT;
@@ -782,7 +996,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 		pipelinePartCreateInfo.stageCount			= 1u + hasTesc + hasTese + hasGeom;
 		pipelinePartCreateInfo.pStages				= m_internalData->pipelineShaderStages.data();
 		pipelinePartCreateInfo.pTessellationState	= pTessellationState;
-		pipelinePartCreateInfo.pDynamicState		= m_internalData->pDynamicState;
+		pipelinePartCreateInfo.pDynamicState		= &pickedDynamicStateInfo;
 
 		if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
 			pipelinePartCreateInfo.flags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
@@ -797,6 +1011,149 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 	return *this;
 }
 
+#ifndef CTS_USES_VULKANSC
+GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationMeshShaderState(const std::vector<VkViewport>&					viewports,
+																					   const std::vector<VkRect2D>&						scissors,
+																					   const VkPipelineLayout							layout,
+																					   const VkRenderPass								renderPass,
+																					   const deUint32									subpass,
+																					   const VkShaderModule								taskShaderModule,
+																					   const VkShaderModule								meshShaderModule,
+																					   const VkPipelineRasterizationStateCreateInfo*	rasterizationState,
+																					   const VkSpecializationInfo						*taskSpecializationInfo,
+																					   const VkSpecializationInfo						*meshSpecializationInfo,
+																					   VkPipelineFragmentShadingRateStateCreateInfoKHR*	fragmentShadingRateState,
+																					   PipelineRenderingCreateInfoWrapper				rendering,
+																					   const VkPipelineCache							partPipelineCache,
+																					   VkPipelineCreationFeedbackCreateInfoEXT			*partCreationFeedback)
+{
+	// Make sure pipeline was not already built.
+	DE_ASSERT(m_pipelineFinal.get() == DE_NULL);
+
+	// Make sure states are set in order - this state needs to be set first or second.
+	DE_ASSERT(m_internalData && (m_internalData->setupState < PSS_PRE_RASTERIZATION_SHADERS));
+
+	// The vertex input interface is not needed for mesh shading pipelines, so we're going to mark it as ready here.
+	m_internalData->setupState					|= (PSS_VERTEX_INPUT_INTERFACE | PSS_PRE_RASTERIZATION_SHADERS);
+	m_internalData->pFragmentShadingRateState	= fragmentShadingRateState;
+	m_internalData->pRenderingState				= rendering;
+
+	const bool hasTask				= (taskShaderModule != DE_NULL);
+	const auto taskShaderCount		= static_cast<uint32_t>(hasTask);
+	const auto pRasterizationState	= rasterizationState
+									? rasterizationState
+									: (m_internalData->useDefaultRasterizationState
+										? &m_internalData->defaultRasterizationState
+										: nullptr);
+	const auto pTessellationState	= nullptr;
+	const auto pViewportState		= m_internalData->useViewportState ? &m_internalData->viewportState : DE_NULL;
+
+	// Reserve space for all stages including fragment. This is needed when we create monolithic pipeline.
+	m_internalData->pipelineShaderStages = std::vector<VkPipelineShaderStageCreateInfo>(2u + taskShaderCount,
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType
+		nullptr,												// const void*							pNext
+		0u,														// VkPipelineShaderStageCreateFlags		flags
+		VK_SHADER_STAGE_VERTEX_BIT,								// VkShaderStageFlagBits				stage
+		DE_NULL,												// VkShaderModule						module
+		"main",													// const char*							pName
+		nullptr,												// const VkSpecializationInfo*			pSpecializationInfo
+	});
+
+	// Mesh shader.
+	auto currStage = m_internalData->pipelineShaderStages.begin();
+	{
+		auto& stageInfo = *currStage;
+
+		stageInfo.stage					= VK_SHADER_STAGE_MESH_BIT_EXT;
+		stageInfo.module				= meshShaderModule;
+		stageInfo.pSpecializationInfo	= meshSpecializationInfo;
+
+		++currStage;
+	}
+
+	if (hasTask)
+	{
+		auto& stageInfo = *currStage;
+
+		stageInfo.stage					= VK_SHADER_STAGE_TASK_BIT_EXT;
+		stageInfo.module				= taskShaderModule;
+		stageInfo.pSpecializationInfo	= taskSpecializationInfo;
+
+		++currStage;
+	}
+
+	if (pViewportState)
+	{
+		if (!viewports.empty())
+		{
+			pViewportState->viewportCount	= (deUint32)viewports.size();
+			pViewportState->pViewports		= &viewports[0];
+		}
+		if (!scissors.empty())
+		{
+			pViewportState->scissorCount	= (deUint32)scissors.size();
+			pViewportState->pScissors		= &scissors[0];
+		}
+	}
+
+	if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+	{
+		// make sure we dont overwrite layout specified with setupMonolithicPipelineLayout
+		if (m_internalData->monolithicPipelineCreateInfo.layout == 0)
+			m_internalData->monolithicPipelineCreateInfo.layout = layout;
+
+		m_internalData->monolithicPipelineCreateInfo.renderPass				= renderPass;
+		m_internalData->monolithicPipelineCreateInfo.subpass				= subpass;
+		m_internalData->monolithicPipelineCreateInfo.pRasterizationState	= pRasterizationState;
+		m_internalData->monolithicPipelineCreateInfo.pViewportState			= pViewportState;
+		m_internalData->monolithicPipelineCreateInfo.stageCount				= 1u + taskShaderCount;
+		m_internalData->monolithicPipelineCreateInfo.pStages				= m_internalData->pipelineShaderStages.data();
+		m_internalData->monolithicPipelineCreateInfo.pTessellationState		= pTessellationState;
+	}
+	else
+	{
+		auto	libraryCreateInfo	= makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT);
+		void*	firstStructInChain	= reinterpret_cast<void*>(&libraryCreateInfo);
+		addToChain(&firstStructInChain, m_internalData->pFragmentShadingRateState);
+		addToChain(&firstStructInChain, m_internalData->pRenderingState.ptr);
+		addToChain(&firstStructInChain, partCreationFeedback);
+
+		VkPipelineDynamicStateCreateInfo pickedDynamicStateInfo = initVulkanStructure();
+		std::vector<VkDynamicState> states;
+
+		if(m_internalData->pDynamicState)
+		{
+			states = getDynamicStates(m_internalData->pDynamicState, m_internalData->setupState);
+
+			pickedDynamicStateInfo.pDynamicStates = states.data();
+			pickedDynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(states.size());
+		}
+
+
+		VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
+		pipelinePartCreateInfo.pNext			= firstStructInChain;
+		pipelinePartCreateInfo.flags			= m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
+		pipelinePartCreateInfo.layout				= layout;
+		pipelinePartCreateInfo.renderPass			= renderPass;
+		pipelinePartCreateInfo.subpass				= subpass;
+		pipelinePartCreateInfo.pRasterizationState	= pRasterizationState;
+		pipelinePartCreateInfo.pViewportState		= pViewportState;
+		pipelinePartCreateInfo.stageCount			= 1u + taskShaderCount;
+		pipelinePartCreateInfo.pStages				= m_internalData->pipelineShaderStages.data();
+		pipelinePartCreateInfo.pTessellationState	= pTessellationState;
+		pipelinePartCreateInfo.pDynamicState		= &pickedDynamicStateInfo;
+
+		if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
+			pipelinePartCreateInfo.flags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
+
+		m_pipelineParts[1] = createGraphicsPipeline(m_internalData->vk, m_internalData->device, partPipelineCache, &pipelinePartCreateInfo);
+	}
+
+	return *this;
+}
+#endif // CTS_USES_VULKANSC
+
 GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState(const VkPipelineLayout							layout,
 																		   const VkRenderPass								renderPass,
 																		   const deUint32									subpass,
@@ -805,7 +1162,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState(const
 																		   const VkPipelineMultisampleStateCreateInfo*		multisampleState,
 																		   const VkSpecializationInfo*						specializationInfo,
 																		   const VkPipelineCache							partPipelineCache,
-																		   PipelineCreationFeedbackCreateInfoWrapper				partCreationFeedback)
+																		   PipelineCreationFeedbackCreateInfoWrapper		partCreationFeedback)
 {
 	return setupFragmentShaderState2(layout,
 									 renderPass,
@@ -898,6 +1255,19 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState2(cons
 		addToChain(&firstStructInChain, m_internalData->pFragmentShadingRateState);
 		addToChain(&firstStructInChain, m_internalData->pRenderingState.ptr);
 		addToChain(&firstStructInChain, partCreationFeedback.ptr);
+		addToChain(&firstStructInChain, m_internalData->pRepresentativeFragmentTestState.ptr);
+
+		VkPipelineDynamicStateCreateInfo pickedDynamicStateInfo = initVulkanStructure();
+		std::vector<VkDynamicState> states;
+
+		if(m_internalData->pDynamicState)
+		{
+			states = getDynamicStates(m_internalData->pDynamicState, m_internalData->setupState);
+
+			pickedDynamicStateInfo.pDynamicStates = states.data();
+			pickedDynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(states.size());
+		}
+
 
 		VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
 		pipelinePartCreateInfo.pNext				= firstStructInChain;
@@ -909,7 +1279,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState2(cons
 		pipelinePartCreateInfo.pMultisampleState	= pMultisampleState;
 		pipelinePartCreateInfo.stageCount			= hasFrag;
 		pipelinePartCreateInfo.pStages				= hasFrag ? &m_internalData->pipelineShaderStages[stageIndex] : DE_NULL;
-		pipelinePartCreateInfo.pDynamicState		= m_internalData->pDynamicState;
+		pipelinePartCreateInfo.pDynamicState		= &pickedDynamicStateInfo;
 
 		if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
 			pipelinePartCreateInfo.flags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
@@ -973,6 +1343,19 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentOutputState(const
 		addToChain(&firstStructInChain, &libraryCreateInfo);
 		addToChain(&firstStructInChain, partCreationFeedback.ptr);
 
+
+		VkPipelineDynamicStateCreateInfo pickedDynamicStateInfo = initVulkanStructure();
+		std::vector<VkDynamicState> states;
+
+		if(m_internalData->pDynamicState)
+		{
+			states = getDynamicStates(m_internalData->pDynamicState, m_internalData->setupState);
+
+			pickedDynamicStateInfo.pDynamicStates = states.data();
+			pickedDynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(states.size());
+		}
+
+
 		VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
 		pipelinePartCreateInfo.pNext				= firstStructInChain;
 		pipelinePartCreateInfo.flags				= (m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR) & ~VK_PIPELINE_CREATE_DERIVATIVE_BIT;
@@ -980,12 +1363,12 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentOutputState(const
 		pipelinePartCreateInfo.subpass				= subpass;
 		pipelinePartCreateInfo.pColorBlendState		= pColorBlendState;
 		pipelinePartCreateInfo.pMultisampleState	= pMultisampleState;
-		pipelinePartCreateInfo.pDynamicState		= m_internalData->pDynamicState;
+		pipelinePartCreateInfo.pDynamicState		= &pickedDynamicStateInfo;
 
 		if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
 			pipelinePartCreateInfo.flags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
 
-		m_pipelineParts[3] = createGraphicsPipeline(m_internalData->vk, m_internalData->device, partPipelineCache, &pipelinePartCreateInfo);
+		m_pipelineParts[3] = makeGraphicsPipeline(m_internalData->vk, m_internalData->device, partPipelineCache, &pipelinePartCreateInfo);
 	}
 #endif // CTS_USES_VULKANSC
 
@@ -1007,29 +1390,36 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 	// Unreference variables that are not used in Vulkan SC. No need to put this in ifdef.
 	DE_UNREF(creationFeedback);
 
-	VkGraphicsPipelineCreateInfo* pointerToCreateInfo = &m_internalData->monolithicPipelineCreateInfo;
+	VkGraphicsPipelineCreateInfo*	pointerToCreateInfo	= &m_internalData->monolithicPipelineCreateInfo;
 
 #ifndef CTS_USES_VULKANSC
-	VkGraphicsPipelineCreateInfo	linkedCreateInfo = initVulkanStructure();
-	VkPipeline						rawPipelines[4];
+	VkGraphicsPipelineCreateInfo	linkedCreateInfo	= initVulkanStructure();
+	std::vector<VkPipeline>			rawPipelines;
 	VkPipelineLibraryCreateInfoKHR	linkingInfo
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR,		// VkStructureType		sType;
 		creationFeedback.ptr,									// const void*			pNext;
-		4,														// deUint32				libraryCount;
-		rawPipelines											// const VkPipeline*	pLibraries;
+		0u,														// deUint32				libraryCount;
+		nullptr,												// const VkPipeline*	pLibraries;
 	};
 
 	if (m_internalData->pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
-		for (deUint32 i = 0; i < 4; ++i)
-			rawPipelines[i] = m_pipelineParts[i].get();
+		for (const auto& pipelinePtr : m_pipelineParts)
+		{
+			const auto& pipeline = pipelinePtr.get();
+			if (pipeline != DE_NULL)
+				rawPipelines.push_back(pipeline);
+		}
 
-		linkedCreateInfo.flags	= m_internalData->pipelineFlags;
-		linkedCreateInfo.layout	= m_internalData->monolithicPipelineCreateInfo.layout;
-		pointerToCreateInfo		= &linkedCreateInfo;
+		linkingInfo.libraryCount	= static_cast<uint32_t>(rawPipelines.size());
+		linkingInfo.pLibraries		= de::dataOrNull(rawPipelines);
 
-		linkedCreateInfo.pNext = &linkingInfo;
+		linkedCreateInfo.flags		= m_internalData->pipelineFlags;
+		linkedCreateInfo.layout		= m_internalData->monolithicPipelineCreateInfo.layout;
+		linkedCreateInfo.pNext		= &linkingInfo;
+
+		pointerToCreateInfo			= &linkedCreateInfo;
 
 		if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
 			linkedCreateInfo.flags |= VK_PIPELINE_CREATE_LINK_TIME_OPTIMIZATION_BIT_EXT;
@@ -1042,6 +1432,7 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 		// note: there might be other structures in the chain already
 		void* firstStructInChain = static_cast<void*>(pointerToCreateInfo);
 		addToChain(&firstStructInChain, creationFeedback.ptr);
+		addToChain(&firstStructInChain, m_internalData->pRepresentativeFragmentTestState.ptr);
 	}
 #endif // CTS_USES_VULKANSC
 

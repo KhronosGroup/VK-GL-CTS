@@ -29,8 +29,8 @@ from mustpass import Project, Package, Mustpass, Configuration, include, exclude
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts"))
 
-from build.common import DEQP_DIR
-from build.config import ANY_GENERATOR, BuildConfig
+from ctsbuild.common import DEQP_DIR
+from ctsbuild.config import ANY_GENERATOR, BuildConfig
 
 
 COPYRIGHT_DECLARATION = """\

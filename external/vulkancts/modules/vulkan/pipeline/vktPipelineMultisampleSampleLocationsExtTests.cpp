@@ -691,7 +691,7 @@ void preparePipelineWrapper (GraphicsPipelineWrapper&			gpw,
 	gpw.setDefaultTopology(topology)
 	   .setDynamicState(&dynamicStateCreateInfo)
 	   .setDefaultRasterizationState()
-	   .setupVertexInputStete(&vertexInputStateInfo)
+	   .setupVertexInputState(&vertexInputStateInfo)
 	   .setupPreRasterizationShaderState(viewports,
 								scissors,
 								pipelineLayout,

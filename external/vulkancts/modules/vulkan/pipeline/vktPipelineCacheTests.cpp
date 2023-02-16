@@ -756,7 +756,7 @@ void GraphicsCacheTestInstance::preparePipelineWrapper(GraphicsPipelineWrapper&	
 		.setDefaultRasterizationState()
 		.setDefaultColorBlendState()
 		.setDefaultMultisampleState()
-		.setupVertexInputStete(&defaultVertexInputStateParams)
+		.setupVertexInputState(&defaultVertexInputStateParams)
 		.setupPreRasterizationShaderState(viewport,
 										  scissor,
 										  *m_pipelineLayout,

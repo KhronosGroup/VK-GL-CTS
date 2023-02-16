@@ -1,0 +1,9 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT":
+		[
+			{ "features": ["mutableDescriptorType"],	"requirements": ["VK_EXT_mutable_descriptor_type"] }
+		]
+	}
+}

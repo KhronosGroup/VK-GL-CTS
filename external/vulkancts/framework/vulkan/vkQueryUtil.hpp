@@ -180,6 +180,16 @@ void addToChainVulkanStructure (void***	chainPNextPtr, StructType&	structType)
 	(*chainPNextPtr) = &structType.pNext;
 }
 
+template<class StructType>
+void addToChainVulkanStructure (const void***	chainPNextPtr, StructType&	structType)
+{
+	DE_ASSERT(chainPNextPtr != DE_NULL);
+
+	(**chainPNextPtr) = &structType;
+
+	(*chainPNextPtr) = &structType.pNext;
+}
+
 struct initVulkanStructureConst
 {
 	initVulkanStructureConst	(const void*	pNext = DE_NULL)	: m_next(pNext)	{}
