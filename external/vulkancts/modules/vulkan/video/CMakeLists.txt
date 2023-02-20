@@ -1,5 +1,5 @@
 include_directories(..)
-if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)
+if ((DE_OS_IS_WIN32 OR DE_OS_IS_UNIX) AND NOT DEQP_USE_SURFACELESS AND NOT DEQP_USE_NULLWS)
 	include_directories(${FFMPEG_INCLUDE_PATH})
 	add_compile_definitions(DE_BUILD_VIDEO)
 endif()

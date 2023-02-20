@@ -163,7 +163,7 @@ VkscServer* createServerVKSC(const std::string& logFile)
 	tcu::DirArchive					archive		{""};
 	tcu::TestLog					log			{ logFile.c_str() }; log.supressLogging(true);
 	tcu::Platform*					platform	{createPlatform()};
-#if (DE_OS == DE_OS_WIN32) || (DE_OS == DE_OS_UNIX)
+#ifdef DE_PLATFORM_USE_LIBRARY_TYPE
 	vk::Library*					library		{platform->getVulkanPlatform().createLibrary(vk::Platform::LIBRARY_TYPE_VULKAN, DE_NULL)};
 #else
 	vk::Library*					library		{platform->getVulkanPlatform().createLibrary(DE_NULL)};

@@ -113,6 +113,7 @@ if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 		endif()
 
 	elseif (DE_OS_IS_UNIX AND DEQP_USE_SURFACELESS)
+		add_definitions(-DDEQP_SURFACELESS=1)
 		set(TCUTIL_PLATFORM_SRCS
 			surfaceless/tcuSurfacelessPlatform.hpp
 			surfaceless/tcuSurfacelessPlatform.cpp

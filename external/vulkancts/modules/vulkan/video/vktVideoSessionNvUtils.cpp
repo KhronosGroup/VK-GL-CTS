@@ -148,7 +148,7 @@ private:
 };
 
 NvFunctions::NvFunctions (const vk::Platform& platform)
-#ifdef DE_BUILD_VIDEO
+#ifdef DE_PLATFORM_USE_LIBRARY_TYPE
 	: m_library	(de::MovePtr<vk::Library>(platform.createLibrary(vk::Platform::LIBRARY_TYPE_VULKAN_VIDEO_DECODE_PARSER, DE_NULL)))
 #else
 	: m_library	(de::MovePtr<vk::Library>(platform.createLibrary()))
