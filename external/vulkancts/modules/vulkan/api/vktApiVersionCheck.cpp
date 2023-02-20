@@ -133,7 +133,7 @@ public:
 		tcu::TestLog&						log				= m_context.getTestContext().getLog();
 		const deUint32						apiVersion		= m_context.getUsedApiVersion();
 		const vk::Platform&					platform		= m_context.getTestContext().getPlatform().getVulkanPlatform();
-#if (DE_OS == DE_OS_WIN32) || (DE_OS == DE_OS_UNIX)
+#ifdef DE_PLATFORM_USE_LIBRARY_TYPE
 		de::MovePtr<vk::Library>			vkLibrary		= de::MovePtr<vk::Library>(platform.createLibrary(vk::Platform::LibraryType::LIBRARY_TYPE_VULKAN, m_context.getTestContext().getCommandLine().getVkLibraryPath()));
 #else
 		de::MovePtr<vk::Library>			vkLibrary		= de::MovePtr<vk::Library>(platform.createLibrary(m_context.getTestContext().getCommandLine().getVkLibraryPath()));
