@@ -1378,7 +1378,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentOutputState(const
 void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineCache,
 											const VkPipeline							basePipelineHandle,
 											const deInt32								basePipelineIndex,
-											PipelineCreationFeedbackCreateInfoWrapper	creationFeedback)
+											PipelineCreationFeedbackCreateInfoWrapper	creationFeedback,
+											void*										pNext)
 {
 	// make sure we are not trying to build pipeline second time
 	DE_ASSERT(m_pipelineFinal.get() == DE_NULL);
@@ -1389,6 +1390,7 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 
 	// Unreference variables that are not used in Vulkan SC. No need to put this in ifdef.
 	DE_UNREF(creationFeedback);
+	DE_UNREF(pNext);
 
 	VkGraphicsPipelineCreateInfo*	pointerToCreateInfo	= &m_internalData->monolithicPipelineCreateInfo;
 
@@ -1433,6 +1435,7 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 		void* firstStructInChain = static_cast<void*>(pointerToCreateInfo);
 		addToChain(&firstStructInChain, creationFeedback.ptr);
 		addToChain(&firstStructInChain, m_internalData->pRepresentativeFragmentTestState.ptr);
+		addToChain(&firstStructInChain, pNext);
 	}
 #endif // CTS_USES_VULKANSC
 

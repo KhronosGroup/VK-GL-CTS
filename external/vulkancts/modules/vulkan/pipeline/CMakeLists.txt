@@ -143,6 +143,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineImageSlicedViewOf3DTests.hpp
 	vktPipelineMultisampleShaderFragmentMaskTests.cpp
 	vktPipelineMultisampleShaderFragmentMaskTests.hpp
+	vktPipelineRobustnessCacheTests.cpp
+	vktPipelineRobustnessCacheTests.hpp
 	)
 
 #vktPipelinePushDescriptorTests.cpp				- missing VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR

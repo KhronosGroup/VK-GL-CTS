@@ -277,7 +277,8 @@ public:
 	void						buildPipeline						(const VkPipelineCache								pipelineCache = DE_NULL,
 																	 const VkPipeline									basePipelineHandle = DE_NULL,
 																	 const deInt32										basePipelineIndex = 0,
-																	 PipelineCreationFeedbackCreateInfoWrapper			creationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
+																	 PipelineCreationFeedbackCreateInfoWrapper			creationFeedback = PipelineCreationFeedbackCreateInfoWrapper(),
+																	 void*												pNext = DE_NULL);
 
 	// Returns true when pipeline was build using buildPipeline method.
 	deBool						wasBuild							(void) const;
