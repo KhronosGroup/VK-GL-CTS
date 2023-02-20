@@ -1,5 +1,8 @@
 include_directories(..)
-include_directories(${FFMPEG_INCLUDE_PATH})
+if ((DE_OS_IS_WIN32 OR DE_OS_IS_UNIX) AND NOT DEQP_USE_SURFACELESS AND NOT DEQP_USE_NULLWS)
+	include_directories(${FFMPEG_INCLUDE_PATH})
+	add_compile_definitions(DE_BUILD_VIDEO)
+endif()
 
 set(DEQP_VK_VIDEO_SRCS
 	extFFmpegDemuxer.h

@@ -101,6 +101,12 @@
 #	error Unknown operating system.
 #endif
 
+#if ((DE_OS == DE_OS_WIN32) || (DE_OS == DE_OS_UNIX)) && !defined(DEQP_SURFACELESS) && !defined(NULLWS)
+#	define DE_PLATFORM_USE_LIBRARY_TYPE 1
+#else
+#	undef DE_PLATFORM_USE_LIBRARY_TYPE
+#endif
+
 /* CPUs */
 #define DE_CPU_VANILLA	0
 #define DE_CPU_X86		1
