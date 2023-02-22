@@ -375,6 +375,8 @@ void MemoryRequirementsTest::checkSupport (Context& context) const
 	const VkPhysicalDevice							physDevice			= context.getPhysicalDevice();
 	auto&											log					= context.getTestContext().getLog();
 
+	context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
+
 	if (m_testConfig.useMethod2)
 		context.requireDeviceFunctionality("VK_KHR_get_memory_requirements2");
 

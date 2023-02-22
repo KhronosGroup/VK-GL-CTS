@@ -170,7 +170,7 @@ public:
 				log << tcu::TestLog::Message << mixupResult << tcu::TestLog::EndMessage;
 			}
 
-			// Check function entry points of disabled extesions
+			// Check function entry points of disabled extensions
 			{
 				FunctionInfosList				extFunctions		= FunctionInfosList();
 				extFunctions.push_back(FunctionInfo("vkTrimCommandPoolKHR", FUNCTIONORIGIN_DEVICE));

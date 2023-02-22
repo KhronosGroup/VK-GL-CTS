@@ -62,7 +62,6 @@ namespace pipeline
 namespace
 {
 using namespace vk;
-using de::UniquePtr;
 using de::MovePtr;
 using de::SharedPtr;
 using tcu::UVec2;
@@ -242,6 +241,7 @@ class SingletonDevice
 		descriptorBufferFeatures.pNext = &graphicsPipelineLibraryFeaturesEXT;
 
 		VkPhysicalDeviceFeatures2 features2	= initVulkanStructure(&descriptorBufferFeatures);
+		m_context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
 		m_context.getInstanceInterface().getPhysicalDeviceFeatures2(m_context.getPhysicalDevice(), &features2);
 
 		if (m_context.isDeviceFunctionalitySupported("VK_EXT_descriptor_buffer"))
