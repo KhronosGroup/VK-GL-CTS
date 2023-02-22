@@ -221,7 +221,9 @@ VK_NULL_DEFINE_DEVICE_OBJ(SamplerYcbcrConversion);
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, Swapchain, KHR)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkInstance, DebugUtilsMessenger, EXT)
 
-#ifndef CTS_USES_VULKANSC
+#ifdef CTS_USES_VULKANSC
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, SemaphoreSciSyncPool, NV)
+#else
 VK_NULL_DEFINE_DEVICE_OBJ(ShaderModule);
 VK_NULL_DEFINE_DEVICE_OBJ(DescriptorUpdateTemplate);
 VK_NULL_DEFINE_DEVICE_OBJ(PrivateDataSlot);
@@ -523,15 +525,6 @@ private:
 };
 #endif // defined(USE_ANDROID_O_HARDWARE_BUFFER)
 
-#endif // CTS_USES_VULKANSC
-
-#ifdef CTS_USES_VULKANSC
-class SemaphoreSciSyncPoolNV
-{
-public:
-	SemaphoreSciSyncPoolNV (VkDevice, const VkSemaphoreSciSyncPoolCreateInfoNV*)
-	{}
-};
 #endif // CTS_USES_VULKANSC
 
 class DeferredOperationKHR

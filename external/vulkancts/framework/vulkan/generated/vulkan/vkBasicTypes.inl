@@ -7,7 +7,7 @@
 #define VK_API_VERSION_1_1											(static_cast<uint32_t>			(VK_MAKE_API_VERSION(0, 1, 1, 0)))
 #define VK_API_VERSION_1_2											(static_cast<uint32_t>			(VK_MAKE_API_VERSION(0, 1, 2, 0)))
 #define VK_API_VERSION_1_3											(static_cast<uint32_t>			(VK_MAKE_API_VERSION(0, 1, 3, 0)))
-#define VKSC_API_VERSION_1_0										(static_cast<uint32_t>			(VKSC_API_VARIANT(VKSC_API_VARIANT, 1, 0, 0)))
+#define VKSC_API_VERSION_1_0										(static_cast<uint32_t>			(VK_MAKE_API_VERSION(1, 1, 0, 0)))
 #define VK_MAX_PHYSICAL_DEVICE_NAME_SIZE							(static_cast<size_t>			(256))
 #define VK_UUID_SIZE												(static_cast<size_t>			(16))
 #define VK_LUID_SIZE												(static_cast<size_t>			(8))

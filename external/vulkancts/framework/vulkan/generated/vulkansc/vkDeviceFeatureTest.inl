@@ -5,7 +5,7 @@
 
 
 
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTest16BitStorageFeatures (Context& context)
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExternalMemorySciBufFeaturesNV (Context& context)
 {
 	const PlatformInterface&				vkp						= context.getPlatformInterface();
 	tcu::TestLog&							log						= context.getTestContext().getLog();
@@ -27,18 +27,146 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest16BitStorageFeatures (Con
 
 	// Only non-core extensions will be used when creating the device.
 	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevice16BitStorageFeatures>()))
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceExternalMemorySciBufFeaturesNV>()))
 	{
 		static const Feature features[] =
 		{
-		FEATURE_ITEM (VkPhysicalDevice16BitStorageFeatures, storageBuffer16BitAccess),
-		FEATURE_ITEM (VkPhysicalDevice16BitStorageFeatures, uniformAndStorageBuffer16BitAccess),
-		FEATURE_ITEM (VkPhysicalDevice16BitStorageFeatures, storagePushConstant16),
-		FEATURE_ITEM (VkPhysicalDevice16BitStorageFeatures, storageInputOutput16),
+		FEATURE_ITEM (VkPhysicalDeviceExternalMemorySciBufFeaturesNV, sciBufImport),
+		FEATURE_ITEM (VkPhysicalDeviceExternalMemorySciBufFeaturesNV, sciBufExport),
 		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDevice16BitStorageFeatures*>(featuresStruct);
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceExternalMemorySciBufFeaturesNV*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVariablePointersFeatures (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceVariablePointersFeatures>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceVariablePointersFeatures, variablePointersStorageBuffer),
+		FEATURE_ITEM (VkPhysicalDeviceVariablePointersFeatures, variablePointers),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceVariablePointersFeatures*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExternalSciSyncFeaturesNV (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceExternalSciSyncFeaturesNV>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceExternalSciSyncFeaturesNV, sciSyncFence),
+		FEATURE_ITEM (VkPhysicalDeviceExternalSciSyncFeaturesNV, sciSyncSemaphore),
+		FEATURE_ITEM (VkPhysicalDeviceExternalSciSyncFeaturesNV, sciSyncImport),
+		FEATURE_ITEM (VkPhysicalDeviceExternalSciSyncFeaturesNV, sciSyncExport),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceExternalSciSyncFeaturesNV*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 4, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExternalSciSync2FeaturesNV (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceExternalSciSync2FeaturesNV>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceExternalSciSync2FeaturesNV, sciSyncFence),
+		FEATURE_ITEM (VkPhysicalDeviceExternalSciSync2FeaturesNV, sciSyncSemaphore2),
+		FEATURE_ITEM (VkPhysicalDeviceExternalSciSync2FeaturesNV, sciSyncImport),
+		FEATURE_ITEM (VkPhysicalDeviceExternalSciSync2FeaturesNV, sciSyncExport),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceExternalSciSync2FeaturesNV*>(featuresStruct);
 		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 4, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
 	}
 
@@ -71,7 +199,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMultiviewFeatures (Contex
 
 	// Only non-core extensions will be used when creating the device.
 	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceMultiviewFeatures>()))
 	{
@@ -92,7 +220,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMultiviewFeatures (Contex
 }
 
 
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVariablePointersFeatures (Context& context)
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTest16BitStorageFeatures (Context& context)
 {
 	const PlatformInterface&				vkp						= context.getPlatformInterface();
 	tcu::TestLog&							log						= context.getTestContext().getLog();
@@ -114,17 +242,19 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVariablePointersFeatures 
 
 	// Only non-core extensions will be used when creating the device.
 	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceVariablePointersFeatures>()))
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevice16BitStorageFeatures>()))
 	{
 		static const Feature features[] =
 		{
-		FEATURE_ITEM (VkPhysicalDeviceVariablePointersFeatures, variablePointersStorageBuffer),
-		FEATURE_ITEM (VkPhysicalDeviceVariablePointersFeatures, variablePointers),
+		FEATURE_ITEM (VkPhysicalDevice16BitStorageFeatures, storageBuffer16BitAccess),
+		FEATURE_ITEM (VkPhysicalDevice16BitStorageFeatures, uniformAndStorageBuffer16BitAccess),
+		FEATURE_ITEM (VkPhysicalDevice16BitStorageFeatures, storagePushConstant16),
+		FEATURE_ITEM (VkPhysicalDevice16BitStorageFeatures, storageInputOutput16),
 		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceVariablePointersFeatures*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDevice16BitStorageFeatures*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 4, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
 	}
 
 	if (numErrors > 0)
@@ -134,7 +264,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVariablePointersFeatures 
 }
 
 
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestProtectedMemoryFeatures (Context& context)
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderSubgroupExtendedTypesFeatures (Context& context)
 {
 	const PlatformInterface&				vkp						= context.getPlatformInterface();
 	tcu::TestLog&							log						= context.getTestContext().getLog();
@@ -156,15 +286,15 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestProtectedMemoryFeatures (
 
 	// Only non-core extensions will be used when creating the device.
 	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceProtectedMemoryFeatures>()))
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures>()))
 	{
 		static const Feature features[] =
 		{
-		FEATURE_ITEM (VkPhysicalDeviceProtectedMemoryFeatures, protectedMemory),
+		FEATURE_ITEM (VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures, shaderSubgroupExtendedTypes),
 		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceProtectedMemoryFeatures*>(featuresStruct);
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures*>(featuresStruct);
 		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
 	}
 
@@ -197,7 +327,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSamplerYcbcrConversionFea
 
 	// Only non-core extensions will be used when creating the device.
 	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceSamplerYcbcrConversionFeatures>()))
 	{
@@ -206,6 +336,88 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSamplerYcbcrConversionFea
 		FEATURE_ITEM (VkPhysicalDeviceSamplerYcbcrConversionFeatures, samplerYcbcrConversion),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceSamplerYcbcrConversionFeatures*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestProtectedMemoryFeatures (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceProtectedMemoryFeatures>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceProtectedMemoryFeatures, protectedMemory),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceProtectedMemoryFeatures*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestBlendOperationAdvancedFeaturesEXT (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT, advancedBlendCoherentOperations),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT*>(featuresStruct);
 		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
 	}
 
@@ -238,7 +450,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderDrawParametersFeatu
 
 	// Only non-core extensions will be used when creating the device.
 	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderDrawParametersFeatures>()))
 	{
@@ -248,6 +460,1121 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderDrawParametersFeatu
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderDrawParametersFeatures*>(featuresStruct);
 		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderFloat16Int8Features (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderFloat16Int8Features>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceShaderFloat16Int8Features, shaderFloat16),
+		FEATURE_ITEM (VkPhysicalDeviceShaderFloat16Int8Features, shaderInt8),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderFloat16Int8Features*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestHostQueryResetFeatures (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceHostQueryResetFeatures>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceHostQueryResetFeatures, hostQueryReset),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceHostQueryResetFeatures*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDescriptorIndexingFeatures (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceDescriptorIndexingFeatures>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, shaderInputAttachmentArrayDynamicIndexing),
+		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, shaderUniformTexelBufferArrayDynamicIndexing),
+		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, shaderStorageTexelBufferArrayDynamicIndexing),
+		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, shaderUniformBufferArrayNonUniformIndexing),
+		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, shaderSampledImageArrayNonUniformIndexing),
+		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, shaderStorageBufferArrayNonUniformIndexing),
+		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, shaderStorageImageArrayNonUniformIndexing),
+		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, shaderInputAttachmentArrayNonUniformIndexing),
+		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, shaderUniformTexelBufferArrayNonUniformIndexing),
+		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, shaderStorageTexelBufferArrayNonUniformIndexing),
+		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, descriptorBindingUniformBufferUpdateAfterBind),
+		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, descriptorBindingSampledImageUpdateAfterBind),
+		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, descriptorBindingStorageImageUpdateAfterBind),
+		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, descriptorBindingStorageBufferUpdateAfterBind),
+		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, descriptorBindingUniformTexelBufferUpdateAfterBind),
+		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, descriptorBindingStorageTexelBufferUpdateAfterBind),
+		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, descriptorBindingUpdateUnusedWhilePending),
+		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, descriptorBindingPartiallyBound),
+		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, descriptorBindingVariableDescriptorCount),
+		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, runtimeDescriptorArray),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceDescriptorIndexingFeatures*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 20, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestTimelineSemaphoreFeatures (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceTimelineSemaphoreFeatures>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceTimelineSemaphoreFeatures, timelineSemaphore),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceTimelineSemaphoreFeatures*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTest8BitStorageFeatures (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevice8BitStorageFeatures>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDevice8BitStorageFeatures, storageBuffer8BitAccess),
+		FEATURE_ITEM (VkPhysicalDevice8BitStorageFeatures, uniformAndStorageBuffer8BitAccess),
+		FEATURE_ITEM (VkPhysicalDevice8BitStorageFeatures, storagePushConstant8),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDevice8BitStorageFeatures*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkanMemoryModelFeatures (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceVulkanMemoryModelFeatures>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceVulkanMemoryModelFeatures, vulkanMemoryModel),
+		FEATURE_ITEM (VkPhysicalDeviceVulkanMemoryModelFeatures, vulkanMemoryModelDeviceScope),
+		FEATURE_ITEM (VkPhysicalDeviceVulkanMemoryModelFeatures, vulkanMemoryModelAvailabilityVisibilityChains),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceVulkanMemoryModelFeatures*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderAtomicInt64Features (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderAtomicInt64Features>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicInt64Features, shaderBufferInt64Atomics),
+		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicInt64Features, shaderSharedInt64Atomics),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderAtomicInt64Features*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderAtomicFloatFeaturesEXT (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderAtomicFloatFeaturesEXT>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, shaderBufferFloat32Atomics),
+		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, shaderBufferFloat32AtomicAdd),
+		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, shaderBufferFloat64Atomics),
+		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, shaderBufferFloat64AtomicAdd),
+		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, shaderSharedFloat32Atomics),
+		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, shaderSharedFloat32AtomicAdd),
+		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, shaderSharedFloat64Atomics),
+		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, shaderSharedFloat64AtomicAdd),
+		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, shaderImageFloat32Atomics),
+		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, shaderImageFloat32AtomicAdd),
+		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, sparseImageFloat32Atomics),
+		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, sparseImageFloat32AtomicAdd),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderAtomicFloatFeaturesEXT*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 12, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVertexAttributeDivisorFeaturesEXT (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT, vertexAttributeInstanceRateDivisor),
+		FEATURE_ITEM (VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT, vertexAttributeInstanceRateZeroDivisor),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestASTCDecodeFeaturesEXT (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceASTCDecodeFeaturesEXT>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceASTCDecodeFeaturesEXT, decodeModeSharedExponent),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceASTCDecodeFeaturesEXT*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestScalarBlockLayoutFeatures (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceScalarBlockLayoutFeatures>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceScalarBlockLayoutFeatures, scalarBlockLayout),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceScalarBlockLayoutFeatures*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestUniformBufferStandardLayoutFeatures (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceUniformBufferStandardLayoutFeatures>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceUniformBufferStandardLayoutFeatures, uniformBufferStandardLayout),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceUniformBufferStandardLayoutFeatures*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDepthClipEnableFeaturesEXT (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceDepthClipEnableFeaturesEXT>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceDepthClipEnableFeaturesEXT, depthClipEnable),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceDepthClipEnableFeaturesEXT*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestBufferDeviceAddressFeatures (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceBufferDeviceAddressFeatures>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceBufferDeviceAddressFeatures, bufferDeviceAddress),
+		FEATURE_ITEM (VkPhysicalDeviceBufferDeviceAddressFeatures, bufferDeviceAddressCaptureReplay),
+		FEATURE_ITEM (VkPhysicalDeviceBufferDeviceAddressFeatures, bufferDeviceAddressMultiDevice),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceBufferDeviceAddressFeatures*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImagelessFramebufferFeatures (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceImagelessFramebufferFeatures>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceImagelessFramebufferFeatures, imagelessFramebuffer),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceImagelessFramebufferFeatures*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestTextureCompressionASTCHDRFeaturesEXT (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT, textureCompressionASTC_HDR),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestYcbcrImageArraysFeaturesEXT (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceYcbcrImageArraysFeaturesEXT>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceYcbcrImageArraysFeaturesEXT, ycbcrImageArrays),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceYcbcrImageArraysFeaturesEXT*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPerformanceQueryFeaturesKHR (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevicePerformanceQueryFeaturesKHR>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDevicePerformanceQueryFeaturesKHR, performanceCounterQueryPools),
+		FEATURE_ITEM (VkPhysicalDevicePerformanceQueryFeaturesKHR, performanceCounterMultipleQueryPools),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDevicePerformanceQueryFeaturesKHR*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderClockFeaturesKHR (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderClockFeaturesKHR>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceShaderClockFeaturesKHR, shaderSubgroupClock),
+		FEATURE_ITEM (VkPhysicalDeviceShaderClockFeaturesKHR, shaderDeviceClock),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderClockFeaturesKHR*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestIndexTypeUint8FeaturesEXT (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceIndexTypeUint8FeaturesEXT>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceIndexTypeUint8FeaturesEXT, indexTypeUint8),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceIndexTypeUint8FeaturesEXT*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFragmentShaderInterlockFeaturesEXT (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT, fragmentShaderSampleInterlock),
+		FEATURE_ITEM (VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT, fragmentShaderPixelInterlock),
+		FEATURE_ITEM (VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT, fragmentShaderShadingRateInterlock),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSeparateDepthStencilLayoutsFeatures (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures, separateDepthStencilLayouts),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderDemoteToHelperInvocationFeaturesEXT (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT, shaderDemoteToHelperInvocation),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestTexelBufferAlignmentFeaturesEXT (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT, texelBufferAlignment),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSubgroupSizeControlFeaturesEXT (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceSubgroupSizeControlFeaturesEXT>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceSubgroupSizeControlFeaturesEXT, subgroupSizeControl),
+		FEATURE_ITEM (VkPhysicalDeviceSubgroupSizeControlFeaturesEXT, computeFullSubgroups),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestLineRasterizationFeaturesEXT (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceLineRasterizationFeaturesEXT>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceLineRasterizationFeaturesEXT, rectangularLines),
+		FEATURE_ITEM (VkPhysicalDeviceLineRasterizationFeaturesEXT, bresenhamLines),
+		FEATURE_ITEM (VkPhysicalDeviceLineRasterizationFeaturesEXT, smoothLines),
+		FEATURE_ITEM (VkPhysicalDeviceLineRasterizationFeaturesEXT, stippledRectangularLines),
+		FEATURE_ITEM (VkPhysicalDeviceLineRasterizationFeaturesEXT, stippledBresenhamLines),
+		FEATURE_ITEM (VkPhysicalDeviceLineRasterizationFeaturesEXT, stippledSmoothLines),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceLineRasterizationFeaturesEXT*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 6, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
 	}
 
 	if (numErrors > 0)
@@ -279,7 +1606,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkan11Features (Context
 
 	// Only non-core extensions will be used when creating the device.
 	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceVulkan11Features>()))
 	{
@@ -331,7 +1658,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkan12Features (Context
 
 	// Only non-core extensions will be used when creating the device.
 	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceVulkan12Features>()))
 	{
@@ -396,7 +1723,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkan12Features (Context
 }
 
 
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTest8BitStorageFeatures (Context& context)
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkan13Features (Context& context)
 {
 	const PlatformInterface&				vkp						= context.getPlatformInterface();
 	tcu::TestLog&							log						= context.getTestContext().getLog();
@@ -418,1464 +1745,30 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest8BitStorageFeatures (Cont
 
 	// Only non-core extensions will be used when creating the device.
 	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevice8BitStorageFeatures>()))
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceVulkan13Features>()))
 	{
 		static const Feature features[] =
 		{
-		FEATURE_ITEM (VkPhysicalDevice8BitStorageFeatures, storageBuffer8BitAccess),
-		FEATURE_ITEM (VkPhysicalDevice8BitStorageFeatures, uniformAndStorageBuffer8BitAccess),
-		FEATURE_ITEM (VkPhysicalDevice8BitStorageFeatures, storagePushConstant8),
+		FEATURE_ITEM (VkPhysicalDeviceVulkan13Features, robustImageAccess),
+		FEATURE_ITEM (VkPhysicalDeviceVulkan13Features, inlineUniformBlock),
+		FEATURE_ITEM (VkPhysicalDeviceVulkan13Features, descriptorBindingInlineUniformBlockUpdateAfterBind),
+		FEATURE_ITEM (VkPhysicalDeviceVulkan13Features, pipelineCreationCacheControl),
+		FEATURE_ITEM (VkPhysicalDeviceVulkan13Features, privateData),
+		FEATURE_ITEM (VkPhysicalDeviceVulkan13Features, shaderDemoteToHelperInvocation),
+		FEATURE_ITEM (VkPhysicalDeviceVulkan13Features, shaderTerminateInvocation),
+		FEATURE_ITEM (VkPhysicalDeviceVulkan13Features, subgroupSizeControl),
+		FEATURE_ITEM (VkPhysicalDeviceVulkan13Features, computeFullSubgroups),
+		FEATURE_ITEM (VkPhysicalDeviceVulkan13Features, synchronization2),
+		FEATURE_ITEM (VkPhysicalDeviceVulkan13Features, textureCompressionASTC_HDR),
+		FEATURE_ITEM (VkPhysicalDeviceVulkan13Features, shaderZeroInitializeWorkgroupMemory),
+		FEATURE_ITEM (VkPhysicalDeviceVulkan13Features, dynamicRendering),
+		FEATURE_ITEM (VkPhysicalDeviceVulkan13Features, shaderIntegerDotProduct),
+		FEATURE_ITEM (VkPhysicalDeviceVulkan13Features, maintenance4),
 		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDevice8BitStorageFeatures*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderAtomicInt64Features (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderAtomicInt64Features>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicInt64Features, shaderBufferInt64Atomics),
-		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicInt64Features, shaderSharedInt64Atomics),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderAtomicInt64Features*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderFloat16Int8Features (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderFloat16Int8Features>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceShaderFloat16Int8Features, shaderFloat16),
-		FEATURE_ITEM (VkPhysicalDeviceShaderFloat16Int8Features, shaderInt8),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderFloat16Int8Features*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDescriptorIndexingFeatures (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceDescriptorIndexingFeatures>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, shaderInputAttachmentArrayDynamicIndexing),
-		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, shaderUniformTexelBufferArrayDynamicIndexing),
-		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, shaderStorageTexelBufferArrayDynamicIndexing),
-		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, shaderUniformBufferArrayNonUniformIndexing),
-		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, shaderSampledImageArrayNonUniformIndexing),
-		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, shaderStorageBufferArrayNonUniformIndexing),
-		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, shaderStorageImageArrayNonUniformIndexing),
-		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, shaderInputAttachmentArrayNonUniformIndexing),
-		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, shaderUniformTexelBufferArrayNonUniformIndexing),
-		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, shaderStorageTexelBufferArrayNonUniformIndexing),
-		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, descriptorBindingUniformBufferUpdateAfterBind),
-		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, descriptorBindingSampledImageUpdateAfterBind),
-		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, descriptorBindingStorageImageUpdateAfterBind),
-		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, descriptorBindingStorageBufferUpdateAfterBind),
-		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, descriptorBindingUniformTexelBufferUpdateAfterBind),
-		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, descriptorBindingStorageTexelBufferUpdateAfterBind),
-		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, descriptorBindingUpdateUnusedWhilePending),
-		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, descriptorBindingPartiallyBound),
-		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, descriptorBindingVariableDescriptorCount),
-		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, runtimeDescriptorArray),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceDescriptorIndexingFeatures*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 20, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestScalarBlockLayoutFeatures (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceScalarBlockLayoutFeatures>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceScalarBlockLayoutFeatures, scalarBlockLayout),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceScalarBlockLayoutFeatures*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkanMemoryModelFeatures (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceVulkanMemoryModelFeatures>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceVulkanMemoryModelFeatures, vulkanMemoryModel),
-		FEATURE_ITEM (VkPhysicalDeviceVulkanMemoryModelFeatures, vulkanMemoryModelDeviceScope),
-		FEATURE_ITEM (VkPhysicalDeviceVulkanMemoryModelFeatures, vulkanMemoryModelAvailabilityVisibilityChains),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceVulkanMemoryModelFeatures*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImagelessFramebufferFeatures (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceImagelessFramebufferFeatures>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceImagelessFramebufferFeatures, imagelessFramebuffer),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceImagelessFramebufferFeatures*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestUniformBufferStandardLayoutFeatures (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceUniformBufferStandardLayoutFeatures>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceUniformBufferStandardLayoutFeatures, uniformBufferStandardLayout),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceUniformBufferStandardLayoutFeatures*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderSubgroupExtendedTypesFeatures (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures, shaderSubgroupExtendedTypes),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSeparateDepthStencilLayoutsFeatures (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures, separateDepthStencilLayouts),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestHostQueryResetFeatures (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceHostQueryResetFeatures>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceHostQueryResetFeatures, hostQueryReset),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceHostQueryResetFeatures*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestTimelineSemaphoreFeatures (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceTimelineSemaphoreFeatures>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceTimelineSemaphoreFeatures, timelineSemaphore),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceTimelineSemaphoreFeatures*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestBufferDeviceAddressFeatures (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceBufferDeviceAddressFeatures>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceBufferDeviceAddressFeatures, bufferDeviceAddress),
-		FEATURE_ITEM (VkPhysicalDeviceBufferDeviceAddressFeatures, bufferDeviceAddressCaptureReplay),
-		FEATURE_ITEM (VkPhysicalDeviceBufferDeviceAddressFeatures, bufferDeviceAddressMultiDevice),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceBufferDeviceAddressFeatures*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkanSC10Features (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceVulkanSC10Features>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceVulkanSC10Features, shaderAtomicInstructions),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceVulkanSC10Features*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPerformanceQueryFeaturesKHR (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevicePerformanceQueryFeaturesKHR>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDevicePerformanceQueryFeaturesKHR, performanceCounterQueryPools),
-		FEATURE_ITEM (VkPhysicalDevicePerformanceQueryFeaturesKHR, performanceCounterMultipleQueryPools),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDevicePerformanceQueryFeaturesKHR*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderClockFeaturesKHR (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderClockFeaturesKHR>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceShaderClockFeaturesKHR, shaderSubgroupClock),
-		FEATURE_ITEM (VkPhysicalDeviceShaderClockFeaturesKHR, shaderDeviceClock),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderClockFeaturesKHR*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderTerminateInvocationFeaturesKHR (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR, shaderTerminateInvocation),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFragmentShadingRateFeaturesKHR (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceFragmentShadingRateFeaturesKHR>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceFragmentShadingRateFeaturesKHR, pipelineFragmentShadingRate),
-		FEATURE_ITEM (VkPhysicalDeviceFragmentShadingRateFeaturesKHR, primitiveFragmentShadingRate),
-		FEATURE_ITEM (VkPhysicalDeviceFragmentShadingRateFeaturesKHR, attachmentFragmentShadingRate),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceFragmentShadingRateFeaturesKHR*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSynchronization2FeaturesKHR (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceSynchronization2FeaturesKHR>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceSynchronization2FeaturesKHR, synchronization2),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceSynchronization2FeaturesKHR*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestTextureCompressionASTCHDRFeaturesEXT (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT, textureCompressionASTC_HDR),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestASTCDecodeFeaturesEXT (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceASTCDecodeFeaturesEXT>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceASTCDecodeFeaturesEXT, decodeModeSharedExponent),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceASTCDecodeFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDepthClipEnableFeaturesEXT (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceDepthClipEnableFeaturesEXT>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceDepthClipEnableFeaturesEXT, depthClipEnable),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceDepthClipEnableFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestBlendOperationAdvancedFeaturesEXT (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT, advancedBlendCoherentOperations),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVertexAttributeDivisorFeaturesEXT (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT, vertexAttributeInstanceRateDivisor),
-		FEATURE_ITEM (VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT, vertexAttributeInstanceRateZeroDivisor),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSubgroupSizeControlFeaturesEXT (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceSubgroupSizeControlFeaturesEXT>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceSubgroupSizeControlFeaturesEXT, subgroupSizeControl),
-		FEATURE_ITEM (VkPhysicalDeviceSubgroupSizeControlFeaturesEXT, computeFullSubgroups),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderImageAtomicInt64FeaturesEXT (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT, shaderImageInt64Atomics),
-		FEATURE_ITEM (VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT, sparseImageInt64Atomics),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFragmentShaderInterlockFeaturesEXT (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT, fragmentShaderSampleInterlock),
-		FEATURE_ITEM (VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT, fragmentShaderPixelInterlock),
-		FEATURE_ITEM (VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT, fragmentShaderShadingRateInterlock),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestYcbcrImageArraysFeaturesEXT (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceYcbcrImageArraysFeaturesEXT>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceYcbcrImageArraysFeaturesEXT, ycbcrImageArrays),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceYcbcrImageArraysFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestLineRasterizationFeaturesEXT (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceLineRasterizationFeaturesEXT>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceLineRasterizationFeaturesEXT, rectangularLines),
-		FEATURE_ITEM (VkPhysicalDeviceLineRasterizationFeaturesEXT, bresenhamLines),
-		FEATURE_ITEM (VkPhysicalDeviceLineRasterizationFeaturesEXT, smoothLines),
-		FEATURE_ITEM (VkPhysicalDeviceLineRasterizationFeaturesEXT, stippledRectangularLines),
-		FEATURE_ITEM (VkPhysicalDeviceLineRasterizationFeaturesEXT, stippledBresenhamLines),
-		FEATURE_ITEM (VkPhysicalDeviceLineRasterizationFeaturesEXT, stippledSmoothLines),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceLineRasterizationFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 6, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderAtomicFloatFeaturesEXT (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderAtomicFloatFeaturesEXT>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, shaderBufferFloat32Atomics),
-		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, shaderBufferFloat32AtomicAdd),
-		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, shaderBufferFloat64Atomics),
-		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, shaderBufferFloat64AtomicAdd),
-		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, shaderSharedFloat32Atomics),
-		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, shaderSharedFloat32AtomicAdd),
-		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, shaderSharedFloat64Atomics),
-		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, shaderSharedFloat64AtomicAdd),
-		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, shaderImageFloat32Atomics),
-		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, shaderImageFloat32AtomicAdd),
-		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, sparseImageFloat32Atomics),
-		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, sparseImageFloat32AtomicAdd),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderAtomicFloatFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 12, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestIndexTypeUint8FeaturesEXT (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceIndexTypeUint8FeaturesEXT>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceIndexTypeUint8FeaturesEXT, indexTypeUint8),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceIndexTypeUint8FeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExtendedDynamicStateFeaturesEXT (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceExtendedDynamicStateFeaturesEXT>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceExtendedDynamicStateFeaturesEXT, extendedDynamicState),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceExtendedDynamicStateFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderDemoteToHelperInvocationFeaturesEXT (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT, shaderDemoteToHelperInvocation),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestTexelBufferAlignmentFeaturesEXT (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT, texelBufferAlignment),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRobustness2FeaturesEXT (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceRobustness2FeaturesEXT>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceRobustness2FeaturesEXT, robustBufferAccess2),
-		FEATURE_ITEM (VkPhysicalDeviceRobustness2FeaturesEXT, robustImageAccess2),
-		FEATURE_ITEM (VkPhysicalDeviceRobustness2FeaturesEXT, nullDescriptor),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceRobustness2FeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceVulkan13Features*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 15, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, DE_NULL, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
 	}
 
 	if (numErrors > 0)
@@ -1907,7 +1800,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCustomBorderColorFeatures
 
 	// Only non-core extensions will be used when creating the device.
 	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceCustomBorderColorFeaturesEXT>()))
 	{
@@ -1927,7 +1820,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCustomBorderColorFeatures
 }
 
 
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestYcbcr2Plane444FormatsFeaturesEXT (Context& context)
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExtendedDynamicStateFeaturesEXT (Context& context)
 {
 	const PlatformInterface&				vkp						= context.getPlatformInterface();
 	tcu::TestLog&							log						= context.getTestContext().getLog();
@@ -1949,16 +1842,102 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestYcbcr2Plane444FormatsFeat
 
 	// Only non-core extensions will be used when creating the device.
 	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT>()))
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceExtendedDynamicStateFeaturesEXT>()))
 	{
 		static const Feature features[] =
 		{
-		FEATURE_ITEM (VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT, ycbcr2plane444Formats),
+		FEATURE_ITEM (VkPhysicalDeviceExtendedDynamicStateFeaturesEXT, extendedDynamicState),
 		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT*>(featuresStruct);
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceExtendedDynamicStateFeaturesEXT*>(featuresStruct);
 		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExtendedDynamicState2FeaturesEXT (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceExtendedDynamicState2FeaturesEXT>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceExtendedDynamicState2FeaturesEXT, extendedDynamicState2),
+		FEATURE_ITEM (VkPhysicalDeviceExtendedDynamicState2FeaturesEXT, extendedDynamicState2LogicOp),
+		FEATURE_ITEM (VkPhysicalDeviceExtendedDynamicState2FeaturesEXT, extendedDynamicState2PatchControlPoints),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceExtendedDynamicState2FeaturesEXT*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRobustness2FeaturesEXT (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceRobustness2FeaturesEXT>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceRobustness2FeaturesEXT, robustBufferAccess2),
+		FEATURE_ITEM (VkPhysicalDeviceRobustness2FeaturesEXT, robustImageAccess2),
+		FEATURE_ITEM (VkPhysicalDeviceRobustness2FeaturesEXT, nullDescriptor),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceRobustness2FeaturesEXT*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
 	}
 
 	if (numErrors > 0)
@@ -1990,7 +1969,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImageRobustnessFeaturesEX
 
 	// Only non-core extensions will be used when creating the device.
 	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceImageRobustnessFeaturesEXT>()))
 	{
@@ -2031,7 +2010,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest4444FormatsFeaturesEXT (C
 
 	// Only non-core extensions will be used when creating the device.
 	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevice4444FormatsFeaturesEXT>()))
 	{
@@ -2042,6 +2021,132 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest4444FormatsFeaturesEXT (C
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDevice4444FormatsFeaturesEXT*>(featuresStruct);
 		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderImageAtomicInt64FeaturesEXT (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT, shaderImageInt64Atomics),
+		FEATURE_ITEM (VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT, sparseImageInt64Atomics),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFragmentShadingRateFeaturesKHR (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceFragmentShadingRateFeaturesKHR>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceFragmentShadingRateFeaturesKHR, pipelineFragmentShadingRate),
+		FEATURE_ITEM (VkPhysicalDeviceFragmentShadingRateFeaturesKHR, primitiveFragmentShadingRate),
+		FEATURE_ITEM (VkPhysicalDeviceFragmentShadingRateFeaturesKHR, attachmentFragmentShadingRate),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceFragmentShadingRateFeaturesKHR*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderTerminateInvocationFeaturesKHR (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR, shaderTerminateInvocation),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
 	}
 
 	if (numErrors > 0)
@@ -2073,7 +2178,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVertexInputDynamicStateFe
 
 	// Only non-core extensions will be used when creating the device.
 	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT>()))
 	{
@@ -2083,49 +2188,6 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVertexInputDynamicStateFe
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT*>(featuresStruct);
 		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
-	}
-
-	if (numErrors > 0)
-		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-	else
-		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
-}
-
-
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExtendedDynamicState2FeaturesEXT (Context& context)
-{
-	const PlatformInterface&				vkp						= context.getPlatformInterface();
-	tcu::TestLog&							log						= context.getTestContext().getLog();
-	tcu::ResultCollector					resultCollector			(log);
-	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32							queueFamilyIndex		= 0;
-	const deUint32							queueCount				= 1;
-	const float								queuePriority			= 1.0f;
-	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
-	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
-	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
-	VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
-
-	VkPhysicalDeviceFeatures emptyDeviceFeatures;
-	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
-
-	// Only non-core extensions will be used when creating the device.
-	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
-
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceExtendedDynamicState2FeaturesEXT>()))
-	{
-		static const Feature features[] =
-		{
-		FEATURE_ITEM (VkPhysicalDeviceExtendedDynamicState2FeaturesEXT, extendedDynamicState2),
-		FEATURE_ITEM (VkPhysicalDeviceExtendedDynamicState2FeaturesEXT, extendedDynamicState2LogicOp),
-		FEATURE_ITEM (VkPhysicalDeviceExtendedDynamicState2FeaturesEXT, extendedDynamicState2PatchControlPoints),
-		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceExtendedDynamicState2FeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
 	}
 
 	if (numErrors > 0)
@@ -2157,7 +2219,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestColorWriteEnableFeaturesE
 
 	// Only non-core extensions will be used when creating the device.
 	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceColorWriteEnableFeaturesEXT>()))
 	{
@@ -2176,7 +2238,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestColorWriteEnableFeaturesE
 }
 
 
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExternalSciSyncFeaturesNV (Context& context)
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSynchronization2FeaturesKHR (Context& context)
 {
 	const PlatformInterface&				vkp						= context.getPlatformInterface();
 	tcu::TestLog&							log						= context.getTestContext().getLog();
@@ -2198,19 +2260,16 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExternalSciSyncFeaturesNV
 
 	// Only non-core extensions will be used when creating the device.
 	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceExternalSciSyncFeaturesNV>()))
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceSynchronization2FeaturesKHR>()))
 	{
 		static const Feature features[] =
 		{
-		FEATURE_ITEM (VkPhysicalDeviceExternalSciSyncFeaturesNV, sciSyncFence),
-		FEATURE_ITEM (VkPhysicalDeviceExternalSciSyncFeaturesNV, sciSyncSemaphore),
-		FEATURE_ITEM (VkPhysicalDeviceExternalSciSyncFeaturesNV, sciSyncImport),
-		FEATURE_ITEM (VkPhysicalDeviceExternalSciSyncFeaturesNV, sciSyncExport),
+		FEATURE_ITEM (VkPhysicalDeviceSynchronization2FeaturesKHR, synchronization2),
 		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceExternalSciSyncFeaturesNV*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 4, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceSynchronization2FeaturesKHR*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
 	}
 
 	if (numErrors > 0)
@@ -2220,7 +2279,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExternalSciSyncFeaturesNV
 }
 
 
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExternalMemorySciBufFeaturesNV (Context& context)
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkanSC10Features (Context& context)
 {
 	const PlatformInterface&				vkp						= context.getPlatformInterface();
 	tcu::TestLog&							log						= context.getTestContext().getLog();
@@ -2242,17 +2301,16 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExternalMemorySciBufFeatu
 
 	// Only non-core extensions will be used when creating the device.
 	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceExternalMemorySciBufFeaturesNV>()))
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceVulkanSC10Features>()))
 	{
 		static const Feature features[] =
 		{
-		FEATURE_ITEM (VkPhysicalDeviceExternalMemorySciBufFeaturesNV, sciBufImport),
-		FEATURE_ITEM (VkPhysicalDeviceExternalMemorySciBufFeaturesNV, sciBufExport),
+		FEATURE_ITEM (VkPhysicalDeviceVulkanSC10Features, shaderAtomicInstructions),
 		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceExternalMemorySciBufFeaturesNV*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceVulkanSC10Features*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
 	}
 
 	if (numErrors > 0)
@@ -2262,7 +2320,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExternalMemorySciBufFeatu
 }
 
 
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExternalSciSync2FeaturesNV (Context& context)
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestYcbcr2Plane444FormatsFeaturesEXT (Context& context)
 {
 	const PlatformInterface&				vkp						= context.getPlatformInterface();
 	tcu::TestLog&							log						= context.getTestContext().getLog();
@@ -2284,19 +2342,16 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExternalSciSync2FeaturesN
 
 	// Only non-core extensions will be used when creating the device.
 	const auto& extensionNames = context.getDeviceCreationExtensions();
-	DE_UNREF(extensionNames); // In some cases this may not be used.
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceExternalSciSync2FeaturesNV>()))
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT>()))
 	{
 		static const Feature features[] =
 		{
-		FEATURE_ITEM (VkPhysicalDeviceExternalSciSync2FeaturesNV, sciSyncFence),
-		FEATURE_ITEM (VkPhysicalDeviceExternalSciSync2FeaturesNV, sciSyncSemaphore2),
-		FEATURE_ITEM (VkPhysicalDeviceExternalSciSync2FeaturesNV, sciSyncImport),
-		FEATURE_ITEM (VkPhysicalDeviceExternalSciSync2FeaturesNV, sciSyncExport),
+		FEATURE_ITEM (VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT, ycbcr2plane444Formats),
 		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceExternalSciSync2FeaturesNV*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 4, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
 	}
 
 	if (numErrors > 0)
@@ -2309,58 +2364,59 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExternalSciSync2FeaturesN
 void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 {
 
-	addFunctionCase(testGroup, "16_bit_storage_features", "createDeviceWithUnsupportedFeaturesTest16BitStorageFeatures", createDeviceWithUnsupportedFeaturesTest16BitStorageFeatures);
-	addFunctionCase(testGroup, "multiview_features", "createDeviceWithUnsupportedFeaturesTestMultiviewFeatures", createDeviceWithUnsupportedFeaturesTestMultiviewFeatures);
+	addFunctionCase(testGroup, "external_memory_sci_buf_features_nv", "createDeviceWithUnsupportedFeaturesTestExternalMemorySciBufFeaturesNV", createDeviceWithUnsupportedFeaturesTestExternalMemorySciBufFeaturesNV);
 	addFunctionCase(testGroup, "variable_pointers_features", "createDeviceWithUnsupportedFeaturesTestVariablePointersFeatures", createDeviceWithUnsupportedFeaturesTestVariablePointersFeatures);
-	addFunctionCase(testGroup, "protected_memory_features", "createDeviceWithUnsupportedFeaturesTestProtectedMemoryFeatures", createDeviceWithUnsupportedFeaturesTestProtectedMemoryFeatures);
-	addFunctionCase(testGroup, "sampler_ycbcr_conversion_features", "createDeviceWithUnsupportedFeaturesTestSamplerYcbcrConversionFeatures", createDeviceWithUnsupportedFeaturesTestSamplerYcbcrConversionFeatures);
-	addFunctionCase(testGroup, "shader_draw_parameters_features", "createDeviceWithUnsupportedFeaturesTestShaderDrawParametersFeatures", createDeviceWithUnsupportedFeaturesTestShaderDrawParametersFeatures);
-	addFunctionCase(testGroup, "vulkan11_features", "createDeviceWithUnsupportedFeaturesTestVulkan11Features", createDeviceWithUnsupportedFeaturesTestVulkan11Features);
-	addFunctionCase(testGroup, "vulkan12_features", "createDeviceWithUnsupportedFeaturesTestVulkan12Features", createDeviceWithUnsupportedFeaturesTestVulkan12Features);
-	addFunctionCase(testGroup, "8_bit_storage_features", "createDeviceWithUnsupportedFeaturesTest8BitStorageFeatures", createDeviceWithUnsupportedFeaturesTest8BitStorageFeatures);
-	addFunctionCase(testGroup, "shader_atomic_int64_features", "createDeviceWithUnsupportedFeaturesTestShaderAtomicInt64Features", createDeviceWithUnsupportedFeaturesTestShaderAtomicInt64Features);
-	addFunctionCase(testGroup, "shader_float16_int8_features", "createDeviceWithUnsupportedFeaturesTestShaderFloat16Int8Features", createDeviceWithUnsupportedFeaturesTestShaderFloat16Int8Features);
-	addFunctionCase(testGroup, "descriptor_indexing_features", "createDeviceWithUnsupportedFeaturesTestDescriptorIndexingFeatures", createDeviceWithUnsupportedFeaturesTestDescriptorIndexingFeatures);
-	addFunctionCase(testGroup, "scalar_block_layout_features", "createDeviceWithUnsupportedFeaturesTestScalarBlockLayoutFeatures", createDeviceWithUnsupportedFeaturesTestScalarBlockLayoutFeatures);
-	addFunctionCase(testGroup, "vulkan_memory_model_features", "createDeviceWithUnsupportedFeaturesTestVulkanMemoryModelFeatures", createDeviceWithUnsupportedFeaturesTestVulkanMemoryModelFeatures);
-	addFunctionCase(testGroup, "imageless_framebuffer_features", "createDeviceWithUnsupportedFeaturesTestImagelessFramebufferFeatures", createDeviceWithUnsupportedFeaturesTestImagelessFramebufferFeatures);
-	addFunctionCase(testGroup, "uniform_buffer_standard_layout_features", "createDeviceWithUnsupportedFeaturesTestUniformBufferStandardLayoutFeatures", createDeviceWithUnsupportedFeaturesTestUniformBufferStandardLayoutFeatures);
+	addFunctionCase(testGroup, "external_sci_sync_features_nv", "createDeviceWithUnsupportedFeaturesTestExternalSciSyncFeaturesNV", createDeviceWithUnsupportedFeaturesTestExternalSciSyncFeaturesNV);
+	addFunctionCase(testGroup, "external_sci_sync2_features_nv", "createDeviceWithUnsupportedFeaturesTestExternalSciSync2FeaturesNV", createDeviceWithUnsupportedFeaturesTestExternalSciSync2FeaturesNV);
+	addFunctionCase(testGroup, "multiview_features", "createDeviceWithUnsupportedFeaturesTestMultiviewFeatures", createDeviceWithUnsupportedFeaturesTestMultiviewFeatures);
+	addFunctionCase(testGroup, "16_bit_storage_features", "createDeviceWithUnsupportedFeaturesTest16BitStorageFeatures", createDeviceWithUnsupportedFeaturesTest16BitStorageFeatures);
 	addFunctionCase(testGroup, "shader_subgroup_extended_types_features", "createDeviceWithUnsupportedFeaturesTestShaderSubgroupExtendedTypesFeatures", createDeviceWithUnsupportedFeaturesTestShaderSubgroupExtendedTypesFeatures);
-	addFunctionCase(testGroup, "separate_depth_stencil_layouts_features", "createDeviceWithUnsupportedFeaturesTestSeparateDepthStencilLayoutsFeatures", createDeviceWithUnsupportedFeaturesTestSeparateDepthStencilLayoutsFeatures);
+	addFunctionCase(testGroup, "sampler_ycbcr_conversion_features", "createDeviceWithUnsupportedFeaturesTestSamplerYcbcrConversionFeatures", createDeviceWithUnsupportedFeaturesTestSamplerYcbcrConversionFeatures);
+	addFunctionCase(testGroup, "protected_memory_features", "createDeviceWithUnsupportedFeaturesTestProtectedMemoryFeatures", createDeviceWithUnsupportedFeaturesTestProtectedMemoryFeatures);
+	addFunctionCase(testGroup, "blend_operation_advanced_features_ext", "createDeviceWithUnsupportedFeaturesTestBlendOperationAdvancedFeaturesEXT", createDeviceWithUnsupportedFeaturesTestBlendOperationAdvancedFeaturesEXT);
+	addFunctionCase(testGroup, "shader_draw_parameters_features", "createDeviceWithUnsupportedFeaturesTestShaderDrawParametersFeatures", createDeviceWithUnsupportedFeaturesTestShaderDrawParametersFeatures);
+	addFunctionCase(testGroup, "shader_float16_int8_features", "createDeviceWithUnsupportedFeaturesTestShaderFloat16Int8Features", createDeviceWithUnsupportedFeaturesTestShaderFloat16Int8Features);
 	addFunctionCase(testGroup, "host_query_reset_features", "createDeviceWithUnsupportedFeaturesTestHostQueryResetFeatures", createDeviceWithUnsupportedFeaturesTestHostQueryResetFeatures);
+	addFunctionCase(testGroup, "descriptor_indexing_features", "createDeviceWithUnsupportedFeaturesTestDescriptorIndexingFeatures", createDeviceWithUnsupportedFeaturesTestDescriptorIndexingFeatures);
 	addFunctionCase(testGroup, "timeline_semaphore_features", "createDeviceWithUnsupportedFeaturesTestTimelineSemaphoreFeatures", createDeviceWithUnsupportedFeaturesTestTimelineSemaphoreFeatures);
+	addFunctionCase(testGroup, "8_bit_storage_features", "createDeviceWithUnsupportedFeaturesTest8BitStorageFeatures", createDeviceWithUnsupportedFeaturesTest8BitStorageFeatures);
+	addFunctionCase(testGroup, "vulkan_memory_model_features", "createDeviceWithUnsupportedFeaturesTestVulkanMemoryModelFeatures", createDeviceWithUnsupportedFeaturesTestVulkanMemoryModelFeatures);
+	addFunctionCase(testGroup, "shader_atomic_int64_features", "createDeviceWithUnsupportedFeaturesTestShaderAtomicInt64Features", createDeviceWithUnsupportedFeaturesTestShaderAtomicInt64Features);
+	addFunctionCase(testGroup, "shader_atomic_float_features_ext", "createDeviceWithUnsupportedFeaturesTestShaderAtomicFloatFeaturesEXT", createDeviceWithUnsupportedFeaturesTestShaderAtomicFloatFeaturesEXT);
+	addFunctionCase(testGroup, "vertex_attribute_divisor_features_ext", "createDeviceWithUnsupportedFeaturesTestVertexAttributeDivisorFeaturesEXT", createDeviceWithUnsupportedFeaturesTestVertexAttributeDivisorFeaturesEXT);
+	addFunctionCase(testGroup, "astc_decode_features_ext", "createDeviceWithUnsupportedFeaturesTestASTCDecodeFeaturesEXT", createDeviceWithUnsupportedFeaturesTestASTCDecodeFeaturesEXT);
+	addFunctionCase(testGroup, "scalar_block_layout_features", "createDeviceWithUnsupportedFeaturesTestScalarBlockLayoutFeatures", createDeviceWithUnsupportedFeaturesTestScalarBlockLayoutFeatures);
+	addFunctionCase(testGroup, "uniform_buffer_standard_layout_features", "createDeviceWithUnsupportedFeaturesTestUniformBufferStandardLayoutFeatures", createDeviceWithUnsupportedFeaturesTestUniformBufferStandardLayoutFeatures);
+	addFunctionCase(testGroup, "depth_clip_enable_features_ext", "createDeviceWithUnsupportedFeaturesTestDepthClipEnableFeaturesEXT", createDeviceWithUnsupportedFeaturesTestDepthClipEnableFeaturesEXT);
 	addFunctionCase(testGroup, "buffer_device_address_features", "createDeviceWithUnsupportedFeaturesTestBufferDeviceAddressFeatures", createDeviceWithUnsupportedFeaturesTestBufferDeviceAddressFeatures);
-	addFunctionCase(testGroup, "vulkan_sc10_features", "createDeviceWithUnsupportedFeaturesTestVulkanSC10Features", createDeviceWithUnsupportedFeaturesTestVulkanSC10Features);
+	addFunctionCase(testGroup, "imageless_framebuffer_features", "createDeviceWithUnsupportedFeaturesTestImagelessFramebufferFeatures", createDeviceWithUnsupportedFeaturesTestImagelessFramebufferFeatures);
+	addFunctionCase(testGroup, "texture_compression_astchdr_features_ext", "createDeviceWithUnsupportedFeaturesTestTextureCompressionASTCHDRFeaturesEXT", createDeviceWithUnsupportedFeaturesTestTextureCompressionASTCHDRFeaturesEXT);
+	addFunctionCase(testGroup, "ycbcr_image_arrays_features_ext", "createDeviceWithUnsupportedFeaturesTestYcbcrImageArraysFeaturesEXT", createDeviceWithUnsupportedFeaturesTestYcbcrImageArraysFeaturesEXT);
 	addFunctionCase(testGroup, "performance_query_features_khr", "createDeviceWithUnsupportedFeaturesTestPerformanceQueryFeaturesKHR", createDeviceWithUnsupportedFeaturesTestPerformanceQueryFeaturesKHR);
 	addFunctionCase(testGroup, "shader_clock_features_khr", "createDeviceWithUnsupportedFeaturesTestShaderClockFeaturesKHR", createDeviceWithUnsupportedFeaturesTestShaderClockFeaturesKHR);
-	addFunctionCase(testGroup, "shader_terminate_invocation_features_khr", "createDeviceWithUnsupportedFeaturesTestShaderTerminateInvocationFeaturesKHR", createDeviceWithUnsupportedFeaturesTestShaderTerminateInvocationFeaturesKHR);
-	addFunctionCase(testGroup, "fragment_shading_rate_features_khr", "createDeviceWithUnsupportedFeaturesTestFragmentShadingRateFeaturesKHR", createDeviceWithUnsupportedFeaturesTestFragmentShadingRateFeaturesKHR);
-	addFunctionCase(testGroup, "synchronization2_features_khr", "createDeviceWithUnsupportedFeaturesTestSynchronization2FeaturesKHR", createDeviceWithUnsupportedFeaturesTestSynchronization2FeaturesKHR);
-	addFunctionCase(testGroup, "texture_compression_astchdr_features_ext", "createDeviceWithUnsupportedFeaturesTestTextureCompressionASTCHDRFeaturesEXT", createDeviceWithUnsupportedFeaturesTestTextureCompressionASTCHDRFeaturesEXT);
-	addFunctionCase(testGroup, "astc_decode_features_ext", "createDeviceWithUnsupportedFeaturesTestASTCDecodeFeaturesEXT", createDeviceWithUnsupportedFeaturesTestASTCDecodeFeaturesEXT);
-	addFunctionCase(testGroup, "depth_clip_enable_features_ext", "createDeviceWithUnsupportedFeaturesTestDepthClipEnableFeaturesEXT", createDeviceWithUnsupportedFeaturesTestDepthClipEnableFeaturesEXT);
-	addFunctionCase(testGroup, "blend_operation_advanced_features_ext", "createDeviceWithUnsupportedFeaturesTestBlendOperationAdvancedFeaturesEXT", createDeviceWithUnsupportedFeaturesTestBlendOperationAdvancedFeaturesEXT);
-	addFunctionCase(testGroup, "vertex_attribute_divisor_features_ext", "createDeviceWithUnsupportedFeaturesTestVertexAttributeDivisorFeaturesEXT", createDeviceWithUnsupportedFeaturesTestVertexAttributeDivisorFeaturesEXT);
-	addFunctionCase(testGroup, "subgroup_size_control_features_ext", "createDeviceWithUnsupportedFeaturesTestSubgroupSizeControlFeaturesEXT", createDeviceWithUnsupportedFeaturesTestSubgroupSizeControlFeaturesEXT);
-	addFunctionCase(testGroup, "shader_image_atomic_int64_features_ext", "createDeviceWithUnsupportedFeaturesTestShaderImageAtomicInt64FeaturesEXT", createDeviceWithUnsupportedFeaturesTestShaderImageAtomicInt64FeaturesEXT);
-	addFunctionCase(testGroup, "fragment_shader_interlock_features_ext", "createDeviceWithUnsupportedFeaturesTestFragmentShaderInterlockFeaturesEXT", createDeviceWithUnsupportedFeaturesTestFragmentShaderInterlockFeaturesEXT);
-	addFunctionCase(testGroup, "ycbcr_image_arrays_features_ext", "createDeviceWithUnsupportedFeaturesTestYcbcrImageArraysFeaturesEXT", createDeviceWithUnsupportedFeaturesTestYcbcrImageArraysFeaturesEXT);
-	addFunctionCase(testGroup, "line_rasterization_features_ext", "createDeviceWithUnsupportedFeaturesTestLineRasterizationFeaturesEXT", createDeviceWithUnsupportedFeaturesTestLineRasterizationFeaturesEXT);
-	addFunctionCase(testGroup, "shader_atomic_float_features_ext", "createDeviceWithUnsupportedFeaturesTestShaderAtomicFloatFeaturesEXT", createDeviceWithUnsupportedFeaturesTestShaderAtomicFloatFeaturesEXT);
 	addFunctionCase(testGroup, "index_type_uint8_features_ext", "createDeviceWithUnsupportedFeaturesTestIndexTypeUint8FeaturesEXT", createDeviceWithUnsupportedFeaturesTestIndexTypeUint8FeaturesEXT);
-	addFunctionCase(testGroup, "extended_dynamic_state_features_ext", "createDeviceWithUnsupportedFeaturesTestExtendedDynamicStateFeaturesEXT", createDeviceWithUnsupportedFeaturesTestExtendedDynamicStateFeaturesEXT);
+	addFunctionCase(testGroup, "fragment_shader_interlock_features_ext", "createDeviceWithUnsupportedFeaturesTestFragmentShaderInterlockFeaturesEXT", createDeviceWithUnsupportedFeaturesTestFragmentShaderInterlockFeaturesEXT);
+	addFunctionCase(testGroup, "separate_depth_stencil_layouts_features", "createDeviceWithUnsupportedFeaturesTestSeparateDepthStencilLayoutsFeatures", createDeviceWithUnsupportedFeaturesTestSeparateDepthStencilLayoutsFeatures);
 	addFunctionCase(testGroup, "shader_demote_to_helper_invocation_features_ext", "createDeviceWithUnsupportedFeaturesTestShaderDemoteToHelperInvocationFeaturesEXT", createDeviceWithUnsupportedFeaturesTestShaderDemoteToHelperInvocationFeaturesEXT);
 	addFunctionCase(testGroup, "texel_buffer_alignment_features_ext", "createDeviceWithUnsupportedFeaturesTestTexelBufferAlignmentFeaturesEXT", createDeviceWithUnsupportedFeaturesTestTexelBufferAlignmentFeaturesEXT);
-	addFunctionCase(testGroup, "robustness2_features_ext", "createDeviceWithUnsupportedFeaturesTestRobustness2FeaturesEXT", createDeviceWithUnsupportedFeaturesTestRobustness2FeaturesEXT);
+	addFunctionCase(testGroup, "subgroup_size_control_features_ext", "createDeviceWithUnsupportedFeaturesTestSubgroupSizeControlFeaturesEXT", createDeviceWithUnsupportedFeaturesTestSubgroupSizeControlFeaturesEXT);
+	addFunctionCase(testGroup, "line_rasterization_features_ext", "createDeviceWithUnsupportedFeaturesTestLineRasterizationFeaturesEXT", createDeviceWithUnsupportedFeaturesTestLineRasterizationFeaturesEXT);
+	addFunctionCase(testGroup, "vulkan11_features", "createDeviceWithUnsupportedFeaturesTestVulkan11Features", createDeviceWithUnsupportedFeaturesTestVulkan11Features);
+	addFunctionCase(testGroup, "vulkan12_features", "createDeviceWithUnsupportedFeaturesTestVulkan12Features", createDeviceWithUnsupportedFeaturesTestVulkan12Features);
+	addFunctionCase(testGroup, "vulkan13_features", "createDeviceWithUnsupportedFeaturesTestVulkan13Features", createDeviceWithUnsupportedFeaturesTestVulkan13Features);
 	addFunctionCase(testGroup, "custom_border_color_features_ext", "createDeviceWithUnsupportedFeaturesTestCustomBorderColorFeaturesEXT", createDeviceWithUnsupportedFeaturesTestCustomBorderColorFeaturesEXT);
-	addFunctionCase(testGroup, "ycbcr2_plane444_formats_features_ext", "createDeviceWithUnsupportedFeaturesTestYcbcr2Plane444FormatsFeaturesEXT", createDeviceWithUnsupportedFeaturesTestYcbcr2Plane444FormatsFeaturesEXT);
+	addFunctionCase(testGroup, "extended_dynamic_state_features_ext", "createDeviceWithUnsupportedFeaturesTestExtendedDynamicStateFeaturesEXT", createDeviceWithUnsupportedFeaturesTestExtendedDynamicStateFeaturesEXT);
+	addFunctionCase(testGroup, "extended_dynamic_state2_features_ext", "createDeviceWithUnsupportedFeaturesTestExtendedDynamicState2FeaturesEXT", createDeviceWithUnsupportedFeaturesTestExtendedDynamicState2FeaturesEXT);
+	addFunctionCase(testGroup, "robustness2_features_ext", "createDeviceWithUnsupportedFeaturesTestRobustness2FeaturesEXT", createDeviceWithUnsupportedFeaturesTestRobustness2FeaturesEXT);
 	addFunctionCase(testGroup, "image_robustness_features_ext", "createDeviceWithUnsupportedFeaturesTestImageRobustnessFeaturesEXT", createDeviceWithUnsupportedFeaturesTestImageRobustnessFeaturesEXT);
 	addFunctionCase(testGroup, "4444_formats_features_ext", "createDeviceWithUnsupportedFeaturesTest4444FormatsFeaturesEXT", createDeviceWithUnsupportedFeaturesTest4444FormatsFeaturesEXT);
+	addFunctionCase(testGroup, "shader_image_atomic_int64_features_ext", "createDeviceWithUnsupportedFeaturesTestShaderImageAtomicInt64FeaturesEXT", createDeviceWithUnsupportedFeaturesTestShaderImageAtomicInt64FeaturesEXT);
+	addFunctionCase(testGroup, "fragment_shading_rate_features_khr", "createDeviceWithUnsupportedFeaturesTestFragmentShadingRateFeaturesKHR", createDeviceWithUnsupportedFeaturesTestFragmentShadingRateFeaturesKHR);
+	addFunctionCase(testGroup, "shader_terminate_invocation_features_khr", "createDeviceWithUnsupportedFeaturesTestShaderTerminateInvocationFeaturesKHR", createDeviceWithUnsupportedFeaturesTestShaderTerminateInvocationFeaturesKHR);
 	addFunctionCase(testGroup, "vertex_input_dynamic_state_features_ext", "createDeviceWithUnsupportedFeaturesTestVertexInputDynamicStateFeaturesEXT", createDeviceWithUnsupportedFeaturesTestVertexInputDynamicStateFeaturesEXT);
-	addFunctionCase(testGroup, "extended_dynamic_state2_features_ext", "createDeviceWithUnsupportedFeaturesTestExtendedDynamicState2FeaturesEXT", createDeviceWithUnsupportedFeaturesTestExtendedDynamicState2FeaturesEXT);
 	addFunctionCase(testGroup, "color_write_enable_features_ext", "createDeviceWithUnsupportedFeaturesTestColorWriteEnableFeaturesEXT", createDeviceWithUnsupportedFeaturesTestColorWriteEnableFeaturesEXT);
-	addFunctionCase(testGroup, "external_sci_sync_features_nv", "createDeviceWithUnsupportedFeaturesTestExternalSciSyncFeaturesNV", createDeviceWithUnsupportedFeaturesTestExternalSciSyncFeaturesNV);
-	addFunctionCase(testGroup, "external_memory_sci_buf_features_nv", "createDeviceWithUnsupportedFeaturesTestExternalMemorySciBufFeaturesNV", createDeviceWithUnsupportedFeaturesTestExternalMemorySciBufFeaturesNV);
-	addFunctionCase(testGroup, "external_sci_sync2_features_nv", "createDeviceWithUnsupportedFeaturesTestExternalSciSync2FeaturesNV", createDeviceWithUnsupportedFeaturesTestExternalSciSync2FeaturesNV);
+	addFunctionCase(testGroup, "synchronization2_features_khr", "createDeviceWithUnsupportedFeaturesTestSynchronization2FeaturesKHR", createDeviceWithUnsupportedFeaturesTestSynchronization2FeaturesKHR);
+	addFunctionCase(testGroup, "vulkan_sc10_features", "createDeviceWithUnsupportedFeaturesTestVulkanSC10Features", createDeviceWithUnsupportedFeaturesTestVulkanSC10Features);
+	addFunctionCase(testGroup, "ycbcr2_plane444_formats_features_ext", "createDeviceWithUnsupportedFeaturesTestYcbcr2Plane444FormatsFeaturesEXT", createDeviceWithUnsupportedFeaturesTestYcbcr2Plane444FormatsFeaturesEXT);
 }
 
