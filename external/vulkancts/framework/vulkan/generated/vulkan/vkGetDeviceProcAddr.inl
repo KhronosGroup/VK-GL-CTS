@@ -431,6 +431,8 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkCmdWriteMicromapsPropertiesEXT",
 		"vkGetDeviceMicromapCompatibilityEXT",
 		"vkGetMicromapBuildSizesEXT",
+		"vkCmdDrawClusterHUAWEI",
+		"vkCmdDrawClusterIndirectHUAWEI",
 		"vkSetDeviceMemoryPriorityEXT",
 		"vkGetDeviceBufferMemoryRequirementsKHR",
 		"vkGetDeviceImageMemoryRequirementsKHR",

@@ -5061,6 +5061,15 @@ struct VkPhysicalDeviceSubpassShadingPropertiesHUAWEI
 	uint32_t		maxSubpassShadingWorkgroupSizeAspectRatio;
 };
 
+struct VkPhysicalDeviceClusterCullingShaderPropertiesHUAWEI
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxWorkGroupCount[3];
+	uint32_t		maxWorkGroupSize[3];
+	uint32_t		maxOutputClusterCount;
+};
+
 struct VkMemoryOpaqueCaptureAddressAllocateInfo
 {
 	VkStructureType	sType;
@@ -5793,6 +5802,14 @@ struct VkPhysicalDeviceSubpassShadingFeaturesHUAWEI
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		subpassShading;
+};
+
+struct VkPhysicalDeviceClusterCullingShaderFeaturesHUAWEI
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		clustercullingShader;
+	VkBool32		multiviewClusterCullingShader;
 };
 
 struct VkBufferCopy2
@@ -7983,6 +8000,13 @@ struct VkDeviceFaultVendorBinaryHeaderVersionOneEXT
 	uint32_t									applicationNameOffset;
 	uint32_t									applicationVersion;
 	uint32_t									engineNameOffset;
+};
+
+struct VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		pipelineLibraryGroupHandles;
 };
 
 struct VkDecompressMemoryRegionNV

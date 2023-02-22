@@ -988,6 +988,21 @@ VKAPI_ATTR void VKAPI_CALL cmdSubpassShadingHUAWEI (VkCommandBuffer commandBuffe
 	DE_UNREF(commandBuffer);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdDrawClusterHUAWEI (VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(groupCountX);
+	DE_UNREF(groupCountY);
+	DE_UNREF(groupCountZ);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDrawClusterIndirectHUAWEI (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(buffer);
+	DE_UNREF(offset);
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdCopyBuffer (VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t regionCount, const VkBufferCopy* pRegions)
 {
 	DE_UNREF(commandBuffer);
@@ -4052,6 +4067,8 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdDispatch,												cmdDispatch),
 	VK_NULL_FUNC_ENTRY(vkCmdDispatchIndirect,										cmdDispatchIndirect),
 	VK_NULL_FUNC_ENTRY(vkCmdSubpassShadingHUAWEI,									cmdSubpassShadingHUAWEI),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawClusterHUAWEI,										cmdDrawClusterHUAWEI),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawClusterIndirectHUAWEI,								cmdDrawClusterIndirectHUAWEI),
 	VK_NULL_FUNC_ENTRY(vkCmdCopyBuffer,												cmdCopyBuffer),
 	VK_NULL_FUNC_ENTRY(vkCmdCopyImage,												cmdCopyImage),
 	VK_NULL_FUNC_ENTRY(vkCmdBlitImage,												cmdBlitImage),

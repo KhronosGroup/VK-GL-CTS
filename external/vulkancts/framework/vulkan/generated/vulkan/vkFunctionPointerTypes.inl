@@ -122,6 +122,8 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawIndexedIndirectFunc)											(
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDispatchFunc)														(VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDispatchIndirectFunc)												(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSubpassShadingHUAWEIFunc)											(VkCommandBuffer commandBuffer);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawClusterHUAWEIFunc)												(VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawClusterIndirectHUAWEIFunc)										(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyBufferFunc)														(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t regionCount, const VkBufferCopy* pRegions);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyImageFunc)														(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageCopy* pRegions);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBlitImageFunc)														(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageBlit* pRegions, VkFilter filter);

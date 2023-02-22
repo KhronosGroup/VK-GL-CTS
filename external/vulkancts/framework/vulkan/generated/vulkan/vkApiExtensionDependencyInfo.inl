@@ -538,6 +538,7 @@ static const std::tuple<deUint32, deUint32, deUint32, const char*, const char*>	
 	std::make_tuple(0, 1, 2, "VK_EXT_opacity_micromap", "VK_KHR_acceleration_structure"),
 	std::make_tuple(0, 1, 2, "VK_EXT_opacity_micromap", "VK_KHR_synchronization2"),
 	std::make_tuple(0, 1, 3, "VK_EXT_opacity_micromap", "VK_KHR_acceleration_structure"),
+	std::make_tuple(0, 1, 0, "VK_HUAWEI_cluster_culling_shader", "VK_KHR_get_physical_device_properties2"),
 	std::make_tuple(0, 1, 0, "VK_EXT_border_color_swizzle", "VK_EXT_custom_border_color"),
 	std::make_tuple(0, 1, 1, "VK_EXT_border_color_swizzle", "VK_EXT_custom_border_color"),
 	std::make_tuple(0, 1, 2, "VK_EXT_border_color_swizzle", "VK_EXT_custom_border_color"),
@@ -586,6 +587,12 @@ static const std::tuple<deUint32, deUint32, deUint32, const char*, const char*>	
 	std::make_tuple(0, 1, 2, "VK_NV_ray_tracing_invocation_reorder", "VK_KHR_ray_tracing_pipeline"),
 	std::make_tuple(0, 1, 3, "VK_NV_ray_tracing_invocation_reorder", "VK_KHR_ray_tracing_pipeline"),
 	std::make_tuple(0, 1, 0, "VK_EXT_mutable_descriptor_type", "VK_KHR_maintenance3"),
+	std::make_tuple(0, 1, 1, "VK_EXT_pipeline_library_group_handles", "VK_KHR_ray_tracing_pipeline"),
+	std::make_tuple(0, 1, 1, "VK_EXT_pipeline_library_group_handles", "VK_KHR_pipeline_library"),
+	std::make_tuple(0, 1, 2, "VK_EXT_pipeline_library_group_handles", "VK_KHR_ray_tracing_pipeline"),
+	std::make_tuple(0, 1, 2, "VK_EXT_pipeline_library_group_handles", "VK_KHR_pipeline_library"),
+	std::make_tuple(0, 1, 3, "VK_EXT_pipeline_library_group_handles", "VK_KHR_ray_tracing_pipeline"),
+	std::make_tuple(0, 1, 3, "VK_EXT_pipeline_library_group_handles", "VK_KHR_pipeline_library"),
 };
 static const std::tuple<deUint32, deUint32, deUint32, deUint32>	releasedApiVersions[]	=
 {
@@ -882,6 +889,7 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_KHR_portability_enumeration"),
 	std::make_tuple(1, 0, "VK_EXT_opacity_micromap"),
 	std::make_tuple(1, 0, "VK_EXT_load_store_op_none"),
+	std::make_tuple(1, 0, "VK_HUAWEI_cluster_culling_shader"),
 	std::make_tuple(1, 0, "VK_EXT_border_color_swizzle"),
 	std::make_tuple(1, 0, "VK_EXT_pageable_device_local_memory"),
 	std::make_tuple(1, 1, "VK_KHR_maintenance4"),
@@ -909,4 +917,5 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_NV_ray_tracing_invocation_reorder"),
 	std::make_tuple(1, 0, "VK_EXT_mutable_descriptor_type"),
 	std::make_tuple(1, 0, "VK_ARM_shader_core_builtins"),
+	std::make_tuple(1, 1, "VK_EXT_pipeline_library_group_handles"),
 };

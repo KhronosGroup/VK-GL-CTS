@@ -906,12 +906,16 @@ public:
 																							 const VkPipelineShaderStageCreateFlags					pipelineShaderStageCreateFlags = static_cast<VkPipelineShaderStageCreateFlags>(0),
 																							 const void*											pipelineShaderStageCreateInfopNext = nullptr);
 	void														addShader					(VkShaderStageFlagBits									shaderStage,
-																							 VkShaderModule									        shaderModule,
+																							 VkShaderModule											shaderModule,
 																							 deUint32												group,
 																							 const VkSpecializationInfo*							specializationInfo = nullptr,
 																							 const VkPipelineShaderStageCreateFlags					pipelineShaderStageCreateFlags = static_cast<VkPipelineShaderStageCreateFlags>(0),
 																							 const void*											pipelineShaderStageCreateInfopNext = nullptr);
+	void														setGroupCaptureReplayHandle	(uint32_t												group,
+																							 const void*pShaderGroupCaptureReplayHandle);
 	void														addLibrary					(de::SharedPtr<de::MovePtr<RayTracingPipeline>>			pipelineLibrary);
+	uint32_t													getShaderGroupCount			(void); // This pipeline only.
+	uint32_t													getFullShaderGroupCount		(void); // This pipeline and its included pipeline libraries, recursively.
 	Move<VkPipeline>											createPipeline				(const DeviceInterface&									vk,
 																							 const VkDevice											device,
 																							 const VkPipelineLayout									pipelineLayout,
@@ -924,6 +928,18 @@ public:
 	std::vector<de::SharedPtr<Move<VkPipeline>>>				createPipelineWithLibraries	(const DeviceInterface&									vk,
 																							 const VkDevice											device,
 																							 const VkPipelineLayout									pipelineLayout);
+	std::vector<uint8_t>										getShaderGroupHandles		(const DeviceInterface&									vk,
+																							 const VkDevice											device,
+																							 const VkPipeline										pipeline,
+																							 const deUint32											shaderGroupHandleSize,
+																							 const deUint32											firstGroup,
+																							 const deUint32											groupCount) const;
+	std::vector<uint8_t>										getShaderGroupReplayHandles	(const DeviceInterface&									vk,
+																							 const VkDevice											device,
+																							 const VkPipeline										pipeline,
+																							 const deUint32											shaderGroupHandleReplaySize,
+																							 const deUint32											firstGroup,
+																							 const deUint32											groupCount) const;
 	de::MovePtr<BufferWithMemory>								createShaderBindingTable	(const DeviceInterface&									vk,
 																							 const VkDevice											device,
 																							 const VkPipeline										pipeline,
@@ -936,6 +952,20 @@ public:
 																							 const VkBufferUsageFlags&								additionalBufferUsageFlags	= VkBufferUsageFlags(0u),
 																							 const MemoryRequirement&								additionalMemoryRequirement	= MemoryRequirement::Any,
 																							 const VkDeviceAddress&									opaqueCaptureAddress		= 0u,
+																							 const deUint32											shaderBindingTableOffset	= 0u,
+																							 const deUint32											shaderRecordSize			= 0u,
+																							 const void**											shaderGroupDataPtrPerGroup	= nullptr,
+																							 const bool												autoAlignRecords			= true);
+	de::MovePtr<BufferWithMemory>								createShaderBindingTable	(const DeviceInterface&									vk,
+																							 const VkDevice											device,
+																							 Allocator&												allocator,
+																							 const deUint32											shaderGroupHandleSize,
+																							 const deUint32											shaderGroupBaseAlignment,
+																							 const std::vector<uint8_t>&							shaderHandles,
+																							 const VkBufferCreateFlags								additionalBufferCreateFlags	= VkBufferCreateFlags(0u),
+																							 const VkBufferUsageFlags								additionalBufferUsageFlags	= VkBufferUsageFlags(0u),
+																							 const MemoryRequirement&								additionalMemoryRequirement	= MemoryRequirement::Any,
+																							 const VkDeviceAddress									opaqueCaptureAddress		= 0u,
 																							 const deUint32											shaderBindingTableOffset	= 0u,
 																							 const deUint32											shaderRecordSize			= 0u,
 																							 const void**											shaderGroupDataPtrPerGroup	= nullptr,
@@ -981,6 +1011,7 @@ public:
 
 	virtual uint32_t				getShaderGroupHandleSize					(void)	= 0;
 	virtual uint32_t				getShaderGroupHandleAlignment				(void)	= 0;
+	virtual uint32_t				getShaderGroupHandleCaptureReplaySize		(void)	= 0;
 	virtual uint32_t				getMaxRecursionDepth						(void)	= 0;
 	virtual uint32_t				getMaxShaderGroupStride						(void)	= 0;
 	virtual uint32_t				getShaderGroupBaseAlignment					(void)	= 0;
