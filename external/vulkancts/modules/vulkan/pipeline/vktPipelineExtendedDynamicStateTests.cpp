@@ -1847,6 +1847,9 @@ struct TestConfig
 	// Used in some tests to verify color blend pAttachments can be null if all its state is dynamic.
 	bool							nullStaticColorBlendAttPtr;
 
+	// Use dual source blending.
+	bool							dualSrcBlend;
+
 	// When setting the sample mask dynamically, we can use an alternative sample count specified here.
 	OptSampleCount					dynamicSampleMaskCount;
 
@@ -1949,6 +1952,7 @@ struct TestConfig
 		, useColorWriteEnable			(false)
 		, forceUnormColorFormat			(false)
 		, nullStaticColorBlendAttPtr	(false)
+		, dualSrcBlend					(false)
 		, dynamicSampleMaskCount		(tcu::Nothing)
 		, vertexGenerator				(makeVertexGeneratorConfig(staticVertexGenerator, dynamicVertexGenerator))
 		, cullModeConfig				(static_cast<vk::VkCullModeFlags>(vk::VK_CULL_MODE_NONE))
@@ -2052,6 +2056,7 @@ struct TestConfig
 		, useColorWriteEnable			(other.useColorWriteEnable)
 		, forceUnormColorFormat			(other.forceUnormColorFormat)
 		, nullStaticColorBlendAttPtr	(other.nullStaticColorBlendAttPtr)
+		, dualSrcBlend					(other.dualSrcBlend)
 		, dynamicSampleMaskCount		(other.dynamicSampleMaskCount)
 		, vertexGenerator				(other.vertexGenerator)
 		, cullModeConfig				(other.cullModeConfig)
@@ -2848,12 +2853,16 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 	const auto	physicalDevice	= context.getPhysicalDevice();
 
 	// Check feature support.
+	const auto& baseFeatures	= context.getDeviceFeatures();
 	const auto& edsFeatures		= context.getExtendedDynamicStateFeaturesEXT();
 	const auto& eds2Features	= context.getExtendedDynamicState2FeaturesEXT();
 	const auto& viFeatures		= context.getVertexInputDynamicStateFeaturesEXT();
 #ifndef CTS_USES_VULKANSC
 	const auto& meshFeatures	= context.getMeshShaderFeaturesEXT();
 #endif // CTS_USES_VULKANSC
+
+	if (m_testConfig.dualSrcBlend && !baseFeatures.dualSrcBlend)
+		TCU_THROW(NotSupportedError, "dualSrcBlend is not supported");
 
 	if (m_testConfig.testEDS() && !edsFeatures.extendedDynamicState)
 		TCU_THROW(NotSupportedError, "extendedDynamicState is not supported");
@@ -3222,11 +3231,21 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 		;
 	const auto pushConstants = pushSource.str();
 
+	const bool useAttIndex = m_testConfig.dualSrcBlend;
 	for (uint32_t refIdx = 0; refIdx < m_testConfig.colorAttachmentCount; ++refIdx)
 	{
-		const bool used = (refIdx == m_testConfig.colorAttachmentCount - 1u);
-		const std::string attName = (used ? "color" : "unused" + std::to_string(refIdx));
-		fragOutputLocationStream << "layout(location=" << refIdx << ") out ${OUT_COLOR_VTYPE} " << attName << ";\n";
+		const bool			used		= (refIdx == m_testConfig.colorAttachmentCount - 1u);
+		const std::string	attName		= (used ? "color" : "unused" + std::to_string(refIdx));
+		const uint32_t		indexCount	= (useAttIndex ? 2u : 1u);
+
+		for (uint32_t attIdx = 0u; attIdx < indexCount; ++attIdx)
+		{
+			const auto			idxStr		= std::to_string(attIdx);
+			const std::string	indexDecl	= (useAttIndex ? (", index=" + idxStr) : "");
+			const std::string	nameSuffix	= ((attIdx > 0u) ? idxStr : "");
+
+			fragOutputLocationStream << "layout(location=" << refIdx << indexDecl << ") out ${OUT_COLOR_VTYPE} " << attName << nameSuffix << ";\n";
+		}
 	}
 	const auto fragOutputLocations = fragOutputLocationStream.str();
 
@@ -3337,7 +3356,17 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 		<< fragOutputLocations
 		<< "${FRAG_INPUTS}"
 		<< "void main() {\n"
-		<< "    color = ${OUT_COLOR_VTYPE}(pushConstants.triangleColor);\n"
+		<< "    color = ${OUT_COLOR_VTYPE}" << (m_testConfig.dualSrcBlend ? de::toString(kOpaqueWhite) : "(pushConstants.triangleColor)") << ";\n"
+		;
+
+	if (m_testConfig.dualSrcBlend)
+	{
+		fragSourceTemplateStream
+			<< "    color1 = ${OUT_COLOR_VTYPE}(pushConstants.triangleColor);\n"
+			;
+	}
+
+	fragSourceTemplateStream
 		<< "${FRAG_CALCULATIONS}"
 		<< (m_testConfig.representativeFragmentTest ? "    atomicAdd(counterBuffer.fragCounter, 1u);\n" : "")
 		<< "}\n"
@@ -6318,6 +6347,57 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			const char* testName = "null_color_blend_att_ptr";
 			const char* testDesc = "Set all VkPipelineColorBlendAttachmentState substates as dynamic and pass a null pointer in VkPipelineColorBlendStateCreateInfo::pAttachments";
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, testDesc, config));
+		}
+
+		// Dynamic color blend equation with dual blending.
+		{
+			// Two equations: one picks index 0 and the other one picks index 1.
+			const struct
+			{
+				const ColorBlendEq	equation;
+				const tcu::Vec4		expectedColor;
+			} dualSrcCases[] =
+			{
+				{
+					ColorBlendEq(vk::VK_BLEND_FACTOR_SRC_COLOR,
+								 vk::VK_BLEND_FACTOR_ZERO,
+								 vk::VK_BLEND_OP_ADD,
+								 vk::VK_BLEND_FACTOR_SRC_ALPHA,
+								 vk::VK_BLEND_FACTOR_ZERO,
+								 vk::VK_BLEND_OP_ADD),
+					// This matches our logic in the frag shader for the first color index.
+					kOpaqueWhite,
+				},
+				{
+					ColorBlendEq(vk::VK_BLEND_FACTOR_SRC1_COLOR,
+								 vk::VK_BLEND_FACTOR_ZERO,
+								 vk::VK_BLEND_OP_ADD,
+								 vk::VK_BLEND_FACTOR_SRC1_ALPHA,
+								 vk::VK_BLEND_FACTOR_ZERO,
+								 vk::VK_BLEND_OP_ADD),
+					// This matches our logic in the frag shader for color1.
+					kDefaultTriangleColor,
+				},
+			};
+
+			for (size_t dynamicPick = 0u; dynamicPick < de::arrayLength(dualSrcCases); ++dynamicPick)
+			{
+				DE_ASSERT(de::arrayLength(dualSrcCases) == size_t{2});
+
+				const auto& dynamicEq	= dualSrcCases[dynamicPick].equation;
+				const auto& staticEq	= dualSrcCases[size_t{1} - dynamicPick].equation;
+
+				TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+
+				config.dualSrcBlend								= true;
+				config.colorBlendEnableConfig.staticValue		= true;
+				config.colorBlendEquationConfig.staticValue		= staticEq;
+				config.colorBlendEquationConfig.dynamicValue	= dynamicEq;
+				config.referenceColor.reset						(new SingleColorGenerator(dualSrcCases[dynamicPick].expectedColor));
+
+				const auto indexStr = std::to_string(dynamicPick);
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_dual_index_" + indexStr, "Dynamically change dual source blending equation to pick color index " + indexStr, config));
+			}
 		}
 
 		// Dynamically enable primitive restart
