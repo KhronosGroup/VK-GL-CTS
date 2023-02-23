@@ -1933,7 +1933,7 @@ void APITest2::initTest()
 		TCU_FAIL("Program linking failed.");
 	}
 
-	/* Perform a few sanity checks */
+	/* Perform a few quick checks */
 	glw::GLint n_active_subroutines			= 0;
 	glw::GLint n_active_subroutine_uniforms = 0;
 

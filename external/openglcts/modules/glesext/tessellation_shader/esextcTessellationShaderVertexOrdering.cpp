@@ -558,7 +558,7 @@ tcu::TestNode::IterateResult TessellationShaderVertexOrdering::iterate(void)
  **/
 void TessellationShaderVertexOrdering::verifyVertexOrderingCorrectness(const _test_iteration& test_iteration)
 {
-	/* Sanity check */
+	/* Quick check */
 	DE_ASSERT(test_iteration.primitive_mode != TESSELLATION_SHADER_PRIMITIVE_MODE_ISOLINES);
 
 	/* Iterate through all vertices */
@@ -589,7 +589,7 @@ void TessellationShaderVertexOrdering::verifyVertexOrderingCorrectness(const _te
 				primitive_vertex3_data[0], primitive_vertex3_data[1], primitive_vertex3_data[2],
 			};
 
-			/* Sanity checks .. */
+			/* Quick checks .. */
 			DE_UNREF(epsilon);
 			DE_ASSERT(de::abs(barycentric_vertex_data[0] + barycentric_vertex_data[1] + barycentric_vertex_data[2] -
 							  1.0f) < epsilon);
@@ -679,7 +679,7 @@ void TessellationShaderVertexOrdering::verifyVertexOrderingDoesNotChangeGenerate
 {
 	const float epsilon = 1e-5f;
 
-	/* Sanity checks */
+	/* Quick checks */
 	DE_ASSERT(test_iteration_a.is_point_mode_enabled);
 	DE_ASSERT(test_iteration_b.is_point_mode_enabled);
 	DE_ASSERT(test_iteration_a.vertex_ordering == TESSELLATION_SHADER_VERTEX_ORDERING_CCW ||

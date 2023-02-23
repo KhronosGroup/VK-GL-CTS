@@ -925,7 +925,7 @@ tcu::TestStatus UnusedAttachmentTestInstance::verifyImage (void)
 					return tcu::TestStatus::fail("Unused image contents has changed.");
 		}
 
-	// Check for rendered result. Just a quick sanity check to see if correct color is found at the center of the quad.
+	// Check for rendered result. Just a quick check to see if correct color is found at the center of the quad.
 	const tcu::Vec4 resultColor = resultAccess.getPixel(resultAccess.getWidth() / 2, resultAccess.getHeight() / 2);
 	const tcu::Vec4 refColor = tcu::Vec4(0.4f, 0.6f, 0.2f, 1.0f);
 	for (deUint32 cpnt = 0; cpnt < 4; cpnt++)

@@ -70,7 +70,7 @@ if __name__ == "__main__":
 	caseList	= readCaseList(sys.argv[1])
 	resList		= readResolutionList(sys.argv[2])
 
-	# Pass 1: sanity check for resolution values
+	# Pass 1: quick check for resolution values
 	for pattern, minRes, recRes in resList:
 		if not isResolutionOk(minRes) or not isResolutionOk(recRes):
 			fail("Invalid resolution: '%s %s %s'" % (pattern, minRes, recRes))

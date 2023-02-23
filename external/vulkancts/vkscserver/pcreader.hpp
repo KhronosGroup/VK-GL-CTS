@@ -80,7 +80,7 @@ public:
         m_IsLegacy = (sc1->headerVersionOne.headerVersion == VK_PIPELINE_CACHE_HEADER_VERSION_SAFETY_CRITICAL_ONE_LEGACY);
     }
 
-    // basic sanity check of the referenced pipeline cache data
+    // basic quick check of the referenced pipeline cache data
     // make sure m_CacheData starts with a well-formed VkPipelineCacheHeaderVersionSafetyCriticalOne structure
     bool isValid() const
     {

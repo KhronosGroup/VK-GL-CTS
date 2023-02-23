@@ -2078,7 +2078,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
              BufferedReader reader = new BufferedReader(plainReader)) {
             String line = "";
             while ((line = reader.readLine()) != null) {
-                // TOOD: Sanity check filter
+                // TOOD: Quick check filter
                 lines.add(line);
             }
             // Rely on try block to autoclose

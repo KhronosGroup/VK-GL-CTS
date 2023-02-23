@@ -2797,7 +2797,7 @@ bool verifyTriangleGroupRasterization (const tcu::Surface& surface, const Triang
 
 	tcu::clear(errorMask.getAccess(), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
-	// Use these to sanity check there is something drawn when a test expects something else than an empty picture.
+	// Use these to quick check there is something drawn when a test expects something else than an empty picture.
 	bool referenceEmpty	= true;
 	bool resultEmpty	= true;
 

@@ -79,7 +79,7 @@ public:
 	// determine if the test should be supported:
 	//  - If any of the extensions registered via |addRequirement| is not
 	//    supported then throw a NotSupported exception.
-	//  - Otherwise, we do a secondary sanity check depending on code inside
+	//  - Otherwise, we do a secondary quick check depending on code inside
 	//    Amber itself: if the Amber test says it is not supported, then
 	//    throw an internal error exception.
 	// A function pointer for a custom checkSupport function can also be

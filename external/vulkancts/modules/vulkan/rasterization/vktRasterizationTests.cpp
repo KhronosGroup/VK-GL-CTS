@@ -1513,7 +1513,7 @@ bool BaseLineTestInstance::compareAndVerify (std::vector<LineSceneSpec::SceneLin
 		if (scene.isSmooth)
 		{
 			// Smooth lines get the fractional coverage multiplied into the alpha component,
-			// so do a sanity check to validate that there is at least one pixel in the image
+			// so do a quick check to validate that there is at least one pixel in the image
 			// with a fractional opacity.
 			bool hasAlpha = resultHasAlpha(resultImage);
 			if (!hasAlpha)

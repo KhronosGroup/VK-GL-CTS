@@ -710,7 +710,7 @@ bool TestCaseBase::comparePixel(const unsigned char* buffer, unsigned int x, uns
 
 	bool result = true;
 
-	/* Sanity checks */
+	/* Quick checks */
 	if (0 == buffer)
 	{
 		return false;

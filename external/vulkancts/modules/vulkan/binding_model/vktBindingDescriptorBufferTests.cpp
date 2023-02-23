@@ -189,7 +189,7 @@ VkDeviceAddress getAccelerationStructureDeviceAddress (DeviceDriver&				deviceDr
 // Used to distinguish different test implementations.
 enum class TestVariant : deUint32
 {
-	SINGLE,								// basic sanity check for descriptor/shader combinations
+	SINGLE,								// basic quick check for descriptor/shader combinations
 	MULTIPLE,							// multiple buffer bindings with various descriptor types
 	MAX,								// verify max(Sampler/Resource)DescriptorBufferBindings
 	EMBEDDED_IMMUTABLE_SAMPLERS,		// various usages of embedded immutable samplers
@@ -5185,7 +5185,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 
 	{
 		//
-		// Basic single descriptor cases -- a sanity check.
+		// Basic single descriptor cases -- a quick check.
 		//
 		MovePtr<tcu::TestCaseGroup>	subGroup		(new tcu::TestCaseGroup(testCtx, "single", "Single binding tests"));
 		const uint32_t				subGroupHash	= baseSeed ^ deStringHash(subGroup->getName());

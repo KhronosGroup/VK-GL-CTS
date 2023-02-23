@@ -5011,7 +5011,7 @@ bool CompressedSubImageTest::PrepareReferenceData(glw::GLenum internalformat)
 	glw::GLint is_compressed_texture = 0;
 	glw::GLint compressed_texture_size = 0;
 
-	/* Sanity checks. */
+	/* Quick checks. */
 	if ((DE_NULL != m_reference) || (DE_NULL != m_compressed_texture_data))
 	{
 		throw 0;

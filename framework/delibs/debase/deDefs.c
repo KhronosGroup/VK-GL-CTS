@@ -37,7 +37,7 @@ DE_STATIC_ASSERT(sizeof(deUintptr)	== sizeof(void*));
 DE_STATIC_ASSERT(sizeof(deIntptr)	== sizeof(void*));
 DE_STATIC_ASSERT(DE_PTR_SIZE		== sizeof(void*));
 
-/* Sanity checks for DE_PTR_SIZE & DE_CPU */
+/* Quick checks for DE_PTR_SIZE & DE_CPU */
 #if !((DE_CPU == DE_CPU_X86_64 || DE_CPU == DE_CPU_ARM_64 || DE_CPU == DE_CPU_MIPS_64) && (DE_PTR_SIZE == 8)) && \
 	!((DE_CPU == DE_CPU_X86    || DE_CPU == DE_CPU_ARM    || DE_CPU == DE_CPU_MIPS)    && (DE_PTR_SIZE == 4))
 #	error "DE_CPU and DE_PTR_SIZE mismatch"

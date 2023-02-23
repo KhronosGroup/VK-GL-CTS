@@ -364,7 +364,7 @@ tcu::TestNode::IterateResult GeometryShaderLayeredRendering::iterate(void)
 		glw::GLint provoking_vertex_index_uniform_location =
 			gl.getUniformLocation(m_tests[test_index].po_id, "provoking_vertex_index");
 
-		/* Sanity checks */
+		/* Quick checks */
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetUniformLocation() call generated an error");
 		DE_ASSERT(provoking_vertex_index_uniform_location != -1);
 

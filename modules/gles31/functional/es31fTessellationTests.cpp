@@ -5635,7 +5635,7 @@ PrimitiveDiscardCase::IterateResult PrimitiveDiscardCase::iterate (void)
  * The values output are generated in TCS and verified in TES against
  * similarly generated values. In case a verification of a value fails, the
  * index of the invalid value is output with TF.
- * As a sanity check, also the rendering result is verified (against pre-
+ * As a quick check, also the rendering result is verified (against pre-
  * rendered reference).
  *//*--------------------------------------------------------------------*/
 class UserDefinedIOCase : public TestCase
