@@ -428,6 +428,8 @@ typedef vector<de::MovePtr<vector<deUint8>>> HeapType;
 
 #define ALLOC_HEAP_OBJECT_ARRAY(H,T,N) ((T*)heap.emplace(H.end(), de::MovePtr<vector<deUint8>>(new vector<deUint8>(sizeof(T)*N)))->get()->data())
 #define ALLOC_HEAP_OBJECT(H,T) ALLOC_HEAP_OBJECT_ARRAY(H,T,1)
+void* copyToHeap (HeapType& heap, const void* p, size_t size);
+void appendHeap (HeapType& heapTo, HeapType& heapFrom);
 
 class VideoBaseDecoder : public NvidiaVulkanParserVideoDecodeClient
 {
