@@ -1192,25 +1192,6 @@ void TextureFilterCase::test (glu::CallLogWrapper& gl, tcu::ResultCollector& res
 									: (m_pname == GL_TEXTURE_MIN_FILTER) ? (GL_NEAREST_MIPMAP_LINEAR)
 									: (0);
 
-	const glu::ContextType& contextType = m_renderCtx.getType();
-	const bool isCoreGL45 = glu::contextSupports(contextType, glu::ApiType::core(4, 5));
-
-	/* Update initial values to match desktop context. */
-	if (isCoreGL45)
-	{
-		GLenum initialMin = (m_target == GL_TEXTURE_CUBE_MAP_ARRAY) ?
-			GL_NEAREST_MIPMAP_LINEAR : GL_LINEAR_MIPMAP_NEAREST;
-
-		if (m_pname == GL_TEXTURE_MIN_FILTER)
-		{
-			initial = initialMin;
-		}
-		else if (m_pname == GL_TEXTURE_MAG_FILTER)
-		{
-			initial = GL_LINEAR;
-		}
-	}
-
 	if (!isPureCase)
 	{
 		const tcu::ScopedLogSection section(m_testCtx.getLog(), "Initial", "Initial");
