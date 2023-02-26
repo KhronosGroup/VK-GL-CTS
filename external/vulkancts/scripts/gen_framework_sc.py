@@ -133,7 +133,7 @@ TYPE_SUBSTITUTIONS		= [
 	("HANDLE*",		PLATFORM_TYPE_NAMESPACE + "::" + "Win32Handle*"),
 ]
 
-EXTENSION_POSTFIXES				= ["KHR", "EXT", "NV", "NVX", "KHX", "NN", "MVK", "FUCHSIA", "GGP", "AMD", "QNX"]
+EXTENSION_POSTFIXES				= ["KHR", "EXT", "NV", "NVX", "KHX", "NN", "MVK", "FUCHSIA", "GGP", "AMD", "QNX", "LUNARG"]
 EXTENSION_POSTFIXES_STANDARD	= ["KHR", "EXT"]
 
 def prefixName (prefix, name):

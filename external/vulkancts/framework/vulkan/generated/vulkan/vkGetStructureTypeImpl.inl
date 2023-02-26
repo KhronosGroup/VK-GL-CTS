@@ -2203,6 +2203,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceSubpassShadingProper
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBPASS_SHADING_PROPERTIES_HUAWEI;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceClusterCullingShaderPropertiesHUAWEI> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CLUSTER_CULLING_SHADER_PROPERTIES_HUAWEI;
+}
+
 template<> VkStructureType getStructureType<VkMemoryOpaqueCaptureAddressAllocateInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_MEMORY_OPAQUE_CAPTURE_ADDRESS_ALLOCATE_INFO;
@@ -2461,6 +2466,11 @@ template<> VkStructureType getStructureType<VkPhysicalDevice4444FormatsFeaturesE
 template<> VkStructureType getStructureType<VkPhysicalDeviceSubpassShadingFeaturesHUAWEI> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBPASS_SHADING_FEATURES_HUAWEI;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceClusterCullingShaderFeaturesHUAWEI> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CLUSTER_CULLING_SHADER_FEATURES_HUAWEI;
 }
 
 template<> VkStructureType getStructureType<VkBufferCopy2> (void)
@@ -3641,6 +3651,11 @@ template<> VkStructureType getStructureType<VkDeviceFaultCountsEXT> (void)
 template<> VkStructureType getStructureType<VkDeviceFaultInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_DEVICE_FAULT_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_EXT;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM> (void)

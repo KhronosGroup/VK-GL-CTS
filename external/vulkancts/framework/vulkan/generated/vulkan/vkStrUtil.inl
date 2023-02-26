@@ -1154,6 +1154,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSubgroupSizeCon
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineShaderStageRequiredSubgroupSizeCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSubpassShadingPipelineCreateInfoHUAWEI& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSubpassShadingPropertiesHUAWEI& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceClusterCullingShaderPropertiesHUAWEI& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryOpaqueCaptureAddressAllocateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceMemoryOpaqueCaptureAddressInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLineRasterizationFeaturesEXT& value);
@@ -1215,6 +1216,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePortabilitySubs
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePortabilitySubsetPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevice4444FormatsFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSubpassShadingFeaturesHUAWEI& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceClusterCullingShaderFeaturesHUAWEI& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBufferCopy2& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageCopy2& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageBlit2& value);
@@ -1470,6 +1472,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultVendorInfoEXT& val
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultCountsEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultVendorBinaryHeaderVersionOneEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDecompressMemoryRegionNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM& value);

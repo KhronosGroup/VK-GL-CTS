@@ -5448,3 +5448,7 @@ dEQP-VK.synchronization.cross_instance.dedicated.write_update_index_buffer_read_
 dEQP-VK.synchronization.cross_instance.dedicated.write_update_index_buffer_read_index_input.buffer_20_timeline_semaphore_zircon_handle
 dEQP-VK.synchronization.basic.fence.one_signaled
 dEQP-VK.synchronization.basic.fence.multiple_signaled
+dEQP-VK.synchronization.basic.timeline_semaphore.wait_for_any_current_value
+dEQP-VK.synchronization.basic.timeline_semaphore.wait_for_any_lesser_value
+dEQP-VK.synchronization.basic.timeline_semaphore.wait_for_all_current_value
+dEQP-VK.synchronization.basic.timeline_semaphore.wait_for_all_lesser_value

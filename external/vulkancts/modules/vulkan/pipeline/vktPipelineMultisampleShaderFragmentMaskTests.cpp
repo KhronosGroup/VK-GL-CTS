@@ -27,6 +27,8 @@
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
+#include "tcuCommandLine.hpp"
 
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
@@ -51,6 +53,7 @@
 
 #include <string>
 #include <vector>
+#include <set>
 
 namespace vkt
 {
@@ -195,6 +198,142 @@ enum SampleSource
 	SAMPLE_SOURCE_SUBPASS_INPUT,	//!< texel fetch from an input attachment
 };
 
+static
+std::vector<std::string> removeExtensions (const std::vector<std::string>& a, const std::vector<const char*>& b)
+{
+	std::vector<std::string>	res;
+	std::set<std::string>		removeExts	(b.begin(), b.end());
+
+	for (std::vector<std::string>::const_iterator aIter = a.begin(); aIter != a.end(); ++aIter)
+	{
+		if (!de::contains(removeExts, *aIter))
+			res.push_back(*aIter);
+	}
+
+	return res;
+}
+
+// Class to wrap a singleton device for use in fragment mask tests,
+// which require the VK_AMD_shader_fragment extension.
+class SingletonDevice
+{
+	SingletonDevice(Context& context, PipelineConstructionType pipelineType)
+		: m_context(context)
+		, m_logicalDevice()
+	{
+		const float	queuePriority					= 1.0;
+		const VkDeviceQueueCreateInfo	queues[]	=
+		{
+			{
+				VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+				DE_NULL,
+				(VkDeviceQueueCreateFlags)0,
+				m_context.getUniversalQueueFamilyIndex(),
+				1u,									// queueCount
+				&queuePriority,						// pQueuePriorities
+			}
+		};
+
+		// All available device extensions from the Vulkan implementation and implicitly loaded layers.
+		auto extensionProperties = enumerateDeviceExtensionProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), nullptr);
+
+		VkPhysicalDeviceDescriptorBufferFeaturesEXT descriptorBufferFeatures = initVulkanStructure();
+		VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT graphicsPipelineLibraryFeaturesEXT = initVulkanStructure();
+		descriptorBufferFeatures.pNext = &graphicsPipelineLibraryFeaturesEXT;
+
+		VkPhysicalDeviceFeatures2 features2	= initVulkanStructure(&descriptorBufferFeatures);
+		m_context.getInstanceInterface().getPhysicalDeviceFeatures2(m_context.getPhysicalDevice(), &features2);
+
+		if (m_context.isDeviceFunctionalitySupported("VK_EXT_descriptor_buffer"))
+			descriptorBufferFeatures.descriptorBuffer = VK_FALSE;
+
+		std::vector<std::string> enabledDeviceExtensions = m_context.getDeviceExtensions();
+
+		if (pipelineType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+		{
+			if (!graphicsPipelineLibraryFeaturesEXT.graphicsPipelineLibrary)
+				TCU_THROW(NotSupportedError, "graphicsPipelineLibraryFeaturesEXT.graphicsPipelineLibrary required");
+
+			enabledDeviceExtensions.push_back("VK_KHR_pipeline_library");
+			enabledDeviceExtensions.push_back("VK_EXT_graphics_pipeline_library");
+		}
+
+		// This should not be enabled by default.
+		DE_ASSERT(!de::contains(std::begin(enabledDeviceExtensions), std::end(enabledDeviceExtensions), "VK_AMD_shader_fragment_mask"));
+		enabledDeviceExtensions.push_back("VK_AMD_shader_fragment_mask");
+
+		std::vector<const char*> coreExtensions;
+		std::vector<const char*> extensionPtrs;
+		getCoreDeviceExtensions(m_context.getUsedApiVersion(), coreExtensions);
+		std::vector<std::string> nonCoreExtensions(removeExtensions(enabledDeviceExtensions, coreExtensions));
+
+		extensionPtrs.resize(nonCoreExtensions.size());
+
+		for (size_t ndx = 0; ndx < nonCoreExtensions.size(); ++ndx)
+			extensionPtrs[ndx] = nonCoreExtensions[ndx].c_str();
+
+		VkDeviceCreateInfo createInfo = initVulkanStructure(&features2);
+		createInfo.flags = 0u;
+		createInfo.queueCreateInfoCount = de::arrayLength(queues);
+		createInfo.pQueueCreateInfos = queues;
+		createInfo.enabledLayerCount = 0u;
+		createInfo.ppEnabledLayerNames = nullptr;
+		createInfo.enabledExtensionCount = static_cast<deUint32>(extensionPtrs.size());
+		createInfo.ppEnabledExtensionNames = extensionPtrs.data();
+		createInfo.pEnabledFeatures = nullptr;
+
+		m_logicalDevice = createCustomDevice(
+			m_context.getTestContext().getCommandLine().isValidationEnabled(),
+			m_context.getPlatformInterface(),
+			m_context.getInstance(),
+			m_context.getInstanceInterface(),
+			m_context.getPhysicalDevice(),
+			&createInfo,
+			nullptr);
+
+		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), *m_logicalDevice));
+	}
+
+public:
+	~SingletonDevice()
+	{
+	}
+
+	static VkDevice getDevice(Context& context, PipelineConstructionType pipelineType)
+	{
+		if (!m_singletonDevice)
+			m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context, pipelineType));
+		DE_ASSERT(m_singletonDevice);
+		return m_singletonDevice->m_logicalDevice.get();
+	}
+
+	static VkQueue getUniversalQueue(Context& context, PipelineConstructionType pipelineType)
+	{
+		return getDeviceQueue(getDeviceInterface(context, pipelineType), getDevice(context, pipelineType), context.getUniversalQueueFamilyIndex(), 0);
+	}
+
+	static const DeviceInterface& getDeviceInterface(Context& context, PipelineConstructionType pipelineType)
+	{
+		if (!m_singletonDevice)
+			m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context, pipelineType));
+		DE_ASSERT(m_singletonDevice);
+		return *(m_singletonDevice->m_deviceDriver.get());
+	}
+
+	static void destroy()
+	{
+		m_singletonDevice.clear();
+	}
+
+private:
+	const Context&						m_context;
+	Move<vk::VkDevice>					m_logicalDevice;
+	de::MovePtr<vk::DeviceDriver>		m_deviceDriver;
+	static SharedPtr<SingletonDevice>	m_singletonDevice;
+};
+
+SharedPtr<SingletonDevice>		SingletonDevice::m_singletonDevice;
+
 //! The parameters that define a test case
 struct TestParams
 {
@@ -216,7 +355,9 @@ struct TestParams
 
 void checkRequirements (Context& context, TestParams params)
 {
-	context.requireDeviceFunctionality("VK_AMD_shader_fragment_mask");
+	const auto supportedExtensions = enumerateDeviceExtensionProperties(context.getInstanceInterface(), context.getPhysicalDevice(), nullptr);
+	if (!isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_AMD_shader_fragment_mask")))
+		TCU_THROW(NotSupportedError, "VK_AMD_shader_fragment_mask not supported");
 
 	// In the subpass input case we have to store fetch results into a buffer for subsequent verification in a compute shader.
 	const bool requireFragmentStores = (params.sampleSource == SAMPLE_SOURCE_SUBPASS_INPUT);
@@ -389,7 +530,7 @@ void initPrograms (SourceCollections& programCollection, const TestParams params
 			<< "layout(set = 0, binding = 1, std430) writeonly buffer ColorOutput {\n"
 			<< "    " << colorBufferType << " color[];\n"
 			<< "} sb_out;\n"
-			<< "layout(input_attachment_index = " << params.numLayers << ", set = 0, binding = 2) uniform " << samplerPrefix << "subpassInputMS" << " input_attach;\n"
+			<< "layout(input_attachment_index = 0, set = 0, binding = 2) uniform " << samplerPrefix << "subpassInputMS" << " input_attach;\n"
 			<< "\n"
 			<< "void main(void)\n"
 			<< "{\n"
@@ -496,8 +637,8 @@ void drawAndSampleInputAttachment (Context& context, const TestParams& params, W
 {
 	DE_ASSERT(params.numLayers == 1u);	// subpass load with single-layer image
 
-	const DeviceInterface&	vk		= context.getDeviceInterface();
-	const VkDevice			device	= context.getDevice();
+	const DeviceInterface&	vk		= SingletonDevice::getDeviceInterface(context, params.pipelineConstructionType);
+	const VkDevice			device	= SingletonDevice::getDevice(context, params.pipelineConstructionType);
 
 	Move<VkRenderPass>		renderPass;
 	Move<VkFramebuffer>		framebuffer;
@@ -811,7 +952,7 @@ void drawAndSampleInputAttachment (Context& context, const TestParams& params, W
 	}
 
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
-	submitCommandsAndWait(vk, device, context.getUniversalQueue(), *cmdBuffer);
+	submitCommandsAndWait(vk, device, SingletonDevice::getUniversalQueue(context, params.pipelineConstructionType), *cmdBuffer);
 
 	invalidateMappedMemoryRange(vk, device, wd.colorBufferAlloc->getMemory(), wd.colorBufferAlloc->getOffset(), VK_WHOLE_SIZE);
 }
@@ -819,8 +960,8 @@ void drawAndSampleInputAttachment (Context& context, const TestParams& params, W
 //! Only draw a multisampled image
 void draw (Context& context, const TestParams& params, WorkingData& wd)
 {
-	const DeviceInterface&	vk		= context.getDeviceInterface();
-	const VkDevice			device	= context.getDevice();
+	const DeviceInterface&	vk		= SingletonDevice::getDeviceInterface(context, params.pipelineConstructionType);
+	const VkDevice			device	= SingletonDevice::getDevice(context, params.pipelineConstructionType);
 
 	std::vector<ImageViewSp>	imageViews;
 	Move<VkRenderPass>			renderPass;
@@ -1028,14 +1169,14 @@ void draw (Context& context, const TestParams& params, WorkingData& wd)
 	vk.cmdEndRenderPass(*cmdBuffer);
 
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
-	submitCommandsAndWait(vk, device, context.getUniversalQueue(), *cmdBuffer);
+	submitCommandsAndWait(vk, device, SingletonDevice::getUniversalQueue(context, params.pipelineConstructionType), *cmdBuffer);
 }
 
 //! Sample from an image in a compute shader, storing the result in a color buffer
 void dispatchSampleImage (Context& context, const TestParams& params, WorkingData& wd, const std::string& shaderName)
 {
-	const DeviceInterface&	vk		= context.getDeviceInterface();
-	const VkDevice			device	= context.getDevice();
+	const DeviceInterface&	vk		= SingletonDevice::getDeviceInterface(context, params.pipelineConstructionType);
+	const VkDevice			device	= SingletonDevice::getDevice(context, params.pipelineConstructionType);
 
 	// Create descriptor set
 
@@ -1100,7 +1241,7 @@ void dispatchSampleImage (Context& context, const TestParams& params, WorkingDat
 	}
 
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
-	submitCommandsAndWait(vk, device, context.getUniversalQueue(), *cmdBuffer);
+	submitCommandsAndWait(vk, device, SingletonDevice::getUniversalQueue(context, params.pipelineConstructionType), *cmdBuffer);
 
 	invalidateMappedMemoryRange(vk, device, wd.colorBufferAlloc->getMemory(), wd.colorBufferAlloc->getOffset(), VK_WHOLE_SIZE);
 }
@@ -1125,8 +1266,9 @@ tcu::ConstPixelBufferAccess getSingleSampledAccess (const void* const imageData,
 tcu::TestStatus test (Context& context, const TestParams params)
 {
 	WorkingData				wd;
-	const DeviceInterface&	vk		  = context.getDeviceInterface();
-	const VkDevice			device	  = context.getDevice();
+	const DeviceInterface&	vk		  = SingletonDevice::getDeviceInterface(context, params.pipelineConstructionType);
+	const VkDevice			device	  = SingletonDevice::getDevice(context, params.pipelineConstructionType);
+
 	MovePtr<Allocator>		allocator = MovePtr<Allocator>(new SimpleAllocator(vk, device, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice())));
 
 	// Initialize resources
@@ -1281,7 +1423,7 @@ void createShaderFragmentMaskTestsInGroup (tcu::TestCaseGroup* rootGroup, Pipeli
 
 tcu::TestCaseGroup* createMultisampleShaderFragmentMaskTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	return createTestGroup(testCtx, "shader_fragment_mask", "Access raw texel values in a compressed MSAA surface", createShaderFragmentMaskTestsInGroup, pipelineConstructionType);
+	return createTestGroup(testCtx, "shader_fragment_mask", "Access raw texel values in a compressed MSAA surface", createShaderFragmentMaskTestsInGroup, pipelineConstructionType, [](tcu::TestCaseGroup*, PipelineConstructionType) { SingletonDevice::destroy(); });
 }
 
 } // pipeline

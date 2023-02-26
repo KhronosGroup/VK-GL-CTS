@@ -8243,7 +8243,7 @@ bool StorageTest::Check(StorageTest::RenderbufferInternalFormatConfiguration for
 						m_context.getTestContext().getLog()
 							<< tcu::TestLog::Message << "Renderbuffer storage was cleared with color "
 							<< componentName[i % 4 /* color components count*/] << " component equal to "
-							<< s_reference_color_integer << ", but fetched value " << color[i]
+							<< s_reference_color_integer[i % 4 /* color components count*/] << ", but fetched value " << color[i]
 							<< " is not the same. Renderbuffers format was " << format.internalformat_name
 							<< ", width was " << width << ", height was " << height << "." << tcu::TestLog::EndMessage;
 
@@ -8725,7 +8725,7 @@ bool StorageMultisampleTest::Check(StorageMultisampleTest::RenderbufferInternalF
 						m_context.getTestContext().getLog()
 							<< tcu::TestLog::Message << "Renderbuffer storage multisample was cleared with color "
 							<< componentName[i % 4 /* color components count*/] << " component equal to "
-							<< s_reference_color_integer << ", but fetched value " << color[i]
+							<< s_reference_color_integer[i % 4 /* color components count*/] << ", but fetched value " << color[i]
 							<< " is not the same. Renderbuffers format was " << format.internalformat_name
 							<< ", width was " << width << ", height was " << height << "." << tcu::TestLog::EndMessage;
 

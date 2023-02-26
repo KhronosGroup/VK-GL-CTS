@@ -104,6 +104,8 @@ CmdDrawIndexedIndirectFunc									cmdDrawIndexedIndirect;
 CmdDispatchFunc												cmdDispatch;
 CmdDispatchIndirectFunc										cmdDispatchIndirect;
 CmdSubpassShadingHUAWEIFunc									cmdSubpassShadingHUAWEI;
+CmdDrawClusterHUAWEIFunc									cmdDrawClusterHUAWEI;
+CmdDrawClusterIndirectHUAWEIFunc							cmdDrawClusterIndirectHUAWEI;
 CmdCopyBufferFunc											cmdCopyBuffer;
 CmdCopyImageFunc											cmdCopyImage;
 CmdBlitImageFunc											cmdBlitImage;

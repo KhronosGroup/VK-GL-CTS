@@ -4263,6 +4263,43 @@ tcu::TestStatus testPhysicalDeviceFeatureFaultFeaturesEXT (Context& context)
 	return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeaturePipelineLibraryGroupHandlesFeaturesEXT (Context& context)
+{
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+	const InstanceDriver&		vki				(instance.getDriver());
+	const int					count			= 2u;
+	TestLog&					log				= context.getTestContext().getLog();
+	VkPhysicalDeviceFeatures2	extFeatures;
+	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+
+	VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT	devicePipelineLibraryGroupHandlesFeaturesEXT[count];
+	const bool												isPipelineLibraryGroupHandlesFeaturesEXT = checkExtension(properties, "VK_EXT_pipeline_library_group_handles");
+
+	for (int ndx = 0; ndx < count; ++ndx)
+	{
+		deMemset(&devicePipelineLibraryGroupHandlesFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT));
+		devicePipelineLibraryGroupHandlesFeaturesEXT[ndx].sType = isPipelineLibraryGroupHandlesFeaturesEXT ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_EXT : VK_STRUCTURE_TYPE_MAX_ENUM;
+		devicePipelineLibraryGroupHandlesFeaturesEXT[ndx].pNext = DE_NULL;
+
+		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		extFeatures.pNext = &devicePipelineLibraryGroupHandlesFeaturesEXT[ndx];
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+	}
+
+	if (isPipelineLibraryGroupHandlesFeaturesEXT)
+		log << TestLog::Message << devicePipelineLibraryGroupHandlesFeaturesEXT[0] << TestLog::EndMessage;
+
+	if (isPipelineLibraryGroupHandlesFeaturesEXT &&
+		(devicePipelineLibraryGroupHandlesFeaturesEXT[0].pipelineLibraryGroupHandles != devicePipelineLibraryGroupHandlesFeaturesEXT[1].pipelineLibraryGroupHandles))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT");
+	}
+	return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureSwapchainMaintenance1FeaturesEXT (Context& context)
 {
 	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
@@ -4385,9 +4422,7 @@ tcu::TestStatus createDeviceWithPromoted12Structures (Context& context)
 		&queuePriority,							//pQueuePriorities;
 	};
 
-	VkPhysicalDeviceVulkan11Features deviceVulkan11Features = initVulkanStructure();
-	VkPhysicalDeviceVulkan12Features deviceVulkan12Features = initVulkanStructure(&deviceVulkan11Features);
-	VkPhysicalDevice8BitStorageFeatures device8BitStorageFeatures = initVulkanStructure(&deviceVulkan12Features);
+	VkPhysicalDevice8BitStorageFeatures device8BitStorageFeatures = initVulkanStructure();
 	VkPhysicalDeviceShaderAtomicInt64Features deviceShaderAtomicInt64Features = initVulkanStructure(&device8BitStorageFeatures);
 	VkPhysicalDeviceShaderFloat16Int8Features deviceShaderFloat16Int8Features = initVulkanStructure(&deviceShaderAtomicInt64Features);
 	VkPhysicalDeviceDescriptorIndexingFeatures deviceDescriptorIndexingFeatures = initVulkanStructure(&deviceShaderFloat16Int8Features);
@@ -4453,8 +4488,7 @@ tcu::TestStatus createDeviceWithPromoted13Structures (Context& context)
 		&queuePriority,							//pQueuePriorities;
 	};
 
-	VkPhysicalDeviceVulkan13Features deviceVulkan13Features = initVulkanStructure();
-	VkPhysicalDeviceShaderTerminateInvocationFeatures deviceShaderTerminateInvocationFeatures = initVulkanStructure(&deviceVulkan13Features);
+	VkPhysicalDeviceShaderTerminateInvocationFeatures deviceShaderTerminateInvocationFeatures = initVulkanStructure();
 	VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures deviceShaderDemoteToHelperInvocationFeatures = initVulkanStructure(&deviceShaderTerminateInvocationFeatures);
 	VkPhysicalDevicePrivateDataFeatures devicePrivateDataFeatures = initVulkanStructure(&deviceShaderDemoteToHelperInvocationFeatures);
 	VkPhysicalDevicePipelineCreationCacheControlFeatures devicePipelineCreationCacheControlFeatures = initVulkanStructure(&devicePrivateDataFeatures);
@@ -4605,6 +4639,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "depth_clamp_zero_one_features_ext", "VkPhysicalDeviceDepthClampZeroOneFeaturesEXT", testPhysicalDeviceFeatureDepthClampZeroOneFeaturesEXT);
 	addFunctionCase(testGroup, "address_binding_report_features_ext", "VkPhysicalDeviceAddressBindingReportFeaturesEXT", testPhysicalDeviceFeatureAddressBindingReportFeaturesEXT);
 	addFunctionCase(testGroup, "fault_features_ext", "VkPhysicalDeviceFaultFeaturesEXT", testPhysicalDeviceFeatureFaultFeaturesEXT);
+	addFunctionCase(testGroup, "pipeline_library_group_handles_features_ext", "VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT", testPhysicalDeviceFeaturePipelineLibraryGroupHandlesFeaturesEXT);
 	addFunctionCase(testGroup, "swapchain_maintenance1_features_ext", "VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT", testPhysicalDeviceFeatureSwapchainMaintenance1FeaturesEXT);
 	addFunctionCase(testGroup, "create_device_with_promoted11_structures", "", createDeviceWithPromoted11Structures);
 	addFunctionCase(testGroup, "create_device_with_promoted12_structures", "", createDeviceWithPromoted12Structures);

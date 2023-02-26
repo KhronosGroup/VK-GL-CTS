@@ -1,3 +1,4 @@
+
 /*-------------------------------------------------------------------------
  * OpenGL Conformance Test Suite
  * -----------------------------
@@ -30,6 +31,7 @@
 #include "esextcTextureBorderClampSamplingTexture.hpp"
 #include "esextcTextureBorderClampCompressedResources.hpp"
 #include "gluDefs.hpp"
+#include "gluTextureUtil.hpp"
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
 #include "tcuTestLog.hpp"
@@ -744,6 +746,13 @@ bool TextureBorderClampSamplingTexture<InputType, OutputType>::checkResult(Outpu
 				  m_test_configuration.get_output_type(),   /* type */
 				  &resultData[0]);							/* data */
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Error reading pixels from color buffer");
+
+	tcu::TextureFormat tcuFormat =
+		glu::mapGLTransferFormat(m_test_configuration.get_output_format(), m_test_configuration.get_output_type());
+	m_testCtx.getLog() << tcu::TestLog::Image("Result", "Rendered result image",
+											  tcu::ConstPixelBufferAccess(tcuFormat, m_test_configuration.get_width(),
+																		  m_test_configuration.get_height(), 1,
+																		  &resultData[0]));
 
 	/* Choose comparision method depending on filtering mode */
 	if (m_test_configuration.get_filtering() == GL_NEAREST)

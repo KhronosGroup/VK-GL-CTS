@@ -2007,7 +2007,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 					geomShader = createShaderModule(vk, device, binaries.get("geom"), 0);
 			}
 
-			const deUint32 fragSizeWH = m_data.sampleMaskTest ? 2 : 0;
+			const deUint32 fragSizeWH = m_data.sampleMaskTest ? 2 : 1;
 
 			PipelineRenderingCreateInfoWrapper renderingCreateInfoWrapper;
 #ifndef CTS_USES_VULKANSC
@@ -2800,12 +2800,17 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 	PipelineRenderingCreateInfoWrapper		pipelineRenderingCreateInfo = dynamicRenderingState;
 #ifndef CTS_USES_VULKANSC
 	vk::VkPipelineRenderingCreateInfo		pipelineRenderingCreateInfoWithGarbage;
+	std::vector<VkFormat>					garbageFormats;
+
 	if (m_data.garbageAttachment)
 	{
-		pipelineRenderingCreateInfoWithGarbage = *dynamicRenderingState.ptr;
-		pipelineRenderingCreateInfoWithGarbage.colorAttachmentCount		= 99999u;
-		pipelineRenderingCreateInfoWithGarbage.pColorAttachmentFormats	= reinterpret_cast<VkFormat *>(0x11);
+		for (int i = 0; i < 10; i++)
+			garbageFormats.push_back(VK_FORMAT_UNDEFINED);
 
+		pipelineRenderingCreateInfoWithGarbage = *dynamicRenderingState.ptr;
+		// Just set a bunch of VK_FORMAT_UNDEFINED for garbage_color_attachment tests to make the validation happy.
+		pipelineRenderingCreateInfoWithGarbage.colorAttachmentCount		= static_cast<uint32_t>(garbageFormats.size());
+		pipelineRenderingCreateInfoWithGarbage.pColorAttachmentFormats  = garbageFormats.data();
 		pipelineRenderingCreateInfo = &pipelineRenderingCreateInfoWithGarbage;
 	}
 #endif

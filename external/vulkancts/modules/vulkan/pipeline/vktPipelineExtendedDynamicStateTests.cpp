@@ -167,7 +167,7 @@ public:
 	// Get vertex binding declarations as part of descriptor sets, used for mesh shading.
 	virtual std::vector<std::string>								getDescriptorDeclarations()	const = 0;
 
-	// Get statements  to calculate a vec2 called "vertexCoords" using descriptor members.
+	// Get statements to calculate a vec2 called "vertexCoords" using descriptor members.
 	virtual std::vector<std::string>								getDescriptorCoordCalc()	const = 0;
 
 	// Get fragment input attribute declarations in GLSL form. One sentence per element.
@@ -475,6 +475,114 @@ public:
 	virtual std::vector<vk::VkDeviceSize> getVertexDataStrides() const override
 	{
 		return std::vector<vk::VkDeviceSize>(1u, static_cast<vk::VkDeviceSize>(sizeof(VertexData)));
+	}
+};
+
+// Two buffers (bindings): one with vertex data, stored contiguously without paddings, and one with instance data. Instance data
+// will not be stored contiguously: the stride will be twice that of the data size, and the padding space filled with "garbage".
+// Real instance data will contain a scale and an offset similar to the ones from push constants, and will be used to properly scale
+// and offset meshes to make them cover the top and bottom halves of the framebuffer.
+class VertexWithInstanceData : public VertexGenerator
+{
+protected:
+	struct InstanceData
+	{
+		InstanceData (const tcu::Vec2& scaleAndOffsetY_)
+			: scaleAndOffsetY	(scaleAndOffsetY_)
+			, garbage			(0.0f /* bad scale */, 777.0f /* bad offset */)
+		{}
+
+		tcu::Vec2 scaleAndOffsetY;
+		tcu::Vec2 garbage;
+	};
+
+public:
+	virtual std::vector<std::string> getAttributeDeclarations() const override
+	{
+		std::vector<std::string> declarations;
+		declarations.push_back("layout(location=0) in vec2 position;");
+		declarations.push_back("layout(location=1) in vec2 scaleAndOffsetY;");
+		return declarations;
+	}
+
+	virtual std::vector<std::string> getVertexCoordCalc() const override
+	{
+		std::vector<std::string> statements;
+		statements.push_back("vec2 vertexCoords = vec2(position.x, position.y * scaleAndOffsetY.x + scaleAndOffsetY.y);");
+		return statements;
+	}
+
+	virtual std::vector<std::string> getDescriptorDeclarations() const override
+	{
+		DE_ASSERT(false); // This vertex generator should not be used with mesh shaders.
+		return std::vector<std::string>();
+	}
+
+	virtual std::vector<std::string> getDescriptorCoordCalc() const override
+	{
+		DE_ASSERT(false); // This vertex generator should not be used with mesh shaders.
+		return std::vector<std::string>();
+	}
+
+	virtual std::vector<vk::VkVertexInputAttributeDescription> getAttributeDescriptions() const override
+	{
+		std::vector<vk::VkVertexInputAttributeDescription> descriptions;
+		descriptions.push_back(vk::makeVertexInputAttributeDescription(0u, 0u, vk::VK_FORMAT_R32G32_SFLOAT, 0u));
+		descriptions.push_back(vk::makeVertexInputAttributeDescription(1u, 1u, vk::VK_FORMAT_R32G32_SFLOAT, 0u));
+		return descriptions;
+	}
+
+	// Vertex attributes for VK_EXT_vertex_input_dynamic_state.
+	virtual std::vector<vk::VkVertexInputAttributeDescription2EXT> getAttributeDescriptions2() const override
+	{
+		std::vector<vk::VkVertexInputAttributeDescription2EXT> descriptions;
+		descriptions.push_back(makeVertexInputAttributeDescription2EXT(0u, 0u, vk::VK_FORMAT_R32G32_SFLOAT, 0u));
+		descriptions.push_back(makeVertexInputAttributeDescription2EXT(1u, 1u, vk::VK_FORMAT_R32G32_SFLOAT, 0u));
+		return descriptions;
+	}
+
+	// Vertex bindings for VkPipelineVertexInputStateCreateInfo.
+	virtual std::vector<vk::VkVertexInputBindingDescription> getBindingDescriptions(const StrideVec& strides) const override
+	{
+		std::vector<vk::VkVertexInputBindingDescription> descriptions;
+		descriptions.push_back(vk::makeVertexInputBindingDescription(0u, static_cast<deUint32>(strides.at(0)), vk::VK_VERTEX_INPUT_RATE_VERTEX));
+		descriptions.push_back(vk::makeVertexInputBindingDescription(1u, static_cast<deUint32>(strides.at(1)), vk::VK_VERTEX_INPUT_RATE_INSTANCE));
+		return descriptions;
+	}
+
+	// Vertex bindings for VK_EXT_vertex_input_dynamic_state.
+	virtual std::vector<vk::VkVertexInputBindingDescription2EXT> getBindingDescriptions2(const StrideVec& strides) const override
+	{
+		std::vector<vk::VkVertexInputBindingDescription2EXT> descriptions;
+		descriptions.push_back(makeVertexInputBindingDescription2EXT(0u, static_cast<deUint32>(strides.at(0)), vk::VK_VERTEX_INPUT_RATE_VERTEX));
+		descriptions.push_back(makeVertexInputBindingDescription2EXT(1u, static_cast<deUint32>(strides.at(1)), vk::VK_VERTEX_INPUT_RATE_INSTANCE));
+		return descriptions;
+	}
+
+	virtual std::vector<std::vector<deUint8>> createVertexData (const std::vector<tcu::Vec2>& coords, vk::VkDeviceSize dataOffset, vk::VkDeviceSize trailingPadding, const void* paddingPattern, size_t patternSize) const override
+	{
+		// Instance data for 2 instances. Scale and offset like we do with push constants.
+		const std::vector<tcu::Vec2> instanceIds
+		{
+			tcu::Vec2(0.5f, -0.5f),
+			tcu::Vec2(0.5f,  0.5f),
+		};
+
+		std::vector<std::vector<uint8_t>> buffers;
+		buffers.reserve(2u);
+		buffers.push_back(createSingleBindingVertexData<tcu::Vec2>(coords, dataOffset, trailingPadding, paddingPattern, patternSize));
+		buffers.push_back(createSingleBindingVertexData<InstanceData>(instanceIds, dataOffset, trailingPadding, paddingPattern, patternSize));
+
+		return buffers;
+	}
+
+	virtual std::vector<vk::VkDeviceSize> getVertexDataStrides() const override
+	{
+		std::vector<vk::VkDeviceSize> strides;
+		strides.reserve(2u);
+		strides.push_back(static_cast<vk::VkDeviceSize>(sizeof(tcu::Vec2)));
+		strides.push_back(static_cast<vk::VkDeviceSize>(sizeof(InstanceData)));
+		return strides;
 	}
 };
 
@@ -1457,6 +1565,12 @@ const VertexGenerator* getProvokingVertexWithPaddingGenerator (bool lastVertex)
 	return &provokingVertexGeneratorFirstVtx;
 }
 
+const VertexGenerator* getVertexWithInstanceDataGenerator ()
+{
+	static VertexWithInstanceData vertexWithInstanceData;
+	return &vertexWithInstanceData;
+}
+
 // Create VertexGeneratorConfig varying constructor depending on having none, only the static or both.
 VertexGeneratorConfig makeVertexGeneratorConfig (const VertexGenerator* staticGen, const VertexGenerator* dynamicGen)
 {
@@ -1671,6 +1785,9 @@ struct TestConfig
 	// Number of color attachments in the subpass. Note the fragment shader will only write to the last one.
 	uint32_t						colorAttachmentCount;
 
+	// Instance count.
+	uint32_t						instanceCount;
+
 	// Use viewport swizzle or not.
 	bool							viewportSwizzle;
 
@@ -1776,6 +1893,7 @@ struct TestConfig
 		, shaderRasterizationStream		(tcu::Nothing)
 		, sampleLocations				(0.5f, 0.5f)
 		, colorAttachmentCount			(1u)
+		, instanceCount					(1u)
 		, viewportSwizzle				(false)
 		, shadingRateImage				(false)
 		, viewportWScaling				(false)
@@ -1872,6 +1990,7 @@ struct TestConfig
 		, shaderRasterizationStream		(other.shaderRasterizationStream)
 		, sampleLocations				(other.sampleLocations)
 		, colorAttachmentCount			(other.colorAttachmentCount)
+		, instanceCount					(other.instanceCount)
 		, viewportSwizzle				(other.viewportSwizzle)
 		, shadingRateImage				(other.shadingRateImage)
 		, viewportWScaling				(other.viewportWScaling)
@@ -2683,6 +2802,17 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 	if (m_testConfig.vertexGenerator.dynamicValue)
 		m_testConfig.vertexGenerator.dynamicValue.get()->checkSupport(context);
 
+	// Special requirement for rasterizationSamples tests.
+	// The first iteration of these tests puts the pipeline in a mixed samples state,
+	// where colorCount != rasterizationSamples.
+	if (m_testConfig.rasterizationSamplesConfig.dynamicValue &&
+		(m_testConfig.sequenceOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC ||
+		 m_testConfig.sequenceOrdering == SequenceOrdering::TWO_DRAWS_STATIC) &&
+		!context.isDeviceFunctionalitySupported("VK_AMD_mixed_attachment_samples") &&
+		!context.isDeviceFunctionalitySupported("VK_NV_framebuffer_mixed_samples"))
+
+		TCU_THROW(NotSupportedError, "VK_AMD_mixed_attachment_samples or VK_NV_framebuffer_mixed_samples are not supported");
+
 	// Check the number of viewports needed and the corresponding limits.
 	const auto&	viewportConfig	= m_testConfig.viewportConfig;
 	auto		numViewports	= viewportConfig.staticValue.size();
@@ -2826,8 +2956,35 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 		if (m_testConfig.coverageModTableConfig.dynamicValue && !eds3Features.extendedDynamicState3CoverageModulationTable)
 			TCU_THROW(NotSupportedError, "extendedDynamicState3CoverageModulationTable not supported");
 
-		if (m_testConfig.coverageReductionModeConfig.dynamicValue && !eds3Features.extendedDynamicState3CoverageReductionMode)
-			TCU_THROW(NotSupportedError, "extendedDynamicState3CoverageReductionMode not supported");
+		if (m_testConfig.coverageReductionModeConfig.dynamicValue)
+		{
+			if (!eds3Features.extendedDynamicState3CoverageReductionMode)
+				TCU_THROW(NotSupportedError, "extendedDynamicState3CoverageReductionMode not supported");
+
+			uint32_t combinationCount = 0U;
+			auto result = vki.getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV(physicalDevice, &combinationCount, nullptr);
+			if (result != vk::VK_SUCCESS || combinationCount == 0U)
+				TCU_THROW(NotSupportedError, "vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV supported no combinations");
+
+			std::vector<vk::VkFramebufferMixedSamplesCombinationNV> combinations(combinationCount);
+			result = vki.getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV(physicalDevice, &combinationCount, combinations.data());
+			if (result != vk::VK_SUCCESS)
+				TCU_THROW(NotSupportedError, "vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV supported no combinations");
+
+			auto findCombination = [&](vk::VkCoverageReductionModeNV const coverageReductionMode) -> bool {
+				for (uint32_t i = 0U; i < combinationCount; ++i) {
+					if (combinations[i].rasterizationSamples == m_testConfig.rasterizationSamplesConfig.staticValue &&
+						combinations[i].colorSamples == m_testConfig.getColorSampleCount() &&
+						combinations[i].coverageReductionMode == coverageReductionMode) {
+
+						return true;
+					}
+				}
+				return false;
+			};
+			if (!findCombination(m_testConfig.coverageReductionModeConfig.staticValue) || !findCombination(m_testConfig.coverageReductionModeConfig.dynamicValue.get()))
+				TCU_THROW(NotSupportedError, "vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV no matching combination found");
+		}
 
 		if (m_testConfig.viewportSwizzleConfig.dynamicValue && !eds3Features.extendedDynamicState3ViewportSwizzle)
 			TCU_THROW(NotSupportedError, "extendedDynamicState3ViewportSwizzle not supported");
@@ -2982,8 +3139,8 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 	const auto			activeGen	= m_testConfig.getActiveVertexGenerator();
 	const auto			attribDecls	= activeGen->getAttributeDeclarations();
 	const auto			coordCalcs	= activeGen->getVertexCoordCalc();
-	const auto			descDeclsV	= activeGen->getDescriptorDeclarations();
-	const auto			descCalcsV	= activeGen->getDescriptorCoordCalc();
+	const auto			descDeclsV	= (m_testConfig.useMeshShaders ? activeGen->getDescriptorDeclarations() : std::vector<std::string>());
+	const auto			descCalcsV	= (m_testConfig.useMeshShaders ? activeGen->getDescriptorCoordCalc() : std::vector<std::string>());
 	const auto			fragInputs	= activeGen->getFragInputAttributes();
 	const auto			fragCalcs	= activeGen->getFragOutputCalc();
 	const auto			glslExts	= activeGen->getGLSLExtensions();
@@ -3780,6 +3937,7 @@ protected:
 };
 
 // This one creates a new device with VK_NV_shading_rate_image and VK_EXT_extended_dynamic_state3.
+// It also enables VK_EXT_mesh_shader if supported, as some tests need it.
 class ShadingRateImageDeviceHelper : public DeviceHelper
 {
 public:
@@ -3805,18 +3963,26 @@ public:
 			&queuePriority									// const float*					pQueuePriorities;
 		};
 
-		const char* extensions[] =
-		{
-			"VK_EXT_extended_dynamic_state3",
-			"VK_NV_shading_rate_image",
-		};
-
 #ifndef CTS_USES_VULKANSC
-		vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT	eds3Features				= vk::initVulkanStructure();
+		const auto&	contextMeshFeatures	= context.getMeshShaderFeaturesEXT();
+		const bool	meshShaderSupport	= contextMeshFeatures.meshShader;
+
+		vk::VkPhysicalDeviceMeshShaderFeaturesEXT				meshFeatures				= vk::initVulkanStructure();
+		vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT	eds3Features				= vk::initVulkanStructure(meshShaderSupport ? &meshFeatures : nullptr);
 		vk::VkPhysicalDeviceShadingRateImageFeaturesNV			shadingRateImageFeatures	= vk::initVulkanStructure(&eds3Features);
 		vk::VkPhysicalDeviceFeatures2							features2					= vk::initVulkanStructure(&shadingRateImageFeatures);
 
 		vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
+#endif // CTS_USES_VULKANSC
+
+		std::vector<const char*> extensions
+		{
+			"VK_EXT_extended_dynamic_state3",
+			"VK_NV_shading_rate_image",
+		};
+#ifndef CTS_USES_VULKANSC
+		if (meshShaderSupport)
+			extensions.push_back("VK_EXT_mesh_shader");
 #endif // CTS_USES_VULKANSC
 
 		const vk::VkDeviceCreateInfo deviceCreateInfo =
@@ -3832,8 +3998,8 @@ public:
 			&queueParams,											//pRequestedQueues;
 			0u,														//layerCount;
 			nullptr,												//ppEnabledLayerNames;
-			static_cast<uint32_t>(de::arrayLength(extensions)),		// deUint32							enabledExtensionCount;
-			extensions,												// const char* const*				ppEnabledExtensionNames;
+			de::sizeU32(extensions),								// deUint32							enabledExtensionCount;
+			de::dataOrNull(extensions),								// const char* const*				ppEnabledExtensionNames;
 			nullptr,												//pEnabledFeatures;
 		};
 
@@ -5214,7 +5380,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 						{
 							numIndices = 2u;
 						}
-						vkd.cmdDrawIndexed(cmdBuffer, numIndices, 1u, 0u, 0u, 0u);
+						vkd.cmdDrawIndexed(cmdBuffer, numIndices, m_testConfig.instanceCount, 0u, 0u, 0u);
 					}
 #ifndef CTS_USES_VULKANSC
 					else if (m_testConfig.useMeshShaders)
@@ -5223,6 +5389,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 						DE_ASSERT(vertices.size() > 2u);
 						DE_ASSERT(!m_testConfig.topologyConfig.dynamicValue);
 						DE_ASSERT(m_testConfig.topologyConfig.staticValue == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+						DE_ASSERT(m_testConfig.instanceCount == 1u);
 
 						const auto numPrimitives = static_cast<uint32_t>(vertices.size()) - 2u;
 						vkd.cmdDrawMeshTasksEXT(cmdBuffer, numPrimitives, 1u, 1u);
@@ -5230,10 +5397,10 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 #endif // CTS_USES_VULKANSC
 					else
 					{
-						deUint32 vertex_count = static_cast<deUint32>(vertices.size());
+						uint32_t vertexCount = static_cast<deUint32>(vertices.size());
 						if (m_testConfig.singleVertex)
-							vertex_count = m_testConfig.singleVertexDrawCount;
-						vkd.cmdDraw(cmdBuffer, vertex_count, 1u, 0u, 0u);
+							vertexCount = m_testConfig.singleVertexDrawCount;
+						vkd.cmdDraw(cmdBuffer, vertexCount, m_testConfig.instanceCount, 0u, 0u);
 					}
 				}
 			}
@@ -5372,15 +5539,58 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	// Check storage buffer if used.
 	if (m_testConfig.representativeFragmentTest)
 	{
+		DE_ASSERT(m_testConfig.oversizedTriangle);
+		DE_ASSERT(m_testConfig.meshParams.size() == 1u);
+		DE_ASSERT(!m_testConfig.depthWriteEnableConfig.dynamicValue);	// No dynamic value for depth writes.
+		DE_ASSERT(!m_testConfig.depthWriteEnableConfig.staticValue);	// No depth writes.
+
+		// The expected number of invocations depends on how many draws are performed with the test enabled.
+		// Draws with the test disabled should always result in kFramebufferHeight * kFramebufferWidth invocations.
+		// Draws with the test enabled should result in at least 1 invocation, maybe more.
+		uint32_t minValue = 0u;
+
+		const uint32_t minInvocations[] = { (kFramebufferHeight * kFramebufferWidth), 1u };
+
+		if (kNumIterations == 1u)
+		{
+			const auto testEnabled	= m_testConfig.getActiveReprFragTestEnable();
+			minValue += minInvocations[testEnabled];
+		}
+		else if (kNumIterations == 2u)
+		{
+
+			for (uint32_t i = 0u; i < kNumIterations; ++i)
+			{
+				bool testEnabled = false;
+
+#ifndef CTS_USES_VULKANSC
+				// Actually varies depending on TWO_DRAWS_STATIC/_DYNAMIC, but does not affect results.
+				const bool staticDraw = (i == 0u);
+
+				if (staticDraw)
+					testEnabled = m_testConfig.reprFragTestEnableConfig.staticValue;
+				else
+				{
+					testEnabled	= (m_testConfig.reprFragTestEnableConfig.dynamicValue
+								? m_testConfig.reprFragTestEnableConfig.dynamicValue.get()
+								: m_testConfig.reprFragTestEnableConfig.staticValue);
+				}
+#endif // CTS_USES_VULKANSC
+
+				minValue += minInvocations[testEnabled];
+			}
+		}
+		else
+		{
+			DE_ASSERT(false);
+		}
+
 		auto& counterBufferAlloc	= counterBuffer->getAllocation();
 		void* counterBufferData		= counterBufferAlloc.getHostPtr();
 		vk::invalidateAlloc(vkd, device, counterBufferAlloc);
 
 		uint32_t fragCounter;
 		deMemcpy(&fragCounter, counterBufferData, sizeof(fragCounter));
-
-		const auto testEnabled	= m_testConfig.getActiveReprFragTestEnable();
-		const auto minValue		= (testEnabled ? 1u : (kFramebufferHeight * kFramebufferWidth * kNumIterations));
 
 		log << tcu::TestLog::Message << "Fragment counter minimum value: " << minValue << tcu::TestLog::EndMessage;
 		log << tcu::TestLog::Message << "Fragment counter: " << fragCounter << tcu::TestLog::EndMessage;
@@ -5449,7 +5659,7 @@ using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
 tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
 {
-	GroupPtr extendedDynamicStateGroup(new tcu::TestCaseGroup(testCtx, "extended_dynamic_state", "Tests for VK_EXT_extended_dynamic_state"));
+	GroupPtr extendedDynamicStateGroup(new TestGroupWithClean(testCtx, "extended_dynamic_state", "Tests for VK_EXT_extended_dynamic_state"));
 	GroupPtr meshShaderGroup(new tcu::TestCaseGroup(testCtx, "mesh_shader", "Extended dynamic state with mesh shading pipelines"));
 
 	// Auxiliar constants.
@@ -7366,20 +7576,39 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				// dynamic stride being less than the extent of the binding for the second attribute.
 				if (kOrdering != SequenceOrdering::TWO_DRAWS_STATIC)
 				{
-					const auto	staticGen	= getVertexWithPaddingGenerator();
-					const auto	dynamicGen	= getVertexWithExtraAttributesGenerator();
-					const auto	goodStrides	= dynamicGen->getVertexDataStrides();
-					StrideVec	badStrides;
+					{
+						const auto	staticGen	= getVertexWithPaddingGenerator();
+						const auto	dynamicGen	= getVertexWithExtraAttributesGenerator();
+						const auto	goodStrides	= dynamicGen->getVertexDataStrides();
+						StrideVec	badStrides;
 
-					badStrides.reserve(goodStrides.size());
-					for (const auto& stride : goodStrides)
-						badStrides.push_back(stride / 2u);
+						badStrides.reserve(goodStrides.size());
+						for (const auto& stride : goodStrides)
+							badStrides.push_back(stride / 2u);
 
-					TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders, staticGen, dynamicGen);
-					config.strideConfig.staticValue			= badStrides;
-					config.strideConfig.dynamicValue		= goodStrides;
-					config.bindUnusedMeshShadingPipeline	= bindUnusedCase.bindUnusedMeshShadingPipeline;
-					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "vertex_input" + bindUnusedCase.nameSuffix, "Dynamically set vertex input" + bindUnusedCase.descSuffix, config));
+						TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders, staticGen, dynamicGen);
+						config.strideConfig.staticValue			= badStrides;
+						config.strideConfig.dynamicValue		= goodStrides;
+						config.bindUnusedMeshShadingPipeline	= bindUnusedCase.bindUnusedMeshShadingPipeline;
+						orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "vertex_input" + bindUnusedCase.nameSuffix, "Dynamically set vertex input" + bindUnusedCase.descSuffix, config));
+					}
+					{
+						const auto	staticGen	= getVertexWithInstanceDataGenerator();
+						const auto	goodStrides	= staticGen->getVertexDataStrides();
+						StrideVec	badStrides;
+
+						DE_ASSERT(goodStrides.size() == 2u);
+						badStrides.reserve(2u);
+						badStrides.push_back(goodStrides.at(0u));
+						badStrides.push_back(goodStrides.at(1u) / 2u); // Halve instance rate stride.
+
+						TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders, staticGen);
+						config.strideConfig.staticValue			= badStrides;
+						config.strideConfig.dynamicValue		= goodStrides;
+						config.bindUnusedMeshShadingPipeline	= bindUnusedCase.bindUnusedMeshShadingPipeline;
+						config.instanceCount					= 2u;
+						orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "instance_rate_stride" + bindUnusedCase.nameSuffix, "Dynamically set instance rate stride" + bindUnusedCase.descSuffix, config));
+					}
 				}
 
 				{

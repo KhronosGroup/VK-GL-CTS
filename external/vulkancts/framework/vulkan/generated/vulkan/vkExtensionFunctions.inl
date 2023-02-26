@@ -1214,6 +1214,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_HUAWEI_cluster_culling_shader")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_border_color_swizzle")
 	{
 		return;
@@ -1320,6 +1324,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_ARM_shader_core_builtins")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_pipeline_library_group_handles")
 	{
 		return;
 	}
@@ -2724,6 +2732,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_HUAWEI_cluster_culling_shader")
+	{
+		functions.push_back("vkCmdDrawClusterHUAWEI");
+		functions.push_back("vkCmdDrawClusterIndirectHUAWEI");
+		return;
+	}
 	if (extName == "VK_EXT_border_color_swizzle")
 	{
 		return;
@@ -2865,6 +2879,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_ARM_shader_core_builtins")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_pipeline_library_group_handles")
 	{
 		return;
 	}
@@ -3193,6 +3211,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_image_2d_view_of_3d",
 	"VK_EXT_opacity_micromap",
 	"VK_EXT_load_store_op_none",
+	"VK_HUAWEI_cluster_culling_shader",
 	"VK_EXT_border_color_swizzle",
 	"VK_EXT_pageable_device_local_memory",
 	"VK_KHR_maintenance4",
@@ -3218,4 +3237,5 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_NV_ray_tracing_invocation_reorder",
 	"VK_EXT_mutable_descriptor_type",
 	"VK_ARM_shader_core_builtins",
+	"VK_EXT_pipeline_library_group_handles",
 };

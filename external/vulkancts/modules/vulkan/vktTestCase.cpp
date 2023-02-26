@@ -74,7 +74,6 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 		"VK_NV_inherited_viewport_scissor",
 		"VK_NV_mesh_shader",
 		"VK_AMD_mixed_attachment_samples",
-		"VK_AMD_shader_fragment_mask",
 		"VK_AMD_buffer_marker",
 		"VK_AMD_shader_explicit_vertex_parameter",
 		"VK_AMD_shader_image_load_store_lod",

@@ -56,6 +56,7 @@ const vk::VkPhysicalDeviceDrmPropertiesEXT&							getDrmPropertiesEXT							(voi
 const vk::VkPhysicalDeviceSubpassShadingPropertiesHUAWEI&			getSubpassShadingPropertiesHUAWEI			(void) const;
 const vk::VkPhysicalDeviceMultiDrawPropertiesEXT&					getMultiDrawPropertiesEXT					(void) const;
 const vk::VkPhysicalDeviceOpacityMicromapPropertiesEXT&				getOpacityMicromapPropertiesEXT				(void) const;
+const vk::VkPhysicalDeviceClusterCullingShaderPropertiesHUAWEI&		getClusterCullingShaderPropertiesHUAWEI		(void) const;
 const vk::VkPhysicalDeviceMaintenance4Properties&					getMaintenance4Properties					(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM&	getFragmentDensityMapOffsetPropertiesQCOM	(void) const;
 const vk::VkPhysicalDeviceCopyMemoryIndirectPropertiesNV&			getCopyMemoryIndirectProperties				(void) const;

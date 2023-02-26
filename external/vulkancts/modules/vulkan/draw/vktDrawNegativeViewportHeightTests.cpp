@@ -33,6 +33,8 @@
 #include "vkImageUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
+#include "vkBarrierUtil.hpp"
 
 #include "tcuVector.hpp"
 #include "tcuTextureUtil.hpp"
@@ -40,6 +42,7 @@
 #include "tcuTestLog.hpp"
 
 #include "deSharedPtr.hpp"
+#include "deRandom.hpp"
 
 namespace vkt
 {
@@ -51,6 +54,85 @@ using namespace vk;
 using tcu::Vec4;
 using de::SharedPtr;
 using de::MovePtr;
+
+class DynRenderHelper
+{
+public:
+	DynRenderHelper (const SharedGroupParams params)
+		: m_params(params)
+		{}
+
+	void beginSecondaryCmdBuffer (const DeviceInterface& vkd, VkCommandBuffer cmdBuffer, const VkFormat& colorAttachmentFormat) const
+	{
+#ifndef CTS_USES_VULKANSC
+		VkRenderingFlags renderingFlags = 0u;
+		if (m_params->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			renderingFlags |= VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT;
+
+		VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
+		{
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,		// VkStructureType					sType;
+			DE_NULL,																// const void*						pNext;
+			renderingFlags,															// VkRenderingFlagsKHR				flags;
+			0u,																		// uint32_t							viewMask;
+			1u,																		// uint32_t							colorAttachmentCount;
+			&colorAttachmentFormat,													// const VkFormat*					pColorAttachmentFormats;
+			VK_FORMAT_UNDEFINED,													// VkFormat							depthAttachmentFormat;
+			VK_FORMAT_UNDEFINED,													// VkFormat							stencilAttachmentFormat;
+			VK_SAMPLE_COUNT_1_BIT,													// VkSampleCountFlagBits			rasterizationSamples;
+		};
+		const VkCommandBufferInheritanceInfo bufferInheritanceInfo = initVulkanStructure(&inheritanceRenderingInfo);
+
+		VkCommandBufferUsageFlags usageFlags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+		if (!m_params->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			usageFlags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+
+		const VkCommandBufferBeginInfo commandBufBeginParams
+		{
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,							// VkStructureType					sType;
+			DE_NULL,																// const void*						pNext;
+			usageFlags,																// VkCommandBufferUsageFlags		flags;
+			&bufferInheritanceInfo
+		};
+
+		VK_CHECK(vkd.beginCommandBuffer(cmdBuffer, &commandBufBeginParams));
+#else
+		DE_UNREF(vkd);
+		DE_UNREF(cmdBuffer);
+		DE_UNREF(colorAttachmentFormat);
+		DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+	}
+
+	void beginRendering(const DeviceInterface&		vkd,
+						const VkCommandBuffer		cmdBuffer,
+						const bool					isPrimaryCmdBuffer,
+						const VkImageView			colorImageView,
+						const VkRect2D&				renderArea,
+						const VkClearValue&			clearValue,
+						const VkImageLayout			imageLayout) const
+	{
+#ifndef CTS_USES_VULKANSC
+		VkRenderingFlagsKHR renderingFlags = 0u;
+		if (isPrimaryCmdBuffer && m_params->useSecondaryCmdBuffer && !m_params->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			renderingFlags |= VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT;
+
+		vk::beginRendering(vkd, cmdBuffer, colorImageView, renderArea, clearValue, imageLayout, VK_ATTACHMENT_LOAD_OP_LOAD, renderingFlags);
+#else
+		DE_UNREF(vkd);
+		DE_UNREF(cmdBuffer);
+		DE_UNREF(isPrimaryCmdBuffer);
+		DE_UNREF(colorImageView);
+		DE_UNREF(renderArea);
+		DE_UNREF(clearValue);
+		DE_UNREF(imageLayout);
+		DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+	}
+
+protected:
+	SharedGroupParams	m_params;
+};
 
 enum Constants
 {
@@ -77,12 +159,9 @@ public:
 	MovePtr<tcu::TextureLevel>		generateReferenceImage				(void) const;
 	bool							isCulled							(const VkFrontFace triangleFace) const;
 
-#ifndef CTS_USES_VULKANSC
-	void							beginSecondaryCmdBuffer				(VkCommandBuffer cmdBuffer, VkRenderingFlagsKHR renderingFlags = 0u);
-#endif // CTS_USES_VULKANSC
-
 private:
 	const TestParams				m_params;
+	const DynRenderHelper			m_dynRenderHelper;
 	const VkFormat					m_colorAttachmentFormat;
 	SharedPtr<Image>				m_colorTargetImage;
 	Move<VkImageView>				m_colorTargetView;
@@ -96,6 +175,7 @@ private:
 NegativeViewportHeightTestInstance::NegativeViewportHeightTestInstance (Context& context, const TestParams& params)
 	: TestInstance				(context)
 	, m_params					(params)
+	, m_dynRenderHelper			(params.groupParams)
 	, m_colorAttachmentFormat	(VK_FORMAT_R8G8B8A8_UNORM)
 {
 	const DeviceInterface&	vk		= m_context.getDeviceInterface();
@@ -365,40 +445,6 @@ MovePtr<tcu::TextureLevel> NegativeViewportHeightTestInstance::generateReference
 	}
 }
 
-#ifndef CTS_USES_VULKANSC
-void NegativeViewportHeightTestInstance::beginSecondaryCmdBuffer(VkCommandBuffer cmdBuffer, VkRenderingFlagsKHR renderingFlags)
-{
-	VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,		// VkStructureType					sType;
-		DE_NULL,																// const void*						pNext;
-		renderingFlags,															// VkRenderingFlagsKHR				flags;
-		0u,																		// uint32_t							viewMask;
-		1u,																		// uint32_t							colorAttachmentCount;
-		&m_colorAttachmentFormat,												// const VkFormat*					pColorAttachmentFormats;
-		VK_FORMAT_UNDEFINED,													// VkFormat							depthAttachmentFormat;
-		VK_FORMAT_UNDEFINED,													// VkFormat							stencilAttachmentFormat;
-		VK_SAMPLE_COUNT_1_BIT,													// VkSampleCountFlagBits			rasterizationSamples;
-	};
-	const VkCommandBufferInheritanceInfo bufferInheritanceInfo = initVulkanStructure(&inheritanceRenderingInfo);
-
-	VkCommandBufferUsageFlags usageFlags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-	if (!m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
-		usageFlags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-
-	const VkCommandBufferBeginInfo commandBufBeginParams
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,							// VkStructureType					sType;
-		DE_NULL,																// const void*						pNext;
-		usageFlags,																// VkCommandBufferUsageFlags		flags;
-		&bufferInheritanceInfo
-	};
-
-	const DeviceInterface& vk = m_context.getDeviceInterface();
-	VK_CHECK(vk.beginCommandBuffer(cmdBuffer, &commandBufBeginParams));
-}
-#endif // CTS_USES_VULKANSC
-
 std::string getCullModeStr (const VkCullModeFlagBits cullMode)
 {
 	// Cull mode flags are a bit special, because there's a meaning to 0 and or'ed flags.
@@ -448,13 +494,10 @@ tcu::TestStatus NegativeViewportHeightTestInstance::iterate (void)
 		secCmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 
 		// record secondary command buffer
+		m_dynRenderHelper.beginSecondaryCmdBuffer(vk, *secCmdBuffer, m_colorAttachmentFormat);
+
 		if (m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
-		{
-			beginSecondaryCmdBuffer(*secCmdBuffer, VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
-			beginRendering(vk, *secCmdBuffer, *m_colorTargetView, rect, clearColor, VK_IMAGE_LAYOUT_GENERAL, VK_ATTACHMENT_LOAD_OP_LOAD, 0u);
-		}
-		else
-			beginSecondaryCmdBuffer(*secCmdBuffer);
+			m_dynRenderHelper.beginRendering(vk, *secCmdBuffer, false/*isPrimary*/, *m_colorTargetView, rect, clearColor, VK_IMAGE_LAYOUT_GENERAL);
 
 		draw(*secCmdBuffer, viewport);
 
@@ -469,7 +512,7 @@ tcu::TestStatus NegativeViewportHeightTestInstance::iterate (void)
 		preRenderCommands(*cmdBuffer, clearColor);
 
 		if (!m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
-			beginRendering(vk, *cmdBuffer, *m_colorTargetView, rect, clearColor, VK_IMAGE_LAYOUT_GENERAL, VK_ATTACHMENT_LOAD_OP_LOAD, VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+			m_dynRenderHelper.beginRendering(vk, *cmdBuffer, true/*isPrimary*/, *m_colorTargetView, rect, clearColor, VK_IMAGE_LAYOUT_GENERAL);
 
 		vk.cmdExecuteCommands(*cmdBuffer, 1u, &*secCmdBuffer);
 
@@ -483,7 +526,7 @@ tcu::TestStatus NegativeViewportHeightTestInstance::iterate (void)
 		beginCommandBuffer(vk, *cmdBuffer);
 
 		preRenderCommands(*cmdBuffer, clearColor);
-		beginRendering(vk, *cmdBuffer, *m_colorTargetView, rect, clearColor, VK_IMAGE_LAYOUT_GENERAL, VK_ATTACHMENT_LOAD_OP_LOAD, 0u);
+		m_dynRenderHelper.beginRendering(vk, *cmdBuffer, true/*isPrimary*/, *m_colorTargetView, rect, clearColor, VK_IMAGE_LAYOUT_GENERAL);
 		draw(*cmdBuffer, viewport);
 		endRendering(vk, *cmdBuffer);
 
@@ -661,6 +704,281 @@ void populateTestGroup (tcu::TestCaseGroup* testGroup, SubGroupParams subGroupPa
 	}
 }
 
+enum class OffScreenAxisCase
+{
+	ONSCREEN		= 0,
+	NEGATIVE_SIDE	= 1,
+	POSITIVE_SIDE	= 2,
+};
+
+struct OffScreenParams
+{
+	const uint32_t			randomSeed;
+	const OffScreenAxisCase	xAxis;
+	const OffScreenAxisCase	yAxis;
+	const bool				negativeHeight;
+	const SharedGroupParams	groupParams;
+
+	OffScreenParams (uint32_t seed, OffScreenAxisCase x, OffScreenAxisCase y, bool negH, const SharedGroupParams gp)
+		: randomSeed		(seed)
+		, xAxis				(x)
+		, yAxis				(y)
+		, negativeHeight	(negH)
+		, groupParams		(gp)
+	{
+		// At least one of them must be offscreen.
+		DE_ASSERT(xAxis != OffScreenAxisCase::ONSCREEN || yAxis != OffScreenAxisCase::ONSCREEN);
+	}
+};
+
+class OffScreenViewportCase : public vkt::TestCase
+{
+public:
+	static constexpr int32_t	kFramebufferSize	= 32;	// Width and Height of framebuffer.
+	static constexpr int32_t	kViewportMaxDim		= 1024;	// When generating offscreen coords, use this limit as the negative or positive max coord for X/Y.
+	static constexpr uint32_t	kVertexCount		= 4u;
+
+	// Choose a couple of values for the Axis range (X or Y) according to the chosen Axis case.
+	static tcu::IVec2 genAxis (de::Random& rnd, OffScreenAxisCase axisCase)
+	{
+		int32_t minVal = 0;
+		int32_t maxVal = 0;
+
+		if (axisCase == OffScreenAxisCase::ONSCREEN)
+			maxVal = kFramebufferSize - 1;
+		else if (axisCase == OffScreenAxisCase::NEGATIVE_SIDE)
+		{
+			minVal = -kViewportMaxDim;
+			maxVal = -1;
+		}
+		else if (axisCase == OffScreenAxisCase::POSITIVE_SIDE)
+		{
+			minVal = kFramebufferSize + 1;
+			maxVal = kViewportMaxDim;
+		}
+
+		const auto a = rnd.getInt(minVal, maxVal);
+		const auto b = rnd.getInt(minVal, maxVal);
+
+		const tcu::IVec2 axisRange (de::min(a, b), de::max(a, b));
+		return axisRange;
+	}
+
+					OffScreenViewportCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const OffScreenParams& params)
+						: vkt::TestCase	(testCtx, name, description)
+						, m_params		(params)
+						{}
+
+	virtual			~OffScreenViewportCase	(void) {}
+
+	void			initPrograms	(vk::SourceCollections& programCollection) const override;
+	TestInstance*	createInstance	(Context& context) const override;
+	void			checkSupport	(Context& context) const override;
+
+protected:
+	const OffScreenParams m_params;
+};
+
+class OffScreenViewportInstance : public vkt::TestInstance
+{
+public:
+						OffScreenViewportInstance	(Context& context, const OffScreenParams& params)
+							: vkt::TestInstance	(context)
+							, m_params			(params)
+							, m_dynRenderHelper	(params.groupParams)
+							{}
+
+	virtual				~OffScreenViewportInstance	(void) {}
+
+	tcu::TestStatus		iterate						(void) override;
+
+protected:
+	const OffScreenParams	m_params;
+	const DynRenderHelper	m_dynRenderHelper;
+};
+
+TestInstance* OffScreenViewportCase::createInstance (Context &context) const
+{
+	return new OffScreenViewportInstance(context, m_params);
+}
+
+void OffScreenViewportCase::checkSupport (Context &context) const
+{
+	if (m_params.groupParams->useDynamicRendering)
+		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+
+	if (m_params.negativeHeight)
+		context.requireDeviceFunctionality("VK_KHR_maintenance1");
+}
+
+void OffScreenViewportCase::initPrograms (vk::SourceCollections &programCollection) const
+{
+	std::ostringstream vert;
+	vert
+		<< "#version 460\n"
+		<< "const int vertexCount = " << kVertexCount << ";\n"
+		<< "vec2 positions[vertexCount] = vec2[](\n"
+		<< "    vec2(-1.0, -1.0),\n"
+		<< "    vec2(-1.0,  1.0),\n"
+		<< "    vec2( 1.0, -1.0),\n"
+		<< "    vec2( 1.0,  1.0)\n"
+		<< ");\n"
+		<< "void main (void) { gl_Position = vec4(positions[gl_VertexIndex % vertexCount], 0.0, 1.0); }\n"
+		;
+	programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+	std::ostringstream frag;
+	frag
+		<< "#version 460\n"
+		<< "layout (location=0) out vec4 outColor;\n"
+		<< "void main (void) { outColor = vec4(0.0, 0.0, 1.0, 1.0); }\n"
+		;
+	programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+tcu::TestStatus OffScreenViewportInstance::iterate (void)
+{
+	de::Random rnd(m_params.randomSeed);
+
+	// Pseudorandomly generate viewport data.
+	const auto	xAxis	= OffScreenViewportCase::genAxis(rnd, m_params.xAxis);
+	auto		yAxis	= OffScreenViewportCase::genAxis(rnd, m_params.yAxis);
+	const auto	width	= xAxis.y() - xAxis.x() + 1;
+	auto		height	= yAxis.y() - yAxis.x() + 1;
+
+	if (m_params.negativeHeight)
+	{
+		height = -height;
+		std::swap(yAxis[0], yAxis[1]);
+	}
+
+	const VkViewport testViewport =
+	{
+		static_cast<float>(xAxis.x()),	//	float	x;
+		static_cast<float>(yAxis.x()),	//	float	y;
+		static_cast<float>(width),		//	float	width;
+		static_cast<float>(height),		//	float	height;
+		0.0f,							//	float	minDepth;
+		1.0f,							//	float	maxDepth;
+	};
+
+	// Framebuffer parameters.
+	const auto kIFbSize	= OffScreenViewportCase::kFramebufferSize;
+	const auto fbSize	= static_cast<uint32_t>(kIFbSize);
+	const auto fbExtent	= makeExtent3D(fbSize, fbSize, 1u);
+	const auto fbFormat	= VK_FORMAT_R8G8B8A8_UNORM;
+	const auto fbUsage	= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+	const auto&				ctx			= m_context.getContextCommonData();
+	CommandPoolWithBuffer	cmd			(ctx.vkd, ctx.device, ctx.qfIndex);
+	ImageWithBuffer			colorRes	(ctx.vkd, ctx.device, ctx.allocator, fbExtent, fbFormat, fbUsage, VK_IMAGE_TYPE_2D);
+
+	const auto&		binaries	= m_context.getBinaryCollection();
+	const auto		vertModule	= createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
+	const auto		fragModule	= createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+
+	// Render pass and framebuffer.
+	const auto		renderPass	= makeRenderPass(ctx.vkd, ctx.device, fbFormat, VK_FORMAT_UNDEFINED /* DS format */, VK_ATTACHMENT_LOAD_OP_LOAD);
+	const auto		framebuffer	= makeFramebuffer(ctx.vkd, ctx.device, renderPass.get(), colorRes.getImageView(), fbExtent.width, fbExtent.height);
+
+	// Pipeline.
+	const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = initVulkanStructure();
+
+	const std::vector<VkViewport>	viewports(1u, testViewport);
+	const std::vector<VkRect2D>		scissors (1u, makeRect2D(fbExtent));
+
+	const auto pipelineLayout	= makePipelineLayout(ctx.vkd, ctx.device);
+	const auto pipelineRP		= (m_params.groupParams->useDynamicRendering ? VK_NULL_HANDLE : renderPass.get());
+	const auto pipeline			= makeGraphicsPipeline(ctx.vkd, ctx.device, pipelineLayout.get(),
+		vertModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, fragModule.get(),
+		pipelineRP, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u, 0u, &vertexInputStateCreateInfo);
+
+	const auto cmdBuffer		= cmd.cmdBuffer.get();
+	const auto secCmdBufferPtr	= (m_params.groupParams->useSecondaryCmdBuffer
+								? allocateCommandBuffer(ctx.vkd, ctx.device, cmd.cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_SECONDARY)
+								: Move<VkCommandBuffer>());
+	const auto secCmdBuffer		= secCmdBufferPtr.get();
+	const auto clearColor		= tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+	const auto clearColorVal	= makeClearValueColorVec4(clearColor);
+	const auto colorSRR			= makeDefaultImageSubresourceRange();
+
+	// Draw (offscreen due to the viewport).
+	beginCommandBuffer(ctx.vkd, cmdBuffer);
+
+	// Clear color image outside render pass.
+	const auto preClearBarrier = makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT,
+		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		colorRes.getImage(), colorSRR);
+	cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, &preClearBarrier);
+
+	ctx.vkd.cmdClearColorImage(cmdBuffer, colorRes.getImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColorVal.color, 1u, &colorSRR);
+
+	const auto postClearBarrier = makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		colorRes.getImage(), colorSRR);
+	cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, &postClearBarrier);
+
+	// Render pass.
+	if (!m_params.groupParams->useDynamicRendering)
+	{
+		beginRenderPass(ctx.vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.at(0u));
+		ctx.vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
+		ctx.vkd.cmdDraw(cmdBuffer, OffScreenViewportCase::kVertexCount, 1u, 0u, 0u);
+		endRenderPass(ctx.vkd, cmdBuffer);
+	}
+	else
+	{
+#ifndef CTS_USES_VULKANSC
+		const bool secondary				= m_params.groupParams->useSecondaryCmdBuffer;
+		const bool allInSecondary			= m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass;
+		const auto beginEndCmdBuffer		= (allInSecondary ? secCmdBuffer : cmdBuffer);
+		const auto rpContentsCmdBuffer		= (secondary ? secCmdBuffer : cmdBuffer);
+		const auto endAndExecuteSecondary	= [&cmdBuffer, &secCmdBuffer, &ctx](void)
+			{
+				endCommandBuffer(ctx.vkd, secCmdBuffer);
+				ctx.vkd.cmdExecuteCommands(cmdBuffer, 1u, &secCmdBuffer);
+			};
+
+		if (secondary)
+			m_dynRenderHelper.beginSecondaryCmdBuffer(ctx.vkd, secCmdBuffer, fbFormat);
+
+		m_dynRenderHelper.beginRendering(ctx.vkd, beginEndCmdBuffer, !allInSecondary/*isPrimary*/, colorRes.getImageView(), scissors.at(0), clearColorVal, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+		ctx.vkd.cmdBindPipeline(rpContentsCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
+		ctx.vkd.cmdDraw(rpContentsCmdBuffer, OffScreenViewportCase::kVertexCount, 1u, 0u, 0u);
+		if (secondary && !allInSecondary)
+			endAndExecuteSecondary();
+		endRendering(ctx.vkd, beginEndCmdBuffer);
+
+		if (secondary && allInSecondary)
+			endAndExecuteSecondary();
+#else
+		DE_UNREF(secCmdBuffer);
+		DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+	}
+
+	// Copy to results buffer.
+	copyImageToBuffer(ctx.vkd, cmdBuffer, colorRes.getImage(), colorRes.getBuffer(), tcu::IVec2(kIFbSize, kIFbSize),
+		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		1u, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_ASPECT_COLOR_BIT,
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+	endCommandBuffer(ctx.vkd, cmdBuffer);
+	submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+	// Verify color buffer.
+	invalidateAlloc(ctx.vkd, ctx.device, colorRes.getBufferAllocation());
+
+	const tcu::ConstPixelBufferAccess	resultAccess	(mapVkFormat(fbFormat), tcu::IVec3(kIFbSize, kIFbSize, 1), colorRes.getBufferAllocation().getHostPtr());
+	auto&								log				= m_context.getTestContext().getLog();
+	const tcu::Vec4						threshold		(0.0f, 0.0f, 0.0f, 0.0f);
+
+	if (!tcu::floatThresholdCompare(log, "Result", "", clearColor, resultAccess, threshold, tcu::COMPARE_LOG_ON_ERROR))
+		return tcu::TestStatus::fail("Unexpected color result; check log for details");
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 }	// anonymous
 
 tcu::TestCaseGroup*	createNegativeViewportHeightTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
@@ -673,6 +991,53 @@ tcu::TestCaseGroup*	createZeroViewportHeightTests (tcu::TestContext& testCtx, co
 {
 	SubGroupParams subGroupParams{ false, groupParams };
 	return createTestGroup(testCtx, "zero_viewport_height", "Zero viewport height (VK_KHR_maintenance1)", populateTestGroup, subGroupParams);
+}
+
+tcu::TestCaseGroup* createOffScreenViewportTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
+{
+	using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
+
+	const struct
+	{
+		const OffScreenAxisCase	axisCase;
+		const char*				suffix;
+	} axisCases[] =
+	{
+		{ OffScreenAxisCase::ONSCREEN,		"_on_screen"			},
+		{ OffScreenAxisCase::NEGATIVE_SIDE,	"_off_screen_negative"	},
+		{ OffScreenAxisCase::POSITIVE_SIDE,	"_off_screen_positive"	},
+	};
+
+	const struct
+	{
+		const bool			negativeHeight;
+		const char*			suffix;
+	} negativeHeightCases[] =
+	{
+		{ false,		""					},
+		{ true,			"_negative_height"	},
+	};
+
+	uint32_t seed	= 1674229780;
+	GroupPtr group	(new tcu::TestCaseGroup(testCtx, "offscreen_viewport", "Test using off-screen viewports"));
+
+	for (const auto& xCase : axisCases)
+		for (const auto& yCase : axisCases)
+		{
+			// At least one of the axis has to be offscreen for the framebuffer to remain clear.
+			if (xCase.axisCase == OffScreenAxisCase::ONSCREEN && yCase.axisCase == OffScreenAxisCase::ONSCREEN)
+				continue;
+
+			for (const auto& negHeightCase : negativeHeightCases)
+			{
+				OffScreenParams params(seed, xCase.axisCase, yCase.axisCase, negHeightCase.negativeHeight, groupParams);
+				++seed;
+
+				const auto testName = std::string("x") + xCase.suffix + "_y" + yCase.suffix + negHeightCase.suffix;
+				group->addChild(new OffScreenViewportCase(testCtx, testName, "", params));
+			}
+		}
+	return group.release();
 }
 
 }	// Draw

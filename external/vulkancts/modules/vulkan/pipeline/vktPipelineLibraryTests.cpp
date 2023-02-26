@@ -93,11 +93,13 @@ struct TestParams
 
 struct RuntimePipelineTreeNode
 {
-	deInt32								parentIndex;
-	VkGraphicsPipelineLibraryFlagsEXT	graphicsPipelineLibraryFlags;
-	VkGraphicsPipelineLibraryFlagsEXT	subtreeGraphicsPipelineLibraryFlags;
-	Move<VkPipeline>					pipeline;
-	std::vector<VkPipeline>				pipelineLibraries;
+	deInt32												parentIndex;
+	VkGraphicsPipelineLibraryFlagsEXT					graphicsPipelineLibraryFlags;
+	VkGraphicsPipelineLibraryFlagsEXT					subtreeGraphicsPipelineLibraryFlags;
+	Move<VkPipeline>									pipeline;
+	std::vector<VkPipeline>								pipelineLibraries;
+	// We need to track the linked libraries too, included in VkPipelineLibraryCreateInfoKHR->pLibraries
+	std::vector<VkGraphicsPipelineLibraryFlagsEXT>		linkedLibraryFlags;
 };
 
 typedef std::vector<RuntimePipelineTreeNode>	RuntimePipelineTreeConfiguration;
@@ -922,13 +924,39 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 			}
 		}
 
-		if (graphicsPipelineLibraryCreateInfo.flags != ALL_GRAPHICS_PIPELINE_LIBRARY_FLAGS)
+		VkGraphicsPipelineLibraryFlagsEXT linkedLibrariesFlags = 0;
+
+		for (auto flag : node.linkedLibraryFlags)
+			linkedLibrariesFlags |= flag;
+
+		// When pLibraries have any pipeline library with fragment shader state and current pipeline we try to create doesn't,
+		// we need to set a MS info.
+		if ((linkedLibrariesFlags & VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT) &&
+				!(node.graphicsPipelineLibraryFlags & VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT) &&
+				(graphicsPipelineCreateInfo.pMultisampleState == DE_NULL))
+		{
+			const VkPipelineMultisampleStateCreateInfo	pipelineMultisampleStateCreateInfo = makePipelineMultisampleStateCreateInfo();
+
+			graphicsPipelineCreateInfo.addState(pipelineMultisampleStateCreateInfo);
+		}
+
+
+		if (linkedLibrariesFlags != ALL_GRAPHICS_PIPELINE_LIBRARY_FLAGS  && graphicsPipelineLibraryCreateInfo.flags != 0)
 			appendStructurePtrToVulkanChain(&graphicsPipelineCreateInfo.pNext, &graphicsPipelineLibraryCreateInfo);
 
 		if (linkingInfo.libraryCount != 0)
 		{
 			appendStructurePtrToVulkanChain(&graphicsPipelineCreateInfo.pNext, &linkingInfo);
 			graphicsPipelineCreateInfo.layout = *pipelineLayoutSame;
+		}
+
+		linkedLibrariesFlags |= node.graphicsPipelineLibraryFlags;
+
+		// if current pipeline that we try to create and pLibraries have all states of pipelines, we are not allowed to create a pipeline library.
+		if (linkedLibrariesFlags == ALL_GRAPHICS_PIPELINE_LIBRARY_FLAGS)
+		{
+			DE_ASSERT(!buildLibrary);
+			graphicsPipelineCreateInfo.flags &= ~VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
 		}
 
 		node.pipeline = createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo);
@@ -938,6 +966,7 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 			DE_ASSERT(de::inBounds(node.parentIndex, 0, static_cast<deInt32>(runtimePipelineTreeConfiguration.size())));
 
 			runtimePipelineTreeConfiguration[node.parentIndex].pipelineLibraries.push_back(*node.pipeline);
+			runtimePipelineTreeConfiguration[node.parentIndex].linkedLibraryFlags.push_back(linkedLibrariesFlags);
 		}
 		else
 		{
@@ -1259,7 +1288,6 @@ enum class MiscTestMode
 	INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_UNION_HANDLE,
 	BIND_NULL_DESCRIPTOR_SET,
 	BIND_NULL_DESCRIPTOR_SET_IN_MONOLITHIC_PIPELINE,
-	NULL_LAYOUT,
 	COMPARE_LINK_TIMES,
 	SHADER_MODULE_CREATE_INFO_COMP,
 	SHADER_MODULE_CREATE_INFO_RT,
@@ -1287,7 +1315,6 @@ protected:
 
 	tcu::TestStatus		runNullDescriptorSet					(void);
 	tcu::TestStatus		runNullDescriptorSetInMonolithicPipeline(void);
-	tcu::TestStatus		runNullLayout							(void);
 	tcu::TestStatus		runIndependentPipelineLayoutSets		(bool useLinkTimeOptimization = false);
 	tcu::TestStatus		runCompareLinkTimes						(void);
 
@@ -1351,8 +1378,6 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::iterate (void)
 		return runNullDescriptorSet();
 	else if (m_testParams.mode == MiscTestMode::BIND_NULL_DESCRIPTOR_SET_IN_MONOLITHIC_PIPELINE)
 		return runNullDescriptorSetInMonolithicPipeline();
-	else if (m_testParams.mode == MiscTestMode::NULL_LAYOUT)
-		return runNullLayout();
 	else if (m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_FAST_LINKED)
 		return runIndependentPipelineLayoutSets();
 	else if (m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_UNION_HANDLE)
@@ -1506,7 +1531,7 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runNullDescriptorSet(void)
 	};
 
 	// fill proper portion of pipeline state
-	updateVertexInputInterface(m_context, partialPipelineCreateInfo[0], VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+	updateVertexInputInterface(m_context, partialPipelineCreateInfo[0], VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u);
 	updatePreRasterization(m_context, partialPipelineCreateInfo[0], false);
 	updatePostRasterization(m_context, partialPipelineCreateInfo[1], false);
 	updateFragmentOutputInterface(m_context, partialPipelineCreateInfo[1]);
@@ -1556,7 +1581,7 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runNullDescriptorSet(void)
 			uniformBufferDataSize								// VkDeviceSize						size
 		));
 		initialBufferBarriers[1].buffer = uniformBuffer[1]->get();
-		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, (VkDependencyFlags)0, 0, DE_NULL, 2, initialBufferBarriers.data(), 0, DE_NULL);
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, DE_NULL, 2, initialBufferBarriers.data(), 0, DE_NULL);
 
 		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, m_renderArea, m_colorClearColor);
 
@@ -1701,137 +1726,6 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runNullDescriptorSetInMonolithi
 		static_cast<int>(uniformBuffData[1] * 255),
 		static_cast<int>(uniformBuffData[2] * 255),
 		static_cast<int>(uniformBuffData[3] * 255)
-	};
-	const std::vector<VerificationData> verificationData
-	{
-		{ { 1, 1 },						outColor },
-		{ { width / 2, height / 2 },	outColor },
-		{ { width - 2, height - 2 },	{ 0, 0, 0, 255 } }			// clear color
-	};
-
-	return verifyResult(verificationData, colorPixelAccess);
-}
-
-tcu::TestStatus PipelineLibraryMiscTestInstance::runNullLayout () {
-	const DeviceInterface&	vk			= m_context.getDeviceInterface();
-	const VkDevice			device		= m_context.getDevice();
-	Allocator&				allocator	= m_context.getDefaultAllocator();
-
-	const VkDeviceSize				colorBufferDataSize		= static_cast<VkDeviceSize>(m_renderArea.extent.width * m_renderArea.extent.height * tcu::getPixelSize(mapVkFormat(m_colorFormat)));
-	const VkBufferCreateInfo		colorBufferCreateInfo	= makeBufferCreateInfo(colorBufferDataSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-	const BufferWithMemory			colorBuffer(vk, device, allocator, colorBufferCreateInfo, MemoryRequirement::HostVisible);
-
-	Move<VkDescriptorSetLayout>	descriptorSetLayouts[3];
-	descriptorSetLayouts[0] = DescriptorSetLayoutBuilder()
-		.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
-		.build(vk, device);
-	descriptorSetLayouts[1] = DescriptorSetLayoutBuilder()
-		.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
-		.build(vk, device);
-	descriptorSetLayouts[2] = DescriptorSetLayoutBuilder()
-		.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
-		.build(vk, device);
-
-	deUint32 commonPipelinePartFlags = deUint32(VK_PIPELINE_CREATE_LIBRARY_BIT_KHR | VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT);
-	deUint32 allLayoutsFlag = 0;
-
-	// Pre-rasterization stage library has sets 0, 1, 2
-	// * set 0 has descriptors
-	// * set 1 has no descriptors
-	// * set 2 has descriptors
-	// Fragment stage library has sets 0, 1
-	// * set 0 has descriptors
-	// * set 1 has descriptors
-	VkDescriptorSetLayout vertDescriptorSetLayouts[] = { *descriptorSetLayouts[0], DE_NULL, *descriptorSetLayouts[2] };
-	VkDescriptorSetLayout fragDescriptorSetLayouts[] = { *descriptorSetLayouts[0], *descriptorSetLayouts[1] };
-	VkDescriptorSetLayout allDescriptorSetLayouts[] = { *descriptorSetLayouts[0], *descriptorSetLayouts[1], *descriptorSetLayouts[2] };
-
-	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = initVulkanStructure();
-	pipelineLayoutCreateInfo.flags = allLayoutsFlag;
-	pipelineLayoutCreateInfo.setLayoutCount = 3u;
-	pipelineLayoutCreateInfo.pSetLayouts = allDescriptorSetLayouts;
-	Move<VkPipelineLayout> allLayouts = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
-	pipelineLayoutCreateInfo.flags = deUint32(VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT);
-	pipelineLayoutCreateInfo.pSetLayouts = vertDescriptorSetLayouts;
-	Move<VkPipelineLayout> vertLayouts = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
-	pipelineLayoutCreateInfo.setLayoutCount = 2u;
-	pipelineLayoutCreateInfo.pSetLayouts = fragDescriptorSetLayouts;
-	Move<VkPipelineLayout> fragLayouts = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
-
-	GraphicsPipelineCreateInfo partialPipelineCreateInfo[]
-	{
-		{ DE_NULL,		*m_renderPass, 0, commonPipelinePartFlags },
-		{ *vertLayouts,	*m_renderPass, 0, commonPipelinePartFlags },
-		{ *fragLayouts,	*m_renderPass, 0, commonPipelinePartFlags },
-		{ DE_NULL,		*m_renderPass, 0, commonPipelinePartFlags }
-	};
-
-	// fill proper portion of pipeline state
-	updateVertexInputInterface(m_context, partialPipelineCreateInfo[0], VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u);
-	updatePreRasterization(m_context, partialPipelineCreateInfo[1], false);
-	updatePostRasterization(m_context, partialPipelineCreateInfo[2], false);
-	updateFragmentOutputInterface(m_context, partialPipelineCreateInfo[3]);
-
-	// extend pNext chain and create all partial pipelines
-	std::vector<VkPipeline>			rawParts(4u, DE_NULL);
-	std::vector<Move<VkPipeline> >	pipelineParts;
-	pipelineParts.reserve(4u);
-	VkGraphicsPipelineLibraryCreateInfoEXT libraryCreateInfo = makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_EXT);
-	for (deUint32 i = 0; i < 4u; ++i)
-	{
-		libraryCreateInfo.flags = GRAPHICS_PIPELINE_LIBRARY_FLAGS[i];
-		appendStructurePtrToVulkanChain(&partialPipelineCreateInfo[i].pNext, &libraryCreateInfo);
-		pipelineParts.emplace_back(createGraphicsPipeline(vk, device, DE_NULL, &partialPipelineCreateInfo[i]));
-		rawParts[i] = *pipelineParts[i];
-	}
-
-	VkPipelineLibraryCreateInfoKHR	linkingInfo = makePipelineLibraryCreateInfo(rawParts);
-	VkGraphicsPipelineCreateInfo	finalPipelineInfo = initVulkanStructure();
-
-	finalPipelineInfo.flags = 0;
-	finalPipelineInfo.layout = DE_NULL;
-
-	appendStructurePtrToVulkanChain(&finalPipelineInfo.pNext, &linkingInfo);
-	Move<VkPipeline> pipeline = createGraphicsPipeline(vk, device, DE_NULL, &finalPipelineInfo);
-
-	vk::beginCommandBuffer(vk, *m_cmdBuffer, 0u);
-	{
-		// change color image layout
-		const VkImageMemoryBarrier initialImageBarrier = makeImageMemoryBarrier(
-			0,													// VkAccessFlags					srcAccessMask;
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,				// VkAccessFlags					dstAccessMask;
-			VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout					oldLayout;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout					newLayout;
-			**m_colorImage,										// VkImage							image;
-			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u }		// VkImageSubresourceRange			subresourceRange;
-		);
-		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0, DE_NULL, 0, DE_NULL, 1, &initialImageBarrier);
-
-		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, m_renderArea, m_colorClearColor);
-
-		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
-		vk.cmdDraw(*m_cmdBuffer, 4, 1u, 0u, 0u);
-
-		endRenderPass(vk, *m_cmdBuffer);
-
-		const tcu::IVec2 size{ (deInt32)m_renderArea.extent.width, (deInt32)m_renderArea.extent.height };
-		copyImageToBuffer(vk, *m_cmdBuffer, **m_colorImage, *colorBuffer, size);
-	}
-	vk::endCommandBuffer(vk, *m_cmdBuffer);
-	vk::submitCommandsAndWait(vk, device, m_context.getUniversalQueue(), *m_cmdBuffer);
-
-	vk::invalidateAlloc(vk, device, colorBuffer.getAllocation());
-	const tcu::ConstPixelBufferAccess colorPixelAccess(mapVkFormat(m_colorFormat), m_renderArea.extent.width, m_renderArea.extent.height, 1, colorBuffer.getAllocation().getHostPtr());
-
-	// verify result
-	deInt32		width		= (deInt32)m_renderArea.extent.width;
-	deInt32		height		= (deInt32)m_renderArea.extent.height;
-	tcu::IVec4	outColor
-	{
-		0,										// r is 0 because COLOR_COMPONENTS_NO_RED is used
-		static_cast<int>(0.2f * 255),
-		static_cast<int>(0.6f * 255),
-		static_cast<int>(0.75f * 255)
 	};
 	const std::vector<VerificationData> verificationData
 	{
@@ -2646,42 +2540,12 @@ void PipelineLibraryMiscTestCase::initPrograms(SourceCollections& programCollect
 			"  o_color = v;\n"
 			"}\n");
 	}
-	else if (m_testParams.mode == MiscTestMode::NULL_LAYOUT)
-	{
-		programCollection.glslSources.add("vert") << glu::VertexSource(
-			std::string("#version 450\n"
-				"precision mediump int;\nprecision highp float;\n") +
-			"out gl_PerVertex\n"
-			"{\n"
-			"  vec4 gl_Position;\n"
-			"};\n\n"
-			"void main()\n"
-			"{\n"
-			"  vec4 v = vec4(-1.0, 1.0, 2.0, -2.0);\n"
-			"  const float x = (v.x+v.z*((gl_VertexIndex & 2)>>1));\n"
-			"  const float y = (v.y+v.w* (gl_VertexIndex % 2));\n"
-
-			// note: there won't be full screen quad because of used scissors
-			"  gl_Position = vec4(x, y, 0.0, 1.0);\n"
-			"}\n");
-
-		programCollection.glslSources.add("frag") << glu::FragmentSource(
-			std::string("#version 450\n"
-				"precision mediump int; precision highp float;"
-				"layout(location = 0) out highp vec4 o_color;\n") +
-			"void main()\n"
-			"{\n"
-			"  vec4 v = vec4(0.0, 0.2, 0.6, 0.75);\n"
-			"  o_color = v;\n"
-			"}\n");
-	}
 	else if ((m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_FAST_LINKED) ||
 			 (m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_UNION_HANDLE))
 	{
 		programCollection.glslSources.add("vert") << glu::VertexSource(
 			"#version 450\n"
-			"precision mediump int; precision highp float;"
-			"layout(location = 0) in vec4 in_position;\n"
+			"precision mediump int; precision highp float;\n"
 			"layout(set = 0, binding = 0) uniform bufA\n"
 			"{\n"
 			"  vec4 valueA;\n"
@@ -2903,18 +2767,6 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group, bool opti
 														/*   /       */
 			{ 2, 1 },									/*  1        */
 		} },
-
-		{ {
-			{ R, 0 },									/*         0 */
-														/*        /  */
-			{ 0, 1 },									/*       1   */
-														/*      /    */
-			{ 1, 1 },									/*     1     */
-														/*    /      */
-			{ 2, 1 },									/*   1       */
-														/*  /        */
-			{ 3, 1 },									/* 1         */
-		} },
 	};
 
 	for (size_t libConfigNdx = 0; libConfigNdx < DE_LENGTH_OF_ARRAY(pipelineTreeConfiguration); ++libConfigNdx)
@@ -2982,7 +2834,6 @@ tcu::TestCaseGroup*	createPipelineLibraryTests(tcu::TestContext& testCtx)
 		de::MovePtr<tcu::TestCaseGroup> otherTests(new tcu::TestCaseGroup(testCtx, "other", ""));
 		otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "compare_link_times", { MiscTestMode::COMPARE_LINK_TIMES, 0u, 0u }));
 		otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "null_descriptor_set_in_monolithic_pipeline", { MiscTestMode::BIND_NULL_DESCRIPTOR_SET_IN_MONOLITHIC_PIPELINE, 0u, 0u }));
-		otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "null_layout", { MiscTestMode::NULL_LAYOUT, 0u, 0u }));
 		miscTests->addChild(otherTests.release());
 	}
 

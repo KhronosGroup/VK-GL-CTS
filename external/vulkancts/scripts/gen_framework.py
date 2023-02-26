@@ -1692,7 +1692,6 @@ def writeTypeUtil (api, filename):
 			"StdVideoDecodeH265PictureInfoFlags",
 			"StdVideoDecodeH265ReferenceInfoFlags",
 			"StdVideoEncodeH265PictureInfoFlags",
-			"StdVideoEncodeH265SliceSegmentHeaderFlags",
 			"StdVideoEncodeH265ReferenceModificationFlags",
 			"StdVideoEncodeH265ReferenceInfoFlags",
 			"StdVideoEncodeH265SliceSegmentHeaderFlags",
@@ -2134,9 +2133,9 @@ def writeDeviceFeatures2(api, filename):
 		for requirement in feature.requirementsList:
 			for type in requirement.typeList:
 				matchedStructType = re.search(f'VkPhysicalDevice(\w+)Features', type, re.IGNORECASE)
-				if matchedStructType:
+				matchedCoreStructType = re.search(f'VkPhysicalDeviceVulkan(\d+)Features', type, re.IGNORECASE)
+				if matchedStructType and not matchedCoreStructType:
 					promotedFeatures.append(type)
-
 		if promotedFeatures:
 			testName = "createDeviceWithPromoted" + feature.number.replace('.', '') + "Structures"
 			promotedTests.append(testName)

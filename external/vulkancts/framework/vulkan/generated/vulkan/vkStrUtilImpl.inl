@@ -1257,6 +1257,7 @@ tcu::Format::Bitfield<32> getQueryPipelineStatisticFlagsStr (VkQueryPipelineStat
 		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT,					"VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT"),
 		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_TASK_SHADER_INVOCATIONS_BIT_EXT,					"VK_QUERY_PIPELINE_STATISTIC_TASK_SHADER_INVOCATIONS_BIT_EXT"),
 		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_MESH_SHADER_INVOCATIONS_BIT_EXT,					"VK_QUERY_PIPELINE_STATISTIC_MESH_SHADER_INVOCATIONS_BIT_EXT"),
+		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_CLUSTER_CULLING_SHADER_INVOCATIONS_BIT_HUAWEI,		"VK_QUERY_PIPELINE_STATISTIC_CLUSTER_CULLING_SHADER_INVOCATIONS_BIT_HUAWEI"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1397,6 +1398,7 @@ tcu::Format::Bitfield<32> getShaderStageFlagsStr (VkShaderStageFlags value)
 		tcu::Format::BitDesc(VK_SHADER_STAGE_INTERSECTION_BIT_KHR,			"VK_SHADER_STAGE_INTERSECTION_BIT_KHR"),
 		tcu::Format::BitDesc(VK_SHADER_STAGE_CALLABLE_BIT_KHR,				"VK_SHADER_STAGE_CALLABLE_BIT_KHR"),
 		tcu::Format::BitDesc(VK_SHADER_STAGE_SUBPASS_SHADING_BIT_HUAWEI,	"VK_SHADER_STAGE_SUBPASS_SHADING_BIT_HUAWEI"),
+		tcu::Format::BitDesc(VK_SHADER_STAGE_CLUSTER_CULLING_BIT_HUAWEI,	"VK_SHADER_STAGE_CLUSTER_CULLING_BIT_HUAWEI"),
 		tcu::Format::BitDesc(VK_SHADER_STAGE_ALL_GRAPHICS,					"VK_SHADER_STAGE_ALL_GRAPHICS"),
 		tcu::Format::BitDesc(VK_SHADER_STAGE_ALL,							"VK_SHADER_STAGE_ALL"),
 	};
@@ -2136,6 +2138,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_MICROMAP_CREATE_INFO_EXT:											return "VK_STRUCTURE_TYPE_MICROMAP_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_MICROMAP_BUILD_SIZES_INFO_EXT:										return "VK_STRUCTURE_TYPE_MICROMAP_BUILD_SIZES_INFO_EXT";
 		case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_TRIANGLES_OPACITY_MICROMAP_EXT:				return "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_TRIANGLES_OPACITY_MICROMAP_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CLUSTER_CULLING_SHADER_FEATURES_HUAWEI:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CLUSTER_CULLING_SHADER_FEATURES_HUAWEI";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CLUSTER_CULLING_SHADER_PROPERTIES_HUAWEI:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CLUSTER_CULLING_SHADER_PROPERTIES_HUAWEI";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BORDER_COLOR_SWIZZLE_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BORDER_COLOR_SWIZZLE_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_SAMPLER_BORDER_COLOR_COMPONENT_MAPPING_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_SAMPLER_BORDER_COLOR_COMPONENT_MAPPING_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PAGEABLE_DEVICE_LOCAL_MEMORY_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PAGEABLE_DEVICE_LOCAL_MEMORY_FEATURES_EXT";
@@ -2190,6 +2194,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_NV:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_EXT";
 		default:																					return DE_NULL;
 	}
 }
@@ -3162,6 +3167,7 @@ tcu::Format::Bitfield<64> getPipelineStageFlags2Str (VkPipelineStageFlags2 value
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_PRE_RASTERIZATION_SHADERS_BIT,				"VK_PIPELINE_STAGE_2_PRE_RASTERIZATION_SHADERS_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_SUBPASS_SHADING_BIT_HUAWEI,				"VK_PIPELINE_STAGE_2_SUBPASS_SHADING_BIT_HUAWEI"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_INVOCATION_MASK_BIT_HUAWEI,				"VK_PIPELINE_STAGE_2_INVOCATION_MASK_BIT_HUAWEI"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI,			"VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI"),
 	};
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -4206,6 +4212,7 @@ const char* getDriverIdName (VkDriverId value)
 		case VK_DRIVER_ID_MESA_VENUS:					return "VK_DRIVER_ID_MESA_VENUS";
 		case VK_DRIVER_ID_MESA_DOZEN:					return "VK_DRIVER_ID_MESA_DOZEN";
 		case VK_DRIVER_ID_MESA_NVK:						return "VK_DRIVER_ID_MESA_NVK";
+		case VK_DRIVER_ID_IMAGINATION_OPEN_SOURCE_MESA:	return "VK_DRIVER_ID_IMAGINATION_OPEN_SOURCE_MESA";
 		default:										return DE_NULL;
 	}
 }
@@ -11927,6 +11934,18 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceSubpassShadingP
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceClusterCullingShaderPropertiesHUAWEI& value)
+{
+	s << "VkPhysicalDeviceClusterCullingShaderPropertiesHUAWEI = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxWorkGroupCount = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.maxWorkGroupCount), DE_ARRAY_END(value.maxWorkGroupCount)) << '\n';
+	s << "\tmaxWorkGroupSize = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.maxWorkGroupSize), DE_ARRAY_END(value.maxWorkGroupSize)) << '\n';
+	s << "\tmaxOutputClusterCount = " << value.maxOutputClusterCount << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkMemoryOpaqueCaptureAddressAllocateInfo& value)
 {
 	s << "VkMemoryOpaqueCaptureAddressAllocateInfo = {\n";
@@ -12822,6 +12841,17 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceSubpassShadingF
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tsubpassShading = " << value.subpassShading << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceClusterCullingShaderFeaturesHUAWEI& value)
+{
+	s << "VkPhysicalDeviceClusterCullingShaderFeaturesHUAWEI = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tclustercullingShader = " << value.clustercullingShader << '\n';
+	s << "\tmultiviewClusterCullingShader = " << value.multiviewClusterCullingShader << '\n';
 	s << '}';
 	return s;
 }
@@ -15967,6 +15997,16 @@ std::ostream& operator<< (std::ostream& s, const VkDeviceFaultVendorBinaryHeader
 	s << "\tapplicationNameOffset = " << value.applicationNameOffset << '\n';
 	s << "\tapplicationVersion = " << value.applicationVersion << '\n';
 	s << "\tengineNameOffset = " << value.engineNameOffset << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT& value)
+{
+	s << "VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpipelineLibraryGroupHandles = " << value.pipelineLibraryGroupHandles << '\n';
 	s << '}';
 	return s;
 }

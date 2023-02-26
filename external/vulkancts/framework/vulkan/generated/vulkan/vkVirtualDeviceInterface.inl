@@ -104,6 +104,8 @@ virtual void				cmdDrawIndexedIndirect									(VkCommandBuffer commandBuffer, V
 virtual void				cmdDispatch												(VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const = 0;
 virtual void				cmdDispatchIndirect										(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset) const = 0;
 virtual void				cmdSubpassShadingHUAWEI									(VkCommandBuffer commandBuffer) const = 0;
+virtual void				cmdDrawClusterHUAWEI									(VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const = 0;
+virtual void				cmdDrawClusterIndirectHUAWEI							(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset) const = 0;
 virtual void				cmdCopyBuffer											(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t regionCount, const VkBufferCopy* pRegions) const = 0;
 virtual void				cmdCopyImage											(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageCopy* pRegions) const = 0;
 virtual void				cmdBlitImage											(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageBlit* pRegions, VkFilter filter) const = 0;

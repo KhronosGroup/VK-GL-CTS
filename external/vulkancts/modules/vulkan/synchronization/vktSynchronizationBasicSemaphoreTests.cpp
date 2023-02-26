@@ -408,6 +408,86 @@ tcu::TestStatus basicThreadTimelineCase(Context& context, TestConfig config)
 	return tcu::TestStatus::fail("Fail");
 }
 
+VkResult basicWaitForTimelineValueHelper(Context& context, TestConfig config, VkSemaphoreWaitFlags wait_flags, deUint64 signal_value, deUint64 wait_value) {
+	const VkSemaphoreTypeCreateInfo		scti			= { VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO, DE_NULL, VK_SEMAPHORE_TYPE_TIMELINE, 0 };
+	de::MovePtr<VideoDevice>			videoDevice		(config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : DE_NULL);
+	const DeviceInterface&				vk				= getSyncDeviceInterface(videoDevice, context);
+	const VkDevice						device			= getSyncDevice(videoDevice, context);
+	const VkSemaphoreCreateInfo			sci				= { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, &scti, 0 };
+	const VkFenceCreateInfo				fci				= { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, DE_NULL, 0 };
+	const vk::Unique<vk::VkSemaphore>	semaphore		(createSemaphore(vk, device, &sci));
+	const Unique<VkFence>				fence			(createFence(vk, device, &fci));
+	const deUint64						waitTimeout		= 0;		// return immediately
+
+	// helper creating VkSemaphoreSignalInfo
+	auto makeSemaphoreSignalInfo = [&semaphore](deUint64 value) -> VkSemaphoreSignalInfo
+	{
+		return
+		{
+			VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO,		// VkStructureType				sType
+			DE_NULL,										// const void*					pNext
+			*semaphore,										// VkSemaphore					semaphore
+			value											// deUint64						value
+		};
+	};
+
+	// helper creating VkSemaphoreWaitInfo
+	auto makeSemaphoreWaitInfo = [&semaphore](VkSemaphoreWaitFlags flags, deUint64* valuePtr) -> VkSemaphoreWaitInfo
+	{
+		return
+		{
+			VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,			// VkStructureType				sType
+			DE_NULL,										// const void*					pNext
+			flags,											// VkSemaphoreWaitFlags			flags;
+			1u,												// deUint32						semaphoreCount;
+			&*semaphore,									// const VkSemaphore*			pSemaphores;
+			valuePtr										// const deUint64*				pValues;
+		};
+	};
+
+	VkSemaphoreSignalInfo signalTheValue = makeSemaphoreSignalInfo(signal_value);
+	vk.signalSemaphore(device, &signalTheValue);
+
+    VkSemaphoreWaitInfo waitForTheValue = makeSemaphoreWaitInfo(wait_flags, &wait_value);
+    return vk.waitSemaphores(device, &waitForTheValue, waitTimeout);
+}
+
+tcu::TestStatus basicWaitForAnyCurrentTimelineValueCase(Context& context, TestConfig config)
+{
+  VkResult mainResult = basicWaitForTimelineValueHelper(context, config, VK_SEMAPHORE_WAIT_ANY_BIT, 1, 1);
+  if (mainResult == VK_SUCCESS)
+    return tcu::TestStatus::pass("Pass");
+
+  return tcu::TestStatus::fail("Fail");
+}
+
+tcu::TestStatus basicWaitForAnyLesserTimelineValueCase(Context& context, TestConfig config)
+{
+  VkResult mainResult = basicWaitForTimelineValueHelper(context, config, VK_SEMAPHORE_WAIT_ANY_BIT, 4, 1);
+  if (mainResult == VK_SUCCESS)
+    return tcu::TestStatus::pass("Pass");
+
+  return tcu::TestStatus::fail("Fail");
+}
+
+tcu::TestStatus basicWaitForAllCurrentTimelineValueCase(Context& context, TestConfig config)
+{
+  VkResult mainResult = basicWaitForTimelineValueHelper(context, config, 0, 1, 1);
+  if (mainResult == VK_SUCCESS)
+    return tcu::TestStatus::pass("Pass");
+
+  return tcu::TestStatus::fail("Fail");
+}
+
+tcu::TestStatus basicWaitForAllLesserTimelineValueCase(Context& context, TestConfig config)
+{
+  VkResult mainResult = basicWaitForTimelineValueHelper(context, config, 0, 4, 1);
+  if (mainResult == VK_SUCCESS)
+    return tcu::TestStatus::pass("Pass");
+
+  return tcu::TestStatus::fail("Fail");
+}
+
 tcu::TestStatus basicMultiQueueCase (Context& context, TestConfig config)
 {
 	enum { NO_MATCH_FOUND = ~((deUint32)0) };
@@ -814,8 +894,13 @@ tcu::TestCaseGroup* createBasicTimelineSemaphoreTests (tcu::TestContext& testCtx
 	addFunctionCase(basicTests.get(), "chain",			"Timeline semaphore chain test",					checkSupport, basicChainTimelineCase, config);
 
 	// dont repeat this test for synchronization2
-	if (type == SynchronizationType::LEGACY)
+	if (type == SynchronizationType::LEGACY) {
 		addFunctionCase(basicTests.get(), "two_threads","Timeline semaphore used by two threads",			checkSupport, basicThreadTimelineCase, config);
+		addFunctionCase(basicTests.get(), "wait_for_any_current_value","Wait for the currently signalled timeline semaphore value (wait for any)", checkSupport, basicWaitForAnyCurrentTimelineValueCase, config);
+		addFunctionCase(basicTests.get(), "wait_for_any_lesser_value","Wait for a value less than the currently signalled timeline semaphore value (wait for any)", checkSupport, basicWaitForAnyLesserTimelineValueCase, config);
+		addFunctionCase(basicTests.get(), "wait_for_all_current_value","Wait for the currently signalled timeline semaphore value (wait for all)", checkSupport, basicWaitForAllCurrentTimelineValueCase, config);
+		addFunctionCase(basicTests.get(), "wait_for_all_lesser_value","Wait for a value less than the currently signalled timeline semaphore value (wait for all)", checkSupport, basicWaitForAllLesserTimelineValueCase, config);
+    }
 
 	return basicTests.release();
 }

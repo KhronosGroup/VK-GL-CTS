@@ -393,6 +393,17 @@ VkResult getRayTracingShaderGroupHandles (const DeviceInterface&		vk,
 	return getRayTracingShaderGroupHandlesKHR(vk, device, pipeline, firstGroup, groupCount, dataSize, pData);
 }
 
+VkResult getRayTracingCaptureReplayShaderGroupHandles (const DeviceInterface&	vk,
+													   const VkDevice			device,
+													   const VkPipeline			pipeline,
+													   const deUint32			firstGroup,
+													   const deUint32			groupCount,
+													   const deUintptr			dataSize,
+													   void*					pData)
+{
+	return vk.getRayTracingCaptureReplayShaderGroupHandlesKHR(device, pipeline, firstGroup, groupCount, dataSize, pData);
+}
+
 VkResult finishDeferredOperation (const DeviceInterface&	vk,
 								  VkDevice					device,
 								  VkDeferredOperationKHR	deferredOperation)
@@ -3444,9 +3455,30 @@ void RayTracingPipeline::addShader (VkShaderStageFlagBits					shaderStage,
 	}
 }
 
+void RayTracingPipeline::setGroupCaptureReplayHandle (uint32_t group, const void* pShaderGroupCaptureReplayHandle)
+{
+	DE_ASSERT(static_cast<size_t>(group) < m_shadersGroupCreateInfos.size());
+	m_shadersGroupCreateInfos[group].pShaderGroupCaptureReplayHandle = pShaderGroupCaptureReplayHandle;
+}
+
 void RayTracingPipeline::addLibrary (de::SharedPtr<de::MovePtr<RayTracingPipeline>> pipelineLibrary)
 {
 	m_pipelineLibraries.push_back(pipelineLibrary);
+}
+
+uint32_t RayTracingPipeline::getShaderGroupCount (void)
+{
+	return de::sizeU32(m_shadersGroupCreateInfos);
+}
+
+uint32_t RayTracingPipeline::getFullShaderGroupCount (void)
+{
+	uint32_t totalCount = getShaderGroupCount();
+
+	for (const auto& lib : m_pipelineLibraries)
+		totalCount += lib->get()->getFullShaderGroupCount();
+
+	return totalCount;
 }
 
 Move<VkPipeline> RayTracingPipeline::createPipelineKHR (const DeviceInterface&			vk,
@@ -3569,18 +3601,76 @@ std::vector<de::SharedPtr<Move<VkPipeline>>> RayTracingPipeline::createPipelineW
 	return result;
 }
 
+std::vector<uint8_t> RayTracingPipeline::getShaderGroupHandles (const DeviceInterface&		vk,
+																const VkDevice				device,
+																const VkPipeline			pipeline,
+																const deUint32				shaderGroupHandleSize,
+																const deUint32				firstGroup,
+																const deUint32				groupCount) const
+{
+	const auto				handleArraySizeBytes	= groupCount * shaderGroupHandleSize;
+	std::vector<uint8_t>	shaderHandles			(handleArraySizeBytes);
+
+	VK_CHECK(getRayTracingShaderGroupHandles(vk, device, pipeline,
+											 firstGroup, groupCount,
+											 static_cast<uintptr_t>(shaderHandles.size()), de::dataOrNull(shaderHandles)));
+
+	return shaderHandles;
+}
+
+std::vector<uint8_t> RayTracingPipeline::getShaderGroupReplayHandles (const DeviceInterface &vk,
+																	  const VkDevice device,
+																	  const VkPipeline pipeline,
+																	  const deUint32 shaderGroupHandleReplaySize,
+																	  const deUint32 firstGroup,
+																	  const deUint32 groupCount) const
+{
+	const auto				handleArraySizeBytes	= groupCount * shaderGroupHandleReplaySize;
+	std::vector<uint8_t>	shaderHandles			(handleArraySizeBytes);
+
+	VK_CHECK(getRayTracingCaptureReplayShaderGroupHandles(vk, device, pipeline,
+														  firstGroup, groupCount,
+														  static_cast<uintptr_t>(shaderHandles.size()), de::dataOrNull(shaderHandles)));
+
+	return shaderHandles;
+}
+
+de::MovePtr<BufferWithMemory> RayTracingPipeline::createShaderBindingTable	(const DeviceInterface&			vk,
+																			 const VkDevice					device,
+																			 const VkPipeline				pipeline,
+																			 Allocator&						allocator,
+																			 const deUint32&				shaderGroupHandleSize,
+																			 const deUint32					shaderGroupBaseAlignment,
+																			 const deUint32&				firstGroup,
+																			 const deUint32&				groupCount,
+																			 const VkBufferCreateFlags&		additionalBufferCreateFlags,
+																			 const VkBufferUsageFlags&		additionalBufferUsageFlags,
+																			 const MemoryRequirement&		additionalMemoryRequirement,
+																			 const VkDeviceAddress&			opaqueCaptureAddress,
+																			 const deUint32					shaderBindingTableOffset,
+																			 const deUint32					shaderRecordSize,
+																			 const void**					shaderGroupDataPtrPerGroup,
+																			 const bool						autoAlignRecords)
+{
+	const auto shaderHandles = getShaderGroupHandles(vk, device, pipeline, shaderGroupHandleSize, firstGroup, groupCount);
+	return createShaderBindingTable(vk, device, allocator,
+									shaderGroupHandleSize, shaderGroupBaseAlignment, shaderHandles,
+									additionalBufferCreateFlags, additionalBufferUsageFlags, additionalMemoryRequirement,
+									opaqueCaptureAddress,
+									shaderBindingTableOffset, shaderRecordSize, shaderGroupDataPtrPerGroup,
+									autoAlignRecords);
+}
+
 de::MovePtr<BufferWithMemory> RayTracingPipeline::createShaderBindingTable (const DeviceInterface&		vk,
 																			const VkDevice				device,
-																			const VkPipeline			pipeline,
 																			Allocator&					allocator,
-																			const deUint32&				shaderGroupHandleSize,
+																			const deUint32				shaderGroupHandleSize,
 																			const deUint32				shaderGroupBaseAlignment,
-																			const deUint32&				firstGroup,
-																			const deUint32&				groupCount,
-																			const VkBufferCreateFlags&	additionalBufferCreateFlags,
-																			const VkBufferUsageFlags&	additionalBufferUsageFlags,
+																			const std::vector<uint8_t>&	shaderHandles,
+																			const VkBufferCreateFlags	additionalBufferCreateFlags,
+																			const VkBufferUsageFlags	additionalBufferUsageFlags,
 																			const MemoryRequirement&	additionalMemoryRequirement,
-																			const VkDeviceAddress&		opaqueCaptureAddress,
+																			const VkDeviceAddress		opaqueCaptureAddress,
 																			const deUint32				shaderBindingTableOffset,
 																			const deUint32				shaderRecordSize,
 																			const void**				shaderGroupDataPtrPerGroup,
@@ -3590,6 +3680,7 @@ de::MovePtr<BufferWithMemory> RayTracingPipeline::createShaderBindingTable (cons
 	DE_ASSERT((shaderBindingTableOffset % shaderGroupBaseAlignment) == 0);
 	DE_UNREF(shaderGroupBaseAlignment);
 
+	const auto								groupCount						= de::sizeU32(shaderHandles) / shaderGroupHandleSize;
 	const auto								totalEntrySize					= (autoAlignRecords ? (deAlign32(shaderGroupHandleSize + shaderRecordSize, shaderGroupHandleSize)) : (shaderGroupHandleSize + shaderRecordSize));
 	const deUint32							sbtSize							= shaderBindingTableOffset + groupCount * totalEntrySize;
 	const VkBufferUsageFlags				sbtFlags						= VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | additionalBufferUsageFlags;
@@ -3611,16 +3702,12 @@ de::MovePtr<BufferWithMemory> RayTracingPipeline::createShaderBindingTable (cons
 	de::MovePtr<BufferWithMemory>	sbtBuffer								= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, sbtCreateInfo, sbtMemRequirements));
 	vk::Allocation&					sbtAlloc								= sbtBuffer->getAllocation();
 
-	// collect shader group handles
-	std::vector<deUint8>			shaderHandles							(groupCount * shaderGroupHandleSize);
-	VK_CHECK(getRayTracingShaderGroupHandles(vk, device, pipeline, firstGroup, groupCount, groupCount * shaderGroupHandleSize, shaderHandles.data()));
-
-	// reserve place for ShaderRecordKHR after each shader handle ( ShaderRecordKHR size might be 0 ). Also take alignment into consideration
+	// Copy handles to table, leaving space for ShaderRecordKHR after each handle.
 	deUint8* shaderBegin = (deUint8*)sbtAlloc.getHostPtr() + shaderBindingTableOffset;
 	for (deUint32 idx = 0; idx < groupCount; ++idx)
 	{
-		deUint8* shaderSrcPos	= shaderHandles.data() + idx * shaderGroupHandleSize;
-		deUint8* shaderDstPos	= shaderBegin + idx * totalEntrySize;
+		const deUint8*	shaderSrcPos	= shaderHandles.data() + idx * shaderGroupHandleSize;
+		deUint8*		shaderDstPos	= shaderBegin + idx * totalEntrySize;
 		deMemcpy(shaderDstPos, shaderSrcPos, shaderGroupHandleSize);
 
 		if (shaderGroupDataPtrPerGroup		!= nullptr &&
@@ -3681,6 +3768,7 @@ public:
 
 	uint32_t		getShaderGroupHandleSize					(void)	override { return m_rayTracingPipelineProperties.shaderGroupHandleSize;						}
 	uint32_t		getShaderGroupHandleAlignment				(void)	override { return m_rayTracingPipelineProperties.shaderGroupHandleAlignment;				}
+	deUint32		getShaderGroupHandleCaptureReplaySize		(void)	override { return m_rayTracingPipelineProperties.shaderGroupHandleCaptureReplaySize;		}
 	uint32_t		getMaxRecursionDepth						(void)	override { return m_rayTracingPipelineProperties.maxRayRecursionDepth;						}
 	uint32_t		getMaxShaderGroupStride						(void)	override { return m_rayTracingPipelineProperties.maxShaderGroupStride;						}
 	uint32_t		getShaderGroupBaseAlignment					(void)	override { return m_rayTracingPipelineProperties.shaderGroupBaseAlignment;					}
