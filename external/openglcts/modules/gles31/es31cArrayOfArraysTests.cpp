@@ -7504,6 +7504,7 @@ void InteractionInterfaceArrays1<API>::test_shader_compilation(
 
         DEFAULT_MAIN_ENDING(tested_shader_type, source);
 
+        this->limit_active_shader_storage_block_number(tested_shader_type, 4);
         EXECUTE_SHADER_TEST(API::ALLOW_A_OF_A_ON_INTERFACE_BLOCKS, tested_shader_type, source);
     }
 }
