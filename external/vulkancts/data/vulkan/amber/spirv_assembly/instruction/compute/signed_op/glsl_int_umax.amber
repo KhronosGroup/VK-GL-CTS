@@ -11,6 +11,8 @@ SHADER compute test SPIRV-ASM
 
                          OpDecorate %gl_GlobalInvocationId BuiltIn GlobalInvocationId
                          OpDecorate %ra_int ArrayStride 4
+                         OpDecorate %struct_uint3 BufferBlock
+                         OpMemberDecorate %struct_uint3 0 Offset 0
                          OpDecorate %struct_int3 BufferBlock
                          OpMemberDecorate %struct_int3 0 Offset 0
                          OpDecorate %input0 DescriptorSet 0
