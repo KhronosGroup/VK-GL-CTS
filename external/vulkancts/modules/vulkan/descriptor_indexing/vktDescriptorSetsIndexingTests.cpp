@@ -61,11 +61,12 @@ namespace
 using namespace vk;
 using tcu::UVec2;
 using tcu::Vec4;
-using tcu::TestStatus;
 using tcu::PixelBufferAccess;
-using tcu::Texture2D;
 
 static const VkExtent3D RESOLUTION = { 64, 64, 1 };
+
+constexpr uint32_t kMinWorkGroupSize = 2u;
+constexpr uint32_t kMaxWorkGroupSize = 128u;
 
 #define MAX_DESCRIPTORS		4200
 #define FUZZY_COMPARE		false
@@ -683,9 +684,12 @@ const char* CommonDescriptorInstance::getFragmentShaderProlog		(void)
 const char* CommonDescriptorInstance::getComputeShaderProlog		(void)
 {
 	return
-		"layout(local_size_x=1,local_size_y=1,local_size_z=1) in;	\n"
-		"void main(void)											\n"
-		"{															\n";
+		"layout(constant_id=0) const int local_size_x_val = 1;				\n"
+		"layout(constant_id=1) const int local_size_y_val = 1;				\n"
+		"layout(constant_id=2) const int local_size_z_val = 1;				\n"
+		"layout(local_size_x_id=0,local_size_y_id=1,local_size_z_id=2) in;	\n"
+		"void main(void)													\n"
+		"{																	\n";
 }
 
 const char* CommonDescriptorInstance::getShaderEpilog				(void)
@@ -785,28 +789,47 @@ Move<VkPipeline> CommonDescriptorInstance::createPipeline			(VkPipelineLayout			
 
 Move<VkPipeline> CommonDescriptorInstance::createComputePipeline	(VkPipelineLayout							pipelineLayout)
 {
+	const tcu::IVec3	workGroupSize	((m_testParams.calculateInLoop ? kMaxWorkGroupSize : kMinWorkGroupSize), 1, 1);
+	const auto			intSize			= sizeof(int);
+	const auto			intSizeU32		= static_cast<uint32_t>(intSize);
+
+	const std::vector<VkSpecializationMapEntry> mapEntries
+	{
+		makeSpecializationMapEntry(0u, intSizeU32 * 0u, intSize),
+		makeSpecializationMapEntry(1u, intSizeU32 * 1u, intSize),
+		makeSpecializationMapEntry(2u, intSizeU32 * 2u, intSize),
+	};
+
+	const VkSpecializationInfo workGroupSizeInfo =
+	{
+		de::sizeU32(mapEntries),		//	uint32_t						mapEntryCount;
+		de::dataOrNull(mapEntries),		//	const VkSpecializationMapEntry*	pMapEntries;
+		sizeof(workGroupSize),			//	size_t							dataSize;
+		&workGroupSize,					//	const void*						pData;
+	};
+
 	const VkPipelineShaderStageCreateInfo	shaderStaegCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-		DE_NULL,								// pNext
+		nullptr,								// pNext
 		(VkPipelineShaderStageCreateFlags)0,	// flags
 		VK_SHADER_STAGE_COMPUTE_BIT,			// stage
 		*m_computeModule,						// module
 		"main",									// pName
-		(VkSpecializationInfo*)DE_NULL			// pSpecializationInfo
+		&workGroupSizeInfo,						// pSpecializationInfo
 	};
 
 	const VkComputePipelineCreateInfo		pipelineCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-		DE_NULL,								// pNext
+		nullptr,								// pNext
 		0u,										// flags
 		shaderStaegCreateInfo,					// stage
 		pipelineLayout,							// layout
-		(VkPipeline)0,							// basePipelineHandle
+		VK_NULL_HANDLE,							// basePipelineHandle
 		0u,										// basePipelineIndex
 	};
-	return vk::createComputePipeline(m_vki, m_vkd, (VkPipelineCache)0u, &pipelineCreateInfo);
+	return vk::createComputePipeline(m_vki, m_vkd, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 Move<VkPipeline> CommonDescriptorInstance::createGraphicsPipeline	(VkPipelineLayout							pipelineLayout,
@@ -2803,11 +2826,28 @@ std::string CommonDescriptorInstance::getShaderSource				(VkShaderStageFlagBits	
 
 		case VK_SHADER_STAGE_COMPUTE_BIT: // VK_DESCRIPTOR_TYPE_STORAGE_IMAGE
 			if (testCaseParams.calculateInLoop)
-				s << "  for (int i = pc.lowerBound; i < pc.upperBound; ++i)	\n"
-					"    imageAtomicAdd(data[nonuniformEXT(texelFetch(iter, i).x)], ivec2(0, 0), 1);			\n";
+				s
+					<< "  const int totalAdds = pc.upperBound - pc.lowerBound;\n"
+					<< "  const int totalInvs = int(gl_WorkGroupSize.x);\n"
+					<< "  // Round number up so we never fall short in the number of additions\n"
+					<< "  const int addsPerInv = (totalAdds + totalInvs - 1) / totalInvs;\n"
+					<< "  const int baseAdd = int(gl_LocalInvocationID.x) * addsPerInv;\n"
+					<< "  for (int i = 0; i < addsPerInv; ++i) {\n"
+					<< "    const int addIdx = i + baseAdd + pc.lowerBound;\n"
+					<< "    if (addIdx < pc.upperBound) {\n"
+					<< "      imageAtomicAdd(data[nonuniformEXT(texelFetch(iter, addIdx).x)], ivec2(0, 0), 1);\n"
+					<< "    }\n"
+					<< "  }\n"
+					;
 			else
-				s << "  uvec4 c = imageLoad(idxs, ivec2(gl_WorkGroupID.x, gl_WorkGroupID.y));	\n"
-					"  imageAtomicAdd( data[nonuniformEXT(c.r)], ivec2(0, 0), 1);								\n";
+			{
+				s
+					<< "  const int xCoord = int(gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x);\n"
+					<< "  const int yCoord = int(gl_WorkGroupID.y);\n"
+					<< "  uvec4 c = imageLoad(idxs, ivec2(xCoord, yCoord));\n"
+					<< "  imageAtomicAdd( data[nonuniformEXT(c.r)], ivec2(0, 0), 1);\n"
+					;
+			}
 			break;
 
 		default:	TCU_THROW(InternalError, "Not implemented shader stage");
@@ -3876,7 +3916,7 @@ tcu::TestStatus StorageImageInstance::iterate						(void)
 	copyBuffersToImages		(v);
 
 	m_vki.cmdDispatch		(*v.commandBuffer,
-							m_testParams.calculateInLoop ? 1 : v.renderArea.extent.width,
+							m_testParams.calculateInLoop ? 1 : (v.renderArea.extent.width / (m_testParams.minNonUniform ? 1u : kMinWorkGroupSize)),
 							m_testParams.calculateInLoop ? 1 : v.renderArea.extent.height,
 							1);
 
