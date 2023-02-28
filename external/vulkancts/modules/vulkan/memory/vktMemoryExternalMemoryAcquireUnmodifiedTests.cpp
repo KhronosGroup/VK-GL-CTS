@@ -176,6 +176,11 @@ private:
 	static bool						isDrmFormatModifierCompatible	(Context& context, VkFormat format, uint64_t modifier);
 };
 
+class AhbBufImageWithMemory : public ImageWithMemory {
+public:
+	AhbBufImageWithMemory	(Context& context, VkFormat format);
+};
+
 ptrdiff_t
 ptrDiff (const void* x, const void* y)
 {
@@ -327,8 +332,7 @@ tcu::TestStatus TestInstance::iterate (void)
 
 bool TestInstance::testAndroidHardwareBuffer (void)
 {
-	// TODO: Support AndroidHardwareBuffer
-	TCU_THROW(InternalError, "FINISHME: Support AndroidHardwareBuffer");
+	return this->testImage(AhbBufImageWithMemory(m_context, m_params.format));
 }
 
 bool TestInstance::testDmaBuf (void)
@@ -602,8 +606,7 @@ bool TestInstance::testImage (const ImageWithMemory& image)
 	if (vk::isFloatFormat(image.getFormat()))
 	{
 		const Vec4 threshold (0.0f);
-		if (!tcu::floatThresholdCompare(log, "Compare", "Result comparison", m_src2TotalAccess, m_resultAccess, threshold, tcu::COMPARE_LOG_RESULT))
-		{
+		if (!tcu::floatThresholdCompare(log, "Compare", "Result comparison", m_src2TotalAccess, m_resultAccess, threshold, tcu::COMPARE_LOG_ON_ERROR)) {
 			log << tcu::TestLog::Message << "Image comparison failed" << tcu::TestLog::EndMessage;
 			return false;
 		}
@@ -611,8 +614,7 @@ bool TestInstance::testImage (const ImageWithMemory& image)
 	else if (vk::isUnormFormat(image.getFormat()))
 	{
 		const tcu::UVec4 threshold (0u);
-		if (!tcu::intThresholdCompare(log, "Compare", "Result comparison", m_src2TotalAccess, m_resultAccess, threshold, tcu::COMPARE_LOG_RESULT))
-		{
+		if (!tcu::intThresholdCompare(log, "Compare", "Result comparison", m_src2TotalAccess, m_resultAccess, threshold, tcu::COMPARE_LOG_ON_ERROR)) {
 			log << tcu::TestLog::Message << "Image comparison failed" << tcu::TestLog::EndMessage;
 			return false;
 		}
@@ -805,6 +807,67 @@ DmaBufImageWithMemory::DmaBufImageWithMemory (Context& context, VkFormat format,
 	VK_CHECK(vkd.bindImageMemory(device, *m_image, *m_memory, 0));
 }
 
+AhbBufImageWithMemory::AhbBufImageWithMemory (Context& context, VkFormat format)
+	: ImageWithMemory(context, format)
+{
+	vkt::ExternalMemoryUtil::AndroidHardwareBufferExternalApi*	ahbApi				= vkt::ExternalMemoryUtil::AndroidHardwareBufferExternalApi::getInstance();
+	if (!ahbApi)
+		TCU_THROW(NotSupportedError, "Android Hardware Buffer not supported");
+
+	const DeviceInterface&										vk					= m_context.getDeviceInterface();
+	VkDevice													device				= m_context.getDevice();
+	const deUint32												queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	// While the texture is used as source and destination transfer only, there's no actual AHB equivalent and therefore usage will be 0
+	// Vulkan forbids usage being 0 through VUID-vkGetAndroidHardwareBufferPropertiesANDROID-buffer-01884
+	// Ideally at some point there may be an equivalent for source and destination transfer only for AHB
+	deUint64													requiredAhbUsage	= ahbApi->vkUsageToAhbUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+	pt::AndroidHardwareBufferPtr								ahb					= ahbApi->allocate(imageExtent.width, imageExtent.height, m_arrayLayers, ahbApi->vkFormatToAhbFormat(m_format), requiredAhbUsage);
+
+	if (ahb.internal == DE_NULL)
+		TCU_THROW(NotSupportedError, "Required number of layers for Android Hardware Buffer not supported");
+
+	vkt::ExternalMemoryUtil::NativeHandle						nativeHandle		(ahb);
+	m_image	= vkt::ExternalMemoryUtil::createExternalImage(vk, device, queueFamilyIndex, VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
+														   m_format, imageExtent.width, imageExtent.height, VK_IMAGE_TILING_OPTIMAL, 0u,
+														   m_usage, m_mipLevels, m_arrayLayers);
+
+	VkAndroidHardwareBufferPropertiesANDROID					ahbProperties		=
+	{
+		VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID,	// VkStructureType	sType
+		DE_NULL,														// const void*		pNext
+		0u,																// VkDeviceSize		allocationSize
+		0																// uint32_t			memoryTypeBits
+	};
+
+	vk.getAndroidHardwareBufferPropertiesANDROID(device, nativeHandle.getAndroidHardwareBuffer(), &ahbProperties);
+
+	const VkImportAndroidHardwareBufferInfoANDROID				importInfo			=
+	{
+		VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID,	// VkStructureType			sType
+		DE_NULL,														// const void*				pNext
+		nativeHandle.getAndroidHardwareBuffer()							// struct AHardwareBuffer*	buffer
+	};
+
+	const VkMemoryDedicatedAllocateInfo							dedicatedInfo		=
+	{
+		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,	// VkStructureType	sType
+		&importInfo,											// const void*		pNext
+		*m_image,												// VkImage			image
+		DE_NULL													// VkBuffer			buffer
+	};
+
+	const VkMemoryAllocateInfo									allocateInfo		=
+	{
+		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,									// VkStructureType	sType
+		(const void*)&dedicatedInfo,											// const void*		pNext
+		ahbProperties.allocationSize,											// VkDeviceSize		allocationSize
+		vkt::ExternalMemoryUtil::chooseMemoryType(ahbProperties.memoryTypeBits)	// uint32_t			memoryTypeIndex
+	};
+
+	m_memory = allocateMemory(vk, device, &allocateInfo);
+	VK_CHECK(vk.bindImageMemory(device, *m_image, *m_memory, 0u));
+}
+
 std::string formatToName (VkFormat format)
 {
 	const std::string	formatStr	= de::toString(format);
@@ -825,9 +888,7 @@ tcu::TestCaseGroup* createExternalMemoryAcquireUnmodifiedTests (tcu::TestContext
 	const VkExternalMemoryHandleTypeFlagBits extMemTypes[] =
 	{
 		VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT,
-
-		// TODO: Support AndroidHardwareBuffer
-		// VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
+		VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
 	};
 
 	const VkFormat formats[] =
