@@ -8196,6 +8196,23 @@ struct VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT
 	VkBool32		pipelineLibraryGroupHandles;
 };
 
+struct VkDepthBiasInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	float			depthBiasConstantFactor;
+	float			depthBiasClamp;
+	float			depthBiasSlopeFactor;
+};
+
+struct VkDepthBiasRepresentationInfoEXT
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkDepthBiasRepresentationEXT	depthBiasRepresentation;
+	VkBool32						depthBiasExact;
+};
+
 struct VkDecompressMemoryRegionNV
 {
 	VkDeviceAddress						srcAddress;
@@ -8301,6 +8318,16 @@ struct VkReleaseSwapchainImagesInfoEXT
 	VkSwapchainKHR	swapchain;
 	uint32_t		imageIndexCount;
 	const uint32_t*	pImageIndices;
+};
+
+struct VkPhysicalDeviceDepthBiasControlFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		depthBiasControl;
+	VkBool32		leastRepresentableValueForceUnormRepresentation;
+	VkBool32		floatRepresentation;
+	VkBool32		depthBiasExact;
 };
 
 struct VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV
@@ -8446,6 +8473,80 @@ struct VkPhysicalDeviceShaderTileImagePropertiesEXT
 	VkBool32		shaderTileImageCoherentReadAccelerated;
 	VkBool32		shaderTileImageReadSampleFromPixelRateInvocation;
 	VkBool32		shaderTileImageReadFromHelperInvocation;
+};
+
+struct VkImportScreenBufferInfoQNX
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	struct _screen_buffer*	buffer;
+};
+
+struct VkScreenBufferPropertiesQNX
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkDeviceSize	allocationSize;
+	uint32_t		memoryTypeBits;
+};
+
+struct VkScreenBufferFormatPropertiesQNX
+{
+	VkStructureType					sType;
+	void*							pNext;
+	VkFormat						format;
+	uint64_t						externalFormat;
+	uint64_t						screenUsage;
+	VkFormatFeatureFlags			formatFeatures;
+	VkComponentMapping				samplerYcbcrConversionComponents;
+	VkSamplerYcbcrModelConversion	suggestedYcbcrModel;
+	VkSamplerYcbcrRange				suggestedYcbcrRange;
+	VkChromaLocation				suggestedXChromaOffset;
+	VkChromaLocation				suggestedYChromaOffset;
+};
+
+struct VkExternalFormatQNX
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint64_t		externalFormat;
+};
+
+struct VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		screenBufferImport;
+};
+
+struct VkPhysicalDeviceCooperativeMatrixFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		cooperativeMatrix;
+	VkBool32		cooperativeMatrixRobustBufferAccess;
+};
+
+struct VkCooperativeMatrixPropertiesKHR
+{
+	VkStructureType		sType;
+	void*				pNext;
+	uint32_t			MSize;
+	uint32_t			NSize;
+	uint32_t			KSize;
+	VkComponentTypeKHR	AType;
+	VkComponentTypeKHR	BType;
+	VkComponentTypeKHR	CType;
+	VkComponentTypeKHR	ResultType;
+	VkBool32			saturatingAccumulation;
+	VkScopeKHR			scope;
+};
+
+struct VkPhysicalDeviceCooperativeMatrixPropertiesKHR
+{
+	VkStructureType		sType;
+	void*				pNext;
+	VkShaderStageFlags	cooperativeMatrixSupportedStages;
 };
 
 struct StdVideoH264SpsVuiFlags

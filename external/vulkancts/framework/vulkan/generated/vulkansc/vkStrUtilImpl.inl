@@ -1615,6 +1615,11 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_SEMAPHORE_SCI_SYNC_CREATE_INFO_NV:								return "VK_STRUCTURE_TYPE_SEMAPHORE_SCI_SYNC_CREATE_INFO_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SCI_SYNC_2_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SCI_SYNC_2_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_DEVICE_SEMAPHORE_SCI_SYNC_POOL_RESERVATION_CREATE_INFO_NV:		return "VK_STRUCTURE_TYPE_DEVICE_SEMAPHORE_SCI_SYNC_POOL_RESERVATION_CREATE_INFO_NV";
+		case VK_STRUCTURE_TYPE_SCREEN_BUFFER_PROPERTIES_QNX:									return "VK_STRUCTURE_TYPE_SCREEN_BUFFER_PROPERTIES_QNX";
+		case VK_STRUCTURE_TYPE_SCREEN_BUFFER_FORMAT_PROPERTIES_QNX:								return "VK_STRUCTURE_TYPE_SCREEN_BUFFER_FORMAT_PROPERTIES_QNX";
+		case VK_STRUCTURE_TYPE_IMPORT_SCREEN_BUFFER_INFO_QNX:									return "VK_STRUCTURE_TYPE_IMPORT_SCREEN_BUFFER_INFO_QNX";
+		case VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_QNX:												return "VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_QNX";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCREEN_BUFFER_FEATURES_QNX:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCREEN_BUFFER_FEATURES_QNX";
 		default:																				return DE_NULL;
 	}
 }
@@ -2354,6 +2359,7 @@ tcu::Format::Bitfield<32> getExternalMemoryHandleTypeFlagsStr (VkExternalMemoryH
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_MAPPED_FOREIGN_MEMORY_BIT_EXT,	"VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_MAPPED_FOREIGN_MEMORY_BIT_EXT"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT,					"VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_SCI_BUF_BIT_NV,						"VK_EXTERNAL_MEMORY_HANDLE_TYPE_SCI_BUF_BIT_NV"),
+		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_SCREEN_BUFFER_BIT_QNX,				"VK_EXTERNAL_MEMORY_HANDLE_TYPE_SCREEN_BUFFER_BIT_QNX"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -8715,6 +8721,65 @@ std::ostream& operator<< (std::ostream& s, const VkDrmFormatModifierProperties2E
 	s << "\tdrmFormatModifier = " << value.drmFormatModifier << '\n';
 	s << "\tdrmFormatModifierPlaneCount = " << value.drmFormatModifierPlaneCount << '\n';
 	s << "\tdrmFormatModifierTilingFeatures = " << getFormatFeatureFlags2Str(value.drmFormatModifierTilingFeatures) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImportScreenBufferInfoQNX& value)
+{
+	s << "VkImportScreenBufferInfoQNX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tbuffer = " << value.buffer << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkScreenBufferPropertiesQNX& value)
+{
+	s << "VkScreenBufferPropertiesQNX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tallocationSize = " << value.allocationSize << '\n';
+	s << "\tmemoryTypeBits = " << value.memoryTypeBits << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkScreenBufferFormatPropertiesQNX& value)
+{
+	s << "VkScreenBufferFormatPropertiesQNX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tformat = " << value.format << '\n';
+	s << "\texternalFormat = " << value.externalFormat << '\n';
+	s << "\tscreenUsage = " << value.screenUsage << '\n';
+	s << "\tformatFeatures = " << getFormatFeatureFlagsStr(value.formatFeatures) << '\n';
+	s << "\tsamplerYcbcrConversionComponents = " << value.samplerYcbcrConversionComponents << '\n';
+	s << "\tsuggestedYcbcrModel = " << value.suggestedYcbcrModel << '\n';
+	s << "\tsuggestedYcbcrRange = " << value.suggestedYcbcrRange << '\n';
+	s << "\tsuggestedXChromaOffset = " << value.suggestedXChromaOffset << '\n';
+	s << "\tsuggestedYChromaOffset = " << value.suggestedYChromaOffset << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExternalFormatQNX& value)
+{
+	s << "VkExternalFormatQNX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\texternalFormat = " << value.externalFormat << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX& value)
+{
+	s << "VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tscreenBufferImport = " << value.screenBufferImport << '\n';
 	s << '}';
 	return s;
 }

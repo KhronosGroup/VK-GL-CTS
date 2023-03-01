@@ -3907,6 +3907,12 @@ VKAPI_ATTR VkResult VKAPI_CALL getDeviceFaultInfoEXT (VkDevice device, VkDeviceF
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdSetDepthBias2EXT (VkCommandBuffer commandBuffer, const VkDepthBiasInfoEXT* pDepthBiasInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pDepthBiasInfo);
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL releaseSwapchainImagesEXT (VkDevice device, const VkReleaseSwapchainImagesInfoEXT* pReleaseInfo)
 {
 	DE_UNREF(device);
@@ -3944,6 +3950,22 @@ VKAPI_ATTR void VKAPI_CALL cmdBindShadersEXT (VkCommandBuffer commandBuffer, uin
 	DE_UNREF(stageCount);
 	DE_UNREF(pStages);
 	DE_UNREF(pShaders);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getScreenBufferPropertiesQNX (VkDevice device, const struct _screen_buffer* buffer, VkScreenBufferPropertiesQNX* pProperties)
+{
+	DE_UNREF(device);
+	DE_UNREF(buffer);
+	DE_UNREF(pProperties);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceCooperativeMatrixPropertiesKHR (VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixPropertiesKHR* pProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pPropertyCount);
+	DE_UNREF(pProperties);
+	return VK_SUCCESS;
 }
 
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
@@ -4045,6 +4067,7 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkAcquireDrmDisplayEXT,												acquireDrmDisplayEXT),
 	VK_NULL_FUNC_ENTRY(vkGetDrmDisplayEXT,													getDrmDisplayEXT),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceOpticalFlowImageFormatsNV,						getPhysicalDeviceOpticalFlowImageFormatsNV),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR,					getPhysicalDeviceCooperativeMatrixPropertiesKHR),
 };
 
 static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
@@ -4504,6 +4527,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkBindOpticalFlowSessionImageNV,								bindOpticalFlowSessionImageNV),
 	VK_NULL_FUNC_ENTRY(vkCmdOpticalFlowExecuteNV,									cmdOpticalFlowExecuteNV),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceFaultInfoEXT,										getDeviceFaultInfoEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetDepthBias2EXT,										cmdSetDepthBias2EXT),
 	VK_NULL_FUNC_ENTRY(vkReleaseSwapchainImagesEXT,									releaseSwapchainImagesEXT),
 	VK_NULL_FUNC_ENTRY(vkMapMemory2KHR,												mapMemory2KHR),
 	VK_NULL_FUNC_ENTRY(vkUnmapMemory2KHR,											unmapMemory2KHR),
@@ -4511,5 +4535,6 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkDestroyShaderEXT,											destroyShaderEXT),
 	VK_NULL_FUNC_ENTRY(vkGetShaderBinaryDataEXT,									getShaderBinaryDataEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdBindShadersEXT,											cmdBindShadersEXT),
+	VK_NULL_FUNC_ENTRY(vkGetScreenBufferPropertiesQNX,								getScreenBufferPropertiesQNX),
 };
 

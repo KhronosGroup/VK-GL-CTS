@@ -103,3 +103,4 @@ GetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHRFunc			getPhysicalDeviceVid
 AcquireDrmDisplayEXTFunc											acquireDrmDisplayEXT;
 GetDrmDisplayEXTFunc												getDrmDisplayEXT;
 GetPhysicalDeviceOpticalFlowImageFormatsNVFunc						getPhysicalDeviceOpticalFlowImageFormatsNV;
+GetPhysicalDeviceCooperativeMatrixPropertiesKHRFunc					getPhysicalDeviceCooperativeMatrixPropertiesKHR;

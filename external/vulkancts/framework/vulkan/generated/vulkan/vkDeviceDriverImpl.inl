@@ -2279,6 +2279,11 @@ VkResult DeviceDriver::getDeviceFaultInfoEXT (VkDevice device, VkDeviceFaultCoun
 	return m_vk.getDeviceFaultInfoEXT(device, pFaultCounts, pFaultInfo);
 }
 
+void DeviceDriver::cmdSetDepthBias2EXT (VkCommandBuffer commandBuffer, const VkDepthBiasInfoEXT* pDepthBiasInfo) const
+{
+	m_vk.cmdSetDepthBias2EXT(commandBuffer, pDepthBiasInfo);
+}
+
 VkResult DeviceDriver::releaseSwapchainImagesEXT (VkDevice device, const VkReleaseSwapchainImagesInfoEXT* pReleaseInfo) const
 {
 	return m_vk.releaseSwapchainImagesEXT(device, pReleaseInfo);
@@ -2312,4 +2317,9 @@ VkResult DeviceDriver::getShaderBinaryDataEXT (VkDevice device, VkShaderEXT shad
 void DeviceDriver::cmdBindShadersEXT (VkCommandBuffer commandBuffer, uint32_t stageCount, const VkShaderStageFlagBits* pStages, const VkShaderEXT* pShaders) const
 {
 	m_vk.cmdBindShadersEXT(commandBuffer, stageCount, pStages, pShaders);
+}
+
+VkResult DeviceDriver::getScreenBufferPropertiesQNX (VkDevice device, const struct _screen_buffer* buffer, VkScreenBufferPropertiesQNX* pProperties) const
+{
+	return m_vk.getScreenBufferPropertiesQNX(device, buffer, pProperties);
 }

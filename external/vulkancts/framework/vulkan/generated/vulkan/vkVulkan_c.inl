@@ -1141,7 +1141,7 @@ extern "C" {
 #define VK_API_VERSION_1_0 VK_MAKE_API_VERSION(0, 1, 0, 0)// Patch version should always be set to 0
 
 // Version of this file
-#define VK_HEADER_VERSION 253
+#define VK_HEADER_VERSION 255
 
 // Complete version of this file
 #define VK_HEADER_VERSION_COMPLETE VK_MAKE_API_VERSION(0, 1, 3, VK_HEADER_VERSION)
@@ -1897,6 +1897,9 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_FEATURES_EXT = 1000281000,
     VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDER_PASS_TRANSFORM_INFO_QCOM = 1000282000,
     VK_STRUCTURE_TYPE_RENDER_PASS_TRANSFORM_BEGIN_INFO_QCOM = 1000282001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_BIAS_CONTROL_FEATURES_EXT = 1000283000,
+    VK_STRUCTURE_TYPE_DEPTH_BIAS_INFO_EXT = 1000283001,
+    VK_STRUCTURE_TYPE_DEPTH_BIAS_REPRESENTATION_INFO_EXT = 1000283002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_MEMORY_REPORT_FEATURES_EXT = 1000284000,
     VK_STRUCTURE_TYPE_DEVICE_DEVICE_MEMORY_REPORT_CREATE_INFO_EXT = 1000284001,
     VK_STRUCTURE_TYPE_DEVICE_MEMORY_REPORT_CALLBACK_DATA_EXT = 1000284002,
@@ -2138,9 +2141,17 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM = 1000497001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_EXT = 1000498000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_FEATURES_EXT = 1000499000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR = 1000506000,
+    VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_KHR = 1000506001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_KHR = 1000506002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_RENDER_AREAS_FEATURES_QCOM = 1000510000,
     VK_STRUCTURE_TYPE_MULTIVIEW_PER_VIEW_RENDER_AREAS_RENDER_PASS_BEGIN_INFO_QCOM = 1000510001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_FEATURES_EXT = 1000524000,
+    VK_STRUCTURE_TYPE_SCREEN_BUFFER_PROPERTIES_QNX = 1000529000,
+    VK_STRUCTURE_TYPE_SCREEN_BUFFER_FORMAT_PROPERTIES_QNX = 1000529001,
+    VK_STRUCTURE_TYPE_IMPORT_SCREEN_BUFFER_INFO_QNX = 1000529002,
+    VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_QNX = 1000529003,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCREEN_BUFFER_FEATURES_QNX = 1000529004,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES,
     VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
@@ -6015,6 +6026,7 @@ typedef enum VkExternalMemoryHandleTypeFlagBits {
     VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_MAPPED_FOREIGN_MEMORY_BIT_EXT = 0x00000100,
     VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA = 0x00000800,
     VK_EXTERNAL_MEMORY_HANDLE_TYPE_RDMA_ADDRESS_BIT_NV = 0x00001000,
+    VK_EXTERNAL_MEMORY_HANDLE_TYPE_SCREEN_BUFFER_BIT_QNX = 0x00004000,
     VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT,
     VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT,
     VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT,
@@ -11367,6 +11379,69 @@ typedef struct VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR {
 
 
 
+#define VK_KHR_cooperative_matrix 1
+#define VK_KHR_COOPERATIVE_MATRIX_SPEC_VERSION 2
+#define VK_KHR_COOPERATIVE_MATRIX_EXTENSION_NAME "VK_KHR_cooperative_matrix"
+
+typedef enum VkComponentTypeKHR {
+    VK_COMPONENT_TYPE_FLOAT16_KHR = 0,
+    VK_COMPONENT_TYPE_FLOAT32_KHR = 1,
+    VK_COMPONENT_TYPE_FLOAT64_KHR = 2,
+    VK_COMPONENT_TYPE_SINT8_KHR = 3,
+    VK_COMPONENT_TYPE_SINT16_KHR = 4,
+    VK_COMPONENT_TYPE_SINT32_KHR = 5,
+    VK_COMPONENT_TYPE_SINT64_KHR = 6,
+    VK_COMPONENT_TYPE_UINT8_KHR = 7,
+    VK_COMPONENT_TYPE_UINT16_KHR = 8,
+    VK_COMPONENT_TYPE_UINT32_KHR = 9,
+    VK_COMPONENT_TYPE_UINT64_KHR = 10,
+    VK_COMPONENT_TYPE_MAX_ENUM_KHR = 0x7FFFFFFF
+} VkComponentTypeKHR;
+
+typedef enum VkScopeKHR {
+    VK_SCOPE_DEVICE_KHR = 1,
+    VK_SCOPE_WORKGROUP_KHR = 2,
+    VK_SCOPE_SUBGROUP_KHR = 3,
+    VK_SCOPE_QUEUE_FAMILY_KHR = 5,
+    VK_SCOPE_MAX_ENUM_KHR = 0x7FFFFFFF
+} VkScopeKHR;
+typedef struct VkCooperativeMatrixPropertiesKHR {
+    VkStructureType       sType;
+    void*                 pNext;
+    deUint32              MSize;
+    deUint32              NSize;
+    deUint32              KSize;
+    VkComponentTypeKHR    AType;
+    VkComponentTypeKHR    BType;
+    VkComponentTypeKHR    CType;
+    VkComponentTypeKHR    ResultType;
+    VkBool32              saturatingAccumulation;
+    VkScopeKHR            scope;
+} VkCooperativeMatrixPropertiesKHR;
+
+typedef struct VkPhysicalDeviceCooperativeMatrixFeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           cooperativeMatrix;
+    VkBool32           cooperativeMatrixRobustBufferAccess;
+} VkPhysicalDeviceCooperativeMatrixFeaturesKHR;
+
+typedef struct VkPhysicalDeviceCooperativeMatrixPropertiesKHR {
+    VkStructureType       sType;
+    void*                 pNext;
+    VkShaderStageFlags    cooperativeMatrixSupportedStages;
+} VkPhysicalDeviceCooperativeMatrixPropertiesKHR;
+
+typedef VkResult (VKAPI_PTR *PFN_vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR)(VkPhysicalDevice physicalDevice, deUint32* pPropertyCount, VkCooperativeMatrixPropertiesKHR* pProperties);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR(
+    VkPhysicalDevice                            physicalDevice,
+    deUint32*                                   pPropertyCount,
+    VkCooperativeMatrixPropertiesKHR*           pProperties);
+#endif
+
+
 #define VK_EXT_debug_report 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkDebugReportCallbackEXT)
 #define VK_EXT_DEBUG_REPORT_SPEC_VERSION  10
@@ -15036,6 +15111,49 @@ typedef struct VkCommandBufferInheritanceRenderPassTransformInfoQCOM {
     VkRect2D                         renderArea;
 } VkCommandBufferInheritanceRenderPassTransformInfoQCOM;
 
+
+
+#define VK_EXT_depth_bias_control 1
+#define VK_EXT_DEPTH_BIAS_CONTROL_SPEC_VERSION 1
+#define VK_EXT_DEPTH_BIAS_CONTROL_EXTENSION_NAME "VK_EXT_depth_bias_control"
+
+typedef enum VkDepthBiasRepresentationEXT {
+    VK_DEPTH_BIAS_REPRESENTATION_LEAST_REPRESENTABLE_VALUE_FORMAT_EXT = 0,
+    VK_DEPTH_BIAS_REPRESENTATION_LEAST_REPRESENTABLE_VALUE_FORCE_UNORM_EXT = 1,
+    VK_DEPTH_BIAS_REPRESENTATION_FLOAT_EXT = 2,
+    VK_DEPTH_BIAS_REPRESENTATION_MAX_ENUM_EXT = 0x7FFFFFFF
+} VkDepthBiasRepresentationEXT;
+typedef struct VkPhysicalDeviceDepthBiasControlFeaturesEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           depthBiasControl;
+    VkBool32           leastRepresentableValueForceUnormRepresentation;
+    VkBool32           floatRepresentation;
+    VkBool32           depthBiasExact;
+} VkPhysicalDeviceDepthBiasControlFeaturesEXT;
+
+typedef struct VkDepthBiasInfoEXT {
+    VkStructureType    sType;
+    const void*        pNext;
+    float              depthBiasConstantFactor;
+    float              depthBiasClamp;
+    float              depthBiasSlopeFactor;
+} VkDepthBiasInfoEXT;
+
+typedef struct VkDepthBiasRepresentationInfoEXT {
+    VkStructureType                 sType;
+    const void*                     pNext;
+    VkDepthBiasRepresentationEXT    depthBiasRepresentation;
+    VkBool32                        depthBiasExact;
+} VkDepthBiasRepresentationInfoEXT;
+
+typedef void (VKAPI_PTR *PFN_vkCmdSetDepthBias2EXT)(VkCommandBuffer commandBuffer, const VkDepthBiasInfoEXT*         pDepthBiasInfo);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR void VKAPI_CALL vkCmdSetDepthBias2EXT(
+    VkCommandBuffer                             commandBuffer,
+    const VkDepthBiasInfoEXT*                   pDepthBiasInfo);
+#endif
 
 
 #define VK_EXT_device_memory_report 1
