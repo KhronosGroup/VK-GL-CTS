@@ -3507,10 +3507,8 @@ CompressedTextureForBlit::CompressedTextureForBlit(const tcu::CompressedTexForma
 		// in compressed image; to resolve this we are constructing source texture out of set of predefined compressed
 		// blocks that after decompression will have components in proper range
 
-		struct BC6HBlock
-		{
-			deUint32 data[4];
-		};
+		typedef std::array<deUint32, 4> BC6HBlock;
+		DE_STATIC_ASSERT(sizeof(BC6HBlock) == (4 * sizeof(deUint32)));
 		std::vector<BC6HBlock> validBlocks;
 
 		if (srcFormat == tcu::COMPRESSEDTEXFORMAT_BC6H_UFLOAT_BLOCK)
@@ -3551,7 +3549,7 @@ CompressedTextureForBlit::CompressedTextureForBlit(const tcu::CompressedTexForma
 		for (int blockNdx = 0; blockNdx < blocksCount; blockNdx++)
 		{
 			deUint32 selectedBlock = random.getUint32() % static_cast<deUint32>(validBlocks.size());
-			deMemcpy(compressedDataUint32, validBlocks[selectedBlock].data, sizeof(BC6HBlock));
+			deMemcpy(compressedDataUint32, validBlocks[selectedBlock].data(), sizeof(BC6HBlock));
 			compressedDataUint32 += 4;
 		}
 	}
