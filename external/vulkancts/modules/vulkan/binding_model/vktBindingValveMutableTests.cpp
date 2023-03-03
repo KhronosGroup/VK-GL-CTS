@@ -3959,13 +3959,14 @@ tcu::TestCaseGroup* createDescriptorValveMutableTests (tcu::TestContext& testCtx
 				DescriptorSet::BindingPtrVector setBindings;
 				std::vector<SingleBinding> arrayBindings;
 
-				// Single mutable descriptor as the first binding.
-				setBindings.emplace_back(new SingleBinding(VK_DESCRIPTOR_TYPE_MUTABLE_VALVE, mandatoryTypes));
-
-				// Descriptor array as the second binding.
+				// Add single type beyond the mandatory ones.
 				auto arrayBindingDescTypes = mandatoryTypes;
 				arrayBindingDescTypes.push_back(descriptorType);
 
+				// Single mutable descriptor as the first binding.
+				setBindings.emplace_back(new SingleBinding(VK_DESCRIPTOR_TYPE_MUTABLE_VALVE, arrayBindingDescTypes));
+
+				// Descriptor array as the second binding.
 				if (aliasingCase.aliasing)
 				{
 					// With aliasing, the descriptor types rotate in each descriptor.
