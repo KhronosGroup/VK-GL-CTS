@@ -62,7 +62,6 @@ namespace
 using std::vector;
 using std::string;
 using tcu::TestLog;
-using de::UniquePtr;
 using de::MovePtr;
 
 static const deUint64 DEFAULT_TIMEOUT = 2ull*1000*1000*1000; //!< 2 seconds in nanoseconds
@@ -1150,8 +1149,8 @@ tcu::TestStatus testSemaphores (Context& context, SemaphoreTestConfig config)
 
 	TestLog&					log					= context.getTestContext().getLog();
 	const PlatformInterface&	platformInterface	= context.getPlatformInterface();
-	const CustomInstance		instance			(createCustomInstanceFromContext(context));
-	const InstanceInterface&	instanceDriver		= instance.getDriver();
+	const auto					instance			= context.getInstance();
+	const auto&					instanceDriver		= context.getInstanceInterface();
 	const VkPhysicalDevice		physicalDevice		= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
 	deUint32					queueFamilyIdx;
 	bool						isTimelineSemaphore	(config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE);

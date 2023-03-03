@@ -287,7 +287,9 @@ protected:
 	const std::string				m_name;
 
 	vk::VkDevice					m_device;
+#ifdef CTS_USES_VULKANSC
 	const CustomInstance			m_customInstance;
+#endif // CTS_USES_VULKANSC
 	vk::Move<vk::VkDevice>			m_customDevice;
 #ifndef CTS_USES_VULKANSC
 	de::MovePtr<vk::DeviceDriver>	m_deviceDriver;
@@ -320,7 +322,9 @@ IndirectDispatchInstanceBufferUpload::IndirectDispatchInstanceBufferUpload (Cont
 	, m_context				(context)
 	, m_name				(name)
 	, m_device				(context.getDevice())
+#ifdef CTS_USES_VULKANSC
 	, m_customInstance		(createCustomInstanceFromContext(context))
+#endif // CTS_USES_VULKANSC
 	, m_queue				(context.getUniversalQueue())
 	, m_queueFamilyIndex	(context.getUniversalQueueFamilyIndex())
 	, m_bufferSize			(bufferSize)
@@ -385,7 +389,7 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate (void)
 											m_queueFamilyIndex);
 		m_device = m_customDevice.get();
 #ifndef CTS_USES_VULKANSC
-		m_deviceDriver = de::MovePtr<vk::DeviceDriver>(new vk::DeviceDriver(m_context.getPlatformInterface(), m_customInstance, m_device));
+		m_deviceDriver = de::MovePtr<vk::DeviceDriver>(new vk::DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), m_device));
 #else
 		m_deviceDriver = de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>(new vk::DeviceDriverSC(m_context.getPlatformInterface(), m_customInstance, m_device, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), m_device));
 #endif // CTS_USES_VULKANSC

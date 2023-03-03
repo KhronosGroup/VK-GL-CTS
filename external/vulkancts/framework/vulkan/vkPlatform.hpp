@@ -399,7 +399,7 @@ public:
 
 							Platform			(void) {}
 							~Platform			(void) {}
-#if (DE_OS == DE_OS_WIN32) || (DE_OS == DE_OS_UNIX)
+#ifdef DE_PLATFORM_USE_LIBRARY_TYPE
 	virtual Library*		createLibrary		(LibraryType libraryType = LIBRARY_TYPE_VULKAN, const char* libraryPath = DE_NULL) const = 0;
 #else
 	virtual Library*		createLibrary		(const char* libraryPath = DE_NULL) const = 0;

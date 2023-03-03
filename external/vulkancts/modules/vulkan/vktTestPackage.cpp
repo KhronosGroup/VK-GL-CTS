@@ -204,7 +204,7 @@ static void		restoreStandardOutput	()												{ qpRedirectOut(openWrite, open
 
 static MovePtr<vk::Library> createLibrary (tcu::TestContext& testCtx)
 {
-#if (DE_OS == DE_OS_WIN32) || (DE_OS == DE_OS_UNIX)
+#ifdef DE_PLATFORM_USE_LIBRARY_TYPE
 	return MovePtr<vk::Library>(testCtx.getPlatform().getVulkanPlatform().createLibrary(vk::Platform::LIBRARY_TYPE_VULKAN, testCtx.getCommandLine().getVkLibraryPath()));
 #else
 	return MovePtr<vk::Library>(testCtx.getPlatform().getVulkanPlatform().createLibrary(testCtx.getCommandLine().getVkLibraryPath()));

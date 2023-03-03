@@ -314,7 +314,6 @@ protected:
 	void									addRenderingSubpassDependencyIfRequired (deUint32 currentSubpassNdx);
 #endif // CTS_USES_VULKANSC
 
-	std::shared_ptr<CustomInstanceWrapper>	m_instanceWrapper;
 	const TestParameters			m_parameters;
 	const bool						m_useDynamicRendering;
 	const int						m_seed;
@@ -348,7 +347,6 @@ protected:
 
 MultiViewRenderTestInstance::MultiViewRenderTestInstance (Context& context, const TestParameters& parameters)
 	: TestInstance			(context)
-	, m_instanceWrapper		(new CustomInstanceWrapper(context))
 	, m_parameters			(fillMissingParameters(parameters))
 	, m_useDynamicRendering	(parameters.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
 	, m_seed				(context.getTestContext().getCommandLine().getBaseSeed())
@@ -639,8 +637,8 @@ TestParameters MultiViewRenderTestInstance::fillMissingParameters (const TestPar
 		return parameters;
 	else
 	{
-		const InstanceInterface&			instanceDriver		= m_instanceWrapper->instance.getDriver();
-		const VkPhysicalDevice				physicalDevice		= chooseDevice(instanceDriver, m_instanceWrapper->instance, m_context.getTestContext().getCommandLine());
+		const auto& instanceDriver	= m_context.getInstanceInterface();
+		const auto physicalDevice	= m_context.getPhysicalDevice();
 
 		VkPhysicalDeviceMultiviewProperties multiviewProperties =
 		{
@@ -726,8 +724,8 @@ void MultiViewRenderTestInstance::createVertexBuffer (void)
 
 void MultiViewRenderTestInstance::createMultiViewDevices (void)
 {
-	const InstanceDriver&					instanceDriver			( m_instanceWrapper->instance.getDriver() );
-	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, m_instanceWrapper->instance, m_context.getTestContext().getCommandLine());
+	const auto&								instanceDriver			= m_context.getInstanceInterface();
+	const VkPhysicalDevice					physicalDevice			= m_context.getPhysicalDevice();
 	const vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 
 	for (; m_queueFamilyIndex < queueFamilyProperties.size(); ++m_queueFamilyIndex)
@@ -879,11 +877,13 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 			DE_NULL															//const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 		};
 
-		m_logicalDevice					= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), m_instanceWrapper->instance, instanceDriver, physicalDevice, &deviceInfo);
+		const auto instance = m_context.getInstance();
+
+		m_logicalDevice					= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceInfo);
 #ifndef CTS_USES_VULKANSC
-		m_device						= de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_logicalDevice));
+		m_device						= de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), instance, *m_logicalDevice));
 #else
-		m_device						= de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_logicalDevice, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_logicalDevice));
+		m_device						= de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), instance, *m_logicalDevice, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_logicalDevice));
 #endif // CTS_USES_VULKANSC
 		m_allocator						= MovePtr<Allocator>(new SimpleAllocator(*m_device, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instanceDriver, physicalDevice)));
 		m_device->getDeviceQueue		(*m_logicalDevice, m_queueFamilyIndex, 0u, &m_queue);
@@ -2571,8 +2571,8 @@ protected:
 MultiViewPointSizeTestInstance::MultiViewPointSizeTestInstance (Context& context, const TestParameters& parameters)
 	: MultiViewRenderTestInstance	(context, parameters)
 {
-	const InstanceInterface&		vki					= m_instanceWrapper->instance.getDriver();
-	const VkPhysicalDevice			physDevice			= chooseDevice(vki, m_instanceWrapper->instance, context.getTestContext().getCommandLine());
+	const auto&						vki					= m_context.getInstanceInterface();
+	const auto						physDevice			= m_context.getPhysicalDevice();
 	const VkPhysicalDeviceLimits	limits				= getPhysicalDeviceProperties(vki, physDevice).limits;
 
 	validatePointSize(limits, static_cast<deUint32>(TEST_POINT_SIZE_WIDE));
@@ -2925,8 +2925,10 @@ MultiViewQueriesTestInstance::MultiViewQueriesTestInstance (Context& context, co
 	, m_occlusionObjectsOffset		(0)
 {
 	// Generate the timestamp mask
-	const VkPhysicalDevice						physicalDevice	= chooseDevice(m_instanceWrapper->instance.getDriver(), m_instanceWrapper->instance, context.getTestContext().getCommandLine());
-	const std::vector<VkQueueFamilyProperties>	queueProperties	= vk::getPhysicalDeviceQueueFamilyProperties(m_instanceWrapper->instance.getDriver(), physicalDevice);
+	const auto&	vki				= m_context.getInstanceInterface();
+	const auto	physicalDevice	= m_context.getPhysicalDevice();
+
+	const std::vector<VkQueueFamilyProperties>	queueProperties	= vk::getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
 
 	if(queueProperties[0].timestampValidBits == 0)
 		TCU_THROW(NotSupportedError, "Device does not support timestamp.");
@@ -3477,8 +3479,9 @@ MultiViewDepthStencilTestInstance::MultiViewDepthStencilTestInstance (Context& c
 	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(formats); ++ndx)
 	{
 		const VkFormat				format				= formats[ndx];
-		const VkPhysicalDevice		physicalDevice		= chooseDevice(m_instanceWrapper->instance.getDriver(), m_instanceWrapper->instance, context.getTestContext().getCommandLine());
-		const VkFormatProperties	formatProperties	= getPhysicalDeviceFormatProperties(m_instanceWrapper->instance.getDriver(), physicalDevice, format);
+		const auto&					vki					= m_context.getInstanceInterface();
+		const auto					physicalDevice		= m_context.getPhysicalDevice();
+		const VkFormatProperties	formatProperties	= getPhysicalDeviceFormatProperties(vki, physicalDevice, format);
 
 		if ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0)
 		{
@@ -4100,6 +4103,7 @@ private:
 			context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
 		context.requireDeviceFunctionality("VK_KHR_multiview");
+
 		if (m_parameters.viewIndex == TEST_TYPE_DEPTH_DIFFERENT_RANGES)
 			context.requireDeviceFunctionality("VK_EXT_depth_range_unrestricted");
 #ifdef CTS_USES_VULKANSC

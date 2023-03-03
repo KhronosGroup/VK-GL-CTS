@@ -1,6 +1,7 @@
 message("*** Using nullws target")
 set(DEQP_TARGET_NAME "nullws")
 
+set(DEQP_USE_NULLWS ON)
 add_definitions(-DNULLWS)
 
 find_library(GLES2_LIBRARY		NAMES libGLESv2 GLESv2)

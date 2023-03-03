@@ -984,8 +984,8 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest (Context& context, bool useKh
 {
 	tcu::TestLog&							log						= context.getTestContext().getLog();
 	const PlatformInterface&				platformInterface		= context.getPlatformInterface();
-	const CustomInstance					instance				(createCustomInstanceFromContext(context));
-	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const auto&								instanceDriver			= context.getInstanceInterface();
+	const auto								instance				= context.getInstance();
 	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
 	const vector<float>						queuePriorities			(1, 1.0f);
 	const VkQueueGlobalPriorityEXT			globalPriorities[]		= { VK_QUEUE_GLOBAL_PRIORITY_LOW_EXT, VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT, VK_QUEUE_GLOBAL_PRIORITY_HIGH_EXT, VK_QUEUE_GLOBAL_PRIORITY_REALTIME_EXT };
@@ -1191,8 +1191,8 @@ tcu::TestStatus createDeviceWithQueriedGlobalPriorityTest (Context& context, boo
 {
 	tcu::TestLog&					log							= context.getTestContext().getLog();
 	const PlatformInterface&		platformInterface			= context.getPlatformInterface();
-	const CustomInstance			instance					(createCustomInstanceFromContext(context));
-	const InstanceDriver&			instanceDriver				(instance.getDriver());
+	const auto&						instanceDriver				= context.getInstanceInterface();
+	const auto						instance					= context.getInstance();
 	const VkPhysicalDevice			physicalDevice				= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
 	const VkQueueGlobalPriorityEXT	globalPriorities[]			= { VK_QUEUE_GLOBAL_PRIORITY_LOW_EXT, VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT, VK_QUEUE_GLOBAL_PRIORITY_HIGH_EXT, VK_QUEUE_GLOBAL_PRIORITY_REALTIME_EXT };
 	const vector<float>				queuePriorities				(1, 1.0f);

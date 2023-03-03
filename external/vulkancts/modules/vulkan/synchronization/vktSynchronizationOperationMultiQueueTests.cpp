@@ -112,11 +112,22 @@ class MultiQueues
 	};
 
 	MultiQueues	(Context& context, SynchronizationType type, bool timelineSemaphore)
-		: m_instance	(createCustomInstanceFromContext(context))
-		, m_queueCount	(0)
+#ifdef CTS_USES_VULKANSC
+		: m_instance	(createCustomInstanceFromContext(context)),
+#else
+		:
+#endif // CTS_USES_VULKANSC
+		m_queueCount	(0)
 	{
+#ifdef CTS_USES_VULKANSC
 		const InstanceInterface&					instanceDriver			= m_instance.getDriver();
 		const VkPhysicalDevice						physicalDevice			= chooseDevice(instanceDriver, m_instance, context.getTestContext().getCommandLine());
+		const VkInstance							instance				= m_instance;
+#else
+		const InstanceInterface&					instanceDriver			= context.getInstanceInterface();
+		const VkPhysicalDevice						physicalDevice			= context.getPhysicalDevice();
+		const VkInstance							instance				= context.getInstance();
+#endif // CTS_USES_VULKANSC
 		const std::vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 
 		for (deUint32 queuePropertiesNdx = 0; queuePropertiesNdx < queueFamilyProperties.size(); ++queuePropertiesNdx)
@@ -214,11 +225,11 @@ class MultiQueues
 				DE_NULL															//const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 			};
 
-			m_logicalDevice	= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), m_instance, instanceDriver, physicalDevice, &deviceInfo);
+			m_logicalDevice	= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceInfo);
 #ifndef CTS_USES_VULKANSC
-			m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), m_instance, *m_logicalDevice));
+			m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), instance, *m_logicalDevice));
 #else
-			m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), m_instance, *m_logicalDevice, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_logicalDevice));
+			m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), instance, *m_logicalDevice, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_logicalDevice));
 #endif // CTS_USES_VULKANSC
 			m_allocator		= MovePtr<Allocator>(new SimpleAllocator(*m_deviceDriver, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instanceDriver, physicalDevice)));
 
@@ -362,7 +373,9 @@ public:
 	}
 
 private:
+#ifdef CTS_USES_VULKANSC
 	CustomInstance					m_instance;
+#endif // CTS_USES_VULKANSC
 	Move<VkDevice>					m_logicalDevice;
 #ifndef CTS_USES_VULKANSC
 	de::MovePtr<vk::DeviceDriver>	m_deviceDriver;

@@ -552,6 +552,7 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 	}
 #endif
 
+	context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
 	vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
 
 	if (formatIsR64(m_data.format))
