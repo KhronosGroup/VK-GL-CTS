@@ -146,12 +146,12 @@ public:
 	const deUint32&					getQueueFamilyIndexEncode	(void);
 	Allocator&						getAllocator				(void);
 
-	de::MovePtr<vector<deUint8>>	loadVideoDataClipA			(void);
-	de::MovePtr<vector<deUint8>>	loadVideoDataClipB			(void);
-	de::MovePtr<vector<deUint8>>	loadVideoDataClipC			(void);
-	de::MovePtr<vector<deUint8>>	loadVideoDataClipD			(void);
-	de::MovePtr<vector<deUint8>>	loadVideoDataClipH264G13	(void);
-	de::MovePtr<vector<deUint8>>	loadVideoDataClipH265G13	(void);
+	std::string						getVideoDataClipA			(void);
+	std::string						getVideoDataClipB			(void);
+	std::string						getVideoDataClipC			(void);
+	std::string						getVideoDataClipD			(void);
+	std::string						getVideoDataClipH264G13		(void);
+	std::string						getVideoDataClipH265G13		(void);
 
 protected:
 	de::MovePtr<vector<deUint8>>	loadVideoData				(const string&							filename);

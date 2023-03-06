@@ -151,34 +151,34 @@ de::MovePtr<vector<deUint8>> VideoBaseTestInstance::loadVideoData (const string&
 	return result;
 }
 
-de::MovePtr<vector<deUint8>> VideoBaseTestInstance::loadVideoDataClipA (void)
+std::string VideoBaseTestInstance::getVideoDataClipA (void)
 {
-	return loadVideoData("vulkan/video/clip-a.h264");
+	return std::string("vulkan/video/clip-a.h264");
 }
 
-de::MovePtr<vector<deUint8>> VideoBaseTestInstance::loadVideoDataClipB (void)
+std::string VideoBaseTestInstance::getVideoDataClipB (void)
 {
-	return loadVideoData("vulkan/video/clip-b.h264");
+	return std::string("vulkan/video/clip-b.h264");
 }
 
-de::MovePtr<vector<deUint8>> VideoBaseTestInstance::loadVideoDataClipC (void)
+std::string VideoBaseTestInstance::getVideoDataClipC (void)
 {
-	return loadVideoData("vulkan/video/clip-c.h264");
+	return std::string("vulkan/video/clip-c.h264");
 }
 
-de::MovePtr<vector<deUint8>> VideoBaseTestInstance::loadVideoDataClipD (void)
+std::string VideoBaseTestInstance::getVideoDataClipD (void)
 {
-	return loadVideoData("vulkan/video/clip-d.h265");
+	return std::string("vulkan/video/clip-d.h265");
 }
 
-de::MovePtr<vector<deUint8>> VideoBaseTestInstance::loadVideoDataClipH264G13 (void)
+std::string VideoBaseTestInstance::getVideoDataClipH264G13 (void)
 {
-	return loadVideoData("vulkan/video/jellyfish-250-mbps-4k-uhd-GOB-IPB13.h264");
+	return std::string("vulkan/video/jellyfish-250-mbps-4k-uhd-GOB-IPB13.h264");
 }
 
-de::MovePtr<vector<deUint8>> VideoBaseTestInstance::loadVideoDataClipH265G13 (void)
+std::string VideoBaseTestInstance::getVideoDataClipH265G13 (void)
 {
-	return loadVideoData("vulkan/video/jellyfish-250-mbps-4k-uhd-GOB-IPB13.h265");
+	return std::string("vulkan/video/jellyfish-250-mbps-4k-uhd-GOB-IPB13.h265");
 }
 
 de::MovePtr<VkVideoDecodeCapabilitiesKHR> getVideoDecodeCapabilities (void* pNext)
