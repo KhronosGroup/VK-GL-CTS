@@ -118,14 +118,10 @@ include_directories(external/jsoncpp/src/include)
 # RenderDoc API
 include_directories(external/renderdoc/src)
 
-# FFmpeg used in vulkan video won't be part of android, fushia, or macos target
 if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)
-	# FFmpeg
-	if (DE_OS_IS_WIN32)
-		add_subdirectory(external/ffmpeg)
-	endif()
-	include_directories(external/ffmpeg/src/include)
+	add_subdirectory(external/ESExtractor)
 endif()
+
 include_directories(${PNG_INCLUDE_PATH})
 
 # DRM (Direct Rendering Manager) Headers

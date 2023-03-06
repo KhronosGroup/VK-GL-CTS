@@ -794,7 +794,6 @@ uint32_t VideoBaseDecoder::ResetPicDpbSlots (uint32_t picIndexSlotValidMask)
 VideoBaseDecoder::VideoBaseDecoder (Context& context)
 	: m_context									(context)
 	, m_nvFuncs									(createIfcNvFunctions(context.getTestContext().getPlatform().getVulkanPlatform()))
-	, m_ffmpegFuncs								(createIfcFfmpegFunctions())
 	, m_videoCodecOperation						(VK_VIDEO_CODEC_OPERATION_NONE_KHR)
 	, m_vkd										(DE_NULL)
 	, m_device									(DE_NULL)
@@ -2594,13 +2593,6 @@ VideoFrameBuffer* VideoBaseDecoder::GetVideoFrameBuffer (void)
 	DE_ASSERT(m_videoFrameBuffer.get() != DE_NULL);
 
 	return m_videoFrameBuffer.get();
-}
-
-IfcFfmpegFunctions* VideoBaseDecoder::GetIfcFfmpegFuncs (void)
-{
-	DE_ASSERT(m_ffmpegFuncs.get() != DE_NULL);
-
-	return m_ffmpegFuncs.get();
 }
 
 IfcNvFunctions* VideoBaseDecoder::GetNvFuncs (void)

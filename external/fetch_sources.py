@@ -68,7 +68,6 @@ class SourcePackage (Source):
 		self.archiveDir		= "packages"
 		self.postExtract	= postExtract
 		self.sysNdx			= {"Windows":0, "Linux":1, "Darwin":2}[platform.system()]
-		self.FFmpeg			= "FFmpeg" in url
 
 	def clean (self):
 		Source.clean(self)
@@ -298,10 +297,6 @@ PACKAGES = [
 		"c9d164ec247f426a525a7b89936694aefbc91fb7a50182b198898b8fc91174b4",
 		"libpng",
 		postExtract = postExtractLibpng),
-	SourcePackage(
-        {"Windows":"https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-05-31-12-34/ffmpeg-n4.4.2-1-g8e98dfc57f-win64-lgpl-shared-4.4.zip", "Linux": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-05-31-12-34/ffmpeg-n4.4.2-1-g8e98dfc57f-linux64-gpl-shared-4.4.tar.xz", "Darwin":""}[platform.system()],
-        {"Windows":"670df8e9d2ddd5e761459b3538f64b8826566270ef1ed13bcbfc63e73aab3fd9","Linux":"817f8c93ff1ef7ede3dad15b20415d5e366bcd6848844d55046111fd3de827d0", "Darwin":""}[platform.system()],
-		"ffmpeg"),
 	SourceFile(
 		"https://raw.githubusercontent.com/baldurk/renderdoc/v1.1/renderdoc/api/app/renderdoc_app.h",
 		"renderdoc_app.h",
@@ -343,6 +338,11 @@ PACKAGES = [
 		None,
 		"7d68747d3524842afaf050c5e00a10f5b8c07904",
 		"video-parser"),
+	GitRepo(
+		"https://github.com/Igalia/ESExtractor.git",
+		"git@github.com:Igalia/ESExtractor.git",
+		"v0.2.4",
+		"ESExtractor"),
 ]
 
 def parseArgs ():

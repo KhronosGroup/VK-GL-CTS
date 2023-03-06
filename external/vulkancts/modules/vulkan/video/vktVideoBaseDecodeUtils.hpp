@@ -40,7 +40,6 @@
 
 #include "vktVideoTestUtils.hpp"
 #include "vktVideoSessionNvUtils.hpp"
-#include "vktVideoSessionFfmpegUtils.hpp"
 #include "extNvidiaVideoParserIf.hpp"
 #include "vkImageWithMemory.hpp"
 #include "vkBufferWithMemory.hpp"
@@ -556,12 +555,10 @@ public:
 	int32_t													ReleaseDisplayedFrame			(DecodedFrame*											pDisplayedFrame);
 	VideoFrameBuffer*										GetVideoFrameBuffer				(void);
 	IfcNvFunctions*											GetNvFuncs						(void);
-	IfcFfmpegFunctions*										GetIfcFfmpegFuncs				(void);
 
 protected:
 	Context&												m_context;
 	de::MovePtr<IfcNvFunctions>								m_nvFuncs;
-	de::MovePtr<IfcFfmpegFunctions>							m_ffmpegFuncs;
 	VkVideoCodecOperationFlagBitsKHR						m_videoCodecOperation;
 	const DeviceInterface*									m_vkd;
 	VkDevice												m_device;

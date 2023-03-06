@@ -594,7 +594,6 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/video/vktVideoCapabilitiesTests.cpp \
 	external/vulkancts/modules/vulkan/video/vktVideoDecodeTests.cpp \
 	external/vulkancts/modules/vulkan/video/vktVideoPictureUtils.cpp \
-	external/vulkancts/modules/vulkan/video/vktVideoSessionFfmpegUtils.cpp \
 	external/vulkancts/modules/vulkan/video/vktVideoSessionNvUtils.cpp \
 	external/vulkancts/modules/vulkan/video/vktVideoTestUtils.cpp \
 	external/vulkancts/modules/vulkan/video/vktVideoTests.cpp \
