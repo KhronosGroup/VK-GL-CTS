@@ -758,6 +758,8 @@ void resetStateGLCore (const RenderContext& renderCtx, const ContextInfo& ctxInf
 
 		gl.bindBuffer(GL_TEXTURE_BUFFER, 0);
 
+                const bool	supportsCubemapArray	= ctxInfo.isExtensionSupported("GL_ARB_texture_cube_map_array") || contextSupports(type, ApiType::core(4,0));
+
 		for (int ndx = 0; ndx < numTexUnits; ndx++)
 		{
 			gl.activeTexture(GL_TEXTURE0 + ndx);
@@ -838,22 +840,22 @@ void resetStateGLCore (const RenderContext& renderCtx, const ContextInfo& ctxInf
 				gl.texParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_SWIZZLE_A,		GL_ALPHA);
 			}
 
-			// Reset cube array texture.
-			gl.bindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, 0);
-			gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MIN_FILTER,		GL_NEAREST_MIPMAP_LINEAR);
-			gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MAG_FILTER,		GL_LINEAR);
-			gl.texParameterfv(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_BORDER_COLOR,   &borderColor[0]);
-			gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_S,			GL_REPEAT);
-			gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_T,			GL_REPEAT);
-			gl.texParameterf(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MIN_LOD,			-1000.0f);
-			gl.texParameterf(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MAX_LOD,			1000.0f);
-			gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_BASE_LEVEL,		0);
-			gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MAX_LEVEL,		1000);
-			gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_COMPARE_MODE,	GL_NONE);
-			gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_COMPARE_FUNC,	GL_LEQUAL);
-
-			if (contextSupports(type, ApiType::core(3,3)))
+			if (supportsCubemapArray)
 			{
+				// Reset cube array texture.
+				gl.bindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, 0);
+				gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MIN_FILTER,		GL_NEAREST_MIPMAP_LINEAR);
+				gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MAG_FILTER,		GL_LINEAR);
+				gl.texParameterfv(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_BORDER_COLOR,	&borderColor[0]);
+				gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_S,			GL_REPEAT);
+				gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_T,			GL_REPEAT);
+				gl.texParameterf(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MIN_LOD,			-1000.0f);
+				gl.texParameterf(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MAX_LOD,			1000.0f);
+				gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_BASE_LEVEL,		0);
+				gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MAX_LEVEL,		1000);
+				gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_COMPARE_MODE,	GL_NONE);
+				gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_COMPARE_FUNC,	GL_LEQUAL);
+
 				gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_SWIZZLE_R,		GL_RED);
 				gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_SWIZZLE_G,		GL_GREEN);
 				gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_SWIZZLE_B,		GL_BLUE);
