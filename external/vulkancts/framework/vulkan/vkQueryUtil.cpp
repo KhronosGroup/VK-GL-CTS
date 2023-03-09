@@ -328,6 +328,39 @@ std::vector<VkSparseImageMemoryRequirements> getImageSparseMemoryRequirements(co
 
 	return requirements;
 }
+
+std::vector<vk::VkSparseImageMemoryRequirements>	getDeviceImageSparseMemoryRequirements	(const DeviceInterface&		vk,
+																							 VkDevice					device,
+																							 const VkImageCreateInfo&	imageCreateInfo,
+																							 VkImageAspectFlagBits		planeAspect)
+{
+	const VkDeviceImageMemoryRequirements				info
+	{
+		VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS,
+		nullptr,
+		&imageCreateInfo,
+		planeAspect
+	};
+	std::vector<vk::VkSparseImageMemoryRequirements2>	requirements;
+	deUint32											count = 0;
+
+	vk.getDeviceImageSparseMemoryRequirements(device, &info, &count, DE_NULL);
+
+	if (count > 0)
+	{
+		requirements.resize(count);
+		vk.getDeviceImageSparseMemoryRequirements(device, &info, &count, requirements.data());
+
+		if ((size_t)count != requirements.size())
+			TCU_FAIL("Returned sparse image memory requirements count changes between queries");
+	}
+
+	std::vector<vk::VkSparseImageMemoryRequirements>	result(requirements.size());
+	std::transform(requirements.begin(), requirements.end(), result.begin(),
+		[](const VkSparseImageMemoryRequirements2& item) { return item.memoryRequirements; });
+
+	return result;
+}
 #endif // CTS_USES_VULKANSC
 
 VkMemoryRequirements getBufferMemoryRequirements (const DeviceInterface& vk, VkDevice device, VkBuffer buffer)
