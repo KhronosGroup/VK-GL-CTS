@@ -1516,22 +1516,42 @@ private:
 	const tcu::Vec4 m_borderTop;
 };
 
+tcu::Vec3 removeAlpha (const tcu::Vec4& color)
+{
+	const tcu::Vec3 rgb (color.x(), color.y(), color.z());
+	return rgb;
+}
+
 // Verifies the top left pixel matches exactly.
-bool verifyTopLeftCorner (const tcu::ConstPixelBufferAccess& result, const tcu::ConstPixelBufferAccess& reference, const tcu::PixelBufferAccess& errorMask)
+bool verifyTopLeftCorner (const tcu::ConstPixelBufferAccess& result, const tcu::ConstPixelBufferAccess& reference, const tcu::PixelBufferAccess& errorMask, bool partialAlpha)
 {
 	// Check corner.
 	const auto resultColor		= result.getPixel(0, 0);
 	const auto referenceColor	= reference.getPixel(0, 0);
 
-	const auto red		= tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f);
-	const auto green	= tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f);
-	const auto black	= tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
-	const bool match	= (resultColor == referenceColor);
+	const auto resultColorRGB		= removeAlpha(resultColor);
+	const auto referenceColorRGB	= removeAlpha(referenceColor);
+
+	const auto red			= tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f);
+	const auto green		= tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f);
+	const auto black		= tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+	const bool alphaMatch	= (partialAlpha ? (resultColor.w() > 0.0f && resultColor.w() < 1.0f) : (resultColor.w() == referenceColor.w()));
+	const bool match		= ((resultColorRGB == referenceColorRGB) && alphaMatch);
 
 	tcu::clear(errorMask, black);
 	errorMask.setPixel((match ? green : red), 0, 0);
 
 	return match;
+}
+
+bool verifyTopLeftCornerExactly (const tcu::ConstPixelBufferAccess& result, const tcu::ConstPixelBufferAccess& reference, const tcu::PixelBufferAccess& errorMask)
+{
+	return verifyTopLeftCorner(result, reference, errorMask, false/*partialAlpha*/);
+}
+
+bool verifyTopLeftCornerWithPartialAlpha (const tcu::ConstPixelBufferAccess& result, const tcu::ConstPixelBufferAccess& reference, const tcu::PixelBufferAccess& errorMask)
+{
+	return verifyTopLeftCorner(result, reference, errorMask, true/*partialAlpha*/);
 }
 
 const VertexGenerator* getVertexWithPaddingGenerator ()
@@ -6354,7 +6374,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 
 			config.topologyConfig.staticValue			= vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 			config.obliqueLine							= true;
-			config.colorVerificator						= verifyTopLeftCorner;
+			config.colorVerificator						= verifyTopLeftCornerExactly;
 			config.lineStippleEnableConfig.staticValue	= false;
 			config.lineStippleParamsConfig.staticValue	= LineStippleParams{0u, 0u};
 			config.lineRasterModeConfig.staticValue		= LineRasterizationMode::RECTANGULAR;
@@ -6365,6 +6385,20 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.lineRasterModeConfig.swapValues();
 			config.referenceColor.reset(new SingleColorGenerator(kDefaultClearColor));
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "line_raster_mode_rectangular", "Dynamically set line rasterization mode to rectangular", config));
+		}
+		if (!kUseMeshShaders)
+		{
+			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+
+			config.topologyConfig.staticValue			= vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+			config.obliqueLine							= true;
+			config.colorVerificator						= verifyTopLeftCornerWithPartialAlpha;
+			config.lineStippleEnableConfig.staticValue	= false;
+			config.lineStippleParamsConfig.staticValue	= LineStippleParams{0u, 0u};
+			config.lineRasterModeConfig.staticValue		= LineRasterizationMode::BRESENHAM;
+			config.lineRasterModeConfig.dynamicValue	= LineRasterizationMode::SMOOTH;
+
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "line_raster_mode_smooth", "Dynamically set line rasterization mode to smooth", config));
 		}
 
 		// Viewport.
@@ -7264,7 +7298,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				const bool			wScalingEnable	= (i > 0);
 				const std::string	enableStr		= (wScalingEnable ? "enable" : "disable");
 
-				config.colorVerificator = verifyTopLeftCorner;
+				config.colorVerificator = verifyTopLeftCornerExactly;
 				config.viewportWScaling = true;
 				config.viewportWScalingEnableConfig.staticValue = !wScalingEnable;
 				config.viewportWScalingEnableConfig.dynamicValue = wScalingEnable;
