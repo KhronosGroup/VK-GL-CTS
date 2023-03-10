@@ -427,6 +427,7 @@ public:
 		std::vector<deUint64>								timelineValues;
 		const deUint64										secondInMicroSeconds	= 1000ull * 1000ull * 1000ull;
 		deUint64											startTime;
+		VkResult											result = VK_SUCCESS;
 
 		for (deUint32 i = 0; i < semaphorePtrs.size(); i++)
 		{
@@ -449,7 +450,8 @@ public:
 		do
 		{
 			deUint64	value;
-			VkResult	result	=	vk.getSemaphoreCounterValue(device, semaphores.back(), &value);
+
+			result = vk.getSemaphoreCounterValue(device, semaphores.back(), &value);
 
 			if (result != VK_SUCCESS)
 				break;
@@ -463,12 +465,15 @@ public:
 			}
 
 			if (value > timelineValues.back())
+			{
+				result = VK_ERROR_UNKNOWN;
 				break;
-		} while ((deGetMicroseconds() - startTime) > secondInMicroSeconds);
+			}
+		} while ((deGetMicroseconds() - startTime) < secondInMicroSeconds);
 
 		VK_CHECK(vk.deviceWaitIdle(device));
 
-		if ((deGetMicroseconds() - startTime) < secondInMicroSeconds)
+		if (result != VK_SUCCESS)
 			return tcu::TestStatus::fail("Fail");
 		return tcu::TestStatus::fail("Timeout");
 	}
