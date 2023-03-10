@@ -128,7 +128,8 @@ void checkTextureSupport (Context& context, const Texture2DArrayTestCaseParamete
 		context.requireDeviceFunctionality("VK_KHR_sampler_mirror_clamp_to_edge");
 
 #ifndef CTS_USES_VULKANSC
-	if (testParameters.format == VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16 && testParameters.mipmaps && context.getRGBA10X6FormatsFeaturesEXT().formatRgba10x6WithoutYCbCrSampler == VK_FALSE)
+	bool mipmaps = (deLog2Floor32(de::max(testParameters.width, testParameters.height)) + 1) > 1 || testParameters.mipmaps;
+	if (testParameters.format == VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16 && mipmaps && context.getRGBA10X6FormatsFeaturesEXT().formatRgba10x6WithoutYCbCrSampler == VK_FALSE)
 		TCU_THROW(NotSupportedError, "formatRgba10x6WithoutYCbCrSampler not supported");
 #endif
 }
