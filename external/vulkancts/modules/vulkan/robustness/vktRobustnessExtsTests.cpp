@@ -1263,8 +1263,23 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 					checks << "    else if (temp == zzzo) temp = " << vecType << "(0);\n";
 
 				// non-volatile value replaced with stored value
-				if (supportsStores(m_data.descriptorType) && !m_data.vol)
+				if (supportsStores(m_data.descriptorType) && !m_data.vol) {
 					checks << "    else if (temp == " << getStoreValue(m_data.descriptorType, numComponents, vecType, bufType) << ") temp = " << vecType << "(0);\n";
+
+					if (m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC || m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
+
+						for (int mask = (numComponents*numComponents) - 2; mask > 0; mask--) {
+							checks << "    else if (temp == " << vecType << "(";
+							for (int vecIdx = 0; vecIdx < 4; vecIdx++) {
+								if (mask & (1 << vecIdx)) checks << storeValue;
+								else checks << "0";
+
+								if (vecIdx != 3) checks << ",";
+							}
+							checks << ")) temp = " << vecType << "(0);\n";
+						}
+					}
+				}
 
 				// value straddling the boundary, returning a partial vector
 				if (expectedOOB2 != expectedOOB)
