@@ -689,8 +689,8 @@ void BottomLevelAccelerationStructure::setDefaultGeometryData (const VkShaderSta
 		geometryData.push_back(tcu::Vec3(-1.0f, -1.0f, z));
 		geometryData.push_back(tcu::Vec3(-1.0f, +1.0f, z));
 		geometryData.push_back(tcu::Vec3(+1.0f, -1.0f, z));
-		geometryData.push_back(tcu::Vec3(-1.0f, +1.0f, z));
 		geometryData.push_back(tcu::Vec3(+1.0f, -1.0f, z));
+		geometryData.push_back(tcu::Vec3(-1.0f, +1.0f, z));
 		geometryData.push_back(tcu::Vec3(+1.0f, +1.0f, z));
 	}
 	else
