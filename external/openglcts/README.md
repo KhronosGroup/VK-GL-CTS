@@ -13,37 +13,39 @@ Up-to-date documentation for dEQP is available at:
 
 Contents
 ------------------------
- - [Test History](#test-history)
- - [Introduction](#introduction)
- - [Test Environment Requirements](#test-environment-requirements)
- - [Configuring and Building the Tests](#configuring-and-building-the-tests)
+- [OpenGL and OpenGL ES 2.0/3.X Conformance Test Instructions](#opengl-and-opengl-es-203x-conformance-test-instructions)
+  - [Contents](#contents)
+  - [Test History](#test-history)
+  - [Introduction](#introduction)
+  - [Test Environment Requirements](#test-environment-requirements)
+  - [Configuring and Building the Tests](#configuring-and-building-the-tests)
     - [Configuration](#configuration)
     - [Building the Tests](#building-the-tests)
-       - [Windows](#windows)
-       - [Linux](#linux)
-       - [Android](#android)
- - [Porting](#porting)
+      - [Windows](#windows)
+      - [Linux](#linux)
+      - [Android](#android)
+  - [Porting](#porting)
     - [Common Porting Changes](#common-porting-changes)
-    - [Other Allowable Porting Changes](#other-allowable-porting-changes)
- - [Running the Tests](#running-the-tests)
+    - [Other Allowable Changes](#other-allowable-changes)
+  - [Running the Tests](#running-the-tests)
     - [Conformance runs](#conformance-runs)
-       - [Linux and Windows](#linux-and-windows)
-       - [Android](#android-1)
+    - [Linux and Windows](#linux-and-windows)
+      - [Android](#android-1)
     - [Running Subsets](#running-subsets)
-       - [Command line options](#command-line-options)
+      - [Command line options](#command-line-options)
     - [Understanding the Results](#understanding-the-results)
     - [Test Logs](#test-logs)
- - [Debugging Test Failures](#debugging-test-failures)
- - [Waivers](#waivers)
- - [Creating a Submission Package](#creating-a-submission-package)
- - [Submission Update Package](#submission-update-package)
- - [Passing Criteria](#passing-criteria)
- - [Troubleshooting](#troubleshooting)
+  - [Debugging Test Failures](#debugging-test-failures)
+  - [Waivers](#waivers)
+  - [Creating a Submission Package](#creating-a-submission-package)
+  - [Submission Update Package](#submission-update-package)
+  - [Passing Criteria](#passing-criteria)
+  - [Troubleshooting](#troubleshooting)
     - [Crashes early on in the run](#crashes-early-on-in-the-run)
     - [Build fails](#build-fails)
- - [Adding new tests](#adding-new-tests)
- - [Acknowledgments](#acknowledgments)
- - [Revision History](#revision-history)
+  - [Adding new tests](#adding-new-tests)
+  - [Acknowledgments](#acknowledgments)
+  - [Revision History](#revision-history)
 
 Test History
 ------------------------
@@ -102,7 +104,7 @@ the Standard Template Library (STL).
 Configuring and Building the Tests
 ------------------------
 The CTS is built via CMake build system. The requirements for the build are as follows:
-- CMake 3.0 (3.6 for Android NDK r17+ builds) or newer
+- CMake 3.17.2 or newer
 - C++ compiler with STL and exceptions support
 - Unix: Make + GCC / Clang
 - Windows: Visual Studio or Windows SDK (available free-of-charge)
@@ -250,7 +252,7 @@ using Cmake.
 
 Requirements:
 - Visual Studio (2015 or newer recommended) or Windows SDK
-- CMake 3.10.2 Windows native version (i.e. not Cygwin version)
+- CMake 3.17.2 Windows native version (i.e. not Cygwin version)
 - For GL/ES2/ES3.x tests: OpengGL, OpenGL ES 2 or ES 3.x libraries and headers
 
 To choose the backend build system for CMake, choose one of the following Generator Names for the
@@ -297,7 +299,7 @@ function wcmake () {
 
 Required tools:
 - Standard build utilities (make, gcc, etc.)
-- CMake 3.10.2
+- CMake 3.17.2
 - Necessary API libraries (OpenGL, GLES, EGL depending on configuration)
 
 Building ES2 or ES3.x conformance tests:

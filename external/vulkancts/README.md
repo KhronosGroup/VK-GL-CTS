@@ -19,7 +19,7 @@ The following tools must be installed and present in the PATH variable:
 
  * Git (for checking out sources)
  * Python 3.x (for the build related scripts, some other scripts still use Python 2.7.x)
- * CMake 3.10.2 or newer
+ * CMake 3.17.2 or newer
 
 ### Win32
 

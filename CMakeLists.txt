@@ -1,7 +1,7 @@
 # dEQP cmake file
 
 # Module FindGit requires cmake >= 2.8.2
-cmake_minimum_required(VERSION 3.10.2)
+cmake_minimum_required(VERSION 3.17.2)
 
 option(GLES_ALLOW_DIRECT_LINK "Allow direct linking to GLES libraries" ON)
 
