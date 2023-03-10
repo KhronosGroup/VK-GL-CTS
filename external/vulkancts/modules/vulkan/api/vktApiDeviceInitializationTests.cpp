@@ -1584,20 +1584,6 @@ void checkFeatures (const PlatformInterface&				vkp,
 	}
 }
 
-vector<string> removeExtensions (const vector<string>& a, const vector<const char*>& b)
-{
-	vector<string>	res;
-	set<string>		removeExts	(b.begin(), b.end());
-
-	for (const auto & aIter : a)
-	{
-		if (!de::contains(removeExts, aIter))
-			res.push_back(aIter);
-	}
-
-	return res;
-}
-
 tcu::TestStatus createDeviceWithUnsupportedFeaturesTest (Context& context)
 {
 	const PlatformInterface&				vkp						= context.getPlatformInterface();

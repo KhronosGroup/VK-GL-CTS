@@ -37,7 +37,7 @@ namespace vk
 		VkPhysicalDeviceImageRobustnessFeaturesEXT *imageRobustnessFeatures = nullptr;
 #ifndef CTS_USES_VULKANSC
 		VkPhysicalDeviceFragmentShadingRateFeaturesKHR *fragmentShadingRateFeatures = nullptr;
-		VkPhysicalDeviceShadingRateImageFeaturesNV *shadingRateImageFeatures = nullptr;
+		VkPhysicalDeviceShadingRateImageFeaturesNV *shadingRateImageFeaturesNV = nullptr;
 		VkPhysicalDeviceFragmentDensityMapFeaturesEXT *fragmentDensityMapFeatures = nullptr;
 		VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT *pageableDeviceLocalMemoryFeatures = nullptr;
 		VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT *mutableDescriptorTypeFeatures = nullptr;
@@ -133,7 +133,7 @@ namespace vk
 						else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR)
 							fragmentShadingRateFeatures = reinterpret_cast<VkPhysicalDeviceFragmentShadingRateFeaturesKHR *>(rawStructPtr);
 						else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADING_RATE_IMAGE_FEATURES_NV)
-							shadingRateImageFeatures = reinterpret_cast<VkPhysicalDeviceShadingRateImageFeaturesNV *>(rawStructPtr);
+							shadingRateImageFeaturesNV = reinterpret_cast<VkPhysicalDeviceShadingRateImageFeaturesNV *>(rawStructPtr);
 						else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_FEATURES_EXT)
 							fragmentDensityMapFeatures = reinterpret_cast<VkPhysicalDeviceFragmentDensityMapFeaturesEXT *>(rawStructPtr);
 						else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PAGEABLE_DEVICE_LOCAL_MEMORY_FEATURES_EXT)
@@ -223,8 +223,8 @@ namespace vk
 				 fragmentShadingRateFeatures->primitiveFragmentShadingRate ||
 				 fragmentShadingRateFeatures->attachmentFragmentShadingRate))
 			{
-				if (shadingRateImageFeatures)
-					shadingRateImageFeatures->shadingRateImage = false;
+				if (shadingRateImageFeaturesNV)
+					shadingRateImageFeaturesNV->shadingRateImage = false;
 				if (fragmentDensityMapFeatures)
 					fragmentDensityMapFeatures->fragmentDensityMap = false;
 			}

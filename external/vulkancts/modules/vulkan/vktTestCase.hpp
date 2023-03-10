@@ -117,6 +117,7 @@ public:
 #include "vkDevicePropertiesForContextDecl.inl"
 
 	const std::vector<std::string>&				getDeviceExtensions					(void) const;
+	const std::vector<const char*>&				getDeviceCreationExtensions			(void) const;
 	vk::VkDevice								getDevice							(void) const;
 	const vk::DeviceInterface&					getDeviceInterface					(void) const;
 	deUint32									getUniversalQueueFamilyIndex		(void) const;
@@ -221,7 +222,6 @@ void collectAndReportDebugMessages(vk::DebugReportRecorder &debugReportRecorder,
 
 #endif // CTS_USES_VULKANSC
 
-std::vector<std::string> removeExtensions (const std::vector<std::string>& a, const std::vector<const char*>& b);
 } // vkt
 
 #endif // _VKTTESTCASE_HPP

@@ -2480,18 +2480,9 @@ Move<VkDevice> createCustomDevice (Context&								context,
 		}
 	};
 
-	// context.getDeviceExtensions() returns supported device extension including extensions that have been promoted to
-	// Vulkan core. The core extensions must be removed from the list.
-	std::vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	std::vector<std::string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	std::vector<const char*>	extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const std::string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
-
-	const auto& deviceFeatures2 = context.getDeviceFeatures2();
+	// Replicate default device extension list.
+	const auto	extensionNames	= context.getDeviceCreationExtensions();
+	const auto&	deviceFeatures2	= context.getDeviceFeatures2();
 
 	const void *pNext = &deviceFeatures2;
 #ifdef CTS_USES_VULKANSC
