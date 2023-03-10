@@ -39,6 +39,7 @@
 #include "tcuCommandLine.hpp"
 
 #include <map>
+#include <mutex>
 
 namespace vk
 {
@@ -217,9 +218,8 @@ private:
 
 // Each cache node takes 4 * 4 = 16 bytes; 1M items takes 16M memory.
 const deUint32						cacheMaxItems		= 1024 * 1024;
-cacheMutex*							cacheFileMutex		= 0;
-bool								cacheFileFirstRun	= true;
-deUint32*							cacheMempool		= 0;
+cacheMutex*							cacheFileMutex		= nullptr;
+deUint32*							cacheMempool		= nullptr;
 #ifndef DISABLE_SHADERCACHE_IPC
 ipc_sharedmemory					cacheIPCMemory;
 #endif
@@ -344,77 +344,96 @@ void shaderCacheFirstRunCheck (const tcu::CommandLine& commandLine)
 {
 	bool first = true;
 
-	if (!cacheFileFirstRun)
-		return;
+	// We need to solve two problems here:
+	// 1) The cache and cache mutex only have to be initialized once by the first thread that arrives here.
+	// 2) We must prevent other threads from exiting early from this function thinking they don't have to initialize the cache and
+	//    cache mutex, only to try to lock the cache mutex while the first thread is still initializing it. To prevent this, we must
+	//    hold an initialization mutex (declared below) while initializing the cache and cache mutex, making other threads wait.
 
-	cacheFileFirstRun = false;
+	// Used to check and set cacheFileFirstRun. We make it static, and C++11 guarantees it will only be initialized once.
+	static std::mutex cacheFileFirstRunMutex;
+	static bool cacheFileFirstRun = true;
 
+	// Is cacheFileFirstRun true for this thread?
+	bool needInit = false;
+
+	// Check cacheFileFirstRun only while holding the mutex, and hold it while initializing the cache.
+	const std::lock_guard<std::mutex> lock(cacheFileFirstRunMutex);
+	if (cacheFileFirstRun)
+	{
+		needInit = true;
+		cacheFileFirstRun = false;
+	}
+
+	if (needInit)
+	{
 #ifndef DISABLE_SHADERCACHE_IPC
-	if (commandLine.isShaderCacheIPCEnabled())
-	{
-		// IPC path, allocate shared mutex and shared memory
-		cacheFileMutex = new cacheMutexIPC;
-		cacheFileMutex->lock();
-		ipc_mem_init(&cacheIPCMemory, "cts_shadercache_memory", sizeof(deUint32) * (cacheMaxItems * 4 + 1));
-		if (ipc_mem_open_existing(&cacheIPCMemory) != 0)
+		if (commandLine.isShaderCacheIPCEnabled())
 		{
-			ipc_mem_create(&cacheIPCMemory);
-			cacheMempool = (deUint32*)ipc_mem_access(&cacheIPCMemory);
-			cacheMempool[0] = 0;
-		}
-		else
-		{
-			cacheMempool = (deUint32*)ipc_mem_access(&cacheIPCMemory);
-			first = false;
-		}
-		atexit(shaderCacheCleanIPC);
-	}
-	else
-#endif
-	{
-		// Non-IPC path, allocate local mutex and memory
-		cacheFileMutex = new cacheMutex;
-		cacheFileMutex->lock();
-		cacheMempool = new deUint32[cacheMaxItems * 4 + 1];
-		cacheMempool[0] = 0;
-
-		atexit(shaderCacheClean);
-	}
-
-	if (first)
-	{
-		if (commandLine.isShaderCacheTruncateEnabled())
-		{
-			// Open file with "w" access to truncate it
-			FILE* f = fopen(commandLine.getShaderCacheFilename(), "wb");
-			if (f)
-				fclose(f);
-		}
-		else
-		{
-			// Parse chunked shader cache file for hashes and offsets
-			FILE* file	= fopen(commandLine.getShaderCacheFilename(), "rb");
-			int count	= 0;
-			if (file)
+			// IPC path, allocate shared mutex and shared memory
+			cacheFileMutex = new cacheMutexIPC;
+			cacheFileMutex->lock();
+			ipc_mem_init(&cacheIPCMemory, "cts_shadercache_memory", sizeof(deUint32) * (cacheMaxItems * 4 + 1));
+			if (ipc_mem_open_existing(&cacheIPCMemory) != 0)
 			{
-				deUint32 chunksize	= 0;
-				deUint32 hash		= 0;
-				deUint32 offset		= 0;
-				bool ok				= true;
-				while (ok)
+				ipc_mem_create(&cacheIPCMemory);
+				cacheMempool = (deUint32*)ipc_mem_access(&cacheIPCMemory);
+				cacheMempool[0] = 0;
+			}
+			else
+			{
+				cacheMempool = (deUint32*)ipc_mem_access(&cacheIPCMemory);
+				first = false;
+			}
+			atexit(shaderCacheCleanIPC);
+		}
+		else
+#endif
+		{
+			// Non-IPC path, allocate local mutex and memory
+			cacheFileMutex = new cacheMutex;
+			cacheFileMutex->lock();
+			cacheMempool = new deUint32[cacheMaxItems * 4 + 1];
+			cacheMempool[0] = 0;
+
+			atexit(shaderCacheClean);
+		}
+
+		if (first)
+		{
+			if (commandLine.isShaderCacheTruncateEnabled())
+			{
+				// Open file with "w" access to truncate it
+				FILE* f = fopen(commandLine.getShaderCacheFilename(), "wb");
+				if (f)
+					fclose(f);
+			}
+			else
+			{
+				// Parse chunked shader cache file for hashes and offsets
+				FILE* file	= fopen(commandLine.getShaderCacheFilename(), "rb");
+				int count	= 0;
+				if (file)
 				{
-					offset = (deUint32)ftell(file);
-					if (ok) ok = fread(&chunksize, 1, 4, file)				== 4;
-					if (ok) ok = fread(&hash, 1, 4, file)					== 4;
-					if (ok) cacheInsert(hash, offset);
-					if (ok) ok = fseek(file, offset + chunksize, SEEK_SET)	== 0;
-					count++;
+					deUint32 chunksize	= 0;
+					deUint32 hash		= 0;
+					deUint32 offset		= 0;
+					bool ok				= true;
+					while (ok)
+					{
+						offset = (deUint32)ftell(file);
+						if (ok) ok = fread(&chunksize, 1, 4, file)				== 4;
+						if (ok) ok = fread(&hash, 1, 4, file)					== 4;
+						if (ok) cacheInsert(hash, offset);
+						if (ok) ok = fseek(file, offset + chunksize, SEEK_SET)	== 0;
+						count++;
+					}
+					fclose(file);
 				}
-				fclose(file);
 			}
 		}
+		cacheFileMutex->unlock();
 	}
-	cacheFileMutex->unlock();
 }
 
 std::string intToString (deUint32 integer)
