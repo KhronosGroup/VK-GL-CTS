@@ -14,6 +14,7 @@ dEQP-EGL.functional.get_proc_address.extension.gl_nv_memory_object_sparse
 dEQP-EGL.functional.get_proc_address.extension.gl_qcom_motion_estimation
 dEQP-EGL.functional.get_proc_address.extension.gl_qcom_frame_extrapolation
 dEQP-EGL.functional.get_proc_address.extension.gl_qcom_shading_rate
+dEQP-EGL.functional.fence_sync.valid.egl_fence_persistent_buffer
 dEQP-EGL.functional.sharing.gles2.texture.render_sample_mixed
 dEQP-EGL.functional.image.api.create_image_gles2_android_native_rgb565
 dEQP-EGL.functional.image.api.create_image_gles2_android_native_rgb8

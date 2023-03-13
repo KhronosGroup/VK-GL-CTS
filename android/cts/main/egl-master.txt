@@ -1346,6 +1346,7 @@ dEQP-EGL.functional.fence_sync.valid.get_status_signaled
 dEQP-EGL.functional.fence_sync.valid.get_condition
 dEQP-EGL.functional.fence_sync.valid.destroy
 dEQP-EGL.functional.fence_sync.valid.wait_server
+dEQP-EGL.functional.fence_sync.valid.egl_fence_persistent_buffer
 dEQP-EGL.functional.fence_sync.invalid.create_invalid_display
 dEQP-EGL.functional.fence_sync.invalid.create_invalid_type
 dEQP-EGL.functional.fence_sync.invalid.create_invalid_attribs
