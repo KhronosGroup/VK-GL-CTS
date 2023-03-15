@@ -6913,6 +6913,570 @@ tcu::TestStatus CullAndPrimitiveIdInstance::iterate ()
 	return tcu::TestStatus::pass("Pass");
 }
 
+struct PolygonModeLargePointsConfig
+{
+	const float	pointSize;
+	const bool	meshShader;
+	const bool	tessellationShaders;
+	const bool	geometryShader;
+	const bool	dynamicPolygonMode;
+
+	PolygonModeLargePointsConfig (float pointSize_, bool meshShader_, bool tessellationShaders_, bool geometryShader_, bool dynamicPolygonMode_)
+		: pointSize				(pointSize_)
+		, meshShader			(meshShader_)
+		, tessellationShaders	(tessellationShaders_)
+		, geometryShader		(geometryShader_)
+		, dynamicPolygonMode	(dynamicPolygonMode_)
+	{
+		if (meshShader)
+		{
+			DE_ASSERT(!tessellationShaders && !geometryShader);
+		}
+	}
+};
+
+class PolygonModeLargePointsCase : public vkt::TestCase
+{
+public:
+					PolygonModeLargePointsCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const PolygonModeLargePointsConfig& config)
+						: vkt::TestCase	(testCtx, name, description)
+						, m_config		(config)
+						{}
+	virtual			~PolygonModeLargePointsCase	(void) {}
+
+	void			checkSupport				(Context& context) const override;
+	void			initPrograms				(vk::SourceCollections& programCollection) const override;
+	TestInstance*	createInstance				(Context& context) const override;
+
+	static const tcu::Vec4		geometryColor;
+	static constexpr uint32_t	kNumTriangles	= 2u;
+	static constexpr uint32_t	kNumPoints		= kNumTriangles * 3u;
+
+protected:
+	const PolygonModeLargePointsConfig	m_config;
+};
+
+const tcu::Vec4 PolygonModeLargePointsCase::geometryColor (0.0f, 0.0f, 1.0f, 1.0f);
+
+class PolygonModeLargePointsInstance : public vkt::TestInstance
+{
+public:
+						PolygonModeLargePointsInstance	(Context& context, const PolygonModeLargePointsConfig& config)
+							: vkt::TestInstance(context)
+							, m_config(config)
+							{}
+	virtual				~PolygonModeLargePointsInstance	(void) {}
+
+	tcu::TestStatus		iterate							(void) override;
+
+protected:
+	const PolygonModeLargePointsConfig	m_config;
+};
+
+void PolygonModeLargePointsCase::checkSupport (Context &context) const
+{
+#ifndef CTS_USES_VULKANSC
+	context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#else
+	DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FILL_MODE_NON_SOLID);
+
+#ifndef CTS_USES_VULKANSC
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") && !context.getPortabilitySubsetFeatures().pointPolygons)
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Point polygons are not supported by this implementation");
+#else
+	DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+
+	const auto& limits = context.getDeviceProperties().limits;
+	if (!limits.standardSampleLocations)
+		TCU_THROW(NotSupportedError, "standardSampleLocations not supported");
+
+	if (m_config.meshShader)
+		context.requireDeviceFunctionality("VK_EXT_mesh_shader");
+
+	if (m_config.tessellationShaders || m_config.geometryShader)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_TESSELLATION_AND_GEOMETRY_POINT_SIZE);
+
+	if (m_config.tessellationShaders)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
+
+	if (m_config.geometryShader)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+
+	if (m_config.pointSize != 1.0f)
+	{
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_LARGE_POINTS);
+
+		const auto& validRange = limits.pointSizeRange;
+		if (validRange[0] > m_config.pointSize || validRange[1] < m_config.pointSize)
+		{
+			std::ostringstream msg;
+			msg << "Required point size " << m_config.pointSize << " outside valid range [" << validRange[0] << ", " << validRange[1] << "]";
+			TCU_THROW(NotSupportedError, msg.str());
+		}
+	}
+
+#ifndef CTS_USES_VULKANSC
+	if (m_config.dynamicPolygonMode)
+	{
+		const auto eds3Features = context.getExtendedDynamicState3FeaturesEXT();
+		if (!eds3Features.extendedDynamicState3PolygonMode)
+			TCU_THROW(NotSupportedError, "extendedDynamicState3PolygonMode not supported");
+	}
+#else
+	DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+}
+
+void PolygonModeLargePointsCase::initPrograms (vk::SourceCollections &programCollection) const
+{
+	if (!m_config.meshShader)
+	{
+		std::ostringstream vert;
+		vert
+			<< "#version 460\n"
+			<< "layout (location=0) in vec4 inPosition;\n"
+			<< "out gl_PerVertex {\n"
+			<< "    vec4  gl_Position;\n"
+			<< "    float gl_PointSize;\n"
+			<< "};\n"
+			<< "void main (void) {\n"
+			<< "    gl_Position  = inPosition;\n"
+			<< "    gl_PointSize = " << std::fixed << m_config.pointSize << ";\n"
+			<< "}\n"
+			;
+		programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+	}
+	else
+	{
+		std::ostringstream mesh;
+		mesh
+			<< "#version 450\n"
+			<< "#extension GL_EXT_mesh_shader : enable\n"
+			<< "\n"
+			<< "layout (local_size_x=" << kNumPoints << ", local_size_y=1, local_size_z=1) in;\n"
+			<< "layout (triangles) out;\n"
+			<< "layout (max_vertices=" << kNumPoints << ", max_primitives=" << kNumTriangles << ") out;\n"
+			<< "\n"
+			<< "out gl_MeshPerVertexEXT {\n"
+			<< "    vec4  gl_Position;\n"
+			<< "    float gl_PointSize;\n"
+			<< "} gl_MeshVerticesEXT[];\n"
+			<< "\n"
+			<< "layout (set=0, binding=0, std430) readonly buffer VertexData {\n"
+			<< "    vec4 vertices[];\n"
+			<< "} vertexBuffer;\n"
+			<< "\n"
+			<< "void main (void) {\n"
+			<< "    SetMeshOutputsEXT(" << kNumPoints << ", " << kNumTriangles << ");\n"
+			<< "    gl_MeshVerticesEXT[gl_LocalInvocationIndex].gl_Position = vertexBuffer.vertices[gl_LocalInvocationIndex];\n"
+			<< "    gl_MeshVerticesEXT[gl_LocalInvocationIndex].gl_PointSize = " << std::fixed << m_config.pointSize << ";\n"
+			<< "    if (gl_LocalInvocationIndex < " << kNumTriangles << ") {\n"
+			<< "        const uint baseIndex = gl_LocalInvocationIndex * 3u;\n"
+			<< "        gl_PrimitiveTriangleIndicesEXT[gl_LocalInvocationIndex] = uvec3(baseIndex, baseIndex + 1u, baseIndex + 2u);\n"
+			<< "    }\n"
+			<< "}\n"
+			;
+		const vk::ShaderBuildOptions buildOptions (programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+		programCollection.glslSources.add("mesh") << glu::MeshSource(mesh.str()) << buildOptions;
+	}
+
+	std::ostringstream frag;
+	frag
+		<< "#version 460\n"
+		<< "layout (location=0) out vec4 outColor;\n"
+		<< "void main (void) {\n"
+		<< "    outColor = vec4" << geometryColor << ";\n"
+		<< "}\n"
+		;
+	programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+
+	if (m_config.tessellationShaders)
+	{
+		std::ostringstream tesc;
+		tesc
+			<< "#version 460\n"
+			<< "layout (vertices=3) out;\n"
+			<< "in gl_PerVertex {\n"
+			<< "    vec4  gl_Position;\n"
+			<< "    float gl_PointSize;\n"
+			<< "} gl_in[gl_MaxPatchVertices];\n"
+			<< "out gl_PerVertex {\n"
+			<< "    vec4  gl_Position;\n"
+			<< "    float gl_PointSize;\n"
+			<< "} gl_out[];\n"
+			<< "void main (void) {\n"
+			<< "  gl_TessLevelInner[0] = 1.0;\n"
+			<< "  gl_TessLevelInner[1] = 1.0;\n"
+			<< "  gl_TessLevelOuter[0] = 1.0;\n"
+			<< "  gl_TessLevelOuter[1] = 1.0;\n"
+			<< "  gl_TessLevelOuter[2] = 1.0;\n"
+			<< "  gl_TessLevelOuter[3] = 1.0;\n"
+			<< "  gl_out[gl_InvocationID].gl_Position  = gl_in[gl_InvocationID].gl_Position;\n"
+			<< "  gl_out[gl_InvocationID].gl_PointSize = gl_in[gl_InvocationID].gl_PointSize;\n"
+			<< "}\n"
+			;
+		programCollection.glslSources.add("tesc") << glu::TessellationControlSource(tesc.str());
+
+
+		std::ostringstream tese;
+		tese
+			<< "#version 460\n"
+			<< "layout (triangles, fractional_odd_spacing, cw) in;\n"
+			<< "in gl_PerVertex {\n"
+			<< "    vec4  gl_Position;\n"
+			<< "    float gl_PointSize;\n"
+			<< "} gl_in[gl_MaxPatchVertices];\n"
+			<< "out gl_PerVertex {\n"
+			<< "    vec4  gl_Position;\n"
+			<< "    float gl_PointSize;\n"
+			<< "};\n"
+			<< "void main (void) {\n"
+			<< "    gl_Position  = (gl_TessCoord.x * gl_in[0].gl_Position) +\n"
+			<< "                   (gl_TessCoord.y * gl_in[1].gl_Position) +\n"
+			<< "                   (gl_TessCoord.z * gl_in[2].gl_Position);\n"
+			<< "    gl_PointSize = gl_in[0].gl_PointSize;\n"
+			<< "}\n"
+			;
+		programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(tese.str());
+	}
+
+	if (m_config.geometryShader)
+	{
+		std::ostringstream geom;
+		geom
+			<< "#version 460\n"
+			<< "layout (triangles) in;\n"
+			<< "layout (triangle_strip, max_vertices=3) out;\n"
+			<< "in gl_PerVertex {\n"
+			<< "    vec4  gl_Position;\n"
+			<< "    float gl_PointSize;\n"
+			<< "} gl_in[3];\n"
+			<< "out gl_PerVertex {\n"
+			<< "    vec4  gl_Position;\n"
+			<< "    float gl_PointSize;\n"
+			<< "};\n"
+			<< "void main (void) {\n"
+			<< "    for (uint i = 0u; i < 3u; ++i) {\n"
+			<< "        gl_Position  = gl_in[i].gl_Position;\n"
+			<< "        gl_PointSize = gl_in[i].gl_PointSize;\n"
+			<< "        EmitVertex();\n"
+			<< "    }\n"
+			<< "}\n"
+			;
+		programCollection.glslSources.add("geom") << glu::GeometrySource(geom.str());
+	}
+}
+
+TestInstance* PolygonModeLargePointsCase::createInstance (Context& context) const
+{
+	return new PolygonModeLargePointsInstance(context, m_config);
+}
+
+/*
+ * The test will create a 4x4 framebuffer and will draw a quad in the middle of it, roughly covering the 4 center pixels. Instead of
+ * making the quad have the exact size to cover the whole center area, the quad will be slightly inside the 4 center pixels, with a
+ * margin of 0.125 units (1/4 of a pixel in unnormalized coordinates). This means a point size of 1.0 will not reach the sampling
+ * points at the pixel center of the edge pixels, but a point size of 2.0 will.
+*/
+/*
+    +----------+----------+----------+----------+
+    |          |          |          |          |
+    |          |          |          |          |
+    |     x    |     x    |     x    |     x    |
+    |          |          |          |          |
+    |          |          |          |          |
+    +----------+----------+----------+----------+
+    |          |          |          |          |
+    |          | +--------+--------+ |          |
+    |     x    | |        |        | |     x    |
+    |          | |        |        | |          |
+    |          | |        |        | |          |
+    +----------+-+--------+--------+-+----------+
+    |          | |        |        | |          |
+    |          | |        |        | |          |
+    |     x    | |        |        | |     x    |
+    |          | +--------+--------+ |          |
+    |          |          |          |          |
+    +----------+----------+----------+----------+
+    |          |          |          |          |
+    |          |          |          |          |
+    |     x    |     x    |     x    |     x    |
+    |          |          |          |          |
+    |          |          |          |          |
+    +----------+----------+----------+----------+
+*/
+tcu::TestStatus PolygonModeLargePointsInstance::iterate (void)
+{
+	const auto&			vkd				= m_context.getDeviceInterface();
+	const auto			device			= m_context.getDevice();
+	auto&				alloc			= m_context.getDefaultAllocator();
+	const auto			queue			= m_context.getUniversalQueue();
+	const auto			qfIndex			= m_context.getUniversalQueueFamilyIndex();
+
+	const auto			colorFormat		= VK_FORMAT_R8G8B8A8_UNORM;
+	const auto			tcuFormat		= mapVkFormat(colorFormat);
+	const auto			colorExtent		= makeExtent3D(4u, 4u, 1u);
+	const tcu::IVec3	colorIExtent	(static_cast<int>(colorExtent.width), static_cast<int>(colorExtent.height), static_cast<int>(colorExtent.depth));
+	const auto			colorUsage		= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const auto			colorSRR		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	const auto			colorSRL		= makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+	const tcu::Vec4		clearColor		(0.0f, 0.0f, 0.0f, 1.0f);
+
+	// Color buffer.
+	const VkImageCreateInfo colorBufferCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	//	VkStructureType			sType;
+		nullptr,								//	const void*				pNext;
+		0u,										//	VkImageCreateFlags		flags;
+		VK_IMAGE_TYPE_2D,						//	VkImageType				imageType;
+		colorFormat,							//	VkFormat				format;
+		colorExtent,							//	VkExtent3D				extent;
+		1u,										//	uint32_t				mipLevels;
+		1u,										//	uint32_t				arrayLayers;
+		VK_SAMPLE_COUNT_1_BIT,					//	VkSampleCountFlagBits	samples;
+		VK_IMAGE_TILING_OPTIMAL,				//	VkImageTiling			tiling;
+		colorUsage,								//	VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,				//	VkSharingMode			sharingMode;
+		0u,										//	uint32_t				queueFamilyIndexCount;
+		nullptr,								//	const uint32_t*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,				//	VkImageLayout			initialLayout;
+	};
+	ImageWithMemory colorBuffer (vkd, device, alloc, colorBufferCreateInfo, MemoryRequirement::Any);
+
+	const auto colorBufferView = makeImageView(vkd, device, colorBuffer.get(), VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSRR);
+
+	// Verification buffer.
+	const auto			pixelSize				= static_cast<VkDeviceSize>(tcuFormat.getPixelSize());
+	const auto			verificationBufferSize	= pixelSize * colorExtent.width * colorExtent.height * colorExtent.depth;
+	const auto			verificationBufferInfo	= makeBufferCreateInfo(verificationBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	BufferWithMemory	verificationBuffer		(vkd, device, alloc, verificationBufferInfo, MemoryRequirement::HostVisible);
+	auto&				verificationBufferAlloc	= verificationBuffer.getAllocation();
+
+	// Vertex buffer.
+	const float			insideMargin	= 0.125f;
+	const tcu::Vec4		topLeft			(-0.5f, -0.5f, 0.0f, 1.0f);
+	const tcu::Vec4		topRight		( 0.5f, -0.5f, 0.0f, 1.0f);
+	const tcu::Vec4		bottomLeft		(-0.5f,  0.5f, 0.0f, 1.0f);
+	const tcu::Vec4		bottomRight		( 0.5f,  0.5f, 0.0f, 1.0f);
+
+	const tcu::Vec4		actualTL		= topLeft + tcu::Vec4(insideMargin, insideMargin, 0.0f, 0.0f);
+	const tcu::Vec4		actualTR		= topRight + tcu::Vec4(-insideMargin, insideMargin, 0.0f, 0.0f);
+	const tcu::Vec4		actualBL		= bottomLeft + tcu::Vec4(insideMargin, -insideMargin, 0.0f, 0.0f);
+	const tcu::Vec4		actualBR		= bottomRight + tcu::Vec4(-insideMargin, -insideMargin, 0.0f, 0.0f);
+
+	const std::vector<tcu::Vec4> vertices
+	{
+		actualTL, actualTR, actualBL,
+		actualTR, actualBR, actualBL,
+	};
+
+	DE_ASSERT(de::sizeU32(vertices) == PolygonModeLargePointsCase::kNumPoints);
+
+	const auto			vertexBufferSize	= static_cast<VkDeviceSize>(de::dataSize(vertices));
+	const auto			vertexBufferUsage	= (m_config.meshShader ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	const auto			vertexBufferInfo	= makeBufferCreateInfo(vertexBufferSize, vertexBufferUsage);
+	BufferWithMemory	vertexBuffer		(vkd, device, alloc, vertexBufferInfo, MemoryRequirement::HostVisible);
+	auto&				vertexBufferAlloc	= vertexBuffer.getAllocation();
+	void*				vertexBufferData	= vertexBufferAlloc.getHostPtr();
+	const VkDeviceSize	vertexBufferOffset	= 0ull;
+
+	deMemcpy(vertexBufferData, vertices.data(), static_cast<size_t>(vertexBufferSize));
+	flushAlloc(vkd, device, vertexBufferAlloc);
+
+	// Pipeline layout.
+	DescriptorSetLayoutBuilder setLayoutBuilder;
+	if (m_config.meshShader)
+	{
+#ifndef CTS_USES_VULKANSC
+		setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_MESH_BIT_EXT);
+#else
+		DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+	}
+	const auto setLayout		= setLayoutBuilder.build(vkd, device);
+	const auto pipelineLayout	= makePipelineLayout(vkd, device, setLayout.get());
+
+	// Descriptor pool and set if needed.
+	Move<VkDescriptorPool>	descriptorPool;
+	Move<VkDescriptorSet>	descriptorSet;
+	if (m_config.meshShader)
+	{
+		DescriptorPoolBuilder poolBuilder;
+		poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+		descriptorPool	= poolBuilder.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+		descriptorSet	= makeDescriptorSet(vkd, device, descriptorPool.get(), setLayout.get());
+
+		DescriptorSetUpdateBuilder updateBuilder;
+		const auto vertexBufferDescInfo = makeDescriptorBufferInfo(vertexBuffer.get(), 0ull, vertexBufferSize);
+		updateBuilder.writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &vertexBufferDescInfo);
+		updateBuilder.update(vkd, device);
+	}
+
+	// Render pass and framebuffer.
+	const auto renderPass	= makeRenderPass(vkd, device, colorFormat);
+	const auto framebuffer	= makeFramebuffer(vkd, device, renderPass.get(), colorBufferView.get(), colorExtent.width, colorExtent.height);
+
+	// Shader modules.
+	const auto&	binaries	= m_context.getBinaryCollection();
+	const auto	vertModule	= (!m_config.meshShader ? createShaderModule(vkd, device, binaries.get("vert")) : Move<VkShaderModule>());
+	const auto	meshModule	= (m_config.meshShader ? createShaderModule(vkd, device, binaries.get("mesh")) : Move<VkShaderModule>());
+	const auto	fragModule	= createShaderModule(vkd, device, binaries.get("frag"));
+	const auto	tescModule	= (m_config.tessellationShaders ? createShaderModule(vkd, device, binaries.get("tesc")) : Move<VkShaderModule>());
+	const auto	teseModule	= (m_config.tessellationShaders ? createShaderModule(vkd, device, binaries.get("tese")) : Move<VkShaderModule>());
+	const auto	geomModule	= (m_config.geometryShader ? createShaderModule(vkd, device, binaries.get("geom")) : Move<VkShaderModule>());
+
+	// Viewports and scissors.
+	const std::vector<VkViewport>	viewports	(1u, makeViewport(colorExtent));
+	const std::vector<VkRect2D>		scissors	(1u, makeRect2D(colorExtent));
+
+	// Rasterization state: key for the test. Rendering triangles as points.
+	const auto polygonMode = (m_config.dynamicPolygonMode ? VK_POLYGON_MODE_FILL : VK_POLYGON_MODE_POINT);
+	const VkPipelineRasterizationStateCreateInfo rasterizationStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	//	VkStructureType							sType;
+		nullptr,													//	const void*								pNext;
+		0u,															//	VkPipelineRasterizationStateCreateFlags	flags;
+		VK_FALSE,													//	VkBool32								depthClampEnable;
+		VK_FALSE,													//	VkBool32								rasterizerDiscardEnable;
+		polygonMode,												//	VkPolygonMode							polygonMode;
+		VK_CULL_MODE_NONE,											//	VkCullModeFlags							cullMode;
+		VK_FRONT_FACE_CLOCKWISE,									//	VkFrontFace								frontFace;
+		VK_FALSE,													//	VkBool32								depthBiasEnable;
+		0.0f,														//	float									depthBiasConstantFactor;
+		0.0f,														//	float									depthBiasClamp;
+		0.0f,														//	float									depthBiasSlopeFactor;
+		1.0f,														//	float									lineWidth;
+	};
+
+	std::vector<VkDynamicState> dynamicStates;
+
+#ifndef CTS_USES_VULKANSC
+	if (m_config.dynamicPolygonMode)
+		dynamicStates.push_back(VK_DYNAMIC_STATE_POLYGON_MODE_EXT);
+#else
+	DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+
+	const VkPipelineDynamicStateCreateInfo dynamicStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,	//	VkStructureType						sType;
+		nullptr,												//	const void*							pNext;
+		0u,														//	VkPipelineDynamicStateCreateFlags	flags;
+		de::sizeU32(dynamicStates),								//	uint32_t							dynamicStateCount;
+		de::dataOrNull(dynamicStates),							//	const VkDynamicState*				pDynamicStates;
+	};
+
+	const auto primitiveTopology	= (m_config.tessellationShaders ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+	const auto patchControlPoints	= (m_config.tessellationShaders ? 3u : 0u);
+
+	// Pipeline.
+	Move<VkPipeline> pipeline;
+
+	if (m_config.meshShader)
+	{
+#ifndef CTS_USES_VULKANSC
+		pipeline = makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
+			VK_NULL_HANDLE, meshModule.get(), fragModule.get(),
+			renderPass.get(), viewports, scissors, 0u,
+			&rasterizationStateInfo, nullptr, nullptr, nullptr, &dynamicStateInfo);
+#else
+		DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+	}
+	else
+	{
+		pipeline = makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
+			vertModule.get(), tescModule.get(), teseModule.get(), geomModule.get(), fragModule.get(),
+			renderPass.get(), viewports, scissors, primitiveTopology, 0u, patchControlPoints,
+			nullptr, &rasterizationStateInfo, nullptr, nullptr, nullptr, &dynamicStateInfo);
+	}
+
+	// Command pool and buffer, render and verify results.
+	const auto cmdPool = makeCommandPool(vkd, device, qfIndex);
+	const auto cmdBufferPtr = allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	const auto cmdBuffer = cmdBufferPtr.get();
+
+	beginCommandBuffer(vkd, cmdBuffer);
+	beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.at(0u), clearColor);
+	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
+
+	if (m_config.meshShader)
+		vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+	else
+		vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+
+	if (m_config.dynamicPolygonMode)
+	{
+#ifndef CTS_USES_VULKANSC
+		vkd.cmdSetPolygonModeEXT(cmdBuffer, VK_POLYGON_MODE_POINT);
+#else
+		DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+	}
+
+	if (m_config.meshShader)
+#ifndef CTS_USES_VULKANSC
+		vkd.cmdDrawMeshTasksEXT(cmdBuffer, 1u, 1u, 1u);
+#else
+		DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+	else
+		vkd.cmdDraw(cmdBuffer, de::sizeU32(vertices), 1u, 0u, 0u);
+
+	endRenderPass(vkd, cmdBuffer);
+
+	// Copy image to verification buffer.
+	const auto preTransferBarrier = makeImageMemoryBarrier(
+		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		colorBuffer.get(), colorSRR);
+
+	cmdPipelineImageMemoryBarrier(vkd, cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, &preTransferBarrier);
+
+	const auto copyRegion = makeBufferImageCopy(colorExtent, colorSRL);
+	vkd.cmdCopyImageToBuffer(cmdBuffer, colorBuffer.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, verificationBuffer.get(), 1u, &copyRegion);
+
+	const auto preHostBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+	cmdPipelineMemoryBarrier(vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, &preHostBarrier);
+
+	endCommandBuffer(vkd, cmdBuffer);
+	submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+	// Check results.
+	invalidateAlloc(vkd, device, verificationBufferAlloc);
+
+	const tcu::PixelBufferAccess	resultAccess	(tcuFormat, colorIExtent, verificationBufferAlloc.getHostPtr());
+	tcu::TextureLevel				referenceLevel	(tcuFormat, colorIExtent.x(), colorIExtent.y(), colorIExtent.z());
+	const tcu::PixelBufferAccess	referenceAccess	= referenceLevel.getAccess();
+	const tcu::Vec4					threshold		(0.0f, 0.0f, 0.0f, 0.0f);
+#ifndef CTS_USES_VULKANSC
+	const auto&						m5Properties	= m_context.getMaintenance5Properties();
+	const bool						pointSizeUsed	= m5Properties.polygonModePointSize;
+#else
+	const bool						pointSizeUsed	= false;
+#endif // CTS_USES_VULKANSC
+
+	// Prepare reference color image, which depends on VkPhysicalDeviceMaintenance5PropertiesKHR::polygonModePointSize.
+	DE_ASSERT(referenceAccess.getDepth() == 1);
+	for (int y = 0; y < referenceAccess.getHeight(); ++y)
+		for (int x = 0; x < referenceAccess.getWidth(); ++x)
+		{
+			const bool border	= (x == 0 || y == 0 || x == referenceAccess.getWidth() - 1 || y == referenceAccess.getHeight() - 1);
+			const auto color	= ((border && !pointSizeUsed) ? clearColor : PolygonModeLargePointsCase::geometryColor);
+			referenceAccess.setPixel(color, x, y);
+		}
+
+	if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Result", "", referenceAccess, resultAccess, threshold, tcu::COMPARE_LOG_ON_ERROR))
+		return tcu::TestStatus::fail("Color buffer contents do not match expected result -- check log for details");
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 {
 	tcu::TestContext&	testCtx		=	rasterizationTests->getTestContext();
@@ -7081,6 +7645,42 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 			primitiveSize->addChild(points);
 		}
 	}
+
+#ifndef CTS_USES_VULKANSC
+	// .polygon_as_large_points
+	{
+		de::MovePtr<tcu::TestCaseGroup> polygonModeLargePointsGroup (new tcu::TestCaseGroup(testCtx, "polygon_as_large_points", "Test polygons rendered as large points"));
+
+		for (int k = 0; k < 2; ++k)
+			for (int j = 0; j < 2; ++j)
+				for (int i = 0; i < 2; ++i)
+					for (int m = 0; m < 2; ++m)
+					{
+						const bool	meshShader		= (m > 0);
+						const bool	tessellation	= (i > 0);
+						const bool	geometryShader	= (j > 0);
+						const bool	dynamicPolyMode	= (k > 0);
+
+						if (meshShader && (tessellation || geometryShader))
+							continue;
+
+						std::string	testName		(meshShader ? "mesh" : "vert");
+
+						if (tessellation)
+							testName += "_tess";
+
+						if (geometryShader)
+							testName += "_geom";
+
+						testName += (dynamicPolyMode ? "_dynamic_polygon_mode" : "_static_polygon_mode");
+
+						PolygonModeLargePointsConfig config(2.0f, meshShader, tessellation, geometryShader, dynamicPolyMode);
+						polygonModeLargePointsGroup->addChild(new PolygonModeLargePointsCase(testCtx, testName, "", config));
+					}
+
+		rasterizationTests->addChild(polygonModeLargePointsGroup.release());
+	}
+#endif // CTS_USES_VULKANSC
 
 	// .fill_rules
 	{
