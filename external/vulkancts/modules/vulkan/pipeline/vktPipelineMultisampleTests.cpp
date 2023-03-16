@@ -1701,17 +1701,21 @@ void SampleMaskWithConservativeTest::checkSupport(Context& context) const
 	if (m_useFragmentShadingRate && !checkFragmentShadingRateRequirements(context, m_rasterizationSamples))
 		TCU_THROW(NotSupportedError, "Required FragmentShadingRate not supported");
 
-	if (m_enablePostDepthCoverage)
-		context.requireDeviceFunctionality("VK_EXT_post_depth_coverage");
-
 	context.requireDeviceFunctionality("VK_EXT_conservative_rasterization");
 
-	const VkPhysicalDeviceConservativeRasterizationPropertiesEXT	conservativeRasterizationProperties = context.getConservativeRasterizationPropertiesEXT();
-	const deUint32													subPixelPrecisionBits = context.getDeviceProperties().limits.subPixelPrecisionBits;
-	const deUint32													subPixelPrecision = 1 << subPixelPrecisionBits;
-	const float														primitiveOverestimationSizeMult = float(subPixelPrecision) * conservativeRasterizationProperties.primitiveOverestimationSize;
+	const auto&		conservativeRasterizationProperties	= context.getConservativeRasterizationPropertiesEXT();
+	const deUint32	subPixelPrecisionBits				= context.getDeviceProperties().limits.subPixelPrecisionBits;
+	const deUint32	subPixelPrecision					= (1 << subPixelPrecisionBits);
+	const float		primitiveOverestimationSizeMult		= float(subPixelPrecision) * conservativeRasterizationProperties.primitiveOverestimationSize;
 
 	DE_ASSERT(subPixelPrecisionBits < sizeof(deUint32) * 8);
+
+	if (m_enablePostDepthCoverage)
+	{
+		context.requireDeviceFunctionality("VK_EXT_post_depth_coverage");
+		if (!conservativeRasterizationProperties.conservativeRasterizationPostDepthCoverage)
+			TCU_THROW(NotSupportedError, "conservativeRasterizationPostDepthCoverage not supported");
+	}
 
 	context.getTestContext().getLog()
 		<< tcu::TestLog::Message
