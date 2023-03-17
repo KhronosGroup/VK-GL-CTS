@@ -663,8 +663,6 @@ bool Context::isDeviceFunctionalitySupported (const std::string& extension) cons
 
 #ifndef CTS_USES_VULKANSC
 			const auto& vk13Features = m_device->getVulkan13Features();
-			if (extension == "VK_EXT_image_robustness")
-				return !!vk13Features.robustImageAccess;
 			if (extension == "VK_EXT_inline_uniform_block")
 				return !!vk13Features.inlineUniformBlock;
 			if (extension == "VK_EXT_pipeline_creation_cache_control")
