@@ -71,6 +71,8 @@ static const char* getCpuName (int cpu)
 		case DE_CPU_ARM_64:		return "DE_CPU_ARM_64";
 		case DE_CPU_MIPS:		return "DE_CPU_MIPS";
 		case DE_CPU_MIPS_64:	return "DE_CPU_MIPS_64";
+		case DE_CPU_RISCV_32:	return "DE_CPU_RISCV_32";
+		case DE_CPU_RISCV_64:	return "DE_CPU_RISCV_64";
 		default:
 			return DE_NULL;
 	}
