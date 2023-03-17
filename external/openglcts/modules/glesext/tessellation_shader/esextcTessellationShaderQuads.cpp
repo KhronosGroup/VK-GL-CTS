@@ -727,7 +727,7 @@ tcu::TestNode::IterateResult TessellationShaderQuadsInnerTessellationLevelRoundi
 			std::sort(set1_tess_coordinates_x_sorted.begin(), set1_tess_coordinates_x_sorted.end());
 			std::sort(set1_tess_coordinates_y_sorted.begin(), set1_tess_coordinates_y_sorted.end());
 
-			/* Sanity checks */
+			/* Quick checks */
 			DE_ASSERT(set1_tess_coordinates_x_sorted.size() > 2);
 			DE_ASSERT(set1_tess_coordinates_y_sorted.size() > 2);
 

@@ -29,9 +29,9 @@ import subprocess
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 from fetch_kc_cts import SHA1
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts"))
+scriptPath = os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts")
+sys.path.insert(0, scriptPath)
 from ctsbuild.common import *
-
 
 EXTERNAL_DIR    = os.path.realpath(os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..")))
 

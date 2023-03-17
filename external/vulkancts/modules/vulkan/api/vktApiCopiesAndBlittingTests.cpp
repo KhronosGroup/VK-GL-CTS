@@ -2480,18 +2480,9 @@ Move<VkDevice> createCustomDevice (Context&								context,
 		}
 	};
 
-	// context.getDeviceExtensions() returns supported device extension including extensions that have been promoted to
-	// Vulkan core. The core extensions must be removed from the list.
-	std::vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	std::vector<std::string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	std::vector<const char*>	extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const std::string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
-
-	const auto& deviceFeatures2 = context.getDeviceFeatures2();
+	// Replicate default device extension list.
+	const auto	extensionNames	= context.getDeviceCreationExtensions();
+	const auto&	deviceFeatures2	= context.getDeviceFeatures2();
 
 	const void *pNext = &deviceFeatures2;
 #ifdef CTS_USES_VULKANSC
@@ -3479,10 +3470,8 @@ CompressedTextureForBlit::CompressedTextureForBlit(const tcu::CompressedTexForma
 		// in compressed image; to resolve this we are constructing source texture out of set of predefined compressed
 		// blocks that after decompression will have components in proper range
 
-		struct BC6HBlock
-		{
-			deUint32 data[4];
-		};
+		typedef std::array<deUint32, 4> BC6HBlock;
+		DE_STATIC_ASSERT(sizeof(BC6HBlock) == (4 * sizeof(deUint32)));
 		std::vector<BC6HBlock> validBlocks;
 
 		if (srcFormat == tcu::COMPRESSEDTEXFORMAT_BC6H_UFLOAT_BLOCK)
@@ -3523,7 +3512,7 @@ CompressedTextureForBlit::CompressedTextureForBlit(const tcu::CompressedTexForma
 		for (int blockNdx = 0; blockNdx < blocksCount; blockNdx++)
 		{
 			deUint32 selectedBlock = random.getUint32() % static_cast<deUint32>(validBlocks.size());
-			deMemcpy(compressedDataUint32, validBlocks[selectedBlock].data, sizeof(BC6HBlock));
+			deMemcpy(compressedDataUint32, validBlocks[selectedBlock].data(), sizeof(BC6HBlock));
 			compressedDataUint32 += 4;
 		}
 	}

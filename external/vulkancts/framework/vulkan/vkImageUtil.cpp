@@ -64,6 +64,46 @@ bool isUintFormat (VkFormat format)
 	return tcu::getTextureChannelClass(mapVkFormat(format).type) == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER;
 }
 
+bool isScaledFormat (VkFormat format)
+{
+	// update this mapping if VkFormat changes
+	DE_STATIC_ASSERT(VK_CORE_FORMAT_LAST == 185);
+
+	switch (format)
+	{
+		case VK_FORMAT_R8_USCALED:
+		case VK_FORMAT_R8_SSCALED:
+		case VK_FORMAT_R8G8_USCALED:
+		case VK_FORMAT_R8G8_SSCALED:
+		case VK_FORMAT_R8G8B8_USCALED:
+		case VK_FORMAT_R8G8B8_SSCALED:
+		case VK_FORMAT_R8G8B8A8_USCALED:
+		case VK_FORMAT_R8G8B8A8_SSCALED:
+		case VK_FORMAT_A2B10G10R10_USCALED_PACK32:
+		case VK_FORMAT_A2B10G10R10_SSCALED_PACK32:
+		case VK_FORMAT_R16_USCALED:
+		case VK_FORMAT_R16_SSCALED:
+		case VK_FORMAT_R16G16_USCALED:
+		case VK_FORMAT_R16G16_SSCALED:
+		case VK_FORMAT_R16G16B16_USCALED:
+		case VK_FORMAT_R16G16B16_SSCALED:
+		case VK_FORMAT_R16G16B16A16_USCALED:
+		case VK_FORMAT_R16G16B16A16_SSCALED:
+		case VK_FORMAT_B8G8R8_USCALED:
+		case VK_FORMAT_B8G8R8_SSCALED:
+		case VK_FORMAT_B8G8R8A8_USCALED:
+		case VK_FORMAT_B8G8R8A8_SSCALED:
+		case VK_FORMAT_A2R10G10B10_USCALED_PACK32:
+		case VK_FORMAT_A2R10G10B10_SSCALED_PACK32:
+		case VK_FORMAT_A8B8G8R8_USCALED_PACK32:
+		case VK_FORMAT_A8B8G8R8_SSCALED_PACK32:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
 bool isDepthStencilFormat (VkFormat format)
 {
 	if (isCompressedFormat(format))
@@ -3273,44 +3313,6 @@ tcu::CompressedTexFormat mapVkCompressedFormat (VkFormat format)
 		default:
 			TCU_THROW(InternalError, "Unknown image format");
 			return tcu::COMPRESSEDTEXFORMAT_LAST;
-	}
-}
-
-static bool isScaledFormat (VkFormat format)
-{
-	// update this mapping if VkFormat changes
-	DE_STATIC_ASSERT(VK_CORE_FORMAT_LAST == 185);
-
-	switch (format)
-	{
-		case VK_FORMAT_R8_USCALED:
-		case VK_FORMAT_R8_SSCALED:
-		case VK_FORMAT_R8G8_USCALED:
-		case VK_FORMAT_R8G8_SSCALED:
-		case VK_FORMAT_R8G8B8_USCALED:
-		case VK_FORMAT_R8G8B8_SSCALED:
-		case VK_FORMAT_R8G8B8A8_USCALED:
-		case VK_FORMAT_R8G8B8A8_SSCALED:
-		case VK_FORMAT_A2B10G10R10_USCALED_PACK32:
-		case VK_FORMAT_A2B10G10R10_SSCALED_PACK32:
-		case VK_FORMAT_R16_USCALED:
-		case VK_FORMAT_R16_SSCALED:
-		case VK_FORMAT_R16G16_USCALED:
-		case VK_FORMAT_R16G16_SSCALED:
-		case VK_FORMAT_R16G16B16_USCALED:
-		case VK_FORMAT_R16G16B16_SSCALED:
-		case VK_FORMAT_R16G16B16A16_USCALED:
-		case VK_FORMAT_R16G16B16A16_SSCALED:
-		case VK_FORMAT_B8G8R8_USCALED:
-		case VK_FORMAT_B8G8R8_SSCALED:
-		case VK_FORMAT_B8G8R8A8_USCALED:
-		case VK_FORMAT_B8G8R8A8_SSCALED:
-		case VK_FORMAT_A2R10G10B10_USCALED_PACK32:
-		case VK_FORMAT_A2R10G10B10_SSCALED_PACK32:
-			return true;
-
-		default:
-			return false;
 	}
 }
 

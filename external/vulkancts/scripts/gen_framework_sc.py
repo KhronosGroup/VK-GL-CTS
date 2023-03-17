@@ -30,7 +30,8 @@ import argparse
 from itertools import chain
 from collections import OrderedDict
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts"))
+scriptPath = os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts")
+sys.path.insert(0, scriptPath)
 
 from ctsbuild.common import DEQP_DIR, execute
 from khr_util.format import indentLines, writeInlFile
@@ -2546,14 +2547,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest{4} (Context& context)
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this may not be used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<{0}>()))
 	{{

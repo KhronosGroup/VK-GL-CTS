@@ -26,14 +26,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDeviceGeneratedCommandsFe
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV>()))
 	{
@@ -73,14 +67,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPrivateDataFeatures (Cont
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevicePrivateDataFeatures>()))
 	{
@@ -120,14 +108,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVariablePointersFeatures 
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceVariablePointersFeatures>()))
 	{
@@ -168,14 +150,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMultiviewFeatures (Contex
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceMultiviewFeatures>()))
 	{
@@ -217,14 +193,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPresentIdFeaturesKHR (Con
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevicePresentIdFeaturesKHR>()))
 	{
@@ -264,14 +234,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPresentWaitFeaturesKHR (C
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevicePresentWaitFeaturesKHR>()))
 	{
@@ -311,14 +275,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest16BitStorageFeatures (Con
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevice16BitStorageFeatures>()))
 	{
@@ -361,14 +319,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderSubgroupExtendedTyp
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures>()))
 	{
@@ -408,14 +360,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSamplerYcbcrConversionFea
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceSamplerYcbcrConversionFeatures>()))
 	{
@@ -455,14 +401,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestProtectedMemoryFeatures (
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceProtectedMemoryFeatures>()))
 	{
@@ -502,14 +442,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestBlendOperationAdvancedFea
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT>()))
 	{
@@ -549,14 +483,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMultiDrawFeaturesEXT (Con
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceMultiDrawFeaturesEXT>()))
 	{
@@ -596,14 +524,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestInlineUniformBlockFeature
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceInlineUniformBlockFeatures>()))
 	{
@@ -644,14 +566,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMaintenance4Features (Con
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceMaintenance4Features>()))
 	{
@@ -691,14 +607,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderDrawParametersFeatu
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderDrawParametersFeatures>()))
 	{
@@ -738,14 +648,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderFloat16Int8Features
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderFloat16Int8Features>()))
 	{
@@ -786,14 +690,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestHostQueryResetFeatures (C
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceHostQueryResetFeatures>()))
 	{
@@ -833,14 +731,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestGlobalPriorityQueryFeatur
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR>()))
 	{
@@ -880,14 +772,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDeviceMemoryReportFeature
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceDeviceMemoryReportFeaturesEXT>()))
 	{
@@ -927,14 +813,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDescriptorIndexingFeature
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceDescriptorIndexingFeatures>()))
 	{
@@ -993,14 +873,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestTimelineSemaphoreFeatures
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceTimelineSemaphoreFeatures>()))
 	{
@@ -1040,14 +914,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest8BitStorageFeatures (Cont
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevice8BitStorageFeatures>()))
 	{
@@ -1089,14 +957,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestConditionalRenderingFeatu
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceConditionalRenderingFeaturesEXT>()))
 	{
@@ -1137,14 +999,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkanMemoryModelFeatures
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceVulkanMemoryModelFeatures>()))
 	{
@@ -1186,14 +1042,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderAtomicInt64Features
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderAtomicInt64Features>()))
 	{
@@ -1234,14 +1084,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderAtomicFloatFeatures
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderAtomicFloatFeaturesEXT>()))
 	{
@@ -1292,14 +1136,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderAtomicFloat2Feature
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT>()))
 	{
@@ -1350,14 +1188,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVertexAttributeDivisorFea
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT>()))
 	{
@@ -1398,14 +1230,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestASTCDecodeFeaturesEXT (Co
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceASTCDecodeFeaturesEXT>()))
 	{
@@ -1445,14 +1271,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestTransformFeedbackFeatures
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceTransformFeedbackFeaturesEXT>()))
 	{
@@ -1493,14 +1313,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRepresentativeFragmentTes
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV>()))
 	{
@@ -1540,14 +1354,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExclusiveScissorFeaturesN
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceExclusiveScissorFeaturesNV>()))
 	{
@@ -1587,14 +1395,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCornerSampledImageFeature
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceCornerSampledImageFeaturesNV>()))
 	{
@@ -1634,14 +1436,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestComputeShaderDerivativesF
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceComputeShaderDerivativesFeaturesNV>()))
 	{
@@ -1682,14 +1478,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderImageFootprintFeatu
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderImageFootprintFeaturesNV>()))
 	{
@@ -1729,14 +1519,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDedicatedAllocationImageA
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV>()))
 	{
@@ -1776,14 +1560,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCopyMemoryIndirectFeature
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceCopyMemoryIndirectFeaturesNV>()))
 	{
@@ -1823,14 +1601,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMemoryDecompressionFeatur
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceMemoryDecompressionFeaturesNV>()))
 	{
@@ -1870,14 +1642,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShadingRateImageFeaturesN
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShadingRateImageFeaturesNV>()))
 	{
@@ -1918,14 +1684,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestInvocationMaskFeaturesHUA
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceInvocationMaskFeaturesHUAWEI>()))
 	{
@@ -1965,14 +1725,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMeshShaderFeaturesNV (Con
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceMeshShaderFeaturesNV>()))
 	{
@@ -2013,14 +1767,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMeshShaderFeaturesEXT (Co
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceMeshShaderFeaturesEXT>()))
 	{
@@ -2064,14 +1812,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestAccelerationStructureFeat
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceAccelerationStructureFeaturesKHR>()))
 	{
@@ -2115,14 +1857,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRayTracingPipelineFeature
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>()))
 	{
@@ -2166,14 +1902,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRayQueryFeaturesKHR (Cont
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceRayQueryFeaturesKHR>()))
 	{
@@ -2213,14 +1943,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRayTracingMaintenance1Fea
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR>()))
 	{
@@ -2261,14 +1985,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFragmentDensityMapFeature
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceFragmentDensityMapFeaturesEXT>()))
 	{
@@ -2310,14 +2028,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFragmentDensityMap2Featur
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceFragmentDensityMap2FeaturesEXT>()))
 	{
@@ -2357,14 +2069,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFragmentDensityMapOffsetF
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM>()))
 	{
@@ -2404,14 +2110,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestScalarBlockLayoutFeatures
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceScalarBlockLayoutFeatures>()))
 	{
@@ -2451,14 +2151,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestUniformBufferStandardLayo
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceUniformBufferStandardLayoutFeatures>()))
 	{
@@ -2498,14 +2192,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDepthClipEnableFeaturesEX
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceDepthClipEnableFeaturesEXT>()))
 	{
@@ -2545,14 +2233,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMemoryPriorityFeaturesEXT
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceMemoryPriorityFeaturesEXT>()))
 	{
@@ -2592,14 +2274,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPageableDeviceLocalMemory
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT>()))
 	{
@@ -2639,14 +2315,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestBufferDeviceAddressFeatur
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceBufferDeviceAddressFeatures>()))
 	{
@@ -2688,14 +2358,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestBufferDeviceAddressFeatur
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceBufferDeviceAddressFeaturesEXT>()))
 	{
@@ -2737,14 +2401,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImagelessFramebufferFeatu
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceImagelessFramebufferFeatures>()))
 	{
@@ -2784,14 +2442,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestTextureCompressionASTCHDR
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceTextureCompressionASTCHDRFeatures>()))
 	{
@@ -2831,14 +2483,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCooperativeMatrixFeatures
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceCooperativeMatrixFeaturesNV>()))
 	{
@@ -2879,14 +2525,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestYcbcrImageArraysFeaturesE
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceYcbcrImageArraysFeaturesEXT>()))
 	{
@@ -2926,14 +2566,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPresentBarrierFeaturesNV 
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevicePresentBarrierFeaturesNV>()))
 	{
@@ -2973,14 +2607,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPerformanceQueryFeaturesK
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevicePerformanceQueryFeaturesKHR>()))
 	{
@@ -3021,14 +2649,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCoverageReductionModeFeat
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceCoverageReductionModeFeaturesNV>()))
 	{
@@ -3068,14 +2690,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderIntegerFunctions2Fe
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL>()))
 	{
@@ -3115,14 +2731,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderClockFeaturesKHR (C
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderClockFeaturesKHR>()))
 	{
@@ -3163,14 +2773,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestIndexTypeUint8FeaturesEXT
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceIndexTypeUint8FeaturesEXT>()))
 	{
@@ -3210,14 +2814,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderSMBuiltinsFeaturesN
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderSMBuiltinsFeaturesNV>()))
 	{
@@ -3257,14 +2855,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFragmentShaderInterlockFe
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT>()))
 	{
@@ -3306,14 +2898,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSeparateDepthStencilLayou
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures>()))
 	{
@@ -3353,14 +2939,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPrimitiveTopologyListRest
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT>()))
 	{
@@ -3401,14 +2981,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPipelineExecutablePropert
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR>()))
 	{
@@ -3448,14 +3022,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderDemoteToHelperInvoc
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures>()))
 	{
@@ -3495,14 +3063,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestTexelBufferAlignmentFeatu
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT>()))
 	{
@@ -3542,14 +3104,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSubgroupSizeControlFeatur
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceSubgroupSizeControlFeatures>()))
 	{
@@ -3590,14 +3146,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestLineRasterizationFeatures
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceLineRasterizationFeaturesEXT>()))
 	{
@@ -3642,14 +3192,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPipelineCreationCacheCont
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevicePipelineCreationCacheControlFeatures>()))
 	{
@@ -3689,14 +3233,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkan11Features (Context
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceVulkan11Features>()))
 	{
@@ -3747,14 +3285,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkan12Features (Context
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceVulkan12Features>()))
 	{
@@ -3840,14 +3372,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkan13Features (Context
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceVulkan13Features>()))
 	{
@@ -3901,14 +3427,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCoherentMemoryFeaturesAMD
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceCoherentMemoryFeaturesAMD>()))
 	{
@@ -3948,14 +3468,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCustomBorderColorFeatures
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceCustomBorderColorFeaturesEXT>()))
 	{
@@ -3996,14 +3510,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestBorderColorSwizzleFeature
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceBorderColorSwizzleFeaturesEXT>()))
 	{
@@ -4044,14 +3552,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExtendedDynamicStateFeatu
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceExtendedDynamicStateFeaturesEXT>()))
 	{
@@ -4091,14 +3593,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExtendedDynamicState2Feat
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceExtendedDynamicState2FeaturesEXT>()))
 	{
@@ -4140,14 +3636,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExtendedDynamicState3Feat
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceExtendedDynamicState3FeaturesEXT>()))
 	{
@@ -4217,14 +3707,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDiagnosticsConfigFeatures
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceDiagnosticsConfigFeaturesNV>()))
 	{
@@ -4264,14 +3748,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestZeroInitializeWorkgroupMe
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeatures>()))
 	{
@@ -4311,14 +3789,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderSubgroupUniformCont
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR>()))
 	{
@@ -4358,14 +3830,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRobustness2FeaturesEXT (C
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceRobustness2FeaturesEXT>()))
 	{
@@ -4407,14 +3873,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImageRobustnessFeatures (
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceImageRobustnessFeatures>()))
 	{
@@ -4454,14 +3914,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestWorkgroupMemoryExplicitLa
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR>()))
 	{
@@ -4504,14 +3958,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPortabilitySubsetFeatures
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevicePortabilitySubsetFeaturesKHR>()))
 	{
@@ -4565,14 +4013,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest4444FormatsFeaturesEXT (C
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevice4444FormatsFeaturesEXT>()))
 	{
@@ -4613,14 +4055,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSubpassShadingFeaturesHUA
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceSubpassShadingFeaturesHUAWEI>()))
 	{
@@ -4660,14 +4096,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestClusterCullingShaderFeatu
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceClusterCullingShaderFeaturesHUAWEI>()))
 	{
@@ -4708,14 +4138,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderImageAtomicInt64Fea
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT>()))
 	{
@@ -4756,14 +4180,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFragmentShadingRateFeatur
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceFragmentShadingRateFeaturesKHR>()))
 	{
@@ -4805,14 +4223,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderTerminateInvocation
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderTerminateInvocationFeatures>()))
 	{
@@ -4852,14 +4264,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFragmentShadingRateEnumsF
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceFragmentShadingRateEnumsFeaturesNV>()))
 	{
@@ -4901,14 +4307,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImage2DViewOf3DFeaturesEX
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceImage2DViewOf3DFeaturesEXT>()))
 	{
@@ -4919,6 +4319,47 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImage2DViewOf3DFeaturesEX
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceImage2DViewOf3DFeaturesEXT*>(featuresStruct);
 		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImageSlicedViewOf3DFeaturesEXT (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT, imageSlicedViewOf3D),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess);
 	}
 
 	if (numErrors > 0)
@@ -4949,14 +4390,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMutableDescriptorTypeFeat
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT>()))
 	{
@@ -4996,14 +4431,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDepthClipControlFeaturesE
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceDepthClipControlFeaturesEXT>()))
 	{
@@ -5043,14 +4472,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVertexInputDynamicStateFe
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT>()))
 	{
@@ -5090,14 +4513,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExternalMemoryRDMAFeature
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceExternalMemoryRDMAFeaturesNV>()))
 	{
@@ -5137,14 +4554,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestColorWriteEnableFeaturesE
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceColorWriteEnableFeaturesEXT>()))
 	{
@@ -5184,14 +4595,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSynchronization2Features 
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceSynchronization2Features>()))
 	{
@@ -5231,14 +4636,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPrimitivesGeneratedQueryF
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT>()))
 	{
@@ -5280,14 +4679,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestLegacyDitheringFeaturesEX
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceLegacyDitheringFeaturesEXT>()))
 	{
@@ -5327,14 +4720,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMultisampledRenderToSingl
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT>()))
 	{
@@ -5374,14 +4761,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPipelineProtectedAccessFe
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevicePipelineProtectedAccessFeaturesEXT>()))
 	{
@@ -5421,14 +4802,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestInheritedViewportScissorF
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceInheritedViewportScissorFeaturesNV>()))
 	{
@@ -5468,14 +4843,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestYcbcr2Plane444FormatsFeat
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT>()))
 	{
@@ -5515,14 +4884,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestProvokingVertexFeaturesEX
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceProvokingVertexFeaturesEXT>()))
 	{
@@ -5563,14 +4926,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDescriptorBufferFeaturesE
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceDescriptorBufferFeaturesEXT>()))
 	{
@@ -5613,14 +4970,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderIntegerDotProductFe
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderIntegerDotProductFeatures>()))
 	{
@@ -5660,14 +5011,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFragmentShaderBarycentric
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR>()))
 	{
@@ -5707,14 +5052,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRayTracingMotionBlurFeatu
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceRayTracingMotionBlurFeaturesNV>()))
 	{
@@ -5755,14 +5094,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRGBA10X6FormatsFeaturesEX
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT>()))
 	{
@@ -5802,14 +5135,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDynamicRenderingFeatures 
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceDynamicRenderingFeatures>()))
 	{
@@ -5849,14 +5176,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImageViewMinLodFeaturesEX
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceImageViewMinLodFeaturesEXT>()))
 	{
@@ -5896,14 +5217,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRasterizationOrderAttachm
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT>()))
 	{
@@ -5945,14 +5260,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestLinearColorAttachmentFeat
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceLinearColorAttachmentFeaturesNV>()))
 	{
@@ -5992,14 +5301,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestGraphicsPipelineLibraryFe
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT>()))
 	{
@@ -6039,14 +5342,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDescriptorSetHostMappingF
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceDescriptorSetHostMappingFeaturesVALVE>()))
 	{
@@ -6086,14 +5383,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderModuleIdentifierFea
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT>()))
 	{
@@ -6133,14 +5424,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImageCompressionControlFe
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceImageCompressionControlFeaturesEXT>()))
 	{
@@ -6180,14 +5465,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImageCompressionControlSw
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT>()))
 	{
@@ -6227,14 +5506,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSubpassMergeFeedbackFeatu
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT>()))
 	{
@@ -6274,14 +5547,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestOpacityMicromapFeaturesEX
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceOpacityMicromapFeaturesEXT>()))
 	{
@@ -6323,14 +5590,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPipelinePropertiesFeature
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevicePipelinePropertiesFeaturesEXT>()))
 	{
@@ -6370,14 +5631,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderEarlyAndLateFragmen
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD>()))
 	{
@@ -6417,14 +5672,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestNonSeamlessCubeMapFeature
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT>()))
 	{
@@ -6464,14 +5713,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPipelineRobustnessFeature
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevicePipelineRobustnessFeaturesEXT>()))
 	{
@@ -6511,14 +5754,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImageProcessingFeaturesQC
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceImageProcessingFeaturesQCOM>()))
 	{
@@ -6560,14 +5797,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestTilePropertiesFeaturesQCO
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceTilePropertiesFeaturesQCOM>()))
 	{
@@ -6607,14 +5838,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestAmigoProfilingFeaturesSEC
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceAmigoProfilingFeaturesSEC>()))
 	{
@@ -6654,14 +5879,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestAttachmentFeedbackLoopLay
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT>()))
 	{
@@ -6701,14 +5920,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDepthClampZeroOneFeatures
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceDepthClampZeroOneFeaturesEXT>()))
 	{
@@ -6748,14 +5961,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestAddressBindingReportFeatu
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceAddressBindingReportFeaturesEXT>()))
 	{
@@ -6795,14 +6002,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestOpticalFlowFeaturesNV (Co
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceOpticalFlowFeaturesNV>()))
 	{
@@ -6842,14 +6043,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFaultFeaturesEXT (Context
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceFaultFeaturesEXT>()))
 	{
@@ -6890,14 +6085,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPipelineLibraryGroupHandl
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT>()))
 	{
@@ -6937,14 +6126,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderCoreBuiltinsFeature
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM>()))
 	{
@@ -6984,14 +6167,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSwapchainMaintenance1Feat
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT>()))
 	{
@@ -7031,14 +6208,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRayTracingInvocationReord
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV>()))
 	{
@@ -7078,14 +6249,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMultiviewPerViewViewports
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM>()))
 	{
@@ -7094,6 +6259,47 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMultiviewPerViewViewports
 		FEATURE_ITEM (VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM, multiviewPerViewViewports),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess);
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMultiviewPerViewRenderAreasFeaturesQCOM (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM, multiviewPerViewRenderAreas),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM*>(featuresStruct);
 		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess);
 	}
 
@@ -7207,6 +6413,7 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "shader_terminate_invocation_features", "createDeviceWithUnsupportedFeaturesTestShaderTerminateInvocationFeatures", createDeviceWithUnsupportedFeaturesTestShaderTerminateInvocationFeatures);
 	addFunctionCase(testGroup, "fragment_shading_rate_enums_features_nv", "createDeviceWithUnsupportedFeaturesTestFragmentShadingRateEnumsFeaturesNV", createDeviceWithUnsupportedFeaturesTestFragmentShadingRateEnumsFeaturesNV);
 	addFunctionCase(testGroup, "image2_d_view_of3_d_features_ext", "createDeviceWithUnsupportedFeaturesTestImage2DViewOf3DFeaturesEXT", createDeviceWithUnsupportedFeaturesTestImage2DViewOf3DFeaturesEXT);
+	addFunctionCase(testGroup, "image_sliced_view_of3_d_features_ext", "createDeviceWithUnsupportedFeaturesTestImageSlicedViewOf3DFeaturesEXT", createDeviceWithUnsupportedFeaturesTestImageSlicedViewOf3DFeaturesEXT);
 	addFunctionCase(testGroup, "mutable_descriptor_type_features_ext", "createDeviceWithUnsupportedFeaturesTestMutableDescriptorTypeFeaturesEXT", createDeviceWithUnsupportedFeaturesTestMutableDescriptorTypeFeaturesEXT);
 	addFunctionCase(testGroup, "depth_clip_control_features_ext", "createDeviceWithUnsupportedFeaturesTestDepthClipControlFeaturesEXT", createDeviceWithUnsupportedFeaturesTestDepthClipControlFeaturesEXT);
 	addFunctionCase(testGroup, "vertex_input_dynamic_state_features_ext", "createDeviceWithUnsupportedFeaturesTestVertexInputDynamicStateFeaturesEXT", createDeviceWithUnsupportedFeaturesTestVertexInputDynamicStateFeaturesEXT);
@@ -7253,5 +6460,6 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "swapchain_maintenance1_features_ext", "createDeviceWithUnsupportedFeaturesTestSwapchainMaintenance1FeaturesEXT", createDeviceWithUnsupportedFeaturesTestSwapchainMaintenance1FeaturesEXT);
 	addFunctionCase(testGroup, "ray_tracing_invocation_reorder_features_nv", "createDeviceWithUnsupportedFeaturesTestRayTracingInvocationReorderFeaturesNV", createDeviceWithUnsupportedFeaturesTestRayTracingInvocationReorderFeaturesNV);
 	addFunctionCase(testGroup, "multiview_per_view_viewports_features_qcom", "createDeviceWithUnsupportedFeaturesTestMultiviewPerViewViewportsFeaturesQCOM", createDeviceWithUnsupportedFeaturesTestMultiviewPerViewViewportsFeaturesQCOM);
+	addFunctionCase(testGroup, "multiview_per_view_render_areas_features_qcom", "createDeviceWithUnsupportedFeaturesTestMultiviewPerViewRenderAreasFeaturesQCOM", createDeviceWithUnsupportedFeaturesTestMultiviewPerViewRenderAreasFeaturesQCOM);
 }
 

@@ -471,7 +471,7 @@ vk::ProgramBinary* shadercacheLoad (const std::string& shaderstring, const char*
 	if (ok) ok = temp											== hash; // Double check
 	if (ok) ok = fread(&format, 1, 4, file)						== 4;
 	if (ok) ok = fread(&length, 1, 4, file)						== 4;
-	if (ok) ok = length											> 0; // sanity check
+	if (ok) ok = length											> 0; // Quick check
 	if (ok) bin = new deUint8[length];
 	if (ok) ok = fread(bin, 1, length, file)					== (size_t)length;
 	if (ok) ok = fread(&sourcelength, 1, 4, file)				== 4;
@@ -534,7 +534,7 @@ void shadercacheSave (const vk::ProgramBinary* binary, const std::string& shader
 		if (ok) ok = temp											== hash; // Double check
 		if (ok) ok = fread(&temp, 1, 4, file)						== 4;
 		if (ok) ok = fread(&cachedLength, 1, 4, file)				== 4;
-		if (ok) ok = cachedLength									> 0; // sanity check
+		if (ok) ok = cachedLength									> 0; // Quick check
 		if (ok) fseek(file, cachedLength, SEEK_CUR); // skip binary
 		if (ok) ok = fread(&sourcelength, 1, 4, file)				== 4;
 

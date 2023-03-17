@@ -959,6 +959,16 @@ void DeviceDriver::cmdSetDiscardRectangleEXT (VkCommandBuffer commandBuffer, uin
 	m_vk.cmdSetDiscardRectangleEXT(commandBuffer, firstDiscardRectangle, discardRectangleCount, pDiscardRectangles);
 }
 
+void DeviceDriver::cmdSetDiscardRectangleEnableEXT (VkCommandBuffer commandBuffer, VkBool32 discardRectangleEnable) const
+{
+	m_vk.cmdSetDiscardRectangleEnableEXT(commandBuffer, discardRectangleEnable);
+}
+
+void DeviceDriver::cmdSetDiscardRectangleModeEXT (VkCommandBuffer commandBuffer, VkDiscardRectangleModeEXT discardRectangleMode) const
+{
+	m_vk.cmdSetDiscardRectangleModeEXT(commandBuffer, discardRectangleMode);
+}
+
 void DeviceDriver::cmdSetSampleLocationsEXT (VkCommandBuffer commandBuffer, const VkSampleLocationsInfoEXT* pSampleLocationsInfo) const
 {
 	m_vk.cmdSetSampleLocationsEXT(commandBuffer, pSampleLocationsInfo);
@@ -1197,6 +1207,11 @@ void DeviceDriver::cmdDrawIndirectByteCountEXT (VkCommandBuffer commandBuffer, u
 void DeviceDriver::cmdSetExclusiveScissorNV (VkCommandBuffer commandBuffer, uint32_t firstExclusiveScissor, uint32_t exclusiveScissorCount, const VkRect2D* pExclusiveScissors) const
 {
 	m_vk.cmdSetExclusiveScissorNV(commandBuffer, firstExclusiveScissor, exclusiveScissorCount, pExclusiveScissors);
+}
+
+void DeviceDriver::cmdSetExclusiveScissorEnableNV (VkCommandBuffer commandBuffer, uint32_t firstExclusiveScissor, uint32_t exclusiveScissorCount, const VkBool32* pExclusiveScissorEnables) const
+{
+	m_vk.cmdSetExclusiveScissorEnableNV(commandBuffer, firstExclusiveScissor, exclusiveScissorCount, pExclusiveScissorEnables);
 }
 
 void DeviceDriver::cmdBindShadingRateImageNV (VkCommandBuffer commandBuffer, VkImageView imageView, VkImageLayout imageLayout) const

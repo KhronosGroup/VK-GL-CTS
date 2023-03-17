@@ -168,7 +168,7 @@ glu::Interpolation getGluInterpolation (VaryingInterpolation interpolation)
 	}
 }
 
-// used only for debug sanity checks
+// used only for debug quick checks
 #if defined(DE_DEBUG)
 VaryingInterpolation getVaryingInterpolation (glu::Interpolation interpolation)
 {
@@ -785,7 +785,7 @@ bool paramsValid (const TestParams& params)
 	return true;
 }
 
-// used only for debug sanity checks
+// used only for debug quick checks
 #if defined(DE_DEBUG)
 bool varyingsValid (const VaryingInterface& varyings)
 {

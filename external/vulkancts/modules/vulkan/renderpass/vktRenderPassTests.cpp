@@ -2010,6 +2010,8 @@ Move<VkPipeline> createSubpassPipeline (const DeviceInterface&		vk,
 									? VK_TRUE
 									: VK_FALSE;
 
+	VkStencilOp		stencilOp		= writeStencil ? VK_STENCIL_OP_REPLACE : VK_STENCIL_OP_KEEP;
+
 	const VkPipelineDepthStencilStateCreateInfo depthStencilState =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// sType
@@ -2021,18 +2023,18 @@ Move<VkPipeline> createSubpassPipeline (const DeviceInterface&		vk,
 		VK_FALSE,													// depthBoundsEnable
 		writeStencil,												// stencilTestEnable
 		{
-			VK_STENCIL_OP_REPLACE,									// stencilFailOp
-			VK_STENCIL_OP_REPLACE,									// stencilPassOp
-			VK_STENCIL_OP_REPLACE,									// stencilDepthFailOp
+			stencilOp,												// stencilFailOp
+			stencilOp,												// stencilPassOp
+			stencilOp,												// stencilDepthFailOp
 			VK_COMPARE_OP_ALWAYS,									// stencilCompareOp
 			~0u,													// stencilCompareMask
 			~0u,													// stencilWriteMask
 			((stencilIndex % 2) == 0) ? ~0x0u : 0x0u				// stencilReference
 		},															// front
 		{
-			VK_STENCIL_OP_REPLACE,									// stencilFailOp
-			VK_STENCIL_OP_REPLACE,									// stencilPassOp
-			VK_STENCIL_OP_REPLACE,									// stencilDepthFailOp
+			stencilOp,												// stencilFailOp
+			stencilOp,												// stencilPassOp
+			stencilOp,												// stencilDepthFailOp
 			VK_COMPARE_OP_ALWAYS,									// stencilCompareOp
 			~0u,													// stencilCompareMask
 			~0u,													// stencilWriteMask

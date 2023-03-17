@@ -111,20 +111,6 @@ struct Vertex4RGBA
 
 de::SharedPtr<Move<vk::VkDevice>>	g_singletonDevice;
 
-static std::vector<std::string> removeExtensions (const std::vector<std::string>& a, const std::vector<const char*>& b)
-{
-	std::vector<std::string>	res;
-	std::set<std::string>		removeExts	(b.begin(), b.end());
-
-	for (std::vector<std::string>::const_iterator aIter = a.begin(); aIter != a.end(); ++aIter)
-	{
-		if (!de::contains(removeExts, *aIter))
-			res.push_back(*aIter);
-	}
-
-	return res;
-}
-
 VkDevice getDevice(Context& context)
 {
 	if (!g_singletonDevice)
@@ -144,35 +130,50 @@ VkDevice getDevice(Context& context)
 
 		// \note Extensions in core are not explicitly enabled even though
 		//		 they are in the extension list advertised to tests.
-		std::vector<const char*>	extensionPtrs;
-		std::vector<const char*>	coreExtensions;
-		getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-		std::vector<std::string>	nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
+		const auto& extensionPtrs = context.getDeviceCreationExtensions();
 
-		extensionPtrs.resize(nonCoreExtensions.size());
+		VkPhysicalDevicePortabilitySubsetFeaturesKHR	portabilitySubsetFeatures		= initVulkanStructure();
+		VkPhysicalDeviceMultiviewFeatures				multiviewFeatures				= initVulkanStructure();
+		VkPhysicalDeviceImagelessFramebufferFeatures	imagelessFramebufferFeatures	= initVulkanStructure();
+		VkPhysicalDeviceDynamicRenderingFeatures		dynamicRenderingFeatures		= initVulkanStructure();
+		VkPhysicalDeviceFragmentDensityMap2FeaturesEXT	fragmentDensityMap2Features		= initVulkanStructure();
+		VkPhysicalDeviceFragmentDensityMapFeaturesEXT	fragmentDensityMapFeatures		= initVulkanStructure();
+		VkPhysicalDeviceFeatures2						features2						= initVulkanStructure();
 
-		for (size_t ndx = 0; ndx < nonCoreExtensions.size(); ++ndx)
-			extensionPtrs[ndx] = nonCoreExtensions[ndx].c_str();
+		const auto addFeatures = makeStructChainAdder(&features2);
 
-		VkPhysicalDeviceFragmentDensityMapFeaturesEXT	fragmentDensityMapFeatures	= initVulkanStructure();
-		VkPhysicalDeviceFragmentDensityMap2FeaturesEXT	fragmentDensityMap2Features	= initVulkanStructure(&fragmentDensityMapFeatures);
-		VkPhysicalDeviceFeatures2						features2					= initVulkanStructure(&fragmentDensityMap2Features);
+		if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset"))
+			addFeatures(&portabilitySubsetFeatures);
+
+		if (context.isDeviceFunctionalitySupported("VK_KHR_multiview"))
+			addFeatures(&multiviewFeatures);
+
+		if (context.isDeviceFunctionalitySupported("VK_KHR_imageless_framebuffer"))
+			addFeatures(&imagelessFramebufferFeatures);
+
+		if (context.isDeviceFunctionalitySupported("VK_KHR_dynamic_rendering"))
+			addFeatures(&dynamicRenderingFeatures);
+
+		if (context.isDeviceFunctionalitySupported("VK_EXT_fragment_density_map2"))
+			addFeatures(&fragmentDensityMap2Features);
+
+		addFeatures(&fragmentDensityMapFeatures);
 
 		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
-		const VkPhysicalDeviceFeatures2 & feature2ptr = context.getDeviceFeatures2();
+		features2.features.robustBufferAccess = VK_FALSE;
 
 		const VkDeviceCreateInfo deviceCreateInfo
 		{
 			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							//sType;
-			&feature2ptr,													//pNext;
-			(VkDeviceCreateFlags)0u,										//flags
+			&features2,														//pNext;
+			0u,																//flags
 			1,																//queueRecordCount;
 			&queueParams,													//pRequestedQueues;
-			0,																//layerCount;
-			DE_NULL,														//ppEnabledLayerNames;
-			(deUint32)extensionPtrs.size(),			// deUint32				enabledExtensionCount;
-			(extensionPtrs.empty() ? DE_NULL : &extensionPtrs[0]),			// const char* const*				ppEnabledExtensionNames;
-			DE_NULL,														//pEnabledFeatures;
+			0u,																//layerCount;
+			nullptr,														//ppEnabledLayerNames;
+			de::sizeU32(extensionPtrs),										// deUint32				enabledExtensionCount;
+			de::dataOrNull(extensionPtrs),									// const char* const*	ppEnabledExtensionNames;
+			nullptr,														//pEnabledFeatures;
 		};
 
 		Move<VkDevice> device = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(), context.getPhysicalDevice(), &deviceCreateInfo);
@@ -1358,6 +1359,7 @@ void FragmentDensityMapTest::checkSupport(Context& context) const
 	const VkPhysicalDevice		vkPhysicalDevice	= context.getPhysicalDevice();
 
 	context.requireDeviceFunctionality("VK_EXT_fragment_density_map");
+
 	if (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
 		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 

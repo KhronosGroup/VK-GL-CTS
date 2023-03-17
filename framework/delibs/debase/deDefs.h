@@ -101,6 +101,12 @@
 #	error Unknown operating system.
 #endif
 
+#if ((DE_OS == DE_OS_WIN32) || (DE_OS == DE_OS_UNIX)) && !defined(DEQP_SURFACELESS) && !defined(NULLWS)
+#	define DE_PLATFORM_USE_LIBRARY_TYPE 1
+#else
+#	undef DE_PLATFORM_USE_LIBRARY_TYPE
+#endif
+
 /* CPUs */
 #define DE_CPU_VANILLA	0
 #define DE_CPU_X86		1
@@ -109,6 +115,8 @@
 #define DE_CPU_ARM_64	4
 #define DE_CPU_MIPS		5
 #define DE_CPU_MIPS_64	6
+#define DE_CPU_RISCV_32	7
+#define DE_CPU_RISCV_64	8
 
 /* CPU detection. */
 #if defined(DE_CPU)
@@ -125,6 +133,10 @@
 #	define DE_CPU DE_CPU_MIPS
 #elif defined(__mips__) && ((__mips) == 64)
 #	define DE_CPU DE_CPU_MIPS_64
+#elif defined(__riscv) && ((__riscv_xlen) == 32)
+#	define DE_CPU DE_CPU_RISCV_32
+#elif defined(__riscv) && ((__riscv_xlen) == 64)
+#	define DE_CPU DE_CPU_RISCV_64
 #else
 #	error Unknown CPU.
 #endif

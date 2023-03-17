@@ -1044,7 +1044,7 @@ void Program::Release()
  **/
 void Program::Attach(const glw::Functions& gl, glw::GLuint program_id, glw::GLuint shader_id)
 {
-	/* Sanity checks */
+	/* Quick checks */
 	if ((m_invalid_id == program_id) || (Shader::m_invalid_id == shader_id))
 	{
 		return;

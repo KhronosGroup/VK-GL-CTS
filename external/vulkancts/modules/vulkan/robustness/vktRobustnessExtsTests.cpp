@@ -63,14 +63,13 @@ namespace
 using namespace vk;
 using namespace std;
 using de::SharedPtr;
+using BufferWithMemoryPtr = de::MovePtr<BufferWithMemory>;
 
 enum RobustnessFeatureBits
 {
 	RF_IMG_ROBUSTNESS		= (1		),
 	RF_ROBUSTNESS2			= (1 << 1	),
-	SIF_INT64ATOMICS		= (1 << 2	),
-	RF_PIPELINE_ROBUSTNESS	= (1 << 3	),
-	SBL_SCALAR_BLOCK_LAYOUT	= (1 << 4	),
+	RF_PIPELINE_ROBUSTNESS	= (1 << 2	),
 };
 
 using RobustnessFeatures = deUint32;
@@ -84,17 +83,40 @@ class SingletonDevice
 		, m_logicalDevice()
 	{
 		// Note we are already checking the needed features are available in checkSupport().
-		VkPhysicalDeviceRobustness2FeaturesEXT				robustness2Features				= initVulkanStructure();
-		VkPhysicalDeviceImageRobustnessFeaturesEXT			imageRobustnessFeatures			= initVulkanStructure();
 		VkPhysicalDeviceScalarBlockLayoutFeatures			scalarBlockLayoutFeatures		= initVulkanStructure();
 		VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT	shaderImageAtomicInt64Features	= initVulkanStructure();
+		VkPhysicalDeviceBufferDeviceAddressFeatures			bufferDeviceAddressFeatures		= initVulkanStructure();
+#ifndef CTS_USES_VULKANSC
+		VkPhysicalDeviceRayTracingPipelineFeaturesKHR		rayTracingPipelineFeatures		= initVulkanStructure();
+		VkPhysicalDeviceAccelerationStructureFeaturesKHR	accelerationStructureFeatures	= initVulkanStructure();
+#endif // CTS_USES_VULKANSC
+		VkPhysicalDeviceRobustness2FeaturesEXT				robustness2Features				= initVulkanStructure();
+		VkPhysicalDeviceImageRobustnessFeaturesEXT			imageRobustnessFeatures			= initVulkanStructure();
 		VkPhysicalDeviceFeatures2							features2						= initVulkanStructure();
 
-		if (FEATURES & SBL_SCALAR_BLOCK_LAYOUT)
+		// Enable these ones if supported, as they're needed in some tests.
+		if (context.isDeviceFunctionalitySupported("VK_EXT_scalar_block_layout"))
 		{
-			DE_ASSERT(context.isDeviceFunctionalitySupported("VK_EXT_scalar_block_layout"));
-			scalarBlockLayoutFeatures.pNext = features2.pNext;
-			features2.pNext = &scalarBlockLayoutFeatures;
+			scalarBlockLayoutFeatures.pNext	= features2.pNext;
+			features2.pNext					= &scalarBlockLayoutFeatures;
+		}
+		if (context.isDeviceFunctionalitySupported("VK_EXT_shader_image_atomic_int64"))
+		{
+			shaderImageAtomicInt64Features.pNext	= features2.pNext;
+			features2.pNext							= &shaderImageAtomicInt64Features;
+		}
+#ifndef CTS_USES_VULKANSC
+		if (context.isDeviceFunctionalitySupported("VK_KHR_ray_tracing_pipeline"))
+		{
+			accelerationStructureFeatures.pNext	= features2.pNext;
+			rayTracingPipelineFeatures.pNext	= &accelerationStructureFeatures;
+			features2.pNext						= &rayTracingPipelineFeatures;
+		}
+#endif // CTS_USES_VULKANSC
+		if (context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
+		{
+			bufferDeviceAddressFeatures.pNext	= features2.pNext;
+			features2.pNext						= &bufferDeviceAddressFeatures;
 		}
 
 		if (FEATURES & RF_IMG_ROBUSTNESS)
@@ -128,13 +150,6 @@ class SingletonDevice
 			features2.pNext = &pipelineRobustnessFeatures;
 		}
 #endif
-
-		if (FEATURES & SIF_INT64ATOMICS)
-		{
-			DE_ASSERT(context.isDeviceFunctionalitySupported("VK_EXT_shader_image_atomic_int64"));
-			shaderImageAtomicInt64Features.pNext = features2.pNext;
-			features2.pNext = &shaderImageAtomicInt64Features;
-		}
 
 		const auto&	vki				= m_context.getInstanceInterface();
 		const auto	instance		= m_context.getInstance();
@@ -193,32 +208,12 @@ SharedPtr<SingletonDevice<FEATURES>> SingletonDevice<FEATURES>::m_singletonDevic
 constexpr RobustnessFeatures kImageRobustness			= RF_IMG_ROBUSTNESS;
 constexpr RobustnessFeatures kRobustness2				= RF_ROBUSTNESS2;
 constexpr RobustnessFeatures kPipelineRobustness		= RF_PIPELINE_ROBUSTNESS;
-constexpr RobustnessFeatures kShaderImageInt64Atomics	= SIF_INT64ATOMICS;
-constexpr RobustnessFeatures kScalarBlockLayout			= SBL_SCALAR_BLOCK_LAYOUT;
 
 using ImageRobustnessSingleton	= SingletonDevice<kImageRobustness>;
 using Robustness2Singleton		= SingletonDevice<kRobustness2>;
 
-using ImageRobustnessScalarSingleton	= SingletonDevice<kImageRobustness | kScalarBlockLayout>;
-using Robustness2ScalarSingleton		= SingletonDevice<kRobustness2 | kScalarBlockLayout>;
-
 using PipelineRobustnessImageRobustnessSingleton	= SingletonDevice<kImageRobustness | kPipelineRobustness>;
 using PipelineRobustnessRobustness2Singleton		= SingletonDevice<kRobustness2 | kPipelineRobustness>;
-
-using PipelineRobustnessImageRobustnessScalarSingleton	= SingletonDevice<kImageRobustness | kPipelineRobustness | kScalarBlockLayout>;
-using PipelineRobustnessRobustness2ScalarSingleton		= SingletonDevice<kRobustness2 | kPipelineRobustness | kScalarBlockLayout>;
-
-using ImageRobustnessInt64AtomicsSingleton	= SingletonDevice<kImageRobustness | kShaderImageInt64Atomics>;
-using Robustness2Int64AtomicsSingleton		= SingletonDevice<kRobustness2 | kShaderImageInt64Atomics>;
-
-using ImageRobustnessInt64AtomicsScalarSingleton	= SingletonDevice<kImageRobustness | kShaderImageInt64Atomics | kScalarBlockLayout>;
-using Robustness2Int64AtomicsScalarSingleton		= SingletonDevice<kRobustness2 | kShaderImageInt64Atomics | kScalarBlockLayout>;
-
-using PipelineRobustnessImageRobustnessInt64AtomicsSingleton	= SingletonDevice<kImageRobustness | kPipelineRobustness | kShaderImageInt64Atomics>;
-using PipelineRobustnessRobustness2Int64AtomicsSingleton		= SingletonDevice<kRobustness2 | kPipelineRobustness | kShaderImageInt64Atomics>;
-
-using PipelineRobustnessImageRobustnessInt64AtomicsScalarSingleton	= SingletonDevice<kImageRobustness | kPipelineRobustness | kShaderImageInt64Atomics | kScalarBlockLayout>;
-using PipelineRobustnessRobustness2Int64AtomicsScalarSingleton		= SingletonDevice<kRobustness2 | kPipelineRobustness | kShaderImageInt64Atomics | kScalarBlockLayout>;
 
 // Render target / compute grid dimensions
 static const deUint32 DIM = 8;
@@ -291,53 +286,11 @@ static bool formatIsR64(const VkFormat& f)
 // Returns the appropriate singleton device for the given case.
 VkDevice getLogicalDevice (Context& ctx, const CaseDef& caseDef)
 {
-	if (caseDef.needsScalarBlockLayout())
-	{
-		if (caseDef.testPipelineRobustness)
-		{
-			if (formatIsR64(caseDef.format))
-			{
-				if (caseDef.testRobustness2)
-					return PipelineRobustnessRobustness2Int64AtomicsScalarSingleton::getDevice(ctx);
-				return PipelineRobustnessImageRobustnessInt64AtomicsScalarSingleton::getDevice(ctx);
-			}
-
-			if (caseDef.testRobustness2)
-				return PipelineRobustnessRobustness2ScalarSingleton::getDevice(ctx);
-			return PipelineRobustnessImageRobustnessScalarSingleton::getDevice(ctx);
-		}
-
-		if (formatIsR64(caseDef.format))
-		{
-			if (caseDef.testRobustness2)
-				return Robustness2Int64AtomicsScalarSingleton::getDevice(ctx);
-			return ImageRobustnessInt64AtomicsScalarSingleton::getDevice(ctx);
-		}
-
-		if (caseDef.testRobustness2)
-			return Robustness2ScalarSingleton::getDevice(ctx);
-		return ImageRobustnessScalarSingleton::getDevice(ctx);
-	}
-
 	if (caseDef.testPipelineRobustness)
 	{
-		if (formatIsR64(caseDef.format))
-		{
-			if (caseDef.testRobustness2)
-				return PipelineRobustnessRobustness2Int64AtomicsSingleton::getDevice(ctx);
-			return PipelineRobustnessImageRobustnessInt64AtomicsSingleton::getDevice(ctx);
-		}
-
 		if (caseDef.testRobustness2)
 			return PipelineRobustnessRobustness2Singleton::getDevice(ctx);
 		return PipelineRobustnessImageRobustnessSingleton::getDevice(ctx);
-	}
-
-	if (formatIsR64(caseDef.format))
-	{
-		if (caseDef.testRobustness2)
-			return Robustness2Int64AtomicsSingleton::getDevice(ctx);
-		return ImageRobustnessInt64AtomicsSingleton::getDevice(ctx);
 	}
 
 	if (caseDef.testRobustness2)
@@ -348,25 +301,11 @@ VkDevice getLogicalDevice (Context& ctx, const CaseDef& caseDef)
 // Returns the appropriate singleton device driver for the given case.
 const DeviceInterface& getDeviceInterface(Context& ctx, const CaseDef& caseDef)
 {
-	if (caseDef.needsScalarBlockLayout())
-	{
-		if (formatIsR64(caseDef.format))
-		{
-			if (caseDef.testRobustness2)
-				return Robustness2Int64AtomicsScalarSingleton::getDeviceInterface(ctx);
-			return ImageRobustnessInt64AtomicsScalarSingleton::getDeviceInterface(ctx);
-		}
-
-		if (caseDef.testRobustness2)
-			return Robustness2ScalarSingleton::getDeviceInterface(ctx);
-		return ImageRobustnessScalarSingleton::getDeviceInterface(ctx);
-	}
-
-	if (formatIsR64(caseDef.format))
+	if (caseDef.testPipelineRobustness)
 	{
 		if (caseDef.testRobustness2)
-			return Robustness2Int64AtomicsSingleton::getDeviceInterface(ctx);
-		return ImageRobustnessInt64AtomicsSingleton::getDeviceInterface(ctx);
+			return PipelineRobustnessRobustness2Singleton::getDeviceInterface(ctx);
+		return PipelineRobustnessImageRobustnessSingleton::getDeviceInterface(ctx);
 	}
 
 	if (caseDef.testRobustness2)
@@ -552,6 +491,7 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 	}
 #endif
 
+	context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
 	vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
 
 	if (formatIsR64(m_data.format))
@@ -608,7 +548,7 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 		TCU_THROW(NotSupportedError, "Fragment shader stores not supported");
 
 	if (m_data.stage == STAGE_RAYGEN)
-		context.requireDeviceFunctionality("VK_NV_ray_tracing");
+		context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
 
 	switch (m_data.descriptorType)
 	{
@@ -1476,8 +1416,23 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 					checks << "    else if (temp == zzzo) temp = " << vecType << "(0);\n";
 
 				// non-volatile value replaced with stored value
-				if (supportsStores(m_data.descriptorType) && !m_data.vol)
+				if (supportsStores(m_data.descriptorType) && !m_data.vol) {
 					checks << "    else if (temp == " << getStoreValue(m_data.descriptorType, numComponents, vecType, bufType) << ") temp = " << vecType << "(0);\n";
+
+					if (m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC || m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
+
+						for (int mask = (numComponents*numComponents) - 2; mask > 0; mask--) {
+							checks << "    else if (temp == " << vecType << "(";
+							for (int vecIdx = 0; vecIdx < 4; vecIdx++) {
+								if (mask & (1 << vecIdx)) checks << storeValue;
+								else checks << "0";
+
+								if (vecIdx != 3) checks << ",";
+							}
+							checks << ")) temp = " << vecType << "(0);\n";
+						}
+					}
+				}
 
 				// value straddling the boundary, returning a partial vector
 				if (expectedOOB2 != expectedOOB)
@@ -1647,7 +1602,7 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 	if (is64BitFormat)
 		support += SupportR64;
 	if (m_data.stage == STAGE_RAYGEN)
-		support += "#extension GL_NV_ray_tracing : require\n";
+		support += "#extension GL_EXT_ray_tracing : require\n";
 
 	std::string code =	"  " + vecType + " accum = " + vecType + "(0);\n"
 						"  " + vecType + " temp;\n"
@@ -1682,11 +1637,11 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 				"void main()\n"
 				"{\n"
 				<< code <<
-				"  imageStore(image0_0, ivec2(gl_LaunchIDNV.xy), color);\n"
+				"  imageStore(image0_0, ivec2(gl_LaunchIDEXT.xy), color);\n"
 				"}\n";
 
 			programCollection.glslSources.add("test") << glu::RaygenSource(css.str())
-				<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_0, shaderBuildOptions);
+				<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, shaderBuildOptions, true);
 			break;
 		}
 	case STAGE_VERTEX:
@@ -1810,33 +1765,26 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 	generateLayout(layout, m_data);
 
 	// Get needed properties.
-	VkPhysicalDeviceProperties2 properties;
-	deMemset(&properties, 0, sizeof(properties));
-	properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-	void** pNextTail = &properties.pNext;
+	VkPhysicalDeviceProperties2 properties = initVulkanStructure();
 
 #ifndef CTS_USES_VULKANSC
-	VkPhysicalDeviceRayTracingPropertiesNV rayTracingProperties;
-	deMemset(&rayTracingProperties, 0, sizeof(rayTracingProperties));
-	rayTracingProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_NV;
+	VkPhysicalDeviceRayTracingPipelinePropertiesKHR rayTracingProperties = initVulkanStructure();
 #endif
 
-	VkPhysicalDeviceRobustness2PropertiesEXT robustness2Properties;
-	deMemset(&robustness2Properties, 0, sizeof(robustness2Properties));
-	robustness2Properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_PROPERTIES_EXT;
+	VkPhysicalDeviceRobustness2PropertiesEXT robustness2Properties = initVulkanStructure();
 
 #ifndef CTS_USES_VULKANSC
-	if (m_context.isDeviceFunctionalitySupported("VK_NV_ray_tracing"))
+	if (m_context.isDeviceFunctionalitySupported("VK_KHR_ray_tracing_pipeline"))
 	{
-		*pNextTail = &rayTracingProperties;
-		pNextTail = &rayTracingProperties.pNext;
+		rayTracingProperties.pNext = properties.pNext;
+		properties.pNext = &rayTracingProperties;
 	}
 #endif
 
 	if (m_context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
 	{
-		*pNextTail = &robustness2Properties;
-		pNextTail = &robustness2Properties.pNext;
+		robustness2Properties.pNext = properties.pNext;
+		properties.pNext = &robustness2Properties;
 	}
 
 	vki.getPhysicalDeviceProperties2(physicalDevice, &properties);
@@ -1862,7 +1810,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 		break;
 #ifndef CTS_USES_VULKANSC
 	case STAGE_RAYGEN:
-		bindPoint = VK_PIPELINE_BIND_POINT_RAY_TRACING_NV;
+		bindPoint = VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
 		break;
 #endif
 	default:
@@ -1918,7 +1866,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 	if (!m_data.pushDescriptor)
 		descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout, pNext);
 
-	de::MovePtr<BufferWithMemory> buffer;
+	BufferWithMemoryPtr buffer;
 
 	deUint8 *bufferPtr = DE_NULL;
 	if (!m_data.nullDescriptor)
@@ -1954,7 +1902,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 			size = m_data.bufferLen;
 		}
 
-		buffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+		buffer = BufferWithMemoryPtr(new BufferWithMemory(
 			vk, device, allocator, makeBufferCreateInfo(size, usage), MemoryRequirement::HostVisible));
 		bufferPtr = (deUint8 *)buffer->getAllocation().getHostPtr();
 
@@ -2037,7 +1985,6 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 	typedef de::SharedPtr<BufferViewHandleUp>	BufferViewHandleSp;
 	typedef de::SharedPtr<ImageWithMemory>		ImageWithMemorySp;
 	typedef de::SharedPtr<Unique<VkImageView> >	VkImageViewSp;
-	typedef de::MovePtr<BufferWithMemory>		BufferWithMemoryMp;
 
 	vector<BufferViewHandleSp>					bufferViews(1);
 
@@ -2150,15 +2097,15 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 		deMemcpy(ptr, layout.refData.data(), layout.refData.size());
 	}
 
-	BufferWithMemoryMp				bufferImageR64;
-	BufferWithMemoryMp				bufferOutputImageR64;
+	BufferWithMemoryPtr				bufferImageR64;
+	BufferWithMemoryPtr				bufferOutputImageR64;
 	const VkDeviceSize				sizeOutputR64	= 8 * outputImageCreateInfo.extent.width * outputImageCreateInfo.extent.height * outputImageCreateInfo.extent.depth;
 	const VkDeviceSize				sizeOneLayers	= 8 * imageCreateInfo.extent.width * imageCreateInfo.extent.height * imageCreateInfo.extent.depth;
 	const VkDeviceSize				sizeImageR64	= sizeOneLayers * layers;
 
 	if (formatIsR64(m_data.format))
 	{
-		bufferOutputImageR64 = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+		bufferOutputImageR64 = BufferWithMemoryPtr(new BufferWithMemory(
 			vk, device, allocator,
 			makeBufferCreateInfo(sizeOutputR64, VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
 			MemoryRequirement::HostVisible));
@@ -2171,7 +2118,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 		}
 		flushAlloc(vk, device, bufferOutputImageR64->getAllocation());
 
-		bufferImageR64 = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+		bufferImageR64 = BufferWithMemoryPtr(new BufferWithMemory(
 			vk, device, allocator,
 			makeBufferCreateInfo(sizeImageR64, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
 			MemoryRequirement::HostVisible));
@@ -2441,8 +2388,8 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 
 	Move<VkPipelineLayout> pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo, NULL);
 
-	de::MovePtr<BufferWithMemory> copyBuffer;
-	copyBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+	BufferWithMemoryPtr copyBuffer;
+	copyBuffer = BufferWithMemoryPtr(new BufferWithMemory(
 		vk, device, allocator, makeBufferCreateInfo(DIM*DIM*16, VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible));
 
 	{
@@ -2648,7 +2595,15 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 	Move<VkRenderPass> renderPass;
 	Move<VkFramebuffer> framebuffer;
 
-	de::MovePtr<BufferWithMemory> sbtBuffer;
+#ifndef CTS_USES_VULKANSC
+	BufferWithMemoryPtr				sbtBuffer;
+	const auto						sbtFlags		= (VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+	VkStridedDeviceAddressRegionKHR	rgenSBTRegion	= makeStridedDeviceAddressRegionKHR(0ull, 0, 0);
+	VkStridedDeviceAddressRegionKHR	missSBTRegion	= makeStridedDeviceAddressRegionKHR(0ull, 0, 0);
+	VkStridedDeviceAddressRegionKHR	hitSBTRegion	= makeStridedDeviceAddressRegionKHR(0ull, 0, 0);
+	VkStridedDeviceAddressRegionKHR	callSBTRegion	= makeStridedDeviceAddressRegionKHR(0ull, 0, 0);
+	const auto						sgHandleSize	= rayTracingProperties.shaderGroupHandleSize;
+#endif // CTS_USES_VULKANSC
 
 	if (m_data.stage == STAGE_COMPUTE)
 	{
@@ -2665,48 +2620,61 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 		const VkPipelineShaderStageCreateInfo	shaderCreateInfo =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-			DE_NULL,
-			(VkPipelineShaderStageCreateFlags)0,
-			VK_SHADER_STAGE_RAYGEN_BIT_NV,								// stage
+			nullptr,
+			0u,															// flags
+			VK_SHADER_STAGE_RAYGEN_BIT_KHR,								// stage
 			*shader,													// shader
 			"main",
-			DE_NULL,													// pSpecializationInfo
+			nullptr,													// pSpecializationInfo
 		};
 
-		VkRayTracingShaderGroupCreateInfoNV group =
+		VkRayTracingShaderGroupCreateInfoKHR group =
 		{
-			VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_NV,
-			DE_NULL,
-			VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_NV,			// type
+			VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR,
+			nullptr,
+			VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,			// type
 			0,														// generalShader
 			VK_SHADER_UNUSED_KHR,									// closestHitShader
 			VK_SHADER_UNUSED_KHR,									// anyHitShader
 			VK_SHADER_UNUSED_KHR,									// intersectionShader
+			nullptr,												// pShaderGroupCaptureReplayHandle
 		};
 
-		VkRayTracingPipelineCreateInfoNV pipelineCreateInfo = {
-			VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_NV,	// sType
-			DE_NULL,												// pNext
-			0,														// flags
-			1,														// stageCount
+		VkRayTracingPipelineCreateInfoKHR pipelineCreateInfo = {
+			VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,	// sType
+			nullptr,												// pNext
+			0u,														// flags
+			1u,														// stageCount
 			&shaderCreateInfo,										// pStages
-			1,														// groupCount
+			1u,														// groupCount
 			&group,													// pGroups
 			0,														// maxRecursionDepth
+			nullptr,												// pLibraryInfo
+			nullptr,												// pLibraryInterface
+			nullptr,												// pDynamicState
 			*pipelineLayout,										// layout
 			(vk::VkPipeline)0,										// basePipelineHandle
 			0u,														// basePipelineIndex
 		};
 
-		pipeline = createRayTracingPipelineNV(vk, device, DE_NULL, &pipelineCreateInfo, NULL);
+		pipeline = createRayTracingPipelineKHR(vk, device, VK_NULL_HANDLE, VK_NULL_HANDLE, &pipelineCreateInfo);
 
-		sbtBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
-			vk, device, allocator, makeBufferCreateInfo(rayTracingProperties.shaderGroupHandleSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_RAY_TRACING_BIT_NV), MemoryRequirement::HostVisible));
+		sbtBuffer = BufferWithMemoryPtr(new BufferWithMemory(
+			vk, device, allocator, makeBufferCreateInfo(sgHandleSize, sbtFlags), (MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress)));
 
 		deUint32 *ptr = (deUint32 *)sbtBuffer->getAllocation().getHostPtr();
 		invalidateAlloc(vk, device, sbtBuffer->getAllocation());
 
-		vk.getRayTracingShaderGroupHandlesKHR(device, *pipeline, 0, 1, rayTracingProperties.shaderGroupHandleSize, ptr);
+		vk.getRayTracingShaderGroupHandlesKHR(device, *pipeline, 0, 1, sgHandleSize, ptr);
+
+		const VkBufferDeviceAddressInfo deviceAddressInfo
+		{
+			VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,		// VkStructureType    sType
+			nullptr,											// const void*        pNext
+			sbtBuffer->get()									// VkBuffer           buffer;
+		};
+		const auto sbtAddress	= vk.getBufferDeviceAddress(device, &deviceAddressInfo);
+		rgenSBTRegion			= makeStridedDeviceAddressRegionKHR(sbtAddress, sgHandleSize, sgHandleSize);
 	}
 #endif
 	else
@@ -3001,12 +2969,12 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 #ifndef CTS_USES_VULKANSC
 	else if (m_data.stage == STAGE_RAYGEN)
 	{
-		vk.cmdTraceRaysNV(*cmdBuffer,
-			**sbtBuffer, 0,
-			DE_NULL, 0, 0,
-			DE_NULL, 0, 0,
-			DE_NULL, 0, 0,
-			DIM, DIM, 1);
+		vk.cmdTraceRaysKHR(*cmdBuffer,
+			&rgenSBTRegion,
+			&missSBTRegion,
+			&hitSBTRegion,
+			&callSBTRegion,
+			DIM, DIM, 1u);
 	}
 #endif
 	else
@@ -3394,8 +3362,8 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2, bool pipel
 #ifndef CTS_USES_VULKANSC
 													if ((Stage)stageCases[stageNdx].count == STAGE_RAYGEN)
 													{
-														allShaderStages |= VK_SHADER_STAGE_RAYGEN_BIT_NV;
-														allPipelineStages |= VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV;
+														allShaderStages |= VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+														allPipelineStages |= VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
 
 														if (pipelineRobustness)
 															continue;
@@ -3504,22 +3472,10 @@ static void cleanupGroup (tcu::TestCaseGroup* group)
 {
 	DE_UNREF(group);
 	// Destroy singleton objects.
-	Robustness2Int64AtomicsSingleton::destroy();
-	ImageRobustnessInt64AtomicsSingleton::destroy();
 	ImageRobustnessSingleton::destroy();
 	Robustness2Singleton::destroy();
 	PipelineRobustnessImageRobustnessSingleton::destroy();
 	PipelineRobustnessRobustness2Singleton::destroy();
-	PipelineRobustnessImageRobustnessInt64AtomicsSingleton::destroy();
-	PipelineRobustnessRobustness2Int64AtomicsSingleton::destroy();
-	Robustness2Int64AtomicsScalarSingleton::destroy();
-	ImageRobustnessInt64AtomicsScalarSingleton::destroy();
-	ImageRobustnessScalarSingleton::destroy();
-	Robustness2ScalarSingleton::destroy();
-	PipelineRobustnessImageRobustnessScalarSingleton::destroy();
-	PipelineRobustnessRobustness2ScalarSingleton::destroy();
-	PipelineRobustnessImageRobustnessInt64AtomicsScalarSingleton::destroy();
-	PipelineRobustnessRobustness2Int64AtomicsScalarSingleton::destroy();
 }
 
 tcu::TestCaseGroup* createRobustness2Tests (tcu::TestContext& testCtx)

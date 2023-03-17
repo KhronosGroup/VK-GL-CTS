@@ -5632,7 +5632,7 @@ void TextureViewTestViewSampling::initParentTextureContents()
 		const unsigned int n_faces =
 			(m_iteration_parent_texture_target == GL_TEXTURE_CUBE_MAP_ARRAY) ? 6 /* faces */ : 1;
 
-		resetReferenceColorStorage(m_iteration_parent_texture_depth,			 /* n_layers */
+		resetReferenceColorStorage(m_iteration_parent_texture_depth / n_faces,	 /* n_layers */
 								   n_faces, m_iteration_parent_texture_n_levels, /* n_mipmaps */
 								   m_max_color_texture_samples_gl_value);		 /* n_samples */
 
@@ -5645,7 +5645,7 @@ void TextureViewTestViewSampling::initParentTextureContents()
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram() call failed.");
 
 		/* Iterate through all layers of the texture. */
-		for (unsigned int n_layer = 0; n_layer < m_iteration_parent_texture_depth; ++n_layer)
+		for (unsigned int n_layer = 0; n_layer < m_iteration_parent_texture_depth / n_faces; ++n_layer)
 		{
 			/* ..faces.. */
 			for (unsigned int n_face = 0; n_face < n_faces; ++n_face)
@@ -5665,7 +5665,7 @@ void TextureViewTestViewSampling::initParentTextureContents()
 					}
 					else
 					{
-						/* Sanity check */
+						/* Quick check */
 						DE_ASSERT(m_iteration_parent_texture_depth == 1);
 
 						gl.framebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
@@ -5695,7 +5695,7 @@ void TextureViewTestViewSampling::initParentTextureContents()
 					GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform4fv() call failed.");
 
 					/* Update the layer ID the program should render to */
-					const unsigned int layer_id = n_face * 6 /* faces */ + n_layer;
+					const unsigned int layer_id = n_layer * n_faces + n_face;
 
 					gl.uniform1i(m_per_sample_filler_po_layer_id_location, layer_id);
 					GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1i() call failed.");
@@ -5721,7 +5721,7 @@ void TextureViewTestViewSampling::initPerSampleFillerProgramObject()
 {
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
-	/* Sanity checks: GL_MAX_COLOR_TEXTURE_SAMPLES is not 0 */
+	/* Quick checks: GL_MAX_COLOR_TEXTURE_SAMPLES is not 0 */
 	DE_ASSERT(m_max_color_texture_samples_gl_value != 0);
 
 	/* Generate program and shader objects */
@@ -5941,7 +5941,7 @@ void TextureViewTestViewSampling::initTextureObject(bool is_view_texture, glw::G
 	unsigned int		  texture_depth = 0;
 	glw::GLuint*		  to_id_ptr		= (is_view_texture) ? &m_view_to_id : &m_to_id;
 
-	/* Sanity check: make sure GL_TEXTURE_BUFFER texture target is not requested. This
+	/* Quick check: make sure GL_TEXTURE_BUFFER texture target is not requested. This
 	 *               would be against the test specification.
 	 **/
 	DE_ASSERT(texture_target != GL_TEXTURE_BUFFER);
@@ -6389,7 +6389,7 @@ tcu::TestNode::IterateResult TextureViewTestViewSampling::iterate()
 void TextureViewTestViewSampling::resetReferenceColorStorage(unsigned int n_layers, unsigned int n_faces,
 															 unsigned int n_mipmaps, unsigned int n_samples)
 {
-	/* Sanity checks */
+	/* Quick checks */
 	DE_ASSERT(n_layers >= 1);
 	DE_ASSERT(n_faces >= 1);
 	DE_ASSERT(n_mipmaps >= 1);
@@ -6596,7 +6596,7 @@ void TextureViewTestViewClasses::getComponentDataForByteAlignedInternalformat(co
 	signed int*   result_sint  = (signed int*)result;
 	unsigned int* result_uint  = (unsigned int*)result;
 
-	/* Sanity checks: we assume the components are aligned on byte boundary. */
+	/* Quick checks: we assume the components are aligned on byte boundary. */
 	DE_ASSERT((component_sizes[0] % 8) == 0 && (component_sizes[1] % 8) == 0 && (component_sizes[2] % 8) == 0 &&
 			  (component_sizes[3] % 8) == 0);
 
@@ -8222,10 +8222,10 @@ void TextureViewTestCoherency::checkProgramWriteCoherency(_texture_type texture_
 
 	if (!should_use_images)
 	{
-		/* Sanity check: no barrier should be requested if images are not used */
+		/* Quick check: no barrier should be requested if images are not used */
 		DE_ASSERT(barrier_type == BARRIER_TYPE_NONE);
 
-		/* Sanity check: glGetTexImage*() call should only be used for verification
+		/* Quick check: glGetTexImage*() call should only be used for verification
 		 *               when images are used */
 		DE_ASSERT(verification_mean == VERIFICATION_MEAN_PROGRAM);
 	}
@@ -10107,7 +10107,7 @@ void TextureViewTestReferenceCounting::initXFB()
 {
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
-	/* Sanity checks */
+	/* Quick checks */
 	DE_ASSERT(m_po_id != 0);
 
 	/* Generate a buffer object we'll use for Transform Feedback */

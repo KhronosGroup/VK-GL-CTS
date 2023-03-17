@@ -189,7 +189,7 @@ ShaderMetamorphicVariant::IterateResult ShaderMetamorphicVariant::iterate (void)
 	{
 		bool isSane = m_sanityCheck(recipientImg.getAccess());
 		if (!isSane)
-			throw tcu::TestError("Sanity check fails on recipient");
+			throw tcu::TestError("Quick check fails on recipient");
 	}
 
 	bool isOk = tcu::pixelThresholdCompare(log, "Result", "Image comparison result", recipientImg, variantImg, threshold, tcu::COMPARE_LOG_RESULT);
@@ -252,7 +252,7 @@ void ShaderMetamorphicShaderset::init(void)
 /*--------------------------------------------------------------------*//*!
  * \brief SanityPixel
  *
- * A place holder to store info on reference pixel for sanity checking.
+ * A place holder to store info on reference pixel for quick checking.
  *//*--------------------------------------------------------------------*/
 class SanityPixel
 {

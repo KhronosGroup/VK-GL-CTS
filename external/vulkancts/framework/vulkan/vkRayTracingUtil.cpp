@@ -689,8 +689,8 @@ void BottomLevelAccelerationStructure::setDefaultGeometryData (const VkShaderSta
 		geometryData.push_back(tcu::Vec3(-1.0f, -1.0f, z));
 		geometryData.push_back(tcu::Vec3(-1.0f, +1.0f, z));
 		geometryData.push_back(tcu::Vec3(+1.0f, -1.0f, z));
-		geometryData.push_back(tcu::Vec3(-1.0f, +1.0f, z));
 		geometryData.push_back(tcu::Vec3(+1.0f, -1.0f, z));
+		geometryData.push_back(tcu::Vec3(-1.0f, +1.0f, z));
 		geometryData.push_back(tcu::Vec3(+1.0f, +1.0f, z));
 	}
 	else
@@ -882,6 +882,7 @@ public:
 	VkAccelerationStructureBuildTypeKHR						getBuildType									() const override;
 	void													setCreateFlags									(const VkAccelerationStructureCreateFlagsKHR	createFlags) override;
 	void													setCreateGeneric								(bool											createGeneric) override;
+	void													setCreationBufferUnbounded						(bool											creationBufferUnbounded) override;
 	void													setBuildFlags									(const VkBuildAccelerationStructureFlagsKHR		buildFlags) override;
 	void													setBuildWithoutGeometries						(bool											buildWithoutGeometries) override;
 	void													setBuildWithoutPrimitives						(bool											buildWithoutPrimitives) override;
@@ -924,6 +925,7 @@ protected:
 	VkAccelerationStructureBuildTypeKHR						m_buildType;
 	VkAccelerationStructureCreateFlagsKHR					m_createFlags;
 	bool													m_createGeneric;
+	bool													m_creationBufferUnbounded;
 	VkBuildAccelerationStructureFlagsKHR					m_buildFlags;
 	bool													m_buildWithoutGeometries;
 	bool													m_buildWithoutPrimitives;
@@ -981,6 +983,7 @@ BottomLevelAccelerationStructureKHR::BottomLevelAccelerationStructureKHR ()
 	, m_buildType						(VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
 	, m_createFlags						(0u)
 	, m_createGeneric					(false)
+	, m_creationBufferUnbounded			(false)
 	, m_buildFlags						(0u)
 	, m_buildWithoutGeometries			(false)
 	, m_buildWithoutPrimitives			(false)
@@ -1017,6 +1020,11 @@ void BottomLevelAccelerationStructureKHR::setCreateFlags (const VkAccelerationSt
 void BottomLevelAccelerationStructureKHR::setCreateGeneric (bool createGeneric)
 {
 	m_createGeneric = createGeneric;
+}
+
+void BottomLevelAccelerationStructureKHR::setCreationBufferUnbounded (bool creationBufferUnbounded)
+{
+	m_creationBufferUnbounded = creationBufferUnbounded;
 }
 
 void BottomLevelAccelerationStructureKHR::setBuildFlags (const VkBuildAccelerationStructureFlagsKHR	buildFlags)
@@ -1123,15 +1131,16 @@ void BottomLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 	{
 		const VkBufferCreateInfo		bufferCreateInfo		= makeBufferCreateInfo(m_structureSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
 		const MemoryRequirement			memoryRequirement		= addMemoryRequirement | MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress;
+		const bool						bindMemOnCreation		= (!m_creationBufferUnbounded);
 
 		try
 		{
-			m_accelerationStructureBuffer	= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::Cached | memoryRequirement));
+			m_accelerationStructureBuffer	= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, (MemoryRequirement::Cached | memoryRequirement), bindMemOnCreation));
 		}
 		catch (const tcu::NotSupportedError&)
 		{
 			// retry without Cached flag
-			m_accelerationStructureBuffer	= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, memoryRequirement));
+			m_accelerationStructureBuffer	= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, memoryRequirement, bindMemOnCreation));
 		}
 	}
 
@@ -1152,6 +1161,9 @@ void BottomLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 		};
 
 		m_accelerationStructureKHR	= createAccelerationStructureKHR(vk, device, &accelerationStructureCreateInfoKHR, DE_NULL);
+
+		// Make sure buffer memory is always bound after creation.
+		m_accelerationStructureBuffer->bindMemory();
 	}
 
 	if (m_buildScratchSize > 0u)
@@ -2423,6 +2435,7 @@ public:
 	void													setBuildType										(const VkAccelerationStructureBuildTypeKHR		buildType) override;
 	void													setCreateFlags										(const VkAccelerationStructureCreateFlagsKHR	createFlags) override;
 	void													setCreateGeneric									(bool											createGeneric) override;
+	void													setCreationBufferUnbounded							(bool											creationBufferUnbounded) override;
 	void													setBuildFlags										(const VkBuildAccelerationStructureFlagsKHR		buildFlags) override;
 	void													setBuildWithoutPrimitives							(bool											buildWithoutPrimitives) override;
 	void													setInactiveInstances								(bool											inactiveInstances) override;
@@ -2449,7 +2462,8 @@ public:
 																												 const MemoryRequirement&						addMemoryRequirement	= MemoryRequirement::Any) override;
 	void													build												(const DeviceInterface&							vk,
 																												 const VkDevice									device,
-																												 const VkCommandBuffer							cmdBuffer) override;
+																												 const VkCommandBuffer							cmdBuffer,
+																												 TopLevelAccelerationStructure*					srcAccelerationStructure = DE_NULL) override;
 	void													copyFrom											(const DeviceInterface&							vk,
 																												 const VkDevice									device,
 																												 const VkCommandBuffer							cmdBuffer,
@@ -2484,6 +2498,7 @@ protected:
 	VkAccelerationStructureBuildTypeKHR						m_buildType;
 	VkAccelerationStructureCreateFlagsKHR					m_createFlags;
 	bool													m_createGeneric;
+	bool													m_creationBufferUnbounded;
 	VkBuildAccelerationStructureFlagsKHR					m_buildFlags;
 	bool													m_buildWithoutPrimitives;
 	bool													m_inactiveInstances;
@@ -2536,6 +2551,7 @@ TopLevelAccelerationStructureKHR::TopLevelAccelerationStructureKHR ()
 	, m_buildType					(VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
 	, m_createFlags					(0u)
 	, m_createGeneric				(false)
+	, m_creationBufferUnbounded		(false)
 	, m_buildFlags					(0u)
 	, m_buildWithoutPrimitives		(false)
 	, m_inactiveInstances			(false)
@@ -2572,6 +2588,11 @@ void TopLevelAccelerationStructureKHR::setCreateFlags (const VkAccelerationStruc
 void TopLevelAccelerationStructureKHR::setCreateGeneric (bool createGeneric)
 {
 	m_createGeneric = createGeneric;
+}
+
+void TopLevelAccelerationStructureKHR::setCreationBufferUnbounded (bool creationBufferUnbounded)
+{
+	m_creationBufferUnbounded = creationBufferUnbounded;
 }
 
 void TopLevelAccelerationStructureKHR::setInactiveInstances (bool inactiveInstances)
@@ -2752,15 +2773,16 @@ void TopLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 	{
 		const VkBufferCreateInfo	bufferCreateInfo	= makeBufferCreateInfo(m_structureSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
 		const MemoryRequirement		memoryRequirement	= addMemoryRequirement | MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress;
+		const bool					bindMemOnCreation	= (!m_creationBufferUnbounded);
 
 		try
 		{
-			m_accelerationStructureBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::Cached | memoryRequirement));
+			m_accelerationStructureBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, (MemoryRequirement::Cached | memoryRequirement), bindMemOnCreation));
 		}
 		catch (const tcu::NotSupportedError&)
 		{
 			// retry without Cached flag
-			m_accelerationStructureBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, memoryRequirement));
+			m_accelerationStructureBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, memoryRequirement, bindMemOnCreation));
 		}
 	}
 
@@ -2781,6 +2803,9 @@ void TopLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 		};
 
 		m_accelerationStructureKHR	= createAccelerationStructureKHR(vk, device, &accelerationStructureCreateInfoKHR, DE_NULL);
+
+		// Make sure buffer memory is always bound after creation.
+		m_accelerationStructureBuffer->bindMemory();
 	}
 
 	if (m_buildScratchSize > 0u)
@@ -2824,9 +2849,10 @@ void TopLevelAccelerationStructureKHR::updateInstanceMatrix (const DeviceInterfa
 	flushMappedMemoryRange(vk, device, instancesAlloc.getMemory(), instancesAlloc.getOffset(), VK_WHOLE_SIZE);
 }
 
-void TopLevelAccelerationStructureKHR::build (const DeviceInterface&	vk,
-											  const VkDevice			device,
-											  const VkCommandBuffer		cmdBuffer)
+void TopLevelAccelerationStructureKHR::build (const DeviceInterface&			vk,
+											  const VkDevice					device,
+											  const VkCommandBuffer				cmdBuffer,
+											  TopLevelAccelerationStructure*	srcAccelerationStructure)
 {
 	DE_ASSERT(!m_bottomLevelInstances.empty());
 	DE_ASSERT(m_accelerationStructureKHR.get() != DE_NULL);
@@ -2843,14 +2869,17 @@ void TopLevelAccelerationStructureKHR::build (const DeviceInterface&	vk,
 																							? makeDeviceOrHostAddressKHR(vk, device, m_deviceScratchBuffer->get(), 0)
 																							: makeDeviceOrHostAddressKHR(m_hostScratchBuffer.data());
 
+	VkAccelerationStructureKHR				srcStructure									= (srcAccelerationStructure != DE_NULL) ? *(srcAccelerationStructure->getPtr()) : DE_NULL;
+	VkBuildAccelerationStructureModeKHR		mode											= (srcAccelerationStructure != DE_NULL) ? VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR : VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+
 	VkAccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfoKHR		=
 	{
 		VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR,						//  VkStructureType										sType;
 		DE_NULL,																				//  const void*											pNext;
 		VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR,											//  VkAccelerationStructureTypeKHR						type;
 		m_buildFlags,																			//  VkBuildAccelerationStructureFlagsKHR				flags;
-		VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR,											//  VkBuildAccelerationStructureModeKHR					mode;
-		DE_NULL,																				//  VkAccelerationStructureKHR							srcAccelerationStructure;
+		mode,																					//  VkBuildAccelerationStructureModeKHR					mode;
+		srcStructure,																			//  VkAccelerationStructureKHR							srcAccelerationStructure;
 		m_accelerationStructureKHR.get(),														//  VkAccelerationStructureKHR							dstAccelerationStructure;
 		1u,																						//  deUint32											geometryCount;
 		(m_usePPGeometries ? nullptr : &accelerationStructureGeometryKHR),						//  const VkAccelerationStructureGeometryKHR*			pGeometries;

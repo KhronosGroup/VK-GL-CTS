@@ -3069,7 +3069,7 @@ void TessellationShaderInvarianceRule7Test::verifyResultData(const void** all_it
 							}
 						}
 
-						/* Sanity checks */
+						/* Quick checks */
 						DE_UNREF(is_top_outer_edge);
 						DE_ASSERT((is_left_outer_edge && !is_top_outer_edge && !is_bottom_outer_edge &&
 								   !is_right_outer_edge) ||

@@ -561,7 +561,7 @@ void Rank::sub (size_t bits, deUint32 value)
 
 static deUint64 configRank (GlxVisual& visual)
 {
-	// Sanity checks.
+	// Quick checks.
 	if (visual.getAttrib(GLX_DOUBLEBUFFER)					== False	||
 		(visual.getAttrib(GLX_RENDER_TYPE) & GLX_RGBA_BIT)	== 0)
 		return 0;

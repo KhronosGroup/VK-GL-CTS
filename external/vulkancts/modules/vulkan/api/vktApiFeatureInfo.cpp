@@ -2355,52 +2355,20 @@ void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>&
 
 #ifndef CTS_USES_VULKANSC
 
-void checkInstanceExtensionDependencies(tcu::ResultCollector&														results,
-										int																			dependencyLength,
-										const std::tuple<deUint32, deUint32, deUint32, const char*, const char*>*	dependencies,
-										deUint32																	apiVariant,
-										deUint32																	versionMajor,
-										deUint32																	versionMinor,
-										const vector<VkExtensionProperties>&										extensionProperties)
+void checkExtensionDependencies(tcu::ResultCollector&		results,
+								const DependencyCheckVect&	dependencies,
+								deUint32					versionMajor,
+								deUint32					versionMinor,
+								const ExtPropVect&			instanceExtensionProperties,
+								const ExtPropVect&			deviceExtensionProperties)
 {
-	for (int ndx = 0; ndx < dependencyLength; ndx++)
+	tcu::UVec2 v(versionMajor, versionMinor);
+	for (const auto& dependency : dependencies)
 	{
-		deUint32 currentApiVariant, currentVersionMajor, currentVersionMinor;
-		const char* extensionFirst;
-		const char* extensionSecond;
-		std::tie(currentApiVariant, currentVersionMajor, currentVersionMinor, extensionFirst, extensionSecond) = dependencies[ndx];
-		if (currentApiVariant != apiVariant || currentVersionMajor != versionMajor || currentVersionMinor != versionMinor)
-			continue;
-		if (isExtensionStructSupported(extensionProperties, RequiredExtension(extensionFirst)) &&
-			!isExtensionStructSupported(extensionProperties, RequiredExtension(extensionSecond)))
+		// call function that will check all extension dependencies
+		if (!dependency.second(v, instanceExtensionProperties, deviceExtensionProperties))
 		{
-			results.fail("Extension " + string(extensionFirst) + " is missing dependency: " + string(extensionSecond));
-		}
-	}
-}
-
-void checkDeviceExtensionDependencies(tcu::ResultCollector&														results,
-									  int																		dependencyLength,
-									  const std::tuple<deUint32, deUint32, deUint32, const char*, const char*>*	dependencies,
-									  deUint32																	apiVariant,
-									  deUint32																	versionMajor,
-									  deUint32																	versionMinor,
-									  const vector<VkExtensionProperties>&										instanceExtensionProperties,
-									  const vector<VkExtensionProperties>&										deviceExtensionProperties)
-{
-	for (int ndx = 0; ndx < dependencyLength; ndx++)
-	{
-		deUint32 currentApiVariant, currentVersionMajor, currentVersionMinor;
-		const char* extensionFirst;
-		const char* extensionSecond;
-		std::tie(currentApiVariant, currentVersionMajor, currentVersionMinor, extensionFirst, extensionSecond) = dependencies[ndx];
-		if (currentApiVariant != apiVariant || currentVersionMajor != versionMajor || currentVersionMinor != versionMinor)
-			continue;
-		if (isExtensionStructSupported(deviceExtensionProperties, RequiredExtension(extensionFirst)) &&
-			!isExtensionStructSupported(deviceExtensionProperties, RequiredExtension(extensionSecond)) &&
-			!isExtensionStructSupported(instanceExtensionProperties, RequiredExtension(extensionSecond)))
-		{
-			results.fail("Extension " + string(extensionFirst) + " is missing dependency: " + string(extensionSecond));
+			results.fail("Extension " + string(dependency.first) + " is missing dependency");
 		}
 	}
 }
@@ -2435,6 +2403,7 @@ tcu::TestStatus enumerateInstanceExtensions (Context& context)
 	{
 		const ScopedLogSection				section		(log, "Global", "Global Extensions");
 		const vector<VkExtensionProperties>	properties	= enumerateInstanceExtensionProperties(context.getPlatformInterface(), DE_NULL);
+		const vector<VkExtensionProperties>	unused;
 		vector<string>						extensionNames;
 
 		for (size_t ndx = 0; ndx < properties.size(); ndx++)
@@ -2454,13 +2423,12 @@ tcu::TestStatus enumerateInstanceExtensions (Context& context)
 			std::tie(std::ignore, apiVariant, versionMajor, versionMinor) = version;
 			if (context.contextSupports(vk::ApiVersion(apiVariant, versionMajor, versionMinor, 0)))
 			{
-				checkInstanceExtensionDependencies(results,
-					DE_LENGTH_OF_ARRAY(instanceExtensionDependencies),
+				checkExtensionDependencies(results,
 					instanceExtensionDependencies,
-					apiVariant,
 					versionMajor,
 					versionMinor,
-					properties);
+					properties,
+					unused);
 				break;
 			}
 		}
@@ -2608,10 +2576,8 @@ tcu::TestStatus enumerateDeviceExtensions (Context& context)
 			std::tie(std::ignore, apiVariant, versionMajor, versionMinor) = version;
 			if (context.contextSupports(vk::ApiVersion(apiVariant, versionMajor, versionMinor, 0)))
 			{
-				checkDeviceExtensionDependencies(results,
-					DE_LENGTH_OF_ARRAY(deviceExtensionDependencies),
+				checkExtensionDependencies(results,
 					deviceExtensionDependencies,
-					apiVariant,
 					versionMajor,
 					versionMinor,
 					instanceExtensionProperties,
@@ -3523,13 +3489,8 @@ VkFormatFeatureFlags getRequiredOptimalExtendedTilingFeatures (Context& context,
 		if ( de::contains(DE_ARRAY_BEGIN(s_requiredSampledImageFilterCubicFormats), DE_ARRAY_END(s_requiredSampledImageFilterCubicFormats), format) )
 			flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_EXT;
 
-		VkPhysicalDeviceFeatures2						coreFeatures;
-		deMemset(&coreFeatures, 0, sizeof(coreFeatures));
-
-		coreFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-		coreFeatures.pNext = DE_NULL;
-		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &coreFeatures);
-		if ( coreFeatures.features.textureCompressionETC2 && de::contains(DE_ARRAY_BEGIN(s_requiredSampledImageFilterCubicFormatsETC2), DE_ARRAY_END(s_requiredSampledImageFilterCubicFormatsETC2), format) )
+		const auto& coreFeatures = context.getDeviceFeatures();
+		if ( coreFeatures.textureCompressionETC2 && de::contains(DE_ARRAY_BEGIN(s_requiredSampledImageFilterCubicFormatsETC2), DE_ARRAY_END(s_requiredSampledImageFilterCubicFormatsETC2), format) )
 			flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_EXT;
 	}
 

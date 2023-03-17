@@ -1953,6 +1953,18 @@ VKAPI_ATTR void VKAPI_CALL cmdSetDiscardRectangleEXT (VkCommandBuffer commandBuf
 	DE_UNREF(pDiscardRectangles);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdSetDiscardRectangleEnableEXT (VkCommandBuffer commandBuffer, VkBool32 discardRectangleEnable)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(discardRectangleEnable);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetDiscardRectangleModeEXT (VkCommandBuffer commandBuffer, VkDiscardRectangleModeEXT discardRectangleMode)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(discardRectangleMode);
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdSetSampleLocationsEXT (VkCommandBuffer commandBuffer, const VkSampleLocationsInfoEXT* pSampleLocationsInfo)
 {
 	DE_UNREF(commandBuffer);
@@ -2350,6 +2362,14 @@ VKAPI_ATTR void VKAPI_CALL cmdSetExclusiveScissorNV (VkCommandBuffer commandBuff
 	DE_UNREF(firstExclusiveScissor);
 	DE_UNREF(exclusiveScissorCount);
 	DE_UNREF(pExclusiveScissors);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetExclusiveScissorEnableNV (VkCommandBuffer commandBuffer, uint32_t firstExclusiveScissor, uint32_t exclusiveScissorCount, const VkBool32* pExclusiveScissorEnables)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(firstExclusiveScissor);
+	DE_UNREF(exclusiveScissorCount);
+	DE_UNREF(pExclusiveScissorEnables);
 }
 
 VKAPI_ATTR void VKAPI_CALL cmdBindShadingRateImageNV (VkCommandBuffer commandBuffer, VkImageView imageView, VkImageLayout imageLayout)
@@ -4157,6 +4177,8 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetPastPresentationTimingGOOGLE,							getPastPresentationTimingGOOGLE),
 	VK_NULL_FUNC_ENTRY(vkCmdSetViewportWScalingNV,									cmdSetViewportWScalingNV),
 	VK_NULL_FUNC_ENTRY(vkCmdSetDiscardRectangleEXT,									cmdSetDiscardRectangleEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetDiscardRectangleEnableEXT,							cmdSetDiscardRectangleEnableEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetDiscardRectangleModeEXT,								cmdSetDiscardRectangleModeEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdSetSampleLocationsEXT,									cmdSetSampleLocationsEXT),
 	VK_NULL_FUNC_ENTRY(vkGetBufferMemoryRequirements2,								getBufferMemoryRequirements2),
 	VK_NULL_FUNC_ENTRY(vkGetImageMemoryRequirements2,								getImageMemoryRequirements2),
@@ -4205,6 +4227,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdEndQueryIndexedEXT,										cmdEndQueryIndexedEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdDrawIndirectByteCountEXT,								cmdDrawIndirectByteCountEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdSetExclusiveScissorNV,									cmdSetExclusiveScissorNV),
+	VK_NULL_FUNC_ENTRY(vkCmdSetExclusiveScissorEnableNV,							cmdSetExclusiveScissorEnableNV),
 	VK_NULL_FUNC_ENTRY(vkCmdBindShadingRateImageNV,									cmdBindShadingRateImageNV),
 	VK_NULL_FUNC_ENTRY(vkCmdSetViewportShadingRatePaletteNV,						cmdSetViewportShadingRatePaletteNV),
 	VK_NULL_FUNC_ENTRY(vkCmdSetCoarseSampleOrderNV,									cmdSetCoarseSampleOrderNV),

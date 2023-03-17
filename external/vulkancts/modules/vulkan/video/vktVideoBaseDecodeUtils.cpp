@@ -1259,7 +1259,7 @@ bool VideoBaseDecoder::DecodePicture (NvidiaVulkanParserPictureData*	pNvidiaVulk
 		pPictureInfo->pNext					= DE_NULL;
 		pPictureInfo->pStdPictureInfo		= &pH264->stdPictureInfo;
 		pPictureInfo->sliceCount			= pNvidiaVulkanParserPictureData->nNumSlices;
-		pPictureInfo->pSliceOffsets			= pNvidiaVulkanParserPictureData->pSliceDataOffsets;
+		pPictureInfo->pSliceOffsets			= static_cast<uint32_t*>(copyToHeap(heap, pNvidiaVulkanParserPictureData->pSliceDataOffsets, sizeof(uint32_t) * pNvidiaVulkanParserPictureData->nNumSlices));
 
 		pPerFrameDecodeParameters->decodeFrameInfo.pNext = &pH264->pictureInfo;
 
@@ -1401,7 +1401,7 @@ bool VideoBaseDecoder::DecodePicture (NvidiaVulkanParserPictureData*	pNvidiaVulk
 		}
 
 		pPictureInfo->sliceSegmentCount				= pNvidiaVulkanParserPictureData->nNumSlices;
-		pPictureInfo->pSliceSegmentOffsets			= pNvidiaVulkanParserPictureData->pSliceDataOffsets;
+		pPictureInfo->pSliceSegmentOffsets			= static_cast<uint32_t*>(copyToHeap(heap, pNvidiaVulkanParserPictureData->pSliceDataOffsets, sizeof(uint32_t) * pNvidiaVulkanParserPictureData->nNumSlices));
 
 		pStdPictureInfo->pps_pic_parameter_set_id		= pin->pic_parameter_set_id;		// PPS ID
 		pStdPictureInfo->flags.IrapPicFlag				= (pin->IrapPicFlag ? 1 : 0);		// Intra Random Access Point for current picture.

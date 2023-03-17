@@ -39,7 +39,6 @@
 #include <iomanip>
 #include <limits>
 #include <sstream>
-#include <set>
 
 namespace vkt
 {
@@ -49,22 +48,6 @@ namespace robustness
 using namespace vk;
 using std::vector;
 using std::string;
-using std::set;
-
-static
-vector<string> removeExtensions (const vector<string>& a, const vector<const char*>& b)
-{
-	vector<string>	res;
-	set<string>		removeExts	(b.begin(), b.end());
-
-	for (vector<string>::const_iterator aIter = a.begin(); aIter != a.end(); ++aIter)
-	{
-		if (!de::contains(removeExts, *aIter))
-			res.push_back(*aIter);
-	}
-
-	return res;
-}
 
 Move<VkDevice> createRobustBufferAccessDevice (Context& context, const VkPhysicalDeviceFeatures2* enabledFeatures2)
 {
@@ -86,15 +69,7 @@ Move<VkDevice> createRobustBufferAccessDevice (Context& context, const VkPhysica
 
 	// \note Extensions in core are not explicitly enabled even though
 	//		 they are in the extension list advertised to tests.
-	std::vector<const char*>	extensionPtrs;
-	std::vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	std::vector<std::string>	nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	extensionPtrs.resize(nonCoreExtensions.size());
-
-	for (size_t ndx = 0; ndx < nonCoreExtensions.size(); ++ndx)
-		extensionPtrs[ndx] = nonCoreExtensions[ndx].c_str();
+	const auto& extensionPtrs = context.getDeviceCreationExtensions();
 
 	void* pNext												= (void*)enabledFeatures2;
 #ifdef CTS_USES_VULKANSC
@@ -142,10 +117,10 @@ Move<VkDevice> createRobustBufferAccessDevice (Context& context, const VkPhysica
 		1u,										// deUint32							queueCreateInfoCount;
 		&queueParams,							// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
 		0u,										// deUint32							enabledLayerCount;
-		DE_NULL,								// const char* const*				ppEnabledLayerNames;
-		(deUint32)extensionPtrs.size(),			// deUint32							enabledExtensionCount;
-		(extensionPtrs.empty() ? DE_NULL : &extensionPtrs[0]),	// const char* const*				ppEnabledExtensionNames;
-		enabledFeatures2 ? NULL : &enabledFeatures	// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+		nullptr,								// const char* const*				ppEnabledLayerNames;
+		de::sizeU32(extensionPtrs),				// deUint32							enabledExtensionCount;
+		de::dataOrNull(extensionPtrs),			// const char* const*				ppEnabledExtensionNames;
+		enabledFeatures2 ? nullptr : &enabledFeatures	// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 
 	// We are creating a custom device with a potentially large amount of extensions and features enabled, using the default device

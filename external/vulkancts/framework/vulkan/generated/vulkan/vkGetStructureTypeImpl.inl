@@ -1023,6 +1023,11 @@ template<> VkStructureType getStructureType<VkImageViewUsageCreateInfo> (void)
 	return VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO;
 }
 
+template<> VkStructureType getStructureType<VkImageViewSlicedCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_VIEW_SLICED_CREATE_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPipelineTessellationDomainOriginStateCreateInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_DOMAIN_ORIGIN_STATE_CREATE_INFO;
@@ -2588,6 +2593,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceImage2DViewOf3DFeatu
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_SLICED_VIEW_OF_3D_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_EXT;
@@ -3736,5 +3746,20 @@ template<> VkStructureType getStructureType<VkDirectDriverLoadingListLUNARG> (vo
 template<> VkStructureType getStructureType<VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_VIEWPORTS_FEATURES_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderCorePropertiesARM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_ARM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_RENDER_AREAS_FEATURES_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkMultiviewPerViewRenderAreasRenderPassBeginInfoQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_MULTIVIEW_PER_VIEW_RENDER_AREAS_RENDER_PASS_BEGIN_INFO_QCOM;
 }
 

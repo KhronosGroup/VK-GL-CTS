@@ -1718,7 +1718,7 @@ void PipelineStatisticsQueryTestFunctionalBase::buildProgram(const char* cs_body
 	glw::GLuint			  te_id = 0;
 	glw::GLuint			  vs_id = 0;
 
-	/* Sanity checks */
+	/* Quick checks */
 	DE_ASSERT((cs_body != DE_NULL && (fs_body == DE_NULL && gs_body == DE_NULL && tc_body == DE_NULL &&
 									  te_body == DE_NULL && vs_body == DE_NULL)) ||
 			  (cs_body == DE_NULL && (fs_body != DE_NULL || gs_body != DE_NULL || tc_body != DE_NULL ||
@@ -3012,7 +3012,7 @@ bool PipelineStatisticsQueryTestFunctional3::executeTest(glw::GLenum current_que
 	bool													 skipped = false;
 	PipelineStatisticsQueryUtilities::_test_execution_result run_result;
 
-	/* Sanity check: This method should only be called for GL_VERTICES_SUBMITTED_ARB,
+	/* Quick check: This method should only be called for GL_VERTICES_SUBMITTED_ARB,
 	 * GL_PRIMITIVES_SUBMITTED_ARB, GL_CLIPPING_INPUT_PRIMITIVES_ARB and
 	 * GL_CLIPPING_OUTPUT_PRIMITIVES_ARB queries */
 	DE_ASSERT(current_query_target == GL_VERTICES_SUBMITTED_ARB ||
@@ -3178,7 +3178,7 @@ void PipelineStatisticsQueryTestFunctional3::getExpectedPrimitivesSubmittedQuery
 
 	*out_results_written = 0;
 
-	/* Sanity checks */
+	/* Quick checks */
 	DE_ASSERT(current_primitive_type != PipelineStatisticsQueryUtilities::PRIMITIVE_TYPE_PATCHES);
 
 	/* Carry on */
@@ -3389,7 +3389,7 @@ void PipelineStatisticsQueryTestFunctional3::getExpectedVerticesSubmittedQueryRe
 
 	*out_results_written = 0;
 
-	/* Sanity checks */
+	/* Quick checks */
 	DE_ASSERT(current_primitive_type != PipelineStatisticsQueryUtilities::PRIMITIVE_TYPE_PATCHES);
 
 	/* Carry on */
@@ -3580,7 +3580,7 @@ bool PipelineStatisticsQueryTestFunctional4::executeTest(glw::GLenum current_que
 	bool													 skipped = false;
 	PipelineStatisticsQueryUtilities::_test_execution_result run_result;
 
-	/* Sanity check: This method should only be called for GL_VERTEX_SHADER_INVOCATIONS_ARB
+	/* Quick check: This method should only be called for GL_VERTEX_SHADER_INVOCATIONS_ARB
 	 * query */
 	DE_ASSERT(current_query_target == GL_VERTEX_SHADER_INVOCATIONS_ARB);
 
@@ -3756,7 +3756,7 @@ bool PipelineStatisticsQueryTestFunctional5::executeTest(glw::GLenum current_que
 	bool													 skipped = false;
 	PipelineStatisticsQueryUtilities::_test_execution_result run_result;
 
-	/* Sanity check: This method should only be called for GL_TESS_CONTROL_SHADER_PATCHES_ARB and
+	/* Quick check: This method should only be called for GL_TESS_CONTROL_SHADER_PATCHES_ARB and
 	 * GL_TESS_EVALUATION_SHADER_INVOCATIONS_ARB queries. */
 	DE_ASSERT(current_query_target == GL_TESS_CONTROL_SHADER_PATCHES_ARB ||
 			  current_query_target == GL_TESS_EVALUATION_SHADER_INVOCATIONS_ARB);
@@ -3901,7 +3901,7 @@ bool PipelineStatisticsQueryTestFunctional6::executeTest(glw::GLenum current_que
 	bool													 skipped = false;
 	PipelineStatisticsQueryUtilities::_test_execution_result run_result;
 
-	/* Sanity check: This method should only be called for GL_GEOMETRY_SHADER_INVOCATIONS and
+	/* Quick check: This method should only be called for GL_GEOMETRY_SHADER_INVOCATIONS and
 	 * GL_GEOMETRY_SHADER_PRIMITIVES_EMITTED_ARB queries. */
 	DE_ASSERT(current_query_target == GL_GEOMETRY_SHADER_INVOCATIONS ||
 			  current_query_target == GL_GEOMETRY_SHADER_PRIMITIVES_EMITTED_ARB);
@@ -4140,7 +4140,7 @@ bool PipelineStatisticsQueryTestFunctional7::executeTest(glw::GLenum current_que
 	bool													 skipped = false;
 	PipelineStatisticsQueryUtilities::_test_execution_result run_result;
 
-	/* Sanity check: This method should only be called for GL_FRAGMENT_SHADER_INVOCATIONS_ARB query */
+	/* Quick check: This method should only be called for GL_FRAGMENT_SHADER_INVOCATIONS_ARB query */
 	DE_ASSERT(current_query_target == GL_FRAGMENT_SHADER_INVOCATIONS_ARB);
 
 	/* Set up VBO. */
@@ -4308,7 +4308,7 @@ bool PipelineStatisticsQueryTestFunctional8::executeTest(glw::GLenum current_que
 	bool													 skipped = false;
 	PipelineStatisticsQueryUtilities::_test_execution_result run_result;
 
-	/* Sanity check: This method should only be called for
+	/* Quick check: This method should only be called for
 	 * GL_COMPUTE_SHADER_INVOCATIONS_ARB queries. */
 	DE_ASSERT(current_query_target == GL_COMPUTE_SHADER_INVOCATIONS_ARB);
 

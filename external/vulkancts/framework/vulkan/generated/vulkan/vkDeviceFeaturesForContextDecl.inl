@@ -121,6 +121,7 @@ const vk::VkPhysicalDeviceClusterCullingShaderFeaturesHUAWEI&				getClusterCulli
 const vk::VkPhysicalDeviceBorderColorSwizzleFeaturesEXT&					getBorderColorSwizzleFeaturesEXT					(void) const;
 const vk::VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT&				getPageableDeviceLocalMemoryFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceMaintenance4Features&								getMaintenance4Features								(void) const;
+const vk::VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT&					getImageSlicedViewOf3DFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceDescriptorSetHostMappingFeaturesVALVE&			getDescriptorSetHostMappingFeaturesVALVE			(void) const;
 const vk::VkPhysicalDeviceDepthClampZeroOneFeaturesEXT&						getDepthClampZeroOneFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT&					getNonSeamlessCubeMapFeaturesEXT					(void) const;
@@ -144,5 +145,6 @@ const vk::VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV&			getRayTracing
 const vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT&					getMutableDescriptorTypeFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM&					getShaderCoreBuiltinsFeaturesARM					(void) const;
 const vk::VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT&			getPipelineLibraryGroupHandlesFeaturesEXT			(void) const;
+const vk::VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM&			getMultiviewPerViewRenderAreasFeaturesQCOM			(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&							getProtectedMemoryFeatures							(void) const;
 const vk::VkPhysicalDeviceShaderDrawParametersFeatures&						getShaderDrawParametersFeatures						(void) const;

@@ -1447,7 +1447,7 @@ void TransformFeedbackResourceValidator::validate (const ProgramInterfaceDefinit
 	}
 	else
 	{
-		// Check resource name is a xfb output. (sanity check)
+		// Check resource name is a xfb output. (quick check)
 #if defined(DE_DEBUG)
 		bool generatorFound = false;
 

@@ -31,7 +31,8 @@ import subprocess
 import ssl
 import stat
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "scripts"))
+scriptPath = os.path.join(os.path.dirname(__file__), "..", "scripts")
+sys.path.insert(0, scriptPath)
 
 from ctsbuild.common import *
 
@@ -323,9 +324,9 @@ PACKAGES = [
 		"87d5b782bec60822aa878941e6b13c0a9a954c9b",
 		"spirv-headers"),
 	GitRepo(
-		"https://github.com/KhronosGroup/Vulkan-Docs.git",
+        "https://github.com/KhronosGroup/Vulkan-Docs.git",
 		"git@github.com:KhronosGroup/Vulkan-Docs.git",
-		"b33bd816a24012b0ac51e8b05567cc221171ccf1",
+		"1b1c4dd43a35341c8c8e82ad985ed66d8beff5ba",
 		"vulkan-docs"),
 	GitRepo(
 		"https://github.com/google/amber.git",

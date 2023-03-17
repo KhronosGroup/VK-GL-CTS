@@ -553,7 +553,7 @@ TessellationShaderVertexSpacing::_tess_edges TessellationShaderVertexSpacing::ge
 	 * 3) If more than 0 coordinates are still available in the data set at this point, implementation
 	 *    returns to step 1)
 	 *
-	 * After the implementation runs out of tessellation coordinates, a few sanity checks are executed
+	 * After the implementation runs out of tessellation coordinates, a few quick checks are executed
 	 * and the function returns to the caller.
 	 */
 	float		 base_tess_level  = 0.0f;

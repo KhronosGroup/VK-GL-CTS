@@ -627,7 +627,7 @@ void FunctionalTest::prepareShaderPrograms()
 	/* Log size limit. */
 	static const glw::GLsizei max_log_size = 4096;
 
-	/* Sanity check. */
+	/* Quick check. */
 	if (m_spo_v || m_spo_f)
 	{
 		throw 0;
@@ -702,7 +702,7 @@ void FunctionalTest::preparePipeline()
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
-	/* Sanity check. */
+	/* Quick check. */
 	if (m_ppo)
 	{
 		throw 0;

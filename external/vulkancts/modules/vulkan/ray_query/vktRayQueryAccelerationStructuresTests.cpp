@@ -46,6 +46,7 @@
 #include "tcuTestLog.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuFloat.hpp"
+#include "deModularCounter.hpp"
 
 namespace vkt
 {
@@ -92,16 +93,17 @@ enum ShaderTestType
 	STT_SKIP_INTERSECTION			= 1,
 };
 
-enum BottomTestType
+enum class BottomTestType
 {
-	BTT_TRIANGLES,
-	BTT_AABBS
+	TRIANGLES = 0,
+	AABBS = 1,
 };
 
-enum TopTestType
+enum class TopTestType
 {
-	TTT_IDENTICAL_INSTANCES,
-	TTT_DIFFERENT_INSTANCES
+	IDENTICAL_INSTANCES,
+	DIFFERENT_INSTANCES,
+	UPDATED_INSTANCES
 };
 
 enum OperationTarget
@@ -116,7 +118,9 @@ enum OperationType
 	OP_NONE,
 	OP_COPY,
 	OP_COMPACT,
-	OP_SERIALIZE
+	OP_SERIALIZE,
+	OP_UPDATE,
+	OP_UPDATE_IN_PLACE
 };
 
 enum class InstanceCullFlags
@@ -187,9 +191,11 @@ struct TestParams
 	InstanceCullFlags						cullFlags;		// Flags for instances, if needed.
 	bool									bottomUsesAOP;	// does bottom AS use arrays, or arrays of pointers
 	bool									bottomGeneric;	// Bottom created as generic AS type.
+	bool									bottomUnboundedCreation; // Bottom created with unbounded buffer memory.
 	TopTestType								topTestType;	// If instances are identical then bottom geometries must have different vertices/aabbs
 	bool									topUsesAOP;		// does top AS use arrays, or arrays of pointers
 	bool									topGeneric;		// Top created as generic AS type.
+	bool									topUnboundedCreation; // Top created with unbounded buffer memory.
 	VkBuildAccelerationStructureFlagsKHR	buildFlags;
 	OperationTarget							operationTarget;
 	OperationType							operationType;
@@ -400,11 +406,12 @@ void GraphicsConfiguration::initConfiguration (Context&						context,
 
 	std::vector<VkPipelineShaderStageCreateInfo>				shaderCreateInfos;
 	bool tescX, teseX, fragX;
-			registerShaderModule(vkd,	device,	context,	shaderModules,	shaderCreateInfos,	VK_SHADER_STAGE_VERTEX_BIT,						shaderNameIt->second[0],	rayQueryTestName[testParams.bottomTestType]);
-	tescX = registerShaderModule(vkd,	device, context,	shaderModules,	shaderCreateInfos,	VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,		shaderNameIt->second[1],	rayQueryTestName[testParams.bottomTestType]);
-	teseX = registerShaderModule(vkd,	device,	context,	shaderModules,	shaderCreateInfos,	VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,	shaderNameIt->second[2],	rayQueryTestName[testParams.bottomTestType]);
-			registerShaderModule(vkd,	device,	context,	shaderModules,	shaderCreateInfos,	VK_SHADER_STAGE_GEOMETRY_BIT,					shaderNameIt->second[3],	rayQueryTestName[testParams.bottomTestType]);
-	fragX = registerShaderModule(vkd,	device,	context,	shaderModules,	shaderCreateInfos,	VK_SHADER_STAGE_FRAGMENT_BIT,					shaderNameIt->second[4],	rayQueryTestName[testParams.bottomTestType]);
+	const auto bottomTestTypeIdx = static_cast<int>(testParams.bottomTestType);
+			registerShaderModule(vkd,	device,	context,	shaderModules,	shaderCreateInfos,	VK_SHADER_STAGE_VERTEX_BIT,						shaderNameIt->second[0],	rayQueryTestName[bottomTestTypeIdx]);
+	tescX = registerShaderModule(vkd,	device, context,	shaderModules,	shaderCreateInfos,	VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,		shaderNameIt->second[1],	rayQueryTestName[bottomTestTypeIdx]);
+	teseX = registerShaderModule(vkd,	device,	context,	shaderModules,	shaderCreateInfos,	VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,	shaderNameIt->second[2],	rayQueryTestName[bottomTestTypeIdx]);
+			registerShaderModule(vkd,	device,	context,	shaderModules,	shaderCreateInfos,	VK_SHADER_STAGE_GEOMETRY_BIT,					shaderNameIt->second[3],	rayQueryTestName[bottomTestTypeIdx]);
+	fragX = registerShaderModule(vkd,	device,	context,	shaderModules,	shaderCreateInfos,	VK_SHADER_STAGE_FRAGMENT_BIT,					shaderNameIt->second[4],	rayQueryTestName[bottomTestTypeIdx]);
 
 	const vk::VkSubpassDescription		subpassDesc			=
 	{
@@ -812,7 +819,8 @@ void ComputeConfiguration::initConfiguration (Context&						context,
 	rayQueryTestName.push_back("comp_as_triangle");
 	rayQueryTestName.push_back("comp_as_aabb");
 
-	shaderModule															= createShaderModule(vkd, device, context.getBinaryCollection().get(rayQueryTestName[testParams.bottomTestType]), 0u);
+	const auto bottomTestTypeIdx = static_cast<int>(testParams.bottomTestType);
+	shaderModule															= createShaderModule(vkd, device, context.getBinaryCollection().get(rayQueryTestName[bottomTestTypeIdx]), 0u);
 	const VkPipelineShaderStageCreateInfo pipelineShaderStageParams			=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
@@ -991,15 +999,16 @@ void RayTracingConfiguration::initConfiguration (Context&						context,
 		TCU_THROW(InternalError, "Wrong shader source type");
 
 	bool rgenX, isectX, ahitX, chitX, missX, callX;
-	rgenX = registerShaderModule(vkd,	device,	context,		*rayTracingPipeline,	VK_SHADER_STAGE_RAYGEN_BIT_KHR,			shaderNameIt->second[0],	rayQueryTestName[testParams.bottomTestType],	0);
+	const auto bottomTestTypeIdx = static_cast<int>(testParams.bottomTestType);
+	rgenX = registerShaderModule(vkd,	device,	context,		*rayTracingPipeline,	VK_SHADER_STAGE_RAYGEN_BIT_KHR,			shaderNameIt->second[0],	rayQueryTestName[bottomTestTypeIdx],	0);
 	if (testParams.shaderSourceType == SST_INTERSECTION_SHADER)
-		isectX = registerShaderModule(vkd, device, context,		*rayTracingPipeline,	VK_SHADER_STAGE_INTERSECTION_BIT_KHR,	shaderNameIt->second[1],	rayQueryTestName[testParams.bottomTestType],	1);
+		isectX = registerShaderModule(vkd, device, context,		*rayTracingPipeline,	VK_SHADER_STAGE_INTERSECTION_BIT_KHR,	shaderNameIt->second[1],	rayQueryTestName[bottomTestTypeIdx],	1);
 	else
 		isectX = false;
-	ahitX = registerShaderModule(vkd,	device,	context,		*rayTracingPipeline,	VK_SHADER_STAGE_ANY_HIT_BIT_KHR,		shaderNameIt->second[2],	rayQueryTestName[testParams.bottomTestType],	1);
-	chitX = registerShaderModule(vkd,	device,	context,		*rayTracingPipeline,	VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,	shaderNameIt->second[3],	rayQueryTestName[testParams.bottomTestType],	1);
-	missX = registerShaderModule(vkd,	device,	context,		*rayTracingPipeline,	VK_SHADER_STAGE_MISS_BIT_KHR,			shaderNameIt->second[4],	rayQueryTestName[testParams.bottomTestType],	2);
-	callX = registerShaderModule(vkd,	device,	context,		*rayTracingPipeline,	VK_SHADER_STAGE_CALLABLE_BIT_KHR,		shaderNameIt->second[5],	rayQueryTestName[testParams.bottomTestType],	3);
+	ahitX = registerShaderModule(vkd,	device,	context,		*rayTracingPipeline,	VK_SHADER_STAGE_ANY_HIT_BIT_KHR,		shaderNameIt->second[2],	rayQueryTestName[bottomTestTypeIdx],	1);
+	chitX = registerShaderModule(vkd,	device,	context,		*rayTracingPipeline,	VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,	shaderNameIt->second[3],	rayQueryTestName[bottomTestTypeIdx],	1);
+	missX = registerShaderModule(vkd,	device,	context,		*rayTracingPipeline,	VK_SHADER_STAGE_MISS_BIT_KHR,			shaderNameIt->second[4],	rayQueryTestName[bottomTestTypeIdx],	2);
+	callX = registerShaderModule(vkd,	device,	context,		*rayTracingPipeline,	VK_SHADER_STAGE_CALLABLE_BIT_KHR,		shaderNameIt->second[5],	rayQueryTestName[bottomTestTypeIdx],	3);
 	bool hitX = isectX || ahitX || chitX;
 
 	rtPipeline																= rayTracingPipeline->createPipeline(vkd, device, *pipelineLayout);
@@ -1185,7 +1194,7 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> CheckerboardSceneBu
 	DE_UNREF(context);
 
 	// Cull flags can only be used with triangles.
-	DE_ASSERT(testParams.cullFlags == InstanceCullFlags::NONE || testParams.bottomTestType == BTT_TRIANGLES);
+	DE_ASSERT(testParams.cullFlags == InstanceCullFlags::NONE || testParams.bottomTestType == BottomTestType::TRIANGLES);
 
 	std::vector<de::SharedPtr<BottomLevelAccelerationStructure> >	result;
 
@@ -1207,12 +1216,12 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> CheckerboardSceneBu
 
 	unsigned int geometryCount = testParams.emptyASCase == EmptyAccelerationStructureCase::INACTIVE_TRIANGLES ? 4U : 1U;
 
-	if (testParams.topTestType == TTT_DIFFERENT_INSTANCES)
+	if (testParams.topTestType == TopTestType::DIFFERENT_INSTANCES)
 	{
 		de::MovePtr<BottomLevelAccelerationStructure>	bottomLevelAccelerationStructure = makeBottomLevelAccelerationStructure();
 		bottomLevelAccelerationStructure->setGeometryCount(1u);
 		de::SharedPtr<RaytracedGeometryBase> geometry;
-		if (testParams.bottomTestType == BTT_TRIANGLES)
+		if (testParams.bottomTestType == BottomTestType::TRIANGLES)
 		{
 			geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType, testParams.padVertices);
 			if (testParams.indexType == VK_INDEX_TYPE_NONE_KHR)
@@ -1313,7 +1322,7 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> CheckerboardSceneBu
 			de::MovePtr<BottomLevelAccelerationStructure>	bottomLevelAccelerationStructure = makeBottomLevelAccelerationStructure();
 			bottomLevelAccelerationStructure->setGeometryCount(geometryCount);
 
-			if (testParams.bottomTestType == BTT_TRIANGLES)
+			if (testParams.bottomTestType == BottomTestType::TRIANGLES)
 			{
 				for (unsigned int i = 0; i < geometryCount; i++)
 				{
@@ -1435,7 +1444,7 @@ de::MovePtr<TopLevelAccelerationStructure> CheckerboardSceneBuilder::initTopAcce
 	de::MovePtr<TopLevelAccelerationStructure>	result = makeTopLevelAccelerationStructure();
 	result->setInstanceCount(instanceCount);
 
-	if (testParams.topTestType == TTT_DIFFERENT_INSTANCES)
+	if (testParams.topTestType == TopTestType::DIFFERENT_INSTANCES)
 	{
 
 		for (deUint32 y = 0; y < testParams.height; ++y)
@@ -1647,6 +1656,8 @@ void RayQueryASBasicTestCase::initPrograms (SourceCollections& programCollection
 		rayQueryTest.push_back(css.str());
 	}
 
+	const auto bottomTestTypeIdx = static_cast<int>(m_data.bottomTestType);
+
 	// create all programs
 	if (m_data.shaderSourcePipeline == SSP_GRAPHICS_PIPELINE)
 	{
@@ -1696,13 +1707,13 @@ void RayQueryASBasicTestCase::initPrograms (SourceCollections& programCollection
 				"{\n"
 				"  vec3  origin   = vec3(float(position.x) + 0.5, float(position.y) + 0.5, 0.5);\n"
 				"  uvec4 hitValue = uvec4(0,0,0,0);\n" <<
-				rayQueryTest[m_data.bottomTestType] <<
+				rayQueryTest[bottomTestTypeIdx] <<
 				"  imageStore(result, ivec3(gl_VertexIndex, 0, 0), uvec4(hitValue.x, 0, 0, 0));\n"
 				"  imageStore(result, ivec3(gl_VertexIndex, 0, 1), uvec4(hitValue.y, 0, 0, 0));\n"
 				"  gl_Position = vec4(position,1);\n"
 				"}\n";
 			std::stringstream cssName;
-			cssName << "vert_" << rayQueryTestName[m_data.bottomTestType];
+			cssName << "vert_" << rayQueryTestName[bottomTestTypeIdx];
 
 			programCollection.glslSources.add(cssName.str()) << glu::VertexSource(css.str()) << buildOptions;
 		}
@@ -1743,7 +1754,7 @@ void RayQueryASBasicTestCase::initPrograms (SourceCollections& programCollection
 				"{\n"
 				"  vec3  origin   = vec3(gl_in[gl_InvocationID].gl_Position.x + 0.5, gl_in[gl_InvocationID].gl_Position.y + 0.5, 0.5);\n"
 				"  uvec4 hitValue = uvec4(0,0,0,0);\n" <<
-				rayQueryTest[m_data.bottomTestType] <<
+				rayQueryTest[bottomTestTypeIdx] <<
 				"  imageStore(result, ivec3(gl_PrimitiveID, gl_InvocationID, 0), uvec4(hitValue.x, 0, 0, 0));\n"
 				"  imageStore(result, ivec3(gl_PrimitiveID, gl_InvocationID, 1), uvec4(hitValue.y, 0, 0, 0));\n"
 				"  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
@@ -1753,7 +1764,7 @@ void RayQueryASBasicTestCase::initPrograms (SourceCollections& programCollection
 				"  gl_TessLevelOuter[2] = 1;\n"
 				"}\n";
 			std::stringstream cssName;
-			cssName << "tesc_" << rayQueryTestName[m_data.bottomTestType];
+			cssName << "tesc_" << rayQueryTestName[bottomTestTypeIdx];
 
 			programCollection.glslSources.add(cssName.str()) << glu::TessellationControlSource(css.str()) << buildOptions;
 		}
@@ -1773,14 +1784,14 @@ void RayQueryASBasicTestCase::initPrograms (SourceCollections& programCollection
 				"  {\n"
 				"    vec3  origin   = vec3(gl_in[i].gl_Position.x + 0.5, gl_in[i].gl_Position.y + 0.5, 0.5);\n"
 				"    uvec4 hitValue = uvec4(0,0,0,0);\n" <<
-				rayQueryTest[m_data.bottomTestType] <<
+				rayQueryTest[bottomTestTypeIdx] <<
 				"    imageStore(result, ivec3(gl_PrimitiveID, i, 0), uvec4(hitValue.x, 0, 0, 0));\n"
 				"    imageStore(result, ivec3(gl_PrimitiveID, i, 1), uvec4(hitValue.y, 0, 0, 0));\n"
 				"  }\n"
 				"  gl_Position = gl_in[0].gl_Position;\n"
 				"}\n";
 			std::stringstream cssName;
-			cssName << "tese_" << rayQueryTestName[m_data.bottomTestType];
+			cssName << "tese_" << rayQueryTestName[bottomTestTypeIdx];
 
 			programCollection.glslSources.add(cssName.str()) << glu::TessellationEvaluationSource(css.str()) << buildOptions;
 		}
@@ -1838,7 +1849,7 @@ void RayQueryASBasicTestCase::initPrograms (SourceCollections& programCollection
 				"    int i = (firstVertex + j) % gl_in.length();\n"
 				"    vec3  origin   = vec3(gl_in[i].gl_Position.x + 0.5, gl_in[i].gl_Position.y + 0.5, 0.5);\n"
 				"    uvec4 hitValue = uvec4(0,0,0,0);\n" <<
-				rayQueryTest[m_data.bottomTestType] <<
+				rayQueryTest[bottomTestTypeIdx] <<
 				"    imageStore(result, ivec3(gl_PrimitiveIDIn, j, 0), uvec4(hitValue.x, 0, 0, 0));\n"
 				"    imageStore(result, ivec3(gl_PrimitiveIDIn, j, 1), uvec4(hitValue.y, 0, 0, 0));\n"
 				"    gl_Position      = gl_in[i].gl_Position;\n"
@@ -1847,7 +1858,7 @@ void RayQueryASBasicTestCase::initPrograms (SourceCollections& programCollection
 				"  EndPrimitive();\n"
 				"}\n";
 			std::stringstream cssName;
-			cssName << "geom_" << rayQueryTestName[m_data.bottomTestType];
+			cssName << "geom_" << rayQueryTestName[bottomTestTypeIdx];
 
 			programCollection.glslSources.add(cssName.str()) << glu::GeometrySource(css.str()) << buildOptions;
 		}
@@ -1863,12 +1874,12 @@ void RayQueryASBasicTestCase::initPrograms (SourceCollections& programCollection
 				"{\n"
 				"  vec3  origin   = vec3(gl_FragCoord.x, gl_FragCoord.y, 0.5);\n"
 				"  uvec4 hitValue = uvec4(0,0,0,0);\n" <<
-				rayQueryTest[m_data.bottomTestType] <<
+				rayQueryTest[bottomTestTypeIdx] <<
 				"  imageStore(result, ivec3(gl_FragCoord.xy-vec2(0.5,0.5), 0), uvec4(hitValue.x, 0, 0, 0));\n"
 				"  imageStore(result, ivec3(gl_FragCoord.xy-vec2(0.5,0.5), 1), uvec4(hitValue.y, 0, 0, 0));\n"
 				"}\n";
 			std::stringstream cssName;
-			cssName << "frag_" << rayQueryTestName[m_data.bottomTestType];
+			cssName << "frag_" << rayQueryTestName[bottomTestTypeIdx];
 
 			programCollection.glslSources.add(cssName.str()) << glu::FragmentSource(css.str()) << buildOptions;
 		}
@@ -1886,12 +1897,12 @@ void RayQueryASBasicTestCase::initPrograms (SourceCollections& programCollection
 				"{\n"
 				"  vec3  origin   = vec3(float(gl_GlobalInvocationID.x) + 0.5, float(gl_GlobalInvocationID.y) + 0.5, 0.5);\n"
 				"  uvec4 hitValue = uvec4(0,0,0,0);\n" <<
-				rayQueryTest[m_data.bottomTestType] <<
+				rayQueryTest[bottomTestTypeIdx] <<
 				"  imageStore(result, ivec3(gl_GlobalInvocationID.xy, 0), uvec4(hitValue.x, 0, 0, 0));\n"
 				"  imageStore(result, ivec3(gl_GlobalInvocationID.xy, 1), uvec4(hitValue.y, 0, 0, 0));\n"
 				"}\n";
 			std::stringstream cssName;
-			cssName << "comp_" << rayQueryTestName[m_data.bottomTestType];
+			cssName << "comp_" << rayQueryTestName[bottomTestTypeIdx];
 
 			programCollection.glslSources.add(cssName.str()) << glu::ComputeSource(css.str()) << buildOptions;
 		}
@@ -1933,12 +1944,12 @@ void RayQueryASBasicTestCase::initPrograms (SourceCollections& programCollection
 				"{\n"
 				"  vec3  origin    = vec3(float(gl_LaunchIDEXT.x) + 0.5, float(gl_LaunchIDEXT.y) + 0.5, 0.5);\n"
 				"  uvec4  hitValue = uvec4(0,0,0,0);\n" <<
-				rayQueryTest[m_data.bottomTestType] <<
+				rayQueryTest[bottomTestTypeIdx] <<
 				"  imageStore(result, ivec3(gl_LaunchIDEXT.xy, 0), uvec4(hitValue.x, 0, 0, 0));\n"
 				"  imageStore(result, ivec3(gl_LaunchIDEXT.xy, 1), uvec4(hitValue.y, 0, 0, 0));\n"
 				"}\n";
 			std::stringstream cssName;
-			cssName << "rgen_" << rayQueryTestName[m_data.bottomTestType];
+			cssName << "rgen_" << rayQueryTestName[bottomTestTypeIdx];
 
 			programCollection.glslSources.add(cssName.str()) << glu::RaygenSource(updateRayTracingGLSL(css.str())) << buildOptions;
 		}
@@ -1992,11 +2003,11 @@ void RayQueryASBasicTestCase::initPrograms (SourceCollections& programCollection
 				"{\n"
 				"  vec3 origin = gl_WorldRayOriginEXT;\n"
 				"  hitValue    = uvec4(0,0,0,0);\n" <<
-				rayQueryTest[m_data.bottomTestType] <<
+				rayQueryTest[bottomTestTypeIdx] <<
 				"  reportIntersectionEXT(0.5f, 0);\n"
 				"}\n";
 			std::stringstream cssName;
-			cssName << "isect_" << rayQueryTestName[m_data.bottomTestType];
+			cssName << "isect_" << rayQueryTestName[bottomTestTypeIdx];
 
 			programCollection.glslSources.add(cssName.str()) << glu::IntersectionSource(updateRayTracingGLSL(css.str())) << buildOptions;
 		}
@@ -2012,10 +2023,10 @@ void RayQueryASBasicTestCase::initPrograms (SourceCollections& programCollection
 				"void main()\n"
 				"{\n"
 				"  vec3 origin = gl_WorldRayOriginEXT;\n" <<
-				rayQueryTest[m_data.bottomTestType] <<
+				rayQueryTest[bottomTestTypeIdx] <<
 				"}\n";
 			std::stringstream cssName;
-			cssName << "ahit_" << rayQueryTestName[m_data.bottomTestType];
+			cssName << "ahit_" << rayQueryTestName[bottomTestTypeIdx];
 
 			programCollection.glslSources.add(cssName.str()) << glu::AnyHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 		}
@@ -2045,10 +2056,10 @@ void RayQueryASBasicTestCase::initPrograms (SourceCollections& programCollection
 				"void main()\n"
 				"{\n"
 				"  vec3 origin = gl_WorldRayOriginEXT;\n" <<
-				rayQueryTest[m_data.bottomTestType] <<
+				rayQueryTest[bottomTestTypeIdx] <<
 				"}\n";
 			std::stringstream cssName;
-			cssName << "chit_" << rayQueryTestName[m_data.bottomTestType];
+			cssName << "chit_" << rayQueryTestName[bottomTestTypeIdx];
 
 			programCollection.glslSources.add(cssName.str()) << glu::ClosestHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 		}
@@ -2093,10 +2104,10 @@ void RayQueryASBasicTestCase::initPrograms (SourceCollections& programCollection
 				"void main()\n"
 				"{\n"
 				"  vec3 origin = gl_WorldRayOriginEXT;\n" <<
-				rayQueryTest[m_data.bottomTestType] <<
+				rayQueryTest[bottomTestTypeIdx] <<
 				"}\n";
 			std::stringstream cssName;
-			cssName << "miss_" << rayQueryTestName[m_data.bottomTestType];
+			cssName << "miss_" << rayQueryTestName[bottomTestTypeIdx];
 
 			programCollection.glslSources.add(cssName.str()) << glu::MissSource(updateRayTracingGLSL(css.str())) << buildOptions;
 		}
@@ -2117,11 +2128,11 @@ void RayQueryASBasicTestCase::initPrograms (SourceCollections& programCollection
 				"{\n"
 				"  vec3 origin    = result.origin;\n"
 				"  uvec4 hitValue = uvec4(0,0,0,0);\n" <<
-				rayQueryTest[m_data.bottomTestType] <<
+				rayQueryTest[bottomTestTypeIdx] <<
 				"  result.hitValue = hitValue;\n"
 				"}\n";
 			std::stringstream cssName;
-			cssName << "call_" << rayQueryTestName[m_data.bottomTestType];
+			cssName << "call_" << rayQueryTestName[bottomTestTypeIdx];
 
 			programCollection.glslSources.add(cssName.str()) << glu::CallableSource(updateRayTracingGLSL(css.str())) << buildOptions;
 		}
@@ -2143,7 +2154,7 @@ void RayQueryASFuncArgTestCase::initPrograms (SourceCollections& programCollecti
 	const vk::SpirVAsmBuildOptions	spvBuildOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, true);
 
 	DE_ASSERT(m_data.shaderSourcePipeline == SSP_COMPUTE_PIPELINE);
-	DE_ASSERT(m_data.bottomTestType == BTT_TRIANGLES);
+	DE_ASSERT(m_data.bottomTestType == BottomTestType::TRIANGLES);
 
 	// The SPIR-V assembly shader below is based on the following GLSL code.
 	// In it, rayQueryInitializeBottomWrapper has been modified to take a
@@ -2523,6 +2534,7 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest (TestConfigur
 			blas->setBuildFlags						(bottomBuildFlags);
 			blas->setUseArrayOfPointers				(m_data.bottomUsesAOP);
 			blas->setCreateGeneric					(m_data.bottomGeneric);
+			blas->setCreationBufferUnbounded		(m_data.bottomUnboundedCreation);
 			blas->setBuildWithoutGeometries			(buildWithoutGeom);
 			blas->setBuildWithoutPrimitives			(bottomNoPrimitives);
 			blas->createAndBuild					(vkd, device, *cmdBuffer, allocator);
@@ -2577,6 +2589,7 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest (TestConfigur
 					asCopy->setBuildFlags(m_data.buildFlags);
 					asCopy->setUseArrayOfPointers(m_data.bottomUsesAOP);
 					asCopy->setCreateGeneric(m_data.bottomGeneric);
+					asCopy->setCreationBufferUnbounded(m_data.bottomUnboundedCreation);
 					asCopy->setBuildWithoutGeometries(buildWithoutGeom);
 					asCopy->setBuildWithoutPrimitives(bottomNoPrimitives);
 					asCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, bottomLevelAccelerationStructures[i].get(), 0u, 0u);
@@ -2593,6 +2606,7 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest (TestConfigur
 					asCopy->setBuildFlags(m_data.buildFlags);
 					asCopy->setUseArrayOfPointers(m_data.bottomUsesAOP);
 					asCopy->setCreateGeneric(m_data.bottomGeneric);
+					asCopy->setCreationBufferUnbounded(m_data.bottomUnboundedCreation);
 					asCopy->setBuildWithoutGeometries(buildWithoutGeom);
 					asCopy->setBuildWithoutPrimitives(bottomNoPrimitives);
 					asCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, bottomLevelAccelerationStructures[i].get(), bottomBlasCompactSize[i], 0u);
@@ -2625,6 +2639,7 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest (TestConfigur
 					asCopy->setBuildFlags(m_data.buildFlags);
 					asCopy->setUseArrayOfPointers(m_data.bottomUsesAOP);
 					asCopy->setCreateGeneric(m_data.bottomGeneric);
+					asCopy->setCreationBufferUnbounded(m_data.bottomUnboundedCreation);
 					asCopy->setBuildWithoutGeometries(buildWithoutGeom);
 					asCopy->setBuildWithoutPrimitives(bottomNoPrimitives);
 					asCopy->setDeferredOperation(htSerialize, workerThreadsCount);
@@ -2654,6 +2669,7 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest (TestConfigur
 		topLevelAccelerationStructure->setBuildWithoutPrimitives	(topNoPrimitives);
 		topLevelAccelerationStructure->setUseArrayOfPointers		(m_data.topUsesAOP);
 		topLevelAccelerationStructure->setCreateGeneric				(m_data.topGeneric);
+		topLevelAccelerationStructure->setCreationBufferUnbounded	(m_data.topUnboundedCreation);
 		topLevelAccelerationStructure->setInactiveInstances			(inactiveInstances);
 		topLevelAccelerationStructure->createAndBuild				(vkd, device, *cmdBuffer, allocator);
 		topLevelStructureHandles.push_back							(*(topLevelAccelerationStructure->getPtr()));
@@ -2694,6 +2710,7 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest (TestConfigur
 					topLevelAccelerationStructureCopy->setInactiveInstances(inactiveInstances);
 					topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
 					topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
+					topLevelAccelerationStructureCopy->setCreationBufferUnbounded(m_data.topUnboundedCreation);
 					topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, topLevelAccelerationStructure.get(), 0u, 0u);
 					break;
 				}
@@ -2706,6 +2723,7 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest (TestConfigur
 					topLevelAccelerationStructureCopy->setInactiveInstances(inactiveInstances);
 					topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
 					topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
+					topLevelAccelerationStructureCopy->setCreationBufferUnbounded(m_data.topUnboundedCreation);
 					topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, topLevelAccelerationStructure.get(), topBlasCompactSize[0], 0u);
 					break;
 				}
@@ -2734,12 +2752,38 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest (TestConfigur
 					topLevelAccelerationStructureCopy->setInactiveInstances(inactiveInstances);
 					topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
 					topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
+					topLevelAccelerationStructureCopy->setCreationBufferUnbounded(m_data.topUnboundedCreation);
 					topLevelAccelerationStructureCopy->setDeferredOperation(htSerialize, workerThreadsCount);
 					topLevelAccelerationStructureCopy->createAndDeserializeFrom(vkd, device, *cmdBuffer, allocator, storage.get(), 0u);
 					break;
 				}
+				case OP_UPDATE:
+				{
+					topLevelAccelerationStructureCopy = makeTopLevelAccelerationStructure();
+					topLevelAccelerationStructureCopy->create(vkd, device, allocator, 0u, 0u);
+					// Update AS based on topLevelAccelerationStructure
+					topLevelAccelerationStructureCopy->build(vkd, device, *cmdBuffer, topLevelAccelerationStructure.get());
+					break;
+				}
+				case OP_UPDATE_IN_PLACE:
+				{
+					// Update in place
+					topLevelAccelerationStructure->build(vkd, device, *cmdBuffer, topLevelAccelerationStructure.get());
+					// Make a coppy
+					topLevelAccelerationStructureCopy = makeTopLevelAccelerationStructure();
+					topLevelAccelerationStructureCopy->setDeferredOperation(htCopy, workerThreadsCount);
+					topLevelAccelerationStructureCopy->setBuildType(m_data.buildType);
+					topLevelAccelerationStructureCopy->setBuildFlags(m_data.buildFlags);
+					topLevelAccelerationStructureCopy->setBuildWithoutPrimitives(topNoPrimitives);
+					topLevelAccelerationStructureCopy->setInactiveInstances(inactiveInstances);
+					topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
+					topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
+					topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, topLevelAccelerationStructure.get(), 0u, 0u);
+					break;
+				}
 				default:
 					DE_ASSERT(DE_FALSE);
+
 			}
 			topLevelRayTracedPtr = topLevelAccelerationStructureCopy.get();
 		}
@@ -3363,10 +3407,10 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 		const char*								name;
 	} bottomTestTypes[] =
 	{
-		{ BTT_TRIANGLES,	false,										"triangles" },
-		{ BTT_TRIANGLES,	true,										"triangles_aop" },
-		{ BTT_AABBS,		false,										"aabbs" },
-		{ BTT_AABBS,		true,										"aabbs_aop" },
+		{ BottomTestType::TRIANGLES,	false,							"triangles" },
+		{ BottomTestType::TRIANGLES,	true,							"triangles_aop" },
+		{ BottomTestType::AABBS,		false,							"aabbs" },
+		{ BottomTestType::AABBS,		true,							"aabbs_aop" },
 	};
 
 	struct
@@ -3376,10 +3420,10 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 		const char*								name;
 	} topTestTypes[] =
 	{
-		{ TTT_IDENTICAL_INSTANCES,	false,								"identical_instances" },
-		{ TTT_IDENTICAL_INSTANCES,	true,								"identical_instances_aop" },
-		{ TTT_DIFFERENT_INSTANCES,	false,								"different_instances" },
-		{ TTT_DIFFERENT_INSTANCES,	true,								"different_instances_aop" },
+		{ TopTestType::IDENTICAL_INSTANCES,	false,						"identical_instances" },
+		{ TopTestType::IDENTICAL_INSTANCES,	true,						"identical_instances_aop" },
+		{ TopTestType::DIFFERENT_INSTANCES,	false,						"different_instances" },
+		{ TopTestType::DIFFERENT_INSTANCES,	true,						"different_instances_aop" },
 	};
 
 	struct BuildFlagsData
@@ -3436,6 +3480,11 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 		{	true,	true,	"_bothgeneric"		},
 	};
 
+	// In order not to create thousands of new test variants for unbound buffer memory on acceleration structure creation, we will
+	// set these options on some of the tests.
+	de::ModCounter32 unboundedCreationBottomCounter	(3u);
+	de::ModCounter32 unboundedCreationTopCounter	(7u);
+
 	for (size_t shaderSourceNdx = 0; shaderSourceNdx < DE_LENGTH_OF_ARRAY(shaderSourceTypes); ++shaderSourceNdx)
 	{
 		de::MovePtr<tcu::TestCaseGroup> sourceTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), shaderSourceTypes[shaderSourceNdx].name, ""));
@@ -3473,6 +3522,9 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 												std::string(lowMemoryTypes[lowMemoryNdx].name) +
 												std::string(createGenericParams[createGenericIdx].suffix);
 
+											const bool unboundedCreationBottom	= (static_cast<uint32_t>(unboundedCreationBottomCounter++) == 0u);
+											const bool unboundedCreationTop		= (static_cast<uint32_t>(unboundedCreationTopCounter++) == 0u);
+
 											TestParams testParams
 											{
 												shaderSourceTypes[shaderSourceNdx].shaderSourceType,
@@ -3485,9 +3537,11 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 												InstanceCullFlags::NONE,
 												bottomTestTypes[bottomNdx].usesAOP,
 												createGenericParams[createGenericIdx].bottomGeneric,
+												unboundedCreationBottom,
 												topTestTypes[topNdx].testType,
 												topTestTypes[topNdx].usesAOP,
 												createGenericParams[createGenericIdx].topGeneric,
+												unboundedCreationTop,
 												optimizationTypes[optimizationNdx].flags | updateTypes[updateNdx].flags | compactionTypes[compactionNdx].flags | lowMemoryTypes[lowMemoryNdx].flags,
 												OT_NONE,
 												OP_NONE,
@@ -3619,11 +3673,13 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup* group)
 							format,
 							paddingType[paddingIdx].padVertices,
 							indexFormats[indexFormatNdx].indexType,
-							BTT_TRIANGLES,
+							BottomTestType::TRIANGLES,
 							InstanceCullFlags::NONE,
 							false,
 							false,
-							TTT_IDENTICAL_INSTANCES,
+							false,
+							TopTestType::IDENTICAL_INSTANCES,
+							false,
 							false,
 							false,
 							VkBuildAccelerationStructureFlagsKHR(0u),
@@ -3706,8 +3762,8 @@ void addOperationTestsImpl (tcu::TestCaseGroup* group, const deUint32 workerThre
 		const char*											name;
 	} bottomTestTypes[] =
 	{
-		{ BTT_TRIANGLES,									"triangles" },
-		{ BTT_AABBS,										"aabbs" },
+		{ BottomTestType::TRIANGLES,						"triangles" },
+		{ BottomTestType::AABBS,							"aabbs" },
 	};
 
 	for (size_t shaderSourceNdx = 0; shaderSourceNdx < DE_LENGTH_OF_ARRAY(shaderSourceTypes); ++shaderSourceNdx)
@@ -3735,7 +3791,7 @@ void addOperationTestsImpl (tcu::TestCaseGroup* group, const deUint32 workerThre
 
 					for (size_t testTypeNdx = 0; testTypeNdx < DE_LENGTH_OF_ARRAY(bottomTestTypes); ++testTypeNdx)
 					{
-						TopTestType topTest = (operationTargets[operationTargetNdx].operationTarget == OT_TOP_ACCELERATION) ? TTT_DIFFERENT_INSTANCES : TTT_IDENTICAL_INSTANCES;
+						TopTestType topTest = (operationTargets[operationTargetNdx].operationTarget == OT_TOP_ACCELERATION) ? TopTestType::DIFFERENT_INSTANCES : TopTestType::IDENTICAL_INSTANCES;
 
 						TestParams testParams
 						{
@@ -3749,7 +3805,9 @@ void addOperationTestsImpl (tcu::TestCaseGroup* group, const deUint32 workerThre
 							InstanceCullFlags::NONE,
 							false,
 							false,
+							false,
 							topTest,
+							false,
 							false,
 							false,
 							VkBuildAccelerationStructureFlagsKHR(0u),
@@ -3819,11 +3877,13 @@ void addFuncArgTests (tcu::TestCaseGroup* group)
 			VK_FORMAT_R32G32B32_SFLOAT,
 			false,
 			VK_INDEX_TYPE_NONE_KHR,
-			BTT_TRIANGLES,
+			BottomTestType::TRIANGLES,
 			InstanceCullFlags::NONE,
 			false,
 			false,
-			TTT_IDENTICAL_INSTANCES,
+			false,
+			TopTestType::IDENTICAL_INSTANCES,
+			false,
 			false,
 			false,
 			VkBuildAccelerationStructureFlagsKHR(0u),
@@ -3880,8 +3940,8 @@ void addInstanceTriangleCullingTests (tcu::TestCaseGroup* group)
 		std::string	name;
 	} topType[] =
 	{
-		{ TTT_DIFFERENT_INSTANCES, "transformed"	},	// Each instance has its own transformation matrix.
-		{ TTT_IDENTICAL_INSTANCES, "notransform"	},	// "Identical" instances, different geometries.
+		{ TopTestType::DIFFERENT_INSTANCES, "transformed"	},	// Each instance has its own transformation matrix.
+		{ TopTestType::IDENTICAL_INSTANCES, "notransform"	},	// "Identical" instances, different geometries.
 	};
 
 	const struct
@@ -3933,11 +3993,13 @@ void addInstanceTriangleCullingTests (tcu::TestCaseGroup* group)
 							VK_FORMAT_R32G32B32_SFLOAT,
 							false,
 							indexFormats[indexFormatIdx].indexType,
-							BTT_TRIANGLES,
+							BottomTestType::TRIANGLES,
 							cullFlags[cullFlagsIdx].cullFlags,
 							false,
 							false,
+							false,
 							topType[topTypeIdx].topType,
+							false,
 							false,
 							false,
 							VkBuildAccelerationStructureFlagsKHR(0u),
@@ -3956,6 +4018,68 @@ void addInstanceTriangleCullingTests (tcu::TestCaseGroup* group)
 			shaderSourceGroup->addChild(buildTypeGroup.release());
 		}
 		group->addChild(shaderSourceGroup.release());
+	}
+}
+
+void addInstanceUpdateTests (tcu::TestCaseGroup* group)
+{
+	const struct
+	{
+		vk::VkAccelerationStructureBuildTypeKHR	buildType;
+		std::string								name;
+	} buildTypes[] =
+	{
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR,	"cpu_built"	},
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,	"gpu_built"	},
+	};
+
+	struct
+	{
+		OperationType										operationType;
+		const char*											name;
+	} operationTypes[] =
+	{
+		{ OP_UPDATE,											"update"			},
+		{ OP_UPDATE_IN_PLACE,									"update_in_place"	},
+	};
+
+	auto& ctx = group->getTestContext();
+
+	for (int buildTypeNdx = 0; buildTypeNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeNdx)
+	{
+		de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(new tcu::TestCaseGroup(ctx, buildTypes[buildTypeNdx].name.c_str(), ""));
+
+		for (int operationTypesIdx = 0; operationTypesIdx < DE_LENGTH_OF_ARRAY(operationTypes); ++operationTypesIdx)
+		{
+			TestParams testParams
+			{
+				SST_COMPUTE_SHADER,
+				SSP_COMPUTE_PIPELINE,
+				buildTypes[buildTypeNdx].buildType,
+				VK_FORMAT_R32G32B32_SFLOAT,
+				false,
+				VK_INDEX_TYPE_NONE_KHR,
+				BottomTestType::TRIANGLES,
+				InstanceCullFlags::NONE,
+				false,
+				false,
+				false,
+				TopTestType::IDENTICAL_INSTANCES,
+				false,
+				false,
+				false,
+				VkBuildAccelerationStructureFlagsKHR(0u),
+				OT_NONE,
+				OP_NONE,
+				TEST_WIDTH,
+				TEST_HEIGHT,
+				0u,
+				EmptyAccelerationStructureCase::NOT_EMPTY,
+			};
+
+			buildTypeGroup->addChild(new RayQueryASFuncArgTestCase(ctx, operationTypes[operationTypesIdx].name, "", testParams));
+		}
+		group->addChild(buildTypeGroup.release());
 	}
 }
 
@@ -4046,11 +4170,13 @@ void addEmptyAccelerationStructureTests (tcu::TestCaseGroup* group)
 								VK_FORMAT_R32G32B32_SFLOAT,
 								false,
 								indexFormats[indexFormatIdx].indexType,
-								BTT_TRIANGLES,
+								BottomTestType::TRIANGLES,
 								InstanceCullFlags::NONE,
 								false,
 								false,
-								TTT_IDENTICAL_INSTANCES,
+								false,
+								TopTestType::IDENTICAL_INSTANCES,
+								false,
 								false,
 								false,
 								VkBuildAccelerationStructureFlagsKHR(0u),
@@ -4081,6 +4207,7 @@ tcu::TestCaseGroup*	createAccelerationStructuresTests(tcu::TestContext& testCtx)
 	addTestGroup(group.get(), "host_threading", "Test host threading operations", addHostThreadingOperationTests);
 	addTestGroup(group.get(), "function_argument", "Test using AS as function argument using both pointers and bare values", addFuncArgTests);
 	addTestGroup(group.get(), "instance_triangle_culling", "Test building AS with counterclockwise triangles and/or disabling face culling", addInstanceTriangleCullingTests);
+	addTestGroup(group.get(), "instance_update", "Test updating instance index using both in-place and separate src/dst acceleration structures", addInstanceUpdateTests);
 	addTestGroup(group.get(), "dynamic_indexing", "Exercise dynamic indexing of acceleration structures", addDynamicIndexingTests);
 	addTestGroup(group.get(), "empty", "Test building empty acceleration structures using different methods", addEmptyAccelerationStructureTests);
 

@@ -2781,7 +2781,7 @@ void TessellationShaderTessellationMaxInOut::retrieveGLConstantValues(void)
 	GLU_EXPECT_NO_ERROR(gl.getError(),
 						"glGetIntegerv() failed for GL_MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS pname!");
 
-	/* Sanity checks */
+	/* Quick checks */
 	DE_ASSERT(m_gl_max_vertex_output_components_value != 0);
 	DE_ASSERT(m_gl_max_tess_control_input_components_value != 0);
 	DE_ASSERT(m_gl_max_tess_control_output_components_value != 0);

@@ -49,15 +49,30 @@ namespace
 
 using namespace vk;
 
+enum class TestCaseRT
+{
+	CLOSEST_HIT,
+	ANY_HIT,
+	CLOSEST_AND_ANY_HIT_TERMINATE
+};
+
 struct TestParams
 {
-	VkShaderStageFlagBits	stage;
+	TestCaseRT				testCase;
 	deUint32				seed;
 };
 
 VkShaderStageFlags getUsedStages (const TestParams& params)
 {
-	return (VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR | params.stage);
+	VkShaderStageFlags stageFlags{VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR};
+	if (params.testCase == TestCaseRT::CLOSEST_HIT)
+		stageFlags |= VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+	else if (params.testCase == TestCaseRT::ANY_HIT)
+		stageFlags |= VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
+	else if (params.testCase == TestCaseRT::CLOSEST_AND_ANY_HIT_TERMINATE)
+		stageFlags |= VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
+
+	return stageFlags;
 }
 
 constexpr float		kZCoord		= 5.0f;
@@ -141,8 +156,8 @@ void BarycentricCoordinatesCase::initPrograms (vk::SourceCollections& programCol
 		<< "}\n"
 		;
 
-	std::ostringstream hits;
-	hits
+	std::ostringstream chit;
+	chit
 		<< "#version 460 core\n"
 		<< "#extension GL_EXT_ray_tracing : require\n"
 		<< "\n"
@@ -152,7 +167,26 @@ void BarycentricCoordinatesCase::initPrograms (vk::SourceCollections& programCol
 		<< "\n"
 		<< "void main()\n"
 		<< "{\n"
-		<< "  coordinates.values[gl_LaunchIDEXT.x] = vec4(baryCoord, 0.0, 0.0);\n"
+		<< "  coordinates.values[gl_LaunchIDEXT.x].xy = baryCoord;\n"
+		<< "}\n"
+		;
+
+	std::ostringstream ahitTerminate;
+	ahitTerminate
+		<< "#version 460 core\n"
+		<< "#extension GL_EXT_ray_tracing : require\n"
+		<< "\n"
+		<< "hitAttributeEXT vec2 baryCoord;\n"
+		<< "\n"
+		<< layoutDeclsStr
+		<< "\n"
+		<< "void main()\n"
+		<< "{\n"
+		<< "  coordinates.values[gl_LaunchIDEXT.x].z = 0.999;\n"
+		<< "  if(baryCoord.x < 0.7){\n"
+		<< "	terminateRayEXT;\n"
+		<< "    coordinates.values[gl_LaunchIDEXT.x].z = 0.5;\n"
+		<< "  }\n"
 		<< "}\n"
 		;
 
@@ -171,10 +205,15 @@ void BarycentricCoordinatesCase::initPrograms (vk::SourceCollections& programCol
 	programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(rgen.str())) << buildOptions;
 	programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(miss.str())) << buildOptions;
 
-	if (m_params.stage == VK_SHADER_STAGE_ANY_HIT_BIT_KHR)
-		programCollection.glslSources.add("hits") << glu::AnyHitSource(updateRayTracingGLSL(hits.str())) << buildOptions;
-	else if (m_params.stage == VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)
-		programCollection.glslSources.add("hits") << glu::ClosestHitSource(updateRayTracingGLSL(hits.str())) << buildOptions;
+	if (m_params.testCase == TestCaseRT::CLOSEST_HIT)
+		programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(chit.str())) << buildOptions;
+	else if(m_params.testCase == TestCaseRT::ANY_HIT)
+		programCollection.glslSources.add("chit") << glu::AnyHitSource(updateRayTracingGLSL(chit.str())) << buildOptions;
+	else if (m_params.testCase == TestCaseRT::CLOSEST_AND_ANY_HIT_TERMINATE)
+	{
+		programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(chit.str())) << buildOptions;
+		programCollection.glslSources.add("ahitTerminate") << glu::AnyHitSource(updateRayTracingGLSL(ahitTerminate.str())) << buildOptions;
+	}
 	else
 		DE_ASSERT(false);
 }
@@ -275,9 +314,14 @@ tcu::TestStatus BarycentricCoordinatesInstance::iterate (void)
 	directions.push_back(extendToV4(calcCoordinates(triangle, barycentricABC.y(), barycentricABC.x())));
 	directions.push_back(extendToV4(calcCoordinates(triangle, barycentricABC.y(), barycentricABC.z())));
 
-	expectedOutputCoordinates.push_back(tcu::Vec4(barycentricABC.x(), barycentricABC.y(), 0.0f, 0.0f));
-	expectedOutputCoordinates.push_back(tcu::Vec4(barycentricABC.y(), barycentricABC.x(), 0.0f, 0.0f));
-	expectedOutputCoordinates.push_back(tcu::Vec4(barycentricABC.y(), barycentricABC.z(), 0.0f, 0.0f));
+	float expectedZ = 0.0f;
+	// Set expectedZ to the same value as the AnyHit shader sets
+	if (m_params.testCase == TestCaseRT::CLOSEST_AND_ANY_HIT_TERMINATE)
+		expectedZ = 0.999f;
+
+	expectedOutputCoordinates.push_back(tcu::Vec4(barycentricABC.x(), barycentricABC.y(), expectedZ, 0.0f));
+	expectedOutputCoordinates.push_back(tcu::Vec4(barycentricABC.y(), barycentricABC.x(), expectedZ, 0.0f));
+	expectedOutputCoordinates.push_back(tcu::Vec4(barycentricABC.y(), barycentricABC.z(), expectedZ, 0.0f));
 
 	de::Random rnd(m_params.seed);
 	while (directions.size() < kNumRays)
@@ -289,9 +333,11 @@ tcu::TestStatus BarycentricCoordinatesInstance::iterate (void)
 		float c;
 		while ((c = rnd.getFloat(0.0f, 1.0f - b)) == 0.0f)
 			;
-
-		expectedOutputCoordinates.push_back(tcu::Vec4(b, c, 0.0f, 0.0f));
 		directions.push_back(extendToV4(calcCoordinates(triangle, b, c)));
+		if (m_params.testCase == TestCaseRT::CLOSEST_AND_ANY_HIT_TERMINATE)
+			expectedOutputCoordinates.push_back(tcu::Vec4(b, c, expectedZ, 0.0f));
+		else
+			expectedOutputCoordinates.push_back(tcu::Vec4(b, c, 0.0f, 0.0f));
 	}
 
 	deMemcpy(directionsBufferData, directions.data(), directionsBufferSize);
@@ -346,7 +392,10 @@ tcu::TestStatus BarycentricCoordinatesInstance::iterate (void)
 	// Shader modules.
 	auto rgenModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("rgen"), 0);
 	auto missModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("miss"), 0);
-	auto hitsModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("hits"), 0);
+	auto chitModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("chit"), 0);
+	Move<VkShaderModule> ahitTerminateModule;
+	if(m_params.testCase == TestCaseRT::CLOSEST_AND_ANY_HIT_TERMINATE)
+		ahitTerminateModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("ahitTerminate"), 0);
 
 	// Get some ray tracing properties.
 	deUint32 shaderGroupHandleSize		= 0u;
@@ -373,7 +422,15 @@ tcu::TestStatus BarycentricCoordinatesInstance::iterate (void)
 		const auto rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();
 		rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR, rgenModule, 0);
 		rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR, missModule, 1);
-		rayTracingPipeline->addShader(m_params.stage, hitsModule, 2);
+		if(m_params.testCase == TestCaseRT::CLOSEST_HIT)
+			rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, chitModule, 2);
+		if (m_params.testCase == TestCaseRT::ANY_HIT)
+			rayTracingPipeline->addShader(VK_SHADER_STAGE_ANY_HIT_BIT_KHR, chitModule, 2);
+		else if (m_params.testCase == TestCaseRT::CLOSEST_AND_ANY_HIT_TERMINATE)
+		{
+			rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, chitModule, 2);
+			rayTracingPipeline->addShader(VK_SHADER_STAGE_ANY_HIT_BIT_KHR, ahitTerminateModule, 2);
+		}
 
 		pipeline		= rayTracingPipeline->createPipeline(vkd, device, pipelineLayout.get());
 
@@ -412,14 +469,13 @@ tcu::TestStatus BarycentricCoordinatesInstance::iterate (void)
 		const auto& outVal		= outputData[i];
 		const auto& expectedVal	= expectedOutputCoordinates[i];
 
-		if (outVal.z() != 0.0f || outVal.w() != 0.0f || de::abs(outVal.x() - expectedVal.x()) > kThreshold || de::abs(outVal.y() - expectedVal.y()) > kThreshold)
+		if (outVal.z() != expectedVal.z() || outVal.w() != 0.0f || de::abs(outVal.x() - expectedVal.x()) > kThreshold || de::abs(outVal.y() - expectedVal.y()) > kThreshold)
 		{
 			std::ostringstream msg;
 			msg << "Unexpected value found for ray " << i << ": expected " << expectedVal << " and found " << outVal << ";";
 			TCU_FAIL(msg.str());
 		}
 	}
-
 	return tcu::TestStatus::pass("Pass");
 }
 
@@ -432,8 +488,9 @@ tcu::TestCaseGroup*	createBarycentricCoordinatesTests (tcu::TestContext& testCtx
 	GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "barycentric_coordinates", "Test barycentric coordinates reported in hit attributes"));
 
 	deUint32 seed = 1614343620u;
-	mainGroup->addChild(new BarycentricCoordinatesCase(testCtx, "ahit", "", TestParams{VK_SHADER_STAGE_ANY_HIT_BIT_KHR,		seed++}));
-	mainGroup->addChild(new BarycentricCoordinatesCase(testCtx, "chit", "", TestParams{VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,	seed++}));
+	mainGroup->addChild(new BarycentricCoordinatesCase(testCtx, "chit",			 "", TestParams{TestCaseRT::CLOSEST_HIT,						seed++}));
+	mainGroup->addChild(new BarycentricCoordinatesCase(testCtx, "ahit",			 "", TestParams{TestCaseRT::ANY_HIT,							seed++}));
+	mainGroup->addChild(new BarycentricCoordinatesCase(testCtx, "ahitTerminate", "", TestParams{TestCaseRT::CLOSEST_AND_ANY_HIT_TERMINATE,		seed++}));
 
 	return mainGroup.release();
 }

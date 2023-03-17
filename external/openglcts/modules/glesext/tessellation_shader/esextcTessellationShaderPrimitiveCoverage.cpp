@@ -575,7 +575,7 @@ void TessellationShaderPrimitiveCoverage::drawPatch(glw::GLuint po_id, glw::GLui
 													glw::GLuint n_draw_call_vertices, const glw::GLfloat inner_levels[],
 													const glw::GLfloat outer_levels[])
 {
-	/* Sanity check */
+	/* Quick check */
 	DE_ASSERT(n_draw_call_vertices == 3 || n_draw_call_vertices == 6);
 
 	/* Retrieve ES entry-points */

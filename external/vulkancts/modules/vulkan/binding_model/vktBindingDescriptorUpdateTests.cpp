@@ -1168,7 +1168,7 @@ tcu::TestStatus RandomDescriptorUpdateTestInstance::iterate()
 					val0[c] = bufferContents[lastWrite.bufferId][lastWrite.offset / 4 + c];
 					val1[c] = bufferContents[lastWrite.bufferId][lastWrite.offset / 4 + 4 + c];
 
-					// Sanity check we are reading expected values.
+					// Quick check we are reading expected values.
 					DE_ASSERT(val0[c] >= -counter && val0[c] <= counter);
 					DE_ASSERT(val1[c] >= -counter && val1[c] <= counter);
 				}

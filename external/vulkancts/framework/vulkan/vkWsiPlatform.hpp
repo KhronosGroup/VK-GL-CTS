@@ -41,6 +41,7 @@ public:
 	virtual	void		setVisible		(bool visible);
 	virtual void		setForeground	(void);
 	virtual void		resize			(const tcu::UVec2& newSize);
+	virtual	void		setMinimized	(bool minized);
 
 protected:
 						Window			(void) {}
