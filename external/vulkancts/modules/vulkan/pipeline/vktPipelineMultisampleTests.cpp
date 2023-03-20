@@ -4528,7 +4528,15 @@ de::MovePtr<tcu::TextureLevel> MultisampleRenderer::render (void)
 	const VkQueue				queue				= m_context.getUniversalQueue();
 	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 
-	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
+	if (m_backingMode == IMAGE_BACKING_MODE_SPARSE)
+	{
+		const VkPipelineStageFlags stageBits[] = { VK_PIPELINE_STAGE_TRANSFER_BIT };
+		submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get(), false, 1u, 1u, &m_bindSemaphore.get(), stageBits);
+	}
+	else
+	{
+		submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
+	}
 
 	if (m_renderType == RENDER_TYPE_RESOLVE || m_renderType == RENDER_TYPE_DEPTHSTENCIL_ONLY || m_renderType == RENDER_TYPE_UNUSED_ATTACHMENT)
 	{
