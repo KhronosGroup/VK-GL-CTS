@@ -2273,3 +2273,13 @@ VkResult DeviceDriver::releaseSwapchainImagesEXT (VkDevice device, const VkRelea
 {
 	return m_vk.releaseSwapchainImagesEXT(device, pReleaseInfo);
 }
+
+VkResult DeviceDriver::mapMemory2KHR (VkDevice device, const VkMemoryMapInfoKHR* pMemoryMapInfo, void** ppData) const
+{
+	return m_vk.mapMemory2KHR(device, pMemoryMapInfo, ppData);
+}
+
+VkResult DeviceDriver::unmapMemory2KHR (VkDevice device, const VkMemoryUnmapInfoKHR* pMemoryUnmapInfo) const
+{
+	return m_vk.unmapMemory2KHR(device, pMemoryUnmapInfo);
+}

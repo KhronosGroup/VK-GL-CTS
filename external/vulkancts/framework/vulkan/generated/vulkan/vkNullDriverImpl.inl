@@ -3884,6 +3884,21 @@ VKAPI_ATTR VkResult VKAPI_CALL releaseSwapchainImagesEXT (VkDevice device, const
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL mapMemory2KHR (VkDevice device, const VkMemoryMapInfoKHR* pMemoryMapInfo, void** ppData)
+{
+	DE_UNREF(device);
+	DE_UNREF(pMemoryMapInfo);
+	DE_UNREF(ppData);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL unmapMemory2KHR (VkDevice device, const VkMemoryUnmapInfoKHR* pMemoryUnmapInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pMemoryUnmapInfo);
+	return VK_SUCCESS;
+}
+
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 {
 	VK_NULL_FUNC_ENTRY(vkCreateInstance,						createInstance),
@@ -4440,5 +4455,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdOpticalFlowExecuteNV,									cmdOpticalFlowExecuteNV),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceFaultInfoEXT,										getDeviceFaultInfoEXT),
 	VK_NULL_FUNC_ENTRY(vkReleaseSwapchainImagesEXT,									releaseSwapchainImagesEXT),
+	VK_NULL_FUNC_ENTRY(vkMapMemory2KHR,												mapMemory2KHR),
+	VK_NULL_FUNC_ENTRY(vkUnmapMemory2KHR,											unmapMemory2KHR),
 };
 

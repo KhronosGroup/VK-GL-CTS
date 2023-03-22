@@ -457,3 +457,5 @@ virtual VkResult			bindOpticalFlowSessionImageNV							(VkDevice device, VkOptic
 virtual void				cmdOpticalFlowExecuteNV									(VkCommandBuffer commandBuffer, VkOpticalFlowSessionNV session, const VkOpticalFlowExecuteInfoNV* pExecuteInfo) const = 0;
 virtual VkResult			getDeviceFaultInfoEXT									(VkDevice device, VkDeviceFaultCountsEXT* pFaultCounts, VkDeviceFaultInfoEXT* pFaultInfo) const = 0;
 virtual VkResult			releaseSwapchainImagesEXT								(VkDevice device, const VkReleaseSwapchainImagesInfoEXT* pReleaseInfo) const = 0;
+virtual VkResult			mapMemory2KHR											(VkDevice device, const VkMemoryMapInfoKHR* pMemoryMapInfo, void** ppData) const = 0;
+virtual VkResult			unmapMemory2KHR											(VkDevice device, const VkMemoryUnmapInfoKHR* pMemoryUnmapInfo) const = 0;

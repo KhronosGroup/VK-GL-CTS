@@ -1781,11 +1781,9 @@ def writeTypeUtil (api, filename):
 			"StdVideoH264PpsFlags",
 			"StdVideoDecodeH264PictureInfoFlags",
 			"StdVideoDecodeH264ReferenceInfoFlags",
-			"StdVideoDecodeH264MvcElementFlags",
 			"StdVideoEncodeH264SliceHeaderFlags",
 			"StdVideoEncodeH264PictureInfoFlags",
 			"StdVideoEncodeH264ReferenceInfoFlags",
-			"StdVideoEncodeH264RefMgmtFlags",
 			"StdVideoEncodeH264ReferenceInfoFlags",
 			"StdVideoH265HrdFlags",
 			"StdVideoH265VpsFlags",
@@ -1795,11 +1793,12 @@ def writeTypeUtil (api, filename):
 			"StdVideoDecodeH265PictureInfoFlags",
 			"StdVideoDecodeH265ReferenceInfoFlags",
 			"StdVideoEncodeH265PictureInfoFlags",
-			"StdVideoEncodeH265ReferenceModificationFlags",
 			"StdVideoEncodeH265ReferenceInfoFlags",
 			"StdVideoEncodeH265SliceSegmentHeaderFlags",
 			"StdVideoH265ProfileTierLevelFlags",
 			"StdVideoH265ShortTermRefPicSetFlags",
+			"StdVideoEncodeH264ReferenceListsInfoFlags",
+			"StdVideoEncodeH265ReferenceListsInfoFlags",
 		])
 
 	def isSimpleStruct (type):

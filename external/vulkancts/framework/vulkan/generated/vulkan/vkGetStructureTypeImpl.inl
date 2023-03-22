@@ -2898,6 +2898,11 @@ template<> VkStructureType getStructureType<VkVideoEncodeInfoKHR> (void)
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_INFO_KHR;
 }
 
+template<> VkStructureType getStructureType<VkQueryPoolVideoEncodeFeedbackCreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_QUERY_POOL_VIDEO_ENCODE_FEEDBACK_CREATE_INFO_KHR;
+}
+
 template<> VkStructureType getStructureType<VkVideoEncodeRateControlInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_INFO_KHR;
@@ -2936,16 +2941,6 @@ template<> VkStructureType getStructureType<VkVideoEncodeH264DpbSlotInfoEXT> (vo
 template<> VkStructureType getStructureType<VkVideoEncodeH264VclFrameInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_VCL_FRAME_INFO_EXT;
-}
-
-template<> VkStructureType getStructureType<VkVideoEncodeH264ReferenceListsInfoEXT> (void)
-{
-	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_REFERENCE_LISTS_INFO_EXT;
-}
-
-template<> VkStructureType getStructureType<VkVideoEncodeH264EmitPictureParametersInfoEXT> (void)
-{
-	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_EMIT_PICTURE_PARAMETERS_INFO_EXT;
 }
 
 template<> VkStructureType getStructureType<VkVideoEncodeH264ProfileInfoEXT> (void)
@@ -2988,11 +2983,6 @@ template<> VkStructureType getStructureType<VkVideoEncodeH265VclFrameInfoEXT> (v
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_VCL_FRAME_INFO_EXT;
 }
 
-template<> VkStructureType getStructureType<VkVideoEncodeH265EmitPictureParametersInfoEXT> (void)
-{
-	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_EMIT_PICTURE_PARAMETERS_INFO_EXT;
-}
-
 template<> VkStructureType getStructureType<VkVideoEncodeH265NaluSliceSegmentInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_NALU_SLICE_SEGMENT_INFO_EXT;
@@ -3016,11 +3006,6 @@ template<> VkStructureType getStructureType<VkVideoEncodeH265ProfileInfoEXT> (vo
 template<> VkStructureType getStructureType<VkVideoEncodeH265DpbSlotInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_DPB_SLOT_INFO_EXT;
-}
-
-template<> VkStructureType getStructureType<VkVideoEncodeH265ReferenceListsInfoEXT> (void)
-{
-	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_REFERENCE_LISTS_INFO_EXT;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceInheritedViewportScissorFeaturesNV> (void)
@@ -3761,5 +3746,20 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceMultiviewPerViewRend
 template<> VkStructureType getStructureType<VkMultiviewPerViewRenderAreasRenderPassBeginInfoQCOM> (void)
 {
 	return VK_STRUCTURE_TYPE_MULTIVIEW_PER_VIEW_RENDER_AREAS_RENDER_PASS_BEGIN_INFO_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkQueryLowLatencySupportNV> (void)
+{
+	return VK_STRUCTURE_TYPE_QUERY_LOW_LATENCY_SUPPORT_NV;
+}
+
+template<> VkStructureType getStructureType<VkMemoryMapInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_MAP_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkMemoryUnmapInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_UNMAP_INFO_KHR;
 }
 
