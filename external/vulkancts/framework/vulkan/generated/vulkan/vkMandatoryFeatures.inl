@@ -283,6 +283,18 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceImageCompressionControlSwapchainFeaturesEXT.pNext;
 	}
 
+#if defined(CTS_USES_VULKAN)
+	vk::VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT physicalDeviceImageSlicedViewOf3DFeaturesEXT;
+	deMemset(&physicalDeviceImageSlicedViewOf3DFeaturesEXT, 0, sizeof(physicalDeviceImageSlicedViewOf3DFeaturesEXT));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_image_sliced_view_of_3d") )
+	{
+		physicalDeviceImageSlicedViewOf3DFeaturesEXT.sType = getStructureType<VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT>();
+		*nextPtr = &physicalDeviceImageSlicedViewOf3DFeaturesEXT;
+		nextPtr  = &physicalDeviceImageSlicedViewOf3DFeaturesEXT.pNext;
+	}
+#endif // defined(CTS_USES_VULKAN)
+
 	vk::VkPhysicalDeviceImagelessFramebufferFeatures physicalDeviceImagelessFramebufferFeatures;
 	deMemset(&physicalDeviceImagelessFramebufferFeatures, 0, sizeof(physicalDeviceImagelessFramebufferFeatures));
 
@@ -1356,6 +1368,17 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 			result = false;
 		}
 	}
+
+#if defined(CTS_USES_VULKAN)
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_image_sliced_view_of_3d")) )
+	{
+		if ( physicalDeviceImageSlicedViewOf3DFeaturesEXT.imageSlicedViewOf3D == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature imageSlicedViewOf3D not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
 
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_index_type_uint8")) )
 	{

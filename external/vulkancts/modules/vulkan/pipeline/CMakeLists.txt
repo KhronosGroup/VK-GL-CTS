@@ -135,6 +135,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineAttachmentFeedbackLoopLayoutTests.hpp
 	vktPipelineMultisampledRenderToSingleSampledTests.cpp
 	vktPipelineMultisampledRenderToSingleSampledTests.hpp
+	vktPipelineImageSlicedViewOf3DTests.cpp
+	vktPipelineImageSlicedViewOf3DTests.hpp
 	vktPipelineMultisampleShaderFragmentMaskTests.cpp
 	vktPipelineMultisampleShaderFragmentMaskTests.hpp
 	)

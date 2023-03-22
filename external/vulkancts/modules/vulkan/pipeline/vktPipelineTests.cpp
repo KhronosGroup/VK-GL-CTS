@@ -68,6 +68,7 @@
 #include "vktPipelineLibraryTests.hpp"
 #include "vktPipelineAttachmentFeedbackLoopLayoutTests.hpp"
 #include "vktPipelineShaderModuleIdentifierTests.hpp"
+#include "vktPipelineImageSlicedViewOf3DTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt
@@ -152,6 +153,9 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 
 		// dont repeat tests requiring timing execution of vkCreate*Pipelines
 		group->addChild(createCacheControlTests				(testCtx));
+
+		// No need to repeat tests checking sliced view of 3D images for different construction types.
+		group->addChild(createImageSlicedViewOf3DTests		(testCtx));
 #endif // CTS_USES_VULKANSC
 	}
 #ifndef CTS_USES_VULKANSC
