@@ -1280,6 +1280,14 @@ enum class SequenceOrdering
 	TWO_DRAWS_STATIC	= 6,	// Bind bad dynamic pipeline and draw, followed by binding correct static pipeline and drawing again.
 };
 
+// This is used when generating some test cases.
+enum class ColorBlendSubCase
+{
+	EQ_ONLY		= 0,	// Only the equation is dynamic.
+	ALL_CB		= 1,	// All color blending states are dynamic.
+	ALL_BUT_LO	= 2,	// All color blending states are dynamic, except for the ones related to logic op.
+};
+
 class ReferenceColorGenerator
 {
 public:
@@ -5878,6 +5886,13 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 #endif // CTS_USES_VULKANSC
 	};
 
+	static const std::vector<ColorBlendSubCase> cbSubCases
+	{
+		ColorBlendSubCase::EQ_ONLY,
+		ColorBlendSubCase::ALL_CB,
+		ColorBlendSubCase::ALL_BUT_LO,
+	};
+
 	for (const auto& kMeshShadingCase : kMeshShadingCases)
 	for (const auto& kOrderingCase : kOrderingCases)
 	{
@@ -6049,12 +6064,13 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 
 		// Color blend equation.
 		{
-			for (int i = 0; i < 2; ++i)
+			for (const auto& cbSubCase : cbSubCases)
 			{
-				const bool allCBStatesDynamic = (i > 0);
+				const bool onlyEq		= (cbSubCase == ColorBlendSubCase::EQ_ONLY);
+				const bool allCBDynamic	= (cbSubCase == ColorBlendSubCase::ALL_CB);
 
 				// Skip two-draws variants as this will use dynamic logic op and force UNORM color attachments, which would result in illegal operations.
-				if (allCBStatesDynamic && (kOrdering == SequenceOrdering::TWO_DRAWS_STATIC || kOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC))
+				if (allCBDynamic && (kOrdering == SequenceOrdering::TWO_DRAWS_STATIC || kOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC))
 					continue;
 
 				for (int j = 0; j < 2; ++j)
@@ -6062,7 +6078,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 					const bool enableStateValue = (j > 0);
 
 					// Do not test statically disabling color blend.
-					if (!allCBStatesDynamic && !enableStateValue)
+					if (onlyEq && !enableStateValue)
 						continue;
 
 					TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
@@ -6083,7 +6099,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 																				vk::VK_BLEND_FACTOR_ZERO,
 																				vk::VK_BLEND_OP_ADD);
 
-					if (allCBStatesDynamic)
+					if (!onlyEq)
 					{
 						config.colorBlendEnableConfig.staticValue	= !enableStateValue;
 						config.colorBlendEnableConfig.dynamicValue	= enableStateValue;
@@ -6097,11 +6113,14 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 						config.colorWriteEnableConfig.staticValue	= false;
 						config.colorWriteEnableConfig.dynamicValue	= true;
 
-						config.forceUnormColorFormat				= true;
-						config.logicOpEnableConfig.staticValue		= true;
-						config.logicOpEnableConfig.dynamicValue		= false;
-						config.logicOpConfig.staticValue			= vk::VK_LOGIC_OP_COPY;
-						config.logicOpConfig.dynamicValue			= vk::VK_LOGIC_OP_CLEAR;
+						if (allCBDynamic)
+						{
+							config.forceUnormColorFormat				= true;
+							config.logicOpEnableConfig.staticValue		= true;
+							config.logicOpEnableConfig.dynamicValue		= false;
+							config.logicOpConfig.staticValue			= vk::VK_LOGIC_OP_COPY;
+							config.logicOpConfig.dynamicValue			= vk::VK_LOGIC_OP_CLEAR;
+						}
 					}
 					else
 					{
@@ -6109,8 +6128,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 					}
 
 					const std::string stateStr		= (enableStateValue ? "enable" : "disable");
-					const std::string nameSuffix	= (allCBStatesDynamic ? ("_dynamic_" + stateStr) : "");
-					const std::string descSuffix	= (allCBStatesDynamic ? " and dynamically enable color blending" : "");
+					const std::string nameSuffix	= (onlyEq ? "" : (allCBDynamic ? ("_dynamic_" + stateStr) : ("_dynamic_but_logic_op_" + stateStr)));
+					const std::string descSuffix	= (onlyEq ? "" : (allCBDynamic ? " and dynamically enable color blending" : " and dynamically enable color blending except for logic op"));
 
 					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_equation_new_color" + nameSuffix, "Dynamically set a color equation that picks the mesh color" + descSuffix, config));
 
@@ -6124,12 +6143,13 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 
 		// Color blend advanced.
 		{
-			for (int i = 0; i < 2; ++i)
+			for (const auto& cbSubCase : cbSubCases)
 			{
-				const bool allCBStatesDynamic = (i > 0);
+				const bool onlyEq		= (cbSubCase == ColorBlendSubCase::EQ_ONLY);
+				const bool allCBDynamic	= (cbSubCase == ColorBlendSubCase::ALL_CB);
 
 				// Skip two-draws variants as this will use dynamic logic op and force UNORM color attachments, which would result in illegal operations.
-				if (allCBStatesDynamic && (kOrdering == SequenceOrdering::TWO_DRAWS_STATIC || kOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC))
+				if (allCBDynamic && (kOrdering == SequenceOrdering::TWO_DRAWS_STATIC || kOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC))
 					continue;
 
 				for (int j = 0; j < 2; ++j)
@@ -6137,7 +6157,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 					const bool enableStateValue = (j > 0);
 
 					// Do not test statically disabling color blend.
-					if (!allCBStatesDynamic && !enableStateValue)
+					if (onlyEq && !enableStateValue)
 						continue;
 
 					TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
@@ -6158,7 +6178,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 																				vk::VK_BLEND_FACTOR_ZERO,
 																				vk::VK_BLEND_OP_LIGHTEN_EXT);
 
-					if (allCBStatesDynamic)
+					if (!onlyEq)
 					{
 						config.colorBlendEnableConfig.staticValue	= !enableStateValue;
 						config.colorBlendEnableConfig.dynamicValue	= enableStateValue;
@@ -6172,11 +6192,14 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 						config.colorWriteEnableConfig.staticValue	= false;
 						config.colorWriteEnableConfig.dynamicValue	= true;
 
-						config.forceUnormColorFormat				= true;
-						config.logicOpEnableConfig.staticValue		= true;
-						config.logicOpEnableConfig.dynamicValue		= false;
-						config.logicOpConfig.staticValue			= vk::VK_LOGIC_OP_COPY;
-						config.logicOpConfig.dynamicValue			= vk::VK_LOGIC_OP_CLEAR;
+						if (allCBDynamic)
+						{
+							config.forceUnormColorFormat				= true;
+							config.logicOpEnableConfig.staticValue		= true;
+							config.logicOpEnableConfig.dynamicValue		= false;
+							config.logicOpConfig.staticValue			= vk::VK_LOGIC_OP_COPY;
+							config.logicOpConfig.dynamicValue			= vk::VK_LOGIC_OP_CLEAR;
+						}
 					}
 					else
 					{
@@ -6184,8 +6207,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 					}
 
 					const std::string stateStr		= (enableStateValue ? "enable" : "disable");
-					const std::string nameSuffix	= (allCBStatesDynamic ? ("_dynamic_" + stateStr) : "");
-					const std::string descSuffix	= (allCBStatesDynamic ? " and dynamically enable color blending" : "");
+					const std::string nameSuffix	= (onlyEq ? "" : (allCBDynamic ? ("_dynamic_" + stateStr) : ("_dynamic_but_logic_op_" + stateStr)));
+					const std::string descSuffix	= (onlyEq ? "" : (allCBDynamic ? " and dynamically enable color blending" : " and dynamically enable color blending except for logic op"));
 
 					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_equation_advanced_new_color" + nameSuffix, "Dynamically set an advanced color equation that picks the mesh color" + descSuffix, config));
 
