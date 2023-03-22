@@ -57,6 +57,7 @@
 #include "vktPipelineMaxVaryingsTests.hpp"
 #include "vktPipelineBlendOperationAdvancedTests.hpp"
 #include "vktPipelineExtendedDynamicStateTests.hpp"
+#include "vktPipelineDynamicControlPoints.hpp"
 #ifndef CTS_USES_VULKANSC
 #include "vktPipelineCreationCacheControlTests.hpp"
 #include "vktPipelineBindPointTests.hpp"
@@ -84,6 +85,7 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 {
 	tcu::TestContext& testCtx = group->getTestContext();
 
+	group->addChild(createDynamicControlPointTests (testCtx, pipelineConstructionType));
 	group->addChild(createStencilTests					(testCtx, pipelineConstructionType));
 	group->addChild(createBlendTests					(testCtx, pipelineConstructionType));
 	group->addChild(createDepthTests					(testCtx, pipelineConstructionType));
@@ -139,14 +141,12 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 	group->addChild(createShaderModuleIdentifierTests	(testCtx, pipelineConstructionType));
 #endif // CTS_USES_VULKANSC
 	group->addChild(createColorWriteEnable2Tests		(testCtx, pipelineConstructionType));
+	group->addChild(createMiscTests						(testCtx, pipelineConstructionType));
 
 	// NOTE: all new pipeline tests should use GraphicsPipelineWrapper for pipeline creation
 
 	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
-		// there is no support for pipelineConstructionType in amber
-		group->addChild(createMiscTests						(testCtx));
-
 #ifndef CTS_USES_VULKANSC
 		// compute pipeline tests should not be repeated basing on pipelineConstructionType
 		group->addChild(createDerivativeTests				(testCtx));

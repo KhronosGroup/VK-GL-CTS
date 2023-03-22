@@ -5,6 +5,7 @@ include_directories(
 	)
 
 set(DEQP_VK_VKSC_SYNCHRONIZATION_SRCS
+	vktSynchronizationDefs.hpp
 	vktSynchronizationTests.cpp
 	vktSynchronizationTests.hpp
 	vktSynchronizationUtil.cpp

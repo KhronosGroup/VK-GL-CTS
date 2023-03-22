@@ -24,13 +24,14 @@ import sys
 
 from collections import OrderedDict
 
-from build_caselists import Module, getModuleByName, DEFAULT_BUILD_DIR, DEFAULT_TARGET
 from mustpass import Project, Package, Mustpass, Configuration, include, exclude, genMustpassLists
+from build_caselists import Module, getModuleByName, DEFAULT_BUILD_DIR, DEFAULT_TARGET
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts"))
+scriptPath = os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts")
+sys.path.insert(0, scriptPath)
 
-from build.common import DEQP_DIR
-from build.config import ANY_GENERATOR, BuildConfig
+from ctsbuild.common import DEQP_DIR
+from ctsbuild.config import ANY_GENERATOR, BuildConfig
 
 
 COPYRIGHT_DECLARATION = """\

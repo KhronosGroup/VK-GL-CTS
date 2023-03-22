@@ -64,7 +64,6 @@ using tcu::Vec4;
 using tcu::IVec4;
 using tcu::UVec4;
 
-constexpr auto		VK_NULL_HANDLE				= DE_NULL;
  // maxColorAttachments is guaranteed to be at least 4.
 constexpr deUint32	COLOR_ATTACHMENTS_NUMBER	= 4;
 

@@ -307,6 +307,8 @@ Test log will be written into TestResults.qpa
 
 ### Android
 
+For Android build using SDK 29 or greater, it is recommended to use `/sdcard/Documents/` instead of `/sdcard/` due to scoped storage.
+
 	adb push <vulkancts>/external/vulkancts/mustpass/main/vk-default.txt /sdcard/vk-default.txt
 	adb shell
 

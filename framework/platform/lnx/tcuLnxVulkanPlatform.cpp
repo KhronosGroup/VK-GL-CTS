@@ -85,6 +85,12 @@ public:
 		m_window->setDimensions((int)newSize.x(), (int)newSize.y());
 	}
 
+	void setMinimized(bool minimized)
+	{
+		DE_UNREF(minimized);
+		TCU_THROW(NotSupportedError, "Minimized on X11 is not implemented");
+	}
+
 private:
 	UniquePtr<x11::XlibWindow>	m_window;
 };
@@ -133,6 +139,12 @@ public:
 		m_window->setDimensions((int)newSize.x(), (int)newSize.y());
 	}
 
+	void setMinimized(bool minimized)
+	{
+		DE_UNREF(minimized);
+		TCU_THROW(NotSupportedError, "Minimized on xcb is not implemented");
+	}
+
 private:
 	UniquePtr<x11::XcbWindow>	m_window;
 };
@@ -177,6 +189,12 @@ public:
 	void resize (const UVec2& newSize)
 	{
 		m_window->setDimensions((int)newSize.x(), (int)newSize.y());
+	}
+
+	void setMinimized(bool minimized)
+	{
+		DE_UNREF(minimized);
+		TCU_THROW(NotSupportedError, "Minimized on wayland is not implemented");
 	}
 
 private:
@@ -349,6 +367,28 @@ private:
 	const vk::PlatformDriver		m_driver;
 };
 
+class VulkanVideoDecodeParserLibrary : public vk::Library
+{
+public:
+	VulkanVideoDecodeParserLibrary(void)
+		: m_library("./libnvidia-vkvideo-parser.so")
+	{
+	}
+
+	const vk::PlatformInterface& getPlatformInterface(void) const
+	{
+		TCU_THROW(InternalError, "getPlatformInterface is not possible for VulkanVideoDecodeParserLibrary");
+	}
+	const tcu::FunctionLibrary& getFunctionLibrary(void) const
+	{
+		return m_library;
+	}
+
+private:
+	const tcu::DynamicFunctionLibrary	m_library;
+};
+
+
 VulkanPlatform::VulkanPlatform (EventState& eventState)
 	: m_eventState(eventState)
 {
@@ -418,9 +458,16 @@ bool VulkanPlatform::hasDisplay (vk::wsi::Type wsiType) const
 
 	}
 }
-vk::Library* VulkanPlatform::createLibrary (const char* libraryPath) const
+
+vk::Library* VulkanPlatform::createLibrary (LibraryType libraryType, const char* libraryPath) const
 {
-	return new VulkanLibrary(libraryPath);
+	switch(libraryType)
+	{
+		case LIBRARY_TYPE_VULKAN:						return new VulkanLibrary(libraryPath);
+		case LIBRARY_TYPE_VULKAN_VIDEO_DECODE_PARSER:	return new VulkanVideoDecodeParserLibrary();
+
+		default: TCU_THROW(InternalError, "Unknown library type requested");
+	}
 }
 
 void VulkanPlatform::describePlatform (std::ostream& dst) const

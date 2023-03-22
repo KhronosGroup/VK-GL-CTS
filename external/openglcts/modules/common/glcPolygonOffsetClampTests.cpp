@@ -71,9 +71,11 @@ const char* poc_fragmentTexture = "in highp vec2 varyingtexCoord;\n"
 								  "void main()\n"
 								  "{\n"
 								  "    highp vec4 v = texture(tex, varyingtexCoord);\n"
-								  "    int r = int(v.r * 65536.0) % 256;\n"
-								  "    int g = int(v.r * 65536.0) / 256;\n"
-								  "    fragColor = vec4(float(r) / 255.0, float(g) / 255.0, 0.0, 1.0);\n"
+								  "    highp int d = int(texture(tex, varyingtexCoord).r * 16777215.0);\n"
+								  "    highp int r = d % 256;\n"
+								  "    highp int g = (d % 65536) / 256;\n"
+								  "    highp int b = d / 65536;\n"
+								  "    fragColor = vec4(r, g, b, 255) / 255.0;\n"
 								  "}\n";
 
 /** Constructor.
@@ -259,7 +261,7 @@ void PolygonOffsetClampValueTestCaseBase::deinit()
  */
 void PolygonOffsetClampValueTestCaseBase::test(const glw::Functions& gl)
 {
-	const GLfloat vertices[] = { -1.0f, -1.0f, 0.5f, -1.0f, 1.0f, 0.5f, 1.0f, -1.0f, 0.5f, 1.0f, 1.0f, 0.5f };
+	const GLfloat vertices[] = { -1.0f, -1.0f, 0.0f, -1.0f, 1.0f, 0.0f, 1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f };
 
 	// Prepare shader program
 	std::string vertexColor;
@@ -286,6 +288,8 @@ void PolygonOffsetClampValueTestCaseBase::test(const glw::Functions& gl)
 		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 		return;
 	}
+
+	GLuint testProgramId = testProgram.getProgram();
 
 	ShaderProgram* readDepthProgram   = DE_NULL;
 	GLuint		   readDepthProgramId = 0;
@@ -314,7 +318,7 @@ void PolygonOffsetClampValueTestCaseBase::test(const glw::Functions& gl)
 		readDepthProgramId = readDepthProgram->getProgram();
 	}
 
-	gl.useProgram(testProgram.getProgram());
+	gl.useProgram(testProgramId);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram");
 
 	GLuint vao;
@@ -374,7 +378,7 @@ void PolygonOffsetClampValueTestCaseBase::test(const glw::Functions& gl)
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glDrawArrays");
 
 		// Get reference depth value
-		depthValue = readDepthValue(gl, readDepthProgramId);
+		depthValue = readDepthValue(gl, readDepthProgramId, testProgramId);
 
 		// Draw polygon with depth offset
 		gl.enable(GL_POLYGON_OFFSET_FILL);
@@ -389,7 +393,7 @@ void PolygonOffsetClampValueTestCaseBase::test(const glw::Functions& gl)
 		gl.drawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glDrawArrays");
 
-		depthValueOffset = readDepthValue(gl, readDepthProgramId);
+		depthValueOffset = readDepthValue(gl, readDepthProgramId, testProgramId);
 
 		// Draw reference polygon
 		gl.disable(GL_POLYGON_OFFSET_FILL);
@@ -414,7 +418,7 @@ void PolygonOffsetClampValueTestCaseBase::test(const glw::Functions& gl)
 		gl.drawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glDrawArrays");
 
-		depthValueOffsetClamp = readDepthValue(gl, readDepthProgramId);
+		depthValueOffsetClamp = readDepthValue(gl, readDepthProgramId, testProgramId);
 
 		// Verify results
 		result = result && verify(i, depthValue, depthValueOffset, depthValueOffsetClamp);
@@ -446,7 +450,7 @@ void PolygonOffsetClampValueTestCaseBase::test(const glw::Functions& gl)
  *
  *  @param gl   Function bindings
  */
-float PolygonOffsetClampValueTestCaseBase::readDepthValue(const glw::Functions& gl, const GLuint readDepthProgramId)
+float PolygonOffsetClampValueTestCaseBase::readDepthValue(const glw::Functions& gl, const GLuint readDepthProgramId, const GLuint testProgramId)
 {
 	GLfloat depthValue = 0.0f;
 
@@ -486,11 +490,14 @@ float PolygonOffsetClampValueTestCaseBase::readDepthValue(const glw::Functions& 
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glEnable");
 
 		// Convert read depth value to GLfloat normalized
-		depthValue = (GLfloat)(pixels[0] + pixels[1] * 256) / 0xFFFF;
+		depthValue = (GLfloat)(pixels[0] + pixels[1] * 256 + pixels[2] * 65536) / 0xFFFFFF;
 
 		// Bind framebuffer for drawing
 		gl.bindFramebuffer(GL_FRAMEBUFFER, m_fbo);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glBindFramebuffer");
+
+		gl.useProgram(testProgramId);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram");
 	}
 
 	return depthValue;
@@ -514,8 +521,8 @@ void PolygonOffsetClampMinMaxTestCase::init()
 	PolygonOffsetClampValueTestCaseBase::init();
 
 	m_testValues.clear();
-	m_testValues.push_back(PolygonOffsetClampValues(0.0f, -1000.0f, -0.0001f)); // Min offset case
-	m_testValues.push_back(PolygonOffsetClampValues(0.0f, 1000.0f, 0.0001f));   // Max offset case
+	m_testValues.push_back(PolygonOffsetClampValues(0.0f, -5000.0f, -0.0001f)); // Min offset case
+	m_testValues.push_back(PolygonOffsetClampValues(0.0f, 5000.0f, 0.0001f));   // Max offset case
 }
 
 /** Verification method that determines if depth values are as expected

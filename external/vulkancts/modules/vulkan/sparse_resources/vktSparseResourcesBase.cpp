@@ -61,7 +61,7 @@ deUint32 findMatchingQueueFamilyIndex	(const std::vector<VkQueueFamilyProperties
 
 } // anonymous
 
-void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequirementsVec& queueRequirements)
+void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequirementsVec& queueRequirements, bool requireShaderImageAtomicInt64Features)
 {
 	typedef std::map<VkQueueFlags, std::vector<Queue> >	QueuesMap;
 	typedef std::map<deUint32, QueueFamilyQueuesCount>	SelectedQueuesMap;
@@ -81,7 +81,7 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
 	// If requested, create an intance with device groups
 	if (m_useDeviceGroups)
 	{
-		const std::vector<std::string>	requiredExtensions(1, "VK_KHR_device_group_creation");
+		const std::vector<std::string>	requiredExtensions { "VK_KHR_device_group_creation", "VK_KHR_get_physical_device_properties2" };
 		m_deviceGroupInstance	=		createCustomInstanceWithExtensions(m_context, requiredExtensions);
 		devGroupProperties		=		enumeratePhysicalDeviceGroups(m_context.getInstanceInterface(), m_deviceGroupInstance);
 		m_numPhysicalDevices	=		devGroupProperties[m_deviceGroupIdx].physicalDeviceCount;
@@ -99,6 +99,10 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
 
 		if (!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_device_group"))
 			deviceExtensions.push_back("VK_KHR_device_group");
+	}
+	else
+	{
+		m_context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
 	}
 
 	const VkInstance&					instance(m_useDeviceGroups ? m_deviceGroupInstance : m_context.getInstance());
@@ -174,19 +178,34 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
 		queueInfos.push_back(queueInfo);
 	}
 
+	vk::VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT shaderImageAtomicInt64Features = m_context.getShaderImageAtomicInt64FeaturesEXT();
+	shaderImageAtomicInt64Features.pNext = DE_NULL;
+
 	const VkPhysicalDeviceFeatures	deviceFeatures	= getPhysicalDeviceFeatures(instanceDriver, physicalDevice);
+	vk::VkPhysicalDeviceFeatures2	deviceFeatures2	= getPhysicalDeviceFeatures2(instanceDriver, physicalDevice);
+	deviceFeatures2.pNext							= &shaderImageAtomicInt64Features;
+	void* pNext = DE_NULL;
+	if (requireShaderImageAtomicInt64Features) {
+		pNext = &deviceFeatures2;
+		if (m_useDeviceGroups) {
+			shaderImageAtomicInt64Features.pNext = &deviceGroupInfo;
+		}
+		deviceExtensions.push_back("VK_EXT_shader_image_atomic_int64");
+	} else if (m_useDeviceGroups) {
+		pNext = &deviceGroupInfo;
+	}
 	const VkDeviceCreateInfo		deviceInfo		=
 	{
-		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,						// VkStructureType					sType;
-		m_useDeviceGroups ? &deviceGroupInfo : DE_NULL,				// const void*						pNext;
-		(VkDeviceCreateFlags)0,										// VkDeviceCreateFlags				flags;
-		static_cast<deUint32>(queueInfos.size())	,				// uint32_t							queueCreateInfoCount;
-		&queueInfos[0],												// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
-		0u,															// uint32_t							enabledLayerCount;
-		DE_NULL,													// const char* const*				ppEnabledLayerNames;
-		deUint32(deviceExtensions.size()),							// uint32_t							enabledExtensionCount;
-		deviceExtensions.size() ? &deviceExtensions[0] : DE_NULL,	// const char* const*				ppEnabledExtensionNames;
-		&deviceFeatures,											// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,								// VkStructureType					sType;
+		pNext,																// const void*						pNext;
+		(VkDeviceCreateFlags)0,												// VkDeviceCreateFlags				flags;
+		static_cast<deUint32>(queueInfos.size())	,						// uint32_t							queueCreateInfoCount;
+		&queueInfos[0],														// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
+		0u,																	// uint32_t							enabledLayerCount;
+		DE_NULL,															// const char* const*				ppEnabledLayerNames;
+		deUint32(deviceExtensions.size()),									// uint32_t							enabledExtensionCount;
+		deviceExtensions.size() ? &deviceExtensions[0] : DE_NULL,			// const char* const*				ppEnabledExtensionNames;
+		requireShaderImageAtomicInt64Features ? DE_NULL : &deviceFeatures,	// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 
 	m_logicalDevice = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceInfo);

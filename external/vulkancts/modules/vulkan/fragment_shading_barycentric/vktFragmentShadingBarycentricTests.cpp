@@ -1230,6 +1230,25 @@ void FragmentShadingBarycentricTestCase::checkSupport (Context& context) const
 		if (!extendedDynamicStateFeaturesEXT.extendedDynamicState)
 			TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceExtendedDynamicStateFeaturesEXT.extendedDynamicState");
 	}
+
+
+	if ((m_testParams.dataType == glu::TYPE_DOUBLE) ||
+		(m_testParams.dataType == glu::TYPE_DOUBLE_VEC2) ||
+		(m_testParams.dataType == glu::TYPE_DOUBLE_VEC3) ||
+		(m_testParams.dataType == glu::TYPE_DOUBLE_VEC4))
+	{
+		VkPhysicalDeviceFeatures2 features2;
+		deMemset(&features2, 0, sizeof(features2));
+		features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		features2.pNext = nullptr;
+		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+		if (features2.features.shaderFloat64 != VK_TRUE)
+		{
+			TCU_THROW(NotSupportedError, "shaderFloat64 not supported");
+		}
+	}
+
+
 }
 
 TestInstance* FragmentShadingBarycentricTestCase::createInstance (Context& context) const

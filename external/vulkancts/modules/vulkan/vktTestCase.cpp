@@ -45,6 +45,9 @@
 #include "deMemory.h"
 
 #include <set>
+#include <cstring>
+#include <iterator>
+#include <algorithm>
 
 namespace vkt
 {
@@ -74,7 +77,6 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 		"VK_NV_inherited_viewport_scissor",
 		"VK_NV_mesh_shader",
 		"VK_AMD_mixed_attachment_samples",
-		"VK_AMD_shader_fragment_mask",
 		"VK_AMD_buffer_marker",
 		"VK_AMD_shader_explicit_vertex_parameter",
 		"VK_AMD_shader_image_load_store_lod",
@@ -90,6 +92,11 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 		"VK_ARM_rasterization_order_attachment_access",
 		"VK_GOOGLE_surfaceless_query",
 		"VK_FUCHSIA_",
+		"VK_NV_fragment_coverage_to_color",
+		"VK_NV_framebuffer_mixed_samples",
+		"VK_NV_coverage_reduction_mode",
+		"VK_NV_viewport_swizzle",
+		"VK_NV_representative_fragment_test",
 	};
 
 	for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
@@ -127,20 +134,6 @@ vector<string> addExtensions (const vector<string>& a, const vector<const char*>
 	{
 		if (!de::contains(res.begin(), res.end(), string(*bIter)))
 			res.push_back(string(*bIter));
-	}
-
-	return res;
-}
-
-vector<string> removeExtensions (const vector<string>& a, const vector<const char*>& b)
-{
-	vector<string>	res;
-	set<string>		removeExts	(b.begin(), b.end());
-
-	for (vector<string>::const_iterator aIter = a.begin(); aIter != a.end(); ++aIter)
-	{
-		if (!de::contains(removeExts, *aIter))
-			res.push_back(*aIter);
 	}
 
 	return res;
@@ -192,6 +185,21 @@ std::pair<deUint32, deUint32> determineDeviceVersions(const PlatformInterface& v
 	const deUint32							choosenDeviceVersion	= props.apiVersion;
 
 	return std::make_pair(choosenDeviceVersion, lowestDeviceVersion);
+}
+
+// Remove extensions from a which are found in b.
+vector<string> removeExtensions (const vector<string>& a, const vector<const char*>& b)
+{
+	vector<string>	res;
+	set<string>		removeExts	(b.begin(), b.end());
+
+	for (vector<string>::const_iterator aIter = a.begin(); aIter != a.end(); ++aIter)
+	{
+		if (!de::contains(removeExts, *aIter))
+			res.push_back(*aIter);
+	}
+
+	return res;
 }
 
 #ifndef CTS_USES_VULKANSC
@@ -247,18 +255,16 @@ Move<VkDevice> createDefaultDevice (const PlatformInterface&				vkp,
 									VkInstance								instance,
 									const InstanceInterface&				vki,
 									VkPhysicalDevice						physicalDevice,
-									const deUint32							apiVersion,
 									deUint32								queueIndex,
 									deUint32								sparseQueueIndex,
 									const VkPhysicalDeviceFeatures2&		enabledFeatures,
-									const vector<string>&					enabledExtensions,
+									const vector<const char*>&				usedExtensions,
 									const tcu::CommandLine&					cmdLine,
 									de::SharedPtr<vk::ResourceInterface>	resourceInterface)
 {
 	VkDeviceQueueCreateInfo		queueInfo[2];
 	VkDeviceCreateInfo			deviceInfo;
 	vector<const char*>			enabledLayers;
-	vector<const char*>			extensionPtrs;
 	const float					queuePriority	= 1.0f;
 	const deUint32				numQueues = (enabledFeatures.features.sparseBinding && (queueIndex != sparseQueueIndex)) ? 2 : 1;
 
@@ -271,17 +277,6 @@ Move<VkDevice> createDefaultDevice (const PlatformInterface&				vkp,
 		if (enabledLayers.empty())
 			TCU_THROW(NotSupportedError, "No validation layers found");
 	}
-
-	// \note Extensions in core are not explicitly enabled even though
-	//		 they are in the extension list advertised to tests.
-	vector<const char*> coreExtensions;
-	getCoreDeviceExtensions(apiVersion, coreExtensions);
-	vector<string>	nonCoreExtensions(removeExtensions(enabledExtensions, coreExtensions));
-
-	extensionPtrs.resize(nonCoreExtensions.size());
-
-	for (size_t ndx = 0; ndx < nonCoreExtensions.size(); ++ndx)
-		extensionPtrs[ndx] = nonCoreExtensions[ndx].c_str();
 
 	queueInfo[0].sType						= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 	queueInfo[0].pNext						= DE_NULL;
@@ -302,14 +297,14 @@ Move<VkDevice> createDefaultDevice (const PlatformInterface&				vkp,
 
 	// VK_KHR_get_physical_device_properties2 is used if enabledFeatures.pNext != 0
 	deviceInfo.sType						= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	deviceInfo.pNext						= enabledFeatures.pNext ? &enabledFeatures : DE_NULL;
+	deviceInfo.pNext						= enabledFeatures.pNext ? &enabledFeatures : nullptr;
 	deviceInfo.queueCreateInfoCount			= numQueues;
 	deviceInfo.pQueueCreateInfos			= queueInfo;
-	deviceInfo.enabledExtensionCount		= (deUint32)extensionPtrs.size();
-	deviceInfo.ppEnabledExtensionNames		= (extensionPtrs.empty() ? DE_NULL : &extensionPtrs[0]);
-	deviceInfo.enabledLayerCount			= (deUint32)enabledLayers.size();
-	deviceInfo.ppEnabledLayerNames			= (enabledLayers.empty() ? DE_NULL : enabledLayers.data());
-	deviceInfo.pEnabledFeatures				= enabledFeatures.pNext ? DE_NULL : &enabledFeatures.features;
+	deviceInfo.enabledExtensionCount		= de::sizeU32(usedExtensions);
+	deviceInfo.ppEnabledExtensionNames		= de::dataOrNull(usedExtensions);
+	deviceInfo.enabledLayerCount			= de::sizeU32(enabledLayers);
+	deviceInfo.ppEnabledLayerNames			= de::dataOrNull(enabledLayers);
+	deviceInfo.pEnabledFeatures				= enabledFeatures.pNext ? nullptr : &enabledFeatures.features;
 
 #ifdef CTS_USES_VULKANSC
 	// devices created for Vulkan SC must have VkDeviceObjectReservationCreateInfo structure defined in VkDeviceCreateInfo::pNext chain
@@ -417,6 +412,7 @@ public:
 	VkDevice														getDevice								(void) const { return *m_device;											}
 	const DeviceInterface&											getDeviceInterface						(void) const { return *m_deviceInterface;									}
 	const vector<string>&											getDeviceExtensions						(void) const { return m_deviceExtensions;									}
+	const vector<const char*>&										getDeviceCreationExtensions				(void) const { return m_creationExtensions;									}
 	deUint32														getUsedApiVersion						(void) const { return m_usedApiVersion;										}
 	deUint32														getUniversalQueueFamilyIndex			(void) const { return m_universalQueueFamilyIndex;							}
 	VkQueue															getUniversalQueue						(void) const;
@@ -461,6 +457,7 @@ private:
 	const deUint32						m_universalQueueFamilyIndex;
 	const deUint32						m_sparseQueueFamilyIndex;
 	const DeviceProperties				m_deviceProperties;
+	const vector<const char*>			m_creationExtensions;
 
 	const Unique<VkDevice>				m_device;
 	const de::MovePtr<DeviceDriver>		m_deviceInterface;
@@ -483,6 +480,30 @@ de::MovePtr<vk::DebugReportRecorder> createDebugReportRecorder (const vk::Platfo
 		TCU_THROW(NotSupportedError, "VK_EXT_debug_report is not supported");
 }
 #endif // CTS_USES_VULKANSC
+
+// Returns list of non-core extensions. Note the pointers in the result vector come from the extensions vector passed as an argument.
+vector<const char*> removeCoreExtensions (const deUint32 apiVersion, const vector<string>& extensions)
+{
+	// Make vector of char ptrs.
+	vector<const char*> extensionPtrs;
+	extensionPtrs.reserve(extensions.size());
+	std::transform(begin(extensions), end(extensions), std::back_inserter(extensionPtrs), [](const string& s) { return s.c_str(); });
+
+	// Obtain the core extension list.
+	vector<const char*> coreExtensions;
+	getCoreDeviceExtensions(apiVersion, coreExtensions);
+
+	// Remove any extension found in the core extension list.
+	const auto isNonCoreExtension = [&coreExtensions](const char* extName) {
+		const auto isSameString = [&extName](const char* otherExtName) { return (std::strcmp(otherExtName, extName) == 0); };
+		return std::find_if(begin(coreExtensions), end(coreExtensions), isSameString) == end(coreExtensions);
+	};
+
+	vector<const char*> filteredExtensions;
+	std::copy_if(begin(extensionPtrs), end(extensionPtrs), std::back_inserter(filteredExtensions), isNonCoreExtension);
+	return filteredExtensions;
+}
+
 } // anonymous
 
 DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::CommandLine& cmdLine, de::SharedPtr<vk::ResourceInterface> resourceInterface)
@@ -529,7 +550,11 @@ DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::Co
 	, m_sparseQueueFamilyIndex			(0)
 #endif // CTS_USES_VULKANSC
 	, m_deviceProperties				(m_instanceInterface, m_usedApiVersion, m_physicalDevice, m_instanceExtensions, m_deviceExtensions)
-	, m_device							(createDefaultDevice(vkPlatform, *m_instance, m_instanceInterface, m_physicalDevice, m_usedApiVersion, m_universalQueueFamilyIndex, m_sparseQueueFamilyIndex, m_deviceFeatures.getCoreFeatures2(), m_deviceExtensions, cmdLine, resourceInterface))
+	// When the default device is created, we remove the core extensions from the extension list, but those core extensions are
+	// still reported as part of Context::getDeviceExtensions(). If we need the list of extensions actually used when creating the
+	// default device, we can use Context::getDeviceCreationExtensions().
+	, m_creationExtensions				(removeCoreExtensions(m_usedApiVersion, m_deviceExtensions))
+	, m_device							(createDefaultDevice(vkPlatform, *m_instance, m_instanceInterface, m_physicalDevice, m_universalQueueFamilyIndex, m_sparseQueueFamilyIndex, m_deviceFeatures.getCoreFeatures2(), m_creationExtensions, cmdLine, resourceInterface))
 #ifndef CTS_USES_VULKANSC
 	, m_deviceInterface					(de::MovePtr<DeviceDriver>(new DeviceDriver(vkPlatform, *m_instance, *m_device)))
 #else
@@ -663,8 +688,6 @@ bool Context::isDeviceFunctionalitySupported (const std::string& extension) cons
 
 #ifndef CTS_USES_VULKANSC
 			const auto& vk13Features = m_device->getVulkan13Features();
-			if (extension == "VK_EXT_image_robustness")
-				return !!vk13Features.robustImageAccess;
 			if (extension == "VK_EXT_inline_uniform_block")
 				return !!vk13Features.inlineUniformBlock;
 			if (extension == "VK_EXT_pipeline_creation_cache_control")
@@ -731,6 +754,7 @@ const vk::VkPhysicalDeviceVulkanSC10Properties&	Context::getDeviceVulkanSC10Prop
 #include "vkDevicePropertiesForContextDefs.inl"
 
 const vector<string>&					Context::getDeviceExtensions				(void) const { return m_device->getDeviceExtensions();			}
+const vector<const char*>&				Context::getDeviceCreationExtensions		(void) const { return m_device->getDeviceCreationExtensions();	}
 vk::VkDevice							Context::getDevice							(void) const { return m_device->getDevice();					}
 const vk::DeviceInterface&				Context::getDeviceInterface					(void) const { return m_device->getDeviceInterface();			}
 deUint32								Context::getUniversalQueueFamilyIndex		(void) const { return m_device->getUniversalQueueFamilyIndex();	}
@@ -1011,6 +1035,18 @@ void Context::resetCommandPoolForVKSC	(const VkDevice					device,
 	DE_UNREF(device);
 	DE_UNREF(commandPool);
 #endif
+}
+
+ContextCommonData Context::getContextCommonData() {
+	return ContextCommonData {
+		getInstanceInterface(),
+		getDevice(),
+		getDeviceInterface(),
+		getPhysicalDevice(),
+		getDefaultAllocator(),
+		getUniversalQueueFamilyIndex(),
+		getUniversalQueue()
+	};
 }
 
 // TestCase

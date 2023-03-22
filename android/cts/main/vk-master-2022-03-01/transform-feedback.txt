@@ -2539,6 +2539,10 @@ dEQP-VK.transform_feedback.simple.lines_or_triangles_triangle_strip_1
 dEQP-VK.transform_feedback.simple.lines_or_triangles_triangle_strip_3
 dEQP-VK.transform_feedback.simple.lines_or_triangles_triangle_strip_6
 dEQP-VK.transform_feedback.simple.lines_or_triangles_triangle_strip_14
+dEQP-VK.transform_feedback.simple.multistreams_same_location_1
+dEQP-VK.transform_feedback.simple.multistreams_same_location_3
+dEQP-VK.transform_feedback.simple.multistreams_same_location_6
+dEQP-VK.transform_feedback.simple.multistreams_same_location_14
 dEQP-VK.transform_feedback.simple.multiquery_omit_write_1
 dEQP-VK.transform_feedback.simple.multiquery_omit_write_3
 dEQP-VK.transform_feedback.simple.multiquery_omit_write_6

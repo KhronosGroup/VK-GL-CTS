@@ -692,7 +692,7 @@ void getFenceNative (const vk::DeviceInterface&					vkd,
 
 		if (externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT)
 		{
-			TCU_CHECK(!expectFenceUnsignaled || (fd >= 0));
+			TCU_CHECK(!expectFenceUnsignaled || (fd >= 0) || (fd == -1));
 		}
 		else
 		{
@@ -881,7 +881,12 @@ void getSemaphoreNative (const vk::DeviceInterface&					vkd,
 		int										fd	= -1;
 
 		VK_CHECK(vkd.getSemaphoreFdKHR(device, &info, &fd));
-		TCU_CHECK(fd >= 0);
+
+		if (externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT)
+			TCU_CHECK(fd >= -1);
+		else
+			TCU_CHECK(fd >= 0);
+
 		nativeHandle = fd;
 	}
 	else if (externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA)

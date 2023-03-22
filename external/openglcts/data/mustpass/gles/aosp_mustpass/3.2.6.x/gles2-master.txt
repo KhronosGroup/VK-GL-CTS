@@ -8329,6 +8329,10 @@ dEQP-GLES2.functional.shaders.constant_expressions.builtin_functions.vector_rela
 dEQP-GLES2.functional.shaders.constant_expressions.builtin_functions.vector_relational.not_bvec3_fragment
 dEQP-GLES2.functional.shaders.constant_expressions.builtin_functions.vector_relational.not_bvec4_vertex
 dEQP-GLES2.functional.shaders.constant_expressions.builtin_functions.vector_relational.not_bvec4_fragment
+dEQP-GLES2.functional.shaders.function.local_variable_aliasing_vertex
+dEQP-GLES2.functional.shaders.function.local_variable_aliasing_fragment
+dEQP-GLES2.functional.shaders.function.global_variable_aliasing_vertex
+dEQP-GLES2.functional.shaders.function.global_variable_aliasing_fragment
 dEQP-GLES2.functional.shaders.random.basic_expression.vertex.0
 dEQP-GLES2.functional.shaders.random.basic_expression.vertex.1
 dEQP-GLES2.functional.shaders.random.basic_expression.vertex.2

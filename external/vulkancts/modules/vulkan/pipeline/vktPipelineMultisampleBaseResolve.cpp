@@ -285,7 +285,7 @@ tcu::TestStatus MSInstanceBaseResolve::iterate (void)
 					.setDefaultColorBlendState()
 					.setDefaultDepthStencilState()
 					.setDefaultTopology(vertexDataDesc.primitiveTopology)
-					.setupVertexInputStete(&vertexInputStateInfo)
+					.setupVertexInputState(&vertexInputStateInfo)
 					.setupPreRasterizationShaderState(viewports,
 						scissors,
 						*pipelineLayout,

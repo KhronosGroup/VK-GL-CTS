@@ -312,7 +312,7 @@ InvertedDepthRangesTestInstance::InvertedDepthRangesTestInstance (Context& conte
 		1u,
 		&m_colorAttachmentFormat,
 		m_depthAttachmentFormat,
-		m_depthAttachmentFormat
+		VK_FORMAT_UNDEFINED
 	};
 
 	if (m_params.groupParams->useDynamicRendering)

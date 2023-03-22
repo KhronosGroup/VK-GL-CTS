@@ -56,6 +56,13 @@ namespace pipeline
 
 using namespace vk;
 
+enum class RestartType
+{
+	NORMAL,
+	NONE,
+	ALL,
+};
+
 namespace
 {
 
@@ -91,10 +98,10 @@ protected:
 																 std::vector<deUint32>&		indexData,
 																 std::vector<Vertex4RGBA>&	vertexData) const = 0;
 	VkPrimitiveTopology					m_primitiveTopology;
+	const int							m_primitiveCount;
 
 private:
 	const PipelineConstructionType		m_pipelineConstructionType;
-	const int							m_primitiveCount;
 	bool								m_testPrimitiveRestart;
 	VkIndexType							m_indexType;
 };
@@ -130,7 +137,7 @@ public:
 																 const PipelineConstructionType		pipelineConstructionType,
 																 VkPrimitiveTopology				primitiveTopology,
 																 VkIndexType						indexType,
-																 bool								useRestartPrimitives);
+																 RestartType						restartType);
 	virtual								~PrimitiveRestartTest	(void) {}
 	virtual void						checkSupport			(Context& context) const;
 
@@ -155,6 +162,7 @@ private:
 																 std::vector<deUint32>		adjacencies) const;
 
 	std::vector<deUint32>				m_restartPrimitives;
+	RestartType							m_restartType;
 };
 #endif // CTS_USES_VULKANSC
 
@@ -242,8 +250,8 @@ InputAssemblyTest::InputAssemblyTest (tcu::TestContext&					testContext,
 									  VkIndexType						indexType)
 	: vkt::TestCase				(testContext, name, description)
 	, m_primitiveTopology		(primitiveTopology)
+	, m_primitiveCount(primitiveCount)
 	, m_pipelineConstructionType(pipelineConstructionType)
-	, m_primitiveCount			(primitiveCount)
 	, m_testPrimitiveRestart	(testPrimitiveRestart)
 	, m_indexType				(indexType)
 {
@@ -735,13 +743,50 @@ PrimitiveRestartTest::PrimitiveRestartTest (tcu::TestContext&			testContext,
 											PipelineConstructionType	pipelineConstructionType,
 											VkPrimitiveTopology			primitiveTopology,
 											VkIndexType					indexType,
-											bool						useRestartPrimitives)
+											RestartType					restartType)
 
 	: InputAssemblyTest	(testContext, name, description, pipelineConstructionType, primitiveTopology, 10, true, indexType)
+	, m_restartType(restartType)
 {
 	deUint32 restartPrimitives[] = { 1, 5 };
 
-	m_restartPrimitives = useRestartPrimitives ? std::vector<deUint32>(restartPrimitives, restartPrimitives + sizeof(restartPrimitives) / sizeof(deUint32)) : std::vector<deUint32>{};
+	if (restartType == RestartType::NORMAL)
+	{
+		m_restartPrimitives = std::vector<deUint32>(restartPrimitives, restartPrimitives + sizeof(restartPrimitives) / sizeof(deUint32));
+	}
+	else if (restartType == RestartType::NONE)
+	{
+		m_restartPrimitives = std::vector<deUint32>{};
+	}
+	else
+	{
+		deUint32 count = 1;
+		switch (primitiveTopology)
+		{
+			case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+			case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
+			case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
+			case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
+				count = 2;
+				break;
+			case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
+			case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
+			case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
+			case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
+			case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
+				count = 3;
+				break;
+			default:
+				break;
+		}
+		for (deUint32 i = 0; i < (deUint32)m_primitiveCount; ++i)
+		{
+			if (i % count == count - 1)
+			{
+				m_restartPrimitives.push_back(i);
+			}
+		}
+	}
 }
 
 void PrimitiveRestartTest::checkSupport (Context& context) const
@@ -833,7 +878,7 @@ void PrimitiveRestartTest::createBufferData (VkPrimitiveTopology topology, int p
 				}
 				else
 				{
-					if (primitiveStart)
+					if (primitiveStart && m_restartType != RestartType::ALL)
 					{
 						const Vertex4RGBA vertex =
 						{
@@ -870,7 +915,7 @@ void PrimitiveRestartTest::createBufferData (VkPrimitiveTopology topology, int p
 				}
 				else
 				{
-					if (primitiveStart)
+					if (primitiveStart && m_restartType != RestartType::ALL)
 					{
 						for (int vertexNdx = 0; vertexNdx < 2; vertexNdx++)
 						{
@@ -912,7 +957,7 @@ void PrimitiveRestartTest::createBufferData (VkPrimitiveTopology topology, int p
 				}
 				else
 				{
-					if (primitiveStart)
+					if (primitiveStart && m_restartType != RestartType::ALL)
 					{
 						Vertex4RGBA vertex =
 						{
@@ -956,7 +1001,7 @@ void PrimitiveRestartTest::createBufferData (VkPrimitiveTopology topology, int p
 				}
 				else
 				{
-					if (primitiveStart)
+					if (primitiveStart && m_restartType != RestartType::ALL)
 					{
 						indices.push_back(0);
 
@@ -998,7 +1043,7 @@ void PrimitiveRestartTest::createBufferData (VkPrimitiveTopology topology, int p
 				}
 				else
 				{
-					if (primitiveStart)
+					if (primitiveStart && m_restartType != RestartType::ALL)
 					{
 						for (int vertexNdx = 0; vertexNdx < 2; vertexNdx++)
 						{
@@ -1366,7 +1411,7 @@ InputAssemblyInstance::InputAssemblyInstance (Context&							context,
 
 		m_graphicsPipeline.setDefaultRasterizationState()
 						  .setDefaultMultisampleState()
-						  .setupVertexInputStete(&vertexInputStateParams, &inputAssemblyStateParams)
+						  .setupVertexInputState(&vertexInputStateParams, &inputAssemblyStateParams)
 						  .setupPreRasterizationShaderState(viewport,
 											scissor,
 											*m_pipelineLayout,
@@ -1676,38 +1721,49 @@ de::MovePtr<tcu::TestCaseGroup> createPrimitiveRestartTests (tcu::TestContext& t
 	de::MovePtr<tcu::TestCaseGroup> indexUint32Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint32", ""));
 	de::MovePtr<tcu::TestCaseGroup> indexUint8Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint8", ""));
 
-	bool useRestartPrimitives[] = { true, false };
+	constexpr struct RestartTest
+	{
+		RestartType	type;
+		const char* name;
+	} restartTypes[] =
+	{
+		{ RestartType::NORMAL,	"",					},
+		{ RestartType::NONE,	"no_restart_",		},
+		{ RestartType::ALL,		"restart_all_"		},
+	};
 
 	for (int topologyNdx = 0; topologyNdx < DE_LENGTH_OF_ARRAY(primitiveRestartTopologies); topologyNdx++)
 	{
 		const VkPrimitiveTopology topology = primitiveRestartTopologies[topologyNdx];
 
-		for (int useRestartNdx = 0; useRestartNdx < DE_LENGTH_OF_ARRAY(useRestartPrimitives); useRestartNdx++)
+		for (int useRestartNdx = 0; useRestartNdx < DE_LENGTH_OF_ARRAY(restartTypes); useRestartNdx++)
 		{
-			std::string restartName = useRestartPrimitives[useRestartNdx] ? "" : "no_restart_";
+			if (topology == VK_PRIMITIVE_TOPOLOGY_POINT_LIST && restartTypes[useRestartNdx].type == RestartType::ALL) {
+				continue;
+			}
 			indexUint16Tests->addChild(new PrimitiveRestartTest(testCtx,
-																restartName + getPrimitiveTopologyCaseName(topology),
+																restartTypes[useRestartNdx].name + getPrimitiveTopologyCaseName(topology),
 																"",
 																pipelineConstructionType,
 																topology,
 																VK_INDEX_TYPE_UINT16,
-																useRestartPrimitives[useRestartNdx]));
+																restartTypes[useRestartNdx].type));
 
 			indexUint32Tests->addChild(new PrimitiveRestartTest(testCtx,
-																restartName + getPrimitiveTopologyCaseName(topology),
+																restartTypes[useRestartNdx].name + getPrimitiveTopologyCaseName(topology),
 																"",
 																pipelineConstructionType,
 																topology,
 																VK_INDEX_TYPE_UINT32,
-																useRestartPrimitives[useRestartNdx]));
+																restartTypes[useRestartNdx].type));
 
 			indexUint8Tests->addChild(new PrimitiveRestartTest(testCtx,
-																restartName + getPrimitiveTopologyCaseName(topology),
+																restartTypes[useRestartNdx].name + getPrimitiveTopologyCaseName(topology),
 																"",
 																pipelineConstructionType,
 																topology,
 																VK_INDEX_TYPE_UINT8_EXT,
-																useRestartPrimitives[useRestartNdx]));
+																restartTypes[useRestartNdx].type));
 		}
 	}
 

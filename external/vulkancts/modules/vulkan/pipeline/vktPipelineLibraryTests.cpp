@@ -33,6 +33,7 @@
 #include "vkBufferWithMemory.hpp"
 #include "vkImageWithMemory.hpp"
 #include "vkBuilderUtil.hpp"
+#include "vkRayTracingUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "tcuCommandLine.hpp"
@@ -42,6 +43,8 @@
 
 #include "../draw/vktDrawCreateInfoUtil.hpp"
 #include "deMath.h"
+#include "deRandom.hpp"
+#include "deClock.h"
 
 #include <vector>
 #include <chrono>
@@ -90,11 +93,13 @@ struct TestParams
 
 struct RuntimePipelineTreeNode
 {
-	deInt32								parentIndex;
-	VkGraphicsPipelineLibraryFlagsEXT	graphicsPipelineLibraryFlags;
-	VkGraphicsPipelineLibraryFlagsEXT	subtreeGraphicsPipelineLibraryFlags;
-	Move<VkPipeline>					pipeline;
-	std::vector<VkPipeline>				pipelineLibraries;
+	deInt32												parentIndex;
+	VkGraphicsPipelineLibraryFlagsEXT					graphicsPipelineLibraryFlags;
+	VkGraphicsPipelineLibraryFlagsEXT					subtreeGraphicsPipelineLibraryFlags;
+	Move<VkPipeline>									pipeline;
+	std::vector<VkPipeline>								pipelineLibraries;
+	// We need to track the linked libraries too, included in VkPipelineLibraryCreateInfoKHR->pLibraries
+	std::vector<VkGraphicsPipelineLibraryFlagsEXT>		linkedLibraryFlags;
 };
 
 typedef std::vector<RuntimePipelineTreeNode>	RuntimePipelineTreeConfiguration;
@@ -399,7 +404,8 @@ void updateVertexInputInterface (Context&						context,
 void updatePreRasterization (Context&						context,
 							 GraphicsPipelineCreateInfo&	graphicsPipelineCreateInfo,
 							 bool							delayedShaderCreate,
-							 VkPolygonMode					polygonMode = VK_POLYGON_MODE_FILL)
+							 VkPolygonMode					polygonMode = VK_POLYGON_MODE_FILL,
+							 const VkSpecializationInfo*	specializationInfo = DE_NULL)
 {
 	const ProgramBinary&		shaderBinary			= context.getBinaryCollection().get("vert");
 	VkShaderModuleCreateInfo&	shaderModuleCreateInfo	= graphicsPipelineCreateInfo.m_shaderModuleCreateInfo[graphicsPipelineCreateInfo.m_shaderModuleCreateInfoCount];
@@ -437,7 +443,7 @@ void updatePreRasterization (Context&						context,
 		VK_SHADER_STAGE_VERTEX_BIT,								// VkShaderStageFlagBits			stage;
 		shaderModule,											// VkShaderModule					module;
 		"main",													// const char*						pName;
-		DE_NULL													// const VkSpecializationInfo*		pSpecializationInfo;
+		specializationInfo										// const VkSpecializationInfo*		pSpecializationInfo;
 	};
 
 	shaderBinary.setUsed();
@@ -482,7 +488,8 @@ void updatePreRasterization (Context&						context,
 void updatePostRasterization (Context&						context,
 							  GraphicsPipelineCreateInfo&	graphicsPipelineCreateInfo,
 							  bool							delayedShaderCreate,
-							  bool							enableDepth = true)
+							  bool							enableDepth = true,
+							  const VkSpecializationInfo*	specializationInfo = DE_NULL)
 {
 	const ProgramBinary&		shaderBinary			= context.getBinaryCollection().get("frag");
 	VkShaderModuleCreateInfo&	shaderModuleCreateInfo	= graphicsPipelineCreateInfo.m_shaderModuleCreateInfo[graphicsPipelineCreateInfo.m_shaderModuleCreateInfoCount];
@@ -520,7 +527,7 @@ void updatePostRasterization (Context&						context,
 		VK_SHADER_STAGE_FRAGMENT_BIT,							// VkShaderStageFlagBits			stage;
 		shaderModule,											// VkShaderModule					module;
 		"main",													// const char*						pName;
-		DE_NULL													// const VkSpecializationInfo*		pSpecializationInfo;
+		specializationInfo										// const VkSpecializationInfo*		pSpecializationInfo;
 	};
 
 	shaderBinary.setUsed();
@@ -803,6 +810,29 @@ Move<VkDescriptorSet> PipelineLibraryTestInstance::createDescriptorSet (const Vk
 	return descriptorSet;
 }
 
+VkFormat getSupportedDepthFormat(const InstanceInterface &vk, const VkPhysicalDevice physicalDevice)
+{
+	VkFormatProperties properties;
+
+	const VkFormat DepthFormats[] =
+	{
+		VK_FORMAT_D32_SFLOAT,
+		VK_FORMAT_X8_D24_UNORM_PACK32,
+		VK_FORMAT_D24_UNORM_S8_UINT,
+		VK_FORMAT_D32_SFLOAT_S8_UINT
+	};
+
+	for (const auto format: DepthFormats)
+	{
+		vk.getPhysicalDeviceFormatProperties(physicalDevice, format, &properties);
+
+		if (properties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+			return format;
+	}
+
+	TCU_THROW(NotSupportedError, "Depth format is not supported");
+}
+
 bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	runtimePipelineTreeConfiguration,
 										   const bool							optimize,
 										   const bool							delayedShaderCreate)
@@ -813,7 +843,7 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 	Allocator&								allocator				= m_context.getDefaultAllocator();
 	tcu::TestLog&							log						= m_context.getTestContext().getLog();
 	const VkFormat							colorFormat				= VK_FORMAT_R8G8B8A8_UNORM;
-	const VkFormat							depthFormat				= VK_FORMAT_D32_SFLOAT;
+	const VkFormat							depthFormat				= getSupportedDepthFormat(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
 	const VkGraphicsPipelineLibraryFlagsEXT	vertPipelineFlags		= static_cast<VkGraphicsPipelineLibraryFlagsEXT>(VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT);
 	const VkGraphicsPipelineLibraryFlagsEXT	fragPipelineFlags		= static_cast<VkGraphicsPipelineLibraryFlagsEXT>(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT);
 	const VkGraphicsPipelineLibraryFlagsEXT	samePipelineFlags		= vertPipelineFlags | fragPipelineFlags;
@@ -894,13 +924,39 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 			}
 		}
 
-		if (graphicsPipelineLibraryCreateInfo.flags != ALL_GRAPHICS_PIPELINE_LIBRARY_FLAGS)
+		VkGraphicsPipelineLibraryFlagsEXT linkedLibrariesFlags = 0;
+
+		for (auto flag : node.linkedLibraryFlags)
+			linkedLibrariesFlags |= flag;
+
+		// When pLibraries have any pipeline library with fragment shader state and current pipeline we try to create doesn't,
+		// we need to set a MS info.
+		if ((linkedLibrariesFlags & VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT) &&
+				!(node.graphicsPipelineLibraryFlags & VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT) &&
+				(graphicsPipelineCreateInfo.pMultisampleState == DE_NULL))
+		{
+			const VkPipelineMultisampleStateCreateInfo	pipelineMultisampleStateCreateInfo = makePipelineMultisampleStateCreateInfo();
+
+			graphicsPipelineCreateInfo.addState(pipelineMultisampleStateCreateInfo);
+		}
+
+
+		if (linkedLibrariesFlags != ALL_GRAPHICS_PIPELINE_LIBRARY_FLAGS  && graphicsPipelineLibraryCreateInfo.flags != 0)
 			appendStructurePtrToVulkanChain(&graphicsPipelineCreateInfo.pNext, &graphicsPipelineLibraryCreateInfo);
 
 		if (linkingInfo.libraryCount != 0)
 		{
 			appendStructurePtrToVulkanChain(&graphicsPipelineCreateInfo.pNext, &linkingInfo);
 			graphicsPipelineCreateInfo.layout = *pipelineLayoutSame;
+		}
+
+		linkedLibrariesFlags |= node.graphicsPipelineLibraryFlags;
+
+		// if current pipeline that we try to create and pLibraries have all states of pipelines, we are not allowed to create a pipeline library.
+		if (linkedLibrariesFlags == ALL_GRAPHICS_PIPELINE_LIBRARY_FLAGS)
+		{
+			DE_ASSERT(!buildLibrary);
+			graphicsPipelineCreateInfo.flags &= ~VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
 		}
 
 		node.pipeline = createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo);
@@ -910,6 +966,7 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 			DE_ASSERT(de::inBounds(node.parentIndex, 0, static_cast<deInt32>(runtimePipelineTreeConfiguration.size())));
 
 			runtimePipelineTreeConfiguration[node.parentIndex].pipelineLibraries.push_back(*node.pipeline);
+			runtimePipelineTreeConfiguration[node.parentIndex].linkedLibraryFlags.push_back(linkedLibrariesFlags);
 		}
 		else
 		{
@@ -1231,7 +1288,10 @@ enum class MiscTestMode
 	INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_UNION_HANDLE,
 	BIND_NULL_DESCRIPTOR_SET,
 	BIND_NULL_DESCRIPTOR_SET_IN_MONOLITHIC_PIPELINE,
-	COMPARE_LINK_TIMES
+	COMPARE_LINK_TIMES,
+	SHADER_MODULE_CREATE_INFO_COMP,
+	SHADER_MODULE_CREATE_INFO_RT,
+	SHADER_MODULE_CREATE_INFO_RT_LIB,
 };
 
 struct MiscTestParams
@@ -1424,6 +1484,12 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runNullDescriptorSet(void)
 
 		fragPipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
 	}
+	else
+	{
+		pipelineLayoutCreateInfo.setLayoutCount = 0u;
+		pipelineLayoutCreateInfo.pSetLayouts	= DE_NULL;
+		fragPipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
+	}
 
 	// create descriptor pool
 	Move<VkDescriptorPool> descriptorPool = DescriptorPoolBuilder()
@@ -1465,7 +1531,7 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runNullDescriptorSet(void)
 	};
 
 	// fill proper portion of pipeline state
-	updateVertexInputInterface(m_context, partialPipelineCreateInfo[0], VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+	updateVertexInputInterface(m_context, partialPipelineCreateInfo[0], VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u);
 	updatePreRasterization(m_context, partialPipelineCreateInfo[0], false);
 	updatePostRasterization(m_context, partialPipelineCreateInfo[1], false);
 	updateFragmentOutputInterface(m_context, partialPipelineCreateInfo[1]);
@@ -1515,7 +1581,7 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runNullDescriptorSet(void)
 			uniformBufferDataSize								// VkDeviceSize						size
 		));
 		initialBufferBarriers[1].buffer = uniformBuffer[1]->get();
-		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, (VkDependencyFlags)0, 0, DE_NULL, 2, initialBufferBarriers.data(), 0, DE_NULL);
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, DE_NULL, 2, initialBufferBarriers.data(), 0, DE_NULL);
 
 		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, m_renderArea, m_colorClearColor);
 
@@ -1884,13 +1950,57 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runCompareLinkTimes (void)
 		{ *layout, *m_renderPass, 0, VK_PIPELINE_CREATE_LIBRARY_BIT_KHR },
 	};
 
+	de::Random rnd(static_cast<deUint32>(deGetMicroseconds()));
+
+	const uint32_t vertexRandSpecConsts[]	= { rnd.getUint32() * 2, rnd.getUint32() * 2 };
+	const uint32_t fragmentRandSpecConsts[] = { rnd.getUint32() * 2, rnd.getUint32() * 2 };
+
+	const VkSpecializationMapEntry entry =
+	{
+		0,					// uint32_t	constantID;
+		0,					// uint32_t	offset;
+		sizeof(int32_t)		// size_t	size;
+	};
+
+	const VkSpecializationInfo vertexSpecializationInfos[] =
+	{
+		{
+			1u,							// uint32_t							mapEntryCount;
+			&entry,						// const VkSpecializationMapEntry*	pMapEntries;
+			sizeof(int32_t),			// size_t							dataSize;
+			&vertexRandSpecConsts[0]	// const void*						pData;
+		},
+		{
+			1u,							// uint32_t							mapEntryCount;
+			&entry,						// const VkSpecializationMapEntry*	pMapEntries;
+			sizeof(int32_t),			// size_t							dataSize;
+			&vertexRandSpecConsts[1]	// const void*						pData;
+		}
+	};
+
+	const VkSpecializationInfo fragmentSpecializationInfos[] =
+	{
+		{
+			1u,							// uint32_t							mapEntryCount;
+			&entry,						// const VkSpecializationMapEntry*	pMapEntries;
+			sizeof(int32_t),			// size_t							dataSize;
+			&fragmentRandSpecConsts[0]	// const void*						pData;
+		},
+		{
+			1u,							// uint32_t							mapEntryCount;
+			&entry,						// const VkSpecializationMapEntry*	pMapEntries;
+			sizeof(int32_t),			// size_t							dataSize;
+			&fragmentRandSpecConsts[1]	// const void*						pData;
+		}
+	};
+
 	// fill proper portion of pipeline state - this cant be easily done in a scalable loop
 	updateVertexInputInterface		(m_context, partialPipelineCreateInfo[0], VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
 	updateVertexInputInterface		(m_context, partialPipelineCreateInfo[1], VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-	updatePreRasterization			(m_context, partialPipelineCreateInfo[2], false, VK_POLYGON_MODE_FILL);
-	updatePreRasterization			(m_context, partialPipelineCreateInfo[3], false, VK_POLYGON_MODE_LINE);
-	updatePostRasterization			(m_context, partialPipelineCreateInfo[4], false, true);
-	updatePostRasterization			(m_context, partialPipelineCreateInfo[5], false, false);
+	updatePreRasterization			(m_context, partialPipelineCreateInfo[2], false, VK_POLYGON_MODE_FILL, &vertexSpecializationInfos[0]);
+	updatePreRasterization			(m_context, partialPipelineCreateInfo[3], false, VK_POLYGON_MODE_LINE, &vertexSpecializationInfos[1]);
+	updatePostRasterization			(m_context, partialPipelineCreateInfo[4], false, true,	&fragmentSpecializationInfos[0]);
+	updatePostRasterization			(m_context, partialPipelineCreateInfo[5], false, false, &fragmentSpecializationInfos[1]);
 	updateFragmentOutputInterface	(m_context, partialPipelineCreateInfo[6], 0xf);
 	updateFragmentOutputInterface	(m_context, partialPipelineCreateInfo[7]);
 
@@ -1992,6 +2102,324 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::verifyResult(const std::vector<
 	return tcu::TestStatus::pass("Pass");
 }
 
+class PipelineLibraryShaderModuleInfoInstance : public TestInstance
+{
+public:
+					PipelineLibraryShaderModuleInfoInstance		(Context& context)
+						: TestInstance	(context)
+						, m_vkd			(m_context.getDeviceInterface())
+						, m_device		(m_context.getDevice())
+						, m_alloc		(m_context.getDefaultAllocator())
+						, m_queueIndex	(m_context.getUniversalQueueFamilyIndex())
+						, m_queue		(m_context.getUniversalQueue())
+						, m_outVector	(kOutputBufferElements, std::numeric_limits<uint32_t>::max())
+						, m_cmdBuffer	(DE_NULL)
+						{}
+	virtual			~PipelineLibraryShaderModuleInfoInstance	(void) {}
+
+	static constexpr size_t kOutputBufferElements = 64u;
+
+protected:
+	void			prepareOutputBuffer							(VkShaderStageFlags stages);
+	void			allocateCmdBuffers							(void);
+	void			addModule									(const std::string& moduleName, VkShaderStageFlagBits stage);
+	void			recordShaderToHostBarrier					(VkPipelineStageFlagBits pipelineStage) const;
+	void			verifyOutputBuffer							(void);
+
+	using BufferWithMemoryPtr = de::MovePtr<BufferWithMemory>;
+
+	// From the context.
+	const DeviceInterface&		m_vkd;
+	const VkDevice				m_device;
+	Allocator&					m_alloc;
+	const uint32_t				m_queueIndex;
+	const VkQueue				m_queue;
+
+	Move<VkDescriptorSetLayout>	m_setLayout;
+	Move<VkDescriptorPool>		m_descriptorPool;
+	Move<VkDescriptorSet>		m_descriptorSet;
+	std::vector<uint32_t>		m_outVector;
+	BufferWithMemoryPtr			m_outputBuffer;
+
+	Move<VkCommandPool>			m_cmdPool;
+	Move<VkCommandBuffer>		m_cmdBufferPtr;
+	VkCommandBuffer				m_cmdBuffer;
+
+	std::vector<VkPipelineShaderStageCreateInfo>	m_pipelineStageInfos;
+	std::vector<VkShaderModuleCreateInfo>			m_shaderModuleInfos;
+};
+
+void PipelineLibraryShaderModuleInfoInstance::prepareOutputBuffer (VkShaderStageFlags stages)
+{
+	const auto	descriptorType	= VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	const auto	poolFlags		= VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+
+	// Create set layout.
+	DescriptorSetLayoutBuilder layoutBuilder;
+	layoutBuilder.addSingleBinding(descriptorType, stages);
+	m_setLayout = layoutBuilder.build(m_vkd, m_device);
+
+	// Create pool and set.
+	DescriptorPoolBuilder poolBuilder;
+	poolBuilder.addType(descriptorType);
+	m_descriptorPool	= poolBuilder.build(m_vkd, m_device, poolFlags, 1u);
+	m_descriptorSet		= makeDescriptorSet(m_vkd, m_device, m_descriptorPool.get(), m_setLayout.get());
+
+	// Create buffer.
+	const auto outputBufferSize			= static_cast<VkDeviceSize>(de::dataSize(m_outVector));
+	const auto outputBufferCreateInfo	= makeBufferCreateInfo(outputBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	m_outputBuffer = BufferWithMemoryPtr(new BufferWithMemory(m_vkd, m_device, m_alloc, outputBufferCreateInfo, MemoryRequirement::HostVisible));
+
+	// Update set.
+	const auto outputBufferDescInfo = makeDescriptorBufferInfo(m_outputBuffer->get(), 0ull, outputBufferSize);
+	DescriptorSetUpdateBuilder updateBuilder;
+	updateBuilder.writeSingle(m_descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType, &outputBufferDescInfo);
+	updateBuilder.update(m_vkd, m_device);
+}
+
+void PipelineLibraryShaderModuleInfoInstance::addModule (const std::string& moduleName, VkShaderStageFlagBits stage)
+{
+	const auto& binary = m_context.getBinaryCollection().get(moduleName);
+
+	const VkShaderModuleCreateInfo modInfo =
+	{
+		VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,			//	VkStructureType				sType;
+		nullptr,												//	const void*					pNext;
+		0u,														//	VkShaderModuleCreateFlags	flags;
+		binary.getSize(),										//	size_t						codeSize;
+		reinterpret_cast<const uint32_t*>(binary.getBinary()),	//	const uint32_t*				pCode;
+	};
+	m_shaderModuleInfos.push_back(modInfo);
+
+	// Note: the pNext pointer will be updated below.
+	const VkPipelineShaderStageCreateInfo stageInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	//	VkStructureType						sType;
+		nullptr,												//	const void*							pNext;
+		0u,														//	VkPipelineShaderStageCreateFlags	flags;
+		stage,													//	VkShaderStageFlagBits				stage;
+		DE_NULL,												//	VkShaderModule						module;
+		"main",													//	const char*							pName;
+		nullptr,												//	const VkSpecializationInfo*			pSpecializationInfo;
+	};
+	m_pipelineStageInfos.push_back(stageInfo);
+
+	DE_ASSERT(m_shaderModuleInfos.size() == m_pipelineStageInfos.size());
+
+	// Update pNext pointers after possible reallocation.
+	for (size_t i = 0u; i < m_shaderModuleInfos.size(); ++i)
+		m_pipelineStageInfos[i].pNext = &(m_shaderModuleInfos[i]);
+}
+
+void PipelineLibraryShaderModuleInfoInstance::recordShaderToHostBarrier (VkPipelineStageFlagBits pipelineStage) const
+{
+	const auto postWriteBarrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+	cmdPipelineMemoryBarrier(m_vkd, m_cmdBuffer, pipelineStage, VK_PIPELINE_STAGE_HOST_BIT, &postWriteBarrier);
+}
+
+void PipelineLibraryShaderModuleInfoInstance::verifyOutputBuffer (void)
+{
+	auto& allocation	= m_outputBuffer->getAllocation();
+
+	invalidateAlloc(m_vkd, m_device, allocation);
+	deMemcpy(m_outVector.data(), allocation.getHostPtr(), de::dataSize(m_outVector));
+
+	for (uint32_t i = 0; i < static_cast<uint32_t>(m_outVector.size()); ++i)
+	{
+		if (m_outVector[i] != i)
+		{
+			std::ostringstream msg;
+			msg << "Unexpected value found at position " << i << ": " << m_outVector[i];
+			TCU_FAIL(msg.str());
+		}
+	}
+}
+
+void PipelineLibraryShaderModuleInfoInstance::allocateCmdBuffers (void)
+{
+	m_cmdPool		= makeCommandPool(m_vkd, m_device, m_queueIndex);
+	m_cmdBufferPtr	= allocateCommandBuffer(m_vkd, m_device, m_cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	m_cmdBuffer		= m_cmdBufferPtr.get();
+}
+
+class PipelineLibraryShaderModuleInfoCompInstance : public PipelineLibraryShaderModuleInfoInstance
+{
+public:
+					PipelineLibraryShaderModuleInfoCompInstance		(Context& context)
+						: PipelineLibraryShaderModuleInfoInstance(context)
+						{}
+	virtual			~PipelineLibraryShaderModuleInfoCompInstance	(void) {}
+
+	tcu::TestStatus	iterate											(void) override;
+};
+
+tcu::TestStatus	PipelineLibraryShaderModuleInfoCompInstance::iterate (void)
+{
+	const auto stage		= VK_SHADER_STAGE_COMPUTE_BIT;
+	const auto bindPoint	= VK_PIPELINE_BIND_POINT_COMPUTE;
+
+	prepareOutputBuffer(stage);
+	addModule("comp", stage);
+	allocateCmdBuffers();
+
+	const auto pipelineLayout = makePipelineLayout(m_vkd, m_device, m_setLayout.get());
+
+	const VkComputePipelineCreateInfo pipelineCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,	//	VkStructureType					sType;
+		nullptr,										//	const void*						pNext;
+		0u,												//	VkPipelineCreateFlags			flags;
+		m_pipelineStageInfos.at(0u),					//	VkPipelineShaderStageCreateInfo	stage;
+		pipelineLayout.get(),							//	VkPipelineLayout				layout;
+		DE_NULL,										//	VkPipeline						basePipelineHandle;
+		0,												//	int32_t							basePipelineIndex;
+	};
+
+	const auto pipeline = createComputePipeline(m_vkd, m_device, DE_NULL, &pipelineCreateInfo);
+
+	beginCommandBuffer(m_vkd, m_cmdBuffer);
+	m_vkd.cmdBindDescriptorSets(m_cmdBuffer, bindPoint, pipelineLayout.get(), 0u, 1u, &m_descriptorSet.get(), 0u, nullptr);
+	m_vkd.cmdBindPipeline(m_cmdBuffer, bindPoint, pipeline.get());
+	m_vkd.cmdDispatch(m_cmdBuffer, 1u, 1u, 1u);
+	recordShaderToHostBarrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+	endCommandBuffer(m_vkd, m_cmdBuffer);
+	submitCommandsAndWait(m_vkd, m_device, m_queue, m_cmdBuffer);
+	verifyOutputBuffer();
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+class PipelineLibraryShaderModuleInfoRTInstance : public PipelineLibraryShaderModuleInfoInstance
+{
+public:
+					PipelineLibraryShaderModuleInfoRTInstance		(Context& context, bool withLibrary)
+						: PipelineLibraryShaderModuleInfoInstance	(context)
+						, m_withLibrary								(withLibrary)
+						{}
+	virtual			~PipelineLibraryShaderModuleInfoRTInstance		(void) {}
+
+	tcu::TestStatus	iterate											(void) override;
+
+protected:
+	bool m_withLibrary;
+};
+
+tcu::TestStatus	PipelineLibraryShaderModuleInfoRTInstance::iterate (void)
+{
+	const auto stage		= VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+	const auto bindPoint	= VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
+
+	prepareOutputBuffer(stage);
+	addModule("rgen", stage);
+	allocateCmdBuffers();
+
+	const auto pipelineLayout = makePipelineLayout(m_vkd, m_device, m_setLayout.get());
+
+	const VkRayTracingShaderGroupCreateInfoKHR shaderGroupInfo =
+	{
+		VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR,	//	VkStructureType					sType;
+		nullptr,													//	const void*						pNext;
+		VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,				//	VkRayTracingShaderGroupTypeKHR	type;
+		0u,															//	uint32_t						generalShader;
+		VK_SHADER_UNUSED_KHR,										//	uint32_t						closestHitShader;
+		VK_SHADER_UNUSED_KHR,										//	uint32_t						anyHitShader;
+		VK_SHADER_UNUSED_KHR,										//	uint32_t						intersectionShader;
+		nullptr,													//	const void*						pShaderGroupCaptureReplayHandle;
+	};
+
+	const VkPipelineCreateFlags							createFlags		= (m_withLibrary ? static_cast<VkPipelineCreateFlags>(VK_PIPELINE_CREATE_LIBRARY_BIT_KHR) : 0u);
+	const VkRayTracingPipelineInterfaceCreateInfoKHR	libIfaceInfo	= initVulkanStructure();
+	const VkRayTracingPipelineInterfaceCreateInfoKHR*	pLibraryIface	= (m_withLibrary ? &libIfaceInfo : nullptr);
+
+	const VkRayTracingPipelineCreateInfoKHR pipelineCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,	//	VkStructureType										sType;
+		nullptr,												//	const void*											pNext;
+		createFlags,											//	VkPipelineCreateFlags								flags;
+		de::sizeU32(m_pipelineStageInfos),						//	uint32_t											stageCount;
+		de::dataOrNull(m_pipelineStageInfos),					//	const VkPipelineShaderStageCreateInfo*				pStages;
+		1u,														//	uint32_t											groupCount;
+		&shaderGroupInfo,										//	const VkRayTracingShaderGroupCreateInfoKHR*			pGroups;
+		1u,														//	uint32_t											maxPipelineRayRecursionDepth;
+		nullptr,												//	const VkPipelineLibraryCreateInfoKHR*				pLibraryInfo;
+		pLibraryIface,											//	const VkRayTracingPipelineInterfaceCreateInfoKHR*	pLibraryInterface;
+		nullptr,												//	const VkPipelineDynamicStateCreateInfo*				pDynamicState;
+		pipelineLayout.get(),									//	VkPipelineLayout									layout;
+		DE_NULL,												//	VkPipeline											basePipelineHandle;
+		0,														//	int32_t												basePipelineIndex;
+	};
+
+	Move<VkPipeline> pipelineLib;
+	Move<VkPipeline> pipeline;
+
+	if (m_withLibrary)
+	{
+		pipelineLib = createRayTracingPipelineKHR(m_vkd, m_device, DE_NULL, DE_NULL, &pipelineCreateInfo);
+
+		const VkPipelineLibraryCreateInfoKHR libraryInfo =
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR,	//	VkStructureType		sType;
+			nullptr,											//	const void*			pNext;
+			1u,													//	uint32_t			libraryCount;
+			&pipelineLib.get(),									//	const VkPipeline*	pLibraries;
+		};
+
+		const VkRayTracingPipelineCreateInfoKHR nonLibCreateInfo =
+		{
+			VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,	//	VkStructureType										sType;
+			nullptr,												//	const void*											pNext;
+			0u,														//	VkPipelineCreateFlags								flags;
+			0u,														//	uint32_t											stageCount;
+			nullptr,												//	const VkPipelineShaderStageCreateInfo*				pStages;
+			0u,														//	uint32_t											groupCount;
+			nullptr,												//	const VkRayTracingShaderGroupCreateInfoKHR*			pGroups;
+			1u,														//	uint32_t											maxPipelineRayRecursionDepth;
+			&libraryInfo,											//	const VkPipelineLibraryCreateInfoKHR*				pLibraryInfo;
+			pLibraryIface,											//	const VkRayTracingPipelineInterfaceCreateInfoKHR*	pLibraryInterface;
+			nullptr,												//	const VkPipelineDynamicStateCreateInfo*				pDynamicState;
+			pipelineLayout.get(),									//	VkPipelineLayout									layout;
+			DE_NULL,												//	VkPipeline											basePipelineHandle;
+			0,														//	int32_t												basePipelineIndex;
+		};
+		pipeline = createRayTracingPipelineKHR(m_vkd, m_device, DE_NULL, DE_NULL, &nonLibCreateInfo);
+	}
+	else
+	{
+		pipeline = createRayTracingPipelineKHR(m_vkd, m_device, DE_NULL, DE_NULL, &pipelineCreateInfo);
+	}
+
+	// Make shader binding table.
+	const auto			rtProperties	= makeRayTracingProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
+	const auto			rtHandleSize	= rtProperties->getShaderGroupHandleSize();
+	const auto			sbtSize			= static_cast<VkDeviceSize>(rtHandleSize);
+	const auto			sbtMemReqs		= (MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+	const auto			sbtCreateInfo	= makeBufferCreateInfo(sbtSize, VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+	BufferWithMemoryPtr	sbt				= BufferWithMemoryPtr(new BufferWithMemory(m_vkd, m_device, m_alloc, sbtCreateInfo, sbtMemReqs));
+	auto&				sbtAlloc		= sbt->getAllocation();
+	void*				sbtData			= sbtAlloc.getHostPtr();
+
+	// Copy ray gen shader group handle to the start of  the buffer.
+	VK_CHECK(m_vkd.getRayTracingShaderGroupHandlesKHR(m_device, pipeline.get(), 0u, 1u, static_cast<size_t>(sbtSize), sbtData));
+	flushAlloc(m_vkd, m_device, sbtAlloc);
+
+	// Strided device address regions.
+	VkStridedDeviceAddressRegionKHR rgenSBTRegion	= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(m_vkd, m_device, sbt->get(), 0), rtHandleSize, rtHandleSize);
+	VkStridedDeviceAddressRegionKHR	missSBTRegion	= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+	VkStridedDeviceAddressRegionKHR	hitsSBTRegion	= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+	VkStridedDeviceAddressRegionKHR	callSBTRegion	= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+
+	beginCommandBuffer(m_vkd, m_cmdBuffer);
+	m_vkd.cmdBindDescriptorSets(m_cmdBuffer, bindPoint, pipelineLayout.get(), 0u, 1u, &m_descriptorSet.get(), 0u, nullptr);
+	m_vkd.cmdBindPipeline(m_cmdBuffer, bindPoint, pipeline.get());
+	m_vkd.cmdTraceRaysKHR(m_cmdBuffer, &rgenSBTRegion, &missSBTRegion, &hitsSBTRegion, &callSBTRegion, kOutputBufferElements, 1u, 1u);
+	recordShaderToHostBarrier(VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
+	endCommandBuffer(m_vkd, m_cmdBuffer);
+	submitCommandsAndWait(m_vkd, m_device, m_queue, m_cmdBuffer);
+	verifyOutputBuffer();
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 class PipelineLibraryMiscTestCase : public TestCase
 {
 public:
@@ -2025,6 +2453,12 @@ void PipelineLibraryMiscTestCase::checkSupport(Context& context) const
 	if ((m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_FAST_LINKED) &&
 		!context.getGraphicsPipelineLibraryPropertiesEXT().graphicsPipelineLibraryFastLinking)
 		TCU_THROW(NotSupportedError, "graphicsPipelineLibraryFastLinking is not supported");
+
+	if (m_testParams.mode == MiscTestMode::SHADER_MODULE_CREATE_INFO_RT || m_testParams.mode == MiscTestMode::SHADER_MODULE_CREATE_INFO_RT_LIB)
+		context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
+
+	if (m_testParams.mode == MiscTestMode::SHADER_MODULE_CREATE_INFO_RT_LIB)
+		context.requireDeviceFunctionality("VK_KHR_pipeline_library");
 }
 
 void PipelineLibraryMiscTestCase::initPrograms(SourceCollections& programCollection) const
@@ -2111,8 +2545,7 @@ void PipelineLibraryMiscTestCase::initPrograms(SourceCollections& programCollect
 	{
 		programCollection.glslSources.add("vert") << glu::VertexSource(
 			"#version 450\n"
-			"precision mediump int; precision highp float;"
-			"layout(location = 0) in vec4 in_position;\n"
+			"precision mediump int; precision highp float;\n"
 			"layout(set = 0, binding = 0) uniform bufA\n"
 			"{\n"
 			"  vec4 valueA;\n"
@@ -2147,14 +2580,14 @@ void PipelineLibraryMiscTestCase::initPrograms(SourceCollections& programCollect
 			"layout(set = 1, binding = 0) uniform bufB\n"
 			"{\n"
 			"  vec4 valueB;\n"
-			"};\n\n"
+			"};\n"
 			"void main()\n"
 			"{\n"
 			// note: values in buffers were set to get vec4(0.0, 0.75, 0.5, 0.2)
 			"  o_color = valueA * valueB;\n"
 			"}\n");
 	}
-	if (m_testParams.mode == MiscTestMode::COMPARE_LINK_TIMES)
+	else if (m_testParams.mode == MiscTestMode::COMPARE_LINK_TIMES)
 	{
 		programCollection.glslSources.add("vert") << glu::VertexSource(
 			"#version 450\n"
@@ -2163,26 +2596,74 @@ void PipelineLibraryMiscTestCase::initPrograms(SourceCollections& programCollect
 			"out gl_PerVertex\n"
 			"{\n"
 			"  vec4 gl_Position;\n"
-			"};\n\n"
+			"};\n"
+			"layout(constant_id = 0) const int random = 0;\n\n"
 			"void main()\n"
 			"{\n"
 			"   gl_Position = vec4(float(1 - 2 * int(gl_VertexIndex != 1)),\n"
-			"                      float(1 - 2 * int(gl_VertexIndex > 0)), 0.0, 1.0);\n"
+			"                      float(1 - 2 * int(gl_VertexIndex > 0)), 0.0, 1.0) + float(random & 1);\n"
 			"}\n");
 
 		programCollection.glslSources.add("frag") << glu::FragmentSource(
 			"#version 450\n"
 			"precision mediump int; precision highp float;"
 			"layout(location = 0) out highp vec4 o_color;\n"
+			"layout(constant_id = 0) const int random = 0;\n\n"
 			"void main()\n"
 			"{\n"
-			"  o_color = vec4(0.0, 1.0, 0.5, 1.0);\n"
+			"  o_color = vec4(0.0, 1.0, 0.5, 1.0) + float(random & 1);\n"
 			"}\n");
+	}
+	else if (m_testParams.mode == MiscTestMode::SHADER_MODULE_CREATE_INFO_COMP)
+	{
+		std::ostringstream comp;
+		comp
+			<< "#version 450\n"
+			<< "layout (set=0, binding=0, std430) buffer BufferBlock {\n"
+			<< "    uint values[" << PipelineLibraryShaderModuleInfoInstance::kOutputBufferElements << "];\n"
+			<< "} outBuffer;\n"
+			<< "layout (local_size_x=" << PipelineLibraryShaderModuleInfoInstance::kOutputBufferElements << ", local_size_y=1, local_size_z=1) in;\n"
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "    outBuffer.values[gl_LocalInvocationIndex] = gl_LocalInvocationIndex;\n"
+			<< "}\n"
+			;
+		programCollection.glslSources.add("comp") << glu::ComputeSource(comp.str());
+	}
+	else if (m_testParams.mode == MiscTestMode::SHADER_MODULE_CREATE_INFO_RT || m_testParams.mode == MiscTestMode::SHADER_MODULE_CREATE_INFO_RT_LIB)
+	{
+		const vk::ShaderBuildOptions	buildOptions (programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+		std::ostringstream				rgen;
+		rgen
+			<< "#version 460 core\n"
+			<< "#extension GL_EXT_ray_tracing : require\n"
+			<< "layout (set=0, binding=0, std430) buffer BufferBlock {\n"
+			<< "    uint values[" << PipelineLibraryShaderModuleInfoInstance::kOutputBufferElements << "];\n"
+			<< "} outBuffer;\n"
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "    outBuffer.values[gl_LaunchIDEXT.x] = gl_LaunchIDEXT.x;\n"
+			<< "}\n"
+			;
+		programCollection.glslSources.add("rgen") << glu::RaygenSource(rgen.str()) << buildOptions;
+	}
+	else
+	{
+		DE_ASSERT(false);
 	}
 }
 
 TestInstance* PipelineLibraryMiscTestCase::createInstance(Context& context) const
 {
+	if (m_testParams.mode == MiscTestMode::SHADER_MODULE_CREATE_INFO_COMP)
+		return new PipelineLibraryShaderModuleInfoCompInstance(context);
+
+	if (m_testParams.mode == MiscTestMode::SHADER_MODULE_CREATE_INFO_RT)
+		return new PipelineLibraryShaderModuleInfoRTInstance(context, false/*withLibrary*/);
+
+	if (m_testParams.mode == MiscTestMode::SHADER_MODULE_CREATE_INFO_RT_LIB)
+		return new PipelineLibraryShaderModuleInfoRTInstance(context, true/*withLibrary*/);
+
 	return new PipelineLibraryMiscTestInstance(context, m_testParams);
 }
 
@@ -2286,18 +2767,6 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group, bool opti
 														/*   /       */
 			{ 2, 1 },									/*  1        */
 		} },
-
-		{ {
-			{ R, 0 },									/*         0 */
-														/*        /  */
-			{ 0, 1 },									/*       1   */
-														/*      /    */
-			{ 1, 1 },									/*     1     */
-														/*    /      */
-			{ 2, 1 },									/*   1       */
-														/*  /        */
-			{ 3, 1 },									/* 1         */
-		} },
 	};
 
 	for (size_t libConfigNdx = 0; libConfigNdx < DE_LENGTH_OF_ARRAY(pipelineTreeConfiguration); ++libConfigNdx)
@@ -2361,10 +2830,20 @@ tcu::TestCaseGroup*	createPipelineLibraryTests(tcu::TestContext& testCtx)
 	}
 	miscTests->addChild(bindNullDescriptorCombinationsTests.release());
 
-	de::MovePtr<tcu::TestCaseGroup> otherTests(new tcu::TestCaseGroup(testCtx, "other", ""));
-	otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "compare_link_times", { MiscTestMode::COMPARE_LINK_TIMES, 0u, 0u }));
-	otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "null_descriptor_set_in_monolithic_pipeline", { MiscTestMode::BIND_NULL_DESCRIPTOR_SET_IN_MONOLITHIC_PIPELINE, 0u, 0u }));
-	miscTests->addChild(otherTests.release());
+	{
+		de::MovePtr<tcu::TestCaseGroup> otherTests(new tcu::TestCaseGroup(testCtx, "other", ""));
+		otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "compare_link_times", { MiscTestMode::COMPARE_LINK_TIMES, 0u, 0u }));
+		otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "null_descriptor_set_in_monolithic_pipeline", { MiscTestMode::BIND_NULL_DESCRIPTOR_SET_IN_MONOLITHIC_PIPELINE, 0u, 0u }));
+		miscTests->addChild(otherTests.release());
+	}
+
+	{
+		de::MovePtr<tcu::TestCaseGroup> nonGraphicsTests(new tcu::TestCaseGroup(testCtx, "non_graphics", "Tests that do not use graphics pipelines"));
+		nonGraphicsTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "shader_module_info_comp",		{ MiscTestMode::SHADER_MODULE_CREATE_INFO_COMP, 0u, 0u }));
+		nonGraphicsTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "shader_module_info_rt",		{ MiscTestMode::SHADER_MODULE_CREATE_INFO_RT, 0u, 0u }));
+		nonGraphicsTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "shader_module_info_rt_lib",	{ MiscTestMode::SHADER_MODULE_CREATE_INFO_RT_LIB, 0u, 0u }));
+		miscTests->addChild(nonGraphicsTests.release());
+	}
 
 	group->addChild(miscTests.release());
 

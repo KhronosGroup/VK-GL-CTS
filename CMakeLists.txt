@@ -3,6 +3,9 @@
 # Module FindGit requires cmake >= 2.8.2
 cmake_minimum_required(VERSION 3.10.2)
 
+option(GLES_ALLOW_DIRECT_LINK "Allow direct linking to GLES libraries" ON)
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/framework/delibs/cmake")
 find_package(Git)
 find_package(PythonInterp 3)
 
@@ -115,6 +118,14 @@ include_directories(external/jsoncpp/src/include)
 # RenderDoc API
 include_directories(external/renderdoc/src)
 
+# FFmpeg used in vulkan video won't be part of android, fushia, or macos target
+if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)
+	# FFmpeg
+	if (DE_OS_IS_WIN32)
+		add_subdirectory(external/ffmpeg)
+	endif()
+	include_directories(external/ffmpeg/src/include)
+endif()
 include_directories(${PNG_INCLUDE_PATH})
 
 # DRM (Direct Rendering Manager) Headers
@@ -148,23 +159,23 @@ message(STATUS "DEQP_SUPPORT_DRM        = ${DEQP_SUPPORT_DRM}")
 add_definitions(-DDEQP_TARGET_NAME="${DEQP_TARGET_NAME}")
 
 # Entry points loaded directly by linking to libGL*?
-if (DEFINED DEQP_GLES2_LIBRARIES)
+if (DEFINED DEQP_GLES2_LIBRARIES AND GLES_ALLOW_DIRECT_LINK)
 	add_definitions(-DDEQP_GLES2_DIRECT_LINK=1)
 endif ()
 
-if (DEFINED DEQP_GLES3_LIBRARIES)
+if (DEFINED DEQP_GLES3_LIBRARIES AND GLES_ALLOW_DIRECT_LINK)
 	add_definitions(-DDEQP_GLES3_DIRECT_LINK=1)
 endif ()
 
-if (DEFINED DEQP_GLES31_LIBRARIES)
+if (DEFINED DEQP_GLES31_LIBRARIES AND GLES_ALLOW_DIRECT_LINK)
 	add_definitions(-DDEQP_GLES31_DIRECT_LINK=1)
 endif ()
 
-if (DEFINED DEQP_GLES32_LIBRARIES)
+if (DEFINED DEQP_GLES32_LIBRARIES AND GLES_ALLOW_DIRECT_LINK)
 	add_definitions(-DDEQP_GLES32_DIRECT_LINK=1)
 endif ()
 
-if (DEFINED DEQP_EGL_LIBRARIES)
+if (DEFINED DEQP_EGL_LIBRARIES AND GLES_ALLOW_DIRECT_LINK)
 	add_definitions(-DDEQP_EGL_DIRECT_LINK=1)
 endif ()
 

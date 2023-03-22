@@ -59,7 +59,9 @@ public:
 																 VkFormat					imageFormat,
 																 const tcu::IVec3&			imageSize,
 																 int						imageCount,
-																 int						arraySize);
+																 int						arraySize,
+																 bool						pipelineProtectedAccess,
+																 bool						pipelineProtectedFlag);
 
 	ImageSamplingInstanceParams	getImageSamplingInstanceParams	(AllocationKind		allocationKind,
 																 VkDescriptorType	samplingType,
@@ -91,6 +93,8 @@ private:
 	tcu::IVec3					m_imageSize;
 	int							m_imageCount;
 	int							m_arraySize;
+	bool						m_pipelineProtectedAccess;
+	bool						m_pipelineProtectedFlag;
 };
 
 ImageTest::ImageTest (tcu::TestContext&	testContext,
@@ -103,7 +107,9 @@ ImageTest::ImageTest (tcu::TestContext&	testContext,
 					  VkFormat					imageFormat,
 					  const tcu::IVec3&			imageSize,
 					  int						imageCount,
-					  int						arraySize)
+					  int						arraySize,
+					  bool						pipelineProtectedAccess,
+					  bool						pipelineProtectedFlag)
 
 	: vkt::TestCase					(testContext, name, description)
 	, m_allocationKind				(allocationKind)
@@ -114,6 +120,8 @@ ImageTest::ImageTest (tcu::TestContext&	testContext,
 	, m_imageSize					(imageSize)
 	, m_imageCount					(imageCount)
 	, m_arraySize					(arraySize)
+	, m_pipelineProtectedAccess		(pipelineProtectedAccess)
+	, m_pipelineProtectedFlag		(pipelineProtectedFlag)
 {
 }
 
@@ -125,6 +133,19 @@ void ImageTest::checkSupport (Context& context) const
 
 	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 	checkSupportImageSamplingInstance(context, getImageSamplingInstanceParams(m_allocationKind, m_samplingType, m_imageViewType, m_imageFormat, m_imageSize, m_imageCount, m_arraySize));
+
+	if (m_pipelineProtectedAccess) {
+#ifndef CTS_USES_VULKANSC
+		context.requireDeviceFunctionality("VK_EXT_pipeline_protected_access");
+
+		if (!context.getPipelineProtectedAccessFeaturesEXT().pipelineProtectedAccess)
+		{
+			throw tcu::NotSupportedError("pipelineProtectedAccess feature is not supported");
+		}
+#else // CTS_USES_VULKANSC
+		throw tcu::NotSupportedError("pipeline protected access is not supported");
+#endif // CTS_USES_VULKANSC
+	}
 }
 
 ImageSamplingInstanceParams ImageTest::getImageSamplingInstanceParams (AllocationKind		allocationKind,
@@ -161,27 +182,34 @@ ImageSamplingInstanceParams ImageTest::getImageSamplingInstanceParams (Allocatio
 
 	const VkSamplerCreateInfo samplerParams =
 	{
-		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,								// VkStructureType			sType;
-		DE_NULL,															// const void*				pNext;
-		0u,																	// VkSamplerCreateFlags		flags;
-		VK_FILTER_NEAREST,													// VkFilter					magFilter;
-		VK_FILTER_NEAREST,													// VkFilter					minFilter;
-		VK_SAMPLER_MIPMAP_MODE_NEAREST,										// VkSamplerMipmapMode		mipmapMode;
-		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,								// VkSamplerAddressMode		addressModeU;
-		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,								// VkSamplerAddressMode		addressModeV;
-		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,								// VkSamplerAddressMode		addressModeW;
-		0.0f,																// float					mipLodBias;
-		VK_FALSE,															// VkBool32					anisotropyEnable;
-		1.0f,																// float					maxAnisotropy;
-		false,																// VkBool32					compareEnable;
-		VK_COMPARE_OP_NEVER,												// VkCompareOp				compareOp;
-		0.0f,																// float					minLod;
-		(float)(subresourceRange.levelCount - 1),							// float					maxLod;
-		getFormatBorderColor(BORDER_COLOR_TRANSPARENT_BLACK, imageFormat),	// VkBorderColor			borderColor;
-		false																// VkBool32					unnormalizedCoordinates;
+		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,										// VkStructureType			sType;
+		DE_NULL,																	// const void*				pNext;
+		0u,																			// VkSamplerCreateFlags		flags;
+		VK_FILTER_NEAREST,															// VkFilter					magFilter;
+		VK_FILTER_NEAREST,															// VkFilter					minFilter;
+		VK_SAMPLER_MIPMAP_MODE_NEAREST,												// VkSamplerMipmapMode		mipmapMode;
+		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,										// VkSamplerAddressMode		addressModeU;
+		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,										// VkSamplerAddressMode		addressModeV;
+		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,										// VkSamplerAddressMode		addressModeW;
+		0.0f,																		// float					mipLodBias;
+		VK_FALSE,																	// VkBool32					anisotropyEnable;
+		1.0f,																		// float					maxAnisotropy;
+		false,																		// VkBool32					compareEnable;
+		VK_COMPARE_OP_NEVER,														// VkCompareOp				compareOp;
+		0.0f,																		// float					minLod;
+		(float)(subresourceRange.levelCount - 1),									// float					maxLod;
+		getFormatBorderColor(BORDER_COLOR_TRANSPARENT_BLACK, imageFormat, false),	// VkBorderColor			borderColor;
+		false																		// VkBool32					unnormalizedCoordinates;
 	};
 
-	return ImageSamplingInstanceParams(m_pipelineConstructionType, renderSize, imageViewType, imageFormat, imageSize, arraySize, componentMapping, subresourceRange, samplerParams, 0.0f, vertices, separateStencilUsage, samplingType, imageCount, allocationKind);
+#ifdef CTS_USES_VULKANSC
+	const vk::VkPipelineCreateFlags pipelineFlags = (vk::VkPipelineCreateFlagBits)0u;
+	(void)m_pipelineProtectedFlag;
+#else // CTS_USES_VULKANSC
+	const vk::VkPipelineCreateFlags pipelineFlags = m_pipelineProtectedFlag ? vk::VK_PIPELINE_CREATE_NO_PROTECTED_ACCESS_BIT_EXT : (vk::VkPipelineCreateFlagBits)0u;
+#endif // CTS_USES_VULKANSC
+
+	return ImageSamplingInstanceParams(m_pipelineConstructionType, renderSize, imageViewType, imageFormat, imageSize, arraySize, componentMapping, subresourceRange, samplerParams, 0.0f, vertices, separateStencilUsage, samplingType, imageCount, allocationKind, vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, pipelineFlags);
 }
 
 void ImageTest::initPrograms (SourceCollections& sourceCollections) const
@@ -408,9 +436,16 @@ std::string getFormatCaseName (const VkFormat format)
 	return de::toLower(fullName.substr(10));
 }
 
-std::string getSizeName (VkImageViewType viewType, const tcu::IVec3& size, int arraySize)
+std::string getSizeName (VkImageViewType viewType, const tcu::IVec3& size, int arraySize, bool pipelineProtectedAccess, bool pipelineProtectedFlag)
 {
 	std::ostringstream	caseName;
+
+	if (pipelineProtectedAccess) {
+		caseName << "pipeline_protected_access_";
+	}
+	if (pipelineProtectedFlag) {
+		caseName << "pipeline_protected_flag_";
+	}
 
 	switch (viewType)
 	{
@@ -445,6 +480,19 @@ de::MovePtr<tcu::TestCaseGroup> createImageSizeTests (tcu::TestContext& testCtx,
 	std::vector<IVec3>					imageSizes;
 	std::vector<int>					arraySizes;
 	de::MovePtr<tcu::TestCaseGroup>		imageSizeTests	(new tcu::TestCaseGroup(testCtx, "size", ""));
+
+	const bool pipelineProtectedAccess[] = {
+		false,
+#ifndef CTS_USES_VULKANSC
+		true,
+#endif
+	};
+	const bool pipelineProtectedFlag[] = {
+		false,
+#ifndef CTS_USES_VULKANSC
+		true,
+#endif
+	};
 
 	// Select image imageSizes
 	switch (imageViewType)
@@ -563,21 +611,29 @@ de::MovePtr<tcu::TestCaseGroup> createImageSizeTests (tcu::TestContext& testCtx,
 			break;
 	}
 
-	for (size_t sizeNdx = 0; sizeNdx < imageSizes.size(); sizeNdx++)
-	{
-		for (size_t arraySizeNdx = 0; arraySizeNdx < arraySizes.size(); arraySizeNdx++)
-		{
-			imageSizeTests->addChild(new ImageTest(testCtx,
-												   getSizeName(imageViewType, imageSizes[sizeNdx], arraySizes[arraySizeNdx]).c_str(),
-												   "",
-												   allocationKind,
-												   pipelineConstructionType,
-												   samplingType,
-												   imageViewType,
-												   imageFormat,
-												   imageSizes[sizeNdx],
-												   imageCount,
-												   arraySizes[arraySizeNdx]));
+	for (size_t protectedNdx = 0; protectedNdx < DE_LENGTH_OF_ARRAY(pipelineProtectedAccess); ++protectedNdx) {
+		for (size_t flagNdx = 0; flagNdx < DE_LENGTH_OF_ARRAY(pipelineProtectedAccess); ++flagNdx) {
+			if (!pipelineProtectedAccess[protectedNdx] && pipelineProtectedFlag[flagNdx]) continue;
+
+			for (size_t sizeNdx = 0; sizeNdx < imageSizes.size(); sizeNdx++)
+			{
+				for (size_t arraySizeNdx = 0; arraySizeNdx < arraySizes.size(); arraySizeNdx++)
+				{
+					imageSizeTests->addChild(new ImageTest(testCtx,
+														   getSizeName(imageViewType, imageSizes[sizeNdx], arraySizes[arraySizeNdx], pipelineProtectedAccess[protectedNdx], pipelineProtectedFlag[flagNdx]).c_str(),
+														   "",
+														   allocationKind,
+														   pipelineConstructionType,
+														   samplingType,
+														   imageViewType,
+														   imageFormat,
+														   imageSizes[sizeNdx],
+														   imageCount,
+														   arraySizes[arraySizeNdx],
+														   pipelineProtectedAccess[protectedNdx],
+														   pipelineProtectedFlag[flagNdx]));
+				}
+			}
 		}
 	}
 

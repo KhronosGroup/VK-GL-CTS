@@ -605,7 +605,7 @@ tcu::TestStatus DescriptorLimitTestInstance::iterate (void)
 		graphicsPipelineWrapper.setDefaultDepthStencilState()
 			.setDefaultColorBlendState()
 			.setDefaultRasterizationState()
-			.setupVertexInputStete()
+			.setupVertexInputState()
 			.setupPreRasterizationShaderState(viewports,
 				scissors,
 				pipelineLayout.get(),
@@ -768,7 +768,7 @@ void DescriptorLimitTest::initPrograms (SourceCollections& sourceCollections) co
 
 	if (m_testType == TestType::InputAttachments)
 	{
-		testTypeStr << "layout (input_attachment_index = 0, set = 0, binding = " << m_descCount - 1u << ") uniform subpassInput imageInput;\n";
+		testTypeStr << "layout (input_attachment_index = 1, set = 0, binding = " << m_descCount - 1u << ") uniform subpassInput imageInput;\n";
 
 		fragResultStr	<< "    fragColor = subpassLoad(imageInput);\n";
 		compResultStr	<< "    outputData.color = vec4(0.0, 0.0, 0.0, 1.0);\n";

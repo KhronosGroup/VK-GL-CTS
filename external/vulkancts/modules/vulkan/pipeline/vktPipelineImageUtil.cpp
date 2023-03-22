@@ -125,9 +125,14 @@ bool isMinMaxFilteringSupported (const InstanceInterface& vki, VkPhysicalDevice 
 	return (formatFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT) != 0;
 }
 
-VkBorderColor getFormatBorderColor (BorderColor color, VkFormat format)
+static bool isBorderColorInt (VkFormat format, bool useStencilAspect)
 {
-	if (!isCompressedFormat(format) && (isIntFormat(format) || isUintFormat(format)))
+	return (!isCompressedFormat(format) && (isIntFormat(format) || isUintFormat(format) || (isDepthStencilFormat(format) && useStencilAspect)));
+}
+
+VkBorderColor getFormatBorderColor (BorderColor color, VkFormat format, bool useStencilAspect)
+{
+	if (isBorderColorInt(format, useStencilAspect))
 	{
 		switch (color)
 		{
@@ -156,9 +161,9 @@ VkBorderColor getFormatBorderColor (BorderColor color, VkFormat format)
 	return VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
 }
 
-rr::GenericVec4 getFormatCustomBorderColor	(tcu::Vec4 floatValue, tcu::IVec4 intValue, vk::VkFormat format)
+rr::GenericVec4 getFormatCustomBorderColor	(tcu::Vec4 floatValue, tcu::IVec4 intValue, vk::VkFormat format, bool useStencilAspect)
 {
-	if (!isCompressedFormat(format) && (isIntFormat(format) || isUintFormat(format)))
+	if (isBorderColorInt(format, useStencilAspect))
 	{
 		return rr::GenericVec4(intValue);
 	}
@@ -168,15 +173,26 @@ rr::GenericVec4 getFormatCustomBorderColor	(tcu::Vec4 floatValue, tcu::IVec4 int
 	}
 }
 
-void getLookupScaleBias (vk::VkFormat format, tcu::Vec4& lookupScale, tcu::Vec4& lookupBias)
+void getLookupScaleBias (vk::VkFormat format, tcu::Vec4& lookupScale, tcu::Vec4& lookupBias, bool useStencilAspect)
 {
 	if (!isCompressedFormat(format))
 	{
-		const tcu::TextureFormatInfo	fmtInfo	= tcu::getTextureFormatInfo(mapVkFormat(format));
+		const auto tcuFormat = mapVkFormat(format);
 
-		// Needed to normalize various formats to 0..1 range for writing into RT
-		lookupScale	= fmtInfo.lookupScale;
-		lookupBias	= fmtInfo.lookupBias;
+		if (useStencilAspect)
+		{
+			DE_ASSERT(tcu::hasStencilComponent(tcuFormat.order));
+			lookupScale = tcu::Vec4(1.0f / 255.0f, 1.0f, 1.0f, 1.0f);
+			lookupBias = tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f);
+		}
+		else
+		{
+			const tcu::TextureFormatInfo	fmtInfo	= tcu::getTextureFormatInfo(tcuFormat);
+
+			// Needed to normalize various formats to 0..1 range for writing into RT
+			lookupScale	= fmtInfo.lookupScale;
+			lookupBias	= fmtInfo.lookupBias;
+		}
 	}
 	else
 	{

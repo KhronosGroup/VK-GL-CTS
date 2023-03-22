@@ -127,6 +127,12 @@ public:
 		GLSL_TYPE_VEC2,
 		GLSL_TYPE_VEC3,
 		GLSL_TYPE_VEC4,
+
+		GLSL_TYPE_F16,
+		GLSL_TYPE_F16VEC2,
+		GLSL_TYPE_F16VEC3,
+		GLSL_TYPE_F16VEC4,
+
 		GLSL_TYPE_MAT2,
 		GLSL_TYPE_MAT3,
 		GLSL_TYPE_MAT4,
@@ -147,7 +153,8 @@ public:
 		GLSL_BASIC_TYPE_INT,
 		GLSL_BASIC_TYPE_UINT,
 		GLSL_BASIC_TYPE_FLOAT,
-		GLSL_BASIC_TYPE_DOUBLE
+		GLSL_BASIC_TYPE_DOUBLE,
+		GLSL_BASIC_TYPE_FLOAT16,
 	};
 
 	enum BindingMapping
@@ -211,6 +218,7 @@ public:
 private:
 	AttributeInfo							getAttributeInfo			(size_t attributeNdx) const;
 	size_t									getNumAttributes			(void) const;
+	std::string								getGlslExtensions			(void) const;
 	std::string								getGlslInputDeclarations	(void) const;
 	std::string								getGlslVertexCheck			(void) const;
 	std::string								getGlslAttributeConditions	(const AttributeInfo& attributeInfo, const std::string attributeIndex) const;
@@ -224,6 +232,7 @@ private:
 	mutable std::vector<deUint32>			m_locations;
 	const bool								m_queryMaxAttributes;
 	bool									m_usesDoubleType;
+	bool									m_usesFloat16Type;
 	mutable size_t							m_maxAttributes;
 };
 
@@ -281,31 +290,37 @@ private:
 
 const VertexInputTest::GlslTypeDescription VertexInputTest::s_glslTypeDescriptions[GLSL_TYPE_COUNT] =
 {
-	{ "int",	1, 1, GLSL_BASIC_TYPE_INT },
-	{ "ivec2",	2, 1, GLSL_BASIC_TYPE_INT },
-	{ "ivec3",	3, 1, GLSL_BASIC_TYPE_INT },
-	{ "ivec4",	4, 1, GLSL_BASIC_TYPE_INT },
+	{ "int",		1, 1, GLSL_BASIC_TYPE_INT },
+	{ "ivec2",		2, 1, GLSL_BASIC_TYPE_INT },
+	{ "ivec3",		3, 1, GLSL_BASIC_TYPE_INT },
+	{ "ivec4",		4, 1, GLSL_BASIC_TYPE_INT },
 
-	{ "uint",	1, 1, GLSL_BASIC_TYPE_UINT },
-	{ "uvec2",	2, 1, GLSL_BASIC_TYPE_UINT },
-	{ "uvec3",	3, 1, GLSL_BASIC_TYPE_UINT },
-	{ "uvec4",	4, 1, GLSL_BASIC_TYPE_UINT },
+	{ "uint",		1, 1, GLSL_BASIC_TYPE_UINT },
+	{ "uvec2",		2, 1, GLSL_BASIC_TYPE_UINT },
+	{ "uvec3",		3, 1, GLSL_BASIC_TYPE_UINT },
+	{ "uvec4",		4, 1, GLSL_BASIC_TYPE_UINT },
 
-	{ "float",	1, 1, GLSL_BASIC_TYPE_FLOAT },
-	{ "vec2",	2, 1, GLSL_BASIC_TYPE_FLOAT },
-	{ "vec3",	3, 1, GLSL_BASIC_TYPE_FLOAT },
-	{ "vec4",	4, 1, GLSL_BASIC_TYPE_FLOAT },
-	{ "mat2",	2, 2, GLSL_BASIC_TYPE_FLOAT },
-	{ "mat3",	3, 3, GLSL_BASIC_TYPE_FLOAT },
-	{ "mat4",	4, 4, GLSL_BASIC_TYPE_FLOAT },
+	{ "float",		1, 1, GLSL_BASIC_TYPE_FLOAT },
+	{ "vec2",		2, 1, GLSL_BASIC_TYPE_FLOAT },
+	{ "vec3",		3, 1, GLSL_BASIC_TYPE_FLOAT },
+	{ "vec4",		4, 1, GLSL_BASIC_TYPE_FLOAT },
 
-	{ "double",	1, 1, GLSL_BASIC_TYPE_DOUBLE },
-	{ "dvec2",	2, 1, GLSL_BASIC_TYPE_DOUBLE },
-	{ "dvec3",	3, 1, GLSL_BASIC_TYPE_DOUBLE },
-	{ "dvec4",	4, 1, GLSL_BASIC_TYPE_DOUBLE },
-	{ "dmat2",	2, 2, GLSL_BASIC_TYPE_DOUBLE },
-	{ "dmat3",	3, 3, GLSL_BASIC_TYPE_DOUBLE },
-	{ "dmat4",	4, 4, GLSL_BASIC_TYPE_DOUBLE }
+	{ "float16_t",	1, 1, GLSL_BASIC_TYPE_FLOAT16 },
+	{ "f16vec2",	2, 1, GLSL_BASIC_TYPE_FLOAT16 },
+	{ "f16vec3",	3, 1, GLSL_BASIC_TYPE_FLOAT16 },
+	{ "f16vec4",	4, 1, GLSL_BASIC_TYPE_FLOAT16 },
+
+	{ "mat2",		2, 2, GLSL_BASIC_TYPE_FLOAT },
+	{ "mat3",		3, 3, GLSL_BASIC_TYPE_FLOAT },
+	{ "mat4",		4, 4, GLSL_BASIC_TYPE_FLOAT },
+
+	{ "double",		1, 1, GLSL_BASIC_TYPE_DOUBLE },
+	{ "dvec2",		2, 1, GLSL_BASIC_TYPE_DOUBLE },
+	{ "dvec3",		3, 1, GLSL_BASIC_TYPE_DOUBLE },
+	{ "dvec4",		4, 1, GLSL_BASIC_TYPE_DOUBLE },
+	{ "dmat2",		2, 2, GLSL_BASIC_TYPE_DOUBLE },
+	{ "dmat3",		3, 3, GLSL_BASIC_TYPE_DOUBLE },
+	{ "dmat4",		4, 4, GLSL_BASIC_TYPE_DOUBLE }
 };
 
 deUint32 getAttributeBinding (const VertexInputTest::BindingMapping bindingMapping, const VkVertexInputRate firstInputRate, const VkVertexInputRate inputRate, const deUint32 attributeNdx)
@@ -352,19 +367,20 @@ VertexInputTest::VertexInputTest (tcu::TestContext&						testContext,
 	, m_attributeLayout				(attributeLayout)
 	, m_layoutSkip					(layoutSkip)
 	, m_queryMaxAttributes			(attributeInfos.size() == 0)
+	, m_usesDoubleType				(false)
+	, m_usesFloat16Type				(false)
 	, m_maxAttributes				(16)
 {
 	DE_ASSERT(m_attributeLayout == ATTRIBUTE_LAYOUT_INTERLEAVED || m_bindingMapping == BINDING_MAPPING_ONE_TO_MANY);
 
-	m_usesDoubleType = false;
-
 	for (size_t attributeNdx = 0; attributeNdx < m_attributeInfos.size(); attributeNdx++)
 	{
-		if (s_glslTypeDescriptions[m_attributeInfos[attributeNdx].glslType].basicType == GLSL_BASIC_TYPE_DOUBLE)
-		{
+		const auto& basicType = s_glslTypeDescriptions[m_attributeInfos[attributeNdx].glslType].basicType;
+
+		if (basicType == GLSL_BASIC_TYPE_DOUBLE)
 			m_usesDoubleType = true;
-			break;
-		}
+		else if (basicType == GLSL_BASIC_TYPE_FLOAT16)
+			m_usesFloat16Type = true;
 	}
 
 	// Determine number of location slots required for each attribute
@@ -463,6 +479,17 @@ void VertexInputTest::checkSupport (Context& context) const
 	if (m_attributeInfos.size() > maxAttributes)
 		TCU_THROW(NotSupportedError, "Unsupported number of vertex input attributes, maxVertexInputAttributes: " + de::toString(maxAttributes));
 
+	if (m_usesFloat16Type)
+	{
+		const auto& sf16i8Features = context.getShaderFloat16Int8Features();
+		if (!sf16i8Features.shaderFloat16)
+			TCU_THROW(NotSupportedError, "shaderFloat16 not supported");
+
+		const auto& storage16Features = context.get16BitStorageFeatures();
+		if (!storage16Features.storageInputOutput16)
+			TCU_THROW(NotSupportedError, "storageInputOutput16 not supported");
+	}
+
 	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 }
 
@@ -515,17 +542,29 @@ TestInstance* VertexInputTest::createInstance (Context& context) const
 	std::vector<VertexInputAttributeDescription>	attributeDescriptions;
 	std::vector<deUint32>							attributeOffsets		(bindingDescriptions.size(), 0);
 	std::vector<deUint32>							attributeMaxSizes		(bindingDescriptions.size(), 0);	// max component or vector size, depending on which layout we are using
+	std::vector<uint32_t>							attributeMaxCompSizes	(bindingDescriptions.size(), 0u);	// max component size for each binding.
+	std::vector<uint32_t>							bindingSeqStrides		(bindingDescriptions.size(), 0u);	// strides for bindings in sequential layout mode
 
 	// To place the attributes sequentially we need to know the largest attribute and use its size in stride and offset calculations.
 	if (m_attributeLayout == ATTRIBUTE_LAYOUT_SEQUENTIAL)
+	{
 		for (size_t attributeNdx = 0; attributeNdx < numAttributes; ++attributeNdx)
 		{
 			const AttributeInfo&	attributeInfo			= getAttributeInfo(attributeNdx);
 			const deUint32			attributeBinding		= getAttributeBinding(m_bindingMapping, firstInputrate, attributeInfo.inputRate, static_cast<deUint32>(attributeNdx));
 			const deUint32			inputSize				= getVertexFormatSize(attributeInfo.vkType);
+			const auto				componentSize			= getVertexFormatComponentSize(attributeInfo.vkType);
+			const auto				maxSize					= de::max(attributeMaxSizes[attributeBinding], inputSize);
+			const auto				maxComponentSize		= de::max(attributeMaxCompSizes[attributeBinding], componentSize);
 
-			attributeMaxSizes[attributeBinding]				= de::max(attributeMaxSizes[attributeBinding], inputSize);
+			attributeMaxSizes[attributeBinding]				= maxSize;
+			attributeMaxCompSizes[attributeBinding]			= maxComponentSize;
 		}
+
+		// Round up the maximum size so the components are always aligned.
+		for (size_t bindingIdx = 0u; bindingIdx < bindingSeqStrides.size(); ++bindingIdx)
+			bindingSeqStrides[bindingIdx] = de::roundUp(attributeMaxSizes[bindingIdx], attributeMaxCompSizes[bindingIdx]);
+	}
 
 	// Create attribute descriptions, assign them to bindings and update stride.
 	for (size_t attributeNdx = 0; attributeNdx < numAttributes; ++attributeNdx)
@@ -556,7 +595,7 @@ TestInstance* VertexInputTest::createInstance (Context& context) const
 
 			if (m_attributeLayout == ATTRIBUTE_LAYOUT_INTERLEAVED)
 			{
-				const deUint32	offsetToComponentAlignment		 = getNextMultipleOffset(getVertexFormatSize(attributeInfo.vkType),
+				const deUint32	offsetToComponentAlignment		 = getNextMultipleOffset(inputSize,
 																						 (deUint32)bindingOffsets[attributeBinding] + attributeOffsets[attributeBinding]);
 
 				attributeOffsets[attributeBinding]				+= offsetToComponentAlignment;
@@ -566,26 +605,31 @@ TestInstance* VertexInputTest::createInstance (Context& context) const
 
 				bindingDescriptions[attributeBinding].stride	+= offsetToComponentAlignment + inputSize;
 				attributeOffsets[attributeBinding]				+= inputSize;
-				attributeMaxSizes[attributeBinding]				 = de::max(attributeMaxSizes[attributeBinding], getVertexFormatSize(attributeInfo.vkType));
+				attributeMaxSizes[attributeBinding]				 = de::max(attributeMaxSizes[attributeBinding], inputSize);
 			}
 			else // m_attributeLayout == ATTRIBUTE_LAYOUT_SEQUENTIAL
 			{
 				attributeDescription.vkDescription.offset		 = attributeOffsets[attributeBinding];
 				attributeDescriptions.push_back(attributeDescription);
 
-				attributeOffsets[attributeBinding]				+= vertexCount * attributeMaxSizes[attributeBinding];
+				attributeOffsets[attributeBinding]				+= vertexCount * bindingSeqStrides[attributeBinding];
 			}
 		}
 
 		if (m_attributeLayout == ATTRIBUTE_LAYOUT_SEQUENTIAL)
-			bindingDescriptions[attributeBinding].stride = attributeMaxSizes[attributeBinding];
+			bindingDescriptions[attributeBinding].stride = bindingSeqStrides[attributeBinding];
 	}
 
-	// Make sure the stride results in aligned access
-	for (size_t bindingNdx = 0; bindingNdx < bindingDescriptions.size(); ++bindingNdx)
+	if (m_attributeLayout == ATTRIBUTE_LAYOUT_INTERLEAVED)
 	{
-		if (attributeMaxSizes[bindingNdx] > 0)
-			bindingDescriptions[bindingNdx].stride += getNextMultipleOffset(attributeMaxSizes[bindingNdx], bindingDescriptions[bindingNdx].stride);
+		// Make sure the stride results in aligned access
+		for (size_t bindingNdx = 0; bindingNdx < bindingDescriptions.size(); ++bindingNdx)
+		{
+			auto& stride = bindingDescriptions[bindingNdx].stride; // note: by reference to modify it below.
+
+			if (attributeMaxSizes[bindingNdx] > 0)
+				stride += getNextMultipleOffset(attributeMaxSizes[bindingNdx], stride);
+		}
 	}
 
 	// Check upfront for maximum number of vertex input bindings
@@ -623,17 +667,14 @@ void VertexInputTest::initPrograms (SourceCollections& programCollection) const
 {
 	std::ostringstream vertexSrc;
 
-	vertexSrc << "#version 440\n"
+	vertexSrc << "#version 460\n"
+			  << getGlslExtensions()
 			  << "layout(constant_id = 0) const int numAttributes = " << m_maxAttributes << ";\n"
 			  << getGlslInputDeclarations()
 			  << "layout(location = 0) out highp vec4 vtxColor;\n"
 			  << "out gl_PerVertex {\n"
 			  << "  vec4 gl_Position;\n"
 			  << "};\n";
-
-	// NOTE: double abs(double x) undefined in glslang ??
-	if (m_usesDoubleType)
-		vertexSrc << "double abs (double x) { if (x < 0.0LF) return -x; else return x; }\n";
 
 	vertexSrc << "void main (void)\n"
 			  << "{\n"
@@ -643,13 +684,23 @@ void VertexInputTest::initPrograms (SourceCollections& programCollection) const
 	programCollection.glslSources.add("attribute_test_vert") << glu::VertexSource(vertexSrc.str());
 
 	programCollection.glslSources.add("attribute_test_frag") << glu::FragmentSource(
-		"#version 440\n"
+		"#version 460\n"
 		"layout(location = 0) in highp vec4 vtxColor;\n"
 		"layout(location = 0) out highp vec4 fragColor;\n"
 		"void main (void)\n"
 		"{\n"
 		"	fragColor = vtxColor;\n"
 		"}\n");
+}
+
+std::string VertexInputTest::getGlslExtensions (void) const
+{
+	std::string	extensions;
+
+	if (m_usesFloat16Type)
+		extensions += "#extension GL_EXT_shader_explicit_arithmetic_types_float16 : require\n";
+
+	return extensions;
 }
 
 std::string VertexInputTest::getGlslInputDeclarations (void) const
@@ -848,9 +899,15 @@ std::string VertexInputTest::getGlslAttributeConditions (const AttributeInfo& at
 			}
 			else if (isVertexFormatSfloat(attributeInfo.vkType))
 			{
-				if (VertexInputTest::s_glslTypeDescriptions[attributeInfo.glslType].basicType == VertexInputTest::GLSL_BASIC_TYPE_DOUBLE)
+				const auto& basicType = VertexInputTest::s_glslTypeDescriptions[attributeInfo.glslType].basicType;
+
+				if (basicType == VertexInputTest::GLSL_BASIC_TYPE_DOUBLE)
 				{
 					glslCode << indentStr << "if (abs(" << accessStr << " + double(0.01 * (" << totalComponentCount << ".0 * float(" << indexId << ") + " << componentIndex << ".0))) < double(" << threshold[rowNdx] << "))\n";
+				}
+				else if (basicType == VertexInputTest::GLSL_BASIC_TYPE_FLOAT16)
+				{
+					glslCode << indentStr << "if (abs(" << accessStr << " + float16_t(0.01HF * (" << totalComponentCount << ".0HF * float16_t(" << indexId << ") + " << componentIndex << ".0HF))) < float16_t(" << threshold[rowNdx] << "HF))\n";
 				}
 				else
 				{
@@ -900,9 +957,15 @@ std::string VertexInputTest::getGlslAttributeConditions (const AttributeInfo& at
 			}
 			else if (isVertexFormatUfloat(attributeInfo.vkType))
 			{
-				if (VertexInputTest::s_glslTypeDescriptions[attributeInfo.glslType].basicType == VertexInputTest::GLSL_BASIC_TYPE_DOUBLE)
+				const auto& basicType = VertexInputTest::s_glslTypeDescriptions[attributeInfo.glslType].basicType;
+
+				if (basicType == VertexInputTest::GLSL_BASIC_TYPE_DOUBLE)
 				{
 					glslCode << indentStr << "if (abs(" << accessStr << " - double(0.01 * (" << totalComponentCount << ".0 * float(" << indexId << ") + " << componentIndex << ".0))) < double(" << threshold[rowNdx] << "))\n";
+				}
+				else if (basicType == VertexInputTest::GLSL_BASIC_TYPE_FLOAT16)
+				{
+					glslCode << indentStr << "if (abs(" << accessStr << " - float16_t(0.01HF * (" << totalComponentCount << ".0HF * float16_t(" << indexId << ") + " << componentIndex << ".0HF))) < float16_t(" << threshold[rowNdx] << "HF))\n";
 				}
 				else
 				{
@@ -1148,7 +1211,7 @@ VertexInputInstance::VertexInputInstance (Context&												context,
 						  .setDefaultDepthStencilState()
 						  .setDefaultMultisampleState()
 						  .setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
-						  .setupVertexInputStete(&vertexInputStateParams)
+						  .setupVertexInputState(&vertexInputStateParams)
 						  .setupPreRasterizationShaderState(viewport,
 										scissor,
 										*m_pipelineLayout,
@@ -1473,6 +1536,10 @@ void VertexInputInstance::writeVertexInputValue (deUint8* destPtr, const VertexI
 			case VertexInputTest::GLSL_TYPE_MAT2:
 			case VertexInputTest::GLSL_TYPE_MAT3:
 			case VertexInputTest::GLSL_TYPE_MAT4:
+			case VertexInputTest::GLSL_TYPE_F16:
+			case VertexInputTest::GLSL_TYPE_F16VEC2:
+			case VertexInputTest::GLSL_TYPE_F16VEC3:
+			case VertexInputTest::GLSL_TYPE_F16VEC4:
 			{
 				if (isVertexFormatSfloat(attribute.vkDescription.format))
 				{
@@ -1555,6 +1622,9 @@ bool VertexInputTest::isCompatibleType (VkFormat format, GlslType glslType)
 
 			case GLSL_BASIC_TYPE_DOUBLE:
 				return isVertexFormatSfloat(format) && getVertexFormatComponentSize(format) == 8;
+
+			case GLSL_BASIC_TYPE_FLOAT16:
+				return ((isVertexFormatSfloat(format)/* || isVertexFormatSnorm(format) || isVertexFormatUnorm(format)*/) && getVertexFormatComponentSize(format) == 2);
 
 			default:
 				DE_ASSERT(false);
@@ -1687,6 +1757,11 @@ void createSingleAttributeCases (tcu::TestCaseGroup* singleAttributeTests, Pipel
 		VK_FORMAT_R16G16_UINT,
 		VK_FORMAT_R16G16_SINT,
 		VK_FORMAT_R16G16_SFLOAT,
+		VK_FORMAT_R16G16B16_UNORM,
+		VK_FORMAT_R16G16B16_SNORM,
+		VK_FORMAT_R16G16B16_UINT,
+		VK_FORMAT_R16G16B16_SINT,
+		VK_FORMAT_R16G16B16_SFLOAT,
 		VK_FORMAT_R16G16B16A16_UNORM,
 		VK_FORMAT_R16G16B16A16_SNORM,
 		VK_FORMAT_R16G16B16A16_UINT,
@@ -1868,6 +1943,11 @@ void createMultipleAttributeTests (tcu::TestCaseGroup* multipleAttributeTests, P
 		VK_FORMAT_R16G16_UINT,
 		VK_FORMAT_R16G16_SINT,
 		VK_FORMAT_R16G16_SFLOAT,
+		VK_FORMAT_R16G16B16_UNORM,
+		VK_FORMAT_R16G16B16_SNORM,
+		VK_FORMAT_R16G16B16_UINT,
+		VK_FORMAT_R16G16B16_SINT,
+		VK_FORMAT_R16G16B16_SFLOAT,
 		VK_FORMAT_R16G16B16A16_UNORM,
 		VK_FORMAT_R16G16B16A16_SNORM,
 		VK_FORMAT_R16G16B16A16_UINT,
@@ -2001,6 +2081,11 @@ void createMaxAttributeTests (tcu::TestCaseGroup* maxAttributeTests, PipelineCon
 		VK_FORMAT_R16G16_UINT,
 		VK_FORMAT_R16G16_SINT,
 		VK_FORMAT_R16G16_SFLOAT,
+		VK_FORMAT_R16G16B16_UNORM,
+		VK_FORMAT_R16G16B16_SNORM,
+		VK_FORMAT_R16G16B16_UINT,
+		VK_FORMAT_R16G16B16_SINT,
+		VK_FORMAT_R16G16B16_SFLOAT,
 		VK_FORMAT_R16G16B16A16_UNORM,
 		VK_FORMAT_R16G16B16A16_SNORM,
 		VK_FORMAT_R16G16B16A16_UINT,

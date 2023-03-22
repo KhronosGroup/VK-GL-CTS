@@ -959,64 +959,74 @@ tcu::TestStatus querySurfacePresentModes2Test (Context& context, Type wsiType)
 
 tcu::TestStatus querySurfacePresentModes2TestSurfaceless (Context& context, Type wsiType)
 {
-	tcu::TestLog&					log				= context.getTestContext().getLog();
-	tcu::ResultCollector			results			(log);
+	tcu::TestLog&									log					= context.getTestContext().getLog();
+	tcu::ResultCollector							results				(log);
 
-	const InstanceHelper			instHelper		(context, wsiType, vector<string>(1, string("VK_GOOGLE_surfaceless_query")));
-	const NativeObjects				native			(context, instHelper.supportedExtensions, wsiType);
-	const Unique<VkSurfaceKHR>		surface			(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(), native.getWindow(), context.getTestContext().getCommandLine()));
-	const VkSurfaceKHR				nullSurface		= 0;
-	const vector<VkPhysicalDevice>	physicalDevices	= enumeratePhysicalDevices(instHelper.vki, instHelper.instance);
-	const std::vector<VkExtensionProperties>	deviceExtensions(enumerateDeviceExtensionProperties(instHelper.vki, context.getPhysicalDevice(), DE_NULL));
+	const std::string								extensionName		= "VK_GOOGLE_surfaceless_query";
+	const InstanceHelper							instHelper			(context, wsiType, vector<string>(1, extensionName), DE_NULL);
+	const NativeObjects								native				(context, instHelper.supportedExtensions, wsiType);
+	const Unique<VkSurfaceKHR>						surface				(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(), native.getWindow(), context.getTestContext().getCommandLine()));
+	const VkSurfaceKHR								nullSurface			= 0;
+	const vector<VkPhysicalDevice>					physicalDevices		= enumeratePhysicalDevices(instHelper.vki, instHelper.instance);
+	const std::vector<vk::VkExtensionProperties>	deviceExtensions	(enumerateDeviceExtensionProperties(instHelper.vki, context.getPhysicalDevice(), DE_NULL));
+	const vector<VkPresentModeKHR>					validPresentModes	{ VK_PRESENT_MODE_FIFO_KHR, VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR, VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR };
+
 	if (!isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_full_screen_exclusive")))
-		TCU_THROW(NotSupportedError, "Extension VK_EXT_full_screen_exclusive not supported");
+		return tcu::TestStatus(QP_TEST_RESULT_NOT_SUPPORTED, "Extension VK_EXT_full_screen_exclusive not supported");
+
+	// Ensure "VK_GOOGLE_surfaceless_query" extension's spec version is at least 2
+	{
+		deUint32									propertyCount = 0u;
+		std::vector<vk::VkExtensionProperties>		extensionsProperties;
+		vk::VkResult								extensionResult;
+
+		extensionResult = context.getPlatformInterface().enumerateInstanceExtensionProperties(DE_NULL, &propertyCount, DE_NULL);
+		if (extensionResult != vk::VK_SUCCESS)
+			return tcu::TestStatus(QP_TEST_RESULT_FAIL, "Failed to retrieve spec version for extension " + extensionName);
+
+		extensionsProperties.resize(propertyCount);
+
+		extensionResult = context.getPlatformInterface().enumerateInstanceExtensionProperties(DE_NULL, &propertyCount, extensionsProperties.data());
+		if (extensionResult != vk::VK_SUCCESS)
+			return tcu::TestStatus(QP_TEST_RESULT_FAIL, "Failed to retrieve spec version for extension " + extensionName);
+
+		for (const auto& property : extensionsProperties)
+		{
+			if (property.extensionName == extensionName)
+			{
+				if (property.specVersion < 2)
+					return tcu::TestStatus(QP_TEST_RESULT_NOT_SUPPORTED, "VK_GOOGLE_surfaceless_query is version 1. Need version 2 or higher");
+				break;
+			}
+		}
+	}
 
 	for (size_t deviceNdx = 0; deviceNdx < physicalDevices.size(); ++deviceNdx)
 	{
-		if (isSupportedByAnyQueue(instHelper.vki, physicalDevices[deviceNdx], *surface))
+		const VkPhysicalDeviceSurfaceInfo2KHR	nullSurfaceInfo =
 		{
-			const VkPhysicalDeviceSurfaceInfo2KHR	surfaceInfo =
+			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR,
+			DE_NULL,
+			nullSurface
+		};
+		deUint32	numModesNull	= 0u;
+
+		VK_CHECK(instHelper.vki.getPhysicalDeviceSurfacePresentModes2EXT(physicalDevices[deviceNdx], &nullSurfaceInfo, &numModesNull, DE_NULL));
+
+		if (numModesNull == 0u)
+			continue;
+
+		vector<VkPresentModeKHR>	modesNull(numModesNull);
+
+		VK_CHECK(instHelper.vki.getPhysicalDeviceSurfacePresentModes2EXT(physicalDevices[deviceNdx], &nullSurfaceInfo, &numModesNull, &modesNull[0]));
+
+		for (deUint32 i = 0; i < modesNull.size(); i++)
+		{
+			if (std::find(validPresentModes.begin(), validPresentModes.end(), modesNull[i]) == validPresentModes.end())
 			{
-				VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR,
-				DE_NULL,
-				*surface
-			};
-			const VkPhysicalDeviceSurfaceInfo2KHR	nullSurfaceInfo =
-			{
-				VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR,
-				DE_NULL,
-				nullSurface
-			};
-			deUint32	numModesSurface = 0;
-			deUint32	numModesNull	= 0;
-
-			VK_CHECK(instHelper.vki.getPhysicalDeviceSurfacePresentModes2EXT(physicalDevices[deviceNdx], &surfaceInfo, &numModesSurface, DE_NULL));
-			VK_CHECK(instHelper.vki.getPhysicalDeviceSurfacePresentModes2EXT(physicalDevices[deviceNdx], &nullSurfaceInfo, &numModesNull, DE_NULL));
-
-			if (numModesSurface != numModesNull)
-			{
-				results.fail("Number of modes does not match");
-				continue;
-			}
-
-			vector<VkPresentModeKHR>	modesSurface(numModesSurface + 1);
-			vector<VkPresentModeKHR>	modesNull(numModesSurface + 1);
-
-			if (numModesSurface > 0)
-			{
-				VK_CHECK(instHelper.vki.getPhysicalDeviceSurfacePresentModes2EXT(physicalDevices[deviceNdx], &surfaceInfo, &numModesSurface, &modesSurface[0]));
-				VK_CHECK(instHelper.vki.getPhysicalDeviceSurfacePresentModes2EXT(physicalDevices[deviceNdx], &nullSurfaceInfo, &numModesSurface, &modesNull[0]));
-			}
-
-			modesSurface.pop_back();
-			modesNull.pop_back();
-
-			for (deUint32 i = 0; i < modesSurface.size(); i++)
-			{
-				if (modesSurface[i] != modesNull[i])
-				{
-					results.fail("Present modes mismatch");
-				}
+				std::string error_string	= std::string("Present mode mismatch with mode: ") + getPresentModeKHRName(modesNull[i]);
+				results.fail(error_string);
+				break;
 			}
 		}
 	}
@@ -1143,53 +1153,121 @@ tcu::TestStatus querySurfacePresentModesTest (Context& context, Type wsiType)
 	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
-tcu::TestStatus querySurfacePresentModesTestSurfaceless (Context& context, Type wsiType)
+void checkDeprecatedExtensionGoogleSurfacelessQuery(const vk::InstanceDriver& vk, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, tcu::ResultCollector& result)
 {
-	tcu::TestLog&					log				= context.getTestContext().getLog();
-	tcu::ResultCollector			results			(log);
+	const VkSurfaceKHR				nullSurface		= DE_NULL;
 
-	const InstanceHelper			instHelper(context, wsiType, vector<string>(1, string("VK_GOOGLE_surfaceless_query")));
-	const NativeObjects				native			(context, instHelper.supportedExtensions, wsiType);
-	const Unique<VkSurfaceKHR>		surface			(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(), native.getWindow(), context.getTestContext().getCommandLine()));
-	const VkSurfaceKHR				nullSurface		= 0;
-	const vector<VkPhysicalDevice>	physicalDevices	= enumeratePhysicalDevices(instHelper.vki, instHelper.instance);
-
-	for (size_t deviceNdx = 0; deviceNdx < physicalDevices.size(); ++deviceNdx)
+	if (isSupportedByAnyQueue(vk, physicalDevice, surface))
 	{
-		if (isSupportedByAnyQueue(instHelper.vki, physicalDevices[deviceNdx], *surface))
+		deUint32	numModesSurface = 0;
+		deUint32	numModesNull	= 0;
+
+		VK_CHECK(vk.getPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &numModesSurface, DE_NULL));
+		VK_CHECK(vk.getPhysicalDeviceSurfacePresentModesKHR(physicalDevice, nullSurface, &numModesNull, DE_NULL));
+
+		if (numModesNull == 0)
+			return;
+
+		// Actual surface needs to have at least the amount of modes that null surface has
+		if (numModesSurface < numModesNull)
 		{
-			deUint32	numModesSurface = 0;
-			deUint32	numModesNull	= 0;
+			result.fail("Number of modes does not match");
+			return;
+		}
 
-			VK_CHECK(instHelper.vki.getPhysicalDeviceSurfacePresentModesKHR(physicalDevices[deviceNdx], *surface, &numModesSurface, DE_NULL));
-			VK_CHECK(instHelper.vki.getPhysicalDeviceSurfacePresentModesKHR(physicalDevices[deviceNdx], nullSurface, &numModesNull, DE_NULL));
+		vector<VkPresentModeKHR>	modesSurface(numModesSurface);
+		vector<VkPresentModeKHR>	modesNull(numModesNull);
 
-			if (numModesSurface != numModesNull)
+		VK_CHECK(vk.getPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &numModesSurface, &modesSurface[0]));
+		VK_CHECK(vk.getPhysicalDeviceSurfacePresentModesKHR(physicalDevice, nullSurface, &numModesNull, &modesNull[0]));
+
+		// All modes present in null surface should also be present in actual surface
+		for (deUint32 i = 0; i < modesNull.size(); i++)
+		{
+			if (std::find(modesSurface.begin(), modesSurface.end(), modesNull[i]) == modesSurface.end())
 			{
-				results.fail("Number of modes does not match");
-				continue;
-			}
-
-			vector<VkPresentModeKHR>	modesSurface(numModesSurface + 1);
-			vector<VkPresentModeKHR>	modesNull(numModesSurface + 1);
-
-			if (numModesSurface > 0)
-			{
-				VK_CHECK(instHelper.vki.getPhysicalDeviceSurfacePresentModesKHR(physicalDevices[deviceNdx], *surface, &numModesSurface, &modesSurface[0]));
-				VK_CHECK(instHelper.vki.getPhysicalDeviceSurfacePresentModesKHR(physicalDevices[deviceNdx], nullSurface, &numModesSurface, &modesNull[0]));
-			}
-
-			modesSurface.pop_back();
-			modesNull.pop_back();
-
-			for (deUint32 i = 0; i < modesSurface.size(); i++)
-			{
-				if (modesSurface[i] != modesNull[i])
-				{
-					results.fail("Present modes mismatch");
-				}
+				std::string error_string	= std::string("Present mode mismatch with mode: ") + getPresentModeKHRName(modesNull[i]);
+				result.fail(error_string);
+				break;
 			}
 		}
+	}
+}
+
+void checkExtensionGoogleSurfacelessQuery(const vk::InstanceDriver& vk, VkPhysicalDevice physicalDevice, tcu::ResultCollector& result)
+{
+	const VkSurfaceKHR				nullSurface		= DE_NULL;
+	const vector<VkPresentModeKHR>	validPresentModes	{ VK_PRESENT_MODE_FIFO_KHR, VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR, VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR };
+
+	deUint32	numModesNull	= 0;
+	VK_CHECK(vk.getPhysicalDeviceSurfacePresentModesKHR(physicalDevice, nullSurface, &numModesNull, DE_NULL));
+
+	if (numModesNull == 0u)
+		return;
+
+	vector<VkPresentModeKHR>	modesNull(numModesNull);
+
+	VK_CHECK(vk.getPhysicalDeviceSurfacePresentModesKHR(physicalDevice, nullSurface, &numModesNull, &modesNull[0]));
+
+	for (deUint32 i = 0; i < modesNull.size(); i++)
+	{
+		if (std::find(validPresentModes.begin(), validPresentModes.end(), modesNull[i]) == validPresentModes.end())
+		{
+			std::string error_string	= std::string("Present mode mismatch with mode: ") + getPresentModeKHRName(modesNull[i]);
+			result.fail(error_string);
+			break;
+		}
+	}
+}
+
+tcu::TestStatus querySurfacePresentModesTestSurfaceless (Context& context, Type wsiType)
+{
+	tcu::TestLog&					log						= context.getTestContext().getLog();
+	tcu::ResultCollector			results					(log);
+
+	const std::string				extensionName			= "VK_GOOGLE_surfaceless_query";
+	const InstanceHelper			instHelper				(context, wsiType, vector<string>(1, extensionName), DE_NULL);
+	const NativeObjects				native					(context, instHelper.supportedExtensions, wsiType);
+	const Unique<vk::VkSurfaceKHR>	surface					(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(), native.getWindow(), context.getTestContext().getCommandLine()));
+
+	deUint32						extensionVersion		= 1u;
+
+	// Get "VK_GOOGLE_surfaceless_query" extension's spec version
+	{
+		deUint32									propertyCount = 0u;
+		std::vector<vk::VkExtensionProperties>		extensionsProperties;
+		vk::VkResult								extensionResult;
+
+		extensionResult = context.getPlatformInterface().enumerateInstanceExtensionProperties(DE_NULL, &propertyCount, DE_NULL);
+		if (extensionResult != vk::VK_SUCCESS)
+			return tcu::TestStatus(QP_TEST_RESULT_FAIL, "Failed to retrieve spec version for extension " + extensionName);
+
+		extensionsProperties.resize(propertyCount);
+
+		extensionResult = context.getPlatformInterface().enumerateInstanceExtensionProperties(DE_NULL, &propertyCount, extensionsProperties.data());
+		if (extensionResult != vk::VK_SUCCESS)
+			return tcu::TestStatus(QP_TEST_RESULT_FAIL, "Failed to retrieve spec version for extension " + extensionName);
+
+		for (const auto& property : extensionsProperties)
+		{
+			if (property.extensionName == extensionName)
+			{
+				extensionVersion = property.specVersion;
+				break;
+			}
+		}
+	}
+
+	log << TestLog::Message << "Checking spec version " << extensionVersion << " for VK_GOOGLE_surfaceless_query" << TestLog::EndMessage;
+
+	const bool						checkDeprecatedVersion	= extensionVersion < 2;
+	const vector<VkPhysicalDevice>	physicalDevices			= enumeratePhysicalDevices(instHelper.vki, instHelper.instance);
+	for (size_t deviceNdx = 0; deviceNdx < physicalDevices.size(); ++deviceNdx)
+	{
+		if (checkDeprecatedVersion)
+			checkDeprecatedExtensionGoogleSurfacelessQuery(instHelper.vki, physicalDevices[deviceNdx], *surface, results);
+		else
+			checkExtensionGoogleSurfacelessQuery(instHelper.vki, physicalDevices[deviceNdx], results);
 	}
 
 	return tcu::TestStatus(results.getResult(), results.getMessage());

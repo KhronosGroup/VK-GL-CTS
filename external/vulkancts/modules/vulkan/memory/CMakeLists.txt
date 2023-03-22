@@ -24,6 +24,8 @@ set(DEQP_VK_VKSC_MEMORY_SRCS
 set(DEQP_VK_MEMORY_SRCS
 	vktMemoryMappingTests.cpp
 	vktMemoryMappingTests.hpp
+	vktMemoryAddressBindingTests.cpp
+	vktMemoryAddressBindingTests.hpp
 	vktMemoryDeviceMemoryReportTests.cpp
 	vktMemoryDeviceMemoryReportTests.hpp
 	)

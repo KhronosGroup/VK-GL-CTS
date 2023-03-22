@@ -231,7 +231,7 @@ tcu::TestStatus testMatchedAttachments (Context& context, const MatchedAttachmen
 					.setDefaultRasterizationState()
 					.setDefaultMultisampleState()
 					.setDefaultColorBlendState()
-					.setupVertexInputStete(&vertexInputStateCreateInfo)
+					.setupVertexInputState(&vertexInputStateCreateInfo)
 					.setupPreRasterizationShaderState(viewport,
 													  scissor,
 													  *pipelineLayout,

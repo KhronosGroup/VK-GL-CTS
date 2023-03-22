@@ -41,16 +41,24 @@ namespace synchronization
 namespace
 {
 using namespace vk;
+using vkt::synchronization::VideoCodecOperationFlags;
 
 static const deUint64	SHORT_FENCE_WAIT	= 1000ull;			// 1us
 static const deUint64	LONG_FENCE_WAIT		= 1000000000ull;	// 1s
 
-tcu::TestStatus basicOneFenceCase (Context& context)
+struct FenceConfig
 {
-	const DeviceInterface&			vk					= context.getDeviceInterface();
-	const VkDevice					device				= context.getDevice();
-	const VkQueue					queue				= context.getUniversalQueue();
-	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	uint32_t					numFences;
+	VideoCodecOperationFlags	videoCodecOperationFlags;
+};
+
+tcu::TestStatus basicOneFenceCase (Context& context, FenceConfig config)
+{
+	de::MovePtr<VideoDevice>		videoDevice			(config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : DE_NULL);
+	const DeviceInterface&			vk					= getSyncDeviceInterface(videoDevice, context);
+	const VkDevice					device				= getSyncDevice(videoDevice, context);
+	const VkQueue					queue				= getSyncQueue(videoDevice, context);
+	const deUint32					queueFamilyIndex	= getSyncQueueFamilyIndex(videoDevice, context);
 	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>	cmdBuffer			(makeCommandBuffer(vk, device, *cmdPool));
 
@@ -105,29 +113,30 @@ tcu::TestStatus basicOneFenceCase (Context& context)
 	return tcu::TestStatus::pass("Basic one fence tests passed");
 }
 
-void checkCommandBufferSimultaneousUseSupport(Context& context)
+void checkVideoSupport (Context& context, FenceConfig config)
+{
+	if (config.videoCodecOperationFlags != 0)
+		VideoDevice::checkSupport(context, config.videoCodecOperationFlags);
+}
+
+void checkCommandBufferSimultaneousUseSupport (Context& context, FenceConfig config)
 {
 #ifdef CTS_USES_VULKANSC
 	if (context.getDeviceVulkanSC10Properties().commandBufferSimultaneousUse == VK_FALSE)
 		TCU_THROW(NotSupportedError, "commandBufferSimultaneousUse is not supported");
-#else
-	DE_UNREF(context);
 #endif
+
+	checkVideoSupport(context, config);
 }
 
-void checkCommandBufferSimultaneousUseSupport1(Context& context, uint32_t numFences)
+tcu::TestStatus basicSignaledCase (Context& context, FenceConfig config)
 {
-	DE_UNREF(numFences);
-	checkCommandBufferSimultaneousUseSupport(context);
-}
-
-tcu::TestStatus basicSignaledCase (Context& context, uint32_t numFences)
-{
-	const auto&		vkd			= context.getDeviceInterface();
-	const auto		device		= context.getDevice();
+	de::MovePtr<VideoDevice>	videoDevice	(config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : DE_NULL);
+	const DeviceInterface&		vkd			= getSyncDeviceInterface(videoDevice, context);
+	const VkDevice				device		= getSyncDevice(videoDevice, context);
 
 	std::vector<Move<VkFence>> fences;
-	fences.reserve(numFences);
+	fences.reserve(config.numFences);
 
 	const VkFenceCreateInfo fenceCreateInfo =
 	{
@@ -136,7 +145,7 @@ tcu::TestStatus basicSignaledCase (Context& context, uint32_t numFences)
 		VK_FENCE_CREATE_SIGNALED_BIT,			//	VkFenceCreateFlags	flags;
 	};
 
-	for (uint32_t i = 0u; i < numFences; ++i)
+	for (uint32_t i = 0u; i < config.numFences; ++i)
 	{
 		fences.push_back(createFence(vkd, device, &fenceCreateInfo));
 		if (vkd.getFenceStatus(device, fences.back().get()) != VK_SUCCESS)
@@ -153,7 +162,7 @@ tcu::TestStatus basicSignaledCase (Context& context, uint32_t numFences)
 	return tcu::TestStatus::pass("Pass");
 }
 
-tcu::TestStatus basicMultiFenceCase (Context& context)
+tcu::TestStatus basicMultiFenceCase (Context& context, FenceConfig config)
 {
 	enum
 	{
@@ -161,10 +170,11 @@ tcu::TestStatus basicMultiFenceCase (Context& context)
 		SECOND_FENCE
 	};
 
-	const DeviceInterface&			vk					= context.getDeviceInterface();
-	const VkDevice					device				= context.getDevice();
-	const VkQueue					queue				= context.getUniversalQueue();
-	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	de::MovePtr<VideoDevice>		videoDevice			(config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : DE_NULL);
+	const DeviceInterface&			vk					= getSyncDeviceInterface(videoDevice, context);
+	const VkDevice					device				= getSyncDevice(videoDevice, context);
+	const VkQueue					queue				= getSyncQueue(videoDevice, context);
+	const deUint32					queueFamilyIndex	= getSyncQueueFamilyIndex(videoDevice, context);
 	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,  queueFamilyIndex));
 	const Unique<VkCommandBuffer>	cmdBuffer			(makeCommandBuffer(vk, device, *cmdPool));
 
@@ -232,11 +242,12 @@ tcu::TestStatus basicMultiFenceCase (Context& context)
 	return tcu::TestStatus::pass("Basic multi fence tests passed");
 }
 
-tcu::TestStatus emptySubmitCase (Context& context)
+tcu::TestStatus emptySubmitCase (Context& context, FenceConfig config)
 {
-	const DeviceInterface&			vk					= context.getDeviceInterface();
-	const VkDevice					device				= context.getDevice();
-	const VkQueue					queue				= context.getUniversalQueue();
+	de::MovePtr<VideoDevice>		videoDevice			(config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : DE_NULL);
+	const DeviceInterface&			vk					= getSyncDeviceInterface(videoDevice, context);
+	const VkDevice					device				= getSyncDevice(videoDevice, context);
+	const VkQueue					queue				= getSyncQueue(videoDevice, context);
 
 	const VkFenceCreateInfo			fenceCreateInfo		=
 	{
@@ -255,7 +266,7 @@ tcu::TestStatus emptySubmitCase (Context& context)
 	return tcu::TestStatus::pass("OK");
 }
 
-tcu::TestStatus basicMultiFenceWaitAllFalseCase (Context& context)
+tcu::TestStatus basicMultiFenceWaitAllFalseCase (Context& context, FenceConfig config)
 {
 	enum
 	{
@@ -263,10 +274,11 @@ tcu::TestStatus basicMultiFenceWaitAllFalseCase (Context& context)
 		SECOND_FENCE
 	};
 
-	const DeviceInterface&			vk					= context.getDeviceInterface();
-	const VkDevice					device				= context.getDevice();
-	const VkQueue					queue				= context.getUniversalQueue();
-	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	de::MovePtr<VideoDevice>		videoDevice			(config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : DE_NULL);
+	const DeviceInterface&			vk					= getSyncDeviceInterface(videoDevice, context);
+	const VkDevice					device				= getSyncDevice(videoDevice, context);
+	const VkQueue					queue				= getSyncQueue(videoDevice, context);
+	const deUint32					queueFamilyIndex	= getSyncQueueFamilyIndex(videoDevice, context);
 	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>	cmdBuffer			(makeCommandBuffer(vk, device, *cmdPool));
 
@@ -341,15 +353,16 @@ tcu::TestStatus basicMultiFenceWaitAllFalseCase (Context& context)
 
 } // anonymous
 
-tcu::TestCaseGroup* createBasicFenceTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createBasicFenceTests (tcu::TestContext& testCtx, VideoCodecOperationFlags videoCodecOperationFlags)
 {
 	de::MovePtr<tcu::TestCaseGroup> basicFenceTests(new tcu::TestCaseGroup(testCtx, "fence", "Basic fence tests"));
-	addFunctionCase(basicFenceTests.get(),	"one",					"Basic one fence tests",																		basicOneFenceCase);
-	addFunctionCase(basicFenceTests.get(),	"multi",				"Basic multi fence tests",							checkCommandBufferSimultaneousUseSupport,	basicMultiFenceCase);
-	addFunctionCase(basicFenceTests.get(),	"empty_submit",			"Signal a fence after an empty queue submission",												emptySubmitCase);
-	addFunctionCase(basicFenceTests.get(),	"multi_waitall_false",	"Basic multi fence test without waitAll",			checkCommandBufferSimultaneousUseSupport,	basicMultiFenceWaitAllFalseCase);
-	addFunctionCase(basicFenceTests.get(),	"one_signaled",			"Create a single signaled fence and wait on it",	basicSignaledCase, 1u);
-	addFunctionCase(basicFenceTests.get(),	"multiple_signaled",	"Create multiple signaled fences and wait on them",	checkCommandBufferSimultaneousUseSupport1,	basicSignaledCase, 10u);
+
+	addFunctionCase(basicFenceTests.get(),	"one",					"Basic one fence tests",							checkVideoSupport,							basicOneFenceCase, FenceConfig { 0u, videoCodecOperationFlags });
+	addFunctionCase(basicFenceTests.get(),	"multi",				"Basic multi fence tests",							checkCommandBufferSimultaneousUseSupport,	basicMultiFenceCase, FenceConfig { 0u, videoCodecOperationFlags });
+	addFunctionCase(basicFenceTests.get(),	"empty_submit",			"Signal a fence after an empty queue submission",	checkVideoSupport,							emptySubmitCase, FenceConfig { 0u, videoCodecOperationFlags });
+	addFunctionCase(basicFenceTests.get(),	"multi_waitall_false",	"Basic multi fence test without waitAll",			checkCommandBufferSimultaneousUseSupport,	basicMultiFenceWaitAllFalseCase, FenceConfig { 0u, videoCodecOperationFlags });
+	addFunctionCase(basicFenceTests.get(),	"one_signaled",			"Create a single signaled fence and wait on it",	checkVideoSupport,							basicSignaledCase, FenceConfig { 1u, videoCodecOperationFlags });
+	addFunctionCase(basicFenceTests.get(),	"multiple_signaled",	"Create multiple signaled fences and wait on them",	checkCommandBufferSimultaneousUseSupport,	basicSignaledCase, FenceConfig { 10u, videoCodecOperationFlags });
 
 	return basicFenceTests.release();
 }

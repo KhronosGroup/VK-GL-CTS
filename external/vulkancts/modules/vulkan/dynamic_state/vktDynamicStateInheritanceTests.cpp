@@ -125,14 +125,6 @@ struct TestResults
 };
 
 
-// TODO probably tcu has a clamp already.
-template <typename T>
-inline T clamp(T x, T minVal, T maxVal)
-{
-	return std::min(std::max(x, minVal), maxVal);
-}
-
-
 class InheritanceTestInstance : public TestInstance
 {
 	const vk::InstanceInterface& m_in;
@@ -504,7 +496,7 @@ InheritanceTestInstance::InheritanceTestInstance(Context& context, PipelineConst
 
 static deUint8 u8_from_unorm(float x)
 {
-	return deUint8(roundf(clamp(x, 0.0f, 1.0f) * 255.0f));
+	return deUint8(roundf(de::clamp(x, 0.0f, 1.0f) * 255.0f));
 }
 
 
@@ -638,7 +630,7 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 			.setDefaultScissorsCount(staticViewportCount)
 			.setDefaultMultisampleState()
 			.setDefaultColorBlendState()
-			.setupVertexInputStete(&pipelinestate::vertexInput)
+			.setupVertexInputState(&pipelinestate::vertexInput)
 			.setupPreRasterizationShaderState(viewports,
 											  scissors,
 											  *m_rectanglePipelineLayout,
@@ -835,10 +827,10 @@ void InheritanceTestInstance::rasterizeExpectedResults(const TestGeometry& geome
 		float py = viewport.height;
 		float pz = viewport.maxDepth - viewport.minDepth;
 
-		float xLow  = clamp(r.xyz.x(), -1.0f, 1.0f);
-		float xHigh = clamp(r.xyz.x() + r.widthHeight.x(), -1.0f, 1.0f);
-		float yLow  = clamp(r.xyz.y(), -1.0f, 1.0f);
-		float yHigh = clamp(r.xyz.y() + r.widthHeight.y(), -1.0f, 1.0f);
+		float xLow  = de::clamp(r.xyz.x(), -1.0f, 1.0f);
+		float xHigh = de::clamp(r.xyz.x() + r.widthHeight.x(), -1.0f, 1.0f);
+		float yLow  = de::clamp(r.xyz.y(), -1.0f, 1.0f);
+		float yHigh = de::clamp(r.xyz.y() + r.widthHeight.y(), -1.0f, 1.0f);
 
 		float xf[2];
 		xf[0]    = px * 0.5f * xLow  + ox;
@@ -857,18 +849,18 @@ void InheritanceTestInstance::rasterizeExpectedResults(const TestGeometry& geome
 		// positive width/height.
 		deInt32 xsLow  = scissor.offset.x;
 		deInt32 xsHigh = xsLow + deInt32(scissor.extent.width);
-		xBegin         = clamp(xBegin, xsLow, xsHigh);
-		xEnd           = clamp(xEnd,   xsLow, xsHigh);
+		xBegin         = de::clamp(xBegin, xsLow, xsHigh);
+		xEnd           = de::clamp(xEnd,   xsLow, xsHigh);
 		deInt32 ysLow  = scissor.offset.y;
 		deInt32 ysHigh = ysLow + deInt32(scissor.extent.height);
-		yBegin         = clamp(yBegin, ysLow, ysHigh);
-		yEnd           = clamp(yEnd,   ysLow, ysHigh);
+		yBegin         = de::clamp(yBegin, ysLow, ysHigh);
+		yEnd           = de::clamp(yEnd,   ysLow, ysHigh);
 
 		// Clamp to framebuffer size
-		xBegin = clamp(xBegin, 0, kWidth);
-		xEnd   = clamp(xEnd,   0, kWidth);
-		yBegin = clamp(yBegin, 0, kHeight);
-		yEnd   = clamp(yEnd,   0, kHeight);
+		xBegin = de::clamp(xBegin, 0, kWidth);
+		xEnd   = de::clamp(xEnd,   0, kWidth);
+		yBegin = de::clamp(yBegin, 0, kHeight);
+		yEnd   = de::clamp(yEnd,   0, kHeight);
 
 		// Rasterize.
 		Texel rectTexel = texelFrom_r8g8b8(r.r8g8b8);

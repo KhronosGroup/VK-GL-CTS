@@ -74,7 +74,10 @@ if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 			include_directories(lnx/wayland)
 
 			pkg_get_variable(WAYLAND_PROTOCOLS_DIR wayland-protocols pkgdatadir)
-			pkg_get_variable(WAYLAND_SCANNER wayland-scanner wayland_scanner)
+
+			if (NOT WAYLAND_SCANNER)
+				pkg_get_variable(WAYLAND_SCANNER wayland-scanner wayland_scanner)
+			endif()
 
 			set(DEQP_XDG_SHELL_PROTOCOL ${WAYLAND_PROTOCOLS_DIR}/stable/xdg-shell/xdg-shell.xml)
 			set(DEQP_XDG_SHELL_GEN_OUTPUTS_DIR ${PROJECT_BINARY_DIR}/framework/platform)
@@ -110,6 +113,7 @@ if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 		endif()
 
 	elseif (DE_OS_IS_UNIX AND DEQP_USE_SURFACELESS)
+		add_definitions(-DDEQP_SURFACELESS=1)
 		set(TCUTIL_PLATFORM_SRCS
 			surfaceless/tcuSurfacelessPlatform.hpp
 			surfaceless/tcuSurfacelessPlatform.cpp

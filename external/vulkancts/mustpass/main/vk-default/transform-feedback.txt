@@ -3004,6 +3004,10 @@ dEQP-VK.transform_feedback.simple.multistreams_1
 dEQP-VK.transform_feedback.simple.multistreams_3
 dEQP-VK.transform_feedback.simple.multistreams_6
 dEQP-VK.transform_feedback.simple.multistreams_14
+dEQP-VK.transform_feedback.simple.multistreams_same_location_1
+dEQP-VK.transform_feedback.simple.multistreams_same_location_3
+dEQP-VK.transform_feedback.simple.multistreams_same_location_6
+dEQP-VK.transform_feedback.simple.multistreams_same_location_14
 dEQP-VK.transform_feedback.simple.multiquery_1
 dEQP-VK.transform_feedback.simple.multiquery_omit_write_1
 dEQP-VK.transform_feedback.simple.multiquery_3

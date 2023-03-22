@@ -280,3 +280,10 @@ Move<VkSurfaceKHR> createHeadlessSurfaceEXT (const InstanceInterface& vk, VkInst
 	return Move<VkSurfaceKHR>(check<VkSurfaceKHR>(object), Deleter<VkSurfaceKHR>(vk, instance, pAllocator));
 }
 
+Move<VkSemaphoreSciSyncPoolNV> createSemaphoreSciSyncPoolNV (const DeviceInterface& vk, VkDevice device, const VkSemaphoreSciSyncPoolCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkSemaphoreSciSyncPoolNV object = 0;
+	VK_CHECK(vk.createSemaphoreSciSyncPoolNV(device, pCreateInfo, pAllocator, &object));
+	return Move<VkSemaphoreSciSyncPoolNV>(check<VkSemaphoreSciSyncPoolNV>(object), Deleter<VkSemaphoreSciSyncPoolNV>(vk, device, pAllocator));
+}
+

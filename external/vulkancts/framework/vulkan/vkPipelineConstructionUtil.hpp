@@ -37,7 +37,7 @@ namespace vk
 enum PipelineConstructionType
 {
 	PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC			= 0,	// Construct legacy - monolithic pipeline
-	PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY,	// Use VK_EXT_graphics_pipeline_library and construc pipeline out of 4 pipeline parts
+	PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY,	// Use VK_EXT_graphics_pipeline_library and construct pipeline out of several pipeline parts.
 	PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY			// Same as PIPELINE_CONSTRUCTION_TYPE_OPTIMISED_LIBRARY but with fast linking
 };
 
@@ -78,11 +78,13 @@ typedef PointerWrapper<VkPipelineViewportDepthClipControlCreateInfoEXT> Pipeline
 typedef PointerWrapper<VkPipelineRenderingCreateInfoKHR> PipelineRenderingCreateInfoWrapper;
 typedef PointerWrapper<VkPipelineCreationFeedbackCreateInfoEXT> PipelineCreationFeedbackCreateInfoWrapper;
 typedef ConstPointerWrapper<VkPipelineShaderStageModuleIdentifierCreateInfoEXT> PipelineShaderStageModuleIdentifierCreateInfoWrapper;
+typedef PointerWrapper<VkPipelineRepresentativeFragmentTestStateCreateInfoNV> PipelineRepresentativeFragmentTestCreateInfoWrapper;
 #else
 typedef PointerWrapper<void> PipelineViewportDepthClipControlCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineRenderingCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineCreationFeedbackCreateInfoWrapper;
 typedef ConstPointerWrapper<void> PipelineShaderStageModuleIdentifierCreateInfoWrapper;
+typedef PointerWrapper<void> PipelineRepresentativeFragmentTestCreateInfoWrapper;
 #endif
 
 // Class that can build monolithic pipeline or fully separated pipeline libraries
@@ -111,8 +113,11 @@ public:
 	// By default dynamic state has to be specified before specifying other CreateInfo structures
 	GraphicsPipelineWrapper&	setDynamicState						(const VkPipelineDynamicStateCreateInfo* dynamicState);
 
+	// Specify the representative fragment test state.
+	GraphicsPipelineWrapper&	setRepresentativeFragmentTestState	(PipelineRepresentativeFragmentTestCreateInfoWrapper representativeFragmentTestState);
+
 	// Specify topology that is used by default InputAssemblyState in vertex input state. This needs to be
-	// specified only when there is no custom InputAssemblyState provided in setupVertexInputStete and when
+	// specified only when there is no custom InputAssemblyState provided in setupVertexInputState and when
 	// topology is diferent then VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST which is used by default.
 	GraphicsPipelineWrapper&	setDefaultTopology					(const VkPrimitiveTopology topology);
 
@@ -120,6 +125,9 @@ public:
 	// This can to be specified only when there is no custom TessellationState provided in
 	// setupPreRasterizationShaderState and when patchControlPoints is diferent then 3 which is used by default.
 	GraphicsPipelineWrapper&	setDefaultPatchControlPoints		(const deUint32 patchControlPoints);
+
+	// Specify tesellation domain origin, used by the tessellation state in pre-rasterization shader state.
+	GraphicsPipelineWrapper&	setDefaultTessellationDomainOrigin	(const VkTessellationDomainOrigin domainOrigin, bool forceExtStruct = false);
 
 	// Enable discarding of primitives that is used by default RasterizationState in pre-rasterization shader state.
 	// This can be specified only when there is no custom RasterizationState provided in setupPreRasterizationShaderState.
@@ -138,8 +146,12 @@ public:
 	GraphicsPipelineWrapper&	setDefaultViewportsCount			(deUint32 viewportCount = 0u);
 	GraphicsPipelineWrapper&	setDefaultScissorsCount				(deUint32 scissorCount = 0u);
 
-	// Pre-rasterization shader state uses default ViewportState, this method extends it with VkPipelineViewportDepthClipControlCreateInfoEXT.
-	GraphicsPipelineWrapper&	setDepthClipControl					(PipelineViewportDepthClipControlCreateInfoWrapper& depthClipControlCreateInfo);
+	// Pre-rasterization shader state uses default ViewportState, this method extends the internal structure.
+	GraphicsPipelineWrapper&	setViewportStatePnext				(const void* pNext);
+
+#ifndef CTS_USES_VULKANSC
+	GraphicsPipelineWrapper&	setRenderingColorAttachmentsInfo	(PipelineRenderingCreateInfoWrapper pipelineRenderingCreateInfo);
+#endif
 
 	// Pre-rasterization shader state uses provieded viewports and scissors to create ViewportState. When disableViewportState
 	// is used then ViewportState won't be constructed and NULL will be used.
@@ -147,7 +159,7 @@ public:
 
 
 	// Setup vertex input state. When VertexInputState or InputAssemblyState are not provided then default structures will be used.
-	GraphicsPipelineWrapper&	setupVertexInputStete				(const VkPipelineVertexInputStateCreateInfo*		vertexInputState = DE_NULL,
+	GraphicsPipelineWrapper&	setupVertexInputState				(const VkPipelineVertexInputStateCreateInfo*		vertexInputState = DE_NULL,
 																	 const VkPipelineInputAssemblyStateCreateInfo*		inputAssemblyState = DE_NULL,
 																	 const VkPipelineCache								partPipelineCache = DE_NULL,
 																	 PipelineCreationFeedbackCreateInfoWrapper			partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
@@ -212,6 +224,24 @@ public:
 																	 const VkPipelineCache										partPipelineCache = DE_NULL,
 																	 PipelineCreationFeedbackCreateInfoWrapper					partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
 
+#ifndef CTS_USES_VULKANSC
+	// Setup pre-rasterization shader state, mesh shading version.
+	GraphicsPipelineWrapper&	setupPreRasterizationMeshShaderState(const std::vector<VkViewport>&						viewports,
+																	 const std::vector<VkRect2D>&						scissors,
+																	 const VkPipelineLayout								layout,
+																	 const VkRenderPass									renderPass,
+																	 const deUint32										subpass,
+																	 const VkShaderModule								taskShaderModule,
+																	 const VkShaderModule								meshShaderModule,
+																	 const VkPipelineRasterizationStateCreateInfo*		rasterizationState = nullptr,
+																	 const VkSpecializationInfo*						taskSpecializationInfo = nullptr,
+																	 const VkSpecializationInfo*						meshSpecializationInfo = nullptr,
+																	 VkPipelineFragmentShadingRateStateCreateInfoKHR*	fragmentShadingRateState = nullptr,
+																	 PipelineRenderingCreateInfoWrapper					rendering = PipelineRenderingCreateInfoWrapper(),
+																	 const VkPipelineCache								partPipelineCache = DE_NULL,
+																	 VkPipelineCreationFeedbackCreateInfoEXT*			partCreationFeedback = nullptr);
+#endif // CTS_USES_VULKANSC
+
 	// Setup fragment shader state.
 	GraphicsPipelineWrapper&	setupFragmentShaderState			(const VkPipelineLayout								layout,
 																	 const VkRenderPass									renderPass,
@@ -267,8 +297,10 @@ protected:
 
 protected:
 
+	static constexpr size_t kMaxPipelineParts = 4u;
+
 	// Store partial pipelines when non monolithic construction was used.
-	Move<VkPipeline>				m_pipelineParts[4];
+	Move<VkPipeline>				m_pipelineParts[kMaxPipelineParts];
 
 	// Store monolithic pipeline or linked pipeline libraries.
 	Move<VkPipeline>				m_pipelineFinal;

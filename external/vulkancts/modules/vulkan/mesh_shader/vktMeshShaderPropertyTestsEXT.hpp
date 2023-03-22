@@ -1,11 +1,11 @@
-#ifndef _VKTBINDINGVALVEMUTABLETESTS_HPP
-#define _VKTBINDINGVALVEMUTABLETESTS_HPP
-/*-------------------------------------------------------------------------
+#ifndef _VKTMESHSHADERPROPERTYTESTSEXT_HPP
+#define _VKTMESHSHADERPROPERTYTESTSEXT_HPP
+/*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2021 The Khronos Group Inc.
- * Copyright (c) 2021 Valve Corporation.
+ * Copyright (c) 2022 The Khronos Group Inc.
+ * Copyright (c) 2022 Valve Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,19 +21,18 @@
  *
  *//*!
  * \file
- * \brief Tests for VK_VALVE_mutable_descriptor_type.
+ * \brief Mesh Shader Property Tests for VK_EXT_mesh_shader
  *//*--------------------------------------------------------------------*/
+
 #include "tcuDefs.hpp"
 #include "tcuTestCase.hpp"
 
 namespace vkt
 {
-namespace BindingModel
+namespace MeshShader
 {
-
-tcu::TestCaseGroup* createDescriptorValveMutableTests(tcu::TestContext& testCtx);
-
-} // BindingModel
+tcu::TestCaseGroup* createMeshShaderPropertyTestsEXT (tcu::TestContext& testCtx);
+} // MeshShader
 } // vkt
 
-#endif // _VKTBINDINGVALVEMUTABLETESTS_HPP
+#endif // _VKTMESHSHADERPROPERTYTESTSEXT_HPP

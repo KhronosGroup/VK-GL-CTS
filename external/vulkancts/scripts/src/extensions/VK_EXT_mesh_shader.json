@@ -1,0 +1,18 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": ""
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceMeshShaderFeaturesEXT":
+		[
+			{ "features": ["meshShader", "taskShader"],		"requirements": ["VK_EXT_mesh_shader"],															"mandatory_variant": ["vulkan"] }
+		],
+		"VkPhysicalDeviceFragmentShadingRateFeaturesKHR":
+		[
+			{ "features": ["primitiveFragmentShadingRate"],	"requirements": ["physicalDeviceMeshShaderFeaturesEXT.primitiveFragmentShadingRateMeshShader"],	"mandatory_variant": ["vulkan"] }
+		]
+	}
+}

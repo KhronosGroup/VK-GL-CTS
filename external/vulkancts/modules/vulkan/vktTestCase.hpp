@@ -52,6 +52,16 @@ struct SourceCollections;
 namespace vkt
 {
 
+struct ContextCommonData {
+	const vk::InstanceInterface&	vki;
+	vk::VkDevice					device;
+	const vk::DeviceInterface&		vkd;
+	vk::VkPhysicalDevice			physicalDevice;
+	vk::Allocator&					allocator;
+	deUint32						qfIndex;
+	vk::VkQueue						queue;
+};
+
 class DefaultDevice;
 
 class Context
@@ -107,6 +117,7 @@ public:
 #include "vkDevicePropertiesForContextDecl.inl"
 
 	const std::vector<std::string>&				getDeviceExtensions					(void) const;
+	const std::vector<const char*>&				getDeviceCreationExtensions			(void) const;
 	vk::VkDevice								getDevice							(void) const;
 	const vk::DeviceInterface&					getDeviceInterface					(void) const;
 	deUint32									getUniversalQueueFamilyIndex		(void) const;
@@ -144,6 +155,7 @@ public:
 	void checkPipelineLibraryRequirements (const vk::PipelineConstructionType		pipelineConstructionType);
 	void resetCommandPoolForVKSC													(const vk::VkDevice			device,
 																					 const vk::VkCommandPool	commandPool);
+	ContextCommonData getContextCommonData											();
 
 protected:
 	tcu::TestContext&								m_testCtx;

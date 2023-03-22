@@ -122,24 +122,24 @@ ImageSamplingInstanceParams ImageViewTest::getImageSamplingInstanceParams (VkIma
 
 	const VkSamplerCreateInfo		samplerParams	=
 	{
-		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,								// VkStructureType			sType;
-		DE_NULL,															// const void*				pNext;
-		0u,																	// VkSamplerCreateFlags		flags;
-		VK_FILTER_NEAREST,													// VkFilter					magFilter;
-		VK_FILTER_NEAREST,													// VkFilter					minFilter;
-		VK_SAMPLER_MIPMAP_MODE_NEAREST,										// VkSamplerMipmapMode		mipmapMode;
-		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,								// VkSamplerAddressMode		addressModeU;
-		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,								// VkSamplerAddressMode		addressModeV;
-		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,								// VkSamplerAddressMode		addressModeW;
-		0.0f,																// float					mipLodBias;
-		VK_FALSE,															// VkBool32					anisotropyEnable;
-		1.0f,																// float					maxAnisotropy;
-		false,																// VkBool32					compareEnable;
-		VK_COMPARE_OP_NEVER,												// VkCompareOp				compareOp;
-		0.0f,																// float					minLod;
-		(float)(subresourceRange.levelCount - 1),							// float					maxLod;
-		getFormatBorderColor(BORDER_COLOR_TRANSPARENT_BLACK, imageFormat),	// VkBorderColor			borderColor;
-		false																// VkBool32					unnormalizedCoordinates;
+		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,										// VkStructureType			sType;
+		DE_NULL,																	// const void*				pNext;
+		0u,																			// VkSamplerCreateFlags		flags;
+		VK_FILTER_NEAREST,															// VkFilter					magFilter;
+		VK_FILTER_NEAREST,															// VkFilter					minFilter;
+		VK_SAMPLER_MIPMAP_MODE_NEAREST,												// VkSamplerMipmapMode		mipmapMode;
+		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,										// VkSamplerAddressMode		addressModeU;
+		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,										// VkSamplerAddressMode		addressModeV;
+		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,										// VkSamplerAddressMode		addressModeW;
+		0.0f,																		// float					mipLodBias;
+		VK_FALSE,																	// VkBool32					anisotropyEnable;
+		1.0f,																		// float					maxAnisotropy;
+		false,																		// VkBool32					compareEnable;
+		VK_COMPARE_OP_NEVER,														// VkCompareOp				compareOp;
+		0.0f,																		// float					minLod;
+		(float)(subresourceRange.levelCount - 1),									// float					maxLod;
+		getFormatBorderColor(BORDER_COLOR_TRANSPARENT_BLACK, imageFormat, false),	// VkBorderColor			borderColor;
+		false																		// VkBool32					unnormalizedCoordinates;
 	};
 
 	return ImageSamplingInstanceParams(m_pipelineConstructionType, renderSize, imageViewType, imageFormat, imageSize, arraySize, componentMapping, subresourceRange, samplerParams, samplerLod, vertices);

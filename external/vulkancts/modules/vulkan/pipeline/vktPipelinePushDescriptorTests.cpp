@@ -493,7 +493,7 @@ void PushDescriptorBufferGraphicsTestInstance::init (void)
 						  .setDefaultMultisampleState()
 						  .setDefaultColorBlendState()
 						  .setDefaultTopology(topology)
-						  .setupVertexInputStete(&vertexInputStateParams)
+						  .setupVertexInputState(&vertexInputStateParams)
 						  .setupPreRasterizationShaderState(viewports,
 															scissors,
 															*m_preRasterizationStatePipelineLayout,
@@ -1572,7 +1572,7 @@ void PushDescriptorImageGraphicsTestInstance::init (void)
 						  .setDefaultDepthStencilState()
 						  .setDefaultMultisampleState()
 						  .setDefaultColorBlendState()
-						  .setupVertexInputStete(&vertexInputStateParams)
+						  .setupVertexInputState(&vertexInputStateParams)
 						  .setupPreRasterizationShaderState(viewports,
 															scissors,
 															*m_preRasterizationStatePipelineLayout,
@@ -2976,7 +2976,7 @@ void PushDescriptorTexelBufferGraphicsTestInstance::init (void)
 						  .setDefaultDepthStencilState()
 						  .setDefaultMultisampleState()
 						  .setDefaultColorBlendState()
-						  .setupVertexInputStete(&vertexInputStateParams)
+						  .setupVertexInputState(&vertexInputStateParams)
 						  .setupPreRasterizationShaderState(viewports,
 															scissors,
 															*m_preRasterizationStatePipelineLayout,
@@ -4033,7 +4033,7 @@ void PushDescriptorInputAttachmentGraphicsTestInstance::init (void)
 								  .setDefaultDepthStencilState()
 								  .setDefaultMultisampleState()
 								  .setDefaultColorBlendState()
-								  .setupVertexInputStete(&vertexInputStateParams)
+								  .setupVertexInputState(&vertexInputStateParams)
 								  .setupPreRasterizationShaderState(viewports,
 																	scissors,
 																	*m_preRasterizationStatePipelineLayout,

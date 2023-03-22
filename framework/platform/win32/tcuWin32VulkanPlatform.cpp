@@ -68,6 +68,11 @@ public:
 		m_window->setSize((int)newSize.x(), (int)newSize.y());
 	}
 
+	void setMinimized(bool minimized)
+	{
+		m_window->setMinimized(minimized);
+	}
+
 private:
 	UniquePtr<win32::Window>	m_window;
 };
@@ -113,6 +118,28 @@ private:
 	const vk::PlatformDriver			m_driver;
 };
 
+class VulkanVideoDecodeParserLibrary : public vk::Library
+{
+public:
+	VulkanVideoDecodeParserLibrary(void)
+		: m_library("nvidia-vkvideo-parser.dll")
+	{
+	}
+
+	const vk::PlatformInterface& getPlatformInterface(void) const
+	{
+		TCU_THROW(InternalError, "getPlatformInterface is not possible for VulkanVideoDecodeParserLibrary");
+	}
+	const tcu::FunctionLibrary& getFunctionLibrary(void) const
+	{
+		return m_library;
+	}
+
+private:
+	const tcu::DynamicFunctionLibrary	m_library;
+};
+
+
 VulkanPlatform::VulkanPlatform (HINSTANCE instance)
 	: m_instance(instance)
 {
@@ -122,9 +149,14 @@ VulkanPlatform::~VulkanPlatform (void)
 {
 }
 
-vk::Library* VulkanPlatform::createLibrary (const char* libraryPath) const
+vk::Library* VulkanPlatform::createLibrary (LibraryType libraryType, const char* libraryPath) const
 {
-	return new VulkanLibrary(libraryPath);
+	switch(libraryType)
+	{
+		case LIBRARY_TYPE_VULKAN:						return new VulkanLibrary(libraryPath);
+		case LIBRARY_TYPE_VULKAN_VIDEO_DECODE_PARSER:	return new VulkanVideoDecodeParserLibrary();
+		default: TCU_THROW(InternalError, "Unknown library type requested");
+	}
 }
 
 ULONG getStringRegKey (const std::string& regKey, const std::string& strValueName, std::string& strValue)

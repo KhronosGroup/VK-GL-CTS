@@ -2194,7 +2194,7 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 			const auto rasterizationState = makeRasterizationState(fragModule == DE_NULL);
 
 			wrapper	.setDefaultPatchControlPoints(patchCPs)
-					.setupVertexInputStete(&vertexInputState, &inputAssemblyState, pipelineCache.get())
+					.setupVertexInputState(&vertexInputState, &inputAssemblyState, pipelineCache.get())
 					.setupPreRasterizationShaderState2(
 						viewports,
 						scissors,
@@ -2275,7 +2275,7 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 			try
 			{
 				wrapper	.setDefaultPatchControlPoints(patchCPs)
-						.setupVertexInputStete(&vertexInputState, &inputAssemblyState, pipelineCache.get())
+						.setupVertexInputState(&vertexInputState, &inputAssemblyState, pipelineCache.get())
 						.setupPreRasterizationShaderState3(
 							viewports,
 							scissors,
@@ -3283,7 +3283,7 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 			try
 			{
 				wrapper->setDefaultPatchControlPoints(patchCPs)
-						.setupVertexInputStete(&vertexInputState, &inputAssemblyState, pipelineCache.get())
+						.setupVertexInputState(&vertexInputState, &inputAssemblyState, pipelineCache.get())
 						.setupPreRasterizationShaderState2(
 							rpViewports,
 							rpScissors,
@@ -3353,7 +3353,7 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 		try
 		{
 			wrapper->setDefaultPatchControlPoints(patchCPs)
-					.setupVertexInputStete(&vertexInputState, &inputAssemblyState, pipelineCache.get())
+					.setupVertexInputState(&vertexInputState, &inputAssemblyState, pipelineCache.get())
 					.setupPreRasterizationShaderState3(
 						std::vector<VkViewport>(1u, viewports.back()),
 						std::vector<VkRect2D>(1u, scissors.back()),

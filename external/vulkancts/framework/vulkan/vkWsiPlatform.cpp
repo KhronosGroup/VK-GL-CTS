@@ -43,5 +43,11 @@ void Window::resize (const tcu::UVec2&)
 	TCU_THROW(InternalError, "resize() called on window not supporting it");
 }
 
+void Window::setMinimized (bool minimized)
+{
+	DE_UNREF(minimized);
+	TCU_THROW(InternalError, "setMinimized() called on window not supporting it");
+}
+
 } // wsi
 } // vk

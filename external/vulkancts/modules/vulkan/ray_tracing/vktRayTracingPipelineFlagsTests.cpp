@@ -605,7 +605,7 @@ void PipelineFlagsCase::initPrograms (SourceCollections& programCollection) cons
 		str << "#version 460 core"																			<< endl
 			<< "#extension GL_EXT_ray_tracing : require"													<< endl
 			<< "layout(location = 0) rayPayloadEXT ivec4 payload;"											<< endl
-			<< "layout(r32i, set = 0, binding = 0) uniform iimage2D result;"								<< endl
+			<< "layout(rgba32i, set = 0, binding = 0) uniform iimage2D result;"								<< endl
 			<< "layout(set = 0, binding = 1) uniform accelerationStructureEXT topLevelAS;"					<< endl
 			<< "void main()"																				<< endl
 			<< "{"																							<< endl
@@ -1307,6 +1307,10 @@ tcu::TestStatus PipelineFlagsInstance::iterate(void)
 	vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1, &descriptorSet.get(), 0, DE_NULL);
 
 	vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
+
+	const VkImageSubresourceRange	subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	const VkImageMemoryBarrier				imageMemoryBarrier = makeImageMemoryBarrier(VK_ACCESS_NONE, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, image->get(), subresourceRange);
+	cmdPipelineImageMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, &imageMemoryBarrier);
 
 	cmdTraceRays(vkd,
 		*cmdBuffer,

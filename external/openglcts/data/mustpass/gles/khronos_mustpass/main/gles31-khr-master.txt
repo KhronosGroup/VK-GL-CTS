@@ -3456,6 +3456,7 @@ KHR-GLES31.core.pixelstoragemodes.teximage3d.rgba32ui.16_16_1
 KHR-GLES31.core.pixelstoragemodes.teximage3d.rgba32ui.16_16_4
 KHR-GLES31.shaders.negative.initialize
 KHR-GLES31.shaders.negative.constant_sequence
+KHR-GLES31.shaders.negative.non_precision_qualifiers_in_struct_members
 KHR-GLES31.shaders.aggressive_optimizations.sin_float_vert
 KHR-GLES31.shaders.aggressive_optimizations.sin_float_frag
 KHR-GLES31.shaders.aggressive_optimizations.sin_vec2_vert

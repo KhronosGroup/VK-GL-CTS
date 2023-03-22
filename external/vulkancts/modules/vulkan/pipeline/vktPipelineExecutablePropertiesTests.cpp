@@ -1080,7 +1080,7 @@ void GraphicsExecutablePropertiesTestInstance::preparePipelineWrapper(GraphicsPi
 	gpw.setDefaultTopology((tescShaderModule == DE_NULL) ? VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST : VK_PRIMITIVE_TOPOLOGY_PATCH_LIST)
 	   .setDefaultRasterizationState()
 	   .setDefaultMultisampleState()
-	   .setupVertexInputStete(&vertexInputStateParams)
+	   .setupVertexInputState(&vertexInputStateParams)
 	   .setupPreRasterizationShaderState(viewport,
 			scissor,
 			*m_pipelineLayout,

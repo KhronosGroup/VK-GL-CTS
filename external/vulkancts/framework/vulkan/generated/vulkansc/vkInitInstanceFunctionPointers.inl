@@ -55,3 +55,6 @@ m_vk.submitDebugUtilsMessageEXT										= (SubmitDebugUtilsMessageEXTFunc)					
 m_vk.getPhysicalDeviceMultisamplePropertiesEXT						= (GetPhysicalDeviceMultisamplePropertiesEXTFunc)						GET_PROC_ADDR("vkGetPhysicalDeviceMultisamplePropertiesEXT");
 m_vk.getPhysicalDeviceCalibrateableTimeDomainsEXT					= (GetPhysicalDeviceCalibrateableTimeDomainsEXTFunc)					GET_PROC_ADDR("vkGetPhysicalDeviceCalibrateableTimeDomainsEXT");
 m_vk.createHeadlessSurfaceEXT										= (CreateHeadlessSurfaceEXTFunc)										GET_PROC_ADDR("vkCreateHeadlessSurfaceEXT");
+m_vk.getPhysicalDeviceSciSyncAttributesNV							= (GetPhysicalDeviceSciSyncAttributesNVFunc)							GET_PROC_ADDR("vkGetPhysicalDeviceSciSyncAttributesNV");
+m_vk.getPhysicalDeviceExternalMemorySciBufPropertiesNV				= (GetPhysicalDeviceExternalMemorySciBufPropertiesNVFunc)				GET_PROC_ADDR("vkGetPhysicalDeviceExternalMemorySciBufPropertiesNV");
+m_vk.getPhysicalDeviceSciBufAttributesNV							= (GetPhysicalDeviceSciBufAttributesNVFunc)								GET_PROC_ADDR("vkGetPhysicalDeviceSciBufAttributesNV");

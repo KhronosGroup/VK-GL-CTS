@@ -117,6 +117,7 @@
 #include "vktReconvergenceTests.hpp"
 #include "vktMeshShaderTests.hpp"
 #include "vktFragmentShadingBarycentricTests.hpp"
+#include "vktVideoTests.hpp"
 #ifdef CTS_USES_VULKANSC
 #include "vktSafetyCriticalTests.hpp"
 #endif // CTS_USES_VULKANSC
@@ -203,7 +204,11 @@ static void		restoreStandardOutput	()												{ qpRedirectOut(openWrite, open
 
 static MovePtr<vk::Library> createLibrary (tcu::TestContext& testCtx)
 {
+#ifdef DE_PLATFORM_USE_LIBRARY_TYPE
+	return MovePtr<vk::Library>(testCtx.getPlatform().getVulkanPlatform().createLibrary(vk::Platform::LIBRARY_TYPE_VULKAN, testCtx.getCommandLine().getVkLibraryPath()));
+#else
 	return MovePtr<vk::Library>(testCtx.getPlatform().getVulkanPlatform().createLibrary(testCtx.getCommandLine().getVkLibraryPath()));
+#endif
 }
 
 static vk::VkPhysicalDeviceProperties getPhysicalDeviceProperties(vkt::Context& context)
@@ -1132,6 +1137,7 @@ void TestPackage::init (void)
 	addChild(FragmentShadingBarycentric::createTests(m_testCtx));
 	// Amber depth pipeline tests
 	addChild(cts_amber::createAmberDepthGroup	(m_testCtx));
+	addChild(video::createTests					(m_testCtx));
 }
 
 void ExperimentalTestPackage::init (void)

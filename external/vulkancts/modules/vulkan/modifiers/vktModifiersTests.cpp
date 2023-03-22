@@ -188,7 +188,10 @@ std::vector<deUint64> getExportImportCompatibleModifiers (Context& context, VkFo
 	if (drmFormatModifiers.empty())
 		return compatibleModifiers;
 
-	const VkFormatFeatureFlags testFeatures = (VK_FORMAT_FEATURE_TRANSFER_SRC_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT);
+	const VkFormatFeatureFlags testFeatures = (VK_FORMAT_FEATURE_TRANSFER_SRC_BIT |
+									VK_FORMAT_FEATURE_BLIT_SRC_BIT |
+									VK_FORMAT_FEATURE_BLIT_DST_BIT |
+									VK_FORMAT_FEATURE_TRANSFER_DST_BIT);
 
 	for (const auto& modifierProps : drmFormatModifiers)
 	{
@@ -234,6 +237,7 @@ void checkExportImportExtensions (Context& context, VkFormat format)
 		VK_FORMAT_A2B10G10R10_SSCALED_PACK32,
 		VK_FORMAT_A2B10G10R10_UINT_PACK32,
 		VK_FORMAT_A2B10G10R10_SINT_PACK32,
+		VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
 	};
 
 	if (std::find(std::begin(skippedFormats), std::end(skippedFormats), format) != std::end(skippedFormats))

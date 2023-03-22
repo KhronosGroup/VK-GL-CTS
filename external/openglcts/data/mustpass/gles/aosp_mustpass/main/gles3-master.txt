@@ -6136,6 +6136,10 @@ dEQP-GLES3.functional.shaders.discard.function_static_loop_never
 dEQP-GLES3.functional.shaders.discard.function_static_loop_uniform
 dEQP-GLES3.functional.shaders.discard.function_static_loop_dynamic
 dEQP-GLES3.functional.shaders.discard.function_static_loop_texture
+dEQP-GLES3.functional.shaders.function.local_variable_aliasing_vertex
+dEQP-GLES3.functional.shaders.function.local_variable_aliasing_fragment
+dEQP-GLES3.functional.shaders.function.global_variable_aliasing_vertex
+dEQP-GLES3.functional.shaders.function.global_variable_aliasing_fragment
 dEQP-GLES3.functional.shaders.indexing.varying_array.float_static_write_static_read
 dEQP-GLES3.functional.shaders.indexing.varying_array.float_static_write_dynamic_read
 dEQP-GLES3.functional.shaders.indexing.varying_array.float_static_write_static_loop_read

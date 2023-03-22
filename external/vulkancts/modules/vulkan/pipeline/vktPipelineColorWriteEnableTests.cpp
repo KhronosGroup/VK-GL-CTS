@@ -797,7 +797,7 @@ tcu::TestStatus ColorWriteEnableInstance::iterate (void)
 	// Create static pipeline when needed.
 	if (useStaticPipeline)
 	{
-		staticPipeline.setupVertexInputStete(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
+		staticPipeline.setupVertexInputState(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
 					  .setupPreRasterizationShaderState(viewport,
 								scissor,
 								*pipelineLayout,
@@ -819,7 +819,7 @@ tcu::TestStatus ColorWriteEnableInstance::iterate (void)
 	// Create dynamic pipeline.
 	vk::GraphicsPipelineWrapper graphicsPipeline(vkd, device, m_testConfig.pipelineConstructionType);;
 	graphicsPipeline.setDynamicState(&dynamicStateCreateInfo)
-					.setupVertexInputStete(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
+					.setupVertexInputState(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
 					.setupPreRasterizationShaderState(viewport,
 								scissor,
 								*pipelineLayout,
@@ -1589,7 +1589,7 @@ void ColorWriteEnable2Instance::setupAndBuildPipeline (GraphicsPipelineWrapperEx
 		.setDefaultDepthStencilState()
 		.setDefaultMultisampleState()
 		.setDynamicState(cweAllowed ? &dynamicStateCreateInfo : nullptr)
-		.setupVertexInputStete(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
+		.setupVertexInputState(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
 		.setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, renderPass, 0u, *m_vertex)
 		.setupFragmentShaderState(pipelineLayout, renderPass, 0u, *m_fragment)
 		.setupFragmentOutputState(renderPass, 0u, &colorBlendStateCreateInfo)

@@ -24,15 +24,17 @@ import os
 import sys
 import shutil
 import tarfile
+import zipfile
 import hashlib
 import argparse
 import subprocess
 import ssl
 import stat
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "scripts"))
+scriptPath = os.path.join(os.path.dirname(__file__), "..", "scripts")
+sys.path.insert(0, scriptPath)
 
-from build.common import *
+from ctsbuild.common import *
 
 EXTERNAL_DIR	= os.path.realpath(os.path.normpath(os.path.dirname(__file__)))
 
@@ -51,33 +53,36 @@ class Source:
 	def clean (self):
 		fullDstPath = os.path.join(EXTERNAL_DIR, self.baseDir, self.extractDir)
 		# Remove read-only first
-		readonlydir = os.path.join(fullDstPath, ".git", "objects", "pack")
+		readonlydir = os.path.join(fullDstPath, ".git")
 		if os.path.exists(readonlydir):
-			shutil.rmtree(readonlydir, onerror = onReadonlyRemoveError )
+			shutil.rmtree(readonlydir, onerror = onReadonlyRemoveError)
 		if os.path.exists(fullDstPath):
 			shutil.rmtree(fullDstPath, ignore_errors=False)
 
 class SourcePackage (Source):
-	def __init__(self, url, filename, checksum, baseDir, extractDir = "src", postExtract=None):
+	def __init__(self, url, checksum, baseDir, extractDir = "src", postExtract=None):
 		Source.__init__(self, baseDir, extractDir)
 		self.url			= url
-		self.filename		= filename
+		self.filename		= os.path.basename(self.url)
 		self.checksum		= checksum
 		self.archiveDir		= "packages"
 		self.postExtract	= postExtract
+		self.sysNdx			= {"Windows":0, "Linux":1, "Darwin":2}[platform.system()]
+		self.FFmpeg			= "FFmpeg" in url
 
 	def clean (self):
 		Source.clean(self)
 		self.removeArchives()
 
 	def update (self, cmdProtocol = None, force = False):
-		if not self.isArchiveUpToDate():
-			self.fetchAndVerifyArchive()
+		if self.sysNdx != 2:
+			if not self.isArchiveUpToDate():
+				self.fetchAndVerifyArchive()
 
-		if self.getExtractedChecksum() != self.checksum:
-			Source.clean(self)
-			self.extract()
-			self.storeExtractedChecksum(self.checksum)
+			if self.getExtractedChecksum() != self.checksum:
+				Source.clean(self)
+				self.extract()
+				self.storeExtractedChecksum(self.checksum)
 
 	def removeArchives (self):
 		archiveDir = os.path.join(EXTERNAL_DIR, pkg.baseDir, pkg.archiveDir)
@@ -145,7 +150,11 @@ class SourcePackage (Source):
 		srcPath	= os.path.join(EXTERNAL_DIR, self.baseDir, self.archiveDir, self.filename)
 		tmpPath	= os.path.join(EXTERNAL_DIR, ".extract-tmp-%s" % self.baseDir)
 		dstPath	= os.path.join(EXTERNAL_DIR, self.baseDir, self.extractDir)
-		archive	= tarfile.open(srcPath)
+
+		if self.filename.endswith(".zip"):
+			archive	= zipfile.ZipFile(srcPath)
+		else:
+			archive	= tarfile.open(srcPath)
 
 		if os.path.exists(tmpPath):
 			shutil.rmtree(tmpPath, ignore_errors=False)
@@ -282,15 +291,17 @@ def postExtractLibpng (path):
 PACKAGES = [
 	SourcePackage(
 		"http://zlib.net/fossils/zlib-1.2.13.tar.gz",
-		"zlib-1.2.13.tar.gz",
 		"b3a24de97a8fdbc835b9833169501030b8977031bcb54b3b3ac13740f846ab30",
 		"zlib"),
 	SourcePackage(
 		"http://prdownloads.sourceforge.net/libpng/libpng-1.6.27.tar.gz",
-		"libpng-1.6.27.tar.gz",
 		"c9d164ec247f426a525a7b89936694aefbc91fb7a50182b198898b8fc91174b4",
 		"libpng",
 		postExtract = postExtractLibpng),
+	SourcePackage(
+        {"Windows":"https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-05-31-12-34/ffmpeg-n4.4.2-1-g8e98dfc57f-win64-lgpl-shared-4.4.zip", "Linux": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-05-31-12-34/ffmpeg-n4.4.2-1-g8e98dfc57f-linux64-gpl-shared-4.4.tar.xz", "Darwin":""}[platform.system()],
+        {"Windows":"670df8e9d2ddd5e761459b3538f64b8826566270ef1ed13bcbfc63e73aab3fd9","Linux":"817f8c93ff1ef7ede3dad15b20415d5e366bcd6848844d55046111fd3de827d0", "Darwin":""}[platform.system()],
+		"ffmpeg"),
 	SourceFile(
 		"https://raw.githubusercontent.com/baldurk/renderdoc/v1.1/renderdoc/api/app/renderdoc_app.h",
 		"renderdoc_app.h",
@@ -299,7 +310,7 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Tools.git",
 		"git@github.com:KhronosGroup/SPIRV-Tools.git",
-		"b930e734ea198b7aabbbf04ee1562cf6f57962f0",
+		"f98473ceeb1d33700d01e20910433583e5256030",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
@@ -310,12 +321,12 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Headers.git",
 		"git@github.com:KhronosGroup/SPIRV-Headers.git",
-		"36c0c1596225e728bd49abb7ef56a3953e7ed468",
+		"87d5b782bec60822aa878941e6b13c0a9a954c9b",
 		"spirv-headers"),
 	GitRepo(
-		"https://gitlab.khronos.org/vulkan/vulkan.git",
-		"git@gitlab.khronos.org:vulkan/vulkan.git",
-		"07bc88788d6db2c2760a094258eb9f44fd2bbb21",
+        "https://github.com/KhronosGroup/Vulkan-Docs.git",
+		"git@github.com:KhronosGroup/Vulkan-Docs.git",
+		"1b1c4dd43a35341c8c8e82ad985ed66d8beff5ba",
 		"vulkan-docs"),
 	GitRepo(
 		"https://github.com/google/amber.git",
@@ -327,6 +338,11 @@ PACKAGES = [
 		"git@github.com:open-source-parsers/jsoncpp.git",
 		"9059f5cad030ba11d37818847443a53918c327b1",
 		"jsoncpp"),
+	GitRepo(
+		"https://github.com/nvpro-samples/vk_video_samples.git",
+		None,
+		"7d68747d3524842afaf050c5e00a10f5b8c07904",
+		"video-parser"),
 ]
 
 def parseArgs ():
@@ -356,11 +372,34 @@ def parseArgs ():
 
 	return args
 
-if __name__ == "__main__":
-	args = parseArgs()
+def run(*popenargs, **kwargs):
+	process = subprocess.Popen(*popenargs, **kwargs)
 
-	for pkg in PACKAGES:
-		if args.clean:
-			pkg.clean()
-		else:
-			pkg.update(args.protocol, args.force)
+	try:
+		stdout, stderr = process.communicate(None)
+	except:
+		process.kill()
+		process.wait()
+		raise
+
+	retcode = process.poll()
+
+	if retcode:
+		raise subprocess.CalledProcessError(retcode, process.args, output=stdout, stderr=stderr)
+
+	return retcode, stdout, stderr
+
+if __name__ == "__main__":
+	# Rerun script with python3 as python2 does not have lzma (xz) decompression support
+	if sys.version_info < (3, 0):
+		cmd = {"Windows": ['py', '-3'], "Linux": ['python3'], "Darwin": ['python3']}[platform.system()]
+		cmd = cmd + sys.argv
+		run(cmd)
+	else:
+		args = parseArgs()
+
+		for pkg in PACKAGES:
+			if args.clean:
+				pkg.clean()
+			else:
+				pkg.update(args.protocol, args.force)

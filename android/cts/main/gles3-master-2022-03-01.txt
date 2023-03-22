@@ -231,6 +231,10 @@ dEQP-GLES3.functional.shaders.keywords.allowed_keywords.image1DArrayShadow_verte
 dEQP-GLES3.functional.shaders.keywords.allowed_keywords.image1DArrayShadow_fragment
 dEQP-GLES3.functional.shaders.keywords.allowed_keywords.image2DArrayShadow_vertex
 dEQP-GLES3.functional.shaders.keywords.allowed_keywords.image2DArrayShadow_fragment
+dEQP-GLES3.functional.shaders.function.local_variable_aliasing_vertex
+dEQP-GLES3.functional.shaders.function.local_variable_aliasing_fragment
+dEQP-GLES3.functional.shaders.function.global_variable_aliasing_vertex
+dEQP-GLES3.functional.shaders.function.global_variable_aliasing_fragment
 dEQP-GLES3.functional.shaders.switch.default_only_static_vertex
 dEQP-GLES3.functional.shaders.switch.default_only_static_fragment
 dEQP-GLES3.functional.shaders.switch.default_only_uniform_vertex

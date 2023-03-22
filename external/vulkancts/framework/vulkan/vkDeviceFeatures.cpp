@@ -37,9 +37,10 @@ namespace vk
 		VkPhysicalDeviceImageRobustnessFeaturesEXT *imageRobustnessFeatures = nullptr;
 #ifndef CTS_USES_VULKANSC
 		VkPhysicalDeviceFragmentShadingRateFeaturesKHR *fragmentShadingRateFeatures = nullptr;
-		VkPhysicalDeviceShadingRateImageFeaturesNV *shadingRateImageFeatures = nullptr;
+		VkPhysicalDeviceShadingRateImageFeaturesNV *shadingRateImageFeaturesNV = nullptr;
 		VkPhysicalDeviceFragmentDensityMapFeaturesEXT *fragmentDensityMapFeatures = nullptr;
 		VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT *pageableDeviceLocalMemoryFeatures = nullptr;
+		VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT *mutableDescriptorTypeFeatures = nullptr;
 #endif // CTS_USES_VULKANSC
 
 		m_coreFeatures2 = initVulkanStructure();
@@ -132,11 +133,13 @@ namespace vk
 						else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR)
 							fragmentShadingRateFeatures = reinterpret_cast<VkPhysicalDeviceFragmentShadingRateFeaturesKHR *>(rawStructPtr);
 						else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADING_RATE_IMAGE_FEATURES_NV)
-							shadingRateImageFeatures = reinterpret_cast<VkPhysicalDeviceShadingRateImageFeaturesNV *>(rawStructPtr);
+							shadingRateImageFeaturesNV = reinterpret_cast<VkPhysicalDeviceShadingRateImageFeaturesNV *>(rawStructPtr);
 						else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_FEATURES_EXT)
 							fragmentDensityMapFeatures = reinterpret_cast<VkPhysicalDeviceFragmentDensityMapFeaturesEXT *>(rawStructPtr);
 						else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PAGEABLE_DEVICE_LOCAL_MEMORY_FEATURES_EXT)
 							pageableDeviceLocalMemoryFeatures = reinterpret_cast<VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT *>(rawStructPtr);
+						else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_EXT)
+							mutableDescriptorTypeFeatures = reinterpret_cast<VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT *>(rawStructPtr);
 #endif // CTS_USES_VULKANSC
 	   // add to chain
 						*nextPtr = rawStructPtr;
@@ -211,6 +214,8 @@ namespace vk
 			m_coreFeatures2.features.robustBufferAccess = false;
 
 #ifndef CTS_USES_VULKANSC
+			m_vulkan13Features.robustImageAccess = false;
+
 			// Disable VK_EXT_fragment_density_map and VK_NV_shading_rate_image features
 			// that must: not be enabled if KHR fragment shading rate features are enabled.
 			if (fragmentShadingRateFeatures &&
@@ -218,8 +223,8 @@ namespace vk
 				 fragmentShadingRateFeatures->primitiveFragmentShadingRate ||
 				 fragmentShadingRateFeatures->attachmentFragmentShadingRate))
 			{
-				if (shadingRateImageFeatures)
-					shadingRateImageFeatures->shadingRateImage = false;
+				if (shadingRateImageFeaturesNV)
+					shadingRateImageFeaturesNV->shadingRateImage = false;
 				if (fragmentDensityMapFeatures)
 					fragmentDensityMapFeatures->fragmentDensityMap = false;
 			}
@@ -229,6 +234,11 @@ namespace vk
 			// pageableDeviceLocalMemory will use targetted testing on a custom device.
 			if (pageableDeviceLocalMemoryFeatures)
 				pageableDeviceLocalMemoryFeatures->pageableDeviceLocalMemory = false;
+
+			// Disable mutableDescriptorTypeFeatures by default because it can
+			// impact performance on some hardware.
+			if (mutableDescriptorTypeFeatures)
+				mutableDescriptorTypeFeatures->mutableDescriptorType = false;
 #endif // CTS_USES_VULKANSC
 		}
 	}

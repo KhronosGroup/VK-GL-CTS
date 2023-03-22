@@ -1675,7 +1675,7 @@ void BasicGraphicsTestInstance::buildPipeline(void)
 	m_graphicsPipeline.setDefaultRasterizationState()
 					  .setDefaultColorBlendState()
 					  .setDefaultMultisampleState()
-					  .setupVertexInputStete(&defaultVertexInputStateParams)
+					  .setupVertexInputState(&defaultVertexInputStateParams)
 					  .setupPreRasterizationShaderState(viewports,
 														scissors,
 														*m_pipelineLayout,
@@ -1953,7 +1953,7 @@ void AdvGraphicsTestInstance::buildPipeline(void)
 					  .setDefaultRasterizationState()
 					  .setDefaultColorBlendState()
 					  .setDefaultMultisampleState()
-					  .setupVertexInputStete(&defaultVertexInputStateParams)
+					  .setupVertexInputState(&defaultVertexInputStateParams)
 					  .setupPreRasterizationShaderState(viewports,
 														scissors,
 														*m_pipelineLayout,

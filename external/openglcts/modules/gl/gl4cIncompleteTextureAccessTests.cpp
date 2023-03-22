@@ -331,7 +331,7 @@ void SamplerTest::PrepareFramebuffer()
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
-	/* Sanity checks. */
+	/* Quick checks. */
 	if (m_fbo || m_rbo)
 	{
 		throw 0;
@@ -356,7 +356,7 @@ void SamplerTest::PrepareFramebuffer()
 	gl.framebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, m_rbo);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferRenderbuffer has failed");
 
-	/* Sanity checks. */
+	/* Quick checks. */
 	if (GL_FRAMEBUFFER_COMPLETE != gl.checkFramebufferStatus(GL_FRAMEBUFFER))
 	{
 		throw 0;
@@ -368,7 +368,7 @@ void SamplerTest::PrepareVertexArrays()
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
-	/* Sanity checks.*/
+	/* Quick checks.*/
 	if (m_vao)
 	{
 		throw 0;

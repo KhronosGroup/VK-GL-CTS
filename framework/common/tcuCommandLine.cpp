@@ -697,10 +697,14 @@ bool matchWildcards(string::const_iterator	patternStart,
 		return (path == pathEnd);
 	else if (*pattern == '*')
 	{
-		for (; path != pathEnd; ++path)
-		{
-			if (matchWildcards(pattern + 1, patternEnd, path, pathEnd, allowPrefix))
-				return true;
+		string::const_iterator patternNext = pattern + 1;
+		if (patternNext != patternEnd) {
+			for (; path != pathEnd; ++path)
+			{
+				if (*patternNext == *path)
+					if (matchWildcards(patternNext, patternEnd, path, pathEnd, allowPrefix))
+						return true;
+			}
 		}
 
 		if (matchWildcards(pattern + 1, patternEnd, pathEnd, pathEnd, allowPrefix))
@@ -750,7 +754,9 @@ static bool patternMatches(vector<string>::const_iterator	patternStart,
 
 bool CasePaths::matches (const string& caseName, bool allowPrefix) const
 {
+#if defined(TCU_HIERARCHICAL_CASEPATHS)
 	const vector<string> components = de::splitString(caseName, '.');
+#endif
 
 	for (size_t ndx = 0; ndx < m_casePatterns.size(); ++ndx)
 	{

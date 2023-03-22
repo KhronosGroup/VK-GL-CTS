@@ -32,6 +32,8 @@ set(DEQP_VK_WSI_SRCS
 	vktWsiFullScreenExclusiveTests.hpp
 	vktWsiPresentIdWaitTests.cpp
 	vktWsiPresentIdWaitTests.hpp
+	vktWsiMaintenance1Tests.cpp
+	vktWsiMaintenance1Tests.hpp
 	)
 
 set(DEQP_VK_WSI_LIBS

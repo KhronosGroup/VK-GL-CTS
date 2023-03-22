@@ -46,5 +46,6 @@ vk-master/tessellation.txt
 vk-master/texture.txt
 vk-master/transform-feedback.txt
 vk-master/ubo.txt
+vk-master/video.txt
 vk-master/wsi.txt
 vk-master/ycbcr.txt

@@ -49,6 +49,7 @@
 
 #include "tcuCommandLine.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuMaybe.hpp"
 
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
@@ -903,26 +904,19 @@ CopySSBOToImageTestInstance::CopySSBOToImageTestInstance (Context& context, cons
 
 tcu::TestStatus CopySSBOToImageTestInstance::iterate (void)
 {
-	const DeviceInterface&	vk					= m_context.getDeviceInterface();
-	const VkDevice			device				= m_context.getDevice();
-	const VkQueue			queue				= m_context.getUniversalQueue();
-	const deUint32			queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-	Allocator&				allocator			= m_context.getDefaultAllocator();
+	ContextCommonData		data	= m_context.getContextCommonData();
+	const DeviceInterface&	vkd		= data.vkd;
 
-	// Create an image
-
-	const VkImageCreateInfo imageParams = make2DImageCreateInfo(m_imageSize, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT);
-	const ImageWithMemory image(vk, device, allocator, imageParams, MemoryRequirement::Any);
-
+	// Create an image, a view, and the output buffer
 	const VkImageSubresourceRange subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
-	const Unique<VkImageView> imageView(makeImageView(vk, device, *image, VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R32_UINT, subresourceRange));
-
-	// Create an input buffer (data to be read in the shader)
+	ImageWithBuffer imageWithBuffer(vkd, data.device, data.allocator, vk::makeExtent3D(m_imageSize.x(), m_imageSize.y(), 1),
+		VK_FORMAT_R32_UINT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT, vk::VK_IMAGE_TYPE_2D,
+		subresourceRange);
 
 	const deUint32 imageArea = multiplyComponents(m_imageSize);
 	const VkDeviceSize bufferSizeBytes = sizeof(deUint32) * imageArea;
 
-	const BufferWithMemory inputBuffer(vk, device, allocator, makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
+	const BufferWithMemory inputBuffer(vkd, data.device, data.allocator, makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	// Populate the buffer with test data
 	{
@@ -932,82 +926,77 @@ tcu::TestStatus CopySSBOToImageTestInstance::iterate (void)
 		for (deUint32 i = 0; i < imageArea; ++i)
 			*bufferPtr++ = rnd.getUint32();
 
-		flushAlloc(vk, device, inputBufferAllocation);
+		flushAlloc(vkd, data.device, inputBufferAllocation);
 	}
 
-	// Create a buffer to store shader output (copied from image data)
-
-	const BufferWithMemory outputBuffer(vk, device, allocator, makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible);
-
 	// Create descriptor set
-
 	const Unique<VkDescriptorSetLayout> descriptorSetLayout(
 		DescriptorSetLayoutBuilder()
 		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
 		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
-		.build(vk, device));
+		.build(vkd, data.device));
 
 	const Unique<VkDescriptorPool> descriptorPool(
 		DescriptorPoolBuilder()
 		.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 		.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
-		.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+		.build(vkd, data.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 
-	const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+	const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vkd, data.device, *descriptorPool, *descriptorSetLayout));
 
 	// Set the bindings
 
-	const VkDescriptorImageInfo imageDescriptorInfo = makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+	const VkDescriptorImageInfo imageDescriptorInfo = makeDescriptorImageInfo(DE_NULL, imageWithBuffer.getImageView(), VK_IMAGE_LAYOUT_GENERAL);
 	const VkDescriptorBufferInfo bufferDescriptorInfo = makeDescriptorBufferInfo(*inputBuffer, 0ull, bufferSizeBytes);
 
 	DescriptorSetUpdateBuilder()
 		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferDescriptorInfo)
 		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &imageDescriptorInfo)
-		.update(vk, device);
+		.update(vkd, data.device);
 
 	// Perform the computation
 	{
-		const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0u));
-		const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
-		const Unique<VkPipeline> pipeline(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
+		const Unique<VkShaderModule> shaderModule(createShaderModule(vkd, data.device, m_context.getBinaryCollection().get("comp"), 0u));
+		const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vkd, data.device, *descriptorSetLayout));
+		const Unique<VkPipeline> pipeline(makeComputePipeline(vkd, data.device, *pipelineLayout, *shaderModule));
 
 		const VkBufferMemoryBarrier inputBufferPostHostWriteBarrier = makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, *inputBuffer, 0ull, bufferSizeBytes);
 
 		const VkImageMemoryBarrier imageLayoutBarrier = makeImageMemoryBarrier(
 			0u, VK_ACCESS_SHADER_WRITE_BIT,
 			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
-			*image, subresourceRange);
+			imageWithBuffer.getImage(), subresourceRange);
 
 		const tcu::IVec2 workSize = m_imageSize / m_localSize;
 
 		// Prepare the command buffer
 
-		const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
-		const Unique<VkCommandBuffer> cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+		const Unique<VkCommandPool> cmdPool(makeCommandPool(vkd, data.device, data.qfIndex));
+		const Unique<VkCommandBuffer> cmdBuffer(allocateCommandBuffer(vkd, data.device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 		// Start recording commands
 
-		beginCommandBuffer(vk, *cmdBuffer);
+		beginCommandBuffer(vkd, *cmdBuffer);
 
-		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
-		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
+		vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+		vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 
-		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &inputBufferPostHostWriteBarrier, 1, &imageLayoutBarrier);
-		vk.cmdDispatch(*cmdBuffer, workSize.x(), workSize.y(), 1u);
+		vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &inputBufferPostHostWriteBarrier, 1, &imageLayoutBarrier);
+		vkd.cmdDispatch(*cmdBuffer, workSize.x(), workSize.y(), 1u);
 
-		copyImageToBuffer(vk, *cmdBuffer, *image, *outputBuffer, m_imageSize, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL);
+		copyImageToBuffer(vkd, *cmdBuffer, imageWithBuffer.getImage(), imageWithBuffer.getBuffer(), m_imageSize, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL);
 
-		endCommandBuffer(vk, *cmdBuffer);
+		endCommandBuffer(vkd, *cmdBuffer);
 
 		// Wait for completion
 
-		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+		submitCommandsAndWait(vkd, data.device, data.queue, *cmdBuffer);
 	}
 
 	// Validate the results
 
-	const Allocation& outputBufferAllocation = outputBuffer.getAllocation();
-	invalidateAlloc(vk, device, outputBufferAllocation);
+	const Allocation& outputBufferAllocation = imageWithBuffer.getBufferAllocation();
+	invalidateAlloc(vkd, data.device, outputBufferAllocation);
 
 	const deUint32* bufferPtr = static_cast<deUint32*>(outputBufferAllocation.getHostPtr());
 	const deUint32* refBufferPtr = static_cast<deUint32*>(inputBuffer.getAllocation().getHostPtr());
@@ -3856,6 +3845,260 @@ tcu::TestStatus createTest (Context& context)
 }
 
 } // EmptyShaderTest ns
+
+namespace ComputeOnlyQueueTests
+{
+
+tcu::Maybe<uint32_t> getComputeOnlyQueueFamily(Context& context)
+{
+	bool foundQueue = false;
+	uint32_t index = 0;
+
+	auto queueFamilies = getPhysicalDeviceQueueFamilyProperties(context.getInstanceInterface(), context.getPhysicalDevice());
+
+	for (const auto &queueFamily: queueFamilies)
+	{
+		if ((queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT) &&
+			!(queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT))
+		{
+			foundQueue = true;
+			break;
+		} else {
+			index++;
+		}
+	}
+	if (!foundQueue)
+	{
+		return tcu::Maybe<uint32_t>();
+	} else {
+		return index;
+	}
+}
+
+// Creates a device that has a queue for compute capabilities without graphics.
+Move<VkDevice> createComputeOnlyDevice(Context& context, uint32_t& queueFamilyIndex)
+{
+	const auto&	instanceDriver		= context.getInstanceInterface();
+	const auto	physicalDevice		= context.getPhysicalDevice();
+	const auto	queueFamilies		= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
+
+	// One queue family without a graphics bit should be found, since this is checked in checkSupport.
+	queueFamilyIndex = getComputeOnlyQueueFamily(context).get();
+
+	const float									queuePriority				= 1.0f;
+	const VkDeviceQueueCreateInfo				deviceQueueCreateInfos		= {
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,	// VkStructureType				sType;
+		nullptr,									// const void*					pNext;
+		(VkDeviceQueueCreateFlags)0u,				// VkDeviceQueueCreateFlags		flags;
+		queueFamilyIndex,							// uint32_t						queueFamilyIndex;
+		1u,											// uint32_t						queueCount;
+		&queuePriority,								// const float*					pQueuePriorities;
+	};
+
+	void* pNext = nullptr;
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo =
+		context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
+	pNext = &memReservationInfo;
+
+	VkPipelineCacheCreateInfo			pcCI;
+	std::vector<VkPipelinePoolSize>		poolSizes;
+	if (context.getTestContext().getCommandLine().isSubProcess())
+	{
+		if (context.getResourceInterface()->getCacheDataSize() > 0)
+		{
+			pcCI =
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,				// VkStructureType				sType;
+				nullptr,													// const void*					pNext;
+				VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+					VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+				context.getResourceInterface()->getCacheDataSize(),			// deUintptr					initialDataSize;
+				context.getResourceInterface()->getCacheData()				// const void*					pInitialData;
+			};
+			memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+			memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+		}
+		poolSizes = context.getResourceInterface()->getPipelinePoolSizes();
+		if (!poolSizes.empty())
+		{
+			memReservationInfo.pipelinePoolSizeCount		= deUint32(poolSizes.size());
+			memReservationInfo.pPipelinePoolSizes			= poolSizes.data();
+		}
+	}
+#endif // CTS_USES_VULKANSC
+	const VkDeviceCreateInfo deviceCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,			// VkStructureType					sType;
+		pNext,											// const void*						pNext;
+		(VkDeviceCreateFlags)0u,						// VkDeviceCreateFlags				flags;
+		1,												// uint32_t							queueCreateInfoCount;
+		&deviceQueueCreateInfos,						// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
+		0u,												// uint32_t							enabledLayerCount;
+		nullptr,										// const char* const*				ppEnabledLayerNames;
+		0,												// uint32_t							enabledExtensionCount;
+		nullptr,										// const char* const*				ppEnabledExtensionNames;
+		nullptr,										// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+	};
+
+	return vkt::createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
+								   context.getPlatformInterface(),
+								   context.getInstance(),
+								   instanceDriver, physicalDevice, &deviceCreateInfo);
+}
+
+class SecondaryCommandBufferComputeOnlyTest : public vkt::TestCase {
+public:
+	SecondaryCommandBufferComputeOnlyTest(tcu::TestContext& context, const std::string& name, const std::string& description)
+		: vkt::TestCase(context, name, description)
+	{};
+
+	void            initPrograms            (SourceCollections& programCollection) const override;
+	TestInstance*   createInstance          (Context& context) const override;
+	void            checkSupport            (Context& context) const override;
+};
+
+class SecondaryCommandBufferComputeOnlyTestInstance : public vkt::TestInstance {
+public:
+	SecondaryCommandBufferComputeOnlyTestInstance(Context& context) : vkt::TestInstance(context)
+	{ };
+	virtual tcu::TestStatus iterate(void);
+};
+
+void SecondaryCommandBufferComputeOnlyTest::initPrograms(SourceCollections& collection) const {
+		{
+		std::ostringstream src;
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+			<< "layout(set = 0, binding = 0, std430) buffer Out\n"
+			<< "{\n"
+			<< "	uint data[];\n"
+			<< "};\n"
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "data[0] = 1;"
+			<< "}\n";
+		collection.glslSources.add("comp") << glu::ComputeSource(src.str());
+	}
+}
+
+
+TestInstance* SecondaryCommandBufferComputeOnlyTest::createInstance(Context& context) const {
+	return new SecondaryCommandBufferComputeOnlyTestInstance(context);
+}
+
+void SecondaryCommandBufferComputeOnlyTest::checkSupport(Context& context) const {
+	// Find at least one queue family that supports compute queue but does NOT support graphics queue.
+	if (!getComputeOnlyQueueFamily(context))
+		TCU_THROW(NotSupportedError, "No queue family found that only supports compute queue.");
+}
+
+tcu::TestStatus SecondaryCommandBufferComputeOnlyTestInstance::iterate()
+{
+	const InstanceInterface&	vki						= m_context.getInstanceInterface();
+#ifdef CTS_USES_VULKANSC
+	de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter> deviceDriver;
+#else
+	de::MovePtr<DeviceDriver> deviceDriver;
+#endif // CTS_USES_VULKANSC
+	VkDevice device;
+	uint32_t queueFamilyIndex;
+	auto customDevice = createComputeOnlyDevice(m_context, queueFamilyIndex);
+	device = customDevice.get();
+#ifndef CTS_USES_VULKANSC
+	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), device));
+#else
+	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_context.getInstance(), device,
+		m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(),
+		m_context.getDeviceProperties()), DeinitDeviceDeleter(m_context.getResourceInterface().get(), device));
+#endif // CTS_USES_VULKANSC
+
+	const DeviceInterface& vkdi = *deviceDriver;
+
+	auto queue		= getDeviceQueue(vkdi, device, queueFamilyIndex, 0u);
+	auto allocator	= de::MovePtr<Allocator>(new SimpleAllocator(vkdi, device, getPhysicalDeviceMemoryProperties(vki, m_context.getPhysicalDevice())));
+
+	const auto			bufferSize	= static_cast<VkDeviceSize>(sizeof(uint32_t));
+	BufferWithMemory	buffer			(vkdi, device, *allocator.get(), makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
+	auto&				bufferAlloc		= buffer.getAllocation();
+	void*				bufferData		= bufferAlloc.getHostPtr();
+	deMemset(bufferData, 0, sizeof(uint32_t));
+	flushAlloc(vkdi, device, bufferAlloc);
+
+	DescriptorSetLayoutBuilder layoutBuilder;
+	layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
+	Unique<VkDescriptorSetLayout> descriptorSetLayout(layoutBuilder.build(vkdi, device));
+
+	DescriptorPoolBuilder poolBuilder;
+	poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	const auto descriptorPool		= poolBuilder.build(vkdi, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1);
+	const auto descriptorSetBuffer	= makeDescriptorSet(vkdi, device, descriptorPool.get(), descriptorSetLayout.get());
+
+	// Update descriptor sets.
+	DescriptorSetUpdateBuilder updater;
+
+	const auto bufferInfo = makeDescriptorBufferInfo(buffer.get(), 0ull, bufferSize);
+	updater.writeSingle(descriptorSetBuffer.get(), DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferInfo);
+
+	updater.update(vkdi, device);
+
+	auto shader = createShaderModule(vkdi, device, m_context.getBinaryCollection().get("comp"));
+	// Create compute pipeline
+	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vkdi, device, *descriptorSetLayout));
+	const Unique<VkPipeline> computePipeline(makeComputePipeline(vkdi, device, *pipelineLayout, *shader));
+
+	// Create command buffer
+	const Unique<VkCommandPool> cmdPool(makeCommandPool(vkdi, device, queueFamilyIndex));
+	const Unique<VkCommandBuffer> cmdBuffer(allocateCommandBuffer(vkdi, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkCommandBuffer> cmdBuffer2(allocateCommandBuffer(vkdi, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY));
+
+	const VkCommandBufferInheritanceInfo bufferInheritanceInfo
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,					// VkStructureType					sType;
+		nullptr,															// const void*						pNext;
+		VK_NULL_HANDLE,														// VkRenderPass						renderPass;
+		0u,																	// deUint32							subpass;
+		VK_NULL_HANDLE,														// VkFramebuffer					framebuffer;
+		VK_FALSE,															// VkBool32							occlusionQueryEnable;
+		(VkQueryControlFlags)0u,											// VkQueryControlFlags				queryFlags;
+		(VkQueryPipelineStatisticFlags)0u									// VkQueryPipelineStatisticFlags	pipelineStatistics;
+	};
+
+	VkCommandBufferUsageFlags usageFlags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	const VkCommandBufferBeginInfo commandBufBeginParams
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,			// VkStructureType					sType;
+		nullptr,												// const void*						pNext;
+		usageFlags,												// VkCommandBufferUsageFlags		flags;
+		&bufferInheritanceInfo
+	};
+
+	beginCommandBuffer(vkdi, cmdBuffer.get());
+	vkdi.beginCommandBuffer(cmdBuffer2.get(), &commandBufBeginParams);
+	vkdi.cmdBindPipeline(cmdBuffer2.get(), VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline.get());
+	vkdi.cmdBindDescriptorSets(cmdBuffer2.get(), VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout.get(), 0u, 1, &descriptorSetBuffer.get(), 0u, nullptr);
+	vkdi.cmdDispatch(cmdBuffer2.get(), 1, 1, 1);
+	endCommandBuffer(vkdi, cmdBuffer2.get());
+	vkdi.cmdExecuteCommands(cmdBuffer.get(), 1, &cmdBuffer2.get());
+	const VkBufferMemoryBarrier renderBufferBarrier = makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, buffer.get(), 0ull, bufferSize);
+	cmdPipelineBufferMemoryBarrier(vkdi, cmdBuffer.get(), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, &renderBufferBarrier);
+	endCommandBuffer(vkdi, cmdBuffer.get());
+	submitCommandsAndWait(vkdi, device, queue, cmdBuffer.get());
+
+	invalidateAlloc(vkdi, device, bufferAlloc);
+
+	uint32_t result = 0;
+	deMemcpy(&result, bufferData, sizeof(uint32_t));
+	if (result != 1)
+	{
+		return tcu::TestStatus::pass("value of buffer unexpected");
+	}
+
+	return tcu::TestStatus::pass("passed");
+}
+
+};
+
 } // anonymous
 
 tcu::TestCaseGroup* createBasicComputeShaderTests (tcu::TestContext& testCtx)
@@ -3922,6 +4165,8 @@ tcu::TestCaseGroup* createBasicComputeShaderTests (tcu::TestContext& testCtx)
 
 	basicComputeTests->addChild(new ImageBarrierTest(testCtx,	"image_barrier_single",		"Image barrier",	tcu::IVec2(1,1)));
 	basicComputeTests->addChild(new ImageBarrierTest(testCtx,	"image_barrier_multiple",	"Image barrier",	tcu::IVec2(64,64)));
+
+	basicComputeTests->addChild(new ComputeOnlyQueueTests::SecondaryCommandBufferComputeOnlyTest(testCtx, "secondary_compute_only_queue", "Test secondary command buffers in compute only queues"));
 
 #ifndef CTS_USES_VULKANSC
 	basicComputeTests->addChild(cts_amber::createAmberTestCase(testCtx, "write_ssbo_array", "", "compute", "write_ssbo_array.amber"));

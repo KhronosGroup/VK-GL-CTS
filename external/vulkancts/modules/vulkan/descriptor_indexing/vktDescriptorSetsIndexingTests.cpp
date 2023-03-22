@@ -61,31 +61,19 @@ namespace
 using namespace vk;
 using tcu::UVec2;
 using tcu::Vec4;
-using tcu::TestStatus;
 using tcu::PixelBufferAccess;
-using tcu::Texture2D;
 
-#define RESOLUTION_width	64
-#define RESOLUTION_height	64
-static const VkExtent3D RESOLUTION = { RESOLUTION_width, RESOLUTION_height, 1 };
+static const VkExtent3D RESOLUTION = { 64, 64, 1 };
+
+constexpr uint32_t kMinWorkGroupSize = 2u;
+constexpr uint32_t kMaxWorkGroupSize = 128u;
 
 #define MAX_DESCRIPTORS		4200
-#define FUZZY_COMPARE		DE_FALSE
-#define	CMP_THRESHOLD		0.02f
+#define FUZZY_COMPARE		false
 
-#define BINDING_Undefined				0
-#define BINDING_UniformBuffer			1
-#define BINDING_StorageBuffer			2
-#define BINDING_UniformTexelBuffer		3
-#define BINDING_StorageTexelBuffer		4
-#define BINDING_Sampler					5
-#define BINDING_SampledImage			6
-#define BINDING_CombinedImageSampler	7
-#define BINDING_UniformBufferDynamic	8
-#define BINDING_StorageBufferDynamic	9
-#define BINDING_InputAttachment			10
-#define BINDING_StorageImage			11
-#define BINDING_DescriptorEnumerator	12
+#define BINDING_TestObject				0
+#define BINDING_Additional				1
+#define BINDING_DescriptorEnumerator	2
 
 static const VkExtent3D			smallImageExtent				= { 4, 4, 1 };
 static const VkExtent3D			bigImageExtent					= { 32, 32, 1 };
@@ -96,27 +84,15 @@ static const VkDescriptorType	VK_DESCRIPTOR_TYPE_UNDEFINED	= VK_DESCRIPTOR_TYPE_
 static const VkDescriptorType	VK_DESCRIPTOR_TYPE_UNDEFINED	= VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 #endif
 
-template<deUint32 BindingNumber>
-struct Binding
+struct BindingUniformBufferData
 {
-	static const deUint32	binding	= BindingNumber;
+	tcu::Vec4 c;
 };
 
-struct BindingUniformBuffer : Binding<BINDING_UniformBuffer>
+struct BindingStorageBufferData
 {
-	typedef struct
-	{
-		tcu::Vec4 c;
-	} Data;
-};
-
-struct BindingStorageBuffer : Binding<BINDING_StorageBuffer>
-{
-	typedef struct
-	{
-		tcu::Vec4 cnew;
-		tcu::Vec4 cold;
-	} Data;
+	tcu::Vec4 cnew;
+	tcu::Vec4 cold;
 };
 
 struct TestCaseParams
@@ -128,17 +104,13 @@ struct TestCaseParams
 	bool				calculateInLoop;	// perform calculation in a loop
 	bool				usesMipMaps;		// this makes a sense and affects in image test cases only
 	bool				minNonUniform;		// whether a test will use the minimum nonUniform decorations
-	deBool				fuzzyComparison;	// if true then a test will use fuzzy comparison, otherwise float threshold
-	float				thresholdValue;		// a threshold that will be used for both, float and fuzzy comparisons
 };
 
 struct TestParams
 {
 	VkShaderStageFlags	stageFlags;
 	VkDescriptorType	descriptorType;
-	deUint32			descriptorBinding;
 	VkDescriptorType	additionalDescriptorType;
-	deUint32			additionalDescriptorBinding;
 	bool				copyBuffersToImages;
 	bool				allowVertexStoring;
 	VkExtent3D			frameResolution;
@@ -146,22 +118,16 @@ struct TestParams
 	bool				calculateInLoop;
 	bool				usesMipMaps;
 	bool				minNonUniform;
-	deBool				fuzzyComparison;
-	float				thresholdValue;
 
 	TestParams			(VkShaderStageFlags		stageFlags_,
 						VkDescriptorType		descriptorType_,
-						deUint32				descriptorBinding_,
 						VkDescriptorType		additionalDescriptorType_,
-						deUint32				additionalDescriptorBinding_,
 						bool					copyBuffersToImages_,
 						bool					allowVertexStoring_,
 						const TestCaseParams&	caseParams)
 		: stageFlags							(stageFlags_)
 		, descriptorType						(descriptorType_)
-		, descriptorBinding						(descriptorBinding_)
 		, additionalDescriptorType				(additionalDescriptorType_)
-		, additionalDescriptorBinding			(additionalDescriptorBinding_)
 		, copyBuffersToImages					(copyBuffersToImages_)
 		, allowVertexStoring					(allowVertexStoring_)
 		, frameResolution						(caseParams.frameResolution)
@@ -169,8 +135,6 @@ struct TestParams
 		, calculateInLoop						(caseParams.calculateInLoop)
 		, usesMipMaps							(caseParams.usesMipMaps)
 		, minNonUniform							(caseParams.minNonUniform)
-		, fuzzyComparison						(caseParams.fuzzyComparison ? true : false)
-		, thresholdValue						(caseParams.thresholdValue)
 	{
 	}
 };
@@ -261,13 +225,11 @@ public:
 																 deUint32									availableDescriptorCount) const;
 
 	static std::string			substBinding					(deUint32									binding,
-																 const char*								str,
-																 deUint32									count = 0,
-																 const char*								name = DE_NULL);
+																 const char*								str);
 
 	static const char*			getVertexShaderProlog			(void);
-
 	static const char*			getFragmentShaderProlog			(void);
+	static const char*			getComputeShaderProlog			(void);
 
 	static const char*			getShaderEpilog					(void);
 
@@ -557,7 +519,7 @@ Move<VkDescriptorSetLayout>	CommonDescriptorInstance::createDescriptorSetLayout 
 {
 	descriptorCount = computeAvailableDescriptorCount(m_testParams.descriptorType, reserveUniformTexelBuffer);
 
-	bool optional = (m_testParams.additionalDescriptorBinding != BINDING_Undefined) && (m_testParams.additionalDescriptorType != VK_DESCRIPTOR_TYPE_UNDEFINED);
+	bool optional = (m_testParams.additionalDescriptorType != VK_DESCRIPTOR_TYPE_UNDEFINED);
 
 	const VkShaderStageFlags bindingStageFlags = (m_testParams.descriptorType == VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT) ?
 													VkShaderStageFlags{VK_SHADER_STAGE_FRAGMENT_BIT} : m_testParams.stageFlags;
@@ -565,14 +527,14 @@ Move<VkDescriptorSetLayout>	CommonDescriptorInstance::createDescriptorSetLayout 
 	const VkDescriptorSetLayoutBinding	bindings[] =
 	{
 		{
-			m_testParams.descriptorBinding,				// binding
+			BINDING_TestObject,							// binding
 			m_testParams.descriptorType,				// descriptorType
 			descriptorCount,							// descriptorCount
 			bindingStageFlags,							// stageFlags
 			DE_NULL,									// pImmutableSamplers
 		},
 		{
-			m_testParams.additionalDescriptorBinding,	// binding
+			BINDING_Additional,							// binding
 			m_testParams.additionalDescriptorType,		// descriptorType
 			1,											// descriptorCount
 			bindingStageFlags,							// stageFlags
@@ -620,10 +582,8 @@ Move<VkDescriptorPool>	CommonDescriptorInstance::createDescriptorPool (deUint32	
 
 	builder.addType(m_testParams.descriptorType, descriptorCount);
 
-	if (m_testParams.additionalDescriptorType != VK_DESCRIPTOR_TYPE_UNDEFINED && m_testParams.additionalDescriptorBinding != BINDING_Undefined)
-	{
+	if (m_testParams.additionalDescriptorType != VK_DESCRIPTOR_TYPE_UNDEFINED)
 		builder.addType(m_testParams.additionalDescriptorType, 1);
-	}
 
 	return builder.build(m_vki, m_vkd, (VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT | pcf), 1u);
 }
@@ -662,11 +622,9 @@ void CommonDescriptorInstance::createVertexAttributeBuffer			(ut::BufferHandleAl
 		// r: 2,3,5,7,11,13,2,3,5,7,...
 		data[invIdx].index.x() = primes[invIdx % primeCount];
 
-		// b: x index in texel coordinate
-		data[invIdx].index.z() = invIdx % m_testParams.frameResolution.width;
-
-		//a: y index in texel coordinate
-		data[invIdx].index.w() = invIdx / m_testParams.frameResolution.width;
+		// b, a: not used
+		data[invIdx].index.z() = 0;
+		data[invIdx].index.w() = 0;
 	}
 
 	// g: 0,0,2,3,0,5,0,7,0,0,0,11,0,13,...
@@ -687,14 +645,10 @@ void CommonDescriptorInstance::createVertexAttributeBuffer			(ut::BufferHandleAl
 }
 
 std::string CommonDescriptorInstance::substBinding					(deUint32								binding,
-																	 const char*							str,
-																	 deUint32								count,
-																	 const char*							name)
+																	 const char*							str)
 {
 	std::map<std::string, std::string> vars;
 	vars["?"]	= de::toString(binding);
-	vars["*"]	= (0 == count)		? ""		: de::toString(count);
-	vars["VAR"]	= (DE_NULL == name)	? "data"	: name;
 	return tcu::StringTemplate(str).specialize(vars);
 }
 
@@ -704,39 +658,38 @@ const char* CommonDescriptorInstance::getVertexShaderProlog			(void)
 		"layout(location = 0) in  vec4  in_position;	\n"
 		"layout(location = 1) in  vec2  in_normalpos;	\n"
 		"layout(location = 2) in  ivec4 index;			\n"
-		"layout(location = 0) out vec4  position;	\n"
-		"layout(location = 1) out vec2  normalpos;	\n"
-		"layout(location = 2) out int   vIndex;		\n"
-		"layout(location = 3) out int   rIndex;		\n"
-		"layout(location = 4) out int   gIndex;		\n"
-		"layout(location = 5) out int   bIndex;		\n"
-		"layout(location = 6) out int   aIndex;		\n"
-		"void main()							\n"
-		"{										\n"
-		"    gl_PointSize = 0.2f;				\n"
-		"    position = in_position;			\n"
-		"    normalpos = in_normalpos;			\n"
-		"    gl_Position = position;			\n"
-		"    vIndex = gl_VertexIndex;			\n"
-		"    rIndex = index.x;					\n"
-		"    gIndex = index.y;					\n"
-		"    bIndex = index.z;					\n"
-		"    aIndex = index.w;					\n";
+		"layout(location = 0) out vec2  normalpos;		\n"
+		"layout(location = 1) out int   rIndex;			\n"
+		"layout(location = 2) out int   gIndex;			\n"
+		"void main(void)								\n"
+		"{												\n"
+		"    gl_PointSize = 0.2f;						\n"
+		"    normalpos = in_normalpos;					\n"
+		"    gl_Position = in_position;					\n"
+		"    rIndex = index.x;							\n"
+		"    gIndex = index.y;							\n";
 }
 
 const char* CommonDescriptorInstance::getFragmentShaderProlog		(void)
 {
 	return
 		"layout(location = 0) out vec4     FragColor;	\n"
-		"layout(location = 0) in flat vec4 position;	\n"
-		"layout(location = 1) in flat vec2 normalpos;	\n"
-		"layout(location = 2) in flat int  vIndex;		\n"
-		"layout(location = 3) in flat int  rIndex;		\n"
-		"layout(location = 4) in flat int  gIndex;		\n"
-		"layout(location = 5) in flat int  bIndex;		\n"
-		"layout(location = 6) in flat int  aIndex;		\n"
-		"void main()									\n"
+		"layout(location = 0) in flat vec2 normalpos;	\n"
+		"layout(location = 1) in flat int  rIndex;		\n"
+		"layout(location = 2) in flat int  gIndex;		\n"
+		"void main(void)								\n"
 		"{												\n";
+}
+
+const char* CommonDescriptorInstance::getComputeShaderProlog		(void)
+{
+	return
+		"layout(constant_id=0) const int local_size_x_val = 1;				\n"
+		"layout(constant_id=1) const int local_size_y_val = 1;				\n"
+		"layout(constant_id=2) const int local_size_z_val = 1;				\n"
+		"layout(local_size_x_id=0,local_size_y_id=1,local_size_z_id=2) in;	\n"
+		"void main(void)													\n"
+		"{																	\n";
 }
 
 const char* CommonDescriptorInstance::getShaderEpilog				(void)
@@ -836,28 +789,47 @@ Move<VkPipeline> CommonDescriptorInstance::createPipeline			(VkPipelineLayout			
 
 Move<VkPipeline> CommonDescriptorInstance::createComputePipeline	(VkPipelineLayout							pipelineLayout)
 {
+	const tcu::IVec3	workGroupSize	((m_testParams.calculateInLoop ? kMaxWorkGroupSize : kMinWorkGroupSize), 1, 1);
+	const auto			intSize			= sizeof(int);
+	const auto			intSizeU32		= static_cast<uint32_t>(intSize);
+
+	const std::vector<VkSpecializationMapEntry> mapEntries
+	{
+		makeSpecializationMapEntry(0u, intSizeU32 * 0u, intSize),
+		makeSpecializationMapEntry(1u, intSizeU32 * 1u, intSize),
+		makeSpecializationMapEntry(2u, intSizeU32 * 2u, intSize),
+	};
+
+	const VkSpecializationInfo workGroupSizeInfo =
+	{
+		de::sizeU32(mapEntries),		//	uint32_t						mapEntryCount;
+		de::dataOrNull(mapEntries),		//	const VkSpecializationMapEntry*	pMapEntries;
+		sizeof(workGroupSize),			//	size_t							dataSize;
+		&workGroupSize,					//	const void*						pData;
+	};
+
 	const VkPipelineShaderStageCreateInfo	shaderStaegCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-		DE_NULL,								// pNext
+		nullptr,								// pNext
 		(VkPipelineShaderStageCreateFlags)0,	// flags
 		VK_SHADER_STAGE_COMPUTE_BIT,			// stage
 		*m_computeModule,						// module
 		"main",									// pName
-		(VkSpecializationInfo*)DE_NULL			// pSpecializationInfo
+		&workGroupSizeInfo,						// pSpecializationInfo
 	};
 
 	const VkComputePipelineCreateInfo		pipelineCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-		DE_NULL,								// pNext
+		nullptr,								// pNext
 		0u,										// flags
 		shaderStaegCreateInfo,					// stage
 		pipelineLayout,							// layout
-		(VkPipeline)0,							// basePipelineHandle
+		VK_NULL_HANDLE,							// basePipelineHandle
 		0u,										// basePipelineIndex
 	};
-	return vk::createComputePipeline(m_vki, m_vkd, (VkPipelineCache)0u, &pipelineCreateInfo);
+	return vk::createComputePipeline(m_vki, m_vkd, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 Move<VkPipeline> CommonDescriptorInstance::createGraphicsPipeline	(VkPipelineLayout							pipelineLayout,
@@ -1180,7 +1152,7 @@ void CommonDescriptorInstance::updateDescriptors					(IterateCommonVariables&			
 			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,			// sType
 			DE_NULL,										// pNext
 			*variables.descriptorSet,						// descriptorSet
-			m_testParams.descriptorBinding,					// descriptorBinding;
+			BINDING_TestObject,								// descriptorBinding;
 			primes[primeIdx],								// elementIndex
 			1u,												// descriptorCount
 			m_testParams.descriptorType,					// descriptorType
@@ -1438,7 +1410,7 @@ bool CommonDescriptorInstance::iterateVerifyResults			(IterateCommonVariables&		
 																	 ut::UpdatablePixelBufferAccessPtr	referenceResult)
 {
 	bool result = false;
-	if (m_testParams.fuzzyComparison)
+	if (FUZZY_COMPARE)
 	{
 		result = tcu::fuzzyCompare(m_context.getTestContext().getLog(),
 			"Fuzzy Compare", "Comparison result", *referenceResult.get(), *programResult.get(), 0.02f, tcu::COMPARE_LOG_EVERYTHING);
@@ -1695,13 +1667,13 @@ std::string CommonDescriptorInstance::getColorAccess				(VkDescriptorType							
 		break;
 	case VK_DESCRIPTOR_TYPE_SAMPLER:
 		text = usesMipMaps
-			? "textureLod(nonuniformEXT(sampler2D(tex[0], data[${INDEX}])), normalpos, 1)"
-			: "texture(   nonuniformEXT(sampler2D(tex[0], data[${INDEX}])), normalpos   )";
+			? "textureLod(nonuniformEXT(sampler2D(tex, data[${INDEX}])), normalpos, 1)"
+			: "texture(   nonuniformEXT(sampler2D(tex, data[${INDEX}])), normalpos   )";
 		break;
 	case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
 		text = usesMipMaps
-			? "textureLod( nonuniformEXT(sampler2D(data[${INDEX}], samp[0])), vec2(0,0), textureQueryLevels(nonuniformEXT(sampler2D(data[${INDEX}], samp[0])))-1)"
-			: "texture(    nonuniformEXT(sampler2D(data[${INDEX}], samp[0])), vec2(0,0)   )";
+			? "textureLod( nonuniformEXT(sampler2D(data[${INDEX}], samp)), vec2(0,0), textureQueryLevels(nonuniformEXT(sampler2D(data[${INDEX}], samp)))-1)"
+			: "texture(    nonuniformEXT(sampler2D(data[${INDEX}], samp)), vec2(0,0)   )";
 		break;
 	case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
 		text = usesMipMaps
@@ -1743,37 +1715,23 @@ std::string CommonDescriptorInstance::getFragmentLoopSource			(const std::string
 
 bool CommonDescriptorInstance::performWritesInVertex				(VkDescriptorType							descriptorType)
 {
-	bool result = false;
-
 	switch (descriptorType)
 	{
 	case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
 	case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
 	case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
-		result = true;
-		break;
+		return true;
 	default:
-		result = false;
-		break;
+		return false;
 	}
-
-	return result;
 }
 
 bool CommonDescriptorInstance::performWritesInVertex				(VkDescriptorType							descriptorType,
 																	const Context&								context)
 {
-	bool result = false;
-
 	ut::DeviceProperties			dp		(context);
 	const VkPhysicalDeviceFeatures&	feats	= dp.physicalDeviceFeatures();
-
-	if (feats.vertexPipelineStoresAndAtomics != DE_FALSE)
-	{
-		result = CommonDescriptorInstance::performWritesInVertex(descriptorType);
-	}
-
-	return result;
+	return feats.vertexPipelineStoresAndAtomics && CommonDescriptorInstance::performWritesInVertex(descriptorType);
 }
 
 std::string CommonDescriptorInstance::getShaderAsm					(VkShaderStageFlagBits						shaderType,
@@ -1948,7 +1906,7 @@ std::string CommonDescriptorInstance::getShaderAsm					(VkShaderStageFlagBits			
 					s << "               OpDecorate %bIndex Location 5\n";
 					s << "               OpDecorate %aIndex Location 6\n";
 					s << "               OpDecorate %data DescriptorSet 0\n";
-					s << "               OpDecorate %data Binding 4\n";
+					s << "               OpDecorate %data Binding " << BINDING_TestObject << "\n";
 					if (allowVertexStoring)
 					{
 						// s << "               OpDecorate %66 NonUniform\n";
@@ -2116,7 +2074,7 @@ std::string CommonDescriptorInstance::getShaderAsm					(VkShaderStageFlagBits			
 					s << "               OpMemberDecorate %Data 1 Offset 16\n";
 					s << "               OpDecorate %Data Block\n";
 					s << "               OpDecorate %data DescriptorSet 0\n";
-					s << "               OpDecorate %data Binding 2\n";
+					s << "               OpDecorate %data Binding " << BINDING_TestObject << "\n";
 					if (allowVertexStoring)
 					{
 						// s << "               OpDecorate %66 NonUniform\n";
@@ -2260,7 +2218,7 @@ std::string CommonDescriptorInstance::getShaderAsm					(VkShaderStageFlagBits			
 					s << "               OpName %aIndex \"aIndex\"\n";
 					s << "               OpDecorate %FragColor Location 0\n";
 					s << "               OpDecorate %data DescriptorSet 0\n";
-					s << "               OpDecorate %data Binding 7\n";
+					s << "               OpDecorate %data Binding " << BINDING_TestObject << "\n";
 					s << "               OpDecorate %rIndex Flat\n";
 					s << "               OpDecorate %rIndex Location 3\n";
 					// s << "               OpDecorate %19 NonUniform\n";
@@ -2365,7 +2323,7 @@ std::string CommonDescriptorInstance::getShaderAsm					(VkShaderStageFlagBits			
 					s << "               OpName %aIndex \"aIndex\"\n";
 					s << "               OpDecorate %FragColor Location 0\n";
 					s << "               OpDecorate %data DescriptorSet 0\n";
-					s << "               OpDecorate %data Binding 3\n";
+					s << "               OpDecorate %data Binding " << BINDING_TestObject << "\n";
 					s << "               OpDecorate %rIndex Flat\n";
 					s << "               OpDecorate %rIndex Location 3\n";
 					// s << "               OpDecorate %19 NonUniform\n";
@@ -2446,7 +2404,7 @@ std::string CommonDescriptorInstance::getShaderAsm					(VkShaderStageFlagBits			
 					s << "               OpName %aIndex \"aIndex\"\n";
 					s << "               OpDecorate %FragColor Location 0\n";
 					s << "               OpDecorate %data DescriptorSet 0\n";
-					s << "               OpDecorate %data Binding 4\n";
+					s << "               OpDecorate %data Binding " << BINDING_TestObject << "\n";
 					s << "               OpDecorate %rIndex Flat\n";
 					s << "               OpDecorate %rIndex Location 3\n";
 					// s << "               OpDecorate %18 NonUniform\n";
@@ -2529,7 +2487,7 @@ std::string CommonDescriptorInstance::getShaderAsm					(VkShaderStageFlagBits			
 					s << "               OpMemberDecorate %Data 1 Offset 16\n";
 					s << "               OpDecorate %Data Block\n";
 					s << "               OpDecorate %data DescriptorSet 0\n";
-					s << "               OpDecorate %data Binding 2\n";
+					s << "               OpDecorate %data Binding " << BINDING_TestObject << "\n";
 					s << "               OpDecorate %rIndex Flat\n";
 					s << "               OpDecorate %rIndex Location 3\n";
 					// s << "               OpDecorate %18 NonUniform\n";
@@ -2608,7 +2566,7 @@ std::string CommonDescriptorInstance::getShaderAsm					(VkShaderStageFlagBits			
 					s << "               OpMemberDecorate %Data 0 Offset 0\n";
 					s << "               OpDecorate %Data Block\n";
 					s << "               OpDecorate %data DescriptorSet 0\n";
-					s << "               OpDecorate %data Binding 1\n";
+					s << "               OpDecorate %data Binding " << BINDING_TestObject << "\n";
 					s << "               OpDecorate %rIndex Flat\n";
 					s << "               OpDecorate %rIndex Location 3\n";
 					// s << "               OpDecorate %18 NonUniform\n";
@@ -2685,10 +2643,10 @@ std::string CommonDescriptorInstance::getShaderAsm					(VkShaderStageFlagBits			
 					s << "               OpName %gl_WorkGroupID \"gl_WorkGroupID\"\n";
 					s << "               OpName %data \"data\"\n";
 					s << "               OpDecorate %idxs DescriptorSet 0\n";
-					s << "               OpDecorate %idxs Binding 12\n";
+					s << "               OpDecorate %idxs Binding " << BINDING_Additional << "\n";
 					s << "               OpDecorate %gl_WorkGroupID BuiltIn WorkgroupId\n";
 					s << "               OpDecorate %data DescriptorSet 0\n";
-					s << "               OpDecorate %data Binding 11\n";
+					s << "               OpDecorate %data Binding " << BINDING_TestObject << "\n";
 					// s << "               OpDecorate %36 NonUniform\n";
 					// s << "               OpDecorate %37 NonUniform\n";
 					s << "               OpDecorate %41 NonUniform\n";
@@ -2766,82 +2724,60 @@ std::string CommonDescriptorInstance::getShaderSource				(VkShaderStageFlagBits	
 			"layout(set=1,binding=${?}) uniform isamplerBuffer iter;	\n");
 	}
 
+	std::string declType;
 	switch (testCaseParams.descriptorType)
 	{
 		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-			s << substBinding(BINDING_StorageBuffer,
-				"layout(set=0,binding=${?}) buffer Data { vec4 cnew, cold; } data[]; \n");
-			break;
-		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
-			s << substBinding(BINDING_StorageBufferDynamic,
-				"layout(set=0,binding=${?}) buffer Data { vec4 cnew, cold; } data[]; \n");
-			break;
+		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:	declType = "buffer Data { vec4 cnew, cold; }";	break;
 		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-			s << substBinding(BINDING_UniformBuffer,
-				"layout(set=0,binding=${?}) uniform Data { vec4 c; } data[]; \n");
-			break;
-		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
-			s << substBinding(BINDING_UniformBufferDynamic,
-				"layout(set=0,binding=${?}) uniform Data { vec4 c; } data[]; \n");
-			break;
-		case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
-			s << substBinding(BINDING_StorageTexelBuffer,
-				"layout(set=0,binding=${?},rgba32f) uniform imageBuffer data[];\n");
-			break;
-		case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
-			s << "#extension GL_EXT_texture_buffer : require	\n";
-			s << substBinding(BINDING_UniformTexelBuffer,
-				"layout(set=0,binding=${?}) uniform samplerBuffer data[];\n");
-			break;
-		case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
-			// Left for the consistent of code.
-			// Header is set one swicth below
-			break;
-		case VK_DESCRIPTOR_TYPE_SAMPLER:
-			s << "#extension GL_EXT_texture_buffer : require	\n";
-			s << substBinding(BINDING_SampledImage,
-				"layout(set=0,binding=${?}) uniform texture2D ${VAR}[${*}];\n", 1, "tex");
-			s << substBinding(BINDING_Sampler,
-				"layout(set=0,binding=${?}) uniform sampler ${VAR}[${*}];\n");
-			break;
-		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-			s << "#extension GL_EXT_texture_buffer : require	\n";
-			s << substBinding(BINDING_Sampler,
-				"layout(set=0,binding=${?}) uniform sampler ${VAR}[${*}];\n", 1, "samp");
-			s << substBinding(BINDING_SampledImage,
-				"layout(set=0,binding=${?}) uniform texture2D ${VAR}[${*}];\n");
-			break;
-		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-			s << "#extension GL_EXT_texture_buffer : require	\n";
-			s << substBinding(BINDING_CombinedImageSampler,
-				"layout(set=0,binding=${?}) uniform sampler2D data[];\n");
-			break;
-		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-			s << "layout(local_size_x=1,local_size_y=1,local_size_z=1) in;	\n";
-			s << substBinding(BINDING_StorageImage + 1,
-				"layout(r32ui,set=0,binding=${?}) uniform uimage2D idxs;	\n");
-			s << substBinding(BINDING_StorageImage,
-				"layout(r32ui,set=0,binding=${?}) uniform uimage2D data[];	\n");
-			break;
+		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:	declType = "uniform Data { vec4 c; }";			break;
+		case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:	declType = "uniform imageBuffer";				break;
+		case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:	declType = "uniform samplerBuffer";				break;
+		case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:		declType = "uniform subpassInput";				break;
+		case VK_DESCRIPTOR_TYPE_SAMPLER:				declType = "uniform sampler";					break;
+		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:			declType = "uniform texture2D";					break;
+		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:	declType = "uniform sampler2D";					break;
+		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:			declType = "uniform uimage2D";					break;
 		default:
 			TCU_THROW(InternalError, "Not implemented descriptor type");
+	}
+
+	std::string extraLayout = "";
+	switch (testCaseParams.descriptorType)
+	{
+		// Note trailing commas to fit in with layout declaration, below.
+		case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:	extraLayout = "rgba32f,";					break;
+		case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:		extraLayout = "input_attachment_index=1,";	break;
+		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:			extraLayout = "r32ui,";						break;
+		default:																					break;
+	}
+
+	// Input attachments may only be declared in fragment shaders. The tests should only be constructed to use fragment
+	// shaders, but the matching vertex shader will still pass here and must not pick up the invalid declaration.
+	if (testCaseParams.descriptorType != VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT || shaderType == VK_SHADER_STAGE_FRAGMENT_BIT)
+		s << "layout(" << extraLayout << "set=0, binding = " << BINDING_TestObject << ") " << declType << " data[];\n";
+
+	// Now make any additional declarations needed for specific descriptor types
+	switch (testCaseParams.descriptorType)
+	{
+		case VK_DESCRIPTOR_TYPE_SAMPLER:
+			s << "layout(set=0,binding=" << BINDING_Additional << ") uniform texture2D tex;\n";
+			break;
+		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+			s << "layout(set=0,binding=" << BINDING_Additional << ") uniform sampler samp;\n";
+			break;
+		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+			s << "layout(r32ui,set=0,binding=" << BINDING_Additional << ") uniform uimage2D idxs;\n";
+			break;
+		default:
+			break;
 	}
 
 	switch (shaderType)
 	{
 		case VK_SHADER_STAGE_VERTEX_BIT:	s << getVertexShaderProlog();	break;
-		case VK_SHADER_STAGE_FRAGMENT_BIT:
-			{
-				if (testCaseParams.descriptorType == VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT)
-				{
-					s << substBinding(BINDING_InputAttachment,
-						"layout(input_attachment_index=1,set=0,binding=${?}) uniform subpassInput data[];	\n");
-				}
-				s << getFragmentShaderProlog();
-			}
-			break;
-		case VK_SHADER_STAGE_COMPUTE_BIT:
-			break;
+		case VK_SHADER_STAGE_FRAGMENT_BIT:	s << getFragmentShaderProlog();	break;
+		case VK_SHADER_STAGE_COMPUTE_BIT:	s << getComputeShaderProlog();	break;
 		default:
 			TCU_THROW(InternalError, "Not implemented shader stage");
 	}
@@ -2878,47 +2814,40 @@ std::string CommonDescriptorInstance::getShaderSource				(VkShaderStageFlagBits	
 
 		case VK_SHADER_STAGE_FRAGMENT_BIT:
 		{
-			switch (testCaseParams.descriptorType)
-			{
-			case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-			case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
-			case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
-				{
-					if (testCaseParams.calculateInLoop)
-						s << getFragmentLoopSource(
-							getColorAccess(testCaseParams.descriptorType, "rIndex", false),
-							getColorAccess(testCaseParams.descriptorType, "loopIdx", false));
-					else
-						s << getFragmentReturnSource(getColorAccess(testCaseParams.descriptorType, "rIndex", false));
-				}
-				break;
-			case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-			case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
-			case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
-			case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
-			case VK_DESCRIPTOR_TYPE_SAMPLER:
-			case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-			case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-				if (testCaseParams.calculateInLoop)
-					s << getFragmentLoopSource(
-						getColorAccess(testCaseParams.descriptorType, "rIndex", testCaseParams.usesMipMaps),
-						getColorAccess(testCaseParams.descriptorType, "loopIdx", testCaseParams.usesMipMaps));
-				else
-					s << getFragmentReturnSource(getColorAccess(testCaseParams.descriptorType, "rIndex", testCaseParams.usesMipMaps));
-				break;
-			default:	TCU_THROW(InternalError, "Not implemented descriptor type");
-			}
+			if (testCaseParams.calculateInLoop)
+				s << getFragmentLoopSource(
+					getColorAccess(testCaseParams.descriptorType, "rIndex", testCaseParams.usesMipMaps),
+					getColorAccess(testCaseParams.descriptorType, "loopIdx", testCaseParams.usesMipMaps));
+			else
+				s << getFragmentReturnSource(getColorAccess(testCaseParams.descriptorType, "rIndex", testCaseParams.usesMipMaps));
+			break;
 		}
 		break;
 
 		case VK_SHADER_STAGE_COMPUTE_BIT: // VK_DESCRIPTOR_TYPE_STORAGE_IMAGE
-			s << "void main(void)\n{\n";
 			if (testCaseParams.calculateInLoop)
-				s << "  for (int i = pc.lowerBound; i < pc.upperBound; ++i)	\n"
-					"    imageAtomicAdd(data[nonuniformEXT(texelFetch(iter, i).x)], ivec2(0, 0), 1);			\n";
+				s
+					<< "  const int totalAdds = pc.upperBound - pc.lowerBound;\n"
+					<< "  const int totalInvs = int(gl_WorkGroupSize.x);\n"
+					<< "  // Round number up so we never fall short in the number of additions\n"
+					<< "  const int addsPerInv = (totalAdds + totalInvs - 1) / totalInvs;\n"
+					<< "  const int baseAdd = int(gl_LocalInvocationID.x) * addsPerInv;\n"
+					<< "  for (int i = 0; i < addsPerInv; ++i) {\n"
+					<< "    const int addIdx = i + baseAdd + pc.lowerBound;\n"
+					<< "    if (addIdx < pc.upperBound) {\n"
+					<< "      imageAtomicAdd(data[nonuniformEXT(texelFetch(iter, addIdx).x)], ivec2(0, 0), 1);\n"
+					<< "    }\n"
+					<< "  }\n"
+					;
 			else
-				s << "  uvec4 c = imageLoad(idxs, ivec2(gl_WorkGroupID.x, gl_WorkGroupID.y));	\n"
-					"  imageAtomicAdd( data[nonuniformEXT(c.r)], ivec2(0, 0), 1);								\n";
+			{
+				s
+					<< "  const int xCoord = int(gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x);\n"
+					<< "  const int yCoord = int(gl_WorkGroupID.y);\n"
+					<< "  uvec4 c = imageLoad(idxs, ivec2(xCoord, yCoord));\n"
+					<< "  imageAtomicAdd( data[nonuniformEXT(c.r)], ivec2(0, 0), 1);\n"
+					;
+			}
 			break;
 
 		default:	TCU_THROW(InternalError, "Not implemented shader stage");
@@ -2945,9 +2874,7 @@ StorageBufferInstance::StorageBufferInstance						(Context&									context,
 	: CommonDescriptorInstance(context,
 		TestParams(VK_SHADER_STAGE_ALL_GRAPHICS,
 			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-			BINDING_StorageBuffer,
 			VK_DESCRIPTOR_TYPE_UNDEFINED,
-			BINDING_Undefined,
 			false,
 			performWritesInVertex(testCaseParams.descriptorType, context),
 			testCaseParams))
@@ -2956,7 +2883,7 @@ StorageBufferInstance::StorageBufferInstance						(Context&									context,
 
 void StorageBufferInstance::createAndPopulateDescriptors			(IterateCommonVariables&					variables)
 {
-	BindingStorageBuffer::Data	data;
+	BindingStorageBufferData	data;
 
 	bool						vertexStores = false;
 	{
@@ -2988,7 +2915,7 @@ bool StorageBufferInstance::verifyVertexWriteResults				(IterateCommonVariables&
 	const std::vector<deUint32>	primes			= ut::generatePrimes(variables.availableDescriptorCount);
 
 	unsigned char*				buffer = static_cast<unsigned char*>(variables.descriptorsBuffer->alloc->getHostPtr());
-	BindingStorageBuffer::Data	data;
+	BindingStorageBufferData	data;
 	for (deUint32 primeIdx = 0; primeIdx < variables.validDescriptorCount; ++primeIdx)
 	{
 		const deUint32			prime		= primes[primeIdx];
@@ -3020,9 +2947,7 @@ UniformBufferInstance::UniformBufferInstance						(Context&									context,
 	: CommonDescriptorInstance(context,
 		TestParams(VK_SHADER_STAGE_ALL_GRAPHICS,
 			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-			BINDING_UniformBuffer,
 			VK_DESCRIPTOR_TYPE_UNDEFINED,
-			BINDING_Undefined,
 			false,
 			performWritesInVertex(testCaseParams.descriptorType, context),
 			testCaseParams))
@@ -3031,7 +2956,7 @@ UniformBufferInstance::UniformBufferInstance						(Context&									context,
 
 void UniformBufferInstance::createAndPopulateDescriptors			(IterateCommonVariables&					variables)
 {
-	BindingUniformBuffer::Data data;
+	BindingUniformBufferData data;
 
 	const deUint32				alignment	= static_cast<deUint32>(ut::DeviceProperties(m_context).physicalDeviceProperties().limits.minUniformBufferOffsetAlignment);
 	createBuffers(variables.descriptorsBufferInfos, variables.descriptorsBuffer, variables.validDescriptorCount, sizeof(data), alignment, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
@@ -3065,9 +2990,7 @@ StorageTexelInstance::StorageTexelInstance							(Context&									context,
 	: CommonDescriptorInstance(context,
 		TestParams(VK_SHADER_STAGE_ALL_GRAPHICS,
 			VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
-			BINDING_StorageTexelBuffer,
 			VK_DESCRIPTOR_TYPE_UNDEFINED,
-			BINDING_Undefined,
 			false,
 			performWritesInVertex(testCaseParams.descriptorType, context),
 			testCaseParams))
@@ -3129,9 +3052,7 @@ UniformTexelInstance::UniformTexelInstance							(Context&									context,
 	: CommonDescriptorInstance(context,
 		TestParams(VK_SHADER_STAGE_ALL_GRAPHICS,
 			VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
-			BINDING_UniformTexelBuffer,
 			VK_DESCRIPTOR_TYPE_UNDEFINED,
-			BINDING_Undefined,
 			false,
 			performWritesInVertex(testCaseParams.descriptorType, context),
 			testCaseParams))
@@ -3184,7 +3105,7 @@ void DynamicBuffersInstance::updateDescriptors						(IterateCommonVariables&				
 		VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,			// sType
 		DE_NULL,										// pNext
 		*variables.descriptorSet,						// descriptorSet
-		m_testParams.descriptorBinding,					// descriptorBinding;
+		BINDING_TestObject,								// descriptorBinding;
 		0,	// to be set in below loop					// dstArrayElement
 		1u,												// descriptorCount
 		m_testParams.descriptorType,					// descriptorType
@@ -3304,9 +3225,7 @@ DynamicStorageBufferInstance::DynamicStorageBufferInstance			(Context&					conte
 	: CommonDescriptorInstance(context,
 		TestParams(VK_SHADER_STAGE_ALL_GRAPHICS,
 			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,
-			BINDING_StorageBufferDynamic,
 			VK_DESCRIPTOR_TYPE_UNDEFINED,
-			BINDING_Undefined,
 			false,
 			performWritesInVertex(testCaseParams.descriptorType, context),
 			testCaseParams)),
@@ -3349,9 +3268,7 @@ DynamicUniformBufferInstance::DynamicUniformBufferInstance			(Context&					conte
 	: CommonDescriptorInstance(context,
 		TestParams(VK_SHADER_STAGE_ALL_GRAPHICS,
 			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
-			BINDING_UniformBufferDynamic,
 			VK_DESCRIPTOR_TYPE_UNDEFINED,
-			BINDING_Undefined,
 			false,
 			performWritesInVertex(testCaseParams.descriptorType, context),
 			testCaseParams)),
@@ -3392,9 +3309,7 @@ InputAttachmentInstance::InputAttachmentInstance					(Context&									context,
 	: CommonDescriptorInstance(context,
 		TestParams(VK_SHADER_STAGE_ALL_GRAPHICS,
 			VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
-			BINDING_InputAttachment,
 			VK_DESCRIPTOR_TYPE_UNDEFINED,
-			BINDING_Undefined,
 			true,
 			performWritesInVertex(testCaseParams.descriptorType, context),
 			testCaseParams))
@@ -3544,9 +3459,7 @@ SamplerInstance::SamplerInstance									(Context&									context,
 	: CommonDescriptorInstance(context,
 		TestParams(VK_SHADER_STAGE_ALL_GRAPHICS,
 			VK_DESCRIPTOR_TYPE_SAMPLER,
-			BINDING_Sampler,
 			VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
-			BINDING_SampledImage,
 			true,
 			performWritesInVertex(testCaseParams.descriptorType, context),
 			testCaseParams))
@@ -3575,7 +3488,7 @@ void SamplerInstance::updateDescriptors								(IterateCommonVariables&					vari
 			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,			// sType
 			DE_NULL,										// pNext
 			*variables.descriptorSet,						// descriptorSet
-			BINDING_SampledImage,							// descriptorBinding;
+			BINDING_Additional,								// descriptorBinding;
 			0,												// elementIndex
 			1u,												// descriptorCount
 			VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,				// descriptorType
@@ -3661,9 +3574,7 @@ SampledImageInstance::SampledImageInstance							(Context&									context,
 	: CommonDescriptorInstance(context,
 		TestParams(VK_SHADER_STAGE_ALL_GRAPHICS,
 			VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
-			BINDING_SampledImage,
 			VK_DESCRIPTOR_TYPE_SAMPLER,
-			BINDING_Sampler,
 			true,
 			performWritesInVertex(testCaseParams.descriptorType, context),
 			testCaseParams))
@@ -3691,7 +3602,7 @@ void SampledImageInstance::updateDescriptors						(IterateCommonVariables&					v
 			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,			// sType
 			DE_NULL,										// pNext
 			*variables.descriptorSet,						// descriptorSet
-			BINDING_Sampler,								// descriptorBinding;
+			BINDING_Additional,								// descriptorBinding;
 			0,												// elementIndex
 			1u,												// descriptorCount
 			VK_DESCRIPTOR_TYPE_SAMPLER,						// descriptorType
@@ -3780,9 +3691,7 @@ CombinedImageInstance::CombinedImageInstance						(Context&									context,
 	: CommonDescriptorInstance(context,
 		TestParams(VK_SHADER_STAGE_ALL_GRAPHICS,
 			testCaseParams.descriptorType,
-			BINDING_CombinedImageSampler,
 			VK_DESCRIPTOR_TYPE_UNDEFINED,
-			BINDING_Undefined,
 			true,
 			performWritesInVertex(testCaseParams.descriptorType),
 			testCaseParams))
@@ -3813,7 +3722,7 @@ void CombinedImageInstance::updateDescriptors						(IterateCommonVariables&					
 			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,			// sType
 			DE_NULL,										// pNext
 			*variables.descriptorSet,						// descriptorSet
-			BINDING_CombinedImageSampler,					// descriptorBinding;
+			BINDING_TestObject,								// descriptorBinding;
 			primes[primeIdx],								// elementIndex
 			1u,												// descriptorCount
 			m_testParams.descriptorType,					// descriptorType
@@ -3904,9 +3813,7 @@ StorageImageInstance::StorageImageInstance							(Context&									context,
 	: CommonDescriptorInstance(context,
 		TestParams	(VK_SHADER_STAGE_COMPUTE_BIT,
 					VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-					BINDING_StorageImage,
 					VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-					(BINDING_StorageImage + 1),
 					true,
 					performWritesInVertex(testCaseParams.descriptorType, context),
 					testCaseParams))
@@ -3931,7 +3838,7 @@ void StorageImageInstance::updateDescriptors						(IterateCommonVariables&					v
 			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,		// sType
 			DE_NULL,									// pNext
 			*variables.descriptorSet,					// descriptorSet
-			m_testParams.additionalDescriptorBinding,	// descriptorBinding;
+			BINDING_Additional,							// descriptorBinding;
 			0,											// elementIndex
 			1u,											// descriptorCount
 			m_testParams.additionalDescriptorType,		// descriptorType
@@ -4009,7 +3916,7 @@ tcu::TestStatus StorageImageInstance::iterate						(void)
 	copyBuffersToImages		(v);
 
 	m_vki.cmdDispatch		(*v.commandBuffer,
-							m_testParams.calculateInLoop ? 1 : v.renderArea.extent.width,
+							m_testParams.calculateInLoop ? 1 : (v.renderArea.extent.width / (m_testParams.minNonUniform ? 1u : kMinWorkGroupSize)),
 							m_testParams.calculateInLoop ? 1 : v.renderArea.extent.height,
 							1);
 
@@ -4106,9 +4013,10 @@ public:
 
 	virtual void checkSupport (vkt::Context& context) const
 	{
-		context.requireDeviceFunctionality("VK_EXT_descriptor_indexing");
-
 		const vk::VkPhysicalDeviceDescriptorIndexingFeatures& feats = context.getDescriptorIndexingFeatures();
+
+		if (!feats.runtimeDescriptorArray)
+			TCU_THROW(NotSupportedError, "runtimeDescriptorArray not supported");
 
 		switch (m_testCaseParams.descriptorType)
 		{
@@ -4284,139 +4192,52 @@ public:
 
 } // - unnamed namespace
 
+static bool descriptorTypeUsesMipmaps(VkDescriptorType t)
+{
+	return t == VK_DESCRIPTOR_TYPE_SAMPLER || t == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE || t == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+}
+
+static bool descriptorTypeSupportsUpdateAfterBind(VkDescriptorType t)
+{
+	switch (t)
+	{
+	case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+	case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+	case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+	case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+	case VK_DESCRIPTOR_TYPE_SAMPLER:
+	case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+	case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+		return true;
+	default:
+		return false;
+	}
+}
+
 void descriptorIndexingDescriptorSetsCreateTests (tcu::TestCaseGroup* group)
 {
 	struct TestCaseInfo
 	{
-		const char*		name;
-		const char*		description;
-		TestCaseParams	params;
+		const char*			name;
+		const char*			description;
+		VkDescriptorType	descriptorType;
 	};
 
-	tcu::TestContext&				context(group->getTestContext());
+	tcu::TestContext& context(group->getTestContext());
 
 	TestCaseInfo casesAfterBindAndLoop[] =
 	{
-		{
-			"storage_buffer", "Regular Storage Buffer Descriptors",
-			{
-				VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-				(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
-				RESOLUTION,
-				false,	// updateAfterBind
-				false,	// calculateInLoop
-				false,	// useMipMaps
-				false,	// minNonUniform
-				FUZZY_COMPARE, CMP_THRESHOLD
-			}
-		},
-		{
-			"storage_texel_buffer", "Storage Texel Buffer Descriptors",
-			{
-				VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
-				(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
-				RESOLUTION,
-				false,	// updateAfterBind
-				false,	// calculateInLoop
-				false,	// useMipMaps
-				false,	// minNonUniform
-				FUZZY_COMPARE, CMP_THRESHOLD
-			}
-		},
-		{
-			"uniform_texel_buffer", "Uniform Texel Buffer Descriptors",
-			{
-				VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
-				(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
-				RESOLUTION,
-				false,	// updateAfterBind,
-				false,	// calculateInLoop
-				false,	// usesMipMaps
-				false,	// minNonUniform
-				FUZZY_COMPARE, CMP_THRESHOLD
-			}
-		},
-		{
-			"storage_image", "Storage Image Descriptors",
-			{
-				VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-				VK_SHADER_STAGE_COMPUTE_BIT,
-				RESOLUTION,
-				false,	// updateAfterBind
-				false,	// calculateInLoop
-				false,	// useMipMaps
-				false,	// minNonUniform
-				FUZZY_COMPARE, CMP_THRESHOLD
-			}
-		},
-	};
-
-	for (int updateAfterBind = 0; updateAfterBind < 2; ++updateAfterBind)
-	{
-		for (int calculateInLoop = 0; calculateInLoop < 2; ++calculateInLoop)
-		{
-			for (deUint32 caseIdx = 0; caseIdx < DE_LENGTH_OF_ARRAY(casesAfterBindAndLoop); ++caseIdx)
-			{
-				TestCaseInfo&	info			(casesAfterBindAndLoop[caseIdx]);
-				std::string		caseName		(info.name);
-				std::string		caseDescription	(info.description);
-				TestCaseParams	params			(info.params);
-
-				caseName				+= (updateAfterBind	? "_after_bind"	: "");
-				caseName				+= (calculateInLoop	? "_in_loop"	: "");
-
-				caseDescription			+= (updateAfterBind	? " After Bind"	: "");
-				caseDescription			+= (calculateInLoop ? " In Loop"	: "");
-
-				params.updateAfterBind	= updateAfterBind	? true			: false;
-				params.calculateInLoop	= calculateInLoop	? true			: false;
-
-				group->addChild(new DescriptorIndexingTestCase(context, caseName.c_str(), caseDescription.c_str(), params));
-			}
-		}
-	}
-
-	TestCaseInfo casesAfterBindAndLoopAndLOD[] =
-	{
-		{
-			"sampler", "Sampler Descriptors",
-			{
-				VK_DESCRIPTOR_TYPE_SAMPLER,
-				(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
-				RESOLUTION,
-				false,	// updateAfterBind
-				false,	// calculateInLoop
-				false,	// usesMipMaps
-				false,	// minNonUniform
-				FUZZY_COMPARE, CMP_THRESHOLD
-			}
-		},
-		{
-			"sampled_image", "Sampled Image Descriptors",
-			{
-				VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
-				(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
-				RESOLUTION,
-				false,	// updateAfterBind
-				false,	// calculateInLoop
-				false,	// usesMipMaps
-				false,	// minNonUniform
-				FUZZY_COMPARE, CMP_THRESHOLD
-			}
-		},
-		{
-			"combined_image_sampler", "Combined Image Sampler Descriptors",
-			{
-				VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
-				RESOLUTION,
-				false,	// updateAfterBind
-				false,	// calculateInLoop
-				false,	// usesMipMaps
-				false,	// minNonUniform
-				FUZZY_COMPARE, CMP_THRESHOLD
-			}
-		},
+		{ "storage_buffer",			"Regular Storage Buffer Descriptors",	VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,			},
+		{ "storage_texel_buffer",	"Storage Texel Buffer Descriptors",		VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,	},
+		{ "uniform_texel_buffer",	"Uniform Texel Buffer Descriptors",		VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,	},
+		{ "storage_image",			"Storage Image Descriptors",			VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,			},
+		{ "sampler",				"Sampler Descriptors",					VK_DESCRIPTOR_TYPE_SAMPLER,					},
+		{ "sampled_image",			"Sampled Image Descriptors",			VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,			},
+		{ "combined_image_sampler",	"Combined Image Sampler Descriptors",	VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	},
+		{ "uniform_buffer",			"Regular Uniform Buffer Descriptors",	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,			},
+		{ "storage_buffer_dynamic",	"Dynamic Storage Buffer Descriptors",	VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,	},
+		{ "uniform_buffer_dynamic",	"Dynamic Uniform Buffer Descriptors",	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,	},
+		{ "input_attachment",		"Input Attachment Descriptors",			VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,		},
 	};
 
 	for (int updateAfterBind = 0; updateAfterBind < 2; ++updateAfterBind)
@@ -4425,103 +4246,39 @@ void descriptorIndexingDescriptorSetsCreateTests (tcu::TestCaseGroup* group)
 		{
 			for (int usesMipMaps = 0; usesMipMaps < 2; ++usesMipMaps)
 			{
-				for (deUint32 caseIdx = 0; caseIdx < DE_LENGTH_OF_ARRAY(casesAfterBindAndLoopAndLOD); ++caseIdx)
+				for (deUint32 caseIdx = 0; caseIdx < DE_LENGTH_OF_ARRAY(casesAfterBindAndLoop); ++caseIdx)
 				{
-					TestCaseInfo&	info			(casesAfterBindAndLoopAndLOD[caseIdx]);
+					TestCaseInfo&	info			(casesAfterBindAndLoop[caseIdx]);
+
+					if (updateAfterBind && !descriptorTypeSupportsUpdateAfterBind(info.descriptorType))
+						continue;
+
+					if (usesMipMaps && !descriptorTypeUsesMipmaps(info.descriptorType))
+						continue;
+
 					std::string		caseName		(info.name);
 					std::string		caseDescription	(info.description);
-					TestCaseParams	params			(info.params);
+					TestCaseParams	params;
 
-					caseName				+= (updateAfterBind	? "_after_bind"	: "");
-					caseName				+= (calculateInLoop ? "_in_loop"	: "");
-					caseName				+= (usesMipMaps		? "_with_lod"	: "");
+					caseName		+= (updateAfterBind	? "_after_bind"	: "");
+					caseName		+= (calculateInLoop ? "_in_loop"	: "");
+					caseName		+= (usesMipMaps		? "_with_lod"	: "");
 
-					caseDescription			+= (updateAfterBind	? " After Bind"	: "");
-					caseDescription			+= (calculateInLoop	? " In Loop"	: "");
-					caseDescription			+= (usesMipMaps		? " Use LOD"	: "");
+					caseDescription	+= (updateAfterBind	? " After Bind"	: "");
+					caseDescription	+= (calculateInLoop	? " In Loop"	: "");
+					caseDescription	+= (usesMipMaps		? " Use LOD"	: "");
 
-					params.updateAfterBind	= updateAfterBind	? true			: false;
-					params.calculateInLoop	= calculateInLoop	? true			: false;
-					params.usesMipMaps		= usesMipMaps		? true			: false;
+					params.descriptorType	= info.descriptorType;
+					params.stageFlags		= (info.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ? VK_SHADER_STAGE_COMPUTE_BIT : (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+					params.frameResolution	= RESOLUTION;
+					params.updateAfterBind	= updateAfterBind	? true : false;
+					params.calculateInLoop	= calculateInLoop	? true : false;
+					params.usesMipMaps		= usesMipMaps		? true : false;
+					params.minNonUniform	= false;
 
 					group->addChild(new DescriptorIndexingTestCase(context, caseName.c_str(), caseDescription.c_str(), params));
 				}
 			}
-		}
-	}
-
-	TestCaseInfo casesNonAfterBindAndLoop[] =
-	{
-		{
-			"uniform_buffer", "Regular Uniform Buffer Descriptors",
-			{
-				VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-				(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
-				RESOLUTION,
-				false,	// updateAfterBind
-				false,	// calculateInLoop
-				false,	// usesMipMaps
-				false,	// minNonUniform
-				FUZZY_COMPARE, CMP_THRESHOLD
-			}
-		},
-		{
-			"storage_buffer_dynamic", "Dynamic Storage Buffer Descriptors",
-			{
-				VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,
-				(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
-				RESOLUTION,
-				false,	// updateAfterBind
-				false,	// calculateInLoop
-				false,	// useMipMaps
-				false,	// minNonUniform
-				FUZZY_COMPARE, CMP_THRESHOLD
-			}
-		},
-		{
-			"uniform_buffer_dynamic", "Dynamic Uniform Buffer Descriptors",
-			{
-				VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
-				(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
-				RESOLUTION,
-				false,	// updateAfterBind
-				false,	// calculateInLoop
-				false,	// useMipMaps
-				false,	// minNonUniform
-				FUZZY_COMPARE, CMP_THRESHOLD
-			}
-		},
-		{
-			"input_attachment", "Input Attachment Descriptors",
-			{
-				VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
-				(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
-				RESOLUTION,
-				false,	// updateAfterBind
-				false,	// calculateInLoop
-				false,	// useMipMaps
-				false,	// minNonUniform
-				FUZZY_COMPARE, CMP_THRESHOLD
-			}
-		},
-	};
-
-	for (int calculateInLoop = 0; calculateInLoop < 2; ++calculateInLoop)
-	{
-		for (deUint32 caseIdx = 0; caseIdx < DE_LENGTH_OF_ARRAY(casesNonAfterBindAndLoop); ++caseIdx)
-		{
-			TestCaseInfo&	info(casesNonAfterBindAndLoop[caseIdx]);
-			std::string		caseName(info.name);
-			std::string		caseDescription(info.description);
-			TestCaseParams	params(info.params);
-
-			caseName				+= (calculateInLoop	? "_in_loop"	: "");
-
-			caseDescription			+= (calculateInLoop ? " In Loop"	: "");
-
-			params.calculateInLoop	= calculateInLoop	? true			: false;
-
-			group->addChild(new DescriptorIndexingTestCase(context, caseName.c_str(), caseDescription.c_str(), params));
 		}
 	}
 
@@ -4531,116 +4288,44 @@ void descriptorIndexingDescriptorSetsCreateTests (tcu::TestCaseGroup* group)
 
 	TestCaseInfo casesMinNonUniform[] =
 	{
-		{
-			"storage_buffer", "Regular Storage Buffer Descriptors",
-			{
-				VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-				(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
-				RESOLUTION,
-				false,	// updateAfterBind
-				false,	// calculateInLoop
-				false,	// useMipMaps
-				true,	// minNonUniform
-				FUZZY_COMPARE, CMP_THRESHOLD
-			}
-		},
-		{
-			"storage_texel_buffer", "Storage Texel Buffer Descriptors",
-			{
-				VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
-				(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
-				RESOLUTION,
-				false,	// updateAfterBind
-				false,	// calculateInLoop
-				false,	// useMipMaps
-				true,	// minNonUniform
-				FUZZY_COMPARE, CMP_THRESHOLD
-			}
-		},
-		{
-			"uniform_texel_buffer", "Uniform Texel Buffer Descriptors",
-			{
-				VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
-				(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
-				RESOLUTION,
-				false,	// updateAfterBind,
-				false,	// calculateInLoop
-				false,	// usesMipMaps
-				true,	// minNonUniform
-				FUZZY_COMPARE, CMP_THRESHOLD
-			}
-		},
-		{
-			"uniform_buffer", "Regular Uniform Buffer Descriptors",
-			{
-				VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-				(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
-				RESOLUTION,
-				false,	// updateAfterBind
-				false,	// calculateInLoop
-				false,	// usesMipMaps
-				true,	// minNonUniform
-				FUZZY_COMPARE, CMP_THRESHOLD
-			}
-		},
-		{
-			"combined_image_sampler", "Combined Image Sampler Descriptors",
-			{
-				VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
-				RESOLUTION,
-				false,	// updateAfterBind
-				false,	// calculateInLoop
-				false,	// usesMipMaps
-				true,	// minNonUniform
-				FUZZY_COMPARE, CMP_THRESHOLD
-			}
-		},
-		{
-			"combined_image_sampler", "Combined Image Sampler Descriptors",
-			{
-				VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
-				RESOLUTION,
-				false,	// updateAfterBind
-				false,	// calculateInLoop
-				true,	// usesMipMaps
-				true,	// minNonUniform
-				FUZZY_COMPARE, CMP_THRESHOLD
-			}
-		},
-		{
-			"storage_image", "Storage Image Descriptors",
-			{
-				VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-				VK_SHADER_STAGE_COMPUTE_BIT,
-				RESOLUTION,
-				false,	// updateAfterBind
-				false,	// calculateInLoop
-				false,	// useMipMaps
-				true,	// minNonUniform
-				FUZZY_COMPARE, CMP_THRESHOLD
-			}
-		},
+		{ "storage_buffer",			"Regular Storage Buffer Descriptors",	VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,			},
+		{ "storage_texel_buffer",	"Storage Texel Buffer Descriptors",		VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,	},
+		{ "uniform_texel_buffer",	"Uniform Texel Buffer Descriptors",		VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,	},
+		{ "uniform_buffer",			"Regular Uniform Buffer Descriptors",	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,			},
+		{ "combined_image_sampler",	"Combined Image Sampler Descriptors",	VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	},
+		{ "storage_image",			"Storage Image Descriptors",			VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,			},
 	};
 
-	for (deUint32 caseIdx = 0; caseIdx < DE_LENGTH_OF_ARRAY(casesMinNonUniform); ++caseIdx)
+	for (int usesMipMaps = 0; usesMipMaps < 2; ++usesMipMaps)
 	{
-		TestCaseInfo&	info(casesMinNonUniform[caseIdx]);
-		std::string		caseName(info.name);
-		std::string		caseDescription(info.description);
-		TestCaseParams	params(info.params);
+		for (deUint32 caseIdx = 0; caseIdx < DE_LENGTH_OF_ARRAY(casesMinNonUniform); ++caseIdx)
+		{
+			TestCaseInfo&	info(casesMinNonUniform[caseIdx]);
 
-		if (params.usesMipMaps) {
-			caseName += "_with_lod";
+			if (usesMipMaps && !descriptorTypeUsesMipmaps(info.descriptorType))
+				continue;
+
+			std::string		caseName(info.name);
+			std::string		caseDescription(info.description);
+			TestCaseParams	params;
+
+			caseName		+= (usesMipMaps		? "_with_lod"	: "");
+			caseName		+= "_minNonUniform";
+
+			caseDescription	+= (usesMipMaps		? " Use LOD"	: "");
+			caseDescription += " With Minimum NonUniform Decorations";
+
+			params.descriptorType	= info.descriptorType;
+			params.stageFlags		= (info.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ? VK_SHADER_STAGE_COMPUTE_BIT : (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+			params.frameResolution	= RESOLUTION;
+			params.updateAfterBind	= false;
+			params.calculateInLoop	= false;
+			params.usesMipMaps		= usesMipMaps ? true : false;
+			params.minNonUniform	= true;
+
+			TestCase* tc = new DescriptorIndexingTestCase(context, caseName.c_str(), caseDescription.c_str(), params);
+			group->addChild(tc);
 		}
-		caseName += "_minNonUniform";
-
-		caseDescription += " With Minimum NonUniform Decorations";
-
-		TestCase* tc = new DescriptorIndexingTestCase(context, caseName.c_str(), caseDescription.c_str(), params);
-		group->addChild(tc);
-		// group->addChild(new DescriptorIndexingTestCase(context, caseName.c_str(), caseDescription.c_str(), params));
 	}
 }
 

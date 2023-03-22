@@ -310,7 +310,7 @@ struct MessageData
 	MessageData (const MessageID& id_, GLenum severity_, const string& message_) : id(id_) , severity(severity_) , message(message_) {}
 };
 
-extern "C" typedef void GLW_APIENTRY DebugCallbackFunc(GLenum, GLenum, GLuint, GLenum, GLsizei, const char*, void*);
+extern "C" typedef void GLW_APIENTRY DebugCallbackFunc(GLenum, GLenum, GLuint, GLenum, GLsizei, const char*, const void*);
 
 // Base class
 class BaseCase : public NegativeTestShared::ErrorCase
@@ -356,7 +356,7 @@ protected:
 	tcu::ResultCollector		m_results;
 };
 
-void BaseCase::callbackHandle (GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const char* message, void* userParam)
+void BaseCase::callbackHandle (GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const char* message, const void* userParam)
 {
 	static_cast<BaseCase*>(const_cast<void*>(userParam))->callback(source, type, id, severity, string(message, &message[length]));
 }
@@ -2804,7 +2804,7 @@ GroupStackDepthQueryCase::IterateResult GroupStackDepthQueryCase::iterate (void)
 	return STOP;
 }
 
-extern "C" void GLW_APIENTRY emptyCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const char*, void*)
+extern "C" void GLW_APIENTRY emptyCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const char*, const void*)
 {
 	// empty
 }

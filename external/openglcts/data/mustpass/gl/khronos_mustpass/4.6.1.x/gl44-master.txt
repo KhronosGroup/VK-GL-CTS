@@ -2626,6 +2626,10 @@ KHR-GL44.shaders.preprocessor.operator_precedence.logical_and_vs_bitwise_and_ver
 KHR-GL44.shaders.preprocessor.operator_precedence.logical_and_vs_bitwise_and_fragment
 KHR-GL44.shaders.preprocessor.operator_precedence.logical_or_vs_logical_and_vertex
 KHR-GL44.shaders.preprocessor.operator_precedence.logical_or_vs_logical_and_fragment
+KHR-GL44.shaders.function.local_variable_aliasing_vertex
+KHR-GL44.shaders.function.local_variable_aliasing_fragment
+KHR-GL44.shaders.function.global_variable_aliasing_vertex
+KHR-GL44.shaders.function.global_variable_aliasing_fragment
 KHR-GL44.shaders.struct.local.basic_vertex
 KHR-GL44.shaders.struct.local.basic_fragment
 KHR-GL44.shaders.struct.local.nested_vertex
@@ -2670,6 +2674,16 @@ KHR-GL44.shaders.struct.local.dynamic_loop_struct_array_vertex
 KHR-GL44.shaders.struct.local.dynamic_loop_struct_array_fragment
 KHR-GL44.shaders.struct.local.dynamic_loop_nested_struct_array_vertex
 KHR-GL44.shaders.struct.local.dynamic_loop_nested_struct_array_fragment
+KHR-GL44.shaders.struct.local.basic_equal_vertex
+KHR-GL44.shaders.struct.local.basic_equal_fragment
+KHR-GL44.shaders.struct.local.basic_not_equal_vertex
+KHR-GL44.shaders.struct.local.basic_not_equal_fragment
+KHR-GL44.shaders.struct.local.nested_equal_vertex
+KHR-GL44.shaders.struct.local.nested_equal_fragment
+KHR-GL44.shaders.struct.local.nested_not_equal_vertex
+KHR-GL44.shaders.struct.local.nested_not_equal_fragment
+KHR-GL44.shaders.struct.local.array_member_equality_vertex
+KHR-GL44.shaders.struct.local.array_member_equality_fragment
 KHR-GL44.shaders.struct.uniform.basic_vertex
 KHR-GL44.shaders.struct.uniform.basic_fragment
 KHR-GL44.shaders.struct.uniform.nested_vertex
@@ -3537,6 +3551,7 @@ KHR-GL44.shaders.shader_integer_mix.mix-uvec4
 KHR-GL44.shaders.shader_integer_mix.mix-bvec4
 KHR-GL44.shaders.negative.initialize
 KHR-GL44.shaders.negative.constant_sequence
+KHR-GL44.shaders.negative.non_precision_qualifiers_in_struct_members
 KHR-GL44.pipeline_statistics_query_tests_ARB.api_coverage_invalid_glbeginquery_calls
 KHR-GL44.pipeline_statistics_query_tests_ARB.api_coverage_unsupported_calls
 KHR-GL44.pipeline_statistics_query_tests_ARB.functional_default_qo_values

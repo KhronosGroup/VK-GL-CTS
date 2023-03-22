@@ -579,6 +579,12 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 				const std::string message = std::string("xfbWritten == ") + de::toString(xfbWritten) + ", expected " + de::toString(primitivesWritten);
 				return tcu::TestStatus::fail(message);
 			}
+
+			if (xfbWritten != (primitivesGenerated - 3))
+			{
+				const std::string message = std::string("xfbWritten == ") + de::toString(xfbWritten) + ", expected " + de::toString(primitivesGenerated - 3);
+				return tcu::TestStatus::fail(message);
+			}
 		}
 	}
 
@@ -833,11 +839,11 @@ void PrimitivesGeneratedQueryTestInstance::fillVertexBuffer(tcu::Vec2* vertices,
 			{
 				if (prim % 2 == 0)
 				{
-					vertices[3 + prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, 1.0f);
+					vertices[2 + prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, 1.0f);
 				}
 				else
 				{
-					vertices[3 + prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -1.0f);
+					vertices[2 + prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -1.0f);
 				}
 			}
 			break;
@@ -943,13 +949,13 @@ void PrimitivesGeneratedQueryTestInstance::fillVertexBuffer(tcu::Vec2* vertices,
 			{
 				if (prim % 2 == 0)
 				{
-					vertices[6 + prim + 0] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, 1.0f);
-					vertices[6 + prim + 1] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, 1.0f);
+					vertices[5 + prim + 0] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, 1.0f);
+					vertices[5 + prim + 1] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, 1.0f);
 				}
 				else
 				{
-					vertices[6 + prim + 0] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -1.0f);
-					vertices[6 + prim + 1] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -1.0f);
+					vertices[5 + prim + 0] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -1.0f);
+					vertices[5 + prim + 1] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -1.0f);
 				}
 			}
 			break;
@@ -1302,23 +1308,23 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 
 	for (const ReadType& read : readTypes)
 	{
-		tcu::TestCaseGroup* const readGroup = new tcu::TestCaseGroup(testCtx, read.name, read.desc);
+		de::MovePtr<tcu::TestCaseGroup> readGroup(new tcu::TestCaseGroup(testCtx, read.name, read.desc));
 
 		for (const ResetType& reset : resetTypes)
 		{
-			tcu::TestCaseGroup* const resetGroup = new tcu::TestCaseGroup(testCtx, reset.name, reset.desc);
+			de::MovePtr<tcu::TestCaseGroup> resetGroup(new tcu::TestCaseGroup(testCtx, reset.name, reset.desc));
 
 			for (const ResultTypes& result : resultTypes)
 			{
-				tcu::TestCaseGroup* const resultGroup = new tcu::TestCaseGroup(testCtx, result.name, result.desc);
+				de::MovePtr<tcu::TestCaseGroup> resultGroup(new tcu::TestCaseGroup(testCtx, result.name, result.desc));
 
 				for (const Shader& shader : shaderStages)
 				{
-					tcu::TestCaseGroup* const shaderGroup = new tcu::TestCaseGroup(testCtx, shader.name, shader.desc);
+					de::MovePtr<tcu::TestCaseGroup> shaderGroup(new tcu::TestCaseGroup(testCtx, shader.name, shader.desc));
 
 					for (const TransformFeedbackState& xfbState : transformFeedbackStates)
 					{
-						tcu::TestCaseGroup* const xfbGroup = new tcu::TestCaseGroup(testCtx, xfbState.name, xfbState.desc);
+						de::MovePtr<tcu::TestCaseGroup> xfbGroup(new tcu::TestCaseGroup(testCtx, xfbState.name, xfbState.desc));
 
 						// Only test multiple result types with XFB enabled.
 						if ((result.type == QUERY_RESULT_TYPE_PGQ_32_XFB_64 || result.type == QUERY_RESULT_TYPE_PGQ_64_XFB_32) && !xfbState.enable)
@@ -1326,7 +1332,7 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 
 						for (const RastCase& rastCase : rastCases)
 						{
-							tcu::TestCaseGroup* const rastGroup = new tcu::TestCaseGroup(testCtx, rastCase.name, rastCase.desc);
+							de::MovePtr<tcu::TestCaseGroup> rastGroup(new tcu::TestCaseGroup(testCtx, rastCase.name, rastCase.desc));
 
 							// Skip uninteresting cases
 							if ((rastCase.type > RAST_CASE_DISCARD)
@@ -1339,7 +1345,7 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 
 							for (const Topology& topology : topologies)
 							{
-								tcu::TestCaseGroup* const topologyGroup = new tcu::TestCaseGroup(testCtx, topology.name, topology.desc);
+								de::MovePtr<tcu::TestCaseGroup> topologyGroup(new tcu::TestCaseGroup(testCtx, topology.name, topology.desc));
 
 								// Only test patch lists with tessellation shaders.
 								if ((topology.type == VK_PRIMITIVE_TOPOLOGY_PATCH_LIST && shader.stage != SHADER_STAGE_TESSELLATION_EVALUATION) ||
@@ -1362,7 +1368,7 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 										const std::string			pgqDescStr		= std::string("PGQ on ") + (pgqDefault ? "default " : "") + std::string("vertex stream ") + (pgqDefault ? "" : pgqStream.name);
 										const std::string			xfbDescStr		= std::string("XFB on ") + (xfbDefault ? "default " : "") + std::string("vertex stream ") + (xfbDefault ? "" : xfbStream.name);
 										const std::string			streamGroupDesc	= std::string("Tests for ") + pgqDescStr + (xfbState.enable ? (std::string(" and ") + xfbDescStr) : "");
-										tcu::TestCaseGroup* const	streamGroup		= new tcu::TestCaseGroup(testCtx, streamGroupName.c_str(), streamGroupDesc.c_str());
+										de::MovePtr<tcu::TestCaseGroup>	streamGroup(new tcu::TestCaseGroup(testCtx, streamGroupName.c_str(), streamGroupDesc.c_str()));
 
 										// Only test nondefault vertex streams with geometry shaders.
 										if ((pgqStream.index != VERTEX_STREAM_DEFAULT || xfbStream.index != VERTEX_STREAM_DEFAULT) && shader.stage != SHADER_STAGE_GEOMETRY)
@@ -1392,29 +1398,29 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 											streamGroup->addChild(new PrimitivesGeneratedQueryTestCase(testCtx, cmdBufCase.name, cmdBufCase.desc, parameters));
 										}
 
-										topologyGroup->addChild(streamGroup);
+										topologyGroup->addChild(streamGroup.release());
 									}
 								}
 
-								rastGroup->addChild(topologyGroup);
+								rastGroup->addChild(topologyGroup.release());
 							}
 
-							xfbGroup->addChild(rastGroup);
+							xfbGroup->addChild(rastGroup.release());
 						}
 
-						shaderGroup->addChild(xfbGroup);
+						shaderGroup->addChild(xfbGroup.release());
 					}
 
-					resultGroup->addChild(shaderGroup);
+					resultGroup->addChild(shaderGroup.release());
 				}
 
-				resetGroup->addChild(resultGroup);
+				resetGroup->addChild(resultGroup.release());
 			}
 
-			readGroup->addChild(resetGroup);
+			readGroup->addChild(resetGroup.release());
 		}
 
-		pgqGroup->addChild(readGroup);
+		pgqGroup->addChild(readGroup.release());
 	}
 }
 

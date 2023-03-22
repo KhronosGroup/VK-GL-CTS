@@ -254,6 +254,7 @@ dEQP-VKSC.clipping.user_defined.clip_cull_distance_dynamic_index.vert_tess_geom.
 dEQP-VKSC.clipping.user_defined.clip_cull_distance_dynamic_index.vert_tess_geom.7_1_fragmentshader_read
 dEQP-VKSC.clipping.user_defined.clip_cull_distance_dynamic_index.vert_tess_geom.8
 dEQP-VKSC.clipping.user_defined.clip_cull_distance_dynamic_index.vert_tess_geom.8_fragmentshader_read
+dEQP-VKSC.clipping.misc.negative_and_non_negative_cull_distance
 dEQP-VKSC.clipping.complementarity.1
 dEQP-VKSC.clipping.complementarity.2
 dEQP-VKSC.clipping.complementarity.3

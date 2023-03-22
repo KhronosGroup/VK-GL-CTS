@@ -1762,6 +1762,9 @@ NegativeFramebufferCase::IterateResult NegativeFramebufferCase::iterate (void)
 		gl.glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, m_numSamples0, m_internalFormat, m_fboSize, m_fboSize, fixedSampleLocations0);
 		GLU_EXPECT_NO_ERROR(gl.glGetError(), "gen texture 0");
 
+		int textureSamples;
+		gl.glGetTexLevelParameteriv(GL_TEXTURE_2D_MULTISAMPLE, 0, GL_TEXTURE_SAMPLES, &textureSamples);
+
 		if (m_caseType == CASE_NON_ZERO_LEVEL)
 		{
 			glw::GLenum error;
@@ -1781,12 +1784,15 @@ NegativeFramebufferCase::IterateResult NegativeFramebufferCase::iterate (void)
 			gl.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, tex0Id, 0);
 			GLU_EXPECT_NO_ERROR(gl.glGetError(), "attach to c0");
 
+			int fbSamples = 0;
+
 			if (colorAttachmentTexture)
 			{
 				gl.glGenTextures(1, &tex1Id);
 				gl.glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, tex1Id);
 				gl.glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, m_numSamples1, m_internalFormat, m_fboSize, m_fboSize, fixedSampleLocations1);
 				GLU_EXPECT_NO_ERROR(gl.glGetError(), "gen texture 1");
+				gl.glGetTexLevelParameteriv(GL_TEXTURE_2D_MULTISAMPLE, 0, GL_TEXTURE_SAMPLES, &fbSamples);
 
 				gl.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D_MULTISAMPLE, tex1Id, 0);
 				GLU_EXPECT_NO_ERROR(gl.glGetError(), "attach to c1");
@@ -1797,6 +1803,7 @@ NegativeFramebufferCase::IterateResult NegativeFramebufferCase::iterate (void)
 				gl.glBindRenderbuffer(GL_RENDERBUFFER, rboId);
 				gl.glRenderbufferStorageMultisample(GL_RENDERBUFFER, m_numSamples1, m_internalFormat, m_fboSize, m_fboSize);
 				GLU_EXPECT_NO_ERROR(gl.glGetError(), "gen rb");
+				gl.glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_SAMPLES, &fbSamples);
 
 				gl.glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_RENDERBUFFER, rboId);
 				GLU_EXPECT_NO_ERROR(gl.glGetError(), "attach to c1");
@@ -1804,14 +1811,24 @@ NegativeFramebufferCase::IterateResult NegativeFramebufferCase::iterate (void)
 			else
 				DE_ASSERT(DE_FALSE);
 
-			// should not be complete
 			{
 				glw::GLenum status = gl.glCheckFramebufferStatus(GL_FRAMEBUFFER);
 
-				if (status != GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE)
+				if ((textureSamples != fbSamples) || (fixedSampleLocations0 != fixedSampleLocations1))
 				{
-					m_testCtx.getLog() << tcu::TestLog::Message << "ERROR! Expected GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE, got " << glu::getFramebufferStatusName(status) << tcu::TestLog::EndMessage;
-					testFailed = true;
+					if (status != GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE) // should not be complete
+					{
+						m_testCtx.getLog() << tcu::TestLog::Message << "ERROR! Expected GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE, got " << glu::getFramebufferStatusName(status) << tcu::TestLog::EndMessage;
+						testFailed = true;
+					}
+				}
+				else
+				{
+					if (status != GL_FRAMEBUFFER_COMPLETE) // should be complete
+					{
+						m_testCtx.getLog() << tcu::TestLog::Message << "ERROR! Expected GL_FRAMEBUFFER_COMPLETE, got " << glu::getFramebufferStatusName(status) << tcu::TestLog::EndMessage;
+						testFailed = true;
+					}
 				}
 			}
 		}

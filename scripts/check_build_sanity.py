@@ -25,8 +25,8 @@ import argparse
 import tempfile
 import sys
 
-from build.common import *
-from build.build import *
+from ctsbuild.common import *
+from ctsbuild.build import *
 
 pythonExecutable = sys.executable or "python"
 

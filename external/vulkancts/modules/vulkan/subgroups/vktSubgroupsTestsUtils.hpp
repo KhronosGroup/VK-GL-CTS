@@ -218,10 +218,10 @@ void setTesEvalShaderFrameBuffer (vk::SourceCollections& programCollection);
 
 bool check (std::vector<const void*> datas, deUint32 width, deUint32 ref);
 
-bool checkCompute (std::vector<const void*>		datas,
-				   const deUint32				numWorkgroups[3],
-				   const deUint32				localSize[3],
-				   deUint32						ref);
+bool checkComputeOrMesh (std::vector<const void*>	datas,
+						 const deUint32				numWorkgroups[3],
+						 const deUint32				localSize[3],
+						 deUint32					ref);
 
 tcu::TestStatus makeTessellationEvaluationFrameBufferTest (Context&						context,
 														   vk::VkFormat					format,
@@ -299,6 +299,15 @@ tcu::TestStatus makeComputeTest (Context&				context,
 								 deUint32				requiredSubgroupSize = 0u,
 								 const deUint32			pipelineShaderStageCreateFlags = 0u);
 
+tcu::TestStatus makeMeshTest (Context&				context,
+							  vk::VkFormat			format,
+							  const SSBOData*		inputs,
+							  deUint32				inputsCount,
+							  const void*			internalData,
+							  CheckResultCompute	checkResult,
+							  deUint32				requiredSubgroupSize = 0u,
+							  const deUint32		pipelineShaderStageCreateFlags = 0u);
+
 /* Functions needed for VK_EXT_subgroup_size_control tests */
 tcu::TestStatus makeTessellationEvaluationFrameBufferTestRequiredSubgroupSize (Context&							context,
 																			   vk::VkFormat						format,
@@ -352,6 +361,19 @@ tcu::TestStatus makeFragmentFrameBufferTestRequiredSubgroupSize (Context&				con
 																 const deUint32			requiredSubgroupSize = 0u);
 
 tcu::TestStatus makeComputeTestRequiredSubgroupSize (Context&				context,
+													 vk::VkFormat			format,
+													 const SSBOData*		inputs,
+													 deUint32				inputsCount,
+													 const void*			internalData,
+													 CheckResultCompute		checkResult,
+													 const deUint32			pipelineShaderStageCreateFlags,
+													 const deUint32			numWorkgroups[3],
+													 const deBool			isRequiredSubgroupSize,
+													 const deUint32			subgroupSize,
+													 const deUint32			localSizesToTest[][3],
+													 const deUint32			localSizesToTestCount);
+
+tcu::TestStatus makeMeshTestRequiredSubgroupSize	(Context&				context,
 													 vk::VkFormat			format,
 													 const SSBOData*		inputs,
 													 deUint32				inputsCount,

@@ -64,13 +64,14 @@ bool							isMinMaxFilteringSupported	(const vk::InstanceInterface&	instanceInte
 															 vk::VkFormat					format,
 															 vk::VkImageTiling				tiling);
 
-vk::VkBorderColor				getFormatBorderColor		(BorderColor color, vk::VkFormat format);
+vk::VkBorderColor				getFormatBorderColor		(BorderColor color, vk::VkFormat format, bool useStencilAspect);
 
-rr::GenericVec4					getFormatCustomBorderColor	(tcu::Vec4 floatValue, tcu::IVec4 intValue, vk::VkFormat format);
+rr::GenericVec4					getFormatCustomBorderColor	(tcu::Vec4 floatValue, tcu::IVec4 intValue, vk::VkFormat format, bool useStencilAspect);
 
 void							getLookupScaleBias			(vk::VkFormat					format,
 															 tcu::Vec4&						lookupScale,
-															 tcu::Vec4&						lookupBias);
+															 tcu::Vec4&						lookupBias,
+															 bool							useStencilAspect = false);
 
 /*--------------------------------------------------------------------*//*!
  * Gets a tcu::TextureLevel initialized with data from a VK color
