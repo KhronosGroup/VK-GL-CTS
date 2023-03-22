@@ -593,3 +593,5 @@ m_vk.bindOpticalFlowSessionImageNV							= (BindOpticalFlowSessionImageNVFunc)		
 m_vk.cmdOpticalFlowExecuteNV								= (CmdOpticalFlowExecuteNVFunc)									GET_PROC_ADDR("vkCmdOpticalFlowExecuteNV");
 m_vk.getDeviceFaultInfoEXT									= (GetDeviceFaultInfoEXTFunc)									GET_PROC_ADDR("vkGetDeviceFaultInfoEXT");
 m_vk.releaseSwapchainImagesEXT								= (ReleaseSwapchainImagesEXTFunc)								GET_PROC_ADDR("vkReleaseSwapchainImagesEXT");
+m_vk.mapMemory2KHR											= (MapMemory2KHRFunc)											GET_PROC_ADDR("vkMapMemory2KHR");
+m_vk.unmapMemory2KHR										= (UnmapMemory2KHRFunc)											GET_PROC_ADDR("vkUnmapMemory2KHR");

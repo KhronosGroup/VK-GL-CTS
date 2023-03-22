@@ -213,8 +213,6 @@ de::MovePtr <VkVideoEncodeH264CapabilitiesEXT> getVideoCapabilitiesExtensionH264
 		vk::VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_CAPABILITIES_EXT,	//  VkStructureType						sType;
 		DE_NULL,													//  const void*							pNext;
 		0u,															//  VkVideoEncodeH264CapabilityFlagsEXT	flags;
-		0u,															//  VkVideoEncodeH264InputModeFlagsEXT	inputModeFlags;
-		0u,															//  VkVideoEncodeH264OutputModeFlagsEXT	outputModeFlags;
 		0u,															//  uint8_t								maxPPictureL0ReferenceCount;
 		0u,															//  uint8_t								maxBPictureL0ReferenceCount;
 		0u,															//  uint8_t								maxL1ReferenceCount;
@@ -247,8 +245,6 @@ de::MovePtr <VkVideoEncodeH265CapabilitiesEXT> getVideoCapabilitiesExtensionH265
 		VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_CAPABILITIES_EXT,	//  VkStructureType								sType;
 		DE_NULL,												//  const void*									pNext;
 		0u,														//  VkVideoEncodeH265CapabilityFlagsEXT			flags;
-		0u,														//  VkVideoEncodeH265InputModeFlagsEXT			inputModeFlags;
-		0u,														//  VkVideoEncodeH265OutputModeFlagsEXT			outputModeFlags;
 		0u,														//  VkVideoEncodeH265CtbSizeFlagsEXT			ctbSizes;
 		0u,														//  VkVideoEncodeH265TransformBlockSizeFlagsEXT	transformBlockSizes;
 		0u,														//  uint8_t										maxPPictureL0ReferenceCount;

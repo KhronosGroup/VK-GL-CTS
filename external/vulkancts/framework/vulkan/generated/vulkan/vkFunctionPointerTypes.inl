@@ -629,3 +629,5 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* BindOpticalFlowSessionImageNVFunc)		
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdOpticalFlowExecuteNVFunc)											(VkCommandBuffer commandBuffer, VkOpticalFlowSessionNV session, const VkOpticalFlowExecuteInfoNV* pExecuteInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDeviceFaultInfoEXTFunc)												(VkDevice device, VkDeviceFaultCountsEXT* pFaultCounts, VkDeviceFaultInfoEXT* pFaultInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ReleaseSwapchainImagesEXTFunc)											(VkDevice device, const VkReleaseSwapchainImagesInfoEXT* pReleaseInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* MapMemory2KHRFunc)														(VkDevice device, const VkMemoryMapInfoKHR* pMemoryMapInfo, void** ppData);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* UnmapMemory2KHRFunc)													(VkDevice device, const VkMemoryUnmapInfoKHR* pMemoryUnmapInfo);
