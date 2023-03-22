@@ -346,6 +346,8 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkGetPipelineExecutablePropertiesKHR",
 		"vkGetPipelineExecutableStatisticsKHR",
 		"vkGetPipelineExecutableInternalRepresentationsKHR",
+		"vkMapMemory2KHR",
+		"vkUnmapMemory2KHR",
 		"vkReleaseSwapchainImagesEXT",
 		"vkGetGeneratedCommandsMemoryRequirementsNV",
 		"vkCmdPreprocessGeneratedCommandsNV",

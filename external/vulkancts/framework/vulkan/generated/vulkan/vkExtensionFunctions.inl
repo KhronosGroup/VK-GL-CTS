@@ -912,6 +912,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_map_memory2")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_shader_atomic_float2")
 	{
 		return;
@@ -1003,6 +1007,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_QCOM_render_pass_store_ops")
+	{
+		return;
+	}
+	if (extName == "VK_NV_low_latency")
 	{
 		return;
 	}
@@ -2390,6 +2398,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkGetPipelineExecutableInternalRepresentationsKHR");
 		return;
 	}
+	if (extName == "VK_KHR_map_memory2")
+	{
+		functions.push_back("vkMapMemory2KHR");
+		functions.push_back("vkUnmapMemory2KHR");
+		return;
+	}
 	if (extName == "VK_EXT_shader_atomic_float2")
 	{
 		return;
@@ -2487,6 +2501,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_QCOM_render_pass_store_ops")
+	{
+		return;
+	}
+	if (extName == "VK_NV_low_latency")
 	{
 		return;
 	}
@@ -3168,6 +3186,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_extended_dynamic_state",
 	"VK_KHR_deferred_host_operations",
 	"VK_KHR_pipeline_executable_properties",
+	"VK_KHR_map_memory2",
 	"VK_EXT_shader_atomic_float2",
 	"VK_EXT_swapchain_maintenance1",
 	"VK_EXT_shader_demote_to_helper_invocation",
@@ -3189,6 +3208,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_KHR_video_encode_queue",
 	"VK_NV_device_diagnostics_config",
 	"VK_QCOM_render_pass_store_ops",
+	"VK_NV_low_latency",
 	"VK_EXT_metal_objects",
 	"VK_KHR_synchronization2",
 	"VK_EXT_descriptor_buffer",

@@ -1679,10 +1679,8 @@ def writeTypeUtil (api, filename):
 			"StdVideoH264PpsFlags",
 			"StdVideoDecodeH264PictureInfoFlags",
 			"StdVideoDecodeH264ReferenceInfoFlags",
-			"StdVideoDecodeH264MvcElementFlags",
 			"StdVideoEncodeH264SliceHeaderFlags",
 			"StdVideoEncodeH264PictureInfoFlags",
-			"StdVideoEncodeH264RefMgmtFlags",
 			"StdVideoEncodeH264ReferenceInfoFlags",
 			"StdVideoH265HrdFlags",
 			"StdVideoH265VpsFlags",
@@ -1693,9 +1691,10 @@ def writeTypeUtil (api, filename):
 			"StdVideoDecodeH265ReferenceInfoFlags",
 			"StdVideoEncodeH265PictureInfoFlags",
 			"StdVideoEncodeH265SliceHeaderFlags",
-			"StdVideoEncodeH265ReferenceModificationFlags",
 			"StdVideoEncodeH265ReferenceInfoFlags",
 			"StdVideoEncodeH265SliceSegmentHeaderFlags",
+			"StdVideoEncodeH264ReferenceListsInfoFlags",
+			"StdVideoEncodeH265ReferenceListsInfoFlags",
 		])
 	COMPOSITE_TYPES = set([t.name for t in api.compositeTypes if not t.isAlias])
 
