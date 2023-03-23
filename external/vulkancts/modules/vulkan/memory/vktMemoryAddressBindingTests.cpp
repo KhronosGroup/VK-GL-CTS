@@ -201,10 +201,17 @@ static Move<VkDevice> createDeviceWithAdressBindingReport (	deBool								isVali
 	const char* const										enabledExtensions[]				= {"VK_EXT_device_address_binding_report"};
 	VkPhysicalDeviceFeatures								features						= getPhysicalDeviceFeatures(vki, physicalDevice);
 
+	VkPhysicalDeviceAddressBindingReportFeaturesEXT deviceAddressBindingReportFeatures
+	{
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ADDRESS_BINDING_REPORT_FEATURES_EXT,
+		DE_NULL,
+		VK_TRUE
+	};
+
 	const VkPhysicalDeviceFeatures2						enabledFeatures2				=
 	{
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,							// VkStructureType						sType;
-		DE_NULL,																// const void*							pNext;
+		&deviceAddressBindingReportFeatures,									// const void*							pNext;
 		features																// VkPhysicalDeviceFeatures				features;
 	};
 	const VkDeviceQueueCreateInfo						queueCreateInfo					=
@@ -1599,17 +1606,11 @@ struct CaseDescriptions
 };
 
 template<typename Object>
-static void checkSupport (Context& context, typename Object::Parameters)
-{
-	context.requireDeviceFunctionality("VK_EXT_device_address_binding_report");
-}
-
-template<typename Object>
 void addCases (const MovePtr<tcu::TestCaseGroup>& group, const CaseDescription<Object>& cases)
 {
 	for (const NamedParameters<Object>* cur = cases.paramsBegin; cur != cases.paramsEnd; cur++)
 	{
-		addFunctionCase(group.get(), cur->name, "", checkSupport<Object>, cases.function, cur->parameters);
+		addFunctionCase(group.get(), cur->name, "", cases.function, cur->parameters);
 	}
 }
 
@@ -1618,7 +1619,7 @@ void addCasesWithProgs (const MovePtr<tcu::TestCaseGroup>& group, const CaseDesc
 {
 	for (const NamedParameters<Object>* cur = cases.paramsBegin; cur != cases.paramsEnd; cur++)
 	{
-		addFunctionCaseWithPrograms(group.get(), cur->name, "", checkSupport<Object>, Object::initPrograms, cases.function, cur->parameters);
+		addFunctionCaseWithPrograms(group.get(), cur->name, "", Object::initPrograms, cases.function, cur->parameters);
 	}
 }
 
@@ -1731,6 +1732,37 @@ static std::vector<std::string> getInstanceExtensions(const deUint32 instanceVer
 	return instanceExtensions;
 }
 
+static bool checkSupport(CustomInstance& customInstance, vk::VkPhysicalDevice& physicalDevice)
+{
+	const std::vector<VkExtensionProperties> extensions = enumerateDeviceExtensionProperties(customInstance.getDriver(), physicalDevice, DE_NULL);
+
+	for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
+	{
+		if (deStringEqual("VK_EXT_device_address_binding_report", extensions[extNdx].extensionName))
+		{
+			VkPhysicalDeviceAddressBindingReportFeaturesEXT deviceAddressBindingReportFeatures
+			{
+				VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ADDRESS_BINDING_REPORT_FEATURES_EXT,
+				DE_NULL,
+				VK_FALSE
+			};
+
+			VkPhysicalDeviceFeatures2 availFeatures;
+			availFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+			availFeatures.pNext = &deviceAddressBindingReportFeatures;
+
+			customInstance.getDriver().getPhysicalDeviceFeatures2(physicalDevice, &availFeatures);
+
+			if (deviceAddressBindingReportFeatures.reportAddressBinding == VK_TRUE)
+				return true;
+			else
+				return false;
+		}
+	}
+
+	return false;
+}
+
 template<typename Object>
 tcu::TestStatus createDestroyObjectTest (Context& context, typename Object::Parameters params)
 {
@@ -1740,6 +1772,11 @@ tcu::TestStatus createDestroyObjectTest (Context& context, typename Object::Para
 	CustomInstance          customInstance		= createCustomInstanceWithExtensions(context, getInstanceExtensions(context.getUsedApiVersion()));
 	vk::VkPhysicalDevice	physicalDevice		= chooseDevice(customInstance.getDriver(), customInstance, context.getTestContext().getCommandLine());
 	deUint32				queueFamilyIndex	= 0;
+
+	if (!checkSupport(customInstance, physicalDevice))
+	{
+		TCU_THROW(NotSupportedError, "Device address binding report not supported");
+	}
 
 	const std::vector<VkQueueFamilyProperties>	queueProps = getPhysicalDeviceQueueFamilyProperties(customInstance.getDriver(), physicalDevice);
 
