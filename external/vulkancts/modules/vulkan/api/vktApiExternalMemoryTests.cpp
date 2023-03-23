@@ -1418,6 +1418,9 @@ tcu::TestStatus testSemaphoreMultipleExports (Context&					context,
 		{
 			NativeHandle handle;
 
+			// Need to touch watchdog due to how long one iteration takes
+			context.getTestContext().touchWatchdog();
+
 			if (transference == TRANSFERENCE_COPY)
 			{
 				submitAtomicCalculationsAndGetSemaphoreNative(context, vkd, *device, alloc, queue, queueFamilyIndex, *semaphore, config.externalType, handle);
@@ -2486,6 +2489,9 @@ tcu::TestStatus testFenceMultipleExports (Context&				context,
 		for (size_t exportNdx = 0; exportNdx < exportCount; exportNdx++)
 		{
 			NativeHandle handle;
+
+			// Need to touch watchdog due to how long one iteration takes
+			context.getTestContext().touchWatchdog();
 
 			if (transference == TRANSFERENCE_COPY)
 			{
