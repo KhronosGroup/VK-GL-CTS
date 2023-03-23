@@ -63,6 +63,7 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 {
 	vector<string>	enabledExtensions;
 	bool			khrBufferDeviceAddress	= false;
+	bool			excludeExtension		= false;
 
 	const char*		extensionGroups[]		=
 	{
@@ -96,6 +97,12 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 		"VK_NV_representative_fragment_test",
 	};
 
+	const char* exclusions[] =
+	{
+		"VK_EXT_device_address_binding_report",
+		"VK_EXT_device_memory_report"
+	};
+
 	for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
 	{
 		if (deStringEqual(extensions[extNdx].extensionName, "VK_KHR_buffer_device_address"))
@@ -109,8 +116,22 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 	{
 		const auto& extName = extensions[extNdx].extensionName;
 
+		excludeExtension = false;
+
 		// VK_EXT_buffer_device_address is deprecated and must not be enabled if VK_KHR_buffer_device_address is enabled
 		if (khrBufferDeviceAddress && deStringEqual(extName, "VK_EXT_buffer_device_address"))
+			continue;
+
+		for (int exclusionsNdx = 0; exclusionsNdx < DE_LENGTH_OF_ARRAY(exclusions); exclusionsNdx++)
+		{
+			if (deStringEqual(extName, exclusions[exclusionsNdx]))
+			{
+				excludeExtension = true;
+				break;
+			}
+		}
+
+		if (excludeExtension)
 			continue;
 
 		for (int extGroupNdx = 0; extGroupNdx < DE_LENGTH_OF_ARRAY(extensionGroups); extGroupNdx++)
