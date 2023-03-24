@@ -224,7 +224,7 @@ tcu::TestStatus TransferQueueInstance::iterate (void)
 			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
 			DE_NULL,										// const void*				pNext;
 			VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			srcAccessMask;
-			VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			dstAccessMask;
+			VK_ACCESS_TRANSFER_READ_BIT,					// VkAccessFlags			dstAccessMask;
 			VK_IMAGE_LAYOUT_GENERAL,						// VkImageLayout			oldLayout;
 			VK_IMAGE_LAYOUT_GENERAL,						// VkImageLayout			newLayout;
 			VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;

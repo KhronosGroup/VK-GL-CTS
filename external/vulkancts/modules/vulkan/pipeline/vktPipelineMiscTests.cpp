@@ -1329,10 +1329,10 @@ tcu::TestStatus PipelineLibraryInterpolateAtSampleTestInstance::iterate(void)
 	void*				indexBufferGPLData	= indexBufferGPLAlloc.getHostPtr();
 	void*				valuesBufferGPLData	= valuesBufferGPLAlloc.getHostPtr();
 
-	deMemset(indexBufferMonolithicData, 0, sizeof(ValueBuffer));
-	deMemset(valuesBufferMonolithicData, 0, sizeof(uint32_t));
-	deMemset(indexBufferGPLData, 0, sizeof(uint32_t));
+	deMemset(indexBufferMonolithicData, 0, sizeof(uint32_t));
 	deMemset(valuesBufferMonolithicData, 0, sizeof(ValueBuffer));
+	deMemset(indexBufferGPLData, 0, sizeof(uint32_t));
+	deMemset(valuesBufferGPLData, 0, sizeof(ValueBuffer));
 
 	flushAlloc(vkd, device, indexBufferMonolithicAlloc);
 	flushAlloc(vkd, device, valuesBufferMonolithicAlloc);
