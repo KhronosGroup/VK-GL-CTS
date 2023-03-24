@@ -3624,7 +3624,7 @@ void drawSingleRenderPass (Context& context, const TestParams& params, WorkingDa
 		std::vector<std::vector<deUint32>>							preserveAttachments(numSubpasses);
 		std::vector<VkSubpassDependency2>							subpassDependencies;
 		std::vector<VkMultisampledRenderToSingleSampledInfoEXT>		msrtss(numSubpasses);
-		VkSubpassDescriptionDepthStencilResolve						depthStencilResolve;
+		std::vector<VkSubpassDescriptionDepthStencilResolve>	    depthStencilResolve(numSubpasses);
 		deInt32														attachmentNdxes[8]	= {-1, -1, -1, -1,
 																						   -1, -1, -1, -1};
 		deUint32													attachmentUseMask	= 0;
@@ -3638,7 +3638,7 @@ void drawSingleRenderPass (Context& context, const TestParams& params, WorkingDa
 								  passNdx,
 								  attachmentReferences[passNdx],
 								  resolveAttachmentReferences[passNdx],
-								  depthStencilResolve,
+								  depthStencilResolve[passNdx],
 								  &preserveAttachments[passNdx],
 								  msrtss[passNdx],
 								  subpasses,
@@ -4448,7 +4448,7 @@ void drawInputAttachments (Context& context, const TestParams& params, WorkingDa
 		std::vector<VkAttachmentReference2>							inputAttachmentReferences;
 		std::vector<VkSubpassDependency2>							subpassDependencies;
 		std::vector<VkMultisampledRenderToSingleSampledInfoEXT>		msrtss(numSubpasses);
-		VkSubpassDescriptionDepthStencilResolve						depthStencilResolve;
+		std::vector<VkSubpassDescriptionDepthStencilResolve>		depthStencilResolve(numSubpasses);
 		deInt32														attachmentNdxes[8]	= {-1, -1, -1, -1,
 																						   -1, -1, -1, -1};
 		deUint32													attachmentUseMask	= 0;
@@ -4476,7 +4476,7 @@ void drawInputAttachments (Context& context, const TestParams& params, WorkingDa
 								  passNdx,
 								  attachmentReferences[passNdx],
 								  resolveAttachmentReferences[passNdx],
-								  depthStencilResolve,
+								  depthStencilResolve[passNdx],
 								  &preserveAttachments[passNdx],
 								  msrtss[passNdx],
 								  subpasses,
