@@ -498,7 +498,6 @@ static void getTestRunsForSingleConfigGL(glu::ApiType type, vector<TestRunParams
 
 static void getTestRunsForESForGL(glu::ApiType type, vector<TestRunParams>& runs, const ConfigList& configs)
 {
-	DE_UNREF(type);
 #include "glcKhronosMustpassAospForGl.hpp"
 
 	vector<Config>::const_iterator cfgIter = configs.configs.begin();
@@ -507,6 +506,9 @@ static void getTestRunsForESForGL(glu::ApiType type, vector<TestRunParams>& runs
 
 	for (int i = 0; i < numRunParams; ++i)
 	{
+		if (!glu::contextSupports(glu::ContextType(type), runParams[i].apiType))
+			continue;
+
 		const char* apiName = getApiName(runParams[i].apiType);
 
 		const int width  = runParams[i].surfaceWidth;
