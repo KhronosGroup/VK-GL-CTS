@@ -89,6 +89,7 @@ struct TestParams
 	PipelineTreeConfiguration	pipelineTreeConfiguration;
 	bool						optimize;
 	bool						delayedShaderCreate;
+	bool						useMaintenance5;
 };
 
 struct RuntimePipelineTreeNode
@@ -866,7 +867,7 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 	VkDescriptorSetLayout vecLayoutBoth[2] = { *descriptorSetLayoutVert, *descriptorSetLayoutFrag };
 
 	VkPipelineLayoutCreateFlags pipelineLayoutCreateFlag = 0u;
-	if (m_data.delayedShaderCreate || (m_data.pipelineTreeConfiguration.size() > 1))
+	if (!m_data.useMaintenance5 && (m_data.delayedShaderCreate || (m_data.pipelineTreeConfiguration.size() > 1)))
 		pipelineLayoutCreateFlag = VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT;
 
 	const Move<VkCommandPool>				cmdPool					= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
@@ -941,7 +942,7 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 		}
 
 
-		if (linkedLibrariesFlags != ALL_GRAPHICS_PIPELINE_LIBRARY_FLAGS  && graphicsPipelineLibraryCreateInfo.flags != 0)
+		if (!m_data.useMaintenance5 && linkedLibrariesFlags != ALL_GRAPHICS_PIPELINE_LIBRARY_FLAGS && graphicsPipelineLibraryCreateInfo.flags != 0)
 			appendStructurePtrToVulkanChain(&graphicsPipelineCreateInfo.pNext, &graphicsPipelineLibraryCreateInfo);
 
 		if (linkingInfo.libraryCount != 0)
@@ -1225,6 +1226,12 @@ PipelineLibraryTestCase::~PipelineLibraryTestCase (void)
 
 void PipelineLibraryTestCase::checkSupport (Context& context) const
 {
+	if (m_data.useMaintenance5)
+	{
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+		return;
+	}
+
 	if (m_data.delayedShaderCreate || (m_data.pipelineTreeConfiguration.size() > 1))
 	{
 		context.requireDeviceFunctionality("VK_EXT_graphics_pipeline_library");
@@ -2776,7 +2783,8 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group, bool opti
 		{
 			pipelineTreeConfiguration[libConfigNdx],	//  PipelineTreeConfiguration	pipelineTreeConfiguration;
 			optimize,									//  bool						optimize;
-			delayedShaderCreate							//  bool						delayedShaderCreate;
+			delayedShaderCreate,						//  bool						delayedShaderCreate;
+			false										//  bool						useMaintenance5;
 		};
 		const std::string	testName			= getTestName(pipelineTreeConfiguration[libConfigNdx]);
 
@@ -2784,6 +2792,21 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group, bool opti
 			continue;
 
 		group->addChild(new PipelineLibraryTestCase(group->getTestContext(), testName.c_str(), "", testParams));
+	}
+
+	// repeat first case (one that creates montolithic pipeline) to test VK_KHR_maintenance5;
+	// VkShaderModule deprecation (tested with delayedShaderCreate) was added to VK_KHR_maintenance5
+	if (optimize == false)
+	{
+		const TestParams testParams
+		{
+			pipelineTreeConfiguration[0],				//  PipelineTreeConfiguration	pipelineTreeConfiguration;
+			false,										//  bool						optimize;
+			true,										//  bool						delayedShaderCreate;
+			true										//  bool						useMaintenance5;
+		};
+
+		group->addChild(new PipelineLibraryTestCase(group->getTestContext(), "maintenance5", "", testParams));
 	}
 }
 
