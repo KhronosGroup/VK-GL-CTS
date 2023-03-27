@@ -2390,6 +2390,20 @@ struct TestConfig
 				sequenceOrdering == SequenceOrdering::TWO_DRAWS_STATIC);
 	}
 
+	// Returns true if the ordering needs to bind a static pipeline first.
+	bool bindStaticFirst () const
+	{
+		return (sequenceOrdering == SequenceOrdering::BETWEEN_PIPELINES	||
+				sequenceOrdering == SequenceOrdering::AFTER_PIPELINES	||
+				sequenceOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC);
+	}
+
+	// Returns true if the test uses a static pipeline.
+	bool useStaticPipeline () const
+	{
+		return (bindStaticFirst() || isReversed());
+	}
+
 	// Swaps static and dynamic configuration values.
 	void swapValues ()
 	{
@@ -3187,8 +3201,8 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 				for (uint32_t i = 0U; i < combinationCount; ++i) {
 					if (combinations[i].rasterizationSamples == m_testConfig.rasterizationSamplesConfig.staticValue &&
 						combinations[i].colorSamples == m_testConfig.getColorSampleCount() &&
-						combinations[i].coverageReductionMode == coverageReductionMode) {
-
+						combinations[i].coverageReductionMode == coverageReductionMode)
+					{
 						return true;
 					}
 				}
@@ -4403,6 +4417,8 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	auto&		log					= m_context.getTestContext().getLog();
 
 	const auto	kReversed			= m_testConfig.isReversed();
+	const auto	kBindStaticFirst	= m_testConfig.bindStaticFirst();
+	const auto	kUseStaticPipeline	= m_testConfig.useStaticPipeline();
 	const auto	kNumIterations		= m_testConfig.numIterations();
 	const auto	kColorAttCount		= m_testConfig.colorAttachmentCount;
 	const auto	kSequenceOrdering	= m_testConfig.sequenceOrdering;
@@ -5394,11 +5410,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		},
 	};
 
-	vk::GraphicsPipelineWrapper	staticPipeline		(vkd, device, m_testConfig.pipelineConstructionType);
-	const bool					bindStaticFirst		= (kSequenceOrdering == SequenceOrdering::BETWEEN_PIPELINES	||
-													   kSequenceOrdering == SequenceOrdering::AFTER_PIPELINES	||
-													   kSequenceOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC);
-	const bool					useStaticPipeline	= (bindStaticFirst || kReversed);
+	vk::GraphicsPipelineWrapper	staticPipeline (vkd, device, m_testConfig.pipelineConstructionType);
 
 	// Create extra dynamic patch control points pipeline if needed.
 	vk::Move<vk::VkPipeline> extraDynPCPPipeline;
@@ -5432,7 +5444,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	}
 
 	// Create static pipeline when needed.
-	if (useStaticPipeline)
+	if (kUseStaticPipeline)
 	{
 		auto viewports	= m_testConfig.viewportConfig.staticValue;
 		auto scissors	= m_testConfig.scissorConfig.staticValue;
@@ -5704,7 +5716,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		vk::beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffers[iteration].get(), vk::makeRect2D(kFramebufferWidth, kFramebufferHeight), static_cast<deUint32>(clearValues.size()), clearValues.data());
 
 			// Bind a static pipeline first if needed.
-			if (bindStaticFirst && iteration == 0u)
+			if (kBindStaticFirst && iteration == 0u)
 				vkd.cmdBindPipeline(cmdBuffer, pipelineBindPoint, staticPipeline.getPipeline());
 
 			// Maybe set extended dynamic state here.
@@ -7151,9 +7163,14 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			// Sample count.
 			{
 				TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
-				config.rasterizationSamplesConfig.staticValue	= inactiveSampleCount;
-				config.rasterizationSamplesConfig.dynamicValue	= activeSampleCount;
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, namePrefix + "rasterization_samples", "Dynamically set the rasterization sample count" + descSuffix, config));
+
+				// The static pipeline would be illegal due to VUID-VkGraphicsPipelineCreateInfo-multisampledRenderToSingleSampled-06853.
+				if (!config.useStaticPipeline())
+				{
+					config.rasterizationSamplesConfig.staticValue	= inactiveSampleCount;
+					config.rasterizationSamplesConfig.dynamicValue	= activeSampleCount;
+					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, namePrefix + "rasterization_samples", "Dynamically set the rasterization sample count" + descSuffix, config));
+				}
 			}
 
 			// Sample mask
@@ -7241,6 +7258,30 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.referenceColor.reset				(new TopLeftBorderGenerator(kDefaultTriangleColor, kDefaultTriangleColor, kDefaultClearColor, kDefaultClearColor));
 
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "sample_mask_count", "Dynamically set sample mask with slightly different sample count", config));
+		}
+
+		// Special rasterization samples case: make sure rasterization samples is taken from the dynamic value, but provide a larger mask.
+		{
+			const auto kLargeRasterizationSampleCount = vk::VK_SAMPLE_COUNT_64_BIT;
+			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+
+			// We cannot create a static pipeline with the configuration below because the render pass attachments will have a
+			// sample count of kMultiSampleCount and VUID-VkGraphicsPipelineCreateInfo-multisampledRenderToSingleSampled-06853
+			// applies here.
+			if (!config.useStaticPipeline())
+			{
+				config.rasterizationSamplesConfig.staticValue	= kLargeRasterizationSampleCount;
+				config.rasterizationSamplesConfig.dynamicValue	= kMultiSampleCount;
+				config.sampleMaskConfig.staticValue				= SampleMaskVec{ 0xFFFFFFF0u, 0xFFFFFFFFu }; // Last 4 bits off.
+				config.referenceColor.reset						(new SingleColorGenerator(kDefaultClearColor));
+
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "large_static_rasterization_samples_off", "Dynamically set the rasterization samples to a low value while disabling bits corresponding to the dynamic sample count", config));
+
+				config.sampleMaskConfig.staticValue				= SampleMaskVec{ 0xFu, 0u }; // Last 4 bits on.
+				config.referenceColor.reset						(new SingleColorGenerator(kDefaultTriangleColor));
+
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "large_static_rasterization_samples_on", "Dynamically set the rasterization samples to a low value while enabling bits corresponding to the dynamic sample count", config));
+			}
 		}
 
 		// Color write mask.
