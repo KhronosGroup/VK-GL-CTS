@@ -733,6 +733,61 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+#if defined(CTS_USES_VULKAN)
+	if ( physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3TessellationDomainOrigin )
+	{
+		if ( coreFeatures.features.tessellationShader == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature tessellationShader not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	if ( physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3DepthClampEnable )
+	{
+		if ( coreFeatures.features.depthClamp == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature depthClamp not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	if ( physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3PolygonMode )
+	{
+		if ( coreFeatures.features.fillModeNonSolid == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature fillModeNonSolid not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	if ( physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3AlphaToOneEnable )
+	{
+		if ( coreFeatures.features.alphaToOne == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature alphaToOne not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	if ( physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3LogicOpEnable )
+	{
+		if ( coreFeatures.features.logicOp == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature logicOp not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_fragment_shader_interlock")) )
 	{
 		if ( ( physicalDeviceFragmentShaderInterlockFeaturesEXT.fragmentShaderSampleInterlock == VK_FALSE ) && ( physicalDeviceFragmentShaderInterlockFeaturesEXT.fragmentShaderPixelInterlock == VK_FALSE ) && ( physicalDeviceFragmentShaderInterlockFeaturesEXT.fragmentShaderShadingRateInterlock == VK_FALSE ) )

@@ -1,0 +1,58 @@
+{
+    "register_extension":
+    {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features":
+    {
+        "VkPhysicalDeviceFeatures":
+        [
+            { "features": ["tessellationShader"], "requirements": ["physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3TessellationDomainOrigin"], "mandatory_variant": ["vulkan"] },
+            { "features": ["depthClamp"], "requirements": ["physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3DepthClampEnable"], "mandatory_variant": ["vulkan"] },
+            { "features": ["fillModeNonSolid"], "requirements": ["physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3PolygonMode"], "mandatory_variant": ["vulkan"] },
+            { "features": ["alphaToOne"], "requirements": ["physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3AlphaToOneEnable"], "mandatory_variant": ["vulkan"] },
+            { "features": ["logicOp"], "requirements": ["physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3LogicOpEnable"], "mandatory_variant": ["vulkan"] }
+        ],
+        "VkPhysicalDeviceTransformFeedbackFeaturesEXT":
+        [
+            { "features": ["geometryStreams"], "requirements": ["physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3RasterizationStream"], "mandatory_variant": ["vulkan"] }
+        ],
+        "VkPhysicalDeviceProvokingVertexFeaturesEXT":
+        [
+            { "features": ["provokingVertexLast"], "requirements": ["physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3ProvokingVertexMode"], "mandatory_variant": ["vulkan"] }
+        ],
+        "VkPhysicalDeviceDepthClipControlFeaturesEXT":
+        [
+            { "features": ["depthClipControl"], "requirements": ["physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3DepthClipNegativeOneToOne"], "mandatory_variant": ["vulkan"] }
+        ],
+        "VkPhysicalDeviceCoverageReductionModeFeaturesNV":
+        [
+            { "features": ["coverageReductionMode"], "requirements": ["physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3CoverageReductionMode"], "mandatory_variant": ["vulkan"] }
+        ],
+        "VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV":
+        [
+            { "features": ["representativeFragmentTest"], "requirements": ["physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3RepresentativeFragmentTestEnable"], "mandatory_variant": ["vulkan"] }
+        ],
+        "VkPhysicalDeviceShadingRateImageFeaturesNV":
+        [
+            { "features": ["shadingRateImage"], "requirements": ["physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3ShadingRateImageEnable"], "mandatory_variant": ["vulkan"] }
+        ]
+    },
+    "mandatory_extensions":
+    [
+        { "extension": "VK_EXT_conservative_rasterization", "requirements": ["physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3ConservativeRasterizationMode"], "mandatory_variant": ["vulkan"] },
+        { "extension": "VK_EXT_conservative_rasterization", "requirements": ["physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3ExtraPrimitiveOverestimationSize"], "mandatory_variant": ["vulkan"] },
+        { "extension": "VK_EXT_sample_locations", "requirements": ["physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3SampleLocationsEnable"], "mandatory_variant": ["vulkan"] },
+        { "extension": "VK_EXT_blend_operation_advanced", "requirements": ["physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3ColorBlendAdvanced"], "mandatory_variant": ["vulkan"] },
+        { "extension": "VK_EXT_line_rasterization", "requirements": ["physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3LineRasterizationMode"], "mandatory_variant": ["vulkan"] },
+        { "extension": "VK_EXT_line_rasterization", "requirements": ["physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3LineStippleEnable"], "mandatory_variant": ["vulkan"] },
+        { "extension": "VK_NV_clip_space_w_scaling", "requirements": ["physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3ViewportWScalingEnable"], "mandatory_variant": ["vulkan"] },
+        { "extension": "VK_NV_viewport_swizzle", "requirements": ["physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3ViewportSwizzle"], "mandatory_variant": ["vulkan"] },
+        { "extension": "VK_NV_fragment_coverage_to_color", "requirements": ["physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3CoverageToColorEnable"], "mandatory_variant": ["vulkan"] },
+        { "extension": "VK_NV_fragment_coverage_to_color", "requirements": ["physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3CoverageToColorLocation"], "mandatory_variant": ["vulkan"] },
+        { "extension": "VK_NV_framebuffer_mixed_samples", "requirements": ["physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3CoverageModulationMode"], "mandatory_variant": ["vulkan"] },
+        { "extension": "VK_NV_framebuffer_mixed_samples", "requirements": ["physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3CoverageModulationTableEnable"], "mandatory_variant": ["vulkan"] },
+        { "extension": "VK_NV_framebuffer_mixed_samples", "requirements": ["physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3CoverageModulationTable"], "mandatory_variant": ["vulkan"] }
+    ]
+}

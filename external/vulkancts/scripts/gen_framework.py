@@ -2841,44 +2841,67 @@ def writeMandatoryFeatures(api, filename):
 
 	dictStructs = {}
 	dictData = []
+	extData = []
 	usedFeatureStructs = {}
 	for _, data in api.additionalExtensionData:
-		if 'mandatory_features' not in data.keys():
-			continue
-		# sort to have same results for py2 and py3
-		listStructFeatures = sorted(data['mandatory_features'].items(), key=lambda tup: tup[0])
-		for structure, featuresList in listStructFeatures:
-			for featureData in featuresList:
-				# allow for featureless VKSC only extensions
-				if not 'features' in featureData.keys() or 'requirements' not in featureData.keys():
-					continue
-				requirements = featureData['requirements']
+		if 'mandatory_features' in data.keys():
+			# sort to have same results for py2 and py3
+			listStructFeatures = sorted(data['mandatory_features'].items(), key=lambda tup: tup[0])
+			for structure, featuresList in listStructFeatures:
+				for featureData in featuresList:
+					# allow for featureless VKSC only extensions
+					if not 'features' in featureData.keys() or 'requirements' not in featureData.keys():
+						continue
+					requirements = featureData['requirements']
 
-				mandatory_variant = ''
-				try:
-					mandatory_variant = featureData['mandatory_variant']
-				except KeyError:
 					mandatory_variant = ''
+					try:
+						mandatory_variant = featureData['mandatory_variant']
+					except KeyError:
+						mandatory_variant = ''
 
-				dictData.append( [ structure, featureData['features'], requirements, mandatory_variant] )
+					dictData.append( [ structure, featureData['features'], requirements, mandatory_variant] )
 
-				if structure == 'VkPhysicalDeviceFeatures':
+					if structure == 'VkPhysicalDeviceFeatures':
+						continue
+
+					# if structure is not in dict construct name of variable and add is as a first item
+					if (structure not in dictStructs):
+						dictStructs[structure] = ([structure[2:3].lower() + structure[3:]], mandatory_variant)
+					# add first requirement if it is unique
+					if requirements and (requirements[0] not in dictStructs[structure][0]):
+						dictStructs[structure][0].append(requirements[0])
+
+					usedFeatureStructs[structure] = []
+
+					if requirements:
+						for req in requirements:
+							if '.' in req:
+								req = req.split('.')[0]
+								reqStruct = 'Vk' + req[0].upper() + req[1:]
+								usedFeatureStructs[reqStruct] = []
+
+		if 'mandatory_extensions' in data:
+			mandatoryExtensions = []
+			for mandatoryExt in data['mandatory_extensions']:
+				if 'extension' in mandatoryExt:
+					extName = mandatoryExt.pop('extension')
+					mandatoryExtensions.append((extName, mandatoryExt))
+
+			for extension, extensionData in mandatoryExtensions:
+				# requirements are actually mandatory.
+				if 'requirements' not in extensionData:
 					continue
 
-				# if structure is not in dict construct name of variable and add is as a first item
-				if (structure not in dictStructs):
-					dictStructs[structure] = ([structure[2:3].lower() + structure[3:]], mandatory_variant)
-				# add first requirement if it is unique
-				if requirements and (requirements[0] not in dictStructs[structure][0]):
-					dictStructs[structure][0].append(requirements[0])
+				requirements = extensionData['requirements']
+				mandatory_variant = '' if 'mandatory_variant' not in extensionData else extensionData['mandatory_variant']
+				extData.append((extension, requirements, mandatory_variant))
 
-				usedFeatureStructs[structure] = []
-
-				if requirements:
-					for req in requirements:
-						if '.' in req:
-							reqStruct = 'Vk' + req[0].upper() + req[1:]
-							usedFeatureStructs[reqStruct] = []
+				for req in requirements:
+					if '.' in req:
+						req = req.split('.')[0]
+						reqStruct = 'Vk' + req[0].upper() + req[1:]
+						usedFeatureStructs[reqStruct] = []
 
 	stream.extend(['bool canUseFeaturesStruct (const vector<VkExtensionProperties>& deviceExtensions, uint32_t usedApiVersion, const char* extension)',
 				   '{',
@@ -3025,8 +3048,40 @@ def writeMandatoryFeatures(api, filename):
 		else:
 			stream.extend([''])
 
+	for extension, requirements, mandatory_variant in extData:
+		metaCondition = ''
+		if mandatory_variant != '':
+			metaCondition = metaCondition + ' || defined(CTS_USES_' + mandatory_variant[0].upper() + ')'
+			stream.extend(['#if ' + metaCondition[4:]])
+		if len(requirements) > 0 :
+			condition = 'if ( '
+			for i, req in enumerate(requirements) :
+				if (req.startswith("ApiVersion")):
+					condition = condition + 'context.contextSupports(vk::' + req + ')'
+				elif '.' in req:
+					condition = condition + req
+				else:
+					condition = condition + 'isExtensionStructSupported(deviceExtensions, RequiredExtension("' + req + '"))'
+				if i+1 < len(requirements) :
+					condition = condition + ' && '
+			condition = condition + ' )'
+			stream.append('\t' + condition)
+		stream.append('\t{')
+		stream.extend(['\t\tif (!(isExtensionStructSupported(deviceExtensions, RequiredExtension("' + extension + '")) || isCoreDeviceExtension(usedApiVersion, "' + extension + '")))',
+					   '\t\t{',
+					   '\t\t\tlog << tcu::TestLog::Message << "Mandatory extension ' + extension + ' not supported" << tcu::TestLog::EndMessage;',
+					   '\t\t\tresult = false;',
+					   '\t\t}',
+					   '\t}'])
+		if metaCondition != '':
+			stream.extend(['#endif // ' + metaCondition[4:],
+						  ''])
+		else:
+			stream.append('')
+
 	stream.append('\treturn result;')
 	stream.append('}\n')
+
 	writeInlFile(filename, INL_HEADER, stream)
 
 def writeExtensionList(apiName, api, filename, extensionType):
