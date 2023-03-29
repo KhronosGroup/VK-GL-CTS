@@ -2595,8 +2595,11 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(
 	else if (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR ||
 			 m_params.variant == TestVariant::ROBUST_BUFFER_ACCESS)
 	{
-		extensions.push_back("VK_EXT_robustness2");
-		addToChainVulkanStructure(&nextPtr, robustness2Features);
+		if (context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
+		{
+			extensions.push_back("VK_EXT_robustness2");
+			addToChainVulkanStructure(&nextPtr, robustness2Features);
+		}
 	}
 	else if (m_params.subcase == SubCase::CAPTURE_REPLAY_CUSTOM_BORDER_COLOR)
 	{
