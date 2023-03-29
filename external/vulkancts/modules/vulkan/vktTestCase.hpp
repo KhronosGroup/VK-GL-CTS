@@ -36,6 +36,9 @@
 #include "vkPipelineConstructionUtil.hpp"
 #include <vector>
 #include <string>
+#ifdef CTS_USES_VULKANSC
+#include <mutex>
+#endif // CTS_USES_VULKANSC
 
 namespace glu
 {
@@ -144,6 +147,13 @@ public:
 	void checkPipelineLibraryRequirements (const vk::PipelineConstructionType		pipelineConstructionType);
 	void resetCommandPoolForVKSC													(const vk::VkDevice			device,
 																					 const vk::VkCommandPool	commandPool);
+#ifdef CTS_USES_VULKANSC
+	static std::vector<VkFaultData>					m_faultData;
+	static std::mutex								m_faultDataMutex;
+	static VKAPI_ATTR void VKAPI_CALL				faultCallbackFunction(VkBool32 unrecordedFaults,
+																		  deUint32 faultCount,
+																		  const VkFaultData* pFaults);
+#endif // CTS_USES_VULKANSC
 
 protected:
 	tcu::TestContext&								m_testCtx;

@@ -362,6 +362,22 @@ Move<VkDevice> createDefaultDevice (const PlatformInterface&				vkp,
 		deviceInfo.pNext = &appParams[0];
 	}
 
+	VkFaultCallbackInfo					faultCallbackInfo		=
+	{
+		VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO,					//	VkStructureType				sType;
+		DE_NULL,												//	void*						pNext;
+		0U,														//	uint32_t					faultCount;
+		nullptr,												//	VkFaultData*				pFaults;
+		Context::faultCallbackFunction							//	PFN_vkFaultCallbackFunction	pfnFaultCallback;
+	};
+
+	if (cmdLine.isSubProcess())
+	{
+		// XXX workaround incorrect constness on faultCallbackInfo.pNext.
+		faultCallbackInfo.pNext = const_cast<void *>(deviceInfo.pNext);
+		deviceInfo.pNext = &faultCallbackInfo;
+	}
+
 #else
 	DE_UNREF(resourceInterface);
 #endif // CTS_USES_VULKANSC
@@ -1010,6 +1026,28 @@ void Context::resetCommandPoolForVKSC	(const VkDevice					device,
 	DE_UNREF(commandPool);
 #endif
 }
+
+#ifdef CTS_USES_VULKANSC
+std::vector<VkFaultData>						Context::m_faultData;
+std::mutex										Context::m_faultDataMutex;
+
+void Context::faultCallbackFunction(VkBool32 unrecordedFaults,
+									uint32_t faultCount,
+									const VkFaultData* pFaults)
+{
+	DE_UNREF(unrecordedFaults);
+	std::lock_guard<std::mutex> lock(m_faultDataMutex);
+
+	// Append new faults to the vector
+	for (deUint32 i = 0; i < faultCount; ++i) {
+		VkFaultData faultData = pFaults[i];
+		faultData.pNext = DE_NULL;
+
+		m_faultData.push_back(faultData);
+	}
+}
+#endif // CTS_USES_VULKANSC
+
 
 // TestCase
 
