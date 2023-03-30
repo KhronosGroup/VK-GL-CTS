@@ -3659,12 +3659,28 @@ public:
 
 #ifndef CTS_USES_VULKANSC
 		const auto&	contextMeshFeatures	= context.getMeshShaderFeaturesEXT();
+		const auto& contextGPLFeatures	= context.getGraphicsPipelineLibraryFeaturesEXT();
 		const bool	meshShaderSupport	= contextMeshFeatures.meshShader;
+		const bool	gplSupport			= contextGPLFeatures.graphicsPipelineLibrary;
 
 		vk::VkPhysicalDeviceMeshShaderFeaturesEXT				meshFeatures				= vk::initVulkanStructure();
-		vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT	eds3Features				= vk::initVulkanStructure(meshShaderSupport ? &meshFeatures : nullptr);
+		vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT	gplFeatures					= vk::initVulkanStructure();
+
+		vk::VkPhysicalDeviceExtendedDynamicState3FeaturesEXT	eds3Features				= vk::initVulkanStructure();
 		vk::VkPhysicalDeviceShadingRateImageFeaturesNV			shadingRateImageFeatures	= vk::initVulkanStructure(&eds3Features);
 		vk::VkPhysicalDeviceFeatures2							features2					= vk::initVulkanStructure(&shadingRateImageFeatures);
+
+		if (meshShaderSupport)
+		{
+			meshFeatures.pNext	= features2.pNext;
+			features2.pNext		= &meshFeatures;
+		}
+
+		if (gplSupport)
+		{
+			gplFeatures.pNext	= features2.pNext;
+			features2.pNext		= &gplFeatures;
+		}
 
 		vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
 #endif // CTS_USES_VULKANSC
@@ -3674,9 +3690,19 @@ public:
 			"VK_EXT_extended_dynamic_state3",
 			"VK_NV_shading_rate_image",
 		};
+
 #ifndef CTS_USES_VULKANSC
 		if (meshShaderSupport)
 			extensions.push_back("VK_EXT_mesh_shader");
+
+		if (gplSupport)
+		{
+			extensions.push_back("VK_KHR_pipeline_library");
+			extensions.push_back("VK_EXT_graphics_pipeline_library");
+		}
+
+		// Disable robustness.
+		features2.features.robustBufferAccess = VK_FALSE;
 #endif // CTS_USES_VULKANSC
 
 		const vk::VkDeviceCreateInfo deviceCreateInfo =
