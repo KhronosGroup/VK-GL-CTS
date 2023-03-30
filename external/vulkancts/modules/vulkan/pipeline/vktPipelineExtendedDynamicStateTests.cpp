@@ -149,6 +149,31 @@ const DepthStencilFormat kDepthStencilFormats[] =
 
 using StrideVec = std::vector<vk::VkDeviceSize>;
 
+enum class TopologyClass
+{
+	POINT,
+	LINE,
+	TRIANGLE,
+	PATCH,
+	INVALID,
+};
+
+std::string topologyClassName (TopologyClass tclass)
+{
+	switch (tclass)
+	{
+	case TopologyClass::POINT:		return "point";
+	case TopologyClass::LINE:		return "line";
+	case TopologyClass::TRIANGLE:	return "triangle";
+	case TopologyClass::PATCH:		return "patch";
+	default:
+		break;
+	}
+
+	DE_ASSERT(false);
+	return "";
+}
+
 // We will use several data types in vertex bindings. Each type will need to define a few things.
 class VertexGenerator
 {
@@ -169,7 +194,7 @@ public:
 	virtual std::vector<std::string>								getDescriptorDeclarations()	const = 0;
 
 	// Get statements to calculate a vec2 called "vertexCoords" using descriptor members.
-	virtual std::vector<std::string>								getDescriptorCoordCalc()	const = 0;
+	virtual std::vector<std::string>								getDescriptorCoordCalc(TopologyClass topology) const = 0;
 
 	// Get fragment input attribute declarations in GLSL form. One sentence per element.
 	virtual std::vector<std::string>								getFragInputAttributes()	const { return std::vector<std::string>(); }
@@ -310,14 +335,34 @@ public:
 		return declarations;
 	}
 
-	virtual std::vector<std::string> getDescriptorCoordCalc() const override
+	virtual std::vector<std::string> getDescriptorCoordCalc(TopologyClass topology) const override
 	{
 		std::vector<std::string> statements;
-		statements.reserve(4u);
-		statements.push_back("uint prim = uint(gl_WorkGroupID.x);");
-		statements.push_back("uint indices[3] = uint[](prim, (prim + (1 + prim % 2)), (prim + (2 - prim % 2)));");
-		statements.push_back("uint invIndex = indices[gl_LocalInvocationIndex];");
-		statements.push_back("vec2 vertexCoords = s0b0buffer.data[invIndex].position;");
+
+		if (topology == TopologyClass::TRIANGLE)
+		{
+			statements.reserve(4u);
+			statements.push_back("uint prim = uint(gl_WorkGroupID.x);");
+			statements.push_back("uint indices[3] = uint[](prim, (prim + (1 + prim % 2)), (prim + (2 - prim % 2)));");
+			statements.push_back("uint invIndex = indices[gl_LocalInvocationIndex];");
+			statements.push_back("vec2 vertexCoords = s0b0buffer.data[invIndex].position;");
+		}
+		else if (topology == TopologyClass::LINE)
+		{
+			statements.reserve(9u);
+			statements.push_back("const uint linesPerRow = 3u;");
+			statements.push_back("const uint verticesPerRow = 4u;");
+			statements.push_back("uint lineIndex = uint(gl_WorkGroupID.x);");
+			statements.push_back("uint rowIndex = lineIndex / linesPerRow;");
+			statements.push_back("uint lineInRow = lineIndex % linesPerRow;");
+			statements.push_back("uint firstVertex = rowIndex * verticesPerRow + lineInRow;");
+			statements.push_back("uint indices[2] = uint[](firstVertex, firstVertex + 1u);");
+			statements.push_back("uint invIndex = indices[gl_LocalInvocationIndex];");
+			statements.push_back("vec2 vertexCoords = s0b0buffer.data[invIndex].position;");
+		}
+		else
+			DE_ASSERT(false);
+
 		return statements;
 	}
 
@@ -426,14 +471,34 @@ public:
 		return declarations;
 	}
 
-	virtual std::vector<std::string> getDescriptorCoordCalc() const override
+	virtual std::vector<std::string> getDescriptorCoordCalc(TopologyClass topology) const override
 	{
 		std::vector<std::string> statements;
-		statements.reserve(4u);
-		statements.push_back("uint prim = uint(gl_WorkGroupID.x);");
-		statements.push_back("uint indices[3] = uint[](prim, (prim + (1 + prim % 2)), (prim + (2 - prim % 2)));");
-		statements.push_back("uint invIndex = indices[gl_LocalInvocationIndex];");
-		statements.push_back("f16vec2 vertexCoords = s0b0buffer.data[invIndex].position;");
+
+		if (topology == TopologyClass::TRIANGLE)
+		{
+			statements.reserve(4u);
+			statements.push_back("uint prim = uint(gl_WorkGroupID.x);");
+			statements.push_back("uint indices[3] = uint[](prim, (prim + (1 + prim % 2)), (prim + (2 - prim % 2)));");
+			statements.push_back("uint invIndex = indices[gl_LocalInvocationIndex];");
+			statements.push_back("f16vec2 vertexCoords = s0b0buffer.data[invIndex].position;");
+		}
+		else if (topology == TopologyClass::LINE)
+		{
+			statements.reserve(9u);
+			statements.push_back("const uint linesPerRow = 3u;");
+			statements.push_back("const uint verticesPerRow = 4u;");
+			statements.push_back("uint lineIndex = uint(gl_WorkGroupID.x);");
+			statements.push_back("uint rowIndex = lineIndex / linesPerRow;");
+			statements.push_back("uint lineInRow = lineIndex % linesPerRow;");
+			statements.push_back("uint firstVertex = rowIndex * verticesPerRow + lineInRow;");
+			statements.push_back("uint indices[2] = uint[](firstVertex, firstVertex + 1u);");
+			statements.push_back("uint invIndex = indices[gl_LocalInvocationIndex];");
+			statements.push_back("f16vec2 vertexCoords = s0b0buffer.data[invIndex].position;");
+		}
+		else
+			DE_ASSERT(false);
+
 		return statements;
 	}
 
@@ -519,7 +584,7 @@ public:
 		return std::vector<std::string>();
 	}
 
-	virtual std::vector<std::string> getDescriptorCoordCalc() const override
+	virtual std::vector<std::string> getDescriptorCoordCalc(TopologyClass) const override
 	{
 		DE_ASSERT(false); // This vertex generator should not be used with mesh shaders.
 		return std::vector<std::string>();
@@ -621,11 +686,11 @@ public:
 		return statements;
 	}
 
-	virtual std::vector<std::string> getDescriptorCoordCalc() const override
+	virtual std::vector<std::string> getDescriptorCoordCalc(TopologyClass topology) const override
 	{
-		auto statements = VertexWithPadding::getDescriptorCoordCalc();
+		auto statements = VertexWithPadding::getDescriptorCoordCalc(topology);
 		statements.push_back("const bool provokingLast = " + std::string(m_lastVertex ? "true" : "false") + ";");
-		statements.push_back("colorMultiplier[gl_LocalInvocationIndex] = (((!provokingLast && gl_LocalInvocationIndex == 0) || (provokingLast && gl_LocalInvocationIndex == 2)) ? 1 : 0);");
+		statements.push_back("colorMultiplier[gl_LocalInvocationIndex] = (((!provokingLast && gl_LocalInvocationIndex == 0) || (provokingLast && gl_LocalInvocationIndex == gl_WorkGroupSize.x - 1u)) ? 1 : 0);");
 		return statements;
 	}
 
@@ -704,16 +769,38 @@ public:
 		return declarations;
 	}
 
-	virtual std::vector<std::string> getDescriptorCoordCalc() const override
+	virtual std::vector<std::string> getDescriptorCoordCalc(TopologyClass topology) const override
 	{
 		std::vector<std::string> statements;
-		statements.reserve(6u);
-		statements.push_back("uint prim = uint(gl_WorkGroupID.x);");
-		statements.push_back("uint indices[3] = uint[](prim, (prim + (1 + prim % 2)), (prim + (2 - prim % 2)));");
-		statements.push_back("uint invIndex = indices[gl_LocalInvocationIndex];");
-		statements.push_back("vec2 auxPos = s0b0buffer.data[invIndex].coords;");
-		statements.push_back("vec2 auxOnes = s0b0buffer.data[invIndex].ones;");
-		statements.push_back("vec2 vertexCoords = auxPos * auxOnes;");
+
+		if (topology == TopologyClass::TRIANGLE)
+		{
+			statements.reserve(6u);
+			statements.push_back("uint prim = uint(gl_WorkGroupID.x);");
+			statements.push_back("uint indices[3] = uint[](prim, (prim + (1 + prim % 2)), (prim + (2 - prim % 2)));");
+			statements.push_back("uint invIndex = indices[gl_LocalInvocationIndex];");
+			statements.push_back("vec2 auxPos = s0b0buffer.data[invIndex].coords;");
+			statements.push_back("vec2 auxOnes = s0b0buffer.data[invIndex].ones;");
+			statements.push_back("vec2 vertexCoords = auxPos * auxOnes;");
+		}
+		else if (topology == TopologyClass::LINE)
+		{
+			statements.reserve(11u);
+			statements.push_back("const uint linesPerRow = 3u;");
+			statements.push_back("const uint verticesPerRow = 4u;");
+			statements.push_back("uint lineIndex = uint(gl_WorkGroupID.x);");
+			statements.push_back("uint rowIndex = lineIndex / linesPerRow;");
+			statements.push_back("uint lineInRow = lineIndex % linesPerRow;");
+			statements.push_back("uint firstVertex = rowIndex * verticesPerRow + lineInRow;");
+			statements.push_back("uint indices[2] = uint[](firstVertex, firstVertex + 1u);");
+			statements.push_back("uint invIndex = indices[gl_LocalInvocationIndex];");
+			statements.push_back("vec2 auxPos = s0b0buffer.data[invIndex].coords;");
+			statements.push_back("vec2 auxOnes = s0b0buffer.data[invIndex].ones;");
+			statements.push_back("vec2 vertexCoords = auxPos * auxOnes;");
+		}
+		else
+			DE_ASSERT(false);
+
 		return statements;
 	}
 
@@ -871,18 +958,42 @@ public:
 		return declarations;
 	}
 
-	virtual std::vector<std::string> getDescriptorCoordCalc() const override
+	virtual std::vector<std::string> getDescriptorCoordCalc(TopologyClass topology) const override
 	{
 		std::vector<std::string> statements;
-		statements.reserve(8u);
-		statements.push_back("uint prim = uint(gl_WorkGroupID.x);");
-		statements.push_back("uint indices[3] = uint[](prim, (prim + (1 + prim % 2)), (prim + (2 - prim % 2)));");
-		statements.push_back("uint invIndex = indices[gl_LocalInvocationIndex];");
-		statements.push_back("vec2 auxOnes1 = s0b1buffer.data[invIndex].ones;");
-		statements.push_back("vec2 auxCoords = s0b3buffer.data[invIndex].coords;");
-		statements.push_back("vec2 auxOnes5 = s0b5buffer.data[invIndex].ones;");
-		statements.push_back("vec2 auxZeros = s0b5buffer.data[invIndex].zeros;");
-		statements.push_back("vec2 vertexCoords = ((auxCoords * auxOnes1) + auxZeros) * auxOnes5;");
+
+		if (topology == TopologyClass::TRIANGLE)
+		{
+			statements.reserve(8u);
+			statements.push_back("uint prim = uint(gl_WorkGroupID.x);");
+			statements.push_back("uint indices[3] = uint[](prim, (prim + (1 + prim % 2)), (prim + (2 - prim % 2)));");
+			statements.push_back("uint invIndex = indices[gl_LocalInvocationIndex];");
+			statements.push_back("vec2 auxOnes1 = s0b1buffer.data[invIndex].ones;");
+			statements.push_back("vec2 auxCoords = s0b3buffer.data[invIndex].coords;");
+			statements.push_back("vec2 auxOnes5 = s0b5buffer.data[invIndex].ones;");
+			statements.push_back("vec2 auxZeros = s0b5buffer.data[invIndex].zeros;");
+			statements.push_back("vec2 vertexCoords = ((auxCoords * auxOnes1) + auxZeros) * auxOnes5;");
+		}
+		else if (topology == TopologyClass::LINE)
+		{
+			statements.reserve(13u);
+			statements.push_back("const uint linesPerRow = 3u;");
+			statements.push_back("const uint verticesPerRow = 4u;");
+			statements.push_back("uint lineIndex = uint(gl_WorkGroupID.x);");
+			statements.push_back("uint rowIndex = lineIndex / linesPerRow;");
+			statements.push_back("uint lineInRow = lineIndex % linesPerRow;");
+			statements.push_back("uint firstVertex = rowIndex * verticesPerRow + lineInRow;");
+			statements.push_back("uint indices[2] = uint[](firstVertex, firstVertex + 1u);");
+			statements.push_back("uint invIndex = indices[gl_LocalInvocationIndex];");
+			statements.push_back("vec2 auxOnes1 = s0b1buffer.data[invIndex].ones;");
+			statements.push_back("vec2 auxCoords = s0b3buffer.data[invIndex].coords;");
+			statements.push_back("vec2 auxOnes5 = s0b5buffer.data[invIndex].ones;");
+			statements.push_back("vec2 auxZeros = s0b5buffer.data[invIndex].zeros;");
+			statements.push_back("vec2 vertexCoords = ((auxCoords * auxOnes1) + auxZeros) * auxOnes5;");
+		}
+		else
+			DE_ASSERT(false);
+
 		return statements;
 	}
 
@@ -1623,31 +1734,6 @@ const VertexGenerator* chooseVertexGenerator (const VertexGenerator* staticGen, 
 	if (staticGen)
 		return staticGen;
 	return getVertexWithPaddingGenerator();
-}
-
-enum class TopologyClass
-{
-	POINT,
-	LINE,
-	TRIANGLE,
-	PATCH,
-	INVALID,
-};
-
-std::string topologyClassName (TopologyClass tclass)
-{
-	switch (tclass)
-	{
-	case TopologyClass::POINT:		return "point";
-	case TopologyClass::LINE:		return "line";
-	case TopologyClass::TRIANGLE:	return "triangle";
-	case TopologyClass::PATCH:		return "patch";
-	default:
-		break;
-	}
-
-	DE_ASSERT(false);
-	return "";
 }
 
 #ifndef CTS_USES_VULKANSC
@@ -2403,10 +2489,16 @@ struct TestConfig
 		return static_cast<bool>(primRestartEnableConfig.dynamicValue);
 	}
 
+	// Returns the topology class.
+	TopologyClass topologyClass () const
+	{
+		return getTopologyClass(topologyConfig.staticValue);
+	}
+
 	// Returns true if the topology class is patches for tessellation.
 	bool patchesTopology () const
 	{
-		return (getTopologyClass(topologyConfig.staticValue) == TopologyClass::PATCH);
+		return (topologyClass() == TopologyClass::PATCH);
 	}
 
 	// Returns true if the test needs tessellation shaders.
@@ -2446,7 +2538,7 @@ struct TestConfig
 	// Returns true if the test needs an index buffer.
 	bool needsIndexBuffer () const
 	{
-		return (testPrimRestartEnable() || getActiveLineStippleEnable());
+		return ((testPrimRestartEnable() || getActiveLineStippleEnable()) && !useMeshShaders);
 	}
 
 	// Returns true if the test needs the depth bias clamp feature.
@@ -3070,7 +3162,8 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 			if (result != vk::VK_SUCCESS || combinationCount == 0U)
 				TCU_THROW(NotSupportedError, "vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV supported no combinations");
 
-			std::vector<vk::VkFramebufferMixedSamplesCombinationNV> combinations(combinationCount);
+			const vk::VkFramebufferMixedSamplesCombinationNV defaultCombination = vk::initVulkanStructure();
+			std::vector<vk::VkFramebufferMixedSamplesCombinationNV> combinations(combinationCount, defaultCombination);
 			result = vki.getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV(physicalDevice, &combinationCount, combinations.data());
 			if (result != vk::VK_SUCCESS)
 				TCU_THROW(NotSupportedError, "vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV supported no combinations");
@@ -3250,11 +3343,12 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 	const auto fragOutputLocations = fragOutputLocationStream.str();
 
 	// The actual generator, attributes and calculations.
+	const auto			topology	= m_testConfig.topologyClass();
 	const auto			activeGen	= m_testConfig.getActiveVertexGenerator();
 	const auto			attribDecls	= activeGen->getAttributeDeclarations();
 	const auto			coordCalcs	= activeGen->getVertexCoordCalc();
 	const auto			descDeclsV	= (m_testConfig.useMeshShaders ? activeGen->getDescriptorDeclarations() : std::vector<std::string>());
-	const auto			descCalcsV	= (m_testConfig.useMeshShaders ? activeGen->getDescriptorCoordCalc() : std::vector<std::string>());
+	const auto			descCalcsV	= (m_testConfig.useMeshShaders ? activeGen->getDescriptorCoordCalc(topology) : std::vector<std::string>());
 	const auto			fragInputs	= activeGen->getFragInputAttributes();
 	const auto			fragCalcs	= activeGen->getFragOutputCalc();
 	const auto			glslExts	= activeGen->getGLSLExtensions();
@@ -3484,22 +3578,47 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 	{
 		DE_ASSERT(!m_testConfig.needsGeometryShader());
 		DE_ASSERT(!m_testConfig.needsTessellation());
-		DE_ASSERT(!m_testConfig.needsIndexBuffer());
+		//DE_ASSERT(!m_testConfig.needsIndexBuffer());
 
 		// Make sure no dynamic states incompatible with mesh shading pipelines are used.
 		DE_ASSERT(!m_testConfig.badMeshShadingPipelineDynState());
 
 		// Shader below is designed to work with vertex buffers containing triangle strips as used by default.
-		DE_ASSERT(m_testConfig.topologyConfig.staticValue == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+		DE_ASSERT(m_testConfig.topologyConfig.staticValue == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP ||
+				  m_testConfig.topologyConfig.staticValue == vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP);
 		DE_ASSERT(!m_testConfig.singleVertex);
+
+		std::string	topologyStr;
+		std::string	indicesBuiltIn;
+		std::string	indicesVal;
+		uint32_t	maxVertices		= 0u;
+
+		switch (topology)
+		{
+		case TopologyClass::TRIANGLE:
+			topologyStr		= "triangles";
+			maxVertices		= 3u;
+			indicesBuiltIn	= "gl_PrimitiveTriangleIndicesEXT";
+			indicesVal		= "uvec3(0, 1, 2)";
+			break;
+		case TopologyClass::LINE:
+			topologyStr		= "lines";
+			maxVertices		= 2u;
+			indicesBuiltIn	= "gl_PrimitiveLineIndicesEXT";
+			indicesVal		= "uvec2(0, 1)";
+			break;
+		default:
+			DE_ASSERT(false);
+			break;
+		}
 
 		meshSourceTemplateStream
 			<< "#version 450\n"
 			<< "${EXTENSIONS}"
 			<< "#extension GL_EXT_mesh_shader : enable\n"
-			<< "layout(local_size_x=3, local_size_y=1, local_size_z=1) in;\n"
-			<< "layout(triangles) out;\n"
-			<< "layout(max_vertices=3, max_primitives=1) out;\n"
+			<< "layout(local_size_x=" << maxVertices << ", local_size_y=1, local_size_z=1) in;\n"
+			<< "layout(" << topologyStr << ") out;\n"
+			<< "layout(max_vertices=" << maxVertices << ", max_primitives=1) out;\n"
 			<< pushConstants
 			<< (m_testConfig.isMultiViewport()
 				? "perprimitiveEXT out gl_MeshPerPrimitiveEXT { int gl_ViewportIndex; } gl_MeshPrimitivesEXT[];\n"
@@ -3507,10 +3626,10 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 			<< descDecls.str()
 			<< "void main() {\n"
 			<< descCalcs.str()
-			<< "    SetMeshOutputsEXT(3u, 1u);\n"
+			<< "    SetMeshOutputsEXT(" << maxVertices << "u, 1u);\n"
 			<< "    gl_MeshVerticesEXT[gl_LocalInvocationIndex].gl_Position = vec4(vertexCoords.x * pushConstants.scaleX + pushConstants.offsetX, vertexCoords.y * pushConstants.scaleY + pushConstants.offsetY, pushConstants.depthValue, 1.0);\n"
 			<< "    if (gl_LocalInvocationIndex == 0u) {\n"
-			<< "        gl_PrimitiveTriangleIndicesEXT[0] = uvec3(0, 1, 2);\n"
+			<< "        " << indicesBuiltIn << "[0] = " << indicesVal << ";\n"
 			<< (m_testConfig.isMultiViewport()
 				? "        gl_MeshPrimitivesEXT[0].gl_ViewportIndex = pushConstants.viewPortIndex;\n"
 				: "")
@@ -4598,31 +4717,38 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 
 	if (vertDataAsSSBO)
 	{
+		const auto					hasReversed		= (rvertBuffers.size() > 0u);
 		const auto					descType		= vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		vk::DescriptorPoolBuilder	poolBuilder;
 		poolBuilder.addType(descType, static_cast<uint32_t>(vertBuffers.size()) * 2u);
 
 		meshDescriptorPool		= poolBuilder.build(vkd, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 2u);
 		meshDescriptorSet		= vk::makeDescriptorSet(vkd, device, meshDescriptorPool.get(), meshSetLayout.get());
-		meshDescriptorSetRev	= vk::makeDescriptorSet(vkd, device, meshDescriptorPool.get(), meshSetLayout.get());
+
+		if (hasReversed)
+			meshDescriptorSetRev = vk::makeDescriptorSet(vkd, device, meshDescriptorPool.get(), meshSetLayout.get());
 
 		std::vector<vk::VkDescriptorBufferInfo> descBufferInfos;
 		std::vector<vk::VkDescriptorBufferInfo> descBufferInfosRev;
 		descBufferInfos.reserve(vertBuffers.size());
-		descBufferInfosRev.reserve(rvertBuffers.size());
+		if (hasReversed)
+			descBufferInfosRev.reserve(rvertBuffers.size());
 
 		vk::DescriptorSetUpdateBuilder updateBuilder;
 
-		DE_ASSERT(vertBuffers.size() == rvertBuffers.size());
+		DE_ASSERT(vertBuffers.size() == rvertBuffers.size() || !hasReversed);
 		for (size_t i = 0; i < vertBuffers.size(); ++i)
 		{
-			descBufferInfos.push_back(vk::makeDescriptorBufferInfo(vertBuffers[i].buffer->get(), vertBuffers[i].offset, vertBuffers[i].dataSize));
-			descBufferInfosRev.push_back(vk::makeDescriptorBufferInfo(rvertBuffers[i].buffer->get(), rvertBuffers[i].offset, rvertBuffers[i].dataSize));
-
 			const auto binding = vk::DescriptorSetUpdateBuilder::Location::binding(static_cast<uint32_t>(i));
 
+			descBufferInfos.push_back(vk::makeDescriptorBufferInfo(vertBuffers[i].buffer->get(), vertBuffers[i].offset, vertBuffers[i].dataSize));
 			updateBuilder.writeSingle(meshDescriptorSet.get(), binding, descType, &descBufferInfos.back());
-			updateBuilder.writeSingle(meshDescriptorSetRev.get(), binding, descType, &descBufferInfosRev.back());
+
+			if (hasReversed)
+			{
+				descBufferInfosRev.push_back(vk::makeDescriptorBufferInfo(rvertBuffers[i].buffer->get(), rvertBuffers[i].offset, rvertBuffers[i].dataSize));
+				updateBuilder.writeSingle(meshDescriptorSetRev.get(), binding, descType, &descBufferInfosRev.back());
+			}
 		}
 
 		updateBuilder.update(vkd, device);
@@ -5568,6 +5694,9 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 
 					if (vertDataAsSSBO)
 					{
+						if (topologyClass == TopologyClass::LINE)
+							DE_ASSERT(!m_testConfig.meshParams[meshIdx].reversed);
+
 						const auto boundSet = (m_testConfig.meshParams[meshIdx].reversed ? meshDescriptorSetRev.get() : meshDescriptorSet.get());
 						vkd.cmdBindDescriptorSets(cmdBuffer, pipelineBindPoint, pipelineLayout.get(), 0u, 1u, &boundSet, 0u, nullptr);
 					}
@@ -5600,12 +5729,36 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 					else if (m_testConfig.useMeshShaders)
 					{
 						// Make sure drawing this way makes sense.
-						DE_ASSERT(vertices.size() > 2u);
-						DE_ASSERT(!m_testConfig.topologyConfig.dynamicValue);
-						DE_ASSERT(m_testConfig.topologyConfig.staticValue == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+						const auto minVertCount = ((topologyClass == TopologyClass::LINE) ? 2u : 3u);
+						DE_UNREF(minVertCount); // For release builds.
+						DE_ASSERT(vertices.size() >= minVertCount);
 						DE_ASSERT(m_testConfig.instanceCount == 1u);
+						DE_ASSERT(!m_testConfig.topologyConfig.dynamicValue);
 
-						const auto numPrimitives = static_cast<uint32_t>(vertices.size()) - 2u;
+						uint32_t numPrimitives = 0u;
+
+						if (topologyClass == TopologyClass::TRIANGLE)
+						{
+							DE_ASSERT(m_testConfig.topologyConfig.staticValue == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+							numPrimitives = de::sizeU32(vertices) - 2u;
+						}
+						else if (topologyClass == TopologyClass::LINE)
+						{
+							DE_ASSERT(m_testConfig.topologyConfig.staticValue == vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP);
+							const auto vertsPerRow = 4u;
+							const auto linesPerRow = 3u;
+							const auto vertexCount = de::sizeU32(vertices);
+							const auto rowCount = vertexCount / vertsPerRow;
+							numPrimitives = rowCount * linesPerRow;
+
+							if (m_testConfig.obliqueLine)
+								numPrimitives = 1u;
+							else
+								DE_ASSERT(vertexCount % vertsPerRow == 0u);
+						}
+						else
+							DE_ASSERT(false);
+
 						vkd.cmdDrawMeshTasksEXT(cmdBuffer, numPrimitives, 1u, 1u);
 					}
 #endif // CTS_USES_VULKANSC
@@ -6521,7 +6674,6 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 		}
 
 		// Line stipple enable.
-		if (!kUseMeshShaders)
 		{
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
 
@@ -6540,7 +6692,6 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 		}
 
 		// Line stipple params.
-		if (!kUseMeshShaders)
 		{
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
 
@@ -6555,11 +6706,10 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 		}
 
 		// Line rasterization mode.
-		if (!kUseMeshShaders)
 		{
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
 
-			config.topologyConfig.staticValue			= vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+			config.topologyConfig.staticValue			= vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
 			config.obliqueLine							= true;
 			config.colorVerificator						= verifyTopLeftCornerExactly;
 			config.lineStippleEnableConfig.staticValue	= false;
@@ -6573,11 +6723,10 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.referenceColor.reset(new SingleColorGenerator(kDefaultClearColor));
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "line_raster_mode_rectangular", "Dynamically set line rasterization mode to rectangular", config));
 		}
-		if (!kUseMeshShaders)
 		{
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
 
-			config.topologyConfig.staticValue			= vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+			config.topologyConfig.staticValue			= vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
 			config.obliqueLine							= true;
 			config.colorVerificator						= verifyTopLeftCornerWithPartialAlpha;
 			config.lineStippleEnableConfig.staticValue	= false;
