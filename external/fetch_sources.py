@@ -30,12 +30,15 @@ import argparse
 import subprocess
 import ssl
 import stat
+import platform
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "scripts"))
 
 from ctsbuild.common import *
 
 EXTERNAL_DIR	= os.path.realpath(os.path.normpath(os.path.dirname(__file__)))
+
+SYSTEM_NAME		= platform.system()
 
 def computeChecksum (data):
 	return hashlib.sha256(data).hexdigest()
@@ -66,7 +69,16 @@ class SourcePackage (Source):
 		self.checksum		= checksum
 		self.archiveDir		= "packages"
 		self.postExtract	= postExtract
-		self.sysNdx			= {"Windows":0, "Linux":1, "Darwin":2}[platform.system()]
+
+		if SYSTEM_NAME == 'Windows' or SYSTEM_NAME.startswith('CYGWIN') or SYSTEM_NAME.startswith('MINGW'):
+			self.sysNdx = 0
+		elif SYSTEM_NAME == 'Linux':
+			self.sysNdx = 1
+		elif SYSTEM_NAME == 'Darwin':
+			self.sysNdx = 2
+		else:
+			self.sysNdx = -1  # unknown system
+
 		self.FFmpeg			= "FFmpeg" in url
 
 	def clean (self):
@@ -287,6 +299,19 @@ def postExtractLibpng (path):
 	shutil.copy(os.path.join(path, "scripts", "pnglibconf.h.prebuilt"),
 				os.path.join(path, "pnglibconf.h"))
 
+if SYSTEM_NAME == 'Windows' or SYSTEM_NAME.startswith('CYGWIN') or SYSTEM_NAME.startswith('MINGW'):
+    ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-05-31-12-34/ffmpeg-n4.4.2-1-g8e98dfc57f-win64-lgpl-shared-4.4.zip"
+    ffmpeg_hash_value = "670df8e9d2ddd5e761459b3538f64b8826566270ef1ed13bcbfc63e73aab3fd9"
+elif SYSTEM_NAME == 'Linux':
+    ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-05-31-12-34/ffmpeg-n4.4.2-1-g8e98dfc57f-linux64-gpl-shared-4.4.tar.xz"
+    ffmpeg_hash_value = "817f8c93ff1ef7ede3dad15b20415d5e366bcd6848844d55046111fd3de827d0"
+elif SYSTEM_NAME == 'Darwin':
+    ffmpeg_url = ""
+    ffmpeg_hash_value = ""
+else:
+    ffmpeg_url = None
+    ffmpeg_hash_value = None
+
 PACKAGES = [
 	SourcePackage(
 		"http://zlib.net/fossils/zlib-1.2.13.tar.gz",
@@ -298,8 +323,8 @@ PACKAGES = [
 		"libpng",
 		postExtract = postExtractLibpng),
 	SourcePackage(
-        {"Windows":"https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-05-31-12-34/ffmpeg-n4.4.2-1-g8e98dfc57f-win64-lgpl-shared-4.4.zip", "Linux": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-05-31-12-34/ffmpeg-n4.4.2-1-g8e98dfc57f-linux64-gpl-shared-4.4.tar.xz", "Darwin":""}[platform.system()],
-        {"Windows":"670df8e9d2ddd5e761459b3538f64b8826566270ef1ed13bcbfc63e73aab3fd9","Linux":"817f8c93ff1ef7ede3dad15b20415d5e366bcd6848844d55046111fd3de827d0", "Darwin":""}[platform.system()],
+		ffmpeg_url,
+		ffmpeg_hash_value,
 		"ffmpeg"),
 	SourceFile(
 		"https://raw.githubusercontent.com/baldurk/renderdoc/v1.1/renderdoc/api/app/renderdoc_app.h",
@@ -391,7 +416,15 @@ def run(*popenargs, **kwargs):
 if __name__ == "__main__":
 	# Rerun script with python3 as python2 does not have lzma (xz) decompression support
 	if sys.version_info < (3, 0):
-		cmd = {"Windows": ['py', '-3'], "Linux": ['python3'], "Darwin": ['python3']}[platform.system()]
+		if SYSTEM_NAME == 'Windows' or SYSTEM_NAME.startswith('CYGWIN') or SYSTEM_NAME.startswith('MINGW'):
+			cmd = ['py', '-3']
+		elif SYSTEM_NAME == 'Linux':
+			cmd = ['python3']
+		elif SYSTEM_NAME == 'Darwin':
+			cmd = ['python3']
+		else:
+			cmd = None  # unknown system
+
 		cmd = cmd + sys.argv
 		run(cmd)
 	else:
