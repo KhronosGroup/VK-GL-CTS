@@ -728,12 +728,14 @@ std::string VertexInputTest::getGlslInputDeclarations (void) const
 std::string VertexInputTest::getGlslVertexCheck (void) const
 {
 	std::ostringstream	glslCode;
-	int					totalInputComponentCount	= 0;
+	std::string			inputCountStr;
 
 	glslCode << "	int okCount = 0;\n";
 
 	if (m_queryMaxAttributes)
 	{
+		// numAttributes will be replaced later by a specialisation constant, so this loop and
+		// the multiplication by numAttributes, below, must happen in the shader itself.
 		const AttributeInfo attributeInfo = getAttributeInfo(0);
 
 		glslCode << "	for (int checkNdx = 0; checkNdx < numAttributes; checkNdx++)\n"
@@ -743,40 +745,15 @@ std::string VertexInputTest::getGlslVertexCheck (void) const
 		glslCode << getGlslAttributeConditions(attributeInfo, "checkNdx")
 				 << "	}\n";
 
-			const int vertexInputCount	= VertexInputTest::s_glslTypeDescriptions[attributeInfo.glslType].vertexInputCount;
-			totalInputComponentCount	+= vertexInputCount * VertexInputTest::s_glslTypeDescriptions[attributeInfo.glslType].vertexInputComponentCount;
+		const int vertexInputCount		= VertexInputTest::s_glslTypeDescriptions[attributeInfo.glslType].vertexInputCount;
+		int totalInputComponentCount	= vertexInputCount * VertexInputTest::s_glslTypeDescriptions[attributeInfo.glslType].vertexInputComponentCount;
 
-		glslCode <<
-			"	if (okCount == " << totalInputComponentCount << " * numAttributes)\n"
-			"	{\n"
-			"		if (gl_InstanceIndex == 0)\n"
-			"			vtxColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
-			"		else\n"
-			"			vtxColor = vec4(0.0, 0.0, 1.0, 1.0);\n"
-			"	}\n"
-			"	else\n"
-			"	{\n"
-			"		vtxColor = vec4(okCount / float(" << totalInputComponentCount << " * numAttributes), 0.0f, 0.0f, 1.0);\n" <<
-			"	}\n\n"
-			"	if (gl_InstanceIndex == 0)\n"
-			"	{\n"
-			"		if (gl_VertexIndex == 0) gl_Position = vec4(-1.0, -1.0, 0.0, 1.0);\n"
-			"		else if (gl_VertexIndex == 1) gl_Position = vec4(0.0, -1.0, 0.0, 1.0);\n"
-			"		else if (gl_VertexIndex == 2) gl_Position = vec4(-1.0, 1.0, 0.0, 1.0);\n"
-			"		else if (gl_VertexIndex == 3) gl_Position = vec4(0.0, 1.0, 0.0, 1.0);\n"
-			"		else gl_Position = vec4(0.0);\n"
-			"	}\n"
-			"	else\n"
-			"	{\n"
-			"		if (gl_VertexIndex == 0) gl_Position = vec4(0.0, -1.0, 0.0, 1.0);\n"
-			"		else if (gl_VertexIndex == 1) gl_Position = vec4(1.0, -1.0, 0.0, 1.0);\n"
-			"		else if (gl_VertexIndex == 2) gl_Position = vec4(0.0, 1.0, 0.0, 1.0);\n"
-			"		else if (gl_VertexIndex == 3) gl_Position = vec4(1.0, 1.0, 0.0, 1.0);\n"
-			"		else gl_Position = vec4(0.0);\n"
-			"	}\n";
+		inputCountStr = std::to_string(totalInputComponentCount) + " * numAttributes";
 	}
 	else
 	{
+		// Generate 1 check per attribute and work out the number of components at compile time.
+		int totalInputComponentCount = 0;
 		for (size_t attributeNdx = 0; attributeNdx < m_attributeInfos.size(); attributeNdx++)
 		{
 			glslCode << getGlslAttributeConditions(m_attributeInfos[attributeNdx], de::toString(attributeNdx));
@@ -785,35 +762,38 @@ std::string VertexInputTest::getGlslVertexCheck (void) const
 			totalInputComponentCount	+= vertexInputCount * VertexInputTest::s_glslTypeDescriptions[m_attributeInfos[attributeNdx].glslType].vertexInputComponentCount;
 		}
 
-		glslCode <<
-			"	if (okCount == " << totalInputComponentCount << ")\n"
-			"	{\n"
-			"		if (gl_InstanceIndex == 0)\n"
-			"			vtxColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
-			"		else\n"
-			"			vtxColor = vec4(0.0, 0.0, 1.0, 1.0);\n"
-			"	}\n"
-			"	else\n"
-			"	{\n"
-			"		vtxColor = vec4(okCount / float(" << totalInputComponentCount << "), 0.0f, 0.0f, 1.0);\n" <<
-			"	}\n\n"
-			"	if (gl_InstanceIndex == 0)\n"
-			"	{\n"
-			"		if (gl_VertexIndex == 0) gl_Position = vec4(-1.0, -1.0, 0.0, 1.0);\n"
-			"		else if (gl_VertexIndex == 1) gl_Position = vec4(0.0, -1.0, 0.0, 1.0);\n"
-			"		else if (gl_VertexIndex == 2) gl_Position = vec4(-1.0, 1.0, 0.0, 1.0);\n"
-			"		else if (gl_VertexIndex == 3) gl_Position = vec4(0.0, 1.0, 0.0, 1.0);\n"
-			"		else gl_Position = vec4(0.0);\n"
-			"	}\n"
-			"	else\n"
-			"	{\n"
-			"		if (gl_VertexIndex == 0) gl_Position = vec4(0.0, -1.0, 0.0, 1.0);\n"
-			"		else if (gl_VertexIndex == 1) gl_Position = vec4(1.0, -1.0, 0.0, 1.0);\n"
-			"		else if (gl_VertexIndex == 2) gl_Position = vec4(0.0, 1.0, 0.0, 1.0);\n"
-			"		else if (gl_VertexIndex == 3) gl_Position = vec4(1.0, 1.0, 0.0, 1.0);\n"
-			"		else gl_Position = vec4(0.0);\n"
-			"	}\n";
+		inputCountStr = std::to_string(totalInputComponentCount);
 	}
+
+	glslCode <<
+		"	if (okCount == " << inputCountStr << ")\n"
+		"	{\n"
+		"		if (gl_InstanceIndex == 0)\n"
+		"			vtxColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
+		"		else\n"
+		"			vtxColor = vec4(0.0, 0.0, 1.0, 1.0);\n"
+		"	}\n"
+		"	else\n"
+		"	{\n"
+		"		vtxColor = vec4(okCount / float(" << inputCountStr << "), 0.0f, 0.0f, 1.0);\n" <<
+		"	}\n\n"
+		"	if (gl_InstanceIndex == 0)\n"
+		"	{\n"
+		"		if (gl_VertexIndex == 0) gl_Position = vec4(-1.0, -1.0, 0.0, 1.0);\n"
+		"		else if (gl_VertexIndex == 1) gl_Position = vec4(0.0, -1.0, 0.0, 1.0);\n"
+		"		else if (gl_VertexIndex == 2) gl_Position = vec4(-1.0, 1.0, 0.0, 1.0);\n"
+		"		else if (gl_VertexIndex == 3) gl_Position = vec4(0.0, 1.0, 0.0, 1.0);\n"
+		"		else gl_Position = vec4(0.0);\n"
+		"	}\n"
+		"	else\n"
+		"	{\n"
+		"		if (gl_VertexIndex == 0) gl_Position = vec4(0.0, -1.0, 0.0, 1.0);\n"
+		"		else if (gl_VertexIndex == 1) gl_Position = vec4(1.0, -1.0, 0.0, 1.0);\n"
+		"		else if (gl_VertexIndex == 2) gl_Position = vec4(0.0, 1.0, 0.0, 1.0);\n"
+		"		else if (gl_VertexIndex == 3) gl_Position = vec4(1.0, 1.0, 0.0, 1.0);\n"
+		"		else gl_Position = vec4(0.0);\n"
+		"	}\n";
+
 	return glslCode.str();
 }
 
