@@ -349,6 +349,8 @@ std::vector<vk::VkSparseImageMemoryRequirements>	getDeviceImageSparseMemoryRequi
 	if (count > 0)
 	{
 		requirements.resize(count);
+		for (deUint32 i = 0; i < count; ++i)
+			requirements[i] = vk::initVulkanStructure();
 		vk.getDeviceImageSparseMemoryRequirements(device, &info, &count, requirements.data());
 
 		if ((size_t)count != requirements.size())
