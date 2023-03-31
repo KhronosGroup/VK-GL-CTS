@@ -709,8 +709,10 @@ std::string VertexInputTest::getGlslInputDeclarations (void) const
 
 	if (m_queryMaxAttributes)
 	{
+		// Don't use the first input binding to leave room for VertexIndex and InstanceIndex, which count towards the
+		// total number of inputs attributes. Leave the first binding so that the largest location number are still used.
 		const GlslTypeDescription& glslTypeDesc = s_glslTypeDescriptions[GLSL_TYPE_VEC4];
-		glslInputs << "layout(location = 0) in " << glslTypeDesc.name << " attr[numAttributes];\n";
+		glslInputs << "layout(location = 1) in " << glslTypeDesc.name << " attr[numAttributes-1];\n";
 	}
 	else
 	{
@@ -738,17 +740,19 @@ std::string VertexInputTest::getGlslVertexCheck (void) const
 		// the multiplication by numAttributes, below, must happen in the shader itself.
 		const AttributeInfo attributeInfo = getAttributeInfo(0);
 
-		glslCode << "	for (int checkNdx = 0; checkNdx < numAttributes; checkNdx++)\n"
+		glslCode << "	for (int checkNdx = 1; checkNdx < numAttributes; checkNdx++)\n"
 				 <<	"	{\n"
 				 << "		uint index = (checkNdx % 2 == 0) ? gl_VertexIndex : gl_InstanceIndex;\n";
 
-		glslCode << getGlslAttributeConditions(attributeInfo, "checkNdx")
+		// Because our location is offset by 1 relative to the API definitions, checkNdx-1 here.
+		glslCode << getGlslAttributeConditions(attributeInfo, "checkNdx-1")
 				 << "	}\n";
 
 		const int vertexInputCount		= VertexInputTest::s_glslTypeDescriptions[attributeInfo.glslType].vertexInputCount;
 		int totalInputComponentCount	= vertexInputCount * VertexInputTest::s_glslTypeDescriptions[attributeInfo.glslType].vertexInputComponentCount;
 
-		inputCountStr = std::to_string(totalInputComponentCount) + " * numAttributes";
+		// Don't count components from location 0 which was skipped.
+		inputCountStr = std::to_string(totalInputComponentCount) + " * (numAttributes-1)";
 	}
 	else
 	{
