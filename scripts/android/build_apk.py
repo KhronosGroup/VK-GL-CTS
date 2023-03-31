@@ -769,7 +769,8 @@ class AddNativeLibsToAPK (BuildStep):
 			libFiles.append(libRelPath)
 
 			if config.layers:
-				layersGlob = os.path.join(config.layers, abi, "libVkLayer_*.so")
+				# Need to copy everything in the layer folder
+				layersGlob = os.path.join(config.layers, abi, "*")
 				libVkLayers = glob.glob(layersGlob)
 				for layer in libVkLayers:
 					layerFilename = os.path.basename(layer)
