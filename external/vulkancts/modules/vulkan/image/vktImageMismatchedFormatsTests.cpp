@@ -443,7 +443,8 @@ tcu::TestStatus MismatchedFormatTestInstance::iterate (void)
 		vk.cmdDispatch(*cmdBuffer, 8, 8, 1);
 	endCommandBuffer(vk, *cmdBuffer);
 
-	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+	const VkPipelineStageFlags stageBits[] = { VK_PIPELINE_STAGE_TRANSFER_BIT };
+	submitCommandsAndWait(vk, device, queue, *cmdBuffer, false, 1u, 1u, &bindSemaphore.get(), stageBits);
 
 	return tcu::TestStatus::pass("Passed");
 }
