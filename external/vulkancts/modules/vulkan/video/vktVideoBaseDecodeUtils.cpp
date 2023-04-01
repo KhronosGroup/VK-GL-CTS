@@ -553,15 +553,15 @@ typedef struct dpbEntry
 
 	NvidiaVulkanPictureBase* m_picBuff; // internal picture reference
 
-	void setReferenceAndTopBottomField (bool						isReference,
-										bool						nonExisting,
-										bool						isLongTerm,
-										bool						isFieldRef,
-										bool						topFieldIsReference,
-										bool						bottomFieldIsReference,
-										int16_t						frameIdx,
-										const int16_t				fieldOrderCntList[2],
-										NvidiaVulkanPictureBase*	picBuff)
+	void setReferenceAndTopBoottomField (bool						isReference,
+										 bool						nonExisting,
+										 bool						isLongTerm,
+										 bool						isFieldRef,
+										 bool						topFieldIsReference,
+										 bool						bottomFieldIsReference,
+										 int16_t					frameIdx,
+										 const int16_t				fieldOrderCntList[2],
+										 NvidiaVulkanPictureBase*	picBuff)
 	{
 		is_non_existing = nonExisting;
 		is_long_term = isLongTerm;
@@ -628,17 +628,15 @@ typedef struct dpbEntry
 			// picFlags.field_pic_flag = true;
 		}
 
-		if ((used_for_reference & topFieldMask) && is_field_ref)
+		if (used_for_reference & topFieldMask)
 		{
 			picFlags.top_field_flag = true;
 		}
 
-		if ((used_for_reference & bottomFieldMask) && is_field_ref)
+		if (used_for_reference & bottomFieldMask)
 		{
 			picFlags.bottom_field_flag = true;
 		}
-
-		DE_ASSERT(!(picFlags.top_field_flag && picFlags.bottom_field_flag));
 
 		return picFlags;
 	}
@@ -660,7 +658,6 @@ typedef struct dpbEntry
 
 		pRefPicInfo->FrameNum = FrameIdx;
 		pRefPicInfo->flags = getPictureFlag();
-
 		pRefPicInfo->PicOrderCnt[0] = FieldOrderCnt[0];
 		pRefPicInfo->PicOrderCnt[1] = FieldOrderCnt[1];
 	}
@@ -1530,7 +1527,7 @@ uint32_t VideoBaseDecoder::FillDpbH264State (const NvidiaVulkanParserPictureData
 				(int16_t)dpbIn[inIdx].FieldOrderCnt[1]
 			};
 
-			refOnlyDpbIn[numUsedRef].setReferenceAndTopBottomField(
+			refOnlyDpbIn[numUsedRef].setReferenceAndTopBoottomField(
 				!!used_for_reference,
 				(picIdx < 0), /* not_existing is frame inferred by the decoding process for gaps in frame_num */
 				!!dpbIn[inIdx].is_long_term,
