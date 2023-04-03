@@ -104,6 +104,7 @@ struct TestCaseParams
 	bool				calculateInLoop;	// perform calculation in a loop
 	bool				usesMipMaps;		// this makes a sense and affects in image test cases only
 	bool				minNonUniform;		// whether a test will use the minimum nonUniform decorations
+	bool				lifetimeCheck;		// fill unused descriptors with resource that will be deleted before draw
 };
 
 struct TestParams
@@ -118,6 +119,7 @@ struct TestParams
 	bool				calculateInLoop;
 	bool				usesMipMaps;
 	bool				minNonUniform;
+	bool				lifetimeCheck;
 
 	TestParams			(VkShaderStageFlags		stageFlags_,
 						VkDescriptorType		descriptorType_,
@@ -135,6 +137,7 @@ struct TestParams
 		, calculateInLoop						(caseParams.calculateInLoop)
 		, usesMipMaps							(caseParams.usesMipMaps)
 		, minNonUniform							(caseParams.minNonUniform)
+		, lifetimeCheck							(caseParams.lifetimeCheck)
 	{
 	}
 };
@@ -170,11 +173,18 @@ struct IterateCommonVariables
 
 	ut::BufferHandleAllocSp							vertexAttributesBuffer;
 	ut::BufferHandleAllocSp							descriptorsBuffer;
+	ut::BufferHandleAllocSp							unusedDescriptorsBuffer;
 	std::vector<VkDescriptorBufferInfo>				descriptorsBufferInfos;
 	std::vector<ut::BufferViewSp>					descriptorsBufferViews;
 	std::vector<ut::ImageViewSp>					descriptorImageViews;
 	std::vector<ut::SamplerSp>						descriptorSamplers;
 	std::vector<ut::ImageHandleAllocSp>				descriptorsImages;
+	// Only need a single resource to fill all unused descriptors. Using vector for compatibility with utility
+	std::vector<VkDescriptorBufferInfo>				unusedDescriptorsBufferInfos;
+	std::vector<ut::BufferViewSp>					unusedDescriptorsBufferViews;
+	std::vector<ut::ImageViewSp>					unusedDescriptorImageViews;
+	std::vector<ut::SamplerSp>						unusedDescriptorSamplers;
+	std::vector<ut::ImageHandleAllocSp>				unusedDescriptorsImages;
 	ut::FrameBufferSp								frameBuffer;
 
 	Move<VkDescriptorSetLayout>						descriptorSetLayout;
@@ -189,19 +199,19 @@ struct IterateCommonVariables
 class CommonDescriptorInstance : public TestInstance
 {
 public:
-								CommonDescriptorInstance		(Context&									context,
-																const TestParams&							testParams);
+								CommonDescriptorInstance			(Context&									context,
+																	 const TestParams&							testParams);
 
-	uint32_t					computeAvailableDescriptorCount	(VkDescriptorType							descriptorType,
-																 bool										reserveUniformTexelBuffer) const;
+	deUint32					computeAvailableDescriptorCount		(VkDescriptorType							descriptorType,
+																	 bool										reserveUniformTexelBuffer) const;
 
-	Move<VkDescriptorSetLayout>	createDescriptorSetLayout		(bool										reserveUniformTexelBuffer,
-																 uint32_t&									descriptorCount) const;
+	Move<VkDescriptorSetLayout>	createDescriptorSetLayout			(bool										reserveUniformTexelBuffer,
+																	 deUint32&									descriptorCount) const;
 
-	Move<VkDescriptorPool>		createDescriptorPool			(uint32_t									descriptorCount) const;
+	Move<VkDescriptorPool>		createDescriptorPool				(deUint32									descriptorCount) const;
 
-	Move<VkDescriptorSet>		createDescriptorSet				(VkDescriptorPool							dsPool,
-																 VkDescriptorSetLayout						dsLayout) const;
+	Move<VkDescriptorSet>		createDescriptorSet					(VkDescriptorPool							dsPool,
+																	 VkDescriptorSetLayout						dsLayout) const;
 
 	struct attributes
 	{
@@ -221,148 +231,152 @@ public:
 			return *this;
 		}
 	};
-	void						createVertexAttributeBuffer		(ut::BufferHandleAllocSp&					buffer,
-																 uint32_t									availableDescriptorCount) const;
+	void						createVertexAttributeBuffer			(ut::BufferHandleAllocSp&					buffer,
+																	 deUint32									availableDescriptorCount) const;
 
-	static std::string			substBinding					(uint32_t									binding,
-																 const char*								str);
+	static std::string			substBinding						(deUint32									binding,
+																	 const char*								str);
 
-	static const char*			getVertexShaderProlog			(void);
-	static const char*			getFragmentShaderProlog			(void);
-	static const char*			getComputeShaderProlog			(void);
+	static const char*			getVertexShaderProlog				(void);
+	static const char*			getFragmentShaderProlog				(void);
+	static const char*			getComputeShaderProlog				(void);
 
-	static const char*			getShaderEpilog					(void);
+	static const char*			getShaderEpilog						(void);
 
-	static bool					performWritesInVertex			(VkDescriptorType							descriptorType);
+	static bool					performWritesInVertex				(VkDescriptorType							descriptorType);
 
-	static bool					performWritesInVertex			(VkDescriptorType							descriptorType,
-																 const Context&						        context);
+	static bool					performWritesInVertex				(VkDescriptorType							descriptorType,
+																	 const Context&								context);
 
-	static std::string			getShaderAsm					(VkShaderStageFlagBits						shaderType,
-																 const TestCaseParams&						testCaseParams,
-																 bool										allowVertexStoring);
+	static std::string			getShaderAsm						(VkShaderStageFlagBits						shaderType,
+																	 const TestCaseParams&						testCaseParams,
+																	 bool										allowVertexStoring);
 
-	static std::string			getShaderSource                 (VkShaderStageFlagBits						shaderType,
-		                                                         const TestCaseParams&						testCaseParams,
-		                                                         bool										allowVertexStoring);
+	static std::string			getShaderSource						(VkShaderStageFlagBits						shaderType,
+																	 const TestCaseParams&						testCaseParams,
+																	 bool										allowVertexStoring);
 
-	static std::string			getColorAccess					(VkDescriptorType							descriptorType,
-																 const char*								indexVariableName,
-																 bool										usesMipMaps);
+	static std::string			getColorAccess						(VkDescriptorType							descriptorType,
+																	 const char*								indexVariableName,
+																	 bool										usesMipMaps);
 
-	static std::string			getFragmentReturnSource			(const std::string&							colorAccess);
+	static std::string			getFragmentReturnSource				(const std::string&							colorAccess);
 
-	static std::string			getFragmentLoopSource			(const std::string&							colorAccess1,
-																 const std::string&							colorAccess2);
+	static std::string			getFragmentLoopSource				(const std::string&							colorAccess1,
+																	 const std::string&							colorAccess2);
 
-	virtual Move<VkRenderPass>	createRenderPass				(const IterateCommonVariables&				variables);
+	virtual Move<VkRenderPass>	createRenderPass					(const IterateCommonVariables&				variables);
 
 	struct push_constant
 	{
 		int32_t	lowerBound;
 		int32_t	upperBound;
 	};
-	VkPushConstantRange			makePushConstantRange			(void) const;
+	VkPushConstantRange			makePushConstantRange				(void) const;
 
-	Move<VkPipelineLayout>		createPipelineLayout			(const std::vector<VkDescriptorSetLayout>&	descriptorSetLayouts) const;
+	Move<VkPipelineLayout>		createPipelineLayout				(const std::vector<VkDescriptorSetLayout>&	descriptorSetLayouts) const;
 
 	// Creates graphics or compute pipeline and appropriate shaders' modules according the testCaseParams.stageFlags
 	// In the case of compute pipeline renderPass parameter is ignored.
 	// Viewport will be created with a width and a height taken from testCaseParam.fragResolution.
-	Move<VkPipeline>			createPipeline					(VkPipelineLayout							pipelineLayout,
-																 VkRenderPass								renderPass);
+	Move<VkPipeline>			createPipeline						(VkPipelineLayout							pipelineLayout,
+																	 VkRenderPass								renderPass);
 
-	virtual void				createFramebuffer				(ut::FrameBufferSp&							frameBuffer,
-																 VkRenderPass								renderPass,
-																 const IterateCommonVariables&				variables);
+	virtual void				createFramebuffer					(ut::FrameBufferSp&							frameBuffer,
+																	 VkRenderPass								renderPass,
+																	 const IterateCommonVariables&				variables);
 
 	// Creates one big stagging buffer cutted out on chunks that can accomodate an element of elementSize size
-	VkDeviceSize				createBuffers					(std::vector<VkDescriptorBufferInfo>&		bufferInfos,
-																 ut::BufferHandleAllocSp&					buffer,
-																 uint32_t									elementCount,
-																 uint32_t									elementSize,
-																 VkDeviceSize								alignment,
-																 VkBufferUsageFlags							bufferUsage);
+	VkDeviceSize				createBuffers						(std::vector<VkDescriptorBufferInfo>&		bufferInfos,
+																	 ut::BufferHandleAllocSp&					buffer,
+																	 deUint32									elementCount,
+																	 deUint32									elementSize,
+																	 VkDeviceSize								alignment,
+																	 VkBufferUsageFlags							bufferUsage);
 
 	// Creates and binds an imagesCount of images with given parameters.
 	// Additionally creates stagging buffer for their data and PixelBufferAccess for particular images.
-	VkDeviceSize				createImages					(std::vector<ut::ImageHandleAllocSp>&		images,
-																 std::vector<VkDescriptorBufferInfo>&		bufferInfos,
-																 ut::BufferHandleAllocSp&					buffer,
-																 VkBufferUsageFlags							bufferUsage,
-																 const VkExtent3D&							imageExtent,
-																 VkFormat									imageFormat,
-																 VkImageLayout								imageLayout,
-																 uint32_t									imageCount,
-																 bool										withMipMaps = false);
+	VkDeviceSize				createImages						(std::vector<ut::ImageHandleAllocSp>&		images,
+																	 std::vector<VkDescriptorBufferInfo>&		bufferInfos,
+																	 ut::BufferHandleAllocSp&					buffer,
+																	 VkBufferUsageFlags							bufferUsage,
+																	 const VkExtent3D&							imageExtent,
+																	 VkFormat									imageFormat,
+																	 VkImageLayout								imageLayout,
+																	 deUint32									imageCount,
+																	 bool										withMipMaps = false);
 
-	void						createBuffersViews				(std::vector<ut::BufferViewSp>&				views,
-																 const std::vector<VkDescriptorBufferInfo>&	bufferInfos,
-																 VkFormat									format);
+	void						createBuffersViews					(std::vector<ut::BufferViewSp>&				views,
+																	 const std::vector<VkDescriptorBufferInfo>&	bufferInfos,
+																	 VkFormat									format);
 
-	void						createImagesViews				(std::vector<ut::ImageViewSp>&				views,
-																 const std::vector<ut::ImageHandleAllocSp>&	images,
-																 VkFormat									format);
+	void						createImagesViews					(std::vector<ut::ImageViewSp>&				views,
+																	 const std::vector<ut::ImageHandleAllocSp>&	images,
+																	 VkFormat									format);
 
-	virtual void				copyBuffersToImages				(IterateCommonVariables&					variables);
+	virtual void				copyBuffersToImages					(IterateCommonVariables&					variables);
 
-	virtual void				copyImagesToBuffers				(IterateCommonVariables&					variables);
+	virtual void				copyImagesToBuffers					(IterateCommonVariables&					variables);
 
-	PixelBufferAccess			getPixelAccess					(uint32_t									imageIndex,
-																 const VkExtent3D&							imageExtent,
-																 VkFormat									imageFormat,
-																 const std::vector<VkDescriptorBufferInfo>&	bufferInfos,
-																 const ut::BufferHandleAllocSp&				buffer,
-																 uint32_t									mipLevel = 0u) const;
+	PixelBufferAccess			getPixelAccess						(deUint32									imageIndex,
+																	 const VkExtent3D&							imageExtent,
+																	 VkFormat									imageFormat,
+																	 const std::vector<VkDescriptorBufferInfo>&	bufferInfos,
+																	 const ut::BufferHandleAllocSp&				buffer,
+																	 deUint32									mipLevel = 0u) const;
 
-	virtual void				createAndPopulateDescriptors	(IterateCommonVariables&					variables) = 0;
+	virtual void				createAndPopulateDescriptors		(IterateCommonVariables&					variables) = 0;
+	virtual void				createAndPopulateUnusedDescriptors	(IterateCommonVariables&					variables) = 0;
 
-	virtual void				updateDescriptors				(IterateCommonVariables&					variables);
+	virtual void				updateDescriptors					(IterateCommonVariables&					variables);
+	void						updateUnusedDescriptors				(IterateCommonVariables&					variables);
 
-	virtual void				iterateCollectResults			(ut::UpdatablePixelBufferAccessPtr&			result,
-																 const IterateCommonVariables&				variables,
-																 bool										fromTest);
+	void						destroyUnusedResources				(IterateCommonVariables&					variables);
 
-	void						iterateCommandSetup				(IterateCommonVariables&					variables);
+	virtual void				iterateCollectResults				(ut::UpdatablePixelBufferAccessPtr&			result,
+																	 const IterateCommonVariables&				variables,
+																	 bool										fromTest);
 
-	void						iterateCommandBegin				(IterateCommonVariables&					variables,
-																bool										firstPass = true);
+	void						iterateCommandSetup					(IterateCommonVariables&					variables);
 
-	void						iterateCommandEnd				(IterateCommonVariables&					variables,
-																ut::UpdatablePixelBufferAccessPtr&	programResult,
-																ut::UpdatablePixelBufferAccessPtr&	referenceResult,
-																 bool										collectBeforeSubmit = true);
+	void						iterateCommandBegin					(IterateCommonVariables&					variables,
+																	 bool										firstPass = true);
 
-	bool						iterateVerifyResults			(IterateCommonVariables&					variables,
+	void						iterateCommandEnd					(IterateCommonVariables&					variables,
+																	 ut::UpdatablePixelBufferAccessPtr&			programResult,
+																	 ut::UpdatablePixelBufferAccessPtr&			referenceResult,
+																	 bool										collectBeforeSubmit = true);
+
+	bool						iterateVerifyResults				(IterateCommonVariables&					variables,
 																	 ut::UpdatablePixelBufferAccessPtr	programResult,
 																	 ut::UpdatablePixelBufferAccessPtr	referenceResult);
 
-	Move<VkCommandBuffer>		createCmdBuffer					(void);
+	Move<VkCommandBuffer>		createCmdBuffer						(void);
 
-	void						commandBindPipeline				(VkCommandBuffer							commandBuffer,
-																 VkPipeline									pipeline);
+	void						commandBindPipeline					(VkCommandBuffer							commandBuffer,
+																	 VkPipeline									pipeline);
 
-	void						commandBindVertexAttributes		(VkCommandBuffer							commandBuffer,
-																 const ut::BufferHandleAllocSp&				vertexAttributesBuffer);
+	void						commandBindVertexAttributes			(VkCommandBuffer							commandBuffer,
+																	 const ut::BufferHandleAllocSp&				vertexAttributesBuffer);
 
-	void						commandBindDescriptorSets		(VkCommandBuffer							commandBuffer,
-																 VkPipelineLayout							pipelineLayout,
-																 VkDescriptorSet							descriptorSet,
-																 uint32_t									descriptorSetIndex);
+	void						commandBindDescriptorSets			(VkCommandBuffer							commandBuffer,
+																	 VkPipelineLayout							pipelineLayout,
+																	 VkDescriptorSet							descriptorSet,
+																	 deUint32									descriptorSetIndex);
 
-	void						commandReadFrameBuffer			(ut::BufferHandleAllocSp&					content,
-																 VkCommandBuffer							commandBuffer,
-																 const ut::FrameBufferSp&					frameBuffer);
+	void						commandReadFrameBuffer				(ut::BufferHandleAllocSp&					content,
+																	 VkCommandBuffer							commandBuffer,
+																	 const ut::FrameBufferSp&					frameBuffer);
 	ut::UpdatablePixelBufferAccessPtr
-								commandReadFrameBuffer			(VkCommandBuffer							commandBuffer,
-																 const ut::FrameBufferSp&					frameBuffer);
+								commandReadFrameBuffer				(VkCommandBuffer							commandBuffer,
+																	 const ut::FrameBufferSp&					frameBuffer);
 
-	Move<VkFence>				commandSubmit					(VkCommandBuffer							commandBuffer);
+	Move<VkFence>				commandSubmit						(VkCommandBuffer							commandBuffer);
 
-	virtual bool				verifyVertexWriteResults		(IterateCommonVariables&					variables);
+	virtual bool				verifyVertexWriteResults			(IterateCommonVariables&					variables);
 
 protected:
-	virtual tcu::TestStatus		iterate							(void);
+	virtual tcu::TestStatus		iterate								(void);
 
 protected:
 	const VkDevice				m_vkd;
@@ -379,12 +393,12 @@ protected:
 
 private:
 
-	Move<VkPipeline>			createGraphicsPipeline			(VkPipelineLayout							pipelineLayout,
-																 VkRenderPass								renderPass);
+	Move<VkPipeline>			createGraphicsPipeline				(VkPipelineLayout							pipelineLayout,
+																	 VkRenderPass								renderPass);
 
-	Move<VkPipeline>			createComputePipeline			(VkPipelineLayout							pipelineLayout);
+	Move<VkPipeline>			createComputePipeline				(VkPipelineLayout							pipelineLayout);
 
-	void						constructShaderModules			(void);
+	void						constructShaderModules				(void);
 
 	static std::vector<float>	createColorScheme();
 
@@ -489,8 +503,8 @@ void DescriptorEnumerator::update (const vkt::Context& context)
 	context.getDeviceInterface().updateDescriptorSets(context.getDevice(), 1u, &writeInfo, 0u, nullptr);
 }
 
-CommonDescriptorInstance::CommonDescriptorInstance					(Context&								context,
-																	const TestParams&						testParams)
+CommonDescriptorInstance::CommonDescriptorInstance								(Context&								context,
+																				 const TestParams&						testParams)
 	: TestInstance		(context)
 	, m_vkd				(context.getDevice())
 	, m_vki				(context.getDeviceInterface())
@@ -514,8 +528,8 @@ uint32_t CommonDescriptorInstance::computeAvailableDescriptorCount	(VkDescriptor
 	return deMinu32(deMinu32(vertexCount, availableDescriptorsOnDevice), MAX_DESCRIPTORS);
 }
 
-Move<VkDescriptorSetLayout>	CommonDescriptorInstance::createDescriptorSetLayout (bool						reserveUniformTexelBuffer,
-																				 uint32_t&					descriptorCount) const
+Move<VkDescriptorSetLayout>	CommonDescriptorInstance::createDescriptorSetLayout	(bool						reserveUniformTexelBuffer,
+																				 deUint32&					descriptorCount) const
 {
 	descriptorCount = computeAvailableDescriptorCount(m_testParams.descriptorType, reserveUniformTexelBuffer);
 
@@ -1160,6 +1174,101 @@ void CommonDescriptorInstance::updateDescriptors					(IterateCommonVariables&			
 	}
 }
 
+void CommonDescriptorInstance::updateUnusedDescriptors				(IterateCommonVariables&					variables)
+{
+	const std::vector<deUint32>	primes		= ut::generatePrimes(variables.availableDescriptorCount);
+	const deUint32				primeCount	= static_cast<deUint32>(primes.size());
+	deUint32					primeIndex	= 0u;
+
+	for (deUint32 i = 0u; i < variables.availableDescriptorCount; ++i)
+	{
+		if (primeIndex < primeCount && i == primes[primeIndex])
+		{
+			++primeIndex;
+			continue;
+		}
+
+		const VkDescriptorBufferInfo*	pBufferInfo			= DE_NULL;
+		const VkDescriptorImageInfo*	pImageInfo			= DE_NULL;
+		const VkBufferView*				pTexelBufferView	= DE_NULL;
+
+		VkDescriptorImageInfo		imageInfo =
+		{
+			static_cast<VkSampler>(0),
+			static_cast<VkImageView>(0),
+			VK_IMAGE_LAYOUT_GENERAL
+		};
+
+		switch (m_testParams.descriptorType)
+		{
+		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
+		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+		case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+		case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+			{
+				pBufferInfo = &variables.unusedDescriptorsBufferInfos[0];
+				switch (m_testParams.descriptorType)
+				{
+				case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+				case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+					pTexelBufferView = &(**variables.unusedDescriptorsBufferViews[0]);
+					break;
+				default:
+					break;
+				}
+			}
+			break;
+
+		case VK_DESCRIPTOR_TYPE_SAMPLER:
+			imageInfo.sampler = **variables.unusedDescriptorSamplers[0];
+			pImageInfo = &imageInfo;
+			break;
+
+		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+		case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
+			imageInfo.imageView = **variables.unusedDescriptorImageViews[0];
+			pImageInfo = &imageInfo;
+			break;
+
+		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+			imageInfo.sampler = **variables.unusedDescriptorSamplers[0];
+			imageInfo.imageView = **variables.unusedDescriptorImageViews[0];
+			pImageInfo = &imageInfo;
+			break;
+
+		default:	break;
+		}
+
+		const VkWriteDescriptorSet writeInfo =
+		{
+			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,			// sType
+			DE_NULL,										// pNext
+			*variables.descriptorSet,						// descriptorSet
+			BINDING_TestObject,								// descriptorBinding;
+			i,												// elementIndex
+			1u,												// descriptorCount
+			m_testParams.descriptorType,					// descriptorType
+			pImageInfo,										// pImageInfo
+			pBufferInfo,									// pBufferInfo
+			pTexelBufferView								// pTexelBufferView
+		};
+
+		m_vki.updateDescriptorSets(m_vkd, 1u, &writeInfo, 0u, DE_NULL);
+	}
+}
+
+void CommonDescriptorInstance::destroyUnusedResources				(IterateCommonVariables&					variables)
+{
+	variables.unusedDescriptorsBufferInfos.clear();
+	variables.unusedDescriptorsBufferViews.clear();
+	variables.unusedDescriptorImageViews.clear();
+	variables.unusedDescriptorSamplers.clear();
+	variables.unusedDescriptorsImages.clear();
+}
+
 void CommonDescriptorInstance::iterateCommandSetup					(IterateCommonVariables&					variables)
 {
 	variables.dataAlignment				= 0;
@@ -1216,6 +1325,14 @@ void CommonDescriptorInstance::iterateCommandSetup					(IterateCommonVariables&	
 
 void CommonDescriptorInstance::iterateCommandBegin					(IterateCommonVariables&					variables,	bool firstPass)
 {
+	if (m_testParams.lifetimeCheck)
+	{
+		createAndPopulateUnusedDescriptors(variables);
+
+		if (!m_testParams.updateAfterBind)
+			updateUnusedDescriptors(variables);
+	}
+
 	vk::beginCommandBuffer				(m_vki, *variables.commandBuffer);
 
 	// Clear color attachment, and transition it to VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
@@ -1382,6 +1499,10 @@ void CommonDescriptorInstance::iterateCommandEnd					(IterateCommonVariables&			
 																	 ut::UpdatablePixelBufferAccessPtr&	referenceResult,
 																	 bool										collectBeforeSubmit)
 {
+	// Destroy unused descriptor resources to test there's no issues as allowed by the spec
+	if (m_testParams.lifetimeCheck)
+		destroyUnusedResources(variables);
+
 	if (collectBeforeSubmit)
 	{
 		iterateCollectResults(programResult, variables, true);
@@ -2859,9 +2980,10 @@ public:
 								StorageBufferInstance				(Context&									context,
 																	 const TestCaseParams&						testCaseParams);
 protected:
-	virtual void				createAndPopulateDescriptors		(IterateCommonVariables&					variables);
+	void						createAndPopulateDescriptors		(IterateCommonVariables&					variables) override;
+	void						createAndPopulateUnusedDescriptors	(IterateCommonVariables&					variables) override;
 
-	virtual bool				verifyVertexWriteResults			(IterateCommonVariables&					variables);
+	bool						verifyVertexWriteResults			(IterateCommonVariables&					variables) override;
 };
 
 StorageBufferInstance::StorageBufferInstance						(Context&									context,
@@ -2904,6 +3026,12 @@ void StorageBufferInstance::createAndPopulateDescriptors			(IterateCommonVariabl
 	variables.dataAlignment = deAlign64(sizeof(data), alignment);
 }
 
+void StorageBufferInstance::createAndPopulateUnusedDescriptors			(IterateCommonVariables&					variables)
+{
+	const deUint32				alignment	= static_cast<deUint32>(ut::DeviceProperties(m_context).physicalDeviceProperties().limits.minStorageBufferOffsetAlignment);
+	createBuffers(variables.unusedDescriptorsBufferInfos, variables.unusedDescriptorsBuffer, 1, sizeof(BindingStorageBufferData), alignment, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+}
+
 bool StorageBufferInstance::verifyVertexWriteResults				(IterateCommonVariables&					variables)
 {
 	const tcu::Vec4				threshold		(0.002f, 0.002f, 0.002f, 0.002f);
@@ -2934,7 +3062,8 @@ public:
 								UniformBufferInstance				(Context&									context,
 																	 const TestCaseParams&						testCaseParams);
 protected:
-	virtual void				createAndPopulateDescriptors		(IterateCommonVariables&					variables);
+	void						createAndPopulateDescriptors		(IterateCommonVariables&					variables) override;
+	void						createAndPopulateUnusedDescriptors	(IterateCommonVariables&					variables) override;
 };
 
 UniformBufferInstance::UniformBufferInstance						(Context&									context,
@@ -2969,15 +3098,23 @@ void UniformBufferInstance::createAndPopulateDescriptors			(IterateCommonVariabl
 	variables.dataAlignment = deAlign64(sizeof(data), alignment);
 }
 
+void UniformBufferInstance::createAndPopulateUnusedDescriptors		(IterateCommonVariables&					variables)
+{
+	// Just create buffer for unused descriptors, no data needed
+	const deUint32				alignment	= static_cast<deUint32>(ut::DeviceProperties(m_context).physicalDeviceProperties().limits.minUniformBufferOffsetAlignment);
+	createBuffers(variables.unusedDescriptorsBufferInfos, variables.unusedDescriptorsBuffer, 1, sizeof(BindingUniformBufferData), alignment, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+}
+
 class StorageTexelInstance : public CommonDescriptorInstance
 {
 public:
 								StorageTexelInstance				(Context&									context,
 																	 const TestCaseParams&						testCaseParams);
 private:
-	virtual void				createAndPopulateDescriptors		(IterateCommonVariables&					variables);
+	void						createAndPopulateDescriptors		(IterateCommonVariables&					variables) override;
+	void						createAndPopulateUnusedDescriptors	(IterateCommonVariables&					variables) override;
 
-	virtual bool				verifyVertexWriteResults			(IterateCommonVariables&					variables);
+	bool						verifyVertexWriteResults			(IterateCommonVariables&					variables) override;
 };
 
 StorageTexelInstance::StorageTexelInstance							(Context&									context,
@@ -3011,6 +3148,15 @@ void StorageTexelInstance::createAndPopulateDescriptors			(IterateCommonVariable
 	vk::flushAlloc(m_vki, m_vkd, *variables.descriptorsBuffer->alloc);
 }
 
+void StorageTexelInstance::createAndPopulateUnusedDescriptors	(IterateCommonVariables&					variables)
+{
+	const VkExtent3D			imageExtent			= { 4, 4, 1 };
+	const deUint32				imageSize			= ut::computeImageSize(imageExtent, m_colorFormat);
+
+	createBuffers(variables.unusedDescriptorsBufferInfos, variables.unusedDescriptorsBuffer, 1, imageSize, sizeof(tcu::Vec4), VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT);
+	createBuffersViews(variables.unusedDescriptorsBufferViews, variables.unusedDescriptorsBufferInfos, m_colorFormat);
+}
+
 bool StorageTexelInstance::verifyVertexWriteResults(IterateCommonVariables&					variables)
 {
 	const VkExtent3D			imageExtent		= { 4, 4, 1 };
@@ -3039,7 +3185,8 @@ public:
 								UniformTexelInstance				(Context&									context,
 																	 const TestCaseParams&						testCaseParams);
 private:
-	virtual void				createAndPopulateDescriptors		(IterateCommonVariables&					variables);
+	void						createAndPopulateDescriptors		(IterateCommonVariables&					variables) override;
+	void						createAndPopulateUnusedDescriptors	(IterateCommonVariables&					variables) override;
 };
 
 UniformTexelInstance::UniformTexelInstance							(Context&									context,
@@ -3070,6 +3217,15 @@ void UniformTexelInstance::createAndPopulateDescriptors				(IterateCommonVariabl
 		tcu::clear(pa, tcu::Vec4(component, component, component, 1.0f));
 	}
 	vk::flushAlloc(m_vki, m_vkd, *variables.descriptorsBuffer->alloc);
+}
+
+void UniformTexelInstance::createAndPopulateUnusedDescriptors		(IterateCommonVariables&					variables)
+{
+	const VkExtent3D			imageExtent	= { 4, 4, 1 };
+	const deUint32				imageSize	= ut::computeImageSize(imageExtent, m_colorFormat);
+
+	createBuffers(variables.unusedDescriptorsBufferInfos, variables.unusedDescriptorsBuffer, 1, imageSize, sizeof(tcu::Vec4), VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT);
+	createBuffersViews(variables.unusedDescriptorsBufferViews, variables.unusedDescriptorsBufferInfos, m_colorFormat);
 }
 
 class DynamicBuffersInstance : virtual public CommonDescriptorInstance
@@ -3208,10 +3364,11 @@ class DynamicStorageBufferInstance : public DynamicBuffersInstance, public Stora
 public:
 	DynamicStorageBufferInstance									(Context&					context,
 																	 const TestCaseParams&		testCaseParams);
-	tcu::TestStatus		iterate										(void);
-	void				createAndPopulateDescriptors				(IterateCommonVariables&	variables);
-	void				updateDescriptors							(IterateCommonVariables&	variables);
-	bool				verifyVertexWriteResults					(IterateCommonVariables&	variables);
+	tcu::TestStatus		iterate										(void) override;
+	void				createAndPopulateDescriptors				(IterateCommonVariables&	variables) override;
+	void				createAndPopulateUnusedDescriptors			(IterateCommonVariables&	variables) override;
+	void				updateDescriptors							(IterateCommonVariables&	variables) override;
+	bool				verifyVertexWriteResults					(IterateCommonVariables&	variables) override;
 };
 
 DynamicStorageBufferInstance::DynamicStorageBufferInstance			(Context&					context,
@@ -3237,6 +3394,11 @@ void DynamicStorageBufferInstance::createAndPopulateDescriptors(IterateCommonVar
 	StorageBufferInstance::createAndPopulateDescriptors(variables);
 }
 
+void DynamicStorageBufferInstance::createAndPopulateUnusedDescriptors(IterateCommonVariables&			variables)
+{
+	StorageBufferInstance::createAndPopulateUnusedDescriptors(variables);
+}
+
 void DynamicStorageBufferInstance::updateDescriptors(IterateCommonVariables&					variables)
 {
 	DynamicBuffersInstance::updateDescriptors(variables);
@@ -3252,9 +3414,10 @@ class DynamicUniformBufferInstance : public DynamicBuffersInstance, public Unifo
 public:
 	DynamicUniformBufferInstance									(Context&					context,
 																	 const TestCaseParams&		testCaseParams);
-	tcu::TestStatus		iterate(void);
-	void				createAndPopulateDescriptors(IterateCommonVariables&					variables);
-	void				updateDescriptors(IterateCommonVariables&								variables);
+	tcu::TestStatus		iterate										(void) override;
+	void				createAndPopulateDescriptors				(IterateCommonVariables&	variables) override;
+	void				createAndPopulateUnusedDescriptors			(IterateCommonVariables&	variables) override;
+	void				updateDescriptors							(IterateCommonVariables&	variables) override;
 };
 
 DynamicUniformBufferInstance::DynamicUniformBufferInstance			(Context&					context,
@@ -3280,6 +3443,11 @@ void DynamicUniformBufferInstance::createAndPopulateDescriptors(IterateCommonVar
 	UniformBufferInstance::createAndPopulateDescriptors(variables);
 }
 
+void DynamicUniformBufferInstance::createAndPopulateUnusedDescriptors(IterateCommonVariables&			variables)
+{
+	UniformBufferInstance::createAndPopulateUnusedDescriptors(variables);
+}
+
 void DynamicUniformBufferInstance::updateDescriptors(IterateCommonVariables&					variables)
 {
 	DynamicBuffersInstance::updateDescriptors(variables);
@@ -3291,11 +3459,12 @@ public:
 								InputAttachmentInstance				(Context&									context,
 																	const TestCaseParams&						testCaseParams);
 private:
-	virtual Move<VkRenderPass>	createRenderPass					(const IterateCommonVariables&				variables);
-	virtual void				createFramebuffer					(ut::FrameBufferSp&							frameBuffer,
+	Move<VkRenderPass>			createRenderPass					(const IterateCommonVariables&				variables) override;
+	void						createFramebuffer					(ut::FrameBufferSp&							frameBuffer,
 																	 VkRenderPass								renderPass,
-																	 const IterateCommonVariables&				variables);
-	virtual void				createAndPopulateDescriptors		(IterateCommonVariables&					variables);
+																	 const IterateCommonVariables&				variables) override;
+	void						createAndPopulateDescriptors		(IterateCommonVariables&					variables) override;
+	void						createAndPopulateUnusedDescriptors	(IterateCommonVariables&					variables) override;
 };
 
 InputAttachmentInstance::InputAttachmentInstance					(Context&									context,
@@ -3323,6 +3492,13 @@ void InputAttachmentInstance::createAndPopulateDescriptors			(IterateCommonVaria
 		tcu::clear(pa, tcu::Vec4(component, component, component, 1.0f));
 	}
 	vk::flushAlloc(m_vki, m_vkd, *variables.descriptorsBuffer->alloc);
+}
+
+void InputAttachmentInstance::createAndPopulateUnusedDescriptors	(IterateCommonVariables&					variables)
+{
+	createImages(variables.unusedDescriptorsImages, variables.unusedDescriptorsBufferInfos, variables.unusedDescriptorsBuffer,
+				 VK_BUFFER_USAGE_TRANSFER_SRC_BIT, m_testParams.frameResolution, m_colorFormat, VK_IMAGE_LAYOUT_UNDEFINED, 1);
+	createImagesViews(variables.unusedDescriptorImageViews, variables.unusedDescriptorsImages, m_colorFormat);
 }
 
 Move<VkRenderPass> InputAttachmentInstance::createRenderPass		(const IterateCommonVariables&				variables)
@@ -3444,8 +3620,9 @@ public:
 								SamplerInstance						(Context&									context,
 																	 const TestCaseParams&						testCaseParams);
 private:
-	virtual void				createAndPopulateDescriptors		(IterateCommonVariables&					variables);
-	virtual void				updateDescriptors					(IterateCommonVariables&					variables);
+	void				createAndPopulateDescriptors		(IterateCommonVariables&					variables) override;
+	void				createAndPopulateUnusedDescriptors	(IterateCommonVariables&					variables) override;
+	void				updateDescriptors					(IterateCommonVariables&					variables) override;
 };
 
 SamplerInstance::SamplerInstance									(Context&									context,
@@ -3553,14 +3730,53 @@ void SamplerInstance::createAndPopulateDescriptors					(IterateCommonVariables&	
 	}
 }
 
+void SamplerInstance::createAndPopulateUnusedDescriptors			(IterateCommonVariables&					variables)
+{
+	DE_ASSERT(variables.unusedDescriptorsImages.size()		== 0);
+	DE_ASSERT(variables.unusedDescriptorImageViews.size()	== 0);
+	DE_ASSERT(variables.unusedDescriptorsBufferInfos.size()	== 0);
+	DE_ASSERT(variables.unusedDescriptorSamplers.size()		== 0);
+
+	// create and populate an image
+	{
+		VkExtent3D imageExtent = m_testParams.frameResolution;
+		if (m_testParams.usesMipMaps)
+		{
+			imageExtent.width *= 2;
+			imageExtent.height *= 2;
+		}
+
+		createImages(variables.unusedDescriptorsImages, variables.unusedDescriptorsBufferInfos, variables.unusedDescriptorsBuffer,
+					 VK_BUFFER_USAGE_TRANSFER_SRC_BIT, imageExtent, m_colorFormat, VK_IMAGE_LAYOUT_UNDEFINED, 1, m_testParams.usesMipMaps);
+		createImagesViews(variables.unusedDescriptorImageViews, variables.unusedDescriptorsImages, m_colorFormat);
+	}
+
+	const tcu::Sampler sampler(
+		tcu::Sampler::CLAMP_TO_BORDER,															// wrapS
+		tcu::Sampler::CLAMP_TO_BORDER,															// wrapT
+		tcu::Sampler::CLAMP_TO_BORDER,															// wrapR
+		m_testParams.usesMipMaps ? tcu::Sampler::LINEAR_MIPMAP_NEAREST : tcu::Sampler::NEAREST,	// minFilter
+		m_testParams.usesMipMaps ? tcu::Sampler::LINEAR_MIPMAP_NEAREST : tcu::Sampler::NEAREST,	// magFilter
+		0.0f,																					// lodTreshold
+		true,																					// normalizeCoords
+		tcu::Sampler::COMPAREMODE_NONE,															// compare
+		0,																						// compareChannel
+		tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),														// borderColor
+		true);																					// seamlessCubeMap
+	const VkSamplerCreateInfo createInfo = vk::mapSampler(sampler, vk::mapVkFormat(m_colorFormat));
+	variables.unusedDescriptorSamplers.resize(1);
+	variables.unusedDescriptorSamplers[0] = ut::SamplerSp(new Move<VkSampler>(vk::createSampler(m_vki, m_vkd, &createInfo)));
+}
+
 class SampledImageInstance : public CommonDescriptorInstance
 {
 public:
 								SampledImageInstance				(Context&									context,
 																	 const TestCaseParams&						testCaseParams);
 private:
-	virtual void				createAndPopulateDescriptors		(IterateCommonVariables&					variables);
-	virtual void				updateDescriptors					(IterateCommonVariables&					variables);
+	void				createAndPopulateDescriptors				(IterateCommonVariables&					variables) override;
+	void				createAndPopulateUnusedDescriptors			(IterateCommonVariables&					variables) override;
+	void				updateDescriptors							(IterateCommonVariables&					variables) override;
 };
 
 SampledImageInstance::SampledImageInstance							(Context&									context,
@@ -3670,14 +3886,47 @@ void SampledImageInstance::createAndPopulateDescriptors				(IterateCommonVariabl
 	vk::flushAlloc(m_vki, m_vkd, *variables.descriptorsBuffer->alloc);
 }
 
+void SampledImageInstance::createAndPopulateUnusedDescriptors		(IterateCommonVariables&					variables)
+{
+	DE_ASSERT(variables.unusedDescriptorSamplers.size()		== 0);
+	DE_ASSERT(variables.unusedDescriptorsImages.size()		== 0);
+	DE_ASSERT(variables.unusedDescriptorImageViews.size()	== 0);
+	DE_ASSERT(variables.unusedDescriptorsBufferInfos.size()	== 0);
+
+	// create an only one sampler for all images
+	{
+		const tcu::Sampler sampler(
+			tcu::Sampler::CLAMP_TO_BORDER,																// wrapS
+			tcu::Sampler::CLAMP_TO_BORDER,																// wrapT
+			tcu::Sampler::CLAMP_TO_BORDER,																// wrapR
+			m_testParams.usesMipMaps ? tcu::Sampler::NEAREST_MIPMAP_NEAREST : tcu::Sampler::NEAREST,	// minFilter
+			m_testParams.usesMipMaps ? tcu::Sampler::NEAREST_MIPMAP_NEAREST : tcu::Sampler::NEAREST,	// magFilter
+			0.0f,																						// lodTreshold
+			true,																						// normalizeCoords
+			tcu::Sampler::COMPAREMODE_NONE,																// compare
+			0,																							// compareChannel
+			tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),															// borderColor
+			true);																						// seamlessCubeMap
+		const VkSamplerCreateInfo createInfo = vk::mapSampler(sampler, vk::mapVkFormat(m_colorFormat));
+		variables.unusedDescriptorSamplers.push_back(ut::SamplerSp(new Move<VkSampler>(vk::createSampler(m_vki, m_vkd, &createInfo))));
+	}
+
+	const VkExtent3D&			imageExtent = m_testParams.usesMipMaps ? bigImageExtent : smallImageExtent;
+
+	createImages(variables.unusedDescriptorsImages, variables.unusedDescriptorsBufferInfos, variables.unusedDescriptorsBuffer,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT, imageExtent, m_colorFormat, VK_IMAGE_LAYOUT_UNDEFINED, 1, m_testParams.usesMipMaps);
+	createImagesViews(variables.unusedDescriptorImageViews, variables.unusedDescriptorsImages, m_colorFormat);
+}
+
 class CombinedImageInstance : public CommonDescriptorInstance
 {
 public:
 								CombinedImageInstance				(Context&									context,
 																	 const TestCaseParams&						testCaseParams);
 private:
-	virtual void				createAndPopulateDescriptors		(IterateCommonVariables&					variables);
-	virtual void				updateDescriptors					(IterateCommonVariables&					variables);
+	void						createAndPopulateDescriptors		(IterateCommonVariables&					variables) override;
+	void						createAndPopulateUnusedDescriptors	(IterateCommonVariables&					variables) override;
+	void						updateDescriptors					(IterateCommonVariables&					variables) override;
 };
 
 CombinedImageInstance::CombinedImageInstance						(Context&									context,
@@ -3785,18 +4034,48 @@ void CombinedImageInstance::createAndPopulateDescriptors			(IterateCommonVariabl
 	vk::flushAlloc(m_vki, m_vkd, *variables.descriptorsBuffer->alloc);
 }
 
+void CombinedImageInstance::createAndPopulateUnusedDescriptors	(IterateCommonVariables&					variables)
+{
+	DE_ASSERT(variables.unusedDescriptorSamplers.size()		== 0);
+	DE_ASSERT(variables.unusedDescriptorsImages.size()		== 0);
+	DE_ASSERT(variables.unusedDescriptorImageViews.size()	== 0);
+	DE_ASSERT(variables.unusedDescriptorsBufferInfos.size()	== 0);
+	DE_ASSERT(variables.unusedDescriptorSamplers.size()		== 0);
+
+	const tcu::Sampler sampler(
+		tcu::Sampler::CLAMP_TO_BORDER,																// wrapS
+		tcu::Sampler::CLAMP_TO_BORDER,																// wrapT
+		tcu::Sampler::CLAMP_TO_BORDER,																// wrapR
+		m_testParams.usesMipMaps ? tcu::Sampler::NEAREST_MIPMAP_NEAREST : tcu::Sampler::NEAREST,	// minFilter
+		m_testParams.usesMipMaps ? tcu::Sampler::NEAREST_MIPMAP_NEAREST : tcu::Sampler::NEAREST,	// magFilter
+		0.0f,																						// lodTreshold
+		true,																						// normalizeCoords
+		tcu::Sampler::COMPAREMODE_NONE,																// compare
+		0,																							// compareChannel
+		tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),															// borderColor
+		true);																						// seamlessCubeMap
+	const VkSamplerCreateInfo	createInfo = vk::mapSampler(sampler, vk::mapVkFormat(m_colorFormat));
+	variables.unusedDescriptorSamplers.push_back(ut::SamplerSp(new Move<VkSampler>(vk::createSampler(m_vki, m_vkd, &createInfo))));
+
+	const VkExtent3D&			imageExtent = m_testParams.usesMipMaps ? bigImageExtent : smallImageExtent;
+	createImages(variables.unusedDescriptorsImages, variables.unusedDescriptorsBufferInfos, variables.unusedDescriptorsBuffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+				 imageExtent, m_colorFormat, VK_IMAGE_LAYOUT_UNDEFINED, 1, m_testParams.usesMipMaps);
+	createImagesViews(variables.unusedDescriptorImageViews, variables.unusedDescriptorsImages, m_colorFormat);
+}
+
 class StorageImageInstance : public CommonDescriptorInstance
 {
 public:
 								StorageImageInstance				(Context&									context,
 																	 const TestCaseParams&						testCaseParams);
 private:
-	virtual tcu::TestStatus		iterate								(void);
-	virtual void				createAndPopulateDescriptors		(IterateCommonVariables&					variables);
-	virtual void				updateDescriptors					(IterateCommonVariables&					variables);
-	virtual void				iterateCollectResults				(ut::UpdatablePixelBufferAccessPtr&			result,
+	tcu::TestStatus				iterate								(void) override;
+	void						createAndPopulateDescriptors		(IterateCommonVariables&					variables) override;
+	void						createAndPopulateUnusedDescriptors	(IterateCommonVariables&					variables) override;
+	void						updateDescriptors					(IterateCommonVariables&					variables) override;
+	void						iterateCollectResults				(ut::UpdatablePixelBufferAccessPtr&			result,
 																	 const IterateCommonVariables&				variables,
-																	 bool										fromTest);
+																	 bool										fromTest) override;
 	ut::BufferHandleAllocSp		m_buffer;
 	const uint32_t				m_fillColor;
 	typedef uint32_t			m_imageFormat_t;
@@ -3891,6 +4170,17 @@ void StorageImageInstance::createAndPopulateDescriptors				(IterateCommonVariabl
 
 	// create views for all previously created images
 	createImagesViews(variables.descriptorImageViews, variables.descriptorsImages, imageFormat);
+}
+
+void StorageImageInstance::createAndPopulateUnusedDescriptors		(IterateCommonVariables&					variables)
+{
+	const VkFormat				imageFormat = ut::mapType2vkFormat<m_imageFormat_t>::value;
+	const VkBufferUsageFlags	bufferUsage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+	const VkExtent3D			imageExtent = { 4, 4, 1 };
+
+	createImages(variables.unusedDescriptorsImages, variables.unusedDescriptorsBufferInfos, variables.unusedDescriptorsBuffer,
+				 bufferUsage, imageExtent, imageFormat, VK_IMAGE_LAYOUT_UNDEFINED, 1);
+	createImagesViews(variables.unusedDescriptorImageViews, variables.unusedDescriptorsImages, imageFormat);
 }
 
 tcu::TestStatus StorageImageInstance::iterate						(void)
@@ -4240,37 +4530,43 @@ void descriptorIndexingDescriptorSetsCreateTests (tcu::TestCaseGroup* group)
 		{
 			for (int usesMipMaps = 0; usesMipMaps < 2; ++usesMipMaps)
 			{
-				for (uint32_t caseIdx = 0; caseIdx < DE_LENGTH_OF_ARRAY(casesAfterBindAndLoop); ++caseIdx)
+				for (int lifetimeCheck = 0; lifetimeCheck < 2; ++lifetimeCheck)
 				{
-					TestCaseInfo&	info			(casesAfterBindAndLoop[caseIdx]);
+					for (uint32_t caseIdx = 0; caseIdx < DE_LENGTH_OF_ARRAY(casesAfterBindAndLoop); ++caseIdx)
+					{
+						TestCaseInfo&	info			(casesAfterBindAndLoop[caseIdx]);
 
-					if (updateAfterBind && !descriptorTypeSupportsUpdateAfterBind(info.descriptorType))
-						continue;
+						if (updateAfterBind && !descriptorTypeSupportsUpdateAfterBind(info.descriptorType))
+							continue;
 
-					if (usesMipMaps && !descriptorTypeUsesMipmaps(info.descriptorType))
-						continue;
+						if (usesMipMaps && !descriptorTypeUsesMipmaps(info.descriptorType))
+							continue;
 
-					std::string		caseName		(info.name);
-					std::string		caseDescription	(info.description);
-					TestCaseParams	params;
+						std::string		caseName		(info.name);
+						std::string		caseDescription	(info.description);
+						TestCaseParams	params;
 
-					caseName		+= (updateAfterBind	? "_after_bind"	: "");
-					caseName		+= (calculateInLoop ? "_in_loop"	: "");
-					caseName		+= (usesMipMaps		? "_with_lod"	: "");
+						caseName		+= (updateAfterBind	? "_after_bind"	: "");
+						caseName		+= (calculateInLoop ? "_in_loop"	: "");
+						caseName		+= (usesMipMaps		? "_with_lod"	: "");
+						caseName		+= (lifetimeCheck	? "_lifetime"	: "");
 
-					caseDescription	+= (updateAfterBind	? " After Bind"	: "");
-					caseDescription	+= (calculateInLoop	? " In Loop"	: "");
-					caseDescription	+= (usesMipMaps		? " Use LOD"	: "");
+						caseDescription	+= (updateAfterBind	? " After Bind"	: "");
+						caseDescription	+= (calculateInLoop	? " In Loop"	: "");
+						caseDescription	+= (usesMipMaps		? " Use LOD"	: "");
+						caseDescription	+= (lifetimeCheck	? " Lifetime"	: "");
 
-					params.descriptorType	= info.descriptorType;
-					params.stageFlags		= (info.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ? VK_SHADER_STAGE_COMPUTE_BIT : (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
-					params.frameResolution	= RESOLUTION;
-					params.updateAfterBind	= updateAfterBind	? true : false;
-					params.calculateInLoop	= calculateInLoop	? true : false;
-					params.usesMipMaps		= usesMipMaps		? true : false;
-					params.minNonUniform	= false;
+						params.descriptorType	= info.descriptorType;
+						params.stageFlags		= (info.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ? VK_SHADER_STAGE_COMPUTE_BIT : (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+						params.frameResolution	= RESOLUTION;
+						params.updateAfterBind	= updateAfterBind	? true : false;
+						params.calculateInLoop	= calculateInLoop	? true : false;
+						params.usesMipMaps		= usesMipMaps		? true : false;
+						params.lifetimeCheck	= lifetimeCheck		? true : false;
+						params.minNonUniform	= false;
 
-					group->addChild(new DescriptorIndexingTestCase(context, caseName.c_str(), caseDescription.c_str(), params));
+						group->addChild(new DescriptorIndexingTestCase(context, caseName.c_str(), caseDescription.c_str(), params));
+					}
 				}
 			}
 		}
