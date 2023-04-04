@@ -343,14 +343,14 @@ PACKAGES = [
 		"1feaf4414eb2b353764d01d88f8aa4bcc67b60db",
 		"spirv-headers"),
 	GitRepo(
-        "https://github.com/KhronosGroup/Vulkan-Docs.git",
+		"https://github.com/KhronosGroup/Vulkan-Docs.git",
 		"git@github.com:KhronosGroup/Vulkan-Docs.git",
 		"7beccb60daac498d700a09763945719c31510ab6",
 		"vulkan-docs"),
 	GitRepo(
 		"https://github.com/google/amber.git",
 		"git@github.com:google/amber.git",
-		"8b145a6c89dcdb4ec28173339dd176fb7b6f43ed",
+		"933ecb4d6288675a92eb1650e0f52b1d7afe8273",
 		"amber"),
 	GitRepo(
 		"https://github.com/open-source-parsers/jsoncpp.git",
@@ -365,7 +365,7 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/Igalia/ESExtractor.git",
 		"git@github.com:Igalia/ESExtractor.git",
-		"v0.2.4",
+		"v0.2.5",
 		"ESExtractor"),
 ]
 
