@@ -70,6 +70,7 @@
 #include "vktPipelineAttachmentFeedbackLoopLayoutTests.hpp"
 #include "vktPipelineShaderModuleIdentifierTests.hpp"
 #include "vktPipelineImageSlicedViewOf3DTests.hpp"
+#include "vktPipelineBindVertexBuffers2Tests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt
@@ -144,6 +145,7 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 #endif // CTS_USES_VULKANSC
 	group->addChild(createColorWriteEnable2Tests		(testCtx, pipelineConstructionType));
 	group->addChild(createMiscTests						(testCtx, pipelineConstructionType));
+	group->addChild(createCmdBindBuffers2Tests			(testCtx, pipelineConstructionType));
 
 	// NOTE: all new pipeline tests should use GraphicsPipelineWrapper for pipeline creation
 

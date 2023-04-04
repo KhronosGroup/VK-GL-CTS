@@ -541,7 +541,8 @@ tcu::TestStatus SparseRenderTargetTestInstance::iterateInternal (void)
 
 	endCommandBuffer(vkd, *commandBuffer);
 
-	submitCommandsAndWait(vkd, m_context.getDevice(), m_context.getUniversalQueue(), *commandBuffer);
+	const VkPipelineStageFlags stageBits[] = { VK_PIPELINE_STAGE_TRANSFER_BIT };
+	submitCommandsAndWait(vkd, m_context.getDevice(), m_context.getUniversalQueue(), *commandBuffer, false, 1u, 1u, &m_bindSemaphore.get(), stageBits);
 
 	return verify();
 }
@@ -628,7 +629,8 @@ tcu::TestStatus SparseRenderTargetTestInstance::iterateInternalDynamicRendering(
 
 	endCommandBuffer(vkd, *cmdBuffer);
 
-	submitCommandsAndWait(vkd, m_context.getDevice(), m_context.getUniversalQueue(), *cmdBuffer);
+	const VkPipelineStageFlags stageBits[] = { VK_PIPELINE_STAGE_TRANSFER_BIT };
+	submitCommandsAndWait(vkd, m_context.getDevice(), m_context.getUniversalQueue(), *cmdBuffer, false, 1u, 1u, &m_bindSemaphore.get(), stageBits);
 
 	return verify();
 }

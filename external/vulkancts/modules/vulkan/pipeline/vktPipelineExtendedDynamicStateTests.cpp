@@ -1836,6 +1836,9 @@ struct TestConfig
 	// Force UNORM color format.
 	bool							forceUnormColorFormat;
 
+	// Used in some tests to verify color blend pAttachments can be null if all its state is dynamic.
+	bool							nullStaticColorBlendAttPtr;
+
 	// When setting the sample mask dynamically, we can use an alternative sample count specified here.
 	OptSampleCount					dynamicSampleMaskCount;
 
@@ -1937,6 +1940,7 @@ struct TestConfig
 		, colorBlendBoth				(false)
 		, useColorWriteEnable			(false)
 		, forceUnormColorFormat			(false)
+		, nullStaticColorBlendAttPtr	(false)
 		, dynamicSampleMaskCount		(tcu::Nothing)
 		, vertexGenerator				(makeVertexGeneratorConfig(staticVertexGenerator, dynamicVertexGenerator))
 		, cullModeConfig				(static_cast<vk::VkCullModeFlags>(vk::VK_CULL_MODE_NONE))
@@ -2039,6 +2043,7 @@ struct TestConfig
 		, colorBlendBoth				(other.colorBlendBoth)
 		, useColorWriteEnable			(other.useColorWriteEnable)
 		, forceUnormColorFormat			(other.forceUnormColorFormat)
+		, nullStaticColorBlendAttPtr	(other.nullStaticColorBlendAttPtr)
 		, dynamicSampleMaskCount		(other.dynamicSampleMaskCount)
 		, vertexGenerator				(other.vertexGenerator)
 		, cullModeConfig				(other.cullModeConfig)
@@ -3766,7 +3771,10 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 	}
 
 	if (testConfig.colorWriteMaskConfig.dynamicValue)
-		vkd.cmdSetColorWriteMaskEXT(cmdBuffer, 0u, 1u, &testConfig.colorWriteMaskConfig.dynamicValue.get());
+	{
+		const std::vector<vk::VkColorComponentFlags> writeMasks (testConfig.colorAttachmentCount, testConfig.colorWriteMaskConfig.dynamicValue.get());
+		vkd.cmdSetColorWriteMaskEXT(cmdBuffer, 0u, de::sizeU32(writeMasks), de::dataOrNull(writeMasks));
+	}
 
 	if (testConfig.rasterizationStreamConfig.dynamicValue && static_cast<bool>(testConfig.rasterizationStreamConfig.dynamicValue.get()))
 		vkd.cmdSetRasterizationStreamEXT(cmdBuffer, testConfig.rasterizationStreamConfig.dynamicValue->get());
@@ -3777,7 +3785,8 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 	if (testConfig.colorBlendEnableConfig.dynamicValue)
 	{
 		const auto colorBlendEnableFlag = makeVkBool32(testConfig.colorBlendEnableConfig.dynamicValue.get());
-		vkd.cmdSetColorBlendEnableEXT(cmdBuffer, 0u, 1u, &colorBlendEnableFlag);
+		const std::vector<vk::VkBool32> flags (testConfig.colorAttachmentCount, colorBlendEnableFlag);
+		vkd.cmdSetColorBlendEnableEXT(cmdBuffer, 0u, de::sizeU32(flags), de::dataOrNull(flags));
 	}
 
 	if (testConfig.colorBlendEquationConfig.dynamicValue)
@@ -3787,7 +3796,7 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 
 		if (isAdvanced || testConfig.colorBlendBoth)
 		{
-			const vk::VkColorBlendAdvancedEXT advanced =
+			const vk::VkColorBlendAdvancedEXT equation =
 			{
 				configEq.colorBlendOp,					//	VkBlendOp			advancedBlendOp;
 				VK_TRUE,								//	VkBool32			srcPremultiplied;
@@ -3795,7 +3804,8 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 				vk::VK_BLEND_OVERLAP_UNCORRELATED_EXT,	//	VkBlendOverlapEXT	blendOverlap;
 				VK_FALSE,								//	VkBool32			clampResults;
 			};
-			vkd.cmdSetColorBlendAdvancedEXT(cmdBuffer, 0u, 1u, &advanced);
+			const std::vector<vk::VkColorBlendAdvancedEXT> equations (testConfig.colorAttachmentCount, equation);
+			vkd.cmdSetColorBlendAdvancedEXT(cmdBuffer, 0u, de::sizeU32(equations), de::dataOrNull(equations));
 		}
 
 		if (!isAdvanced || testConfig.colorBlendBoth)
@@ -3820,7 +3830,8 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 				configEq.dstAlphaBlendFactor,	//	VkBlendFactor	dstAlphaBlendFactor;
 				alphaBlendOp,					//	VkBlendOp		alphaBlendOp;
 			};
-			vkd.cmdSetColorBlendEquationEXT(cmdBuffer, 0u, 1u, &equation);
+			const std::vector<vk::VkColorBlendEquationEXT> equations (testConfig.colorAttachmentCount, equation);
+			vkd.cmdSetColorBlendEquationEXT(cmdBuffer, 0u, de::sizeU32(equations), de::dataOrNull(equations));
 		}
 	}
 
@@ -5126,6 +5137,13 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		colorBlendPnext							= pColorWriteEnable.get();
 	}
 
+	if (m_testConfig.nullStaticColorBlendAttPtr)
+	{
+		DE_ASSERT(static_cast<bool>(m_testConfig.colorBlendEnableConfig.dynamicValue));
+		DE_ASSERT(static_cast<bool>(m_testConfig.colorBlendEquationConfig.dynamicValue));
+		DE_ASSERT(static_cast<bool>(m_testConfig.colorWriteMaskConfig.dynamicValue));
+	}
+
 	const vk::VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo =
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType                               sType
@@ -5134,7 +5152,10 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		m_testConfig.logicOpEnableConfig.staticValue,					// VkBool32                                      logicOpEnable
 		m_testConfig.logicOpConfig.staticValue,							// VkLogicOp                                     logicOp
 		static_cast<uint32_t>(colorBlendAttachmentStateVec.size()),		// deUint32                                      attachmentCount
-		de::dataOrNull(colorBlendAttachmentStateVec),					// const VkPipelineColorBlendAttachmentState*    pAttachments
+		(m_testConfig.nullStaticColorBlendAttPtr						// const VkPipelineColorBlendAttachmentState*    pAttachments
+			? nullptr
+			: de::dataOrNull(colorBlendAttachmentStateVec)),
+
 		{																// float                                         blendConstants[4]
 			m_testConfig.blendConstantsConfig.staticValue[0],
 			m_testConfig.blendConstantsConfig.staticValue[1],
@@ -5195,6 +5216,10 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 					  .setViewportStatePnext(viewportPnext)
 					  .setDefaultTessellationDomainOrigin(m_testConfig.tessDomainOriginConfig.staticValue);
 
+		// The pAttachments pointer must never be null for the static pipeline.
+		vk::VkPipelineColorBlendStateCreateInfo staticCBStateInfo = colorBlendStateCreateInfo;
+		if (m_testConfig.nullStaticColorBlendAttPtr)
+			staticCBStateInfo.pAttachments = de::dataOrNull(colorBlendAttachmentStateVec);
 
 #ifndef CTS_USES_VULKANSC
 		if (m_testConfig.useMeshShaders)
@@ -5231,7 +5256,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 					  .setRepresentativeFragmentTestState(pReprFragment.get())
 #endif // CTS_USES_VULKANSC
 					  .setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *staticFragModule, &depthStencilStateCreateInfo, &multisampleStateCreateInfo)
-					  .setupFragmentOutputState(*renderPass, 0u, &colorBlendStateCreateInfo, &multisampleStateCreateInfo)
+					  .setupFragmentOutputState(*renderPass, 0u, &staticCBStateInfo, &multisampleStateCreateInfo)
 					  .setMonolithicPipelineLayout(*pipelineLayout)
 					  .buildPipeline();
 	}
@@ -6211,6 +6236,39 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, testDesc, config));
 				}
 			}
+		}
+
+		// Null color blend pipeline pAttachments pointer with all structure contents as dynamic states.
+		{
+			TestConfig config (pipelineConstructionType, kOrdering, kUseMeshShaders);
+
+			// The equation picks the old color instead of the new one if blending is enabled.
+			config.colorBlendEquationConfig.staticValue = ColorBlendEq(vk::VK_BLEND_FACTOR_ZERO,
+																		vk::VK_BLEND_FACTOR_ONE,
+																		vk::VK_BLEND_OP_ADD,
+																		vk::VK_BLEND_FACTOR_ZERO,
+																		vk::VK_BLEND_FACTOR_ONE,
+																		vk::VK_BLEND_OP_ADD);
+
+			// The dynamic value picks the new color.
+			config.colorBlendEquationConfig.dynamicValue = ColorBlendEq(vk::VK_BLEND_FACTOR_ONE,
+																		vk::VK_BLEND_FACTOR_ZERO,
+																		vk::VK_BLEND_OP_ADD,
+																		vk::VK_BLEND_FACTOR_ONE,
+																		vk::VK_BLEND_FACTOR_ZERO,
+																		vk::VK_BLEND_OP_ADD);
+
+			config.colorBlendEnableConfig.staticValue	= false;
+			config.colorBlendEnableConfig.dynamicValue	= true;
+
+			config.colorWriteMaskConfig.staticValue		= ( 0 |  0 |  0 |  0);
+			config.colorWriteMaskConfig.dynamicValue	= (CR | CG | CB | CA);
+
+			config.nullStaticColorBlendAttPtr			= true; // What this test is about.
+
+			const char* testName = "null_color_blend_att_ptr";
+			const char* testDesc = "Set all VkPipelineColorBlendAttachmentState substates as dynamic and pass a null pointer in VkPipelineColorBlendStateCreateInfo::pAttachments";
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, testDesc, config));
 		}
 
 		// Dynamically enable primitive restart

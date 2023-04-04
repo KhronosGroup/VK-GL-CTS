@@ -409,6 +409,8 @@ public:
 	const typename TypedFieldTraits<Option>::ValueType&
 								getOption		(void) const	{ return m_options.get<Option>();		}
 
+	bool						helpSpecified	(void) const;
+
 private:
 	TypedFieldMap				m_options;
 	vector<string>				m_args;

@@ -148,7 +148,7 @@ bool Parser::parse (int numArgs, const char* const* args, CommandLine* dst, std:
 			opt.setDefault(&dst->m_options);
 	}
 
-	DE_ASSERT(!dst->m_options.get<Help>());
+	DE_ASSERT(!dst->helpSpecified());
 
 	for (int argNdx = 0; argNdx < numArgs; argNdx++)
 	{
@@ -236,7 +236,7 @@ bool Parser::parse (int numArgs, const char* const* args, CommandLine* dst, std:
 	}
 
 	// Help specified?
-	if (dst->m_options.get<Help>())
+	if (dst->helpSpecified())
 		allOk = false;
 
 	return allOk;
@@ -290,6 +290,11 @@ void CommandLine::clear (void)
 {
 	m_options.clear();
 	m_args.clear();
+}
+
+bool CommandLine::helpSpecified (void) const
+{
+	return m_options.get<Help>();
 }
 
 const void* findNamedValueMatch (const char* src, const void* namedValues, const void* namedValuesEnd, size_t stride)

@@ -108,6 +108,8 @@ set(DEQP_VK_VKSC_PIPELINE_SRCS
 	vktPipelineNoPositionTests.hpp
 	vktPipelineDynamicControlPoints.cpp
 	vktPipelineDynamicControlPoints.hpp
+	vktPipelineBindVertexBuffers2Tests.cpp
+	vktPipelineBindVertexBuffers2Tests.hpp
 	)
 
 set(DEQP_VK_PIPELINE_SRCS
