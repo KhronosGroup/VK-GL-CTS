@@ -325,7 +325,7 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/google/amber.git",
 		"git@github.com:google/amber.git",
-		"8b145a6c89dcdb4ec28173339dd176fb7b6f43ed",
+		"933ecb4d6288675a92eb1650e0f52b1d7afe8273",
 		"amber"),
 	GitRepo(
 		"https://github.com/open-source-parsers/jsoncpp.git",
@@ -340,7 +340,7 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/Igalia/ESExtractor.git",
 		"git@github.com:Igalia/ESExtractor.git",
-		"v0.2.4",
+		"v0.2.5",
 		"ESExtractor"),
 ]
 
