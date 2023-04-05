@@ -31,10 +31,16 @@
 #include "vkRefUtil.hpp"
 #include "vkObjUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkQueryUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vktPipelineClearUtil.hpp"
 #include "vkBufferWithMemory.hpp"
+#include "vkSafetyCriticalUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
+#include "vkDeviceUtil.hpp"
+#include "tcuCommandLine.hpp"
+#include "deRandom.hpp"
 
 namespace vkt
 {
@@ -114,6 +120,117 @@ void copyAndFlush(const vk::DeviceInterface& vkd, vk::VkDevice device, vk::Buffe
 	deMemcpy(dst + offset, src, size);
 	vk::flushAlloc(vkd, device, alloc);
 }
+
+#ifndef CTS_USES_VULKANSC
+typedef de::MovePtr<vk::DeviceDriver> DeviceDriverPtr;
+#else
+typedef de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> DeviceDriverPtr;
+#endif // CTS_USES_VULKANSC
+
+typedef vk::Move<vk::VkDevice> DevicePtr;
+
+vk::Move<vk::VkDevice> createRobustBufferAccessDevice (Context& context, const vk::VkPhysicalDeviceFeatures2* enabledFeatures2)
+{
+	const float queuePriority = 1.0f;
+
+	// Create a universal queue that supports graphics and compute
+	const vk::VkDeviceQueueCreateInfo	queueParams =
+	{
+		vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,	// VkStructureType				sType;
+		DE_NULL,										// const void*					pNext;
+		0u,												// VkDeviceQueueCreateFlags		flags;
+		context.getUniversalQueueFamilyIndex(),			// deUint32						queueFamilyIndex;
+		1u,												// deUint32						queueCount;
+		&queuePriority									// const float*					pQueuePriorities;
+	};
+
+	vk::VkPhysicalDeviceFeatures enabledFeatures1 = context.getDeviceFeatures();
+	enabledFeatures1.robustBufferAccess = true;
+
+	// \note Extensions in core are not explicitly enabled even though
+	//		 they are in the extension list advertised to tests.
+	const auto& extensionPtrs = context.getDeviceCreationExtensions();
+
+	void* pNext = (void*)enabledFeatures2;
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo = context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext = pNext;
+	pNext = &memReservationInfo;
+
+	VkPhysicalDeviceVulkanSC10Features sc10Features =
+		createDefaultSC10Features();
+	sc10Features.pNext = pNext;
+	pNext = &sc10Features;
+
+	VkPipelineCacheCreateInfo			pcCI;
+	std::vector<VkPipelinePoolSize>		poolSizes;
+	if (context.getTestContext().getCommandLine().isSubProcess())
+	{
+		if (context.getResourceInterface()->getCacheDataSize() > 0)
+		{
+			pcCI =
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,		// VkStructureType				sType;
+				DE_NULL,											// const void*					pNext;
+				VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+					VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+				context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
+				context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
+			};
+			memReservationInfo.pipelineCacheCreateInfoCount = 1;
+			memReservationInfo.pPipelineCacheCreateInfos = &pcCI;
+		}
+
+		poolSizes = context.getResourceInterface()->getPipelinePoolSizes();
+		if (!poolSizes.empty())
+		{
+			memReservationInfo.pipelinePoolSizeCount = deUint32(poolSizes.size());
+			memReservationInfo.pPipelinePoolSizes = poolSizes.data();
+		}
+	}
+#endif
+
+	const vk::VkDeviceCreateInfo		deviceParams =
+	{
+		vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,	// VkStructureType					sType;
+		pNext,										// const void*						pNext;
+		0u,											// VkDeviceCreateFlags				flags;
+		1u,											// deUint32							queueCreateInfoCount;
+		&queueParams,								// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
+		0u,											// deUint32							enabledLayerCount;
+		nullptr,									// const char* const*				ppEnabledLayerNames;
+		de::sizeU32(extensionPtrs),					// deUint32							enabledExtensionCount;
+		de::dataOrNull(extensionPtrs),				// const char* const*				ppEnabledExtensionNames;
+		enabledFeatures2 ? nullptr : &enabledFeatures1	// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+	};
+
+	// We are creating a custom device with a potentially large amount of extensions and features enabled, using the default device
+	// as a reference. Some implementations may only enable certain device extensions if some instance extensions are enabled, so in
+	// this case it's important to reuse the context instance when creating the device.
+	const auto& vki = context.getInstanceInterface();
+	const auto	instance = context.getInstance();
+	const auto	physicalDevice = chooseDevice(vki, instance, context.getTestContext().getCommandLine());
+
+	return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(),
+		instance, vki, physicalDevice, &deviceParams);
+}
+
+enum BeyondType
+{
+	BUFFER,
+	SIZE
+};
+
+struct TestParamsMaint5
+{
+	vk::VkPrimitiveTopology	topology;
+	deUint32				width;
+	deUint32				height;
+	deUint32				bufferCount;
+	deUint32				rndSeed;
+	bool					wholeSize;
+	BeyondType				beyondType;
+};
 
 class BindBuffers2Instance : public vkt::TestInstance
 {
@@ -413,6 +530,515 @@ tcu::TestStatus BindBuffers2Instance::iterate (void)
 	return tcu::TestStatus::pass("Pass");
 }
 
+class BindVertexBuffers2Instance : public vkt::TestInstance
+{
+public:
+						BindVertexBuffers2Instance	(Context&						context,
+													 DeviceDriverPtr				driver,
+													 DevicePtr						device,
+													 vk::PipelineConstructionType	pipelineConstructionType,
+													 const TestParamsMaint5&		params,
+													 deUint32						robustnessVersion)
+							: vkt::TestInstance(context)
+							, m_pipelineConstructionType(pipelineConstructionType)
+							, m_params(params)
+							, m_robustnessVersion(robustnessVersion)
+							, m_deviceDriver(driver)
+							, m_device(device)
+							, m_physicalDevice(chooseDevice(context.getInstanceInterface(), context.getInstance(), context.getTestContext().getCommandLine()))
+							, m_allocator(getDeviceInterface(), getDevice(), getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), m_physicalDevice))
+							, m_pipelineWrapper(context.getDeviceInterface(), getDevice(), m_pipelineConstructionType)
+							, m_vertShaderModule(createShaderModule(context.getDeviceInterface(), getDevice(), m_context.getBinaryCollection().get("vert")))
+							, m_fragShaderModule(createShaderModule(context.getDeviceInterface(), getDevice(), m_context.getBinaryCollection().get("frag"))) { }
+	virtual				~BindVertexBuffers2Instance	(void) = default;
+
+	tcu::TestStatus		iterate(void) override;
+
+protected:
+	typedef std::vector<vk::VkDeviceSize> Sizes;
+	typedef std::vector<de::SharedPtr<vk::BufferWithMemory>> Buffers;
+	const vk::DeviceInterface&	getDeviceInterface	() const;
+	vk::VkDevice				getDevice			() const;
+	vk::VkQueue					getQueue			() const;
+	vk::Allocator&				getAllocator();
+	vk::VkPipeline				createPipeline		(vk::VkPipelineLayout	layout,
+													 vk::VkRenderPass		renderPass);
+	Buffers						createBuffers		(Sizes&					offsets,
+													 Sizes&					strides,
+													 Sizes&					sizes);
+
+private:
+	const vk::PipelineConstructionType	m_pipelineConstructionType;
+	const TestParamsMaint5				m_params;
+	const deUint32						m_robustnessVersion;
+	DeviceDriverPtr						m_deviceDriver;
+	DevicePtr							m_device;
+	const vk::VkPhysicalDevice			m_physicalDevice;
+	vk::SimpleAllocator					m_allocator;
+	vk::GraphicsPipelineWrapper			m_pipelineWrapper;
+	const vk::Move<vk::VkShaderModule>	m_vertShaderModule;
+	const vk::Move<vk::VkShaderModule>	m_fragShaderModule;
+};
+
+const vk::DeviceInterface& BindVertexBuffers2Instance::getDeviceInterface () const
+{
+	return (m_robustnessVersion != 0) ? *m_deviceDriver : m_context.getDeviceInterface();
+}
+
+vk::VkDevice BindVertexBuffers2Instance::getDevice () const
+{
+	return (m_robustnessVersion != 0) ? *m_device : m_context.getDevice();
+}
+
+vk::VkQueue BindVertexBuffers2Instance::getQueue () const
+{
+	vk::VkQueue queue = DE_NULL;
+	if (m_robustnessVersion != 0)
+	{
+		const deUint32 queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+		m_deviceDriver->getDeviceQueue(getDevice(), queueFamilyIndex, 0, &queue);
+	}
+	else
+	{
+		queue = m_context.getUniversalQueue();
+	}
+	return queue;
+}
+
+vk::Allocator& BindVertexBuffers2Instance::getAllocator ()
+{
+	return m_allocator;
+}
+
+vk::VkPipeline BindVertexBuffers2Instance::createPipeline (vk::VkPipelineLayout layout, vk::VkRenderPass renderPass)
+{
+	vk::VkPhysicalDeviceProperties	dp{};
+	m_context.getInstanceInterface().getPhysicalDeviceProperties(m_physicalDevice, &dp);
+
+	const std::vector<vk::VkViewport>	viewports	{ vk::makeViewport(m_params.width, m_params.height) };
+	const std::vector<vk::VkRect2D>		scissors	{ vk::makeRect2D(m_params.width, m_params.height) };
+
+	std::vector<vk::VkVertexInputBindingDescription>		bindings
+	{
+		// color buffer binding
+		makeBindingDescription(0, dp.limits.maxVertexInputBindingStride /* ignored */, vk::VK_VERTEX_INPUT_RATE_VERTEX)
+	};
+	for (deUint32 b = 1; b < m_params.bufferCount; ++b)
+	{
+		// vertex buffer binding
+		bindings.push_back(makeBindingDescription(b, dp.limits.maxVertexInputBindingStride /* ignored */, vk::VK_VERTEX_INPUT_RATE_VERTEX));
+	}
+
+	std::vector<vk::VkVertexInputAttributeDescription>		attributes
+	{
+		// color attribute layout information
+		makeAttributeDescription(0, 0, vk::VK_FORMAT_R32G32B32_SFLOAT, 0)
+	};
+	for (deUint32 lb = 1; lb < m_params.bufferCount; ++lb)
+	{
+		attributes.push_back(makeAttributeDescription(lb, 1, vk::VK_FORMAT_R32G32_SFLOAT, 0));
+	}
+
+	vk::VkPipelineVertexInputStateCreateInfo				vertexInputState = vk::initVulkanStructure();
+	vertexInputState.vertexBindingDescriptionCount		= (deUint32)bindings.size();
+	vertexInputState.pVertexBindingDescriptions			= bindings.data();
+	vertexInputState.vertexAttributeDescriptionCount	= (deUint32)attributes.size();
+	vertexInputState.pVertexAttributeDescriptions		= attributes.data();
+
+	vk::VkPipelineInputAssemblyStateCreateInfo				inputAssemblyState = vk::initVulkanStructure();
+	inputAssemblyState.topology	= m_params.topology;
+
+	const vk::VkDynamicState								dynamicState = vk::VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE_EXT;
+
+	const vk::VkPipelineDynamicStateCreateInfo				dynamicStateInfo
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,	//	VkStructureType						sType;
+		nullptr,													//	const void*							pNext;
+		0u,															//	VkPipelineDynamicStateCreateFlags	flags;
+		1u,															//	uint32_t							dynamicStateCount;
+		&dynamicState,												//	const VkDynamicState*				pDynamicStates;
+	};
+
+	const vk::VkPipelineRasterizationStateCreateInfo		rasterizationCreateInfo
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	// VkStructureType								sType
+		DE_NULL,														// const void*									pNext
+		0u,																// VkPipelineRasterizationStateCreateFlags		flags
+		VK_FALSE,														// VkBool32										depthClampEnable
+		VK_FALSE,														// VkBool32										rasterizerDiscardEnable
+		vk::VK_POLYGON_MODE_FILL,										// VkPolygonMode								polygonMode
+		vk::VK_CULL_MODE_NONE,											// VkCullModeFlags								cullMode
+		vk::VK_FRONT_FACE_CLOCKWISE,									// VkFrontFace									frontFace
+		VK_FALSE,														// VkBool32										depthBiasEnable
+		0.0f,															// float										depthBiasConstantFactor
+		0.0f,															// float										depthBiasClamp
+		0.0f,															// float										depthBiasSlopeFactor
+		1.0f															// float										lineWidth
+	};
+
+	m_pipelineWrapper.setDefaultDepthStencilState()
+		.setDefaultColorBlendState()
+		//.setDefaultRasterizationState()
+		.setDefaultMultisampleState()
+		.setDynamicState(&dynamicStateInfo)
+		.setupVertexInputState(&vertexInputState, &inputAssemblyState)
+		.setupPreRasterizationShaderState(
+			viewports,
+			scissors,
+			layout,
+			renderPass,
+			0u,
+			m_vertShaderModule.get(),
+			&rasterizationCreateInfo)
+		.setupFragmentShaderState(
+			layout,
+			renderPass,
+			0u,
+			m_fragShaderModule.get())
+		.setupFragmentOutputState(renderPass)
+		.setMonolithicPipelineLayout(layout)
+	.buildPipeline();
+
+	return m_pipelineWrapper.getPipeline();
+}
+
+BindVertexBuffers2Instance::Buffers BindVertexBuffers2Instance::createBuffers (Sizes& offsets, Sizes& strides, Sizes& sizes)
+{
+	Buffers						buffers;
+	vk::Allocator&				allocator	= getAllocator();
+	const vk::DeviceInterface&	vk			= getDeviceInterface();
+	const vk::VkDevice			device		= getDevice();
+	de::Random					rnd			(m_params.rndSeed);
+	const float					p			= 1.0f / float(m_params.bufferCount - 1); DE_ASSERT(m_params.bufferCount >= 2);
+	const deUint32				compCount	= deUint32(sizeof(tcu::Vec2) / sizeof(float));
+
+	std::vector<float>			pointTemplate;
+	deUint32					returnSize	= 0;
+	deUint32					sourceSize	= 0;
+	deUint32					allocSize	= 0;
+
+	if (m_params.topology == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+	{
+		//-1 / -1 / 0 / -1 / -1 / 0
+		pointTemplate.push_back	(-p);
+		pointTemplate.push_back	(-p);
+		pointTemplate.push_back		(0.0f);
+		pointTemplate.push_back		(-p);
+		pointTemplate.push_back			(-p);
+		pointTemplate.push_back			(0.0f);
+		if (m_robustnessVersion == 0)
+		{
+			pointTemplate.push_back(0.0f);
+			pointTemplate.push_back(0.0f);
+			// Beyonds do not matter
+			sourceSize	= 4;
+			allocSize	= 4;
+			returnSize	= 4; // or WHOLE_SIZE
+		}
+		else
+		{
+			pointTemplate.push_back(+p); // those should be read as (0,0)
+			pointTemplate.push_back(+p);
+
+			switch (m_params.beyondType)
+			{
+			case BeyondType::BUFFER:
+				sourceSize	= 3;
+				allocSize	= 3;
+				returnSize	= 3;
+				break;
+			case BeyondType::SIZE:
+				DE_ASSERT(m_params.wholeSize == false);
+				sourceSize	= 4;
+				allocSize	= 4;
+				returnSize	= 3;
+				break;
+			}
+		}
+	}
+	else if (m_params.topology == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+	{
+		// -1/0/ -1/-1 /0/-1 /-1/0 /0/-1
+		pointTemplate.push_back	(-p);
+		pointTemplate.push_back	(0.0f);
+		pointTemplate.push_back		(-p);
+		pointTemplate.push_back		(-p);
+		pointTemplate.push_back			(0.0);
+		pointTemplate.push_back			(-p);
+		pointTemplate.push_back	(-p);
+		pointTemplate.push_back	(0.0f);
+		pointTemplate.push_back		(0.0f);
+		pointTemplate.push_back		(-p);
+		if (m_robustnessVersion == 0)
+		{
+			pointTemplate.push_back(0.0f);
+			pointTemplate.push_back(0.0f);
+			// Beyonds do not matter
+			sourceSize	= 6;
+			allocSize	= 6;
+			returnSize	= 6; // or WHOLE_SIZE
+		}
+		else
+		{
+			// those should be read as (0,0)
+			pointTemplate.push_back(+p);
+			pointTemplate.push_back(+p);
+
+			switch (m_params.beyondType)
+			{
+			case BeyondType::BUFFER:
+				sourceSize	= 5;
+				allocSize	= 5;
+				returnSize	= 5;
+				break;
+			case BeyondType::SIZE:
+				sourceSize	= 6;
+				allocSize	= 6;
+				returnSize	= 5;
+				break;
+			}
+		}
+	}
+	else
+	{
+		DE_ASSERT(0);
+	}
+	DE_ASSERT((allocSize != 0) && (allocSize >= sourceSize));
+
+	const std::vector<float>&	source		= pointTemplate;
+
+	std::vector<tcu::Vec3> colorTemplate(7);
+	for (int i = 1; i <= 7; ++i)
+	{
+		colorTemplate[i - 1] = {
+			i & 0x1 ? 1.0f : 0.6f,
+			i & 0x2 ? 1.0f : 0.6f,
+			i & 0x4 ? 1.0f : 0.6f
+		};
+	}
+	std::vector<float> colors(sourceSize * 3);
+	for (deUint32 i = 0; i < sourceSize; ++i)
+	{
+		const tcu::Vec3& c = colorTemplate[i % colorTemplate.size()];
+		colors[3 * i + 0] = c.x();
+		colors[3 * i + 1] = c.y();
+		colors[3 * i + 2] = c.z();
+	}
+	vk::VkDeviceSize clrSize = allocSize * 3 * sizeof(float);
+	const vk::VkBufferCreateInfo clrCreateInfo = vk::makeBufferCreateInfo(clrSize, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	de::SharedPtr<vk::BufferWithMemory> clrBuffer(new vk::BufferWithMemory(vk, device, allocator, clrCreateInfo, vk::MemoryRequirement::HostVisible));
+	copyAndFlush(vk, device, *clrBuffer, 0, colors.data(), deUint32(colors.size() * sizeof(float)));
+	buffers.push_back(clrBuffer);
+
+	sizes.resize(m_params.bufferCount);
+	sizes[0] = m_params.wholeSize ? VK_WHOLE_SIZE : (returnSize * 3 * sizeof(float));
+
+	offsets.resize(m_params.bufferCount);
+	strides.resize(m_params.bufferCount);
+
+	// random offsets multiplyied later by 4, special value 0 for no-offset
+	offsets[0] = 0;
+	for (deUint32 i = 1; i < m_params.bufferCount; ++i)
+	{
+		auto nextOffset = [&]() {
+			vk::VkDeviceSize offset = rnd.getUint64() % 30;
+			while (offset == 0)
+				offset = rnd.getUint64() % 30;
+			return offset;
+		};
+		offsets[i] = (m_params.rndSeed == 0) ? vk::VkDeviceSize(0) : nextOffset();
+	}
+
+	// random strides multiplyied later by 4, special value for atributes stride
+	strides[0] = { sizeof(tcu::Vec3) };
+	for (deUint32 i = 1; i < m_params.bufferCount; ++i)
+	{
+		auto nextStride = [&]() {
+			vk::VkDeviceSize stride = rnd.getUint64() % 30;
+			while (stride == 0)
+				stride = rnd.getUint64() % 30;
+			return stride;
+		};
+		strides[i] = (m_params.rndSeed == 0) ? vk::VkDeviceSize(0) : nextStride();
+	}
+
+	for (deUint32 i = 1; i < m_params.bufferCount; ++i)
+	{
+		const deUint32		stride	= deUint32(strides[i]);
+		const deUint32		offset	= deUint32(offsets[i]);
+		std::vector<float>	points	(offset + sourceSize * (compCount + stride));
+
+		for (deUint32 j = 0; j < offset; ++j)
+		{
+			points[j] = float(i * 13) + 0.234f;
+		}
+		for (uint32_t j = 0; j < sourceSize; ++j)
+		{
+			auto k = offset + j * (compCount + stride);
+			points[k + 0] = source[j * compCount + 0];
+			points[k + 1] = source[j * compCount + 1];
+			for (uint32_t s = 0; s < stride; ++s)
+			{
+				points[k + compCount + s] = float(i * 19) + 0.543f;
+			}
+		}
+
+		vk::VkDeviceSize size = (offset + allocSize * (compCount + stride)) * sizeof(float);
+		const vk::VkBufferCreateInfo createInfo = vk::makeBufferCreateInfo(size, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+		de::SharedPtr<vk::BufferWithMemory> buffer(new vk::BufferWithMemory(vk, device, allocator, createInfo, vk::MemoryRequirement::HostVisible));
+		copyAndFlush(vk, device, *buffer, 0, points.data(), deUint32(points.size() * sizeof(float)));
+
+		sizes[i]	= m_params.wholeSize ? VK_WHOLE_SIZE : ((compCount + stride) * returnSize * sizeof(float));
+		strides[i]	= (compCount + stride) * sizeof(float);
+		offsets[i]	= offset * sizeof(float);
+		buffers.push_back(buffer);
+	}
+
+	return buffers;
+}
+
+template<class X> struct collection_element { };
+template<template<class, class...> class coll__, class X, class... Y>
+	struct collection_element<coll__<X, Y...>> { typedef X type; };
+template<class coll__> using collection_element_t = typename collection_element<coll__>::type;
+
+tcu::TestStatus BindVertexBuffers2Instance::iterate (void)
+{
+	const vk::DeviceInterface&				vk					= getDeviceInterface();
+	const vk::VkDevice						device				= getDevice();
+	const deUint32							queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	const vk::VkQueue						queue				= getQueue();
+	vk::Allocator&							allocator			= getAllocator();
+	tcu::TestLog&							log					= m_context.getTestContext().getLog();
+
+	const vk::VkExtent2D					extent				{ m_params.width, m_params.height };
+	const vk::VkImageSubresourceRange		colorSubresRange	= vk::makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	const vk::VkFormat						colorFormat			= vk::VK_FORMAT_R32G32B32A32_SFLOAT;
+	const vk::Move<vk::VkImage>				colorImage			= makeImage(vk, device, makeImageCreateInfo(extent, colorFormat, vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT));
+	const de::MovePtr<vk::Allocation>		colorImageAlloc		= bindImage(vk, device, allocator, *colorImage, vk::MemoryRequirement::Any);
+	const vk::Move<vk::VkImageView>			colorImageView		= makeImageView(vk, device, *colorImage, vk::VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresRange);
+	const vk::Move<vk::VkRenderPass>		renderPass			= makeRenderPass(vk, device, colorFormat);
+	const vk::Move<vk::VkFramebuffer>		framebuffer			= makeFramebuffer(vk, device, *renderPass, 1u, &colorImageView.get(), extent.width, extent.height);
+	const vk::VkPipelineLayoutCreateInfo	pipelineLayoutInfo	= vk::initVulkanStructure();
+	const vk::Move<vk::VkPipelineLayout>	pipelineLayout		= vk::createPipelineLayout(vk, device, &pipelineLayoutInfo);
+	const vk::VkPipeline					pipeline			= createPipeline(*pipelineLayout, *renderPass);
+
+	const vk::VkClearValue					clearColorValue		= vk::makeClearValueColor(tcu::Vec4(0.5f));
+	const vk::Move<vk::VkCommandPool>		cmdPool				= createCommandPool(vk, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
+	const vk::Move<vk::VkCommandBuffer>		cmdBuffer			= allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	Sizes									offsets;
+	Sizes									strides;
+	Sizes									sizes;
+	Buffers									buffers				= createBuffers(offsets, strides, sizes);
+	std::vector<vk::VkBuffer>				vkBuffers			(buffers.size());
+	std::transform(buffers.begin(), buffers.end(), vkBuffers.begin(), [](collection_element_t<decltype(buffers)> buffer) { return **buffer; });
+
+	deUint32								vertexCount			= 0;
+	switch (m_params.topology)
+	{
+		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
+			vertexCount = 4;
+			break;
+		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
+			vertexCount = 6;
+			break;
+		default:	DE_ASSERT(0);
+			break;
+	};
+
+	std::unique_ptr<vk::BufferWithMemory>	outBuffer			= makeBufferForImage(vk, device, allocator, mapVkFormat(colorFormat), extent);
+	vk::Allocation&							outBufferAlloc		= outBuffer->getAllocation();
+
+	beginCommandBuffer(vk, *cmdBuffer);
+		vk::beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, vk::makeRect2D(0, 0, extent.width, extent.height), 1u, &clearColorValue);
+		vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+#ifndef CTS_USES_VULKANSC
+		vk.cmdBindVertexBuffers2(*cmdBuffer, 0, m_params.bufferCount, vkBuffers.data(), offsets.data(), sizes.data(), strides.data());
+#else
+		vk.cmdBindVertexBuffers2EXT(*cmdBuffer, 0, m_params.bufferCount, vkBuffers.data(), offsets.data(), sizes.data(), strides.data());
+#endif
+		vk.cmdDraw(*cmdBuffer, vertexCount, 1, 0, 0);
+		vk::endRenderPass(vk, *cmdBuffer);
+		vk::copyImageToBuffer(vk, *cmdBuffer, *colorImage, **outBuffer, tcu::IVec2(extent.width, extent.height));
+	endCommandBuffer(vk, *cmdBuffer);
+
+	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+	invalidateAlloc(vk, device, outBufferAlloc);
+	const tcu::ConstPixelBufferAccess result(vk::mapVkFormat(colorFormat), extent.width, extent.height, 1, outBufferAlloc.getHostPtr());
+
+	bool		verdict			= false;
+	deUint32	equalClearCount = 0;
+	deUint32	halfWidth		= m_params.width / 2;
+	deUint32	halfHeight		= m_params.height / 2;
+
+	for (deUint32 Y = 0; (Y < halfHeight); ++Y)
+	for (deUint32 X = 0; (X < halfWidth); ++X)
+	{
+		const tcu::Vec4 px = result.getPixel(X, Y);
+		if (	px.x() == clearColorValue.color.float32[0]
+			&&	px.y() == clearColorValue.color.float32[1]
+			&&	px.z() == clearColorValue.color.float32[2])
+		{
+			equalClearCount = equalClearCount + 1;
+		}
+	}
+	const double mismatch = double(equalClearCount) / double(halfWidth * halfHeight);
+	const std::string mismatchText = "Mismatch: " + std::to_string(deUint32(mismatch * 100.9)) + '%';
+
+	const float eps = 0.2f;
+	const tcu::Vec4 px = result.getPixel(halfWidth - 1, halfHeight - 1);
+	const bool secondCondition = px.x() < eps && px.y() < eps && px.z() < eps;
+
+	if (m_robustnessVersion == 0)
+	{
+		verdict = (secondCondition == false) && (mismatch == 0.0);
+	}
+	else
+	{
+		verdict = (secondCondition == true) && (mismatch < 0.25);
+	}
+
+	auto logOffsets = (log << tcu::TestLog::Message << "Offsets: ");
+	for (deUint32 k = 0; k < m_params.bufferCount; ++k) {
+		if (k) logOffsets << ", ";
+		logOffsets << offsets[k];
+	} logOffsets << tcu::TestLog::EndMessage;
+
+	auto logSizes = (log << tcu::TestLog::Message << "Sizes: ");
+	for (deUint32 k = 0; k < m_params.bufferCount; ++k) {
+		if (k) logSizes << ", ";
+		logSizes << ((sizes[k] == VK_WHOLE_SIZE) ? "WHOLE_SIZE" : std::to_string(sizes[k]).c_str());
+	} logSizes << tcu::TestLog::EndMessage;
+
+	auto logStrides = (log << tcu::TestLog::Message << "Strides: ");
+	for (deUint32 k = 0; k < m_params.bufferCount; ++k) {
+		if (k) logStrides << ", ";
+		logStrides << strides[k];
+	} logStrides << tcu::TestLog::EndMessage;
+
+	if (!verdict)
+	{
+		std::ostringstream os;
+		os << (m_params.topology == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP ? "list" : "strip");
+		os << ".buffs" << m_params.bufferCount;
+		os << (m_params.wholeSize ? ".whole_size" : ".true_size");
+		if (m_robustnessVersion != 0)
+		{
+			os << ".robust";
+			os << (m_params.beyondType == BeyondType::BUFFER ? ".over_buff" : ".over_size");
+		}
+		os.flush();
+
+		log << tcu::TestLog::ImageSet("Result", "")
+			<< tcu::TestLog::Image(os.str(), "", result)
+			<< tcu::TestLog::EndImageSet;
+	}
+
+	return (*(verdict ? &tcu::TestStatus::pass : &tcu::TestStatus::fail))(mismatchText);
+}
+
 class BindBuffers2Case : public vkt::TestCase
 {
 public:
@@ -522,6 +1148,117 @@ void BindBuffers2Case::initPrograms(vk::SourceCollections& programCollection) co
 	programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
 }
 
+class BindVertexBuffers2Case : public vkt::TestCase
+{
+public:
+					BindVertexBuffers2Case	(tcu::TestContext&				testCtx,
+											 const std::string&				name,
+											 vk::PipelineConstructionType	pipelineConstructionType,
+											 const TestParamsMaint5&		params,
+											 deUint32						robustnessVersion)
+						: vkt::TestCase(testCtx, name, std::string())
+						, m_pipelineConstructionType(pipelineConstructionType)
+						, m_params(params)
+						, m_robustnessVersion(robustnessVersion) { }
+	virtual			~BindVertexBuffers2Case	(void) = default;
+
+	void			checkSupport			(vkt::Context&					context) const override;
+	virtual void	initPrograms			(vk::SourceCollections&			programCollection) const override;
+	TestInstance*	createInstance			(Context&						context) const override;
+
+private:
+	const vk::PipelineConstructionType	m_pipelineConstructionType;
+	const TestParamsMaint5				m_params;
+	const deUint32						m_robustnessVersion;
+};
+
+void BindVertexBuffers2Case::checkSupport (Context& context) const
+{
+	context.requireDeviceFunctionality("VK_EXT_extended_dynamic_state");
+
+#ifndef CTS_USES_VULKANSC
+	context.requireDeviceFunctionality(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
+#endif // CTS_USES_VULKANSC
+
+	if (m_robustnessVersion != 0)
+	{
+		vk::VkPhysicalDeviceFeatures2 features2 = vk::initVulkanStructure();
+		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+		if (!features2.features.robustBufferAccess)
+			TCU_THROW(NotSupportedError, "robustBufferAccess not supported by this implementation");
+		if (m_robustnessVersion > 1)
+			context.requireDeviceFunctionality("VK_EXT_robustness2");
+	}
+
+	vk::checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+}
+
+void BindVertexBuffers2Case::initPrograms (vk::SourceCollections& programCollection) const
+{
+	std::ostringstream	vert;
+	vert << "#version 450\n";
+	vert << "layout(location = 0) in vec3 in_color;\n";
+	for (deUint32 i = 1; i < m_params.bufferCount; ++i)
+	vert << "layout(location = " << i << ") in vec2 pos" << i << ";\n";
+	vert << "layout(location = 0) out vec3 out_color;\n";
+	vert << "void main() {\n";
+	vert << "  gl_Position = vec4(";
+	for (deUint32 i = 1; i < m_params.bufferCount; ++i)
+	{
+		if (i > 1) vert << '+';
+		vert << "pos" << i;
+	}
+	vert << ", 0.0, 1.0);\n";
+	vert << "  out_color = in_color;\n";
+	vert << "}\n";
+	vert.flush();
+
+	const std::string frag(
+		"#version 450\n"
+		"layout (location = 0) in  vec3 in_color;\n"
+		"layout (location = 0) out vec4 out_color;\n"
+		"void main() {\n"
+		"    out_color = vec4(in_color, 1.0);\n"
+		"}\n"
+	);
+
+	programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+	programCollection.glslSources.add("frag") << glu::FragmentSource(frag);
+}
+
+TestInstance* BindVertexBuffers2Case::createInstance (Context& context) const
+{
+	DevicePtr		device;
+	DeviceDriverPtr	driver;
+	if (m_robustnessVersion != 0)
+	{
+		vk::VkPhysicalDeviceFeatures2 features2 = vk::initVulkanStructure();
+		features2.features.robustBufferAccess = DE_TRUE;
+
+		void** nextPtr = &features2.pNext;
+
+		vk::VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features = vk::initVulkanStructure();
+		if (m_robustnessVersion > 1u)
+		{
+			robustness2Features.robustBufferAccess2 = DE_TRUE;
+			addToChainVulkanStructure(&nextPtr, robustness2Features);
+		}
+
+		device = createRobustBufferAccessDevice(context, &features2);
+		driver =
+#ifndef CTS_USES_VULKANSC
+			DeviceDriverPtr(new vk::DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device));
+#else
+			DeviceDriverPtr(new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *device, context.getTestContext().getCommandLine(),
+				context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties()),
+				vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *device));
+#endif // CTS_USES_VULKANSC
+	}
+
+	return (new BindVertexBuffers2Instance(context, driver, device, m_pipelineConstructionType, m_params, m_robustnessVersion));
+}
+
+tcu::TestCaseGroup* createCmdBindVertexBuffers2Tests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
 tcu::TestCaseGroup* createCmdBindBuffers2Tests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
 {
 	de::MovePtr<tcu::TestCaseGroup> cmdBindBuffers2Group(new tcu::TestCaseGroup(testCtx, "bind_buffers_2", ""));
@@ -580,7 +1317,131 @@ tcu::TestCaseGroup* createCmdBindBuffers2Tests (tcu::TestContext& testCtx, vk::P
 		cmdBindBuffers2Group->addChild(bindGroup.release());
 	}
 
+#ifndef CTS_USES_VULKANSC
+	cmdBindBuffers2Group->addChild(createCmdBindVertexBuffers2Tests(testCtx, pipelineConstructionType));
+#endif // CTS_USES_VULKANSC
+
 	return cmdBindBuffers2Group.release();
+}
+
+tcu::TestCaseGroup* createCmdBindVertexBuffers2Tests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
+{
+	const deUint32	counts[]		{ 5, 9 };
+	const deUint32	randoms[]		{ 321, 432 };
+	const deUint32	robustRandoms[]	{ 543, 654 };
+	const std::pair<bool, const char*> sizes[] {
+		{ true,   "whole_size"	},
+		{ false,  "true_size"	}
+	};
+	const std::pair<BeyondType, const char*> beyondTypes[] {
+		{ BeyondType::BUFFER,	"beyond_buffer"	},
+		{ BeyondType::SIZE,		"beyond_size"	}
+	};
+	const std::pair<vk::VkPrimitiveTopology, const char*> topos[] {
+		{ vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	"triangle_list"		},
+		{ vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,	"triangle_strip"	},
+	};
+
+	std::string name;
+	const deUint32 defaultWidth = 32;
+	const deUint32 defaultHeight = 32;
+
+	de::MovePtr<tcu::TestCaseGroup> rootGroup(new tcu::TestCaseGroup(testCtx, "maintenance5", ""));
+
+	for (const auto& topo : topos)
+	{
+		de::MovePtr<tcu::TestCaseGroup> topoGroup(new tcu::TestCaseGroup(testCtx, topo.second, ""));
+
+		for (deUint32 count : counts)
+		{
+			name = "buffers" + std::to_string(count);
+			de::MovePtr<tcu::TestCaseGroup> countGroup(new tcu::TestCaseGroup(testCtx, name.c_str(), ""));
+
+			for (deUint32 random : randoms)
+			{
+				name = "stride_offset_rnd" + std::to_string(random);
+				de::MovePtr<tcu::TestCaseGroup> randomGroup(new tcu::TestCaseGroup(testCtx, name.c_str(), ""));
+
+				for (const auto& size : sizes)
+				{
+					TestParamsMaint5 p;
+					p.width			= defaultWidth;
+					p.height		= defaultHeight;
+					p.topology		= topo.first;
+					p.wholeSize		= size.first;
+					p.rndSeed		= random;
+					p.bufferCount	= count;
+					p.beyondType	= BeyondType::BUFFER;
+
+					randomGroup->addChild(new BindVertexBuffers2Case(testCtx, size.second, pipelineConstructionType, p, 0));
+				}
+				countGroup->addChild(randomGroup.release());
+			}
+			topoGroup->addChild(countGroup.release());
+		}
+		rootGroup->addChild(topoGroup.release());
+	}
+
+	de::MovePtr<tcu::TestCaseGroup> robustGroup(new tcu::TestCaseGroup(testCtx, "robust", ""));
+	for (deUint32 robustVersion = 1; robustVersion < 3; ++robustVersion)
+	{
+		name = "ver" + std::to_string(robustVersion);
+		de::MovePtr<tcu::TestCaseGroup> versionGroup(new tcu::TestCaseGroup(testCtx, name.c_str(), ""));
+
+		for (const auto& topo : topos)
+		{
+			de::MovePtr<tcu::TestCaseGroup> topoGroup(new tcu::TestCaseGroup(testCtx, topo.second, ""));
+
+			for (deUint32 count : counts)
+			{
+				name = "buffers" + std::to_string(count);
+				de::MovePtr<tcu::TestCaseGroup> countGroup(new tcu::TestCaseGroup(testCtx, name.c_str(), ""));
+
+				for (deUint32 random : robustRandoms)
+				{
+					name = "stride_offset_rnd" + std::to_string(random);
+					de::MovePtr<tcu::TestCaseGroup> randomGroup(new tcu::TestCaseGroup(testCtx, name.c_str(), ""));
+
+					for (const auto& size : sizes)
+					{
+						de::MovePtr<tcu::TestCaseGroup> sizeGroup(new tcu::TestCaseGroup(testCtx, size.second, ""));
+
+						TestParamsMaint5 p;
+						p.width			= defaultWidth;
+						p.height		= defaultHeight;
+						p.topology		= topo.first;
+						p.wholeSize		= size.first;
+						p.rndSeed		= random;
+						p.bufferCount	= count;
+
+						if (p.wholeSize)
+						{
+							p.beyondType = BeyondType::BUFFER;
+							auto beyondType = std::find_if(std::begin(beyondTypes), std::end(beyondTypes),
+								[&](const std::pair<BeyondType, const char*>& b) { return b.first == p.beyondType; });
+							sizeGroup->addChild(new BindVertexBuffers2Case(testCtx, beyondType->second, pipelineConstructionType, p, robustVersion));
+						}
+						else
+						{
+							for (const auto& beyondType : beyondTypes)
+							{
+								p.beyondType = beyondType.first;
+								sizeGroup->addChild(new BindVertexBuffers2Case(testCtx, beyondType.second, pipelineConstructionType, p, robustVersion));
+							}
+						}
+						randomGroup->addChild(sizeGroup.release());
+					}
+					countGroup->addChild(randomGroup.release());
+				}
+				topoGroup->addChild(countGroup.release());
+			}
+			versionGroup->addChild(topoGroup.release());
+		}
+		robustGroup->addChild(versionGroup.release());
+	}
+	rootGroup->addChild(robustGroup.release());
+
+	return rootGroup.release();
 }
 
 } // pipeline
