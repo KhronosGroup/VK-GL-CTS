@@ -970,6 +970,7 @@ void VideoBaseDecoder::setDecodeParameters (bool		randomOrSwapped,
 int32_t VideoBaseDecoder::BeginSequence (const NvidiaVulkanParserSequenceInfo* pnvsi)
 {
 	DEBUGLOG(std::cout << "VideoBaseDecoder::BeginSequence " << std::dec << pnvsi->nCodedWidth << "x" << pnvsi->nCodedHeight << std::endl);
+	DEBUGLOG(std::cout << "VideoBaseDecoder::BeginSequence nMinNumDecodeSurfaces=" << pnvsi->nMinNumDecodeSurfaces << " pnvsi->isSVC=" << pnvsi->isSVC << std::endl);
 
 	const int32_t								maxDbpSlots						= MAX_DPB_SLOTS_PLUS_1 - ((pnvsi->eCodec == VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR) ? 0 : EXTRA_DPB_SLOTS);
 	const int32_t								configDpbSlotsPre				= (pnvsi->nMinNumDecodeSurfaces > 0)
@@ -977,6 +978,9 @@ int32_t VideoBaseDecoder::BeginSequence (const NvidiaVulkanParserSequenceInfo* p
 																				: 0;
 	const int32_t								configDpbSlots					= std::min(maxDbpSlots, configDpbSlotsPre);
 	const int32_t								configDpbSlotsPlus1				= std::min(configDpbSlots + 1, (int32_t)MAX_DPB_SLOTS_PLUS_1);
+
+	DEBUGLOG(std::cout << "VideoBaseDecoder::BeginSequence configDpbSlots=" << configDpbSlots << " configDpbSlotsPlus1=" << configDpbSlotsPlus1 << std::endl);
+
 	const bool									sequenceUpdate					= (m_nvidiaVulkanParserSequenceInfo.nMaxWidth != 0) && (m_nvidiaVulkanParserSequenceInfo.nMaxHeight != 0);
 	const bool									formatChange					=  (pnvsi->eCodec					!= m_nvidiaVulkanParserSequenceInfo.eCodec)
 																				|| (pnvsi->codecProfile				!= m_nvidiaVulkanParserSequenceInfo.codecProfile)
@@ -2091,6 +2095,9 @@ int32_t VideoBaseDecoder::StartVideoSequence (const VulkanParserDetectedVideoFor
 																								: DE_NULL;
 	MovePtr<VkVideoDecodeCapabilitiesKHR>					videoDecodeCapabilities				= getVideoDecodeCapabilities(videoCapabilitiesExtension);
 	const MovePtr<VkVideoCapabilitiesKHR>					videoCapabilites					= getVideoCapabilities(vki, physDevice, videoProfile.get(), videoDecodeCapabilities.get());
+
+	DEBUGLOG(std::cout << "StartVideoSequence: maxDpbSlots=" << videoCapabilites->maxDpbSlots << " maxActiveReferencePictures=" << videoCapabilites->maxActiveReferencePictures << std::endl);
+
 	const bool												videoExtentSupported				= validateVideoExtent(codedExtent, *videoCapabilites);
 
 	m_distinctDstDpbImages = (videoDecodeCapabilities->flags & VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_DISTINCT_BIT_KHR) ? true : false;
@@ -2119,8 +2126,8 @@ int32_t VideoBaseDecoder::StartVideoSequence (const VulkanParserDetectedVideoFor
 																																codedExtent,
 																																outPictureFormat,
 																																dpbPictureFormat,
-																																maxDpbSlotCount,
-																																maxDpbSlotCount);
+																																std::min(maxDpbSlotCount, videoCapabilites->maxDpbSlots),
+																																std::min(maxDpbSlotCount, videoCapabilites->maxActiveReferencePictures));
 		Move<VkVideoSessionKHR>									videoSession						= createVideoSessionKHR(vkd, device, videoSessionCreateInfo.get());
 		vector<AllocationPtr>									allocations							= getAndBindVideoSessionMemory(vkd, device, *videoSession, allocator);
 
