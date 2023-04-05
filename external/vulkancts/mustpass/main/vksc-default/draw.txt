@@ -13,6 +13,7 @@ dEQP-VKSC.draw.renderpass.indirect_draw.sequential.indirect_draw_count.triangle_
 dEQP-VKSC.draw.renderpass.indirect_draw.sequential.indirect_draw_count.triangle_strip
 dEQP-VKSC.draw.renderpass.indirect_draw.sequential.indirect_draw_param_count.triangle_list
 dEQP-VKSC.draw.renderpass.indirect_draw.sequential.indirect_draw_param_count.triangle_strip
+dEQP-VKSC.draw.renderpass.indirect_draw.sequential.indirect_draw_multiview.triangle_list
 dEQP-VKSC.draw.renderpass.indirect_draw.sequential.indirect_draw_first_instance.triangle_list
 dEQP-VKSC.draw.renderpass.indirect_draw.sequential.indirect_draw_first_instance.triangle_strip
 dEQP-VKSC.draw.renderpass.indirect_draw.sequential.indirect_draw_count_first_instance.triangle_list
@@ -37,6 +38,7 @@ dEQP-VKSC.draw.renderpass.indirect_draw.indexed.indirect_draw_count.triangle_lis
 dEQP-VKSC.draw.renderpass.indirect_draw.indexed.indirect_draw_count.triangle_strip
 dEQP-VKSC.draw.renderpass.indirect_draw.indexed.indirect_draw_param_count.triangle_list
 dEQP-VKSC.draw.renderpass.indirect_draw.indexed.indirect_draw_param_count.triangle_strip
+dEQP-VKSC.draw.renderpass.indirect_draw.indexed.indirect_draw_multiview.triangle_list
 dEQP-VKSC.draw.renderpass.indirect_draw.indexed.indirect_draw_first_instance.triangle_list
 dEQP-VKSC.draw.renderpass.indirect_draw.indexed.indirect_draw_first_instance.triangle_strip
 dEQP-VKSC.draw.renderpass.indirect_draw.indexed.indirect_draw_count_first_instance.triangle_list
@@ -61,6 +63,7 @@ dEQP-VKSC.draw.renderpass.indirect_draw.sequential_data_from_compute.indirect_dr
 dEQP-VKSC.draw.renderpass.indirect_draw.sequential_data_from_compute.indirect_draw_count.triangle_strip
 dEQP-VKSC.draw.renderpass.indirect_draw.sequential_data_from_compute.indirect_draw_param_count.triangle_list
 dEQP-VKSC.draw.renderpass.indirect_draw.sequential_data_from_compute.indirect_draw_param_count.triangle_strip
+dEQP-VKSC.draw.renderpass.indirect_draw.sequential_data_from_compute.indirect_draw_multiview.triangle_list
 dEQP-VKSC.draw.renderpass.indirect_draw.sequential_data_from_compute.indirect_draw_first_instance.triangle_list
 dEQP-VKSC.draw.renderpass.indirect_draw.sequential_data_from_compute.indirect_draw_first_instance.triangle_strip
 dEQP-VKSC.draw.renderpass.indirect_draw.sequential_data_from_compute.indirect_draw_count_first_instance.triangle_list
@@ -87,6 +90,7 @@ dEQP-VKSC.draw.renderpass.indirect_draw.indexed_data_from_compute.indirect_draw_
 dEQP-VKSC.draw.renderpass.indirect_draw.indexed_data_from_compute.indirect_draw_count.triangle_strip_memory_access
 dEQP-VKSC.draw.renderpass.indirect_draw.indexed_data_from_compute.indirect_draw_param_count.triangle_list
 dEQP-VKSC.draw.renderpass.indirect_draw.indexed_data_from_compute.indirect_draw_param_count.triangle_strip
+dEQP-VKSC.draw.renderpass.indirect_draw.indexed_data_from_compute.indirect_draw_multiview.triangle_list
 dEQP-VKSC.draw.renderpass.indirect_draw.indexed_data_from_compute.indirect_draw_first_instance.triangle_list
 dEQP-VKSC.draw.renderpass.indirect_draw.indexed_data_from_compute.indirect_draw_first_instance.triangle_strip
 dEQP-VKSC.draw.renderpass.indirect_draw.indexed_data_from_compute.indirect_draw_count_first_instance.triangle_list

@@ -46,6 +46,7 @@
 #include <functional>
 #include <set>
 #include <algorithm>
+#include <limits>
 
 namespace vkt
 {
@@ -81,6 +82,7 @@ enum TestType
 	TEST_TYPE_MULTISTREAMS,
 	TEST_TYPE_MULTISTREAMS_SAME_LOCATION,
 	TEST_TYPE_DRAW_INDIRECT,
+	TEST_TYPE_DRAW_INDIRECT_MULTIVIEW,
 	TEST_TYPE_BACKWARD_DEPENDENCY,
 	TEST_TYPE_QUERY_GET,
 	TEST_TYPE_QUERY_COPY,
@@ -1717,15 +1719,18 @@ tcu::TestStatus TransformFeedbackStreamsTestInstance::iterate (void)
 class TransformFeedbackIndirectDrawTestInstance : public TransformFeedbackTestInstance
 {
 public:
-						TransformFeedbackIndirectDrawTestInstance	(Context& context, const TestParameters& parameters);
+						TransformFeedbackIndirectDrawTestInstance	(Context& context, const TestParameters& parameters, bool multiview);
 
 protected:
 	tcu::TestStatus		iterate										(void);
-	bool				verifyImage									(const VkFormat imageFormat, const VkExtent2D& size, const void* resultData);
+	bool				verifyImage									(const VkFormat imageFormat, const VkExtent2D& size, const void* resultData, uint32_t layerIdx = std::numeric_limits<uint32_t>::max());
+
+	const bool			m_multiview;
 };
 
-TransformFeedbackIndirectDrawTestInstance::TransformFeedbackIndirectDrawTestInstance (Context& context, const TestParameters& parameters)
+TransformFeedbackIndirectDrawTestInstance::TransformFeedbackIndirectDrawTestInstance (Context& context, const TestParameters& parameters, bool multiview)
 	: TransformFeedbackTestInstance	(context, parameters)
+	, m_multiview					(multiview)
 {
 	const InstanceInterface&		vki							= m_context.getInstanceInterface();
 	const VkPhysicalDevice			physDevice					= m_context.getPhysicalDevice();
@@ -1746,13 +1751,15 @@ TransformFeedbackIndirectDrawTestInstance::TransformFeedbackIndirectDrawTestInst
 		TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackBufferDataStride=" + de::toString(tfBufferDataStrideSupported) + ", while test requires " + de::toString(m_parameters.vertexStride)).c_str());
 }
 
-bool TransformFeedbackIndirectDrawTestInstance::verifyImage (const VkFormat imageFormat, const VkExtent2D& size, const void* resultData)
+bool TransformFeedbackIndirectDrawTestInstance::verifyImage (const VkFormat imageFormat, const VkExtent2D& size, const void* resultData, uint32_t layerIdx)
 {
 	const tcu::Vec4				white			(tcu::RGBA::white().toVec());
 	const tcu::TextureFormat	textureFormat	(mapVkFormat(imageFormat));
 	const int					dataSize		(size.width * size.height * textureFormat.getPixelSize());
 	tcu::TextureLevel			referenceImage	(textureFormat, size.width, size.height);
 	tcu::PixelBufferAccess		referenceAccess	(referenceImage.getAccess());
+	const bool					isMultilayer	= (layerIdx != std::numeric_limits<uint32_t>::max());
+	const std::string			setName			= "Image comparison" + (isMultilayer ? " (layer " + std::to_string(layerIdx) + ")" : std::string());
 
 	// Generate reference image
 	for (int y = 0; y < referenceImage.getHeight(); ++y)
@@ -1764,7 +1771,7 @@ bool TransformFeedbackIndirectDrawTestInstance::verifyImage (const VkFormat imag
 		const tcu::ConstPixelBufferAccess	resultImage	(textureFormat, size.width, size.height, 1, resultData);
 		bool								ok;
 
-		ok = tcu::intThresholdCompare(m_context.getTestContext().getLog(), "Image comparison", "", referenceAccess, resultImage, tcu::UVec4(1), tcu::COMPARE_LOG_RESULT);
+		ok = tcu::intThresholdCompare(m_context.getTestContext().getLog(), setName.c_str(), "", referenceAccess, resultImage, tcu::UVec4(1), tcu::COMPARE_LOG_RESULT);
 
 		return ok;
 	}
@@ -1779,8 +1786,35 @@ tcu::TestStatus TransformFeedbackIndirectDrawTestInstance::iterate (void)
 	const deUint32						queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 	const VkQueue						queue				= m_context.getUniversalQueue();
 	Allocator&							allocator			= m_context.getDefaultAllocator();
+	const uint32_t						layerCount			= (m_multiview ? 2u : 1u);
+	const auto							colorViewType		= (layerCount > 1u ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D);
 
-	const Unique<VkRenderPass>			renderPass			(makeRenderPass			(vk, device, VK_FORMAT_R8G8B8A8_UNORM));
+	// Only used for multiview.
+	const std::vector<uint32_t>			subpassViewMasks	{ ((1u << layerCount) - 1u) };
+
+	const VkRenderPassMultiviewCreateInfo multiviewCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO,	//	VkStructureType	sType;
+		nullptr,												//	const void*		pNext;
+		de::sizeU32(subpassViewMasks),							//	uint32_t		subpassCount;
+		de::dataOrNull(subpassViewMasks),						//	const uint32_t*	pViewMasks;
+		0u,														//	uint32_t		dependencyCount;
+		nullptr,												//	const int32_t*	pViewOffsets;
+		de::sizeU32(subpassViewMasks),							//	uint32_t		correlationMaskCount;
+		de::dataOrNull(subpassViewMasks),						//	const uint32_t*	pCorrelationMasks;
+	};
+
+	const Unique<VkRenderPass>			renderPass			(makeRenderPass			(vk,
+																					 device,
+																					 VK_FORMAT_R8G8B8A8_UNORM,
+																					 VK_FORMAT_UNDEFINED,
+																					 VK_ATTACHMENT_LOAD_OP_CLEAR,
+																					 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+																					 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+																					 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+																					 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+																					 nullptr,
+																					 (m_multiview ? &multiviewCreateInfo : nullptr)));
 
 	const Unique<VkShaderModule>		vertModule			(createShaderModule		(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
 	const Unique<VkShaderModule>		fragModule			(createShaderModule		(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
@@ -1788,11 +1822,12 @@ tcu::TestStatus TransformFeedbackIndirectDrawTestInstance::iterate (void)
 	const VkFormat						colorFormat			= VK_FORMAT_R8G8B8A8_UNORM;
 	const VkImageUsageFlags				imageUsageFlags		= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 	const tcu::RGBA						clearColor			(tcu::RGBA::black());
-	const VkImageSubresourceRange		colorSubresRange	(makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u));
-	const VkDeviceSize					colorBufferSize		(m_imageExtent2D.width * m_imageExtent2D.height * tcu::getPixelSize(mapVkFormat(colorFormat)));
-	const Unique<VkImage>				colorImage			(makeImage				(vk, device, makeImageCreateInfo(0u, VK_IMAGE_TYPE_2D, colorFormat, m_imageExtent2D, 1u, imageUsageFlags)));
+	const VkImageSubresourceRange		colorSubresRange	(makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, layerCount));
+	const VkDeviceSize					layerSize			(m_imageExtent2D.width * m_imageExtent2D.height * static_cast<uint32_t>(tcu::getPixelSize(mapVkFormat(colorFormat))));
+	const VkDeviceSize					colorBufferSize		(layerSize * layerCount);
+	const Unique<VkImage>				colorImage			(makeImage				(vk, device, makeImageCreateInfo(0u, VK_IMAGE_TYPE_2D, colorFormat, m_imageExtent2D, layerCount, imageUsageFlags)));
 	const UniquePtr<Allocation>			colorImageAlloc		(bindImage				(vk, device, allocator, *colorImage, MemoryRequirement::Any));
-	const Unique<VkImageView>			colorAttachment		(makeImageView			(vk, device, *colorImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresRange));
+	const Unique<VkImageView>			colorAttachment		(makeImageView			(vk, device, *colorImage, colorViewType, colorFormat, colorSubresRange));
 	const Unique<VkBuffer>				colorBuffer			(makeBuffer				(vk, device, colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
 	const UniquePtr<Allocation>			colorBufferAlloc	(bindBuffer				(vk, device, allocator, *colorBuffer, MemoryRequirement::HostVisible));
 
@@ -1818,6 +1853,7 @@ tcu::TestStatus TransformFeedbackIndirectDrawTestInstance::iterate (void)
 	const Unique<VkBuffer>				counterBuffer		(makeBuffer								(vk, device, counterBufferSize, counterBufferUsage));
 	const UniquePtr<Allocation>			counterBufferAlloc	(bindBuffer								(vk, device, allocator, *counterBuffer, MemoryRequirement::HostVisible));
 
+	// Note: for multiview the framebuffer layer count is also 1.
 	const Unique<VkFramebuffer>			framebuffer			(makeFramebuffer						(vk, device, *renderPass, *colorAttachment, m_imageExtent2D.width, m_imageExtent2D.height));
 	const Unique<VkPipelineLayout>		pipelineLayout		(TransformFeedback::makePipelineLayout	(vk, device));
 	const Unique<VkPipeline>			pipeline			(makeGraphicsPipeline					(vk, device, *pipelineLayout, *renderPass, *vertModule, DE_NULL, DE_NULL, DE_NULL, *fragModule, m_imageExtent2D, 0u, DE_NULL, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, true));
@@ -1828,7 +1864,7 @@ tcu::TestStatus TransformFeedbackIndirectDrawTestInstance::iterate (void)
 																					 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 																					 *colorImage, colorSubresRange);
 	const VkBufferImageCopy				region				= makeBufferImageCopy(makeExtent3D(m_imageExtent2D.width, m_imageExtent2D.height, 1u),
-																				  makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u));
+																				  makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, layerCount));
 	const VkBufferMemoryBarrier			postCopyBarrier		= makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *colorBuffer, 0ull, VK_WHOLE_SIZE);
 
 	fillBuffer(vk, device, *counterBufferAlloc, counterBufferSize, &counterBufferValue, counterBufferSize);
@@ -1855,8 +1891,16 @@ tcu::TestStatus TransformFeedbackIndirectDrawTestInstance::iterate (void)
 	endCommandBuffer(vk, *cmdBuffer);
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
-	if (!verifyImage(colorFormat, m_imageExtent2D, colorBufferAlloc->getHostPtr()))
-		return tcu::TestStatus::fail("Fail");
+	bool fail = false;
+	for (uint32_t layerIdx = 0u; layerIdx < layerCount; ++layerIdx)
+	{
+		const auto dataPtr = reinterpret_cast<uint8_t*>(colorBufferAlloc->getHostPtr()) + layerIdx * layerSize;
+		if (!verifyImage(colorFormat, m_imageExtent2D, dataPtr))
+			fail = true;
+	}
+
+	if (fail)
+		return tcu::TestStatus::fail("Fail; check log for details");
 
 	return tcu::TestStatus::pass("Pass");
 }
@@ -2770,7 +2814,10 @@ vkt::TestInstance*	TransformFeedbackTestCase::createInstance (vkt::Context& cont
 		return new TransformFeedbackMultistreamSameLocationTestInstance(context, m_parameters);
 
 	if (m_parameters.testType == TEST_TYPE_DRAW_INDIRECT)
-		return new TransformFeedbackIndirectDrawTestInstance(context, m_parameters);
+		return new TransformFeedbackIndirectDrawTestInstance(context, m_parameters, false);
+
+	if (m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_MULTIVIEW)
+		return new TransformFeedbackIndirectDrawTestInstance(context, m_parameters, true);
 
 	if (m_parameters.testType == TEST_TYPE_BACKWARD_DEPENDENCY)
 		return new TransformFeedbackBackwardDependencyTestInstance(context, m_parameters);
@@ -2805,6 +2852,13 @@ void TransformFeedbackTestCase::checkSupport (Context& context) const
 	// transformFeedbackRasterizationStreamSelect is required when vertex streams other than zero are rasterized
 	if (m_parameters.requireRastStreamSelect && (context.getTransformFeedbackPropertiesEXT().transformFeedbackRasterizationStreamSelect == VK_FALSE) && (m_parameters.streamId > 0))
 		TCU_THROW(NotSupportedError, "transformFeedbackRasterizationStreamSelect property is not supported");
+
+	if (m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_MULTIVIEW)
+	{
+		const auto& features = context.getMultiviewFeatures();
+		if (!features.multiview)
+			TCU_THROW(NotSupportedError, "multiview not supported");
+	}
 }
 
 void TransformFeedbackTestCase::initPrograms (SourceCollections& programCollection) const
@@ -3332,7 +3386,7 @@ void TransformFeedbackTestCase::initPrograms (SourceCollections& programCollecti
 		return;
 	}
 
-	if (m_parameters.testType == TEST_TYPE_DRAW_INDIRECT)
+	if (m_parameters.testType == TEST_TYPE_DRAW_INDIRECT || m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_MULTIVIEW)
 	{
 		// vertex shader
 		{
@@ -3774,20 +3828,24 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup* group)
 	}
 
 	{
-		const deUint32		vertexStrides[]	= { 4u, 61u, 127u, 251u, 509u };
-		const TestType		testType		= TEST_TYPE_DRAW_INDIRECT;
-		const std::string	testName		= "draw_indirect";
-
-		for (deUint32 vertexStridesNdx = 0; vertexStridesNdx < DE_LENGTH_OF_ARRAY(vertexStrides); ++vertexStridesNdx)
+		for (int i = 0; i < 2; ++i)
 		{
-			const deUint32	vertexStrideBytes	= static_cast<deUint32>(sizeof(deUint32) * vertexStrides[vertexStridesNdx]);
-			TestParameters	parameters			= { testType, 0u, 0u, 0u, 0u, vertexStrideBytes, STREAM_ID_0_NORMAL, false, false, false, false, VK_PRIMITIVE_TOPOLOGY_POINT_LIST };
+			const bool			multiview		= (i > 0);
+			const deUint32		vertexStrides[]	= { 4u, 61u, 127u, 251u, 509u };
+			const TestType		testType		= (multiview ? TEST_TYPE_DRAW_INDIRECT_MULTIVIEW : TEST_TYPE_DRAW_INDIRECT);
+			const std::string	testName		= std::string("draw_indirect") + (multiview ? "_multiview" : "");
 
-			group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_" + de::toString(vertexStrideBytes)).c_str(), "Rendering tests with various strides", parameters));
-			parameters.streamId0Mode = STREAM_ID_0_BEGIN_QUERY_INDEXED;
-			group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_beginqueryindexed_streamid_0_" + de::toString(vertexStrideBytes)).c_str(), "Rendering tests with various strides", parameters));
-			parameters.streamId0Mode = STREAM_ID_0_END_QUERY_INDEXED;
-			group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_endqueryindexed_streamid_0_" + de::toString(vertexStrideBytes)).c_str(), "Rendering tests with various strides", parameters));
+			for (deUint32 vertexStridesNdx = 0; vertexStridesNdx < DE_LENGTH_OF_ARRAY(vertexStrides); ++vertexStridesNdx)
+			{
+				const deUint32	vertexStrideBytes	= static_cast<deUint32>(sizeof(deUint32) * vertexStrides[vertexStridesNdx]);
+				TestParameters	parameters			= { testType, 0u, 0u, 0u, 0u, vertexStrideBytes, STREAM_ID_0_NORMAL, false, false, false, false, VK_PRIMITIVE_TOPOLOGY_POINT_LIST };
+
+				group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_" + de::toString(vertexStrideBytes)).c_str(), "Rendering tests with various strides", parameters));
+				parameters.streamId0Mode = STREAM_ID_0_BEGIN_QUERY_INDEXED;
+				group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_beginqueryindexed_streamid_0_" + de::toString(vertexStrideBytes)).c_str(), "Rendering tests with various strides", parameters));
+				parameters.streamId0Mode = STREAM_ID_0_END_QUERY_INDEXED;
+				group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_endqueryindexed_streamid_0_" + de::toString(vertexStrideBytes)).c_str(), "Rendering tests with various strides", parameters));
+			}
 		}
 	}
 

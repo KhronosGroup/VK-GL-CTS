@@ -93,6 +93,7 @@ struct DrawTypedTestSpec : public TestSpecBase
 		, testIndirectCountExt(IndirectCountType::NONE)
 		, dataFromCompute(false)
 		, useMemoryAccess(false)
+		, layerCount(1u)
 	{}
 
 	DrawType			drawType;
@@ -100,6 +101,7 @@ struct DrawTypedTestSpec : public TestSpecBase
 	IndirectCountType	testIndirectCountExt;
 	bool				dataFromCompute;
 	bool				useMemoryAccess;
+	uint32_t			layerCount;
 };
 
 class IndirectDraw : public DrawTestsBaseClass
@@ -327,7 +329,7 @@ void IndirectDraw::negateDataUsingCompute(vk::VkDeviceSize indirectBufferSize, v
 }
 
 IndirectDraw::IndirectDraw (Context &context, TestSpec testSpec)
-	: DrawTestsBaseClass				(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], testSpec.groupParams, testSpec.topology)
+	: DrawTestsBaseClass				(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], testSpec.groupParams, testSpec.topology, testSpec.layerCount)
 	, m_testIndirectCountExt			(testSpec.testIndirectCountExt)
 	, m_indirectCountExtDrawPadding		(1u)
 	, m_drawType						(testSpec.drawType)
@@ -420,7 +422,7 @@ void IndirectDraw::draw (vk::VkCommandBuffer cmdBuffer)
 				if (m_testIndirectCountExt != IndirectCountType::NONE)
 				{
 					const deUint32 maxDrawCount = m_drawCount + (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? m_indirectCountExtDrawPadding : 0u);
-					m_vk.cmdDrawIndexedIndirectCount(cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer,
+																																																				m_vk.cmdDrawIndexedIndirectCount(cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer,
 													 m_indirectCountBuffer->object(), m_offsetInCountBuffer, maxDrawCount,
 													 m_strideInBuffer);
 				}
@@ -1193,6 +1195,13 @@ void checkSupport(Context& context, IndirectDraw::TestSpec testSpec)
 
 	if (testSpec.groupParams->useDynamicRendering)
 		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+
+	if (testSpec.layerCount > 1u)
+	{
+		const auto& features = context.getMultiviewFeatures();
+		if (!features.multiview)
+			TCU_THROW(NotSupportedError, "multiview not supported");
+	}
 }
 
 }	// anonymous
@@ -1243,6 +1252,7 @@ void IndirectDrawTests::init (void)
 			tcu::TestCaseGroup* indirectDrawGroup			= new tcu::TestCaseGroup(m_testCtx, "indirect_draw", "Draws geometry");
 			tcu::TestCaseGroup* indirectDrawCountGroup		= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_count", "Draws geometry with VK_KHR_draw_indirect_count extension");
 			tcu::TestCaseGroup* indirectDrawParamCountGroup	= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_param_count", "Draws geometry with VK_KHR_draw_indirect_count extension and limit draws count with call parameter");
+			tcu::TestCaseGroup* indirectDrawMultiviewGroup	= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_multiview", "Draws geometry with indirect draws and multiview");
 			{
 				IndirectDraw::TestSpec testSpec(m_groupParams);
 				testSpec.drawType = static_cast<DrawType>(drawTypeIdx);
@@ -1259,7 +1269,7 @@ void IndirectDrawTests::init (void)
 				indirectDrawGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
 					(m_testCtx, "triangle_strip", "Draws triangle strip", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
 
-				// test using V_ACCESSK_MEMORY_WRITE/READ_BIT - there is no need to repeat this case for different drawing options
+				// test using V_ACCESS_MEMORY_WRITE/READ_BIT - there is no need to repeat this case for different drawing options
 				if (dataFromCompute && drawTypeIdx && !m_groupParams->useDynamicRendering && !m_groupParams->useSecondaryCmdBuffer)
 				{
 					testSpec.useMemoryAccess = true;
@@ -1276,7 +1286,7 @@ void IndirectDrawTests::init (void)
 				indirectDrawCountGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
 					(m_testCtx, "triangle_strip", "Draws triangle strip", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
 
-				// test using V_ACCESSK_MEMORY_WRITE/READ_BIT - there is no need to repeat this case for different drawing options
+				// test using V_ACCESS_MEMORY_WRITE/READ_BIT - there is no need to repeat this case for different drawing options
 				if (dataFromCompute && drawTypeIdx && !m_groupParams->useDynamicRendering && !m_groupParams->useSecondaryCmdBuffer)
 				{
 					testSpec.useMemoryAccess = true;
@@ -1292,10 +1302,17 @@ void IndirectDrawTests::init (void)
 				testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 				indirectDrawParamCountGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
 					(m_testCtx, "triangle_strip", "Draws triangle strip", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
+
+				testSpec.testIndirectCountExt = IndirectCountType::BUFFER_LIMIT;
+				testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+				testSpec.layerCount = 2u;
+				indirectDrawMultiviewGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
+					(m_testCtx, "triangle_list", "Draws triangle list", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
 			}
 			drawTypeGroup->addChild(indirectDrawGroup);
 			drawTypeGroup->addChild(indirectDrawCountGroup);
 			drawTypeGroup->addChild(indirectDrawParamCountGroup);
+			drawTypeGroup->addChild(indirectDrawMultiviewGroup);
 
 			{
 				tcu::TestCaseGroup* indirectDrawFirstInstanceGroup				= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_first_instance", "Draws geometry with different first instance in one commandbuffer");
