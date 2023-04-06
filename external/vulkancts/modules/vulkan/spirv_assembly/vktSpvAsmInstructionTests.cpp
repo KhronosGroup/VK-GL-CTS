@@ -97,6 +97,7 @@
 #include <sstream>
 #include <utility>
 #include <stack>
+#include <cassert>
 
 namespace vkt
 {
@@ -5646,8 +5647,7 @@ float constructNormalizedFloat (deInt32 exponent, deUint32 significand)
 // Returns true if the output is what is expected from the test case.
 bool compareOpQuantizeF16ComputeExactCase (const std::vector<Resource>&, const vector<AllocationSp>& outputAllocs, const std::vector<Resource>& expectedOutputs, TestLog&)
 {
-	if (outputAllocs.size() != 1)
-		return false;
+	assert(outputAllocs.size() == 1);
 
 	// Only size is needed because we cannot compare Nans.
 	size_t byteSize = expectedOutputs[0].getByteSize();
@@ -5687,8 +5687,7 @@ bool compareOpQuantizeF16ComputeExactCase (const std::vector<Resource>&, const v
 // Checks that every output from a test-case is a float NaN.
 bool compareNan (const std::vector<Resource>&, const vector<AllocationSp>& outputAllocs, const std::vector<Resource>& expectedOutputs, TestLog&)
 {
-	if (outputAllocs.size() != 1)
-		return false;
+	assert (outputAllocs.size() == 1);
 
 	// Only size is needed because we cannot compare Nans.
 	size_t byteSize = expectedOutputs[0].getByteSize();
@@ -5709,8 +5708,7 @@ bool compareNan (const std::vector<Resource>&, const vector<AllocationSp>& outpu
 // Checks that every output from a test-case is either +0.0f or -0.0f
 bool compareZeros (const std::vector<Resource>&, const vector<AllocationSp>& outputAllocs, const std::vector<Resource>& expectedOutputs, TestLog&)
 {
-	if (outputAllocs.size() != 1)
-		return false;
+	assert (outputAllocs.size() == 1);
 
 	// Only size is needed because all the results are supposed to be zero.
 	size_t byteSize = expectedOutputs[0].getByteSize();
