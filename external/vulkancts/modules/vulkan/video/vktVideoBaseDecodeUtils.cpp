@@ -125,6 +125,7 @@ struct nvVideoH265PicParameters
 	StdVideoDecodeH265PictureInfo					stdPictureInfo;
 	VkVideoDecodeH265PictureInfoKHR					pictureInfo;
 	VkVideoDecodeH265SessionParametersAddInfoKHR	pictureParameters;
+	VkVideoDecodeH265DpbSlotInfoKHR					setupSlotInfo;
 	NvidiaVideoDecodeH265DpbSlotInfo				dpbRefList[MAX_REF_PICTURES_LIST_ENTRIES];
 };
 
@@ -1411,7 +1412,13 @@ bool VideoBaseDecoder::DecodePicture (NvidiaVulkanParserPictureData*	pNvidiaVulk
 
 		int8_t dpbSlot = AllocateDpbSlotForCurrentH265(GetPic(pNvidiaVulkanParserPictureData->pCurrPic), true);
 
+		pHevc->setupSlotInfo.sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_DPB_SLOT_INFO_KHR;
+		pHevc->setupSlotInfo.pNext = nullptr; // No more extension structures.
+		StdVideoDecodeH265ReferenceInfo referenceInfo = StdVideoDecodeH265ReferenceInfo();
+		pHevc->setupSlotInfo.pStdReferenceInfo = &referenceInfo; // No more extension structures.
 		pSetupReferenceSlot->slotIndex = dpbSlot;
+		pSetupReferenceSlot->pNext = &pHevc->setupSlotInfo;
+
 		// slotLayer requires NVIDIA specific extension VK_KHR_video_layers, not
 		// enabled, just yet. setupReferenceSlot.slotLayerIndex = 0;
 		DE_ASSERT(!(dpbSlot < 0));
