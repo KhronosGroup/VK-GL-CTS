@@ -2739,8 +2739,6 @@ int32_t VideoBaseDecoder::DecodeCachedPictures (VideoBaseDecoder*	friendDecoder,
 	m_frameConsumerDoneSemaphoreSubmitInfos.resize(ndxMax);
 	m_frameCompleteSemaphoreSubmitInfos.resize(ndxMax);
 
-	std::vector<VkVideoReferenceSlotInfoKHR> completeReferenceSlots;
-
 	for (size_t ndx = 0; ndx < ndxMax; ++ndx)
 	{
 		const size_t									picNdx							= ndx;
@@ -3034,18 +3032,17 @@ int32_t VideoBaseDecoder::DecodeCachedPictures (VideoBaseDecoder*	friendDecoder,
 		// resources set.  See VUID-vkCmdDecodeVideoKHR-pDecodeInfo-07149.
 		if (pPicParams->decodeFrameInfo.pSetupReferenceSlot != nullptr)
 		{
-			completeReferenceSlots.clear();
-			for (deUint32 i = 0; i < decodeBeginInfo.referenceSlotCount; i++)
-				completeReferenceSlots.push_back(decodeBeginInfo.pReferenceSlots[i]);
-
-			VkVideoReferenceSlotInfoKHR dstPictureSlot = {};
+			unsigned idx = 0;
+			for (; idx < decodeBeginInfo.referenceSlotCount; idx++) {
+				pPicParams->decodeBeginSlots[idx] = decodeBeginInfo.pReferenceSlots[idx];
+			}
+			DE_ASSERT(idx < PerFrameDecodeParameters::MAX_DPB_REF_SLOTS - 1);
+			VkVideoReferenceSlotInfoKHR& dstPictureSlot = pPicParams->decodeBeginSlots[idx];
 			dstPictureSlot.sType = VK_STRUCTURE_TYPE_VIDEO_REFERENCE_SLOT_INFO_KHR;
-			dstPictureSlot.slotIndex = -1;
-			dstPictureSlot.pPictureResource = m_distinctDstDpbImages ? &pPicParams->pictureResources[pPicParams->numGopReferenceSlots] : &pPicParams->decodeFrameInfo.dstPictureResource;
-			completeReferenceSlots.push_back(dstPictureSlot);
-
+			dstPictureSlot.slotIndex = -1;  // Activate the setup reference slot
+			dstPictureSlot.pPictureResource =  m_distinctDstDpbImages ? &pPicParams->pictureResources[pPicParams->numGopReferenceSlots] : &pPicParams->decodeFrameInfo.dstPictureResource;
+			decodeBeginInfo.pReferenceSlots = pPicParams->decodeBeginSlots;
 			decodeBeginInfo.referenceSlotCount++;
-			decodeBeginInfo.pReferenceSlots = completeReferenceSlots.data();
 		}
 
 		vkd.cmdBeginVideoCodingKHR(commandBuffer, &decodeBeginInfo);

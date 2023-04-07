@@ -1021,6 +1021,7 @@ struct PerFrameDecodeParameters
 	unsigned int						bitstreamDataLen;					// Number of bytes in bitstream data buffer
 	const unsigned char*				pBitstreamData;						// ptr to bitstream data for this picture (slice-layer)
 	vk::VkVideoDecodeInfoKHR			decodeFrameInfo;
+	vk::VkVideoReferenceSlotInfoKHR		decodeBeginSlots[MAX_DPB_REF_SLOTS];
 	int32_t								numGopReferenceSlots;
 	int8_t								pGopReferenceImagesIndexes[MAX_DPB_REF_SLOTS];
 	vk::VkVideoPictureResourceInfoKHR	pictureResources[MAX_DPB_REF_SLOTS];
