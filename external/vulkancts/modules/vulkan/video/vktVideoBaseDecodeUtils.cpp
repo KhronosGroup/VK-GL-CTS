@@ -605,7 +605,7 @@ typedef struct dpbEntry
 		return (used_for_reference != 0);
 	}
 
-	StdVideoDecodeH264ReferenceInfoFlags getPictureFlag ()
+	StdVideoDecodeH264ReferenceInfoFlags getPictureFlag (bool currentPictureIsProgressive)
 	{
 		StdVideoDecodeH264ReferenceInfoFlags picFlags = StdVideoDecodeH264ReferenceInfoFlags();
 
@@ -629,12 +629,12 @@ typedef struct dpbEntry
 			// picFlags.field_pic_flag = true;
 		}
 
-		if (used_for_reference & topFieldMask)
+		if (!currentPictureIsProgressive && (used_for_reference & topFieldMask))
 		{
 			picFlags.top_field_flag = true;
 		}
 
-		if (used_for_reference & bottomFieldMask)
+		if (!currentPictureIsProgressive && (used_for_reference & bottomFieldMask))
 		{
 			picFlags.bottom_field_flag = true;
 		}
@@ -645,7 +645,8 @@ typedef struct dpbEntry
 	void setH264PictureData (NvidiaVideoDecodeH264DpbSlotInfo*	pDpbRefList,
 							 VkVideoReferenceSlotInfoKHR*			pReferenceSlots,
 							 uint32_t							dpbEntryIdx,
-							 uint32_t							dpbSlotIndex)
+							 uint32_t							dpbSlotIndex,
+							 bool								currentPictureIsProgressive)
 	{
 		DE_ASSERT(dpbEntryIdx < AVC_MAX_DPB_SLOTS);
 		DE_ASSERT(dpbSlotIndex < AVC_MAX_DPB_SLOTS);
@@ -658,7 +659,7 @@ typedef struct dpbEntry
 		StdVideoDecodeH264ReferenceInfo* pRefPicInfo = &pDpbRefList[dpbEntryIdx].stdReferenceInfo;
 
 		pRefPicInfo->FrameNum = FrameIdx;
-		pRefPicInfo->flags = getPictureFlag();
+		pRefPicInfo->flags = getPictureFlag(currentPictureIsProgressive);
 		pRefPicInfo->PicOrderCnt[0] = FieldOrderCnt[0];
 		pRefPicInfo->PicOrderCnt[1] = FieldOrderCnt[1];
 	}
@@ -1701,7 +1702,7 @@ uint32_t VideoBaseDecoder::FillDpbH264State (const NvidiaVulkanParserPictureData
 
 			DE_ASSERT((dpbSlot >= 0) && ((uint32_t)dpbSlot < m_maxNumDpbSurfaces));
 
-			refOnlyDpbIn[dpbIdx].setH264PictureData(pDpbRefList, pReferenceSlots, dpbIdx, dpbSlot);
+			refOnlyDpbIn[dpbIdx].setH264PictureData(pDpbRefList, pReferenceSlots, dpbIdx, dpbSlot, pNvidiaVulkanParserPictureData->progressive_frame);
 
 			pGopReferenceImagesIndexes[dpbIdx] = picIdx;
 		}
