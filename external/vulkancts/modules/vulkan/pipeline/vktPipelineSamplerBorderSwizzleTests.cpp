@@ -168,6 +168,21 @@ void BorderSwizzleCase::checkSupport (Context& context) const
 	if (m_params.useSamplerSwizzleHint)
 		context.requireDeviceFunctionality("VK_EXT_border_color_swizzle");
 
+	// VK_COMPONENT_SWIZZLE_ONE is undefined when used with combined depth stencil formats, unless the maintenance5 property 'depthStencilSwizzleOneSupport' is supported
+	// For depth/stencil formats, VK_COMPONENT_SWIZZLE_A is aliased to VK_COMPONENT_SWIZZLE_ONE within this test group.
+	if (isCombinedDepthStencilType(mapVkFormat(m_params.textureFormat).type) && (
+			(m_params.componentMapping.r == VK_COMPONENT_SWIZZLE_ONE) || (m_params.componentMapping.r == VK_COMPONENT_SWIZZLE_A) ||
+			(m_params.componentMapping.g == VK_COMPONENT_SWIZZLE_ONE) || (m_params.componentMapping.g == VK_COMPONENT_SWIZZLE_A) ||
+			(m_params.componentMapping.b == VK_COMPONENT_SWIZZLE_ONE) || (m_params.componentMapping.b == VK_COMPONENT_SWIZZLE_A) ||
+			(m_params.componentMapping.a == VK_COMPONENT_SWIZZLE_ONE) || (m_params.componentMapping.a == VK_COMPONENT_SWIZZLE_A)
+		))
+	{
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+
+		if (!context.getMaintenance5Properties().depthStencilSwizzleOneSupport)
+			TCU_THROW(NotSupportedError, "Swizzle results are undefined without depthStencilSwizzleOneSupport");
+	}
+
 	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 
 	if (m_params.isCustom())
