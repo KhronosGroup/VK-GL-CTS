@@ -1864,20 +1864,22 @@ protected:
 class PointSizeTestInstance : public BaseRenderingTestInstance
 {
 public:
-							PointSizeTestInstance	(Context& context, deUint32 renderSize, float pointSize);
-	virtual tcu::TestStatus	iterate					(void);
-	virtual float			getPointSize			(void) const;
+								PointSizeTestInstance	(Context& context, deUint32 renderSize, float pointSize);
+	virtual tcu::TestStatus		iterate					(void);
+	virtual float				getPointSize			(void) const;
 
-private:
-	void					generatePointData		(PointSceneSpec::ScenePoint& outPoint);
-	void					drawPoint				(tcu::PixelBufferAccess& result, tcu::PointSceneSpec::ScenePoint& point);
-	bool					verifyPoint				(tcu::TestLog& log, tcu::PixelBufferAccess& access, float pointSize);
-	bool					isPointSizeClamped		(float pointSize, float maxPointSizeLimit);
+protected:
+	void						generatePointData		(PointSceneSpec::ScenePoint& outPoint);
+	virtual Move<VkPipeline>	createPipeline			(void);
+	virtual void				bindDrawData			(VkCommandBuffer commandBuffer, VkPipeline graphicsPipeline, VkBuffer vertexBuffer);
+	void						drawPoint				(tcu::PixelBufferAccess& result, tcu::PointSceneSpec::ScenePoint& point);
+	bool						verifyPoint				(tcu::TestLog& log, tcu::PixelBufferAccess& access, float pointSize);
+	bool						isPointSizeClamped		(float pointSize, float maxPointSizeLimit);
 
-	const float				m_pointSize;
-	const float				m_maxPointSize;
-	const deUint32			m_renderSize;
-	const VkFormat			m_format;
+	const float					m_pointSize;
+	const float					m_maxPointSize;
+	const deUint32				m_renderSize;
+	const VkFormat				m_format;
 };
 
 PointSizeTestInstance::PointSizeTestInstance (Context& context, deUint32 renderSize, float pointSize)
@@ -1947,6 +1949,87 @@ void PointSizeTestInstance::generatePointData (PointSceneSpec::ScenePoint& outPo
 	}
 }
 
+Move<VkPipeline> PointSizeTestInstance::createPipeline (void)
+{
+	const DeviceInterface&						vkd									(m_context.getDeviceInterface());
+	const VkDevice								vkDevice							(m_context.getDevice());
+	const std::vector<VkViewport>				viewports							(1, makeViewport(tcu::UVec2(m_renderSize)));
+	const std::vector<VkRect2D>					scissors							(1, makeRect2D(tcu::UVec2(m_renderSize)));
+
+	const VkVertexInputBindingDescription		vertexInputBindingDescription		=
+	{
+		0u,									// deUint32					binding;
+		(deUint32)(2 * sizeof(tcu::Vec4)),	// deUint32					strideInBytes;
+		VK_VERTEX_INPUT_RATE_VERTEX			// VkVertexInputStepRate	stepRate;
+	};
+
+	const VkVertexInputAttributeDescription		vertexInputAttributeDescriptions[2]	=
+	{
+		{
+			0u,								// deUint32	location;
+			0u,								// deUint32	binding;
+			VK_FORMAT_R32G32B32A32_SFLOAT,	// VkFormat	format;
+			0u								// deUint32	offsetInBytes;
+		},
+		{
+			1u,								// deUint32	location;
+			0u,								// deUint32	binding;
+			VK_FORMAT_R32G32B32A32_SFLOAT,	// VkFormat	format;
+			(deUint32)sizeof(tcu::Vec4)		// deUint32	offsetInBytes;
+		}
+	};
+
+	const VkPipelineVertexInputStateCreateInfo	vertexInputStateParams				=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType							sType;
+		DE_NULL,													// const void*								pNext;
+		0,															// VkPipelineVertexInputStateCreateFlags	flags;
+		1u,															// deUint32									bindingCount;
+		&vertexInputBindingDescription,								// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
+		2u,															// deUint32									attributeCount;
+		vertexInputAttributeDescriptions							// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
+	};
+
+	return makeGraphicsPipeline(vkd,									// const DeviceInterface&							 vk
+								vkDevice,								// const VkDevice									 device
+								*m_pipelineLayout,						// const VkPipelineLayout							 pipelineLayout
+								*m_vertexShaderModule,					// const VkShaderModule								 vertexShaderModule
+								DE_NULL,								// const VkShaderModule								 tessellationControlShaderModule
+								DE_NULL,								// const VkShaderModule								 tessellationEvalShaderModule
+								DE_NULL,								// const VkShaderModule								 geometryShaderModule
+								*m_fragmentShaderModule,				// const VkShaderModule								 fragmentShaderModule
+								*m_renderPass,							// const VkRenderPass								 renderPass
+								viewports,								// const std::vector<VkViewport>&					 viewports
+								scissors,								// const std::vector<VkRect2D>&						 scissors
+								VK_PRIMITIVE_TOPOLOGY_POINT_LIST,		// const VkPrimitiveTopology						 topology
+								0u,										// const deUint32									 subpass
+								0u,										// const deUint32									 patchControlPoints
+								&vertexInputStateParams,				// const VkPipelineVertexInputStateCreateInfo*		 vertexInputStateCreateInfo
+								getRasterizationStateCreateInfo(),		// const VkPipelineRasterizationStateCreateInfo*	 rasterizationStateCreateInfo
+								DE_NULL,								// const VkPipelineMultisampleStateCreateInfo*		 multisampleStateCreateInfo
+								DE_NULL,								// const VkPipelineDepthStencilStateCreateInfo*		 depthStencilStateCreateInfo,
+								getColorBlendStateCreateInfo());		// const VkPipelineColorBlendStateCreateInfo*		 colorBlendStateCreateInfo
+}
+
+void PointSizeTestInstance::bindDrawData (VkCommandBuffer commandBuffer, VkPipeline graphicsPipeline, VkBuffer vertexBuffer)
+{
+	const DeviceInterface&	vkd					(m_context.getDeviceInterface());
+	const VkDevice			vkDevice			(m_context.getDevice());
+	const VkDeviceSize		vertexBufferOffset	= 0;
+
+	vkd.cmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+	vkd.cmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1, &m_descriptorSet.get(), 0u, DE_NULL);
+	vkd.cmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+
+	// Set Point Size
+	{
+		float pointSize = getPointSize();
+
+		deMemcpy(m_uniformBufferMemory->getHostPtr(), &pointSize, (size_t)m_uniformBufferSize);
+		flushAlloc(vkd, vkDevice, *m_uniformBufferMemory);
+	}
+}
+
 void PointSizeTestInstance::drawPoint (tcu::PixelBufferAccess& result, PointSceneSpec::ScenePoint& point)
 {
 	const tcu::Vec4			positionData		(point.position);
@@ -1965,64 +2048,7 @@ void PointSizeTestInstance::drawPoint (tcu::PixelBufferAccess& result, PointScen
 	de::MovePtr<Allocation>	vertexBufferMemory;
 
 	// Create Graphics Pipeline
-	{
-		const std::vector<VkViewport>				viewports							(1, makeViewport(tcu::UVec2(m_renderSize)));
-		const std::vector<VkRect2D>					scissors							(1, makeRect2D(tcu::UVec2(m_renderSize)));
-
-		const VkVertexInputBindingDescription		vertexInputBindingDescription		=
-		{
-			0u,									// deUint32					binding;
-			(deUint32)(2 * sizeof(tcu::Vec4)),	// deUint32					strideInBytes;
-			VK_VERTEX_INPUT_RATE_VERTEX			// VkVertexInputStepRate	stepRate;
-		};
-
-		const VkVertexInputAttributeDescription		vertexInputAttributeDescriptions[2]	=
-		{
-			{
-				0u,								// deUint32	location;
-				0u,								// deUint32	binding;
-				VK_FORMAT_R32G32B32A32_SFLOAT,	// VkFormat	format;
-				0u								// deUint32	offsetInBytes;
-			},
-			{
-				1u,								// deUint32	location;
-				0u,								// deUint32	binding;
-				VK_FORMAT_R32G32B32A32_SFLOAT,	// VkFormat	format;
-				(deUint32)sizeof(tcu::Vec4)		// deUint32	offsetInBytes;
-			}
-		};
-
-		const VkPipelineVertexInputStateCreateInfo	vertexInputStateParams				=
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType							sType;
-			DE_NULL,													// const void*								pNext;
-			0,															// VkPipelineVertexInputStateCreateFlags	flags;
-			1u,															// deUint32									bindingCount;
-			&vertexInputBindingDescription,								// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
-			2u,															// deUint32									attributeCount;
-			vertexInputAttributeDescriptions							// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
-		};
-
-		graphicsPipeline = makeGraphicsPipeline(vkd,								// const DeviceInterface&							 vk
-												vkDevice,							// const VkDevice									 device
-												*m_pipelineLayout,					// const VkPipelineLayout							 pipelineLayout
-												*m_vertexShaderModule,				// const VkShaderModule								 vertexShaderModule
-												DE_NULL,							// const VkShaderModule								 tessellationControlShaderModule
-												DE_NULL,							// const VkShaderModule								 tessellationEvalShaderModule
-												DE_NULL,							// const VkShaderModule								 geometryShaderModule
-												*m_fragmentShaderModule,			// const VkShaderModule								 fragmentShaderModule
-												*m_renderPass,						// const VkRenderPass								 renderPass
-												viewports,							// const std::vector<VkViewport>&					 viewports
-												scissors,							// const std::vector<VkRect2D>&						 scissors
-												VK_PRIMITIVE_TOPOLOGY_POINT_LIST,	// const VkPrimitiveTopology						 topology
-												0u,									// const deUint32									 subpass
-												0u,									// const deUint32									 patchControlPoints
-												&vertexInputStateParams,			// const VkPipelineVertexInputStateCreateInfo*		 vertexInputStateCreateInfo
-												getRasterizationStateCreateInfo(),	// const VkPipelineRasterizationStateCreateInfo*	 rasterizationStateCreateInfo
-												DE_NULL,							// const VkPipelineMultisampleStateCreateInfo*		 multisampleStateCreateInfo
-												DE_NULL,							// const VkPipelineDepthStencilStateCreateInfo*		 depthStencilStateCreateInfo,
-												getColorBlendStateCreateInfo());	// const VkPipelineColorBlendStateCreateInfo*		 colorBlendStateCreateInfo
-	}
+	graphicsPipeline = createPipeline();
 
 	// Create Vertex Buffer
 	{
@@ -2066,11 +2092,7 @@ void PointSizeTestInstance::drawPoint (tcu::PixelBufferAccess& result, PointScen
 	// Begin Render Pass
 	beginRenderPass(vkd, *commandBuffer, *m_renderPass, *m_frameBuffer, vk::makeRect2D(0, 0, m_renderSize, m_renderSize), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
-	const VkDeviceSize vertexBufferOffset = 0;
-
-	vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
-	vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1, &m_descriptorSet.get(), 0u, DE_NULL);
-	vkd.cmdBindVertexBuffers(*commandBuffer, 0, 1, &vertexBuffer.get(), &vertexBufferOffset);
+	bindDrawData(commandBuffer.get(), graphicsPipeline.get(), vertexBuffer.get());
 	vkd.cmdDraw(*commandBuffer, 1, 1, 0, 0);
 	endRenderPass(vkd, *commandBuffer);
 
@@ -2078,14 +2100,6 @@ void PointSizeTestInstance::drawPoint (tcu::PixelBufferAccess& result, PointScen
 	copyImageToBuffer(vkd, *commandBuffer, *m_image, *m_resultBuffer, tcu::IVec2(m_renderSize, m_renderSize));
 
 	endCommandBuffer(vkd, *commandBuffer);
-
-	// Set Point Size
-	{
-		float pointSize = getPointSize();
-
-		deMemcpy(m_uniformBufferMemory->getHostPtr(), &pointSize, (size_t)m_uniformBufferSize);
-		flushAlloc(vkd, vkDevice, *m_uniformBufferMemory);
-	}
 
 	// Submit
 	submitCommandsAndWait(vkd, vkDevice, queue, commandBuffer.get());
@@ -2155,6 +2169,245 @@ bool PointSizeTestInstance::verifyPoint (tcu::TestLog& log, tcu::PixelBufferAcce
 bool PointSizeTestInstance::isPointSizeClamped (float pointSize, float maxPointSizeLimit)
 {
 	return (pointSize == maxPointSizeLimit);
+}
+
+class PointDefaultSizeTestInstance : public PointSizeTestInstance
+{
+public:
+								PointDefaultSizeTestInstance	(Context& context, deUint32 renderSize, VkShaderStageFlags stage);
+
+protected:
+	Move<VkPipeline>			createPipeline					(void) override;
+	void						bindDrawData					(VkCommandBuffer commandBuffer, VkPipeline graphicsPipeline, VkBuffer vertexBuffer) override;
+
+	const VkShaderStageFlags	m_tessellationBits				= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+	const VkShaderStageFlags	m_geometryBits					= VK_SHADER_STAGE_GEOMETRY_BIT;
+
+	Move<VkShaderModule>		m_tessellationControlShaderModule;
+	Move<VkShaderModule>		m_tessellationEvaluationShaderModule;
+	Move<VkShaderModule>		m_geometryShaderModule;
+
+	bool						m_hasTessellationStage;
+	bool						m_hasGeometryStage;
+};
+
+PointDefaultSizeTestInstance::PointDefaultSizeTestInstance	(Context& context, deUint32 renderSize, VkShaderStageFlags stage)
+	: PointSizeTestInstance(context, renderSize, 1.0f)
+	, m_hasTessellationStage(stage & m_tessellationBits)
+	, m_hasGeometryStage(stage & m_geometryBits)
+{
+	const DeviceInterface&		vkd					= m_context.getDeviceInterface();
+	const VkDevice				vkDevice			= m_context.getDevice();
+
+	if (m_hasTessellationStage)
+	{
+		m_tessellationControlShaderModule			= createShaderModule(vkd, vkDevice, m_context.getBinaryCollection().get("tessellation_control_shader"), 0);
+		m_tessellationEvaluationShaderModule		= createShaderModule(vkd, vkDevice, m_context.getBinaryCollection().get("tessellation_evaluation_shader"), 0);
+	}
+
+	if (m_hasGeometryStage)
+	{
+		m_geometryShaderModule						= createShaderModule(vkd, vkDevice, m_context.getBinaryCollection().get("geometry_shader"), 0);
+	}
+}
+
+Move<VkPipeline> PointDefaultSizeTestInstance::createPipeline (void)
+{
+	const DeviceInterface&						vkd									(m_context.getDeviceInterface());
+	const VkDevice								vkDevice							(m_context.getDevice());
+	const std::vector<VkViewport>				viewports							(1, makeViewport(tcu::UVec2(m_renderSize)));
+	const std::vector<VkRect2D>					scissors							(1, makeRect2D(tcu::UVec2(m_renderSize)));
+	const VkPrimitiveTopology					topology							= m_hasTessellationStage ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+	const deUint32								patchCount							= m_hasTessellationStage ? 1u : 0u;
+
+	const VkVertexInputBindingDescription		vertexInputBindingDescription		=
+	{
+		0u,									// deUint32					binding;
+		(deUint32)(2 * sizeof(tcu::Vec4)),	// deUint32					strideInBytes;
+		VK_VERTEX_INPUT_RATE_VERTEX			// VkVertexInputStepRate	stepRate;
+	};
+
+	const VkVertexInputAttributeDescription		vertexInputAttributeDescriptions	=
+	{
+		0u,								// deUint32	location;
+		0u,								// deUint32	binding;
+		VK_FORMAT_R32G32B32A32_SFLOAT,	// VkFormat	format;
+		0u								// deUint32	offsetInBytes;
+	};
+
+	const VkPipelineVertexInputStateCreateInfo	vertexInputStateParams				=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType							sType;
+		DE_NULL,													// const void*								pNext;
+		0,															// VkPipelineVertexInputStateCreateFlags	flags;
+		1u,															// deUint32									bindingCount;
+		&vertexInputBindingDescription,								// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
+		1u,															// deUint32									attributeCount;
+		&vertexInputAttributeDescriptions							// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
+	};
+
+	return makeGraphicsPipeline(vkd,									// const DeviceInterface&							 vk
+								vkDevice,								// const VkDevice									 device
+								*m_pipelineLayout,						// const VkPipelineLayout							 pipelineLayout
+								*m_vertexShaderModule,					// const VkShaderModule								 vertexShaderModule
+								*m_tessellationControlShaderModule,		// const VkShaderModule								 tessellationControlShaderModule
+								*m_tessellationEvaluationShaderModule,	// const VkShaderModule								 tessellationEvalShaderModule
+								*m_geometryShaderModule,				// const VkShaderModule								 geometryShaderModule
+								*m_fragmentShaderModule,				// const VkShaderModule								 fragmentShaderModule
+								*m_renderPass,							// const VkRenderPass								 renderPass
+								viewports,								// const std::vector<VkViewport>&					 viewports
+								scissors,								// const std::vector<VkRect2D>&						 scissors
+								topology,								// const VkPrimitiveTopology						 topology
+								0u,										// const deUint32									 subpass
+								patchCount,								// const deUint32									 patchControlPoints
+								&vertexInputStateParams,				// const VkPipelineVertexInputStateCreateInfo*		 vertexInputStateCreateInfo
+								getRasterizationStateCreateInfo(),		// const VkPipelineRasterizationStateCreateInfo*	 rasterizationStateCreateInfo
+								DE_NULL,								// const VkPipelineMultisampleStateCreateInfo*		 multisampleStateCreateInfo
+								DE_NULL,								// const VkPipelineDepthStencilStateCreateInfo*		 depthStencilStateCreateInfo,
+								getColorBlendStateCreateInfo());		// const VkPipelineColorBlendStateCreateInfo*		 colorBlendStateCreateInfo
+}
+
+void PointDefaultSizeTestInstance::bindDrawData (VkCommandBuffer commandBuffer, VkPipeline graphicsPipeline, VkBuffer vertexBuffer)
+{
+	const DeviceInterface&	vkd					(m_context.getDeviceInterface());
+	const VkDeviceSize		vertexBufferOffset	= 0;
+
+	vkd.cmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+	vkd.cmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+}
+
+class PointDefaultSizeTestCase : public BaseRenderingTestCase
+{
+public:
+					PointDefaultSizeTestCase	(tcu::TestContext&		context,
+												 std::string			name,
+												 std::string			description,
+												 deUint32				renderSize,
+												 VkShaderStageFlags		stage,
+												 VkSampleCountFlagBits	sampleCount = VK_SAMPLE_COUNT_1_BIT);
+
+	void			initPrograms				(vk::SourceCollections& programCollection) const override;
+	TestInstance*	createInstance				(Context& context) const override;
+	void			checkSupport				(Context& context) const override;
+
+protected:
+	const deUint32				m_renderSize;
+	const VkShaderStageFlags	m_stage;
+};
+
+PointDefaultSizeTestCase::PointDefaultSizeTestCase	(tcu::TestContext&		context,
+													 std::string			name,
+													 std::string			description,
+													 deUint32				renderSize,
+													 VkShaderStageFlags		stage,
+													 VkSampleCountFlagBits	sampleCount)
+	: BaseRenderingTestCase	(context, name, description, sampleCount)
+	, m_renderSize			(renderSize)
+	, m_stage				(stage)
+{
+}
+
+void PointDefaultSizeTestCase::initPrograms			(vk::SourceCollections& programCollection) const
+{
+	std::ostringstream vert;
+	std::ostringstream tesc;
+	std::ostringstream tese;
+	std::ostringstream geom;
+	std::ostringstream frag;
+
+	vert
+		<< "#version 450\n"
+		<< "layout(location = 0) in highp vec4 a_position;\n"
+		<< "void main()"
+		<< "{\n"
+		<< "	gl_Position = a_position;\n"
+		<< "}\n"
+		;
+
+	tesc
+		<< "#version 450\n"
+		<< "layout(vertices = 1) out;\n"
+		<< "void main()\n"
+		<< "{\n"
+		<< "	gl_TessLevelOuter[0] = 1.0;\n"
+		<< "	gl_TessLevelOuter[1] = 1.0;\n"
+		<< "	gl_TessLevelOuter[2] = 1.0;\n"
+		<< "	gl_TessLevelOuter[3] = 1.0;\n"
+		<< "	gl_TessLevelInner[0] = 1.0;\n"
+		<< "	gl_TessLevelInner[1] = 1.0;\n"
+		<< "\n"
+		<< "	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+		<< "}\n"
+		;
+
+	tese
+		<< "#version 450\n"
+		<< "layout(isolines, point_mode) in;\n"
+		<< "void main()\n"
+		<< "{\n"
+		<< "	gl_Position = gl_in[0].gl_Position;\n"
+		<< "}\n"
+		;
+
+	geom
+		<< "#version 450\n"
+		<< "layout(points) in;\n"
+		<< "layout(points, max_vertices=1) out;\n"
+		<< "void main()\n"
+		<< "{\n"
+		<< "	gl_Position = gl_in[0].gl_Position;\n"
+		<< "	EmitVertex();\n"
+		<< "	EndPrimitive();\n"
+		<< "}\n"
+		;
+
+	frag
+		<< "#version 450\n"
+		<< "layout(location = 0) out highp vec4 fragColor;\n"
+		<< "void main()"
+		<< "{\n"
+		<< "	fragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f);\n"
+		<< "}\n"
+		;
+
+	programCollection.glslSources.add("vertext_shader") << glu::VertexSource(vert.str());
+	programCollection.glslSources.add("tessellation_control_shader") << glu::TessellationControlSource(tesc.str());
+	programCollection.glslSources.add("tessellation_evaluation_shader") << glu::TessellationEvaluationSource(tese.str());
+	programCollection.glslSources.add("geometry_shader") << glu::GeometrySource(geom.str());
+	programCollection.glslSources.add("fragment_shader") << glu::FragmentSource(frag.str());
+}
+
+TestInstance* PointDefaultSizeTestCase::createInstance	(Context& context) const
+{
+	VkPhysicalDeviceProperties	properties	(context.getDeviceProperties());
+
+	if (m_renderSize > properties.limits.maxViewportDimensions[0] || m_renderSize > properties.limits.maxViewportDimensions[1])
+		TCU_THROW(NotSupportedError , "Viewport dimensions not supported");
+
+	if (m_renderSize > properties.limits.maxFramebufferWidth || m_renderSize > properties.limits.maxFramebufferHeight)
+		TCU_THROW(NotSupportedError , "Framebuffer width/height not supported");
+
+	return new PointDefaultSizeTestInstance(context, m_renderSize, m_stage);
+}
+
+void PointDefaultSizeTestCase::checkSupport				(Context& context) const
+{
+	const VkShaderStageFlags	tessellationBits	= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+	const VkShaderStageFlags	geometryBits		= VK_SHADER_STAGE_GEOMETRY_BIT;
+
+	if (m_stage & tessellationBits)
+	{
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_TESSELLATION_AND_GEOMETRY_POINT_SIZE);
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
+	}
+
+	if (m_stage & geometryBits)
+	{
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_TESSELLATION_AND_GEOMETRY_POINT_SIZE);
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+	}
+
+	context.requireDeviceFunctionality("VK_KHR_maintenance5");
 }
 
 template <typename ConcreteTestInstance>
@@ -7643,6 +7896,42 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 			}
 
 			primitiveSize->addChild(points);
+		}
+
+		// .default_size
+		{
+			tcu::TestCaseGroup* const defaultSize	= new tcu::TestCaseGroup(testCtx, "default_size", "Default size");
+			{
+				tcu::TestCaseGroup* const points						= new tcu::TestCaseGroup(testCtx, "points", "Default point size");
+				static const VkShaderStageFlags vertexStageBits			= VK_SHADER_STAGE_VERTEX_BIT;
+				static const VkShaderStageFlags tessellationStageBits	= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+				static const VkShaderStageFlags geometryStageBits		= VK_SHADER_STAGE_GEOMETRY_BIT;
+				static const struct PointDefaultSizeCombination
+				{
+					const VkShaderStageFlags stageFlags;
+					const std::string stageName;
+				} pointDefaultSizeCombinations[] =
+				{
+					{ vertexStageBits, "vertex" },
+					{ vertexStageBits | tessellationStageBits, "tessellation" },
+					{ vertexStageBits | geometryStageBits, "geometry" },
+					{ vertexStageBits | tessellationStageBits | geometryStageBits, "all" },
+				};
+
+				for (size_t testCombNdx = 0u; testCombNdx < DE_LENGTH_OF_ARRAY(pointDefaultSizeCombinations); testCombNdx++)
+				{
+					const std::string			testCaseName		= pointDefaultSizeCombinations[testCombNdx].stageName;
+					const std::string			testCaseDescription	= "Check default point size in " + pointDefaultSizeCombinations[testCombNdx].stageName + " stage/s.";
+					const VkShaderStageFlags	testStageFlags		= pointDefaultSizeCombinations[testCombNdx].stageFlags;
+					const deUint32				renderSize			= 3u;	// Odd number so only the center pixel is rendered
+
+					points->addChild(new PointDefaultSizeTestCase(testCtx, testCaseName, testCaseDescription, renderSize, testStageFlags));
+				}
+
+				defaultSize->addChild(points);
+			}
+
+			primitiveSize->addChild(defaultSize);
 		}
 	}
 

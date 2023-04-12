@@ -784,6 +784,10 @@ dEQP-VK.rasterization.primitive_size.points.point_size_2048
 dEQP-VK.rasterization.primitive_size.points.point_size_4096
 dEQP-VK.rasterization.primitive_size.points.point_size_8192
 dEQP-VK.rasterization.primitive_size.points.point_size_10000
+dEQP-VK.rasterization.primitive_size.default_size.points.vertex
+dEQP-VK.rasterization.primitive_size.default_size.points.tessellation
+dEQP-VK.rasterization.primitive_size.default_size.points.geometry
+dEQP-VK.rasterization.primitive_size.default_size.points.all
 dEQP-VK.rasterization.polygon_as_large_points.vert_static_polygon_mode
 dEQP-VK.rasterization.polygon_as_large_points.mesh_static_polygon_mode
 dEQP-VK.rasterization.polygon_as_large_points.vert_tess_static_polygon_mode
