@@ -65,7 +65,7 @@ struct ExplicitModifier
 	VkSubresourceLayout*	pPlaneLayouts;
 };
 
-void checkModifiersSupported (Context& context, VkFormat)
+void checkModifiersSupported (Context& context, VkFormat format)
 {
 	if (!context.isDeviceFunctionalitySupported("VK_EXT_image_drm_format_modifier"))
 		TCU_THROW(NotSupportedError, "VK_EXT_image_drm_format_modifier is not supported");
@@ -78,6 +78,11 @@ void checkModifiersSupported (Context& context, VkFormat)
 
 	if (!context.isDeviceFunctionalitySupported("VK_KHR_image_format_list"))
 		TCU_THROW(NotSupportedError, "VK_KHR_image_format_list not supported");
+
+#ifndef CTS_USES_VULKANSC
+	if (format == VK_FORMAT_A8_UNORM_KHR)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
 }
 
 void checkModifiersList2Supported (Context& context, VkFormat fmt)
@@ -977,6 +982,9 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 		VK_FORMAT_R8_UINT,
 		VK_FORMAT_R8_SINT,
 		VK_FORMAT_R8_SRGB,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8G8_UNORM,
 		VK_FORMAT_R8G8_SNORM,
 		VK_FORMAT_R8G8_USCALED,

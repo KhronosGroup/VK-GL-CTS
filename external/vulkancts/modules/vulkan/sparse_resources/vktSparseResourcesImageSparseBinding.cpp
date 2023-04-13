@@ -67,7 +67,7 @@ public:
 									 const bool			useDeviceGroups = false);
 
 	TestInstance*	createInstance	(Context&			context) const;
-	virtual void	checkSupport			(Context&					context) const;
+	virtual void	checkSupport	(Context&			context) const;
 
 private:
 	const bool			m_useDeviceGroups;
@@ -95,6 +95,11 @@ ImageSparseBindingCase::ImageSparseBindingCase (tcu::TestContext&	testCtx,
 void ImageSparseBindingCase::checkSupport (Context& context) const
 {
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
+
+#ifndef CTS_USES_VULKANSC
+	if (m_format == VK_FORMAT_A8_UNORM_KHR)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
 
 	if (!isImageSizeSupported(context.getInstanceInterface(), context.getPhysicalDevice(), m_imageType, m_imageSize))
 		TCU_THROW(NotSupportedError, "Image size not supported for device");
@@ -461,19 +466,29 @@ TestInstance* ImageSparseBindingCase::createInstance (Context& context) const
 	return new ImageSparseBindingInstance(context, m_imageType, m_imageSize, m_format, m_useDeviceGroups);
 }
 
+std::vector<TestFormat> getSparseBindingTestFormats (ImageType imageType, bool addExtraFormat)
+{
+	auto formats = getTestFormats(imageType);
+#ifndef CTS_USES_VULKANSC
+	if (addExtraFormat)
+		formats.push_back(TestFormat{ VK_FORMAT_A8_UNORM_KHR });
+#endif // CTS_USES_VULKANSC
+	return formats;
+}
+
 } // anonymous ns
 
 tcu::TestCaseGroup* createImageSparseBindingTestsCommon(tcu::TestContext& testCtx, de::MovePtr<tcu::TestCaseGroup> testGroup, const bool useDeviceGroup = false)
 {
 	const std::vector<TestImageParameters> imageParameters
 	{
-		{ IMAGE_TYPE_1D,			{ tcu::UVec3(512u, 1u,   1u ),	tcu::UVec3(1024u, 1u,   1u),	tcu::UVec3(11u,  1u,   1u) },	getTestFormats(IMAGE_TYPE_1D) },
-		{ IMAGE_TYPE_1D_ARRAY,		{ tcu::UVec3(512u, 1u,   64u),	tcu::UVec3(1024u, 1u,   8u),	tcu::UVec3(11u,  1u,   3u) },	getTestFormats(IMAGE_TYPE_1D_ARRAY) },
-		{ IMAGE_TYPE_2D,			{ tcu::UVec3(512u, 256u, 1u ),	tcu::UVec3(1024u, 128u, 1u),	tcu::UVec3(11u,  137u, 1u) },	getTestFormats(IMAGE_TYPE_2D) },
-		{ IMAGE_TYPE_2D_ARRAY,		{ tcu::UVec3(512u, 256u, 6u ),	tcu::UVec3(1024u, 128u, 8u),	tcu::UVec3(11u,  137u, 3u) },	getTestFormats(IMAGE_TYPE_2D_ARRAY) },
-		{ IMAGE_TYPE_3D,			{ tcu::UVec3(512u, 256u, 6u ),	tcu::UVec3(1024u, 128u, 8u),	tcu::UVec3(11u,  137u, 3u) },	getTestFormats(IMAGE_TYPE_3D) },
-		{ IMAGE_TYPE_CUBE,			{ tcu::UVec3(256u, 256u, 1u ),	tcu::UVec3(128u,  128u, 1u),	tcu::UVec3(137u, 137u, 1u) },	getTestFormats(IMAGE_TYPE_CUBE) },
-		{ IMAGE_TYPE_CUBE_ARRAY,	{ tcu::UVec3(256u, 256u, 6u ),	tcu::UVec3(128u,  128u, 8u),	tcu::UVec3(137u, 137u, 3u) },	getTestFormats(IMAGE_TYPE_CUBE_ARRAY) }
+		{ IMAGE_TYPE_1D,			{ tcu::UVec3(512u, 1u,   1u ),	tcu::UVec3(1024u, 1u,   1u),	tcu::UVec3(11u,  1u,   1u) },	getSparseBindingTestFormats(IMAGE_TYPE_1D, !useDeviceGroup) },
+		{ IMAGE_TYPE_1D_ARRAY,		{ tcu::UVec3(512u, 1u,   64u),	tcu::UVec3(1024u, 1u,   8u),	tcu::UVec3(11u,  1u,   3u) },	getSparseBindingTestFormats(IMAGE_TYPE_1D_ARRAY, !useDeviceGroup) },
+		{ IMAGE_TYPE_2D,			{ tcu::UVec3(512u, 256u, 1u ),	tcu::UVec3(1024u, 128u, 1u),	tcu::UVec3(11u,  137u, 1u) },	getSparseBindingTestFormats(IMAGE_TYPE_2D, !useDeviceGroup) },
+		{ IMAGE_TYPE_2D_ARRAY,		{ tcu::UVec3(512u, 256u, 6u ),	tcu::UVec3(1024u, 128u, 8u),	tcu::UVec3(11u,  137u, 3u) },	getSparseBindingTestFormats(IMAGE_TYPE_2D_ARRAY, !useDeviceGroup) },
+		{ IMAGE_TYPE_3D,			{ tcu::UVec3(512u, 256u, 6u ),	tcu::UVec3(1024u, 128u, 8u),	tcu::UVec3(11u,  137u, 3u) },	getSparseBindingTestFormats(IMAGE_TYPE_3D, !useDeviceGroup) },
+		{ IMAGE_TYPE_CUBE,			{ tcu::UVec3(256u, 256u, 1u ),	tcu::UVec3(128u,  128u, 1u),	tcu::UVec3(137u, 137u, 1u) },	getSparseBindingTestFormats(IMAGE_TYPE_CUBE, !useDeviceGroup) },
+		{ IMAGE_TYPE_CUBE_ARRAY,	{ tcu::UVec3(256u, 256u, 6u ),	tcu::UVec3(128u,  128u, 8u),	tcu::UVec3(137u, 137u, 3u) },	getSparseBindingTestFormats(IMAGE_TYPE_CUBE_ARRAY, !useDeviceGroup) }
 	};
 
 	for (size_t imageTypeNdx = 0; imageTypeNdx < imageParameters.size(); ++imageTypeNdx)

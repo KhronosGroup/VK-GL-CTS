@@ -360,6 +360,10 @@ ImageSamplingInstanceParams SamplerTest::getImageSamplingInstanceParams (Sampler
 void SamplerTest::checkSupport (Context& context) const
 {
 	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+#ifndef CTS_USES_VULKANSC
+	if (m_imageFormat == VK_FORMAT_A8_UNORM_KHR)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
 	checkSupportImageSamplingInstance(context, getImageSamplingInstanceParams(m_imageViewType, m_imageFormat, m_imageSize, m_samplerLod, m_separateStencilUsage, m_sampleStencil));
 }
 
@@ -1421,6 +1425,11 @@ TestInstance* ExactSamplingCase::createInstance (Context& context) const
 
 void ExactSamplingCase::checkSupport (Context& context) const
 {
+#ifndef CTS_USES_VULKANSC
+	if (m_params.format == VK_FORMAT_A8_UNORM_KHR)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
+
 	const auto&						vki					= context.getInstanceInterface();
 	const auto						physicalDevice		= context.getPhysicalDevice();
 	const auto						props				= vk::getPhysicalDeviceFormatProperties(vki, physicalDevice, m_params.format);
@@ -1914,6 +1923,9 @@ tcu::TestCaseGroup* createAllFormatsSamplerTests (tcu::TestContext& testCtx, Pip
 		VK_FORMAT_R8G8_SNORM,
 		VK_FORMAT_B8G8R8_UNORM,
 		VK_FORMAT_R8_UNORM,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 
 		// Pairwise combinations of 16/32-bit channel formats x SINT/UINT/SFLOAT type x 1-to-4 channels
 		VK_FORMAT_R32G32_SFLOAT,
@@ -2060,6 +2072,9 @@ tcu::TestCaseGroup* createExactSamplingTests (tcu::TestContext& testCtx, Pipelin
 		vk::VK_FORMAT_R8G8_SNORM,
 		vk::VK_FORMAT_B8G8R8_UNORM,
 		vk::VK_FORMAT_R8_UNORM,
+#ifndef CTS_USES_VULKANSC
+		vk::VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 
 		vk::VK_FORMAT_R32G32_SFLOAT,
 		vk::VK_FORMAT_R32G32B32_UINT,

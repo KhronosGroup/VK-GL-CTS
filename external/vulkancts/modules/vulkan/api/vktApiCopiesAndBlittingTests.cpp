@@ -1422,6 +1422,11 @@ public:
 				TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance1 not supported");
 		}
 
+#ifndef CTS_USES_VULKANSC
+		if (m_params.src.image.format == VK_FORMAT_A8_UNORM_KHR || m_params.dst.image.format == VK_FORMAT_A8_UNORM_KHR)
+			context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
+
 		const VkPhysicalDeviceLimits	limits		= context.getDeviceProperties().limits;
 		VkImageFormatProperties			properties;
 
@@ -5064,6 +5069,11 @@ public:
 				TCU_THROW(NotSupportedError, "VK_KHR_copy_commands2 is not supported");
 			}
 		}
+
+#ifndef CTS_USES_VULKANSC
+		if (m_params.src.image.format == VK_FORMAT_A8_UNORM_KHR || m_params.dst.image.format == VK_FORMAT_A8_UNORM_KHR)
+			context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
 	}
 
 private:
@@ -9163,6 +9173,15 @@ const VkFormat	compatibleFormats8Bit[]		=
 
 	VK_FORMAT_UNDEFINED
 };
+
+const VkFormat	compatibleFormats8BitA[]	=
+{
+#ifndef CTS_USES_VULKANSC
+	VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
+	VK_FORMAT_UNDEFINED
+};
+
 const VkFormat	compatibleFormats16Bit[]	=
 {
 	VK_FORMAT_R4G4B4A4_UNORM_PACK16,
@@ -9388,6 +9407,7 @@ const VkFormat	compatibleFormats256Bit[]	=
 const VkFormat*	colorImageFormatsToTest[]	=
 {
 	compatibleFormats8Bit,
+	compatibleFormats8BitA,
 	compatibleFormats16Bit,
 	compatibleFormats24Bit,
 	compatibleFormats32Bit,
@@ -9465,6 +9485,9 @@ const VkFormat	compatibleFormatsFloats[]	=
 	VK_FORMAT_R8_SNORM,
 	VK_FORMAT_R8_USCALED,
 	VK_FORMAT_R8_SSCALED,
+#ifndef CTS_USES_VULKANSC
+	VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 	VK_FORMAT_R8G8_UNORM,
 	VK_FORMAT_R8G8_SNORM,
 	VK_FORMAT_R8G8_USCALED,

@@ -225,6 +225,11 @@ void ImageSubresourceLayoutCase::checkSupport (Context& context) const
 	const auto&	vki				= context.getInstanceInterface();
 	const auto	physicalDevice	= context.getPhysicalDevice();
 
+#ifndef CTS_USES_VULKANSC
+	if (m_params.imageFormat == VK_FORMAT_A8_UNORM_KHR)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
+
 	const auto formatProperties = getPhysicalDeviceFormatProperties(vki, physicalDevice, m_params.imageFormat);
 	if ((formatProperties.linearTilingFeatures & kRequiredFeatures) != kRequiredFeatures)
 		TCU_THROW(NotSupportedError, "Required format features not supported");
@@ -694,6 +699,9 @@ tcu::TestCaseGroup* createImageSubresourceLayoutTests (tcu::TestContext& testCtx
 		VK_FORMAT_R8_UINT,
 		VK_FORMAT_R8_SINT,
 		VK_FORMAT_R8_SRGB,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8G8_UNORM,
 		VK_FORMAT_R8G8_SNORM,
 		VK_FORMAT_R8G8_USCALED,

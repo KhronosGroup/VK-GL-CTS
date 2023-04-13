@@ -1050,6 +1050,11 @@ bool ImageMemoryRequirementsOriginal::isImageSupported (const Context& context, 
 {
 	DE_ASSERT(info.extent.width >= 1u && info.extent.height >= 1u && info.extent.depth >= 1u);
 
+#ifndef CTS_USES_VULKANSC
+	if (info.format == VK_FORMAT_A8_UNORM_KHR && !context.isDeviceFunctionalitySupported("VK_KHR_maintenance5"))
+		return false;
+#endif // CTS_USES_VULKANSC
+
 	if (isYCbCrFormat(info.format)
 		&& (info.imageType != VK_IMAGE_TYPE_2D
 			|| info.mipLevels != 1
@@ -1300,6 +1305,9 @@ tcu::TestStatus ImageMemoryRequirementsOriginal::execTest (Context& context, con
 		VK_FORMAT_R8_UINT,
 		VK_FORMAT_R8_SINT,
 		VK_FORMAT_R8_SRGB,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8G8_UNORM,
 		VK_FORMAT_R8G8_SNORM,
 		VK_FORMAT_R8G8_USCALED,

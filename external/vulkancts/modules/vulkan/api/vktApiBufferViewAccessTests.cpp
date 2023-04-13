@@ -978,6 +978,15 @@ public:
 	virtual							~BufferViewAllFormatsTestCase		(void)
 	{}
 	virtual	void					initPrograms						(SourceCollections&			programCollection) const;
+	virtual void					checkSupport						(Context&					context) const
+	{
+#ifndef CTS_USES_VULKANSC
+		if (m_bufferViewTestInfo.format == VK_FORMAT_A8_UNORM_KHR)
+			context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#else
+		DE_UNREF(context);
+#endif // CTS_USES_VULKANSC
+	}
 
 	virtual TestInstance*			createInstance						(Context&					context) const
 	{
@@ -1197,6 +1206,9 @@ tcu::TestCaseGroup* createBufferViewAccessTests							(tcu::TestContext&			testC
 		VK_FORMAT_R8_SSCALED,
 		VK_FORMAT_R8_UINT,
 		VK_FORMAT_R8_SINT,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8G8_UNORM,
 		VK_FORMAT_R8G8_SNORM,
 		VK_FORMAT_R8G8_USCALED,
@@ -1292,8 +1304,9 @@ tcu::TestCaseGroup* createBufferViewAccessTests							(tcu::TestContext&			testC
 
 		for (deUint32 formatIdx = 0; formatIdx < DE_LENGTH_OF_ARRAY(testFormats); formatIdx++)
 		{
-			const auto			skip		= strlen("VK_FORMAT_");
+			const auto			skip	= strlen("VK_FORMAT_");
 			const std::string	fmtName	= de::toLower(std::string(getFormatName(testFormats[formatIdx])).substr(skip));
+
 			de::MovePtr<tcu::TestCaseGroup>	formatGroup		(new tcu::TestCaseGroup(testCtx, fmtName.c_str(), ""));
 
 			if (usage[usageNdx] == VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT && !isSupportedImageLoadStore(mapVkFormat(testFormats[formatIdx])))

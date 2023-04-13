@@ -102,6 +102,11 @@ void TransferQueueCase::checkSupport (Context& context) const
 	const auto& vki				= context.getInstanceInterface();
 	const auto	physicalDevice	= context.getPhysicalDevice();
 
+#ifndef CTS_USES_VULKANSC
+	if (m_params.imageFormat == VK_FORMAT_A8_UNORM_KHR)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
+
 	VkImageFormatProperties	formatProperties;
 	const auto result = vki.getPhysicalDeviceImageFormatProperties(physicalDevice, m_params.imageFormat, m_params.imageType, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, 0u, &formatProperties);
 	if (result != VK_SUCCESS)
@@ -326,6 +331,9 @@ tcu::TestCaseGroup* createTransferQueueImageTests (tcu::TestContext& testCtx)
 		VK_FORMAT_R8_UINT,
 		VK_FORMAT_R8_SINT,
 		VK_FORMAT_R8_SRGB,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8G8_UNORM,
 		VK_FORMAT_R8G8_SNORM,
 		VK_FORMAT_R8G8_USCALED,

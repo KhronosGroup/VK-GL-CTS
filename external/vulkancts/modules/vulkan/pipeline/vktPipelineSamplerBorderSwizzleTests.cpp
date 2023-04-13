@@ -146,6 +146,11 @@ void BorderSwizzleCase::checkSupport (Context& context) const
 	const auto				physicalDevice		= context.getPhysicalDevice();
 	VkImageFormatProperties	formatProperties;
 
+#ifndef CTS_USES_VULKANSC
+	if (m_params.textureFormat == VK_FORMAT_A8_UNORM_KHR)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
+
 	const auto result = vki.getPhysicalDeviceImageFormatProperties(
 		physicalDevice, m_params.textureFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, (VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT), 0u, &formatProperties);
 
@@ -442,13 +447,23 @@ VkClearColorValue getExpectedColor (const VkClearColorValue& color, const TestPa
 	{
 		DE_ASSERT(formatType == FormatType::FLOAT);
 
-		tcu::Vec4 borderColor (.0f, .0f, .0f, .0f);
+		tcu::Vec4 borderColor (.0f, .0f, .0f, 1.f);
 
-		for (int i = 0; i < numComp; ++i)
-			borderColor[i] = color.float32[i];
-
-		if (numComp < 4)
-			borderColor[3] = 1.0f;
+#ifndef CTS_USES_VULKANSC
+		if (params.textureFormat == VK_FORMAT_A8_UNORM_KHR)
+		{
+			// This one is a bit special compared to others we test. Single component alpha format borders use [0,0,0,Ba] as the
+			// border texel components after replacing (Ba being the border alpha component).
+			borderColor[3] = color.float32[3];
+		}
+		else
+#endif // CTS_USES_VULKANSC
+		{
+			// Other formats use the first color components from the border, and are expanded to 4 components by filling missing
+			// components with zero and the alpha component with 1.
+			for (int i = 0; i < numComp; ++i)
+				borderColor[i] = color.float32[i];
+		}
 
 		const auto expected = getExpectedColor(borderColor, params);
 
@@ -1257,6 +1272,9 @@ tcu::TestCaseGroup* createSamplerBorderSwizzleTests (tcu::TestContext& testCtx, 
 		VK_FORMAT_R8_UINT,
 		VK_FORMAT_R8_SINT,
 		VK_FORMAT_R8_SRGB,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8G8_UNORM,
 		VK_FORMAT_R8G8_SNORM,
 		//VK_FORMAT_R8G8_USCALED,

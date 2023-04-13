@@ -262,6 +262,9 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 	bool									success							= true;
 	const deBool							isDedicatedAllocationSupported	= m_context.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation");
 	const deBool							isYcbcrSupported				= m_context.isDeviceFunctionalitySupported("VK_KHR_sampler_ycbcr_conversion");
+#ifndef CTS_USES_VULKANSC
+	const bool								isMaintenance5Supported			= m_context.isDeviceFunctionalitySupported("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
 	std::vector<int>						optimalFormats;
 	std::vector<int>						linearFormats;
 	std::vector<int>						memoryTypes;
@@ -285,6 +288,9 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 		VK_FORMAT_R8_UINT,
 		VK_FORMAT_R8_SINT,
 		VK_FORMAT_R8_SRGB,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8G8_UNORM,
 		VK_FORMAT_R8G8_SNORM,
 		VK_FORMAT_R8G8_USCALED,
@@ -513,6 +519,11 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 	{
 		if (isYCbCrFormat((VkFormat)formatlist[i]) && !isYcbcrSupported)
 			continue;
+
+#ifndef CTS_USES_VULKANSC
+		if (formatlist[i] == VK_FORMAT_A8_UNORM_KHR && !isMaintenance5Supported)
+			continue;
+#endif // CTS_USES_VULKANSC
 
 		vk::VkImageFormatProperties imageformatprops;
 
