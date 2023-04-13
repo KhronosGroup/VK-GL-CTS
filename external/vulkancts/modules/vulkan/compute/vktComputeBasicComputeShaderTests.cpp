@@ -4171,6 +4171,7 @@ tcu::TestCaseGroup* createBasicComputeShaderTests (tcu::TestContext& testCtx)
 #ifndef CTS_USES_VULKANSC
 	basicComputeTests->addChild(cts_amber::createAmberTestCase(testCtx, "write_ssbo_array", "", "compute", "write_ssbo_array.amber"));
 	basicComputeTests->addChild(cts_amber::createAmberTestCase(testCtx, "branch_past_barrier", "", "compute", "branch_past_barrier.amber"));
+	basicComputeTests->addChild(cts_amber::createAmberTestCase(testCtx,"webgl_spirv_loop", "Simple SPIR-V loop from a WebGL example that caused problems in some implementations", "compute", "webgl_spirv_loop.amber"));
 #endif
 
 	return basicComputeTests.release();
