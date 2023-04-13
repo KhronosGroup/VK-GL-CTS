@@ -342,7 +342,7 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/Igalia/ESExtractor.git",
 		"git@github.com:Igalia/ESExtractor.git",
-		"v0.2.5",
+		"v0.3.3",
 		"ESExtractor"),
 ]
 
