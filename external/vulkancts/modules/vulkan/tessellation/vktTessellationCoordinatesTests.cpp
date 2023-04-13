@@ -362,6 +362,13 @@ bool compareTessCoords (tcu::TestLog&					log,
 	return success;
 }
 
+inline std::string getTeseName (const bool writePointSize)
+{
+	std::ostringstream str;
+	str << "tese" << (writePointSize ? "_point_size" : "");
+	return str.str();
+}
+
 class TessCoordTest : public TestCase
 {
 public:
@@ -452,11 +459,16 @@ void TessCoordTest::initPrograms (SourceCollections& programCollection) const
 		}
 
 		// Tessellation evaluation shader
+		for (deUint32 i = 0; i < 2; ++i)
 		{
+			const bool writePointSize = i == 1;
+
 			std::ostringstream src;
 			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
-				<< "#extension GL_EXT_tessellation_shader : require\n"
-				<< "\n"
+				<< "#extension GL_EXT_tessellation_shader : require\n";
+			if (writePointSize)
+				src << "#extension GL_EXT_tessellation_point_size : require\n";
+			src << "\n"
 				<< "layout(" << getTessPrimitiveTypeShaderName(m_primitiveType) << ", "
 				<< getSpacingModeShaderName(m_spacingMode) << ", point_mode) in;\n" << "\n"
 				<< "layout(set = 0, binding = 1, std430) coherent restrict buffer Output {\n"
@@ -467,10 +479,12 @@ void TessCoordTest::initPrograms (SourceCollections& programCollection) const
 				<< "void main (void)\n"
 				<< "{\n"
 				<< "    int index = atomicAdd(sb_out.numInvocations, 1);\n"
-				<< "    sb_out.tessCoord[index] = gl_TessCoord;\n"
-				<< "}\n";
+				<< "    sb_out.tessCoord[index] = gl_TessCoord;\n";
+			if (writePointSize)
+				src << "    gl_PointSize = 1.0f;\n";
+			src << "}\n";
 
-			programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(src.str());
+			programCollection.glslSources.add(getTeseName(writePointSize)) << glu::TessellationEvaluationSource(src.str());
 		}
 	}
 	else
@@ -626,7 +640,8 @@ void TessCoordTest::initPrograms (SourceCollections& programCollection) const
 			   "                         OpStore %out_tess_coord %gl_tess_coord\n"
 			   "OpReturn\n"
 			   "OpFunctionEnd\n";
-		programCollection.spirvAsmSources.add("tese") << teseSrc;
+		programCollection.spirvAsmSources.add(getTeseName(false)) << teseSrc;
+		programCollection.spirvAsmSources.add(getTeseName(true)) << teseSrc;
 	}
 }
 
@@ -716,7 +731,7 @@ tcu::TestStatus TessCoordTestInstance::iterate (void)
 	const Unique<VkPipeline> pipeline(GraphicsPipelineBuilder()
 		.setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT,					m_context.getBinaryCollection().get("vert"), DE_NULL)
 		.setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,	m_context.getBinaryCollection().get("tesc"), DE_NULL)
-		.setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, m_context.getBinaryCollection().get("tese"), DE_NULL)
+		.setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, m_context.getBinaryCollection().get(getTeseName(m_context.getDeviceFeatures().shaderTessellationAndGeometryPointSize)), DE_NULL)
 		.build    (vk, device, *pipelineLayout, *renderPass));
 
 	deUint32 numPassedCases = 0;
