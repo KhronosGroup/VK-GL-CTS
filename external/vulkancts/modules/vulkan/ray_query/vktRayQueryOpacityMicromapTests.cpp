@@ -264,6 +264,7 @@ void OpacityMicromapCase::initPrograms (vk::SourceCollections& programCollection
 			<< "{\n"
 			<< "  uint index             = gl_VertexIndex.x;\n"
 			<< mainLoop.str()
+			<< "  gl_PointSize = 1.0f;\n"
 			<< "}\n"
 			;
 
@@ -397,9 +398,9 @@ static Move<VkRenderPass> makeEmptyRenderPass(const DeviceInterface& vk,
 		0u,													//  deUint32				srcSubpass;
 		0u,													//  deUint32				dstSubpass;
 		VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,				//  VkPipelineStageFlags	srcStageMask;
-		VK_PIPELINE_STAGE_HOST_BIT,							//  VkPipelineStageFlags	dstStageMask;
+		VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,				//  VkPipelineStageFlags	dstStageMask;
 		VK_ACCESS_SHADER_WRITE_BIT,							//  VkAccessFlags			srcAccessMask;
-		VK_ACCESS_HOST_READ_BIT,							//  VkAccessFlags			dstAccessMask;
+		VK_ACCESS_MEMORY_READ_BIT,							//  VkAccessFlags			dstAccessMask;
 		0u													//  VkDependencyFlags		dependencyFlags;
 	};
 	subpassDependencies.push_back(dependency);
@@ -621,7 +622,7 @@ tcu::TestStatus OpacityMicromapInstance::iterate (void)
 		0ull										  // VkDeviceAddress				deviceAddress;
 	};
 
-	VkMicromapEXT micromap, origMicromap;
+	VkMicromapEXT micromap = VK_NULL_HANDLE, origMicromap = VK_NULL_HANDLE;
 
 	VK_CHECK(vkd.createMicromapEXT(device, &maCreateInfo, nullptr, &micromap));
 
@@ -870,17 +871,21 @@ tcu::TestStatus OpacityMicromapInstance::iterate (void)
 	Move<VkPipeline>				pipeline;
 	de::MovePtr<BufferWithMemory>	raygenSBT;
 	Move<VkRenderPass>				renderPass;
+	Move<VkFramebuffer>				framebuffer;
 
 	if (m_params.shaderSourceType == SST_VERTEX_SHADER)
 	{
 		auto vertexModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0);
 
 		renderPass = makeEmptyRenderPass(vkd, device);
+		framebuffer = makeFramebuffer(vkd, device, *renderPass, 0u, DE_NULL, 32, 32);
 		pipeline = makeGraphicsPipeline(vkd, device, *pipelineLayout, *renderPass, *vertexModule, 0);
 
+		beginRenderPass(vkd, cmdBuffer, *renderPass, *framebuffer, makeRect2D(32u, 32u));
 		vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
 		vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
 		vkd.cmdDraw(cmdBuffer, kNumThreadsAtOnce, 1, 0, 0);
+		endRenderPass(vkd, cmdBuffer);
 	} else if (m_params.shaderSourceType == SST_RAY_GENERATION_SHADER)
 	{
 		const auto& vki = m_context.getInstanceInterface();
@@ -958,6 +963,11 @@ tcu::TestStatus OpacityMicromapInstance::iterate (void)
 
 	endCommandBuffer(vkd, cmdBuffer);
 	submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+	if (micromap != VK_NULL_HANDLE)
+		vkd.destroyMicromapEXT(device, micromap, DE_NULL);
+	if (micromap != VK_NULL_HANDLE)
+		vkd.destroyMicromapEXT(device, origMicromap, DE_NULL);
 
 	// Verify results.
 	std::vector<deUint32>	outputData				(expectedOutputModes.size());

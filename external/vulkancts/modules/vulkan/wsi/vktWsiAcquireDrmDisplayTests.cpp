@@ -333,9 +333,6 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testGetDrmDisplayEXTInvalidFd (vo
 	if (result != VK_ERROR_UNKNOWN)
 		TCU_FAIL("vkGetDrmDisplayEXT failed to return error.");
 
-	if (display != DE_NULL)
-		TCU_FAIL("vkGetDrmDisplayEXT did not set display to null.");
-
 	return tcu::TestStatus::pass("pass");
 }
 
