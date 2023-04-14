@@ -244,7 +244,6 @@ include_directories(
 	framework/egl/wrapper
 	framework/xexml
 	external/vulkancts/framework/vulkan
-	external/vulkancts/framework/vulkan/generated/vulkan
 	)
 
 if (DE_OS_IS_ANDROID OR DE_OS_IS_IOS)

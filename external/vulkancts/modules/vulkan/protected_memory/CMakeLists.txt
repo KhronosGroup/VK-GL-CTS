@@ -56,5 +56,4 @@ add_library(deqp-vk-protected-memory STATIC ${DEQP_VK_VKSC_PROTECTED_MEMORY_SRCS
 target_link_libraries(deqp-vk-protected-memory tcutil vkutil)
 
 add_library(deqp-vksc-protected-memory STATIC ${DEQP_VK_VKSC_PROTECTED_MEMORY_SRCS})
-target_include_directories(deqp-vksc-protected-memory BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 target_link_libraries(deqp-vksc-protected-memory PUBLIC deqp-vksc-util tcutil vkscutil)
