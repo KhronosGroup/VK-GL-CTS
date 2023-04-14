@@ -191,12 +191,6 @@ set(VKUTILNOSHADER_LIBS
 	tcutil
 	)
 
-set(VKUTIL_LIBS
-	glutil
-	tcutil
-	vkutilnoshader
-	)
-
 include_directories(${GLSLANG_INCLUDE_PATH})
 include_directories(${DEQP_VULKAN_INL_GEN_OUTPUTS_DIR})
 
