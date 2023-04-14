@@ -137,9 +137,9 @@ tcu::TestStatus testGetFaultData (Context& context, TestParams testParams)
 	return isOK ? tcu::TestStatus::pass("Pass") : tcu::TestStatus::fail("Fail");
 }
 
-void		testFaultCallback (VkBool32			incompleteFaultData,
-							   deUint32			faultCount,
-							   VkFaultData*		pFaultData)
+VKAPI_ATTR void	VKAPI_CALL testFaultCallback (VkBool32				incompleteFaultData,
+											  deUint32				faultCount,
+											  const VkFaultData*	pFaultData)
 {
 	DE_UNREF(incompleteFaultData);
 	DE_UNREF(faultCount);
@@ -193,7 +193,7 @@ tcu::TestStatus testCreateDeviceWithFaultCallbackInfo (Context& context, FaultCa
 		DE_NULL,												//	void*						pNext;
 		deUint32(faults.size()),								//	uint32_t					faultCount;
 		testParams.allocateFaultData ? faults.data() : nullptr,	//	VkFaultData*				pFaults;
-		(PFN_vkFaultCallbackFunction) testFaultCallback			//	PFN_vkFaultCallbackFunction	pfnFaultCallback;
+		testFaultCallback										//	PFN_vkFaultCallbackFunction	pfnFaultCallback;
 	};
 	faultCallBackInfo.pNext										= pNext;
 	pNext														= &faultCallBackInfo;

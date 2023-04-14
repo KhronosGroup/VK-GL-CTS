@@ -476,6 +476,25 @@ vk::Move<vk::VkDevice> createCustomDevice (bool validationEnabled, const vk::Pla
 		createInfo.ppEnabledLayerNames = (enabledLayers.empty() ? DE_NULL : enabledLayers.data());
 	}
 
+#ifdef CTS_USES_VULKANSC
+	// Add fault callback if there isn't one already.
+	VkFaultCallbackInfo					faultCallbackInfo		=
+	{
+		VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO,					//	VkStructureType				sType;
+		DE_NULL,												//	void*						pNext;
+		0U,														//	uint32_t					faultCount;
+		nullptr,												//	VkFaultData*				pFaults;
+		Context::faultCallbackFunction							//	PFN_vkFaultCallbackFunction	pfnFaultCallback;
+	};
+
+	if (!findStructureInChain(createInfo.pNext, getStructureType<VkFaultCallbackInfo>()))
+	{
+		// XXX workaround incorrect constness on faultCallbackInfo.pNext.
+		faultCallbackInfo.pNext = const_cast<void *>(createInfo.pNext);
+		createInfo.pNext = &faultCallbackInfo;
+	}
+#endif // CTS_USES_VULKANSC
+
 	return createDevice(vkp, instance, vki, physicalDevice, &createInfo, pAllocator);
 }
 
@@ -490,6 +509,25 @@ vk::VkResult createUncheckedDevice (bool validationEnabled, const vk::InstanceIn
 		createInfo.enabledLayerCount = static_cast<deUint32>(enabledLayers.size());
 		createInfo.ppEnabledLayerNames = (enabledLayers.empty() ? DE_NULL : enabledLayers.data());
 	}
+
+#ifdef CTS_USES_VULKANSC
+	// Add fault callback if there isn't one already.
+	VkFaultCallbackInfo					faultCallbackInfo		=
+	{
+		VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO,					//	VkStructureType				sType;
+		DE_NULL,												//	void*						pNext;
+		0U,														//	uint32_t					faultCount;
+		nullptr,												//	VkFaultData*				pFaults;
+		Context::faultCallbackFunction							//	PFN_vkFaultCallbackFunction	pfnFaultCallback;
+	};
+
+	if (!findStructureInChain(createInfo.pNext, getStructureType<VkFaultCallbackInfo>()))
+	{
+		// XXX workaround incorrect constness on faultCallbackInfo.pNext.
+		faultCallbackInfo.pNext = const_cast<void *>(createInfo.pNext);
+		createInfo.pNext = &faultCallbackInfo;
+	}
+#endif // CTS_USES_VULKANSC
 
 	return vki.createDevice(physicalDevice, &createInfo, pAllocator, pDevice);
 }
