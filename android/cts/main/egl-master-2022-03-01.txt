@@ -1,3 +1,11 @@
+dEQP-EGL.functional.wide_color.window_fp16_colorspace_bt2020_linear
+dEQP-EGL.functional.wide_color.window_fp16_colorspace_bt2020_pq
+dEQP-EGL.functional.wide_color.pbuffer_fp16_colorspace_bt2020_linear
+dEQP-EGL.functional.wide_color.pbuffer_fp16_colorspace_bt2020_pq
+dEQP-EGL.functional.wide_color.window_1010102_colorspace_bt2020_linear
+dEQP-EGL.functional.wide_color.window_1010102_colorspace_bt2020_pq
+dEQP-EGL.functional.wide_color.pbuffer_1010102_colorspace_bt2020_linear
+dEQP-EGL.functional.wide_color.pbuffer_1010102_colorspace_bt2020_pq
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_fragment_shading_rate
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_texture_storage_compression
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_timeline_semaphore
