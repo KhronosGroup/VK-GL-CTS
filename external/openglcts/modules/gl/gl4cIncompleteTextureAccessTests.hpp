@@ -119,6 +119,7 @@ private:
 		const glw::GLchar* sampler_template;
 		const glw::GLchar* fetch_template;
 		glw::GLfloat	   expected_result[4];
+		bool               is_shadow;
 	} s_configurations[];
 
 	static const glw::GLuint s_configurations_count;
