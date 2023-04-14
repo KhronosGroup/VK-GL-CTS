@@ -201,6 +201,21 @@ inline VkSemaphoreSubmitInfoKHR makeSemaphoreSubmitInfo (VkSemaphore semaphore, 
 	};
 }
 
+inline VkPipelineShaderStageCreateInfo makePipelineShaderStageCreateInfo (VkShaderStageFlagBits stage, VkShaderModule module, const VkSpecializationInfo* pSpecializationInfo = nullptr, const void* pNext = nullptr)
+{
+	const VkPipelineShaderStageCreateInfo stageInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	//	VkStructureType						sType;
+		pNext,													//	const void*							pNext;
+		0u,														//	VkPipelineShaderStageCreateFlags	flags;
+		stage,													//	VkShaderStageFlagBits				stage;
+		module,													//	VkShaderModule						module;
+		"main",													//	const char*							pName;
+		pSpecializationInfo,									//	const VkSpecializationInfo*			pSpecializationInfo;
+	};
+	return stageInfo;
+}
+
 inline VkPrimitiveTopology primitiveTopologyCastToList (const VkPrimitiveTopology primitiveTopology)
 {
 	DE_STATIC_ASSERT(static_cast<deUint64>(VK_PRIMITIVE_TOPOLOGY_PATCH_LIST) + 1 == static_cast<deUint64>(VK_PRIMITIVE_TOPOLOGY_LAST));
