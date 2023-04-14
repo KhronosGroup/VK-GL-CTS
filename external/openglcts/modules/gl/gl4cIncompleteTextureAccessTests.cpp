@@ -324,6 +324,16 @@ void SamplerTest::PrepareTexture(Configuration configuration)
 
 	gl.bindTexture(configuration.texture_target, m_to);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture has failed");
+
+	if (configuration.is_shadow)
+	{
+		gl.texParameteri(configuration.texture_target, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+		gl.texParameteri(configuration.texture_target, GL_TEXTURE_COMPARE_FUNC, GL_NEVER);
+	}
+	else
+	{
+		gl.texParameteri(configuration.texture_target, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+	}
 }
 
 void SamplerTest::PrepareFramebuffer()
@@ -487,44 +497,44 @@ void SamplerTest::CleanTest()
 
 const struct SamplerTest::Configuration SamplerTest::s_configurations[] = {
 	/* regular floating point sampling */
-	{ GL_TEXTURE_1D, "sampler1D", "texture(texture_input, 0.0)", { 0.f, 0.f, 0.f, 1.f } },
-	{ GL_TEXTURE_2D, "sampler2D", "texture(texture_input, vec2(0.0))", { 0.f, 0.f, 0.f, 1.f } },
-	{ GL_TEXTURE_3D, "sampler3D", "texture(texture_input, vec3(0.0))", { 0.f, 0.f, 0.f, 1.f } },
-	{ GL_TEXTURE_CUBE_MAP, "samplerCube", "texture(texture_input, vec3(0.0))", { 0.f, 0.f, 0.f, 1.f } },
-	{ GL_TEXTURE_RECTANGLE, "sampler2DRect", "texture(texture_input, vec2(0.0))", { 0.f, 0.f, 0.f, 1.f } },
-	{ GL_TEXTURE_1D_ARRAY, "sampler1DArray", "texture(texture_input, vec2(0.0))", { 0.f, 0.f, 0.f, 1.f } },
-	{ GL_TEXTURE_2D_ARRAY, "sampler2DArray", "texture(texture_input, vec3(0.0))", { 0.f, 0.f, 0.f, 1.f } },
-	{ GL_TEXTURE_CUBE_MAP_ARRAY, "samplerCubeArray", "texture(texture_input, vec4(0.0))", { 0.f, 0.f, 0.f, 1.f } },
+	{ GL_TEXTURE_1D, "sampler1D", "texture(texture_input, 0.0)", { 0.f, 0.f, 0.f, 1.f }, false },
+	{ GL_TEXTURE_2D, "sampler2D", "texture(texture_input, vec2(0.0))", { 0.f, 0.f, 0.f, 1.f }, false },
+	{ GL_TEXTURE_3D, "sampler3D", "texture(texture_input, vec3(0.0))", { 0.f, 0.f, 0.f, 1.f }, false },
+	{ GL_TEXTURE_CUBE_MAP, "samplerCube", "texture(texture_input, vec3(0.0))", { 0.f, 0.f, 0.f, 1.f }, false },
+	{ GL_TEXTURE_RECTANGLE, "sampler2DRect", "texture(texture_input, vec2(0.0))", { 0.f, 0.f, 0.f, 1.f }, false },
+	{ GL_TEXTURE_1D_ARRAY, "sampler1DArray", "texture(texture_input, vec2(0.0))", { 0.f, 0.f, 0.f, 1.f }, false },
+	{ GL_TEXTURE_2D_ARRAY, "sampler2DArray", "texture(texture_input, vec3(0.0))", { 0.f, 0.f, 0.f, 1.f }, false },
+	{ GL_TEXTURE_CUBE_MAP_ARRAY, "samplerCubeArray", "texture(texture_input, vec4(0.0))", { 0.f, 0.f, 0.f, 1.f }, false },
 
 	/* Shadow textures. */
 	{ GL_TEXTURE_1D,
 	  "sampler1DShadow",
 	  "vec4(texture(texture_input, vec3(0.0)), 0.0, 0.0, 0.0)",
-	  { 0.f, 0.f, 0.f, 0.f } },
+	  { 0.f, 0.f, 0.f, 0.f }, true },
 	{ GL_TEXTURE_2D,
 	  "sampler2DShadow",
 	  "vec4(texture(texture_input, vec3(0.0)), 0.0, 0.0, 0.0)",
-	  { 0.f, 0.f, 0.f, 0.f } },
+	  { 0.f, 0.f, 0.f, 0.f }, true },
 	{ GL_TEXTURE_CUBE_MAP,
 	  "samplerCubeShadow",
 	  "vec4(texture(texture_input, vec4(0.0)), 0.0, 0.0, 0.0)",
-	  { 0.f, 0.f, 0.f, 0.f } },
+	  { 0.f, 0.f, 0.f, 0.f }, true },
 	{ GL_TEXTURE_RECTANGLE,
 	  "sampler2DRectShadow",
 	  "vec4(texture(texture_input, vec3(0.0)), 0.0, 0.0, 0.0)",
-	  { 0.f, 0.f, 0.f, 0.f } },
+	  { 0.f, 0.f, 0.f, 0.f }, true },
 	{ GL_TEXTURE_1D_ARRAY,
 	  "sampler1DArrayShadow",
 	  "vec4(texture(texture_input, vec3(0.0)), 0.0, 0.0, 0.0)",
-	  { 0.f, 0.f, 0.f, 0.f } },
+	  { 0.f, 0.f, 0.f, 0.f }, true },
 	{ GL_TEXTURE_2D_ARRAY,
 	  "sampler2DArrayShadow",
 	  "vec4(texture(texture_input, vec4(0.0)), 0.0, 0.0, 0.0)",
-	  { 0.f, 0.f, 0.f, 0.f } },
+	  { 0.f, 0.f, 0.f, 0.f }, true },
 	{ GL_TEXTURE_CUBE_MAP_ARRAY,
 	  "samplerCubeArrayShadow",
 	  "vec4(texture(texture_input, vec4(0.0), 1.0), 0.0, 0.0, 0.0)",
-	  { 0.f, 0.f, 0.f, 0.f } }
+	  { 0.f, 0.f, 0.f, 0.f }, true }
 };
 
 const glw::GLuint SamplerTest::s_configurations_count = sizeof(s_configurations) / sizeof(s_configurations[0]);
