@@ -658,6 +658,11 @@ public:
 			const auto	colorUsage	= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 			if (vki.getPhysicalDeviceImageFormatProperties(vkd, m_params.colorFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, colorUsage, 0u, &imageFormatProperties) != VK_SUCCESS)
 				TCU_THROW(NotSupportedError, "Color format not supported");
+
+			vk::VkFormatProperties formatProperties;
+			vki.getPhysicalDeviceFormatProperties(vkd, m_params.colorFormat, &formatProperties);
+			if ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT) == 0)
+				TCU_THROW(NotSupportedError, "Color format not supported");
 		}
 		if (m_params.depthFormat != VK_FORMAT_UNDEFINED)
 		{
