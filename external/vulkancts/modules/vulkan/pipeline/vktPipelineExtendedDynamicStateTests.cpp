@@ -2683,6 +2683,8 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 				TCU_THROW(NotSupportedError, "vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV supported no combinations");
 
 			std::vector<vk::VkFramebufferMixedSamplesCombinationNV> combinations(combinationCount);
+			for (auto& combination : combinations)
+				combination = vk::initVulkanStructure();
 			result = vki.getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV(physicalDevice, &combinationCount, combinations.data());
 			if (result != vk::VK_SUCCESS)
 				TCU_THROW(NotSupportedError, "vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV supported no combinations");
