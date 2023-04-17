@@ -370,6 +370,8 @@ void FSRTestCase::initPrograms (SourceCollections& programCollection) const
 	vss << "}\n";
 
 	programCollection.glslSources.add("vert") << glu::VertexSource(vss.str());
+	programCollection.glslSources.add("vert_1_2") << glu::VertexSource(vss.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_5, 0u, true);
+
 
 	if (m_data.geometryShader)
 	{
@@ -1740,7 +1742,11 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 			};
 
 			Move<VkShaderModule> fragShader = createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0);
-			Move<VkShaderModule> vertShader = createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0);
+			Move<VkShaderModule> vertShader;
+			if (m_context.contextSupports(VK_API_VERSION_1_2))
+				vertShader = createShaderModule(vk, device, m_context.getBinaryCollection().get("vert_1_2"), 0);
+			else
+				vertShader = createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0);
 			Move<VkShaderModule> geomShader;
 			if (m_data.geometryShader)
 				geomShader = createShaderModule(vk, device, m_context.getBinaryCollection().get("geom"), 0);
