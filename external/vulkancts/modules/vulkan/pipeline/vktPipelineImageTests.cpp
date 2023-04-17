@@ -132,7 +132,7 @@ void ImageTest::checkSupport (Context& context) const
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_SAMPLED_IMAGE_ARRAY_DYNAMIC_INDEXING);
 
 #ifndef CTS_USES_VULKANSC
-	if (m_imageFormat == VK_FORMAT_A8_UNORM_KHR)
+	if (m_imageFormat == VK_FORMAT_A8_UNORM_KHR || m_imageFormat == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
 		context.requireDeviceFunctionality("VK_KHR_maintenance5");
 #endif // CTS_USES_VULKANSC
 
@@ -712,6 +712,9 @@ de::MovePtr<tcu::TestCaseGroup> createImageFormatTests (tcu::TestContext& testCt
 		VK_FORMAT_A2B10G10R10_UNORM_PACK32,
 		VK_FORMAT_A2B10G10R10_UINT_PACK32,
 		VK_FORMAT_A1R5G5B5_UNORM_PACK16,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R16_UNORM,
 		VK_FORMAT_R16_SNORM,
 		VK_FORMAT_R16_USCALED,

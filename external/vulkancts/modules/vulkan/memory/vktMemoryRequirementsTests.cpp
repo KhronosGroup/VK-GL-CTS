@@ -1051,8 +1051,11 @@ bool ImageMemoryRequirementsOriginal::isImageSupported (const Context& context, 
 	DE_ASSERT(info.extent.width >= 1u && info.extent.height >= 1u && info.extent.depth >= 1u);
 
 #ifndef CTS_USES_VULKANSC
-	if (info.format == VK_FORMAT_A8_UNORM_KHR && !context.isDeviceFunctionalitySupported("VK_KHR_maintenance5"))
-		return false;
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_maintenance5"))
+	{
+		if (info.format == VK_FORMAT_A8_UNORM_KHR || info.format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
+			return false;
+	}
 #endif // CTS_USES_VULKANSC
 
 	if (isYCbCrFormat(info.format)
@@ -1298,6 +1301,9 @@ tcu::TestStatus ImageMemoryRequirementsOriginal::execTest (Context& context, con
 		VK_FORMAT_R5G5B5A1_UNORM_PACK16,
 		VK_FORMAT_B5G5R5A1_UNORM_PACK16,
 		VK_FORMAT_A1R5G5B5_UNORM_PACK16,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8_UNORM,
 		VK_FORMAT_R8_SNORM,
 		VK_FORMAT_R8_USCALED,

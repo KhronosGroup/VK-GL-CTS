@@ -150,7 +150,7 @@ void ImageViewTest::checkSupport (Context& context) const
 	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 
 #ifndef CTS_USES_VULKANSC
-	if (m_imageFormat == VK_FORMAT_A8_UNORM_KHR)
+	if (m_imageFormat == VK_FORMAT_A8_UNORM_KHR || m_imageFormat == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
 		context.requireDeviceFunctionality("VK_KHR_maintenance5");
 #endif // CTS_USES_VULKANSC
 
@@ -711,6 +711,9 @@ tcu::TestCaseGroup* createImageViewTests (tcu::TestContext& testCtx, PipelineCon
 		VK_FORMAT_R4G4B4A4_UNORM_PACK16,
 		VK_FORMAT_R5G6B5_UNORM_PACK16,
 		VK_FORMAT_R5G5B5A1_UNORM_PACK16,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8_UNORM,
 		VK_FORMAT_R8_SNORM,
 		VK_FORMAT_R8_USCALED,

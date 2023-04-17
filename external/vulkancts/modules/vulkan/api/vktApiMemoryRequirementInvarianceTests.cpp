@@ -281,6 +281,9 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 		VK_FORMAT_R5G5B5A1_UNORM_PACK16,
 		VK_FORMAT_B5G5R5A1_UNORM_PACK16,
 		VK_FORMAT_A1R5G5B5_UNORM_PACK16,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8_UNORM,
 		VK_FORMAT_R8_SNORM,
 		VK_FORMAT_R8_USCALED,
@@ -521,8 +524,12 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 			continue;
 
 #ifndef CTS_USES_VULKANSC
-		if (formatlist[i] == VK_FORMAT_A8_UNORM_KHR && !isMaintenance5Supported)
-			continue;
+		if (!isMaintenance5Supported)
+		{
+			if (formatlist[i] == VK_FORMAT_A8_UNORM_KHR ||
+				formatlist[i] == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
+				continue;
+		}
 #endif // CTS_USES_VULKANSC
 
 		vk::VkImageFormatProperties imageformatprops;

@@ -1453,7 +1453,8 @@ public:
 		}
 
 #ifndef CTS_USES_VULKANSC
-		if (m_params.src.image.format == VK_FORMAT_A8_UNORM_KHR || m_params.dst.image.format == VK_FORMAT_A8_UNORM_KHR)
+		if (m_params.src.image.format == VK_FORMAT_A8_UNORM_KHR || m_params.dst.image.format == VK_FORMAT_A8_UNORM_KHR ||
+			m_params.src.image.format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR || m_params.dst.image.format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
 			context.requireDeviceFunctionality("VK_KHR_maintenance5");
 #endif // CTS_USES_VULKANSC
 
@@ -5061,7 +5062,8 @@ public:
 		}
 
 #ifndef CTS_USES_VULKANSC
-		if (m_params.src.image.format == VK_FORMAT_A8_UNORM_KHR || m_params.dst.image.format == VK_FORMAT_A8_UNORM_KHR)
+		if (m_params.src.image.format == VK_FORMAT_A8_UNORM_KHR || m_params.dst.image.format == VK_FORMAT_A8_UNORM_KHR ||
+			m_params.src.image.format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR || m_params.dst.image.format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
 			context.requireDeviceFunctionality("VK_KHR_maintenance5");
 #endif // CTS_USES_VULKANSC
 
@@ -9174,6 +9176,9 @@ const VkFormat	compatibleFormats16Bit[]	=
 	VK_FORMAT_R5G5B5A1_UNORM_PACK16,
 	VK_FORMAT_B5G5R5A1_UNORM_PACK16,
 	VK_FORMAT_A1R5G5B5_UNORM_PACK16,
+#ifndef CTS_USES_VULKANSC
+	VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
+#endif // CTS_USES_VULKANSC
 	VK_FORMAT_R8G8_UNORM,
 	VK_FORMAT_R8G8_SNORM,
 	VK_FORMAT_R8G8_USCALED,
@@ -9464,6 +9469,9 @@ const VkFormat	compatibleFormatsFloats[]	=
 	VK_FORMAT_R5G5B5A1_UNORM_PACK16,
 	VK_FORMAT_B5G5R5A1_UNORM_PACK16,
 	VK_FORMAT_A1R5G5B5_UNORM_PACK16,
+#ifndef CTS_USES_VULKANSC
+	VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
+#endif // CTS_USES_VULKANSC
 	VK_FORMAT_R8_UNORM,
 	VK_FORMAT_R8_SNORM,
 	VK_FORMAT_R8_USCALED,

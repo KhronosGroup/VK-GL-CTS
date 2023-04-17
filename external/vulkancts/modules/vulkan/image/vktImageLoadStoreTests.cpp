@@ -523,7 +523,7 @@ StoreTest::StoreTest (tcu::TestContext&		testCtx,
 void StoreTest::checkSupport (Context& context) const
 {
 #ifndef CTS_USES_VULKANSC
-	if (m_format == VK_FORMAT_A8_UNORM_KHR)
+	if (m_format == VK_FORMAT_A8_UNORM_KHR || m_format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
 		context.requireDeviceFunctionality("VK_KHR_maintenance5");
 
 	const VkFormatProperties3 formatProperties (context.getFormatProperties(m_format));
@@ -1212,7 +1212,7 @@ LoadStoreTest::LoadStoreTest (tcu::TestContext&		testCtx,
 void LoadStoreTest::checkSupport (Context& context) const
 {
 #ifndef CTS_USES_VULKANSC
-	if (m_format == VK_FORMAT_A8_UNORM_KHR)
+	if (m_format == VK_FORMAT_A8_UNORM_KHR || m_format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
 		context.requireDeviceFunctionality("VK_KHR_maintenance5");
 
 	const VkFormatProperties3 formatProperties (context.getFormatProperties(m_format));
@@ -2485,6 +2485,7 @@ void ImageExtendOperandTest::checkSupport (Context& context) const
 
 #ifndef CTS_USES_VULKANSC
 	DE_ASSERT(m_readFormat != VK_FORMAT_A8_UNORM_KHR && m_writeFormat != VK_FORMAT_A8_UNORM_KHR);
+	DE_ASSERT(m_readFormat != VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR && m_writeFormat != VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR);
 
 	if ((m_extendTestType == ExtendTestType::WRITE_NONTEMPORAL) &&
 		(context.getUsedApiVersion() < VK_API_VERSION_1_3))
@@ -2786,6 +2787,10 @@ static const VkFormat s_formats[] =
 	VK_FORMAT_R5G5B5A1_UNORM_PACK16,
 	VK_FORMAT_B5G5R5A1_UNORM_PACK16,
 	VK_FORMAT_A1R5G5B5_UNORM_PACK16,
+#ifndef CTS_USES_VULKANSC
+	VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
+#endif // CTS_USES_VULKANSC
+
 	VK_FORMAT_B8G8R8A8_SNORM,
 	VK_FORMAT_B8G8R8A8_SINT,
 	VK_FORMAT_A8B8G8R8_UNORM_PACK32,

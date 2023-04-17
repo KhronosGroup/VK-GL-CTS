@@ -361,7 +361,7 @@ void SamplerTest::checkSupport (Context& context) const
 {
 	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 #ifndef CTS_USES_VULKANSC
-	if (m_imageFormat == VK_FORMAT_A8_UNORM_KHR)
+	if (m_imageFormat == VK_FORMAT_A8_UNORM_KHR || m_imageFormat == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
 		context.requireDeviceFunctionality("VK_KHR_maintenance5");
 #endif // CTS_USES_VULKANSC
 	checkSupportImageSamplingInstance(context, getImageSamplingInstanceParams(m_imageViewType, m_imageFormat, m_imageSize, m_samplerLod, m_separateStencilUsage, m_sampleStencil));
@@ -1204,10 +1204,13 @@ MovePtr<tcu::TestCaseGroup> createSamplerAddressModesTests (tcu::TestContext& te
 			 (config.v != VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE && config.v != VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER)))
 			 continue;
 
-		// VK_FORMAT_B4G4R4A4_UNORM_PACK16, VK_FORMAT_B5G6R5_UNORM_PACK16 and VK_FORMAT_B5G5R5A1_UNORM_PACK16 are forbidden
-		// for non-formatless custom border color.
+		// VK_FORMAT_B4G4R4A4_UNORM_PACK16, VK_FORMAT_B5G6R5_UNORM_PACK16, VK_FORMAT_B5G5R5A1_UNORM_PACK16
+		// and VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR are forbidden for non-formatless custom border color.
 		if ((imageFormat == VK_FORMAT_B4G4R4A4_UNORM_PACK16 ||
 			 imageFormat == VK_FORMAT_B5G6R5_UNORM_PACK16   ||
+#ifndef CTS_USES_VULKANSC
+			 imageFormat == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR ||
+#endif
 			 imageFormat == VK_FORMAT_B5G5R5A1_UNORM_PACK16)  && config.border == BORDER_COLOR_CUSTOM && config.customColorFormatless)
 			continue;
 
@@ -1900,6 +1903,9 @@ tcu::TestCaseGroup* createAllFormatsSamplerTests (tcu::TestContext& testCtx, Pip
 		VK_FORMAT_B5G5R5A1_UNORM_PACK16,
 		VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT,
 		VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
+#endif // CTS_USES_VULKANSC
 
 		// Pairwise combinations of 8-bit channel formats, UNORM/SNORM/SINT/UINT/SRGB type x 1-to-4 channels x RGBA/BGRA order
 		VK_FORMAT_R8_SRGB,

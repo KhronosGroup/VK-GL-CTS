@@ -2528,6 +2528,31 @@ PlanarFormatDescription getCorePlanarFormatDescription (VkFormat format)
 			return desc;
 		}
 
+#ifndef CTS_USES_VULKANSC
+		case VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR:
+		{
+			const PlanarFormatDescription desc
+			{
+				1, // planes
+				chanR | chanG | chanB | chanA,
+				1,1,
+				{
+				//		Size	WDiv	HDiv	planeCompatibleFormat
+					{	2,		1,		1,		VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR },
+					{	0,		0,		0,		VK_FORMAT_UNDEFINED },
+					{	0,		0,		0,		VK_FORMAT_UNDEFINED },
+				},
+				{
+				//		Plane	Type	Offs	Size	Stride
+					{	0,		unorm,	11,		5,		2 },	// R
+					{	0,		unorm,	6,		5,		2 },	// G
+					{	0,		unorm,	1,		5,		2 },	// B
+					{	0,		unorm,	0,		1,		2 }		// A
+				}
+			};
+			return desc;
+		}
+#endif // CTS_USES_VULKANSC
 
 		default:
 			TCU_THROW(InternalError, "Not implemented");
@@ -2785,7 +2810,7 @@ bool isChromaSubsampled (VkFormat format)
 bool isSupportedByFramework (VkFormat format)
 {
 #ifndef CTS_USES_VULKANSC
-	if (format == VK_FORMAT_A8_UNORM_KHR)
+	if (format == VK_FORMAT_A8_UNORM_KHR || format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
 		return true;
 #endif // CTS_USES_VULKANSC
 
@@ -2869,6 +2894,9 @@ VkFormat mapTextureFormat (const tcu::TextureFormat& format)
 		case FMT_CASE(RGB, UNORM_SHORT_565):				return VK_FORMAT_R5G6B5_UNORM_PACK16;
 		case FMT_CASE(RGBA, UNORM_SHORT_4444):				return VK_FORMAT_R4G4B4A4_UNORM_PACK16;
 		case FMT_CASE(RGBA, UNORM_SHORT_5551):				return VK_FORMAT_R5G5B5A1_UNORM_PACK16;
+#ifndef CTS_USES_VULKANSC
+		case FMT_CASE(ABGR, UNORM_SHORT_1555):				return VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR;
+#endif // CTS_USES_VULKANSC
 
 		case FMT_CASE(BGR, UNORM_SHORT_565):				return VK_FORMAT_B5G6R5_UNORM_PACK16;
 		case FMT_CASE(BGRA, UNORM_SHORT_4444):				return VK_FORMAT_B4G4R4A4_UNORM_PACK16;
@@ -3125,6 +3153,9 @@ tcu::TextureFormat mapVkFormat (VkFormat format)
 		case VK_FORMAT_B5G5R5A1_UNORM_PACK16:	return TextureFormat(TextureFormat::BGRA,	TextureFormat::UNORM_SHORT_5551);
 
 		case VK_FORMAT_A1R5G5B5_UNORM_PACK16:	return TextureFormat(TextureFormat::ARGB,	TextureFormat::UNORM_SHORT_1555);
+#ifndef CTS_USES_VULKANSC
+		case VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR:	return TextureFormat(TextureFormat::ABGR, TextureFormat::UNORM_SHORT_1555);
+#endif // CTS_USES_VULKANSC
 
 		case VK_FORMAT_R8_UNORM:				return TextureFormat(TextureFormat::R,		TextureFormat::UNORM_INT8);
 		case VK_FORMAT_R8_SNORM:				return TextureFormat(TextureFormat::R,		TextureFormat::SNORM_INT8);

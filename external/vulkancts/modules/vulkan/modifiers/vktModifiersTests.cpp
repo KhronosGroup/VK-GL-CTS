@@ -80,7 +80,7 @@ void checkModifiersSupported (Context& context, VkFormat format)
 		TCU_THROW(NotSupportedError, "VK_KHR_image_format_list not supported");
 
 #ifndef CTS_USES_VULKANSC
-	if (format == VK_FORMAT_A8_UNORM_KHR)
+	if (format == VK_FORMAT_A8_UNORM_KHR || format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
 		context.requireDeviceFunctionality("VK_KHR_maintenance5");
 #endif // CTS_USES_VULKANSC
 }
@@ -975,6 +975,9 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 		VK_FORMAT_R5G5B5A1_UNORM_PACK16,
 		VK_FORMAT_B5G5R5A1_UNORM_PACK16,
 		VK_FORMAT_A1R5G5B5_UNORM_PACK16,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8_UNORM,
 		VK_FORMAT_R8_SNORM,
 		VK_FORMAT_R8_USCALED,
