@@ -21804,6 +21804,10 @@ dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.attachment_rate.setup_wit
 dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.attachment_rate.setup_with_linear_tiled_image.r64g64b64a64_uint.rate_4x4_imageless
 dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.attachment_rate.misc.two_subpass
 dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.attachment_rate.misc.memory_access
+dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.attachment_rate.misc.ro_ds_read_only_optimal_khr
+dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.attachment_rate.misc.ro_ds_depth_read_only_optimal
+dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.attachment_rate.misc.ro_ds_stencil_read_only_optimal
+dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.attachment_rate.misc.ro_ds_general
 dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.misc.limits
 dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.misc.shading_rates
 dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.pixel_consistency.rate_1x1.samples_1.extent_1x1

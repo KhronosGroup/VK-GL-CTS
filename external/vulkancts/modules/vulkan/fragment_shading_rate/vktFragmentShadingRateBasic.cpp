@@ -1795,7 +1795,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 						VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,	// VkStructureType sType;
 						DE_NULL,									// const void* pNext;
 						(VkAttachmentDescriptionFlags)0u,			// VkAttachmentDescriptionFlags		flags;
-						cbFormat,					// VkFormat							format;
+						cbFormat,									// VkFormat							format;
 						m_data.samples,								// VkSampleCountFlagBits			samples;
 						VK_ATTACHMENT_LOAD_OP_LOAD,					// VkAttachmentLoadOp				loadOp;
 						VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp				storeOp;
