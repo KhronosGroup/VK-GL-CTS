@@ -39,6 +39,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/framework/vulkan/vkDeviceUtil.cpp \
 	external/vulkancts/framework/vulkan/vkImageUtil.cpp \
 	external/vulkancts/framework/vulkan/vkImageWithMemory.cpp \
+	external/vulkancts/framework/vulkan/vkMd5Sum.cpp \
 	external/vulkancts/framework/vulkan/vkMemUtil.cpp \
 	external/vulkancts/framework/vulkan/vkNoRenderDocUtil.cpp \
 	external/vulkancts/framework/vulkan/vkNullDriver.cpp \
@@ -597,11 +598,12 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/util/vktDrawUtil.cpp \
 	external/vulkancts/modules/vulkan/util/vktExternalMemoryUtil.cpp \
 	external/vulkancts/modules/vulkan/util/vktTypeComparisonUtil.cpp \
+	external/vulkancts/modules/vulkan/video/vktBitstreamBufferImpl.cpp \
 	external/vulkancts/modules/vulkan/video/vktVideoBaseDecodeUtils.cpp \
 	external/vulkancts/modules/vulkan/video/vktVideoCapabilitiesTests.cpp \
+	external/vulkancts/modules/vulkan/video/vktVideoClipInfo.cpp \
 	external/vulkancts/modules/vulkan/video/vktVideoDecodeTests.cpp \
-	external/vulkancts/modules/vulkan/video/vktVideoPictureUtils.cpp \
-	external/vulkancts/modules/vulkan/video/vktVideoSessionNvUtils.cpp \
+	external/vulkancts/modules/vulkan/video/vktVideoFrameBuffer.cpp \
 	external/vulkancts/modules/vulkan/video/vktVideoTestUtils.cpp \
 	external/vulkancts/modules/vulkan/video/vktVideoTests.cpp \
 	external/vulkancts/modules/vulkan/vktCustomInstancesDevices.cpp \

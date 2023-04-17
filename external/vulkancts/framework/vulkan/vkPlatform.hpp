@@ -392,8 +392,6 @@ public:
 	enum LibraryType
 	{
 		LIBRARY_TYPE_VULKAN						= 0,
-		LIBRARY_TYPE_VULKAN_VIDEO_DECODE_PARSER,
-
 		LIBRARY_TYPE_LAST
 	};
 

@@ -119,8 +119,12 @@ include_directories(external/jsoncpp/src/include)
 # RenderDoc API
 include_directories(external/renderdoc/src)
 
+# Vulkan video support libraries
 if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)
+	# Used for elementary stream demuxing
 	add_subdirectory(external/ESExtractor)
+	# Used for the heavy lifting in video decoding, depends on ESExtrator at runtime.
+	add_subdirectory(external/nvidia-video-samples)
 endif()
 
 include_directories(${PNG_INCLUDE_PATH})
