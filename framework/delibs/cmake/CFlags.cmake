@@ -45,6 +45,12 @@ if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
 	set(CMAKE_C_FLAGS			"${TARGET_FLAGS} ${WARNING_FLAGS} ${CMAKE_C_FLAGS} -std=c99 -pedantic ")
 	set(CMAKE_CXX_FLAGS			"${TARGET_FLAGS} ${WARNING_FLAGS} ${CMAKE_CXX_FLAGS} -std=c++11 -Wno-delete-non-virtual-dtor")
 
+	# Set _FILE_OFFSET_BITS=64 on 32-bit build on Linux to enable output log files to exceed 2GB
+	if ((DE_CPU_X86) AND (DE_OS_UNIX))
+		set(CMAKE_C_FLAGS		"${CMAKE_C_FLAGS} -D_FILE_OFFSET_BITS=64")
+		set(CMAKE_CXX_FLAGS		"${CMAKE_CXX_FLAGS} -D_FILE_OFFSET_BITS=64")
+	endif ()
+
 	# Force compiler to generate code where integers have well defined overflow
 	# Turn on -Wstrict-overflow=5 and check all warnings before removing
 	set(CMAKE_C_FLAGS			"${CMAKE_C_FLAGS} -fwrapv")

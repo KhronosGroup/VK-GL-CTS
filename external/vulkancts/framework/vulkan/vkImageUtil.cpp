@@ -64,6 +64,46 @@ bool isUintFormat (VkFormat format)
 	return tcu::getTextureChannelClass(mapVkFormat(format).type) == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER;
 }
 
+bool isScaledFormat (VkFormat format)
+{
+	// update this mapping if VkFormat changes
+	DE_STATIC_ASSERT(VK_CORE_FORMAT_LAST == 185);
+
+	switch (format)
+	{
+		case VK_FORMAT_R8_USCALED:
+		case VK_FORMAT_R8_SSCALED:
+		case VK_FORMAT_R8G8_USCALED:
+		case VK_FORMAT_R8G8_SSCALED:
+		case VK_FORMAT_R8G8B8_USCALED:
+		case VK_FORMAT_R8G8B8_SSCALED:
+		case VK_FORMAT_R8G8B8A8_USCALED:
+		case VK_FORMAT_R8G8B8A8_SSCALED:
+		case VK_FORMAT_A2B10G10R10_USCALED_PACK32:
+		case VK_FORMAT_A2B10G10R10_SSCALED_PACK32:
+		case VK_FORMAT_R16_USCALED:
+		case VK_FORMAT_R16_SSCALED:
+		case VK_FORMAT_R16G16_USCALED:
+		case VK_FORMAT_R16G16_SSCALED:
+		case VK_FORMAT_R16G16B16_USCALED:
+		case VK_FORMAT_R16G16B16_SSCALED:
+		case VK_FORMAT_R16G16B16A16_USCALED:
+		case VK_FORMAT_R16G16B16A16_SSCALED:
+		case VK_FORMAT_B8G8R8_USCALED:
+		case VK_FORMAT_B8G8R8_SSCALED:
+		case VK_FORMAT_B8G8R8A8_USCALED:
+		case VK_FORMAT_B8G8R8A8_SSCALED:
+		case VK_FORMAT_A2R10G10B10_USCALED_PACK32:
+		case VK_FORMAT_A2R10G10B10_SSCALED_PACK32:
+		case VK_FORMAT_A8B8G8R8_USCALED_PACK32:
+		case VK_FORMAT_A8B8G8R8_SSCALED_PACK32:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
 bool isDepthStencilFormat (VkFormat format)
 {
 	if (isCompressedFormat(format))
@@ -3276,44 +3316,6 @@ tcu::CompressedTexFormat mapVkCompressedFormat (VkFormat format)
 	}
 }
 
-static bool isScaledFormat (VkFormat format)
-{
-	// update this mapping if VkFormat changes
-	DE_STATIC_ASSERT(VK_CORE_FORMAT_LAST == 185);
-
-	switch (format)
-	{
-		case VK_FORMAT_R8_USCALED:
-		case VK_FORMAT_R8_SSCALED:
-		case VK_FORMAT_R8G8_USCALED:
-		case VK_FORMAT_R8G8_SSCALED:
-		case VK_FORMAT_R8G8B8_USCALED:
-		case VK_FORMAT_R8G8B8_SSCALED:
-		case VK_FORMAT_R8G8B8A8_USCALED:
-		case VK_FORMAT_R8G8B8A8_SSCALED:
-		case VK_FORMAT_A2B10G10R10_USCALED_PACK32:
-		case VK_FORMAT_A2B10G10R10_SSCALED_PACK32:
-		case VK_FORMAT_R16_USCALED:
-		case VK_FORMAT_R16_SSCALED:
-		case VK_FORMAT_R16G16_USCALED:
-		case VK_FORMAT_R16G16_SSCALED:
-		case VK_FORMAT_R16G16B16_USCALED:
-		case VK_FORMAT_R16G16B16_SSCALED:
-		case VK_FORMAT_R16G16B16A16_USCALED:
-		case VK_FORMAT_R16G16B16A16_SSCALED:
-		case VK_FORMAT_B8G8R8_USCALED:
-		case VK_FORMAT_B8G8R8_SSCALED:
-		case VK_FORMAT_B8G8R8A8_USCALED:
-		case VK_FORMAT_B8G8R8A8_SSCALED:
-		case VK_FORMAT_A2R10G10B10_USCALED_PACK32:
-		case VK_FORMAT_A2R10G10B10_SSCALED_PACK32:
-			return true;
-
-		default:
-			return false;
-	}
-}
-
 static bool fullTextureFormatRoundTripSupported (VkFormat format)
 {
 	if (isScaledFormat(format))
@@ -4225,6 +4227,7 @@ void copyBufferToImage (const DeviceInterface&					vk,
 						VkImage									destImage,
 						VkImageLayout							destImageLayout,
 						VkPipelineStageFlags					destImageDstStageFlags,
+						VkAccessFlags							destImageDstAccessMask,
 						deUint32								baseMipLevel)
 {
 	// Barriers for copying buffer to image
@@ -4266,7 +4269,7 @@ void copyBufferToImage (const DeviceInterface&					vk,
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
 		DE_NULL,										// const void*				pNext;
 		VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			srcAccessMask;
-		VK_ACCESS_SHADER_READ_BIT,						// VkAccessFlags			dstAccessMask;
+		destImageDstAccessMask,							// VkAccessFlags			dstAccessMask;
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout			oldLayout;
 		destImageLayout,								// VkImageLayout			newLayout;
 		VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;
@@ -4301,6 +4304,7 @@ void copyBufferToImage (const DeviceInterface&					vk,
 						VkImage									destImage,
 						VkImageLayout							destImageLayout,
 						VkPipelineStageFlags					destImageDstStageFlags,
+						VkAccessFlags							destImageDstAccessMask,
 						const VkCommandPool*					externalCommandPool,
 						deUint32								baseMipLevel)
 {
@@ -4330,10 +4334,10 @@ void copyBufferToImage (const DeviceInterface&					vk,
 	};
 
 	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
-	copyBufferToImage(vk, *cmdBuffer, buffer, bufferSize, copyRegions, imageAspectFlags, mipLevels, arrayLayers, destImage, destImageLayout, destImageDstStageFlags, baseMipLevel);
+	copyBufferToImage(vk, *cmdBuffer, buffer, bufferSize, copyRegions, imageAspectFlags, mipLevels, arrayLayers, destImage, destImageLayout, destImageDstStageFlags, destImageDstAccessMask, baseMipLevel);
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
-	const VkPipelineStageFlags pipelineStageFlags = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
+	const VkPipelineStageFlags pipelineStageFlags = VK_PIPELINE_STAGE_TRANSFER_BIT;
 
 	const VkSubmitInfo submitInfo =
 	{
@@ -4370,7 +4374,7 @@ void copyImageToBuffer (const DeviceInterface&	vk,
 						deUint32				numLayers,
 						VkImageAspectFlags		barrierAspect,
 						VkImageAspectFlags		copyAspect,
-						VkPipelineStageFlags    srcMask)
+						VkPipelineStageFlags	srcStageMask)
 {
 	const VkImageMemoryBarrier	imageBarrier	=
 	{
@@ -4386,7 +4390,7 @@ void copyImageToBuffer (const DeviceInterface&	vk,
 		makeImageSubresourceRange(barrierAspect, 0u, 1u, 0, numLayers)	// VkImageSubresourceRange	subresourceRange;
 	};
 
-	vk.cmdPipelineBarrier(cmdBuffer, srcMask, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
+	vk.cmdPipelineBarrier(cmdBuffer, srcStageMask, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
 						  0u, DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
 
 	const VkImageSubresourceLayers	subresource	=

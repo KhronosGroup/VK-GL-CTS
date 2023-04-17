@@ -26,6 +26,9 @@
 #include <memory>
 #include <vector>
 #include <algorithm>
+#include <array>
+#include <numeric>
+#include <memory>
 
 #include "vkPipelineConstructionUtil.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -45,6 +48,7 @@
 #include "vkBufferWithMemory.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vktPipelineReferenceRenderer.hpp"
+#include "vkBuilderUtil.hpp"
 
 namespace vkt
 {
@@ -982,6 +986,7 @@ tcu::TestStatus UnusedShaderStagesInstance::iterate ()
 
 	VkGraphicsPipelineCreateInfo linkedPipelineInfo	= initVulkanStructure(&linkedPipelineLibraryInfo);
 	linkedPipelineInfo.flags						= linkFlags;
+	linkedPipelineInfo.layout						= pipelineLayout.get();
 	linkedPipelineInfo.stageCount					= de::sizeU32(allBadStages);
 	linkedPipelineInfo.pStages						= de::dataOrNull(allBadStages);
 
@@ -1324,10 +1329,10 @@ tcu::TestStatus PipelineLibraryInterpolateAtSampleTestInstance::iterate(void)
 	void*				indexBufferGPLData	= indexBufferGPLAlloc.getHostPtr();
 	void*				valuesBufferGPLData	= valuesBufferGPLAlloc.getHostPtr();
 
-	deMemset(indexBufferMonolithicData, 0, sizeof(ValueBuffer));
-	deMemset(valuesBufferMonolithicData, 0, sizeof(uint32_t));
-	deMemset(indexBufferGPLData, 0, sizeof(uint32_t));
+	deMemset(indexBufferMonolithicData, 0, sizeof(uint32_t));
 	deMemset(valuesBufferMonolithicData, 0, sizeof(ValueBuffer));
+	deMemset(indexBufferGPLData, 0, sizeof(uint32_t));
+	deMemset(valuesBufferGPLData, 0, sizeof(ValueBuffer));
 
 	flushAlloc(vkd, device, indexBufferMonolithicAlloc);
 	flushAlloc(vkd, device, valuesBufferMonolithicAlloc);
@@ -1373,8 +1378,315 @@ tcu::TestStatus PipelineLibraryInterpolateAtSampleTestInstance::iterate(void)
 }
 #endif
 
-} // anonymous
+struct BindingTestConfig {
+	PipelineConstructionType construction;
+	bool backwardsBinding;
+	bool holes;
+};
 
+/*
+ * Test the following behaviours:
+ * Descriptor sets updated/bound in backwards order
+ * Descriptor sets with index holes updated/bound/used
+ */
+class PipelineLayoutBindingTestCases : public vkt::TestCase
+{
+public:
+	PipelineLayoutBindingTestCases		(tcu::TestContext&                  testCtx,
+											 const std::string&                 name,
+											 const std::string&                 description,
+											 const BindingTestConfig&			config)
+		: vkt::TestCase(testCtx, name, description)
+		, m_config(config)
+	{
+	}
+	~PipelineLayoutBindingTestCases		    (void) {}
+	void			initPrograms				(SourceCollections& programCollection) const override;
+	void			checkSupport				(Context& context) const override;
+	TestInstance*	createInstance				(Context& context) const override;
+
+	const BindingTestConfig m_config;
+};
+
+class PipelineLayoutBindingTestInstance : public vkt::TestInstance
+{
+public:
+	PipelineLayoutBindingTestInstance	(Context& context,
+										 const BindingTestConfig& config)
+		: vkt::TestInstance(context)
+		, m_renderSize		        (2, 2)
+		, m_extent(makeExtent3D(m_renderSize.x(), m_renderSize.y(), 1u))
+		, m_format					(VK_FORMAT_R8G8B8A8_UNORM)
+		, m_graphicsPipeline		(context.getDeviceInterface(), context.getDevice(), config.construction)
+		, m_config					(config)
+	{
+	}
+	~PipelineLayoutBindingTestInstance	(void) {}
+	tcu::TestStatus		iterate				(void) override;
+
+private:
+	const tcu::UVec2            m_renderSize;
+	const VkExtent3D		    m_extent;
+	const VkFormat		        m_format;
+	GraphicsPipelineWrapper		m_graphicsPipeline;
+	const BindingTestConfig		m_config;
+};
+
+TestInstance* PipelineLayoutBindingTestCases::createInstance (Context& context) const
+{
+	return new PipelineLayoutBindingTestInstance(context, m_config);
+}
+
+void PipelineLayoutBindingTestCases::checkSupport (Context &context) const
+{
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_config.construction);
+}
+
+void PipelineLayoutBindingTestCases::initPrograms(SourceCollections& sources) const
+{
+	std::ostringstream src;
+	src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+		<< "vec2 positions[3] = vec2[](\n"
+		<< "		vec2(-1.0, -1.0),"
+		<< "		vec2(3.0, -1.0),"
+		<< "		vec2(-1.0, 3.0)"
+		<< ");\n"
+		<< "void main() {\n"
+		<< "		gl_Position = vec4(positions[gl_VertexIndex], 0.0, 1.0);\n"
+		<< "}";
+	sources.glslSources.add("vert") << glu::VertexSource(src.str());
+
+	std::ostringstream frag;
+	frag
+		<< glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+		<< "layout (location=0) out vec4 outColor;\n"
+		<< "layout(set = 0, binding = 0) uniform Output0 {"
+		<< "	uint data;"
+		<< "} buf0;\n";
+		if (!m_config.holes) {
+			frag
+				<< "layout(set = 1, binding = 0) uniform Output1 {"
+				<< "	uint data;"
+				<< "} buf1;\n"
+				<< "layout(set = 2, binding = 0) uniform Output2 {"
+				<< "	uint data;"
+				<< "} buf2;\n"
+				<< "\n";
+		}
+	frag
+				<< "layout(set = 3, binding = 0) uniform Output3 {"
+				<< "	uint data;"
+				<< "} buf3;\n"
+				<< "void main ()\n"
+				<< "{\n"
+				<< "    const vec4 red = vec4(1.0, 0.0, 0.0, 1.0);\n"
+				<< "    const vec4 green = vec4(0.0, 1.0, 0.0, 1.0);\n";
+		if (!m_config.holes) {
+			frag
+				<< "    outColor = ((buf0.data == 0) && (buf1.data == 1) && (buf2.data == 2) && (buf3.data == 3)) ? green : red;\n";
+		} else {
+			frag
+				<< "    outColor = ((buf0.data == 0) && (buf3.data == 3)) ? green : red;\n";
+		}
+		frag << "}\n";
+	sources.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+tcu::TestStatus PipelineLayoutBindingTestInstance::iterate ()
+{
+	const auto&			vkd					= m_context.getDeviceInterface();
+	const auto			device				= m_context.getDevice();
+	auto&				alloc				= m_context.getDefaultAllocator();
+	const auto			qIndex				= m_context.getUniversalQueueFamilyIndex();
+	const auto			queue				= m_context.getUniversalQueue();
+	const auto			tcuFormat			= mapVkFormat(m_format);
+	const auto			colorUsage			= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const auto			verifBufferUsage	= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+	const tcu::Vec4		clearColor			(0.0f, 0.0f, 0.0f, 1.0f);
+
+	// Color attachment.
+	const VkImageCreateInfo colorBufferInfo =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	//	VkStructureType			sType;
+		nullptr,								//	const void*				pNext;
+		0u,										//	VkImageCreateFlags		flags;
+		VK_IMAGE_TYPE_2D,						//	VkImageType				imageType;
+		m_format,								//	VkFormat				format;
+		m_extent,								//	VkExtent3D				extent;
+		1u,										//	uint32_t				mipLevels;
+		1u,										//	uint32_t				arrayLayers;
+		VK_SAMPLE_COUNT_1_BIT,					//	VkSampleCountFlagBits	samples;
+		VK_IMAGE_TILING_OPTIMAL,				//	VkImageTiling			tiling;
+		colorUsage,								//	VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,				//	VkSharingMode			sharingMode;
+		0u,										//	uint32_t				queueFamilyIndexCount;
+		nullptr,								//	const uint32_t*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,				//	VkImageLayout			initialLayout;
+	};
+	ImageWithMemory		colorBuffer		(vkd, device, alloc, colorBufferInfo, MemoryRequirement::Any);
+	const auto			colorSRR		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	const auto			colorSRL		= makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+	const auto			colorBufferView	= makeImageView(vkd, device, colorBuffer.get(), VK_IMAGE_VIEW_TYPE_2D, m_format, colorSRR);
+
+	// Verification buffer.
+	const auto			verifBufferSize		= static_cast<VkDeviceSize>(tcu::getPixelSize(tcuFormat)) * m_extent.width * m_extent.height;
+	const auto			verifBufferInfo		= makeBufferCreateInfo(verifBufferSize, verifBufferUsage);
+	BufferWithMemory	verifBuffer			(vkd, device, alloc, verifBufferInfo, MemoryRequirement::HostVisible);
+	auto&				verifBufferAlloc	= verifBuffer.getAllocation();
+
+	// Render pass and framebuffer.
+	const auto renderPass	= makeRenderPass(vkd, device, m_format);
+	const auto framebuffer	= makeFramebuffer(vkd, device, renderPass.get(), colorBufferView.get(), m_extent.width, m_extent.height);
+
+	// Shader modules.
+	const auto&		binaries		= m_context.getBinaryCollection();
+	const auto		vertModule		= createShaderModule(vkd, device, binaries.get("vert"));
+	const auto		fragModule		= createShaderModule(vkd, device, binaries.get("frag"));
+
+	// Viewports and scissors.
+	const std::vector<VkViewport>	viewports	(1u, makeViewport(m_extent));
+	const std::vector<VkRect2D>		scissors	(1u, makeRect2D(m_extent));
+
+	const VkPipelineVertexInputStateCreateInfo		vertexInputState	= initVulkanStructure();
+	const VkPipelineRasterizationStateCreateInfo    rasterizationState  =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,		// VkStructureType                          sType;
+		DE_NULL,														// const void*                              pNext;
+		(VkPipelineRasterizationStateCreateFlags)0,						// VkPipelineRasterizationStateCreateFlags  flags;
+		VK_FALSE,														// VkBool32                                 depthClampEnable;
+		VK_FALSE,														// VkBool32                                 rasterizerDiscardEnable;
+		VK_POLYGON_MODE_FILL,											// VkPolygonMode							polygonMode;
+		VK_CULL_MODE_NONE,												// VkCullModeFlags							cullMode;
+		VK_FRONT_FACE_CLOCKWISE,										// VkFrontFace								frontFace;
+		VK_FALSE,														// VkBool32									depthBiasEnable;
+		0.0f,															// float									depthBiasConstantFactor;
+		0.0f,															// float									depthBiasClamp;
+		0.0f,															// float									depthBiasSlopeFactor;
+		1.0f,															// float									lineWidth;
+	};
+
+	std::array<int, 4> tmpIndices = {};
+	std::array<int, 4> indices = {};
+	std::iota(tmpIndices.begin(), tmpIndices.end(), 0);
+	if (m_config.backwardsBinding) {
+		std::copy(tmpIndices.rbegin(), tmpIndices.rend(), indices.begin());
+	} else {
+		std::copy(tmpIndices.begin(), tmpIndices.end(), indices.begin());
+	}
+
+	vk::DescriptorSetLayoutBuilder layoutBuilder;
+	layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
+
+	std::vector<vk::Move<VkDescriptorSetLayout>>  descriptorSetLayouts = {};
+
+	for (size_t i = 0; i < indices.size(); i++) {
+		descriptorSetLayouts.emplace_back(layoutBuilder.build(vkd, device));
+	}
+
+	// Pipeline layout and graphics pipeline.
+	uint32_t setAndDescriptorCount = de::sizeU32(indices);
+	const auto pipelineLayout	= makePipelineLayout(vkd, device, descriptorSetLayouts);
+	DescriptorPoolBuilder poolBuilder;
+	poolBuilder.addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, setAndDescriptorCount);
+	const auto descriptorPool = poolBuilder.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, setAndDescriptorCount);
+	std::vector<vk::Move<VkDescriptorSet>> descriptorSetsWrap = {};
+	std::vector<VkDescriptorSet> descriptorSets = {};
+
+	for (const auto& setLayout : descriptorSetLayouts) {
+		descriptorSetsWrap.emplace_back(makeDescriptorSet(vkd, device, descriptorPool.get(), setLayout.get()));
+	}
+
+	for (size_t i = 0; i < indices.size(); i++) {
+		descriptorSets.emplace_back(descriptorSetsWrap[i].get());
+	}
+
+	const auto			bufferSize		= static_cast<VkDeviceSize>(sizeof(uint32_t));
+	std::vector<std::unique_ptr<BufferWithMemory>> buffers;
+	//create uniform buffers
+	for (size_t i = 0; i < indices.size(); i++) {
+		auto outBufferInfo = makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+		auto buffer = std::unique_ptr<vk::BufferWithMemory>(new vk::BufferWithMemory(vkd, device, alloc, outBufferInfo, vk::MemoryRequirement::HostVisible));
+		auto&				bufferAlloc		= buffer->getAllocation();
+		uint32_t*			bufferData		= (uint32_t*)bufferAlloc.getHostPtr();
+		*bufferData = (uint32_t)i;
+		flushAlloc(vkd, device, bufferAlloc);
+		buffers.push_back(std::move(buffer));
+	}
+
+	DescriptorSetUpdateBuilder updater;
+
+	for (auto i : indices) {
+		const auto bufferInfo = makeDescriptorBufferInfo(buffers[i]->get(), 0ull, bufferSize);
+		updater.writeSingle(descriptorSets[i], DescriptorSetUpdateBuilder::Location::binding(0), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &bufferInfo);
+		updater.update(vkd, device);
+	}
+
+	const auto topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	m_graphicsPipeline.setDefaultRasterizationState()
+		.setDefaultTopology(topology)
+		.setupVertexInputState(&vertexInputState)
+		.setDefaultDepthStencilState()
+		.setDefaultMultisampleState()
+		.setDefaultColorBlendState()
+		.setupPreRasterizationShaderState(viewports, scissors, *pipelineLayout, *renderPass, 0u, *vertModule, &rasterizationState)
+		.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragModule)
+		.setupFragmentOutputState(*renderPass)
+		.setMonolithicPipelineLayout(*pipelineLayout)
+		.buildPipeline();
+
+	// Command pool and buffer.
+	const auto cmdPool		= makeCommandPool(vkd, device, qIndex);
+	const auto cmdBufferPtr	= allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	const auto cmdBuffer	= cmdBufferPtr.get();
+
+	beginCommandBuffer(vkd, cmdBuffer);
+
+	// Draw.
+	beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.at(0u), clearColor);
+	for (auto i : indices) {
+		if (m_config.holes && ((i == 1) || (i == 2))) {
+			continue;
+		}
+		vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), i, 1, &descriptorSets[i], 0u, nullptr);
+	}
+	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.getPipeline());
+	vkd.cmdDraw(cmdBuffer, 3, 1u, 0u, 0u);
+	endRenderPass(vkd, cmdBuffer);
+
+	// Copy to verification buffer.
+	const auto copyRegion		= makeBufferImageCopy(m_extent, colorSRL);
+	const auto transfer2Host	= makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+	const auto color2Transfer	= makeImageMemoryBarrier(
+		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		colorBuffer.get(), colorSRR);
+
+	cmdPipelineImageMemoryBarrier(vkd, cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, &color2Transfer);
+	vkd.cmdCopyImageToBuffer(cmdBuffer, colorBuffer.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, verifBuffer.get(), 1u, &copyRegion);
+	cmdPipelineMemoryBarrier(vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, &transfer2Host);
+
+	endCommandBuffer(vkd, cmdBuffer);
+
+	// Submit and validate result.
+	submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+	const tcu::IVec3					iExtent (static_cast<int>(m_extent.width), static_cast<int>(m_extent.height), static_cast<int>(m_extent.depth));
+	void*								verifBufferData		= verifBufferAlloc.getHostPtr();
+	const tcu::ConstPixelBufferAccess	verifAccess		(tcuFormat, iExtent, verifBufferData);
+	invalidateAlloc(vkd, device, verifBufferAlloc);
+
+	const auto green = tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f);
+	tcu::TextureLevel referenceLevel(mapVkFormat(m_format), m_extent.height, m_extent.height);
+	tcu::PixelBufferAccess reference = referenceLevel.getAccess();
+	tcu::clear(reference, green);
+
+	if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Compare", "Result comparison", reference, verifAccess, tcu::Vec4(0.0), tcu::COMPARE_LOG_ON_ERROR))
+		return tcu::TestStatus::fail("Image comparison failed");
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+} // anonymous
 
 tcu::TestCaseGroup* createMiscTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
@@ -1414,6 +1726,14 @@ tcu::TestCaseGroup* createMiscTests (tcu::TestContext& testCtx, PipelineConstruc
 			}
 	}
 #endif // CTS_USES_VULKANSC
+
+	BindingTestConfig config0 = {pipelineConstructionType, true, false};
+	BindingTestConfig config1 = {pipelineConstructionType, false, true};
+	BindingTestConfig config2 = {pipelineConstructionType, true, true};
+
+	miscTests->addChild(new PipelineLayoutBindingTestCases(testCtx, "descriptor_bind_test_backwards", "Verify implicit access to gl_PrimtiveID works with a tessellation shader", config0));
+	miscTests->addChild(new PipelineLayoutBindingTestCases(testCtx, "descriptor_bind_test_holes", "Verify implicit access to gl_PrimtiveID works with a tessellation shader", config1));
+	miscTests->addChild(new PipelineLayoutBindingTestCases(testCtx, "descriptor_bind_test_backwards_holes", "Verify implicit access to gl_PrimtiveID works with a tessellation shader", config2));
 
 	return miscTests.release();
 }

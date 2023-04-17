@@ -111,7 +111,7 @@ namespace
 		{
 			const vk::VkImageAspectFlagBits	planeAspect	= (vk::VkImageAspectFlagBits)(vk::VK_IMAGE_ASPECT_PLANE_0_BIT << planeNdx);
 			vk::VkMemoryRequirements		reqs		= getImagePlaneMemoryRequirements(vkd, device, srcImage.get(), planeAspect);
-			const VkDeviceSize				offset		= reqs.size;
+			const VkDeviceSize				offset		= deAlign64(reqs.size, reqs.alignment);
 			reqs.size *= 2;
 
 			srcImageMemory.push_back(AllocationSp(context.getDefaultAllocator().allocate(reqs, srcMemoryRequirement).release()));

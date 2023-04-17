@@ -760,7 +760,7 @@ tcu::TestStatus bufferMarkerMemoryDep(Context& context, MemoryDepParams params)
 			renderPass.get(),											// VkRenderPass										renderPass;
 			0,															// deUint32											subpass;
 			DE_NULL,													// VkPipeline										basePipelineHandle;
-			-1,															// deInt32											basePipelineIndex;
+			0,															// deInt32											basePipelineIndex;
 		};
 
 		pipeline = createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineInfo);

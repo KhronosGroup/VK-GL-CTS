@@ -368,10 +368,11 @@ void GraphicsCacheTest::initPrograms (SourceCollections& programCollection) cons
 		const std::string missSuffix = (shaderOp == SHADERS_CACHE_OP_HIT ? "" : "_miss");
 
 		programCollection.glslSources.add("color_vert" + missSuffix) << glu::VertexSource(
-			"#version 310 es\n"
+			"#version 450\n"
 			"layout(location = 0) in vec4 position;\n"
 			"layout(location = 1) in vec4 color;\n"
 			"layout(location = 0) out highp vec4 vtxColor;\n"
+			"out gl_PerVertex { vec4 gl_Position; };\n"
 			"void main (void)\n"
 			"{\n"
 			"  gl_Position = position;\n"

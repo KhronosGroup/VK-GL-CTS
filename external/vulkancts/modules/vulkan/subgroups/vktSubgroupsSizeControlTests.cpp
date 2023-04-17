@@ -29,6 +29,7 @@
 
 #include <string>
 #include <vector>
+#include <algorithm>
 
 using namespace tcu;
 using namespace std;
@@ -53,6 +54,16 @@ struct CaseDefinition
 	deUint32			requiredSubgroupSizeMode;
 	de::SharedPtr<bool>	geometryPointSizeSupported;
 	SpirvVersion		spirvVersion;
+
+	bool hasFullSubgroupsFlag (void) const
+	{
+		return ((pipelineShaderStageCreateFlags & VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT) != 0u);
+	}
+
+	bool shaderUsesFullSubgroups (void) const
+	{
+		return (hasFullSubgroupsFlag() || (spirvVersion >= SPIRV_VERSION_1_6));
+	}
 };
 
 struct TestParams
@@ -66,23 +77,13 @@ struct internalDataStruct
 {
 	const Context*			context;
 	struct CaseDefinition	caseDef;
-	deUint32				requiredSubgroupSize;
+	const deUint32			requiredSubgroupSize;
+	const bool				isRequiredSubgroupSize;	// Indicates if the test uses VkPipelineShaderStageRequiredSubgroupSizeCreateInfo.
 };
 
-// Find greatest common divisor for a and b
-deUint32 gcd (deUint32 a, deUint32 b)
+inline deBool makeDeBool (bool value)
 {
-	if ((0 != a) && (0 == b))
-	{
-		return a;
-	}
-	else
-	{
-		deUint32 greater = max(a, b);
-		deUint32 lesser  = min(a, b);
-
-		return gcd(lesser, greater % lesser);
-	}
+	return (value ? DE_TRUE : DE_FALSE);
 }
 
 UVec3	getLocalSizes (const uint32_t maxWorkGroupSize[3],
@@ -91,9 +92,10 @@ UVec3	getLocalSizes (const uint32_t maxWorkGroupSize[3],
 {
 	DE_ASSERT(numWorkGroupInvocations <= maxWorkGroupInvocations);
 	DE_UNREF(maxWorkGroupInvocations); // For release builds.
-	const deUint32 localSizeX = gcd(numWorkGroupInvocations, maxWorkGroupSize[0]);
-	const deUint32 localSizeY = gcd(deMax32(numWorkGroupInvocations / localSizeX, 1u), maxWorkGroupSize[1]);
-	const deUint32 localSizeZ = deMax32(numWorkGroupInvocations / (localSizeX * localSizeY), 1u);
+
+	const deUint32 localSizeX = de::gcd(numWorkGroupInvocations, maxWorkGroupSize[0]);
+	const deUint32 localSizeY = de::gcd(std::max(numWorkGroupInvocations / localSizeX, 1u), maxWorkGroupSize[1]);
+	const deUint32 localSizeZ = std::max(numWorkGroupInvocations / (localSizeX * localSizeY), 1u);
 
 	return UVec3(localSizeX, localSizeY, localSizeZ);
 }
@@ -141,7 +143,7 @@ static bool checkVertexPipelineStages (const void*			internalData,
 			return DE_FALSE;
 		}
 
-		if (checkInternalData->caseDef.requiredSubgroupSizeMode != REQUIRED_SUBGROUP_SIZE_NONE && data[i] != checkInternalData->requiredSubgroupSize)
+		if (checkInternalData->isRequiredSubgroupSize && data[i] != checkInternalData->requiredSubgroupSize)
 		{
 			log << TestLog::Message << "gl_SubgroupSize (" << data[i] << ") is not equal to the required subgroup size value (" << checkInternalData->requiredSubgroupSize << ")" << TestLog::EndMessage;
 
@@ -182,8 +184,7 @@ static bool checkFragmentPipelineStages (const void*			internalData,
 				return DE_FALSE;
 			}
 
-			if (checkInternalData->caseDef.requiredSubgroupSizeMode != REQUIRED_SUBGROUP_SIZE_NONE &&
-				data[ndx] != checkInternalData->requiredSubgroupSize)
+			if (checkInternalData->isRequiredSubgroupSize && data[ndx] != checkInternalData->requiredSubgroupSize)
 			{
 				log << TestLog::Message << "gl_SubgroupSize (" << data[ndx] << ") is not equal to the required subgroup size value (" << checkInternalData->requiredSubgroupSize << ")" << TestLog::EndMessage;
 
@@ -225,8 +226,7 @@ static bool checkCompute (const void*			internalData,
 			return DE_FALSE;
 		}
 
-		if (checkInternalData->caseDef.requiredSubgroupSizeMode != REQUIRED_SUBGROUP_SIZE_NONE &&
-			data[i] != checkInternalData->requiredSubgroupSize)
+		if (checkInternalData->isRequiredSubgroupSize && data[i] != checkInternalData->requiredSubgroupSize)
 		{
 			log << TestLog::Message << "[" << localSize[0] << ", " << localSize[1] << ", " << localSize[2] << "] "
 				<< "gl_SubgroupSize (" << data[i] << ") is not equal to the required subgroup size value (" << checkInternalData->requiredSubgroupSize << ")" << TestLog::EndMessage;
@@ -258,6 +258,7 @@ static bool checkComputeRequireFull (const void*			internalData,
 	const deUint32											width							= globalSizeX * globalSizeY * globalSizeZ;
 	const UVec4*											data							= reinterpret_cast<const UVec4*>(datas[0]);
 	const deUint32											numSubgroups					= (localSize[0] * localSize[1] * localSize[2]) / checkInternalData->requiredSubgroupSize;
+	const bool												exactSubgroupSize				= (checkInternalData->caseDef.shaderUsesFullSubgroups() && checkInternalData->isRequiredSubgroupSize);
 
 	for (deUint32 i = 0; i < width; i++)
 	{
@@ -276,18 +277,14 @@ static bool checkComputeRequireFull (const void*			internalData,
 			return DE_FALSE;
 		}
 
-		if ((checkInternalData->caseDef.pipelineShaderStageCreateFlags == VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT
-			&& checkInternalData->caseDef.spirvVersion < SPIRV_VERSION_1_6)
-			&& data[i].x() != checkInternalData->requiredSubgroupSize)
+		if (exactSubgroupSize && data[i].x() != checkInternalData->requiredSubgroupSize)
 		{
 			log << TestLog::Message << "[" << localSize[0] << ", " << localSize[1] << ", " << localSize[2] << "] "
 				<< "expected subgroupSize (" << checkInternalData->requiredSubgroupSize << ") doesn't match gl_SubgroupSize ( " << data[i].x() << ")" << TestLog::EndMessage;
 			return DE_FALSE;
 		}
 
-		if ((checkInternalData->caseDef.pipelineShaderStageCreateFlags == VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT
-			 && checkInternalData->caseDef.spirvVersion < SPIRV_VERSION_1_6)
-			 && data[i].z() != numSubgroups)
+		if (exactSubgroupSize && data[i].z() != numSubgroups)
 		{
 			log << TestLog::Message << "[" << localSize[0] << ", " << localSize[1] << ", " << localSize[2] << "] "
 				<< "expected number of subgroups dispatched (" << numSubgroups << ") doesn't match gl_NumSubgroups (" << data[i].z() << ")" << TestLog::EndMessage;
@@ -496,10 +493,10 @@ void initProgramsRequireFull (SourceCollections& programCollection, CaseDefiniti
 		<< "  highp uint offset = globalSize.x * ((globalSize.y * "
 		"gl_GlobalInvocationID.z) + gl_GlobalInvocationID.y) + "
 		"gl_GlobalInvocationID.x;\n"
-		<< "   result[offset].x = gl_SubgroupSize;" // save the subgroup size value
+		<< "   result[offset].x = gl_SubgroupSize;\n" // save the subgroup size value
 		<< "   uint numActive = subgroupBallotBitCount(subgroupBallot(true));\n"
 		<< "   result[offset].y = numActive;\n" // save the number of active subgroup invocations
-		<< "   result[offset].z = gl_NumSubgroups;" // save the number of subgroups dispatched.
+		<< "   result[offset].z = gl_NumSubgroups;\n" // save the number of subgroups dispatched.
 		<< "}\n";
 
 	programCollection.glslSources.add("comp") << glu::ComputeSource(src.str()) << ShaderBuildOptions(programCollection.usedVulkanVersion, caseDef.spirvVersion, 0u);
@@ -560,7 +557,7 @@ void supportedCheckFeatures (Context& context, CaseDefinition caseDef)
 		}
 	}
 
-	if (caseDef.pipelineShaderStageCreateFlags == VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT)
+	if (caseDef.hasFullSubgroupsFlag())
 	{
 #ifndef CTS_USES_VULKANSC
 		const VkPhysicalDeviceSubgroupSizeControlFeatures&	subgroupSizeControlFeatures		= context.getSubgroupSizeControlFeatures();
@@ -613,6 +610,7 @@ TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 		&context,
 		caseDef,
 		0u,
+		false,
 	};
 
 	switch (caseDef.shaderStage)
@@ -662,6 +660,7 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 			&context,
 			caseDef,
 			subgroupSize,
+			false,
 		};
 
 		return subgroups::makeComputeTestRequiredSubgroupSize(context,
@@ -672,7 +671,7 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 															  checkCompute,
 															  caseDef.pipelineShaderStageCreateFlags,
 															  numWorkgroups,
-															  DE_FALSE,
+															  makeDeBool(internalData.isRequiredSubgroupSize),
 															  subgroupSize,
 															  localSizesToTest,
 															  localSizesToTestCount);
@@ -718,17 +717,18 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 			&context,
 			caseDef,
 			subgroupSize,
+			false,
 		};
 
 		return subgroups::makeMeshTestRequiredSubgroupSize(context,
 														   VK_FORMAT_R32_UINT,
-														   DE_NULL,
+														   nullptr,
 														   0,
 														   &internalData,
 														   checkCompute,
 														   caseDef.pipelineShaderStageCreateFlags,
 														   numWorkgroups,
-														   DE_FALSE,
+														   makeDeBool(internalData.isRequiredSubgroupSize),
 														   subgroupSize,
 														   localSizesToTest,
 														   localSizesToTestCount);
@@ -742,11 +742,12 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 			&context,
 			caseDef,
 			0u,
+			false,
 		};
 
 		return subgroups::allStagesRequiredSubgroupSize(context,
 														VK_FORMAT_R32_UINT,
-														DE_NULL,
+														nullptr,
 														0,
 														&internalData,
 														checkVertexPipelineStages,
@@ -756,7 +757,7 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 														caseDef.pipelineShaderStageCreateFlags,
 														caseDef.pipelineShaderStageCreateFlags,
 														caseDef.pipelineShaderStageCreateFlags,
-														DE_NULL);
+														nullptr);
 	}
 #ifndef CTS_USES_VULKANSC
 	else if (isAllRayTracingStages(caseDef.shaderStage))
@@ -768,17 +769,18 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 			&context,
 			caseDef,
 			0u,
+			false,
 		};
 
 		return subgroups::allRayTracingStagesRequiredSubgroupSize(context,
 																  VK_FORMAT_R32_UINT,
-																  DE_NULL,
+																  nullptr,
 																  0,
 																  &internalData,
 																  checkVertexPipelineStages,
 																  stages,
 																  flags.data(),
-																  DE_NULL);
+																  nullptr);
 	}
 #endif // CTS_USES_VULKANSC
 	else
@@ -820,17 +822,20 @@ TestStatus testRequireFullSubgroups (Context& context, const CaseDefinition case
 		&context,
 		caseDef,
 		subgroupSize,
+		false,
 	};
+
+	DE_ASSERT(caseDef.requiredSubgroupSizeMode == REQUIRED_SUBGROUP_SIZE_NONE);
 
 	return subgroups::makeComputeTestRequiredSubgroupSize(context,
 														  VK_FORMAT_R32G32B32A32_UINT,
-														  DE_NULL,
+														  nullptr,
 														  0,
 														  &internalData,
 														  checkComputeRequireFull,
 														  caseDef.pipelineShaderStageCreateFlags,
 														  numWorkgroups,
-														  DE_FALSE,
+														  makeDeBool(internalData.isRequiredSubgroupSize),
 														  subgroupSize,
 														  localSizesToTest,
 														  localSizesToTestCount);
@@ -853,6 +858,7 @@ TestStatus testRequireSubgroupSize (Context& context, const CaseDefinition caseD
 		const auto&												maxWorkGroupSize							= physicalDeviceProperties.limits.maxComputeWorkGroupSize;
 		const auto&												maxInvocations								= physicalDeviceProperties.limits.maxComputeWorkGroupInvocations;
 		const UVec3												localSize									= getLocalSizes(maxWorkGroupSize, maxInvocations, maxTotalLocalSize);
+		const bool												shaderUsesFullSubgroups						= caseDef.shaderUsesFullSubgroups();
 		const deUint32											localSizesToTest[5][3]	=
 		{
 			{localSize.x(), localSize.y(), localSize.z()},
@@ -862,34 +868,32 @@ TestStatus testRequireSubgroupSize (Context& context, const CaseDefinition caseD
 			{1, 1, 1} // Isn't used, just here to make double buffering checks easier
 		};
 
+		// If the shader uses full subgroups, use only the first two entries so the local size in X is a multiple of the requested
+		// subgroup size, as required by the spec.
 		deUint32 localSizesToTestCount = 5;
-		if (caseDef.pipelineShaderStageCreateFlags & VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT
-			|| caseDef.spirvVersion >= SPIRV_VERSION_1_6)
+		if (shaderUsesFullSubgroups)
 			localSizesToTestCount = 3;
 
-		struct internalDataStruct internalData =
+		const internalDataStruct internalData =
 		{
 			&context,				//  const Context*			context;
 			caseDef,				//  struct CaseDefinition	caseDef;
 			requiredSubgroupSize,	//  deUint32				requiredSubgroupSize;
+			true,					//	bool					isRequiredSubgroupSize;
 		};
 
 		// Depending on the flag and SPIR-V version we need to run one verification function or another.
-		subgroups::CheckResultCompute							checkResult									= checkCompute;
-
-		if (caseDef.pipelineShaderStageCreateFlags & VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT
-			|| caseDef.spirvVersion >= SPIRV_VERSION_1_6)
-			checkResult = checkComputeRequireFull;
+		const auto checkFunction = (shaderUsesFullSubgroups ? checkComputeRequireFull : checkCompute);
 
 		return subgroups::makeComputeTestRequiredSubgroupSize(context,
 															  VK_FORMAT_R32G32B32A32_UINT,
-															  DE_NULL,
+															  nullptr,
 															  0,
 															  &internalData,
-															  checkResult,
+															  checkFunction,
 															  caseDef.pipelineShaderStageCreateFlags,
 															  numWorkgroups,
-															  DE_TRUE,
+															  makeDeBool(internalData.isRequiredSubgroupSize),
 															  requiredSubgroupSize,
 															  localSizesToTest,
 															  localSizesToTestCount);
@@ -910,8 +914,8 @@ TestStatus testRequireSubgroupSize (Context& context, const CaseDefinition caseD
 		const auto&		maxWorkGroupSize							= (isMesh ? meshProperties.maxMeshWorkGroupSize			: meshProperties.maxTaskWorkGroupSize);
 		const auto&		maxInvocations								= (isMesh ? meshProperties.maxMeshWorkGroupInvocations	: meshProperties.maxTaskWorkGroupInvocations);
 		const UVec3		localSize									= getLocalSizes(maxWorkGroupSize, maxInvocations, maxInvocations);
-		const uint32_t	localSizesToTestCount						= 5;
-		const uint32_t	localSizesToTest[localSizesToTestCount][3]	=
+		const bool		shaderUsesFullSubgroups						= caseDef.shaderUsesFullSubgroups();
+		const uint32_t	localSizesToTest[5][3]	=
 		{
 			{requiredSubgroupSize, 1, 1},
 			{1, requiredSubgroupSize, 1},
@@ -919,23 +923,33 @@ TestStatus testRequireSubgroupSize (Context& context, const CaseDefinition caseD
 			{localSize.x(), localSize.y(), localSize.z()},
 			{1, 1, 1} // Isn't used, just here to make double buffering checks easier
 		};
-		struct internalDataStruct								internalData								=
+
+		// If the shader uses full subgroups, use only the first two entries so the local size in X is a multiple of the requested
+		// subgroup size, as required by the spec.
+		deUint32 localSizesToTestCount = 5;
+		if (shaderUsesFullSubgroups)
+			localSizesToTestCount = 3;
+
+		const internalDataStruct internalData =
 		{
 			&context,				//  const Context*			context;
 			caseDef,				//  struct CaseDefinition	caseDef;
 			requiredSubgroupSize,	//  uint32_t				requiredSubgroupSize;
+			true,					//  bool					isRequiredSubgroupSize;
 		};
 
-		// Depending on the flag we need to run one verification function or another.
+		// Depending on the flag and SPIR-V version we need to run one verification function or another.
+		const auto checkFunction = (shaderUsesFullSubgroups ? checkComputeRequireFull : checkCompute);
+
 		return subgroups::makeMeshTestRequiredSubgroupSize(context,
 														   VK_FORMAT_R32G32B32A32_UINT,
-														   DE_NULL,
+														   nullptr,
 														   0,
 														   &internalData,
-														   caseDef.pipelineShaderStageCreateFlags == VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT ? checkComputeRequireFull : checkCompute,
+														   checkFunction,
 														   caseDef.pipelineShaderStageCreateFlags,
 														   numWorkgroups,
-														   DE_TRUE,
+														   makeDeBool(internalData.isRequiredSubgroupSize),
 														   requiredSubgroupSize,
 														   localSizesToTest,
 														   localSizesToTestCount);
@@ -951,11 +965,12 @@ TestStatus testRequireSubgroupSize (Context& context, const CaseDefinition caseD
 #endif // CTS_USES_VULKANSC
 		const deUint32											requiredSubgroupSize			= getRequiredSubgroupSizeFromMode(context, caseDef, subgroupSizeControlProperties);
 		const deUint32											requiredSubgroupSizes[5]		= { requiredSubgroupSize, requiredSubgroupSize, requiredSubgroupSize, requiredSubgroupSize, requiredSubgroupSize};
-		const struct internalDataStruct							internalData					=
+		const internalDataStruct								internalData					=
 		{
 			&context,				//  const Context*			context;
 			caseDef,				//  struct CaseDefinition	caseDef;
 			requiredSubgroupSize,	//  deUint32				requiredSubgroupSize;
+			true,					//  bool					isRequiredSubgroupSize;
 		};
 
 		return subgroups::allStagesRequiredSubgroupSize(context,
@@ -985,6 +1000,7 @@ TestStatus testRequireSubgroupSize (Context& context, const CaseDefinition caseD
 			&context,				//  const Context*			context;
 			caseDef,				//  struct CaseDefinition	caseDef;
 			requiredSubgroupSize,	//  deUint32				requiredSubgroupSize;
+			true,					//  bool					isRequiredSubgroupSize;
 		};
 
 		return subgroups::allRayTracingStagesRequiredSubgroupSize(context,
@@ -1018,6 +1034,7 @@ TestStatus noSSBOtestRequireSubgroupSize (Context& context, const CaseDefinition
 		&context,
 		caseDef,
 		requiredSubgroupSize,
+		true,
 	};
 
 	switch (caseDef.shaderStage)

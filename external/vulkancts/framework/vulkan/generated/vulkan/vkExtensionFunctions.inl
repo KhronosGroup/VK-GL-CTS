@@ -912,6 +912,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_map_memory2")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_shader_atomic_float2")
 	{
 		return;
@@ -1003,6 +1007,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_QCOM_render_pass_store_ops")
+	{
+		return;
+	}
+	if (extName == "VK_NV_low_latency")
 	{
 		return;
 	}
@@ -1214,6 +1222,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_HUAWEI_cluster_culling_shader")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_border_color_swizzle")
 	{
 		return;
@@ -1223,6 +1235,14 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_KHR_maintenance4")
+	{
+		return;
+	}
+	if (extName == "VK_ARM_shader_core_properties")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_image_sliced_view_of_3d")
 	{
 		return;
 	}
@@ -1324,6 +1344,14 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_ARM_shader_core_builtins")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_pipeline_library_group_handles")
+	{
+		return;
+	}
+	if (extName == "VK_QCOM_multiview_per_view_render_areas")
 	{
 		return;
 	}
@@ -1758,6 +1786,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	if (extName == "VK_EXT_discard_rectangles")
 	{
 		functions.push_back("vkCmdSetDiscardRectangleEXT");
+		functions.push_back("vkCmdSetDiscardRectangleEnableEXT");
+		functions.push_back("vkCmdSetDiscardRectangleModeEXT");
 		return;
 	}
 	if (extName == "VK_EXT_conservative_rasterization")
@@ -2157,6 +2187,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_NV_scissor_exclusive")
 	{
+		functions.push_back("vkCmdSetExclusiveScissorEnableNV");
 		functions.push_back("vkCmdSetExclusiveScissorNV");
 		return;
 	}
@@ -2371,6 +2402,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkGetPipelineExecutableInternalRepresentationsKHR");
 		return;
 	}
+	if (extName == "VK_KHR_map_memory2")
+	{
+		functions.push_back("vkMapMemory2KHR");
+		functions.push_back("vkUnmapMemory2KHR");
+		return;
+	}
 	if (extName == "VK_EXT_shader_atomic_float2")
 	{
 		return;
@@ -2468,6 +2505,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_QCOM_render_pass_store_ops")
+	{
+		return;
+	}
+	if (extName == "VK_NV_low_latency")
 	{
 		return;
 	}
@@ -2728,6 +2769,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_HUAWEI_cluster_culling_shader")
+	{
+		functions.push_back("vkCmdDrawClusterHUAWEI");
+		functions.push_back("vkCmdDrawClusterIndirectHUAWEI");
+		return;
+	}
 	if (extName == "VK_EXT_border_color_swizzle")
 	{
 		return;
@@ -2738,6 +2785,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_KHR_maintenance4")
+	{
+		return;
+	}
+	if (extName == "VK_ARM_shader_core_properties")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_image_sliced_view_of_3d")
 	{
 		return;
 	}
@@ -2873,6 +2928,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_ARM_shader_core_builtins")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_pipeline_library_group_handles")
+	{
+		return;
+	}
+	if (extName == "VK_QCOM_multiview_per_view_render_areas")
 	{
 		return;
 	}
@@ -3131,6 +3194,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_extended_dynamic_state",
 	"VK_KHR_deferred_host_operations",
 	"VK_KHR_pipeline_executable_properties",
+	"VK_KHR_map_memory2",
 	"VK_EXT_shader_atomic_float2",
 	"VK_EXT_swapchain_maintenance1",
 	"VK_EXT_shader_demote_to_helper_invocation",
@@ -3152,6 +3216,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_KHR_video_encode_queue",
 	"VK_NV_device_diagnostics_config",
 	"VK_QCOM_render_pass_store_ops",
+	"VK_NV_low_latency",
 	"VK_EXT_metal_objects",
 	"VK_KHR_synchronization2",
 	"VK_EXT_descriptor_buffer",
@@ -3201,9 +3266,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_image_2d_view_of_3d",
 	"VK_EXT_opacity_micromap",
 	"VK_EXT_load_store_op_none",
+	"VK_HUAWEI_cluster_culling_shader",
 	"VK_EXT_border_color_swizzle",
 	"VK_EXT_pageable_device_local_memory",
 	"VK_KHR_maintenance4",
+	"VK_ARM_shader_core_properties",
+	"VK_EXT_image_sliced_view_of_3d",
 	"VK_VALVE_descriptor_set_host_mapping",
 	"VK_EXT_depth_clamp_zero_one",
 	"VK_EXT_non_seamless_cube_map",
@@ -3227,4 +3295,6 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_NV_ray_tracing_invocation_reorder",
 	"VK_EXT_mutable_descriptor_type",
 	"VK_ARM_shader_core_builtins",
+	"VK_EXT_pipeline_library_group_handles",
+	"VK_QCOM_multiview_per_view_render_areas",
 };

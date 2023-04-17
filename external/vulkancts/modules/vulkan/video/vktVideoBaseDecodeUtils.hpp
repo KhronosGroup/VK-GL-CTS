@@ -40,7 +40,6 @@
 
 #include "vktVideoTestUtils.hpp"
 #include "vktVideoSessionNvUtils.hpp"
-#include "vktVideoSessionFfmpegUtils.hpp"
 #include "extNvidiaVideoParserIf.hpp"
 #include "vkImageWithMemory.hpp"
 #include "vkBufferWithMemory.hpp"
@@ -428,6 +427,8 @@ typedef vector<de::MovePtr<vector<deUint8>>> HeapType;
 
 #define ALLOC_HEAP_OBJECT_ARRAY(H,T,N) ((T*)heap.emplace(H.end(), de::MovePtr<vector<deUint8>>(new vector<deUint8>(sizeof(T)*N)))->get()->data())
 #define ALLOC_HEAP_OBJECT(H,T) ALLOC_HEAP_OBJECT_ARRAY(H,T,1)
+void* copyToHeap (HeapType& heap, const void* p, size_t size);
+void appendHeap (HeapType& heapTo, HeapType& heapFrom);
 
 class VideoBaseDecoder : public NvidiaVulkanParserVideoDecodeClient
 {
@@ -554,12 +555,10 @@ public:
 	int32_t													ReleaseDisplayedFrame			(DecodedFrame*											pDisplayedFrame);
 	VideoFrameBuffer*										GetVideoFrameBuffer				(void);
 	IfcNvFunctions*											GetNvFuncs						(void);
-	IfcFfmpegFunctions*										GetIfcFfmpegFuncs				(void);
 
 protected:
 	Context&												m_context;
 	de::MovePtr<IfcNvFunctions>								m_nvFuncs;
-	de::MovePtr<IfcFfmpegFunctions>							m_ffmpegFuncs;
 	VkVideoCodecOperationFlagBitsKHR						m_videoCodecOperation;
 	const DeviceInterface*									m_vkd;
 	VkDevice												m_device;

@@ -71,6 +71,8 @@ const char*	getTimeDomainEXTName					(VkTimeDomainEXT value);
 const char*	getValidationFeatureEnableEXTName		(VkValidationFeatureEnableEXT value);
 const char*	getValidationFeatureDisableEXTName		(VkValidationFeatureDisableEXT value);
 const char*	getLineRasterizationModeEXTName			(VkLineRasterizationModeEXT value);
+const char*	getSciSyncClientTypeNVName				(VkSciSyncClientTypeNV value);
+const char*	getSciSyncPrimitiveTypeNVName			(VkSciSyncPrimitiveTypeNV value);
 
 inline tcu::Format::Enum<VkResult>								getResultStr							(VkResult value)							{ return tcu::Format::Enum<VkResult>(getResultName, value);														}
 inline tcu::Format::Enum<VkStructureType>						getStructureTypeStr						(VkStructureType value)						{ return tcu::Format::Enum<VkStructureType>(getStructureTypeName, value);										}
@@ -140,6 +142,8 @@ inline tcu::Format::Enum<VkTimeDomainEXT>						getTimeDomainEXTStr						(VkTimeD
 inline tcu::Format::Enum<VkValidationFeatureEnableEXT>			getValidationFeatureEnableEXTStr		(VkValidationFeatureEnableEXT value)		{ return tcu::Format::Enum<VkValidationFeatureEnableEXT>(getValidationFeatureEnableEXTName, value);				}
 inline tcu::Format::Enum<VkValidationFeatureDisableEXT>			getValidationFeatureDisableEXTStr		(VkValidationFeatureDisableEXT value)		{ return tcu::Format::Enum<VkValidationFeatureDisableEXT>(getValidationFeatureDisableEXTName, value);			}
 inline tcu::Format::Enum<VkLineRasterizationModeEXT>			getLineRasterizationModeEXTStr			(VkLineRasterizationModeEXT value)			{ return tcu::Format::Enum<VkLineRasterizationModeEXT>(getLineRasterizationModeEXTName, value);					}
+inline tcu::Format::Enum<VkSciSyncClientTypeNV>					getSciSyncClientTypeNVStr				(VkSciSyncClientTypeNV value)				{ return tcu::Format::Enum<VkSciSyncClientTypeNV>(getSciSyncClientTypeNVName, value);							}
+inline tcu::Format::Enum<VkSciSyncPrimitiveTypeNV>				getSciSyncPrimitiveTypeNVStr			(VkSciSyncPrimitiveTypeNV value)			{ return tcu::Format::Enum<VkSciSyncPrimitiveTypeNV>(getSciSyncPrimitiveTypeNVName, value);						}
 
 inline std::ostream&	operator<<	(std::ostream& s, VkResult value)							{ return s << getResultStr(value);								}
 inline std::ostream&	operator<<	(std::ostream& s, VkStructureType value)					{ return s << getStructureTypeStr(value);						}
@@ -209,6 +213,8 @@ inline std::ostream&	operator<<	(std::ostream& s, VkTimeDomainEXT value)					{ r
 inline std::ostream&	operator<<	(std::ostream& s, VkValidationFeatureEnableEXT value)		{ return s << getValidationFeatureEnableEXTStr(value);			}
 inline std::ostream&	operator<<	(std::ostream& s, VkValidationFeatureDisableEXT value)		{ return s << getValidationFeatureDisableEXTStr(value);			}
 inline std::ostream&	operator<<	(std::ostream& s, VkLineRasterizationModeEXT value)			{ return s << getLineRasterizationModeEXTStr(value);			}
+inline std::ostream&	operator<<	(std::ostream& s, VkSciSyncClientTypeNV value)				{ return s << getSciSyncClientTypeNVStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, VkSciSyncPrimitiveTypeNV value)			{ return s << getSciSyncPrimitiveTypeNVStr(value);				}
 
 tcu::Format::Bitfield<32>	getAccessFlagsStr											(VkAccessFlags value);
 tcu::Format::Bitfield<32>	getImageAspectFlagsStr										(VkImageAspectFlags value);
@@ -686,3 +692,20 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExtendedDynamic
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceColorWriteEnableFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineColorWriteCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkApplicationParametersEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExportFenceSciSyncInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImportFenceSciSyncInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkFenceGetSciSyncInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSciSyncAttributesInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExportSemaphoreSciSyncInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImportSemaphoreSciSyncInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSemaphoreGetSciSyncInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalSciSyncFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExportMemorySciBufInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImportMemorySciBufInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemoryGetSciBufInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemorySciBufPropertiesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalMemorySciBufFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalSciSync2FeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSemaphoreSciSyncPoolCreateInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSemaphoreSciSyncCreateInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceSemaphoreSciSyncPoolReservationCreateInfoNV& value);

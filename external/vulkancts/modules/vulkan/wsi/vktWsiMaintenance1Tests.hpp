@@ -1,10 +1,11 @@
-#ifndef _VKTVIDEOSESSIONFFMPEGUTILS_HPP
-#define _VKTVIDEOSESSIONFFMPEGUTILS_HPP
+#ifndef _VKTWSIMAINTENANCE1TESTS_HPP
+#define _VKTWSIMAINTENANCE1TESTS_HPP
 /*-------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2021 The Khronos Group Inc.
+ * Copyright (c) 2022 Google Inc.
+ * Copyright (c) 2022 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,37 +21,21 @@
  *
  *//*!
  * \file
- * \brief Video Session Ffmpeg Utils
+ * \brief VK_EXT_surface_maintenance1 and VK_EXT_swapchain_maintenance1 extension tests
  *//*--------------------------------------------------------------------*/
 
-#include "deUniquePtr.hpp"
-#include "deDefs.hpp"
-#include "vkPlatform.hpp"
-#include <vector>
+#include "tcuDefs.hpp"
+#include "tcuTestCase.hpp"
+#include "vkDefs.hpp"
 
 namespace vkt
 {
-namespace video
+namespace wsi
 {
 
-class IfcFfmpegDemuxer
-{
-public:
-	virtual bool	demux				(deUint8** pData, deInt64* pSize) = 0;
-	virtual			~IfcFfmpegDemuxer	() { }
-};
+void	createMaintenance1Tests	(tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType);
 
-
-class IfcFfmpegFunctions
-{
-public:
-	virtual	IfcFfmpegDemuxer*	createIfcFfmpegDemuxer	(de::MovePtr<std::vector<deUint8>>& data) = 0;
-	virtual						~IfcFfmpegFunctions		() {};
-};
-
-de::MovePtr<IfcFfmpegFunctions> createIfcFfmpegFunctions ();
-
-} // video
+} // wsi
 } // vkt
 
-#endif // _VKTVIDEOSESSIONFFMPEGUTILS_HPP
+#endif // _VKTWSIMAINTENANCE1TESTS_HPP

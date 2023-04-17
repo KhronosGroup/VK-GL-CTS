@@ -169,7 +169,6 @@ protected:
 	Move<VkCommandBuffer>		m_cmdBufferCopy;
 	Move<VkFence>				m_fence_1;
 	Move<VkFence>				m_fence_2;
-	Move<VkEvent>				m_event;
 };
 
 ExternalMemoryHostBaseTestInstance::ExternalMemoryHostBaseTestInstance (Context& context, VkDeviceSize allocationSize)
@@ -843,8 +842,6 @@ tcu::TestStatus ExternalMemoryHostSynchronizationTestInstance::iterate ()
 	m_cmdPool								= createCommandPool(m_vkd, m_device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 	m_cmdBuffer								= allocateCommandBuffer(m_vkd, m_device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 	m_cmdBufferCopy							= allocateCommandBuffer(m_vkd, m_device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-
-	m_event									= createEvent(m_vkd, m_device);
 	m_fence_1								= createFence(m_vkd, m_device);
 	m_fence_2								= createFence(m_vkd, m_device);
 
@@ -860,7 +857,35 @@ tcu::TestStatus ExternalMemoryHostSynchronizationTestInstance::iterate ()
 	endCommandBuffer(m_vkd, *m_cmdBufferCopy);
 
 	submitCommands(*m_cmdBuffer, *m_fence_1);
-	submitCommands(*m_cmdBufferCopy, *m_fence_2);
+
+	const uint64_t semaphoreWaitValue = 1ull;
+	const VkPipelineStageFlags semaphoreWaitStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	const auto semaphore = createSemaphoreType(m_vkd, m_device, VK_SEMAPHORE_TYPE_TIMELINE);
+
+	// Use timeline semaphore to signal from host.
+	const VkTimelineSemaphoreSubmitInfo timelineWaitSubmitInfo =
+	{
+		VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,	//	VkStructureType	sType;
+		nullptr,											//	const void*		pNext;
+		1u,													//	uint32_t		waitSemaphoreValueCount;
+		&semaphoreWaitValue,								//	const uint64_t*	pWaitSemaphoreValues;
+		0u,													//	uint32_t		signalSemaphoreValueCount;
+		nullptr,											//	const uint64_t*	pSignalSemaphoreValues;
+	};
+
+	const VkSubmitInfo submit =
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,		//	VkStructureType				sType;
+		&timelineWaitSubmitInfo,			//	const void*					pNext;
+		1u,									//	uint32_t					waitSemaphoreCount;
+		&semaphore.get(),					//	const VkSemaphore*			pWaitSemaphores;
+		&semaphoreWaitStage,				//	const VkPipelineStageFlags*	pWaitDstStageMask;
+		1u,									//	uint32_t					commandBufferCount;
+		&m_cmdBufferCopy.get(),				//	const VkCommandBuffer*		pCommandBuffers;
+		0u,									//	uint32_t					signalSemaphoreCount;
+		nullptr,							//	const VkSemaphore*			pSignalSemaphores;
+	};
+	VK_CHECK(m_vkd.queueSubmit(m_queue, 1u, &submit, *m_fence_2));
 
 	//wait for fence_1 and modify image on host
 	VK_CHECK(m_vkd.waitForFences(m_device, 1u, &m_fence_1.get(), DE_TRUE, ~0ull));
@@ -873,7 +898,17 @@ tcu::TestStatus ExternalMemoryHostSynchronizationTestInstance::iterate ()
 	if (deMemCmp(m_hostMemoryAlloc, pointerReturnedByMapMemory, (size_t)dataBufferSize) != 0)
 		TCU_FAIL("Failed memcmp check.");
 	m_vkd.unmapMemory(m_device, *m_deviceMemoryAllocatedFromHostPointer);
-	VK_CHECK(m_vkd.setEvent(m_device, *m_event));
+
+	// Signal from host
+	const vk::VkSemaphoreSignalInfo signalInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO,	//	VkStructureType	sType;
+		nullptr,										//	const void*		pNext;
+		semaphore.get(),								//	VkSemaphore		semaphore;
+		semaphoreWaitValue,								//	uint64_t		value;
+	};
+
+	VK_CHECK(m_vkd.signalSemaphore(m_device, &signalInfo));
 
 	//wait for fence_2 before checking result
 	VK_CHECK(m_vkd.waitForFences(m_device, 1u, &m_fence_2.get(), DE_TRUE, ~0ull));
@@ -912,19 +947,6 @@ void ExternalMemoryHostSynchronizationTestInstance::prepareBufferForHostAccess (
 
 void ExternalMemoryHostSynchronizationTestInstance::copyResultBuffertoBuffer (VkDeviceSize size)
 {
-	const VkBufferMemoryBarrier		bufferBarrier =
-	{
-		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
-		DE_NULL,									// const void*		pNext;
-		VK_ACCESS_HOST_WRITE_BIT,					// VkAccessFlags	srcAccessMask;
-		VK_ACCESS_TRANSFER_READ_BIT,				// VkAccessFlags	dstAccessMask;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32			srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32			dstQueueFamilyIndex;
-		*m_dataBuffer,								// VkBuffer			buffer;
-		0u,											// VkDeviceSize		offset;
-		size										// VkDeviceSize		size;
-	};
-
 	const VkBufferCopy				region_all =
 	{
 		0,		//VkDeviceSize srcOffset;
@@ -932,7 +954,6 @@ void ExternalMemoryHostSynchronizationTestInstance::copyResultBuffertoBuffer (Vk
 		size	//VkDeviceSize size;
 	};
 
-	m_vkd.cmdWaitEvents(*m_cmdBufferCopy, 1, &m_event.get(), VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, DE_NULL, 1, &bufferBarrier, 0, DE_NULL);
 	m_vkd.cmdCopyBuffer(*m_cmdBufferCopy, *m_dataBuffer, *m_resultBuffer, 1, &region_all);
 }
 
@@ -1067,9 +1088,11 @@ void checkSupport (Context& context)
 	context.requireDeviceFunctionality("VK_EXT_external_memory_host");
 }
 
-void checkEvent (Context& context)
+void checkTimelineSemaphore (Context& context)
 {
 	checkSupport(context);
+	context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
+
 #ifndef CTS_USES_VULKANSC
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") && !context.getPortabilitySubsetFeatures().events)
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Events are not supported by this implementation");
@@ -1121,7 +1144,7 @@ tcu::TestCaseGroup* createMemoryExternalMemoryHostTests (tcu::TestContext& testC
 
 	synchronization->addChild(new InstanceFactory1WithSupport<ExternalMemoryHostSynchronizationTestInstance, TestParams, FunctionSupport0, AddPrograms>	(testCtx, tcu::NODETYPE_SELF_VALIDATE,
 																																						 "synchronization", "synchronization", AddPrograms(),
-																																						 TestParams(testFormats[0].format, true), checkEvent));
+																																						 TestParams(testFormats[0].format, true), checkTimelineSemaphore));
 	group->addChild(synchronization.release());
 	return group.release();
 }

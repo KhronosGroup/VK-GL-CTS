@@ -148,10 +148,10 @@ private:
 };
 
 NvFunctions::NvFunctions (const vk::Platform& platform)
-#if (DE_OS == DE_OS_ANDROID)
-	: m_library	(de::MovePtr<vk::Library>(platform.createLibrary()))
-#else
+#ifdef DE_PLATFORM_USE_LIBRARY_TYPE
 	: m_library	(de::MovePtr<vk::Library>(platform.createLibrary(vk::Platform::LIBRARY_TYPE_VULKAN_VIDEO_DECODE_PARSER, DE_NULL)))
+#else
+	: m_library	(de::MovePtr<vk::Library>(platform.createLibrary()))
 #endif
 {
 	const tcu::FunctionLibrary& funcsLibrary = m_library->getFunctionLibrary();

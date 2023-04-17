@@ -26,7 +26,8 @@ import hashlib
 
 from . import registry
 
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+scriptPath = os.path.join(os.path.dirname(__file__), "..")
+sys.path.insert(0, scriptPath)
 
 from ctsbuild.common import *
 

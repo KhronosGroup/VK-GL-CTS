@@ -1,5 +1,6 @@
 KHR-GLES2.shaders.negative.initialize
 KHR-GLES2.shaders.negative.constant_sequence
+KHR-GLES2.shaders.negative.non_precision_qualifiers_in_struct_members
 KHR-GLES2.shaders.aggressive_optimizations.sin_float_vert
 KHR-GLES2.shaders.aggressive_optimizations.sin_float_frag
 KHR-GLES2.shaders.aggressive_optimizations.sin_vec2_vert

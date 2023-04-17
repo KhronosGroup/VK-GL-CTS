@@ -583,13 +583,19 @@ MovePtr<GraphicsPipelineWrapper> makeGraphicsPipeline (const DeviceInterface&			
 	};
 
 	VkPipelineRenderingCreateInfo pipelineRenderingCreateInfoWithGarbage;
+	std::vector<VkFormat> garbageFormats;
+
 	if (garbageAttachment)
 	{
 		DE_ASSERT(pipelineRenderingCreateInfo);
 
+		for (int i = 0; i < 10; i++)
+			garbageFormats.push_back(VK_FORMAT_UNDEFINED);
+
 		pipelineRenderingCreateInfoWithGarbage = *pipelineRenderingCreateInfo;
-		pipelineRenderingCreateInfoWithGarbage.colorAttachmentCount		= 99999u;
-		pipelineRenderingCreateInfoWithGarbage.pColorAttachmentFormats	= reinterpret_cast<VkFormat *>(0x11);
+		// Just set a bunch of VK_FORMAT_UNDEFINED for garbage_color_attachment tests to make the validation happy.
+		pipelineRenderingCreateInfoWithGarbage.colorAttachmentCount		= static_cast<uint32_t>(garbageFormats.size());
+		pipelineRenderingCreateInfoWithGarbage.pColorAttachmentFormats  = garbageFormats.data();
 	}
 
 	MovePtr<GraphicsPipelineWrapper> graphicsPipeline = MovePtr<GraphicsPipelineWrapper>(new GraphicsPipelineWrapper(vk, device, pipelineConstructionType, 0u));
@@ -3642,7 +3648,7 @@ void drawSingleRenderPass (Context& context, const TestParams& params, WorkingDa
 		std::vector<std::vector<deUint32>>							preserveAttachments(numSubpasses);
 		std::vector<VkSubpassDependency2>							subpassDependencies;
 		std::vector<VkMultisampledRenderToSingleSampledInfoEXT>		msrtss(numSubpasses);
-		VkSubpassDescriptionDepthStencilResolve						depthStencilResolve;
+		std::vector<VkSubpassDescriptionDepthStencilResolve>	    depthStencilResolve(numSubpasses);
 		deInt32														attachmentNdxes[8]	= {-1, -1, -1, -1,
 																						   -1, -1, -1, -1};
 		deUint32													attachmentUseMask	= 0;
@@ -3656,7 +3662,7 @@ void drawSingleRenderPass (Context& context, const TestParams& params, WorkingDa
 								  passNdx,
 								  attachmentReferences[passNdx],
 								  resolveAttachmentReferences[passNdx],
-								  depthStencilResolve,
+								  depthStencilResolve[passNdx],
 								  &preserveAttachments[passNdx],
 								  msrtss[passNdx],
 								  subpasses,
@@ -4466,7 +4472,7 @@ void drawInputAttachments (Context& context, const TestParams& params, WorkingDa
 		std::vector<VkAttachmentReference2>							inputAttachmentReferences;
 		std::vector<VkSubpassDependency2>							subpassDependencies;
 		std::vector<VkMultisampledRenderToSingleSampledInfoEXT>		msrtss(numSubpasses);
-		VkSubpassDescriptionDepthStencilResolve						depthStencilResolve;
+		std::vector<VkSubpassDescriptionDepthStencilResolve>		depthStencilResolve(numSubpasses);
 		deInt32														attachmentNdxes[8]	= {-1, -1, -1, -1,
 																						   -1, -1, -1, -1};
 		deUint32													attachmentUseMask	= 0;
@@ -4494,7 +4500,7 @@ void drawInputAttachments (Context& context, const TestParams& params, WorkingDa
 								  passNdx,
 								  attachmentReferences[passNdx],
 								  resolveAttachmentReferences[passNdx],
-								  depthStencilResolve,
+								  depthStencilResolve[passNdx],
 								  &preserveAttachments[passNdx],
 								  msrtss[passNdx],
 								  subpasses,

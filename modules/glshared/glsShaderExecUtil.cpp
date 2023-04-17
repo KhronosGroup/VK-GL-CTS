@@ -1065,6 +1065,7 @@ void BufferIoExecutor::readOutputBuffer (void* const* outputPtrs, int numValues)
 
 	DE_ASSERT(outputBufferSize > 0); // At least some outputs are required.
 
+	gl.memoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
 	gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, buffer);
 	void* mapPtr = gl.mapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, outputBufferSize, GL_MAP_READ_BIT);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glMapBufferRange()");

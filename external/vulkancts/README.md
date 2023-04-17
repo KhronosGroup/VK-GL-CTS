@@ -19,7 +19,7 @@ The following tools must be installed and present in the PATH variable:
 
  * Git (for checking out sources)
  * Python 3.x (for the build related scripts, some other scripts still use Python 2.7.x)
- * CMake 3.10.2 or newer
+ * CMake 3.17.2 or newer
 
 ### Win32
 
@@ -306,6 +306,8 @@ Test log will be written into TestResults.qpa
 	./deqp-vk --deqp-caselist-file=...
 
 ### Android
+
+For Android build using SDK 29 or greater, it is recommended to use `/sdcard/Documents/` instead of `/sdcard/` due to scoped storage.
 
 	adb push <vulkancts>/external/vulkancts/mustpass/main/vk-default.txt /sdcard/vk-default.txt
 	adb shell

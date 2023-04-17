@@ -41,6 +41,8 @@ namespace vk_json_parser {
 
 template <typename T1, typename T2>
 class GlobalMem {
+    static constexpr size_t MAX_ALIGNMENT = alignof(std::max_align_t);
+
     void grow(T1 size = 0) {
         //push_back new single vector of size m_tabSize onto vec
         void * p = calloc(size > m_tabSize ? size : m_tabSize, sizeof(T2));
@@ -49,6 +51,9 @@ class GlobalMem {
         m_pointer = 0U;
     }
     void * alloc(T1 size) {
+        // Align to the next multiple of MAX_ALIGNMENT.
+        size = (size + static_cast<T1>(MAX_ALIGNMENT) - 1) & ~(static_cast<T1>(MAX_ALIGNMENT) - 1);
+
         void* result = static_cast<deUint8 *>(m_vec.back()) + m_pointer;
         m_pointer += size;
         return result;
@@ -58,12 +63,11 @@ public:
     GlobalMem(T1 tabSize_ = 32768U)
       : m_tabSize(tabSize_), m_pointer(0U)
     {
-        grow();
     }
 
     void* allocate (T1 size)
     {
-        if (m_pointer+size >= m_tabSize) {
+        if (m_vec.empty() || m_pointer+size >= m_tabSize) {
             grow();
         }
         return alloc(size);
@@ -72,7 +76,7 @@ public:
     void* allocate (T1 count, T1 size)
     {
         T1 totalSize = count * size;
-        if (m_pointer+totalSize >= m_tabSize)
+        if (m_vec.empty() || m_pointer+totalSize >= m_tabSize)
         {
             grow(totalSize);
         }
@@ -85,14 +89,18 @@ public:
         for (size_t i=1 ; i<m_vec.size(); i++) {
             free(m_vec[i]);
         }
-        m_vec.resize(1);
+        if (!m_vec.empty()) {
+            m_vec.resize(1);
+        }
         m_pointer = 0;
     }
 
     ~GlobalMem()
     {
         clear();
-        free(m_vec[0]);
+        if (!m_vec.empty()) {
+            free(m_vec[0]);
+        }
     }
 
 private:
@@ -101,13 +109,7 @@ private:
     T1 m_pointer;
 };
 
-#if defined(USE_THREAD_LOCAL_WAR)
-// Workaround (off by default) for certain platforms that have a thread_local libc bug
-vk_json_parser::GlobalMem<deUint32, deUint8> & TLSGetGlobalMem();
-#define s_globalMem TLSGetGlobalMem()
-#else
 static thread_local GlobalMem<deUint32, deUint8> s_globalMem(32768U);
-#endif
 
 // To make sure the generated data is consistent across platforms,
 // we typecast to 32-bit.
@@ -129,10 +131,10 @@ static void parse_char(const char* s, Json::Value& obj, const char* const*)
 static void parse_char(const char* s, Json::Value& obj, const char** o)
 {
     std::string _res = obj.asString();
-    char** writePtr = (char**)o;
-    *writePtr = (char *)s_globalMem.allocate(static_cast<deUint32>(_res.size()) + 1);
-    memcpy((void*)*writePtr, _res.c_str(), _res.size());
-    (*writePtr)[_res.size()] = '\0';
+    char *writePtr = (char *)s_globalMem.allocate(static_cast<deUint32>(_res.size()) + 1);
+    memcpy((void*)writePtr, _res.c_str(), _res.size());
+    writePtr[_res.size()] = '\0';
+    *o = writePtr;
 }
 
 
@@ -241,6 +243,26 @@ static void parse_uint16_t(const char* s, Json::Value& obj, deUint16& o)
      o = static_cast<deUint16>(obj.asUInt());
 }
 
+static void parse_NvSciBufAttrList(const char* s, Json::Value& obj, vk::pt::NvSciBufAttrList& o)
+{
+     o = static_cast<vk::pt::NvSciBufAttrList>(obj.asInt());
+}
+
+static void parse_NvSciBufObj(const char* s, Json::Value& obj, vk::pt::NvSciBufObj& o)
+{
+     o = static_cast<vk::pt::NvSciBufObj>(obj.asInt());
+}
+
+static void parse_NvSciSyncAttrList(const char* s, Json::Value& obj, vk::pt::NvSciSyncAttrList& o)
+{
+     o = static_cast<vk::pt::NvSciSyncAttrList>(obj.asInt());
+}
+
+static void parse_NvSciSyncObj(const char* s, Json::Value& obj, vk::pt::NvSciSyncObj& o)
+{
+     o = static_cast<vk::pt::NvSciSyncObj>(obj.asInt());
+}
+
 
 // base64 encoder taken from executor/xeTestResultParser.cpp
 
@@ -294,7 +316,19 @@ std::vector<deUint8> base64decode(const std::string encoded)
 
 static void parse_void_data(const void* s, Json::Value& obj, void* o, int oSize)
 {
-	std::vector<deUint8> data = base64decode(obj.asString());
+	std::vector<deUint8> data;
+	if (obj.isString())
+	{
+		data = base64decode(obj.asString());
+	}
+	else
+	{
+		data.resize(oSize);
+		for (int i = 0; i < std::min(oSize, (int)obj.size()); i++)
+		{
+			parse_uint8_t("pData", obj[i], const_cast<deUint8&>(data[i]));
+		}
+	}
 	memcpy(o, data.data(), oSize);
 }
 
@@ -428,6 +462,7 @@ static void parse_VkDisplayModeKHR(const char* s, Json::Value& obj, VkDisplayMod
 static void parse_VkSurfaceKHR(const char* s, Json::Value& obj, VkSurfaceKHR& o);
 static void parse_VkSwapchainKHR(const char* s, Json::Value& obj, VkSwapchainKHR& o);
 static void parse_VkDebugUtilsMessengerEXT(const char* s, Json::Value& obj, VkDebugUtilsMessengerEXT& o);
+static void parse_VkSemaphoreSciSyncPoolNV(const char* s, Json::Value& obj, VkSemaphoreSciSyncPoolNV& o);
 static void parse_VkAttachmentLoadOp(const char* s, Json::Value& obj, VkAttachmentLoadOp& o);
 static void parse_VkAttachmentStoreOp(const char* s, Json::Value& obj, VkAttachmentStoreOp& o);
 static void parse_VkBlendFactor(const char* s, Json::Value& obj, VkBlendFactor& o);
@@ -524,6 +559,8 @@ static void parse_VkFaultQueryBehavior(const char* s, Json::Value& obj, VkFaultQ
 static void parse_VkPipelineMatchControl(const char* s, Json::Value& obj, VkPipelineMatchControl& o);
 static void parse_VkAccessFlagBits2KHR(const char* s, Json::Value& obj, VkAccessFlagBits2KHR& o);
 static void parse_VkPipelineStageFlagBits2KHR(const char* s, Json::Value& obj, VkPipelineStageFlagBits2KHR& o);
+static void parse_VkSciSyncClientTypeNV(const char* s, Json::Value& obj, VkSciSyncClientTypeNV& o);
+static void parse_VkSciSyncPrimitiveTypeNV(const char* s, Json::Value& obj, VkSciSyncPrimitiveTypeNV& o);
 static void parse_VkPipelineCacheValidationVersion(const char* s, Json::Value& obj, VkPipelineCacheValidationVersion& o);
 static void parse_VkColorSpaceKHR(const char* s, Json::Value& obj, VkColorSpaceKHR& o);
 static void parse_VkCompositeAlphaFlagBitsKHR(const char* s, Json::Value& obj, VkCompositeAlphaFlagBitsKHR& o);
@@ -678,6 +715,12 @@ static void parse_VkSwapchainCreateInfoKHR(const char* s, Json::Value& obj, VkSw
 static void parse_VkPresentInfoKHR(const char* s, Json::Value& obj, VkPresentInfoKHR& o);
 static void parse_VkValidationFeaturesEXT(const char* s, Json::Value& obj, VkValidationFeaturesEXT& o);
 static void parse_VkApplicationParametersEXT(const char* s, Json::Value& obj, VkApplicationParametersEXT& o);
+static void parse_VkExportMemorySciBufInfoNV(const char* s, Json::Value& obj, VkExportMemorySciBufInfoNV& o);
+static void parse_VkImportMemorySciBufInfoNV(const char* s, Json::Value& obj, VkImportMemorySciBufInfoNV& o);
+static void parse_VkMemoryGetSciBufInfoNV(const char* s, Json::Value& obj, VkMemoryGetSciBufInfoNV& o);
+static void parse_VkMemorySciBufPropertiesNV(const char* s, Json::Value& obj, VkMemorySciBufPropertiesNV& o);
+static void parse_VkPhysicalDeviceExternalMemorySciBufFeaturesNV(const char* s, Json::Value& obj, VkPhysicalDeviceExternalMemorySciBufFeaturesNV& o);
+static void parse_VkPhysicalDeviceExternalSciBufFeaturesNV(const char* s, Json::Value& obj, VkPhysicalDeviceExternalSciBufFeaturesNV& o);
 static void parse_VkPhysicalDeviceFeatures2(const char* s, Json::Value& obj, VkPhysicalDeviceFeatures2& o);
 static void parse_VkPhysicalDeviceProperties2(const char* s, Json::Value& obj, VkPhysicalDeviceProperties2& o);
 static void parse_VkFormatProperties2(const char* s, Json::Value& obj, VkFormatProperties2& o);
@@ -714,6 +757,18 @@ static void parse_VkExternalFenceProperties(const char* s, Json::Value& obj, VkE
 static void parse_VkExportFenceCreateInfo(const char* s, Json::Value& obj, VkExportFenceCreateInfo& o);
 static void parse_VkImportFenceFdInfoKHR(const char* s, Json::Value& obj, VkImportFenceFdInfoKHR& o);
 static void parse_VkFenceGetFdInfoKHR(const char* s, Json::Value& obj, VkFenceGetFdInfoKHR& o);
+static void parse_VkExportFenceSciSyncInfoNV(const char* s, Json::Value& obj, VkExportFenceSciSyncInfoNV& o);
+static void parse_VkImportFenceSciSyncInfoNV(const char* s, Json::Value& obj, VkImportFenceSciSyncInfoNV& o);
+static void parse_VkFenceGetSciSyncInfoNV(const char* s, Json::Value& obj, VkFenceGetSciSyncInfoNV& o);
+static void parse_VkExportSemaphoreSciSyncInfoNV(const char* s, Json::Value& obj, VkExportSemaphoreSciSyncInfoNV& o);
+static void parse_VkImportSemaphoreSciSyncInfoNV(const char* s, Json::Value& obj, VkImportSemaphoreSciSyncInfoNV& o);
+static void parse_VkSemaphoreGetSciSyncInfoNV(const char* s, Json::Value& obj, VkSemaphoreGetSciSyncInfoNV& o);
+static void parse_VkSciSyncAttributesInfoNV(const char* s, Json::Value& obj, VkSciSyncAttributesInfoNV& o);
+static void parse_VkPhysicalDeviceExternalSciSyncFeaturesNV(const char* s, Json::Value& obj, VkPhysicalDeviceExternalSciSyncFeaturesNV& o);
+static void parse_VkPhysicalDeviceExternalSciSync2FeaturesNV(const char* s, Json::Value& obj, VkPhysicalDeviceExternalSciSync2FeaturesNV& o);
+static void parse_VkSemaphoreSciSyncPoolCreateInfoNV(const char* s, Json::Value& obj, VkSemaphoreSciSyncPoolCreateInfoNV& o);
+static void parse_VkSemaphoreSciSyncCreateInfoNV(const char* s, Json::Value& obj, VkSemaphoreSciSyncCreateInfoNV& o);
+static void parse_VkDeviceSemaphoreSciSyncPoolReservationCreateInfoNV(const char* s, Json::Value& obj, VkDeviceSemaphoreSciSyncPoolReservationCreateInfoNV& o);
 static void parse_VkPhysicalDeviceMultiviewFeatures(const char* s, Json::Value& obj, VkPhysicalDeviceMultiviewFeatures& o);
 static void parse_VkPhysicalDeviceMultiviewProperties(const char* s, Json::Value& obj, VkPhysicalDeviceMultiviewProperties& o);
 static void parse_VkRenderPassMultiviewCreateInfo(const char* s, Json::Value& obj, VkRenderPassMultiviewCreateInfo& o);
@@ -977,6 +1032,24 @@ void* parsePNextChain(Json::Value& obj) {
                 parse_VkApplicationParametersEXT("", pNextObj, *((VkApplicationParametersEXT*)p));
              }
              break;
+             case VK_STRUCTURE_TYPE_EXPORT_MEMORY_SCI_BUF_INFO_NV:
+             {
+                p = s_globalMem.allocate(sizeof(VkExportMemorySciBufInfoNV));
+                parse_VkExportMemorySciBufInfoNV("", pNextObj, *((VkExportMemorySciBufInfoNV*)p));
+             }
+             break;
+             case VK_STRUCTURE_TYPE_IMPORT_MEMORY_SCI_BUF_INFO_NV:
+             {
+                p = s_globalMem.allocate(sizeof(VkImportMemorySciBufInfoNV));
+                parse_VkImportMemorySciBufInfoNV("", pNextObj, *((VkImportMemorySciBufInfoNV*)p));
+             }
+             break;
+             case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCI_BUF_FEATURES_NV:
+             {
+                p = s_globalMem.allocate(sizeof(VkPhysicalDeviceExternalMemorySciBufFeaturesNV));
+                parse_VkPhysicalDeviceExternalMemorySciBufFeaturesNV("", pNextObj, *((VkPhysicalDeviceExternalMemorySciBufFeaturesNV*)p));
+             }
+             break;
              case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2:
              {
                 p = s_globalMem.allocate(sizeof(VkPhysicalDeviceFeatures2));
@@ -1053,6 +1126,42 @@ void* parsePNextChain(Json::Value& obj) {
              {
                 p = s_globalMem.allocate(sizeof(VkExportFenceCreateInfo));
                 parse_VkExportFenceCreateInfo("", pNextObj, *((VkExportFenceCreateInfo*)p));
+             }
+             break;
+             case VK_STRUCTURE_TYPE_EXPORT_FENCE_SCI_SYNC_INFO_NV:
+             {
+                p = s_globalMem.allocate(sizeof(VkExportFenceSciSyncInfoNV));
+                parse_VkExportFenceSciSyncInfoNV("", pNextObj, *((VkExportFenceSciSyncInfoNV*)p));
+             }
+             break;
+             case VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_SCI_SYNC_INFO_NV:
+             {
+                p = s_globalMem.allocate(sizeof(VkExportSemaphoreSciSyncInfoNV));
+                parse_VkExportSemaphoreSciSyncInfoNV("", pNextObj, *((VkExportSemaphoreSciSyncInfoNV*)p));
+             }
+             break;
+             case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SCI_SYNC_FEATURES_NV:
+             {
+                p = s_globalMem.allocate(sizeof(VkPhysicalDeviceExternalSciSyncFeaturesNV));
+                parse_VkPhysicalDeviceExternalSciSyncFeaturesNV("", pNextObj, *((VkPhysicalDeviceExternalSciSyncFeaturesNV*)p));
+             }
+             break;
+             case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SCI_SYNC_2_FEATURES_NV:
+             {
+                p = s_globalMem.allocate(sizeof(VkPhysicalDeviceExternalSciSync2FeaturesNV));
+                parse_VkPhysicalDeviceExternalSciSync2FeaturesNV("", pNextObj, *((VkPhysicalDeviceExternalSciSync2FeaturesNV*)p));
+             }
+             break;
+             case VK_STRUCTURE_TYPE_SEMAPHORE_SCI_SYNC_CREATE_INFO_NV:
+             {
+                p = s_globalMem.allocate(sizeof(VkSemaphoreSciSyncCreateInfoNV));
+                parse_VkSemaphoreSciSyncCreateInfoNV("", pNextObj, *((VkSemaphoreSciSyncCreateInfoNV*)p));
+             }
+             break;
+             case VK_STRUCTURE_TYPE_DEVICE_SEMAPHORE_SCI_SYNC_POOL_RESERVATION_CREATE_INFO_NV:
+             {
+                p = s_globalMem.allocate(sizeof(VkDeviceSemaphoreSciSyncPoolReservationCreateInfoNV));
+                parse_VkDeviceSemaphoreSciSyncPoolReservationCreateInfoNV("", pNextObj, *((VkDeviceSemaphoreSciSyncPoolReservationCreateInfoNV*)p));
              }
              break;
              case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES:
@@ -2338,7 +2447,7 @@ static std::map<std::string, int> VkStructureType_map = {
     std::make_pair("VK_STRUCTURE_TYPE_VIDEO_END_CODING_INFO_KHR", 1000023009),
     std::make_pair("VK_STRUCTURE_TYPE_VIDEO_CODING_CONTROL_INFO_KHR", 1000023010),
     std::make_pair("VK_STRUCTURE_TYPE_VIDEO_REFERENCE_SLOT_KHR", 1000023011),
-    std::make_pair("VK_STRUCTURE_TYPE_QUEUE_FAMILY_VIDEO_PROPERTIES_KHR", 1000023012),
+    std::make_pair("VK_STRUCTURE_TYPE_VIDEO_QUEUE_FAMILY_PROPERTIES_2_KHR", 1000023012),
     std::make_pair("VK_STRUCTURE_TYPE_VIDEO_PROFILES_KHR", 1000023013),
     std::make_pair("VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_FORMAT_INFO_KHR", 1000023014),
     std::make_pair("VK_STRUCTURE_TYPE_VIDEO_FORMAT_PROPERTIES_KHR", 1000023015),
@@ -2377,14 +2486,14 @@ static std::map<std::string, int> VkStructureType_map = {
     std::make_pair("VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_REFERENCE_LISTS_EXT", 1000039009),
     std::make_pair("VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_RATE_CONTROL_INFO_EXT", 1000039010),
     std::make_pair("VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_RATE_CONTROL_LAYER_INFO_EXT", 1000039011),
-    std::make_pair("VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_CAPABILITIES_KHR", 1000040000),
+    std::make_pair("VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_CAPABILITIES_EXT", 1000040000),
     std::make_pair("VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_CREATE_INFO_EXT", 1000040001),
-    std::make_pair("VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PICTURE_INFO_KHR", 1000040002),
+    std::make_pair("VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PICTURE_INFO_EXT", 1000040002),
     std::make_pair("VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_MVC_EXT", 1000040003),
     std::make_pair("VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_EXT", 1000040004),
     std::make_pair("VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_CREATE_INFO_EXT", 1000040005),
-    std::make_pair("VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_ADD_INFO_KHR", 1000040006),
-    std::make_pair("VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_DPB_SLOT_INFO_KHR", 1000040007),
+    std::make_pair("VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_ADD_INFO_EXT", 1000040006),
+    std::make_pair("VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_DPB_SLOT_INFO_EXT", 1000040007),
     std::make_pair("VK_STRUCTURE_TYPE_TEXTURE_LOD_GATHER_FORMAT_PROPERTIES_AMD", 1000041000),
     std::make_pair("VK_STRUCTURE_TYPE_RENDERING_INFO_KHR", 1000044000),
     std::make_pair("VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR", 1000044001),
@@ -2397,6 +2506,7 @@ static std::map<std::string, int> VkStructureType_map = {
     std::make_pair("VK_STRUCTURE_TYPE_MULTIVIEW_PER_VIEW_ATTRIBUTES_INFO_NVX", 1000044009),
     std::make_pair("VK_STRUCTURE_TYPE_STREAM_DESCRIPTOR_SURFACE_CREATE_INFO_GGP", 1000049000),
     std::make_pair("VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CORNER_SAMPLED_IMAGE_FEATURES_NV", 1000050000),
+    std::make_pair("VK_STRUCTURE_TYPE_PRIVATE_VENDOR_INFO_RESERVED_OFFSET_0_NV", 1000051000),
     std::make_pair("VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_NV", 1000056000),
     std::make_pair("VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_NV", 1000056001),
     std::make_pair("VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_NV", 1000057000),
@@ -2754,6 +2864,19 @@ static std::map<std::string, int> VkStructureType_map = {
     std::make_pair("VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INVOCATION_MASK_FEATURES_HUAWEI", 1000370000),
     std::make_pair("VK_STRUCTURE_TYPE_MEMORY_GET_REMOTE_ADDRESS_INFO_NV", 1000371000),
     std::make_pair("VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_RDMA_FEATURES_NV", 1000371001),
+    std::make_pair("VK_STRUCTURE_TYPE_IMPORT_FENCE_SCI_SYNC_INFO_NV", 1000373000),
+    std::make_pair("VK_STRUCTURE_TYPE_EXPORT_FENCE_SCI_SYNC_INFO_NV", 1000373001),
+    std::make_pair("VK_STRUCTURE_TYPE_FENCE_GET_SCI_SYNC_INFO_NV", 1000373002),
+    std::make_pair("VK_STRUCTURE_TYPE_SCI_SYNC_ATTRIBUTES_INFO_NV", 1000373003),
+    std::make_pair("VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_SCI_SYNC_INFO_NV", 1000373004),
+    std::make_pair("VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_SCI_SYNC_INFO_NV", 1000373005),
+    std::make_pair("VK_STRUCTURE_TYPE_SEMAPHORE_GET_SCI_SYNC_INFO_NV", 1000373006),
+    std::make_pair("VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SCI_SYNC_FEATURES_NV", 1000373007),
+    std::make_pair("VK_STRUCTURE_TYPE_IMPORT_MEMORY_SCI_BUF_INFO_NV", 1000374000),
+    std::make_pair("VK_STRUCTURE_TYPE_EXPORT_MEMORY_SCI_BUF_INFO_NV", 1000374001),
+    std::make_pair("VK_STRUCTURE_TYPE_MEMORY_GET_SCI_BUF_INFO_NV", 1000374002),
+    std::make_pair("VK_STRUCTURE_TYPE_MEMORY_SCI_BUF_PROPERTIES_NV", 1000374003),
+    std::make_pair("VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCI_BUF_FEATURES_NV", 1000374004),
     std::make_pair("VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT", 1000377000),
     std::make_pair("VK_STRUCTURE_TYPE_SCREEN_SURFACE_CREATE_INFO_QNX", 1000378000),
     std::make_pair("VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COLOR_WRITE_ENABLE_FEATURES_EXT", 1000381000),
@@ -2772,6 +2895,14 @@ static std::map<std::string, int> VkStructureType_map = {
     std::make_pair("VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS_KHR", 1000413002),
     std::make_pair("VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS_KHR", 1000413003),
     std::make_pair("VK_STRUCTURE_TYPE_APPLICATION_PARAMETERS_EXT", 1000435000),
+    std::make_pair("VK_STRUCTURE_TYPE_SEMAPHORE_SCI_SYNC_POOL_CREATE_INFO_NV", 1000489000),
+    std::make_pair("VK_STRUCTURE_TYPE_SEMAPHORE_SCI_SYNC_CREATE_INFO_NV", 1000489001),
+    std::make_pair("VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SCI_SYNC_2_FEATURES_NV", 1000489002),
+    std::make_pair("VK_STRUCTURE_TYPE_IMPORT_FENCE_SCI_SYNC_INFO_NV", 1000373000),
+    std::make_pair("VK_STRUCTURE_TYPE_EXPORT_FENCE_SCI_SYNC_INFO_NV", 1000373001),
+    std::make_pair("VK_STRUCTURE_TYPE_FENCE_GET_SCI_SYNC_INFO_NV", 1000373002),
+    std::make_pair("VK_STRUCTURE_TYPE_SCI_SYNC_ATTRIBUTES_INFO_NV", 1000373003),
+    std::make_pair("VK_STRUCTURE_TYPE_DEVICE_SEMAPHORE_SCI_SYNC_POOL_RESERVATION_CREATE_INFO_NV", 1000489003),
 };
 static void parse_VkStructureType(const char* s, Json::Value& obj, VkStructureType& o) {
      std::string _res = obj.asString();
@@ -2883,6 +3014,7 @@ static std::map<std::string, int> VkObjectType_map = {
     std::make_pair("VK_OBJECT_TYPE_QUERY_POOL", 12),
     std::make_pair("VK_OBJECT_TYPE_BUFFER_VIEW", 13),
     std::make_pair("VK_OBJECT_TYPE_IMAGE_VIEW", 14),
+    std::make_pair("VK_OBJECT_TYPE_SHADER_MODULE", 15),
     std::make_pair("VK_OBJECT_TYPE_PIPELINE_CACHE", 16),
     std::make_pair("VK_OBJECT_TYPE_PIPELINE_LAYOUT", 17),
     std::make_pair("VK_OBJECT_TYPE_RENDER_PASS", 18),
@@ -2912,6 +3044,7 @@ static std::map<std::string, int> VkObjectType_map = {
     std::make_pair("VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_NV", 1000277000),
     std::make_pair("VK_OBJECT_TYPE_PRIVATE_DATA_SLOT_EXT", 1000295000),
     std::make_pair("VK_OBJECT_TYPE_BUFFER_COLLECTION_FUCHSIA", 1000366000),
+    std::make_pair("VK_OBJECT_TYPE_SEMAPHORE_SCI_SYNC_POOL_NV", 1000489000),
 };
 static void parse_VkObjectType(const char* s, Json::Value& obj, VkObjectType& o) {
      std::string _res = obj.asString();
@@ -3736,7 +3869,6 @@ static void parse_VkCompareOp(const char* s, Json::Value& obj, VkCompareOp& o) {
 
 static std::map<std::string, int> VkPipelineCreateFlagBits_map = {
     std::make_pair("VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT", 1UL << 0),
-    std::make_pair("VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT", 1UL << 1),
     std::make_pair("VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT", 1UL << 3),
     std::make_pair("VK_PIPELINE_CREATE_DISPATCH_BASE_BIT", 1UL << 4),
     std::make_pair("VK_PIPELINE_CREATE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR", 1UL << 21),
@@ -3765,7 +3897,6 @@ static void parse_VkPipelineCreateFlagBits(const char* s, Json::Value& obj, VkPi
 }
 
 static std::map<std::string, int> VkPipelineShaderStageCreateFlagBits_map = {
-    std::make_pair("VK_PIPELINE_SHADER_STAGE_CREATE_RESERVED_2_BIT_NV", 1UL << 2),
     std::make_pair("VK_PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT", 1UL << 0),
     std::make_pair("VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT", 1UL << 1),
     std::make_pair("VK_PIPELINE_SHADER_STAGE_CREATE_RESERVED_3_BIT_KHR", 1UL << 3),
@@ -7285,7 +7416,7 @@ static std::map<std::string, int> VkExternalMemoryHandleTypeFlagBits_map = {
     std::make_pair("VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_MAPPED_FOREIGN_MEMORY_BIT_EXT", 1UL << 8),
     std::make_pair("VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA", 1UL << 11),
     std::make_pair("VK_EXTERNAL_MEMORY_HANDLE_TYPE_RDMA_ADDRESS_BIT_NV", 1UL << 12),
-    std::make_pair("VK_EXTERNAL_MEMORY_HANDLE_TYPE_RESERVED_13_BIT_NV", 1UL << 13),
+    std::make_pair("VK_EXTERNAL_MEMORY_HANDLE_TYPE_SCI_BUF_BIT_NV", 1UL << 13),
 };
 static void parse_VkExternalMemoryHandleTypeFlagBits(const char* s, Json::Value& obj, VkExternalMemoryHandleTypeFlagBits& o) {
      std::string _res = obj.asString();
@@ -7307,8 +7438,10 @@ static std::map<std::string, int> VkExternalFenceHandleTypeFlagBits_map = {
     std::make_pair("VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT", 1UL << 1),
     std::make_pair("VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT", 1UL << 2),
     std::make_pair("VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT", 1UL << 3),
-    std::make_pair("VK_EXTERNAL_FENCE_HANDLE_TYPE_RESERVED_4_BIT_NV", 1UL << 4),
-    std::make_pair("VK_EXTERNAL_FENCE_HANDLE_TYPE_RESERVED_5_BIT_NV", 1UL << 5),
+    std::make_pair("VK_EXTERNAL_FENCE_HANDLE_TYPE_SCI_SYNC_OBJ_BIT_NV", 1UL << 4),
+    std::make_pair("VK_EXTERNAL_FENCE_HANDLE_TYPE_SCI_SYNC_FENCE_BIT_NV", 1UL << 5),
+    std::make_pair("VK_EXTERNAL_FENCE_HANDLE_TYPE_SCI_SYNC_OBJ_BIT_NV", 1UL << 4),
+    std::make_pair("VK_EXTERNAL_FENCE_HANDLE_TYPE_SCI_SYNC_FENCE_BIT_NV", 1UL << 5),
 };
 static void parse_VkExternalFenceHandleTypeFlagBits(const char* s, Json::Value& obj, VkExternalFenceHandleTypeFlagBits& o) {
      std::string _res = obj.asString();
@@ -7347,8 +7480,7 @@ static std::map<std::string, int> VkExternalSemaphoreHandleTypeFlagBits_map = {
     std::make_pair("VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT", 1UL << 3),
     std::make_pair("VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT", 1UL << 4),
     std::make_pair("VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA", 1UL << 7),
-    std::make_pair("VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_RESERVED_5_BIT_NV", 1UL << 5),
-    std::make_pair("VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_RESERVED_6_BIT_NV", 1UL << 6),
+    std::make_pair("VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SCI_SYNC_OBJ_BIT_NV", 1UL << 5),
 };
 static void parse_VkExternalSemaphoreHandleTypeFlagBits(const char* s, Json::Value& obj, VkExternalSemaphoreHandleTypeFlagBits& o) {
      std::string _res = obj.asString();
@@ -13090,6 +13222,176 @@ static void parse_VkVertexInputAttributeDescription2EXT(const char* s, Json::Val
 
 }
 
+static std::map<std::string, int> VkSciSyncClientTypeNV_map = {
+    std::make_pair("VK_SCI_SYNC_CLIENT_TYPE_SIGNALER_NV", 0),
+    std::make_pair("VK_SCI_SYNC_CLIENT_TYPE_WAITER_NV", 1),
+    std::make_pair("VK_SCI_SYNC_CLIENT_TYPE_SIGNALER_WAITER_NV", 2),
+};
+static void parse_VkSciSyncClientTypeNV(const char* s, Json::Value& obj, VkSciSyncClientTypeNV& o) {
+     std::string _res = obj.asString();
+     o = (VkSciSyncClientTypeNV)VkSciSyncClientTypeNV_map[std::string(_res)];
+}
+
+static std::map<std::string, int> VkSciSyncPrimitiveTypeNV_map = {
+    std::make_pair("VK_SCI_SYNC_PRIMITIVE_TYPE_FENCE_NV", 0),
+    std::make_pair("VK_SCI_SYNC_PRIMITIVE_TYPE_SEMAPHORE_NV", 1),
+};
+static void parse_VkSciSyncPrimitiveTypeNV(const char* s, Json::Value& obj, VkSciSyncPrimitiveTypeNV& o) {
+     std::string _res = obj.asString();
+     o = (VkSciSyncPrimitiveTypeNV)VkSciSyncPrimitiveTypeNV_map[std::string(_res)];
+}
+
+static void parse_VkExportFenceSciSyncInfoNV(const char* s, Json::Value& obj, VkExportFenceSciSyncInfoNV& o) {
+
+     parse_VkStructureType("sType", obj["sType"], (o.sType));
+
+     o.pNext = (VkExportFenceSciSyncInfoNV*)parsePNextChain(obj);
+
+     parse_NvSciSyncAttrList("pAttributes", obj["pAttributes"], (o.pAttributes));
+
+}
+
+static void parse_VkImportFenceSciSyncInfoNV(const char* s, Json::Value& obj, VkImportFenceSciSyncInfoNV& o) {
+
+     parse_VkStructureType("sType", obj["sType"], (o.sType));
+
+     o.pNext = (VkImportFenceSciSyncInfoNV*)parsePNextChain(obj);
+
+
+     parse_VkExternalFenceHandleTypeFlagBits("handleType", obj["handleType"], (o.handleType));
+
+
+}
+
+static void parse_VkFenceGetSciSyncInfoNV(const char* s, Json::Value& obj, VkFenceGetSciSyncInfoNV& o) {
+
+     parse_VkStructureType("sType", obj["sType"], (o.sType));
+
+     o.pNext = (VkFenceGetSciSyncInfoNV*)parsePNextChain(obj);
+
+
+     parse_VkExternalFenceHandleTypeFlagBits("handleType", obj["handleType"], (o.handleType));
+
+}
+
+static void parse_VkSciSyncAttributesInfoNV(const char* s, Json::Value& obj, VkSciSyncAttributesInfoNV& o) {
+
+     parse_VkStructureType("sType", obj["sType"], (o.sType));
+
+     o.pNext = (VkSciSyncAttributesInfoNV*)parsePNextChain(obj);
+
+     parse_VkSciSyncClientTypeNV("clientType", obj["clientType"], (o.clientType));
+
+     parse_VkSciSyncPrimitiveTypeNV("primitiveType", obj["primitiveType"], (o.primitiveType));
+
+}
+
+static void parse_VkExportSemaphoreSciSyncInfoNV(const char* s, Json::Value& obj, VkExportSemaphoreSciSyncInfoNV& o) {
+
+     parse_VkStructureType("sType", obj["sType"], (o.sType));
+
+     o.pNext = (VkExportSemaphoreSciSyncInfoNV*)parsePNextChain(obj);
+
+     parse_NvSciSyncAttrList("pAttributes", obj["pAttributes"], (o.pAttributes));
+
+}
+
+static void parse_VkImportSemaphoreSciSyncInfoNV(const char* s, Json::Value& obj, VkImportSemaphoreSciSyncInfoNV& o) {
+
+     parse_VkStructureType("sType", obj["sType"], (o.sType));
+
+     o.pNext = (VkImportSemaphoreSciSyncInfoNV*)parsePNextChain(obj);
+
+
+     parse_VkExternalSemaphoreHandleTypeFlagBits("handleType", obj["handleType"], (o.handleType));
+
+
+}
+
+static void parse_VkSemaphoreGetSciSyncInfoNV(const char* s, Json::Value& obj, VkSemaphoreGetSciSyncInfoNV& o) {
+
+     parse_VkStructureType("sType", obj["sType"], (o.sType));
+
+     o.pNext = (VkSemaphoreGetSciSyncInfoNV*)parsePNextChain(obj);
+
+
+     parse_VkExternalSemaphoreHandleTypeFlagBits("handleType", obj["handleType"], (o.handleType));
+
+}
+
+static void parse_VkPhysicalDeviceExternalSciSyncFeaturesNV(const char* s, Json::Value& obj, VkPhysicalDeviceExternalSciSyncFeaturesNV& o) {
+
+     parse_VkStructureType("sType", obj["sType"], (o.sType));
+
+     o.pNext = (VkPhysicalDeviceExternalSciSyncFeaturesNV*)parsePNextChain(obj);
+
+     parse_VkBool32("sciSyncFence", obj["sciSyncFence"], (o.sciSyncFence));
+
+     parse_VkBool32("sciSyncSemaphore", obj["sciSyncSemaphore"], (o.sciSyncSemaphore));
+
+     parse_VkBool32("sciSyncImport", obj["sciSyncImport"], (o.sciSyncImport));
+
+     parse_VkBool32("sciSyncExport", obj["sciSyncExport"], (o.sciSyncExport));
+
+}
+
+static void parse_VkExportMemorySciBufInfoNV(const char* s, Json::Value& obj, VkExportMemorySciBufInfoNV& o) {
+
+     parse_VkStructureType("sType", obj["sType"], (o.sType));
+
+     o.pNext = (VkExportMemorySciBufInfoNV*)parsePNextChain(obj);
+
+     parse_NvSciBufAttrList("pAttributes", obj["pAttributes"], (o.pAttributes));
+
+}
+
+static void parse_VkImportMemorySciBufInfoNV(const char* s, Json::Value& obj, VkImportMemorySciBufInfoNV& o) {
+
+     parse_VkStructureType("sType", obj["sType"], (o.sType));
+
+     o.pNext = (VkImportMemorySciBufInfoNV*)parsePNextChain(obj);
+
+     parse_VkExternalMemoryHandleTypeFlagBits("handleType", obj["handleType"], (o.handleType));
+
+     parse_NvSciBufObj("handle", obj["handle"], (o.handle));
+
+}
+
+static void parse_VkMemoryGetSciBufInfoNV(const char* s, Json::Value& obj, VkMemoryGetSciBufInfoNV& o) {
+
+     parse_VkStructureType("sType", obj["sType"], (o.sType));
+
+     o.pNext = (VkMemoryGetSciBufInfoNV*)parsePNextChain(obj);
+
+
+     parse_VkExternalMemoryHandleTypeFlagBits("handleType", obj["handleType"], (o.handleType));
+
+}
+
+static void parse_VkMemorySciBufPropertiesNV(const char* s, Json::Value& obj, VkMemorySciBufPropertiesNV& o) {
+
+     parse_VkStructureType("sType", obj["sType"], (o.sType));
+
+     o.pNext = (VkMemorySciBufPropertiesNV*)parsePNextChain(obj);
+
+     parse_uint32_t("memoryTypeBits", obj["memoryTypeBits"], (o.memoryTypeBits));
+
+}
+
+static void parse_VkPhysicalDeviceExternalMemorySciBufFeaturesNV(const char* s, Json::Value& obj, VkPhysicalDeviceExternalMemorySciBufFeaturesNV& o) {
+
+     parse_VkStructureType("sType", obj["sType"], (o.sType));
+
+     o.pNext = (VkPhysicalDeviceExternalMemorySciBufFeaturesNV*)parsePNextChain(obj);
+
+     parse_VkBool32("sciBufImport", obj["sciBufImport"], (o.sciBufImport));
+
+     parse_VkBool32("sciBufExport", obj["sciBufExport"], (o.sciBufExport));
+
+}
+
+typedef VkPhysicalDeviceExternalMemorySciBufFeaturesNV VkPhysicalDeviceExternalSciBufFeaturesNV;
+
 static void parse_VkPhysicalDeviceExtendedDynamicState2FeaturesEXT(const char* s, Json::Value& obj, VkPhysicalDeviceExtendedDynamicState2FeaturesEXT& o) {
 
      parse_VkStructureType("sType", obj["sType"], (o.sType));
@@ -13143,6 +13445,57 @@ static void parse_VkApplicationParametersEXT(const char* s, Json::Value& obj, Vk
      parse_uint32_t("key", obj["key"], (o.key));
 
      parse_uint64_t("value", obj["value"], (o.value));
+
+}
+
+static void parse_VkSemaphoreSciSyncPoolNV(const char* s, Json::Value& obj, VkSemaphoreSciSyncPoolNV& o) {
+//     std::string _res = obj.asString();
+}
+
+static void parse_VkPhysicalDeviceExternalSciSync2FeaturesNV(const char* s, Json::Value& obj, VkPhysicalDeviceExternalSciSync2FeaturesNV& o) {
+
+     parse_VkStructureType("sType", obj["sType"], (o.sType));
+
+     o.pNext = (VkPhysicalDeviceExternalSciSync2FeaturesNV*)parsePNextChain(obj);
+
+     parse_VkBool32("sciSyncFence", obj["sciSyncFence"], (o.sciSyncFence));
+
+     parse_VkBool32("sciSyncSemaphore2", obj["sciSyncSemaphore2"], (o.sciSyncSemaphore2));
+
+     parse_VkBool32("sciSyncImport", obj["sciSyncImport"], (o.sciSyncImport));
+
+     parse_VkBool32("sciSyncExport", obj["sciSyncExport"], (o.sciSyncExport));
+
+}
+
+static void parse_VkSemaphoreSciSyncPoolCreateInfoNV(const char* s, Json::Value& obj, VkSemaphoreSciSyncPoolCreateInfoNV& o) {
+
+     parse_VkStructureType("sType", obj["sType"], (o.sType));
+
+     o.pNext = (VkSemaphoreSciSyncPoolCreateInfoNV*)parsePNextChain(obj);
+
+     parse_NvSciSyncObj("handle", obj["handle"], (o.handle));
+
+}
+
+static void parse_VkSemaphoreSciSyncCreateInfoNV(const char* s, Json::Value& obj, VkSemaphoreSciSyncCreateInfoNV& o) {
+
+     parse_VkStructureType("sType", obj["sType"], (o.sType));
+
+     o.pNext = (VkSemaphoreSciSyncCreateInfoNV*)parsePNextChain(obj);
+
+
+     /** TODO: Handle this - pFence **/
+
+}
+
+static void parse_VkDeviceSemaphoreSciSyncPoolReservationCreateInfoNV(const char* s, Json::Value& obj, VkDeviceSemaphoreSciSyncPoolReservationCreateInfoNV& o) {
+
+     parse_VkStructureType("sType", obj["sType"], (o.sType));
+
+     o.pNext = (VkDeviceSemaphoreSciSyncPoolReservationCreateInfoNV*)parsePNextChain(obj);
+
+     parse_uint32_t("semaphoreSciSyncPoolRequestCount", obj["semaphoreSciSyncPoolRequestCount"], (o.semaphoreSciSyncPoolRequestCount));
 
 }
 

@@ -276,6 +276,31 @@ inline bool isAllMeshShadingStages (const VkShaderStageFlags shaderStageFlags)
 	return isAllInStage(shaderStageFlags, meshStages);
 }
 
+template <typename T>
+class StructChainAdder
+{
+public:
+	StructChainAdder (T* baseStruct)
+		: m_baseStruct(baseStruct)
+		{}
+
+	template <typename U>
+	void operator()(U* nextStruct) const
+	{
+		nextStruct->pNext	= m_baseStruct->pNext;
+		m_baseStruct->pNext	= nextStruct;
+	}
+
+private:
+	T* const m_baseStruct;
+};
+
+template<typename T>
+StructChainAdder<T> makeStructChainAdder (T* baseStruct)
+{
+	return StructChainAdder<T>(baseStruct);
+}
+
 #endif // CTS_USES_VULKANSC
 } // vk
 

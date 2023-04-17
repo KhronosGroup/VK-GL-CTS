@@ -170,6 +170,7 @@ enum class TestType
 	TERMINATE_ANY_HIT_DYNAMICALLY,
 	TERMINATE_INTERSECTION_STATICALLY,
 	TERMINATE_INTERSECTION_DYNAMICALLY,
+	USE_MEMORY_ACCESS,
 
 	COUNT
 };
@@ -8345,8 +8346,13 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 										*pipelineVkPtr);
 
 		{
-			const auto preTraceMemoryBarrier	= makeMemoryBarrier(VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,	/* srcAccessMask */
-																	VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR);	/* dstAccessMask */
+			const auto preTraceMemoryBarrier =
+				(m_data.type == TestType::USE_MEMORY_ACCESS) ?
+					makeMemoryBarrier(VK_ACCESS_MEMORY_WRITE_BIT,						/* srcAccessMask */
+									  VK_ACCESS_MEMORY_READ_BIT)						/* dstAccessMask */
+					:
+					makeMemoryBarrier(VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,	/* srcAccessMask */
+									  VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR);	/* dstAccessMask */
 
 			cmdPipelineMemoryBarrier(	deviceInterface,
 										*cmdBufferPtr,
@@ -8422,8 +8428,13 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 		}
 
 		{
-			const auto postTraceMemoryBarrier	= makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT,	/* srcAccessMask */
-																	VK_ACCESS_HOST_READ_BIT);	/* dstAccessMask */
+			const auto postTraceMemoryBarrier	=
+				(m_data.type == TestType::USE_MEMORY_ACCESS) ?
+					makeMemoryBarrier(VK_ACCESS_MEMORY_WRITE_BIT,	/* srcAccessMask */
+									  VK_ACCESS_MEMORY_READ_BIT)	/* dstAccessMask */
+				:
+					makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT,	/* srcAccessMask */
+									  VK_ACCESS_HOST_READ_BIT);		/* dstAccessMask */
 
 			cmdPipelineMemoryBarrier(	deviceInterface,
 										*cmdBufferPtr,
@@ -8914,6 +8925,7 @@ void RayTracingTestCase::initPrograms(SourceCollections& programCollection)	cons
 		}
 
 		case TestType::REPORT_INTERSECTION_RESULT:
+		case TestType::USE_MEMORY_ACCESS:
 		{
 			m_testPtr.reset(
 				new ReportIntersectionResultTest(m_data.asLayout, m_data.geometryType)
@@ -9133,6 +9145,7 @@ TestInstance* RayTracingTestCase::createInstance (Context& context) const
 		}
 
 		case TestType::REPORT_INTERSECTION_RESULT:
+		case TestType::USE_MEMORY_ACCESS:
 		{
 			if (m_testPtr == nullptr)
 			{
@@ -9338,11 +9351,17 @@ tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx)
 	}
 
 	{
-		auto newTestCasePtr = new RayTracingTestCase(testCtx,
+		auto newTestCase1Ptr = new RayTracingTestCase(testCtx,
 														"report_intersection_result",
 														"Test the return value of reportIntersectionEXT",
 														CaseDef{TestType::REPORT_INTERSECTION_RESULT, GeometryType::AABB, AccelerationStructureLayout::ONE_TL_ONE_BL_ONE_GEOMETRY});
-		miscGroupPtr->addChild(newTestCasePtr);
+		auto newTestCase2Ptr = new RayTracingTestCase(testCtx,
+														"memory_access",
+														"Test replacing VK_ACCESS_*_WRITE/READ_BIT with VK_ACCESS_MEMORY_WRITE/READ_BIT.",
+														CaseDef{TestType::USE_MEMORY_ACCESS, GeometryType::AABB, AccelerationStructureLayout::ONE_TL_ONE_BL_ONE_GEOMETRY });
+
+		miscGroupPtr->addChild(newTestCase1Ptr);
+		miscGroupPtr->addChild(newTestCase2Ptr);
 	}
 
 	for (auto currentGeometryType = GeometryType::FIRST; currentGeometryType != GeometryType::COUNT; currentGeometryType = static_cast<GeometryType>(static_cast<deUint32>(currentGeometryType) + 1) )
@@ -9356,7 +9375,7 @@ tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx)
 		miscGroupPtr->addChild(newTestCasePtr);
 	}
 
-		{
+	{
 		auto newTestCaseSTD430_1Ptr = new RayTracingTestCase(	testCtx,
 																"shaderRecordSTD430_1",
 																"Tests usage of various variables inside a shader record block using std430 layout",

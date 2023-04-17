@@ -519,6 +519,7 @@ void GPQCase::checkSupport (Context& context) const
 	const InstanceInterface&	vki = context.getInstanceInterface();
 	const VkPhysicalDevice		dev = context.getPhysicalDevice();
 
+	context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
 	context.requireDeviceFunctionality("VK_EXT_global_priority");
 
 	if (!m_config.selectFormat(vki, dev, { VK_FORMAT_R32_SINT, VK_FORMAT_R32_UINT, VK_FORMAT_R8_SINT, VK_FORMAT_R8_UINT }))

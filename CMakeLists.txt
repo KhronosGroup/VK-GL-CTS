@@ -1,7 +1,9 @@
 # dEQP cmake file
 
 # Module FindGit requires cmake >= 2.8.2
-cmake_minimum_required(VERSION 3.10.2)
+cmake_minimum_required(VERSION 3.17.2)
+
+option(GLES_ALLOW_DIRECT_LINK "Allow direct linking to GLES libraries" ON)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/framework/delibs/cmake")
 find_package(Git)
@@ -116,29 +118,10 @@ include_directories(external/jsoncpp/src/include)
 # RenderDoc API
 include_directories(external/renderdoc/src)
 
-# FFmpeg used in vulkan video won't be part of android target
-if (NOT DE_OS_IS_ANDROID)
-	# FFmpeg
-	if (DE_OS_IS_WIN32)
-		add_subdirectory(external/ffmpeg)
-		include_directories(external/ffmpeg/src/include)
-	else()
-		find_package(FFmpeg REQUIRED)
-		# FFMPEG_FOUND - system has ffmpeg or libav
-		# FFMPEG_INCLUDE_DIR - the ffmpeg include directory
-		# FFMPEG_LIBRARIES
-		# FFMPEG_LIBAVCODEC
-		# FFMPEG_LIBAVFORMAT
-		# FFMPEG_LIBAVUTIL
-		if(FFMPEG_FOUND)
-			message("Found FFMPEG/LibAV libraries")
-			include_directories(${FFMPEG_INCLUDE_DIR})
-		else()
-			#add_subdirectory(external/ffmpeg)
-			include_directories(external/ffmpeg/src/include)
-		endif()
-	endif()
+if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)
+	add_subdirectory(external/ESExtractor)
 endif()
+
 include_directories(${PNG_INCLUDE_PATH})
 
 # DRM (Direct Rendering Manager) Headers
@@ -172,23 +155,23 @@ message(STATUS "DEQP_SUPPORT_DRM        = ${DEQP_SUPPORT_DRM}")
 add_definitions(-DDEQP_TARGET_NAME="${DEQP_TARGET_NAME}")
 
 # Entry points loaded directly by linking to libGL*?
-if (DEFINED DEQP_GLES2_LIBRARIES)
+if (DEFINED DEQP_GLES2_LIBRARIES AND GLES_ALLOW_DIRECT_LINK)
 	add_definitions(-DDEQP_GLES2_DIRECT_LINK=1)
 endif ()
 
-if (DEFINED DEQP_GLES3_LIBRARIES)
+if (DEFINED DEQP_GLES3_LIBRARIES AND GLES_ALLOW_DIRECT_LINK)
 	add_definitions(-DDEQP_GLES3_DIRECT_LINK=1)
 endif ()
 
-if (DEFINED DEQP_GLES31_LIBRARIES)
+if (DEFINED DEQP_GLES31_LIBRARIES AND GLES_ALLOW_DIRECT_LINK)
 	add_definitions(-DDEQP_GLES31_DIRECT_LINK=1)
 endif ()
 
-if (DEFINED DEQP_GLES32_LIBRARIES)
+if (DEFINED DEQP_GLES32_LIBRARIES AND GLES_ALLOW_DIRECT_LINK)
 	add_definitions(-DDEQP_GLES32_DIRECT_LINK=1)
 endif ()
 
-if (DEFINED DEQP_EGL_LIBRARIES)
+if (DEFINED DEQP_EGL_LIBRARIES AND GLES_ALLOW_DIRECT_LINK)
 	add_definitions(-DDEQP_EGL_DIRECT_LINK=1)
 endif ()
 

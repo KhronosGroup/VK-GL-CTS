@@ -423,6 +423,7 @@ void clearBuffer (const DeviceInterface& vk, const VkDevice device, const de::Sh
 	void*						allocationData	= allocation.getHostPtr();
 	invalidateAlloc(vk, device, allocation);
 	deMemcpy(allocationData, &data[0], (size_t)bufferSizeBytes);
+	flushAlloc(vk, device, allocation);
 }
 
 class StatisticQueryTestInstance : public TestInstance

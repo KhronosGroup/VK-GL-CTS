@@ -133,10 +133,10 @@ public:
 		tcu::TestLog&						log				= m_context.getTestContext().getLog();
 		const deUint32						apiVersion		= m_context.getUsedApiVersion();
 		const vk::Platform&					platform		= m_context.getTestContext().getPlatform().getVulkanPlatform();
-#if (DE_OS == DE_OS_ANDROID)
-		de::MovePtr<vk::Library>			vkLibrary		= de::MovePtr<vk::Library>(platform.createLibrary(m_context.getTestContext().getCommandLine().getVkLibraryPath()));
-#else
+#ifdef DE_PLATFORM_USE_LIBRARY_TYPE
 		de::MovePtr<vk::Library>			vkLibrary		= de::MovePtr<vk::Library>(platform.createLibrary(vk::Platform::LibraryType::LIBRARY_TYPE_VULKAN, m_context.getTestContext().getCommandLine().getVkLibraryPath()));
+#else
+		de::MovePtr<vk::Library>			vkLibrary		= de::MovePtr<vk::Library>(platform.createLibrary(m_context.getTestContext().getCommandLine().getVkLibraryPath()));
 #endif
 		const tcu::FunctionLibrary&			funcLibrary		= vkLibrary->getFunctionLibrary();
 		deUint32							failsQuantity	= 0u;
@@ -170,7 +170,7 @@ public:
 				log << tcu::TestLog::Message << mixupResult << tcu::TestLog::EndMessage;
 			}
 
-			// Check function entry points of disabled extesions
+			// Check function entry points of disabled extensions
 			{
 				FunctionInfosList				extFunctions		= FunctionInfosList();
 				extFunctions.push_back(FunctionInfo("vkTrimCommandPoolKHR", FUNCTIONORIGIN_DEVICE));

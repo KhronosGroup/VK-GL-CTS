@@ -268,6 +268,8 @@ void					  GPUShader5FmaPrecision<S>::initTest(void)
 template <INPUT_DATA_TYPE	S>
 tcu::TestNode::IterateResult GPUShader5FmaPrecision<S>::iterate(void)
 {
+	DE_FENV_ACCESS_ON;
+
 	initTest();
 
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();

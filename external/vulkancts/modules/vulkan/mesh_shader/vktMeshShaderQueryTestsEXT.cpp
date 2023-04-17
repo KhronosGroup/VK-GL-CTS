@@ -380,6 +380,7 @@ void MeshQueryCase::initPrograms (vk::SourceCollections &programCollection) cons
 	const std::string taskDataDecl =
 		"struct TaskData {\n"
 		"    uint branch[" + std::to_string(kTaskLocalInvocations) + "];\n"
+		"    uint drawIndex;\n"
 		"};\n"
 		"taskPayloadSharedEXT TaskData td;\n"
 		;
@@ -429,12 +430,12 @@ void MeshQueryCase::initPrograms (vk::SourceCollections &programCollection) cons
 		<< "    const float horDelta = pixWidth / 4.0;\n"
 		<< "    const float verDelta = pixHeight / 4.0;\n"
 		<< "\n"
-		<< "    const uint DrawIndex = uint(gl_DrawID);\n"
+		<< "    const uint DrawIndex = " << (m_params.useTaskShader ? "td.drawIndex" : "uint(gl_DrawID)") << ";\n"
 		<< "    const uint currentWGIndex = (" << (m_params.useTaskShader ? "2u * td.branch[min(gl_LocalInvocationIndex, " + std::to_string(kTaskLocalInvocations - 1u) + ")] + " : "") << "gl_WorkGroupID.x + gl_WorkGroupID.y + gl_WorkGroupID.z);\n"
 		<< "    const uint row = (pc.prevDrawCalls + DrawIndex) * rowsPerDraw + currentWGIndex;\n"
 		<< "    const uint vertsPerPrimitive = " << vertsPerPrimitive(m_params.geometry) << ";\n"
 		<< "\n"
-		<< "    SetMeshOutputsEXT(32u, 32u);\n"
+		<< "    SetMeshOutputsEXT(colCount * vertsPerPrimitive, colCount);\n"
 		<< "\n"
 		<< "    const uint col = atomicAdd(currentCol, 1);\n"
 		<< "    if (col < colCount)\n"
@@ -501,6 +502,7 @@ void MeshQueryCase::initPrograms (vk::SourceCollections &programCollection) cons
 			<< "void main ()\n"
 			<< "{\n"
 			<< "   td.branch[gl_LocalInvocationIndex] = gl_WorkGroupID.x + gl_WorkGroupID.y + gl_WorkGroupID.z;\n"
+			<< "   td.drawIndex = uint(gl_DrawID);\n"
 			<< "   EmitMeshTasksEXT(" << meshTaskCount.at(0) << ", " << meshTaskCount.at(1) << ", " << meshTaskCount.at(2) << ");\n"
 			<< "}\n"
 			;
@@ -750,19 +752,20 @@ void verifyQueryCounter (uint64_t readVal, uint64_t expectedMinVal, uint64_t exp
 	uint64_t minVal = expectedMinVal;
 	uint64_t maxVal = expectedMaxVal;
 
+	// Resetting a query via vkCmdResetQueryPool or vkResetQueryPool sets the status to unavailable and makes the numerical results undefined.
 	const bool wasReset = (params.resetType == ResetCase::BEFORE_ACCESS);
 
-	if (!params.waitBit || wasReset)
-		minVal = 0ull;
-
-	if (wasReset)
-		maxVal = 0ull;
-
-	if (!de::inRange(readVal, minVal, maxVal))
+	if (!wasReset)
 	{
-		std::ostringstream msg;
-		msg << queryName << " not in expected range: " << readVal << " out of [" << minVal << ", " << maxVal << "]";
-		TCU_FAIL(msg.str());
+		if (!params.waitBit)
+			minVal = 0ull;
+
+		if (!de::inRange(readVal, minVal, maxVal))
+		{
+			std::ostringstream msg;
+			msg << queryName << " not in expected range: " << readVal << " out of [" << minVal << ", " << maxVal << "]";
+			TCU_FAIL(msg.str());
+		}
 	}
 }
 
@@ -838,14 +841,15 @@ tcu::TestStatus MeshQueryInstance::iterate (void)
 
 	const auto			colorFormat		= VK_FORMAT_R8G8B8A8_UNORM;
 	const auto			colorTcuFormat	= mapVkFormat(colorFormat);
-	const auto			colorExtent		= makeExtent3D(kImageWidth, std::max(m_params->getImageHeight(), 1u), 1u);
+	const auto			imageHeight		= m_params->getImageHeight();
+	const auto			colorExtent		= makeExtent3D(kImageWidth, std::max(imageHeight, 1u), 1u);
 	const auto			viewCount		= m_params->getViewCount();
 	const tcu::IVec3	colorTcuExtent	(static_cast<int>(colorExtent.width), static_cast<int>(colorExtent.height), static_cast<int>(viewCount));
 	const auto			colorUsage		= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 	const tcu::Vec4		clearColor		(0.0f, 0.0f, 0.0f, 1.0f);
-	const auto			expectedPrims	= (m_params->getImageHeight() * kImageWidth);
-	const auto			expectedTaskInv	= (m_params->useTaskShader ? (m_params->getImageHeight() * kTaskLocalInvocations / 2u) : 0u);
-	const auto			expectedMeshInv	= m_params->getImageHeight() * kMeshLocalInvocations;
+	const auto			expectedPrims	= (imageHeight * kImageWidth);
+	const auto			expectedTaskInv	= (m_params->useTaskShader ? (imageHeight * kTaskLocalInvocations / 2u) : 0u);
+	const auto			expectedMeshInv	= imageHeight * kMeshLocalInvocations;
 	const auto			imageViewType	= ((viewCount > 1u) ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D);
 
 	// Color buffer.

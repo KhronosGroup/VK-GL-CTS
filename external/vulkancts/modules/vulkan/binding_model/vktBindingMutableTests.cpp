@@ -63,20 +63,6 @@ using namespace vk;
 
 de::SharedPtr<Move<vk::VkDevice>>	g_singletonDevice;
 
-static std::vector<std::string> removeExtensions (const std::vector<std::string>& a, const std::vector<const char*>& b)
-{
-	std::vector<std::string>	res;
-	std::set<std::string>		removeExts	(b.begin(), b.end());
-
-	for (std::vector<std::string>::const_iterator aIter = a.begin(); aIter != a.end(); ++aIter)
-	{
-		if (!de::contains(removeExts, *aIter))
-			res.push_back(*aIter);
-	}
-
-	return res;
-}
-
 VkDevice getDevice(Context& context)
 {
 	if (!g_singletonDevice)
@@ -96,20 +82,38 @@ VkDevice getDevice(Context& context)
 
 		// \note Extensions in core are not explicitly enabled even though
 		//		 they are in the extension list advertised to tests.
-		std::vector<const char*>	extensionPtrs;
-		std::vector<const char*>	coreExtensions;
-		getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-		std::vector<std::string>	nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
+		const auto& extensionPtrs = context.getDeviceCreationExtensions();
 
-		extensionPtrs.resize(nonCoreExtensions.size());
-
-		for (size_t ndx = 0; ndx < nonCoreExtensions.size(); ++ndx)
-			extensionPtrs[ndx] = nonCoreExtensions[ndx].c_str();
-
+		VkPhysicalDeviceAccelerationStructureFeaturesKHR	accelerationStructureFeatures	= initVulkanStructure();
+		VkPhysicalDeviceBufferDeviceAddressFeatures			bufferDeviceAddressFeatures		= initVulkanStructure();
+		VkPhysicalDeviceRayTracingPipelineFeaturesKHR		rayTracingPipelineFeatures		= initVulkanStructure();
+		VkPhysicalDeviceRayQueryFeaturesKHR					rayQueryFeatures				= initVulkanStructure();
 		VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT	mutableDescriptorTypeFeatures	= initVulkanStructure();
-		VkPhysicalDeviceFeatures2							features2					= initVulkanStructure(&mutableDescriptorTypeFeatures);
+		VkPhysicalDeviceDescriptorIndexingFeatures			descriptorIndexingFeatures		= initVulkanStructure();
+		VkPhysicalDeviceFeatures2							features2						= initVulkanStructure();
+
+		const auto addFeatures = makeStructChainAdder(&features2);
+
+		if (context.isDeviceFunctionalitySupported("VK_KHR_acceleration_structure"))
+			addFeatures(&accelerationStructureFeatures);
+
+		if (context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
+			addFeatures(&bufferDeviceAddressFeatures);
+
+		if (context.isDeviceFunctionalitySupported("VK_KHR_ray_tracing_pipeline"))
+			addFeatures(&rayTracingPipelineFeatures);
+
+		if (context.isDeviceFunctionalitySupported("VK_KHR_ray_query"))
+			addFeatures(&rayQueryFeatures);
+
+		if (context.isDeviceFunctionalitySupported("VK_VALVE_mutable_descriptor_type") || context.isDeviceFunctionalitySupported("VK_EXT_mutable_descriptor_type"))
+			addFeatures(&mutableDescriptorTypeFeatures);
+
+		if (context.isDeviceFunctionalitySupported("VK_EXT_descriptor_indexing"))
+			addFeatures(&descriptorIndexingFeatures);
 
 		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+		features2.features.robustBufferAccess = VK_FALSE; // Disable robustness features.
 
 		const VkDeviceCreateInfo deviceCreateInfo
 		{
@@ -119,9 +123,9 @@ VkDevice getDevice(Context& context)
 			1,																//queueRecordCount;
 			&queueParams,													//pRequestedQueues;
 			0,																//layerCount;
-			DE_NULL,														//ppEnabledLayerNames;
-			(deUint32)extensionPtrs.size(),			// deUint32				enabledExtensionCount;
-			(extensionPtrs.empty() ? DE_NULL : &extensionPtrs[0]),			// const char* const*				ppEnabledExtensionNames;
+			nullptr,														//ppEnabledLayerNames;
+			de::sizeU32(extensionPtrs),										// deUint32							enabledExtensionCount;
+			de::dataOrNull(extensionPtrs),									// const char* const*				ppEnabledExtensionNames;
 			DE_NULL,														//pEnabledFeatures;
 		};
 
@@ -4059,13 +4063,14 @@ void createChildren (tcu::TestCaseGroup* mainGroup)
 				DescriptorSet::BindingPtrVector setBindings;
 				std::vector<SingleBinding> arrayBindings;
 
-				// Single mutable descriptor as the first binding.
-				setBindings.emplace_back(new SingleBinding(VK_DESCRIPTOR_TYPE_MUTABLE_EXT, mandatoryTypes));
-
-				// Descriptor array as the second binding.
+				// Add single type beyond the mandatory ones.
 				auto arrayBindingDescTypes = mandatoryTypes;
 				arrayBindingDescTypes.push_back(descriptorType);
 
+				// Single mutable descriptor as the first binding.
+				setBindings.emplace_back(new SingleBinding(VK_DESCRIPTOR_TYPE_MUTABLE_EXT, arrayBindingDescTypes));
+
+				// Descriptor array as the second binding.
 				if (aliasingCase.aliasing)
 				{
 					// With aliasing, the descriptor types rotate in each descriptor.

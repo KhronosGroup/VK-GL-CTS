@@ -50,6 +50,7 @@ enum ShaderType
 {
 	SHADER_TYPE_MATRIX_COPY,
 	SHADER_TYPE_VECTOR_COPY,
+	SHADER_TYPE_VECTOR_MEMBER_COPY,
 	SHADER_TYPE_SCALAR_COPY,
 	SHADER_TYPE_TEXEL_COPY,
 
@@ -72,7 +73,9 @@ class RobustBufferAccessTest : public vkt::TestCase
 {
 public:
 	static const deUint32		s_testArraySize;
+	static const deUint32		s_testVectorSize;
 	static const deUint32		s_numberOfBytesAccessed;
+	static const deUint32		s_numberOfVectorBytesAccessed;
 
 								RobustBufferAccessTest		(tcu::TestContext&		testContext,
 															 const std::string&		name,
@@ -85,6 +88,10 @@ public:
 	virtual						~RobustBufferAccessTest		(void) {}
 
 	virtual void				checkSupport				(Context& context) const;
+
+	static deUint32 getNumberOfBytesAccesssed(ShaderType shaderType) {
+		return shaderType == SHADER_TYPE_VECTOR_MEMBER_COPY ? s_numberOfVectorBytesAccessed : s_numberOfBytesAccessed;
+	}
 
 private:
 	static void					genBufferShaderAccess		(ShaderType				shaderType,
@@ -287,7 +294,9 @@ public:
 // RobustBufferAccessTest
 
 const deUint32 RobustBufferAccessTest::s_testArraySize = 128; // Fit within minimum required maxUniformBufferRange
-const deUint32 RobustBufferAccessTest::s_numberOfBytesAccessed	= (deUint32)(16 * sizeof(float)); // size of mat4
+const deUint32 RobustBufferAccessTest::s_testVectorSize = 4; // vec4
+const deUint32 RobustBufferAccessTest::s_numberOfBytesAccessed = (deUint32)(16 * sizeof(float)); // size of mat4
+const deUint32 RobustBufferAccessTest::s_numberOfVectorBytesAccessed = (deUint32)(4 * sizeof(float)); // size of vec4
 
 RobustBufferAccessTest::RobustBufferAccessTest (tcu::TestContext&		testContext,
 												const std::string&		name,
@@ -326,7 +335,50 @@ void RobustBufferAccessTest::genBufferShaderAccess (ShaderType			shaderType,
 												    std::ostringstream&	bufferDefinition,
 												    std::ostringstream&	bufferUse)
 {
-	if (isFloatFormat(bufferFormat))
+	if (shaderType == SHADER_TYPE_VECTOR_MEMBER_COPY)
+	{
+		std::string typePrefixStr;
+
+		if (isUintFormat(bufferFormat))
+		{
+			typePrefixStr = "u";
+		} else if (isIntFormat(bufferFormat))
+		{
+			typePrefixStr = "i";
+		} else
+		{
+			typePrefixStr = "";
+		}
+
+		typePrefixStr += (bufferFormat == vk::VK_FORMAT_R64_UINT || bufferFormat == vk::VK_FORMAT_R64_SINT) ?
+			"64" : "";
+
+		bufferDefinition <<
+			"layout(binding = 0, " << (readFromStorage ? "std430" : "std140") << ") " << (readFromStorage ? "buffer readonly" : "uniform") << " InBuffer\n"
+			"{\n"
+			"	" << typePrefixStr << "vec4 inVec;\n"
+			"};\n\n";
+
+		bufferDefinition <<
+			"layout(binding = 1, std430) buffer OutBuffer\n"
+			"{\n"
+			"	" << typePrefixStr << "vec4 outVec;\n"
+			"};\n\n";
+
+		bufferDefinition <<
+			"layout(binding = 2, std140) uniform Indices\n"
+			"{\n"
+			"	int inIndex;\n"
+			"	int outIndex;\n"
+			"};\n\n";
+
+		bufferUse <<
+			"	outVec[outIndex] = inVec[inIndex];\n"
+			"	outVec[outIndex + 1] = inVec[inIndex + 1];\n"
+			"	outVec[outIndex + 2] = inVec[inIndex + 2];\n"
+			"	outVec[outIndex + 3] = inVec[inIndex + 3];\n";
+	}
+	else if (isFloatFormat(bufferFormat))
 	{
 		bufferDefinition <<
 			"layout(binding = 0, " << (readFromStorage ? "std430" : "std140") << ") " << (readFromStorage ? "buffer" : "uniform") << " InBuffer\n"
@@ -582,7 +634,6 @@ void RobustBufferAccessTest::initBufferAccessPrograms (SourceCollections&	progra
 			"{\n"
 			<< bufferUse.str() <<
 			"}\n";
-
 		programCollection.glslSources.add("compute") << glu::ComputeSource(computeShaderSource.str());
 	}
 	else
@@ -841,9 +892,10 @@ BufferAccessInstance::BufferAccessInstance (Context&			context,
 	SimpleAllocator				memAlloc				(vk, *m_device, getPhysicalDeviceMemoryProperties(vki, physicalDevice));
 	tcu::TestLog&				log						= m_context.getTestContext().getLog();
 
-	DE_ASSERT(RobustBufferAccessTest::s_numberOfBytesAccessed % sizeof(deUint32) == 0);
-	DE_ASSERT(inBufferAccessRange <= RobustBufferAccessTest::s_numberOfBytesAccessed);
-	DE_ASSERT(outBufferAccessRange <= RobustBufferAccessTest::s_numberOfBytesAccessed);
+	deUint32 numberOfBytesAccessed = RobustBufferAccessTest::getNumberOfBytesAccesssed(shaderType);
+	DE_ASSERT(numberOfBytesAccessed % sizeof(deUint32) == 0);
+	DE_ASSERT(inBufferAccessRange <= numberOfBytesAccessed);
+	DE_ASSERT(outBufferAccessRange <= numberOfBytesAccessed);
 
 	if (m_bufferFormat == VK_FORMAT_R64_UINT || m_bufferFormat == VK_FORMAT_R64_SINT)
 	{
@@ -957,7 +1009,7 @@ BufferAccessInstance::BufferAccessInstance (Context&			context,
 			// If we are requesting access out of the memory that backs the buffer, make sure the test is able to do so.
 			if (m_accessOutOfBackingMemory)
 			{
-				if (m_outBufferAllocSize >= ((RobustBufferAccessTest::s_testArraySize + 1) * RobustBufferAccessTest::s_numberOfBytesAccessed))
+				if (m_outBufferAllocSize >= ((RobustBufferAccessTest::s_testArraySize + 1) * numberOfBytesAccessed))
 				{
 					TCU_THROW(NotSupportedError, "Cannot access beyond the end of the memory that backs the buffer");
 				}
@@ -1004,13 +1056,26 @@ BufferAccessInstance::BufferAccessInstance (Context&			context,
 
 		if (m_accessOutOfBackingMemory)
 		{
-			if (m_bufferAccessType == BUFFER_ACCESS_TYPE_WRITE)
+			if (m_shaderType == SHADER_TYPE_VECTOR_MEMBER_COPY)
 			{
-				indices.outIndex = RobustBufferAccessTest::s_testArraySize - 1;
+				if (m_bufferAccessType == BUFFER_ACCESS_TYPE_WRITE)
+				{
+					indices.outIndex = RobustBufferAccessTest::s_testVectorSize - 1;
+				} else
+				{
+					indices.inIndex = RobustBufferAccessTest::s_testVectorSize - 1;
+				}
 			}
 			else
 			{
-				indices.inIndex = RobustBufferAccessTest::s_testArraySize - 1;
+				if (m_bufferAccessType == BUFFER_ACCESS_TYPE_WRITE)
+				{
+					indices.outIndex = RobustBufferAccessTest::s_testArraySize - 1;
+				}
+				else
+				{
+					indices.inIndex = RobustBufferAccessTest::s_testArraySize - 1;
+				}
 			}
 		}
 
@@ -1312,7 +1377,7 @@ bool BufferAccessInstance::verifyResult (void)
 		deUint8*			outValuePtr		= (deUint8*)outDataPtr + offsetInBytes;
 		const size_t		outValueSize	= (size_t)min(4, (m_outBufferAllocSize - offsetInBytes));
 
-		if (offsetInBytes >= RobustBufferAccessTest::s_numberOfBytesAccessed)
+		if (offsetInBytes >= RobustBufferAccessTest::getNumberOfBytesAccesssed(m_shaderType))
 		{
 			// The shader will only write 16 values into the result buffer. The rest of the values
 			// should remain unchanged or may be modified if we are writing out of bounds.
@@ -1351,6 +1416,10 @@ bool BufferAccessInstance::verifyResult (void)
 
 					case SHADER_TYPE_VECTOR_COPY:
 						operandSize		= 4 * ((m_bufferFormat == vk::VK_FORMAT_R64_UINT || m_bufferFormat == vk::VK_FORMAT_R64_SINT) ? 8 : 4);// Size of vec4
+						break;
+
+					case SHADER_TYPE_VECTOR_MEMBER_COPY:
+						operandSize		= ((m_bufferFormat == vk::VK_FORMAT_R64_UINT || m_bufferFormat == vk::VK_FORMAT_R64_SINT) ? 8 : 4);// Size of vec4
 						break;
 
 					case SHADER_TYPE_MATRIX_COPY:
@@ -1430,7 +1499,7 @@ bool BufferAccessInstance::verifyResult (void)
 
 					const bool	canMatchVec4Pattern	= (isReadAccess
 													&& !isValuePartiallyOutOfBounds
-													&& (m_shaderType == SHADER_TYPE_VECTOR_COPY || m_shaderType == SHADER_TYPE_TEXEL_COPY)
+													&& (m_shaderType == SHADER_TYPE_VECTOR_COPY || m_shaderType == SHADER_TYPE_VECTOR_MEMBER_COPY || m_shaderType == SHADER_TYPE_TEXEL_COPY)
 													&& ((offsetInBytes / 4 + 1) % 4 == 0 || m_bufferFormat == VK_FORMAT_A2B10G10R10_UNORM_PACK32));
 					bool		matchesVec4Pattern	= false;
 
@@ -1510,7 +1579,7 @@ BufferReadInstance::BufferReadInstance (Context&			context,
 	: BufferAccessInstance	(context, device, deviceDriver, shaderType, shaderStage, bufferFormat,
 							 readFromStorage ? BUFFER_ACCESS_TYPE_READ_FROM_STORAGE : BUFFER_ACCESS_TYPE_READ,
 							 inBufferAccessRange,
-							 RobustBufferAccessTest::s_numberOfBytesAccessed,	// outBufferAccessRange
+							 RobustBufferAccessTest::getNumberOfBytesAccesssed(shaderType),	// outBufferAccessRange
 							 accessOutOfBackingMemory,
 							 testPipelineRobustness)
 {
@@ -1534,7 +1603,7 @@ BufferWriteInstance::BufferWriteInstance (Context&				context,
 
 	: BufferAccessInstance	(context, device, deviceDriver, shaderType, shaderStage, bufferFormat,
 							 BUFFER_ACCESS_TYPE_WRITE,
-							 RobustBufferAccessTest::s_numberOfBytesAccessed,	// inBufferAccessRange
+							 RobustBufferAccessTest::getNumberOfBytesAccesssed(shaderType),	// inBufferAccessRange
 							 writeBufferAccessRange,
 							 accessOutOfBackingMemory,
 							 testPipelineRobustness)
@@ -1612,6 +1681,7 @@ static void addBufferAccessTests (tcu::TestContext& testCtx, tcu::TestCaseGroup*
 	{
 		"mat4_copy",
 		"vec4_copy",
+		"vec4_member_copy",
 		"scalar_copy",
 		"texel_copy",
 	};
@@ -1678,6 +1748,10 @@ static void addBufferAccessTests (tcu::TestContext& testCtx, tcu::TestCaseGroup*
 					const BufferRangeConfig&	rangeConfig			= ranges[rangeNdx];
 					const VkDeviceSize			rangeInBytes		= rangeConfig.range * rangeMultiplier;
 
+					if (rangeInBytes > 16 && (ShaderType)shaderTypeNdx == SHADER_TYPE_VECTOR_MEMBER_COPY) {
+						continue;
+					}
+
 					uboReadTests->addChild(new RobustBufferReadTest(testCtx, rangeConfig.name, "", stage, (ShaderType)shaderTypeNdx, bufferFormat, testPipelineRobustness, rangeInBytes, false, false));
 
 					// Avoid too much duplication by excluding certain test cases
@@ -1701,13 +1775,15 @@ static void addBufferAccessTests (tcu::TestContext& testCtx, tcu::TestCaseGroup*
 
 				const VkFormat format = (((ShaderType)shaderTypeNdx == SHADER_TYPE_TEXEL_COPY ) ? VK_FORMAT_R32G32B32A32_SFLOAT : VK_FORMAT_R32_SFLOAT);
 
-				outOfAllocTests->addChild(new RobustBufferReadTest(testCtx, "oob_uniform_read", "", stage, (ShaderType)shaderTypeNdx, format, testPipelineRobustness, 16, false, true));
+				const VkDeviceSize writeAccessRange = ((ShaderType)shaderTypeNdx == SHADER_TYPE_VECTOR_MEMBER_COPY) ? 8 : 16;
+
+				outOfAllocTests->addChild(new RobustBufferReadTest(testCtx, "oob_uniform_read", "", stage, (ShaderType)shaderTypeNdx, format, testPipelineRobustness, writeAccessRange, false, true));
 
 				// Avoid too much duplication by excluding certain test cases
 				if (!testPipelineRobustness)
-					outOfAllocTests->addChild(new RobustBufferReadTest(testCtx, "oob_storage_read", "", stage, (ShaderType)shaderTypeNdx, format, testPipelineRobustness, 16, true, true));
+					outOfAllocTests->addChild(new RobustBufferReadTest(testCtx, "oob_storage_read", "", stage, (ShaderType)shaderTypeNdx, format, testPipelineRobustness, writeAccessRange, true, true));
 
-				outOfAllocTests->addChild(new RobustBufferWriteTest(testCtx, "oob_storage_write", "", stage, (ShaderType)shaderTypeNdx, format, testPipelineRobustness, 16, true));
+				outOfAllocTests->addChild(new RobustBufferWriteTest(testCtx, "oob_storage_write", "", stage, (ShaderType)shaderTypeNdx, format, testPipelineRobustness, writeAccessRange, true));
 
 				shaderTypeTests->addChild(outOfAllocTests.release());
 			}

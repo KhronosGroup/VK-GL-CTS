@@ -147,6 +147,12 @@ VKAPI_ATTR VkResult VKAPI_CALL createHeadlessSurfaceEXT (VkInstance instance, co
 	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL createSemaphoreSciSyncPoolNV (VkDevice device, const VkSemaphoreSciSyncPoolCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSemaphoreSciSyncPoolNV* pSemaphorePool)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pSemaphorePool = allocateNonDispHandle<SemaphoreSciSyncPoolNV, VkSemaphoreSciSyncPoolNV>(device, pCreateInfo, pAllocator)));
+}
+
 VKAPI_ATTR void VKAPI_CALL destroyInstance (VkInstance instance, const VkAllocationCallbacks* pAllocator)
 {
 	freeHandle<Instance, VkInstance>(instance, pAllocator);
@@ -1790,6 +1796,83 @@ VKAPI_ATTR void VKAPI_CALL cmdSetColorWriteEnableEXT (VkCommandBuffer commandBuf
 	DE_UNREF(pColorWriteEnables);
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL getFenceSciSyncFenceNV (VkDevice device, const VkFenceGetSciSyncInfoNV* pGetSciSyncHandleInfo, void* pHandle)
+{
+	DE_UNREF(device);
+	DE_UNREF(pGetSciSyncHandleInfo);
+	DE_UNREF(pHandle);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getFenceSciSyncObjNV (VkDevice device, const VkFenceGetSciSyncInfoNV* pGetSciSyncHandleInfo, void* pHandle)
+{
+	DE_UNREF(device);
+	DE_UNREF(pGetSciSyncHandleInfo);
+	DE_UNREF(pHandle);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL importFenceSciSyncFenceNV (VkDevice device, const VkImportFenceSciSyncInfoNV* pImportFenceSciSyncInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pImportFenceSciSyncInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL importFenceSciSyncObjNV (VkDevice device, const VkImportFenceSciSyncInfoNV* pImportFenceSciSyncInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pImportFenceSciSyncInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSciSyncAttributesNV (VkPhysicalDevice physicalDevice, const VkSciSyncAttributesInfoNV* pSciSyncAttributesInfo, pt::NvSciSyncAttrList pAttributes)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pSciSyncAttributesInfo);
+	DE_UNREF(pAttributes);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getSemaphoreSciSyncObjNV (VkDevice device, const VkSemaphoreGetSciSyncInfoNV* pGetSciSyncInfo, void* pHandle)
+{
+	DE_UNREF(device);
+	DE_UNREF(pGetSciSyncInfo);
+	DE_UNREF(pHandle);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL importSemaphoreSciSyncObjNV (VkDevice device, const VkImportSemaphoreSciSyncInfoNV* pImportSemaphoreSciSyncInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pImportSemaphoreSciSyncInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getMemorySciBufNV (VkDevice device, const VkMemoryGetSciBufInfoNV* pGetSciBufInfo, pt::NvSciBufObj* pHandle)
+{
+	DE_UNREF(device);
+	DE_UNREF(pGetSciBufInfo);
+	DE_UNREF(pHandle);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceExternalMemorySciBufPropertiesNV (VkPhysicalDevice physicalDevice, VkExternalMemoryHandleTypeFlagBits handleType, pt::NvSciBufObj handle, VkMemorySciBufPropertiesNV* pMemorySciBufProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(handleType);
+	DE_UNREF(handle);
+	DE_UNREF(pMemorySciBufProperties);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSciBufAttributesNV (VkPhysicalDevice physicalDevice, pt::NvSciBufAttrList pAttributes)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pAttributes);
+	return VK_SUCCESS;
+}
+
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 {
 	VK_NULL_FUNC_ENTRY(vkCreateInstance,						createInstance),
@@ -1853,6 +1936,9 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMultisamplePropertiesEXT,						getPhysicalDeviceMultisamplePropertiesEXT),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCalibrateableTimeDomainsEXT,					getPhysicalDeviceCalibrateableTimeDomainsEXT),
 	VK_NULL_FUNC_ENTRY(vkCreateHeadlessSurfaceEXT,										createHeadlessSurfaceEXT),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSciSyncAttributesNV,							getPhysicalDeviceSciSyncAttributesNV),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalMemorySciBufPropertiesNV,				getPhysicalDeviceExternalMemorySciBufPropertiesNV),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSciBufAttributesNV,							getPhysicalDeviceSciBufAttributesNV),
 };
 
 static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
@@ -2065,5 +2151,13 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdSetLogicOpEXT,							cmdSetLogicOpEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdSetPrimitiveRestartEnableEXT,			cmdSetPrimitiveRestartEnableEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdSetColorWriteEnableEXT,					cmdSetColorWriteEnableEXT),
+	VK_NULL_FUNC_ENTRY(vkGetFenceSciSyncFenceNV,					getFenceSciSyncFenceNV),
+	VK_NULL_FUNC_ENTRY(vkGetFenceSciSyncObjNV,						getFenceSciSyncObjNV),
+	VK_NULL_FUNC_ENTRY(vkImportFenceSciSyncFenceNV,					importFenceSciSyncFenceNV),
+	VK_NULL_FUNC_ENTRY(vkImportFenceSciSyncObjNV,					importFenceSciSyncObjNV),
+	VK_NULL_FUNC_ENTRY(vkGetSemaphoreSciSyncObjNV,					getSemaphoreSciSyncObjNV),
+	VK_NULL_FUNC_ENTRY(vkImportSemaphoreSciSyncObjNV,				importSemaphoreSciSyncObjNV),
+	VK_NULL_FUNC_ENTRY(vkGetMemorySciBufNV,							getMemorySciBufNV),
+	VK_NULL_FUNC_ENTRY(vkCreateSemaphoreSciSyncPoolNV,				createSemaphoreSciSyncPoolNV),
 };
 

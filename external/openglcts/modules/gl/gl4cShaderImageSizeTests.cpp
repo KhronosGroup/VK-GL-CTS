@@ -442,7 +442,7 @@ class ImageSizeMachine : public deqp::GLWrapper
 			   << "image2D g_image_2d;" NL "layout(binding = 2, rgba32" << ImageFormatPostfix<T>() << ") uniform "
 			   << ImageTypePrefix<T>() << "image3D g_image_3d;" NL "layout(binding = 3, rgba32"
 			   << ImageFormatPostfix<T>() << ") uniform " << ImageTypePrefix<T>()
-			   << "imageCube g_image_cube;" NL "layout(binding = 4, rgba32" << ImageFormatPostfix<T>() << ") uniform "
+			   << "image2D g_image_cube;" NL "layout(binding = 4, rgba32" << ImageFormatPostfix<T>() << ") uniform "
 			   << ImageTypePrefix<T>() << "imageCubeArray g_image_cube_array;" NL "layout(binding = 5, rgba32"
 			   << ImageFormatPostfix<T>() << ") uniform " << ImageTypePrefix<T>()
 			   << "image2DRect g_image_rect;" NL "layout(binding = 6, rgba32" << ImageFormatPostfix<T>() << ") uniform "

@@ -794,7 +794,6 @@ uint32_t VideoBaseDecoder::ResetPicDpbSlots (uint32_t picIndexSlotValidMask)
 VideoBaseDecoder::VideoBaseDecoder (Context& context)
 	: m_context									(context)
 	, m_nvFuncs									(createIfcNvFunctions(context.getTestContext().getPlatform().getVulkanPlatform()))
-	, m_ffmpegFuncs								(createIfcFfmpegFunctions())
 	, m_videoCodecOperation						(VK_VIDEO_CODEC_OPERATION_NONE_KHR)
 	, m_vkd										(DE_NULL)
 	, m_device									(DE_NULL)
@@ -1259,7 +1258,7 @@ bool VideoBaseDecoder::DecodePicture (NvidiaVulkanParserPictureData*	pNvidiaVulk
 		pPictureInfo->pNext					= DE_NULL;
 		pPictureInfo->pStdPictureInfo		= &pH264->stdPictureInfo;
 		pPictureInfo->sliceCount			= pNvidiaVulkanParserPictureData->nNumSlices;
-		pPictureInfo->pSliceOffsets			= pNvidiaVulkanParserPictureData->pSliceDataOffsets;
+		pPictureInfo->pSliceOffsets			= static_cast<uint32_t*>(copyToHeap(heap, pNvidiaVulkanParserPictureData->pSliceDataOffsets, sizeof(uint32_t) * pNvidiaVulkanParserPictureData->nNumSlices));
 
 		pPerFrameDecodeParameters->decodeFrameInfo.pNext = &pH264->pictureInfo;
 
@@ -1401,7 +1400,7 @@ bool VideoBaseDecoder::DecodePicture (NvidiaVulkanParserPictureData*	pNvidiaVulk
 		}
 
 		pPictureInfo->sliceSegmentCount				= pNvidiaVulkanParserPictureData->nNumSlices;
-		pPictureInfo->pSliceSegmentOffsets			= pNvidiaVulkanParserPictureData->pSliceDataOffsets;
+		pPictureInfo->pSliceSegmentOffsets			= static_cast<uint32_t*>(copyToHeap(heap, pNvidiaVulkanParserPictureData->pSliceDataOffsets, sizeof(uint32_t) * pNvidiaVulkanParserPictureData->nNumSlices));
 
 		pStdPictureInfo->pps_pic_parameter_set_id		= pin->pic_parameter_set_id;		// PPS ID
 		pStdPictureInfo->flags.IrapPicFlag				= (pin->IrapPicFlag ? 1 : 0);		// Intra Random Access Point for current picture.
@@ -2596,13 +2595,6 @@ VideoFrameBuffer* VideoBaseDecoder::GetVideoFrameBuffer (void)
 	return m_videoFrameBuffer.get();
 }
 
-IfcFfmpegFunctions* VideoBaseDecoder::GetIfcFfmpegFuncs (void)
-{
-	DE_ASSERT(m_ffmpegFuncs.get() != DE_NULL);
-
-	return m_ffmpegFuncs.get();
-}
-
 IfcNvFunctions* VideoBaseDecoder::GetNvFuncs (void)
 {
 	DE_ASSERT(m_nvFuncs.get() != DE_NULL);
@@ -2746,6 +2738,8 @@ int32_t VideoBaseDecoder::DecodeCachedPictures (VideoBaseDecoder*	friendDecoder,
 	m_frameCompleteFences.resize(ndxMax);
 	m_frameConsumerDoneSemaphoreSubmitInfos.resize(ndxMax);
 	m_frameCompleteSemaphoreSubmitInfos.resize(ndxMax);
+
+	std::vector<VkVideoReferenceSlotInfoKHR> completeReferenceSlots;
 
 	for (size_t ndx = 0; ndx < ndxMax; ++ndx)
 	{
@@ -3033,6 +3027,26 @@ int32_t VideoBaseDecoder::DecodeCachedPictures (VideoBaseDecoder*	friendDecoder,
 
 		if (m_queryResultWithStatus)
 			vkd.cmdResetQueryPool(commandBuffer, frameSynchronizationInfo.queryPool, frameSynchronizationInfo.startQueryId, frameSynchronizationInfo.numQueries);
+
+
+		// Ensure the resource for the resources associated with the
+		// reference slot (if it exists) are in the bound picture
+		// resources set.  See VUID-vkCmdDecodeVideoKHR-pDecodeInfo-07149.
+		if (pPicParams->decodeFrameInfo.pSetupReferenceSlot != nullptr)
+		{
+			completeReferenceSlots.clear();
+			for (deUint32 i = 0; i < decodeBeginInfo.referenceSlotCount; i++)
+				completeReferenceSlots.push_back(decodeBeginInfo.pReferenceSlots[i]);
+
+			VkVideoReferenceSlotInfoKHR dstPictureSlot = {};
+			dstPictureSlot.sType = VK_STRUCTURE_TYPE_VIDEO_REFERENCE_SLOT_INFO_KHR;
+			dstPictureSlot.slotIndex = -1;
+			dstPictureSlot.pPictureResource = m_distinctDstDpbImages ? &pPicParams->pictureResources[pPicParams->numGopReferenceSlots] : &pPicParams->decodeFrameInfo.dstPictureResource;
+			completeReferenceSlots.push_back(dstPictureSlot);
+
+			decodeBeginInfo.referenceSlotCount++;
+			decodeBeginInfo.pReferenceSlots = completeReferenceSlots.data();
+		}
 
 		vkd.cmdBeginVideoCodingKHR(commandBuffer, &decodeBeginInfo);
 

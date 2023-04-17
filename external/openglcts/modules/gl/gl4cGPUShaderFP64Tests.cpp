@@ -6214,6 +6214,12 @@ void GPUShaderFP64Test4::initProgramObjects()
 						  "        tc_array[1].struct_dvec3.y * tc_array[1].struct_dvec4.z > 0.0)\n"
 						  "    {\n"
 						  "        gl_TessLevelInner[1] = 3.0;\n"
+						  "        gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+						  "    }\n"
+						  "    else\n"
+						  "    {\n"
+						  "        gl_TessLevelInner[1] = 0.0;\n"
+						  "        gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position + vec4(1);\n"
 						  "    }\n"
 						  "}\n";
 
@@ -6932,9 +6938,6 @@ bool GPUShaderFP64Test4::verifyUniformValues()
 		m_po_noncs_id, m_po_cs_id,
 	};
 	const unsigned int n_programs = sizeof(programs) / sizeof(programs[0]);
-
-	/* Set up rounding for the tests */
-	deSetRoundingMode(DE_ROUNDINGMODE_TO_NEAREST_EVEN);
 
 	for (unsigned int n_program = 0; n_program < n_programs; ++n_program)
 	{

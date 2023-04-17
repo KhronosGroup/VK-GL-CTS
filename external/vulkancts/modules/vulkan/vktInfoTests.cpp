@@ -29,6 +29,7 @@
 #include "tcuFormatUtil.hpp"
 #include "tcuCommandLine.hpp"
 #include "tcuPlatform.hpp"
+#include "deDefs.h"
 #include "deStringUtil.hpp"
 #include "vktApiFeatureInfo.hpp"
 
@@ -84,6 +85,8 @@ std::string getCpuName (int cpu)
 		case DE_CPU_ARM_64:		return "DE_CPU_ARM_64";
 		case DE_CPU_MIPS:		return "DE_CPU_MIPS";
 		case DE_CPU_MIPS_64:	return "DE_CPU_MIPS_64";
+		case DE_CPU_RISCV_32:	return "DE_CPU_RISCV_32";
+		case DE_CPU_RISCV_64:	return "DE_CPU_RISCV_64";
 		default:
 			return de::toString(cpu);
 	}
@@ -180,14 +183,16 @@ const SizeUnit* getBestSizeUnit (deUint64 value)
 	{
 		// \note Must be ordered from largest to smallest
 		{ "TiB",	1ull<<40ull		},
-		{ "MiB",	1ull<<20ull		},
 		{ "GiB",	1ull<<30ull		},
+		{ "MiB",	1ull<<20ull		},
 		{ "KiB",	1ull<<10ull		},
 	};
 	static const SizeUnit s_defaultUnit	= { "B", 1u };
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_units); ++ndx)
 	{
+		DE_ASSERT(ndx == DE_LENGTH_OF_ARRAY(s_units) ||
+		          s_units[ndx].value > s_units[ndx + 1].value);
 		if (value >= s_units[ndx].value)
 			return &s_units[ndx];
 	}

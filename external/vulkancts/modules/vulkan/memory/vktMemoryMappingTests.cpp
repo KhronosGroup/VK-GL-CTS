@@ -1784,6 +1784,8 @@ TestConfig fullMappedConfig (VkDeviceSize	allocationSize,
 
 void checkSupport (Context& context, TestConfig config)
 {
+	context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
+
 	if (config.allocationKind == ALLOCATION_KIND_DEDICATED_IMAGE
 		|| config.allocationKind == ALLOCATION_KIND_DEDICATED_BUFFER)
 	{

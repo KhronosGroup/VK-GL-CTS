@@ -36,6 +36,9 @@
 #include "vkPipelineConstructionUtil.hpp"
 #include <vector>
 #include <string>
+#ifdef CTS_USES_VULKANSC
+#include <mutex>
+#endif // CTS_USES_VULKANSC
 
 namespace glu
 {
@@ -117,6 +120,7 @@ public:
 #include "vkDevicePropertiesForContextDecl.inl"
 
 	const std::vector<std::string>&				getDeviceExtensions					(void) const;
+	const std::vector<const char*>&				getDeviceCreationExtensions			(void) const;
 	vk::VkDevice								getDevice							(void) const;
 	const vk::DeviceInterface&					getDeviceInterface					(void) const;
 	deUint32									getUniversalQueueFamilyIndex		(void) const;
@@ -155,6 +159,14 @@ public:
 	void resetCommandPoolForVKSC													(const vk::VkDevice			device,
 																					 const vk::VkCommandPool	commandPool);
 	ContextCommonData getContextCommonData											();
+
+#ifdef CTS_USES_VULKANSC
+	static std::vector<VkFaultData>					m_faultData;
+	static std::mutex								m_faultDataMutex;
+	static VKAPI_ATTR void VKAPI_CALL				faultCallbackFunction(VkBool32 unrecordedFaults,
+																		  deUint32 faultCount,
+																		  const VkFaultData* pFaults);
+#endif // CTS_USES_VULKANSC
 
 protected:
 	tcu::TestContext&								m_testCtx;

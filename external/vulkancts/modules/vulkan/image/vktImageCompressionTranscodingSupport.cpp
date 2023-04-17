@@ -547,7 +547,7 @@ TestStatus BasicComputeTestInstance::iterate (void)
 	Allocator&								allocator			= m_context.getDefaultAllocator();
 	const Unique<VkCommandPool>				cmdPool				(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>			cmdBuffer			(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-	const UVec3								fullSize			(m_parameters.size.x(), m_parameters.size.y(), 1);
+	const UVec3								fullSize			(m_parameters.size.x(), m_parameters.imageType == IMAGE_TYPE_1D ? 1 : m_parameters.size.y(), 1);
 	const vector<UVec3>						mipMapSizes			= m_parameters.useMipmaps ? getMipLevelSizes (getLayerDims()) : vector<UVec3>(1, fullSize);
 	vector<ImageData>						imageData			(m_parameters.imagesCount);
 	const deUint32							compressedNdx		= 0u;
@@ -1038,7 +1038,7 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandPool&	cmdPool,
 	{
 		const bool						layoutShaderReadOnly	= (layerNdx % 2u) == 1;
 		const deUint32					imageNdx				= layerNdx + mipNdx * getLayerCount();
-		const VkExtent3D				extentCompressed		= imageType == VK_IMAGE_TYPE_1D ? makeExtent3D(mipMapSizes[mipNdx].x(), 1, mipMapSizes[mipNdx].z()) : makeExtent3D(mipMapSizes[mipNdx]);
+		const VkExtent3D				extentCompressed		= makeExtent3D(mipMapSizes[mipNdx]);
 		const VkImage&					uncompressed			= imageData[m_parameters.imagesCount -1].getImage(imageNdx);
 		const VkExtent3D				extentUncompressed		= imageData[m_parameters.imagesCount -1].getImageInfo(imageNdx).extent;
 		const VkDeviceSize				bufferSizeComp			= getCompressedImageSizeInBytes(m_parameters.formatCompressed, mipMapSizes[mipNdx]);

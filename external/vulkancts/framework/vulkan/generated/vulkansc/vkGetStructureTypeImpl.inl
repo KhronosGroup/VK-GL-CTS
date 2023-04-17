@@ -1533,3 +1533,88 @@ template<> VkStructureType getStructureType<VkApplicationParametersEXT> (void)
 	return VK_STRUCTURE_TYPE_APPLICATION_PARAMETERS_EXT;
 }
 
+template<> VkStructureType getStructureType<VkExportFenceSciSyncInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_EXPORT_FENCE_SCI_SYNC_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkImportFenceSciSyncInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_IMPORT_FENCE_SCI_SYNC_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkFenceGetSciSyncInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_FENCE_GET_SCI_SYNC_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkSciSyncAttributesInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_SCI_SYNC_ATTRIBUTES_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkExportSemaphoreSciSyncInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_SCI_SYNC_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkImportSemaphoreSciSyncInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_SCI_SYNC_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkSemaphoreGetSciSyncInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_SEMAPHORE_GET_SCI_SYNC_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceExternalSciSyncFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SCI_SYNC_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkExportMemorySciBufInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_EXPORT_MEMORY_SCI_BUF_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkImportMemorySciBufInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_IMPORT_MEMORY_SCI_BUF_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkMemoryGetSciBufInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_GET_SCI_BUF_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkMemorySciBufPropertiesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_SCI_BUF_PROPERTIES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceExternalMemorySciBufFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCI_BUF_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceExternalSciSync2FeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SCI_SYNC_2_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkSemaphoreSciSyncPoolCreateInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_SEMAPHORE_SCI_SYNC_POOL_CREATE_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkSemaphoreSciSyncCreateInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_SEMAPHORE_SCI_SYNC_CREATE_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkDeviceSemaphoreSciSyncPoolReservationCreateInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_SEMAPHORE_SCI_SYNC_POOL_RESERVATION_CREATE_INFO_NV;
+}
+

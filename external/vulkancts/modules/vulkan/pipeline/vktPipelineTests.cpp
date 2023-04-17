@@ -29,6 +29,7 @@
 #include "vktPipelineDepthTests.hpp"
 #include "vktPipelineDescriptorLimitsTests.hpp"
 #include "vktPipelineDynamicOffsetTests.hpp"
+#include "vktPipelineDynamicVertexAttributeTests.hpp"
 #include "vktPipelineEarlyDestroyTests.hpp"
 #include "vktPipelineLogicOpTests.hpp"
 #include "vktPipelineImageTests.hpp"
@@ -68,6 +69,8 @@
 #include "vktPipelineLibraryTests.hpp"
 #include "vktPipelineAttachmentFeedbackLoopLayoutTests.hpp"
 #include "vktPipelineShaderModuleIdentifierTests.hpp"
+#include "vktPipelineImageSlicedViewOf3DTests.hpp"
+#include "vktPipelineBindVertexBuffers2Tests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt
@@ -90,6 +93,7 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 	group->addChild(createDepthTests					(testCtx, pipelineConstructionType));
 	group->addChild(createDescriptorLimitsTests			(testCtx, pipelineConstructionType));
 	group->addChild(createDynamicOffsetTests			(testCtx, pipelineConstructionType));
+	group->addChild(createDynamicVertexAttributeTests	(testCtx, pipelineConstructionType));
 #ifndef CTS_USES_VULKANSC
 	group->addChild(createEarlyDestroyTests				(testCtx, pipelineConstructionType));
 #endif // CTS_USES_VULKANSC
@@ -141,6 +145,7 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 #endif // CTS_USES_VULKANSC
 	group->addChild(createColorWriteEnable2Tests		(testCtx, pipelineConstructionType));
 	group->addChild(createMiscTests						(testCtx, pipelineConstructionType));
+	group->addChild(createCmdBindBuffers2Tests			(testCtx, pipelineConstructionType));
 
 	// NOTE: all new pipeline tests should use GraphicsPipelineWrapper for pipeline creation
 
@@ -152,6 +157,9 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 
 		// dont repeat tests requiring timing execution of vkCreate*Pipelines
 		group->addChild(createCacheControlTests				(testCtx));
+
+		// No need to repeat tests checking sliced view of 3D images for different construction types.
+		group->addChild(createImageSlicedViewOf3DTests		(testCtx));
 #endif // CTS_USES_VULKANSC
 	}
 #ifndef CTS_USES_VULKANSC

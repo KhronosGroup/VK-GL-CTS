@@ -208,7 +208,7 @@ typedef VKAPI_ATTR void		(VKAPI_CALL* PFN_vkDeviceMemoryReportCallbackEXT)	(cons
 struct VkFaultData;
 typedef VKAPI_ATTR void		(VKAPI_CALL *PFN_vkFaultCallbackFunction)			(VkBool32											incompleteFaultData,
 																				 deUint32											faultCount,
-																				 VkFaultData*										pFaultData);
+																				 const VkFaultData*									pFaultData);
 #endif // CTS_USES_VULKANSC
 
 #include "vkStructTypes.inl"
@@ -224,7 +224,6 @@ enum VkShaderModuleCreateFlagBits
 typedef deUint32 VkShaderModuleCreateFlags;
 
 #define VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO VkStructureType(16)
-#define VK_OBJECT_TYPE_SHADER_MODULE VkObjectType(15)
 
 struct VkShaderModuleCreateInfo
 {

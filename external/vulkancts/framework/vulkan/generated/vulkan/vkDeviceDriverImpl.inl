@@ -509,6 +509,16 @@ void DeviceDriver::cmdSubpassShadingHUAWEI (VkCommandBuffer commandBuffer) const
 	m_vk.cmdSubpassShadingHUAWEI(commandBuffer);
 }
 
+void DeviceDriver::cmdDrawClusterHUAWEI (VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const
+{
+	m_vk.cmdDrawClusterHUAWEI(commandBuffer, groupCountX, groupCountY, groupCountZ);
+}
+
+void DeviceDriver::cmdDrawClusterIndirectHUAWEI (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset) const
+{
+	m_vk.cmdDrawClusterIndirectHUAWEI(commandBuffer, buffer, offset);
+}
+
 void DeviceDriver::cmdCopyBuffer (VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t regionCount, const VkBufferCopy* pRegions) const
 {
 	m_vk.cmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, regionCount, pRegions);
@@ -949,6 +959,16 @@ void DeviceDriver::cmdSetDiscardRectangleEXT (VkCommandBuffer commandBuffer, uin
 	m_vk.cmdSetDiscardRectangleEXT(commandBuffer, firstDiscardRectangle, discardRectangleCount, pDiscardRectangles);
 }
 
+void DeviceDriver::cmdSetDiscardRectangleEnableEXT (VkCommandBuffer commandBuffer, VkBool32 discardRectangleEnable) const
+{
+	m_vk.cmdSetDiscardRectangleEnableEXT(commandBuffer, discardRectangleEnable);
+}
+
+void DeviceDriver::cmdSetDiscardRectangleModeEXT (VkCommandBuffer commandBuffer, VkDiscardRectangleModeEXT discardRectangleMode) const
+{
+	m_vk.cmdSetDiscardRectangleModeEXT(commandBuffer, discardRectangleMode);
+}
+
 void DeviceDriver::cmdSetSampleLocationsEXT (VkCommandBuffer commandBuffer, const VkSampleLocationsInfoEXT* pSampleLocationsInfo) const
 {
 	m_vk.cmdSetSampleLocationsEXT(commandBuffer, pSampleLocationsInfo);
@@ -1187,6 +1207,11 @@ void DeviceDriver::cmdDrawIndirectByteCountEXT (VkCommandBuffer commandBuffer, u
 void DeviceDriver::cmdSetExclusiveScissorNV (VkCommandBuffer commandBuffer, uint32_t firstExclusiveScissor, uint32_t exclusiveScissorCount, const VkRect2D* pExclusiveScissors) const
 {
 	m_vk.cmdSetExclusiveScissorNV(commandBuffer, firstExclusiveScissor, exclusiveScissorCount, pExclusiveScissors);
+}
+
+void DeviceDriver::cmdSetExclusiveScissorEnableNV (VkCommandBuffer commandBuffer, uint32_t firstExclusiveScissor, uint32_t exclusiveScissorCount, const VkBool32* pExclusiveScissorEnables) const
+{
+	m_vk.cmdSetExclusiveScissorEnableNV(commandBuffer, firstExclusiveScissor, exclusiveScissorCount, pExclusiveScissorEnables);
 }
 
 void DeviceDriver::cmdBindShadingRateImageNV (VkCommandBuffer commandBuffer, VkImageView imageView, VkImageLayout imageLayout) const
@@ -2247,4 +2272,14 @@ VkResult DeviceDriver::getDeviceFaultInfoEXT (VkDevice device, VkDeviceFaultCoun
 VkResult DeviceDriver::releaseSwapchainImagesEXT (VkDevice device, const VkReleaseSwapchainImagesInfoEXT* pReleaseInfo) const
 {
 	return m_vk.releaseSwapchainImagesEXT(device, pReleaseInfo);
+}
+
+VkResult DeviceDriver::mapMemory2KHR (VkDevice device, const VkMemoryMapInfoKHR* pMemoryMapInfo, void** ppData) const
+{
+	return m_vk.mapMemory2KHR(device, pMemoryMapInfo, ppData);
+}
+
+VkResult DeviceDriver::unmapMemory2KHR (VkDevice device, const VkMemoryUnmapInfoKHR* pMemoryUnmapInfo) const
+{
+	return m_vk.unmapMemory2KHR(device, pMemoryUnmapInfo);
 }

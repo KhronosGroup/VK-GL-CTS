@@ -87,6 +87,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/api/vktApiFeatureInfo.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiFillBufferTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiFormatPropertiesExtendedKHRtests.cpp \
+	external/vulkancts/modules/vulkan/api/vktApiGetDeviceProcAddrTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiGetMemoryCommitment.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiGranularityTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiImageClearingTests.cpp \
@@ -123,6 +124,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/conditional_rendering/vktConditionalDispatchTests.cpp \
 	external/vulkancts/modules/vulkan/conditional_rendering/vktConditionalDrawAndClearTests.cpp \
 	external/vulkancts/modules/vulkan/conditional_rendering/vktConditionalDrawTests.cpp \
+	external/vulkancts/modules/vulkan/conditional_rendering/vktConditionalIgnoreTests.cpp \
 	external/vulkancts/modules/vulkan/conditional_rendering/vktConditionalRenderingTestUtil.cpp \
 	external/vulkancts/modules/vulkan/conditional_rendering/vktConditionalTests.cpp \
 	external/vulkancts/modules/vulkan/descriptor_indexing/vktDescriptorIndexingTests.cpp \
@@ -255,6 +257,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/pch.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineAttachmentFeedbackLoopLayoutTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineBindPointTests.cpp \
+	external/vulkancts/modules/vulkan/pipeline/vktPipelineBindVertexBuffers2Tests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineBlendOperationAdvancedTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineBlendTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineCacheTests.cpp \
@@ -268,12 +271,14 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineDescriptorLimitsTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineDynamicControlPoints.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineDynamicOffsetTests.cpp \
+	external/vulkancts/modules/vulkan/pipeline/vktPipelineDynamicVertexAttributeTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineEarlyDestroyTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineExecutablePropertiesTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineExtendedDynamicStateTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineFramebufferAttachmentTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineImage2DViewOf3DTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineImageSamplingInstance.cpp \
+	external/vulkancts/modules/vulkan/pipeline/vktPipelineImageSlicedViewOf3DTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineImageTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineImageUtil.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineImageViewTests.cpp \
@@ -592,7 +597,6 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/video/vktVideoCapabilitiesTests.cpp \
 	external/vulkancts/modules/vulkan/video/vktVideoDecodeTests.cpp \
 	external/vulkancts/modules/vulkan/video/vktVideoPictureUtils.cpp \
-	external/vulkancts/modules/vulkan/video/vktVideoSessionFfmpegUtils.cpp \
 	external/vulkancts/modules/vulkan/video/vktVideoSessionNvUtils.cpp \
 	external/vulkancts/modules/vulkan/video/vktVideoTestUtils.cpp \
 	external/vulkancts/modules/vulkan/video/vktVideoTests.cpp \
@@ -613,6 +617,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/wsi/vktWsiDisplayTimingTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiFullScreenExclusiveTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiIncrementalPresentTests.cpp \
+	external/vulkancts/modules/vulkan/wsi/vktWsiMaintenance1Tests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiPresentIdWaitTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiSharedPresentableImageTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiSurfaceTests.cpp \

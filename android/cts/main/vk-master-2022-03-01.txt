@@ -1,5 +1,6 @@
 vk-master-2022-03-01/api.txt
 vk-master-2022-03-01/binding-model.txt
+vk-master-2022-03-01/clipping.txt
 vk-master-2022-03-01/compute.txt
 vk-master-2022-03-01/conditional-rendering.txt
 vk-master-2022-03-01/depth.txt
@@ -14,6 +15,7 @@ vk-master-2022-03-01/glsl.txt
 vk-master-2022-03-01/graphicsfuzz.txt
 vk-master-2022-03-01/image.txt
 vk-master-2022-03-01/imageless-framebuffer.txt
+vk-master-2022-03-01/info.txt
 vk-master-2022-03-01/memory-model.txt
 vk-master-2022-03-01/memory.txt
 vk-master-2022-03-01/mesh-shader.txt

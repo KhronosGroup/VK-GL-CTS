@@ -3551,6 +3551,7 @@ KHR-GL45.shaders.shader_integer_mix.mix-uvec4
 KHR-GL45.shaders.shader_integer_mix.mix-bvec4
 KHR-GL45.shaders.negative.initialize
 KHR-GL45.shaders.negative.constant_sequence
+KHR-GL45.shaders.negative.non_precision_qualifiers_in_struct_members
 KHR-GL45.pipeline_statistics_query_tests_ARB.api_coverage_invalid_glbeginquery_calls
 KHR-GL45.pipeline_statistics_query_tests_ARB.api_coverage_unsupported_calls
 KHR-GL45.pipeline_statistics_query_tests_ARB.functional_default_qo_values

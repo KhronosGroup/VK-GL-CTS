@@ -55,3 +55,6 @@ SubmitDebugUtilsMessageEXTFunc										submitDebugUtilsMessageEXT;
 GetPhysicalDeviceMultisamplePropertiesEXTFunc						getPhysicalDeviceMultisamplePropertiesEXT;
 GetPhysicalDeviceCalibrateableTimeDomainsEXTFunc					getPhysicalDeviceCalibrateableTimeDomainsEXT;
 CreateHeadlessSurfaceEXTFunc										createHeadlessSurfaceEXT;
+GetPhysicalDeviceSciSyncAttributesNVFunc							getPhysicalDeviceSciSyncAttributesNV;
+GetPhysicalDeviceExternalMemorySciBufPropertiesNVFunc				getPhysicalDeviceExternalMemorySciBufPropertiesNV;
+GetPhysicalDeviceSciBufAttributesNVFunc								getPhysicalDeviceSciBufAttributesNV;

@@ -843,7 +843,8 @@ void transition2DImage (const vk::DeviceInterface&	vk,
 						vk::VkAccessFlags			srcAccessMask,
 						vk::VkAccessFlags			dstAccessMask,
 						vk::VkPipelineStageFlags	srcStageMask,
-						vk::VkPipelineStageFlags	dstStageMask)
+						vk::VkPipelineStageFlags	dstStageMask,
+						deUint32					numLayers)
 {
 	vk::VkImageMemoryBarrier barrier;
 	barrier.sType							= vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -859,16 +860,16 @@ void transition2DImage (const vk::DeviceInterface&	vk,
 	barrier.subresourceRange.baseMipLevel	= 0;
 	barrier.subresourceRange.levelCount		= 1;
 	barrier.subresourceRange.baseArrayLayer = 0;
-	barrier.subresourceRange.layerCount		= 1;
+	barrier.subresourceRange.layerCount		= numLayers;
 
 	vk.cmdPipelineBarrier(cmdBuffer, srcStageMask, dstStageMask, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL,
 						  0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &barrier);
 }
 
 void initialTransitionColor2DImage (const vk::DeviceInterface &vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkImageLayout layout,
-									vk::VkAccessFlags dstAccessMask, vk::VkPipelineStageFlags dstStageMask)
+									vk::VkAccessFlags dstAccessMask, vk::VkPipelineStageFlags dstStageMask, deUint32 numLayers)
 {
-	transition2DImage(vk, cmdBuffer, image, vk::VK_IMAGE_ASPECT_COLOR_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED, layout, 0u, dstAccessMask, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dstStageMask);
+	transition2DImage(vk, cmdBuffer, image, vk::VK_IMAGE_ASPECT_COLOR_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED, layout, 0u, dstAccessMask, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dstStageMask, numLayers);
 }
 
 void initialTransitionDepth2DImage (const vk::DeviceInterface &vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkImageLayout layout,

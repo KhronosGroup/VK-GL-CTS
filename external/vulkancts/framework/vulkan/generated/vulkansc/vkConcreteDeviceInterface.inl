@@ -211,3 +211,11 @@ virtual void				cmdSetDepthBiasEnableEXT				(VkCommandBuffer commandBuffer, VkBo
 virtual void				cmdSetLogicOpEXT						(VkCommandBuffer commandBuffer, VkLogicOp logicOp) const;
 virtual void				cmdSetPrimitiveRestartEnableEXT			(VkCommandBuffer commandBuffer, VkBool32 primitiveRestartEnable) const;
 virtual void				cmdSetColorWriteEnableEXT				(VkCommandBuffer commandBuffer, uint32_t attachmentCount, const VkBool32* pColorWriteEnables) const;
+virtual VkResult			getFenceSciSyncFenceNV					(VkDevice device, const VkFenceGetSciSyncInfoNV* pGetSciSyncHandleInfo, void* pHandle) const;
+virtual VkResult			getFenceSciSyncObjNV					(VkDevice device, const VkFenceGetSciSyncInfoNV* pGetSciSyncHandleInfo, void* pHandle) const;
+virtual VkResult			importFenceSciSyncFenceNV				(VkDevice device, const VkImportFenceSciSyncInfoNV* pImportFenceSciSyncInfo) const;
+virtual VkResult			importFenceSciSyncObjNV					(VkDevice device, const VkImportFenceSciSyncInfoNV* pImportFenceSciSyncInfo) const;
+virtual VkResult			getSemaphoreSciSyncObjNV				(VkDevice device, const VkSemaphoreGetSciSyncInfoNV* pGetSciSyncInfo, void* pHandle) const;
+virtual VkResult			importSemaphoreSciSyncObjNV				(VkDevice device, const VkImportSemaphoreSciSyncInfoNV* pImportSemaphoreSciSyncInfo) const;
+virtual VkResult			getMemorySciBufNV						(VkDevice device, const VkMemoryGetSciBufInfoNV* pGetSciBufInfo, pt::NvSciBufObj* pHandle) const;
+virtual VkResult			createSemaphoreSciSyncPoolNV			(VkDevice device, const VkSemaphoreSciSyncPoolCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSemaphoreSciSyncPoolNV* pSemaphorePool) const;

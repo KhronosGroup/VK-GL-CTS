@@ -63,13 +63,35 @@ using namespace vkt::ExternalMemoryUtil;
 using de::MovePtr;
 using de::SharedPtr;
 
+struct BindingData
+{
+	VkDeviceAddress					bindingAddress;
+	VkDeviceSize					size;
+	VkDeviceAddressBindingTypeEXT	bindingType;
+	uint64_t						objectHandle;
+
+	bool operator==(const BindingData& rhs) const
+	{
+		if (bindingAddress != rhs.bindingAddress)
+			return false;
+
+		if (size != rhs.size)
+			return false;
+
+		if (objectHandle != rhs.objectHandle)
+			return false;
+
+		return true;
+	}
+};
+
 class BindingCallbackRecorder
 {
 public:
 	BindingCallbackRecorder(void) {}
 	~BindingCallbackRecorder(void) = default;
 
-	typedef std::vector<VkDebugUtilsMessengerCallbackDataEXT>::const_iterator	RecordIterator;
+	typedef std::vector<BindingData>::const_iterator	RecordIterator;
 
 	RecordIterator getRecordsBegin (void) const
 	{
@@ -88,7 +110,17 @@ public:
 
 	void callbackInternal (const VkDebugUtilsMessengerCallbackDataEXT * pCallbackData)
 	{
-		mRecords.emplace_back(*pCallbackData);
+		const VkDeviceAddressBindingCallbackDataEXT* bindingCallbackData = static_cast<const VkDeviceAddressBindingCallbackDataEXT*>(pCallbackData->pNext);
+
+		const BindingData bindingData =
+		{
+			bindingCallbackData->baseAddress,
+			bindingCallbackData->size,
+			bindingCallbackData->bindingType,
+			pCallbackData->pObjects[0].objectHandle
+		};
+
+		mRecords.emplace_back(bindingData);
 	}
 
 	static VKAPI_ATTR VkBool32 VKAPI_CALL callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
@@ -103,7 +135,7 @@ public:
 	}
 
 private:
-	typedef std::vector<VkDebugUtilsMessengerCallbackDataEXT>	Records;
+	typedef std::vector<BindingData>	Records;
 
 	Records			mRecords;
 };
@@ -169,10 +201,17 @@ static Move<VkDevice> createDeviceWithAdressBindingReport (	deBool								isVali
 	const char* const										enabledExtensions[]				= {"VK_EXT_device_address_binding_report"};
 	VkPhysicalDeviceFeatures								features						= getPhysicalDeviceFeatures(vki, physicalDevice);
 
+	VkPhysicalDeviceAddressBindingReportFeaturesEXT deviceAddressBindingReportFeatures
+	{
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ADDRESS_BINDING_REPORT_FEATURES_EXT,
+		DE_NULL,
+		VK_TRUE
+	};
+
 	const VkPhysicalDeviceFeatures2						enabledFeatures2				=
 	{
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,							// VkStructureType						sType;
-		DE_NULL,																// const void*							pNext;
+		&deviceAddressBindingReportFeatures,									// const void*							pNext;
 		features																// VkPhysicalDeviceFeatures				features;
 	};
 	const VkDeviceQueueCreateInfo						queueCreateInfo					=
@@ -1567,17 +1606,11 @@ struct CaseDescriptions
 };
 
 template<typename Object>
-static void checkSupport (Context& context, typename Object::Parameters)
-{
-	context.requireDeviceFunctionality("VK_EXT_device_address_binding_report");
-}
-
-template<typename Object>
 void addCases (const MovePtr<tcu::TestCaseGroup>& group, const CaseDescription<Object>& cases)
 {
 	for (const NamedParameters<Object>* cur = cases.paramsBegin; cur != cases.paramsEnd; cur++)
 	{
-		addFunctionCase(group.get(), cur->name, "", checkSupport<Object>, cases.function, cur->parameters);
+		addFunctionCase(group.get(), cur->name, "", cases.function, cur->parameters);
 	}
 }
 
@@ -1586,7 +1619,7 @@ void addCasesWithProgs (const MovePtr<tcu::TestCaseGroup>& group, const CaseDesc
 {
 	for (const NamedParameters<Object>* cur = cases.paramsBegin; cur != cases.paramsEnd; cur++)
 	{
-		addFunctionCaseWithPrograms(group.get(), cur->name, "", checkSupport<Object>, Object::initPrograms, cases.function, cur->parameters);
+		addFunctionCaseWithPrograms(group.get(), cur->name, "", Object::initPrograms, cases.function, cur->parameters);
 	}
 }
 
@@ -1624,58 +1657,67 @@ tcu::TestCaseGroup* createObjectTestsGroup (tcu::TestContext& testCtx, const cha
 static deBool validateCallbackRecords (Context& context, const BindingCallbackRecorder& recorder)
 {
 	tcu::TestLog&							log					= context.getTestContext().getLog();
-	VkDeviceAddress							baseAddress			= 0;
-	VkDeviceSize							memorySize			= 0;
 
-	for (auto record = recorder.getRecordsBegin(); record != recorder.getRecordsEnd(); record++)
+	for (auto bindRecord = recorder.getRecordsBegin(); bindRecord != recorder.getRecordsEnd(); bindRecord++)
 	{
-		const VkDeviceAddressBindingCallbackDataEXT& bindingData = reinterpret_cast<const VkDeviceAddressBindingCallbackDataEXT&>(record->pNext);
-
-		if (bindingData.bindingType == VK_DEVICE_ADDRESS_BINDING_TYPE_BIND_EXT)
+		if (bindRecord->bindingType == VK_DEVICE_ADDRESS_BINDING_TYPE_BIND_EXT)
 		{
-			baseAddress = bindingData.baseAddress;
-			memorySize = bindingData.size;
-		}
-	}
+			bool matchedBoundUnbound = false;
 
-	bool matchedBoundUnbound = true;
-
-	for (auto record = recorder.getRecordsBegin(); record != recorder.getRecordsEnd(); record++)
-	{
-		const VkDeviceAddressBindingCallbackDataEXT& bindingData = reinterpret_cast<const VkDeviceAddressBindingCallbackDataEXT&>(record->pNext);
-
-		if (bindingData.bindingType == VK_DEVICE_ADDRESS_BINDING_TYPE_UNBIND_EXT)
-		{
-			if (bindingData.baseAddress != baseAddress)
+			for (auto pairRecord = bindRecord; pairRecord != recorder.getRecordsEnd(); pairRecord++)
 			{
-				log << tcu::TestLog::Message << "Bind base adress:" << baseAddress << " differ from unbound one: " << bindingData.baseAddress << tcu::TestLog::EndMessage;
-				matchedBoundUnbound = false;
+				if (pairRecord->bindingType == VK_DEVICE_ADDRESS_BINDING_TYPE_UNBIND_EXT)
+				{
+					if ((*bindRecord) == (*pairRecord))
+					{
+						log << tcu::TestLog::Message << "Bind/Unbind base adress:"		<< bindRecord->bindingAddress	<< tcu::TestLog::EndMessage;
+						log << tcu::TestLog::Message << "Bind/Unbind size:"				<< bindRecord->size				<< tcu::TestLog::EndMessage;
+						log << tcu::TestLog::Message << "Bind/Unbind object handle:"	<< bindRecord->objectHandle		<< tcu::TestLog::EndMessage;
+
+						matchedBoundUnbound = true;
+						break;
+					}
+				}
+			}
+
+			if (matchedBoundUnbound == false)
+			{
+				log << tcu::TestLog::Message << "Lonely bind base adress:"		<< bindRecord->bindingAddress	<< tcu::TestLog::EndMessage;
+				log << tcu::TestLog::Message << "Lonely bind size:"				<< bindRecord->size				<< tcu::TestLog::EndMessage;
+				log << tcu::TestLog::Message << "Lonely bind object handle:"	<< bindRecord->objectHandle		<< tcu::TestLog::EndMessage;
+
 				return false;
 			}
-			if (bindingData.size != memorySize)
+		}
+		else if (bindRecord->bindingType == VK_DEVICE_ADDRESS_BINDING_TYPE_UNBIND_EXT)
+		{
+			bool matchedBoundUnbound = false;
+
+			for (auto pairRecord = recorder.getRecordsBegin(); pairRecord != bindRecord; pairRecord++)
 			{
-				log << tcu::TestLog::Message << "Bind memory size:" << memorySize << " differ from unbound one: " << bindingData.size << tcu::TestLog::EndMessage;
-				matchedBoundUnbound = false;
+				if (pairRecord->bindingType == VK_DEVICE_ADDRESS_BINDING_TYPE_BIND_EXT)
+				{
+					if ((*bindRecord) == (*pairRecord))
+					{
+						matchedBoundUnbound = true;
+						break;
+					}
+				}
+			}
+
+			if (matchedBoundUnbound == false)
+			{
+				log << tcu::TestLog::Message << "Lonely unbind base adress:"	<< bindRecord->bindingAddress	<< tcu::TestLog::EndMessage;
+				log << tcu::TestLog::Message << "Lonely unbind size:"			<< bindRecord->size				<< tcu::TestLog::EndMessage;
+				log << tcu::TestLog::Message << "Lonely unbind object handle:"	<< bindRecord->objectHandle		<< tcu::TestLog::EndMessage;
+
+				return false;
 			}
 		}
 	}
 
-	return matchedBoundUnbound;
+	return true;
 }
-
-struct EnvClone
-{
-	Unique<VkDevice>	device;
-	DeviceDriver		vkd;
-	Environment			env;
-
-	EnvClone (const Environment& parent)
-		: device	(Device::create(parent, Device::Resources(parent, Device::Parameters()), Device::Parameters()))
-		, vkd		(parent.vkp, parent.instance, *device)
-		, env		(parent.vkp, parent.vki, parent.instance, parent.physicalDevice, vkd, *device, parent.queueFamilyIndex, parent.programBinaries, parent.commandLine, nullptr)
-	{
-	}
-};
 
 static std::vector<std::string> getInstanceExtensions(const deUint32 instanceVersion)
 {
@@ -1684,38 +1726,116 @@ static std::vector<std::string> getInstanceExtensions(const deUint32 instanceVer
 	if (!isCoreInstanceExtension(instanceVersion, "VK_KHR_get_physical_device_properties2"))
 		instanceExtensions.push_back("VK_KHR_get_physical_device_properties2");
 
+	if (!isCoreInstanceExtension(instanceVersion, "VK_EXT_debug_utils"))
+		instanceExtensions.push_back("VK_EXT_debug_utils");
+
 	return instanceExtensions;
+}
+
+static bool checkSupport(CustomInstance& customInstance, vk::VkPhysicalDevice& physicalDevice)
+{
+	const std::vector<VkExtensionProperties> extensions = enumerateDeviceExtensionProperties(customInstance.getDriver(), physicalDevice, DE_NULL);
+
+	for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
+	{
+		if (deStringEqual("VK_EXT_device_address_binding_report", extensions[extNdx].extensionName))
+		{
+			VkPhysicalDeviceAddressBindingReportFeaturesEXT deviceAddressBindingReportFeatures
+			{
+				VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ADDRESS_BINDING_REPORT_FEATURES_EXT,
+				DE_NULL,
+				VK_FALSE
+			};
+
+			VkPhysicalDeviceFeatures2 availFeatures;
+			availFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+			availFeatures.pNext = &deviceAddressBindingReportFeatures;
+
+			customInstance.getDriver().getPhysicalDeviceFeatures2(physicalDevice, &availFeatures);
+
+			if (deviceAddressBindingReportFeatures.reportAddressBinding == VK_TRUE)
+				return true;
+			else
+				return false;
+		}
+	}
+
+	return false;
 }
 
 template<typename Object>
 tcu::TestStatus createDestroyObjectTest (Context& context, typename Object::Parameters params)
 {
-	BindingCallbackRecorder	recorder;
-	CustomInstance          customInstance = createCustomInstanceWithExtensions(context, getInstanceExtensions(context.getUsedApiVersion()));
+	BindingCallbackRecorder	 recorder;
+	VkDebugUtilsMessengerEXT messenger;
+
+	CustomInstance          customInstance		= createCustomInstanceWithExtensions(context, getInstanceExtensions(context.getUsedApiVersion()));
+	vk::VkPhysicalDevice	physicalDevice		= chooseDevice(customInstance.getDriver(), customInstance, context.getTestContext().getCommandLine());
+	deUint32				queueFamilyIndex	= 0;
+
+	if (!checkSupport(customInstance, physicalDevice))
+	{
+		TCU_THROW(NotSupportedError, "Device address binding report not supported");
+	}
+
+	const std::vector<VkQueueFamilyProperties>	queueProps = getPhysicalDeviceQueueFamilyProperties(customInstance.getDriver(), physicalDevice);
+
+	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
+	{
+		if ((queueProps[queueNdx].queueFlags & VK_QUEUE_GRAPHICS_BIT) == VK_QUEUE_GRAPHICS_BIT)
+		{
+			queueFamilyIndex = (deUint32)queueNdx;
+			break;
+		}
+	}
+
+	Move<VkDevice> device = createDeviceWithAdressBindingReport(
+		context.getTestContext().getCommandLine().isValidationEnabled(),
+		context.getPlatformInterface(),
+		customInstance,
+		customInstance.getDriver(),
+		physicalDevice,
+		queueFamilyIndex);
+
+	de::MovePtr<DeviceDriver> deviceInterface = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), customInstance, device.get()));
 
 	const Environment	env	(context.getPlatformInterface(),
-							 context.getInstanceInterface(),
+							 customInstance.getDriver(),
 							 customInstance,
-							 context.getPhysicalDevice(),
-							 context.getDeviceInterface(),
-							 context.getDevice(),
-							 context.getUniversalQueueFamilyIndex(),
+							 physicalDevice,
+							 *deviceInterface.get(),
+							 device.get(),
+							 queueFamilyIndex,
 							 context.getBinaryCollection(),
 							 context.getTestContext().getCommandLine(),
 							 &recorder);
 
+	VkDebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
+		nullptr,
+		0,
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT,
+		VK_DEBUG_UTILS_MESSAGE_TYPE_DEVICE_ADDRESS_BINDING_BIT_EXT,
+		recorder.callback,
+		&recorder
+	};
 
-	if (std::is_same<Object, Device>::value)
+	env.vki.createDebugUtilsMessengerEXT(
+		customInstance,
+		&debugUtilsMessengerCreateInfo,
+		nullptr,
+		&messenger);
+
 	{
 		const typename Object::Resources	res					(env, params);
 		Unique<typename Object::Type>		obj	(Object::create(env, res, params));
 	}
-	else
-	{
-		const EnvClone						envWithCustomDevice	(env);
-		const typename Object::Resources	res					(envWithCustomDevice.env, params);
-		Unique<typename Object::Type>		obj	(Object::create(envWithCustomDevice.env, res, params));
-	}
+
+	env.vki.destroyDebugUtilsMessengerEXT(
+		customInstance,
+		messenger,
+		nullptr);
 
 	if (!validateCallbackRecords(context, recorder))
 	{

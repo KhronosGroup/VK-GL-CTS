@@ -30,7 +30,8 @@ import argparse
 from itertools import chain
 from collections import OrderedDict
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts"))
+scriptPath = os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts")
+sys.path.insert(0, scriptPath)
 
 from ctsbuild.common import DEQP_DIR, execute
 from khr_util.format import indentLines, writeInlFile
@@ -116,6 +117,13 @@ PLATFORM_TYPES		= [
 	(["MTLTexture_id"],						["MTLTexture_id"],				"void*"),
 	(["IOSurfaceRef"],						["IOSurfaceRef"],				"void*"),
 	(["MTLSharedEvent_id"],					["MTLSharedEvent_id"],			"void*"),
+
+    # VK_NV_external_sci_sync / VK_NV_external_sci_sync2 / VK_NV_external_memory_sci_buf
+    (["NvSciSyncAttrList"],                 ["NvSciSyncAttrList"],          "int32_t"),
+    (["NvSciSyncObj"],                      ["NvSciSyncObj"],               "int32_t"),
+    (["NvSciSyncFence"],                    ["NvSciSyncFence"],             "int32_t"),
+    (["NvSciBufAttrList"],                  ["NvSciBufAttrList"],           "int32_t"),
+    (["NvSciBufObj"],                       ["NvSciBufObj"],                "int32_t"),
 ]
 
 PLATFORM_TYPE_NAMESPACE	= "pt"
@@ -126,7 +134,7 @@ TYPE_SUBSTITUTIONS		= [
 	("HANDLE*",		PLATFORM_TYPE_NAMESPACE + "::" + "Win32Handle*"),
 ]
 
-EXTENSION_POSTFIXES				= ["KHR", "EXT", "NV", "NVX", "KHX", "NN", "MVK", "FUCHSIA", "GGP", "AMD", "QNX"]
+EXTENSION_POSTFIXES				= ["KHR", "EXT", "NV", "NVX", "KHX", "NN", "MVK", "FUCHSIA", "GGP", "AMD", "QNX", "LUNARG"]
 EXTENSION_POSTFIXES_STANDARD	= ["KHR", "EXT"]
 
 def prefixName (prefix, name):
@@ -1671,10 +1679,8 @@ def writeTypeUtil (api, filename):
 			"StdVideoH264PpsFlags",
 			"StdVideoDecodeH264PictureInfoFlags",
 			"StdVideoDecodeH264ReferenceInfoFlags",
-			"StdVideoDecodeH264MvcElementFlags",
 			"StdVideoEncodeH264SliceHeaderFlags",
 			"StdVideoEncodeH264PictureInfoFlags",
-			"StdVideoEncodeH264RefMgmtFlags",
 			"StdVideoEncodeH264ReferenceInfoFlags",
 			"StdVideoH265HrdFlags",
 			"StdVideoH265VpsFlags",
@@ -1685,9 +1691,10 @@ def writeTypeUtil (api, filename):
 			"StdVideoDecodeH265ReferenceInfoFlags",
 			"StdVideoEncodeH265PictureInfoFlags",
 			"StdVideoEncodeH265SliceHeaderFlags",
-			"StdVideoEncodeH265ReferenceModificationFlags",
 			"StdVideoEncodeH265ReferenceInfoFlags",
 			"StdVideoEncodeH265SliceSegmentHeaderFlags",
+			"StdVideoEncodeH264ReferenceListsInfoFlags",
+			"StdVideoEncodeH265ReferenceListsInfoFlags",
 		])
 	COMPOSITE_TYPES = set([t.name for t in api.compositeTypes if not t.isAlias])
 
@@ -2539,14 +2546,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest{4} (Context& context)
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
 	// Only non-core extensions will be used when creating the device.
-	vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	vector<const char*> extensionNames;
-	extensionNames.reserve(nonCoreExtensions.size());
-	for (const string& extension : nonCoreExtensions)
-		extensionNames.push_back(extension.c_str());
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this may not be used.
 
 	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<{0}>()))
 	{{
@@ -3035,6 +3036,7 @@ if __name__ == "__main__":
 	elif args.api=='SC':
 		# At the moment vulkan-docs does not have vulkan_sc_core.h. We will use a file from external/vulkancts/scripts/src
 		src = preprocessTopInclude(readFile(os.path.join(os.path.dirname(__file__), "src", "vulkan_sc_core.h" )), VULKAN_HEADERS_INCLUDE_DIR)
+		src += preprocessTopInclude(readFile(os.path.join(os.path.dirname(__file__), "src", "vulkan_sci.h" )), VULKAN_HEADERS_INCLUDE_DIR)
 
 	src = re.sub('\s*//[^\n]*', '', src)
 	src = re.sub('\n\n', '\n', src)

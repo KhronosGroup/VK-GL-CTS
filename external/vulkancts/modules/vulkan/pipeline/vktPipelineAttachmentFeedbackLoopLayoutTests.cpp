@@ -655,7 +655,21 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup (void)
 		m_framebuffer = createFramebuffer(vk, vkDevice, &framebufferParams);
 	}
 
-	// Create pipeline layout
+	// Create pipeline layouts
+	{
+		const VkPipelineLayoutCreateInfo pipelineLayoutParams =
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
+			DE_NULL,											// const void*					pNext;
+			0u,													// VkPipelineLayoutCreateFlags	flags;
+			0u,													// deUint32						setLayoutCount;
+			DE_NULL,											// const VkDescriptorSetLayout*	pSetLayouts;
+			0u,													// deUint32						pushConstantRangeCount;
+			DE_NULL												// const VkPushConstantRange*	pPushConstantRanges;
+		};
+
+		m_preRasterizationStatePipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+	}
 	{
 		const VkPipelineLayoutCreateInfo pipelineLayoutParams =
 		{
@@ -1150,6 +1164,20 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup (void)
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
 			0u,													// VkPipelineLayoutCreateFlags	flags;
+			0u,													// deUint32						setLayoutCount;
+			DE_NULL,											// const VkDescriptorSetLayout*	pSetLayouts;
+			0u,													// deUint32						pushConstantRangeCount;
+			DE_NULL												// const VkPushConstantRange*	pPushConstantRanges;
+		};
+
+		m_preRasterizationStatePipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+	}
+	{
+		const VkPipelineLayoutCreateInfo pipelineLayoutParams =
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
+			DE_NULL,											// const void*					pNext;
+			0u,													// VkPipelineLayoutCreateFlags	flags;
 			1u,													// deUint32						setLayoutCount;
 			&m_descriptorSetLayout.get(),						// const VkDescriptorSetLayout*	pSetLayouts;
 			0u,													// deUint32						pushConstantRangeCount;
@@ -1222,8 +1250,8 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup (void)
 			0u,															// VkPipelineColorBlendStateCreateFlags			flags;
 			false,														// VkBool32										logicOpEnable;
 			VK_LOGIC_OP_COPY,											// VkLogicOp									logicOp;
-			(deUint32)m_imageCount,										// deUint32										attachmentCount;
-			&colorBlendAttachmentStates[0],								// const VkPipelineColorBlendAttachmentState*	pAttachments;
+			0u,															// deUint32										attachmentCount;
+			DE_NULL,													// const VkPipelineColorBlendAttachmentState*	pAttachments;
 			{ 0.0f, 0.0f, 0.0f, 0.0f }									// float										blendConstants[4];
 		};
 
@@ -1547,7 +1575,8 @@ tcu::TestStatus AttachmentFeedbackLoopLayoutImageSamplingInstance::verifyImage(v
 																						 m_context.getDefaultAllocator(),
 																						 **m_colorImages[imgNdx],
 																						 m_colorFormat,
-																						 renderSize));
+																						 renderSize,
+																						 vk::VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT));
 		const tcu::ConstPixelBufferAccess	result	= resultTexture->getAccess();
 		const bool							isIntegerFormat	= isUintFormat(m_imageFormat) || isIntFormat(m_imageFormat);
 

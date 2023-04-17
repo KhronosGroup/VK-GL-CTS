@@ -268,3 +268,14 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetDepthBiasEnableEXTFunc)										
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetLogicOpEXTFunc)												(VkCommandBuffer commandBuffer, VkLogicOp logicOp);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetPrimitiveRestartEnableEXTFunc)								(VkCommandBuffer commandBuffer, VkBool32 primitiveRestartEnable);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetColorWriteEnableEXTFunc)										(VkCommandBuffer commandBuffer, uint32_t attachmentCount, const VkBool32* pColorWriteEnables);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetFenceSciSyncFenceNVFunc)										(VkDevice device, const VkFenceGetSciSyncInfoNV* pGetSciSyncHandleInfo, void* pHandle);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetFenceSciSyncObjNVFunc)											(VkDevice device, const VkFenceGetSciSyncInfoNV* pGetSciSyncHandleInfo, void* pHandle);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ImportFenceSciSyncFenceNVFunc)										(VkDevice device, const VkImportFenceSciSyncInfoNV* pImportFenceSciSyncInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ImportFenceSciSyncObjNVFunc)										(VkDevice device, const VkImportFenceSciSyncInfoNV* pImportFenceSciSyncInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceSciSyncAttributesNVFunc)							(VkPhysicalDevice physicalDevice, const VkSciSyncAttributesInfoNV* pSciSyncAttributesInfo, pt::NvSciSyncAttrList pAttributes);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetSemaphoreSciSyncObjNVFunc)										(VkDevice device, const VkSemaphoreGetSciSyncInfoNV* pGetSciSyncInfo, void* pHandle);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ImportSemaphoreSciSyncObjNVFunc)									(VkDevice device, const VkImportSemaphoreSciSyncInfoNV* pImportSemaphoreSciSyncInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetMemorySciBufNVFunc)												(VkDevice device, const VkMemoryGetSciBufInfoNV* pGetSciBufInfo, pt::NvSciBufObj* pHandle);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceExternalMemorySciBufPropertiesNVFunc)				(VkPhysicalDevice physicalDevice, VkExternalMemoryHandleTypeFlagBits handleType, pt::NvSciBufObj handle, VkMemorySciBufPropertiesNV* pMemorySciBufProperties);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceSciBufAttributesNVFunc)							(VkPhysicalDevice physicalDevice, pt::NvSciBufAttrList pAttributes);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateSemaphoreSciSyncPoolNVFunc)									(VkDevice device, const VkSemaphoreSciSyncPoolCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSemaphoreSciSyncPoolNV* pSemaphorePool);

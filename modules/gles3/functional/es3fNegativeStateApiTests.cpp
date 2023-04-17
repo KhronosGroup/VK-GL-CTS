@@ -931,6 +931,7 @@ void NegativeStateApiTests::init (void)
 		});
 	ES3F_ADD_API_CASE(get_internalformativ, "Invalid glGetInternalformativ() usage",
 		{
+			const bool isES	= glu::isContextTypeES(m_context.getRenderContext().getType());
 			GLint params[16];
 
 			deMemset(&params[0], 0xcd, sizeof(params));
@@ -945,16 +946,19 @@ void NegativeStateApiTests::init (void)
 			expectError				(GL_INVALID_ENUM);
 			m_log << TestLog::EndSection;
 
-			m_log << TestLog::Section("", "GL_INVALID_ENUM is generated if internalformat is not color-, depth-, or stencil-renderable.");
-			if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_render_snorm"))
+			if (isES)
 			{
-				glGetInternalformativ	(GL_RENDERBUFFER, GL_RG8_SNORM, GL_NUM_SAMPLE_COUNTS, 16, &params[0]);
-				expectError				(GL_INVALID_ENUM);
-			}
+				m_log << TestLog::Section("", "GL_INVALID_ENUM is generated if internalformat is not color-, depth-, or stencil-renderable.");
+				if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_render_snorm"))
+				{
+					glGetInternalformativ	(GL_RENDERBUFFER, GL_RG8_SNORM, GL_NUM_SAMPLE_COUNTS, 16, &params[0]);
+					expectError				(GL_INVALID_ENUM);
+				}
 
-			glGetInternalformativ	(GL_RENDERBUFFER, GL_COMPRESSED_RGB8_ETC2, GL_NUM_SAMPLE_COUNTS, 16, &params[0]);
-			expectError				(GL_INVALID_ENUM);
-			m_log << TestLog::EndSection;
+				glGetInternalformativ	(GL_RENDERBUFFER, GL_COMPRESSED_RGB8_ETC2, GL_NUM_SAMPLE_COUNTS, 16, &params[0]);
+				expectError				(GL_INVALID_ENUM);
+				m_log << TestLog::EndSection;
+			}
 
 			m_log << TestLog::Section("", "GL_INVALID_ENUM is generated if target is not GL_RENDERBUFFER.");
 			glGetInternalformativ	(-1, GL_RGBA8, GL_NUM_SAMPLE_COUNTS, 16, &params[0]);
@@ -962,7 +966,7 @@ void NegativeStateApiTests::init (void)
 			glGetInternalformativ	(GL_FRAMEBUFFER, GL_RGBA8, GL_NUM_SAMPLE_COUNTS, 16, &params[0]);
 			expectError				(GL_INVALID_ENUM);
 
-			if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_sparse_texture"))
+			if (isES && !m_context.getContextInfo().isExtensionSupported("GL_EXT_sparse_texture"))
 			{
 				glGetInternalformativ	(GL_TEXTURE_2D, GL_RGBA8, GL_NUM_SAMPLE_COUNTS, 16, &params[0]);
 				expectError				(GL_INVALID_ENUM);

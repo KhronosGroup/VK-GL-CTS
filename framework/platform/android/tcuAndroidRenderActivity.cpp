@@ -139,7 +139,7 @@ void RenderThread::processMessage (const Message& message)
 
 		// \note While Platform / WindowRegistry are currently multi-window -capable,
 		//		 the fact that platform gives us windows too late / at unexpected times
-		//		 forces us to do some sanity checking and limit system to one window here.
+		//		 forces us to do some quick checking and limit system to one window here.
 		case MESSAGE_WINDOW_CREATED:
 			if (m_windowState != WINDOWSTATE_NOT_CREATED && m_windowState != WINDOWSTATE_DESTROYED)
 				throw InternalError("Got unexpected onNativeWindowCreated() event from system");

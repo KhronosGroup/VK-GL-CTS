@@ -11265,6 +11265,7 @@ dEQP-GLES31.functional.image_load_store.2d.atomic.xor_r32ui_return_value
 dEQP-GLES31.functional.image_load_store.2d.atomic.exchange_r32ui_result
 dEQP-GLES31.functional.image_load_store.2d.atomic.exchange_r32ui_return_value
 dEQP-GLES31.functional.image_load_store.2d.atomic.comp_swap_r32ui_result
+dEQP-GLES31.functional.image_load_store.2d.atomic.comp_swap_r32ui_return_value
 dEQP-GLES31.functional.image_load_store.2d.atomic.add_r32i_result
 dEQP-GLES31.functional.image_load_store.2d.atomic.add_r32i_return_value
 dEQP-GLES31.functional.image_load_store.2d.atomic.min_r32i_result
@@ -11280,6 +11281,7 @@ dEQP-GLES31.functional.image_load_store.2d.atomic.xor_r32i_return_value
 dEQP-GLES31.functional.image_load_store.2d.atomic.exchange_r32i_result
 dEQP-GLES31.functional.image_load_store.2d.atomic.exchange_r32i_return_value
 dEQP-GLES31.functional.image_load_store.2d.atomic.comp_swap_r32i_result
+dEQP-GLES31.functional.image_load_store.2d.atomic.comp_swap_r32i_return_value
 dEQP-GLES31.functional.image_load_store.2d.qualifiers.coherent_r32f
 dEQP-GLES31.functional.image_load_store.2d.qualifiers.volatile_r32f
 dEQP-GLES31.functional.image_load_store.2d.qualifiers.coherent_r32ui
@@ -11422,6 +11424,7 @@ dEQP-GLES31.functional.image_load_store.cube.atomic.xor_r32ui_return_value
 dEQP-GLES31.functional.image_load_store.cube.atomic.exchange_r32ui_result
 dEQP-GLES31.functional.image_load_store.cube.atomic.exchange_r32ui_return_value
 dEQP-GLES31.functional.image_load_store.cube.atomic.comp_swap_r32ui_result
+dEQP-GLES31.functional.image_load_store.cube.atomic.comp_swap_r32ui_return_value
 dEQP-GLES31.functional.image_load_store.cube.atomic.add_r32i_result
 dEQP-GLES31.functional.image_load_store.cube.atomic.add_r32i_return_value
 dEQP-GLES31.functional.image_load_store.cube.atomic.min_r32i_result
@@ -11437,6 +11440,7 @@ dEQP-GLES31.functional.image_load_store.cube.atomic.xor_r32i_return_value
 dEQP-GLES31.functional.image_load_store.cube.atomic.exchange_r32i_result
 dEQP-GLES31.functional.image_load_store.cube.atomic.exchange_r32i_return_value
 dEQP-GLES31.functional.image_load_store.cube.atomic.comp_swap_r32i_result
+dEQP-GLES31.functional.image_load_store.cube.atomic.comp_swap_r32i_return_value
 dEQP-GLES31.functional.image_load_store.cube.qualifiers.coherent_r32f
 dEQP-GLES31.functional.image_load_store.cube.qualifiers.volatile_r32f
 dEQP-GLES31.functional.image_load_store.cube.qualifiers.coherent_r32ui
@@ -11579,6 +11583,7 @@ dEQP-GLES31.functional.image_load_store.3d.atomic.xor_r32ui_return_value
 dEQP-GLES31.functional.image_load_store.3d.atomic.exchange_r32ui_result
 dEQP-GLES31.functional.image_load_store.3d.atomic.exchange_r32ui_return_value
 dEQP-GLES31.functional.image_load_store.3d.atomic.comp_swap_r32ui_result
+dEQP-GLES31.functional.image_load_store.3d.atomic.comp_swap_r32ui_return_value
 dEQP-GLES31.functional.image_load_store.3d.atomic.add_r32i_result
 dEQP-GLES31.functional.image_load_store.3d.atomic.add_r32i_return_value
 dEQP-GLES31.functional.image_load_store.3d.atomic.min_r32i_result
@@ -11594,6 +11599,7 @@ dEQP-GLES31.functional.image_load_store.3d.atomic.xor_r32i_return_value
 dEQP-GLES31.functional.image_load_store.3d.atomic.exchange_r32i_result
 dEQP-GLES31.functional.image_load_store.3d.atomic.exchange_r32i_return_value
 dEQP-GLES31.functional.image_load_store.3d.atomic.comp_swap_r32i_result
+dEQP-GLES31.functional.image_load_store.3d.atomic.comp_swap_r32i_return_value
 dEQP-GLES31.functional.image_load_store.3d.qualifiers.coherent_r32f
 dEQP-GLES31.functional.image_load_store.3d.qualifiers.volatile_r32f
 dEQP-GLES31.functional.image_load_store.3d.qualifiers.coherent_r32ui
@@ -11736,6 +11742,7 @@ dEQP-GLES31.functional.image_load_store.2d_array.atomic.xor_r32ui_return_value
 dEQP-GLES31.functional.image_load_store.2d_array.atomic.exchange_r32ui_result
 dEQP-GLES31.functional.image_load_store.2d_array.atomic.exchange_r32ui_return_value
 dEQP-GLES31.functional.image_load_store.2d_array.atomic.comp_swap_r32ui_result
+dEQP-GLES31.functional.image_load_store.2d_array.atomic.comp_swap_r32ui_return_value
 dEQP-GLES31.functional.image_load_store.2d_array.atomic.add_r32i_result
 dEQP-GLES31.functional.image_load_store.2d_array.atomic.add_r32i_return_value
 dEQP-GLES31.functional.image_load_store.2d_array.atomic.min_r32i_result
@@ -11751,6 +11758,7 @@ dEQP-GLES31.functional.image_load_store.2d_array.atomic.xor_r32i_return_value
 dEQP-GLES31.functional.image_load_store.2d_array.atomic.exchange_r32i_result
 dEQP-GLES31.functional.image_load_store.2d_array.atomic.exchange_r32i_return_value
 dEQP-GLES31.functional.image_load_store.2d_array.atomic.comp_swap_r32i_result
+dEQP-GLES31.functional.image_load_store.2d_array.atomic.comp_swap_r32i_return_value
 dEQP-GLES31.functional.image_load_store.2d_array.qualifiers.coherent_r32f
 dEQP-GLES31.functional.image_load_store.2d_array.qualifiers.volatile_r32f
 dEQP-GLES31.functional.image_load_store.2d_array.qualifiers.coherent_r32ui
@@ -11865,6 +11873,7 @@ dEQP-GLES31.functional.image_load_store.buffer.atomic.xor_r32ui_return_value
 dEQP-GLES31.functional.image_load_store.buffer.atomic.exchange_r32ui_result
 dEQP-GLES31.functional.image_load_store.buffer.atomic.exchange_r32ui_return_value
 dEQP-GLES31.functional.image_load_store.buffer.atomic.comp_swap_r32ui_result
+dEQP-GLES31.functional.image_load_store.buffer.atomic.comp_swap_r32ui_return_value
 dEQP-GLES31.functional.image_load_store.buffer.atomic.add_r32i_result
 dEQP-GLES31.functional.image_load_store.buffer.atomic.add_r32i_return_value
 dEQP-GLES31.functional.image_load_store.buffer.atomic.min_r32i_result
@@ -11880,6 +11889,7 @@ dEQP-GLES31.functional.image_load_store.buffer.atomic.xor_r32i_return_value
 dEQP-GLES31.functional.image_load_store.buffer.atomic.exchange_r32i_result
 dEQP-GLES31.functional.image_load_store.buffer.atomic.exchange_r32i_return_value
 dEQP-GLES31.functional.image_load_store.buffer.atomic.comp_swap_r32i_result
+dEQP-GLES31.functional.image_load_store.buffer.atomic.comp_swap_r32i_return_value
 dEQP-GLES31.functional.image_load_store.buffer.qualifiers.coherent_r32f
 dEQP-GLES31.functional.image_load_store.buffer.qualifiers.volatile_r32f
 dEQP-GLES31.functional.image_load_store.buffer.qualifiers.coherent_r32ui

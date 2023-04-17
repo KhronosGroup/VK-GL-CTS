@@ -151,34 +151,34 @@ de::MovePtr<vector<deUint8>> VideoBaseTestInstance::loadVideoData (const string&
 	return result;
 }
 
-de::MovePtr<vector<deUint8>> VideoBaseTestInstance::loadVideoDataClipA (void)
+std::string VideoBaseTestInstance::getVideoDataClipA (void)
 {
-	return loadVideoData("vulkan/video/clip-a.mp4");
+	return std::string("vulkan/video/clip-a.h264");
 }
 
-de::MovePtr<vector<deUint8>> VideoBaseTestInstance::loadVideoDataClipB (void)
+std::string VideoBaseTestInstance::getVideoDataClipB (void)
 {
-	return loadVideoData("vulkan/video/clip-b.mp4");
+	return std::string("vulkan/video/clip-b.h264");
 }
 
-de::MovePtr<vector<deUint8>> VideoBaseTestInstance::loadVideoDataClipC (void)
+std::string VideoBaseTestInstance::getVideoDataClipC (void)
 {
-	return loadVideoData("vulkan/video/clip-c.mp4");
+	return std::string("vulkan/video/clip-c.h264");
 }
 
-de::MovePtr<vector<deUint8>> VideoBaseTestInstance::loadVideoDataClipD (void)
+std::string VideoBaseTestInstance::getVideoDataClipD (void)
 {
-	return loadVideoData("vulkan/video/clip-d.mp4");
+	return std::string("vulkan/video/clip-d.h265");
 }
 
-de::MovePtr<vector<deUint8>> VideoBaseTestInstance::loadVideoDataClipH264G13 (void)
+std::string VideoBaseTestInstance::getVideoDataClipH264G13 (void)
 {
-	return loadVideoData("vulkan/video/jellyfish-250-mbps-4k-uhd-GOB-IPB13.h264.mp4");
+	return std::string("vulkan/video/jellyfish-250-mbps-4k-uhd-GOB-IPB13.h264");
 }
 
-de::MovePtr<vector<deUint8>> VideoBaseTestInstance::loadVideoDataClipH265G13 (void)
+std::string VideoBaseTestInstance::getVideoDataClipH265G13 (void)
 {
-	return loadVideoData("vulkan/video/jellyfish-250-mbps-4k-uhd-GOB-IPB13.h265.mp4");
+	return std::string("vulkan/video/jellyfish-250-mbps-4k-uhd-GOB-IPB13.h265");
 }
 
 de::MovePtr<VkVideoDecodeCapabilitiesKHR> getVideoDecodeCapabilities (void* pNext)
@@ -213,8 +213,6 @@ de::MovePtr <VkVideoEncodeH264CapabilitiesEXT> getVideoCapabilitiesExtensionH264
 		vk::VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_CAPABILITIES_EXT,	//  VkStructureType						sType;
 		DE_NULL,													//  const void*							pNext;
 		0u,															//  VkVideoEncodeH264CapabilityFlagsEXT	flags;
-		0u,															//  VkVideoEncodeH264InputModeFlagsEXT	inputModeFlags;
-		0u,															//  VkVideoEncodeH264OutputModeFlagsEXT	outputModeFlags;
 		0u,															//  uint8_t								maxPPictureL0ReferenceCount;
 		0u,															//  uint8_t								maxBPictureL0ReferenceCount;
 		0u,															//  uint8_t								maxL1ReferenceCount;
@@ -247,8 +245,6 @@ de::MovePtr <VkVideoEncodeH265CapabilitiesEXT> getVideoCapabilitiesExtensionH265
 		VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_CAPABILITIES_EXT,	//  VkStructureType								sType;
 		DE_NULL,												//  const void*									pNext;
 		0u,														//  VkVideoEncodeH265CapabilityFlagsEXT			flags;
-		0u,														//  VkVideoEncodeH265InputModeFlagsEXT			inputModeFlags;
-		0u,														//  VkVideoEncodeH265OutputModeFlagsEXT			outputModeFlags;
 		0u,														//  VkVideoEncodeH265CtbSizeFlagsEXT			ctbSizes;
 		0u,														//  VkVideoEncodeH265TransformBlockSizeFlagsEXT	transformBlockSizes;
 		0u,														//  uint8_t										maxPPictureL0ReferenceCount;
@@ -389,8 +385,8 @@ de::MovePtr<VkVideoSessionCreateInfoKHR> getVideoSessionCreateInfo (deUint32				
 	//FIXME: last spec version accepted by the parser function
 	//const VkExtensionProperties*				extensionProperties		= getVideoExtensionProperties(videoProfile->videoCodecOperation);
 
-	static const vk::VkExtensionProperties h264StdExtensionVersion = { VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_EXTENSION_NAME, VK_MAKE_VIDEO_STD_VERSION(0, 9, 8) };
-	static const vk::VkExtensionProperties h265StdExtensionVersion = { VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_EXTENSION_NAME, VK_MAKE_VIDEO_STD_VERSION(0, 9, 9) };
+	static const vk::VkExtensionProperties h264StdExtensionVersion = { VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_EXTENSION_NAME, VK_MAKE_VIDEO_STD_VERSION(1, 0, 0) };
+	static const vk::VkExtensionProperties h265StdExtensionVersion = { VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_EXTENSION_NAME, VK_MAKE_VIDEO_STD_VERSION(1, 0, 0) };
 
 	VkVideoSessionCreateInfoKHR*				videoSessionCreateInfo	= new VkVideoSessionCreateInfoKHR
 	{

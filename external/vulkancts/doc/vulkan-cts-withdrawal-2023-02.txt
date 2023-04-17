@@ -1,0 +1,32 @@
+Dear Adopters,
+
+This announcement provides notification that the Khronos Group Inc. intends
+to withdraw Vulkan CTS 1.3.1.x releases.
+
+These releases are being discontinued due to improved quality and coverage
+provided by more recent releases. Once the releases are withdrawn it will not be
+possible to make conformance submissions against these releases.
+
+The Khronos Group recommends updating to Vulkan CTS 1.3.5.x and more recent releases
+as early as possible.
+
+This announcement covers the following tags as listed on
+https://github.com/KhronosGroup/VK-GL-CTS/tags:
+- vulkan-cts-1.3.1.0
+- vulkan-cts-1.3.1.1
+
+More information about Khronos Conformance and withdrawal policies can be found
+in the Khronos Group Conformance Process document
+(https://www.khronos.org/files/conformance_procedures.pdf) Attachment M.
+Please contact the Vulkan CTS TSG chair (vk-gl-cts-wgchair at khronos.org) or
+the Vulkan Working Group chair (vulkan-wgchair at khronos.org) if you have any questions.
+
+Below are some key dates to acknowledge:
+
+2023-02-03 Notice of intent to withdraw Vulkan CTS 1.3.1.x
+           distributed via email to adopters.
+
+2023-08-04 The affected releases are withdrawn.
+
+03 Feb 2023
+Vulkan CTS TSG Chair

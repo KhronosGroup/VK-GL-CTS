@@ -2189,7 +2189,11 @@ public:
 			{ 1, GL_INT,		0,	GL_FALSE, vertexData },
 		};
 
+		const glu::ContextType& contextType = m_context.getRenderContext().getType();
+		const bool isCoreGL45 = glu::contextSupports(contextType, glu::ApiType::core(4, 5));
+
 		// Test with default VAO
+		if (!isCoreGL45)
 		{
 			const tcu::ScopedLogSection section(m_log, "DefaultVAO", "Test with default VAO");
 
@@ -2254,7 +2258,11 @@ public:
 
 	void test (void)
 	{
+		const glu::ContextType& contextType = m_context.getRenderContext().getType();
+		const bool isCoreGL45 = glu::contextSupports(contextType, glu::ApiType::core(4, 5));
+
 		// Test with default VAO
+		if (!isCoreGL45)
 		{
 			const tcu::ScopedLogSection section(m_log, "DefaultVAO", "Test with default VAO");
 
@@ -2360,7 +2368,11 @@ public:
 
 	void test (void)
 	{
+		const glu::ContextType& contextType = m_context.getRenderContext().getType();
+		const bool isCoreGL45 = glu::contextSupports(contextType, glu::ApiType::core(4, 5));
+
 		// Test with default VAO
+		if (!isCoreGL45)
 		{
 			const tcu::ScopedLogSection section(m_log, "DefaultVAO", "Test with default VAO");
 
@@ -2475,7 +2487,11 @@ public:
 
 	void test (void)
 	{
+		const glu::ContextType& contextType = m_context.getRenderContext().getType();
+		const bool isCoreGL45 = glu::contextSupports(contextType, glu::ApiType::core(4, 5));
+
 		// Test with default VAO
+		if (!isCoreGL45)
 		{
 			const tcu::ScopedLogSection section(m_log, "DefaultVAO", "Test with default VAO");
 
@@ -2586,7 +2602,11 @@ public:
 
 	void test (void)
 	{
+		const glu::ContextType& contextType = m_context.getRenderContext().getType();
+		const bool isCoreGL45 = glu::contextSupports(contextType, glu::ApiType::core(4, 5));
+
 		// Test with default VAO
+		if (!isCoreGL45)
 		{
 			const tcu::ScopedLogSection section(m_log, "DefaultVAO", "Test with default VAO");
 
@@ -2694,7 +2714,11 @@ public:
 	{
 		// VERTEX_ATTRIB_ARRAY_ENABLED
 
+		const glu::ContextType& contextType = m_context.getRenderContext().getType();
+		const bool isCoreGL45 = glu::contextSupports(contextType, glu::ApiType::core(4, 5));
+
 		// Test with default VAO
+		if (!isCoreGL45)
 		{
 			const tcu::ScopedLogSection section(m_log, "DefaultVAO", "Test with default VAO");
 
@@ -2749,7 +2773,11 @@ public:
 
 	void test (void)
 	{
+		const glu::ContextType& contextType = m_context.getRenderContext().getType();
+		const bool isCoreGL45 = glu::contextSupports(contextType, glu::ApiType::core(4, 5));
+
 		// Test with default VAO
+		if (!isCoreGL45)
 		{
 			const tcu::ScopedLogSection section(m_log, "DefaultVAO", "Test with default VAO");
 
@@ -2804,7 +2832,11 @@ public:
 
 	void test (void)
 	{
+		const glu::ContextType& contextType = m_context.getRenderContext().getType();
+		const bool isCoreGL45 = glu::contextSupports(contextType, glu::ApiType::core(4, 5));
+
 		// Test with default VAO
+		if (!isCoreGL45)
 		{
 			const tcu::ScopedLogSection section(m_log, "DefaultVAO", "Test with default VAO");
 
@@ -2876,7 +2908,11 @@ public:
 
 	void test (void)
 	{
+		const glu::ContextType& contextType = m_context.getRenderContext().getType();
+		const bool isCoreGL45 = glu::contextSupports(contextType, glu::ApiType::core(4, 5));
+
 		// Test with default VAO
+		if (!isCoreGL45)
 		{
 			const tcu::ScopedLogSection section(m_log, "DefaultVAO", "Test with default VAO");
 

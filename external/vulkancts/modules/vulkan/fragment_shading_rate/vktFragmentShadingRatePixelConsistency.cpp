@@ -481,8 +481,8 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate (void)
 {
 	const VkPhysicalDeviceMemoryProperties memoryProperties = vk::getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
 
-	const CustomInstance		instance			(createCustomInstanceFromContext(m_context));
-	const InstanceDriver&		instanceDriver		(instance.getDriver());
+	const VkInstance			instance			= m_context.getInstance();
+	const auto&					instanceDriver		= m_context.getInstanceInterface();
 
 	Move<VkDevice>				vkd					= createImageRobustnessDevice(m_context, instance, instanceDriver);
 	const VkDevice				device				= *vkd;

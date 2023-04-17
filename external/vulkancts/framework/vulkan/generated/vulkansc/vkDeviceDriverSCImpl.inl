@@ -1764,3 +1764,59 @@ void DeviceDriverSC::cmdSetColorWriteEnableEXT (VkCommandBuffer commandBuffer, u
 	else
 		increaseCommandBufferSize(commandBuffer, 0u);
 }
+
+VkResult DeviceDriverSC::getFenceSciSyncFenceNV (VkDevice device, const VkFenceGetSciSyncInfoNV* pGetSciSyncHandleInfo, void* pHandle) const
+{
+	if (m_normalMode)
+		return m_vk.getFenceSciSyncFenceNV(device, pGetSciSyncHandleInfo, pHandle);
+	return VK_SUCCESS;
+}
+
+VkResult DeviceDriverSC::getFenceSciSyncObjNV (VkDevice device, const VkFenceGetSciSyncInfoNV* pGetSciSyncHandleInfo, void* pHandle) const
+{
+	if (m_normalMode)
+		return m_vk.getFenceSciSyncObjNV(device, pGetSciSyncHandleInfo, pHandle);
+	return VK_SUCCESS;
+}
+
+VkResult DeviceDriverSC::importFenceSciSyncFenceNV (VkDevice device, const VkImportFenceSciSyncInfoNV* pImportFenceSciSyncInfo) const
+{
+	if (m_normalMode)
+		return m_vk.importFenceSciSyncFenceNV(device, pImportFenceSciSyncInfo);
+	return VK_SUCCESS;
+}
+
+VkResult DeviceDriverSC::importFenceSciSyncObjNV (VkDevice device, const VkImportFenceSciSyncInfoNV* pImportFenceSciSyncInfo) const
+{
+	if (m_normalMode)
+		return m_vk.importFenceSciSyncObjNV(device, pImportFenceSciSyncInfo);
+	return VK_SUCCESS;
+}
+
+VkResult DeviceDriverSC::getSemaphoreSciSyncObjNV (VkDevice device, const VkSemaphoreGetSciSyncInfoNV* pGetSciSyncInfo, void* pHandle) const
+{
+	if (m_normalMode)
+		return m_vk.getSemaphoreSciSyncObjNV(device, pGetSciSyncInfo, pHandle);
+	return VK_SUCCESS;
+}
+
+VkResult DeviceDriverSC::importSemaphoreSciSyncObjNV (VkDevice device, const VkImportSemaphoreSciSyncInfoNV* pImportSemaphoreSciSyncInfo) const
+{
+	if (m_normalMode)
+		return m_vk.importSemaphoreSciSyncObjNV(device, pImportSemaphoreSciSyncInfo);
+	return VK_SUCCESS;
+}
+
+VkResult DeviceDriverSC::getMemorySciBufNV (VkDevice device, const VkMemoryGetSciBufInfoNV* pGetSciBufInfo, pt::NvSciBufObj* pHandle) const
+{
+	if (m_normalMode)
+		return m_vk.getMemorySciBufNV(device, pGetSciBufInfo, pHandle);
+	return VK_SUCCESS;
+}
+
+VkResult DeviceDriverSC::createSemaphoreSciSyncPoolNV (VkDevice device, const VkSemaphoreSciSyncPoolCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSemaphoreSciSyncPoolNV* pSemaphorePool) const
+{
+	if (m_normalMode)
+		return m_vk.createSemaphoreSciSyncPoolNV(device, pCreateInfo, pAllocator, pSemaphorePool);
+	return VK_SUCCESS;
+}

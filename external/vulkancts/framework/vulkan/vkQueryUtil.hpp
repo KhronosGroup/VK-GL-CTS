@@ -68,6 +68,7 @@ VkMemoryRequirements							getImageMemoryRequirements						(const DeviceInterfac
 VkMemoryRequirements							getImagePlaneMemoryRequirements					(const DeviceInterface& vk, VkDevice device, VkImage image, VkImageAspectFlagBits planeAspect);
 #ifndef CTS_USES_VULKANSC
 std::vector<VkSparseImageMemoryRequirements>	getImageSparseMemoryRequirements				(const DeviceInterface& vk, VkDevice device, VkImage image);
+std::vector<vk::VkSparseImageMemoryRequirements>getDeviceImageSparseMemoryRequirements			(const DeviceInterface& vk, VkDevice device, const VkImageCreateInfo& imageCreateInfo, VkImageAspectFlagBits planeAspect);
 #endif // CTS_USES_VULKANSC
 
 std::vector<VkLayerProperties>					enumerateInstanceLayerProperties				(const PlatformInterface& vkp);

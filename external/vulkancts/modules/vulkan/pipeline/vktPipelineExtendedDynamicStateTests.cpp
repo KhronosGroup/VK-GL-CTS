@@ -60,6 +60,7 @@
 #include <functional>
 #include <cstddef>
 #include <set>
+#include <array>
 
 namespace vkt
 {
@@ -152,6 +153,10 @@ using StrideVec = std::vector<vk::VkDeviceSize>;
 class VertexGenerator
 {
 public:
+	// Some generators may need specific features.
+	virtual void													checkSupport (Context&) const {}
+
+
 	// For GLSL.
 
 	// Vertex input/output attribute declarations in GLSL form. One sentence per element.
@@ -163,7 +168,7 @@ public:
 	// Get vertex binding declarations as part of descriptor sets, used for mesh shading.
 	virtual std::vector<std::string>								getDescriptorDeclarations()	const = 0;
 
-	// Get statements  to calculate a vec2 called "vertexCoords" using descriptor members.
+	// Get statements to calculate a vec2 called "vertexCoords" using descriptor members.
 	virtual std::vector<std::string>								getDescriptorCoordCalc()	const = 0;
 
 	// Get fragment input attribute declarations in GLSL form. One sentence per element.
@@ -171,6 +176,9 @@ public:
 
 	// Get fragment output post-calculations, maybe altering the "color" output variable.
 	virtual std::vector<std::string>								getFragOutputCalc()			const { return std::vector<std::string>(); }
+
+	// GLSL extensions if needed.
+	virtual std::vector<std::string>								getGLSLExtensions()			const { return std::vector<std::string>(); }
 
 
 	// For the pipeline.
@@ -352,6 +360,230 @@ public:
 	virtual std::vector<vk::VkDeviceSize> getVertexDataStrides() const override
 	{
 		return std::vector<vk::VkDeviceSize>(1u, static_cast<vk::VkDeviceSize>(sizeof(VertexData)));
+	}
+};
+
+// Vertices in buffers will have 2 components and a padding. Same as VertexWithPadding but using 16-bit floats.
+class VertexWithPadding16 : public VertexGenerator
+{
+protected:
+	struct VertexData
+	{
+		VertexData(const tcu::Vec2& coords_)
+			: coords	(tcu::Float16(coords_.x()), tcu::Float16(coords_.y()))
+			, padding	(tcu::Float16(0.0f), tcu::Float16(0.0f))
+		{}
+
+		tcu::F16Vec2 coords;
+		tcu::F16Vec2 padding;
+	};
+
+public:
+	virtual void checkSupport (Context& context) const override
+	{
+		// We need shaderFloat16 and storageInputOutput16.
+		const auto& sf16i8Features = context.getShaderFloat16Int8Features();
+		if (!sf16i8Features.shaderFloat16)
+			TCU_THROW(NotSupportedError, "shaderFloat16 not supported");
+
+		const auto& storage16Features = context.get16BitStorageFeatures();
+		if (!storage16Features.storageInputOutput16)
+			TCU_THROW(NotSupportedError, "storageInputOutput16 not supported");
+	}
+
+	virtual std::vector<std::string> getGLSLExtensions() const override
+	{
+		std::vector<std::string> extensions;
+		extensions.push_back("#extension GL_EXT_shader_explicit_arithmetic_types_float16 : require");
+		return extensions;
+	}
+
+	virtual std::vector<std::string> getAttributeDeclarations() const override
+	{
+		std::vector<std::string> declarations;
+		declarations.push_back("layout(location=0) in f16vec2 position;");
+		return declarations;
+	}
+
+	virtual std::vector<std::string> getVertexCoordCalc() const override
+	{
+		std::vector<std::string> statements;
+		statements.push_back("f16vec2 vertexCoords = position;");
+		return statements;
+	}
+
+	virtual std::vector<std::string> getDescriptorDeclarations() const override
+	{
+		std::vector<std::string> declarations;
+		declarations.reserve(7u);
+		declarations.push_back("struct VertexData {");
+		declarations.push_back("    f16vec2 position;");
+		declarations.push_back("    f16vec2 padding;");
+		declarations.push_back("};");
+		declarations.push_back("layout(set=0, binding=0, std430) readonly buffer S0B0Block {");
+		declarations.push_back("    VertexData data[];");
+		declarations.push_back("} s0b0buffer;");
+		return declarations;
+	}
+
+	virtual std::vector<std::string> getDescriptorCoordCalc() const override
+	{
+		std::vector<std::string> statements;
+		statements.reserve(4u);
+		statements.push_back("uint prim = uint(gl_WorkGroupID.x);");
+		statements.push_back("uint indices[3] = uint[](prim, (prim + (1 + prim % 2)), (prim + (2 - prim % 2)));");
+		statements.push_back("uint invIndex = indices[gl_LocalInvocationIndex];");
+		statements.push_back("f16vec2 vertexCoords = s0b0buffer.data[invIndex].position;");
+		return statements;
+	}
+
+	virtual std::vector<vk::VkVertexInputAttributeDescription> getAttributeDescriptions() const override
+	{
+		std::vector<vk::VkVertexInputAttributeDescription> descriptions;
+		descriptions.push_back(vk::makeVertexInputAttributeDescription(0u, 0u, vk::VK_FORMAT_R16G16_SFLOAT, 0u));
+		return descriptions;
+	}
+
+	// Vertex attributes for VK_EXT_vertex_input_dynamic_state.
+	virtual std::vector<vk::VkVertexInputAttributeDescription2EXT> getAttributeDescriptions2() const override
+	{
+		std::vector<vk::VkVertexInputAttributeDescription2EXT> descriptions;
+		descriptions.push_back(makeVertexInputAttributeDescription2EXT(0u, 0u, vk::VK_FORMAT_R16G16_SFLOAT, 0u));
+		return descriptions;
+	}
+
+	// Vertex bindings for VkPipelineVertexInputStateCreateInfo.
+	virtual std::vector<vk::VkVertexInputBindingDescription> getBindingDescriptions(const StrideVec& strides) const override
+	{
+		std::vector<vk::VkVertexInputBindingDescription> descriptions;
+		descriptions.push_back(vk::makeVertexInputBindingDescription(0u, static_cast<deUint32>(strides.at(0)), vk::VK_VERTEX_INPUT_RATE_VERTEX));
+		return descriptions;
+	}
+
+	// Vertex bindings for VK_EXT_vertex_input_dynamic_state.
+	virtual std::vector<vk::VkVertexInputBindingDescription2EXT> getBindingDescriptions2(const StrideVec& strides) const override
+	{
+		std::vector<vk::VkVertexInputBindingDescription2EXT> descriptions;
+		descriptions.push_back(makeVertexInputBindingDescription2EXT(0u, static_cast<deUint32>(strides.at(0)), vk::VK_VERTEX_INPUT_RATE_VERTEX));
+		return descriptions;
+	}
+
+	virtual std::vector<std::vector<deUint8>> createVertexData (const std::vector<tcu::Vec2>& coords, vk::VkDeviceSize dataOffset, vk::VkDeviceSize trailingPadding, const void* paddingPattern, size_t patternSize) const override
+	{
+		return std::vector<std::vector<deUint8>>(1u, createSingleBindingVertexData<VertexData>(coords, dataOffset, trailingPadding, paddingPattern, patternSize));
+	}
+
+	virtual std::vector<vk::VkDeviceSize> getVertexDataStrides() const override
+	{
+		return std::vector<vk::VkDeviceSize>(1u, static_cast<vk::VkDeviceSize>(sizeof(VertexData)));
+	}
+};
+
+// Two buffers (bindings): one with vertex data, stored contiguously without paddings, and one with instance data. Instance data
+// will not be stored contiguously: the stride will be twice that of the data size, and the padding space filled with "garbage".
+// Real instance data will contain a scale and an offset similar to the ones from push constants, and will be used to properly scale
+// and offset meshes to make them cover the top and bottom halves of the framebuffer.
+class VertexWithInstanceData : public VertexGenerator
+{
+protected:
+	struct InstanceData
+	{
+		InstanceData (const tcu::Vec2& scaleAndOffsetY_)
+			: scaleAndOffsetY	(scaleAndOffsetY_)
+			, garbage			(0.0f /* bad scale */, 777.0f /* bad offset */)
+		{}
+
+		tcu::Vec2 scaleAndOffsetY;
+		tcu::Vec2 garbage;
+	};
+
+public:
+	virtual std::vector<std::string> getAttributeDeclarations() const override
+	{
+		std::vector<std::string> declarations;
+		declarations.push_back("layout(location=0) in vec2 position;");
+		declarations.push_back("layout(location=1) in vec2 scaleAndOffsetY;");
+		return declarations;
+	}
+
+	virtual std::vector<std::string> getVertexCoordCalc() const override
+	{
+		std::vector<std::string> statements;
+		statements.push_back("vec2 vertexCoords = vec2(position.x, position.y * scaleAndOffsetY.x + scaleAndOffsetY.y);");
+		return statements;
+	}
+
+	virtual std::vector<std::string> getDescriptorDeclarations() const override
+	{
+		DE_ASSERT(false); // This vertex generator should not be used with mesh shaders.
+		return std::vector<std::string>();
+	}
+
+	virtual std::vector<std::string> getDescriptorCoordCalc() const override
+	{
+		DE_ASSERT(false); // This vertex generator should not be used with mesh shaders.
+		return std::vector<std::string>();
+	}
+
+	virtual std::vector<vk::VkVertexInputAttributeDescription> getAttributeDescriptions() const override
+	{
+		std::vector<vk::VkVertexInputAttributeDescription> descriptions;
+		descriptions.push_back(vk::makeVertexInputAttributeDescription(0u, 0u, vk::VK_FORMAT_R32G32_SFLOAT, 0u));
+		descriptions.push_back(vk::makeVertexInputAttributeDescription(1u, 1u, vk::VK_FORMAT_R32G32_SFLOAT, 0u));
+		return descriptions;
+	}
+
+	// Vertex attributes for VK_EXT_vertex_input_dynamic_state.
+	virtual std::vector<vk::VkVertexInputAttributeDescription2EXT> getAttributeDescriptions2() const override
+	{
+		std::vector<vk::VkVertexInputAttributeDescription2EXT> descriptions;
+		descriptions.push_back(makeVertexInputAttributeDescription2EXT(0u, 0u, vk::VK_FORMAT_R32G32_SFLOAT, 0u));
+		descriptions.push_back(makeVertexInputAttributeDescription2EXT(1u, 1u, vk::VK_FORMAT_R32G32_SFLOAT, 0u));
+		return descriptions;
+	}
+
+	// Vertex bindings for VkPipelineVertexInputStateCreateInfo.
+	virtual std::vector<vk::VkVertexInputBindingDescription> getBindingDescriptions(const StrideVec& strides) const override
+	{
+		std::vector<vk::VkVertexInputBindingDescription> descriptions;
+		descriptions.push_back(vk::makeVertexInputBindingDescription(0u, static_cast<deUint32>(strides.at(0)), vk::VK_VERTEX_INPUT_RATE_VERTEX));
+		descriptions.push_back(vk::makeVertexInputBindingDescription(1u, static_cast<deUint32>(strides.at(1)), vk::VK_VERTEX_INPUT_RATE_INSTANCE));
+		return descriptions;
+	}
+
+	// Vertex bindings for VK_EXT_vertex_input_dynamic_state.
+	virtual std::vector<vk::VkVertexInputBindingDescription2EXT> getBindingDescriptions2(const StrideVec& strides) const override
+	{
+		std::vector<vk::VkVertexInputBindingDescription2EXT> descriptions;
+		descriptions.push_back(makeVertexInputBindingDescription2EXT(0u, static_cast<deUint32>(strides.at(0)), vk::VK_VERTEX_INPUT_RATE_VERTEX));
+		descriptions.push_back(makeVertexInputBindingDescription2EXT(1u, static_cast<deUint32>(strides.at(1)), vk::VK_VERTEX_INPUT_RATE_INSTANCE));
+		return descriptions;
+	}
+
+	virtual std::vector<std::vector<deUint8>> createVertexData (const std::vector<tcu::Vec2>& coords, vk::VkDeviceSize dataOffset, vk::VkDeviceSize trailingPadding, const void* paddingPattern, size_t patternSize) const override
+	{
+		// Instance data for 2 instances. Scale and offset like we do with push constants.
+		const std::vector<tcu::Vec2> instanceIds
+		{
+			tcu::Vec2(0.5f, -0.5f),
+			tcu::Vec2(0.5f,  0.5f),
+		};
+
+		std::vector<std::vector<uint8_t>> buffers;
+		buffers.reserve(2u);
+		buffers.push_back(createSingleBindingVertexData<tcu::Vec2>(coords, dataOffset, trailingPadding, paddingPattern, patternSize));
+		buffers.push_back(createSingleBindingVertexData<InstanceData>(instanceIds, dataOffset, trailingPadding, paddingPattern, patternSize));
+
+		return buffers;
+	}
+
+	virtual std::vector<vk::VkDeviceSize> getVertexDataStrides() const override
+	{
+		std::vector<vk::VkDeviceSize> strides;
+		strides.reserve(2u);
+		strides.push_back(static_cast<vk::VkDeviceSize>(sizeof(tcu::Vec2)));
+		strides.push_back(static_cast<vk::VkDeviceSize>(sizeof(InstanceData)));
+		return strides;
 	}
 };
 
@@ -900,6 +1132,7 @@ using CovModTableVec	= std::vector<float>;
 #ifndef CTS_USES_VULKANSC
 using ViewportSwzVec	= std::vector<vk::VkViewportSwizzleNV>;
 #endif // CTS_USES_VULKANSC
+using BlendConstArray	= std::array<float, 4>;
 
 // Generic, to be used with any state than can be set statically and, as an option, dynamically.
 template<typename T>
@@ -960,11 +1193,13 @@ using PolygonModeConfig				= StaticAndDynamicPair<vk::VkPolygonMode>;
 using SampleMaskConfig				= StaticAndDynamicPair<SampleMaskVec>;
 using AlphaToCoverageConfig			= BooleanFlagConfig;
 using AlphaToOneConfig				= BooleanFlagConfig;
+using ColorWriteEnableConfig		= BooleanFlagConfig;
 using ColorWriteMaskConfig			= StaticAndDynamicPair<vk::VkColorComponentFlags>;
 using RasterizationStreamConfig		= StaticAndDynamicPair<OptRastStream>;
 using LogicOpEnableConfig			= BooleanFlagConfig;
 using ColorBlendEnableConfig		= BooleanFlagConfig;
 using ColorBlendEquationConfig		= StaticAndDynamicPair<ColorBlendEq>;
+using BlendConstantsConfig			= StaticAndDynamicPair<BlendConstArray>;
 using ProvokingVertexConfig			= StaticAndDynamicPair<OptBoolean>;	// First vertex boolean flag.
 using NegativeOneToOneConfig		= StaticAndDynamicPair<OptBoolean>;
 using DepthClipEnableConfig			= StaticAndDynamicPair<OptBoolean>;
@@ -1043,6 +1278,14 @@ enum class SequenceOrdering
 	BEFORE_GOOD_STATIC	= 4,	// Before a static state pipeline with the correct values has been bound.
 	TWO_DRAWS_DYNAMIC	= 5,	// Bind bad static pipeline and draw, followed by binding correct dynamic pipeline and drawing again.
 	TWO_DRAWS_STATIC	= 6,	// Bind bad dynamic pipeline and draw, followed by binding correct static pipeline and drawing again.
+};
+
+// This is used when generating some test cases.
+enum class ColorBlendSubCase
+{
+	EQ_ONLY		= 0,	// Only the equation is dynamic.
+	ALL_CB		= 1,	// All color blending states are dynamic.
+	ALL_BUT_LO	= 2,	// All color blending states are dynamic, except for the ones related to logic op.
 };
 
 class ReferenceColorGenerator
@@ -1199,6 +1442,38 @@ private:
 	const uint32_t	m_width;
 };
 
+// Some tests may expect a center strip in the framebuffer having a different color.
+class CenterStripGenerator : public ReferenceColorGenerator
+{
+public:
+	CenterStripGenerator (const tcu::Vec4& sides, const tcu::Vec4& center)
+		: m_sides	(sides)
+		, m_center	(center)
+		{}
+
+	void operator()(tcu::PixelBufferAccess& access) const override
+	{
+		constexpr auto kWidth		= static_cast<int>(kFramebufferWidth);
+		constexpr auto kHeight		= static_cast<int>(kFramebufferHeight);
+
+		for (int y = 0; y < kHeight; ++y)
+			for (int x = 0; x < kWidth; ++x)
+			{
+				const auto& color = ((x >= kWidth / 4 && x < (kWidth * 3) / 4) ? m_center : m_sides);
+				access.setPixel(color, x, y);
+			}
+	}
+
+	P clone() const override
+	{
+		return P(new CenterStripGenerator(*this));
+	}
+
+private:
+	const tcu::Vec4 m_sides;
+	const tcu::Vec4 m_center;
+};
+
 // Tests using an off-center triangle may want this generator: fill the image with a solid color but leave the top and left edges in
 // a different color.
 class TopLeftBorderGenerator : public ReferenceColorGenerator
@@ -1249,17 +1524,27 @@ private:
 	const tcu::Vec4 m_borderTop;
 };
 
+tcu::Vec3 removeAlpha (const tcu::Vec4& color)
+{
+	const tcu::Vec3 rgb (color.x(), color.y(), color.z());
+	return rgb;
+}
+
 // Verifies the top left pixel matches exactly.
-bool verifyTopLeftCorner (const tcu::ConstPixelBufferAccess& result, const tcu::ConstPixelBufferAccess& reference, const tcu::PixelBufferAccess& errorMask)
+bool verifyTopLeftCorner (const tcu::ConstPixelBufferAccess& result, const tcu::ConstPixelBufferAccess& reference, const tcu::PixelBufferAccess& errorMask, bool partialAlpha)
 {
 	// Check corner.
 	const auto resultColor		= result.getPixel(0, 0);
 	const auto referenceColor	= reference.getPixel(0, 0);
 
-	const auto red		= tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f);
-	const auto green	= tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f);
-	const auto black	= tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
-	const bool match	= (resultColor == referenceColor);
+	const auto resultColorRGB		= removeAlpha(resultColor);
+	const auto referenceColorRGB	= removeAlpha(referenceColor);
+
+	const auto red			= tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f);
+	const auto green		= tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f);
+	const auto black		= tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+	const bool alphaMatch	= (partialAlpha ? (resultColor.w() > 0.0f && resultColor.w() < 1.0f) : (resultColor.w() == referenceColor.w()));
+	const bool match		= ((resultColorRGB == referenceColorRGB) && alphaMatch);
 
 	tcu::clear(errorMask, black);
 	errorMask.setPixel((match ? green : red), 0, 0);
@@ -1267,10 +1552,26 @@ bool verifyTopLeftCorner (const tcu::ConstPixelBufferAccess& result, const tcu::
 	return match;
 }
 
+bool verifyTopLeftCornerExactly (const tcu::ConstPixelBufferAccess& result, const tcu::ConstPixelBufferAccess& reference, const tcu::PixelBufferAccess& errorMask)
+{
+	return verifyTopLeftCorner(result, reference, errorMask, false/*partialAlpha*/);
+}
+
+bool verifyTopLeftCornerWithPartialAlpha (const tcu::ConstPixelBufferAccess& result, const tcu::ConstPixelBufferAccess& reference, const tcu::PixelBufferAccess& errorMask)
+{
+	return verifyTopLeftCorner(result, reference, errorMask, true/*partialAlpha*/);
+}
+
 const VertexGenerator* getVertexWithPaddingGenerator ()
 {
 	static VertexWithPadding vertexWithPadding;
 	return &vertexWithPadding;
+}
+
+const VertexGenerator* getVertexWithPadding16Generator ()
+{
+	static VertexWithPadding16 vertexWithPadding16;
+	return &vertexWithPadding16;
 }
 
 const VertexGenerator* getVertexWithExtraAttributesGenerator ()
@@ -1294,6 +1595,12 @@ const VertexGenerator* getProvokingVertexWithPaddingGenerator (bool lastVertex)
 	}
 	static ProvokingVertexWithPadding provokingVertexGeneratorFirstVtx (false);
 	return &provokingVertexGeneratorFirstVtx;
+}
+
+const VertexGenerator* getVertexWithInstanceDataGenerator ()
+{
+	static VertexWithInstanceData vertexWithInstanceData;
+	return &vertexWithInstanceData;
 }
 
 // Create VertexGeneratorConfig varying constructor depending on having none, only the static or both.
@@ -1510,6 +1817,9 @@ struct TestConfig
 	// Number of color attachments in the subpass. Note the fragment shader will only write to the last one.
 	uint32_t						colorAttachmentCount;
 
+	// Instance count.
+	uint32_t						instanceCount;
+
 	// Use viewport swizzle or not.
 	bool							viewportSwizzle;
 
@@ -1521,6 +1831,21 @@ struct TestConfig
 
 	// Use representative fragment test or not.
 	bool							representativeFragmentTest;
+
+	// Insert extra indices for restarting lines.
+	bool							extraLineRestarts;
+
+	// Consider both the basic and advanced color blend states dynamic if any of them is dynamic.
+	bool							colorBlendBoth;
+
+	// Use color write enable state.
+	bool							useColorWriteEnable;
+
+	// Force UNORM color format.
+	bool							forceUnormColorFormat;
+
+	// Used in some tests to verify color blend pAttachments can be null if all its state is dynamic.
+	bool							nullStaticColorBlendAttPtr;
 
 	// When setting the sample mask dynamically, we can use an alternative sample count specified here.
 	OptSampleCount					dynamicSampleMaskCount;
@@ -1551,11 +1876,13 @@ struct TestConfig
 	SampleMaskConfig				sampleMaskConfig;
 	AlphaToCoverageConfig			alphaToCoverageConfig;
 	AlphaToOneConfig				alphaToOneConfig;
+	ColorWriteEnableConfig			colorWriteEnableConfig;
 	ColorWriteMaskConfig			colorWriteMaskConfig;
 	RasterizationStreamConfig		rasterizationStreamConfig;
 	LogicOpEnableConfig				logicOpEnableConfig;
 	ColorBlendEnableConfig			colorBlendEnableConfig;
 	ColorBlendEquationConfig		colorBlendEquationConfig;
+	BlendConstantsConfig			blendConstantsConfig;
 	ProvokingVertexConfig			provokingVertexConfig;
 	NegativeOneToOneConfig			negativeOneToOneConfig;
 	DepthClipEnableConfig			depthClipEnableConfig;
@@ -1612,10 +1939,16 @@ struct TestConfig
 		, shaderRasterizationStream		(tcu::Nothing)
 		, sampleLocations				(0.5f, 0.5f)
 		, colorAttachmentCount			(1u)
+		, instanceCount					(1u)
 		, viewportSwizzle				(false)
 		, shadingRateImage				(false)
 		, viewportWScaling				(false)
 		, representativeFragmentTest	(false)
+		, extraLineRestarts				(false)
+		, colorBlendBoth				(false)
+		, useColorWriteEnable			(false)
+		, forceUnormColorFormat			(false)
+		, nullStaticColorBlendAttPtr	(false)
 		, dynamicSampleMaskCount		(tcu::Nothing)
 		, vertexGenerator				(makeVertexGeneratorConfig(staticVertexGenerator, dynamicVertexGenerator))
 		, cullModeConfig				(static_cast<vk::VkCullModeFlags>(vk::VK_CULL_MODE_NONE))
@@ -1644,11 +1977,13 @@ struct TestConfig
 		, sampleMaskConfig				(SampleMaskVec())
 		, alphaToCoverageConfig			(false)
 		, alphaToOneConfig				(false)
+		, colorWriteEnableConfig		(true)
 		, colorWriteMaskConfig			(CR | CG | CB | CA)
 		, rasterizationStreamConfig		(tcu::Nothing)
 		, logicOpEnableConfig			(false)
 		, colorBlendEnableConfig		(false)
 		, colorBlendEquationConfig		(ColorBlendEq())
+		, blendConstantsConfig			(BlendConstArray{0.0f, 0.0f, 0.0f, 0.0f})
 		, provokingVertexConfig			(tcu::Nothing)
 		, negativeOneToOneConfig		(tcu::Nothing)
 		, depthClipEnableConfig			(tcu::Nothing)
@@ -1707,10 +2042,16 @@ struct TestConfig
 		, shaderRasterizationStream		(other.shaderRasterizationStream)
 		, sampleLocations				(other.sampleLocations)
 		, colorAttachmentCount			(other.colorAttachmentCount)
+		, instanceCount					(other.instanceCount)
 		, viewportSwizzle				(other.viewportSwizzle)
 		, shadingRateImage				(other.shadingRateImage)
 		, viewportWScaling				(other.viewportWScaling)
 		, representativeFragmentTest	(other.representativeFragmentTest)
+		, extraLineRestarts				(other.extraLineRestarts)
+		, colorBlendBoth				(other.colorBlendBoth)
+		, useColorWriteEnable			(other.useColorWriteEnable)
+		, forceUnormColorFormat			(other.forceUnormColorFormat)
+		, nullStaticColorBlendAttPtr	(other.nullStaticColorBlendAttPtr)
 		, dynamicSampleMaskCount		(other.dynamicSampleMaskCount)
 		, vertexGenerator				(other.vertexGenerator)
 		, cullModeConfig				(other.cullModeConfig)
@@ -1737,11 +2078,13 @@ struct TestConfig
 		, sampleMaskConfig				(other.sampleMaskConfig)
 		, alphaToCoverageConfig			(other.alphaToCoverageConfig)
 		, alphaToOneConfig				(other.alphaToOneConfig)
+		, colorWriteEnableConfig		(other.colorWriteEnableConfig)
 		, colorWriteMaskConfig			(other.colorWriteMaskConfig)
 		, rasterizationStreamConfig		(other.rasterizationStreamConfig)
 		, logicOpEnableConfig			(other.logicOpEnableConfig)
 		, colorBlendEnableConfig		(other.colorBlendEnableConfig)
 		, colorBlendEquationConfig		(other.colorBlendEquationConfig)
+		, blendConstantsConfig			(other.blendConstantsConfig)
 		, provokingVertexConfig			(other.provokingVertexConfig)
 		, negativeOneToOneConfig		(other.negativeOneToOneConfig)
 		, depthClipEnableConfig			(other.depthClipEnableConfig)
@@ -1796,12 +2139,6 @@ struct TestConfig
 	DepthBiasParams getActiveDepthBiasParams () const
 	{
 		return ((depthBiasConfig.dynamicValue && !m_swappedValues) ? depthBiasConfig.dynamicValue.get() : depthBiasConfig.staticValue);
-	}
-
-	// Get the active primitive restart enable value.
-	bool getActivePrimitiveRestartEnable () const
-	{
-		return ((primRestartEnableConfig.dynamicValue && !m_swappedValues) ? primRestartEnableConfig.dynamicValue.get() : primRestartEnableConfig.staticValue);
 	}
 
 	vk::VkTessellationDomainOrigin getActiveTessellationDomainOrigin () const
@@ -1911,11 +2248,6 @@ struct TestConfig
 		return ((static_cast<bool>(extraPrimitiveOverEstConfig.dynamicValue) && !m_swappedValues) ? extraPrimitiveOverEstConfig.dynamicValue.get() : extraPrimitiveOverEstConfig.staticValue);
 	}
 
-	bool getActiveLogicOpEnable () const
-	{
-		return ((logicOpEnableConfig.dynamicValue && !m_swappedValues) ? logicOpEnableConfig.dynamicValue.get() : logicOpEnableConfig.staticValue);
-	}
-
 	bool getActiveNegativeOneToOneValue () const
 	{
 		const bool				staticValue		= (static_cast<bool>(negativeOneToOneConfig.staticValue) ? negativeOneToOneConfig.staticValue.get() : false);
@@ -1984,11 +2316,13 @@ struct TestConfig
 		sampleMaskConfig.swapValues();
 		alphaToCoverageConfig.swapValues();
 		alphaToOneConfig.swapValues();
+		colorWriteEnableConfig.swapValues();
 		colorWriteMaskConfig.swapValues();
 		rasterizationStreamConfig.swapValues();
 		logicOpEnableConfig.swapValues();
 		colorBlendEnableConfig.swapValues();
 		colorBlendEquationConfig.swapValues();
+		blendConstantsConfig.swapValues();
 		provokingVertexConfig.swapValues();
 		negativeOneToOneConfig.swapValues();
 		depthClipEnableConfig.swapValues();
@@ -2098,6 +2432,12 @@ struct TestConfig
 #endif // CTS_USES_VULKANSC
 	}
 
+	// Returns the active color blend enablement flag.
+	bool getActiveColorBlendEnable () const
+	{
+		return ((static_cast<bool>(colorBlendEnableConfig.dynamicValue) && !m_swappedValues) ? colorBlendEnableConfig.dynamicValue.get() : colorBlendEnableConfig.staticValue);
+	}
+
 	// Returns true if the test needs an index buffer.
 	bool needsIndexBuffer () const
 	{
@@ -2151,6 +2491,10 @@ struct TestConfig
 	// Returns the appropriate color image format for the test.
 	vk::VkFormat colorFormat () const
 	{
+		// Special case for some tests.
+		if (forceUnormColorFormat)
+			return kUnormColorFormat;
+
 		// Pick int color format when testing logic op dynamic states.
 		if (testLogicOp() || testLogicOpEnable())
 			return kIntColorFormat;
@@ -2202,13 +2546,26 @@ struct TestConfig
 		if (sampleMaskConfig.dynamicValue)				dynamicStates.push_back(vk::VK_DYNAMIC_STATE_SAMPLE_MASK_EXT);
 		if (alphaToCoverageConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_ALPHA_TO_COVERAGE_ENABLE_EXT);
 		if (alphaToOneConfig.dynamicValue)				dynamicStates.push_back(vk::VK_DYNAMIC_STATE_ALPHA_TO_ONE_ENABLE_EXT);
+		if (colorWriteEnableConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_WRITE_ENABLE_EXT);
 		if (colorWriteMaskConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_WRITE_MASK_EXT);
 		if (rasterizationStreamConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_RASTERIZATION_STREAM_EXT);
 		if (logicOpEnableConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LOGIC_OP_ENABLE_EXT);
 		if (colorBlendEnableConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_BLEND_ENABLE_EXT);
-		if (colorBlendEquationConfig.dynamicValue)		dynamicStates.push_back(colorBlendEquationConfig.staticValue.isAdvanced()
+		if (colorBlendEquationConfig.dynamicValue)
+		{
+			if (colorBlendBoth)
+			{
+														dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_BLEND_EQUATION_EXT);
+														dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_BLEND_ADVANCED_EXT);
+			}
+			else
+			{
+														dynamicStates.push_back(colorBlendEquationConfig.staticValue.isAdvanced()
 															? vk::VK_DYNAMIC_STATE_COLOR_BLEND_ADVANCED_EXT
 															: vk::VK_DYNAMIC_STATE_COLOR_BLEND_EQUATION_EXT);
+			}
+		}
+		if (blendConstantsConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_BLEND_CONSTANTS);
 		if (provokingVertexConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_PROVOKING_VERTEX_MODE_EXT);
 		if (negativeOneToOneConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_CLIP_NEGATIVE_ONE_TO_ONE_EXT);
 		if (depthClipEnableConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_CLIP_ENABLE_EXT);
@@ -2367,6 +2724,11 @@ struct TestConfig
 			extensions.push_back("VK_NV_representative_fragment_test");
 		}
 
+		if (useColorWriteEnable)
+		{
+			extensions.push_back("VK_EXT_color_write_enable");
+		}
+
 		return extensions;
 	}
 
@@ -2518,6 +2880,22 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 	for (const auto& extension : requiredExtensions)
 		context.requireDeviceFunctionality(extension);
 
+	// Check support needed for the vertex generators.
+	m_testConfig.vertexGenerator.staticValue->checkSupport(context);
+	if (m_testConfig.vertexGenerator.dynamicValue)
+		m_testConfig.vertexGenerator.dynamicValue.get()->checkSupport(context);
+
+	// Special requirement for rasterizationSamples tests.
+	// The first iteration of these tests puts the pipeline in a mixed samples state,
+	// where colorCount != rasterizationSamples.
+	if (m_testConfig.rasterizationSamplesConfig.dynamicValue &&
+		(m_testConfig.sequenceOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC ||
+		 m_testConfig.sequenceOrdering == SequenceOrdering::TWO_DRAWS_STATIC) &&
+		!context.isDeviceFunctionalitySupported("VK_AMD_mixed_attachment_samples") &&
+		!context.isDeviceFunctionalitySupported("VK_NV_framebuffer_mixed_samples"))
+
+		TCU_THROW(NotSupportedError, "VK_AMD_mixed_attachment_samples or VK_NV_framebuffer_mixed_samples are not supported");
+
 	// Check the number of viewports needed and the corresponding limits.
 	const auto&	viewportConfig	= m_testConfig.viewportConfig;
 	auto		numViewports	= viewportConfig.staticValue.size();
@@ -2570,6 +2948,15 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 
 		if ((formatProps.sampleCounts & colorSampleCount) != colorSampleCount)
 			TCU_THROW(NotSupportedError, "Required color sample count not supported");
+
+		// If blending is active, we need to check support explicitly.
+		if (m_testConfig.getActiveColorBlendEnable())
+		{
+			const auto colorFormatProps = vk::getPhysicalDeviceFormatProperties(vki, physicalDevice, colorFormat);
+			DE_ASSERT(colorImageInfo.tiling == vk::VK_IMAGE_TILING_OPTIMAL);
+			if (!(colorFormatProps.optimalTilingFeatures & vk::VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT))
+				TCU_THROW(NotSupportedError, "Color format does not support blending");
+		}
 	}
 
 	// Extended dynamic state 3 features.
@@ -2610,12 +2997,15 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 
 		if (m_testConfig.colorBlendEquationConfig.dynamicValue)
 		{
-			if (m_testConfig.colorBlendEquationConfig.staticValue.isAdvanced())
+			const auto isAdvanced = m_testConfig.colorBlendEquationConfig.staticValue.isAdvanced();
+
+			if (isAdvanced || m_testConfig.colorBlendBoth)
 			{
 				if (!eds3Features.extendedDynamicState3ColorBlendAdvanced)
 					TCU_THROW(NotSupportedError, "extendedDynamicState3ColorBlendAdvanced not supported");
 			}
-			else
+
+			if (!isAdvanced || m_testConfig.colorBlendBoth)
 			{
 				if (!eds3Features.extendedDynamicState3ColorBlendEquation)
 					TCU_THROW(NotSupportedError, "extendedDynamicState3ColorBlendEquation not supported");
@@ -2661,8 +3051,35 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 		if (m_testConfig.coverageModTableConfig.dynamicValue && !eds3Features.extendedDynamicState3CoverageModulationTable)
 			TCU_THROW(NotSupportedError, "extendedDynamicState3CoverageModulationTable not supported");
 
-		if (m_testConfig.coverageReductionModeConfig.dynamicValue && !eds3Features.extendedDynamicState3CoverageReductionMode)
-			TCU_THROW(NotSupportedError, "extendedDynamicState3CoverageReductionMode not supported");
+		if (m_testConfig.coverageReductionModeConfig.dynamicValue)
+		{
+			if (!eds3Features.extendedDynamicState3CoverageReductionMode)
+				TCU_THROW(NotSupportedError, "extendedDynamicState3CoverageReductionMode not supported");
+
+			uint32_t combinationCount = 0U;
+			auto result = vki.getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV(physicalDevice, &combinationCount, nullptr);
+			if (result != vk::VK_SUCCESS || combinationCount == 0U)
+				TCU_THROW(NotSupportedError, "vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV supported no combinations");
+
+			std::vector<vk::VkFramebufferMixedSamplesCombinationNV> combinations(combinationCount);
+			result = vki.getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV(physicalDevice, &combinationCount, combinations.data());
+			if (result != vk::VK_SUCCESS)
+				TCU_THROW(NotSupportedError, "vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV supported no combinations");
+
+			auto findCombination = [&](vk::VkCoverageReductionModeNV const coverageReductionMode) -> bool {
+				for (uint32_t i = 0U; i < combinationCount; ++i) {
+					if (combinations[i].rasterizationSamples == m_testConfig.rasterizationSamplesConfig.staticValue &&
+						combinations[i].colorSamples == m_testConfig.getColorSampleCount() &&
+						combinations[i].coverageReductionMode == coverageReductionMode) {
+
+						return true;
+					}
+				}
+				return false;
+			};
+			if (!findCombination(m_testConfig.coverageReductionModeConfig.staticValue) || !findCombination(m_testConfig.coverageReductionModeConfig.dynamicValue.get()))
+				TCU_THROW(NotSupportedError, "vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV no matching combination found");
+		}
 
 		if (m_testConfig.viewportSwizzleConfig.dynamicValue && !eds3Features.extendedDynamicState3ViewportSwizzle)
 			TCU_THROW(NotSupportedError, "extendedDynamicState3ViewportSwizzle not supported");
@@ -2789,7 +3206,7 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 	std::ostringstream geomSource;
 	std::ostringstream tescSource;
 	std::ostringstream teseSource;
-	std::ostringstream meshSource;
+	std::ostringstream meshSourceTemplateStream;
 
 	pushSource
 		<< "layout(push_constant, std430) uniform PushConstantsBlock {\n"
@@ -2817,10 +3234,11 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 	const auto			activeGen	= m_testConfig.getActiveVertexGenerator();
 	const auto			attribDecls	= activeGen->getAttributeDeclarations();
 	const auto			coordCalcs	= activeGen->getVertexCoordCalc();
-	const auto			descDeclsV	= activeGen->getDescriptorDeclarations();
-	const auto			descCalcsV	= activeGen->getDescriptorCoordCalc();
+	const auto			descDeclsV	= (m_testConfig.useMeshShaders ? activeGen->getDescriptorDeclarations() : std::vector<std::string>());
+	const auto			descCalcsV	= (m_testConfig.useMeshShaders ? activeGen->getDescriptorCoordCalc() : std::vector<std::string>());
 	const auto			fragInputs	= activeGen->getFragInputAttributes();
 	const auto			fragCalcs	= activeGen->getFragOutputCalc();
+	const auto			glslExts	= activeGen->getGLSLExtensions();
 
 	// The static generator, attributes and calculations, for the static pipeline, if needed.
 	const auto			inactiveGen			= m_testConfig.getInactiveVertexGenerator();
@@ -2828,17 +3246,20 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 	const auto			staticCoordCalc		= inactiveGen->getVertexCoordCalc();
 	const auto			staticFragInputs	= inactiveGen->getFragInputAttributes();
 	const auto			staticFragCalcs		= inactiveGen->getFragOutputCalc();
+	const auto			staticGlslExts		= inactiveGen->getGLSLExtensions();
 
 	std::ostringstream	activeAttribs;
 	std::ostringstream	activeCalcs;
 	std::ostringstream	activeFragInputs;
 	std::ostringstream	activeFragCalcs;
+	std::ostringstream	activeExts;
 	std::ostringstream	inactiveAttribs;
 	std::ostringstream	inactiveCalcs;
 	std::ostringstream	descDecls;
 	std::ostringstream	descCalcs;
 	std::ostringstream	inactiveFragInputs;
 	std::ostringstream	inactiveFragCalcs;
+	std::ostringstream	inactiveExts;
 
 	for (const auto& decl : attribDecls)
 		activeAttribs << decl << "\n";
@@ -2870,8 +3291,15 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 	for (const auto& statement : staticFragCalcs)
 		inactiveFragCalcs << "    " << statement << "\n";
 
+	for (const auto& ext : glslExts)
+		activeExts << ext << "\n";
+
+	for (const auto& ext : staticGlslExts)
+		inactiveExts << ext << "\n";
+
 	vertSourceTemplateStream
 		<< "#version 450\n"
+		<< "${EXTENSIONS}"
 		<< pushConstants
 		<< "${ATTRIBUTES}"
 		<< "out gl_PerVertex\n"
@@ -2924,12 +3352,14 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 	activeMap["CALCULATIONS"]		= activeCalcs.str();
 	activeMap["FRAG_INPUTS"]		= activeFragInputs.str();
 	activeMap["FRAG_CALCULATIONS"]	= activeFragCalcs.str();
+	activeMap["EXTENSIONS"]			= activeExts.str();
 	activeMap["OUT_COLOR_VTYPE"]	= vecType;
 
 	inactiveMap["ATTRIBUTES"]			= inactiveAttribs.str();
 	inactiveMap["CALCULATIONS"]			= inactiveCalcs.str();
 	inactiveMap["FRAG_INPUTS"]			= inactiveFragInputs.str();
 	inactiveMap["FRAG_CALCULATIONS"]	= inactiveFragCalcs.str();
+	inactiveMap["EXTENSIONS"]			= inactiveExts.str();
 	inactiveMap["OUT_COLOR_VTYPE"]		= vecType;
 
 	const auto activeVertSource		= vertSourceTemplate.specialize(activeMap);
@@ -3034,8 +3464,9 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 		DE_ASSERT(m_testConfig.topologyConfig.staticValue == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
 		DE_ASSERT(!m_testConfig.singleVertex);
 
-		meshSource
+		meshSourceTemplateStream
 			<< "#version 450\n"
+			<< "${EXTENSIONS}"
 			<< "#extension GL_EXT_mesh_shader : enable\n"
 			<< "layout(local_size_x=3, local_size_y=1, local_size_z=1) in;\n"
 			<< "layout(triangles) out;\n"
@@ -3075,7 +3506,15 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 		programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(teseSource.str());
 	}
 	if (m_testConfig.useMeshShaders)
-		programCollection.glslSources.add("mesh") << glu::MeshSource(meshSource.str()) << meshBuildOptions;
+	{
+		tcu::StringTemplate meshSourceTemplate (meshSourceTemplateStream.str());
+
+		const auto activeMeshSource		= meshSourceTemplate.specialize(activeMap);
+		const auto inactiveMeshSource	= meshSourceTemplate.specialize(inactiveMap);
+
+		programCollection.glslSources.add("dynamicMesh")	<< glu::MeshSource(kReversed ? inactiveMeshSource : activeMeshSource) << meshBuildOptions;
+		programCollection.glslSources.add("staticMesh")		<< glu::MeshSource(kReversed ? activeMeshSource : inactiveMeshSource) << meshBuildOptions;
+	}
 
 	if (m_testConfig.bindUnusedMeshShadingPipeline)
 	{
@@ -3333,8 +3772,17 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 	if (testConfig.alphaToOneConfig.dynamicValue)
 		vkd.cmdSetAlphaToOneEnableEXT(cmdBuffer, makeVkBool32(testConfig.alphaToOneConfig.dynamicValue.get()));
 
+	if (testConfig.colorWriteEnableConfig.dynamicValue)
+	{
+		const std::vector<vk::VkBool32> colorWriteEnableValues (testConfig.colorAttachmentCount, makeVkBool32(testConfig.colorWriteEnableConfig.dynamicValue.get()));
+		vkd.cmdSetColorWriteEnableEXT(cmdBuffer, de::sizeU32(colorWriteEnableValues), de::dataOrNull(colorWriteEnableValues));
+	}
+
 	if (testConfig.colorWriteMaskConfig.dynamicValue)
-		vkd.cmdSetColorWriteMaskEXT(cmdBuffer, 0u, 1u, &testConfig.colorWriteMaskConfig.dynamicValue.get());
+	{
+		const std::vector<vk::VkColorComponentFlags> writeMasks (testConfig.colorAttachmentCount, testConfig.colorWriteMaskConfig.dynamicValue.get());
+		vkd.cmdSetColorWriteMaskEXT(cmdBuffer, 0u, de::sizeU32(writeMasks), de::dataOrNull(writeMasks));
+	}
 
 	if (testConfig.rasterizationStreamConfig.dynamicValue && static_cast<bool>(testConfig.rasterizationStreamConfig.dynamicValue.get()))
 		vkd.cmdSetRasterizationStreamEXT(cmdBuffer, testConfig.rasterizationStreamConfig.dynamicValue->get());
@@ -3345,16 +3793,18 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 	if (testConfig.colorBlendEnableConfig.dynamicValue)
 	{
 		const auto colorBlendEnableFlag = makeVkBool32(testConfig.colorBlendEnableConfig.dynamicValue.get());
-		vkd.cmdSetColorBlendEnableEXT(cmdBuffer, 0u, 1u, &colorBlendEnableFlag);
+		const std::vector<vk::VkBool32> flags (testConfig.colorAttachmentCount, colorBlendEnableFlag);
+		vkd.cmdSetColorBlendEnableEXT(cmdBuffer, 0u, de::sizeU32(flags), de::dataOrNull(flags));
 	}
 
 	if (testConfig.colorBlendEquationConfig.dynamicValue)
 	{
-		const auto& configEq = testConfig.colorBlendEquationConfig.dynamicValue.get();
+		const auto&	configEq	= testConfig.colorBlendEquationConfig.dynamicValue.get();
+		const auto	isAdvanced	= testConfig.colorBlendEquationConfig.staticValue.isAdvanced();
 
-		if (testConfig.colorBlendEquationConfig.staticValue.isAdvanced())
+		if (isAdvanced || testConfig.colorBlendBoth)
 		{
-			const vk::VkColorBlendAdvancedEXT advanced =
+			const vk::VkColorBlendAdvancedEXT equation =
 			{
 				configEq.colorBlendOp,					//	VkBlendOp			advancedBlendOp;
 				VK_TRUE,								//	VkBool32			srcPremultiplied;
@@ -3362,22 +3812,39 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 				vk::VK_BLEND_OVERLAP_UNCORRELATED_EXT,	//	VkBlendOverlapEXT	blendOverlap;
 				VK_FALSE,								//	VkBool32			clampResults;
 			};
-			vkd.cmdSetColorBlendAdvancedEXT(cmdBuffer, 0u, 1u, &advanced);
+			const std::vector<vk::VkColorBlendAdvancedEXT> equations (testConfig.colorAttachmentCount, equation);
+			vkd.cmdSetColorBlendAdvancedEXT(cmdBuffer, 0u, de::sizeU32(equations), de::dataOrNull(equations));
 		}
-		else
+
+		if (!isAdvanced || testConfig.colorBlendBoth)
 		{
+			// VUID-VkColorBlendEquationEXT-colorBlendOp-07361 forbids colorBlendOp and alphaBlendOp to be any advanced operation.
+			// When the advanced blend op will be set by vkCmdSetColorBlendAdvancedEXT, we use a legal placeholder in this call.
+			vk::VkBlendOp colorBlendOp = vk::VK_BLEND_OP_ADD;
+			vk::VkBlendOp alphaBlendOp = vk::VK_BLEND_OP_ADD;
+
+			if (!isAdvanced)
+			{
+				colorBlendOp = configEq.colorBlendOp;
+				alphaBlendOp = configEq.alphaBlendOp;
+			}
+
 			const vk::VkColorBlendEquationEXT equation =
 			{
 				configEq.srcColorBlendFactor,	//	VkBlendFactor	srcColorBlendFactor;
 				configEq.dstColorBlendFactor,	//	VkBlendFactor	dstColorBlendFactor;
-				configEq.colorBlendOp,			//	VkBlendOp		colorBlendOp;
+				colorBlendOp,					//	VkBlendOp		colorBlendOp;
 				configEq.srcAlphaBlendFactor,	//	VkBlendFactor	srcAlphaBlendFactor;
 				configEq.dstAlphaBlendFactor,	//	VkBlendFactor	dstAlphaBlendFactor;
-				configEq.alphaBlendOp,			//	VkBlendOp		alphaBlendOp;
+				alphaBlendOp,					//	VkBlendOp		alphaBlendOp;
 			};
-			vkd.cmdSetColorBlendEquationEXT(cmdBuffer, 0u, 1u, &equation);
+			const std::vector<vk::VkColorBlendEquationEXT> equations (testConfig.colorAttachmentCount, equation);
+			vkd.cmdSetColorBlendEquationEXT(cmdBuffer, 0u, de::sizeU32(equations), de::dataOrNull(equations));
 		}
 	}
+
+	if (testConfig.blendConstantsConfig.dynamicValue)
+		vkd.cmdSetBlendConstants(cmdBuffer, testConfig.blendConstantsConfig.dynamicValue.get().data());
 
 	if (testConfig.provokingVertexConfig.dynamicValue && static_cast<bool>(testConfig.provokingVertexConfig.dynamicValue.get()))
 	{
@@ -3593,6 +4060,7 @@ protected:
 };
 
 // This one creates a new device with VK_NV_shading_rate_image and VK_EXT_extended_dynamic_state3.
+// It also enables VK_EXT_mesh_shader if supported, as some tests need it.
 class ShadingRateImageDeviceHelper : public DeviceHelper
 {
 public:
@@ -3618,18 +4086,52 @@ public:
 			&queuePriority									// const float*					pQueuePriorities;
 		};
 
-		const char* extensions[] =
+#ifndef CTS_USES_VULKANSC
+		const auto&	contextMeshFeatures	= context.getMeshShaderFeaturesEXT();
+		const auto& contextGPLFeatures	= context.getGraphicsPipelineLibraryFeaturesEXT();
+		const bool	meshShaderSupport	= contextMeshFeatures.meshShader;
+		const bool	gplSupport			= contextGPLFeatures.graphicsPipelineLibrary;
+
+		vk::VkPhysicalDeviceMeshShaderFeaturesEXT				meshFeatures				= vk::initVulkanStructure();
+		vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT	gplFeatures					= vk::initVulkanStructure();
+
+		vk::VkPhysicalDeviceExtendedDynamicState3FeaturesEXT	eds3Features				= vk::initVulkanStructure();
+		vk::VkPhysicalDeviceShadingRateImageFeaturesNV			shadingRateImageFeatures	= vk::initVulkanStructure(&eds3Features);
+		vk::VkPhysicalDeviceFeatures2							features2					= vk::initVulkanStructure(&shadingRateImageFeatures);
+
+		if (meshShaderSupport)
+		{
+			meshFeatures.pNext	= features2.pNext;
+			features2.pNext		= &meshFeatures;
+		}
+
+		if (gplSupport)
+		{
+			gplFeatures.pNext	= features2.pNext;
+			features2.pNext		= &gplFeatures;
+		}
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
+#endif // CTS_USES_VULKANSC
+
+		std::vector<const char*> extensions
 		{
 			"VK_EXT_extended_dynamic_state3",
 			"VK_NV_shading_rate_image",
 		};
 
 #ifndef CTS_USES_VULKANSC
-		vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT	eds3Features				= vk::initVulkanStructure();
-		vk::VkPhysicalDeviceShadingRateImageFeaturesNV			shadingRateImageFeatures	= vk::initVulkanStructure(&eds3Features);
-		vk::VkPhysicalDeviceFeatures2							features2					= vk::initVulkanStructure(&shadingRateImageFeatures);
+		if (meshShaderSupport)
+			extensions.push_back("VK_EXT_mesh_shader");
 
-		vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
+		if (gplSupport)
+		{
+			extensions.push_back("VK_KHR_pipeline_library");
+			extensions.push_back("VK_EXT_graphics_pipeline_library");
+		}
+
+		// Disable robustness.
+		features2.features.robustBufferAccess = VK_FALSE;
 #endif // CTS_USES_VULKANSC
 
 		const vk::VkDeviceCreateInfo deviceCreateInfo =
@@ -3645,8 +4147,8 @@ public:
 			&queueParams,											//pRequestedQueues;
 			0u,														//layerCount;
 			nullptr,												//ppEnabledLayerNames;
-			static_cast<uint32_t>(de::arrayLength(extensions)),		// deUint32							enabledExtensionCount;
-			extensions,												// const char* const*				ppEnabledExtensionNames;
+			de::sizeU32(extensions),								// deUint32							enabledExtensionCount;
+			de::dataOrNull(extensions),								// const char* const*				ppEnabledExtensionNames;
 			nullptr,												//pEnabledFeatures;
 		};
 
@@ -3757,6 +4259,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	if (!dsFormatInfo)
 		TCU_THROW(NotSupportedError, "Required depth/stencil image features not supported");
 	log << tcu::TestLog::Message << "Chosen depth/stencil format: " << dsFormatInfo->imageFormat << tcu::TestLog::EndMessage;
+	log << tcu::TestLog::Message << "Chosen color format: " << colorFormat << tcu::TestLog::EndMessage;
 
 	// Swap static and dynamic values in the test configuration so the static pipeline ends up with the expected values for cases
 	// where we will bind the static pipeline last before drawing.
@@ -3815,7 +4318,6 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 
 	if (topologyClass == TopologyClass::TRIANGLE)
 	{
-		// These indices are used for a subset of cases.
 		DE_ASSERT(!m_testConfig.needsIndexBuffer());
 
 		if (m_testConfig.oversizedTriangle)
@@ -3900,8 +4402,9 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 			// Draw one segmented line per output row of pixels that could be wrongly interpreted as a list of lines that would not cover the whole screen.
 			vertices.reserve(kFramebufferHeight * 4u);
 
+			const auto indicesPerRow = (m_testConfig.extraLineRestarts ? 6u : 5u);
 			if (m_testConfig.needsIndexBuffer())
-				indices.reserve(kFramebufferHeight * 5u);
+				indices.reserve(kFramebufferHeight * indicesPerRow);
 
 			for (deUint32 rowIdx = 0; rowIdx < kFramebufferHeight; ++rowIdx)
 			{
@@ -3916,6 +4419,12 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 				{
 					indices.push_back(4u * rowIdx + 0u);
 					indices.push_back(4u * rowIdx + 1u);
+
+					// When using extra line restarts, insert a primitive restart index in the middle, which will result in the
+					// center strip being skipped, as if the topology was a line list instead of a strip.
+					if (m_testConfig.extraLineRestarts)
+						indices.push_back(0xFFFFFFFFu);
+
 					indices.push_back(4u * rowIdx + 2u);
 					indices.push_back(4u * rowIdx + 3u);
 					indices.push_back(0xFFFFFFFFu); // Restart line strip.
@@ -4278,7 +4787,8 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	const auto	geomModule			= (m_testConfig.needsGeometryShader() ? vk::createShaderModule(vkd, device, binaries.get("geom")) : vk::Move<vk::VkShaderModule>());
 	const auto	tescModule			= (m_testConfig.needsTessellation() ? vk::createShaderModule(vkd, device, binaries.get("tesc")) : vk::Move<vk::VkShaderModule>());
 	const auto	teseModule			= (m_testConfig.needsTessellation() ? vk::createShaderModule(vkd, device, binaries.get("tese")) : vk::Move<vk::VkShaderModule>());
-	const auto	meshModule			= (m_testConfig.useMeshShaders ? vk::createShaderModule(vkd, device, binaries.get("mesh")) : vk::Move<vk::VkShaderModule>());
+	const auto	dynamicMeshModule	= (m_testConfig.useMeshShaders ? vk::createShaderModule(vkd, device, binaries.get("dynamicMesh")) : vk::Move<vk::VkShaderModule>());
+	const auto	staticMeshModule	= (m_testConfig.useMeshShaders ? vk::createShaderModule(vkd, device, binaries.get("staticMesh")) : vk::Move<vk::VkShaderModule>());
 	const auto	meshNoOutModule		= (m_testConfig.bindUnusedMeshShadingPipeline ? vk::createShaderModule(vkd, device, binaries.get("meshNoOut")) : vk::Move<vk::VkShaderModule>());
 
 	vk::Move<vk::VkShaderModule>	vertDPCPModule;
@@ -4634,27 +5144,58 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	};
 	const std::vector<vk::VkPipelineColorBlendAttachmentState> colorBlendAttachmentStateVec (kColorAttCount, colorBlendAttachmentState);
 
+	void* colorBlendPnext = nullptr;
+
 	using ColorBlendAdvancedPtr = de::MovePtr<vk::VkPipelineColorBlendAdvancedStateCreateInfoEXT>;
 	ColorBlendAdvancedPtr pColorBlendAdvanced;
 
 	if (m_testConfig.colorBlendEquationConfig.staticValue.isAdvanced())
 	{
-		pColorBlendAdvanced = ColorBlendAdvancedPtr(new vk::VkPipelineColorBlendAdvancedStateCreateInfoEXT(vk::initVulkanStructure()));
+		pColorBlendAdvanced						= ColorBlendAdvancedPtr(new vk::VkPipelineColorBlendAdvancedStateCreateInfoEXT(vk::initVulkanStructure(colorBlendPnext)));
 		pColorBlendAdvanced->srcPremultiplied	= VK_TRUE;
 		pColorBlendAdvanced->dstPremultiplied	= VK_TRUE;
 		pColorBlendAdvanced->blendOverlap		= vk::VK_BLEND_OVERLAP_UNCORRELATED_EXT;
+		colorBlendPnext							= pColorBlendAdvanced.get();
+	}
+
+	const std::vector<vk::VkBool32> colorWriteValues (colorBlendAttachmentStateVec.size(), m_testConfig.colorWriteEnableConfig.staticValue);
+
+	using ColorWriteEnablePtr = de::MovePtr<vk::VkPipelineColorWriteCreateInfoEXT>;
+	ColorWriteEnablePtr pColorWriteEnable;
+
+	if (m_testConfig.useColorWriteEnable)
+	{
+		pColorWriteEnable						= ColorWriteEnablePtr(new vk::VkPipelineColorWriteCreateInfoEXT(vk::initVulkanStructure(colorBlendPnext)));
+		pColorWriteEnable->attachmentCount		= de::sizeU32(colorWriteValues);
+		pColorWriteEnable->pColorWriteEnables	= de::dataOrNull(colorWriteValues);
+		colorBlendPnext							= pColorWriteEnable.get();
+	}
+
+	if (m_testConfig.nullStaticColorBlendAttPtr)
+	{
+		DE_ASSERT(static_cast<bool>(m_testConfig.colorBlendEnableConfig.dynamicValue));
+		DE_ASSERT(static_cast<bool>(m_testConfig.colorBlendEquationConfig.dynamicValue));
+		DE_ASSERT(static_cast<bool>(m_testConfig.colorWriteMaskConfig.dynamicValue));
 	}
 
 	const vk::VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo =
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType                               sType
-		pColorBlendAdvanced.get(),										// const void*                                   pNext
+		colorBlendPnext,												// const void*                                   pNext
 		0u,																// VkPipelineColorBlendStateCreateFlags          flags
 		m_testConfig.logicOpEnableConfig.staticValue,					// VkBool32                                      logicOpEnable
 		m_testConfig.logicOpConfig.staticValue,							// VkLogicOp                                     logicOp
 		static_cast<uint32_t>(colorBlendAttachmentStateVec.size()),		// deUint32                                      attachmentCount
-		de::dataOrNull(colorBlendAttachmentStateVec),					// const VkPipelineColorBlendAttachmentState*    pAttachments
-		{ 0.0f, 0.0f, 0.0f, 0.0f }										// float                                         blendConstants[4]
+		(m_testConfig.nullStaticColorBlendAttPtr						// const VkPipelineColorBlendAttachmentState*    pAttachments
+			? nullptr
+			: de::dataOrNull(colorBlendAttachmentStateVec)),
+
+		{																// float                                         blendConstants[4]
+			m_testConfig.blendConstantsConfig.staticValue[0],
+			m_testConfig.blendConstantsConfig.staticValue[1],
+			m_testConfig.blendConstantsConfig.staticValue[2],
+			m_testConfig.blendConstantsConfig.staticValue[3],
+		},
 	};
 
 	vk::GraphicsPipelineWrapper	staticPipeline		(vkd, device, m_testConfig.pipelineConstructionType);
@@ -4709,6 +5250,10 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 					  .setViewportStatePnext(viewportPnext)
 					  .setDefaultTessellationDomainOrigin(m_testConfig.tessDomainOriginConfig.staticValue);
 
+		// The pAttachments pointer must never be null for the static pipeline.
+		vk::VkPipelineColorBlendStateCreateInfo staticCBStateInfo = colorBlendStateCreateInfo;
+		if (m_testConfig.nullStaticColorBlendAttPtr)
+			staticCBStateInfo.pAttachments = de::dataOrNull(colorBlendAttachmentStateVec);
 
 #ifndef CTS_USES_VULKANSC
 		if (m_testConfig.useMeshShaders)
@@ -4720,7 +5265,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 												*renderPass,
 												0u,
 												VK_NULL_HANDLE,
-												*meshModule,
+												*staticMeshModule,
 												&rasterizationStateCreateInfo);
 		}
 		else
@@ -4745,7 +5290,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 					  .setRepresentativeFragmentTestState(pReprFragment.get())
 #endif // CTS_USES_VULKANSC
 					  .setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *staticFragModule, &depthStencilStateCreateInfo, &multisampleStateCreateInfo)
-					  .setupFragmentOutputState(*renderPass, 0u, &colorBlendStateCreateInfo, &multisampleStateCreateInfo)
+					  .setupFragmentOutputState(*renderPass, 0u, &staticCBStateInfo, &multisampleStateCreateInfo)
 					  .setMonolithicPipelineLayout(*pipelineLayout)
 					  .buildPipeline();
 	}
@@ -4798,7 +5343,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 												*renderPass,
 												0u,
 												DE_NULL,
-												*meshModule,
+												*dynamicMeshModule,
 												&rasterizationStateCreateInfo);
 		}
 		else
@@ -5018,9 +5563,9 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 							(m_testConfig.sequenceOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC ||
 							m_testConfig.sequenceOrdering == SequenceOrdering::TWO_DRAWS_STATIC))
 						{
-							numIndices = 3u;
+							numIndices = 2u;
 						}
-						vkd.cmdDrawIndexed(cmdBuffer, numIndices, 1u, 0u, 0u, 0u);
+						vkd.cmdDrawIndexed(cmdBuffer, numIndices, m_testConfig.instanceCount, 0u, 0u, 0u);
 					}
 #ifndef CTS_USES_VULKANSC
 					else if (m_testConfig.useMeshShaders)
@@ -5029,6 +5574,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 						DE_ASSERT(vertices.size() > 2u);
 						DE_ASSERT(!m_testConfig.topologyConfig.dynamicValue);
 						DE_ASSERT(m_testConfig.topologyConfig.staticValue == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+						DE_ASSERT(m_testConfig.instanceCount == 1u);
 
 						const auto numPrimitives = static_cast<uint32_t>(vertices.size()) - 2u;
 						vkd.cmdDrawMeshTasksEXT(cmdBuffer, numPrimitives, 1u, 1u);
@@ -5036,10 +5582,10 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 #endif // CTS_USES_VULKANSC
 					else
 					{
-						deUint32 vertex_count = static_cast<deUint32>(vertices.size());
+						uint32_t vertexCount = static_cast<deUint32>(vertices.size());
 						if (m_testConfig.singleVertex)
-							vertex_count = m_testConfig.singleVertexDrawCount;
-						vkd.cmdDraw(cmdBuffer, vertex_count, 1u, 0u, 0u);
+							vertexCount = m_testConfig.singleVertexDrawCount;
+						vkd.cmdDraw(cmdBuffer, vertexCount, m_testConfig.instanceCount, 0u, 0u);
 					}
 				}
 			}
@@ -5151,15 +5697,6 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 			}
 		}
 
-	if (!colorMatch)
-		logErrors(log, "Color", "Result color image and error mask", colorAccess, colorErrorAccess);
-
-	if (!depthMatch)
-		logErrors(log, "Depth", "Result depth image and error mask", depthAccess, depthErrorAccess);
-
-	if (!stencilMatch)
-		logErrors(log, "Stencil", "Result stencil image and error mask", stencilAccess, stencilErrorAccess);
-
 	if (!(colorMatch && depthMatch && stencilMatch))
 	{
 		if (!colorMatch)
@@ -5178,15 +5715,58 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	// Check storage buffer if used.
 	if (m_testConfig.representativeFragmentTest)
 	{
+		DE_ASSERT(m_testConfig.oversizedTriangle);
+		DE_ASSERT(m_testConfig.meshParams.size() == 1u);
+		DE_ASSERT(!m_testConfig.depthWriteEnableConfig.dynamicValue);	// No dynamic value for depth writes.
+		DE_ASSERT(!m_testConfig.depthWriteEnableConfig.staticValue);	// No depth writes.
+
+		// The expected number of invocations depends on how many draws are performed with the test enabled.
+		// Draws with the test disabled should always result in kFramebufferHeight * kFramebufferWidth invocations.
+		// Draws with the test enabled should result in at least 1 invocation, maybe more.
+		uint32_t minValue = 0u;
+
+		const uint32_t minInvocations[] = { (kFramebufferHeight * kFramebufferWidth), 1u };
+
+		if (kNumIterations == 1u)
+		{
+			const auto testEnabled	= m_testConfig.getActiveReprFragTestEnable();
+			minValue += minInvocations[testEnabled];
+		}
+		else if (kNumIterations == 2u)
+		{
+
+			for (uint32_t i = 0u; i < kNumIterations; ++i)
+			{
+				bool testEnabled = false;
+
+#ifndef CTS_USES_VULKANSC
+				// Actually varies depending on TWO_DRAWS_STATIC/_DYNAMIC, but does not affect results.
+				const bool staticDraw = (i == 0u);
+
+				if (staticDraw)
+					testEnabled = m_testConfig.reprFragTestEnableConfig.staticValue;
+				else
+				{
+					testEnabled	= (m_testConfig.reprFragTestEnableConfig.dynamicValue
+								? m_testConfig.reprFragTestEnableConfig.dynamicValue.get()
+								: m_testConfig.reprFragTestEnableConfig.staticValue);
+				}
+#endif // CTS_USES_VULKANSC
+
+				minValue += minInvocations[testEnabled];
+			}
+		}
+		else
+		{
+			DE_ASSERT(false);
+		}
+
 		auto& counterBufferAlloc	= counterBuffer->getAllocation();
 		void* counterBufferData		= counterBufferAlloc.getHostPtr();
 		vk::invalidateAlloc(vkd, device, counterBufferAlloc);
 
 		uint32_t fragCounter;
 		deMemcpy(&fragCounter, counterBufferData, sizeof(fragCounter));
-
-		const auto testEnabled	= m_testConfig.getActiveReprFragTestEnable();
-		const auto minValue		= (testEnabled ? 1u : (kFramebufferHeight * kFramebufferWidth * kNumIterations));
 
 		log << tcu::TestLog::Message << "Fragment counter minimum value: " << minValue << tcu::TestLog::EndMessage;
 		log << tcu::TestLog::Message << "Fragment counter: " << fragCounter << tcu::TestLog::EndMessage;
@@ -5255,7 +5835,7 @@ using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
 tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
 {
-	GroupPtr extendedDynamicStateGroup(new tcu::TestCaseGroup(testCtx, "extended_dynamic_state", "Tests for VK_EXT_extended_dynamic_state"));
+	GroupPtr extendedDynamicStateGroup(new TestGroupWithClean(testCtx, "extended_dynamic_state", "Tests for VK_EXT_extended_dynamic_state"));
 	GroupPtr meshShaderGroup(new tcu::TestCaseGroup(testCtx, "mesh_shader", "Extended dynamic state with mesh shading pipelines"));
 
 	// Auxiliar constants.
@@ -5304,6 +5884,13 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 #ifndef CTS_USES_VULKANSC
 		{ true,		"_bind_unused_ms",	" and bind unused mesh shading pipeline before the dynamic one"	},
 #endif // CTS_USES_VULKANSC
+	};
+
+	static const std::vector<ColorBlendSubCase> cbSubCases
+	{
+		ColorBlendSubCase::EQ_ONLY,
+		ColorBlendSubCase::ALL_CB,
+		ColorBlendSubCase::ALL_BUT_LO,
 	};
 
 	for (const auto& kMeshShadingCase : kMeshShadingCases)
@@ -5477,15 +6064,240 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 
 		// Color blend equation.
 		{
-			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+			for (const auto& cbSubCase : cbSubCases)
+			{
+				const bool onlyEq		= (cbSubCase == ColorBlendSubCase::EQ_ONLY);
+				const bool allCBDynamic	= (cbSubCase == ColorBlendSubCase::ALL_CB);
+
+				// Skip two-draws variants as this will use dynamic logic op and force UNORM color attachments, which would result in illegal operations.
+				if (allCBDynamic && (kOrdering == SequenceOrdering::TWO_DRAWS_STATIC || kOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC))
+					continue;
+
+				for (int j = 0; j < 2; ++j)
+				{
+					const bool enableStateValue = (j > 0);
+
+					// Do not test statically disabling color blend.
+					if (onlyEq && !enableStateValue)
+						continue;
+
+					TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+
+					// The equation picks the old color instead of the new one if blending is enabled.
+					config.colorBlendEquationConfig.staticValue = ColorBlendEq(vk::VK_BLEND_FACTOR_ZERO,
+																			   vk::VK_BLEND_FACTOR_ONE,
+																			   vk::VK_BLEND_OP_ADD,
+																			   vk::VK_BLEND_FACTOR_ZERO,
+																			   vk::VK_BLEND_FACTOR_ONE,
+																			   vk::VK_BLEND_OP_ADD);
+
+					// The dynamic value picks the new color.
+					config.colorBlendEquationConfig.dynamicValue = ColorBlendEq(vk::VK_BLEND_FACTOR_ONE,
+																				vk::VK_BLEND_FACTOR_ZERO,
+																				vk::VK_BLEND_OP_ADD,
+																				vk::VK_BLEND_FACTOR_ONE,
+																				vk::VK_BLEND_FACTOR_ZERO,
+																				vk::VK_BLEND_OP_ADD);
+
+					if (!onlyEq)
+					{
+						config.colorBlendEnableConfig.staticValue	= !enableStateValue;
+						config.colorBlendEnableConfig.dynamicValue	= enableStateValue;
+						config.colorWriteMaskConfig.staticValue		= ( 0 |  0 |  0 |  0);
+						config.colorWriteMaskConfig.dynamicValue	= (CR | CG | CB | CA);
+						config.blendConstantsConfig.staticValue		= BlendConstArray{1.0f, 1.0f, 1.0f, 1.0f};
+						config.blendConstantsConfig.dynamicValue	= BlendConstArray{0.0f, 0.0f, 0.0f, 0.0f};
+						// Note we don't set a dynamic value for alpha to coverage.
+
+						config.useColorWriteEnable					= true;
+						config.colorWriteEnableConfig.staticValue	= false;
+						config.colorWriteEnableConfig.dynamicValue	= true;
+
+						if (allCBDynamic)
+						{
+							config.forceUnormColorFormat				= true;
+							config.logicOpEnableConfig.staticValue		= true;
+							config.logicOpEnableConfig.dynamicValue		= false;
+							config.logicOpConfig.staticValue			= vk::VK_LOGIC_OP_COPY;
+							config.logicOpConfig.dynamicValue			= vk::VK_LOGIC_OP_CLEAR;
+						}
+					}
+					else
+					{
+						config.colorBlendEnableConfig.staticValue	= enableStateValue;
+					}
+
+					const std::string stateStr		= (enableStateValue ? "enable" : "disable");
+					const std::string nameSuffix	= (onlyEq ? "" : (allCBDynamic ? ("_dynamic_" + stateStr) : ("_dynamic_but_logic_op_" + stateStr)));
+					const std::string descSuffix	= (onlyEq ? "" : (allCBDynamic ? " and dynamically enable color blending" : " and dynamically enable color blending except for logic op"));
+
+					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_equation_new_color" + nameSuffix, "Dynamically set a color equation that picks the mesh color" + descSuffix, config));
+
+					config.colorBlendEquationConfig.swapValues();
+					config.referenceColor.reset(new SingleColorGenerator(enableStateValue ? kDefaultClearColor : kDefaultTriangleColor));
+
+					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_equation_old_color" + nameSuffix, "Dynamically set a color equation that picks the clear color" + descSuffix, config));
+				}
+			}
+		}
+
+		// Color blend advanced.
+		{
+			for (const auto& cbSubCase : cbSubCases)
+			{
+				const bool onlyEq		= (cbSubCase == ColorBlendSubCase::EQ_ONLY);
+				const bool allCBDynamic	= (cbSubCase == ColorBlendSubCase::ALL_CB);
+
+				// Skip two-draws variants as this will use dynamic logic op and force UNORM color attachments, which would result in illegal operations.
+				if (allCBDynamic && (kOrdering == SequenceOrdering::TWO_DRAWS_STATIC || kOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC))
+					continue;
+
+				for (int j = 0; j < 2; ++j)
+				{
+					const bool enableStateValue = (j > 0);
+
+					// Do not test statically disabling color blend.
+					if (onlyEq && !enableStateValue)
+						continue;
+
+					TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+
+					// This static value picks the old color instead of the new one.
+					config.colorBlendEquationConfig.staticValue = ColorBlendEq(vk::VK_BLEND_FACTOR_ZERO,
+																			   vk::VK_BLEND_FACTOR_ONE,
+																			   vk::VK_BLEND_OP_DARKEN_EXT,
+																			   vk::VK_BLEND_FACTOR_ZERO,
+																			   vk::VK_BLEND_FACTOR_ONE,
+																			   vk::VK_BLEND_OP_DARKEN_EXT);
+
+					// The dynamic value picks the new color.
+					config.colorBlendEquationConfig.dynamicValue = ColorBlendEq(vk::VK_BLEND_FACTOR_ONE,
+																				vk::VK_BLEND_FACTOR_ZERO,
+																				vk::VK_BLEND_OP_LIGHTEN_EXT,
+																				vk::VK_BLEND_FACTOR_ONE,
+																				vk::VK_BLEND_FACTOR_ZERO,
+																				vk::VK_BLEND_OP_LIGHTEN_EXT);
+
+					if (!onlyEq)
+					{
+						config.colorBlendEnableConfig.staticValue	= !enableStateValue;
+						config.colorBlendEnableConfig.dynamicValue	= enableStateValue;
+						config.colorWriteMaskConfig.staticValue		= ( 0 |  0 |  0 |  0);
+						config.colorWriteMaskConfig.dynamicValue	= (CR | CG | CB | CA);
+						config.blendConstantsConfig.staticValue		= BlendConstArray{1.0f, 1.0f, 1.0f, 1.0f};
+						config.blendConstantsConfig.dynamicValue	= BlendConstArray{0.0f, 0.0f, 0.0f, 0.0f};
+						// Note we don't set a dynamic value for alpha to coverage.
+
+						config.useColorWriteEnable					= true;
+						config.colorWriteEnableConfig.staticValue	= false;
+						config.colorWriteEnableConfig.dynamicValue	= true;
+
+						if (allCBDynamic)
+						{
+							config.forceUnormColorFormat				= true;
+							config.logicOpEnableConfig.staticValue		= true;
+							config.logicOpEnableConfig.dynamicValue		= false;
+							config.logicOpConfig.staticValue			= vk::VK_LOGIC_OP_COPY;
+							config.logicOpConfig.dynamicValue			= vk::VK_LOGIC_OP_CLEAR;
+						}
+					}
+					else
+					{
+						config.colorBlendEnableConfig.staticValue	= true;
+					}
+
+					const std::string stateStr		= (enableStateValue ? "enable" : "disable");
+					const std::string nameSuffix	= (onlyEq ? "" : (allCBDynamic ? ("_dynamic_" + stateStr) : ("_dynamic_but_logic_op_" + stateStr)));
+					const std::string descSuffix	= (onlyEq ? "" : (allCBDynamic ? " and dynamically enable color blending" : " and dynamically enable color blending except for logic op"));
+
+					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_equation_advanced_new_color" + nameSuffix, "Dynamically set an advanced color equation that picks the mesh color" + descSuffix, config));
+
+					config.colorBlendEquationConfig.swapValues();
+					config.referenceColor.reset(new SingleColorGenerator(enableStateValue ? kDefaultClearColor : kDefaultTriangleColor));
+
+					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_equation_advanced_old_color" + nameSuffix, "Dynamically set an advanced color equation that picks the clear color" + descSuffix, config));
+				}
+			}
+		}
+
+		// All color blend as dynamic, including both blend equations.
+		{
+			for (int i = 0; i < 2; ++i)
+			{
+				for (int j = 0; j < 2; ++j)
+				{
+					const bool swapEquation			= (j > 0);
+					const bool picksNew				= (!swapEquation);
+					const auto colorBlendResultName	= (picksNew ? "new" : "old");
+
+					const bool colorBlendEnableDyn		= (i > 0);
+					const bool colorBlendEnableStatic	= !colorBlendEnableDyn;
+					const auto colorBlendStateName		= (colorBlendEnableDyn ? "enabled" : "disabled");
+
+					TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+
+					// We need to apply both color blending equation states instead of deciding if it's advanced or not.
+					config.colorBlendBoth						= true;
+
+					config.colorBlendEnableConfig.staticValue	= colorBlendEnableStatic;
+					config.colorBlendEnableConfig.dynamicValue	= colorBlendEnableDyn;
+
+					config.colorWriteMaskConfig.staticValue		= ( 0 |  0 |  0 |  0);
+					config.colorWriteMaskConfig.dynamicValue	= (CR | CG | CB | CA);
+					config.blendConstantsConfig.staticValue		= BlendConstArray{1.0f, 1.0f, 1.0f, 1.0f};
+					config.blendConstantsConfig.dynamicValue	= BlendConstArray{0.0f, 0.0f, 0.0f, 0.0f};
+
+					config.useColorWriteEnable					= true;
+					config.colorWriteEnableConfig.staticValue	= false;
+					config.colorWriteEnableConfig.dynamicValue	= true;
+
+					config.forceUnormColorFormat				= true;
+					config.logicOpEnableConfig.staticValue		= true;
+					config.logicOpEnableConfig.dynamicValue		= false;
+					config.logicOpConfig.staticValue			= vk::VK_LOGIC_OP_COPY;
+					config.logicOpConfig.dynamicValue			= vk::VK_LOGIC_OP_CLEAR;
+
+					// This static value picks the new color.
+					config.colorBlendEquationConfig.staticValue = ColorBlendEq(vk::VK_BLEND_FACTOR_ONE,
+																			   vk::VK_BLEND_FACTOR_ZERO,
+																			   vk::VK_BLEND_OP_LIGHTEN_EXT,
+																			   vk::VK_BLEND_FACTOR_ONE,
+																			   vk::VK_BLEND_FACTOR_ZERO,
+																			   vk::VK_BLEND_OP_LIGHTEN_EXT);
+
+					// The dynamic value picks the old color instead of the new one.
+					config.colorBlendEquationConfig.dynamicValue = ColorBlendEq(vk::VK_BLEND_FACTOR_ZERO,
+																				vk::VK_BLEND_FACTOR_ONE,
+																				vk::VK_BLEND_OP_DARKEN_EXT,
+																				vk::VK_BLEND_FACTOR_ZERO,
+																				vk::VK_BLEND_FACTOR_ONE,
+																				vk::VK_BLEND_OP_DARKEN_EXT);
+
+					if (swapEquation)
+						config.colorBlendEquationConfig.swapValues();
+
+					// Expected result.
+					const auto expectGeomColor = (!colorBlendEnableDyn || swapEquation);
+					config.referenceColor.reset(new SingleColorGenerator(expectGeomColor ? kDefaultTriangleColor : kDefaultClearColor));
+
+					const auto testName = std::string("color_blend_all_") + colorBlendStateName + "_" + colorBlendResultName + "_color";
+					const auto testDesc = std::string(std::string("Set all color blend to dynamic and dynamically set color blend to ") + colorBlendStateName + " and pick the " + colorBlendResultName + " color");
+					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, testDesc, config));
+				}
+			}
+		}
+
+		// Null color blend pipeline pAttachments pointer with all structure contents as dynamic states.
+		{
+			TestConfig config (pipelineConstructionType, kOrdering, kUseMeshShaders);
 
 			// The equation picks the old color instead of the new one if blending is enabled.
 			config.colorBlendEquationConfig.staticValue = ColorBlendEq(vk::VK_BLEND_FACTOR_ZERO,
-																	   vk::VK_BLEND_FACTOR_ONE,
-																	   vk::VK_BLEND_OP_ADD,
-																	   vk::VK_BLEND_FACTOR_ZERO,
-																	   vk::VK_BLEND_FACTOR_ONE,
-																	   vk::VK_BLEND_OP_ADD);
+																		vk::VK_BLEND_FACTOR_ONE,
+																		vk::VK_BLEND_OP_ADD,
+																		vk::VK_BLEND_FACTOR_ZERO,
+																		vk::VK_BLEND_FACTOR_ONE,
+																		vk::VK_BLEND_OP_ADD);
 
 			// The dynamic value picks the new color.
 			config.colorBlendEquationConfig.dynamicValue = ColorBlendEq(vk::VK_BLEND_FACTOR_ONE,
@@ -5495,44 +6307,17 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 																		vk::VK_BLEND_FACTOR_ZERO,
 																		vk::VK_BLEND_OP_ADD);
 
-			config.colorBlendEnableConfig.staticValue	= true;
+			config.colorBlendEnableConfig.staticValue	= false;
+			config.colorBlendEnableConfig.dynamicValue	= true;
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_equation_new_color", "Dynamically set a color equation that picks the mesh color", config));
+			config.colorWriteMaskConfig.staticValue		= ( 0 |  0 |  0 |  0);
+			config.colorWriteMaskConfig.dynamicValue	= (CR | CG | CB | CA);
 
-			config.colorBlendEquationConfig.swapValues();
-			config.referenceColor.reset(new SingleColorGenerator(kDefaultClearColor));
+			config.nullStaticColorBlendAttPtr			= true; // What this test is about.
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_equation_old_color", "Dynamically set a color equation that picks the clear color", config));
-		}
-
-		// Color blend advanced.
-		{
-			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
-
-			// This static value picks the old color instead of the new one.
-			config.colorBlendEquationConfig.staticValue = ColorBlendEq(vk::VK_BLEND_FACTOR_ZERO,
-																	   vk::VK_BLEND_FACTOR_ONE,
-																	   vk::VK_BLEND_OP_DARKEN_EXT,
-																	   vk::VK_BLEND_FACTOR_ZERO,
-																	   vk::VK_BLEND_FACTOR_ONE,
-																	   vk::VK_BLEND_OP_DARKEN_EXT);
-
-			// The dynamic value picks the new color.
-			config.colorBlendEquationConfig.dynamicValue = ColorBlendEq(vk::VK_BLEND_FACTOR_ONE,
-																		vk::VK_BLEND_FACTOR_ZERO,
-																		vk::VK_BLEND_OP_LIGHTEN_EXT,
-																		vk::VK_BLEND_FACTOR_ONE,
-																		vk::VK_BLEND_FACTOR_ZERO,
-																		vk::VK_BLEND_OP_LIGHTEN_EXT);
-
-			config.colorBlendEnableConfig.staticValue	= true;
-
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_equation_advanced_new_color", "Dynamically set an advanced color equation that picks the mesh color", config));
-
-			config.colorBlendEquationConfig.swapValues();
-			config.referenceColor.reset(new SingleColorGenerator(kDefaultClearColor));
-
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_equation_advanced_old_color", "Dynamically set an advanced color equation that picks the clear color", config));
+			const char* testName = "null_color_blend_att_ptr";
+			const char* testDesc = "Set all VkPipelineColorBlendAttachmentState substates as dynamic and pass a null pointer in VkPipelineColorBlendStateCreateInfo::pAttachments";
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, testDesc, config));
 		}
 
 		// Dynamically enable primitive restart
@@ -5544,10 +6329,12 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 					continue;
 
 				TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+				config.topologyConfig.staticValue			= vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
+				config.extraLineRestarts					= true;
 				config.primRestartEnableConfig.staticValue	= false;
 				config.primRestartEnableConfig.dynamicValue	= tcu::just(true);
-				config.topologyConfig.staticValue			= vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
 				config.bindUnusedMeshShadingPipeline		= bindUnusedCase.bindUnusedMeshShadingPipeline;
+				config.referenceColor.reset					(new CenterStripGenerator(kDefaultTriangleColor, kDefaultClearColor));
 				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, std::string("prim_restart_enable") + bindUnusedCase.nameSuffix, "Dynamically enable primitiveRestart" + bindUnusedCase.descSuffix, config));
 			}
 		}
@@ -5694,7 +6481,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 
 			config.topologyConfig.staticValue			= vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 			config.obliqueLine							= true;
-			config.colorVerificator						= verifyTopLeftCorner;
+			config.colorVerificator						= verifyTopLeftCornerExactly;
 			config.lineStippleEnableConfig.staticValue	= false;
 			config.lineStippleParamsConfig.staticValue	= LineStippleParams{0u, 0u};
 			config.lineRasterModeConfig.staticValue		= LineRasterizationMode::RECTANGULAR;
@@ -5705,6 +6492,20 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.lineRasterModeConfig.swapValues();
 			config.referenceColor.reset(new SingleColorGenerator(kDefaultClearColor));
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "line_raster_mode_rectangular", "Dynamically set line rasterization mode to rectangular", config));
+		}
+		if (!kUseMeshShaders)
+		{
+			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+
+			config.topologyConfig.staticValue			= vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+			config.obliqueLine							= true;
+			config.colorVerificator						= verifyTopLeftCornerWithPartialAlpha;
+			config.lineStippleEnableConfig.staticValue	= false;
+			config.lineStippleParamsConfig.staticValue	= LineStippleParams{0u, 0u};
+			config.lineRasterModeConfig.staticValue		= LineRasterizationMode::BRESENHAM;
+			config.lineRasterModeConfig.dynamicValue	= LineRasterizationMode::SMOOTH;
+
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "line_raster_mode_smooth", "Dynamically set line rasterization mode to smooth", config));
 		}
 
 		// Viewport.
@@ -6604,7 +7405,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				const bool			wScalingEnable	= (i > 0);
 				const std::string	enableStr		= (wScalingEnable ? "enable" : "disable");
 
-				config.colorVerificator = verifyTopLeftCorner;
+				config.colorVerificator = verifyTopLeftCornerExactly;
 				config.viewportWScaling = true;
 				config.viewportWScalingEnableConfig.staticValue = !wScalingEnable;
 				config.viewportWScalingEnableConfig.dynamicValue = wScalingEnable;
@@ -7170,20 +7971,39 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				// dynamic stride being less than the extent of the binding for the second attribute.
 				if (kOrdering != SequenceOrdering::TWO_DRAWS_STATIC)
 				{
-					const auto	staticGen	= getVertexWithPaddingGenerator();
-					const auto	dynamicGen	= getVertexWithExtraAttributesGenerator();
-					const auto	goodStrides	= dynamicGen->getVertexDataStrides();
-					StrideVec	badStrides;
+					{
+						const auto	staticGen	= getVertexWithPaddingGenerator();
+						const auto	dynamicGen	= getVertexWithExtraAttributesGenerator();
+						const auto	goodStrides	= dynamicGen->getVertexDataStrides();
+						StrideVec	badStrides;
 
-					badStrides.reserve(goodStrides.size());
-					for (const auto& stride : goodStrides)
-						badStrides.push_back(stride / 2u);
+						badStrides.reserve(goodStrides.size());
+						for (const auto& stride : goodStrides)
+							badStrides.push_back(stride / 2u);
 
-					TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders, staticGen, dynamicGen);
-					config.strideConfig.staticValue			= badStrides;
-					config.strideConfig.dynamicValue		= goodStrides;
-					config.bindUnusedMeshShadingPipeline	= bindUnusedCase.bindUnusedMeshShadingPipeline;
-					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "vertex_input" + bindUnusedCase.nameSuffix, "Dynamically set vertex input" + bindUnusedCase.descSuffix, config));
+						TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders, staticGen, dynamicGen);
+						config.strideConfig.staticValue			= badStrides;
+						config.strideConfig.dynamicValue		= goodStrides;
+						config.bindUnusedMeshShadingPipeline	= bindUnusedCase.bindUnusedMeshShadingPipeline;
+						orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "vertex_input" + bindUnusedCase.nameSuffix, "Dynamically set vertex input" + bindUnusedCase.descSuffix, config));
+					}
+					{
+						const auto	staticGen	= getVertexWithInstanceDataGenerator();
+						const auto	goodStrides	= staticGen->getVertexDataStrides();
+						StrideVec	badStrides;
+
+						DE_ASSERT(goodStrides.size() == 2u);
+						badStrides.reserve(2u);
+						badStrides.push_back(goodStrides.at(0u));
+						badStrides.push_back(goodStrides.at(1u) / 2u); // Halve instance rate stride.
+
+						TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders, staticGen);
+						config.strideConfig.staticValue			= badStrides;
+						config.strideConfig.dynamicValue		= goodStrides;
+						config.bindUnusedMeshShadingPipeline	= bindUnusedCase.bindUnusedMeshShadingPipeline;
+						config.instanceCount					= 2u;
+						orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "instance_rate_stride" + bindUnusedCase.nameSuffix, "Dynamically set instance rate stride" + bindUnusedCase.descSuffix, config));
+					}
 				}
 
 				{
@@ -7198,6 +8018,13 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 					TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders, getVertexWithExtraAttributesGenerator(), getVertexWithMultipleBindingsGenerator());
 					config.bindUnusedMeshShadingPipeline = bindUnusedCase.bindUnusedMeshShadingPipeline;
 					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "vertex_input_multiple_bindings" + bindUnusedCase.nameSuffix, "Dynamically set vertex input with multiple bindings" + bindUnusedCase.descSuffix, config));
+				}
+
+				{
+					// Variant checking dynamic vertex inputs with 16-bit floats.
+					TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders, getVertexWithPaddingGenerator(), getVertexWithPadding16Generator());
+					config.bindUnusedMeshShadingPipeline = bindUnusedCase.bindUnusedMeshShadingPipeline;
+					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "vertex_input_float16" + bindUnusedCase.nameSuffix, "Dynamically set vertex input with float16 inputs" + bindUnusedCase.descSuffix, config));
 				}
 			}
 		}

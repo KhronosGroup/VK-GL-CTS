@@ -3717,3 +3717,7 @@ dEQP-VK.ray_query.helper_invocations.cpu.fine.cubic_quadratic.64x64.64x64
 dEQP-VK.ray_query.helper_invocations.cpu.fine.cubic_quadratic.64x64.64x32
 dEQP-VK.ray_query.helper_invocations.cpu.fine.cubic_quadratic.32x64.64x64
 dEQP-VK.ray_query.helper_invocations.cpu.fine.cubic_quadratic.32x64.64x32
+dEQP-VK.ray_query.acceleration_structures.instance_update.cpu_built.update
+dEQP-VK.ray_query.acceleration_structures.instance_update.cpu_built.update_in_place
+dEQP-VK.ray_query.acceleration_structures.instance_update.gpu_built.update
+dEQP-VK.ray_query.acceleration_structures.instance_update.gpu_built.update_in_place

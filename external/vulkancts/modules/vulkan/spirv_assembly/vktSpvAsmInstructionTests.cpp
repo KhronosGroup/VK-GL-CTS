@@ -97,6 +97,7 @@
 #include <sstream>
 #include <utility>
 #include <stack>
+#include <cassert>
 
 namespace vkt
 {
@@ -5646,8 +5647,7 @@ float constructNormalizedFloat (deInt32 exponent, deUint32 significand)
 // Returns true if the output is what is expected from the test case.
 bool compareOpQuantizeF16ComputeExactCase (const std::vector<Resource>&, const vector<AllocationSp>& outputAllocs, const std::vector<Resource>& expectedOutputs, TestLog&)
 {
-	if (outputAllocs.size() != 1)
-		return false;
+	assert(outputAllocs.size() == 1);
 
 	// Only size is needed because we cannot compare Nans.
 	size_t byteSize = expectedOutputs[0].getByteSize();
@@ -5687,8 +5687,7 @@ bool compareOpQuantizeF16ComputeExactCase (const std::vector<Resource>&, const v
 // Checks that every output from a test-case is a float NaN.
 bool compareNan (const std::vector<Resource>&, const vector<AllocationSp>& outputAllocs, const std::vector<Resource>& expectedOutputs, TestLog&)
 {
-	if (outputAllocs.size() != 1)
-		return false;
+	assert (outputAllocs.size() == 1);
 
 	// Only size is needed because we cannot compare Nans.
 	size_t byteSize = expectedOutputs[0].getByteSize();
@@ -5701,6 +5700,25 @@ bool compareNan (const std::vector<Resource>&, const vector<AllocationSp>& outpu
 		{
 			return false;
 		}
+	}
+
+	return true;
+}
+
+// Checks that every output from a test-case is either +0.0f or -0.0f
+bool compareZeros (const std::vector<Resource>&, const vector<AllocationSp>& outputAllocs, const std::vector<Resource>& expectedOutputs, TestLog&)
+{
+	assert (outputAllocs.size() == 1);
+
+	// Only size is needed because all the results are supposed to be zero.
+	size_t byteSize = expectedOutputs[0].getByteSize();
+
+	const float* const	output_as_float	= static_cast<const float*>(outputAllocs[0]->getHostPtr());
+
+	for (size_t idx = 0; idx < byteSize / sizeof(float); ++idx)
+	{
+		if (output_as_float[idx] != 0)
+			return false;
 	}
 
 	return true;
@@ -5822,35 +5840,31 @@ tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
 			{
 				case 0:
 					small.push_back(0.f);
-					zeros.push_back(0.f);
 					break;
 				case 1:
 					small.push_back(-0.f);
-					zeros.push_back(-0.f);
 					break;
 				case 2:
 					small.push_back(std::ldexp(1.0f, -16));
-					zeros.push_back(0.f);
 					break;
 				case 3:
 					small.push_back(std::ldexp(-1.0f, -32));
-					zeros.push_back(-0.f);
 					break;
 				case 4:
 					small.push_back(std::ldexp(1.0f, -127));
-					zeros.push_back(0.f);
 					break;
 				case 5:
 					small.push_back(-std::ldexp(1.0f, -128));
-					zeros.push_back(-0.f);
 					break;
 			}
 		}
 
 		spec.assembly = shader;
 		spec.inputs.push_back(BufferSp(new Float32Buffer(small)));
-		spec.outputs.push_back(BufferSp(new Float32Buffer(zeros)));
+		// Only the size of outputs[0] will be used, actual expected values aren't needed.
+		spec.outputs.push_back(BufferSp(new Float32Buffer(small)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
+		spec.verifyIO = &compareZeros;
 
 		group->addChild(new SpvAsmComputeShaderCase(
 			testCtx, "flush_to_zero", "Check that values are zeroed correctly", spec));
