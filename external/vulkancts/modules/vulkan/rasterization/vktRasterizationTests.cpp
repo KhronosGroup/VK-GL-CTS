@@ -7173,13 +7173,15 @@ struct PolygonModeLargePointsConfig
 	const bool	tessellationShaders;
 	const bool	geometryShader;
 	const bool	dynamicPolygonMode;
+	const bool	defaultSize;
 
-	PolygonModeLargePointsConfig (float pointSize_, bool meshShader_, bool tessellationShaders_, bool geometryShader_, bool dynamicPolygonMode_)
+	PolygonModeLargePointsConfig (float pointSize_, bool meshShader_, bool tessellationShaders_, bool geometryShader_, bool dynamicPolygonMode_, bool defaultSize_ = false)
 		: pointSize				(pointSize_)
 		, meshShader			(meshShader_)
 		, tessellationShaders	(tessellationShaders_)
 		, geometryShader		(geometryShader_)
 		, dynamicPolygonMode	(dynamicPolygonMode_)
+		, defaultSize			(defaultSize_)
 	{
 		if (meshShader)
 		{
@@ -7297,8 +7299,13 @@ void PolygonModeLargePointsCase::initPrograms (vk::SourceCollections &programCol
 			<< "    float gl_PointSize;\n"
 			<< "};\n"
 			<< "void main (void) {\n"
-			<< "    gl_Position  = inPosition;\n"
-			<< "    gl_PointSize = " << std::fixed << m_config.pointSize << ";\n"
+			<< "    gl_Position  = inPosition;\n";
+		if (!m_config.defaultSize)
+		{
+		vert
+			<< "    gl_PointSize = " << std::fixed << m_config.pointSize << ";\n";
+		}
+		vert
 			<< "}\n"
 			;
 		programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
@@ -7325,8 +7332,13 @@ void PolygonModeLargePointsCase::initPrograms (vk::SourceCollections &programCol
 			<< "\n"
 			<< "void main (void) {\n"
 			<< "    SetMeshOutputsEXT(" << kNumPoints << ", " << kNumTriangles << ");\n"
-			<< "    gl_MeshVerticesEXT[gl_LocalInvocationIndex].gl_Position = vertexBuffer.vertices[gl_LocalInvocationIndex];\n"
-			<< "    gl_MeshVerticesEXT[gl_LocalInvocationIndex].gl_PointSize = " << std::fixed << m_config.pointSize << ";\n"
+			<< "    gl_MeshVerticesEXT[gl_LocalInvocationIndex].gl_Position = vertexBuffer.vertices[gl_LocalInvocationIndex];\n";
+		if (!m_config.defaultSize)
+		{
+		mesh
+			<< "    gl_MeshVerticesEXT[gl_LocalInvocationIndex].gl_PointSize = " << std::fixed << m_config.pointSize << ";\n";
+		}
+		mesh
 			<< "    if (gl_LocalInvocationIndex < " << kNumTriangles << ") {\n"
 			<< "        const uint baseIndex = gl_LocalInvocationIndex * 3u;\n"
 			<< "        gl_PrimitiveTriangleIndicesEXT[gl_LocalInvocationIndex] = uvec3(baseIndex, baseIndex + 1u, baseIndex + 2u);\n"
@@ -7368,8 +7380,13 @@ void PolygonModeLargePointsCase::initPrograms (vk::SourceCollections &programCol
 			<< "  gl_TessLevelOuter[1] = 1.0;\n"
 			<< "  gl_TessLevelOuter[2] = 1.0;\n"
 			<< "  gl_TessLevelOuter[3] = 1.0;\n"
-			<< "  gl_out[gl_InvocationID].gl_Position  = gl_in[gl_InvocationID].gl_Position;\n"
-			<< "  gl_out[gl_InvocationID].gl_PointSize = gl_in[gl_InvocationID].gl_PointSize;\n"
+			<< "  gl_out[gl_InvocationID].gl_Position  = gl_in[gl_InvocationID].gl_Position;\n";
+		if (!m_config.defaultSize)
+		{
+		tesc
+			<< "  gl_out[gl_InvocationID].gl_PointSize = gl_in[gl_InvocationID].gl_PointSize;\n";
+		}
+		tesc
 			<< "}\n"
 			;
 		programCollection.glslSources.add("tesc") << glu::TessellationControlSource(tesc.str());
@@ -7390,8 +7407,13 @@ void PolygonModeLargePointsCase::initPrograms (vk::SourceCollections &programCol
 			<< "void main (void) {\n"
 			<< "    gl_Position  = (gl_TessCoord.x * gl_in[0].gl_Position) +\n"
 			<< "                   (gl_TessCoord.y * gl_in[1].gl_Position) +\n"
-			<< "                   (gl_TessCoord.z * gl_in[2].gl_Position);\n"
-			<< "    gl_PointSize = gl_in[0].gl_PointSize;\n"
+			<< "                   (gl_TessCoord.z * gl_in[2].gl_Position);\n";
+		if (!m_config.defaultSize)
+		{
+		tese
+			<< "    gl_PointSize = gl_in[0].gl_PointSize;\n";
+		}
+		tese
 			<< "}\n"
 			;
 		programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(tese.str());
@@ -7414,8 +7436,13 @@ void PolygonModeLargePointsCase::initPrograms (vk::SourceCollections &programCol
 			<< "};\n"
 			<< "void main (void) {\n"
 			<< "    for (uint i = 0u; i < 3u; ++i) {\n"
-			<< "        gl_Position  = gl_in[i].gl_Position;\n"
-			<< "        gl_PointSize = gl_in[i].gl_PointSize;\n"
+			<< "        gl_Position  = gl_in[i].gl_Position;\n";
+		if (!m_config.defaultSize)
+		{
+		geom
+			<< "        gl_PointSize = gl_in[i].gl_PointSize;\n";
+		}
+		geom
 			<< "        EmitVertex();\n"
 			<< "    }\n"
 			<< "}\n"
@@ -7709,7 +7736,9 @@ tcu::TestStatus PolygonModeLargePointsInstance::iterate (void)
 	const tcu::Vec4					threshold		(0.0f, 0.0f, 0.0f, 0.0f);
 #ifndef CTS_USES_VULKANSC
 	const auto&						m5Properties	= m_context.getMaintenance5Properties();
-	const bool						pointSizeUsed	= m5Properties.polygonModePointSize;
+	// If testing default size means we are not setting the point size in shaders, and therefore we don't care about m5Properties.polygonModePointSize
+	// Default size is 1.0f, so we should only take the border into account
+	const bool						pointSizeUsed	= m_config.defaultSize ? false : m5Properties.polygonModePointSize;
 #else
 	const bool						pointSizeUsed	= false;
 #endif // CTS_USES_VULKANSC
@@ -7901,6 +7930,8 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 		// .default_size
 		{
 			tcu::TestCaseGroup* const defaultSize	= new tcu::TestCaseGroup(testCtx, "default_size", "Default size");
+
+			// .points
 			{
 				tcu::TestCaseGroup* const points						= new tcu::TestCaseGroup(testCtx, "points", "Default point size");
 				static const VkShaderStageFlags vertexStageBits			= VK_SHADER_STAGE_VERTEX_BIT;
@@ -7930,6 +7961,47 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 
 				defaultSize->addChild(points);
 			}
+
+#ifndef CTS_USES_VULKANSC
+			// .polygons_as_points
+			{
+				tcu::TestCaseGroup* const polygonsAsPoints = new tcu::TestCaseGroup(testCtx, "polygon_as_points", "Default point size for polygons as points");
+				for (int k = 0; k < 2; ++k)
+				{
+					for (int j = 0; j < 2; ++j)
+					{
+						for (int i = 0; i < 2; ++i)
+						{
+							for (int m = 0; m < 2; ++m)
+							{
+								const bool	meshShader		= (m > 0);
+								const bool	tessellation	= (i > 0);
+								const bool	geometryShader	= (j > 0);
+								const bool	dynamicPolyMode	= (k > 0);
+
+								if (meshShader && (tessellation || geometryShader))
+									continue;
+
+								std::string	testName		(meshShader ? "mesh" : "vert");
+
+								if (tessellation)
+									testName += "_tess";
+
+								if (geometryShader)
+									testName += "_geom";
+
+								testName += (dynamicPolyMode ? "_dynamic_polygon_mode" : "_static_polygon_mode");
+
+								PolygonModeLargePointsConfig config(1.0f, meshShader, tessellation, geometryShader, dynamicPolyMode, true);
+								polygonsAsPoints->addChild(new PolygonModeLargePointsCase(testCtx, testName, "", config));
+							}
+						}
+					}
+				}
+
+				defaultSize->addChild(polygonsAsPoints);
+			}
+#endif
 
 			primitiveSize->addChild(defaultSize);
 		}
