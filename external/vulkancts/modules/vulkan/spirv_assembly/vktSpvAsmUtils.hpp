@@ -310,21 +310,29 @@ std::vector<deInt8> getInt8s (de::Random& rnd, const deUint32 count);
 
 // Generate and return 64-bit floats
 //
-// The first 24 number pairs are manually picked, while the rest are randomly generated.
-// Expected count to be at least 24 (numPicks).
-std::vector<double> getFloat64s (de::Random& rnd, deUint32 count);
+// If includeSpecialFloat16Values is false, random float64 that can be converted to float16 inf/nan/denormal must be excluded
+// since inf may be clamped, and nan/denormal be flushed without float control features.
+// And expected count to be at least 14 (numPicks).
+// Otherwise, the first 24 number pairs are manually picked, while the rest are randomly generated.
+// And expected count to be at least 24 (numPicks).
+std::vector<double> getFloat64s (de::Random& rnd, deUint32 count, deBool includeSpecialFloat16Values = DE_TRUE);
 
 // Generate and return 32-bit floats
 //
-// The first 24 number pairs are manually picked, while the rest are randomly generated.
-// Expected count to be at least 24 (numPicks).
-std::vector<float> getFloat32s (de::Random& rnd, deUint32 count);
+// If includeSpecialFloat16Values is false, random float32 that can be converted to float16 inf/nan/denormal must be excluded
+// since inf may be clamped, and nan/denormal be flushed without float control features.
+// And expected count to be at least 14 (numPicks).
+// Otherwise, the first 24 number pairs are manually picked, while the rest are randomly generated.
+// And expected count to be at least 24 (numPicks).
+std::vector<float> getFloat32s (de::Random& rnd, deUint32 count, deBool includeSpecialFloat16Values = DE_TRUE);
 
-// Generate and return 16-bit floats and their corresponding 32-bit values.
+// Generate and return 16-bit floats
 //
-// The first 14 number pairs are manually picked, while the rest are randomly generated.
-// Expected count to be at least 14 (numPicks).
-std::vector<deFloat16> getFloat16s (de::Random& rnd, deUint32 count);
+// If includeSpecialFloat16Values is false, float16 inf/nan/denormal must be excluded since inf may be clamped,
+// and nan/denormal be flushed without float control features. And expected count to be at least 6 (numPicks).
+// Otherwise, the first 14 number pairs are manually picked, while the rest are randomly generated.
+// And expected count to be at least 14 (numPicks).
+std::vector<deFloat16> getFloat16s (de::Random& rnd, deUint32 count, deBool includeSpecialFloat16Values = DE_TRUE);
 
 // Generate an OpCapability Shader line.
 std::string getOpCapabilityShader();

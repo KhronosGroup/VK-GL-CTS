@@ -37,6 +37,7 @@
 
 #include <string>
 #include <vector>
+#include <unistd.h>
 
 namespace vkt
 {
@@ -327,9 +328,10 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testGetDrmDisplayEXTInvalidFd (vo
 	if (!connectorId)
 		TCU_THROW(NotSupportedError, "Could not find a DRM connector.");
 
-	int invalidFd = fd + 1;
+	int invalidFd = open("/", O_RDONLY | O_PATH);
 	VkDisplayKHR display = INVALID_PTR;
 	VkResult result = m_vki.getDrmDisplayEXT(m_physDevice, invalidFd, connectorId, &display);
+	close(invalidFd);
 	if (result != VK_ERROR_UNKNOWN)
 		TCU_FAIL("vkGetDrmDisplayEXT failed to return error.");
 
@@ -516,8 +518,9 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testAcquireDrmDisplayEXTInvalidFd
 	if (display == DE_NULL || display == INVALID_PTR)
 		TCU_FAIL("vkGetDrmDisplayEXT did not set display.");
 
-	int invalidFd = fd + 1;
+	int invalidFd = open("/", O_RDONLY | O_PATH);
 	result = m_vki.acquireDrmDisplayEXT(m_physDevice, invalidFd, display);
+	close(invalidFd);
 	if (result != VK_ERROR_UNKNOWN)
 		TCU_FAIL("vkAcquireDrmDisplayEXT failed to return error.");
 
