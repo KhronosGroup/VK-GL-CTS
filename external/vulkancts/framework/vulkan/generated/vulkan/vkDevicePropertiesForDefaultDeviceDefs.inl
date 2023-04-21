@@ -55,7 +55,9 @@ const VkPhysicalDeviceFragmentDensityMap2PropertiesEXT&			getFragmentDensityMap2
 const VkPhysicalDeviceDrmPropertiesEXT&							getDrmPropertiesEXT							(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceDrmPropertiesEXT>();							}
 const VkPhysicalDeviceSubpassShadingPropertiesHUAWEI&			getSubpassShadingPropertiesHUAWEI			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceSubpassShadingPropertiesHUAWEI>();				}
 const VkPhysicalDeviceMultiDrawPropertiesEXT&					getMultiDrawPropertiesEXT					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceMultiDrawPropertiesEXT>();						}
+const VkPhysicalDeviceShaderTileImagePropertiesEXT&				getShaderTileImagePropertiesEXT				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceShaderTileImagePropertiesEXT>();				}
 const VkPhysicalDeviceOpacityMicromapPropertiesEXT&				getOpacityMicromapPropertiesEXT				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceOpacityMicromapPropertiesEXT>();				}
+const VkPhysicalDeviceDisplacementMicromapPropertiesNV&			getDisplacementMicromapProperties			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceDisplacementMicromapPropertiesNV>();			}
 const VkPhysicalDeviceClusterCullingShaderPropertiesHUAWEI&		getClusterCullingShaderPropertiesHUAWEI		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceClusterCullingShaderPropertiesHUAWEI>();		}
 const VkPhysicalDeviceMaintenance4Properties&					getMaintenance4Properties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceMaintenance4Properties>();						}
 const VkPhysicalDeviceShaderCorePropertiesARM&					getShaderCorePropertiesARM					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceShaderCorePropertiesARM>();					}
@@ -66,6 +68,7 @@ const VkPhysicalDeviceImageProcessingPropertiesQCOM&			getImageProcessingPropert
 const VkPhysicalDeviceExtendedDynamicState3PropertiesEXT&		getExtendedDynamicState3PropertiesEXT		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceExtendedDynamicState3PropertiesEXT>();			}
 const VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT&		getShaderModuleIdentifierPropertiesEXT		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT>();		}
 const VkPhysicalDeviceOpticalFlowPropertiesNV&					getOpticalFlowProperties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceOpticalFlowPropertiesNV>();					}
+const VkPhysicalDeviceShaderObjectPropertiesEXT&				getShaderObjectPropertiesEXT				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceShaderObjectPropertiesEXT>();					}
 const VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV&	getRayTracingInvocationReorderProperties	(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV>();	}
 const VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM&			getShaderCoreBuiltinsPropertiesARM			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM>();			}
 const VkPhysicalDeviceSubgroupProperties&						getSubgroupProperties						(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceSubgroupProperties>();							}

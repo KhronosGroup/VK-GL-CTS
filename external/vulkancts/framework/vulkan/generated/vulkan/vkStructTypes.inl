@@ -7637,6 +7637,42 @@ struct VkAccelerationStructureTrianglesOpacityMicromapEXT
 	VkMicromapEXT						micromap;
 };
 
+struct VkPhysicalDeviceDisplacementMicromapFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		displacementMicromap;
+};
+
+struct VkPhysicalDeviceDisplacementMicromapPropertiesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxDisplacementMicromapSubdivisionLevel;
+};
+
+struct VkAccelerationStructureTrianglesDisplacementMicromapNV
+{
+	VkStructureType						sType;
+	void*								pNext;
+	VkFormat							displacementBiasAndScaleFormat;
+	VkFormat							displacementVectorFormat;
+	VkDeviceOrHostAddressConstKHR		displacementBiasAndScaleBuffer;
+	VkDeviceSize						displacementBiasAndScaleStride;
+	VkDeviceOrHostAddressConstKHR		displacementVectorBuffer;
+	VkDeviceSize						displacementVectorStride;
+	VkDeviceOrHostAddressConstKHR		displacedMicromapPrimitiveFlags;
+	VkDeviceSize						displacedMicromapPrimitiveFlagsStride;
+	VkIndexType							indexType;
+	VkDeviceOrHostAddressConstKHR		indexBuffer;
+	VkDeviceSize						indexStride;
+	uint32_t							baseTriangle;
+	uint32_t							usageCountsCount;
+	const VkMicromapUsageEXT*			pUsageCounts;
+	const VkMicromapUsageEXT* const*	ppUsageCounts;
+	VkMicromapEXT						micromap;
+};
+
 struct VkPipelinePropertiesIdentifierEXT
 {
 	VkStructureType	sType;
@@ -7998,6 +8034,8 @@ struct VkDeviceFaultVendorBinaryHeaderVersionOneEXT
 	uint32_t									applicationNameOffset;
 	uint32_t									applicationVersion;
 	uint32_t									engineNameOffset;
+	uint32_t									engineVersion;
+	uint32_t									apiVersion;
 };
 
 struct VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT
@@ -8192,6 +8230,57 @@ struct VkMemoryUnmapInfoKHR
 	const void*				pNext;
 	VkMemoryUnmapFlagsKHR	flags;
 	VkDeviceMemory			memory;
+};
+
+struct VkPhysicalDeviceShaderObjectFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderObject;
+};
+
+struct VkPhysicalDeviceShaderObjectPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint8_t			shaderBinaryUUID[VK_UUID_SIZE];
+	uint32_t		shaderBinaryVersion;
+};
+
+struct VkShaderCreateInfoEXT
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkShaderCreateFlagsEXT			flags;
+	VkShaderStageFlagBits			stage;
+	VkShaderStageFlags				nextStage;
+	VkShaderCodeTypeEXT				codeType;
+	size_t							codeSize;
+	const void*						pCode;
+	const char*						pName;
+	uint32_t						setLayoutCount;
+	const VkDescriptorSetLayout*	pSetLayouts;
+	uint32_t						pushConstantRangeCount;
+	const VkPushConstantRange*		pPushConstantRanges;
+	const VkSpecializationInfo*		pSpecializationInfo;
+};
+
+struct VkPhysicalDeviceShaderTileImageFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderTileImageColorReadAccess;
+	VkBool32		shaderTileImageDepthReadAccess;
+	VkBool32		shaderTileImageStencilReadAccess;
+};
+
+struct VkPhysicalDeviceShaderTileImagePropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderTileImageCoherentReadAccelerated;
+	VkBool32		shaderTileImageReadSampleFromPixelRateInvocation;
+	VkBool32		shaderTileImageReadFromHelperInvocation;
 };
 
 struct StdVideoH264SpsVuiFlags
@@ -9424,6 +9513,8 @@ typedef VkPhysicalDeviceSubgroupSizeControlFeatures VkPhysicalDeviceSubgroupSize
 typedef VkPhysicalDeviceSubgroupSizeControlProperties VkPhysicalDeviceSubgroupSizeControlPropertiesEXT;
 
 typedef VkPipelineShaderStageRequiredSubgroupSizeCreateInfo VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT;
+
+typedef VkPipelineShaderStageRequiredSubgroupSizeCreateInfo VkShaderRequiredSubgroupSizeCreateInfoEXT;
 
 typedef VkMemoryOpaqueCaptureAddressAllocateInfo VkMemoryOpaqueCaptureAddressAllocateInfoKHR;
 

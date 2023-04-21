@@ -595,3 +595,7 @@ m_vk.getDeviceFaultInfoEXT									= (GetDeviceFaultInfoEXTFunc)									GET_PRO
 m_vk.releaseSwapchainImagesEXT								= (ReleaseSwapchainImagesEXTFunc)								GET_PROC_ADDR("vkReleaseSwapchainImagesEXT");
 m_vk.mapMemory2KHR											= (MapMemory2KHRFunc)											GET_PROC_ADDR("vkMapMemory2KHR");
 m_vk.unmapMemory2KHR										= (UnmapMemory2KHRFunc)											GET_PROC_ADDR("vkUnmapMemory2KHR");
+m_vk.createShadersEXT										= (CreateShadersEXTFunc)										GET_PROC_ADDR("vkCreateShadersEXT");
+m_vk.destroyShaderEXT										= (DestroyShaderEXTFunc)										GET_PROC_ADDR("vkDestroyShaderEXT");
+m_vk.getShaderBinaryDataEXT									= (GetShaderBinaryDataEXTFunc)									GET_PROC_ADDR("vkGetShaderBinaryDataEXT");
+m_vk.cmdBindShadersEXT										= (CmdBindShadersEXTFunc)										GET_PROC_ADDR("vkCmdBindShadersEXT");

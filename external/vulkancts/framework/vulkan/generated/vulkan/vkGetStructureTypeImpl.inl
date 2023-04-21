@@ -3448,6 +3448,21 @@ template<> VkStructureType getStructureType<VkAccelerationStructureTrianglesOpac
 	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_TRIANGLES_OPACITY_MICROMAP_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceDisplacementMicromapFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DISPLACEMENT_MICROMAP_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDisplacementMicromapPropertiesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DISPLACEMENT_MICROMAP_PROPERTIES_NV;
+}
+
+template<> VkStructureType getStructureType<VkAccelerationStructureTrianglesDisplacementMicromapNV> (void)
+{
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_TRIANGLES_DISPLACEMENT_MICROMAP_NV;
+}
+
 template<> VkStructureType getStructureType<VkPipelinePropertiesIdentifierEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PIPELINE_PROPERTIES_IDENTIFIER_EXT;
@@ -3761,5 +3776,30 @@ template<> VkStructureType getStructureType<VkMemoryMapInfoKHR> (void)
 template<> VkStructureType getStructureType<VkMemoryUnmapInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_MEMORY_UNMAP_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderObjectFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderObjectPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkShaderCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderTileImageFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_TILE_IMAGE_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderTileImagePropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_TILE_IMAGE_PROPERTIES_EXT;
 }
 

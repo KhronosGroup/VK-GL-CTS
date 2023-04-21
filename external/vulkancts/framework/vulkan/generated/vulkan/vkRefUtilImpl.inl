@@ -216,6 +216,12 @@ void Deleter<VkOpticalFlowSessionNV>::operator() (VkOpticalFlowSessionNV obj) co
 	m_deviceIface->destroyOpticalFlowSessionNV(m_device, obj, m_allocator);
 }
 
+template<>
+void Deleter<VkShaderEXT>::operator() (VkShaderEXT obj) const
+{
+	m_deviceIface->destroyShaderEXT(m_device, obj, m_allocator);
+}
+
 } // refdetails
 
 Move<VkInstance> createInstance (const PlatformInterface& vk, const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)

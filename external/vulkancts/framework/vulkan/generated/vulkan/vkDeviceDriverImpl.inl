@@ -2283,3 +2283,23 @@ VkResult DeviceDriver::unmapMemory2KHR (VkDevice device, const VkMemoryUnmapInfo
 {
 	return m_vk.unmapMemory2KHR(device, pMemoryUnmapInfo);
 }
+
+VkResult DeviceDriver::createShadersEXT (VkDevice device, uint32_t createInfoCount, const VkShaderCreateInfoEXT* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkShaderEXT* pShaders) const
+{
+	return m_vk.createShadersEXT(device, createInfoCount, pCreateInfos, pAllocator, pShaders);
+}
+
+void DeviceDriver::destroyShaderEXT (VkDevice device, VkShaderEXT shader, const VkAllocationCallbacks* pAllocator) const
+{
+	m_vk.destroyShaderEXT(device, shader, pAllocator);
+}
+
+VkResult DeviceDriver::getShaderBinaryDataEXT (VkDevice device, VkShaderEXT shader, size_t* pDataSize, void* pData) const
+{
+	return m_vk.getShaderBinaryDataEXT(device, shader, pDataSize, pData);
+}
+
+void DeviceDriver::cmdBindShadersEXT (VkCommandBuffer commandBuffer, uint32_t stageCount, const VkShaderStageFlagBits* pStages, const VkShaderEXT* pShaders) const
+{
+	m_vk.cmdBindShadersEXT(commandBuffer, stageCount, pStages, pShaders);
+}

@@ -459,3 +459,7 @@ virtual VkResult			getDeviceFaultInfoEXT									(VkDevice device, VkDeviceFault
 virtual VkResult			releaseSwapchainImagesEXT								(VkDevice device, const VkReleaseSwapchainImagesInfoEXT* pReleaseInfo) const = 0;
 virtual VkResult			mapMemory2KHR											(VkDevice device, const VkMemoryMapInfoKHR* pMemoryMapInfo, void** ppData) const = 0;
 virtual VkResult			unmapMemory2KHR											(VkDevice device, const VkMemoryUnmapInfoKHR* pMemoryUnmapInfo) const = 0;
+virtual VkResult			createShadersEXT										(VkDevice device, uint32_t createInfoCount, const VkShaderCreateInfoEXT* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkShaderEXT* pShaders) const = 0;
+virtual void				destroyShaderEXT										(VkDevice device, VkShaderEXT shader, const VkAllocationCallbacks* pAllocator) const = 0;
+virtual VkResult			getShaderBinaryDataEXT									(VkDevice device, VkShaderEXT shader, size_t* pDataSize, void* pData) const = 0;
+virtual void				cmdBindShadersEXT										(VkCommandBuffer commandBuffer, uint32_t stageCount, const VkShaderStageFlagBits* pStages, const VkShaderEXT* pShaders) const = 0;
