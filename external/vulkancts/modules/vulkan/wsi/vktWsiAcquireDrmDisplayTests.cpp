@@ -37,7 +37,10 @@
 
 #include <string>
 #include <vector>
+
+#if (DE_OS != DE_OS_WIN32)
 #include <unistd.h>
+#endif
 
 namespace vkt
 {
