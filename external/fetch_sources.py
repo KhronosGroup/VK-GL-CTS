@@ -317,7 +317,7 @@ PACKAGES = [
 		"git@github.com:KhronosGroup/glslang.git",
 		"a0ad0d7067521fff880e36acfb8ce453421c3f25",
 		"glslang",
-		removeTags = ["master-tot"]),
+		removeTags = ["main-tot"]),
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Headers.git",
 		"git@github.com:KhronosGroup/SPIRV-Headers.git",
