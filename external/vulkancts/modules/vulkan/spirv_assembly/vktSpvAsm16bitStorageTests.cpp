@@ -3603,7 +3603,9 @@ void addGraphics16BitStorageInputOutputFloat32To16Group (tcu::TestCaseGroup* tes
 	vector<string>		extensions;
 	map<string, string>	fragments			= passthruFragments();
 	const deUint32		numDataPoints		= 64;
-	vector<float>		float32Data			= getFloat32s(rnd, numDataPoints);
+	// Special values like inf/nan/denormal may not be preserved when float control features are not provided,
+	// thus values generating special float16 values must be excluded in input data here.
+	vector<float>		float32Data			= getFloat32s(rnd, numDataPoints, DE_FALSE);
 
 	extensions.push_back("VK_KHR_16bit_storage");
 
@@ -3879,7 +3881,9 @@ void addGraphics16BitStorageInputOutputFloat16To16Group (tcu::TestCaseGroup* tes
 	vector<string>		extensions;
 	map<string, string>	fragments			= passthruFragments();
 	const deUint32		numDataPoints		= 64;
-	vector<deFloat16>	float16Data			(getFloat16s(rnd, numDataPoints));
+	// Special values like inf/nan/denormal may not be preserved when float control features are not provided,
+	// thus those values must be excluded in the input data here.
+	vector<deFloat16>	float16Data			(getFloat16s(rnd, numDataPoints, DE_FALSE));
 	VulkanFeatures		requiredFeatures;
 
 	requiredFeatures.ext16BitStorage.storageInputOutput16 = true;
@@ -7952,7 +7956,9 @@ void addGraphics16BitStorageInputOutputFloat64To16Group (tcu::TestCaseGroup* tes
 	vector<string>		extensions;
 	map<string, string>	fragments			= passthruFragments();
 	const deUint32		numDataPoints		= 64;
-	vector<double>		float64Data			= getFloat64s(rnd, numDataPoints);
+	// Special values like inf/nan/denormal may not be preserved when float control features are not provided,
+	// thus values generating special float16 values must be excluded in input data here.
+	vector<double>		float64Data			= getFloat64s(rnd, numDataPoints, DE_FALSE);
 
 	extensions.push_back("VK_KHR_16bit_storage");
 

@@ -498,6 +498,10 @@ tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 										if (res == VK_ERROR_OUT_OF_DEVICE_MEMORY && memoryType.propertyFlags & vk::VK_MEMORY_PROPERTY_PROTECTED_BIT && ndx > 80)
 											break;
 
+										// We don't know the purpose of the memory type, memory type might have limitation not checked in this test.
+										if (res == VK_ERROR_OUT_OF_DEVICE_MEMORY && (memReqs.memoryTypeBits & (1 << m_memoryTypeIndex)) == 0)
+											break;
+
 										VK_CHECK(res);
 
 										TCU_CHECK(!!memoryObjects[ndx]);
