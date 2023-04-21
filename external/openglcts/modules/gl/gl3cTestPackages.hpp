@@ -68,7 +68,7 @@ class GL31TestPackage : public GL30TestPackage
 public:
 	GL31TestPackage(tcu::TestContext& testCtx, const char* packageName,
 					const char*		 description	   = "OpenGL 3.1 Conformance Tests",
-					glu::ContextType renderContextType = glu::ContextType(3, 1, glu::PROFILE_CORE));
+					glu::ContextType renderContextType = glu::ContextType(3, 1, glu::PROFILE_CORE, glu::CONTEXT_FORWARD_COMPATIBLE));
 
 	~GL31TestPackage(void);
 
