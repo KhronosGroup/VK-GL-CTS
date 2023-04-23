@@ -375,7 +375,7 @@ vk::Move<vk::VkCommandBuffer> createCommandBuffer (const vk::DeviceInterface&	vk
 			image,
 			subRange
 		};
-		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &barrier);
+		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_ACCESS_TRANSFER_WRITE_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &barrier);
 	}
 
 	beginRenderPass(vkd, *commandBuffer, renderPass, framebuffer, vk::makeRect2D(imageWidth, imageHeight), tcu::Vec4(0.25f, 0.5f, 0.75f, 1.0f));
