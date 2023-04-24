@@ -58,7 +58,7 @@ SHADER vertex variant_vertex_shader PASSTHROUGH
 #     for( i = _int_0; i < _int_50; i ++)
 #         A[i] = _float_1_0;
 #
-#     // a becomes 0.
+#     // a becomes -1.
 #     int a = findLSB(0);
 #
 #     // Loops once.
