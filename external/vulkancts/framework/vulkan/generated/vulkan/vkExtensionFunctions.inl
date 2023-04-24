@@ -1214,7 +1214,15 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_shader_tile_image")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_opacity_micromap")
+	{
+		return;
+	}
+	if (extName == "VK_NV_displacement_micromap")
 	{
 		return;
 	}
@@ -1286,6 +1294,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_external_memory_acquire_unmodified")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_extended_dynamic_state3")
 	{
 		return;
@@ -1319,6 +1331,14 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_ray_tracing_position_fetch")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_shader_object")
+	{
+		return;
+	}
 	if (extName == "VK_QCOM_tile_properties")
 	{
 		return;
@@ -1347,7 +1367,15 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_dynamic_rendering_unused_attachments")
+	{
+		return;
+	}
 	if (extName == "VK_QCOM_multiview_per_view_render_areas")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_attachment_feedback_loop_dynamic_state")
 	{
 		return;
 	}
@@ -2743,6 +2771,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_shader_tile_image")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_opacity_micromap")
 	{
 		functions.push_back("vkCreateMicromapEXT");
@@ -2759,6 +2791,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdWriteMicromapsPropertiesEXT");
 		functions.push_back("vkGetDeviceMicromapCompatibilityEXT");
 		functions.push_back("vkGetMicromapBuildSizesEXT");
+		return;
+	}
+	if (extName == "VK_NV_displacement_micromap")
+	{
 		return;
 	}
 	if (extName == "VK_EXT_load_store_op_none")
@@ -2838,6 +2874,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_external_memory_acquire_unmodified")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_extended_dynamic_state3")
 	{
 		functions.push_back("vkCmdSetTessellationDomainOriginEXT");
@@ -2897,6 +2937,42 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_ray_tracing_position_fetch")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_shader_object")
+	{
+		functions.push_back("vkCreateShadersEXT");
+		functions.push_back("vkDestroyShaderEXT");
+		functions.push_back("vkGetShaderBinaryDataEXT");
+		functions.push_back("vkCmdBindShadersEXT");
+		functions.push_back("vkCmdSetVertexInputEXT");
+		functions.push_back("vkCmdSetPatchControlPointsEXT");
+		functions.push_back("vkCmdSetLogicOpEXT");
+		functions.push_back("vkCmdSetTessellationDomainOriginEXT");
+		functions.push_back("vkCmdSetDepthClampEnableEXT");
+		functions.push_back("vkCmdSetPolygonModeEXT");
+		functions.push_back("vkCmdSetRasterizationSamplesEXT");
+		functions.push_back("vkCmdSetSampleMaskEXT");
+		functions.push_back("vkCmdSetAlphaToCoverageEnableEXT");
+		functions.push_back("vkCmdSetAlphaToOneEnableEXT");
+		functions.push_back("vkCmdSetLogicOpEnableEXT");
+		functions.push_back("vkCmdSetColorBlendEnableEXT");
+		functions.push_back("vkCmdSetColorBlendEquationEXT");
+		functions.push_back("vkCmdSetColorWriteMaskEXT");
+		functions.push_back("vkCmdSetRasterizationStreamEXT");
+		functions.push_back("vkCmdSetConservativeRasterizationModeEXT");
+		functions.push_back("vkCmdSetExtraPrimitiveOverestimationSizeEXT");
+		functions.push_back("vkCmdSetDepthClipEnableEXT");
+		functions.push_back("vkCmdSetSampleLocationsEnableEXT");
+		functions.push_back("vkCmdSetColorBlendAdvancedEXT");
+		functions.push_back("vkCmdSetProvokingVertexModeEXT");
+		functions.push_back("vkCmdSetLineRasterizationModeEXT");
+		functions.push_back("vkCmdSetLineStippleEnableEXT");
+		functions.push_back("vkCmdSetDepthClipNegativeOneToOneEXT");
+		return;
+	}
 	if (extName == "VK_QCOM_tile_properties")
 	{
 		functions.push_back("vkGetFramebufferTilePropertiesQCOM");
@@ -2927,8 +3003,17 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_dynamic_rendering_unused_attachments")
+	{
+		return;
+	}
 	if (extName == "VK_QCOM_multiview_per_view_render_areas")
 	{
+		return;
+	}
+	if (extName == "VK_EXT_attachment_feedback_loop_dynamic_state")
+	{
+		functions.push_back("vkCmdSetAttachmentFeedbackLoopEnableEXT");
 		return;
 	}
 	if (extName == "vulkan_video_codecs_common")
@@ -3256,7 +3341,9 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_image_view_min_lod",
 	"VK_EXT_multi_draw",
 	"VK_EXT_image_2d_view_of_3d",
+	"VK_EXT_shader_tile_image",
 	"VK_EXT_opacity_micromap",
+	"VK_NV_displacement_micromap",
 	"VK_EXT_load_store_op_none",
 	"VK_HUAWEI_cluster_culling_shader",
 	"VK_EXT_border_color_swizzle",
@@ -3273,6 +3360,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_NV_linear_color_attachment",
 	"VK_EXT_image_compression_control_swapchain",
 	"VK_QCOM_image_processing",
+	"VK_EXT_external_memory_acquire_unmodified",
 	"VK_EXT_extended_dynamic_state3",
 	"VK_EXT_subpass_merge_feedback",
 	"VK_EXT_shader_module_identifier",
@@ -3280,6 +3368,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_NV_optical_flow",
 	"VK_EXT_legacy_dithering",
 	"VK_EXT_pipeline_protected_access",
+	"VK_KHR_ray_tracing_position_fetch",
+	"VK_EXT_shader_object",
 	"VK_QCOM_tile_properties",
 	"VK_SEC_amigo_profiling",
 	"VK_QCOM_multiview_per_view_viewports",
@@ -3287,5 +3377,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_mutable_descriptor_type",
 	"VK_ARM_shader_core_builtins",
 	"VK_EXT_pipeline_library_group_handles",
+	"VK_EXT_dynamic_rendering_unused_attachments",
 	"VK_QCOM_multiview_per_view_render_areas",
+	"VK_EXT_attachment_feedback_loop_dynamic_state",
 };

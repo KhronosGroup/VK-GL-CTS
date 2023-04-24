@@ -101,6 +101,7 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* BeginCommandBufferFunc)												(
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* EndCommandBufferFunc)													(VkCommandBuffer commandBuffer);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ResetCommandBufferFunc)												(VkCommandBuffer commandBuffer, VkCommandBufferResetFlags flags);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindPipelineFunc)													(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetAttachmentFeedbackLoopEnableEXTFunc)								(VkCommandBuffer commandBuffer, VkImageAspectFlags aspectMask);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetViewportFunc)													(VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetScissorFunc)														(VkCommandBuffer commandBuffer, uint32_t firstScissor, uint32_t scissorCount, const VkRect2D* pScissors);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetLineWidthFunc)													(VkCommandBuffer commandBuffer, float lineWidth);
@@ -631,3 +632,7 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDeviceFaultInfoEXTFunc)										
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ReleaseSwapchainImagesEXTFunc)											(VkDevice device, const VkReleaseSwapchainImagesInfoEXT* pReleaseInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* MapMemory2KHRFunc)														(VkDevice device, const VkMemoryMapInfoKHR* pMemoryMapInfo, void** ppData);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* UnmapMemory2KHRFunc)													(VkDevice device, const VkMemoryUnmapInfoKHR* pMemoryUnmapInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateShadersEXTFunc)													(VkDevice device, uint32_t createInfoCount, const VkShaderCreateInfoEXT* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkShaderEXT* pShaders);
+typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyShaderEXTFunc)													(VkDevice device, VkShaderEXT shader, const VkAllocationCallbacks* pAllocator);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetShaderBinaryDataEXTFunc)											(VkDevice device, VkShaderEXT shader, size_t* pDataSize, void* pData);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindShadersEXTFunc)													(VkCommandBuffer commandBuffer, uint32_t stageCount, const VkShaderStageFlagBits* pStages, const VkShaderEXT* pShaders);

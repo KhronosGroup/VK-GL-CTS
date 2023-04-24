@@ -2598,6 +2598,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceImageSlicedViewOf3DF
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_SLICED_VIEW_OF_3D_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_EXT;
@@ -3448,6 +3453,21 @@ template<> VkStructureType getStructureType<VkAccelerationStructureTrianglesOpac
 	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_TRIANGLES_OPACITY_MICROMAP_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceDisplacementMicromapFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DISPLACEMENT_MICROMAP_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDisplacementMicromapPropertiesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DISPLACEMENT_MICROMAP_PROPERTIES_NV;
+}
+
+template<> VkStructureType getStructureType<VkAccelerationStructureTrianglesDisplacementMicromapNV> (void)
+{
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_TRIANGLES_DISPLACEMENT_MICROMAP_NV;
+}
+
 template<> VkStructureType getStructureType<VkPipelinePropertiesIdentifierEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PIPELINE_PROPERTIES_IDENTIFIER_EXT;
@@ -3461,6 +3481,11 @@ template<> VkStructureType getStructureType<VkPhysicalDevicePipelinePropertiesFe
 template<> VkStructureType getStructureType<VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_EARLY_AND_LATE_FRAGMENT_TESTS_FEATURES_AMD;
+}
+
+template<> VkStructureType getStructureType<VkExternalMemoryAcquireUnmodifiedEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_ACQUIRE_UNMODIFIED_EXT;
 }
 
 template<> VkStructureType getStructureType<VkExportMetalObjectCreateInfoEXT> (void)
@@ -3663,6 +3688,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceShaderCoreBuiltinsFe
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkSurfacePresentModeEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_EXT;
@@ -3733,6 +3763,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceMultiviewPerViewView
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_VIEWPORTS_FEATURES_QCOM;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_POSITION_FETCH_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceShaderCorePropertiesARM> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_ARM;
@@ -3761,5 +3796,30 @@ template<> VkStructureType getStructureType<VkMemoryMapInfoKHR> (void)
 template<> VkStructureType getStructureType<VkMemoryUnmapInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_MEMORY_UNMAP_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderObjectFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderObjectPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkShaderCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderTileImageFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_TILE_IMAGE_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderTileImagePropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_TILE_IMAGE_PROPERTIES_EXT;
 }
 

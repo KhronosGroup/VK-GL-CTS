@@ -55,7 +55,9 @@ const vk::VkPhysicalDeviceFragmentDensityMap2PropertiesEXT&			getFragmentDensity
 const vk::VkPhysicalDeviceDrmPropertiesEXT&							getDrmPropertiesEXT							(void) const;
 const vk::VkPhysicalDeviceSubpassShadingPropertiesHUAWEI&			getSubpassShadingPropertiesHUAWEI			(void) const;
 const vk::VkPhysicalDeviceMultiDrawPropertiesEXT&					getMultiDrawPropertiesEXT					(void) const;
+const vk::VkPhysicalDeviceShaderTileImagePropertiesEXT&				getShaderTileImagePropertiesEXT				(void) const;
 const vk::VkPhysicalDeviceOpacityMicromapPropertiesEXT&				getOpacityMicromapPropertiesEXT				(void) const;
+const vk::VkPhysicalDeviceDisplacementMicromapPropertiesNV&			getDisplacementMicromapProperties			(void) const;
 const vk::VkPhysicalDeviceClusterCullingShaderPropertiesHUAWEI&		getClusterCullingShaderPropertiesHUAWEI		(void) const;
 const vk::VkPhysicalDeviceMaintenance4Properties&					getMaintenance4Properties					(void) const;
 const vk::VkPhysicalDeviceShaderCorePropertiesARM&					getShaderCorePropertiesARM					(void) const;
@@ -66,6 +68,7 @@ const vk::VkPhysicalDeviceImageProcessingPropertiesQCOM&			getImageProcessingPro
 const vk::VkPhysicalDeviceExtendedDynamicState3PropertiesEXT&		getExtendedDynamicState3PropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT&		getShaderModuleIdentifierPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceOpticalFlowPropertiesNV&					getOpticalFlowProperties					(void) const;
+const vk::VkPhysicalDeviceShaderObjectPropertiesEXT&				getShaderObjectPropertiesEXT				(void) const;
 const vk::VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV&	getRayTracingInvocationReorderProperties	(void) const;
 const vk::VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM&			getShaderCoreBuiltinsPropertiesARM			(void) const;
 const vk::VkPhysicalDeviceSubgroupProperties&						getSubgroupProperties						(void) const;

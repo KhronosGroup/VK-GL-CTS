@@ -2801,6 +2801,8 @@ typedef uint32_t VkPresentScalingFlagsEXT;
 
 typedef uint32_t VkPresentGravityFlagsEXT;
 
+typedef uint32_t VkShaderCreateFlagsEXT;
+
 typedef uint32_t VkVideoCodecOperationFlagsKHR;
 
 typedef uint32_t VkVideoCapabilityFlagsKHR;

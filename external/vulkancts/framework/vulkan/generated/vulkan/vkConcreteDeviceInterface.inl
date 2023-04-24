@@ -83,6 +83,7 @@ virtual VkResult			beginCommandBuffer										(VkCommandBuffer commandBuffer, c
 virtual VkResult			endCommandBuffer										(VkCommandBuffer commandBuffer) const;
 virtual VkResult			resetCommandBuffer										(VkCommandBuffer commandBuffer, VkCommandBufferResetFlags flags) const;
 virtual void				cmdBindPipeline											(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline) const;
+virtual void				cmdSetAttachmentFeedbackLoopEnableEXT					(VkCommandBuffer commandBuffer, VkImageAspectFlags aspectMask) const;
 virtual void				cmdSetViewport											(VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports) const;
 virtual void				cmdSetScissor											(VkCommandBuffer commandBuffer, uint32_t firstScissor, uint32_t scissorCount, const VkRect2D* pScissors) const;
 virtual void				cmdSetLineWidth											(VkCommandBuffer commandBuffer, float lineWidth) const;
@@ -459,3 +460,7 @@ virtual VkResult			getDeviceFaultInfoEXT									(VkDevice device, VkDeviceFault
 virtual VkResult			releaseSwapchainImagesEXT								(VkDevice device, const VkReleaseSwapchainImagesInfoEXT* pReleaseInfo) const;
 virtual VkResult			mapMemory2KHR											(VkDevice device, const VkMemoryMapInfoKHR* pMemoryMapInfo, void** ppData) const;
 virtual VkResult			unmapMemory2KHR											(VkDevice device, const VkMemoryUnmapInfoKHR* pMemoryUnmapInfo) const;
+virtual VkResult			createShadersEXT										(VkDevice device, uint32_t createInfoCount, const VkShaderCreateInfoEXT* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkShaderEXT* pShaders) const;
+virtual void				destroyShaderEXT										(VkDevice device, VkShaderEXT shader, const VkAllocationCallbacks* pAllocator) const;
+virtual VkResult			getShaderBinaryDataEXT									(VkDevice device, VkShaderEXT shader, size_t* pDataSize, void* pData) const;
+virtual void				cmdBindShadersEXT										(VkCommandBuffer commandBuffer, uint32_t stageCount, const VkShaderStageFlagBits* pStages, const VkShaderEXT* pShaders) const;

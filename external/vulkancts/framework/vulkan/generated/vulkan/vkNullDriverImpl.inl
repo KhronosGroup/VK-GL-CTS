@@ -553,6 +553,12 @@ VKAPI_ATTR void VKAPI_CALL destroyOpticalFlowSessionNV (VkDevice device, VkOptic
 	freeNonDispHandle<OpticalFlowSessionNV, VkOpticalFlowSessionNV>(session, pAllocator);
 }
 
+VKAPI_ATTR void VKAPI_CALL destroyShaderEXT (VkDevice device, VkShaderEXT shader, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<ShaderEXT, VkShaderEXT>(shader, pAllocator);
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL enumerateInstanceVersion (uint32_t* pApiVersion)
 {
 	DE_UNREF(pApiVersion);
@@ -815,6 +821,12 @@ VKAPI_ATTR void VKAPI_CALL cmdBindPipeline (VkCommandBuffer commandBuffer, VkPip
 	DE_UNREF(commandBuffer);
 	DE_UNREF(pipelineBindPoint);
 	DE_UNREF(pipeline);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetAttachmentFeedbackLoopEnableEXT (VkCommandBuffer commandBuffer, VkImageAspectFlags aspectMask)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(aspectMask);
 }
 
 VKAPI_ATTR void VKAPI_CALL cmdSetViewport (VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports)
@@ -3899,6 +3911,23 @@ VKAPI_ATTR VkResult VKAPI_CALL unmapMemory2KHR (VkDevice device, const VkMemoryU
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL getShaderBinaryDataEXT (VkDevice device, VkShaderEXT shader, size_t* pDataSize, void* pData)
+{
+	DE_UNREF(device);
+	DE_UNREF(shader);
+	DE_UNREF(pDataSize);
+	DE_UNREF(pData);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdBindShadersEXT (VkCommandBuffer commandBuffer, uint32_t stageCount, const VkShaderStageFlagBits* pStages, const VkShaderEXT* pShaders)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(stageCount);
+	DE_UNREF(pStages);
+	DE_UNREF(pShaders);
+}
+
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 {
 	VK_NULL_FUNC_ENTRY(vkCreateInstance,						createInstance),
@@ -4081,6 +4110,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkEndCommandBuffer,											endCommandBuffer),
 	VK_NULL_FUNC_ENTRY(vkResetCommandBuffer,										resetCommandBuffer),
 	VK_NULL_FUNC_ENTRY(vkCmdBindPipeline,											cmdBindPipeline),
+	VK_NULL_FUNC_ENTRY(vkCmdSetAttachmentFeedbackLoopEnableEXT,						cmdSetAttachmentFeedbackLoopEnableEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdSetViewport,											cmdSetViewport),
 	VK_NULL_FUNC_ENTRY(vkCmdSetScissor,												cmdSetScissor),
 	VK_NULL_FUNC_ENTRY(vkCmdSetLineWidth,											cmdSetLineWidth),
@@ -4457,5 +4487,9 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkReleaseSwapchainImagesEXT,									releaseSwapchainImagesEXT),
 	VK_NULL_FUNC_ENTRY(vkMapMemory2KHR,												mapMemory2KHR),
 	VK_NULL_FUNC_ENTRY(vkUnmapMemory2KHR,											unmapMemory2KHR),
+	VK_NULL_FUNC_ENTRY(vkCreateShadersEXT,											createShadersEXT),
+	VK_NULL_FUNC_ENTRY(vkDestroyShaderEXT,											destroyShaderEXT),
+	VK_NULL_FUNC_ENTRY(vkGetShaderBinaryDataEXT,									getShaderBinaryDataEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdBindShadersEXT,											cmdBindShadersEXT),
 };
 

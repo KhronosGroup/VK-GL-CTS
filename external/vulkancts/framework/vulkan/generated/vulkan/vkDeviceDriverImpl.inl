@@ -404,6 +404,11 @@ void DeviceDriver::cmdBindPipeline (VkCommandBuffer commandBuffer, VkPipelineBin
 	m_vk.cmdBindPipeline(commandBuffer, pipelineBindPoint, pipeline);
 }
 
+void DeviceDriver::cmdSetAttachmentFeedbackLoopEnableEXT (VkCommandBuffer commandBuffer, VkImageAspectFlags aspectMask) const
+{
+	m_vk.cmdSetAttachmentFeedbackLoopEnableEXT(commandBuffer, aspectMask);
+}
+
 void DeviceDriver::cmdSetViewport (VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports) const
 {
 	m_vk.cmdSetViewport(commandBuffer, firstViewport, viewportCount, pViewports);
@@ -2282,4 +2287,24 @@ VkResult DeviceDriver::mapMemory2KHR (VkDevice device, const VkMemoryMapInfoKHR*
 VkResult DeviceDriver::unmapMemory2KHR (VkDevice device, const VkMemoryUnmapInfoKHR* pMemoryUnmapInfo) const
 {
 	return m_vk.unmapMemory2KHR(device, pMemoryUnmapInfo);
+}
+
+VkResult DeviceDriver::createShadersEXT (VkDevice device, uint32_t createInfoCount, const VkShaderCreateInfoEXT* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkShaderEXT* pShaders) const
+{
+	return m_vk.createShadersEXT(device, createInfoCount, pCreateInfos, pAllocator, pShaders);
+}
+
+void DeviceDriver::destroyShaderEXT (VkDevice device, VkShaderEXT shader, const VkAllocationCallbacks* pAllocator) const
+{
+	m_vk.destroyShaderEXT(device, shader, pAllocator);
+}
+
+VkResult DeviceDriver::getShaderBinaryDataEXT (VkDevice device, VkShaderEXT shader, size_t* pDataSize, void* pData) const
+{
+	return m_vk.getShaderBinaryDataEXT(device, shader, pDataSize, pData);
+}
+
+void DeviceDriver::cmdBindShadersEXT (VkCommandBuffer commandBuffer, uint32_t stageCount, const VkShaderStageFlagBits* pStages, const VkShaderEXT* pShaders) const
+{
+	m_vk.cmdBindShadersEXT(commandBuffer, stageCount, pStages, pShaders);
 }
