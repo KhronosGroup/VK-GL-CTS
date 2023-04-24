@@ -2168,6 +2168,8 @@ def writeExtensionFunctions (api, filename):
 								if aliasName == commandName:
 									func = f
 									break
+							if func:
+								break
 					else:
 						func = funcList[0]
 					if func == None:
@@ -2177,11 +2179,11 @@ def writeExtensionFunctions (api, filename):
 						assert(False)
 					if func.getType() == functionType:
 						# only add functions with same vendor as extension
-						# this is a workaroudn for entrypoints requiring more
-						# than one excetions and lack of the dependency in vk.xml
+						# this is a workaround for entrypoints requiring more
+						# than one extension and lack of the dependency in vk.xml
 						vendor = ext.name.split('_')[1]
-						if func.name.endswith(vendor):
-							funcNames.append(func.name)
+						if commandName.endswith(vendor):
+							funcNames.append(commandName)
 			if ext.name:
 				yield '\tif (extName == "%s")' % ext.name
 				yield '\t{'

@@ -213,6 +213,13 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	}
 	if (extName == "VK_KHR_get_physical_device_properties2")
 	{
+		functions.push_back("vkGetPhysicalDeviceFeatures2KHR");
+		functions.push_back("vkGetPhysicalDeviceProperties2KHR");
+		functions.push_back("vkGetPhysicalDeviceFormatProperties2KHR");
+		functions.push_back("vkGetPhysicalDeviceImageFormatProperties2KHR");
+		functions.push_back("vkGetPhysicalDeviceQueueFamilyProperties2KHR");
+		functions.push_back("vkGetPhysicalDeviceMemoryProperties2KHR");
+		functions.push_back("vkGetPhysicalDeviceSparseImageFormatProperties2KHR");
 		return;
 	}
 	if (extName == "VK_KHR_device_group")
@@ -260,10 +267,12 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	}
 	if (extName == "VK_KHR_device_group_creation")
 	{
+		functions.push_back("vkEnumeratePhysicalDeviceGroupsKHR");
 		return;
 	}
 	if (extName == "VK_KHR_external_memory_capabilities")
 	{
+		functions.push_back("vkGetPhysicalDeviceExternalBufferPropertiesKHR");
 		return;
 	}
 	if (extName == "VK_KHR_external_memory")
@@ -284,6 +293,7 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	}
 	if (extName == "VK_KHR_external_semaphore_capabilities")
 	{
+		functions.push_back("vkGetPhysicalDeviceExternalSemaphorePropertiesKHR");
 		return;
 	}
 	if (extName == "VK_KHR_external_semaphore")
@@ -404,6 +414,7 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	}
 	if (extName == "VK_KHR_external_fence_capabilities")
 	{
+		functions.push_back("vkGetPhysicalDeviceExternalFencePropertiesKHR");
 		return;
 	}
 	if (extName == "VK_KHR_external_fence")
@@ -830,6 +841,7 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	}
 	if (extName == "VK_EXT_tooling_info")
 	{
+		functions.push_back("vkGetPhysicalDeviceToolPropertiesEXT");
 		return;
 	}
 	if (extName == "VK_EXT_separate_stencil_usage")
@@ -1536,6 +1548,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_AMD_draw_indirect_count")
 	{
+		functions.push_back("vkCmdDrawIndirectCountAMD");
+		functions.push_back("vkCmdDrawIndexedIndirectCountAMD");
 		return;
 	}
 	if (extName == "VK_AMD_negative_viewport_height")
@@ -1573,6 +1587,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_KHR_dynamic_rendering")
 	{
+		functions.push_back("vkCmdBeginRenderingKHR");
+		functions.push_back("vkCmdEndRenderingKHR");
 		return;
 	}
 	if (extName == "VK_AMD_shader_image_load_store_lod")
@@ -1618,6 +1634,9 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_KHR_device_group")
 	{
+		functions.push_back("vkGetDeviceGroupPeerMemoryFeaturesKHR");
+		functions.push_back("vkCmdSetDeviceMaskKHR");
+		functions.push_back("vkCmdDispatchBaseKHR");
 		if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkGetDeviceGroupPresentCapabilitiesKHR");
 		if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkGetDeviceGroupSurfacePresentModesKHR");
 		if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkAcquireNextImage2KHR");
@@ -1660,6 +1679,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_KHR_maintenance1")
 	{
+		functions.push_back("vkTrimCommandPoolKHR");
 		return;
 	}
 	if (extName == "VK_KHR_device_group_creation")
@@ -1737,6 +1757,9 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_KHR_descriptor_update_template")
 	{
+		functions.push_back("vkCreateDescriptorUpdateTemplateKHR");
+		functions.push_back("vkDestroyDescriptorUpdateTemplateKHR");
+		functions.push_back("vkUpdateDescriptorSetWithTemplateKHR");
 		functions.push_back("vkCmdPushDescriptorSetWithTemplateKHR");
 		return;
 	}
@@ -1821,6 +1844,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_KHR_create_renderpass2")
 	{
+		functions.push_back("vkCreateRenderPass2KHR");
+		functions.push_back("vkCmdBeginRenderPass2KHR");
+		functions.push_back("vkCmdNextSubpass2KHR");
+		functions.push_back("vkCmdEndRenderPass2KHR");
 		return;
 	}
 	if (extName == "VK_KHR_shared_presentable_image")
@@ -1947,6 +1974,9 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_KHR_get_memory_requirements2")
 	{
+		functions.push_back("vkGetImageMemoryRequirements2KHR");
+		functions.push_back("vkGetBufferMemoryRequirements2KHR");
+		functions.push_back("vkGetImageSparseMemoryRequirements2KHR");
 		return;
 	}
 	if (extName == "VK_KHR_image_format_list")
@@ -2014,10 +2044,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_KHR_sampler_ycbcr_conversion")
 	{
+		functions.push_back("vkCreateSamplerYcbcrConversionKHR");
+		functions.push_back("vkDestroySamplerYcbcrConversionKHR");
 		return;
 	}
 	if (extName == "VK_KHR_bind_memory2")
 	{
+		functions.push_back("vkBindBufferMemory2KHR");
+		functions.push_back("vkBindImageMemory2KHR");
 		return;
 	}
 	if (extName == "VK_EXT_image_drm_format_modifier")
@@ -2062,6 +2096,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdCopyAccelerationStructureNV");
 		functions.push_back("vkCmdTraceRaysNV");
 		functions.push_back("vkCreateRayTracingPipelinesNV");
+		functions.push_back("vkGetRayTracingShaderGroupHandlesNV");
 		functions.push_back("vkGetAccelerationStructureHandleNV");
 		functions.push_back("vkCmdWriteAccelerationStructuresPropertiesNV");
 		functions.push_back("vkCompileDeferredNV");
@@ -2073,10 +2108,13 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_KHR_maintenance3")
 	{
+		functions.push_back("vkGetDescriptorSetLayoutSupportKHR");
 		return;
 	}
 	if (extName == "VK_KHR_draw_indirect_count")
 	{
+		functions.push_back("vkCmdDrawIndirectCountKHR");
+		functions.push_back("vkCmdDrawIndexedIndirectCountKHR");
 		return;
 	}
 	if (extName == "VK_EXT_filter_cubic")
@@ -2207,6 +2245,9 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_KHR_timeline_semaphore")
 	{
+		functions.push_back("vkGetSemaphoreCounterValueKHR");
+		functions.push_back("vkWaitSemaphoresKHR");
+		functions.push_back("vkSignalSemaphoreKHR");
 		return;
 	}
 	if (extName == "VK_INTEL_shader_integer_functions2")
@@ -2314,6 +2355,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_EXT_buffer_device_address")
 	{
+		functions.push_back("vkGetBufferDeviceAddressEXT");
 		return;
 	}
 	if (extName == "VK_EXT_tooling_info")
@@ -2371,6 +2413,9 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_KHR_buffer_device_address")
 	{
+		functions.push_back("vkGetBufferDeviceAddressKHR");
+		functions.push_back("vkGetBufferOpaqueCaptureAddressKHR");
+		functions.push_back("vkGetDeviceMemoryOpaqueCaptureAddressKHR");
 		return;
 	}
 	if (extName == "VK_EXT_line_rasterization")
@@ -2384,6 +2429,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_EXT_host_query_reset")
 	{
+		functions.push_back("vkResetQueryPoolEXT");
 		return;
 	}
 	if (extName == "VK_EXT_index_type_uint8")
@@ -2392,6 +2438,18 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_EXT_extended_dynamic_state")
 	{
+		functions.push_back("vkCmdSetCullModeEXT");
+		functions.push_back("vkCmdSetFrontFaceEXT");
+		functions.push_back("vkCmdSetPrimitiveTopologyEXT");
+		functions.push_back("vkCmdSetViewportWithCountEXT");
+		functions.push_back("vkCmdSetScissorWithCountEXT");
+		functions.push_back("vkCmdBindVertexBuffers2EXT");
+		functions.push_back("vkCmdSetDepthTestEnableEXT");
+		functions.push_back("vkCmdSetDepthWriteEnableEXT");
+		functions.push_back("vkCmdSetDepthCompareOpEXT");
+		functions.push_back("vkCmdSetDepthBoundsTestEnableEXT");
+		functions.push_back("vkCmdSetStencilTestEnableEXT");
+		functions.push_back("vkCmdSetStencilOpEXT");
 		return;
 	}
 	if (extName == "VK_KHR_deferred_host_operations")
@@ -2497,6 +2555,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_EXT_private_data")
 	{
+		functions.push_back("vkCreatePrivateDataSlotEXT");
+		functions.push_back("vkDestroyPrivateDataSlotEXT");
+		functions.push_back("vkSetPrivateDataEXT");
+		functions.push_back("vkGetPrivateDataEXT");
 		return;
 	}
 	if (extName == "VK_EXT_pipeline_creation_cache_control")
@@ -2527,6 +2589,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_KHR_synchronization2")
 	{
+		functions.push_back("vkCmdSetEvent2KHR");
+		functions.push_back("vkCmdResetEvent2KHR");
+		functions.push_back("vkCmdWaitEvents2KHR");
+		functions.push_back("vkCmdPipelineBarrier2KHR");
+		functions.push_back("vkCmdWriteTimestamp2KHR");
+		functions.push_back("vkQueueSubmit2KHR");
 		return;
 	}
 	if (extName == "VK_EXT_descriptor_buffer")
@@ -2602,6 +2670,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_KHR_copy_commands2")
 	{
+		functions.push_back("vkCmdCopyBuffer2KHR");
+		functions.push_back("vkCmdCopyImage2KHR");
+		functions.push_back("vkCmdCopyBufferToImage2KHR");
+		functions.push_back("vkCmdCopyImageToBuffer2KHR");
+		functions.push_back("vkCmdBlitImage2KHR");
+		functions.push_back("vkCmdResolveImage2KHR");
 		return;
 	}
 	if (extName == "VK_EXT_image_compression_control")
@@ -2712,7 +2786,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	if (extName == "VK_EXT_extended_dynamic_state2")
 	{
 		functions.push_back("vkCmdSetPatchControlPointsEXT");
+		functions.push_back("vkCmdSetRasterizerDiscardEnableEXT");
+		functions.push_back("vkCmdSetDepthBiasEnableEXT");
 		functions.push_back("vkCmdSetLogicOpEXT");
+		functions.push_back("vkCmdSetPrimitiveRestartEnableEXT");
 		return;
 	}
 	if (extName == "VK_QNX_screen_surface")
@@ -2802,6 +2879,9 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_KHR_maintenance4")
 	{
+		functions.push_back("vkGetDeviceBufferMemoryRequirementsKHR");
+		functions.push_back("vkGetDeviceImageMemoryRequirementsKHR");
+		functions.push_back("vkGetDeviceImageSparseMemoryRequirementsKHR");
 		return;
 	}
 	if (extName == "VK_ARM_shader_core_properties")
