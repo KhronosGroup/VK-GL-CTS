@@ -3787,6 +3787,7 @@ tcu::TestStatus formatProperties (Context& context, VkFormat format)
 
 	TestLog&					log			= context.getTestContext().getLog();
 	const VkFormatProperties	properties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
+	const bool					apiVersion10WithoutKhrMaintenance1 = isApiVersionEqual(context.getUsedApiVersion(), VK_API_VERSION_1_0) && !context.isDeviceFunctionalitySupported("VK_KHR_maintenance1");
 
 	const VkFormatFeatureFlags reqImg	= getRequiredOptimalTilingFeatures(context, format);
 	const VkFormatFeatureFlags reqBuf	= getRequiredBufferFeatures(format);
@@ -3812,9 +3813,14 @@ tcu::TestStatus formatProperties (Context& context, VkFormat format)
 	for (int fieldNdx = 0; fieldNdx < DE_LENGTH_OF_ARRAY(fields); fieldNdx++)
 	{
 		const char* const			fieldName	= fields[fieldNdx].fieldName;
-		const VkFormatFeatureFlags	supported	= fields[fieldNdx].supportedFeatures;
+		VkFormatFeatureFlags		supported	= fields[fieldNdx].supportedFeatures;
 		const VkFormatFeatureFlags	required	= fields[fieldNdx].requiredFeatures;
 		const VkFormatFeatureFlags	allowed		= fields[fieldNdx].allowedFeatures;
+
+		if (apiVersion10WithoutKhrMaintenance1 && supported)
+		{
+			supported |= VK_FORMAT_FEATURE_TRANSFER_SRC_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
+		}
 
 		results.check((supported & required) == required, de::toString(fieldName) + ": required: " + de::toString(getFormatFeatureFlagsStr(required)) + "  missing: " + de::toString(getFormatFeatureFlagsStr(~supported & required)));
 
