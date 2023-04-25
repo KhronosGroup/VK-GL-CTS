@@ -55,6 +55,7 @@
 #include "vktApiToolingInfoTests.hpp"
 #include "vktApiFormatPropertiesExtendedKHRtests.hpp"
 #include "vktApiImageCompressionControlTests.hpp"
+#include "vktApiPhysicalDeviceFormatPropertiesMaint5Tests.hpp"
 #endif // CTS_USES_VULKANSC
 
 namespace vkt
@@ -116,6 +117,7 @@ void createApiTests (tcu::TestCaseGroup* apiTests)
 #ifndef CTS_USES_VULKANSC
 	apiTests->addChild(createImageCompressionControlTests		(testCtx));
 	apiTests->addChild(createGetDeviceProcAddrTests				(testCtx));
+	apiTests->addChild(createMaintenance5Tests					(testCtx));
 #endif
 }
 
