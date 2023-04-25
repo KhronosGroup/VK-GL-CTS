@@ -105,13 +105,15 @@ struct DrawParamsBase
 {
 	std::vector<PositionColorVertex>	vertices;
 	vk::VkPrimitiveTopology				topology;
+	bool								useMaintenance5;
 	GroupParams							groupParams;	// we can't use SharedGroupParams here
 
 	DrawParamsBase ()
 	{}
 
 	DrawParamsBase (const vk::VkPrimitiveTopology top, const SharedGroupParams gParams)
-		: topology		(top)
+		: topology			(top)
+		, useMaintenance5	(false)
 		, groupParams
 		{
 			gParams->useDynamicRendering,
@@ -417,8 +419,20 @@ void DrawTestInstanceBase::initialize (const DrawParamsBase& data)
 															  vertexInputAttributeDescriptions);
 
 	const vk::VkDeviceSize dataSize = m_data.vertices.size() * sizeof(PositionColorVertex);
-	m_vertexBuffer = Buffer::createAndAlloc(m_vk, device, BufferCreateInfo(dataSize,
-		vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), m_context.getDefaultAllocator(), vk::MemoryRequirement::HostVisible);
+	BufferCreateInfo createInfo(dataSize, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+
+#ifndef CTS_USES_VULKANSC
+	vk::VkBufferUsageFlags2CreateInfoKHR bufferUsageFlags2 = vk::initVulkanStructure();
+	if (m_data.useMaintenance5)
+	{
+		bufferUsageFlags2.usage = vk::VK_BUFFER_USAGE_2_VERTEX_BUFFER_BIT_KHR;
+		createInfo.pNext = &bufferUsageFlags2;
+		createInfo.usage = 0;
+	}
+#endif // CTS_USES_VULKANSC
+
+	m_vertexBuffer = Buffer::createAndAlloc(m_vk, device, createInfo,
+		m_context.getDefaultAllocator(), vk::MemoryRequirement::HostVisible);
 
 	deUint8* ptr = reinterpret_cast<deUint8*>(m_vertexBuffer->getBoundMemory().getHostPtr());
 	deMemcpy(ptr, &(m_data.vertices[0]), static_cast<size_t>(dataSize));
@@ -689,6 +703,9 @@ void DrawTestCase<T>::checkSupport (Context& context) const
 	}
 
 #ifndef CTS_USES_VULKANSC
+	if (m_data.useMaintenance5)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+
 	if (m_data.groupParams.useDynamicRendering)
 		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
@@ -1334,7 +1351,7 @@ tcu::TestStatus DrawTestInstance<DrawIndexedIndirectParams>::iterate (void)
 	{
 		const vk::VkDeviceSize	indirectInfoSize	= m_data.commands.size() * sizeof(vk::VkDrawIndexedIndirectCommand);
 
-		const vk::VkBufferCreateInfo	indirectCreateInfo =
+		vk::VkBufferCreateInfo	indirectCreateInfo
 		{
 			vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
 			DE_NULL,									// const void*			pNext;
@@ -1345,6 +1362,16 @@ tcu::TestStatus DrawTestInstance<DrawIndexedIndirectParams>::iterate (void)
 			1u,											// deUint32				queueFamilyIndexCount;
 			&queueFamilyIndex,							// const deUint32*		pQueueFamilyIndices;
 		};
+
+#ifndef CTS_USES_VULKANSC
+		vk::VkBufferUsageFlags2CreateInfoKHR bufferUsageFlags2 = vk::initVulkanStructure();
+		if (m_data.useMaintenance5)
+		{
+			bufferUsageFlags2.usage = vk::VK_BUFFER_USAGE_2_INDIRECT_BUFFER_BIT_KHR;
+			indirectCreateInfo.pNext = &bufferUsageFlags2;
+			indirectCreateInfo.usage = 0;
+		}
+#endif // CTS_USES_VULKANSC
 
 		indirectBuffer	= createBuffer(vk, vkDevice, &indirectCreateInfo);
 		indirectAlloc	= allocator.allocate(getBufferMemoryRequirements(vk, vkDevice, *indirectBuffer), vk::MemoryRequirement::HostVisible);
@@ -1359,7 +1386,7 @@ tcu::TestStatus DrawTestInstance<DrawIndexedIndirectParams>::iterate (void)
 
 	vk::Move<vk::VkBuffer>			indexBuffer;
 
-	const vk::VkBufferCreateInfo	bufferCreateInfo =
+	vk::VkBufferCreateInfo	bufferCreateInfo
 	{
 		vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
 		DE_NULL,									// const void*			pNext;
@@ -1370,6 +1397,16 @@ tcu::TestStatus DrawTestInstance<DrawIndexedIndirectParams>::iterate (void)
 		1u,											// deUint32				queueFamilyIndexCount;
 		&queueFamilyIndex,							// const deUint32*		pQueueFamilyIndices;
 	};
+
+#ifndef CTS_USES_VULKANSC
+	vk::VkBufferUsageFlags2CreateInfoKHR bufferUsageFlags2 = vk::initVulkanStructure();
+	if (m_data.useMaintenance5)
+	{
+		bufferUsageFlags2.usage = vk::VK_BUFFER_USAGE_2_INDEX_BUFFER_BIT_KHR;
+		bufferCreateInfo.pNext = &bufferUsageFlags2;
+		bufferCreateInfo.usage = 0;
+	}
+#endif // CTS_USES_VULKANSC
 
 	indexBuffer = createBuffer(vk, vkDevice, &bufferCreateInfo);
 
@@ -1613,6 +1650,18 @@ void createDrawTests(tcu::TestCaseGroup* testGroup, const SharedGroupParams grou
 
 		testGroup->addChild(topologyGroup.release());
 	}
+
+#ifndef CTS_USES_VULKANSC
+	de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testGroup->getTestContext(), "misc", ""));
+	if (groupParams->useDynamicRendering == false)
+	{
+		DrawIndexedIndirectParams params(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, groupParams, vk::VK_INDEX_TYPE_UINT32);
+		params.addCommand(4, 1, 0, 0, 0);
+		params.useMaintenance5 = true;
+		miscGroup->addChild(new IndexedIndirectCase(testGroup->getTestContext(), "maintenance5", "", params));
+	}
+	testGroup->addChild(miscGroup.release());
+#endif // CTS_USES_VULKANSC
 }
 
 tcu::TestCaseGroup*	createBasicDrawTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)

@@ -34,6 +34,7 @@
 #include "vkImageWithMemory.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 
 #include "vkRayTracingUtil.hpp"
 
@@ -127,6 +128,7 @@ struct CaseDef
 	bool					frontFace;
 	VkPipelineCreateFlags	pipelineCreateFlags;
 	bool					useSpecConstants;
+	bool					useMaintenance5;
 };
 
 const deUint32	DEFAULT_UINT_CLEAR_VALUE	= 0x8000;
@@ -326,6 +328,9 @@ void RayTracingTestCase::checkSupport(Context& context) const
 
 	if (cullingFlags && rayTracingPipelineFeaturesKHR.rayTraversalPrimitiveCulling == DE_FALSE)
 		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTraversalPrimitiveCulling");
+
+	if (m_data.useMaintenance5)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
 }
 
 const std::string RayTracingTestCase::getIntersectionPassthrough (void)
@@ -1572,7 +1577,11 @@ Move<VkPipeline> RayTracingBuiltinLaunchTestInstance::makePipeline (de::MovePtr<
 	if (0 != (m_shaders & VK_SHADER_STAGE_CALLABLE_BIT_KHR))		rayTracingPipeline->addShader(VK_SHADER_STAGE_CALLABLE_BIT_KHR		, createShaderModule(vkd, device, collection.get("call"), 0), m_callableShaderGroup, specializationInfo);
 
 	if (m_data.pipelineCreateFlags != 0)
+	{
 		rayTracingPipeline->setCreateFlags(m_data.pipelineCreateFlags);
+		if (m_data.useMaintenance5)
+			rayTracingPipeline->setCreateFlags2(translateCreateFlag(m_data.pipelineCreateFlags));
+	}
 
 	Move<VkPipeline> pipeline = rayTracingPipeline->createPipeline(vkd, device, pipelineLayout);
 
@@ -2530,7 +2539,8 @@ void createLaunchTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtinGr
 				false,					//  bool					opaque;
 				false,					//  bool					frontFace;
 				0u,						//  VkPipelineCreateFlags	pipelineCreateFlags;
-				false,					//	bool					useSpecConstants;
+				false,					//  bool					useSpecConstants;
+				false,					//  bool					useMaintenance5;
 			};
 			const std::string	suffix		= de::toString(caseDef.width) + '_' + de::toString(caseDef.height) + '_' + de::toString(caseDef.depth);
 			const std::string	testName	= string(stages[stageNdx].name) + '_' + suffix;
@@ -2617,7 +2627,8 @@ void createScalarTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtinGr
 				false,					//  bool					opaque;
 				false,					//  bool					frontFace;
 				0u,						//  VkPipelineCreateFlags	pipelineCreateFlags;
-				false,					//	bool					useSpecConstants;
+				false,					//  bool					useSpecConstants;
+				false,					//  bool					useMaintenance5;
 			};
 			const std::string	suffix		= '_' + de::toString(caseDef.width) + '_' + de::toString(caseDef.height);
 			const std::string	testName	= string(stages[stageNdx].name) + '_' + geomTypes[geomTypesNdx].name + (specializedTest ? "" : suffix);
@@ -2745,9 +2756,8 @@ void createRayFlagsTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtin
 
 						const deUint32		instancesGroupCount		= 1;
 						const deUint32		geometriesGroupCount	= 1;
-						const deUint32		largestGroup			= width * height / geometriesGroupCount / instancesGroupCount;
-						const deUint32		squaresGroupCount		= largestGroup;
-						const CaseDef		caseDef					=
+						const deUint32		squaresGroupCount		= width * height / geometriesGroupCount / instancesGroupCount;
+						const CaseDef		caseDef =
 						{
 							id,												//  TestId					id;
 							name,											//  const char*				name;
@@ -2770,8 +2780,9 @@ void createRayFlagsTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtin
 							faces[facesNdx].flag,							//  bool					frontFace;
 							pipelineFlags[pipelineFlagsNdx].flag,			//  VkPipelineCreateFlags	pipelineCreateFlags;
 							false,											//	bool					useSpecConstants;
+							false,											//	bool					useMaintenance5;
 						};
-						const std::string	testName				= string(stages[stageNdx].name) ;
+						const std::string	testName				= string(stages[stageNdx].name);
 
 						geomPropertiesGroup->addChild(new RayTracingTestCase(testCtx, testName.c_str(), "", caseDef));
 					}
@@ -2786,6 +2797,41 @@ void createRayFlagsTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtin
 		}
 
 		group->addChild(geomGroup.release());
+	}
+
+	{
+		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc", ""));
+		CaseDef caseDef
+		{
+			TEST_ID_INCOMING_RAY_FLAGS_EXT,								//  TestId					id;
+			name,														//  const char*				name;
+			width,														//  deUint32				width;
+			height,														//  deUint32				height;
+			imageDepth,													//  deUint32				depth;
+			rayDepth,													//  deUint32				raysDepth;
+			VK_FORMAT_R32_SINT,											//  VkFormat				format;
+			false,														//  bool					fixedPointScalarOutput;
+			false,														//  bool					fixedPointVectorOutput;
+			false,														//  bool					fixedPointMatrixOutput;
+			GEOM_TYPE_TRIANGLES,										//  GeomType				geomType;
+			width * height,												//  deUint32				squaresGroupCount;
+			1,															//  deUint32				geometriesGroupCount;
+			1,															//  deUint32				instancesGroupCount;
+			VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,						//  VkShaderStageFlagBits	stage;
+			false,														//  bool					skipTriangles;
+			false,														//  bool					skipAABSs;
+			false,														//  bool					opaque;
+			true,														//  bool					frontFace;
+			VK_PIPELINE_CREATE_RAY_TRACING_SKIP_TRIANGLES_BIT_KHR,		//  VkPipelineCreateFlags	pipelineCreateFlags;
+			false,														//	bool					useSpecConstants;
+			true,														//	bool					useMaintenance5;
+		};
+
+		miscGroup->addChild(new RayTracingTestCase(testCtx, "pipelineskiptriangles_maintenance5", "", caseDef));
+		caseDef.pipelineCreateFlags = VK_PIPELINE_CREATE_RAY_TRACING_SKIP_AABBS_BIT_KHR;
+		miscGroup->addChild(new RayTracingTestCase(testCtx, "pipelineskipaabbs_maintenance5", "", caseDef));
+
+		group->addChild(miscGroup.release());
 	}
 
 	builtinGroup->addChild(group.release());
@@ -2850,6 +2896,7 @@ void createMultiOutputTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* buil
 			false,					//  bool					frontFace;
 			0u,						//  VkPipelineCreateFlags	pipelineCreateFlags;
 			false,					//	bool					useSpecConstants;
+			false,					//	bool					useMaintenance5;
 		};
 		const std::string	testName				= string(stages[stageNdx].name) + '_' + geomTypes[geomTypesNdx].name;
 
@@ -2957,6 +3004,7 @@ tcu::TestCaseGroup* createSpecConstantTests	(tcu::TestContext& testCtx)
 			false,					//  bool					frontFace;
 			0u,						//  VkPipelineCreateFlags	pipelineCreateFlags;
 			true,					//	bool					useSpecConstants;
+			false,					//	bool					useMaintenance5;
 		};
 
 		group->addChild(new RayTracingTestCase(testCtx, stages[stageNdx].name, "", caseDef));

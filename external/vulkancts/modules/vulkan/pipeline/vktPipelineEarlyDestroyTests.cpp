@@ -51,10 +51,14 @@ struct TestParams
 {
 	PipelineConstructionType	pipelineConstructionType;
 	bool						usePipelineCache;
+	bool						useMaintenance5;
 };
 
 void checkSupport(Context& context, TestParams testParams)
 {
+	if (testParams.useMaintenance5)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+
 	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), testParams.pipelineConstructionType);
 }
 
@@ -188,6 +192,11 @@ tcu::TestStatus testEarlyDestroy (Context& context, const TestParams& params, bo
 		const std::vector<VkViewport>					viewports						{};
 		const std::vector<VkRect2D>						scissors						{};
 		GraphicsPipelineWrapper							graphicsPipeline				(vk, vkDevice, params.pipelineConstructionType, VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT);
+
+#ifndef CTS_USES_VULKANSC
+		if (params.useMaintenance5)
+			graphicsPipeline.setPipelineCreateFlags2(VK_PIPELINE_CREATE_2_DISABLE_OPTIMIZATION_BIT_KHR);
+#endif // CTS_USES_VULKANSC
 
 		graphicsPipeline.disableViewportState()
 						.setDefaultMultisampleState()
@@ -336,7 +345,8 @@ void addEarlyDestroyTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineC
 	TestParams params
 	{
 		pipelineConstructionType,
-		true
+		true,
+		false,
 	};
 
 	addFunctionCaseWithPrograms(group, "cache", "", checkSupport, initPrograms, testEarlyDestroyKeepLayout, params);
@@ -346,6 +356,8 @@ void addEarlyDestroyTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineC
 	addFunctionCaseWithPrograms(group, "cache_destroy_layout", "", checkSupport, initPrograms, testEarlyDestroyDestroyLayout, params);
 	params.usePipelineCache = false;
 	addFunctionCaseWithPrograms(group, "no_cache_destroy_layout", "", checkSupport, initPrograms, testEarlyDestroyDestroyLayout, params);
+	params.useMaintenance5 = true;
+	addFunctionCaseWithPrograms(group, "no_cache_destroy_layout_maintenance5", "", checkSupport, initPrograms, testEarlyDestroyDestroyLayout, params);
 }
 
 } // anonymous

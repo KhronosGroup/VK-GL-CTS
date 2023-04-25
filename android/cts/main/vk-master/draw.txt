@@ -349,6 +349,7 @@ dEQP-VK.draw.renderpass.basic_draw.draw_indexed_indirect.triangle_strip_with_adj
 dEQP-VK.draw.renderpass.basic_draw.draw_indexed_indirect.triangle_strip_with_adjacency.17_multi_command
 dEQP-VK.draw.renderpass.basic_draw.draw_indexed_indirect.triangle_strip_with_adjacency.45_single_command
 dEQP-VK.draw.renderpass.basic_draw.draw_indexed_indirect.triangle_strip_with_adjacency.45_multi_command
+dEQP-VK.draw.renderpass.basic_draw.misc.maintenance5
 dEQP-VK.draw.renderpass.instanced.draw_vk_primitive_topology_point_list
 dEQP-VK.draw.renderpass.instanced.draw_vk_primitive_topology_point_list_attrib_divisor_0
 dEQP-VK.draw.renderpass.instanced.draw_vk_primitive_topology_point_list_attrib_divisor_0_multiview

@@ -587,6 +587,7 @@ public:
 	virtual void										setDeferredOperation					(const bool										deferredOperation,
 																								 const deUint32									workerThreadCount		= 0u ) = DE_NULL;
 	virtual void										setUseArrayOfPointers					(const bool										useArrayOfPointers) = DE_NULL;
+	virtual void										setUseMaintenance5						(const bool										useMaintenance5) = DE_NULL;
 	virtual void										setIndirectBuildParameters				(const VkBuffer									indirectBuffer,
 																								 const VkDeviceSize								indirectBufferOffset,
 																								 const deUint32									indirectBufferStride) = DE_NULL;
@@ -974,6 +975,7 @@ public:
 																							 const void**											shaderGroupDataPtrPerGroup	= nullptr,
 																							 const bool												autoAlignRecords			= true);
 	void														setCreateFlags				(const VkPipelineCreateFlags&							pipelineCreateFlags);
+	void														setCreateFlags2				(const VkPipelineCreateFlags2KHR&						pipelineCreateFlags2);
 	void														setMaxRecursionDepth		(const deUint32&										maxRecursionDepth);
 	void														setMaxPayloadSize			(const deUint32&										maxPayloadSize);
 	void														setMaxAttributeSize			(const deUint32&										maxAttributeSize);
@@ -994,6 +996,7 @@ protected:
 	std::vector<VkPipelineShaderStageCreateInfo>				m_shaderCreateInfos;
 	std::vector<VkRayTracingShaderGroupCreateInfoKHR>			m_shadersGroupCreateInfos;
 	VkPipelineCreateFlags										m_pipelineCreateFlags;
+	VkPipelineCreateFlags2KHR									m_pipelineCreateFlags2;
 	deUint32													m_maxRecursionDepth;
 	deUint32													m_maxPayloadSize;
 	deUint32													m_maxAttributeSize;

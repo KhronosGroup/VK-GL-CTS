@@ -83,6 +83,7 @@ struct TestParams
 	bool								pipelinesCreatedUsingDHO;
 	TestType							testType;
 	bool								useAABBs;
+	bool								useMaintenance5;
 	deUint32							width;
 	deUint32							height;
 
@@ -292,6 +293,9 @@ void RayTracingPipelineLibraryTestCase::checkSupport(Context& context) const
 
 	if (m_data.testType != TestType::DEFAULT)
 		context.requireDeviceFunctionality("VK_EXT_pipeline_library_group_handles");
+
+	if (m_data.useMaintenance5)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
 
 	if (m_data.includesCaptureReplay())
 	{
@@ -651,6 +655,8 @@ std::vector<uint32_t> RayTracingPipelineLibraryTestInstance::runTest (bool repla
 			creationFlags |= VK_PIPELINE_CREATE_RAY_TRACING_SHADER_GROUP_HANDLE_CAPTURE_REPLAY_BIT_KHR;
 
 		rtPipeline->get()->setCreateFlags(creationFlags);
+		if (m_data.useMaintenance5)
+			rtPipeline->get()->setCreateFlags2(translateCreateFlag(creationFlags));
 
 		rtPipeline->get()->setMaxPayloadSize(16U); // because rayPayloadInEXT is uvec4 ( = 16 bytes ) for all chit shaders
 		rtPipelines[idx] = rtPipeline;
@@ -983,6 +989,7 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group)
 						threadData[threadNdx].pipelinesCreatedUsingDHO,
 						testTypeCase.testType,
 						geometryCase.useAABBs,
+						false,
 						RTPL_DEFAULT_SIZE,
 						RTPL_DEFAULT_SIZE
 					};
@@ -993,6 +1000,25 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group)
 			}
 		}
 		group->addChild(threadGroup.release());
+	}
+
+	{
+		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(group->getTestContext(), "misc", ""));
+
+		TestParams testParams
+		{
+			libraryConfigurationData[1].libraryConfiguration,
+			false,
+			false,
+			TestType::CHECK_CAPTURE_REPLAY_HANDLES,
+			false,
+			true,
+			RTPL_DEFAULT_SIZE,
+			RTPL_DEFAULT_SIZE
+		};
+		miscGroup->addChild(new RayTracingPipelineLibraryTestCase(group->getTestContext(), "maintenance5", "", testParams));
+
+		group->addChild(miscGroup.release());
 	}
 }
 

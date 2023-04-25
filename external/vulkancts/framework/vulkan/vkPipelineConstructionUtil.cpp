@@ -33,6 +33,7 @@
 
 #include <memory>
 #include <set>
+#include <map>
 
 namespace vk
 {
@@ -191,6 +192,11 @@ void checkPipelineLibraryRequirements (const InstanceInterface&		vki,
 		TCU_THROW(NotSupportedError, "VK_EXT_graphics_pipeline_library not supported");
 }
 
+PipelineCreateFlags2 translateCreateFlag(VkPipelineCreateFlags flagToTranslate)
+{
+	return (PipelineCreateFlags2)flagToTranslate;
+}
+
 void addToChain(void** structThatStartsChain, void* structToAddAtTheEnd)
 {
 	DE_ASSERT(structThatStartsChain);
@@ -242,6 +248,7 @@ struct GraphicsPipelineWrapper::InternalData
 	VkDevice											device;
 	const PipelineConstructionType						pipelineConstructionType;
 	const VkPipelineCreateFlags							pipelineFlags;
+	PipelineCreateFlags2								pipelineFlags2;
 
 	// attribute used for making sure pipeline is configured in correct order
 	int													setupState;
@@ -273,6 +280,7 @@ struct GraphicsPipelineWrapper::InternalData
 		, device					(vkDevice)
 		, pipelineConstructionType	(constructionType)
 		, pipelineFlags				(pipelineCreateFlags)
+		, pipelineFlags2			(0u)
 		, setupState				(PSS_NONE)
 		, inputAssemblyState
 		{
@@ -372,6 +380,15 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setRepresentativeFragmentTestS
 	DE_ASSERT(m_internalData && (m_internalData->setupState < PSS_FRAGMENT_SHADER));
 
 	m_internalData->pRepresentativeFragmentTestState = representativeFragmentTestState;
+	return *this;
+}
+
+GraphicsPipelineWrapper& GraphicsPipelineWrapper::setPipelineCreateFlags2(PipelineCreateFlags2 pipelineFlags2)
+{
+	// make sure states are not yet setup - all pipeline states must know about createFlags2
+	DE_ASSERT(m_internalData && m_internalData->setupState == PSS_NONE);
+
+	m_internalData->pipelineFlags2 = pipelineFlags2;
 	return *this;
 }
 
@@ -711,6 +728,14 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupVertexInputState(const Vk
 		if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
 			pipelinePartCreateInfo.flags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
 
+		VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
+		if (m_internalData->pipelineFlags2)
+		{
+			pipelineFlags2CreateInfo.flags = m_internalData->pipelineFlags2 | translateCreateFlag(pipelinePartCreateInfo.flags);
+			addToChain(&firstStructInChain, &pipelineFlags2CreateInfo);
+			pipelinePartCreateInfo.flags = 0u;
+		}
+
 		m_pipelineParts[0] = makeGraphicsPipeline(m_internalData->vk, m_internalData->device, partPipelineCache, &pipelinePartCreateInfo);
 	}
 #endif // CTS_USES_VULKANSC
@@ -1004,6 +1029,14 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 		if ((shaderModuleIdFlags & VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT) != 0)
 			m_internalData->failOnCompileWhenLinking = true;
 
+		VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
+		if (m_internalData->pipelineFlags2)
+		{
+			pipelineFlags2CreateInfo.flags = m_internalData->pipelineFlags2 | translateCreateFlag(pipelinePartCreateInfo.flags);
+			addToChain(&firstStructInChain, &pipelineFlags2CreateInfo);
+			pipelinePartCreateInfo.flags = 0u;
+		}
+
 		m_pipelineParts[1] = makeGraphicsPipeline(m_internalData->vk, m_internalData->device, partPipelineCache, &pipelinePartCreateInfo);
 	}
 #endif // CTS_USES_VULKANSC
@@ -1130,7 +1163,6 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationMeshShade
 			pickedDynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(states.size());
 		}
 
-
 		VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
 		pipelinePartCreateInfo.pNext			= firstStructInChain;
 		pipelinePartCreateInfo.flags			= m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
@@ -1146,6 +1178,14 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationMeshShade
 
 		if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
 			pipelinePartCreateInfo.flags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
+
+		VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
+		if (m_internalData->pipelineFlags2)
+		{
+			pipelineFlags2CreateInfo.flags = m_internalData->pipelineFlags2 | translateCreateFlag(pipelinePartCreateInfo.flags);
+			addToChain(&firstStructInChain, &pipelineFlags2CreateInfo);
+			pipelinePartCreateInfo.flags = 0u;
+		}
 
 		m_pipelineParts[1] = createGraphicsPipeline(m_internalData->vk, m_internalData->device, partPipelineCache, &pipelinePartCreateInfo);
 	}
@@ -1268,7 +1308,6 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState2(cons
 			pickedDynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(states.size());
 		}
 
-
 		VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
 		pipelinePartCreateInfo.pNext				= firstStructInChain;
 		pipelinePartCreateInfo.flags				= (m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR | shaderModuleIdFlags) & ~VK_PIPELINE_CREATE_DERIVATIVE_BIT;
@@ -1286,6 +1325,14 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState2(cons
 
 		if ((shaderModuleIdFlags & VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT) != 0)
 			m_internalData->failOnCompileWhenLinking = true;
+
+		VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
+		if (m_internalData->pipelineFlags2)
+		{
+			pipelineFlags2CreateInfo.flags = m_internalData->pipelineFlags2 | translateCreateFlag(pipelinePartCreateInfo.flags);
+			addToChain(&firstStructInChain, &pipelineFlags2CreateInfo);
+			pipelinePartCreateInfo.flags = 0u;
+		}
 
 		m_pipelineParts[2] = makeGraphicsPipeline(m_internalData->vk, m_internalData->device, partPipelineCache, &pipelinePartCreateInfo);
 	}
@@ -1368,6 +1415,14 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentOutputState(const
 		if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
 			pipelinePartCreateInfo.flags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
 
+		VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
+		if (m_internalData->pipelineFlags2)
+		{
+			pipelineFlags2CreateInfo.flags = m_internalData->pipelineFlags2 | translateCreateFlag(pipelinePartCreateInfo.flags);
+			addToChain(&firstStructInChain, &pipelineFlags2CreateInfo);
+			pipelinePartCreateInfo.flags = 0u;
+		}
+
 		m_pipelineParts[3] = makeGraphicsPipeline(m_internalData->vk, m_internalData->device, partPipelineCache, &pipelinePartCreateInfo);
 	}
 #endif // CTS_USES_VULKANSC
@@ -1433,6 +1488,15 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 		void* firstStructInChain = static_cast<void*>(pointerToCreateInfo);
 		addToChain(&firstStructInChain, creationFeedback.ptr);
 		addToChain(&firstStructInChain, m_internalData->pRepresentativeFragmentTestState.ptr);
+	}
+
+	VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
+	if (m_internalData->pipelineFlags2)
+	{
+		void* firstStructInChain = static_cast<void*>(pointerToCreateInfo);
+		pipelineFlags2CreateInfo.flags = m_internalData->pipelineFlags2 | translateCreateFlag(pointerToCreateInfo->flags);
+		addToChain(&firstStructInChain, &pipelineFlags2CreateInfo);
+		pointerToCreateInfo->flags = 0u;
 	}
 #endif // CTS_USES_VULKANSC
 

@@ -91,6 +91,7 @@ struct TestParams
 	bool					coarseReconstruction;
 	bool					imagelessFramebuffer;
 	bool					useMemoryAccess;
+	bool					useMaintenance5;
 	deUint32				samplersCount;
 	deUint32				viewCount;
 	bool					makeCopy;
@@ -904,7 +905,8 @@ Move<VkPipeline> buildGraphicsPipeline(const DeviceInterface&						vk,
 										const deUint32								subpass,
 										const VkPipelineMultisampleStateCreateInfo*	multisampleStateCreateInfo,
 										const void*									pNext,
-										const bool									useDensityMapAttachment)
+										const bool									useDensityMapAttachment,
+										const bool									useMaintenance5 = false)
 {
 	std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageParams(2,
 		{
@@ -1048,7 +1050,7 @@ Move<VkPipeline> buildGraphicsPipeline(const DeviceInterface&						vk,
 		{ 0.0f, 0.0f, 0.0f, 0.0f }										// float										blendConstants[4]
 	};
 
-	const VkGraphicsPipelineCreateInfo pipelineCreateInfo
+	VkGraphicsPipelineCreateInfo pipelineCreateInfo
 	{
 		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,													// VkStructureType									sType
 		pNext,																								// const void*										pNext
@@ -1072,6 +1074,15 @@ Move<VkPipeline> buildGraphicsPipeline(const DeviceInterface&						vk,
 		DE_NULL,																							// VkPipeline										basePipelineHandle
 		0																									// deInt32											basePipelineIndex;
 	};
+
+	VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo;
+	if (useDensityMapAttachment && useMaintenance5)
+	{
+		pipelineFlags2CreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CREATE_FLAGS_2_CREATE_INFO_KHR;
+		pipelineFlags2CreateInfo.flags = VK_PIPELINE_CREATE_2_RENDERING_FRAGMENT_DENSITY_MAP_ATTACHMENT_BIT_KHR;
+		pipelineCreateInfo.pNext = &pipelineFlags2CreateInfo;
+		pipelineCreateInfo.flags = 0;
+	}
 
 	return createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 }
@@ -1365,6 +1376,9 @@ void FragmentDensityMapTest::checkSupport(Context& context) const
 
 	if (m_testParams.imagelessFramebuffer)
 		context.requireDeviceFunctionality("VK_KHR_imageless_framebuffer");
+
+	if (m_testParams.useMaintenance5)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
 
 	VkPhysicalDeviceFragmentDensityMapFeaturesEXT		fragmentDensityMapFeatures		= initVulkanStructure();
 	VkPhysicalDeviceFragmentDensityMap2FeaturesEXT		fragmentDensityMap2Features		= initVulkanStructure(&fragmentDensityMapFeatures);
@@ -1908,7 +1922,8 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 															0u,												// const deUint32									subpass
 															DE_NULL,										// const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo
 															pNextForProduceDynamicDensityMap,				// const void*										pNext
-															isDynamicRendering);							// const bool										useDensityMapAttachment
+															isDynamicRendering,								// const bool										useDensityMapAttachment
+															m_testParams.useMaintenance5);					// const bool										useMaintenance5
 
 		m_graphicsPipelineProduceSubsampledImage = buildGraphicsPipeline(vk,								// const DeviceInterface&							vk
 															vkDevice,										// const VkDevice									device
@@ -1921,7 +1936,8 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 															0u,												// const deUint32									subpass
 															&multisampleStateCreateInfo,					// const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo
 															pNextForeProduceSubsampledImage,				// const void*										pNext
-															isDynamicRendering);							// const bool										useDensityMapAttachment
+															isDynamicRendering,								// const bool										useDensityMapAttachment
+															m_testParams.useMaintenance5);					// const bool										useMaintenance5
 
 		if(m_testParams.makeCopy)
 			m_graphicsPipelineCopySubsampledImage = buildGraphicsPipeline(vk,								// const DeviceInterface&							vk
@@ -1948,7 +1964,9 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 															0u,												// const deUint32									subpass
 															&multisampleStateCreateInfo,					// const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo
 															pNextForeUpdateSubsampledImage,					// const void*										pNext
-															isDynamicRendering);							// const bool										useDensityMapAttachment
+															isDynamicRendering,								// const bool										useDensityMapAttachment
+															m_testParams.useMaintenance5);					// const bool										useMaintenance5
+
 
 		m_graphicsPipelineOutputSubsampledImage = buildGraphicsPipeline(vk,									// const DeviceInterface&							vk
 															vkDevice,										// const VkDevice									device
@@ -2853,6 +2871,7 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 							false,							// bool						coarseReconstruction;
 							false,							// bool						imagelessFramebuffer;
 							false,							// bool						useMemoryAccess;
+							false,							// bool						useMaintenance5;
 							1,								// deUint32					samplersCount;
 							view.viewCount,					// deUint32					viewCount;
 							render.makeCopy,				// bool						makeCopy;
@@ -2917,6 +2936,7 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 			false,							// bool						coarseReconstruction;
 			false,							// bool						imagelessFramebuffer;
 			false,							// bool						useMemoryAccess;
+			false,							// bool						useMaintenance5;
 			sampler.count,					// deUint32					samplersCount;
 			1,								// deUint32					viewCount;
 			false,							// bool						makeCopy;
@@ -2934,9 +2954,35 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 			break;
 	}
 
-	// interaction between fragment density map and imageless framebuffer
+	if ((groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) && (groupParams->useSecondaryCmdBuffer == false))
+	{
+		TestParams params
+		{
+			false,							// bool						dynamicDensityMap;
+			false,							// bool						deferredDensityMap;
+			false,							// bool						nonSubsampledImages;
+			false,							// bool						subsampledLoads;
+			false,							// bool						coarseReconstruction;
+			false,							// bool						imagelessFramebuffer;
+			false,							// bool						useMemoryAccess;
+			true,							// bool						useMaintenance5;
+			1,								// deUint32					samplersCount;
+			1,								// deUint32					viewCount;
+			false,							// bool						makeCopy;
+			4.0f,							// float					renderMultiplier;
+			VK_SAMPLE_COUNT_1_BIT,			// VkSampleCountFlagBits	colorSamples;
+			{  2,  2 },						// tcu::UVec2				fragmentArea;
+			{ 16, 16 },						// tcu::UVec2				densityMapSize;
+			VK_FORMAT_R8G8_UNORM,			// VkFormat					densityMapFormat;
+			groupParams						// SharedGroupParams		groupParams;
+		};
+		propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, "maintenance5", "", params));
+	}
+
 	if (groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
 	{
+		// interaction between fragment density map and imageless framebuffer
+
 		const struct
 		{
 			std::string		name;
@@ -2958,6 +3004,7 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 				false,									// bool						coarseReconstruction;
 				true,									// bool						imagelessFramebuffer;
 				false,									// bool						useMemoryAccess;
+				false,									// bool						useMaintenance5;
 				1,										// deUint32					samplersCount;
 				1,										// deUint32					viewCount;
 				false,									// bool						makeCopy;
@@ -2997,6 +3044,7 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 			false,							// bool						coarseReconstruction;
 			false,							// bool						imagelessFramebuffer;
 			false,							// bool						useMemoryAccess;
+			false,							// bool						useMaintenance5;
 			1,								// deUint32					samplersCount;
 			2,								// deUint32					viewCount;
 			false,							// bool						makeCopy;

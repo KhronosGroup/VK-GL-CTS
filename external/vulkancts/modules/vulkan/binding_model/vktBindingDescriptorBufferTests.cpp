@@ -284,6 +284,7 @@ struct TestParams
 	VkQueueFlagBits				queue;				// which queue to use for the access
 	deUint32					bufferBindingCount;	// number of buffer bindings to create
 	deUint32					setsPerBuffer;		// how may sets to put in one buffer binding
+	bool						useMaintenance5;	// should we use VkPipelineCreateFlagBits2KHR
 
 	// Basic, null descriptor, or capture/replay test
 	VkDescriptorType			descriptor;			// descriptor type under test
@@ -2033,6 +2034,8 @@ void DescriptorBufferTestCase::checkSupport (Context& context) const
 
 	context.requireDeviceFunctionality("VK_KHR_buffer_device_address");
 	context.requireDeviceFunctionality("VK_KHR_maintenance4");
+	if (m_params.useMaintenance5)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
 
 	// Optional
 
@@ -2920,9 +2923,18 @@ void DescriptorBufferTestInstance::createDescriptorBuffers()
 				m_descriptorBuffers.emplace_back(new BufferAlloc());
 				auto& bufferAlloc = *m_descriptorBuffers.back();
 
-				bufferAlloc.buffer = vk::createBuffer(*m_deviceInterface, *m_device, &bufferCreateInfo);
 				bufferAlloc.size = bufferCreateInfo.size;
 				bufferAlloc.usage = bufferCreateInfo.usage;
+
+				vk::VkBufferUsageFlags2CreateInfoKHR bufferUsageFlags2 = initVulkanStructure();;
+				if (m_params.useMaintenance5)
+				{
+					bufferUsageFlags2.usage = (VkBufferUsageFlagBits2KHR)currentBuffer.usage;
+					bufferCreateInfo.pNext = &bufferUsageFlags2;
+					bufferCreateInfo.usage = 0;
+				}
+
+				bufferAlloc.buffer = vk::createBuffer(*m_deviceInterface, *m_device, &bufferCreateInfo);
 
 				auto bufferMemReqs = getBufferMemoryRequirements(*m_deviceInterface, *m_device, *bufferAlloc.buffer);
 				bool useStagedUpload = false;	// write directly to device-local memory, if possible
@@ -2963,7 +2975,7 @@ void DescriptorBufferTestInstance::createDescriptorBuffers()
 						bufferAlloc.buffer = Move<VkBuffer>();
 						bufferAlloc.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
-						bufferCreateInfo.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+						bufferCreateInfo.usage = bufferAlloc.usage;
 
 						bufferAlloc.buffer = vk::createBuffer(*m_deviceInterface, *m_device, &bufferCreateInfo);
 
@@ -4636,16 +4648,37 @@ tcu::TestStatus	DescriptorBufferTestInstance::iterate()
 	if (m_params.isCompute())
 	{
 		const auto					shaderModule		= createShaderModule(vk, *m_device, getShaderBinary(VK_SHADER_STAGE_COMPUTE_BIT), 0u);
-		const VkSpecializationInfo* pSpecializationInfo = nullptr;
 
-		m_pipeline = makeComputePipeline(
-			vk,
-			*m_device,
-			*m_pipelineLayout,
-			VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT,
-			*shaderModule,
-			(VkPipelineShaderStageCreateFlags)0,
-			pSpecializationInfo);
+		const VkPipelineShaderStageCreateInfo pipelineShaderStageParams
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
+			nullptr,												// const void*							pNext;
+			0u,														// VkPipelineShaderStageCreateFlags		flags;
+			VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits				stage;
+			*shaderModule,											// VkShaderModule						module;
+			"main",													// const char*							pName;
+			nullptr,												// const VkSpecializationInfo*			pSpecializationInfo;
+		};
+		VkComputePipelineCreateInfo pipelineCreateInfo
+		{
+			VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,		// VkStructureType					sType;
+			nullptr,											// const void*						pNext;
+			VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT,		// VkPipelineCreateFlags			flags;
+			pipelineShaderStageParams,							// VkPipelineShaderStageCreateInfo	stage;
+			* m_pipelineLayout,									// VkPipelineLayout					layout;
+			DE_NULL,											// VkPipeline						basePipelineHandle;
+			0,													// deInt32							basePipelineIndex;
+		};
+
+		vk::VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = vk::initVulkanStructure();
+		if (m_params.useMaintenance5)
+		{
+			pipelineFlags2CreateInfo.flags = VK_PIPELINE_CREATE_2_DESCRIPTOR_BUFFER_BIT_KHR;
+			pipelineCreateInfo.pNext = &pipelineFlags2CreateInfo;
+			pipelineCreateInfo.flags = 0;
+		}
+
+		m_pipeline = createComputePipeline(vk, *m_device, DE_NULL, &pipelineCreateInfo);
 	}
 	else if (m_params.isRayTracing())
 	{
@@ -5206,6 +5239,13 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 			VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,
 		};
 
+		TestParams params {};
+		params.variant				= TestVariant::SINGLE;
+		params.subcase				= SubCase::NONE;
+		params.bufferBindingCount	= 1;
+		params.setsPerBuffer		= 1;
+		params.useMaintenance5		= false;
+
 		for (auto pQueue = choiceQueues; pQueue < DE_ARRAY_END(choiceQueues); ++pQueue)
 		for (auto pStage = choiceStages; pStage < DE_ARRAY_END(choiceStages); ++pStage)
 		for (auto pDescriptor = choiceDescriptors; pDescriptor < DE_ARRAY_END(choiceDescriptors); ++pDescriptor)
@@ -5222,18 +5262,19 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 				continue;
 			}
 
-			TestParams params {};
-			params.variant				= TestVariant::SINGLE;
-			params.subcase				= SubCase::NONE;
-			params.stage				= *pStage;
-			params.queue				= *pQueue;
-			params.descriptor			= *pDescriptor;
-			params.bufferBindingCount	= 1;
-			params.setsPerBuffer		= 1;
+			params.stage		= *pStage;
+			params.queue		= *pQueue;
+			params.descriptor	= *pDescriptor;
 
 			subGroup->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), "", params));
 		}
 
+		params.stage			= VK_SHADER_STAGE_COMPUTE_BIT;
+		params.queue			= VK_QUEUE_COMPUTE_BIT;
+		params.descriptor		= VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		params.useMaintenance5	= true;
+
+		subGroup->addChild(new DescriptorBufferTestCase(testCtx, "compute_maintenance5", "", params));
 		topGroup->addChild(subGroup.release());
 	}
 
@@ -5284,6 +5325,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 			params.resourceBufferBindingCount	= pOptions->bufferBindingCount;
 			params.setsPerBuffer				= pOptions->setsPerBuffer;
 			params.descriptor					= VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR; // Optional, will be tested if supported
+			params.useMaintenance5				= false;
 
 			subGroup->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), "", params));
 
@@ -5351,6 +5393,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 			params.bufferBindingCount		  = pOptions->samplerBufferBindingCount + pOptions->resourceBufferBindingCount;
 			params.setsPerBuffer			  = 1;
 			params.descriptor				  = VK_DESCRIPTOR_TYPE_MAX_ENUM;
+			params.useMaintenance5			  = false;
 
 			subGroup->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), "", params));
 		}
@@ -5404,6 +5447,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 			params.embeddedImmutableSamplerBufferBindingCount	= pOptions->bufferBindingCount;
 			params.embeddedImmutableSamplersPerBuffer			= pOptions->samplersPerBuffer;
 			params.descriptor									= VK_DESCRIPTOR_TYPE_MAX_ENUM;
+			params.useMaintenance5								= false;
 
 			subGroup->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), "", params));
 		}
@@ -5458,6 +5502,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 			params.setsPerBuffer				= 1;
 			params.pushDescriptorSetIndex		= pOptions->pushDescriptorSetIndex;
 			params.descriptor					= VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR; // Optional, will be tested if supported
+			params.useMaintenance5				= false;
 
 			subGroupPush->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupPushHash), "", params));
 
@@ -5522,6 +5567,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 			params.queue				= *pQueue;
 			params.bufferBindingCount	= 1;
 			params.setsPerBuffer		= 1;
+			params.useMaintenance5		= false;
 
 			subGroupBuffer->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupBufferHash), "", params));
 
@@ -5589,6 +5635,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 			params.descriptor			= *pDescriptor;
 			params.bufferBindingCount	= 1;
 			params.setsPerBuffer		= 1;
+			params.useMaintenance5		= false;
 
 			subGroup->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), "", params));
 

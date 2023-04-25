@@ -109,6 +109,7 @@ struct TestParams
 	deUint32				mode; // Special index value if useSpecialIndex, 2 or 4 for number of states otherwise
 	deUint32				seed;
 	CopyType				copyType;
+	bool					useMaintenance5;
 };
 
 static constexpr deUint32 kNumThreadsAtOnce = 1024;
@@ -150,6 +151,9 @@ void OpacityMicromapCase::checkSupport (Context& context) const
 	context.requireDeviceFunctionality("VK_KHR_ray_query");
 	context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
 	context.requireDeviceFunctionality("VK_EXT_opacity_micromap");
+
+	if (m_params.useMaintenance5)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
 
 	const VkPhysicalDeviceRayQueryFeaturesKHR& rayQueryFeaturesKHR = context.getRayQueryFeatures();
 	if (rayQueryFeaturesKHR.rayQuery == DE_FALSE)
@@ -479,7 +483,8 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface& vk,
 		1.0f														//  float									lineWidth
 	};
 
-	return makeGraphicsPipeline(vk,									// const DeviceInterface&							vk
+	return makeGraphicsPipeline(
+		vk,									// const DeviceInterface&							vk
 		device,								// const VkDevice									device
 		pipelineLayout,						// const VkPipelineLayout							pipelineLayout
 		vertexModule,						// const VkShaderModule								vertexShaderModule
@@ -493,7 +498,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface& vk,
 		&inputAssemblyStateCreateInfo,		// const VkPipelineInputAssemblyStateCreateInfo*	inputAssemblyStateCreateInfo
 		DE_NULL,							// const VkPipelineTessellationStateCreateInfo*		tessStateCreateInfo
 		&viewportStateCreateInfo,			// const VkPipelineViewportStateCreateInfo*			viewportStateCreateInfo
-		&rasterizationStateCreateInfo);	// const VkPipelineRasterizationStateCreateInfo*	rasterizationStateCreateInfo
+		&rasterizationStateCreateInfo);		// const VkPipelineRasterizationStateCreateInfo*	rasterizationStateCreateInfo
 }
 
 tcu::TestStatus OpacityMicromapInstance::iterate (void)
@@ -530,9 +535,17 @@ tcu::TestStatus OpacityMicromapInstance::iterate (void)
 	// Build a micromap (ignore infrastructure for now)
 	// Create the buffer with the mask and index data
 	// Allocate a fairly conservative bound for now
+	VkBufferUsageFlags2CreateInfoKHR bufferUsageFlags2 = initVulkanStructure();;
 	const auto micromapDataBufferSize = static_cast<VkDeviceSize>(1024 + opacityMicromapBytes);
-	const auto micromapDataBufferCreateInfo = makeBufferCreateInfo(micromapDataBufferSize,
+	auto micromapDataBufferCreateInfo = makeBufferCreateInfo(micromapDataBufferSize,
 		VK_BUFFER_USAGE_MICROMAP_BUILD_INPUT_READ_ONLY_BIT_EXT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+	if (m_params.useMaintenance5)
+	{
+		bufferUsageFlags2.usage = (VkBufferUsageFlagBits2KHR)micromapDataBufferCreateInfo.usage;
+		micromapDataBufferCreateInfo.pNext = &bufferUsageFlags2;
+		micromapDataBufferCreateInfo.usage = 0;
+	}
+
 	BufferWithMemory micromapDataBuffer(vkd, device, alloc, micromapDataBufferCreateInfo, MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
 	auto& micromapDataBufferAlloc = micromapDataBuffer.getAllocation();
 	void* micromapDataBufferData = micromapDataBufferAlloc.getHostPtr();
@@ -603,8 +616,14 @@ tcu::TestStatus OpacityMicromapInstance::iterate (void)
 		VK_BUFFER_USAGE_MICROMAP_STORAGE_BIT_EXT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
 	BufferWithMemory micromapBackingBuffer(vkd, device, alloc, micromapBackingBufferCreateInfo, MemoryRequirement::Local | MemoryRequirement::DeviceAddress);
 
-	const auto micromapScratchBufferCreateInfo = makeBufferCreateInfo(sizeInfo.buildScratchSize,
+	auto micromapScratchBufferCreateInfo = makeBufferCreateInfo(sizeInfo.buildScratchSize,
 		VK_BUFFER_USAGE_MICROMAP_STORAGE_BIT_EXT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+	if (m_params.useMaintenance5)
+	{
+		bufferUsageFlags2.usage = (VkBufferUsageFlagBits2KHR)micromapScratchBufferCreateInfo.usage;
+		micromapScratchBufferCreateInfo.pNext = &bufferUsageFlags2;
+		micromapScratchBufferCreateInfo.usage = 0;
+	}
 	BufferWithMemory micromapScratchBuffer(vkd, device, alloc, micromapScratchBufferCreateInfo, MemoryRequirement::Local | MemoryRequirement::DeviceAddress);
 
 	de::MovePtr<BufferWithMemory> copyMicromapBackingBuffer;
@@ -740,7 +759,13 @@ tcu::TestStatus OpacityMicromapInstance::iterate (void)
 
 	// SSBO buffer for origins.
 	const auto originsBufferSize		= static_cast<VkDeviceSize>(sizeof(tcu::Vec4) * numRays);
-	const auto originsBufferInfo		= makeBufferCreateInfo(originsBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	auto originsBufferInfo				= makeBufferCreateInfo(originsBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	if (m_params.useMaintenance5)
+	{
+		bufferUsageFlags2.usage = (VkBufferUsageFlagBits2KHR)originsBufferInfo.usage;
+		originsBufferInfo.pNext = &bufferUsageFlags2;
+		originsBufferInfo.usage = 0;
+	}
 	BufferWithMemory originsBuffer	(vkd, device, alloc, originsBufferInfo, MemoryRequirement::HostVisible);
 	auto& originsBufferAlloc			= originsBuffer.getAllocation();
 	void* originsBufferData				= originsBufferAlloc.getHostPtr();
@@ -904,6 +929,8 @@ tcu::TestStatus OpacityMicromapInstance::iterate (void)
 		{
 			const auto rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();
 			rayTracingPipeline->setCreateFlags(VK_PIPELINE_CREATE_RAY_TRACING_OPACITY_MICROMAP_BIT_EXT);
+			if (m_params.useMaintenance5)
+				rayTracingPipeline->setCreateFlags2(VK_PIPELINE_CREATE_2_RAY_TRACING_OPACITY_MICROMAP_BIT_KHR);
 			rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR, rgenModule, 0);
 
 			pipeline = rayTracingPipeline->createPipeline(vkd, device, pipelineLayout.get());
@@ -1062,6 +1089,7 @@ void addBasicTests(tcu::TestCaseGroup* group)
 							~specialIndex,
 							seed++,
 							CT_NONE,
+							false,
 						};
 
 						std::stringstream css;
@@ -1096,6 +1124,7 @@ void addBasicTests(tcu::TestCaseGroup* group)
 								modes[modeNdx].mode,
 								seed++,
 								CT_NONE,
+								false,
 							};
 
 							std::stringstream css;
@@ -1150,6 +1179,7 @@ void addCopyTests(tcu::TestCaseGroup* group)
 					modes[modeNdx].mode,
 					seed++,
 					(CopyType)copyTypeNdx,
+					false,
 				};
 
 				std::stringstream css;
@@ -1160,6 +1190,24 @@ void addCopyTests(tcu::TestCaseGroup* group)
 			copyTypeGroup->addChild(modeGroup.release());
 		}
 		group->addChild(copyTypeGroup.release());
+	}
+
+	{
+		TestParams testParams
+		{
+			SST_COMPUTE_SHADER,
+			SSP_COMPUTE_PIPELINE,
+			false,
+			0,
+			0,
+			2,
+			1,
+			CT_FIRST_ACTIVE,
+			true,
+		};
+		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(group->getTestContext(), "misc", ""));
+		miscGroup->addChild(new OpacityMicromapCase(testCtx, "maintenance5", "", testParams));
+		group->addChild(miscGroup.release());
 	}
 }
 

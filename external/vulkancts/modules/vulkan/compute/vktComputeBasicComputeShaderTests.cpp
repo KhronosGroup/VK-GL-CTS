@@ -2468,9 +2468,11 @@ public:
 											const deUint32		numValues,
 											const tcu::IVec3&	localsize,
 											const tcu::IVec3&	worksize,
-											const tcu::IVec3&	splitsize);
+											const tcu::IVec3&	splitsize,
+											const bool			useMaintenance5);
 
 	void				initPrograms		(SourceCollections& sourceCollections) const;
+	void				checkSupport		(Context&			context) const;
 	TestInstance*		createInstance		(Context&			context) const;
 
 private:
@@ -2478,6 +2480,7 @@ private:
 	const tcu::IVec3				m_localSize;
 	const tcu::IVec3				m_workSize;
 	const tcu::IVec3				m_splitSize;
+	const bool						m_useMaintenance5;
 };
 
 class DispatchBaseTestInstance : public ComputeTestInstance
@@ -2487,7 +2490,8 @@ public:
 																const deUint32		numValues,
 																const tcu::IVec3&	localsize,
 																const tcu::IVec3&	worksize,
-																const tcu::IVec3&	splitsize);
+																const tcu::IVec3&	splitsize,
+																const bool			useMaintenance5);
 
 	bool							isInputVectorValid			(const tcu::IVec3& small, const tcu::IVec3& big);
 	tcu::TestStatus					iterate						(void);
@@ -2497,6 +2501,7 @@ private:
 	const tcu::IVec3				m_localSize;
 	const tcu::IVec3				m_workSize;
 	const tcu::IVec3				m_splitWorkSize;
+	const bool						m_useMaintenance5;
 };
 
 DispatchBaseTest::DispatchBaseTest (tcu::TestContext&	testCtx,
@@ -2505,12 +2510,14 @@ DispatchBaseTest::DispatchBaseTest (tcu::TestContext&	testCtx,
 									const deUint32		numValues,
 									const tcu::IVec3&	localsize,
 									const tcu::IVec3&	worksize,
-									const tcu::IVec3&	splitsize)
-	: TestCase		(testCtx, name, description)
-	, m_numValues	(numValues)
-	, m_localSize	(localsize)
-	, m_workSize	(worksize)
-	, m_splitSize	(splitsize)
+									const tcu::IVec3&	splitsize,
+									const bool			useMaintenance5)
+	: TestCase			(testCtx, name, description)
+	, m_numValues		(numValues)
+	, m_localSize		(localsize)
+	, m_workSize		(worksize)
+	, m_splitSize		(splitsize)
+	, m_useMaintenance5	(useMaintenance5)
 {
 }
 
@@ -2540,22 +2547,30 @@ void DispatchBaseTest::initPrograms (SourceCollections& sourceCollections) const
 	sourceCollections.glslSources.add("comp") << glu::ComputeSource(src.str());
 }
 
+void DispatchBaseTest::checkSupport(Context& context) const
+{
+	if (m_useMaintenance5)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+}
+
 TestInstance* DispatchBaseTest::createInstance (Context& context) const
 {
-	return new DispatchBaseTestInstance(context, m_numValues, m_localSize, m_workSize, m_splitSize);
+	return new DispatchBaseTestInstance(context, m_numValues, m_localSize, m_workSize, m_splitSize, m_useMaintenance5);
 }
 
 DispatchBaseTestInstance::DispatchBaseTestInstance (Context& context,
 													const deUint32		numValues,
 													const tcu::IVec3&	localsize,
 													const tcu::IVec3&	worksize,
-													const tcu::IVec3&	splitsize)
+													const tcu::IVec3&	splitsize,
+													const bool			useMaintenance5)
 
 	: ComputeTestInstance	(context)
 	, m_numValues			(numValues)
 	, m_localSize			(localsize)
 	, m_workSize			(worksize)
 	, m_splitWorkSize		(splitsize)
+	, m_useMaintenance5		(useMaintenance5)
 {
 	// For easy work distribution across physical devices:
 	// WorkSize should be a multiple of SplitWorkSize only in the X component
@@ -2654,7 +2669,41 @@ tcu::TestStatus DispatchBaseTestInstance::iterate (void)
 
 	const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0u));
 	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
-	const Unique<VkPipeline> pipeline(makeComputePipeline(vk, device, *pipelineLayout, static_cast<VkPipelineCreateFlags>(VK_PIPELINE_CREATE_DISPATCH_BASE), *shaderModule, static_cast<VkPipelineShaderStageCreateFlags>(0u)));
+
+	const VkPipelineShaderStageCreateInfo pipelineShaderStageParams
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
+		nullptr,												// const void*							pNext;
+		static_cast<VkPipelineShaderStageCreateFlags>(0u),		// VkPipelineShaderStageCreateFlags		flags;
+		VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits				stage;
+		*shaderModule,											// VkShaderModule						module;
+		"main",													// const char*							pName;
+		nullptr,												// const VkSpecializationInfo*			pSpecializationInfo;
+	};
+	VkComputePipelineCreateInfo pipelineCreateInfo
+	{
+		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,		// VkStructureType					sType;
+		nullptr,											// const void*						pNext;
+		VK_PIPELINE_CREATE_DISPATCH_BASE,					// VkPipelineCreateFlags			flags;
+		pipelineShaderStageParams,							// VkPipelineShaderStageCreateInfo	stage;
+		*pipelineLayout,									// VkPipelineLayout					layout;
+		DE_NULL,											// VkPipeline						basePipelineHandle;
+		0,													// deInt32							basePipelineIndex;
+	};
+
+#ifndef CTS_USES_VULKANSC
+	VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
+	if (m_useMaintenance5)
+	{
+		pipelineCreateInfo.pNext = &pipelineFlags2CreateInfo;
+		pipelineCreateInfo.flags = 0;
+		pipelineFlags2CreateInfo.flags = VK_PIPELINE_CREATE_2_DISPATCH_BASE_BIT_KHR;
+	}
+#else
+	DE_UNREF(m_useMaintenance5);
+#endif // CTS_USES_VULKANSC
+
+	const Unique<VkPipeline> pipeline(createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo));
 
 	const VkBufferMemoryBarrier hostWriteBarrier = makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, *buffer, 0ull, bufferSizeBytes);
 	const VkBufferMemoryBarrier hostUniformWriteBarrier = makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_UNIFORM_READ_BIT, *uniformBuffer, 0ull, uniformBufferSizeBytes);
@@ -4180,8 +4229,11 @@ tcu::TestCaseGroup* createBasicDeviceGroupComputeShaderTests (tcu::TestContext& 
 {
 	de::MovePtr<tcu::TestCaseGroup> deviceGroupComputeTests(new tcu::TestCaseGroup(testCtx, "device_group", "Basic device group compute tests"));
 
-	deviceGroupComputeTests->addChild(new DispatchBaseTest(testCtx,	"dispatch_base",	"Compute shader with base groups",				32768,	tcu::IVec3(4,2,4),	tcu::IVec3(16,8,8),	tcu::IVec3(4,8,8)));
-	deviceGroupComputeTests->addChild(new DeviceIndexTest(testCtx,	"device_index",		"Compute shader using deviceIndex in SPIRV",	96,		tcu::IVec3(3,2,1),	tcu::IVec3(2,4,1)));
+	deviceGroupComputeTests->addChild(new DispatchBaseTest(testCtx, "dispatch_base",				"Compute shader with base groups",			32768, tcu::IVec3(4, 2, 4), tcu::IVec3(16, 8, 8), tcu::IVec3(4, 8, 8), false));
+#ifndef CTS_USES_VULKANSC
+	deviceGroupComputeTests->addChild(new DispatchBaseTest(testCtx, "dispatch_base_maintenance5",	"Compute shader with base groups",			32768, tcu::IVec3(4, 2, 4), tcu::IVec3(16, 8, 8), tcu::IVec3(4, 8, 8), true));
+#endif
+	deviceGroupComputeTests->addChild(new DeviceIndexTest(testCtx,	"device_index",					"Compute shader using deviceIndex in SPIRV",   96, tcu::IVec3(3,2,1),	tcu::IVec3(2,4,1)));
 
 	return deviceGroupComputeTests.release();
 

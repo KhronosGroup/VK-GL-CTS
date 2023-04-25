@@ -299,7 +299,8 @@ public:
 																					 ImageSamplingInstanceParams	params,
 																					 bool							useImageAsColorOrDSAttachment_,
 																					 bool							useDifferentAreasSampleWrite_,
-																					 bool							interleaveReadWriteComponents_);
+																					 bool							interleaveReadWriteComponents_,
+																					 bool							useMaintenance5_);
 
 	virtual						~AttachmentFeedbackLoopLayoutImageSamplingInstance	(void);
 
@@ -313,6 +314,7 @@ protected:
 	const bool						m_useImageAsColorOrDSAttachment;
 	const bool						m_useDifferentAreasSampleWrite;
 	const bool						m_interleaveReadWriteComponents;
+	const bool						m_useMaintenance5;
 };
 
 class AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance : public AttachmentFeedbackLoopLayoutImageSamplingInstance
@@ -322,7 +324,8 @@ public:
 																								 ImageSamplingInstanceParams	params,
 																								 bool							useImageAsColorOrDSAttachment_,
 																								 bool							useDifferentAreasSampleWrite_,
-																								 bool							interleaveReadWriteComponents_);
+																								 bool							interleaveReadWriteComponents_,
+																								 bool							useMaintenance5_);
 
 	virtual						~AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance	(void);
 
@@ -343,12 +346,14 @@ AttachmentFeedbackLoopLayoutImageSamplingInstance::AttachmentFeedbackLoopLayoutI
 																									  ImageSamplingInstanceParams	params,
 																									  bool							useImageAsColorOrDSAttachment_,
 																									  bool							useDifferentAreasSampleWrite_,
-																									  bool							interleaveReadWriteComponents_)
+																									  bool							interleaveReadWriteComponents_,
+																									  bool							useMaintenance5_)
 	: ImageSamplingInstance				(context, params)
 	, m_params							(params)
 	, m_useImageAsColorOrDSAttachment	(useImageAsColorOrDSAttachment_)
 	, m_useDifferentAreasSampleWrite	(useDifferentAreasSampleWrite_)
 	, m_interleaveReadWriteComponents	(interleaveReadWriteComponents_)
+	, m_useMaintenance5					(useMaintenance5_)
 {
 }
 
@@ -758,6 +763,9 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup (void)
 			{ 0.0f, 0.0f, 0.0f, 0.0f }									// float										blendConstants[4];
 		};
 
+		if (m_useMaintenance5)
+			m_graphicsPipeline.setPipelineCreateFlags2(translateCreateFlag(m_params.pipelineCreateFlags));
+
 		m_graphicsPipeline.setMonolithicPipelineLayout(*m_fragmentStatePipelineLayout)
 						  .setDefaultDepthStencilState()
 						  .setDefaultRasterizationState()
@@ -878,8 +886,10 @@ AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::AttachmentFeedbac
 																															  ImageSamplingInstanceParams	params,
 																															  bool							useImageAsColorOrDSAttachment_,
 																															  bool							useDifferentAreasSampleWrite_,
-																															  bool							interleaveReadWriteComponents_)
-	: AttachmentFeedbackLoopLayoutImageSamplingInstance		(context, params, useImageAsColorOrDSAttachment_, useDifferentAreasSampleWrite_, interleaveReadWriteComponents_)
+																															  bool							interleaveReadWriteComponents_,
+																															  bool							useMaintenance5_)
+
+	: AttachmentFeedbackLoopLayoutImageSamplingInstance		(context, params, useImageAsColorOrDSAttachment_, useDifferentAreasSampleWrite_, interleaveReadWriteComponents_, useMaintenance5_)
 	, m_separateStencilUsage								(params.separateStencilUsage)
 {
 }
@@ -1282,6 +1292,9 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup (void)
 			1.0f,																				// float									maxDepthBounds;
 		};
 
+		if (m_useMaintenance5)
+			m_graphicsPipeline.setPipelineCreateFlags2(translateCreateFlag(m_params.pipelineCreateFlags));
+
 		m_graphicsPipeline.setMonolithicPipelineLayout(*m_fragmentStatePipelineLayout)
 						  .setDefaultDepthStencilState()
 						  .setDefaultRasterizationState()
@@ -1624,7 +1637,8 @@ public:
 																						 float							samplerLod,
 																						 TestMode						testMode,
 																						 ImageAspectTestMode			imageAspectTestMode,
-																						 bool							interleaveReadWriteComponents);
+																						 bool							interleaveReadWriteComponents,
+																						 bool							useMaintenance5);
 	virtual								~AttachmentFeedbackLoopLayoutSamplerTest		(void) {}
 
 	virtual ImageSamplingInstanceParams	getImageSamplingInstanceParams	(SamplerViewType	imageViewType,
@@ -1660,6 +1674,7 @@ protected:
 	TestMode							m_testMode;
 	ImageAspectTestMode					m_imageAspectTestMode;
 	bool								m_interleaveReadWriteComponents;
+	bool								m_useMaintenance5;
 };
 
 // AttachmentFeedbackLoopLayoutSamplerTest
@@ -1675,17 +1690,19 @@ AttachmentFeedbackLoopLayoutSamplerTest::AttachmentFeedbackLoopLayoutSamplerTest
 																					 float							samplerLod,
 																					 TestMode						testMode,
 																					 ImageAspectTestMode			imageAspectTestMode,
-																					 bool							interleaveReadWriteComponents = false)
-	: vkt::TestCase					(testContext, name, description)
-	, m_pipelineConstructionType	(pipelineConstructionType)
-	, m_imageViewType				(imageViewType)
-	, m_imageFormat					(imageFormat)
-	, m_imageSize					(imageSize)
-	, m_imageDescriptorType			(imageDescriptorType)
-	, m_samplerLod					(samplerLod)
-	, m_testMode					(testMode)
-	, m_imageAspectTestMode			(imageAspectTestMode)
+																					 bool							interleaveReadWriteComponents = false,
+																					 bool							useMaintenance5 = false)
+	: vkt::TestCase						(testContext, name, description)
+	, m_pipelineConstructionType		(pipelineConstructionType)
+	, m_imageViewType					(imageViewType)
+	, m_imageFormat						(imageFormat)
+	, m_imageSize						(imageSize)
+	, m_imageDescriptorType				(imageDescriptorType)
+	, m_samplerLod						(samplerLod)
+	, m_testMode						(testMode)
+	, m_imageAspectTestMode				(imageAspectTestMode)
 	, m_interleaveReadWriteComponents	(interleaveReadWriteComponents)
+	, m_useMaintenance5					(useMaintenance5)
 {
 }
 
@@ -1717,7 +1734,7 @@ ImageSamplingInstanceParams AttachmentFeedbackLoopLayoutSamplerTest::getImageSam
 			imageAspect |= VK_IMAGE_ASPECT_DEPTH_BIT;
 			pipelineCreateFlags = VK_PIPELINE_CREATE_DEPTH_STENCIL_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT;
 		}
-	    if (m_imageAspectTestMode == IMAGE_ASPECT_TEST_STENCIL)
+		if (m_imageAspectTestMode == IMAGE_ASPECT_TEST_STENCIL)
 		{
 			DE_ASSERT(tcu::hasStencilComponent(mapVkFormat(imageFormat).order));
 			imageAspect |= VK_IMAGE_ASPECT_STENCIL_BIT;
@@ -1751,6 +1768,8 @@ ImageSamplingInstanceParams AttachmentFeedbackLoopLayoutSamplerTest::getImageSam
 void AttachmentFeedbackLoopLayoutSamplerTest::checkSupport (Context& context) const
 {
 	context.requireDeviceFunctionality("VK_EXT_attachment_feedback_loop_layout");
+	if (m_useMaintenance5)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
 
 	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 
@@ -1773,9 +1792,8 @@ void AttachmentFeedbackLoopLayoutSamplerTest::checkSupport (Context& context) co
 		throw tcu::NotSupportedError("attachmentFeedbackLoopLayout not supported");
 	}
 
-	checkSupportImageSamplingInstance(context, getImageSamplingInstanceParams(m_imageViewType, m_imageFormat, m_imageSize, m_imageDescriptorType, m_samplerLod));
-
 	ImageSamplingInstanceParams	params = getImageSamplingInstanceParams(m_imageViewType, m_imageFormat, m_imageSize, m_imageDescriptorType, m_samplerLod);
+	checkSupportImageSamplingInstance(context, params);
 
 	bool useImageAsColorOrDSAttachment	= m_testMode >= TEST_MODE_READ_WRITE_SAME_PIXEL;
 	if (useImageAsColorOrDSAttachment)
@@ -2060,8 +2078,8 @@ TestInstance* AttachmentFeedbackLoopLayoutSamplerTest::createInstance (Context& 
 	const bool useDifferentAreasSampleWrite		= m_testMode == TEST_MODE_READ_WRITE_DIFFERENT_AREAS;
 
 	if (m_imageAspectTestMode != IMAGE_ASPECT_TEST_COLOR && useImageAsColorOrDSAttachment)
-		return new AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance(context, getImageSamplingInstanceParams(m_imageViewType, m_imageFormat, m_imageSize, m_imageDescriptorType, m_samplerLod), useImageAsColorOrDSAttachment, useDifferentAreasSampleWrite, m_interleaveReadWriteComponents);
-	return new AttachmentFeedbackLoopLayoutImageSamplingInstance(context, getImageSamplingInstanceParams(m_imageViewType, m_imageFormat, m_imageSize, m_imageDescriptorType, m_samplerLod), useImageAsColorOrDSAttachment, useDifferentAreasSampleWrite, m_interleaveReadWriteComponents);
+		return new AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance(context, getImageSamplingInstanceParams(m_imageViewType, m_imageFormat, m_imageSize, m_imageDescriptorType, m_samplerLod), useImageAsColorOrDSAttachment, useDifferentAreasSampleWrite, m_interleaveReadWriteComponents, m_useMaintenance5);
+	return new AttachmentFeedbackLoopLayoutImageSamplingInstance(context, getImageSamplingInstanceParams(m_imageViewType, m_imageFormat, m_imageSize, m_imageDescriptorType, m_samplerLod), useImageAsColorOrDSAttachment, useDifferentAreasSampleWrite, m_interleaveReadWriteComponents, m_useMaintenance5);
 }
 
 tcu::UVec2 AttachmentFeedbackLoopLayoutSamplerTest::getRenderSize (SamplerViewType viewType) const
@@ -2435,6 +2453,14 @@ tcu::TestCaseGroup* createAttachmentFeedbackLoopLayoutSamplerTests (tcu::TestCon
 		}
 		imageDescriptorTypeGroup->addChild(imageTypeTests.release());
 		samplingTypeTests->addChild(imageDescriptorTypeGroup.release());
+	}
+
+	if (pipelineConstructionType == PipelineConstructionType::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+	{
+		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc", ""));
+		miscGroup->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(testCtx, pipelineConstructionType, "maintenance5_color_attachment", "", VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, outputImageSize, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0.0f, TEST_MODE_READ_ONLY, IMAGE_ASPECT_TEST_COLOR, false, true));
+		miscGroup->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(testCtx, pipelineConstructionType, "maintenance5_ds_attachment", "", VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_D16_UNORM, outputImageSize, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0.0f, TEST_MODE_READ_ONLY, IMAGE_ASPECT_TEST_DEPTH, false, true));
+		samplingTypeTests->addChild(miscGroup.release());
 	}
 
 	return samplingTypeTests.release();
