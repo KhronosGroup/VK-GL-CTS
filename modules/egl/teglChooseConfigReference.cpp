@@ -243,6 +243,7 @@ public:
 	{
 		static const SurfaceConfig::CompareFunc compareFuncs[] =
 		{
+			SurfaceConfig::compareAttributeSmaller<EGL_CONFIG_SELECT_GROUP_EXT>,
 			SurfaceConfig::compareCaveat,
 			SurfaceConfig::compareColorComponentType,
 			SurfaceConfig::compareColorBufferType,
@@ -326,6 +327,9 @@ public:
 
 		// EGL_EXT_pixel_format_float
 		rules[EGL_COLOR_COMPONENT_TYPE_EXT]	= AttribRule(EGL_COLOR_COMPONENT_TYPE_EXT,	EGL_COLOR_COMPONENT_TYPE_FIXED_EXT,		CRITERIA_EXACT,		SORTORDER_SPECIAL);	//	2
+
+		// EGL_EXT_config_select_group
+		rules[EGL_CONFIG_SELECT_GROUP_EXT]	= AttribRule(EGL_CONFIG_SELECT_GROUP_EXT,	EGL_DONT_CARE,		CRITERIA_SPECIAL,		SORTORDER_SMALLER); // 0
 
 		return rules;
 	}

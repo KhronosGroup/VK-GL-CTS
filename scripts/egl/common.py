@@ -68,6 +68,7 @@ EXTENSIONS			= [
 	"EGL_KHR_partial_update",
 	"EGL_KHR_swap_buffers_with_damage",
 	"EGL_KHR_mutable_render_buffer",
+	"EGL_EXT_config_select_group",
 	"EGL_EXT_pixel_format_float",
 	"EGL_KHR_gl_colorspace",
 	"EGL_EXT_gl_colorspace_bt2020_linear",
