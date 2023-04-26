@@ -259,6 +259,7 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 	const deBool							isDedicatedAllocationSupported	= m_context.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation");
 	const deBool							isYcbcrSupported				= m_context.isDeviceFunctionalitySupported("VK_KHR_sampler_ycbcr_conversion");
 	const deBool							isYcbcrExtensionSupported		= m_context.isDeviceFunctionalitySupported("VK_EXT_ycbcr_2plane_444_formats");
+	const deBool							isPvrtcSupported				= m_context.isDeviceFunctionalitySupported("VK_IMG_format_pvrtc");
 	std::vector<int>						optimalFormats;
 	std::vector<int>						linearFormats;
 	std::vector<int>						memoryTypes;
@@ -509,6 +510,9 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 			continue;
 
 		if (isYCbCrExtensionFormat((VkFormat)formatlist[i]) && !isYcbcrExtensionSupported)
+			continue;
+
+		if (isPvrtcFormat((VkFormat)formatlist[i]) && !isPvrtcSupported)
 			continue;
 
 		vk::VkImageFormatProperties imageformatprops;
