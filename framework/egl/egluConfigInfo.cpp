@@ -83,6 +83,9 @@ deInt32 ConfigInfo::getAttribute (deUint32 attribute) const
 		// EGL_ANDROID_recordable
 		case EGL_RECORDABLE_ANDROID:		return recordableAndroid;
 
+		// EGL_EXT_config_select_group
+		case EGL_CONFIG_SELECT_GROUP_EXT:	return groupId;
+
 		default:							TCU_THROW(InternalError, "Unknown attribute");
 	}
 }
@@ -125,7 +128,8 @@ void queryCoreConfigInfo (const Library& egl, EGLDisplay display, EGLConfig conf
 
 void queryExtConfigInfo (const eglw::Library& egl, eglw::EGLDisplay display, eglw::EGLConfig config, ConfigInfo* dst)
 {
-	const std::vector<std::string>	extensions	= getDisplayExtensions(egl, display);
+	const std::vector<std::string>	extensions		= getDisplayExtensions(egl, display);
+	const std::vector<std::string>	clientExtensions	= getClientExtensions(egl);
 
 	if (de::contains(extensions.begin(), extensions.end(), "EGL_EXT_yuv_surface"))
 	{
@@ -154,6 +158,13 @@ void queryExtConfigInfo (const eglw::Library& egl, eglw::EGLDisplay display, egl
 	}
 	else
 		dst->colorComponentType = EGL_COLOR_COMPONENT_TYPE_FIXED_EXT;
+
+	if (de::contains(clientExtensions.begin(), clientExtensions.end(), "EGL_EXT_config_select_group"))
+	{
+		egl.getConfigAttrib(display, config, EGL_CONFIG_SELECT_GROUP_EXT,	(EGLint*)&dst->groupId);
+
+		EGLU_CHECK_MSG(egl, "Failed to query EGL_EXT_config_select_group config attribs");
+	}
 }
 
 } // eglu

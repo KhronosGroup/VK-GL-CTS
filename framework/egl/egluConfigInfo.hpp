@@ -87,6 +87,9 @@ public:
 	// EGL_ANDROID_recordable
 	deUint32		recordableAndroid;
 
+	// EGL_EXT_config_select_group
+	deInt32			groupId;
+
 	ConfigInfo (void)
 		: bufferSize			(0)
 		, redSize				(0)
@@ -127,6 +130,7 @@ public:
 		, yuvPlaneBpp			(EGL_YUV_PLANE_BPP_0_EXT)
 		, colorComponentType	(EGL_NONE)
 		, recordableAndroid		(0)
+		, groupId			(0)
 	{
 	}
 
