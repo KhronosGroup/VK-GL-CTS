@@ -271,6 +271,7 @@ public:
                    const tcu::BVec2 &specifiedLuminanceColors, bool yuvPlaneBppSpecified) const
     {
         static const SurfaceConfig::CompareFunc compareFuncs[] = {
+            SurfaceConfig::compareAttributeSmaller<EGL_CONFIG_SELECT_GROUP_EXT>,
             SurfaceConfig::compareCaveat,
             SurfaceConfig::compareColorComponentType,
             SurfaceConfig::compareColorBufferType,
@@ -373,6 +374,10 @@ public:
         // EGL_ANDROID_recordable
         rules[EGL_RECORDABLE_ANDROID] =
             AttribRule(EGL_RECORDABLE_ANDROID, EGL_DONT_CARE, CRITERIA_EXACT, SORTORDER_NONE);
+
+        // EGL_EXT_config_select_group
+        rules[EGL_CONFIG_SELECT_GROUP_EXT] =
+            AttribRule(EGL_CONFIG_SELECT_GROUP_EXT, EGL_DONT_CARE, CRITERIA_SPECIAL, SORTORDER_SMALLER); // 0
 
         return rules;
     }
