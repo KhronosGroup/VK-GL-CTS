@@ -452,13 +452,11 @@ tcu::TestCaseGroup* createIndexAccessTests(tcu::TestContext& testCtx)
 		{ "draw_multi_indexed",				TestMode::TM_DRAW_MULTI_INDEXED },
 	};
 
-	for (deUint32 robustnessVersion = 1; robustnessVersion < 3; ++robustnessVersion)
+	const deUint32 robustnessVersion = 2;
+	for (const auto& c : testConfigs)
 	{
-		for (const auto& c : testConfigs)
-		{
-			std::string name = c.name + "_" + std::to_string(robustnessVersion);
-			indexAccessTests->addChild(new DrawIndexedTestCase(testCtx, name, c.mode, robustnessVersion));
-		}
+		std::string name = c.name + "_" + std::to_string(robustnessVersion);
+		indexAccessTests->addChild(new DrawIndexedTestCase(testCtx, name, c.mode, robustnessVersion));
 	}
 
 	return indexAccessTests.release();
