@@ -168,6 +168,18 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 #endif // defined(CTS_USES_VULKAN)
 
 #if defined(CTS_USES_VULKAN)
+	vk::VkPhysicalDeviceCooperativeVectorFeaturesNV physicalDeviceCooperativeVectorFeaturesNV;
+	deMemset(&physicalDeviceCooperativeVectorFeaturesNV, 0, sizeof(physicalDeviceCooperativeVectorFeaturesNV));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_cooperative_vector"))
+	{
+		physicalDeviceCooperativeVectorFeaturesNV.sType = getStructureType<VkPhysicalDeviceCooperativeVectorFeaturesNV>();
+		*nextPtr = &physicalDeviceCooperativeVectorFeaturesNV;
+		nextPtr  = &physicalDeviceCooperativeVectorFeaturesNV.pNext;
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceCoverageReductionModeFeaturesNV physicalDeviceCoverageReductionModeFeaturesNV;
 	deMemset(&physicalDeviceCoverageReductionModeFeaturesNV, 0, sizeof(physicalDeviceCoverageReductionModeFeaturesNV));
 
@@ -2848,6 +2860,17 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		if ( ( physicalDeviceCooperativeMatrix2FeaturesNV.cooperativeMatrixWorkgroupScope == VK_FALSE ) && ( physicalDeviceCooperativeMatrix2FeaturesNV.cooperativeMatrixFlexibleDimensions == VK_FALSE ) && ( physicalDeviceCooperativeMatrix2FeaturesNV.cooperativeMatrixReductions == VK_FALSE ) && ( physicalDeviceCooperativeMatrix2FeaturesNV.cooperativeMatrixConversions == VK_FALSE ) && ( physicalDeviceCooperativeMatrix2FeaturesNV.cooperativeMatrixPerElementOperations == VK_FALSE ) && ( physicalDeviceCooperativeMatrix2FeaturesNV.cooperativeMatrixTensorAddressing == VK_FALSE ) && ( physicalDeviceCooperativeMatrix2FeaturesNV.cooperativeMatrixBlockLoads == VK_FALSE ) )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature cooperativeMatrixWorkgroupScope or cooperativeMatrixFlexibleDimensions or cooperativeMatrixReductions or cooperativeMatrixConversions or cooperativeMatrixPerElementOperations or cooperativeMatrixTensorAddressing or cooperativeMatrixBlockLoads not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_NV_cooperative_vector")) )
+	{
+		if ( physicalDeviceCooperativeVectorFeaturesNV.cooperativeVector == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature cooperativeVector not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

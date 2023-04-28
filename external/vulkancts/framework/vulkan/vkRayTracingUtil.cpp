@@ -112,24 +112,26 @@ void checkAccelerationStructureVertexBufferFormat(const vk::InstanceInterface &v
     }
 }
 
-std::string getCommonRayGenerationShader(void)
+std::string getCommonRayGenerationShader(uint32_t set, uint32_t binding)
 {
-    return "#version 460 core\n"
-           "#extension GL_EXT_ray_tracing : require\n"
-           "layout(location = 0) rayPayloadEXT vec3 hitValue;\n"
-           "layout(set = 0, binding = 1) uniform accelerationStructureEXT topLevelAS;\n"
-           "\n"
-           "void main()\n"
-           "{\n"
-           "  uint  rayFlags = 0;\n"
-           "  uint  cullMask = 0xFF;\n"
-           "  float tmin     = 0.0;\n"
-           "  float tmax     = 9.0;\n"
-           "  vec3  origin   = vec3((float(gl_LaunchIDEXT.x) + 0.5f) / float(gl_LaunchSizeEXT.x), "
-           "(float(gl_LaunchIDEXT.y) + 0.5f) / float(gl_LaunchSizeEXT.y), 0.0);\n"
-           "  vec3  direct   = vec3(0.0, 0.0, -1.0);\n"
-           "  traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 0, origin, tmin, direct, tmax, 0);\n"
-           "}\n";
+    return std::string("#version 460 core\n"
+                       "#extension GL_EXT_ray_tracing : require\n"
+                       "layout(location = 0) rayPayloadEXT vec3 hitValue;\n"
+                       "layout(set = ") +
+           std::to_string(set) + std::string(", binding = ") + std::to_string(binding) +
+           std::string(") uniform accelerationStructureEXT topLevelAS;\n"
+                       "\n"
+                       "void main()\n"
+                       "{\n"
+                       "  uint  rayFlags = 0;\n"
+                       "  uint  cullMask = 0xFF;\n"
+                       "  float tmin     = 0.0;\n"
+                       "  float tmax     = 9.0;\n"
+                       "  vec3  origin   = vec3((float(gl_LaunchIDEXT.x) + 0.5f) / float(gl_LaunchSizeEXT.x), "
+                       "(float(gl_LaunchIDEXT.y) + 0.5f) / float(gl_LaunchSizeEXT.y), 0.0);\n"
+                       "  vec3  direct   = vec3(0.0, 0.0, -1.0);\n"
+                       "  traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 0, origin, tmin, direct, tmax, 0);\n"
+                       "}\n");
 }
 
 void bindBuffer(const DeviceInterface &vk, const VkDevice device, VkQueue queue, VkBuffer buffer, VkDeviceMemory memory,

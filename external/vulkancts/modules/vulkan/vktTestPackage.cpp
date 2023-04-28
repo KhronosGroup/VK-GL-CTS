@@ -132,6 +132,7 @@
 #include "vktVideoTests.hpp"
 #include "vktShaderObjectTests.hpp"
 #include "vktDGCTests.hpp"
+#include "vktCooperativeVectorTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -1272,6 +1273,7 @@ void TestPackage::init(void)
 #endif
     addRootChild("shader_object", m_caseListFilter, ShaderObject::createTests);
     addRootChild("dgc", m_caseListFilter, DGC::createTests);
+    addRootChild("cooperative_vector", m_caseListFilter, cooperative_vector::createTests);
 }
 
 void ExperimentalTestPackage::init(void)
@@ -1330,6 +1332,7 @@ void TestPackageSC::init(void)
     // addRootChild("ray_query", m_caseListFilter, RayQuery::createTests);
     addRootChild("fragment_shading_rate", m_caseListFilter, FragmentShadingRate::createTests);
     addChild(sc::createTests(m_testCtx));
+    // addChild(cooperative_vector::createTests (m_testCtx));
 }
 
 #endif // CTS_USES_VULKANSC

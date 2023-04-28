@@ -113,7 +113,7 @@ inline std::string updateRayTracingGLSL(const std::string &str)
     return str;
 }
 
-std::string getCommonRayGenerationShader(void);
+std::string getCommonRayGenerationShader(uint32_t set = 0, uint32_t binding = 1);
 
 // Get lowercase version of the format name with no VK_FORMAT_ prefix.
 std::string getFormatSimpleName(vk::VkFormat format);
