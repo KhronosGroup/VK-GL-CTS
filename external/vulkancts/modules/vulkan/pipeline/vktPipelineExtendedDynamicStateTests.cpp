@@ -2679,7 +2679,7 @@ struct TestConfig
 		if (colorBlendEnableConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_BLEND_ENABLE_EXT);
 		if (colorBlendEquationConfig.dynamicValue)
 		{
-			if (colorBlendBoth)
+			if (colorBlendBoth || nullStaticColorBlendAttPtr)
 			{
 														dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_BLEND_EQUATION_EXT);
 														dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_BLEND_ADVANCED_EXT);
@@ -3139,7 +3139,7 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 		{
 			const auto isAdvanced = m_testConfig.colorBlendEquationConfig.staticValue.isAdvanced();
 
-			if (isAdvanced || m_testConfig.colorBlendBoth)
+			if (isAdvanced || m_testConfig.colorBlendBoth || m_testConfig.nullStaticColorBlendAttPtr)
 			{
 				if (!eds3Features.extendedDynamicState3ColorBlendAdvanced)
 					TCU_THROW(NotSupportedError, "extendedDynamicState3ColorBlendAdvanced not supported");
@@ -4015,7 +4015,7 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 		const auto&	configEq	= testConfig.colorBlendEquationConfig.dynamicValue.get();
 		const auto	isAdvanced	= testConfig.colorBlendEquationConfig.staticValue.isAdvanced();
 
-		if (isAdvanced || testConfig.colorBlendBoth)
+		if (isAdvanced || testConfig.colorBlendBoth || testConfig.nullStaticColorBlendAttPtr)
 		{
 			const vk::VkColorBlendAdvancedEXT equation =
 			{
@@ -4127,6 +4127,7 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 
 	if (testConfig.reprFragTestEnableConfig.dynamicValue)
 		vkd.cmdSetRepresentativeFragmentTestEnableNV(cmdBuffer, makeVkBool32(testConfig.reprFragTestEnableConfig.dynamicValue.get()));
+
 #else
 	DE_ASSERT(false);
 #endif // CTS_USES_VULKANSC
