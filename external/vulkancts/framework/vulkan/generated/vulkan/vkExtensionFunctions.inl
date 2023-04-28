@@ -1371,6 +1371,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_attachment_feedback_loop_dynamic_state")
+	{
+		return;
+	}
 	if (extName == "vulkan_video_codecs_common")
 	{
 		return;
@@ -3002,6 +3006,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_attachment_feedback_loop_dynamic_state")
+	{
+		functions.push_back("vkCmdSetAttachmentFeedbackLoopEnableEXT");
+		return;
+	}
 	if (extName == "vulkan_video_codecs_common")
 	{
 		return;
@@ -3364,4 +3373,5 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_ARM_shader_core_builtins",
 	"VK_EXT_pipeline_library_group_handles",
 	"VK_QCOM_multiview_per_view_render_areas",
+	"VK_EXT_attachment_feedback_loop_dynamic_state",
 };

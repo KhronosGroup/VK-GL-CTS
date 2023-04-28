@@ -3133,6 +3133,18 @@ bool check_VK_EXT_pipeline_library_group_handles(const tcu::UVec2& v, const ExtP
 	return isSupported(vDEP, "VK_KHR_ray_tracing_pipeline") && isSupported(vDEP, "VK_KHR_pipeline_library");
 }
 
+bool check_VK_EXT_attachment_feedback_loop_dynamic_state(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_attachment_feedback_loop_dynamic_state"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2+VK_EXT_attachment_feedback_loop_layout
+	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")) && isSupported(vDEP, "VK_EXT_attachment_feedback_loop_layout");
+}
+
 static const DependencyCheckVect deviceExtensionDependencies
 {
 	std::make_pair("VK_KHR_swapchain",										&check_VK_KHR_swapchain),
@@ -3356,6 +3368,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_mutable_descriptor_type",						&check_VK_EXT_mutable_descriptor_type),
 	std::make_pair("VK_ARM_shader_core_builtins",							&check_VK_ARM_shader_core_builtins),
 	std::make_pair("VK_EXT_pipeline_library_group_handles",					&check_VK_EXT_pipeline_library_group_handles),
+	std::make_pair("VK_EXT_attachment_feedback_loop_dynamic_state",			&check_VK_EXT_attachment_feedback_loop_dynamic_state),
 };
 
 static const std::tuple<deUint32, deUint32, deUint32, deUint32>	releasedApiVersions[]	=
@@ -3692,4 +3705,5 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_ARM_shader_core_builtins"),
 	std::make_tuple(1, 0, "VK_EXT_pipeline_library_group_handles"),
 	std::make_tuple(1, 0, "VK_QCOM_multiview_per_view_render_areas"),
+	std::make_tuple(1, 0, "VK_EXT_attachment_feedback_loop_dynamic_state"),
 };

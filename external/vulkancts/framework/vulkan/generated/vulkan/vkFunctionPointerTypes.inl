@@ -102,6 +102,7 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* BeginCommandBufferFunc)												(
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* EndCommandBufferFunc)													(VkCommandBuffer commandBuffer);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ResetCommandBufferFunc)												(VkCommandBuffer commandBuffer, VkCommandBufferResetFlags flags);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindPipelineFunc)													(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetAttachmentFeedbackLoopEnableEXTFunc)								(VkCommandBuffer commandBuffer, VkImageAspectFlags aspectMask);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetViewportFunc)													(VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetScissorFunc)														(VkCommandBuffer commandBuffer, uint32_t firstScissor, uint32_t scissorCount, const VkRect2D* pScissors);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetLineWidthFunc)													(VkCommandBuffer commandBuffer, float lineWidth);

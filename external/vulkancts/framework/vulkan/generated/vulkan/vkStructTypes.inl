@@ -6107,6 +6107,13 @@ struct VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT
 	VkBool32		imageSlicedViewOf3D;
 };
 
+struct VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		attachmentFeedbackLoopDynamicState;
+};
+
 struct VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT
 {
 	VkStructureType	sType;
