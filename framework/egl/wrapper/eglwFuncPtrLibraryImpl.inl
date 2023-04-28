@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 3338ed0db494d6a4db7f76627b38f0b1892db096.
+ * Generated from Khronos EGL API description (egl.xml) revision 9ab603608d6b165f79f17eee9ee1ced861625893.
  */
 
 EGLBoolean FuncPtrLibrary::bindAPI (EGLenum api) const
@@ -254,7 +254,7 @@ EGLBoolean FuncPtrLibrary::swapBuffers (EGLDisplay dpy, EGLSurface surface) cons
 	return m_egl.swapBuffers(dpy, surface);
 }
 
-EGLBoolean FuncPtrLibrary::swapBuffersWithDamageKHR (EGLDisplay dpy, EGLSurface surface, EGLint *rects, EGLint n_rects) const
+EGLBoolean FuncPtrLibrary::swapBuffersWithDamageKHR (EGLDisplay dpy, EGLSurface surface, const EGLint *rects, EGLint n_rects) const
 {
 	return m_egl.swapBuffersWithDamageKHR(dpy, surface, rects, n_rects);
 }

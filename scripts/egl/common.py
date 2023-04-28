@@ -40,8 +40,8 @@ EGL_WRAPPER_DIR		= os.path.normpath(os.path.join(EGL_DIR, "wrapper"))
 EGL_SOURCE			= khr_util.registry_cache.RegistrySource(
 						"https://raw.githubusercontent.com/KhronosGroup/EGL-Registry",
 						"api/egl.xml",
-						"3338ed0db494d6a4db7f76627b38f0b1892db096",
-						"863db99411edfd83ba1d875fb0e13e021e155689d3eae5199a9b1ec969f368e9")
+						"9ab603608d6b165f79f17eee9ee1ced861625893",
+						"8827da3d266d5de62e3de53cc008b82a8285cd8a957c8d975333b7754105e3a4")
 
 VERSION				= '1.5'
 

@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 3338ed0db494d6a4db7f76627b38f0b1892db096.
+ * Generated from Khronos EGL API description (egl.xml) revision 9ab603608d6b165f79f17eee9ee1ced861625893.
  */
 dst->clientWaitSyncKHR				= (eglClientWaitSyncKHRFunc)				loader->get("eglClientWaitSyncKHR");
 dst->createImageKHR					= (eglCreateImageKHRFunc)					loader->get("eglCreateImageKHR");

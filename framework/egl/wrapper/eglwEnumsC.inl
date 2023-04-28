@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 3338ed0db494d6a4db7f76627b38f0b1892db096.
+ * Generated from Khronos EGL API description (egl.xml) revision 9ab603608d6b165f79f17eee9ee1ced861625893.
  */
 #define EGL_PBUFFER_BIT										0x0001
 #define EGL_PIXMAP_BIT										0x0002
@@ -291,3 +291,4 @@
 #define EGL_GL_COLORSPACE_DISPLAY_P3_LINEAR_EXT				0x3362
 #define EGL_GL_COLORSPACE_DISPLAY_P3_EXT					0x3363
 #define EGL_GL_COLORSPACE_DISPLAY_P3_PASSTHROUGH_EXT		0x3490
+#define EGL_CONFIG_SELECT_GROUP_EXT							0x34C0

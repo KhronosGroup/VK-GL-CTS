@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 3338ed0db494d6a4db7f76627b38f0b1892db096.
+ * Generated from Khronos EGL API description (egl.xml) revision 9ab603608d6b165f79f17eee9ee1ced861625893.
  */
 
 eglw::EGLBoolean CallLogWrapper::eglBindAPI (eglw::EGLenum api)
@@ -521,7 +521,7 @@ eglw::EGLBoolean CallLogWrapper::eglSwapBuffers (eglw::EGLDisplay dpy, eglw::EGL
 	return returnValue;
 }
 
-eglw::EGLBoolean CallLogWrapper::eglSwapBuffersWithDamageKHR (eglw::EGLDisplay dpy, eglw::EGLSurface surface, eglw::EGLint *rects, eglw::EGLint n_rects)
+eglw::EGLBoolean CallLogWrapper::eglSwapBuffersWithDamageKHR (eglw::EGLDisplay dpy, eglw::EGLSurface surface, const eglw::EGLint *rects, eglw::EGLint n_rects)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "eglSwapBuffersWithDamageKHR(" << dpy << ", " << toHex(surface) << ", " << rects << ", " << n_rects << ");" << TestLog::EndMessage;
