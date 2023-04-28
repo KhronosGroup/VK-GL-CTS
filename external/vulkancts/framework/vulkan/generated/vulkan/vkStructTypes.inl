@@ -8227,6 +8227,13 @@ struct VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM
 	VkBool32		multiviewPerViewViewports;
 };
 
+struct VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		rayTracingPositionFetch;
+};
+
 struct VkDeviceImageSubresourceInfoKHR
 {
 	VkStructureType					sType;
@@ -9112,11 +9119,11 @@ struct StdVideoDecodeH265PictureInfo
 
 struct VkVideoDecodeH265PictureInfoKHR
 {
-	VkStructureType					sType;
-	const void*						pNext;
-	StdVideoDecodeH265PictureInfo*	pStdPictureInfo;
-	uint32_t						sliceSegmentCount;
-	const uint32_t*					pSliceSegmentOffsets;
+	VkStructureType							sType;
+	const void*								pNext;
+	const StdVideoDecodeH265PictureInfo*	pStdPictureInfo;
+	uint32_t								sliceSegmentCount;
+	const uint32_t*							pSliceSegmentOffsets;
 };
 
 struct StdVideoDecodeH265ReferenceInfoFlags

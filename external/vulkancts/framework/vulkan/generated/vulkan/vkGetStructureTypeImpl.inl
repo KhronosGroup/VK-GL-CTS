@@ -3773,6 +3773,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceMultiviewPerViewView
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_VIEWPORTS_FEATURES_QCOM;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_POSITION_FETCH_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkDeviceImageSubresourceInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_DEVICE_IMAGE_SUBRESOURCE_INFO_KHR;

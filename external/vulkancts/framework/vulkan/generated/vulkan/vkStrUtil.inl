@@ -1505,6 +1505,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayTracingInvoc
 std::ostream&	operator<<	(std::ostream& s, const VkDirectDriverLoadingInfoLUNARG& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDirectDriverLoadingListLUNARG& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceImageSubresourceInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderCorePropertiesARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM& value);

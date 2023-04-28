@@ -141,6 +141,7 @@ const vk::VkPhysicalDeviceOpticalFlowFeaturesNV&							Context::getOpticalFlowFe
 const vk::VkPhysicalDeviceLegacyDitheringFeaturesEXT&						Context::getLegacyDitheringFeaturesEXT						(void) const { return m_device->getLegacyDitheringFeaturesEXT();					}
 const vk::VkPhysicalDevicePipelineProtectedAccessFeaturesEXT&				Context::getPipelineProtectedAccessFeaturesEXT				(void) const { return m_device->getPipelineProtectedAccessFeaturesEXT();			}
 const vk::VkPhysicalDeviceMaintenance5FeaturesKHR&							Context::getMaintenance5Features							(void) const { return m_device->getMaintenance5Features();							}
+const vk::VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR&				Context::getRayTracingPositionFetchFeatures					(void) const { return m_device->getRayTracingPositionFetchFeatures();				}
 const vk::VkPhysicalDeviceShaderObjectFeaturesEXT&							Context::getShaderObjectFeaturesEXT							(void) const { return m_device->getShaderObjectFeaturesEXT();						}
 const vk::VkPhysicalDeviceTilePropertiesFeaturesQCOM&						Context::getTilePropertiesFeaturesQCOM						(void) const { return m_device->getTilePropertiesFeaturesQCOM();					}
 const vk::VkPhysicalDeviceAmigoProfilingFeaturesSEC&						Context::getAmigoProfilingFeaturesSEC						(void) const { return m_device->getAmigoProfilingFeaturesSEC();						}

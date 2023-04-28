@@ -4411,6 +4411,43 @@ tcu::TestStatus testPhysicalDeviceFeatureSwapchainMaintenance1FeaturesEXT (Conte
 	return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureRayTracingPositionFetchFeaturesKHR (Context& context)
+{
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+	const InstanceDriver&		vki				(instance.getDriver());
+	const int					count			= 2u;
+	TestLog&					log				= context.getTestContext().getLog();
+	VkPhysicalDeviceFeatures2	extFeatures;
+	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+
+	VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR	deviceRayTracingPositionFetchFeaturesKHR[count];
+	const bool											isRayTracingPositionFetchFeaturesKHR = checkExtension(properties, "VK_KHR_ray_tracing_position_fetch");
+
+	for (int ndx = 0; ndx < count; ++ndx)
+	{
+		deMemset(&deviceRayTracingPositionFetchFeaturesKHR[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR));
+		deviceRayTracingPositionFetchFeaturesKHR[ndx].sType = isRayTracingPositionFetchFeaturesKHR ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_POSITION_FETCH_FEATURES_KHR : VK_STRUCTURE_TYPE_MAX_ENUM;
+		deviceRayTracingPositionFetchFeaturesKHR[ndx].pNext = DE_NULL;
+
+		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		extFeatures.pNext = &deviceRayTracingPositionFetchFeaturesKHR[ndx];
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+	}
+
+	if (isRayTracingPositionFetchFeaturesKHR)
+		log << TestLog::Message << deviceRayTracingPositionFetchFeaturesKHR[0] << TestLog::EndMessage;
+
+	if (isRayTracingPositionFetchFeaturesKHR &&
+		(deviceRayTracingPositionFetchFeaturesKHR[0].rayTracingPositionFetch != deviceRayTracingPositionFetchFeaturesKHR[1].rayTracingPositionFetch))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR");
+	}
+	return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureShaderObjectFeaturesEXT (Context& context)
 {
 	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
@@ -4793,6 +4830,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "fault_features_ext", "VkPhysicalDeviceFaultFeaturesEXT", testPhysicalDeviceFeatureFaultFeaturesEXT);
 	addFunctionCase(testGroup, "pipeline_library_group_handles_features_ext", "VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT", testPhysicalDeviceFeaturePipelineLibraryGroupHandlesFeaturesEXT);
 	addFunctionCase(testGroup, "swapchain_maintenance1_features_ext", "VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT", testPhysicalDeviceFeatureSwapchainMaintenance1FeaturesEXT);
+	addFunctionCase(testGroup, "ray_tracing_position_fetch_features_khr", "VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR", testPhysicalDeviceFeatureRayTracingPositionFetchFeaturesKHR);
 	addFunctionCase(testGroup, "shader_object_features_ext", "VkPhysicalDeviceShaderObjectFeaturesEXT", testPhysicalDeviceFeatureShaderObjectFeaturesEXT);
 	addFunctionCase(testGroup, "shader_tile_image_features_ext", "VkPhysicalDeviceShaderTileImageFeaturesEXT", testPhysicalDeviceFeatureShaderTileImageFeaturesEXT);
 	addFunctionCase(testGroup, "create_device_with_promoted11_structures", "", createDeviceWithPromoted11Structures);

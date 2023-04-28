@@ -1138,7 +1138,7 @@ extern "C" {
 #define VK_API_VERSION_1_0 VK_MAKE_API_VERSION(0, 1, 0, 0)// Patch version should always be set to 0
 
 // Version of this file
-#define VK_HEADER_VERSION 246
+#define VK_HEADER_VERSION 249
 
 // Complete version of this file
 #define VK_HEADER_VERSION_COMPLETE VK_MAKE_API_VERSION(0, 1, 3, VK_HEADER_VERSION)
@@ -2078,6 +2078,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_IMAGE_SUBRESOURCE_2_KHR = 1000338003,
     VK_STRUCTURE_TYPE_PIPELINE_CREATE_FLAGS_2_CREATE_INFO_KHR = 1000470005,
     VK_STRUCTURE_TYPE_BUFFER_USAGE_FLAGS_2_CREATE_INFO_KHR = 1000470006,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_POSITION_FETCH_FEATURES_KHR = 1000481000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT = 1000482000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_PROPERTIES_EXT = 1000482001,
     VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT = 1000482002,
@@ -10499,11 +10500,11 @@ typedef struct VkVideoDecodeH265SessionParametersCreateInfoKHR {
 } VkVideoDecodeH265SessionParametersCreateInfoKHR;
 
 typedef struct VkVideoDecodeH265PictureInfoKHR {
-    VkStructureType                   sType;
-    const void*                       pNext;
-    StdVideoDecodeH265PictureInfo*    pStdPictureInfo;
-    deUint32                          sliceSegmentCount;
-    const deUint32*                   pSliceSegmentOffsets;
+    VkStructureType                         sType;
+    const void*                             pNext;
+    const StdVideoDecodeH265PictureInfo*    pStdPictureInfo;
+    deUint32                                sliceSegmentCount;
+    const deUint32*                         pSliceSegmentOffsets;
 } VkVideoDecodeH265PictureInfoKHR;
 
 typedef struct VkVideoDecodeH265DpbSlotInfoKHR {
@@ -11471,6 +11472,17 @@ VKAPI_ATTR void VKAPI_CALL vkGetImageSubresourceLayout2KHR(
     const VkImageSubresource2KHR*               pSubresource,
     VkSubresourceLayout2KHR*                    pLayout);
 #endif
+
+
+#define VK_KHR_ray_tracing_position_fetch 1
+#define VK_KHR_RAY_TRACING_POSITION_FETCH_SPEC_VERSION 1
+#define VK_KHR_RAY_TRACING_POSITION_FETCH_EXTENSION_NAME "VK_KHR_ray_tracing_position_fetch"
+typedef struct VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           rayTracingPositionFetch;
+} VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR;
+
 
 
 #define VK_EXT_debug_report 1
@@ -13333,6 +13345,7 @@ typedef enum VkBuildAccelerationStructureFlagBitsKHR {
 #ifdef VK_ENABLE_BETA_EXTENSIONS
     VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DISPLACEMENT_MICROMAP_UPDATE_NV = 0x00000200,
 #endif
+    VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DATA_ACCESS_KHR = 0x00000800,
     VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV = VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR,
     VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_NV = VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR,
     VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_NV = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR,
