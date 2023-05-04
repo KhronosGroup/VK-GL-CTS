@@ -404,6 +404,11 @@ void DeviceDriver::cmdBindPipeline (VkCommandBuffer commandBuffer, VkPipelineBin
 	m_vk.cmdBindPipeline(commandBuffer, pipelineBindPoint, pipeline);
 }
 
+void DeviceDriver::cmdSetAttachmentFeedbackLoopEnableEXT (VkCommandBuffer commandBuffer, VkImageAspectFlags aspectMask) const
+{
+	m_vk.cmdSetAttachmentFeedbackLoopEnableEXT(commandBuffer, aspectMask);
+}
+
 void DeviceDriver::cmdSetViewport (VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports) const
 {
 	m_vk.cmdSetViewport(commandBuffer, firstViewport, viewportCount, pViewports);

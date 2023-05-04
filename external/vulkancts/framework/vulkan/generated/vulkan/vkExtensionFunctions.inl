@@ -1327,6 +1327,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_ray_tracing_position_fetch")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_shader_object")
 	{
 		return;
@@ -1360,6 +1364,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_QCOM_multiview_per_view_render_areas")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_attachment_feedback_loop_dynamic_state")
 	{
 		return;
 	}
@@ -2917,6 +2925,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_ray_tracing_position_fetch")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_shader_object")
 	{
 		functions.push_back("vkCreateShadersEXT");
@@ -2981,6 +2993,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_QCOM_multiview_per_view_render_areas")
 	{
+		return;
+	}
+	if (extName == "VK_EXT_attachment_feedback_loop_dynamic_state")
+	{
+		functions.push_back("vkCmdSetAttachmentFeedbackLoopEnableEXT");
 		return;
 	}
 	if (extName == "vulkan_video_codecs_common")
@@ -3334,6 +3351,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_NV_optical_flow",
 	"VK_EXT_legacy_dithering",
 	"VK_EXT_pipeline_protected_access",
+	"VK_KHR_ray_tracing_position_fetch",
 	"VK_EXT_shader_object",
 	"VK_QCOM_tile_properties",
 	"VK_SEC_amigo_profiling",
@@ -3343,4 +3361,5 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_ARM_shader_core_builtins",
 	"VK_EXT_pipeline_library_group_handles",
 	"VK_QCOM_multiview_per_view_render_areas",
+	"VK_EXT_attachment_feedback_loop_dynamic_state",
 };

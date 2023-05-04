@@ -83,6 +83,7 @@ BeginCommandBufferFunc										beginCommandBuffer;
 EndCommandBufferFunc										endCommandBuffer;
 ResetCommandBufferFunc										resetCommandBuffer;
 CmdBindPipelineFunc											cmdBindPipeline;
+CmdSetAttachmentFeedbackLoopEnableEXTFunc					cmdSetAttachmentFeedbackLoopEnableEXT;
 CmdSetViewportFunc											cmdSetViewport;
 CmdSetScissorFunc											cmdSetScissor;
 CmdSetLineWidthFunc											cmdSetLineWidth;

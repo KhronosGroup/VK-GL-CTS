@@ -823,6 +823,12 @@ VKAPI_ATTR void VKAPI_CALL cmdBindPipeline (VkCommandBuffer commandBuffer, VkPip
 	DE_UNREF(pipeline);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdSetAttachmentFeedbackLoopEnableEXT (VkCommandBuffer commandBuffer, VkImageAspectFlags aspectMask)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(aspectMask);
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdSetViewport (VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports)
 {
 	DE_UNREF(commandBuffer);
@@ -4104,6 +4110,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkEndCommandBuffer,											endCommandBuffer),
 	VK_NULL_FUNC_ENTRY(vkResetCommandBuffer,										resetCommandBuffer),
 	VK_NULL_FUNC_ENTRY(vkCmdBindPipeline,											cmdBindPipeline),
+	VK_NULL_FUNC_ENTRY(vkCmdSetAttachmentFeedbackLoopEnableEXT,						cmdSetAttachmentFeedbackLoopEnableEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdSetViewport,											cmdSetViewport),
 	VK_NULL_FUNC_ENTRY(vkCmdSetScissor,												cmdSetScissor),
 	VK_NULL_FUNC_ENTRY(vkCmdSetLineWidth,											cmdSetLineWidth),

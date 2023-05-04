@@ -85,6 +85,7 @@ m_vk.beginCommandBuffer										= (BeginCommandBufferFunc)										GET_PROC_AD
 m_vk.endCommandBuffer										= (EndCommandBufferFunc)										GET_PROC_ADDR("vkEndCommandBuffer");
 m_vk.resetCommandBuffer										= (ResetCommandBufferFunc)										GET_PROC_ADDR("vkResetCommandBuffer");
 m_vk.cmdBindPipeline										= (CmdBindPipelineFunc)											GET_PROC_ADDR("vkCmdBindPipeline");
+m_vk.cmdSetAttachmentFeedbackLoopEnableEXT					= (CmdSetAttachmentFeedbackLoopEnableEXTFunc)					GET_PROC_ADDR("vkCmdSetAttachmentFeedbackLoopEnableEXT");
 m_vk.cmdSetViewport											= (CmdSetViewportFunc)											GET_PROC_ADDR("vkCmdSetViewport");
 m_vk.cmdSetScissor											= (CmdSetScissorFunc)											GET_PROC_ADDR("vkCmdSetScissor");
 m_vk.cmdSetLineWidth										= (CmdSetLineWidthFunc)											GET_PROC_ADDR("vkCmdSetLineWidth");
