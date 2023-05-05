@@ -619,12 +619,6 @@ void GraphicsCacheTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&
 		pipelineCreationFeedbackCreateInfo[1].pPipelineStageCreationFeedbacks		= pipelineStageCreationFeedbacks;
 		pipelineCreationFeedbackCreateInfo[2].pipelineStageCreationFeedbackCount	= 1u;
 		pipelineCreationFeedbackCreateInfo[2].pPipelineStageCreationFeedbacks		= pipelineStageCreationFeedbacks + geometryStages;
-
-		if (m_param->getPipelineConstructionType() == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
-		{
-			pipelineCreationFeedbackCreateInfo[4].pipelineStageCreationFeedbackCount	= 1u + geometryStages;
-			pipelineCreationFeedbackCreateInfo[4].pPipelineStageCreationFeedbacks		= pipelineStageCreationFeedbacks;
-		}
 	}
 
 	gpw.setDefaultTopology((tescShaderModule == DE_NULL) ? VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST : VK_PRIMITIVE_TOPOLOGY_PATCH_LIST)
