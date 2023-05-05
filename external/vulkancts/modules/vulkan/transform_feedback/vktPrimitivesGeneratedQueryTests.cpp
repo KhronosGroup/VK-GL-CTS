@@ -299,6 +299,7 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 	const VkCommandBufferLevel		cmdBufferLevel		= VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, cmdPoolCreateFlags, queueFamilyIndex));
 	const Unique<VkCommandBuffer>	cmdBuffer			(allocateCommandBuffer(vk, device, *cmdPool, cmdBufferLevel));
+	const auto						resetCmdBuffer		= allocateCommandBuffer(vk, device, *cmdPool, cmdBufferLevel);
 
 	const bool						pgq64				= (m_parameters.queryResultType == QUERY_RESULT_TYPE_64_BIT ||
 														   m_parameters.queryResultType == QUERY_RESULT_TYPE_PGQ_64_XFB_32);
@@ -396,18 +397,25 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 
 	VK_CHECK(vk.bindBufferMemory(device, *vtxBuffer, vtxBufferAlloc->getMemory(), vtxBufferAlloc->getOffset()));
 
+	// After query pool creation, each query must be reset before it is used.
+	//
+	// When resetting them using a queue, we will submit a separate command buffer with the reset operation and wait for it to
+	// complete. This will make sure queries are properly reset before we attempt to get results from them. This is needed because
+	// we're not going to wait for any fence when using vkGetQueryPoolResults, so there's a potential race condition with
+	// vkGetQueryPoolResults attempting to get results before queries are properly reset, which is against the spec.
+	if (m_parameters.queryResetType == QUERY_RESET_TYPE_QUEUE)
+	{
+		beginCommandBuffer(vk, *resetCmdBuffer);
+		vk.cmdResetQueryPool(*resetCmdBuffer, *pgqPool, queryIndex, queryCount);
+		if (m_parameters.transformFeedback)
+			vk.cmdResetQueryPool(*resetCmdBuffer, *xfbPool, queryIndex, queryCount);
+		endCommandBuffer(vk, *resetCmdBuffer);
+		submitCommandsAndWait(vk, device, queue, *resetCmdBuffer);
+	}
+
 	beginCommandBuffer(vk, *cmdBuffer);
 	{
 		const VkDeviceSize	vertexBufferOffset	= static_cast<VkDeviceSize>(0);
-
-		// After query pool creation, each query must be reset before it is used.
-		if (m_parameters.queryResetType == QUERY_RESET_TYPE_QUEUE)
-		{
-			vk.cmdResetQueryPool(*cmdBuffer, *pgqPool, queryIndex, queryCount);
-
-			if (m_parameters.transformFeedback)
-				vk.cmdResetQueryPool(*cmdBuffer, *xfbPool, queryIndex, queryCount);
-		}
 
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 
@@ -512,7 +520,18 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 			vk.resetQueryPool(device, *xfbPool, queryIndex, queryCount);
 	}
 
-	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+	const auto fence = submitCommands(vk, device, queue, *cmdBuffer);
+
+	// To make it more interesting, attempt to get results with WAIT before waiting for the fence.
+	if (m_parameters.queryReadType == QUERY_READ_TYPE_GET)
+	{
+		vk.getQueryPoolResults(device, *pgqPool, queryIndex, queryCount, pgqResults.size(), pgqResults.data(), pgqResults.size(), pgqResultFlags);
+
+		if (m_parameters.transformFeedback)
+			vk.getQueryPoolResults(device, *xfbPool, queryIndex, queryCount, xfbResults.size(), xfbResults.data(), xfbResults.size(), xfbResultFlags);
+	}
+
+	waitForFence(vk, device, *fence);
 
 	if (m_parameters.queryReadType == QUERY_READ_TYPE_COPY)
 	{
@@ -524,13 +543,6 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 			invalidateAlloc(vk, device, *xfbResultsBufferAlloc);
 			deMemcpy(xfbResults.data(), xfbResultsBufferAlloc->getHostPtr(), xfbResults.size());
 		}
-	}
-	else
-	{
-		vk.getQueryPoolResults(device, *pgqPool, queryIndex, queryCount, pgqResults.size(), pgqResults.data(), pgqResults.size(), pgqResultFlags);
-
-		if (m_parameters.transformFeedback)
-			vk.getQueryPoolResults(device, *xfbPool, queryIndex, queryCount, xfbResults.size(), xfbResults.data(), xfbResults.size(), xfbResultFlags);
 	}
 
 	// Validate counters.
