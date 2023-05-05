@@ -6042,15 +6042,11 @@ tcu::TestCaseGroup* createSpecConstantOpQuantizeToF16Group (tcu::TestContext& te
 		spec.specConstants.append<deInt32>(bitwiseCast<deUint32>(std::ldexp(1.0f, -127)));
 		spec.specConstants.append<deInt32>(bitwiseCast<deUint32>(-std::ldexp(1.0f, -128)));
 
-		outputs.push_back(0.f);
-		outputs.push_back(-0.f);
-		outputs.push_back(0.f);
-		outputs.push_back(-0.f);
-		outputs.push_back(0.f);
-		outputs.push_back(-0.f);
+		spec.verifyIO = &compareZeros;
 
 		spec.inputs.push_back(BufferSp(new Float32Buffer(inputs)));
-		spec.outputs.push_back(BufferSp(new Float32Buffer(outputs)));
+		// Only the size of outputs[0] will be used, actual expected values aren't needed.
+		spec.outputs.push_back(BufferSp(new Float32Buffer(inputs)));
 
 		group->addChild(new SpvAsmComputeShaderCase(
 			testCtx, "flush_to_zero", "Check that values are zeroed correctly", spec));
