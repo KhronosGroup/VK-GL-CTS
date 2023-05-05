@@ -1421,12 +1421,12 @@ bool AttachmentRateInstance::runCopyMode (void)
 		beginCommandBuffer(vk, *cmdBuffer, 0u);
 
 		// wait till sr images layout are changed
-		VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 		VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
 		std::vector<VkImageMemoryBarrier> srImageBarrierGeneral(2,
 			makeImageMemoryBarrier(
 				VK_ACCESS_NONE_KHR,
-				VK_ACCESS_NONE_KHR,
+				(VK_ACCESS_TRANSFER_WRITE_BIT | VK_ACCESS_TRANSFER_READ_BIT),
 				VK_IMAGE_LAYOUT_UNDEFINED,
 				VK_IMAGE_LAYOUT_GENERAL,
 				**m_srImage[0],
@@ -1677,20 +1677,18 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
 		beginCommandBuffer(vk, *transferCmdBuffer, 0u);
 
 		// wait till sr data is ready in buffer and change sr image layouts to general
-		VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 		VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
-		memoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		memoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 		std::vector<VkImageMemoryBarrier> srImageBarrierGeneral(2,
 			makeImageMemoryBarrier(
 				VK_ACCESS_NONE_KHR,
-				VK_ACCESS_NONE_KHR,
+				(VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT),
 				VK_IMAGE_LAYOUT_UNDEFINED,
 				VK_IMAGE_LAYOUT_GENERAL,
 				**m_srImage[0],
 				m_defaultImageSubresourceRange));
 		srImageBarrierGeneral[1].image = **srSrcImage;
-		vk.cmdPipelineBarrier(*transferCmdBuffer, srcStageMask, dstStageMask, 0, 1, &memoryBarrier, 0, DE_NULL, 2, srImageBarrierGeneral.data());
+		vk.cmdPipelineBarrier(*transferCmdBuffer, srcStageMask, dstStageMask, 0, 0, nullptr, 0, DE_NULL, 2, srImageBarrierGeneral.data());
 
 		// copy sr data to images
 		const VkBufferImageCopy srCopyBuffer = makeBufferImageCopy({ srWidth, srHeight, 1u }, m_defaultImageSubresourceLayers);
@@ -2020,12 +2018,12 @@ bool AttachmentRateInstance::runTwoSubpassMode(void)
 	beginCommandBuffer(vk, *cmdBuffer, 0u);
 
 	// change sr image layouts to general
-	VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 	VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
 	std::vector<VkImageMemoryBarrier> srImageBarrierGeneral(2,
 		makeImageMemoryBarrier(
 			VK_ACCESS_NONE_KHR,
-			VK_ACCESS_NONE_KHR,
+			(VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT),
 			VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_GENERAL,
 			**m_srImage[0],
