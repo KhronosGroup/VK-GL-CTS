@@ -838,6 +838,7 @@ const TextureSwizzle& getChannelReadSwizzle (TextureFormat::ChannelOrder order)
 	static const TextureSwizzle ABGR	= {{ TextureSwizzle::CHANNEL_3,		TextureSwizzle::CHANNEL_2,		TextureSwizzle::CHANNEL_1,		TextureSwizzle::CHANNEL_0	}};
 	static const TextureSwizzle D		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ONE	}};
 	static const TextureSwizzle S		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ONE	}};
+	static const TextureSwizzle DS		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_1,		TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ONE	}};
 
 	switch (order)
 	{
@@ -862,10 +863,7 @@ const TextureSwizzle& getChannelReadSwizzle (TextureFormat::ChannelOrder order)
 		case TextureFormat::sBGRA:		return BGRA;
 		case TextureFormat::D:			return D;
 		case TextureFormat::S:			return S;
-
-		case TextureFormat::DS:
-			DE_ASSERT(false); // combined formats cannot be read from
-			return INV;
+		case TextureFormat::DS:			return DS;
 
 		default:
 			DE_ASSERT(DE_FALSE);
