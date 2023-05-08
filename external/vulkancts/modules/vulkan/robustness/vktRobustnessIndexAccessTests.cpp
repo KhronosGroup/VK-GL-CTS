@@ -256,6 +256,10 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
 	const VkBufferImageCopy copyRegion = makeBufferImageCopy(imageExtent, colorSL);
 	vk.cmdCopyImageToBuffer(*cmdBuffer, colorImage.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, outputBuffer.get(), 1u, &copyRegion);
 
+	auto bufferBarrier = makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, outputBuffer.get(), 0u, VK_WHOLE_SIZE);
+
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, 0u, 1u, &bufferBarrier, 0u, 0u);
+
 	endCommandBuffer(vk, *cmdBuffer);
 
 	VkQueue queue;

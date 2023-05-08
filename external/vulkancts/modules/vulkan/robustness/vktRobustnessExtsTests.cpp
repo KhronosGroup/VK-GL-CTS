@@ -3058,6 +3058,11 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 															 makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u));
 	vk.cmdCopyImageToBuffer(*cmdBuffer, **images[0], VK_IMAGE_LAYOUT_GENERAL, **copyBuffer, 1u, &copyRegion);
 
+	memBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	memBarrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+		0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
+
 	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
