@@ -3457,6 +3457,7 @@ def writeEntryPointValidation(api, filename):
 			stream.append(f'\t\t\t"{fun}",')
 		stream.append('\t\t}\n\t},')
 	stream.append('};')
+	writeInlFile(filename, INL_HEADER, stream)
 
 def writeGetDeviceProcAddr(api, filename):
 	testBlockStart = '''tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
