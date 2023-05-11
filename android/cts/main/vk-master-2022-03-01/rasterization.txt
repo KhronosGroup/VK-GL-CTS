@@ -350,4 +350,8 @@ dEQP-VK.rasterization.polygon_as_large_points.mesh_dynamic_polygon_mode
 dEQP-VK.rasterization.polygon_as_large_points.vert_tess_dynamic_polygon_mode
 dEQP-VK.rasterization.polygon_as_large_points.vert_geom_dynamic_polygon_mode
 dEQP-VK.rasterization.polygon_as_large_points.vert_tess_geom_dynamic_polygon_mode
+dEQP-VK.rasterization.maintenance5.non_strict_lines_narrow
+dEQP-VK.rasterization.maintenance5.non_strict_lines_wide
+dEQP-VK.rasterization.maintenance5.non_strict_line_strip_narrow
+dEQP-VK.rasterization.maintenance5.non_strict_line_strip_wide
 dEQP-VK.rasterization.culling.primitive_id

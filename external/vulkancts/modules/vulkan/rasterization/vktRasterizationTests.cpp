@@ -193,6 +193,8 @@ public:
 													BaseRenderingTestInstance		(Context& context, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT, deUint32 renderSize = RESOLUTION_POT, VkFormat imageFormat = VK_FORMAT_R8G8B8A8_UNORM, deUint32 additionalRenderSize = 0);
 													~BaseRenderingTestInstance		(void);
 
+	const tcu::TextureFormat&						getTextureFormat				(void) const;
+
 protected:
 	void											addImageTransitionBarrier		(VkCommandBuffer commandBuffer, VkImage image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldLayout, VkImageLayout newLayout) const;
 	virtual void									drawPrimitives					(tcu::Surface& result, const std::vector<tcu::Vec4>& vertexData, VkPrimitiveTopology primitiveTopology);
@@ -218,8 +220,6 @@ protected:
 
 	virtual
 	const VkPipelineColorBlendStateCreateInfo*		getColorBlendStateCreateInfo	(void) const;
-
-	const tcu::TextureFormat&						getTextureFormat				(void) const;
 
 	const deUint32									m_renderSize;
 	const VkSampleCountFlagBits						m_sampleCount;
@@ -4774,7 +4774,6 @@ const VkPipelineRasterizationLineStateCreateInfoEXT* ConservativePointTestInstan
 	return DE_NULL;
 }
 
-
 template <typename ConcreteTestInstance>
 class WidenessTestCase : public BaseRenderingTestCase
 {
@@ -7759,6 +7758,141 @@ tcu::TestStatus PolygonModeLargePointsInstance::iterate (void)
 	return tcu::TestStatus::pass("Pass");
 }
 
+template <typename ConcreteTestInstance>
+class NonStrictLinesMaintenance5TestCase : public BaseRenderingTestCase
+{
+public:
+					NonStrictLinesMaintenance5TestCase	(tcu::TestContext&		context,
+														 const std::string&		name,
+														 const std::string&		description,
+														 PrimitiveWideness		wideness)
+						: BaseRenderingTestCase	(context, name, description, VK_SAMPLE_COUNT_1_BIT)
+						, m_wideness			(wideness) {}
+	virtual auto	createInstance						(Context& context) const -> TestInstance* override
+														{
+															return new ConcreteTestInstance(context, m_wideness, 0);
+														}
+	virtual	auto	checkSupport						(Context& context) const -> void override
+														{
+															context.requireDeviceFunctionality("VK_KHR_maintenance5");
+
+															if (context.getDeviceProperties().limits.strictLines)
+																TCU_THROW(NotSupportedError, "Nonstrict rasterization is not supported");
+
+															if (m_wideness == PRIMITIVEWIDENESS_WIDE)
+																context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_WIDE_LINES);
+														}
+protected:
+	const PrimitiveWideness		m_wideness;
+
+	friend class NonStrictLinesMaintenance5TestInstance;
+	friend class NonStrictLineStripMaintenance5TestInstance;
+	static bool		compareAndVerify					(Context&								context,
+														 BaseLineTestInstance*					lineInstance,
+														 bool									isStrip,
+														 bool									isWide,
+														 std::vector<LineSceneSpec::SceneLine>&	lines,
+														 tcu::Surface&							resultImage,
+														 std::vector<tcu::Vec4>&				/* drawBuffer */);
+};
+
+template<class X>
+bool NonStrictLinesMaintenance5TestCase<X>::compareAndVerify (Context&									context,
+															  BaseLineTestInstance*						lineInstance,
+															  bool										isStrip,
+															  bool										isWide,
+															  std::vector<LineSceneSpec::SceneLine>&	lines,
+															  tcu::Surface&								resultImage,
+															  std::vector<tcu::Vec4>&)
+{
+	const tcu::IVec4		colorBits	= tcu::getTextureFormatBitDepth(lineInstance->getTextureFormat());
+
+	RasterizationArguments	args;
+	args.numSamples		= 0;
+	args.subpixelBits	= context.getDeviceProperties().limits.subPixelPrecisionBits;
+	args.redBits		= colorBits[0];
+	args.greenBits		= colorBits[1];
+	args.blueBits		= colorBits[2];
+
+	LineSceneSpec			scene;
+	scene.lines.swap(lines);
+	scene.lineWidth			= lineInstance->getLineWidth();
+	scene.stippleEnable		= false;
+	scene.stippleFactor		= 1;
+	scene.stipplePattern	= 0xFFFF;
+	scene.isStrip			= isStrip;
+	scene.isSmooth			= false;
+	scene.isRectangular		= false;
+	scene.verificationMode	= tcu::VERIFICATIONMODE_STRICT;
+
+	bool			result				= false;
+	const bool		strict				= false;
+	tcu::TestLog&	log					= context.getTestContext().getLog();
+	const bool		algoBresenhan		= verifyLineGroupRasterization(resultImage, scene, args, log);
+	const bool		algoParallelogram	= verifyRelaxedLineGroupRasterization(resultImage, scene, args, log, true, strict);
+
+#ifndef CTS_USES_VULKANSC
+	const VkPhysicalDeviceMaintenance5PropertiesKHR& p = context.getMaintenance5Properties();
+	if (isWide)
+	{
+		// nonStrictWideLinesUseParallelogram is a boolean value indicating whether non-strict lines
+		// with a width greater than 1.0 are rasterized as parallelograms or using Bresenham's algorithm.
+		result = p.nonStrictWideLinesUseParallelogram ? algoParallelogram : algoBresenhan;
+	}
+	else
+	{
+		// nonStrictSinglePixelWideLinesUseParallelogram is a boolean value indicating whether
+		// non-strict lines with a width of 1.0 are rasterized as parallelograms or using Bresenham's algorithm.
+		result = p.nonStrictSinglePixelWideLinesUseParallelogram ? algoParallelogram : algoBresenhan;
+	}
+#else
+	DE_UNREF(isWide);
+	DE_UNREF(algoBresenhan);
+	DE_UNREF(algoParallelogram);
+#endif
+
+	return result;
+}
+
+
+class NonStrictLinesMaintenance5TestInstance : public LinesTestInstance
+{
+public:
+					NonStrictLinesMaintenance5TestInstance (Context& context, PrimitiveWideness wideness, deUint32 additionalRenderSize)
+						: LinesTestInstance	(context, wideness, PRIMITIVESTRICTNESS_NONSTRICT, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST, LineStippleFactorCase::DEFAULT, additionalRenderSize)
+						, m_amIWide			(PRIMITIVEWIDENESS_WIDE == wideness)
+					{}
+protected:
+	virtual bool	compareAndVerify						(std::vector<LineSceneSpec::SceneLine>&	lines,
+															 tcu::Surface&							resultImage,
+															 std::vector<tcu::Vec4>&				drawBuffer)
+					{
+						return NonStrictLinesMaintenance5TestCase<NonStrictLinesMaintenance5TestInstance>::compareAndVerify(
+							m_context, this, false, m_amIWide, lines, resultImage, drawBuffer);
+					}
+private:
+	const bool	m_amIWide;
+};
+
+class NonStrictLineStripMaintenance5TestInstance : public LineStripTestInstance
+{
+public:
+					NonStrictLineStripMaintenance5TestInstance	(Context& context, PrimitiveWideness wideness, deUint32 additionalRenderSize)
+						: LineStripTestInstance	(context, wideness, PRIMITIVESTRICTNESS_NONSTRICT, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST, LineStippleFactorCase::DEFAULT, additionalRenderSize)
+						, m_amIWide				(PRIMITIVEWIDENESS_WIDE == wideness)
+					{}
+protected:
+	virtual bool	compareAndVerify							(std::vector<LineSceneSpec::SceneLine>&	lines,
+																 tcu::Surface&							resultImage,
+																 std::vector<tcu::Vec4>&				drawBuffer)
+					{
+						return NonStrictLinesMaintenance5TestCase<NonStrictLineStripMaintenance5TestInstance>::compareAndVerify(
+							m_context, this, true, m_amIWide, lines, resultImage, drawBuffer);
+					}
+private:
+	const bool	m_amIWide;
+};
+
 void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 {
 	tcu::TestContext&	testCtx		=	rasterizationTests->getTestContext();
@@ -8725,6 +8859,23 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 	// Rasterization order attachment access tests
 	{
 		rasterizationTests->addChild(createRasterizationOrderAttachmentAccessTests(testCtx));
+	}
+#endif // CTS_USES_VULKANSC
+
+#ifndef CTS_USES_VULKANSC
+	// .maintenance5
+	{
+		//NonStrictLineStripMaintenance5TestInstance
+		tcu::TestCaseGroup* const maintenance5tests = new tcu::TestCaseGroup(testCtx, "maintenance5", "Primitive rasterization");
+		maintenance5tests->addChild(new NonStrictLinesMaintenance5TestCase<NonStrictLinesMaintenance5TestInstance>(testCtx, "non_strict_lines_narrow", "Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode, verify rasterization result",
+																												   PRIMITIVEWIDENESS_NARROW));
+		maintenance5tests->addChild(new NonStrictLinesMaintenance5TestCase<NonStrictLinesMaintenance5TestInstance>(testCtx, "non_strict_lines_wide", "Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode, verify rasterization result",
+																												   PRIMITIVEWIDENESS_WIDE));
+		maintenance5tests->addChild(new NonStrictLinesMaintenance5TestCase<NonStrictLineStripMaintenance5TestInstance>(testCtx, "non_strict_line_strip_narrow", "Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in nonstrict mode, verify rasterization result",
+																													   PRIMITIVEWIDENESS_NARROW));
+		maintenance5tests->addChild(new NonStrictLinesMaintenance5TestCase<NonStrictLineStripMaintenance5TestInstance>(testCtx, "non_strict_line_strip_wide", "Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in nonstrict mode, verify rasterization result",
+																													   PRIMITIVEWIDENESS_WIDE));
+		rasterizationTests->addChild(maintenance5tests);
 	}
 #endif // CTS_USES_VULKANSC
 }
