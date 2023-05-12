@@ -114,7 +114,7 @@ enum Program
 	PROGRAM_LAST
 };
 
-void initializePrograms (vk::SourceCollections& programCollection, glu::Precision texCoordPrecision, const std::vector<Program>& programs, const char* texCoordSwizzle = DE_NULL, glu::Precision fragOutputPrecision = glu::Precision::PRECISION_MEDIUMP);
+void initializePrograms (vk::SourceCollections& programCollection, glu::Precision texCoordPrecision, const std::vector<Program>& programs, const char* texCoordSwizzle = DE_NULL, glu::Precision fragOutputPrecision = glu::Precision::PRECISION_MEDIUMP, bool unnormal = false);
 
 typedef de::SharedPtr<pipeline::TestTexture>			TestTextureSp;
 typedef de::SharedPtr<pipeline::TestTexture2D>			TestTexture2DSp;
@@ -354,7 +354,7 @@ public:
 
 	virtual void						initPrograms				(vk::SourceCollections& programCollection) const
 										{
-											initializePrograms(programCollection, m_testsParameters.texCoordPrecision, m_testsParameters.programs);
+											initializePrograms(programCollection, m_testsParameters.texCoordPrecision, m_testsParameters.programs, DE_NULL, glu::PRECISION_MEDIUMP, m_testsParameters.unnormal);
 										}
 
 	virtual void						checkSupport				(Context& context) const
