@@ -1654,7 +1654,7 @@ InterfaceBlockCaseInstance::InterfaceBlockCaseInstance (Context&							ctx,
 	, m_imageExtent2D		(makeExtent2D(256u, 256u))
 {
 	const deUint32											componentsPerLocation		= 4u;
-	const deUint32											componentsRequired			= m_locationsRequired * componentsPerLocation;
+	const deUint32											componentsRequired			= m_locationsRequired * componentsPerLocation + 7u; // Add 7 for built-in components
 	const InstanceInterface&								vki							= m_context.getInstanceInterface();
 	const VkPhysicalDevice									physDevice					= m_context.getPhysicalDevice();
 	const VkPhysicalDeviceFeatures							features					= getPhysicalDeviceFeatures(vki, physDevice);

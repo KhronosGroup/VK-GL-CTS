@@ -152,10 +152,45 @@ void createDeviceWithExtension (Context& context, WorkingDevice& wd, VkQueueFlag
 	wd.queueProps		= queueFamilyProperties[queueCreateInfo.queueFamilyIndex];
 }
 
-bool checkMarkerBuffer	(const DeviceInterface& vk, VkDevice device, const MovePtr<vk::Allocation>& memory,
-						 const std::vector<deUint32>& expected)
+void writeHostMemory (const vk::DeviceInterface&	vkd,
+					  vk::VkDevice					device,
+					  vk::VkDeviceMemory			memory,
+					  size_t						size,
+					  size_t						memorySize,
+					  const void*					data)
 {
-	invalidateAlloc(vk, device, *memory);
+	void* const ptr = vk::mapMemory(vkd, device, memory, 0, memorySize, 0);
+
+	deMemcpy(ptr, data, size);
+
+	flushMappedMemoryRange(vkd, device, memory, 0, memorySize);
+
+	vkd.unmapMemory(device, memory);
+}
+
+void invalidateHostMemory (const vk::DeviceInterface&	vkd,
+						   vk::VkDevice					device,
+						   vk::VkDeviceMemory			memory,
+						   size_t						size)
+{
+	vk::mapMemory(vkd, device, memory, 0, size, 0);
+
+	invalidateMappedMemoryRange(vkd, device, memory, 0, size);
+
+	vkd.unmapMemory(device, memory);
+}
+
+bool checkMarkerBuffer	(const DeviceInterface& vk, VkDevice device, const MovePtr<vk::Allocation>& memory,
+						 const std::vector<deUint32>& expected, size_t size, bool useHostMemory)
+{
+	if (useHostMemory)
+	{
+		invalidateHostMemory(vk, device, memory->getMemory(), size);
+	}
+	else
+	{
+		invalidateAlloc(vk, device, *memory);
+	}
 
 	const deUint32* data = reinterpret_cast<const deUint32*>(static_cast<const char*>(memory->getHostPtr()));
 
@@ -273,7 +308,16 @@ tcu::TestStatus bufferMarkerSequential(Context& context, BaseTestParams params)
 	const DeviceInterface&			vk(*wd.deviceDriver);
 	const VkDevice					device(*wd.logicalDevice);
 	const VkDeviceSize				markerBufferSize(params.size * sizeof(deUint32));
-	Move<VkBuffer>					markerBuffer(makeBuffer(vk, device, markerBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
+	VkExternalMemoryBufferCreateInfo	externalMemoryBufferCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
+		DE_NULL,
+		VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT
+	};
+	VkBufferCreateInfo				bufferCreateInfo = makeBufferCreateInfo(markerBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	if (params.useHostPtr)
+		bufferCreateInfo.pNext = &externalMemoryBufferCreateInfo;
+	Move<VkBuffer>					markerBuffer(createBuffer(vk, device, &bufferCreateInfo));
 	MovePtr<ExternalHostMemory>		hostMemory;
 	MovePtr<Allocation>				markerMemory;
 
@@ -286,8 +330,15 @@ tcu::TestStatus bufferMarkerSequential(Context& context, BaseTestParams params)
 	for (size_t i = 0; i < params.size; ++i)
 		expected[i] = rng.getUint32();
 
-	deMemcpy(markerMemory->getHostPtr(), &expected[0], static_cast<size_t>(markerBufferSize));
-	flushAlloc(vk, device, *markerMemory);
+	if (params.useHostPtr)
+	{
+		writeHostMemory(vk, device, markerMemory->getMemory(), static_cast<size_t>(markerBufferSize), hostMemory->size, &expected[0]);
+	}
+	else
+	{
+		deMemcpy(markerMemory->getHostPtr(), &expected[0], static_cast<size_t>(markerBufferSize));
+		flushMappedMemoryRange(vk, device, markerMemory->getMemory(), markerMemory->getOffset(), VK_WHOLE_SIZE);
+	}
 
 	const Unique<VkCommandPool>		cmdPool(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, wd.queueFamilyIdx));
 	const Unique<VkCommandBuffer>	cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
@@ -313,7 +364,7 @@ tcu::TestStatus bufferMarkerSequential(Context& context, BaseTestParams params)
 
 	submitCommandsAndWait(vk, device, wd.queue, *cmdBuffer);
 
-	if (!checkMarkerBuffer(vk, device, markerMemory, expected))
+	if (!checkMarkerBuffer(vk, device, markerMemory, expected, params.useHostPtr ? hostMemory->size : 0, params.useHostPtr))
 		return tcu::TestStatus::fail("Some marker values were incorrect");
 
 	return tcu::TestStatus::pass("Pass");
@@ -325,12 +376,22 @@ tcu::TestStatus bufferMarkerOverwrite(Context& context, BaseTestParams params)
 
 	createDeviceWithExtension(context, wd, params.testQueue, params.useHostPtr, params.offset);
 
-	const DeviceInterface&			vk(*wd.deviceDriver);
-	const VkDevice					device(*wd.logicalDevice);
-	const VkDeviceSize				markerBufferSize(params.size * sizeof(deUint32));
-	Move<VkBuffer>					markerBuffer(makeBuffer(vk, device, markerBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
-	MovePtr<ExternalHostMemory>		hostMemory;
-	MovePtr<Allocation>				markerMemory;
+	const DeviceInterface&				vk(*wd.deviceDriver);
+	const VkDevice						device(*wd.logicalDevice);
+	const VkDeviceSize					markerBufferSize(params.size * sizeof(deUint32));
+	VkExternalMemoryBufferCreateInfo	externalMemoryBufferCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
+		DE_NULL,
+		VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT
+	};
+	VkBufferCreateInfo					bufferCreateInfo	= makeBufferCreateInfo(markerBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	if (params.useHostPtr)
+		bufferCreateInfo.pNext = &externalMemoryBufferCreateInfo;
+
+	Move<VkBuffer>						markerBuffer		(createBuffer(vk, device, &bufferCreateInfo));
+	MovePtr<ExternalHostMemory>			hostMemory;
+	MovePtr<Allocation>					markerMemory;
 
 	createMarkerBufferMemory(context.getInstanceInterface(), vk, context.getPhysicalDevice(), device,
 							 *markerBuffer, params.offset, wd.allocator, MemoryRequirement::HostVisible, params.useHostPtr, hostMemory, markerMemory);
@@ -341,9 +402,15 @@ tcu::TestStatus bufferMarkerOverwrite(Context& context, BaseTestParams params)
 	for (size_t i = 0; i < params.size; ++i)
 		expected[i] = 0;
 
-	deMemcpy(markerMemory->getHostPtr(), &expected[0], static_cast<size_t>(markerBufferSize));
-
-	flushAlloc(vk, device, *markerMemory);
+	if (params.useHostPtr)
+	{
+		writeHostMemory(vk, device, markerMemory->getMemory(), static_cast<size_t>(markerBufferSize), hostMemory->size, &expected[0]);
+	}
+	else
+	{
+		deMemcpy(markerMemory->getHostPtr(), &expected[0], static_cast<size_t>(markerBufferSize));
+		flushMappedMemoryRange(vk, device, markerMemory->getMemory(), markerMemory->getOffset(), VK_WHOLE_SIZE);
+	}
 
 	const Unique<VkCommandPool>		cmdPool(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, wd.queueFamilyIdx));
 	const Unique<VkCommandBuffer>	cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
@@ -367,13 +434,13 @@ tcu::TestStatus bufferMarkerOverwrite(Context& context, BaseTestParams params)
 		VK_ACCESS_HOST_READ_BIT,
 	};
 
-	vk.cmdPipelineBarrier(*cmdBuffer, params.stage, VK_PIPELINE_STAGE_HOST_BIT, 0, 1, &memoryDep, 0, DE_NULL, 0, DE_NULL);
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 1, &memoryDep, 0, DE_NULL, 0, DE_NULL);
 
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
 	submitCommandsAndWait(vk, device, wd.queue, *cmdBuffer);
 
-	if (!checkMarkerBuffer(vk, device, markerMemory, expected))
+	if (!checkMarkerBuffer(vk, device, markerMemory, expected, params.useHostPtr ? hostMemory->size : 0, params.useHostPtr))
 		return tcu::TestStatus::fail("Some marker values were incorrect");
 
 	return tcu::TestStatus::pass("Pass");
@@ -447,11 +514,20 @@ tcu::TestStatus bufferMarkerMemoryDep(Context& context, MemoryDepParams params)
 		usageFlags |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 
 	const deUint32					numIters(1000);
-	const DeviceInterface&			vk(*wd.deviceDriver);
+	const DeviceInterface& vk(*wd.deviceDriver);
 	const VkDevice					device(*wd.logicalDevice);
 	const deUint32					size(params.base.size);
 	const VkDeviceSize				markerBufferSize(params.base.size * sizeof(deUint32));
-	Move<VkBuffer>					markerBuffer(makeBuffer(vk, device, params.base.size * sizeof(deUint32), usageFlags));
+	VkExternalMemoryBufferCreateInfo	externalMemoryBufferCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
+		DE_NULL,
+		VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT
+	};
+	VkBufferCreateInfo				bufferCreateInfo = makeBufferCreateInfo(markerBufferSize, usageFlags);
+	if (params.base.useHostPtr)
+		bufferCreateInfo.pNext = &externalMemoryBufferCreateInfo;
+	Move<VkBuffer>					markerBuffer(createBuffer(vk, device, &bufferCreateInfo));
 	MovePtr<ExternalHostMemory>		hostMemory;
 	MovePtr<Allocation>				markerMemory;
 
@@ -518,7 +594,7 @@ tcu::TestStatus bufferMarkerMemoryDep(Context& context, MemoryDepParams params)
 		{
 			pushConstantStage,	// VkShaderStageFlags    stageFlags;
 			0u,					// uint32_t              offset;
-			2*sizeof(deUint32),	// uint32_t              size;
+			2 * sizeof(deUint32),	// uint32_t              size;
 		};
 
 		const VkPipelineLayoutCreateInfo pipelineLayoutInfo =
@@ -567,7 +643,7 @@ tcu::TestStatus bufferMarkerMemoryDep(Context& context, MemoryDepParams params)
 			DE_NULL,									// const VkAttachmentDescription*    pAttachments;
 			1,											// uint32_t                          subpassCount;
 			&subpassInfo,								// const VkSubpassDescription*       pSubpasses;
-			0,											// uint32_t                          dependencyCount;
+			0u,											// uint32_t                          dependencyCount;
 			DE_NULL										// const VkSubpassDependency*        pDependencies
 		};
 
@@ -701,7 +777,7 @@ tcu::TestStatus bufferMarkerMemoryDep(Context& context, MemoryDepParams params)
 			VK_FALSE,													// VkBool32									alphaToOneEnable;
 		};
 
-		const VkStencilOpState						noStencilOp					=
+		const VkStencilOpState						noStencilOp				=
 		{
 			VK_STENCIL_OP_KEEP,		// VkStencilOp    failOp
 			VK_STENCIL_OP_KEEP,		// VkStencilOp    passOp
@@ -794,8 +870,15 @@ tcu::TestStatus bufferMarkerMemoryDep(Context& context, MemoryDepParams params)
 		pipeline = createComputePipeline(vk, device, DE_NULL, &computePipelineInfo);
 	}
 
-	deMemcpy(markerMemory->getHostPtr(), &expected[0], static_cast<size_t>(markerBufferSize));
-	flushAlloc(vk, device, *markerMemory);
+	if (params.base.useHostPtr)
+	{
+		writeHostMemory(vk, device, markerMemory->getMemory(), static_cast<size_t>(markerBufferSize), hostMemory->size, &expected[0]);
+	}
+	else
+	{
+		deMemcpy(markerMemory->getHostPtr(), &expected[0], static_cast<size_t>(markerBufferSize));
+		flushMappedMemoryRange(vk, device, markerMemory->getMemory(), markerMemory->getOffset(), VK_WHOLE_SIZE);
+	}
 
 	const Unique<VkCommandPool>		cmdPool(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, wd.queueFamilyIdx));
 	const Unique<VkCommandBuffer>	cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
@@ -808,18 +891,6 @@ tcu::TestStatus bufferMarkerMemoryDep(Context& context, MemoryDepParams params)
 
 	if (params.method == MEMORY_DEP_DRAW)
 	{
-		const VkRenderPassBeginInfo beginInfo =
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType        sType;
-			DE_NULL,									// const void*            pNext;
-			renderPass.get(),							// VkRenderPass           renderPass;
-			fbo.get(),									// VkFramebuffer          framebuffer;
-			{ { 0, 0, }, { 1, 1 } },					// VkRect2D               renderArea;
-			0,											// uint32_t               clearValueCount;
-			DE_NULL										// const VkClearValue*    pClearValues;
-		};
-
-		vk.cmdBeginRenderPass(*cmdBuffer, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0, 1, &setHandle, 0, DE_NULL);
 	}
@@ -829,8 +900,15 @@ tcu::TestStatus bufferMarkerMemoryDep(Context& context, MemoryDepParams params)
 		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0, 1, &setHandle, 0, DE_NULL);
 	}
 
-	deMemcpy(markerMemory->getHostPtr(), &expected[0], static_cast<size_t>(markerBufferSize));
-	flushAlloc(vk, device, *markerMemory);
+	if (params.base.useHostPtr)
+	{
+		writeHostMemory(vk, device, markerMemory->getMemory(), static_cast<size_t>(markerBufferSize), hostMemory->size, &expected[0]);
+	}
+	else
+	{
+		deMemcpy(markerMemory->getHostPtr(), &expected[0], static_cast<size_t>(markerBufferSize));
+		flushMappedMemoryRange(vk, device, markerMemory->getMemory(), markerMemory->getOffset(), VK_WHOLE_SIZE);
+	}
 
 	deUint32 writeStages = 0;
 	deUint32 writeAccess = 0;
@@ -867,6 +945,22 @@ tcu::TestStatus bufferMarkerMemoryDep(Context& context, MemoryDepParams params)
 			computeMemoryDepBarrier(params, newOwner, &memoryDep.dstAccessMask, &dstStageMask);
 
 			vk.cmdPipelineBarrier(*cmdBuffer, srcStageMask, dstStageMask, 0, 0, DE_NULL, 1, &memoryDep, 0, DE_NULL);
+		}
+
+		if (params.method == MEMORY_DEP_DRAW)
+		{
+			const VkRenderPassBeginInfo beginInfo =
+			{
+				VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType        sType;
+				DE_NULL,									// const void*            pNext;
+				renderPass.get(),							// VkRenderPass           renderPass;
+				fbo.get(),									// VkFramebuffer          framebuffer;
+				{ { 0, 0, }, { 1, 1 } },					// VkRect2D               renderArea;
+				0,											// uint32_t               clearValueCount;
+				DE_NULL										// const VkClearValue*    pClearValues;
+			};
+
+			vk.cmdBeginRenderPass(*cmdBuffer, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
 		}
 
 		const deUint32 value = i;
@@ -913,11 +1007,11 @@ tcu::TestStatus bufferMarkerMemoryDep(Context& context, MemoryDepParams params)
 
 		dataOwner[slot] = newOwner;
 		expected[slot]  = value;
-	}
 
-	if (params.method == MEMORY_DEP_DRAW)
-	{
-		vk.cmdEndRenderPass(*cmdBuffer);
+		if (params.method == MEMORY_DEP_DRAW)
+		{
+			vk.cmdEndRenderPass(*cmdBuffer);
+		}
 	}
 
 	const VkMemoryBarrier memoryDep =
@@ -934,7 +1028,7 @@ tcu::TestStatus bufferMarkerMemoryDep(Context& context, MemoryDepParams params)
 
 	submitCommandsAndWait(vk, device, wd.queue, *cmdBuffer);
 
-	if (!checkMarkerBuffer(vk, device, markerMemory, expected))
+	if (!checkMarkerBuffer(vk, device, markerMemory, expected, params.base.useHostPtr ? hostMemory->size : 0, params.base.useHostPtr))
 		return tcu::TestStatus::fail("Some marker values were incorrect");
 
 	return tcu::TestStatus::pass("Pass");
@@ -949,10 +1043,11 @@ void initMemoryDepPrograms(SourceCollections& programCollection, const MemoryDep
 
             src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
                 << "layout(location = 0) flat out uint offset;\n"
-                << "out gl_PerVertex { vec4 gl_Position; };\n"
+                << "out gl_PerVertex { vec4 gl_Position; float gl_PointSize; };\n"
 				<< "void main() {\n"
 				<< "	offset = gl_VertexIndex;\n"
 				<< "	gl_Position = vec4(0.0, 0.0, 0.0, 1.0);\n"
+				<< "	gl_PointSize = 1.0f;\n"
 				<< "}\n";
 
 			programCollection.glslSources.add("vert") << glu::VertexSource(src.str());

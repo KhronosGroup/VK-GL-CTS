@@ -399,6 +399,26 @@ bool isYCbCr422Format (VkFormat format)
 	}
 }
 
+bool isPvrtcFormat (VkFormat format)
+{
+	switch (format)
+	{
+#ifndef CTS_USES_VULKANSC
+		case VK_FORMAT_PVRTC1_2BPP_UNORM_BLOCK_IMG:
+		case VK_FORMAT_PVRTC1_4BPP_UNORM_BLOCK_IMG:
+		case VK_FORMAT_PVRTC2_2BPP_UNORM_BLOCK_IMG:
+		case VK_FORMAT_PVRTC2_4BPP_UNORM_BLOCK_IMG:
+		case VK_FORMAT_PVRTC1_2BPP_SRGB_BLOCK_IMG:
+		case VK_FORMAT_PVRTC1_4BPP_SRGB_BLOCK_IMG:
+		case VK_FORMAT_PVRTC2_2BPP_SRGB_BLOCK_IMG:
+		case VK_FORMAT_PVRTC2_4BPP_SRGB_BLOCK_IMG:
+			return true;
+#endif
+		default:
+			return false;
+	}
+}
+
 const std::map<VkFormat, std::string> spirvFormats = {
 	{ VK_FORMAT_R32G32B32A32_SFLOAT,		"Rgba32f"		},
 	{ VK_FORMAT_R32G32_SFLOAT,				"Rg32f"			},
