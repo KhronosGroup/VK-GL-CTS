@@ -155,17 +155,17 @@ inline bool byPatchPrimitiveID (const PerPrimitive& a, const PerPrimitive& b)
 	return a.patchPrimitiveID < b.patchPrimitiveID;
 }
 
-inline std::string getProgramName (const std::string& baseName, const Winding winding, const bool usePointMode)
-{
-	std::ostringstream str;
-	str << baseName << "_" << getWindingShaderName(winding) << (usePointMode ? "_point_mode" : "");
-	return str.str();
-}
-
 inline std::string getProgramName (const std::string& baseName, const bool usePointMode, const bool writePointSize)
 {
 	std::ostringstream str;
 	str << baseName << (usePointMode ? "_point_mode" : "") << (writePointSize ? "_write_point_size" : "");
+	return str.str();
+}
+
+inline std::string getProgramName (const std::string& baseName, const bool writePointSize)
+{
+	std::ostringstream str;
+	str << baseName << (writePointSize ? "_write_point_size" : "");
 	return str.str();
 }
 
@@ -2005,27 +2005,35 @@ void initPrograms (vk::SourceCollections& programCollection, const CaseDefinitio
 			return;
 		}
 
-		std::ostringstream src;
-		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
-			<< "#extension GL_EXT_tessellation_shader : require\n"
-			<< "\n"
-			<< "layout(" << getTessPrimitiveTypeShaderName(caseDef.primitiveType) << ", "
-						 << getSpacingModeShaderName(caseDef.spacingMode) << ", "
-						 << getWindingShaderName(caseDef.winding)
-						 << (caseDef.usePointMode ? ", point_mode" : "") << ") in;\n"
-			<< "\n"
-			<< "layout(set = 0, binding = 0, std430) coherent restrict buffer Output {\n"
-			<< "    int  numInvocations;\n"
-			<< "    vec3 tessCoord[];\n"
-			<< "} sb_out;\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "    int index = atomicAdd(sb_out.numInvocations, 1);\n"
-			<< tessCoordSrc.str()
-			<< "}\n";
+		for (deUint32 i = 0; i < 2; ++i)
+		{
+			bool writePointSize = i == 1;
+			std::ostringstream src;
+			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+				<< "#extension GL_EXT_tessellation_shader : require\n";
+			if (writePointSize)
+				src << "#extension GL_EXT_tessellation_point_size : require\n";
+			src << "\n"
+				<< "layout(" << getTessPrimitiveTypeShaderName(caseDef.primitiveType) << ", "
+				<< getSpacingModeShaderName(caseDef.spacingMode) << ", "
+				<< getWindingShaderName(caseDef.winding)
+				<< (caseDef.usePointMode ? ", point_mode" : "") << ") in;\n"
+				<< "\n"
+				<< "layout(set = 0, binding = 0, std430) coherent restrict buffer Output {\n"
+				<< "    int  numInvocations;\n"
+				<< "    vec3 tessCoord[];\n";
+			src << "} sb_out;\n"
+				<< "\n"
+				<< "void main (void)\n"
+				<< "{\n"
+				<< "    int index = atomicAdd(sb_out.numInvocations, 1);\n"
+				<< tessCoordSrc.str();
+			if (writePointSize)
+				src << "    gl_PointSize = 1.0f;\n";
+			src << "}\n";
 
-		programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(src.str());
+			programCollection.glslSources.add(getProgramName("tese", writePointSize)) << glu::TessellationEvaluationSource(src.str());
+		}
 	}
 }
 
@@ -2038,6 +2046,8 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 	const VkQueue			queue				= context.getUniversalQueue();
 	const deUint32			queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	Allocator&				allocator			= context.getDefaultAllocator();
+
+	const bool				tessPointSize		= context.getDeviceFeatures().shaderTessellationAndGeometryPointSize;
 
 	const int						numTessLevelCases	= 32;
 	const std::vector<TessLevels>	tessLevelCases		= genTessLevelCases(numTessLevelCases);
@@ -2093,7 +2103,7 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 		.setVertexInputSingleAttribute(vertexFormat, vertexStride)
 		.setShader                    (vk, device, VK_SHADER_STAGE_VERTEX_BIT,					context.getBinaryCollection().get("vert"), DE_NULL)
 		.setShader                    (vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,	context.getBinaryCollection().get("tesc"), DE_NULL)
-		.setShader                    (vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, context.getBinaryCollection().get("tese"), DE_NULL)
+		.setShader                    (vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, context.getBinaryCollection().get(getProgramName("tese", tessPointSize)), DE_NULL)
 		.build                        (vk, device, *pipelineLayout, *renderPass));
 
 	for (int tessLevelCaseNdx = 0; tessLevelCaseNdx < numTessLevelCases; ++tessLevelCaseNdx)
