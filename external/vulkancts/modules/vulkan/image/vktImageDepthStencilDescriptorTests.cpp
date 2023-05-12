@@ -185,7 +185,7 @@ VkImageUsageFlags getReadOnlyUsageFlags (const ROAccessVec& readOnlyAccesses)
 		if (access == ReadOnlyAccess::DS_ATTACHMENT)
 			usageFlags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 		else if (access == ReadOnlyAccess::INPUT_ATTACHMENT)
-			usageFlags |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+			usageFlags |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 		else if (access == ReadOnlyAccess::SAMPLED)
 			usageFlags |= VK_IMAGE_USAGE_SAMPLED_BIT;
 		else
