@@ -689,6 +689,9 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 			size_t							referenceSize	= 0;
 			vector<deUint8>					reference;
 
+			if ((memoryType.propertyFlags & VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD) != 0 && !context.getCoherentMemoryFeaturesAMD().deviceCoherentMemory)
+				continue;
+
 			if (config.implicitUnmap)
 			{
 				VkDeviceSize max	= 0x10000000; // 256MiB

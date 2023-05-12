@@ -5575,8 +5575,9 @@ tcu::TestCaseGroup* createOpConstantCompositeGroup (tcu::TestContext& testCtx)
 		"             OpReturn\n"
 		"             OpFunctionEnd\n");
 
-	cases.push_back(CaseParameter("vector",			"%five = OpConstant %u32 5\n"
-													"%const = OpConstantComposite %uvec3 %five %zero %five"));
+	cases.push_back(CaseParameter("vector",			"%five = OpConstant %i32 5\n"
+													"%ivec3 = OpTypeVector %i32 3\n"
+													"%const = OpConstantComposite %ivec3 %five %zero %five"));
 	cases.push_back(CaseParameter("matrix",			"%m3fvec3 = OpTypeMatrix %fvec3 3\n"
 													"%ten = OpConstant %f32 10.\n"
 													"%fzero = OpConstant %f32 0.\n"
