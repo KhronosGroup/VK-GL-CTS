@@ -1584,10 +1584,43 @@ struct CaseDescriptions
 	CaseDescription<CommandBuffer>			commandBuffer;
 };
 
+static void checkSupport(Context& context)
+{
+	const std::vector<VkExtensionProperties> extensions =
+		enumerateDeviceExtensionProperties(context.getInstanceInterface(), context.getPhysicalDevice(), DE_NULL);
+
+	for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
+	{
+		if (deStringEqual("VK_EXT_device_memory_report", extensions[extNdx].extensionName))
+		{
+			VkPhysicalDeviceDeviceMemoryReportFeaturesEXT deviceMemoryReportFeatures =
+			{
+				VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_MEMORY_REPORT_FEATURES_EXT,
+				DE_NULL,
+				VK_FALSE
+			};
+
+			VkPhysicalDeviceFeatures2 availFeatures;
+			availFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+			availFeatures.pNext = &deviceMemoryReportFeatures;
+
+			context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &availFeatures);
+
+			if (deviceMemoryReportFeatures.deviceMemoryReport == VK_FALSE)
+			{
+				TCU_THROW(NotSupportedError, "VK_EXT_device_memory_report not supported");
+			}
+			return;
+		}
+	}
+
+	TCU_THROW(NotSupportedError, "VK_EXT_device_memory_report not supported");
+}
+
 template<typename Object>
 static void checkSupport (Context& context, typename Object::Parameters)
 {
-	context.requireDeviceFunctionality("VK_EXT_device_memory_report");
+	checkSupport(context);
 }
 
 template<typename Object>
@@ -1902,11 +1935,6 @@ tcu::TestStatus vkDeviceMemoryAllocationFailedTest (Context& context)
 	return tcu::TestStatus::pass("Ok");
 }
 
-static void checkSupport (Context& context)
-{
-	context.requireDeviceFunctionality("VK_EXT_device_memory_report");
-}
-
 tcu::TestCaseGroup* createVkDeviceMemoryTestsGroup (tcu::TestContext& testCtx, const char* name, const char* desc)
 {
 	MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, name, desc));
@@ -1919,8 +1947,9 @@ tcu::TestCaseGroup* createVkDeviceMemoryTestsGroup (tcu::TestContext& testCtx, c
 
 static void checkSupport (Context& context, VkExternalMemoryHandleTypeFlagBits externalMemoryType)
 {
+	checkSupport(context);
+
 	context.requireInstanceFunctionality("VK_KHR_external_memory_capabilities");
-	context.requireDeviceFunctionality("VK_EXT_device_memory_report");
 	context.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
 	context.requireDeviceFunctionality("VK_KHR_get_memory_requirements2");
 

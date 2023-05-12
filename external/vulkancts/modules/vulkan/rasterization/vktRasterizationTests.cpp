@@ -796,7 +796,8 @@ void BaseRenderingTestInstance::drawPrimitives (tcu::Surface& result, const std:
 												DE_NULL,							// const VkShaderModule                          tessellationControlShaderModule
 												DE_NULL,							// const VkShaderModule                          tessellationEvalShaderModule
 												DE_NULL,							// const VkShaderModule                          geometryShaderModule
-												*m_fragmentShaderModule,			// const VkShaderModule                          fragmentShaderModule
+												rasterizationStateInfo.rasterizerDiscardEnable ? DE_NULL : *m_fragmentShaderModule,
+																					// const VkShaderModule                          fragmentShaderModule
 												*m_renderPass,						// const VkRenderPass                            renderPass
 												viewports,							// const std::vector<VkViewport>&                viewports
 												scissors,							// const std::vector<VkRect2D>&                  scissors
@@ -5743,6 +5744,8 @@ void DiscardTestInstance::drawPrimitivesDiscard (tcu::Surface& result, const std
 			VK_FALSE													// VkBool32									alphaToOneEnable;
 		};
 
+		const VkPipelineRasterizationStateCreateInfo* rasterizationStateInfo = getRasterizationStateCreateInfo();
+
 		graphicsPipeline = makeGraphicsPipeline(vkd,								// const DeviceInterface&							vk
 												vkDevice,							// const VkDevice									device
 												*m_pipelineLayout,					// const VkPipelineLayout							pipelineLayout
@@ -5750,7 +5753,8 @@ void DiscardTestInstance::drawPrimitivesDiscard (tcu::Surface& result, const std
 												DE_NULL,							// const VkShaderModule								tessellationControlShaderModule
 												DE_NULL,							// const VkShaderModule								tessellationEvalShaderModule
 												DE_NULL,							// const VkShaderModule								geometryShaderModule
-												*m_fragmentShaderModule,			// const VkShaderModule								fragmentShaderModule
+												rasterizationStateInfo->rasterizerDiscardEnable ? DE_NULL : *m_fragmentShaderModule,
+																					// const VkShaderModule								fragmentShaderModule
 												*m_renderPass,						// const VkRenderPass								renderPass
 												viewports,							// const std::vector<VkViewport>&					viewports
 												scissors,							// const std::vector<VkRect2D>&						scissors
@@ -5758,7 +5762,7 @@ void DiscardTestInstance::drawPrimitivesDiscard (tcu::Surface& result, const std
 												0u,									// const deUint32									subpass
 												0u,									// const deUint32									patchControlPoints
 												&vertexInputStateParams,			// const VkPipelineVertexInputStateCreateInfo*		vertexInputStateCreateInfo
-												getRasterizationStateCreateInfo(),	// const VkPipelineRasterizationStateCreateInfo*	rasterizationStateCreateInfo
+												rasterizationStateInfo,				// const VkPipelineRasterizationStateCreateInfo*	rasterizationStateCreateInfo
 												&multisampleStateParams,			// const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo
 												DE_NULL,							// const VkPipelineDepthStencilStateCreateInfo*		depthStencilStateCreateInfo,
 												getColorBlendStateCreateInfo());	// const VkPipelineColorBlendStateCreateInfo*		colorBlendStateCreateInfo

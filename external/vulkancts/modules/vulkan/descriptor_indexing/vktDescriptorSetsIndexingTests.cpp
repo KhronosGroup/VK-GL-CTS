@@ -348,8 +348,8 @@ public:
 																	 bool										collectBeforeSubmit = true);
 
 	bool						iterateVerifyResults				(IterateCommonVariables&					variables,
-																	 ut::UpdatablePixelBufferAccessPtr	programResult,
-																	 ut::UpdatablePixelBufferAccessPtr	referenceResult);
+																	 ut::UpdatablePixelBufferAccessPtr			programResult,
+																	 ut::UpdatablePixelBufferAccessPtr			referenceResult);
 
 	Move<VkCommandBuffer>		createCmdBuffer						(void);
 
@@ -1479,7 +1479,9 @@ tcu::TestStatus	CommonDescriptorInstance::iterate					(void)
 			programResult->invalidate();
 		}
 
-	return ( iterateVerifyResults(v, programResult, referenceResult) ? tcu::TestStatus::pass : tcu::TestStatus::fail)("");
+	if (iterateVerifyResults(v, programResult, referenceResult))
+		return tcu::TestStatus::pass("Pass");
+	return tcu::TestStatus::fail("Failed -- check log for details");
 }
 
 std::vector<float> CommonDescriptorInstance::createColorScheme		(void)
@@ -1521,9 +1523,9 @@ void CommonDescriptorInstance::iterateCommandEnd					(IterateCommonVariables&			
 	m_context.resetCommandPoolForVKSC(m_vkd, *m_commandPool);
 }
 
-bool CommonDescriptorInstance::iterateVerifyResults			(IterateCommonVariables&					variables,
-																	 ut::UpdatablePixelBufferAccessPtr	programResult,
-																	 ut::UpdatablePixelBufferAccessPtr	referenceResult)
+bool CommonDescriptorInstance::iterateVerifyResults			(IterateCommonVariables&			variables,
+															 ut::UpdatablePixelBufferAccessPtr	programResult,
+															 ut::UpdatablePixelBufferAccessPtr	referenceResult)
 {
 	bool result = false;
 	if (FUZZY_COMPARE)
@@ -1539,7 +1541,7 @@ bool CommonDescriptorInstance::iterateVerifyResults			(IterateCommonVariables&		
 
 	if (m_testParams.allowVertexStoring)
 	{
-		result = verifyVertexWriteResults(variables);
+		result = (verifyVertexWriteResults(variables) && result);
 	}
 
 	return result;
@@ -3034,12 +3036,16 @@ void StorageBufferInstance::createAndPopulateUnusedDescriptors			(IterateCommonV
 
 bool StorageBufferInstance::verifyVertexWriteResults				(IterateCommonVariables&					variables)
 {
+	auto&						log				= m_context.getTestContext().getLog();
 	const tcu::Vec4				threshold		(0.002f, 0.002f, 0.002f, 0.002f);
-	const std::vector<uint32_t>	primes			= ut::generatePrimes(variables.availableDescriptorCount);
-
-	unsigned char*				buffer = static_cast<unsigned char*>(variables.descriptorsBuffer->alloc->getHostPtr());
+	const std::vector<deUint32>	primes			= ut::generatePrimes(variables.availableDescriptorCount);
+	unsigned char*				buffer			= static_cast<unsigned char*>(variables.descriptorsBuffer->alloc->getHostPtr());
 	BindingStorageBufferData	data;
-	for (uint32_t primeIdx = 0; primeIdx < variables.validDescriptorCount; ++primeIdx)
+
+	log << tcu::TestLog::Message << "Available descriptor count: " << variables.availableDescriptorCount << tcu::TestLog::EndMessage;
+	log << tcu::TestLog::Message << "Valid descriptor count:     " << variables.validDescriptorCount << tcu::TestLog::EndMessage;
+
+	for (deUint32 primeIdx = 0; primeIdx < variables.validDescriptorCount; ++primeIdx)
 	{
 		const uint32_t			prime		= primes[primeIdx];
 		const float				component	= m_colorScheme[(prime % variables.validDescriptorCount) % m_schemeSize];
@@ -3051,7 +3057,14 @@ bool StorageBufferInstance::verifyVertexWriteResults				(IterateCommonVariables&
 
 		const tcu::Vec4			diff = tcu::absDiff(referenceValue, realValue);
 		if (!tcu::boolAll(tcu::lessThanEqual(diff, threshold)))
+		{
+			log << tcu::TestLog::Message
+				<< "Error in valid descriptor " << primeIdx << " (descriptor " << prime << "): expected "
+				<< referenceValue << " but found " << realValue << " (threshold " << threshold << ")"
+				<< tcu::TestLog::EndMessage;
+
 			return false;
+		}
 	}
 	return true;
 }
@@ -3159,11 +3172,15 @@ void StorageTexelInstance::createAndPopulateUnusedDescriptors	(IterateCommonVari
 
 bool StorageTexelInstance::verifyVertexWriteResults(IterateCommonVariables&					variables)
 {
+	auto&						log				= m_context.getTestContext().getLog();
 	const VkExtent3D			imageExtent		= { 4, 4, 1 };
 	const tcu::Vec4				threshold		(0.002f, 0.002f, 0.002f, 0.002f);
 	const std::vector<uint32_t>	primes			= ut::generatePrimes(variables.availableDescriptorCount);
 
-	for (uint32_t primeIdx = 0; primeIdx < variables.validDescriptorCount; ++primeIdx)
+	log << tcu::TestLog::Message << "Available descriptor count: " << variables.availableDescriptorCount << tcu::TestLog::EndMessage;
+	log << tcu::TestLog::Message << "Valid descriptor count:     " << variables.validDescriptorCount << tcu::TestLog::EndMessage;
+
+	for (deUint32 primeIdx = 0; primeIdx < variables.validDescriptorCount; ++primeIdx)
 	{
 		const uint32_t			prime		= primes[primeIdx];
 		const float				component	= m_colorScheme[( prime % variables.validDescriptorCount ) % m_schemeSize];
@@ -3174,7 +3191,14 @@ bool StorageTexelInstance::verifyVertexWriteResults(IterateCommonVariables&					
 
 		const tcu::Vec4			diff		= tcu::absDiff(referenceValue, realValue);
 		if (!tcu::boolAll(tcu::lessThanEqual(diff, threshold)))
+		{
+			log << tcu::TestLog::Message
+				<< "Error in valid descriptor " << primeIdx << " (descriptor " << prime << "): expected "
+				<< referenceValue << " but found " << realValue << " (threshold " << threshold << ")"
+				<< tcu::TestLog::EndMessage;
+
 			return false;
+		}
 	}
 	return true;
 }
@@ -3356,7 +3380,9 @@ tcu::TestStatus	DynamicBuffersInstance::iterate						(void)
 			programResult->invalidate();
 		}
 
-	return (iterateVerifyResults(v, programResult, referenceResult) ? tcu::TestStatus::pass : tcu::TestStatus::fail)("");
+	if (iterateVerifyResults(v, programResult, referenceResult))
+		return tcu::TestStatus::pass("Pass");
+	return tcu::TestStatus::fail("Failed -- check log for details");
 }
 
 class DynamicStorageBufferInstance : public DynamicBuffersInstance, public StorageBufferInstance
@@ -4208,7 +4234,9 @@ tcu::TestStatus StorageImageInstance::iterate						(void)
 
 	iterateCommandEnd(v, programResult, referenceResult, false);
 
-	return ( iterateVerifyResults(v, programResult, referenceResult) ? tcu::TestStatus::pass : tcu::TestStatus::fail)("");
+	if (iterateVerifyResults(v, programResult, referenceResult))
+		return tcu::TestStatus::pass("Pass");
+	return tcu::TestStatus::fail("Failed -- check log for details");
 }
 
 void StorageImageInstance::iterateCollectResults					(ut::UpdatablePixelBufferAccessPtr&			result,
