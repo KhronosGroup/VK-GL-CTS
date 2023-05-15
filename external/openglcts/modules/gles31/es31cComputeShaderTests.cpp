@@ -781,7 +781,8 @@ class LongRunningPersistentSSBOComputeTest : public ComputeShaderBase
 
 		if (!base_render_context_info.isExtensionSupported("GL_EXT_buffer_storage"))
 		{
-			TCU_THROW(NotSupportedError, "EGL_KHR_reusable_sync not supported");
+			OutputNotSupported("GL_EXT_buffer_storage not supported");
+			return NOT_SUPPORTED;
 		}
 
 #if (DE_OS == DE_OS_ANDROID) || defined(DEQP_SURFACELESS) || defined(NULLWS)
