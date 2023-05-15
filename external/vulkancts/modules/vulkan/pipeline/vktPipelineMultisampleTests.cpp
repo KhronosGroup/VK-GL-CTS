@@ -5746,50 +5746,65 @@ tcu::TestStatus ZExportIterate (Context& context, const ZExportParams params)
 	const auto halfWidth	= iExtent.x() / 2;
 	const auto halfHeight	= iExtent.y() / 2;
 
-	// Prepare color reference.
+	const tcu::Vec4 geometryColorNoAlpha	(geometryColor.x(), geometryColor.y(), geometryColor.z(), 0.0f); // For pixels with coverage but alpha set to 0
+
+	// allow skipping alpha to coverage if sample mask output is used
+	std::vector<bool> skipAlphaToCoverageBehaviors = (params.testSampleMask() ? std::vector<bool>({false, true}) : std::vector<bool>({false}));
+
+	for (bool skipAlphaToCoverage : skipAlphaToCoverageBehaviors)
 	{
-		auto leftSide		= tcu::getSubregion(refColorAccess, 0,			0,			halfWidth, iExtent.y());
-		auto topRight		= tcu::getSubregion(refColorAccess, halfWidth,	0,			halfWidth, halfHeight);
-		auto bottomRight	= tcu::getSubregion(refColorAccess, halfWidth,	halfHeight,	halfWidth, halfHeight);
 
-		tcu::clear(leftSide, clearColor);
-		tcu::clear(topRight, geometryColor);
-		tcu::clear(bottomRight, (params.testSampleMask() ? clearColor : geometryColor));
+		// Prepare color reference.
+		{
+			auto topLeft		= tcu::getSubregion(refColorAccess, 0,			0,			halfWidth, halfHeight);
+			auto bottomLeft		= tcu::getSubregion(refColorAccess, 0,			halfHeight,	halfWidth, halfHeight);
+			auto topRight		= tcu::getSubregion(refColorAccess, halfWidth,	0,			halfWidth, halfHeight);
+			auto bottomRight	= tcu::getSubregion(refColorAccess, halfWidth,	halfHeight,	halfWidth, halfHeight);
+
+			tcu::clear(topLeft,		(skipAlphaToCoverage ? geometryColorNoAlpha												: clearColor));
+			tcu::clear(bottomLeft,	(skipAlphaToCoverage ? (params.testSampleMask() ? clearColor	: geometryColorNoAlpha) : clearColor));
+			tcu::clear(topRight, geometryColor);
+			tcu::clear(bottomRight, (params.testSampleMask() ? clearColor : geometryColor));
+		}
+		// Prepare depth reference.
+		{
+			auto topLeft		= tcu::getSubregion(refDepthAccess, 0,			0,			halfWidth, halfHeight);
+			auto bottomLeft		= tcu::getSubregion(refDepthAccess, 0,			halfHeight,	halfWidth, halfHeight);
+			auto topRight		= tcu::getSubregion(refDepthAccess, halfWidth,	0,			halfWidth, halfHeight);
+			auto bottomRight	= tcu::getSubregion(refDepthAccess, halfWidth,	halfHeight,	halfWidth, halfHeight);
+
+			tcu::clearDepth(topLeft,		(skipAlphaToCoverage ? ZExportParams::kExpectedDepth							: ZExportParams::kClearDepth));
+			tcu::clearDepth(bottomLeft,		(skipAlphaToCoverage ? (params.testSampleMask() ? ZExportParams::kClearDepth	: ZExportParams::kExpectedDepth) : ZExportParams::kClearDepth));
+			tcu::clearDepth(topRight,		ZExportParams::kExpectedDepth);
+			tcu::clearDepth(bottomRight,	(params.testSampleMask() ? ZExportParams::kClearDepth : ZExportParams::kExpectedDepth));
+		}
+		// Prepare stencil reference.
+		{
+			const auto clearStencil		= static_cast<int>(ZExportParams::kClearStencil);
+			const auto expectedStencil	= static_cast<int>(ZExportParams::kExpectedStencil);
+
+			auto topLeft		= tcu::getSubregion(refStencilAccess, 0,			0,			halfWidth, halfHeight);
+			auto bottomLeft		= tcu::getSubregion(refStencilAccess, 0,			halfHeight,	halfWidth, halfHeight);
+			auto topRight		= tcu::getSubregion(refStencilAccess, halfWidth,	0,			halfWidth, halfHeight);
+			auto bottomRight	= tcu::getSubregion(refStencilAccess, halfWidth,	halfHeight,	halfWidth, halfHeight);
+
+			tcu::clearStencil(topLeft,		(skipAlphaToCoverage ? expectedStencil							: clearStencil));
+			tcu::clearStencil(bottomLeft,	(skipAlphaToCoverage ? (params.testSampleMask() ? clearStencil	: expectedStencil) : clearStencil));
+			tcu::clearStencil(topRight,		expectedStencil);
+			tcu::clearStencil(bottomRight,	(params.testSampleMask() ? clearStencil : expectedStencil));
+		}
+
+		// Compare results and references.
+		auto& log = context.getTestContext().getLog();
+		const auto colorOK		= tcu::floatThresholdCompare(log, "Color", "Color Result", refColorAccess, colorAccess, tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f), tcu::COMPARE_LOG_ON_ERROR);
+		const auto depthOK		= tcu::dsThresholdCompare(log, "Depth", "Depth Result", refDepthAccess, depthAccess, 0.0f, tcu::COMPARE_LOG_ON_ERROR);
+		const auto stencilOK	= tcu::dsThresholdCompare(log, "Stencil", "Stencil Result", refStencilAccess, stencilAccess, 0.0f, tcu::COMPARE_LOG_ON_ERROR);
+
+		if (colorOK && depthOK && stencilOK)
+			return tcu::TestStatus::pass("Pass");
 	}
-	// Prepare depth reference.
-	{
-		auto leftSide		= tcu::getSubregion(refDepthAccess, 0,			0,			halfWidth, iExtent.y());
-		auto topRight		= tcu::getSubregion(refDepthAccess, halfWidth,	0,			halfWidth, halfHeight);
-		auto bottomRight	= tcu::getSubregion(refDepthAccess, halfWidth,	halfHeight,	halfWidth, halfHeight);
 
-		tcu::clearDepth(leftSide, ZExportParams::kClearDepth);
-		tcu::clearDepth(topRight, ZExportParams::kExpectedDepth);
-		tcu::clearDepth(bottomRight, (params.testSampleMask() ? ZExportParams::kClearDepth : ZExportParams::kExpectedDepth));
-	}
-	// Prepare stencil reference.
-	{
-		const auto clearStencil		= static_cast<int>(ZExportParams::kClearStencil);
-		const auto expectedStencil	= static_cast<int>(ZExportParams::kExpectedStencil);
-
-		auto leftSide		= tcu::getSubregion(refStencilAccess, 0,			0,			halfWidth, iExtent.y());
-		auto topRight		= tcu::getSubregion(refStencilAccess, halfWidth,	0,			halfWidth, halfHeight);
-		auto bottomRight	= tcu::getSubregion(refStencilAccess, halfWidth,	halfHeight,	halfWidth, halfHeight);
-
-		tcu::clearStencil(leftSide, clearStencil);
-		tcu::clearStencil(topRight, expectedStencil);
-		tcu::clearStencil(bottomRight, (params.testSampleMask() ? clearStencil : expectedStencil));
-	}
-
-	// Compare results and references.
-	auto& log = context.getTestContext().getLog();
-	const auto colorOK		= tcu::floatThresholdCompare(log, "Color", "Color Result", refColorAccess, colorAccess, tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f), tcu::COMPARE_LOG_ON_ERROR);
-	const auto depthOK		= tcu::dsThresholdCompare(log, "Depth", "Depth Result", refDepthAccess, depthAccess, 0.0f, tcu::COMPARE_LOG_ON_ERROR);
-	const auto stencilOK	= tcu::dsThresholdCompare(log, "Stencil", "Stencil Result", refStencilAccess, stencilAccess, 0.0f, tcu::COMPARE_LOG_ON_ERROR);
-
-	if (!colorOK || !depthOK || !stencilOK)
-		return tcu::TestStatus::fail("Unexpected color, depth or stencil result; check log for details");
-
-	return tcu::TestStatus::pass("Pass");
+	return tcu::TestStatus::fail("Unexpected color, depth or stencil result; check log for details");
 }
 
 } // anonymous
