@@ -2989,6 +2989,7 @@ class AdvancedLargeStrideAndOffsetsNewAndLegacyAPI : public VertexAttribBindingB
 
 		/* */
 		{
+			glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
 			glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_ssbo);
 			GLubyte* ptr = static_cast<GLubyte*>(
 				glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, (GLsizeiptr)data.size(), GL_MAP_READ_BIT));
