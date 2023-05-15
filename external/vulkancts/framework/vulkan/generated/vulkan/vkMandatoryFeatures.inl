@@ -191,6 +191,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceDescriptorIndexingFeatures.pNext;
 	}
 
+	vk::VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT;
+	deMemset(&physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT, 0, sizeof(physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_dynamic_rendering_unused_attachments") )
+	{
+		physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT.sType = getStructureType<VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT>();
+		*nextPtr = &physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT;
+		nextPtr  = &physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT physicalDeviceExtendedDynamicState2FeaturesEXT;
 	deMemset(&physicalDeviceExtendedDynamicState2FeaturesEXT, 0, sizeof(physicalDeviceExtendedDynamicState2FeaturesEXT));
 
@@ -1360,6 +1370,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceFaultFeaturesEXT.deviceFault == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature deviceFault not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_dynamic_rendering_unused_attachments")) )
+	{
+		if ( physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT.dynamicRenderingUnusedAttachments == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature dynamicRenderingUnusedAttachments not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

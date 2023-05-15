@@ -45,6 +45,7 @@
 #include "vktRenderPassSubpassMergeFeedbackTests.hpp"
 #include "vktDynamicRenderingRandomTests.hpp"
 #include "vktRenderPassDitheringTests.hpp"
+#include "vktDynamicRenderingUnusedAttachmentsTests.hpp"
 
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -7954,6 +7955,11 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, co
 		{
 			renderingTests->addChild(createDynamicRenderingRandomTests(testCtx));
 			renderingTests->addChild(createDynamicRenderingBasicTests(testCtx));
+			renderingTests->addChild(createDynamicRenderingUnusedAttachmentsTests(testCtx, false));
+		}
+		else if (!groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+		{
+			renderingTests->addChild(createDynamicRenderingUnusedAttachmentsTests(testCtx, true));
 		}
 		break;
 #endif // CTS_USES_VULKANSC

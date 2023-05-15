@@ -881,12 +881,22 @@ bool intThresholdCompare (TestLog& log, const char* imageSetName, const char* im
 
 	if (!compareOk || logMode == COMPARE_LOG_EVERYTHING)
 	{
-		// All formats except normalized unsigned fixed point ones need remapping in order to fit into unorm channels in logged images.
-		if (tcu::getTextureChannelClass(reference.getFormat().type)	!= tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT ||
-			tcu::getTextureChannelClass(result.getFormat().type)	!= tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT)
 		{
-			computeScaleAndBias(reference, result, pixelScale, pixelBias);
-			log << TestLog::Message << "Result and reference images are normalized with formula p * " << pixelScale << " + " << pixelBias << TestLog::EndMessage;
+			const auto refChannelClass = tcu::getTextureChannelClass(reference.getFormat().type);
+			const auto resChannelClass = tcu::getTextureChannelClass(result.getFormat().type);
+
+			const bool refIsUint8 = (reference.getFormat().type == TextureFormat::UNSIGNED_INT8);
+			const bool resIsUint8 = (result.getFormat().type == TextureFormat::UNSIGNED_INT8);
+
+			const bool calcScaleBias = ((refChannelClass != tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT && !refIsUint8) ||
+				(resChannelClass != tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT && !resIsUint8));
+
+			// All formats except normalized unsigned fixed point ones need remapping in order to fit into unorm channels in logged images.
+			if (calcScaleBias)
+			{
+				computeScaleAndBias(reference, result, pixelScale, pixelBias);
+				log << TestLog::Message << "Result and reference images are normalized with formula p * " << pixelScale << " + " << pixelBias << TestLog::EndMessage;
+			}
 		}
 
 		if (!compareOk)

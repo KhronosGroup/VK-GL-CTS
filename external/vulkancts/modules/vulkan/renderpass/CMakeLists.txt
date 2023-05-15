@@ -49,6 +49,8 @@ set(DEQP_VK_RENDER_PASS_SRCS
 	vktRenderPassSubpassMergeFeedbackTests.hpp
 	vktDynamicRenderingRandomTests.cpp
 	vktDynamicRenderingRandomTests.hpp
+	vktDynamicRenderingUnusedAttachmentsTests.cpp
+	vktDynamicRenderingUnusedAttachmentsTests.hpp
 	)
 
 PCH(DEQP_VK_RENDER_PASS_SRCS ../pch.cpp)
