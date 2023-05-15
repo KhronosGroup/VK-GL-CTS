@@ -3026,6 +3026,16 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 
 		TCU_THROW(NotSupportedError, "VK_AMD_mixed_attachment_samples or VK_NV_framebuffer_mixed_samples are not supported");
 
+	if (m_testConfig.rasterizationSamplesConfig.dynamicValue &&
+		(m_testConfig.sequenceOrdering == SequenceOrdering::BETWEEN_PIPELINES ||
+		 m_testConfig.sequenceOrdering == SequenceOrdering::AFTER_PIPELINES ||
+		 m_testConfig.sequenceOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC ||
+		 m_testConfig.isReversed()) &&
+		(context.isDeviceFunctionalitySupported("VK_AMD_mixed_attachment_samples") ||
+		context.isDeviceFunctionalitySupported("VK_NV_framebuffer_mixed_samples")))
+
+		TCU_THROW(NotSupportedError, "Test not supported with VK_AMD_mixed_attachment_samples or VK_NV_framebuffer_mixed_samples");
+
 	// Check the number of viewports needed and the corresponding limits.
 	const auto&	viewportConfig	= m_testConfig.viewportConfig;
 	auto		numViewports	= viewportConfig.staticValue.size();

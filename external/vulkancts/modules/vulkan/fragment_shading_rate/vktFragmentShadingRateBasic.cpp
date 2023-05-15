@@ -478,6 +478,7 @@ void FSRTestCase::initPrograms (SourceCollections& programCollection) const
 		vss << "}\n";
 
 		programCollection.glslSources.add("vert") << glu::VertexSource(vss.str());
+		programCollection.glslSources.add("vert_1_2") << glu::VertexSource(vss.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_5, 0u, true);
 
 		if (m_data.geometryShader)
 		{
@@ -2044,7 +2045,11 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 			}
 			else
 			{
-				vertShader = createShaderModule(vk, device, binaries.get("vert"), 0);
+				if (m_context.contextSupports(VK_API_VERSION_1_2))
+					vertShader = createShaderModule(vk, device, binaries.get("vert_1_2"), 0);
+				else
+					vertShader = createShaderModule(vk, device, binaries.get("vert"), 0);
+
 				if (m_data.geometryShader)
 					geomShader = createShaderModule(vk, device, binaries.get("geom"), 0);
 			}
