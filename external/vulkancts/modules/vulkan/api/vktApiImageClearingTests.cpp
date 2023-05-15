@@ -77,6 +77,14 @@ union Threshold {
 	UVec4	uvec4;
 };
 
+bool is64Format (const tcu::TextureFormat tcuFormat)
+{
+		const auto bitDepths	= getTextureFormatBitDepth(tcuFormat);
+		const bool is64Bit		= tcu::boolAny(tcu::equal(bitDepths, tcu::IVec4(64,64,64,64)));
+
+		return is64Bit;
+}
+
 de::MovePtr<Allocation> allocateBuffer (const InstanceInterface&	vki,
 										const DeviceInterface&		vkd,
 										const VkPhysicalDevice&		physDevice,
@@ -344,11 +352,15 @@ bool comparePixelToColorClearValue (const ConstPixelBufferAccess&	access,
 									const BVec4&					channelMask,
 									const TextureChannelClass&		channelClass)
 {
+	const bool is64Bit = is64Format(access.getFormat());
+
 	switch (channelClass)
 	{
 		case TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
 		case TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
 		{
+			DE_ASSERT(!is64Bit); // There are no 64-bit fixed point formats.
+
 			const Vec4	resColor	(access.getPixel(x, y, z));
 			Vec4		refColor	(ref.float32[0],
 									 ref.float32[1],
@@ -372,17 +384,23 @@ bool comparePixelToColorClearValue (const ConstPixelBufferAccess&	access,
 
 		case TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
 		{
-			const UVec4	resColor	(access.getPixelUint(x, y, z));
-			const UVec4	refColor	(ref.uint32[0],
-									 ref.uint32[1],
-									 ref.uint32[2],
-									 ref.uint32[3]);
-			const bool	result		= !(anyNotEqual(logicalAnd(lessThanEqual(absDiff(resColor, refColor), threshold.uvec4), channelMask), channelMask));
+			uint64_t		packed[2]	{ 0ull, 0ull };
+
+			deMemcpy(packed+0, ref.uint32+0, sizeof(uint64_t));
+			deMemcpy(packed+1, ref.uint32+2, sizeof(uint64_t));
+
+			const U64Vec4	resColor	(access.getPixelUint64(x, y, z));
+			const U64Vec4	refColor	((is64Bit ? packed[0] : static_cast<uint64_t>(ref.uint32[0])),
+										 (is64Bit ? packed[1] : static_cast<uint64_t>(ref.uint32[1])),
+										 static_cast<uint64_t>(is64Bit ? 0u : ref.uint32[2]),
+										 static_cast<uint64_t>(is64Bit ? 0u : ref.uint32[3]));
+			const U64Vec4	threshold64	(threshold.uvec4[0], threshold.uvec4[1], threshold.uvec4[2], threshold.uvec4[3]);
+			const bool		result		= !(anyNotEqual(logicalAnd(lessThanEqual(absDiff(resColor, refColor), threshold64), channelMask), channelMask));
 
 			if (!result)
 			{
 				std::stringstream s;
-				s << "Ref:" << refColor << " Mask:" << channelMask << " Threshold:" << threshold.uvec4 << " Color:" << resColor;
+				s << "Ref:" << refColor << " Mask:" << channelMask << " Threshold:" << threshold64 << " Color:" << resColor;
 				stringResult	= s.str();
 			}
 
@@ -391,17 +409,23 @@ bool comparePixelToColorClearValue (const ConstPixelBufferAccess&	access,
 
 		case TEXTURECHANNELCLASS_SIGNED_INTEGER:
 		{
-			const IVec4	resColor	(access.getPixelInt(x, y, z));
-			const IVec4	refColor	(ref.int32[0],
-									 ref.int32[1],
-									 ref.int32[2],
-									 ref.int32[3]);
-			const bool	result		= !(anyNotEqual(logicalAnd(lessThanEqual(absDiff(resColor, refColor), threshold.ivec4), channelMask), channelMask));
+			int64_t			packed[2]	{ 0ll, 0ll };
+
+			deMemcpy(packed+0, ref.int32+0, sizeof(int64_t));
+			deMemcpy(packed+1, ref.int32+2, sizeof(int64_t));
+
+			const I64Vec4	resColor	(access.getPixelInt64(x, y, z));
+			const I64Vec4	refColor	((is64Bit ? packed[0] : static_cast<int64_t>(ref.int32[0])),
+										 (is64Bit ? packed[1] : static_cast<int64_t>(ref.int32[1])),
+										 static_cast<int64_t>(is64Bit ? 0 : ref.int32[2]),
+										 static_cast<int64_t>(is64Bit ? 0 : ref.int32[3]));
+			const I64Vec4	threshold64	(threshold.ivec4[0], threshold.ivec4[1], threshold.ivec4[2], threshold.ivec4[3]);
+			const bool		result		= !(anyNotEqual(logicalAnd(lessThanEqual(absDiff(resColor, refColor), threshold64), channelMask), channelMask));
 
 			if (!result)
 			{
 				std::stringstream s;
-				s << "Ref:" << refColor << " Mask:" << channelMask << " Threshold:" << threshold.ivec4 << " Color:" << resColor;
+				s << "Ref:" << refColor << " Mask:" << channelMask << " Threshold:" << threshold64 << " Color:" << resColor;
 				stringResult	= s.str();
 			}
 
@@ -410,6 +434,10 @@ bool comparePixelToColorClearValue (const ConstPixelBufferAccess&	access,
 
 		case TEXTURECHANNELCLASS_FLOATING_POINT:
 		{
+			// Not supported so far. The threshold calculation would need to be adjusted, and the framework currently does not
+			// support reading 64-bit floats from pixel buffer accesses (see getPixel below).
+			DE_ASSERT(!is64Bit);
+
 			const Vec4	resColor		(access.getPixel(x, y, z));
 			const Vec4	refColor		(ref.float32[0],
 										 ref.float32[1],
@@ -1874,6 +1902,47 @@ VkClearValue makeClearColorValue (VkFormat format, float r, float g, float b, fl
 	return clearValue;
 }
 
+enum class ClearColor64BitCase
+{
+	PACK,
+	INIT,
+};
+
+// The expected value will always use the packed format, for clarity. We will handle it that way when verifying values.
+void makeClearColorValue64 (uint32_t level, ClearColor64BitCase case64, VkClearValue* clear, VkClearValue* expected = nullptr)
+{
+	DE_ASSERT(level <= 1u);
+
+	if (case64 == ClearColor64BitCase::PACK)
+	{
+		// We can pack 2 colors in the 4 elements.
+		const uint32_t lsb[2] = { 0x7FFFFFFFu - level, 0x7FFFFFF7u - level };	// Low bits for each number.
+		const uint32_t msb[2] = { 0xFFFFFFFFu, 0xFFFFFFFFu };					// High bits for each number.
+
+		const uint64_t colors[2] =
+		{
+			((static_cast<uint64_t>(msb[0]) << 32u) | static_cast<uint64_t>(lsb[0])),
+			((static_cast<uint64_t>(msb[1]) << 32u) | static_cast<uint64_t>(lsb[1])),
+		};
+
+		deMemcpy(&(clear->color.uint32[0]), &(colors[0]), sizeof(uint64_t));
+		deMemcpy(&(clear->color.uint32[2]), &(colors[1]), sizeof(uint64_t));
+
+		if (expected)
+		{
+			*expected = *clear;
+		}
+	}
+	else if (case64 == ClearColor64BitCase::INIT)
+	{
+		deMemset(clear, 0, sizeof(*clear));
+		if (expected)
+			*expected = *clear;
+	}
+	else
+		DE_ASSERT(false);
+}
+
 std::string getFormatCaseName (VkFormat format)
 {
 	return de::toLower(de::toString(getFormatStr(format)).substr(10));
@@ -2021,11 +2090,11 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 		VK_FORMAT_R32G32B32A32_UINT,
 		VK_FORMAT_R32G32B32A32_SINT,
 		VK_FORMAT_R32G32B32A32_SFLOAT,
-//		VK_FORMAT_R64_UINT,
-//		VK_FORMAT_R64_SINT,
+		VK_FORMAT_R64_UINT,
+		VK_FORMAT_R64_SINT,
 //		VK_FORMAT_R64_SFLOAT,
-//		VK_FORMAT_R64G64_UINT,
-//		VK_FORMAT_R64G64_SINT,
+		VK_FORMAT_R64G64_UINT,
+		VK_FORMAT_R64G64_SINT,
 //		VK_FORMAT_R64G64_SFLOAT,
 //		VK_FORMAT_R64G64B64_UINT,
 //		VK_FORMAT_R64G64B64_SINT,
@@ -2275,75 +2344,151 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 							const	VkFormat			format			= colorImageFormatsToTest[imageFormatIndex];
 							const	TextureFormat		tcuFormat		= mapVkFormat(format);
 							const	TextureChannelClass	channelClass	= getTextureChannelClass(tcuFormat.type);
-							for (size_t clearColorIndex = 0; clearColorIndex < numOfClearColorsToTest; ++clearColorIndex)
+							const	bool				is64Bit			= is64Format(tcuFormat);
+
+							if (!is64Bit)
 							{
-								const	ClearTestColorParams&	colorParams		= clearColorsToTest[clearColorIndex];
+								for (size_t clearColorIndex = 0; clearColorIndex < numOfClearColorsToTest; ++clearColorIndex)
+								{
+									const	ClearTestColorParams&	colorParams		= clearColorsToTest[clearColorIndex];
 
-								if (colorParams.matchTextureChannelClass && channelClass != colorParams.textureChannelClass)
-									continue;
+									if (colorParams.matchTextureChannelClass && channelClass != colorParams.textureChannelClass)
+										continue;
 
-								VkClearValue					clearColors[2]	=
-								{
-									makeClearColorValue(format, colorParams.clearColors[0][0], colorParams.clearColors[0][1], colorParams.clearColors[0][2], colorParams.clearColors[0][3]),
-									makeClearColorValue(format, colorParams.clearColors[1][0], colorParams.clearColors[1][1], colorParams.clearColors[1][2], colorParams.clearColors[1][3]),
-								};
-								VkClearValue					expectedColors[2];
-								if (clearColorsToTest[clearColorIndex].useSeparateExpectedColors)
-								{
-									expectedColors[0] = makeClearColorValue(format, colorParams.expectedColors[0][0], colorParams.expectedColors[0][1], colorParams.expectedColors[0][2], colorParams.expectedColors[0][3]);
-									expectedColors[1] = makeClearColorValue(format, colorParams.expectedColors[1][0], colorParams.expectedColors[1][1], colorParams.expectedColors[1][2], colorParams.expectedColors[1][3]);
-								}
-								else
-								{
-									expectedColors[0] = clearColors[0];
-									expectedColors[1] = clearColors[1];
-								}
-
-								std::string						testCaseName	= getFormatCaseName(format) + dimensionsString + colorParams.testNameSuffix;
-								TestParams						testParams		=
-								{
-									false,																// bool								useSingleMipLevel;
-									imageTypesToTest[imageTypeIndex],									// VkImageType						imageType;
-									format,																// VkFormat							imageFormat;
-									imageTilingsToTest[imageTilingIndex],								// VkImageTiling					imageTiling;
-									dimensions,															// VkExtent3D						imageExtent;
-									imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount,		// deUint32							imageLayerCount;
+									VkClearValue					clearColors[2]	=
 									{
-										0u,
-										imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount
-									},																	// LayerRange						imageViewLayerRange;
-									makeClearColorValue(format, 0.0f, 0.0f, 0.0f, 0.0f),				// VkClearValue						initValue;
+										makeClearColorValue(format, colorParams.clearColors[0][0], colorParams.clearColors[0][1], colorParams.clearColors[0][2], colorParams.clearColors[0][3]),
+										makeClearColorValue(format, colorParams.clearColors[1][0], colorParams.clearColors[1][1], colorParams.clearColors[1][2], colorParams.clearColors[1][3]),
+									};
+									VkClearValue					expectedColors[2];
+									if (clearColorsToTest[clearColorIndex].useSeparateExpectedColors)
 									{
-										clearColors[0],													// VkClearValue						clearValue[0];
-										clearColors[1],													// VkClearValue						clearValue[1];
-									},
-									clearColorsToTest[clearColorIndex].useSeparateExpectedColors,		// bool								useSeparateExpectedClearValue;
+										expectedColors[0] = makeClearColorValue(format, colorParams.expectedColors[0][0], colorParams.expectedColors[0][1], colorParams.expectedColors[0][2], colorParams.expectedColors[0][3]);
+										expectedColors[1] = makeClearColorValue(format, colorParams.expectedColors[1][0], colorParams.expectedColors[1][1], colorParams.expectedColors[1][2], colorParams.expectedColors[1][3]);
+									}
+									else
 									{
-										expectedColors[0],												// VkClearValue						expectedClearValue[0];
-										expectedColors[1],												// VkClearValue						expectedClearValue[1];
-									},
-									imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange,		// LayerRange						clearLayerRange;
-									allocationKind,														// AllocationKind					allocationKind;
-									false,																// bool								isCube;
-									SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_NONE,							// SeparateDepthStencilLayoutMode	separateDepthStencilLayoutMode;
-									false,																// bool								isColorMultipleSubresourceRangeTest;
-								};
+										expectedColors[0] = clearColors[0];
+										expectedColors[1] = clearColors[1];
+									}
 
-								if (!imageLayerParamsToTest[imageLayerParamsIndex].twoStep)
-								{
-									imageLayersGroup->addChild(new InstanceFactory1<ClearColorImageTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Image", testParams));
-
-									// Removing linear images as the miplevels may be 1
-									if (imageTilingsToTest[imageTilingIndex] == VK_IMAGE_TILING_OPTIMAL)
+									std::string						testCaseName	= getFormatCaseName(format) + dimensionsString + colorParams.testNameSuffix;
+									TestParams						testParams		=
 									{
-										testParams.isColorMultipleSubresourceRangeTest = true;
-										testCaseName += "_multiple_subresourcerange";
-										imageLayersGroup->addChild(new InstanceFactory1<ClearColorImageMultipleSubresourceRangeTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Image with two ranges", testParams));
+										false,																// bool								useSingleMipLevel;
+										imageTypesToTest[imageTypeIndex],									// VkImageType						imageType;
+										format,																// VkFormat							imageFormat;
+										imageTilingsToTest[imageTilingIndex],								// VkImageTiling					imageTiling;
+										dimensions,															// VkExtent3D						imageExtent;
+										imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount,		// deUint32							imageLayerCount;
+										{
+											0u,
+											imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount
+										},																	// LayerRange						imageViewLayerRange;
+										makeClearColorValue(format, 0.0f, 0.0f, 0.0f, 0.0f),				// VkClearValue						initValue;
+										{
+											clearColors[0],													// VkClearValue						clearValue[0];
+											clearColors[1],													// VkClearValue						clearValue[1];
+										},
+										clearColorsToTest[clearColorIndex].useSeparateExpectedColors,		// bool								useSeparateExpectedClearValue;
+										{
+											expectedColors[0],												// VkClearValue						expectedClearValue[0];
+											expectedColors[1],												// VkClearValue						expectedClearValue[1];
+										},
+										imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange,		// LayerRange						clearLayerRange;
+										allocationKind,														// AllocationKind					allocationKind;
+										false,																// bool								isCube;
+										SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_NONE,							// SeparateDepthStencilLayoutMode	separateDepthStencilLayoutMode;
+										false,																// bool								isColorMultipleSubresourceRangeTest;
+									};
+
+									if (!imageLayerParamsToTest[imageLayerParamsIndex].twoStep)
+									{
+										imageLayersGroup->addChild(new InstanceFactory1<ClearColorImageTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Image", testParams));
+
+										// Removing linear images as the miplevels may be 1
+										if (imageTilingsToTest[imageTilingIndex] == VK_IMAGE_TILING_OPTIMAL)
+										{
+											testParams.isColorMultipleSubresourceRangeTest = true;
+											testCaseName += "_multiple_subresourcerange";
+											imageLayersGroup->addChild(new InstanceFactory1<ClearColorImageMultipleSubresourceRangeTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Image with two ranges", testParams));
+										}
+									}
+									else
+									{
+										imageLayersGroup->addChild(new InstanceFactory1<TwoStepClearColorImageTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Image", testParams));
 									}
 								}
-								else
+							}
+							else
+							{
 								{
-									imageLayersGroup->addChild(new InstanceFactory1<TwoStepClearColorImageTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Image", testParams));
+									// The expected values will be packed, so we cannot verify more than 2 channels.
+									const auto numUsedChannels = tcu::getNumUsedChannels(tcuFormat.order);
+									DE_UNREF(numUsedChannels); // For release builds.
+									DE_ASSERT(numUsedChannels <= 2);
+								}
+
+								{
+									VkClearValue initValue;
+									deMemset(&initValue, 0, sizeof(initValue));
+									makeClearColorValue64(0u, ClearColor64BitCase::INIT, &initValue);
+
+									VkClearValue	clearColors[2];
+									VkClearValue	expectedColors[2];
+
+									deMemset(clearColors, 0, sizeof(clearColors));
+									deMemset(expectedColors, 0, sizeof(expectedColors));
+
+									for (size_t i = 0; i < de::arrayLength(clearColors); ++i)
+										makeClearColorValue64(static_cast<uint32_t>(i), ClearColor64BitCase::PACK, clearColors+i, expectedColors+i);
+
+									std::string						testCaseName	= getFormatCaseName(format) + dimensionsString;
+									TestParams						testParams		=
+									{
+										false,																// bool								useSingleMipLevel;
+										imageTypesToTest[imageTypeIndex],									// VkImageType						imageType;
+										format,																// VkFormat							imageFormat;
+										imageTilingsToTest[imageTilingIndex],								// VkImageTiling					imageTiling;
+										dimensions,															// VkExtent3D						imageExtent;
+										imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount,		// deUint32							imageLayerCount;
+										{
+											0u,
+											imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount
+										},																	// LayerRange						imageViewLayerRange;
+										initValue,															// VkClearValue						initValue;
+										{
+											clearColors[0],													// VkClearValue						clearValue[0];
+											clearColors[1],													// VkClearValue						clearValue[1];
+										},
+										true,																// bool								useSeparateExpectedClearValue;
+										{
+											expectedColors[0],												// VkClearValue						expectedClearValue[0];
+											expectedColors[1],												// VkClearValue						expectedClearValue[1];
+										},
+										imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange,		// LayerRange						clearLayerRange;
+										allocationKind,														// AllocationKind					allocationKind;
+										false,																// bool								isCube;
+										SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_NONE,							// SeparateDepthStencilLayoutMode	separateDepthStencilLayoutMode;
+										false,																// bool								isColorMultipleSubresourceRangeTest;
+									};
+
+									if (!imageLayerParamsToTest[imageLayerParamsIndex].twoStep)
+									{
+										imageLayersGroup->addChild(new InstanceFactory1<ClearColorImageTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Image", testParams));
+
+										// Removing linear images as the miplevels may be 1
+										if (imageTilingsToTest[imageTilingIndex] == VK_IMAGE_TILING_OPTIMAL)
+										{
+											testParams.isColorMultipleSubresourceRangeTest = true;
+											testCaseName += "_multiple_subresourcerange";
+											imageLayersGroup->addChild(new InstanceFactory1<ClearColorImageMultipleSubresourceRangeTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Image with two ranges", testParams));
+										}
+									}
+									else
+									{
+										imageLayersGroup->addChild(new InstanceFactory1<TwoStepClearColorImageTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Image", testParams));
+									}
 								}
 							}
 						}
@@ -2478,6 +2623,12 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 						const	VkFormat			format			= colorImageFormatsToTest[imageFormatIndex];
 						const	TextureFormat		tcuFormat		= mapVkFormat(format);
 						const	TextureChannelClass	channelClass	= getTextureChannelClass(tcuFormat.type);
+						const	bool				is64Bit			= is64Format(tcuFormat);
+
+						// We will not check color attachments.
+						if (is64Bit)
+							continue;
+
 						for (size_t clearColorIndex = 0; clearColorIndex < numOfClearColorsToTest; ++clearColorIndex)
 						{
 							const	ClearTestColorParams&	colorParams		= clearColorsToTest[clearColorIndex];
