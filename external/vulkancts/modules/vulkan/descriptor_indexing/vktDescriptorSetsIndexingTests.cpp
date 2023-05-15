@@ -3038,14 +3038,14 @@ bool StorageBufferInstance::verifyVertexWriteResults				(IterateCommonVariables&
 {
 	auto&						log				= m_context.getTestContext().getLog();
 	const tcu::Vec4				threshold		(0.002f, 0.002f, 0.002f, 0.002f);
-	const std::vector<deUint32>	primes			= ut::generatePrimes(variables.availableDescriptorCount);
+	const std::vector<uint32_t>	primes			= ut::generatePrimes(variables.availableDescriptorCount);
 	unsigned char*				buffer			= static_cast<unsigned char*>(variables.descriptorsBuffer->alloc->getHostPtr());
 	BindingStorageBufferData	data;
 
 	log << tcu::TestLog::Message << "Available descriptor count: " << variables.availableDescriptorCount << tcu::TestLog::EndMessage;
 	log << tcu::TestLog::Message << "Valid descriptor count:     " << variables.validDescriptorCount << tcu::TestLog::EndMessage;
 
-	for (deUint32 primeIdx = 0; primeIdx < variables.validDescriptorCount; ++primeIdx)
+	for (uint32_t primeIdx = 0; primeIdx < variables.validDescriptorCount; ++primeIdx)
 	{
 		const uint32_t			prime		= primes[primeIdx];
 		const float				component	= m_colorScheme[(prime % variables.validDescriptorCount) % m_schemeSize];
@@ -3180,7 +3180,7 @@ bool StorageTexelInstance::verifyVertexWriteResults(IterateCommonVariables&					
 	log << tcu::TestLog::Message << "Available descriptor count: " << variables.availableDescriptorCount << tcu::TestLog::EndMessage;
 	log << tcu::TestLog::Message << "Valid descriptor count:     " << variables.validDescriptorCount << tcu::TestLog::EndMessage;
 
-	for (deUint32 primeIdx = 0; primeIdx < variables.validDescriptorCount; ++primeIdx)
+	for (uint32_t primeIdx = 0; primeIdx < variables.validDescriptorCount; ++primeIdx)
 	{
 		const uint32_t			prime		= primes[primeIdx];
 		const float				component	= m_colorScheme[( prime % variables.validDescriptorCount ) % m_schemeSize];
