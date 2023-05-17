@@ -3846,9 +3846,16 @@ tcu::TestStatus formatProperties (Context& context, VkFormat format)
 
 bool optimalTilingFeaturesSupported (Context& context, VkFormat format, VkFormatFeatureFlags features)
 {
-	const VkFormatProperties	properties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
+	const VkFormatProperties	properties							= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
+	const bool					apiVersion10WithoutKhrMaintenance1	= isApiVersionEqual(context.getUsedApiVersion(), VK_API_VERSION_1_0) && !context.isDeviceFunctionalitySupported("VK_KHR_maintenance1");
+	VkFormatFeatureFlags		supported							= properties.optimalTilingFeatures;
 
-	return (properties.optimalTilingFeatures & features) == features;
+	if (apiVersion10WithoutKhrMaintenance1 && supported)
+	{
+		supported |= VK_FORMAT_FEATURE_TRANSFER_SRC_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
+	}
+
+	return (supported & features) == features;
 }
 
 bool optimalTilingFeaturesSupportedForAll (Context& context, const VkFormat* begin, const VkFormat* end, VkFormatFeatureFlags features)
