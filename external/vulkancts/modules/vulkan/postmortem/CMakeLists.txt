@@ -14,6 +14,8 @@ set(DEQP_VK_POSTMORTEM_SRCS
 	vktPostmortemUtil.cpp
 	vktPostmortemDeviceFaultTests.cpp
 	vktPostmortemDeviceFaultTests.hpp
+	vktPostmortemDeviceLossTests.cpp
+	vktPostmortemDeviceLossTests.hpp
 )
 
 set(DEQP_VK_POSTMORTEM_LIBS
