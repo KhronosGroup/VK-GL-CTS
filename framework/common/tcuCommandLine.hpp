@@ -147,6 +147,7 @@ public:
 	bool							parse							(int argc, const char* const* argv);
 	bool							parse							(const std::string& cmdLine);
 
+	const std::string&				getApplicationName				(void) const;
 	const std::string&				getInitialCmdLine				(void) const;
 
 	//! Get log file name (--deqp-log-filename)
@@ -246,6 +247,9 @@ public:
 	//! Should the shader cache be truncated before run (--deqp-shadercache-truncate)
 	bool							isShaderCacheTruncateEnabled	(void) const;
 
+	//! Should the shader cache use inter process communication (IPC) (--deqp-shadercache-ipc)
+	bool							isShaderCacheIPCEnabled	(void) const;
+
 	//! Get shader optimization recipe (--deqp-optimization-recipe)
 	int								getOptimizationRecipe		(void) const;
 
@@ -272,6 +276,54 @@ public:
 
 	//! Should the run be terminated on first failure (--deqp-terminate-on-fail)
 	bool							isTerminateOnFailEnabled	(void) const;
+
+	//! Start as subprocess ( Vulkan SC )
+	bool							isSubProcess				(void) const;
+
+	//! Define default number of tests performed in main process ( Vulkan SC )
+	int								getSubprocessTestCount		(void) const;
+
+	//! Config file defining number of tests performed in subprocess for specific test branches
+	const char*						getSubprocessConfigFile		(void) const;
+
+	//! Optional server address that will be responsible for (among other things) compiling shaders ( Vulkan SC )
+	const char*						getServerAddress			(void) const;
+
+	//! Define minimum size of a single command pool ( Vulkan SC )
+	int								getCommandPoolMinSize(void) const;
+
+	//! Define minimum size of a single command buffer ( Vulkan SC )
+	int								getCommandBufferMinSize(void) const;
+
+	//! Define default size for single command in command buffer ( Vulkan SC )
+	int								getCommandDefaultSize(void) const;
+
+	//! Define default size for single pipeline ( Vulkan SC )
+	int								getPipelineDefaultSize(void) const;
+
+	//! Path to offline pipeline compiler executable
+	const char*						getPipelineCompilerPath		(void) const;
+
+	//! Directory containing input and output pipeline compiler files
+	const char*						getPipelineCompilerDataDir	(void) const;
+
+	//! Additional args for offline pipeline compiler
+	const char*						getPipelineCompilerArgs		(void) const;
+
+	//! Output pipeline cache file produced by offline pipeline compiler
+	const char*						getPipelineCompilerOutputFile(void) const;
+
+	//! Log file for offline pipeline compiler
+	const char*						getPipelineCompilerLogFile	(void) const;
+
+	//! Prefix for offline pipeline compiler input files
+	const char*						getPipelineCompilerFilePrefix(void) const;
+
+	//! Path to Vulkan library (e.g. loader library vulkan-1.dll)
+	const char*						getVkLibraryPath			(void) const;
+
+	//! File that provides a default set of application parameters
+	const char*						getAppParamsInputFilePath(void) const;
 
 	/*--------------------------------------------------------------------*//*!
 	 * \brief Creates case list filter
@@ -300,10 +352,12 @@ private:
 
 	virtual void					registerExtendedOptions		(de::cmdline::Parser& parser);
 
+	std::string						m_appName;
 	de::cmdline::CommandLine		m_cmdLine;
 	deUint32						m_logFlags;
 
 	std::string						m_initialCmdLine;
+	bool							m_hadHelpSpecified;
 };
 
 } // tcu

@@ -26,13 +26,14 @@
 
 #include "tcuDefs.hpp"
 #include "tcuTestCase.hpp"
+#include "vktDrawGroupParams.hpp"
 
 namespace vkt
 {
 namespace Draw
 {
 
-tcu::TestCaseGroup*		createShaderViewportIndexTests	(tcu::TestContext& testCtx, bool useDynamicRendering);
+tcu::TestCaseGroup*		createShaderViewportIndexTests	(tcu::TestContext& testCtx, const SharedGroupParams groupParams);
 
 } // Draw
 } // vkt

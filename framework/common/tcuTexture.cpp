@@ -588,6 +588,11 @@ bool isColorOrder (TextureFormat::ChannelOrder order)
 	}
 }
 
+float getImageViewMinLod(ImageViewMinLod& l)
+{
+	return (l.mode == IMAGEVIEWMINLODMODE_PREFERRED) ? l.value : deFloatFloor(l.value);
+}
+
 } // anonymous
 
 bool isValid (TextureFormat format)
@@ -2480,14 +2485,14 @@ Vec4 sampleLevelArray1D (const ConstPixelBufferAccess* levels, int numLevels, co
 	return sampleLevelArray1DOffset(levels, numLevels, sampler, s, lod, IVec2(0, depth)); // y-offset in 1D textures is layer selector
 }
 
-Vec4 sampleLevelArray2D (const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, int depth, float lod, bool es2)
+Vec4 sampleLevelArray2D (const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, int depth, float lod, bool es2, ImageViewMinLodParams* minLodParams)
 {
-	return sampleLevelArray2DOffset(levels, numLevels, sampler, s, t, lod, IVec3(0, 0, depth), es2); // z-offset in 2D textures is layer selector
+	return sampleLevelArray2DOffset(levels, numLevels, sampler, s, t, lod, IVec3(0, 0, depth), es2, minLodParams); // z-offset in 2D textures is layer selector
 }
 
-Vec4 sampleLevelArray3D (const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, float r, float lod)
+Vec4 sampleLevelArray3D (const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, float r, float lod, ImageViewMinLodParams* minLodParams)
 {
-	return sampleLevelArray3DOffset(levels, numLevels, sampler, s, t, r, lod, IVec3(0, 0, 0));
+	return sampleLevelArray3DOffset(levels, numLevels, sampler, s, t, r, lod, IVec3(0, 0, 0), minLodParams);
 }
 
 Vec4 sampleLevelArray1DOffset (const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float lod, const IVec2& offset)
@@ -2530,28 +2535,57 @@ Vec4 sampleLevelArray1DOffset (const ConstPixelBufferAccess* levels, int numLeve
 	}
 }
 
-Vec4 sampleLevelArray2DOffset (const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, float lod, const IVec3& offset, bool es2)
+Vec4 sampleLevelArray2DOffset (const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, float lod, const IVec3& offset, bool es2, ImageViewMinLodParams* minLodParams)
 {
 	bool					magnified;
+	// minLodRelative is used to calculate the image level to sample from, when VK_EXT_image_view_min_lod extension is enabled.
+	// The value is relative to baseLevel as the Texture*View was created as the baseLevel being level[0].
+	const float				minLodRelative	= (minLodParams != DE_NULL) ? getImageViewMinLod(minLodParams->minLod) - (float)minLodParams->baseLevel : 0.0f;
 
 	if (es2 && sampler.magFilter == Sampler::LINEAR &&
 		(sampler.minFilter == Sampler::NEAREST_MIPMAP_NEAREST || sampler.minFilter == Sampler::NEAREST_MIPMAP_LINEAR))
 		magnified = lod <= 0.5;
 	else
 		magnified = lod <= sampler.lodThreshold;
-	Sampler::FilterMode		filterMode	= magnified ? sampler.magFilter : sampler.minFilter;
 
+	// VK_EXT_image_view_min_lod: Integer Texel Coordinates case (with robustness2 supported)
+	if (minLodParams != DE_NULL && minLodParams->intTexCoord)
+	{
+		if (lod < deFloatFloor(minLodRelative) || lod >= (float)numLevels)
+			return Vec4(0.0f);
+
+		if (s < 0.0f || s > 1.0f || t < 0.0f || t > 1.0f)
+			return Vec4(0.0f);
+	}
+
+	Sampler::FilterMode		filterMode	= magnified ? sampler.magFilter : sampler.minFilter;
 	switch (filterMode)
 	{
 		case Sampler::NEAREST:
 		case Sampler::LINEAR:
 		case Sampler::CUBIC:
-			return levels[0].sample2DOffset(sampler, filterMode, s, t, offset);
+		{
+			bool isLinearMipmapMode	= magnified && tcu::isSamplerMipmapModeLinear(sampler.minFilter);
+			const int maxLevel		= (int)numLevels - 1;
+			const int level0		= isLinearMipmapMode ? (int)deFloatFloor(minLodRelative) : deClamp32((int)deFloatCeil(minLodRelative + 0.5f) - 1, 0, maxLevel);
+			tcu::Vec4 t0			= levels[level0].sample2DOffset(sampler, filterMode, s, t, offset);
+
+			if (!isLinearMipmapMode)
+				return t0;
+
+			const float frac		= deFloatFrac(minLodRelative);
+			const int level1		= de::min(level0 + 1, maxLevel);
+			tcu::Vec4 t1			= levels[level1].sample2DOffset(sampler, filterMode, s, t, offset);
+			return t0*(1.0f - frac) + t1*frac;
+		}
 
 		case Sampler::NEAREST_MIPMAP_NEAREST:
 		case Sampler::LINEAR_MIPMAP_NEAREST:
 		case Sampler::CUBIC_MIPMAP_NEAREST:
 		{
+			if (minLodParams != DE_NULL && !minLodParams->intTexCoord)
+				lod = de::max(lod, minLodRelative);
+
 			int					maxLevel	= (int)numLevels-1;
 			int					level		= deClamp32((int)deFloatCeil(lod + 0.5f) - 1, 0, maxLevel);
 			Sampler::FilterMode	levelFilter;
@@ -2572,6 +2606,9 @@ Vec4 sampleLevelArray2DOffset (const ConstPixelBufferAccess* levels, int numLeve
 		case Sampler::LINEAR_MIPMAP_LINEAR:
 		case Sampler::CUBIC_MIPMAP_LINEAR:
 		{
+			if (minLodParams != DE_NULL && !minLodParams->intTexCoord)
+				lod = de::max(lod, minLodRelative);
+
 			int					maxLevel	= (int)numLevels-1;
 			int					level0		= deClamp32((int)deFloatFloor(lod), 0, maxLevel);
 			int					level1		= de::min(maxLevel, level0 + 1);
@@ -2598,19 +2635,49 @@ Vec4 sampleLevelArray2DOffset (const ConstPixelBufferAccess* levels, int numLeve
 	}
 }
 
-Vec4 sampleLevelArray3DOffset (const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, float r, float lod, const IVec3& offset)
+Vec4 sampleLevelArray3DOffset (const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, float r, float lod, const IVec3& offset, ImageViewMinLodParams* minLodParams)
 {
+	// minLodRelative is used to calculate the image level to sample from, when VK_EXT_image_view_min_lod extension is enabled.
+	// The value is relative to baseLevel as the Texture*View was created as the baseLevel being level[0].
+	const float				minLodRelative	= (minLodParams != DE_NULL) ? getImageViewMinLod(minLodParams->minLod) - (float)minLodParams->baseLevel : 0.0f;
 	bool					magnified	= lod <= sampler.lodThreshold;
 	Sampler::FilterMode		filterMode	= magnified ? sampler.magFilter : sampler.minFilter;
 
+	// VK_EXT_image_view_min_lod: Integer Texel Coordinates case (with robustness2 supported)
+	if (minLodParams != DE_NULL && minLodParams->intTexCoord)
+	{
+		if (lod < deFloatFloor(minLodRelative) || lod >= (float)numLevels)
+			return Vec4(0.0f);
+
+		if (s < 0.0f || s > 1.0f || t < 0.0f || t > 1.0f)
+			return Vec4(0.0f);
+	}
+
 	switch (filterMode)
 	{
-		case Sampler::NEAREST:	return levels[0].sample3DOffset(sampler, filterMode, s, t, r, offset);
-		case Sampler::LINEAR:	return levels[0].sample3DOffset(sampler, filterMode, s, t, r, offset);
+		case Sampler::NEAREST:
+		case Sampler::LINEAR:
+		{
+			bool isLinearMipmapMode	= magnified && tcu::isSamplerMipmapModeLinear(sampler.minFilter);
+			const int maxLevel		= (int)numLevels - 1;
+			const int level0		= isLinearMipmapMode ? (int)deFloatFloor(minLodRelative) : deClamp32((int)deFloatCeil(minLodRelative + 0.5f) - 1, 0, maxLevel);
+			tcu::Vec4 t0			= levels[level0].sample3DOffset(sampler, filterMode, s, t, r, offset);
+
+			if (!isLinearMipmapMode)
+				return t0;
+
+			const float frac		= deFloatFrac(minLodRelative);
+			const int level1		= de::min(level0 + 1, maxLevel);
+			tcu::Vec4 t1			= levels[level1].sample3DOffset(sampler, filterMode, s, t, r, offset);
+			return t0*(1.0f - frac) + t1*frac;
+		}
 
 		case Sampler::NEAREST_MIPMAP_NEAREST:
 		case Sampler::LINEAR_MIPMAP_NEAREST:
 		{
+			if (minLodParams != DE_NULL && !minLodParams->intTexCoord)
+				lod = de::max(lod, minLodRelative);
+
 			int					maxLevel	= (int)numLevels-1;
 			int					level		= deClamp32((int)deFloatCeil(lod + 0.5f) - 1, 0, maxLevel);
 			Sampler::FilterMode	levelFilter	= (filterMode == Sampler::LINEAR_MIPMAP_NEAREST) ? Sampler::LINEAR : Sampler::NEAREST;
@@ -2621,6 +2688,9 @@ Vec4 sampleLevelArray3DOffset (const ConstPixelBufferAccess* levels, int numLeve
 		case Sampler::NEAREST_MIPMAP_LINEAR:
 		case Sampler::LINEAR_MIPMAP_LINEAR:
 		{
+			if (minLodParams != DE_NULL && !minLodParams->intTexCoord)
+				lod = de::max(lod, minLodRelative);
+
 			int					maxLevel	= (int)numLevels-1;
 			int					level0		= deClamp32((int)deFloatFloor(lod), 0, maxLevel);
 			int					level1		= de::min(maxLevel, level0 + 1);
@@ -2847,6 +2917,11 @@ Vec2 projectToFace (CubeFace face, const Vec3& coord)
 			DE_ASSERT(DE_FALSE);
 	}
 
+	if (fabs(ma) < FLT_EPSILON)
+	{
+		return Vec2(0.0f);
+	}
+
 	// Compute s, t
 	s = ((sc / ma) + 1.0f) / 2.0f;
 	t = ((tc / ma) + 1.0f) / 2.0f;
@@ -3004,28 +3079,73 @@ static Vec4 sampleCubeSeamlessLinear (const ConstPixelBufferAccess (&faceAccesse
 		   (sampleColors[3]*(     a)*(     b));
 }
 
-static Vec4 sampleLevelArrayCubeSeamless (const ConstPixelBufferAccess* const (&faces)[CUBEFACE_LAST], int numLevels, CubeFace face, const Sampler& sampler, float s, float t, int depth, float lod)
+static Vec4 sampleLevelArrayCubeSeamless (const ConstPixelBufferAccess* const (&faces)[CUBEFACE_LAST], int numLevels, CubeFace face, const Sampler& sampler, float s, float t, int depth, float lod, ImageViewMinLodParams* minLodParams)
 {
+	// minLodRelative is used to calculate the image level to sample from, when VK_EXT_image_view_min_lod extension is enabled.
+	// The value is relative to baseLevel as the Texture*View was created as the baseLevel being level[0].
+	const float				minLodRelative	= (minLodParams != DE_NULL) ? getImageViewMinLod(minLodParams->minLod) - (float)minLodParams->baseLevel : 0.0f;
 	bool					magnified	= lod <= sampler.lodThreshold;
 	Sampler::FilterMode		filterMode	= magnified ? sampler.magFilter : sampler.minFilter;
+
+	// VK_EXT_image_view_min_lod: Integer Texel Coordinates case (with robustness2 supported)
+	if (minLodParams != DE_NULL && minLodParams->intTexCoord)
+	{
+		if (lod < deFloatFloor(minLodRelative) || lod >= (float)(numLevels - 1))
+			return Vec4(0.0f);
+
+		if (s < 0.0f || s > 1.0f || t < 0.0f || t > 1.0f)
+			return Vec4(0.0f);
+	}
 
 	switch (filterMode)
 	{
 		case Sampler::NEAREST:
-			return sampleCubeSeamlessNearest(faces[face][0], sampler, s, t, depth);
+		{
+			bool isLinearMipmapMode	= magnified && tcu::isSamplerMipmapModeLinear(sampler.minFilter);
+			const int maxLevel		= (int)numLevels - 1;
+			const int level0		= isLinearMipmapMode ? (int)deFloatFloor(minLodRelative) : deClamp32((int)deFloatCeil(minLodRelative + 0.5f) - 1, 0, maxLevel);
+			tcu::Vec4 t0			= sampleCubeSeamlessNearest(faces[face][level0], sampler, s, t, depth);
+
+			if (!isLinearMipmapMode)
+				return t0;
+
+			const float frac		= deFloatFrac(minLodRelative);
+			const int level1		= de::min(level0 + 1, maxLevel);
+			tcu::Vec4 t1			= sampleCubeSeamlessNearest(faces[face][level1], sampler, s, t, depth);
+			return t0*(1.0f - frac) + t1*frac;
+		}
 
 		case Sampler::LINEAR:
 		{
+			bool cond = sampler.minFilter == Sampler::NEAREST_MIPMAP_LINEAR || sampler.minFilter == Sampler::LINEAR_MIPMAP_LINEAR;
+			const int index = cond ? (int)deFloatFloor(minLodRelative) : ((int)deFloatCeil(minLodRelative + 0.5f) - 1u);
 			ConstPixelBufferAccess faceAccesses[CUBEFACE_LAST];
 			for (int i = 0; i < (int)CUBEFACE_LAST; i++)
-				faceAccesses[i] = faces[i][0];
+				faceAccesses[i] = faces[i][index];
 
-			return sampleCubeSeamlessLinear(faceAccesses, face, sampler, s, t, depth);
+			Vec4 result = sampleCubeSeamlessLinear(faceAccesses, face, sampler, s, t, depth);
+
+
+			if (cond && ((index + 1) < numLevels) && deFloatFrac(minLodRelative) != 0.0f)
+			{
+				// In case of a minLodRelative value with fractional part, we need to ponderate the different sample of N level
+				// and sample for level N+1 accordingly.
+				result = result * (1.0f - deFloatFrac(minLodRelative));
+
+				ConstPixelBufferAccess faceAccessesNext[CUBEFACE_LAST];
+				for (int i = 0; i < (int)CUBEFACE_LAST; i++)
+					faceAccessesNext[i] = faces[i][index + 1];
+				result += sampleCubeSeamlessLinear(faceAccesses, face, sampler, s, t, depth) * deFloatFrac(minLodRelative);
+			}
+			return result;
 		}
 
 		case Sampler::NEAREST_MIPMAP_NEAREST:
 		case Sampler::LINEAR_MIPMAP_NEAREST:
 		{
+			if (minLodParams != DE_NULL && !minLodParams->intTexCoord)
+				lod = de::max(lod, minLodRelative);
+
 			int						maxLevel	= (int)numLevels-1;
 			int						level		= deClamp32((int)deFloatCeil(lod + 0.5f) - 1, 0, maxLevel);
 			Sampler::FilterMode		levelFilter	= (filterMode == Sampler::LINEAR_MIPMAP_NEAREST) ? Sampler::LINEAR : Sampler::NEAREST;
@@ -3047,6 +3167,9 @@ static Vec4 sampleLevelArrayCubeSeamless (const ConstPixelBufferAccess* const (&
 		case Sampler::NEAREST_MIPMAP_LINEAR:
 		case Sampler::LINEAR_MIPMAP_LINEAR:
 		{
+			if (minLodParams != DE_NULL && !minLodParams->intTexCoord)
+				lod = de::max(lod, minLodRelative);
+
 			int						maxLevel	= (int)numLevels-1;
 			int						level0		= deClamp32((int)deFloatFloor(lod), 0, maxLevel);
 			int						level1		= de::min(maxLevel, level0 + 1);
@@ -3625,14 +3748,17 @@ void Texture2D::allocLevel (int levelNdx)
 
 TextureCubeView::TextureCubeView (void)
 	: m_numLevels(0)
+	, m_es2(false)
+	, m_minLodParams (DE_NULL)
 {
 	for (int ndx = 0; ndx < CUBEFACE_LAST; ndx++)
 		m_levels[ndx] = DE_NULL;
 }
 
-TextureCubeView::TextureCubeView (int numLevels, const ConstPixelBufferAccess* const (&levels) [CUBEFACE_LAST], bool es2)
+TextureCubeView::TextureCubeView (int numLevels, const ConstPixelBufferAccess* const (&levels) [CUBEFACE_LAST], bool es2, ImageViewMinLodParams *minLodParams)
 	: m_numLevels(numLevels)
 	, m_es2(es2)
+	, m_minLodParams(minLodParams)
 {
 	for (int ndx = 0; ndx < CUBEFACE_LAST; ndx++)
 		m_levels[ndx] = levels[ndx];
@@ -3645,9 +3771,9 @@ tcu::Vec4 TextureCubeView::sample (const Sampler& sampler, float s, float t, flo
 	// Computes (face, s, t).
 	const CubeFaceFloatCoords coords = getCubeFaceCoords(Vec3(s, t, r));
 	if (sampler.seamlessCubeMap)
-		return sampleLevelArrayCubeSeamless(m_levels, m_numLevels, coords.face, sampler, coords.s, coords.t, 0 /* depth */, lod);
+		return sampleLevelArrayCubeSeamless(m_levels, m_numLevels, coords.face, sampler, coords.s, coords.t, 0 /* depth */, lod, m_minLodParams);
 	else
-		return sampleLevelArray2D(m_levels[coords.face], m_numLevels, sampler, coords.s, coords.t, 0 /* depth */, lod, m_es2);
+		return sampleLevelArray2D(m_levels[coords.face], m_numLevels, sampler, coords.s, coords.t, 0 /* depth */, lod, m_es2, m_minLodParams);
 }
 
 float TextureCubeView::sampleCompare (const Sampler& sampler, float ref, float s, float t, float r, float lod) const
@@ -3821,7 +3947,7 @@ void TextureCube::clearLevel (tcu::CubeFace face, int levelNdx)
 
 // Texture1DArrayView
 
-Texture1DArrayView::Texture1DArrayView (int numLevels, const ConstPixelBufferAccess* levels, bool es2 DE_UNUSED_ATTR)
+Texture1DArrayView::Texture1DArrayView (int numLevels, const ConstPixelBufferAccess* levels, bool es2 DE_UNUSED_ATTR, ImageViewMinLodParams* minLodParams DE_UNUSED_ATTR)
 	: m_numLevels	(numLevels)
 	, m_levels		(levels)
 {
@@ -3855,7 +3981,7 @@ float Texture1DArrayView::sampleCompareOffset (const Sampler& sampler, float ref
 
 // Texture2DArrayView
 
-Texture2DArrayView::Texture2DArrayView (int numLevels, const ConstPixelBufferAccess* levels, bool es2 DE_UNUSED_ATTR)
+Texture2DArrayView::Texture2DArrayView (int numLevels, const ConstPixelBufferAccess* levels, bool es2 DE_UNUSED_ATTR, ImageViewMinLodParams* minLodParams DE_UNUSED_ATTR)
 	: m_numLevels	(numLevels)
 	, m_levels		(levels)
 {
@@ -3993,9 +4119,11 @@ void Texture2DArray::allocLevel (int levelNdx)
 
 // Texture3DView
 
-Texture3DView::Texture3DView (int numLevels, const ConstPixelBufferAccess* levels, bool es2 DE_UNUSED_ATTR)
-	: m_numLevels	(numLevels)
-	, m_levels		(levels)
+Texture3DView::Texture3DView (int numLevels, const ConstPixelBufferAccess* levels, bool es2, ImageViewMinLodParams *minLodParams)
+	: m_numLevels		(numLevels)
+	, m_levels			(levels)
+	, m_es2				(es2)
+	, m_minLodParams	(minLodParams)
 {
 }
 
@@ -4051,7 +4179,7 @@ void Texture3D::allocLevel (int levelNdx)
 
 // TextureCubeArrayView
 
-TextureCubeArrayView::TextureCubeArrayView (int numLevels, const ConstPixelBufferAccess* levels, bool es2 DE_UNUSED_ATTR)
+TextureCubeArrayView::TextureCubeArrayView (int numLevels, const ConstPixelBufferAccess* levels, bool es2 DE_UNUSED_ATTR, ImageViewMinLodParams* minLodParams DE_UNUSED_ATTR)
 	: m_numLevels	(numLevels)
 	, m_levels		(levels)
 {
@@ -4261,4 +4389,25 @@ std::ostream& operator<< (std::ostream& str, const ConstPixelBufferAccess& acces
 			   << ", pitch = " << access.getRowPitch() << " / " << access.getSlicePitch();
 }
 
+deBool isSamplerMipmapModeLinear (tcu::Sampler::FilterMode filterMode)
+{
+	DE_STATIC_ASSERT(tcu::Sampler::FILTERMODE_LAST == 9);
+	switch (filterMode)
+	{
+		case tcu::Sampler::NEAREST:
+		case tcu::Sampler::LINEAR:
+		case tcu::Sampler::CUBIC:
+		case tcu::Sampler::NEAREST_MIPMAP_NEAREST:
+		case tcu::Sampler::LINEAR_MIPMAP_NEAREST:
+		case tcu::Sampler::CUBIC_MIPMAP_NEAREST:
+			return DE_FALSE;
+		case tcu::Sampler::NEAREST_MIPMAP_LINEAR:
+		case tcu::Sampler::LINEAR_MIPMAP_LINEAR:
+		case tcu::Sampler::CUBIC_MIPMAP_LINEAR:
+			return DE_TRUE;
+		default:
+			DE_FATAL("Illegal filter mode");
+			return DE_FALSE;
+	}
+}
 } // tcu

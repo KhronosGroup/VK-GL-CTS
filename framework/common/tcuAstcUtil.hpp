@@ -67,8 +67,8 @@ void			generateBlockCaseTestData		(std::vector<deUint8>& dst, CompressedTexForma
 void			generateRandomBlocks			(deUint8* dst, size_t numBlocks, CompressedTexFormat format, deUint32 seed);
 void			generateRandomValidBlocks		(deUint8* dst, size_t numBlocks, CompressedTexFormat format, TexDecompressionParams::AstcMode mode, deUint32 seed);
 
-void			generateDummyVoidExtentBlocks	(deUint8* dst, size_t numBlocks);
-void			generateDummyNormalBlocks		(deUint8* dst, size_t numBlocks, int blockWidth, int blockHeight);
+void			generateDefaultVoidExtentBlocks	(deUint8* dst, size_t numBlocks);
+void			generateDefaultNormalBlocks		(deUint8* dst, size_t numBlocks, int blockWidth, int blockHeight);
 
 bool			isValidBlock					(const deUint8* data, CompressedTexFormat format, TexDecompressionParams::AstcMode mode);
 

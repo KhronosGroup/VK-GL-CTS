@@ -1,0 +1,168 @@
+#!amber
+
+# Copyright 2021 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a coverage-gap found by the GraphicsFuzz project.
+
+# Short description: A fragment shader that covers specific LLVM code paths
+
+# The test passes because the shader always writes red.
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 320 es
+# #define _int_1 _GLF_uniform_int_values[0]
+# #define _int_0 _GLF_uniform_int_values[1]
+#
+# precision highp int;
+# precision highp float;
+#
+# // Contents of _GLF_uniform_int_values: [1, 0]
+# layout(set = 0, binding = 0) uniform buf0
+# {
+#     int _GLF_uniform_int_values[2];
+# };
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# int func()
+# {
+#     int a = 1;
+#     return (1 + a) - 1;
+# }
+#
+# void main()
+# {
+#     // Always true.
+#     if(func() == 1)
+#     {
+#         _GLF_color = vec4(_int_1, _int_0, _int_0, _int_1);
+#     }
+#     else
+#     {
+#         _GLF_color = vec4(_int_0);
+#     }
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 10
+; Bound: 53
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %26
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpName %4 "main"
+               OpName %8 "func("
+               OpName %11 "a"
+               OpName %26 "_GLF_color"
+               OpName %30 "buf0"
+               OpMemberName %30 0 "_GLF_uniform_int_values"
+               OpName %32 ""
+               OpDecorate %26 Location 0
+               OpDecorate %29 ArrayStride 16
+               OpMemberDecorate %30 0 Offset 0
+               OpDecorate %30 Block
+               OpDecorate %32 DescriptorSet 0
+               OpDecorate %32 Binding 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeFunction %6
+         %10 = OpTypePointer Function %6
+         %12 = OpConstant %6 1
+         %19 = OpTypeBool
+         %23 = OpTypeFloat 32
+         %24 = OpTypeVector %23 4
+         %25 = OpTypePointer Output %24
+         %26 = OpVariable %25 Output
+         %27 = OpTypeInt 32 0
+         %28 = OpConstant %27 2
+         %29 = OpTypeArray %6 %28
+         %30 = OpTypeStruct %29
+         %31 = OpTypePointer Uniform %30
+         %32 = OpVariable %31 Uniform
+         %33 = OpConstant %6 0
+         %34 = OpTypePointer Uniform %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %18 = OpFunctionCall %6 %8
+         %20 = OpIEqual %19 %18 %12
+               OpSelectionMerge %22 None
+               OpBranchConditional %20 %21 %48
+         %21 = OpLabel
+         %35 = OpAccessChain %34 %32 %33 %33
+         %36 = OpLoad %6 %35
+         %37 = OpConvertSToF %23 %36
+         %38 = OpAccessChain %34 %32 %33 %12
+         %39 = OpLoad %6 %38
+         %40 = OpConvertSToF %23 %39
+         %41 = OpAccessChain %34 %32 %33 %12
+         %42 = OpLoad %6 %41
+         %43 = OpConvertSToF %23 %42
+         %44 = OpAccessChain %34 %32 %33 %33
+         %45 = OpLoad %6 %44
+         %46 = OpConvertSToF %23 %45
+         %47 = OpCompositeConstruct %24 %37 %40 %43 %46
+               OpStore %26 %47
+               OpBranch %22
+         %48 = OpLabel
+         %49 = OpAccessChain %34 %32 %33 %12
+         %50 = OpLoad %6 %49
+         %51 = OpConvertSToF %23 %50
+         %52 = OpCompositeConstruct %24 %51 %51 %51 %51
+               OpStore %26 %52
+               OpBranch %22
+         %22 = OpLabel
+               OpReturn
+               OpFunctionEnd
+          %8 = OpFunction %6 None %7
+          %9 = OpLabel
+         %11 = OpVariable %10 Function
+               OpStore %11 %12
+         %13 = OpLoad %6 %11
+         %14 = OpIAdd %6 %12 %13
+         %15 = OpISub %6 %14 %12
+               OpReturnValue %15
+               OpFunctionEnd
+END
+
+# uniforms for variant
+
+# _GLF_uniform_int_values
+BUFFER variant__GLF_uniform_int_values DATA_TYPE int32[] STD140 DATA
+ 1 0
+END
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+  BIND BUFFER variant__GLF_uniform_int_values AS uniform DESCRIPTOR_SET 0 BINDING 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255

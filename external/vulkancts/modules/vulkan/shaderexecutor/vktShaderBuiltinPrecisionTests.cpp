@@ -180,7 +180,7 @@ const T& instance (void)
 }
 
 /*--------------------------------------------------------------------*//*!
- * \brief Dummy placeholder type for unused template parameters.
+ * \brief Empty placeholder type for unused template parameters.
  *
  * In the precision tests we are dealing with functions of different arities.
  * To minimize code duplication, we only define templates with the maximum
@@ -1424,7 +1424,7 @@ public:
 template <typename T>
 class ExprP : public ExprPBase<T> {};
 
-// We treat Voids as containers since the dummy parameters in generalized
+// We treat Voids as containers since the unused parameters in generalized
 // vector functions are represented as Voids.
 template <>
 class ExprP<Void> : public ContainerExprPBase<Void> {};
@@ -4103,6 +4103,39 @@ protected:
 	}
 };
 
+template <class T>
+class Reflect<1, T> : public DerivedFunc<
+	Signature<T, T, T> >
+{
+public:
+	typedef typename	Reflect::Ret		Ret;
+	typedef typename	Reflect::Arg0		Arg0;
+	typedef typename	Reflect::Arg1		Arg1;
+	typedef typename	Reflect::ArgExprs	ArgExprs;
+
+	string		getName		(void) const
+	{
+		return "reflect";
+	}
+
+protected:
+	ExprP<Ret>	doExpand	(ExpandContext& ctx, const ArgExprs& args) const
+	{
+		const ExprP<Arg0>&	i		= args.a;
+		const ExprP<Arg1>&	n		= args.b;
+		const ExprP<T>	dotNI	= bindExpression("dotNI", ctx, dot(n, i));
+
+		return i - alternatives((n * dotNI) * getConstTwo<T>(),
+								   alternatives( n * (dotNI * getConstTwo<T>()),
+												alternatives(n * dot(i * getConstTwo<T>(), n),
+															 alternatives(n * dot(i, n * getConstTwo<T>()),
+																	dot(n * n, i * getConstTwo<T>()))
+												)
+									)
+								);
+	}
+};
+
 template <int Size, class T>
 class Refract : public DerivedFunc<
 	Signature<typename ContainerOf<T, Size>::Container,
@@ -6236,7 +6269,7 @@ tcu::TestStatus BuiltinPrecisionCaseTestInstance<In, Out>::iterate (void)
 
 	m_executor->execute(int(numValues), inputArr, outputArr);
 
-	// Initialize environment with dummy values so we don't need to bind in inner loop.
+	// Initialize environment with unused values so we don't need to bind in inner loop.
 	{
 		const typename Traits<In0>::IVal		in0;
 		const typename Traits<In1>::IVal		in1;
@@ -6853,6 +6886,7 @@ public:
 	const FuncBase&		getFunc			(void) const { return instance<GenF<1, T> >(); }
 };
 
+#ifndef CTS_USES_VULKANSC
 template <template <int> class GenF>
 class SquareMatrixFuncCaseFactory : public FuncCaseFactory
 {
@@ -6880,12 +6914,17 @@ public:
 				else
 				{
 					requirements.push_back("Float16Int8Features.shaderFloat16");
+					requirements.push_back("VK_KHR_16bit_storage");
+					requirements.push_back("VK_KHR_storage_buffer_storage_class");
 					fileName += "_fp16";
 
 					if (ctx.isPackFloat16b == true)
 					{
-						requirements.push_back("Storage16BitFeatures.storageBuffer16BitAccess");
 						fileName += "_32bit";
+					}
+					else
+					{
+						requirements.push_back("Storage16BitFeatures.storageBuffer16BitAccess");
 					}
 				}
 			}
@@ -6899,6 +6938,7 @@ public:
 
 	const FuncBase&		getFunc			(void) const { return instance<GenF<2> >(); }
 };
+#endif // CTS_USES_VULKANSC
 
 template <template <int, int, class> class GenF, typename T>
 class MatrixFuncCaseFactory : public FuncCaseFactory
@@ -7056,8 +7096,10 @@ MovePtr<const CaseFactories> createBuiltinCases ()
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<MatrixCompMult, float>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<OuterProduct, float>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<Transpose, float>()));
+#ifndef CTS_USES_VULKANSC
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Determinant>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Inverse>()));
+#endif // CTS_USES_VULKANSC
 
 	addScalarFactory<Frexp32Bit>(*funcs);
 	addScalarFactory<FrexpStruct32Bit>(*funcs);
@@ -7139,8 +7181,10 @@ MovePtr<const CaseFactories> createBuiltinDoubleCases ()
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<MatrixCompMult, double>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<OuterProduct, double>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<Transpose, double>()));
+#ifndef CTS_USES_VULKANSC
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Determinant64bit>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Inverse64bit>()));
+#endif // CTS_USES_VULKANSC
 
 	addScalarFactory<Frexp64Bit>(*funcs);
 	addScalarFactory<FrexpStruct64Bit>(*funcs);
@@ -7218,8 +7262,10 @@ MovePtr<const CaseFactories> createBuiltinCases16Bit(void)
 
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<OuterProduct, deFloat16>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<Transpose, deFloat16>()));
+#ifndef CTS_USES_VULKANSC
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Determinant16bit>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Inverse16bit>()));
+#endif // CTS_USES_VULKANSC
 
 	addScalarFactory<Frexp16Bit>(*funcs);
 	addScalarFactory<FrexpStruct16Bit>(*funcs);

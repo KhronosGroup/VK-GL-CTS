@@ -55,53 +55,27 @@ using namespace vk;
 
 namespace
 {
-enum
-{
-	VK_MAX_SHADER_STAGES = 6,
-};
 
 // helper functions
 
-std::string getShaderFlagStr (const VkShaderStageFlagBits	shader,
-							  bool							isDescription)
+std::string getShaderFlagStr (const VkShaderStageFlags	shader,
+							  bool						isDescription)
 {
 	std::ostringstream desc;
-	switch(shader)
+	if (shader & VK_SHADER_STAGE_COMPUTE_BIT)
 	{
-		case VK_SHADER_STAGE_VERTEX_BIT:
-		{
-			desc << ((isDescription) ? "vertex stage" : "vertex_stage");
-			break;
-		}
-		case VK_SHADER_STAGE_FRAGMENT_BIT:
-		{
-			desc << ((isDescription) ? "fragment stage" : "fragment_stage");
-			break;
-		}
-		case VK_SHADER_STAGE_GEOMETRY_BIT:
-		{
-			desc << ((isDescription) ? "geometry stage" : "geometry_stage");
-			break;
-		}
-		case VK_SHADER_STAGE_COMPUTE_BIT:
-		{
-			desc << ((isDescription) ? "compute stage" : "compute_stage");
-			break;
-		}
-		case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
-		{
-			desc << ((isDescription) ? "tessellation control stage" : "tessellation_control_stage");
-			break;
-		}
-		case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
-		{
-			desc << ((isDescription) ? "tessellation evaluation stage" : "tessellation_evaluation_stage");
-			break;
-		}
-	  default:
-		desc << "unknown shader stage!";
-		DE_FATAL("Unknown shader Stage!");
-		break;
+		desc << ((isDescription) ? "compute stage" : "compute_stage");
+	}
+	else
+	{
+		desc << ((isDescription) ? "vertex stage" : "vertex_stage");
+		if (shader & VK_SHADER_STAGE_GEOMETRY_BIT)
+			desc << ((isDescription) ? " geometry stage" : "_geometry_stage");
+		if (shader & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
+			desc << ((isDescription) ? " tessellation control stage" : "_tessellation_control_stage");
+		if (shader & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
+			desc << ((isDescription) ? " tessellation evaluation stage" : "_tessellation_evaluation_stage");
+		desc << ((isDescription) ? " fragment stage" : "_fragment_stage");
 	}
 
 	return desc.str();
@@ -111,313 +85,50 @@ std::string getShaderFlagStr (const VkShaderStageFlagBits	shader,
 class CacheTestParam
 {
 public:
-								CacheTestParam			(const VkShaderStageFlagBits*	shaders,
-														 deUint32						count,
-														 bool							compileCacheMissShaders);
-	virtual						~CacheTestParam			(void);
-	virtual const std::string	generateTestName		(void)			const;
-	virtual const std::string	generateTestDescription	(void)			const;
-	VkShaderStageFlagBits		getShaderFlag			(deUint32 ndx)	const	{ return m_shaders[ndx]; }
-	deUint32					getShaderCount			(void)			const	{ return (deUint32)m_shaderCount; }
-	bool						getCompileMissShaders	(void)			const	{ return m_compileCacheMissShaders;	}
+								CacheTestParam				(PipelineConstructionType		pipelineConstructionType,
+															 const VkShaderStageFlags		shaders,
+															 bool							compileCacheMissShaders,
+															 VkPipelineCacheCreateFlags		pipelineCacheCreateFlags = 0u);
+	virtual						~CacheTestParam				(void) = default;
+	virtual const std::string	generateTestName			(void)	const;
+	virtual const std::string	generateTestDescription		(void)	const;
+	PipelineConstructionType	getPipelineConstructionType	(void)	const	{ return m_pipelineConstructionType; }
+	VkShaderStageFlags			getShaderFlags				(void)	const	{ return m_shaders; }
+	VkPipelineCacheCreateFlags	getPipelineCacheCreateFlags	(void)  const   { return m_pipelineCacheCreateFlags; }
+	bool						getCompileMissShaders		(void)	const	{ return m_compileCacheMissShaders;	}
+
 protected:
-	VkShaderStageFlagBits		m_shaders[VK_MAX_SHADER_STAGES];
-	size_t						m_shaderCount;
+
+	PipelineConstructionType	m_pipelineConstructionType;
+	VkShaderStageFlags			m_shaders;
+	VkPipelineCacheCreateFlags	m_pipelineCacheCreateFlags;
 	bool						m_compileCacheMissShaders;
 };
 
-CacheTestParam::CacheTestParam (const VkShaderStageFlagBits* shaders, deUint32 count, bool compileCacheMissShaders)
-	: m_compileCacheMissShaders	(compileCacheMissShaders)
-{
-	DE_ASSERT(count <= VK_MAX_SHADER_STAGES);
-
-	for (deUint32 ndx = 0; ndx < count; ndx++)
-		m_shaders[ndx] = shaders[ndx];
-
-	m_shaderCount = count;
-}
-
-CacheTestParam::~CacheTestParam (void)
+CacheTestParam::CacheTestParam (PipelineConstructionType pipelineConstructionType, const VkShaderStageFlags shaders, bool compileCacheMissShaders, VkPipelineCacheCreateFlags pipelineCacheCreateFlags)
+	: m_pipelineConstructionType	(pipelineConstructionType)
+	, m_shaders						(shaders)
+	, m_pipelineCacheCreateFlags(pipelineCacheCreateFlags)
+	, m_compileCacheMissShaders		(compileCacheMissShaders)
 {
 }
 
 const std::string CacheTestParam::generateTestName (void) const
 {
-	std::string result(getShaderFlagStr(m_shaders[0], false));
-
-	for(deUint32 ndx = 1; ndx < m_shaderCount; ndx++)
-		result += '_' + getShaderFlagStr(m_shaders[ndx], false) ;
-
-	return result;
+	std::string name = getShaderFlagStr(m_shaders, false);
+	if (m_pipelineCacheCreateFlags == VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT) {
+		name += "_externally_synchronized";
+	}
+	return name;
 }
 
 const std::string CacheTestParam::generateTestDescription (void) const
 {
-	std::string result("Create pipeline cache with " + getShaderFlagStr(m_shaders[0], true));
-
-	for(deUint32 ndx = 1; ndx < m_shaderCount; ndx++)
-		result += ' ' + getShaderFlagStr(m_shaders[ndx], true);
-
-	return result;
-}
-
-class SimpleGraphicsPipelineBuilder
-{
-public:
-							SimpleGraphicsPipelineBuilder	(Context&				context);
-							~SimpleGraphicsPipelineBuilder	(void) { }
-	void					bindShaderStage					(VkShaderStageFlagBits	stage,
-															 const char*			sourceName,
-															 const char*			entryName);
-	void					enableTessellationStage			(deUint32				patchControlPoints);
-	Move<VkPipeline>		buildPipeline					(tcu::UVec2				renderSize,
-															 VkRenderPass			renderPass,
-															 VkPipelineCache		cache,
-															 VkPipelineLayout		pipelineLayout);
-protected:
-	Context&							m_context;
-	Move<VkShaderModule>				m_shaderModules[VK_MAX_SHADER_STAGES];
-	deUint32							m_shaderStageCount;
-	VkPipelineShaderStageCreateInfo		m_shaderStageInfo[VK_MAX_SHADER_STAGES];
-	deUint32							m_patchControlPoints;
-};
-
-SimpleGraphicsPipelineBuilder::SimpleGraphicsPipelineBuilder (Context& context)
-	: m_context(context)
-{
-	m_patchControlPoints = 0;
-	m_shaderStageCount   = 0;
-}
-
-void SimpleGraphicsPipelineBuilder::bindShaderStage (VkShaderStageFlagBits	stage,
-													 const char*			sourceName,
-													 const char*			entryName)
-{
-	const DeviceInterface&	vk			= m_context.getDeviceInterface();
-	const VkDevice			vkDevice	= m_context.getDevice();
-
-	// Create shader module
-	deUint32*				code		= (deUint32*)m_context.getBinaryCollection().get(sourceName).getBinary();
-	deUint32				codeSize	= (deUint32)m_context.getBinaryCollection().get(sourceName).getSize();
-
-	const VkShaderModuleCreateInfo moduleCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,                // VkStructureType             sType;
-		DE_NULL,                                                    // const void*                 pNext;
-		0u,                                                         // VkShaderModuleCreateFlags   flags;
-		codeSize,                                                   // deUintptr                   codeSize;
-		code,                                                       // const deUint32*             pCode;
-	};
-
-	m_shaderModules[m_shaderStageCount] = createShaderModule(vk, vkDevice, &moduleCreateInfo);
-
-	// Prepare shader stage info
-	m_shaderStageInfo[m_shaderStageCount].sType					= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	m_shaderStageInfo[m_shaderStageCount].pNext					= DE_NULL;
-	m_shaderStageInfo[m_shaderStageCount].flags					= 0u;
-	m_shaderStageInfo[m_shaderStageCount].stage					= stage;
-	m_shaderStageInfo[m_shaderStageCount].module				= *m_shaderModules[m_shaderStageCount];
-	m_shaderStageInfo[m_shaderStageCount].pName					= entryName;
-	m_shaderStageInfo[m_shaderStageCount].pSpecializationInfo	= DE_NULL;
-
-	m_shaderStageCount++;
-}
-
-Move<VkPipeline> SimpleGraphicsPipelineBuilder::buildPipeline (tcu::UVec2 renderSize, VkRenderPass renderPass, VkPipelineCache cache, VkPipelineLayout pipelineLayout)
-{
-	const DeviceInterface&	vk			= m_context.getDeviceInterface();
-	const VkDevice			vkDevice	= m_context.getDevice();
-
-	// Create pipeline
-	const VkVertexInputBindingDescription vertexInputBindingDescription =
-	{
-		0u,								// deUint32                 binding;
-		sizeof(Vertex4RGBA),			// deUint32                 strideInBytes;
-		VK_VERTEX_INPUT_RATE_VERTEX,	// VkVertexInputRate        inputRate;
-	};
-
-	const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[2] =
-	{
-		{
-			0u,								// deUint32 location;
-			0u,								// deUint32 binding;
-			VK_FORMAT_R32G32B32A32_SFLOAT,	// VkFormat format;
-			0u								// deUint32 offsetInBytes;
-		},
-		{
-			1u,									// deUint32 location;
-			0u,									// deUint32 binding;
-			VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat format;
-			DE_OFFSET_OF(Vertex4RGBA, color),	// deUint32 offsetInBytes;
-		}
-	};
-
-	const VkPipelineVertexInputStateCreateInfo vertexInputStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType                          sType;
-		DE_NULL,													// const void*                              pNext;
-		0u,															// VkPipelineVertexInputStateCreateFlags    flags;
-		1u,															// deUint32                                 vertexBindingDescriptionCount;
-		&vertexInputBindingDescription,								// const VkVertexInputBindingDescription*   pVertexBindingDescriptions;
-		2u,															// deUint32                                 vertexAttributeDescriptionCount;
-		vertexInputAttributeDescriptions,							// const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
-	};
-
-	const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType                          sType;
-		DE_NULL,														// const void*                              pNext;
-		0u,																// VkPipelineInputAssemblyStateCreateFlags  flags;
-		(m_patchControlPoints == 0 ? VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST
-								   : VK_PRIMITIVE_TOPOLOGY_PATCH_LIST),	// VkPrimitiveTopology                      topology;
-		VK_FALSE,														// VkBool32                                 primitiveRestartEnable;
-	};
-
-	const VkViewport	viewport	= makeViewport(renderSize);
-	const VkRect2D		scissor		= makeRect2D(renderSize);
-
-	const VkPipelineViewportStateCreateInfo viewportStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,	// VkStructureType                      sType;
-		DE_NULL,												// const void*                          pNext;
-		0u,														// VkPipelineViewportStateCreateFlags   flags;
-		1u,														// deUint32                             viewportCount;
-		&viewport,												// const VkViewport*                    pViewports;
-		1u,														// deUint32                             scissorCount;
-		&scissor												// const VkRect2D*                      pScissors;
-	};
-
-	const VkPipelineRasterizationStateCreateInfo rasterStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	// VkStructureType                          sType;
-		DE_NULL,													// const void*                              pNext;
-		0u,															// VkPipelineRasterizationStateCreateFlags  flags;
-		VK_FALSE,													// VkBool32                                 depthClampEnable;
-		VK_FALSE,													// VkBool32                                 rasterizerDiscardEnable;
-		VK_POLYGON_MODE_FILL,										// VkPolygonMode                            polygonMode;
-		VK_CULL_MODE_NONE,											// VkCullModeFlags                          cullMode;
-		VK_FRONT_FACE_COUNTER_CLOCKWISE,							// VkFrontFace                              frontFace;
-		VK_FALSE,													// VkBool32                                 depthBiasEnable;
-		0.0f,														// float                                    depthBiasConstantFactor;
-		0.0f,														// float                                    depthBiasClamp;
-		0.0f,														// float                                    depthBiasSlopeFactor;
-		1.0f,														// float                                    lineWidth;
-	};
-
-	const VkPipelineColorBlendAttachmentState colorBlendAttachmentState =
-	{
-		VK_FALSE,						// VkBool32                 blendEnable;
-		VK_BLEND_FACTOR_ONE,			// VkBlendFactor            srcColorBlendFactor;
-		VK_BLEND_FACTOR_ZERO,			// VkBlendFactor            dstColorBlendFactor;
-		VK_BLEND_OP_ADD,				// VkBlendOp                colorBlendOp;
-		VK_BLEND_FACTOR_ONE,			// VkBlendFactor            srcAlphaBlendFactor;
-		VK_BLEND_FACTOR_ZERO,			// VkBlendFactor            dstAlphaBlendFactor;
-		VK_BLEND_OP_ADD,				// VkBlendOp                alphaBlendOp;
-		VK_COLOR_COMPONENT_R_BIT |
-		VK_COLOR_COMPONENT_G_BIT |
-		VK_COLOR_COMPONENT_B_BIT |
-		VK_COLOR_COMPONENT_A_BIT		// VkColorComponentFlags    colorWriteMask;
-	};
-
-	const VkPipelineColorBlendStateCreateInfo colorBlendStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType                              sType;
-		DE_NULL,													// const void*                                  pNext;
-		0u,															// VkPipelineColorBlendStateCreateFlags         flags;
-		VK_FALSE,													// VkBool32                                     logicOpEnable;
-		VK_LOGIC_OP_COPY,											// VkLogicOp                                    logicOp;
-		1u,															// deUint32                                     attachmentCount;
-		&colorBlendAttachmentState,									// const VkPipelineColorBlendAttachmentState*   pAttachments;
-		{ 0.0f, 0.0f, 0.0f, 0.0f },									// float                                        blendConst[4];
-	};
-
-	const VkPipelineMultisampleStateCreateInfo  multisampleStateParams  =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType                          sType;
-		DE_NULL,													// const void*                              pNext;
-		0u,															// VkPipelineMultisampleStateCreateFlags    flags;
-		VK_SAMPLE_COUNT_1_BIT,										// VkSampleCountFlagBits                    rasterizationSamples;
-		VK_FALSE,													// VkBool32                                 sampleShadingEnable;
-		0.0f,														// float                                    minSampleShading;
-		DE_NULL,													// const VkSampleMask*                      pSampleMask;
-		VK_FALSE,													// VkBool32                                 alphaToCoverageEnable;
-		VK_FALSE,													// VkBool32                                 alphaToOneEnable;
-	};
-
-	VkPipelineDepthStencilStateCreateInfo depthStencilStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType                          sType;
-		DE_NULL,													// const void*                              pNext;
-		0u,															// VkPipelineDepthStencilStateCreateFlags   flags;
-		VK_TRUE,													// VkBool32                                 depthTestEnable;
-		VK_TRUE,													// VkBool32                                 depthWriteEnable;
-		VK_COMPARE_OP_LESS_OR_EQUAL,								// VkCompareOp                              depthCompareOp;
-		VK_FALSE,													// VkBool32                                 depthBoundsTestEnable;
-		VK_FALSE,													// VkBool32                                 stencilTestEnable;
-		// VkStencilOpState front;
-		{
-			VK_STENCIL_OP_KEEP,		// VkStencilOp  failOp;
-			VK_STENCIL_OP_KEEP,		// VkStencilOp  passOp;
-			VK_STENCIL_OP_KEEP,		// VkStencilOp  depthFailOp;
-			VK_COMPARE_OP_NEVER,	// VkCompareOp  compareOp;
-			0u,						// deUint32     compareMask;
-			0u,						// deUint32     writeMask;
-			0u,						// deUint32     reference;
-		},
-		// VkStencilOpState back;
-		{
-			VK_STENCIL_OP_KEEP,		// VkStencilOp  failOp;
-			VK_STENCIL_OP_KEEP,		// VkStencilOp  passOp;
-			VK_STENCIL_OP_KEEP,		// VkStencilOp  depthFailOp;
-			VK_COMPARE_OP_NEVER,	// VkCompareOp  compareOp;
-			0u,						// deUint32     compareMask;
-			0u,						// deUint32     writeMask;
-			0u,						// deUint32     reference;
-		},
-		0.0f,														// float                                    minDepthBounds;
-		1.0f,														// float                                    maxDepthBounds;
-	};
-
-	const VkPipelineTessellationStateCreateInfo tessStateCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,	// VkStructureType                          sType;
-		DE_NULL,													// const void*                              pNext;
-		0u,															// VkPipelineTesselationStateCreateFlags    flags;
-		m_patchControlPoints,										// deUint32                                 patchControlPoints;
-	};
-	const VkPipelineTessellationStateCreateInfo* pTessCreateInfo = (m_patchControlPoints > 0)
-																  ? &tessStateCreateInfo
-																  : DE_NULL;
-
-	const VkGraphicsPipelineCreateInfo graphicsPipelineParams =
-	{
-		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType                                  sType;
-		DE_NULL,											// const void*                                      pNext;
-		0u,													// VkPipelineCreateFlags                            flags;
-		m_shaderStageCount,									// deUint32                                         stageCount;
-		m_shaderStageInfo,									// const VkPipelineShaderStageCreateInfo*           pStages;
-		&vertexInputStateParams,							// const VkPipelineVertexInputStateCreateInfo*      pVertexInputState;
-		&inputAssemblyStateParams,							// const VkPipelineInputAssemblyStateCreateInfo*    pInputAssemblyState;
-		pTessCreateInfo,									// const VkPipelineTessellationStateCreateInfo*     pTessellationState;
-		&viewportStateParams,								// const VkPipelineViewportStateCreateInfo*         pViewportState;
-		&rasterStateParams,									// const VkPipelineRasterizationStateCreateInfo*    pRasterState;
-		&multisampleStateParams,							// const VkPipelineMultisampleStateCreateInfo*      pMultisampleState;
-		&depthStencilStateParams,							// const VkPipelineDepthStencilStateCreateInfo*     pDepthStencilState;
-		&colorBlendStateParams,								// const VkPipelineColorBlendStateCreateInfo*       pColorBlendState;
-		(const VkPipelineDynamicStateCreateInfo*)DE_NULL,	// const VkPipelineDynamicStateCreateInfo*          pDynamicState;
-		pipelineLayout,										// VkPipelineLayout                                 layout;
-		renderPass,											// VkRenderPass                                     renderPass;
-		0u,													// deUint32                                         subpass;
-		0u,													// VkPipeline                                       basePipelineHandle;
-		0,													// deInt32                                          basePipelineIndex;
-	};
-
-	return createGraphicsPipeline(vk, vkDevice, cache, &graphicsPipelineParams);
-}
-
-void SimpleGraphicsPipelineBuilder::enableTessellationStage (deUint32 patchControlPoints)
-{
-	m_patchControlPoints = patchControlPoints;
+	std::string description = getShaderFlagStr(m_shaders, true);
+	if (m_pipelineCacheCreateFlags == VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT) {
+		description += "with externally synchronized bit";
+	}
+	return description;
 }
 
 template <class Test>
@@ -555,7 +266,7 @@ CacheTestInstance::CacheTestInstance (Context&				context,
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,	// VkStructureType             sType;
 			DE_NULL,										// const void*                 pNext;
-			0u,												// VkPipelineCacheCreateFlags  flags;
+			m_param->getPipelineCacheCreateFlags(),			// VkPipelineCacheCreateFlags  flags;
 			0u,												// deUintptr                   initialDataSize;
 			DE_NULL,										// const void*                 pInitialData;
 		};
@@ -590,10 +301,10 @@ public:
 												 const CacheTestParam*	param)
 								: CacheTest (testContext, name, description, param)
 								{ }
-	virtual                 ~GraphicsCacheTest	(void) { }
-	virtual void            initPrograms		(SourceCollections&		programCollection) const;
+	virtual					~GraphicsCacheTest	(void) { }
+	virtual void			initPrograms		(SourceCollections&		programCollection) const;
 	virtual void			checkSupport		(Context&				context) const;
-	virtual TestInstance*   createInstance		(Context&				context) const;
+	virtual TestInstance*	createInstance		(Context&				context) const;
 };
 
 class GraphicsCacheTestInstance : public CacheTestInstance
@@ -603,6 +314,11 @@ public:
 														 const CacheTestParam*	param);
 	virtual					~GraphicsCacheTestInstance	(void);
 protected:
+
+			void			preparePipelineWrapper		(GraphicsPipelineWrapper&	gpw,
+														 VkPipelineCache			cache,
+														 bool						useMissShaders);
+	virtual void			preparePipelines			(void);
 			void			prepareRenderPass			(VkFramebuffer framebuffer, VkPipeline pipeline);
 	virtual void			prepareCommandBuffer		(void);
 	virtual tcu::TestStatus	verifyTestResult			(void);
@@ -623,14 +339,12 @@ protected:
 	de::MovePtr<Allocation>			m_vertexBufferMemory;
 	std::vector<Vertex4RGBA>		m_vertices;
 
-	SimpleGraphicsPipelineBuilder	m_pipelineBuilder;
-	SimpleGraphicsPipelineBuilder	m_missPipelineBuilder;
+	GraphicsPipelineWrapper			m_pipeline[PIPELINE_CACHE_NDX_COUNT];
 	Move<VkRenderPass>				m_renderPass;
 
 	Move<VkImage>					m_colorImage[PIPELINE_CACHE_NDX_COUNT];
 	Move<VkImageView>				m_colorAttachmentView[PIPELINE_CACHE_NDX_COUNT];
 	Move<VkFramebuffer>				m_framebuffer[PIPELINE_CACHE_NDX_COUNT];
-	Move<VkPipeline>				m_pipeline[PIPELINE_CACHE_NDX_COUNT];
 };
 
 void GraphicsCacheTest::initPrograms (SourceCollections& programCollection) const
@@ -653,127 +367,108 @@ void GraphicsCacheTest::initPrograms (SourceCollections& programCollection) cons
 		const std::string missHitDiff = (shaderOp == SHADERS_CACHE_OP_HIT ? "" : " + 0.1");
 		const std::string missSuffix = (shaderOp == SHADERS_CACHE_OP_HIT ? "" : "_miss");
 
-		for (deUint32 shaderNdx = 0; shaderNdx < m_param.getShaderCount(); shaderNdx++)
+		programCollection.glslSources.add("color_vert" + missSuffix) << glu::VertexSource(
+			"#version 450\n"
+			"layout(location = 0) in vec4 position;\n"
+			"layout(location = 1) in vec4 color;\n"
+			"layout(location = 0) out highp vec4 vtxColor;\n"
+			"out gl_PerVertex { vec4 gl_Position; };\n"
+			"void main (void)\n"
+			"{\n"
+			"  gl_Position = position;\n"
+			"  vtxColor = color" + missHitDiff + ";\n"
+			"}\n");
+
+		programCollection.glslSources.add("color_frag" + missSuffix) << glu::FragmentSource(
+			"#version 310 es\n"
+			"layout(location = 0) in highp vec4 vtxColor;\n"
+			"layout(location = 0) out highp vec4 fragColor;\n"
+			"void main (void)\n"
+			"{\n"
+			"  fragColor = vtxColor" + missHitDiff + ";\n"
+			"}\n");
+
+		VkShaderStageFlags shaderFlag = m_param.getShaderFlags();
+		if (shaderFlag & VK_SHADER_STAGE_GEOMETRY_BIT)
 		{
-			switch(m_param.getShaderFlag(shaderNdx))
-			{
-				case VK_SHADER_STAGE_VERTEX_BIT:
-					programCollection.glslSources.add("color_vert" + missSuffix) << glu::VertexSource(
-						"#version 310 es\n"
-						"layout(location = 0) in vec4 position;\n"
-						"layout(location = 1) in vec4 color;\n"
-						"layout(location = 0) out highp vec4 vtxColor;\n"
-						"void main (void)\n"
-						"{\n"
-						"  gl_Position = position;\n"
-						"  vtxColor = color" + missHitDiff + ";\n"
-						"}\n");
-					break;
-
-				case VK_SHADER_STAGE_FRAGMENT_BIT:
-					programCollection.glslSources.add("color_frag" + missSuffix) << glu::FragmentSource(
-						"#version 310 es\n"
-						"layout(location = 0) in highp vec4 vtxColor;\n"
-						"layout(location = 0) out highp vec4 fragColor;\n"
-						"void main (void)\n"
-						"{\n"
-						"  fragColor = vtxColor" + missHitDiff + ";\n"
-						"}\n");
-					break;
-
-				case VK_SHADER_STAGE_GEOMETRY_BIT:
-					programCollection.glslSources.add("dummy_geo" + missSuffix) << glu::GeometrySource(
-						"#version 450 \n"
-						"layout(triangles) in;\n"
-						"layout(triangle_strip, max_vertices = 3) out;\n"
-						"layout(location = 0) in highp vec4 in_vtxColor[];\n"
-						"layout(location = 0) out highp vec4 vtxColor;\n"
-						"out gl_PerVertex { vec4 gl_Position; };\n"
-						"in gl_PerVertex { vec4 gl_Position; } gl_in[];\n"
-						"void main (void)\n"
-						"{\n"
-						"  for(int ndx=0; ndx<3; ndx++)\n"
-						"  {\n"
-						"    gl_Position = gl_in[ndx].gl_Position;\n"
-						"    vtxColor    = in_vtxColor[ndx]" + missHitDiff + ";\n"
-						"    EmitVertex();\n"
-						"  }\n"
-						"  EndPrimitive();\n"
-						"}\n");
-					break;
-
-				case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
-					programCollection.glslSources.add("basic_tcs" + missSuffix) << glu::TessellationControlSource(
-						"#version 450 \n"
-						"layout(vertices = 3) out;\n"
-						"layout(location = 0) in highp vec4 color[];\n"
-						"layout(location = 0) out highp vec4 vtxColor[];\n"
-						"out gl_PerVertex { vec4 gl_Position; } gl_out[3];\n"
-						"in gl_PerVertex { vec4 gl_Position; } gl_in[gl_MaxPatchVertices];\n"
-						"void main()\n"
-						"{\n"
-						"  gl_TessLevelOuter[0] = 4.0;\n"
-						"  gl_TessLevelOuter[1] = 4.0;\n"
-						"  gl_TessLevelOuter[2] = 4.0;\n"
-						"  gl_TessLevelInner[0] = 4.0;\n"
-						"  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
-						"  vtxColor[gl_InvocationID] = color[gl_InvocationID]" + missHitDiff + ";\n"
-						"}\n");
-					break;
-
-				case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
-					programCollection.glslSources.add("basic_tes" + missSuffix) << glu::TessellationEvaluationSource(
-						"#version 450 \n"
-						"layout(triangles, fractional_even_spacing, ccw) in;\n"
-						"layout(location = 0) in highp vec4 colors[];\n"
-						"layout(location = 0) out highp vec4 vtxColor;\n"
-						"out gl_PerVertex { vec4 gl_Position; };\n"
-						"in gl_PerVertex { vec4 gl_Position; } gl_in[gl_MaxPatchVertices];\n"
-						"void main() \n"
-						"{\n"
-						"  float u = gl_TessCoord.x;\n"
-						"  float v = gl_TessCoord.y;\n"
-						"  float w = gl_TessCoord.z;\n"
-						"  vec4 pos = vec4(0);\n"
-						"  vec4 color = vec4(0)" + missHitDiff + ";\n"
-						"  pos.xyz += u * gl_in[0].gl_Position.xyz;\n"
-						"  color.xyz += u * colors[0].xyz;\n"
-						"  pos.xyz += v * gl_in[1].gl_Position.xyz;\n"
-						"  color.xyz += v * colors[1].xyz;\n"
-						"  pos.xyz += w * gl_in[2].gl_Position.xyz;\n"
-						"  color.xyz += w * colors[2].xyz;\n"
-						"  pos.w = 1.0;\n"
-						"  color.w = 1.0;\n"
-						"  gl_Position = pos;\n"
-						"  vtxColor = color;\n"
-						"}\n");
-					break;
-
-				default:
-					DE_FATAL("Unknown Shader Stage!");
-					break;
-			}
+			programCollection.glslSources.add("unused_geo" + missSuffix) << glu::GeometrySource(
+				"#version 450 \n"
+				"layout(triangles) in;\n"
+				"layout(triangle_strip, max_vertices = 3) out;\n"
+				"layout(location = 0) in highp vec4 in_vtxColor[];\n"
+				"layout(location = 0) out highp vec4 vtxColor;\n"
+				"out gl_PerVertex { vec4 gl_Position; };\n"
+				"in gl_PerVertex { vec4 gl_Position; } gl_in[];\n"
+				"void main (void)\n"
+				"{\n"
+				"  for(int ndx=0; ndx<3; ndx++)\n"
+				"  {\n"
+				"    gl_Position = gl_in[ndx].gl_Position;\n"
+				"    vtxColor    = in_vtxColor[ndx]" + missHitDiff + ";\n"
+				"    EmitVertex();\n"
+				"  }\n"
+				"  EndPrimitive();\n"
+				"}\n");
+		}
+		if (shaderFlag & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
+		{
+			programCollection.glslSources.add("basic_tcs" + missSuffix) << glu::TessellationControlSource(
+				"#version 450 \n"
+				"layout(vertices = 3) out;\n"
+				"layout(location = 0) in highp vec4 color[];\n"
+				"layout(location = 0) out highp vec4 vtxColor[];\n"
+				"out gl_PerVertex { vec4 gl_Position; } gl_out[3];\n"
+				"in gl_PerVertex { vec4 gl_Position; } gl_in[gl_MaxPatchVertices];\n"
+				"void main()\n"
+				"{\n"
+				"  gl_TessLevelOuter[0] = 4.0;\n"
+				"  gl_TessLevelOuter[1] = 4.0;\n"
+				"  gl_TessLevelOuter[2] = 4.0;\n"
+				"  gl_TessLevelInner[0] = 4.0;\n"
+				"  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+				"  vtxColor[gl_InvocationID] = color[gl_InvocationID]" + missHitDiff + ";\n"
+				"}\n");
+		}
+		if (shaderFlag & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
+		{
+			programCollection.glslSources.add("basic_tes" + missSuffix) << glu::TessellationEvaluationSource(
+				"#version 450 \n"
+				"layout(triangles, fractional_even_spacing, ccw) in;\n"
+				"layout(location = 0) in highp vec4 colors[];\n"
+				"layout(location = 0) out highp vec4 vtxColor;\n"
+				"out gl_PerVertex { vec4 gl_Position; };\n"
+				"in gl_PerVertex { vec4 gl_Position; } gl_in[gl_MaxPatchVertices];\n"
+				"void main() \n"
+				"{\n"
+				"  float u = gl_TessCoord.x;\n"
+				"  float v = gl_TessCoord.y;\n"
+				"  float w = gl_TessCoord.z;\n"
+				"  vec4 pos = vec4(0);\n"
+				"  vec4 color = vec4(0)" + missHitDiff + ";\n"
+				"  pos.xyz += u * gl_in[0].gl_Position.xyz;\n"
+				"  color.xyz += u * colors[0].xyz;\n"
+				"  pos.xyz += v * gl_in[1].gl_Position.xyz;\n"
+				"  color.xyz += v * colors[1].xyz;\n"
+				"  pos.xyz += w * gl_in[2].gl_Position.xyz;\n"
+				"  color.xyz += w * colors[2].xyz;\n"
+				"  pos.w = 1.0;\n"
+				"  color.w = 1.0;\n"
+				"  gl_Position = pos;\n"
+				"  vtxColor = color;\n"
+				"}\n");
 		}
 	}
 }
 
 void GraphicsCacheTest::checkSupport (Context& context) const
 {
-	for (deUint32 shaderNdx = 0; shaderNdx < m_param.getShaderCount(); shaderNdx++)
-	{
-		switch(m_param.getShaderFlag(shaderNdx))
-		{
-			case VK_SHADER_STAGE_GEOMETRY_BIT:
-				context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
-				break;
-			case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
-			case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
-				context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
-				break;
-			default:
-				break;
-		}
-	}
+	if (m_param.getShaderFlags() & VK_SHADER_STAGE_GEOMETRY_BIT)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+	if ((m_param.getShaderFlags() & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT) ||
+		(m_param.getShaderFlags() & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT))
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
+
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_param.getPipelineConstructionType());
 }
 
 TestInstance* GraphicsCacheTest::createInstance (Context& context) const
@@ -787,8 +482,11 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&				context,
 	, m_renderSize			(32u, 32u)
 	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_depthFormat			(VK_FORMAT_D16_UNORM)
-	, m_pipelineBuilder		(context)
-	, m_missPipelineBuilder	(context)
+	, m_pipeline
+	{
+		{ context.getDeviceInterface(), context.getDevice(), param->getPipelineConstructionType() },
+		{ context.getDeviceInterface(), context.getDevice(), param->getPipelineConstructionType() },
+	}
 {
 	const DeviceInterface&	vk			= m_context.getDeviceInterface();
 	const VkDevice			vkDevice	= m_context.getDevice();
@@ -806,7 +504,7 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&				context,
 	// Create render pass
 	m_renderPass = makeRenderPass(vk, vkDevice, m_colorFormat, m_depthFormat);
 
-	const VkComponentMapping ComponentMappingRGBA = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A};
+	const VkComponentMapping ComponentMappingRGBA = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 	// Create color image
 	{
 		m_colorImage[PIPELINE_CACHE_NDX_NO_CACHE]	= createImage2DAndBindMemory(m_context,
@@ -937,56 +635,6 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&				context,
 		m_framebuffer[PIPELINE_CACHE_NDX_CACHED] = createFramebuffer(vk, vkDevice, &framebufferParams);
 	}
 
-	// Bind shader stages
-	for (deUint32 shaderNdx = 0; shaderNdx < m_param->getShaderCount(); shaderNdx++)
-	{
-		switch(m_param->getShaderFlag(shaderNdx))
-		{
-			case VK_SHADER_STAGE_VERTEX_BIT:
-				m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_VERTEX_BIT, "color_vert", "main");
-				if (m_param->getCompileMissShaders())
-				{
-					m_missPipelineBuilder.bindShaderStage(VK_SHADER_STAGE_VERTEX_BIT, "color_vert_miss", "main");
-				}
-				break;
-			case VK_SHADER_STAGE_FRAGMENT_BIT:
-				m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_FRAGMENT_BIT, "color_frag", "main");
-				if (m_param->getCompileMissShaders())
-				{
-					m_missPipelineBuilder.bindShaderStage(VK_SHADER_STAGE_FRAGMENT_BIT, "color_frag_miss", "main");
-				}
-				break;
-			case VK_SHADER_STAGE_GEOMETRY_BIT:
-				m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_GEOMETRY_BIT, "dummy_geo", "main");
-				if (m_param->getCompileMissShaders())
-				{
-					m_missPipelineBuilder.bindShaderStage(VK_SHADER_STAGE_GEOMETRY_BIT, "dummy_geo_miss", "main");
-				}
-				break;
-			case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
-				m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "basic_tcs", "main");
-				m_pipelineBuilder.enableTessellationStage(3);
-				if (m_param->getCompileMissShaders())
-				{
-					m_missPipelineBuilder.bindShaderStage(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "basic_tcs_miss", "main");
-					m_missPipelineBuilder.enableTessellationStage(3);
-				}
-				break;
-			case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
-				m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "basic_tes", "main");
-				m_pipelineBuilder.enableTessellationStage(3);
-				if (m_param->getCompileMissShaders())
-				{
-					m_missPipelineBuilder.bindShaderStage(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "basic_tes_miss", "main");
-					m_missPipelineBuilder.enableTessellationStage(3);
-				}
-				break;
-			default:
-				DE_FATAL("Unknown Shader Stage!");
-				break;
-		}
-	}
-
 	// Create pipeline layout
 	{
 		const VkPipelineLayoutCreateInfo pipelineLayoutParams =
@@ -1002,13 +650,134 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&				context,
 
 		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
 	}
-
-	m_pipeline[PIPELINE_CACHE_NDX_NO_CACHE]	= m_pipelineBuilder.buildPipeline(m_renderSize, *m_renderPass, *m_cache, *m_pipelineLayout);
-	m_pipeline[PIPELINE_CACHE_NDX_CACHED]	= m_pipelineBuilder.buildPipeline(m_renderSize, *m_renderPass, *m_cache, *m_pipelineLayout);
 }
 
 GraphicsCacheTestInstance::~GraphicsCacheTestInstance (void)
 {
+}
+
+void GraphicsCacheTestInstance::preparePipelineWrapper(GraphicsPipelineWrapper&	gpw,
+													   VkPipelineCache			cache,
+													   bool						useMissShaders = false)
+{
+	static const VkPipelineDepthStencilStateCreateInfo defaultDepthStencilState
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,		// VkStructureType							sType;
+		DE_NULL,														// const void*								pNext;
+		0u,																// VkPipelineDepthStencilStateCreateFlags	flags;
+		VK_TRUE,														// VkBool32									depthTestEnable;
+		VK_TRUE,														// VkBool32									depthWriteEnable;
+		VK_COMPARE_OP_LESS_OR_EQUAL,									// VkCompareOp								depthCompareOp;
+		VK_FALSE,														// VkBool32									depthBoundsTestEnable;
+		VK_FALSE,														// VkBool32									stencilTestEnable;
+		{																// VkStencilOpState		front;
+			VK_STENCIL_OP_KEEP,												// VkStencilOp		failOp;
+			VK_STENCIL_OP_KEEP,												// VkStencilOp		passOp;
+			VK_STENCIL_OP_KEEP,												// VkStencilOp		depthFailOp;
+			VK_COMPARE_OP_NEVER,											// VkCompareOp		compareOp;
+			0u,																// deUint32			compareMask;
+			0u,																// deUint32			writeMask;
+			0u,																// deUint32			reference;
+		},
+		{																// VkStencilOpState		back;
+			VK_STENCIL_OP_KEEP,												// VkStencilOp		failOp;
+			VK_STENCIL_OP_KEEP,												// VkStencilOp		passOp;
+			VK_STENCIL_OP_KEEP,												// VkStencilOp		depthFailOp;
+			VK_COMPARE_OP_NEVER,											// VkCompareOp		compareOp;
+			0u,																// deUint32			compareMask;
+			0u,																// deUint32			writeMask;
+			0u,																// deUint32			reference;
+		},
+		0.0f,															// float									minDepthBounds;
+		1.0f,															// float									maxDepthBounds;
+	};
+
+	static const VkVertexInputBindingDescription defaultVertexInputBindingDescription
+	{
+		0u,																// deUint32					binding;
+		sizeof(Vertex4RGBA),											// deUint32					strideInBytes;
+		VK_VERTEX_INPUT_RATE_VERTEX,									// VkVertexInputRate		inputRate;
+	};
+
+	static const VkVertexInputAttributeDescription defaultVertexInputAttributeDescriptions[]
+	{
+		{
+			0u,															// deUint32					location;
+			0u,															// deUint32					binding;
+			VK_FORMAT_R32G32B32A32_SFLOAT,								// VkFormat					format;
+			0u															// deUint32					offsetInBytes;
+		},
+		{
+			1u,															// deUint32					location;
+			0u,															// deUint32					binding;
+			VK_FORMAT_R32G32B32A32_SFLOAT,								// VkFormat					format;
+			DE_OFFSET_OF(Vertex4RGBA, color),							// deUint32					offsetInBytes;
+		}
+	};
+
+	static const VkPipelineVertexInputStateCreateInfo defaultVertexInputStateParams
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,		// VkStructureType								sType;
+		DE_NULL,														// const void*									pNext;
+		0u,																// VkPipelineVertexInputStateCreateFlags		flags;
+		1u,																// deUint32										vertexBindingDescriptionCount;
+		&defaultVertexInputBindingDescription,							// const VkVertexInputBindingDescription*		pVertexBindingDescriptions;
+		2u,																// deUint32										vertexAttributeDescriptionCount;
+		defaultVertexInputAttributeDescriptions,						// const VkVertexInputAttributeDescription*		pVertexAttributeDescriptions;
+	};
+
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			vkDevice	= m_context.getDevice();
+	const std::string		postfix		= useMissShaders ? "_miss" : "";
+
+	auto createModule = [&vk, vkDevice, &postfix](Context& context, std::string shaderName)
+	{
+		return createShaderModule(vk, vkDevice, context.getBinaryCollection().get(shaderName + postfix), 0);
+	};
+
+	// Bind shader stages
+	Move<VkShaderModule> vertShaderModule = createModule(m_context, "color_vert");
+	Move<VkShaderModule> fragShaderModule = createModule(m_context, "color_frag");
+	Move<VkShaderModule> tescShaderModule;
+	Move<VkShaderModule> teseShaderModule;
+	Move<VkShaderModule> geomShaderModule;
+
+	if (m_param->getShaderFlags() & VK_SHADER_STAGE_GEOMETRY_BIT)
+		geomShaderModule = createModule(m_context, "unused_geo");
+	if (m_param->getShaderFlags() & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
+		tescShaderModule = createModule(m_context, "basic_tcs");
+	if (m_param->getShaderFlags() & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
+		teseShaderModule = createModule(m_context, "basic_tes");
+
+	const std::vector<VkViewport>	viewport	{ makeViewport(m_renderSize) };
+	const std::vector<VkRect2D>		scissor		{ makeRect2D(m_renderSize) };
+
+	gpw.setDefaultTopology((m_param->getShaderFlags() & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
+						   ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+		.setDefaultRasterizationState()
+		.setDefaultColorBlendState()
+		.setDefaultMultisampleState()
+		.setupVertexInputState(&defaultVertexInputStateParams)
+		.setupPreRasterizationShaderState(viewport,
+										  scissor,
+										  *m_pipelineLayout,
+										  *m_renderPass,
+										  0u,
+										  *vertShaderModule,
+										  DE_NULL,
+										  *tescShaderModule,
+										  *teseShaderModule,
+										  *geomShaderModule)
+		.setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fragShaderModule, &defaultDepthStencilState)
+		.setupFragmentOutputState(*m_renderPass)
+		.setMonolithicPipelineLayout(*m_pipelineLayout)
+		.buildPipeline(cache);
+}
+
+void GraphicsCacheTestInstance::preparePipelines (void)
+{
+	preparePipelineWrapper(m_pipeline[PIPELINE_CACHE_NDX_NO_CACHE], *m_cache);
+	preparePipelineWrapper(m_pipeline[PIPELINE_CACHE_NDX_CACHED], *m_cache);
 }
 
 void GraphicsCacheTestInstance::prepareRenderPass (VkFramebuffer framebuffer, VkPipeline pipeline)
@@ -1035,16 +804,18 @@ void GraphicsCacheTestInstance::prepareCommandBuffer (void)
 {
 	const DeviceInterface& vk = m_context.getDeviceInterface();
 
+	preparePipelines();
+
 	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, (VkDependencyFlags)0,
 		0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(m_imageLayoutBarriers), m_imageLayoutBarriers);
 
-	prepareRenderPass(*m_framebuffer[PIPELINE_CACHE_NDX_NO_CACHE], *m_pipeline[PIPELINE_CACHE_NDX_NO_CACHE]);
+	prepareRenderPass(*m_framebuffer[PIPELINE_CACHE_NDX_NO_CACHE], m_pipeline[PIPELINE_CACHE_NDX_NO_CACHE].getPipeline());
 
 	// After the first render pass, the images are in correct layouts
 
-	prepareRenderPass(*m_framebuffer[PIPELINE_CACHE_NDX_CACHED], *m_pipeline[PIPELINE_CACHE_NDX_CACHED]);
+	prepareRenderPass(*m_framebuffer[PIPELINE_CACHE_NDX_CACHED], m_pipeline[PIPELINE_CACHE_NDX_CACHED].getPipeline());
 
 	endCommandBuffer(vk, *m_cmdBuffer);
 }
@@ -1372,6 +1143,10 @@ class PipelineFromCacheTestInstance : public GraphicsCacheTestInstance
 public:
 							PipelineFromCacheTestInstance	(Context& context, const CacheTestParam* param);
 	virtual					~PipelineFromCacheTestInstance	(void);
+
+protected:
+	void					preparePipelines(void);
+
 protected:
 	Move<VkPipelineCache>	m_newCache;
 	deUint8*				m_data;
@@ -1409,12 +1184,17 @@ PipelineFromCacheTestInstance::PipelineFromCacheTestInstance (Context& context, 
 		};
 		m_newCache = createPipelineCache(vk, vkDevice, &pipelineCacheCreateInfo);
 	}
-	m_pipeline[PIPELINE_CACHE_NDX_CACHED] = m_pipelineBuilder.buildPipeline(m_renderSize, *m_renderPass, *m_newCache, *m_pipelineLayout);
 }
 
 PipelineFromCacheTestInstance::~PipelineFromCacheTestInstance (void)
 {
 	delete[] m_data;
+}
+
+void PipelineFromCacheTestInstance::preparePipelines (void)
+{
+	preparePipelineWrapper(m_pipeline[PIPELINE_CACHE_NDX_NO_CACHE], *m_cache);
+	preparePipelineWrapper(m_pipeline[PIPELINE_CACHE_NDX_CACHED], *m_newCache);
 }
 
 class PipelineFromIncompleteCacheTest : public GraphicsCacheTest
@@ -1436,6 +1216,7 @@ public:
 							PipelineFromIncompleteCacheTestInstance(Context& context, const CacheTestParam* param);
 	virtual					~PipelineFromIncompleteCacheTestInstance(void);
 protected:
+	void					preparePipelines(void);
 protected:
 	Move<VkPipelineCache>	m_newCache;
 	deUint8*				m_data;
@@ -1478,12 +1259,17 @@ PipelineFromIncompleteCacheTestInstance::PipelineFromIncompleteCacheTestInstance
 		};
 		m_newCache = createPipelineCache(vk, vkDevice, &pipelineCacheCreateInfo);
 	}
-	m_pipeline[PIPELINE_CACHE_NDX_CACHED] = m_pipelineBuilder.buildPipeline(m_renderSize, *m_renderPass, *m_newCache, *m_pipelineLayout);
 }
 
 PipelineFromIncompleteCacheTestInstance::~PipelineFromIncompleteCacheTestInstance (void)
 {
 	delete[] m_data;
+}
+
+void PipelineFromIncompleteCacheTestInstance::preparePipelines (void)
+{
+	preparePipelineWrapper(m_pipeline[PIPELINE_CACHE_NDX_NO_CACHE], *m_cache);
+	preparePipelineWrapper(m_pipeline[PIPELINE_CACHE_NDX_CACHED], *m_newCache);
 }
 
 enum MergeCacheType
@@ -1565,6 +1351,9 @@ private:
 	Move<VkPipelineCache>	createPipelineCache		(const DeviceInterface& vk, VkDevice device, MergeCacheType type);
 
 protected:
+	void					preparePipelines		(void);
+
+protected:
 	Move<VkPipelineCache>	m_cacheMerged;
 };
 
@@ -1600,9 +1389,6 @@ MergeCacheTestInstance::MergeCacheTestInstance (Context& context, const CacheTes
 
 	// Merge the caches
 	VK_CHECK(vk.mergePipelineCaches(vkDevice, *m_cacheMerged, static_cast<deUint32>(sourceCaches.size()), &sourceCaches[0]));
-
-	// Create pipeline from merged cache
-	m_pipeline[PIPELINE_CACHE_NDX_CACHED] = m_pipelineBuilder.buildPipeline(m_renderSize, *m_renderPass, *m_cacheMerged, *m_pipelineLayout);
 }
 
 Move<VkPipelineCache> MergeCacheTestInstance::createPipelineCache (const DeviceInterface& vk, VkDevice device, MergeCacheType type)
@@ -1615,6 +1401,9 @@ Move<VkPipelineCache> MergeCacheTestInstance::createPipelineCache (const DeviceI
 		0u,												// deUintptr                   initialDataSize;
 		DE_NULL,										// const void*                 pInitialData;
 	};
+
+	GraphicsPipelineWrapper localPipeline		(vk, device, m_param->getPipelineConstructionType());
+	GraphicsPipelineWrapper localMissPipeline	(vk, device, m_param->getPipelineConstructionType());
 
 	switch (type)
 	{
@@ -1639,7 +1428,7 @@ Move<VkPipelineCache> MergeCacheTestInstance::createPipelineCache (const DeviceI
 		{
 			Move<VkPipelineCache> ret = createPipelineCache(vk, device, MERGE_CACHE_EMPTY);
 
-			m_pipelineBuilder.buildPipeline(m_renderSize, *m_renderPass, *ret, *m_pipelineLayout);
+			preparePipelineWrapper(localPipeline, *ret);
 
 			return ret;
 		}
@@ -1647,7 +1436,7 @@ Move<VkPipelineCache> MergeCacheTestInstance::createPipelineCache (const DeviceI
 		{
 			Move<VkPipelineCache> ret = createPipelineCache(vk, device, MERGE_CACHE_EMPTY);
 
-			m_missPipelineBuilder.buildPipeline(m_renderSize, *m_renderPass, *ret, *m_pipelineLayout);
+			preparePipelineWrapper(localMissPipeline, *ret, true);
 
 			return ret;
 		}
@@ -1655,8 +1444,8 @@ Move<VkPipelineCache> MergeCacheTestInstance::createPipelineCache (const DeviceI
 		{
 			Move<VkPipelineCache> ret = createPipelineCache(vk, device, MERGE_CACHE_EMPTY);
 
-			m_pipelineBuilder.buildPipeline(m_renderSize, *m_renderPass, *ret, *m_pipelineLayout);
-			m_missPipelineBuilder.buildPipeline(m_renderSize, *m_renderPass, *ret, *m_pipelineLayout);
+			preparePipelineWrapper(localPipeline, *ret);
+			preparePipelineWrapper(localMissPipeline, *ret, true);
 
 			return ret;
 		}
@@ -1682,6 +1471,14 @@ Move<VkPipelineCache> MergeCacheTestInstance::createPipelineCache (const DeviceI
 		}
 	}
 	TCU_FAIL("unhandled merge cache type");
+}
+
+void MergeCacheTestInstance::preparePipelines(void)
+{
+	preparePipelineWrapper(m_pipeline[PIPELINE_CACHE_NDX_NO_CACHE], *m_cache);
+
+	// Create pipeline from merged cache
+	preparePipelineWrapper(m_pipeline[PIPELINE_CACHE_NDX_CACHED], *m_cacheMerged);
 }
 
 class CacheHeaderTest : public GraphicsCacheTest
@@ -2026,38 +1823,26 @@ InvalidBlobTestInstance::~InvalidBlobTestInstance (void)
 }
 } // anonymous
 
-tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-
 	de::MovePtr<tcu::TestCaseGroup> cacheTests (new tcu::TestCaseGroup(testCtx, "cache", "pipeline cache tests"));
+
+	const VkShaderStageFlags vertFragStages			= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+	const VkShaderStageFlags vertGeomFragStages		= vertFragStages | VK_SHADER_STAGE_GEOMETRY_BIT;
+	const VkShaderStageFlags vertTesFragStages		= vertFragStages | VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
 
 	// Graphics Pipeline Tests
 	{
 		de::MovePtr<tcu::TestCaseGroup> graphicsTests (new tcu::TestCaseGroup(testCtx, "graphics_tests", "Test pipeline cache with graphics pipeline."));
 
-		const VkShaderStageFlagBits testParamShaders0[] =
-		{
-			VK_SHADER_STAGE_VERTEX_BIT,
-			VK_SHADER_STAGE_FRAGMENT_BIT,
-		};
-		const VkShaderStageFlagBits testParamShaders1[] =
-		{
-			VK_SHADER_STAGE_VERTEX_BIT,
-			VK_SHADER_STAGE_GEOMETRY_BIT,
-			VK_SHADER_STAGE_FRAGMENT_BIT,
-		};
-		const VkShaderStageFlagBits testParamShaders2[] =
-		{
-			VK_SHADER_STAGE_VERTEX_BIT,
-			VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
-			VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
-			VK_SHADER_STAGE_FRAGMENT_BIT,
-		};
 		const CacheTestParam testParams[] =
 		{
-			CacheTestParam(testParamShaders0, DE_LENGTH_OF_ARRAY(testParamShaders0), false),
-			CacheTestParam(testParamShaders1, DE_LENGTH_OF_ARRAY(testParamShaders1), false),
-			CacheTestParam(testParamShaders2, DE_LENGTH_OF_ARRAY(testParamShaders2), false),
+			CacheTestParam(pipelineConstructionType, vertFragStages,		false),
+			CacheTestParam(pipelineConstructionType, vertGeomFragStages,	false),
+			CacheTestParam(pipelineConstructionType, vertTesFragStages,		false),
+			CacheTestParam(pipelineConstructionType, vertFragStages,		false, VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT),
+			CacheTestParam(pipelineConstructionType, vertGeomFragStages,	false, VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT),
+			CacheTestParam(pipelineConstructionType, vertTesFragStages,		false, VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT),
 		};
 
 		for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(testParams); i++)
@@ -2070,29 +1855,11 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx)
 	{
 		de::MovePtr<tcu::TestCaseGroup> graphicsTests(new tcu::TestCaseGroup(testCtx, "pipeline_from_get_data", "Test pipeline cache with graphics pipeline."));
 
-		const VkShaderStageFlagBits testParamShaders0[] =
-		{
-			VK_SHADER_STAGE_VERTEX_BIT,
-			VK_SHADER_STAGE_FRAGMENT_BIT,
-		};
-		const VkShaderStageFlagBits testParamShaders1[] =
-		{
-			VK_SHADER_STAGE_VERTEX_BIT,
-			VK_SHADER_STAGE_GEOMETRY_BIT,
-			VK_SHADER_STAGE_FRAGMENT_BIT,
-		};
-		const VkShaderStageFlagBits testParamShaders2[] =
-		{
-			VK_SHADER_STAGE_VERTEX_BIT,
-			VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
-			VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
-			VK_SHADER_STAGE_FRAGMENT_BIT,
-		};
 		const CacheTestParam testParams[] =
 		{
-			CacheTestParam(testParamShaders0, DE_LENGTH_OF_ARRAY(testParamShaders0), false),
-			CacheTestParam(testParamShaders1, DE_LENGTH_OF_ARRAY(testParamShaders1), false),
-			CacheTestParam(testParamShaders2, DE_LENGTH_OF_ARRAY(testParamShaders2), false),
+			CacheTestParam(pipelineConstructionType, vertFragStages,		false),
+			CacheTestParam(pipelineConstructionType, vertGeomFragStages,	false),
+			CacheTestParam(pipelineConstructionType, vertTesFragStages,		false),
 		};
 
 		for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(testParams); i++)
@@ -2105,29 +1872,11 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx)
 	{
 		de::MovePtr<tcu::TestCaseGroup> graphicsTests(new tcu::TestCaseGroup(testCtx, "pipeline_from_incomplete_get_data", "Test pipeline cache with graphics pipeline."));
 
-		const VkShaderStageFlagBits testParamShaders0[] =
-		{
-			VK_SHADER_STAGE_VERTEX_BIT,
-			VK_SHADER_STAGE_FRAGMENT_BIT,
-		};
-		const VkShaderStageFlagBits testParamShaders1[] =
-		{
-			VK_SHADER_STAGE_VERTEX_BIT,
-			VK_SHADER_STAGE_GEOMETRY_BIT,
-			VK_SHADER_STAGE_FRAGMENT_BIT,
-		};
-		const VkShaderStageFlagBits testParamShaders2[] =
-		{
-			VK_SHADER_STAGE_VERTEX_BIT,
-			VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
-			VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
-			VK_SHADER_STAGE_FRAGMENT_BIT,
-		};
 		const CacheTestParam testParams[] =
 		{
-			CacheTestParam(testParamShaders0, DE_LENGTH_OF_ARRAY(testParamShaders0), false),
-			CacheTestParam(testParamShaders1, DE_LENGTH_OF_ARRAY(testParamShaders1), false),
-			CacheTestParam(testParamShaders2, DE_LENGTH_OF_ARRAY(testParamShaders2), false),
+			CacheTestParam(pipelineConstructionType, vertFragStages,		false),
+			CacheTestParam(pipelineConstructionType, vertGeomFragStages,	false),
+			CacheTestParam(pipelineConstructionType, vertTesFragStages,		false),
 		};
 
 		for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(testParams); i++)
@@ -2136,17 +1885,14 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx)
 		cacheTests->addChild(graphicsTests.release());
 	}
 
-	// Compute Pipeline Tests
+	// Compute Pipeline Tests - don't repeat those tests for graphics pipeline library
+	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
 		de::MovePtr<tcu::TestCaseGroup> computeTests (new tcu::TestCaseGroup(testCtx, "compute_tests", "Test pipeline cache with compute pipeline."));
 
-		const VkShaderStageFlagBits testParamShaders0[] =
-		{
-			VK_SHADER_STAGE_COMPUTE_BIT,
-		};
 		const CacheTestParam testParams[] =
 		{
-			CacheTestParam(testParamShaders0, DE_LENGTH_OF_ARRAY(testParamShaders0), false),
+			CacheTestParam(pipelineConstructionType, VK_SHADER_STAGE_COMPUTE_BIT, false),
 		};
 
 		for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(testParams); i++)
@@ -2159,29 +1905,11 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx)
 	{
 		de::MovePtr<tcu::TestCaseGroup> mergeTests (new tcu::TestCaseGroup(testCtx, "merge", "Cache merging tests"));
 
-		const VkShaderStageFlagBits testParamShaders0[] =
-		{
-			VK_SHADER_STAGE_VERTEX_BIT,
-			VK_SHADER_STAGE_FRAGMENT_BIT,
-		};
-		const VkShaderStageFlagBits testParamShaders1[] =
-		{
-			VK_SHADER_STAGE_VERTEX_BIT,
-			VK_SHADER_STAGE_GEOMETRY_BIT,
-			VK_SHADER_STAGE_FRAGMENT_BIT,
-		};
-		const VkShaderStageFlagBits testParamShaders2[] =
-		{
-			VK_SHADER_STAGE_VERTEX_BIT,
-			VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
-			VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
-			VK_SHADER_STAGE_FRAGMENT_BIT,
-		};
 		const CacheTestParam testParams[] =
 		{
-			CacheTestParam(testParamShaders0, DE_LENGTH_OF_ARRAY(testParamShaders0), true),
-			CacheTestParam(testParamShaders1, DE_LENGTH_OF_ARRAY(testParamShaders1), true),
-			CacheTestParam(testParamShaders2, DE_LENGTH_OF_ARRAY(testParamShaders2), true),
+			CacheTestParam(pipelineConstructionType, vertFragStages,		true),
+			CacheTestParam(pipelineConstructionType, vertGeomFragStages,	true),
+			CacheTestParam(pipelineConstructionType, vertTesFragStages,		true),
 		};
 
 		for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(testParams); i++)
@@ -2231,14 +1959,7 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx)
 	{
 		de::MovePtr<tcu::TestCaseGroup> miscTests(new tcu::TestCaseGroup(testCtx, "misc_tests", "Misc tests that can not be categorized to other group."));
 
-		const VkShaderStageFlagBits testParamShaders[] =
-		{
-			VK_SHADER_STAGE_VERTEX_BIT,
-			VK_SHADER_STAGE_FRAGMENT_BIT,
-		};
-
-		const CacheTestParam testParam(testParamShaders, DE_LENGTH_OF_ARRAY(testParamShaders), false);
-
+		const CacheTestParam testParam(pipelineConstructionType, vertFragStages, false);
 
 		miscTests->addChild(new CacheHeaderTest(testCtx,
 											   "cache_header_test",

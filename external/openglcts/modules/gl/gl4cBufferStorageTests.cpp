@@ -1044,7 +1044,7 @@ void Program::Release()
  **/
 void Program::Attach(const glw::Functions& gl, glw::GLuint program_id, glw::GLuint shader_id)
 {
-	/* Sanity checks */
+	/* Quick checks */
 	if ((m_invalid_id == program_id) || (Shader::m_invalid_id == shader_id))
 	{
 		return;
@@ -3338,8 +3338,8 @@ tcu::TestNode::IterateResult MapPersistentDrawTest::iterate()
 	 *   * geometry shader should:
 	 *     - define single uniform buffer array "rectangles" with unspecified size;
 	 *     Rectangles should have two vec2 fields: position and size;
-	 *     - define single atomic_uint "atom_color";
-	 *     - increment "atom_color" once per execution;
+	 *     - define a separate atomic_uint "atom_color" per input point;
+	 *     - increment "atom_color" once per input point;
 	 *     - output a quad that is placed at rectangles[vs_gs_index].position and
 	 *     has size equal rectangles[vs_gs_index].size;
 	 *     - define output float varying "gs_fs_color" equal to "atom_color" / 255;
@@ -3359,14 +3359,20 @@ tcu::TestNode::IterateResult MapPersistentDrawTest::iterate()
 		"    Rectangle rectangle[2];\n"
 		"} rectangles;\n"
 		"\n"
-		"layout (binding = 0) uniform atomic_uint atom_color;\n"
+		"layout (binding = 0) uniform atomic_uint atom_color[2];\n"
+		"layout (binding = 0) uniform atomic_uint invocation_hit_count[2];\n"
 		"\n"
 		"in  uint  vs_gs_index[];\n"
 		"out float gs_fs_color;\n"
 		"\n"
 		"void main()\n"
 		"{\n"
-		"    const uint  atom_color_value = atomicCounterIncrement(atom_color);\n"
+		"    if (atomicCounterIncrement(invocation_hit_count[gl_PrimitiveIDIn]) == 0)\n"
+		"    {\n"
+		"        atomicCounterIncrement(atom_color[gl_PrimitiveIDIn]);\n"
+		"    }\n"
+		"    memoryBarrierAtomicCounter();\n"
+        "    const uint atom_color_value = atomicCounter(atom_color[gl_PrimitiveIDIn]);"
 		"    //const uint  atom_color_value = vs_gs_index[0];\n"
 		"    const float color            = float(atom_color_value) / 255.0;\n"
 		"    //const float color            = rectangles.rectangle[1].size.x;\n"
@@ -3414,10 +3420,10 @@ tcu::TestNode::IterateResult MapPersistentDrawTest::iterate()
 										 "\n";
 
 	static const GLuint atom_binding		 = 0;
-	static const size_t atom_data_size		 = 1 * sizeof(GLuint);
-	static const GLuint expected_atom_first  = 3;
-	static const GLuint expected_atom_second = 7;
-	static const GLuint expected_pixel		 = 0xff000003;
+	static const size_t atom_data_size		 = 4 * sizeof(GLuint);
+	static const GLuint expected_atom_first  = 2;
+	static const GLuint expected_atom_second = 6;
+	static const GLuint expected_pixel		 = 0xff000004;
 	static const GLuint height				 = 16;
 	static const GLuint n_rectangles		 = 2;
 	static const GLuint pixel_size			 = 4 * sizeof(GLubyte);
@@ -3434,14 +3440,11 @@ tcu::TestNode::IterateResult MapPersistentDrawTest::iterate()
 	bool test_result = true;
 
 	/* Prepare data */
-	GLuint  atom_first_data[1];
-	GLuint  atom_second_data[1];
+	GLuint  atom_first_data[4] = {1, 1, 0, 0};
+	GLuint  atom_second_data[4] = {5, 5, 0, 0};
 	GLubyte rectangles_first_data[rectangles_data_size];
 	GLubyte rectangles_second_data[rectangles_data_size];
 	GLubyte texture_data[texture_data_size];
-
-	atom_first_data[0]  = 1;
-	atom_second_data[0] = 5;
 
 	{
 		GLfloat* ptr = (GLfloat*)rectangles_first_data;
@@ -3526,8 +3529,8 @@ tcu::TestNode::IterateResult MapPersistentDrawTest::iterate()
 	 * - execute DrawArrays for two vertices;
 	 * - execute MemoryBarrier for ALL_BARRIER_BITS and Finish;
 	 * - inspect contents of:
-	 *   * texture - to verify that pixel at 8,8 is filled with RGBA8(3,0,0,0),
-	 *   * "atom_color" - to verify that it is equal to 3;
+	 *   * texture - to verify that pixel at 8,8 is filled with RGBA8(4,0,0,0),
+	 *   * "atom_color" - to verify that it is equal to 2;
 	 * - modify "rectangles" buffer via mapped memory with the following two sets
 	 *   * position [-1.0,-1.0], size [0.5,0.5],
 	 *   * position [0.5,0.5], size [0.5,0.5];
@@ -3536,8 +3539,8 @@ tcu::TestNode::IterateResult MapPersistentDrawTest::iterate()
 	 * - execute DrawArrays for two vertices;
 	 * - execute MemoryBarrier for ALL_BARRIER_BITS and Finish;
 	 * - inspect contents of:
-	 *   * texture - to verify that pixel at 8,8 is filled with RGBA8(3,0,0,0),
-	 *   * "atom_color" - to verify that it is equal to 7;
+	 *   * texture - to verify that pixel at 8,8 is filled with RGBA8(4,0,0,0),
+	 *   * "atom_color" - to verify that it is equal to 6;
 	 *
 	 *  Additionally: change MemoryBarrier to FlushMapped*BufferRange if context supports OpenGL 4.5 Core Profile.
 	 */

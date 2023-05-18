@@ -506,7 +506,7 @@ vk::Move<vk::VkCommandBuffer> createBeginCommandBuffer (const vk::DeviceInterfac
 
 	vk::Move<vk::VkCommandBuffer> commandBuffer (allocateCommandBuffer(vkd, device, pool, level));
 
-	vkd.beginCommandBuffer(*commandBuffer, &beginInfo);
+	VK_CHECK(vkd.beginCommandBuffer(*commandBuffer, &beginInfo));
 
 	return commandBuffer;
 }
@@ -10061,11 +10061,16 @@ struct AddPrograms
 
 void checkSupport(vkt::Context& context, TestConfig config)
 {
+#ifndef CTS_USES_VULKANSC
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		((config.vertexBufferStride % context.getPortabilitySubsetProperties().minVertexInputBindingStrideAlignment) != 0u))
 	{
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: stride is not multiply of minVertexInputBindingStrideAlignment");
 	}
+#else
+	DE_UNREF(context);
+	DE_UNREF(config);
+#endif // CTS_USES_VULKANSC
 }
 
 } // anonymous

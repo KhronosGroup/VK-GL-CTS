@@ -1,6 +1,0 @@
-# Khronos bug 14442, internal bug 27909189
-dEQP-GL45.functional.texture.border_clamp.range_clamp.nearest_float_depth_uint_stencil_sample_stencil
-dEQP-GL45.functional.texture.border_clamp.range_clamp.nearest_int_color
-dEQP-GL45.functional.texture.border_clamp.range_clamp.nearest_uint_color
-dEQP-GL45.functional.texture.border_clamp.range_clamp.nearest_uint_stencil
-dEQP-GL45.functional.texture.border_clamp.range_clamp.nearest_unorm_depth_uint_stencil_sample_stencil

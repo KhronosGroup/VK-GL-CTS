@@ -1126,7 +1126,7 @@ void MixedApiCase::renderTo (tcu::Surface& dst)
 	glu::CallLogWrapper		gl				(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	const int				positionLoc		= gl.glGetAttribLocation(m_program->getProgram(), "a_position");
 	const int				colorLoc		= gl.glGetAttribLocation(m_program->getProgram(), "a_color");
-	glu::Buffer				dummyBuffer		(m_context.getRenderContext());
+	glu::Buffer				unusedBuffer	(m_context.getRenderContext());
 
 	gl.enableLogging(true);
 
@@ -1145,7 +1145,7 @@ void MixedApiCase::renderTo (tcu::Surface& dst)
 		{
 			// bind data using old api
 
-			gl.glBindBuffer(GL_ARRAY_BUFFER, *dummyBuffer);
+			gl.glBindBuffer(GL_ARRAY_BUFFER, *unusedBuffer);
 			gl.glVertexAttribPointer(positionLoc, 4, GL_FLOAT, GL_FALSE, (glw::GLsizei)(2 * sizeof(tcu::Vec4)), (const deUint8*)DE_NULL);
 			gl.glVertexAttribPointer(colorLoc,    4, GL_FLOAT, GL_FALSE, (glw::GLsizei)(2 * sizeof(tcu::Vec4)), glu::BufferOffsetAsPointer(sizeof(tcu::Vec4)));
 

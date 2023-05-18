@@ -179,8 +179,6 @@ set(DEQP_GLES31_FUNCTIONAL_SRCS
 	es31fPrimitiveBoundingBoxTests.hpp
 	es31fCopyImageTests.hpp
 	es31fCopyImageTests.cpp
-	es31fDrawBuffersIndexedTests.hpp
-	es31fDrawBuffersIndexedTests.cpp
 	es31fNegativeShaderStorageTests.cpp
 	es31fNegativeShaderStorageTests.hpp
 	es31fNegativeSSBOBlockTests.cpp

@@ -1657,11 +1657,11 @@ UniformCase::IterateResult UniformCase::iterate (void)
 	const string					fragmentSource	= generateFragmentSource(basicUniforms);
 	const ShaderProgram				program			(m_context.getRenderContext(), glu::makeVtxFragSources(vertexSource, fragmentSource));
 
-	// A dummy program that we'll give to glUseProgram before we actually need
+	// An unused program that we'll give to glUseProgram before we actually need
 	// the real program above, to see if an implementation tries to use the
 	// currently active program for something inappropriate (instead of the
 	// program given as argument to, say, glProgramUniform*).
-	const ShaderProgram				dummyProgram	(m_context.getRenderContext(), glu::makeVtxFragSources("#version 310 es\n"
+	const ShaderProgram				unusedProgram	(m_context.getRenderContext(), glu::makeVtxFragSources("#version 310 es\n"
 																										   "void main (void) { gl_Position = vec4(1.0); }\n",
 
 																										   "#version 310 es\n"
@@ -1676,15 +1676,15 @@ UniformCase::IterateResult UniformCase::iterate (void)
 		return STOP;
 	}
 
-	if (!dummyProgram.isOk())
+	if (!unusedProgram.isOk())
 	{
-		log << dummyProgram;
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Compilation of dummy program failed");
+		log << unusedProgram;
+		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Compilation of unused program failed");
 		return STOP;
 	}
 
-	log << TestLog::Message << "// Note: calling glUseProgram with a dummy program (will only use the real program once it's needed for rendering)" << TestLog::EndMessage;
-	glUseProgram(dummyProgram.getProgram());
+	log << TestLog::Message << "// Note: calling glUseProgram with a unused program (will only use the real program once it's needed for rendering)" << TestLog::EndMessage;
+	glUseProgram(unusedProgram.getProgram());
 
 	const bool success = test(basicUniforms, basicUniformReportsRef, program, rnd);
 	m_testCtx.setTestResult(success ? QP_TEST_RESULT_PASS	: QP_TEST_RESULT_FAIL,

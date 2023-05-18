@@ -23,6 +23,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkMemUtil.hpp"
+#include "deDefs.h"
 #include "vkStrUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkRef.hpp"
@@ -72,17 +73,6 @@ HostPtr::~HostPtr (void)
 	m_vkd.unmapMemory(m_device, m_memory);
 }
 
-deUint32 selectMatchingMemoryType (const VkPhysicalDeviceMemoryProperties& deviceMemProps, deUint32 allowedMemTypeBits, MemoryRequirement requirement)
-{
-	const deUint32	compatibleTypes	= getCompatibleMemoryTypes(deviceMemProps, requirement);
-	const deUint32	candidates		= allowedMemTypeBits & compatibleTypes;
-
-	if (candidates == 0)
-		TCU_THROW(NotSupportedError, "No compatible memory type found");
-
-	return (deUint32)deCtz32(candidates);
-}
-
 bool isHostVisibleMemory (const VkPhysicalDeviceMemoryProperties& deviceMemProps, deUint32 memoryTypeNdx)
 {
 	DE_ASSERT(memoryTypeNdx < deviceMemProps.memoryTypeCount);
@@ -116,19 +106,20 @@ void invalidateAlloc (const DeviceInterface& vkd, VkDevice device, const Allocat
 
 // MemoryRequirement
 
-const MemoryRequirement MemoryRequirement::Any				= MemoryRequirement(0x0u);
-const MemoryRequirement MemoryRequirement::HostVisible		= MemoryRequirement(MemoryRequirement::FLAG_HOST_VISIBLE);
-const MemoryRequirement MemoryRequirement::Coherent			= MemoryRequirement(MemoryRequirement::FLAG_COHERENT);
-const MemoryRequirement MemoryRequirement::LazilyAllocated	= MemoryRequirement(MemoryRequirement::FLAG_LAZY_ALLOCATION);
-const MemoryRequirement MemoryRequirement::Protected		= MemoryRequirement(MemoryRequirement::FLAG_PROTECTED);
-const MemoryRequirement MemoryRequirement::Local			= MemoryRequirement(MemoryRequirement::FLAG_LOCAL);
-const MemoryRequirement MemoryRequirement::Cached			= MemoryRequirement(MemoryRequirement::FLAG_CACHED);
-const MemoryRequirement MemoryRequirement::NonLocal			= MemoryRequirement(MemoryRequirement::FLAG_NON_LOCAL);
-const MemoryRequirement MemoryRequirement::DeviceAddress	= MemoryRequirement(MemoryRequirement::FLAG_DEVICE_ADDRESS);
+const MemoryRequirement MemoryRequirement::Any							= MemoryRequirement(0x0u);
+const MemoryRequirement MemoryRequirement::HostVisible					= MemoryRequirement(MemoryRequirement::FLAG_HOST_VISIBLE);
+const MemoryRequirement MemoryRequirement::Coherent						= MemoryRequirement(MemoryRequirement::FLAG_COHERENT);
+const MemoryRequirement MemoryRequirement::LazilyAllocated				= MemoryRequirement(MemoryRequirement::FLAG_LAZY_ALLOCATION);
+const MemoryRequirement MemoryRequirement::Protected					= MemoryRequirement(MemoryRequirement::FLAG_PROTECTED);
+const MemoryRequirement MemoryRequirement::Local						= MemoryRequirement(MemoryRequirement::FLAG_LOCAL);
+const MemoryRequirement MemoryRequirement::Cached						= MemoryRequirement(MemoryRequirement::FLAG_CACHED);
+const MemoryRequirement MemoryRequirement::NonLocal						= MemoryRequirement(MemoryRequirement::FLAG_NON_LOCAL);
+const MemoryRequirement MemoryRequirement::DeviceAddress				= MemoryRequirement(MemoryRequirement::FLAG_DEVICE_ADDRESS);
+const MemoryRequirement MemoryRequirement::DeviceAddressCaptureReplay	= MemoryRequirement(MemoryRequirement::FLAG_DEVICE_ADDRESS_CAPTURE_REPLAY);
 
 bool MemoryRequirement::matchesHeap (VkMemoryPropertyFlags heapFlags) const
 {
-	// sanity check
+	// Quick check
 	if ((m_flags & FLAG_COHERENT) && !(m_flags & FLAG_HOST_VISIBLE))
 		DE_FATAL("Coherent memory must be host-visible");
 	if ((m_flags & FLAG_HOST_VISIBLE) && (m_flags & FLAG_LAZY_ALLOCATION))
@@ -177,7 +168,7 @@ MemoryRequirement::MemoryRequirement (deUint32 flags)
 class SimpleAllocation : public Allocation
 {
 public:
-									SimpleAllocation	(Move<VkDeviceMemory> mem, MovePtr<HostPtr> hostPtr);
+									SimpleAllocation	(Move<VkDeviceMemory> mem, MovePtr<HostPtr> hostPtr, size_t offset);
 	virtual							~SimpleAllocation	(void);
 
 private:
@@ -185,8 +176,8 @@ private:
 	const UniquePtr<HostPtr>		m_hostPtr;
 };
 
-SimpleAllocation::SimpleAllocation (Move<VkDeviceMemory> mem, MovePtr<HostPtr> hostPtr)
-	: Allocation	(*mem, (VkDeviceSize)0, hostPtr ? hostPtr->get() : DE_NULL)
+SimpleAllocation::SimpleAllocation (Move<VkDeviceMemory> mem, MovePtr<HostPtr> hostPtr, size_t offset)
+	: Allocation	(*mem, offset, hostPtr ? hostPtr->get() : DE_NULL)
 	, m_memHolder	(mem)
 	, m_hostPtr		(hostPtr)
 {
@@ -196,34 +187,40 @@ SimpleAllocation::~SimpleAllocation (void)
 {
 }
 
-SimpleAllocator::SimpleAllocator (const DeviceInterface& vk, VkDevice device, const VkPhysicalDeviceMemoryProperties& deviceMemProps)
+SimpleAllocator::SimpleAllocator (const DeviceInterface& vk, VkDevice device, const VkPhysicalDeviceMemoryProperties& deviceMemProps, size_t offset)
 	: m_vk		(vk)
 	, m_device	(device)
 	, m_memProps(deviceMemProps)
+	, m_offset	(offset)
 {
 }
 
 MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryAllocateInfo& allocInfo, VkDeviceSize alignment)
 {
-	DE_UNREF(alignment);
-
-	Move<VkDeviceMemory>	mem		= allocateMemory(m_vk, m_device, &allocInfo);
+	// Align the offset to the requirements.
+	size_t offset = deAlignSize(m_offset, static_cast<size_t>(alignment));
+	VkMemoryAllocateInfo info = allocInfo;
+	info.allocationSize += offset;
+	Move<VkDeviceMemory>	mem		= allocateMemory(m_vk, m_device, &info);
 	MovePtr<HostPtr>		hostPtr;
 
-	if (isHostVisibleMemory(m_memProps, allocInfo.memoryTypeIndex))
-		hostPtr = MovePtr<HostPtr>(new HostPtr(m_vk, m_device, *mem, 0u, allocInfo.allocationSize, 0u));
+	if (isHostVisibleMemory(m_memProps, info.memoryTypeIndex))
+		hostPtr = MovePtr<HostPtr>(new HostPtr(m_vk, m_device, *mem, offset, info.allocationSize, 0u));
 
-	return MovePtr<Allocation>(new SimpleAllocation(mem, hostPtr));
+	return MovePtr<Allocation>(new SimpleAllocation(mem, hostPtr, offset));
 }
 
 MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryRequirements& memReqs, MemoryRequirement requirement)
 {
 	const deUint32				memoryTypeNdx	= selectMatchingMemoryType(m_memProps, memReqs.memoryTypeBits, requirement);
+	// Align the offset to the requirements.
+	size_t offset = deAlignSize(m_offset, static_cast<size_t>(memReqs.alignment));
+
 	VkMemoryAllocateInfo		allocInfo		=
 	{
 		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	//	VkStructureType			sType;
 		DE_NULL,								//	const void*				pNext;
-		memReqs.size,							//	VkDeviceSize			allocationSize;
+		memReqs.size + offset,					//	VkDeviceSize			allocationSize;
 		memoryTypeNdx,							//	deUint32				memoryTypeIndex;
 	};
 
@@ -236,10 +233,13 @@ MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryRequirements& memRe
 	};
 
 	if (requirement & MemoryRequirement::DeviceAddress)
-	{
 		allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+
+	if (requirement & MemoryRequirement::DeviceAddressCaptureReplay)
+		allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT;
+
+	if (allocFlagsInfo.flags)
 		allocInfo.pNext = &allocFlagsInfo;
-	}
 
 	Move<VkDeviceMemory>		mem				= allocateMemory(m_vk, m_device, &allocInfo);
 	MovePtr<HostPtr>			hostPtr;
@@ -247,10 +247,10 @@ MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryRequirements& memRe
 	if (requirement & MemoryRequirement::HostVisible)
 	{
 		DE_ASSERT(isHostVisibleMemory(m_memProps, allocInfo.memoryTypeIndex));
-		hostPtr = MovePtr<HostPtr>(new HostPtr(m_vk, m_device, *mem, 0u, allocInfo.allocationSize, 0u));
+		hostPtr = MovePtr<HostPtr>(new HostPtr(m_vk, m_device, *mem, offset, memReqs.size, 0u));
 	}
 
-	return MovePtr<Allocation>(new SimpleAllocation(mem, hostPtr));
+	return MovePtr<Allocation>(new SimpleAllocation(mem, hostPtr, offset));
 }
 
 MovePtr<Allocation> allocateExtended (const InstanceInterface&		vki,
@@ -279,7 +279,7 @@ MovePtr<Allocation> allocateExtended (const InstanceInterface&		vki,
 		hostPtr = MovePtr<HostPtr>(new HostPtr(vkd, device, *mem, 0u, allocInfo.allocationSize, 0u));
 	}
 
-	return MovePtr<Allocation>(new SimpleAllocation(mem, hostPtr));
+	return MovePtr<Allocation>(new SimpleAllocation(mem, hostPtr, 0u));
 }
 
 de::MovePtr<Allocation> allocateDedicated (const InstanceInterface&	vki,
@@ -356,6 +356,24 @@ void invalidateMappedMemoryRange (const DeviceInterface& vkd, VkDevice device, V
 	VK_CHECK(vkd.invalidateMappedMemoryRanges(device, 1u, &range));
 }
 
+deUint32 selectMatchingMemoryType (const VkPhysicalDeviceMemoryProperties& deviceMemProps, deUint32 allowedMemTypeBits, MemoryRequirement requirement)
+{
+	const deUint32	compatibleTypes		= getCompatibleMemoryTypes(deviceMemProps, requirement);
+	deUint32		candidates			= allowedMemTypeBits & compatibleTypes;
+#ifdef CTS_USES_VULKANSC
+	// in case of Vulkan SC: prefer memory types from SEU-safe heaps ( SEU = single event upsets )
+	const deUint32	seuSafeTypes		= getSEUSafeMemoryTypes(deviceMemProps);
+	deUint32		seuSafeCandidates	= candidates & seuSafeTypes;
+	if (seuSafeCandidates != 0u)
+		candidates						= seuSafeCandidates;
+#endif // CTS_USES_VULKANSC
+
+	if (candidates == 0u)
+		TCU_THROW(NotSupportedError, "No compatible memory type found");
+
+	return (deUint32)deCtz32(candidates);
+}
+
 deUint32 getCompatibleMemoryTypes (const VkPhysicalDeviceMemoryProperties& deviceMemProps, MemoryRequirement requirement)
 {
 	deUint32	compatibleTypes	= 0u;
@@ -368,6 +386,22 @@ deUint32 getCompatibleMemoryTypes (const VkPhysicalDeviceMemoryProperties& devic
 
 	return compatibleTypes;
 }
+
+#ifdef CTS_USES_VULKANSC
+
+deUint32 getSEUSafeMemoryTypes (const VkPhysicalDeviceMemoryProperties& deviceMemProps)
+{
+	deUint32	seuSafeTypes	= 0u;
+
+	for (deUint32 memoryTypeNdx = 0; memoryTypeNdx < deviceMemProps.memoryTypeCount; memoryTypeNdx++)
+	{
+		if( ( deviceMemProps.memoryHeaps[deviceMemProps.memoryTypes[memoryTypeNdx].heapIndex].flags & VK_MEMORY_HEAP_SEU_SAFE_BIT ) != 0u )
+			seuSafeTypes |= (1u << memoryTypeNdx);
+	}
+	return seuSafeTypes;
+}
+
+#endif // CTS_USES_VULKANSC
 
 void bindImagePlanesMemory (const DeviceInterface&		vkd,
 							const VkDevice				device,

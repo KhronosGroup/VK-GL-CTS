@@ -552,27 +552,27 @@ private:
  *  in a named uniform block.
  *  The following members should be defined in the block:
  *
- *  ivec3   dummy1[3];
+ *  ivec3   unused1[3];
  *  double  double_value;
- *  bool    dummy2;
+ *  bool    unused2;
  *  dvec2   dvec2_value;
- *  bvec3   dummy3;
+ *  bvec3   unused3;
  *  dvec3   dvec3_value;
- *  int     dummy4[3];
+ *  int     unused4[3];
  *  dvec4   dvec4_value;
- *  bool    dummy5;
- *  bool    dummy6[2];
+ *  bool    unused5;
+ *  bool    unused6[2];
  *  dmat2   dmat2_value;
  *  dmat3   dmat3_value;
- *  bool    dummy7;
+ *  bool    unused7;
  *  dmat4   dmat4_value;
  *  dmat2x3 dmat2x3_value;
- *  uvec3   dummy8;
+ *  uvec3   unused8;
  *  dmat2x4 dmat2x4_value;
  *  dmat3x2 dmat3x2_value;
- *  bool    dummy9;
+ *  bool    unused9;
  *  dmat3x4 dmat3x4_value;
- *  int     dummy10;
+ *  int     unused10;
  *  dmat4x2 dmat4x2_value;
  *  dmat4x3 dmat4x3_value;
  *

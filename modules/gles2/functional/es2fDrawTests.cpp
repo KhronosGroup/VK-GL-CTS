@@ -579,7 +579,7 @@ void RandomGroup::init (void)
 	};
 	const UniformWeightArray<DE_LENGTH_OF_ARRAY(usages)> usageWeights;
 
-	static const deUint32 blacklistedCases[]=
+	static const deUint32 disallowedCases[]=
 	{
 		3153,	//!< extremely narrow triangle, results depend on sample positions
 	};
@@ -672,7 +672,7 @@ void RandomGroup::init (void)
 				hash = (hash << 2) ^ (deUint32)spec.attribs[attrNdx].hash();
 
 			if (insertedHashes.find(hash) == insertedHashes.end() &&
-				!de::contains(DE_ARRAY_BEGIN(blacklistedCases), DE_ARRAY_END(blacklistedCases), hash))
+				!de::contains(DE_ARRAY_BEGIN(disallowedCases), DE_ARRAY_END(disallowedCases), hash))
 			{
 				// Only aligned cases
 				if (spec.isCompatibilityTest() != gls::DrawTestSpec::COMPATIBILITY_UNALIGNED_OFFSET &&

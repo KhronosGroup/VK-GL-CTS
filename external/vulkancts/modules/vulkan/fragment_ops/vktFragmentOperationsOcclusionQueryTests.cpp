@@ -23,7 +23,6 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktFragmentOperationsOcclusionQueryTests.hpp"
-#include "vktFragmentOperationsMakeUtil.hpp"
 #include "vktTestCaseUtil.hpp"
 
 #include "vkDefs.hpp"
@@ -406,18 +405,6 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate (void)
 		flushAlloc(vk, device, *vertexBufferAlloc);
 	}
 
-	// Result buffer
-	const VkDeviceSize				resultBufferSizeBytes	= sizeof(deUint32);
-	const Unique<VkBuffer>			resultBuffer			(makeBuffer(vk, device, resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT));
-	const UniquePtr<Allocation>		resultBufferAlloc		(bindBuffer(vk, device, allocator, *resultBuffer, MemoryRequirement::HostVisible));
-
-	{
-		deUint32* const pData = static_cast<deUint32*>(resultBufferAlloc->getHostPtr());
-
-		*pData = 0;
-		flushAlloc(vk, device, *resultBufferAlloc);
-	}
-
 	// Render result buffer (to retrieve color attachment contents)
 	const VkDeviceSize				colorBufferSizeBytes	= tcu::getPixelSize(mapVkFormat(colorFormat)) * m_renderSize.x() * m_renderSize.y();
 	const Unique<VkBuffer>			colorBuffer				(makeBuffer(vk, device, colorBufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
@@ -568,7 +555,9 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate (void)
 			log << tcu::TestLog::Message << "Passed Samples : " << de::toString(sampleCounts[0]) << " / " << expResult << tcu::TestLog::EndMessage;
 		}
 
+#ifndef CTS_USES_VULKANSC
 		vk.destroyQueryPool(device, queryPool, nullptr);
+#endif // CTS_USES_VULKANSC
 
 		if ((m_preciseBitEnabled && sampleCounts[0] == expResult) || (!m_preciseBitEnabled && sampleCounts[0] > 0))
 		{

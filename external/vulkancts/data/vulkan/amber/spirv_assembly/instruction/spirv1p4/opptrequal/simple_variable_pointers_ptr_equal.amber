@@ -1,0 +1,121 @@
+[require]
+VK_KHR_spirv_1_4
+VariablePointerFeatures.variablePointersStorageBuffer
+[compute shader spirv]
+OpCapability Shader
+OpCapability VariablePointersStorageBuffer
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %var1 %var2 %out_var
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %irta ArrayStride 4
+OpDecorate %struct Block
+OpDecorate %out_struct Block
+OpMemberDecorate %struct 0 ColMajor
+OpMemberDecorate %struct 0 Offset 0
+OpMemberDecorate %struct 0 MatrixStride 16
+OpMemberDecorate %struct 1 RowMajor
+OpMemberDecorate %struct 1 Offset 64
+OpMemberDecorate %struct 1 MatrixStride 16
+OpMemberDecorate %struct 2 Offset 128
+OpMemberDecorate %struct 3 Offset 132
+OpMemberDecorate %out_struct 0 Offset 0
+OpDecorate %var1 DescriptorSet 0
+OpDecorate %var1 Binding 0
+OpDecorate %var2 DescriptorSet 0
+OpDecorate %var2 Binding 1
+OpDecorate %out_var DescriptorSet 0
+OpDecorate %out_var Binding 2
+%void = OpTypeVoid
+%bool = OpTypeBool
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+%int_3 = OpConstant %int 3
+%float = OpTypeFloat 32
+%irta = OpTypeRuntimeArray %int
+%v4 = OpTypeVector %float 4
+%mat4v4 = OpTypeMatrix %v4 4
+%struct = OpTypeStruct %mat4v4 %mat4v4 %float %float
+%out_struct = OpTypeStruct %irta
+%ptr_buffer_struct = OpTypePointer StorageBuffer %struct
+%out_ptr_buffer_struct = OpTypePointer StorageBuffer %out_struct
+%ptr_mat4v4 = OpTypePointer StorageBuffer %mat4v4
+%ptr_buffer_int = OpTypePointer StorageBuffer %int
+%ptr_buffer_float = OpTypePointer StorageBuffer %float
+%ptr_v4 = OpTypePointer StorageBuffer %v4
+%var1 = OpVariable %ptr_buffer_struct StorageBuffer
+%var2 = OpVariable %ptr_buffer_struct StorageBuffer
+%out_var = OpVariable %out_ptr_buffer_struct StorageBuffer
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%out_idx0 = OpCopyObject %int %int_0
+; var 1 float 1
+%var1_float_1 = OpAccessChain %ptr_buffer_float %var1 %int_2
+; var 1 float 2
+%var1_float_2 = OpAccessChain %ptr_buffer_float %var1 %int_3
+; var 2 float 1
+%var2_float_1 = OpAccessChain %ptr_buffer_float %var2 %int_2
+; var 2 float 2
+%var2_float_2 = OpAccessChain %ptr_buffer_float %var2 %int_3
+; var 1 matrix 1
+%var1_mat_1 = OpAccessChain %ptr_mat4v4 %var1 %int_0
+; var 1 matrix 2
+%var1_mat_2 = OpAccessChain %ptr_mat4v4 %var1 %int_1
+; var 1 matrix 1 column 1
+%var1_mat_1_0 = OpAccessChain %ptr_v4 %var1 %int_0 %int_0
+; var 1 matrix 1 column 2
+%var1_mat_1_1 = OpAccessChain %ptr_v4 %var1 %int_0 %int_1
+; var 1 matrix first member
+%var1_mat_1_0_0 = OpAccessChain %ptr_buffer_float %var1 %int_0 %int_0 %int_0
+; Two different members of a same uniform blocks
+%var1_float_1_eq_var1_float_2 = OpPtrEqual %bool %var1_float_1 %var1_float_2
+%var1_float_1_eq_var1_float_2_sel = OpSelect %int %var1_float_1_eq_var1_float_2 %int_0 %int_1
+%out_gep1 = OpAccessChain %ptr_buffer_int %out_var %int_0 %out_idx0
+%out_idx1 = OpIAdd %int %out_idx0 %int_1
+OpStore %out_gep1 %var1_float_1_eq_var1_float_2_sel
+; The same member in two separate uniform blocks
+%var1_float_1_eq_var2_float_1 = OpPtrEqual %bool %var1_float_1 %var2_float_1
+%var1_float_1_eq_var2_float_1_sel = OpSelect %int %var1_float_1_eq_var2_float_1 %int_0 %int_1
+%out_gep2 = OpAccessChain %ptr_buffer_int %out_var %int_0 %out_idx1
+%out_idx2 = OpIAdd %int %out_idx1 %int_1
+OpStore %out_gep2 %var1_float_1_eq_var2_float_1_sel
+; Variable pointer and one non-variable pointer
+%var1_float_1_var1_float_2_sel = OpSelect %ptr_buffer_float %var1_float_1_eq_var2_float_1 %var1_float_1 %var1_float_2
+%var2_float_1_var2_float_2_sel = OpSelect %ptr_buffer_float %var1_float_1_eq_var2_float_1 %var2_float_1 %var2_float_2
+%var1_float_1_var1_float_2_sel_eq_var2_float_1_var2_float_2_sel = OpPtrEqual %bool %var1_float_1_var1_float_2_sel %var2_float_1_var2_float_2_sel
+%var1_float_1_var1_float_2_sel_eq_var2_float_1_var2_float_2_sel_sel = OpSelect %int %var1_float_1_var1_float_2_sel_eq_var2_float_1_var2_float_2_sel %int_0 %int_1
+%out_gep3 = OpAccessChain %ptr_buffer_int %out_var %int_0 %out_idx2
+%out_idx3 = OpIAdd %int %out_idx2 %int_1
+OpStore %out_gep3 %var1_float_1_var1_float_2_sel_eq_var2_float_1_var2_float_2_sel_sel
+; Variable pointer and first member of matrices
+%var1_float_1_var1_float_2_sel_2 = OpSelect %ptr_buffer_float %var1_float_1_var1_float_2_sel_eq_var2_float_1_var2_float_2_sel %var1_float_1 %var1_float_2
+%var1_float_1_var1_float_2_sel_2_eq_var1_mat_1_0_0 = OpPtrEqual %bool %var1_float_1_var1_float_2_sel_2 %var1_mat_1_0_0
+%var1_float_1_var1_float_2_sel_2_eq_var1_mat_1_0_0_sel = OpSelect %int %var1_float_1_var1_float_2_sel_2_eq_var1_mat_1_0_0 %int_0 %int_1
+%out_gep4 = OpAccessChain %ptr_buffer_int %out_var %int_0 %out_idx3
+%out_idx4 = OpIAdd %int %out_idx3 %int_1
+OpStore %out_gep4 %var1_float_1_var1_float_2_sel_2_eq_var1_mat_1_0_0_sel
+; Matrices of the same uniform blocks
+%var1_mat_1_eq_var1_mat_2 = OpPtrEqual %bool %var1_mat_1 %var1_mat_2
+%var1_mat_1_eq_var1_mat_2_sel = OpSelect %int %var1_mat_1_eq_var1_mat_2 %int_0 %int_1
+%out_gep5 = OpAccessChain %ptr_buffer_int %out_var %int_0 %out_idx4
+%out_idx5 = OpIAdd %int %out_idx4 %int_1
+OpStore %out_gep5 %var1_mat_1_eq_var1_mat_2_sel
+; Pointers to individual columns of row-major matrices
+%var1_mat_1_0_eq_var1_mat_1_1 = OpPtrEqual %bool %var1_mat_1_0 %var1_mat_1_1
+%var1_mat_1_0_eq_var1_mat_1_1_sel = OpSelect %int %var1_mat_1_0_eq_var1_mat_1_1 %int_0 %int_1
+%out_gep6 = OpAccessChain %ptr_buffer_int %out_var %int_0 %out_idx5
+%out_idx6 = OpIAdd %int %out_idx5 %int_1
+OpStore %out_gep6 %var1_mat_1_0_eq_var1_mat_1_1_sel
+OpReturn
+OpFunctionEnd
+[test]
+ssbo 0:0 136
+ssbo 0:1 136
+ssbo 0:2 24
+
+compute entrypoint main
+compute 1 1 1
+
+probe ssbo int 0:2 0 == 1 1 1 1 1 1

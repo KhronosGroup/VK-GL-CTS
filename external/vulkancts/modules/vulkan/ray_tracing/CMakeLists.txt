@@ -1,4 +1,7 @@
-include_directories(..)
+include_directories(
+	..
+	${DEQP_INL_DIR}
+	)
 
 set(DEQP_VK_RAY_TRACING_SRCS
 	vktRayTracingBarrierTests.cpp
@@ -47,6 +50,10 @@ set(DEQP_VK_RAY_TRACING_SRCS
 	vktRayTracingCaptureReplayTests.hpp
 	vktRayTracingTests.cpp
 	vktRayTracingTests.hpp
+	vktRayTracingPipelineFlagsTests.cpp
+	vktRayTracingPipelineFlagsTests.hpp
+	vktRayTracingOpacityMicromapTests.cpp
+	vktRayTracingOpacityMicromapTests.hpp
 	)
 
 set(DEQP_VK_RAY_TRACING_LIBS

@@ -741,11 +741,21 @@ public:
 
 		for (int compNdx = 0; compNdx < scalarSize; compNdx++)
 		{
-			const deUint32	value	= ((const deUint32*)inputs[0])[compNdx];
-			const deUint32	out		= ((const deUint32*)outputs[0])[compNdx];
-			const deUint32	valMask	= (bits == 32 ? ~0u : ((1u<<bits)-1u));
-			const deUint32	baseVal	= (offset == 32) ? (0) : ((value >> offset) & valMask);
-			const deUint32	ref		= baseVal | ((isSigned && (baseVal & (1<<(bits-1)))) ? ~valMask : 0u);
+			const deUint32	out	= ((const deUint32*)outputs[0])[compNdx];
+			deUint32		ref;
+
+			// From the bitfieldExtract spec: "If bits is zero, the result will be zero.".
+			if (bits == 0)
+			{
+				ref = 0u;
+			}
+			else
+			{
+				const deUint32	value	= ((const deUint32*)inputs[0])[compNdx];
+				const deUint32	valMask	= (bits == 32 ? ~0u : ((1u<<bits)-1u));
+				const deUint32	baseVal	= (offset == 32) ? (0) : ((value >> offset) & valMask);
+				ref = baseVal | ((isSigned && (baseVal & (1 << (bits - 1)))) ? ~valMask : 0u);
+			}
 
 			if (out != ref)
 			{

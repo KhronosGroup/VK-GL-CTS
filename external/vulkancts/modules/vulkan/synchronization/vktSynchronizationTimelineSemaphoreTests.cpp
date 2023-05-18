@@ -35,11 +35,13 @@
 #include "vkDefs.hpp"
 #include "vkPlatform.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkDeviceUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkRef.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkBufferWithMemory.hpp"
+#include "vkSafetyCriticalUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuCommandLine.hpp"
@@ -63,11 +65,9 @@ namespace
 {
 
 using namespace vk;
-using namespace vkt::ExternalMemoryUtil;
 using tcu::TestLog;
 using de::MovePtr;
 using de::SharedPtr;
-using de::UniquePtr;
 
 template<typename T>
 inline SharedPtr<Move<T> > makeVkSharedPtr (Move<T> move)
@@ -147,7 +147,7 @@ void deviceSignal (const DeviceInterface&		vk,
 
 void hostSignal (const DeviceInterface& vk, const VkDevice& device, VkSemaphore semaphore, const deUint64 timelineValue)
 {
-	VkSemaphoreSignalInfoKHR	ssi	=
+	VkSemaphoreSignalInfo	ssi	=
 	{
 		VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO,	// VkStructureType				sType;
 		DE_NULL,									// const void*					pNext;
@@ -215,7 +215,7 @@ public:
 			{
 				VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,									// VkStructureType			sType;
 				DE_NULL,																// const void*				pNext;
-				m_waitAll ? 0u : (VkSemaphoreWaitFlags) VK_SEMAPHORE_WAIT_ANY_BIT_KHR,	// VkSemaphoreWaitFlagsKHR	flags;
+				m_waitAll ? 0u : (VkSemaphoreWaitFlags) VK_SEMAPHORE_WAIT_ANY_BIT,	// VkSemaphoreWaitFlagsKHR	flags;
 				(deUint32) semaphores.size(),											// deUint32					semaphoreCount;
 				&semaphores[0],															// const VkSemaphore*		pSemaphores;
 				&timelineValues[0],														// const deUint64*			pValues;
@@ -238,7 +238,7 @@ private:
 		std::vector<SharedPtr<Move<VkSemaphore > > > semaphores;
 
 		for (deUint32 i = 0; i < count; i++)
-			semaphores.push_back(makeVkSharedPtr(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE_KHR)));
+			semaphores.push_back(makeVkSharedPtr(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE)));
 
 		return semaphores;
 	}
@@ -293,7 +293,7 @@ public:
 		const DeviceInterface&	vk					= m_context.getDeviceInterface();
 		const VkDevice&			device				= m_context.getDevice();
 		const VkQueue			queue				= m_context.getUniversalQueue();
-		Unique<VkSemaphore>		semaphore			(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE_KHR));
+		Unique<VkSemaphore>		semaphore			(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE));
 		de::Random				rng					(1234);
 		std::vector<deUint64>	timelineValues;
 
@@ -324,9 +324,9 @@ public:
 		}
 
 		{
-			const VkSemaphoreWaitInfoKHR waitInfo =
+			const VkSemaphoreWaitInfo waitInfo =
 			{
-				VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO_KHR,										// VkStructureType			sType;
+				VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,											// VkStructureType			sType;
 				DE_NULL,																		// const void*				pNext;
 				0u,																				// VkSemaphoreWaitFlagsKHR	flags;
 				(deUint32) 1u,																	// deUint32					semaphoreCount;
@@ -342,9 +342,9 @@ public:
 		hostSignal(vk, device, *semaphore, timelineValues.front());
 
 		{
-			const VkSemaphoreWaitInfoKHR waitInfo =
+			const VkSemaphoreWaitInfo waitInfo =
 			{
-				VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO_KHR,	// VkStructureType			sType;
+				VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,		// VkStructureType			sType;
 				DE_NULL,									// const void*				pNext;
 				0u,											// VkSemaphoreWaitFlagsKHR	flags;
 				(deUint32) 1u,								// deUint32					semaphoreCount;
@@ -369,7 +369,7 @@ private:
 		std::vector<SharedPtr<Move<VkSemaphore > > > semaphores;
 
 		for (deUint32 i = 0; i < count; i++)
-			semaphores.push_back(makeVkSharedPtr(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE_KHR)));
+			semaphores.push_back(makeVkSharedPtr(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE)));
 
 		return semaphores;
 	}
@@ -427,6 +427,7 @@ public:
 		std::vector<deUint64>								timelineValues;
 		const deUint64										secondInMicroSeconds	= 1000ull * 1000ull * 1000ull;
 		deUint64											startTime;
+		VkResult											result = VK_SUCCESS;
 
 		for (deUint32 i = 0; i < semaphorePtrs.size(); i++)
 		{
@@ -449,7 +450,8 @@ public:
 		do
 		{
 			deUint64	value;
-			VkResult	result	=	vk.getSemaphoreCounterValue(device, semaphores.back(), &value);
+
+			result = vk.getSemaphoreCounterValue(device, semaphores.back(), &value);
 
 			if (result != VK_SUCCESS)
 				break;
@@ -463,12 +465,15 @@ public:
 			}
 
 			if (value > timelineValues.back())
+			{
+				result = VK_ERROR_UNKNOWN;
 				break;
-		} while ((deGetMicroseconds() - startTime) > secondInMicroSeconds);
+			}
+		} while ((deGetMicroseconds() - startTime) < secondInMicroSeconds);
 
 		VK_CHECK(vk.deviceWaitIdle(device));
 
-		if ((deGetMicroseconds() - startTime) < secondInMicroSeconds)
+		if (result != VK_SUCCESS)
 			return tcu::TestStatus::fail("Fail");
 		return tcu::TestStatus::fail("Timeout");
 	}
@@ -480,7 +485,7 @@ private:
 		std::vector<SharedPtr<Move<VkSemaphore > > > semaphores;
 
 		for (deUint32 i = 0; i < count; i++)
-			semaphores.push_back(makeVkSharedPtr(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE_KHR)));
+			semaphores.push_back(makeVkSharedPtr(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE)));
 
 		return semaphores;
 	}
@@ -574,7 +579,7 @@ tcu::TestStatus maxDifferenceValueCase (Context& context, SynchronizationType ty
 	const VkQueue									queue						= context.getUniversalQueue();
 	const deUint64									requiredMinValueDifference	= deIntMaxValue32(32);
 	const deUint64									maxTimelineValueDifference	= getMaxTimelineSemaphoreValueDifference(context.getInstanceInterface(), context.getPhysicalDevice());
-	const Unique<VkSemaphore>						semaphore					(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE_KHR));
+	const Unique<VkSemaphore>						semaphore					(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE));
 	const Unique<VkFence>							fence						(createFence(vk, device));
 	tcu::TestLog&									log							= context.getTestContext().getLog();
 	MonotonicallyIncrementChecker					checkerThread				(vk, device, *semaphore);
@@ -638,8 +643,8 @@ tcu::TestStatus initialValueCase (Context& context, SynchronizationType type)
 	const deUint64									maxTimelineValueDifference	= getMaxTimelineSemaphoreValueDifference(context.getInstanceInterface(), context.getPhysicalDevice());
 	de::Random										rng							(1234);
 	const deUint64									nonZeroValue				= 1 + rng.getUint64() % (maxTimelineValueDifference - 1);
-	const Unique<VkSemaphore>						semaphoreDefaultValue		(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE_KHR));
-	const Unique<VkSemaphore>						semaphoreInitialValue		(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE_KHR, 0, nonZeroValue));
+	const Unique<VkSemaphore>						semaphoreDefaultValue		(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE));
+	const Unique<VkSemaphore>						semaphoreInitialValue		(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE, 0, nonZeroValue));
 	deUint64										initialValue;
 	VkSemaphoreWaitInfo								waitInfo					=
 	{
@@ -680,8 +685,13 @@ tcu::TestStatus initialValueCase (Context& context, SynchronizationType type)
 	}
 
 	VK_CHECK(vk.getSemaphoreCounterValue(device, *semaphoreDefaultValue, &value));
-	if (value != initialValue)
-		return tcu::TestStatus::fail("Invalid zero initial value");
+#ifdef CTS_USES_VULKANSC
+	if (context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
+	{
+		if (value != initialValue)
+			return tcu::TestStatus::fail("Invalid zero initial value");
+	}
 
 	waitInfo.pSemaphores = &semaphoreInitialValue.get();
 	initialValue = nonZeroValue;
@@ -690,13 +700,18 @@ tcu::TestStatus initialValueCase (Context& context, SynchronizationType type)
 		return tcu::TestStatus::fail("Wait non zero initial value failed");
 
 	VK_CHECK(vk.getSemaphoreCounterValue(device, *semaphoreInitialValue, &value));
-	if (value != nonZeroValue)
-		return tcu::TestStatus::fail("Invalid non zero initial value");
+#ifdef CTS_USES_VULKANSC
+	if (context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
+	{
+		if (value != nonZeroValue)
+			return tcu::TestStatus::fail("Invalid non zero initial value");
+	}
 
 	if (maxTimelineValueDifference != std::numeric_limits<deUint64>::max())
 	{
 		const deUint64				nonZeroMaxValue		= maxTimelineValueDifference + 1;
-		const Unique<VkSemaphore>	semaphoreMaxValue	(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE_KHR, 0, nonZeroMaxValue));
+		const Unique<VkSemaphore>	semaphoreMaxValue	(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE, 0, nonZeroMaxValue));
 
 		waitInfo.pSemaphores = &semaphoreMaxValue.get();
 		initialValue = nonZeroMaxValue;
@@ -705,8 +720,13 @@ tcu::TestStatus initialValueCase (Context& context, SynchronizationType type)
 			return tcu::TestStatus::fail("Wait max value failed");
 
 		VK_CHECK(vk.getSemaphoreCounterValue(device, *semaphoreMaxValue, &value));
-		if (value != nonZeroMaxValue)
-			return tcu::TestStatus::fail("Invalid max value initial value");
+#ifdef CTS_USES_VULKANSC
+		if (context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
+		{
+			if (value != nonZeroMaxValue)
+				return tcu::TestStatus::fail("Invalid max value initial value");
+		}
 	}
 
 	return tcu::TestStatus::pass("Initial value correct");
@@ -792,9 +812,9 @@ public:
 		{
 			// Wait on the GPU read operation.
 			{
-				const VkSemaphoreWaitInfoKHR	waitInfo	=
+				const VkSemaphoreWaitInfo	waitInfo	=
 				{
-					VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO_KHR,	// VkStructureType			sType;
+					VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,	// VkStructureType			sType;
 					DE_NULL,									// const void*				pNext;
 					0u,											// VkSemaphoreWaitFlagsKHR	flags;
 					1u,											// deUint32					semaphoreCount
@@ -814,9 +834,9 @@ public:
 
 			// Signal the next GPU write operation.
 			{
-				const VkSemaphoreSignalInfoKHR	signalInfo	=
+				const VkSemaphoreSignalInfo	signalInfo	=
 				{
-					VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO_KHR,	// VkStructureType			sType;
+					VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO,	// VkStructureType			sType;
 					DE_NULL,										// const void*				pNext;
 					m_semaphore,									// VkSemaphore				semaphore;
 					m_iterations[iterIdx]->cpuValue,				// deUint64					value;
@@ -906,7 +926,7 @@ public:
 		const VkDevice										device					= m_context.getDevice();
 		const VkQueue										queue					= m_context.getUniversalQueue();
 		const deUint32										queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
-		const Unique<VkSemaphore>							semaphore				(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE_KHR));
+		const Unique<VkSemaphore>							semaphore				(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE));
 		const Unique<VkCommandPool>							cmdPool					(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 		HostCopyThread										hostCopyThread			(vk, device, *semaphore, m_iterations);
 		std::vector<SharedPtr<Move<VkCommandBuffer> > >		ptrCmdBuffers;
@@ -1279,36 +1299,75 @@ std::vector<VkDeviceQueueCreateInfo> getQueueCreateInfo(const std::vector<VkQueu
 	return infos;
 }
 
-Move<VkDevice> createTestDevice(const Context& context, SynchronizationType type)
+Move<VkDevice> createTestDevice(Context& context, const VkInstance& instance, const InstanceInterface& vki, SynchronizationType type)
 {
-	const std::vector<VkQueueFamilyProperties>		queueFamilyProperties		= getPhysicalDeviceQueueFamilyProperties(context.getInstanceInterface(), context.getPhysicalDevice());
+	const VkPhysicalDevice							physicalDevice				= chooseDevice(vki, instance, context.getTestContext().getCommandLine());
+	const std::vector<VkQueueFamilyProperties>		queueFamilyProperties		= getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
 	std::vector<VkDeviceQueueCreateInfo>			queueCreateInfos			= getQueueCreateInfo(queueFamilyProperties);
 	VkPhysicalDeviceSynchronization2FeaturesKHR		synchronization2Features	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR, DE_NULL, DE_TRUE };
 	VkPhysicalDeviceTimelineSemaphoreFeatures		timelineSemaphoreFeatures	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES, DE_NULL, DE_TRUE };
 	VkPhysicalDeviceFeatures2						createPhysicalFeatures		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &timelineSemaphoreFeatures, context.getDeviceFeatures() };
 	void**											nextPtr						= &timelineSemaphoreFeatures.pNext;
 
-	std::vector<const char*> deviceExtensions =
-	{
-		"VK_KHR_timeline_semaphore"
-	};
+	std::vector<const char*> deviceExtensions;
+
+	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_timeline_semaphore"))
+		deviceExtensions.push_back("VK_KHR_timeline_semaphore");
 	if (type == SynchronizationType::SYNCHRONIZATION2)
 	{
 		deviceExtensions.push_back("VK_KHR_synchronization2");
 		addToChainVulkanStructure(&nextPtr, synchronization2Features);
 	}
 
+	void* pNext												= &createPhysicalFeatures;
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext								= pNext;
+	pNext													= &memReservationInfo;
+
+	VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+	sc10Features.pNext										= pNext;
+	pNext													= &sc10Features;
+
+	VkPipelineCacheCreateInfo			pcCI;
+	std::vector<VkPipelinePoolSize>		poolSizes;
+	if (context.getTestContext().getCommandLine().isSubProcess())
+	{
+		if (context.getResourceInterface()->getCacheDataSize() > 0)
+		{
+			pcCI =
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,		// VkStructureType				sType;
+				DE_NULL,											// const void*					pNext;
+				VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+					VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+				context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
+				context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
+			};
+			memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+			memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+		}
+
+		poolSizes							= context.getResourceInterface()->getPipelinePoolSizes();
+		if (!poolSizes.empty())
+		{
+			memReservationInfo.pipelinePoolSizeCount			= deUint32(poolSizes.size());
+			memReservationInfo.pPipelinePoolSizes				= poolSizes.data();
+		}
+	}
+#endif // CTS_USES_VULKANSC
+
 	const VkDeviceCreateInfo						deviceInfo				=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							//VkStructureType					sType;
-		&createPhysicalFeatures,										//const void*						pNext;
+		pNext,															//const void*						pNext;
 		0u,																//VkDeviceCreateFlags				flags;
 		static_cast<deUint32>(queueCreateInfos.size()),					//deUint32							queueCreateInfoCount;
 		&queueCreateInfos[0],											//const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
 		0u,																//deUint32							enabledLayerCount;
 		DE_NULL,														//const char* const*				ppEnabledLayerNames;
 		static_cast<deUint32>(deviceExtensions.size()),					//deUint32							enabledExtensionCount;
-		&deviceExtensions[0],											//const char* const*				ppEnabledExtensionNames;
+		deviceExtensions.data(),										//const char* const*				ppEnabledExtensionNames;
 		0u																//const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 	std::vector<SharedPtr<std::vector<float> > >	queuePriorities;
@@ -1327,22 +1386,22 @@ Move<VkDevice> createTestDevice(const Context& context, SynchronizationType type
 
 	const auto validation = context.getTestContext().getCommandLine().isValidationEnabled();
 
-	return createCustomDevice(validation, context.getPlatformInterface(), context.getInstance(),
-							  context.getInstanceInterface(), context.getPhysicalDevice(), &deviceInfo);
+	return createCustomDevice(validation, context.getPlatformInterface(), instance,
+							  vki, physicalDevice, &deviceInfo);
 }
 
 
 // Class to wrap a singleton instance and device
 class SingletonDevice
 {
-	SingletonDevice	(const Context& context, SynchronizationType type)
-		: m_logicalDevice	(createTestDevice(context, type))
+	SingletonDevice	(Context& context, SynchronizationType type)
+		: m_logicalDevice	(createTestDevice(context, context.getInstance(), context.getInstanceInterface(), type))
 	{
 	}
 
 public:
 
-	static const Unique<vk::VkDevice>& getDevice(const Context& context, SynchronizationType type)
+	static const Unique<vk::VkDevice>& getDevice(Context& context, SynchronizationType type)
 	{
 		if (!m_singletonDevice)
 			m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context, type));
@@ -1355,7 +1414,6 @@ public:
 	{
 		m_singletonDevice.clear();
 	}
-
 private:
 	const Unique<vk::VkDevice>			m_logicalDevice;
 
@@ -1385,15 +1443,23 @@ public:
 		, m_type			(type)
 		, m_resourceDesc	(resourceDesc)
 		, m_device			(SingletonDevice::getDevice(context, type))
-		, m_deviceDriver	(MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_device)))
+		, m_context			(context)
+#ifndef CTS_USES_VULKANSC
+		, m_deviceDriver	(de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_device)))
+#else
+		, m_deviceDriver	(de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *m_device, context.getTestContext().getCommandLine(), context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_device)))
+#endif // CTS_USES_VULKANSC
 		, m_allocator		(new SimpleAllocator(*m_deviceDriver, *m_device,
 												 getPhysicalDeviceMemoryProperties(context.getInstanceInterface(),
-																				   context.getPhysicalDevice())))
+												 chooseDevice(context.getInstanceInterface(), context.getInstance(), context.getTestContext().getCommandLine()))))
 		, m_opContext		(context, type, *m_deviceDriver, *m_device, *m_allocator, pipelineCacheData)
 	{
+		const auto&									vki							= m_context.getInstanceInterface();
+		const auto									instance					= m_context.getInstance();
 		const DeviceInterface&						vk							= *m_deviceDriver;
 		const VkDevice								device						= *m_device;
-		const std::vector<VkQueueFamilyProperties>	queueFamilyProperties		= getPhysicalDeviceQueueFamilyProperties(context.getInstanceInterface(), context.getPhysicalDevice());
+		const VkPhysicalDevice						physicalDevice				= chooseDevice(vki, instance, context.getTestContext().getCommandLine());
+		const std::vector<VkQueueFamilyProperties>	queueFamilyProperties		= getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
 		const deUint32								universalQueueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 		de::Random									rng							(1234);
 		deUint32									lastCopyOpIdx				= 0;
@@ -1403,7 +1469,7 @@ public:
 
 		m_iterations.push_back(makeSharedPtr(new QueueTimelineIteration(writeOp, m_hostTimelineValue,
 																		getDeviceQueue(vk, device,
-																					   universalQueueFamilyIndex, 0),
+																		universalQueueFamilyIndex, 0),
 																		universalQueueFamilyIndex, rng)));
 		used_queues.insert(std::make_pair(universalQueueFamilyIndex, 0));
 
@@ -1441,7 +1507,7 @@ public:
 		// submitted in order with regard to the write operation.
 		m_iterations.push_back(makeSharedPtr(new QueueTimelineIteration(readOp, m_iterations.back()->timelineValue,
 																		getDeviceQueue(vk, device,
-																					   universalQueueFamilyIndex, 0),
+																		universalQueueFamilyIndex, 0),
 																		universalQueueFamilyIndex, rng)));
 
 		// Now create the resources with the usage associated to the
@@ -1463,11 +1529,15 @@ public:
 		m_iterations.back()->op = makeSharedPtr(m_iterations.back()->opSupport->build(m_opContext, *m_resources.back()).release());
 	}
 
+	~WaitBeforeSignalTestInstance()
+	{
+	}
+
 	tcu::TestStatus	iterate (void)
 	{
 		const DeviceInterface&							vk							= *m_deviceDriver;
 		const VkDevice									device						= *m_device;
-		const Unique<VkSemaphore>						semaphore					(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE_KHR));
+		const Unique<VkSemaphore>						semaphore					(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE));
 		std::vector<SharedPtr<Move<VkCommandPool> > >	cmdPools;
 		std::vector<SharedPtr<Move<VkCommandBuffer> > >	ptrCmdBuffers;
 		std::vector<VkCommandBufferSubmitInfoKHR>		commandBufferSubmitInfos	(m_iterations.size(), makeCommonCommandBufferSubmitInfo(0));
@@ -1616,7 +1686,12 @@ protected:
 	const SynchronizationType						m_type;
 	const ResourceDescription						m_resourceDesc;
 	const Unique<VkDevice>&							m_device;
-	MovePtr<DeviceDriver>							m_deviceDriver;
+	const Context&									m_context;
+#ifndef CTS_USES_VULKANSC
+	de::MovePtr<vk::DeviceDriver>					m_deviceDriver;
+#else
+	de::MovePtr<DeviceDriverSC,DeinitDeviceDeleter>	m_deviceDriver;
+#endif // CTS_USES_VULKANSC
 	MovePtr<Allocator>								m_allocator;
 	OperationContext								m_opContext;
 	std::vector<SharedPtr<QueueTimelineIteration> >	m_iterations;
@@ -1802,15 +1877,23 @@ public:
 		, m_type			(type)
 		, m_resourceDesc	(resourceDesc)
 		, m_device			(SingletonDevice::getDevice(context, type))
-		, m_deviceDriver	(MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_device)))
+		, m_context			(context)
+#ifndef CTS_USES_VULKANSC
+		, m_deviceDriver(de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_device)))
+#else
+		, m_deviceDriver(de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *m_device, context.getTestContext().getCommandLine(), context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_device)))
+#endif // CTS_USES_VULKANSC
 		, m_allocator		(new SimpleAllocator(*m_deviceDriver, *m_device,
 												 getPhysicalDeviceMemoryProperties(context.getInstanceInterface(),
-																				   context.getPhysicalDevice())))
+												 chooseDevice(context.getInstanceInterface(), context.getInstance(), context.getTestContext().getCommandLine()))))
 		, m_opContext		(context, type, *m_deviceDriver, *m_device, *m_allocator, pipelineCacheData)
 	{
-		const DeviceInterface&									vk				= *m_deviceDriver;
-		const VkDevice											device			= *m_device;
-		const std::vector<VkQueueFamilyProperties>	queueFamilyProperties		= getPhysicalDeviceQueueFamilyProperties(context.getInstanceInterface(), context.getPhysicalDevice());
+		const auto&									vki							= m_context.getInstanceInterface();
+		const auto									instance					= m_context.getInstance();
+		const DeviceInterface&						vk							= *m_deviceDriver;
+		const VkDevice								device						= *m_device;
+		const VkPhysicalDevice						physicalDevice				= chooseDevice(vki, instance, context.getTestContext().getCommandLine());
+		const std::vector<VkQueueFamilyProperties>	queueFamilyProperties		= getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
 		const deUint32								universalQueueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 		de::Random									rng							(1234);
 		deUint32									lastCopyOpIdx				= 0;
@@ -1820,7 +1903,7 @@ public:
 
 		m_writeIteration = makeSharedPtr(new QueueTimelineIteration(writeOp, m_hostTimelineValue,
 																	getDeviceQueue(vk, device,
-																				   universalQueueFamilyIndex, 0),
+																	universalQueueFamilyIndex, 0),
 																	universalQueueFamilyIndex, rng));
 		lastSubmitValue = m_writeIteration->timelineValue;
 
@@ -1908,7 +1991,11 @@ public:
 		}
 	}
 
-	void recordBarrier (const DeviceInterface&	vk, VkCommandBuffer cmdBuffer, const QueueTimelineIteration& inIter, const QueueTimelineIteration& outIter, const Resource& resource)
+	~OneToNTestInstance ()
+	{
+	}
+
+	void recordBarrier (const DeviceInterface&	vk, VkCommandBuffer cmdBuffer, const QueueTimelineIteration& inIter, const QueueTimelineIteration& outIter, const Resource& resource, bool originalLayout)
 	{
 		const SyncInfo				writeSync				= inIter.op->getOutSyncInfo();
 		const SyncInfo				readSync				= outIter.op->getInSyncInfo();
@@ -1920,16 +2007,16 @@ public:
 			DE_ASSERT(readSync.imageLayout != VK_IMAGE_LAYOUT_UNDEFINED);
 
 			const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
-				writeSync.stageMask,							// VkPipelineStageFlags2KHR			srcStageMask
-				writeSync.accessMask,							// VkAccessFlags2KHR				srcAccessMask
-				readSync.stageMask,								// VkPipelineStageFlags2KHR			dstStageMask
-				readSync.accessMask,							// VkAccessFlags2KHR				dstAccessMask
-				writeSync.imageLayout,							// VkImageLayout					oldLayout
-				readSync.imageLayout,							// VkImageLayout					newLayout
-				resource.getImage().handle,						// VkImage							image
-				resource.getImage().subresourceRange,			// VkImageSubresourceRange			subresourceRange
-				inIter.queueFamilyIdx,							// deUint32							srcQueueFamilyIndex
-				outIter.queueFamilyIdx							// deUint32							destQueueFamilyIndex
+				writeSync.stageMask,											// VkPipelineStageFlags2KHR			srcStageMask
+				writeSync.accessMask,											// VkAccessFlags2KHR				srcAccessMask
+				readSync.stageMask,												// VkPipelineStageFlags2KHR			dstStageMask
+				readSync.accessMask,											// VkAccessFlags2KHR				dstAccessMask
+				originalLayout ? writeSync.imageLayout : readSync.imageLayout,	// VkImageLayout					oldLayout
+				readSync.imageLayout,											// VkImageLayout					newLayout
+				resource.getImage().handle,										// VkImage							image
+				resource.getImage().subresourceRange,							// VkImageSubresourceRange			subresourceRange
+				inIter.queueFamilyIdx,											// deUint32							srcQueueFamilyIndex
+				outIter.queueFamilyIdx											// deUint32							destQueueFamilyIndex
 			);
 			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
 			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
@@ -1983,7 +2070,7 @@ public:
 	{
 		const DeviceInterface&								vk						= *m_deviceDriver;
 		const VkDevice										device					= *m_device;
-		const Unique<VkSemaphore>							semaphore				(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE_KHR));
+		const Unique<VkSemaphore>							semaphore				(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE));
 		Unique<VkCommandPool>								writeCmdPool			(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
 																									   m_context.getUniversalQueueFamilyIndex()));
 		Unique<VkCommandBuffer>								writeCmdBuffer			(makeCommandBuffer(vk, device, *writeCmdPool));
@@ -2025,7 +2112,7 @@ public:
 			for (deUint32 copyOpIdx = 0; copyOpIdx < m_copyIterations.size(); copyOpIdx++)
 			{
 				beginCommandBuffer(vk, **copyPtrCmdBuffers[copyOpIdx]);
-				recordBarrier(vk, **copyPtrCmdBuffers[copyOpIdx], *m_writeIteration, *m_copyIterations[copyOpIdx], *m_writeResource);
+				recordBarrier(vk, **copyPtrCmdBuffers[copyOpIdx], *m_writeIteration, *m_copyIterations[copyOpIdx], *m_writeResource, copyOpIdx == 0);
 				m_copyIterations[copyOpIdx]->op->recordCommands(**copyPtrCmdBuffers[copyOpIdx]);
 				endCommandBuffer(vk, **copyPtrCmdBuffers[copyOpIdx]);
 			}
@@ -2033,7 +2120,7 @@ public:
 			for (deUint32 readOpIdx = 0; readOpIdx < m_readIterations.size(); readOpIdx++)
 			{
 				beginCommandBuffer(vk, **readPtrCmdBuffers[readOpIdx]);
-				recordBarrier(vk, **readPtrCmdBuffers[readOpIdx], *m_copyIterations[readOpIdx], *m_readIterations[readOpIdx], *m_copyResources[readOpIdx]);
+				recordBarrier(vk, **readPtrCmdBuffers[readOpIdx], *m_copyIterations[readOpIdx], *m_readIterations[readOpIdx], *m_copyResources[readOpIdx], true);
 				m_readIterations[readOpIdx]->op->recordCommands(**readPtrCmdBuffers[readOpIdx]);
 				endCommandBuffer(vk, **readPtrCmdBuffers[readOpIdx]);
 			}
@@ -2089,7 +2176,12 @@ protected:
 	SynchronizationType								m_type;
 	ResourceDescription								m_resourceDesc;
 	const Unique<VkDevice>&							m_device;
-	MovePtr<DeviceDriver>							m_deviceDriver;
+	const Context&									m_context;
+#ifndef CTS_USES_VULKANSC
+	de::MovePtr<vk::DeviceDriver>					m_deviceDriver;
+#else
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	m_deviceDriver;
+#endif // CTS_USES_VULKANSC
 	MovePtr<Allocator>								m_allocator;
 	OperationContext								m_opContext;
 	SharedPtr<QueueTimelineIteration>				m_writeIteration;
@@ -2258,8 +2350,10 @@ private:
 	PipelineCacheData	m_pipelineCacheData;
 };
 
+#ifndef CTS_USES_VULKANSC
+
 // Make a nonzero initial value for a semaphore. semId is assigned to each semaphore by callers.
-deUint64 getInitialValue (deUint32 semId)
+deUint64 getInitialValue(deUint32 semId)
 {
 	return (semId + 1ull) * 1000ull;
 }
@@ -2323,6 +2417,8 @@ void queueBindSparse (const vk::DeviceInterface& vkd, vk::VkQueue queue, deUint3
 	VK_CHECK(vkd.queueBindSparse(queue, bindInfoCount, pBindInfo, DE_NULL));
 }
 
+#endif // CTS_USES_VULKANSC
+
 struct SemaphoreWithInitial
 {
 	vk::Move<vk::VkSemaphore>	semaphore;
@@ -2342,6 +2438,8 @@ struct SemaphoreWithInitial
 using SemaphoreVec	= std::vector<SemaphoreWithInitial>;
 using PlainSemVec	= std::vector<vk::VkSemaphore>;
 using ValuesVec		= std::vector<deUint64>;
+
+#ifndef CTS_USES_VULKANSC
 
 PlainSemVec getHandles (const SemaphoreVec& semVec)
 {
@@ -2525,6 +2623,8 @@ public:
 	}
 };
 
+#endif // CTS_USES_VULKANSC
+
 } // anonymous
 
 tcu::TestCaseGroup* createTimelineSemaphoreTests (tcu::TestContext& testCtx)
@@ -2536,7 +2636,9 @@ tcu::TestCaseGroup* createTimelineSemaphoreTests (tcu::TestContext& testCtx)
 	basicTests->addChild(new OneToNTests(testCtx, type));
 	basicTests->addChild(new WaitBeforeSignalTests(testCtx, type));
 	basicTests->addChild(new WaitTests(testCtx, type));
+#ifndef CTS_USES_VULKANSC
 	basicTests->addChild(new SparseBindGroup(testCtx));
+#endif // CTS_USES_VULKANSC
 
 	return basicTests.release();
 }

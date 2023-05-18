@@ -25,6 +25,8 @@
 #include "vktConditionalRenderingTestUtil.hpp"
 #include "vktDrawCreateInfoUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkCmdUtil.hpp"
+#include "vkTypeUtil.hpp"
 
 namespace vkt
 {
@@ -46,26 +48,54 @@ void checkConditionalRenderingCapabilities (vkt::Context& context, const Conditi
 
 de::SharedPtr<Draw::Buffer>	createConditionalRenderingBuffer (vkt::Context& context, const ConditionalData& data)
 {
+	const auto&	vk			= context.getDeviceInterface();
+	const auto	device		= context.getDevice();
+	const auto	queueIndex	= context.getUniversalQueueFamilyIndex();
+	const auto	queue		= context.getUniversalQueue();
+	auto&		alloc		= context.getDefaultAllocator();
+
 	// When padding the condition value, it will be surounded by two additional values with nonzero bytes in them.
+	// When choosing to apply an offset to the allocation, the offset will be four times the size of the condition variable.
 	const auto					bufferSize	= static_cast<vk::VkDeviceSize>(sizeof(data.conditionValue)) * (data.padConditionValue ? 3ull : 1ull);
 	const auto					dataOffset	= static_cast<vk::VkDeviceSize>(data.padConditionValue ? sizeof(data.conditionValue) : 0);
-	const vk::DeviceInterface&	vk			= context.getDeviceInterface();
-	de::SharedPtr<Draw::Buffer>	buffer		= Draw::Buffer::createAndAlloc(vk, context.getDevice(),
-												Draw::BufferCreateInfo(bufferSize,
-																 vk::VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT),
-												context.getDefaultAllocator(),
-												vk::MemoryRequirement::HostVisible);
+	const auto					allocOffset	= static_cast<vk::VkDeviceSize>(sizeof(data.conditionValue) * (data.allocationOffset ? 4u : 0u));
 
-	deUint8* conditionBufferPtr = reinterpret_cast<deUint8*>(buffer->getBoundMemory().getHostPtr()) + buffer->getBoundMemory().getOffset();
+	// Create host-visible buffer. This may be the final buffer or only a staging buffer.
+	const auto					hostUsage	= ((data.memoryType == HOST) ? vk::VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT : vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+	de::SharedPtr<Draw::Buffer>	hostBuffer	= Draw::Buffer::createAndAlloc(vk, device,
+												Draw::BufferCreateInfo(bufferSize, hostUsage),
+												alloc,
+												vk::MemoryRequirement::HostVisible,
+												allocOffset);
+
+	// Copy data to host buffer.
+	deUint8* conditionBufferPtr = reinterpret_cast<deUint8*>(hostBuffer->getHostPtr());
 	deMemset(conditionBufferPtr, 1, static_cast<size_t>(bufferSize));
 	deMemcpy(conditionBufferPtr + dataOffset, &data.conditionValue, sizeof(data.conditionValue));
+	vk::flushAlloc(vk, context.getDevice(), hostBuffer->getBoundMemory());
 
-	vk::flushMappedMemoryRange(	vk,
-								context.getDevice(),
-								buffer->getBoundMemory().getMemory(),
-								buffer->getBoundMemory().getOffset(),
-								VK_WHOLE_SIZE);
-	return buffer;
+	// Return host buffer if appropriate.
+	if (data.memoryType == HOST)
+		return hostBuffer;
+
+	// Create and return device-local buffer otherwise, after copying host-visible buffer contents to it.
+	const auto					deviceLocalUsage	= (vk::VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT | vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	de::SharedPtr<Draw::Buffer>	deviceLocalBuffer	= Draw::Buffer::createAndAlloc(vk, device,
+														Draw::BufferCreateInfo(bufferSize, deviceLocalUsage),
+														alloc,
+														vk::MemoryRequirement::Local,
+														allocOffset);
+
+	const auto cmdPool		= vk::makeCommandPool(vk, device, queueIndex);
+	const auto cmdBuffer	= vk::allocateCommandBuffer (vk, device, cmdPool.get(), vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	const auto copyInfo		= vk::makeBufferCopy(0ull, 0ull, bufferSize);
+
+	vk::beginCommandBuffer(vk, *cmdBuffer);
+	vk.cmdCopyBuffer(*cmdBuffer, hostBuffer->object(), deviceLocalBuffer->object(), 1, &copyInfo);
+	vk::endCommandBuffer(vk, *cmdBuffer);
+	vk::submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+	return deviceLocalBuffer;
 }
 
 void beginConditionalRendering (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, Draw::Buffer& buffer, const ConditionalData& data)
@@ -84,6 +114,8 @@ std::ostream& operator<< (std::ostream& str, ConditionalData const& c)
 {
 	const bool conditionEnabled = c.conditionInPrimaryCommandBuffer || c.conditionInSecondaryCommandBuffer;
 	str << (conditionEnabled ? "condition" : "no_condition");
+	str << (c.memoryType ? "_host_memory" : "_local_memory");
+
 
 	if (c.conditionInSecondaryCommandBuffer || !conditionEnabled)
 	{
@@ -105,6 +137,11 @@ std::ostream& operator<< (std::ostream& str, ConditionalData const& c)
 	if (c.padConditionValue)
 	{
 		str << "_padded";
+	}
+
+	if (c.clearInRenderPass)
+	{
+		str << "_rp_clear";
 	}
 
 	return str;

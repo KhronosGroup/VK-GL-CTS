@@ -38,6 +38,8 @@
 #include "vkStrUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkImageWithMemory.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
@@ -333,7 +335,7 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 	const std::size_t  vertexTessParamsOffset = sizeInBytes(gridPosComps);
 	const std::size_t  vertexIndicesOffset    = vertexTessParamsOffset + sizeInBytes(gridTessParams);
 
-	const Buffer vertexBuffer(vk, device, allocator,
+	const BufferWithMemory vertexBuffer(vk, device, allocator,
 		makeBufferCreateInfo(vertexDataSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	{
@@ -353,14 +355,14 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 	const tcu::IVec2			  renderSize				 = tcu::IVec2(256, 256);
 	const VkFormat				  colorFormat				 = VK_FORMAT_R8G8B8A8_UNORM;
 	const VkImageSubresourceRange colorImageSubresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
-	const Image					  colorAttachmentImage		 (vk, device, allocator,
+	const ImageWithMemory		  colorAttachmentImage		 (vk, device, allocator,
 															 makeImageCreateInfo(renderSize, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 1u),
 															 MemoryRequirement::Any);
 
 	// Color output buffer: image will be copied here for verification
 
-	const VkDeviceSize	colorBufferSizeBytes = renderSize.x()*renderSize.y() * tcu::getPixelSize(mapVkFormat(colorFormat));
-	const Buffer		colorBuffer			 (vk, device, allocator, makeBufferCreateInfo(colorBufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible);
+	const VkDeviceSize		colorBufferSizeBytes = renderSize.x()*renderSize.y() * tcu::getPixelSize(mapVkFormat(colorFormat));
+	const BufferWithMemory	colorBuffer			 (vk, device, allocator, makeBufferCreateInfo(colorBufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible);
 
 	// Pipeline
 

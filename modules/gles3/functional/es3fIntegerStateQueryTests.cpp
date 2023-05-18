@@ -1152,7 +1152,8 @@ public:
 		GLboolean hasViewportArray = false;
 		glGetIntegerv(GL_MAX_VIEWPORT_DIMS, maxViewportDimensions);
 		hasViewportArray = m_context.getContextInfo().isExtensionSupported("GL_OES_viewport_array") ||
-						   m_context.getContextInfo().isExtensionSupported("GL_NV_viewport_array");
+				   m_context.getContextInfo().isExtensionSupported("GL_NV_viewport_array") ||
+				   m_context.getContextInfo().isExtensionSupported("GL_ARB_viewport_array");
 		if (hasViewportArray)
 		{
 			glGetFloatv(GL_VIEWPORT_BOUNDS_RANGE, viewportBoundsRange);
@@ -2591,7 +2592,9 @@ public:
 
 	void test (void)
 	{
-		const GLint validInitialValues[] = {GL_BACK, GL_NONE};
+		const bool isGlCore45 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
+		const GLenum colorAttachment = isGlCore45 ? GL_FRONT : GL_BACK;
+		const GLint validInitialValues[] = {(GLint)colorAttachment, GL_BACK, GL_NONE};
 		m_verifier->verifyIntegerAnyOf(m_testCtx, GL_READ_BUFFER, validInitialValues, DE_LENGTH_OF_ARRAY(validInitialValues));
 		expectError(GL_NO_ERROR);
 
@@ -2599,8 +2602,8 @@ public:
 		m_verifier->verifyInteger(m_testCtx, GL_READ_BUFFER, GL_NONE);
 		expectError(GL_NO_ERROR);
 
-		glReadBuffer(GL_BACK);
-		m_verifier->verifyInteger(m_testCtx, GL_READ_BUFFER, GL_BACK);
+		glReadBuffer(colorAttachment);
+		m_verifier->verifyInteger(m_testCtx, GL_READ_BUFFER, colorAttachment);
 		expectError(GL_NO_ERROR);
 
 		// test GL_READ_BUFFER with framebuffers
@@ -2631,7 +2634,7 @@ public:
 		glDeleteRenderbuffers(1, &renderbuffer_id);
 		expectError(GL_NO_ERROR);
 
-		m_verifier->verifyInteger(m_testCtx, GL_READ_BUFFER, GL_BACK);
+		m_verifier->verifyInteger(m_testCtx, GL_READ_BUFFER, colorAttachment);
 		expectError(GL_NO_ERROR);
 	}
 private:
@@ -2649,7 +2652,7 @@ public:
 
 	void test (void)
 	{
-		const GLint validInitialValues[] = {GL_BACK, GL_NONE};
+		const GLint validInitialValues[] = {GL_FRONT, GL_BACK, GL_NONE};
 		m_verifier->verifyIntegerAnyOf(m_testCtx, GL_DRAW_BUFFER0, validInitialValues, DE_LENGTH_OF_ARRAY(validInitialValues));
 		expectError(GL_NO_ERROR);
 
@@ -2660,7 +2663,8 @@ public:
 
 		bufs = GL_BACK;
 		glDrawBuffers(1, &bufs);
-		m_verifier->verifyInteger(m_testCtx, GL_DRAW_BUFFER0, GL_BACK);
+		const GLint validDraw0Values[] = {GL_FRONT_LEFT, GL_BACK};
+		m_verifier->verifyIntegerAnyOf(m_testCtx, GL_DRAW_BUFFER0, validDraw0Values, DE_LENGTH_OF_ARRAY(validDraw0Values));
 		expectError(GL_NO_ERROR);
 
 		// test GL_DRAW_BUFFER with framebuffers
@@ -2703,7 +2707,7 @@ public:
 		glDeleteRenderbuffers(2, renderbuffer_ids);
 		expectError(GL_NO_ERROR);
 
-		m_verifier->verifyInteger(m_testCtx, GL_DRAW_BUFFER0, GL_BACK);
+		m_verifier->verifyIntegerAnyOf(m_testCtx, GL_DRAW_BUFFER0, validDraw0Values, DE_LENGTH_OF_ARRAY(validDraw0Values));
 		expectError(GL_NO_ERROR);
 	}
 private:
@@ -2784,60 +2788,66 @@ void IntegerStateQueryTests::init (void)
 		const char*		description;
 		GLenum			targetName;
 		GLint			value;
+		bool			skipForGl;
 	} implementationMinLimits[] =
 	{
-		{ "subpixel_bits",									"SUBPIXEL_BITS has minimum value of 4",										GL_SUBPIXEL_BITS,									4	},
-		{ "max_3d_texture_size",							"MAX_3D_TEXTURE_SIZE has minimum value of 256",								GL_MAX_3D_TEXTURE_SIZE,								256	},
-		{ "max_texture_size",								"MAX_TEXTURE_SIZE has minimum value of 2048",								GL_MAX_TEXTURE_SIZE,								2048},
-		{ "max_array_texture_layers",						"MAX_ARRAY_TEXTURE_LAYERS has minimum value of 256",						GL_MAX_ARRAY_TEXTURE_LAYERS,						256	},
-		{ "max_cube_map_texture_size",						"MAX_CUBE_MAP_TEXTURE_SIZE has minimum value of 2048",						GL_MAX_CUBE_MAP_TEXTURE_SIZE,						2048},
-		{ "max_renderbuffer_size",							"MAX_RENDERBUFFER_SIZE has minimum value of 2048",							GL_MAX_RENDERBUFFER_SIZE,							2048},
-		{ "max_draw_buffers",								"MAX_DRAW_BUFFERS has minimum value of 4",									GL_MAX_DRAW_BUFFERS,								4	},
-		{ "max_color_attachments",							"MAX_COLOR_ATTACHMENTS has minimum value of 4",								GL_MAX_COLOR_ATTACHMENTS,							4	},
-		{ "max_elements_indices",							"MAX_ELEMENTS_INDICES has minimum value of 0",								GL_MAX_ELEMENTS_INDICES,							0	},
-		{ "max_elements_vertices",							"MAX_ELEMENTS_VERTICES has minimum value of 0",								GL_MAX_ELEMENTS_VERTICES,							0	},
-		{ "num_extensions",									"NUM_EXTENSIONS has minimum value of 0",									GL_NUM_EXTENSIONS,									0	},
-		{ "major_version",									"MAJOR_VERSION has minimum value of 3",										GL_MAJOR_VERSION,									3	},
-		{ "minor_version",									"MINOR_VERSION has minimum value of 0",										GL_MINOR_VERSION,									0	},
-		{ "max_vertex_attribs",								"MAX_VERTEX_ATTRIBS has minimum value of 16",								GL_MAX_VERTEX_ATTRIBS,								16	},
-		{ "max_vertex_uniform_components",					"MAX_VERTEX_UNIFORM_COMPONENTS has minimum value of 1024",					GL_MAX_VERTEX_UNIFORM_COMPONENTS,					1024},
-		{ "max_vertex_uniform_vectors",						"MAX_VERTEX_UNIFORM_VECTORS has minimum value of 256",						GL_MAX_VERTEX_UNIFORM_VECTORS,						256	},
-		{ "max_vertex_uniform_blocks",						"MAX_VERTEX_UNIFORM_BLOCKS has minimum value of 12",						GL_MAX_VERTEX_UNIFORM_BLOCKS,						12	},
-		{ "max_vertex_output_components",					"MAX_VERTEX_OUTPUT_COMPONENTS has minimum value of 64",						GL_MAX_VERTEX_OUTPUT_COMPONENTS,					64	},
-		{ "max_vertex_texture_image_units",					"MAX_VERTEX_TEXTURE_IMAGE_UNITS has minimum value of 16",					GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS,					16	},
-		{ "max_fragment_uniform_components",				"MAX_FRAGMENT_UNIFORM_COMPONENTS has minimum value of 896",					GL_MAX_FRAGMENT_UNIFORM_COMPONENTS,					896	},
-		{ "max_fragment_uniform_vectors",					"MAX_FRAGMENT_UNIFORM_VECTORS has minimum value of 224",					GL_MAX_FRAGMENT_UNIFORM_VECTORS,					224	},
-		{ "max_fragment_uniform_blocks",					"MAX_FRAGMENT_UNIFORM_BLOCKS has minimum value of 12",						GL_MAX_FRAGMENT_UNIFORM_BLOCKS,						12	},
-		{ "max_fragment_input_components",					"MAX_FRAGMENT_INPUT_COMPONENTS has minimum value of 60",					GL_MAX_FRAGMENT_INPUT_COMPONENTS,					60	},
-		{ "max_texture_image_units",						"MAX_TEXTURE_IMAGE_UNITS has minimum value of 16",							GL_MAX_TEXTURE_IMAGE_UNITS,							16	},
-		{ "max_program_texel_offset",						"MAX_PROGRAM_TEXEL_OFFSET has minimum value of 7",							GL_MAX_PROGRAM_TEXEL_OFFSET,						7	},
-		{ "max_uniform_buffer_bindings",					"MAX_UNIFORM_BUFFER_BINDINGS has minimum value of 24",						GL_MAX_UNIFORM_BUFFER_BINDINGS,						24	},
-		{ "max_combined_uniform_blocks",					"MAX_COMBINED_UNIFORM_BLOCKS has minimum value of 24",						GL_MAX_COMBINED_UNIFORM_BLOCKS,						24	},
-		{ "max_varying_components",							"MAX_VARYING_COMPONENTS has minimum value of 60",							GL_MAX_VARYING_COMPONENTS,							60	},
-		{ "max_varying_vectors",							"MAX_VARYING_VECTORS has minimum value of 15",								GL_MAX_VARYING_VECTORS,								15	},
-		{ "max_combined_texture_image_units",				"MAX_COMBINED_TEXTURE_IMAGE_UNITS has minimum value of 32",					GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,				32	},
-		{ "max_transform_feedback_interleaved_components",	"MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS has minimum value of 64",	GL_MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS,	64	},
-		{ "max_transform_feedback_separate_attribs",		"MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS has minimum value of 4",			GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS,			4	},
-		{ "max_transform_feedback_separate_components",		"MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS has minimum value of 4",		GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS,		4	},
-		{ "max_samples",									"MAX_SAMPLES has minimum value of 4",										GL_MAX_SAMPLES,										4	},
-		{ "red_bits",										"RED_BITS has minimum value of 0",											GL_RED_BITS,										0	},
-		{ "green_bits",										"GREEN_BITS has minimum value of 0",										GL_GREEN_BITS,										0	},
-		{ "blue_bits",										"BLUE_BITS has minimum value of 0",											GL_BLUE_BITS,										0	},
-		{ "alpha_bits",										"ALPHA_BITS has minimum value of 0",										GL_ALPHA_BITS,										0	},
-		{ "depth_bits",										"DEPTH_BITS has minimum value of 0",										GL_DEPTH_BITS,										0	},
-		{ "stencil_bits",									"STENCIL_BITS has minimum value of 0",										GL_STENCIL_BITS,									0	},
+		{ "subpixel_bits",									"SUBPIXEL_BITS has minimum value of 4",										GL_SUBPIXEL_BITS,									4	,	false},
+		{ "max_3d_texture_size",							"MAX_3D_TEXTURE_SIZE has minimum value of 256",								GL_MAX_3D_TEXTURE_SIZE,								256	,	false	},
+		{ "max_texture_size",								"MAX_TEXTURE_SIZE has minimum value of 2048",								GL_MAX_TEXTURE_SIZE,								2048	,	false	},
+		{ "max_array_texture_layers",						"MAX_ARRAY_TEXTURE_LAYERS has minimum value of 256",						GL_MAX_ARRAY_TEXTURE_LAYERS,						256	,	false	},
+		{ "max_cube_map_texture_size",						"MAX_CUBE_MAP_TEXTURE_SIZE has minimum value of 2048",						GL_MAX_CUBE_MAP_TEXTURE_SIZE,						2048	,	false	},
+		{ "max_renderbuffer_size",							"MAX_RENDERBUFFER_SIZE has minimum value of 2048",							GL_MAX_RENDERBUFFER_SIZE,							2048	,	false	},
+		{ "max_draw_buffers",								"MAX_DRAW_BUFFERS has minimum value of 4",									GL_MAX_DRAW_BUFFERS,								4	,	false	},
+		{ "max_color_attachments",							"MAX_COLOR_ATTACHMENTS has minimum value of 4",								GL_MAX_COLOR_ATTACHMENTS,							4	,	false	},
+		{ "max_elements_indices",							"MAX_ELEMENTS_INDICES has minimum value of 0",								GL_MAX_ELEMENTS_INDICES,							0	,	false	},
+		{ "max_elements_vertices",							"MAX_ELEMENTS_VERTICES has minimum value of 0",								GL_MAX_ELEMENTS_VERTICES,							0	,	false	},
+		{ "num_extensions",									"NUM_EXTENSIONS has minimum value of 0",									GL_NUM_EXTENSIONS,									0	,	false	},
+		{ "major_version",									"MAJOR_VERSION has minimum value of 3",										GL_MAJOR_VERSION,									3	,	false	},
+		{ "minor_version",									"MINOR_VERSION has minimum value of 0",										GL_MINOR_VERSION,									0	,	false	},
+		{ "max_vertex_attribs",								"MAX_VERTEX_ATTRIBS has minimum value of 16",								GL_MAX_VERTEX_ATTRIBS,								16	,	false	},
+		{ "max_vertex_uniform_components",					"MAX_VERTEX_UNIFORM_COMPONENTS has minimum value of 1024",					GL_MAX_VERTEX_UNIFORM_COMPONENTS,					1024	,	false	},
+		{ "max_vertex_uniform_vectors",						"MAX_VERTEX_UNIFORM_VECTORS has minimum value of 256",						GL_MAX_VERTEX_UNIFORM_VECTORS,						256	,	false	},
+		{ "max_vertex_uniform_blocks",						"MAX_VERTEX_UNIFORM_BLOCKS has minimum value of 12",						GL_MAX_VERTEX_UNIFORM_BLOCKS,						12	,	false	},
+		{ "max_vertex_output_components",					"MAX_VERTEX_OUTPUT_COMPONENTS has minimum value of 64",						GL_MAX_VERTEX_OUTPUT_COMPONENTS,					64	,	false	},
+		{ "max_vertex_texture_image_units",					"MAX_VERTEX_TEXTURE_IMAGE_UNITS has minimum value of 16",					GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS,					16	,	false	},
+		{ "max_fragment_uniform_components",				"MAX_FRAGMENT_UNIFORM_COMPONENTS has minimum value of 896",					GL_MAX_FRAGMENT_UNIFORM_COMPONENTS,					896	,	false	},
+		{ "max_fragment_uniform_vectors",					"MAX_FRAGMENT_UNIFORM_VECTORS has minimum value of 224",					GL_MAX_FRAGMENT_UNIFORM_VECTORS,					224	,	false	},
+		{ "max_fragment_uniform_blocks",					"MAX_FRAGMENT_UNIFORM_BLOCKS has minimum value of 12",						GL_MAX_FRAGMENT_UNIFORM_BLOCKS,						12	,	false	},
+		{ "max_fragment_input_components",					"MAX_FRAGMENT_INPUT_COMPONENTS has minimum value of 60",					GL_MAX_FRAGMENT_INPUT_COMPONENTS,					60	,	false	},
+		{ "max_texture_image_units",						"MAX_TEXTURE_IMAGE_UNITS has minimum value of 16",							GL_MAX_TEXTURE_IMAGE_UNITS,							16	,	false	},
+		{ "max_program_texel_offset",						"MAX_PROGRAM_TEXEL_OFFSET has minimum value of 7",							GL_MAX_PROGRAM_TEXEL_OFFSET,						7	,	false	},
+		{ "max_uniform_buffer_bindings",					"MAX_UNIFORM_BUFFER_BINDINGS has minimum value of 24",						GL_MAX_UNIFORM_BUFFER_BINDINGS,						24	,	false	},
+		{ "max_combined_uniform_blocks",					"MAX_COMBINED_UNIFORM_BLOCKS has minimum value of 24",						GL_MAX_COMBINED_UNIFORM_BLOCKS,						24	,	false	},
+		{ "max_varying_components",							"MAX_VARYING_COMPONENTS has minimum value of 60",							GL_MAX_VARYING_COMPONENTS,							60	,	false	},
+		{ "max_varying_vectors",							"MAX_VARYING_VECTORS has minimum value of 15",								GL_MAX_VARYING_VECTORS,								15	,	false	},
+		{ "max_combined_texture_image_units",				"MAX_COMBINED_TEXTURE_IMAGE_UNITS has minimum value of 32",					GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,				32	,	false	},
+		{ "max_transform_feedback_interleaved_components",	"MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS has minimum value of 64",	GL_MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS,	64	,	false	},
+		{ "max_transform_feedback_separate_attribs",		"MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS has minimum value of 4",			GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS,			4	,	false	},
+		{ "max_transform_feedback_separate_components",		"MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS has minimum value of 4",		GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS,		4	,	false	},
+		{ "max_samples",									"MAX_SAMPLES has minimum value of 4",										GL_MAX_SAMPLES,										4	,	false	},
+		{ "red_bits",										"RED_BITS has minimum value of 0",											GL_RED_BITS,										0,	true	},
+		{ "green_bits",										"GREEN_BITS has minimum value of 0",										GL_GREEN_BITS,										0,	true	},
+		{ "blue_bits",										"BLUE_BITS has minimum value of 0",											GL_BLUE_BITS,										0,	true	},
+		{ "alpha_bits",										"ALPHA_BITS has minimum value of 0",										GL_ALPHA_BITS,										0,	true	},
+		{ "depth_bits",										"DEPTH_BITS has minimum value of 0",										GL_DEPTH_BITS,										0,	true	},
+		{ "stencil_bits",									"STENCIL_BITS has minimum value of 0",										GL_STENCIL_BITS,									0,	true	},
 	};
 	const LimitedStateInteger implementationMaxLimits[] =
 	{
-		{ "min_program_texel_offset",						"MIN_PROGRAM_TEXEL_OFFSET has maximum value of -8",							GL_MIN_PROGRAM_TEXEL_OFFSET,						-8	},
-		{ "uniform_buffer_offset_alignment",				"UNIFORM_BUFFER_OFFSET_ALIGNMENT has minimum value of 1",					GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT,					256	},
+		{ "min_program_texel_offset",						"MIN_PROGRAM_TEXEL_OFFSET has maximum value of -8",							GL_MIN_PROGRAM_TEXEL_OFFSET,						-8	,	false	},
+		{ "uniform_buffer_offset_alignment",				"UNIFORM_BUFFER_OFFSET_ALIGNMENT has minimum value of 1",					GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT,					256	,	false	},
 	};
 
 	// \note implementation defined limits have their own tests so just check the conversions to boolean, int64 and float
 	StateVerifier* implementationLimitVerifiers[] = {m_verifierBoolean, m_verifierInteger64, m_verifierFloat};
 
+	const bool isGlCore45 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
 	for (int testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(implementationMinLimits); testNdx++)
+	{
+		if (implementationMinLimits[testNdx].skipForGl && isGlCore45)
+			continue;
 		FOR_EACH_VERIFIER(implementationLimitVerifiers, addChild(new ConstantMinimumValueTestCase(m_context, verifier, (std::string(implementationMinLimits[testNdx].name) + verifier->getTestNamePostfix()).c_str(), implementationMinLimits[testNdx].description, implementationMinLimits[testNdx].targetName, implementationMinLimits[testNdx].value)));
+	}
 	for (int testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(implementationMaxLimits); testNdx++)
 		FOR_EACH_VERIFIER(implementationLimitVerifiers, addChild(new ConstantMaximumValueTestCase(m_context, verifier, (std::string(implementationMaxLimits[testNdx].name) + verifier->getTestNamePostfix()).c_str(), implementationMaxLimits[testNdx].description, implementationMaxLimits[testNdx].targetName, implementationMaxLimits[testNdx].value)));
 
@@ -2846,7 +2856,8 @@ void IntegerStateQueryTests::init (void)
 	FOR_EACH_VERIFIER(implementationLimitVerifiers, addChild(new SampleBuffersTestCase		(m_context,	 verifier, (std::string("sample_buffers")						+ verifier->getTestNamePostfix()).c_str(),		"SAMPLE_BUFFERS")));
 
 	FOR_EACH_VERIFIER(normalVerifiers, addChild(new SamplesTestCase				(m_context,	 verifier, (std::string("samples")								+ verifier->getTestNamePostfix()).c_str(),		"SAMPLES")));
-	FOR_EACH_VERIFIER(normalVerifiers, addChild(new HintTestCase				(m_context,	 verifier, (std::string("generate_mipmap_hint")					+ verifier->getTestNamePostfix()).c_str(),		"GENERATE_MIPMAP_HINT",				GL_GENERATE_MIPMAP_HINT)));
+	if (!isGlCore45)
+		FOR_EACH_VERIFIER(normalVerifiers, addChild(new HintTestCase				(m_context,	 verifier, (std::string("generate_mipmap_hint")					+ verifier->getTestNamePostfix()).c_str(),		"GENERATE_MIPMAP_HINT",				GL_GENERATE_MIPMAP_HINT)));
 	FOR_EACH_VERIFIER(normalVerifiers, addChild(new HintTestCase				(m_context,	 verifier, (std::string("fragment_shader_derivative_hint")		+ verifier->getTestNamePostfix()).c_str(),		"FRAGMENT_SHADER_DERIVATIVE_HINT",	GL_FRAGMENT_SHADER_DERIVATIVE_HINT)));
 	FOR_EACH_VERIFIER(normalVerifiers, addChild(new DepthFuncTestCase			(m_context,	 verifier, (std::string("depth_func")							+ verifier->getTestNamePostfix()).c_str(),		"DEPTH_FUNC")));
 	FOR_EACH_VERIFIER(normalVerifiers, addChild(new CullFaceTestCase			(m_context,	 verifier, (std::string("cull_face_mode")						+ verifier->getTestNamePostfix()).c_str(),		"CULL_FACE_MODE")));

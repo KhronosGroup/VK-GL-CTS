@@ -75,7 +75,7 @@ void dePoolHeap_selfTest (void)
 	/* Push items -1000..1000 into heap. */
 	for (i = -1000; i < 1000; i++)
 	{
-		/* Dummy alloc to try to break alignments. */
+		/* Unused alloc to try to break alignments. */
 		deMemPool_alloc(pool, 1);
 		TestHeap_push(heap, HeapItem_create(i, -i));
 	}

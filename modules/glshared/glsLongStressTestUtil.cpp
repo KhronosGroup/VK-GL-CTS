@@ -85,12 +85,12 @@ ProgramLibrary::ProgramLibrary (const glu::GLSLVersion glslVersion)
 	DE_ASSERT(glslVersion == glu::GLSL_VERSION_100_ES || glslVersion == glu::GLSL_VERSION_300_ES);
 }
 
-gls::ProgramContext ProgramLibrary::generateBufferContext (const int numDummyAttributes) const
+gls::ProgramContext ProgramLibrary::generateBufferContext (const int numUnusedAttributes) const
 {
 	static const char* const vertexTemplate =
 		"${VTX_HEADER}"
 		"${VTX_IN} highp vec3 a_position;\n"
-		"${VTX_DUMMY_INPUTS}"
+		"${VTX_UNUSED_INPUTS}"
 		"${VTX_OUT} mediump vec4 v_color;\n"
 		"\n"
 		"void main (void)\n"
@@ -111,15 +111,15 @@ gls::ProgramContext ProgramLibrary::generateBufferContext (const int numDummyAtt
 	map<string, string> firstLevelParams;
 
 	{
-		string vtxDummyInputs;
+		string vtxUnusedInputs;
 		string vtxColorExpr;
-		for (int i = 0; i < numDummyAttributes; i++)
+		for (int i = 0; i < numUnusedAttributes; i++)
 		{
-			vtxDummyInputs	+= "${VTX_IN} mediump vec4 a_in" + toString(i) + ";\n";
+			vtxUnusedInputs	+= "${VTX_IN} mediump vec4 a_in" + toString(i) + ";\n";
 			vtxColorExpr	+= string() + (i > 0 ? " + " : "") + "a_in" + toString(i);
 		}
 
-		firstLevelParams["VTX_DUMMY_INPUTS"]		= substitute(vtxDummyInputs);
+		firstLevelParams["VTX_UNUSED_INPUTS"]		= substitute(vtxUnusedInputs);
 		firstLevelParams["VTX_COLOR_EXPRESSION"]	= vtxColorExpr;
 	}
 
@@ -127,8 +127,8 @@ gls::ProgramContext ProgramLibrary::generateBufferContext (const int numDummyAtt
 
 	context.attributes.push_back(gls::VarSpec("a_position", Vec3(-0.1f), Vec3(0.1f)));
 
-	for (int i = 0; i < numDummyAttributes; i++)
-		context.attributes.push_back(gls::VarSpec("a_in" + de::toString(i), Vec4(0.0f), Vec4(1.0f / (float)numDummyAttributes)));
+	for (int i = 0; i < numUnusedAttributes; i++)
+		context.attributes.push_back(gls::VarSpec("a_in" + de::toString(i), Vec4(0.0f), Vec4(1.0f / (float)numUnusedAttributes)));
 
 	return context;
 }

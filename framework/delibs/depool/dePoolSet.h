@@ -190,7 +190,7 @@ DE_INLINE void TYPENAME##_safeDelete (DE_PTR_TYPE(TYPENAME) set, KEYTYPE key)	\
 		TYPENAME##_delete(set, key);								\
 }																	\
 \
-struct TYPENAME##Dummy_s { int dummy; }
+struct TYPENAME##Unused_s { int unused; }
 
 /*--------------------------------------------------------------------*//*!
  * \brief Implement a template pool set class.
@@ -424,13 +424,13 @@ void TYPENAME##_delete (DE_PTR_TYPE(TYPENAME) set, KEYTYPE key)    \
 	} \
 }    \
 \
-struct TYPENAME##Dummy2_s { int dummy; }
+struct TYPENAME##Unused2_s { int unused; }
 
 /* Copy-to-array templates. */
 
 #define DE_DECLARE_POOL_SET_TO_ARRAY(SETTYPENAME, ARRAYTYPENAME)		\
 	deBool SETTYPENAME##_copyToArray(const SETTYPENAME* set, DE_PTR_TYPE(ARRAYTYPENAME) array);	\
-	struct SETTYPENAME##_##ARRAYTYPENAME##_declare_dummy { int dummy; }
+	struct SETTYPENAME##_##ARRAYTYPENAME##_declare_unused { int unused; }
 
 #define DE_IMPLEMENT_POOL_SET_TO_ARRAY(SETTYPENAME, ARRAYTYPENAME)		\
 	deBool SETTYPENAME##_copyToArray(const SETTYPENAME* set, DE_PTR_TYPE(ARRAYTYPENAME) array)	\
@@ -456,7 +456,7 @@ struct TYPENAME##Dummy2_s { int dummy; }
 		DE_ASSERT(arrayNdx == numElements);	\
 		return DE_TRUE;	\
 	}	\
-	struct SETTYPENAME##_##ARRAYTYPENAME##_implement_dummy { int dummy; }
+	struct SETTYPENAME##_##ARRAYTYPENAME##_implement_unused { int unused; }
 
 /*--------------------------------------------------------------------*//*!
  * \brief Declare set-wise operations for a set template.
@@ -487,7 +487,7 @@ struct TYPENAME##Dummy2_s { int dummy; }
 	void TYPENAME##_intersectInplace (DE_PTR_TYPE(TYPENAME) a, const TYPENAME* b);					\
 	deBool TYPENAME##_difference (DE_PTR_TYPE(TYPENAME) to, const TYPENAME* a, const TYPENAME* b);	\
 	void TYPENAME##_differenceInplace (DE_PTR_TYPE(TYPENAME) a, const TYPENAME* b);					\
-	struct TYPENAME##SetwiseDeclareDummy_s { int dummy; }
+	struct TYPENAME##SetwiseDeclareUnused_s { int unused; }
 
 #define DE_IMPLEMENT_POOL_SET_SETWISE_OPERATIONS(TYPENAME, KEYTYPE)	\
 deBool TYPENAME##_union (DE_PTR_TYPE(TYPENAME) to, const TYPENAME* a, const TYPENAME* b)	\
@@ -572,6 +572,6 @@ void TYPENAME##_differenceInplace (DE_PTR_TYPE(TYPENAME) a, const TYPENAME* b)	\
 	}	\
 }	\
 \
-struct TYPENAME##UnionIntersectImplementDummy_s { int dummy; }
+struct TYPENAME##UnionIntersectImplementUnused_s { int unused; }
 
 #endif /* _DEPOOLSET_H */

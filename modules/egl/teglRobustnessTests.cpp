@@ -1050,7 +1050,7 @@ void ShadersOOB::setup (void)
 		GLU_CHECK_GLW_CALL(m_gl, vertexAttribPointer(m_coordLocation, 2, GL_FLOAT, GL_FALSE, 0, DE_NULL));
 	}
 
-	// Create dummy data for filling buffer objects
+	// Create unused data for filling buffer objects
 	const std::vector<tcu::Vec4> refValues(s_numBindings, tcu::Vec4(0.0f, 1.0f, 1.0f, 1.0f));
 
 	if (m_isLocalArray && m_shaderType == SHADERTYPE_COMPUTE)

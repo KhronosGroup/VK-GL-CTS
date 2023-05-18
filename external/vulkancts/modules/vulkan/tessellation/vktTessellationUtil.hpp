@@ -46,62 +46,6 @@ namespace vkt
 namespace tessellation
 {
 
-class Buffer
-{
-public:
-										Buffer			(const vk::DeviceInterface&		vk,
-														 const vk::VkDevice				device,
-														 vk::Allocator&					allocator,
-														 const vk::VkBufferCreateInfo&	bufferCreateInfo,
-														 const vk::MemoryRequirement	memoryRequirement)
-
-											: m_buffer		(createBuffer(vk, device, &bufferCreateInfo))
-											, m_allocation	(allocator.allocate(getBufferMemoryRequirements(vk, device, *m_buffer), memoryRequirement))
-										{
-											VK_CHECK(vk.bindBufferMemory(device, *m_buffer, m_allocation->getMemory(), m_allocation->getOffset()));
-										}
-
-	const vk::VkBuffer&					get				(void) const { return *m_buffer; }
-	const vk::VkBuffer&					operator*		(void) const { return get(); }
-	vk::Allocation&						getAllocation	(void) const { return *m_allocation; }
-
-private:
-	const vk::Unique<vk::VkBuffer>		m_buffer;
-	const de::UniquePtr<vk::Allocation>	m_allocation;
-
-	// "deleted"
-										Buffer			(const Buffer&);
-	Buffer&								operator=		(const Buffer&);
-};
-
-class Image
-{
-public:
-										Image			(const vk::DeviceInterface&		vk,
-														 const vk::VkDevice				device,
-														 vk::Allocator&					allocator,
-														 const vk::VkImageCreateInfo&	imageCreateInfo,
-														 const vk::MemoryRequirement	memoryRequirement)
-
-											: m_image		(createImage(vk, device, &imageCreateInfo))
-											, m_allocation	(allocator.allocate(getImageMemoryRequirements(vk, device, *m_image), memoryRequirement))
-										{
-											VK_CHECK(vk.bindImageMemory(device, *m_image, m_allocation->getMemory(), m_allocation->getOffset()));
-										}
-
-	const vk::VkImage&					get				(void) const { return *m_image; }
-	const vk::VkImage&					operator*		(void) const { return get(); }
-	vk::Allocation&						getAllocation	(void) const { return *m_allocation; }
-
-private:
-	const vk::Unique<vk::VkImage>		m_image;
-	const de::UniquePtr<vk::Allocation>	m_allocation;
-
-	// "deleted"
-										Image			(const Image&);
-	Image&								operator=		(const Image&);
-};
-
 class GraphicsPipelineBuilder
 {
 public:
@@ -210,7 +154,6 @@ enum FeatureFlagBits
 typedef deUint32 FeatureFlags;
 
 vk::VkImageCreateInfo			makeImageCreateInfo							(const tcu::IVec2& size, const vk::VkFormat format, const vk::VkImageUsageFlags usage, const deUint32 numArrayLayers);
-vk::Move<vk::VkPipeline>		makeComputePipeline							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineLayout pipelineLayout, const vk::VkShaderModule shaderModule, const vk::VkSpecializationInfo* specInfo);
 vk::Move<vk::VkRenderPass>		makeRenderPassWithoutAttachments			(const vk::DeviceInterface& vk, const vk::VkDevice device);
 vk::VkBufferImageCopy			makeBufferImageCopy							(const vk::VkExtent3D extent, const vk::VkImageSubresourceLayers subresourceLayers);
 void							beginRenderPassWithRasterizationDisabled	(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer, const vk::VkRenderPass renderPass, const vk::VkFramebuffer framebuffer);
@@ -373,6 +316,8 @@ static inline const char* getGeometryShaderOutputPrimitiveTypeShaderName (const 
 	}
 }
 
+#ifndef CTS_USES_VULKANSC
+
 static inline const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR* getPortability (const Context& context)
 {
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset"))
@@ -403,6 +348,8 @@ static inline void checkPointMode (const vk::VkPhysicalDevicePortabilitySubsetFe
 	if (!features.tessellationPointMode)
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Tessellation point mode is not supported by this implementation");
 }
+
+#endif // CTS_USES_VULKANSC
 
 template<typename T>
 inline std::size_t sizeInBytes (const std::vector<T>& vec)
@@ -483,29 +430,38 @@ std::vector<T> readInterleavedData (const int count, const void* memory, const i
 template <typename CaseDef, typename = bool>
 struct PointMode
 {
+#ifndef CTS_USES_VULKANSC
 	static void check(const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR&, const CaseDef)
 	{
 	}
+#endif // CTS_USES_VULKANSC
 };
 
 template <typename CaseDef>
 struct PointMode<CaseDef, decltype(CaseDef().usePointMode)>
 {
+#ifndef CTS_USES_VULKANSC
 	static void check(const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR& features, const CaseDef caseDef)
 	{
 		if (caseDef.usePointMode)
 			checkPointMode(features);
 	}
+#endif // CTS_USES_VULKANSC
 };
 
 template <typename CaseDef>
 void checkSupportCase (Context& context, const CaseDef caseDef)
 {
+#ifndef CTS_USES_VULKANSC
 	if (const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR* const features = getPortability(context))
 	{
 		PointMode<CaseDef>::check(*features, caseDef);
 		checkPrimitive(*features, caseDef.primitiveType);
-	}
+}
+#else
+	DE_UNREF(context);
+	DE_UNREF(caseDef);
+#endif // CTS_USES_VULKANSC
 }
 
 } // tessellation

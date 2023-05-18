@@ -24,11 +24,21 @@
 
 #include "vktMeshShaderTests.hpp"
 #include "vktMeshShaderSmokeTests.hpp"
+#include "vktMeshShaderSmokeTestsEXT.hpp"
 #include "vktMeshShaderSyncTests.hpp"
+#include "vktMeshShaderSyncTestsEXT.hpp"
 #include "vktMeshShaderApiTests.hpp"
+#include "vktMeshShaderApiTestsEXT.hpp"
 #include "vktMeshShaderPropertyTests.hpp"
 #include "vktMeshShaderBuiltinTests.hpp"
+#include "vktMeshShaderBuiltinTestsEXT.hpp"
 #include "vktMeshShaderMiscTests.hpp"
+#include "vktMeshShaderMiscTestsEXT.hpp"
+#include "vktMeshShaderInOutTestsEXT.hpp"
+#include "vktMeshShaderPropertyTestsEXT.hpp"
+#include "vktMeshShaderConditionalRenderingTestsEXT.hpp"
+#include "vktMeshShaderProvokingVertexTestsEXT.hpp"
+#include "vktMeshShaderQueryTestsEXT.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -46,6 +56,7 @@ tcu::TestCaseGroup*	createTests	(tcu::TestContext& testCtx)
 {
 	GroupPtr mainGroup	(new tcu::TestCaseGroup(testCtx, "mesh_shader", "Mesh Shader Tests"));
 	GroupPtr nvGroup	(new tcu::TestCaseGroup(testCtx, "nv", "Tests for VK_NV_mesh_shader"));
+	GroupPtr extGroup	(new tcu::TestCaseGroup(testCtx, "ext", "Tests for VK_EXT_mesh_shader"));
 
 	nvGroup->addChild(createMeshShaderSmokeTests(testCtx));
 	nvGroup->addChild(createMeshShaderApiTests(testCtx));
@@ -53,8 +64,21 @@ tcu::TestCaseGroup*	createTests	(tcu::TestContext& testCtx)
 	nvGroup->addChild(createMeshShaderPropertyTests(testCtx));
 	nvGroup->addChild(createMeshShaderBuiltinTests(testCtx));
 	nvGroup->addChild(createMeshShaderMiscTests(testCtx));
+	nvGroup->addChild(createMeshShaderInOutTests(testCtx));
+
+	extGroup->addChild(createMeshShaderSmokeTestsEXT(testCtx));
+	extGroup->addChild(createMeshShaderApiTestsEXT(testCtx));
+	extGroup->addChild(createMeshShaderSyncTestsEXT(testCtx));
+	extGroup->addChild(createMeshShaderBuiltinTestsEXT(testCtx));
+	extGroup->addChild(createMeshShaderMiscTestsEXT(testCtx));
+	extGroup->addChild(createMeshShaderInOutTestsEXT(testCtx));
+	extGroup->addChild(createMeshShaderPropertyTestsEXT(testCtx));
+	extGroup->addChild(createMeshShaderConditionalRenderingTestsEXT(testCtx));
+	extGroup->addChild(createMeshShaderProvokingVertexTestsEXT(testCtx));
+	extGroup->addChild(createMeshShaderQueryTestsEXT(testCtx));
 
 	mainGroup->addChild(nvGroup.release());
+	mainGroup->addChild(extGroup.release());
 	return mainGroup.release();
 }
 

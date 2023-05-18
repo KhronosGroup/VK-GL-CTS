@@ -32,6 +32,8 @@
 namespace vk
 {
 
+#ifndef CTS_USES_VULKANSC
+
 struct DebugReportMessage
 {
 	VkDebugReportFlagsEXT		flags;
@@ -102,6 +104,8 @@ private:
 	MessageList								m_messages;
 	const bool								m_print_errors;
 };
+
+#endif // CTS_USES_VULKANSC
 
 bool isDebugReportSupported (const PlatformInterface& vkp);
 

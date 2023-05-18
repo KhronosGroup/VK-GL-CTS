@@ -253,6 +253,7 @@ void MismatchedFormatTest::checkSupport (Context& context) const
 	const auto&	vki				= context.getInstanceInterface();
 	const auto	physicalDevice	= context.getPhysicalDevice();
 
+#ifndef CTS_USES_VULKANSC
 	if (m_type == TestType::SPARSE_READ)
 	{
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
@@ -274,6 +275,7 @@ void MismatchedFormatTest::checkSupport (Context& context) const
 			TCU_THROW(NotSupportedError, "Shader resource residency not supported");
 		}
 	}
+#endif // CTS_USES_VULKANSC
 
 	VkFormatProperties formatProperties = getPhysicalDeviceFormatProperties(vki, physicalDevice, m_format);
 
@@ -376,8 +378,10 @@ tcu::TestStatus MismatchedFormatTestInstance::iterate (void)
 	const VkQueue					queue				= m_context.getUniversalQueue();
 	const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 	auto&							allocator			= m_context.getDefaultAllocator();
+#ifndef CTS_USES_VULKANSC
 	const auto						physicalDevice		= m_context.getPhysicalDevice();
 	const auto&						instance			= m_context.getInstanceInterface();
+#endif // CTS_USES_VULKANSC
 
 	Move<VkShaderModule>			shaderModule		= createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0);
 
@@ -406,10 +410,11 @@ tcu::TestStatus MismatchedFormatTestInstance::iterate (void)
 	if (m_type == TestType::SPARSE_READ)
 	{
 		bindSemaphore = createSemaphore(vk, device);
-
+#ifndef CTS_USES_VULKANSC
 		allocateAndBindSparseImage(	vk, device, physicalDevice, instance,
 									imageCreateInfo, *bindSemaphore, m_context.getSparseQueue(),
 									allocator, allocations, tcuFormat, *storageImage	);
+#endif // CTS_USES_VULKANSC
 	}
 	else
 	{
@@ -438,7 +443,13 @@ tcu::TestStatus MismatchedFormatTestInstance::iterate (void)
 		vk.cmdDispatch(*cmdBuffer, 8, 8, 1);
 	endCommandBuffer(vk, *cmdBuffer);
 
-	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+	if (m_type == TestType::SPARSE_READ)
+	{
+		const VkPipelineStageFlags stageBits[] = { VK_PIPELINE_STAGE_TRANSFER_BIT };
+		submitCommandsAndWait(vk, device, queue, *cmdBuffer, false, 1u, 1u, &bindSemaphore.get(), stageBits);
+	}
+	else
+		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 	return tcu::TestStatus::pass("Passed");
 }
@@ -455,7 +466,9 @@ tcu::TestCaseGroup* createImageMismatchedFormatsTests (tcu::TestContext& testCtx
 	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "mismatched_formats", "Test image load/store operations on mismatched formats"));
 	de::MovePtr<tcu::TestCaseGroup> testGroupOpRead(new tcu::TestCaseGroup(testCtx, "image_read", "perform OpImageRead"));
 	de::MovePtr<tcu::TestCaseGroup> testGroupOpWrite(new tcu::TestCaseGroup(testCtx, "image_write", "perform OpImageWrite"));
+#ifndef CTS_USES_VULKANSC
 	de::MovePtr<tcu::TestCaseGroup> testGroupOpSparseRead(new tcu::TestCaseGroup(testCtx, "sparse_image_read", "perform OpSparseImageRead"));
+#endif // CTS_USES_VULKANSC
 
 	for (VkFormat format = VK_FORMAT_R4G4_UNORM_PACK8; format < VK_CORE_FORMAT_LAST; format = static_cast<VkFormat>(format+1))
 	{
@@ -475,17 +488,20 @@ tcu::TestCaseGroup* createImageMismatchedFormatsTests (tcu::TestContext& testCtx
 				testGroupOpWrite->addChild(new MismatchedFormatTest(testCtx, testName, "",
 																	TestType::WRITE,
 																	format, spirvFormat) );
-
+#ifndef CTS_USES_VULKANSC
 				testGroupOpSparseRead->addChild(new MismatchedFormatTest(	testCtx, testName, "",
 																			TestType::SPARSE_READ,
 																			format, spirvFormat) );
+#endif // CTS_USES_VULKANSC
 			}
 		}
 	}
 
 	testGroup->addChild(testGroupOpRead.release());
 	testGroup->addChild(testGroupOpWrite.release());
+#ifndef CTS_USES_VULKANSC
 	testGroup->addChild(testGroupOpSparseRead.release());
+#endif // CTS_USES_VULKANSC
 
 	return testGroup.release();
 }

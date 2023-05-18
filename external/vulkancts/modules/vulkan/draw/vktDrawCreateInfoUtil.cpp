@@ -900,6 +900,7 @@ PipelineCreateInfo::ColorBlendState::ColorBlendState (const std::vector<vk::VkPi
 	logicOp					= _logicOp;
 	attachmentCount			= static_cast<deUint32>(m_attachments.size());
 	pAttachments			= &m_attachments[0];
+	deMemset(blendConstants, 0, sizeof(blendConstants));
 }
 
 PipelineCreateInfo::ColorBlendState::ColorBlendState (deUint32											_attachmentCount,
@@ -915,6 +916,7 @@ PipelineCreateInfo::ColorBlendState::ColorBlendState (deUint32											_attach
 	logicOp					= _logicOp;
 	attachmentCount			= static_cast<deUint32>(m_attachments.size());
 	pAttachments			= &m_attachments[0];
+	deMemset(blendConstants, 0, sizeof(blendConstants));
 }
 
 PipelineCreateInfo::ColorBlendState::ColorBlendState (const vk::VkPipelineColorBlendStateCreateInfo& createInfo)
@@ -927,6 +929,7 @@ PipelineCreateInfo::ColorBlendState::ColorBlendState (const vk::VkPipelineColorB
 	logicOp					= createInfo.logicOp;
 	attachmentCount			= static_cast<deUint32>(m_attachments.size());
 	pAttachments			= &m_attachments[0];
+	deMemset(blendConstants, 0, sizeof(blendConstants));
 }
 
 PipelineCreateInfo::ColorBlendState::ColorBlendState (const ColorBlendState& createInfo, std::vector<float> _blendConstants)
@@ -1155,9 +1158,12 @@ PipelineCreateInfo& PipelineCreateInfo::addState (const vk::VkPipelineMultisampl
 {
 
 	const size_t sampleMaskArrayLen = (sizeof(vk::VkSampleMask) * 8 + state.rasterizationSamples) / ( sizeof(vk::VkSampleMask) * 8 );
-	m_multisampleStateSampleMask	= std::vector<vk::VkSampleMask>(state.pSampleMask, state.pSampleMask + sampleMaskArrayLen);
 	m_multisampleState				= state;
-	m_multisampleState.pSampleMask	= &m_multisampleStateSampleMask[0];
+	if (state.pSampleMask != DE_NULL)
+	{
+		m_multisampleStateSampleMask	= std::vector<vk::VkSampleMask>(state.pSampleMask, state.pSampleMask + sampleMaskArrayLen);
+		m_multisampleState.pSampleMask	= &m_multisampleStateSampleMask[0];
+	}
 	pMultisampleState				= &m_multisampleState;
 
 	return *this;

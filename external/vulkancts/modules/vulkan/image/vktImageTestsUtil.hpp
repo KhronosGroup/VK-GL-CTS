@@ -66,27 +66,6 @@ bool					isComponentSwizzled				(const vk::VkFormat format);
 int						getNumUsedChannels				(const vk::VkFormat format);
 bool					isFormatImageLoadStoreCapable	(const vk::VkFormat format);
 
-class Buffer
-{
-public:
-									Buffer			(const vk::DeviceInterface&		vk,
-													 const vk::VkDevice				device,
-													 vk::Allocator&					allocator,
-													 const vk::VkBufferCreateInfo&	bufferCreateInfo,
-													 const vk::MemoryRequirement	memoryRequirement);
-
-	const vk::VkBuffer&				get				(void) const { return *m_buffer; }
-	const vk::VkBuffer&				operator*		(void) const { return get(); }
-	vk::Allocation&					getAllocation	(void) const { return *m_allocation; }
-
-private:
-	de::MovePtr<vk::Allocation>		m_allocation;
-	vk::Move<vk::VkBuffer>			m_buffer;
-
-									Buffer			(const Buffer&);  // "deleted"
-	Buffer&							operator=		(const Buffer&);
-};
-
 class Image
 {
 public:
@@ -114,6 +93,7 @@ protected:
 	vk::Move<vk::VkImage>			m_image;
 };
 
+#ifndef CTS_USES_VULKANSC
 class SparseImage : public Image
 {
 public:
@@ -134,6 +114,7 @@ public:
 protected:
 	vk::Move<vk::VkSemaphore>		m_semaphore;
 };
+#endif // CTS_USES_VULKANSC
 
 tcu::UVec3				getShaderGridSize	(const ImageType imageType, const tcu::UVec3& imageSize);	//!< Size used for addresing image in a shader
 tcu::UVec3				getLayerSize		(const ImageType imageType, const tcu::UVec3& imageSize);	//!< Size of a single layer
@@ -141,11 +122,6 @@ deUint32				getNumLayers		(const ImageType imageType, const tcu::UVec3& imageSiz
 deUint32				getNumPixels		(const ImageType imageType, const tcu::UVec3& imageSize);	//!< Number of texels in an image
 deUint32				getDimensions		(const ImageType imageType);								//!< Coordinate dimension used for addressing (e.g. 3 (x,y,z) for 2d array)
 deUint32				getLayerDimensions	(const ImageType imageType);								//!< Coordinate dimension used for addressing a single layer (e.g. 2 (x,y) for 2d array)
-
-vk::Move<vk::VkPipeline>			makeComputePipeline				(const vk::DeviceInterface&					vk,
-																	 const vk::VkDevice							device,
-																	 const vk::VkPipelineLayout					pipelineLayout,
-																	 const vk::VkShaderModule					shaderModule);
 
 vk::Move<vk::VkPipeline>			makeGraphicsPipeline			(const vk::DeviceInterface&					vk,
 																	 const vk::VkDevice							device,

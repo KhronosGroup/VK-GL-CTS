@@ -43,6 +43,7 @@
 #include "tcuVectorUtil.hpp"
 #include "tcuFloatFormat.hpp"
 #include "tcuFloat.hpp"
+#include "tcuCommandLine.hpp"
 
 #include "deRandom.hpp"
 #include "deSTLUtil.hpp"
@@ -609,6 +610,12 @@ void checkSupport (Context& context, const TestConfig config)
 	if (!context.isDeviceFunctionalitySupported("VK_KHR_sampler_ycbcr_conversion"))
 		TCU_THROW(NotSupportedError, "Extension VK_KHR_sampler_ycbcr_conversion not supported");
 
+	{
+		const vk::VkPhysicalDeviceSamplerYcbcrConversionFeatures	features = context.getSamplerYcbcrConversionFeatures();
+		if (features.samplerYcbcrConversion == VK_FALSE)
+			TCU_THROW(NotSupportedError, "samplerYcbcrConversion feature is not supported");
+	}
+
 	try
 	{
 		const vk::VkFormatProperties	properties	(vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), config.format));
@@ -708,7 +715,7 @@ tcu::TestStatus textureConversionTest (Context& context, const TestConfig config
 		ChannelAccess						bChannelAccess			(planeInfo.hasChannelNdx(2) ? getChannelAccess(src, planeInfo, srcSize, 2) : nullAccess);
 		ChannelAccess						aChannelAccess			(planeInfo.hasChannelNdx(3) ? getChannelAccess(src, planeInfo, srcSize, 3) : nullAccessAlpha);
 		const bool							implicitNearestCosited	((config.chromaFilter == vk::VK_FILTER_NEAREST && !config.explicitReconstruction) &&
-																	 (config.xChromaOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN_KHR || config.yChromaOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN_KHR));
+																	 (config.xChromaOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN || config.yChromaOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN));
 
 		vector<Vec2>						sts;
 		vector<vector<Vec4> >				results;
@@ -783,7 +790,7 @@ tcu::TestStatus textureConversionTest (Context& context, const TestConfig config
 
 			if (implicitNearestCosited)
 			{
-				calculateBounds(rChannelAccess, gChannelAccess, bChannelAccess, aChannelAccess, bitDepth, sts, filteringPrecision, conversionPrecision, subTexelPrecisionBits, config.textureFilter, colorModels[i], config.colorRange, config.chromaFilter, vk::VK_CHROMA_LOCATION_MIDPOINT_KHR, vk::VK_CHROMA_LOCATION_MIDPOINT_KHR, config.componentMapping, explicitReconstruction, config.addressModeU, config.addressModeV, minMidpointBound, maxMidpointBound, uvBound, ijBound);
+				calculateBounds(rChannelAccess, gChannelAccess, bChannelAccess, aChannelAccess, bitDepth, sts, filteringPrecision, conversionPrecision, subTexelPrecisionBits, config.textureFilter, colorModels[i], config.colorRange, config.chromaFilter, vk::VK_CHROMA_LOCATION_MIDPOINT, vk::VK_CHROMA_LOCATION_MIDPOINT, config.componentMapping, explicitReconstruction, config.addressModeU, config.addressModeV, minMidpointBound, maxMidpointBound, uvBound, ijBound);
 			}
 			results.push_back			(vector<Vec4>());
 			minBounds.push_back			(minBound);
@@ -1841,7 +1848,7 @@ struct YCbCrConversionTestBuilder
 
 			de::MovePtr<tcu::TestCaseGroup>				oneToOneGroup(new tcu::TestCaseGroup(testCtx, "one_to_one", "Ycbcr images sampled to a frame buffer of the same dimentions."));
 
-			const vk::VkFormat							format(vk::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM_KHR);
+			const vk::VkFormat							format(vk::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM);
 			const vk::VkFilter							filter(vk::VK_FILTER_NEAREST);
 
 			for (size_t sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(imageSizes); sizeNdx++)

@@ -74,8 +74,8 @@ public:
 
 private:
 	void					generateBlock				(de::Random& rnd, deUint32 layoutFlags);
-	void					generateUniform				(de::Random& rnd, UniformBlock& block);
-	VarType					generateType				(de::Random& rnd, int typeDepth, bool arrayOk);
+	void					generateUniform				(de::Random& rnd, UniformBlock& block, deUint32 complexity);
+	VarType					generateType				(de::Random& rnd, int typeDepth, bool arrayOk, deUint32 complexity);
 
 	const deUint32			m_features;
 	const int				m_maxVertexBlocks;

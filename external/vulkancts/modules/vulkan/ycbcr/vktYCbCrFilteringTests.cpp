@@ -562,10 +562,10 @@ tcu::TestStatus LinearFilteringTestInstance::iterate(void)
 		}
 	}
 
-	if (!isOk)
-		return tcu::TestStatus::fail("Result comparison failed");
 	if (++m_caseIndex < (int)m_cases.size())
 		return tcu::TestStatus::incomplete();
+	if (!isOk)
+		return tcu::TestStatus::fail("Result comparison failed");
 	return tcu::TestStatus::pass("Pass");
 }
 
@@ -595,6 +595,10 @@ void LinearFilteringTestCase::checkSupport(Context& context) const
 {
 	context.requireDeviceFunctionality("VK_KHR_sampler_ycbcr_conversion");
 
+	const vk::VkPhysicalDeviceSamplerYcbcrConversionFeatures	features = context.getSamplerYcbcrConversionFeatures();
+	if (features.samplerYcbcrConversion == VK_FALSE)
+		TCU_THROW(NotSupportedError, "samplerYcbcrConversion feature is not supported");
+
 	const auto&					instInt				= context.getInstanceInterface();
 	auto						physicalDevice		= context.getPhysicalDevice();
 	const VkFormatProperties	formatProperties	= getPhysicalDeviceFormatProperties(instInt, physicalDevice, m_format);
@@ -609,6 +613,10 @@ void LinearFilteringTestCase::checkSupport(Context& context) const
 	if (m_chromaFiltering != VK_FILTER_LINEAR &&
 		(featureFlags & VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_SEPARATE_RECONSTRUCTION_FILTER_BIT) == 0)
 		TCU_THROW(NotSupportedError, "Different chroma, min, and mag filters not supported for format");
+
+	if (m_chromaFiltering == VK_FILTER_LINEAR &&
+		(featureFlags & VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT) == 0)
+		TCU_THROW(NotSupportedError, "Linear chroma filtering not supported for format");
 }
 
 vkt::TestInstance* LinearFilteringTestCase::createInstance(vkt::Context& context) const

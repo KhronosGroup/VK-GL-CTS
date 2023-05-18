@@ -5462,7 +5462,7 @@ tcu::TestNode::IterateResult GetVertexArrayIndexedErrorsTest::iterate()
 	glw::GLuint vao		  = 0;
 	glw::GLuint not_a_vao = 0;
 
-	/* Dummy storage. */
+	/* Unused storage. */
 	glw::GLint   storage   = 0;
 	glw::GLint64 storage64 = 0;
 

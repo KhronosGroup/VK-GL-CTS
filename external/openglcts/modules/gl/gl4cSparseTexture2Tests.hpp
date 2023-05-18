@@ -147,7 +147,7 @@ protected:
 	};
 
 	/* Protected methods */
-	TokenStrings createShaderTokens(GLint target, GLint format, GLint sample, const std::string outputBase = "image",
+	TokenStrings createShaderTokens(GLint target, GLint verifyTarget, GLint format, GLint sample, const std::string outputBase = "image",
 									const std::string inputBase = "image");
 
 	virtual bool caseAllowed(GLint target, GLint format);
@@ -250,7 +250,7 @@ protected:
 	std::vector<FunctionToken> mFunctions;
 
 	/* Protected methods */
-	TokenStringsExt createLookupShaderTokens(GLint target, GLint format, GLint level, GLint sample,
+	TokenStringsExt createLookupShaderTokens(GLint target, GLint verifyTarget, GLint format, GLint level, GLint sample,
 											 FunctionToken& funcToken);
 
 	virtual bool caseAllowed(GLint target, GLint format);

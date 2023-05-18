@@ -32,13 +32,16 @@
 #include "vktSubgroupsBallotOtherTests.hpp"
 #include "vktSubgroupsArithmeticTests.hpp"
 #include "vktSubgroupsClusteredTests.hpp"
-#include "vktSubgroupsPartitionedTests.hpp"
 #include "vktSubgroupsShuffleTests.hpp"
 #include "vktSubgroupsQuadTests.hpp"
 #include "vktSubgroupsShapeTests.hpp"
 #include "vktSubgroupsBallotMasksTests.hpp"
 #include "vktSubgroupsSizeControlTests.hpp"
+#ifndef CTS_USES_VULKANSC
+#include "vktSubgroupsPartitionedTests.hpp"
 #include "vktSubgroupUniformControlFlowTests.hpp"
+#endif // CTS_USES_VULKANSC
+#include "vktSubgroupsMultipleDispatchesUniformSubgroupSizeTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt
@@ -62,13 +65,18 @@ void createChildren(tcu::TestCaseGroup* subgroupsTests)
 	subgroupsTests->addChild(createSubgroupsBallotOtherTests(testCtx));
 	subgroupsTests->addChild(createSubgroupsArithmeticTests(testCtx));
 	subgroupsTests->addChild(createSubgroupsClusteredTests(testCtx));
+#ifndef CTS_USES_VULKANSC
 	subgroupsTests->addChild(createSubgroupsPartitionedTests(testCtx));
+#endif
 	subgroupsTests->addChild(createSubgroupsShuffleTests(testCtx));
 	subgroupsTests->addChild(createSubgroupsQuadTests(testCtx));
 	subgroupsTests->addChild(createSubgroupsShapeTests(testCtx));
 	subgroupsTests->addChild(createSubgroupsBallotMasksTests(testCtx));
+	subgroupsTests->addChild(createMultipleDispatchesUniformSubgroupSizeTests(testCtx));
 	subgroupsTests->addChild(createSubgroupsSizeControlTests(testCtx));
+#ifndef CTS_USES_VULKANSC
 	subgroupsTests->addChild(createSubgroupUniformControlFlowTests(testCtx));
+#endif // CTS_USES_VULKANSC
 }
 
 } // anonymous

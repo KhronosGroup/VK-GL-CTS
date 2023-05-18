@@ -75,12 +75,19 @@ struct SSBOData
 		LayoutPacked
 	};
 
+	enum BindingType
+	{
+		BindingSSBO,
+		BindingImage,
+		BindingUBO,
+	};
+
 	SSBOData() :
 		initializeType	(InitializeNone),
 		layout			(LayoutStd140),
 		format			(vk::VK_FORMAT_UNDEFINED),
 		numElements		(0),
-		isImage			(false),
+		bindingType		(BindingSSBO),
 		binding			(0u),
 		stages			((vk::VkShaderStageFlags)0u)
 	{}
@@ -89,23 +96,36 @@ struct SSBOData
 			  InputDataLayoutType		layout_,
 			  vk::VkFormat				format_,
 			  vk::VkDeviceSize			numElements_,
-			  bool						isImage_	= false,
-			  deUint32					binding_	= 0u,
-			  vk::VkShaderStageFlags	stages_		= static_cast<vk::VkShaderStageFlags>(0u))
+			  BindingType				bindingType_	= BindingSSBO,
+			  deUint32					binding_		= 0u,
+			  vk::VkShaderStageFlags	stages_			= static_cast<vk::VkShaderStageFlags>(0u))
 		: initializeType	(initializeType_)
 		, layout			(layout_)
 		, format			(format_)
 		, numElements		(numElements_)
-		, isImage			(isImage_)
+		, bindingType		(bindingType_)
 		, binding			(binding_)
 		, stages			(stages_)
-	{}
+	{
+		if (bindingType == BindingUBO)
+			DE_ASSERT(layout == LayoutStd140);
+	}
+
+	bool isImage () const
+	{
+		return (bindingType == BindingImage);
+	}
+
+	bool isUBO () const
+	{
+		return (bindingType == BindingUBO);
+	}
 
 	InputDataInitializeType		initializeType;
 	InputDataLayoutType			layout;
 	vk::VkFormat				format;
 	vk::VkDeviceSize			numElements;
-	bool						isImage;
+	BindingType					bindingType;
 	deUint32					binding;
 	vk::VkShaderStageFlags		stages;
 };
@@ -198,10 +218,10 @@ void setTesEvalShaderFrameBuffer (vk::SourceCollections& programCollection);
 
 bool check (std::vector<const void*> datas, deUint32 width, deUint32 ref);
 
-bool checkCompute (std::vector<const void*>		datas,
-				   const deUint32				numWorkgroups[3],
-				   const deUint32				localSize[3],
-				   deUint32						ref);
+bool checkComputeOrMesh (std::vector<const void*>	datas,
+						 const deUint32				numWorkgroups[3],
+						 const deUint32				localSize[3],
+						 deUint32					ref);
 
 tcu::TestStatus makeTessellationEvaluationFrameBufferTest (Context&						context,
 														   vk::VkFormat					format,
@@ -279,6 +299,15 @@ tcu::TestStatus makeComputeTest (Context&				context,
 								 deUint32				requiredSubgroupSize = 0u,
 								 const deUint32			pipelineShaderStageCreateFlags = 0u);
 
+tcu::TestStatus makeMeshTest (Context&				context,
+							  vk::VkFormat			format,
+							  const SSBOData*		inputs,
+							  deUint32				inputsCount,
+							  const void*			internalData,
+							  CheckResultCompute	checkResult,
+							  deUint32				requiredSubgroupSize = 0u,
+							  const deUint32		pipelineShaderStageCreateFlags = 0u);
+
 /* Functions needed for VK_EXT_subgroup_size_control tests */
 tcu::TestStatus makeTessellationEvaluationFrameBufferTestRequiredSubgroupSize (Context&							context,
 																			   vk::VkFormat						format,
@@ -332,6 +361,19 @@ tcu::TestStatus makeFragmentFrameBufferTestRequiredSubgroupSize (Context&				con
 																 const deUint32			requiredSubgroupSize = 0u);
 
 tcu::TestStatus makeComputeTestRequiredSubgroupSize (Context&				context,
+													 vk::VkFormat			format,
+													 const SSBOData*		inputs,
+													 deUint32				inputsCount,
+													 const void*			internalData,
+													 CheckResultCompute		checkResult,
+													 const deUint32			pipelineShaderStageCreateFlags,
+													 const deUint32			numWorkgroups[3],
+													 const deBool			isRequiredSubgroupSize,
+													 const deUint32			subgroupSize,
+													 const deUint32			localSizesToTest[][3],
+													 const deUint32			localSizesToTestCount);
+
+tcu::TestStatus makeMeshTestRequiredSubgroupSize	(Context&				context,
 													 vk::VkFormat			format,
 													 const SSBOData*		inputs,
 													 deUint32				inputsCount,

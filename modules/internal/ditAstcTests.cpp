@@ -133,7 +133,7 @@ AstcCase::IterateResult AstcCase::iterate (void)
 		const size_t		numBlocks		= 1024;
 
 		generatedData.resize(numBlocks*astc::BLOCK_SIZE_BYTES);
-		astc::generateDummyVoidExtentBlocks(&generatedData[0], numBlocks);
+		astc::generateDefaultVoidExtentBlocks(&generatedData[0], numBlocks);
 
 		testDecompress(m_format, numBlocks, &generatedData[0]);
 
@@ -143,13 +143,13 @@ AstcCase::IterateResult AstcCase::iterate (void)
 			verifyBlocksValid(m_format, TexDecompressionParams::ASTCMODE_HDR, numBlocks, &generatedData[0]);
 	}
 
-	// Verify generating dummy normal blocks
+	// Verify generating unused normal blocks
 	{
 		const size_t		numBlocks			= 1024;
 		const IVec3			blockPixelSize		= getBlockPixelSize(m_format);
 
 		generatedData.resize(numBlocks*astc::BLOCK_SIZE_BYTES);
-		astc::generateDummyNormalBlocks(&generatedData[0], numBlocks, blockPixelSize.x(), blockPixelSize.y());
+		astc::generateDefaultNormalBlocks(&generatedData[0], numBlocks, blockPixelSize.x(), blockPixelSize.y());
 
 		testDecompress(m_format, numBlocks, &generatedData[0]);
 

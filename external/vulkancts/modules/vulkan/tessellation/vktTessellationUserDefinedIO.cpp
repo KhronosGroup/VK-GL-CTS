@@ -41,6 +41,8 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkImageWithMemory.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"
@@ -148,7 +150,7 @@ std::string glslTraverseBasicTypes (const std::string&			rootName,
 	else
 	{
 		DE_ASSERT(false);
-		return DE_NULL;
+		return "";
 	}
 }
 
@@ -311,7 +313,7 @@ std::string Variable::basicSubobjectAtIndex (const int subobjectIndex, const int
 		++currentIndex;
 	}
 	DE_ASSERT(false);
-	return DE_NULL;
+	return "";
 }
 
 class IOBlock : public TopLevelObject
@@ -428,7 +430,7 @@ std::string IOBlock::basicSubobjectAtIndex (const int subobjectIndex, const int 
 		}
 	}
 	DE_ASSERT(false);
-	return DE_NULL;
+	return "";
 }
 
 class UserDefinedIOTest : public TestCase
@@ -470,7 +472,7 @@ UserDefinedIOTest::UserDefinedIOTest (tcu::TestContext& testCtx, const std::stri
 	const std::string	vertexAttrArrayInputSize	= m_caseDef.vertexIOArraySize == VERTEX_IO_ARRAY_SIZE_IMPLICIT					? ""
 													: m_caseDef.vertexIOArraySize == VERTEX_IO_ARRAY_SIZE_EXPLICIT_SHADER_BUILTIN	? "gl_MaxPatchVertices"
 													: m_caseDef.vertexIOArraySize == VERTEX_IO_ARRAY_SIZE_EXPLICIT_SPEC_MIN			? de::toString(MAX_TESSELLATION_PATCH_SIZE)
-													: DE_NULL;
+													: deFatalStr("Invalid vertexIOArraySize");
 
 	const char* const	maybePatch					= isPerPatchIO ? "patch " : "";
 	const std::string	outMaybePatch				= std::string() + maybePatch + "out ";
@@ -778,10 +780,10 @@ tcu::TestStatus UserDefinedIOTestInstance::iterate (void)
 
 	// Vertex input attributes buffer: to pass tessellation levels
 
-	const VkFormat     vertexFormat				= VK_FORMAT_R32_SFLOAT;
-	const deUint32     vertexStride				= tcu::getPixelSize(mapVkFormat(vertexFormat));
-	const VkDeviceSize vertexDataSizeBytes		= numAttributes * vertexStride;
-	const Buffer       vertexBuffer				(vk, device, allocator, makeBufferCreateInfo(vertexDataSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible);
+	const VkFormat			vertexFormat				= VK_FORMAT_R32_SFLOAT;
+	const deUint32			vertexStride				= tcu::getPixelSize(mapVkFormat(vertexFormat));
+	const VkDeviceSize		vertexDataSizeBytes		= numAttributes * vertexStride;
+	const BufferWithMemory	vertexBuffer				(vk, device, allocator, makeBufferCreateInfo(vertexDataSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	{
 		const Allocation& alloc = vertexBuffer.getAllocation();
@@ -792,9 +794,9 @@ tcu::TestStatus UserDefinedIOTestInstance::iterate (void)
 
 	// Output buffer: number of invocations and verification indices
 
-	const int			resultBufferMaxVertices	= refNumVertices;
-	const VkDeviceSize	resultBufferSizeBytes	= sizeof(deInt32) + resultBufferMaxVertices * sizeof(deUint32);
-	const Buffer		resultBuffer			(vk, device, allocator, makeBufferCreateInfo(resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
+	const int				resultBufferMaxVertices	= refNumVertices;
+	const VkDeviceSize		resultBufferSizeBytes	= sizeof(deInt32) + resultBufferMaxVertices * sizeof(deUint32);
+	const BufferWithMemory	resultBuffer			(vk, device, allocator, makeBufferCreateInfo(resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	{
 		const Allocation& alloc = resultBuffer.getAllocation();
@@ -808,14 +810,14 @@ tcu::TestStatus UserDefinedIOTestInstance::iterate (void)
 	const tcu::IVec2			  renderSize				 = tcu::IVec2(RENDER_SIZE, RENDER_SIZE);
 	const VkFormat				  colorFormat				 = VK_FORMAT_R8G8B8A8_UNORM;
 	const VkImageSubresourceRange colorImageSubresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
-	const Image					  colorAttachmentImage		 (vk, device, allocator,
+	const ImageWithMemory		  colorAttachmentImage		 (vk, device, allocator,
 															 makeImageCreateInfo(renderSize, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 1u),
 															 MemoryRequirement::Any);
 
 	// Color output buffer: image will be copied here for verification
 
-	const VkDeviceSize	colorBufferSizeBytes	= renderSize.x()*renderSize.y() * tcu::getPixelSize(mapVkFormat(colorFormat));
-	const Buffer		colorBuffer				(vk, device, allocator, makeBufferCreateInfo(colorBufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible);
+	const VkDeviceSize		colorBufferSizeBytes	= renderSize.x()*renderSize.y() * tcu::getPixelSize(mapVkFormat(colorFormat));
+	const BufferWithMemory	colorBuffer				(vk, device, allocator, makeBufferCreateInfo(colorBufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible);
 
 	// Descriptors
 

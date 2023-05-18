@@ -31,6 +31,7 @@
 
 #include "gluShaderUtil.hpp"
 #include "vkPrograms.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -58,43 +59,57 @@ class InstanceFactory : public TestCase
 {
 public:
 	InstanceFactory (tcu::TestContext& testCtx, const std::string& name, const std::string& desc,
-		const std::map<glu::ShaderType, const char*> shaderPaths)
-		: TestCase		(testCtx, name, desc)
-		, m_shaderPaths (shaderPaths)
-		, m_support		()
+		const vk::PipelineConstructionType pipelineConstructionType,
+		const ShaderMap& shaderPaths)
+		: TestCase						(testCtx, name, desc)
+		, m_pipelineConstructionType	(pipelineConstructionType)
+		, m_shaderPaths					(shaderPaths)
+		, m_support						()
 	{
 	}
 
 	InstanceFactory (tcu::TestContext& testCtx, const std::string& name, const std::string& desc,
-		const std::map<glu::ShaderType, const char*> shaderPaths, const Support& support)
-		: TestCase		(testCtx, name, desc)
-		, m_shaderPaths (shaderPaths)
-		, m_support		(support)
+		const vk::PipelineConstructionType pipelineConstructionType,
+		const ShaderMap& shaderPaths, const Support& support)
+		: TestCase						(testCtx, name, desc)
+		, m_pipelineConstructionType	(pipelineConstructionType)
+		, m_shaderPaths					(shaderPaths)
+		, m_support						(support)
 	{
 	}
 
 	TestInstance*	createInstance	(Context& context) const
 	{
-		return new Instance(context, m_shaderPaths);
+		return new Instance(context, m_pipelineConstructionType, m_shaderPaths);
 	}
 
 	virtual void	initPrograms	(vk::SourceCollections& programCollection) const
 	{
+		const vk::ShaderBuildOptions	defaultOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_0, 0u);
+		const vk::ShaderBuildOptions	spv14Options	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
 		for (ShaderMap::const_iterator i = m_shaderPaths.begin(); i != m_shaderPaths.end(); ++i)
 		{
-			programCollection.glslSources.add(i->second) <<
-				glu::ShaderSource(i->first, ShaderSourceProvider::getSource(m_testCtx.getArchive(), i->second));
+			if (i->second)
+			{
+				programCollection.glslSources.add(i->second)
+					<< glu::ShaderSource(i->first, ShaderSourceProvider::getSource(m_testCtx.getArchive(), i->second))
+					<< ((i->first == glu::SHADERTYPE_TASK || i->first == glu::SHADERTYPE_MESH) ? spv14Options : defaultOptions);
+			}
 		}
 	}
 
 	virtual void	checkSupport	(Context& context) const
 	{
+		checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+
 		m_support.checkSupport(context);
 	}
 
 private:
-	const ShaderMap	m_shaderPaths;
-	const Support	m_support;
+	const vk::PipelineConstructionType	m_pipelineConstructionType;
+	const ShaderMap						m_shaderPaths;
+	const Support						m_support;
 };
 
 } // DynamicState

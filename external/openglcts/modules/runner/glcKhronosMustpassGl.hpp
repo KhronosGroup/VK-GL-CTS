@@ -19,7 +19,7 @@
  * be lost! Modify the generating script instead.
  */
 
-const char* mustpassDir = "gl_cts/data/mustpass/gl/khronos_mustpass/4.6.1.x/";
+const char* mustpassDir = "gl_cts/data/mustpass/gl/khronos_mustpass/main/";
 
 static const RunParams khronos_mustpass_gl_first_cfg[] = {
 	{ glu::ApiType::core(4, 6), "master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },

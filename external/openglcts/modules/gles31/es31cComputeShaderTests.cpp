@@ -23,10 +23,13 @@
 
 #include "es31cComputeShaderTests.hpp"
 #include "gluContextInfo.hpp"
+#include "gluPlatform.hpp"
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
+#include "tcuCommandLine.hpp"
 #include "tcuMatrix.hpp"
 #include "tcuMatrixUtil.hpp"
+#include "tcuPlatform.hpp"
 #include "tcuRenderTarget.hpp"
 #include <cstdarg>
 #include <sstream>
@@ -553,6 +556,353 @@ class SimpleCompute : public ComputeShaderBase
 		glUseProgram(0);
 		glDeleteProgram(m_program);
 		glDeleteBuffers(1, &m_buffer);
+		return NO_ERROR;
+	}
+};
+
+static const char* const glsl_cs_long = R"(
+	layout(local_size_x = 1, local_size_y = 1) in;
+	layout(std430) buffer;
+	layout(binding = 0) buffer Output {
+		int elements[2];
+	} output_data;
+
+	void main() {
+		int temp = 0;
+		int value = output_data.elements[1]/100;
+		for (int i = 0; i < value; i++) {
+			for (int j = 0; j < output_data.elements[1]/value; j++) {
+				temp += 1;
+			}
+		}
+		atomicAdd(output_data.elements[0], temp);
+	}
+)";
+
+static const char* const glsl_cs_short = R"(
+	layout(local_size_x = 1, local_size_y = 1) in;
+	layout(std430) buffer;
+	layout(binding = 0) buffer Output {
+		int elements[2];
+	} output_data;
+
+	void main() {
+		output_data.elements[0] += 1;
+	}
+)";
+
+class LongRunningComputeFenceTest : public ComputeShaderBase
+{
+
+	std::string Title() override
+	{
+		return "Synchronization test for two compute tests";
+	}
+
+	std::string Purpose() override
+	{
+		return "Verify that fence works correctly across different contexts.";
+	}
+
+	std::string Method() override
+	{
+		return R"(1. Create two CS(Long and Short) an SSBO and a new shared context.
+			  2. Dispatch long CS with DispatchCompute and generate a fence object.
+			  3. Change the context to the newly created shared context.
+			  4. Issue a glWaitSync() followed by a call to DispatchCompute on the short CS.
+			  5. Issue a glFinish() to wait for both CS to finish.
+			  6. Verify the value is correctly updated in the SSBO.)";
+	}
+
+	std::string PassCriteria() override
+	{
+		return "Everything works as expected.";
+	}
+
+	glu::RenderContext*		m_sharedContext;
+	GLuint				m_program1;
+	GLuint				m_program2;
+	GLuint				m_buffer;
+	GLsync				m_gl_sync;
+	const int			m_total_count = 5000000;
+	const int			m_shorter_count = 50000;
+	int				m_dataLoadStore[2] = {0, m_shorter_count};
+	int				*m_read_data;
+
+	long Setup() override
+	{
+		glu::RenderContext&		base_render_context = m_context.getRenderContext();
+		tcu::TestContext&		m_testcontext	    = m_context.getTestContext();
+		glu::ContextType		contextType(base_render_context.getType().getAPI());
+		glu::RenderConfig		config(contextType);
+		const tcu::CommandLine&		cmdLine = m_testcontext.getCommandLine();
+
+		glGenBuffers(2, &m_buffer);
+
+		m_program1 = CreateComputeProgram(glsl_cs_long);
+		glLinkProgram(m_program1);
+		if (!CheckProgram(m_program1))
+			return ERROR;
+
+		m_program2 = CreateComputeProgram(glsl_cs_short);
+		glLinkProgram(m_program2);
+		if (!CheckProgram(m_program2))
+			return ERROR;
+
+		glu::parseRenderConfig(&config, cmdLine);
+
+#if (DE_OS == DE_OS_ANDROID) || defined(DEQP_SURFACELESS) || defined(NULLWS)
+		// Can only have one Window created at a time
+		// Note that this surface type is not supported on all platforms
+		config.surfaceType = glu::RenderConfig::SURFACETYPE_OFFSCREEN_GENERIC;
+#endif
+
+		m_sharedContext = glu::createRenderContext(m_testcontext.getPlatform(), cmdLine, config, &base_render_context);
+		if (!m_sharedContext)
+			return ERROR;
+
+		base_render_context.makeCurrent();
+
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_buffer);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(int) * 2, &m_dataLoadStore, GL_STREAM_COPY);
+
+		return NO_ERROR;
+	}
+
+	long Run() override
+	{
+		long				error	= NO_ERROR;
+		glu::RenderContext&		base_render_context = m_context.getRenderContext();
+
+		glUseProgram(m_program1);
+		for (int i = 0; i < m_total_count/m_shorter_count; i++)
+			glDispatchCompute(1, 1, 1);
+
+		glMemoryBarrier(GL_ALL_BARRIER_BITS);
+		m_gl_sync = glFenceSync(
+			/*condition=*/GL_SYNC_GPU_COMMANDS_COMPLETE, /*flags=*/0);
+		glFlush();
+
+		m_sharedContext->makeCurrent();
+
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_buffer);
+		glUseProgram(m_program2);
+
+		glWaitSync(m_gl_sync, 0, GL_TIMEOUT_IGNORED);
+
+		glMemoryBarrier(GL_ALL_BARRIER_BITS);
+		glDispatchCompute(1, 1, 1);
+		glMemoryBarrier(GL_ALL_BARRIER_BITS);
+		glFinish();
+
+		m_read_data =
+			static_cast<int*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(int) * 2, GL_MAP_READ_BIT));
+		if (m_read_data[0] != (m_total_count + 1))
+		{
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Invalid read data: " << m_read_data[0] << tcu::TestLog::EndMessage;
+			error = ERROR;
+		}
+
+		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+		base_render_context.makeCurrent();
+
+		return error;
+	}
+
+	long Cleanup() override
+	{
+		glUseProgram(0);
+
+		glDeleteProgram(m_program1);
+		glDeleteProgram(m_program2);
+		glDeleteBuffers(2, &m_buffer);
+
+		return NO_ERROR;
+	}
+};
+
+static
+decltype(glw::Functions::bufferStorage) getBufferStorageFunction(glu::RenderContext& renderContext)
+{
+	decltype(glw::Functions::bufferStorage) bufferStorageFunc;
+
+	bufferStorageFunc = (decltype(bufferStorageFunc))renderContext.getProcAddress("glBufferStorageEXT");
+	DE_ASSERT(bufferStorageFunc);
+
+	return bufferStorageFunc;
+}
+
+class LongRunningPersistentSSBOComputeTest : public ComputeShaderBase
+{
+
+	std::string Title() override
+	{
+		return "Synchronization test for Persistent Buffers";
+	}
+
+	std::string Purpose() override
+	{
+		return "Verify that fence works correctly across different contexts.";
+	}
+
+	std::string Method() override
+	{
+		return  R"(1. Create two Long CS, an SSBO and a new shared context.
+			   2. Dispatch long CS with DispatchCompute and generate a fence object.
+			   3. Change the context to the newly created shared context.
+			   4. Issue a glClientWaitSync().
+			   5. Verify the value is correctly updated in the SSBO.)";
+	}
+
+	std::string PassCriteria() override
+	{
+		return "Everything works as expected.";
+	}
+
+	glu::RenderContext*	m_sharedContext = NULL;
+	GLuint			m_buffer;
+	volatile int*		m_dataLoadStore = NULL;
+	const int		m_total_count = 5000000;
+	const int		m_shorter_count = 50000;
+
+	long Setup() override
+	{
+		glu::RenderContext&		base_render_context = m_context.getRenderContext();
+		const glu::ContextInfo&		base_render_context_info = m_context.getContextInfo();
+		tcu::TestContext&		m_testcontext = m_context.getTestContext();
+		const tcu::CommandLine&		cmdLine = m_testcontext.getCommandLine();
+		glu::ContextType		contextType(base_render_context.getType().getAPI());
+		glu::RenderConfig		config(contextType);
+
+		glu::parseRenderConfig(&config, cmdLine);
+
+		if (!base_render_context_info.isExtensionSupported("GL_EXT_buffer_storage"))
+		{
+			TCU_THROW(NotSupportedError, "EGL_KHR_reusable_sync not supported");
+		}
+
+#if (DE_OS == DE_OS_ANDROID) || defined(DEQP_SURFACELESS) || defined(NULLWS)
+		// Android can only have one Window created at a time
+		// Note that this surface type is not supported on all platforms
+		config.surfaceType = glu::RenderConfig::SURFACETYPE_OFFSCREEN_GENERIC;
+#endif
+
+		m_sharedContext = glu::createRenderContext(m_testcontext.getPlatform(), cmdLine, config, &base_render_context);
+		if (!m_sharedContext)
+			return ERROR;
+
+		base_render_context.makeCurrent();
+
+		return NO_ERROR;
+	}
+
+	long RunComputePersistent()
+	{
+		glw::glBufferStorageFunc	GLBUFFERSTORAGEEXTFUNC = NULL;
+		GLbitfield			buffer_flags = GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+		GLuint				program	= CreateComputeProgram(glsl_cs_long);
+
+		glLinkProgram(program);
+		if (!CheckProgram(program))
+			return ERROR;
+
+		glUseProgram(program);
+
+		glGenBuffers(2, &m_buffer);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_buffer);
+
+		GLU_EXPECT_NO_ERROR(glGetError(), "Error in binding buffer!");
+
+		GLBUFFERSTORAGEEXTFUNC = getBufferStorageFunction(*m_sharedContext);
+		if (!GLBUFFERSTORAGEEXTFUNC)
+		{
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Empty function!" << tcu::TestLog::EndMessage;
+			return ERROR;
+		}
+
+		GLBUFFERSTORAGEEXTFUNC(GL_SHADER_STORAGE_BUFFER, sizeof(int) * 2, NULL, buffer_flags);
+		GLU_EXPECT_NO_ERROR(glGetError(), "Error when setting default value to Buffer");
+
+		m_dataLoadStore	 = static_cast<int*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(int) * 2, buffer_flags));
+		m_dataLoadStore[0] = 0;
+		m_dataLoadStore[1] = m_shorter_count;
+
+		for (int i = 0; i < m_total_count/m_shorter_count; i++)
+			glDispatchCompute(1, 1, 1);
+
+		glMemoryBarrier(GL_ALL_BARRIER_BITS);
+		glFlush();
+
+		return NO_ERROR;
+	}
+
+	void PollClientWait(GLsync gl_sync)
+	{
+		while (true)
+		{
+			GLenum status = glClientWaitSync(gl_sync, 0, 100000000);
+			switch (status)
+			{
+			case GL_ALREADY_SIGNALED:
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "glClientWaitSync --- GL_ALREADY_SIGNALED" << tcu::TestLog::EndMessage;
+				return;
+			case GL_CONDITION_SATISFIED:
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "glClientWaitSync --- GL_CONDITION_SATISFIED"
+					<< tcu::TestLog::EndMessage;
+				return;
+			case GL_WAIT_FAILED:
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "glClientWaitSync --- GL_WAIT_FAILED" << tcu::TestLog::EndMessage;
+				return;
+			case GL_TIMEOUT_EXPIRED:
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "glClientWaitSync --- GL_TIMEOUT_EXPIRED" << tcu::TestLog::EndMessage;
+				break;
+			}
+		}
+	}
+
+	long Run() override
+	{
+		long				error = NO_ERROR;
+		GLsync				gl_sync;
+		glu::RenderContext& base_render_context = m_context.getRenderContext();
+
+		m_sharedContext->makeCurrent();
+
+		if (RunComputePersistent() == ERROR)
+			return ERROR;
+
+		gl_sync = glFenceSync(
+			/*condition=*/GL_SYNC_GPU_COMMANDS_COMPLETE, /*flags=*/0);
+		glFlush();
+
+		PollClientWait(gl_sync);
+
+		if (m_dataLoadStore[0] != m_total_count)
+		{
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Invalid read data: " << m_dataLoadStore[0] << tcu::TestLog::EndMessage;
+			error = ERROR;
+		}
+
+		base_render_context.makeCurrent();
+
+		glDeleteSync(gl_sync);
+
+		return error;
+	}
+
+	long Cleanup() override
+	{
+		glDeleteBuffers(2, &m_buffer);
+		m_dataLoadStore = NULL;
 		return NO_ERROR;
 	}
 };
@@ -1938,17 +2288,17 @@ class BasicMax : public ComputeShaderBase
 			return false;
 		}
 		glGetInteger64v(target, &i64);
-		if (static_cast<GLint>(i64) < min_value)
+		if (i64 < static_cast<GLint64>(min_value))
 		{
-			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Is " << static_cast<GLint>(i64)
-												<< " should be at least " << min_value << tcu::TestLog::EndMessage;
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Is " << i64
+												<< " should be at least " << static_cast<GLint64>(min_value) << tcu::TestLog::EndMessage;
 			return false;
 		}
 		glGetFloatv(target, &f);
-		if (static_cast<GLint>(f) < min_value)
+		if (f < static_cast<GLfloat>(min_value))
 		{
-			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Is " << static_cast<GLint>(f)
-												<< " should be at least " << min_value << tcu::TestLog::EndMessage;
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Is " << f
+												<< " should be at least " << static_cast<GLfloat>(min_value) << tcu::TestLog::EndMessage;
 			return false;
 		}
 		glGetBooleanv(target, &b);
@@ -5692,6 +6042,8 @@ void ComputeShaderTests::init()
 {
 	using namespace glcts;
 	addChild(new TestSubcase(m_context, "simple-compute", TestSubcase::Create<SimpleCompute>));
+	addChild(new TestSubcase(m_context, "simple-compute-shared_context", TestSubcase::Create<LongRunningComputeFenceTest>));
+	addChild(new TestSubcase(m_context, "simple-compute-shared_context-persistent-buffer", TestSubcase::Create<LongRunningPersistentSSBOComputeTest>));
 	addChild(new TestSubcase(m_context, "one-work-group", TestSubcase::Create<BasicOneWorkGroup>));
 	addChild(new TestSubcase(m_context, "resource-ubo", TestSubcase::Create<BasicResourceUBO>));
 	addChild(new TestSubcase(m_context, "resource-texture", TestSubcase::Create<BasicResourceTexture>));

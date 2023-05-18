@@ -30,6 +30,7 @@
 #include "vktSynchronizationUtil.hpp"
 #include "tcuVector.hpp"
 #include "deUniquePtr.hpp"
+#include "vkResourceInterface.hpp"
 #include <string>
 
 namespace vkt
@@ -88,6 +89,13 @@ enum OperationName
 	OPERATION_NAME_READ_UBO_FRAGMENT,
 	OPERATION_NAME_READ_UBO_COMPUTE,
 	OPERATION_NAME_READ_UBO_COMPUTE_INDIRECT,
+	OPERATION_NAME_READ_UBO_TEXEL_VERTEX,
+	OPERATION_NAME_READ_UBO_TEXEL_TESSELLATION_CONTROL,
+	OPERATION_NAME_READ_UBO_TEXEL_TESSELLATION_EVALUATION,
+	OPERATION_NAME_READ_UBO_TEXEL_GEOMETRY,
+	OPERATION_NAME_READ_UBO_TEXEL_FRAGMENT,
+	OPERATION_NAME_READ_UBO_TEXEL_COMPUTE,
+	OPERATION_NAME_READ_UBO_TEXEL_COMPUTE_INDIRECT,
 	OPERATION_NAME_READ_SSBO_VERTEX,
 	OPERATION_NAME_READ_SSBO_TESSELLATION_CONTROL,
 	OPERATION_NAME_READ_SSBO_TESSELLATION_EVALUATION,
@@ -167,7 +175,7 @@ public:
 	{
 		return m_context.isDeviceFunctionalitySupported(extension);
 	}
-
+	de::SharedPtr<vk::ResourceInterface>	getResourceInterface	(void) const { return m_context.getResourceInterface(); }
 private:
 	const vkt::Context&				m_context;
 	const SynchronizationType		m_syncType;
@@ -206,20 +214,21 @@ public:
 										 vk::VkImageType				imageType,
 										 vk::VkFormat					format,
 										 vk::VkImageSubresourceRange	subresourceRange,
-										 vk::VkImageSubresourceLayers	subresourceLayers);
+										 vk::VkImageSubresourceLayers	subresourceLayers,
+										 vk::VkImageTiling				tiling);
 
 	ResourceType			getType		(void) const { return m_type; }
-	const BufferResource&	getBuffer	(void) const { return m_bufferData; }
-	const ImageResource&	getImage	(void) const { return m_imageData; }
+	const BufferResource&	getBuffer	(void) const { DE_ASSERT(m_bufferData.get()); return *m_bufferData; }
+	const ImageResource&	getImage	(void) const { DE_ASSERT(m_imageData.get()); return *m_imageData; }
 
 	vk::VkDeviceMemory		getMemory	(void) const;
 
 private:
-	const ResourceType		m_type;
-	de::MovePtr<Buffer>		m_buffer;
-	BufferResource			m_bufferData;
-	de::MovePtr<Image>		m_image;
-	ImageResource			m_imageData;
+	const ResourceType			m_type;
+	de::MovePtr<Buffer>			m_buffer;
+	de::MovePtr<BufferResource>	m_bufferData;
+	de::MovePtr<Image>			m_image;
+	de::MovePtr<ImageResource>	m_imageData;
 };
 
 // \note Meaning of image layout is different for read and write types of operations:
@@ -246,7 +255,12 @@ struct Data
 class Operation
 {
 public:
-						Operation		(void) {}
+						Operation		(void)
+							: m_specializedAccess	(false)
+						{}
+						Operation		(const bool	specializedAccess)
+							: m_specializedAccess	(specializedAccess)
+						{}
 	virtual				~Operation		(void) {}
 
 	virtual void		recordCommands	(const vk::VkCommandBuffer cmdBuffer) = 0;	// commands that carry out this operation
@@ -258,6 +272,9 @@ public:
 private:
 						Operation		(const Operation&);
 	Operation&			operator=		(const Operation&);
+
+protected:
+	bool				m_specializedAccess;
 };
 
 // A helper class to init programs and create the operation when context becomes available.
@@ -265,7 +282,12 @@ private:
 class OperationSupport
 {
 public:
-									OperationSupport			(void) {}
+									OperationSupport			(void)
+										: m_specializedAccess	(false)
+									{}
+									OperationSupport			(const bool	specializedAccess)
+										: m_specializedAccess	(specializedAccess)
+									{}
 	virtual							~OperationSupport			(void) {}
 
 	virtual deUint32				getInResourceUsageFlags		(void) const = 0;
@@ -279,10 +301,14 @@ public:
 private:
 									OperationSupport			(const OperationSupport&);
 	OperationSupport&				operator=					(const OperationSupport&);
+
+protected:
+	bool				m_specializedAccess;
 };
 
 bool							isResourceSupported		(const OperationName opName, const ResourceDescription& resourceDesc);
-de::MovePtr<OperationSupport>	makeOperationSupport	(const OperationName opName, const ResourceDescription& resourceDesc);
+bool							isSpecializedAccessFlagSupported	(const OperationName opName);
+de::MovePtr<OperationSupport>	makeOperationSupport	(const OperationName opName, const ResourceDescription& resourceDesc, const bool specializedAccess = false);
 std::string						getOperationName		(const OperationName opName);
 
 } // synchronization

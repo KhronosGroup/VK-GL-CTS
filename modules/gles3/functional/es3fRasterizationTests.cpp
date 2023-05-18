@@ -603,6 +603,7 @@ BaseLineCase::IterateResult BaseLineCase::iterate (void)
 			scene.lineWidth = lineWidth;
 			scene.stippleFactor = 1;
 			scene.stipplePattern = 0xFFFF;
+			scene.allowNonProjectedInterpolation = true;
 
 			compareOk = verifyLineGroupRasterization(resultImage, scene, args, m_testCtx.getLog());
 
@@ -2021,6 +2022,7 @@ LineInterpolationTest::IterateResult LineInterpolationTest::iterate (void)
 			scene.lineWidth = getLineWidth();
 			scene.stippleFactor = 1;
 			scene.stipplePattern = 0xFFFF;
+			scene.allowNonProjectedInterpolation = true;
 
 
 			iterationResult = verifyLineGroupInterpolation(resultImage, scene, args, m_testCtx.getLog());

@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": "0.1.3.0"
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR":
+		[
+			{ "features": ["shaderZeroInitializeWorkgroupMemory"],	"requirements": ["VK_KHR_zero_initialize_workgroup_memory"] }
+		]
+	}
+}

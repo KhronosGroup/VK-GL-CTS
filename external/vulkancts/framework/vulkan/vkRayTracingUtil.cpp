@@ -30,14 +30,19 @@
 #include "vkCmdUtil.hpp"
 
 #include "deStringUtil.hpp"
+#include "deSTLUtil.hpp"
 
 #include <vector>
 #include <string>
 #include <thread>
 #include <limits>
+#include <type_traits>
+#include <map>
 
 namespace vk
 {
+
+#ifndef CTS_USES_VULKANSC
 
 struct DeferredThreadParams
 {
@@ -51,6 +56,21 @@ std::string getFormatSimpleName (vk::VkFormat format)
 {
 	constexpr size_t kPrefixLen = 10; // strlen("VK_FORMAT_")
 	return de::toLower(de::toString(format).substr(kPrefixLen));
+}
+
+bool pointInTriangle2D(const tcu::Vec3& p, const tcu::Vec3& p0, const tcu::Vec3& p1, const tcu::Vec3& p2)
+{
+	float s = p0.y() * p2.x() - p0.x() * p2.y() + (p2.y() - p0.y()) * p.x() + (p0.x() - p2.x()) * p.y();
+	float t = p0.x() * p1.y() - p0.y() * p1.x() + (p0.y() - p1.y()) * p.x() + (p1.x() - p0.x()) * p.y();
+
+	if ((s < 0) != (t < 0))
+		return false;
+
+	float a = -p1.y() * p2.x() + p0.y() * (p2.x() - p1.x()) + p0.x() * (p1.y() - p2.y()) + p1.x() * p2.y();
+
+	return a < 0 ?
+		(s <= 0 && s + t >= a) :
+		(s >= 0 && s + t <= a);
 }
 
 // Returns true if VK_FORMAT_FEATURE_ACCELERATION_STRUCTURE_VERTEX_BUFFER_BIT_KHR needs to be supported for the given format.
@@ -113,6 +133,7 @@ RaytracedGeometryBase::RaytracedGeometryBase (VkGeometryTypeKHR geometryType, Vk
 	, m_vertexFormat	(vertexFormat)
 	, m_indexType		(indexType)
 	, m_geometryFlags	((VkGeometryFlagsKHR)0u)
+	, m_hasOpacityMicromap (false)
 {
 	if (m_geometryType == VK_GEOMETRY_TYPE_AABBS_KHR)
 		DE_ASSERT(m_vertexFormat == VK_FORMAT_R32G32B32_SFLOAT);
@@ -285,72 +306,6 @@ VkDeviceAddress getBufferDeviceAddress ( const DeviceInterface&	vk,
 }
 
 
-static inline VkDeviceOrHostAddressConstKHR makeDeviceOrHostAddressConstKHR (const void* hostAddress)
-{
-	// VS2015: Cannot create as a const due to cannot assign hostAddress due to it is a second field. Only assigning of first field supported.
-	VkDeviceOrHostAddressConstKHR result;
-
-	deMemset(&result, 0, sizeof(result));
-
-	result.hostAddress = hostAddress;
-
-	return result;
-}
-
-static inline VkDeviceOrHostAddressKHR makeDeviceOrHostAddressKHR (void* hostAddress)
-{
-	// VS2015: Cannot create as a const due to cannot assign hostAddress due to it is a second field. Only assigning of first field supported.
-	VkDeviceOrHostAddressKHR result;
-
-	deMemset(&result, 0, sizeof(result));
-
-	result.hostAddress = hostAddress;
-
-	return result;
-}
-
-static inline VkDeviceOrHostAddressConstKHR makeDeviceOrHostAddressConstKHR (const DeviceInterface&	vk,
-																	  const VkDevice			device,
-																	  VkBuffer					buffer,
-																	  VkDeviceSize				offset)
-{
-	// VS2015: Cannot create as a const due to cannot assign hostAddress due to it is a second field. Only assigning of first field supported.
-	VkDeviceOrHostAddressConstKHR result;
-
-	deMemset(&result, 0, sizeof(result));
-
-	VkBufferDeviceAddressInfo bufferDeviceAddressInfo =
-	{
-		VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_KHR,	// VkStructureType	 sType;
-		DE_NULL,											// const void*		 pNext;
-		buffer,												// VkBuffer			buffer
-	};
-	result.deviceAddress = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo) + offset;
-
-	return result;
-}
-
-static inline VkDeviceOrHostAddressKHR makeDeviceOrHostAddressKHR (const DeviceInterface&	vk,
-																   const VkDevice			device,
-																   VkBuffer					buffer,
-																   VkDeviceSize				offset)
-{
-	// VS2015: Cannot create as a const due to cannot assign hostAddress due to it is a second field. Only assigning of first field supported.
-	VkDeviceOrHostAddressKHR result;
-
-	deMemset(&result, 0, sizeof(result));
-
-	VkBufferDeviceAddressInfo bufferDeviceAddressInfo =
-	{
-		VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_KHR,	// VkStructureType	 sType;
-		DE_NULL,											// const void*		 pNext;
-		buffer,												// VkBuffer			buffer
-	};
-	result.deviceAddress = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo) + offset;
-
-	return result;
-}
-
 static inline Move<VkQueryPool> makeQueryPool (const DeviceInterface&		vk,
 											   const VkDevice				device,
 											   const VkQueryType			queryType,
@@ -436,6 +391,17 @@ VkResult getRayTracingShaderGroupHandles (const DeviceInterface&		vk,
 										  void*							pData)
 {
 	return getRayTracingShaderGroupHandlesKHR(vk, device, pipeline, firstGroup, groupCount, dataSize, pData);
+}
+
+VkResult getRayTracingCaptureReplayShaderGroupHandles (const DeviceInterface&	vk,
+													   const VkDevice			device,
+													   const VkPipeline			pipeline,
+													   const deUint32			firstGroup,
+													   const deUint32			groupCount,
+													   const deUintptr			dataSize,
+													   void*					pData)
+{
+	return vk.getRayTracingCaptureReplayShaderGroupHandlesKHR(device, pipeline, firstGroup, groupCount, dataSize, pData);
 }
 
 VkResult finishDeferredOperation (const DeviceInterface&	vk,
@@ -556,6 +522,7 @@ SerialStorage::SerialStorage (const DeviceInterface&									vk,
 							  const VkDeviceSize										storageSize)
 	: m_buildType		(buildType)
 	, m_storageSize		(storageSize)
+	, m_serialInfo		()
 {
 	const VkBufferCreateInfo	bufferCreateInfo	= makeBufferCreateInfo(storageSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
 	try
@@ -722,8 +689,8 @@ void BottomLevelAccelerationStructure::setDefaultGeometryData (const VkShaderSta
 		geometryData.push_back(tcu::Vec3(-1.0f, -1.0f, z));
 		geometryData.push_back(tcu::Vec3(-1.0f, +1.0f, z));
 		geometryData.push_back(tcu::Vec3(+1.0f, -1.0f, z));
-		geometryData.push_back(tcu::Vec3(-1.0f, +1.0f, z));
 		geometryData.push_back(tcu::Vec3(+1.0f, -1.0f, z));
+		geometryData.push_back(tcu::Vec3(-1.0f, +1.0f, z));
 		geometryData.push_back(tcu::Vec3(+1.0f, +1.0f, z));
 	}
 	else
@@ -753,7 +720,8 @@ void BottomLevelAccelerationStructure::addGeometry (de::SharedPtr<RaytracedGeome
 
 void BottomLevelAccelerationStructure::addGeometry (const std::vector<tcu::Vec3>&	geometryData,
 													const bool						triangles,
-													const VkGeometryFlagsKHR		geometryFlags)
+													const VkGeometryFlagsKHR		geometryFlags,
+													const VkAccelerationStructureTrianglesOpacityMicromapEXT* opacityGeometryMicromap)
 {
 	DE_ASSERT(geometryData.size() > 0);
 	DE_ASSERT((triangles && geometryData.size() % 3 == 0) || (!triangles && geometryData.size() % 2 == 0));
@@ -771,12 +739,39 @@ void BottomLevelAccelerationStructure::addGeometry (const std::vector<tcu::Vec3>
 		geometry->addVertex(*it);
 
 	geometry->setGeometryFlags(geometryFlags);
+	if (opacityGeometryMicromap)
+		geometry->setOpacityMicromap(opacityGeometryMicromap);
 	addGeometry(geometry);
 }
 
-VkDeviceSize BottomLevelAccelerationStructure::getStructureSize() const
+VkAccelerationStructureBuildSizesInfoKHR BottomLevelAccelerationStructure::getStructureBuildSizes () const
 {
-	return m_structureSize;
+	return
+	{
+		VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR,	//  VkStructureType	sType;
+		DE_NULL,														//  const void*		pNext;
+		m_structureSize,												//  VkDeviceSize	accelerationStructureSize;
+		m_updateScratchSize,											//  VkDeviceSize	updateScratchSize;
+		m_buildScratchSize												//  VkDeviceSize	buildScratchSize;
+	};
+};
+
+VkDeviceSize getVertexBufferSize (const std::vector<de::SharedPtr<RaytracedGeometryBase>>&	geometriesData)
+{
+	DE_ASSERT(geometriesData.size() != 0);
+	VkDeviceSize					bufferSizeBytes = 0;
+	for (size_t geometryNdx = 0; geometryNdx < geometriesData.size(); ++geometryNdx)
+		bufferSizeBytes += deAlignSize(geometriesData[geometryNdx]->getVertexByteSize(),8);
+	return bufferSizeBytes;
+}
+
+BufferWithMemory* createVertexBuffer (const DeviceInterface&	vk,
+									  const VkDevice			device,
+									  Allocator&				allocator,
+									  const VkDeviceSize		bufferSizeBytes)
+{
+	const VkBufferCreateInfo	bufferCreateInfo	= makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+	return new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress);
 }
 
 BufferWithMemory* createVertexBuffer (const DeviceInterface&									vk,
@@ -784,24 +779,18 @@ BufferWithMemory* createVertexBuffer (const DeviceInterface&									vk,
 									  Allocator&												allocator,
 									  const std::vector<de::SharedPtr<RaytracedGeometryBase>>&	geometriesData)
 {
-	DE_ASSERT(geometriesData.size() != 0);
-
-	VkDeviceSize					bufferSizeBytes = 0;
-	for (size_t geometryNdx = 0; geometryNdx < geometriesData.size(); ++geometryNdx)
-		bufferSizeBytes += deAlignSize(geometriesData[geometryNdx]->getVertexByteSize(),8);
-
-	const VkBufferCreateInfo		bufferCreateInfo	= makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
-	return new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress);
+	return createVertexBuffer(vk, device, allocator, getVertexBufferSize(geometriesData));
 }
 
 void updateVertexBuffer (const DeviceInterface&										vk,
 						 const VkDevice												device,
 						 const std::vector<de::SharedPtr<RaytracedGeometryBase>>&	geometriesData,
-						 BufferWithMemory*											vertexBuffer)
+						 BufferWithMemory*											vertexBuffer,
+						 VkDeviceSize												geometriesOffset = 0)
 {
 	const Allocation&				geometryAlloc		= vertexBuffer->getAllocation();
 	deUint8*						bufferStart			= static_cast<deUint8*>(geometryAlloc.getHostPtr());
-	VkDeviceSize					bufferOffset		= 0;
+	VkDeviceSize					bufferOffset		= geometriesOffset;
 
 	for (size_t geometryNdx = 0; geometryNdx < geometriesData.size(); ++geometryNdx)
 	{
@@ -813,7 +802,31 @@ void updateVertexBuffer (const DeviceInterface&										vk,
 		bufferOffset += deAlignSize(geometryPtrSize,8);
 	}
 
-	flushMappedMemoryRange(vk, device, geometryAlloc.getMemory(), geometryAlloc.getOffset(), VK_WHOLE_SIZE);
+	// Flush the whole allocation. We could flush only the interesting range, but we'd need to be sure both the offset and size
+	// align to VkPhysicalDeviceLimits::nonCoherentAtomSize, which we are not considering. Also note most code uses Coherent memory
+	// for the vertex and index buffers, so flushing is actually not needed.
+	flushAlloc(vk, device, geometryAlloc);
+}
+
+VkDeviceSize getIndexBufferSize (const std::vector<de::SharedPtr<RaytracedGeometryBase>>&	geometriesData)
+{
+	DE_ASSERT(!geometriesData.empty());
+
+	VkDeviceSize	bufferSizeBytes = 0;
+	for (size_t geometryNdx = 0; geometryNdx < geometriesData.size(); ++geometryNdx)
+		if(geometriesData[geometryNdx]->getIndexType() != VK_INDEX_TYPE_NONE_KHR)
+			bufferSizeBytes += deAlignSize(geometriesData[geometryNdx]->getIndexByteSize(),8);
+	return bufferSizeBytes;
+}
+
+BufferWithMemory* createIndexBuffer (const DeviceInterface&		vk,
+									 const VkDevice				device,
+									 Allocator&					allocator,
+									 const VkDeviceSize			bufferSizeBytes)
+{
+	DE_ASSERT(bufferSizeBytes);
+	const VkBufferCreateInfo		bufferCreateInfo	= makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+	return  new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress);
 }
 
 BufferWithMemory* createIndexBuffer (const DeviceInterface&										vk,
@@ -821,28 +834,21 @@ BufferWithMemory* createIndexBuffer (const DeviceInterface&										vk,
 									 Allocator&													allocator,
 									 const std::vector<de::SharedPtr<RaytracedGeometryBase>>&	geometriesData)
 {
-	DE_ASSERT(!geometriesData.empty());
 
-	VkDeviceSize					bufferSizeBytes = 0;
-	for (size_t geometryNdx = 0; geometryNdx < geometriesData.size(); ++geometryNdx)
-		if(geometriesData[geometryNdx]->getIndexType() != VK_INDEX_TYPE_NONE_KHR)
-			bufferSizeBytes += deAlignSize(geometriesData[geometryNdx]->getIndexByteSize(),8);
 
-	if (bufferSizeBytes == 0)
-		return DE_NULL;
-
-	const VkBufferCreateInfo		bufferCreateInfo	= makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
-	return  new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress);
+	const VkDeviceSize bufferSizeBytes = getIndexBufferSize(geometriesData);
+	return bufferSizeBytes ? createIndexBuffer(vk, device, allocator, bufferSizeBytes) : nullptr;
 }
 
 void updateIndexBuffer (const DeviceInterface&										vk,
 						const VkDevice												device,
 						const std::vector<de::SharedPtr<RaytracedGeometryBase>>&	geometriesData,
-						BufferWithMemory*											indexBuffer)
+						BufferWithMemory*											indexBuffer,
+						VkDeviceSize												geometriesOffset)
 {
 	const Allocation&				indexAlloc			= indexBuffer->getAllocation();
 	deUint8*						bufferStart			= static_cast<deUint8*>(indexAlloc.getHostPtr());
-	VkDeviceSize					bufferOffset		= 0;
+	VkDeviceSize					bufferOffset		= geometriesOffset;
 
 	for (size_t geometryNdx = 0; geometryNdx < geometriesData.size(); ++geometryNdx)
 	{
@@ -857,7 +863,10 @@ void updateIndexBuffer (const DeviceInterface&										vk,
 		}
 	}
 
-	flushMappedMemoryRange(vk, device, indexAlloc.getMemory(), indexAlloc.getOffset(), VK_WHOLE_SIZE);
+	// Flush the whole allocation. We could flush only the interesting range, but we'd need to be sure both the offset and size
+	// align to VkPhysicalDeviceLimits::nonCoherentAtomSize, which we are not considering. Also note most code uses Coherent memory
+	// for the vertex and index buffers, so flushing is actually not needed.
+	flushAlloc(vk, device, indexAlloc);
 }
 
 class BottomLevelAccelerationStructureKHR : public BottomLevelAccelerationStructure
@@ -870,8 +879,10 @@ public:
 	virtual													~BottomLevelAccelerationStructureKHR			();
 
 	void													setBuildType									(const VkAccelerationStructureBuildTypeKHR		buildType) override;
+	VkAccelerationStructureBuildTypeKHR						getBuildType									() const override;
 	void													setCreateFlags									(const VkAccelerationStructureCreateFlagsKHR	createFlags) override;
 	void													setCreateGeneric								(bool											createGeneric) override;
+	void													setCreationBufferUnbounded						(bool											creationBufferUnbounded) override;
 	void													setBuildFlags									(const VkBuildAccelerationStructureFlagsKHR		buildFlags) override;
 	void													setBuildWithoutGeometries						(bool											buildWithoutGeometries) override;
 	void													setBuildWithoutPrimitives						(bool											buildWithoutPrimitives) override;
@@ -887,7 +898,9 @@ public:
 																											 const VkDevice									device,
 																											 Allocator&										allocator,
 																											 VkDeviceSize									structureSize,
-																											 VkDeviceAddress								deviceAddress	= 0u ) override;
+																											 VkDeviceAddress								deviceAddress			= 0u,
+																											 const void*									pNext					= DE_NULL,
+																											 const MemoryRequirement&						addMemoryRequirement	= MemoryRequirement::Any) override;
 	void													build											(const DeviceInterface&							vk,
 																											 const VkDevice									device,
 																											 const VkCommandBuffer							cmdBuffer) override;
@@ -912,6 +925,7 @@ protected:
 	VkAccelerationStructureBuildTypeKHR						m_buildType;
 	VkAccelerationStructureCreateFlagsKHR					m_createFlags;
 	bool													m_createGeneric;
+	bool													m_creationBufferUnbounded;
 	VkBuildAccelerationStructureFlagsKHR					m_buildFlags;
 	bool													m_buildWithoutGeometries;
 	bool													m_buildWithoutPrimitives;
@@ -922,18 +936,32 @@ protected:
 	de::MovePtr<BufferWithMemory>							m_vertexBuffer;
 	de::MovePtr<BufferWithMemory>							m_indexBuffer;
 	de::MovePtr<BufferWithMemory>							m_deviceScratchBuffer;
-	std::vector<deUint8>									m_hostScratchBuffer;
+	de::UniquePtr<std::vector<deUint8>>						m_hostScratchBuffer;
 	Move<VkAccelerationStructureKHR>						m_accelerationStructureKHR;
 	VkBuffer												m_indirectBuffer;
 	VkDeviceSize											m_indirectBufferOffset;
 	deUint32												m_indirectBufferStride;
 
-	void													prepareGeometries								(const DeviceInterface&									vk,
-																											 const VkDevice											device,
-																											 std::vector<VkAccelerationStructureGeometryKHR>&		accelerationStructureGeometriesKHR,
-																											 std::vector<VkAccelerationStructureGeometryKHR*>&		accelerationStructureGeometriesKHRPointers,
-																											 std::vector<VkAccelerationStructureBuildRangeInfoKHR>&	accelerationStructureBuildRangeInfoKHR,
-																											 std::vector<deUint32>&									maxPrimitiveCounts);
+	void													prepareGeometries								(const DeviceInterface&												vk,
+																											 const VkDevice														device,
+																											 std::vector<VkAccelerationStructureGeometryKHR>&					accelerationStructureGeometriesKHR,
+																											 std::vector<VkAccelerationStructureGeometryKHR*>&					accelerationStructureGeometriesKHRPointers,
+																											 std::vector<VkAccelerationStructureBuildRangeInfoKHR>&				accelerationStructureBuildRangeInfoKHR,
+																											 std::vector<VkAccelerationStructureTrianglesOpacityMicromapEXT>&	accelerationStructureGeometryMicromapsEXT,
+																											 std::vector<deUint32>&												maxPrimitiveCounts,
+																											 VkDeviceSize														vertexBufferOffset = 0,
+																											 VkDeviceSize														indexBufferOffset = 0) const;
+
+	virtual BufferWithMemory*								getAccelerationStructureBuffer					() const { return m_accelerationStructureBuffer.get(); }
+	virtual BufferWithMemory*								getDeviceScratchBuffer							() const { return m_deviceScratchBuffer.get(); }
+	virtual std::vector<deUint8>*							getHostScratchBuffer							() const { return m_hostScratchBuffer.get(); }
+	virtual BufferWithMemory*								getVertexBuffer									() const { return m_vertexBuffer.get(); }
+	virtual BufferWithMemory*								getIndexBuffer									() const { return m_indexBuffer.get(); }
+
+	virtual VkDeviceSize									getAccelerationStructureBufferOffset			() const { return 0; }
+	virtual VkDeviceSize									getDeviceScratchBufferOffset					() const { return 0; }
+	virtual VkDeviceSize									getVertexBufferOffset							() const { return 0; }
+	virtual VkDeviceSize									getIndexBufferOffset							() const { return 0; }
 };
 
 deUint32 BottomLevelAccelerationStructureKHR::getRequiredAllocationCount (void)
@@ -955,6 +983,7 @@ BottomLevelAccelerationStructureKHR::BottomLevelAccelerationStructureKHR ()
 	, m_buildType						(VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
 	, m_createFlags						(0u)
 	, m_createGeneric					(false)
+	, m_creationBufferUnbounded			(false)
 	, m_buildFlags						(0u)
 	, m_buildWithoutGeometries			(false)
 	, m_buildWithoutPrimitives			(false)
@@ -965,6 +994,7 @@ BottomLevelAccelerationStructureKHR::BottomLevelAccelerationStructureKHR ()
 	, m_vertexBuffer					(DE_NULL)
 	, m_indexBuffer						(DE_NULL)
 	, m_deviceScratchBuffer				(DE_NULL)
+	, m_hostScratchBuffer				(new std::vector<deUint8>)
 	, m_accelerationStructureKHR		()
 	, m_indirectBuffer					(DE_NULL)
 	, m_indirectBufferOffset			(0)
@@ -977,6 +1007,11 @@ void BottomLevelAccelerationStructureKHR::setBuildType (const VkAccelerationStru
 	m_buildType = buildType;
 }
 
+VkAccelerationStructureBuildTypeKHR BottomLevelAccelerationStructureKHR::getBuildType () const
+{
+	return m_buildType;
+}
+
 void BottomLevelAccelerationStructureKHR::setCreateFlags (const VkAccelerationStructureCreateFlagsKHR	createFlags)
 {
 	m_createFlags = createFlags;
@@ -985,6 +1020,11 @@ void BottomLevelAccelerationStructureKHR::setCreateFlags (const VkAccelerationSt
 void BottomLevelAccelerationStructureKHR::setCreateGeneric (bool createGeneric)
 {
 	m_createGeneric = createGeneric;
+}
+
+void BottomLevelAccelerationStructureKHR::setCreationBufferUnbounded (bool creationBufferUnbounded)
+{
+	m_creationBufferUnbounded = creationBufferUnbounded;
 }
 
 void BottomLevelAccelerationStructureKHR::setBuildFlags (const VkBuildAccelerationStructureFlagsKHR	buildFlags)
@@ -1032,7 +1072,9 @@ void BottomLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 												  const VkDevice						device,
 												  Allocator&							allocator,
 												  VkDeviceSize							structureSize,
-												  VkDeviceAddress						deviceAddress)
+												  VkDeviceAddress						deviceAddress,
+												  const void*							pNext,
+												  const MemoryRequirement&				addMemoryRequirement)
 {
 	// AS may be built from geometries using vkCmdBuildAccelerationStructuresKHR / vkBuildAccelerationStructuresKHR
 	// or may be copied/compacted/deserialized from other AS ( in this case AS does not need geometries, but it needs to know its size before creation ).
@@ -1043,8 +1085,9 @@ void BottomLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 		std::vector<VkAccelerationStructureGeometryKHR>			accelerationStructureGeometriesKHR;
 		std::vector<VkAccelerationStructureGeometryKHR*>		accelerationStructureGeometriesKHRPointers;
 		std::vector<VkAccelerationStructureBuildRangeInfoKHR>	accelerationStructureBuildRangeInfoKHR;
+		std::vector<VkAccelerationStructureTrianglesOpacityMicromapEXT> accelerationStructureGeometryMicromapsEXT;
 		std::vector<deUint32>									maxPrimitiveCounts;
-		prepareGeometries(vk, device, accelerationStructureGeometriesKHR, accelerationStructureGeometriesKHRPointers, accelerationStructureBuildRangeInfoKHR, maxPrimitiveCounts);
+		prepareGeometries(vk, device, accelerationStructureGeometriesKHR, accelerationStructureGeometriesKHRPointers, accelerationStructureBuildRangeInfoKHR, accelerationStructureGeometryMicromapsEXT, maxPrimitiveCounts);
 
 		const VkAccelerationStructureGeometryKHR*				accelerationStructureGeometriesKHRPointer	= accelerationStructureGeometriesKHR.data();
 		const VkAccelerationStructureGeometryKHR* const*		accelerationStructureGeometry				= accelerationStructureGeometriesKHRPointers.data();
@@ -1086,15 +1129,18 @@ void BottomLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 	}
 
 	{
-		const VkBufferCreateInfo		bufferCreateInfo	= makeBufferCreateInfo(m_structureSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+		const VkBufferCreateInfo		bufferCreateInfo		= makeBufferCreateInfo(m_structureSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+		const MemoryRequirement			memoryRequirement		= addMemoryRequirement | MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress;
+		const bool						bindMemOnCreation		= (!m_creationBufferUnbounded);
+
 		try
 		{
-			m_accelerationStructureBuffer						= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::Cached | MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
+			m_accelerationStructureBuffer	= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, (MemoryRequirement::Cached | memoryRequirement), bindMemOnCreation));
 		}
 		catch (const tcu::NotSupportedError&)
 		{
 			// retry without Cached flag
-			m_accelerationStructureBuffer						= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
+			m_accelerationStructureBuffer	= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, memoryRequirement, bindMemOnCreation));
 		}
 	}
 
@@ -1105,16 +1151,19 @@ void BottomLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 		const VkAccelerationStructureCreateInfoKHR	accelerationStructureCreateInfoKHR
 		{
 			VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR,						//  VkStructureType											sType;
-			DE_NULL,																		//  const void*												pNext;
+			pNext,																			//  const void*												pNext;
 			m_createFlags,																	//  VkAccelerationStructureCreateFlagsKHR					createFlags;
-			m_accelerationStructureBuffer->get(),											//  VkBuffer												buffer;
-			0u,																				//  VkDeviceSize											offset;
+			getAccelerationStructureBuffer()->get(),										//  VkBuffer												buffer;
+			getAccelerationStructureBufferOffset(),											//  VkDeviceSize											offset;
 			m_structureSize,																//  VkDeviceSize											size;
 			structureType,																	//  VkAccelerationStructureTypeKHR							type;
 			deviceAddress																	//  VkDeviceAddress											deviceAddress;
 		};
 
 		m_accelerationStructureKHR	= createAccelerationStructureKHR(vk, device, &accelerationStructureCreateInfoKHR, DE_NULL);
+
+		// Make sure buffer memory is always bound after creation.
+		m_accelerationStructureBuffer->bindMemory();
 	}
 
 	if (m_buildScratchSize > 0u)
@@ -1126,7 +1175,7 @@ void BottomLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 		}
 		else
 		{
-			m_hostScratchBuffer.resize(static_cast<size_t>(m_buildScratchSize));
+			m_hostScratchBuffer->resize(static_cast<size_t>(m_buildScratchSize));
 		}
 	}
 
@@ -1147,24 +1196,26 @@ void BottomLevelAccelerationStructureKHR::build (const DeviceInterface&						vk,
 
 	if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
 	{
-		updateVertexBuffer(vk, device, m_geometriesData, m_vertexBuffer.get());
-		if(m_indexBuffer.get() != DE_NULL)
-			updateIndexBuffer(vk, device, m_geometriesData, m_indexBuffer.get());
+		updateVertexBuffer(vk, device, m_geometriesData,  getVertexBuffer(), getVertexBufferOffset());
+		if(getIndexBuffer() != DE_NULL)
+			updateIndexBuffer(vk, device, m_geometriesData, getIndexBuffer(), getIndexBufferOffset());
 	}
 
 	{
 		std::vector<VkAccelerationStructureGeometryKHR>			accelerationStructureGeometriesKHR;
 		std::vector<VkAccelerationStructureGeometryKHR*>		accelerationStructureGeometriesKHRPointers;
 		std::vector<VkAccelerationStructureBuildRangeInfoKHR>	accelerationStructureBuildRangeInfoKHR;
+		std::vector<VkAccelerationStructureTrianglesOpacityMicromapEXT> accelerationStructureGeometryMicromapsEXT;
 		std::vector<deUint32>									maxPrimitiveCounts;
 
-		prepareGeometries(vk, device, accelerationStructureGeometriesKHR, accelerationStructureGeometriesKHRPointers, accelerationStructureBuildRangeInfoKHR, maxPrimitiveCounts);
+		prepareGeometries(vk, device, accelerationStructureGeometriesKHR, accelerationStructureGeometriesKHRPointers,
+						  accelerationStructureBuildRangeInfoKHR, accelerationStructureGeometryMicromapsEXT, maxPrimitiveCounts, getVertexBufferOffset(), getIndexBufferOffset());
 
 		const VkAccelerationStructureGeometryKHR*			accelerationStructureGeometriesKHRPointer	= accelerationStructureGeometriesKHR.data();
 		const VkAccelerationStructureGeometryKHR* const*	accelerationStructureGeometry				= accelerationStructureGeometriesKHRPointers.data();
 		VkDeviceOrHostAddressKHR							scratchData									= (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
-																										? makeDeviceOrHostAddressKHR(vk, device, m_deviceScratchBuffer->get(), 0)
-																										: makeDeviceOrHostAddressKHR(m_hostScratchBuffer.data());
+																										? makeDeviceOrHostAddressKHR(vk, device, getDeviceScratchBuffer()->get(), getDeviceScratchBufferOffset())
+																										: makeDeviceOrHostAddressKHR(getHostScratchBuffer()->data());
 		const deUint32										geometryCount								= (m_buildWithoutGeometries
 																										? 0u
 																										: static_cast<deUint32>(accelerationStructureGeometriesKHR.size()));
@@ -1359,37 +1410,42 @@ const VkAccelerationStructureKHR* BottomLevelAccelerationStructureKHR::getPtr (v
 	return &m_accelerationStructureKHR.get();
 }
 
-void BottomLevelAccelerationStructureKHR::prepareGeometries (const DeviceInterface&										vk,
-															 const VkDevice												device,
-															 std::vector<VkAccelerationStructureGeometryKHR>&			accelerationStructureGeometriesKHR,
-															 std::vector<VkAccelerationStructureGeometryKHR*>&			accelerationStructureGeometriesKHRPointers,
-															 std::vector<VkAccelerationStructureBuildRangeInfoKHR>&		accelerationStructureBuildRangeInfoKHR,
-															 std::vector<deUint32>&										maxPrimitiveCounts)
+void BottomLevelAccelerationStructureKHR::prepareGeometries (const DeviceInterface&												vk,
+															 const VkDevice														device,
+															 std::vector<VkAccelerationStructureGeometryKHR>&					accelerationStructureGeometriesKHR,
+															 std::vector<VkAccelerationStructureGeometryKHR*>&					accelerationStructureGeometriesKHRPointers,
+															 std::vector<VkAccelerationStructureBuildRangeInfoKHR>&				accelerationStructureBuildRangeInfoKHR,
+															 std::vector<VkAccelerationStructureTrianglesOpacityMicromapEXT>&	accelerationStructureGeometryMicromapsEXT,
+															 std::vector<deUint32>&												maxPrimitiveCounts,
+															 VkDeviceSize														vertexBufferOffset,
+															 VkDeviceSize														indexBufferOffset) const
 {
 	accelerationStructureGeometriesKHR.resize(m_geometriesData.size());
 	accelerationStructureGeometriesKHRPointers.resize(m_geometriesData.size());
 	accelerationStructureBuildRangeInfoKHR.resize(m_geometriesData.size());
+	accelerationStructureGeometryMicromapsEXT.resize(m_geometriesData.size());
 	maxPrimitiveCounts.resize(m_geometriesData.size());
-
-	VkDeviceSize vertexBufferOffset = 0, indexBufferOffset = 0;
 
 	for (size_t geometryNdx = 0; geometryNdx < m_geometriesData.size(); ++geometryNdx)
 	{
-		de::SharedPtr<RaytracedGeometryBase>&					geometryData = m_geometriesData[geometryNdx];
+		const de::SharedPtr<RaytracedGeometryBase>&				geometryData = m_geometriesData[geometryNdx];
 		VkDeviceOrHostAddressConstKHR							vertexData, indexData;
 		if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
 		{
-			if (m_vertexBuffer.get() != DE_NULL)
+			if (getVertexBuffer() != DE_NULL)
 			{
-				vertexData			= makeDeviceOrHostAddressConstKHR(vk, device, m_vertexBuffer->get(), vertexBufferOffset);
-				vertexBufferOffset	+= deAlignSize(geometryData->getVertexByteSize(), 8);
+				vertexData			= makeDeviceOrHostAddressConstKHR(vk, device, getVertexBuffer()->get(), vertexBufferOffset);
+				if (m_indirectBuffer == DE_NULL )
+				{
+					vertexBufferOffset	+= deAlignSize(geometryData->getVertexByteSize(), 8);
+				}
 			}
 			else
 				vertexData			= makeDeviceOrHostAddressConstKHR(DE_NULL);
 
-			if (m_indexBuffer.get() != DE_NULL &&  geometryData->getIndexType() != VK_INDEX_TYPE_NONE_KHR)
+			if (getIndexBuffer() != DE_NULL &&  geometryData->getIndexType() != VK_INDEX_TYPE_NONE_KHR)
 			{
-				indexData			= makeDeviceOrHostAddressConstKHR(vk, device, m_indexBuffer->get(), indexBufferOffset);
+				indexData			= makeDeviceOrHostAddressConstKHR(vk, device, getIndexBuffer()->get(), indexBufferOffset);
 				indexBufferOffset	+= deAlignSize(geometryData->getIndexByteSize(), 8);
 			}
 			else
@@ -1404,7 +1460,7 @@ void BottomLevelAccelerationStructureKHR::prepareGeometries (const DeviceInterfa
 				indexData = makeDeviceOrHostAddressConstKHR(DE_NULL);
 		}
 
-		const VkAccelerationStructureGeometryTrianglesDataKHR	accelerationStructureGeometryTrianglesDataKHR =
+		VkAccelerationStructureGeometryTrianglesDataKHR	accelerationStructureGeometryTrianglesDataKHR =
 		{
 			VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR,	//  VkStructureType					sType;
 			DE_NULL,																//  const void*						pNext;
@@ -1416,6 +1472,9 @@ void BottomLevelAccelerationStructureKHR::prepareGeometries (const DeviceInterfa
 			indexData,																//  VkDeviceOrHostAddressConstKHR	indexData;
 			makeDeviceOrHostAddressConstKHR(DE_NULL),								//  VkDeviceOrHostAddressConstKHR	transformData;
 		};
+
+		if (geometryData->getHasOpacityMicromap())
+			accelerationStructureGeometryTrianglesDataKHR.pNext = &geometryData->getOpacityMicromap();
 
 		const VkAccelerationStructureGeometryAabbsDataKHR		accelerationStructureGeometryAabbsDataKHR =
 		{
@@ -1477,7 +1536,7 @@ void BottomLevelAccelerationStructure::createAndCopyFrom (const DeviceInterface&
 														  VkDeviceAddress						deviceAddress)
 {
 	DE_ASSERT(accelerationStructure != NULL);
-	VkDeviceSize copiedSize = compactCopySize > 0u ? compactCopySize : accelerationStructure->getStructureSize();
+	VkDeviceSize copiedSize = compactCopySize > 0u ? compactCopySize : accelerationStructure->getStructureBuildSizes().accelerationStructureSize;
 	DE_ASSERT(copiedSize != 0u);
 
 	create(vk, device, allocator, copiedSize, deviceAddress);
@@ -1500,6 +1559,687 @@ void BottomLevelAccelerationStructure::createAndDeserializeFrom (const DeviceInt
 de::MovePtr<BottomLevelAccelerationStructure> makeBottomLevelAccelerationStructure ()
 {
 	return de::MovePtr<BottomLevelAccelerationStructure>(new BottomLevelAccelerationStructureKHR);
+}
+
+// Forward declaration
+struct BottomLevelAccelerationStructurePoolImpl;
+
+class BottomLevelAccelerationStructurePoolMember : public BottomLevelAccelerationStructureKHR
+{
+public:
+	friend class BottomLevelAccelerationStructurePool;
+
+								BottomLevelAccelerationStructurePoolMember	(BottomLevelAccelerationStructurePoolImpl& pool);
+								BottomLevelAccelerationStructurePoolMember	(const BottomLevelAccelerationStructurePoolMember&) = delete;
+								BottomLevelAccelerationStructurePoolMember	(BottomLevelAccelerationStructurePoolMember&&) = delete;
+	virtual						~BottomLevelAccelerationStructurePoolMember	() = default;
+
+	virtual void				create										(const DeviceInterface&,
+																			 const VkDevice,
+																			 Allocator&,
+																			 VkDeviceSize,
+																			 VkDeviceAddress,
+																			 const void*,
+																			 const MemoryRequirement&) override
+								{
+									DE_ASSERT(0); // Silent this method
+								}
+	virtual auto				computeBuildSize							(const DeviceInterface&	vk,
+																			 const VkDevice			device,
+																			 const VkDeviceSize		strSize) const
+																			 //              accStrSize,updateScratch, buildScratch, vertexSize,   indexSize
+																			 -> std::tuple<VkDeviceSize, VkDeviceSize, VkDeviceSize, VkDeviceSize, VkDeviceSize>;
+protected:
+	struct Info;
+	virtual void				preCreateSetSizesAndOffsets					(const Info&			info,
+																			 const VkDeviceSize		accStrSize,
+																			 const VkDeviceSize		updateScratchSize,
+																			 const VkDeviceSize		buildScratchSize);
+	virtual void				createAccellerationStructure				(const DeviceInterface&	vk,
+																			 const VkDevice			device,
+																			 VkDeviceAddress		deviceAddress);
+
+	virtual BufferWithMemory*	getAccelerationStructureBuffer				() const override;
+	virtual BufferWithMemory*	getDeviceScratchBuffer						() const override;
+	virtual std::vector<deUint8>*	getHostScratchBuffer					() const override;
+	virtual BufferWithMemory*	getVertexBuffer								() const override;
+	virtual BufferWithMemory*	getIndexBuffer								() const override;
+
+	virtual VkDeviceSize		getAccelerationStructureBufferOffset		() const override { return m_info.accStrOffset; }
+	virtual VkDeviceSize		getDeviceScratchBufferOffset				() const override { return m_info.buildScratchBuffOffset; }
+	virtual VkDeviceSize		getVertexBufferOffset						() const override { return m_info.vertBuffOffset; }
+	virtual VkDeviceSize		getIndexBufferOffset						() const override { return m_info.indexBuffOffset; }
+
+	BottomLevelAccelerationStructurePoolImpl&	m_pool;
+
+	struct Info
+	{
+		deUint32				accStrIndex;
+		VkDeviceSize			accStrOffset;
+		deUint32				vertBuffIndex;
+		VkDeviceSize			vertBuffOffset;
+		deUint32				indexBuffIndex;
+		VkDeviceSize			indexBuffOffset;
+		deUint32				buildScratchBuffIndex;
+		VkDeviceSize			buildScratchBuffOffset;
+	}											m_info;
+};
+
+template<class X> inline X negz (const X&)
+{
+	return (~static_cast<X>(0));
+}
+template<class X> inline bool isnegz (const X& x)
+{
+	return x == negz(x);
+}
+template<class Y> inline auto make_unsigned(const Y& y) -> typename std::make_unsigned<Y>::type
+{
+	return static_cast<typename std::make_unsigned<Y>::type>(y);
+}
+
+BottomLevelAccelerationStructurePoolMember::BottomLevelAccelerationStructurePoolMember	(BottomLevelAccelerationStructurePoolImpl& pool)
+	: m_pool	(pool)
+	, m_info	{}
+{
+}
+
+struct BottomLevelAccelerationStructurePoolImpl
+{
+	BottomLevelAccelerationStructurePoolImpl (BottomLevelAccelerationStructurePoolImpl&&) = delete;
+	BottomLevelAccelerationStructurePoolImpl (const BottomLevelAccelerationStructurePoolImpl&) = delete;
+	BottomLevelAccelerationStructurePoolImpl (BottomLevelAccelerationStructurePool& pool);
+
+	BottomLevelAccelerationStructurePool&			m_pool;
+	std::vector<de::SharedPtr<BufferWithMemory>>	m_accellerationStructureBuffers;
+	de::SharedPtr<BufferWithMemory>					m_deviceScratchBuffer;
+	de::UniquePtr<std::vector<deUint8>>				m_hostScratchBuffer;
+	std::vector<de::SharedPtr<BufferWithMemory>>	m_vertexBuffers;
+	std::vector<de::SharedPtr<BufferWithMemory>>	m_indexBuffers;
+};
+BottomLevelAccelerationStructurePoolImpl::BottomLevelAccelerationStructurePoolImpl (BottomLevelAccelerationStructurePool& pool)
+	: m_pool							(pool)
+	, m_accellerationStructureBuffers	()
+	, m_deviceScratchBuffer				()
+	, m_hostScratchBuffer				(new std::vector<deUint8>)
+	, m_vertexBuffers					()
+	, m_indexBuffers					()
+{
+}
+BufferWithMemory* BottomLevelAccelerationStructurePoolMember::getAccelerationStructureBuffer () const
+{
+	BufferWithMemory* result = nullptr;
+	if (m_pool.m_accellerationStructureBuffers.size())
+	{
+		DE_ASSERT(!isnegz(m_info.accStrIndex));
+		result = m_pool.m_accellerationStructureBuffers[m_info.accStrIndex].get();
+	}
+	return result;
+}
+BufferWithMemory* BottomLevelAccelerationStructurePoolMember::getDeviceScratchBuffer () const
+{
+	DE_ASSERT(m_info.buildScratchBuffIndex == 0);
+	return m_pool.m_deviceScratchBuffer.get();
+}
+std::vector<deUint8>* BottomLevelAccelerationStructurePoolMember::getHostScratchBuffer () const
+{
+	return this->m_buildScratchSize ? m_pool.m_hostScratchBuffer.get() : nullptr;
+}
+
+BufferWithMemory* BottomLevelAccelerationStructurePoolMember::getVertexBuffer () const
+{
+	BufferWithMemory* result = nullptr;
+	if (m_pool.m_vertexBuffers.size())
+	{
+		DE_ASSERT(!isnegz(m_info.vertBuffIndex));
+		result = m_pool.m_vertexBuffers[m_info.vertBuffIndex].get();
+	}
+	return result;
+}
+BufferWithMemory* BottomLevelAccelerationStructurePoolMember::getIndexBuffer () const
+{
+	BufferWithMemory* result = nullptr;
+	if (m_pool.m_indexBuffers.size())
+	{
+		DE_ASSERT(!isnegz(m_info.indexBuffIndex));
+		result = m_pool.m_indexBuffers[m_info.indexBuffIndex].get();
+	}
+	return result;
+}
+
+struct BottomLevelAccelerationStructurePool::Impl : BottomLevelAccelerationStructurePoolImpl
+{
+	friend class BottomLevelAccelerationStructurePool;
+	friend class BottomLevelAccelerationStructurePoolMember;
+
+	Impl (BottomLevelAccelerationStructurePool& pool)
+		: BottomLevelAccelerationStructurePoolImpl(pool) { }
+};
+
+BottomLevelAccelerationStructurePool::BottomLevelAccelerationStructurePool ()
+	: m_batchStructCount	(4)
+	, m_batchGeomCount		(0)
+	, m_infos				()
+	, m_structs				()
+	, m_createOnce			(false)
+	, m_tryCachedMemory		(true)
+	, m_structsBuffSize		(0)
+	, m_updatesScratchSize	(0)
+	, m_buildsScratchSize	(0)
+	, m_verticesSize		(0)
+	, m_indicesSize			(0)
+	, m_impl				(new Impl(*this))
+{
+}
+
+BottomLevelAccelerationStructurePool::~BottomLevelAccelerationStructurePool()
+{
+	delete m_impl;
+}
+
+void BottomLevelAccelerationStructurePool::batchStructCount (const deUint32& value)
+{
+	DE_ASSERT(value >= 1); m_batchStructCount = value;
+}
+
+auto BottomLevelAccelerationStructurePool::add (VkDeviceSize		structureSize,
+												VkDeviceAddress		deviceAddress) -> BottomLevelAccelerationStructurePool::BlasPtr
+{
+	// Prevent a programmer from calling this method after batchCreate(...) method has been called.
+	if (m_createOnce) DE_ASSERT(0);
+
+	auto blas = new BottomLevelAccelerationStructurePoolMember(*m_impl);
+	m_infos.push_back({structureSize, deviceAddress});
+	m_structs.emplace_back(blas);
+	return m_structs.back();
+}
+
+void adjustBatchCount (const DeviceInterface&		vkd,
+					   const VkDevice				device,
+					   const std::vector<BottomLevelAccelerationStructurePool::BlasPtr>& structs,
+					   const std::vector<BottomLevelAccelerationStructurePool::BlasInfo>& infos,
+					   const VkDeviceSize			maxBufferSize,
+					   deUint32						(&result)[4])
+{
+	tcu::Vector<VkDeviceSize, 4>	sizes(0);
+	tcu::Vector<VkDeviceSize, 4>	sums(0);
+	tcu::Vector<deUint32, 4>		tmps(0);
+	tcu::Vector<deUint32, 4>		batches(0);
+
+	VkDeviceSize	updateScratchSize = 0;	static_cast<void>(updateScratchSize);	// not used yet, disabled for future implementation
+
+	auto updateIf = [&](deUint32 c)
+	{
+		if (sums[c] + sizes[c] <= maxBufferSize)
+		{
+			sums[c] += sizes[c];
+			tmps[c] += 1;
+
+			batches[c] = std::max(tmps[c], batches[c]);
+		}
+		else
+		{
+			sums[c] = 0;
+			tmps[c] = 0;
+		}
+	};
+
+	const deUint32	maxIter	= static_cast<deUint32>(structs.size());
+	for (deUint32 i = 0; i < maxIter; ++i)
+	{
+		auto& str = *dynamic_cast<BottomLevelAccelerationStructurePoolMember*>(structs[i].get());
+		std::tie(sizes[0], updateScratchSize, sizes[1], sizes[2], sizes[3]) = str.computeBuildSize(vkd, device, infos[i].structureSize);
+
+		updateIf(0);
+		updateIf(1);
+		updateIf(2);
+		updateIf(3);
+	}
+
+	result[0] = std::max(batches[0], 1u);
+	result[1] = std::max(batches[1], 1u);
+	result[2] = std::max(batches[2], 1u);
+	result[3] = std::max(batches[3], 1u);
+}
+
+size_t BottomLevelAccelerationStructurePool::getAllocationCount () const
+{
+	return m_impl->m_accellerationStructureBuffers.size()
+			+ m_impl->m_vertexBuffers.size()
+			+ m_impl->m_indexBuffers.size()
+			+ 1 /* for scratch buffer */;
+}
+
+size_t BottomLevelAccelerationStructurePool::getAllocationCount (const DeviceInterface&		vk,
+																 const VkDevice				device,
+																 const VkDeviceSize			maxBufferSize) const
+{
+	DE_ASSERT(m_structs.size() != 0);
+
+	std::map<deUint32, VkDeviceSize>	accStrSizes;
+	std::map<deUint32, VkDeviceSize>	vertBuffSizes;
+	std::map<deUint32, VkDeviceSize>	indexBuffSizes;
+	std::map<deUint32, VkDeviceSize>	scratchBuffSizes;
+
+	const deUint32	allStructsCount		= structCount();
+
+	deUint32		batchStructCount	= m_batchStructCount;
+	deUint32		batchScratchCount	= m_batchStructCount;
+	deUint32		batchVertexCount	= m_batchGeomCount ? m_batchGeomCount : m_batchStructCount;
+	deUint32		batchIndexCount		= batchVertexCount;
+
+	if (!isnegz(maxBufferSize))
+	{
+		deUint32	batches[4];
+		adjustBatchCount(vk, device, m_structs, m_infos, maxBufferSize, batches);
+		batchStructCount	= batches[0];
+		batchScratchCount	= batches[1];
+		batchVertexCount	= batches[2];
+		batchIndexCount		= batches[3];
+	}
+
+	deUint32		iStr				= 0;
+	deUint32		iScratch			= 0;
+	deUint32		iVertex				= 0;
+	deUint32		iIndex				= 0;
+
+	VkDeviceSize	strSize				= 0;
+	VkDeviceSize	updateScratchSize	= 0;
+	VkDeviceSize	buildScratchSize	= 0;
+	VkDeviceSize	vertexSize			= 0;
+	VkDeviceSize	indexSize			= 0;
+
+	for (; iStr < allStructsCount; ++iStr)
+	{
+		auto& str = *dynamic_cast<BottomLevelAccelerationStructurePoolMember*>(m_structs[iStr].get());
+		std::tie(strSize, updateScratchSize, buildScratchSize, vertexSize, indexSize) = str.computeBuildSize(vk, device, m_infos[iStr].structureSize);
+
+		{
+			const VkDeviceSize	alignedStrSize	= deAlign64(strSize, 256);
+			const deUint32		accStrIndex		= (iStr / batchStructCount);
+			accStrSizes[accStrIndex]	+= alignedStrSize;
+		}
+
+		if (buildScratchSize != 0)
+		{
+			const VkDeviceSize	alignedBuilsScratchSize	= deAlign64(buildScratchSize, 256);
+			const deUint32		scratchBuffIndex		= (iScratch/ batchScratchCount);
+			scratchBuffSizes[scratchBuffIndex]	+= alignedBuilsScratchSize;
+			iScratch							+= 1;
+		}
+
+		if (vertexSize != 0)
+		{
+			const VkDeviceSize	alignedVertBuffSize	= deAlign64(vertexSize, 8);
+			const deUint32		vertBuffIndex		= (iVertex / batchVertexCount);
+			vertBuffSizes[vertBuffIndex]	+= alignedVertBuffSize;
+			iVertex							+= 1;
+		}
+
+		if (indexSize != 0)
+		{
+			const VkDeviceSize	alignedIndexBuffSize	= deAlign64(indexSize, 8);
+			const deUint32		indexBuffIndex			= (iIndex / batchIndexCount);
+			indexBuffSizes[indexBuffIndex]	+= alignedIndexBuffSize;
+			iIndex							+= 1;
+		}
+	}
+
+	return accStrSizes.size()
+			+ vertBuffSizes.size()
+			+ indexBuffSizes.size()
+			+ scratchBuffSizes.size();
+}
+
+tcu::Vector<VkDeviceSize, 4> BottomLevelAccelerationStructurePool::getAllocationSizes (const DeviceInterface&		vk,
+																					   const VkDevice				device) const
+{
+	if (m_structsBuffSize)
+	{
+		return tcu::Vector<VkDeviceSize, 4>(m_structsBuffSize, m_buildsScratchSize, m_verticesSize, m_indicesSize);
+	}
+
+	VkDeviceSize strSize				= 0;
+	VkDeviceSize updateScratchSize		= 0;	static_cast<void>(updateScratchSize);		// not used yet, disabled for future implementation
+	VkDeviceSize buildScratchSize		= 0;
+	VkDeviceSize vertexSize				= 0;
+	VkDeviceSize indexSize				= 0;
+	VkDeviceSize sumStrSize				= 0;
+	VkDeviceSize sumUpdateScratchSize	= 0;	static_cast<void>(sumUpdateScratchSize);	// not used yet, disabled for future implementation
+	VkDeviceSize sumBuildScratchSize	= 0;
+	VkDeviceSize sumVertexSize			= 0;
+	VkDeviceSize sumIndexSize			= 0;
+	for (size_t i = 0; i < structCount(); ++i)
+	{
+		auto& str = *dynamic_cast<BottomLevelAccelerationStructurePoolMember*>(m_structs[i].get());
+		std::tie(strSize, updateScratchSize, buildScratchSize, vertexSize, indexSize) = str.computeBuildSize(vk, device, m_infos[i].structureSize);
+		sumStrSize				+= deAlign64(strSize, 256);
+		//sumUpdateScratchSize	+= deAlign64(updateScratchSize, 256);	not used yet, disabled for future implementation
+		sumBuildScratchSize		+= deAlign64(buildScratchSize, 256);
+		sumVertexSize			+= deAlign64(vertexSize, 8);
+		sumIndexSize			+= deAlign64(indexSize, 8);
+	}
+	return tcu::Vector<VkDeviceSize, 4>(sumStrSize, sumBuildScratchSize, sumVertexSize, sumIndexSize);
+}
+
+void BottomLevelAccelerationStructurePool::batchCreate (const DeviceInterface&		vkd,
+														const VkDevice				device,
+														Allocator&					allocator)
+{
+	batchCreateAdjust(vkd, device, allocator, negz<VkDeviceSize>(0));
+}
+
+void BottomLevelAccelerationStructurePool::batchCreateAdjust (const DeviceInterface&	vkd,
+															  const VkDevice			device,
+															  Allocator&				allocator,
+															  const VkDeviceSize		maxBufferSize)
+{
+	// Prevent a programmer from calling this method more than once.
+	if (m_createOnce) DE_ASSERT(0);
+
+	m_createOnce = true;
+	DE_ASSERT(m_structs.size() != 0);
+
+	auto createAccellerationStructureBuffer = [&](VkDeviceSize bufferSize) -> typename std::add_pointer<BufferWithMemory>::type
+	{
+		BufferWithMemory* res = nullptr;
+		const VkBufferCreateInfo bci = makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+
+		if (m_tryCachedMemory) try
+		{
+			res = new BufferWithMemory(vkd, device, allocator, bci, MemoryRequirement::Cached | MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress);
+		}
+		catch (const tcu::NotSupportedError&)
+		{
+			res = nullptr;
+		}
+
+		return (nullptr != res)
+				? res
+				: (new BufferWithMemory(vkd, device, allocator, bci, MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
+	};
+
+	auto createDeviceScratchBuffer = [&](VkDeviceSize bufferSize) -> de::SharedPtr<BufferWithMemory>
+	{
+		const VkBufferCreateInfo bci = makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+		BufferWithMemory* p = new BufferWithMemory(vkd, device, allocator, bci, MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress);
+		return de::SharedPtr<BufferWithMemory>(p);
+	};
+
+	std::map<deUint32, VkDeviceSize>	accStrSizes;
+	std::map<deUint32, VkDeviceSize>	vertBuffSizes;
+	std::map<deUint32, VkDeviceSize>	indexBuffSizes;
+
+	const deUint32	allStructsCount		= structCount();
+	deUint32		iterKey				= 0;
+
+	deUint32		batchStructCount	= m_batchStructCount;
+	deUint32		batchVertexCount	= m_batchGeomCount ? m_batchGeomCount : m_batchStructCount;
+	deUint32		batchIndexCount		= batchVertexCount;
+
+	if (!isnegz(maxBufferSize))
+	{
+		deUint32	batches[4];
+		adjustBatchCount(vkd, device, m_structs, m_infos, maxBufferSize, batches);
+		batchStructCount	= batches[0];
+		// batches[1]: batchScratchCount
+		batchVertexCount	= batches[2];
+		batchIndexCount		= batches[3];
+	}
+
+	deUint32		iStr				= 0;
+	deUint32		iVertex				= 0;
+	deUint32		iIndex				= 0;
+
+	VkDeviceSize	strSize				= 0;
+	VkDeviceSize	updateScratchSize	= 0;
+	VkDeviceSize	buildScratchSize	= 0;
+	VkDeviceSize	maxBuildScratchSize	= 0;
+	VkDeviceSize	vertexSize			= 0;
+	VkDeviceSize	indexSize			= 0;
+
+	VkDeviceSize	strOffset			= 0;
+	VkDeviceSize	vertexOffset		= 0;
+	VkDeviceSize	indexOffset			= 0;
+
+	deUint32		hostStructCount		= 0;
+	deUint32		deviceStructCount	= 0;
+
+	for (; iStr < allStructsCount; ++iStr)
+	{
+		BottomLevelAccelerationStructurePoolMember::Info info{};
+		auto& str = *dynamic_cast<BottomLevelAccelerationStructurePoolMember*>(m_structs[iStr].get());
+		std::tie(strSize, updateScratchSize, buildScratchSize, vertexSize, indexSize) = str.computeBuildSize(vkd, device, m_infos[iStr].structureSize);
+
+		++(str.getBuildType() == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR ? hostStructCount : deviceStructCount);
+
+		{
+			const VkDeviceSize	alignedStrSize	= deAlign64(strSize, 256);
+			const deUint32		accStrIndex		= (iStr / batchStructCount);
+			if (iStr != 0 && (iStr % batchStructCount) == 0)
+			{
+				strOffset				= 0;
+			}
+
+			info.accStrIndex			= accStrIndex;
+			info.accStrOffset			= strOffset;
+			accStrSizes[accStrIndex]	+= alignedStrSize;
+			strOffset					+= alignedStrSize;
+			m_structsBuffSize			+= alignedStrSize;
+		}
+
+		if (buildScratchSize != 0)
+		{
+			maxBuildScratchSize = std::max(maxBuildScratchSize, make_unsigned(deAlign64(buildScratchSize, 256u)));
+
+			info.buildScratchBuffIndex		= 0;
+			info.buildScratchBuffOffset		= 0;
+		}
+
+		if (vertexSize != 0)
+		{
+			const VkDeviceSize	alignedVertBuffSize	= deAlign64(vertexSize, 8);
+			const deUint32		vertBuffIndex		= (iVertex / batchVertexCount);
+			if (iVertex != 0 && (iVertex % batchVertexCount) == 0)
+			{
+				vertexOffset				= 0;
+			}
+
+			info.vertBuffIndex				= vertBuffIndex;
+			info.vertBuffOffset				= vertexOffset;
+			vertBuffSizes[vertBuffIndex]	+= alignedVertBuffSize;
+			vertexOffset					+= alignedVertBuffSize;
+			m_verticesSize					+= alignedVertBuffSize;
+			iVertex							+= 1;
+		}
+
+		if (indexSize != 0)
+		{
+			const VkDeviceSize	alignedIndexBuffSize	= deAlign64(indexSize, 8);
+			const deUint32		indexBuffIndex			= (iIndex / batchIndexCount);
+			if (iIndex != 0 && (iIndex % batchIndexCount) == 0)
+			{
+				indexOffset					= 0;
+			}
+
+			info.indexBuffIndex				= indexBuffIndex;
+			info.indexBuffOffset			= indexOffset;
+			indexBuffSizes[indexBuffIndex]	+= alignedIndexBuffSize;
+			indexOffset						+= alignedIndexBuffSize;
+			m_indicesSize					+= alignedIndexBuffSize;
+			iIndex							+= 1;
+		}
+
+		str.preCreateSetSizesAndOffsets(info, strSize, updateScratchSize, buildScratchSize);
+	}
+
+	for (iterKey = 0; iterKey < static_cast<deUint32>(accStrSizes.size()); ++iterKey)
+	{
+		m_impl->m_accellerationStructureBuffers.emplace_back(createAccellerationStructureBuffer(accStrSizes.at(iterKey)));
+	}
+	for (iterKey = 0; iterKey < static_cast<deUint32>(vertBuffSizes.size()); ++iterKey)
+	{
+		m_impl->m_vertexBuffers.emplace_back(createVertexBuffer(vkd, device, allocator, vertBuffSizes.at(iterKey)));
+	}
+	for (iterKey = 0; iterKey < static_cast<deUint32>(indexBuffSizes.size()); ++iterKey)
+	{
+		m_impl->m_indexBuffers.emplace_back(createIndexBuffer(vkd, device, allocator, indexBuffSizes.at(iterKey)));
+	}
+
+	if (maxBuildScratchSize)
+	{
+		if (hostStructCount)	m_impl->m_hostScratchBuffer->resize(static_cast<size_t>(maxBuildScratchSize));
+		if (deviceStructCount)	m_impl->m_deviceScratchBuffer = createDeviceScratchBuffer(maxBuildScratchSize);
+
+		m_buildsScratchSize = maxBuildScratchSize;
+	}
+
+	for (iterKey = 0; iterKey < allStructsCount; ++iterKey)
+	{
+		auto& str = *dynamic_cast<BottomLevelAccelerationStructurePoolMember*>(m_structs[iterKey].get());
+		str.createAccellerationStructure(vkd, device, m_infos[iterKey].deviceAddress);
+	}
+}
+
+void BottomLevelAccelerationStructurePool::batchBuild (const DeviceInterface&	vk,
+													   const VkDevice			device,
+													   VkCommandBuffer			cmdBuffer)
+{
+	for (const auto& str : m_structs)
+	{
+		str->build(vk, device, cmdBuffer);
+	}
+}
+
+void BottomLevelAccelerationStructurePool::batchBuild (const DeviceInterface&	vk,
+													   const VkDevice			device,
+													   VkCommandPool			cmdPool,
+													   VkQueue					queue)
+{
+	const deUint32			limit	= 10000u;
+	const deUint32			count	= structCount();
+	std::vector<BlasPtr>	buildingOnDevice;
+
+	auto buildOnDevice = [&]() -> void
+	{
+		Move<VkCommandBuffer>	cmd = allocateCommandBuffer(vk, device, cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+		beginCommandBuffer(vk, *cmd, 0u);
+			for (const auto& str : buildingOnDevice)
+				str->build(vk, device, *cmd);
+		endCommandBuffer(vk, *cmd);
+
+		submitCommandsAndWait(vk, device, queue, *cmd);
+		vk.resetCommandPool(device, cmdPool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
+	};
+
+	buildingOnDevice.reserve(limit);
+	for (deUint32 i = 0; i < count; ++i)
+	{
+		auto str = m_structs[i];
+
+		if (str->getBuildType() == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR)
+			str->build(vk, device, DE_NULL);
+		else
+			buildingOnDevice.emplace_back(str);
+
+		if ( buildingOnDevice.size() == limit || (count - 1) == i)
+		{
+			buildOnDevice();
+			buildingOnDevice.clear();
+		}
+	}
+}
+
+auto BottomLevelAccelerationStructurePoolMember::computeBuildSize (const DeviceInterface&	vk,
+																   const VkDevice			device,
+																   const VkDeviceSize		strSize) const
+																   //              accStrSize,updateScratch,buildScratch, vertexSize, indexSize
+																   -> std::tuple<VkDeviceSize, VkDeviceSize,VkDeviceSize,VkDeviceSize,VkDeviceSize>
+{
+	DE_ASSERT(!m_geometriesData.empty() !=  !(strSize == 0)); // logical xor
+
+	std::tuple<VkDeviceSize,VkDeviceSize,VkDeviceSize,VkDeviceSize,VkDeviceSize> result(deAlign64(strSize, 256), 0, 0, 0, 0);
+
+	if (!m_geometriesData.empty())
+	{
+		std::vector<VkAccelerationStructureGeometryKHR>			accelerationStructureGeometriesKHR;
+		std::vector<VkAccelerationStructureGeometryKHR*>		accelerationStructureGeometriesKHRPointers;
+		std::vector<VkAccelerationStructureBuildRangeInfoKHR>	accelerationStructureBuildRangeInfoKHR;
+		std::vector<VkAccelerationStructureTrianglesOpacityMicromapEXT> accelerationStructureGeometryMicromapsEXT;
+		std::vector<deUint32>									maxPrimitiveCounts;
+		prepareGeometries(vk, device, accelerationStructureGeometriesKHR, accelerationStructureGeometriesKHRPointers, accelerationStructureBuildRangeInfoKHR, accelerationStructureGeometryMicromapsEXT, maxPrimitiveCounts);
+
+		const VkAccelerationStructureGeometryKHR*				accelerationStructureGeometriesKHRPointer	= accelerationStructureGeometriesKHR.data();
+		const VkAccelerationStructureGeometryKHR* const*		accelerationStructureGeometry				= accelerationStructureGeometriesKHRPointers.data();
+
+		VkAccelerationStructureBuildGeometryInfoKHR	accelerationStructureBuildGeometryInfoKHR	=
+		{
+			VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR,			//  VkStructureType										sType;
+			DE_NULL,																	//  const void*											pNext;
+			VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,							//  VkAccelerationStructureTypeKHR						type;
+			m_buildFlags,																//  VkBuildAccelerationStructureFlagsKHR				flags;
+			VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR,								//  VkBuildAccelerationStructureModeKHR					mode;
+			DE_NULL,																	//  VkAccelerationStructureKHR							srcAccelerationStructure;
+			DE_NULL,																	//  VkAccelerationStructureKHR							dstAccelerationStructure;
+			static_cast<deUint32>(accelerationStructureGeometriesKHR.size()),			//  deUint32											geometryCount;
+			m_useArrayOfPointers ? DE_NULL : accelerationStructureGeometriesKHRPointer,	//  const VkAccelerationStructureGeometryKHR*			pGeometries;
+			m_useArrayOfPointers ? accelerationStructureGeometry : DE_NULL,				//  const VkAccelerationStructureGeometryKHR* const*	ppGeometries;
+			makeDeviceOrHostAddressKHR(DE_NULL)											//  VkDeviceOrHostAddressKHR							scratchData;
+		};
+
+		VkAccelerationStructureBuildSizesInfoKHR sizeInfo =
+		{
+			VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR,	//  VkStructureType	sType;
+			DE_NULL,														//  const void*		pNext;
+			0,																//  VkDeviceSize	accelerationStructureSize;
+			0,																//  VkDeviceSize	updateScratchSize;
+			0																//  VkDeviceSize	buildScratchSize;
+		};
+
+		vk.getAccelerationStructureBuildSizesKHR(device, m_buildType, &accelerationStructureBuildGeometryInfoKHR, maxPrimitiveCounts.data(), &sizeInfo);
+
+		std::get<0>(result) = sizeInfo.accelerationStructureSize;
+		std::get<1>(result) = sizeInfo.updateScratchSize;
+		std::get<2>(result) = sizeInfo.buildScratchSize;
+		std::get<3>(result) = getVertexBufferSize(m_geometriesData);
+		std::get<4>(result) = getIndexBufferSize(m_geometriesData);
+	}
+
+	return result;
+}
+
+void BottomLevelAccelerationStructurePoolMember::preCreateSetSizesAndOffsets (const Info&			info,
+																			  const VkDeviceSize	accStrSize,
+																			  const VkDeviceSize	updateScratchSize,
+																			  const VkDeviceSize	buildScratchSize)
+{
+	m_info				= info;
+	m_structureSize		= accStrSize;
+	m_updateScratchSize	= updateScratchSize;
+	m_buildScratchSize	= buildScratchSize;
+}
+
+void BottomLevelAccelerationStructurePoolMember::createAccellerationStructure (const DeviceInterface&	vk,
+																			   const VkDevice			device,
+																			   VkDeviceAddress			deviceAddress)
+{
+	const VkAccelerationStructureTypeKHR		structureType						= (m_createGeneric
+																					   ? VK_ACCELERATION_STRUCTURE_TYPE_GENERIC_KHR
+																					   : VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
+	const VkAccelerationStructureCreateInfoKHR	accelerationStructureCreateInfoKHR
+	{
+		VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR,						//  VkStructureType											sType;
+		DE_NULL,																		//  const void*												pNext;
+		m_createFlags,																	//  VkAccelerationStructureCreateFlagsKHR					createFlags;
+		getAccelerationStructureBuffer()->get(),										//  VkBuffer												buffer;
+		getAccelerationStructureBufferOffset(),											//  VkDeviceSize											offset;
+		m_structureSize,																//  VkDeviceSize											size;
+		structureType,																	//  VkAccelerationStructureTypeKHR							type;
+		deviceAddress																	//  VkDeviceAddress											deviceAddress;
+	};
+
+	m_accelerationStructureKHR	= createAccelerationStructureKHR(vk, device, &accelerationStructureCreateInfoKHR, DE_NULL);
 }
 
 TopLevelAccelerationStructure::~TopLevelAccelerationStructure ()
@@ -1530,9 +2270,16 @@ void TopLevelAccelerationStructure::addInstance (de::SharedPtr<BottomLevelAccele
 	m_instanceData.push_back(InstanceData(matrix, instanceCustomIndex, mask, instanceShaderBindingTableRecordOffset, flags));
 }
 
-VkDeviceSize TopLevelAccelerationStructure::getStructureSize () const
+VkAccelerationStructureBuildSizesInfoKHR TopLevelAccelerationStructure::getStructureBuildSizes () const
 {
-	return m_structureSize;
+	return
+	{
+		VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR,	//  VkStructureType	sType;
+		DE_NULL,														//  const void*		pNext;
+		m_structureSize,												//  VkDeviceSize	accelerationStructureSize;
+		m_updateScratchSize,											//  VkDeviceSize	updateScratchSize;
+		m_buildScratchSize												//  VkDeviceSize	buildScratchSize;
+	};
 }
 
 void TopLevelAccelerationStructure::createAndBuild (const DeviceInterface&	vk,
@@ -1554,7 +2301,7 @@ void TopLevelAccelerationStructure::createAndCopyFrom (const DeviceInterface&			
 													   VkDeviceAddress						deviceAddress)
 {
 	DE_ASSERT(accelerationStructure != NULL);
-	VkDeviceSize copiedSize = compactCopySize > 0u ? compactCopySize : accelerationStructure->getStructureSize();
+	VkDeviceSize copiedSize = compactCopySize > 0u ? compactCopySize : accelerationStructure->getStructureBuildSizes().accelerationStructureSize;
 	DE_ASSERT(copiedSize != 0u);
 
 	create(vk, device, allocator, copiedSize, deviceAddress);
@@ -1579,23 +2326,27 @@ BufferWithMemory* createInstanceBuffer (const DeviceInterface&											vk,
 										const VkDevice													device,
 										Allocator&														allocator,
 										std::vector<de::SharedPtr<BottomLevelAccelerationStructure> >	bottomLevelInstances,
-										std::vector<InstanceData>										instanceData)
+										std::vector<InstanceData>										instanceData,
+										const bool														tryCachedMemory)
 {
 	DE_ASSERT(bottomLevelInstances.size() != 0);
 	DE_ASSERT(bottomLevelInstances.size() == instanceData.size());
 	DE_UNREF(instanceData);
 
+	BufferWithMemory*			result				= nullptr;
 	const VkDeviceSize			bufferSizeBytes		= bottomLevelInstances.size() * sizeof(VkAccelerationStructureInstanceKHR);
 	const VkBufferCreateInfo	bufferCreateInfo	= makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
-	try
+	if (tryCachedMemory) try
 	{
-		return new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::Cached | MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress);
+		result = new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::Cached | MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress);
 	}
 	catch (const tcu::NotSupportedError&)
 	{
-		// retry without Cached flag
-		return new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress);
+		result = nullptr;
 	}
+	return result
+			? result
+			: new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress);
 }
 
 void updateSingleInstance (const DeviceInterface&					vk,
@@ -1684,6 +2435,7 @@ public:
 	void													setBuildType										(const VkAccelerationStructureBuildTypeKHR		buildType) override;
 	void													setCreateFlags										(const VkAccelerationStructureCreateFlagsKHR	createFlags) override;
 	void													setCreateGeneric									(bool											createGeneric) override;
+	void													setCreationBufferUnbounded							(bool											creationBufferUnbounded) override;
 	void													setBuildFlags										(const VkBuildAccelerationStructureFlagsKHR		buildFlags) override;
 	void													setBuildWithoutPrimitives							(bool											buildWithoutPrimitives) override;
 	void													setInactiveInstances								(bool											inactiveInstances) override;
@@ -1694,16 +2446,24 @@ public:
 																												 const VkDeviceSize								indirectBufferOffset,
 																												 const deUint32									indirectBufferStride) override;
 	void													setUsePPGeometries									(const bool										usePPGeometries) override;
+	void													setTryCachedMemory									(const bool										tryCachedMemory) override;
 	VkBuildAccelerationStructureFlagsKHR					getBuildFlags										() const override;
 
+	void													getCreationSizes									(const DeviceInterface&							vk,
+																												 const VkDevice									device,
+																												 const VkDeviceSize								structureSize,
+																												 CreationSizes&									sizes) override;
 	void													create												(const DeviceInterface&							vk,
 																												 const VkDevice									device,
 																												 Allocator&										allocator,
 																												 VkDeviceSize									structureSize,
-																												 VkDeviceAddress								deviceAddress = 0u ) override;
+																												 VkDeviceAddress								deviceAddress			= 0u,
+																												 const void*									pNext					= DE_NULL,
+																												 const MemoryRequirement&						addMemoryRequirement	= MemoryRequirement::Any) override;
 	void													build												(const DeviceInterface&							vk,
 																												 const VkDevice									device,
-																												 const VkCommandBuffer							cmdBuffer) override;
+																												 const VkCommandBuffer							cmdBuffer,
+																												 TopLevelAccelerationStructure*					srcAccelerationStructure = DE_NULL) override;
 	void													copyFrom											(const DeviceInterface&							vk,
 																												 const VkDevice									device,
 																												 const VkCommandBuffer							cmdBuffer,
@@ -1738,6 +2498,7 @@ protected:
 	VkAccelerationStructureBuildTypeKHR						m_buildType;
 	VkAccelerationStructureCreateFlagsKHR					m_createFlags;
 	bool													m_createGeneric;
+	bool													m_creationBufferUnbounded;
 	VkBuildAccelerationStructureFlagsKHR					m_buildFlags;
 	bool													m_buildWithoutPrimitives;
 	bool													m_inactiveInstances;
@@ -1754,6 +2515,7 @@ protected:
 	VkDeviceSize											m_indirectBufferOffset;
 	deUint32												m_indirectBufferStride;
 	bool													m_usePPGeometries;
+	bool													m_tryCachedMemory;
 
 
 	void													prepareInstances									(const DeviceInterface&							vk,
@@ -1789,6 +2551,7 @@ TopLevelAccelerationStructureKHR::TopLevelAccelerationStructureKHR ()
 	, m_buildType					(VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
 	, m_createFlags					(0u)
 	, m_createGeneric				(false)
+	, m_creationBufferUnbounded		(false)
 	, m_buildFlags					(0u)
 	, m_buildWithoutPrimitives		(false)
 	, m_inactiveInstances			(false)
@@ -1804,6 +2567,7 @@ TopLevelAccelerationStructureKHR::TopLevelAccelerationStructureKHR ()
 	, m_indirectBufferOffset		(0)
 	, m_indirectBufferStride		(0)
 	, m_usePPGeometries				(false)
+	, m_tryCachedMemory				(true)
 {
 }
 
@@ -1824,6 +2588,11 @@ void TopLevelAccelerationStructureKHR::setCreateFlags (const VkAccelerationStruc
 void TopLevelAccelerationStructureKHR::setCreateGeneric (bool createGeneric)
 {
 	m_createGeneric = createGeneric;
+}
+
+void TopLevelAccelerationStructureKHR::setCreationBufferUnbounded (bool creationBufferUnbounded)
+{
+	m_creationBufferUnbounded = creationBufferUnbounded;
 }
 
 void TopLevelAccelerationStructureKHR::setInactiveInstances (bool inactiveInstances)
@@ -1858,6 +2627,11 @@ void TopLevelAccelerationStructureKHR::setUsePPGeometries (const bool usePPGeome
 	m_usePPGeometries = usePPGeometries;
 }
 
+void TopLevelAccelerationStructureKHR::setTryCachedMemory (const bool tryCachedMemory)
+{
+	m_tryCachedMemory = tryCachedMemory;
+}
+
 void TopLevelAccelerationStructureKHR::setIndirectBuildParameters (const VkBuffer		indirectBuffer,
 																   const VkDeviceSize	indirectBufferOffset,
 																   const deUint32		indirectBufferStride)
@@ -1872,11 +2646,81 @@ VkBuildAccelerationStructureFlagsKHR TopLevelAccelerationStructureKHR::getBuildF
 	return m_buildFlags;
 }
 
+VkDeviceSize TopLevelAccelerationStructure::CreationSizes::sum () const
+{
+	return structure + updateScratch + buildScratch + instancePointers + instancesBuffer;
+}
+
+void TopLevelAccelerationStructureKHR::getCreationSizes (const DeviceInterface&	vk,
+														 const VkDevice			device,
+														 const VkDeviceSize		structureSize,
+														 CreationSizes&			sizes)
+{
+	// AS may be built from geometries using vkCmdBuildAccelerationStructureKHR / vkBuildAccelerationStructureKHR
+	// or may be copied/compacted/deserialized from other AS ( in this case AS does not need geometries, but it needs to know its size before creation ).
+	DE_ASSERT(!m_bottomLevelInstances.empty() != !(structureSize == 0)); // logical xor
+
+	if (structureSize == 0)
+	{
+		VkAccelerationStructureGeometryKHR		accelerationStructureGeometryKHR;
+		const auto								accelerationStructureGeometryKHRPtr = &accelerationStructureGeometryKHR;
+		std::vector<deUint32>					maxPrimitiveCounts;
+		prepareInstances(vk, device, accelerationStructureGeometryKHR, maxPrimitiveCounts);
+
+		VkAccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfoKHR		=
+		{
+			VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR,						//  VkStructureType										sType;
+			DE_NULL,																				//  const void*											pNext;
+			VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR,											//  VkAccelerationStructureTypeKHR						type;
+			m_buildFlags,																			//  VkBuildAccelerationStructureFlagsKHR				flags;
+			VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR,											//  VkBuildAccelerationStructureModeKHR					mode;
+			DE_NULL,																				//  VkAccelerationStructureKHR							srcAccelerationStructure;
+			DE_NULL,																				//  VkAccelerationStructureKHR							dstAccelerationStructure;
+			1u,																						//  deUint32											geometryCount;
+			(m_usePPGeometries ? nullptr : &accelerationStructureGeometryKHR),						//  const VkAccelerationStructureGeometryKHR*			pGeometries;
+			(m_usePPGeometries ? &accelerationStructureGeometryKHRPtr : nullptr),					//  const VkAccelerationStructureGeometryKHR* const*	ppGeometries;
+			makeDeviceOrHostAddressKHR(DE_NULL)														//  VkDeviceOrHostAddressKHR							scratchData;
+		};
+
+		VkAccelerationStructureBuildSizesInfoKHR	sizeInfo =
+		{
+			VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR,	//  VkStructureType	sType;
+			DE_NULL,														//  const void*		pNext;
+			0,																//  VkDeviceSize	accelerationStructureSize;
+			0,																//  VkDeviceSize	updateScratchSize;
+			0																//  VkDeviceSize	buildScratchSize;
+		};
+
+		vk.getAccelerationStructureBuildSizesKHR(device, m_buildType, &accelerationStructureBuildGeometryInfoKHR, maxPrimitiveCounts.data(), &sizeInfo);
+
+		sizes.structure		= sizeInfo.accelerationStructureSize;
+		sizes.updateScratch	= sizeInfo.updateScratchSize;
+		sizes.buildScratch	= sizeInfo.buildScratchSize;
+	}
+	else
+	{
+		sizes.structure		= structureSize;
+		sizes.updateScratch	= 0u;
+		sizes.buildScratch	= 0u;
+	}
+
+	sizes.instancePointers	= 0u;
+	if (m_useArrayOfPointers)
+	{
+		const size_t	pointerSize = (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR) ? sizeof(VkDeviceOrHostAddressConstKHR::deviceAddress) : sizeof(VkDeviceOrHostAddressConstKHR::hostAddress);
+		sizes.instancePointers		= static_cast<VkDeviceSize>(m_bottomLevelInstances.size() * pointerSize);
+	}
+
+	sizes.instancesBuffer = m_bottomLevelInstances.empty() ? 0u : m_bottomLevelInstances.size() * sizeof(VkAccelerationStructureInstanceKHR);
+}
+
 void TopLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 											   const VkDevice						device,
 											   Allocator&							allocator,
 											   VkDeviceSize							structureSize,
-											   VkDeviceAddress						deviceAddress)
+											   VkDeviceAddress						deviceAddress,
+											   const void*							pNext,
+											   const MemoryRequirement&				addMemoryRequirement)
 {
 	// AS may be built from geometries using vkCmdBuildAccelerationStructureKHR / vkBuildAccelerationStructureKHR
 	// or may be copied/compacted/deserialized from other AS ( in this case AS does not need geometries, but it needs to know its size before creation ).
@@ -1927,15 +2771,18 @@ void TopLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 	}
 
 	{
-		const VkBufferCreateInfo		bufferCreateInfo = makeBufferCreateInfo(m_structureSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+		const VkBufferCreateInfo	bufferCreateInfo	= makeBufferCreateInfo(m_structureSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+		const MemoryRequirement		memoryRequirement	= addMemoryRequirement | MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress;
+		const bool					bindMemOnCreation	= (!m_creationBufferUnbounded);
+
 		try
 		{
-			m_accelerationStructureBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::Cached | MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
+			m_accelerationStructureBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, (MemoryRequirement::Cached | memoryRequirement), bindMemOnCreation));
 		}
 		catch (const tcu::NotSupportedError&)
 		{
 			// retry without Cached flag
-			m_accelerationStructureBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
+			m_accelerationStructureBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, memoryRequirement, bindMemOnCreation));
 		}
 	}
 
@@ -1946,7 +2793,7 @@ void TopLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 		const VkAccelerationStructureCreateInfoKHR	accelerationStructureCreateInfoKHR	=
 		{
 			VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR,	//  VkStructureType											sType;
-			DE_NULL,													//  const void*												pNext;
+			pNext,														//  const void*												pNext;
 			m_createFlags,												//  VkAccelerationStructureCreateFlagsKHR					createFlags;
 			m_accelerationStructureBuffer->get(),						//  VkBuffer												buffer;
 			0u,															//  VkDeviceSize											offset;
@@ -1956,6 +2803,9 @@ void TopLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 		};
 
 		m_accelerationStructureKHR	= createAccelerationStructureKHR(vk, device, &accelerationStructureCreateInfoKHR, DE_NULL);
+
+		// Make sure buffer memory is always bound after creation.
+		m_accelerationStructureBuffer->bindMemory();
 	}
 
 	if (m_buildScratchSize > 0u)
@@ -1979,7 +2829,7 @@ void TopLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 	}
 
 	if(!m_bottomLevelInstances.empty())
-		m_instanceBuffer = de::MovePtr<BufferWithMemory>(createInstanceBuffer(vk, device, allocator, m_bottomLevelInstances, m_instanceData));
+		m_instanceBuffer = de::MovePtr<BufferWithMemory>(createInstanceBuffer(vk, device, allocator, m_bottomLevelInstances, m_instanceData, m_tryCachedMemory));
 }
 
 void TopLevelAccelerationStructureKHR::updateInstanceMatrix (const DeviceInterface& vk, const VkDevice device, size_t instanceIndex, const VkTransformMatrixKHR& matrix)
@@ -1999,9 +2849,10 @@ void TopLevelAccelerationStructureKHR::updateInstanceMatrix (const DeviceInterfa
 	flushMappedMemoryRange(vk, device, instancesAlloc.getMemory(), instancesAlloc.getOffset(), VK_WHOLE_SIZE);
 }
 
-void TopLevelAccelerationStructureKHR::build (const DeviceInterface&	vk,
-											  const VkDevice			device,
-											  const VkCommandBuffer		cmdBuffer)
+void TopLevelAccelerationStructureKHR::build (const DeviceInterface&			vk,
+											  const VkDevice					device,
+											  const VkCommandBuffer				cmdBuffer,
+											  TopLevelAccelerationStructure*	srcAccelerationStructure)
 {
 	DE_ASSERT(!m_bottomLevelInstances.empty());
 	DE_ASSERT(m_accelerationStructureKHR.get() != DE_NULL);
@@ -2018,14 +2869,17 @@ void TopLevelAccelerationStructureKHR::build (const DeviceInterface&	vk,
 																							? makeDeviceOrHostAddressKHR(vk, device, m_deviceScratchBuffer->get(), 0)
 																							: makeDeviceOrHostAddressKHR(m_hostScratchBuffer.data());
 
+	VkAccelerationStructureKHR				srcStructure									= (srcAccelerationStructure != DE_NULL) ? *(srcAccelerationStructure->getPtr()) : DE_NULL;
+	VkBuildAccelerationStructureModeKHR		mode											= (srcAccelerationStructure != DE_NULL) ? VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR : VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+
 	VkAccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfoKHR		=
 	{
 		VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR,						//  VkStructureType										sType;
 		DE_NULL,																				//  const void*											pNext;
 		VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR,											//  VkAccelerationStructureTypeKHR						type;
 		m_buildFlags,																			//  VkBuildAccelerationStructureFlagsKHR				flags;
-		VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR,											//  VkBuildAccelerationStructureModeKHR					mode;
-		DE_NULL,																				//  VkAccelerationStructureKHR							srcAccelerationStructure;
+		mode,																					//  VkBuildAccelerationStructureModeKHR					mode;
+		srcStructure,																			//  VkAccelerationStructureKHR							srcAccelerationStructure;
 		m_accelerationStructureKHR.get(),														//  VkAccelerationStructureKHR							dstAccelerationStructure;
 		1u,																						//  deUint32											geometryCount;
 		(m_usePPGeometries ? nullptr : &accelerationStructureGeometryKHR),						//  const VkAccelerationStructureGeometryKHR*			pGeometries;
@@ -2264,7 +3118,7 @@ void TopLevelAccelerationStructureKHR::createAndDeserializeBottoms (const Device
 	{
 		const deUint64& lookAddr	= addresses[i+1];
 		auto			end			= matches.end();
-		auto			match		= std::find_if(matches.begin(), end, [&](const std::pair<deUint64, deUint32>& item){ return item.first == lookAddr; });
+		auto			match		= std::find_if(matches.begin(), end, [&](const std::pair<deUint64, std::size_t>& item){ return item.first == lookAddr; });
 		if (match != end)
 		{
 			m_bottomLevelInstances .emplace_back(m_bottomLevelInstances[match->second]);
@@ -2547,7 +3401,7 @@ void RayTracingPipeline::addShader (VkShaderStageFlagBits					shaderStage,
 }
 
 void RayTracingPipeline::addShader (VkShaderStageFlagBits					shaderStage,
-									VkShaderModule		                    shaderModule,
+									VkShaderModule							shaderModule,
 									deUint32								group,
 									const VkSpecializationInfo*				specializationInfoPtr,
 									const VkPipelineShaderStageCreateFlags	pipelineShaderStageCreateFlags,
@@ -2630,31 +3484,47 @@ void RayTracingPipeline::addShader (VkShaderStageFlagBits					shaderStage,
 	}
 }
 
+void RayTracingPipeline::setGroupCaptureReplayHandle (uint32_t group, const void* pShaderGroupCaptureReplayHandle)
+{
+	DE_ASSERT(static_cast<size_t>(group) < m_shadersGroupCreateInfos.size());
+	m_shadersGroupCreateInfos[group].pShaderGroupCaptureReplayHandle = pShaderGroupCaptureReplayHandle;
+}
+
 void RayTracingPipeline::addLibrary (de::SharedPtr<de::MovePtr<RayTracingPipeline>> pipelineLibrary)
 {
 	m_pipelineLibraries.push_back(pipelineLibrary);
 }
 
-Move<VkPipeline> RayTracingPipeline::createPipelineKHR (const DeviceInterface&								vk,
-														const VkDevice										device,
-														const VkPipelineLayout								pipelineLayout,
-														const std::vector<de::SharedPtr<Move<VkPipeline>>>&	pipelineLibraries)
+uint32_t RayTracingPipeline::getShaderGroupCount (void)
+{
+	return de::sizeU32(m_shadersGroupCreateInfos);
+}
+
+uint32_t RayTracingPipeline::getFullShaderGroupCount (void)
+{
+	uint32_t totalCount = getShaderGroupCount();
+
+	for (const auto& lib : m_pipelineLibraries)
+		totalCount += lib->get()->getFullShaderGroupCount();
+
+	return totalCount;
+}
+
+Move<VkPipeline> RayTracingPipeline::createPipelineKHR (const DeviceInterface&			vk,
+														const VkDevice					device,
+														const VkPipelineLayout			pipelineLayout,
+														const std::vector<VkPipeline>&	pipelineLibraries,
+														const VkPipelineCache			pipelineCache)
 {
 	for (size_t groupNdx = 0; groupNdx < m_shadersGroupCreateInfos.size(); ++groupNdx)
 		DE_ASSERT(m_shadersGroupCreateInfos[groupNdx].sType == VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR);
 
-	DE_ASSERT(m_shaderCreateInfos.size() > 0);
-	DE_ASSERT(m_shadersGroupCreateInfos.size() > 0);
-
-	std::vector<VkPipeline>								vkPipelineLibraries;
-	for (auto it = begin(pipelineLibraries), eit = end(pipelineLibraries); it != eit; ++it)
-		vkPipelineLibraries.push_back( it->get()->get() );
 	VkPipelineLibraryCreateInfoKHR				librariesCreateInfo	=
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR,		//  VkStructureType	sType;
-		DE_NULL,												//  const void*		pNext;
-		deUint32(vkPipelineLibraries.size()),					//  deUint32		libraryCount;
-		dataOrNullPtr(vkPipelineLibraries)						//  VkPipeline*		pLibraries;
+		VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR,	//  VkStructureType	sType;
+		DE_NULL,											//  const void*		pNext;
+		de::sizeU32(pipelineLibraries),						//  deUint32		libraryCount;
+		de::dataOrNull(pipelineLibraries)					//  VkPipeline*		pLibraries;
 	};
 	const VkRayTracingPipelineInterfaceCreateInfoKHR	pipelineInterfaceCreateInfo		=
 	{
@@ -2665,7 +3535,7 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR (const DeviceInterface&		
 	};
 	const bool											addPipelineInterfaceCreateInfo	= m_maxPayloadSize != 0 || m_maxAttributeSize != 0;
 	const VkRayTracingPipelineInterfaceCreateInfoKHR*	pipelineInterfaceCreateInfoPtr	= addPipelineInterfaceCreateInfo ? &pipelineInterfaceCreateInfo : DE_NULL;
-	const VkPipelineLibraryCreateInfoKHR*				librariesCreateInfoPtr			= (vkPipelineLibraries.empty() ? nullptr : &librariesCreateInfo);
+	const VkPipelineLibraryCreateInfoKHR*				librariesCreateInfoPtr			= (pipelineLibraries.empty() ? nullptr : &librariesCreateInfo);
 
 	Move<VkDeferredOperationKHR>						deferredOperation;
 	if (m_deferredOperation)
@@ -2685,10 +3555,10 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR (const DeviceInterface&		
 		VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,	//  VkStructureType								sType;
 		DE_NULL,												//  const void*									pNext;
 		m_pipelineCreateFlags,									//  VkPipelineCreateFlags						flags;
-		(deUint32)m_shaderCreateInfos.size(),					//  deUint32									stageCount;
-		m_shaderCreateInfos.data(),								//  const VkPipelineShaderStageCreateInfo*		pStages;
-		(deUint32)m_shadersGroupCreateInfos.size(),				//  deUint32									groupCount;
-		m_shadersGroupCreateInfos.data(),						//  const VkRayTracingShaderGroupCreateInfoKHR*	pGroups;
+		de::sizeU32(m_shaderCreateInfos),						//  deUint32									stageCount;
+		de::dataOrNull(m_shaderCreateInfos),					//  const VkPipelineShaderStageCreateInfo*		pStages;
+		de::sizeU32(m_shadersGroupCreateInfos),					//  deUint32									groupCount;
+		de::dataOrNull(m_shadersGroupCreateInfos),				//  const VkRayTracingShaderGroupCreateInfoKHR*	pGroups;
 		m_maxRecursionDepth,									//  deUint32									maxRecursionDepth;
 		librariesCreateInfoPtr,									//  VkPipelineLibraryCreateInfoKHR*				pLibraryInfo;
 		pipelineInterfaceCreateInfoPtr,							//  VkRayTracingPipelineInterfaceCreateInfoKHR*	pLibraryInterface;
@@ -2698,16 +3568,19 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR (const DeviceInterface&		
 		0,														//  deInt32										basePipelineIndex;
 	};
 	VkPipeline											object							= DE_NULL;
-	VkResult											result							= vk.createRayTracingPipelinesKHR(device, deferredOperation.get(), DE_NULL, 1u, &pipelineCreateInfo, DE_NULL, &object);
-	Move<VkPipeline>									pipeline						(check<VkPipeline>(object), Deleter<VkPipeline>(vk, device, DE_NULL));
+	VkResult											result							= vk.createRayTracingPipelinesKHR(device, deferredOperation.get(), pipelineCache, 1u, &pipelineCreateInfo, DE_NULL, &object);
+	const bool											allowCompileRequired			= ((m_pipelineCreateFlags & VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT_EXT) != 0);
 
 	if (m_deferredOperation)
 	{
-		DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
-
+		DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS || (allowCompileRequired && result == VK_PIPELINE_COMPILE_REQUIRED));
 		finishDeferredOperation(vk, device, deferredOperation.get(), m_workerThreadCount, result == VK_OPERATION_NOT_DEFERRED_KHR);
 	}
 
+	if (allowCompileRequired && result == VK_PIPELINE_COMPILE_REQUIRED)
+		throw CompileRequiredError("createRayTracingPipelinesKHR returned VK_PIPELINE_COMPILE_REQUIRED");
+
+	Move<VkPipeline> pipeline (check<VkPipeline>(object), Deleter<VkPipeline>(vk, device, DE_NULL));
 	return pipeline;
 }
 
@@ -2717,7 +3590,21 @@ Move<VkPipeline> RayTracingPipeline::createPipeline (const DeviceInterface&					
 													 const VkPipelineLayout									pipelineLayout,
 													 const std::vector<de::SharedPtr<Move<VkPipeline>>>&	pipelineLibraries)
 {
-	return createPipelineKHR(vk, device, pipelineLayout, pipelineLibraries);
+	std::vector<VkPipeline> rawPipelines;
+	rawPipelines.reserve(pipelineLibraries.size());
+	for (const auto& lib : pipelineLibraries)
+		rawPipelines.push_back(lib.get()->get());
+
+	return createPipelineKHR(vk, device, pipelineLayout, rawPipelines);
+}
+
+Move<VkPipeline> RayTracingPipeline::createPipeline (const DeviceInterface&			vk,
+													 const VkDevice					device,
+													 const VkPipelineLayout			pipelineLayout,
+													 const std::vector<VkPipeline>&	pipelineLibraries,
+													 const VkPipelineCache			pipelineCache)
+{
+	return createPipelineKHR(vk, device, pipelineLayout, pipelineLibraries, pipelineCache);
 }
 
 std::vector<de::SharedPtr<Move<VkPipeline>>> RayTracingPipeline::createPipelineWithLibraries (const DeviceInterface&			vk,
@@ -2743,27 +3630,88 @@ std::vector<de::SharedPtr<Move<VkPipeline>>> RayTracingPipeline::createPipelineW
 	return result;
 }
 
+std::vector<uint8_t> RayTracingPipeline::getShaderGroupHandles (const DeviceInterface&		vk,
+																const VkDevice				device,
+																const VkPipeline			pipeline,
+																const deUint32				shaderGroupHandleSize,
+																const deUint32				firstGroup,
+																const deUint32				groupCount) const
+{
+	const auto				handleArraySizeBytes	= groupCount * shaderGroupHandleSize;
+	std::vector<uint8_t>	shaderHandles			(handleArraySizeBytes);
+
+	VK_CHECK(getRayTracingShaderGroupHandles(vk, device, pipeline,
+											 firstGroup, groupCount,
+											 static_cast<uintptr_t>(shaderHandles.size()), de::dataOrNull(shaderHandles)));
+
+	return shaderHandles;
+}
+
+std::vector<uint8_t> RayTracingPipeline::getShaderGroupReplayHandles (const DeviceInterface &vk,
+																	  const VkDevice device,
+																	  const VkPipeline pipeline,
+																	  const deUint32 shaderGroupHandleReplaySize,
+																	  const deUint32 firstGroup,
+																	  const deUint32 groupCount) const
+{
+	const auto				handleArraySizeBytes	= groupCount * shaderGroupHandleReplaySize;
+	std::vector<uint8_t>	shaderHandles			(handleArraySizeBytes);
+
+	VK_CHECK(getRayTracingCaptureReplayShaderGroupHandles(vk, device, pipeline,
+														  firstGroup, groupCount,
+														  static_cast<uintptr_t>(shaderHandles.size()), de::dataOrNull(shaderHandles)));
+
+	return shaderHandles;
+}
+
+de::MovePtr<BufferWithMemory> RayTracingPipeline::createShaderBindingTable	(const DeviceInterface&			vk,
+																			 const VkDevice					device,
+																			 const VkPipeline				pipeline,
+																			 Allocator&						allocator,
+																			 const deUint32&				shaderGroupHandleSize,
+																			 const deUint32					shaderGroupBaseAlignment,
+																			 const deUint32&				firstGroup,
+																			 const deUint32&				groupCount,
+																			 const VkBufferCreateFlags&		additionalBufferCreateFlags,
+																			 const VkBufferUsageFlags&		additionalBufferUsageFlags,
+																			 const MemoryRequirement&		additionalMemoryRequirement,
+																			 const VkDeviceAddress&			opaqueCaptureAddress,
+																			 const deUint32					shaderBindingTableOffset,
+																			 const deUint32					shaderRecordSize,
+																			 const void**					shaderGroupDataPtrPerGroup,
+																			 const bool						autoAlignRecords)
+{
+	const auto shaderHandles = getShaderGroupHandles(vk, device, pipeline, shaderGroupHandleSize, firstGroup, groupCount);
+	return createShaderBindingTable(vk, device, allocator,
+									shaderGroupHandleSize, shaderGroupBaseAlignment, shaderHandles,
+									additionalBufferCreateFlags, additionalBufferUsageFlags, additionalMemoryRequirement,
+									opaqueCaptureAddress,
+									shaderBindingTableOffset, shaderRecordSize, shaderGroupDataPtrPerGroup,
+									autoAlignRecords);
+}
+
 de::MovePtr<BufferWithMemory> RayTracingPipeline::createShaderBindingTable (const DeviceInterface&		vk,
 																			const VkDevice				device,
-																			const VkPipeline			pipeline,
 																			Allocator&					allocator,
-																			const deUint32&				shaderGroupHandleSize,
+																			const deUint32				shaderGroupHandleSize,
 																			const deUint32				shaderGroupBaseAlignment,
-																			const deUint32&				firstGroup,
-																			const deUint32&				groupCount,
-																			const VkBufferCreateFlags&	additionalBufferCreateFlags,
-																			const VkBufferUsageFlags&	additionalBufferUsageFlags,
+																			const std::vector<uint8_t>&	shaderHandles,
+																			const VkBufferCreateFlags	additionalBufferCreateFlags,
+																			const VkBufferUsageFlags	additionalBufferUsageFlags,
 																			const MemoryRequirement&	additionalMemoryRequirement,
-																			const VkDeviceAddress&		opaqueCaptureAddress,
+																			const VkDeviceAddress		opaqueCaptureAddress,
 																			const deUint32				shaderBindingTableOffset,
 																			const deUint32				shaderRecordSize,
-																			const void**				shaderGroupDataPtrPerGroup)
+																			const void**				shaderGroupDataPtrPerGroup,
+																			const bool					autoAlignRecords)
 {
 	DE_ASSERT(shaderGroupBaseAlignment != 0u);
 	DE_ASSERT((shaderBindingTableOffset % shaderGroupBaseAlignment) == 0);
 	DE_UNREF(shaderGroupBaseAlignment);
 
-	const deUint32							sbtSize							= shaderBindingTableOffset + groupCount * deAlign32(shaderGroupHandleSize + shaderRecordSize, shaderGroupHandleSize);
+	const auto								groupCount						= de::sizeU32(shaderHandles) / shaderGroupHandleSize;
+	const auto								totalEntrySize					= (autoAlignRecords ? (deAlign32(shaderGroupHandleSize + shaderRecordSize, shaderGroupHandleSize)) : (shaderGroupHandleSize + shaderRecordSize));
+	const deUint32							sbtSize							= shaderBindingTableOffset + groupCount * totalEntrySize;
 	const VkBufferUsageFlags				sbtFlags						= VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | additionalBufferUsageFlags;
 	VkBufferCreateInfo						sbtCreateInfo					= makeBufferCreateInfo(sbtSize, sbtFlags);
 	sbtCreateInfo.flags														|= additionalBufferCreateFlags;
@@ -2783,16 +3731,12 @@ de::MovePtr<BufferWithMemory> RayTracingPipeline::createShaderBindingTable (cons
 	de::MovePtr<BufferWithMemory>	sbtBuffer								= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, sbtCreateInfo, sbtMemRequirements));
 	vk::Allocation&					sbtAlloc								= sbtBuffer->getAllocation();
 
-	// collect shader group handles
-	std::vector<deUint8>			shaderHandles							(groupCount * shaderGroupHandleSize);
-	VK_CHECK(getRayTracingShaderGroupHandles(vk, device, pipeline, firstGroup, groupCount, groupCount * shaderGroupHandleSize, shaderHandles.data()));
-
-	// reserve place for ShaderRecordKHR after each shader handle ( ShaderRecordKHR size might be 0 ). Also take alignment into consideration
+	// Copy handles to table, leaving space for ShaderRecordKHR after each handle.
 	deUint8* shaderBegin = (deUint8*)sbtAlloc.getHostPtr() + shaderBindingTableOffset;
 	for (deUint32 idx = 0; idx < groupCount; ++idx)
 	{
-		deUint8* shaderSrcPos	= shaderHandles.data() + idx * shaderGroupHandleSize;
-		deUint8* shaderDstPos	= shaderBegin + idx * deAlign32(shaderGroupHandleSize + shaderRecordSize, shaderGroupHandleSize);
+		const deUint8*	shaderSrcPos	= shaderHandles.data() + idx * shaderGroupHandleSize;
+		deUint8*		shaderDstPos	= shaderBegin + idx * totalEntrySize;
 		deMemcpy(shaderDstPos, shaderSrcPos, shaderGroupHandleSize);
 
 		if (shaderGroupDataPtrPerGroup		!= nullptr &&
@@ -2851,20 +3795,24 @@ public:
 																		 const VkPhysicalDevice		physicalDevice);
 	virtual					~RayTracingPropertiesKHR					();
 
-	virtual deUint32		getShaderGroupHandleSize					(void)	{ return m_rayTracingPipelineProperties.shaderGroupHandleSize;						}
-	virtual deUint32		getMaxRecursionDepth						(void)	{ return m_rayTracingPipelineProperties.maxRayRecursionDepth;						}
-	virtual deUint32		getMaxShaderGroupStride						(void)	{ return m_rayTracingPipelineProperties.maxShaderGroupStride;						}
-	virtual deUint32		getShaderGroupBaseAlignment					(void)	{ return m_rayTracingPipelineProperties.shaderGroupBaseAlignment;					}
-	virtual deUint64		getMaxGeometryCount							(void)	{ return m_accelerationStructureProperties.maxGeometryCount;						}
-	virtual deUint64		getMaxInstanceCount							(void)	{ return m_accelerationStructureProperties.maxInstanceCount;						}
-	virtual deUint64		getMaxPrimitiveCount						(void)	{ return m_accelerationStructureProperties.maxPrimitiveCount;						}
-	virtual deUint32		getMaxDescriptorSetAccelerationStructures	(void)	{ return m_accelerationStructureProperties.maxDescriptorSetAccelerationStructures;	}
-	deUint32				getMaxRayDispatchInvocationCount			(void)	{ return m_rayTracingPipelineProperties.maxRayDispatchInvocationCount;				}
-	deUint32				getMaxRayHitAttributeSize					(void)	{ return m_rayTracingPipelineProperties.maxRayHitAttributeSize;						}
+	uint32_t		getShaderGroupHandleSize					(void)	override { return m_rayTracingPipelineProperties.shaderGroupHandleSize;						}
+	uint32_t		getShaderGroupHandleAlignment				(void)	override { return m_rayTracingPipelineProperties.shaderGroupHandleAlignment;				}
+	deUint32		getShaderGroupHandleCaptureReplaySize		(void)	override { return m_rayTracingPipelineProperties.shaderGroupHandleCaptureReplaySize;		}
+	uint32_t		getMaxRecursionDepth						(void)	override { return m_rayTracingPipelineProperties.maxRayRecursionDepth;						}
+	uint32_t		getMaxShaderGroupStride						(void)	override { return m_rayTracingPipelineProperties.maxShaderGroupStride;						}
+	uint32_t		getShaderGroupBaseAlignment					(void)	override { return m_rayTracingPipelineProperties.shaderGroupBaseAlignment;					}
+	uint64_t		getMaxGeometryCount							(void)	override { return m_accelerationStructureProperties.maxGeometryCount;						}
+	uint64_t		getMaxInstanceCount							(void)	override { return m_accelerationStructureProperties.maxInstanceCount;						}
+	uint64_t		getMaxPrimitiveCount						(void)	override { return m_accelerationStructureProperties.maxPrimitiveCount;						}
+	uint32_t		getMaxDescriptorSetAccelerationStructures	(void)	override { return m_accelerationStructureProperties.maxDescriptorSetAccelerationStructures;	}
+	uint32_t		getMaxRayDispatchInvocationCount			(void)	override { return m_rayTracingPipelineProperties.maxRayDispatchInvocationCount;				}
+	uint32_t		getMaxRayHitAttributeSize					(void)	override { return m_rayTracingPipelineProperties.maxRayHitAttributeSize;					}
+	uint32_t		getMaxMemoryAllocationCount					(void)	override { return m_maxMemoryAllocationCount;												}
 
 protected:
 	VkPhysicalDeviceAccelerationStructurePropertiesKHR	m_accelerationStructureProperties;
 	VkPhysicalDeviceRayTracingPipelinePropertiesKHR		m_rayTracingPipelineProperties;
+	deUint32											m_maxMemoryAllocationCount;
 };
 
 RayTracingPropertiesKHR::~RayTracingPropertiesKHR ()
@@ -2877,6 +3825,7 @@ RayTracingPropertiesKHR::RayTracingPropertiesKHR (const InstanceInterface&	vki,
 {
 	m_accelerationStructureProperties	= getPhysicalDeviceExtensionProperties(vki, physicalDevice);
 	m_rayTracingPipelineProperties		= getPhysicalDeviceExtensionProperties(vki, physicalDevice);
+	m_maxMemoryAllocationCount			= getPhysicalDeviceProperties(vki, physicalDevice).limits.maxMemoryAllocationCount;
 }
 
 de::MovePtr<RayTracingProperties> makeRayTracingProperties (const InstanceInterface&	vki,
@@ -2970,5 +3919,30 @@ void cmdTraceRaysIndirect (const DeviceInterface&					vk,
 								   callableShaderBindingTableRegion,
 								   indirectDeviceAddress);
 }
+
+static inline void cmdTraceRaysIndirect2KHR (const DeviceInterface&	vk,
+											VkCommandBuffer			commandBuffer,
+											VkDeviceAddress			indirectDeviceAddress )
+{
+	DE_ASSERT(indirectDeviceAddress != 0);
+
+	return vk.cmdTraceRaysIndirect2KHR(commandBuffer, indirectDeviceAddress);
+}
+
+void cmdTraceRaysIndirect2	(const DeviceInterface&	vk,
+							 VkCommandBuffer		commandBuffer,
+							 VkDeviceAddress		indirectDeviceAddress)
+{
+	return cmdTraceRaysIndirect2KHR(vk, commandBuffer, indirectDeviceAddress);
+}
+
+#else
+
+deUint32 rayTracingDefineAnything()
+{
+	return 0;
+}
+
+#endif // CTS_USES_VULKANSC
 
 } // vk

@@ -204,7 +204,9 @@ tcu::TestStatus WorkgroupStorageTestInstance::iterate (void)
 
 	de::MovePtr<tcu::Texture2D>				texture2D			= createTestTexture2D();
 	const tcu::Sampler						refSampler			= tcu::Sampler(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE,
-																			   tcu::Sampler::NEAREST, tcu::Sampler::NEAREST);
+																			   tcu::Sampler::NEAREST, tcu::Sampler::NEAREST,
+																			   00.0f /* LOD threshold */, true /* normalized coords */, tcu::Sampler::COMPAREMODE_NONE,
+																			   0 /* cmp channel */, tcu::Vec4(0.0f) /* border color */, true /* seamless cube map */);
 
 	vk::Unique<vk::VkShaderModule>			computeShader		(vk::createShaderModule(vk, device, ctx.getBinaryCollection().get("comp"), 0));
 
@@ -300,7 +302,7 @@ tcu::TestStatus WorkgroupStorageTestInstance::iterate (void)
 	// Create compute commands & submit
 	{
 		const vk::Unique<vk::VkFence>		fence		(vk::createFence(vk, device));
-		vk::Unique<vk::VkPipeline>			pipeline	(makeComputePipeline(vk, device, *pipelineLayout, *computeShader, DE_NULL));
+		vk::Unique<vk::VkPipeline>			pipeline	(makeComputePipeline(vk, device, *pipelineLayout, *computeShader));
 		vk::Unique<vk::VkCommandBuffer>		cmdBuffer	(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 		beginCommandBuffer(vk, *cmdBuffer);

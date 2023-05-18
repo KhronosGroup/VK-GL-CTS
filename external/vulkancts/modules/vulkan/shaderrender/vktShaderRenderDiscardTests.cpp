@@ -88,7 +88,13 @@ ShaderDiscardCaseInstance::ShaderDiscardCaseInstance (Context&					context,
 																					tcu::Sampler::CLAMP_TO_EDGE,
 																					tcu::Sampler::CLAMP_TO_EDGE,
 																					tcu::Sampler::LINEAR,
-																					tcu::Sampler::LINEAR)));
+																					tcu::Sampler::LINEAR,
+																					0.0f,
+																					true,
+																					tcu::Sampler::COMPAREMODE_NONE,
+																					0,
+																					tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),
+																					true)));
 		m_textures.push_back(brickTexture);
 	}
 }
@@ -120,7 +126,9 @@ public:
 private:
 	const bool				m_usesTexture;
 	const bool				m_fuzzyCompare;
+#ifndef CTS_USES_VULKANSC
 	const bool				m_demote;
+#endif // CTS_USES_VULKANSC
 };
 
 ShaderDiscardCase::ShaderDiscardCase (tcu::TestContext&		testCtx,
@@ -134,8 +142,14 @@ ShaderDiscardCase::ShaderDiscardCase (tcu::TestContext&		testCtx,
 	: ShaderRenderCase	(testCtx, name, description, false, evalFunc, new SamplerUniformSetup(usesTexture), DE_NULL)
 	, m_usesTexture		(usesTexture)
 	, m_fuzzyCompare	(fuzzyCompare)
-	, m_demote			(demote)
+#ifndef CTS_USES_VULKANSC
+	, m_demote(demote)
+#endif // CTS_USES_VULKANSC
 {
+#ifdef CTS_USES_VULKANSC
+	DE_UNREF(demote);
+#endif // CTS_USES_VULKANSC
+
 	m_fragShaderSource	= shaderSource;
 	m_vertShaderSource	=
 		"#version 310 es\n"
@@ -156,8 +170,12 @@ ShaderDiscardCase::ShaderDiscardCase (tcu::TestContext&		testCtx,
 
 void ShaderDiscardCase::checkSupport(Context& context) const
 {
-	if (m_demote && !context.getShaderDemoteToHelperInvocationFeaturesEXT().shaderDemoteToHelperInvocation)
+#ifndef CTS_USES_VULKANSC
+	if (m_demote && !context.getShaderDemoteToHelperInvocationFeatures().shaderDemoteToHelperInvocation)
 		TCU_THROW(NotSupportedError, "VK_EXT_shader_demote_to_helper_invocation not supported");
+#else
+	DE_UNREF(context);
+#endif // CTS_USES_VULKANSC
 }
 
 enum DiscardMode

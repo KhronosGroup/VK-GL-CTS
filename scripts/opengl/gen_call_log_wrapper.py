@@ -167,7 +167,7 @@ CALL_LOG_SPECS = {
 												# wrapper from attempting to print the argument as a C string.
 			},
 			argOutPrints = {2: booleanPointer(size = "getIndexedQueryNumArgsOut(target)")}),
-	"glGetInternalformativ":				LogSpec({0: enum("InternalFormatTarget"), 1: enum("UncompressedTextureFormat"), 2: enum("InternalFormatParameter")}, argOutPrints = {4: pointer(size = "bufSize")}),
+	"glGetInternalformativ":				LogSpec({0: enum("InternalFormatTarget"), 1: enum("UncompressedTextureFormat"), 2: enum("InternalFormatParameter")}, argOutPrints = {4: pointer(size = "count")}),
 	"glGetMultisamplefv":					LogSpec({0: enum("MultisampleParameter")}, argOutPrints = {2: pointer(size = "2")}),
 	"glGetPointerv":						LogSpec({0: enum("PointerState")}, argOutPrints = {1: pointer(size = "1")}),
 	"glGetProgramiv":						LogSpec({1: enum("ProgramParam")}, argOutPrints = {2: pointer(size = "getProgramQueryNumArgsOut(pname)")}),
@@ -343,7 +343,7 @@ CALL_LOG_SPECS = {
 			argOutPrints =
 			{
 				6: pointer(size = "1"),
-				7: pointer(size = "((length == DE_NULL) ? (bufSize) : ((bufSize < *length) ? (bufSize) : (*length)))")
+				7: pointer(size = "((length == DE_NULL) ? (count) : ((count < *length) ? (count) : (*length)))")
 			}),
 	"glDebugMessageInsert":					LogSpec({0: enum("DebugMessageSource"), 1: enum("DebugMessageType"), 3: enum("DebugMessageSeverity")}),
 	"glDebugMessageControl":				LogSpec({0: enum("DebugMessageSource"), 1: enum("DebugMessageType"), 2: enum("DebugMessageSeverity"), 4: pointer(size = "(count)")}),

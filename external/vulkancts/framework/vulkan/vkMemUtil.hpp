@@ -90,6 +90,7 @@ public:
 	static const MemoryRequirement	Cached;
 	static const MemoryRequirement	NonLocal;
 	static const MemoryRequirement	DeviceAddress;
+	static const MemoryRequirement	DeviceAddressCaptureReplay;
 
 	inline MemoryRequirement		operator|			(MemoryRequirement requirement) const
 	{
@@ -112,14 +113,15 @@ private:
 
 	enum Flags
 	{
-		FLAG_HOST_VISIBLE		= 1u << 0u,
-		FLAG_COHERENT			= 1u << 1u,
-		FLAG_LAZY_ALLOCATION	= 1u << 2u,
-		FLAG_PROTECTED			= 1u << 3u,
-		FLAG_LOCAL				= 1u << 4u,
-		FLAG_CACHED				= 1u << 5u,
-		FLAG_NON_LOCAL			= 1u << 6u,
-		FLAG_DEVICE_ADDRESS		= 1u << 7u,
+		FLAG_HOST_VISIBLE					= 1u << 0u,
+		FLAG_COHERENT						= 1u << 1u,
+		FLAG_LAZY_ALLOCATION				= 1u << 2u,
+		FLAG_PROTECTED						= 1u << 3u,
+		FLAG_LOCAL							= 1u << 4u,
+		FLAG_CACHED							= 1u << 5u,
+		FLAG_NON_LOCAL						= 1u << 6u,
+		FLAG_DEVICE_ADDRESS					= 1u << 7u,
+		FLAG_DEVICE_ADDRESS_CAPTURE_REPLAY	= 1u << 8u,
 	};
 };
 
@@ -138,7 +140,7 @@ public:
 class SimpleAllocator : public Allocator
 {
 public:
-											SimpleAllocator	(const DeviceInterface& vk, VkDevice device, const VkPhysicalDeviceMemoryProperties& deviceMemProps);
+											SimpleAllocator	(const DeviceInterface& vk, VkDevice device, const VkPhysicalDeviceMemoryProperties& deviceMemProps, size_t offset = 0);
 
 	de::MovePtr<Allocation>					allocate		(const VkMemoryAllocateInfo& allocInfo, VkDeviceSize alignment);
 	de::MovePtr<Allocation>					allocate		(const VkMemoryRequirements& memRequirements, MemoryRequirement requirement);
@@ -147,6 +149,7 @@ private:
 	const DeviceInterface&					m_vk;
 	const VkDevice							m_device;
 	const VkPhysicalDeviceMemoryProperties	m_memProps;
+	size_t									m_offset;
 };
 
 de::MovePtr<Allocation>	allocateExtended			(const InstanceInterface& vki, const DeviceInterface& vkd, const VkPhysicalDevice& physDevice, const VkDevice device, const VkMemoryRequirements& memReqs, const MemoryRequirement requirement, const void* pNext);
@@ -157,7 +160,12 @@ void*					mapMemory					(const DeviceInterface& vkd, VkDevice device, VkDeviceMe
 void					flushMappedMemoryRange		(const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size);
 void					invalidateMappedMemoryRange	(const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size);
 
+deUint32				selectMatchingMemoryType	(const VkPhysicalDeviceMemoryProperties& deviceMemProps, deUint32 allowedMemTypeBits, MemoryRequirement requirement);
 deUint32				getCompatibleMemoryTypes	(const VkPhysicalDeviceMemoryProperties& deviceMemProps, MemoryRequirement requirement);
+#ifdef CTS_USES_VULKANSC
+deUint32				getSEUSafeMemoryTypes		(const VkPhysicalDeviceMemoryProperties& deviceMemProps);
+#endif // CTS_USES_VULKANSC
+
 void					bindImagePlanesMemory		(const vk::DeviceInterface&					vkd,
 													 const vk::VkDevice							device,
 													 const vk::VkImage							image,

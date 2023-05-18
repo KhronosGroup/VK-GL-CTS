@@ -1193,7 +1193,7 @@ std::string BuiltinVariableShader::genFragmentSource (const glu::ContextType& co
 	else
 	{
 		DE_ASSERT(DE_FALSE);
-		return DE_NULL;
+		return "";
 	}
 }
 
@@ -4114,11 +4114,11 @@ void GeometryProgramQueryCase::expectProgramValue (deUint32 program, int value)
 void GeometryProgramQueryCase::expectQueryError (deUint32 program)
 {
 	const glw::Functions&	gl			= m_context.getRenderContext().getFunctions();
-	glw::GLint				dummy;
+	glw::GLint				unused;
 	glw::GLenum				errorCode;
 
 	m_testCtx.getLog() << tcu::TestLog::Message << "Querying " << glu::getProgramParamStr(m_target) << ", expecting INVALID_OPERATION" << tcu::TestLog::EndMessage;
-	gl.getProgramiv(program, m_target, &dummy);
+	gl.getProgramiv(program, m_target, &unused);
 
 	errorCode = gl.getError();
 
@@ -5339,31 +5339,6 @@ ReferencedByGeometryShaderCase::IterateResult ReferencedByGeometryShaderCase::it
 		m_testCtx.getLog() << program;
 
 		{
-			const tcu::ScopedLogSection section		(m_testCtx.getLog(), "UnreferencedUniform", "Unreferenced uniform u_position");
-			glu::CallLogWrapper			gl			(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
-			const deUint32				props[1]	= { GL_REFERENCED_BY_GEOMETRY_SHADER };
-			deUint32					resourcePos;
-			glw::GLsizei				length		= 0;
-			glw::GLint					referenced	= 0;
-
-			gl.enableLogging(true);
-
-			resourcePos = gl.glGetProgramResourceIndex(program.getProgram(), GL_UNIFORM, "u_position");
-			m_testCtx.getLog() << tcu::TestLog::Message << "u_position resource index: " << resourcePos << tcu::TestLog::EndMessage;
-
-			gl.glGetProgramResourceiv(program.getProgram(), GL_UNIFORM, resourcePos, 1, props, 1, &length, &referenced);
-			m_testCtx.getLog() << tcu::TestLog::Message << "Query GL_REFERENCED_BY_GEOMETRY_SHADER, got " << length << " value(s), value[0] = " << glu::getBooleanStr(referenced) << tcu::TestLog::EndMessage;
-
-			GLU_EXPECT_NO_ERROR(gl.glGetError(), "query resource");
-
-			if (length == 0 || referenced != GL_FALSE)
-			{
-				m_testCtx.getLog() << tcu::TestLog::Message << "Error, expected GL_FALSE." << tcu::TestLog::EndMessage;
-				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "got unexpected value");
-			}
-		}
-
-		{
 			const tcu::ScopedLogSection section		(m_testCtx.getLog(), "ReferencedUniform", "Referenced uniform u_offset");
 			glu::CallLogWrapper			gl			(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 			const deUint32				props[1]	= { GL_REFERENCED_BY_GEOMETRY_SHADER };
@@ -5931,7 +5906,7 @@ void VertexFeedbackOverflowCase::init (void)
 			const int					feedbackCount			= 5 * 4; // 5x vec4
 			const std::vector<float>	initialBufferContents	(feedbackCount, -1.0f);
 
-			m_testCtx.getLog() << tcu::TestLog::Message << "Filling feeback buffer with dummy value (-1.0)." << tcu::TestLog::EndMessage;
+			m_testCtx.getLog() << tcu::TestLog::Message << "Filling feeback buffer with unused value (-1.0)." << tcu::TestLog::EndMessage;
 
 			gl.genBuffers(1, &m_feedbackBuf);
 			gl.bindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, m_feedbackBuf);

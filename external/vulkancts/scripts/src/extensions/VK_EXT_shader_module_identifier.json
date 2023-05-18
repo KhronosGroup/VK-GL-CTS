@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": ""
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT":
+		[
+			{ "features": ["shaderModuleIdentifier"],				"requirements": ["VK_EXT_shader_module_identifier"] }
+		]
+	}
+}

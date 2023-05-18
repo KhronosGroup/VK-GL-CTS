@@ -158,19 +158,19 @@ void RandomUniformBlockCase::generateBlock (de::Random& rnd, deUint32 layoutFlag
 	block.setFlags(layoutFlags);
 
 	for (int ndx = 0; ndx < numUniforms; ndx++)
-		generateUniform(rnd, block);
+		generateUniform(rnd, block, numInstances ? numInstances : 1);
 
 	m_blockNdx += 1;
 }
 
-void RandomUniformBlockCase::generateUniform (de::Random& rnd, UniformBlock& block)
+void RandomUniformBlockCase::generateUniform (de::Random& rnd, UniformBlock& block, deUint32 complexity)
 {
 	const float		unusedVtxWeight		= 0.15f;
 	const float		unusedFragWeight	= 0.15f;
 	bool			unusedOk			= (m_features & FEATURE_UNUSED_UNIFORMS) != 0;
 	deUint32		flags				= 0;
 	std::string		name				= genName('a', 'z', m_uniformNdx);
-	VarType			type				= generateType(rnd, 0, true);
+	VarType			type				= generateType(rnd, 0, true, complexity);
 
 	flags |= (unusedOk && rnd.getFloat() < unusedVtxWeight)		? UNUSED_VERTEX		: 0;
 	flags |= (unusedOk && rnd.getFloat() < unusedFragWeight)	? UNUSED_FRAGMENT	: 0;
@@ -180,7 +180,7 @@ void RandomUniformBlockCase::generateUniform (de::Random& rnd, UniformBlock& blo
 	m_uniformNdx += 1;
 }
 
-VarType RandomUniformBlockCase::generateType (de::Random& rnd, int typeDepth, bool arrayOk)
+VarType RandomUniformBlockCase::generateType (de::Random& rnd, int typeDepth, bool arrayOk, deUint32 complexity)
 {
 	const float structWeight	= 0.1f;
 	const float arrayWeight		= 0.1f;
@@ -195,7 +195,7 @@ VarType RandomUniformBlockCase::generateType (de::Random& rnd, int typeDepth, bo
 
 		// Generate members first so nested struct declarations are in correct order.
 		for (int ndx = 0; ndx < numMembers; ndx++)
-			memberTypes.push_back(generateType(rnd, typeDepth+1, true));
+			memberTypes.push_back(generateType(rnd, typeDepth+1, true, complexity));
 
 		StructType& structType = m_interface.allocStruct(std::string("s") + genName('A', 'Z', m_structNdx));
 		m_structNdx += 1;
@@ -216,8 +216,15 @@ VarType RandomUniformBlockCase::generateType (de::Random& rnd, int typeDepth, bo
 	else if (m_maxArrayLength > 0 && arrayOk && rnd.getFloat() < arrayWeight)
 	{
 		const bool	arraysOfArraysOk	= (m_features & FEATURE_ARRAYS_OF_ARRAYS) != 0;
-		const int	arrayLength			= rnd.getInt(1, m_maxArrayLength);
-		VarType		elementType			= generateType(rnd, typeDepth, arraysOfArraysOk);
+		int			arrayLength			= rnd.getInt(1, m_maxArrayLength);
+
+		if (complexity * arrayLength >= 70)
+		{
+			// Trim overly complicated cases (affects 18 cases out of 1576)
+			arrayLength = 1;
+		}
+
+		VarType		elementType			= generateType(rnd, typeDepth, arraysOfArraysOk, complexity * arrayLength);
 		return VarType(elementType, arrayLength);
 	}
 	else

@@ -93,7 +93,7 @@ void addComputeSameLabelsTest (tcu::TestCaseGroup* group)
 			"  %_ptr_Uniform_Output = OpTypePointer Uniform %Output\n"
 			"           %dataOutput = OpVariable %_ptr_Uniform_Output Uniform\n"
 			"    %_ptr_Uniform_uint = OpTypePointer Uniform %uint\n"
-			"           %uint_dummy = OpConstant %uint 2863311530\n"
+			"          %uint_unused = OpConstant %uint 2863311530\n"
 			"                 %main = OpFunction %void None %3\n"
 			"                    %5 = OpLabel\n"
 			"                    %i = OpVariable %_ptr_Function_uint Function\n"
@@ -109,7 +109,7 @@ void addComputeSameLabelsTest (tcu::TestCaseGroup* group)
 			"                         OpBranch %merge\n"
 			"                 %dead = OpLabel\n"
 			"                   %35 = OpAccessChain %_ptr_Uniform_uint %dataOutput %uint_0 %uint_i\n"
-			"                         OpStore %35 %uint_dummy\n"
+			"                         OpStore %35 %uint_unused\n"
 			"                         OpBranch %merge\n"
 			"                %merge = OpLabel\n"
 			"                         OpReturn\n"
@@ -160,7 +160,7 @@ void addGraphicsSameLabelsTest (tcu::TestCaseGroup* group)
 			"         %dataOutput = OpVariable %_ptr_Uniform_Output Uniform\n"
 			"  %_ptr_Uniform_uint = OpTypePointer Uniform %u32\n"
 			"             %fp_u32 = OpTypePointer Function %u32\n"
-			"         %uint_dummy = OpConstant %u32 2863311530\n";
+			"        %uint_unused = OpConstant %u32 2863311530\n";
 
 		fragments["decoration"]				=
 			"                       OpDecorate %_arr_uint_uint_128 ArrayStride 4\n"
@@ -194,7 +194,7 @@ void addGraphicsSameLabelsTest (tcu::TestCaseGroup* group)
 			"                       OpBranch %condmerge\n"
 			"               %dead = OpLabel\n"
 			"                 %35 = OpAccessChain %_ptr_Uniform_uint %dataOutput %c_u32_0 %uint_i\n"
-			"                       OpStore %35 %uint_dummy\n"
+			"                       OpStore %35 %uint_unused\n"
 			"                       OpBranch %condmerge\n"
 			"          %condmerge = OpLabel\n"
 			"                       OpBranch %inc\n"

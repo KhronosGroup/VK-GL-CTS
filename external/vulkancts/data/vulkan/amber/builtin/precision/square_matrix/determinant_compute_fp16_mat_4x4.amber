@@ -119,17 +119,17 @@ EXPECT bufOut IDX  2 TOLERANCE  0.00048828125  EQ    -1.0
 # Decimals between 0.25 and 0.5: 0.00146484375
 EXPECT bufOut IDX  4 TOLERANCE  0.00146484375  EQ    -0.3641016781
 
-# Decimals between 32 and 64: 0.03125
-EXPECT bufOut IDX  6 TOLERANCE  0.125          EQ    46.3125
+# Decimals between 32 and 64: 0.25
+EXPECT bufOut IDX  6 TOLERANCE  0.25           EQ    46.3125
 
-# Decimals between 1024 and 2048: 6.0
-EXPECT bufOut IDX  8 TOLERANCE  6.0            EQ -1840
+# Decimals between 1024 and 2048: 12.0
+EXPECT bufOut IDX  8 TOLERANCE  12.0            EQ -1840
 
-# Integers between 4096 and 8192: 12
-EXPECT bufOut IDX 10 TOLERANCE  12              EQ  6036
+# Integers between 4096 and 8192: 24
+EXPECT bufOut IDX 10 TOLERANCE  24              EQ  6036
 
-# Integers between 8192 and 16384: 32
-EXPECT bufOut IDX 12 TOLERANCE 32               EQ 13472
+# Integers between 8192 and 16384: 64
+EXPECT bufOut IDX 12 TOLERANCE 64               EQ 13472
 
 # Integers between 32768 and 65536: 128
 EXPECT bufOut IDX 14 TOLERANCE 128              EQ 40192
@@ -137,5 +137,5 @@ EXPECT bufOut IDX 14 TOLERANCE 128              EQ 40192
 # Integers between 16384 and 32768: 96
 EXPECT bufOut IDX 16 TOLERANCE 96              EQ 20800
 
-# Integers between 2048 and 4096: 4
-EXPECT bufOut IDX 18 TOLERANCE  4              EQ -3212
+# Integers between 2048 and 4096: 8
+EXPECT bufOut IDX 18 TOLERANCE  8              EQ -3212

@@ -377,69 +377,6 @@ inline GLValue::Double minValue (void)
 }
 
 template<class T>
-inline T abs (T val);
-
-template<>
-inline GLValue::Fixed abs (GLValue::Fixed val)
-{
-	return GLValue::Fixed::create(0x7FFFu & val.getValue());
-}
-
-template<>
-inline GLValue::Ubyte abs (GLValue::Ubyte val)
-{
-	return val;
-}
-
-template<>
-inline GLValue::Byte abs (GLValue::Byte val)
-{
-	return GLValue::Byte::create(0x7Fu & val.getValue());
-}
-
-template<>
-inline GLValue::Ushort abs (GLValue::Ushort val)
-{
-	return val;
-}
-
-template<>
-inline GLValue::Short abs (GLValue::Short val)
-{
-	return GLValue::Short::create(0x7FFFu & val.getValue());
-}
-
-template<>
-inline GLValue::Float abs (GLValue::Float val)
-{
-	return GLValue::Float::create(std::fabs(val.to<float>()));
-}
-
-template<>
-inline GLValue::Uint abs (GLValue::Uint val)
-{
-	return val;
-}
-
-template<>
-inline GLValue::Int abs (GLValue::Int val)
-{
-	return GLValue::Int::create(0x7FFFFFFFu & val.getValue());
-}
-
-template<>
-inline GLValue::Half abs (GLValue::Half val)
-{
-	return GLValue::Half::create(std::fabs(val.to<float>()));
-}
-
-template<>
-inline GLValue::Double abs (GLValue::Double val)
-{
-	return GLValue::Double::create(std::fabs(val.to<float>()));
-}
-
-template<class T>
 static inline void alignmentSafeAssignment (char* dst, T val)
 {
 	std::memcpy(dst, &val, sizeof(T));
@@ -1575,6 +1512,7 @@ char* RandomArrayGenerator::createQuads (int seed, int count, int componentCount
 			const T	minDiff		= minValue<T>() > minQuadSize
 								? minValue<T>()
 								: minQuadSize;
+			const T maxRounded	= roundTo(minDiff, max);
 
 			for (int quadNdx = 0; quadNdx < count; ++quadNdx)
 			{
@@ -1582,48 +1520,40 @@ char* RandomArrayGenerator::createQuads (int seed, int count, int componentCount
 				T y1, y2;
 				T z, w;
 
-				// attempt to find a good (i.e not extremely small) quad
-				for (int attemptNdx = 0; attemptNdx < 4; ++attemptNdx)
-				{
-					x1 = roundTo(minDiff, getRandom<T>(rnd, min, max));
-					x2 = roundTo(minDiff, getRandom<T>(rnd, minDiff, abs<T>(max - x1)));
+				x1 = roundTo(minDiff, getRandom<T>(rnd, min, maxRounded - minDiff));
+				x2 = roundTo(minDiff, getRandom<T>(rnd, x1 + minDiff, maxRounded));
 
-					y1 = roundTo(minDiff, getRandom<T>(rnd, min, max));
-					y2 = roundTo(minDiff, getRandom<T>(rnd, minDiff, abs<T>(max - y1)));
+				y1 = roundTo(minDiff, getRandom<T>(rnd, min, maxRounded - minDiff));
+				y2 = roundTo(minDiff, getRandom<T>(rnd, y1 + minDiff, maxRounded));
 
-					z = (componentCount > 2) ? roundTo(minDiff, (getRandom<T>(rnd, min, max))) : (T::create(0));
-					w = (componentCount > 3) ? roundTo(minDiff, (getRandom<T>(rnd, min, max))) : (T::create(1));
+				// Make sure the rounding doesn't drop the result below the original range of the random function.
+				if (x2 < x1 + minDiff) x2 = x1 + minDiff;
+				if (y2 < y1 + minDiff) y2 = y1 + minDiff;
 
-					// no additional components, all is good
-					if (componentCount <= 2)
-						break;
+				z = (componentCount > 2) ? roundTo(minDiff, (getRandom<T>(rnd, min, max))) : (T::create(0));
+				w = (componentCount > 3) ? roundTo(minDiff, (getRandom<T>(rnd, min, max))) : (T::create(1));
 
-					// The result quad is too thin?
-					if ((deFloatAbs(x2.template to<float>() + z.template to<float>()) < minDiff.template to<float>()) ||
-						(deFloatAbs(y2.template to<float>() + w.template to<float>()) < minDiff.template to<float>()))
-						continue;
-
-					// all ok
-					break;
-				}
+				// Make sure the quad is not too thin.
+				DE_ASSERT((deFloatAbs(x2.template to<float>() - x1.template to<float>()) >= minDiff.template to<float>() * 0.8f) &&
+					(deFloatAbs(y2.template to<float>() - y1.template to<float>()) >= minDiff.template to<float>() * 0.8f));
 
 				alignmentSafeAssignment<T>(&(resultData[quadNdx * quadStride]), x1);
 				alignmentSafeAssignment<T>(&(resultData[quadNdx * quadStride + componentStride]), y1);
 
-				alignmentSafeAssignment<T>(&(resultData[quadNdx * quadStride + stride]), x1 + x2);
+				alignmentSafeAssignment<T>(&(resultData[quadNdx * quadStride + stride]), x2);
 				alignmentSafeAssignment<T>(&(resultData[quadNdx * quadStride + stride + componentStride]), y1);
 
 				alignmentSafeAssignment<T>(&(resultData[quadNdx * quadStride + stride * 2]), x1);
-				alignmentSafeAssignment<T>(&(resultData[quadNdx * quadStride + stride * 2 + componentStride]), y1 + y2);
+				alignmentSafeAssignment<T>(&(resultData[quadNdx * quadStride + stride * 2 + componentStride]), y2);
 
 				alignmentSafeAssignment<T>(&(resultData[quadNdx * quadStride + stride * 3]), x1);
-				alignmentSafeAssignment<T>(&(resultData[quadNdx * quadStride + stride * 3 + componentStride]), y1 + y2);
+				alignmentSafeAssignment<T>(&(resultData[quadNdx * quadStride + stride * 3 + componentStride]), y2);
 
-				alignmentSafeAssignment<T>(&(resultData[quadNdx * quadStride + stride * 4]), x1 + x2);
+				alignmentSafeAssignment<T>(&(resultData[quadNdx * quadStride + stride * 4]), x2);
 				alignmentSafeAssignment<T>(&(resultData[quadNdx * quadStride + stride * 4 + componentStride]), y1);
 
-				alignmentSafeAssignment<T>(&(resultData[quadNdx * quadStride + stride * 5]), x1 + x2);
-				alignmentSafeAssignment<T>(&(resultData[quadNdx * quadStride + stride * 5 + componentStride]), y1 + y2);
+				alignmentSafeAssignment<T>(&(resultData[quadNdx * quadStride + stride * 5]), x2);
+				alignmentSafeAssignment<T>(&(resultData[quadNdx * quadStride + stride * 5 + componentStride]), y2);
 
 				if (componentCount > 2)
 				{

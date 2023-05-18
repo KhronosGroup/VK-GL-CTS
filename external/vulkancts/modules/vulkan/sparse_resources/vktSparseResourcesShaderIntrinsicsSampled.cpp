@@ -214,6 +214,15 @@ void SparseShaderIntrinsicsCaseSampledBase::initPrograms (vk::SourceCollections&
 	const std::string	typeImgComp		= getImageComponentTypeName(formatDescription);
 	const std::string	typeImgCompVec4	= getImageComponentVec4TypeName(formatDescription);
 
+	SpirvVersion	spirvVersion	= SPIRV_VERSION_1_0;
+	std::string		interfaceList	= "";
+
+	if (m_operand.find("Nontemporal") != std::string::npos)
+	{
+		spirvVersion	= SPIRV_VERSION_1_6;
+		interfaceList	= " %uniformconst_image_sparse %uniformblock_instance";
+	}
+
 	fs	<< "OpCapability Shader\n"
 		<< "OpCapability SampledCubeArray\n"
 		<< "OpCapability ImageCubeArray\n"
@@ -229,7 +238,7 @@ void SparseShaderIntrinsicsCaseSampledBase::initPrograms (vk::SourceCollections&
 
 	fs	<< "%ext_import = OpExtInstImport \"GLSL.std.450\"\n"
 		<< "OpMemoryModel Logical GLSL450\n"
-		<< "OpEntryPoint Fragment %func_main \"main\" %varying_texCoord %output_texel %output_residency\n"
+		<< "OpEntryPoint Fragment %func_main \"main\" %varying_texCoord %output_texel %output_residency " << interfaceList << "\n"
 		<< "OpExecutionMode %func_main OriginUpperLeft\n"
 		<< "OpSource GLSL 440\n"
 
@@ -390,7 +399,9 @@ void SparseShaderIntrinsicsCaseSampledBase::initPrograms (vk::SourceCollections&
 		<< "OpReturn\n"
 		<< "OpFunctionEnd\n";
 
-	programCollection.spirvAsmSources.add("fragment_shader") << fs.str();
+	programCollection.spirvAsmSources.add("fragment_shader") << fs.str()
+		<< vk::SpirVAsmBuildOptions(programCollection.usedVulkanVersion, spirvVersion);
+
 }
 
 std::string	SparseCaseOpImageSparseSampleExplicitLod::sparseImageOpString (const std::string& resultVariable,
@@ -400,8 +411,9 @@ std::string	SparseCaseOpImageSparseSampleExplicitLod::sparseImageOpString (const
 																		   const std::string& miplevel) const
 {
 	std::ostringstream	src;
+	std::string			additionalOperand = (m_operand.empty() ? " " : (std::string("|") + m_operand + " "));
 
-	src << resultVariable << " = OpImageSparseSampleExplicitLod " << resultType << " " << image << " " << coord << " Lod " << miplevel << "\n";
+	src << resultVariable << " = OpImageSparseSampleExplicitLod " << resultType << " " << image << " " << coord << " Lod" << additionalOperand << miplevel << "\n";
 
 	return src.str();
 }
@@ -416,7 +428,7 @@ std::string	SparseCaseOpImageSparseSampleImplicitLod::sparseImageOpString (const
 
 	std::ostringstream	src;
 
-	src << resultVariable << " = OpImageSparseSampleImplicitLod " << resultType << " " << image << " " << coord << "\n";
+	src << resultVariable << " = OpImageSparseSampleImplicitLod " << resultType << " " << image << " " << coord << " " << m_operand << "\n";
 
 	return src.str();
 }
@@ -467,10 +479,10 @@ std::string	SparseCaseOpImageSparseGather::sparseImageOpString (const std::strin
 		}
 	}
 
-	src << "%local_sparse_gather_result_x = OpImageSparseGather " << resultType << " " << image << " %local_coord_biased %constant_int_0\n";
-	src << "%local_sparse_gather_result_y = OpImageSparseGather " << resultType << " " << image << " %local_coord_biased %constant_int_1\n";
-	src << "%local_sparse_gather_result_z = OpImageSparseGather " << resultType << " " << image << " %local_coord_biased %constant_int_2\n";
-	src << "%local_sparse_gather_result_w = OpImageSparseGather " << resultType << " " << image << " %local_coord_biased %constant_int_3\n";
+	src << "%local_sparse_gather_result_x = OpImageSparseGather " << resultType << " " << image << " %local_coord_biased %constant_int_0 " + m_operand + "\n";
+	src << "%local_sparse_gather_result_y = OpImageSparseGather " << resultType << " " << image << " %local_coord_biased %constant_int_1 " + m_operand + "\n";
+	src << "%local_sparse_gather_result_z = OpImageSparseGather " << resultType << " " << image << " %local_coord_biased %constant_int_2 " + m_operand + "\n";
+	src << "%local_sparse_gather_result_w = OpImageSparseGather " << resultType << " " << image << " %local_coord_biased %constant_int_3 " + m_operand + "\n";
 
 	src << "%local_gather_residency_code = OpCompositeExtract %type_int %local_sparse_gather_result_x 0\n";
 

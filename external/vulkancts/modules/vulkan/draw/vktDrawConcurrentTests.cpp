@@ -45,6 +45,10 @@
 #include "vkQueryUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkBarrierUtil.hpp"
+#include "vkObjUtil.hpp"
+#include "vkDeviceUtil.hpp"
+#include "vkSafetyCriticalUtil.hpp"
+#include "vkBufferWithMemory.hpp"
 
 #include "deRandom.hpp"
 
@@ -66,7 +70,7 @@ public:
 };
 
 ConcurrentDraw::ConcurrentDraw (Context &context, TestSpec testSpec)
-	: DrawTestsBaseClass(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], testSpec.useDynamicRendering, testSpec.topology)
+	: DrawTestsBaseClass(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], testSpec.groupParams, testSpec.topology)
 {
 	m_data.push_back(VertexElementData(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), -1));
 	m_data.push_back(VertexElementData(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), -1));
@@ -103,10 +107,13 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 		deUint32	queueFamilyIndex;
 	};
 
-	const DeviceInterface&					vk				= m_context.getDeviceInterface();
 	const deUint32							numValues		= 1024;
-	const InstanceInterface&				instance		= m_context.getInstanceInterface();
-	const VkPhysicalDevice					physicalDevice	= m_context.getPhysicalDevice();
+	const CustomInstance					instance		(createCustomInstanceFromContext(m_context));
+	const InstanceDriver&					instanceDriver	(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice	= chooseDevice(instanceDriver, instance, m_context.getTestContext().getCommandLine());
+//
+//	const InstanceInterface&				instance		= m_context.getInstanceInterface();
+//	const VkPhysicalDevice					physicalDevice	= m_context.getPhysicalDevice();
 	const auto								validation		= m_context.getTestContext().getCommandLine().isValidationEnabled();
 	tcu::TestLog&							log				= m_context.getTestContext().getLog();
 	Move<VkDevice>							computeDevice;
@@ -119,7 +126,7 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 
 	// Set up compute
 
-	queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instance, physicalDevice);
+	queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 
 	for (deUint32 queueNdx = 0; queueNdx < queueFamilyProperties.size(); ++queueNdx)
 	{
@@ -146,10 +153,48 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 	queueInfos = queueInfo;
 
 	deMemset(&deviceInfo, 0, sizeof(deviceInfo));
-	instance.getPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
+	instanceDriver.getPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
+
+	void* pNext												= DE_NULL;
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= m_context.getTestContext().getCommandLine().isSubProcess() ? m_context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext								= pNext;
+	pNext													= &memReservationInfo;
+
+	VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+	sc10Features.pNext										= pNext;
+	pNext													= &sc10Features;
+
+	VkPipelineCacheCreateInfo			pcCI;
+	std::vector<VkPipelinePoolSize>		poolSizes;
+	if (m_context.getTestContext().getCommandLine().isSubProcess())
+	{
+		if (m_context.getResourceInterface()->getCacheDataSize() > 0)
+		{
+			pcCI =
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,			// VkStructureType				sType;
+				DE_NULL,												// const void*					pNext;
+				VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+					VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+				m_context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
+				m_context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
+			};
+			memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+			memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+		}
+
+		poolSizes							= m_context.getResourceInterface()->getPipelinePoolSizes();
+		if (!poolSizes.empty())
+		{
+			memReservationInfo.pipelinePoolSizeCount			= deUint32(poolSizes.size());
+			memReservationInfo.pPipelinePoolSizes				= poolSizes.data();
+		}
+	}
+#endif // CTS_USES_VULKANSC
 
 	deviceInfo.sType					= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	deviceInfo.pNext					= DE_NULL;
+	deviceInfo.pNext					= pNext;
 	deviceInfo.enabledExtensionCount	= 0u;
 	deviceInfo.ppEnabledExtensionNames	= DE_NULL;
 	deviceInfo.enabledLayerCount		= 0u;
@@ -158,16 +203,23 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 	deviceInfo.queueCreateInfoCount		= 1;
 	deviceInfo.pQueueCreateInfos		= &queueInfos;
 
-	computeDevice = createCustomDevice(validation, m_context.getPlatformInterface(), m_context.getInstance(), instance, physicalDevice, &deviceInfo);
+	computeDevice = createCustomDevice(validation, m_context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceInfo);
+
+#ifndef CTS_USES_VULKANSC
+	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<vk::DeviceDriver>(new vk::DeviceDriver(m_context.getPlatformInterface(), instance, *computeDevice));
+#else
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), instance, *computeDevice, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *computeDevice));
+#endif // CTS_USES_VULKANSC
+	vk::DeviceInterface& vk = *deviceDriver;
 
 	vk.getDeviceQueue(*computeDevice, computeQueue.queueFamilyIndex, 0, &computeQueue.queue);
 
 	// Create an input/output buffer
-	const VkPhysicalDeviceMemoryProperties memoryProperties = getPhysicalDeviceMemoryProperties(instance, physicalDevice);
+	const VkPhysicalDeviceMemoryProperties memoryProperties = getPhysicalDeviceMemoryProperties(instanceDriver, physicalDevice);
 
-	SimpleAllocator *			allocator			= new SimpleAllocator(vk, *computeDevice, memoryProperties);
-	const VkDeviceSize			bufferSizeBytes		= sizeof(deUint32) * numValues;
-	const vkt::compute::Buffer	buffer(vk, *computeDevice, *allocator, makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
+	de::MovePtr<SimpleAllocator> allocator			= de::MovePtr<SimpleAllocator>(new SimpleAllocator(vk, *computeDevice, memoryProperties));
+	const VkDeviceSize			 bufferSizeBytes	= sizeof(deUint32) * numValues;
+	const vk::BufferWithMemory	 buffer(vk, *computeDevice, *allocator, makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	// Fill the buffer with data
 
@@ -213,7 +265,7 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 	const Unique<VkShaderModule>		shaderModule(createShaderModule(vk, *computeDevice, m_context.getBinaryCollection().get("vulkan/draw/ConcurrentPayload.comp"), 0u));
 
 	const Unique<VkPipelineLayout>		pipelineLayout(makePipelineLayout(vk, *computeDevice, *descriptorSetLayout));
-	const Unique<VkPipeline>			pipeline(vkt::compute::makeComputePipeline(vk, *computeDevice, *pipelineLayout, *shaderModule));
+	const Unique<VkPipeline>			pipeline(makeComputePipeline(vk, *computeDevice, *pipelineLayout, *shaderModule));
 	const VkBufferMemoryBarrier			hostWriteBarrier	= makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, *buffer, 0ull, bufferSizeBytes);
 	const VkBufferMemoryBarrier			shaderWriteBarrier	= makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *buffer, 0ull, bufferSizeBytes);
 	const Unique<VkCommandPool>			cmdPool(makeCommandPool(vk, *computeDevice, computeQueue.queueFamilyIndex));
@@ -246,19 +298,72 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 
 	const VkQueue		drawQueue			= m_context.getUniversalQueue();
 	const VkDevice		drawDevice			= m_context.getDevice();
-
-	beginRender();
-
 	const VkDeviceSize	vertexBufferOffset	= 0;
 	const VkBuffer		vertexBuffer		= m_vertexBuffer->object();
 
-	m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
-	m_vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+#ifndef CTS_USES_VULKANSC
+	if (m_groupParams->useSecondaryCmdBuffer)
+	{
+		// record secondary command buffer
+		if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+		{
+			beginSecondaryCmdBuffer(m_vk, VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+			beginDynamicRender(*m_secCmdBuffer);
+		}
+		else
+			beginSecondaryCmdBuffer(m_vk);
 
-	m_vk.cmdDraw(*m_cmdBuffer, 6, 1, 2, 0);
+		m_vk.cmdBindVertexBuffers(*m_secCmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+		m_vk.cmdBindPipeline(*m_secCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+		m_vk.cmdDraw(*m_secCmdBuffer, 6, 1, 2, 0);
 
-	endRender();
-	endCommandBuffer(m_vk, *m_cmdBuffer);
+		if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			endDynamicRender(*m_secCmdBuffer);
+
+		endCommandBuffer(m_vk, *m_secCmdBuffer);
+
+		// record primary command buffer
+		beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+		preRenderBarriers();
+
+		if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			beginDynamicRender(*m_cmdBuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+
+		m_vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_secCmdBuffer);
+
+		if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			endDynamicRender(*m_cmdBuffer);
+
+		endCommandBuffer(m_vk, *m_cmdBuffer);
+	}
+	else if (m_groupParams->useDynamicRendering)
+	{
+		beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+		preRenderBarriers();
+		beginDynamicRender(*m_cmdBuffer);
+
+		m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+		m_vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+		m_vk.cmdDraw(*m_cmdBuffer, 6, 1, 2, 0);
+
+		endDynamicRender(*m_cmdBuffer);
+		endCommandBuffer(m_vk, *m_cmdBuffer);
+	}
+#endif // CTS_USES_VULKANSC
+
+	if (!m_groupParams->useDynamicRendering)
+	{
+		beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+		preRenderBarriers();
+		beginLegacyRender(*m_cmdBuffer);
+
+		m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+		m_vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+		m_vk.cmdDraw(*m_cmdBuffer, 6, 1, 2, 0);
+
+		endLegacyRender(*m_cmdBuffer);
+		endCommandBuffer(m_vk, *m_cmdBuffer);
+	}
 
 	const VkCommandBuffer	drawCommandBuffer	= m_cmdBuffer.get();
 	const bool				useDeviceGroups		= false;
@@ -267,7 +372,7 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 
 	VkDeviceGroupSubmitInfo	deviceGroupSubmitInfo =
 	{
-		VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO_KHR,	//	VkStructureType		sType;
+		VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO,		//	VkStructureType		sType;
 		DE_NULL,										//	const void*			pNext;
 		0u,												//	deUint32			waitSemaphoreCount;
 		DE_NULL,										//	const deUint32*		pWaitSemaphoreDeviceIndices;
@@ -306,29 +411,39 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 
 	// Have to wait for all fences before calling fail, or some fence may be left hanging.
 
-	if (err == ERROR_WAIT_COMPUTE)
-		return tcu::TestStatus::fail("Failed waiting for compute queue fence.");
 
-	if (err == ERROR_WAIT_DRAW)
-		return tcu::TestStatus::fail("Failed waiting for draw queue fence.");
-
-	// Validation - compute
-
-	const Allocation&	bufferAllocation	= buffer.getAllocation();
-	invalidateAlloc(vk, *computeDevice, bufferAllocation);
-	const deUint32*		bufferPtr			= static_cast<deUint32*>(bufferAllocation.getHostPtr());
-
-	for (deUint32 ndx = 0; ndx < numValues; ++ndx)
+#ifdef CTS_USES_VULKANSC
+	if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 	{
-		const deUint32 res = bufferPtr[ndx];
-		const deUint32 inp = inputData[ndx];
-		const deUint32 ref = ~inp;
-
-		if (res != ref)
+		if (err == ERROR_WAIT_COMPUTE)
 		{
-			std::ostringstream msg;
-			msg << "Comparison failed (compute) for InOut.values[" << ndx << "] ref:" << ref << " res:" << res << " inp:" << inp;
-			return tcu::TestStatus::fail(msg.str());
+			return tcu::TestStatus::fail("Failed waiting for compute queue fence.");
+		}
+
+		if (err == ERROR_WAIT_DRAW)
+		{
+			return tcu::TestStatus::fail("Failed waiting for draw queue fence.");
+		}
+
+		// Validation - compute
+
+		const Allocation&	bufferAllocation	= buffer.getAllocation();
+		invalidateAlloc(vk, *computeDevice, bufferAllocation);
+		const deUint32*		bufferPtr			= static_cast<deUint32*>(bufferAllocation.getHostPtr());
+
+		for (deUint32 ndx = 0; ndx < numValues; ++ndx)
+		{
+			const deUint32 res = bufferPtr[ndx];
+			const deUint32 inp = inputData[ndx];
+			const deUint32 ref = ~inp;
+
+			if (res != ref)
+			{
+				std::ostringstream msg;
+				msg << "Comparison failed (compute) for InOut.values[" << ndx << "] ref:" << ref << " res:" << res << " inp:" << inp;
+				return tcu::TestStatus::fail(msg.str());
+			}
 		}
 	}
 
@@ -373,21 +488,20 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 	{
 		res = QP_TEST_RESULT_FAIL;
 	}
-
 	return tcu::TestStatus(res, qpGetTestResultName(res));
 }
 
 void checkSupport(Context& context, ConcurrentDraw::TestSpec testSpec)
 {
-	if (testSpec.useDynamicRendering)
+	if (testSpec.groupParams->useDynamicRendering)
 		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 }
 
 }	// anonymous
 
-ConcurrentDrawTests::ConcurrentDrawTests (tcu::TestContext &testCtx, bool useDynamicRendering)
+ConcurrentDrawTests::ConcurrentDrawTests (tcu::TestContext &testCtx, const SharedGroupParams groupParams)
 	: TestCaseGroup			(testCtx, "concurrent", "concurrent drawing")
-	, m_useDynamicRendering	(useDynamicRendering)
+	, m_groupParams			(groupParams)
 {
 	/* Left blank on purpose */
 }
@@ -402,7 +516,7 @@ void ConcurrentDrawTests::init (void)
 			{ glu::SHADERTYPE_COMPUTE,	"vulkan/draw/ConcurrentPayload.comp" }
 		},
 		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-		m_useDynamicRendering
+		m_groupParams
 	};
 
 	addChild(new InstanceFactory<ConcurrentDraw, FunctionSupport1<ConcurrentDraw::TestSpec>>(m_testCtx, "compute_and_triangle_list", "Draws triangle list while running a compute shader", testSpec, FunctionSupport1<ConcurrentDraw::TestSpec>::Args(checkSupport, testSpec)));

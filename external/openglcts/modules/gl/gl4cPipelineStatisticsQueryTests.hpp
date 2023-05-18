@@ -220,22 +220,22 @@ public:
 	/* Code of a compute shader used by a functional test that verifies
 	 * GL_COMPUTE_SHADER_INVOCATIONS_ARB query works correctly.
 	 */
-	static const char* dummy_cs_code;
-	static const char* dummy_cs_code_arb;
+	static const char* minimal_cs_code;
+	static const char* minimal_cs_code_arb;
 	/* Code of a fragment shader used by a number of functional tests */
-	static const char* dummy_fs_code;
+	static const char* minimal_fs_code;
 	/* Code of a tessellation control shader used by a functional test that verifies
 	 * GL_TESS_CONTROL_SHADER_PATCHES_ARB and GL_TESS_EVALUATION_SHADER_INVOCATIONS_ARB
 	 * queries work correctly.
 	 */
-	static const char* dummy_tc_code;
+	static const char* minimal_tc_code;
 	/* Code of a tessellation evaluation shader used by a functional test that verifies
 	 * GL_TESS_CONTROL_SHADER_PATCHES_ARB and GL_TESS_EVALUATION_SHADER_INVOCATIONS_ARB
 	 * queries work correctly.
 	 */
-	static const char* dummy_te_code;
+	static const char* minimal_te_code;
 	/* Code of a vertex shader used by a number of functional tests */
-	static const char* dummy_vs_code;
+	static const char* minimal_vs_code;
 
 	/* Tells how many query targets are stored in query_targets */
 	static const unsigned int n_query_targets;
@@ -263,7 +263,8 @@ public:
 	static bool executeQuery(glw::GLenum query_type, glw::GLuint qo_id, glw::GLuint qo_bo_id,
 							 PFNQUERYDRAWHANDLERPROC pfn_draw, void* draw_user_arg,
 							 const glu::RenderContext& render_context, tcu::TestContext& test_context,
-							 const glu::ContextInfo& context_info, _test_execution_result* out_result);
+							 const glu::ContextInfo& context_info, _test_execution_result* out_result,
+							 bool& skipped);
 
 	static glw::GLenum getEnumForPrimitiveType(_primitive_type primitive_type);
 	static std::string getGLSLStringForGSInput(_geometry_shader_input gs_input);

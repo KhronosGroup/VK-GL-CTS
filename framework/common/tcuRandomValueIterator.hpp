@@ -55,9 +55,15 @@ template <> inline deInt32	getRandomValue<deInt32>		(de::Random& rnd) { return (
 template <> inline deInt64	getRandomValue<deInt64>		(de::Random& rnd) { return (deInt64)rnd.getUint64();	}
 
 template <typename T>
-class RandomValueIterator : public std::iterator<std::forward_iterator_tag, T>
+class RandomValueIterator
 {
 public:
+	using iterator_category = std::forward_iterator_tag;
+	using value_type = T;
+	using difference_type = std::ptrdiff_t;
+	using pointer = T*;
+	using reference = T&;
+
 	static RandomValueIterator	begin					(deUint32 seed, int numValues)	{ return RandomValueIterator<T>(seed, numValues);	}
 	static RandomValueIterator	end						(void)							{ return RandomValueIterator<T>(0, 0);				}
 

@@ -434,7 +434,6 @@ void SparseShaderIntrinsicsInstanceBase::checkSupport(VkImageCreateInfo imageSpa
 	// Check if device supports sparse operations for image format
 	if (!checkSparseSupportForImageFormat(instance, physicalDevice, imageSparseInfo))
 		TCU_THROW(NotSupportedError, "The image format does not support sparse operations");
-
 }
 
 tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate (void)
@@ -487,13 +486,37 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate (void)
 		imageSparseInfo.mipLevels = getMipmapCount(m_format, formatDescription, imageFormatProperties, imageSparseInfo.extent);
 	}
 
+	// Create image to store texels copied from sparse image
+	imageTexelsInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	imageTexelsInfo.pNext = DE_NULL;
+	imageTexelsInfo.flags = 0u;
+	imageTexelsInfo.imageType = imageSparseInfo.imageType;
+	imageTexelsInfo.format = imageSparseInfo.format;
+	imageTexelsInfo.extent = imageSparseInfo.extent;
+	imageTexelsInfo.arrayLayers = imageSparseInfo.arrayLayers;
+	imageTexelsInfo.mipLevels = imageSparseInfo.mipLevels;
+	imageTexelsInfo.samples = imageSparseInfo.samples;
+	imageTexelsInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+	imageTexelsInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	imageTexelsInfo.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | imageOutputUsageFlags();
+	imageTexelsInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	imageTexelsInfo.queueFamilyIndexCount = 0u;
+	imageTexelsInfo.pQueueFamilyIndices = DE_NULL;
+
+	if (m_imageType == IMAGE_TYPE_CUBE || m_imageType == IMAGE_TYPE_CUBE_ARRAY)
+	{
+		imageTexelsInfo.flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+	}
+
+	checkImageSupport(instance, physicalDevice, imageTexelsInfo);
+
 	{
 		// Create logical device supporting both sparse and compute/graphics queues
 		QueueRequirementsVec queueRequirements;
 		queueRequirements.push_back(QueueRequirements(VK_QUEUE_SPARSE_BINDING_BIT, 1u));
 		queueRequirements.push_back(QueueRequirements(getQueueFlags(), 1u));
 
-		createDeviceSupportingQueues(queueRequirements);
+		createDeviceSupportingQueues(queueRequirements, formatIsR64(m_format));
 	}
 
 	// Create queues supporting sparse binding operations and compute/graphics operations
@@ -687,42 +710,6 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate (void)
 
 		// Submit sparse bind commands for execution
 		VK_CHECK(deviceInterface.queueBindSparse(sparseQueue.queueHandle, 1u, &bindSparseInfo, DE_NULL));
-	}
-
-	// Create image to store texels copied from sparse image
-	imageTexelsInfo.sType					= VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	imageTexelsInfo.pNext					= DE_NULL;
-	imageTexelsInfo.flags					= 0u;
-	imageTexelsInfo.imageType				= imageSparseInfo.imageType;
-	imageTexelsInfo.format					= imageSparseInfo.format;
-	imageTexelsInfo.extent					= imageSparseInfo.extent;
-	imageTexelsInfo.arrayLayers				= imageSparseInfo.arrayLayers;
-	imageTexelsInfo.mipLevels				= imageSparseInfo.mipLevels;
-	imageTexelsInfo.samples					= imageSparseInfo.samples;
-	imageTexelsInfo.tiling					= VK_IMAGE_TILING_OPTIMAL;
-	imageTexelsInfo.initialLayout			= VK_IMAGE_LAYOUT_UNDEFINED;
-	imageTexelsInfo.usage					= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | imageOutputUsageFlags();
-	imageTexelsInfo.sharingMode				= VK_SHARING_MODE_EXCLUSIVE;
-	imageTexelsInfo.queueFamilyIndexCount	= 0u;
-	imageTexelsInfo.pQueueFamilyIndices		= DE_NULL;
-
-	if (m_imageType == IMAGE_TYPE_CUBE || m_imageType == IMAGE_TYPE_CUBE_ARRAY)
-	{
-		imageTexelsInfo.flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
-	}
-
-	{
-		VkImageFormatProperties imageFormatProperties;
-		if (instance.getPhysicalDeviceImageFormatProperties(physicalDevice,
-			imageTexelsInfo.format,
-			imageTexelsInfo.imageType,
-			imageTexelsInfo.tiling,
-			imageTexelsInfo.usage,
-			imageTexelsInfo.flags,
-			&imageFormatProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
-		{
-			TCU_THROW(NotSupportedError, "Image format not supported for its usage ");
-		}
 	}
 
 	const Unique<VkImage>			imageTexels			(createImage(deviceInterface, getDevice(), &imageTexelsInfo));

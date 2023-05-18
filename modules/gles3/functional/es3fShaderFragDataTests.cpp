@@ -251,6 +251,13 @@ public:
 		if(!isExtensionSupported(renderCtx, "GL_EXT_draw_buffers") && !isExtensionSupported(renderCtx, "GL_NV_draw_buffers"))
 			num_test_attachment = 1;
 
+		std::string extensionString;
+		if (isExtensionSupported(renderCtx, "GL_EXT_draw_buffers"))
+			extensionString = "#extension GL_EXT_draw_buffers : require\n";
+		else
+			if (isExtensionSupported(renderCtx, "GL_NV_draw_buffers"))
+				extensionString = "#extension GL_NV_draw_buffers : require\n";
+
 		const glu::ShaderProgram		program			(renderCtx, glu::ProgramSources()
 															<< glu::VertexSource(
 																"attribute highp vec4 a_position;\n"
@@ -262,6 +269,7 @@ public:
 																"	v_color = a_color;\n"
 																"}\n")
 															<< glu::FragmentSource(
+																extensionString +
 																"varying mediump vec4 v_color;\n"
 																"uniform mediump int u_index;\n"
 																"void main (void)\n"

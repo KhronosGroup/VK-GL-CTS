@@ -1,9 +1,11 @@
 include_directories(
 	..
 	../util
+	${DEQP_INL_DIR}
 	)
 
-set(DEQP_VK_SYNCHRONIZATION_SRCS
+set(DEQP_VK_VKSC_SYNCHRONIZATION_SRCS
+	vktSynchronizationDefs.hpp
 	vktSynchronizationTests.cpp
 	vktSynchronizationTests.hpp
 	vktSynchronizationUtil.cpp
@@ -25,24 +27,31 @@ set(DEQP_VK_SYNCHRONIZATION_SRCS
 	vktSynchronizationInternallySynchronizedObjectsTests.cpp
 	vktSynchronizationInternallySynchronizedObjectsTests.hpp
 	vktSynchronizationOperationTestData.hpp
-	vktSynchronizationCrossInstanceSharingTests.cpp
-	vktSynchronizationCrossInstanceSharingTests.hpp
 	vktSynchronizationTimelineSemaphoreTests.cpp
 	vktSynchronizationTimelineSemaphoreTests.hpp
+	vktSynchronizationImageLayoutTransitionTests.cpp
+	vktSynchronizationImageLayoutTransitionTests.cpp
+	)
+
+set(DEQP_VK_SYNCHRONIZATION_SRCS
+	vktSynchronizationCrossInstanceSharingTests.cpp
+	vktSynchronizationCrossInstanceSharingTests.hpp
 	vktSynchronizationNoneStageTests.cpp
 	vktSynchronizationNoneStageTests.hpp
 	vktSynchronizationSignalOrderTests.cpp
 	vktSynchronizationSignalOrderTests.hpp
 	vktSynchronizationWin32KeyedMutexTests.cpp
 	vktSynchronizationWin32KeyedMutexTests.hpp
-	)
-
-set(DEQP_VK_SYNCHRONIZATION_LIBS
-	tcutil
-	vkutil
+    vktGlobalPriorityQueueTests.cpp
+    vktGlobalPriorityQueueTests.hpp
+    vktGlobalPriorityQueueUtils.cpp
+    vktGlobalPriorityQueueUtils.hpp
 	)
 
 PCH(DEQP_VK_SYNCHRONIZATION_SRCS ../pch.cpp)
 
-add_library(deqp-vk-synchronization STATIC ${DEQP_VK_SYNCHRONIZATION_SRCS})
-target_link_libraries(deqp-vk-synchronization ${DEQP_VK_SYNCHRONIZATION_LIBS})
+add_library(deqp-vk-synchronization STATIC ${DEQP_VK_VKSC_SYNCHRONIZATION_SRCS} ${DEQP_VK_SYNCHRONIZATION_SRCS})
+target_link_libraries(deqp-vk-synchronization tcutil vkutil)
+
+add_library(deqp-vksc-synchronization STATIC ${DEQP_VK_VKSC_SYNCHRONIZATION_SRCS})
+target_link_libraries(deqp-vksc-synchronization PUBLIC deqp-vksc-util tcutil vkscutil)

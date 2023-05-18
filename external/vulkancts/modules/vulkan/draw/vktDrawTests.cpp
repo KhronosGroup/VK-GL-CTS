@@ -24,6 +24,7 @@
 
 #include "vktDrawTests.hpp"
 
+#include "vktDrawGroupParams.hpp"
 #include "vktDrawSimpleTest.hpp"
 #include "vktDrawConcurrentTests.hpp"
 #include "vktDrawIndexedTest.hpp"
@@ -32,6 +33,7 @@
 #include "vktTestGroupUtil.hpp"
 #include "vktBasicDrawTests.hpp"
 #include "vktDrawShaderDrawParametersTests.hpp"
+#include "vktDrawShaderInvocationTests.hpp"
 #include "vktDrawNegativeViewportHeightTests.hpp"
 #include "vktDrawInvertedDepthRangesTests.hpp"
 #include "vktDrawDifferingInterpolationTests.hpp"
@@ -39,13 +41,18 @@
 #include "vktDrawShaderViewportIndexTests.hpp"
 #include "vktDrawScissorTests.hpp"
 #include "vktDrawMultipleInterpolationTests.hpp"
+#include "vktDrawMultisampleLinearInterpolationTests.hpp"
 #include "vktDrawDiscardRectanglesTests.hpp"
 #include "vktDrawExplicitVertexParameterTests.hpp"
-#include "vktDrawOutputLocationTests.hpp"
 #include "vktDrawDepthClampTests.hpp"
-#include "vktDrawAhbTests.hpp"
 #include "vktDrawMultipleClearsWithinRenderPass.hpp"
+#include "vktDrawSampleAttributeTests.hpp"
+#ifndef CTS_USES_VULKANSC
+#include "vktDrawOutputLocationTests.hpp"
+#include "vktDrawDepthBiasTests.hpp"
+#include "vktDrawAhbTests.hpp"
 #include "vktDrawMultiExtTests.hpp"
+#endif // CTS_USES_VULKANSC
 
 namespace vkt
 {
@@ -55,52 +62,97 @@ namespace Draw
 namespace
 {
 
-void createChildren (tcu::TestContext& testCtx, tcu::TestCaseGroup* group, bool useDynamicRendering)
+void createChildren (tcu::TestContext& testCtx, tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 {
-	group->addChild(new ConcurrentDrawTests					(testCtx, useDynamicRendering));
-	group->addChild(new SimpleDrawTests						(testCtx, useDynamicRendering));
-	group->addChild(new DrawIndexedTests					(testCtx, useDynamicRendering));
-	group->addChild(new IndirectDrawTests					(testCtx, useDynamicRendering));
-	group->addChild(createBasicDrawTests					(testCtx, useDynamicRendering));
-	group->addChild(new InstancedTests						(testCtx, useDynamicRendering));
-	group->addChild(new ShaderDrawParametersTests			(testCtx, useDynamicRendering));
-	group->addChild(createNegativeViewportHeightTests		(testCtx, useDynamicRendering));
-	group->addChild(createZeroViewportHeightTests			(testCtx, useDynamicRendering));
-	group->addChild(createInvertedDepthRangesTests			(testCtx, useDynamicRendering));
-	group->addChild(createDifferingInterpolationTests		(testCtx, useDynamicRendering));
-	group->addChild(createShaderLayerTests					(testCtx, useDynamicRendering));
-	group->addChild(createShaderViewportIndexTests			(testCtx, useDynamicRendering));
-	group->addChild(createScissorTests						(testCtx, useDynamicRendering));
-	group->addChild(createMultipleInterpolationTests		(testCtx, useDynamicRendering));
-	group->addChild(createDiscardRectanglesTests			(testCtx, useDynamicRendering));
-	group->addChild(createExplicitVertexParameterTests		(testCtx, useDynamicRendering));
-	group->addChild(createDepthClampTests					(testCtx, useDynamicRendering));
-	group->addChild(new MultipleClearsWithinRenderPassTests	(testCtx, useDynamicRendering));
-	group->addChild(createDrawMultiExtTests					(testCtx, useDynamicRendering));
+	group->addChild(new ConcurrentDrawTests						(testCtx, groupParams));
+	group->addChild(new SimpleDrawTests							(testCtx, groupParams));
+	group->addChild(new DrawIndexedTests						(testCtx, groupParams));
+	group->addChild(new IndirectDrawTests						(testCtx, groupParams));
+	group->addChild(createBasicDrawTests						(testCtx, groupParams));
+	group->addChild(new InstancedTests							(testCtx, groupParams));
+	group->addChild(new ShaderDrawParametersTests				(testCtx, groupParams));
+	group->addChild(createNegativeViewportHeightTests			(testCtx, groupParams));
+	group->addChild(createZeroViewportHeightTests				(testCtx, groupParams));
+	group->addChild(createOffScreenViewportTests				(testCtx, groupParams));
+	group->addChild(createInvertedDepthRangesTests				(testCtx, groupParams));
+	group->addChild(createDifferingInterpolationTests			(testCtx, groupParams));
+	group->addChild(createShaderLayerTests						(testCtx, groupParams));
+	group->addChild(createShaderViewportIndexTests				(testCtx, groupParams));
+	group->addChild(createScissorTests							(testCtx, groupParams));
+	group->addChild(createMultipleInterpolationTests			(testCtx, groupParams));
+	group->addChild(createMultisampleLinearInterpolationTests	(testCtx, groupParams));
+	group->addChild(createDiscardRectanglesTests				(testCtx, groupParams));
+	group->addChild(createExplicitVertexParameterTests			(testCtx, groupParams));
+	group->addChild(createDepthClampTests						(testCtx, groupParams));
+	group->addChild(new MultipleClearsWithinRenderPassTests		(testCtx, groupParams));
+	group->addChild(createSampleAttributeTests					(testCtx, groupParams));
+	// NOTE: all new draw tests should handle SharedGroupParams
 
-	if (!useDynamicRendering)
+#ifndef CTS_USES_VULKANSC
+	group->addChild(createDrawMultiExtTests						(testCtx, groupParams));
+
+	if (!groupParams->useDynamicRendering)
 	{
 		// amber tests - no support for dynamic rendering
+		group->addChild(createDepthBiasTests				(testCtx));
 		group->addChild(createOutputLocationTests			(testCtx));
+		group->addChild(createShaderInvocationTests			(testCtx));
 
 		// subpasses can't be translated to dynamic rendering
 		group->addChild(createAhbTests						(testCtx));
 	}
+#endif // CTS_USES_VULKANSC
 }
 
 } // anonymous
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> mainGroup				(new tcu::TestCaseGroup(testCtx, "draw", "Simple Draw tests"));
-	de::MovePtr<tcu::TestCaseGroup> renderpassGroup			(new tcu::TestCaseGroup(testCtx, "renderpass", "Draw using render pass object"));
-	de::MovePtr<tcu::TestCaseGroup> dynamicRenderingGroup	(new tcu::TestCaseGroup(testCtx, "dynamic_rendering", "Draw using VK_KHR_dynamic_rendering"));
+	de::MovePtr<tcu::TestCaseGroup> mainGroup						(new tcu::TestCaseGroup(testCtx, "draw", "Simple Draw tests"));
+	de::MovePtr<tcu::TestCaseGroup> renderpassGroup					(new tcu::TestCaseGroup(testCtx, "renderpass", "Draw using renderpass object"));
 
-	createChildren(testCtx, renderpassGroup.get(), false);
-	createChildren(testCtx, dynamicRenderingGroup.get(), true);
-
+	createChildren(testCtx, renderpassGroup.get(), SharedGroupParams(
+		new GroupParams
+		{
+			false,			// bool useDynamicRendering;
+			false,			// bool useSecondaryCmdBuffer;
+			false,			// bool secondaryCmdBufferCompletelyContainsDynamicRenderpass;
+		}));
 	mainGroup->addChild(renderpassGroup.release());
+
+#ifndef CTS_USES_VULKANSC
+	de::MovePtr<tcu::TestCaseGroup> dynamicRenderingGroup			(new tcu::TestCaseGroup(testCtx, "dynamic_rendering", "Draw using VK_KHR_dynamic_rendering"));
+	de::MovePtr<tcu::TestCaseGroup> drPrimaryCmdBuffGroup			(new tcu::TestCaseGroup(testCtx, "primary_cmd_buff", ""));
+	de::MovePtr<tcu::TestCaseGroup> drPartialSecondaryCmdBuffGroup	(new tcu::TestCaseGroup(testCtx, "partial_secondary_cmd_buff", "Secondary command buffer doesn't include begin/endRendering"));
+	de::MovePtr<tcu::TestCaseGroup> drCompleteSecondaryCmdBuffGroup	(new tcu::TestCaseGroup(testCtx, "complete_secondary_cmd_buff", "Secondary command buffer contains completely dynamic renderpass"));
+
+	createChildren(testCtx, drPrimaryCmdBuffGroup.get(), SharedGroupParams(
+		new GroupParams
+		{
+			true,			// bool useDynamicRendering;
+			false,			// bool useSecondaryCmdBuffer;
+			false,			// bool secondaryCmdBufferCompletelyContainsDynamicRenderpass;
+		}));
+	createChildren(testCtx, drPartialSecondaryCmdBuffGroup.get(), SharedGroupParams(
+		new GroupParams
+		{
+			true,			// bool useDynamicRendering;
+			true,			// bool useSecondaryCmdBuffer;
+			false,			// bool secondaryCmdBufferCompletelyContainsDynamicRenderpass;
+		}));
+	createChildren(testCtx, drCompleteSecondaryCmdBuffGroup.get(), SharedGroupParams(
+		new GroupParams
+		{
+			true,			// bool useDynamicRendering;
+			true,			// bool useSecondaryCmdBuffer;
+			true,			// bool secondaryCmdBufferCompletelyContainsDynamicRenderpass;
+		}));
+
+	dynamicRenderingGroup->addChild(drPrimaryCmdBuffGroup.release());
+	dynamicRenderingGroup->addChild(drPartialSecondaryCmdBuffGroup.release());
+	dynamicRenderingGroup->addChild(drCompleteSecondaryCmdBuffGroup.release());
 	mainGroup->addChild(dynamicRenderingGroup.release());
+#endif // CTS_USES_VULKANSC
 
 	return mainGroup.release();
 }

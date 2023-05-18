@@ -64,9 +64,24 @@ struct ResetDescriptorPoolTestParams
 	bool		m_freeDescriptorSets;
 };
 
+void checkSupportFreeDescriptorSets (Context& context, const ResetDescriptorPoolTestParams params)
+{
+#ifdef CTS_USES_VULKANSC
+	if(params.m_freeDescriptorSets && context.getDeviceVulkanSC10Properties().recycleDescriptorSetMemory == VK_FALSE )
+		TCU_THROW(NotSupportedError, "vkFreeDescriptorSets not supported");
+#else
+	DE_UNREF(context);
+	DE_UNREF(params);
+#endif // CTS_USES_VULKANSC
+}
+
 tcu::TestStatus resetDescriptorPoolTest (Context& context, const ResetDescriptorPoolTestParams params)
 {
+#ifndef CTS_USES_VULKANSC
 	const deUint32				numDescriptorSetsPerIter = 2048;
+#else
+	const deUint32				numDescriptorSetsPerIter = 100;
+#endif // CTS_USES_VULKANSC
 	const DeviceInterface&		vkd						 = context.getDeviceInterface();
 	const VkDevice				device					 = context.getDevice();
 
@@ -278,6 +293,58 @@ tcu::TestStatus outOfPoolMemoryTest (Context& context)
 		return tcu::TestStatus::pass("Pass");
 }
 
+tcu::TestStatus zeroPoolSizeCount(Context& context)
+{
+	const DeviceInterface&	vkd = context.getDeviceInterface();
+	const VkDevice			device = context.getDevice();
+
+	const VkDescriptorPoolCreateInfo			descriptorPoolCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,				// VkStructureType                sType;
+		DE_NULL,													// const void*                    pNext;
+		VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,			// VkDescriptorPoolCreateFlags    flags;
+		1u,															// uint32_t                       maxSets;
+		0u,															// uint32_t                       poolSizeCount;
+		DE_NULL,													// const VkDescriptorPoolSize*    pPoolSizes;
+	};
+
+	// Test a pool can be created for empty descriptor sets.
+	const Unique<VkDescriptorPool>				descriptorPool(createDescriptorPool(vkd, device, &descriptorPoolCreateInfo));
+
+	const VkDescriptorSetLayoutCreateInfo		descriptorSetLayoutInfo =
+	{
+		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,		// VkStructureType                        sType;
+		DE_NULL,													// const void*                            pNext;
+		(VkDescriptorSetLayoutCreateFlags)0,						// VkDescriptorSetLayoutCreateFlags       flags;
+		0u,															// uint32_t                               bindingCount;
+		DE_NULL,													// const VkDescriptorSetLayoutBinding*    pBindings;
+	};
+
+	const Unique<VkDescriptorSetLayout>			descriptorSetLayout(createDescriptorSetLayout(vkd, device, &descriptorSetLayoutInfo));
+
+	const VkDescriptorSetAllocateInfo			descriptorSetAllocateInfo =
+	{
+		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,				// VkStructureType                 sType;
+		DE_NULL,													// const void*                     pNext;
+		*descriptorPool,											// VkDescriptorPool                descriptorPool;
+		1u,															// uint32_t                        descriptorSetCount;
+		&descriptorSetLayout.get(),									// const VkDescriptorSetLayout*    pSetLayouts;
+	};
+
+	// Create an empty descriptor set from the pool.
+	VkDescriptorSet descriptorSet;
+	VkResult result = vkd.allocateDescriptorSets(device, &descriptorSetAllocateInfo, &descriptorSet);
+	if (result != VK_SUCCESS)
+		return tcu::TestStatus::fail("Expected vkAllocateDescriptorSets to return VK_SUCCESS but got " + string(getResultName(result)) + " instead");
+
+	// Free the empty descriptor set back to the pool.
+	result = vkd.freeDescriptorSets(device, *descriptorPool, 1, &descriptorSet);
+	if (result != VK_SUCCESS)
+		return tcu::TestStatus::fail("Expected vkFreeDescriptorSets to return VK_SUCCESS but got " + string(getResultName(result)) + " instead");
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createDescriptorPoolTests (tcu::TestContext& testCtx)
@@ -290,23 +357,31 @@ tcu::TestCaseGroup* createDescriptorPoolTests (tcu::TestContext& testCtx)
 	addFunctionCase(descriptorPoolTests.get(),
 					"repeated_reset_short",
 					"Test 2 cycles of vkAllocateDescriptorSets and vkResetDescriptorPool (should pass)",
+					checkSupportFreeDescriptorSets,
 					resetDescriptorPoolTest, ResetDescriptorPoolTestParams(2U));
 	addFunctionCase(descriptorPoolTests.get(),
 					"repeated_reset_long",
 					"Test many cycles of vkAllocateDescriptorSets and vkResetDescriptorPool",
+					checkSupportFreeDescriptorSets,
 					resetDescriptorPoolTest, ResetDescriptorPoolTestParams(numIterationsHigh));
 	addFunctionCase(descriptorPoolTests.get(),
 					"repeated_free_reset_short",
 					"Test 2 cycles of vkAllocateDescriptorSets, vkFreeDescriptorSets and vkResetDescriptorPool (should pass)",
+					checkSupportFreeDescriptorSets,
 					resetDescriptorPoolTest, ResetDescriptorPoolTestParams(2U, true));
 	addFunctionCase(descriptorPoolTests.get(),
 					"repeated_free_reset_long",
 					"Test many cycles of vkAllocateDescriptorSets, vkFreeDescriptorSets and vkResetDescriptorPool",
+					checkSupportFreeDescriptorSets,
 					resetDescriptorPoolTest, ResetDescriptorPoolTestParams(numIterationsHigh, true));
 	addFunctionCase(descriptorPoolTests.get(),
 					"out_of_pool_memory",
 					"Test that when we run out of descriptors a correct error code is returned",
 					outOfPoolMemoryTest);
+	addFunctionCase(descriptorPoolTests.get(),
+					"zero_pool_size_count",
+					"Test a descriptor pool object can be created with zero pools without error or crash",
+					zeroPoolSizeCount);
 
 	return descriptorPoolTests.release();
 }

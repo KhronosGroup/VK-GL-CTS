@@ -102,12 +102,12 @@ void SpinBarrier::sync (WaitMode requestedMode)
 	{
 		// Release all waiting threads. Since this thread has not been removed, m_numLeaving will
 		// be >= 1 until m_numLeaving is decremented at the end of this function.
-		m_numThreads -= m_numRemoved;
-		m_numLeaving  = m_numThreads;
-		m_numRemoved  = 0;
+		m_numThreads = m_numThreads - m_numRemoved;
+		m_numLeaving = m_numThreads;
+		m_numRemoved = 0;
 
 		deMemoryReadWriteFence();
-		m_numEntered  = 0;
+		m_numEntered = 0;
 	}
 	else
 	{
@@ -148,12 +148,12 @@ void SpinBarrier::removeThread (WaitMode requestedMode)
 	if (deAtomicIncrement32(&m_numEntered) == cachedNumThreads)
 	{
 		// Release all waiting threads.
-		m_numThreads -= m_numRemoved;
-		m_numLeaving  = m_numThreads;
-		m_numRemoved  = 0;
+		m_numThreads = m_numThreads - m_numRemoved;
+		m_numLeaving = m_numThreads;
+		m_numRemoved = 0;
 
 		deMemoryReadWriteFence();
-		m_numEntered  = 0;
+		m_numEntered = 0;
 	}
 }
 

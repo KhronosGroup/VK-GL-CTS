@@ -31,7 +31,8 @@
 namespace glcts
 {
 
-static const char* dummy_fs_code = "${VERSION}\n"
+static const char* minimal_fs_code =
+								   "${VERSION}\n"
 								   "\n"
 								   "precision highp float;\n"
 								   "\n"
@@ -42,7 +43,8 @@ static const char* dummy_fs_code = "${VERSION}\n"
 								   "    result = vec4(1.0);\n"
 								   "}\n";
 
-static const char* dummy_gs_code = "${VERSION}\n"
+static const char* minimal_gs_code =
+								   "${VERSION}\n"
 								   "${GEOMETRY_SHADER_REQUIRE}\n"
 								   "\n"
 								   "layout (points)                   in;\n"
@@ -56,7 +58,8 @@ static const char* dummy_gs_code = "${VERSION}\n"
 								   "    EmitVertex();\n"
 								   "}\n";
 
-static const char* dummy_vs_code = "${VERSION}\n"
+static const char* minimal_vs_code =
+								   "${VERSION}\n"
 								   "\n"
 								   "${OUT_PER_VERTEX_DECL}"
 								   "\n"
@@ -637,12 +640,12 @@ tcu::TestNode::IterateResult GeometryShaderGetProgramiv2Test::iterate()
 	}
 
 	/* Initialize the program object */
-	std::string specialized_dummy_fs = specializeShader(1,
-														/* parts */ &dummy_fs_code);
-	const char* specialized_dummy_fs_raw = specialized_dummy_fs.c_str();
-	std::string specialized_dummy_vs	 = specializeShader(1,
-														/* parts */ &dummy_vs_code);
-	const char* specialized_dummy_vs_raw = specialized_dummy_vs.c_str();
+	std::string specialized_minimal_fs		= specializeShader(1,
+														/* parts */ &minimal_fs_code);
+	const char* specialized_minimal_fs_raw	= specialized_minimal_fs.c_str();
+	std::string specialized_minimal_vs		= specializeShader(1,
+														/* parts */ &minimal_vs_code);
+	const char* specialized_minimal_vs_raw	= specialized_minimal_vs.c_str();
 
 	m_fs_id = gl.createShader(GL_FRAGMENT_SHADER);
 	m_vs_id = gl.createShader(GL_VERTEX_SHADER);
@@ -653,10 +656,10 @@ tcu::TestNode::IterateResult GeometryShaderGetProgramiv2Test::iterate()
 
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateProgram() call failed.");
 
-	if (!TestCaseBase::buildProgram(m_po_id, m_fs_id, 1, &specialized_dummy_fs_raw, m_vs_id, 1,
-									&specialized_dummy_vs_raw))
+	if (!TestCaseBase::buildProgram(m_po_id, m_fs_id, 1, &specialized_minimal_fs_raw, m_vs_id, 1,
+									&specialized_minimal_vs_raw))
 	{
-		m_testCtx.getLog() << tcu::TestLog::Message << "Failed to build a dummy test program object"
+		m_testCtx.getLog() << tcu::TestLog::Message << "Failed to build a minimal test program object"
 						   << tcu::TestLog::EndMessage;
 
 		result = false;
@@ -974,12 +977,12 @@ tcu::TestNode::IterateResult GeometryShaderGetProgramiv3Test::iterate()
 		throw tcu::NotSupportedError(GEOMETRY_SHADER_EXTENSION_NOT_SUPPORTED, "", __FILE__, __LINE__);
 	}
 
-	/* Prepare specialized versions of dummy fragment & vertex shaders */
-	std::string dummy_fs_specialized = specializeShader(1,
-														/* parts */ &dummy_fs_code);
-	const char* dummy_fs_specialized_raw = dummy_fs_specialized.c_str();
-	std::string dummy_vs_specialized	 = specializeShader(1, &dummy_vs_code);
-	const char* dummy_vs_specialized_raw = dummy_vs_specialized.c_str();
+	/* Prepare specialized versions of minimal fragment & vertex shaders */
+	std::string minimal_fs_specialized		= specializeShader(1,
+														/* parts */ &minimal_fs_code);
+	const char* minimal_fs_specialized_raw	= minimal_fs_specialized.c_str();
+	std::string minimal_vs_specialized		= specializeShader(1, &minimal_vs_code);
+	const char* minimal_vs_specialized_raw	= minimal_vs_specialized.c_str();
 
 	/* Set up the fragment & the vertex shaders */
 	m_fs_id = gl.createShader(GL_FRAGMENT_SHADER);
@@ -988,7 +991,7 @@ tcu::TestNode::IterateResult GeometryShaderGetProgramiv3Test::iterate()
 
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateShader() call(s) failed.");
 
-	if (!buildShader(m_fs_id, dummy_fs_specialized_raw) || !buildShader(m_vs_id, dummy_vs_specialized_raw))
+	if (!buildShader(m_fs_id, minimal_fs_specialized_raw) || !buildShader(m_vs_id, minimal_vs_specialized_raw))
 	{
 		m_testCtx.getLog() << tcu::TestLog::Message << "Either FS or VS failed to build." << tcu::TestLog::EndMessage;
 
@@ -1007,8 +1010,8 @@ tcu::TestNode::IterateResult GeometryShaderGetProgramiv3Test::iterate()
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glAttachShader() call(s) failed.");
 
 	/* Set up the fragment & the vertex shader programs */
-	if (!buildShaderProgram(&m_fs_po_id, GL_FRAGMENT_SHADER, dummy_fs_specialized_raw) ||
-		!buildShaderProgram(&m_vs_po_id, GL_VERTEX_SHADER, dummy_vs_specialized_raw))
+	if (!buildShaderProgram(&m_fs_po_id, GL_FRAGMENT_SHADER, minimal_fs_specialized_raw) ||
+		!buildShaderProgram(&m_vs_po_id, GL_VERTEX_SHADER, minimal_vs_specialized_raw))
 	{
 		m_testCtx.getLog() << tcu::TestLog::Message << "Either FS or VS SPOs failed to build."
 						   << tcu::TestLog::EndMessage;
@@ -1276,11 +1279,11 @@ tcu::TestNode::IterateResult GeometryShaderDrawCallWithFSAndGS::iterate()
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindVertexArray() call failed.");
 
 	/* Create shader program objects */
-	std::string code_fs_specialized = specializeShader(1, /* parts */
-													   &dummy_fs_code);
+	std::string code_fs_specialized		= specializeShader(1, /* parts */
+													   &minimal_fs_code);
 	const char* code_fs_specialized_raw = code_fs_specialized.c_str();
 	std::string code_gs_specialized		= specializeShader(1, /* parts */
-													   &dummy_gs_code);
+													   &minimal_gs_code);
 	const char* code_gs_specialized_raw = code_gs_specialized.c_str();
 	glw::GLint  link_status				= GL_FALSE;
 
@@ -1295,7 +1298,7 @@ tcu::TestNode::IterateResult GeometryShaderDrawCallWithFSAndGS::iterate()
 
 	if (link_status != GL_TRUE)
 	{
-		m_testCtx.getLog() << tcu::TestLog::Message << "Dummy fragment shader program failed to link."
+		m_testCtx.getLog() << tcu::TestLog::Message << "Minimal fragment shader program failed to link."
 						   << tcu::TestLog::EndMessage;
 
 		result = false;
@@ -1306,7 +1309,7 @@ tcu::TestNode::IterateResult GeometryShaderDrawCallWithFSAndGS::iterate()
 
 	if (link_status != GL_TRUE)
 	{
-		m_testCtx.getLog() << tcu::TestLog::Message << "Dummy geometry shader program failed to link."
+		m_testCtx.getLog() << tcu::TestLog::Message << "Minimal geometry shader program failed to link."
 						   << tcu::TestLog::EndMessage;
 
 		result = false;
@@ -1611,13 +1614,13 @@ tcu::TestNode::IterateResult GeometryShaderMaxImageUniformsTest::iterate()
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glTransformFeedbackVaryings() call failed.");
 
 	/* Try to link the test program object */
-	fs_code_specialized		= specializeShader(1, &dummy_fs_code);
+	fs_code_specialized		= specializeShader(1, &minimal_fs_code);
 	fs_code_specialized_raw = fs_code_specialized.c_str();
 
 	gs_code_specialized		= getGSCode();
 	gs_code_specialized_raw = gs_code_specialized.c_str();
 
-	vs_code_specialized		= specializeShader(1, &dummy_vs_code);
+	vs_code_specialized		= specializeShader(1, &minimal_vs_code);
 	vs_code_specialized_raw = vs_code_specialized.c_str();
 
 	if (!TestCaseBase::buildProgram(m_po_id, m_gs_id, 1,				  /* n_sh1_body_parts */
@@ -1963,13 +1966,13 @@ tcu::TestNode::IterateResult GeometryShaderMaxShaderStorageBlocksTest::iterate()
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glTransformFeedbackVaryings() call failed.");
 
 	/* Try to link the test program object */
-	fs_code_specialized		= specializeShader(1, &dummy_fs_code);
+	fs_code_specialized		= specializeShader(1, &minimal_fs_code);
 	fs_code_specialized_raw = fs_code_specialized.c_str();
 
 	gs_code_specialized		= getGSCode();
 	gs_code_specialized_raw = gs_code_specialized.c_str();
 
-	vs_code_specialized		= specializeShader(1, &dummy_vs_code);
+	vs_code_specialized		= specializeShader(1, &minimal_vs_code);
 	vs_code_specialized_raw = vs_code_specialized.c_str();
 
 	if (!TestCaseBase::buildProgram(m_po_id, m_gs_id, 1,				  /* n_sh1_body_parts */
@@ -2328,7 +2331,7 @@ tcu::TestNode::IterateResult GeometryShaderMaxAtomicCountersTest::iterate()
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateShader() call(s) failed.");
 
 	/* Try to link the test program object */
-	fs_code_specialized		= specializeShader(1, &dummy_fs_code);
+	fs_code_specialized		= specializeShader(1, &minimal_fs_code);
 	fs_code_specialized_raw = fs_code_specialized.c_str();
 
 	gs_code_specialized		= getGSCode();
@@ -2664,7 +2667,7 @@ tcu::TestNode::IterateResult GeometryShaderMaxAtomicCounterBuffersTest::iterate(
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateShader() call(s) failed.");
 
 	/* Try to link the test program object */
-	fs_code_specialized		= specializeShader(1, &dummy_fs_code);
+	fs_code_specialized		= specializeShader(1, &minimal_fs_code);
 	fs_code_specialized_raw = fs_code_specialized.c_str();
 
 	gs_code_specialized		= getGSCode();
@@ -2873,9 +2876,9 @@ tcu::TestNode::IterateResult GeometryShaderPiplineProgramObjectWithoutActiveVSPr
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateShader() call(s) failed.");
 
 	/* Try to link the test program object */
-	std::string fs_code_specialized		= specializeShader(1, &dummy_fs_code);
+	std::string fs_code_specialized		= specializeShader(1, &minimal_fs_code);
 	const char* fs_code_specialized_raw = fs_code_specialized.c_str();
-	std::string gs_code_specialized		= specializeShader(1, &dummy_gs_code);
+	std::string gs_code_specialized		= specializeShader(1, &minimal_gs_code);
 	const char* gs_code_specialized_raw = gs_code_specialized.c_str();
 
 	if (!TestCaseBase::buildProgram(m_fs_po_id, m_fs_id, 1,			/* n_sh1_body_parts */
@@ -3130,7 +3133,7 @@ tcu::TestNode::IterateResult GeometryShaderIncompatibleDrawCallModeTest::iterate
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateShader() call(s) failed.");
 
 	/* Try to link the test program object */
-	std::string fs_code_specialized		= specializeShader(1, &dummy_fs_code);
+	std::string fs_code_specialized		= specializeShader(1, &minimal_fs_code);
 	const char* fs_code_specialized_raw = fs_code_specialized.c_str();
 
 	std::string gs_codes_specialized[] = { specializeShader(1, &gs_code_points), specializeShader(1, &gs_code_lines),
@@ -3141,7 +3144,7 @@ tcu::TestNode::IterateResult GeometryShaderIncompatibleDrawCallModeTest::iterate
 	const char* gs_codes_specialized_raw[] = { gs_codes_specialized[0].c_str(), gs_codes_specialized[1].c_str(),
 											   gs_codes_specialized[2].c_str(), gs_codes_specialized[3].c_str(),
 											   gs_codes_specialized[4].c_str() };
-	std::string vs_code_specialized		= specializeShader(1, &dummy_vs_code);
+	std::string vs_code_specialized		= specializeShader(1, &minimal_vs_code);
 	const char* vs_code_specialized_raw = vs_code_specialized.c_str();
 
 	for (glw::GLuint i = 0; i < m_number_of_gs; ++i)
@@ -3537,7 +3540,7 @@ tcu::TestNode::IterateResult GeometryShaderInsufficientEmittedVerticesTest::iter
 
 	const char* gs_codes_specialized_raw[] = { gs_codes_specialized[0].c_str(), gs_codes_specialized[1].c_str() };
 
-	std::string vs_code_specialized		= specializeShader(1, &dummy_vs_code);
+	std::string vs_code_specialized		= specializeShader(1, &minimal_vs_code);
 	const char* vs_code_specialized_raw = vs_code_specialized.c_str();
 
 	for (glw::GLuint i = 0; i < m_number_of_gs; ++i)
@@ -4074,13 +4077,13 @@ tcu::TestNode::IterateResult GeometryShaderDrawPrimitivesDoNotMatchOutputPrimiti
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateShader() call(s) failed.");
 
 	/* Try to link the test program object */
-	std::string fs_code_specialized		= specializeShader(1, &dummy_fs_code);
+	std::string fs_code_specialized		= specializeShader(1, &minimal_fs_code);
 	const char* fs_code_specialized_raw = fs_code_specialized.c_str();
 
 	std::string gs_code_specialized		= specializeShader(1, &gs_code);
 	const char* gs_code_specialized_raw = gs_code_specialized.c_str();
 
-	std::string vs_code_specialized		= specializeShader(1, &dummy_vs_code);
+	std::string vs_code_specialized		= specializeShader(1, &minimal_vs_code);
 	const char* vs_code_specialized_raw = vs_code_specialized.c_str();
 
 	if (!TestCaseBase::buildProgram(m_po_id, m_fs_id, 1,				  /* n_sh1_body_parts */
@@ -4308,10 +4311,10 @@ tcu::TestNode::IterateResult GeometryShaderDrawCallsWhileTFPaused::iterate()
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateShader() call(s) failed.");
 
 	/* Try to link the test program object */
-	std::string fs_code_specialized		= specializeShader(1, &dummy_fs_code);
+	std::string fs_code_specialized		= specializeShader(1, &minimal_fs_code);
 	const char* fs_code_specialized_raw = fs_code_specialized.c_str();
 
-	std::string vs_code_specialized		= specializeShader(1, &dummy_vs_code);
+	std::string vs_code_specialized		= specializeShader(1, &minimal_vs_code);
 	const char* vs_code_specialized_raw = vs_code_specialized.c_str();
 
 	for (int i = 0; i < number_of_combinations; ++i)

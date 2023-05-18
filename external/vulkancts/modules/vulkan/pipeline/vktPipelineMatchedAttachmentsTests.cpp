@@ -43,8 +43,14 @@ namespace
 
 struct MatchedAttachmentsTestParams
 {
-	bool	usePipelineCache;
+	PipelineConstructionType	pipelineConstructionType;
+	bool						usePipelineCache;
 };
+
+void checkSupport(Context& context, const MatchedAttachmentsTestParams params)
+{
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.pipelineConstructionType);
+}
 
 void initPrograms (SourceCollections& programCollection, const MatchedAttachmentsTestParams params)
 {
@@ -176,36 +182,21 @@ tcu::TestStatus testMatchedAttachments (Context& context, const MatchedAttachmen
 
 	const VkPipelineCacheCreateInfo					pipelineCacheCreateInfo			=
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,	// VkStructureType               sType;
-		DE_NULL,										// const void*                   pNext;
-		0u,												// VkPipelineCacheCreateFlags    flags;
-		0u,												// size_t                        initialDataSize;
-		DE_NULL											// const void*                   pInitialData;
+		VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,					// VkStructureType               sType;
+		DE_NULL,														// const void*                   pNext;
+#ifndef CTS_USES_VULKANSC
+		(VkPipelineCacheCreateFlags)0u,									// VkPipelineCacheCreateFlags    flags;
+		0u,																// size_t                        initialDataSize;
+		DE_NULL															// const void*                   pInitialData;
+#else
+		VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+			VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags        flags;
+		context.getResourceInterface()->getCacheDataSize(),			// deUintptr                         initialDataSize;
+		context.getResourceInterface()->getCacheData()				// const void*                       pInitialData;
+#endif // CTS_USES_VULKANSC
 	};
 
 	const Unique<VkPipelineCache>					pipelineCache					(createPipelineCache(vk, vkDevice, &pipelineCacheCreateInfo));
-
-	const VkPipelineShaderStageCreateInfo			stages[]						=
-	{
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType                     sType;
-			DE_NULL,												// const void*                         pNext;
-			0u,														// VkPipelineShaderStageCreateFlags    flags;
-			VK_SHADER_STAGE_VERTEX_BIT,								// VkShaderStageFlagBits               stage;
-			*vertexShaderModule,									// VkShaderModule                      module;
-			"main",													// const char*                         pName;
-			DE_NULL													// const VkSpecializationInfo*         pSpecializationInfo;
-		},
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType                     sType;
-			DE_NULL,												// const void*                         pNext;
-			0u,														// VkPipelineShaderStageCreateFlags    flags;
-			VK_SHADER_STAGE_FRAGMENT_BIT,							// VkShaderStageFlagBits               stage;
-			*fragmentShaderModule,									// VkShaderModule                      module;
-			"main",													// const char*                         pName;
-			DE_NULL													// const VkSpecializationInfo*         pSpecializationInfo;
-		}
-	};
 
 	const VkPipelineVertexInputStateCreateInfo		vertexInputStateCreateInfo		=
 	{
@@ -216,80 +207,6 @@ tcu::TestStatus testMatchedAttachments (Context& context, const MatchedAttachmen
 		DE_NULL,													// const VkVertexInputBindingDescription*      pVertexBindingDescriptions;
 		0u,															// deUint32                                    vertexAttributeDescriptionCount;
 		DE_NULL														// const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions;
-	};
-
-	const VkPipelineInputAssemblyStateCreateInfo	inputAssemblyStateCreateInfo	=
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType                            sType;
-		DE_NULL,														// const void*                                pNext;
-		0u,																// VkPipelineInputAssemblyStateCreateFlags    flags;
-		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,							// VkPrimitiveTopology                        topology;
-		VK_FALSE														// VkBool32                                   primitiveRestartEnable;
-	};
-
-	const VkPipelineViewportStateCreateInfo			viewportStateCreateInfo			=
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,	// VkStructureType                       sType;
-		DE_NULL,												// const void*                           pNext;
-		0u,														// VkPipelineViewportStateCreateFlags    flags;
-		1u,														// deUint32                              viewportCount;
-		DE_NULL,												// const VkViewport*                     pViewports;
-		1u,														// deUint32                              scissorCount;
-		DE_NULL													// const VkRect2D*                       pScissors;
-	};
-
-	const VkPipelineRasterizationStateCreateInfo	rasterizationStateCreateInfo	=
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	// VkStructureType                            sType;
-		DE_NULL,													// const void*                                pNext;
-		0u,															// VkPipelineRasterizationStateCreateFlags    flags;
-		VK_FALSE,													// VkBool32                                   depthClampEnable;
-		VK_FALSE,													// VkBool32                                   rasterizerDiscardEnable;
-		VK_POLYGON_MODE_FILL,										// VkPolygonMode                              polygonMode;
-		VK_CULL_MODE_BACK_BIT,										// VkCullModeFlags                            cullMode;
-		VK_FRONT_FACE_CLOCKWISE,									// VkFrontFace                                frontFace;
-		VK_FALSE,													// VkBool32                                   depthBiasEnable;
-		0.0f,														// float                                      depthBiasConstantFactor;
-		0.0f,														// float                                      depthBiasClamp;
-		0.0f,														// float                                      depthBiasSlopeFactor;
-		1.0f														// float                                      lineWidth;
-	};
-
-	const VkPipelineMultisampleStateCreateInfo		multisampleStateCreateInfo		=
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType                          sType;
-		DE_NULL,													// const void*                              pNext;
-		0u,															// VkPipelineMultisampleStateCreateFlags    flags;
-		VK_SAMPLE_COUNT_1_BIT,										// VkSampleCountFlagBits                    rasterizationSamples;
-		VK_FALSE,													// VkBool32                                 sampleShadingEnable;
-		0.0f,														// float                                    minSampleShading;
-		DE_NULL,													// const VkSampleMask*                      pSampleMask;
-		VK_FALSE,													// VkBool32                                 alphaToCoverageEnable;
-		VK_FALSE													// VkBool32                                 alphaToOneEnable;
-	};
-
-	const VkPipelineColorBlendAttachmentState		colorBlendAttachmentState		=
-	{
-		VK_FALSE,				// VkBool32                 blendEnable;
-		VK_BLEND_FACTOR_ZERO,	// VkBlendFactor            srcColorBlendFactor;
-		VK_BLEND_FACTOR_ZERO,	// VkBlendFactor            dstColorBlendFactor;
-		VK_BLEND_OP_ADD,		// VkBlendOp                colorBlendOp;
-		VK_BLEND_FACTOR_ZERO,	// VkBlendFactor            srcAlphaBlendFactor;
-		VK_BLEND_FACTOR_ZERO,	// VkBlendFactor            dstAlphaBlendFactor;
-		VK_BLEND_OP_ADD,		// VkBlendOp                alphaBlendOp;
-		0xf						// VkColorComponentFlags    colorWriteMask;
-	};
-
-	const VkPipelineColorBlendStateCreateInfo		colorBlendStateCreateInfo		=
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType                               sType;
-		DE_NULL,													// const void*                                   pNext;
-		0u,															// VkPipelineColorBlendStateCreateFlags          flags;
-		VK_FALSE,													// VkBool32                                      logicOpEnable;
-		VK_LOGIC_OP_COPY,											// VkLogicOp                                     logicOp;
-		1u,															// deUint32                                      attachmentCount;
-		&colorBlendAttachmentState,									// const VkPipelineColorBlendAttachmentState*    pAttachments;
-		{ 1.0f, 1.0f, 1.0f, 1.0f }									// float                                         blendConstants[4];
 	};
 
 	const VkDynamicState							dynamicState[]					=
@@ -307,49 +224,43 @@ tcu::TestStatus testMatchedAttachments (Context& context, const MatchedAttachmen
 		dynamicState											// const VkDynamicState*                pDynamicStates;
 	};
 
-	const VkGraphicsPipelineCreateInfo				graphicsPipelineCreateInfo		=
-	{
-		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType                                  sType;
-		DE_NULL,											// const void*                                      pNext;
-		0u,													// VkPipelineCreateFlags                            flags;
-		2u,													// deUint32                                         stageCount;
-		stages,												// const VkPipelineShaderStageCreateInfo*           pStages;
-		&vertexInputStateCreateInfo,						// const VkPipelineVertexInputStateCreateInfo*      pVertexInputState;
-		&inputAssemblyStateCreateInfo,						// const VkPipelineInputAssemblyStateCreateInfo*    pInputAssemblyState;
-		DE_NULL,											// const VkPipelineTessellationStateCreateInfo*     pTessellationState;
-		&viewportStateCreateInfo,							// const VkPipelineViewportStateCreateInfo*         pViewportState;
-		&rasterizationStateCreateInfo,						// const VkPipelineRasterizationStateCreateInfo*    pRasterizationState;
-		&multisampleStateCreateInfo,						// const VkPipelineMultisampleStateCreateInfo*      pMultisampleState;
-		DE_NULL,											// const VkPipelineDepthStencilStateCreateInfo*     pDepthStencilState;
-		&colorBlendStateCreateInfo,							// const VkPipelineColorBlendStateCreateInfo*       pColorBlendState;
-		&dynamicStateCreateInfo,							// const VkPipelineDynamicStateCreateInfo*          pDynamicState;
-		*pipelineLayout,									// VkPipelineLayout                                 layout;
-		*renderPass,										// VkRenderPass                                     renderPass;
-		0u,													// deUint32                                         subpass;
-		DE_NULL,											// VkPipeline                                       basePipelineHandle;
-		0													// int                                              basePipelineIndex;
-	};
-
-	createGraphicsPipeline(vk, vkDevice, params.usePipelineCache ? *pipelineCache : DE_NULL, &graphicsPipelineCreateInfo);
+	const std::vector<VkViewport>	viewport{};
+	const std::vector<VkRect2D>		scissor	{};
+	GraphicsPipelineWrapper			graphicsPipeline(vk, vkDevice, params.pipelineConstructionType);
+	graphicsPipeline.setDynamicState(&dynamicStateCreateInfo)
+					.setDefaultRasterizationState()
+					.setDefaultMultisampleState()
+					.setDefaultColorBlendState()
+					.setupVertexInputState(&vertexInputStateCreateInfo)
+					.setupPreRasterizationShaderState(viewport,
+													  scissor,
+													  *pipelineLayout,
+													  *renderPass,
+													  0u,
+													  *vertexShaderModule)
+					.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragmentShaderModule)
+					.setupFragmentOutputState(*renderPass, 0u)
+					.setMonolithicPipelineLayout(*pipelineLayout)
+					.buildPipeline(params.usePipelineCache ? *pipelineCache : DE_NULL);
 
 	// Passes as long as createGraphicsPipeline didn't crash.
 	return tcu::TestStatus::pass("Pass");
 }
 
-void addMatchedAttachmentsTestCasesWithFunctions (tcu::TestCaseGroup* group)
+void addMatchedAttachmentsTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineConstructionType pipelineConstructionType)
 {
-	const MatchedAttachmentsTestParams useCache = { true };
-	addFunctionCaseWithPrograms(group, "cache", "", initPrograms, testMatchedAttachments, useCache);
+	const MatchedAttachmentsTestParams useCache = { pipelineConstructionType, true };
+	addFunctionCaseWithPrograms(group, "cache", "", checkSupport, initPrograms, testMatchedAttachments, useCache);
 
-	const MatchedAttachmentsTestParams noCache = { false };
-	addFunctionCaseWithPrograms(group, "no_cache", "", initPrograms, testMatchedAttachments, noCache);
+	const MatchedAttachmentsTestParams noCache = { pipelineConstructionType, false };
+	addFunctionCaseWithPrograms(group, "no_cache", "", checkSupport, initPrograms, testMatchedAttachments, noCache);
 }
 
 } // anonymous
 
-tcu::TestCaseGroup* createMatchedAttachmentsTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createMatchedAttachmentsTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	return createTestGroup(testCtx, "matched_attachments", "Matched attachments tests", addMatchedAttachmentsTestCasesWithFunctions);
+	return createTestGroup(testCtx, "matched_attachments", "Matched attachments tests", addMatchedAttachmentsTestCasesWithFunctions, pipelineConstructionType);
 }
 
 } // pipeline

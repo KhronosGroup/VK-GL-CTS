@@ -99,6 +99,14 @@ inline VkComponentMapping makeComponentMappingRGBA (void)
 								VK_COMPONENT_SWIZZLE_A);
 }
 
+inline VkComponentMapping makeComponentMappingIdentity (void)
+{
+	return makeComponentMapping(VK_COMPONENT_SWIZZLE_IDENTITY,
+								VK_COMPONENT_SWIZZLE_IDENTITY,
+								VK_COMPONENT_SWIZZLE_IDENTITY,
+								VK_COMPONENT_SWIZZLE_IDENTITY);
+}
+
 inline VkExtent3D makeExtent3D (const tcu::IVec3& vec)
 {
 	return makeExtent3D((deUint32)vec.x(), (deUint32)vec.y(), (deUint32)vec.z());
@@ -180,6 +188,34 @@ inline VkViewport makeViewport(const deUint32 width, const deUint32 height)
 	return makeViewport(0.0f, 0.0f, (float)width, (float)height, 0.0f, 1.0f);
 }
 
+inline VkSemaphoreSubmitInfoKHR makeSemaphoreSubmitInfo (VkSemaphore semaphore, VkPipelineStageFlags2KHR stageMask, uint64_t value = 0, uint32_t deviceIndex = 0)
+{
+	return VkSemaphoreSubmitInfoKHR
+	{
+		VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR,	//  VkStructureType				sType;
+		DE_NULL,										//  const void*					pNext;
+		semaphore,										//  VkSemaphore					semaphore;
+		value,											//  uint64_t					value;
+		stageMask,										//  VkPipelineStageFlags2KHR	stageMask;
+		deviceIndex,									//  uint32_t					deviceIndex;
+	};
+}
+
+inline VkPipelineShaderStageCreateInfo makePipelineShaderStageCreateInfo (VkShaderStageFlagBits stage, VkShaderModule module, const VkSpecializationInfo* pSpecializationInfo = nullptr, const void* pNext = nullptr)
+{
+	const VkPipelineShaderStageCreateInfo stageInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	//	VkStructureType						sType;
+		pNext,													//	const void*							pNext;
+		0u,														//	VkPipelineShaderStageCreateFlags	flags;
+		stage,													//	VkShaderStageFlagBits				stage;
+		module,													//	VkShaderModule						module;
+		"main",													//	const char*							pName;
+		pSpecializationInfo,									//	const VkSpecializationInfo*			pSpecializationInfo;
+	};
+	return stageInfo;
+}
+
 inline VkPrimitiveTopology primitiveTopologyCastToList (const VkPrimitiveTopology primitiveTopology)
 {
 	DE_STATIC_ASSERT(static_cast<deUint64>(VK_PRIMITIVE_TOPOLOGY_PATCH_LIST) + 1 == static_cast<deUint64>(VK_PRIMITIVE_TOPOLOGY_LAST));
@@ -236,6 +272,7 @@ inline bool isAllGraphicsStages (const VkShaderStageFlags shaderStageFlags)
 	return isAllInStage(shaderStageFlags, VK_SHADER_STAGE_ALL_GRAPHICS);
 }
 
+#ifndef CTS_USES_VULKANSC
 inline bool isAllRayTracingStages (const VkShaderStageFlags shaderStageFlags)
 {
 	const VkShaderStageFlags	rayTracingStageFlags	= VK_SHADER_STAGE_RAYGEN_BIT_KHR
@@ -248,6 +285,38 @@ inline bool isAllRayTracingStages (const VkShaderStageFlags shaderStageFlags)
 	return isAllInStage(shaderStageFlags, rayTracingStageFlags);
 }
 
+inline bool isAllMeshShadingStages (const VkShaderStageFlags shaderStageFlags)
+{
+	const VkShaderStageFlags meshStages = (VK_SHADER_STAGE_MESH_BIT_EXT | VK_SHADER_STAGE_TASK_BIT_EXT);
+	return isAllInStage(shaderStageFlags, meshStages);
+}
+
+template <typename T>
+class StructChainAdder
+{
+public:
+	StructChainAdder (T* baseStruct)
+		: m_baseStruct(baseStruct)
+		{}
+
+	template <typename U>
+	void operator()(U* nextStruct) const
+	{
+		nextStruct->pNext	= m_baseStruct->pNext;
+		m_baseStruct->pNext	= nextStruct;
+	}
+
+private:
+	T* const m_baseStruct;
+};
+
+template<typename T>
+StructChainAdder<T> makeStructChainAdder (T* baseStruct)
+{
+	return StructChainAdder<T>(baseStruct);
+}
+
+#endif // CTS_USES_VULKANSC
 } // vk
 
 #endif // _VKTYPEUTIL_HPP

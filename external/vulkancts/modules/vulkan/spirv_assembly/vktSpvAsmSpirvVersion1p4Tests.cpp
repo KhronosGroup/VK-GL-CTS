@@ -70,12 +70,13 @@ struct CaseGroup
 
 void addTestsForAmberFiles (tcu::TestCaseGroup* tests, CaseGroup group)
 {
+#ifndef CTS_USES_VULKANSC
 	tcu::TestContext& testCtx = tests->getTestContext();
 	const std::string data_dir(group.data_dir);
 	const std::string subdir(group.subdir);
 	const std::string category = data_dir + "/" + subdir;
 	std::vector<Case> cases(group.cases);
-	vk::SpirVAsmBuildOptions asm_options(VK_MAKE_VERSION(1, 1, 0), vk::SPIRV_VERSION_1_4);
+	vk::SpirVAsmBuildOptions asm_options(VK_MAKE_API_VERSION(0, 1, 1, 0), vk::SPIRV_VERSION_1_4);
 	asm_options.supports_VK_KHR_spirv_1_4 = true;
 
 	for (unsigned i = 0; i < cases.size() ; ++i)
@@ -111,6 +112,10 @@ void addTestsForAmberFiles (tcu::TestCaseGroup* tests, CaseGroup group)
 		testCase->setSpirVAsmBuildOptions(asm_options);
 		tests->addChild(testCase);
 	}
+#else
+	DE_UNREF(tests);
+	DE_UNREF(group);
+#endif
 }
 
 } // anonymous
@@ -178,6 +183,7 @@ tcu::TestCaseGroup* createSpirvVersion1p4Group (tcu::TestContext& testCtx)
 	group.add("variable_pointers_ssbo_2_equal", "ptr equal in SSBO, store pointers in Function var", Varptr_full);
 	group.add("variable_pointers_ssbo_equal", "ptr equal in SSBO", Varptr_ssbo);
 	group.add("variable_pointers_vars_ssbo_equal", "ptr equal in SSBO, store pointers in Private var ", Varptr_ssbo);
+	group.add("simple_variable_pointers_ptr_equal", "ptr equal between simple data primitives in SSBOs", Varptr_ssbo);
 	group.add("variable_pointers_vars_wg_equal", "ptr equal in Workgrop, store pointers in Private var", Varptr_full);
 	group.add("variable_pointers_wg_equal", "ptr equal in Workgrop", Varptr_full);
 	group.add("wg_comparisons_equal", "ptr equal in Workgrop", Varptr_full);
@@ -191,6 +197,7 @@ tcu::TestCaseGroup* createSpirvVersion1p4Group (tcu::TestContext& testCtx)
 	group.add("ssbo_comparisons_not_equal", "ptr not equal SSBO", Varptr_ssbo);
 	group.add("variable_pointers_ssbo_2_not_equal", "ptr not equal SSBO, store pointer in Function var", Varptr_full);
 	group.add("variable_pointers_ssbo_not_equal", "ptr not equal SSBO, pointer from function return", Varptr_ssbo);
+	group.add("simple_variable_pointers_ptr_not_equal", "ptr not equal between simple data primitives in SSBOs", Varptr_ssbo);
 	group.add("variable_pointers_vars_ssbo_not_equal", "ptr not equal SSBO, store pointer in Private var", Varptr_ssbo);
 	group.add("variable_pointers_vars_wg_not_equal", "ptr not equal Workgroup, store pointer in Private var", Varptr_full);
 	group.add("variable_pointers_wg_not_equal", "ptr not equal Workgroup", Varptr_full);
@@ -249,7 +256,7 @@ tcu::TestCaseGroup* createSpirvVersion1p4Group (tcu::TestContext& testCtx)
 
 	group = CaseGroup(data_dir, "loop_control");
 	group.add("iteration_multiple", "Loop control IterationMultiple");
-	group.add("max_iterations", "Loop control IterationMultiple");
+	group.add("max_iterations", "Loop control MaxIterations");
 	group.add("min_iterations", "Loop control MinIterations");
 	group.add("partial_count", "Loop control PartialCount");
 	group.add("peel_count", "Loop control PeelCount");

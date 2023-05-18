@@ -353,7 +353,7 @@ public:
 	{
 	public:
 		static Fixed		create			(deInt32 value)				{ Fixed v; v.m_value = value; return v; }
-		static Fixed		fromFloat		(float value)				{ Fixed v; v.m_value = (deInt32)(value * 32768.0f); return v; }
+		static Fixed		fromFloat		(float value)				{ Fixed v; v.m_value = (deInt32)value; return v; }
 		inline deInt32		getValue		(void) const				{ return m_value; }
 
 		inline Fixed		operator+		(const Fixed& other) const	{ return create(m_value + other.getValue()); }

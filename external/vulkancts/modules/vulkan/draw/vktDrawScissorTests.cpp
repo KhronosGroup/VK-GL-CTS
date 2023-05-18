@@ -218,7 +218,7 @@ vector<VkRect2D> DynamicScissorTestCommand::updateScissors (vector<VkRect2D> sci
 	for (size_t scissorIdx = 0; scissorIdx < m_scissors.size(); scissorIdx++)
 	{
 		while (scissors.size() <= m_firstScissor + scissorIdx)
-			scissors.push_back(makeRect2D(0, 0)); // Add dummy scissor
+			scissors.push_back(makeRect2D(0, 0)); // Add empty scissor
 
 		scissors[m_firstScissor + scissorIdx] = m_scissors[scissorIdx];
 	}
@@ -228,13 +228,16 @@ vector<VkRect2D> DynamicScissorTestCommand::updateScissors (vector<VkRect2D> sci
 
 struct TestParams
 {
-	TestParams() : framebufferSize({WIDTH,HEIGHT}) {}
+	TestParams(const SharedGroupParams gp)
+		: groupParams		(gp)
+		, framebufferSize	({WIDTH,HEIGHT})
+	{}
 
 	bool					dynamicScissor;
 	vector<VkRect2D>		staticScissors;
 	vector<TestCommandSp>	commands;
 	bool					usesMultipleScissors;
-	bool					usesDynamicRendering;
+	const SharedGroupParams	groupParams;
 	VkExtent2D				framebufferSize;
 };
 
@@ -259,6 +262,15 @@ public:
 				ScissorTestInstance		(Context& context, const TestParams& params);
 				~ScissorTestInstance	(void);
 	TestStatus	iterate					(void);
+
+protected:
+	void		drawCommands			(VkCommandBuffer cmdBuffer, VkPipeline pipeline, VkBuffer vertexBuffer) const;
+	void		postRenderCommands		(VkCommandBuffer cmdBuffer, VkImage colorTargetImage) const;
+
+#ifndef CTS_USES_VULKANSC
+	void		beginSecondaryCmdBuffer	(VkCommandBuffer cmdBuffer, VkFormat colorAttachmentFormat, VkRenderingFlagsKHR renderingFlags = 0u) const;
+#endif // CTS_USES_VULKANSC
+
 private:
 	TestParams	m_params;
 
@@ -304,7 +316,7 @@ ScissorTestCase::~ScissorTestCase (void)
 
 void ScissorTestCase::checkSupport (Context& context) const
 {
-	if (m_params.usesDynamicRendering)
+	if (m_params.groupParams->useDynamicRendering)
 		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
 	if (m_params.usesMultipleScissors)
@@ -375,6 +387,7 @@ TestStatus ScissorTestInstance::iterate (void)
 	const CmdPoolCreateInfo			cmdPoolCreateInfo		(m_context.getUniversalQueueFamilyIndex());
 	Move<VkCommandPool>				cmdPool					= createCommandPool(vk, device, &cmdPoolCreateInfo);
 	Move<VkCommandBuffer>			cmdBuffer				= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	Move<VkCommandBuffer>			secCmdBuffer;
 	const Unique<VkShaderModule>	vs						(createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0));
 	Move<VkShaderModule>			gs;
 	const Unique<VkShaderModule>	fs						(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0));
@@ -403,7 +416,7 @@ TestStatus ScissorTestInstance::iterate (void)
 	colorTargetView = createImageView(vk, device, &colorTargetViewInfo);
 
 	// Create render pass
-	if (!m_params.usesDynamicRendering)
+	if (!m_params.groupParams->useDynamicRendering)
 	{
 		RenderPassCreateInfo		renderPassCreateInfo;
 		renderPassCreateInfo.addAttachment(AttachmentDescription(colorImageFormat,
@@ -494,6 +507,7 @@ TestStatus ScissorTestInstance::iterate (void)
 			pipelineCreateInfo.addState(PipelineCreateInfo::ViewportState(numScissors, vector<VkViewport>(numScissors, viewport), m_params.staticScissors));
 		}
 
+#ifndef CTS_USES_VULKANSC
 		VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
@@ -505,8 +519,9 @@ TestStatus ScissorTestInstance::iterate (void)
 			VK_FORMAT_UNDEFINED
 		};
 
-		if (m_params.usesDynamicRendering)
+		if (m_params.groupParams->useDynamicRendering)
 			pipelineCreateInfo.pNext = &renderingCreateInfo;
+#endif // CTS_USES_VULKANSC
 
 		pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 	}
@@ -514,45 +529,80 @@ TestStatus ScissorTestInstance::iterate (void)
 	// Queue commands and read results.
 	{
 		const ImageSubresourceRange subresourceRange	(VK_IMAGE_ASPECT_COLOR_BIT);
-		const VkRect2D				renderArea			= makeRect2D(framebufferSize);
-		const VkDeviceSize			vertexBufferOffset	= 0;
 		const VkOffset3D			zeroOffset			= { 0, 0, 0 };
 		const tcu::Vec4				clearColor			= { 0.0f, 0.0f, 0.0f, 1.0f };
 		const VkClearValue			clearValue			= makeClearValueColor(clearColor);
+		const VkBuffer				vBuffer				= (vertexBufferSize > 0) ? vertexBuffer->object() : DE_NULL;
+		const VkRect2D				renderArea			= makeRect2D(m_params.framebufferSize);
+
+		// Unreference value for Vulkan SC
+		DE_UNREF(clearValue);
 
 		clearColorImage(vk, device, m_context.getUniversalQueue(), m_context.getUniversalQueueFamilyIndex(), colorTargetImage->object(), clearColor,
 						VK_IMAGE_LAYOUT_UNDEFINED,
 						VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-						VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+						VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 1u);
 
-		beginCommandBuffer(vk, *cmdBuffer, 0u);
-
-		if (m_params.usesDynamicRendering)
-			beginRendering(vk, *cmdBuffer, *colorTargetView, renderArea, clearValue, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-		else
-			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea, clearColor);
-
-		if (vertexBufferSize > 0)
+#ifndef CTS_USES_VULKANSC
+		if (m_params.groupParams->useSecondaryCmdBuffer)
 		{
-			const VkBuffer buffer = vertexBuffer->object();
-			vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &buffer, &vertexBufferOffset);
+			secCmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+
+			// record secondary command buffer
+			if (m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			{
+				beginSecondaryCmdBuffer(*secCmdBuffer, colorImageFormat, VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+				beginRendering(vk, *secCmdBuffer, *colorTargetView, renderArea, clearValue, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+			}
+			else
+				beginSecondaryCmdBuffer(*secCmdBuffer, colorImageFormat);
+
+			drawCommands(*secCmdBuffer, *pipeline, vBuffer);
+
+			if (m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+				endRendering(vk, *secCmdBuffer);
+
+			endCommandBuffer(vk, *secCmdBuffer);
+
+			// record primary command buffer
+			beginCommandBuffer(vk, *cmdBuffer, 0u);
+
+			if (!m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+				beginRendering(vk, *cmdBuffer, *colorTargetView, renderArea, clearValue, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+
+			vk.cmdExecuteCommands(*cmdBuffer, 1u, &*secCmdBuffer);
+
+			if (!m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+				endRendering(vk, *cmdBuffer);
+
+			postRenderCommands(*cmdBuffer, colorTargetImage->object());
+			endCommandBuffer(vk, *cmdBuffer);
 		}
-		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+		else if (m_params.groupParams->useDynamicRendering)
+		{
+			beginCommandBuffer(vk, *cmdBuffer);
 
-		for (size_t commandIdx = 0; commandIdx < m_params.commands.size(); commandIdx++)
-			m_params.commands[commandIdx]->addCommands(vk, *cmdBuffer);
-
-		if (m_params.usesDynamicRendering)
+			beginRendering(vk, *cmdBuffer, *colorTargetView, renderArea, clearValue, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+			drawCommands(*cmdBuffer, *pipeline, vBuffer);
 			endRendering(vk, *cmdBuffer);
-		else
-			endRenderPass(vk, *cmdBuffer);
+			postRenderCommands(*cmdBuffer, colorTargetImage->object());
 
-		transition2DImage(vk, *cmdBuffer, colorTargetImage->object(),
-						  VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-						  VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-						  VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-						  VK_PIPELINE_STAGE_TRANSFER_BIT);
-		endCommandBuffer(vk, *cmdBuffer);
+			endCommandBuffer(vk, *cmdBuffer);
+		}
+#endif // CTS_USES_VULKANSC
+
+		if (!m_params.groupParams->useDynamicRendering)
+		{
+			beginCommandBuffer(vk, *cmdBuffer);
+
+			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea, clearColor);
+			drawCommands(*cmdBuffer, *pipeline, vBuffer);
+			endRenderPass(vk, *cmdBuffer);
+			postRenderCommands(*cmdBuffer, colorTargetImage->object());
+
+			endCommandBuffer(vk, *cmdBuffer);
+		}
+
 		submitCommandsAndWait(vk, device, m_context.getUniversalQueue(), cmdBuffer.get());
 
 		frame = colorTargetImage->readSurface(m_context.getUniversalQueue(), m_context.getDefaultAllocator(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, zeroOffset, WIDTH, HEIGHT, VK_IMAGE_ASPECT_COLOR_BIT);
@@ -595,7 +645,64 @@ TestStatus ScissorTestInstance::iterate (void)
 	return TestStatus(res, qpGetTestResultName(res));
 }
 
-void createTests (TestCaseGroup* testGroup, bool useDynamicRendering)
+void ScissorTestInstance::drawCommands(VkCommandBuffer cmdBuffer, VkPipeline pipeline, VkBuffer vertexBuffer) const
+{
+	const DeviceInterface&	vk					= m_context.getDeviceInterface();
+	const VkDeviceSize		vertexBufferOffset	= 0;
+
+	if (vertexBuffer != DE_NULL)
+		vk.cmdBindVertexBuffers(cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+	for (size_t commandIdx = 0; commandIdx < m_params.commands.size(); commandIdx++)
+		m_params.commands[commandIdx]->addCommands(vk, cmdBuffer);
+}
+
+void ScissorTestInstance::postRenderCommands(VkCommandBuffer cmdBuffer, VkImage colorTargetImage) const
+{
+	const DeviceInterface&	vk = m_context.getDeviceInterface();
+	transition2DImage(vk, cmdBuffer, colorTargetImage,
+						VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+						VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+						VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+						VK_PIPELINE_STAGE_TRANSFER_BIT);
+}
+
+#ifndef CTS_USES_VULKANSC
+void ScissorTestInstance::beginSecondaryCmdBuffer(VkCommandBuffer cmdBuffer, VkFormat colorAttachmentFormat, VkRenderingFlagsKHR renderingFlags) const
+{
+	VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,		// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		renderingFlags,															// VkRenderingFlagsKHR				flags;
+		0u,																		// uint32_t							viewMask;
+		1u,																		// uint32_t							colorAttachmentCount;
+		&colorAttachmentFormat,													// const VkFormat*					pColorAttachmentFormats;
+		VK_FORMAT_UNDEFINED,													// VkFormat							depthAttachmentFormat;
+		VK_FORMAT_UNDEFINED,													// VkFormat							stencilAttachmentFormat;
+		VK_SAMPLE_COUNT_1_BIT,													// VkSampleCountFlagBits			rasterizationSamples;
+	};
+	const VkCommandBufferInheritanceInfo bufferInheritanceInfo = initVulkanStructure(&inheritanceRenderingInfo);
+
+	VkCommandBufferUsageFlags usageFlags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	if (!m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+		usageFlags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+
+	const VkCommandBufferBeginInfo commandBufBeginParams
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,							// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		usageFlags,																// VkCommandBufferUsageFlags		flags;
+		&bufferInheritanceInfo
+	};
+
+	const DeviceInterface& vk = m_context.getDeviceInterface();
+	VK_CHECK(vk.beginCommandBuffer(cmdBuffer, &commandBufBeginParams));
+}
+#endif // CTS_USES_VULKANSC
+
+void createTests (TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 {
 	TestContext&		testCtx		= testGroup->getTestContext();
 	const Vec4			red			(1.0f, 0.0f, 0.0f, 1.0f);
@@ -605,9 +712,8 @@ void createTests (TestCaseGroup* testGroup, bool useDynamicRendering)
 
 	// Two quads with a single static scissor
 	{
-		TestParams params;
+		TestParams params(groupParams);
 		params.dynamicScissor = false;
-		params.usesDynamicRendering = useDynamicRendering;
 		params.staticScissors.push_back(makeRect2D(30, 40, WIDTH - 60, HEIGHT - 80));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(10, 10, 50, 50, red)));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(WIDTH - 80, HEIGHT - 100, 30, 40, green)));
@@ -617,9 +723,8 @@ void createTests (TestCaseGroup* testGroup, bool useDynamicRendering)
 
 	// Two clears with a single static scissor
 	{
-		TestParams params;
+		TestParams params(groupParams);
 		params.dynamicScissor = false;
-		params.usesDynamicRendering = useDynamicRendering;
 		params.staticScissors.push_back(makeRect2D(30, 40, WIDTH - 60, HEIGHT - 80));
 		params.commands.push_back(TestCommandSp(new RectClearTestCommand(10, 10, 50, 50, red)));
 		params.commands.push_back(TestCommandSp(new RectClearTestCommand(WIDTH - 80, HEIGHT - 100, 30, 40, green)));
@@ -629,9 +734,8 @@ void createTests (TestCaseGroup* testGroup, bool useDynamicRendering)
 
 	// One quad with two static scissors
 	{
-		TestParams params;
+		TestParams params(groupParams);
 		params.dynamicScissor = false;
-		params.usesDynamicRendering = useDynamicRendering;
 		params.staticScissors.push_back(makeRect2D(30, 40, WIDTH - 60, HEIGHT - 70));
 		params.staticScissors.push_back(makeRect2D(40, 50, WIDTH - 60, HEIGHT - 70));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(10, 10, WIDTH - 10, HEIGHT - 10, red)));
@@ -641,9 +745,8 @@ void createTests (TestCaseGroup* testGroup, bool useDynamicRendering)
 
 	// Static scissor extending outside viewport
 	{
-		TestParams params;
+		TestParams params(groupParams);
 		params.dynamicScissor = false;
-		params.usesDynamicRendering = useDynamicRendering;
 		params.staticScissors.push_back(makeRect2D(30, 40, WIDTH, HEIGHT));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(0, 0, WIDTH, HEIGHT + 30, green)));
 
@@ -652,9 +755,8 @@ void createTests (TestCaseGroup* testGroup, bool useDynamicRendering)
 
 	// Static scissor completely outside viewport
 	{
-		TestParams params;
+		TestParams params(groupParams);
 		params.dynamicScissor = false;
-		params.usesDynamicRendering = useDynamicRendering;
 		params.staticScissors.push_back(makeRect2D(WIDTH + 30, HEIGHT + 40, WIDTH, HEIGHT));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(100, 100, 20, 30, green)));
 
@@ -663,9 +765,8 @@ void createTests (TestCaseGroup* testGroup, bool useDynamicRendering)
 
 	// Static scissor outside viewport and touching right border of viewport
 	{
-		TestParams params;
+		TestParams params(groupParams);
 		params.dynamicScissor = false;
-		params.usesDynamicRendering = useDynamicRendering;
 		params.staticScissors.push_back(makeRect2D(WIDTH, 0, WIDTH, HEIGHT));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(100, 100, 20, 30, green)));
 
@@ -674,9 +775,8 @@ void createTests (TestCaseGroup* testGroup, bool useDynamicRendering)
 
 	// Static scissor with offset + extent equal to largest positive int32
 	{
-		TestParams params;
+		TestParams params(groupParams);
 		params.dynamicScissor = false;
-		params.usesDynamicRendering = useDynamicRendering;
 		params.staticScissors.push_back(makeRect2D(100, 100, 0x7fffffff - 100, 0x7fffffff - 100));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(0, 0, WIDTH, HEIGHT, green)));
 
@@ -685,9 +785,8 @@ void createTests (TestCaseGroup* testGroup, bool useDynamicRendering)
 
 	// 16 static scissors (minimum number required when multiViewport supported)
 	{
-		TestParams params;
+		TestParams params(groupParams);
 		params.dynamicScissor = false;
-		params.usesDynamicRendering = useDynamicRendering;
 
 		for (deUint32 i = 0; i < 16; i++)
 			params.staticScissors.push_back(makeRect2D(10 + i * 3, 20 + i * 2, WIDTH / 2, HEIGHT / 2));
@@ -699,9 +798,8 @@ void createTests (TestCaseGroup* testGroup, bool useDynamicRendering)
 
 	// Two quads with an empty scissor
 	{
-		TestParams params;
+		TestParams params(groupParams);
 		params.dynamicScissor = false;
-		params.usesDynamicRendering = useDynamicRendering;
 		params.staticScissors.push_back(makeRect2D(0, 0, 0, 0));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(10, 10, 50, 50, red)));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(WIDTH - 80, HEIGHT - 100, 30, 40, green)));
@@ -711,9 +809,8 @@ void createTests (TestCaseGroup* testGroup, bool useDynamicRendering)
 
 	// Two quads with a single dynamic scissor
 	{
-		TestParams params;
+		TestParams params(groupParams);
 		params.dynamicScissor = true;
-		params.usesDynamicRendering = useDynamicRendering;
 		params.commands.push_back(TestCommandSp(new DynamicScissorTestCommand(0, vector<VkRect2D>(1, makeRect2D(30, 40, WIDTH - 60, HEIGHT - 80)))));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(10, 10, 50, 50, red)));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(WIDTH - 80, HEIGHT - 100, 30, 40, green)));
@@ -723,9 +820,8 @@ void createTests (TestCaseGroup* testGroup, bool useDynamicRendering)
 
 	// Empty scissor for the first draw
 	{
-		TestParams params;
+		TestParams params(groupParams);
 		params.dynamicScissor = true;
-		params.usesDynamicRendering = useDynamicRendering;
 		params.commands.push_back(TestCommandSp(new DynamicScissorTestCommand(0, vector<VkRect2D>(1, makeRect2D(0, 0, 0, 0)))));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(10, 10, 50, 50, red)));
 		params.commands.push_back(TestCommandSp(new DynamicScissorTestCommand(0, vector<VkRect2D>(1, makeRect2D(30, 40, WIDTH - 60, HEIGHT - 80)))));
@@ -736,12 +832,11 @@ void createTests (TestCaseGroup* testGroup, bool useDynamicRendering)
 
 	// Two quads with three scissors updated in between
 	{
-		TestParams			params;
+		TestParams			params(groupParams);
 		VkRect2D			rect		= makeRect2D(10, 20, WIDTH - 60, HEIGHT - 70);
 		vector<VkRect2D>	scissors;
 
 		params.dynamicScissor = true;
-		params.usesDynamicRendering = useDynamicRendering;
 
 		scissors.push_back(rect);
 		rect.offset.x += 10;
@@ -765,12 +860,11 @@ void createTests (TestCaseGroup* testGroup, bool useDynamicRendering)
 
 	// Scissor updates out of order
 	{
-		TestParams			params;
+		TestParams			params(groupParams);
 		VkRect2D			rect		= makeRect2D(10, 20, WIDTH - 60, HEIGHT - 70);
 		vector<VkRect2D>	scissors;
 
 		params.dynamicScissor = true;
-		params.usesDynamicRendering = useDynamicRendering;
 
 		scissors.push_back(rect);
 		rect.offset.x += 10;
@@ -798,9 +892,8 @@ void createTests (TestCaseGroup* testGroup, bool useDynamicRendering)
 
 	// Dynamic scissor extending outside viewport
 	{
-		TestParams params;
+		TestParams params(groupParams);
 		params.dynamicScissor = true;
-		params.usesDynamicRendering = useDynamicRendering;
 		params.commands.push_back(TestCommandSp(new DynamicScissorTestCommand(0, vector<VkRect2D>(1, makeRect2D(30, 40, WIDTH, HEIGHT)))));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(0, 0, WIDTH + 50, HEIGHT + 20, green)));
 
@@ -809,9 +902,8 @@ void createTests (TestCaseGroup* testGroup, bool useDynamicRendering)
 
 	// Dynamic scissor completely outside viewport
 	{
-		TestParams params;
+		TestParams params(groupParams);
 		params.dynamicScissor = true;
-		params.usesDynamicRendering = useDynamicRendering;
 		params.commands.push_back(TestCommandSp(new DynamicScissorTestCommand(0, vector<VkRect2D>(1, makeRect2D(WIDTH + 30, HEIGHT + 40, WIDTH, HEIGHT)))));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(100, 100, 20, 30, green)));
 
@@ -820,9 +912,8 @@ void createTests (TestCaseGroup* testGroup, bool useDynamicRendering)
 
 	// Dynamic scissor outside viewport and touching right border of viewport
 	{
-		TestParams params;
+		TestParams params(groupParams);
 		params.dynamicScissor = true;
-		params.usesDynamicRendering = useDynamicRendering;
 		params.commands.push_back(TestCommandSp(new DynamicScissorTestCommand(0, vector<VkRect2D>(1, makeRect2D(WIDTH, 0, WIDTH, HEIGHT)))));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(100, 100, 20, 30, green)));
 
@@ -831,9 +922,8 @@ void createTests (TestCaseGroup* testGroup, bool useDynamicRendering)
 
 	// Dynamic scissor with offset + extent equal to largest positive int32
 	{
-		TestParams params;
+		TestParams params(groupParams);
 		params.dynamicScissor = true;
-		params.usesDynamicRendering = useDynamicRendering;
 		params.commands.push_back(TestCommandSp(new DynamicScissorTestCommand(0, vector<VkRect2D>(1, makeRect2D(100, 100, 0x7fffffff - 100, 0x7fffffff - 100)))));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(0, 0, WIDTH, HEIGHT, green)));
 
@@ -842,10 +932,9 @@ void createTests (TestCaseGroup* testGroup, bool useDynamicRendering)
 
 	// 16 dynamic scissors (minimum number required when multiViewport supported)
 	{
-		TestParams			params;
+		TestParams			params(groupParams);
 		vector<VkRect2D>	scissors;
 		params.dynamicScissor = true;
-		params.usesDynamicRendering = useDynamicRendering;
 
 		for (deUint32 i = 0; i < 16; i++)
 			scissors.push_back(makeRect2D(10 + i * 3, 20 + i * 2, WIDTH / 2, HEIGHT / 2));
@@ -858,9 +947,8 @@ void createTests (TestCaseGroup* testGroup, bool useDynamicRendering)
 
 	// Two clears with a single dynamic scissor
 	{
-		TestParams params;
+		TestParams params(groupParams);
 		params.dynamicScissor = true;
-		params.usesDynamicRendering = useDynamicRendering;
 		params.commands.push_back(TestCommandSp(new DynamicScissorTestCommand(0, vector<VkRect2D>(1, makeRect2D(30, 40, WIDTH - 60, HEIGHT - 80)))));
 		params.commands.push_back(TestCommandSp(new RectClearTestCommand(10, 10, 50, 50, red)));
 		params.commands.push_back(TestCommandSp(new RectClearTestCommand(WIDTH - 80, HEIGHT - 100, 30, 40, green)));
@@ -870,11 +958,10 @@ void createTests (TestCaseGroup* testGroup, bool useDynamicRendering)
 
 	// Mixture of quad draws and clears with dynamic scissor updates
 	{
-		TestParams			params;
+		TestParams			params(groupParams);
 		vector<VkRect2D>	scissors;
 
 		params.dynamicScissor = true;
-		params.usesDynamicRendering = useDynamicRendering;
 
 		scissors.push_back(makeRect2D(30, 40, 50, 60));
 		scissors.push_back(makeRect2D(40, 20, 50, 50));
@@ -899,11 +986,10 @@ void createTests (TestCaseGroup* testGroup, bool useDynamicRendering)
 			HEIGHT / 2 - 1
 		};
 
-		TestParams params;
+		TestParams params(groupParams);
 
 		params.framebufferSize = size;
 		params.dynamicScissor = false;
-		params.usesDynamicRendering = useDynamicRendering;
 		params.staticScissors.push_back(makeRect2D(1, 1, size.width - 2, size.height - 2));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(0, 0, WIDTH * 4, HEIGHT * 4, red)));
 
@@ -918,12 +1004,11 @@ void createTests (TestCaseGroup* testGroup, bool useDynamicRendering)
 			HEIGHT / 2 - 1
 		};
 
-		TestParams			params;
+		TestParams			params(groupParams);
 		vector<VkRect2D>	scissors;
 
 		params.framebufferSize = size;
 		params.dynamicScissor = true;
-		params.usesDynamicRendering = useDynamicRendering;
 
 		scissors.push_back(makeRect2D(1, 1, size.width - 2, size.height - 2));
 		params.commands.push_back(TestCommandSp(new DynamicScissorTestCommand(0, scissors)));
@@ -931,97 +1016,13 @@ void createTests (TestCaseGroup* testGroup, bool useDynamicRendering)
 
 		testGroup->addChild(new ScissorTestCase(testCtx, "dynamic_scissor_framebuffer_border_in", "", params));
 	}
-
-	// Static scissor off by one, outside frame buffer border
-	{
-		VkExtent2D size =
-		{
-			WIDTH / 2 - 1,
-			HEIGHT / 2 - 1
-		};
-
-		TestParams params;
-
-		params.framebufferSize = size;
-		params.dynamicScissor = false;
-		params.usesDynamicRendering = useDynamicRendering;
-
-		params.staticScissors.push_back(makeRect2D(0, 0, size.width + 1, size.height + 1));
-		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(0, 0, WIDTH * 4, HEIGHT * 4, red)));
-
-		testGroup->addChild(new ScissorTestCase(testCtx, "static_scissor_framebuffer_border_out", "", params));
-	}
-
-	// Dynamic scissor off by one, outside frame buffer border
-	{
-		VkExtent2D size =
-		{
-			WIDTH / 2 - 1,
-			HEIGHT / 2 - 1
-		};
-
-		TestParams			params;
-		vector<VkRect2D>	scissors;
-
-		params.framebufferSize = size;
-		params.dynamicScissor = true;
-		params.usesDynamicRendering = useDynamicRendering;
-
-		scissors.push_back(makeRect2D(0, 0, size.width + 1, size.height + 1));
-		params.commands.push_back(TestCommandSp(new DynamicScissorTestCommand(0, scissors)));
-		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(0, 0, WIDTH * 4, HEIGHT * 4, red)));
-
-		testGroup->addChild(new ScissorTestCase(testCtx, "dynamic_scissor_framebuffer_border_out", "", params));
-	}
-
-	// Static oversized scissor, exceeds frame buffer and image attachment sizes
-	{
-		VkExtent2D size =
-		{
-			WIDTH / 2 - 1,
-			HEIGHT / 2 - 1
-		};
-
-		TestParams params;
-
-		params.framebufferSize = size;
-		params.dynamicScissor = false;
-		params.usesDynamicRendering = useDynamicRendering;
-
-		params.staticScissors.push_back(makeRect2D(0, 0, WIDTH * 2, HEIGHT * 2));
-		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(0, 0, WIDTH * 4, HEIGHT * 4, red)));
-
-		testGroup->addChild(new ScissorTestCase(testCtx, "static_scissor_oversized", "", params));
-	}
-
-	// Dynamic oversized scissor, exceeds frame buffer and image attachment sizes
-	{
-		VkExtent2D size =
-		{
-			WIDTH / 2 - 1,
-			HEIGHT / 2 - 1
-		};
-
-		TestParams			params;
-		vector<VkRect2D>	scissors;
-
-		params.framebufferSize = size;
-		params.dynamicScissor = true;
-		params.usesDynamicRendering = useDynamicRendering;
-
-		scissors.push_back(makeRect2D(0, 0, WIDTH * 2, HEIGHT * 2));
-		params.commands.push_back(TestCommandSp(new DynamicScissorTestCommand(0, scissors)));
-		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(0, 0, WIDTH * 4, HEIGHT * 4, red)));
-
-		testGroup->addChild(new ScissorTestCase(testCtx, "dynamic_scissor_oversized", "", params));
-	}
 }
 
 }	// anonymous
 
-TestCaseGroup*	createScissorTests (TestContext& testCtx, bool useDynamicRendering)
+TestCaseGroup*	createScissorTests (TestContext& testCtx, const SharedGroupParams groupParams)
 {
-	return createTestGroup(testCtx, "scissor", "Scissor tests", createTests, useDynamicRendering);
+	return createTestGroup(testCtx, "scissor", "Scissor tests", createTests, groupParams);
 }
 
 }	// Draw

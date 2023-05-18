@@ -1653,8 +1653,13 @@ Vec4 calculateThreshold (const tcu::TextureFormat& sourceFormat, const tcu::Text
 	{
 		const tcu::IVec4	srcBits		= tcu::getTextureFormatBitDepth(sourceFormat);
 		const tcu::IVec4	readBits	= tcu::getTextureFormatBitDepth(readPixelsFormat);
+		const tcu::IVec4	minBits		= tcu::min(srcBits, readBits);
 
-		return Vec4(1.0f) / ((tcu::IVec4(1) << (tcu::min(srcBits, readBits))) - tcu::IVec4(1)).cast<float>();
+		return Vec4(
+			minBits[0] ? 1.0f / (float)((1 << minBits[0]) - 1) : 0,
+			minBits[1] ? 1.0f / (float)((1 << minBits[1]) - 1) : 0,
+			minBits[2] ? 1.0f / (float)((1 << minBits[2]) - 1) : 0,
+			minBits[3] ? 1.0f / (float)((1 << minBits[3]) - 1) : 0);
 	}
 }
 

@@ -1,0 +1,59 @@
+#!amber
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+DEVICE_EXTENSION VK_KHR_zero_initialize_workgroup_memory
+
+SHADER compute compute_shader GLSL TARGET_ENV spv1.3
+#version 450
+#extension GL_EXT_null_initializer : enable
+
+layout(local_size_x = 8, local_size_y = 2, local_size_z = 8) in;
+layout(set = 0, binding = 0) buffer A
+{
+    uint a[];
+} a;
+
+shared uint wg_mem = {};
+
+void main()
+{
+    uint idx_z = gl_LocalInvocationID.z * gl_WorkGroupSize.x * gl_WorkGroupSize.y;
+    uint idx_y = gl_LocalInvocationID.y * gl_WorkGroupSize.x;
+    uint idx_x = gl_LocalInvocationID.x;
+    uint idx = idx_x + idx_y + idx_z;
+
+    if (gl_LocalInvocationIndex == 0)
+    {
+        wg_mem = 1;
+    }
+
+    barrier();
+
+    a.a[idx] = wg_mem;
+}
+END
+
+BUFFER result_buffer DATA_TYPE uint32 SIZE 128 FILL 99
+BUFFER reference_buffer DATA_TYPE uint32 SIZE 128 FILL 1
+
+PIPELINE compute pipeline
+    ATTACH compute_shader
+
+    BIND BUFFER result_buffer AS storage DESCRIPTOR_SET 0 BINDING 0
+END
+
+RUN pipeline 1 1 1
+
+EXPECT result_buffer EQ_BUFFER reference_buffer

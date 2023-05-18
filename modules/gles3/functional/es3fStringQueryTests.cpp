@@ -68,8 +68,10 @@ void StringQueryTests::init (void)
 	});
 	ES3F_ADD_API_CASE(version, "VERSION",
 	{
-		const char* string				= (const char*)glGetString(GL_VERSION);
-		const char	referenceString[]	= "OpenGL ES 3.";
+		bool isES = glu::isContextTypeES(m_context.getRenderContext().getType());
+
+		const char* string		= (const char*)glGetString(GL_VERSION);
+		const char *referenceString	= isES ? "OpenGL ES 3." : "4.";
 
 		if (string == NULL)
 			TCU_FAIL("Got invalid string");
@@ -85,8 +87,12 @@ void StringQueryTests::init (void)
 			GLint		stateVersionMinor	= 0;
 
 			std::istringstream versionStream(string);
-			versionStream >> tmpString;			// OpenGL
-			versionStream >> tmpString;			// ES
+
+			if (isES) {
+				versionStream >> tmpString;			// OpenGL
+				versionStream >> tmpString;			// ES
+			}
+
 			versionStream >> glMajor;			// 3
 			versionStream >> std::noskipws;
 			versionStream >> versionDelimiter;	// .
@@ -106,8 +112,10 @@ void StringQueryTests::init (void)
 	});
 	ES3F_ADD_API_CASE(shading_language_version, "SHADING_LANGUAGE_VERSION",
 	{
-		const char* string				= (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
-		const char	referenceString[]	= "OpenGL ES GLSL ES ";
+		bool isES = glu::isContextTypeES(m_context.getRenderContext().getType());
+
+		const char* string		= (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
+		const char *referenceString	= isES ? "OpenGL ES GLSL ES " : "4.";
 
 		if (string == NULL)
 			TCU_FAIL("Got invalid string");
@@ -124,10 +132,14 @@ void StringQueryTests::init (void)
 			bool		digitsAreValid;
 
 			std::istringstream versionStream(string);
-			versionStream >> tmpString;			// OpenGL
-			versionStream >> tmpString;			// ES
-			versionStream >> tmpString;			// GLSL
-			versionStream >> tmpString;			// ES
+
+			if (isES) {
+				versionStream >> tmpString;			// OpenGL
+				versionStream >> tmpString;			// ES
+				versionStream >> tmpString;			// GLSL
+				versionStream >> tmpString;			// ES
+			}
+
 			versionStream >> glslMajor;			// x
 			versionStream >> std::noskipws;
 			versionStream >> versionDelimiter;	// .
@@ -144,8 +156,19 @@ void StringQueryTests::init (void)
 	ES3F_ADD_API_CASE(extensions, "EXTENSIONS",
 	{
 		const char* extensions_cstring = (const char*)glGetString(GL_EXTENSIONS);
-		if (extensions_cstring == NULL)
+		if (extensions_cstring == NULL) {
+			bool isES = glu::isContextTypeES(m_context.getRenderContext().getType());
+
+			// GL_EXTENSIONS has been deprecated on desktop GL
+			if (!isES) {
+				m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Got NULL string for deprecated enum");
+				expectError(GL_INVALID_ENUM);
+				return;
+			}
+
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid string");
+			return;
+                }
 
 		// split extensions_string at ' '
 

@@ -323,8 +323,8 @@ void ShaderTextureFunctionCase::initTexture (void)
 	tcu::TextureFormat		texFmt			= glu::mapGLTransferFormat(m_textureSpec.format, m_textureSpec.dataType);
 	tcu::TextureFormatInfo	fmtInfo			= tcu::getTextureFormatInfo(texFmt);
 	tcu::IVec2				viewportSize	= getViewportSize();
-	bool					isProj			= functionHasProj(m_lookupSpec.function);
-	float					proj			= isProj ? 1.0f/m_lookupSpec.minCoord[m_lookupSpec.function == FUNCTION_TEXTUREPROJ3 ? 2 : 3] : 1.0f;
+	bool					useProj			= functionHasProj(m_lookupSpec.function) && !functionHasLod(m_lookupSpec.function);
+	float					proj			= useProj ? 1.0f / m_lookupSpec.minCoord[m_lookupSpec.function == FUNCTION_TEXTUREPROJ3 ? 2 : 3] : 1.0f;
 
 	switch (m_textureSpec.type)
 	{

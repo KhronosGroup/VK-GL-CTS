@@ -23,6 +23,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktMeshShaderBuiltinTests.hpp"
+#include "vktMeshShaderUtil.hpp"
 #include "vktTestCase.hpp"
 
 #include "vkTypeUtil.hpp"
@@ -44,15 +45,6 @@
 #include <utility>
 #include <sstream>
 
-namespace tcu
-{
-// Needed for PixelMap below.
-bool operator<(const IVec2& a, const IVec2& b)
-{
-	return (a.x() < b.x() || (a.x() == b.x() && a.y() < b.y()));
-}
-}
-
 namespace vkt
 {
 namespace MeshShader
@@ -60,6 +52,40 @@ namespace MeshShader
 
 namespace
 {
+
+// Wraps a tcu::IVec2 with a custom operator< that uses the X and Y components in component order so it can be used as a map key.
+// Can be converted to and from a tcu::IVec2 automatically.
+class CoordKey
+{
+public:
+	CoordKey (const tcu::IVec2& coords)
+		: m_coords(coords)
+	{}
+
+	operator tcu::IVec2 () const
+	{
+		return m_coords;
+	}
+
+	bool operator< (const CoordKey& other) const
+	{
+		const auto& a = this->m_coords;
+		const auto& b = other.m_coords;
+
+		for (int i = 0; i < tcu::IVec2::SIZE; ++i)
+		{
+			if (a[i] < b[i])
+				return true;
+			if (a[i] > b[i])
+				return false;
+		}
+
+		return false;
+	}
+
+private:
+	const tcu::IVec2 m_coords;
+};
 
 using namespace vk;
 
@@ -69,7 +95,7 @@ using ImageWithMemoryPtr	= de::MovePtr<ImageWithMemory>;
 using BufferWithMemoryPtr	= de::MovePtr<BufferWithMemory>;
 using ViewportVec			= std::vector<VkViewport>;
 using ColorVec				= std::vector<tcu::Vec4>;
-using PixelMap				= std::map<tcu::IVec2, tcu::Vec4>; // Coordinates to color.
+using PixelMap				= std::map<CoordKey, tcu::Vec4>; // Coordinates to color.
 
 VkExtent2D getDefaultExtent ()
 {
@@ -116,11 +142,12 @@ std::string getBasicFragShader ()
 
 struct IterationParams
 {
-	VkExtent2D		colorExtent;
-	uint32_t		numLayers;
-	DrawCommandVec	drawArgs;
-	bool			indirect;
-	ViewportVec		viewports;	// If empty, a single default viewport is used.
+	VkExtent2D					colorExtent;
+	uint32_t					numLayers;
+	DrawCommandVec				drawArgs;
+	bool						indirect;
+	ViewportVec					viewports;	// If empty, a single default viewport is used.
+	tcu::Maybe<FragmentSize>	fragmentSize;
 };
 
 class MeshShaderBuiltinInstance : public vkt::TestInstance
@@ -223,9 +250,21 @@ tcu::TestStatus MeshShaderBuiltinInstance::iterate ()
 		scissors.resize(viewports.size(), makeRect2D(extent));
 	}
 
+	using ShadingRateInfoPtr = de::MovePtr<VkPipelineFragmentShadingRateStateCreateInfoKHR>;
+	ShadingRateInfoPtr pNext;
+	if (static_cast<bool>(m_params.fragmentSize))
+	{
+		pNext = ShadingRateInfoPtr(new VkPipelineFragmentShadingRateStateCreateInfoKHR);
+		*pNext = initVulkanStructure();
+
+		pNext->fragmentSize		= getShadingRateSize(m_params.fragmentSize.get());
+		pNext->combinerOps[0]	= VK_FRAGMENT_SHADING_RATE_COMBINER_OP_REPLACE_KHR;
+		pNext->combinerOps[1]	= VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR;
+	}
+
 	const auto pipeline = makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
 		taskModule.get(), meshModule.get(), fragModule.get(),
-		renderPass.get(), viewports, scissors);
+		renderPass.get(), viewports, scissors, 0u, nullptr, nullptr, nullptr, nullptr, nullptr, 0u, pNext.get());
 
 	// Command pool and buffer.
 	const auto cmdPool		= makeCommandPool(vkd, device, queueIndex);
@@ -331,15 +370,7 @@ protected:
 
 void MeshShaderBuiltinCase::checkSupport (Context& context) const
 {
-	context.requireDeviceFunctionality("VK_NV_mesh_shader");
-
-	const auto& meshFeatures = context.getMeshShaderFeatures();
-
-	if (!meshFeatures.meshShader)
-		TCU_THROW(NotSupportedError, "Mesh shader not supported");
-
-	if (m_taskNeeded && !meshFeatures.taskShader)
-		TCU_THROW(NotSupportedError, "Task shader not supported");
+	checkTaskMeshShaderSupportNV(context, m_taskNeeded, true);
 }
 
 // Instance that verifies color layers.
@@ -640,11 +671,12 @@ TestInstance* PrimitiveIdCase::createInstance (Context& context) const
 	const ColorVec			expectedColors	(1u, tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
 	const IterationParams	iterationParams	=
 	{
-		getDefaultExtent(),			//	VkExtent2D		colorExtent;
-		1u,							//	uint32_t		numLayers;
-		getDefaultDrawCommands(),	//	DrawCommandVec	drawArgs;
-		false,						//	bool			indirect;
-		{},							//	ViewportVec		viewports;	// If empty, a single default viewport is used.
+		getDefaultExtent(),			//	VkExtent2D					colorExtent;
+		1u,							//	uint32_t					numLayers;
+		getDefaultDrawCommands(),	//	DrawCommandVec				drawArgs;
+		false,						//	bool						indirect;
+		{},							//	ViewportVec					viewports;	// If empty, a single default viewport is used.
+		tcu::Nothing,				//	tcu::Maybe<FragmentSize>	fragmentSize;
 	};
 	return new FullScreenColorInstance(context, iterationParams, expectedColors);
 }
@@ -741,7 +773,7 @@ void LayerCase::checkSupport (Context& context) const
 {
 	MeshShaderBuiltinCase::checkSupport(context);
 
-	if (!context.contextSupports(vk::ApiVersion(1u, 2u, 0u)))
+	if (!context.contextSupports(vk::ApiVersion(0u, 1u, 2u, 0u)))
 		context.requireDeviceFunctionality("VK_EXT_shader_viewport_index_layer");
 	else
 	{
@@ -764,11 +796,12 @@ TestInstance* LayerCase::createInstance (Context& context) const
 	const auto numWorkGroups = (m_shareVertices ? 1u : kNumLayers);
 	const IterationParams iterationParams =
 	{
-		getDefaultExtent(),						//	VkExtent2D		colorExtent;
-		kNumLayers,								//	uint32_t		numLayers;
-		getDefaultDrawCommands(numWorkGroups),	//	DrawCommandVec	drawArgs;
-		false,									//	bool			indirect;
-		{},										//	ViewportVec		viewports;	// If empty, a single default viewport is used.
+		getDefaultExtent(),						//	VkExtent2D					colorExtent;
+		kNumLayers,								//	uint32_t					numLayers;
+		getDefaultDrawCommands(numWorkGroups),	//	DrawCommandVec				drawArgs;
+		false,									//	bool						indirect;
+		{},										//	ViewportVec					viewports;	// If empty, a single default viewport is used.
+		tcu::Nothing,							//	tcu::Maybe<FragmentSize>	fragmentSize;
 	};
 	return new FullScreenColorInstance(context, iterationParams, expectedColors);
 }
@@ -866,7 +899,7 @@ void ViewportIndexCase::checkSupport (Context& context) const
 	MeshShaderBuiltinCase::checkSupport(context);
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_MULTI_VIEWPORT);
 
-	if (!context.contextSupports(vk::ApiVersion(1u, 2u, 0u)))
+	if (!context.contextSupports(vk::ApiVersion(0u, 1u, 2u, 0u)))
 		context.requireDeviceFunctionality("VK_EXT_shader_viewport_index_layer");
 	else
 	{
@@ -883,8 +916,8 @@ TestInstance* ViewportIndexCase::createInstance (Context& context) const
 	DE_ASSERT(extent.width > 0u && extent.width % 2u == 0u);
 	DE_ASSERT(extent.height > 0u && extent.height % 2u == 0u);
 
-	const auto halfWidth	= static_cast<float>(extent.width / 2u);
-	const auto halfHeight	= static_cast<float>(extent.height / 2u);
+	const auto halfWidth	= static_cast<float>(extent.width) / 2.0f;
+	const auto halfHeight	= static_cast<float>(extent.height) / 2.0f;
 
 	const auto topLeft		= tcu::Vec4(0.0, 0.0, 1.0, 1.0);
 	const auto topRight		= tcu::Vec4(1.0, 0.0, 1.0, 1.0);
@@ -901,11 +934,12 @@ TestInstance* ViewportIndexCase::createInstance (Context& context) const
 	const auto numWorkGroups = (m_shareVertices ? 1u : kQuadrants);
 	const IterationParams iterationParams =
 	{
-		getDefaultExtent(),						//	VkExtent2D		colorExtent;
-		1u,										//	uint32_t		numLayers;
-		getDefaultDrawCommands(numWorkGroups),	//	DrawCommandVec	drawArgs;
-		false,									//	bool			indirect;
-		std::move(viewports),					//	ViewportVec		viewports;
+		getDefaultExtent(),						//	VkExtent2D					colorExtent;
+		1u,										//	uint32_t					numLayers;
+		getDefaultDrawCommands(numWorkGroups),	//	DrawCommandVec				drawArgs;
+		false,									//	bool						indirect;
+		std::move(viewports),					//	ViewportVec					viewports;
+		tcu::Nothing,							//	tcu::Maybe<FragmentSize>	fragmentSize;
 	};
 	return new QuadrantsInstance(context, iterationParams, topLeft, topRight, bottomLeft, bottomRight);
 }
@@ -977,11 +1011,12 @@ TestInstance* PositionCase::createInstance (Context& context) const
 {
 	const IterationParams iterationParams =
 	{
-		getDefaultExtent(),			//	VkExtent2D		colorExtent;
-		1u,							//	uint32_t		numLayers;
-		getDefaultDrawCommands(),	//	DrawCommandVec	drawArgs;
-		false,						//	bool			indirect;
-		{},							//	ViewportVec		viewports;	// If empty, a single default viewport is used.
+		getDefaultExtent(),			//	VkExtent2D					colorExtent;
+		1u,							//	uint32_t					numLayers;
+		getDefaultDrawCommands(),	//	DrawCommandVec				drawArgs;
+		false,						//	bool						indirect;
+		{},							//	ViewportVec					viewports;	// If empty, a single default viewport is used.
+		tcu::Nothing,				//	tcu::Maybe<FragmentSize>	fragmentSize;
 	};
 
 	// Must match the shader.
@@ -1047,11 +1082,12 @@ TestInstance* PointSizeCase::createInstance (Context& context) const
 {
 	const IterationParams iterationParams =
 	{
-		getDefaultExtent(),			//	VkExtent2D		colorExtent;
-		1u,							//	uint32_t		numLayers;
-		getDefaultDrawCommands(),	//	DrawCommandVec	drawArgs;
-		false,						//	bool			indirect;
-		{},							//	ViewportVec		viewports;	// If empty, a single default viewport is used.
+		getDefaultExtent(),			//	VkExtent2D					colorExtent;
+		1u,							//	uint32_t					numLayers;
+		getDefaultDrawCommands(),	//	DrawCommandVec				drawArgs;
+		false,						//	bool						indirect;
+		{},							//	ViewportVec					viewports;	// If empty, a single default viewport is used.
+		tcu::Nothing,				//	tcu::Maybe<FragmentSize>	fragmentSize;
 	};
 
 	// Must match the shader.
@@ -1158,11 +1194,12 @@ TestInstance* ClipDistanceCase::createInstance (Context& context) const
 {
 	const IterationParams iterationParams =
 	{
-		getDefaultExtent(),			//	VkExtent2D		colorExtent;
-		1u,							//	uint32_t		numLayers;
-		getDefaultDrawCommands(),	//	DrawCommandVec	drawArgs;
-		false,						//	bool			indirect;
-		{},							//	ViewportVec		viewports;	// If empty, a single default viewport is used.
+		getDefaultExtent(),			//	VkExtent2D					colorExtent;
+		1u,							//	uint32_t					numLayers;
+		getDefaultDrawCommands(),	//	DrawCommandVec				drawArgs;
+		false,						//	bool						indirect;
+		{},							//	ViewportVec					viewports;	// If empty, a single default viewport is used.
+		tcu::Nothing,				//	tcu::Maybe<FragmentSize>	fragmentSize;
 	};
 
 	// Must match the shader.
@@ -1278,11 +1315,12 @@ TestInstance* CullDistanceCase::createInstance (Context& context) const
 {
 	const IterationParams iterationParams =
 	{
-		getDefaultExtent(),			//	VkExtent2D		colorExtent;
-		1u,							//	uint32_t		numLayers;
-		getDefaultDrawCommands(),	//	DrawCommandVec	drawArgs;
-		false,						//	bool			indirect;
-		{},							//	ViewportVec		viewports;	// If empty, a single default viewport is used.
+		getDefaultExtent(),			//	VkExtent2D					colorExtent;
+		1u,							//	uint32_t					numLayers;
+		getDefaultDrawCommands(),	//	DrawCommandVec				drawArgs;
+		false,						//	bool						indirect;
+		{},							//	ViewportVec					viewports;	// If empty, a single default viewport is used.
+		tcu::Nothing,				//	tcu::Maybe<FragmentSize>	fragmentSize;
 	};
 
 	// Must match the shader.
@@ -1410,11 +1448,12 @@ TestInstance* WorkGroupIdCase::createInstance (Context& context) const
 	const ColorVec			expectedColors	(1u, tcu::Vec4(0.0, 0.0, 1.0, 1.0));
 	const IterationParams	iterationParams	=
 	{
-		m_extent,								//	VkExtent2D		colorExtent;
-		1u,										//	uint32_t		numLayers;
-		getDefaultDrawCommands(m_extent.width),	//	DrawCommandVec	drawArgs;
-		false,									//	bool			indirect;
-		{},										//	ViewportVec		viewports;	// If empty, a single default viewport is used.
+		m_extent,								//	VkExtent2D					colorExtent;
+		1u,										//	uint32_t					numLayers;
+		getDefaultDrawCommands(m_extent.width),	//	DrawCommandVec				drawArgs;
+		false,									//	bool						indirect;
+		{},										//	ViewportVec					viewports;	// If empty, a single default viewport is used.
+		tcu::Nothing,							//	tcu::Maybe<FragmentSize>	fragmentSize;
 	};
 	return new FullScreenColorInstance(context, iterationParams, expectedColors);
 }
@@ -1520,11 +1559,12 @@ TestInstance* LocalInvocationCase::createInstance (Context& context) const
 	const ColorVec			expectedColors	(1u, tcu::Vec4(0.0, 0.0, 1.0, 1.0));
 	const IterationParams	iterationParams	=
 	{
-		m_extent,								//	VkExtent2D		colorExtent;
-		1u,										//	uint32_t		numLayers;
-		getDefaultDrawCommands(),				//	DrawCommandVec	drawArgs;
-		false,									//	bool			indirect;
-		{},										//	ViewportVec		viewports;	// If empty, a single default viewport is used.
+		m_extent,					//	VkExtent2D					colorExtent;
+		1u,							//	uint32_t					numLayers;
+		getDefaultDrawCommands(),	//	DrawCommandVec				drawArgs;
+		false,						//	bool						indirect;
+		{},							//	ViewportVec					viewports;	// If empty, a single default viewport is used.
+		tcu::Nothing,				//	tcu::Maybe<FragmentSize>	fragmentSize;
 	};
 	return new FullScreenColorInstance(context, iterationParams, expectedColors);
 }
@@ -1624,11 +1664,12 @@ TestInstance* GlobalInvocationIdCase::createInstance (Context& context) const
 	const ColorVec			expectedColors	(1u, tcu::Vec4(0.0, 0.0, 1.0, 1.0));
 	const IterationParams	iterationParams	=
 	{
-		m_extent,									//	VkExtent2D		colorExtent;
-		1u,											//	uint32_t		numLayers;
-		getDefaultDrawCommands(m_jobSize.numTasks),	//	DrawCommandVec	drawArgs;
-		false,										//	bool			indirect;
-		{},											//	ViewportVec		viewports;	// If empty, a single default viewport is used.
+		m_extent,									//	VkExtent2D					colorExtent;
+		1u,											//	uint32_t					numLayers;
+		getDefaultDrawCommands(m_jobSize.numTasks),	//	DrawCommandVec				drawArgs;
+		false,										//	bool						indirect;
+		{},											//	ViewportVec					viewports;	// If empty, a single default viewport is used.
+		tcu::Nothing,								//	tcu::Maybe<FragmentSize>	fragmentSize;
 	};
 	return new FullScreenColorInstance(context, iterationParams, expectedColors);
 }
@@ -1722,11 +1763,289 @@ TestInstance* DrawIndexCase::createInstance (Context& context) const
 	const DrawCommandVec	commands		(m_extent.width, makeDrawMeshTasksIndirectCommandNV(1u, 0u));
 	const IterationParams	iterationParams	=
 	{
-		m_extent,	//	VkExtent2D		colorExtent;
-		1u,			//	uint32_t		numLayers;
-		commands,	//	DrawCommandVec	drawArgs;
-		true,		//	bool			indirect;
-		{},			//	ViewportVec		viewports;	// If empty, a single default viewport is used.
+		m_extent,		//	VkExtent2D					colorExtent;
+		1u,				//	uint32_t					numLayers;
+		commands,		//	DrawCommandVec				drawArgs;
+		true,			//	bool						indirect;
+		{},				//	ViewportVec					viewports;	// If empty, a single default viewport is used.
+		tcu::Nothing,	//	tcu::Maybe<FragmentSize>	fragmentSize;
+	};
+	return new FullScreenColorInstance(context, iterationParams, expectedColors);
+}
+
+// Primitive Shading Rate case.
+class PrimitiveShadingRateCase : public MeshShaderBuiltinCase
+{
+public:
+					PrimitiveShadingRateCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, FragmentSize topSize, FragmentSize bottomSize)
+						: MeshShaderBuiltinCase	(testCtx, name, description, false/*taskNeeded*/)
+						, m_topSize				(topSize)
+						, m_bottomSize			(bottomSize)
+						{}
+	virtual			~PrimitiveShadingRateCase	(void) {}
+
+	void			initPrograms				(vk::SourceCollections& programCollection) const override;
+	void			checkSupport				(Context& context) const override;
+	TestInstance*	createInstance				(Context& context) const override;
+
+protected:
+	const FragmentSize m_topSize;
+	const FragmentSize m_bottomSize;
+};
+
+void PrimitiveShadingRateCase::initPrograms (vk::SourceCollections& programCollection) const
+{
+	// Shading rate masks to use.
+	const auto topMask			= getGLSLShadingRateMask(m_topSize);
+	const auto bottomMask		= getGLSLShadingRateMask(m_bottomSize);
+	const auto topMaskVal		= getSPVShadingRateValue(m_topSize);
+	const auto bottomMaskVal	= getSPVShadingRateValue(m_bottomSize);
+
+	// Mesh shader.
+	{
+		// Similar to the GLSL code below if glslang accepted it.
+		// Top quad with two triangles and bottom quad with two triangles.
+		// One shading rate mask each.
+#if 0
+		#version 460
+		#extension GL_NV_mesh_shader : enable
+		#extension GL_EXT_fragment_shading_rate : enable
+
+		layout (local_size_x=1) in;
+		layout (triangles) out;
+		layout (max_vertices=6, max_primitives=4) out;
+
+		perprimitiveNV out gl_MeshPerPrimitiveNV {
+			int gl_PrimitiveShadingRateEXT;
+		} gl_MeshPrimitivesNV[];
+
+		void main ()
+		{
+			gl_PrimitiveCountNV = 4u;
+
+			const vec4 topLeft  = vec4(-1.0, -1.0, 0.0, 1.0);
+			const vec4 midLeft  = vec4(-1.0,  0.0, 0.0, 1.0);
+			const vec4 botLeft  = vec4(-1.0,  1.0, 0.0, 1.0);
+
+			const vec4 topRight = vec4( 1.0, -1.0, 0.0, 1.0);
+			const vec4 midRight = vec4( 1.0,  0.0, 0.0, 1.0);
+			const vec4 botRight = vec4( 1.0,  1.0, 0.0, 1.0);
+
+			gl_MeshVerticesNV[0].gl_Position = topLeft;
+			gl_MeshVerticesNV[1].gl_Position = midLeft;
+			gl_MeshVerticesNV[2].gl_Position = botLeft;
+
+			gl_MeshVerticesNV[3].gl_Position = topRight;
+			gl_MeshVerticesNV[4].gl_Position = midRight;
+			gl_MeshVerticesNV[5].gl_Position = botRight;
+
+			gl_PrimitiveIndicesNV[0]  = 0u;
+			gl_PrimitiveIndicesNV[1]  = 1u;
+			gl_PrimitiveIndicesNV[2]  = 3u;
+			gl_PrimitiveIndicesNV[3]  = 1u;
+			gl_PrimitiveIndicesNV[4]  = 4u;
+			gl_PrimitiveIndicesNV[5]  = 3u;
+			gl_PrimitiveIndicesNV[6]  = 1u;
+			gl_PrimitiveIndicesNV[7]  = 2u;
+			gl_PrimitiveIndicesNV[8]  = 4u;
+			gl_PrimitiveIndicesNV[9]  = 2u;
+			gl_PrimitiveIndicesNV[10] = 5u;
+			gl_PrimitiveIndicesNV[11] = 4u;
+
+			gl_MeshPrimitivesNV[0].gl_PrimitiveShadingRateEXT = TOP_MASK;
+			gl_MeshPrimitivesNV[1].gl_PrimitiveShadingRateEXT = TOP_MASK;
+			gl_MeshPrimitivesNV[2].gl_PrimitiveShadingRateEXT = BOTTOM_MASK;
+			gl_MeshPrimitivesNV[3].gl_PrimitiveShadingRateEXT = BOTTOM_MASK;
+		}
+#endif
+		std::ostringstream meshSPV;
+		meshSPV
+			<< "; SPIR-V\n"
+			<< "; Version: 1.0\n"
+			<< "; Generator: Khronos Glslang Reference Front End; 10\n"
+			<< "; Bound: 81\n"
+			<< "; Schema: 0\n"
+			<< "      OpCapability MeshShadingNV\n"
+			<< "      OpCapability FragmentShadingRateKHR\n"					// Added manually.
+			<< "      OpExtension \"SPV_NV_mesh_shader\"\n"
+			<< "      OpExtension \"SPV_KHR_fragment_shading_rate\"\n"			// Added manually.
+			<< " %1 = OpExtInstImport \"GLSL.std.450\"\n"
+			<< "      OpMemoryModel Logical GLSL450\n"
+			<< "      OpEntryPoint MeshNV %4 \"main\" %8 %20 %47 %73\n"
+			<< "      OpExecutionMode %4 LocalSize 1 1 1\n"
+			<< "      OpExecutionMode %4 OutputVertices 6\n"
+			<< "      OpExecutionMode %4 OutputPrimitivesNV 4\n"
+			<< "      OpExecutionMode %4 OutputTrianglesNV\n"
+			<< "      OpDecorate %8 BuiltIn PrimitiveCountNV\n"
+			<< "      OpMemberDecorate %16 0 BuiltIn Position\n"
+			<< "      OpMemberDecorate %16 1 BuiltIn PointSize\n"
+			<< "      OpMemberDecorate %16 2 BuiltIn ClipDistance\n"
+			<< "      OpMemberDecorate %16 3 BuiltIn CullDistance\n"
+			<< "      OpMemberDecorate %16 4 PerViewNV\n"
+			<< "      OpMemberDecorate %16 4 BuiltIn PositionPerViewNV\n"
+			<< "      OpMemberDecorate %16 5 PerViewNV\n"
+			<< "      OpMemberDecorate %16 5 BuiltIn ClipDistancePerViewNV\n"
+			<< "      OpMemberDecorate %16 6 PerViewNV\n"
+			<< "      OpMemberDecorate %16 6 BuiltIn CullDistancePerViewNV\n"
+			<< "      OpDecorate %16 Block\n"
+			<< "      OpDecorate %47 BuiltIn PrimitiveIndicesNV\n"
+			<< "      OpMemberDecorate %70 0 PerPrimitiveNV\n"
+			<< "      OpMemberDecorate %70 0 BuiltIn PrimitiveShadingRateKHR\n"	// Replaced PrimitiveID with this.
+			<< "      OpDecorate %70 Block\n"
+			<< "      OpDecorate %80 BuiltIn WorkgroupSize\n"
+			<< " %2 = OpTypeVoid\n"
+			<< " %3 = OpTypeFunction %2\n"
+			<< " %6 = OpTypeInt 32 0\n"
+			<< " %7 = OpTypePointer Output %6\n"
+			<< " %8 = OpVariable %7 Output\n"
+			<< " %9 = OpConstant %6 4\n"
+			<< "%10 = OpTypeFloat 32\n"
+			<< "%11 = OpTypeVector %10 4\n"
+			<< "%12 = OpConstant %6 1\n"
+			<< "%13 = OpTypeArray %10 %12\n"
+			<< "%14 = OpTypeArray %11 %9\n"
+			<< "%15 = OpTypeArray %13 %9\n"
+			<< "%16 = OpTypeStruct %11 %10 %13 %13 %14 %15 %15\n"
+			<< "%17 = OpConstant %6 6\n"
+			<< "%18 = OpTypeArray %16 %17\n"
+			<< "%19 = OpTypePointer Output %18\n"
+			<< "%20 = OpVariable %19 Output\n"
+			<< "%21 = OpTypeInt 32 1\n"
+			<< "%tm = OpConstant %21 " << topMaskVal << "\n"					// Added mask value line.
+			<< "%bm = OpConstant %21 " << bottomMaskVal << "\n"					// Ditto.
+			<< "%22 = OpConstant %21 0\n"
+			<< "%23 = OpConstant %10 -1\n"
+			<< "%24 = OpConstant %10 0\n"
+			<< "%25 = OpConstant %10 1\n"
+			<< "%26 = OpConstantComposite %11 %23 %23 %24 %25\n"
+			<< "%27 = OpTypePointer Output %11\n"
+			<< "%29 = OpConstant %21 1\n"
+			<< "%30 = OpConstantComposite %11 %23 %24 %24 %25\n"
+			<< "%32 = OpConstant %21 2\n"
+			<< "%33 = OpConstantComposite %11 %23 %25 %24 %25\n"
+			<< "%35 = OpConstant %21 3\n"
+			<< "%36 = OpConstantComposite %11 %25 %23 %24 %25\n"
+			<< "%38 = OpConstant %21 4\n"
+			<< "%39 = OpConstantComposite %11 %25 %24 %24 %25\n"
+			<< "%41 = OpConstant %21 5\n"
+			<< "%42 = OpConstantComposite %11 %25 %25 %24 %25\n"
+			<< "%44 = OpConstant %6 12\n"
+			<< "%45 = OpTypeArray %6 %44\n"
+			<< "%46 = OpTypePointer Output %45\n"
+			<< "%47 = OpVariable %46 Output\n"
+			<< "%48 = OpConstant %6 0\n"
+			<< "%51 = OpConstant %6 3\n"
+			<< "%56 = OpConstant %21 6\n"
+			<< "%58 = OpConstant %21 7\n"
+			<< "%59 = OpConstant %6 2\n"
+			<< "%61 = OpConstant %21 8\n"
+			<< "%63 = OpConstant %21 9\n"
+			<< "%65 = OpConstant %21 10\n"
+			<< "%66 = OpConstant %6 5\n"
+			<< "%68 = OpConstant %21 11\n"
+			<< "%70 = OpTypeStruct %21\n"
+			<< "%71 = OpTypeArray %70 %9\n"
+			<< "%72 = OpTypePointer Output %71\n"
+			<< "%73 = OpVariable %72 Output\n"
+			<< "%74 = OpTypePointer Output %21\n"
+			<< "%79 = OpTypeVector %6 3\n"
+			<< "%80 = OpConstantComposite %79 %12 %12 %12\n"
+			<< " %4 = OpFunction %2 None %3\n"
+			<< " %5 = OpLabel\n"
+			<< "      OpStore %8 %9\n"
+			<< "%28 = OpAccessChain %27 %20 %22 %22\n"
+			<< "      OpStore %28 %26\n"
+			<< "%31 = OpAccessChain %27 %20 %29 %22\n"
+			<< "      OpStore %31 %30\n"
+			<< "%34 = OpAccessChain %27 %20 %32 %22\n"
+			<< "      OpStore %34 %33\n"
+			<< "%37 = OpAccessChain %27 %20 %35 %22\n"
+			<< "      OpStore %37 %36\n"
+			<< "%40 = OpAccessChain %27 %20 %38 %22\n"
+			<< "      OpStore %40 %39\n"
+			<< "%43 = OpAccessChain %27 %20 %41 %22\n"
+			<< "      OpStore %43 %42\n"
+			<< "%49 = OpAccessChain %7 %47 %22\n"
+			<< "      OpStore %49 %48\n"
+			<< "%50 = OpAccessChain %7 %47 %29\n"
+			<< "      OpStore %50 %12\n"
+			<< "%52 = OpAccessChain %7 %47 %32\n"
+			<< "      OpStore %52 %51\n"
+			<< "%53 = OpAccessChain %7 %47 %35\n"
+			<< "      OpStore %53 %12\n"
+			<< "%54 = OpAccessChain %7 %47 %38\n"
+			<< "      OpStore %54 %9\n"
+			<< "%55 = OpAccessChain %7 %47 %41\n"
+			<< "      OpStore %55 %51\n"
+			<< "%57 = OpAccessChain %7 %47 %56\n"
+			<< "      OpStore %57 %12\n"
+			<< "%60 = OpAccessChain %7 %47 %58\n"
+			<< "      OpStore %60 %59\n"
+			<< "%62 = OpAccessChain %7 %47 %61\n"
+			<< "      OpStore %62 %9\n"
+			<< "%64 = OpAccessChain %7 %47 %63\n"
+			<< "      OpStore %64 %59\n"
+			<< "%67 = OpAccessChain %7 %47 %65\n"
+			<< "      OpStore %67 %66\n"
+			<< "%69 = OpAccessChain %7 %47 %68\n"
+			<< "      OpStore %69 %9\n"
+			<< "%75 = OpAccessChain %74 %73 %22 %22\n"
+			<< "      OpStore %75 %tm\n"										// Store the proper mask here. First triangle, top primitive.
+			<< "%76 = OpAccessChain %74 %73 %29 %22\n"
+			<< "      OpStore %76 %tm\n"										// Second triangle, top primitive.
+			<< "%77 = OpAccessChain %74 %73 %32 %22\n"
+			<< "      OpStore %77 %bm\n"										// Third triangle, bottom primitive.
+			<< "%78 = OpAccessChain %74 %73 %35 %22\n"
+			<< "      OpStore %78 %bm\n"										// Fourth triangle, bottom primitive.
+			<< "      OpReturn\n"
+			<< "      OpFunctionEnd\n"
+			;
+		programCollection.spirvAsmSources.add("mesh") << meshSPV.str();
+	}
+
+	// Frag shader.
+	{
+		const auto extent		= getDefaultExtent();
+		const auto halfHeight	= static_cast<float>(extent.height) / 2.0f;
+
+		std::ostringstream frag;
+		frag
+			<< "#version 460\n"
+			<< "#extension GL_NV_mesh_shader : enable\n"
+			<< "#extension GL_EXT_fragment_shading_rate : enable\n"
+			<< "\n"
+			<< "layout (location=0) out vec4 outColor;\n"
+			<< "\n"
+			<< "void main ()\n"
+			<< "{\n"
+			// Checks the shading rate matches.
+			<< "    const int expectedRate = ((gl_FragCoord.y < " << halfHeight << ")? " << topMask << " : " << bottomMask << ");\n"
+			<< "    outColor = ((gl_ShadingRateEXT == expectedRate) ? vec4(0.0, 0.0, 1.0, 1.0) : vec4(0.0, 0.0, 0.0, 1.0));\n"
+			<< "}\n"
+			;
+		programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+	}
+}
+
+void PrimitiveShadingRateCase::checkSupport (Context& context) const
+{
+	MeshShaderBuiltinCase::checkSupport(context);
+
+	context.requireDeviceFunctionality("VK_KHR_fragment_shading_rate");
+}
+
+TestInstance* PrimitiveShadingRateCase::createInstance (Context& context) const
+{
+	const ColorVec			expectedColors	(1u, tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
+	FragmentSizeVector		fsInUse			{m_topSize, m_bottomSize};
+	const IterationParams	iterationParams	=
+	{
+		getDefaultExtent(),												//	VkExtent2D					colorExtent;
+		1u,																//	uint32_t					numLayers;
+		getDefaultDrawCommands(),										//	DrawCommandVec				drawArgs;
+		false,															//	bool						indirect;
+		{},																//	ViewportVec					viewports;	// If empty, a single default viewport is used.
+		tcu::just(getBadShadingRateSize(begin(fsInUse), end(fsInUse))),	//	tcu::Maybe<FragmentSize>	fragmentSize;
 	};
 	return new FullScreenColorInstance(context, iterationParams, expectedColors);
 }
@@ -1757,6 +2076,29 @@ tcu::TestCaseGroup* createMeshShaderBuiltinTests (tcu::TestContext& testCtx)
 	mainGroup->addChild(new GlobalInvocationIdCase		(testCtx, "global_invocation_id_in_task", "", true/*taskNeeded*/));
 	mainGroup->addChild(new DrawIndexCase				(testCtx, "draw_index_in_mesh", "", false/*taskNeeded*/));
 	mainGroup->addChild(new DrawIndexCase				(testCtx, "draw_index_in_task", "", true/*taskNeeded*/));
+
+	// Primitive shading rate tests.
+	{
+		const auto sizeCount = static_cast<int>(FragmentSize::SIZE_COUNT);
+
+		for (int i = 0; i < sizeCount; ++i)
+		for (int j = 0; j < sizeCount; ++j)
+		{
+			const auto topSize		= static_cast<FragmentSize>(i);
+			const auto bottomSize	= static_cast<FragmentSize>(j);
+
+			const auto topExtent	= getShadingRateSize(topSize);
+			const auto bottomExtent	= getShadingRateSize(bottomSize);
+
+			const auto testName		= "primitive_shading_rate_"
+										+ std::to_string(topExtent.width) + "x" + std::to_string(topExtent.height)
+										+ "_"
+										+ std::to_string(bottomExtent.width) + "x" + std::to_string(bottomExtent.height)
+									;
+
+			mainGroup->addChild(new PrimitiveShadingRateCase(testCtx, testName, "", topSize, bottomSize));
+		}
+	}
 
 	return mainGroup.release();
 }

@@ -28,6 +28,8 @@
 #include "vkDefs.hpp"
 #include "vkMemUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkTypeUtil.hpp"
+#include "vktRenderPassGroupParams.hpp"
 
 #include <vector>
 
@@ -37,19 +39,6 @@ namespace renderpass
 {
 
 using namespace vk;
-
-enum RenderingType
-{
-	RENDERING_TYPE_RENDERPASS_LEGACY = 0,
-	RENDERING_TYPE_RENDERPASS2,
-	RENDERING_TYPE_DYNAMIC_RENDERING
-};
-
-enum SynchronizationType
-{
-	SYNCHRONIZATION_TYPE_LEGACY = 0,
-	SYNCHRONIZATION_TYPE_SYNCHRONIZATION2,
-};
 
 class AttachmentDescription1 : public vk::VkAttachmentDescription
 {

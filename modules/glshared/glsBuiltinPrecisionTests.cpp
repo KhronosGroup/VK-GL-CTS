@@ -132,7 +132,7 @@ const T& instance (void)
 }
 
 /*--------------------------------------------------------------------*//*!
- * \brief Dummy placeholder type for unused template parameters.
+ * \brief A placeholder type for unused template parameters.
  *
  * In the precision tests we are dealing with functions of different arities.
  * To minimize code duplication, we only define templates with the maximum
@@ -653,33 +653,6 @@ private:
 	int		m_count;
 };
 
-class ExpandContext
-{
-public:
-						ExpandContext	(Counter& symCounter) : m_symCounter(symCounter) {}
-						ExpandContext	(const ExpandContext& parent)
-							: m_symCounter(parent.m_symCounter) {}
-
-	template<typename T>
-	VariableP<T>		genSym			(const string& baseName)
-	{
-		return variable<T>(baseName + de::toString(m_symCounter()));
-	}
-
-	void				addStatement	(const StatementP& stmt)
-	{
-		m_statements.push_back(stmt);
-	}
-
-	vector<StatementP>	getStatements	(void) const
-	{
-		return m_statements;
-	}
-private:
-	Counter&			m_symCounter;
-	vector<StatementP>	m_statements;
-};
-
 /*--------------------------------------------------------------------*//*!
  * \brief A statement or declaration.
  *
@@ -726,6 +699,33 @@ public:
 				StatementP			(void) {}
 	explicit	StatementP			(const Statement* ptr)	: Super(ptr) {}
 				StatementP			(const Super& ptr)		: Super(ptr) {}
+};
+
+class ExpandContext
+{
+public:
+						ExpandContext	(Counter& symCounter) : m_symCounter(symCounter) {}
+						ExpandContext	(const ExpandContext& parent)
+							: m_symCounter(parent.m_symCounter) {}
+
+	template<typename T>
+	VariableP<T>		genSym			(const string& baseName)
+	{
+		return variable<T>(baseName + de::toString(m_symCounter()));
+	}
+
+	void				addStatement	(const StatementP& stmt)
+	{
+		m_statements.push_back(stmt);
+	}
+
+	vector<StatementP>	getStatements	(void) const
+	{
+		return m_statements;
+	}
+private:
+	Counter&			m_symCounter;
+	vector<StatementP>	m_statements;
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -923,7 +923,7 @@ public:
 template <typename T>
 class ExprP : public ExprPBase<T> {};
 
-// We treat Voids as containers since the dummy parameters in generalized
+// We treat Voids as containers since the unused parameters in generalized
 // vector functions are represented as Voids.
 template <>
 class ExprP<Void> : public ContainerExprPBase<Void> {};
@@ -2276,7 +2276,7 @@ ExprP<TRET> NAME (const ExprP<T0>& arg0, const ExprP<T1>& arg1,			\
 	return app<CLASS>(arg0, arg1, arg2, arg3);							\
 }
 
-DEFINE_DERIVED_FLOAT1(Sqrt,		sqrt,		x,		constant(1.0f) / app<InverseSqrt>(x))
+DEFINE_DERIVED_FLOAT1(Sqrt,		sqrt,		x,		(x == 0.0f ? constant(1.0f) : (constant(1.0f) / app<InverseSqrt>(x))))
 DEFINE_DERIVED_FLOAT2(Pow,		pow,		x,	y,	exp2(y * log2(x)))
 DEFINE_DERIVED_FLOAT1(Radians,	radians,	d,		(constant(DE_PI) / constant(180.0f)) * d)
 DEFINE_DERIVED_FLOAT1(Degrees,	degrees,	r,		(constant(180.0f) / constant(DE_PI)) * r)
@@ -4736,7 +4736,7 @@ void PrecisionCase::testStatement (const Variables<In, Out>&	variables,
 		executor->execute(int(numValues), inputArr, outputArr);
 	}
 
-	// Initialize environment with dummy values so we don't need to bind in inner loop.
+	// Initialize environment with unused values so we don't need to bind in inner loop.
 	{
 		const typename Traits<In0>::IVal		in0;
 		const typename Traits<In1>::IVal		in1;

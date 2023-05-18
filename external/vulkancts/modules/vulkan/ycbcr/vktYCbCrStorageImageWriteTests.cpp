@@ -117,35 +117,6 @@ tcu::UVec3 computeWorkGroupSize(const VkExtent3D& planeExtent)
 	return tcu::UVec3(xWorkGroupSize, yWorkGroupSize, zWorkGroupSize);
 }
 
-Move<VkPipeline> makeComputePipeline (const DeviceInterface&		vk,
-									  const VkDevice				device,
-									  const VkPipelineLayout		pipelineLayout,
-									  const VkShaderModule			shaderModule,
-									  const VkSpecializationInfo*	specializationInfo)
-{
-	const VkPipelineShaderStageCreateInfo pipelineShaderStageParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
-		DE_NULL,												// const void*							pNext;
-		0u,														// VkPipelineShaderStageCreateFlags		flags;
-		VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits				stage;
-		shaderModule,											// VkShaderModule						module;
-		"main",													// const char*							pName;
-		specializationInfo,										// const VkSpecializationInfo*			pSpecializationInfo;
-	};
-	const VkComputePipelineCreateInfo pipelineCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,		// VkStructureType					sType;
-		DE_NULL,											// const void*						pNext;
-		0u,													// VkPipelineCreateFlags			flags;
-		pipelineShaderStageParams,							// VkPipelineShaderStageCreateInfo	stage;
-		pipelineLayout,										// VkPipelineLayout					layout;
-		DE_NULL,											// VkPipeline						basePipelineHandle;
-		0,													// deInt32							basePipelineIndex;
-	};
-	return createComputePipeline(vk, device, DE_NULL , &pipelineCreateInfo);
-}
-
 vk::VkFormat getPlaneCompatibleFormatForWriting(const vk::PlanarFormatDescription& formatInfo, deUint32 planeNdx)
 {
 	DE_ASSERT(planeNdx < formatInfo.numPlanes);
@@ -154,14 +125,14 @@ vk::VkFormat getPlaneCompatibleFormatForWriting(const vk::PlanarFormatDescriptio
 	// redirect result for some of the YCbCr image formats
 	static const std::pair<vk::VkFormat, vk::VkFormat> ycbcrFormats[] =
 	{
-		{ VK_FORMAT_G8B8G8R8_422_UNORM_KHR,						VK_FORMAT_R8G8B8A8_UNORM		},
-		{ VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16_KHR,	VK_FORMAT_R16G16B16A16_UNORM	},
-		{ VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16_KHR,	VK_FORMAT_R16G16B16A16_UNORM	},
-		{ VK_FORMAT_G16B16G16R16_422_UNORM_KHR,					VK_FORMAT_R16G16B16A16_UNORM	},
-		{ VK_FORMAT_B8G8R8G8_422_UNORM_KHR,						VK_FORMAT_R8G8B8A8_UNORM		},
-		{ VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16_KHR,	VK_FORMAT_R16G16B16A16_UNORM	},
-		{ VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16_KHR,	VK_FORMAT_R16G16B16A16_UNORM	},
-		{ VK_FORMAT_B16G16R16G16_422_UNORM_KHR,					VK_FORMAT_R16G16B16A16_UNORM	}
+		{ VK_FORMAT_G8B8G8R8_422_UNORM,						VK_FORMAT_R8G8B8A8_UNORM		},
+		{ VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16,	VK_FORMAT_R16G16B16A16_UNORM	},
+		{ VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16,	VK_FORMAT_R16G16B16A16_UNORM	},
+		{ VK_FORMAT_G16B16G16R16_422_UNORM,					VK_FORMAT_R16G16B16A16_UNORM	},
+		{ VK_FORMAT_B8G8R8G8_422_UNORM,						VK_FORMAT_R8G8B8A8_UNORM		},
+		{ VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16,	VK_FORMAT_R16G16B16A16_UNORM	},
+		{ VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16,	VK_FORMAT_R16G16B16A16_UNORM	},
+		{ VK_FORMAT_B16G16R16G16_422_UNORM,					VK_FORMAT_R16G16B16A16_UNORM	}
 	};
 	auto it = std::find_if(std::begin(ycbcrFormats), std::end(ycbcrFormats), [result](const std::pair<vk::VkFormat, vk::VkFormat>& p) { return p.first == result; });
 	if (it != std::end(ycbcrFormats))
@@ -250,7 +221,7 @@ tcu::TestStatus testStorageImageWrite (Context& context, TestParameters params)
 			shaderName << "comp" << planeNdx;
 			auto							shaderModule			= makeVkSharedPtr(createShaderModule(vkd, device, context.getBinaryCollection().get(shaderName.str()), DE_NULL));
 			shaderModules.push_back(shaderModule);
-			auto							computePipeline			= makeVkSharedPtr(makeComputePipeline(vkd, device, *pipelineLayout, shaderModule->get(), DE_NULL));
+			auto							computePipeline			= makeVkSharedPtr(makeComputePipeline(vkd, device, *pipelineLayout, (VkPipelineCreateFlags) 0u, shaderModule->get(), (VkPipelineShaderStageCreateFlags) 0u, DE_NULL));
 			computePipelines.push_back(computePipeline);
 			vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline->get());
 
@@ -351,101 +322,101 @@ tcu::TestStatus testStorageImageWrite (Context& context, TestParameters params)
 
 		for (deUint32 planeNdx = 0; planeNdx < formatDescription.numPlanes; ++planeNdx)
 			planePointers[planeNdx] = outputData + static_cast<size_t>(planeOffsets[planeNdx]);
-	}
 
-	// write result images to log file
-	for (deUint32 channelNdx = 0; channelNdx < 4; ++channelNdx)
-	{
-		if (!formatDescription.hasChannelNdx(channelNdx))
-			continue;
-		deUint32					planeNdx					= formatDescription.channels[channelNdx].planeNdx;
-		vk::VkFormat				planeCompatibleFormat		= getPlaneCompatibleFormatForWriting(formatDescription, planeNdx);
-		vk::PlanarFormatDescription	compatibleFormatDescription	= (planeCompatibleFormat != getPlaneCompatibleFormat(formatDescription, planeNdx)) ? getPlanarFormatDescription(planeCompatibleFormat) : formatDescription;
-		const tcu::UVec3			compatibleShaderGridSize	( params.size.x() / formatDescription.blockWidth, params.size.y() / formatDescription.blockHeight, params.size.z() / 1u );
-		tcu::ConstPixelBufferAccess	pixelBuffer					= vk::getChannelAccess(compatibleFormatDescription, compatibleShaderGridSize, planeRowPitches, (const void* const*)planePointers, channelNdx);
-		std::ostringstream str;
-		str << "image" << channelNdx;
-		context.getTestContext().getLog() << tcu::LogImage(str.str(), str.str(), pixelBuffer);
-	}
-
-	// verify data
-	const float					epsilon = 1e-5f;
-	for (deUint32 channelNdx = 0; channelNdx < 4; ++channelNdx)
-	{
-		if (!formatDescription.hasChannelNdx(channelNdx))
-			continue;
-
-		deUint32							planeNdx					= formatDescription.channels[channelNdx].planeNdx;
-		vk::VkFormat						planeCompatibleFormat		= getPlaneCompatibleFormatForWriting(formatDescription, planeNdx);
-		vk::PlanarFormatDescription			compatibleFormatDescription	= (planeCompatibleFormat != getPlaneCompatibleFormat(formatDescription, planeNdx)) ? getPlanarFormatDescription(planeCompatibleFormat) : formatDescription;
-		const tcu::UVec3					compatibleShaderGridSize	( params.size.x() / formatDescription.blockWidth, params.size.y() / formatDescription.blockHeight, params.size.z() / 1u );
-		VkExtent3D							compatibleImageSize			{ imageCreateInfo.extent.width / formatDescription.blockWidth, imageCreateInfo.extent.height / formatDescription.blockHeight, imageCreateInfo.extent.depth / 1u };
-		tcu::ConstPixelBufferAccess			pixelBuffer					= vk::getChannelAccess(compatibleFormatDescription, compatibleShaderGridSize, planeRowPitches, (const void* const*)planePointers, channelNdx);
-		VkExtent3D							planeExtent					= getPlaneExtent(compatibleFormatDescription, compatibleImageSize, planeNdx, 0u);
-		tcu::IVec3							pixelDivider				= pixelBuffer.getDivider();
-
-		for (deUint32 offsetZ = 0u; offsetZ < planeExtent.depth; ++offsetZ)
-		for (deUint32 offsetY = 0u; offsetY < planeExtent.height; ++offsetY)
-		for (deUint32 offsetX = 0u; offsetX < planeExtent.width; ++offsetX)
+		// write result images to log file
+		for (deUint32 channelNdx = 0; channelNdx < 4; ++channelNdx)
 		{
-			deUint32	iReferenceValue;
-			float		fReferenceValue;
-			switch (channelNdx)
+			if (!formatDescription.hasChannelNdx(channelNdx))
+				continue;
+			deUint32					planeNdx					= formatDescription.channels[channelNdx].planeNdx;
+			vk::VkFormat				planeCompatibleFormat		= getPlaneCompatibleFormatForWriting(formatDescription, planeNdx);
+			vk::PlanarFormatDescription	compatibleFormatDescription	= (planeCompatibleFormat != getPlaneCompatibleFormat(formatDescription, planeNdx)) ? getPlanarFormatDescription(planeCompatibleFormat) : formatDescription;
+			const tcu::UVec3			compatibleShaderGridSize	( params.size.x() / formatDescription.blockWidth, params.size.y() / formatDescription.blockHeight, params.size.z() / 1u );
+			tcu::ConstPixelBufferAccess	pixelBuffer					= vk::getChannelAccess(compatibleFormatDescription, compatibleShaderGridSize, planeRowPitches, (const void* const*)planePointers, channelNdx);
+			std::ostringstream str;
+			str << "image" << channelNdx;
+			context.getTestContext().getLog() << tcu::LogImage(str.str(), str.str(), pixelBuffer);
+		}
+
+		// verify data
+		const float					epsilon = 1e-5f;
+		for (deUint32 channelNdx = 0; channelNdx < 4; ++channelNdx)
+		{
+			if (!formatDescription.hasChannelNdx(channelNdx))
+				continue;
+
+			deUint32							planeNdx					= formatDescription.channels[channelNdx].planeNdx;
+			vk::VkFormat						planeCompatibleFormat		= getPlaneCompatibleFormatForWriting(formatDescription, planeNdx);
+			vk::PlanarFormatDescription			compatibleFormatDescription	= (planeCompatibleFormat != getPlaneCompatibleFormat(formatDescription, planeNdx)) ? getPlanarFormatDescription(planeCompatibleFormat) : formatDescription;
+			const tcu::UVec3					compatibleShaderGridSize	( params.size.x() / formatDescription.blockWidth, params.size.y() / formatDescription.blockHeight, params.size.z() / 1u );
+			VkExtent3D							compatibleImageSize			{ imageCreateInfo.extent.width / formatDescription.blockWidth, imageCreateInfo.extent.height / formatDescription.blockHeight, imageCreateInfo.extent.depth / 1u };
+			tcu::ConstPixelBufferAccess			pixelBuffer					= vk::getChannelAccess(compatibleFormatDescription, compatibleShaderGridSize, planeRowPitches, (const void* const*)planePointers, channelNdx);
+			VkExtent3D							planeExtent					= getPlaneExtent(compatibleFormatDescription, compatibleImageSize, planeNdx, 0u);
+			tcu::IVec3							pixelDivider				= pixelBuffer.getDivider();
+
+			for (deUint32 offsetZ = 0u; offsetZ < planeExtent.depth; ++offsetZ)
+			for (deUint32 offsetY = 0u; offsetY < planeExtent.height; ++offsetY)
+			for (deUint32 offsetX = 0u; offsetX < planeExtent.width; ++offsetX)
 			{
-				case 0:
-					iReferenceValue = offsetX % 127u;
-					fReferenceValue = static_cast<float>(iReferenceValue) / 127.f;
-					break;
-				case 1:
-					iReferenceValue = offsetY % 127u;
-					fReferenceValue = static_cast<float>(iReferenceValue) / 127.f;
-					break;
-				case 2:
-					iReferenceValue = offsetZ % 127u;
-					fReferenceValue = static_cast<float>(iReferenceValue) / 127.f;
-					break;
-				case 3:
-					iReferenceValue = 0u;
-					fReferenceValue = 0.f;
-					break;
-				default:	DE_FATAL("Unexpected channel index");	break;
-			}
-			float acceptableError = epsilon;
-
-			switch (formatDescription.channels[channelNdx].type)
-			{
-				case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
-				case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
+				deUint32	iReferenceValue;
+				float		fReferenceValue;
+				switch (channelNdx)
 				{
-					tcu::UVec4 outputValue = pixelBuffer.getPixelUint(offsetX * pixelDivider.x(), offsetY * pixelDivider.y(), 0);
-
-					if (outputValue.x() != iReferenceValue)
-						return tcu::TestStatus::fail("Failed");
-
-					break;
+					case 0:
+						iReferenceValue = offsetX % 127u;
+						fReferenceValue = static_cast<float>(iReferenceValue) / 127.f;
+						break;
+					case 1:
+						iReferenceValue = offsetY % 127u;
+						fReferenceValue = static_cast<float>(iReferenceValue) / 127.f;
+						break;
+					case 2:
+						iReferenceValue = offsetZ % 127u;
+						fReferenceValue = static_cast<float>(iReferenceValue) / 127.f;
+						break;
+					case 3:
+						iReferenceValue = 1u;
+						fReferenceValue = 1.f;
+						break;
+					default:	DE_FATAL("Unexpected channel index");	break;
 				}
-				case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
-				case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
+				float acceptableError = epsilon;
+
+				switch (formatDescription.channels[channelNdx].type)
 				{
-					float fixedPointError = tcu::TexVerifierUtil::computeFixedPointError(formatDescription.channels[channelNdx].sizeBits);
-					acceptableError += fixedPointError;
-					tcu::Vec4 outputValue = pixelBuffer.getPixel(offsetX * pixelDivider.x(), offsetY * pixelDivider.y(), 0);
+					case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
+					case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
+					{
+						tcu::UVec4 outputValue = pixelBuffer.getPixelUint(offsetX * pixelDivider.x(), offsetY * pixelDivider.y(), 0);
 
-					if (deAbs(outputValue.x() - fReferenceValue) > acceptableError)
-						return tcu::TestStatus::fail("Failed");
+						if (outputValue.x() != iReferenceValue)
+							return tcu::TestStatus::fail("Failed");
 
-					break;
+						break;
+					}
+					case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
+					case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
+					{
+						float fixedPointError = tcu::TexVerifierUtil::computeFixedPointError(formatDescription.channels[channelNdx].sizeBits);
+						acceptableError += fixedPointError;
+						tcu::Vec4 outputValue = pixelBuffer.getPixel(offsetX * pixelDivider.x(), offsetY * pixelDivider.y(), 0);
+
+						if (deAbs(outputValue.x() - fReferenceValue) > acceptableError)
+							return tcu::TestStatus::fail("Failed");
+
+						break;
+					}
+					case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
+					{
+						const tcu::Vec4 outputValue = pixelBuffer.getPixel(offsetX * pixelDivider.x(), offsetY * pixelDivider.y(), 0);
+
+						if (deAbs( outputValue.x() - fReferenceValue) > acceptableError)
+							return tcu::TestStatus::fail("Failed");
+
+						break;
+					}
+					default:	DE_FATAL("Unexpected channel type");	break;
 				}
-				case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
-				{
-					const tcu::Vec4 outputValue = pixelBuffer.getPixel(offsetX * pixelDivider.x(), offsetY * pixelDivider.y(), 0);
-
-					if (deAbs( outputValue.x() - fReferenceValue) > acceptableError)
-						return tcu::TestStatus::fail("Failed");
-
-					break;
-				}
-				default:	DE_FATAL("Unexpected channel type");	break;
 			}
 		}
 	}

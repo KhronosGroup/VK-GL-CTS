@@ -29,6 +29,7 @@
 
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
+#include "vktDrawGroupParams.hpp"
 
 #include "gluShaderUtil.hpp"
 #include "vkPrograms.hpp"
@@ -46,9 +47,9 @@ typedef std::map<glu::ShaderType, const char*> ShaderMap;
 
 struct TestSpecBase
 {
-	ShaderMap				shaders;
-	vk::VkPrimitiveTopology	topology;
-	bool					useDynamicRendering;
+	ShaderMap					shaders;
+	vk::VkPrimitiveTopology		topology;
+	const SharedGroupParams		groupParams;
 };
 
 template<typename Instance, typename Support = NoSupport0>

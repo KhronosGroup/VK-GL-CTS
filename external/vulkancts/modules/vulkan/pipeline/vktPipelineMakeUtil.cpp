@@ -35,58 +35,9 @@ namespace pipeline
 using namespace vk;
 using de::MovePtr;
 
-Buffer::Buffer (const vk::DeviceInterface&		vk,
-				const vk::VkDevice				device,
-				vk::Allocator&					allocator,
-				const vk::VkBufferCreateInfo&	bufferCreateInfo,
-				const vk::MemoryRequirement		memoryRequirement)
-	: m_buffer		(createBuffer(vk, device, &bufferCreateInfo))
-	, m_allocation	(bindBuffer(vk, device, allocator, *m_buffer, memoryRequirement))
-{
-}
-
-Image::Image (const vk::DeviceInterface&		vk,
-			  const vk::VkDevice				device,
-			  vk::Allocator&					allocator,
-			  const vk::VkImageCreateInfo&		imageCreateInfo,
-			  const vk::MemoryRequirement		memoryRequirement)
-	: m_image		(createImage(vk, device, &imageCreateInfo))
-	, m_allocation	(bindImage(vk, device, allocator, *m_image, memoryRequirement))
-{
-}
-
 Move<VkCommandBuffer> makeCommandBuffer (const DeviceInterface& vk, const VkDevice device, const VkCommandPool commandPool)
 {
 	return allocateCommandBuffer(vk, device, commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-}
-
-Move<VkPipeline> makeComputePipeline (const DeviceInterface&		vk,
-									  const VkDevice				device,
-									  const VkPipelineLayout		pipelineLayout,
-									  const VkShaderModule			shaderModule,
-									  const VkSpecializationInfo*	specInfo)
-{
-	const VkPipelineShaderStageCreateInfo shaderStageInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType					sType;
-		DE_NULL,												// const void*						pNext;
-		(VkPipelineShaderStageCreateFlags)0,					// VkPipelineShaderStageCreateFlags	flags;
-		VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits			stage;
-		shaderModule,											// VkShaderModule					module;
-		"main",													// const char*						pName;
-		specInfo,												// const VkSpecializationInfo*		pSpecializationInfo;
-	};
-	const VkComputePipelineCreateInfo pipelineInfo =
-	{
-		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,		// VkStructureType					sType;
-		DE_NULL,											// const void*						pNext;
-		(VkPipelineCreateFlags)0,							// VkPipelineCreateFlags			flags;
-		shaderStageInfo,									// VkPipelineShaderStageCreateInfo	stage;
-		pipelineLayout,										// VkPipelineLayout					layout;
-		DE_NULL,											// VkPipeline						basePipelineHandle;
-		0,													// deInt32							basePipelineIndex;
-	};
-	return createComputePipeline(vk, device, DE_NULL , &pipelineInfo);
 }
 
 MovePtr<Allocation> bindImageDedicated (const InstanceInterface& vki, const DeviceInterface& vkd, const VkPhysicalDevice physDevice, const VkDevice device, const VkImage image, const MemoryRequirement requirement)

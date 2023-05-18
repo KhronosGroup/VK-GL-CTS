@@ -136,5 +136,8 @@ endif ()
 
 PCH(GLCTS_GL_SRCS ../pch.cpp)
 
+include_directories(${PROJECT_BINARY_DIR}/external/vulkancts/framework/vulkan)
+
 add_library(glcts-gl STATIC ${GLCTS_GL_SRCS})
+add_dependencies(glcts-gl deqp-vk-inl)
 target_link_libraries(glcts-gl ${GLCTS_GL_LIBS})

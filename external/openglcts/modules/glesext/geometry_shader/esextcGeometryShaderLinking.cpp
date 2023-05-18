@@ -31,7 +31,7 @@
 namespace glcts
 {
 
-static const char* dummy_fs_code = "${VERSION}\n"
+static const char* minimal_fs_code = "${VERSION}\n"
 								   "\n"
 								   "precision highp float;\n"
 								   "\n"
@@ -42,7 +42,7 @@ static const char* dummy_fs_code = "${VERSION}\n"
 								   "    result = vec4(1.0);\n"
 								   "}\n";
 
-static const char* dummy_gs_code = "${VERSION}\n"
+static const char* minimal_gs_code = "${VERSION}\n"
 								   "${GEOMETRY_SHADER_REQUIRE}\n"
 								   "\n"
 								   "layout (points)                   in;\n"
@@ -57,7 +57,7 @@ static const char* dummy_gs_code = "${VERSION}\n"
 								   "    EmitVertex();\n"
 								   "}\n";
 
-static const char* dummy_vs_code = "${VERSION}\n"
+static const char* minimal_vs_code = "${VERSION}\n"
 								   "\n"
 								   "${OUT_PER_VERTEX_DECL}"
 								   "\n"
@@ -115,9 +115,9 @@ void GeometryShaderIncompleteProgramObjectsTest::deinit()
 void GeometryShaderIncompleteProgramObjectsTest::initShaderObjects()
 {
 	const glw::Functions& gl					  = m_context.getRenderContext().getFunctions();
-	std::string			  specialized_fs_code	 = specializeShader(1, &dummy_fs_code);
+	std::string			  specialized_fs_code	 = specializeShader(1, &minimal_fs_code);
 	const char*			  specialized_fs_code_raw = specialized_fs_code.c_str();
-	std::string			  specialized_gs_code	 = specializeShader(1, &dummy_gs_code);
+	std::string			  specialized_gs_code	 = specializeShader(1, &minimal_gs_code);
 	const char*			  specialized_gs_code_raw = specialized_gs_code.c_str();
 
 	m_fs_id = gl.createShader(GL_FRAGMENT_SHADER);
@@ -378,11 +378,11 @@ void GeometryShaderIncompleteGSTest::initShaderObjects(const _run& current_run, 
 {
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
-	std::string specialized_fs_code = specializeShader(1, &dummy_fs_code);
+	std::string specialized_fs_code = specializeShader(1, &minimal_fs_code);
 	std::string gs_code				= getGeometryShaderCode(current_run);
 	const char* gs_code_raw			= gs_code.c_str();
 	std::string specialized_gs_code = specializeShader(1, &gs_code_raw);
-	std::string specialized_vs_code = specializeShader(1, &dummy_vs_code);
+	std::string specialized_vs_code = specializeShader(1, &minimal_vs_code);
 
 	const char* specialized_fs_code_raw = specialized_fs_code.c_str();
 	const char* specialized_gs_code_raw = specialized_gs_code.c_str();
@@ -474,7 +474,7 @@ tcu::TestNode::IterateResult GeometryShaderIncompleteGSTest::iterate()
 
 		if (!has_fs_compiled || !has_vs_compiled)
 		{
-			m_testCtx.getLog() << tcu::TestLog::Message << "Dummy FS and/or dummy VS failed to compile"
+			m_testCtx.getLog() << tcu::TestLog::Message << "Minimal FS and/or minimal VS failed to compile"
 							   << tcu::TestLog::EndMessage;
 
 			result = false;
@@ -737,7 +737,7 @@ void GeometryShaderInvalidArrayedInputVariablesTest::initShaderObjects(glw::GLen
 																	   bool*	   out_has_vs_compiled_successfully)
 {
 	const glw::Functions& gl					  = m_context.getRenderContext().getFunctions();
-	std::string			  specialized_fs_code	 = specializeShader(1, &dummy_fs_code);
+	std::string			  specialized_fs_code	 = specializeShader(1, &minimal_fs_code);
 	const char*			  specialized_fs_code_raw = specialized_fs_code.c_str();
 	std::string			  gs_code				  = getGSCode(gs_input_primitive_type);
 	const char*			  gs_code_raw			  = gs_code.c_str();
@@ -979,7 +979,7 @@ tcu::TestNode::IterateResult GeometryShaderVSGSVariableTypeMismatchTest::iterate
 							  "    test = vec3(gl_VertexID);\n"
 							  "}\n";
 
-	std::string fs_code_specialized		= specializeShader(1, &dummy_fs_code);
+	std::string fs_code_specialized		= specializeShader(1, &minimal_fs_code);
 	const char* fs_code_specialized_raw = fs_code_specialized.c_str();
 	std::string gs_code_specialized		= specializeShader(1, &gs_code_raw);
 	const char* gs_code_specialized_raw = gs_code_specialized.c_str();
@@ -1124,7 +1124,7 @@ tcu::TestNode::IterateResult GeometryShaderVSGSVariableQualifierMismatchTest::it
 							  "    test = vec4(gl_VertexID);\n"
 							  "}\n";
 
-	std::string fs_code_specialized		= specializeShader(1, &dummy_fs_code);
+	std::string fs_code_specialized		= specializeShader(1, &minimal_fs_code);
 	const char* fs_code_specialized_raw = fs_code_specialized.c_str();
 	std::string gs_code_specialized		= specializeShader(1, &gs_code_raw);
 	const char* gs_code_specialized_raw = gs_code_specialized.c_str();
@@ -1284,7 +1284,7 @@ tcu::TestNode::IterateResult GeometryShaderVSGSArrayedVariableSizeMismatchTest::
 							  "    Color3 = vec4(0.0,         0.0,         gl_VertexID, 0.0);\n"
 							  "}\n";
 
-	std::string fs_code_specialized		= specializeShader(1, &dummy_fs_code);
+	std::string fs_code_specialized		= specializeShader(1, &minimal_fs_code);
 	const char* fs_code_specialized_raw = fs_code_specialized.c_str();
 	std::string gs_code_specialized		= specializeShader(1, &gs_code_raw);
 	const char* gs_code_specialized_raw = gs_code_specialized.c_str();
@@ -1413,11 +1413,11 @@ tcu::TestNode::IterateResult GeometryShaderFragCoordRedeclarationTest::iterate()
 							  "    EmitVertex();\n"
 							  "}\n";
 
-	std::string fs_code_specialized		= specializeShader(1, &dummy_fs_code);
+	std::string fs_code_specialized		= specializeShader(1, &minimal_fs_code);
 	const char* fs_code_specialized_raw = fs_code_specialized.c_str();
 	std::string gs_code_specialized		= specializeShader(1, &gs_code_raw);
 	const char* gs_code_specialized_raw = gs_code_specialized.c_str();
-	std::string vs_code_specialized		= specializeShader(1, &dummy_vs_code);
+	std::string vs_code_specialized		= specializeShader(1, &minimal_vs_code);
 	const char* vs_code_specialized_raw = vs_code_specialized.c_str();
 
 	if (TestCaseBase::buildProgram(m_po_id, m_gs_id, 1,					 /* n_sh1_body_parts */
@@ -1543,11 +1543,11 @@ tcu::TestNode::IterateResult GeometryShaderLocationAliasingTest::iterate()
 							  "    EmitVertex();\n"
 							  "}\n";
 
-	std::string fs_code_specialized		= specializeShader(1, &dummy_fs_code);
+	std::string fs_code_specialized		= specializeShader(1, &minimal_fs_code);
 	const char* fs_code_specialized_raw = fs_code_specialized.c_str();
 	std::string gs_code_specialized		= specializeShader(1, &gs_code_raw);
 	const char* gs_code_specialized_raw = gs_code_specialized.c_str();
-	std::string vs_code_specialized		= specializeShader(1, &dummy_vs_code);
+	std::string vs_code_specialized		= specializeShader(1, &minimal_vs_code);
 	const char* vs_code_specialized_raw = vs_code_specialized.c_str();
 
 	has_program_link_succeeded = TestCaseBase::buildProgram(
@@ -1709,11 +1709,11 @@ tcu::TestNode::IterateResult GeometryShaderMoreACsInGSThanSupportedTest::iterate
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateShader() call(s) failed.");
 
 	/* Try to link the test program object */
-	std::string fs_code_specialized		= specializeShader(1, &dummy_fs_code);
+	std::string fs_code_specialized		= specializeShader(1, &minimal_fs_code);
 	const char* fs_code_specialized_raw = fs_code_specialized.c_str();
 	std::string gs_code_specialized		= getGSCode();
 	const char* gs_code_specialized_raw = gs_code_specialized.c_str();
-	std::string vs_code_specialized		= specializeShader(1, &dummy_vs_code);
+	std::string vs_code_specialized		= specializeShader(1, &minimal_vs_code);
 	const char* vs_code_specialized_raw = vs_code_specialized.c_str();
 
 	if (TestCaseBase::buildProgram(m_po_id, m_gs_id, 1,					 /* n_sh1_body_parts */
@@ -1875,11 +1875,11 @@ tcu::TestNode::IterateResult GeometryShaderMoreACBsInGSThanSupportedTest::iterat
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateShader() call(s) failed.");
 
 	/* Try to link the test program object */
-	std::string fs_code_specialized		= specializeShader(1, &dummy_fs_code);
+	std::string fs_code_specialized		= specializeShader(1, &minimal_fs_code);
 	const char* fs_code_specialized_raw = fs_code_specialized.c_str();
 	std::string gs_code_specialized		= getGSCode();
 	const char* gs_code_specialized_raw = gs_code_specialized.c_str();
-	std::string vs_code_specialized		= specializeShader(1, &dummy_vs_code);
+	std::string vs_code_specialized		= specializeShader(1, &minimal_vs_code);
 	const char* vs_code_specialized_raw = vs_code_specialized.c_str();
 
 	if (TestCaseBase::buildProgram(m_po_id, m_gs_id, 1,					 /* n_sh1_body_parts */
@@ -2001,13 +2001,13 @@ tcu::TestNode::IterateResult GeometryShaderCompilationFailTest::iterate()
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateShader() call(s) failed.");
 
 	/* Try to link the test program object */
-	std::string fs_code_specialized		= specializeShader(1, &dummy_fs_code);
+	std::string fs_code_specialized		= specializeShader(1, &minimal_fs_code);
 	const char* fs_code_specialized_raw = fs_code_specialized.c_str();
 
 	std::string gs_code_specialized		= specializeShader(1, &gs_code);
 	const char* gs_code_specialized_raw = gs_code_specialized.c_str();
 
-	std::string vs_code_specialized		= specializeShader(1, &dummy_vs_code);
+	std::string vs_code_specialized		= specializeShader(1, &minimal_vs_code);
 	const char* vs_code_specialized_raw = vs_code_specialized.c_str();
 
 	if (TestCaseBase::buildProgram(m_po_id, m_gs_id, 1,					 /* n_sh1_body_parts */
@@ -2211,7 +2211,7 @@ tcu::TestNode::IterateResult GeometryShaderMoreInputVerticesThanAvailableTest::i
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateShader() call(s) failed.");
 
 	/* Try to link the test program object */
-	std::string fs_code_specialized		= specializeShader(1, &dummy_fs_code);
+	std::string fs_code_specialized		= specializeShader(1, &minimal_fs_code);
 	const char* fs_code_specialized_raw = fs_code_specialized.c_str();
 
 	std::string gs_codes_specialized[] = { specializeShader(1, &gs_code_points), specializeShader(1, &gs_code_lines),
@@ -2223,7 +2223,7 @@ tcu::TestNode::IterateResult GeometryShaderMoreInputVerticesThanAvailableTest::i
 											   gs_codes_specialized[2].c_str(), gs_codes_specialized[3].c_str(),
 											   gs_codes_specialized[4].c_str() };
 
-	std::string vs_code_specialized		= specializeShader(1, &dummy_vs_code);
+	std::string vs_code_specialized		= specializeShader(1, &minimal_vs_code);
 	const char* vs_code_specialized_raw = vs_code_specialized.c_str();
 
 	for (glw::GLuint i = 0; i < m_number_of_gs; ++i)
@@ -2367,7 +2367,7 @@ tcu::TestNode::IterateResult GeometryShaderTransformFeedbackVertexAndGeometrySha
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateShader() call(s) failed.");
 
 	/* Try to link the test program object */
-	std::string fs_code_specialized		= specializeShader(1, &dummy_fs_code);
+	std::string fs_code_specialized		= specializeShader(1, &minimal_fs_code);
 	const char* fs_code_specialized_raw = fs_code_specialized.c_str();
 
 	std::string gs_code_specialized		= specializeShader(1, &gs_code);

@@ -38,6 +38,7 @@
 #include "vkImageUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
@@ -86,13 +87,24 @@ Texture getTexture (const ImageType imageType, const tcu::IVec3& size)
 	}
 }
 
-inline VkImageCreateInfo makeImageCreateInfo (const Texture& texture, const VkFormat format)
+inline VkImageCreateInfo makeImageCreateInfo (const Texture& texture, const VkFormat format, const bool is2DViewOf3D)
 {
+	VkImageViewCreateFlags createFlags = 0u;
+
+	if (isCube(texture))
+		createFlags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+#ifndef CTS_USES_VULKANSC
+	else if (is2DViewOf3D)
+		createFlags |= VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT;
+#else
+	DE_UNREF(is2DViewOf3D);
+#endif // CTS_USES_VULKANSC
+
 	const VkImageCreateInfo imageParams =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,												// VkStructureType			sType;
 		DE_NULL,																			// const void*				pNext;
-		(isCube(texture) ? (VkImageCreateFlags)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0u),	// VkImageCreateFlags		flags;
+		createFlags,																		// VkImageCreateFlags		flags;
 		mapImageType(texture.type()),														// VkImageType				imageType;
 		format,																				// VkFormat					format;
 		makeExtent3D(texture.layerSize()),													// VkExtent3D				extent;
@@ -116,7 +128,7 @@ inline tcu::IVec3 readIVec3 (const void* const data)
 	return tcu::IVec3(p[0], p[1], p[2]);
 }
 
-tcu::IVec3 getExpectedImageSizeResult (const Texture& texture)
+tcu::IVec3 getExpectedImageSizeResult (const Texture& texture, const bool is2DViewOf3D)
 {
 	// GLSL imageSize() function returns:
 	// z = 0 for cubes
@@ -140,7 +152,11 @@ tcu::IVec3 getExpectedImageSizeResult (const Texture& texture)
 
 		case IMAGE_TYPE_2D_ARRAY:
 		case IMAGE_TYPE_3D:
-			return size;
+			{
+				if (is2DViewOf3D)
+					return tcu::IVec3(size.x(), size.y(), 0);
+				return size;
+			}
 
 		case IMAGE_TYPE_CUBE_ARRAY:
 			return tcu::IVec3(size.x(), size.y(), size.z() / numCubeFaces);
@@ -165,7 +181,8 @@ public:
 											 const std::string&	description,
 											 const Texture&		texture,
 											 const VkFormat		format,
-											 const deUint32		flags = 0);
+											 const deUint32		flags,
+											 const bool			is2DViewOf3D);
 
 	void				initPrograms		(SourceCollections& programCollection) const;
 	TestInstance*		createInstance		(Context&			context) const;
@@ -176,6 +193,7 @@ private:
 	const VkFormat		m_format;
 	const bool			m_useReadonly;
 	const bool			m_useWriteonly;
+	const bool			m_2DViewOf3D;
 };
 
 SizeTest::SizeTest (tcu::TestContext&		testCtx,
@@ -183,28 +201,51 @@ SizeTest::SizeTest (tcu::TestContext&		testCtx,
 					const std::string&		description,
 					const Texture&			texture,
 					const VkFormat			format,
-					const deUint32			flags)
+					const deUint32			flags,
+					const bool				is2DViewOf3D)
 	: TestCase			(testCtx, name, description)
 	, m_texture			(texture)
 	, m_format			(format)
 	, m_useReadonly		((flags & FLAG_READONLY_IMAGE) != 0)
 	, m_useWriteonly	((flags & FLAG_WRITEONLY_IMAGE) != 0)
+	, m_2DViewOf3D		(is2DViewOf3D)
 {
 	// We expect at least one flag to be set.
 	DE_ASSERT(m_useReadonly || m_useWriteonly);
+
+	// For 2D views of 3D we need 3D images.
+	DE_ASSERT(!m_2DViewOf3D || m_texture.type() == IMAGE_TYPE_3D);
 }
 
 void SizeTest::checkSupport (Context& context) const
 {
-	if (m_texture.type() == IMAGE_TYPE_CUBE_ARRAY)
+	const auto imgType = m_texture.type();
+
+	if (imgType == IMAGE_TYPE_CUBE_ARRAY)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
+
+	if (imgType != IMAGE_TYPE_BUFFER)
+	{
+		const auto&				vki					= context.getInstanceInterface();
+		const auto				physicalDevice		= context.getPhysicalDevice();
+		const auto				createInfo			= makeImageCreateInfo(m_texture, m_format, m_2DViewOf3D);
+		VkImageFormatProperties	formatProperties;
+
+		const auto result = vki.getPhysicalDeviceImageFormatProperties(physicalDevice, createInfo.format, createInfo.imageType, createInfo.tiling, createInfo.usage, createInfo.flags, &formatProperties);
+
+		if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
+			TCU_THROW(NotSupportedError, "Format not supported for the specified usage");
+	}
+
+	if (m_2DViewOf3D)
+		context.requireDeviceFunctionality("VK_EXT_image_2d_view_of_3d");
 }
 
 void SizeTest::initPrograms (SourceCollections& programCollection) const
 {
-	const std::string formatQualifierStr = getShaderImageFormatQualifier(mapVkFormat(m_format));
-	const std::string imageTypeStr = getShaderImageType(mapVkFormat(m_format), m_texture.type());
-	const int dimension = m_texture.dimension();
+	const std::string	formatQualifierStr	= getShaderImageFormatQualifier(mapVkFormat(m_format));
+	const std::string	imageTypeStr		= getShaderImageType(mapVkFormat(m_format), (m_2DViewOf3D ? IMAGE_TYPE_2D : m_texture.type()));
+	const int			dimension			= m_texture.dimension();
 
 	std::ostringstream accessQualifier;
 	if (m_useReadonly)
@@ -225,9 +266,9 @@ void SizeTest::initPrograms (SourceCollections& programCollection) const
 		<< "{\n"
 		<< (dimension == 1 ?
 			"    sb_out.size = ivec3(imageSize(u_image), 0, 0);\n"
-			: dimension == 2 || m_texture.type() == IMAGE_TYPE_CUBE ?		// cubes return ivec2
+			: dimension == 2 || m_2DViewOf3D || m_texture.type() == IMAGE_TYPE_CUBE ?	// cubes return ivec2
 			"    sb_out.size = ivec3(imageSize(u_image), 0);\n"
-			: dimension == 3 ?												// cube arrays return ivec3
+			: dimension == 3 ?															// cube arrays return ivec3
 			"    sb_out.size = imageSize(u_image);\n"
 			: "")
 		<< "}\n";
@@ -236,11 +277,14 @@ void SizeTest::initPrograms (SourceCollections& programCollection) const
 }
 
 //! Build a case name, e.g. "readonly_writeonly_32x32"
-std::string getCaseName (const Texture& texture, const deUint32 flags)
+std::string getCaseName (const Texture& texture, const deUint32 flags, const bool is2DViewOf3D)
 {
 	std::ostringstream str;
 	str << ((flags & SizeTest::FLAG_READONLY_IMAGE) != 0 ? "readonly_" : "")
 		<< ((flags & SizeTest::FLAG_WRITEONLY_IMAGE) != 0 ? "writeonly_" : "");
+
+	if (is2DViewOf3D)
+		str << "2d_view_";
 
 	const int numComponents = texture.dimension();
 	for (int i = 0; i < numComponents; ++i)
@@ -255,7 +299,8 @@ class SizeTestInstance : public TestInstance
 public:
 									SizeTestInstance			(Context&				context,
 																 const Texture&			texture,
-																 const VkFormat			format);
+																 const VkFormat			format,
+																 const bool				is2DViewOf3D = false);
 
 	tcu::TestStatus                 iterate						(void);
 	virtual							~SizeTestInstance			(void) {}
@@ -268,14 +313,16 @@ protected:
 	const Texture					m_texture;
 	const VkFormat					m_format;
 	const VkDeviceSize				m_resultBufferSizeBytes;
-	de::MovePtr<Buffer>				m_resultBuffer;				//!< Shader writes the output here.
+	const bool						m_2DViewOf3D;
+	de::MovePtr<BufferWithMemory>	m_resultBuffer;				//!< Shader writes the output here.
 };
 
-SizeTestInstance::SizeTestInstance (Context& context, const Texture& texture, const VkFormat format)
+SizeTestInstance::SizeTestInstance (Context& context, const Texture& texture, const VkFormat format, const bool is2DViewOf3D)
 	: TestInstance				(context)
 	, m_texture					(texture)
 	, m_format					(format)
 	, m_resultBufferSizeBytes	(3 * sizeof(deUint32))	// ivec3 in shader
+	, m_2DViewOf3D				(is2DViewOf3D)
 {
 	const DeviceInterface&	vk			= m_context.getDeviceInterface();
 	const VkDevice			device		= m_context.getDevice();
@@ -283,7 +330,7 @@ SizeTestInstance::SizeTestInstance (Context& context, const Texture& texture, co
 
 	// Create an SSBO for shader output.
 
-	m_resultBuffer = de::MovePtr<Buffer>(new Buffer(
+	m_resultBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
 		vk, device, allocator,
 		makeBufferCreateInfo(m_resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
 		MemoryRequirement::HostVisible));
@@ -334,7 +381,7 @@ tcu::TestStatus SizeTestInstance::iterate (void)
 	invalidateAlloc(vk, device, bufferAlloc);
 
 	const tcu::IVec3 resultSize = readIVec3(bufferAlloc.getHostPtr());
-	const tcu::IVec3 expectedSize = getExpectedImageSizeResult(m_texture);
+	const tcu::IVec3 expectedSize = getExpectedImageSizeResult(m_texture, m_2DViewOf3D);
 
 	if (resultSize != expectedSize)
 		return tcu::TestStatus::fail("Incorrect imageSize(): expected " + de::toString(expectedSize) + " but got " + de::toString(resultSize));
@@ -347,7 +394,8 @@ class ImageSizeTestInstance : public SizeTestInstance
 public:
 									ImageSizeTestInstance		(Context&				context,
 																 const Texture&			texture,
-																 const VkFormat			format);
+																 const VkFormat			format,
+																 const bool				is2DViewOf3D);
 
 protected:
 	VkDescriptorSetLayout			prepareDescriptors			(void);
@@ -362,19 +410,22 @@ protected:
 	Move<VkDescriptorSet>			m_descriptorSet;
 };
 
-ImageSizeTestInstance::ImageSizeTestInstance (Context& context, const Texture& texture, const VkFormat format)
-	: SizeTestInstance	(context, texture, format)
+ImageSizeTestInstance::ImageSizeTestInstance (Context& context, const Texture& texture, const VkFormat format, const bool is2DViewOf3D)
+	: SizeTestInstance	(context, texture, format, is2DViewOf3D)
 {
 	const DeviceInterface&	vk			= m_context.getDeviceInterface();
 	const VkDevice			device		= m_context.getDevice();
 	Allocator&				allocator	= m_context.getDefaultAllocator();
 
-	// Create an image. Its data be uninitialized, as we're not reading from it.
+	// Create an image. Its data will be uninitialized, as we're not reading from it.
 
-	m_image = de::MovePtr<Image>(new Image(vk, device, allocator, makeImageCreateInfo(m_texture, m_format), MemoryRequirement::Any));
+	m_image = de::MovePtr<Image>(new Image(vk, device, allocator, makeImageCreateInfo(m_texture, m_format, m_2DViewOf3D), MemoryRequirement::Any));
 
-	const VkImageSubresourceRange subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, m_texture.numLayers());
-	m_imageView = makeImageView(vk, device, m_image->get(), mapImageViewType(m_texture.type()), m_format, subresourceRange);
+	const auto baseLayer		= (m_2DViewOf3D ? static_cast<uint32_t>(m_texture.size().z() / 2) : 0u);
+	const auto viewType			= (m_2DViewOf3D ? VK_IMAGE_VIEW_TYPE_2D : mapImageViewType(m_texture.type()));
+	const auto subresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, baseLayer, m_texture.numLayers());
+
+	m_imageView = makeImageView(vk, device, m_image->get(), viewType, m_format, subresourceRange);
 }
 
 VkDescriptorSetLayout ImageSizeTestInstance::prepareDescriptors (void)
@@ -431,7 +482,7 @@ protected:
 	void							commandBeforeCompute		(const VkCommandBuffer) {}
 	VkDescriptorSet					getDescriptorSet			(void) const { return *m_descriptorSet; }
 
-	de::MovePtr<Buffer>				m_imageBuffer;
+	de::MovePtr<BufferWithMemory>	m_imageBuffer;
 	Move<VkBufferView>				m_bufferView;
 	Move<VkDescriptorSetLayout>		m_descriptorSetLayout;
 	Move<VkDescriptorPool>			m_descriptorPool;
@@ -448,7 +499,7 @@ BufferSizeTestInstance::BufferSizeTestInstance (Context& context, const Texture&
 	// Create a texel storage buffer. Its data be uninitialized, as we're not reading from it.
 
 	const VkDeviceSize imageSizeBytes = getImageSizeBytes(m_texture.size(), m_format);
-	m_imageBuffer = de::MovePtr<Buffer>(new Buffer(vk, device, allocator,
+	m_imageBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator,
 		makeBufferCreateInfo(imageSizeBytes, VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT), MemoryRequirement::Any));
 
 	m_bufferView = makeBufferView(vk, device, m_imageBuffer->get(), m_format, 0ull, imageSizeBytes);
@@ -486,55 +537,69 @@ TestInstance* SizeTest::createInstance (Context& context) const
 	if (m_texture.type() == IMAGE_TYPE_BUFFER)
 		return new BufferSizeTestInstance(context, m_texture, m_format);
 	else
-		return new ImageSizeTestInstance(context, m_texture, m_format);
+		return new ImageSizeTestInstance(context, m_texture, m_format, m_2DViewOf3D);
 }
-
-static const ImageType s_imageTypes[] =
-{
-	IMAGE_TYPE_1D,
-	IMAGE_TYPE_1D_ARRAY,
-	IMAGE_TYPE_2D,
-	IMAGE_TYPE_2D_ARRAY,
-	IMAGE_TYPE_3D,
-	IMAGE_TYPE_CUBE,
-	IMAGE_TYPE_CUBE_ARRAY,
-	IMAGE_TYPE_BUFFER,
-};
-
-//! Base sizes used to generate actual image/buffer sizes in the test.
-static const tcu::IVec3 s_baseImageSizes[] =
-{
-	tcu::IVec3(32, 32, 32),
-	tcu::IVec3(12, 34, 56),
-	tcu::IVec3(1,   1,  1),
-	tcu::IVec3(7,   1,  1),
-};
-
-static const deUint32 s_flags[] =
-{
-	SizeTest::FLAG_READONLY_IMAGE,
-	SizeTest::FLAG_WRITEONLY_IMAGE,
-	SizeTest::FLAG_READONLY_IMAGE | SizeTest::FLAG_WRITEONLY_IMAGE,
-};
 
 } // anonymous ns
 
 tcu::TestCaseGroup* createImageSizeTests (tcu::TestContext& testCtx)
 {
+	const ImageType s_imageTypes[] =
+	{
+		IMAGE_TYPE_1D,
+		IMAGE_TYPE_1D_ARRAY,
+		IMAGE_TYPE_2D,
+		IMAGE_TYPE_2D_ARRAY,
+		IMAGE_TYPE_3D,
+		IMAGE_TYPE_CUBE,
+		IMAGE_TYPE_CUBE_ARRAY,
+		IMAGE_TYPE_BUFFER,
+	};
+
+	//! Base sizes used to generate actual image/buffer sizes in the test.
+	const tcu::IVec3 s_baseImageSizes[] =
+	{
+		tcu::IVec3(32, 32, 32),
+		tcu::IVec3(12, 34, 56),
+		tcu::IVec3(1,   1,  1),
+		tcu::IVec3(7,   1,  1),
+	};
+
+	const deUint32 s_flags[] =
+	{
+		SizeTest::FLAG_READONLY_IMAGE,
+		SizeTest::FLAG_WRITEONLY_IMAGE,
+		SizeTest::FLAG_READONLY_IMAGE | SizeTest::FLAG_WRITEONLY_IMAGE,
+	};
+
 	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "image_size", "imageSize() cases"));
 
 	const VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT;
 
-	for (int imageTypeNdx = 0; imageTypeNdx < DE_LENGTH_OF_ARRAY(s_imageTypes); ++imageTypeNdx)
+	for (const auto& imageType : s_imageTypes)
 	{
-		de::MovePtr<tcu::TestCaseGroup> imageGroup(new tcu::TestCaseGroup(testCtx, getImageTypeName(s_imageTypes[imageTypeNdx]).c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> imageGroup(new tcu::TestCaseGroup(testCtx, getImageTypeName(imageType).c_str(), ""));
 
-		for (int flagNdx = 0; flagNdx < DE_LENGTH_OF_ARRAY(s_flags); ++flagNdx)
-		for (int imageSizeNdx = 0; imageSizeNdx < DE_LENGTH_OF_ARRAY(s_baseImageSizes); ++imageSizeNdx)
-		{
-			const Texture texture = getTexture(s_imageTypes[imageTypeNdx], s_baseImageSizes[imageSizeNdx]);
-			imageGroup->addChild(new SizeTest(testCtx, getCaseName(texture, s_flags[flagNdx]), "", texture, format, s_flags[flagNdx]));
-		}
+		for (const auto& flags : s_flags)
+			for (const auto& baseImageSize : s_baseImageSizes)
+				for (int boolIdx = 0; boolIdx < 2; ++boolIdx)
+				{
+					const bool is2DViewOf3D = (boolIdx > 0);
+
+#ifdef CTS_USES_VULKANSC
+					// VulkanSC doesn't have VK_EXT_image_2d_view_of_3d
+					if (is2DViewOf3D)
+						continue;
+#endif // CTS_USES_VULKANSC
+
+					if (is2DViewOf3D && imageType != IMAGE_TYPE_3D)
+						continue;
+
+					const Texture	texture		= getTexture(imageType, baseImageSize);
+					const auto		caseName	= getCaseName(texture, flags, is2DViewOf3D);
+
+					imageGroup->addChild(new SizeTest(testCtx, caseName, "", texture, format, flags, is2DViewOf3D));
+				}
 
 		testGroup->addChild(imageGroup.release());
 	}

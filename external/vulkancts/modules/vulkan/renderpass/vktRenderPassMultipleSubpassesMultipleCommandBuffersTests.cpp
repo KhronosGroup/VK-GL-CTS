@@ -747,7 +747,7 @@ void MultipleSubpassesMultipleCommandBuffersTestInstance::createCommandBuffer (c
 
 	VkDeviceSize	vertexBufferOffset	= 0u;
 
-	// Command Buffer A will set his own event but wait for the B's event before continuing to the next subpass.
+	// Command Buffer A will set its own event but wait for the B's event before continuing to the next subpass.
 	beginCommandBuffer(vk, *m_cmdBufferA, 0u);
 	beginCommandBuffer(vk, *m_cmdBufferB, 0u);
 		vk.cmdBeginRenderPass(*m_cmdBufferA, &renderPassBeginInfoA, VK_SUBPASS_CONTENTS_INLINE);

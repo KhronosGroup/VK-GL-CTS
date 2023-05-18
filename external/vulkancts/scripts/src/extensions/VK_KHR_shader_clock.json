@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": ""
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceShaderClockFeaturesKHR":
+		[
+			{ "features": ["shaderSubgroupClock"],	"requirements": ["VK_KHR_shader_clock"] }
+		]
+	}
+}

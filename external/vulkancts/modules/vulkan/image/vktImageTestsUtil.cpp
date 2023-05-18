@@ -35,17 +35,6 @@ namespace vkt
 namespace image
 {
 
-Buffer::Buffer (const DeviceInterface&		vk,
-				const VkDevice				device,
-				Allocator&					allocator,
-				const VkBufferCreateInfo&	bufferCreateInfo,
-				const MemoryRequirement		memoryRequirement)
-{
-	m_buffer = createBuffer(vk, device, &bufferCreateInfo);
-	m_allocation = allocator.allocate(getBufferMemoryRequirements(vk, device, *m_buffer), memoryRequirement);
-	VK_CHECK(vk.bindBufferMemory(device, *m_buffer, m_allocation->getMemory(), m_allocation->getOffset()));
-}
-
 Image::Image (const DeviceInterface&	vk,
 			  const VkDevice			device,
 			  Allocator&				allocator,
@@ -63,6 +52,7 @@ Image::Image (void)
 	, m_image		()
 {}
 
+#ifndef CTS_USES_VULKANSC
 SparseImage::SparseImage (const vk::DeviceInterface&	vkd,
 						  vk::VkDevice					device,
 						  vk::VkPhysicalDevice			physicalDevice,
@@ -78,6 +68,7 @@ SparseImage::SparseImage (const vk::DeviceInterface&	vkd,
 	m_semaphore	= createSemaphore(vkd, device);
 	allocateAndBindSparseImage(vkd, device, physicalDevice, vki, createInfo, m_semaphore.get(), sparseQueue, allocator, m_allocations, format, m_image.get());
 }
+#endif // CTS_USES_VULKANSC
 
 tcu::UVec3 getShaderGridSize (const ImageType imageType, const tcu::UVec3& imageSize)
 {
@@ -227,34 +218,6 @@ VkBufferImageCopy makeBufferImageCopy (const VkExtent3D extent,
 		extent,																		//	VkExtent3D					imageExtent;
 	};
 	return copyParams;
-}
-
-Move<VkPipeline> makeComputePipeline (const DeviceInterface&	vk,
-									  const VkDevice			device,
-									  const VkPipelineLayout	pipelineLayout,
-									  const VkShaderModule		shaderModule)
-{
-	const VkPipelineShaderStageCreateInfo pipelineShaderStageParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
-		DE_NULL,												// const void*							pNext;
-		0u,														// VkPipelineShaderStageCreateFlags		flags;
-		VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits				stage;
-		shaderModule,											// VkShaderModule						module;
-		"main",													// const char*							pName;
-		DE_NULL,												// const VkSpecializationInfo*			pSpecializationInfo;
-	};
-	const VkComputePipelineCreateInfo pipelineCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,		// VkStructureType					sType;
-		DE_NULL,											// const void*						pNext;
-		0u,													// VkPipelineCreateFlags			flags;
-		pipelineShaderStageParams,							// VkPipelineShaderStageCreateInfo	stage;
-		pipelineLayout,										// VkPipelineLayout					layout;
-		DE_NULL,											// VkPipeline						basePipelineHandle;
-		0,													// deInt32							basePipelineIndex;
-	};
-	return createComputePipeline(vk, device, DE_NULL , &pipelineCreateInfo);
 }
 
 Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&	vk,
@@ -438,7 +401,7 @@ VkImageViewUsageCreateInfo makeImageViewUsageCreateInfo (const VkImageUsageFlags
 {
 	VkImageViewUsageCreateInfo imageViewUsageCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,	//VkStructureType		sType;
+		VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,		//VkStructureType		sType;
 		DE_NULL,											//const void*			pNext;
 		imageUsageFlags,									//VkImageUsageFlags		usage;
 	};

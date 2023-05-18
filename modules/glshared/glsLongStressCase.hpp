@@ -331,7 +331,7 @@ private:
 		std::vector<deUint8>							attrDataBuf;
 		std::vector<int>								attrDataOffsets;
 		std::vector<int>								attrDataSizes;
-		std::vector<de::SharedPtr<tcu::TextureLevel> >	dummyTextures;
+		std::vector<de::SharedPtr<tcu::TextureLevel> >	unusedTextures;
 		std::string										shaderNameManglingSuffix;
 	};
 

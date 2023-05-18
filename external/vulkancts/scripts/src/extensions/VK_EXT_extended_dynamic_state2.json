@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": ""
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceExtendedDynamicState2FeaturesEXT":
+		[
+			{ "features": ["extendedDynamicState2"],	"requirements": ["VK_EXT_extended_dynamic_state2"] }
+		]
+	}
+}

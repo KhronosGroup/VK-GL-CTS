@@ -98,6 +98,10 @@ public:
 	virtual void				checkSupport				(Context& context) const
 								{
 									checkProtectedQueueSupport(context);
+#ifdef CTS_USES_VULKANSC
+									if (m_cmdBufferType == CMD_BUFFER_SECONDARY && context.getDeviceVulkanSC10Properties().secondaryCommandBufferNullOrImagelessFramebuffer == VK_FALSE)
+										TCU_THROW(NotSupportedError, "secondaryCommandBufferNullFramebuffer is not supported");
+#endif // CTS_USES_VULKANSC
 								}
 private:
 	vk::VkClearColorValue		m_clearColorValue;

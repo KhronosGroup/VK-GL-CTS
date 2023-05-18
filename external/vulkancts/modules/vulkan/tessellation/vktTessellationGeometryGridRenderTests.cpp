@@ -39,6 +39,8 @@
 #include "vkImageUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkImageWithMemory.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -594,12 +596,12 @@ tcu::TestStatus GridRenderTestInstance::iterate (void)
 	const VkImageSubresourceRange colorImageAllLayersRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, m_params.numLayers);
 	const VkImageCreateInfo		  colorImageCreateInfo	   = makeImageCreateInfo(renderSize, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, m_params.numLayers);
 	const VkImageViewType		  colorAttachmentViewType  = (m_params.numLayers == 1 ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_2D_ARRAY);
-	const Image					  colorAttachmentImage	   (vk, device, allocator, colorImageCreateInfo, MemoryRequirement::Any);
+	const ImageWithMemory		  colorAttachmentImage	   (vk, device, allocator, colorImageCreateInfo, MemoryRequirement::Any);
 
 	// Color output buffer: image will be copied here for verification (big enough for all layers).
 
-	const VkDeviceSize	colorBufferSizeBytes	= renderSize.x()*renderSize.y() * m_params.numLayers * tcu::getPixelSize(mapVkFormat(colorFormat));
-	const Buffer		colorBuffer				(vk, device, allocator, makeBufferCreateInfo(colorBufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible);
+	const VkDeviceSize		colorBufferSizeBytes	= renderSize.x()*renderSize.y() * m_params.numLayers * tcu::getPixelSize(mapVkFormat(colorFormat));
+	const BufferWithMemory	colorBuffer				(vk, device, allocator, makeBufferCreateInfo(colorBufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible);
 
 	// Pipeline: no vertex input attributes nor descriptors.
 

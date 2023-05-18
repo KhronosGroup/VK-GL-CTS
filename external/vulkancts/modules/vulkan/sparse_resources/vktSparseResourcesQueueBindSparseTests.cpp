@@ -230,7 +230,7 @@ public:
 		}
 		else
 		{
-			// a dummy submission, won't be used in a call to vkQueueBindSparse
+			// an unused submission, won't be used in a call to vkQueueBindSparse
 			queueSubmissions.push_back(makeSubmissionSparse(sparseQueue, 0u, DE_NULL, 0u, DE_NULL));
 		}
 

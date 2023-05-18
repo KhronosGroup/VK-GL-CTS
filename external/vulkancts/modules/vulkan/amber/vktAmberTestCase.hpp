@@ -26,6 +26,7 @@
 
 #include <string>
 #include <set>
+#include <functional>
 #include "tcuDefs.hpp"
 #include "tcuTestCase.hpp"
 #include "vkSpirVProgram.hpp"
@@ -48,15 +49,17 @@ class AmberTestInstance : public TestInstance
 {
 public:
 	AmberTestInstance	(Context&		context,
-						 amber::Recipe*	recipe)
-		: TestInstance(context), m_recipe(recipe)
+						 amber::Recipe*	recipe,
+						 vk::VkDevice	customDevice)
+		: TestInstance(context), m_recipe(recipe), m_customDevice(customDevice)
 	{
 	}
 
 	virtual tcu::TestStatus iterate (void);
 
 private:
-	amber::Recipe* m_recipe;
+	amber::Recipe*	m_recipe;
+	vk::VkDevice	m_customDevice;
 };
 
 class AmberTestCase : public TestCase
@@ -76,9 +79,11 @@ public:
 	// determine if the test should be supported:
 	//  - If any of the extensions registered via |addRequirement| is not
 	//    supported then throw a NotSupported exception.
-	//  - Otherwise, we do a secondary sanity check depending on code inside
+	//  - Otherwise, we do a secondary quick check depending on code inside
 	//    Amber itself: if the Amber test says it is not supported, then
 	//    throw an internal error exception.
+	// A function pointer for a custom checkSupport function can also be
+	// provided for a more sophisticated support check.
 	void checkSupport (Context& ctx) const override;
 
 	// If the test case uses SPIR-V Assembly, use these build options.
@@ -96,34 +101,36 @@ public:
 
 	void addImageRequirement(vk::VkImageCreateInfo info);
 	void addBufferRequirement(BufferRequirement req);
+	void setCheckSupportCallback(std::function<void(Context&, std::string)> func)	{ m_checkSupportCallback = func; }
 
 	virtual bool validateRequirements() override;
 
 	tcu::TestRunnerType getRunnerType (void) const override { return tcu::RUNNERTYPE_AMBER; }
 
-private:
+protected:
 	bool parse (const std::string& readFilename);
 
-	amber::Recipe* m_recipe;
-	vk::SpirVAsmBuildOptions m_asm_options;
+	amber::Recipe*								m_recipe;
+	vk::SpirVAsmBuildOptions					m_asm_options;
 
-	std::string m_readFilename;
+	std::string									m_readFilename;
 
 	// Instance and device extensions required by the test.
 	// We don't differentiate between the two:  We consider the requirement
 	// satisfied if the string is registered as either an instance or device
 	// extension.  Use a set for consistent ordering.
-	std::set<std::string> m_required_extensions;
+	std::set<std::string>						m_required_extensions;
 
 	// Features required by the test.
 	// A feature bit is represented by a string of form "<structure>.<feature>", where
 	// the structure name matches the Vulkan spec, but without the leading "VkPhysicalDevice".
 	// An example entry is: "VariablePointerFeatures.variablePointers".
 	// Use a set for consistent ordering.
-	std::set<std::string> m_required_features;
+	std::set<std::string>						m_required_features;
 
-	std::vector<vk::VkImageCreateInfo> m_imageRequirements;
-	std::vector<BufferRequirement> m_bufferRequirements;
+	std::vector<vk::VkImageCreateInfo>			m_imageRequirements;
+	std::vector<BufferRequirement>				m_bufferRequirements;
+	std::function<void(Context&, std::string)>	m_checkSupportCallback	= nullptr;
 };
 
 AmberTestCase* createAmberTestCase (tcu::TestContext&							testCtx,

@@ -61,7 +61,7 @@ struct ShaderBuildOptions
 	{}
 
 	ShaderBuildOptions (void)
-		: vulkanVersion	(VK_MAKE_VERSION(1, 0, 0))
+		: vulkanVersion	(VK_MAKE_API_VERSION(0, 1, 0, 0))
 		, targetVersion	(SPIRV_VERSION_1_0)
 		, flags			(0u)
 		, supports_VK_KHR_spirv_1_4 (false)

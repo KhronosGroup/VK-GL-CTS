@@ -748,7 +748,7 @@ CoherentBlendTestCaseGroup::CoherentBlendTest::IterateResult CoherentBlendTestCa
 
 	delete[] result;
 
-	m_testCtx.setTestResult(pass ? QP_TEST_RESULT_PASS : QP_TEST_RESULT_FAIL, pass ? "Pass" : "Fail (results differ)");
+	m_testCtx.setTestResult(pass ? QP_TEST_RESULT_PASS : QP_TEST_RESULT_FAIL, pass ? "" : "results differ");
 	return STOP;
 }
 
@@ -1085,7 +1085,7 @@ BlendTestCaseGroup::BlendTest::IterateResult BlendTestCaseGroup::BlendTest::iter
 		}
 	}
 
-	m_testCtx.setTestResult(pass ? QP_TEST_RESULT_PASS : QP_TEST_RESULT_FAIL, pass ? "Pass" : "Fail (results differ)");
+	m_testCtx.setTestResult(pass ? QP_TEST_RESULT_PASS : QP_TEST_RESULT_FAIL, pass ? "" : "results differ");
 	delete[] resultBytes;
 	return STOP;
 }

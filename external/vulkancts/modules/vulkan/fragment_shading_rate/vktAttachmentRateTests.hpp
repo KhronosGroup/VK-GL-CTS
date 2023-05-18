@@ -25,13 +25,14 @@
 
 #include "tcuDefs.hpp"
 #include "tcuTestCase.hpp"
+#include "vktFragmentShadingRateGroupParams.hpp"
 
 namespace vkt
 {
 namespace FragmentShadingRate
 {
 
-void createAttachmentRateTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* group);
+void createAttachmentRateTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* group, SharedGroupParams groupParams);
 
 } // FragmentShadingRate
 } // vkt

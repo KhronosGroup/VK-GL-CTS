@@ -1,0 +1,9 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceImageCompressionControlFeaturesEXT":
+		[
+			{ "features": ["imageCompressionControl"],	"requirements": ["VK_EXT_image_compression_control"]	}
+		]
+	}
+}

@@ -265,7 +265,7 @@ const std::string RayTracingTestCase::getIntersectionPassthrough (void)
 		"\n"
 		"void main()\n"
 		"{\n"
-		"  reportIntersectionEXT(0.95f, gl_HitKindFrontFacingTriangleEXT);\n"
+		"  reportIntersectionEXT(0.95f, 0x7Eu);\n"
 		"}\n";
 
 	return intersectionPassthrough;

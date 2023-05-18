@@ -1,4 +1,7 @@
-include_directories(..)
+include_directories(
+	..
+	${DEQP_INL_DIR}
+)
 
 set(DEQP_VK_SHADEREXECUTOR_SRCS
 	vktShaderExecutor.cpp
@@ -23,12 +26,10 @@ set(DEQP_VK_SHADEREXECUTOR_SRCS
 	vktShaderClockTests.hpp
 )
 
-set(DEQP_VK_SHADEREXECUTOR_LIBS
-	tcutil
-	vkutil
-)
-
 PCH(DEQP_VK_SHADEREXECUTOR_SRCS ../pch.cpp)
 
 add_library(deqp-vk-shaderexecutor STATIC ${DEQP_VK_SHADEREXECUTOR_SRCS})
-target_link_libraries(deqp-vk-shaderexecutor ${DEQP_VK_SHADEREXECUTOR_LIBS})
+target_link_libraries(deqp-vk-shaderexecutor tcutil vkutil)
+
+add_library(deqp-vksc-shaderexecutor STATIC ${DEQP_VK_SHADEREXECUTOR_SRCS})
+target_link_libraries(deqp-vksc-shaderexecutor PUBLIC deqp-vksc-util tcutil vkscutil)

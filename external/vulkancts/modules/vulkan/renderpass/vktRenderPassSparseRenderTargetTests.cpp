@@ -386,17 +386,48 @@ Move<VkPipeline> createRenderPipeline (const DeviceInterface&							vkd,
 								pNext);									// const void*                                   pNext
 }
 
+void beginSecondaryCmdBuffer(const DeviceInterface& vkd, VkCommandBuffer cmdBuffer, VkFormat colorFormat, VkRenderingFlagsKHR renderingFlags = 0u)
+{
+	VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,		// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		renderingFlags,															// VkRenderingFlagsKHR				flags;
+		0u,																		// uint32_t							viewMask;
+		1u,																		// uint32_t							colorAttachmentCount;
+		&colorFormat,															// const VkFormat*					pColorAttachmentFormats;
+		VK_FORMAT_UNDEFINED,													// VkFormat							depthAttachmentFormat;
+		VK_FORMAT_UNDEFINED,													// VkFormat							stencilAttachmentFormat;
+		VK_SAMPLE_COUNT_1_BIT,													// VkSampleCountFlagBits			rasterizationSamples;
+	};
+	const VkCommandBufferInheritanceInfo bufferInheritanceInfo = initVulkanStructure(&inheritanceRenderingInfo);
+
+	VkCommandBufferUsageFlags usageFlags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	if (renderingFlags == 0u)
+		usageFlags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+
+	const VkCommandBufferBeginInfo commandBufBeginParams
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,							// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		usageFlags,																// VkCommandBufferUsageFlags		flags;
+		&bufferInheritanceInfo
+	};
+
+	vkd.beginCommandBuffer(cmdBuffer, &commandBufBeginParams);
+}
+
 struct TestConfig
 {
-				TestConfig		(VkFormat		format_,
-								 RenderingType	renderingType_)
+				TestConfig		(VkFormat					format_,
+								 const SharedGroupParams	groupParams_)
 		: format			(format_)
-		, renderingType		(renderingType_)
+		, groupParams		(groupParams_)
 	{
 	}
 
-	VkFormat		format;
-	RenderingType	renderingType;
+	VkFormat				format;
+	const SharedGroupParams	groupParams;
 };
 
 class SparseRenderTargetTestInstance : public TestInstance
@@ -405,13 +436,16 @@ public:
 											SparseRenderTargetTestInstance	(Context& context, TestConfig testConfig);
 											~SparseRenderTargetTestInstance	(void);
 
-	tcu::TestStatus							iterate					(void);
+	tcu::TestStatus							iterate							(void);
 
 	template<typename RenderpassSubpass>
-	tcu::TestStatus							iterateInternal			(void);
+	tcu::TestStatus							iterateInternal					(void);
+	tcu::TestStatus							iterateInternalDynamicRendering	(void);
+
+	tcu::TestStatus							verify							(void);
 
 private:
-	const RenderingType						m_renderingType;
+	const SharedGroupParams					m_groupParams;
 
 	const deUint32							m_width;
 	const deUint32							m_height;
@@ -439,7 +473,7 @@ private:
 
 SparseRenderTargetTestInstance::SparseRenderTargetTestInstance (Context& context, TestConfig testConfig)
 	: TestInstance				(context)
-	, m_renderingType			(testConfig.renderingType)
+	, m_groupParams				(testConfig.groupParams)
 	, m_width					(32u)
 	, m_height					(32u)
 	, m_format					(testConfig.format)
@@ -448,7 +482,7 @@ SparseRenderTargetTestInstance::SparseRenderTargetTestInstance (Context& context
 	, m_dstImageView			(createImageView(context.getDeviceInterface(), context.getDevice(), *m_dstImage, m_format, VK_IMAGE_ASPECT_COLOR_BIT))
 	, m_dstBuffer				(createBuffer(context.getDeviceInterface(), context.getDevice(), m_format, m_width, m_height))
 	, m_dstBufferMemory			(createBufferMemory(context.getDeviceInterface(), context.getDevice(), context.getDefaultAllocator(), *m_dstBuffer))
-	, m_renderPass				(createRenderPass(context.getDeviceInterface(), context.getDevice(), m_format, testConfig.renderingType))
+	, m_renderPass				(createRenderPass(context.getDeviceInterface(), context.getDevice(), m_format, testConfig.groupParams->renderingType))
 	, m_framebuffer				(createFramebuffer(context.getDeviceInterface(), context.getDevice(), *m_renderPass, *m_dstImageView, m_width, m_height))
 	, m_renderPipelineLayout	(createRenderPipelineLayout(context.getDeviceInterface(), context.getDevice()))
 	, m_renderPipeline			(createRenderPipeline(context.getDeviceInterface(), context.getDevice(), *m_renderPass, testConfig.format, *m_renderPipelineLayout, context.getBinaryCollection(), m_width, m_height))
@@ -462,13 +496,14 @@ SparseRenderTargetTestInstance::~SparseRenderTargetTestInstance (void)
 
 tcu::TestStatus SparseRenderTargetTestInstance::iterate (void)
 {
-	switch (m_renderingType)
+	switch (m_groupParams->renderingType)
 	{
 		case RENDERING_TYPE_RENDERPASS_LEGACY:
 			return iterateInternal<RenderpassSubpass1>();
 		case RENDERING_TYPE_RENDERPASS2:
-		case RENDERING_TYPE_DYNAMIC_RENDERING:
 			return iterateInternal<RenderpassSubpass2>();
+		case RENDERING_TYPE_DYNAMIC_RENDERING:
+			return iterateInternalDynamicRendering();
 		default:
 			TCU_THROW(InternalError, "Impossible");
 	}
@@ -479,141 +514,216 @@ tcu::TestStatus SparseRenderTargetTestInstance::iterateInternal (void)
 {
 	const DeviceInterface&			vkd				(m_context.getDeviceInterface());
 	const Unique<VkCommandBuffer>	commandBuffer	(allocateCommandBuffer(vkd, m_context.getDevice(), *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const VkRect2D					renderArea		= makeRect2D(m_width, m_height);
 
 	beginCommandBuffer(vkd, *commandBuffer);
 
-	VkRect2D renderArea = makeRect2D(m_width, m_height);
-	if (m_renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+	const typename RenderpassSubpass::SubpassBeginInfo subpassBeginInfo(DE_NULL, VK_SUBPASS_CONTENTS_INLINE);
+	const VkRenderPassBeginInfo beginInfo
 	{
-		const VkClearValue clearValue = makeClearValueColor({ 0.0f, 0.0f, 0.0f, 1.0f });
-		beginRendering(vkd, *commandBuffer, *m_dstImageView, renderArea, clearValue, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_DONT_CARE);
-	}
-	else
-	{
-		const typename RenderpassSubpass::SubpassBeginInfo subpassBeginInfo(DE_NULL, VK_SUBPASS_CONTENTS_INLINE);
-		const VkRenderPassBeginInfo beginInfo =
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-			DE_NULL,
-			*m_renderPass,
-			*m_framebuffer,
-			renderArea,
-			0u,
-			DE_NULL
-		};
-		RenderpassSubpass::cmdBeginRenderPass(vkd, *commandBuffer, &beginInfo, &subpassBeginInfo);
-	}
+		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+		DE_NULL,
+		*m_renderPass,
+		*m_framebuffer,
+		renderArea,
+		0u,
+		DE_NULL
+	};
+	RenderpassSubpass::cmdBeginRenderPass(vkd, *commandBuffer, &beginInfo, &subpassBeginInfo);
 
 	vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
 	vkd.cmdDraw(*commandBuffer, 6u, 1u, 0u, 0u);
 
-	if (m_renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
-		vkd.cmdEndRenderingKHR(*commandBuffer);
-	else
-	{
-		const typename RenderpassSubpass::SubpassEndInfo subpassEndInfo(DE_NULL);
-		RenderpassSubpass::cmdEndRenderPass(vkd, *commandBuffer, &subpassEndInfo);
-	}
+	const typename RenderpassSubpass::SubpassEndInfo subpassEndInfo(DE_NULL);
+	RenderpassSubpass::cmdEndRenderPass(vkd, *commandBuffer, &subpassEndInfo);
 
 	copyImageToBuffer(vkd, *commandBuffer, *m_dstImage, *m_dstBuffer, tcu::IVec2(m_width, m_height));
 
 	endCommandBuffer(vkd, *commandBuffer);
 
-	submitCommandsAndWait(vkd, m_context.getDevice(), m_context.getUniversalQueue(), *commandBuffer);
+	const VkPipelineStageFlags stageBits[] = { VK_PIPELINE_STAGE_TRANSFER_BIT };
+	submitCommandsAndWait(vkd, m_context.getDevice(), m_context.getUniversalQueue(), *commandBuffer, false, 1u, 1u, &m_bindSemaphore.get(), stageBits);
 
+	return verify();
+}
+
+tcu::TestStatus SparseRenderTargetTestInstance::iterateInternalDynamicRendering(void)
+{
+	const DeviceInterface&			vkd				(m_context.getDeviceInterface());
+	const Unique<VkCommandBuffer>	cmdBuffer		(allocateCommandBuffer(vkd, m_context.getDevice(), *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	Move<VkCommandBuffer>			secCmdBuffer;
+	const VkRect2D					renderArea		= makeRect2D(m_width, m_height);
+	const VkClearValue				clearValue		= makeClearValueColor({ 0.0f, 0.0f, 0.0f, 1.0f });
+	const VkImageMemoryBarrier		barrier
 	{
-		const tcu::TextureFormat			format			(mapVkFormat(m_format));
-		const void* const					ptr				(m_dstBufferMemory->getHostPtr());
-		const tcu::ConstPixelBufferAccess	access			(format, m_width, m_height, 1, ptr);
-		tcu::TextureLevel					reference		(format, m_width, m_height);
-		const tcu::TextureChannelClass		channelClass	(tcu::getTextureChannelClass(format.type));
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+		DE_NULL,
 
-		switch (channelClass)
+		0,
+		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+
+		VK_IMAGE_LAYOUT_UNDEFINED,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+
+		VK_QUEUE_FAMILY_IGNORED,
+		VK_QUEUE_FAMILY_IGNORED,
+
+		*m_dstImage,
 		{
-			case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
-			{
-				const UVec4	bits	(tcu::getTextureFormatBitDepth(format).cast<deUint32>());
-				const UVec4	color	(1u << (bits.x()-1), 1u << (bits.y()-2), 1u << (bits.z()-3), 0xffffffff);
-
-				for (deUint32 y = 0; y < m_height; y++)
-				for (deUint32 x = 0; x < m_width; x++)
-				{
-					reference.getAccess().setPixel(color, x, y);
-				}
-
-				if (!tcu::intThresholdCompare(m_context.getTestContext().getLog(), "", "", reference.getAccess(), access, UVec4(0u), tcu::COMPARE_LOG_ON_ERROR))
-					m_resultCollector.fail("Compare failed.");
-			}
-			break;
-
-			case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
-			{
-				const UVec4	bits	(tcu::getTextureFormatBitDepth(format).cast<deUint32>());
-				const UVec4	color	(1u << (bits.x()-2), 1u << (bits.y()-3), 1u << (bits.z()-4), 0xffffffff);
-
-				for (deUint32 y = 0; y < m_height; y++)
-				for (deUint32 x = 0; x < m_width; x++)
-				{
-					reference.getAccess().setPixel(color, x, y);
-				}
-
-				if (!tcu::intThresholdCompare(m_context.getTestContext().getLog(), "", "", reference.getAccess(), access, UVec4(0u), tcu::COMPARE_LOG_ON_ERROR))
-					m_resultCollector.fail("Compare failed.");
-			}
-			break;
-
-			case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
-			case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
-			{
-				const tcu::TextureFormatInfo	info		(tcu::getTextureFormatInfo(format));
-				const Vec4						maxValue	(info.valueMax);
-				const Vec4						color		(maxValue.x() / 2.0f, maxValue.y() / 4.0f, maxValue.z() / 8.0f, maxValue.w());
-
-				for (deUint32 y = 0; y < m_height; y++)
-				for (deUint32 x = 0; x < m_width; x++)
-				{
-					if (tcu::isSRGB(format))
-						reference.getAccess().setPixel(tcu::linearToSRGB(color), x, y);
-					else
-						reference.getAccess().setPixel(color, x, y);
-				}
-
-				{
-					// Allow error of 4 times the minimum presentable difference
-					const Vec4 threshold (4.0f * 1.0f / ((UVec4(1u) << tcu::getTextureFormatMantissaBitDepth(format).cast<deUint32>()) - 1u).cast<float>());
-
-					if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "", "", reference.getAccess(), access, threshold, tcu::COMPARE_LOG_ON_ERROR))
-						m_resultCollector.fail("Compare failed.");
-				}
-			}
-			break;
-
-			case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
-			{
-				const Vec4 color(0.5f, 0.25f, 0.125f, 1.0f);
-
-				for (deUint32 y = 0; y < m_height; y++)
-				for (deUint32 x = 0; x < m_width; x++)
-				{
-					if (tcu::isSRGB(format))
-						reference.getAccess().setPixel(tcu::linearToSRGB(color), x, y);
-					else
-						reference.getAccess().setPixel(color, x, y);
-				}
-
-				{
-					// Convert target format ulps to float ulps and allow 64ulp differences
-					const UVec4 threshold (64u * (UVec4(1u) << (UVec4(23) - tcu::getTextureFormatMantissaBitDepth(format).cast<deUint32>())));
-
-					if (!tcu::floatUlpThresholdCompare(m_context.getTestContext().getLog(), "", "", reference.getAccess(), access, threshold, tcu::COMPARE_LOG_ON_ERROR))
-						m_resultCollector.fail("Compare failed.");
-				}
-			}
-			break;
-
-			default:
-				DE_FATAL("Unknown channel class");
+			VK_IMAGE_ASPECT_COLOR_BIT,
+			0u,
+			1u,
+			0u,
+			1u
 		}
+	};
+
+	if (m_groupParams->useSecondaryCmdBuffer)
+	{
+		secCmdBuffer = allocateCommandBuffer(vkd, m_context.getDevice(), *m_commandPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+
+		// record secondary command buffer
+		if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+		{
+			beginSecondaryCmdBuffer(vkd, *secCmdBuffer, m_format, vk::VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+			beginRendering(vkd, *secCmdBuffer, *m_dstImageView, renderArea, clearValue, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_DONT_CARE);
+		}
+		else
+			beginSecondaryCmdBuffer(vkd, *secCmdBuffer, m_format);
+
+		vkd.cmdBindPipeline(*secCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
+		vkd.cmdDraw(*secCmdBuffer, 6u, 1u, 0u, 0u);
+
+		if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			vkd.cmdEndRendering(*secCmdBuffer);
+
+		endCommandBuffer(vkd, *secCmdBuffer);
+
+		// record primary command buffer
+		beginCommandBuffer(vkd, *cmdBuffer, 0u);
+		vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
+
+		if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			beginRendering(vkd, *cmdBuffer, *m_dstImageView, renderArea, clearValue, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+
+		vkd.cmdExecuteCommands(*cmdBuffer, 1u, &*secCmdBuffer);
+
+		if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			vkd.cmdEndRendering(*cmdBuffer);
+	}
+	else
+	{
+		beginCommandBuffer(vkd, *cmdBuffer);
+
+		vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
+
+		beginRendering(vkd, *cmdBuffer, *m_dstImageView, renderArea, clearValue, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_DONT_CARE);
+
+		vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
+		vkd.cmdDraw(*cmdBuffer, 6u, 1u, 0u, 0u);
+
+		vkd.cmdEndRendering(*cmdBuffer);
+	}
+
+	copyImageToBuffer(vkd, *cmdBuffer, *m_dstImage, *m_dstBuffer, tcu::IVec2(m_width, m_height));
+
+	endCommandBuffer(vkd, *cmdBuffer);
+
+	const VkPipelineStageFlags stageBits[] = { VK_PIPELINE_STAGE_TRANSFER_BIT };
+	submitCommandsAndWait(vkd, m_context.getDevice(), m_context.getUniversalQueue(), *cmdBuffer, false, 1u, 1u, &m_bindSemaphore.get(), stageBits);
+
+	return verify();
+}
+
+tcu::TestStatus SparseRenderTargetTestInstance::verify(void)
+{
+	const tcu::TextureFormat			format			(mapVkFormat(m_format));
+	const void* const					ptr				(m_dstBufferMemory->getHostPtr());
+	const tcu::ConstPixelBufferAccess	access			(format, m_width, m_height, 1, ptr);
+	tcu::TextureLevel					reference		(format, m_width, m_height);
+	const tcu::TextureChannelClass		channelClass	(tcu::getTextureChannelClass(format.type));
+
+	switch (channelClass)
+	{
+	case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
+	{
+		const UVec4	bits(tcu::getTextureFormatBitDepth(format).cast<deUint32>());
+		const UVec4	color(1u << (bits.x() - 1), 1u << (bits.y() - 2), 1u << (bits.z() - 3), 0xffffffff);
+
+		for (deUint32 y = 0; y < m_height; y++)
+			for (deUint32 x = 0; x < m_width; x++)
+				reference.getAccess().setPixel(color, x, y);
+
+		if (!tcu::intThresholdCompare(m_context.getTestContext().getLog(), "", "", reference.getAccess(), access, UVec4(0u), tcu::COMPARE_LOG_ON_ERROR))
+			m_resultCollector.fail("Compare failed.");
+	}
+	break;
+
+	case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
+	{
+		const UVec4	bits(tcu::getTextureFormatBitDepth(format).cast<deUint32>());
+		const UVec4	color(1u << (bits.x() - 2), 1u << (bits.y() - 3), 1u << (bits.z() - 4), 0xffffffff);
+
+		for (deUint32 y = 0; y < m_height; y++)
+			for (deUint32 x = 0; x < m_width; x++)
+				reference.getAccess().setPixel(color, x, y);
+
+		if (!tcu::intThresholdCompare(m_context.getTestContext().getLog(), "", "", reference.getAccess(), access, UVec4(0u), tcu::COMPARE_LOG_ON_ERROR))
+			m_resultCollector.fail("Compare failed.");
+	}
+	break;
+
+	case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
+	case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
+	{
+		const tcu::TextureFormatInfo	info(tcu::getTextureFormatInfo(format));
+		const Vec4						maxValue(info.valueMax);
+		const Vec4						color(maxValue.x() / 2.0f, maxValue.y() / 4.0f, maxValue.z() / 8.0f, maxValue.w());
+
+		for (deUint32 y = 0; y < m_height; y++)
+			for (deUint32 x = 0; x < m_width; x++)
+			{
+				if (tcu::isSRGB(format))
+					reference.getAccess().setPixel(tcu::linearToSRGB(color), x, y);
+				else
+					reference.getAccess().setPixel(color, x, y);
+			}
+
+		{
+			// Allow error of 4 times the minimum presentable difference
+			const Vec4 threshold(4.0f * 1.0f / ((UVec4(1u) << tcu::getTextureFormatMantissaBitDepth(format).cast<deUint32>()) - 1u).cast<float>());
+
+			if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "", "", reference.getAccess(), access, threshold, tcu::COMPARE_LOG_ON_ERROR))
+				m_resultCollector.fail("Compare failed.");
+		}
+	}
+	break;
+
+	case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
+	{
+		const Vec4 color(0.5f, 0.25f, 0.125f, 1.0f);
+
+		for (deUint32 y = 0; y < m_height; y++)
+			for (deUint32 x = 0; x < m_width; x++)
+			{
+				if (tcu::isSRGB(format))
+					reference.getAccess().setPixel(tcu::linearToSRGB(color), x, y);
+				else
+					reference.getAccess().setPixel(color, x, y);
+			}
+
+		{
+			// Convert target format ulps to float ulps and allow 64ulp differences
+			const UVec4 threshold(64u * (UVec4(1u) << (UVec4(23) - tcu::getTextureFormatMantissaBitDepth(format).cast<deUint32>())));
+
+			if (!tcu::floatUlpThresholdCompare(m_context.getTestContext().getLog(), "", "", reference.getAccess(), access, threshold, tcu::COMPARE_LOG_ON_ERROR))
+				m_resultCollector.fail("Compare failed.");
+		}
+	}
+	break;
+
+	default:
+		DE_FATAL("Unknown channel class");
 	}
 
 	return tcu::TestStatus(m_resultCollector.getResult(), m_resultCollector.getMessage());
@@ -697,14 +807,22 @@ std::string formatToName (VkFormat format)
 template<class TestConfigType>
 void checkSupport(Context& context, TestConfigType config)
 {
-	if (config.renderingType == RENDERING_TYPE_RENDERPASS2)
+	if (config.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
 		context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
 
-	if (config.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+	if (config.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
 		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+
+	const auto& vki = context.getInstanceInterface();
+	const auto& physicalDevice = context.getPhysicalDevice();
+	VkImageFormatProperties formatProperties;
+	const auto result = vki.getPhysicalDeviceImageFormatProperties(physicalDevice, config.format, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0u, &formatProperties);
+	if (result == VK_ERROR_FORMAT_NOT_SUPPORTED) {
+		TCU_THROW(NotSupportedError, "Image format not supported");
+	}
 }
 
-void initTests (tcu::TestCaseGroup* group, const RenderingType renderingType)
+void initTests (tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 {
 	static const VkFormat	formats[]	=
 	{
@@ -764,7 +882,7 @@ void initTests (tcu::TestCaseGroup* group, const RenderingType renderingType)
 	for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 	{
 		const VkFormat		format		(formats[formatNdx]);
-		const TestConfig	testConfig	(format, renderingType);
+		const TestConfig	testConfig	(format, groupParams);
 		string				testName	(formatToName(format));
 
 		group->addChild(new InstanceFactory1WithSupport<SparseRenderTargetTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig, typename FunctionSupport1<TestConfig>::Args(checkSupport, testConfig)));
@@ -773,19 +891,19 @@ void initTests (tcu::TestCaseGroup* group, const RenderingType renderingType)
 
 } // anonymous
 
-tcu::TestCaseGroup* createRenderPassSparseRenderTargetTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createRenderPassSparseRenderTargetTests (tcu::TestContext& testCtx, const renderpass::SharedGroupParams groupParams)
 {
-	return createTestGroup(testCtx, "sparserendertarget", "Sparse render target tests", initTests, RENDERING_TYPE_RENDERPASS_LEGACY);
+	return createTestGroup(testCtx, "sparserendertarget", "Sparse render target tests", initTests, groupParams);
 }
 
-tcu::TestCaseGroup* createRenderPass2SparseRenderTargetTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createRenderPass2SparseRenderTargetTests (tcu::TestContext& testCtx, const renderpass::SharedGroupParams groupParams)
 {
-	return createTestGroup(testCtx, "sparserendertarget", "Sparse render target tests", initTests, RENDERING_TYPE_RENDERPASS2);
+	return createTestGroup(testCtx, "sparserendertarget", "Sparse render target tests", initTests, groupParams);
 }
 
-tcu::TestCaseGroup* createDynamicRenderingSparseRenderTargetTests(tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createDynamicRenderingSparseRenderTargetTests(tcu::TestContext& testCtx, const renderpass::SharedGroupParams groupParams)
 {
-	return createTestGroup(testCtx, "sparserendertarget", "Sparse render target tests", initTests, RENDERING_TYPE_DYNAMIC_RENDERING);
+	return createTestGroup(testCtx, "sparserendertarget", "Sparse render target tests", initTests, groupParams);
 }
 
 } // vkt

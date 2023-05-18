@@ -74,7 +74,7 @@
 
 namespace glcts
 {
-const char* PipelineStatisticsQueryUtilities::dummy_cs_code =
+const char* PipelineStatisticsQueryUtilities::minimal_cs_code =
 	"#version 430\n"
 	"\n"
 	"layout(local_size_x=1, local_size_y = 1, local_size_z = 1) in;\n"
@@ -85,7 +85,8 @@ const char* PipelineStatisticsQueryUtilities::dummy_cs_code =
 	"{\n"
 	"    atomicCounterIncrement(test_counter);\n"
 	"}\n";
-const char* PipelineStatisticsQueryUtilities::dummy_cs_code_arb =
+
+const char* PipelineStatisticsQueryUtilities::minimal_cs_code_arb =
 	"#version 420 core\n"
 	"#extension GL_ARB_compute_shader : require\n"
 	"#extension GL_ARB_shader_atomic_counters : require\n"
@@ -98,7 +99,7 @@ const char* PipelineStatisticsQueryUtilities::dummy_cs_code_arb =
 	"{\n"
 	"    atomicCounterIncrement(test_counter);\n"
 	"}\n";
-const char* PipelineStatisticsQueryUtilities::dummy_fs_code = "#version 130\n"
+const char* PipelineStatisticsQueryUtilities::minimal_fs_code = "#version 130\n"
 															  "\n"
 															  "out vec4 result;\n"
 															  "\n"
@@ -106,7 +107,7 @@ const char* PipelineStatisticsQueryUtilities::dummy_fs_code = "#version 130\n"
 															  "{\n"
 															  "    result = gl_FragCoord;\n"
 															  "}\n";
-const char* PipelineStatisticsQueryUtilities::dummy_tc_code =
+const char* PipelineStatisticsQueryUtilities::minimal_tc_code =
 	"#version 400\n"
 	"\n"
 	"layout(vertices = 3) out;\n"
@@ -121,7 +122,7 @@ const char* PipelineStatisticsQueryUtilities::dummy_tc_code =
 	"    gl_TessLevelOuter[2]                = 5.0;\n"
 	"    gl_TessLevelOuter[3]                = 6.0;\n"
 	"}\n";
-const char* PipelineStatisticsQueryUtilities::dummy_te_code =
+const char* PipelineStatisticsQueryUtilities::minimal_te_code =
 	"#version 400\n"
 	"\n"
 	"layout(triangles) in;\n"
@@ -130,7 +131,7 @@ const char* PipelineStatisticsQueryUtilities::dummy_te_code =
 	"{\n"
 	"    gl_Position = gl_TessCoord.xyxy * gl_in[gl_PrimitiveID].gl_Position;\n"
 	"}\n";
-const char* PipelineStatisticsQueryUtilities::dummy_vs_code = "#version 130\n"
+const char* PipelineStatisticsQueryUtilities::minimal_vs_code = "#version 130\n"
 															  "\n"
 															  "in vec4 position;\n"
 															  "\n"
@@ -307,7 +308,8 @@ bool PipelineStatisticsQueryUtilities::executeQuery(glw::GLenum query_type, glw:
 													const glu::RenderContext& render_context,
 													tcu::TestContext&		  test_context,
 													const glu::ContextInfo&   context_info,
-													_test_execution_result*   out_result)
+													_test_execution_result*   out_result,
+													bool&                     skipped)
 {
 	glw::GLenum			  error_code = GL_NO_ERROR;
 	const glw::Functions& gl		 = render_context.getFunctions();
@@ -340,8 +342,10 @@ bool PipelineStatisticsQueryUtilities::executeQuery(glw::GLenum query_type, glw:
 								 ": zero bits available for counter storage"
 							  << tcu::TestLog::EndMessage;
 
+		skipped = true;
 		return result;
 	}
+	skipped = false;
 
 	/* Start the query */
 	gl.beginQuery(query_type, qo_id);
@@ -1714,7 +1718,7 @@ void PipelineStatisticsQueryTestFunctionalBase::buildProgram(const char* cs_body
 	glw::GLuint			  te_id = 0;
 	glw::GLuint			  vs_id = 0;
 
-	/* Sanity checks */
+	/* Quick checks */
 	DE_ASSERT((cs_body != DE_NULL && (fs_body == DE_NULL && gs_body == DE_NULL && tc_body == DE_NULL &&
 									  te_body == DE_NULL && vs_body == DE_NULL)) ||
 			  (cs_body == DE_NULL && (fs_body != DE_NULL || gs_body != DE_NULL || tc_body != DE_NULL ||
@@ -1940,7 +1944,7 @@ void PipelineStatisticsQueryTestFunctionalBase::deinit()
 	deinitObjects();
 }
 
-/** Dummy method that should be overloaded by inheriting methods.
+/** Empty method that should be overloaded by inheriting methods.
  *
  *  The method can be thought as of a placeholder for code that deinitializes
  *  test-specific GL objects.
@@ -1985,7 +1989,7 @@ void PipelineStatisticsQueryTestFunctionalBase::initFBO()
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glViewport() call failed.");
 }
 
-/** A dummy method, which can be thought of as a placeholder to initialize
+/** An empty method, which can be thought of as a placeholder to initialize
  *  test-specific GL objects.
  **/
 void PipelineStatisticsQueryTestFunctionalBase::initObjects()
@@ -2443,12 +2447,13 @@ PipelineStatisticsQueryTestFunctional1::PipelineStatisticsQueryTestFunctional1(d
 bool PipelineStatisticsQueryTestFunctional1::executeTest(glw::GLenum current_query_target)
 {
 	bool													 result = true;
+	bool													 skipped = false;
 	PipelineStatisticsQueryUtilities::_test_execution_result run_result;
 
 	if (!PipelineStatisticsQueryUtilities::executeQuery(
 			current_query_target, m_qo_id, m_bo_qo_id, DE_NULL, /* pfn_draw */
 			DE_NULL,											/* draw_user_arg */
-			m_context.getRenderContext(), m_testCtx, m_context.getContextInfo(), &run_result))
+			m_context.getRenderContext(), m_testCtx, m_context.getContextInfo(), &run_result, skipped))
 	{
 		m_testCtx.getLog() << tcu::TestLog::Message << "Could not retrieve test run results for query target "
 													   "["
@@ -2457,7 +2462,7 @@ bool PipelineStatisticsQueryTestFunctional1::executeTest(glw::GLenum current_que
 
 		result = false;
 	}
-	else
+	else if (!skipped)
 	{
 		const glw::GLuint64 expected_value = 0;
 
@@ -2848,6 +2853,7 @@ bool PipelineStatisticsQueryTestFunctional2::executeTexSubImageTest(void* pThis)
 bool PipelineStatisticsQueryTestFunctional2::executeTest(glw::GLenum current_query_target)
 {
 	bool															result = true;
+	bool															skipped = false;
 	PipelineStatisticsQueryUtilities::_test_execution_result		run_result;
 	const PipelineStatisticsQueryUtilities::PFNQUERYDRAWHANDLERPROC query_draw_handlers[] = {
 		executeBlitFramebufferTest,
@@ -2878,7 +2884,7 @@ bool PipelineStatisticsQueryTestFunctional2::executeTest(glw::GLenum current_que
 			if (!PipelineStatisticsQueryUtilities::executeQuery(
 					current_query_target, m_qo_id, m_bo_qo_id, DE_NULL, /* pfn_draw */
 					DE_NULL,											/* draw_user_arg */
-					m_context.getRenderContext(), m_testCtx, m_context.getContextInfo(), &run_result))
+					m_context.getRenderContext(), m_testCtx, m_context.getContextInfo(), &run_result, skipped))
 			{
 				m_testCtx.getLog() << tcu::TestLog::Message << "Query execution failed for query target "
 															   "["
@@ -2887,7 +2893,7 @@ bool PipelineStatisticsQueryTestFunctional2::executeTest(glw::GLenum current_que
 
 				result = false;
 			}
-			else
+			else if (!skipped)
 			{
 				const glw::GLuint64 expected_value = 0;
 				bool				has_passed	 = true;
@@ -3003,9 +3009,10 @@ bool PipelineStatisticsQueryTestFunctional3::executeTest(glw::GLenum current_que
 {
 	const glw::Functions&									 gl		= m_context.getRenderContext().getFunctions();
 	bool													 result = true;
+	bool													 skipped = false;
 	PipelineStatisticsQueryUtilities::_test_execution_result run_result;
 
-	/* Sanity check: This method should only be called for GL_VERTICES_SUBMITTED_ARB,
+	/* Quick check: This method should only be called for GL_VERTICES_SUBMITTED_ARB,
 	 * GL_PRIMITIVES_SUBMITTED_ARB, GL_CLIPPING_INPUT_PRIMITIVES_ARB and
 	 * GL_CLIPPING_OUTPUT_PRIMITIVES_ARB queries */
 	DE_ASSERT(current_query_target == GL_VERTICES_SUBMITTED_ARB ||
@@ -3097,7 +3104,7 @@ bool PipelineStatisticsQueryTestFunctional3::executeTest(glw::GLenum current_que
 				if (!PipelineStatisticsQueryUtilities::executeQuery(
 						current_query_target, m_qo_id, m_bo_qo_id, queryCallbackDrawCallHandler,
 						(PipelineStatisticsQueryTestFunctionalBase*)this, m_context.getRenderContext(), m_testCtx,
-						m_context.getContextInfo(), &run_result))
+						m_context.getContextInfo(), &run_result, skipped))
 				{
 					m_testCtx.getLog() << tcu::TestLog::Message
 									   << "Could not retrieve test run results for query target "
@@ -3107,7 +3114,7 @@ bool PipelineStatisticsQueryTestFunctional3::executeTest(glw::GLenum current_que
 
 					result = false;
 				}
-				else
+				else if (!skipped)
 				{
 					glw::GLuint64										 expected_values[4] = { 0 };
 					unsigned int										 n_expected_values  = 0;
@@ -3171,7 +3178,7 @@ void PipelineStatisticsQueryTestFunctional3::getExpectedPrimitivesSubmittedQuery
 
 	*out_results_written = 0;
 
-	/* Sanity checks */
+	/* Quick checks */
 	DE_ASSERT(current_primitive_type != PipelineStatisticsQueryUtilities::PRIMITIVE_TYPE_PATCHES);
 
 	/* Carry on */
@@ -3382,7 +3389,7 @@ void PipelineStatisticsQueryTestFunctional3::getExpectedVerticesSubmittedQueryRe
 
 	*out_results_written = 0;
 
-	/* Sanity checks */
+	/* Quick checks */
 	DE_ASSERT(current_primitive_type != PipelineStatisticsQueryUtilities::PRIMITIVE_TYPE_PATCHES);
 
 	/* Carry on */
@@ -3511,10 +3518,10 @@ void PipelineStatisticsQueryTestFunctional3::initObjects()
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
 	buildProgram(DE_NULL,												   /* cs_body */
-				 PipelineStatisticsQueryUtilities::dummy_fs_code, DE_NULL, /* gs_body */
+				 PipelineStatisticsQueryUtilities::minimal_fs_code, DE_NULL, /* gs_body */
 				 DE_NULL,												   /* tc_body */
 				 DE_NULL,												   /* te_body */
-				 PipelineStatisticsQueryUtilities::dummy_vs_code);
+				 PipelineStatisticsQueryUtilities::minimal_vs_code);
 
 	gl.useProgram(m_po_id);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram() call failed.");
@@ -3570,9 +3577,10 @@ bool PipelineStatisticsQueryTestFunctional4::executeTest(glw::GLenum current_que
 {
 	const glw::Functions&									 gl		= m_context.getRenderContext().getFunctions();
 	bool													 result = true;
+	bool													 skipped = false;
 	PipelineStatisticsQueryUtilities::_test_execution_result run_result;
 
-	/* Sanity check: This method should only be called for GL_VERTEX_SHADER_INVOCATIONS_ARB
+	/* Quick check: This method should only be called for GL_VERTEX_SHADER_INVOCATIONS_ARB
 	 * query */
 	DE_ASSERT(current_query_target == GL_VERTEX_SHADER_INVOCATIONS_ARB);
 
@@ -3651,7 +3659,7 @@ bool PipelineStatisticsQueryTestFunctional4::executeTest(glw::GLenum current_que
 				if (!PipelineStatisticsQueryUtilities::executeQuery(
 						current_query_target, m_qo_id, m_bo_qo_id, queryCallbackDrawCallHandler,
 						(PipelineStatisticsQueryTestFunctionalBase*)this, m_context.getRenderContext(), m_testCtx,
-						m_context.getContextInfo(), &run_result))
+						m_context.getContextInfo(), &run_result, skipped))
 				{
 					m_testCtx.getLog() << tcu::TestLog::Message
 									   << "Could not retrieve test run results for query target "
@@ -3661,7 +3669,7 @@ bool PipelineStatisticsQueryTestFunctional4::executeTest(glw::GLenum current_que
 
 					result = false;
 				}
-				else
+				else if (!skipped)
 				{
 					static const glw::GLuint64 expected_value = 1;
 
@@ -3690,7 +3698,7 @@ void PipelineStatisticsQueryTestFunctional4::initObjects()
 				 DE_NULL, /* gs_body */
 				 DE_NULL, /* tc_body */
 				 DE_NULL, /* te_body */
-				 PipelineStatisticsQueryUtilities::dummy_vs_code);
+				 PipelineStatisticsQueryUtilities::minimal_vs_code);
 
 	gl.useProgram(m_po_id);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram() call failed.");
@@ -3745,9 +3753,10 @@ bool PipelineStatisticsQueryTestFunctional5::executeTest(glw::GLenum current_que
 {
 	const glw::Functions&									 gl		= m_context.getRenderContext().getFunctions();
 	bool													 result = true;
+	bool													 skipped = false;
 	PipelineStatisticsQueryUtilities::_test_execution_result run_result;
 
-	/* Sanity check: This method should only be called for GL_TESS_CONTROL_SHADER_PATCHES_ARB and
+	/* Quick check: This method should only be called for GL_TESS_CONTROL_SHADER_PATCHES_ARB and
 	 * GL_TESS_EVALUATION_SHADER_INVOCATIONS_ARB queries. */
 	DE_ASSERT(current_query_target == GL_TESS_CONTROL_SHADER_PATCHES_ARB ||
 			  current_query_target == GL_TESS_EVALUATION_SHADER_INVOCATIONS_ARB);
@@ -3790,7 +3799,7 @@ bool PipelineStatisticsQueryTestFunctional5::executeTest(glw::GLenum current_que
 		if (!PipelineStatisticsQueryUtilities::executeQuery(
 				current_query_target, m_qo_id, m_bo_qo_id, queryCallbackDrawCallHandler,
 				(PipelineStatisticsQueryTestFunctionalBase*)this, m_context.getRenderContext(), m_testCtx,
-				m_context.getContextInfo(), &run_result))
+				m_context.getContextInfo(), &run_result, skipped))
 		{
 			m_testCtx.getLog() << tcu::TestLog::Message << "Could not retrieve test run results for query target "
 														   "["
@@ -3799,7 +3808,7 @@ bool PipelineStatisticsQueryTestFunctional5::executeTest(glw::GLenum current_que
 
 			result = false;
 		}
-		else
+		else if (!skipped)
 		{
 			static const glw::GLuint64 expected_value = 1; /* as per test spec */
 
@@ -3828,9 +3837,9 @@ void PipelineStatisticsQueryTestFunctional5::initObjects()
 	}
 
 	buildProgram(DE_NULL,												   /* cs_body */
-				 PipelineStatisticsQueryUtilities::dummy_fs_code, DE_NULL, /* gs_body */
-				 PipelineStatisticsQueryUtilities::dummy_tc_code, PipelineStatisticsQueryUtilities::dummy_te_code,
-				 PipelineStatisticsQueryUtilities::dummy_vs_code);
+				 PipelineStatisticsQueryUtilities::minimal_fs_code, DE_NULL, /* gs_body */
+				 PipelineStatisticsQueryUtilities::minimal_tc_code, PipelineStatisticsQueryUtilities::minimal_te_code,
+				 PipelineStatisticsQueryUtilities::minimal_vs_code);
 
 	gl.useProgram(m_po_id);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram() call failed.");
@@ -3889,9 +3898,10 @@ bool PipelineStatisticsQueryTestFunctional6::executeTest(glw::GLenum current_que
 {
 	const glw::Functions&									 gl		= m_context.getRenderContext().getFunctions();
 	bool													 result = true;
+	bool													 skipped = false;
 	PipelineStatisticsQueryUtilities::_test_execution_result run_result;
 
-	/* Sanity check: This method should only be called for GL_GEOMETRY_SHADER_INVOCATIONS and
+	/* Quick check: This method should only be called for GL_GEOMETRY_SHADER_INVOCATIONS and
 	 * GL_GEOMETRY_SHADER_PRIMITIVES_EMITTED_ARB queries. */
 	DE_ASSERT(current_query_target == GL_GEOMETRY_SHADER_INVOCATIONS ||
 			  current_query_target == GL_GEOMETRY_SHADER_PRIMITIVES_EMITTED_ARB);
@@ -3979,9 +3989,9 @@ bool PipelineStatisticsQueryTestFunctional6::executeTest(glw::GLenum current_que
 				}
 
 				buildProgram(DE_NULL,																	/* cs_body */
-							 PipelineStatisticsQueryUtilities::dummy_fs_code, gs_body.c_str(), DE_NULL, /* tc_body */
+							 PipelineStatisticsQueryUtilities::minimal_fs_code, gs_body.c_str(), DE_NULL, /* tc_body */
 							 DE_NULL,																	/* te_body */
-							 PipelineStatisticsQueryUtilities::dummy_vs_code);
+							 PipelineStatisticsQueryUtilities::minimal_vs_code);
 
 				gl.useProgram(m_po_id);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram() call failed.");
@@ -4005,7 +4015,7 @@ bool PipelineStatisticsQueryTestFunctional6::executeTest(glw::GLenum current_que
 					if (!PipelineStatisticsQueryUtilities::executeQuery(
 							current_query_target, m_qo_id, m_bo_qo_id, queryCallbackDrawCallHandler,
 							(PipelineStatisticsQueryTestFunctionalBase*)this, m_context.getRenderContext(), m_testCtx,
-							m_context.getContextInfo(), &run_result))
+							m_context.getContextInfo(), &run_result, skipped))
 					{
 						m_testCtx.getLog()
 							<< tcu::TestLog::Message << "Could not retrieve test run results for query target "
@@ -4015,7 +4025,7 @@ bool PipelineStatisticsQueryTestFunctional6::executeTest(glw::GLenum current_que
 
 						result = false;
 					}
-					else
+					else if (!skipped)
 					{
 						unsigned int										 n_expected_values  = 0;
 						glw::GLuint64										 expected_values[2] = { 0 };
@@ -4127,9 +4137,10 @@ bool PipelineStatisticsQueryTestFunctional7::executeTest(glw::GLenum current_que
 {
 	const glw::Functions&									 gl		= m_context.getRenderContext().getFunctions();
 	bool													 result = true;
+	bool													 skipped = false;
 	PipelineStatisticsQueryUtilities::_test_execution_result run_result;
 
-	/* Sanity check: This method should only be called for GL_FRAGMENT_SHADER_INVOCATIONS_ARB query */
+	/* Quick check: This method should only be called for GL_FRAGMENT_SHADER_INVOCATIONS_ARB query */
 	DE_ASSERT(current_query_target == GL_FRAGMENT_SHADER_INVOCATIONS_ARB);
 
 	/* Set up VBO. */
@@ -4202,7 +4213,7 @@ bool PipelineStatisticsQueryTestFunctional7::executeTest(glw::GLenum current_que
 			if (!PipelineStatisticsQueryUtilities::executeQuery(
 					current_query_target, m_qo_id, m_bo_qo_id, queryCallbackDrawCallHandler,
 					(PipelineStatisticsQueryTestFunctionalBase*)this, m_context.getRenderContext(), m_testCtx,
-					m_context.getContextInfo(), &run_result))
+					m_context.getContextInfo(), &run_result, skipped))
 			{
 				m_testCtx.getLog() << tcu::TestLog::Message << "Could not retrieve test run results for query target "
 															   "["
@@ -4211,7 +4222,7 @@ bool PipelineStatisticsQueryTestFunctional7::executeTest(glw::GLenum current_que
 
 				result = false;
 			}
-			else
+			else if (!skipped)
 			{
 				static const glw::GLuint64 expected_value = 1; /* as per test spec */
 
@@ -4235,10 +4246,10 @@ void PipelineStatisticsQueryTestFunctional7::initObjects()
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
 	buildProgram(DE_NULL,												   /* cs_body */
-				 PipelineStatisticsQueryUtilities::dummy_fs_code, DE_NULL, /* gs_body */
+				 PipelineStatisticsQueryUtilities::minimal_fs_code, DE_NULL, /* gs_body */
 				 DE_NULL,												   /* tc_body */
 				 DE_NULL,												   /* te_body */
-				 PipelineStatisticsQueryUtilities::dummy_vs_code);
+				 PipelineStatisticsQueryUtilities::minimal_vs_code);
 
 	gl.useProgram(m_po_id);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram() call failed.");
@@ -4294,9 +4305,10 @@ void PipelineStatisticsQueryTestFunctional8::deinitObjects()
 bool PipelineStatisticsQueryTestFunctional8::executeTest(glw::GLenum current_query_target)
 {
 	bool													 result = true;
+	bool													 skipped = false;
 	PipelineStatisticsQueryUtilities::_test_execution_result run_result;
 
-	/* Sanity check: This method should only be called for
+	/* Quick check: This method should only be called for
 	 * GL_COMPUTE_SHADER_INVOCATIONS_ARB queries. */
 	DE_ASSERT(current_query_target == GL_COMPUTE_SHADER_INVOCATIONS_ARB);
 
@@ -4312,7 +4324,7 @@ bool PipelineStatisticsQueryTestFunctional8::executeTest(glw::GLenum current_que
 		/* Execute the query */
 		if (!PipelineStatisticsQueryUtilities::executeQuery(
 				current_query_target, m_qo_id, m_bo_qo_id, queryCallbackDispatchCallHandler, this,
-				m_context.getRenderContext(), m_testCtx, m_context.getContextInfo(), &run_result))
+				m_context.getRenderContext(), m_testCtx, m_context.getContextInfo(), &run_result, skipped))
 		{
 			m_testCtx.getLog() << tcu::TestLog::Message << "Could not retrieve test run results for query target "
 														   "["
@@ -4321,7 +4333,7 @@ bool PipelineStatisticsQueryTestFunctional8::executeTest(glw::GLenum current_que
 
 			result = false;
 		}
-		else
+		else if (!skipped)
 		{
 			static const glw::GLuint64 expected_value = 1; /* as per test spec */
 
@@ -4345,12 +4357,12 @@ void PipelineStatisticsQueryTestFunctional8::initObjects()
 	/* This test should not execute if we don't have compute shaders */
 	if (glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 3)))
 	{
-		cs_code = PipelineStatisticsQueryUtilities::dummy_cs_code;
+		cs_code = PipelineStatisticsQueryUtilities::minimal_cs_code;
 	}
 	else if (m_context.getContextInfo().isExtensionSupported("GL_ARB_compute_shader") &&
 	m_context.getContextInfo().isExtensionSupported("GL_ARB_shader_atomic_counters"))
 	{
-		cs_code = PipelineStatisticsQueryUtilities::dummy_cs_code_arb;
+		cs_code = PipelineStatisticsQueryUtilities::minimal_cs_code_arb;
 	}
 	else
 	{

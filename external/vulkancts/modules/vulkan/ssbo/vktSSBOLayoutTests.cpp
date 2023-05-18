@@ -93,12 +93,13 @@ public:
 private:
 	void					generateBlock				(de::Random& rnd, deUint32 layoutFlags);
 	void					generateBufferVar			(de::Random& rnd, BufferBlock& block, bool isLastMember);
-	glu::VarType			generateType				(de::Random& rnd, int typeDepth, bool arrayOk, bool unusedArrayOk);
+	glu::VarType			generateType				(de::Random& rnd, int structDepth, int arrayDepth, bool arrayOk, bool unusedArrayOk);
 
 	deUint32				m_features;
 	int						m_maxBlocks;
 	int						m_maxInstances;
 	int						m_maxArrayLength;
+	int						m_maxArrayDepth;
 	int						m_maxStructDepth;
 	int						m_maxBlockMembers;
 	int						m_maxStructMembers;
@@ -115,6 +116,7 @@ RandomSSBOLayoutCase::RandomSSBOLayoutCase (tcu::TestContext& testCtx, const cha
 	, m_maxBlocks			((features & FEATURE_DESCRIPTOR_INDEXING)	? 1 : 4)
 	, m_maxInstances		((features & FEATURE_INSTANCE_ARRAYS)		? 3 : 0)
 	, m_maxArrayLength		((features & FEATURE_ARRAYS)				? 8 : 1)
+	, m_maxArrayDepth		((features& FEATURE_ARRAYS_OF_ARRAYS)		? 2 : 0)
 	, m_maxStructDepth		((features & FEATURE_STRUCTS)				? 2 : 0)
 	, m_maxBlockMembers		(5)
 	, m_maxStructMembers	(4)
@@ -232,7 +234,7 @@ void RandomSSBOLayoutCase::generateBufferVar (de::Random& rnd, BufferBlock& bloc
 	const float			accessWeight		= 0.85f;
 	const bool			unusedOk			= (m_features & FEATURE_UNUSED_VARS) != 0;
 	const std::string	name				= genName('a', 'z', m_bufferVarNdx);
-	const glu::VarType	type				= generateType(rnd, 0, true, isLastMember && (m_features & FEATURE_UNSIZED_ARRAYS));
+	const glu::VarType	type				= generateType(rnd, 0, 0, true, isLastMember && (m_features & FEATURE_UNSIZED_ARRAYS));
 	const bool			access				= !unusedOk || (rnd.getFloat() < accessWeight);
 	const bool			read				= access ? (rnd.getFloat() < readWeight) : false;
 	const bool			write				= access ? (!read || (rnd.getFloat() < writeWeight)) : false;
@@ -243,7 +245,7 @@ void RandomSSBOLayoutCase::generateBufferVar (de::Random& rnd, BufferBlock& bloc
 	m_bufferVarNdx += 1;
 }
 
-glu::VarType RandomSSBOLayoutCase::generateType (de::Random& rnd, int typeDepth, bool arrayOk, bool unsizedArrayOk)
+glu::VarType RandomSSBOLayoutCase::generateType (de::Random& rnd, int structDepth, int arrayDepth, bool arrayOk, bool unsizedArrayOk)
 {
 	const float structWeight		= 0.1f;
 	const float arrayWeight			= 0.1f;
@@ -253,18 +255,19 @@ glu::VarType RandomSSBOLayoutCase::generateType (de::Random& rnd, int typeDepth,
 
 	if (unsizedArrayOk && (rnd.getFloat() < unsizedArrayWeight))
 	{
-		const bool			childArrayOk	= (m_features & FEATURE_ARRAYS_OF_ARRAYS) != 0;
-		const glu::VarType	elementType		= generateType(rnd, typeDepth, childArrayOk, false);
+		const bool			childArrayOk	= ((m_features & FEATURE_ARRAYS_OF_ARRAYS) != 0) &&
+											  (arrayDepth < m_maxArrayDepth);
+		const glu::VarType	elementType		= generateType(rnd, structDepth, arrayDepth + 1, childArrayOk, false);
 		return glu::VarType(elementType, glu::VarType::UNSIZED_ARRAY);
 	}
-	else if (typeDepth < m_maxStructDepth && rnd.getFloat() < structWeight)
+	else if (structDepth < m_maxStructDepth && rnd.getFloat() < structWeight)
 	{
 		vector<glu::VarType>	memberTypes;
 		int						numMembers = rnd.getInt(1, m_maxStructMembers);
 
 		// Generate members first so nested struct declarations are in correct order.
 		for (int ndx = 0; ndx < numMembers; ndx++)
-			memberTypes.push_back(generateType(rnd, typeDepth+1, true, false));
+			memberTypes.push_back(generateType(rnd, structDepth + 1, arrayDepth, (arrayDepth < m_maxArrayDepth), false));
 
 		glu::StructType& structType = m_interface.allocStruct((string("s") + genName('A', 'Z', m_structNdx)).c_str());
 		m_structNdx += 1;
@@ -280,8 +283,9 @@ glu::VarType RandomSSBOLayoutCase::generateType (de::Random& rnd, int typeDepth,
 	else if (m_maxArrayLength > 0 && arrayOk && rnd.getFloat() < arrayWeight)
 	{
 		const int			arrayLength		= rnd.getInt(1, m_maxArrayLength);
-		const bool			childArrayOk	= (m_features & FEATURE_ARRAYS_OF_ARRAYS) != 0;
-		const glu::VarType	elementType		= generateType(rnd, typeDepth, childArrayOk, false);
+		const bool			childArrayOk	= ((m_features & FEATURE_ARRAYS_OF_ARRAYS) != 0) &&
+											  (arrayDepth < m_maxArrayDepth);
+		const glu::VarType	elementType		= generateType(rnd, structDepth, arrayDepth + 1, childArrayOk, false);
 
 		return glu::VarType(elementType, arrayLength);
 	}

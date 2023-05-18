@@ -39,6 +39,7 @@
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkBufferWithMemory.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
@@ -165,7 +166,7 @@ tcu::TestStatus MisalignedCubeTestInstance::iterate (void)
 	const float						eps						= 1.0f / float(2 * 256);
 
 	const VkBufferCreateInfo		resultBufferCreateInfo	= makeBufferCreateInfo(resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-	de::MovePtr<Buffer>				resultBuffer			= de::MovePtr<Buffer>(new Buffer(vk, device, allocator, resultBufferCreateInfo, MemoryRequirement::HostVisible));
+	de::MovePtr<BufferWithMemory>	resultBuffer			= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, resultBufferCreateInfo, MemoryRequirement::HostVisible));
 	const Allocation&				resultBufferAlloc		= resultBuffer->getAllocation();
 	const VkImageCreateInfo			imageCreateInfo			= makeImageCreateInfo(m_size, m_format);
 	de::MovePtr<Image>				image					= de::MovePtr<Image>(new Image(vk, device, allocator, imageCreateInfo, MemoryRequirement::Any));

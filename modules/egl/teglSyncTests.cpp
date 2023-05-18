@@ -54,6 +54,13 @@ using tcu::TestLog;
 using namespace eglw;
 using namespace glw;
 
+#define NO_ERROR 0
+#define ERROR -1
+
+#if (DE_OS == DE_OS_ANDROID)
+#define EGL_SYNC_NATIVE_FENCE_ANDROID 0x3144
+#endif
+
 namespace deqp
 {
 namespace egl
@@ -65,6 +72,10 @@ const char* getSyncTypeName (EGLenum syncType)
 	{
 		case EGL_SYNC_FENCE_KHR:	return "EGL_SYNC_FENCE_KHR";
 		case EGL_SYNC_REUSABLE_KHR:	return "EGL_SYNC_REUSABLE_KHR";
+#if (DE_OS == DE_OS_ANDROID)
+		case EGL_SYNC_NATIVE_FENCE_ANDROID:
+									return "EGL_SYNC_NATIVE_FENCE_ANDROID";
+#endif
 		default:
 			DE_ASSERT(DE_FALSE);
 			return "<Unknown>";
@@ -105,8 +116,8 @@ public:
 									SyncTest	(EglTestContext& eglTestCtx, EGLenum syncType, Extension extensions, bool useCurrentContext, const char* name, const char* description);
 									virtual ~SyncTest	(void);
 
-	void							init		(void);
-	void							deinit		(void);
+	virtual void						init(void);
+	virtual void						deinit	(void);
 	bool							hasRequiredEGLVersion(int requiredMajor, int requiredMinor);
 	bool							hasEGLFenceSyncExtension(void);
 	bool							hasEGLWaitSyncExtension(void);
@@ -316,6 +327,423 @@ void SyncTest::deinit (void)
 		m_eglDisplay = EGL_NO_DISPLAY;
 	}
 }
+
+static const char* const glsl_cs_long = R"(
+	layout(local_size_x = 1, local_size_y = 1) in;
+	layout(std430) buffer;
+	layout(binding = 0) buffer Output {
+		int elements[2];
+	} output_data;
+
+	void main() {
+		int temp = 0;
+		int value = output_data.elements[1]/100;
+		for (int i = 0; i < value; i++) {
+			for (int j = 0; j < output_data.elements[1]/value; j++) {
+				temp += 1;
+			}
+		}
+		atomicAdd(output_data.elements[0], temp);
+	}
+)";
+
+static const char* const kGLSLVer = "#version 310 es\n";
+
+class CreateLongRunningSyncTest : public SyncTest {
+	GLuint					m_buffer = 0;
+	volatile int*				m_dataloadstoreptr = NULL;
+	eglw::EGLContext			m_sharedcontext = NULL;
+	const int				m_total_count = 5000000;
+	const int				m_shorter_count = 50000;
+
+	void init(void) override
+	{
+		const EGLint contextAttribList[] = {EGL_CONTEXT_CLIENT_VERSION,
+							3, EGL_NONE};
+		const EGLint displayAttribList[] = {EGL_RENDERABLE_TYPE,
+							EGL_OPENGL_ES3_BIT_KHR,
+							EGL_SURFACE_TYPE,
+							EGL_WINDOW_BIT,
+							EGL_ALPHA_SIZE,
+							1,
+							EGL_NONE};
+		const Library& egl = m_eglTestCtx.getLibrary();
+		const eglu::NativeWindowFactory& windowFactory =
+			eglu::selectNativeWindowFactory(
+				m_eglTestCtx.getNativeDisplayFactory(),
+				m_testCtx.getCommandLine());
+		TestLog& log = m_testCtx.getLog();
+
+		m_eglDisplay =
+			eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
+		m_eglConfig = eglu::chooseSingleConfig(egl, m_eglDisplay,
+							displayAttribList);
+
+		m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(3, 1));
+
+		m_extensions = (Extension)(m_extensions | getSyncTypeExtension(m_syncType));
+
+		// Create context
+		EGLU_CHECK_CALL(egl, bindAPI(EGL_OPENGL_ES_API));
+		m_eglContext = egl.createContext(m_eglDisplay, m_eglConfig, EGL_NO_CONTEXT, contextAttribList);
+		if (egl.getError() != EGL_SUCCESS)
+			TCU_THROW(NotSupportedError, "GLES3 not supported");
+
+		m_nativeWindow = windowFactory.createWindow(&m_eglTestCtx.getNativeDisplay(), m_eglDisplay,
+					m_eglConfig, DE_NULL, eglu::WindowParams(480, 480,
+						eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
+
+		m_eglSurface = eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_nativeWindow,
+					m_eglDisplay, m_eglConfig, DE_NULL);
+
+		EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext));
+
+		requiredGLESExtensions(m_gl);
+
+		m_sharedcontext = egl.createContext(m_eglDisplay, m_eglConfig, m_eglContext, contextAttribList);
+
+		if (m_sharedcontext == EGL_NO_CONTEXT || egl.getError() != EGL_SUCCESS) {
+			log << TestLog::Message << "Error creating a shared context"
+				<< TestLog::EndMessage;
+			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+		}
+	}
+
+	void deinit(void) override
+	{
+		const Library& egl = m_eglTestCtx.getLibrary();
+
+		m_gl.useProgram(0);
+		if (m_buffer != 0) {
+			m_gl.deleteBuffers(2, &m_buffer);
+			m_buffer = 0;
+		}
+
+		if (m_sharedcontext != EGL_NO_CONTEXT) {
+			EGLU_CHECK_CALL(egl, destroyContext(m_eglDisplay, m_sharedcontext));
+			m_sharedcontext = EGL_NO_CONTEXT;
+		}
+
+		SyncTest::deinit();
+	}
+
+	bool CheckProgram(GLuint program, bool* compile_error = NULL) {
+		GLint compile_status = GL_TRUE;
+		GLint status;
+		TestLog& logger = m_testCtx.getLog();
+
+		m_gl.getProgramiv(program, GL_LINK_STATUS, &status);
+
+		if (status == GL_FALSE)
+		{
+			GLint attached_shaders = 0;
+			GLint length;
+
+			m_gl.getProgramiv(program, GL_ATTACHED_SHADERS, &attached_shaders);
+
+			if (attached_shaders > 0)
+			{
+				std::vector<GLuint> shaders(attached_shaders);
+				m_gl.getAttachedShaders(program, attached_shaders, NULL, &shaders[0]);
+
+				for (GLint i = 0; i < attached_shaders; ++i)
+				{
+					GLint res;
+					GLenum type;
+					m_gl.getShaderiv(shaders[i], GL_SHADER_TYPE,
+							reinterpret_cast<GLint*>(&type));
+					switch (type) {
+						case GL_VERTEX_SHADER:
+							logger << tcu::TestLog::Message
+								<< "*** Vertex Shader ***"
+								<< tcu::TestLog::EndMessage;
+							break;
+						case GL_FRAGMENT_SHADER:
+							logger << tcu::TestLog::Message
+								<< "*** Fragment Shader ***"
+								<< tcu::TestLog::EndMessage;
+							break;
+						case GL_COMPUTE_SHADER:
+							logger << tcu::TestLog::Message
+									<< "*** Compute Shader ***"
+									<< tcu::TestLog::EndMessage;
+							break;
+						default:
+							logger << tcu::TestLog::Message
+								<< "*** Unknown Shader ***"
+								<< tcu::TestLog::EndMessage;
+							break;
+					}
+
+					m_gl.getShaderiv(shaders[i], GL_COMPILE_STATUS, &res);
+					if (res != GL_TRUE)
+						compile_status = res;
+
+					length = 0;
+					m_gl.getShaderiv(shaders[i], GL_SHADER_SOURCE_LENGTH, &length);
+					if (length > 0)
+					{
+						std::vector<GLchar> source(length);
+						m_gl.getShaderSource(shaders[i], length, NULL, &source[0]);
+						logger << tcu::TestLog::Message << &source[0]
+								<< tcu::TestLog::EndMessage;
+					}
+
+					m_gl.getShaderiv(shaders[i], GL_INFO_LOG_LENGTH, &length);
+					if (length > 0)
+					{
+						std::vector<GLchar> log(length);
+						m_gl.getShaderInfoLog(shaders[i], length, NULL, &log[0]);
+						logger << tcu::TestLog::Message << &log[0] << tcu::TestLog::EndMessage;
+					}
+				}
+			}
+
+			m_gl.getProgramiv(program, GL_INFO_LOG_LENGTH, &length);
+			if (length > 0) {
+				std::vector<GLchar> log(length);
+				m_gl.getProgramInfoLog(program, length, NULL,
+										&log[0]);
+				logger << tcu::TestLog::Message << &log[0]
+						<< tcu::TestLog::EndMessage;
+			}
+		}
+
+		if (compile_error)
+			*compile_error = (compile_status == GL_TRUE ? false : true);
+
+		if (compile_status != GL_TRUE)
+			return false;
+
+		return status == GL_TRUE ? true : false;
+	}
+
+	GLuint CreateComputeProgram(const std::string& cs) {
+		const GLuint p = m_gl.createProgram();
+
+		if (!cs.empty())
+		{
+			const GLuint sh = m_gl.createShader(GL_COMPUTE_SHADER);
+			m_gl.attachShader(p, sh);
+			m_gl.deleteShader(sh);
+			const char* const src[2] = {kGLSLVer, cs.c_str()};
+			m_gl.shaderSource(sh, 2, src, NULL);
+			m_gl.compileShader(sh);
+		}
+
+		return p;
+	}
+
+	void RunComputePersistent() {
+		const Library&		egl = m_eglTestCtx.getLibrary();
+		TestLog&		log = m_testCtx.getLog();
+		GLbitfield		flags = GL_MAP_READ_BIT | GL_MAP_WRITE_BIT |
+						GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+		GLuint			program = CreateComputeProgram(glsl_cs_long);
+		decltype(glw::Functions::bufferStorage) func;
+
+		m_gl.linkProgram(program);
+		if (!CheckProgram(program))
+		{
+			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+			return;
+		}
+
+		m_gl.useProgram(program);
+		m_gl.genBuffers(2, &m_buffer);
+		m_gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_buffer);
+
+		GLU_EXPECT_NO_ERROR(m_gl.getError(), "Buffer Creation Failed");
+
+		func = reinterpret_cast<decltype(glw::Functions::bufferStorage)>(
+				egl.getProcAddress("glBufferStorageEXT"));
+		if (!func)
+		{
+			log << TestLog::Message
+				<< "Error getting the correct function"
+				<< TestLog::EndMessage;
+			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+			return;
+		}
+
+		func(GL_SHADER_STORAGE_BUFFER, sizeof(int) * 2, NULL, flags);
+		GLU_EXPECT_NO_ERROR(m_gl.getError(), "Buffer Set Persistent Bits");
+
+		m_dataloadstoreptr = static_cast<int*>(m_gl.mapBufferRange(
+			GL_SHADER_STORAGE_BUFFER, 0, sizeof(int) * 2, flags));
+		m_dataloadstoreptr[0] = 0;
+		m_dataloadstoreptr[1] = m_shorter_count;
+
+		for (int i = 0; i < m_total_count/m_shorter_count; i++)
+			m_gl.dispatchCompute(1, 1, 1);
+
+		m_gl.memoryBarrier(GL_ALL_BARRIER_BITS);
+		m_gl.flush();
+	};
+
+	template <typename clientWaitSyncFuncType>
+	void PollClientWait(string funcNames[FUNC_NAME_NUM_NAMES],
+					clientWaitSyncFuncType clientWaitSyncFunc,
+					EGLint flags, const string& flagsName,
+					EGLTime eglTime, const string& eglTimeName,
+					EGLint condSatisfied) {
+		TestLog& log = m_testCtx.getLog();
+		const Library& egl = m_eglTestCtx.getLibrary();
+		EGLint status = (egl.*clientWaitSyncFunc)(m_eglDisplay, m_sync, flags, 0);
+
+		log << TestLog::Message << status << " = "
+			<< funcNames[FUNC_NAME_CLIENT_WAIT_SYNC] << "("
+			<< m_eglDisplay << ", " << m_sync << ", " << flagsName
+			<< ", " << eglTimeName << ")" << TestLog::EndMessage;
+
+		while (true)
+		{
+			switch (status)
+			{
+				case EGL_TIMEOUT_EXPIRED_KHR:
+					log << TestLog::Message
+						<< "TAGTAG Wait --- GL_TIMEOUT_EXPIRED"
+						<< TestLog::EndMessage;
+					break;
+				case EGL_CONDITION_SATISFIED_KHR:
+					log << TestLog::Message
+						<< "TAGTAG Wait --- GL_CONDITION_SATISFIED"
+						<< TestLog::EndMessage;
+					return;
+				case EGL_FALSE:
+					log << TestLog::Message
+						<< "TAGTAG Wait --- EGL_FALSE"
+						<< TestLog::EndMessage;
+					return;
+				default:
+					log << TestLog::Message
+						<< "TAGTAG Wait --- SOMETHING ELSE"
+						<< TestLog::EndMessage;
+					return;
+			}
+			status = (egl.*clientWaitSyncFunc)(m_eglDisplay, m_sync, flags, eglTime);
+		}
+
+		TCU_CHECK(status == condSatisfied);
+	}
+
+	template <typename createSyncFuncType, typename clientWaitSyncFuncType,
+				typename destroySyncFuncType>
+	void test(string funcNames[FUNC_NAME_NUM_NAMES],
+			createSyncFuncType createSyncFunc,
+			clientWaitSyncFuncType clientWaitSyncFunc,
+			destroySyncFuncType destroySyncFunc, EGLenum syncType,
+			EGLint flags, const string& flagsName, EGLTime eglTime,
+			const string& eglTimeName, EGLint condSatisfied) {
+
+		const Library& egl = m_eglTestCtx.getLibrary();
+		TestLog& log = m_testCtx.getLog();
+		string createSyncMsgChk =
+			funcNames[FUNC_NAME_CREATE_SYNC] + "()";
+		EGLBoolean result;
+
+		// Reset before each test
+		deinit();
+		init();
+
+		result = egl.makeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface,
+									m_sharedcontext);
+
+		if (!result || egl.getError() != EGL_SUCCESS)
+		{
+			log << TestLog::Message
+				<< "Error making this context current"
+				<< TestLog::EndMessage;
+
+			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+
+			return;
+		}
+
+		RunComputePersistent();
+
+		m_sync = (egl.*createSyncFunc)(m_eglDisplay, syncType, NULL);
+		log << TestLog::Message << m_sync << " = "
+			<< funcNames[FUNC_NAME_CREATE_SYNC] << "(" << m_eglDisplay
+			<< ", " << getSyncTypeName(syncType) << ", NULL)"
+			<< TestLog::EndMessage;
+
+		EGLU_CHECK_MSG(egl, createSyncMsgChk.c_str());
+
+		PollClientWait<clientWaitSyncFuncType>(
+			funcNames, clientWaitSyncFunc, flags, flagsName, eglTime,
+			eglTimeName, condSatisfied);
+
+		log << TestLog::Message << funcNames[FUNC_NAME_DESTROY_SYNC]
+			<< "(" << m_eglDisplay << ", " << m_sync << ")"
+			<< TestLog::EndMessage;
+
+		EGLU_CHECK_CALL_FPTR(
+			egl, (egl.*destroySyncFunc)(m_eglDisplay, m_sync));
+
+		m_sync = EGL_NO_SYNC_KHR;
+
+		if (*m_dataloadstoreptr != 5000000) {
+			log << TestLog::Message << "Invalid m_Dataloadstoreptr "
+				<< *m_dataloadstoreptr << TestLog::EndMessage;
+			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+			return;
+		}
+
+		EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, m_eglSurface,
+						m_eglSurface, m_eglContext));
+	}
+
+public:
+	CreateLongRunningSyncTest(EglTestContext& eglTestCtx, EGLenum syncType)
+		: SyncTest(eglTestCtx, syncType, SyncTest::EXTENSION_NONE, true,
+					"egl_fence_persistent_buffer",
+					"egl_fence_persistent_buffer") {}
+
+	IterateResult iterate(void) override
+	{
+		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		if (hasRequiredEGLVersion(1, 5))
+		{
+			test<createSync, clientWaitSync, destroySync>(
+				m_funcNames, &Library::createSync,
+				&Library::clientWaitSync, &Library::destroySync,
+				EGL_SYNC_FENCE, EGL_SYNC_FLUSH_COMMANDS_BIT,
+				"EGL_SYNC_FLUSH_COMMANDS_BIT", EGL_FOREVER,
+				"EGL_FOREVER", EGL_CONDITION_SATISFIED);
+		}
+
+		if (hasEGLFenceSyncExtension())
+		{
+			test<createSyncKHR, clientWaitSyncKHR, destroySyncKHR>(
+				m_funcNames, &Library::createSyncKHR,
+				&Library::clientWaitSyncKHR,
+				&Library::destroySyncKHR, EGL_SYNC_FENCE_KHR,
+				EGL_SYNC_FLUSH_COMMANDS_BIT,
+				"EGL_SYNC_FLUSH_COMMANDS_BIT", EGL_FOREVER,
+				"EGL_FOREVER", EGL_CONDITION_SATISFIED);
+
+#if (DE_OS == DE_OS_ANDROID)
+			test<createSyncKHR, clientWaitSyncKHR, destroySyncKHR>(
+				m_funcNames, &Library::createSyncKHR,
+				&Library::clientWaitSyncKHR,
+				&Library::destroySyncKHR,
+				EGL_SYNC_NATIVE_FENCE_ANDROID,
+				EGL_SYNC_FLUSH_COMMANDS_BIT,
+				"EGL_SYNC_FLUSH_COMMANDS_BIT", EGL_FOREVER,
+				"EGL_FOREVER", EGL_CONDITION_SATISFIED);
+#endif
+
+		} else if (!hasRequiredEGLVersion(1, 5))
+		{
+			TCU_THROW(NotSupportedError,
+						"Required extensions not supported");
+		}
+
+		return STOP;
+	}
+};
 
 class CreateNullAttribsTest : public SyncTest
 {
@@ -2210,12 +2638,16 @@ void FenceSyncTests::init (void)
 		// eglWaitSyncKHR tests
 		valid->addChild(new WaitSyncTest(m_eglTestCtx, EGL_SYNC_FENCE_KHR));
 
+		// eglClientWaitSyncKHR tests
+		valid->addChild(new CreateLongRunningSyncTest(m_eglTestCtx, EGL_SYNC_FENCE_KHR));
+
 		addChild(valid);
 	}
 
-	// Add negative API tests
+        // Add negative API tests
 	{
-		TestCaseGroup* const invalid = new TestCaseGroup(m_eglTestCtx, "invalid", "Invalid function calls");
+		TestCaseGroup* const invalid = new TestCaseGroup(
+			m_eglTestCtx, "invalid", "Invalid function calls");
 
 		// eglCreateSyncKHR tests
 		invalid->addChild(new CreateInvalidDisplayTest(m_eglTestCtx, EGL_SYNC_FENCE_KHR));
@@ -2243,7 +2675,7 @@ void FenceSyncTests::init (void)
 		invalid->addChild(new WaitSyncInvalidFlagTest(m_eglTestCtx, EGL_SYNC_FENCE_KHR));
 
 		addChild(invalid);
-	}
+    }
 }
 
 ReusableSyncTests::ReusableSyncTests (EglTestContext& eglTestCtx)

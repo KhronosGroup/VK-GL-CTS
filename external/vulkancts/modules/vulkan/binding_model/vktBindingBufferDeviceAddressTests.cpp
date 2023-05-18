@@ -102,16 +102,23 @@ typedef enum
 	CONVERT_U64TOUVEC2,
 } Convert;
 
+typedef enum
+{
+	OFFSET_ZERO = 0,
+	OFFSET_NONZERO,
+} MemoryOffset;
+
 struct CaseDef
 {
-	deUint32 set;
-	deUint32 depth;
-	Base base;
-	Stage stage;
-	Convert convertUToPtr;
-	bool storeInLocal;
-	BufType bufType;
-	Layout layout;
+	deUint32		set;
+	deUint32		depth;
+	Base			base;
+	Stage			stage;
+	Convert			convertUToPtr;
+	bool			storeInLocal;
+	BufType			bufType;
+	Layout			layout;
+	MemoryOffset	memoryOffset;
 };
 
 class BufferAddressTestInstance : public TestInstance
@@ -178,9 +185,15 @@ void BufferAddressTestCase::checkSupport (Context& context) const
 	if (m_data.set >= context.getDeviceProperties().limits.maxBoundDescriptorSets)
 		TCU_THROW(NotSupportedError, "descriptor set number not supported");
 
+#ifndef CTS_USES_VULKANSC
 	bool isBufferDeviceAddressWithCaptureReplaySupported =
 			(context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address") && context.getBufferDeviceAddressFeatures().bufferDeviceAddressCaptureReplay) ||
 			(context.isDeviceFunctionalitySupported("VK_EXT_buffer_device_address") && context.getBufferDeviceAddressFeaturesEXT().bufferDeviceAddressCaptureReplay);
+#else
+	bool isBufferDeviceAddressWithCaptureReplaySupported =
+			(context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address") && context.getBufferDeviceAddressFeatures().bufferDeviceAddressCaptureReplay);
+#endif
+
 	if (m_data.bufType == BT_REPLAY && !isBufferDeviceAddressWithCaptureReplaySupported)
 		TCU_THROW(NotSupportedError, "Capture/replay of physical storage buffer pointers not supported");
 
@@ -632,14 +645,22 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 	VkDescriptorPoolCreateFlags poolCreateFlags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
 	VkDescriptorSetLayoutBinding bindings[2];
-	bindings[0].binding = 0;
-	bindings[0].stageFlags = allShaderStages;
-	bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-	bindings[0].descriptorCount = 1;
-	bindings[1].binding = 1;
-	bindings[1].stageFlags = allShaderStages;
-	bindings[1].descriptorType = m_data.base == BASE_UBO ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-	bindings[1].descriptorCount = 1;
+	bindings[0] =
+	{
+		0,									// deUint32				binding;
+		VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,	// VkDescriptorType		descriptorType;
+		1,									// deUint32				descriptorCount;
+		allShaderStages,					// VkShaderStageFlags	stageFlags;
+		DE_NULL								// const VkSampler*		pImmutableSamplers;
+	};
+	bindings[1] =
+	{
+		1,									// deUint32				binding;
+		m_data.base == BASE_UBO ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,	// VkDescriptorType		descriptorType;
+		1,									// deUint32				descriptorCount;
+		allShaderStages,					// VkShaderStageFlags	stageFlags;
+		DE_NULL								// const VkSampler*		pImmutableSamplers;
+	};
 
 	// Create a layout and allocate a descriptor set for it.
 	VkDescriptorSetLayoutCreateInfo setLayoutCreateInfo =
@@ -674,12 +695,14 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 		numBindings = numBindings*3+1;
 	}
 
+#ifndef CTS_USES_VULKANSC
 	VkBufferDeviceAddressCreateInfoEXT addressCreateInfoEXT =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_CREATE_INFO_EXT,	// VkStructureType	 sType;
 		DE_NULL,													// const void*		 pNext;
 		0x000000000ULL,												// VkDeviceSize		 deviceAddress
 	};
+#endif
 
 	VkBufferOpaqueCaptureAddressCreateInfo bufferOpaqueCaptureAddressCreateInfo =
 	{
@@ -708,8 +731,10 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 	};
 
 	bool multiBuffer = m_data.bufType != BT_SINGLE;
+	bool offsetNonZero = m_data.memoryOffset == OFFSET_NONZERO;
 	deUint32 numBuffers = multiBuffer ? numBindings : 1;
 	VkDeviceSize bufferSize = multiBuffer ? align : (align*numBindings);
+	VkDeviceSize memoryOffset = 0;
 
 	vector<VkBufferSp>			buffers(numBuffers);
 	vector<AllocationSp>		allocations(numBuffers);
@@ -756,7 +781,14 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 			opaqueBufferAddrs[i] = vk.getBufferOpaqueCaptureAddress(device, &bufferDeviceAddressInfo);
 		}
 
-		allocations[i] = AllocationSp(allocateExtended(vki, vk, physDevice, device, getBufferMemoryRequirements(vk, device, **buffers[i]), MemoryRequirement::HostVisible, &allocFlagsInfo));
+		VkMemoryRequirements memReq = getBufferMemoryRequirements(vk, device, **buffers[i]);
+		if (offsetNonZero)
+		{
+			memoryOffset = memReq.alignment;
+			memReq.size += memoryOffset;
+		}
+
+		allocations[i] = AllocationSp(allocateExtended(vki, vk, physDevice, device, memReq, MemoryRequirement::HostVisible, &allocFlagsInfo));
 
 		if (useKHR)
 		{
@@ -764,7 +796,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 			opaqueMemoryAddrs[i] = vk.getDeviceMemoryOpaqueCaptureAddress(device, &deviceMemoryOpaqueCaptureAddressInfo);
 		}
 
-		VK_CHECK(vk.bindBufferMemory(device, **buffers[i], allocations[i]->getMemory(), 0));
+		VK_CHECK(vk.bindBufferMemory(device, **buffers[i], allocations[i]->getMemory(), memoryOffset));
 	}
 
 	if (m_data.bufType == BT_REPLAY)
@@ -772,21 +804,24 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 		for (deUint32 i = 0; i < numBuffers; ++i)
 		{
 			bufferDeviceAddressInfo.buffer = **buffers[i];
-			if (useKHR)
-				gpuAddrs[i] = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
-			else
-				gpuAddrs[i] = vk.getBufferDeviceAddressEXT(device, &bufferDeviceAddressInfo);
+			gpuAddrs[i] = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
 		}
 		buffers.clear();
 		buffers.resize(numBuffers);
 		allocations.clear();
 		allocations.resize(numBuffers);
 
+#ifndef CTS_USES_VULKANSC
 		bufferCreateInfo.pNext = useKHR ? (void *)&bufferOpaqueCaptureAddressCreateInfo : (void *)&addressCreateInfoEXT;
+#else
+		bufferCreateInfo.pNext = (void *)&bufferOpaqueCaptureAddressCreateInfo;
+#endif
 
 		for (deInt32 i = numBuffers-1; i >= 0; --i)
 		{
+#ifndef CTS_USES_VULKANSC
 			addressCreateInfoEXT.deviceAddress = gpuAddrs[i];
+#endif
 			bufferOpaqueCaptureAddressCreateInfo.opaqueCaptureAddress = opaqueBufferAddrs[i];
 			memoryOpaqueCaptureAddressAllocateInfo.opaqueCaptureAddress = opaqueMemoryAddrs[i];
 
@@ -795,11 +830,8 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 			VK_CHECK(vk.bindBufferMemory(device, **buffers[i], allocations[i]->getMemory(), 0));
 
 			bufferDeviceAddressInfo.buffer = **buffers[i];
-			VkDeviceSize newAddr;
-			if (useKHR)
-				newAddr = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
-			else
-				newAddr = vk.getBufferDeviceAddressEXT(device, &bufferDeviceAddressInfo);
+			VkDeviceSize newAddr = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
+
 			if (newAddr != gpuAddrs[i])
 				return tcu::TestStatus(QP_TEST_RESULT_FAIL, "address mismatch");
 		}
@@ -809,12 +841,9 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 	for (deUint32 i = 0; i < numBindings; ++i)
 	{
 		bufferDeviceAddressInfo.buffer = **buffers[multiBuffer ? i : 0];
+		gpuAddrs[i] = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
 
-		if (useKHR)
-			gpuAddrs[i] = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
-		else
-			gpuAddrs[i] = vk.getBufferDeviceAddressEXT(device, &bufferDeviceAddressInfo);
-		cpuAddrs[i] = (deUint8 *)allocations[multiBuffer ? i : 0]->getHostPtr();
+		cpuAddrs[i] = (deUint8 *)allocations[multiBuffer ? i : 0]->getHostPtr() + memoryOffset;
 		if (!multiBuffer)
 		{
 			cpuAddrs[i] = cpuAddrs[i] + align*i;
@@ -1357,9 +1386,14 @@ void CaptureReplayTestCase::checkSupport (Context& context) const
 	if (!context.isBufferDeviceAddressSupported())
 		TCU_THROW(NotSupportedError, "Physical storage buffer pointers not supported");
 
+#ifndef CTS_USES_VULKANSC
 	bool isBufferDeviceAddressWithCaptureReplaySupported =
 			(context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address") && context.getBufferDeviceAddressFeatures().bufferDeviceAddressCaptureReplay) ||
 			(context.isDeviceFunctionalitySupported("VK_EXT_buffer_device_address") && context.getBufferDeviceAddressFeaturesEXT().bufferDeviceAddressCaptureReplay);
+#else
+	bool isBufferDeviceAddressWithCaptureReplaySupported =
+			(context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address") && context.getBufferDeviceAddressFeatures().bufferDeviceAddressCaptureReplay);
+#endif
 
 	if (!isBufferDeviceAddressWithCaptureReplaySupported)
 		TCU_THROW(NotSupportedError, "Capture/replay of physical storage buffer pointers not supported");
@@ -1399,12 +1433,14 @@ tcu::TestStatus CaptureReplayTestInstance::iterate (void)
 	const bool				useKHR					= m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 	de::Random				rng(m_seed);
 
+#ifndef CTS_USES_VULKANSC
 	VkBufferDeviceAddressCreateInfoEXT addressCreateInfoEXT =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_CREATE_INFO_EXT,	// VkStructureType	 sType;
 		DE_NULL,													// const void*		 pNext;
 		0x000000000ULL,												// VkDeviceSize		 deviceAddress
 	};
+#endif
 
 	VkBufferOpaqueCaptureAddressCreateInfo bufferOpaqueCaptureAddressCreateInfo =
 	{
@@ -1497,21 +1533,24 @@ tcu::TestStatus CaptureReplayTestInstance::iterate (void)
 	for (deUint32 i = 0; i < numBuffers; ++i)
 	{
 		bufferDeviceAddressInfo.buffer = **buffers[i];
-		if (useKHR)
-			gpuAddrs[i] = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
-		else
-			gpuAddrs[i] = vk.getBufferDeviceAddressEXT(device, &bufferDeviceAddressInfo);
+		gpuAddrs[i] = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
 	}
 	buffers.clear();
 	buffers.resize(numBuffers);
 	allocations.clear();
 	allocations.resize(numBuffers);
 
+#ifndef CTS_USES_VULKANSC
 	bufferCreateInfo.pNext = useKHR ? (void *)&bufferOpaqueCaptureAddressCreateInfo : (void *)&addressCreateInfoEXT;
+#else
+	bufferCreateInfo.pNext = (void *)&bufferOpaqueCaptureAddressCreateInfo;
+#endif
 
 	for (deInt32 i = numBuffers-1; i >= 0; --i)
 	{
+#ifndef CTS_USES_VULKANSC
 		addressCreateInfoEXT.deviceAddress = gpuAddrs[i];
+#endif
 		bufferOpaqueCaptureAddressCreateInfo.opaqueCaptureAddress = opaqueBufferAddrs[i];
 		memoryOpaqueCaptureAddressAllocateInfo.opaqueCaptureAddress = opaqueMemoryAddrs[i];
 
@@ -1521,11 +1560,8 @@ tcu::TestStatus CaptureReplayTestInstance::iterate (void)
 		VK_CHECK(vk.bindBufferMemory(device, **buffers[i], allocations[i]->getMemory(), 0));
 
 		bufferDeviceAddressInfo.buffer = **buffers[i];
-		VkDeviceSize newAddr;
-		if (useKHR)
-			newAddr = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
-		else
-			newAddr = vk.getBufferDeviceAddressEXT(device, &bufferDeviceAddressInfo);
+		VkDeviceSize newAddr = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
+
 		if (newAddr != gpuAddrs[i])
 			return tcu::TestStatus(QP_TEST_RESULT_FAIL, "address mismatch");
 	}
@@ -1608,6 +1644,12 @@ tcu::TestCaseGroup*	createBufferDeviceAddressTests (tcu::TestContext& testCtx)
 #endif
 	};
 
+	TestGroupCase offsetCases[] =
+	{
+		{ OFFSET_ZERO,		"offset_zero",			"offset zero"		},
+		{ OFFSET_NONZERO,	"offset_nonzero",		"offset nonzero"	},
+	};
+
 	for (int setNdx = 0; setNdx < DE_LENGTH_OF_ARRAY(setCases); setNdx++)
 	{
 		de::MovePtr<tcu::TestCaseGroup> setGroup(new tcu::TestCaseGroup(testCtx, setCases[setNdx].name, setCases[setNdx].description));
@@ -1631,23 +1673,36 @@ tcu::TestCaseGroup*	createBufferDeviceAddressTests (tcu::TestContext& testCtx)
 								de::MovePtr<tcu::TestCaseGroup> layoutGroup(new tcu::TestCaseGroup(testCtx, layoutCases[layoutNdx].name, layoutCases[layoutNdx].description));
 								for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stageCases); stageNdx++)
 								{
-									CaseDef c =
+									for (int offsetNdx = 0; offsetNdx < DE_LENGTH_OF_ARRAY(offsetCases); offsetNdx++)
 									{
-										setCases[setNdx].count,						// deUint32 set;
-										depthCases[depthNdx].count,					// deUint32 depth;
-										(Base)baseCases[baseNdx].count,				// Base base;
-										(Stage)stageCases[stageNdx].count,			// Stage stage;
-										(Convert)cvtCases[cvtNdx].count,			// Convert convertUToPtr;
-										!!storeCases[storeNdx].count,				// bool storeInLocal;
-										(BufType)btCases[btNdx].count,				// BufType bufType;
-										(Layout)layoutCases[layoutNdx].count,		// Layout layout;
-									};
+										CaseDef c =
+										{
+											setCases[setNdx].count,						// deUint32 set;
+											depthCases[depthNdx].count,					// deUint32 depth;
+											(Base)baseCases[baseNdx].count,				// Base base;
+											(Stage)stageCases[stageNdx].count,			// Stage stage;
+											(Convert)cvtCases[cvtNdx].count,			// Convert convertUToPtr;
+											!!storeCases[storeNdx].count,				// bool storeInLocal;
+											(BufType)btCases[btNdx].count,				// BufType bufType;
+											(Layout)layoutCases[layoutNdx].count,		// Layout layout;
+											(MemoryOffset)offsetCases[offsetNdx].count, // Memory Offset;
+										};
 
-									// Skip more complex test cases for most descriptor sets, to reduce runtime.
-									if (c.set != 3 && (c.depth == 3 || c.layout != LAYOUT_STD140))
-										continue;
+										// Skip more complex test cases for most descriptor sets, to reduce runtime.
+										if (c.set != 3 && (c.depth == 3 || c.layout != LAYOUT_STD140))
+											continue;
 
-									layoutGroup->addChild(new BufferAddressTestCase(testCtx, stageCases[stageNdx].name, stageCases[stageNdx].description, c));
+										// Memory offset tests are only for single buffer test cases.
+										if (c.memoryOffset == OFFSET_NONZERO && c.bufType != BT_SINGLE)
+											continue;
+
+										std::ostringstream caseName;
+										caseName << stageCases[stageNdx].name;
+										if (c.memoryOffset == OFFSET_NONZERO)
+											caseName << "_offset_nonzero";
+
+										layoutGroup->addChild(new BufferAddressTestCase(testCtx, caseName.str().c_str(), stageCases[stageNdx].description, c));
+									}
 								}
 								btGroup->addChild(layoutGroup.release());
 							}

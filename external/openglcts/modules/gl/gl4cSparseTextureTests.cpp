@@ -160,7 +160,7 @@ void SparseTextureUtils::getTextureLevelSize(GLint target, TextureState& state, 
 
 	if (target == GL_TEXTURE_3D)
 		depth = state.depth / (int)pow(2, level);
-	else if (target == GL_TEXTURE_1D_ARRAY || target == GL_TEXTURE_2D_ARRAY || target == GL_TEXTURE_CUBE_MAP_ARRAY)
+	else if (target == GL_TEXTURE_1D_ARRAY || target == GL_TEXTURE_2D_ARRAY || target == GL_TEXTURE_CUBE_MAP_ARRAY || target == GL_TEXTURE_2D_MULTISAMPLE_ARRAY)
 		depth = state.depth;
 	else
 		depth = 1;
@@ -1849,15 +1849,7 @@ bool SparseTextureCommitmentTestCase::sparseAllocateTexture(const Functions& gl,
 	GLU_EXPECT_NO_ERROR(gl.getError(), "texParameteri error occurred for GL_TEXTURE_SPARSE_ARB");
 
 	// GL_TEXTURE_RECTANGLE can have only one level
-	if (target != GL_TEXTURE_RECTANGLE)
-	{
-		gl.getTexParameteriv(target, GL_NUM_SPARSE_LEVELS_ARB, &mState.levels);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetTexParameteriv");
-
-		mState.levels = deMin32(mState.levels, levels);
-	}
-	else
-		mState.levels = 1;
+	mState.levels = target == GL_TEXTURE_RECTANGLE ? 1 : levels;
 
 	Texture::Storage(gl, target, mState.levels, format, mState.width, mState.height, mState.depth);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "TexStorage");

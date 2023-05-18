@@ -27,11 +27,12 @@ import argparse
 import tempfile
 import shutil
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts"))
+scriptPath = os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts")
+sys.path.insert(0, scriptPath)
 
-from build.common import *
-from build.config import *
-from build.build import *
+from ctsbuild.common import *
+from ctsbuild.config import *
+from ctsbuild.build import *
 
 
 class Module:
@@ -44,7 +45,8 @@ MODULES = [
 	Module("dEQP-GLES2",	"GLES2"),
 	Module("dEQP-GLES3",	"GLES3"),
 	Module("dEQP-GLES31",	"GLES31"),
-	Module("dEQP-GL45",		"GL45"),
+	Module("dEQP-GL45-ES3",	"GL45"),
+	Module("dEQP-GL45-ES31","GL45"),
 	Module("KHR-GLES3",		"GLES3"),
 	Module("KHR-GLES2",		"GLES2"),
 	Module("KHR-GLES31",	"GLES31"),

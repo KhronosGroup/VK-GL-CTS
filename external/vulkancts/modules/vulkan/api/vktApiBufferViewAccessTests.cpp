@@ -42,6 +42,9 @@
 #include "tcuTexture.hpp"
 #include "tcuTextureUtil.hpp"
 #include "deSharedPtr.hpp"
+#include "deArrayUtil.hpp"
+#include "tcuVectorUtil.hpp"
+#include "../image/vktImageTestsUtil.hpp"
 
 namespace vkt
 {
@@ -68,6 +71,32 @@ struct BufferViewCaseParams
 	deUint32							elementOffset;
 	AllocationKind						bufferAllocationKind;
 	AllocationKind						imageAllocationKind;
+
+	VkFormat							format;
+	VkBufferUsageFlags					usage;
+	VkFormatFeatureFlags				feature;
+	VkDescriptorType					descType;
+
+	BufferViewCaseParams (deUint32 bufferSize_,
+						  deUint32 bufferViewSize_,
+						  deUint32 elementOffset_,
+						  AllocationKind bufferAllocKind_,
+						  AllocationKind imageAllocKind_,
+						  VkFormat format_ = VK_FORMAT_R32_UINT,
+						  VkBufferUsageFlags usage_ = VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT,
+						  VkFormatFeatureFlags feature_ = VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT,
+						  VkDescriptorType descType_ = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER)
+		: bufferSize(bufferSize_)
+		, bufferViewSize(bufferViewSize_)
+		, elementOffset(elementOffset_)
+		, bufferAllocationKind(bufferAllocKind_)
+		, imageAllocationKind(imageAllocKind_)
+		, format(format_)
+		, usage(usage_)
+		, feature(feature_)
+		, descType(descType_)
+	{
+	}
 };
 
 class BufferViewTestInstance : public vkt::TestInstance
@@ -260,7 +289,7 @@ BufferViewTestInstance::BufferViewTestInstance							(Context&					context,
 
 		const VkDeviceSize				uniformSize						= testCase.bufferSize * sizeof(deUint32);
 
-		BufferSuballocation().createTestBuffer(uniformSize, VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT, m_context, memAlloc, m_uniformBuffer, MemoryRequirement::HostVisible, m_uniformBufferAlloc);
+		BufferSuballocation().createTestBuffer(uniformSize, testCase.usage, m_context, memAlloc, m_uniformBuffer, MemoryRequirement::HostVisible, m_uniformBufferAlloc);
 		deMemcpy(m_uniformBufferAlloc->getHostPtr(), uniformData.data(), (size_t)uniformSize);
 		flushAlloc(vk, vkDevice, *m_uniformBufferAlloc);
 
@@ -524,7 +553,546 @@ void BufferViewTestCase::initPrograms									(SourceCollections&			programColle
 		"}\n");
 }
 
+class BufferViewAllFormatsTestInstance : public vkt::TestInstance
+{
+public:
+										BufferViewAllFormatsTestInstance		(Context&					context,
+																				 BufferViewCaseParams		testCase);
+	virtual								~BufferViewAllFormatsTestInstance		(void);
+	virtual tcu::TestStatus				iterate									(void);
+
+private:
+	void								checkTexelBufferSupport					(Context&					context,
+																				 VkFormat					format,
+																				 VkFormatFeatureFlags		feature);
+	int									getFetchPos								(int fetchPosNdx);
+	tcu::TestStatus						checkResult								();
+	tcu::TestStatus						checkResultFloat						();
+	void								populateSourceBuffer					(const tcu::PixelBufferAccess& access, deUint32 bufferNdx);
+
+private:
+	enum
+	{
+		// some arbitrary points
+		SAMPLE_POINT_0 = 6,
+		SAMPLE_POINT_1 = 51,
+		SAMPLE_POINT_2 = 42,
+		SAMPLE_POINT_3 = 25,
+	};
+
+	BufferViewCaseParams				m_testCase;
+	const VkFormat						m_bufferFormat;
+
+	Move<VkDescriptorSetLayout>			m_descriptorSetLayout;
+	Move<VkDescriptorPool>				m_descriptorPool;
+	Move<VkDescriptorSet>				m_descriptorSet;
+
+	Move<VkBuffer>						m_uniformBuffer;
+	de::MovePtr<vk::Allocation>			m_uniformBufferAlloc;
+	Move<VkBufferView>					m_uniformBufferView;
+	Move<VkShaderModule>				m_computeShaderModule;
+	Move<VkPipelineLayout>				m_pipelineLayout;
+	Move<VkPipeline>					m_computePipeline;
+
+	Move<VkCommandPool>					m_cmdPool;
+	Move<VkCommandBuffer>				m_cmdBuffer;
+
+	Move<VkBuffer>						m_resultBuffer;
+	de::MovePtr<Allocation>				m_resultBufferAlloc;
+
+	de::ArrayBuffer<deUint8>			m_sourceBuffer;
+	tcu::ConstPixelBufferAccess			m_sourceView;
+};
+
+void BufferViewAllFormatsTestInstance::checkTexelBufferSupport			(Context& context, VkFormat format, VkFormatFeatureFlags feature)
+{
+	const InstanceInterface&	vki				= context.getInstanceInterface();
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+
+	VkFormatProperties					properties;
+	properties = getPhysicalDeviceFormatProperties(vki, physicalDevice, format);
+
+	if (!(properties.bufferFeatures & feature))
+		TCU_THROW(NotSupportedError, "Format not supported");
+}
+
+BufferViewAllFormatsTestInstance::~BufferViewAllFormatsTestInstance		(void)
+{
+}
+
+/* Taken from BindingShaderAccessTests.cpp */
+void BufferViewAllFormatsTestInstance::populateSourceBuffer				(const tcu::PixelBufferAccess& access, deUint32 bufferNdx)
+{
+	DE_ASSERT(access.getHeight() == 1);
+	DE_ASSERT(access.getDepth() == 1);
+
+	const deInt32 width = access.getWidth();
+
+	for (int x = 0; x < width; ++x)
+	{
+		int	red		= 255 * x / width;												//!< gradient from 0 -> max (detects large offset errors)
+		int	green	= ((x % 2 == 0) ? (127) : (0)) + ((x % 4 < 3) ? (128) : (0));	//!< 3-level M pattern (detects small offset errors)
+		int	blue	= 16 * (x % 16);												//!< 16-long triangle wave
+
+		DE_ASSERT(de::inRange(red, 0, 255));
+		DE_ASSERT(de::inRange(green, 0, 255));
+		DE_ASSERT(de::inRange(blue, 0, 255));
+
+		if (bufferNdx % 2 == 0) red		= 255 - red;
+		if (bufferNdx % 3 == 0) green	= 255 - green;
+		if (bufferNdx % 4 == 0) blue	= 255 - blue;
+
+		access.setPixel(tcu::IVec4(red, green, blue, 255), x, 0, 0);
+	}
+}
+
+BufferViewAllFormatsTestInstance::BufferViewAllFormatsTestInstance		(Context&					context,
+																		 BufferViewCaseParams		testCase)
+										: vkt::TestInstance				(context)
+										, m_testCase					(testCase)
+										, m_bufferFormat				(testCase.format)
+{
+	const DeviceInterface&				vk								= context.getDeviceInterface();
+	const VkDevice						vkDevice						= context.getDevice();
+	const deUint32						queueFamilyIndex				= context.getUniversalQueueFamilyIndex();
+	SimpleAllocator						memAlloc						(vk, vkDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
+	checkTexelBufferSupport(context, m_bufferFormat, testCase.feature);
+
+	// Create a result buffer
+	BufferSuballocation().createTestBuffer(sizeof(tcu::Vec4[4]), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, m_context, memAlloc, m_resultBuffer, MemoryRequirement::HostVisible, m_resultBufferAlloc);
+
+	// Create descriptors
+	{
+		const VkDescriptorSetLayoutBinding layoutBindings[2]			=
+		{
+			{
+				0u,														// deUint32					binding;
+				VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,						// VkDescriptorType			descriptorType;
+				1u,														// deUint32					arraySize;
+				VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlags		stageFlags;
+				DE_NULL													// const VkSampler*			pImmutableSamplers;
+			},
+			{
+				1u,														// deUint32					binding;
+				testCase.descType,										// VkDescriptorType			descriptorType;
+				1u,														// deUint32					arraySize;
+				VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlags		stageFlags;
+				DE_NULL													// const VkSampler*			pImmutableSamplers;
+			},
+		};
+
+		const VkDescriptorSetLayoutCreateInfo descriptorLayoutParams	=
+		{
+			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,		// VkStructureType			sType;
+			DE_NULL,													// const void*				pNext;
+			(VkDescriptorSetLayoutCreateFlags)0,
+			DE_LENGTH_OF_ARRAY(layoutBindings),							// deUint32					count;
+			layoutBindings												// const VkDescriptorSetLayoutBinding pBinding;
+		};
+
+		m_descriptorSetLayout = createDescriptorSetLayout(vk, vkDevice, &descriptorLayoutParams);
+
+
+		// Generate buffer
+		const tcu::TextureFormat tcuFormat	= mapVkFormat(m_bufferFormat);
+
+		de::ArrayBuffer<deUint8> sourceBuffer(testCase.bufferSize);
+		populateSourceBuffer(tcu::PixelBufferAccess(tcuFormat, tcu::IVec3(testCase.bufferSize / tcuFormat.getPixelSize(), 1, 1), sourceBuffer.getPtr()), 0);
+
+		m_sourceBuffer = sourceBuffer;
+		m_sourceView = tcu::ConstPixelBufferAccess(tcuFormat, tcu::IVec3(64, 1, 1), m_sourceBuffer.getPtr());
+
+		BufferSuballocation().createTestBuffer(sourceBuffer.size(), testCase.usage, m_context, memAlloc, m_uniformBuffer, MemoryRequirement::HostVisible, m_uniformBufferAlloc);
+		deMemcpy(m_uniformBufferAlloc->getHostPtr(), sourceBuffer.getPtr(), sourceBuffer.size());
+		flushAlloc(vk, vkDevice, *m_uniformBufferAlloc);
+
+		const VkBufferViewCreateInfo	viewInfo						=
+		{
+			VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO,					// VkStructureType			sType;
+			DE_NULL,													// void*					pNext;
+			(VkBufferViewCreateFlags)0,
+			*m_uniformBuffer,											// VkBuffer					buffer;
+			m_bufferFormat,												// VkFormat					format;
+			m_testCase.elementOffset,									// VkDeviceSize				offset;
+			VK_WHOLE_SIZE												// VkDeviceSize				range;
+		};
+
+		m_uniformBufferView = createBufferView(vk, vkDevice, &viewInfo);
+
+		const VkDescriptorPoolSize		descriptorTypes[2]				=
+		{
+			{
+				VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,						// VkDescriptorType			type;
+				1														// deUint32					count;
+			},
+			{
+				testCase.descType,										// VkDescriptorType			type;
+				1														// deUint32					count;
+			}
+		};
+
+		const VkDescriptorPoolCreateInfo
+										descriptorPoolParams			=
+		{
+			VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,				// VkStructureType			sType;
+			DE_NULL,													// void*					pNext;
+			VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,			// VkDescriptorPoolCreateFlags flags;
+			1u,															// uint32_t					maxSets;
+			DE_LENGTH_OF_ARRAY(descriptorTypes),						// deUint32					count;
+			descriptorTypes												// const VkDescriptorTypeCount* pTypeCount
+		};
+
+		m_descriptorPool = createDescriptorPool(vk, vkDevice, &descriptorPoolParams);
+
+		const VkDescriptorSetAllocateInfo
+										descriptorSetParams				=
+		{
+			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+			DE_NULL,
+			*m_descriptorPool,
+			1u,
+			&m_descriptorSetLayout.get(),
+		};
+		m_descriptorSet = allocateDescriptorSet(vk, vkDevice, &descriptorSetParams);
+
+		const VkDescriptorBufferInfo	outBufferInfo					=
+		{
+			m_resultBuffer.get(),
+			0,
+			sizeof(tcu::Vec4[4])
+		};
+
+		const VkWriteDescriptorSet		writeDescritporSets[]			=
+		{
+			{
+				VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,					// VkStructureType			sType;
+				DE_NULL,												// const void*				pNext;
+				*m_descriptorSet,										// VkDescriptorSet			destSet;
+				0,														// deUint32					destBinding;
+				0,														// deUint32					destArrayElement;
+				1u,														// deUint32					count;
+				VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,						// VkDescriptorType			descriptorType;
+				(const VkDescriptorImageInfo*)DE_NULL,
+				&outBufferInfo,
+				(const VkBufferView*)DE_NULL,
+			},
+			{
+				VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,					// VkStructureType			sType;
+				DE_NULL,												// const void*				pNext;
+				*m_descriptorSet,										// VkDescriptorSet			destSet;
+				1,														// deUint32					destBinding;
+				0,														// deUint32					destArrayElement;
+				1u,														// deUint32					count;
+				testCase.descType,										// VkDescriptorType			descriptorType;
+				(const VkDescriptorImageInfo*)DE_NULL,
+				(const VkDescriptorBufferInfo*)DE_NULL,
+				&m_uniformBufferView.get(),
+			}
+		};
+
+		vk.updateDescriptorSets(vkDevice, DE_LENGTH_OF_ARRAY(writeDescritporSets), writeDescritporSets, 0u, DE_NULL);
+	}
+
+	// Create pipeline layout
+	{
+		const VkPipelineLayoutCreateInfo pipelineLayoutParams			=
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,				// VkStructureType			sType;
+			DE_NULL,													// const void*				pNext;
+			(VkPipelineLayoutCreateFlags)0,
+			1u,															// deUint32					descriptorSetCount;
+			&*m_descriptorSetLayout,									// const VkDescriptorSetLayout* pSetLayouts;
+			0u,															// deUint32					pushConstantRangeCount;
+			DE_NULL														// const VkPushConstantRange* pPushConstantRanges;
+		};
+
+		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+	}
+
+	// Create shaders
+	{
+		m_computeShaderModule = createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("comp"), 0);
+	}
+
+	// Create pipeline
+	{
+		m_computePipeline         = makeComputePipeline(vk, vkDevice, m_pipelineLayout.get(), m_computeShaderModule.get());
+	}
+
+	// Create command pool
+	m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+
+	// Create and record a command buffer
+	{
+		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+		beginCommandBuffer(vk, *m_cmdBuffer, 0u);
+
+		vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *m_computePipeline);
+		vk.cmdBindDescriptorSets(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0u, 1u, &*m_descriptorSet, 0u, nullptr);
+
+		const vk::VkBufferMemoryBarrier	barrier		=
+		{
+			vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+			DE_NULL,
+			vk::VK_ACCESS_HOST_WRITE_BIT,			// srcAccessMask
+			vk::VK_ACCESS_UNIFORM_READ_BIT,			// dstAccessMask
+			VK_QUEUE_FAMILY_IGNORED,				// srcQueueFamilyIndex
+			VK_QUEUE_FAMILY_IGNORED,				// destQueueFamilyIndex
+			*m_resultBuffer,						// buffer
+			0u,										// offset
+			sizeof(tcu::Vec4[4]),					// size
+		};
+		const vk::VkBufferMemoryBarrier bufferBarrier =
+		{
+			vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+			DE_NULL,
+			vk::VK_ACCESS_SHADER_WRITE_BIT,			// srcAccessMask
+			vk::VK_ACCESS_HOST_READ_BIT,			// dstAccessMask
+			VK_QUEUE_FAMILY_IGNORED,				// srcQueueFamilyIndex
+			VK_QUEUE_FAMILY_IGNORED,				// destQueueFamilyIndex
+			*m_resultBuffer,						// buffer
+			(vk::VkDeviceSize)0u,					// offset
+			sizeof(tcu::Vec4[4]),					// size
+		};
+
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, nullptr, 0u, &barrier, 0u, nullptr);
+		//vk.cmdDispatch(*m_cmdBuffer, 1u, 1u, 1u);
+		vk.cmdDispatch(*m_cmdBuffer, 4u, 1u, 1u);
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, nullptr, 0u, &bufferBarrier, 0u, nullptr);
+		endCommandBuffer(vk, *m_cmdBuffer);
+	}
+}
+
+int BufferViewAllFormatsTestInstance::getFetchPos (int fetchPosNdx)
+{
+	static const int fetchPositions[4] =
+	{
+		SAMPLE_POINT_0,
+		SAMPLE_POINT_1,
+		SAMPLE_POINT_2,
+		SAMPLE_POINT_3,
+	};
+
+	return fetchPositions[fetchPosNdx];
+}
+
+tcu::TestStatus BufferViewAllFormatsTestInstance::checkResult						()
+{
+	const DeviceInterface&				vk					= m_context.getDeviceInterface();
+	const VkDevice						vkDevice			= m_context.getDevice();
+	bool								allResultsOk		= true;
+
+	tcu::UVec4							results[4];
+	invalidateAlloc(vk, vkDevice, *m_resultBufferAlloc);
+	deMemcpy(results, m_resultBufferAlloc->getHostPtr(), sizeof(tcu::UVec4[4]));
+
+	// verify
+	for (int resultNdx = 0; resultNdx < 4; ++resultNdx)
+	{
+		const tcu::UVec4	result				= results[resultNdx];
+		const tcu::UVec4	conversionThreshold	= tcu::UVec4(0);
+		tcu::UVec4			reference			= tcu::UVec4(0);
+
+		reference	+= m_sourceView.getPixelUint(getFetchPos(resultNdx), 0, 0);
+
+		if (tcu::boolAny(tcu::greaterThan(tcu::abs(result - reference), conversionThreshold)))
+		{
+			allResultsOk = false;
+
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "Test sample " << resultNdx << ": Expected " << reference << ", got " << result
+				<< tcu::TestLog::EndMessage;
+		}
+	}
+
+	if (allResultsOk)
+		return tcu::TestStatus::pass("Pass");
+	else
+		return tcu::TestStatus::fail("Invalid result values");
+}
+
+tcu::TestStatus BufferViewAllFormatsTestInstance::checkResultFloat					()
+{
+	const DeviceInterface&				vk					= m_context.getDeviceInterface();
+	const VkDevice						vkDevice			= m_context.getDevice();
+	bool								allResultsOk		= true;
+
+	tcu::Vec4							results[4];
+	invalidateAlloc(vk, vkDevice, *m_resultBufferAlloc);
+	deMemcpy(results, m_resultBufferAlloc->getHostPtr(), sizeof(tcu::Vec4[4]));
+
+	// verify
+	for (int resultNdx = 0; resultNdx < 4; ++resultNdx)
+	{
+		const tcu::Vec4	result				= results[resultNdx];
+		const tcu::Vec4	conversionThreshold	= tcu::Vec4(1.0f / 255.0f);
+		tcu::Vec4		reference			= tcu::Vec4(0.0f);
+
+		reference	+= m_sourceView.getPixel(getFetchPos(resultNdx), 0, 0);
+
+		if (tcu::boolAny(tcu::greaterThan(tcu::abs(result - reference), conversionThreshold)))
+		{
+			allResultsOk = false;
+
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "Test sample " << resultNdx << ": Expected " << reference << ", got " << result
+				<< tcu::TestLog::EndMessage;
+		}
+	}
+
+	if (allResultsOk)
+		return tcu::TestStatus::pass("Pass");
+	else
+		return tcu::TestStatus::fail("Invalid result values");
+}
+
+tcu::TestStatus BufferViewAllFormatsTestInstance::iterate							(void)
+{
+	const DeviceInterface&				vk					= m_context.getDeviceInterface();
+	const VkDevice						vkDevice			= m_context.getDevice();
+	const VkQueue						queue				= m_context.getUniversalQueue();
+
+	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
+
+	if (isIntFormat(m_bufferFormat) || isUintFormat(m_bufferFormat))
+		return checkResult();
+	else
+		return checkResultFloat();
+}
+
+
+class BufferViewAllFormatsTestCase : public vkt::TestCase
+{
+public:
+									BufferViewAllFormatsTestCase		(tcu::TestContext&			testCtx,
+																		 const std::string&			name,
+																		 const std::string&			description,
+																		 BufferViewCaseParams		bufferViewTestInfo)
+									: vkt::TestCase						(testCtx, name, description)
+									, m_bufferViewTestInfo				(bufferViewTestInfo)
+	{}
+
+	virtual							~BufferViewAllFormatsTestCase		(void)
+	{}
+	virtual	void					initPrograms						(SourceCollections&			programCollection) const;
+
+	virtual TestInstance*			createInstance						(Context&					context) const
+	{
+		return new BufferViewAllFormatsTestInstance(context, m_bufferViewTestInfo);
+	}
+
+private:
+	BufferViewCaseParams			m_bufferViewTestInfo;
+};
+
+const std::string strLayoutFormat										(VkFormat format)
+{
+	std::ostringstream	buf;
+
+	buf << ", " << image::getShaderImageFormatQualifier(mapVkFormat(format)).c_str();
+
+	return buf.str();
+}
+
+void BufferViewAllFormatsTestCase::initPrograms							(SourceCollections&			programCollection) const
+{
+	std::ostringstream	buf;
+
+	const bool			isIntFmt		= isIntFormat(m_bufferViewTestInfo.format);
+	const bool			isUintFmt		= isUintFormat(m_bufferViewTestInfo.format);
+
+	const bool			isUniform		= m_bufferViewTestInfo.usage == VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT ? true : false;
+	const char* const	storageType		= isUniform ? "textureBuffer " : "imageBuffer ";
+	const char* const	extraOption		= isUniform ? "" : "readonly ";
+	const std::string	stringFmtLayout = isUniform ? "" : strLayoutFormat(m_bufferViewTestInfo.format);
+	const char* const	fmtLayout		= isUniform ? "" : stringFmtLayout.c_str();
+	const char* const	opName			= isUniform ? "texelFetch" : "imageLoad";
+	const char* const	outFormat		= isIntFmt  ? "i"			   : isUintFmt ? "u" : "";
+	const char* const	inFormat		= vk::isScaledFormat(m_bufferViewTestInfo.format)? "" : outFormat;
+
+	buf << "#version 440\n"
+		<< "#extension GL_EXT_texture_buffer : require\n"
+		<< "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+		<< "layout(set = 0, binding = 1" << fmtLayout << ") uniform highp " << extraOption << inFormat << storageType << " texelBuffer;\n"
+		<< "layout(set = 0, binding = 0, std140) writeonly buffer OutBuf\n"
+		<< "{\n"
+		<< "	highp " << outFormat << "vec4 read_colors[4];\n"
+		<< "} b_out;\n"
+		<< "void main (void)\n"
+		<< "{\n"
+		<< "	highp int quadrant_id = int(gl_WorkGroupID.x);\n"
+		<< "	highp " << outFormat << "vec4 result_color;\n"
+		<< "	result_color = " << outFormat << "vec4(0);\n"
+		<< "	if (quadrant_id == 0)\n"
+		<< "		result_color += " << outFormat << "vec4(" << opName << "(texelBuffer, 6));\n"
+		<< "	else if (quadrant_id == 1)\n"
+		<< "		result_color += " << outFormat << "vec4(" << opName << "(texelBuffer, 51));\n"
+		<< "	else if (quadrant_id == 2)\n"
+		<< "		result_color += " << outFormat << "vec4(" << opName << "(texelBuffer, 42));\n"
+		<< "	else\n"
+		<< "		result_color += " << outFormat << "vec4(" << opName << "(texelBuffer, 25));\n"
+		<< "	b_out.read_colors[gl_WorkGroupID.x] = result_color;\n"
+		<< "}\n";
+
+	programCollection.glslSources.add("comp") << glu::ComputeSource(buf.str());
+}
+
 } // anonymous
+
+bool isSupportedImageLoadStore (const tcu::TextureFormat& format)
+{
+	if (!image::isPackedType(mapTextureFormat(format)))
+	{
+		switch (format.order)
+		{
+			case tcu::TextureFormat::RGBA:
+				break;
+			default:
+				return false;
+		}
+
+		switch (format.type)
+		{
+			case tcu::TextureFormat::FLOAT:
+			case tcu::TextureFormat::HALF_FLOAT:
+
+			case tcu::TextureFormat::UNSIGNED_INT32:
+			case tcu::TextureFormat::UNSIGNED_INT16:
+			case tcu::TextureFormat::UNSIGNED_INT8:
+
+			case tcu::TextureFormat::SIGNED_INT32:
+			case tcu::TextureFormat::SIGNED_INT16:
+			case tcu::TextureFormat::SIGNED_INT8:
+
+			case tcu::TextureFormat::UNORM_INT16:
+			case tcu::TextureFormat::UNORM_INT8:
+
+			case tcu::TextureFormat::SNORM_INT16:
+			case tcu::TextureFormat::SNORM_INT8:
+				break;
+
+			default:
+				return false;
+		}
+	}
+	else
+	{
+		switch (mapTextureFormat(format))
+		{
+			case VK_FORMAT_A2B10G10R10_UNORM_PACK32:
+			case VK_FORMAT_A2B10G10R10_UINT_PACK32:
+				break;
+
+			default:
+				return false;
+		}
+	}
+
+	return true;
+}
 
 tcu::TestCaseGroup* createBufferViewAccessTests							(tcu::TestContext&			testCtx)
 {
@@ -612,6 +1180,148 @@ tcu::TestCaseGroup* createBufferViewAccessTests							(tcu::TestContext&			testC
 	{
 		bufferViewTests->addChild(bufferViewAllocationGroupTests[subgroupNdx].release());
 	}
+
+	VkFormat testFormats[] =
+	{
+		VK_FORMAT_R4G4_UNORM_PACK8,
+		VK_FORMAT_R4G4B4A4_UNORM_PACK16,
+		VK_FORMAT_B4G4R4A4_UNORM_PACK16,
+		VK_FORMAT_R5G6B5_UNORM_PACK16,
+		VK_FORMAT_B5G6R5_UNORM_PACK16,
+		VK_FORMAT_R5G5B5A1_UNORM_PACK16,
+		VK_FORMAT_B5G5R5A1_UNORM_PACK16,
+		VK_FORMAT_A1R5G5B5_UNORM_PACK16,
+		VK_FORMAT_R8_UNORM,
+		VK_FORMAT_R8_SNORM,
+		VK_FORMAT_R8_USCALED,
+		VK_FORMAT_R8_SSCALED,
+		VK_FORMAT_R8_UINT,
+		VK_FORMAT_R8_SINT,
+		VK_FORMAT_R8G8_UNORM,
+		VK_FORMAT_R8G8_SNORM,
+		VK_FORMAT_R8G8_USCALED,
+		VK_FORMAT_R8G8_SSCALED,
+		VK_FORMAT_R8G8_UINT,
+		VK_FORMAT_R8G8_SINT,
+		VK_FORMAT_R8G8B8_UNORM,
+		VK_FORMAT_R8G8B8_SNORM,
+		VK_FORMAT_R8G8B8_USCALED,
+		VK_FORMAT_R8G8B8_SSCALED,
+		VK_FORMAT_R8G8B8_UINT,
+		VK_FORMAT_R8G8B8_SINT,
+		VK_FORMAT_B8G8R8_UNORM,
+		VK_FORMAT_B8G8R8_SNORM,
+		VK_FORMAT_B8G8R8_USCALED,
+		VK_FORMAT_B8G8R8_SSCALED,
+		VK_FORMAT_B8G8R8_UINT,
+		VK_FORMAT_B8G8R8_SINT,
+		VK_FORMAT_R8G8B8A8_UNORM,
+		VK_FORMAT_R8G8B8A8_SNORM,
+		VK_FORMAT_R8G8B8A8_USCALED,
+		VK_FORMAT_R8G8B8A8_SSCALED,
+		VK_FORMAT_R8G8B8A8_UINT,
+		VK_FORMAT_R8G8B8A8_SINT,
+		VK_FORMAT_B8G8R8A8_UNORM,
+		VK_FORMAT_B8G8R8A8_SNORM,
+		VK_FORMAT_B8G8R8A8_USCALED,
+		VK_FORMAT_B8G8R8A8_SSCALED,
+		VK_FORMAT_B8G8R8A8_UINT,
+		VK_FORMAT_B8G8R8A8_SINT,
+		VK_FORMAT_A8B8G8R8_UNORM_PACK32,
+		VK_FORMAT_A8B8G8R8_SNORM_PACK32,
+		VK_FORMAT_A8B8G8R8_USCALED_PACK32,
+		VK_FORMAT_A8B8G8R8_SSCALED_PACK32,
+		VK_FORMAT_A8B8G8R8_UINT_PACK32,
+		VK_FORMAT_A8B8G8R8_SINT_PACK32,
+		VK_FORMAT_A2R10G10B10_UNORM_PACK32,
+		VK_FORMAT_A2R10G10B10_SNORM_PACK32,
+		VK_FORMAT_A2R10G10B10_USCALED_PACK32,
+		VK_FORMAT_A2R10G10B10_SSCALED_PACK32,
+		VK_FORMAT_A2R10G10B10_UINT_PACK32,
+		VK_FORMAT_A2R10G10B10_SINT_PACK32,
+		VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+		VK_FORMAT_A2B10G10R10_SNORM_PACK32,
+		VK_FORMAT_A2B10G10R10_USCALED_PACK32,
+		VK_FORMAT_A2B10G10R10_SSCALED_PACK32,
+		VK_FORMAT_A2B10G10R10_UINT_PACK32,
+		VK_FORMAT_A2B10G10R10_SINT_PACK32,
+		VK_FORMAT_R16_UNORM,
+		VK_FORMAT_R16_SNORM,
+		VK_FORMAT_R16_USCALED,
+		VK_FORMAT_R16_SSCALED,
+		VK_FORMAT_R16_UINT,
+		VK_FORMAT_R16_SINT,
+		VK_FORMAT_R16_SFLOAT,
+		VK_FORMAT_R16G16_UNORM,
+		VK_FORMAT_R16G16_SNORM,
+		VK_FORMAT_R16G16_USCALED,
+		VK_FORMAT_R16G16_SSCALED,
+		VK_FORMAT_R16G16_UINT,
+		VK_FORMAT_R16G16_SINT,
+		VK_FORMAT_R16G16_SFLOAT,
+		VK_FORMAT_R16G16B16_UNORM,
+		VK_FORMAT_R16G16B16_SNORM,
+		VK_FORMAT_R16G16B16_USCALED,
+		VK_FORMAT_R16G16B16_SSCALED,
+		VK_FORMAT_R16G16B16_UINT,
+		VK_FORMAT_R16G16B16_SINT,
+		VK_FORMAT_R16G16B16_SFLOAT,
+		VK_FORMAT_R16G16B16A16_UNORM,
+		VK_FORMAT_R16G16B16A16_SNORM,
+		VK_FORMAT_R16G16B16A16_USCALED,
+		VK_FORMAT_R16G16B16A16_SSCALED,
+		VK_FORMAT_R16G16B16A16_UINT,
+		VK_FORMAT_R16G16B16A16_SINT,
+		VK_FORMAT_R16G16B16A16_SFLOAT,
+		VK_FORMAT_R32_UINT,
+		VK_FORMAT_R32_SINT,
+		VK_FORMAT_R32_SFLOAT,
+		VK_FORMAT_R32G32_UINT,
+		VK_FORMAT_R32G32_SINT,
+		VK_FORMAT_R32G32_SFLOAT,
+	};
+
+	const char* const					usageName[]						= { "uniform_texel_buffer", "storage_texel_buffer"};
+	const vk::VkBufferUsageFlags		usage[]							= { vk::VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT, vk::VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT };
+	const vk::VkFormatFeatureFlags		feature[]						= { vk::VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT, vk::VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT };
+	const vk::VkDescriptorType			descType[]					= { vk::VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, vk::VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER };
+
+	for (deUint32 usageNdx = 0; usageNdx < DE_LENGTH_OF_ARRAY(usage); ++usageNdx)
+	{
+		de::MovePtr<tcu::TestCaseGroup>	usageGroup		(new tcu::TestCaseGroup(testCtx, usageName[usageNdx], ""));
+
+		for (deUint32 formatIdx = 0; formatIdx < DE_LENGTH_OF_ARRAY(testFormats); formatIdx++)
+		{
+			const auto			skip		= strlen("VK_FORMAT_");
+			const std::string	fmtName	= de::toLower(std::string(getFormatName(testFormats[formatIdx])).substr(skip));
+			de::MovePtr<tcu::TestCaseGroup>	formatGroup		(new tcu::TestCaseGroup(testCtx, fmtName.c_str(), ""));
+
+			if (usage[usageNdx] == VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT && !isSupportedImageLoadStore(mapVkFormat(testFormats[formatIdx])))
+				continue;
+
+			const BufferViewCaseParams	info							=
+			{
+				512,													// deUint32					bufferSize
+				128,													// deUint32					bufferViewSize
+				0,														// deUint32					elementOffset
+				ALLOCATION_KIND_SUBALLOCATION,							// AllocationKind			bufferAllocationKind
+				ALLOCATION_KIND_SUBALLOCATION,							// AllocationKind			imageAllocationKind
+
+				testFormats[formatIdx],									// VkFormat					format
+				usage[usageNdx],										// VkBufferUsageFlags		usage
+				feature[usageNdx],										// VkFormatFeatureFlags		feature
+				descType[usageNdx],										// VkDescriptorType			descType
+			};
+
+			std::ostringstream		description;
+			description << "bufferFormat: " << getFormatName(testFormats[formatIdx]) << " bufferSize: " << info.bufferSize << " bufferViewSize: " << info.bufferViewSize << " bufferView element offset: " << info.elementOffset;
+
+			usageGroup->addChild(new BufferViewAllFormatsTestCase(testCtx, fmtName.c_str(), description.str(), info));
+		}
+
+		bufferViewTests->addChild(usageGroup.release());
+	}
+
 	return bufferViewTests.release();
 }
 

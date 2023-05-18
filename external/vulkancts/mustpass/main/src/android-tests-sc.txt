@@ -1,0 +1,8 @@
+# This file contains tests exclusive to Android CTS. These
+# tests are excluded from Khronos CTS mustpass as they are
+# either not applicable, or go beyond Khronos' conformance
+# requirements.
+
+dEQP-VKSC.api.info.android.*
+dEQP-VKSC.spirv_assembly.instruction.compute.android.*
+dEQP-VKSC.spirv_assembly.instruction.graphics.android.*

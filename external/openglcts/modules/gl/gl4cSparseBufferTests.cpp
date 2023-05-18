@@ -885,8 +885,8 @@ void AtomicCounterBufferStorageTestCase::deinitTestCaseIteration()
 		m_gl.bindBuffer(GL_ARRAY_BUFFER, m_sparse_bo);
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
-		m_gl.bufferPageCommitmentARB(GL_ARRAY_BUFFER, 0,				  /* offset */
-									 m_helper_bo_size_rounded, GL_FALSE); /* commit */
+		m_gl.bufferPageCommitmentARB(GL_ARRAY_BUFFER, m_sparse_bo_data_start_offset_rounded,		/* offset */
+									 m_sparse_bo_data_size_rounded, GL_FALSE); /* commit */
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferPageCommitmentARB() call failed.");
 
 		m_sparse_bo = 0;
@@ -3207,7 +3207,7 @@ bool PixelPackBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags
  */
 bool PixelPackBufferStorageTestCase::initTestCaseGlobal()
 {
-	/* Determine dummy vertex shader and fragment shader that will generate black-to-white gradient. */
+	/* Determine vertex shader and fragment shader that will generate black-to-white gradient. */
 	const char* gradient_fs_code = "#version 330 core\n"
 								   "\n"
 								   "out vec4 result;\n"
@@ -4157,7 +4157,7 @@ void QuadsBufferStorageTestCase::initSparseBO(bool decommit_data_pages_after_upl
 	}
 	else
 	{
-		/* Sanity checks */
+		/* Quick checks */
 		if (m_ibo_usage != IBO_USAGE_NONE)
 		{
 			DE_ASSERT(m_vbo_data_offset != m_ibo_data_offset);
@@ -5700,7 +5700,7 @@ bool TransformFeedbackBufferStorageTestCase::execute(glw::GLuint sparse_bo_stora
 
 						/* Only perform the check if the offsets refer to pages with physical backing.
 						 *
-						 * Note that, on platforms, whose page size % 4 != 0, the values can land partially in the no-man's land,
+						 * Note that, on platforms, whose page size % 4 != 0, the values can land partially out of bounds,
 						 * and partially in the safe zone. In such cases, skip the verification. */
 						const bool result_instance_id_page_has_physical_backing =
 							(((((char*)result_instance_id_traveller_ptr - (char*)result_ptr) / m_page_size) % 2) ==
@@ -5969,7 +5969,7 @@ bool TransformFeedbackBufferStorageTestCase::initTestCaseIteration(glw::GLuint s
 	/* Initialize buffer objects used by the test case */
 	m_result_bo = sparse_bo;
 
-	/* Sanity check */
+	/* Quick check */
 	DE_ASSERT(m_data_bo != 0);
 
 	return result;
@@ -6131,7 +6131,7 @@ void TransformFeedbackBufferStorageTestCase::initTestData()
 								 (m_multidrawcall_count[0] + m_multidrawcall_count[1]) * m_multidrawcall_primcount);
 	m_result_bo_size_rounded = SparseBufferTestUtilities::alignOffset(m_result_bo_size, m_page_size);
 
-	/* Sanity checks */
+	/* Quick checks */
 	DE_ASSERT(m_min_memory_page_span > 0);
 	DE_ASSERT(m_page_size > 0);
 	DE_ASSERT(m_result_bo_size >= (m_min_memory_page_span * m_page_size));
@@ -6242,7 +6242,7 @@ bool UniformBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 	bool result = true;
 
 	m_gl.bindBufferRange(GL_UNIFORM_BUFFER, 0, /* index */
-						 m_sparse_bo, m_sparse_bo_data_start_offset, m_sparse_bo_data_size);
+						 m_sparse_bo, m_sparse_bo_data_start_offset, m_n_ubo_uints * 4 * sizeof(unsigned int));
 	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBufferBase() call failed.");
 
 	/* Run the test in three iterations:

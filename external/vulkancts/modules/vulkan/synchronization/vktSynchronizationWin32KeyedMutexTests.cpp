@@ -178,6 +178,8 @@ vk::Move<vk::VkDevice> createTestDevice (Context&						context,
 	extensions.push_back("VK_KHR_external_memory_win32");
 	extensions.push_back("VK_KHR_win32_keyed_mutex");
 
+	const auto& features = context.getDeviceFeatures();
+
 	try
 	{
 		std::vector<vk::VkDeviceQueueCreateInfo>	queues;
@@ -212,7 +214,7 @@ vk::Move<vk::VkDevice> createTestDevice (Context&						context,
 
 			(deUint32)extensions.size(),
 			extensions.empty() ? DE_NULL : &extensions[0],
-			0u
+			&features
 		};
 
 		return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &createInfo);
@@ -418,6 +420,7 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 			DE_NULL,
 			(vk::VkExternalMemoryHandleTypeFlags)externalType
 		};
+		const vk::VkImageTiling								tiling					= VK_IMAGE_TILING_OPTIMAL;
 		const vk::VkImageCreateInfo							createInfo				=
 		{
 			vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -430,7 +433,7 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 			1u,
 			1u,
 			resourceDesc.imageSamples,
-			vk::VK_IMAGE_TILING_OPTIMAL,
+			tiling,
 			readOp.getInResourceUsageFlags() | writeOp.getOutResourceUsageFlags(),
 			vk::VK_SHARING_MODE_EXCLUSIVE,
 
@@ -442,7 +445,7 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 		vk::Move<vk::VkImage>								image					= vk::createImage(vkd, device, &createInfo);
 		de::MovePtr<vk::Allocation>							allocation				= importAndBindMemory(vkd, device, *image, nativeHandle, externalType);
 
-		return de::MovePtr<Resource>(new Resource(image, allocation, extent, resourceDesc.imageType, resourceDesc.imageFormat, subresourceRange, subresourceLayers));
+		return de::MovePtr<Resource>(new Resource(image, allocation, extent, resourceDesc.imageType, resourceDesc.imageFormat, subresourceRange, subresourceLayers, tiling));
 	}
 	else
 	{
@@ -1297,7 +1300,7 @@ public:
 			DXGI_ADAPTER_DESC desc;
 			pAdapter->GetDesc(&desc);
 
-			if (deMemCmp(&desc.AdapterLuid, propertiesId.deviceLUID, VK_LUID_SIZE_KHR) == 0)
+			if (deMemCmp(&desc.AdapterLuid, propertiesId.deviceLUID, VK_LUID_SIZE) == 0)
 				break;
 		}
 		pFactory->Release();

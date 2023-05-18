@@ -18,7 +18,7 @@
  *
  *//*!
  * \file
- * \brief Android EGL platform.
+ * \brief Android EGL and Vulkan platforms.
  *//*--------------------------------------------------------------------*/
 
 #include "tcuAndroidPlatform.hpp"
@@ -194,8 +194,8 @@ eglu::NativeDisplay* NativeDisplayFactory::createDisplay (const EGLAttrib* attri
 class VulkanLibrary : public vk::Library
 {
 public:
-	VulkanLibrary (void)
-		: m_library	("libvulkan.so")
+	VulkanLibrary (const char* libraryPath)
+		: m_library	(libraryPath != DE_NULL ? libraryPath : "libvulkan.so")
 		, m_driver	(m_library)
 	{
 	}
@@ -234,6 +234,12 @@ public:
 	void resize(const UVec2& newSize)
 	{
 		DE_UNREF(newSize);
+	}
+
+	void setMinimized(bool minimized)
+	{
+		DE_UNREF(minimized);
+		TCU_THROW(NotSupportedError, "Minimized on Android is not implemented");
 	}
 
 	~VulkanWindow (void)
@@ -322,9 +328,9 @@ bool Platform::processEvents (void)
 	return true;
 }
 
-vk::Library* Platform::createLibrary (void) const
+vk::Library* Platform::createLibrary (const char* libraryPath) const
 {
-	return new VulkanLibrary();
+	return new VulkanLibrary(libraryPath);
 }
 
 void Platform::describePlatform (std::ostream& dst) const
@@ -332,12 +338,25 @@ void Platform::describePlatform (std::ostream& dst) const
 	tcu::Android::describePlatform(m_activity.getNativeActivity(), dst);
 }
 
-void Platform::getMemoryLimits (vk::PlatformMemoryLimits& limits) const
+void Platform::getMemoryLimits (tcu::PlatformMemoryLimits& limits) const
 {
 	// Worst-case estimates
 	const size_t	MiB				= (size_t)(1<<20);
 	const size_t	baseMemUsage	= 400*MiB;
+
+#if (DE_PTR_SIZE == 4)
+	// Some tests, such as:
+	//
+	// dEQP-VK.api.object_management.max_concurrent.*
+	// dEQP-VK.memory.allocation.random.*
+	//
+	// when run in succession, can lead to system memory fragmentation. It depends on the allocator, and on some 32-bit
+	// systems can lead to out of memory errors. As a workaround, we use a smaller amount of memory on 32-bit systems,
+	// as this typically avoids out of memory errors caused by fragmentation.
+	const double	safeUsageRatio	= 0.1;
+#else
 	const double	safeUsageRatio	= 0.25;
+#endif
 
 	limits.totalSystemMemory					= de::max((size_t)(double(deInt64(m_totalSystemMemory)-deInt64(baseMemUsage)) * safeUsageRatio), 16*MiB);
 

@@ -1,10 +1,11 @@
-include_directories(..)
+include_directories(
+	..
+	${DEQP_INL_DIR}
+)
 
 set(DEQP_VK_FRAGMENT_OPS_SRCS
 	vktFragmentOperationsEarlyFragmentTests.cpp
 	vktFragmentOperationsEarlyFragmentTests.hpp
-	vktFragmentOperationsMakeUtil.cpp
-	vktFragmentOperationsMakeUtil.hpp
 	vktFragmentOperationsOcclusionQueryTests.cpp
 	vktFragmentOperationsOcclusionQueryTests.hpp
 	vktFragmentOperationsScissorMultiViewportTests.cpp
@@ -13,14 +14,14 @@ set(DEQP_VK_FRAGMENT_OPS_SRCS
 	vktFragmentOperationsScissorTests.hpp
 	vktFragmentOperationsTests.cpp
 	vktFragmentOperationsTests.hpp
-	)
-
-set(DEQP_VK_FRAGMENT_OPS_LIBS
-	tcutil
-	vkutil
+	vktFragmentOperationsTransientAttachmentTests.cpp
+	vktFragmentOperationsTransientAttachmentTests.hpp
 	)
 
 PCH(DEQP_VK_FRAGMENT_OPS_SRCS ../pch.cpp)
 
 add_library(deqp-vk-fragment-ops STATIC ${DEQP_VK_FRAGMENT_OPS_SRCS})
-target_link_libraries(deqp-vk-fragment-ops ${DEQP_VK_FRAGMENT_OPS_LIBS})
+target_link_libraries(deqp-vk-fragment-ops tcutil vkutil)
+
+add_library(deqp-vksc-fragment-ops STATIC ${DEQP_VK_FRAGMENT_OPS_SRCS})
+target_link_libraries(deqp-vksc-fragment-ops PUBLIC deqp-vksc-util tcutil vkscutil)

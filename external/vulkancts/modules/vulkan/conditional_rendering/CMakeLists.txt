@@ -1,7 +1,7 @@
 include_directories(
 	..
 	../draw
-	../compute
+	${DEQP_INL_DIR}
 )
 
 set(DEQP_VK_CONDITIONAL_REDENDERING_SRCS
@@ -17,13 +17,14 @@ set(DEQP_VK_CONDITIONAL_REDENDERING_SRCS
 	vktConditionalTests.cpp
 	vktConditionalDrawAndClearTests.hpp
 	vktConditionalDrawAndClearTests.cpp
+	vktConditionalIgnoreTests.hpp
+	vktConditionalIgnoreTests.cpp
 )
 
 set(DEQP_VK_CONDITIONAL_REDENDERING_LIBS
 	tcutil
 	vkutil
 	deqp-vk-draw
-	deqp-vk-compute
 )
 
 add_library(deqp-vk-conditional-rendering STATIC ${DEQP_VK_CONDITIONAL_REDENDERING_SRCS})

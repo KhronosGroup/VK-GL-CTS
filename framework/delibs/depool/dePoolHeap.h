@@ -163,6 +163,6 @@ DE_INLINE VALUETYPE TYPENAME##_popMin (DE_PTR_TYPE(TYPENAME) heap)    \
 	return tmp;	\
 }    \
 \
-struct TYPENAME##Dummy_s { int dummy; }
+struct TYPENAME##Unused_s { int unused; }
 
 #endif /* _DEPOOLHEAP_H */

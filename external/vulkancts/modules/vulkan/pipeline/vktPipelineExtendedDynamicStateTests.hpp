@@ -25,13 +25,14 @@
  *//*--------------------------------------------------------------------*/
 
 #include "tcuTestCase.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 
 namespace vkt
 {
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
 
 } // pipeline
 } // vkt

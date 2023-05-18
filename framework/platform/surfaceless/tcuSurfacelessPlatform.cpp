@@ -96,8 +96,8 @@ namespace surfaceless
 class VulkanLibrary : public vk::Library
 {
 public:
-	VulkanLibrary (void)
-		: m_library	(DEQP_VULKAN_LIBRARY_PATH)
+	VulkanLibrary (const char* libraryPath)
+		: m_library	(libraryPath != DE_NULL ? libraryPath : DEQP_VULKAN_LIBRARY_PATH)
 		, m_driver	(m_library)
 	{
 	}
@@ -119,9 +119,9 @@ private:
 class VulkanPlatform : public vk::Platform
 {
 public:
-	vk::Library* createLibrary (void) const
+	vk::Library* createLibrary (const char* libraryPath) const
 	{
-		return new VulkanLibrary();
+		return new VulkanLibrary(libraryPath);
 	}
 
 	void describePlatform (std::ostream& dst) const
@@ -135,20 +135,6 @@ public:
 
 		dst << "OS: " << sysInfo.sysname << " " << sysInfo.release << " " << sysInfo.version << "\n";
 		dst << "CPU: " << sysInfo.machine << "\n";
-	}
-
-	// FINISHME: Query actual memory limits.
-	//
-	// These hard-coded memory limits were copied from tcuX11Platform.cpp,
-	// and they work well enough for Intel platforms.
-	void getMemoryLimits (vk::PlatformMemoryLimits& limits) const
-	{
-		limits.totalSystemMemory					= 256*1024*1024;
-		limits.totalDeviceLocalMemory				= 128*1024*1024;
-		limits.deviceMemoryAllocationGranularity	= 64*1024;
-		limits.devicePageSize						= 4096;
-		limits.devicePageTableEntrySize				= 8;
-		limits.devicePageTableHierarchyLevels		= 3;
 	}
 };
 

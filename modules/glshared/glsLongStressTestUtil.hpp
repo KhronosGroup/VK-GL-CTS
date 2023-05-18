@@ -41,7 +41,7 @@ class ProgramLibrary
 public:
 									ProgramLibrary							(glu::GLSLVersion glslVersion);
 
-	gls::ProgramContext				generateBufferContext					(int numDummyAttributes) const;
+	gls::ProgramContext				generateBufferContext					(int numUnusedAttributes) const;
 	gls::ProgramContext				generateTextureContext					(int numTextureObjects, int texWid, int texHei, float positionFactor) const;
 	gls::ProgramContext				generateBufferAndTextureContext			(int numTextures, int texWid, int texHei) const;
 	gls::ProgramContext				generateFragmentPointLightContext		(int texWid, int texHei) const;

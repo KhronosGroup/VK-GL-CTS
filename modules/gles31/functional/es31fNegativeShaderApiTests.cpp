@@ -522,7 +522,7 @@ void program_binary (NegativeTestContext& ctx)
 {
 	glu::ShaderProgram		srcProgram		(ctx.getRenderContext(), glu::makeVtxFragSources(vertexShaderSource, fragmentShaderSource));
 	GLuint					dstProgram		= ctx.glCreateProgram();
-	GLuint					dummyShader		= ctx.glCreateShader(GL_VERTEX_SHADER);
+	GLuint					unusedShader		= ctx.glCreateShader(GL_VERTEX_SHADER);
 	GLenum					binaryFormat	= -1;
 	GLsizei					binaryLength	= -1;
 	std::vector<deUint8>	binaryBuf;
@@ -542,7 +542,7 @@ void program_binary (NegativeTestContext& ctx)
 		ctx.expectError			(GL_NO_ERROR);
 
 		ctx.beginSection("GL_INVALID_OPERATION is generated if program is not the name of an existing program object.");
-		ctx.glProgramBinary		(dummyShader, binaryFormat, &binaryBuf[0], binaryLength);
+		ctx.glProgramBinary		(unusedShader, binaryFormat, &binaryBuf[0], binaryLength);
 		ctx.expectError			(GL_INVALID_OPERATION);
 		ctx.endSection();
 
@@ -552,7 +552,7 @@ void program_binary (NegativeTestContext& ctx)
 		ctx.endSection();
 	}
 
-	ctx.glDeleteShader(dummyShader);
+	ctx.glDeleteShader(unusedShader);
 	ctx.glDeleteProgram(dstProgram);
 }
 

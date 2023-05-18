@@ -1,5 +1,6 @@
 include_directories(
 	..
+	${DEQP_INL_DIR}
 )
 
 set(DEQP_VK_POSTMORTEM_SRCS
@@ -11,6 +12,8 @@ set(DEQP_VK_POSTMORTEM_SRCS
 	vktPostmortemUseAfterFreeTests.cpp
 	vktPostmortemUtil.hpp
 	vktPostmortemUtil.cpp
+	vktPostmortemDeviceFaultTests.cpp
+	vktPostmortemDeviceFaultTests.hpp
 )
 
 set(DEQP_VK_POSTMORTEM_LIBS

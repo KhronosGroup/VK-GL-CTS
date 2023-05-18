@@ -1,0 +1,922 @@
+#!amber
+
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a coverage-gap found by the GraphicsFuzz project.
+
+# Short description: A fragment shader that covers specific LLVM code paths
+
+# The test passes because the shader always writes red.
+
+# Optimized using spirv-opt with the following arguments:
+# '-O'
+# spirv-opt commit hash: a0370efd589be33d5d9a85cfde2f85841b3755af
+
+
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 320 es
+#
+# precision highp float;
+# precision highp int;
+#
+# const int _GLF_global_loop_bound = 10;
+# int _GLF_global_loop_count = 0;
+#
+# // Contents of injectionSwitch: [0.0, 1.0]
+# layout(set = 0, binding = 0) uniform buf0
+# {
+#     highp vec2 injectionSwitch;
+# };
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# void main()
+# {
+#     _GLF_color = vec4(0);
+#
+#     int a = 0;
+#
+#     // None of the returns, discards, or continues are executed in this loop, except for the return at the end.
+#     do
+#     {
+#         _GLF_global_loop_count ++;
+#
+#         if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return;
+#         if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return;
+#         if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return;
+#         if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return;
+#         if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return;
+#         if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return;
+#         if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return;
+#         if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return;
+#         if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return;
+#         if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return;
+#         if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return;
+#
+#         a++;
+#
+#         // Always false.
+#         if(a == 0)
+#         {
+#             if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return;
+#             if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return; if(gl_FragCoord.x < 0.0) return;
+#
+#             while (_GLF_global_loop_count < _GLF_global_loop_bound)
+#             {
+#                 _GLF_global_loop_count ++;
+#
+#                 if(gl_FragCoord.x < 0.0) return;
+#
+#                 if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard;
+#                 if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard;
+#             }
+#
+#             if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard;
+#         }
+#         else
+#         {
+#             if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard;
+#             if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard;
+#             if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard;
+#             if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard;
+#             if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard;
+#             if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard;
+#             if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard;
+#             if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard;
+#             if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard;
+#             if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard;
+#             if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard;
+#             if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard;
+#             if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard;
+#             if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard;
+#             if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard; if(gl_FragCoord.x < 0.0) discard;
+#             if(gl_FragCoord.x < 0.0) discard;
+#
+#             if(injectionSwitch.x > injectionSwitch.y)
+#             {
+#                 if(gl_FragCoord.x < 0.0) return;
+#                 if(gl_FragCoord.x < 0.0) continue;
+#
+#                 discard;
+#             }
+#
+#         }
+#
+#         if(gl_FragCoord.x < 0.0) discard;
+#         if(gl_FragCoord.x < 0.0) continue;
+#
+#         _GLF_color = vec4(1, 0, 0, 1);
+#
+#         return;
+#     }
+#     while(_GLF_global_loop_count < _GLF_global_loop_bound);
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 10
+; Bound: 857
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %13 %26
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpName %4 "main"
+               OpName %13 "_GLF_color"
+               OpName %26 "gl_FragCoord"
+               OpName %793 "buf0"
+               OpMemberName %793 0 "injectionSwitch"
+               OpName %795 ""
+               OpDecorate %13 Location 0
+               OpDecorate %26 BuiltIn FragCoord
+               OpMemberDecorate %793 0 Offset 0
+               OpDecorate %793 Block
+               OpDecorate %795 DescriptorSet 0
+               OpDecorate %795 Binding 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %9 = OpConstant %6 0
+         %10 = OpTypeFloat 32
+         %11 = OpTypeVector %10 4
+         %12 = OpTypePointer Output %11
+         %13 = OpVariable %12 Output
+         %14 = OpConstant %10 0
+         %15 = OpConstantComposite %11 %14 %14 %14 %14
+         %23 = OpConstant %6 1
+         %25 = OpTypePointer Input %11
+         %26 = OpVariable %25 Input
+         %27 = OpTypeInt 32 0
+         %28 = OpConstant %27 0
+         %29 = OpTypePointer Input %10
+         %32 = OpTypeBool
+        %355 = OpConstant %6 10
+        %792 = OpTypeVector %10 2
+        %793 = OpTypeStruct %792
+        %794 = OpTypePointer Uniform %793
+        %795 = OpVariable %794 Uniform
+        %796 = OpTypePointer Uniform %10
+        %799 = OpConstant %27 1
+        %830 = OpConstant %10 1
+        %831 = OpConstantComposite %11 %830 %14 %14 %830
+        %837 = OpConstantFalse %32
+        %840 = OpConstantTrue %32
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpSelectionMerge %835 None
+               OpSwitch %28 %836
+        %836 = OpLabel
+               OpStore %13 %15
+               OpBranch %18
+         %18 = OpLabel
+        %850 = OpPhi %32 %837 %836 %855 %21
+        %846 = OpPhi %6 %9 %836 %296 %21
+        %845 = OpPhi %6 %9 %836 %851 %21
+               OpLoopMerge %20 %21 None
+               OpBranch %19
+         %19 = OpLabel
+         %24 = OpIAdd %6 %845 %23
+         %30 = OpAccessChain %29 %26 %28
+         %31 = OpLoad %10 %30
+         %33 = OpFOrdLessThan %32 %31 %14
+               OpSelectionMerge %35 None
+               OpBranchConditional %33 %34 %35
+         %34 = OpLabel
+               OpBranch %20
+         %35 = OpLabel
+               OpSelectionMerge %41 None
+               OpBranchConditional %33 %40 %41
+         %40 = OpLabel
+               OpBranch %20
+         %41 = OpLabel
+               OpSelectionMerge %47 None
+               OpBranchConditional %33 %46 %47
+         %46 = OpLabel
+               OpBranch %20
+         %47 = OpLabel
+               OpSelectionMerge %53 None
+               OpBranchConditional %33 %52 %53
+         %52 = OpLabel
+               OpBranch %20
+         %53 = OpLabel
+               OpSelectionMerge %59 None
+               OpBranchConditional %33 %58 %59
+         %58 = OpLabel
+               OpBranch %20
+         %59 = OpLabel
+               OpSelectionMerge %65 None
+               OpBranchConditional %33 %64 %65
+         %64 = OpLabel
+               OpBranch %20
+         %65 = OpLabel
+               OpSelectionMerge %71 None
+               OpBranchConditional %33 %70 %71
+         %70 = OpLabel
+               OpBranch %20
+         %71 = OpLabel
+               OpSelectionMerge %77 None
+               OpBranchConditional %33 %76 %77
+         %76 = OpLabel
+               OpBranch %20
+         %77 = OpLabel
+               OpSelectionMerge %83 None
+               OpBranchConditional %33 %82 %83
+         %82 = OpLabel
+               OpBranch %20
+         %83 = OpLabel
+               OpSelectionMerge %89 None
+               OpBranchConditional %33 %88 %89
+         %88 = OpLabel
+               OpBranch %20
+         %89 = OpLabel
+               OpSelectionMerge %95 None
+               OpBranchConditional %33 %94 %95
+         %94 = OpLabel
+               OpBranch %20
+         %95 = OpLabel
+               OpSelectionMerge %101 None
+               OpBranchConditional %33 %100 %101
+        %100 = OpLabel
+               OpBranch %20
+        %101 = OpLabel
+               OpSelectionMerge %107 None
+               OpBranchConditional %33 %106 %107
+        %106 = OpLabel
+               OpBranch %20
+        %107 = OpLabel
+               OpSelectionMerge %113 None
+               OpBranchConditional %33 %112 %113
+        %112 = OpLabel
+               OpBranch %20
+        %113 = OpLabel
+               OpSelectionMerge %119 None
+               OpBranchConditional %33 %118 %119
+        %118 = OpLabel
+               OpBranch %20
+        %119 = OpLabel
+               OpSelectionMerge %125 None
+               OpBranchConditional %33 %124 %125
+        %124 = OpLabel
+               OpBranch %20
+        %125 = OpLabel
+               OpSelectionMerge %131 None
+               OpBranchConditional %33 %130 %131
+        %130 = OpLabel
+               OpBranch %20
+        %131 = OpLabel
+               OpSelectionMerge %137 None
+               OpBranchConditional %33 %136 %137
+        %136 = OpLabel
+               OpBranch %20
+        %137 = OpLabel
+               OpSelectionMerge %143 None
+               OpBranchConditional %33 %142 %143
+        %142 = OpLabel
+               OpBranch %20
+        %143 = OpLabel
+               OpSelectionMerge %149 None
+               OpBranchConditional %33 %148 %149
+        %148 = OpLabel
+               OpBranch %20
+        %149 = OpLabel
+               OpSelectionMerge %155 None
+               OpBranchConditional %33 %154 %155
+        %154 = OpLabel
+               OpBranch %20
+        %155 = OpLabel
+               OpSelectionMerge %161 None
+               OpBranchConditional %33 %160 %161
+        %160 = OpLabel
+               OpBranch %20
+        %161 = OpLabel
+               OpSelectionMerge %167 None
+               OpBranchConditional %33 %166 %167
+        %166 = OpLabel
+               OpBranch %20
+        %167 = OpLabel
+               OpSelectionMerge %173 None
+               OpBranchConditional %33 %172 %173
+        %172 = OpLabel
+               OpBranch %20
+        %173 = OpLabel
+               OpSelectionMerge %179 None
+               OpBranchConditional %33 %178 %179
+        %178 = OpLabel
+               OpBranch %20
+        %179 = OpLabel
+               OpSelectionMerge %185 None
+               OpBranchConditional %33 %184 %185
+        %184 = OpLabel
+               OpBranch %20
+        %185 = OpLabel
+               OpSelectionMerge %191 None
+               OpBranchConditional %33 %190 %191
+        %190 = OpLabel
+               OpBranch %20
+        %191 = OpLabel
+               OpSelectionMerge %197 None
+               OpBranchConditional %33 %196 %197
+        %196 = OpLabel
+               OpBranch %20
+        %197 = OpLabel
+               OpSelectionMerge %203 None
+               OpBranchConditional %33 %202 %203
+        %202 = OpLabel
+               OpBranch %20
+        %203 = OpLabel
+               OpSelectionMerge %209 None
+               OpBranchConditional %33 %208 %209
+        %208 = OpLabel
+               OpBranch %20
+        %209 = OpLabel
+               OpSelectionMerge %215 None
+               OpBranchConditional %33 %214 %215
+        %214 = OpLabel
+               OpBranch %20
+        %215 = OpLabel
+               OpSelectionMerge %221 None
+               OpBranchConditional %33 %220 %221
+        %220 = OpLabel
+               OpBranch %20
+        %221 = OpLabel
+               OpSelectionMerge %227 None
+               OpBranchConditional %33 %226 %227
+        %226 = OpLabel
+               OpBranch %20
+        %227 = OpLabel
+               OpSelectionMerge %233 None
+               OpBranchConditional %33 %232 %233
+        %232 = OpLabel
+               OpBranch %20
+        %233 = OpLabel
+               OpSelectionMerge %239 None
+               OpBranchConditional %33 %238 %239
+        %238 = OpLabel
+               OpBranch %20
+        %239 = OpLabel
+               OpSelectionMerge %245 None
+               OpBranchConditional %33 %244 %245
+        %244 = OpLabel
+               OpBranch %20
+        %245 = OpLabel
+               OpSelectionMerge %251 None
+               OpBranchConditional %33 %250 %251
+        %250 = OpLabel
+               OpBranch %20
+        %251 = OpLabel
+               OpSelectionMerge %257 None
+               OpBranchConditional %33 %256 %257
+        %256 = OpLabel
+               OpBranch %20
+        %257 = OpLabel
+               OpSelectionMerge %263 None
+               OpBranchConditional %33 %262 %263
+        %262 = OpLabel
+               OpBranch %20
+        %263 = OpLabel
+               OpSelectionMerge %269 None
+               OpBranchConditional %33 %268 %269
+        %268 = OpLabel
+               OpBranch %20
+        %269 = OpLabel
+               OpSelectionMerge %275 None
+               OpBranchConditional %33 %274 %275
+        %274 = OpLabel
+               OpBranch %20
+        %275 = OpLabel
+               OpSelectionMerge %281 None
+               OpBranchConditional %33 %280 %281
+        %280 = OpLabel
+               OpBranch %20
+        %281 = OpLabel
+               OpSelectionMerge %287 None
+               OpBranchConditional %33 %286 %287
+        %286 = OpLabel
+               OpBranch %20
+        %287 = OpLabel
+               OpSelectionMerge %293 None
+               OpBranchConditional %33 %292 %293
+        %292 = OpLabel
+               OpBranch %20
+        %293 = OpLabel
+        %296 = OpIAdd %6 %846 %23
+        %298 = OpIEqual %32 %296 %9
+               OpSelectionMerge %300 None
+               OpBranchConditional %298 %299 %425
+        %299 = OpLabel
+               OpSelectionMerge %305 None
+               OpBranchConditional %33 %304 %305
+        %304 = OpLabel
+               OpBranch %20
+        %305 = OpLabel
+               OpSelectionMerge %311 None
+               OpBranchConditional %33 %310 %311
+        %310 = OpLabel
+               OpBranch %20
+        %311 = OpLabel
+               OpSelectionMerge %317 None
+               OpBranchConditional %33 %316 %317
+        %316 = OpLabel
+               OpBranch %20
+        %317 = OpLabel
+               OpSelectionMerge %323 None
+               OpBranchConditional %33 %322 %323
+        %322 = OpLabel
+               OpBranch %20
+        %323 = OpLabel
+               OpSelectionMerge %329 None
+               OpBranchConditional %33 %328 %329
+        %328 = OpLabel
+               OpBranch %20
+        %329 = OpLabel
+               OpSelectionMerge %335 None
+               OpBranchConditional %33 %334 %335
+        %334 = OpLabel
+               OpBranch %20
+        %335 = OpLabel
+               OpSelectionMerge %341 None
+               OpBranchConditional %33 %340 %341
+        %340 = OpLabel
+               OpBranch %20
+        %341 = OpLabel
+               OpSelectionMerge %347 None
+               OpBranchConditional %33 %346 %347
+        %346 = OpLabel
+               OpBranch %20
+        %347 = OpLabel
+               OpBranch %349
+        %349 = OpLabel
+        %847 = OpPhi %6 %24 %347 %358 %352
+        %356 = OpSLessThan %32 %847 %355
+               OpLoopMerge %351 %352 None
+               OpBranchConditional %356 %350 %351
+        %350 = OpLabel
+        %358 = OpIAdd %6 %847 %23
+               OpSelectionMerge %363 None
+               OpBranchConditional %33 %362 %363
+        %362 = OpLabel
+               OpBranch %351
+        %363 = OpLabel
+               OpSelectionMerge %369 None
+               OpBranchConditional %33 %368 %369
+        %368 = OpLabel
+               OpKill
+        %369 = OpLabel
+               OpSelectionMerge %375 None
+               OpBranchConditional %33 %374 %375
+        %374 = OpLabel
+               OpKill
+        %375 = OpLabel
+               OpSelectionMerge %381 None
+               OpBranchConditional %33 %380 %381
+        %380 = OpLabel
+               OpKill
+        %381 = OpLabel
+               OpSelectionMerge %387 None
+               OpBranchConditional %33 %386 %387
+        %386 = OpLabel
+               OpKill
+        %387 = OpLabel
+               OpSelectionMerge %393 None
+               OpBranchConditional %33 %392 %393
+        %392 = OpLabel
+               OpKill
+        %393 = OpLabel
+               OpSelectionMerge %399 None
+               OpBranchConditional %33 %398 %399
+        %398 = OpLabel
+               OpKill
+        %399 = OpLabel
+               OpSelectionMerge %405 None
+               OpBranchConditional %33 %404 %405
+        %404 = OpLabel
+               OpKill
+        %405 = OpLabel
+               OpSelectionMerge %411 None
+               OpBranchConditional %33 %410 %411
+        %410 = OpLabel
+               OpKill
+        %411 = OpLabel
+               OpBranch %352
+        %352 = OpLabel
+               OpBranch %349
+        %351 = OpLabel
+        %853 = OpPhi %6 %847 %349 %358 %362
+        %848 = OpPhi %32 %850 %349 %840 %362
+               OpSelectionMerge %843 None
+               OpBranchConditional %848 %20 %843
+        %843 = OpLabel
+               OpSelectionMerge %417 None
+               OpBranchConditional %33 %416 %417
+        %416 = OpLabel
+               OpKill
+        %417 = OpLabel
+               OpSelectionMerge %423 None
+               OpBranchConditional %33 %422 %423
+        %422 = OpLabel
+               OpKill
+        %423 = OpLabel
+               OpBranch %300
+        %425 = OpLabel
+               OpSelectionMerge %430 None
+               OpBranchConditional %33 %429 %430
+        %429 = OpLabel
+               OpKill
+        %430 = OpLabel
+               OpSelectionMerge %436 None
+               OpBranchConditional %33 %435 %436
+        %435 = OpLabel
+               OpKill
+        %436 = OpLabel
+               OpSelectionMerge %442 None
+               OpBranchConditional %33 %441 %442
+        %441 = OpLabel
+               OpKill
+        %442 = OpLabel
+               OpSelectionMerge %448 None
+               OpBranchConditional %33 %447 %448
+        %447 = OpLabel
+               OpKill
+        %448 = OpLabel
+               OpSelectionMerge %454 None
+               OpBranchConditional %33 %453 %454
+        %453 = OpLabel
+               OpKill
+        %454 = OpLabel
+               OpSelectionMerge %460 None
+               OpBranchConditional %33 %459 %460
+        %459 = OpLabel
+               OpKill
+        %460 = OpLabel
+               OpSelectionMerge %466 None
+               OpBranchConditional %33 %465 %466
+        %465 = OpLabel
+               OpKill
+        %466 = OpLabel
+               OpSelectionMerge %472 None
+               OpBranchConditional %33 %471 %472
+        %471 = OpLabel
+               OpKill
+        %472 = OpLabel
+               OpSelectionMerge %478 None
+               OpBranchConditional %33 %477 %478
+        %477 = OpLabel
+               OpKill
+        %478 = OpLabel
+               OpSelectionMerge %484 None
+               OpBranchConditional %33 %483 %484
+        %483 = OpLabel
+               OpKill
+        %484 = OpLabel
+               OpSelectionMerge %490 None
+               OpBranchConditional %33 %489 %490
+        %489 = OpLabel
+               OpKill
+        %490 = OpLabel
+               OpSelectionMerge %496 None
+               OpBranchConditional %33 %495 %496
+        %495 = OpLabel
+               OpKill
+        %496 = OpLabel
+               OpSelectionMerge %502 None
+               OpBranchConditional %33 %501 %502
+        %501 = OpLabel
+               OpKill
+        %502 = OpLabel
+               OpSelectionMerge %508 None
+               OpBranchConditional %33 %507 %508
+        %507 = OpLabel
+               OpKill
+        %508 = OpLabel
+               OpSelectionMerge %514 None
+               OpBranchConditional %33 %513 %514
+        %513 = OpLabel
+               OpKill
+        %514 = OpLabel
+               OpSelectionMerge %520 None
+               OpBranchConditional %33 %519 %520
+        %519 = OpLabel
+               OpKill
+        %520 = OpLabel
+               OpSelectionMerge %526 None
+               OpBranchConditional %33 %525 %526
+        %525 = OpLabel
+               OpKill
+        %526 = OpLabel
+               OpSelectionMerge %532 None
+               OpBranchConditional %33 %531 %532
+        %531 = OpLabel
+               OpKill
+        %532 = OpLabel
+               OpSelectionMerge %538 None
+               OpBranchConditional %33 %537 %538
+        %537 = OpLabel
+               OpKill
+        %538 = OpLabel
+               OpSelectionMerge %544 None
+               OpBranchConditional %33 %543 %544
+        %543 = OpLabel
+               OpKill
+        %544 = OpLabel
+               OpSelectionMerge %550 None
+               OpBranchConditional %33 %549 %550
+        %549 = OpLabel
+               OpKill
+        %550 = OpLabel
+               OpSelectionMerge %556 None
+               OpBranchConditional %33 %555 %556
+        %555 = OpLabel
+               OpKill
+        %556 = OpLabel
+               OpSelectionMerge %562 None
+               OpBranchConditional %33 %561 %562
+        %561 = OpLabel
+               OpKill
+        %562 = OpLabel
+               OpSelectionMerge %568 None
+               OpBranchConditional %33 %567 %568
+        %567 = OpLabel
+               OpKill
+        %568 = OpLabel
+               OpSelectionMerge %574 None
+               OpBranchConditional %33 %573 %574
+        %573 = OpLabel
+               OpKill
+        %574 = OpLabel
+               OpSelectionMerge %580 None
+               OpBranchConditional %33 %579 %580
+        %579 = OpLabel
+               OpKill
+        %580 = OpLabel
+               OpSelectionMerge %586 None
+               OpBranchConditional %33 %585 %586
+        %585 = OpLabel
+               OpKill
+        %586 = OpLabel
+               OpSelectionMerge %592 None
+               OpBranchConditional %33 %591 %592
+        %591 = OpLabel
+               OpKill
+        %592 = OpLabel
+               OpSelectionMerge %598 None
+               OpBranchConditional %33 %597 %598
+        %597 = OpLabel
+               OpKill
+        %598 = OpLabel
+               OpSelectionMerge %604 None
+               OpBranchConditional %33 %603 %604
+        %603 = OpLabel
+               OpKill
+        %604 = OpLabel
+               OpSelectionMerge %610 None
+               OpBranchConditional %33 %609 %610
+        %609 = OpLabel
+               OpKill
+        %610 = OpLabel
+               OpSelectionMerge %616 None
+               OpBranchConditional %33 %615 %616
+        %615 = OpLabel
+               OpKill
+        %616 = OpLabel
+               OpSelectionMerge %622 None
+               OpBranchConditional %33 %621 %622
+        %621 = OpLabel
+               OpKill
+        %622 = OpLabel
+               OpSelectionMerge %628 None
+               OpBranchConditional %33 %627 %628
+        %627 = OpLabel
+               OpKill
+        %628 = OpLabel
+               OpSelectionMerge %634 None
+               OpBranchConditional %33 %633 %634
+        %633 = OpLabel
+               OpKill
+        %634 = OpLabel
+               OpSelectionMerge %640 None
+               OpBranchConditional %33 %639 %640
+        %639 = OpLabel
+               OpKill
+        %640 = OpLabel
+               OpSelectionMerge %646 None
+               OpBranchConditional %33 %645 %646
+        %645 = OpLabel
+               OpKill
+        %646 = OpLabel
+               OpSelectionMerge %652 None
+               OpBranchConditional %33 %651 %652
+        %651 = OpLabel
+               OpKill
+        %652 = OpLabel
+               OpSelectionMerge %658 None
+               OpBranchConditional %33 %657 %658
+        %657 = OpLabel
+               OpKill
+        %658 = OpLabel
+               OpSelectionMerge %664 None
+               OpBranchConditional %33 %663 %664
+        %663 = OpLabel
+               OpKill
+        %664 = OpLabel
+               OpSelectionMerge %670 None
+               OpBranchConditional %33 %669 %670
+        %669 = OpLabel
+               OpKill
+        %670 = OpLabel
+               OpSelectionMerge %676 None
+               OpBranchConditional %33 %675 %676
+        %675 = OpLabel
+               OpKill
+        %676 = OpLabel
+               OpSelectionMerge %682 None
+               OpBranchConditional %33 %681 %682
+        %681 = OpLabel
+               OpKill
+        %682 = OpLabel
+               OpSelectionMerge %688 None
+               OpBranchConditional %33 %687 %688
+        %687 = OpLabel
+               OpKill
+        %688 = OpLabel
+               OpSelectionMerge %694 None
+               OpBranchConditional %33 %693 %694
+        %693 = OpLabel
+               OpKill
+        %694 = OpLabel
+               OpSelectionMerge %700 None
+               OpBranchConditional %33 %699 %700
+        %699 = OpLabel
+               OpKill
+        %700 = OpLabel
+               OpSelectionMerge %706 None
+               OpBranchConditional %33 %705 %706
+        %705 = OpLabel
+               OpKill
+        %706 = OpLabel
+               OpSelectionMerge %712 None
+               OpBranchConditional %33 %711 %712
+        %711 = OpLabel
+               OpKill
+        %712 = OpLabel
+               OpSelectionMerge %718 None
+               OpBranchConditional %33 %717 %718
+        %717 = OpLabel
+               OpKill
+        %718 = OpLabel
+               OpSelectionMerge %724 None
+               OpBranchConditional %33 %723 %724
+        %723 = OpLabel
+               OpKill
+        %724 = OpLabel
+               OpSelectionMerge %730 None
+               OpBranchConditional %33 %729 %730
+        %729 = OpLabel
+               OpKill
+        %730 = OpLabel
+               OpSelectionMerge %736 None
+               OpBranchConditional %33 %735 %736
+        %735 = OpLabel
+               OpKill
+        %736 = OpLabel
+               OpSelectionMerge %742 None
+               OpBranchConditional %33 %741 %742
+        %741 = OpLabel
+               OpKill
+        %742 = OpLabel
+               OpSelectionMerge %748 None
+               OpBranchConditional %33 %747 %748
+        %747 = OpLabel
+               OpKill
+        %748 = OpLabel
+               OpSelectionMerge %754 None
+               OpBranchConditional %33 %753 %754
+        %753 = OpLabel
+               OpKill
+        %754 = OpLabel
+               OpSelectionMerge %760 None
+               OpBranchConditional %33 %759 %760
+        %759 = OpLabel
+               OpKill
+        %760 = OpLabel
+               OpSelectionMerge %766 None
+               OpBranchConditional %33 %765 %766
+        %765 = OpLabel
+               OpKill
+        %766 = OpLabel
+               OpSelectionMerge %772 None
+               OpBranchConditional %33 %771 %772
+        %771 = OpLabel
+               OpKill
+        %772 = OpLabel
+               OpSelectionMerge %778 None
+               OpBranchConditional %33 %777 %778
+        %777 = OpLabel
+               OpKill
+        %778 = OpLabel
+               OpSelectionMerge %784 None
+               OpBranchConditional %33 %783 %784
+        %783 = OpLabel
+               OpKill
+        %784 = OpLabel
+               OpSelectionMerge %790 None
+               OpBranchConditional %33 %789 %790
+        %789 = OpLabel
+               OpKill
+        %790 = OpLabel
+        %797 = OpAccessChain %796 %795 %9 %28
+        %798 = OpLoad %10 %797
+        %800 = OpAccessChain %796 %795 %9 %799
+        %801 = OpLoad %10 %800
+        %802 = OpFOrdGreaterThan %32 %798 %801
+               OpSelectionMerge %804 None
+               OpBranchConditional %802 %803 %804
+        %803 = OpLabel
+               OpSelectionMerge %809 None
+               OpBranchConditional %33 %808 %809
+        %808 = OpLabel
+               OpBranch %20
+        %809 = OpLabel
+               OpSelectionMerge %815 None
+               OpBranchConditional %33 %814 %815
+        %814 = OpLabel
+               OpBranch %21
+        %815 = OpLabel
+               OpKill
+        %804 = OpLabel
+               OpBranch %300
+        %300 = OpLabel
+        %856 = OpPhi %32 %848 %423 %850 %804
+        %852 = OpPhi %6 %853 %423 %24 %804
+               OpSelectionMerge %822 None
+               OpBranchConditional %33 %821 %822
+        %821 = OpLabel
+               OpKill
+        %822 = OpLabel
+               OpSelectionMerge %828 None
+               OpBranchConditional %33 %827 %828
+        %827 = OpLabel
+               OpBranch %21
+        %828 = OpLabel
+               OpStore %13 %831
+               OpBranch %20
+         %21 = OpLabel
+        %855 = OpPhi %32 %850 %814 %856 %827
+        %851 = OpPhi %6 %24 %814 %852 %827
+        %834 = OpSLessThan %32 %851 %355
+               OpBranchConditional %834 %18 %20
+         %20 = OpLabel
+        %854 = OpPhi %32 %840 %34 %840 %40 %840 %46 %840 %52 %840 %58 %840 %64 %840 %70 %840 %76 %840 %82 %840 %88 %840 %94 %840 %100 %840 %106 %840 %112 %840 %118 %840 %124 %840 %130 %840 %136 %840 %142 %840 %148 %840 %154 %840 %160 %840 %166 %840 %172 %840 %178 %840 %184 %840 %190 %840 %196 %840 %202 %840 %208 %840 %214 %840 %220 %840 %226 %840 %232 %840 %238 %840 %244 %840 %250 %840 %256 %840 %262 %840 %268 %840 %274 %840 %280 %840 %286 %840 %292 %840 %304 %840 %310 %840 %316 %840 %322 %840 %328 %840 %334 %840 %340 %840 %346 %848 %351 %840 %808 %840 %828 %855 %21
+               OpSelectionMerge %841 None
+               OpBranchConditional %854 %835 %841
+        %841 = OpLabel
+               OpBranch %835
+        %835 = OpLabel
+               OpReturn
+               OpFunctionEnd
+END
+
+# uniforms for variant
+
+# resolution
+BUFFER variant_resolution DATA_TYPE vec2<float> STD140 DATA
+ 256.0 256.0
+END
+# injectionSwitch
+BUFFER variant_injectionSwitch DATA_TYPE vec2<float> STD140 DATA
+ 0.0 1.0
+END
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 32 32
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+  BIND BUFFER variant_resolution AS uniform DESCRIPTOR_SET 0 BINDING 1
+  BIND BUFFER variant_injectionSwitch AS uniform DESCRIPTOR_SET 0 BINDING 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 32 32
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 32 32 EQ_RGBA 255 0 0 255

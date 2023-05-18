@@ -69,7 +69,7 @@ public:
 };
 
 DrawIndexed::DrawIndexed (Context &context, TestSpec testSpec)
-	: DrawTestsBaseClass(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], testSpec.useDynamicRendering, testSpec.topology)
+	: DrawTestsBaseClass(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], testSpec.groupParams, testSpec.topology)
 {
 	switch (m_topology)
 	{
@@ -138,8 +138,6 @@ tcu::TestStatus DrawIndexed::iterate (void)
 	const vk::VkQueue	queue	= m_context.getUniversalQueue();
 	const vk::VkDevice	device	= m_context.getDevice();
 
-	beginRender();
-
 	const vk::VkDeviceSize dataSize = m_indexes.size() * sizeof(deUint32);
 	m_indexBuffer = Buffer::createAndAlloc(	m_vk, m_context.getDevice(),
 											BufferCreateInfo(dataSize,
@@ -151,19 +149,76 @@ tcu::TestStatus DrawIndexed::iterate (void)
 	deMemcpy(ptr, &m_indexes[0], static_cast<size_t>(dataSize));
 	vk::flushAlloc(m_vk, m_context.getDevice(), m_indexBuffer->getBoundMemory());
 
-	const vk::VkDeviceSize vertexBufferOffset = 0;
-	const vk::VkBuffer vertexBuffer = m_vertexBuffer->object();
-	const vk::VkBuffer indexBuffer = m_indexBuffer->object();
+	const vk::VkDeviceSize	vertexBufferOffset	= 0;
+	const vk::VkBuffer		vertexBuffer		= m_vertexBuffer->object();
+	const vk::VkBuffer		indexBuffer			= m_indexBuffer->object();
 
-	m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
-	m_vk.cmdBindIndexBuffer(*m_cmdBuffer, indexBuffer, 0, vk::VK_INDEX_TYPE_UINT32);
+#ifndef CTS_USES_VULKANSC
+	if (m_groupParams->useSecondaryCmdBuffer)
+	{
+		// record secondary command buffer
+		if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+		{
+			beginSecondaryCmdBuffer(m_vk, vk::VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+			beginDynamicRender(*m_secCmdBuffer);
+		}
+		else
+			beginSecondaryCmdBuffer(m_vk);
 
-	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+		m_vk.cmdBindVertexBuffers(*m_secCmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+		m_vk.cmdBindIndexBuffer(*m_secCmdBuffer, indexBuffer, 0, vk::VK_INDEX_TYPE_UINT32);
+		m_vk.cmdBindPipeline(*m_secCmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+		m_vk.cmdDrawIndexed(*m_secCmdBuffer, 6, 1, 2, VERTEX_OFFSET, 0);
 
-	m_vk.cmdDrawIndexed(*m_cmdBuffer, 6, 1, 2, VERTEX_OFFSET, 0);
+		if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			endDynamicRender(*m_secCmdBuffer);
 
-	endRender();
-	endCommandBuffer(m_vk, *m_cmdBuffer);
+		endCommandBuffer(m_vk, *m_secCmdBuffer);
+
+		// record primary command buffer
+		beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+		preRenderBarriers();
+
+		if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			beginDynamicRender(*m_cmdBuffer, vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+
+		m_vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_secCmdBuffer);
+
+		if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			endDynamicRender(*m_cmdBuffer);
+
+		endCommandBuffer(m_vk, *m_cmdBuffer);
+	}
+	else if (m_groupParams->useDynamicRendering)
+	{
+		beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+		preRenderBarriers();
+		beginDynamicRender(*m_cmdBuffer);
+
+		m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+		m_vk.cmdBindIndexBuffer(*m_cmdBuffer, indexBuffer, 0, vk::VK_INDEX_TYPE_UINT32);
+		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+		m_vk.cmdDrawIndexed(*m_cmdBuffer, 6, 1, 2, VERTEX_OFFSET, 0);
+
+		endDynamicRender(*m_cmdBuffer);
+		endCommandBuffer(m_vk, *m_cmdBuffer);
+	}
+#endif // CTS_USES_VULKANSC
+
+	if (!m_groupParams->useDynamicRendering)
+	{
+		beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+		preRenderBarriers();
+		beginLegacyRender(*m_cmdBuffer);
+
+		m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+		m_vk.cmdBindIndexBuffer(*m_cmdBuffer, indexBuffer, 0, vk::VK_INDEX_TYPE_UINT32);
+		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+		m_vk.cmdDrawIndexed(*m_cmdBuffer, 6, 1, 2, VERTEX_OFFSET, 0);
+
+		endLegacyRender(*m_cmdBuffer);
+		endCommandBuffer(m_vk, *m_cmdBuffer);
+	}
 
 	submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
 
@@ -220,7 +275,17 @@ tcu::TestStatus DrawInstancedIndexed::iterate (void)
 	const vk::VkQueue	queue	= m_context.getUniversalQueue();
 	const vk::VkDevice	device	= m_context.getDevice();
 
-	beginRender();
+	beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+	preRenderBarriers();
+
+#ifndef CTS_USES_VULKANSC
+	if (m_groupParams->useDynamicRendering)
+		beginDynamicRender(*m_cmdBuffer);
+	else
+		beginLegacyRender(*m_cmdBuffer);
+#else
+	beginLegacyRender(*m_cmdBuffer);
+#endif // CTS_USES_VULKANSC
 
 	const vk::VkDeviceSize dataSize = m_indexes.size() * sizeof(deUint32);
 	m_indexBuffer = Buffer::createAndAlloc(	m_vk, m_context.getDevice(),
@@ -267,7 +332,15 @@ tcu::TestStatus DrawInstancedIndexed::iterate (void)
 			break;
 	}
 
-	endRender();
+#ifndef CTS_USES_VULKANSC
+	if (m_groupParams->useDynamicRendering)
+		endDynamicRender(*m_cmdBuffer);
+	else
+		endLegacyRender(*m_cmdBuffer);
+#else
+	endLegacyRender(*m_cmdBuffer);
+#endif // CTS_USES_VULKANSC
+
 	endCommandBuffer(m_vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
@@ -318,15 +391,15 @@ tcu::TestStatus DrawInstancedIndexed::iterate (void)
 
 void checkSupport(Context& context, DrawIndexed::TestSpec testSpec)
 {
-	if (testSpec.useDynamicRendering)
+	if (testSpec.groupParams->useDynamicRendering)
 		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 }
 
 }	// anonymous
 
-DrawIndexedTests::DrawIndexedTests (tcu::TestContext &testCtx, bool useDynamicRendering)
-	: TestCaseGroup			(testCtx, "indexed_draw", "drawing indexed geometry")
-	, m_useDynamicRendering	(useDynamicRendering)
+DrawIndexedTests::DrawIndexedTests (tcu::TestContext &testCtx, const SharedGroupParams groupParams)
+	: TestCaseGroup		(testCtx, "indexed_draw", "drawing indexed geometry")
+	, m_groupParams		(groupParams)
 {
 	/* Left blank on purpose */
 }
@@ -336,12 +409,16 @@ DrawIndexedTests::~DrawIndexedTests (void) {}
 void DrawIndexedTests::init (void)
 {
 	{
-		DrawIndexed::TestSpec testSpec;
-		testSpec.shaders[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetch.vert";
-		testSpec.shaders[glu::SHADERTYPE_FRAGMENT] = "vulkan/draw/VertexFetch.frag";
-		testSpec.useDynamicRendering = m_useDynamicRendering;
+		DrawIndexed::TestSpec testSpec
+		{
+			{
+				{ glu::SHADERTYPE_VERTEX, "vulkan/draw/VertexFetch.vert" },
+				{ glu::SHADERTYPE_FRAGMENT, "vulkan/draw/VertexFetch.frag" }
+			},
+			vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+			m_groupParams
+		};
 
-		testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		addChild(new InstanceFactory<DrawIndexed, FunctionSupport1<DrawIndexed::TestSpec> >
 			(m_testCtx, "draw_indexed_triangle_list", "Draws indexed triangle list", testSpec, FunctionSupport1<DrawIndexed::TestSpec>::Args(checkSupport, testSpec)));
 		testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
@@ -349,12 +426,16 @@ void DrawIndexedTests::init (void)
 			(m_testCtx, "draw_indexed_triangle_strip", "Draws indexed triangle strip", testSpec, FunctionSupport1<DrawIndexed::TestSpec>::Args(checkSupport, testSpec)));
 	}
 	{
-		DrawInstancedIndexed::TestSpec testSpec;
-		testSpec.shaders[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetchInstancedFirstInstance.vert";
-		testSpec.shaders[glu::SHADERTYPE_FRAGMENT] = "vulkan/draw/VertexFetch.frag";
-		testSpec.useDynamicRendering = m_useDynamicRendering;
+		DrawInstancedIndexed::TestSpec testSpec
+		{
+			{
+				{ glu::SHADERTYPE_VERTEX, "vulkan/draw/VertexFetchInstancedFirstInstance.vert" },
+				{ glu::SHADERTYPE_FRAGMENT, "vulkan/draw/VertexFetch.frag" }
+			},
+			vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+			m_groupParams
+		};
 
-		testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		addChild(new InstanceFactory<DrawInstancedIndexed, FunctionSupport1<DrawInstancedIndexed::TestSpec> >
 			(m_testCtx, "draw_instanced_indexed_triangle_list", "Draws indexed triangle list", testSpec, FunctionSupport1<DrawInstancedIndexed::TestSpec>::Args(checkSupport, testSpec)));
 		testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;

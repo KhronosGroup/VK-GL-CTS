@@ -110,12 +110,14 @@ public:
 											 const SpirVFunction		function,
 											 const ImageType			imageType,
 											 const tcu::UVec3&			imageSize,
-											 const vk::VkFormat			format)
+											 const vk::VkFormat			format,
+											 const std::string&			operand)
 		: TestCase(testCtx, name, "")
 		, m_function(function)
 		, m_imageType(imageType)
 		, m_imageSize(imageSize)
 		, m_format(format)
+		, m_operand(operand)
 	{
 	}
 
@@ -133,6 +135,10 @@ public:
 		// Check if device supports sparse operations for image type
 		if (!checkSparseSupportForImageType(instance, physicalDevice, m_imageType))
 			TCU_THROW(NotSupportedError, "Sparse residency for image type is not supported");
+
+		if ((m_operand.find("Nontemporal") != std::string::npos) &&
+			(context.getUsedApiVersion() < VK_API_VERSION_1_3))
+			TCU_THROW(NotSupportedError, "Vulkan 1.3 or higher is required for this test to run");
 	}
 
 protected:
@@ -140,6 +146,7 @@ protected:
 	const ImageType				m_imageType;
 	const tcu::UVec3			m_imageSize;
 	const vk::VkFormat			m_format;
+	const std::string			m_operand;
 };
 
 class SparseShaderIntrinsicsInstanceBase : public SparseResourcesBaseInstance

@@ -403,55 +403,58 @@ void NegativeTextureApiTests::init (void)
 		});
 	ES3F_ADD_API_CASE(compressedteximage2d_invalid_border, "Invalid glCompressedTexImage2D() usage",
 		{
+			bool	isES = glu::isContextTypeES(m_context.getRenderContext().getType());
+			GLenum	error = isES ? GL_INVALID_VALUE : GL_INVALID_OPERATION;
+
 			m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if border is not 0.");
 
 			m_log << TestLog::Section("", "GL_TEXTURE_2D target");
 			glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, 1, 0, 0);
-			expectError(GL_INVALID_VALUE);
+			expectError(error);
 			glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, -1, 0, 0);
-			expectError(GL_INVALID_VALUE);
+			expectError(error);
 			m_log << TestLog::EndSection;
 
 			m_log << TestLog::Section("", "GL_TEXTURE_CUBE_MAP_POSITIVE_X target");
 			glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, 1, 0, 0);
-			expectError(GL_INVALID_VALUE);
+			expectError(error);
 			glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, -1, 0, 0);
-			expectError(GL_INVALID_VALUE);
+			expectError(error);
 			m_log << TestLog::EndSection;
 
 			m_log << TestLog::Section("", "GL_TEXTURE_CUBE_MAP_POSITIVE_Y target");
 			glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, 1, 0, 0);
-			expectError(GL_INVALID_VALUE);
+			expectError(error);
 			glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, -1, 0, 0);
-			expectError(GL_INVALID_VALUE);
+			expectError(error);
 			m_log << TestLog::EndSection;
 
 			m_log << TestLog::Section("", "GL_TEXTURE_CUBE_MAP_POSITIVE_Z target");
 			glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, 1, 0, 0);
-			expectError(GL_INVALID_VALUE);
+			expectError(error);
 			glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, -1, 0, 0);
-			expectError(GL_INVALID_VALUE);
+			expectError(error);
 			m_log << TestLog::EndSection;
 
 			m_log << TestLog::Section("", "GL_TEXTURE_CUBE_MAP_NEGATIVE_X target");
 			glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, 1, 0, 0);
-			expectError(GL_INVALID_VALUE);
+			expectError(error);
 			glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, -1, 0, 0);
-			expectError(GL_INVALID_VALUE);
+			expectError(error);
 			m_log << TestLog::EndSection;
 
 			m_log << TestLog::Section("", "GL_TEXTURE_CUBE_MAP_NEGATIVE_Y target");
 			glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, 1, 0, 0);
-			expectError(GL_INVALID_VALUE);
+			expectError(error);
 			glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, -1, 0, 0);
-			expectError(GL_INVALID_VALUE);
+			expectError(error);
 			m_log << TestLog::EndSection;
 
 			m_log << TestLog::Section("", "GL_TEXTURE_CUBE_MAP_NEGATIVE_Z target");
 			glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, 1, 0, 0);
-			expectError(GL_INVALID_VALUE);
+			expectError(error);
 			glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, -1, 0, 0);
-			expectError(GL_INVALID_VALUE);
+			expectError(error);
 			m_log << TestLog::EndSection;
 
 			m_log << TestLog::EndSection;
@@ -510,18 +513,18 @@ void NegativeTextureApiTests::init (void)
 					const IVec3					blockPixels = getBlockPixelSize(tcuFormat);
 					{
 						const size_t			blockBytes	= getBlockSize(tcuFormat);
-						const vector<deUint8>	dummyData	(blockBytes);
+						const vector<deUint8>	unusedData	(blockBytes);
 
-						glCompressedTexImage2D(GL_TEXTURE_2D, 0, format, blockPixels.x(), blockPixels.y(), 0, (int)blockBytes, &dummyData[0]);
+						glCompressedTexImage2D(GL_TEXTURE_2D, 0, format, blockPixels.x(), blockPixels.y(), 0, (int)blockBytes, &unusedData[0]);
 						expectError(GL_INVALID_ENUM);
 					}
 					FOR_CUBE_FACES(faceGL,
 					{
 						const deInt32			cubeSize	= blockPixels.x() * blockPixels.y(); // Divisible by the block size and square
 						const size_t			blockBytes	= getBlockSize(tcuFormat) * cubeSize; // We have a x * y grid of blocks
-						const vector<deUint8>	dummyData	(blockBytes);
+						const vector<deUint8>	unusedData	(blockBytes);
 
-						glCompressedTexImage2D(faceGL, 0, format, cubeSize, cubeSize, 0, (int)blockBytes, &dummyData[0]);
+						glCompressedTexImage2D(faceGL, 0, format, cubeSize, cubeSize, 0, (int)blockBytes, &unusedData[0]);
 						expectError(GL_INVALID_ENUM);
 					});
 				}
@@ -1052,29 +1055,32 @@ void NegativeTextureApiTests::init (void)
 			expectError(GL_INVALID_OPERATION);
 			m_log << TestLog::EndSection;
 
-			m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if the zero level array is stored in a compressed internal format.");
-			glBindTexture(GL_TEXTURE_2D, texture[1]);
-			glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, 0, 0, 0);
-			glGenerateMipmap(GL_TEXTURE_2D);
-			expectError(GL_INVALID_OPERATION);
-			m_log << TestLog::EndSection;
-
-			m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if the level base array was not specified with an unsized internal format or a sized internal format that is both color-renderable and texture-filterable.");
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8_SNORM, 0, 0, 0, GL_RGB, GL_BYTE, 0);
-			glGenerateMipmap(GL_TEXTURE_2D);
-			expectError(GL_INVALID_OPERATION);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_R8I, 0, 0, 0, GL_RED_INTEGER, GL_BYTE, 0);
-			glGenerateMipmap(GL_TEXTURE_2D);
-			expectError(GL_INVALID_OPERATION);
-
-			if (!(m_context.getContextInfo().isExtensionSupported("GL_EXT_color_buffer_float") && m_context.getContextInfo().isExtensionSupported("GL_OES_texture_float_linear")))
+			if (glu::isContextTypeES(m_context.getRenderContext().getType()))
 			{
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 0, 0, 0, GL_RGBA, GL_FLOAT, 0);
+				m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if the zero level array is stored in a compressed internal format.");
+				glBindTexture(GL_TEXTURE_2D, texture[1]);
+				glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, 0, 0, 0);
 				glGenerateMipmap(GL_TEXTURE_2D);
 				expectError(GL_INVALID_OPERATION);
-			}
+				m_log << TestLog::EndSection;
 
-			m_log << TestLog::EndSection;
+				m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if the level base array was not specified with an unsized internal format or a sized internal format that is both color-renderable and texture-filterable.");
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8_SNORM, 0, 0, 0, GL_RGB, GL_BYTE, 0);
+				glGenerateMipmap(GL_TEXTURE_2D);
+				expectError(GL_INVALID_OPERATION);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_R8I, 0, 0, 0, GL_RED_INTEGER, GL_BYTE, 0);
+				glGenerateMipmap(GL_TEXTURE_2D);
+				expectError(GL_INVALID_OPERATION);
+
+				if (!(m_context.getContextInfo().isExtensionSupported("GL_EXT_color_buffer_float") && m_context.getContextInfo().isExtensionSupported("GL_OES_texture_float_linear")))
+				{
+					glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 0, 0, 0, GL_RGBA, GL_FLOAT, 0);
+					glGenerateMipmap(GL_TEXTURE_2D);
+					expectError(GL_INVALID_OPERATION);
+				}
+
+				m_log << TestLog::EndSection;
+			}
 
 			glDeleteTextures(2, texture);
 		});
@@ -1141,16 +1147,19 @@ void NegativeTextureApiTests::init (void)
 			m_log << TestLog::EndSection;
 
 			m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if the combination of internalFormat, format and type is invalid.");
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-			expectError(GL_INVALID_OPERATION);
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGB, GL_UNSIGNED_SHORT_4_4_4_4, 0);
 			expectError(GL_INVALID_OPERATION);
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB5_A1, 1, 1, 0, GL_RGB, GL_UNSIGNED_SHORT_5_5_5_1, 0);
 			expectError(GL_INVALID_OPERATION);
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB10_A2, 1, 1, 0, GL_RGB, GL_UNSIGNED_INT_2_10_10_10_REV, 0);
 			expectError(GL_INVALID_OPERATION);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32UI, 1, 1, 0, GL_RGBA_INTEGER, GL_INT, 0);
-			expectError(GL_INVALID_OPERATION);
+			if (glu::isContextTypeES(m_context.getRenderContext().getType()))
+			{
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+				expectError(GL_INVALID_OPERATION);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32UI, 1, 1, 0, GL_RGBA_INTEGER, GL_INT, 0);
+				expectError(GL_INVALID_OPERATION);
+			}
 			m_log << TestLog::EndSection;
 		});
 	ES3F_ADD_API_CASE(teximage2d_inequal_width_height_cube, "Invalid glTexImage2D() usage",
@@ -1451,8 +1460,11 @@ void NegativeTextureApiTests::init (void)
 			expectError(GL_INVALID_OPERATION);
 			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 4, 4, GL_RGBA_INTEGER, GL_UNSIGNED_INT, 0);
 			expectError(GL_INVALID_OPERATION);
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 4, 4, GL_RGB, GL_FLOAT, 0);
-			expectError(GL_INVALID_OPERATION);
+			if (glu::isContextTypeES(m_context.getRenderContext().getType()))
+			{
+				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 4, 4, GL_RGB, GL_FLOAT, 0);
+				expectError(GL_INVALID_OPERATION);
+			}
 			m_log << tcu::TestLog::EndSection;
 
 			glDeleteTextures	(1, &texture);
@@ -2072,16 +2084,19 @@ void NegativeTextureApiTests::init (void)
 			m_log << TestLog::EndSection;
 
 			m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if the combination of internalFormat, format and type is invalid.");
-			glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, 1, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-			expectError(GL_INVALID_OPERATION);
 			glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, 1, 1, 1, 0, GL_RGB, GL_UNSIGNED_SHORT_4_4_4_4, 0);
 			expectError(GL_INVALID_OPERATION);
 			glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB5_A1, 1, 1, 1, 0, GL_RGB, GL_UNSIGNED_SHORT_5_5_5_1, 0);
 			expectError(GL_INVALID_OPERATION);
 			glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB10_A2, 1, 1, 1, 0, GL_RGB, GL_UNSIGNED_INT_2_10_10_10_REV, 0);
 			expectError(GL_INVALID_OPERATION);
-			glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32UI, 1, 1, 1, 0, GL_RGBA_INTEGER, GL_INT, 0);
-			expectError(GL_INVALID_OPERATION);
+			if (glu::isContextTypeES(m_context.getRenderContext().getType()))
+			{
+				glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, 1, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+				expectError(GL_INVALID_OPERATION);
+				glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32UI, 1, 1, 1, 0, GL_RGBA_INTEGER, GL_INT, 0);
+				expectError(GL_INVALID_OPERATION);
+			}
 			m_log << TestLog::EndSection;
 		});
 	ES3F_ADD_API_CASE(teximage3d_neg_level, "Invalid glTexImage3D() usage",
@@ -2245,8 +2260,11 @@ void NegativeTextureApiTests::init (void)
 			expectError(GL_INVALID_OPERATION);
 			glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, 4, 4, 4, GL_RGBA_INTEGER, GL_UNSIGNED_INT, 0);
 			expectError(GL_INVALID_OPERATION);
-			glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, 4, 4, 4, GL_RGB, GL_FLOAT, 0);
-			expectError(GL_INVALID_OPERATION);
+			if (glu::isContextTypeES(m_context.getRenderContext().getType()))
+			{
+				glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, 4, 4, 4, GL_RGB, GL_FLOAT, 0);
+				expectError(GL_INVALID_OPERATION);
+			}
 			m_log << tcu::TestLog::EndSection;
 
 			glDeleteTextures	(1, &texture);
@@ -2621,11 +2639,14 @@ void NegativeTextureApiTests::init (void)
 		});
 	ES3F_ADD_API_CASE(compressedteximage3d_invalid_border, "Invalid glCompressedTexImage3D() usage",
 		{
+			bool	isES = glu::isContextTypeES(m_context.getRenderContext().getType());
+			GLenum	error = isES ? GL_INVALID_VALUE : GL_INVALID_OPERATION;
+
 			m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if border is not 0.");
 			glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, 0, -1, 0, 0);
-			expectError(GL_INVALID_VALUE);
+			expectError(error);
 			glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, 0, 1, 0, 0);
-			expectError(GL_INVALID_VALUE);
+			expectError(error);
 			m_log << TestLog::EndSection;
 		});
 	ES3F_ADD_API_CASE(compressedteximage3d_invalid_size, "Invalid glCompressedTexImage3D() usage",
@@ -2693,9 +2714,9 @@ void NegativeTextureApiTests::init (void)
 					const CompressedTexFormat	tcuFormat	= mapGLCompressedTexFormat(format);
 					const IVec3					blockPixels = getBlockPixelSize(tcuFormat);
 					const size_t				blockBytes	= getBlockSize(tcuFormat);
-					const vector<deUint8>		dummyData	(blockBytes);
+					const vector<deUint8>		unusedData	(blockBytes);
 
-					glCompressedTexImage3D(GL_TEXTURE_3D, 0, format, blockPixels.x(), blockPixels.y(), blockPixels.z(), 0, (int)blockBytes, &dummyData[0]);
+					glCompressedTexImage3D(GL_TEXTURE_3D, 0, format, blockPixels.x(), blockPixels.y(), blockPixels.z(), 0, (int)blockBytes, &unusedData[0]);
 					expectError(requiredError);
 				}
 			}

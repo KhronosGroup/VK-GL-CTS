@@ -728,12 +728,35 @@ ShaderLibraryCase::~ShaderLibraryCase (void)
 {
 }
 
+static inline void requireExtension(const glu::ContextInfo& info, const ShaderCaseSpecification& spec, const char *extension)
+{
+	if (!info.isExtensionSupported(extension))
+		TCU_THROW(NotSupportedError, (string(getGLSLVersionName(spec.targetVersion)) + " is not supported").c_str());
+}
+
 void ShaderLibraryCase::init (void)
 {
 	DE_ASSERT(isValid(m_spec));
 
-	if (!isGLSLVersionSupported(m_renderCtx.getType(), m_spec.targetVersion))
-		TCU_THROW(NotSupportedError, (string(getGLSLVersionName(m_spec.targetVersion)) + " is not supported").c_str());
+	// Check for ES compatibility extensions, e.g. if we are on desktop context but require GLSL ES
+	if (!isContextTypeES(m_renderCtx.getType()) && glslVersionIsES(m_spec.targetVersion)) {
+		switch (m_spec.targetVersion) {
+		case GLSL_VERSION_300_ES:
+			requireExtension(m_contextInfo, m_spec, "GL_ARB_ES3_compatibility");
+			break;
+		case GLSL_VERSION_310_ES:
+			requireExtension(m_contextInfo, m_spec, "GL_ARB_ES3_1_compatibility");
+			break;
+		case GLSL_VERSION_320_ES:
+			requireExtension(m_contextInfo, m_spec, "GL_ARB_ES3_2_compatibility");
+			break;
+		default:
+			DE_ASSERT(false);
+		}
+	} else {
+		if (!isGLSLVersionSupported(m_renderCtx.getType(), m_spec.targetVersion))
+			TCU_THROW(NotSupportedError, (string(getGLSLVersionName(m_spec.targetVersion)) + " is not supported").c_str());
+	}
 
 	checkImplementationLimits(m_spec.requiredCaps, m_contextInfo);
 

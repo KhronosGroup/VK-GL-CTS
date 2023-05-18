@@ -26,10 +26,14 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkDefs.hpp"
-#include "vkMemUtil.hpp"
 #include "tcuTexture.hpp"
 #include "tcuCompressedTexture.hpp"
 #include "deSharedPtr.hpp"
+#include "vkImageWithMemory.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkMemUtil.hpp"
+#include "vkTypeUtil.hpp"
+#include <memory>
 
 namespace vk
 {
@@ -41,6 +45,7 @@ bool						isUnormFormat				(VkFormat format);
 bool						isSnormFormat				(VkFormat format);
 bool						isIntFormat					(VkFormat format);
 bool						isUintFormat				(VkFormat format);
+bool						isScaledFormat				(VkFormat format);
 bool						isDepthStencilFormat		(VkFormat format);
 bool						isCompressedFormat			(VkFormat format);
 bool						isSrgbFormat				(VkFormat format);
@@ -134,8 +139,40 @@ struct PlanarFormatDescription
 	}
 };
 
+class ImageWithBuffer {
+	std::unique_ptr<ImageWithMemory>	image;
+	Move<vk::VkImageView>				imageView;
+	std::unique_ptr<BufferWithMemory>	buffer;
+	VkDeviceSize						size;
+
+	public:
+	ImageWithBuffer(
+			const DeviceInterface&		vkd,
+			const VkDevice				device,
+			Allocator&					alloc,
+			vk::VkExtent3D				extent,
+			vk::VkFormat				imageFormat,
+			vk::VkImageUsageFlags		usage,
+			vk::VkImageType				imageType,
+			vk::VkImageSubresourceRange ssr = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u),
+			uint32_t					arrayLayers = 1,
+			vk::VkSampleCountFlagBits   samples = VK_SAMPLE_COUNT_1_BIT,
+			vk::VkImageTiling			tiling = VK_IMAGE_TILING_OPTIMAL,
+			uint32_t					mipLevels = 1,
+			vk::VkSharingMode			sharingMode = VK_SHARING_MODE_EXCLUSIVE);
+
+	VkImage			getImage();
+	VkImageView		getImageView();
+	VkBuffer		getBuffer();
+	VkDeviceSize	getBufferSize();
+	Allocation&		getImageAllocation();
+	Allocation&		getBufferAllocation();
+};
+
 bool							isYCbCrFormat					(VkFormat						format);
 bool							isYCbCrExtensionFormat			(VkFormat						format);
+bool							isYCbCrConversionFormat			(VkFormat						format);
+bool							isPvrtcFormat					(VkFormat						format);
 PlanarFormatDescription			getPlanarFormatDescription		(VkFormat						format);
 int								getPlaneCount					(VkFormat						format);
 deUint32						getMipmapCount					(VkFormat						format,
@@ -219,7 +256,10 @@ void	copyBufferToImage						(const DeviceInterface&							vk,
 												 deUint32										arrayLayers,
 												 vk::VkImage									destImage,
 												 VkImageLayout									destImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-												 VkPipelineStageFlags							destImageDstStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+												 VkPipelineStageFlags							destImageDstStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+												 VkAccessFlags									destImageDstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+												const VkCommandPool*							externalCommandPool = DE_NULL,
+												 deUint32										baseMipLevel = 0);
 
 void	copyBufferToImage						(const DeviceInterface&							vk,
 												 const VkCommandBuffer&							cmdBuffer,
@@ -231,7 +271,9 @@ void	copyBufferToImage						(const DeviceInterface&							vk,
 												 deUint32										arrayLayers,
 												 VkImage										destImage,
 												 VkImageLayout									destImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-												 VkPipelineStageFlags							destImageDstStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+												 VkPipelineStageFlags							destImageDstStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+												 VkAccessFlags									destImageDstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+												 deUint32										baseMipLevel = 0);
 
 /*--------------------------------------------------------------------*//*!
  * Copies image data into a buffer. The buffer is expected to be
@@ -246,7 +288,8 @@ void	copyImageToBuffer						(const DeviceInterface&							vk,
 												 vk::VkImageLayout								oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 												 deUint32										numLayers = 1u,
 												 VkImageAspectFlags								barrierAspect = VK_IMAGE_ASPECT_COLOR_BIT,
-												 VkImageAspectFlags								copyAspect = VK_IMAGE_ASPECT_COLOR_BIT);
+												 VkImageAspectFlags								copyAspect = VK_IMAGE_ASPECT_COLOR_BIT,
+												 VkPipelineStageFlags							srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 
 void	copyImageToBuffer						(const DeviceInterface&							vk,
 												 vk::VkCommandBuffer							cmdBuffer,
@@ -274,7 +317,9 @@ void	clearColorImage							(const DeviceInterface&							vk,
 												 vk::VkImageLayout								newLayout,
 												 vk::VkPipelineStageFlags						dstStageFlags,
 												 deUint32										baseArrayLayer = 0u,
-												 deUint32										layerCount = 1u);
+												 deUint32										layerCount = 1u,
+												 deUint32										baseMipLevel = 0u,
+												 deUint32										levelCount = 1u);
 
 void	clearColorImage							(const DeviceInterface&							vk,
 												 const vk::VkDevice								device,
@@ -284,9 +329,12 @@ void	clearColorImage							(const DeviceInterface&							vk,
 												 vk::VkClearColorValue							clearColor,
 												 vk::VkImageLayout								oldLayout,
 												 vk::VkImageLayout								newLayout,
+												 vk::VkAccessFlags								dstAccessFlags,
 												 vk::VkPipelineStageFlags						dstStageFlags,
 												 deUint32										baseArrayLayer = 0u,
-												 deUint32										layerCount = 1u);
+												 deUint32										layerCount = 1u,
+												 deUint32										baseMipLevel = 0u,
+												 deUint32										levelCount = 1u);
 
 /*--------------------------------------------------------------------*//*!
  * Initialize color image with a chessboard pattern
@@ -329,10 +377,12 @@ void	clearDepthStencilImage					(const DeviceInterface&							vk,
 												 const vk::VkQueue								queue,
 												 deUint32										queueFamilyIndex,
 												 vk::VkImage									image,
+												 vk::VkFormat									format,
 												 float											depthValue,
 												 deUint32										stencilValue,
 												 vk::VkImageLayout								oldLayout,
 												 vk::VkImageLayout								newLayout,
+												 vk::VkAccessFlags								dstAccessFlags,
 												 vk::VkPipelineStageFlags						dstStageFlags);
 
 /*--------------------------------------------------------------------*//*!
@@ -356,6 +406,14 @@ void	initDepthStencilImageChessboardPattern	(const DeviceInterface&							vk,
 												 vk::VkImageLayout								newLayout,
 												 vk::VkPipelineStageFlags						dstStageFlags);
 
+/*--------------------------------------------------------------------*//*!
+ * Makes common image subresource structures with common defaults
+*//*--------------------------------------------------------------------*/
+vk::VkImageSubresourceRange makeDefaultImageSubresourceRange();
+
+vk::VkImageSubresourceLayers makeDefaultImageSubresourceLayers();
+
+#ifndef CTS_USES_VULKANSC
 /*--------------------------------------------------------------------*//*!
  * Checks if the physical device supports creation of the specified
  * image format.
@@ -386,7 +444,7 @@ void	allocateAndBindSparseImage				(const vk::DeviceInterface&						vk,
 												 std::vector<de::SharedPtr<vk::Allocation> >&	allocations,
 												 tcu::TextureFormat								format,
 												 vk::VkImage									destImage);
-
+#endif // CTS_USES_VULKANSC
 } // vk
 
 #endif // _VKIMAGEUTIL_HPP

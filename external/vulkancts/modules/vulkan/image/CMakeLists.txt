@@ -1,4 +1,7 @@
-include_directories(..)
+include_directories(
+	..
+	${DEQP_INL_DIR}
+)
 
 set(DEQP_VK_IMAGE_SRCS
 	vktImageTests.cpp
@@ -43,14 +46,16 @@ set(DEQP_VK_IMAGE_SRCS
 	vktImageDepthStencilDescriptorTests.hpp
 	vktImageSampleCompressedTextureTests.cpp
 	vktImageSampleCompressedTextureTests.hpp
-	)
-
-set(DEQP_VK_IMAGE_LIBS
-	tcutil
-	vkutil
+	vktImageExtendedUsageBitTests.cpp
+	vktImageExtendedUsageBitTests.hpp
+	vktImageTransfer.cpp
+	vktImageTransfer.hpp
 	)
 
 PCH(DEQP_VK_IMAGE_SRCS ../pch.cpp)
 
 add_library(deqp-vk-image STATIC ${DEQP_VK_IMAGE_SRCS})
-target_link_libraries(deqp-vk-image ${DEQP_VK_IMAGE_LIBS})
+target_link_libraries(deqp-vk-image tcutil vkutil)
+
+add_library(deqp-vksc-image STATIC ${DEQP_VK_IMAGE_SRCS})
+target_link_libraries(deqp-vksc-image PUBLIC deqp-vksc-util tcutil vkscutil)

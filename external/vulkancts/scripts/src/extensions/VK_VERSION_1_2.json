@@ -1,0 +1,57 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceFeatures":
+		[
+			{ "features": ["shaderSampledImageArrayDynamicIndexing"],					"requirements": ["ApiVersion(0, 1, 2, 0)", "physicalDeviceVulkan12Features.descriptorIndexing"] },
+			{ "features": ["shaderStorageBufferArrayDynamicIndexing"],					"requirements": ["ApiVersion(0, 1, 2, 0)", "physicalDeviceVulkan12Features.descriptorIndexing"] }
+		],
+		"VkPhysicalDeviceVulkan11Features":
+		[
+			{ "features": ["multiview"],												"requirements": ["ApiVersion(0, 1, 2, 0)"], "mandatory_variant": ["vulkan"]}
+		],
+		"VkPhysicalDeviceVulkan12Features":
+		[
+			{ "features": ["subgroupBroadcastDynamicId"],								"requirements": ["ApiVersion(0, 1, 2, 0)"] },
+			{ "features": ["shaderSubgroupExtendedTypes"],								"requirements": ["ApiVersion(0, 1, 2, 0)"] },
+			{ "features": ["imagelessFramebuffer"],										"requirements": ["ApiVersion(0, 1, 2, 0)"] },
+			{ "features": ["uniformBufferStandardLayout"],								"requirements": ["ApiVersion(0, 1, 2, 0)"] },
+			{ "features": ["separateDepthStencilLayouts"],								"requirements": ["ApiVersion(0, 1, 2, 0)"] },
+			{ "features": ["hostQueryReset"],											"requirements": ["ApiVersion(0, 1, 2, 0)"] },
+			{ "features": ["timelineSemaphore"],										"requirements": ["ApiVersion(0, 1, 2, 0)"],						"mandatory_variant": ["vulkan"] },
+			{ "features": ["shaderUniformTexelBufferArrayDynamicIndexing"],				"requirements": ["ApiVersion(0, 1, 2, 0)", "physicalDeviceVulkan12Features.descriptorIndexing"] },
+			{ "features": ["shaderStorageTexelBufferArrayDynamicIndexing"],				"requirements": ["ApiVersion(0, 1, 2, 0)", "physicalDeviceVulkan12Features.descriptorIndexing"] },
+			{ "features": ["shaderSampledImageArrayNonUniformIndexing"],				"requirements": ["ApiVersion(0, 1, 2, 0)", "physicalDeviceVulkan12Features.descriptorIndexing"] },
+			{ "features": ["shaderStorageBufferArrayNonUniformIndexing"],				"requirements": ["ApiVersion(0, 1, 2, 0)", "physicalDeviceVulkan12Features.descriptorIndexing"] },
+			{ "features": ["shaderUniformTexelBufferArrayNonUniformIndexing"],			"requirements": ["ApiVersion(0, 1, 2, 0)", "physicalDeviceVulkan12Features.descriptorIndexing"] },
+			{ "features": ["descriptorBindingSampledImageUpdateAfterBind"],				"requirements": ["ApiVersion(0, 1, 2, 0)", "physicalDeviceVulkan12Features.descriptorIndexing"] },
+			{ "features": ["descriptorBindingStorageImageUpdateAfterBind"],				"requirements": ["ApiVersion(0, 1, 2, 0)", "physicalDeviceVulkan12Features.descriptorIndexing"] },
+			{ "features": ["descriptorBindingStorageBufferUpdateAfterBind"],			"requirements": ["ApiVersion(0, 1, 2, 0)", "physicalDeviceVulkan12Features.descriptorIndexing"] },
+			{ "features": ["descriptorBindingUniformTexelBufferUpdateAfterBind"],		"requirements": ["ApiVersion(0, 1, 2, 0)", "physicalDeviceVulkan12Features.descriptorIndexing"] },
+			{ "features": ["descriptorBindingStorageTexelBufferUpdateAfterBind"],		"requirements": ["ApiVersion(0, 1, 2, 0)", "physicalDeviceVulkan12Features.descriptorIndexing"] },
+			{ "features": ["descriptorBindingUpdateUnusedWhilePending"],				"requirements": ["ApiVersion(0, 1, 2, 0)", "physicalDeviceVulkan12Features.descriptorIndexing"] },
+			{ "features": ["descriptorBindingPartiallyBound"],							"requirements": ["ApiVersion(0, 1, 2, 0)", "physicalDeviceVulkan12Features.descriptorIndexing"] },
+			{ "features": ["runtimeDescriptorArray"],									"requirements": ["ApiVersion(0, 1, 2, 0)", "physicalDeviceVulkan12Features.descriptorIndexing"] },
+			{ "features": ["shaderBufferInt64Atomics"],									"requirements": ["ApiVersion(0, 1, 2, 0)", "physicalDeviceShaderAtomicInt64Features.shaderBufferInt64Atomics"] },
+			{ "features": ["drawIndirectCount"],										"requirements": ["ApiVersion(0, 1, 2, 0)", "VK_KHR_draw_indirect_count"] },
+			{ "features": ["samplerMirrorClampToEdge"],									"requirements": ["ApiVersion(0, 1, 2, 0)", "VK_KHR_sampler_mirror_clamp_to_edge"] },
+			{ "features": ["samplerFilterMinmax"],										"requirements": ["ApiVersion(0, 1, 2, 0)", "VK_EXT_sampler_filter_minmax"] },
+			{ "features": ["shaderOutputViewportIndex"],								"requirements": ["ApiVersion(0, 1, 2, 0)", "VK_EXT_shader_viewport_index_layer"] },
+			{ "features": ["shaderOutputLayer"],										"requirements": ["ApiVersion(0, 1, 2, 0)", "VK_EXT_shader_viewport_index_layer"] },
+			{ "features": ["shaderUniformTexelBufferArrayDynamicIndexing"],				"requirements": ["ApiVersion(0, 1, 2, 0)", "VK_KHR_acceleration_structure"] },
+			{ "features": ["shaderStorageTexelBufferArrayDynamicIndexing"],				"requirements": ["ApiVersion(0, 1, 2, 0)", "VK_KHR_acceleration_structure"] },
+			{ "features": ["shaderSampledImageArrayNonUniformIndexing"],				"requirements": ["ApiVersion(0, 1, 2, 0)", "VK_KHR_acceleration_structure"] },
+			{ "features": ["shaderStorageBufferArrayNonUniformIndexing"],				"requirements": ["ApiVersion(0, 1, 2, 0)", "VK_KHR_acceleration_structure"] },
+			{ "features": ["shaderUniformTexelBufferArrayNonUniformIndexing"],			"requirements": ["ApiVersion(0, 1, 2, 0)", "VK_KHR_acceleration_structure"] },
+			{ "features": ["descriptorBindingSampledImageUpdateAfterBind"],				"requirements": ["ApiVersion(0, 1, 2, 0)", "VK_KHR_acceleration_structure"] },
+			{ "features": ["descriptorBindingStorageImageUpdateAfterBind"],				"requirements": ["ApiVersion(0, 1, 2, 0)", "VK_KHR_acceleration_structure"] },
+			{ "features": ["descriptorBindingStorageBufferUpdateAfterBind"],			"requirements": ["ApiVersion(0, 1, 2, 0)", "VK_KHR_acceleration_structure"] },
+			{ "features": ["descriptorBindingUniformTexelBufferUpdateAfterBind"],		"requirements": ["ApiVersion(0, 1, 2, 0)", "VK_KHR_acceleration_structure"] },
+			{ "features": ["descriptorBindingStorageTexelBufferUpdateAfterBind"],		"requirements": ["ApiVersion(0, 1, 2, 0)", "VK_KHR_acceleration_structure"] },
+			{ "features": ["descriptorBindingUpdateUnusedWhilePending"],				"requirements": ["ApiVersion(0, 1, 2, 0)", "VK_KHR_acceleration_structure"] },
+			{ "features": ["descriptorBindingPartiallyBound"],							"requirements": ["ApiVersion(0, 1, 2, 0)", "VK_KHR_acceleration_structure"] },
+			{ "features": ["runtimeDescriptorArray"],									"requirements": ["ApiVersion(0, 1, 2, 0)", "VK_KHR_acceleration_structure"] },
+			{ "features": ["bufferDeviceAddress"],										"requirements": ["ApiVersion(0, 1, 2, 0)", "VK_KHR_acceleration_structure"] }
+		]
+	}
+}

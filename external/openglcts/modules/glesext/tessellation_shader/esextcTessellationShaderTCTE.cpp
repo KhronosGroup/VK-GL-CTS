@@ -355,7 +355,7 @@ void TessellationShaderTCTEDataPassThrough::executeTestRun(_run& run, _tessellat
 	shaderSourceSpecialized(run.vs_id, 1 /* count */, &vs_body);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed for vertex shader");
 
-	/* Set dummy fragment shader's body */
+	/* Set minimal fragment shader's body */
 	const char* fs_body = "${VERSION}\n"
 						  "\n"
 						  "void main()\n"
@@ -1924,7 +1924,7 @@ void TessellationShaderTCTEgl_MaxPatchVertices_Position_PointSize::deinitTestRun
 	}
 }
 
-/** Retrieves a dummy fragment shader code to be used for forming program objects
+/** Retrieves a minimal fragment shader code to be used for forming program objects
  *  used by the test.
  *
  *  @return As per description.
@@ -2212,7 +2212,7 @@ std::string TessellationShaderTCTEgl_MaxPatchVertices_Position_PointSize::getTes
 	return result;
 }
 
-/** Retrieves a dummy vertex shader code to be used for forming program objects
+/** Retrieves a minimal vertex shader code to be used for forming program objects
  *  used by the test.
  *
  *  @return As per description.

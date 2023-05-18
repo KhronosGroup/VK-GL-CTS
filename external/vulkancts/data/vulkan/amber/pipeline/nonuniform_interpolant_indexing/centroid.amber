@@ -1,0 +1,84 @@
+#!amber
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+DEVICE_FEATURE sampleRateShading
+
+SHADER vertex vert_shader GLSL
+#version 440
+layout(location = 0) in vec4 inPosNDC;
+layout(location = 1) in vec2 inPosScreen;
+layout(location = 0) out vec2 outPosScreenArr[10];
+
+void main (void)
+{
+    gl_Position = inPosNDC;
+
+    for (int i = 0; i < 10; i++)
+        outPosScreenArr[i] = inPosScreen + vec2(i);
+}
+END
+
+SHADER fragment frag_shader GLSL
+#version 440
+layout(location = 0) sample in vec2 inPosScreenArr[10];
+layout(location = 0) out vec4 fs_out_color;
+
+void main (void)
+{
+    int index = int(gl_FragCoord.x) % 10;
+    vec2 ref = interpolateAtCentroid(inPosScreenArr[0]) + vec2(index);
+
+    if (distance(ref, interpolateAtCentroid(inPosScreenArr[index])) < 0.01
+        && abs(ref.y - interpolateAtCentroid(inPosScreenArr[index].y)) < 0.01
+        && abs(ref.y - interpolateAtCentroid(inPosScreenArr[index])).y < 0.01)
+    {
+        fs_out_color = vec4(0.0, 1.0, 0.0, 1.0);
+    }
+    else
+    {
+        fs_out_color = vec4(1.0, 0.0, 0.0, 1.0);
+    }
+}
+END
+
+BUFFER position DATA_TYPE vec4<float> DATA
+-1.0 -1.0 0.0 1.0
+ 1.0 -1.0 0.0 1.0
+ 1.0  1.0 0.0 1.0
+-1.0  1.0 0.0 1.0
+END
+
+BUFFER position_screen DATA_TYPE vec2<float> DATA
+ 0.0  0.0
+64.0  0.0
+64.0 64.0
+ 0.0 64.0
+END
+
+IMAGE framebufferMS FORMAT R8G8B8A8_UNORM DIM_2D WIDTH 64 HEIGHT 64 SAMPLES 4
+IMAGE framebuffer FORMAT R8G8B8A8_UNORM DIM_2D WIDTH 64 HEIGHT 64
+
+PIPELINE graphics pipeline
+  ATTACH vert_shader
+  ATTACH frag_shader
+  VERTEX_DATA position LOCATION 0
+  VERTEX_DATA position_screen LOCATION 1
+  FRAMEBUFFER_SIZE 64 64
+  BIND BUFFER framebufferMS AS color LOCATION 0
+  BIND BUFFER framebuffer AS resolve
+END
+
+RUN pipeline DRAW_ARRAY AS TRIANGLE_FAN START_IDX 0 COUNT 4
+EXPECT framebuffer IDX 0 0 SIZE 64 64 EQ_RGBA 0 255 0 255

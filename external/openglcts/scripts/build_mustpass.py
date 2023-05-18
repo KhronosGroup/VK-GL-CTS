@@ -24,13 +24,14 @@ import sys
 
 from collections import OrderedDict
 
-from build_caselists import Module, getModuleByName, DEFAULT_BUILD_DIR, DEFAULT_TARGET
 from mustpass import Project, Package, Mustpass, Configuration, include, exclude, genMustpassLists
+from build_caselists import Module, getModuleByName, DEFAULT_BUILD_DIR, DEFAULT_TARGET
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts"))
+scriptPath = os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts")
+sys.path.insert(0, scriptPath)
 
-from build.common import DEQP_DIR
-from build.config import ANY_GENERATOR, BuildConfig
+from ctsbuild.common import DEQP_DIR
+from ctsbuild.config import ANY_GENERATOR, BuildConfig
 
 
 COPYRIGHT_DECLARATION = """\
@@ -89,7 +90,8 @@ EGL_MODULE						= getModuleByName("dEQP-EGL")
 ES2CTS_MODULE					= getModuleByName("dEQP-GLES2")
 ES3CTS_MODULE					= getModuleByName("dEQP-GLES3")
 ES31CTS_MODULE					= getModuleByName("dEQP-GLES31")
-GL45_MODULE						= getModuleByName("dEQP-GL45")
+GL45ES3_MODULE					= getModuleByName("dEQP-GL45-ES3")
+GL45ES31_MODULE					= getModuleByName("dEQP-GL45-ES31")
 
 ES2KHR_MODULE					= getModuleByName("KHR-GLES2")
 ES3KHR_MODULE					= getModuleByName("KHR-GLES3")
@@ -440,47 +442,47 @@ GLCTS_3_2_3_GLES32_KHR_PKG_N1CFG		= Package(module = ES32KHR_MODULE, useforfirst
 
 
 # master
-MASTER_EGL_COMMON_FILTERS			= [include("egl-master.txt"),
+MAIN_EGL_COMMON_FILTERS			= [include("egl-master.txt"),
 										exclude("egl-test-issues.txt"),
 										exclude("egl-internal-api-tests.txt")]
-MASTER_EGL_PKG						= Package(module = EGL_MODULE, configurations = [
+MAIN_EGL_PKG						= Package(module = EGL_MODULE, configurations = [
 		# Master
 		Configuration(name			= "master",
 					glconfig		= "rgba8888d24s8ms0",
 					rotation		= "unspecified",
-					surfacewidth    = "256",
-                    surfaceheight   = "256",
-					filters			= MASTER_EGL_COMMON_FILTERS),
+					surfacewidth	= "256",
+					surfaceheight	= "256",
+					filters			= MAIN_EGL_COMMON_FILTERS),
 	])
 
-MASTER_GLES2_COMMON_FILTERS			= [
+MAIN_GLES2_COMMON_FILTERS			= [
 				include("gles2-master.txt"),
 				exclude("gles2-test-issues.txt"),
 				exclude("gles2-spec-issues.txt")
 		]
-MASTER_GLES2_PKG         = Package(module = ES2CTS_MODULE, configurations = [
+MAIN_GLES2_PKG         = Package(module = ES2CTS_MODULE, configurations = [
         # Master
         Configuration(name          = "master",
                     glconfig        = "rgba8888d24s8ms0",
                     rotation        = "unspecified",
                     surfacewidth    = "256",
                     surfaceheight   = "256",
-                    filters         = MASTER_GLES2_COMMON_FILTERS),
+                    filters         = MAIN_GLES2_COMMON_FILTERS),
     ])
 
-MASTER_GLES3_COMMON_FILTERS		= [
+MAIN_GLES3_COMMON_FILTERS		= [
 		include("gles3-master.txt"),
 		exclude("gles3-test-issues.txt"),
 		exclude("gles3-spec-issues.txt")
 	]
-MASTER_GLES3_PKG				= Package(module = ES3CTS_MODULE, configurations = [
+MAIN_GLES3_PKG				= Package(module = ES3CTS_MODULE, configurations = [
 		# Master
 		Configuration(name			= "master",
 					glconfig	= "rgba8888d24s8ms0",
 					rotation	= "unspecified",
 					surfacewidth    = "256",
 					surfaceheight   = "256",
-					filters		= MASTER_GLES3_COMMON_FILTERS),
+					filters		= MAIN_GLES3_COMMON_FILTERS),
 		# Rotations
 		Configuration(name			= "rotate-portrait",
 					glconfig	= "rgba8888d24s8ms0",
@@ -488,28 +490,28 @@ MASTER_GLES3_PKG				= Package(module = ES3CTS_MODULE, configurations = [
 					surfacewidth	= "256",
 					surfaceheight	= "256",
 					os				= "android",
-					filters		= MASTER_GLES3_COMMON_FILTERS + [include("gles3-rotation.txt")]),
+					filters		= MAIN_GLES3_COMMON_FILTERS + [include("gles3-rotation.txt")]),
 		Configuration(name			= "rotate-landscape",
 					glconfig	= "rgba8888d24s8ms0",
 					rotation	= "90",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
 					os				= "android",
-					filters		= MASTER_GLES3_COMMON_FILTERS + [include("gles3-rotation.txt")]),
+					filters		= MAIN_GLES3_COMMON_FILTERS + [include("gles3-rotation.txt")]),
 		Configuration(name			= "rotate-reverse-portrait",
 					glconfig	= "rgba8888d24s8ms0",
 					rotation	= "180",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
 					os				= "android",
-					filters		= MASTER_GLES3_COMMON_FILTERS + [include("gles3-rotation.txt")]),
+					filters		= MAIN_GLES3_COMMON_FILTERS + [include("gles3-rotation.txt")]),
 		Configuration(name			= "rotate-reverse-landscape",
 					glconfig	= "rgba8888d24s8ms0",
 					rotation	= "270",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
 					os				= "android",
-					filters		= MASTER_GLES3_COMMON_FILTERS + [include("gles3-rotation.txt")]),
+					filters		= MAIN_GLES3_COMMON_FILTERS + [include("gles3-rotation.txt")]),
 
 		# MSAA
 		Configuration(name			= "multisample",
@@ -517,7 +519,7 @@ MASTER_GLES3_PKG				= Package(module = ES3CTS_MODULE, configurations = [
 					rotation	= "unspecified",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
-					filters		= MASTER_GLES3_COMMON_FILTERS + [include("gles3-multisample.txt")]),
+					filters		= MAIN_GLES3_COMMON_FILTERS + [include("gles3-multisample.txt")]),
 
 		# Pixel format
 		Configuration(name			= "565-no-depth-no-stencil",
@@ -526,22 +528,22 @@ MASTER_GLES3_PKG				= Package(module = ES3CTS_MODULE, configurations = [
 					surfacewidth	= "256",
 					surfaceheight	= "256",
 					os				= "android",
-					filters		= MASTER_GLES3_COMMON_FILTERS + [include("gles3-pixelformat.txt")]),
+					filters		= MAIN_GLES3_COMMON_FILTERS + [include("gles3-pixelformat.txt")]),
 	])
-MASTER_GLES31_COMMON_FILTERS             = [
+MAIN_GLES31_COMMON_FILTERS             = [
 		include("gles31-master.txt"),
 		exclude("gles31-test-issues.txt"),
 		exclude("gles31-spec-issues.txt")
 	]
 
-MASTER_GLES31_PKG				= Package(module = ES31CTS_MODULE, configurations = [
+MAIN_GLES31_PKG				= Package(module = ES31CTS_MODULE, configurations = [
 		# Master
 		Configuration(name			= "master",
 					glconfig	= "rgba8888d24s8ms0",
 					rotation	= "unspecified",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
-					filters		= MASTER_GLES31_COMMON_FILTERS),
+					filters		= MAIN_GLES31_COMMON_FILTERS),
 
 		# Rotations
 		Configuration(name			= "rotate-portrait",
@@ -550,28 +552,28 @@ MASTER_GLES31_PKG				= Package(module = ES31CTS_MODULE, configurations = [
 					surfacewidth	= "256",
 					surfaceheight	= "256",
 					os				= "android",
-					filters		= MASTER_GLES31_COMMON_FILTERS + [include("gles31-rotation.txt")]),
+					filters		= MAIN_GLES31_COMMON_FILTERS + [include("gles31-rotation.txt")]),
 		Configuration(name			= "rotate-landscape",
 					glconfig	= "rgba8888d24s8ms0",
 					rotation	= "90",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
 					os				= "android",
-					filters		= MASTER_GLES31_COMMON_FILTERS + [include("gles31-rotation.txt")]),
+					filters		= MAIN_GLES31_COMMON_FILTERS + [include("gles31-rotation.txt")]),
 		Configuration(name			= "rotate-reverse-portrait",
 					glconfig	= "rgba8888d24s8ms0",
 					rotation	= "180",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
 					os				= "android",
-					filters		= MASTER_GLES31_COMMON_FILTERS + [include("gles31-rotation.txt")]),
+					filters		= MAIN_GLES31_COMMON_FILTERS + [include("gles31-rotation.txt")]),
 		Configuration(name			= "rotate-reverse-landscape",
 					glconfig	= "rgba8888d24s8ms0",
 					rotation	= "270",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
 					os				= "android",
-					filters		= MASTER_GLES31_COMMON_FILTERS + [include("gles31-rotation.txt")]),
+					filters		= MAIN_GLES31_COMMON_FILTERS + [include("gles31-rotation.txt")]),
 
 		# MSAA
 		Configuration(name			= "multisample",
@@ -579,7 +581,7 @@ MASTER_GLES31_PKG				= Package(module = ES31CTS_MODULE, configurations = [
 					rotation	= "unspecified",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
-					filters		= MASTER_GLES31_COMMON_FILTERS + [include("gles31-multisample.txt")]),
+					filters		= MAIN_GLES31_COMMON_FILTERS + [include("gles31-multisample.txt")]),
 
 		# Pixel format
 		Configuration(name			= "565-no-depth-no-stencil",
@@ -588,7 +590,7 @@ MASTER_GLES31_PKG				= Package(module = ES31CTS_MODULE, configurations = [
 					surfacewidth	= "256",
 					surfaceheight	= "256",
 					os				= "android",
-					filters		= MASTER_GLES31_COMMON_FILTERS + [include("gles31-pixelformat.txt")]),
+					filters		= MAIN_GLES31_COMMON_FILTERS + [include("gles31-pixelformat.txt")]),
 	])
 
 GLCTS_GLES2_KHR_PKG_1CFG			= Package(module = ES2KHR_MODULE, configurations = [
@@ -828,7 +830,7 @@ GLCTS_GLES31_GTF_PKG_N1CFG			= Package(module = ES31GTF_MODULE, useforfirsteglco
 					filters			= [include("gles31-gtf-master.txt")]),
 	])
 
-MASTER_GLES32_COMMON_FILTERS             = [
+MAIN_GLES32_COMMON_FILTERS             = [
 		include("gles32-khr-master.txt"),
 		exclude("gles32-khr-test-issues.txt"),
 		exclude("gles32-khr-spec-issues.txt")
@@ -840,24 +842,24 @@ GLCTS_GLES32_KHR_PKG_1CFG			= Package(module = ES32KHR_MODULE, configurations = 
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
-					filters			= MASTER_GLES32_COMMON_FILTERS),
+					filters			= MAIN_GLES32_COMMON_FILTERS),
 		Configuration(name			= "khr-master",
 					surfacewidth	= "113",
 					surfaceheight	= "47",
 					baseseed		= "2",
-					filters			= MASTER_GLES32_COMMON_FILTERS),
+					filters			= MAIN_GLES32_COMMON_FILTERS),
 		Configuration(name			= "khr-master",
 					surfacewidth	= "64",
 					surfaceheight	= "-1",
 					baseseed		= "3",
 					fboconfig		= "rgba8888d24s8",
-					filters			= MASTER_GLES32_COMMON_FILTERS),
+					filters			= MAIN_GLES32_COMMON_FILTERS),
 		Configuration(name			= "khr-master",
 					surfacewidth	= "-1",
 					surfaceheight	= "64",
 					baseseed		= "3",
 					fboconfig		= "rgba8888d24s8",
-					filters			= MASTER_GLES32_COMMON_FILTERS),
+					filters			= MAIN_GLES32_COMMON_FILTERS),
 	])
 
 GLCTS_GLES32_KHR_PKG_N1CFG			= Package(module = ES32KHR_MODULE, useforfirsteglconfig = False, configurations = [
@@ -866,12 +868,12 @@ GLCTS_GLES32_KHR_PKG_N1CFG			= Package(module = ES32KHR_MODULE, useforfirsteglco
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
-					filters			= MASTER_GLES32_COMMON_FILTERS),
+					filters			= MAIN_GLES32_COMMON_FILTERS),
 		Configuration(name			= "khr-master",
 					surfacewidth	= "113",
 					surfaceheight	= "47",
 					baseseed		= "2",
-					filters			= MASTER_GLES32_COMMON_FILTERS),
+					filters			= MAIN_GLES32_COMMON_FILTERS),
 	])
 
 GLCTS_NOCTX_ES2_KHR_PKG			= Package(module = NOCTX_ES2_KHR_MODULE, configurations = [
@@ -889,7 +891,7 @@ GLCTS_NOCTX_ES32_KHR_PKG		= Package(module = NOCTX_ES32_KHR_MODULE, configuratio
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
-					filters			= MASTER_GLES32_COMMON_FILTERS),
+					filters			= MAIN_GLES32_COMMON_FILTERS),
 	])
 
 GLCTS_SINGLE_ES32_KHR_PKG		= Package(module = SINGLE_ES32_KHR_MODULE, configurations = [
@@ -1023,9 +1025,9 @@ ES_MUSTPASS_LISTS		= [
 	Mustpass(project = CTS_AOSP_MP_EGL_PROJECT, version = "3.2.6.x", isCurrent=False,
 			packages = [GLCTS_3_2_3_EGL_PKG]),
 
-	# master
+	# main
 
-	Mustpass(project = CTS_KHR_MP_ES_PROJECT,	version = "master", isCurrent=True,
+	Mustpass(project = CTS_KHR_MP_ES_PROJECT,	version = "main", isCurrent=True,
 			packages = [GLCTS_GLES2_KHR_PKG_1CFG,
 						GLCTS_GLES2_KHR_PKG_N1CFG,
 						GLCTS_GLES3_KHR_PKG_1CFG,
@@ -1036,16 +1038,16 @@ ES_MUSTPASS_LISTS		= [
 						GLCTS_GLES32_KHR_PKG_N1CFG,
 						]),
 
-	Mustpass(project = CTS_KHR_MP_NOCTX_ES_PROJECT, version = "master", isCurrent=True,
+	Mustpass(project = CTS_KHR_MP_NOCTX_ES_PROJECT, version = "main", isCurrent=True,
 			packages = [GLCTS_NOCTX_ES2_KHR_PKG, GLCTS_NOCTX_ES32_KHR_PKG]),
 
-	Mustpass(project = CTS_KHR_MP_SINGLE_ES_PROJECT, version = "master", isCurrent=True,
+	Mustpass(project = CTS_KHR_MP_SINGLE_ES_PROJECT, version = "main", isCurrent=True,
 			packages = [GLCTS_SINGLE_ES32_KHR_PKG]),
 
-	Mustpass(project = CTS_AOSP_MP_ES_PROJECT, version = "master", isCurrent=True,
+	Mustpass(project = CTS_AOSP_MP_ES_PROJECT, version = "main", isCurrent=True,
 			packages = [GLCTS_3_2_3_GLES2_PKG, GLCTS_3_2_3_GLES3_PKG, GLCTS_3_2_3_GLES31_PKG]),
 
-	Mustpass(project = CTS_AOSP_MP_EGL_PROJECT, version = "master", isCurrent=True,
+	Mustpass(project = CTS_AOSP_MP_EGL_PROJECT, version = "main", isCurrent=True,
 			packages = [GLCTS_3_2_3_EGL_PKG])
 
 	]
@@ -1188,14 +1190,24 @@ GLCTS_SINGLE_GL46_KHR_PKG			= Package(module = SINGLE_GL46_KHR_MODULE, configura
 					filters			= [include("gl46-khr-single.txt")]),
 	])
 
-MASTER_GL_ES31_PKG					= Package(module = GL45_MODULE, configurations = [
+MAIN_GL_ES3_PKG						= Package(module = GL45ES3_MODULE, configurations = [
 		# Master
-		Configuration(name			= "master",
+		Configuration(name			= "es3-master",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "unspecified",
 					  surfacewidth	= "256",
 					  surfaceheight	= "256",
-					  filters		= [include("gl45-master.txt"), exclude("gl45-test-issues.txt"), exclude("gl45-spec-issues.txt")])
+					  filters		= [include("gl45es3-master.txt"), exclude("gl45es3-test-issues.txt"), exclude("gl45es3-spec-issues.txt")])
+	])
+
+MAIN_GL_ES31_PKG					= Package(module = GL45ES31_MODULE, configurations = [
+		# Master
+		Configuration(name			= "es31-master",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "unspecified",
+					  surfacewidth	= "256",
+					  surfaceheight	= "256",
+					  filters		= [include("gl45es31-master.txt"), exclude("gl45es31-test-issues.txt"), exclude("gl45es31-spec-issues.txt")])
 	])
 
 def generateGLMustpass():
@@ -1226,10 +1238,16 @@ def generateGLMustpass():
 
 		mustpass = [Mustpass(project = GL_CTS_KHR_MP_PROJECT, version = "4.6.0.x", isCurrent=False, packages = gl_packages),
 					Mustpass(project = GL_CTS_NOCTX_PROJECT, version = "4.6.0.x", isCurrent=False, packages = [GLCTS_NOCTX_GL30_KHR_PKG, GLCTS_NOCTX_GL40_KHR_PKG, GLCTS_NOCTX_GL43_KHR_PKG, GLCTS_NOCTX_GL45_KHR_PKG]),
-				    Mustpass(project = GL_CTS_KHR_MP_PROJECT, version = "4.6.1.x", isCurrent=True, packages = gl_packages),
-                    Mustpass(project = GL_CTS_NOCTX_PROJECT, version = "4.6.1.x", isCurrent=True, packages = [GLCTS_NOCTX_GL30_KHR_PKG, GLCTS_NOCTX_GL40_KHR_PKG, GLCTS_NOCTX_GL43_KHR_PKG, GLCTS_NOCTX_GL45_KHR_PKG]),
-                    Mustpass(project = GL_CTS_KHR_SINGLE_PROJECT, version = "4.6.1.x", isCurrent=True, packages = [GLCTS_SINGLE_GL43_KHR_PKG, GLCTS_SINGLE_GL44_KHR_PKG, GLCTS_SINGLE_GL45_KHR_PKG, GLCTS_SINGLE_GL46_KHR_PKG]),
-                    Mustpass(project = GL_CTS_GLES_PROJECT, version = "4.6.1.x", isCurrent=True, packages = [MASTER_GL_ES31_PKG]),
+
+					Mustpass(project = GL_CTS_KHR_MP_PROJECT, version = "4.6.1.x", isCurrent=False, packages = gl_packages),
+					Mustpass(project = GL_CTS_NOCTX_PROJECT, version = "4.6.1.x", isCurrent=False, packages = [GLCTS_NOCTX_GL30_KHR_PKG, GLCTS_NOCTX_GL40_KHR_PKG, GLCTS_NOCTX_GL43_KHR_PKG, GLCTS_NOCTX_GL45_KHR_PKG]),
+					Mustpass(project = GL_CTS_KHR_SINGLE_PROJECT, version = "4.6.1.x", isCurrent=False, packages = [GLCTS_SINGLE_GL43_KHR_PKG, GLCTS_SINGLE_GL44_KHR_PKG, GLCTS_SINGLE_GL45_KHR_PKG, GLCTS_SINGLE_GL46_KHR_PKG]),
+					Mustpass(project = GL_CTS_GLES_PROJECT, version = "4.6.1.x", isCurrent=False, packages = [MAIN_GL_ES3_PKG, MAIN_GL_ES31_PKG]),
+
+					Mustpass(project = GL_CTS_KHR_MP_PROJECT, version = "main", isCurrent=True, packages = gl_packages),
+					Mustpass(project = GL_CTS_NOCTX_PROJECT, version = "main", isCurrent=True, packages = [GLCTS_NOCTX_GL30_KHR_PKG, GLCTS_NOCTX_GL40_KHR_PKG, GLCTS_NOCTX_GL43_KHR_PKG, GLCTS_NOCTX_GL45_KHR_PKG]),
+					Mustpass(project = GL_CTS_KHR_SINGLE_PROJECT, version = "main", isCurrent=True, packages = [GLCTS_SINGLE_GL43_KHR_PKG, GLCTS_SINGLE_GL44_KHR_PKG, GLCTS_SINGLE_GL45_KHR_PKG, GLCTS_SINGLE_GL46_KHR_PKG]),
+					Mustpass(project = GL_CTS_GLES_PROJECT, version = "main", isCurrent=True, packages = [MAIN_GL_ES3_PKG, MAIN_GL_ES31_PKG]),
 					]
 		return mustpass
 

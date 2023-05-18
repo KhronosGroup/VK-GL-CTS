@@ -32,7 +32,7 @@
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
 #include "vkDeviceUtil.hpp"
-#include "vkCmdUtil.hpp"
+#include "vkSafetyCriticalUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
@@ -62,7 +62,6 @@ namespace
 using std::vector;
 using std::string;
 using tcu::TestLog;
-using de::UniquePtr;
 using de::MovePtr;
 
 static const deUint64 DEFAULT_TIMEOUT = 2ull*1000*1000*1000; //!< 2 seconds in nanoseconds
@@ -101,12 +100,10 @@ void buildShaders(SourceCollections& shaderCollection)
 	initShaders(shaderCollection, { SynchronizationType::LEGACY, VK_SEMAPHORE_TYPE_BINARY });
 }
 
-Move<VkDevice> createTestDevice (Context& context, SemaphoreTestConfig& config, deUint32* outQueueFamilyIndex)
+Move<VkDevice> createTestDevice (Context& context, SemaphoreTestConfig& config, const VkInstance& instance, const InstanceInterface& vki, deUint32* outQueueFamilyIndex)
 {
 	const PlatformInterface&	vkp							= context.getPlatformInterface();
-	VkInstance					instance					= context.getInstance();
-	const InstanceInterface&	vki							= context.getInstanceInterface();
-	VkPhysicalDevice			physicalDevice				= context.getPhysicalDevice();
+	VkPhysicalDevice			physicalDevice				= chooseDevice(vki, instance, context.getTestContext().getCommandLine());
 	bool						validationEnabled			= context.getTestContext().getCommandLine().isValidationEnabled();
 	VkDeviceQueueCreateInfo		queueInfo;
 	VkDeviceCreateInfo			deviceInfo;
@@ -148,20 +145,62 @@ Move<VkDevice> createTestDevice (Context& context, SemaphoreTestConfig& config, 
 	queueInfo.pQueuePriorities				= queuePriority;
 
 	vector<const char*> deviceExtensions;
+	bool useFeatures2 = false;
 	if (config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE)
 	{
-		deviceExtensions.push_back("VK_KHR_timeline_semaphore");
+		if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_timeline_semaphore"))
+			deviceExtensions.push_back("VK_KHR_timeline_semaphore");
 		addToChainVulkanStructure(&nextPtr, timelineSemaphoreFeatures);
+		useFeatures2 = true;
 	}
 	if (config.synchronizationType == SynchronizationType::SYNCHRONIZATION2)
 	{
 		deviceExtensions.push_back("VK_KHR_synchronization2");
 		addToChainVulkanStructure(&nextPtr, synchronization2Features);
+		useFeatures2 = true;
 	}
+
+	void* pNext												= !useFeatures2 ? DE_NULL : &physicalDeviceFeatures2;
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext								= pNext;
+	pNext													= &memReservationInfo;
+
+	VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+	sc10Features.pNext										= pNext;
+	pNext													= &sc10Features;
+
+	VkPipelineCacheCreateInfo			pcCI;
+	std::vector<VkPipelinePoolSize>		poolSizes;
+	if (context.getTestContext().getCommandLine().isSubProcess())
+	{
+		if (context.getResourceInterface()->getCacheDataSize() > 0)
+		{
+			pcCI =
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,		// VkStructureType				sType;
+				DE_NULL,											// const void*					pNext;
+				VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+					VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+				context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
+				context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
+			};
+			memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+			memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+		}
+
+		poolSizes							= context.getResourceInterface()->getPipelinePoolSizes();
+		if (!poolSizes.empty())
+		{
+			memReservationInfo.pipelinePoolSizeCount			= deUint32(poolSizes.size());
+			memReservationInfo.pPipelinePoolSizes				= poolSizes.data();
+		}
+	}
+#endif // CTS_USES_VULKANSC
 
 	deMemset(&deviceInfo, 0xcd, sizeof(deviceInfo));
 	deviceInfo.sType						= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	deviceInfo.pNext						= deviceExtensions.empty() ? DE_NULL : &physicalDeviceFeatures2;
+	deviceInfo.pNext						= pNext;
 	deviceInfo.flags						= (VkDeviceCreateFlags)0u;
 	deviceInfo.queueCreateInfoCount			= 1u;
 	deviceInfo.pQueueCreateInfos			= &queueInfo;
@@ -169,7 +208,7 @@ Move<VkDevice> createTestDevice (Context& context, SemaphoreTestConfig& config, 
 	deviceInfo.ppEnabledExtensionNames		= deviceExtensions.empty() ? DE_NULL : &deviceExtensions[0];
 	deviceInfo.enabledLayerCount			= 0u;
 	deviceInfo.ppEnabledLayerNames			= DE_NULL;
-	deviceInfo.pEnabledFeatures				= deviceExtensions.empty() ? &physicalDeviceFeatures : DE_NULL;
+	deviceInfo.pEnabledFeatures				= !useFeatures2 ? &physicalDeviceFeatures : DE_NULL;
 
 	*outQueueFamilyIndex					= queueInfo.queueFamilyIndex;
 
@@ -573,6 +612,7 @@ struct TestContext
 	const deUint32				queueFamilyIndex;
 	const BinaryCollection&		binaryCollection;
 	Allocator&					allocator;
+	de::SharedPtr<vk::ResourceInterface>	resourceInterface;
 
 	const tcu::Vec4*			vertices;
 	deUint32					numVertices;
@@ -595,16 +635,18 @@ struct TestContext
 	vk::Move<VkPipeline>		pipeline;
 	MovePtr<Allocation>			imageAllocation;
 
-	TestContext (const DeviceInterface&		vkd_,
-				 const VkDevice				device_,
-				 deUint32					queueFamilyIndex_,
-				 const BinaryCollection&	binaryCollection_,
-				 Allocator&					allocator_)
+	TestContext (const DeviceInterface&					vkd_,
+				 const VkDevice							device_,
+				 deUint32								queueFamilyIndex_,
+				 const BinaryCollection&				binaryCollection_,
+				 Allocator&								allocator_,
+				 de::SharedPtr<vk::ResourceInterface>	resourceInterface_)
 		: vkd				(vkd_)
 		, device			(device_)
 		, queueFamilyIndex	(queueFamilyIndex_)
 		, binaryCollection	(binaryCollection_)
 		, allocator			(allocator_)
+		, resourceInterface	(resourceInterface_)
 		, vertices			(0)
 		, numVertices		(0)
 		, renderSize		(0)
@@ -886,12 +928,18 @@ void generateWork (TestContext& testContext)
 	deMemset(&cacheState, 0xcd, sizeof(cacheState));
 	cacheState.sType							= VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
 	cacheState.pNext							= DE_NULL;
-	cacheState.flags							= 0;
+#ifndef CTS_USES_VULKANSC
+	cacheState.flags							= (VkPipelineCacheCreateFlags)0u;
 	cacheState.initialDataSize					= 0;
 	cacheState.pInitialData						= DE_NULL;
+#else
+	cacheState.flags							= VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT | VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT;
+	cacheState.initialDataSize					= testContext.resourceInterface->getCacheDataSize();
+	cacheState.pInitialData						= testContext.resourceInterface->getCacheData();
+#endif
 
-	testContext.pipelineCache	= createPipelineCache(deviceInterface, testContext.device, &cacheState);
-	testContext.pipeline		= createGraphicsPipeline(deviceInterface, testContext.device, testContext.pipelineCache.get(), &pipelineState);
+	testContext.pipelineCache					= createPipelineCache(deviceInterface, testContext.device, &cacheState);
+	testContext.pipeline						= createGraphicsPipeline(deviceInterface, testContext.device, testContext.pipelineCache.get(), &pipelineState);
 
 	deMemset(&fbState, 0xcd, sizeof(fbState));
 	fbState.sType								= VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -1002,7 +1050,7 @@ tcu::TestStatus testFences (Context& context)
 	VkDevice					device				= context.getDevice();
 	VkResult					waitStatus;
 	VkResult					fenceStatus;
-	TestContext					testContext			(deviceInterface, device, queueFamilyIdx, context.getBinaryCollection(), context.getDefaultAllocator());
+	TestContext					testContext			(deviceInterface, device, queueFamilyIdx, context.getBinaryCollection(), context.getDefaultAllocator(), context.getResourceInterface());
 	void*						resultImage;
 
 	const tcu::Vec4				vertices[]			=
@@ -1096,29 +1144,36 @@ tcu::TestStatus testFences (Context& context)
 
 tcu::TestStatus testSemaphores (Context& context, SemaphoreTestConfig config)
 {
-	if (config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE_KHR && !context.getTimelineSemaphoreFeatures().timelineSemaphore)
+	if (config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE && !context.getTimelineSemaphoreFeatures().timelineSemaphore)
 		TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
 
 	TestLog&					log					= context.getTestContext().getLog();
 	const PlatformInterface&	platformInterface	= context.getPlatformInterface();
-	const InstanceInterface&	instanceInterface	= context.getInstanceInterface();
-	const VkPhysicalDevice		physicalDevice		= context.getPhysicalDevice();
+	const auto					instance			= context.getInstance();
+	const auto&					instanceDriver		= context.getInstanceInterface();
+	const VkPhysicalDevice		physicalDevice		= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
 	deUint32					queueFamilyIdx;
 	bool						isTimelineSemaphore	(config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE);
-	vk::Move<VkDevice>			device				(createTestDevice(context, config, &queueFamilyIdx));
-	const DeviceDriver			deviceInterface		(platformInterface, context.getInstance(), *device);
-	SimpleAllocator				allocator			(deviceInterface,
+	vk::Move<VkDevice>			device				(createTestDevice(context, config, instance, instanceDriver, &queueFamilyIdx));
+
+#ifndef CTS_USES_VULKANSC
+	de::MovePtr<vk::DeviceDriver>	deviceInterfacePtr = de::MovePtr<DeviceDriver>(new DeviceDriver(platformInterface, instance, *device));
+#else
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceInterfacePtr = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(platformInterface, instance, *device, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *device));
+#endif // CTS_USES_VULKANSC
+	const DeviceDriver&			deviceDriver		= *deviceInterfacePtr;
+	SimpleAllocator				allocator			(deviceDriver,
 													 *device,
-													 getPhysicalDeviceMemoryProperties(instanceInterface, physicalDevice));
+													 getPhysicalDeviceMemoryProperties(instanceDriver, physicalDevice));
 	const VkQueue				queue[2]			=
 	{
-		getDeviceQueue(deviceInterface, *device, queueFamilyIdx, 0),
-		getDeviceQueue(deviceInterface, *device, queueFamilyIdx, 1)
+		getDeviceQueue(deviceDriver, *device, queueFamilyIdx, 0),
+		getDeviceQueue(deviceDriver, *device, queueFamilyIdx, 1)
 	};
 	VkResult							testStatus;
-	TestContext							testContext1				(deviceInterface, device.get(), queueFamilyIdx, context.getBinaryCollection(), allocator);
-	TestContext							testContext2				(deviceInterface, device.get(), queueFamilyIdx, context.getBinaryCollection(), allocator);
-	Unique<VkSemaphore>					semaphore					(createSemaphoreType(deviceInterface, *device, config.semaphoreType));
+	TestContext							testContext1				(deviceDriver, device.get(), queueFamilyIdx, context.getBinaryCollection(), allocator, context.getResourceInterface());
+	TestContext							testContext2				(deviceDriver, device.get(), queueFamilyIdx, context.getBinaryCollection(), allocator, context.getResourceInterface());
+	Unique<VkSemaphore>					semaphore					(createSemaphoreType(deviceDriver, *device, config.semaphoreType));
 	VkSemaphoreSubmitInfoKHR			waitSemaphoreSubmitInfo		= makeCommonSemaphoreSubmitInfo(*semaphore, 1u, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR);
 	VkSemaphoreSubmitInfoKHR			signalSemaphoreSubmitInfo	= makeCommonSemaphoreSubmitInfo(*semaphore, 1u, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR);
 
@@ -1146,15 +1201,15 @@ tcu::TestStatus testSemaphores (Context& context, SemaphoreTestConfig config)
 	testContext2.renderDimension	= tcu::IVec2(256, 256);
 	testContext2.renderSize			= sizeof(deUint32) * testContext2.renderDimension.x() * testContext2.renderDimension.y();
 
-	createCommandBuffer(deviceInterface, device.get(), queueFamilyIdx, &testContext1.cmdBuffer, &testContext1.commandPool);
+	createCommandBuffer(deviceDriver, device.get(), queueFamilyIdx, &testContext1.cmdBuffer, &testContext1.commandPool);
 	generateWork(testContext1);
 
-	createCommandBuffer(deviceInterface, device.get(), queueFamilyIdx, &testContext2.cmdBuffer, &testContext2.commandPool);
+	createCommandBuffer(deviceDriver, device.get(), queueFamilyIdx, &testContext2.cmdBuffer, &testContext2.commandPool);
 	generateWork(testContext2);
 
 	{
 		VkCommandBufferSubmitInfoKHR	commandBufferSubmitInfo = makeCommonCommandBufferSubmitInfo(testContext1.cmdBuffer.get());
-		SynchronizationWrapperPtr		synchronizationWrapper = getSynchronizationWrapper(config.synchronizationType, deviceInterface, isTimelineSemaphore);
+		SynchronizationWrapperPtr		synchronizationWrapper = getSynchronizationWrapper(config.synchronizationType, deviceDriver, isTimelineSemaphore);
 		synchronizationWrapper->addSubmitInfo(
 			0u,										// deUint32								waitSemaphoreInfoCount
 			DE_NULL,								// const VkSemaphoreSubmitInfoKHR*		pWaitSemaphoreInfos
@@ -1169,14 +1224,14 @@ tcu::TestStatus testSemaphores (Context& context, SemaphoreTestConfig config)
 		VK_CHECK(synchronizationWrapper->queueSubmit(queue[0], testContext1.fences[0]));
 	}
 
-	testStatus  = deviceInterface.waitForFences(device.get(), 1, &testContext1.fences[0], true, std::numeric_limits<deUint64>::max());
+	testStatus  = deviceDriver.waitForFences(device.get(), 1, &testContext1.fences[0], true, std::numeric_limits<deUint64>::max());
 	if (testStatus != VK_SUCCESS)
 	{
 		log << TestLog::Message << "testSynchPrimitives failed to wait for a set fence" << TestLog::EndMessage;
 		return tcu::TestStatus::fail("failed to wait for a set fence");
 	}
 
-	invalidateAlloc(deviceInterface, device.get(), *testContext1.renderReadBuffer);
+	invalidateAlloc(deviceDriver, device.get(), *testContext1.renderReadBuffer);
 	void* resultImage = testContext1.renderReadBuffer->getHostPtr();
 
 	log << TestLog::Image(	"result",
@@ -1193,7 +1248,7 @@ tcu::TestStatus testSemaphores (Context& context, SemaphoreTestConfig config)
 	// semaphore but not signal it.
 	{
 		VkCommandBufferSubmitInfoKHR	commandBufferSubmitInfo	= makeCommonCommandBufferSubmitInfo(testContext2.cmdBuffer.get());
-		SynchronizationWrapperPtr		synchronizationWrapper	= getSynchronizationWrapper(config.synchronizationType, deviceInterface, isTimelineSemaphore);
+		SynchronizationWrapperPtr		synchronizationWrapper	= getSynchronizationWrapper(config.synchronizationType, deviceDriver, isTimelineSemaphore);
 		synchronizationWrapper->addSubmitInfo(
 			1u,										// deUint32								waitSemaphoreInfoCount
 			&waitSemaphoreSubmitInfo,				// const VkSemaphoreSubmitInfoKHR*		pWaitSemaphoreInfos
@@ -1207,14 +1262,14 @@ tcu::TestStatus testSemaphores (Context& context, SemaphoreTestConfig config)
 		VK_CHECK(synchronizationWrapper->queueSubmit(queue[1], testContext2.fences[0]));
 	}
 
-	testStatus  = deviceInterface.waitForFences(device.get(), 1, &testContext2.fences[0], true, std::numeric_limits<deUint64>::max());
+	testStatus  = deviceDriver.waitForFences(device.get(), 1, &testContext2.fences[0], true, std::numeric_limits<deUint64>::max());
 	if (testStatus != VK_SUCCESS)
 	{
 		log << TestLog::Message << "testSynchPrimitives failed to wait for a set fence" << TestLog::EndMessage;
 		return tcu::TestStatus::fail("failed to wait for a set fence");
 	}
 
-	invalidateAlloc(deviceInterface, device.get(), *testContext2.renderReadBuffer);
+	invalidateAlloc(deviceDriver, device.get(), *testContext2.renderReadBuffer);
 	resultImage = testContext2.renderReadBuffer->getHostPtr();
 
 	log << TestLog::Image(	"result",

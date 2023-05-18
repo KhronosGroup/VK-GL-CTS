@@ -1,0 +1,9 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT":
+		[
+			{ "features": ["fragmentShaderSampleInterlock", "fragmentShaderPixelInterlock", "fragmentShaderShadingRateInterlock"],	"requirements": ["VK_EXT_fragment_shader_interlock"] }
+		]
+	}
+}

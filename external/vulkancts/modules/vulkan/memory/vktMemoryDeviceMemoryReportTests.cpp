@@ -731,11 +731,18 @@ struct PipelineCache
 	{
 		const VkPipelineCacheCreateInfo	pipelineCacheCreateInfo	=
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,	// VkStructureType				sType;
-			DE_NULL,										// const void*					pNext;
-			(VkPipelineCacheCreateFlags)0u,					// VkPipelineCacheCreateFlags	flags;
-			0u,												// size_t						initialDataSize;
-			DE_NULL,										// const void*					pInitialData;
+			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,			// VkStructureType				sType;
+			DE_NULL,												// const void*					pNext;
+#ifndef CTS_USES_VULKANSC
+		(VkPipelineCacheCreateFlags)0u,								// VkPipelineCacheCreateFlags	flags;
+		0,															// size_t						initialDataSize;
+		DE_NULL														// const void*					pInitialData;
+#else
+		VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+			VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+		env.resourceInterface->getCacheDataSize(),						// deUintptr					initialDataSize;
+		env.resourceInterface->getCacheData()							// const void*					pInitialData;
+#endif // CTS_USES_VULKANSC
 		};
 
 		return createPipelineCache(env.vkd, env.device, &pipelineCacheCreateInfo);
@@ -1577,10 +1584,43 @@ struct CaseDescriptions
 	CaseDescription<CommandBuffer>			commandBuffer;
 };
 
+static void checkSupport(Context& context)
+{
+	const std::vector<VkExtensionProperties> extensions =
+		enumerateDeviceExtensionProperties(context.getInstanceInterface(), context.getPhysicalDevice(), DE_NULL);
+
+	for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
+	{
+		if (deStringEqual("VK_EXT_device_memory_report", extensions[extNdx].extensionName))
+		{
+			VkPhysicalDeviceDeviceMemoryReportFeaturesEXT deviceMemoryReportFeatures =
+			{
+				VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_MEMORY_REPORT_FEATURES_EXT,
+				DE_NULL,
+				VK_FALSE
+			};
+
+			VkPhysicalDeviceFeatures2 availFeatures;
+			availFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+			availFeatures.pNext = &deviceMemoryReportFeatures;
+
+			context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &availFeatures);
+
+			if (deviceMemoryReportFeatures.deviceMemoryReport == VK_FALSE)
+			{
+				TCU_THROW(NotSupportedError, "VK_EXT_device_memory_report not supported");
+			}
+			return;
+		}
+	}
+
+	TCU_THROW(NotSupportedError, "VK_EXT_device_memory_report not supported");
+}
+
 template<typename Object>
 static void checkSupport (Context& context, typename Object::Parameters)
 {
-	context.requireDeviceFunctionality("VK_EXT_device_memory_report");
+	checkSupport(context);
 }
 
 template<typename Object>
@@ -1832,30 +1872,44 @@ tcu::TestStatus vkDeviceMemoryAllocationFailedTest (Context& context)
 	const Unique<VkDevice>					device				(createDeviceWithMemoryReport(isValidationEnabled, vkp, instance, vki, physicalDevice, queueFamilyIndex, &recorder));
 	const DeviceDriver						vkd					(vkp, instance, *device);
 	const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physicalDevice);
-	const VkDeviceSize						testSize			= std::numeric_limits<deUint64>::max();
 	const deUint32							testTypeIndex		= 0;
 	const deUint32							testHeapIndex		= memoryProperties.memoryTypes[testTypeIndex].heapIndex;
+	const VkDeviceSize						testSize			= memoryProperties.memoryHeaps[testHeapIndex].size;
 
 	{
 		recorder.setCallbackMarker(MARKER_ALLOCATION_FAILED);
 
-		VkResult					result				= VK_SUCCESS;
-		VkDeviceMemory				memory				= DE_NULL;
-		const VkMemoryAllocateInfo	memoryAllocateInfo	=
+		VkDeviceMemory			memory1 = DE_NULL;
+		VkDeviceMemory			memory2 = DE_NULL;
+		VkMemoryAllocateInfo	memoryAllocateInfo
 		{
 			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	// VkStructureType	sType;
 			DE_NULL,								// const void*		pNext;
-			testSize,								// VkDeviceSize		allocationSize;
+			128,									// VkDeviceSize		allocationSize;
 			testHeapIndex,							// uint32_t			memoryTypeIndex;
 		};
 
-		result = vkd.allocateMemory(*device, &memoryAllocateInfo, (const VkAllocationCallbacks*)DE_NULL, &memory);
+		// first do a small allocation to prevent LowMemoryKiller on android from culling this app
+		VkResult result = vkd.allocateMemory(*device, &memoryAllocateInfo, (const VkAllocationCallbacks*)DE_NULL, &memory1);
+		if (result != VK_SUCCESS)
+			TCU_THROW(NotSupportedError, "Unable to do a small allocation");
+
+		// if small allocation succeeded then we can try to trigger an allocation failure by allocating as much memory as there is on the heap
+		memoryAllocateInfo.allocationSize = testSize;
+		result = vkd.allocateMemory(*device, &memoryAllocateInfo, (const VkAllocationCallbacks*)DE_NULL, &memory2);
 		if (result == VK_SUCCESS)
 		{
-			return tcu::TestStatus::fail("Should not be able to allocate UINT64_MAX bytes of memory");
+			vkd.freeMemory(*device, memory1, DE_NULL);
+			vkd.freeMemory(*device, memory2, DE_NULL);
+			return tcu::TestStatus::fail(std::string("Should not be able to allocate ") + std::to_string(testSize) + " bytes of memory");
 		}
 
 		recorder.setCallbackMarker(MARKER_UNKNOWN);
+
+		if (!!memory1)
+			vkd.freeMemory(*device, memory1, DE_NULL);
+		if (!!memory2)
+			vkd.freeMemory(*device, memory2, DE_NULL);
 	}
 
 	deBool	allocationFailedEvent	= false;
@@ -1881,11 +1935,6 @@ tcu::TestStatus vkDeviceMemoryAllocationFailedTest (Context& context)
 	return tcu::TestStatus::pass("Ok");
 }
 
-static void checkSupport (Context& context)
-{
-	context.requireDeviceFunctionality("VK_EXT_device_memory_report");
-}
-
 tcu::TestCaseGroup* createVkDeviceMemoryTestsGroup (tcu::TestContext& testCtx, const char* name, const char* desc)
 {
 	MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, name, desc));
@@ -1898,8 +1947,9 @@ tcu::TestCaseGroup* createVkDeviceMemoryTestsGroup (tcu::TestContext& testCtx, c
 
 static void checkSupport (Context& context, VkExternalMemoryHandleTypeFlagBits externalMemoryType)
 {
+	checkSupport(context);
+
 	context.requireInstanceFunctionality("VK_KHR_external_memory_capabilities");
-	context.requireDeviceFunctionality("VK_EXT_device_memory_report");
 	context.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
 	context.requireDeviceFunctionality("VK_KHR_get_memory_requirements2");
 

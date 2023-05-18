@@ -157,13 +157,16 @@ class ColorFragmentShader : public rr::FragmentShader
 private:
 	const tcu::TextureFormat		m_colorFormat;
 	const tcu::TextureFormat		m_depthStencilFormat;
+	const bool						m_disableVulkanDepthRange;
 
 public:
-	ColorFragmentShader (const tcu::TextureFormat& colorFormat,
-						 const tcu::TextureFormat& depthStencilFormat)
-		: rr::FragmentShader	(2, 1)
-		, m_colorFormat			(colorFormat)
-		, m_depthStencilFormat	(depthStencilFormat)
+	ColorFragmentShader (const tcu::TextureFormat&	colorFormat,
+						 const tcu::TextureFormat&	depthStencilFormat,
+						 const bool					disableVulkanDepthRange = false)
+		: rr::FragmentShader		(2, 1)
+		, m_colorFormat				(colorFormat)
+		, m_depthStencilFormat		(depthStencilFormat)
+		, m_disableVulkanDepthRange	(disableVulkanDepthRange)
 	{
 		const tcu::TextureChannelClass channelClass = tcu::getTextureChannelClass(m_colorFormat.type);
 
@@ -184,7 +187,11 @@ public:
 		{
 			const rr::FragmentPacket& packet = packets[packetNdx];
 
-			if (m_depthStencilFormat.order == tcu::TextureFormat::D || m_depthStencilFormat.order == tcu::TextureFormat::DS)
+			// Reference renderer uses OpenGL depth range of -1..1, and does the viewport depth transform using
+			// formula (position.z+1)/2. For Vulkan the depth range is 0..1 and the vertex depth is mapped as is, so
+			// the values gets overridden here, unless depth clip control extension changes the depth clipping to use
+			// the OpenGL depth range.
+			if (!m_disableVulkanDepthRange && (m_depthStencilFormat.order == tcu::TextureFormat::D || m_depthStencilFormat.order == tcu::TextureFormat::DS))
 			{
 				for (int fragNdx = 0; fragNdx < 4; fragNdx++)
 				{

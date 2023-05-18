@@ -286,6 +286,8 @@ void DescriptorSetUpdateBuilder::update (const DeviceInterface& vk, VkDevice dev
 	vk.updateDescriptorSets(device, (deUint32)writes.size(), writePtr, (deUint32)m_copies.size(), copyPtr);
 }
 
+#ifndef CTS_USES_VULKANSC
+
 void DescriptorSetUpdateBuilder::updateWithPush (const DeviceInterface& vk, VkCommandBuffer cmd, VkPipelineBindPoint bindPoint, VkPipelineLayout pipelineLayout, deUint32 setIdx, deUint32 descriptorIdx, deUint32 numDescriptors) const
 {
 	// Write all descriptors or just a subset?
@@ -312,6 +314,8 @@ void DescriptorSetUpdateBuilder::updateWithPush (const DeviceInterface& vk, VkCo
 
 	vk.cmdPushDescriptorSetKHR(cmd, bindPoint, pipelineLayout, setIdx, count, writePtr);
 }
+
+#endif // CTS_USES_VULKANSC
 
 void DescriptorSetUpdateBuilder::clear(void)
 {

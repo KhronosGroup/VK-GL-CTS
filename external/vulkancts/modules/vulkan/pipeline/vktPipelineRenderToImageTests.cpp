@@ -50,6 +50,7 @@
 #include <string>
 #include <vector>
 #include <set>
+#include <algorithm>
 
 namespace vkt
 {
@@ -70,7 +71,6 @@ using tcu::BVec4;
 using std::vector;
 
 typedef SharedPtr<Unique<VkImageView> >	SharedPtrVkImageView;
-typedef SharedPtr<Unique<VkPipeline> >	SharedPtrVkPipeline;
 
 enum Constants
 {
@@ -109,11 +109,12 @@ static const Vec4	COLOR_TABLE[]			=
 
 struct CaseDef
 {
-	VkImageViewType	viewType;
-	IVec4			imageSizeHint;			//!< (w, h, d, layers), a component may have a symbolic value MAX_SIZE
-	VkFormat		colorFormat;
-	VkFormat		depthStencilFormat;		//! A depth/stencil format, or UNDEFINED if not used
-	AllocationKind	allocationKind;
+	PipelineConstructionType	pipelineConstructionType;
+	VkImageViewType				viewType;
+	IVec4						imageSizeHint;			//!< (w, h, d, layers), a component may have a symbolic value MAX_SIZE
+	VkFormat					colorFormat;
+	VkFormat					depthStencilFormat;		//! A depth/stencil format, or UNDEFINED if not used
+	AllocationKind				allocationKind;
 };
 
 template<typename T>
@@ -228,18 +229,17 @@ de::MovePtr<Allocation> bindImage (const InstanceInterface&		vki,
 }
 
 // This is very test specific, so be careful if you want to reuse this code.
-Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
-									   const VkDevice				device,
-									   const VkPipeline				basePipeline,		// for derivatives
-									   const VkPipelineLayout		pipelineLayout,
-									   const VkRenderPass			renderPass,
-									   const VkShaderModule			vertexModule,
-									   const VkShaderModule			fragmentModule,
-									   const IVec2&					renderSize,
-									   const VkPrimitiveTopology	topology,
-									   const deUint32				subpass,
-									   const bool					useDepth,
-									   const bool					useStencil)
+void preparePipelineWrapper(GraphicsPipelineWrapper&	gpw,
+							const VkPipeline			basePipeline,		// for derivatives
+							const VkPipelineLayout		pipelineLayout,
+							const VkRenderPass			renderPass,
+							const VkShaderModule		vertexModule,
+							const VkShaderModule		fragmentModule,
+							const IVec2&				renderSize,
+							const VkPrimitiveTopology	topology,
+							const deUint32				subpass,
+							const bool					useDepth,
+							const bool					useStencil)
 {
 	const VkVertexInputBindingDescription vertexInputBindingDescription =
 	{
@@ -275,58 +275,8 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 		vertexInputAttributeDescriptions,							// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 	};
 
-	const VkPipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType							sType;
-		DE_NULL,														// const void*								pNext;
-		(VkPipelineInputAssemblyStateCreateFlags)0,						// VkPipelineInputAssemblyStateCreateFlags	flags;
-		topology,														// VkPrimitiveTopology						topology;
-		VK_FALSE,														// VkBool32									primitiveRestartEnable;
-	};
-
-	const VkViewport	viewport	= makeViewport(renderSize);
-	const VkRect2D		scissor		= makeRect2D(renderSize);
-
-	const VkPipelineViewportStateCreateInfo pipelineViewportStateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,	// VkStructureType						sType;
-		DE_NULL,												// const void*							pNext;
-		(VkPipelineViewportStateCreateFlags)0,					// VkPipelineViewportStateCreateFlags	flags;
-		1u,														// uint32_t								viewportCount;
-		&viewport,												// const VkViewport*					pViewports;
-		1u,														// uint32_t								scissorCount;
-		&scissor,												// const VkRect2D*						pScissors;
-	};
-
-	const VkPipelineRasterizationStateCreateInfo pipelineRasterizationStateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	// VkStructureType							sType;
-		DE_NULL,													// const void*								pNext;
-		(VkPipelineRasterizationStateCreateFlags)0,					// VkPipelineRasterizationStateCreateFlags	flags;
-		VK_FALSE,													// VkBool32									depthClampEnable;
-		VK_FALSE,													// VkBool32									rasterizerDiscardEnable;
-		VK_POLYGON_MODE_FILL,										// VkPolygonMode							polygonMode;
-		VK_CULL_MODE_NONE,											// VkCullModeFlags							cullMode;
-		VK_FRONT_FACE_COUNTER_CLOCKWISE,							// VkFrontFace								frontFace;
-		VK_FALSE,													// VkBool32									depthBiasEnable;
-		0.0f,														// float									depthBiasConstantFactor;
-		0.0f,														// float									depthBiasClamp;
-		0.0f,														// float									depthBiasSlopeFactor;
-		1.0f,														// float									lineWidth;
-	};
-
-	const VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType							sType;
-		DE_NULL,													// const void*								pNext;
-		(VkPipelineMultisampleStateCreateFlags)0,					// VkPipelineMultisampleStateCreateFlags	flags;
-		VK_SAMPLE_COUNT_1_BIT,										// VkSampleCountFlagBits					rasterizationSamples;
-		VK_FALSE,													// VkBool32									sampleShadingEnable;
-		0.0f,														// float									minSampleShading;
-		DE_NULL,													// const VkSampleMask*						pSampleMask;
-		VK_FALSE,													// VkBool32									alphaToCoverageEnable;
-		VK_FALSE													// VkBool32									alphaToOneEnable;
-	};
+	const std::vector<VkViewport>	viewport	{ makeViewport(renderSize) };
+	const std::vector<VkRect2D>		scissor		{ makeRect2D(renderSize) };
 
 	const VkStencilOpState stencilOpState = makeStencilOpState(
 		VK_STENCIL_OP_KEEP,									// stencil fail
@@ -379,55 +329,20 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 		{ 0.0f, 0.0f, 0.0f, 0.0f },									// float										blendConstants[4];
 	};
 
-	const VkPipelineShaderStageCreateInfo pShaderStages[] =
-	{
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
-			DE_NULL,												// const void*							pNext;
-			(VkPipelineShaderStageCreateFlags)0,					// VkPipelineShaderStageCreateFlags		flags;
-			VK_SHADER_STAGE_VERTEX_BIT,								// VkShaderStageFlagBits				stage;
-			vertexModule,											// VkShaderModule						module;
-			"main",													// const char*							pName;
-			DE_NULL,												// const VkSpecializationInfo*			pSpecializationInfo;
-		},
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
-			DE_NULL,												// const void*							pNext;
-			(VkPipelineShaderStageCreateFlags)0,					// VkPipelineShaderStageCreateFlags		flags;
-			VK_SHADER_STAGE_FRAGMENT_BIT,							// VkShaderStageFlagBits				stage;
-			fragmentModule,											// VkShaderModule						module;
-			"main",													// const char*							pName;
-			DE_NULL,												// const VkSpecializationInfo*			pSpecializationInfo;
-		}
-	};
-
-	const VkPipelineCreateFlags			flags = (basePipeline == DE_NULL ? VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT
-																		 : VK_PIPELINE_CREATE_DERIVATIVE_BIT);
-
-	const VkGraphicsPipelineCreateInfo	graphicsPipelineInfo =
-	{
-		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType									sType;
-		DE_NULL,											// const void*										pNext;
-		flags,												// VkPipelineCreateFlags							flags;
-		DE_LENGTH_OF_ARRAY(pShaderStages),					// deUint32											stageCount;
-		pShaderStages,										// const VkPipelineShaderStageCreateInfo*			pStages;
-		&vertexInputStateInfo,								// const VkPipelineVertexInputStateCreateInfo*		pVertexInputState;
-		&pipelineInputAssemblyStateInfo,					// const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState;
-		DE_NULL,											// const VkPipelineTessellationStateCreateInfo*		pTessellationState;
-		&pipelineViewportStateInfo,							// const VkPipelineViewportStateCreateInfo*			pViewportState;
-		&pipelineRasterizationStateInfo,					// const VkPipelineRasterizationStateCreateInfo*	pRasterizationState;
-		&pipelineMultisampleStateInfo,						// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
-		&pipelineDepthStencilStateInfo,						// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
-		&pipelineColorBlendStateInfo,						// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
-		DE_NULL,											// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
-		pipelineLayout,										// VkPipelineLayout									layout;
-		renderPass,											// VkRenderPass										renderPass;
-		subpass,											// deUint32											subpass;
-		basePipeline,										// VkPipeline										basePipelineHandle;
-		-1,													// deInt32											basePipelineIndex;
-	};
-
-	return createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineInfo);
+	gpw.setDefaultTopology(topology)
+	   .setDefaultRasterizationState()
+	   .setDefaultMultisampleState()
+	   .setupVertexInputState(&vertexInputStateInfo)
+	   .setupPreRasterizationShaderState(viewport,
+										 scissor,
+										 pipelineLayout,
+										 renderPass,
+										 subpass,
+										 vertexModule)
+	   .setupFragmentShaderState(pipelineLayout, renderPass, subpass, fragmentModule, &pipelineDepthStencilStateInfo)
+	   .setupFragmentOutputState(renderPass, subpass, &pipelineColorBlendStateInfo)
+	   .setMonolithicPipelineLayout(pipelineLayout)
+	   .buildPipeline(DE_NULL, basePipeline, -1);
 }
 
 //! Make a render pass with one subpass per color attachment and depth/stencil attachment (if used).
@@ -651,7 +566,7 @@ VkImageCreateFlags getImageCreateFlags (const VkImageViewType viewType)
 {
 	VkImageCreateFlags	flags	= (VkImageCreateFlags)0;
 
-	if (viewType == VK_IMAGE_VIEW_TYPE_3D)	flags |= VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT_KHR;
+	if (viewType == VK_IMAGE_VIEW_TYPE_3D)	flags |= VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT;
 	if (isCube(viewType))					flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 
 	return flags;
@@ -682,17 +597,6 @@ void generateExpectedImage (const tcu::PixelBufferAccess& outputImage, const IVe
 				outputImage.setPixel(setColor, x, y, z);
 		}
 	}
-}
-
-deUint32 selectMatchingMemoryType (const VkPhysicalDeviceMemoryProperties& deviceMemProps, deUint32 allowedMemTypeBits, MemoryRequirement requirement)
-{
-	const deUint32	compatibleTypes	= getCompatibleMemoryTypes(deviceMemProps, requirement);
-	const deUint32	candidates		= allowedMemTypeBits & compatibleTypes;
-
-	if (candidates == 0)
-		TCU_THROW(NotSupportedError, "No compatible memory type found");
-
-	return (deUint32)deCtz32(candidates);
 }
 
 IVec4 getMaxImageSize (const VkImageViewType viewType, const IVec4& sizeHint)
@@ -899,8 +803,8 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 	VkDeviceSize					neededMemory		= static_cast<VkDeviceSize>(static_cast<float>(colorSize + depthStencilSize) * additionalMemory) + reserveForChecking;
 	VkDeviceSize					maxMemory			= getMaxDeviceHeapSize(context, caseDef) >> 2;
 
-	vk::PlatformMemoryLimits		memoryLimits;
-	context.getTestContext().getPlatform().getVulkanPlatform().getMemoryLimits(memoryLimits);
+	tcu::PlatformMemoryLimits		memoryLimits;
+	context.getTestContext().getPlatform().getMemoryLimits(memoryLimits);
 	maxMemory = std::min(maxMemory, VkDeviceSize(memoryLimits.totalSystemMemory));
 
 	const VkDeviceSize				deviceMemoryBudget	= std::min(neededMemory, maxMemory);
@@ -985,7 +889,7 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 																				 (caseDef.viewType == VK_IMAGE_VIEW_TYPE_3D) ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
 																															 : VK_IMAGE_LAYOUT_UNDEFINED));
 	const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout			(vk, device));
-	vector<SharedPtrVkPipeline>		pipelines;
+	vector<GraphicsPipelineWrapper>	pipelines;
 
 	Move<VkImage>					colorImage;
 	MovePtr<Allocation>				colorImageAlloc;
@@ -1073,18 +977,24 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 		VkPipeline					basePipeline			= DE_NULL;
 
 		// Color attachments are first in the framebuffer
+		pipelines.reserve(numSlices);
 		for (int subpassNdx = 0; subpassNdx < numSlices; ++subpassNdx)
 		{
 			colorAttachments.push_back(makeSharedPtr(
 				makeImageView(vk, device, *colorImage, getImageViewSliceType(caseDef.viewType), caseDef.colorFormat, makeColorSubresourceRange(subpassNdx, 1))));
 			attachmentHandles.push_back(**colorAttachments.back());
 
+#ifndef CTS_USES_VULKANSC  // Pipeline derivatives are forbidden in Vulkan SC
 			// We also have to create pipelines for each subpass
-			pipelines.push_back(makeSharedPtr(makeGraphicsPipeline(
-				vk, device, basePipeline, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule, imageSize.swizzle(0, 1), VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
-				static_cast<deUint32>(subpassNdx), useDepth, useStencil)));
+			pipelines.emplace_back(vk, device, caseDef.pipelineConstructionType, (basePipeline == DE_NULL ? VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT
+																										  : VK_PIPELINE_CREATE_DERIVATIVE_BIT));
+#else
+			pipelines.emplace_back(vk, device, caseDef.pipelineConstructionType, 0u);
+#endif // CTS_USES_VULKANSC
+			preparePipelineWrapper(pipelines.back(), basePipeline, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
+								   imageSize.swizzle(0, 1), VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, static_cast<deUint32>(subpassNdx), useDepth, useStencil);
 
-			basePipeline = **pipelines.front();
+			basePipeline = pipelines.front().getPipeline();
 		}
 
 		// Then D/S attachments, if any
@@ -1122,7 +1032,7 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 			if (subpassNdx != 0)
 				vk.cmdNextSubpass(*cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
-			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
+			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[subpassNdx].getPipeline());
 			vk.cmdDraw(*cmdBuffer, 4u, 1u, subpassNdx*4u, 0u);
 		}
 
@@ -1218,16 +1128,18 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 
 void checkImageViewTypeRequirements (Context& context, const VkImageViewType viewType)
 {
+#ifndef CTS_USES_VULKANSC
 	if (viewType == VK_IMAGE_VIEW_TYPE_3D)
 	{
 		if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
-		   !context.getPortabilitySubsetFeatures().imageView2DOn3DImage)
+			!context.getPortabilitySubsetFeatures().imageView2DOn3DImage)
 		{
 			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Implementation does not support 2D or 2D array image view to be created on a 3D VkImage");
 		}
 
 		context.requireDeviceFunctionality("VK_KHR_maintenance1");
 	}
+#endif // CTS_USES_VULKANSC
 
 	if (viewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
@@ -1242,6 +1154,8 @@ void checkSupportAttachmentSize (Context& context, const CaseDef caseDef)
 
 	if (caseDef.depthStencilFormat != VK_FORMAT_UNDEFINED  && !isDepthStencilFormatSupported(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.depthStencilFormat))
 		TCU_THROW(NotSupportedError, "Unsupported depth/stencil format");
+
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.pipelineConstructionType);
 }
 
 //! A test that can exercise very big color and depth/stencil attachment sizes.
@@ -1303,7 +1217,7 @@ void drawToMipLevel (const Context&				context,
 	const Unique<VkRenderPass>		renderPass			(makeRenderPass(vk, device, caseDef.colorFormat, caseDef.depthStencilFormat, static_cast<deUint32>(numSlices),
 																		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 																		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));
-	vector<SharedPtrVkPipeline>		pipelines;
+	vector<GraphicsPipelineWrapper>	pipelines;
 	vector<SharedPtrVkImageView>	colorAttachments;
 	vector<SharedPtrVkImageView>	depthStencilAttachments;
 	vector<VkImageView>				attachmentHandles;			// all attachments (color and d/s)
@@ -1313,6 +1227,7 @@ void drawToMipLevel (const Context&				context,
 		VkPipeline					basePipeline			= DE_NULL;
 
 		// Color attachments are first in the framebuffer
+		pipelines.reserve(numSlices);
 		for (int subpassNdx = 0; subpassNdx < numSlices; ++subpassNdx)
 		{
 			colorAttachments.push_back(makeSharedPtr(makeImageView(
@@ -1320,12 +1235,17 @@ void drawToMipLevel (const Context&				context,
 				makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, mipLevel, 1u, subpassNdx, 1u))));
 			attachmentHandles.push_back(**colorAttachments.back());
 
-			// We also have to create pipelines for each subpass
-			pipelines.push_back(makeSharedPtr(makeGraphicsPipeline(
-				vk, device, basePipeline, pipelineLayout, *renderPass, vertexModule, fragmentModule, mipSize.swizzle(0, 1), VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
-				static_cast<deUint32>(subpassNdx), useDepth, useStencil)));
+		// We also have to create pipelines for each subpass
+#ifndef CTS_USES_VULKANSC // Pipeline derivatives are forbidden in Vulkan SC
+			pipelines.emplace_back(vk, device, caseDef.pipelineConstructionType, (basePipeline == DE_NULL ? VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT
+																										  : VK_PIPELINE_CREATE_DERIVATIVE_BIT));
+#else
+			pipelines.emplace_back(vk, device, caseDef.pipelineConstructionType, 0u);
+#endif // CTS_USES_VULKANSC
+			preparePipelineWrapper(pipelines.back(), basePipeline, pipelineLayout, *renderPass, vertexModule, fragmentModule,
+								   mipSize.swizzle(0, 1), VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, static_cast<deUint32>(subpassNdx), useDepth, useStencil);
 
-			basePipeline = **pipelines.front();
+			basePipeline = pipelines.front().getPipeline();
 		}
 
 		// Then D/S attachments, if any
@@ -1365,7 +1285,7 @@ void drawToMipLevel (const Context&				context,
 			if (subpassNdx != 0)
 				vk.cmdNextSubpass(*cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
-			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
+			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[subpassNdx].getPipeline());
 			vk.cmdDraw(*cmdBuffer, 4u, 1u, subpassNdx*4u, 0u);
 		}
 
@@ -1385,6 +1305,8 @@ void checkSupportRenderToMipMaps (Context& context, const CaseDef caseDef)
 
 	if (caseDef.depthStencilFormat != VK_FORMAT_UNDEFINED  && !isDepthStencilFormatSupported(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.depthStencilFormat))
 		TCU_THROW(NotSupportedError, "Unsupported depth/stencil format");
+
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.pipelineConstructionType);
 }
 
 //! Use image mip levels as attachments
@@ -1719,7 +1641,7 @@ vector<IVec4> genSizeCombinations (const IVec4& baselineSize, const deUint32 siz
 	return sizes;
 }
 
-void addTestCasesWithFunctions (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+void addTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineConstructionType pipelineConstructionType, AllocationKind allocationKind)
 {
 	const struct
 	{
@@ -1764,7 +1686,12 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group, AllocationKind alloca
 
 		// Generate attachment size cases
 		{
-			const vector<IVec4> sizes = genSizeCombinations(testCase[caseNdx].baselineSize, testCase[caseNdx].sizeMask, testCase[caseNdx].viewType);
+			vector<IVec4> sizes = genSizeCombinations(testCase[caseNdx].baselineSize, testCase[caseNdx].sizeMask, testCase[caseNdx].viewType);
+
+#ifdef CTS_USES_VULKANSC
+			// filter out sizes in which width and height is equal to maximimum values
+			sizes.erase(std::remove_if(begin(sizes), end(sizes), [&](const IVec4& v) { return v.x() == MAX_SIZE && v.y() == MAX_SIZE; }), end(sizes));
+#endif // CTS_USES_VULKANSC
 
 			MovePtr<tcu::TestCaseGroup>	smallGroup(new tcu::TestCaseGroup(group->getTestContext(), "small", ""));
 			MovePtr<tcu::TestCaseGroup>	hugeGroup (new tcu::TestCaseGroup(group->getTestContext(), "huge",  ""));
@@ -1780,13 +1707,14 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group, AllocationKind alloca
 					for (int dsFormatNdx = 0; dsFormatNdx < DE_LENGTH_OF_ARRAY(depthStencilFormat); ++dsFormatNdx)
 					for (int formatNdx   = 0; formatNdx   < DE_LENGTH_OF_ARRAY(format);             ++formatNdx)
 					{
-						const CaseDef caseDef =
+						const CaseDef caseDef
 						{
-							testCase[caseNdx].viewType,			// VkImageViewType	imageType;
-							*sizeIter,							// IVec4			imageSizeHint;
-							format[formatNdx],					// VkFormat			colorFormat;
-							depthStencilFormat[dsFormatNdx],	// VkFormat			depthStencilFormat;
-							allocationKind						// AllocationKind	allocationKind;
+							pipelineConstructionType,			// PipelineConstructionType		pipelineConstructionType;
+							testCase[caseNdx].viewType,			// VkImageViewType				imageType;
+							*sizeIter,							// IVec4						imageSizeHint;
+							format[formatNdx],					// VkFormat						colorFormat;
+							depthStencilFormat[dsFormatNdx],	// VkFormat						depthStencilFormat;
+							allocationKind						// AllocationKind				allocationKind;
 						};
 						addFunctionCaseWithPrograms(smallGroup.get(), getFormatString(format[formatNdx], depthStencilFormat[dsFormatNdx]), "", checkSupportAttachmentSize, initPrograms, testAttachmentSize, caseDef);
 					}
@@ -1801,13 +1729,14 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group, AllocationKind alloca
 						// Use the same color format for all cases, to reduce the number of permutations
 						for (int dsFormatNdx = 0; dsFormatNdx < DE_LENGTH_OF_ARRAY(depthStencilFormat); ++dsFormatNdx)
 						{
-							const CaseDef caseDef =
+							const CaseDef caseDef
 							{
-								testCase[caseNdx].viewType,			// VkImageViewType	viewType;
-								*sizeIter,							// IVec4			imageSizeHint;
-								colorFormat,						// VkFormat			colorFormat;
-								depthStencilFormat[dsFormatNdx],	// VkFormat			depthStencilFormat;
-								allocationKind						// AllocationKind	allocationKind;
+								pipelineConstructionType,			// PipelineConstructionType		pipelineConstructionType;
+								testCase[caseNdx].viewType,			// VkImageViewType				viewType;
+								*sizeIter,							// IVec4						imageSizeHint;
+								colorFormat,						// VkFormat						colorFormat;
+								depthStencilFormat[dsFormatNdx],	// VkFormat						depthStencilFormat;
+								allocationKind						// AllocationKind				allocationKind;
 							};
 							addFunctionCaseWithPrograms(sizeGroup.get(), getFormatString(colorFormat, depthStencilFormat[dsFormatNdx]), "", checkSupportAttachmentSize, initPrograms, testAttachmentSize, caseDef);
 						}
@@ -1826,13 +1755,14 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group, AllocationKind alloca
 			for (int dsFormatNdx = 0; dsFormatNdx < DE_LENGTH_OF_ARRAY(depthStencilFormat); ++dsFormatNdx)
 			for (int formatNdx   = 0; formatNdx   < DE_LENGTH_OF_ARRAY(format);             ++formatNdx)
 			{
-				const CaseDef caseDef =
+				const CaseDef caseDef
 				{
-					testCase[caseNdx].viewType,			// VkImageViewType	imageType;
-					testCase[caseNdx].baselineSize,		// IVec4			imageSizeHint;
-					format[formatNdx],					// VkFormat			colorFormat;
-					depthStencilFormat[dsFormatNdx],	// VkFormat			depthStencilFormat;
-					allocationKind						// AllocationKind	allocationKind;
+					pipelineConstructionType,			// PipelineConstructionType		pipelineConstructionType;
+					testCase[caseNdx].viewType,			// VkImageViewType				imageType;
+					testCase[caseNdx].baselineSize,		// IVec4						imageSizeHint;
+					format[formatNdx],					// VkFormat						colorFormat;
+					depthStencilFormat[dsFormatNdx],	// VkFormat						depthStencilFormat;
+					allocationKind						// AllocationKind				allocationKind;
 				};
 				addFunctionCaseWithPrograms(mipmapGroup.get(), getFormatString(format[formatNdx], depthStencilFormat[dsFormatNdx]), "", checkSupportRenderToMipMaps, initPrograms, testRenderToMipMaps, caseDef);
 			}
@@ -1843,24 +1773,24 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group, AllocationKind alloca
 	}
 }
 
-void addCoreRenderToImageTests (tcu::TestCaseGroup* group)
+void addCoreRenderToImageTests (tcu::TestCaseGroup* group, PipelineConstructionType pipelineConstructionType)
 {
-	addTestCasesWithFunctions(group, ALLOCATION_KIND_SUBALLOCATED);
+	addTestCasesWithFunctions(group, pipelineConstructionType, ALLOCATION_KIND_SUBALLOCATED);
 }
 
-void addDedicatedAllocationRenderToImageTests (tcu::TestCaseGroup* group)
+void addDedicatedAllocationRenderToImageTests (tcu::TestCaseGroup* group, PipelineConstructionType pipelineConstructionType)
 {
-	addTestCasesWithFunctions(group, ALLOCATION_KIND_DEDICATED);
+	addTestCasesWithFunctions(group, pipelineConstructionType, ALLOCATION_KIND_DEDICATED);
 }
 
 } // anonymous ns
 
-tcu::TestCaseGroup* createRenderToImageTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createRenderToImageTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
 	de::MovePtr<tcu::TestCaseGroup>	renderToImageTests	(new tcu::TestCaseGroup(testCtx, "render_to_image", "Render to image tests"));
 
-	renderToImageTests->addChild(createTestGroup(testCtx, "core",					"Core render to image tests",								addCoreRenderToImageTests));
-	renderToImageTests->addChild(createTestGroup(testCtx, "dedicated_allocation",	"Render to image tests for dedicated memory allocation",	addDedicatedAllocationRenderToImageTests));
+	renderToImageTests->addChild(createTestGroup(testCtx, "core",					"Core render to image tests",								addCoreRenderToImageTests, pipelineConstructionType));
+	renderToImageTests->addChild(createTestGroup(testCtx, "dedicated_allocation",	"Render to image tests for dedicated memory allocation",	addDedicatedAllocationRenderToImageTests, pipelineConstructionType));
 
 	return renderToImageTests.release();
 }

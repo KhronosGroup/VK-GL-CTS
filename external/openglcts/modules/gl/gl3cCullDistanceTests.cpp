@@ -2077,7 +2077,7 @@ void CullDistance::FunctionalTest::configureVAO(glw::GLuint clipdistances_array_
 		}			  /* for (all horizontal cells) */
 	}				  /* for (all vertical cells) */
 
-	/* Sanity check: make sure we pushed required amount of data */
+	/* Quick check: make sure we pushed required amount of data */
 	DE_ASSERT(m_bo_data.size() == n_vertices_total * n_pervertex_float_attributes);
 
 	/* Save number of primitives to render */
@@ -2221,7 +2221,6 @@ void CullDistance::FunctionalTest::executeRenderTest(glw::GLuint	 clipdistances_
 	glw::GLenum			  mode						  = GL_NONE;
 	glw::GLuint			  n_clipped_vertices_real	 = 0;
 	glw::GLuint			  n_culled_primitives_real	= 0;
-	glw::GLuint			  n_not_clipped_vertices_real = 0;
 	const glw::GLuint	 primitive_vertices_count =
 		((primitive_mode == PRIMITIVE_MODE_LINES) ? 2 : (primitive_mode == PRIMITIVE_MODE_POINTS) ? 1 : 3);
 	const glw::GLuint stride_in_floats =
@@ -2456,10 +2455,6 @@ void CullDistance::FunctionalTest::executeRenderTest(glw::GLuint	 clipdistances_
 
 					TCU_FAIL("Vertex is unexpectedly clipped or invisible");
 				}
-				else
-				{
-					n_not_clipped_vertices_real++;
-				}
 			}
 		}
 
@@ -2527,7 +2522,7 @@ void CullDistance::FunctionalTest::executeRenderTest(glw::GLuint	 clipdistances_
 	/* sub_grid cell size is 3*3 */
 	DE_ASSERT(m_render_primitives % 9 == 0);
 
-	/* Sanity check */
+	/* Quick check */
 	switch (primitive_mode)
 	{
 	case PRIMITIVE_MODE_LINES:
@@ -2827,7 +2822,7 @@ tcu::TestNode::IterateResult CullDistance::FunctionalTest::iterate()
 
 				if (clipdistances_array_size == 0 && culldistances_array_size == 0)
 				{
-					/* Skip the dummy iteration */
+					/* Skip the empty iteration */
 					continue;
 				}
 

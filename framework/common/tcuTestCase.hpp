@@ -119,7 +119,7 @@ public:
 	TestContext&			getTestContext			(void) const	{ return m_testCtx;				}
 	const char*				getName					(void) const	{ return m_name.c_str();		}
 	const char*				getDescription			(void) const	{ return m_description.c_str(); }
-	void					getChildren				(std::vector<TestNode*>& children);
+	void					getChildren				(std::vector<TestNode*>& children) const;
 	void					addChild				(TestNode* node);
 	bool					empty					() const		{ return m_children.empty();	}
 
@@ -191,6 +191,7 @@ public:
 						TestStatus		(qpTestResult code, const std::string& description) : m_code(code), m_description(description) {}
 
 	bool				isComplete		(void) const { return m_code != QP_TEST_RESULT_LAST;			}
+	bool				isFail			(void) const { return m_code == QP_TEST_RESULT_FAIL;			}
 	qpTestResult		getCode			(void) const { DE_ASSERT(isComplete()); return m_code;			}
 	const std::string&	getDescription	(void) const { DE_ASSERT(isComplete()); return m_description;	}
 

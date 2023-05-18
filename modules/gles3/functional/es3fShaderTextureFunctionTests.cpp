@@ -567,10 +567,10 @@ void ShaderTextureFunctionCase::initTexture (void)
 	tcu::TextureFormat		texFmt			= glu::mapGLInternalFormat(m_textureSpec.format);
 	tcu::TextureFormatInfo	fmtInfo			= tcu::getTextureFormatInfo(texFmt);
 	tcu::IVec2				viewportSize	= getViewportSize();
-	bool					isProj			= functionHasProj(m_lookupSpec.function);
+	bool					useProj			= functionHasProj(m_lookupSpec.function) && !functionHasGrad(m_lookupSpec.function) && !functionHasLod(m_lookupSpec.function);
 	bool					isAutoLod		= functionHasAutoLod(m_isVertexCase ? glu::SHADERTYPE_VERTEX : glu::SHADERTYPE_FRAGMENT,
 																 m_lookupSpec.function); // LOD can vary significantly
-	float					proj			= isProj ? 1.0f/m_lookupSpec.minCoord[m_lookupSpec.function == FUNCTION_TEXTUREPROJ3 ? 2 : 3] : 1.0f;
+	float					proj			= useProj ? 1.0f / m_lookupSpec.minCoord[m_lookupSpec.function == FUNCTION_TEXTUREPROJ3 ? 2 : 3] : 1.0f;
 
 	switch (m_textureSpec.type)
 	{

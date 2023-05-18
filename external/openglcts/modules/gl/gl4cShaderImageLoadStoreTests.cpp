@@ -28,7 +28,6 @@
 #include "tcuPlatform.hpp"
 #include "tcuRenderTarget.hpp"
 #include "tcuVectorUtil.hpp"
-#include "vkPlatform.hpp"
 #include <assert.h>
 #include <climits>
 #include <cmath>
@@ -190,8 +189,8 @@ public:
 
 	void scaleDimensionsToMemory(int& width, int& height, int devLayers, int sysLayers, int devBPP, int sysBPP)
 	{
-		vk::PlatformMemoryLimits memoryLimits;
-		m_context.getTestContext().getPlatform().getVulkanPlatform().getMemoryLimits(memoryLimits);
+		tcu::PlatformMemoryLimits memoryLimits;
+		m_context.getTestContext().getPlatform().getMemoryLimits(memoryLimits);
 		GLsizeiptr sysSpace		  = memoryLimits.totalSystemMemory;
 		GLsizeiptr devSpace		  = memoryLimits.totalDeviceLocalMemory;
 		int		   devInSysLayers = 0;
@@ -3796,7 +3795,7 @@ class BasicAllTargetsAtomic : public ShaderImageLoadStoreBase
 		   << FormatEnumToString(internalformat) << ") coherent uniform " << TypePrefix<T>()
 		   << "imageCube g_image_cube;" NL "layout(" << FormatEnumToString(internalformat) << ") coherent uniform "
 		   << TypePrefix<T>()
-		   << "imageCube g_image_cube_array;" NL "void main() {" NL "  o_color = vec4(0.0, 1.0, 0.0, 1.0);" NL
+		   << "imageCubeArray g_image_cube_array;" NL "void main() {" NL "  o_color = vec4(0.0, 1.0, 0.0, 1.0);" NL
 			  "  ivec2 coord = ivec2(gl_FragCoord.xy);"
 
 			NL "  if (imageAtomicAdd(g_image_cube, ivec3(coord, 0), 2) != 0) o_color = vec4(1.0, 0.0, 0.0, 1.0);" NL

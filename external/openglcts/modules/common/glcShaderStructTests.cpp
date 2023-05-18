@@ -29,6 +29,7 @@
 #include "glwFunctions.hpp"
 #include "tcuStringTemplate.hpp"
 #include "tcuTextureUtil.hpp"
+#include "deMath.h"
 
 using tcu::StringTemplate;
 
@@ -951,6 +952,173 @@ void LocalStructTests::init(void)
 								   << "    ${ASSIGN_POS}"
 								   << "}",
 					  { c.color.xyz() = (c.coords.swizzle(0, 1, 2) + c.coords.swizzle(1, 2, 3)) * 0.5f; });
+
+	LOCAL_STRUCT_CASE(basic_equal, "Basic struct equality",
+		LineStream()
+		<< "${HEADER}"
+		<< "uniform int ui_one;"
+		<< "uniform int ui_two;"
+		<< ""
+		<< "struct S {"
+		<< "	mediump float	a;"
+		<< "	mediump vec3	b;"
+		<< "	int				c;"
+		<< "};"
+		<< ""
+		<< "void main (void)"
+		<< "{"
+		<< "	S a = S(floor(${COORDS}.x), vec3(0.0, floor(${COORDS}.y), 2.3), ui_one);"
+		<< "	S b = S(floor(${COORDS}.x+0.5), vec3(0.0, floor(${COORDS}.y), 2.3), ui_one);"
+		<< "	S c = S(floor(${COORDS}.x), vec3(0.0, floor(${COORDS}.y+0.5), 2.3), ui_one);"
+		<< "	S d = S(floor(${COORDS}.x), vec3(0.0, floor(${COORDS}.y), 2.3), ui_two);"
+		<< "	${DST} = vec4(0.0, 0.0, 0.0, 1.0);"
+		<< "	if (a == b) ${DST}.x = 1.0;"
+		<< "	if (a == c) ${DST}.y = 1.0;"
+		<< "	if (a == d) ${DST}.z = 1.0;"
+		<< "	${ASSIGN_POS}"
+		<< "}",
+		{
+			if (deFloatFloor(c.coords[0]) == deFloatFloor(c.coords[0]+0.5f))
+				c.color.x() = 1.0f;
+			if (deFloatFloor(c.coords[1]) == deFloatFloor(c.coords[1]+0.5f))
+				c.color.y() = 1.0f;
+		});
+
+	LOCAL_STRUCT_CASE(basic_not_equal, "Basic struct equality",
+		LineStream()
+		<< "${HEADER}"
+		<< "uniform int ui_one;"
+		<< "uniform int ui_two;"
+		<< ""
+		<< "struct S {"
+		<< "	mediump float	a;"
+		<< "	mediump vec3	b;"
+		<< "	int				c;"
+		<< "};"
+		<< ""
+		<< "void main (void)"
+		<< "{"
+		<< "	S a = S(floor(${COORDS}.x), vec3(0.0, floor(${COORDS}.y), 2.3), ui_one);"
+		<< "	S b = S(floor(${COORDS}.x+0.5), vec3(0.0, floor(${COORDS}.y), 2.3), ui_one);"
+		<< "	S c = S(floor(${COORDS}.x), vec3(0.0, floor(${COORDS}.y+0.5), 2.3), ui_one);"
+		<< "	S d = S(floor(${COORDS}.x), vec3(0.0, floor(${COORDS}.y), 2.3), ui_two);"
+		<< "	${DST} = vec4(0.0, 0.0, 0.0, 1.0);"
+		<< "	if (a != b) ${DST}.x = 1.0;"
+		<< "	if (a != c) ${DST}.y = 1.0;"
+		<< "	if (a != d) ${DST}.z = 1.0;"
+		<< "	${ASSIGN_POS}"
+		<< "}",
+		{
+			if (deFloatFloor(c.coords[0]) != deFloatFloor(c.coords[0]+0.5f))
+				c.color.x() = 1.0f;
+			if (deFloatFloor(c.coords[1]) != deFloatFloor(c.coords[1]+0.5f))
+				c.color.y() = 1.0f;
+			c.color.z() = 1.0f;
+		});
+
+	LOCAL_STRUCT_CASE(nested_equal, "Nested struct struct equality",
+		LineStream()
+		<< "${HEADER}"
+		<< "uniform int ui_one;"
+		<< "uniform int ui_two;"
+		<< ""
+		<< "struct T {"
+		<< "	mediump vec3	a;"
+		<< "	int				b;"
+		<< "};"
+		<< "struct S {"
+		<< "	mediump float	a;"
+		<< "	T				b;"
+		<< "	int				c;"
+		<< "};"
+		<< ""
+		<< "void main (void)"
+		<< "{"
+		<< "	S a = S(floor(${COORDS}.x), T(vec3(0.0, floor(${COORDS}.y), 2.3), ui_one), 1);"
+		<< "	S b = S(floor(${COORDS}.x+0.5), T(vec3(0.0, floor(${COORDS}.y), 2.3), ui_one), 1);"
+		<< "	S c = S(floor(${COORDS}.x), T(vec3(0.0, floor(${COORDS}.y+0.5), 2.3), ui_one), 1);"
+		<< "	S d = S(floor(${COORDS}.x), T(vec3(0.0, floor(${COORDS}.y), 2.3), ui_two), 1);"
+		<< "	${DST} = vec4(0.0, 0.0, 0.0, 1.0);"
+		<< "	if (a == b) ${DST}.x = 1.0;"
+		<< "	if (a == c) ${DST}.y = 1.0;"
+		<< "	if (a == d) ${DST}.z = 1.0;"
+		<< "	${ASSIGN_POS}"
+		<< "}",
+		{
+			if (deFloatFloor(c.coords[0]) == deFloatFloor(c.coords[0]+0.5f))
+				c.color.x() = 1.0f;
+			if (deFloatFloor(c.coords[1]) == deFloatFloor(c.coords[1]+0.5f))
+				c.color.y() = 1.0f;
+		});
+
+	LOCAL_STRUCT_CASE(nested_not_equal, "Nested struct struct equality",
+		LineStream()
+		<< "${HEADER}"
+		<< "uniform int ui_one;"
+		<< "uniform int ui_two;"
+		<< ""
+		<< "struct T {"
+		<< "	mediump vec3	a;"
+		<< "	int				b;"
+		<< "};"
+		<< "struct S {"
+		<< "	mediump float	a;"
+		<< "	T				b;"
+		<< "	int				c;"
+		<< "};"
+		<< ""
+		<< "void main (void)"
+		<< "{"
+		<< "	S a = S(floor(${COORDS}.x), T(vec3(0.0, floor(${COORDS}.y), 2.3), ui_one), 1);"
+		<< "	S b = S(floor(${COORDS}.x+0.5), T(vec3(0.0, floor(${COORDS}.y), 2.3), ui_one), 1);"
+		<< "	S c = S(floor(${COORDS}.x), T(vec3(0.0, floor(${COORDS}.y+0.5), 2.3), ui_one), 1);"
+		<< "	S d = S(floor(${COORDS}.x), T(vec3(0.0, floor(${COORDS}.y), 2.3), ui_two), 1);"
+		<< "	${DST} = vec4(0.0, 0.0, 0.0, 1.0);"
+		<< "	if (a != b) ${DST}.x = 1.0;"
+		<< "	if (a != c) ${DST}.y = 1.0;"
+		<< "	if (a != d) ${DST}.z = 1.0;"
+		<< "	${ASSIGN_POS}"
+		<< "}",
+		{
+			if (deFloatFloor(c.coords[0]) != deFloatFloor(c.coords[0]+0.5f))
+				c.color.x() = 1.0f;
+			if (deFloatFloor(c.coords[1]) != deFloatFloor(c.coords[1]+0.5f))
+				c.color.y() = 1.0f;
+			c.color.z() = 1.0f;
+		});
+
+	LOCAL_STRUCT_CASE(array_member_equality, "Struct with array members equality",
+		LineStream()
+		<< "${HEADER}"
+		<< ""
+		<< "struct S {"
+		<< "	bool	m[2];"
+		<< "};"
+		<< ""
+		<< "void main (void)"
+		<< "{"
+		<< "	S a;"
+		<< "	a.m[0] = true;"
+		<< "	a.m[1] = false;"
+		<< ""
+		<< "	S b;"
+		<< "	b.m[0] = true;"
+		<< "	b.m[1] = false;"
+		<< ""
+		<< "	S c;"
+		<< "	c.m[0] = true;"
+		<< "	c.m[1] = true;"
+		<< ""
+		<< "	${DST} = vec4(0.0, 0.0, 1.0, 1.0);"
+		<< "	if (a == b) ${DST}.x = 1.0;"
+		<< "	if (a != c) ${DST}.y = 1.0;"
+		<< "	${ASSIGN_POS}"
+		<< "}",
+		{
+			c.color.x() = 1.0f;
+			c.color.y() = 1.0f;
+			c.color.z() = 1.0f;
+		});
 }
 
 class UniformStructTests : public TestCaseGroup
@@ -983,7 +1151,7 @@ namespace
 		SETUNIFORM(loc, 1, vec.getPtr());                                                                    \
 		CHECK_SET_UNIFORM(name);                                                                             \
 	}                                                                                                        \
-	struct SetUniform##VECTYPE##Dummy_s                                                                      \
+	struct SetUniform##VECTYPE##Unused_s                                                                     \
 	{                                                                                                        \
 		int unused;                                                                                          \
 	}
@@ -996,7 +1164,7 @@ namespace
 		SETUNIFORM(loc, arraySize, vec->getPtr());                                                           \
 		CHECK_SET_UNIFORM(name);                                                                             \
 	}                                                                                                        \
-	struct SetUniformPtr##VECTYPE##Dummy_s                                                                   \
+	struct SetUniformPtr##VECTYPE##Unused_s                                                                  \
 	{                                                                                                        \
 		int unused;                                                                                          \
 	}

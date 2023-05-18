@@ -293,24 +293,23 @@ void RayTracingTestCase::checkSupport(Context& context) const
 {
 	const auto&	vki					= context.getInstanceInterface();
 	const auto	physicalDevice		= context.getPhysicalDevice();
-	const auto	supportedExtensions	= enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
-	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_ray_tracing_pipeline")))
-		TCU_THROW(NotSupportedError, "VK_KHR_ray_tracing_pipeline not supported");
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_ray_tracing_pipeline"))
+	TCU_THROW(NotSupportedError, "VK_KHR_ray_tracing_pipeline not supported");
 
 	// VK_KHR_acceleration_structure is required by VK_KHR_ray_tracing_pipeline.
-	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_acceleration_structure")))
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_acceleration_structure"))
 		TCU_FAIL("VK_KHR_acceleration_structure not supported but VK_KHR_ray_tracing_pipeline supported");
 
 	// VK_KHR_deferred_host_operations is required by VK_KHR_ray_tracing_pipeline.
-	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_deferred_host_operations")))
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_deferred_host_operations"))
 		TCU_FAIL("VK_KHR_deferred_host_operations not supported but VK_KHR_ray_tracing_pipeline supported");
 
 	// VK_KHR_buffer_device_address is required by VK_KHR_acceleration_structure.
-	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_buffer_device_address")))
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
 		TCU_FAIL("VK_KHR_buffer_device_address not supported but VK_KHR_acceleration_structure supported");
 
-	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_EXT_robustness2")))
+	if (!context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
 		TCU_THROW(NotSupportedError, "VK_EXT_robustness2 not supported");
 
 	// Required extensions supported: check features.

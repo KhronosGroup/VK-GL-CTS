@@ -55,12 +55,21 @@ VkPhysicalDeviceProperties						getPhysicalDeviceProperties						(const Instance
 VkPhysicalDeviceMemoryProperties				getPhysicalDeviceMemoryProperties				(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
 VkFormatProperties								getPhysicalDeviceFormatProperties				(const InstanceInterface& vk, VkPhysicalDevice physicalDevice, VkFormat format);
 VkImageFormatProperties							getPhysicalDeviceImageFormatProperties			(const InstanceInterface& vk, VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags);
-std::vector<VkSparseImageFormatProperties>		getPhysicalDeviceSparseImageFormatProperties	(const InstanceInterface& vk, VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkSampleCountFlagBits samples, VkImageUsageFlags usage, VkImageTiling tiling);
 
+#ifndef CTS_USES_VULKANSC
+std::vector<VkSparseImageFormatProperties>		getPhysicalDeviceSparseImageFormatProperties	(const InstanceInterface& vk, VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkSampleCountFlagBits samples, VkImageUsageFlags usage, VkImageTiling tiling);
+#endif // CTS_USES_VULKANSC
+#ifdef CTS_USES_VULKANSC
+VkPhysicalDeviceVulkanSC10Features				getPhysicalDeviceVulkanSC10Features				(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
+VkPhysicalDeviceVulkanSC10Properties			getPhysicalDeviceVulkanSC10Properties			(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
+#endif // CTS_USES_VULKANSC
 VkMemoryRequirements							getBufferMemoryRequirements						(const DeviceInterface& vk, VkDevice device, VkBuffer buffer);
 VkMemoryRequirements							getImageMemoryRequirements						(const DeviceInterface& vk, VkDevice device, VkImage image);
 VkMemoryRequirements							getImagePlaneMemoryRequirements					(const DeviceInterface& vk, VkDevice device, VkImage image, VkImageAspectFlagBits planeAspect);
+#ifndef CTS_USES_VULKANSC
 std::vector<VkSparseImageMemoryRequirements>	getImageSparseMemoryRequirements				(const DeviceInterface& vk, VkDevice device, VkImage image);
+std::vector<vk::VkSparseImageMemoryRequirements>getDeviceImageSparseMemoryRequirements			(const DeviceInterface& vk, VkDevice device, const VkImageCreateInfo& imageCreateInfo, VkImageAspectFlagBits planeAspect);
+#endif // CTS_USES_VULKANSC
 
 std::vector<VkLayerProperties>					enumerateInstanceLayerProperties				(const PlatformInterface& vkp);
 std::vector<VkExtensionProperties>				enumerateInstanceExtensionProperties			(const PlatformInterface& vkp, const char* layerName);
@@ -114,8 +123,8 @@ bool										isCompatible							(const VkExtensionProperties& extensionProperti
 bool										isCompatible							(const VkLayerProperties& layerProperties, const RequiredLayer& required);
 
 template<typename ExtensionIterator>
-bool										isExtensionSupported					(ExtensionIterator begin, ExtensionIterator end, const RequiredExtension& required);
-bool										isExtensionSupported					(const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required);
+bool										isExtensionStructSupported					(ExtensionIterator begin, ExtensionIterator end, const RequiredExtension& required);
+bool										isExtensionStructSupported					(const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required);
 
 bool										isInstanceExtensionSupported			(const deUint32 instanceVersion, const std::vector<std::string>& extensions, const std::string& required);
 
@@ -164,6 +173,16 @@ private:
 
 template<class StructType>
 void addToChainVulkanStructure (void***	chainPNextPtr, StructType&	structType)
+{
+	DE_ASSERT(chainPNextPtr != DE_NULL);
+
+	(**chainPNextPtr) = &structType;
+
+	(*chainPNextPtr) = &structType.pNext;
+}
+
+template<class StructType>
+void addToChainVulkanStructure (const void***	chainPNextPtr, StructType&	structType)
 {
 	DE_ASSERT(chainPNextPtr != DE_NULL);
 
@@ -318,7 +337,7 @@ bool checkBits (IterT beg, const IterT end, const deUint8 pattern = 0xdeu)
 // Template implementations
 
 template<typename ExtensionIterator>
-bool isExtensionSupported (ExtensionIterator begin, ExtensionIterator end, const RequiredExtension& required)
+bool isExtensionStructSupported (ExtensionIterator begin, ExtensionIterator end, const RequiredExtension& required)
 {
 	for (ExtensionIterator cur = begin; cur != end; ++cur)
 	{

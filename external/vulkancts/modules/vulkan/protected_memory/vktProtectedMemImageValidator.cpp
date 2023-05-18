@@ -58,7 +58,7 @@ void ImageValidator::initPrograms (vk::SourceCollections& programCollection) con
 					  "layout(set=0, binding=1) buffer ProtectedHelper\n"
 					  "{\n"
 					  "    highp uint zero; // set to 0\n"
-					  "    highp uint dummyOut;\n"
+					  "    highp uint unusedOut;\n"
 					  "} helper;\n"
 					  "\n"
 					  "layout(set=0, binding=2) uniform Data\n"
@@ -70,7 +70,7 @@ void ImageValidator::initPrograms (vk::SourceCollections& programCollection) con
 					  "void error ()\n"
 					  "{\n"
 					  "    for (uint x = 0; x < 10; x += helper.zero)\n"
-					  "        atomicAdd(helper.dummyOut, 1u);\n"
+					  "        atomicAdd(helper.unusedOut, 1u);\n"
 					  "}\n"
 					  "\n"
 					  "bool compare (vec4 a, vec4 b, float threshold)\n"
@@ -94,7 +94,7 @@ void ImageValidator::initPrograms (vk::SourceCollections& programCollection) con
 					  "layout(set=0, binding=1) buffer ProtectedHelper\n"
 					  "{\n"
 					  "    highp uint zero; // set to 0\n"
-					  "    highp uint dummyOut;\n"
+					  "    highp uint unusedOut;\n"
 					  "} helper;\n"
 					  "\n"
 					  "void main (void)\n"
@@ -215,7 +215,7 @@ bool ImageValidator::validateImage (ProtectedContext& ctx, const ValidationData&
 	// Reset helper SSBO
 	{
 		const vk::Unique<vk::VkFence>		fence				(vk::createFence(vk, device));
-		vk::Unique<vk::VkPipeline>			resetSSBOPipeline	(makeComputePipeline(vk, device, *pipelineLayout, *resetSSBOShader, DE_NULL));
+		vk::Unique<vk::VkPipeline>			resetSSBOPipeline	(makeComputePipeline(vk, device, *pipelineLayout, *resetSSBOShader));
 		vk::Unique<vk::VkCommandBuffer>		resetCmdBuffer		(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 		beginCommandBuffer(vk, *resetCmdBuffer);
 
@@ -231,7 +231,7 @@ bool ImageValidator::validateImage (ProtectedContext& ctx, const ValidationData&
 	vk::VkResult							queueSubmitResult;
 	{
 		const vk::Unique<vk::VkFence>		fence				(vk::createFence(vk, device));
-		vk::Unique<vk::VkPipeline>			validationPipeline	(makeComputePipeline(vk, device, *pipelineLayout, *validatorShader, DE_NULL));
+		vk::Unique<vk::VkPipeline>			validationPipeline	(makeComputePipeline(vk, device, *pipelineLayout, *validatorShader));
 		vk::Unique<vk::VkCommandBuffer>		cmdBuffer			(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 		beginCommandBuffer(vk, *cmdBuffer);

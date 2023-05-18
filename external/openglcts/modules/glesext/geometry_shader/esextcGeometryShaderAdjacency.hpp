@@ -283,6 +283,8 @@ public:
 	glw::GLuint	m_vertex_data_bo_size;
 	glw::GLfloat*  m_expected_adjacency_geometry;
 	glw::GLfloat*  m_expected_geometry;
+	glw::GLfloat*  m_alternate_expected_adjacency_geometry;
+	glw::GLfloat*  m_alternate_expected_geometry;
 	glw::GLuint*   m_index_data;
 	glw::GLenum	m_tf_mode;
 	glw::GLfloat*  m_vertex_data;

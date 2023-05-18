@@ -1,0 +1,9 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceFragmentDensityMapFeaturesEXT":
+		[
+			{ "features": ["fragmentDensityMap"],	"requirements": ["VK_EXT_fragment_density_map"]	}
+		]
+	}
+}

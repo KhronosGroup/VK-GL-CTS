@@ -60,6 +60,10 @@ MovePtr<ImageSource> createAndroidNativeImageSource	(GLenum format, deUint32 num
 #	define BUILT_WITH_ANDROID_HARDWARE_BUFFER 1
 #endif
 
+#if defined(__ANDROID_API_P__) && (DE_ANDROID_API >= __ANDROID_API_P__)
+#	define BUILT_WITH_ANDROID_P_HARDWARE_BUFFER 1
+#endif
+
 #if !defined(BUILT_WITH_ANDROID_HARDWARE_BUFFER)
 
 MovePtr<ImageSource> createAndroidNativeImageSource	(GLenum format, deUint32 numLayers, bool isYUV)
@@ -76,6 +80,8 @@ namespace
 #include <sys/system_properties.h>
 #include <android/hardware_buffer.h>
 #include "deDynamicLibrary.hpp"
+
+const deUint32 AHB_FORMAT_Y8Cb8Cr8_420 = 0x23;
 
 deInt32 androidGetSdkVersion (void)
 {
@@ -107,7 +113,7 @@ struct AhbFunctions
 
 AhbFunctions ahbFunctions;
 
-bool ahbFunctionsLoaded (AhbFunctions* pAhbFunctions)
+bool ahbFunctionsLoaded (AhbFunctions* pAhbFunctions, deInt32 sdkVersion)
 {
 	static bool ahbApiLoaded = false;
 	if (ahbApiLoaded ||
@@ -115,7 +121,7 @@ bool ahbFunctionsLoaded (AhbFunctions* pAhbFunctions)
 			 (pAhbFunctions->describe != DE_NULL) &&
 			 (pAhbFunctions->acquire  != DE_NULL) &&
 			 (pAhbFunctions->release  != DE_NULL) &&
-			 (pAhbFunctions->isSupported  != DE_NULL)))
+			 (pAhbFunctions->isSupported != DE_NULL || sdkVersion < 29)))
 	{
 		ahbApiLoaded = true;
 		return true;
@@ -123,24 +129,27 @@ bool ahbFunctionsLoaded (AhbFunctions* pAhbFunctions)
 	return false;
 }
 
-bool loadAhbDynamicApis (void)
+bool loadAhbDynamicApis (deInt32 sdkVersion)
 {
-	if (!ahbFunctionsLoaded(&ahbFunctions))
+	if (!ahbFunctionsLoaded(&ahbFunctions, sdkVersion))
 	{
 		static de::DynamicLibrary libnativewindow("libnativewindow.so");
 		ahbFunctions.allocate = reinterpret_cast<pfnAHardwareBuffer_allocate>(libnativewindow.getFunction("AHardwareBuffer_allocate"));
 		ahbFunctions.describe = reinterpret_cast<pfnAHardwareBuffer_describe>(libnativewindow.getFunction("AHardwareBuffer_describe"));
 		ahbFunctions.acquire  = reinterpret_cast<pfnAHardwareBuffer_acquire>(libnativewindow.getFunction("AHardwareBuffer_acquire"));
 		ahbFunctions.release  = reinterpret_cast<pfnAHardwareBuffer_release>(libnativewindow.getFunction("AHardwareBuffer_release"));
-		ahbFunctions.isSupported  = reinterpret_cast<pfnAHardwareBuffer_isSupported>(libnativewindow.getFunction("AHardwareBuffer_isSupported"));
+		if (sdkVersion >= 29)
+			ahbFunctions.isSupported = reinterpret_cast<pfnAHardwareBuffer_isSupported>(libnativewindow.getFunction("AHardwareBuffer_isSupported"));
+		else
+			ahbFunctions.isSupported = DE_NULL;
 
-		return ahbFunctionsLoaded(&ahbFunctions);
+		return ahbFunctionsLoaded(&ahbFunctions, sdkVersion);
 	}
 
 	return true;
 }
 
-AHardwareBuffer_Format getPixelFormat (GLenum format)
+deUint32 getPixelFormat (GLenum format)
 {
 	switch (format)
 	{
@@ -180,10 +189,15 @@ AndroidNativeClientBuffer::AndroidNativeClientBuffer (const Library& egl, GLenum
 {
 	deInt32 sdkVersion = androidGetSdkVersion();
 
-    if (sdkVersion < __ANDROID_API_Q__)
-        TCU_THROW(NotSupportedError, "Android API version 29 or higher required.");
+#if defined(BUILT_WITH_ANDROID_P_HARDWARE_BUFFER)
+	// When testing AHB on Android-P and newer the CTS must be compiled against API28 or newer.
+	DE_TEST_ASSERT(sdkVersion >= 28); /*__ANDROID_API_P__ */
+#else
+	// When testing AHB on Android-O and newer the CTS must be compiled against API26 or newer.
+	DE_TEST_ASSERT(sdkVersion >= 26); /* __ANDROID_API_O__ */
+#endif // !defined(BUILT_WITH_ANDROID_P_HARDWARE_BUFFER)
 
-	if (!loadAhbDynamicApis())
+	if (!loadAhbDynamicApis(sdkVersion))
 	{
 		// Couldn't load Android AHB system APIs.
 		DE_TEST_ASSERT(false);
@@ -193,20 +207,29 @@ AndroidNativeClientBuffer::AndroidNativeClientBuffer (const Library& egl, GLenum
 		64u,
 		64u,
 		numLayers,
-		isYUV ? AHARDWAREBUFFER_FORMAT_Y8Cb8Cr8_420 : getPixelFormat(format),
+		isYUV ? AHB_FORMAT_Y8Cb8Cr8_420 : getPixelFormat(format),
 		AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN	|
 		AHARDWAREBUFFER_USAGE_CPU_WRITE_RARELY	|
 		AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE	|
-		AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER,
+		AHARDWAREBUFFER_USAGE_GPU_COLOR_OUTPUT,
 		0u,		// Stride in pixels, ignored for AHardwareBuffer_allocate()
 		0u,		// Initialize to zero, reserved for future use
 		0u		// Initialize to zero, reserved for future use
 	};
 
-	if (!ahbFunctions.isSupported(&hbufferdesc))
-		TCU_THROW(NotSupportedError, "Texture format unsupported");
+	// If we have AHardwareBuffer_isSupported use that before trying the allocation.
+	if (ahbFunctions.isSupported != DE_NULL)
+	{
+		if (!ahbFunctions.isSupported(&hbufferdesc))
+			TCU_THROW(NotSupportedError, "Texture format unsupported");
+	}
 
-	ahbFunctions.allocate(&hbufferdesc, &m_hardwareBuffer);
+	if (ahbFunctions.allocate(&hbufferdesc, &m_hardwareBuffer) != 0)
+	{
+		// Throw unsupported instead of failing the test as the texture format or the number
+		// of layers might be unsupported.
+		TCU_THROW(NotSupportedError, "AHB allocation failed");
+	}
 }
 
 AndroidNativeClientBuffer::~AndroidNativeClientBuffer (void)

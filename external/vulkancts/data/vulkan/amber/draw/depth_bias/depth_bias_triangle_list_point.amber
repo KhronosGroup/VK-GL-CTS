@@ -1,0 +1,182 @@
+#!amber
+# Copyright 2021 Google LLC.
+# Copyright 2021 The Khronos Group Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Red rect. fragDepth:    0.17
+# Green rect. fragDepth:  0.18
+# Depth color format:     D16_UNORM
+# Depth bias:             -0.01068115234375 (-700.0 / 2^16)
+# Draw method:            Triangle List
+# Polygon Mode:           Point
+# Result:                 Green rectangle should be on top.
+
+DEVICE_FEATURE fillModeNonSolid
+
+SHADER vertex vert_shader GLSL
+#version 450
+
+layout (location = 0) in vec3 inPosition;
+layout (location = 1) in vec4 inColor;
+
+layout (location = 0) out vec4 outColor;
+
+void main()
+{
+  gl_Position = vec4(inPosition, 1.0);
+  gl_PointSize = 1.0;
+  outColor = inColor;
+}
+END
+
+SHADER fragment frag_shader GLSL
+#version 450
+
+layout (location = 0) in vec4 inColor;
+layout (location = 0) out vec4 outColor;
+
+void main()
+{
+  outColor = inColor;
+}
+END
+
+BUFFER framebuffer FORMAT R8G8B8A8_UNORM
+IMAGE verifyImage FORMAT R8G8B8A8_UNORM DIM_2D WIDTH 100 HEIGHT 100 FILL 0
+BUFFER depth_buf FORMAT D16_UNORM
+
+BUFFER vertexPositionA DATA_TYPE vec3<float> DATA
+-0.50 -0.50  0.17
+ 0.50 -0.50  0.17
+ 0.50  0.50  0.17
+ 0.50  0.50  0.17
+-0.50  0.50  0.17
+-0.50 -0.50  0.17
+END
+
+BUFFER vertexPositionB DATA_TYPE vec3<float> DATA
+-0.50 -0.50  0.18
+ 0.50 -0.50  0.18
+ 0.50  0.50  0.18
+ 0.50  0.50  0.18
+-0.50  0.50  0.18
+-0.50 -0.50  0.18
+END
+
+BUFFER vertexColorA DATA_TYPE vec4<float> DATA
+1.0 0.0 0.0 1.0
+1.0 0.0 0.0 1.0
+1.0 0.0 0.0 1.0
+1.0 0.0 0.0 1.0
+1.0 0.0 0.0 1.0
+1.0 0.0 0.0 1.0
+END
+
+BUFFER vertexColorB DATA_TYPE vec4<float> DATA
+0.0 1.0 0.0 1.0
+0.0 1.0 0.0 1.0
+0.0 1.0 0.0 1.0
+0.0 1.0 0.0 1.0
+0.0 1.0 0.0 1.0
+0.0 1.0 0.0 1.0
+END
+
+PIPELINE graphics pipeline1
+  ATTACH vert_shader
+  ATTACH frag_shader
+
+  POLYGON_MODE point
+
+  DEPTH
+    TEST on
+    WRITE on
+    COMPARE_OP less
+    CLAMP off
+    BOUNDS min 0.0 max 1.0
+    BIAS constant 0.0 clamp 0.0 slope 0.0
+  END
+
+  FRAMEBUFFER_SIZE 100 100
+  VIEWPORT 0.0 0.0 SIZE 100.0 100.0
+  VERTEX_DATA vertexPositionA LOCATION 0
+  VERTEX_DATA vertexColorA LOCATION 1
+  BIND BUFFER framebuffer AS color LOCATION 0
+  BIND BUFFER depth_buf AS depth_stencil
+END
+
+PIPELINE graphics pipeline2
+  ATTACH vert_shader
+  ATTACH frag_shader
+
+  POLYGON_MODE point
+
+  DEPTH
+    TEST on
+    WRITE on
+    COMPARE_OP less
+    CLAMP off
+    BOUNDS min 0.0 max 1.0
+    BIAS constant -700.0 clamp 0.0 slope 0.0
+  END
+
+  FRAMEBUFFER_SIZE 100 100
+  VIEWPORT 0.0 0.0 SIZE 100.0 100.0
+  VERTEX_DATA vertexPositionB LOCATION 0
+  VERTEX_DATA vertexColorB LOCATION 1
+  BIND BUFFER framebuffer AS color LOCATION 0
+  BIND BUFFER depth_buf AS depth_stencil
+END
+
+CLEAR_COLOR pipeline1 0 0 0 255
+CLEAR_DEPTH pipeline1 0.3
+CLEAR pipeline1
+
+CLEAR_COLOR pipeline2 0 0 0 255
+
+RUN pipeline1 DRAW_ARRAY AS TRIANGLE_LIST START_IDX 0 COUNT 6
+RUN pipeline2 DRAW_ARRAY AS TRIANGLE_LIST START_IDX 0 COUNT 6
+
+# ---------------- VERIFY PIPELINE ------------------
+# This pipeline verifies the frame buffer contents.
+# The compute shader writes color green if the value is expected,
+# otherwise red.
+
+SHADER compute comp_shader GLSL
+#version 450
+
+layout(local_size_x=10,local_size_y=10) in;
+uniform layout(set=0, binding=0, rgba8) image2D resultImage;
+uniform layout(set=0, binding=1, rgba8) image2D verifyImage;
+
+void main()
+{
+  ivec2 uv = ivec2(gl_GlobalInvocationID.xy);
+  vec4 color = imageLoad(resultImage, uv);
+
+  if(color.r == 0.0 && color.a == 1.0) imageStore(verifyImage, uv, vec4(0.0, 1.0, 0.0, 1.0));
+  else imageStore(verifyImage, uv, vec4(1.0, 0.0, 0.0, 1.0));
+}
+END
+
+PIPELINE compute verify_pipeline
+  ATTACH comp_shader
+
+  FRAMEBUFFER_SIZE 100 100
+  BIND BUFFER framebuffer AS storage_image DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER verifyImage AS storage_image DESCRIPTOR_SET 0 BINDING 1
+END
+
+RUN verify_pipeline 10 10 1
+
+EXPECT verifyImage IDX 0 0 SIZE 100 100 EQ_RGBA   0 255   0 255

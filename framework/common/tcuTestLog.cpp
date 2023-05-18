@@ -182,7 +182,7 @@ TestLog& SampleBuilder::operator<< (const TestLog::EndSampleToken&)
 // TestLog
 
 TestLog::TestLog (const char* fileName, deUint32 flags)
-	: m_log(qpTestLog_createFileLog(fileName, flags))
+	: m_log(qpTestLog_createFileLog(fileName, flags)), m_logSupressed(false)
 {
 	if (!m_log)
 		throw ResourceError(std::string("Failed to open test log file '") + fileName + "'");
@@ -200,18 +200,21 @@ TestLog::~TestLog (void)
 
 void TestLog::writeMessage (const char* msgStr)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_writeText(m_log, DE_NULL, DE_NULL, QP_KEY_TAG_NONE, msgStr) == DE_FALSE)
 		throw LogWriteFailedError();
 }
 
 void TestLog::startImageSet (const char* name, const char* description)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_startImageSet(m_log, name, description) == DE_FALSE)
 		throw LogWriteFailedError();
 }
 
 void TestLog::endImageSet (void)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_endImageSet(m_log) == DE_FALSE)
 		throw LogWriteFailedError();
 }
@@ -241,6 +244,7 @@ static Vector<int, Size> computeScaledSize (const Vector<int, Size>& imageSize, 
 
 void TestLog::writeImage (const char* name, const char* description, const ConstPixelBufferAccess& access, const Vec4& pixelScale, const Vec4& pixelBias, qpImageCompressionMode compressionMode)
 {
+	if (m_logSupressed) return;
 	const TextureFormat&	format		= access.getFormat();
 	int						width		= access.getWidth();
 	int						height		= access.getHeight();
@@ -365,175 +369,219 @@ void TestLog::writeImage (const char* name, const char* description, const Const
 
 void TestLog::writeImage (const char* name, const char* description, qpImageCompressionMode compressionMode, qpImageFormat format, int width, int height, int stride, const void* data)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_writeImage(m_log, name, description, compressionMode, format, width, height, stride, data) == DE_FALSE)
 		throw LogWriteFailedError();
 }
 
 void TestLog::startSection (const char* name, const char* description)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_startSection(m_log, name, description) == DE_FALSE)
 		throw LogWriteFailedError();
 }
 
 void TestLog::endSection (void)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_endSection(m_log) == DE_FALSE)
 		throw LogWriteFailedError();
 }
 
 void TestLog::startShaderProgram (bool linkOk, const char* linkInfoLog)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_startShaderProgram(m_log, linkOk?DE_TRUE:DE_FALSE, linkInfoLog) == DE_FALSE)
 		throw LogWriteFailedError();
 }
 
 void TestLog::endShaderProgram (void)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_endShaderProgram(m_log) == DE_FALSE)
 		throw LogWriteFailedError();
 }
 
 void TestLog::writeShader (qpShaderType type, const char* source, bool compileOk, const char* infoLog)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_writeShader(m_log, type, source, compileOk?DE_TRUE:DE_FALSE, infoLog) == DE_FALSE)
 		throw LogWriteFailedError();
 }
 
 void TestLog::writeSpirVAssemblySource (const char* source)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_writeSpirVAssemblySource(m_log, source) == DE_FALSE)
 		throw LogWriteFailedError();
 }
 
 void TestLog::writeKernelSource (const char* source)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_writeKernelSource(m_log, source) == DE_FALSE)
 		throw LogWriteFailedError();
 }
 
 void TestLog::writeCompileInfo (const char* name, const char* description, bool compileOk, const char* infoLog)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_writeCompileInfo(m_log, name, description, compileOk ? DE_TRUE : DE_FALSE, infoLog) == DE_FALSE)
 		throw LogWriteFailedError();
 }
 
 void TestLog::writeFloat (const char* name, const char* description, const char* unit, qpKeyValueTag tag, float value)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_writeFloat(m_log, name, description, unit, tag, value) == DE_FALSE)
 		throw LogWriteFailedError();
 }
 
 void TestLog::writeInteger (const char* name, const char* description, const char* unit, qpKeyValueTag tag, deInt64 value)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_writeInteger(m_log, name, description, unit, tag, value) == DE_FALSE)
 		throw LogWriteFailedError();
 }
 
 void TestLog::startEglConfigSet (const char* name, const char* description)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_startEglConfigSet(m_log, name, description) == DE_FALSE)
 		throw LogWriteFailedError();
 }
 
 void TestLog::writeEglConfig (const qpEglConfigInfo* config)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_writeEglConfig(m_log, config) == DE_FALSE)
 		throw LogWriteFailedError();
 }
 
 void TestLog::endEglConfigSet (void)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_endEglConfigSet(m_log) == DE_FALSE)
 		throw LogWriteFailedError();
 }
 
 void TestLog::startCase (const char* testCasePath, qpTestCaseType testCaseType)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_startCase(m_log, testCasePath, testCaseType) == DE_FALSE)
 		throw LogWriteFailedError();
 }
 
 void TestLog::endCase (qpTestResult result, const char* description)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_endCase(m_log, result, description) == DE_FALSE)
 		throw LogWriteFailedError();
 }
 
 void TestLog::terminateCase (qpTestResult result)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_terminateCase(m_log, result) == DE_FALSE)
 		throw LogWriteFailedError();
 }
 
 void TestLog::startTestsCasesTime (void)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_startTestsCasesTime(m_log) == DE_FALSE)
 		throw LogWriteFailedError();
 }
 
 void TestLog::endTestsCasesTime (void)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_endTestsCasesTime(m_log) == DE_FALSE)
 		throw LogWriteFailedError();
 }
 
 void TestLog::startSampleList (const std::string& name, const std::string& description)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_startSampleList(m_log, name.c_str(), description.c_str()) == DE_FALSE)
 		throw LogWriteFailedError();
 }
 
 void TestLog::startSampleInfo (void)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_startSampleInfo(m_log) == DE_FALSE)
 		throw LogWriteFailedError();
 }
 
 void TestLog::writeValueInfo (const std::string& name, const std::string& description, const std::string& unit, qpSampleValueTag tag)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_writeValueInfo(m_log, name.c_str(), description.c_str(), unit.empty() ? DE_NULL : unit.c_str(), tag) == DE_FALSE)
 		throw LogWriteFailedError();
 }
 
 void TestLog::endSampleInfo (void)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_endSampleInfo(m_log) == DE_FALSE)
 		throw LogWriteFailedError();
 }
 
 void TestLog::startSample (void)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_startSample(m_log) == DE_FALSE)
 		throw LogWriteFailedError();
 }
 
 void TestLog::writeSampleValue (double value)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_writeValueFloat(m_log, value) == DE_FALSE)
 		throw LogWriteFailedError();
 }
 
 void TestLog::writeSampleValue (deInt64 value)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_writeValueInteger(m_log, value) == DE_FALSE)
 		throw LogWriteFailedError();
 }
 
 void TestLog::endSample (void)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_endSample(m_log) == DE_FALSE)
 		throw LogWriteFailedError();
 }
 
 void TestLog::endSampleList (void)
 {
+	if (m_logSupressed) return;
 	if (qpTestLog_endSampleList(m_log) == DE_FALSE)
 		throw LogWriteFailedError();
+}
+
+void TestLog::writeRaw(const char* rawContents)
+{
+	if (m_logSupressed) return;
+	qpTestLog_writeRaw(m_log, rawContents);
 }
 
 bool TestLog::isShaderLoggingEnabled (void)
 {
 	return (qpTestLog_getLogFlags(m_log) & QP_TEST_LOG_EXCLUDE_SHADER_SOURCES) == 0;
+}
+
+void TestLog::supressLogging (bool value)
+{
+	m_logSupressed = value;
+}
+
+bool TestLog::isSupressLogging (void)
+{
+	return m_logSupressed;
 }
 
 const TestLog::BeginMessageToken		TestLog::Message			= TestLog::BeginMessageToken();

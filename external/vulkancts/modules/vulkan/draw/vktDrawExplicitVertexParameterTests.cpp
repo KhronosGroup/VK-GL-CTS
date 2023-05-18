@@ -94,7 +94,7 @@ struct DrawParams
 	Interpolation				interpolation;
 	vk::VkSampleCountFlagBits	samples;
 	AuxiliaryQualifier			auxiliaryStorage;
-	bool						useDynamicRendering;
+	const SharedGroupParams		groupParams;
 };
 
 const char* interpolationToString (Interpolation interpolation)
@@ -180,11 +180,34 @@ std::string getTestName (DrawParams params)
 class DrawTestInstance : public TestInstance
 {
 public:
-						DrawTestInstance	(Context& context, const DrawParams& data);
-						~DrawTestInstance	(void);
-	tcu::TestStatus		iterate				(void);
+						DrawTestInstance		(Context& context, const DrawParams& data);
+						~DrawTestInstance		(void);
+	tcu::TestStatus		iterate					(void);
+
+protected:
+	void				preRenderCommands		(VkCommandBuffer cmdBuffer, VkImage colorTargetImage) const;
+	void				beginRenderPass			(VkCommandBuffer cmdBuffer, VkRect2D renderArea,
+												 const VkClearValue* pClearValues, deUint32 clearValueCount) const;
+	void				drawCommands			(VkCommandBuffer cmdBuffer, VkBuffer vertexBuffer) const;
+
+#ifndef CTS_USES_VULKANSC
+	void				beginSecondaryCmdBuffer	(VkCommandBuffer cmdBuffer, VkFormat colorFormat,
+												 VkRenderingFlagsKHR renderingFlags = 0u) const;
+	void				beginDynamicRender		(VkCommandBuffer cmdBuffer, VkRect2D renderArea,
+												 const VkClearValue* pClearValues, VkRenderingFlagsKHR renderingFlags = 0u) const;
+#endif // CTS_USES_VULKANSC
+
 private:
-	DrawParams			m_data;
+	DrawParams						m_data;
+	Move<VkRenderPass>				m_renderPass;
+	Move<VkImageView>				m_colorTargetView;
+	Move<VkImageView>				m_multisampleTargetView;
+	Move<VkFramebuffer>				m_framebuffer;
+	Move<VkPipeline>				m_pipeline;
+	Move<VkPipelineLayout>			m_pipelineLayout;
+	Move<VkDescriptorPool>			m_descriptorPool;
+	Move<VkDescriptorSet>			m_descriptorSet;
+	Move<VkDescriptorSetLayout>		m_descriptorSetLayout;
 };
 
 DrawTestInstance::DrawTestInstance (Context& context, const DrawParams& data)
@@ -227,7 +250,7 @@ void DrawTestCase::checkSupport(Context &context) const
 	if ((context.getDeviceProperties().limits.framebufferColorSampleCounts & m_data.samples) == 0)
 		TCU_THROW(NotSupportedError, "framebufferColorSampleCounts: sample count not supported");
 
-	if (m_data.useDynamicRendering)
+	if (m_data.groupParams->useDynamicRendering)
 		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 }
 
@@ -323,19 +346,11 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 	const CmdPoolCreateInfo			cmdPoolCreateInfo		(m_context.getUniversalQueueFamilyIndex());
 	Move<VkCommandPool>				cmdPool					= createCommandPool(vk, device, &cmdPoolCreateInfo);
 	Move<VkCommandBuffer>			cmdBuffer				= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	Move<VkCommandBuffer>			secCmdBuffer;
 	const Unique<VkShaderModule>	vs						(createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0));
 	const Unique<VkShaderModule>	fs						(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0));
 	de::SharedPtr<Buffer>			vertexBuffer;
 	de::SharedPtr<Buffer>			ssboBuffer;
-	Move<VkRenderPass>				renderPass;
-	Move<VkImageView>				colorTargetView;
-	Move<VkImageView>				multisampleTargetView;
-	Move<VkFramebuffer>				framebuffer;
-	Move<VkPipeline>				pipeline;
-	Move<VkPipelineLayout>			pipelineLayout;
-	Move<VkDescriptorPool>			descriptorPool;
-	Move<VkDescriptorSet>			descriptorSet;
-	Move<VkDescriptorSetLayout>		descriptorSetLayout;
 
 	vk::VkFormat					imageFormat				= VK_FORMAT_R8G8B8A8_UNORM;
 	const deUint32					numValues				= WIDTH * HEIGHT * m_data.samples;
@@ -357,21 +372,21 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 	}
 
 	const ImageViewCreateInfo colorTargetViewInfo(colorTargetImage->object(), VK_IMAGE_VIEW_TYPE_2D, imageFormat);
-	colorTargetView = createImageView(vk, device, &colorTargetViewInfo);
+	m_colorTargetView = createImageView(vk, device, &colorTargetViewInfo);
 
 	if (useMultisampling)
 	{
 		const ImageViewCreateInfo multisamplingTargetViewInfo(multisampleTargetImage->object(), vk::VK_IMAGE_VIEW_TYPE_2D, imageFormat);
-		multisampleTargetView = createImageView(vk, device, &multisamplingTargetViewInfo);
+		m_multisampleTargetView = createImageView(vk, device, &multisamplingTargetViewInfo);
 	}
 
 	// Create render pass
-	if (!m_data.useDynamicRendering)
+	if (!m_data.groupParams->useDynamicRendering)
 	{
 		RenderPassCreateInfo			renderPassCreateInfo;
 		renderPassCreateInfo.addAttachment(AttachmentDescription(imageFormat,
 																 VK_SAMPLE_COUNT_1_BIT,
-																 VK_ATTACHMENT_LOAD_OP_LOAD,
+																 VK_ATTACHMENT_LOAD_OP_CLEAR,
 																 VK_ATTACHMENT_STORE_OP_STORE,
 																 VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 																 VK_ATTACHMENT_STORE_OP_STORE,
@@ -404,15 +419,15 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 														   0,
 														   DE_NULL));
 
-		renderPass = createRenderPass(vk, device, &renderPassCreateInfo);
+		m_renderPass = createRenderPass(vk, device, &renderPassCreateInfo);
 
 		// Create framebuffer
-		vector<VkImageView> colorAttachments { *colorTargetView };
+		vector<VkImageView> colorAttachments { *m_colorTargetView };
 		if (useMultisampling)
-			colorAttachments.push_back(*multisampleTargetView);
+			colorAttachments.push_back(*m_multisampleTargetView);
 
-		const FramebufferCreateInfo framebufferCreateInfo(*renderPass, colorAttachments, WIDTH, HEIGHT, 1);
-		framebuffer = createFramebuffer(vk, device, &framebufferCreateInfo);
+		const FramebufferCreateInfo framebufferCreateInfo(*m_renderPass, colorAttachments, WIDTH, HEIGHT, 1);
+		m_framebuffer = createFramebuffer(vk, device, &framebufferCreateInfo);
 	}
 
 	// Create vertex buffer.
@@ -454,18 +469,18 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 
 	// Create Descriptor Set layout
 	{
-		descriptorSetLayout = DescriptorSetLayoutBuilder()
+		m_descriptorSetLayout = DescriptorSetLayoutBuilder()
 			.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
 			.build(vk, device);
 	}
 
 	// Create Descriptor Set
 	{
-		descriptorPool = DescriptorPoolBuilder()
+		m_descriptorPool = DescriptorPoolBuilder()
 			.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 			.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 
-		descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
+		m_descriptorSet = makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout);
 
 		const VkDescriptorBufferInfo	bufferInfo =
 		{
@@ -475,7 +490,7 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 		};
 
 		DescriptorSetUpdateBuilder()
-			.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferInfo)
+			.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferInfo)
 			.update(vk, device);
 	}
 
@@ -496,9 +511,9 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 
 		PipelineCreateInfo::VertexInputState vertexInputState	= PipelineCreateInfo::VertexInputState(1, &vertexInputBindingDescription, 2, vertexInputAttributeDescriptions);
 
-		pipelineLayout = makePipelineLayout	(vk, device, *descriptorSetLayout);
+		m_pipelineLayout = makePipelineLayout	(vk, device, *m_descriptorSetLayout);
 
-		PipelineCreateInfo pipelineCreateInfo(*pipelineLayout, *renderPass, 0, 0);
+		PipelineCreateInfo pipelineCreateInfo(*m_pipelineLayout, *m_renderPass, 0, 0);
 		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", VK_SHADER_STAGE_VERTEX_BIT));
 		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, "main", VK_SHADER_STAGE_FRAGMENT_BIT));
 		pipelineCreateInfo.addState(PipelineCreateInfo::VertexInputState(vertexInputState));
@@ -509,6 +524,7 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 		pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
 		pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState(m_data.samples));
 
+#ifndef CTS_USES_VULKANSC
 		VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
@@ -520,10 +536,11 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 			VK_FORMAT_UNDEFINED
 		};
 
-		if (m_data.useDynamicRendering)
+		if (m_data.groupParams->useDynamicRendering)
 			pipelineCreateInfo.pNext = &renderingCreateInfo;
+#endif // CTS_USES_VULKANSC
 
-		pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+		m_pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 	}
 
 	// Queue draw and read results.
@@ -532,7 +549,6 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 		const ImageSubresourceRange subresourceRange	(VK_IMAGE_ASPECT_COLOR_BIT);
 		const tcu::Vec4				clearColor			= tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		const VkRect2D				renderArea			= makeRect2D(WIDTH, HEIGHT);
-		const VkDeviceSize			vertexBufferOffset	= 0;
 		const VkBuffer				buffer				= vertexBuffer->object();
 
 		vector<VkClearValue>		clearColors;
@@ -540,67 +556,58 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 		if (useMultisampling)
 			clearColors.push_back(makeClearValueColor(clearColor));
 
-		beginCommandBuffer(vk, *cmdBuffer, 0u);
-
-		if (m_data.useDynamicRendering)
+#ifndef CTS_USES_VULKANSC
+		if (m_data.groupParams->useSecondaryCmdBuffer)
 		{
-			VkRenderingAttachmentInfoKHR colorAttachment
-			{
-				VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,								// VkStructureType						sType;
-				DE_NULL,																		// const void*							pNext;
-				useMultisampling ? *multisampleTargetView : *colorTargetView,					// VkImageView							imageView;
-				VK_IMAGE_LAYOUT_GENERAL,														// VkImageLayout						imageLayout;
-				useMultisampling ? VK_RESOLVE_MODE_AVERAGE_BIT : VK_RESOLVE_MODE_NONE,			// VkResolveModeFlagBits				resolveMode;
-				useMultisampling ? *colorTargetView : DE_NULL,									// VkImageView							resolveImageView;
-				VK_IMAGE_LAYOUT_GENERAL,														// VkImageLayout						resolveImageLayout;
-				useMultisampling ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD,	// VkAttachmentLoadOp					loadOp;
-				VK_ATTACHMENT_STORE_OP_STORE,													// VkAttachmentStoreOp					storeOp;
-				clearColors[0]																	// VkClearValue							clearValue;
-			};
+			secCmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 
-			VkRenderingInfoKHR renderingInfo
+			// record secondary command buffer
+			if (m_data.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
 			{
-				VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
-				DE_NULL,
-				0u,																				// VkRenderingFlagsKHR					flags;
-				renderArea,																		// VkRect2D								renderArea;
-				1u,																				// deUint32								layerCount;
-				0u,																				// deUint32								viewMask;
-				1u,																				// deUint32								colorAttachmentCount;
-				&colorAttachment,																// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
-				DE_NULL,																		// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
-				DE_NULL,																		// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
-			};
+				beginSecondaryCmdBuffer(*secCmdBuffer, imageFormat, VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+				beginDynamicRender(*secCmdBuffer, renderArea, clearColors.data());
+			}
+			else
+				beginSecondaryCmdBuffer(*secCmdBuffer, imageFormat);
 
-			vk.cmdBeginRenderingKHR(*cmdBuffer, &renderingInfo);
+			drawCommands(*secCmdBuffer, buffer);
+
+			if (m_data.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+				endRendering(vk, *secCmdBuffer);
+
+			endCommandBuffer(vk, *secCmdBuffer);
+
+			// record primary command buffer
+			beginCommandBuffer(vk, *cmdBuffer, 0u);
+
+			if (!m_data.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+				beginDynamicRender(*cmdBuffer, renderArea, clearColors.data(), VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+
+			vk.cmdExecuteCommands(*cmdBuffer, 1u, &*secCmdBuffer);
+
+			if (!m_data.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+				endRendering(vk, *cmdBuffer);
+
+			endCommandBuffer(vk, *cmdBuffer);
 		}
-		else
+		else if (m_data.groupParams->useDynamicRendering)
 		{
-			const VkRenderPassBeginInfo renderPassBeginInfo =
-			{
-				VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType         sType;
-				DE_NULL,									// const void*             pNext;
-				*renderPass,								// VkRenderPass            renderPass;
-				*framebuffer,								// VkFramebuffer           framebuffer;
-				renderArea,									// VkRect2D                renderArea;
-				(deUint32)clearColors.size(),				// deUint32                clearValueCount;
-				clearColors.data(),							// const VkClearValue*     pClearValues;
-			};
-
-			vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-		}
-
-		vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &buffer, &vertexBufferOffset);
-		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
-		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
-		vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
-
-		if (m_data.useDynamicRendering)
+			beginCommandBuffer(vk, *cmdBuffer);
+			beginDynamicRender(*cmdBuffer, renderArea, clearColors.data());
+			drawCommands(*cmdBuffer, buffer);
 			endRendering(vk, *cmdBuffer);
-		else
-			endRenderPass(vk, *cmdBuffer);
+			endCommandBuffer(vk, *cmdBuffer);
+		}
+#endif // CTS_USES_VULKANSC
 
-		endCommandBuffer(vk, *cmdBuffer);
+		if (!m_data.groupParams->useDynamicRendering)
+		{
+			beginCommandBuffer(vk, *cmdBuffer);
+			beginRenderPass(*cmdBuffer, renderArea, clearColors.data(), (deUint32)clearColors.size());
+			drawCommands(*cmdBuffer, buffer);
+			endRenderPass(vk, *cmdBuffer);
+			endCommandBuffer(vk, *cmdBuffer);
+		}
 
 		submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 	}
@@ -626,7 +633,107 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 	return tcu::TestStatus(res, qpGetTestResultName(res));
 }
 
-void createTests (tcu::TestCaseGroup* testGroup, bool useDynamicRendering)
+void DrawTestInstance::beginRenderPass(VkCommandBuffer cmdBuffer, VkRect2D renderArea,
+									   const VkClearValue* pClearValues, deUint32 clearValueCount) const
+{
+	const DeviceInterface& vk = m_context.getDeviceInterface();
+
+	const VkRenderPassBeginInfo renderPassBeginInfo
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,				// VkStructureType						sType;
+		DE_NULL,												// const void*							pNext;
+		*m_renderPass,											// VkRenderPass							renderPass;
+		*m_framebuffer,											// VkFramebuffer						framebuffer;
+		renderArea,												// VkRect2D								renderArea;
+		clearValueCount,										// deUint32								clearValueCount;
+		pClearValues,											// const VkClearValue*					pClearValues;
+	};
+
+	vk.cmdBeginRenderPass(cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+}
+
+void DrawTestInstance::drawCommands(VkCommandBuffer cmdBuffer, VkBuffer vertexBuffer) const
+{
+	const DeviceInterface&	vk = m_context.getDeviceInterface();
+	const VkDeviceSize		vertexBufferOffset = 0;
+
+	vk.cmdBindVertexBuffers(cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+	vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u, &*m_descriptorSet, 0u, DE_NULL);
+	vk.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+}
+
+#ifndef CTS_USES_VULKANSC
+void DrawTestInstance::beginSecondaryCmdBuffer(VkCommandBuffer cmdBuffer, VkFormat colorFormat, VkRenderingFlagsKHR renderingFlags) const
+{
+	VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,		// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		renderingFlags,															// VkRenderingFlagsKHR				flags;
+		0u,																		// uint32_t							viewMask;
+		1u,																		// uint32_t							colorAttachmentCount;
+		&colorFormat,															// const VkFormat*					pColorAttachmentFormats;
+		VK_FORMAT_UNDEFINED,													// VkFormat							depthAttachmentFormat;
+		VK_FORMAT_UNDEFINED,													// VkFormat							stencilAttachmentFormat;
+		m_data.samples,															// VkSampleCountFlagBits			rasterizationSamples;
+	};
+	const VkCommandBufferInheritanceInfo bufferInheritanceInfo = initVulkanStructure(&inheritanceRenderingInfo);
+
+	VkCommandBufferUsageFlags usageFlags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	if (!m_data.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+		usageFlags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+
+	const VkCommandBufferBeginInfo commandBufBeginParams
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,							// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		usageFlags,																// VkCommandBufferUsageFlags		flags;
+		&bufferInheritanceInfo
+	};
+
+	const DeviceInterface& vk = m_context.getDeviceInterface();
+	VK_CHECK(vk.beginCommandBuffer(cmdBuffer, &commandBufBeginParams));
+}
+
+void DrawTestInstance::beginDynamicRender(VkCommandBuffer cmdBuffer, VkRect2D renderArea, const VkClearValue* pClearValues, VkRenderingFlagsKHR renderingFlags) const
+{
+	const DeviceInterface&	vk					= m_context.getDeviceInterface();
+	const deBool			useMultisampling	= m_data.samples != VK_SAMPLE_COUNT_1_BIT;
+
+	VkRenderingAttachmentInfoKHR colorAttachment
+	{
+		VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,								// VkStructureType						sType;
+		DE_NULL,																		// const void*							pNext;
+		useMultisampling ? *m_multisampleTargetView : *m_colorTargetView,				// VkImageView							imageView;
+		VK_IMAGE_LAYOUT_GENERAL,														// VkImageLayout						imageLayout;
+		useMultisampling ? VK_RESOLVE_MODE_AVERAGE_BIT : VK_RESOLVE_MODE_NONE,			// VkResolveModeFlagBits				resolveMode;
+		useMultisampling ? *m_colorTargetView : DE_NULL,								// VkImageView							resolveImageView;
+		VK_IMAGE_LAYOUT_GENERAL,														// VkImageLayout						resolveImageLayout;
+		useMultisampling ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD,	// VkAttachmentLoadOp					loadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,													// VkAttachmentStoreOp					storeOp;
+		pClearValues[0]																	// VkClearValue							clearValue;
+	};
+
+	VkRenderingInfoKHR renderingInfo
+	{
+		VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+		DE_NULL,
+		renderingFlags,											// VkRenderingFlagsKHR					flags;
+		renderArea,												// VkRect2D								renderArea;
+		1u,														// deUint32								layerCount;
+		0u,														// deUint32								viewMask;
+		1u,														// deUint32								colorAttachmentCount;
+		&colorAttachment,										// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
+		DE_NULL,												// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
+		DE_NULL,												// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
+	};
+
+	vk.cmdBeginRendering(cmdBuffer, &renderingInfo);
+}
+#endif // CTS_USES_VULKANSC
+
+void createTests (tcu::TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 {
 	tcu::TestContext&	testCtx		= testGroup->getTestContext();
 
@@ -654,29 +761,35 @@ void createTests (tcu::TestCaseGroup* testGroup, bool useDynamicRendering)
 		AUX_CENTROID,
 	};
 
-	for (deUint32 sampleNdx	= 0;	sampleNdx	< DE_LENGTH_OF_ARRAY(samples);			sampleNdx++)
-	for (deUint32 auxNdx	= 0;	auxNdx		< DE_LENGTH_OF_ARRAY(auxQualifiers);	auxNdx++)
-	for (deUint32 interNdx	= 0;	interNdx	< DE_LENGTH_OF_ARRAY(interTypes);		interNdx++)
+	for (deUint32 sampleNdx	= 0; sampleNdx < DE_LENGTH_OF_ARRAY(samples); sampleNdx++)
 	{
-		if (samples[sampleNdx] == VK_SAMPLE_COUNT_1_BIT && auxQualifiers[auxNdx] != AUX_NONE)
+		// reduce number of tests for dynamic rendering cases where secondary command buffer is used
+		if (groupParams->useSecondaryCmdBuffer && (sampleNdx > VK_SAMPLE_COUNT_2_BIT))
 			continue;
 
-		const DrawParams params =
+		for (deUint32 auxNdx	= 0;	auxNdx		< DE_LENGTH_OF_ARRAY(auxQualifiers);	auxNdx++)
+		for (deUint32 interNdx	= 0;	interNdx	< DE_LENGTH_OF_ARRAY(interTypes);		interNdx++)
 		{
-			interTypes[interNdx],
-			samples[sampleNdx],
-			auxQualifiers[auxNdx],
-			useDynamicRendering
-		};
-		testGroup->addChild(new DrawTestCase(testCtx, getTestName(params).c_str(), "", params));
+			if (samples[sampleNdx] == VK_SAMPLE_COUNT_1_BIT && auxQualifiers[auxNdx] != AUX_NONE)
+				continue;
+
+			const DrawParams params
+			{
+				interTypes[interNdx],
+				samples[sampleNdx],
+				auxQualifiers[auxNdx],
+				groupParams
+			};
+			testGroup->addChild(new DrawTestCase(testCtx, getTestName(params).c_str(), "", params));
+		}
 	}
 }
 
 }	// anonymous
 
-tcu::TestCaseGroup*	createExplicitVertexParameterTests (tcu::TestContext& testCtx, bool useDynamicRendering)
+tcu::TestCaseGroup*	createExplicitVertexParameterTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
-	return createTestGroup(testCtx, "explicit_vertex_parameter", "Tests for VK_AMD_shader_explicit_vertex_parameter.", createTests, useDynamicRendering);
+	return createTestGroup(testCtx, "explicit_vertex_parameter", "Tests for VK_AMD_shader_explicit_vertex_parameter.", createTests, groupParams);
 }
 
 }	// Draw

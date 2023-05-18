@@ -43,6 +43,8 @@ using namespace vkt;
 namespace
 {
 
+enum class ComputeLike { COMPUTE = 0, MESH };
+
 deUint32 getMaxWidth ()
 {
 	return 1024u;
@@ -672,7 +674,7 @@ protected:
 
 struct Buffer : public BufferOrImage
 {
-	explicit Buffer (Context& context, VkDeviceSize sizeInBytes, VkBufferUsageFlags usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
+	explicit Buffer (Context& context, VkDeviceSize sizeInBytes, VkBufferUsageFlags usage)
 		: BufferOrImage		(false)
 		, m_sizeInBytes		(sizeInBytes)
 		, m_usage			(usage)
@@ -860,9 +862,12 @@ private:
 
 deUint32 vkt::subgroups::getStagesCount (const VkShaderStageFlags shaderStages)
 {
-	const deUint32	stageCount	= isAllRayTracingStages(shaderStages) ? 6
-								: isAllGraphicsStages(shaderStages)   ? 4
-								: isAllComputeStages(shaderStages)    ? 1
+	const deUint32	stageCount	= isAllGraphicsStages(shaderStages)    ? 4
+								: isAllComputeStages(shaderStages)     ? 1
+#ifndef CTS_USES_VULKANSC
+								: isAllRayTracingStages(shaderStages)  ? 6
+								: isAllMeshShadingStages(shaderStages) ? 1
+#endif // CTS_USES_VULKANSC
 								: 0;
 
 	DE_ASSERT(stageCount != 0);
@@ -948,12 +953,16 @@ std::string vkt::subgroups::getShaderStageName (VkShaderStageFlags stage)
 		case VK_SHADER_STAGE_GEOMETRY_BIT:					return "geometry";
 		case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:		return "tess_control";
 		case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:	return "tess_eval";
+#ifndef CTS_USES_VULKANSC
 		case VK_SHADER_STAGE_RAYGEN_BIT_KHR:				return "rgen";
 		case VK_SHADER_STAGE_ANY_HIT_BIT_KHR:				return "ahit";
 		case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR:			return "chit";
 		case VK_SHADER_STAGE_MISS_BIT_KHR:					return "miss";
 		case VK_SHADER_STAGE_INTERSECTION_BIT_KHR:			return "sect";
 		case VK_SHADER_STAGE_CALLABLE_BIT_KHR:				return "call";
+		case VK_SHADER_STAGE_MESH_BIT_EXT:					return "mesh";
+		case VK_SHADER_STAGE_TASK_BIT_EXT:					return "task";
+#endif // CTS_USES_VULKANSC
 		default:											TCU_THROW(InternalError, "Unhandled stage");
 	}
 }
@@ -1434,6 +1443,90 @@ void vkt::subgroups::initStdPrograms (vk::SourceCollections&			programCollection
 
 		programCollection.glslSources.add("comp") << glu::ComputeSource(src.str()) << buildOptions;
 	}
+#ifndef CTS_USES_VULKANSC
+	else if (isAllMeshShadingStages(shaderStage))
+	{
+		const bool testMesh = ((shaderStage & VK_SHADER_STAGE_MESH_BIT_EXT) != 0u);
+		const bool testTask = ((shaderStage & VK_SHADER_STAGE_TASK_BIT_EXT) != 0u);
+
+		if (testMesh)
+		{
+			std::ostringstream mesh;
+
+			mesh
+				<< "#version 450\n"
+				<< "#extension GL_EXT_mesh_shader : enable\n"
+				<< extHeader
+				<< "layout (local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2) in;\n"
+				<< "layout (points) out;\n"
+				<< "layout (max_vertices = 1, max_primitives = 1) out;\n"
+				<< getBufferDeclarations(shaderStage, formatName, declarations, 0)
+				<< "\n"
+				<< helperStr
+				<< "void main (void)\n"
+				<< "{\n"
+				<< "  uvec3 globalSize = gl_NumWorkGroups * gl_WorkGroupSize;\n"
+				<< "  highp uint offset = globalSize.x * ((globalSize.y * "
+				"gl_GlobalInvocationID.z) + gl_GlobalInvocationID.y) + "
+				"gl_GlobalInvocationID.x;\n"
+				<< tempRes
+				<< testSrc
+				<< "  result[offset] = tempRes;\n"
+				<< "  SetMeshOutputsEXT(0u, 0u);\n"
+				<< "}\n";
+
+			programCollection.glslSources.add("mesh") << glu::MeshSource(mesh.str()) << buildOptions;
+		}
+		else
+		{
+			const std::string meshShaderNoSubgroups =
+				"#version 450\n"
+				"#extension GL_EXT_mesh_shader : enable\n"
+				"\n"
+				"layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+				"layout (points) out;\n"
+				"layout (max_vertices = 1, max_primitives = 1) out;\n"
+				"\n"
+				"void main (void)\n"
+				"{\n"
+				"  SetMeshOutputsEXT(0u, 0u);\n"
+				"}\n"
+				;
+			programCollection.glslSources.add("mesh") << glu::MeshSource(meshShaderNoSubgroups) << buildOptions;
+		}
+
+		if (testTask)
+		{
+			const tcu::UVec3	emitSize = (testMesh ? tcu::UVec3(1u, 1u, 1u) : tcu::UVec3(0u, 0u, 0u));
+			std::ostringstream	task;
+
+			task
+				<< "#version 450\n"
+				<< "#extension GL_EXT_mesh_shader : enable\n"
+				//<< "#extension GL_NV_mesh_shader : enable\n"
+				<< extHeader
+				<< "layout (local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2) in;\n"
+				<< getBufferDeclarations(shaderStage, formatName, declarations, 0)
+				<< "\n"
+				<< helperStr
+				<< "void main (void)\n"
+				<< "{\n"
+				<< "  uvec3 globalSize = gl_NumWorkGroups * gl_WorkGroupSize;\n"
+				//<< "  uvec3 globalSize = uvec3(0, 0, 0)/*gl_NumWorkGroups*/ * gl_WorkGroupSize;\n"
+				<< "  highp uint offset = globalSize.x * ((globalSize.y * "
+				"gl_GlobalInvocationID.z) + gl_GlobalInvocationID.y) + "
+				"gl_GlobalInvocationID.x;\n"
+				<< tempRes
+				<< testSrc
+				<< "  result[offset] = tempRes;\n"
+				<< "  EmitMeshTasksEXT(" << emitSize.x() << ", " << emitSize.y() << ", " << emitSize.z() << ");\n"
+				//<< "  gl_TaskCountNV = " << emitSize.x() << ";\n"
+				<< "}\n";
+
+			programCollection.glslSources.add("task") << glu::TaskSource(task.str()) << buildOptions;
+		}
+	}
+#endif // CTS_USES_VULKANSC
 	else if (isAllGraphicsStages(shaderStage))
 	{
 		const string vertex =
@@ -1531,6 +1624,7 @@ void vkt::subgroups::initStdPrograms (vk::SourceCollections&			programCollection
 		subgroups::addGeometryShadersFromTemplate(geometry, buildOptions, programCollection.glslSources);
 		programCollection.glslSources.add("fragment") << glu::FragmentSource(fragment)<< buildOptions;
 	}
+#ifndef CTS_USES_VULKANSC
 	else if (isAllRayTracingStages(shaderStage))
 	{
 		const std::string	rgenShader	=
@@ -1616,7 +1710,7 @@ void vkt::subgroups::initStdPrograms (vk::SourceCollections&			programCollection
 			"{\n"
 			+ tempRes
 			+ testSrc +
-			"  reportIntersectionEXT(0.75f, gl_HitKindFrontFacingTriangleEXT);\n"
+			"  reportIntersectionEXT(0.75f, 0x7Eu);\n"
 			"  result[gl_LaunchIDEXT.x] = tempRes;\n"
 			"}\n";
 		const std::string	callShader	=
@@ -1643,6 +1737,7 @@ void vkt::subgroups::initStdPrograms (vk::SourceCollections&			programCollection
 
 		subgroups::addRayTracingNoSubgroupShader(programCollection);
 	}
+#endif // CTS_USES_VULKANSC
 	else
 		TCU_THROW(InternalError, "Unknown stage or invalid stage set");
 
@@ -1650,7 +1745,7 @@ void vkt::subgroups::initStdPrograms (vk::SourceCollections&			programCollection
 
 bool vkt::subgroups::isSubgroupSupported (Context& context)
 {
-	return context.contextSupports(vk::ApiVersion(1, 1, 0));
+	return context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
 }
 
 bool vkt::subgroups::areSubgroupOperationsSupportedForStage (Context& context, const VkShaderStageFlags stage)
@@ -1769,7 +1864,8 @@ bool vkt::subgroups::isFormatSupportedForDevice (Context& context, vk::VkFormat 
 
 bool vkt::subgroups::isSubgroupBroadcastDynamicIdSupported (Context& context)
 {
-	return context.contextSupports(vk::ApiVersion(1, 2, 0)) && context.getDeviceVulkan12Features().subgroupBroadcastDynamicId;
+	return context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) &&
+		vk::getPhysicalDeviceVulkan12Features(context.getInstanceInterface(), context.getPhysicalDevice()).subgroupBroadcastDynamicId;
 }
 
 std::string vkt::subgroups::getFormatNameForGLSL (VkFormat format)
@@ -2364,7 +2460,7 @@ void initializeMemory (Context& context, const Allocation& alloc, const subgroup
 {
 	const vk::VkFormat format = data.format;
 	const vk::VkDeviceSize size = data.numElements *
-		(data.isImage ? getFormatSizeInBytes(format) : getElementSizeInBytes(format, data.layout));
+		(data.isImage() ? getFormatSizeInBytes(format) : getElementSizeInBytes(format, data.layout));
 	if (subgroups::SSBOData::InitializeNonZero == data.initializeType)
 	{
 		de::Random rnd(context.getTestContext().getCommandLine().getBaseSeed());
@@ -2584,12 +2680,13 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTestRequire
 
 	for (deUint32 i = 0u; i < extraDataCount; i++)
 	{
-		if (extraData[i].isImage)
+		if (extraData[i].isImage())
 		{
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Image(context, static_cast<deUint32>(extraData[i].numElements), 1u, extraData[i].format));
 		}
 		else
 		{
+			DE_ASSERT(extraData[i].isUBO());
 			vk::VkDeviceSize size = getElementSizeInBytes(extraData[i].format, extraData[i].layout) * extraData[i].numElements;
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
 		}
@@ -2721,6 +2818,7 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTestRequire
 
 			submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 		}
+		context.resetCommandPoolForVKSC(device, *cmdPool);
 
 		{
 			const Allocation& allocResult = imageBufferResult.getAllocation();
@@ -2761,10 +2859,10 @@ bool vkt::subgroups::check (std::vector<const void*> datas, deUint32 width, deUi
 	return true;
 }
 
-bool vkt::subgroups::checkCompute (std::vector<const void*>		datas,
-								   const deUint32				numWorkgroups[3],
-								   const deUint32				localSize[3],
-								   deUint32						ref)
+bool vkt::subgroups::checkComputeOrMesh (std::vector<const void*>	datas,
+										 const deUint32				numWorkgroups[3],
+										 const deUint32				localSize[3],
+										 deUint32					ref)
 {
 	const deUint32 globalSizeX = numWorkgroups[0] * localSize[0];
 	const deUint32 globalSizeY = numWorkgroups[1] * localSize[1];
@@ -2821,12 +2919,13 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTestRequiredSubgroupSize 
 
 	for (deUint32 i = 0u; i < extraDataCount; i++)
 	{
-		if (extraData[i].isImage)
+		if (extraData[i].isImage())
 		{
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Image(context, static_cast<deUint32>(extraData[i].numElements), 1u, extraData[i].format));
 		}
 		else
 		{
+			DE_ASSERT(extraData[i].isUBO());
 			vk::VkDeviceSize size = getElementSizeInBytes(extraData[i].format, extraData[i].layout) * extraData[i].numElements;
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
 		}
@@ -2958,6 +3057,7 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTestRequiredSubgroupSize 
 
 			submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 		}
+		context.resetCommandPoolForVKSC(device, *cmdPool);
 
 		{
 			const Allocation& allocResult = imageBufferResult.getAllocation();
@@ -3103,12 +3203,13 @@ tcu::TestStatus vkt::subgroups::allStagesRequiredSubgroupSize (Context&						con
 	std::vector< de::SharedPtr<BufferOrImage> > inputBuffers(stagesCount + extraDatasCount);
 
 	DescriptorSetLayoutBuilder layoutBuilder;
+
 	// The implicit result SSBO we use to store our outputs from the shader
 	for (deUint32 ndx = 0u; ndx < stagesCount; ++ndx)
 	{
 		const VkDeviceSize shaderSize = (stagesVector[ndx] == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) ? maxWidth * 2 : maxWidth;
 		const VkDeviceSize size = getElementSizeInBytes(format, SSBOData::LayoutStd430) * shaderSize;
-		inputBuffers[ndx] = de::SharedPtr<BufferOrImage>(new Buffer(context, size));
+		inputBuffers[ndx] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT));
 
 		layoutBuilder.addIndexedBinding(inputBuffers[ndx]->getType(), 1, stagesVector[ndx], getResultBinding(stagesVector[ndx]), DE_NULL);
 	}
@@ -3116,14 +3217,15 @@ tcu::TestStatus vkt::subgroups::allStagesRequiredSubgroupSize (Context&						con
 	for (deUint32 ndx = stagesCount; ndx < stagesCount + extraDatasCount; ++ndx)
 	{
 		const deUint32 datasNdx = ndx - stagesCount;
-		if (extraDatas[datasNdx].isImage)
+		if (extraDatas[datasNdx].isImage())
 		{
 			inputBuffers[ndx] = de::SharedPtr<BufferOrImage>(new Image(context, static_cast<deUint32>(extraDatas[datasNdx].numElements), 1, extraDatas[datasNdx].format));
 		}
 		else
 		{
-			const vk::VkDeviceSize size = getElementSizeInBytes(extraDatas[datasNdx].format, extraDatas[datasNdx].layout) * extraDatas[datasNdx].numElements;
-			inputBuffers[ndx] = de::SharedPtr<BufferOrImage>(new Buffer(context, size));
+			const auto usage	= (extraDatas[datasNdx].isUBO() ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+			const auto size		= getElementSizeInBytes(extraDatas[datasNdx].format, extraDatas[datasNdx].layout) * extraDatas[datasNdx].numElements;
+			inputBuffers[ndx] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, usage));
 		}
 
 		const Allocation& alloc = inputBuffers[ndx]->getAllocation();
@@ -3322,7 +3424,7 @@ tcu::TestStatus vkt::subgroups::allStagesRequiredSubgroupSize (Context&						con
 					failedIterations++;
 			}
 
-			vk.resetCommandBuffer(*cmdBuffer, 0);
+			context.resetCommandPoolForVKSC(device, *cmdPool);
 		}
 
 		if (0 < failedIterations)
@@ -3385,12 +3487,13 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTestRequiredSubgroupSize (C
 
 	for (deUint32 i = 0u; i < extraDataCount; i++)
 	{
-		if (extraData[i].isImage)
+		if (extraData[i].isImage())
 		{
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Image(context, static_cast<deUint32>(extraData[i].numElements), 1u, extraData[i].format));
 		}
 		else
 		{
+			DE_ASSERT(extraData[i].isUBO());
 			vk::VkDeviceSize size = getElementSizeInBytes(extraData[i].format, extraData[i].layout) * extraData[i].numElements;
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
 		}
@@ -3536,6 +3639,7 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTestRequiredSubgroupSize (C
 
 			submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 		}
+		context.resetCommandPoolForVKSC(device, *cmdPool);
 
 		{
 			const Allocation& allocResult = imageBufferResult.getAllocation();
@@ -3591,12 +3695,14 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTestRequiredSubgroupSize 
 
 	for (deUint32 i = 0; i < extraDatasCount; i++)
 	{
-		if (extraDatas[i].isImage)
+		if (extraDatas[i].isImage())
 		{
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Image(context, static_cast<deUint32>(extraDatas[i].numElements), 1, extraDatas[i].format));
 		}
 		else
 		{
+			DE_ASSERT(extraDatas[i].isUBO());
+
 			const vk::VkDeviceSize	size	= getElementSizeInBytes(extraDatas[i].format, extraDatas[i].layout) * extraDatas[i].numElements;
 
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
@@ -3744,7 +3850,7 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTestRequiredSubgroupSize 
 				failedIterations++;
 			}
 
-			vk.resetCommandBuffer(*cmdBuffer, 0);
+			context.resetCommandPoolForVKSC(device, *cmdPool);
 		}
 	}
 
@@ -3810,51 +3916,158 @@ Move<VkPipeline> makeComputePipeline (Context&					context,
 		pipelineCreateFlags,							// VkPipelineCreateFlags			flags;
 		pipelineShaderStageParams,						// VkPipelineShaderStageCreateInfo	stage;
 		pipelineLayout,									// VkPipelineLayout					layout;
+#ifndef CTS_USES_VULKANSC
 		basePipelineHandle,								// VkPipeline						basePipelineHandle;
 		-1,												// deInt32							basePipelineIndex;
+#else
+		DE_NULL,										// VkPipeline						basePipelineHandle;
+		0,												// deInt32							basePipelineIndex;
+#endif // CTS_USES_VULKANSC
 	};
+	static_cast<void>(basePipelineHandle);
 
 	return createComputePipeline(context.getDeviceInterface(), context.getDevice(), DE_NULL, &pipelineCreateInfo);
 }
 
-tcu::TestStatus vkt::subgroups::makeComputeTestRequiredSubgroupSize (Context&			context,
-																	 VkFormat			format,
-																	 const SSBOData*	inputs,
-																	 deUint32			inputsCount,
-																	 const void*		internalData,
-																	 CheckResultCompute	checkResult,
-																	 const deUint32		pipelineShaderStageCreateFlags,
-																	 const deUint32		numWorkgroups[3],
-																	 const deBool		isRequiredSubgroupSize,
-																	 const deUint32		subgroupSize,
-																	 const deUint32		localSizesToTest[][3],
-																	 const deUint32		localSizesToTestCount)
+#ifndef CTS_USES_VULKANSC
+Move<VkPipeline> makeMeshPipeline (Context&					context,
+								   const VkPipelineLayout	pipelineLayout,
+								   const VkShaderModule		taskModule,
+								   const VkShaderModule		meshModule,
+								   const deUint32			pipelineShaderStageFlags,
+								   const deUint32			pipelineCreateFlags,
+								   VkPipeline				basePipelineHandle,
+								   deUint32					localSizeX,
+								   deUint32					localSizeY,
+								   deUint32					localSizeZ,
+								   deUint32					requiredSubgroupSize,
+								   const VkRenderPass		renderPass)
+{
+	const deUint32														localSize[3]				= {localSizeX, localSizeY, localSizeZ};
+	const vk::VkSpecializationMapEntry									entries[3]					=
+	{
+		{0, sizeof(deUint32) * 0, sizeof(deUint32)},
+		{1, sizeof(deUint32) * 1, sizeof(deUint32)},
+		{2, static_cast<deUint32>(sizeof(deUint32) * 2), sizeof(deUint32)},
+	};
+	const vk::VkSpecializationInfo										info						=
+	{
+		/* mapEntryCount = */ 3,
+		/* pMapEntries   = */ entries,
+		/* dataSize      = */ sizeof(localSize),
+		/* pData         = */ localSize
+	};
+	const vk::VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT	subgroupSizeCreateInfo		=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT,	// VkStructureType    sType;
+		DE_NULL,																		// void*              pNext;
+		requiredSubgroupSize															// uint32_t           requiredSubgroupSize;
+	};
+
+	const VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT*		pSubgroupSizeCreateInfo		= ((requiredSubgroupSize != 0u) ? &subgroupSizeCreateInfo : nullptr);
+
+	std::vector<VkPipelineShaderStageCreateInfo>						shaderStageParams;
+	vk::VkPipelineShaderStageCreateInfo									pipelineShaderStageParams	=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType					sType;
+		nullptr,												// const void*						pNext;
+		pipelineShaderStageFlags,								// VkPipelineShaderStageCreateFlags	flags;
+		VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM,						// VkShaderStageFlagBits			stage;
+		DE_NULL,												// VkShaderModule					module;
+		"main",													// const char*						pName;
+		&info,													// const VkSpecializationInfo*		pSpecializationInfo;
+	};
+
+	if (taskModule != DE_NULL)
+	{
+		pipelineShaderStageParams.module	= taskModule;
+		pipelineShaderStageParams.pNext		= pSubgroupSizeCreateInfo;
+		pipelineShaderStageParams.stage		= VK_SHADER_STAGE_TASK_BIT_EXT;
+		shaderStageParams.push_back(pipelineShaderStageParams);
+	}
+
+	if (meshModule != DE_NULL)
+	{
+		pipelineShaderStageParams.module	= meshModule;
+		pipelineShaderStageParams.pNext		= ((taskModule == DE_NULL) ? pSubgroupSizeCreateInfo : nullptr);
+		pipelineShaderStageParams.stage		= VK_SHADER_STAGE_MESH_BIT_EXT;
+		shaderStageParams.push_back(pipelineShaderStageParams);
+	}
+
+	const std::vector<VkViewport>	viewports	(1u, makeViewport(1u, 1u));
+	const std::vector<VkRect2D>		scissors	(1u, makeRect2D(1u, 1u));
+
+	return makeGraphicsPipeline(context.getDeviceInterface(), context.getDevice(), basePipelineHandle, pipelineLayout, pipelineCreateFlags, shaderStageParams, renderPass, viewports, scissors);
+}
+#endif // CTS_USES_VULKANSC
+
+tcu::TestStatus makeComputeOrMeshTestRequiredSubgroupSize (ComputeLike							testType,
+														   Context&								context,
+														   VkFormat								format,
+														   const vkt::subgroups::SSBOData*		inputs,
+														   deUint32								inputsCount,
+														   const void*							internalData,
+														   vkt::subgroups::CheckResultCompute	checkResult,
+														   const deUint32						pipelineShaderStageCreateFlags,
+														   const deUint32						numWorkgroups[3],
+														   const deBool							isRequiredSubgroupSize,
+														   const deUint32						subgroupSize,
+														   const deUint32						localSizesToTest[][3],
+														   const deUint32						localSizesToTestCount)
 {
 	const DeviceInterface&									vk								= context.getDeviceInterface();
 	const VkDevice											device							= context.getDevice();
 	const VkQueue											queue							= context.getUniversalQueue();
 	const deUint32											queueFamilyIndex				= context.getUniversalQueueFamilyIndex();
+#ifndef CTS_USES_VULKANSC
+	const VkPhysicalDeviceSubgroupSizeControlProperties&	subgroupSizeControlProperties	= context.getSubgroupSizeControlProperties();
+#else
 	const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties	= context.getSubgroupSizeControlPropertiesEXT();
+#endif // CTS_USES_VULKANSC
 	const VkDeviceSize										elementSize						= getFormatSizeInBytes(format);
 	const VkDeviceSize										maxSubgroupSize					= isRequiredSubgroupSize
-																							? deMax32(subgroupSizeControlProperties.maxSubgroupSize, maxSupportedSubgroupSize())
-																							: maxSupportedSubgroupSize();
+																							? deMax32(subgroupSizeControlProperties.maxSubgroupSize, vkt::subgroups::maxSupportedSubgroupSize())
+																							: vkt::subgroups::maxSupportedSubgroupSize();
 	const VkDeviceSize										resultBufferSize				= maxSubgroupSize * maxSubgroupSize * maxSubgroupSize;
 	const VkDeviceSize										resultBufferSizeInBytes			= resultBufferSize * elementSize;
-	Buffer													resultBuffer					(context, resultBufferSizeInBytes);
+	Buffer													resultBuffer					(context, resultBufferSizeInBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 	std::vector< de::SharedPtr<BufferOrImage> >				inputBuffers					(inputsCount);
+	const auto												shaderStageFlags				= ((testType == ComputeLike::COMPUTE)
+																								? VK_SHADER_STAGE_COMPUTE_BIT
+#ifndef CTS_USES_VULKANSC
+																								: (VK_SHADER_STAGE_MESH_BIT_EXT | VK_SHADER_STAGE_TASK_BIT_EXT));
+#else
+																								: 0);
+#endif // CTS_USES_VULKANSC
+	const auto												pipelineBindPoint				= ((testType == ComputeLike::COMPUTE)
+																								? VK_PIPELINE_BIND_POINT_COMPUTE
+																								: VK_PIPELINE_BIND_POINT_GRAPHICS);
+	const auto												pipelineStage					= ((testType == ComputeLike::COMPUTE)
+																								? VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT
+#ifndef CTS_USES_VULKANSC
+																								: (VK_PIPELINE_STAGE_TASK_SHADER_BIT_EXT | VK_PIPELINE_STAGE_MESH_SHADER_BIT_EXT));
+#else
+																								: 0);
+#endif // CTS_USES_VULKANSC
+	const auto												renderArea						= makeRect2D(1u, 1u);
+
+	std::vector<tcu::UVec3>									usedLocalSizes;
+	for (deUint32 i = 0; i < localSizesToTestCount; ++i)
+	{
+		usedLocalSizes.push_back(tcu::UVec3(localSizesToTest[i][0], localSizesToTest[i][1], localSizesToTest[i][2]));
+	}
 
 	for (deUint32 i = 0; i < inputsCount; i++)
 	{
-		if (inputs[i].isImage)
+		if (inputs[i].isImage())
 		{
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Image(context, static_cast<deUint32>(inputs[i].numElements), 1, inputs[i].format));
 		}
 		else
 		{
-			const vk::VkDeviceSize size = getElementSizeInBytes(inputs[i].format, inputs[i].layout) * inputs[i].numElements;
-
-			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size));
+			const auto usage	= (inputs[i].isUBO() ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+			const auto size		= getElementSizeInBytes(inputs[i].format, inputs[i].layout) * inputs[i].numElements;
+			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, usage));
 		}
 
 		const Allocation& alloc = inputBuffers[i]->getAllocation();
@@ -3864,20 +4077,37 @@ tcu::TestStatus vkt::subgroups::makeComputeTestRequiredSubgroupSize (Context&			
 
 	DescriptorSetLayoutBuilder layoutBuilder;
 	layoutBuilder.addBinding(
-		resultBuffer.getType(), 1, VK_SHADER_STAGE_COMPUTE_BIT, DE_NULL);
+		resultBuffer.getType(), 1, shaderStageFlags, DE_NULL);
 
 	for (deUint32 i = 0; i < inputsCount; i++)
 	{
 		layoutBuilder.addBinding(
-			inputBuffers[i]->getType(), 1, VK_SHADER_STAGE_COMPUTE_BIT, DE_NULL);
+			inputBuffers[i]->getType(), 1, shaderStageFlags, DE_NULL);
 	}
 
 	const Unique<VkDescriptorSetLayout> descriptorSetLayout(
 		layoutBuilder.build(vk, device));
 
-	const Unique<VkShaderModule> shaderModule(
-		createShaderModule(vk, device,
-						   context.getBinaryCollection().get("comp"), 0u));
+	Move<VkShaderModule>	compShader;
+	Move<VkShaderModule>	meshShader;
+	Move<VkShaderModule>	taskShader;
+	const auto&				binaries	= context.getBinaryCollection();
+
+	if (testType == ComputeLike::COMPUTE)
+	{
+		compShader = createShaderModule(vk, device, binaries.get("comp"));
+	}
+	else if (testType == ComputeLike::MESH)
+	{
+		meshShader = createShaderModule(vk, device, binaries.get("mesh"));
+		if (binaries.contains("task"))
+			taskShader = createShaderModule(vk, device, binaries.get("task"));
+	}
+	else
+	{
+		DE_ASSERT(false);
+	}
+
 	const Unique<VkPipelineLayout> pipelineLayout(
 		makePipelineLayout(vk, device, *descriptorSetLayout));
 
@@ -3921,40 +4151,105 @@ tcu::TestStatus vkt::subgroups::makeComputeTestRequiredSubgroupSize (Context&			
 	unsigned										failedIterations	= 0;
 	const Unique<VkCommandBuffer>					cmdBuffer			(makeCommandBuffer(context, *cmdPool));
 	std::vector<de::SharedPtr<Move<VkPipeline>>>	pipelines			(localSizesToTestCount);
+	const auto										reqSubgroupSize		= (isRequiredSubgroupSize ? subgroupSize : 0u);
+	Move<VkRenderPass>								renderPass;
+	Move<VkFramebuffer>								framebuffer;
+
+	if (testType == ComputeLike::MESH)
+	{
+		renderPass	= makeRenderPass(vk, device);
+		framebuffer	= makeFramebuffer(vk, device, renderPass.get(), 0u, nullptr, renderArea.extent.width, renderArea.extent.height);
+	}
 
 	context.getTestContext().touchWatchdog();
 	{
-		pipelines[0] = de::SharedPtr<Move<VkPipeline>>(new Move<VkPipeline>(makeComputePipeline(context,
-																								*pipelineLayout,
-																								*shaderModule,
-																								pipelineShaderStageCreateFlags,
-																								VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,
-																								(VkPipeline) DE_NULL,
-																								localSizesToTest[0][0],
-																								localSizesToTest[0][1],
-																								localSizesToTest[0][2],
-																								isRequiredSubgroupSize ? subgroupSize : 0u)));
+		if (testType == ComputeLike::COMPUTE)
+		{
+			pipelines[0] = de::SharedPtr<Move<VkPipeline>>(new Move<VkPipeline>(makeComputePipeline(context,
+																									*pipelineLayout,
+																									*compShader,
+																									pipelineShaderStageCreateFlags,
+#ifndef CTS_USES_VULKANSC
+																									VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,
+#else
+																									0u,
+#endif // CTS_USES_VULKANSC
+																									(VkPipeline) DE_NULL,
+																									usedLocalSizes[0][0],
+																									usedLocalSizes[0][1],
+																									usedLocalSizes[0][2],
+																									reqSubgroupSize)));
+		}
+#ifndef CTS_USES_VULKANSC
+		else if (testType == ComputeLike::MESH)
+		{
+			pipelines[0] = de::SharedPtr<Move<VkPipeline>>(new Move<VkPipeline>(makeMeshPipeline(context,
+																								 pipelineLayout.get(),
+																								 taskShader.get(),
+																								 meshShader.get(),
+																								 pipelineShaderStageCreateFlags,
+																								 VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,
+																								 DE_NULL,
+																								 usedLocalSizes[0][0],
+																								 usedLocalSizes[0][1],
+																								 usedLocalSizes[0][2],
+																								 reqSubgroupSize,
+																								 renderPass.get())));
+		}
+#endif // CTS_USES_VULKANSC
+		else
+		{
+			DE_ASSERT(false);
+		}
 	}
 	context.getTestContext().touchWatchdog();
 
 	for (deUint32 index = 1; index < (localSizesToTestCount - 1); index++)
 	{
-		const deUint32 nextX = localSizesToTest[index][0];
-		const deUint32 nextY = localSizesToTest[index][1];
-		const deUint32 nextZ = localSizesToTest[index][2];
+		const deUint32 nextX = usedLocalSizes[index][0];
+		const deUint32 nextY = usedLocalSizes[index][1];
+		const deUint32 nextZ = usedLocalSizes[index][2];
 
 		context.getTestContext().touchWatchdog();
 		{
-			pipelines[index] = de::SharedPtr<Move<VkPipeline>>(new Move<VkPipeline>(makeComputePipeline(context,
-																										*pipelineLayout,
-																										*shaderModule,
-																										pipelineShaderStageCreateFlags,
-																										VK_PIPELINE_CREATE_DERIVATIVE_BIT,
-																										**pipelines[0],
-																										nextX,
-																										nextY,
-																										nextZ,
-																										isRequiredSubgroupSize ? subgroupSize : 0u)));
+			if (testType == ComputeLike::COMPUTE)
+			{
+				pipelines[index] = de::SharedPtr<Move<VkPipeline>>(new Move<VkPipeline>(makeComputePipeline(context,
+																											*pipelineLayout,
+																											*compShader,
+																											pipelineShaderStageCreateFlags,
+#ifndef CTS_USES_VULKANSC
+																											VK_PIPELINE_CREATE_DERIVATIVE_BIT,
+#else
+																											0u,
+#endif // CTS_USES_VULKANSC
+																											**pipelines[0],
+																											nextX,
+																											nextY,
+																											nextZ,
+																											reqSubgroupSize)));
+			}
+#ifndef CTS_USES_VULKANSC
+			else if (testType == ComputeLike::MESH)
+			{
+				pipelines[index] = de::SharedPtr<Move<VkPipeline>>(new Move<VkPipeline>(makeMeshPipeline(context,
+																										 pipelineLayout.get(),
+																										 taskShader.get(),
+																										 meshShader.get(),
+																										 pipelineShaderStageCreateFlags,
+																										 VK_PIPELINE_CREATE_DERIVATIVE_BIT,
+																										 pipelines[0].get()->get(),
+																										 nextX,
+																										 nextY,
+																										 nextZ,
+																										 reqSubgroupSize,
+																										 renderPass.get())));
+			}
+#endif // CTS_USES_VULKANSC
+			else
+			{
+				DE_ASSERT(false);
+			}
 		}
 		context.getTestContext().touchWatchdog();
 	}
@@ -3966,12 +4261,31 @@ tcu::TestStatus vkt::subgroups::makeComputeTestRequiredSubgroupSize (Context&			
 
 		beginCommandBuffer(vk, *cmdBuffer);
 		{
-			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, **pipelines[index]);
+			if (testType == ComputeLike::MESH)
+				beginRenderPass(vk, *cmdBuffer, renderPass.get(), framebuffer.get(), renderArea);
 
-			vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
+			vk.cmdBindPipeline(*cmdBuffer, pipelineBindPoint, **pipelines[index]);
 
-			vk.cmdDispatch(*cmdBuffer,numWorkgroups[0], numWorkgroups[1], numWorkgroups[2]);
+			vk.cmdBindDescriptorSets(*cmdBuffer, pipelineBindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
+
+			if (testType == ComputeLike::COMPUTE)
+				vk.cmdDispatch(*cmdBuffer, numWorkgroups[0], numWorkgroups[1], numWorkgroups[2]);
+#ifndef CTS_USES_VULKANSC
+			else if (testType == ComputeLike::MESH)
+				vk.cmdDrawMeshTasksEXT(*cmdBuffer, numWorkgroups[0], numWorkgroups[1], numWorkgroups[2]);
+				//vk.cmdDrawMeshTasksNV(*cmdBuffer, numWorkgroups[0], 0);
+#endif // CTS_USES_VULKANSC
+			else
+				DE_ASSERT(false);
+
+			if (testType == ComputeLike::MESH)
+				endRenderPass(vk, *cmdBuffer);
 		}
+
+		// Make shader writes available.
+		const auto postShaderBarrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+		vk.cmdPipelineBarrier(*cmdBuffer, pipelineStage, VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u, &postShaderBarrier, 0u, nullptr, 0u, nullptr);
+
 		endCommandBuffer(vk, *cmdBuffer);
 
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
@@ -3998,12 +4312,12 @@ tcu::TestStatus vkt::subgroups::makeComputeTestRequiredSubgroupSize (Context&			
 			}
 		}
 
-		if (!checkResult(internalData, datas, numWorkgroups, localSizesToTest[index], subgroupSize))
+		if (!checkResult(internalData, datas, numWorkgroups, usedLocalSizes[index].getPtr(), subgroupSize))
 		{
 			failedIterations++;
 		}
 
-		vk.resetCommandBuffer(*cmdBuffer, 0);
+		context.resetCommandPoolForVKSC(device, *cmdPool);
 	}
 
 	if (0 < failedIterations)
@@ -4020,20 +4334,77 @@ tcu::TestStatus vkt::subgroups::makeComputeTestRequiredSubgroupSize (Context&			
 	return tcu::TestStatus::pass("OK");
 }
 
-tcu::TestStatus vkt::subgroups::makeComputeTest (Context&				context,
-												 VkFormat				format,
-												 const SSBOData*		inputs,
-												 deUint32				inputsCount,
-												 const void*			internalData,
-												 CheckResultCompute		checkResult,
-												 deUint32				requiredSubgroupSize,
-												 const deUint32			pipelineShaderStageCreateFlags)
+tcu::TestStatus vkt::subgroups::makeComputeTestRequiredSubgroupSize (Context&			context,
+																	 VkFormat			format,
+																	 const SSBOData*	inputs,
+																	 deUint32			inputsCount,
+																	 const void*		internalData,
+																	 CheckResultCompute	checkResult,
+																	 const deUint32		pipelineShaderStageCreateFlags,
+																	 const deUint32		numWorkgroups[3],
+																	 const deBool		isRequiredSubgroupSize,
+																	 const deUint32		subgroupSize,
+																	 const deUint32		localSizesToTest[][3],
+																	 const deUint32		localSizesToTestCount)
 {
-	const deUint32 numWorkgroups[3] = {4, 2, 2};
-	deUint32 subgroupSize = requiredSubgroupSize;
+	return makeComputeOrMeshTestRequiredSubgroupSize(
+		ComputeLike::COMPUTE,
+		context,
+		format,
+		inputs,
+		inputsCount,
+		internalData,
+		checkResult,
+		pipelineShaderStageCreateFlags,
+		numWorkgroups,
+		isRequiredSubgroupSize,
+		subgroupSize,
+		localSizesToTest,
+		localSizesToTestCount);
+}
 
-	if(requiredSubgroupSize == 0)
-		subgroupSize = vkt::subgroups::getSubgroupSize(context);
+tcu::TestStatus vkt::subgroups::makeMeshTestRequiredSubgroupSize (Context&				context,
+																  VkFormat				format,
+																  const SSBOData*		inputs,
+																  deUint32				inputsCount,
+																  const void*			internalData,
+																  CheckResultCompute	checkResult,
+																  const deUint32		pipelineShaderStageCreateFlags,
+																  const deUint32		numWorkgroups[3],
+																  const deBool			isRequiredSubgroupSize,
+																  const deUint32		subgroupSize,
+																  const deUint32		localSizesToTest[][3],
+																  const deUint32		localSizesToTestCount)
+{
+	return makeComputeOrMeshTestRequiredSubgroupSize(
+		ComputeLike::MESH,
+		context,
+		format,
+		inputs,
+		inputsCount,
+		internalData,
+		checkResult,
+		pipelineShaderStageCreateFlags,
+		numWorkgroups,
+		isRequiredSubgroupSize,
+		subgroupSize,
+		localSizesToTest,
+		localSizesToTestCount);
+}
+
+tcu::TestStatus makeComputeOrMeshTest (ComputeLike							testType,
+									   Context&								context,
+									   VkFormat								format,
+									   const vkt::subgroups::SSBOData*		inputs,
+									   deUint32								inputsCount,
+									   const void*							internalData,
+									   vkt::subgroups::CheckResultCompute	checkResult,
+									   deUint32								requiredSubgroupSize,
+									   const deUint32						pipelineShaderStageCreateFlags)
+{
+	const uint32_t	numWorkgroups[3]		= {4, 2, 2};
+	const bool		isRequiredSubgroupSize	= (requiredSubgroupSize != 0u);
+	const uint32_t	subgroupSize			= (isRequiredSubgroupSize ? requiredSubgroupSize : vkt::subgroups::getSubgroupSize(context));
 
 	const deUint32 localSizesToTestCount = 8;
 	deUint32 localSizesToTest[localSizesToTestCount][3] =
@@ -4048,8 +4419,36 @@ tcu::TestStatus vkt::subgroups::makeComputeTest (Context&				context,
 		{1, 1, 1} // Isn't used, just here to make double buffering checks easier
 	};
 
-	return makeComputeTestRequiredSubgroupSize(context, format, inputs, inputsCount, internalData, checkResult, pipelineShaderStageCreateFlags,
-											   numWorkgroups, requiredSubgroupSize != 0u, subgroupSize, localSizesToTest, localSizesToTestCount);
+	if (testType == ComputeLike::COMPUTE)
+		return makeComputeTestRequiredSubgroupSize(context, format, inputs, inputsCount, internalData, checkResult, pipelineShaderStageCreateFlags,
+												   numWorkgroups, isRequiredSubgroupSize, subgroupSize, localSizesToTest, localSizesToTestCount);
+	else
+		return makeMeshTestRequiredSubgroupSize(context, format, inputs, inputsCount, internalData, checkResult, pipelineShaderStageCreateFlags,
+												numWorkgroups, isRequiredSubgroupSize, subgroupSize, localSizesToTest, localSizesToTestCount);
+}
+
+tcu::TestStatus vkt::subgroups::makeComputeTest (Context&				context,
+												 VkFormat				format,
+												 const SSBOData*		inputs,
+												 deUint32				inputsCount,
+												 const void*			internalData,
+												 CheckResultCompute		checkResult,
+												 deUint32				requiredSubgroupSize,
+												 const deUint32			pipelineShaderStageCreateFlags)
+{
+	return makeComputeOrMeshTest(ComputeLike::COMPUTE, context, format, inputs, inputsCount, internalData, checkResult, requiredSubgroupSize, pipelineShaderStageCreateFlags);
+}
+
+tcu::TestStatus vkt::subgroups::makeMeshTest (Context&				context,
+											  VkFormat				format,
+											  const SSBOData*		inputs,
+											  deUint32				inputsCount,
+											  const void*			internalData,
+											  CheckResultCompute	checkResult,
+											  deUint32				requiredSubgroupSize,
+											  const deUint32		pipelineShaderStageCreateFlags)
+{
+	return makeComputeOrMeshTest(ComputeLike::MESH, context, format, inputs, inputsCount, internalData, checkResult, requiredSubgroupSize, pipelineShaderStageCreateFlags);
 }
 
 static inline void checkShaderStageSetValidity (const VkShaderStageFlags shaderStages)
@@ -4058,9 +4457,13 @@ static inline void checkShaderStageSetValidity (const VkShaderStageFlags shaderS
 		TCU_THROW(InternalError, "Shader stage is not specified");
 
 	// It can actually be only 1 or 0.
-	const deUint32 exclusivePipelinesCount	= (isAllComputeStages(shaderStages) ? 1 :0)
-											+ (isAllGraphicsStages(shaderStages) ? 1 :0)
-											+ (isAllRayTracingStages(shaderStages) ? 1 :0);
+	const deUint32 exclusivePipelinesCount	= (isAllComputeStages(shaderStages) ? 1 : 0)
+											+ (isAllGraphicsStages(shaderStages) ? 1 : 0)
+#ifndef CTS_USES_VULKANSC
+											+ (isAllRayTracingStages(shaderStages) ? 1 : 0)
+											+ (isAllMeshShadingStages(shaderStages) ? 1 : 0)
+#endif // CTS_USES_VULKANSC
+											;
 
 	if (exclusivePipelinesCount != 1)
 		TCU_THROW(InternalError, "Mix of shaders from different pipelines is detected");
@@ -4070,6 +4473,9 @@ void vkt::subgroups::supportedCheckShader (Context& context, const VkShaderStage
 {
 	checkShaderStageSetValidity(shaderStages);
 
+	if ((shaderStages & VK_SHADER_STAGE_GEOMETRY_BIT) != 0)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+
 	if ((context.getSubgroupProperties().supportedStages & shaderStages) == 0)
 	{
 		if (isAllComputeStages(shaderStages))
@@ -4078,12 +4484,14 @@ void vkt::subgroups::supportedCheckShader (Context& context, const VkShaderStage
 			TCU_THROW(NotSupportedError, "Subgroup support is not available for test shader stage(s)");
 	}
 
+#ifndef CTS_USES_VULKANSC
 	if ((VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) & shaderStages &&
 		context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		!context.getPortabilitySubsetFeatures().tessellationIsolines)
 	{
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Tessellation iso lines are not supported by this implementation");
 	}
+#endif // CTS_USES_VULKANSC
 }
 
 
@@ -4182,7 +4590,7 @@ void addRayTracingNoSubgroupShader (SourceCollections& programCollection)
 		"\n"
 		"void main()\n"
 		"{\n"
-		"  reportIntersectionEXT(0.75f, gl_HitKindFrontFacingTriangleEXT);\n"
+		"  reportIntersectionEXT(0.75f, 0x7Eu);\n"
 		"}\n";
 	const std::string callShaderNoSubgroups =
 		"#version 460 core\n"
@@ -4200,6 +4608,8 @@ void addRayTracingNoSubgroupShader (SourceCollections& programCollection)
 	programCollection.glslSources.add("sect_noSubgroup") << glu::IntersectionSource	(sectShaderNoSubgroups) << buildOptions;
 	programCollection.glslSources.add("call_noSubgroup") << glu::CallableSource		(callShaderNoSubgroups) << buildOptions;
 }
+
+#ifndef CTS_USES_VULKANSC
 
 static vector<VkShaderStageFlagBits> enumerateRayTracingShaderStages (const VkShaderStageFlags	shaderStage)
 {
@@ -4261,21 +4671,21 @@ static vectorBufferOrImage makeRayTracingInputBuffers (Context&								context,
 
 	// The implicit result SSBO we use to store our outputs from the shader
 	for (size_t stageNdx = 0u; stageNdx < stagesCount; ++stageNdx)
-		inputBuffers[stageNdx]	= de::SharedPtr<BufferOrImage>(new Buffer(context, inputBufferSize));
+		inputBuffers[stageNdx]	= de::SharedPtr<BufferOrImage>(new Buffer(context, inputBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT));
 
 	for (size_t stageNdx = stagesCount; stageNdx < stagesCount + extraDatasCount; ++stageNdx)
 	{
 		const size_t	datasNdx	= stageNdx - stagesCount;
 
-		if (extraDatas[datasNdx].isImage)
+		if (extraDatas[datasNdx].isImage())
 		{
 			inputBuffers[stageNdx] = de::SharedPtr<BufferOrImage>(new Image(context, static_cast<deUint32>(extraDatas[datasNdx].numElements), 1, extraDatas[datasNdx].format));
 		}
 		else
 		{
-			const VkDeviceSize size = getElementSizeInBytes(extraDatas[datasNdx].format, extraDatas[datasNdx].layout) * extraDatas[datasNdx].numElements;
-
-			inputBuffers[stageNdx] = de::SharedPtr<BufferOrImage>(new Buffer(context, size));
+			const auto usage	= (extraDatas[datasNdx].isUBO() ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+			const auto size		= getElementSizeInBytes(extraDatas[datasNdx].format, extraDatas[datasNdx].layout) * extraDatas[datasNdx].numElements;
+			inputBuffers[stageNdx] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, usage));
 		}
 
 		initializeMemory(context, inputBuffers[stageNdx]->getAllocation(), extraDatas[datasNdx]);
@@ -4691,7 +5101,7 @@ tcu::TestStatus allRayTracingStagesRequiredSubgroupSize (Context&					context,
 				passIterations++;
 		}
 
-		vkd.resetCommandBuffer(*cmdBuffer, 0);
+		context.resetCommandPoolForVKSC(device, *cmdPool);
 	}
 
 	if (failIterations > 0 || passIterations == 0)
@@ -4699,5 +5109,7 @@ tcu::TestStatus allRayTracingStagesRequiredSubgroupSize (Context&					context,
 	else
 		return tcu::TestStatus::pass("OK");
 }
+#endif // CTS_USES_VULKANSC
+
 } // namespace subgroups
 } // nsamespace vkt

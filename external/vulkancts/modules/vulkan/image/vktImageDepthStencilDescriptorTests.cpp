@@ -82,12 +82,12 @@ tcu::Maybe<std::string> layoutExtension (VkImageLayout layout)
 
 	switch (layout)
 	{
-	case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR:
-	case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR:
+	case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL:
+	case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL:
 		extension = "VK_KHR_maintenance2";
 		break;
-	case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL_KHR:
-	case VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL_KHR:
+	case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL:
+	case VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL:
 		// Note: we will not be using separate depth/stencil layouts. There's a separate group of tests for that.
 		extension = "VK_KHR_separate_depth_stencil_layouts";
 		break;
@@ -142,13 +142,13 @@ AspectAccess getLegalAccess (VkImageLayout layout, VkImageAspectFlagBits aspect)
 {
 	DE_ASSERT(aspect == VK_IMAGE_ASPECT_DEPTH_BIT || aspect == VK_IMAGE_ASPECT_STENCIL_BIT);
 
-	if (layout == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR)
+	if (layout == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
 		return ((aspect == VK_IMAGE_ASPECT_STENCIL_BIT) ? AspectAccess::RW : AspectAccess::RO);
-	else if (layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR)
+	else if (layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
 		return ((aspect == VK_IMAGE_ASPECT_DEPTH_BIT) ? AspectAccess::RW : AspectAccess::RO);
-	else if (layout == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL_KHR)
+	else if (layout == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL)
 		return ((aspect == VK_IMAGE_ASPECT_DEPTH_BIT) ? AspectAccess::RO : AspectAccess::NONE);
-	else if (layout == VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL_KHR)
+	else if (layout == VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL)
 		return ((aspect == VK_IMAGE_ASPECT_STENCIL_BIT) ? AspectAccess::RO : AspectAccess::NONE);
 
 	DE_ASSERT(false);
@@ -185,7 +185,7 @@ VkImageUsageFlags getReadOnlyUsageFlags (const ROAccessVec& readOnlyAccesses)
 		if (access == ReadOnlyAccess::DS_ATTACHMENT)
 			usageFlags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 		else if (access == ReadOnlyAccess::INPUT_ATTACHMENT)
-			usageFlags |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+			usageFlags |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 		else if (access == ReadOnlyAccess::SAMPLED)
 			usageFlags |= VK_IMAGE_USAGE_SAMPLED_BIT;
 		else
@@ -1284,10 +1284,10 @@ tcu::TestCaseGroup* createImageDepthStencilDescriptorTests (tcu::TestContext& te
 	// Layouts used in these tests as VkDescriptorImageInfo::imageLayout.
 	const VkImageLayout kTestedLayouts[] =
 	{
-		VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR,
-		VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR,
-		VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL_KHR,
-		VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL_KHR,
+		VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL,
+		VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL,
+		VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL,
+		VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL,
 	};
 
 	// Types of read-only combinations to test.

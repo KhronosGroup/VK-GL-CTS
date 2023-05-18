@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 9d534f9312e56c72df763207e449c6719576fd54.
+ * Generated from Khronos GL API description (gl.xml) revision d8371b44919d61c02e60f446a4b5461fda910f71.
  */
 
 if (de::contains(extSet, "GL_KHR_blend_equation_advanced"))
@@ -135,6 +135,14 @@ if (de::contains(extSet, "GL_EXT_debug_marker"))
 if (de::contains(extSet, "GL_EXT_polygon_offset_clamp"))
 {
 	gl->polygonOffsetClamp	= (glPolygonOffsetClampFunc)	loader->get("glPolygonOffsetClampEXT");
+}
+
+if (de::contains(extSet, "GL_EXT_fragment_shading_rate"))
+{
+	gl->framebufferShadingRateEXT	= (glFramebufferShadingRateEXTFunc)		loader->get("glFramebufferShadingRateEXT");
+	gl->getFragmentShadingRatesEXT	= (glGetFragmentShadingRatesEXTFunc)	loader->get("glGetFragmentShadingRatesEXT");
+	gl->shadingRateEXT				= (glShadingRateEXTFunc)				loader->get("glShadingRateEXT");
+	gl->shadingRateCombinerOpsEXT	= (glShadingRateCombinerOpsEXTFunc)		loader->get("glShadingRateCombinerOpsEXT");
 }
 
 if (de::contains(extSet, "GL_OES_EGL_image"))

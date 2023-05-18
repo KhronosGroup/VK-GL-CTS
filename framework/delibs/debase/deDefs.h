@@ -78,6 +78,7 @@
 #define DE_OS_SYMBIAN	6			/*!< Symbian OS									*/
 #define DE_OS_IOS		7			/*!< iOS										*/
 #define DE_OS_QNX       8           /*!< QNX                                        */
+#define DE_OS_FUCHSIA   9           /*!< Fuchsia									*/
 
 /* OS detection (set to one of DE_OS_*). */
 #if defined(DE_OS)
@@ -100,6 +101,12 @@
 #	error Unknown operating system.
 #endif
 
+#if ((DE_OS == DE_OS_WIN32) || (DE_OS == DE_OS_UNIX)) && !defined(DEQP_SURFACELESS) && !defined(NULLWS)
+#	define DE_PLATFORM_USE_LIBRARY_TYPE 1
+#else
+#	undef DE_PLATFORM_USE_LIBRARY_TYPE
+#endif
+
 /* CPUs */
 #define DE_CPU_VANILLA	0
 #define DE_CPU_X86		1
@@ -108,6 +115,8 @@
 #define DE_CPU_ARM_64	4
 #define DE_CPU_MIPS		5
 #define DE_CPU_MIPS_64	6
+#define DE_CPU_RISCV_32	7
+#define DE_CPU_RISCV_64	8
 
 /* CPU detection. */
 #if defined(DE_CPU)
@@ -124,6 +133,10 @@
 #	define DE_CPU DE_CPU_MIPS
 #elif defined(__mips__) && ((__mips) == 64)
 #	define DE_CPU DE_CPU_MIPS_64
+#elif defined(__riscv) && ((__riscv_xlen) == 32)
+#	define DE_CPU DE_CPU_RISCV_32
+#elif defined(__riscv) && ((__riscv_xlen) == 64)
+#	define DE_CPU DE_CPU_RISCV_64
 #else
 #	error Unknown CPU.
 #endif
@@ -160,40 +173,19 @@
 #endif
 
 /* Sized data types. */
-typedef signed char			deInt8;
-typedef signed short		deInt16;
-typedef signed int			deInt32;
-typedef unsigned char		deUint8;
-typedef unsigned short		deUint16;
-typedef unsigned int		deUint32;
-
-#if (DE_COMPILER == DE_COMPILER_MSC)
-	typedef signed __int64		deInt64;
-	typedef unsigned __int64	deUint64;
-
-#	if (DE_OS == DE_OS_WINCE)
-#		include <basetsd.h>
-		typedef INT_PTR			deIntptr;
-		typedef UINT_PTR		deUintptr;
-#	elif (DE_OS == DE_OS_WIN32)
-#		include <crtdefs.h>
-		typedef intptr_t		deIntptr;
-		typedef uintptr_t		deUintptr;
-#	else
-#		error Define intptr types.
-#	endif
-
-#elif (DE_COMPILER == DE_COMPILER_GCC) || (DE_COMPILER == DE_COMPILER_CLANG)
-	/* \note stddef.h is needed for size_t definition. */
-#	include <stddef.h>
-#	include <stdint.h>
-	typedef int64_t				deInt64;
-	typedef uint64_t			deUint64;
-	typedef intptr_t			deIntptr;
-	typedef uintptr_t			deUintptr;
-#else
-#	error Define 64-bit and intptr types.
-#endif
+/* \note stddef.h is needed for size_t definition. */
+#include <stddef.h>
+#include <stdint.h>
+typedef int8_t				deInt8;
+typedef uint8_t				deUint8;
+typedef int16_t				deInt16;
+typedef uint16_t			deUint16;
+typedef int32_t				deInt32;
+typedef uint32_t			deUint32;
+typedef int64_t				deInt64;
+typedef uint64_t			deUint64;
+typedef intptr_t			deIntptr;
+typedef uintptr_t			deUintptr;
 
 /** Boolean type. */
 typedef int deBool;
@@ -384,6 +376,8 @@ DE_INLINE deBool deGetTrue (void) { return DE_TRUE; }
 #else
 #	define DE_UNUSED_FUNCTION
 #endif
+
+DE_INLINE const char* deFatalStr (const char* reason) { DE_ASSERT(0); return reason; }
 
 #ifdef __cplusplus
 }

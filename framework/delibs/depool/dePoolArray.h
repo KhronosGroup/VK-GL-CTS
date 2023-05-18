@@ -207,7 +207,7 @@ DE_INLINE void TYPENAME##_swap (DE_PTR_TYPE(TYPENAME) arr, int aNdx, int bNdx)	\
 	TYPENAME##_set(arr, bNdx, tmp);	\
 }	\
 \
-struct TYPENAME##Dummy_s { int dummy; }
+struct TYPENAME##Unused_s { int unused; }
 
 /*--------------------------------------------------------------------*//*!
  * \brief Declare a sort function for an array.
@@ -284,7 +284,7 @@ DE_INLINE void TYPENAME##_##SORTNAME (DE_PTR_TYPE(TYPENAME) arr)	\
 	}	\
 }	\
 \
-struct TYPENAME##SORTNAME##Dummy_s { int dummy; }
+struct TYPENAME##SORTNAME##unused_s { int unused; }
 
 /* Basic array types. */
 

@@ -88,7 +88,7 @@ void prepareGlslang (void)
 
 // Fail compilation if more members are added to TLimits or TBuiltInResource
 struct LimitsSizeHelper_s			{ bool m0, m1, m2, m3, m4, m5, m6, m7, m8; };
-struct BuiltInResourceSizeHelper_s	{ int m[93]; LimitsSizeHelper_s l; };
+struct BuiltInResourceSizeHelper_s	{ int m[102]; LimitsSizeHelper_s l; };
 
 DE_STATIC_ASSERT(sizeof(TLimits)			== sizeof(LimitsSizeHelper_s));
 DE_STATIC_ASSERT(sizeof(TBuiltInResource)	== sizeof(BuiltInResourceSizeHelper_s));
@@ -193,15 +193,24 @@ void getDefaultBuiltInResources (TBuiltInResource* builtin)
 	builtin->maxCullDistances							= 8;
 	builtin->maxCombinedClipAndCullDistances			= 8;
 	builtin->maxSamples									= 4;
-	builtin->maxMeshOutputVerticesNV					= 256;
-	builtin->maxMeshOutputPrimitivesNV					= 256;
-	builtin->maxMeshWorkGroupSizeX_NV					= 32;
+	builtin->maxMeshOutputVerticesNV					= 2048;
+	builtin->maxMeshOutputPrimitivesNV					= 2048;
+	builtin->maxMeshWorkGroupSizeX_NV					= 256;
 	builtin->maxMeshWorkGroupSizeY_NV					= 1;
 	builtin->maxMeshWorkGroupSizeZ_NV					= 1;
-	builtin->maxTaskWorkGroupSizeX_NV					= 32;
+	builtin->maxTaskWorkGroupSizeX_NV					= 1024;
 	builtin->maxTaskWorkGroupSizeY_NV					= 1;
 	builtin->maxTaskWorkGroupSizeZ_NV					= 1;
 	builtin->maxMeshViewCountNV							= 4;
+	builtin->maxMeshOutputVerticesEXT					= 2048;
+	builtin->maxMeshOutputPrimitivesEXT					= 2048;
+	builtin->maxMeshWorkGroupSizeX_EXT					= 256;
+	builtin->maxMeshWorkGroupSizeY_EXT					= 256;
+	builtin->maxMeshWorkGroupSizeZ_EXT					= 256;
+	builtin->maxTaskWorkGroupSizeX_EXT					= 256;
+	builtin->maxTaskWorkGroupSizeY_EXT					= 256;
+	builtin->maxTaskWorkGroupSizeZ_EXT					= 256;
+	builtin->maxMeshViewCountEXT						= 4;
 	builtin->maxDualSourceDrawBuffersEXT				= 1;
 };
 
@@ -302,6 +311,9 @@ bool compileShaderToSpirV (const std::vector<std::string>* sources, const Shader
 			case SPIRV_VERSION_1_5:
 				shader.setEnvTarget(glslang::EshTargetSpv, (glslang::EShTargetLanguageVersion)0x10500);
 				break;
+			case SPIRV_VERSION_1_6:
+				shader.setEnvTarget(glslang::EshTargetSpv, (glslang::EShTargetLanguageVersion)0x10600);
+				break;
 			default:
 				TCU_THROW(InternalError, "Unsupported SPIR-V target version");
 			}
@@ -365,11 +377,12 @@ bool compileHlslToSpirV (const HlslSource& program, std::vector<deUint32>* dst, 
 void stripSpirVDebugInfo (const size_t numSrcInstrs, const deUint32* srcInstrs, std::vector<deUint32>* dst)
 {
 	spv::spirvbin_t remapper;
+	std::vector<std::string> whiteListStrings;
 
 	// glslang operates in-place
 	dst->resize(numSrcInstrs);
 	std::copy(srcInstrs, srcInstrs+numSrcInstrs, dst->begin());
-	remapper.remap(*dst, spv::spirvbin_base_t::STRIP);
+	remapper.remap(*dst, whiteListStrings, spv::spirvbin_base_t::STRIP);
 }
 
 } // vk

@@ -1,0 +1,51 @@
+#!amber
+
+# Copyright 2022 Google LLC.
+# Copyright 2022 The Khronos Group Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+SHADER vertex vert_shader PASSTHROUGH
+
+SHADER fragment frag_shader GLSL
+#version 430
+layout(location = 0) out vec4 color_out;
+uniform layout(set=0, binding=0) sampler2DShadow tex;
+void main()
+{
+    // Sample border color of opaque white which makes the depth comparison 0.5 > 1.0 false.
+    color_out = vec4(texture(tex, vec3(2.0, 2.0, 0.5)), 0.0, 0.0, 1.0);
+}
+END
+
+IMAGE texture FORMAT D32_SFLOAT DIM_2D WIDTH 32 HEIGHT 32 FILL 0.0
+IMAGE framebuffer FORMAT R8G8B8A8_UNORM DIM_2D WIDTH 32 HEIGHT 32
+
+SAMPLER sampler_float_opaque_white \
+  ADDRESS_MODE_U clamp_to_border \
+  ADDRESS_MODE_V clamp_to_border \
+  BORDER_COLOR float_opaque_white \
+  COMPARE on \
+  COMPARE_OP greater
+
+PIPELINE graphics pipeline_float_opaque_white
+  ATTACH vert_shader
+  ATTACH frag_shader
+  BIND BUFFER texture AS combined_image_sampler SAMPLER sampler_float_opaque_white DESCRIPTOR_SET 0 BINDING 0
+  FRAMEBUFFER_SIZE 32 32
+  BIND BUFFER framebuffer AS color LOCATION 0
+END
+
+RUN pipeline_float_opaque_white DRAW_RECT POS 0 0 SIZE 32 32
+
+EXPECT framebuffer IDX 0 0 SIZE 32 32 EQ_RGBA 0 0 0 255

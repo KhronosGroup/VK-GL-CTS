@@ -96,7 +96,7 @@ inline int Random::getInt (int min, int max)
 	if (min == (int)0x80000000 && max == (int)0x7fffffff)
 		return (int)getUint32();
 	else
-		return min + (int)(getUint32() % (deUint32)(max-min+1));
+		return min + (int)(getUint32() % ((deUint32)max - (deUint32)min + 1u));
 }
 
 // Template implementations

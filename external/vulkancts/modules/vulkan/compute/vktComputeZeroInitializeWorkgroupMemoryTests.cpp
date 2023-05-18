@@ -26,6 +26,7 @@
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
+#include "vktAmberTestCase.hpp"
 
 #include "vkBufferWithMemory.hpp"
 #include "vkImageWithMemory.hpp"
@@ -72,7 +73,7 @@ tcu::TestStatus runCompute(Context& context, deUint32 bufferSize,
 	VkDeviceSize size = bufferSize;
 	buffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
 		vk, device, allocator, makeBufferCreateInfo(size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
-		MemoryRequirement::HostVisible | MemoryRequirement::Cached));
+		MemoryRequirement::HostVisible));
 	bufferDescriptor = makeDescriptorBufferInfo(**buffer, 0, size);
 
 	deUint32* ptr = (deUint32*)buffer->getAllocation().getHostPtr();
@@ -568,6 +569,14 @@ struct CompositeCaseDef
 	std::string				assignment;
 	deUint32				elements;
 	std::vector<deUint32>	specValues;
+
+	CompositeCaseDef (uint32_t index_, const std::string& typeDefinition_, const std::string& assignment_, uint32_t elements_, const std::vector<uint32_t>& specValues_)
+		: index				(index_)
+		, typeDefinition	(typeDefinition_)
+		, assignment		(assignment_)
+		, elements			(elements_)
+		, specValues		(specValues_)
+		{}
 };
 
 class CompositeTestInstance : public vkt::TestInstance
@@ -669,7 +678,7 @@ tcu::TestStatus CompositeTestInstance::iterate(void)
 
 void AddCompositeTests(tcu::TestCaseGroup* group)
 {
-	std::vector<CompositeCaseDef> cases =
+	const std::vector<CompositeCaseDef> cases
 	{
 		{0,
 		"shared uint wg_mem[specId0] = {};\n",
@@ -1393,6 +1402,32 @@ void AddRepeatedPipelineTests(tcu::TestCaseGroup* group)
 		}
 	}
 }
+#ifndef CTS_USES_VULKANSC
+void AddSharedMemoryTests (tcu::TestCaseGroup* group)
+{
+	tcu::TestContext&			testCtx		= group->getTestContext();
+	std::string					filePath	= "compute/zero_initialize_workgroup_memory";
+	std::vector<std::string>	requirements;
+
+	std::string					testNames[]	=
+	{
+		"workgroup_size_128",
+		"workgroup_size_8x8x2",
+		"workgroup_size_8x2x8",
+		"workgroup_size_2x8x8",
+		"workgroup_size_8x4x4",
+		"workgroup_size_4x8x4",
+		"workgroup_size_4x4x8"
+	};
+
+	requirements.push_back("VK_KHR_zero_initialize_workgroup_memory");
+
+	for (const auto& testName : testNames)
+	{
+		group->addChild(cts_amber::createAmberTestCase(testCtx, testName.c_str(), "", filePath.c_str(), testName + ".amber", requirements));
+	}
+}
+#endif // CTS_USES_VULKANSC
 
 } // anonymous
 
@@ -1424,6 +1459,12 @@ tcu::TestCaseGroup* createZeroInitializeWorkgroupMemoryTests(tcu::TestContext& t
 	tcu::TestCaseGroup* repeatPipelineGroup = new tcu::TestCaseGroup(testCtx, "repeat_pipeline", "repeated pipeline run");
 	AddRepeatedPipelineTests(repeatPipelineGroup);
 	tests->addChild(repeatPipelineGroup);
+
+#ifndef CTS_USES_VULKANSC
+	tcu::TestCaseGroup* subgroupInvocationGroup = new tcu::TestCaseGroup(testCtx, "shared_memory_blocks", "shared memory tests");
+	AddSharedMemoryTests(subgroupInvocationGroup);
+	tests->addChild(subgroupInvocationGroup);
+#endif // CTS_USES_VULKANSC
 
 	return tests.release();
 }

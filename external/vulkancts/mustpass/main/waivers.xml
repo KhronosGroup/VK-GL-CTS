@@ -1,0 +1,444 @@
+<?xml version="1.0" encoding="utf-8"?>
+<waiver_list>
+
+	<!--/*     Copyright (C) 2020 The Khronos Group Inc
+ *
+ *     Licensed under the Apache License, Version 2.0 (the "License");
+ *     you may not use this file except in compliance with the License.
+ *     You may obtain a copy of the License at
+ *
+ *          http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *     Unless required by applicable law or agreed to in writing, software
+ *     distributed under the License is distributed on an "AS IS" BASIS,
+ *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *     See the License for the specific language governing permissions and
+ *     limitations under the License.
+*/-->
+	<!--/*
+	Each <waiver> entry must contain three attributes: vendorName, vendorId and url.
+	Url should be a full path to gitlab issue(s).
+	Waiver tag should have one <description> child that describes issue.
+	Waiver tag should have one <device_list> child.
+	Device list should have one or more <d> elements containing device ids for which this waiver was created.
+	Waiver tag should contain one or more <t> elements containing test paths that should be waived.
+	String in <t> can use wildcard *.
+
+	<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:element name="waiver_list">
+	<xs:complexType>
+		<xs:sequence>
+			<xs:element name="waiver" maxOccurs="unbounded">
+			<xs:complexType>
+				<xs:sequence>
+					<xs:element name="description" type="xs:string"/>
+					<xs:element name="device_list">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="d" type="xs:integer" minOccurs="1" maxOccurs="unbounded"/>
+						</xs:sequence>
+					</xs:complexType>
+					</xs:element>
+					<xs:element name="t" type="xs:string" minOccurs="1" maxOccurs="unbounded"/>
+				</xs:sequence>
+				<xs:attribute name="vendorName" type="xs:string" use="required"/>
+				<xs:attribute name="vendorId" type="xs:string" use="required"/>
+				<xs:attribute name="url" type="xs:string" use="required"/>
+			</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	</xs:element>
+	</xs:schema>
+*/-->
+
+	<waiver vendorName="Imagination Technologies" vendorId="0x1010" url="https://gitlab.khronos.org/Tracker/vk-gl-cts/issues/336">
+		<description>GPU's are unable to correctly filter CEM corners with F32 textures, this includes the ability to gather texels for texel gather instructions.</description>
+		<device_list>
+			<!--TODO: plase specify for which deviceIds this waiver should be defined -->
+			<d>6200</d>
+		</device_list>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.size_pot.compare_less.clamp_to_edge_repeat</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.size_pot.compare_less.sparse_clamp_to_edge_repeat</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.size_pot.compare_less.repeat_mirrored_repeat</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.size_pot.compare_less.sparse_repeat_mirrored_repeat</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.size_pot.compare_less.mirrored_repeat_clamp_to_edge</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.size_pot.compare_less.sparse_mirrored_repeat_clamp_to_edge</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.size_pot.compare_greater.clamp_to_edge_repeat</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.size_pot.compare_greater.sparse_clamp_to_edge_repeat</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.size_pot.compare_greater.repeat_mirrored_repeat</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.size_pot.compare_greater.sparse_repeat_mirrored_repeat</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.size_pot.compare_greater.mirrored_repeat_clamp_to_edge</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.size_pot.compare_greater.sparse_mirrored_repeat_clamp_to_edge</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.size_npot.compare_less.clamp_to_edge_repeat</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.size_npot.compare_less.sparse_clamp_to_edge_repeat</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.size_npot.compare_less.repeat_mirrored_repeat</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.size_npot.compare_less.sparse_repeat_mirrored_repeat</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.size_npot.compare_less.mirrored_repeat_clamp_to_edge</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.size_npot.compare_less.sparse_mirrored_repeat_clamp_to_edge</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.size_npot.compare_greater.clamp_to_edge_repeat</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.size_npot.compare_greater.sparse_clamp_to_edge_repeat</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.size_npot.compare_greater.repeat_mirrored_repeat</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.size_npot.compare_greater.sparse_repeat_mirrored_repeat</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.size_npot.compare_greater.mirrored_repeat_clamp_to_edge</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.size_npot.compare_greater.sparse_mirrored_repeat_clamp_to_edge</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.filter_mode.min_linear_mag_linear</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.filter_mode.sparse_min_linear_mag_linear</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.filter_mode.min_nearest_mipmap_nearest_mag_linear</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.filter_mode.sparse_min_nearest_mipmap_nearest_mag_linear</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.filter_mode.min_nearest_mipmap_linear_mag_linear</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.filter_mode.sparse_min_nearest_mipmap_linear_mag_linear</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.filter_mode.min_linear_mipmap_nearest_mag_linear</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.filter_mode.sparse_min_linear_mipmap_nearest_mag_linear</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.filter_mode.min_linear_mipmap_linear_mag_linear</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.filter_mode.sparse_min_linear_mipmap_linear_mag_linear</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.base_level.level_1</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.base_level.sparse_level_1</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.base_level.level_2</t>
+		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.base_level.sparse_level_2</t>
+	</waiver>
+
+	<waiver vendorName="Imagination Technologies" vendorId="0x1010" url="https://gitlab.khronos.org/Tracker/vk-gl-cts/issues/229">
+		<description>Affected GPU families have a small error within the HW texture units bit replication logic for negative SNORM values prior to applying linear filtering.</description>
+		<device_list>
+			<d>0x24208504</d>
+			<d>0x6230</d>
+			<d>0x6430</d>
+			<d>0x6250</d>
+			<d>0x6450</d>
+			<d>0x6650</d>
+			<d>0x6110</d>
+			<d>0x6500</d>
+			<d>0x7400</d>
+			<d>0x15001064</d>
+			<d>0x22022025</d>
+			<d>0x22054025</d>
+			<d>0x22054030</d>
+			<d>0x22054038</d>
+			<d>0x22054330</d>
+			<d>0x22104018</d>
+			<d>0x22104218</d>
+			<d>0x22208318</d>
+		</device_list>
+
+		<t>dEQP-VK.pipeline.*.sampler.view_type.1d.format.r8g8b8a8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.1d.format.r8g8b8a8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.1d.format.r8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.1d.format.r8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.1d.format.r8g8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.1d.format.r8g8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.1d_array.format.r8g8b8a8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.1d_array.format.r8g8b8a8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.1d_array.format.r8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.1d_array.format.r8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.1d_array.format.r8g8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.1d_array.format.r8g8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.2d.format.r8g8b8a8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.2d.format.r8g8b8a8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.2d.format.r8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.2d.format.r8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.2d.format.r8g8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.2d.format.r8g8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.2d_array.format.r8g8b8a8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.2d_array.format.r8g8b8a8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.2d_array.format.r8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.2d_array.format.r8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.2d_array.format.r8g8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.2d_array.format.r8g8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.3d.format.r8g8b8a8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.3d.format.r8g8b8a8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.3d.format.r8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.3d.format.r8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.3d.format.r8g8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.3d.format.r8g8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.cube.format.r8g8b8a8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.cube.format.r8g8b8a8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.cube.format.r8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.cube.format.r8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.cube.format.r8g8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.cube.format.r8g8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.cube_array.format.r8g8b8a8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.cube_array.format.r8g8b8a8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.cube_array.format.r8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.cube_array.format.r8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.cube_array.format.r8g8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.*.sampler.view_type.cube_array.format.r8g8_snorm.mag_filter.linear</t>
+
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.b8g8r8_snorm.solid_color.normalized_coords.centered</t>
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.b8g8r8_snorm.solid_color.normalized_coords.edge_left</t>
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.b8g8r8_snorm.solid_color.normalized_coords.edge_right</t>
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.b8g8r8_snorm.solid_color.unnormalized_coords.centered</t>
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.b8g8r8_snorm.solid_color.unnormalized_coords.edge_left</t>
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.b8g8r8_snorm.solid_color.unnormalized_coords.edge_right</t>
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.normalized_coords.centered</t>
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.normalized_coords.edge_left</t>
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.normalized_coords.edge_right</t>
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.unnormalized_coords.centered</t>
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.unnormalized_coords.edge_left</t>
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.unnormalized_coords.edge_right</t>
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.r8_snorm.solid_color.normalized_coords.centered</t>
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.r8_snorm.solid_color.normalized_coords.edge_left</t>
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.r8_snorm.solid_color.normalized_coords.edge_right</t>
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.r8_snorm.solid_color.unnormalized_coords.centered</t>
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.r8_snorm.solid_color.unnormalized_coords.edge_left</t>
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.r8_snorm.solid_color.unnormalized_coords.edge_right</t>
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.r8g8_snorm.solid_color.normalized_coords.centered</t>
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.r8g8_snorm.solid_color.normalized_coords.edge_left</t>
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.r8g8_snorm.solid_color.normalized_coords.edge_right</t>
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.r8g8_snorm.solid_color.unnormalized_coords.centered</t>
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.r8g8_snorm.solid_color.unnormalized_coords.edge_left</t>
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.r8g8_snorm.solid_color.unnormalized_coords.edge_right</t>
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.r16_snorm.solid_color.normalized_coords.centered</t>
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.r16_snorm.solid_color.normalized_coords.edge_left</t>
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.r16_snorm.solid_color.normalized_coords.edge_right</t>
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.r16_snorm.solid_color.unnormalized_coords.centered</t>
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.r16_snorm.solid_color.unnormalized_coords.edge_left</t>
+		<t>dEQP-VK.pipeline.*.sampler.exact_sampling.r16_snorm.solid_color.unnormalized_coords.edge_right</t>
+
+		<t>dEQP-VK.texture.explicit_lod.2d.formats.r8_snorm_linear</t>
+		<t>dEQP-VK.texture.explicit_lod.2d.formats.r8g8_snorm_linear</t>
+		<t>dEQP-VK.texture.explicit_lod.2d.formats.r8g8b8a8_snorm_linear</t>
+		<t>dEQP-VK.texture.explicit_lod.2d.formats.a8b8g8r8_snorm_pack32_linear</t>
+
+		<t>dEQP-VK.texture.conversion.snorm_clamp_linear.a8b8g8r8_snorm_pack32</t>
+		<t>dEQP-VK.texture.conversion.snorm_clamp_linear.b8g8r8a8_snorm</t>
+		<t>dEQP-VK.texture.conversion.snorm_clamp_linear.r16g16b16a16_snorm</t>
+		<t>dEQP-VK.texture.conversion.snorm_clamp_linear.r16g16b16_snorm</t>
+		<t>dEQP-VK.texture.conversion.snorm_clamp_linear.r16g16_snorm</t>
+		<t>dEQP-VK.texture.conversion.snorm_clamp_linear.r16_snorm</t>
+		<t>dEQP-VK.texture.conversion.snorm_clamp_linear.r8g8b8a8_snorm</t>
+		<t>dEQP-VK.texture.conversion.snorm_clamp_linear.r8g8_snorm</t>
+		<t>dEQP-VK.texture.conversion.snorm_clamp_linear.r8_snorm</t>
+	</waiver>
+
+	<waiver vendorName="Broadcom" vendorId="0x14E4" url="https://gitlab.khronos.org/Tracker/vk-gl-cts/issues/757">
+		<description>On affected devices depth clipping is incorrectly disabled when the viewport minDepth is equal to maxDepth.</description>
+		<device_list>
+			<d>0x001E43CB</d>
+			<d>0xBE485FD3</d>
+		</device_list>
+		<t>dEQP-VK.draw.renderpass.inverted_depth_ranges.nodepthclamp_deltazero</t>
+		<t>dEQP-VK.draw.dynamic_rendering.*.inverted_depth_ranges.nodepthclamp_deltazero</t>
+	</waiver>
+
+	<waiver vendorName="Broadcom" vendorId="0x14E4" url="https://gitlab.khronos.org/Tracker/vk-gl-cts/issues/2804">
+		<description>On affected devices depth exponent is incorrectly ignored when calculating floating-point depth bias.</description>
+		<device_list>
+			<d>0x001E43CB</d>
+			<d>0xBE485FD3</d>
+			<d>0xC8D064C2</d>
+			<d>0x7BECF276</d>
+			<d>0x1AB5C29F</d>
+		</device_list>
+		<t>dEQP-VK.rasterization.depth_bias.d32_sfloat</t>
+	</waiver>
+
+	<waiver vendorName="NVIDIA" vendorId="0x10DE" url="https://gitlab.khronos.org/Tracker/vk-gl-cts/issues/1356">
+		<description>The affected GPUs are unable to reliably synchronize memory accesses at device scope.</description>
+		<device_list>
+			<d>0x0CE0</d>
+			<d>0x0E0D</d>
+			<d>0x0E16</d>
+			<d>0x0FA0</d>
+			<d>0x0FA7</d>
+			<d>0x0FC0</d>
+			<d>0x0FC1</d>
+			<d>0x0FC2</d>
+			<d>0x0FC4</d>
+			<d>0x0FC5</d>
+			<d>0x0FC6</d>
+			<d>0x0FC7</d>
+			<d>0x0FC8</d>
+			<d>0x0FC9</d>
+			<d>0x0FCA</d>
+			<d>0x0FCB</d>
+			<d>0x0FCC</d>
+			<d>0x0FCD</d>
+			<d>0x0FCE</d>
+			<d>0x0FCF</d>
+			<d>0x0FD0</d>
+			<d>0x0FD1</d>
+			<d>0x0FD2</d>
+			<d>0x0FD3</d>
+			<d>0x0FD4</d>
+			<d>0x0FD5</d>
+			<d>0x0FD6</d>
+			<d>0x0FD7</d>
+			<d>0x0FD8</d>
+			<d>0x0FD9</d>
+			<d>0x0FDA</d>
+			<d>0x0FDB</d>
+			<d>0x0FDC</d>
+			<d>0x0FDD</d>
+			<d>0x0FDE</d>
+			<d>0x0FDF</d>
+			<d>0x0FE0</d>
+			<d>0x0FE1</d>
+			<d>0x0FE2</d>
+			<d>0x0FE3</d>
+			<d>0x0FE4</d>
+			<d>0x0FE5</d>
+			<d>0x0FE6</d>
+			<d>0x0FE7</d>
+			<d>0x0FE8</d>
+			<d>0x0FE9</d>
+			<d>0x0FEA</d>
+			<d>0x0FEC</d>
+			<d>0x0FED</d>
+			<d>0x0FEE</d>
+			<d>0x0FEF</d>
+			<d>0x0FF0</d>
+			<d>0x0FF1</d>
+			<d>0x0FF2</d>
+			<d>0x0FF3</d>
+			<d>0x0FF5</d>
+			<d>0x0FF6</d>
+			<d>0x0FF7</d>
+			<d>0x0FF8</d>
+			<d>0x0FF9</d>
+			<d>0x0FFA</d>
+			<d>0x0FFB</d>
+			<d>0x0FFC</d>
+			<d>0x0FFD</d>
+			<d>0x0FFE</d>
+			<d>0x0FFF</d>
+			<d>0x1001</d>
+			<d>0x1003</d>
+			<d>0x1004</d>
+			<d>0x1005</d>
+			<d>0x1007</d>
+			<d>0x1008</d>
+			<d>0x100A</d>
+			<d>0x100B</d>
+			<d>0x100C</d>
+			<d>0x101E</d>
+			<d>0x101F</d>
+			<d>0x1020</d>
+			<d>0x1021</d>
+			<d>0x1022</d>
+			<d>0x1023</d>
+			<d>0x1024</d>
+			<d>0x1026</d>
+			<d>0x1027</d>
+			<d>0x1028</d>
+			<d>0x1029</d>
+			<d>0x102A</d>
+			<d>0x102B</d>
+			<d>0x102C</d>
+			<d>0x102D</d>
+			<d>0x102E</d>
+			<d>0x102F</d>
+			<d>0x1030</d>
+			<d>0x103A</d>
+			<d>0x103B</d>
+			<d>0x103C</d>
+			<d>0x103F</d>
+			<d>0x1180</d>
+			<d>0x1182</d>
+			<d>0x1183</d>
+			<d>0x1184</d>
+			<d>0x1185</d>
+			<d>0x1187</d>
+			<d>0x1188</d>
+			<d>0x1189</d>
+			<d>0x118A</d>
+			<d>0x118B</d>
+			<d>0x118C</d>
+			<d>0x118D</d>
+			<d>0x118E</d>
+			<d>0x118F</d>
+			<d>0x1191</d>
+			<d>0x1192</d>
+			<d>0x1193</d>
+			<d>0x1194</d>
+			<d>0x1195</d>
+			<d>0x1198</d>
+			<d>0x1199</d>
+			<d>0x119A</d>
+			<d>0x119D</d>
+			<d>0x119E</d>
+			<d>0x119F</d>
+			<d>0x11A0</d>
+			<d>0x11A1</d>
+			<d>0x11A2</d>
+			<d>0x11A3</d>
+			<d>0x11A4</d>
+			<d>0x11A5</d>
+			<d>0x11A7</d>
+			<d>0x11AA</d>
+			<d>0x11AC</d>
+			<d>0x11AD</d>
+			<d>0x11AE</d>
+			<d>0x11AF</d>
+			<d>0x11B0</d>
+			<d>0x11B1</d>
+			<d>0x11B4</d>
+			<d>0x11B6</d>
+			<d>0x11B7</d>
+			<d>0x11B8</d>
+			<d>0x11BA</d>
+			<d>0x11BB</d>
+			<d>0x11BC</d>
+			<d>0x11BD</d>
+			<d>0x11BE</d>
+			<d>0x11BF</d>
+			<d>0x11C0</d>
+			<d>0x11C1</d>
+			<d>0x11C2</d>
+			<d>0x11C3</d>
+			<d>0x11C4</d>
+			<d>0x11C5</d>
+			<d>0x11C6</d>
+			<d>0x11C7</d>
+			<d>0x11C8</d>
+			<d>0x11CB</d>
+			<d>0x11D0</d>
+			<d>0x11D1</d>
+			<d>0x11D2</d>
+			<d>0x11D3</d>
+			<d>0x11E0</d>
+			<d>0x11E1</d>
+			<d>0x11E2</d>
+			<d>0x11E3</d>
+			<d>0x11F0</d>
+			<d>0x11F8</d>
+			<d>0x11FA</d>
+			<d>0x11FC</d>
+			<d>0x11FF</d>
+			<d>0x1280</d>
+			<d>0x1281</d>
+			<d>0x1282</d>
+			<d>0x1283</d>
+			<d>0x1284</d>
+			<d>0x1285</d>
+			<d>0x1286</d>
+			<d>0x1287</d>
+			<d>0x1288</d>
+			<d>0x1289</d>
+			<d>0x128A</d>
+			<d>0x128B</d>
+			<d>0x1290</d>
+			<d>0x1291</d>
+			<d>0x1292</d>
+			<d>0x1293</d>
+			<d>0x1294</d>
+			<d>0x1295</d>
+			<d>0x1296</d>
+			<d>0x1297</d>
+			<d>0x1298</d>
+			<d>0x1299</d>
+			<d>0x129A</d>
+			<d>0x129B</d>
+			<d>0x12A0</d>
+			<d>0x12AD</d>
+			<d>0x12AE</d>
+			<d>0x12AF</d>
+			<d>0x12B0</d>
+			<d>0x12B1</d>
+			<d>0x12B9</d>
+			<d>0x12BA</d>
+		</device_list>
+		<t>dEQP-VK.memory_model.*core11*.device.*</t>
+	</waiver>
+
+</waiver_list>

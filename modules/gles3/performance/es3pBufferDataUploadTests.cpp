@@ -61,14 +61,14 @@ using gls::LineParametersWithConfidence;
 using de::meta::EnableIf;
 using de::meta::Not;
 
-static const char* const s_dummyVertexShader =		"#version 300 es\n"
+static const char* const s_minimalVertexShader =	"#version 300 es\n"
 													"in highp vec4 a_position;\n"
 													"void main (void)\n"
 													"{\n"
 													"	gl_Position = a_position;\n"
 													"}\n";
 
-static const char* const s_dummyFragnentShader =	"#version 300 es\n"
+static const char* const s_minimalFragnentShader =	"#version 300 es\n"
 													"layout(location = 0) out mediump vec4 dEQP_FragColor;\n"
 													"void main (void)\n"
 													"{\n"
@@ -601,7 +601,7 @@ static deUint64 medianTimeMemcpy (void* dst, const void* src, int numBytes)
 	}
 }
 
-static float dummyCalculation (float initial, int workSize)
+static float busyworkCalculation (float initial, int workSize)
 {
 	float	a = initial;
 	int		b = 123;
@@ -619,7 +619,7 @@ static void busyWait (int microseconds)
 {
 	const deUint64	maxSingleWaitTime	= 1000; // 1ms
 	const deUint64	endTime				= deGetMicroseconds() + microseconds;
-	float			dummy				= *tcu::warmupCPUInternal::g_dummy.m_v;
+	float			unused				= *tcu::warmupCPUInternal::g_unused.m_v;
 	int				workSize			= 500;
 
 	// exponentially increase work, cap to 1ms
@@ -628,7 +628,7 @@ static void busyWait (int microseconds)
 		const deUint64	startTime		= deGetMicroseconds();
 		deUint64		totalTime;
 
-		dummy = dummyCalculation(dummy, workSize);
+		unused = busyworkCalculation(unused, workSize);
 
 		totalTime = deGetMicroseconds() - startTime;
 
@@ -640,9 +640,9 @@ static void busyWait (int microseconds)
 
 	// "wait"
 	while (deGetMicroseconds() < endTime)
-		dummy = dummyCalculation(dummy, workSize);
+		unused = busyworkCalculation(unused, workSize);
 
-	*tcu::warmupCPUInternal::g_dummy.m_v = dummy;
+	*tcu::warmupCPUInternal::g_unused.m_v = unused;
 }
 
 // Sample from given values using linear interpolation at a given position as if values were laid to range [0, 1]
@@ -1902,11 +1902,11 @@ protected:
 
 	enum
 	{
-		DUMMY_RENDER_AREA_SIZE = 32
+		UNUSED_RENDER_AREA_SIZE = 32
 	};
 
-	glu::ShaderProgram*		m_dummyProgram;
-	deInt32					m_dummyProgramPosLoc;
+	glu::ShaderProgram*		m_minimalProgram;
+	deInt32					m_minimalProgramPosLoc;
 	deUint32				m_bufferID;
 
 	const int				m_numSamples;
@@ -1926,8 +1926,8 @@ private:
 template <typename SampleType>
 BasicBufferCase<SampleType>::BasicBufferCase (Context& context, const char* name, const char* desc, int bufferSizeMin, int bufferSizeMax, int numSamples, int flags)
 	: TestCase					(context, tcu::NODETYPE_PERFORMANCE, name, desc)
-	, m_dummyProgram			(DE_NULL)
-	, m_dummyProgramPosLoc		(-1)
+	, m_minimalProgram			(DE_NULL)
+	, m_minimalProgramPosLoc	(-1)
 	, m_bufferID				(0)
 	, m_numSamples				(numSamples)
 	, m_bufferSizeMin			(bufferSizeMin)
@@ -1969,19 +1969,19 @@ void BasicBufferCase<SampleType>::init (void)
 	if (!m_useGL)
 		return;
 
-	// \note Viewport size is not checked, it won't matter if the render target actually is smaller hhan DUMMY_RENDER_AREA_SIZE
+	// \note Viewport size is not checked, it won't matter if the render target actually is smaller than UNUSED_RENDER_AREA_SIZE
 
-	// dummy shader
+	// minimal shader
 
-	m_dummyProgram = new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::VertexSource(s_dummyVertexShader) << glu::FragmentSource(s_dummyFragnentShader));
-	if (!m_dummyProgram->isOk())
+	m_minimalProgram = new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::VertexSource(s_minimalVertexShader) << glu::FragmentSource(s_minimalFragnentShader));
+	if (!m_minimalProgram->isOk())
 	{
-		m_testCtx.getLog() << *m_dummyProgram;
+		m_testCtx.getLog() << *m_minimalProgram;
 		throw tcu::TestError("failed to build shader program");
 	}
 
-	m_dummyProgramPosLoc = gl.getAttribLocation(m_dummyProgram->getProgram(), "a_position");
-	if (m_dummyProgramPosLoc == -1)
+	m_minimalProgramPosLoc = gl.getAttribLocation(m_minimalProgram->getProgram(), "a_position");
+	if (m_minimalProgramPosLoc == -1)
 		throw tcu::TestError("a_position location was -1");
 }
 
@@ -1994,8 +1994,8 @@ void BasicBufferCase<SampleType>::deinit (void)
 		m_bufferID = 0;
 	}
 
-	delete m_dummyProgram;
-	m_dummyProgram = DE_NULL;
+	delete m_minimalProgram;
+	m_minimalProgram = DE_NULL;
 }
 
 template <typename SampleType>
@@ -2025,9 +2025,9 @@ TestCase::IterateResult BasicBufferCase<SampleType>::iterate (void)
 		de::Random					rnd								(0x1234);
 		deUint32					bufferIDs[numRandomBuffers]		= {0};
 
-		gl.useProgram(m_dummyProgram->getProgram());
-		gl.viewport(0, 0, DUMMY_RENDER_AREA_SIZE, DUMMY_RENDER_AREA_SIZE);
-		gl.enableVertexAttribArray(m_dummyProgramPosLoc);
+		gl.useProgram(m_minimalProgram->getProgram());
+		gl.viewport(0, 0, UNUSED_RENDER_AREA_SIZE, UNUSED_RENDER_AREA_SIZE);
+		gl.enableVertexAttribArray(m_minimalProgramPosLoc);
 
 		for (int ndx = 0; ndx < numRepeats; ++ndx)
 		{
@@ -2043,7 +2043,7 @@ TestCase::IterateResult BasicBufferCase<SampleType>::iterate (void)
 
 				if (rnd.getBool())
 				{
-					gl.vertexAttribPointer(m_dummyProgramPosLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+					gl.vertexAttribPointer(m_minimalProgramPosLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
 					gl.drawArrays(GL_POINTS, 0, 1);
 					gl.drawArrays(GL_POINTS, randomSize / (int)sizeof(float[4]) - 1, 1);
 				}
@@ -2106,7 +2106,7 @@ TestCase::IterateResult BasicBufferCase<SampleType>::iterate (void)
 				gl.bindBuffer(GL_ARRAY_BUFFER, bufferIDs[randomBufferNdx]);
 				gl.bufferData(GL_ARRAY_BUFFER, randomSize, &zeroData[0], usage);
 
-				gl.vertexAttribPointer(m_dummyProgramPosLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+				gl.vertexAttribPointer(m_minimalProgramPosLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
 				gl.drawArrays(GL_POINTS, 0, 1);
 				gl.drawArrays(GL_POINTS, randomSize / (int)sizeof(float[4]) - 1, 1);
 
@@ -2161,8 +2161,8 @@ void BasicBufferCase<SampleType>::disableGLWarmup (void)
 template <typename SampleType>
 void BasicBufferCase<SampleType>::waitGLResults (void)
 {
-	tcu::Surface dummySurface(DUMMY_RENDER_AREA_SIZE, DUMMY_RENDER_AREA_SIZE);
-	glu::readPixels(m_context.getRenderContext(), 0, 0, dummySurface.getAccess());
+	tcu::Surface unusedSurface(UNUSED_RENDER_AREA_SIZE, UNUSED_RENDER_AREA_SIZE);
+	glu::readPixels(m_context.getRenderContext(), 0, 0, unusedSurface.getAccess());
 }
 
 template <typename SampleType>
@@ -2218,7 +2218,7 @@ private:
 	virtual void		testBufferUpload	(UploadSampleResult<SampleType>& result, int writeSize) = 0;
 	void				logAndSetTestResult	(const std::vector<UploadSampleResult<SampleType> >& results);
 
-	deUint32			m_dummyBufferID;
+	deUint32			m_unusedBufferID;
 
 protected:
 	const CaseType		m_caseType;
@@ -2231,9 +2231,9 @@ protected:
 	using BasicBufferCase<SampleType>::m_testCtx;
 	using BasicBufferCase<SampleType>::m_context;
 
-	using BasicBufferCase<SampleType>::DUMMY_RENDER_AREA_SIZE;
-	using BasicBufferCase<SampleType>::m_dummyProgram;
-	using BasicBufferCase<SampleType>::m_dummyProgramPosLoc;
+	using BasicBufferCase<SampleType>::UNUSED_RENDER_AREA_SIZE;
+	using BasicBufferCase<SampleType>::m_minimalProgram;
+	using BasicBufferCase<SampleType>::m_minimalProgramPosLoc;
 	using BasicBufferCase<SampleType>::m_bufferID;
 	using BasicBufferCase<SampleType>::m_numSamples;
 	using BasicBufferCase<SampleType>::m_bufferSizeMin;
@@ -2244,7 +2244,7 @@ protected:
 template <typename SampleType>
 BasicUploadCase<SampleType>::BasicUploadCase (Context& context, const char* name, const char* desc, int bufferSizeMin, int bufferSizeMax, int numSamples, deUint32 bufferUsage, CaseType caseType, ResultType resultType, int flags)
 	: BasicBufferCase<SampleType>	(context, name, desc, bufferSizeMin, bufferSizeMax, numSamples, (caseType == CASE_USED_LARGER_BUFFER) ? (BasicBufferCase<SampleType>::FLAG_ALLOCATE_LARGER_BUFFER) : (0))
-	, m_dummyBufferID				(0)
+	, m_unusedBufferID				(0)
 	, m_caseType					(caseType)
 	, m_resultType					(resultType)
 	, m_bufferUsage					(bufferUsage)
@@ -2271,9 +2271,9 @@ void BasicUploadCase<SampleType>::init (void)
 	// zero buffer as upload source
 	m_zeroData.resize(m_bufferSizeMax, 0x00);
 
-	// dummy buffer
+	// unused buffer
 
-	gl.genBuffers(1, &m_dummyBufferID);
+	gl.genBuffers(1, &m_unusedBufferID);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Gen buf");
 
 	// log basic info
@@ -2328,10 +2328,10 @@ void BasicUploadCase<SampleType>::init (void)
 template <typename SampleType>
 void BasicUploadCase<SampleType>::deinit (void)
 {
-	if (m_dummyBufferID)
+	if (m_unusedBufferID)
 	{
-		m_context.getRenderContext().getFunctions().deleteBuffers(1, &m_dummyBufferID);
-		m_dummyBufferID = 0;
+		m_context.getRenderContext().getFunctions().deleteBuffers(1, &m_unusedBufferID);
+		m_unusedBufferID = 0;
 	}
 
 	m_zeroData = std::vector<deUint8>();
@@ -2391,14 +2391,14 @@ void BasicUploadCase<SampleType>::createBuffer (int iteration, int bufferSize)
 
 		de::Random					rng				(0xbadc * iteration);
 		const int					sizeDelta		= rng.getInt(0, 2097140);
-		const int					dummyUploadSize = deAlign32(1048576 + sizeDelta, 4*4); // Vary buffer size to make sure it is always reallocated
-		const std::vector<deUint8>	dummyData		(dummyUploadSize, 0x20);
+		const int					unusedUploadSize = deAlign32(1048576 + sizeDelta, 4*4); // Vary buffer size to make sure it is always reallocated
+		const std::vector<deUint8>	unusedData		(unusedUploadSize, 0x20);
 
-		gl.bindBuffer(GL_ARRAY_BUFFER, m_dummyBufferID);
-		gl.bufferData(GL_ARRAY_BUFFER, dummyUploadSize, &dummyData[0], m_bufferUsage);
+		gl.bindBuffer(GL_ARRAY_BUFFER, m_unusedBufferID);
+		gl.bufferData(GL_ARRAY_BUFFER, unusedUploadSize, &unusedData[0], m_bufferUsage);
 
 		// make sure upload won't interfere with the test
-		useBuffer(dummyUploadSize);
+		useBuffer(unusedUploadSize);
 
 		// don't kill the buffer so that the following upload cannot potentially reuse the buffer
 
@@ -2411,8 +2411,8 @@ void BasicUploadCase<SampleType>::createBuffer (int iteration, int bufferSize)
 		gl.bufferData(GL_ARRAY_BUFFER, bufferSize, DE_NULL, m_bufferUsage);
 	else
 	{
-		const std::vector<deUint8> dummyData(bufferSize, 0x20);
-		gl.bufferData(GL_ARRAY_BUFFER, bufferSize, &dummyData[0], m_bufferUsage);
+		const std::vector<deUint8> unusedData(bufferSize, 0x20);
+		gl.bufferData(GL_ARRAY_BUFFER, bufferSize, &unusedData[0], m_bufferUsage);
 	}
 
 	if (m_caseType == CASE_UNSPECIFIED_BUFFER || m_caseType == CASE_SPECIFIED_BUFFER)
@@ -2444,8 +2444,8 @@ void BasicUploadCase<SampleType>::deleteBuffer (int bufferSize)
 
 	if (m_bufferUnspecifiedContent)
 	{
-		const std::vector<deUint8> dummyData(bufferSize, 0x20);
-		gl.bufferData(GL_ARRAY_BUFFER, bufferSize, &dummyData[0], m_bufferUsage);
+		const std::vector<deUint8> unusedData(bufferSize, 0x20);
+		gl.bufferData(GL_ARRAY_BUFFER, bufferSize, &unusedData[0], m_bufferUsage);
 
 		GLU_EXPECT_NO_ERROR(gl.getError(), "re-specify buffer");
 	}
@@ -2461,11 +2461,11 @@ void BasicUploadCase<SampleType>::useBuffer (int bufferSize)
 {
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
-	gl.useProgram(m_dummyProgram->getProgram());
+	gl.useProgram(m_minimalProgram->getProgram());
 
-	gl.viewport(0, 0, DUMMY_RENDER_AREA_SIZE, DUMMY_RENDER_AREA_SIZE);
-	gl.vertexAttribPointer(m_dummyProgramPosLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
-	gl.enableVertexAttribArray(m_dummyProgramPosLoc);
+	gl.viewport(0, 0, UNUSED_RENDER_AREA_SIZE, UNUSED_RENDER_AREA_SIZE);
+	gl.vertexAttribPointer(m_minimalProgramPosLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+	gl.enableVertexAttribArray(m_minimalProgramPosLoc);
 
 	// use whole buffer to make sure buffer is uploaded by drawing first and last
 	DE_ASSERT(bufferSize % (int)sizeof(float[4]) == 0);
@@ -3181,9 +3181,9 @@ protected:
 	using BasicBufferCase<SampleType>::m_testCtx;
 	using BasicBufferCase<SampleType>::m_context;
 
-	using BasicBufferCase<SampleType>::DUMMY_RENDER_AREA_SIZE;
-	using BasicBufferCase<SampleType>::m_dummyProgram;
-	using BasicBufferCase<SampleType>::m_dummyProgramPosLoc;
+	using BasicBufferCase<SampleType>::UNUSED_RENDER_AREA_SIZE;
+	using BasicBufferCase<SampleType>::m_minimalProgram;
+	using BasicBufferCase<SampleType>::m_minimalProgramPosLoc;
 	using BasicBufferCase<SampleType>::m_bufferID;
 	using BasicBufferCase<SampleType>::m_numSamples;
 	using BasicBufferCase<SampleType>::m_bufferSizeMin;
@@ -3237,9 +3237,9 @@ void ModifyAfterBasicCase<SampleType>::init (void)
 
 	// Set state for drawing so that we don't have to change these during the iteration
 	{
-		gl.useProgram(m_dummyProgram->getProgram());
-		gl.viewport(0, 0, DUMMY_RENDER_AREA_SIZE, DUMMY_RENDER_AREA_SIZE);
-		gl.enableVertexAttribArray(m_dummyProgramPosLoc);
+		gl.useProgram(m_minimalProgram->getProgram());
+		gl.viewport(0, 0, UNUSED_RENDER_AREA_SIZE, UNUSED_RENDER_AREA_SIZE);
+		gl.enableVertexAttribArray(m_minimalProgramPosLoc);
 	}
 }
 
@@ -3307,7 +3307,7 @@ bool ModifyAfterBasicCase<SampleType>::prepareAndRunTest (int iteration, UploadS
 	gl.bufferData(GL_ARRAY_BUFFER, bufferSize, &m_zeroData[0], m_bufferUsage);
 
 	// ...use it...
-	gl.vertexAttribPointer(m_dummyProgramPosLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+	gl.vertexAttribPointer(m_minimalProgramPosLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
 	drawBufferRange(0, bufferSize);
 
 	// ..and make sure it is uploaded
@@ -4007,8 +4007,8 @@ void RenderPerformanceTestBase::setupVertexAttribs (void) const
 
 void RenderPerformanceTestBase::waitGLResults (void) const
 {
-	tcu::Surface dummySurface(RENDER_AREA_SIZE, RENDER_AREA_SIZE);
-	glu::readPixels(m_context.getRenderContext(), 0, 0, dummySurface.getAccess());
+	tcu::Surface unusedSurface(RENDER_AREA_SIZE, RENDER_AREA_SIZE);
+	glu::readPixels(m_context.getRenderContext(), 0, 0, unusedSurface.getAccess());
 }
 
 template <typename SampleType>
@@ -4111,7 +4111,7 @@ void RenderCase<SampleType>::init (void)
 
 			m_results.back().result.numVertices = getLayeredGridNumVertices(m_results.back().scene);
 
-			// test cases set these, initialize to dummy values
+			// test cases set these, initialize to unused values
 			m_results.back().result.renderDataSize = -1;
 			m_results.back().result.uploadedDataSize = -1;
 			m_results.back().result.unrelatedDataSize = -1;
@@ -5642,14 +5642,14 @@ void UploadWaitDrawCase::deinit (void)
 UploadWaitDrawCase::IterateResult UploadWaitDrawCase::iterate (void)
 {
 	const glw::Functions&	gl								= m_context.getRenderContext().getFunctions();
-	const int				betweenIterationDummyFrameCount = 5; // draw misc between test samples
+	const int				betweenIterationFrameCount		= 5; // draw misc between test samples
 	const int				frameNdx						= m_frameNdx++;
 	const int				currentSampleNdx				= m_iterationOrder[m_sampleNdx];
 
 	// Simulate work for about 8ms
 	busyWait(8000);
 
-	// Dummy rendering during dummy frames
+	// Busywork rendering during unused frames
 	if (frameNdx != m_samples[currentSampleNdx].numFrames)
 	{
 		// draw similar from another buffer
@@ -5671,7 +5671,7 @@ UploadWaitDrawCase::IterateResult UploadWaitDrawCase::iterate (void)
 		if (m_bufferState == BUFFERSTATE_NEW)
 			reuseAndDeleteBuffer();
 	}
-	else if (frameNdx == m_samples[currentSampleNdx].numFrames + betweenIterationDummyFrameCount)
+	else if (frameNdx == m_samples[currentSampleNdx].numFrames + betweenIterationFrameCount)
 	{
 		// next sample
 		++m_sampleNdx;

@@ -25,9 +25,37 @@
 
 #include "tcuDefs.hpp"
 #include "tcuTestCase.hpp"
+#include <map>
 
 namespace tcu
 {
+
+//! Test run summary.
+class TestRunStatus
+{
+public:
+	TestRunStatus (void) { clear(); }
+
+	void clear (void)
+	{
+		numExecuted		= 0;
+		numPassed		= 0;
+		numFailed		= 0;
+		numNotSupported	= 0;
+		numWarnings		= 0;
+		numWaived		= 0;
+		isComplete		= false;
+	}
+
+	int		numExecuted;		//!< Total number of cases executed.
+	int		numPassed;			//!< Number of cases passed.
+	int		numFailed;			//!< Number of cases failed.
+	int		numNotSupported;	//!< Number of cases not supported.
+	int		numWarnings;		//!< Number of QualityWarning / CompatibilityWarning results.
+	int		numWaived;			//!< Number of waived tests.
+	bool	isComplete;			//!< Is run complete.
+};
+
 
 /*--------------------------------------------------------------------*//*!
  * \brief Test case execution interface.
@@ -58,6 +86,10 @@ public:
 	virtual void						init				(TestCase* testCase, const std::string& path) = 0;
 	virtual void						deinit				(TestCase* testCase) = 0;
 	virtual TestNode::IterateResult		iterate				(TestCase* testCase) = 0;
+	virtual void						deinitTestPackage	(TestContext& testCtx) { DE_UNREF(testCtx); };
+	virtual bool						usesLocalStatus		()	{ return false; }
+	virtual void						updateGlobalStatus	(tcu::TestRunStatus& status) { DE_UNREF(status); }
+	virtual void						reportDurations		(tcu::TestContext& testCtx, const std::string& packageName, const deInt64& duration, const std::map<std::string, deUint64>& groupsDurationTime) { DE_UNREF(testCtx); DE_UNREF(packageName); DE_UNREF(duration); DE_UNREF(groupsDurationTime); }
 };
 
 /*--------------------------------------------------------------------*//*!

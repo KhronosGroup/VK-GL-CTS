@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": "0.1.2.0"
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceUniformBufferStandardLayoutFeatures":
+		[
+			{ "features": ["uniformBufferStandardLayout"],		"requirements": ["VK_KHR_uniform_buffer_standard_layout"] }
+		]
+	}
+}

@@ -36,6 +36,9 @@
 
 #include "tcuTestLog.hpp"
 #include "tcuImageCompare.hpp"
+#include "tcuCommandLine.hpp"
+
+#include <cmath>
 
 namespace vkt
 {
@@ -198,6 +201,7 @@ enum TestMode
 
 struct BlendOperationAdvancedParam
 {
+	PipelineConstructionType		pipelineConstructionType;
 	TestMode						testMode;
 	deUint32						testNumber;
 	std::vector<VkBlendOp>			blendOps;
@@ -207,6 +211,7 @@ struct BlendOperationAdvancedParam
 	VkBool32						premultipliedSrcColor;
 	VkBool32						premultipliedDstColor;
 	VkBlendOverlapEXT				overlap;
+	VkFormat						format;
 };
 
 // helper functions
@@ -220,6 +225,8 @@ const std::string generateTestName (struct BlendOperationAdvancedParam param)
 	result << (!param.premultipliedSrcColor ? "_nonpremultipliedsrc" : "");
 	result << (!param.premultipliedDstColor ? "_nonpremultiplieddst" : "");
 	result << "_" << param.testNumber;
+	if (param.format == VK_FORMAT_R8G8B8A8_UNORM)
+		result << "_r8g8b8a8_unorm";
 	return result.str();
 }
 
@@ -986,9 +993,6 @@ protected:
 			void				prepareRenderPass						(VkFramebuffer framebuffer, VkPipeline pipeline) const;
 			void				prepareCommandBuffer					(void) const;
 			void				buildPipeline							(VkBool32 premultiplySrc, VkBool32 premultiplyDst);
-			void				bindShaderStage							(VkShaderStageFlagBits					stage,
-																		 const char*							sourceName,
-																		 const char*							entryName);
 			deBool				verifyTestResult						(void);
 protected:
 	const BlendOperationAdvancedParam		m_param;
@@ -1008,119 +1012,19 @@ protected:
 	std::vector<de::MovePtr<Allocation>>	m_colorImageAllocs;
 	std::vector<VkImageMemoryBarrier>		m_imageLayoutBarriers;
 	Move<VkFramebuffer>						m_framebuffer;
-	Move<VkPipeline>						m_pipeline;
+	GraphicsPipelineWrapper					m_pipeline;
 
 	Move<VkShaderModule>					m_shaderModules[2];
-	deUint32								m_shaderStageCount;
-	VkPipelineShaderStageCreateInfo			m_shaderStageInfo[2];
 };
-
-void BlendOperationAdvancedTestInstance::bindShaderStage (VkShaderStageFlagBits	stage,
-														  const char*			sourceName,
-														  const char*			entryName)
-{
-	const DeviceInterface&	vk			= m_context.getDeviceInterface();
-	const VkDevice			vkDevice	= m_context.getDevice();
-
-	// Create shader module
-	deUint32*				code		= (deUint32*)m_context.getBinaryCollection().get(sourceName).getBinary();
-	deUint32				codeSize	= (deUint32)m_context.getBinaryCollection().get(sourceName).getSize();
-
-	const VkShaderModuleCreateInfo moduleCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,				// VkStructureType				sType;
-		DE_NULL,													// const void*					pNext;
-		0u,															// VkShaderModuleCreateFlags	flags;
-		codeSize,													// deUintptr					codeSize;
-		code,														// const deUint32*				pCode;
-	};
-
-	m_shaderModules[m_shaderStageCount] = createShaderModule(vk, vkDevice, &moduleCreateInfo);
-
-	// Prepare shader stage info
-	m_shaderStageInfo[m_shaderStageCount].sType					= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	m_shaderStageInfo[m_shaderStageCount].pNext					= DE_NULL;
-	m_shaderStageInfo[m_shaderStageCount].flags					= 0u;
-	m_shaderStageInfo[m_shaderStageCount].stage					= stage;
-	m_shaderStageInfo[m_shaderStageCount].module				= *m_shaderModules[m_shaderStageCount];
-	m_shaderStageInfo[m_shaderStageCount].pName					= entryName;
-	m_shaderStageInfo[m_shaderStageCount].pSpecializationInfo	= DE_NULL;
-
-	m_shaderStageCount++;
-}
 
 void BlendOperationAdvancedTestInstance::buildPipeline (VkBool32 srcPremultiplied,
 													   VkBool32 dstPremultiplied)
 {
-	const DeviceInterface&		vk					= m_context.getDeviceInterface();
-	const VkDevice				vkDevice			= m_context.getDevice();
+	const DeviceInterface&			vk			= m_context.getDeviceInterface();
+	const VkDevice					vkDevice	= m_context.getDevice();
 
-	// Create pipeline
-	const VkVertexInputBindingDescription vertexInputBindingDescription =
-	{
-		0u,									// deUint32				binding;
-		sizeof(Vec4),						// deUint32				strideInBytes;
-		VK_VERTEX_INPUT_RATE_VERTEX,		// VkVertexInputRate	inputRate;
-	};
-
-	const VkVertexInputAttributeDescription vertexInputAttributeDescription =
-	{
-		0u,									// deUint32 location;
-		0u,									// deUint32 binding;
-		VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat format;
-		0u									// deUint32 offsetInBytes;
-	};
-
-	const VkPipelineVertexInputStateCreateInfo vertexInputStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,		// VkStructureType							sType;
-		DE_NULL,														// const void*								pNext;
-		0u,																// VkPipelineVertexInputStateCreateFlags	flags;
-		1u,																// deUint32									vertexBindingDescriptionCount;
-		&vertexInputBindingDescription,									// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
-		1u,																// deUint32									vertexAttributeDescriptionCount;
-		&vertexInputAttributeDescription,								// const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
-	};
-
-	const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType							sType;
-		DE_NULL,														// const void*								pNext;
-		0u,																// VkPipelineInputAssemblyStateCreateFlags	flags;
-		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,							// VkPrimitiveTopology						topology;
-		VK_FALSE,														// VkBool32									primitiveRestartEnable;
-	};
-
-	const VkRect2D		scissor		= makeRect2D(m_renderSize);
-	VkViewport			viewport	= makeViewport(m_renderSize);
-
-	const VkPipelineViewportStateCreateInfo viewportStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,			// VkStructureType							sType;
-		DE_NULL,														// const void*								pNext;
-		0u,																// VkPipelineViewportStateCreateFlags		flags;
-		1u,																// deUint32									viewportCount;
-		&viewport,														// const VkViewport*						pViewports;
-		1u,																// deUint32									scissorCount;
-		&scissor														// const VkRect2D*							pScissors;
-	};
-
-	const VkPipelineRasterizationStateCreateInfo rasterStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,		// VkStructureType							sType;
-		DE_NULL,														// const void*								pNext;
-		0u,																// VkPipelineRasterizationStateCreateFlags	flags;
-		VK_FALSE,														// VkBool32									depthClampEnable;
-		VK_FALSE,														// VkBool32									rasterizerDiscardEnable;
-		VK_POLYGON_MODE_FILL,											// VkPolygonMode							polygonMode;
-		VK_CULL_MODE_NONE,												// VkCullModeFlags							cullMode;
-		VK_FRONT_FACE_COUNTER_CLOCKWISE,								// VkFrontFace								frontFace;
-		VK_FALSE,														// VkBool32									depthBiasEnable;
-		0.0f,															// float									depthBiasConstantFactor;
-		0.0f,															// float									depthBiasClamp;
-		0.0f,															// float									depthBiasSlopeFactor;
-		1.0f,															// float									lineWidth;
-	};
+	const std::vector<VkRect2D>		scissor		{ makeRect2D(m_renderSize) };
+	const std::vector<VkViewport>	viewport	{ makeViewport(m_renderSize) };
 
 	const VkPipelineColorBlendAdvancedStateCreateInfoEXT blendAdvancedStateParams =
 	{
@@ -1221,30 +1125,17 @@ void BlendOperationAdvancedTestInstance::buildPipeline (VkBool32 srcPremultiplie
 		&dynamicState											// const VkDynamicState*				pDynamicStates;
 	};
 
-	const VkGraphicsPipelineCreateInfo graphicsPipelineParams =
-	{
-		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType										sType;
-		DE_NULL,											// const void*											pNext;
-		0u,													// VkPipelineCreateFlags								flags;
-		m_shaderStageCount,									// deUint32												stageCount;
-		m_shaderStageInfo,									// const VkPipelineShaderStageCreateInfo*				pStages;
-		&vertexInputStateParams,							// const VkPipelineVertexInputStateCreateInfo*			pVertexInputState;
-		&inputAssemblyStateParams,							// const VkPipelineInputAssemblyStateCreateInfo*		pInputAssemblyState;
-		DE_NULL,											// const VkPipelineTessellationStateCreateInfo*			pTessellationState;
-		&viewportStateParams,								// const VkPipelineViewportStateCreateInfo*				pViewportState;
-		&rasterStateParams,									// const VkPipelineRasterizationStateCreateInfo*		pRasterState;
-		&multisampleStateParams,							// const VkPipelineMultisampleStateCreateInfo*			pMultisampleState;
-		&depthStencilStateParams,							// const VkPipelineDepthStencilStateCreateInfo*			pDepthStencilState;
-		&colorBlendStateParams,								// const VkPipelineColorBlendStateCreateInfo*			pColorBlendState;
-		&dynamicStateParams,								// const VkPipelineDynamicStateCreateInfo*				pDynamicState;
-		*m_pipelineLayout,									// VkPipelineLayout										layout;
-		*m_renderPass,										// VkRenderPass											renderPass;
-		0u,													// deUint32												subpass;
-		DE_NULL,											// VkPipeline											basePipelineHandle;
-		0u,													// deInt32												basePipelineIndex;
-	};
+	m_shaderModules[0] = createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("vert"), 0);
+	m_shaderModules[1] = createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("frag"), 0);
 
-	m_pipeline = createGraphicsPipeline(vk, vkDevice, DE_NULL, &graphicsPipelineParams);
+	m_pipeline.setDynamicState(&dynamicStateParams)
+			  .setDefaultRasterizationState()
+			  .setupVertexInputState()
+			  .setupPreRasterizationShaderState(viewport, scissor, *m_pipelineLayout, *m_renderPass, 0u, m_shaderModules[0].get())
+			  .setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, m_shaderModules[1].get(), &depthStencilStateParams, &multisampleStateParams)
+			  .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams, &multisampleStateParams)
+			  .setMonolithicPipelineLayout(*m_pipelineLayout)
+			  .buildPipeline();
 }
 
 void BlendOperationAdvancedTestInstance::prepareRenderPass (VkFramebuffer framebuffer, VkPipeline pipeline) const
@@ -1347,7 +1238,7 @@ void BlendOperationAdvancedTestInstance::prepareCommandBuffer () const
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, (VkDependencyFlags)0,
 						  0u, DE_NULL, 0u, DE_NULL, (deUint32)m_imageLayoutBarriers.size(), m_imageLayoutBarriers.data());
 
-	prepareRenderPass(*m_framebuffer, *m_pipeline);
+	prepareRenderPass(*m_framebuffer, m_pipeline.getPipeline());
 
 	endCommandBuffer(vk, *m_cmdBuffer);
 }
@@ -1357,8 +1248,8 @@ BlendOperationAdvancedTestInstance::BlendOperationAdvancedTestInstance	(Context&
 	: TestInstance			(context)
 	, m_param				(param)
 	, m_renderSize			(tcu::UVec2(widthArea, heightArea))
-	, m_colorFormat			(VK_FORMAT_R16G16B16A16_SFLOAT)
-	, m_shaderStageCount	(0)
+	, m_colorFormat			(param.format)
+	, m_pipeline			(m_context.getDeviceInterface(), m_context.getDevice(), param.pipelineConstructionType)
 {
 	const DeviceInterface&		vk				 = m_context.getDeviceInterface();
 	const VkDevice				vkDevice		 = m_context.getDevice();
@@ -1456,12 +1347,6 @@ BlendOperationAdvancedTestInstance::BlendOperationAdvancedTestInstance	(Context&
 		m_framebuffer = createFramebuffer(vk, vkDevice, &framebufferParams);
 	}
 
-	// Bind shader stages
-	{
-		bindShaderStage(VK_SHADER_STAGE_VERTEX_BIT, "vert", "main");
-		bindShaderStage(VK_SHADER_STAGE_FRAGMENT_BIT, "frag", "main");
-	}
-
 
 	// Create pipeline layout
 	{
@@ -1555,6 +1440,7 @@ deBool BlendOperationAdvancedTestInstance::verifyTestResult ()
 		for (deUint32 colorAtt = 0; colorAtt < m_param.colorAttachmentsCount; colorAtt++)
 		{
 			Vec4 rectColor = calculateFinalColor(m_param, m_param.blendOps[colorAtt], srcColors[color], dstColors[color]);
+
 			if (m_param.premultipliedDstColor == VK_FALSE)
 			{
 				if (rectColor.w() > 0.0f)
@@ -1573,6 +1459,13 @@ deBool BlendOperationAdvancedTestInstance::verifyTestResult ()
 					}
 				}
 			}
+
+			// If pixel value is not normal (inf, nan, denorm), skip it
+			if (!std::isnormal(rectColor.x()) ||
+				!std::isnormal(rectColor.y()) ||
+				!std::isnormal(rectColor.z()) ||
+				!std::isnormal(rectColor.w()))
+				skipColor = DE_TRUE;
 		}
 
 		// Skip ill-formed colors that appears in any color attachment.
@@ -1611,15 +1504,22 @@ deBool BlendOperationAdvancedTestInstance::verifyTestResult ()
 		std::ostringstream name;
 		name << "Image comparison. Color attachment: "  << colorAtt << ". Depth op: " << de::toLower(getBlendOpStr(m_param.blendOps[colorAtt]).toString().substr(3));
 
+		// R8G8B8A8 threshold was derived experimentally.
 		compareOk = tcu::floatThresholdCompare(m_context.getTestContext().getLog(),
 											   "FloatImageCompare",
 											   name.str().c_str(),
 											   referenceImages[colorAtt].getAccess(),
 											   result->getAccess(),
-											   Vec4(0.01f, 0.01f, 0.01f, 0.01f),
+											   clearColorVec4,
+											   m_colorFormat == VK_FORMAT_R8G8B8A8_UNORM ? Vec4(0.15f, 0.15f, 0.15f, 0.13f) : Vec4(0.01f, 0.01f, 0.01f, 0.01f),
 											   tcu::COMPARE_LOG_RESULT);
-		if (!compareOk)
-			return DE_FALSE;
+#ifdef CTS_USES_VULKANSC
+		if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
+		{
+			if (!compareOk)
+				return DE_FALSE;
+		}
 	}
 	return DE_TRUE;
 }
@@ -1718,6 +1618,7 @@ void BlendOperationAdvancedTest::checkSupport(Context& context) const
 	{
 		throw tcu::NotSupportedError("Unsupported required coherent operations");
 	}
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_param.pipelineConstructionType);
 }
 
 void BlendOperationAdvancedTest::initPrograms (SourceCollections& programCollection) const
@@ -1755,9 +1656,6 @@ protected:
 																		 VkRenderPass renderpass, deBool secondDraw);
 	virtual	void				prepareCommandBuffer					(void);
 	virtual	void				buildPipeline							(void);
-	virtual	void				bindShaderStage							(VkShaderStageFlagBits					stage,
-																		 const char*							sourceName,
-																		 const char*							entryName);
 	virtual	tcu::TestStatus		verifyTestResult						(void);
 
 protected:
@@ -1778,7 +1676,7 @@ protected:
 	de::MovePtr<Allocation>					m_colorImageAlloc;
 	std::vector<VkImageMemoryBarrier>		m_imageLayoutBarriers;
 	std::vector<Move<VkFramebuffer>>		m_framebuffers;
-	std::vector<Move<VkPipeline>>			m_pipelines;
+	std::vector<GraphicsPipelineWrapper>	m_pipelines;
 
 	Move<VkShaderModule>					m_shaderModules[2];
 	deUint32								m_shaderStageCount;
@@ -1789,111 +1687,13 @@ BlendOperationAdvancedTestCoherentInstance::~BlendOperationAdvancedTestCoherentI
 {
 }
 
-void BlendOperationAdvancedTestCoherentInstance::bindShaderStage (VkShaderStageFlagBits	stage,
-																 const char*			sourceName,
-																 const char*			entryName)
-{
-	const DeviceInterface&	vk			= m_context.getDeviceInterface();
-	const VkDevice			vkDevice	= m_context.getDevice();
-
-	// Create shader module
-	deUint32*				code		= (deUint32*)m_context.getBinaryCollection().get(sourceName).getBinary();
-	deUint32				codeSize	= (deUint32)m_context.getBinaryCollection().get(sourceName).getSize();
-
-	const VkShaderModuleCreateInfo moduleCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,				// VkStructureType				sType;
-		DE_NULL,													// const void*					pNext;
-		0u,															// VkShaderModuleCreateFlags	flags;
-		codeSize,													// deUintptr					codeSize;
-		code,														// const deUint32*				pCode;
-	};
-
-	m_shaderModules[m_shaderStageCount] = createShaderModule(vk, vkDevice, &moduleCreateInfo);
-
-	// Prepare shader stage info
-	m_shaderStageInfo[m_shaderStageCount].sType					= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	m_shaderStageInfo[m_shaderStageCount].pNext					= DE_NULL;
-	m_shaderStageInfo[m_shaderStageCount].flags					= 0u;
-	m_shaderStageInfo[m_shaderStageCount].stage					= stage;
-	m_shaderStageInfo[m_shaderStageCount].module				= *m_shaderModules[m_shaderStageCount];
-	m_shaderStageInfo[m_shaderStageCount].pName					= entryName;
-	m_shaderStageInfo[m_shaderStageCount].pSpecializationInfo	= DE_NULL;
-
-	m_shaderStageCount++;
-}
-
 void BlendOperationAdvancedTestCoherentInstance::buildPipeline ()
 {
-	const DeviceInterface&		vk					= m_context.getDeviceInterface();
-	const VkDevice				vkDevice			= m_context.getDevice();
+	const DeviceInterface&			vk			= m_context.getDeviceInterface();
+	const VkDevice					vkDevice	= m_context.getDevice();
 
-	// Create pipeline
-	const VkVertexInputBindingDescription vertexInputBindingDescription =
-	{
-		0u,									// deUint32				binding;
-		sizeof(Vec4)		,				// deUint32				strideInBytes;
-		VK_VERTEX_INPUT_RATE_VERTEX,		// VkVertexInputRate	inputRate;
-	};
-
-	const VkVertexInputAttributeDescription vertexInputAttributeDescription =
-	{
-		0u,									// deUint32 location;
-		0u,									// deUint32 binding;
-		VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat format;
-		0u									// deUint32 offsetInBytes;
-	};
-
-	const VkPipelineVertexInputStateCreateInfo vertexInputStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,		// VkStructureType							sType;
-		DE_NULL,														// const void*								pNext;
-		0u,																// VkPipelineVertexInputStateCreateFlags	flags;
-		1u,																// deUint32									vertexBindingDescriptionCount;
-		&vertexInputBindingDescription,									// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
-		1u,																// deUint32									vertexAttributeDescriptionCount;
-		&vertexInputAttributeDescription,								// const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
-	};
-
-	const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType							sType;
-		DE_NULL,														// const void*								pNext;
-		0u,																// VkPipelineInputAssemblyStateCreateFlags	flags;
-		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,							// VkPrimitiveTopology						topology;
-		VK_FALSE,														// VkBool32									primitiveRestartEnable;
-	};
-
-	const VkRect2D		scissor		= makeRect2D(m_renderSize);
-	VkViewport			viewport	= makeViewport(m_renderSize);
-
-	const VkPipelineViewportStateCreateInfo viewportStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,			// VkStructureType							sType;
-		DE_NULL,														// const void*								pNext;
-		0u,																// VkPipelineViewportStateCreateFlags		flags;
-		1u,																// deUint32									viewportCount;
-		&viewport,														// const VkViewport*						pViewports;
-		1u,																// deUint32									scissorCount;
-		&scissor														// const VkRect2D*							pScissors;
-	};
-
-	const VkPipelineRasterizationStateCreateInfo rasterStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,		// VkStructureType							sType;
-		DE_NULL,														// const void*								pNext;
-		0u,																// VkPipelineRasterizationStateCreateFlags	flags;
-		VK_FALSE,														// VkBool32									depthClampEnable;
-		VK_FALSE,														// VkBool32									rasterizerDiscardEnable;
-		VK_POLYGON_MODE_FILL,											// VkPolygonMode							polygonMode;
-		VK_CULL_MODE_NONE,												// VkCullModeFlags							cullMode;
-		VK_FRONT_FACE_COUNTER_CLOCKWISE,								// VkFrontFace								frontFace;
-		VK_FALSE,														// VkBool32									depthBiasEnable;
-		0.0f,															// float									depthBiasConstantFactor;
-		0.0f,															// float									depthBiasClamp;
-		0.0f,															// float									depthBiasSlopeFactor;
-		1.0f,															// float									lineWidth;
-	};
+	const std::vector<VkRect2D>		scissor		{ makeRect2D(m_renderSize) };
+	const std::vector<VkViewport>	viewport	{ makeViewport(m_renderSize) };
 
 	const VkPipelineColorBlendAdvancedStateCreateInfoEXT blendAdvancedStateParams =
 	{
@@ -2001,35 +1801,34 @@ void BlendOperationAdvancedTestCoherentInstance::buildPipeline ()
 		&dynamicState											// const VkDynamicState*				pDynamicStates;
 	};
 
-	VkGraphicsPipelineCreateInfo graphicsPipelineParams =
-	{
-		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType										sType;
-		DE_NULL,											// const void*											pNext;
-		0u,													// VkPipelineCreateFlags								flags;
-		m_shaderStageCount,									// deUint32												stageCount;
-		m_shaderStageInfo,									// const VkPipelineShaderStageCreateInfo*				pStages;
-		&vertexInputStateParams,							// const VkPipelineVertexInputStateCreateInfo*			pVertexInputState;
-		&inputAssemblyStateParams,							// const VkPipelineInputAssemblyStateCreateInfo*		pInputAssemblyState;
-		DE_NULL,											// const VkPipelineTessellationStateCreateInfo*			pTessellationState;
-		&viewportStateParams,								// const VkPipelineViewportStateCreateInfo*				pViewportState;
-		&rasterStateParams,									// const VkPipelineRasterizationStateCreateInfo*		pRasterState;
-		&multisampleStateParams,							// const VkPipelineMultisampleStateCreateInfo*			pMultisampleState;
-		&depthStencilStateParams,							// const VkPipelineDepthStencilStateCreateInfo*			pDepthStencilState;
-		&colorBlendStateParams[0],							// const VkPipelineColorBlendStateCreateInfo*			pColorBlendState;
-		&dynamicStateParams,								// const VkPipelineDynamicStateCreateInfo*				pDynamicState;
-		*m_pipelineLayout,									// VkPipelineLayout										layout;
-		m_renderPasses[0].get(),							// VkRenderPass											renderPass;
-		0u,													// deUint32												subpass;
-		DE_NULL,											// VkPipeline											basePipelineHandle;
-		0u,													// deInt32												basePipelineIndex;
-	};
+	m_shaderModules[0] = createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("vert"), 0);
+	m_shaderModules[1] = createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("frag"), 0);
+
+	m_pipelines.reserve(2);
 
 	// Create first pipeline
-	m_pipelines.emplace_back(createGraphicsPipeline(vk, vkDevice, DE_NULL, &graphicsPipelineParams));
+	m_pipelines.emplace_back(vk, vkDevice, m_param.pipelineConstructionType);
+	m_pipelines.back()
+		.setDynamicState(&dynamicStateParams)
+		.setDefaultRasterizationState()
+		.setupVertexInputState()
+		.setupPreRasterizationShaderState(viewport, scissor, *m_pipelineLayout, m_renderPasses[0].get(), 0u, m_shaderModules[0].get())
+		.setupFragmentShaderState(*m_pipelineLayout, m_renderPasses[0].get(), 0u, m_shaderModules[1].get(), &depthStencilStateParams, &multisampleStateParams)
+		.setupFragmentOutputState(m_renderPasses[0].get(), 0u, &colorBlendStateParams[0], &multisampleStateParams)
+		.setMonolithicPipelineLayout(*m_pipelineLayout)
+		.buildPipeline();
+
 	// Create second pipeline
-	graphicsPipelineParams.pColorBlendState = &colorBlendStateParams[1];
-	graphicsPipelineParams.renderPass = m_renderPasses[1].get();
-	m_pipelines.emplace_back(createGraphicsPipeline(vk, vkDevice, DE_NULL, &graphicsPipelineParams));
+	m_pipelines.emplace_back(vk, vkDevice, m_param.pipelineConstructionType);
+	m_pipelines.back()
+		.setDynamicState(&dynamicStateParams)
+		.setDefaultRasterizationState()
+		.setupVertexInputState()
+		.setupPreRasterizationShaderState(viewport, scissor, *m_pipelineLayout, m_renderPasses[1].get(), 0u, m_shaderModules[0].get())
+		.setupFragmentShaderState(*m_pipelineLayout, m_renderPasses[1].get(), 0u, m_shaderModules[1].get(), &depthStencilStateParams, &multisampleStateParams)
+		.setupFragmentOutputState(m_renderPasses[1].get(), 0u, &colorBlendStateParams[1], &multisampleStateParams)
+		.setMonolithicPipelineLayout(*m_pipelineLayout)
+		.buildPipeline();
 }
 
 void BlendOperationAdvancedTestCoherentInstance::prepareRenderPass (VkFramebuffer framebuffer, VkPipeline pipeline, VkRenderPass renderpass, deBool secondDraw)
@@ -2128,7 +1927,7 @@ void BlendOperationAdvancedTestCoherentInstance::prepareCommandBuffer ()
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, (VkDependencyFlags)0,
 						  0u, DE_NULL, 0u, DE_NULL, (deUint32)m_imageLayoutBarriers.size(), m_imageLayoutBarriers.data());
 
-	prepareRenderPass(m_framebuffers[0].get(), m_pipelines[0].get(), m_renderPasses[0].get(), false);
+	prepareRenderPass(m_framebuffers[0].get(), m_pipelines[0].getPipeline(), m_renderPasses[0].get(), false);
 
 	if (m_param.coherentOperations == DE_FALSE)
 	{
@@ -2152,7 +1951,7 @@ void BlendOperationAdvancedTestCoherentInstance::prepareCommandBuffer ()
 							  0u, DE_NULL, 0u, DE_NULL, 1u, &colorImageBarrier);
 	}
 
-	prepareRenderPass(m_framebuffers[1].get(), m_pipelines[1].get(), m_renderPasses[1].get(), true);
+	prepareRenderPass(m_framebuffers[1].get(), m_pipelines[1].getPipeline(), m_renderPasses[1].get(), true);
 
 	endCommandBuffer(vk, *m_cmdBuffer);
 }
@@ -2162,7 +1961,7 @@ BlendOperationAdvancedTestCoherentInstance::BlendOperationAdvancedTestCoherentIn
 	: TestInstance			(context)
 	, m_param				(param)
 	, m_renderSize			(tcu::UVec2(widthArea, heightArea))
-	, m_colorFormat			(VK_FORMAT_R16G16B16A16_SFLOAT)
+	, m_colorFormat			(param.format)
 	, m_shaderStageCount	(0)
 {
 	const DeviceInterface&		vk				 = m_context.getDeviceInterface();
@@ -2250,13 +2049,6 @@ BlendOperationAdvancedTestCoherentInstance::BlendOperationAdvancedTestCoherentIn
 		framebufferParams.renderPass = m_renderPasses[1].get();
 		m_framebuffers.emplace_back(createFramebuffer(vk, vkDevice, &framebufferParams));
 	}
-
-	// Bind shader stages
-	{
-		bindShaderStage(VK_SHADER_STAGE_VERTEX_BIT, "vert", "main");
-		bindShaderStage(VK_SHADER_STAGE_FRAGMENT_BIT, "frag", "main");
-	}
-
 
 	// Create pipeline layout
 	{
@@ -2373,12 +2165,15 @@ tcu::TestStatus BlendOperationAdvancedTestCoherentInstance::verifyTestResult (vo
 	de::MovePtr<tcu::TextureLevel> result = vkt::pipeline::readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *m_colorImage, m_colorFormat, m_renderSize);
 	std::ostringstream name;
 	name << "Image comparison. Depth ops: " << de::toLower(getBlendOpStr(m_param.blendOps[0]).toString().substr(3)) << " and " << de::toLower(getBlendOpStr(m_param.blendOps[1]).toString().substr(3));
+
+	// R8G8B8A8 threshold was derived experimentally.
 	compareOk = tcu::floatThresholdCompare(m_context.getTestContext().getLog(),
 										   "FloatImageCompare",
 										   name.str().c_str(),
 										   refImage.getAccess(),
 										   result->getAccess(),
-										   Vec4(0.01f, 0.01f, 0.01f, 0.01f),
+										   clearColorVec4,
+										   m_colorFormat == VK_FORMAT_R8G8B8A8_UNORM ? Vec4(0.13f, 0.13f, 0.13f, 0.13f) : Vec4(0.01f, 0.01f, 0.01f, 0.01f),
 										   tcu::COMPARE_LOG_RESULT);
 	if (!compareOk)
 		return tcu::TestStatus::fail("Image mismatch");
@@ -2396,7 +2191,7 @@ TestInstance* BlendOperationAdvancedTest::createInstance (Context& context) cons
 
 } // anonymous
 
-tcu::TestCaseGroup* createBlendOperationAdvancedTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createBlendOperationAdvancedTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
 	enum nonpremultiplyEnum
 	{
@@ -2441,6 +2236,7 @@ tcu::TestCaseGroup* createBlendOperationAdvancedTests (tcu::TestContext& testCtx
 						continue;
 
 					BlendOperationAdvancedParam testParams;
+					testParams.pipelineConstructionType = pipelineConstructionType;
 					testParams.testMode					= TEST_MODE_GENERIC;
 					testParams.overlap					= (VkBlendOverlapEXT) overlap;
 					testParams.coherentOperations		= DE_FALSE;
@@ -2449,9 +2245,13 @@ tcu::TestCaseGroup* createBlendOperationAdvancedTests (tcu::TestContext& testCtx
 					testParams.premultipliedSrcColor	= (premultiplyModes[premultiply] & PREMULTIPLY_SRC) ? VK_TRUE : VK_FALSE;
 					testParams.premultipliedDstColor	= (premultiplyModes[premultiply] & PREMULTIPLY_DST) ? VK_TRUE : VK_FALSE;
 					testParams.testNumber				= testNumber++;
+					testParams.format					= VK_FORMAT_R16G16B16A16_SFLOAT;
 
 					for (deUint32 numColorAtt = 0; numColorAtt < colorAttachmentCounts[colorAttachmentCount]; numColorAtt++)
 						testParams.blendOps.push_back(blendOps[blendOp]);
+					opsTests->addChild(newTestCase<BlendOperationAdvancedTest>(testCtx, testParams));
+
+					testParams.format = VK_FORMAT_R8G8B8A8_UNORM;
 					opsTests->addChild(newTestCase<BlendOperationAdvancedTest>(testCtx, testParams));
 				}
 			}
@@ -2466,6 +2266,7 @@ tcu::TestCaseGroup* createBlendOperationAdvancedTests (tcu::TestContext& testCtx
 	for (deUint32 colorAttachmentCount = 1u; colorAttachmentCount < DE_LENGTH_OF_ARRAY(colorAttachmentCounts); colorAttachmentCount++)
 	{
 		BlendOperationAdvancedParam testParams;
+		testParams.pipelineConstructionType = pipelineConstructionType;
 		testParams.testMode					= TEST_MODE_GENERIC;
 		testParams.overlap					= VK_BLEND_OVERLAP_UNCORRELATED_EXT;
 		testParams.coherentOperations		= DE_FALSE;
@@ -2474,12 +2275,16 @@ tcu::TestCaseGroup* createBlendOperationAdvancedTests (tcu::TestContext& testCtx
 		testParams.premultipliedSrcColor	= VK_TRUE;
 		testParams.premultipliedDstColor	= VK_TRUE;
 		testParams.testNumber				= testNumber++;
+		testParams.format					= VK_FORMAT_R16G16B16A16_SFLOAT;
 
 		for (deUint32 numColorAtt = 0; numColorAtt < colorAttachmentCounts[colorAttachmentCount]; numColorAtt++)
 		{
 			deUint32 i = de::randomScalar<deUint32>(rnd, 0, DE_LENGTH_OF_ARRAY(blendOps) - 1);
 			testParams.blendOps.push_back(blendOps[i]);
 		}
+		independentTests->addChild(newTestCase<BlendOperationAdvancedTest>(testCtx, testParams));
+
+		testParams.format = VK_FORMAT_R8G8B8A8_UNORM;
 		independentTests->addChild(newTestCase<BlendOperationAdvancedTest>(testCtx, testParams));
 	}
 
@@ -2492,6 +2297,7 @@ tcu::TestCaseGroup* createBlendOperationAdvancedTests (tcu::TestContext& testCtx
 	for (deUint32 coherent = 0u; coherent < DE_LENGTH_OF_ARRAY(coherentOps); coherent++)
 	{
 		BlendOperationAdvancedParam testParams;
+		testParams.pipelineConstructionType = pipelineConstructionType;
 		testParams.testMode					= TEST_MODE_COHERENT;
 		testParams.overlap					= VK_BLEND_OVERLAP_UNCORRELATED_EXT;
 		testParams.coherentOperations		= coherentOps[coherent];
@@ -2500,6 +2306,7 @@ tcu::TestCaseGroup* createBlendOperationAdvancedTests (tcu::TestContext& testCtx
 		testParams.premultipliedSrcColor	= VK_TRUE;
 		testParams.premultipliedDstColor	= VK_TRUE;
 		testParams.testNumber				= testNumber++;
+		testParams.format					= VK_FORMAT_R16G16B16A16_SFLOAT;
 
 		// We do two consecutive advanced blending operations
 		deUint32 i = de::randomScalar<deUint32>(rnd, 0, DE_LENGTH_OF_ARRAY(blendOps) - 1);
@@ -2507,6 +2314,9 @@ tcu::TestCaseGroup* createBlendOperationAdvancedTests (tcu::TestContext& testCtx
 		i = de::randomScalar<deUint32>(rnd, 0, DE_LENGTH_OF_ARRAY(blendOps) - 1);
 		testParams.blendOps.push_back(blendOps[i]);
 
+		coherentTests->addChild(newTestCase<BlendOperationAdvancedTest>(testCtx, testParams));
+
+		testParams.format = VK_FORMAT_R8G8B8A8_UNORM;
 		coherentTests->addChild(newTestCase<BlendOperationAdvancedTest>(testCtx, testParams));
 	}
 	tests->addChild(coherentTests.release());

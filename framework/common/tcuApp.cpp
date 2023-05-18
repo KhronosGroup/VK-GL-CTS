@@ -133,8 +133,11 @@ App::App (Platform& platform, Archive& archive, TestLog& log, const CommandLine&
 	, m_testRoot		(DE_NULL)
 	, m_testExecutor	(DE_NULL)
 {
-	print("dEQP Core %s (0x%08x) starting..\n", qpGetReleaseName(), qpGetReleaseId());
-	print("  target implementation = '%s'\n", qpGetTargetName());
+	if (!cmdLine.isSubProcess())
+	{
+		print("dEQP Core %s (0x%08x) starting..\n", qpGetReleaseName(), qpGetReleaseId());
+		print("  target implementation = '%s'\n", qpGetTargetName());
+	}
 
 	if (!deSetRoundingMode(DE_ROUNDINGMODE_TO_NEAREST_EVEN))
 		qpPrintf("WARNING: Failed to set floating-point rounding mode!\n");
@@ -226,27 +229,46 @@ bool App::iterate (void)
 		}
 	}
 
-	if (!platformOk || !testExecOk)
+	if ((!platformOk || !testExecOk) )
 	{
-		if (!platformOk)
-			print("\nABORTED!\n");
-		else
-			print("\nDONE!\n");
+		if (!m_testCtx->getCommandLine().isSubProcess())
+		{
+			if (!platformOk)
+				print("\nABORTED!\n");
+			else
+				print("\nDONE!\n");
+		}
 
 		const RunMode runMode = m_testCtx->getCommandLine().getRunMode();
 		if (runMode == RUNMODE_EXECUTE)
 		{
 			const TestRunStatus& result = m_testExecutor->getStatus();
-
-			// Report statistics.
-			print("\nTest run totals:\n");
-			print("  Passed:        %d/%d (%.1f%%)\n", result.numPassed,		result.numExecuted, (result.numExecuted > 0 ? (100.0f * (float)result.numPassed			/ (float)result.numExecuted) : 0.0f));
-			print("  Failed:        %d/%d (%.1f%%)\n", result.numFailed,		result.numExecuted, (result.numExecuted > 0 ? (100.0f * (float)result.numFailed			/ (float)result.numExecuted) : 0.0f));
-			print("  Not supported: %d/%d (%.1f%%)\n", result.numNotSupported,	result.numExecuted, (result.numExecuted > 0 ? (100.0f * (float)result.numNotSupported	/ (float)result.numExecuted) : 0.0f));
-			print("  Warnings:      %d/%d (%.1f%%)\n", result.numWarnings,		result.numExecuted, (result.numExecuted > 0 ? (100.0f * (float)result.numWarnings		/ (float)result.numExecuted) : 0.0f));
-			print("  Waived:        %d/%d (%.1f%%)\n", result.numWaived,		result.numExecuted, (result.numExecuted > 0 ? (100.0f * (float)result.numWaived			/ (float)result.numExecuted) : 0.0f));
-			if (!result.isComplete)
-				print("Test run was ABORTED!\n");
+			if(!m_testCtx->getCommandLine().isSubProcess())
+			{
+				// Report statistics.
+				print("\nTest run totals:\n");
+				print("  Passed:        %d/%d (%.1f%%)\n", result.numPassed,		result.numExecuted, (result.numExecuted > 0 ? (100.0f * (float)result.numPassed			/ (float)result.numExecuted) : 0.0f));
+				print("  Failed:        %d/%d (%.1f%%)\n", result.numFailed,		result.numExecuted, (result.numExecuted > 0 ? (100.0f * (float)result.numFailed			/ (float)result.numExecuted) : 0.0f));
+				print("  Not supported: %d/%d (%.1f%%)\n", result.numNotSupported,	result.numExecuted, (result.numExecuted > 0 ? (100.0f * (float)result.numNotSupported	/ (float)result.numExecuted) : 0.0f));
+				print("  Warnings:      %d/%d (%.1f%%)\n", result.numWarnings,		result.numExecuted, (result.numExecuted > 0 ? (100.0f * (float)result.numWarnings		/ (float)result.numExecuted) : 0.0f));
+				print("  Waived:        %d/%d (%.1f%%)\n", result.numWaived,		result.numExecuted, (result.numExecuted > 0 ? (100.0f * (float)result.numWaived			/ (float)result.numExecuted) : 0.0f));
+				if (!result.isComplete)
+					print("Test run was ABORTED!\n");
+			}
+			else
+			{
+				// subprocess sends test statisticts through qpa file, so that main process may read it
+				// and add to global statistics ( search for #SubProcessStatus to see how it's done )
+				std::ostringstream str;
+				str << "\n#SubProcessStatus " <<
+					result.numExecuted		<< " " <<
+					result.numPassed		<< " " <<
+					result.numFailed		<< " " <<
+					result.numNotSupported	<< " " <<
+					result.numWarnings		<< " " <<
+					result.numWaived		<< "\n";
+				m_testCtx->getLog().writeRaw(str.str().c_str());
+			}
 		}
 	}
 

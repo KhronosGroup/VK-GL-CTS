@@ -1,7 +1,0 @@
-dEQP-VK.descriptor_indexing.storage_buffer_minNonUniform
-dEQP-VK.descriptor_indexing.storage_texel_buffer_minNonUniform
-dEQP-VK.descriptor_indexing.uniform_texel_buffer_minNonUniform
-dEQP-VK.descriptor_indexing.uniform_buffer_minNonUniform
-dEQP-VK.descriptor_indexing.combined_image_sampler_minNonUniform
-dEQP-VK.descriptor_indexing.combined_image_sampler_with_lod_minNonUniform
-dEQP-VK.descriptor_indexing.storage_image_minNonUniform

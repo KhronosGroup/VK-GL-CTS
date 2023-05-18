@@ -103,7 +103,7 @@ DE_INLINE void TYPENAME##_reset (DE_PTR_TYPE(TYPENAME) hashArray)									\
 	TYPENAME##Array_reset(hashArray->array);														\
 }																									\
 																									\
-struct TYPENAME##Dummy_s { int dummy; }
+struct TYPENAME##Unused_s { int unused; }
 
 /*--------------------------------------------------------------------*//*!
  * \brief Implement a template pool hash-array class.
@@ -166,6 +166,6 @@ deBool TYPENAME##_copyToArray (const TYPENAME* hashArray, DE_PTR_TYPE(KEYARRAYTY
 	return DE_TRUE;																					\
 }																									\
 																									\
-struct TYPENAME##Dummy2_s { int dummy; }
+struct TYPENAME##Unused2_s { int unused; }
 
 #endif /* _DEPOOLHASHARRAY_H */

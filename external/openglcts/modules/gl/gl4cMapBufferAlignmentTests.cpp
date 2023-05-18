@@ -28,6 +28,7 @@
 
 #include "gl4cMapBufferAlignmentTests.hpp"
 
+#include "gluContextInfo.hpp"
 #include "gluDefs.hpp"
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
@@ -104,6 +105,7 @@ public:
 		/* Nothing to be done */
 	}
 
+	void init();
 	/** Execute test
 	 *
 	 * @return tcu::TestNode::STOP
@@ -149,6 +151,14 @@ struct BufferEnums
 	GLenum m_target;
 	GLenum m_max_size;
 };
+
+void Functional::init(void)
+{
+	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_buffer_storage"))
+	{
+		TCU_THROW(NotSupportedError, "GL_ARB_buffer_storage not supported");
+	}
+}
 
 /** Execute test
  *

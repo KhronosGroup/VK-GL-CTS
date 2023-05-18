@@ -44,7 +44,9 @@ void createChildren (tcu::TestCaseGroup* queryPoolTests)
 
 	queryPoolTests->addChild(new QueryPoolOcclusionTests(testCtx));
 	queryPoolTests->addChild(new QueryPoolStatisticsTests(testCtx));
+#ifndef CTS_USES_VULKANSC
 	queryPoolTests->addChild(new QueryPoolPerformanceTests(testCtx));
+#endif
 	queryPoolTests->addChild(new QueryPoolConcurrentTests(testCtx));
 }
 

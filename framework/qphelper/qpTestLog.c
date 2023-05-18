@@ -32,6 +32,8 @@
 
 #include "deMutex.h"
 
+#include "deClock.h"
+
 #if defined(QP_SUPPORT_PNG)
 #	include <png.h>
 #endif
@@ -44,6 +46,10 @@
 #	include <windows.h>
 #	include <io.h>
 #endif
+
+static deUint64 sessionStartTime;
+
+
 
 #if defined(DE_DEBUG)
 
@@ -306,6 +312,10 @@ static deBool endSession (qpTestLog* log)
 	/* Make sure xml is flushed. */
 	qpXmlWriter_flush(log->writer);
 
+	deUint64 duration = deGetMicroseconds() - sessionStartTime;
+
+	fprintf(log->outputFile, "\nRun took %.2f seconds\n", (float)duration / 1000000.0f);
+
 	/* Write out #endSession. */
 	fprintf(log->outputFile, "\n#endSession\n");
 	qpTestLog_flushFile(log);
@@ -332,7 +342,8 @@ qpTestLog* qpTestLog_createFileLog (const char* fileName, deUint32 flags)
 	ContainerStack_reset(&log->containerStack);
 #endif
 
-	qpPrintf("Writing test log into %s\n", fileName);
+	if(!(flags & QP_TEST_LOG_NO_INITIAL_OUTPUT))
+		qpPrintf("Writing test log into %s\n", fileName);
 
 	/* Create output file. */
 	log->outputFile = fopen(fileName, "wb");
@@ -390,6 +401,7 @@ deBool qpTestLog_beginSession(qpTestLog* log, const char* additionalSessionInfo)
 	/* Write out #beginSession. */
 	fprintf(log->outputFile, "#beginSession\n");
 	qpTestLog_flushFile(log);
+	sessionStartTime = deGetMicroseconds();
 
 	log->isSessionOpen = DE_TRUE;
 
@@ -1531,6 +1543,18 @@ deBool qpTestLog_endSampleList (qpTestLog* log)
 	DE_ASSERT(ContainerStack_pop(&log->containerStack) == CONTAINERTYPE_SAMPLELIST);
 
 	deMutex_unlock(log->lock);
+	return DE_TRUE;
+}
+
+deBool qpTestLog_writeRaw(qpTestLog* log, const char* rawContents)
+{
+	DE_ASSERT(log);
+
+	fseek(log->outputFile, 0, SEEK_END);
+	fprintf(log->outputFile, "%s", rawContents);
+	if (!(log->flags & QP_TEST_LOG_NO_FLUSH))
+		qpTestLog_flushFile(log);
+
 	return DE_TRUE;
 }
 

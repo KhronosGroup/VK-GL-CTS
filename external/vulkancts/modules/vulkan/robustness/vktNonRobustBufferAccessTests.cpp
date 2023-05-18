@@ -46,10 +46,13 @@ tcu::TestCaseGroup*	createNonRobustBufferAccessTests (tcu::TestContext& testCtx)
 	};
 
 	de::MovePtr<tcu::TestCaseGroup> group{new tcu::TestCaseGroup{testCtx, kGroupName.c_str(), "Non-robust buffer access test group"}};
+#ifndef CTS_USES_VULKANSC
 	for (const auto& test : nonRobustBufferAccessTests)
 	{
 		group->addChild(createAmberTestCase(testCtx, test.first.c_str(), test.second.c_str(), kGroupName.c_str(), test.first + ".amber"));
 	}
+#endif
+
 	return group.release();
 }
 

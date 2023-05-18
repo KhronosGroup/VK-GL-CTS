@@ -606,18 +606,21 @@ bool ConversionDatabase::convertNormalizedUnsignedFixedPoint(int* src_input_rgba
 
 	for (unsigned int n = 0; n < sizeof(bit_diffs_src_intermediate) / sizeof(bit_diffs_src_intermediate[0]); ++n)
 	{
-		float tmp = ((float)src_rgba_intermediate[n]) / ((1 << src_input_rgba_bits[n]) - 1);
-		if (tmp > 1.0f)
-			tmp = 1.0f;
-		tmp *= (float)((1 << src_attachment_rgba_bits[n]) - 1);
-		src_rgba_intermediate[n] = (int)(0.5 + tmp);
+		if (src_input_rgba_bits[n] != 0)
+		{
+			float tmp = ((float)src_rgba_intermediate[n]) / ((1 << src_input_rgba_bits[n]) - 1);
+			if (tmp > 1.0f)
+				tmp = 1.0f;
+			tmp *= (float)((1 << src_attachment_rgba_bits[n]) - 1);
+			src_rgba_intermediate[n] = (int)(0.5 + tmp);
+		}
 	}
 
 	// The following equations correspond to equation 2.1 from ES spec 3.0.2
-	r_f32 = ((float)src_rgba_intermediate[0]) / (float)((1 << src_attachment_rgba_bits[0]) - 1);
-	g_f32 = ((float)src_rgba_intermediate[1]) / (float)((1 << src_attachment_rgba_bits[1]) - 1);
-	b_f32 = ((float)src_rgba_intermediate[2]) / (float)((1 << src_attachment_rgba_bits[2]) - 1);
-	a_f32 = ((float)src_rgba_intermediate[3]) / (float)((1 << src_attachment_rgba_bits[3]) - 1);
+	if (src_attachment_rgba_bits[0] != 0) r_f32 = ((float)src_rgba_intermediate[0]) / (float)((1 << src_attachment_rgba_bits[0]) - 1);
+	if (src_attachment_rgba_bits[1] != 0) g_f32 = ((float)src_rgba_intermediate[1]) / (float)((1 << src_attachment_rgba_bits[1]) - 1);
+	if (src_attachment_rgba_bits[2] != 0) b_f32 = ((float)src_rgba_intermediate[2]) / (float)((1 << src_attachment_rgba_bits[2]) - 1);
+	if (src_attachment_rgba_bits[3] != 0) a_f32 = ((float)src_rgba_intermediate[3]) / (float)((1 << src_attachment_rgba_bits[3]) - 1);
 
 	// Clamp to <0, 1>. Since we're dealing with unsigned ints on input, there's
 	// no way we could be lower than 0.
@@ -665,11 +668,14 @@ bool ConversionDatabase::convertNormalizedUnsignedFixedPoint(int* src_input_rgba
 
 	for (unsigned int n = 0; n < 4 /* channels */; ++n)
 	{
-		float tmp = ((float)dst_rgba[n]) / ((1 << dst_attachment_rgba_bits[n]) - 1);
-		if (tmp > 1.0f)
-			tmp = 1.0f;
-		tmp *= (float)((1 << dst_output_rgba_bits[n]) - 1);
-		dst_rgba[n] = (int)(0.5 + tmp);
+		if (dst_attachment_rgba_bits[n] != 0)
+		{
+			float tmp = ((float)dst_rgba[n]) / ((1 << dst_attachment_rgba_bits[n]) - 1);
+			if (tmp > 1.0f)
+				tmp = 1.0f;
+			tmp *= (float)((1 << dst_output_rgba_bits[n]) - 1);
+			dst_rgba[n] = (int)(0.5 + tmp);
+		}
 	}
 
 	return true;
@@ -689,7 +695,7 @@ PixelData ConversionDatabase::getAlpha8OESPixelData(GLenum type, unsigned char a
 {
 	PixelData result;
 
-	// Sanity checks
+	// Quick checks
 	DE_ASSERT(type == GL_UNSIGNED_BYTE);
 
 	// Carry on
@@ -720,7 +726,7 @@ PixelData ConversionDatabase::getLuminance8OESPixelData(GLenum type, unsigned ch
 {
 	PixelData result;
 
-	/* Sanity checks */
+	/* Quick checks */
 	DE_ASSERT(type == GL_UNSIGNED_BYTE);
 
 	/* Carry on */
@@ -755,7 +761,7 @@ PixelData ConversionDatabase::getLuminance8Alpha8OESPixelData(GLenum type, unsig
 {
 	PixelData result;
 
-	/* Sanity checks */
+	/* Quick checks */
 	DE_ASSERT(type == GL_UNSIGNED_BYTE);
 
 	/* Carry on */
@@ -791,7 +797,7 @@ PixelData ConversionDatabase::getR16IPixelData(int is_source_pixel, GLenum type,
 {
 	PixelData result;
 
-	/* Sanity checks */
+	/* Quick checks */
 	if (is_source_pixel)
 	{
 		DE_ASSERT(type == GL_SHORT);
@@ -842,7 +848,7 @@ PixelData ConversionDatabase::getR16UIPixelData(int is_source_pixel, GLenum type
 {
 	PixelData result;
 
-	/* Sanity checks */
+	/* Quick checks */
 	if (is_source_pixel)
 	{
 		DE_ASSERT(type == GL_UNSIGNED_SHORT);
@@ -969,7 +975,7 @@ PixelData ConversionDatabase::getR8IPixelData(int is_source_pixel, GLenum type, 
 {
 	PixelData result;
 
-	// Sanity checks
+	// Quick checks
 	if (is_source_pixel)
 		DE_ASSERT(type == GL_BYTE);
 	else
@@ -1017,7 +1023,7 @@ PixelData ConversionDatabase::getR8UIPixelData(int is_source_pixel, GLenum type,
 {
 	PixelData result;
 
-	/* Sanity checks */
+	/* Quick checks */
 	if (is_source_pixel)
 		DE_ASSERT(type == GL_UNSIGNED_BYTE);
 	else
@@ -1773,7 +1779,7 @@ PixelData ConversionDatabase::getRGB5A1PixelData(int is_source_pixel, GLenum typ
 
 	case GL_UNSIGNED_INT_2_10_10_10_REV:
 	{
-		// Sanity checks
+		// Quick checks
 		DE_ASSERT(red <= 1023);
 		DE_ASSERT(green <= 1023);
 		DE_ASSERT(blue <= 1023);
@@ -2848,7 +2854,7 @@ void ConversionDatabase::addEntryToConversionDatabase(PixelData src_topleft, Pix
 	GLenum src_internalformat		   = GL_NONE;
 	GLenum src_type					   = GL_NONE;
 
-	// Sanity checks: general
+	// Quick checks: general
 	DE_ASSERT(src_topleft.data_internalformat != GL_NONE);
 	DE_ASSERT(dst_topleft.data_internalformat != GL_NONE);
 
@@ -2892,7 +2898,7 @@ void ConversionDatabase::addEntryToConversionDatabase(PixelData src_topleft, Pix
 	dst_internalformat = dst_topleft.data_internalformat;
 	dst_type		   = dst_topleft.data_type;
 
-	// Sanity checks: format used for destination storage
+	// Quick checks: format used for destination storage
 	is_dst_type_valid			= isTypeSupportedByGLReadPixels(dst_type);
 	is_dst_internalformat_valid = isInternalFormatCompatibleWithType(dst_type, dst_internalformat);
 
@@ -2900,7 +2906,7 @@ void ConversionDatabase::addEntryToConversionDatabase(PixelData src_topleft, Pix
 	if (!is_dst_type_valid || !is_dst_internalformat_valid)
 		TCU_FAIL("Requested destination type or internalformat is not compatible with validation requirements.");
 
-	// Sanity checks: make sure the conversion has not been already added
+	// Quick checks: make sure the conversion has not been already added
 	for (unsigned int n = 0; n < n_entries_added; ++n)
 	{
 		ConversionDatabaseEntry& entry_ptr = entries[n];
@@ -6469,7 +6475,7 @@ tcu::TestNode::IterateResult RequiredCase::iterate(void)
 
 	m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 
-	// Sanity checks
+	// Quick checks
 	DE_ASSERT(m_destination_attachment_type == GL_TEXTURE_2D ||
 			  m_destination_attachment_type == GL_TEXTURE_CUBE_MAP_NEGATIVE_X ||
 			  m_destination_attachment_type == GL_TEXTURE_CUBE_MAP_NEGATIVE_Y ||
@@ -7600,7 +7606,7 @@ unsigned int RequiredCase::getSizeOfPixel(GLenum format, GLenum type)
 bool RequiredCase::getPixelDataFromRawData(void* raw_data, GLenum raw_data_format, GLenum raw_data_type,
 										   PixelData* out_result)
 {
-	// Sanity checks: format should be equal to one of the values supported
+	// Quick checks: format should be equal to one of the values supported
 	//				by glReadPixels()
 	DE_ASSERT(raw_data_format == GL_RGBA || raw_data_format == GL_RGBA_INTEGER);
 
@@ -7609,7 +7615,7 @@ bool RequiredCase::getPixelDataFromRawData(void* raw_data, GLenum raw_data_forma
 		return false;
 	}
 
-	// Sanity checks: type should be equal to one of the values supported
+	// Quick checks: type should be equal to one of the values supported
 	//				by glReadPixels()
 	DE_ASSERT(raw_data_type == GL_UNSIGNED_BYTE || raw_data_type == GL_UNSIGNED_INT || raw_data_type == GL_INT ||
 			  raw_data_type == GL_FLOAT || raw_data_type == GL_UNSIGNED_INT_2_10_10_10_REV_EXT);
@@ -8241,7 +8247,7 @@ bool RequiredCase::findEntryInConversionDatabase(unsigned int index, GLenum src_
 	GLenum		 result_internalformat				= GL_NONE;
 	int			 result_internalformat_index		= -1;
 
-	/* Sanity checks */
+	/* Quick checks */
 	DE_ASSERT(out_src_topleft != NULL);
 	DE_ASSERT(out_src_topright != NULL);
 	DE_ASSERT(out_src_bottomleft != NULL);
@@ -8376,7 +8382,7 @@ bool RequiredCase::getRawDataFromPixelData(std::vector<char>& result, PixelData 
 	char*			 result_traveller  = DE_NULL;
 	GLenum			 type			   = topleft.data_type;
 
-	// Sanity checks
+	// Quick checks
 	DE_ASSERT(topleft.data_internalformat == topright.data_internalformat);
 	DE_ASSERT(topleft.data_internalformat == bottomleft.data_internalformat);
 	DE_ASSERT(topleft.data_internalformat == bottomright.data_internalformat);
@@ -10007,7 +10013,7 @@ tcu::TestNode::IterateResult ForbiddenCase::iterate(void)
 	gl.pixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glPixelStorei");
 
-	// Sanity checks
+	// Quick checks
 	DE_ASSERT(m_destination_attachment_type == GL_TEXTURE_2D ||
 			  m_destination_attachment_type == GL_TEXTURE_CUBE_MAP_NEGATIVE_X ||
 			  m_destination_attachment_type == GL_TEXTURE_CUBE_MAP_NEGATIVE_Y ||
@@ -10102,7 +10108,7 @@ bool ForbiddenCase::execute(GLenum src_internal_format, GLenum dst_internal_form
 	int			n_src_pair							= 0;
 	bool		result								= true;
 
-	// Sanity checks
+	// Quick checks
 	DE_ASSERT(m_destination_attachment_type == GL_TEXTURE_2D ||
 			  m_destination_attachment_type == GL_TEXTURE_CUBE_MAP_NEGATIVE_X ||
 			  m_destination_attachment_type == GL_TEXTURE_CUBE_MAP_NEGATIVE_Y ||
