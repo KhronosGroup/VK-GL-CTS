@@ -206,9 +206,9 @@ void SparseShaderIntrinsicsCaseStorage::initPrograms (vk::SourceCollections& pro
 		<< "%constant_int_2					= OpConstant %type_int 2\n"
 		<< "%constant_bool_true				= OpConstantTrue %type_bool\n"
 
-		<< "%constant_uint_resident			= OpConstant " << (formatIsR64(m_format) ? "%type_uint64" : "%type_uint") << " " << MEMORY_BLOCK_BOUND_VALUE << "\n"
+		<< "%constant_uint_resident			= OpConstant %type_uint " << MEMORY_BLOCK_BOUND_VALUE << "\n"
 		<< "%constant_uvec4_resident		= OpConstantComposite %type_uvec4 %constant_uint_resident %constant_uint_resident %constant_uint_resident %constant_uint_resident\n"
-		<< "%constant_uint_not_resident		= OpConstant " << (formatIsR64(m_format) ? "%type_uint64" : "%type_uint") << " " << MEMORY_BLOCK_NOT_BOUND_VALUE << "\n"
+		<< "%constant_uint_not_resident		= OpConstant %type_uint " << MEMORY_BLOCK_NOT_BOUND_VALUE << "\n"
 		<< "%constant_uvec4_not_resident	= OpConstantComposite %type_uvec4 %constant_uint_not_resident %constant_uint_not_resident %constant_uint_not_resident %constant_uint_not_resident\n"
 
 		// Call main function
