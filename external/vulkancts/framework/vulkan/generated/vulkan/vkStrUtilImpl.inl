@@ -1979,6 +1979,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES";
 		case VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDER_PASS_TRANSFORM_INFO_QCOM:			return "VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDER_PASS_TRANSFORM_INFO_QCOM";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_TRANSFORM_BEGIN_INFO_QCOM:								return "VK_STRUCTURE_TYPE_RENDER_PASS_TRANSFORM_BEGIN_INFO_QCOM";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_BIAS_CONTROL_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_BIAS_CONTROL_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_DEPTH_BIAS_INFO_EXT:													return "VK_STRUCTURE_TYPE_DEPTH_BIAS_INFO_EXT";
+		case VK_STRUCTURE_TYPE_DEPTH_BIAS_REPRESENTATION_INFO_EXT:									return "VK_STRUCTURE_TYPE_DEPTH_BIAS_REPRESENTATION_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_MEMORY_REPORT_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_MEMORY_REPORT_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_DEVICE_DEVICE_MEMORY_REPORT_CREATE_INFO_EXT:							return "VK_STRUCTURE_TYPE_DEVICE_DEVICE_MEMORY_REPORT_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_DEVICE_MEMORY_REPORT_CALLBACK_DATA_EXT:								return "VK_STRUCTURE_TYPE_DEVICE_MEMORY_REPORT_CALLBACK_DATA_EXT";
@@ -3494,6 +3497,17 @@ tcu::Format::Bitfield<64> getMemoryDecompressionMethodFlagsNVStr (VkMemoryDecomp
 		tcu::Format::BitDesc(VK_MEMORY_DECOMPRESSION_METHOD_GDEFLATE_1_0_BIT_NV,	"VK_MEMORY_DECOMPRESSION_METHOD_GDEFLATE_1_0_BIT_NV"),
 	};
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+const char* getDepthBiasRepresentationEXTName (VkDepthBiasRepresentationEXT value)
+{
+	switch (value)
+	{
+		case VK_DEPTH_BIAS_REPRESENTATION_LEAST_REPRESENTABLE_VALUE_FORMAT_EXT:			return "VK_DEPTH_BIAS_REPRESENTATION_LEAST_REPRESENTABLE_VALUE_FORMAT_EXT";
+		case VK_DEPTH_BIAS_REPRESENTATION_LEAST_REPRESENTABLE_VALUE_FORCE_UNORM_EXT:	return "VK_DEPTH_BIAS_REPRESENTATION_LEAST_REPRESENTABLE_VALUE_FORCE_UNORM_EXT";
+		case VK_DEPTH_BIAS_REPRESENTATION_FLOAT_EXT:									return "VK_DEPTH_BIAS_REPRESENTATION_FLOAT_EXT";
+		default:																		return DE_NULL;
+	}
 }
 
 const char* getDirectDriverLoadingModeLUNARGName (VkDirectDriverLoadingModeLUNARG value)
@@ -16053,8 +16067,6 @@ std::ostream& operator<< (std::ostream& s, const VkDeviceFaultVendorBinaryHeader
 	s << "\tapplicationNameOffset = " << value.applicationNameOffset << '\n';
 	s << "\tapplicationVersion = " << value.applicationVersion << '\n';
 	s << "\tengineNameOffset = " << value.engineNameOffset << '\n';
-	s << "\tengineVersion = " << value.engineVersion << '\n';
-	s << "\tapiVersion = " << value.apiVersion << '\n';
 	s << '}';
 	return s;
 }
@@ -16065,6 +16077,29 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePipelineLibrary
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpipelineLibraryGroupHandles = " << value.pipelineLibraryGroupHandles << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDepthBiasInfoEXT& value)
+{
+	s << "VkDepthBiasInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdepthBiasConstantFactor = " << value.depthBiasConstantFactor << '\n';
+	s << "\tdepthBiasClamp = " << value.depthBiasClamp << '\n';
+	s << "\tdepthBiasSlopeFactor = " << value.depthBiasSlopeFactor << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDepthBiasRepresentationInfoEXT& value)
+{
+	s << "VkDepthBiasRepresentationInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdepthBiasRepresentation = " << value.depthBiasRepresentation << '\n';
+	s << "\tdepthBiasExact = " << value.depthBiasExact << '\n';
 	s << '}';
 	return s;
 }
@@ -16201,6 +16236,19 @@ std::ostream& operator<< (std::ostream& s, const VkReleaseSwapchainImagesInfoEXT
 	s << "\tswapchain = " << value.swapchain << '\n';
 	s << "\timageIndexCount = " << value.imageIndexCount << '\n';
 	s << "\tpImageIndices = " << value.pImageIndices << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDepthBiasControlFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceDepthBiasControlFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdepthBiasControl = " << value.depthBiasControl << '\n';
+	s << "\tleastRepresentableValueForceUnormRepresentation = " << value.leastRepresentableValueForceUnormRepresentation << '\n';
+	s << "\tfloatRepresentation = " << value.floatRepresentation << '\n';
+	s << "\tdepthBiasExact = " << value.depthBiasExact << '\n';
 	s << '}';
 	return s;
 }

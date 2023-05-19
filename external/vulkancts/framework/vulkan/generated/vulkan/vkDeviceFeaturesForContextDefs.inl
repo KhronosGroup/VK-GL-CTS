@@ -73,6 +73,7 @@ const vk::VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV&				Context::getDevi
 const vk::VkPhysicalDeviceInheritedViewportScissorFeaturesNV&				Context::getInheritedViewportScissorFeatures				(void) const { return m_device->getInheritedViewportScissorFeatures();				}
 const vk::VkPhysicalDeviceShaderIntegerDotProductFeatures&					Context::getShaderIntegerDotProductFeatures					(void) const { return m_device->getShaderIntegerDotProductFeatures();				}
 const vk::VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT&					Context::getTexelBufferAlignmentFeaturesEXT					(void) const { return m_device->getTexelBufferAlignmentFeaturesEXT();				}
+const vk::VkPhysicalDeviceDepthBiasControlFeaturesEXT&						Context::getDepthBiasControlFeaturesEXT						(void) const { return m_device->getDepthBiasControlFeaturesEXT();					}
 const vk::VkPhysicalDeviceDeviceMemoryReportFeaturesEXT&					Context::getDeviceMemoryReportFeaturesEXT					(void) const { return m_device->getDeviceMemoryReportFeaturesEXT();					}
 const vk::VkPhysicalDeviceRobustness2FeaturesEXT&							Context::getRobustness2FeaturesEXT							(void) const { return m_device->getRobustness2FeaturesEXT();						}
 const vk::VkPhysicalDeviceCustomBorderColorFeaturesEXT&						Context::getCustomBorderColorFeaturesEXT					(void) const { return m_device->getCustomBorderColorFeaturesEXT();					}

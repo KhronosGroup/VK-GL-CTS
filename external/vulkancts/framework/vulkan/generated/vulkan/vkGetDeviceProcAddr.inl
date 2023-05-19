@@ -355,6 +355,7 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkCmdBindPipelineShaderGroupNV",
 		"vkCreateIndirectCommandsLayoutNV",
 		"vkDestroyIndirectCommandsLayoutNV",
+		"vkCmdSetDepthBias2EXT",
 		"vkAcquireDrmDisplayEXT",
 		"vkGetDrmDisplayEXT",
 		"vkCreatePrivateDataSlotEXT",

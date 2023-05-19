@@ -139,13 +139,14 @@ struct PlanarFormatDescription
 	}
 };
 
-class ImageWithBuffer {
+class ImageWithBuffer
+{
 	std::unique_ptr<ImageWithMemory>	image;
 	Move<vk::VkImageView>				imageView;
 	std::unique_ptr<BufferWithMemory>	buffer;
 	VkDeviceSize						size;
 
-	public:
+public:
 	ImageWithBuffer(
 			const DeviceInterface&		vkd,
 			const VkDevice				device,

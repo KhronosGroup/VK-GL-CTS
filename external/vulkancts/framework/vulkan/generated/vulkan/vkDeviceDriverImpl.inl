@@ -2269,6 +2269,11 @@ VkResult DeviceDriver::getDeviceFaultInfoEXT (VkDevice device, VkDeviceFaultCoun
 	return m_vk.getDeviceFaultInfoEXT(device, pFaultCounts, pFaultInfo);
 }
 
+void DeviceDriver::cmdSetDepthBias2EXT (VkCommandBuffer commandBuffer, const VkDepthBiasInfoEXT* pDepthBiasInfo) const
+{
+	m_vk.cmdSetDepthBias2EXT(commandBuffer, pDepthBiasInfo);
+}
+
 VkResult DeviceDriver::releaseSwapchainImagesEXT (VkDevice device, const VkReleaseSwapchainImagesInfoEXT* pReleaseInfo) const
 {
 	return m_vk.releaseSwapchainImagesEXT(device, pReleaseInfo);

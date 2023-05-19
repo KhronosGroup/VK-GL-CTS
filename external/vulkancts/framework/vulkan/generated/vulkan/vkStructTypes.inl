@@ -8034,8 +8034,6 @@ struct VkDeviceFaultVendorBinaryHeaderVersionOneEXT
 	uint32_t									applicationNameOffset;
 	uint32_t									applicationVersion;
 	uint32_t									engineNameOffset;
-	uint32_t									engineVersion;
-	uint32_t									apiVersion;
 };
 
 struct VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT
@@ -8043,6 +8041,23 @@ struct VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		pipelineLibraryGroupHandles;
+};
+
+struct VkDepthBiasInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	float			depthBiasConstantFactor;
+	float			depthBiasClamp;
+	float			depthBiasSlopeFactor;
+};
+
+struct VkDepthBiasRepresentationInfoEXT
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkDepthBiasRepresentationEXT	depthBiasRepresentation;
+	VkBool32						depthBiasExact;
 };
 
 struct VkDecompressMemoryRegionNV
@@ -8143,6 +8158,16 @@ struct VkReleaseSwapchainImagesInfoEXT
 	VkSwapchainKHR	swapchain;
 	uint32_t		imageIndexCount;
 	const uint32_t*	pImageIndices;
+};
+
+struct VkPhysicalDeviceDepthBiasControlFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		depthBiasControl;
+	VkBool32		leastRepresentableValueForceUnormRepresentation;
+	VkBool32		floatRepresentation;
+	VkBool32		depthBiasExact;
 };
 
 struct VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV

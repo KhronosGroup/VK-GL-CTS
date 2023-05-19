@@ -952,6 +952,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_depth_bias_control")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_device_memory_report")
 	{
 		return;
@@ -2459,6 +2463,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_depth_bias_control")
+	{
+		functions.push_back("vkCmdSetDepthBias2EXT");
+		return;
+	}
 	if (extName == "VK_EXT_device_memory_report")
 	{
 		return;
@@ -3247,6 +3256,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_KHR_shader_integer_dot_product",
 	"VK_EXT_texel_buffer_alignment",
 	"VK_QCOM_render_pass_transform",
+	"VK_EXT_depth_bias_control",
 	"VK_EXT_device_memory_report",
 	"VK_EXT_robustness2",
 	"VK_EXT_custom_border_color",
