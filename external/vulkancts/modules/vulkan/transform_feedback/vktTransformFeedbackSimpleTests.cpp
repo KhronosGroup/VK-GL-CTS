@@ -117,6 +117,7 @@ struct TestParameters
 	bool				requireRastStreamSelect;
 	bool				omitShaderWrite;
 	VkPrimitiveTopology	primTopology;
+	bool				queryResultWithAvailability;
 };
 
 struct TopologyInfo
@@ -2098,9 +2099,11 @@ tcu::TestStatus TransformFeedbackQueryTestInstance::iterate (void)
 	const deUint32						queryCountersNumber		= 1u;
 	const deUint32						queryIndex				= 0u;
 	constexpr deUint32					queryResultElements		= 2u;
-	const deUint32						queryDataSize			= static_cast<deUint32>(queryResultElements * queryResultWidth);
+	const deUint32						queryDataSize			= static_cast<deUint32>(queryResultElements * queryResultWidth) + (m_parameters.queryResultWithAvailability ? (deUint32)queryResultWidth : 0u);
 	const VkQueryPoolCreateInfo			queryPoolCreateInfo		= makeQueryPoolCreateInfo(queryCountersNumber);
 	const Unique<VkQueryPool>			queryPool				(createQueryPool(vk, device, &queryPoolCreateInfo));
+
+	const VkQueryResultFlagBits			queryWait				= m_parameters.queryResultWithAvailability ? VK_QUERY_RESULT_WITH_AVAILABILITY_BIT : VK_QUERY_RESULT_WAIT_BIT;
 
 	Move<VkBuffer>						queryPoolResultsBuffer;
 	de::MovePtr<Allocation>				queryPoolResultsBufferAlloc;
@@ -2163,7 +2166,8 @@ tcu::TestStatus TransformFeedbackQueryTestInstance::iterate (void)
 			VkDeviceSize copyStride = queryDataSize;
 			if (queryCountersNumber == 1u && m_parameters.testType == TEST_TYPE_QUERY_COPY_STRIDE_ZERO)
 				copyStride = 0;
-			vk.cmdCopyQueryPoolResults(*cmdBuffer, *queryPool, queryIndex, queryCountersNumber, *queryPoolResultsBuffer, 0u, copyStride, (vk::VK_QUERY_RESULT_WAIT_BIT | queryExtraFlags));
+
+			vk.cmdCopyQueryPoolResults(*cmdBuffer, *queryPool, queryIndex, queryCountersNumber, *queryPoolResultsBuffer, 0u, copyStride, (queryWait | queryExtraFlags));
 
 			const VkBufferMemoryBarrier bufferBarrier =
 			{
@@ -2199,13 +2203,17 @@ tcu::TestStatus TransformFeedbackQueryTestInstance::iterate (void)
 
 		if (m_parameters.testType != TEST_TYPE_QUERY_COPY && m_parameters.testType != TEST_TYPE_QUERY_COPY_STRIDE_ZERO)
 		{
-			vk.getQueryPoolResults(device, *queryPool, queryIndex, queryCountersNumber, queryDataSize, queryData.data(), queryDataSize, (vk::VK_QUERY_RESULT_WAIT_BIT | queryExtraFlags));
+			vk.getQueryPoolResults(device, *queryPool, queryIndex, queryCountersNumber, queryDataSize, queryData.data(), queryDataSize, (queryWait | queryExtraFlags));
 		}
 		else
 		{
 			invalidateAlloc(vk, device, *queryPoolResultsBufferAlloc);
 			deMemcpy(queryData.data(), queryPoolResultsBufferAlloc->getHostPtr(), queryData.size());
 		}
+
+		// Query results not available
+		if (*reinterpret_cast<deUint32*>(&queryData[queryDataSize - queryResultWidth]) == 0)
+			return tcu::TestStatus::pass("Pass");
 
 		// The number of primitives successfully written to the corresponding transform feedback buffer.
 		const deUint64	numPrimitivesWritten	= (m_parameters.query64bits ? queryResults->elements64[0] : queryResults->elements32[0]);
@@ -3793,7 +3801,7 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup* group)
 				for (deUint32 bufferSizesNdx = 0; bufferSizesNdx < DE_LENGTH_OF_ARRAY(bufferSizes); ++bufferSizesNdx)
 				{
 					const deUint32	bufferSize	= bufferSizes[bufferSizesNdx];
-					TestParameters	parameters	= { testType, bufferSize, partCount, 0u, 0u, 0u, STREAM_ID_0_NORMAL, false, false, true, false, VK_PRIMITIVE_TOPOLOGY_POINT_LIST };
+					TestParameters	parameters	= { testType, bufferSize, partCount, 0u, 0u, 0u, STREAM_ID_0_NORMAL, false, false, true, false, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, false };
 
 					group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_" + de::toString(partCount) + "_" + de::toString(bufferSize)).c_str(), "Simple Transform Feedback test", parameters));
 					parameters.streamId0Mode = STREAM_ID_0_BEGIN_QUERY_INDEXED;
@@ -3820,7 +3828,7 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup* group)
 			{
 				const deUint32	vertexCount	= bufferCounts[bufferCountsNdx];
 
-				TestParameters	parameters	= { testType, 0u, vertexCount, 0u, 0u, 0u, STREAM_ID_0_NORMAL, false, false, false, false, topology.first };
+				TestParameters	parameters	= { testType, 0u, vertexCount, 0u, 0u, 0u, STREAM_ID_0_NORMAL, false, false, false, false, topology.first, false };
 
 				group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_" + topology.second.topologyName + de::toString(vertexCount)).c_str(), "Topology winding test", parameters));
 			}
@@ -3838,7 +3846,7 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup* group)
 			for (deUint32 vertexStridesNdx = 0; vertexStridesNdx < DE_LENGTH_OF_ARRAY(vertexStrides); ++vertexStridesNdx)
 			{
 				const deUint32	vertexStrideBytes	= static_cast<deUint32>(sizeof(deUint32) * vertexStrides[vertexStridesNdx]);
-				TestParameters	parameters			= { testType, 0u, 0u, 0u, 0u, vertexStrideBytes, STREAM_ID_0_NORMAL, false, false, false, false, VK_PRIMITIVE_TOPOLOGY_POINT_LIST };
+				TestParameters	parameters			= { testType, 0u, 0u, 0u, 0u, vertexStrideBytes, STREAM_ID_0_NORMAL, false, false, false, false, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, false };
 
 				group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_" + de::toString(vertexStrideBytes)).c_str(), "Rendering tests with various strides", parameters));
 				parameters.streamId0Mode = STREAM_ID_0_BEGIN_QUERY_INDEXED;
@@ -3852,7 +3860,7 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup* group)
 	{
 		const TestType		testType	= TEST_TYPE_BACKWARD_DEPENDENCY;
 		const std::string	testName	= "backward_dependency";
-		TestParameters		parameters	= { testType, 512u, 2u, 0u, 0u, 0u, STREAM_ID_0_NORMAL, false, false, false, false, VK_PRIMITIVE_TOPOLOGY_POINT_LIST };
+		TestParameters		parameters	= { testType, 512u, 2u, 0u, 0u, 0u, STREAM_ID_0_NORMAL, false, false, false, false, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, false };
 
 		group->addChild(new TransformFeedbackTestCase(group->getTestContext(), testName.c_str(), "Rendering test checks backward pipeline dependency", parameters));
 		parameters.streamId0Mode = STREAM_ID_0_BEGIN_QUERY_INDEXED;
@@ -3904,22 +3912,26 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup* group)
 
 						const deUint32			bytesPerVertex	= static_cast<deUint32>(4 * sizeof(float));
 						const deUint32			bufferSize		= bytesPerVertex * vertexCount;
-						TestParameters			parameters		= { testType, bufferSize, 0u, streamId, 0u, 0u, STREAM_ID_0_NORMAL, query64Bits, false, true, false, topology.first };
+						TestParameters			parameters		= { testType, bufferSize, 0u, streamId, 0u, 0u, STREAM_ID_0_NORMAL, query64Bits, false, true, false, topology.first, false };
 						const std::string		fullTestName	= testName + "_" + topology.second.topologyName + de::toString(streamId) + "_" + de::toString(vertexCount) + widthStr;
 						group->addChild(new TransformFeedbackTestCase(group->getTestContext(), fullTestName.c_str(), "Written primitives query test", parameters));
 
-						TestParameters			omitParameters	= { testType, bufferSize, 0u, streamId, 0u, 0u, STREAM_ID_0_NORMAL, query64Bits, false, true, true, topology.first };
+						TestParameters			omitParameters	= { testType, bufferSize, 0u, streamId, 0u, 0u, STREAM_ID_0_NORMAL, query64Bits, false, true, true, topology.first, false };
 						const std::string		omitTestName	= testName + "_omit_write_" + topology.second.topologyName + de::toString(streamId) + "_" + de::toString(vertexCount) + widthStr;
 						group->addChild(new TransformFeedbackTestCase(group->getTestContext(), omitTestName.c_str(), "Written primitives query test", omitParameters));
 
 						for (deUint32 testTypeCopyNdx = 0; testTypeCopyNdx < DE_LENGTH_OF_ARRAY(testTypeCopy); testTypeCopyNdx++)
 						{
-							const TestParameters	parametersCopy		= { testTypeCopy[testTypeCopyNdx], bufferSize, 0u, streamId, 0u, 0u, STREAM_ID_0_NORMAL, query64Bits, false, true, false, topology.first };
+							TestParameters			parametersCopy		= { testTypeCopy[testTypeCopyNdx], bufferSize, 0u, streamId, 0u, 0u, STREAM_ID_0_NORMAL, query64Bits, false, true, false, topology.first, false };
 							const std::string		fullTestNameCopy	= testNameCopy[testTypeCopyNdx] + "_" + topology.second.topologyName + de::toString(streamId) + "_" + de::toString(vertexCount) + widthStr;
 							group->addChild(new TransformFeedbackTestCase(group->getTestContext(), fullTestNameCopy.c_str(), "Written primitives query test", parametersCopy));
+
+							parametersCopy.queryResultWithAvailability = true;
+							const std::string		fullTestNameQueryWithAvailability = testNameCopy[testTypeCopyNdx] + "_" + topology.second.topologyName + de::toString(streamId) + "_" + de::toString(vertexCount) + widthStr + "_query_with_availability";
+							group->addChild(new TransformFeedbackTestCase(group->getTestContext(), fullTestNameQueryWithAvailability.c_str(), "Written primitives query test", parametersCopy));
 						}
 
-						const TestParameters	parametersHostQueryReset	= { testTypeHostQueryReset, bufferSize, 0u, streamId, 0u, 0u, STREAM_ID_0_NORMAL, query64Bits, false, true, false, topology.first };
+						const TestParameters	parametersHostQueryReset	= { testTypeHostQueryReset, bufferSize, 0u, streamId, 0u, 0u, STREAM_ID_0_NORMAL, query64Bits, false, true, false, topology.first, false };
 						const std::string		fullTestNameHostQueryReset	= testNameHostQueryReset + "_" + topology.second.topologyName + de::toString(streamId) + "_" + de::toString(vertexCount) + widthStr;
 						group->addChild(new TransformFeedbackTestCase(group->getTestContext(), fullTestNameHostQueryReset.c_str(), "Written primitives query test", parametersHostQueryReset));
 
@@ -3942,17 +3954,17 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup* group)
 
 	// Depth clip control tests.
 	{
-		TestParameters	parameters	= { TEST_TYPE_DEPTH_CLIP_CONTROL_VERTEX, 96, 1u, 0u, 0u, 0u, STREAM_ID_0_NORMAL, false, false, true, false, VK_PRIMITIVE_TOPOLOGY_POINT_LIST };
+		TestParameters	parameters	= { TEST_TYPE_DEPTH_CLIP_CONTROL_VERTEX, 96, 1u, 0u, 0u, 0u, STREAM_ID_0_NORMAL, false, false, true, false, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, false };
 
 		group->addChild(new TransformFeedbackTestCase(group->getTestContext(), "depth_clip_control_vertex", "", parameters));
 	}
 	{
-		TestParameters	parameters	= { TEST_TYPE_DEPTH_CLIP_CONTROL_GEOMETRY, 96, 1u, 0u, 0u, 0u, STREAM_ID_0_NORMAL, false, false, true, false, VK_PRIMITIVE_TOPOLOGY_POINT_LIST };
+		TestParameters	parameters	= { TEST_TYPE_DEPTH_CLIP_CONTROL_GEOMETRY, 96, 1u, 0u, 0u, 0u, STREAM_ID_0_NORMAL, false, false, true, false, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, false };
 
 		group->addChild(new TransformFeedbackTestCase(group->getTestContext(), "depth_clip_control_geometry", "", parameters));
 	}
 	{
-		TestParameters	parameters	= { TEST_TYPE_DEPTH_CLIP_CONTROL_TESE, 96, 1u, 0u, 0u, 0u, STREAM_ID_0_NORMAL, false, false, true, false, VK_PRIMITIVE_TOPOLOGY_PATCH_LIST };
+		TestParameters	parameters	= { TEST_TYPE_DEPTH_CLIP_CONTROL_TESE, 96, 1u, 0u, 0u, 0u, STREAM_ID_0_NORMAL, false, false, true, false, VK_PRIMITIVE_TOPOLOGY_PATCH_LIST, false };
 
 		group->addChild(new TransformFeedbackTestCase(group->getTestContext(), "depth_clip_control_tese", "", parameters));
 	}
@@ -3990,7 +4002,8 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup* group)
 					false,				//  bool				noOffsetArray;
 					true,				//  bool				requireRastStreamSelect;
 					false,				//  bool				omitShaderWrite;
-					topology.first		//  VkPrimitiveTopology	primTopology;
+					topology.first,		//  VkPrimitiveTopology	primTopology;
+					false				//  bool				queryResultWithAvailability;
 				};
 
 				group->addChild(new TransformFeedbackTestCase(group->getTestContext(), fullTestName.c_str(), "", parameters));
@@ -4014,7 +4027,7 @@ void createTransformFeedbackStreamsSimpleTests (tcu::TestCaseGroup* group)
 		for (deUint32 streamCountsNdx = 0; streamCountsNdx < DE_LENGTH_OF_ARRAY(usedStreamId); ++streamCountsNdx)
 		{
 			const deUint32	streamId	= usedStreamId[streamCountsNdx];
-			TestParameters	parameters	= { testType, 0u, 0u, streamId, pointSize, 0u, STREAM_ID_0_NORMAL, false, false, true, false, VK_PRIMITIVE_TOPOLOGY_POINT_LIST };
+			TestParameters	parameters	= { testType, 0u, 0u, streamId, pointSize, 0u, STREAM_ID_0_NORMAL, false, false, true, false, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, false };
 
 			group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_" + de::toString(streamId)).c_str(), "Streams usage test", parameters));
 		}
@@ -4029,7 +4042,7 @@ void createTransformFeedbackStreamsSimpleTests (tcu::TestCaseGroup* group)
 			const deUint32			streamId			= usedStreamId[bufferCountsNdx];
 			const deUint32			streamsUsed			= 2u;
 			const deUint32			maxBytesPerVertex	= 256u;
-			const TestParameters	parameters			= { testType, maxBytesPerVertex * streamsUsed, streamsUsed, streamId, 0u, 0u, STREAM_ID_0_NORMAL, false, false, false, false, VK_PRIMITIVE_TOPOLOGY_POINT_LIST };
+			const TestParameters	parameters			= { testType, maxBytesPerVertex * streamsUsed, streamsUsed, streamId, 0u, 0u, STREAM_ID_0_NORMAL, false, false, false, false, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, false };
 
 			group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_" + de::toString(streamId)).c_str(), "Simultaneous multiple streams usage test", parameters));
 		}
@@ -4041,7 +4054,7 @@ void createTransformFeedbackStreamsSimpleTests (tcu::TestCaseGroup* group)
 		for (const auto streamId : usedStreamId)
 		{
 			const deUint32			streamsUsed			= 2u;
-			const TestParameters	parameters			= { testType, 32 * 4, streamsUsed, streamId, 0u, 0u, STREAM_ID_0_NORMAL, false, false, false, false, VK_PRIMITIVE_TOPOLOGY_POINT_LIST };
+			const TestParameters	parameters			= { testType, 32 * 4, streamsUsed, streamId, 0u, 0u, STREAM_ID_0_NORMAL, false, false, false, false, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, false };
 
 			group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_" + de::toString(streamId)).c_str(), "Simultaneous multiple streams to the same location usage test", parameters));
 		}
@@ -4056,8 +4069,8 @@ void createTransformFeedbackStreamsSimpleTests (tcu::TestCaseGroup* group)
 			const deUint32			streamId			= usedStreamId[bufferCountsNdx];
 			const deUint32			streamsUsed			= 2u;
 			const deUint32			maxBytesPerVertex	= 256u;
-			const TestParameters	parameters			= { testType, maxBytesPerVertex * streamsUsed, streamsUsed, streamId, 0u, 0u, STREAM_ID_0_NORMAL, false, false, false, false, VK_PRIMITIVE_TOPOLOGY_POINT_LIST };
-			const TestParameters	writeOmitParameters	= { testType, maxBytesPerVertex * streamsUsed, streamsUsed, streamId, 0u, 0u, STREAM_ID_0_NORMAL, false, false, false, true, VK_PRIMITIVE_TOPOLOGY_POINT_LIST };
+			const TestParameters	parameters			= { testType, maxBytesPerVertex * streamsUsed, streamsUsed, streamId, 0u, 0u, STREAM_ID_0_NORMAL, false, false, false, false, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, false };
+			const TestParameters	writeOmitParameters	= { testType, maxBytesPerVertex * streamsUsed, streamsUsed, streamId, 0u, 0u, STREAM_ID_0_NORMAL, false, false, false, true, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, false };
 
 			group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_" + de::toString(streamId)).c_str(), "Simultaneous multiple queries usage test", parameters));
 			group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_omit_write_" + de::toString(streamId)).c_str(), "Simultaneous multiple queries usage test", writeOmitParameters));
