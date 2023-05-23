@@ -68,7 +68,6 @@
 #define GLS_LOG_ALL_RESULTS false
 
 #define FLOAT16_1_0		0x3C00 //1.0 float16bit
-#define FLOAT16_180_0	0x59A0 //180.0 float16bit
 #define FLOAT16_2_0		0x4000 //2.0 float16bit
 #define FLOAT16_3_0		0x4200 //3.0 float16bit
 #define FLOAT16_0_5		0x3800 //0.5 float16bit
@@ -1585,6 +1584,8 @@ VariableP<T> bindExpression (const string& name, ExpandContext& ctx, const ExprP
  *
  * A constant is evaluated by rounding it to a set of possible values allowed
  * by the current floating point precision.
+ * TODO: For whatever reason this doesn't happen, the constant is converted to
+ *       type T and the interval contains only (T)value. See FloatConstant, below.
  *//*--------------------------------------------------------------------*/
 template <typename T>
 class Constant : public Expr<T>
@@ -1606,6 +1607,32 @@ template <typename T>
 ExprP<T> constant (const T& value)
 {
 	return exprP(new Constant<T>(value));
+}
+
+template <typename T>
+class FloatConstant : public Expr<T>
+{
+public:
+	typedef typename Expr<T>::IVal IVal;
+
+			FloatConstant		(double value) : m_value(value) {}
+
+protected:
+	void	doPrintExpr		(ostream& os) const			{ os << m_value; }
+	// TODO: This should probably roundOut to T, not ctx.format, but the templates don't work like that.
+	IVal	doEvaluate		(const EvalContext &ctx) const	{ return ctx.format.roundOut(makeIVal(m_value), true); }
+
+private:
+	double		m_value;
+};
+
+ExprP<deFloat16> f16Constant (double value)
+{
+	return exprP(new FloatConstant<deFloat16>(value));
+}
+ExprP<float> f32Constant (double value)
+{
+	return exprP(new FloatConstant<float>(value));
 }
 
 //! Return a reference to a singleton void constant.
@@ -3018,11 +3045,11 @@ DEFINE_DERIVED_DOUBLE1(Sqrt64Bit,		sqrt,		x,		constant(1.0) / app<InverseSqrt64B
 DEFINE_DERIVED_FLOAT2(Pow,				pow,		x,	y,	exp2<float>(y * log2(x)))
 DEFINE_DERIVED_FLOAT2_16BIT(Pow16,		pow,		x,	y,	exp2<deFloat16>(y * log2(x)))
 DEFINE_DERIVED_DOUBLE2(Pow64,			pow,		x,	y,	exp2<double>(y * log2(x)))
-DEFINE_DERIVED_FLOAT1(Radians,			radians,	d,		(constant(DE_PI) / constant(180.0f)) * d)
-DEFINE_DERIVED_FLOAT1_16BIT(Radians16,	radians,	d,		(constant((deFloat16)DE_PI_16BIT) / constant((deFloat16)FLOAT16_180_0)) * d)
+DEFINE_DERIVED_FLOAT1(Radians,			radians,	d,		f32Constant(DE_PI_DOUBLE / 180.0f) * d)
+DEFINE_DERIVED_FLOAT1_16BIT(Radians16,	radians,	d,		f16Constant(DE_PI_DOUBLE / 180.0f) * d)
 DEFINE_DERIVED_DOUBLE1(Radians64,		radians,	d,		(constant(DE_PI_DOUBLE) / constant(180.0)) * d)
-DEFINE_DERIVED_FLOAT1(Degrees,			degrees,	r,		(constant(180.0f) / constant(DE_PI)) * r)
-DEFINE_DERIVED_FLOAT1_16BIT(Degrees16,	degrees,	r,		(constant((deFloat16)FLOAT16_180_0) / constant((deFloat16)DE_PI_16BIT)) * r)
+DEFINE_DERIVED_FLOAT1(Degrees,			degrees,	r,		f32Constant(180.0 / DE_PI_DOUBLE) * r)
+DEFINE_DERIVED_FLOAT1_16BIT(Degrees16,	degrees,	r,		f16Constant(180.0 / DE_PI_DOUBLE) * r)
 DEFINE_DERIVED_DOUBLE1(Degrees64,		degrees,	r,		(constant(180.0) / constant(DE_PI_DOUBLE)) * r)
 
 /*Proper parameters for template T
