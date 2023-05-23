@@ -175,9 +175,20 @@ void NegativeShaderApiTests::init (void)
 				expectError(GL_INVALID_VALUE);
 				m_log << TestLog::EndSection;
 
-				m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if more than one of the handles in shaders refers to the same type of shader, or GL_INVALID_VALUE due to invalid data pointer.");
+				// Error handling is different in case of SPIRV.
+				const bool spirvBinary = binaryFormats[0] == GL_SHADER_BINARY_FORMAT_SPIR_V;
+				if (spirvBinary)
+					m_log << TestLog::Section("", "GL_INVALID_VALUE due to invalid data pointer.");
+				else
+					m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if more than one of the handles in shaders refers to the same type of shader, or GL_INVALID_VALUE due to invalid data pointer.");
+
 				glShaderBinary(2, &shaders[0], binaryFormats[0], 0, 0);
-				expectError(GL_INVALID_OPERATION, GL_INVALID_VALUE);
+
+				if (spirvBinary)
+					expectError(GL_INVALID_VALUE);
+				else
+					expectError(GL_INVALID_OPERATION, GL_INVALID_VALUE);
+
 				m_log << TestLog::EndSection;
 			}
 
