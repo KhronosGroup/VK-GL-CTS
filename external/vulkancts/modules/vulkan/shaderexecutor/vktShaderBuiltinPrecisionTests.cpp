@@ -3020,10 +3020,10 @@ DEFINE_DERIVED_FLOAT2_16BIT(Pow16,		pow,		x,	y,	exp2<deFloat16>(y * log2(x)))
 DEFINE_DERIVED_DOUBLE2(Pow64,			pow,		x,	y,	exp2<double>(y * log2(x)))
 DEFINE_DERIVED_FLOAT1(Radians,			radians,	d,		(constant(DE_PI) / constant(180.0f)) * d)
 DEFINE_DERIVED_FLOAT1_16BIT(Radians16,	radians,	d,		(constant((deFloat16)DE_PI_16BIT) / constant((deFloat16)FLOAT16_180_0)) * d)
-DEFINE_DERIVED_DOUBLE1(Radians64,		radians,	d,		(constant((double)(DE_PI)) / constant(180.0)) * d)
+DEFINE_DERIVED_DOUBLE1(Radians64,		radians,	d,		(constant(DE_PI_DOUBLE) / constant(180.0)) * d)
 DEFINE_DERIVED_FLOAT1(Degrees,			degrees,	r,		(constant(180.0f) / constant(DE_PI)) * r)
 DEFINE_DERIVED_FLOAT1_16BIT(Degrees16,	degrees,	r,		(constant((deFloat16)FLOAT16_180_0) / constant((deFloat16)DE_PI_16BIT)) * r)
-DEFINE_DERIVED_DOUBLE1(Degrees64,		degrees,	r,		(constant(180.0) / constant((double)(DE_PI))) * r)
+DEFINE_DERIVED_DOUBLE1(Degrees64,		degrees,	r,		(constant(180.0) / constant(DE_PI_DOUBLE)) * r)
 
 /*Proper parameters for template T
 	Signature<float, float>		32bit tests
