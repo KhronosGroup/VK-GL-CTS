@@ -4042,7 +4042,7 @@ public:
 protected:
 	ExprP<Ret>	doExpand	(ExpandContext&, const ArgExprs& args) const
 	{
-		return args.a / length<Size, T, T>(args.a);
+		return args.a * app<InverseSqrt<Signature<T, T>>>(dot(args.a, args.a));
 	}
 };
 
