@@ -83,6 +83,11 @@ void checkEnableDisableSupport (Context& context)
 	checkShadingRateSupport(context, true, false, true);
 }
 
+void checkNoFragSupport (Context& context)
+{
+	checkShadingRateSupport(context, true);
+}
+
 void initDefaultVertShader (vk::SourceCollections& programCollection, const std::string& shaderName)
 {
 	// Default vertex shader, including vertex color.
@@ -124,6 +129,11 @@ void initEnableDisableShaders (vk::SourceCollections& programCollection)
 	initDefaultFragShader(programCollection, "frag");
 }
 
+void initNoFragShaders (vk::SourceCollections& programCollection)
+{
+	initDefaultVertShader(programCollection, "vert");
+}
+
 const VkPipelineVertexInputStateCreateInfo* getDefaultVertexInputStateCreateInfo (void)
 {
 	static VkVertexInputBindingDescription vertexBinding =
@@ -163,6 +173,22 @@ const VkPipelineVertexInputStateCreateInfo* getDefaultVertexInputStateCreateInfo
 	};
 
 	return &vertexInputStateCreateInfo;
+}
+
+VkPipelineFragmentShadingRateStateCreateInfoKHR makeFragmentShadingRateStateCreateInfo (uint32_t width, uint32_t height, VkFragmentShadingRateCombinerOpKHR combiner0, VkFragmentShadingRateCombinerOpKHR combiner1)
+{
+	const VkPipelineFragmentShadingRateStateCreateInfoKHR fragmentShadingRateStateCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_STATE_CREATE_INFO_KHR,		//	VkStructureType						sType;
+		nullptr,																	//	const void*							pNext;
+		makeExtent2D(width, height),												//	VkExtent2D							fragmentSize;
+		{																			//	VkFragmentShadingRateCombinerOpKHR	combinerOps[2];
+			combiner0,
+			combiner1,
+		},
+	};
+
+	return fragmentShadingRateStateCreateInfo;
 }
 
 // Test idea: draw with VRS enabled by a fragment shading rate attachment, then bind a pipeline with VRS disabled and draw again.
@@ -321,16 +347,10 @@ tcu::TestStatus testEnableDisable (Context& context)
 	const std::vector<VkRect2D>		scissors	(1u, makeRect2D(fbExtent));
 
 	// Use the rate according to the attachment.
-	const VkPipelineFragmentShadingRateStateCreateInfoKHR fragmentShadingRateStateCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_STATE_CREATE_INFO_KHR,			//	VkStructureType						sType;
-		nullptr,																		//	const void*							pNext;
-		makeExtent2D(1u, 1u),															//	VkExtent2D							fragmentSize;
-		{																				//	VkFragmentShadingRateCombinerOpKHR	combinerOps[2];
-			VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR,
-			VK_FRAGMENT_SHADING_RATE_COMBINER_OP_REPLACE_KHR,
-		},
-	};
+	const auto fragmentShadingRateStateCreateInfo = makeFragmentShadingRateStateCreateInfo(
+		1u, 1u,
+		VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR,
+		VK_FRAGMENT_SHADING_RATE_COMBINER_OP_REPLACE_KHR);
 
 	const std::vector<tcu::Vec4> vertices
 	{
@@ -482,6 +502,197 @@ tcu::TestStatus testEnableDisable (Context& context)
 	return tcu::TestStatus::pass("Pass");
 }
 
+tcu::TestStatus testNoFrag (Context& context)
+{
+	const auto			ctx				= context.getContextCommonData();
+	const auto			colorFormat		= VK_FORMAT_R8G8B8A8_UNORM;
+	const auto			colorUsage		= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const auto			colorSRR		= makeDefaultImageSubresourceRange();
+	const auto			colorSRL		= makeDefaultImageSubresourceLayers();
+	const auto			depthFormat		= VK_FORMAT_D16_UNORM;
+	const auto			depthUsage		= (VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const auto			depthSRR		= makeImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 1u, 0u, 1u);
+	const auto			depthSRL		= makeImageSubresourceLayers(VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 0u, 1u);
+	const auto			bindPoint		= VK_PIPELINE_BIND_POINT_GRAPHICS;
+	const auto			vkExtent		= makeExtent3D(8u, 1u, 1u);
+	const tcu::IVec3	fbExtent		(static_cast<int>(vkExtent.width), static_cast<int>(vkExtent.height), static_cast<int>(vkExtent.depth));
+	const auto			imageType		= VK_IMAGE_TYPE_2D;
+	const tcu::IVec2	tileSize		(2, 2);
+
+	vk::ImageWithBuffer colorBuffer (ctx.vkd, ctx.device, ctx.allocator, vkExtent, colorFormat, colorUsage, imageType, colorSRR);
+	vk::ImageWithBuffer depthBuffer (ctx.vkd, ctx.device, ctx.allocator, vkExtent, depthFormat, depthUsage, imageType, depthSRR);
+
+	const auto vertModule = createShaderModule(ctx.vkd, ctx.device, context.getBinaryCollection().get("vert"));
+	const auto renderPass = makeRenderPass(ctx.vkd, ctx.device, colorFormat, depthFormat);
+
+	const std::vector<VkImageView>	attachmentViews	{ colorBuffer.getImageView(), depthBuffer.getImageView() };
+	const auto						framebuffer		= makeFramebuffer(
+		ctx.vkd, ctx.device, renderPass.get(),
+		de::sizeU32(attachmentViews), de::dataOrNull(attachmentViews),
+		vkExtent.width, vkExtent.height);
+
+	const std::vector<VkViewport>	viewports	(1u, makeViewport(fbExtent));
+	const std::vector<VkRect2D>		scissors	(1u, makeRect2D(fbExtent));
+
+	// Use the rate from the pipeline.
+	const auto fragmentShadingRateStateCreateInfo = makeFragmentShadingRateStateCreateInfo(
+		static_cast<uint32_t>(tileSize.x()), static_cast<uint32_t>(tileSize.y()), // This has mandatory support.
+		VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR,
+		VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR);
+
+	const std::vector<PositionColor> vertices
+	{
+		// Colors (second column) are irrelevant due to the lack of a frag shader.
+		// In the first column we increase depth as we advance from left to right.
+		{ tcu::Vec4(-1.0, -1.0f, 0.0f, 1.0f), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f) },
+		{ tcu::Vec4(-1.0,  1.0f, 0.0f, 1.0f), tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f) },
+		{ tcu::Vec4( 1.0, -1.0f, 1.0f, 1.0f), tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f) },
+		{ tcu::Vec4( 1.0,  1.0f, 1.0f, 1.0f), tcu::Vec4(1.0f, 0.0f, 1.0f, 1.0f) },
+	};
+
+	const auto vertexBufferSize			= static_cast<VkDeviceSize>(de::dataSize(vertices));
+	const auto vertexBufferUsage		= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	const auto vertexBufferCreateInfo	= makeBufferCreateInfo(vertexBufferSize, vertexBufferUsage);
+	const auto vertexBufferOffset		= static_cast<VkDeviceSize>(0);
+	BufferWithMemory vertexBuffer		(ctx.vkd, ctx.device, ctx.allocator, vertexBufferCreateInfo, MemoryRequirement::HostVisible);
+	auto& vertexBufferAlloc				= vertexBuffer.getAllocation();
+
+	deMemcpy(vertexBufferAlloc.getHostPtr(), de::dataOrNull(vertices), de::dataSize(vertices));
+	flushAlloc(ctx.vkd, ctx.device, vertexBufferAlloc);
+
+	const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device);
+
+	const VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	//	VkStructureType							sType;
+		nullptr,													//	const void*								pNext;
+		0u,															//	VkPipelineDepthStencilStateCreateFlags	flags;
+		VK_TRUE,													//	VkBool32								depthTestEnable;
+		VK_TRUE,													//	VkBool32								depthWriteEnable;
+		VK_COMPARE_OP_ALWAYS,										//	VkCompareOp								depthCompareOp;
+		VK_FALSE,													//	VkBool32								depthBoundsTestEnable;
+		VK_FALSE,													//	VkBool32								stencilTestEnable;
+		{},															//	VkStencilOpState						front;
+		{},															//	VkStencilOpState						back;
+		0.0f,														//	float									minDepthBounds;
+		1.0f,														//	float									maxDepthBounds;
+	};
+
+	// We need to force-enable rasterization at this step, otherwise the helper will disable it due to missing frag shader.
+	const VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	//	VkStructureType							sType;
+		nullptr,													//	const void*								pNext;
+		0u,															//	VkPipelineRasterizationStateCreateFlags	flags;
+		VK_FALSE,													//	VkBool32								depthClampEnable;
+		VK_FALSE,													//	VkBool32								rasterizerDiscardEnable;
+		VK_POLYGON_MODE_FILL,										//	VkPolygonMode							polygonMode;
+		VK_CULL_MODE_NONE,											//	VkCullModeFlags							cullMode;
+		VK_FRONT_FACE_COUNTER_CLOCKWISE,							//	VkFrontFace								frontFace;
+		VK_FALSE,													//	VkBool32								depthBiasEnable;
+		0.0f,														//	float									depthBiasConstantFactor;
+		0.0f,														//	float									depthBiasClamp;
+		0.0f,														//	float									depthBiasSlopeFactor;
+		1.0f,														//	float									lineWidth;
+	};
+
+	// Pipeline.
+	const auto pipeline = makeGraphicsPipeline(ctx.vkd, ctx.device, pipelineLayout.get(),
+		vertModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+		renderPass.get(), viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u, 0u,
+		getDefaultVertexInputStateCreateInfo(), &rasterizationStateCreateInfo, nullptr, &depthStencilStateCreateInfo, nullptr, nullptr, &fragmentShadingRateStateCreateInfo);
+
+	CommandPoolWithBuffer cmd (ctx.vkd, ctx.device, ctx.qfIndex);
+	const auto cmdBuffer = cmd.cmdBuffer.get();
+
+	using ClearValueVec = std::vector<VkClearValue>;
+	const tcu::Vec4		clearColor			(0.0f, 0.0f, 0.0f, 0.0f);
+	const float			clearDepth			= 1.0f;
+	const ClearValueVec	clearValues
+	{
+		makeClearValueColor(clearColor),
+		makeClearValueDepthStencil(clearDepth, 0u),
+	};
+	const auto			colorCompThreshold	= 0.0f; // Expect exact results.
+	const tcu::Vec4		colorThreshold		(colorCompThreshold, colorCompThreshold, colorCompThreshold, colorCompThreshold);
+	const float			depthThreshold		= 0.000025f; // Between 1/65535 and 2/65535.
+	const auto			vertexCount			= de::sizeU32(vertices);
+
+	beginCommandBuffer(ctx.vkd, cmdBuffer);
+	{
+		// Render pass.
+		beginRenderPass(ctx.vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.at(0u), de::sizeU32(clearValues), de::dataOrNull(clearValues));
+		ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+		ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, pipeline.get());
+		ctx.vkd.cmdDraw(cmdBuffer, vertexCount, 1u, 0u, 0u);
+		endRenderPass(ctx.vkd, cmdBuffer);
+	}
+	{
+		// Copy images to verification buffers after rendering.
+		const std::vector<VkImageMemoryBarrier> preTransferBarriers =
+		{
+			makeImageMemoryBarrier(
+						VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+						VK_ACCESS_TRANSFER_READ_BIT,
+						VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+						VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+						colorBuffer.getImage(), colorSRR),
+
+			makeImageMemoryBarrier(
+						VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+						VK_ACCESS_TRANSFER_READ_BIT,
+						VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+						VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+						depthBuffer.getImage(), depthSRR),
+		};
+		const auto preTransferStages = (VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+		cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, preTransferStages, VK_PIPELINE_STAGE_TRANSFER_BIT, de::dataOrNull(preTransferBarriers), preTransferBarriers.size());
+
+		const auto copyColorRegion = makeBufferImageCopy(vkExtent, colorSRL);
+		const auto copyDepthRegion = makeBufferImageCopy(vkExtent, depthSRL);
+		ctx.vkd.cmdCopyImageToBuffer(cmdBuffer, colorBuffer.getImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, colorBuffer.getBuffer(), 1u, &copyColorRegion);
+		ctx.vkd.cmdCopyImageToBuffer(cmdBuffer, depthBuffer.getImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, depthBuffer.getBuffer(), 1u, &copyDepthRegion);
+
+		const auto preHostBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+		cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, &preHostBarrier);
+	}
+	endCommandBuffer(ctx.vkd, cmdBuffer);
+	submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+	invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+	invalidateAlloc(ctx.vkd, ctx.device, depthBuffer.getBufferAllocation());
+
+	// Check results:
+	// - Color image shouldn't have been touched.
+	// - Depth buffer should have values in pairs of 2, within the accepted range.
+	const auto colorTcuFormat = mapVkFormat(colorFormat);
+	const auto depthTcuFormat = mapVkFormat(depthFormat);
+	const tcu::ConstPixelBufferAccess colorResultAccess	(colorTcuFormat, fbExtent, colorBuffer.getBufferAllocation().getHostPtr());
+	const tcu::ConstPixelBufferAccess depthResultAccess (depthTcuFormat, fbExtent, depthBuffer.getBufferAllocation().getHostPtr());
+
+	auto& log = context.getTestContext().getLog();
+	if (!tcu::floatThresholdCompare(log, "ColorResult", "", clearColor, colorResultAccess, colorThreshold, tcu::COMPARE_LOG_ON_ERROR))
+		return tcu::TestStatus::fail("Unexpected color buffer contents (expected transparent black) -- check log for details");
+
+	// Note fragment shading rate does not affect the depth buffer, only frag shader invocations.
+	// When verifying the depth buffer, we'll generate the reference values normally.
+	tcu::TextureLevel refDepthLevel (depthTcuFormat, fbExtent.x(), fbExtent.y(), fbExtent.z());
+	tcu::PixelBufferAccess refDepthAccess = refDepthLevel.getAccess();
+	const float fWidth = static_cast<float>(fbExtent.x());
+
+	for (int y = 0; y < fbExtent.y(); ++y)
+		for (int x = 0; x < fbExtent.x(); ++x)
+		{
+			// This needs to match vertex depths.
+			const float depth = (static_cast<float>(x) + 0.5f) / fWidth;
+			refDepthAccess.setPixDepth(depth, x, y);
+		}
+
+	if (!tcu::dsThresholdCompare(log, "DepthResult", "", refDepthAccess, depthResultAccess, depthThreshold, tcu::COMPARE_LOG_ON_ERROR))
+		return tcu::TestStatus::fail("Unexpected depth buffer contents -- check log for details");
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 } // anonymous
 
 void createFragmentShadingRateMiscTests (tcu::TestCaseGroup* group)
@@ -490,6 +701,11 @@ void createFragmentShadingRateMiscTests (tcu::TestCaseGroup* group)
 		const char* testName = "enable_disable_attachment";
 		const char* testDesc = "Test drawing with VRS enabled by an attachment and then disabled";
 		addFunctionCaseWithPrograms(group, testName, testDesc, checkEnableDisableSupport, initEnableDisableShaders, testEnableDisable);
+	}
+	{
+		const char* testName = "no_frag_shader";
+		const char* testDesc = "Test drawing with VRS enabled and no frag shader";
+		addFunctionCaseWithPrograms(group, testName, testDesc, checkNoFragSupport, initNoFragShaders, testNoFrag);
 	}
 }
 
