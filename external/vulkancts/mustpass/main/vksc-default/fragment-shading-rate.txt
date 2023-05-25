@@ -23550,6 +23550,7 @@ dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.attachment_rate.misc.ro_d
 dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.attachment_rate.misc.ro_ds_general
 dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.misc.limits
 dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.misc.shading_rates
+dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.misc.enable_disable_attachment
 dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.pixel_consistency.rate_1x1.samples_1.extent_1x1
 dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.pixel_consistency.rate_1x1.samples_1.extent_4x4
 dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.pixel_consistency.rate_1x1.samples_1.extent_33x35
