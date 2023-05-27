@@ -65,7 +65,7 @@ public:
 									ContextFactory			(ScreenManager* screenManager);
 									~ContextFactory			(void);
 
-	glu::RenderContext*				createContext			(const glu::RenderConfig& config, const tcu::CommandLine& cmdLine) const;
+	glu::RenderContext*				createContext			(const glu::RenderConfig& config, const tcu::CommandLine& cmdLine, const glu::RenderContext* sharedContext) const override;
 
 private:
 	ScreenManager* const			m_screenManager;
