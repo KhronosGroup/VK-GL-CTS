@@ -94,7 +94,7 @@ VkPipelineMultisampleStateCreateInfo MSInstanceBaseResolveAndPerSampleFetch::get
 		(VkPipelineMultisampleStateCreateFlags)0u,						// VkPipelineMultisampleStateCreateFlags	flags;
 		imageMSParams.numSamples,										// VkSampleCountFlagBits					rasterizationSamples;
 		VK_TRUE,														// VkBool32									sampleShadingEnable;
-		1.0f,															// float									minSampleShading;
+		imageMSParams.shadingRate,										// float									minSampleShading;
 		DE_NULL,														// const VkSampleMask*						pSampleMask;
 		VK_FALSE,														// VkBool32									alphaToCoverageEnable;
 		VK_FALSE,														// VkBool32									alphaToOneEnable;
