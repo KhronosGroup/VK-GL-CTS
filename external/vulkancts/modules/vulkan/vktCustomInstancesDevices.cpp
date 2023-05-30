@@ -171,7 +171,7 @@ UncheckedInstance::UncheckedInstance (Context& context, vk::VkInstance instance,
 	, m_allocator	(pAllocator)
 	, m_instance	(instance)
 	, m_driver		((m_instance != DE_NULL) ? new InstanceDriver(context.getPlatformInterface(), m_instance) : nullptr)
-	, m_callback	(m_recorder ? m_recorder->createCallback(*m_driver, m_instance) : Move<VkDebugReportCallbackEXT>())
+	, m_callback	((m_driver && m_recorder) ? m_recorder->createCallback(*m_driver, m_instance) : Move<VkDebugReportCallbackEXT>())
 {
 }
 
@@ -182,6 +182,7 @@ UncheckedInstance::~UncheckedInstance ()
 
 	if (m_instance != DE_NULL)
 	{
+		m_callback.~Move<vk::VkDebugReportCallbackEXT>();
 		m_recorder.reset(nullptr);
 		m_driver->destroyInstance(m_instance, m_allocator);
 	}
@@ -355,7 +356,6 @@ vk::VkResult createUncheckedInstance (Context& context, const vk::VkInstanceCrea
 	const vk::PlatformInterface&			vkp						= context.getPlatformInterface();
 	const bool								addLayers				= (validationEnabled && allowLayers);
 	std::unique_ptr<DebugReportRecorder>	recorder;
-	VkDebugReportCallbackCreateInfoEXT		callbackInfo;
 
 	if (addLayers)
 	{
@@ -372,11 +372,10 @@ vk::VkResult createUncheckedInstance (Context& context, const vk::VkInstanceCrea
 		createInfo.enabledExtensionCount = static_cast<deUint32>(enabledExtensions.size());
 		createInfo.ppEnabledExtensionNames = enabledExtensions.data();
 
-		// Prepare debug report recorder also for instance creation.
 		recorder.reset(new DebugReportRecorder(printValidationErrors));
-		callbackInfo		= recorder->makeCreateInfo();
-		callbackInfo.pNext	= createInfo.pNext;
-		createInfo.pNext	= &callbackInfo;
+		// No need to add VkDebugReportCallbackCreateInfoEXT to VkInstanceCreateInfo since we
+		// don't want to check for errors at instance creation. This is intended since we use
+		// UncheckedInstance to try to create invalid instances for driver stability
 	}
 
 	vk::VkInstance	raw_instance = DE_NULL;
