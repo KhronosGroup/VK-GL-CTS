@@ -233,6 +233,8 @@ void collectAndReportDebugMessages(vk::DebugReportRecorder &debugReportRecorder,
 
 #endif // CTS_USES_VULKANSC
 
+deUint32 findQueueFamilyIndexWithCaps(const vk::InstanceInterface& vkInstance, vk::VkPhysicalDevice physicalDevice, vk::VkQueueFlags requiredCaps, vk::VkQueueFlags excludedCaps = 0u);
+
 } // vkt
 
 #endif // _VKTTESTCASE_HPP
