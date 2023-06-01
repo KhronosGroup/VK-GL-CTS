@@ -268,7 +268,7 @@ Khronos Confidential CTS doesn't support run-time selection of API context.
 If you intend to run it you need to additionally supply `GLCTS_GTF_TARGET`
 option to you cmake command, e.g.:
 
-	cmake <path to VK-GL-CTS> -DDEQP_TARGET=default -DGLCTS_GTF_TARGET=<target> -G"<Generator Name>"
+	cmake <path to VK-GL-CTS> -DDEQP_TARGET=default -DGLCTS_GTF_TARGET=<target> -G "<Generator Name>"
 
 Available `<target>`s are `gles2`, `gles3`, `gles31`, `gles32`, and `gl`.
 The default `<target>` is `gles32`.
