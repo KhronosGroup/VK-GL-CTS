@@ -56,6 +56,7 @@ std::ostream& operator<< (std::ostream& str, const ConfigAttribValueFmt& attribF
 		case EGL_BIND_TO_TEXTURE_RGB:
 		case EGL_BIND_TO_TEXTURE_RGBA:
 		case EGL_NATIVE_RENDERABLE:
+		case EGL_RECORDABLE_ANDROID:
 			return str << getBoolDontCareStr(attribFmt.value);
 
 		case EGL_ALPHA_MASK_SIZE:
