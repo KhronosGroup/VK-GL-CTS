@@ -46,6 +46,7 @@
 #include "vktApiMemoryRequirementInvarianceTests.hpp"
 #include "vktApiBufferMemoryRequirementsTests.hpp"
 #include "vktApiGetDeviceProcAddrTests.hpp"
+#include "vktApiExtensionDuplicatesTests.hpp"
 
 #ifndef CTS_USES_VULKANSC
 #include "vktApiSmokeTests.hpp"
@@ -121,6 +122,7 @@ void createApiTests (tcu::TestCaseGroup* apiTests)
 	apiTests->addChild(createFrameBoundaryTests					(testCtx));
 	apiTests->addChild(createMaintenance5Tests					(testCtx));
 #endif
+	apiTests->addChild(createExtensionDuplicatesTests			(testCtx));
 }
 
 } // anonymous
