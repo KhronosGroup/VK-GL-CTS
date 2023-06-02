@@ -1766,7 +1766,7 @@ tcu::TestStatus vkDeviceMemoryAllocateAndFreeTest (Context& context)
 			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	// VkStructureType	sType;
 			DE_NULL,								// const void*		pNext;
 			testSize,								// VkDeviceSize		allocationSize;
-			testHeapIndex,							// uint32_t			memoryTypeIndex;
+			testTypeIndex,							// uint32_t			memoryTypeIndex;
 		};
 
 		result = vkd.allocateMemory(*device, &memoryAllocateInfo, (const VkAllocationCallbacks*)DE_NULL, &memory);
@@ -1846,7 +1846,7 @@ tcu::TestStatus vkDeviceMemoryAllocationFailedTest (Context& context)
 			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	// VkStructureType	sType;
 			DE_NULL,								// const void*		pNext;
 			128,									// VkDeviceSize		allocationSize;
-			testHeapIndex,							// uint32_t			memoryTypeIndex;
+			testTypeIndex,							// uint32_t			memoryTypeIndex;
 		};
 
 		// first do a small allocation to prevent LowMemoryKiller on android from culling this app

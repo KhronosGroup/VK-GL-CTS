@@ -3,3 +3,6 @@ dEQP-VK.glsl.texture_functions.textureoffset.isampler2darray_vertex
 dEQP-VK.glsl.texture_functions.textureoffset.usampler2darray_vertex
 dEQP-VK.glsl.texture_functions.textureoffset.usampler3d_vertex
 dEQP-VK.glsl.texture_functions.texturegradoffset.usampler2darray_vertex
+
+# Issue 4372
+dEQP-VK.subgroups.subgroup_uniform_control_flow.*partial*
