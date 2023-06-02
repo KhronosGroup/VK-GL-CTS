@@ -192,6 +192,7 @@ tcu::TestStatus TransferQueueInstance::iterate (void)
 		fillRandomNoNaN(&randomGen, generatedData.data(), (deUint32)generatedData.size(), m_params.imageFormat);
 		const Allocation& alloc = srcBuffer.getAllocation();
 		deMemcpy(alloc.getHostPtr(), generatedData.data(), generatedData.size());
+		flushAlloc(vk, device, alloc);
 	}
 
 	beginCommandBuffer(vk, *m_cmdBuffer);
@@ -252,6 +253,7 @@ tcu::TestStatus TransferQueueInstance::iterate (void)
 	{
 		std::vector<deUint8> resultData(pixelDataSize);
 		const Allocation& alloc = dstBuffer.getAllocation();
+		invalidateAlloc(vk, device, alloc);
 		deMemcpy(resultData.data(), alloc.getHostPtr(), resultData.size());
 
 		for (uint32_t i = 0; i < pixelDataSize; ++i) {
