@@ -3044,13 +3044,10 @@ DEFINE_DERIVED_FLOAT1_16BIT(Sqrt16Bit,	sqrt,		x,		constant((deFloat16)FLOAT16_1_
 DEFINE_DERIVED_DOUBLE1(Sqrt64Bit,		sqrt,		x,		constant(1.0) / app<InverseSqrt64Bit>(x))
 DEFINE_DERIVED_FLOAT2(Pow,				pow,		x,	y,	exp2<float>(y * log2(x)))
 DEFINE_DERIVED_FLOAT2_16BIT(Pow16,		pow,		x,	y,	exp2<deFloat16>(y * log2(x)))
-DEFINE_DERIVED_DOUBLE2(Pow64,			pow,		x,	y,	exp2<double>(y * log2(x)))
 DEFINE_DERIVED_FLOAT1(Radians,			radians,	d,		f32Constant(DE_PI_DOUBLE / 180.0f) * d)
 DEFINE_DERIVED_FLOAT1_16BIT(Radians16,	radians,	d,		f16Constant(DE_PI_DOUBLE / 180.0f) * d)
-DEFINE_DERIVED_DOUBLE1(Radians64,		radians,	d,		(constant(DE_PI_DOUBLE) / constant(180.0)) * d)
 DEFINE_DERIVED_FLOAT1(Degrees,			degrees,	r,		f32Constant(180.0 / DE_PI_DOUBLE) * r)
 DEFINE_DERIVED_FLOAT1_16BIT(Degrees16,	degrees,	r,		f16Constant(180.0 / DE_PI_DOUBLE) * r)
-DEFINE_DERIVED_DOUBLE1(Degrees64,		degrees,	r,		(constant(180.0) / constant(DE_PI_DOUBLE)) * r)
 
 /*Proper parameters for template T
 	Signature<float, float>		32bit tests
@@ -3235,7 +3232,6 @@ ExprP<double> cos (const ExprP<double>& x) { return app<Cos<Signature<double, do
 
 DEFINE_DERIVED_FLOAT1_INPUTRANGE(Tan, tan, x, sin(x) * (constant(1.0f) / cos(x)), Interval(false, -DE_PI_DOUBLE, DE_PI_DOUBLE))
 DEFINE_DERIVED_FLOAT1_INPUTRANGE_16BIT(Tan16Bit, tan, x, sin(x) * (constant((deFloat16)FLOAT16_1_0) / cos(x)), Interval(false, -DE_PI_DOUBLE, DE_PI_DOUBLE))
-DEFINE_DERIVED_DOUBLE1_INPUTRANGE(Tan64Bit, tan, x, sin(x) * (constant(1.0) / cos(x)), Interval(false, -DE_PI_DOUBLE, DE_PI_DOUBLE))
 
 template <class T>
 class ATan : public CFloatFunc1<T>
@@ -3317,10 +3313,6 @@ DEFINE_DERIVED_FLOAT1_16BIT(Sinh16Bit, sinh, x, (exp(x) - exp(-x)) / constant((d
 DEFINE_DERIVED_FLOAT1_16BIT(Cosh16Bit, cosh, x, (exp(x) + exp(-x)) / constant((deFloat16)FLOAT16_2_0))
 DEFINE_DERIVED_FLOAT1_16BIT(Tanh16Bit, tanh, x, sinh(x) / cosh(x))
 
-DEFINE_DERIVED_DOUBLE1(Sinh64Bit, sinh, x, (exp<double>(x) - exp<double>(-x)) / constant(2.0))
-DEFINE_DERIVED_DOUBLE1(Cosh64Bit, cosh, x, (exp<double>(x) + exp<double>(-x)) / constant(2.0))
-DEFINE_DERIVED_DOUBLE1(Tanh64Bit, tanh, x, sinh(x) / cosh(x))
-
 DEFINE_DERIVED_FLOAT1(ASin, asin, x, atan2(x, sqrt(constant(1.0f) - x * x)))
 DEFINE_DERIVED_FLOAT1(ACos, acos, x, atan2(sqrt(constant(1.0f) - x * x), x))
 DEFINE_DERIVED_FLOAT1(ASinh, asinh, x, log(x + sqrt(x * x + constant(1.0f))))
@@ -3336,14 +3328,6 @@ DEFINE_DERIVED_FLOAT1_16BIT(ACosh16Bit, acosh, x, log(x + sqrt(alternatives((x +
 																 (x * x - constant((deFloat16)FLOAT16_1_0))))))
 DEFINE_DERIVED_FLOAT1_16BIT(ATanh16Bit, atanh, x, constant((deFloat16)FLOAT16_0_5) * log((constant((deFloat16)FLOAT16_1_0) + x) /
 															(constant((deFloat16)FLOAT16_1_0) - x)))
-
-DEFINE_DERIVED_DOUBLE1(ASin64Bit, asin, x, atan2(x, sqrt(constant(1.0) - pow(x, constant(2.0)))))
-DEFINE_DERIVED_DOUBLE1(ACos64Bit, acos, x, atan2(sqrt(constant(1.0) - pow(x, constant(2.0))), x))
-DEFINE_DERIVED_DOUBLE1(ASinh64Bit, asinh, x, log(x + sqrt(x * x + constant(1.0))))
-DEFINE_DERIVED_DOUBLE1(ACosh64Bit, acosh, x, log(x + sqrt(alternatives((x + constant(1.0)) * (x - constant(1.0)),
-																 (x * x - constant(1.0))))))
-DEFINE_DERIVED_DOUBLE1(ATanh64Bit, atanh, x, constant(0.5) * log((constant(1.0) + x) /
-															(constant(1.0) - x)))
 
 template <typename T>
 class GetComponent : public PrimitiveFunc<Signature<typename T::Element, T, int> >
@@ -7149,29 +7133,7 @@ MovePtr<const CaseFactories> createBuiltinDoubleCases ()
 
 	// Radians, degrees, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, asinh, acosh, atanh, atan2, pow, exp, log, exp2 and log2
 	// only work with 16-bit and 32-bit floating point types according to the spec.
-#if 0
-	addScalarFactory<Radians64>(*funcs);
-	addScalarFactory<Degrees64>(*funcs);
-	addScalarFactory<Sin<Signature<double, double>>>(*funcs);
-	addScalarFactory<Cos<Signature<double, double>>>(*funcs);
-	addScalarFactory<Tan64Bit>(*funcs);
-	addScalarFactory<ASin64Bit>(*funcs);
-	addScalarFactory<ACos64Bit>(*funcs);
-	addScalarFactory<ATan2<Signature<double, double, double>>>(*funcs, "atan2");
-	addScalarFactory<ATan<Signature<double, double>>>(*funcs);
-	addScalarFactory<Sinh64Bit>(*funcs);
-	addScalarFactory<Cosh64Bit>(*funcs);
-	addScalarFactory<Tanh64Bit>(*funcs);
-	addScalarFactory<ASinh64Bit>(*funcs);
-	addScalarFactory<ACosh64Bit>(*funcs);
-	addScalarFactory<ATanh64Bit>(*funcs);
 
-	addScalarFactory<Pow64>(*funcs);
-	addScalarFactory<Exp<Signature<double, double>>>(*funcs);
-	addScalarFactory<Log<Signature<double, double>>>(*funcs);
-	addScalarFactory<Exp2<Signature<double, double>>>(*funcs);
-	addScalarFactory<Log2<Signature<double, double>>>(*funcs);
-#endif
 	addScalarFactory<Sqrt64Bit>(*funcs);
 	addScalarFactory<InverseSqrt<Signature<double, double>>>(*funcs);
 
