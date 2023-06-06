@@ -3588,6 +3588,9 @@ def writeConformanceVersions(filename):
 				for v in vkBranchMatches:
 					selectedSet = withdrawnScBranches if v[0] == "sc" else withdrawnVkBranches
 					selectedSet.add((v[1], v[2], v[3], v[4]))
+	if len(withdrawnVkBranches) == 0:
+		print(f"Warning: unable to read content of doc folder, skipping generation of {os.path.basename(filename)}")
+		return
 	# define helper function that will be used to add entries for both vk and sc
 	def appendToStream(stream, versionsToAdd, maxWithdrawnVersion):
 		addedVersions = set()
