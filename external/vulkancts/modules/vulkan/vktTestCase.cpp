@@ -627,7 +627,9 @@ namespace
 
 vk::Allocator* createAllocator (DefaultDevice* device)
 {
-	const VkPhysicalDeviceMemoryProperties memoryProperties = vk::getPhysicalDeviceMemoryProperties(device->getInstanceInterface(), device->getPhysicalDevice());
+	const auto&	vki					= device->getInstanceInterface();
+	const auto	physicalDevice		= device->getPhysicalDevice();
+	const auto	memoryProperties	= vk::getPhysicalDeviceMemoryProperties(vki, physicalDevice);
 
 	// \todo [2015-07-24 jarkko] support allocator selection/configuration from command line (or compile time)
 	return new SimpleAllocator(device->getDeviceInterface(), device->getDevice(), memoryProperties);
