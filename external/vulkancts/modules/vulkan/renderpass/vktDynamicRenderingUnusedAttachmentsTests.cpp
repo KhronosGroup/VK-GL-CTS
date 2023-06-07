@@ -400,6 +400,16 @@ void DynamicUnusedAttachmentsCase::initPrograms (vk::SourceCollections& programC
 		programCollection.glslSources.add("vert-spv15") << glu::VertexSource(src) << spv15Opts;
 	}
 
+	// Make sure the fragment shader does not write to any attachment which will have an undefined format in the pipeline.
+	std::vector<bool>	fragAttachmentUsed	(m_params.fragAttachmentCount, true);
+	const auto			pipelineFormats		= m_params.getPipelineFormatVector(kColorFormat);
+
+	for (size_t i = 0; i < pipelineFormats.size(); ++i)
+	{
+		if (pipelineFormats[i] == VK_FORMAT_UNDEFINED)
+			fragAttachmentUsed.at(i) = false;
+	}
+
 	std::ostringstream frag;
 
 	frag
@@ -409,7 +419,10 @@ void DynamicUnusedAttachmentsCase::initPrograms (vk::SourceCollections& programC
 
 	// Color outputs.
 	for (uint32_t i = 0u; i < m_params.fragAttachmentCount; ++i)
-		frag << "layout (location=" << i << ") out uvec4 color" << i << ";\n";
+	{
+		if (fragAttachmentUsed.at(i))
+			frag << "layout (location=" << i << ") out uvec4 color" << i << ";\n";
+	}
 
 	const char* layerIndexExpr;
 
@@ -426,7 +439,10 @@ void DynamicUnusedAttachmentsCase::initPrograms (vk::SourceCollections& programC
 		;
 
 	for (uint32_t i = 0u; i < m_params.fragAttachmentCount; ++i)
-		frag << "    color" << i << " = uvec4(layerIndex, 255, " << i << ", 255);\n";
+	{
+		if (fragAttachmentUsed.at(i))
+			frag << "    color" << i << " = uvec4(layerIndex, 255, " << i << ", 255);\n";
+	}
 
 	frag << "}\n";
 
@@ -539,16 +555,19 @@ tcu::TestStatus DynamicUnusedAttachmentsInstance::iterate (void)
 
 	const VkPipelineVertexInputStateCreateInfo	vertexInputStateCreateInfo	= initVulkanStructure();
 	const auto									stencilOpState				= makeStencilOpState(VK_STENCIL_OP_KEEP, VK_STENCIL_OP_REPLACE, VK_STENCIL_OP_KEEP, VK_COMPARE_OP_GREATER_OR_EQUAL, 0xFFu, 0xFFu, 0xFFu);
+	// If the depth or stencil test is enabled and the image view is not VK_NULL_HANDLE, the format cannot be UNDEFINED.
+	const auto									depthEnabled				= (m_params.depthPresent	&& !(!m_params.depthDefined		&& m_params.depthValidHandle));
+	const auto									stencilEnabled				= (m_params.stencilPresent	&& !(!m_params.stencilDefined	&& m_params.stencilValidHandle));
 	const VkPipelineDepthStencilStateCreateInfo	depthStencilStateCreateInfo	=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	//	VkStructureType							sType;
 		nullptr,													//	const void*								pNext;
 		0u,															//	VkPipelineDepthStencilStateCreateFlags	flags;
-		m_params.depthPresent,										//	VkBool32								depthTestEnable;
-		m_params.depthPresent,										//	VkBool32								depthWriteEnable;
+		depthEnabled,												//	VkBool32								depthTestEnable;
+		depthEnabled,												//	VkBool32								depthWriteEnable;
 		VK_COMPARE_OP_GREATER_OR_EQUAL,								//	VkCompareOp								depthCompareOp;
 		VK_FALSE,													//	VkBool32								depthBoundsTestEnable;
-		m_params.stencilPresent,									//	VkBool32								stencilTestEnable;
+		stencilEnabled,												//	VkBool32								stencilTestEnable;
 		stencilOpState,												//	VkStencilOpState						front;
 		stencilOpState,												//	VkStencilOpState						back;
 		0.0f,														//	float									minDepthBounds;
