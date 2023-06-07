@@ -7940,6 +7940,34 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, caseName, caseDesc, config));
 		}
+		{
+			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+
+			// Enable depth test and writes.
+			config.depthTestEnableConfig.staticValue	= true;
+			config.depthWriteEnableConfig.staticValue	= true;
+			config.depthCompareOpConfig.staticValue		= vk::VK_COMPARE_OP_ALWAYS;
+			config.clearDepthValue						= 0.25f;	// Clear depth buffer to 0.25.
+			config.meshParams[0].depth					= 0.5f;		// Set mesh depth to 0.5 as a base.
+
+			// Enable dynamic depth bias to add a 0.25 bias to the mesh depth (using float representation), expecting the final
+			// depth to be 0.75.
+			vk::VkDepthBiasRepresentationInfoEXT depthBiasReprInfo	= vk::initVulkanStructure();
+			depthBiasReprInfo.depthBiasRepresentation				= vk::VK_DEPTH_BIAS_REPRESENTATION_FLOAT_EXT;
+			depthBiasReprInfo.depthBiasExact						= VK_FALSE;
+			config.depthBiasReprInfo								= depthBiasReprInfo;
+
+			const DepthBiasParams kPositiveBias			{ 0.25f, 0.0f };
+			config.depthBiasEnableConfig.staticValue	= true;
+			config.depthBiasConfig.staticValue			= kNoDepthBiasParams;
+			config.depthBiasConfig.dynamicValue			= kPositiveBias;
+			config.expectedDepth						= 0.75f;
+
+			const char* caseName = "depth_bias_repr_info_float";
+			const char* caseDesc = "Dynamically set the depth bias representation information to float representation";
+
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, caseName, caseDesc, config));
+		}
 #endif // CTS_USES_VULKANSC
 
 		// Depth compare op.
