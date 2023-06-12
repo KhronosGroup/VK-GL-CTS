@@ -294,34 +294,41 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 
 		subpasses[1u + sampleNdx] = subpassDesc;
 
-		const VkSubpassDependency subpassDependency =
+		if (sampleNdx == 0u)
 		{
-			0u,												// uint32_t                srcSubpass;
-			1u + sampleNdx,									// uint32_t                dstSubpass;
-			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,  // VkPipelineStageFlags    srcStageMask;
-			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,			// VkPipelineStageFlags    dstStageMask;
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags           srcAccessMask;
-			VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,			// VkAccessFlags           dstAccessMask;
-			0u,												// VkDependencyFlags       dependencyFlags;
-		};
+			// The second subpass will be in charge of transitioning the multisample attachment from
+			// VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+			const VkSubpassDependency subpassDependency =
+			{
+				0u,												// uint32_t                srcSubpass;
+				1u + sampleNdx,									// uint32_t                dstSubpass;
+				VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,	// VkPipelineStageFlags    srcStageMask;
+				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,			// VkPipelineStageFlags    dstStageMask;
+				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags           srcAccessMask;
+				VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,			// VkAccessFlags           dstAccessMask;
+				0u,												// VkDependencyFlags       dependencyFlags;
+			};
 
-		subpassDependencies.push_back(subpassDependency);
-	}
-	// now handle the very last sample pass, which must synchronize with all prior subpasses
-	for (deUint32 sampleNdx = 0u; sampleNdx < (numSamples - 1); ++sampleNdx)
-	{
-		const VkSubpassDependency subpassDependency =
+			subpassDependencies.push_back(subpassDependency);
+		}
+		else
 		{
-			1u + sampleNdx,									// uint32_t					srcSubpass;
-			numSamples,										// uint32_t					dstSubpass;
-			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,	// VkPipelineStageFlags		srcStageMask;
-			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,			// VkPipelineStageFlags		dstStageMask;
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags			srcAccessMask;
-			VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,			// VkAccessFlags			dstAccessMask;
-			0u,												// VkDependencyFlags		dependencyFlags;
-		};
+			// Make sure subpass reads are in order. This serializes subpasses to make sure there are no layout transition hazards
+			// in the multisample image, from VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			// caused by parallel execution of several subpasses.
+			const VkSubpassDependency readDependency =
+			{
+				sampleNdx,										// uint32_t                srcSubpass;
+				1u + sampleNdx,									// uint32_t                dstSubpass;
+				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,			// VkPipelineStageFlags    srcStageMask;
+				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,			// VkPipelineStageFlags    dstStageMask;
+				VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,			// VkAccessFlags           srcAccessMask;
+				VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,			// VkAccessFlags           dstAccessMask;
+				0u,												// VkDependencyFlags       dependencyFlags;
+			};
 
-		subpassDependencies.push_back(subpassDependency);
+			subpassDependencies.push_back(readDependency);
+		}
 	}
 
 	const VkRenderPassCreateInfo renderPassInfo =
