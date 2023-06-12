@@ -1653,6 +1653,7 @@ void FragmentShadingBarycentricTestCase::initWeightPrograms (SourceCollections& 
 		break;
 	case TEST_SUBTYPE_MSAA_INTERPOLATE_AT_OFFSET:
 		attributes["glslFormulaeTest"] = std::string("interpolateAtOffset(gl_") + baryCoordVariable + "EXT, vec2(gl_SamplePosition - vec2(0.5)))";
+		attributes["glslDeclspecRef"] += " sample";
 		break;
 	case TEST_SUBTYPE_MSAA_CENTROID_QUALIFIER:
 		attributes["spirvBaryCoordVariable"]		= baryCoordVariable + "KHR";
