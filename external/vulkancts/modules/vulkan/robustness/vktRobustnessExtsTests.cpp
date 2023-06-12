@@ -2599,7 +2599,38 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 	{
 		const Unique<VkShaderModule>	shader(createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0));
 
-		pipeline = makeComputePipeline(vk, device, *pipelineLayout, *shader);
+		const VkPipelineShaderStageCreateInfo pipelineShaderStageParams =
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
+			nullptr,												// const void*							pNext;
+			static_cast<VkPipelineShaderStageCreateFlags>(0u),		// VkPipelineShaderStageCreateFlags		flags;
+			VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits				stage;
+			*shader,												// VkShaderModule						module;
+			"main",													// const char*							pName;
+			nullptr,												// const VkSpecializationInfo*			pSpecializationInfo;
+		};
+
+		VkComputePipelineCreateInfo pipelineCreateInfo =
+		{
+			VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,			// VkStructureType					sType;
+			nullptr,												// const void*						pNext;
+			static_cast<VkPipelineCreateFlags>(0u),					// VkPipelineCreateFlags			flags;
+			pipelineShaderStageParams,								// VkPipelineShaderStageCreateInfo	stage;
+			*pipelineLayout,										// VkPipelineLayout					layout;
+			DE_NULL,												// VkPipeline						basePipelineHandle;
+			0,														// deInt32							basePipelineIndex;
+		};
+
+#ifndef CTS_USES_VULKANSC
+		VkPipelineRobustnessCreateInfoEXT pipelineRobustnessInfo;
+		if (m_data.testPipelineRobustness)
+		{
+			pipelineRobustnessInfo = getPipelineRobustnessInfo(m_data.testRobustness2, m_data.descriptorType);
+			pipelineCreateInfo.pNext = &pipelineRobustnessInfo;
+		}
+#endif
+
+		pipeline = createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 
 	}
 #ifndef CTS_USES_VULKANSC
@@ -2646,6 +2677,13 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 			(vk::VkPipeline)0,										// basePipelineHandle
 			0u,														// basePipelineIndex
 		};
+
+		VkPipelineRobustnessCreateInfoEXT pipelineRobustnessInfo;
+		if (m_data.testPipelineRobustness)
+		{
+			pipelineRobustnessInfo = getPipelineRobustnessInfo(m_data.testRobustness2, m_data.descriptorType);
+			pipelineCreateInfo.pNext = &pipelineRobustnessInfo;
+		}
 
 		pipeline = createRayTracingPipelineKHR(vk, device, VK_NULL_HANDLE, VK_NULL_HANDLE, &pipelineCreateInfo);
 

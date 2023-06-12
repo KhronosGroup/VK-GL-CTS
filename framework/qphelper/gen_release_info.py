@@ -38,7 +38,7 @@ def writeFile (filename, data):
 
 def getDescribe (gitDir):
 	commit = subprocess.check_output(["git", "--git-dir", gitDir,
-	                                  "describe", "--always", "--long"])
+	                                  "describe", "--always", "--long", "--abbrev=40"])
 	return commit.decode().strip()
 
 def getHead (gitDir):
