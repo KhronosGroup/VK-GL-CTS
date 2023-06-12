@@ -361,6 +361,8 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkDestroyPrivateDataSlotEXT",
 		"vkSetPrivateDataEXT",
 		"vkGetPrivateDataEXT",
+		"vkGetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR",
+		"vkGetEncodedVideoSessionParametersKHR",
 		"vkCmdEncodeVideoKHR",
 		"vkExportMetalObjectsEXT",
 		"vkCmdSetEvent2KHR",
@@ -541,6 +543,7 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkCmdSetCoverageReductionModeNV",
 		"vkGetFramebufferTilePropertiesQCOM",
 		"vkGetDynamicRenderingTilePropertiesQCOM",
+		"vkCmdSetAttachmentFeedbackLoopEnableEXT",
 	};
 
 	bool fail = false;

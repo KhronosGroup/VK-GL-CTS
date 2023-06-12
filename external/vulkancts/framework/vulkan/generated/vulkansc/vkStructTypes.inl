@@ -3614,7 +3614,7 @@ struct VkFaultData
 struct VkFaultCallbackInfo
 {
 	VkStructureType				sType;
-	void*						pNext;
+	const void*					pNext;
 	uint32_t					faultCount;
 	VkFaultData*				pFaults;
 	PFN_vkFaultCallbackFunction	pfnFaultCallback;
