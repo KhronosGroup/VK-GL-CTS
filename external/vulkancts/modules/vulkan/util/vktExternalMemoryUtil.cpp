@@ -1278,6 +1278,9 @@ vk::Move<vk::VkImage> createExternalImage (const vk::DeviceInterface&					vkd,
 #  if defined(__ANDROID_API_P__) && (DE_ANDROID_API >= __ANDROID_API_P__)
 #      define BUILT_WITH_ANDROID_P_HARDWARE_BUFFER 1
 #  endif
+#  if defined(__ANDROID_API_T__) && (DE_ANDROID_API >= __ANDROID_API_T__)
+#      define BUILT_WITH_ANDROID_T_HARDWARE_BUFFER 1
+#  endif
 
 static deInt32 androidGetSdkVersion()
 {
@@ -1303,6 +1306,10 @@ static deInt32 checkAnbApiBuild()
 	// When testing AHB on Android-P and newer the CTS must be compiled against API28 or newer.
 	DE_TEST_ASSERT(!(sdkVersion >= 28)); /*__ANDROID_API_P__ */
 #endif // !defined(BUILT_WITH_ANDROID_P_HARDWARE_BUFFER)
+#if !defined(BUILT_WITH_ANDROID_T_HARDWARE_BUFFER)
+	// When testing AHB on Android-T and newer the CTS must be compiled against API33 or newer.
+	DE_TEST_ASSERT(!(sdkVersion >= 33)); /*__ANDROID_API_T__ */
+#endif // !defined(BUILT_WITH_ANDROID_T_HARDWARE_BUFFER)
 	return sdkVersion;
 }
 
@@ -1627,6 +1634,13 @@ AndroidHardwareBufferExternalApi* AndroidHardwareBufferExternalApi::getInstance(
 #if (DE_OS == DE_OS_ANDROID)
 	deInt32 sdkVersion = checkAnbApiBuild();
 #if defined(BUILT_WITH_ANDROID_HARDWARE_BUFFER)
+#  if defined(__ANDROID_API_T__) && (DE_ANDROID_API >= __ANDROID_API_T__)
+	if (sdkVersion >= __ANDROID_API_T__ )
+	{
+		static AndroidHardwareBufferExternalApi33 api33Instance;
+		return &api33Instance;
+	}
+#  endif
 #  if defined(__ANDROID_API_P__) && (DE_ANDROID_API >= __ANDROID_API_P__)
 	if (sdkVersion >= __ANDROID_API_P__ )
 	{
