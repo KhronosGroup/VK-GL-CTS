@@ -199,13 +199,15 @@ public:
 class EglRenderContext : public glu::RenderContext
 {
 public:
-					EglRenderContext(const glu::RenderConfig& config, const tcu::CommandLine& cmdLine);
+					EglRenderContext(const glu::RenderConfig& config, const tcu::CommandLine& cmdLine, const glu::RenderContext* sharedContext);
 					~EglRenderContext(void);
 
 	glu::ContextType		getType		(void) const	{ return m_contextType; }
+	eglw::EGLContext		getEglContext	(void) const	{ return m_eglContext; }
 	const glw::Functions&		getFunctions	(void) const	{ return m_glFunctions; }
 	const tcu::RenderTarget&	getRenderTarget	(void) const;
 	void				postIterate	(void);
+	virtual void		makeCurrent		(void);
 
 	virtual glw::GenericFuncType    getProcAddress	(const char* name) const { return m_egl.getProcAddress(name); }
 
@@ -214,6 +216,7 @@ private:
 	const glu::ContextType		m_contextType;
 	eglw::EGLDisplay		m_eglDisplay;
 	eglw::EGLContext		m_eglContext;
+	eglw::EGLSurface		m_eglSurface;
 	de::DynamicLibrary*		m_glLibrary;
 	glw::Functions			m_glFunctions;
 	tcu::RenderTarget		m_renderTarget;
@@ -228,12 +231,12 @@ ContextFactory::ContextFactory()
 	: glu::ContextFactory("default", "EGL surfaceless context")
 {}
 
-glu::RenderContext* ContextFactory::createContext(const glu::RenderConfig& config, const tcu::CommandLine& cmdLine, const glu::RenderContext*) const
+glu::RenderContext* ContextFactory::createContext(const glu::RenderConfig& config, const tcu::CommandLine& cmdLine, const glu::RenderContext* sharedContext) const
 {
-	return new EglRenderContext(config, cmdLine);
+	return new EglRenderContext(config, cmdLine, sharedContext);
 }
 
-EglRenderContext::EglRenderContext(const glu::RenderConfig& config, const tcu::CommandLine& cmdLine)
+EglRenderContext::EglRenderContext(const glu::RenderConfig& config, const tcu::CommandLine& cmdLine, const glu::RenderContext *sharedContext)
 	: m_egl("libEGL.so")
 	, m_contextType(config.type)
 	, m_eglDisplay(EGL_NO_DISPLAY)
@@ -261,7 +264,6 @@ EglRenderContext::EglRenderContext(const glu::RenderConfig& config, const tcu::C
 	eglw::EGLint		flags = 0;
 	eglw::EGLint		num_configs;
 	eglw::EGLConfig		egl_config = NULL;
-	eglw::EGLSurface	egl_surface;
 
 	(void) cmdLine;
 
@@ -367,11 +369,11 @@ EglRenderContext::EglRenderContext(const glu::RenderConfig& config, const tcu::C
 	switch (config.surfaceType)
 	{
 		case glu::RenderConfig::SURFACETYPE_DONT_CARE:
-			egl_surface = EGL_NO_SURFACE;
+			m_eglSurface = EGL_NO_SURFACE;
 			break;
 		case glu::RenderConfig::SURFACETYPE_OFFSCREEN_NATIVE:
 		case glu::RenderConfig::SURFACETYPE_OFFSCREEN_GENERIC:
-			egl_surface = eglCreatePbufferSurface(m_eglDisplay, egl_config, &surface_attribs[0]);
+			m_eglSurface = eglCreatePbufferSurface(m_eglDisplay, egl_config, &surface_attribs[0]);
 			break;
 		case glu::RenderConfig::SURFACETYPE_WINDOW:
 		case glu::RenderConfig::SURFACETYPE_LAST:
@@ -416,12 +418,15 @@ EglRenderContext::EglRenderContext(const glu::RenderConfig& config, const tcu::C
 
 	context_attribs.push_back(EGL_NONE);
 
-	m_eglContext = m_egl.createContext(m_eglDisplay, egl_config, EGL_NO_CONTEXT, &context_attribs[0]);
+	const EglRenderContext *sharedEglRenderContext = dynamic_cast<const EglRenderContext*>(sharedContext);
+	eglw::EGLContext sharedEglContext = sharedEglRenderContext ? sharedEglRenderContext->getEglContext() : EGL_NO_CONTEXT;
+
+	m_eglContext = m_egl.createContext(m_eglDisplay, egl_config, sharedEglContext, &context_attribs[0]);
 	EGLU_CHECK_MSG(m_egl, "eglCreateContext()");
 	if (!m_eglContext)
 		throw tcu::ResourceError("eglCreateContext failed");
 
-	EGLU_CHECK_CALL(m_egl, makeCurrent(m_eglDisplay, egl_surface, egl_surface, m_eglContext));
+	EGLU_CHECK_CALL(m_egl, makeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext));
 
 	if ((eglMajorVersion == 1 && eglMinorVersion >= 5) ||
 		isEGLExtensionSupported(m_egl, m_eglDisplay, "EGL_KHR_get_all_proc_addresses") ||
@@ -493,6 +498,11 @@ EglRenderContext::~EglRenderContext(void)
 const tcu::RenderTarget& EglRenderContext::getRenderTarget(void) const
 {
 	return m_renderTarget;
+}
+
+void EglRenderContext::makeCurrent (void)
+{
+	EGLU_CHECK_CALL(m_egl, makeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext));
 }
 
 void EglRenderContext::postIterate(void)
