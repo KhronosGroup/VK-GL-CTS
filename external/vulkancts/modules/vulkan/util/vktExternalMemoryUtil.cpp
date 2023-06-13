@@ -1458,6 +1458,10 @@ static deInt32 checkAnbApiBuild()
 	// When testing AHB on Android-T and newer the CTS must be compiled against API33 or newer.
 	DE_TEST_ASSERT(!(sdkVersion >= 33)); /*__ANDROID_API_T__ */
 #endif // !defined(BUILT_WITH_ANDROID_T_HARDWARE_BUFFER)
+#if !defined(BUILT_WITH_ANDROID_U_HARDWARE_BUFFER)
+	// When testing AHB on Android-U and newer the CTS must be compiled against API34 or newer.
+	DE_TEST_ASSERT(!(sdkVersion >= 34)); /*__ANDROID_API_U__ */
+#endif // !defined(BUILT_WITH_ANDROID_U_HARDWARE_BUFFER)
 	return sdkVersion;
 }
 
