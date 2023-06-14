@@ -58,6 +58,7 @@
 #include "vkBufferWithMemory.hpp"
 #ifndef CTS_USES_VULKANSC
 #include "vktRasterizationOrderAttachmentAccessTests.hpp"
+#include "vktShaderTileImageTests.hpp"
 #endif // CTS_USES_VULKANSC
 
 #include <vector>
@@ -7778,6 +7779,11 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 	// Rasterization order attachment access tests
 	{
 		rasterizationTests->addChild(createRasterizationOrderAttachmentAccessTests(testCtx));
+	}
+
+	// Tile Storage tests
+	{
+		rasterizationTests->addChild(createShaderTileImageTests(testCtx));
 	}
 #endif // CTS_USES_VULKANSC
 }
