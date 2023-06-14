@@ -8448,6 +8448,27 @@ struct VkPhysicalDeviceShaderTileImagePropertiesEXT
 	VkBool32		shaderTileImageReadFromHelperInvocation;
 };
 
+struct VkPhysicalDeviceExternalFormatResolveFeaturesANDROID
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		externalFormatResolve;
+};
+
+struct VkPhysicalDeviceExternalFormatResolvePropertiesANDROID
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		nullColorAttachmentWithExternalFormatResolve;
+};
+
+struct VkAndroidHardwareBufferFormatResolvePropertiesANDROID
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkFormat		colorAttachmentFormat;
+};
+
 struct StdVideoH264SpsVuiFlags
 {
 	uint32_t	aspect_ratio_info_present_flag:1;

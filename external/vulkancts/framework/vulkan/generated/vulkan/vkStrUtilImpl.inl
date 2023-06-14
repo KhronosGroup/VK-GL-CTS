@@ -2222,6 +2222,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_OPTICAL_FLOW_SESSION_CREATE_PRIVATE_DATA_INFO_NV:					return "VK_STRUCTURE_TYPE_OPTICAL_FLOW_SESSION_CREATE_PRIVATE_DATA_INFO_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_DITHERING_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_DITHERING_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROTECTED_ACCESS_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROTECTED_ACCESS_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FORMAT_RESOLVE_FEATURES_ANDROID:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FORMAT_RESOLVE_FEATURES_ANDROID";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FORMAT_RESOLVE_PROPERTIES_ANDROID:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FORMAT_RESOLVE_PROPERTIES_ANDROID";
+		case VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_FORMAT_RESOLVE_PROPERTIES_ANDROID:			return "VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_FORMAT_RESOLVE_PROPERTIES_ANDROID";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_POSITION_FETCH_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_POSITION_FETCH_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_PROPERTIES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_PROPERTIES_EXT";
@@ -2668,11 +2671,12 @@ tcu::Format::Bitfield<32> getResolveModeFlagsStr (VkResolveModeFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_RESOLVE_MODE_NONE,				"VK_RESOLVE_MODE_NONE"),
-		tcu::Format::BitDesc(VK_RESOLVE_MODE_SAMPLE_ZERO_BIT,	"VK_RESOLVE_MODE_SAMPLE_ZERO_BIT"),
-		tcu::Format::BitDesc(VK_RESOLVE_MODE_AVERAGE_BIT,		"VK_RESOLVE_MODE_AVERAGE_BIT"),
-		tcu::Format::BitDesc(VK_RESOLVE_MODE_MIN_BIT,			"VK_RESOLVE_MODE_MIN_BIT"),
-		tcu::Format::BitDesc(VK_RESOLVE_MODE_MAX_BIT,			"VK_RESOLVE_MODE_MAX_BIT"),
+		tcu::Format::BitDesc(VK_RESOLVE_MODE_NONE,									"VK_RESOLVE_MODE_NONE"),
+		tcu::Format::BitDesc(VK_RESOLVE_MODE_SAMPLE_ZERO_BIT,						"VK_RESOLVE_MODE_SAMPLE_ZERO_BIT"),
+		tcu::Format::BitDesc(VK_RESOLVE_MODE_AVERAGE_BIT,							"VK_RESOLVE_MODE_AVERAGE_BIT"),
+		tcu::Format::BitDesc(VK_RESOLVE_MODE_MIN_BIT,								"VK_RESOLVE_MODE_MIN_BIT"),
+		tcu::Format::BitDesc(VK_RESOLVE_MODE_MAX_BIT,								"VK_RESOLVE_MODE_MAX_BIT"),
+		tcu::Format::BitDesc(VK_RESOLVE_MODE_EXTERNAL_FORMAT_DOWNSAMPLE_ANDROID,	"VK_RESOLVE_MODE_EXTERNAL_FORMAT_DOWNSAMPLE_ANDROID"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -16652,6 +16656,36 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderTileImage
 	s << "\tshaderTileImageCoherentReadAccelerated = " << value.shaderTileImageCoherentReadAccelerated << '\n';
 	s << "\tshaderTileImageReadSampleFromPixelRateInvocation = " << value.shaderTileImageReadSampleFromPixelRateInvocation << '\n';
 	s << "\tshaderTileImageReadFromHelperInvocation = " << value.shaderTileImageReadFromHelperInvocation << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExternalFormatResolveFeaturesANDROID& value)
+{
+	s << "VkPhysicalDeviceExternalFormatResolveFeaturesANDROID = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\texternalFormatResolve = " << value.externalFormatResolve << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExternalFormatResolvePropertiesANDROID& value)
+{
+	s << "VkPhysicalDeviceExternalFormatResolvePropertiesANDROID = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tnullColorAttachmentWithExternalFormatResolve = " << value.nullColorAttachmentWithExternalFormatResolve << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAndroidHardwareBufferFormatResolvePropertiesANDROID& value)
+{
+	s << "VkAndroidHardwareBufferFormatResolvePropertiesANDROID = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcolorAttachmentFormat = " << value.colorAttachmentFormat << '\n';
 	s << '}';
 	return s;
 }
