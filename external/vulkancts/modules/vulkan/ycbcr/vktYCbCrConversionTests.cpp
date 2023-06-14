@@ -607,6 +607,67 @@ void logTestCaseInfo (TestLog& log, const TestConfig& config)
 void checkSupport (Context& context, const TestConfig config)
 {
 #if !defined(FAKE_COLOR_CONVERSION)
+
+	const auto&							instInt	(context.getInstanceInterface());
+
+	{
+		const vk::VkPhysicalDeviceImageFormatInfo2			imageFormatInfo				=
+		{
+			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,	// sType;
+			DE_NULL,													// pNext;
+			config.format,												// format;
+			vk::VK_IMAGE_TYPE_2D,										// type;
+			vk::VK_IMAGE_TILING_OPTIMAL,								// tiling;
+			vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+			vk::VK_IMAGE_USAGE_SAMPLED_BIT,									// usage;
+			(vk::VkImageCreateFlags)0u										// flags
+		};
+
+		vk::VkSamplerYcbcrConversionImageFormatProperties	samplerYcbcrConversionImage = {};
+		samplerYcbcrConversionImage.sType = vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES;
+		samplerYcbcrConversionImage.pNext = DE_NULL;
+
+		vk::VkImageFormatProperties2						imageFormatProperties		= {};
+		imageFormatProperties.sType = vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
+		imageFormatProperties.pNext = &samplerYcbcrConversionImage;
+
+		vk::VkResult result = instInt.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &imageFormatInfo, &imageFormatProperties);
+		if (result == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+			TCU_THROW(NotSupportedError, "Format not supported.");
+		VK_CHECK(result);
+
+		// Check for plane compatible format support when the disjoint flag is being used
+		if (config.disjoint)
+		{
+			const vk::PlanarFormatDescription				formatDescription		= vk::getPlanarFormatDescription(config.format);
+
+			for (deUint32 channelNdx = 0; channelNdx < 4; ++channelNdx)
+			{
+				if (!formatDescription.hasChannelNdx(channelNdx))
+					continue;
+				deUint32					planeNdx					= formatDescription.channels[channelNdx].planeNdx;
+				vk::VkFormat				planeCompatibleFormat		= getPlaneCompatibleFormat(formatDescription, planeNdx);
+
+				const vk::VkPhysicalDeviceImageFormatInfo2			planeImageFormatInfo				=
+				{
+					vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,	// sType;
+					DE_NULL,												// pNext;
+					planeCompatibleFormat,									// format;
+					vk::VK_IMAGE_TYPE_2D,										// type;
+					vk::VK_IMAGE_TILING_OPTIMAL,								// tiling;
+					vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+					vk::VK_IMAGE_USAGE_SAMPLED_BIT,								// usage;
+					(vk::VkImageCreateFlags)0u									// flags
+				};
+
+				vk::VkResult planesResult = instInt.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &planeImageFormatInfo, &imageFormatProperties);
+				if (planesResult == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+					TCU_THROW(NotSupportedError, "Plane compatibile format not supported.");
+				VK_CHECK(planesResult);
+			}
+		}
+	}
+
 	if (!context.isDeviceFunctionalitySupported("VK_KHR_sampler_ycbcr_conversion"))
 		TCU_THROW(NotSupportedError, "Extension VK_KHR_sampler_ycbcr_conversion not supported");
 
@@ -616,7 +677,6 @@ void checkSupport (Context& context, const TestConfig config)
 			TCU_THROW(NotSupportedError, "samplerYcbcrConversion feature is not supported");
 	}
 
-	try
 	{
 		const vk::VkFormatProperties	properties	(vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), config.format));
 		const vk::VkFormatFeatureFlags	features	(config.imageTiling == vk::VK_IMAGE_TILING_OPTIMAL
@@ -656,13 +716,6 @@ void checkSupport (Context& context, const TestConfig config)
 		if (isYChromaSubsampled(config.format) && (config.yChromaOffset == vk::VK_CHROMA_LOCATION_MIDPOINT) && ((features & vk::VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT) == 0))
 			TCU_THROW(NotSupportedError, "Format doesn't support midpoint chroma samples");
 	}
-	catch (const vk::Error& err)
-	{
-		if (err.getError() == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
-			TCU_THROW(NotSupportedError, "Format not supported");
-
-		throw;
-	}
 #endif
 }
 
@@ -677,11 +730,38 @@ tcu::TestStatus textureConversionTest (Context& context, const TestConfig config
 	const UVec2						srcSize					= config.srcSize;
 	const UVec2						dstSize					= config.dstSize;
 	bool							isOk					= true;
+	const auto&						instInt	(context.getInstanceInterface());
 
 	logTestCaseInfo(log, config);
 
 #if !defined(FAKE_COLOR_CONVERSION)
-	try
+	{
+		const vk::VkPhysicalDeviceImageFormatInfo2			imageFormatInfo				=
+		{
+			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,	// sType;
+			DE_NULL,													// pNext;
+			config.format,												// format;
+			vk::VK_IMAGE_TYPE_2D,										// type;
+			vk::VK_IMAGE_TILING_OPTIMAL,								// tiling;
+			vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+			vk::VK_IMAGE_USAGE_SAMPLED_BIT,									// usage;
+			(vk::VkImageCreateFlags)0u										// flags
+		};
+
+		vk::VkSamplerYcbcrConversionImageFormatProperties	samplerYcbcrConversionImage = {};
+		samplerYcbcrConversionImage.sType = vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES;
+		samplerYcbcrConversionImage.pNext = DE_NULL;
+
+		vk::VkImageFormatProperties2						imageFormatProperties		= {};
+		imageFormatProperties.sType = vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
+		imageFormatProperties.pNext = &samplerYcbcrConversionImage;
+
+		vk::VkResult result = instInt.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &imageFormatInfo, &imageFormatProperties);
+		if (result == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+			TCU_THROW(NotSupportedError, "Format not supported.");
+		VK_CHECK(result);
+	}
+
 	{
 		const vk::VkFormatProperties	properties	(vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), config.format));
 		const vk::VkFormatFeatureFlags	features	(config.imageTiling == vk::VK_IMAGE_TILING_OPTIMAL
@@ -692,13 +772,6 @@ tcu::TestStatus textureConversionTest (Context& context, const TestConfig config
 			explicitReconstruction = true;
 
 		log << TestLog::Message << "FormatFeatures: " << vk::getFormatFeatureFlagsStr(features) << TestLog::EndMessage;
-	}
-	catch (const vk::Error& err)
-	{
-		if (err.getError() == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
-			TCU_THROW(NotSupportedError, "Format not supported");
-
-		throw;
 	}
 #endif
 

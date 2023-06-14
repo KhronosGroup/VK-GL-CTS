@@ -2784,6 +2784,11 @@ tcu::Format::Bitfield<32> getMemoryMapFlagsStr (VkMemoryMapFlags value)
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
+tcu::Format::Bitfield<32> getMemoryUnmapFlagsKHRStr (VkMemoryUnmapFlagsKHR value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
 tcu::Format::Bitfield<32> getDescriptorPoolResetFlagsStr (VkDescriptorPoolResetFlags value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
@@ -3219,7 +3224,27 @@ tcu::Format::Bitfield<32> getVideoEncodeH264CapabilityFlagsEXTStr (VkVideoEncode
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
+tcu::Format::Bitfield<32> getVideoEncodeH264StdFlagsEXTStr (VkVideoEncodeH264StdFlagsEXT value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
+tcu::Format::Bitfield<32> getVideoEncodeH264RateControlFlagsEXTStr (VkVideoEncodeH264RateControlFlagsEXT value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
 tcu::Format::Bitfield<32> getVideoEncodeH265CapabilityFlagsEXTStr (VkVideoEncodeH265CapabilityFlagsEXT value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
+tcu::Format::Bitfield<32> getVideoEncodeH265StdFlagsEXTStr (VkVideoEncodeH265StdFlagsEXT value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
+tcu::Format::Bitfield<32> getVideoEncodeH265RateControlFlagsEXTStr (VkVideoEncodeH265RateControlFlagsEXT value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
@@ -3230,11 +3255,6 @@ tcu::Format::Bitfield<32> getVideoEncodeH265CtbSizeFlagsEXTStr (VkVideoEncodeH26
 }
 
 tcu::Format::Bitfield<32> getVideoEncodeH265TransformBlockSizeFlagsEXTStr (VkVideoEncodeH265TransformBlockSizeFlagsEXT value)
-{
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
-}
-
-tcu::Format::Bitfield<32> getMemoryUnmapFlagsKHRStr (VkMemoryUnmapFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }

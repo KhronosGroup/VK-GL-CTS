@@ -1764,6 +1764,39 @@ deUint32 AndroidHardwareBufferExternalApi33::vkFormatToAhbFormat(vk::VkFormat vk
 }
 
 #endif // defined(BUILT_WITH_ANDROID_T_HARDWARE_BUFFER)
+
+#if defined(BUILT_WITH_ANDROID_U_HARDWARE_BUFFER)
+class AndroidHardwareBufferExternalApi34 : public  AndroidHardwareBufferExternalApi33
+{
+public:
+
+	virtual deUint32 vkFormatToAhbFormat(vk::VkFormat vkFormat);
+
+	AndroidHardwareBufferExternalApi34() : AndroidHardwareBufferExternalApi33() {};
+	virtual ~AndroidHardwareBufferExternalApi34() {};
+
+private:
+	// Stop the compiler generating methods of copy the object
+	AndroidHardwareBufferExternalApi34(AndroidHardwareBufferExternalApi34 const& copy);            // Not Implemented
+	AndroidHardwareBufferExternalApi34& operator=(AndroidHardwareBufferExternalApi34 const& copy); // Not Implemented
+};
+
+deUint32 AndroidHardwareBufferExternalApi34::vkFormatToAhbFormat(vk::VkFormat vkFormat)
+{
+	switch(vkFormat)
+	{
+	  case vk::VK_FORMAT_R16_UINT:
+		return AHARDWAREBUFFER_FORMAT_R16_UINT;
+	  case vk::VK_FORMAT_R16G16_UINT:
+		return AHARDWAREBUFFER_FORMAT_R16G16_UINT;
+	  case vk::VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16:
+		return AHARDWAREBUFFER_FORMAT_R10G10B10A10_UNORM;
+	  default:
+		return AndroidHardwareBufferExternalApi33::vkFormatToAhbFormat(vkFormat);
+	}
+}
+
+#endif // defined(BUILT_WITH_ANDROID_U_HARDWARE_BUFFER)
 #endif // defined(BUILT_WITH_ANDROID_HARDWARE_BUFFER)
 #endif // (DE_OS == DE_OS_ANDROID)
 
@@ -1772,6 +1805,20 @@ AndroidHardwareBufferExternalApi* AndroidHardwareBufferExternalApi::getInstance(
 #if (DE_OS == DE_OS_ANDROID)
 	deInt32 sdkVersion = checkAnbApiBuild();
 #if defined(BUILT_WITH_ANDROID_HARDWARE_BUFFER)
+#  if defined(__ANDROID_API_U__) && (DE_ANDROID_API >= __ANDROID_API_U__)
+	if (sdkVersion >= __ANDROID_API_U__ )
+	{
+		static AndroidHardwareBufferExternalApi34 api34Instance;
+		return &api34Instance;
+	}
+#  endif
+#  if defined(__ANDROID_API_T__) && (DE_ANDROID_API >= __ANDROID_API_T__)
+	if (sdkVersion >= __ANDROID_API_T__ )
+	{
+		static AndroidHardwareBufferExternalApi33 api33Instance;
+		return &api33Instance;
+	}
+#  endif
 #  if defined(__ANDROID_API_P__) && (DE_ANDROID_API >= __ANDROID_API_P__)
 	if (sdkVersion >= __ANDROID_API_P__ )
 	{

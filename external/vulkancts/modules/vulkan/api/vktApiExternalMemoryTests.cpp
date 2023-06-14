@@ -4919,6 +4919,9 @@ de::MovePtr<tcu::TestCaseGroup> createMemoryTests (tcu::TestContext& testCtx, vk
 			vk::VK_FORMAT_D32_SFLOAT_S8_UINT,
 			vk::VK_FORMAT_S8_UINT,
 			vk::VK_FORMAT_R8_UNORM,
+			vk::VK_FORMAT_R16_UINT,
+			vk::VK_FORMAT_R16G16_UINT,
+			vk::VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16,
 		};
 		const size_t		numOfAhbFormats	= DE_LENGTH_OF_ARRAY(ahbFormats);
 

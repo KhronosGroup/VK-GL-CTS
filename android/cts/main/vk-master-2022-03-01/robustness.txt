@@ -8974,6 +8974,8 @@ dEQP-VK.robustness.robustness2.push.template.r64ui.unroll.volatile.storage_buffe
 dEQP-VK.robustness.robustness2.push.template.r64ui.unroll.volatile.storage_buffer.readonly.no_fmt_qual.null_descriptor.samples_1.1d.frag
 dEQP-VK.robustness.robustness2.push.template.r64ui.unroll.volatile.storage_buffer.readonly.no_fmt_qual.null_descriptor.samples_1.1d.vert
 dEQP-VK.robustness.robustness2.push.template.r64ui.unroll.volatile.storage_buffer.readonly.no_fmt_qual.null_descriptor.samples_1.1d.rgen
+dEQP-VK.robustness.robustness2.misc.out_of_bounds_stride
+dEQP-VK.robustness.robustness2.misc.out_of_bounds_stride_dynamic_stride
 dEQP-VK.robustness.robustness1_vertex_access.out_of_bounds_stride_0
 dEQP-VK.robustness.robustness1_vertex_access.out_of_bounds_stride_16_single_buffer
 dEQP-VK.robustness.robustness1_vertex_access.out_of_bounds_stride_30_middle_of_buffer
@@ -9503,6 +9505,8 @@ dEQP-VK.robustness.pipeline_robustness.robustness2.push.notemplate.r64i.dontunro
 dEQP-VK.robustness.pipeline_robustness.robustness2.push.notemplate.r64i.dontunroll.volatile.storage_buffer.readwrite.no_fmt_qual.len_512.samples_1.1d.comp
 dEQP-VK.robustness.pipeline_robustness.robustness2.push.notemplate.r64i.dontunroll.volatile.storage_buffer.readwrite.no_fmt_qual.len_512.samples_1.1d.frag
 dEQP-VK.robustness.pipeline_robustness.robustness2.push.notemplate.r64i.dontunroll.volatile.storage_buffer.readwrite.no_fmt_qual.len_512.samples_1.1d.vert
+dEQP-VK.robustness.pipeline_robustness.robustness2.misc.out_of_bounds_stride
+dEQP-VK.robustness.pipeline_robustness.robustness2.misc.out_of_bounds_stride_dynamic_stride
 dEQP-VK.robustness.pipeline_robustness.image_robustness.bind.notemplate.r32ui.dontunroll.nonvolatile.sampled_image.no_fmt_qual.img.samples_1.1d.comp
 dEQP-VK.robustness.pipeline_robustness.image_robustness.bind.notemplate.r32ui.dontunroll.nonvolatile.sampled_image.no_fmt_qual.img.samples_1.1d.frag
 dEQP-VK.robustness.pipeline_robustness.image_robustness.bind.notemplate.r32ui.dontunroll.nonvolatile.sampled_image.no_fmt_qual.img.samples_1.1d.vert
