@@ -1661,7 +1661,6 @@ tcu::TestStatus pipelineInvalidPointersUnusedStructsTest (Context& context, VkPi
 	if (isGraphics)
 	{
 		shaderModules.push_back(createShaderModule(vk, device, context.getBinaryCollection().get("vertex"), 0));
-		shaderModules.push_back(createShaderModule(vk, device, context.getBinaryCollection().get("fragment"), 0));
 
 		const VkPipelineShaderStageCreateInfo	shaderStageCreateInfos[]	=
 		{
@@ -1671,15 +1670,6 @@ tcu::TestStatus pipelineInvalidPointersUnusedStructsTest (Context& context, VkPi
 				(VkPipelineShaderStageCreateFlags)0,					// VkPipelineShaderStageCreateFlags    flags;
 				VK_SHADER_STAGE_VERTEX_BIT,								// VkShaderStageFlagBits               stage;
 				shaderModules[0].get(),									// VkShaderModule                      shader;
-				"main",													// const char*                         pName;
-				DE_NULL,												// const VkSpecializationInfo*         pSpecializationInfo;
-			},
-			{
-				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType                     sType;
-				DE_NULL,												// const void*                         pNext;
-				(VkPipelineShaderStageCreateFlags)0,					// VkPipelineShaderStageCreateFlags    flags;
-				VK_SHADER_STAGE_FRAGMENT_BIT,							// VkShaderStageFlagBits               stage;
-				shaderModules[1].get(),									// VkShaderModule                      shader;
 				"main",													// const char*                         pName;
 				DE_NULL,												// const VkSpecializationInfo*         pSpecializationInfo;
 			}
