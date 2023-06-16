@@ -191,7 +191,7 @@ const SizeUnit* getBestSizeUnit (deUint64 value)
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_units); ++ndx)
 	{
-		DE_ASSERT(ndx == DE_LENGTH_OF_ARRAY(s_units) ||
+		DE_ASSERT(ndx == (DE_LENGTH_OF_ARRAY(s_units) - 1) ||
 		          s_units[ndx].value > s_units[ndx + 1].value);
 		if (value >= s_units[ndx].value)
 			return &s_units[ndx];
