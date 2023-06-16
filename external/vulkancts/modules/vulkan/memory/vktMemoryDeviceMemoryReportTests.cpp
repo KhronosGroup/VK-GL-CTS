@@ -1842,13 +1842,14 @@ tcu::TestStatus vkDeviceMemoryAllocationFailedTest (Context& context)
 	const deUint32							testTypeIndex		= 0;
 	const deUint32							testHeapIndex		= memoryProperties.memoryTypes[testTypeIndex].heapIndex;
 	const VkDeviceSize						testSize			= memoryProperties.memoryHeaps[testHeapIndex].size;
+	const deUint32							testNumAlloc		= 10;
 
 	{
-		recorder.setCallbackMarker(MARKER_ALLOCATION_FAILED);
+		recorder.setCallbackMarker(MARKER_UNKNOWN);
 
-		VkDeviceMemory			memory1 = DE_NULL;
-		VkDeviceMemory			memory2 = DE_NULL;
-		VkMemoryAllocateInfo	memoryAllocateInfo
+		std::vector<VkDeviceMemory>	memories;
+		VkResult					result				= VK_SUCCESS;
+		VkMemoryAllocateInfo		memoryAllocateInfo	=
 		{
 			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	// VkStructureType	sType;
 			DE_NULL,								// const void*		pNext;
@@ -1856,27 +1857,44 @@ tcu::TestStatus vkDeviceMemoryAllocationFailedTest (Context& context)
 			testTypeIndex,							// uint32_t			memoryTypeIndex;
 		};
 
-		// first do a small allocation to prevent LowMemoryKiller on android from culling this app
-		VkResult result = vkd.allocateMemory(*device, &memoryAllocateInfo, (const VkAllocationCallbacks*)DE_NULL, &memory1);
-		if (result != VK_SUCCESS)
-			TCU_THROW(NotSupportedError, "Unable to do a small allocation");
-
-		// if small allocation succeeded then we can try to trigger an allocation failure by allocating as much memory as there is on the heap
-		memoryAllocateInfo.allocationSize = testSize;
-		result = vkd.allocateMemory(*device, &memoryAllocateInfo, (const VkAllocationCallbacks*)DE_NULL, &memory2);
-		if (result == VK_SUCCESS)
 		{
-			vkd.freeMemory(*device, memory1, DE_NULL);
-			vkd.freeMemory(*device, memory2, DE_NULL);
-			return tcu::TestStatus::fail(std::string("Should not be able to allocate ") + std::to_string(testSize) + " bytes of memory");
+			VkDeviceMemory	memory	= DE_NULL;
+
+			// first do a small allocation to prevent LowMemoryKiller on android from culling this app
+			result = vkd.allocateMemory(*device, &memoryAllocateInfo, (const VkAllocationCallbacks*)DE_NULL, &memory);
+			if (result != VK_SUCCESS)
+				TCU_THROW(NotSupportedError, "Unable to do a small allocation");
+
+			memories.emplace_back(memory);
 		}
 
+		// use heap size to trigger allocation failure (up to testNumAlloc times for overallocation)
+		memoryAllocateInfo.allocationSize = testSize;
+		// only mark the range that an allocation failure could occur
+		recorder.setCallbackMarker(MARKER_ALLOCATION_FAILED);
+		for (deUint32 i = 0; i < testNumAlloc; i++)
+		{
+			VkDeviceMemory	memory	= DE_NULL;
+
+			result = vkd.allocateMemory(*device, &memoryAllocateInfo, (const VkAllocationCallbacks*)DE_NULL, &memory);
+			if (result != VK_SUCCESS)
+			{
+				break;
+			}
+
+			memories.emplace_back(memory);
+		}
 		recorder.setCallbackMarker(MARKER_UNKNOWN);
 
-		if (!!memory1)
-			vkd.freeMemory(*device, memory1, DE_NULL);
-		if (!!memory2)
-			vkd.freeMemory(*device, memory2, DE_NULL);
+		for (auto memory : memories)
+		{
+			vkd.freeMemory(*device, memory, DE_NULL);
+		}
+
+		if (result == VK_SUCCESS)
+		{
+			return tcu::TestStatus::fail(std::string("Should not be able to allocate ") + std::to_string(testNumAlloc * testSize) + " bytes of memory");
+		}
 	}
 
 	deBool	allocationFailedEvent	= false;
