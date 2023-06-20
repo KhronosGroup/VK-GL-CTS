@@ -47,6 +47,7 @@ const vk::VkPhysicalDeviceScalarBlockLayoutFeatures&						Context::getScalarBloc
 const vk::VkPhysicalDeviceSubgroupSizeControlFeatures&						Context::getSubgroupSizeControlFeatures						(void) const { return m_device->getSubgroupSizeControlFeatures();					}
 const vk::VkPhysicalDeviceFragmentShadingRateFeaturesKHR&					Context::getFragmentShadingRateFeatures						(void) const { return m_device->getFragmentShadingRateFeatures();					}
 const vk::VkPhysicalDeviceCoherentMemoryFeaturesAMD&						Context::getCoherentMemoryFeaturesAMD						(void) const { return m_device->getCoherentMemoryFeaturesAMD();						}
+const vk::VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR&				Context::getDynamicRenderingLocalReadFeatures				(void) const { return m_device->getDynamicRenderingLocalReadFeatures();				}
 const vk::VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT&				Context::getShaderImageAtomicInt64FeaturesEXT				(void) const { return m_device->getShaderImageAtomicInt64FeaturesEXT();				}
 const vk::VkPhysicalDeviceMemoryPriorityFeaturesEXT&						Context::getMemoryPriorityFeaturesEXT						(void) const { return m_device->getMemoryPriorityFeaturesEXT();						}
 const vk::VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV&		Context::getDedicatedAllocationImageAliasingFeatures		(void) const { return m_device->getDedicatedAllocationImageAliasingFeatures();		}

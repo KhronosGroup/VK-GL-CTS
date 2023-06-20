@@ -1653,6 +1653,18 @@ bool check_VK_AMD_device_coherent_memory(const tcu::UVec2& v, const ExtPropVect&
 	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
 }
 
+bool check_VK_KHR_dynamic_rendering_local_read(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_dynamic_rendering_local_read"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_dynamic_rendering
+	return (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_dynamic_rendering"));
+}
+
 bool check_VK_EXT_shader_image_atomic_int64(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -3260,6 +3272,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_KHR_fragment_shading_rate",							&check_VK_KHR_fragment_shading_rate),
 	std::make_pair("VK_AMD_shader_core_properties2",						&check_VK_AMD_shader_core_properties2),
 	std::make_pair("VK_AMD_device_coherent_memory",							&check_VK_AMD_device_coherent_memory),
+	std::make_pair("VK_KHR_dynamic_rendering_local_read",					&check_VK_KHR_dynamic_rendering_local_read),
 	std::make_pair("VK_EXT_shader_image_atomic_int64",						&check_VK_EXT_shader_image_atomic_int64),
 	std::make_pair("VK_KHR_spirv_1_4",										&check_VK_KHR_spirv_1_4),
 	std::make_pair("VK_EXT_memory_budget",									&check_VK_EXT_memory_budget),
@@ -3577,6 +3590,7 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 2, "VK_KHR_fragment_shading_rate"),
 	std::make_tuple(1, 0, "VK_AMD_shader_core_properties2"),
 	std::make_tuple(1, 0, "VK_AMD_device_coherent_memory"),
+	std::make_tuple(1, 0, "VK_KHR_dynamic_rendering_local_read"),
 	std::make_tuple(1, 1, "VK_EXT_shader_image_atomic_int64"),
 	std::make_tuple(1, 1, "VK_KHR_spirv_1_4"),
 	std::make_tuple(1, 1, "VK_EXT_memory_budget"),

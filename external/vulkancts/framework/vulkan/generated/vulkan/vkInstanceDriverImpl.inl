@@ -479,11 +479,6 @@ VkResult InstanceDriver::getPhysicalDeviceVideoFormatPropertiesKHR (VkPhysicalDe
 	return m_vk.getPhysicalDeviceVideoFormatPropertiesKHR(physicalDevice, pVideoFormatInfo, pVideoFormatPropertyCount, pVideoFormatProperties);
 }
 
-VkResult InstanceDriver::getPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceVideoEncodeQualityLevelInfoKHR* pQualityLevelInfo, VkVideoEncodeQualityLevelPropertiesKHR* pQualityLevelProperties) const
-{
-	return m_vk.getPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR(physicalDevice, pQualityLevelInfo, pQualityLevelProperties);
-}
-
 VkResult InstanceDriver::acquireDrmDisplayEXT (VkPhysicalDevice physicalDevice, int32_t drmFd, VkDisplayKHR display) const
 {
 	return m_vk.acquireDrmDisplayEXT(physicalDevice, drmFd, display);

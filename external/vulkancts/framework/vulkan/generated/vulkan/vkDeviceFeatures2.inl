@@ -4561,6 +4561,44 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderTileImageFeaturesEXT (Context& co
 	return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureDynamicRenderingLocalReadFeaturesKHR (Context& context)
+{
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+	const InstanceDriver&		vki				(instance.getDriver());
+	const int					count			= 2u;
+	TestLog&					log				= context.getTestContext().getLog();
+	VkPhysicalDeviceFeatures2	extFeatures;
+	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+
+	VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR	deviceDynamicRenderingLocalReadFeaturesKHR[count];
+	const bool												isDynamicRenderingLocalReadFeaturesKHR = checkExtension(properties, "VK_KHR_dynamic_rendering_local_read");
+
+	for (int ndx = 0; ndx < count; ++ndx)
+	{
+		deMemset(&deviceDynamicRenderingLocalReadFeaturesKHR[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR));
+		deviceDynamicRenderingLocalReadFeaturesKHR[ndx].sType = isDynamicRenderingLocalReadFeaturesKHR ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_LOCAL_READ_FEATURES_KHR : VK_STRUCTURE_TYPE_MAX_ENUM;
+		deviceDynamicRenderingLocalReadFeaturesKHR[ndx].pNext = DE_NULL;
+
+		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		extFeatures.pNext = &deviceDynamicRenderingLocalReadFeaturesKHR[ndx];
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+	}
+
+	if (isDynamicRenderingLocalReadFeaturesKHR)
+		log << TestLog::Message << deviceDynamicRenderingLocalReadFeaturesKHR[0] << TestLog::EndMessage;
+
+	if (isDynamicRenderingLocalReadFeaturesKHR &&
+		(deviceDynamicRenderingLocalReadFeaturesKHR[0].dynamicRenderingLocalRead != deviceDynamicRenderingLocalReadFeaturesKHR[1].dynamicRenderingLocalRead ||
+		 deviceDynamicRenderingLocalReadFeaturesKHR[0].dynamicStateRenderingAttachmentLocations != deviceDynamicRenderingLocalReadFeaturesKHR[1].dynamicStateRenderingAttachmentLocations))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR");
+	}
+	return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus createDeviceWithPromoted11Structures (Context& context)
 {
 	if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
@@ -4871,6 +4909,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "ray_tracing_position_fetch_features_khr", "VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR", testPhysicalDeviceFeatureRayTracingPositionFetchFeaturesKHR);
 	addFunctionCase(testGroup, "shader_object_features_ext", "VkPhysicalDeviceShaderObjectFeaturesEXT", testPhysicalDeviceFeatureShaderObjectFeaturesEXT);
 	addFunctionCase(testGroup, "shader_tile_image_features_ext", "VkPhysicalDeviceShaderTileImageFeaturesEXT", testPhysicalDeviceFeatureShaderTileImageFeaturesEXT);
+	addFunctionCase(testGroup, "dynamic_rendering_local_read_features_khr", "VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR", testPhysicalDeviceFeatureDynamicRenderingLocalReadFeaturesKHR);
 	addFunctionCase(testGroup, "create_device_with_promoted11_structures", "", createDeviceWithPromoted11Structures);
 	addFunctionCase(testGroup, "create_device_with_promoted12_structures", "", createDeviceWithPromoted12Structures);
 	addFunctionCase(testGroup, "create_device_with_promoted13_structures", "", createDeviceWithPromoted13Structures);

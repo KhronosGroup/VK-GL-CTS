@@ -122,7 +122,6 @@ m_vk.getPhysicalDeviceToolPropertiesEXT									= (GetPhysicalDeviceToolProperti
 m_vk.getPhysicalDeviceFragmentShadingRatesKHR							= (GetPhysicalDeviceFragmentShadingRatesKHRFunc)						GET_PROC_ADDR("vkGetPhysicalDeviceFragmentShadingRatesKHR");
 m_vk.getPhysicalDeviceVideoCapabilitiesKHR								= (GetPhysicalDeviceVideoCapabilitiesKHRFunc)							GET_PROC_ADDR("vkGetPhysicalDeviceVideoCapabilitiesKHR");
 m_vk.getPhysicalDeviceVideoFormatPropertiesKHR							= (GetPhysicalDeviceVideoFormatPropertiesKHRFunc)						GET_PROC_ADDR("vkGetPhysicalDeviceVideoFormatPropertiesKHR");
-m_vk.getPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR				= (GetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHRFunc)			GET_PROC_ADDR("vkGetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR");
 m_vk.acquireDrmDisplayEXT												= (AcquireDrmDisplayEXTFunc)											GET_PROC_ADDR("vkAcquireDrmDisplayEXT");
 m_vk.getDrmDisplayEXT													= (GetDrmDisplayEXTFunc)												GET_PROC_ADDR("vkGetDrmDisplayEXT");
 m_vk.getPhysicalDeviceOpticalFlowImageFormatsNV							= (GetPhysicalDeviceOpticalFlowImageFormatsNVFunc)						GET_PROC_ADDR("vkGetPhysicalDeviceOpticalFlowImageFormatsNV");

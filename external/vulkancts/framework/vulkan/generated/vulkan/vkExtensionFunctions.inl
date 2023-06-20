@@ -807,6 +807,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_dynamic_rendering_local_read")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_shader_image_atomic_int64")
 	{
 		return;
@@ -1012,7 +1016,6 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	}
 	if (extName == "VK_KHR_video_encode_queue")
 	{
-		functions.push_back("vkGetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR");
 		return;
 	}
 	if (extName == "VK_NV_device_diagnostics_config")
@@ -2342,6 +2345,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_dynamic_rendering_local_read")
+	{
+		functions.push_back("vkCmdSetRenderingAttachmentLocationsKHR");
+		return;
+	}
 	if (extName == "VK_EXT_shader_image_atomic_int64")
 	{
 		return;
@@ -2584,7 +2592,6 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_KHR_video_encode_queue")
 	{
-		functions.push_back("vkGetEncodedVideoSessionParametersKHR");
 		functions.push_back("vkCmdEncodeVideoKHR");
 		return;
 	}
@@ -3343,6 +3350,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_KHR_fragment_shading_rate",
 	"VK_AMD_shader_core_properties2",
 	"VK_AMD_device_coherent_memory",
+	"VK_KHR_dynamic_rendering_local_read",
 	"VK_EXT_shader_image_atomic_int64",
 	"VK_KHR_spirv_1_4",
 	"VK_EXT_memory_budget",

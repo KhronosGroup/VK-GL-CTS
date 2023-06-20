@@ -394,7 +394,6 @@ virtual VkResult			createVideoSessionKHR									(VkDevice device, const VkVideo
 virtual void				destroyVideoSessionKHR									(VkDevice device, VkVideoSessionKHR videoSession, const VkAllocationCallbacks* pAllocator) const = 0;
 virtual VkResult			createVideoSessionParametersKHR							(VkDevice device, const VkVideoSessionParametersCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkVideoSessionParametersKHR* pVideoSessionParameters) const = 0;
 virtual VkResult			updateVideoSessionParametersKHR							(VkDevice device, VkVideoSessionParametersKHR videoSessionParameters, const VkVideoSessionParametersUpdateInfoKHR* pUpdateInfo) const = 0;
-virtual VkResult			getEncodedVideoSessionParametersKHR						(VkDevice device, const VkVideoEncodeSessionParametersGetInfoKHR* pVideoSessionParametersInfo, VkVideoEncodeSessionParametersFeedbackInfoKHR* pFeedbackInfo, size_t* pDataSize, void* pData) const = 0;
 virtual void				destroyVideoSessionParametersKHR						(VkDevice device, VkVideoSessionParametersKHR videoSessionParameters, const VkAllocationCallbacks* pAllocator) const = 0;
 virtual VkResult			getVideoSessionMemoryRequirementsKHR					(VkDevice device, VkVideoSessionKHR videoSession, uint32_t* pMemoryRequirementsCount, VkVideoSessionMemoryRequirementsKHR* pMemoryRequirements) const = 0;
 virtual VkResult			bindVideoSessionMemoryKHR								(VkDevice device, VkVideoSessionKHR videoSession, uint32_t bindSessionMemoryInfoCount, const VkBindVideoSessionMemoryInfoKHR* pBindSessionMemoryInfos) const = 0;
@@ -465,3 +464,4 @@ virtual VkResult			createShadersEXT										(VkDevice device, uint32_t createIn
 virtual void				destroyShaderEXT										(VkDevice device, VkShaderEXT shader, const VkAllocationCallbacks* pAllocator) const = 0;
 virtual VkResult			getShaderBinaryDataEXT									(VkDevice device, VkShaderEXT shader, size_t* pDataSize, void* pData) const = 0;
 virtual void				cmdBindShadersEXT										(VkCommandBuffer commandBuffer, uint32_t stageCount, const VkShaderStageFlagBits* pStages, const VkShaderEXT* pShaders) const = 0;
+virtual void				cmdSetRenderingAttachmentLocationsKHR					(VkCommandBuffer commandBuffer, const VkRenderingAttachmentLocationInfoKHR* pLocationInfo) const = 0;

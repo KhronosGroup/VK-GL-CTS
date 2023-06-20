@@ -99,7 +99,6 @@ GetPhysicalDeviceToolPropertiesEXTFunc								getPhysicalDeviceToolPropertiesEXT
 GetPhysicalDeviceFragmentShadingRatesKHRFunc						getPhysicalDeviceFragmentShadingRatesKHR;
 GetPhysicalDeviceVideoCapabilitiesKHRFunc							getPhysicalDeviceVideoCapabilitiesKHR;
 GetPhysicalDeviceVideoFormatPropertiesKHRFunc						getPhysicalDeviceVideoFormatPropertiesKHR;
-GetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHRFunc			getPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR;
 AcquireDrmDisplayEXTFunc											acquireDrmDisplayEXT;
 GetDrmDisplayEXTFunc												getDrmDisplayEXT;
 GetPhysicalDeviceOpticalFlowImageFormatsNVFunc						getPhysicalDeviceOpticalFlowImageFormatsNV;

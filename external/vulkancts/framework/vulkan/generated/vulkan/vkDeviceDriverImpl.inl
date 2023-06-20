@@ -1959,11 +1959,6 @@ VkResult DeviceDriver::updateVideoSessionParametersKHR (VkDevice device, VkVideo
 	return m_vk.updateVideoSessionParametersKHR(device, videoSessionParameters, pUpdateInfo);
 }
 
-VkResult DeviceDriver::getEncodedVideoSessionParametersKHR (VkDevice device, const VkVideoEncodeSessionParametersGetInfoKHR* pVideoSessionParametersInfo, VkVideoEncodeSessionParametersFeedbackInfoKHR* pFeedbackInfo, size_t* pDataSize, void* pData) const
-{
-	return m_vk.getEncodedVideoSessionParametersKHR(device, pVideoSessionParametersInfo, pFeedbackInfo, pDataSize, pData);
-}
-
 void DeviceDriver::destroyVideoSessionParametersKHR (VkDevice device, VkVideoSessionParametersKHR videoSessionParameters, const VkAllocationCallbacks* pAllocator) const
 {
 	m_vk.destroyVideoSessionParametersKHR(device, videoSessionParameters, pAllocator);
@@ -2312,4 +2307,9 @@ VkResult DeviceDriver::getShaderBinaryDataEXT (VkDevice device, VkShaderEXT shad
 void DeviceDriver::cmdBindShadersEXT (VkCommandBuffer commandBuffer, uint32_t stageCount, const VkShaderStageFlagBits* pStages, const VkShaderEXT* pShaders) const
 {
 	m_vk.cmdBindShadersEXT(commandBuffer, stageCount, pStages, pShaders);
+}
+
+void DeviceDriver::cmdSetRenderingAttachmentLocationsKHR (VkCommandBuffer commandBuffer, const VkRenderingAttachmentLocationInfoKHR* pLocationInfo) const
+{
+	m_vk.cmdSetRenderingAttachmentLocationsKHR(commandBuffer, pLocationInfo);
 }

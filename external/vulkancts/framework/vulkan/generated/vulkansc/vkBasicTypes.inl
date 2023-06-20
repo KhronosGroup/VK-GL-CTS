@@ -2533,8 +2533,6 @@ typedef uint32_t VkQueryPipelineStatisticFlags;
 
 typedef uint32_t VkMemoryMapFlags;
 
-typedef uint32_t VkMemoryUnmapFlagsKHR;
-
 typedef uint32_t VkImageAspectFlags;
 
 typedef uint32_t VkSparseMemoryBindFlags;
@@ -2847,19 +2845,13 @@ typedef uint32_t VkVideoComponentBitDepthFlagsKHR;
 
 typedef uint32_t VkVideoEncodeH264CapabilityFlagsEXT;
 
-typedef uint32_t VkVideoEncodeH264StdFlagsEXT;
-
-typedef uint32_t VkVideoEncodeH264RateControlFlagsEXT;
-
 typedef uint32_t VkVideoEncodeH265CapabilityFlagsEXT;
-
-typedef uint32_t VkVideoEncodeH265StdFlagsEXT;
-
-typedef uint32_t VkVideoEncodeH265RateControlFlagsEXT;
 
 typedef uint32_t VkVideoEncodeH265CtbSizeFlagsEXT;
 
 typedef uint32_t VkVideoEncodeH265TransformBlockSizeFlagsEXT;
+
+typedef uint32_t VkMemoryUnmapFlagsKHR;
 
 
 VK_DEFINE_PLATFORM_TYPE(XlibDisplayPtr,				void*)

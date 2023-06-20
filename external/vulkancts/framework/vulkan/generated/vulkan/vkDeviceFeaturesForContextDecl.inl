@@ -47,6 +47,7 @@ const vk::VkPhysicalDeviceScalarBlockLayoutFeatures&						getScalarBlockLayoutFe
 const vk::VkPhysicalDeviceSubgroupSizeControlFeatures&						getSubgroupSizeControlFeatures						(void) const;
 const vk::VkPhysicalDeviceFragmentShadingRateFeaturesKHR&					getFragmentShadingRateFeatures						(void) const;
 const vk::VkPhysicalDeviceCoherentMemoryFeaturesAMD&						getCoherentMemoryFeaturesAMD						(void) const;
+const vk::VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR&				getDynamicRenderingLocalReadFeatures				(void) const;
 const vk::VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT&				getShaderImageAtomicInt64FeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceMemoryPriorityFeaturesEXT&						getMemoryPriorityFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV&		getDedicatedAllocationImageAliasingFeatures			(void) const;

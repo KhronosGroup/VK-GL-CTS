@@ -47,6 +47,7 @@ const VkPhysicalDeviceScalarBlockLayoutFeatures&						getScalarBlockLayoutFeatur
 const VkPhysicalDeviceSubgroupSizeControlFeatures&						getSubgroupSizeControlFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceSubgroupSizeControlFeatures>();					}
 const VkPhysicalDeviceFragmentShadingRateFeaturesKHR&					getFragmentShadingRateFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceFragmentShadingRateFeaturesKHR>();				}
 const VkPhysicalDeviceCoherentMemoryFeaturesAMD&						getCoherentMemoryFeaturesAMD						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceCoherentMemoryFeaturesAMD>();						}
+const VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR&				getDynamicRenderingLocalReadFeatures				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR>();			}
 const VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT&				getShaderImageAtomicInt64FeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT>();				}
 const VkPhysicalDeviceMemoryPriorityFeaturesEXT&						getMemoryPriorityFeaturesEXT						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceMemoryPriorityFeaturesEXT>();						}
 const VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV&		getDedicatedAllocationImageAliasingFeatures			(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV>();	}
