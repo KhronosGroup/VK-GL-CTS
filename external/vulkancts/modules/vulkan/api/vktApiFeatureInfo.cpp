@@ -3770,6 +3770,17 @@ bool requiresYCbCrConversion(Context& context, VkFormat format)
 
 VkFormatFeatureFlags getAllowedOptimalTilingFeatures (Context &context, VkFormat format)
 {
+
+	VkFormatFeatureFlags vulkanOnlyFeatureFlags = 0;
+#ifndef CTS_USES_VULKANSC
+	if (context.isDeviceFunctionalitySupported(VK_KHR_VIDEO_DECODE_QUEUE_EXTENSION_NAME))
+		vulkanOnlyFeatureFlags |= VK_FORMAT_FEATURE_VIDEO_DECODE_DPB_BIT_KHR |
+								  VK_FORMAT_FEATURE_VIDEO_DECODE_OUTPUT_BIT_KHR;
+	if (context.isDeviceFunctionalitySupported(VK_KHR_VIDEO_ENCODE_QUEUE_EXTENSION_NAME))
+		vulkanOnlyFeatureFlags |= VK_FORMAT_FEATURE_VIDEO_ENCODE_INPUT_BIT_KHR |
+							      VK_FORMAT_FEATURE_VIDEO_ENCODE_DPB_BIT_KHR;
+#endif
+
 	// YCbCr formats only support a subset of format feature flags
 	const VkFormatFeatureFlags ycbcrAllows =
 		VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT |
@@ -3784,7 +3795,8 @@ VkFormatFeatureFlags getAllowedOptimalTilingFeatures (Context &context, VkFormat
 		VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT |
 		VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT |
 		VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT |
-		VK_FORMAT_FEATURE_DISJOINT_BIT;
+		VK_FORMAT_FEATURE_DISJOINT_BIT |
+		vulkanOnlyFeatureFlags;
 
 	// By default everything is allowed.
 	VkFormatFeatureFlags allow = (VkFormatFeatureFlags)~0u;
