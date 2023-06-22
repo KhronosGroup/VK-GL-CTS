@@ -10837,14 +10837,20 @@ void createConvertCases (vector<ConvertCase>& testCases, const string& instructi
 	else if (instruction == "OpConvertFToU")
 	{
 		// Normal numbers from uint8 range
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_8,		0x5020,								true,	33,									"33",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_8,		0x5020,								true,	33,									"33",	    false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_8,		0x503F,								true,	33,									"33rtz",	false));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_UNSIGNED_8,		0x42280000,							true,	42,									"42"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_UNSIGNED_8,		0x422BFFFF,							true,	42,									"42rtz"));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_64,			DATA_TYPE_UNSIGNED_8,		0x4067800000000000ull,				true,	188,								"188"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_64,			DATA_TYPE_UNSIGNED_8,		0x40679FFFFFFFFFFFull,				true,	188,								"188rtz"));
 
 		// Maximum uint8 value
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_8,		0x5BF8,								true,	255,								"max",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_8,		0x5BFF,								true,	255,								"maxrtz",	false));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_UNSIGNED_8,		0x437F0000,							true,	255,								"max"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_UNSIGNED_8,		0x437FFFFF,							true,	255,								"maxrtz"));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_64,			DATA_TYPE_UNSIGNED_8,		0x406FE00000000000ull,				true,	255,								"max"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_64,			DATA_TYPE_UNSIGNED_8,		0x406FFFFFFFFFFFFFull,				true,	255,								"maxrtz"));
 
 		// +0
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_8,		0x0000,								true,	0,									"p0",	false));
@@ -10866,6 +10872,12 @@ void createConvertCases (vector<ConvertCase>& testCases, const string& instructi
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_32,		0x7BFF,								true,	65504,								"max",	false));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_64,		0x7BFF,								true,	65504,								"max",	false));
 
+        // Show round to zero behaviour
+        // Example: see https://float.exposed/0x58ff
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_16,		0x44FF,								true,	4,									"p4rtz",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_32,		0x58FF,								true,	159,								"p159rtz",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_64,		0x58FF,								true,	159,								"p159rtz",	false));
+
 		// +0
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_32,		0x0000,								true,	0,									"p0",	false));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_16,		0x0000,								true,	0,									"p0",	false));
@@ -10877,12 +10889,18 @@ void createConvertCases (vector<ConvertCase>& testCases, const string& instructi
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_64,		0x8000,								true,	0,									"m0",	false));
 
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_UNSIGNED_16,		0x449a4000,							true,	1234));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_UNSIGNED_16,		0x449a5fff,							true,	1234,                               "rtz"));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_UNSIGNED_32,		0x449a4000,							true,	1234));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_UNSIGNED_32,		0x449a5fff,							true,	1234,                               "rtz"));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_UNSIGNED_64,		0x449a4000,							true,	1234));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_UNSIGNED_64,		0x449a5fff,							true,	1234,                               "rtz"));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_UNSIGNED_64,		0x51b9ad78,							true,	99684909056ll,						"large"));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_64,			DATA_TYPE_UNSIGNED_16,		0x4093480000000000,					true,	1234));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_64,			DATA_TYPE_UNSIGNED_16,		0x40934bffffffffff,					true,	1234,                               "rtz"));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_64,			DATA_TYPE_UNSIGNED_32,		0x4093480000000000,					true,	1234));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_64,			DATA_TYPE_UNSIGNED_32,		0x40934bffffffffff,					true,	1234,                               "rtz"));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_64,			DATA_TYPE_UNSIGNED_64,		0x4093480000000000,					true,	1234));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_64,			DATA_TYPE_UNSIGNED_64,		0x40934bffffffffff,					true,	1234,                               "rtz"));
 	}
 	else if (instruction == "OpConvertUToF")
 	{
@@ -10980,7 +10998,7 @@ void createConvertCases (vector<ConvertCase>& testCases, const string& instructi
 
 		// Show round to zero behaviour, from positive side.
 		// Example: see https://float.exposed/0x58ff
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_16,		0x44FF,								true,	4,								    "p4rtz",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_16,		0x44FF,								true,	4,									"p4rtz",	false));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_32,		0x58FF,								true,	159,								"p159rtz",	false));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_64,		0x58FF,								true,	159,								"p159rtz",	false));
 
