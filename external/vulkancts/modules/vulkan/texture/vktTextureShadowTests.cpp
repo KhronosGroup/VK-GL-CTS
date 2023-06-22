@@ -38,6 +38,7 @@
 #include "tcuTexVerifierUtil.hpp"
 #include "tcuTexture.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuVectorUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -158,11 +159,12 @@ bool verifyTexCompareResult (tcu::TestContext&						testCtx,
 							 const tcu::LodPrecision&				lodPrec,
 							 const tcu::PixelFormat&				pixelFormat)
 {
-	tcu::TestLog&	log					= testCtx.getLog();
-	tcu::Surface	reference			(result.getWidth(), result.getHeight());
-	tcu::Surface	errorMask			(result.getWidth(), result.getHeight());
-	const tcu::Vec3	nonShadowThreshold	= tcu::computeFixedPointThreshold(getBitsVec(pixelFormat)-1).swizzle(1,2,3);
-	int				numFailedPixels;
+	tcu::TestLog&	 log				= testCtx.getLog();
+	tcu::Surface	 reference			(result.getWidth(), result.getHeight());
+	tcu::Surface	 errorMask			(result.getWidth(), result.getHeight());
+	const tcu::IVec4 nonShadowBits		= tcu::max(getBitsVec(pixelFormat)-1, tcu::IVec4(0));
+	const tcu::Vec3	 nonShadowThreshold	= tcu::computeFixedPointThreshold(nonShadowBits).swizzle(1,2,3);
+	int				 numFailedPixels;
 
 	// sampleTexture() expects source image to be the same state as it would be in a GL implementation, that is
 	// the floating point depth values should be in [0, 1] range as data is clamped during texture upload. Since

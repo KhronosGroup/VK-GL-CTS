@@ -60,6 +60,7 @@
 #include <array>
 #include <algorithm>
 #include <iterator>
+#include <limits>
 #include <sstream>
 
 namespace vkt
@@ -3614,7 +3615,13 @@ bool BlittingImages::checkNonNearestFilteredResult (const tcu::ConstPixelBufferA
 		const tcu::IVec4	dstBitDepth	= tcu::getTextureFormatBitDepth(dstFormat);
 		const tcu::IVec4	srcBitDepth = tcu::getTextureFormatBitDepth(srcFormat);
 		for (deUint32 i = 0; i < 4; ++i)
-			threshold[i] = 1 + de::max( ( ( 1 << dstBitDepth[i] ) - 1 ) / de::clamp((1 << srcBitDepth[i]) - 1, 1, 256), 1);
+		{
+			DE_ASSERT(dstBitDepth[i] < std::numeric_limits<uint64_t>::digits);
+			DE_ASSERT(srcBitDepth[i] < std::numeric_limits<uint64_t>::digits);
+			deUint64 threshold64 = 1 + de::max( ( ( UINT64_C(1) << dstBitDepth[i] ) - 1 ) / de::clamp((UINT64_C(1) << srcBitDepth[i]) - 1, UINT64_C(1), UINT64_C(256)), UINT64_C(1));
+			DE_ASSERT(threshold64 <= std::numeric_limits<uint32_t>::max());
+			threshold[i] = static_cast<deUint32>(threshold64);
+		}
 
 		isOk = tcu::intThresholdCompare(log, "Compare", "Result comparsion", clampedExpected, result, threshold, tcu::COMPARE_LOG_RESULT);
 		log << tcu::TestLog::EndSection;
@@ -5067,7 +5074,13 @@ bool BlittingMipmaps::checkNonNearestFilteredResult (void)
 			const tcu::IVec4	dstBitDepth	= tcu::getTextureFormatBitDepth(dstFormat);
 			const tcu::IVec4	srcBitDepth = tcu::getTextureFormatBitDepth(srcFormat);
 			for (deUint32 i = 0; i < 4; ++i)
-				threshold[i] = 1 + de::max(((1 << dstBitDepth[i]) - 1) / de::clamp((1 << srcBitDepth[i]) - 1, 1, 256), 1);
+			{
+				DE_ASSERT(dstBitDepth[i] < std::numeric_limits<uint64_t>::digits);
+				DE_ASSERT(srcBitDepth[i] < std::numeric_limits<uint64_t>::digits);
+				deUint64 threshold64 = 1 + de::max( ( ( UINT64_C(1) << dstBitDepth[i] ) - 1 ) / de::clamp((UINT64_C(1) << srcBitDepth[i]) - 1, UINT64_C(1), UINT64_C(256)), UINT64_C(1));
+				DE_ASSERT(threshold64 <= std::numeric_limits<uint32_t>::max());
+				threshold[i] = static_cast<deUint32>(threshold64);
+			}
 
 			singleLevelOk = tcu::intThresholdCompare(log, "Compare", "Result comparsion", clampedLevel, result, threshold, tcu::COMPARE_LOG_RESULT);
 			log << tcu::TestLog::EndSection;
