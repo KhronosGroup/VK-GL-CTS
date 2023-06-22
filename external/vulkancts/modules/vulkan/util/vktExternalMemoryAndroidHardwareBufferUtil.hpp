@@ -242,6 +242,8 @@ public:
 	static bool					isFormatYuv (Format format);
 	static bool					isFormatRaw (Format format);
 	static bool					isFormatColor (Format format);
+	static bool					isFormatDepth (Format format);
+	static bool					isFormatStencil (Format format);
 	static const char*			getFormatName (Format format);
 	static deUint32				formatToInternalFormat (Format format);
 	static tcu::TextureFormat	formatToTextureFormat (Format format);

@@ -830,6 +830,34 @@ bool AndroidHardwareBufferInstance::isFormatColor (Format format)
 	}
 }
 
+bool AndroidHardwareBufferInstance::isFormatDepth (Format format)
+{
+	switch (format)
+	{
+	case Format::D16_UNORM:
+	case Format::D24_UNORM:
+	case Format::D24_UNORM_S8_UINT:
+	case Format::D32_FLOAT:
+	case Format::D32_FLOAT_S8_UINT:
+		return true;
+	default:
+		return false;
+	}
+}
+
+bool AndroidHardwareBufferInstance::isFormatStencil (Format format)
+{
+	switch (format)
+	{
+	case Format::D24_UNORM_S8_UINT:
+	case Format::D32_FLOAT_S8_UINT:
+	case Format::S8_UINT:
+		return true;
+	default:
+		return false;
+	}
+}
+
 const char* AndroidHardwareBufferInstance::getFormatName (Format format)
 {
 	switch (format)
