@@ -3010,7 +3010,8 @@ VkFormat mapTextureFormat (const tcu::TextureFormat& format)
 VkFormat mapCompressedTextureFormat (const tcu::CompressedTexFormat format)
 {
 	// update this mapping if CompressedTexFormat changes
-	DE_STATIC_ASSERT(tcu::COMPRESSEDTEXFORMAT_LAST == 55);
+	// 55 needed for Vulkan and 2 for AHB that won't have mapping here
+	DE_STATIC_ASSERT(tcu::COMPRESSEDTEXFORMAT_LAST == 57);
 
 	switch (format)
 	{

@@ -614,6 +614,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/ubo/vktUniformBlockCase.cpp \
 	external/vulkancts/modules/vulkan/ubo/vktUniformBlockTests.cpp \
 	external/vulkancts/modules/vulkan/util/vktDrawUtil.cpp \
+	external/vulkancts/modules/vulkan/util/vktExternalMemoryAndroidHardwareBufferUtil.cpp \
 	external/vulkancts/modules/vulkan/util/vktExternalMemoryUtil.cpp \
 	external/vulkancts/modules/vulkan/util/vktTypeComparisonUtil.cpp \
 	external/vulkancts/modules/vulkan/video/vktBitstreamBufferImpl.cpp \
