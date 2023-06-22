@@ -2089,17 +2089,19 @@ public:
 
 	OperationTestCase(const char*	_baseName,
 					  BehaviorFlags	_behaviorFlags,
-					  OperationId	_operatinId,
+					  OperationId	_operationId,
 					  ValueId		_input1,
 					  ValueId		_input2,
 					  ValueId		_expectedOutput,
 					  bool			_fp16Without16BitStorage = false)
-		: baseName(_baseName)
-		, behaviorFlags(_behaviorFlags)
-		, operationId(_operatinId)
+		: behaviorFlags(_behaviorFlags)
+		, operationId(_operationId)
 		, expectedOutput(_expectedOutput)
 		, fp16Without16BitStorage(_fp16Without16BitStorage)
 	{
+		baseName = _baseName;
+		if (fp16Without16BitStorage)
+			baseName += "_nostorage";
 		input[0] = _input1;
 		input[1] = _input2;
 	}
@@ -2752,63 +2754,49 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 
 	bool isFP16 = typeTestResults->variableType() == FP16;
 
-	// Denorm - FlushToZero - binary operations
-	for (size_t i = 0 ; i < typeTestResults->binaryOpFTZ.size() ; ++i)
+	for (int j=0; j<2; j++)
 	{
-		const BinaryCase&	binaryCase	= typeTestResults->binaryOpFTZ[i];
-		OperationId			operation	= binaryCase.operationId;
-		testCases.push_back(OTC("denorm_op_var_flush_to_zero",		B_DENORM_FLUSH,					 operation, V_DENORM, V_ONE,		binaryCase.opVarResult));
-		testCases.push_back(OTC("denorm_op_denorm_flush_to_zero",	B_DENORM_FLUSH,					 operation, V_DENORM, V_DENORM,		binaryCase.opDenormResult));
-		testCases.push_back(OTC("denorm_op_inf_flush_to_zero",		B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM, V_INF,		binaryCase.opInfResult));
-		testCases.push_back(OTC("denorm_op_nan_flush_to_zero",		B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM, V_NAN,		binaryCase.opNanResult));
+		// fp16NoStorage tests only supported if testing fp16.
+		bool fp16NoStorage = (j == 1);
+		if (fp16NoStorage && !isFP16) continue;
 
-		if (isFP16)
+		// Denorm - FlushToZero - binary operations
+		for (size_t i = 0 ; i < typeTestResults->binaryOpFTZ.size() ; ++i)
 		{
-			testCases.push_back(OTC("denorm_op_var_flush_to_zero_nostorage",		B_DENORM_FLUSH,					 operation, V_DENORM, V_ONE,		binaryCase.opVarResult, true));
-			testCases.push_back(OTC("denorm_op_denorm_flush_to_zero_nostorage",		B_DENORM_FLUSH,					 operation, V_DENORM, V_DENORM,		binaryCase.opDenormResult, true));
-			testCases.push_back(OTC("denorm_op_inf_flush_to_zero_nostorage",		B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM, V_INF,		binaryCase.opInfResult, true));
-			testCases.push_back(OTC("denorm_op_nan_flush_to_zero_nostorage",		B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM, V_NAN,		binaryCase.opNanResult, true));
+			const BinaryCase&	binaryCase	= typeTestResults->binaryOpFTZ[i];
+			OperationId			operation	= binaryCase.operationId;
+			testCases.push_back(OTC("denorm_op_var_flush_to_zero",		B_DENORM_FLUSH,					 operation, V_DENORM, V_ONE,		binaryCase.opVarResult,		fp16NoStorage));
+			testCases.push_back(OTC("denorm_op_denorm_flush_to_zero",	B_DENORM_FLUSH,					 operation, V_DENORM, V_DENORM,		binaryCase.opDenormResult,	fp16NoStorage));
+			testCases.push_back(OTC("denorm_op_inf_flush_to_zero",		B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM, V_INF,		binaryCase.opInfResult,		fp16NoStorage));
+			testCases.push_back(OTC("denorm_op_nan_flush_to_zero",		B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM, V_NAN,		binaryCase.opNanResult,		fp16NoStorage));
 		}
-	}
 
-	// Denorm - FlushToZero - unary operations
-	for (size_t i = 0 ; i < typeTestResults->unaryOpFTZ.size() ; ++i)
-	{
-		const UnaryCase&	unaryCase = typeTestResults->unaryOpFTZ[i];
-		OperationId			operation = unaryCase.operationId;
-		testCases.push_back(OTC("op_denorm_flush_to_zero", B_DENORM_FLUSH, operation, V_DENORM, V_UNUSED, unaryCase.result));
-		if (isFP16)
-			testCases.push_back(OTC("op_denorm_flush_to_zero_nostorage", B_DENORM_FLUSH, operation, V_DENORM, V_UNUSED, unaryCase.result, true));
-
-	}
-
-	// Denom - Preserve - binary operations
-	for (size_t i = 0 ; i < typeTestResults->binaryOpDenormPreserve.size() ; ++i)
-	{
-		const BinaryCase&	binaryCase	= typeTestResults->binaryOpDenormPreserve[i];
-		OperationId			operation	= binaryCase.operationId;
-		testCases.push_back(OTC("denorm_op_var_preserve",			B_DENORM_PRESERVE,					operation, V_DENORM,	V_ONE,		binaryCase.opVarResult));
-		testCases.push_back(OTC("denorm_op_denorm_preserve",		B_DENORM_PRESERVE,					operation, V_DENORM,	V_DENORM,	binaryCase.opDenormResult));
-		testCases.push_back(OTC("denorm_op_inf_preserve",			B_DENORM_PRESERVE | B_ZIN_PRESERVE, operation, V_DENORM,	V_INF,		binaryCase.opInfResult));
-		testCases.push_back(OTC("denorm_op_nan_preserve",			B_DENORM_PRESERVE | B_ZIN_PRESERVE, operation, V_DENORM,	V_NAN,		binaryCase.opNanResult));
-
-		if (isFP16)
+		// Denorm - FlushToZero - unary operations
+		for (size_t i = 0 ; i < typeTestResults->unaryOpFTZ.size() ; ++i)
 		{
-			testCases.push_back(OTC("denorm_op_var_preserve_nostorage",			B_DENORM_PRESERVE,					operation, V_DENORM,	V_ONE,		binaryCase.opVarResult, true));
-			testCases.push_back(OTC("denorm_op_denorm_preserve_nostorage",		B_DENORM_PRESERVE,					operation, V_DENORM,	V_DENORM,	binaryCase.opDenormResult, true));
-			testCases.push_back(OTC("denorm_op_inf_preserve_nostorage",			B_DENORM_PRESERVE | B_ZIN_PRESERVE, operation, V_DENORM,	V_INF,		binaryCase.opInfResult, true));
-			testCases.push_back(OTC("denorm_op_nan_preserve_nostorage",			B_DENORM_PRESERVE | B_ZIN_PRESERVE, operation, V_DENORM,	V_NAN,		binaryCase.opNanResult, true));
+			const UnaryCase&	unaryCase = typeTestResults->unaryOpFTZ[i];
+			OperationId			operation = unaryCase.operationId;
+			testCases.push_back(OTC("op_denorm_flush_to_zero", B_DENORM_FLUSH, operation, V_DENORM, V_UNUSED, unaryCase.result, fp16NoStorage));
 		}
-	}
 
-	// Denom - Preserve - unary operations
-	for (size_t i = 0 ; i < typeTestResults->unaryOpDenormPreserve.size() ; ++i)
-	{
-		const UnaryCase&	unaryCase	= typeTestResults->unaryOpDenormPreserve[i];
-		OperationId			operation	= unaryCase.operationId;
-		testCases.push_back(OTC("op_denorm_preserve", B_DENORM_PRESERVE, operation, V_DENORM, V_UNUSED, unaryCase.result));
-		if (isFP16)
-			testCases.push_back(OTC("op_denorm_preserve_nostorage", B_DENORM_PRESERVE, operation, V_DENORM, V_UNUSED, unaryCase.result, true));
+		// Denorm - Preserve - binary operations
+		for (size_t i = 0 ; i < typeTestResults->binaryOpDenormPreserve.size() ; ++i)
+		{
+			const BinaryCase&	binaryCase	= typeTestResults->binaryOpDenormPreserve[i];
+			OperationId			operation	= binaryCase.operationId;
+			testCases.push_back(OTC("denorm_op_var_preserve",			B_DENORM_PRESERVE,					operation, V_DENORM,	V_ONE,		binaryCase.opVarResult,		fp16NoStorage));
+			testCases.push_back(OTC("denorm_op_denorm_preserve",		B_DENORM_PRESERVE,					operation, V_DENORM,	V_DENORM,	binaryCase.opDenormResult,	fp16NoStorage));
+			testCases.push_back(OTC("denorm_op_inf_preserve",			B_DENORM_PRESERVE | B_ZIN_PRESERVE, operation, V_DENORM,	V_INF,		binaryCase.opInfResult,		fp16NoStorage));
+			testCases.push_back(OTC("denorm_op_nan_preserve",			B_DENORM_PRESERVE | B_ZIN_PRESERVE, operation, V_DENORM,	V_NAN,		binaryCase.opNanResult,		fp16NoStorage));
+		}
+
+		// Denorm - Preserve - unary operations
+		for (size_t i = 0 ; i < typeTestResults->unaryOpDenormPreserve.size() ; ++i)
+		{
+			const UnaryCase&	unaryCase	= typeTestResults->unaryOpDenormPreserve[i];
+			OperationId			operation	= unaryCase.operationId;
+			testCases.push_back(OTC("op_denorm_preserve", B_DENORM_PRESERVE, operation, V_DENORM, V_UNUSED, unaryCase.result, fp16NoStorage));
+		}
 	}
 
 	struct ZINCase
@@ -2848,48 +2836,37 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 	bool isFP64 = typeTestResults->variableType() == FP64;
 
 	// Signed Zero Inf Nan - Preserve - binary operations
-	for (size_t i = 0 ; i < DE_LENGTH_OF_ARRAY(binaryOpZINPreserve) ; ++i)
+	for (int j=0; j<2; j++)
 	{
-		const ZINCase& zc = binaryOpZINPreserve[i];
-		if (isFP64 && !zc.supportedByFP64)
-			continue;
+		// fp16NoStorage tests only supported if testing fp16.
+		bool fp16NoStorage = (j == 1);
+		if (fp16NoStorage && !isFP16) continue;
 
-		testCases.push_back(OTC("zero_op_var_preserve",				B_ZIN_PRESERVE, zc.operationId, V_ZERO,			zc.secondArgument,	zc.preserveZeroResult));
-		testCases.push_back(OTC("signed_zero_op_var_preserve",		B_ZIN_PRESERVE, zc.operationId, V_MINUS_ZERO,	zc.secondArgument,	zc.preserveSZeroResult));
-		testCases.push_back(OTC("inf_op_var_preserve",				B_ZIN_PRESERVE, zc.operationId, V_INF,			zc.secondArgument,	zc.preserveInfResult));
-		testCases.push_back(OTC("signed_inf_op_var_preserve",		B_ZIN_PRESERVE, zc.operationId, V_MINUS_INF,	zc.secondArgument,	zc.preserveSInfResult));
-		testCases.push_back(OTC("nan_op_var_preserve",				B_ZIN_PRESERVE, zc.operationId, V_NAN,			zc.secondArgument,	zc.preserveNanResult));
-
-		if (isFP16)
+		for (size_t i = 0 ; i < DE_LENGTH_OF_ARRAY(binaryOpZINPreserve) ; ++i)
 		{
-			testCases.push_back(OTC("zero_op_var_preserve_nostorage",				B_ZIN_PRESERVE, zc.operationId, V_ZERO,			zc.secondArgument,	zc.preserveZeroResult, true));
-			testCases.push_back(OTC("signed_zero_op_var_preserve_nostorage",		B_ZIN_PRESERVE, zc.operationId, V_MINUS_ZERO,	zc.secondArgument,	zc.preserveSZeroResult, true));
-			testCases.push_back(OTC("inf_op_var_preserve_nostorage",				B_ZIN_PRESERVE, zc.operationId, V_INF,			zc.secondArgument,	zc.preserveInfResult, true));
-			testCases.push_back(OTC("signed_inf_op_var_preserve_nostorage",			B_ZIN_PRESERVE, zc.operationId, V_MINUS_INF,	zc.secondArgument,	zc.preserveSInfResult, true));
-			testCases.push_back(OTC("nan_op_var_preserve_nostorage",				B_ZIN_PRESERVE, zc.operationId, V_NAN,			zc.secondArgument,	zc.preserveNanResult, true));
+			const ZINCase& zc = binaryOpZINPreserve[i];
+			if (isFP64 && !zc.supportedByFP64)
+				continue;
+
+			testCases.push_back(OTC("zero_op_var_preserve",				B_ZIN_PRESERVE, zc.operationId, V_ZERO,			zc.secondArgument,	zc.preserveZeroResult,	fp16NoStorage));
+			testCases.push_back(OTC("signed_zero_op_var_preserve",		B_ZIN_PRESERVE, zc.operationId, V_MINUS_ZERO,	zc.secondArgument,	zc.preserveSZeroResult,	fp16NoStorage));
+			testCases.push_back(OTC("inf_op_var_preserve",				B_ZIN_PRESERVE, zc.operationId, V_INF,			zc.secondArgument,	zc.preserveInfResult,	fp16NoStorage));
+			testCases.push_back(OTC("signed_inf_op_var_preserve",		B_ZIN_PRESERVE, zc.operationId, V_MINUS_INF,	zc.secondArgument,	zc.preserveSInfResult,	fp16NoStorage));
+			testCases.push_back(OTC("nan_op_var_preserve",				B_ZIN_PRESERVE, zc.operationId, V_NAN,			zc.secondArgument,	zc.preserveNanResult,	fp16NoStorage));
 		}
-	}
 
-	// Signed Zero Inf Nan - Preserve - unary operations
-	for (size_t i = 0 ; i < DE_LENGTH_OF_ARRAY(unaryOpZINPreserve) ; ++i)
-	{
-		const ZINCase& zc = unaryOpZINPreserve[i];
-		if (isFP64 && !zc.supportedByFP64)
-			continue;
-
-		testCases.push_back(OTC("op_zero_preserve",			B_ZIN_PRESERVE,zc.operationId, V_ZERO,			V_UNUSED,	zc.preserveZeroResult));
-		testCases.push_back(OTC("op_signed_zero_preserve",	B_ZIN_PRESERVE,zc.operationId, V_MINUS_ZERO,	V_UNUSED,	zc.preserveSZeroResult));
-		testCases.push_back(OTC("op_inf_preserve",			B_ZIN_PRESERVE,zc.operationId, V_INF,			V_UNUSED,	zc.preserveInfResult));
-		testCases.push_back(OTC("op_signed_inf_preserve",	B_ZIN_PRESERVE,zc.operationId, V_MINUS_INF,		V_UNUSED,	zc.preserveSInfResult));
-		testCases.push_back(OTC("op_nan_preserve",			B_ZIN_PRESERVE,zc.operationId, V_NAN,			V_UNUSED,	zc.preserveNanResult));
-
-		if (isFP16)
+		// Signed Zero Inf Nan - Preserve - unary operations
+		for (size_t i = 0 ; i < DE_LENGTH_OF_ARRAY(unaryOpZINPreserve) ; ++i)
 		{
-			testCases.push_back(OTC("op_zero_preserve_nostorage",			B_ZIN_PRESERVE,zc.operationId, V_ZERO,			V_UNUSED,	zc.preserveZeroResult, true));
-			testCases.push_back(OTC("op_signed_zero_preserve_nostorage",	B_ZIN_PRESERVE,zc.operationId, V_MINUS_ZERO,	V_UNUSED,	zc.preserveSZeroResult, true));
-			testCases.push_back(OTC("op_inf_preserve_nostorage",			B_ZIN_PRESERVE,zc.operationId, V_INF,			V_UNUSED,	zc.preserveInfResult, true));
-			testCases.push_back(OTC("op_signed_inf_preserve_nostorage",		B_ZIN_PRESERVE,zc.operationId, V_MINUS_INF,		V_UNUSED,	zc.preserveSInfResult, true));
-			testCases.push_back(OTC("op_nan_preserve_nostorage",			B_ZIN_PRESERVE,zc.operationId, V_NAN,			V_UNUSED,	zc.preserveNanResult, true));
+			const ZINCase& zc = unaryOpZINPreserve[i];
+			if (isFP64 && !zc.supportedByFP64)
+				continue;
+
+			testCases.push_back(OTC("op_zero_preserve",			B_ZIN_PRESERVE,zc.operationId, V_ZERO,			V_UNUSED,	zc.preserveZeroResult,	fp16NoStorage));
+			testCases.push_back(OTC("op_signed_zero_preserve",	B_ZIN_PRESERVE,zc.operationId, V_MINUS_ZERO,	V_UNUSED,	zc.preserveSZeroResult,	fp16NoStorage));
+			testCases.push_back(OTC("op_inf_preserve",			B_ZIN_PRESERVE,zc.operationId, V_INF,			V_UNUSED,	zc.preserveInfResult,	fp16NoStorage));
+			testCases.push_back(OTC("op_signed_inf_preserve",	B_ZIN_PRESERVE,zc.operationId, V_MINUS_INF,		V_UNUSED,	zc.preserveSInfResult,	fp16NoStorage));
+			testCases.push_back(OTC("op_nan_preserve",			B_ZIN_PRESERVE,zc.operationId, V_NAN,			V_UNUSED,	zc.preserveNanResult,	fp16NoStorage));
 		}
 	}
 
@@ -2920,7 +2897,7 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 		const ComparisonCase& cc = comparisonCases[op];
 		testCases.push_back(OTC("denorm_op_var_preserve", B_DENORM_PRESERVE, cc.operationId, V_DENORM, V_ONE, cc.denormPreserveResult));
 		if (isFP16)
-			testCases.push_back(OTC("denorm_op_var_preserve_nostorage", B_DENORM_PRESERVE, cc.operationId, V_DENORM, V_ONE, cc.denormPreserveResult, true));
+			testCases.push_back(OTC("denorm_op_var_preserve", B_DENORM_PRESERVE, cc.operationId, V_DENORM, V_ONE, cc.denormPreserveResult, true));
 	}
 
 	if (argumentsFromInput)
@@ -2963,8 +2940,8 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 			testCases.push_back(OTC("rounding_rtz_op", B_RTZ_ROUNDING, rmc.operationId, rmc.arg1, rmc.arg2, rmc.expectedRTZResult));
 			if (isFP16)
 			{
-				testCases.push_back(OTC("rounding_rte_op_nostorage", B_RTE_ROUNDING, rmc.operationId, rmc.arg1, rmc.arg2, rmc.expectedRTEResult, true));
-				testCases.push_back(OTC("rounding_rtz_op_nostorage", B_RTZ_ROUNDING, rmc.operationId, rmc.arg1, rmc.arg2, rmc.expectedRTZResult, true));
+				testCases.push_back(OTC("rounding_rte_op", B_RTE_ROUNDING, rmc.operationId, rmc.arg1, rmc.arg2, rmc.expectedRTEResult, true));
+				testCases.push_back(OTC("rounding_rtz_op", B_RTZ_ROUNDING, rmc.operationId, rmc.arg1, rmc.arg2, rmc.expectedRTZResult, true));
 			}
 		}
 	}
@@ -2974,105 +2951,60 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 	{
 		if (argumentsFromInput)
 		{
-			//// Conversions from arguments
-			// fp32 rte
-			testCases.push_back(OTC("rounding_rte_conv_from_fp32_up", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rte_conv_from_fp32_down", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rte_conv_from_fp32_tie_up", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rte_conv_from_fp32_tie_down", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTE_RESULT));
+			for (int i=0; i<2; i++)
+			{
+				bool noStorage = (i == 1);
 
-			// fp32 rtz
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp32_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTZ_RESULT));
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp32_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTZ_RESULT));
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp32_tie_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTZ_RESULT));
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp32_tie_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTZ_RESULT));
+				//// Conversions from arguments
+				// fp32 rte
+				testCases.push_back(OTC("rounding_rte_conv_from_fp32_up", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTE_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rte_conv_from_fp32_down", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTE_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rte_conv_from_fp32_tie_up", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTE_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rte_conv_from_fp32_tie_down", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTE_RESULT, noStorage));
 
-			// fp64 rte
-			testCases.push_back(OTC("rounding_rte_conv_from_fp64_up", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_UP_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rte_conv_from_fp64_down", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_DOWN_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rte_conv_from_fp64_tie_up", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rte_conv_from_fp64_tie_down", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTE_RESULT));
+				// fp32 rtz
+				testCases.push_back(OTC("rounding_rtz_conv_from_fp32_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTZ_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rtz_conv_from_fp32_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTZ_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rtz_conv_from_fp32_tie_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTZ_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rtz_conv_from_fp32_tie_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTZ_RESULT, noStorage));
 
-			// fp64 rtz
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_UP_RTZ_RESULT));
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_DOWN_RTZ_RESULT));
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_tie_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTZ_RESULT));
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_tie_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTZ_RESULT));
+				// fp64 rte
+				testCases.push_back(OTC("rounding_rte_conv_from_fp64_up", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_UP_RTE_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rte_conv_from_fp64_down", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_DOWN_RTE_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rte_conv_from_fp64_tie_up", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTE_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rte_conv_from_fp64_tie_down", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTE_RESULT, noStorage));
 
-			//// Conversions from specialization constants
-			// fp32 rte
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_up", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_UP, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_down", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_DOWN, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_tie_up", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_UP, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_tie_down", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_DOWN, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTE_RESULT));
+				// fp64 rtz
+				testCases.push_back(OTC("rounding_rtz_conv_from_fp64_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_UP_RTZ_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rtz_conv_from_fp64_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_DOWN_RTZ_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rtz_conv_from_fp64_tie_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTZ_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rtz_conv_from_fp64_tie_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTZ_RESULT, noStorage));
 
-			// fp32 rtz
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_up", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_UP, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTZ_RESULT));
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_down", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_DOWN, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTZ_RESULT));
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_tie_up", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_UP, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTZ_RESULT));
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_tie_down", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_DOWN, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTZ_RESULT));
+				//// Conversions from specialization constants
+				// fp32 rte
+				testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_up", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_UP, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTE_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_down", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_DOWN, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTE_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_tie_up", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_UP, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTE_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_tie_down", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_DOWN, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTE_RESULT, noStorage));
 
-			// fp64 rte
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_up", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_UP, V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_UP_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_down", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_DOWN, V_CONV_FROM_FP64_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_DOWN_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_tie_up", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_UP, V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_tie_down", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_DOWN, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTE_RESULT));
+				// fp32 rtz
+				testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_up", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_UP, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTZ_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_down", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_DOWN, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTZ_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_tie_up", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_UP, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTZ_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_tie_down", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_DOWN, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTZ_RESULT, noStorage));
 
-			// fp64 rtz
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_up", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_UP, V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_UP_RTZ_RESULT));
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_down", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_DOWN, V_CONV_FROM_FP64_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_DOWN_RTZ_RESULT));
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_tie_up", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_UP, V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTZ_RESULT));
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_tie_down", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_DOWN, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTZ_RESULT));
+				// fp64 rte
+				testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_up", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_UP, V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_UP_RTE_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_down", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_DOWN, V_CONV_FROM_FP64_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_DOWN_RTE_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_tie_up", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_UP, V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTE_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_tie_down", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_DOWN, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTE_RESULT, noStorage));
 
-			/// Conversions from arguments, no storage
-			// fp32 rte
-			testCases.push_back(OTC("rounding_rte_conv_from_fp32_up_nostorage", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTE_RESULT, true));
-			testCases.push_back(OTC("rounding_rte_conv_from_fp32_down_nostorage", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTE_RESULT, true));
-			testCases.push_back(OTC("rounding_rte_conv_from_fp32_tie_up_nostorage", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTE_RESULT, true));
-			testCases.push_back(OTC("rounding_rte_conv_from_fp32_tie_down_nostorage", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTE_RESULT, true));
-
-			// fp32 rtz
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp32_up_nostorage", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTZ_RESULT, true));
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp32_down_nostorage", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTZ_RESULT, true));
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp32_tie_up_nostorage", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTZ_RESULT, true));
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp32_tie_down_nostorage", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTZ_RESULT, true));
-
-			// fp64 rte
-			testCases.push_back(OTC("rounding_rte_conv_from_fp64_up_nostorage", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_UP_RTE_RESULT, true));
-			testCases.push_back(OTC("rounding_rte_conv_from_fp64_down_nostorage", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_DOWN_RTE_RESULT, true));
-			testCases.push_back(OTC("rounding_rte_conv_from_fp64_tie_up_nostorage", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTE_RESULT, true));
-			testCases.push_back(OTC("rounding_rte_conv_from_fp64_tie_down_nostorage", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTE_RESULT, true));
-
-			// fp64 rtz
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_up_nostorage", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_UP_RTZ_RESULT, true));
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_down_nostorage", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_DOWN_RTZ_RESULT, true));
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_tie_up_nostorage", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTZ_RESULT, true));
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_tie_down_nostorage", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTZ_RESULT, true));
-
-			/// Conversions from specialization constants, no storage
-			// fp32 rte
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_up_nostorage", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_UP, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTE_RESULT, true));
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_down_nostorage", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_DOWN, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTE_RESULT, true));
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_tie_up_nostorage", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_UP, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTE_RESULT, true));
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_tie_down_nostorage", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_DOWN, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTE_RESULT, true));
-
-			// fp32 rtz
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_up_nostorage", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_UP, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTZ_RESULT, true));
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_down_nostorage", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_DOWN, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTZ_RESULT, true));
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_tie_up_nostorage", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_UP, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTZ_RESULT, true));
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_tie_down_nostorage", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_DOWN, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTZ_RESULT, true));
-
-			// fp64 rte
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_up_nostorage", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_UP, V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_UP_RTE_RESULT, true));
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_down_nostorage", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_DOWN, V_CONV_FROM_FP64_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_DOWN_RTE_RESULT, true));
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_tie_up_nostorage", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_UP, V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTE_RESULT, true));
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_tie_down_nostorage", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_DOWN, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTE_RESULT, true));
-
-			// fp64 rtz
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_up_nostorage", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_UP, V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_UP_RTZ_RESULT, true));
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_down_nostorage", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_DOWN, V_CONV_FROM_FP64_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_DOWN_RTZ_RESULT, true));
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_tie_up_nostorage", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_UP, V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTZ_RESULT, true));
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_tie_down_nostorage", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_DOWN, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTZ_RESULT, true));
+				// fp64 rtz
+				testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_up", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_UP, V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_UP_RTZ_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_down", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_DOWN, V_CONV_FROM_FP64_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_DOWN_RTZ_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_tie_up", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_UP, V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTZ_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_tie_down", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_DOWN, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTZ_RESULT, noStorage));
+			}
 
 			// verify that VkShaderFloatingPointRoundingModeKHR can be overridden for a given instruction by the FPRoundingMode decoration.
 			// FPRoundingMode decoration requires VK_KHR_16bit_storage.
@@ -3232,34 +3164,17 @@ const Operation& TestCasesBuilder::getOperation(OperationId id) const
 
 void TestCasesBuilder::createUnaryTestCases(vector<OperationTestCase>& testCases, OperationId operationId, ValueId denormPreserveResult, ValueId denormFTZResult, bool fp16WithoutStorage) const
 {
-	if (fp16WithoutStorage)
-	{
-		// Denom - Preserve
-		testCases.push_back(OTC("op_denorm_preserve_nostorage",		B_DENORM_PRESERVE,	operationId, V_DENORM,	V_UNUSED, denormPreserveResult, true));
+	// Denorm - Preserve
+	testCases.push_back(OTC("op_denorm_preserve",		B_DENORM_PRESERVE,	operationId, V_DENORM,		V_UNUSED, denormPreserveResult, fp16WithoutStorage));
 
-		// Denorm - FlushToZero
-		testCases.push_back(OTC("op_denorm_flush_to_zero_nostorage",	B_DENORM_FLUSH,		operationId, V_DENORM,	V_UNUSED, denormFTZResult, true));
+	// Denorm - FlushToZero
+	testCases.push_back(OTC("op_denorm_flush_to_zero",	B_DENORM_FLUSH,		operationId, V_DENORM,		V_UNUSED, denormFTZResult,		fp16WithoutStorage));
 
-		// Signed Zero Inf Nan - Preserve
-		testCases.push_back(OTC("op_zero_preserve_nostorage",			B_ZIN_PRESERVE,		operationId, V_ZERO,		V_UNUSED, V_ZERO, true));
-		testCases.push_back(OTC("op_signed_zero_preserve_nostorage",	B_ZIN_PRESERVE,		operationId, V_MINUS_ZERO,	V_UNUSED, V_MINUS_ZERO, true));
-		testCases.push_back(OTC("op_inf_preserve_nostorage",			B_ZIN_PRESERVE,		operationId, V_INF,			V_UNUSED, V_INF, true));
-		testCases.push_back(OTC("op_nan_preserve_nostorage",			B_ZIN_PRESERVE,		operationId, V_NAN,			V_UNUSED, V_NAN, true));
-	}
-	else
-	{
-		// Denom - Preserve
-		testCases.push_back(OTC("op_denorm_preserve",		B_DENORM_PRESERVE,	operationId, V_DENORM,	V_UNUSED, denormPreserveResult));
-
-		// Denorm - FlushToZero
-		testCases.push_back(OTC("op_denorm_flush_to_zero",	B_DENORM_FLUSH,		operationId, V_DENORM,	V_UNUSED, denormFTZResult));
-
-		// Signed Zero Inf Nan - Preserve
-		testCases.push_back(OTC("op_zero_preserve",			B_ZIN_PRESERVE,		operationId, V_ZERO,		V_UNUSED, V_ZERO));
-		testCases.push_back(OTC("op_signed_zero_preserve",	B_ZIN_PRESERVE,		operationId, V_MINUS_ZERO,	V_UNUSED, V_MINUS_ZERO));
-		testCases.push_back(OTC("op_inf_preserve",			B_ZIN_PRESERVE,		operationId, V_INF,			V_UNUSED, V_INF));
-		testCases.push_back(OTC("op_nan_preserve",			B_ZIN_PRESERVE,		operationId, V_NAN,			V_UNUSED, V_NAN));
-	}
+	// Signed Zero Inf Nan - Preserve
+	testCases.push_back(OTC("op_zero_preserve",			B_ZIN_PRESERVE,		operationId, V_ZERO,		V_UNUSED, V_ZERO,				fp16WithoutStorage));
+	testCases.push_back(OTC("op_signed_zero_preserve",	B_ZIN_PRESERVE,		operationId, V_MINUS_ZERO,	V_UNUSED, V_MINUS_ZERO,			fp16WithoutStorage));
+	testCases.push_back(OTC("op_inf_preserve",			B_ZIN_PRESERVE,		operationId, V_INF,			V_UNUSED, V_INF,				fp16WithoutStorage));
+	testCases.push_back(OTC("op_nan_preserve",			B_ZIN_PRESERVE,		operationId, V_NAN,			V_UNUSED, V_NAN,				fp16WithoutStorage));
 }
 
 template <typename TYPE, typename FLOAT_TYPE>
