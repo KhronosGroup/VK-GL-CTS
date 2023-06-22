@@ -858,6 +858,21 @@ bool AndroidHardwareBufferInstance::isFormatStencil (Format format)
 	}
 }
 
+bool AndroidHardwareBufferInstance::hasFormatAlpha (Format format)
+{
+	switch (format)
+	{
+	case Format::R8G8B8A8_UNORM:
+	case Format::R16G16B16A16_FLOAT:
+	case Format::R10G10B10A2_UNORM:
+	case Format::R10G10B10A10_UNORM:
+	case Format::B8G8R8A8_UNORM:
+		return true;
+	default:
+		return false;
+	}
+}
+
 const char* AndroidHardwareBufferInstance::getFormatName (Format format)
 {
 	switch (format)
@@ -1075,6 +1090,123 @@ tcu::TextureFormat AndroidHardwareBufferInstance::formatToTextureFormat(Format f
 	// Format::BLOB
 	default:
 		return tcu::TextureFormat(); // Unassigned
+	}
+}
+
+AndroidHardwareBufferInstance::ChromaLocation AndroidHardwareBufferInstance::vkChromaLocationToChromaLocation (vk::VkChromaLocation location)
+{
+	switch (location)
+	{
+	case vk::VK_CHROMA_LOCATION_COSITED_EVEN:
+		return ChromaLocation::COSITED_EVEN;
+	case vk::VK_CHROMA_LOCATION_MIDPOINT:
+		return ChromaLocation::MIDPOINT;
+	default:
+		DE_ASSERT(false);	// Should never reach this
+		return ChromaLocation::COSITED_EVEN;
+		break;
+	}
+}
+
+void AndroidHardwareBufferInstance::reduceYuvTexture (tcu::TextureLevel& texture, Format format, ChromaLocation xChroma, ChromaLocation yChroma)
+{
+	switch (format)
+	{
+	// YUV 4:2:0
+	case Y8Cb8Cr8_420:
+	case YCbCr_P010:
+	case YV12:
+	case NV21:
+		reduceYuv420Texture(texture, xChroma, yChroma);
+		break;
+
+	// YUV 4:2:2
+	case NV16:
+	case YUY2:
+		reduceYuv422Texture(texture, xChroma);
+		break;
+
+	default:
+		break;
+	}
+}
+
+void AndroidHardwareBufferInstance::reduceYuv420Texture (tcu::TextureLevel& texture, ChromaLocation xChroma, ChromaLocation yChroma)
+{
+	tcu::PixelBufferAccess	access	= texture.getAccess();
+
+	for (int32_t y = 0; y < texture.getHeight(); y += 2)
+	{
+		for (int32_t x = 0; x < texture.getWidth(); x += 2)
+		{
+			tcu::Vec4	colors[4]	=
+			{
+				access.getPixel(x, y),
+				access.getPixel(x, y + 1),
+				access.getPixel(x + 1, y),
+				access.getPixel(x + 1, y + 1)
+			};
+			tcu::Vec2	chroma		= colors[0].xz();
+			float		texelCount	= 1.0f;
+
+			if (yChroma == ChromaLocation::MIDPOINT)
+			{
+				chroma		+= colors[1].xz();
+				texelCount	+= 1.0f;
+
+				if (xChroma == ChromaLocation::MIDPOINT)
+				{
+					chroma		+= colors[3].xz();
+					texelCount	+= 1.0f;
+				}
+			}
+
+			if (xChroma == ChromaLocation::MIDPOINT)
+			{
+				chroma		+= colors[2].xz();
+				texelCount	+= 1.0f;
+			}
+
+			chroma	= chroma / texelCount;
+
+			colors[0].xz()	= chroma;
+			access.setPixel(colors[0], x, y);
+			colors[1].xz()	= chroma;
+			access.setPixel(colors[1], x, y + 1);
+			colors[2].xz()	= chroma;
+			access.setPixel(colors[2], x + 1, y);
+			colors[3].xz()	= chroma;
+			access.setPixel(colors[3], x + 1, y + 1);
+		}
+	}
+}
+
+void AndroidHardwareBufferInstance::reduceYuv422Texture (tcu::TextureLevel& texture, ChromaLocation xChroma)
+{
+	tcu::PixelBufferAccess	access	= texture.getAccess();
+
+	for (int32_t y = 0; y < texture.getHeight(); ++y)
+	{
+		for (int32_t x = 0; x < texture.getWidth(); x += 2)
+		{
+			tcu::Vec4	colors[2]	=
+			{
+				access.getPixel(x, y),
+				access.getPixel(x + 1, y)
+			};
+			tcu::Vec2	chroma		= colors[0].xz();
+
+			if (xChroma == ChromaLocation::MIDPOINT)
+			{
+				chroma += colors[1].xz();
+				chroma = chroma / 2.0f;
+			}
+
+			colors[0].xz()	= chroma;
+			access.setPixel(colors[0], x, y);
+			colors[1].xz()	= chroma;
+			access.setPixel(colors[1], x + 1, y);
+		}
 	}
 }
 

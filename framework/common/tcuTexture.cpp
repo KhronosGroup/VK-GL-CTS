@@ -763,6 +763,29 @@ int getNumUsedChannels (TextureFormat::ChannelOrder order)
 	}
 }
 
+bool hasAlphaChannel (TextureFormat::ChannelOrder order)
+{
+	// make sure this table is updated if type table is updated
+	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 22);
+
+	switch (order)
+	{
+		case TextureFormat::A:
+		case TextureFormat::LA:
+		case TextureFormat::RG:
+		case TextureFormat::RA:
+		case TextureFormat::RGBA:
+		case TextureFormat::ARGB:
+		case TextureFormat::ABGR:
+		case TextureFormat::BGRA:
+		case TextureFormat::sRGBA:
+		case TextureFormat::sBGRA:
+			return true;
+		default:
+			return false;
+	}
+}
+
 int getChannelSize (TextureFormat::ChannelType type)
 {
 	// make sure this table is updated if format table is updated

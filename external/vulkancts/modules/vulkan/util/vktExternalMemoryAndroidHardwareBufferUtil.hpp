@@ -219,6 +219,12 @@ public:
 		CPU_WRITE = 8,
 	};
 
+	enum ChromaLocation : uint32_t
+	{
+		COSITED_EVEN = 0,	// VK_CHROMA_LOCATION_COSITED_EVEN
+		MIDPOINT,			// VK_CHROMA_LOCATION_MIDPOINT
+	};
+
 protected:
 	struct AccessDataCPU
 	{
@@ -244,11 +250,16 @@ public:
 	static bool					isFormatColor (Format format);
 	static bool					isFormatDepth (Format format);
 	static bool					isFormatStencil (Format format);
+	static bool					hasFormatAlpha (Format format);
 	static const char*			getFormatName (Format format);
 	static deUint32				formatToInternalFormat (Format format);
 	static tcu::TextureFormat	formatToTextureFormat (Format format);
+	static ChromaLocation		vkChromaLocationToChromaLocation (vk::VkChromaLocation location);
+	static void					reduceYuvTexture (tcu::TextureLevel& texture, Format format, ChromaLocation xChroma, ChromaLocation yChroma);
 
 protected:
+	static void					reduceYuv420Texture (tcu::TextureLevel& texture, ChromaLocation xChroma, ChromaLocation yChroma);
+	static void					reduceYuv422Texture (tcu::TextureLevel& texture, ChromaLocation xChroma);
 	static deUint64				usageToInternalUsage (Usage usage);
 	// Pixel stride in bytes
 	static deUint32				pixelStride (Format format);
