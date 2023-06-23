@@ -6,10 +6,6 @@ cmake_minimum_required(VERSION 3.20.0)
 
 option(GLES_ALLOW_DIRECT_LINK "Allow direct linking to GLES libraries" OFF)
 
-option(GLES_ALLOW_DIRECT_LINK "Allow direct linking to GLES libraries" ON)
-
-option(GLES_ALLOW_DIRECT_LINK "Allow direct linking to GLES libraries" ON)
-
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/framework/delibs/cmake")
 find_package(Git)
 find_package(PythonInterp 3)
