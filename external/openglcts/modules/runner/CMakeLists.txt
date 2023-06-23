@@ -15,6 +15,9 @@ include_directories(${PROJECT_BINARY_DIR}/external/vulkancts/framework/vulkan)
 
 if (DE_OS_IS_ANDROID)
 	include_directories(${PROJECT_SOURCE_DIR}/framework/platform/android)
+	# The Android platform file includes the Vulkan header, which needs the generated files
+	# to complete the header. SC is not supported, so include the non-SC generated folder.
+	include_directories(${PROJECT_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkan)
 
 	set(GLCTS_RUNNER_SRCS
 		${GLCTS_RUNNER_SRCS}

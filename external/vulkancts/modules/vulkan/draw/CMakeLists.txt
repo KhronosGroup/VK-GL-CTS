@@ -77,5 +77,4 @@ add_library(deqp-vk-draw STATIC ${DEQP_VK_VKSC_DRAW_SRCS} ${DEQP_VK_DRAW_SRCS})
 target_link_libraries(deqp-vk-draw tcutil vkutil)
 
 add_library(deqp-vksc-draw STATIC ${DEQP_VK_VKSC_DRAW_SRCS})
-target_include_directories(deqp-vksc-draw BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 target_link_libraries(deqp-vksc-draw PUBLIC deqp-vksc-util tcutil vkscutil)

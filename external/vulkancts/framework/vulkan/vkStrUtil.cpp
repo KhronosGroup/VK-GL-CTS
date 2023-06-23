@@ -23,6 +23,13 @@
 
 #include "vkStrUtil.hpp"
 
+#if (DE_OS == DE_OS_WIN32)
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+#endif
+
 namespace vk
 {
 
@@ -48,9 +55,6 @@ inline CharPtr getCharPtrStr (const char* ptr)
 
 
 #if (DE_OS == DE_OS_WIN32)
-
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
 
 struct WStr
 {

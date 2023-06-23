@@ -1389,6 +1389,8 @@ void WideColorTests::init (void)
 	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_fp16_colorspace_p3_passthrough", "FP16 window surface, explicit Display-P3 colorspace", windowAttribListFP16, EGL_GL_COLORSPACE_DISPLAY_P3_PASSTHROUGH_EXT, iterations));
 	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_fp16_colorspace_scrgb", "FP16 window surface, explicit scRGB colorspace", windowAttribListFP16, EGL_GL_COLORSPACE_SCRGB_EXT, iterations));
 	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_fp16_colorspace_scrgb_linear", "FP16 window surface, explicit scRGB linear colorspace", windowAttribListFP16, EGL_GL_COLORSPACE_SCRGB_LINEAR_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_fp16_colorspace_bt2020_linear", "FP16 window surface, explicit BT2020 linear colorspace", windowAttribListFP16, EGL_GL_COLORSPACE_BT2020_LINEAR_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_fp16_colorspace_bt2020_pq", "FP16 window surface, explicit BT2020 PQ colorspace", windowAttribListFP16, EGL_GL_COLORSPACE_BT2020_PQ_EXT, iterations));
 
 	const EGLint pbufferAttribListFP16[] =
 	{
@@ -1407,6 +1409,8 @@ void WideColorTests::init (void)
 	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_fp16_colorspace_p3_passthrough", "FP16 pbuffer surface, explicit Display-P3 colorspace", pbufferAttribListFP16, EGL_GL_COLORSPACE_DISPLAY_P3_PASSTHROUGH_EXT, iterations));
 	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_fp16_colorspace_scrgb", "FP16 pbuffer surface, explicit scRGB colorspace", pbufferAttribListFP16, EGL_GL_COLORSPACE_SCRGB_EXT, iterations));
 	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_fp16_colorspace_scrgb_linear", "FP16 pbuffer surface, explicit scRGB linear colorspace", pbufferAttribListFP16, EGL_GL_COLORSPACE_SCRGB_LINEAR_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_fp16_colorspace_bt2020_linear", "FP16 pbuffer surface, explicit BT2020 linear colorspace", pbufferAttribListFP16, EGL_GL_COLORSPACE_BT2020_LINEAR_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_fp16_colorspace_bt2020_pq", "FP16 pbuffer surface, explicit BT2020 PQ colorspace", pbufferAttribListFP16, EGL_GL_COLORSPACE_BT2020_PQ_EXT, iterations));
 
 	const EGLint windowAttribList1010102[] =
 	{
@@ -1422,6 +1426,8 @@ void WideColorTests::init (void)
 	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_1010102_colorspace_srgb", "1010102 Window surface, explicit sRGB colorspace", windowAttribList1010102, EGL_GL_COLORSPACE_SRGB_KHR, iterations));
 	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_1010102_colorspace_p3", "1010102 Window surface, explicit Display-P3 colorspace", windowAttribList1010102, EGL_GL_COLORSPACE_DISPLAY_P3_EXT, iterations));
 	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_1010102_colorspace_p3_passthrough", "1010102 Window surface, explicit Display-P3 colorspace", windowAttribList1010102, EGL_GL_COLORSPACE_DISPLAY_P3_PASSTHROUGH_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_1010102_colorspace_bt2020_linear", "1010102 Window surface, explicit BT2020 linear colorspace", windowAttribList1010102, EGL_GL_COLORSPACE_BT2020_LINEAR_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_1010102_colorspace_bt2020_pq", "1010102 Window surface, explicit BT2020 PQ colorspace", windowAttribList1010102, EGL_GL_COLORSPACE_BT2020_PQ_EXT, iterations));
 
 	const EGLint pbufferAttribList1010102[] =
 	{
@@ -1437,6 +1443,8 @@ void WideColorTests::init (void)
 	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_1010102_colorspace_srgb", "1010102 pbuffer surface, explicit sRGB colorspace", pbufferAttribList1010102, EGL_GL_COLORSPACE_SRGB_KHR, iterations));
 	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_1010102_colorspace_p3", "1010102 pbuffer surface, explicit Display-P3 colorspace", pbufferAttribList1010102, EGL_GL_COLORSPACE_DISPLAY_P3_EXT, iterations));
 	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_1010102_colorspace_p3_passthrough", "1010102 pbuffer surface, explicit Display-P3 colorspace", pbufferAttribList1010102, EGL_GL_COLORSPACE_DISPLAY_P3_PASSTHROUGH_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_1010102_colorspace_bt2020_linear", "1010102 pbuffer surface, explicit BT2020 linear colorspace", pbufferAttribList1010102, EGL_GL_COLORSPACE_BT2020_LINEAR_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_1010102_colorspace_bt2020_pq", "1010102 pbuffer surface, explicit BT2020 PQ colorspace", pbufferAttribList1010102, EGL_GL_COLORSPACE_BT2020_PQ_EXT, iterations));
 
 	const EGLint windowAttribList8888[] =
 	{

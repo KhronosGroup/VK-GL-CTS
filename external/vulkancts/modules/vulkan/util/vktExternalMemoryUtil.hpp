@@ -64,6 +64,7 @@ public:
 	vk::pt::Win32Handle					getWin32Handle				(void) const;
 	void								setHostPtr					(void* hostPtr);
 	void*								getHostPtr					(void) const;
+	bool								hasValidFd					(void) const;
 	int									getFd						(void) const;
 	vk::pt::AndroidHardwareBufferPtr	getAndroidHardwareBuffer	(void) const;
 	vk::pt::zx_handle_t					getZirconHandle				(void) const;

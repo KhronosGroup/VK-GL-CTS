@@ -424,14 +424,18 @@ void checkSupport(Context& context, TestParameters params)
 }
 
 Vec4 castResult(Vec4 result, VkFormat f) {
+	union {
+		Vec4 vec;
+		IVec4 ivec;
+		UVec4 uvec;
+	} cast = { result };
+
 	if (isIntFormat(f)) {
-		IVec4* result_ptr = reinterpret_cast<IVec4*>(&result);
-		IVec4 ivec = *(result_ptr);
+		IVec4 ivec = cast.ivec;
 		return Vec4((float)ivec.x(), (float)ivec.y(), (float)ivec.z(), (float)ivec.w());
 	}
 	else if (isUintFormat(f)) {
-		UVec4* result_ptr = reinterpret_cast<UVec4*>(&result);
-		UVec4 uvec = *(result_ptr);
+		UVec4 uvec = cast.uvec;
 		return Vec4((float)uvec.x(), (float)uvec.y(), (float)uvec.z(), (float)uvec.w());
 	}
 	else {

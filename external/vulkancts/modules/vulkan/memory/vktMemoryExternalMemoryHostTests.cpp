@@ -889,7 +889,7 @@ tcu::TestStatus ExternalMemoryHostSynchronizationTestInstance::iterate ()
 
 	//wait for fence_1 and modify image on host
 	VK_CHECK(m_vkd.waitForFences(m_device, 1u, &m_fence_1.get(), DE_TRUE, ~0ull));
-	pointerReturnedByMapMemory				= mapMemory(m_vkd, m_device, *m_deviceMemoryAllocatedFromHostPointer, 0, dataBufferSize, 0);
+	pointerReturnedByMapMemory				= mapMemory(m_vkd, m_device, *m_deviceMemoryAllocatedFromHostPointer, 0, m_allocationSize, 0);
 	invalidateMappedMemoryRange(m_vkd, m_device, *m_deviceMemoryAllocatedFromHostPointer, 0, VK_WHOLE_SIZE);
 	tcu::PixelBufferAccess bufferSurface(mapVkFormat(m_testParams.m_format), 100, 100, 1, (100 * vk::mapVkFormat(m_testParams.m_format).getPixelSize()), 0, m_hostMemoryAlloc);
 	prepareReferenceImage(bufferSurface);

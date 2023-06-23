@@ -526,6 +526,7 @@ m_vk.createVideoSessionKHR									= (CreateVideoSessionKHRFunc)									GET_PRO
 m_vk.destroyVideoSessionKHR									= (DestroyVideoSessionKHRFunc)									GET_PROC_ADDR("vkDestroyVideoSessionKHR");
 m_vk.createVideoSessionParametersKHR						= (CreateVideoSessionParametersKHRFunc)							GET_PROC_ADDR("vkCreateVideoSessionParametersKHR");
 m_vk.updateVideoSessionParametersKHR						= (UpdateVideoSessionParametersKHRFunc)							GET_PROC_ADDR("vkUpdateVideoSessionParametersKHR");
+m_vk.getEncodedVideoSessionParametersKHR					= (GetEncodedVideoSessionParametersKHRFunc)						GET_PROC_ADDR("vkGetEncodedVideoSessionParametersKHR");
 m_vk.destroyVideoSessionParametersKHR						= (DestroyVideoSessionParametersKHRFunc)						GET_PROC_ADDR("vkDestroyVideoSessionParametersKHR");
 m_vk.getVideoSessionMemoryRequirementsKHR					= (GetVideoSessionMemoryRequirementsKHRFunc)					GET_PROC_ADDR("vkGetVideoSessionMemoryRequirementsKHR");
 m_vk.bindVideoSessionMemoryKHR								= (BindVideoSessionMemoryKHRFunc)								GET_PROC_ADDR("vkBindVideoSessionMemoryKHR");

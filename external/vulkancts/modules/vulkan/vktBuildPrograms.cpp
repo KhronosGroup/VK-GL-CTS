@@ -398,8 +398,10 @@ BuildStats buildPrograms (tcu::TestContext&			testCtx,
 						  const bool				allowSpirV14)
 {
 	const deUint32						numThreads			= deGetNumAvailableLogicalCores();
+	// Limit dictated by the memory limitations of the CI system
+	const deUint32						numThreadsUsed			= numThreads > 16 ? 16 : numThreads;
 
-	TaskExecutor						executor			(numThreads);
+	TaskExecutor						executor			(numThreadsUsed);
 
 	// de::PoolArray<> is faster to build than std::vector
 	de::MemPool							programPool;

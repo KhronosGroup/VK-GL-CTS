@@ -57,5 +57,4 @@ add_library(deqp-vk-render-pass STATIC ${DEQP_VK_VKSC_RENDER_PASS_SRCS} ${DEQP_V
 target_link_libraries(deqp-vk-render-pass tcutil vkutil deqp-vk-draw)
 
 add_library(deqp-vksc-render-pass STATIC ${DEQP_VK_VKSC_RENDER_PASS_SRCS})
-target_include_directories(deqp-vksc-render-pass BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 target_link_libraries(deqp-vksc-render-pass PUBLIC deqp-vksc-util tcutil vkscutil deqp-vksc-draw)

@@ -394,6 +394,7 @@ CreateVideoSessionKHRFunc									createVideoSessionKHR;
 DestroyVideoSessionKHRFunc									destroyVideoSessionKHR;
 CreateVideoSessionParametersKHRFunc							createVideoSessionParametersKHR;
 UpdateVideoSessionParametersKHRFunc							updateVideoSessionParametersKHR;
+GetEncodedVideoSessionParametersKHRFunc						getEncodedVideoSessionParametersKHR;
 DestroyVideoSessionParametersKHRFunc						destroyVideoSessionParametersKHR;
 GetVideoSessionMemoryRequirementsKHRFunc					getVideoSessionMemoryRequirementsKHR;
 BindVideoSessionMemoryKHRFunc								bindVideoSessionMemoryKHR;

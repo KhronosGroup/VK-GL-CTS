@@ -26,6 +26,7 @@ import sys
 import glob
 import json
 import argparse
+import datetime
 from lxml import etree
 
 scriptPath = os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts")
@@ -2168,6 +2169,8 @@ def writeExtensionFunctions (api, filename):
 								if aliasName == commandName:
 									func = f
 									break
+							if func:
+								break
 					else:
 						func = funcList[0]
 					if func == None:
@@ -2177,11 +2180,11 @@ def writeExtensionFunctions (api, filename):
 						assert(False)
 					if func.getType() == functionType:
 						# only add functions with same vendor as extension
-						# this is a workaroudn for entrypoints requiring more
-						# than one excetions and lack of the dependency in vk.xml
+						# this is a workaround for entrypoints requiring more
+						# than one extension and lack of the dependency in vk.xml
 						vendor = ext.name.split('_')[1]
-						if func.name.endswith(vendor):
-							funcNames.append(func.name)
+						if commandName.endswith(vendor):
+							funcNames.append(commandName)
 			if ext.name:
 				yield '\tif (extName == "%s")' % ext.name
 				yield '\t{'
@@ -3457,6 +3460,7 @@ def writeEntryPointValidation(api, filename):
 			stream.append(f'\t\t\t"{fun}",')
 		stream.append('\t\t}\n\t},')
 	stream.append('};')
+	writeInlFile(filename, INL_HEADER, stream)
 
 def writeGetDeviceProcAddr(api, filename):
 	testBlockStart = '''tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
@@ -3559,6 +3563,55 @@ def writeGetDeviceProcAddr(api, filename):
 
 	writeInlFile(filename, INL_HEADER, stream)
 
+def writeConformanceVersions(filename):
+    # get list of all vulkan/vulkansc tags from git
+	listOfTags = os.popen("git ls-remote -t").read()
+	vkMatches = re.findall("vulkan-cts-(\d).(\d).(\d).(\d)", listOfTags, re.M)
+	scMatches = re.findall("vulkansc-cts-(\d).(\d).(\d).(\d)", listOfTags, re.M)
+	if len(vkMatches) == 0 or len(scMatches) == 0:
+		return
+	# read all text files in doc folder and find withdrawn cts versions (branches)
+	withdrawnVkBranches = set()
+	withdrawnScBranches = set()
+	today = datetime.date.today()
+	for fileName in glob.glob(os.path.join(os.path.dirname(__file__), "..", "doc", "*.txt")):
+		if "withdrawal" not in fileName:
+			continue
+		fileContent	= readFile(fileName)
+        # get date when releases are withdrawn
+		match = re.search(r"(20\d\d)-(\d\d)-(\d\d).+ withdrawn", fileContent, re.IGNORECASE)
+		if match is not None:
+            # check if announcement refers to date in the past
+			if today > datetime.date(int(match[1]), int(match[2]), int(match[3])):
+				# get names of withdrawn branches
+				vkBranchMatches = re.findall("vulkan(\w\w)?-cts-(\d).(\d).(\d).(\d)", fileContent, re.M)
+				for v in vkBranchMatches:
+					selectedSet = withdrawnScBranches if v[0] == "sc" else withdrawnVkBranches
+					selectedSet.add((v[1], v[2], v[3], v[4]))
+	if len(withdrawnVkBranches) == 0:
+		print(f"Warning: unable to read content of doc folder, skipping generation of {os.path.basename(filename)}")
+		return
+	# define helper function that will be used to add entries for both vk and sc
+	def appendToStream(stream, versionsToAdd, maxWithdrawnVersion):
+		addedVersions = set()
+		for v in reversed(versionsToAdd):
+			# add only unique versions; ignore duplicates (e.g. with "-rc1", "-rc2" postfix);
+            # also add versions that are greater then maximal withdrawn version
+			if v in addedVersions or v <= maxWithdrawnVersion:
+				continue
+			addedVersions.add(v)
+			stream.append(f'\tmakeConformanceVersion({v[0]}, {v[1]}, {v[2]}, {v[3]}),')
+    # save array with versions
+	stream = ['static const VkConformanceVersion knownConformanceVersions[]',\
+			  '{',\
+			  '#ifndef CTS_USES_VULKANSC']
+	appendToStream(stream, vkMatches, max(withdrawnVkBranches))
+	stream.append('#else')
+	appendToStream(stream, scMatches, tuple('0'*4) if len(withdrawnScBranches) == 0 else max(withdrawnScBranches))
+	stream.append('#endif // CTS_USES_VULKANSC')
+	stream.append('};')
+	writeInlFile(filename, INL_HEADER, stream)
+
 def parseCmdLineArgs():
 	parser = argparse.ArgumentParser(description = "Generate Vulkan INL files",
 									 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -3650,6 +3703,7 @@ if __name__ == "__main__":
 	writeApiExtensionDependencyInfo			(api, os.path.join(outputPath, "vkApiExtensionDependencyInfo.inl"))
 	writeEntryPointValidation				(api, os.path.join(outputPath, "vkEntryPointValidation.inl"))
 	writeGetDeviceProcAddr					(api, os.path.join(outputPath, "vkGetDeviceProcAddr.inl"))
+	writeConformanceVersions                (     os.path.join(outputPath, "vkKnownConformanceVersions.inl"))
 
 	# NOTE: when new files are generated then they should also be added to the
 	# vk-gl-cts\external\vulkancts\framework\vulkan\CMakeLists.txt outputs list

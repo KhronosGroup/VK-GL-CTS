@@ -22,7 +22,7 @@ the Vulkan SC Working Group chair (vulkansc-wgchair at khronos.org) if you have 
 
 Below are some key dates to acknowledge:
 
-2023-03-06 Notice of intent to withdraw Vulkan CTS 1.0.0.x
+2023-03-06 Notice of intent to withdraw Vulkan SC CTS 1.0.0.x
            distributed via email to adopters.
 
 2024-03-05 The affected releases are withdrawn.

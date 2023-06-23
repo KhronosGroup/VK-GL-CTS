@@ -24,5 +24,4 @@ add_library(deqp-vk-fragment-ops STATIC ${DEQP_VK_FRAGMENT_OPS_SRCS})
 target_link_libraries(deqp-vk-fragment-ops tcutil vkutil)
 
 add_library(deqp-vksc-fragment-ops STATIC ${DEQP_VK_FRAGMENT_OPS_SRCS})
-target_include_directories(deqp-vksc-fragment-ops BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 target_link_libraries(deqp-vksc-fragment-ops PUBLIC deqp-vksc-util tcutil vkscutil)

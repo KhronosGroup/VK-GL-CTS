@@ -1,3 +1,11 @@
+dEQP-EGL.functional.wide_color.window_fp16_colorspace_bt2020_linear
+dEQP-EGL.functional.wide_color.window_fp16_colorspace_bt2020_pq
+dEQP-EGL.functional.wide_color.pbuffer_fp16_colorspace_bt2020_linear
+dEQP-EGL.functional.wide_color.pbuffer_fp16_colorspace_bt2020_pq
+dEQP-EGL.functional.wide_color.window_1010102_colorspace_bt2020_linear
+dEQP-EGL.functional.wide_color.window_1010102_colorspace_bt2020_pq
+dEQP-EGL.functional.wide_color.pbuffer_1010102_colorspace_bt2020_linear
+dEQP-EGL.functional.wide_color.pbuffer_1010102_colorspace_bt2020_pq
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_fragment_shading_rate
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_texture_storage_compression
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_timeline_semaphore
@@ -6,6 +14,7 @@ dEQP-EGL.functional.get_proc_address.extension.gl_nv_memory_object_sparse
 dEQP-EGL.functional.get_proc_address.extension.gl_qcom_motion_estimation
 dEQP-EGL.functional.get_proc_address.extension.gl_qcom_frame_extrapolation
 dEQP-EGL.functional.get_proc_address.extension.gl_qcom_shading_rate
+dEQP-EGL.functional.fence_sync.valid.egl_fence_persistent_buffer
 dEQP-EGL.functional.sharing.gles2.texture.render_sample_mixed
 dEQP-EGL.functional.image.api.create_image_gles2_android_native_rgb565
 dEQP-EGL.functional.image.api.create_image_gles2_android_native_rgb8

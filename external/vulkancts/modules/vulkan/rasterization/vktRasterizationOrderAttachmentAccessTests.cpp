@@ -840,7 +840,7 @@ void AttachmentAccessOrderTestCase::checkSupport (Context& context) const
 		if (result != VK_SUCCESS)
 		{
 			if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
-				TCU_THROW(NotSupportedError, "Error: format " + de::toString(format) + " does not support the required features");
+				TCU_THROW(NotSupportedError, "format " + de::toString(format) + " does not support the required features");
 			else
 				TCU_FAIL("vkGetPhysicalDeviceImageFormatProperties returned unexpected error");
 		}
@@ -1298,13 +1298,16 @@ Move<VkRenderPass> AttachmentAccessOrderTestInstance::createRenderPass(VkFormat 
 	else
 	{
 		subpasses[0].flags = VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_COLOR_ACCESS_BIT_ARM;
+		subpasses[1].flags = VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_COLOR_ACCESS_BIT_ARM;
 		if (m_testCase->hasDepth())
 		{
 			subpasses[0].flags |= VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_DEPTH_ACCESS_BIT_ARM;
+			subpasses[1].flags |= VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_DEPTH_ACCESS_BIT_ARM;
 		}
 		else if (m_testCase->hasStencil())
 		{
 			subpasses[0].flags |= VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_STENCIL_ACCESS_BIT_ARM;
+			subpasses[1].flags |= VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_STENCIL_ACCESS_BIT_ARM;
 		}
 	}
 

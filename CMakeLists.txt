@@ -1,7 +1,12 @@
 # dEQP cmake file
 
 # Module FindGit requires cmake >= 2.8.2
-cmake_minimum_required(VERSION 3.17.2)
+# Using AFTER in target_include_directories requires >= 3.20.0
+cmake_minimum_required(VERSION 3.20.0)
+
+option(GLES_ALLOW_DIRECT_LINK "Allow direct linking to GLES libraries" OFF)
+
+option(GLES_ALLOW_DIRECT_LINK "Allow direct linking to GLES libraries" ON)
 
 option(GLES_ALLOW_DIRECT_LINK "Allow direct linking to GLES libraries" ON)
 
@@ -244,7 +249,6 @@ include_directories(
 	framework/egl/wrapper
 	framework/xexml
 	external/vulkancts/framework/vulkan
-	external/vulkancts/framework/vulkan/generated/vulkan
 	)
 
 if (DE_OS_IS_ANDROID OR DE_OS_IS_IOS)

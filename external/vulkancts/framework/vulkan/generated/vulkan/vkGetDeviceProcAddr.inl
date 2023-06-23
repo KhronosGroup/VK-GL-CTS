@@ -361,6 +361,8 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkDestroyPrivateDataSlotEXT",
 		"vkSetPrivateDataEXT",
 		"vkGetPrivateDataEXT",
+		"vkGetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR",
+		"vkGetEncodedVideoSessionParametersKHR",
 		"vkCmdEncodeVideoKHR",
 		"vkExportMetalObjectsEXT",
 		"vkCmdSetEvent2KHR",

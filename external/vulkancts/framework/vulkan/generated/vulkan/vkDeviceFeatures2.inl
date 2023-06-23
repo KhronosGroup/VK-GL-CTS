@@ -4374,6 +4374,43 @@ tcu::TestStatus testPhysicalDeviceFeaturePipelineLibraryGroupHandlesFeaturesEXT 
 	return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureDynamicRenderingUnusedAttachmentsFeaturesEXT (Context& context)
+{
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+	const InstanceDriver&		vki				(instance.getDriver());
+	const int					count			= 2u;
+	TestLog&					log				= context.getTestContext().getLog();
+	VkPhysicalDeviceFeatures2	extFeatures;
+	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+
+	VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT	deviceDynamicRenderingUnusedAttachmentsFeaturesEXT[count];
+	const bool														isDynamicRenderingUnusedAttachmentsFeaturesEXT = checkExtension(properties, "VK_EXT_dynamic_rendering_unused_attachments");
+
+	for (int ndx = 0; ndx < count; ++ndx)
+	{
+		deMemset(&deviceDynamicRenderingUnusedAttachmentsFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT));
+		deviceDynamicRenderingUnusedAttachmentsFeaturesEXT[ndx].sType = isDynamicRenderingUnusedAttachmentsFeaturesEXT ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_FEATURES_EXT : VK_STRUCTURE_TYPE_MAX_ENUM;
+		deviceDynamicRenderingUnusedAttachmentsFeaturesEXT[ndx].pNext = DE_NULL;
+
+		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		extFeatures.pNext = &deviceDynamicRenderingUnusedAttachmentsFeaturesEXT[ndx];
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+	}
+
+	if (isDynamicRenderingUnusedAttachmentsFeaturesEXT)
+		log << TestLog::Message << deviceDynamicRenderingUnusedAttachmentsFeaturesEXT[0] << TestLog::EndMessage;
+
+	if (isDynamicRenderingUnusedAttachmentsFeaturesEXT &&
+		(deviceDynamicRenderingUnusedAttachmentsFeaturesEXT[0].dynamicRenderingUnusedAttachments != deviceDynamicRenderingUnusedAttachmentsFeaturesEXT[1].dynamicRenderingUnusedAttachments))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT");
+	}
+	return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureSwapchainMaintenance1FeaturesEXT (Context& context)
 {
 	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
@@ -4829,6 +4866,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "address_binding_report_features_ext", "VkPhysicalDeviceAddressBindingReportFeaturesEXT", testPhysicalDeviceFeatureAddressBindingReportFeaturesEXT);
 	addFunctionCase(testGroup, "fault_features_ext", "VkPhysicalDeviceFaultFeaturesEXT", testPhysicalDeviceFeatureFaultFeaturesEXT);
 	addFunctionCase(testGroup, "pipeline_library_group_handles_features_ext", "VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT", testPhysicalDeviceFeaturePipelineLibraryGroupHandlesFeaturesEXT);
+	addFunctionCase(testGroup, "dynamic_rendering_unused_attachments_features_ext", "VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT", testPhysicalDeviceFeatureDynamicRenderingUnusedAttachmentsFeaturesEXT);
 	addFunctionCase(testGroup, "swapchain_maintenance1_features_ext", "VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT", testPhysicalDeviceFeatureSwapchainMaintenance1FeaturesEXT);
 	addFunctionCase(testGroup, "ray_tracing_position_fetch_features_khr", "VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR", testPhysicalDeviceFeatureRayTracingPositionFetchFeaturesKHR);
 	addFunctionCase(testGroup, "shader_object_features_ext", "VkPhysicalDeviceShaderObjectFeaturesEXT", testPhysicalDeviceFeatureShaderObjectFeaturesEXT);

@@ -36,5 +36,4 @@ add_library(deqp-vk-ycbcr STATIC ${DEQP_VK_YCBCR_SRCS})
 target_link_libraries(deqp-vk-ycbcr deqp-vk-shaderexecutor deqp-vk-util tcutil vkutil)
 
 add_library(deqp-vksc-ycbcr STATIC ${DEQP_VK_YCBCR_SRCS})
-target_include_directories(deqp-vksc-ycbcr BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 target_link_libraries(deqp-vksc-ycbcr PUBLIC deqp-vksc-shaderexecutor deqp-vksc-util tcutil vkscutil)
