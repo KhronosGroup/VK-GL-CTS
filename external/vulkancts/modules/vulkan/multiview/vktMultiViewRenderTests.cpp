@@ -4102,6 +4102,9 @@ private:
 		context.requireDeviceFunctionality("VK_KHR_multiview");
 		if (m_parameters.viewIndex == TEST_TYPE_DEPTH_DIFFERENT_RANGES)
 			context.requireDeviceFunctionality("VK_EXT_depth_range_unrestricted");
+		if (m_parameters.viewIndex == TEST_TYPE_QUERIES)
+			context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_OCCLUSION_QUERY_PRECISE);
+
 #ifdef CTS_USES_VULKANSC
 		const InstanceInterface&			instance			= context.getInstanceInterface();
 		const VkPhysicalDevice				physicalDevice		= context.getPhysicalDevice();
