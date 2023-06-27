@@ -5576,8 +5576,9 @@ tcu::TestCaseGroup* createOpConstantCompositeGroup (tcu::TestContext& testCtx)
 		"             OpReturn\n"
 		"             OpFunctionEnd\n");
 
-	cases.push_back(CaseParameter("vector",			"%five = OpConstant %u32 5\n"
-													"%const = OpConstantComposite %uvec3 %five %zero %five"));
+	cases.push_back(CaseParameter("vector",			"%five = OpConstant %i32 5\n"
+													"%ivec3 = OpTypeVector %i32 3\n"
+													"%const = OpConstantComposite %ivec3 %five %zero %five"));
 	cases.push_back(CaseParameter("matrix",			"%m3fvec3 = OpTypeMatrix %fvec3 3\n"
 													"%ten = OpConstant %f32 10.\n"
 													"%fzero = OpConstant %f32 0.\n"
@@ -10878,6 +10879,7 @@ void createConvertCases (vector<ConvertCase>& testCases, const string& instructi
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_UNSIGNED_16,		0x449a4000,							true,	1234));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_UNSIGNED_32,		0x449a4000,							true,	1234));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_UNSIGNED_64,		0x449a4000,							true,	1234));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_UNSIGNED_64,		0x51b9ad78,							true,	99684909056ll,						"large"));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_64,			DATA_TYPE_UNSIGNED_16,		0x4093480000000000,					true,	1234));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_64,			DATA_TYPE_UNSIGNED_32,		0x4093480000000000,					true,	1234));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_64,			DATA_TYPE_UNSIGNED_64,		0x4093480000000000,					true,	1234));
@@ -10914,6 +10916,7 @@ void createConvertCases (vector<ConvertCase>& testCases, const string& instructi
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_32,		DATA_TYPE_FLOAT_32,			1234,								true,	0x449a4000));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_32,		DATA_TYPE_FLOAT_64,			1234,								true,	0x4093480000000000));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_64,		DATA_TYPE_FLOAT_32,			1234,								true,	0x449a4000));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_64,		DATA_TYPE_FLOAT_32,			99684909056ll,						true,	0x51b9ad78,							"large"));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_64,		DATA_TYPE_FLOAT_64,			1234,								true,	0x4093480000000000));
 	}
 	else if (instruction == "OpConvertFToS")
@@ -10973,6 +10976,7 @@ void createConvertCases (vector<ConvertCase>& testCases, const string& instructi
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_SIGNED_16,		0xc49a4000,							true,	-1234));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_SIGNED_32,		0xc49a4000,							true,	-1234));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_SIGNED_64,		0xc49a4000,							true,	-1234));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_SIGNED_64,		0xd1b9ad78,							true,	-99684909056ll,						"large"));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_64,			DATA_TYPE_SIGNED_16,		0xc093480000000000,					true,	-1234));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_64,			DATA_TYPE_SIGNED_32,		0xc093480000000000,					true,	-1234));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_64,			DATA_TYPE_SIGNED_64,		0xc093480000000000,					true,	-1234));
@@ -11033,6 +11037,7 @@ void createConvertCases (vector<ConvertCase>& testCases, const string& instructi
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_32,		DATA_TYPE_FLOAT_32,			-1234,								true,	0xc49a4000));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_32,		DATA_TYPE_FLOAT_64,			-1234,								true,	0xc093480000000000));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_FLOAT_32,			-1234,								true,	0xc49a4000));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_FLOAT_32,			-99684909056ll,						true,	0xd1b9ad78,							"large"));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_FLOAT_64,			-1234,								true,	0xc093480000000000));
 	}
 	else

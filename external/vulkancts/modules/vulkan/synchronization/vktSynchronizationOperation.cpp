@@ -60,6 +60,7 @@ enum BufferType
 {
 	BUFFER_TYPE_UNIFORM,
 	BUFFER_TYPE_STORAGE,
+	BUFFER_TYPE_UNIFORM_TEXEL,
 };
 
 enum AccessMode
@@ -1666,15 +1667,17 @@ public:
 						  const BufferType				bufferType,
 						  const std::string&			shaderPrefix,
 						  const AccessMode				mode,
+						  const bool					specializedAccess,
 						  const PipelineType			pipelineType,
 						  const DispatchCall			dispatchCall)
-		: m_context			(context)
-		, m_resource		(resource)
-		, m_stage			(stage)
-		, m_pipelineStage	(pipelineStageFlagsFromShaderStageFlagBits(m_stage))
-		, m_bufferType		(bufferType)
-		, m_mode			(mode)
-		, m_dispatchCall	(dispatchCall)
+		: Operation				(specializedAccess)
+		, m_context				(context)
+		, m_resource			(resource)
+		, m_stage				(stage)
+		, m_pipelineStage		(pipelineStageFlagsFromShaderStageFlagBits(m_stage))
+		, m_bufferType			(bufferType)
+		, m_mode				(mode)
+		, m_dispatchCall		(dispatchCall)
 	{
 		requireFeaturesForSSBOAccess (m_context, m_stage);
 
@@ -1694,10 +1697,14 @@ public:
 				fillPattern(alloc.getHostPtr(), m_resource.getBuffer().size);
 			flushAlloc(vk, device, alloc);
 		}
-
 		// Prepare descriptors
 		{
-			const VkDescriptorType	bufferDescriptorType	= (m_bufferType == BUFFER_TYPE_UNIFORM ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+			VkDescriptorType	bufferDescriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+
+			if (m_bufferType == BUFFER_TYPE_UNIFORM)
+				bufferDescriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			else if (m_bufferType == BUFFER_TYPE_UNIFORM_TEXEL)
+				bufferDescriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
 
 			m_descriptorSetLayout = DescriptorSetLayoutBuilder()
 				.addSingleBinding(bufferDescriptorType, m_stage)
@@ -1711,18 +1718,31 @@ public:
 
 			m_descriptorSet = makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout);
 
-			const VkDescriptorBufferInfo  bufferInfo	 = makeDescriptorBufferInfo(m_resource.getBuffer().handle, m_resource.getBuffer().offset, m_resource.getBuffer().size);
-			const VkDescriptorBufferInfo  hostBufferInfo = makeDescriptorBufferInfo(**m_hostBuffer, 0u, m_resource.getBuffer().size);
-
 			if (m_mode == ACCESS_MODE_READ)
 			{
-				DescriptorSetUpdateBuilder()
-					.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), bufferDescriptorType, &bufferInfo)
-					.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &hostBufferInfo)
-					.update(vk, device);
+				if ((m_bufferType == BUFFER_TYPE_UNIFORM) || (m_bufferType == BUFFER_TYPE_STORAGE))
+				{
+					const VkDescriptorBufferInfo  bufferInfo	 = makeDescriptorBufferInfo(m_resource.getBuffer().handle, m_resource.getBuffer().offset, m_resource.getBuffer().size);
+					const VkDescriptorBufferInfo  hostBufferInfo = makeDescriptorBufferInfo(**m_hostBuffer, 0u, m_resource.getBuffer().size);
+					DescriptorSetUpdateBuilder()
+						.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), bufferDescriptorType, &bufferInfo)
+						.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &hostBufferInfo)
+						.update(vk, device);
+				}
+				else
+				{
+					m_pBufferView = vk::makeBufferView(vk, device, m_resource.getBuffer().handle, VK_FORMAT_R32G32B32A32_UINT, m_resource.getBuffer().offset, m_resource.getBuffer().size);
+					const VkDescriptorBufferInfo  hostBufferInfo = makeDescriptorBufferInfo(**m_hostBuffer, 0u, m_resource.getBuffer().size);
+					DescriptorSetUpdateBuilder()
+						.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), bufferDescriptorType, &m_pBufferView.get())
+						.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &hostBufferInfo)
+						.update(vk, device);
+				}
 			}
 			else
 			{
+				const VkDescriptorBufferInfo  bufferInfo	 = makeDescriptorBufferInfo(m_resource.getBuffer().handle, m_resource.getBuffer().offset, m_resource.getBuffer().size);
+				const VkDescriptorBufferInfo  hostBufferInfo = makeDescriptorBufferInfo(**m_hostBuffer, 0u, m_resource.getBuffer().size);
 				DescriptorSetUpdateBuilder()
 					.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &hostBufferInfo)
 					.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferInfo)
@@ -1763,9 +1783,36 @@ public:
 
 	SyncInfo getInSyncInfo (void) const
 	{
-		const VkAccessFlags2KHR	accessFlags = (m_mode == ACCESS_MODE_READ ? (m_bufferType == BUFFER_TYPE_UNIFORM ? VK_ACCESS_2_UNIFORM_READ_BIT_KHR
-																											 : VK_ACCESS_2_SHADER_READ_BIT_KHR)
-																	  : VK_ACCESS_2_SHADER_WRITE_BIT_KHR);
+		VkAccessFlags2KHR accessFlags = VK_ACCESS_2_NONE_KHR;
+
+		if (m_mode == ACCESS_MODE_READ)
+		{
+			if (m_bufferType == BUFFER_TYPE_UNIFORM)
+				accessFlags = VK_ACCESS_2_UNIFORM_READ_BIT_KHR;
+
+			else if (m_bufferType == BUFFER_TYPE_UNIFORM_TEXEL)
+			{
+				if (m_specializedAccess)
+					accessFlags = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT_KHR;
+				else
+					accessFlags = VK_ACCESS_2_SHADER_READ_BIT_KHR;
+			}
+			else
+			{
+				if (m_specializedAccess)
+					accessFlags = VK_ACCESS_2_SHADER_STORAGE_READ_BIT_KHR;
+				else
+					accessFlags = VK_ACCESS_2_SHADER_READ_BIT_KHR;
+			}
+		}
+		else
+		{
+			if (m_specializedAccess)
+				accessFlags = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT_KHR;
+			else
+				accessFlags = VK_ACCESS_2_SHADER_WRITE_BIT_KHR;
+		}
+
 		const SyncInfo			syncInfo	=
 		{
 			m_pipelineStage,				// VkPipelineStageFlags		stageMask;
@@ -1777,7 +1824,16 @@ public:
 
 	SyncInfo getOutSyncInfo (void) const
 	{
-		const VkAccessFlags	accessFlags = m_mode == ACCESS_MODE_WRITE ? VK_ACCESS_2_SHADER_WRITE_BIT_KHR : 0;
+		VkAccessFlags2KHR	accessFlags = VK_ACCESS_2_NONE_KHR;
+
+		if (m_mode == ACCESS_MODE_WRITE)
+		{
+			if (m_specializedAccess)
+				accessFlags = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT_KHR;
+			else
+				accessFlags = VK_ACCESS_2_SHADER_WRITE_BIT_KHR;
+		}
+
 		const SyncInfo		syncInfo	=
 		{
 			m_pipelineStage,				// VkPipelineStageFlags		stageMask;
@@ -1811,6 +1867,7 @@ private:
 	Move<VkDescriptorSetLayout>	m_descriptorSetLayout;
 	Move<VkDescriptorSet>		m_descriptorSet;
 	de::MovePtr<Pipeline>		m_pipeline;
+	Move<VkBufferView>			m_pBufferView;
 };
 
 class ImageImplementation : public Operation
@@ -1821,9 +1878,11 @@ public:
 						 const VkShaderStageFlagBits	stage,
 						 const std::string&				shaderPrefix,
 						 const AccessMode				mode,
+						 const bool						specializedAccess,
 						 const PipelineType				pipelineType,
 						 const DispatchCall				dispatchCall)
-		: m_context				(context)
+		: Operation				(specializedAccess)
+		, m_context				(context)
 		, m_resource			(resource)
 		, m_stage				(stage)
 		, m_pipelineStage		(pipelineStageFlagsFromShaderStageFlagBits(m_stage))
@@ -2018,7 +2077,16 @@ public:
 
 	SyncInfo getInSyncInfo (void) const
 	{
-		const VkAccessFlags	accessFlags = (m_mode == ACCESS_MODE_READ ? VK_ACCESS_2_SHADER_READ_BIT_KHR : 0);
+		VkAccessFlags2KHR accessFlags = VK_ACCESS_2_NONE_KHR;
+
+		if (m_mode == ACCESS_MODE_READ)
+		{
+			if (m_specializedAccess)
+				accessFlags = VK_ACCESS_2_SHADER_STORAGE_READ_BIT_KHR;
+			else
+				accessFlags = VK_ACCESS_2_SHADER_READ_BIT_KHR;
+		}
+
 		const SyncInfo		syncInfo	=
 		{
 			m_pipelineStage,			// VkPipelineStageFlags		stageMask;
@@ -2030,7 +2098,16 @@ public:
 
 	SyncInfo getOutSyncInfo (void) const
 	{
-		const VkAccessFlags	accessFlags = (m_mode == ACCESS_MODE_WRITE ? VK_ACCESS_2_SHADER_WRITE_BIT_KHR : 0);
+		VkAccessFlags2KHR	accessFlags = VK_ACCESS_2_NONE_KHR;
+
+		if (m_mode == ACCESS_MODE_WRITE)
+		{
+			if (m_specializedAccess)
+				accessFlags = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT_KHR;
+			else
+				accessFlags = VK_ACCESS_2_SHADER_WRITE_BIT_KHR;
+		}
+
 		const SyncInfo		syncInfo	=
 		{
 			m_pipelineStage,			// VkPipelineStageFlags		stageMask;
@@ -2069,6 +2146,7 @@ private:
 	Move<VkDescriptorSetLayout>	m_descriptorSetLayout;
 	Move<VkDescriptorSet>		m_descriptorSet;
 	de::MovePtr<Pipeline>		m_pipeline;
+
 };
 
 //! Create generic passthrough shaders with bits of custom code inserted in a specific shader stage.
@@ -2227,17 +2305,19 @@ public:
 	BufferSupport (const ResourceDescription&	resourceDesc,
 				   const BufferType				bufferType,
 				   const AccessMode				mode,
+				   const bool					specializedAccess,
 				   const VkShaderStageFlagBits	stage,
 				   const DispatchCall			dispatchCall = DISPATCH_CALL_DISPATCH)
-		: m_resourceDesc	(resourceDesc)
-		, m_bufferType		(bufferType)
-		, m_mode			(mode)
-		, m_stage			(stage)
-		, m_shaderPrefix	(std::string(m_mode == ACCESS_MODE_READ ? "read_" : "write_") + (m_bufferType == BUFFER_TYPE_UNIFORM ? "ubo_" : "ssbo_"))
-		, m_dispatchCall	(dispatchCall)
+		: OperationSupport		(specializedAccess)
+		, m_resourceDesc		(resourceDesc)
+		, m_bufferType			(bufferType)
+		, m_mode				(mode)
+		, m_stage				(stage)
+		, m_shaderPrefix		(std::string(m_mode == ACCESS_MODE_READ ? "read_" : "write_") + (m_bufferType == BUFFER_TYPE_UNIFORM ? "ubo_" : (m_bufferType == BUFFER_TYPE_UNIFORM_TEXEL ? "ubo_texel_" : "ssbo_")))
+		, m_dispatchCall		(dispatchCall)
 	{
 		DE_ASSERT(m_resourceDesc.type == RESOURCE_TYPE_BUFFER);
-		DE_ASSERT(m_bufferType == BUFFER_TYPE_UNIFORM || m_bufferType == BUFFER_TYPE_STORAGE);
+		DE_ASSERT(m_bufferType == BUFFER_TYPE_UNIFORM || m_bufferType == BUFFER_TYPE_STORAGE || m_bufferType == BUFFER_TYPE_UNIFORM_TEXEL);
 		DE_ASSERT(m_mode == ACCESS_MODE_READ || m_mode == ACCESS_MODE_WRITE);
 		DE_ASSERT(m_mode == ACCESS_MODE_READ || m_bufferType == BUFFER_TYPE_STORAGE);
 		DE_ASSERT(m_bufferType != BUFFER_TYPE_UNIFORM || m_resourceDesc.size.x() <= MAX_UBO_RANGE);
@@ -2250,22 +2330,45 @@ public:
 	{
 		DE_ASSERT((m_resourceDesc.size.x() % sizeof(tcu::UVec4)) == 0);
 
-		const std::string	bufferTypeStr	= (m_bufferType == BUFFER_TYPE_UNIFORM ? "uniform" : "buffer");
-		const int			numVecElements	= static_cast<int>(m_resourceDesc.size.x() / sizeof(tcu::UVec4));  // std140 must be aligned to a multiple of 16
+		std::string	bufferTypeStr = "";
+		if (m_bufferType == BUFFER_TYPE_UNIFORM)
+			bufferTypeStr = "uniform";
+		else
+		{
+			if (m_bufferType == BUFFER_TYPE_UNIFORM_TEXEL)
+				bufferTypeStr = "uniform utextureBuffer";
+			else
+				bufferTypeStr = "buffer";
+		}
 
+		const int numVecElements	= static_cast<int>(m_resourceDesc.size.x() / sizeof(tcu::UVec4));  // std140 must be aligned to a multiple of 16
 		std::ostringstream declSrc;
-		declSrc << "layout(set = 0, binding = 0, std140) readonly " << bufferTypeStr << " Input {\n"
-				<< "    uvec4 data[" << numVecElements << "];\n"
-				<< "} b_in;\n"
-				<< "\n"
-				<< "layout(set = 0, binding = 1, std140) writeonly buffer Output {\n"
-				<< "    uvec4 data[" << numVecElements << "];\n"
-				<< "} b_out;\n";
-
 		std::ostringstream copySrc;
-		copySrc << "    for (int i = 0; i < " << numVecElements << "; ++i) {\n"
-				<< "        b_out.data[i] = b_in.data[i];\n"
-				<< "    }\n";
+		std::string outputBuff	=	"layout(set = 0, binding = 1, std140) writeonly buffer Output {\n"
+									"    uvec4 data[" + std::to_string(numVecElements) + "];\n"
+									"} b_out;\n";
+		if ((m_bufferType == BUFFER_TYPE_UNIFORM) || (m_bufferType == BUFFER_TYPE_STORAGE))
+		{
+			declSrc << "layout(set = 0, binding = 0, std140) readonly " << bufferTypeStr << " Input {\n"
+					<< "    uvec4 data[" << numVecElements << "];\n"
+					<< "} b_in;\n"
+					<< "\n"
+					<< outputBuff;
+
+			copySrc << "    for (int i = 0; i < " << numVecElements << "; ++i) {\n"
+					<< "        b_out.data[i] = b_in.data[i];\n"
+					<< "    }\n";
+		}
+		else if (m_bufferType == BUFFER_TYPE_UNIFORM_TEXEL)
+		{
+			declSrc << "layout(set = 0, binding = 0) " << bufferTypeStr << " Input;\n"
+					<< "\n"
+					<< outputBuff;
+
+			copySrc << "    for (int i = 0; i < " << numVecElements << "; ++i) {\n"
+					<< "        b_out.data[i] = texelFetch(Input, i);\n"
+					<< "    }\n";
+		}
 
 		initPassthroughPrograms(programCollection, m_shaderPrefix, declSrc.str(), copySrc.str(), m_stage);
 	}
@@ -2274,6 +2377,8 @@ public:
 	{
 		if (m_bufferType == BUFFER_TYPE_UNIFORM)
 			return m_mode == ACCESS_MODE_READ ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT : 0;
+		else if (m_bufferType == BUFFER_TYPE_UNIFORM_TEXEL)
+			return m_mode == ACCESS_MODE_READ ? VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT : 0;
 		else
 			return m_mode == ACCESS_MODE_READ ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : 0;
 	}
@@ -2282,6 +2387,8 @@ public:
 	{
 		if (m_bufferType == BUFFER_TYPE_UNIFORM)
 			return m_mode == ACCESS_MODE_WRITE ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT : 0;
+		else if (m_bufferType == BUFFER_TYPE_UNIFORM_TEXEL)
+			return m_mode == ACCESS_MODE_WRITE ? 0 : VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
 		else
 			return m_mode == ACCESS_MODE_WRITE ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : 0;
 	}
@@ -2295,9 +2402,9 @@ public:
 	de::MovePtr<Operation> build (OperationContext& context, Resource& resource) const
 	{
 		if (m_stage & VK_SHADER_STAGE_COMPUTE_BIT)
-			return de::MovePtr<Operation>(new BufferImplementation(context, resource, m_stage, m_bufferType, m_shaderPrefix, m_mode, PIPELINE_TYPE_COMPUTE, m_dispatchCall));
+			return de::MovePtr<Operation>(new BufferImplementation(context, resource, m_stage, m_bufferType, m_shaderPrefix, m_mode, m_specializedAccess, PIPELINE_TYPE_COMPUTE, m_dispatchCall));
 		else
-			return de::MovePtr<Operation>(new BufferImplementation(context, resource, m_stage, m_bufferType, m_shaderPrefix, m_mode, PIPELINE_TYPE_GRAPHICS, m_dispatchCall));
+			return de::MovePtr<Operation>(new BufferImplementation(context, resource, m_stage, m_bufferType, m_shaderPrefix, m_mode, m_specializedAccess, PIPELINE_TYPE_GRAPHICS, m_dispatchCall));
 	}
 
 	de::MovePtr<Operation> build (OperationContext&, Resource&, Resource&) const
@@ -2320,13 +2427,15 @@ class ImageSupport : public OperationSupport
 public:
 	ImageSupport (const ResourceDescription&	resourceDesc,
 				  const AccessMode				mode,
+				  const bool					specializedAccess,
 				  const VkShaderStageFlagBits	stage,
 				  const DispatchCall			dispatchCall = DISPATCH_CALL_DISPATCH)
-		: m_resourceDesc	(resourceDesc)
-		, m_mode			(mode)
-		, m_stage			(stage)
-		, m_shaderPrefix	(m_mode == ACCESS_MODE_READ ? "read_image_" : "write_image_")
-		, m_dispatchCall	(dispatchCall)
+		: OperationSupport		(specializedAccess)
+		, m_resourceDesc		(resourceDesc)
+		, m_mode				(mode)
+		, m_stage				(stage)
+		, m_shaderPrefix		(m_mode == ACCESS_MODE_READ ? "read_image_" : "write_image_")
+		, m_dispatchCall		(dispatchCall)
 	{
 		DE_ASSERT(m_resourceDesc.type == RESOURCE_TYPE_IMAGE);
 		DE_ASSERT(m_mode == ACCESS_MODE_READ || m_mode == ACCESS_MODE_WRITE);
@@ -2382,9 +2491,9 @@ public:
 	de::MovePtr<Operation> build (OperationContext& context, Resource& resource) const
 	{
 		if (m_stage & VK_SHADER_STAGE_COMPUTE_BIT)
-			return de::MovePtr<Operation>(new ImageImplementation(context, resource, m_stage, m_shaderPrefix, m_mode, PIPELINE_TYPE_COMPUTE, m_dispatchCall));
+			return de::MovePtr<Operation>(new ImageImplementation(context, resource, m_stage, m_shaderPrefix, m_mode, m_specializedAccess, PIPELINE_TYPE_COMPUTE, m_dispatchCall));
 		else
-			return de::MovePtr<Operation>(new ImageImplementation(context, resource, m_stage, m_shaderPrefix, m_mode, PIPELINE_TYPE_GRAPHICS, m_dispatchCall));
+			return de::MovePtr<Operation>(new ImageImplementation(context, resource, m_stage, m_shaderPrefix, m_mode, m_specializedAccess, PIPELINE_TYPE_GRAPHICS, m_dispatchCall));
 	}
 
 	de::MovePtr<Operation> build (OperationContext&, Resource&, Resource&) const
@@ -2411,15 +2520,17 @@ public:
 							  const VkShaderStageFlagBits	stage,
 							  const BufferType				bufferType,
 							  const std::string&			shaderPrefix,
+							  const bool					specializedAccess,
 							  const PipelineType			pipelineType,
 							  const DispatchCall			dispatchCall)
-		: m_context			(context)
-		, m_inResource		(inResource)
-		, m_outResource		(outResource)
-		, m_stage			(stage)
-		, m_pipelineStage	(pipelineStageFlagsFromShaderStageFlagBits(m_stage))
-		, m_bufferType		(bufferType)
-		, m_dispatchCall	(dispatchCall)
+		: Operation				(specializedAccess)
+		, m_context				(context)
+		, m_inResource			(inResource)
+		, m_outResource			(outResource)
+		, m_stage				(stage)
+		, m_pipelineStage		(pipelineStageFlagsFromShaderStageFlagBits(m_stage))
+		, m_bufferType			(bufferType)
+		, m_dispatchCall		(dispatchCall)
 	{
 		requireFeaturesForSSBOAccess (m_context, m_stage);
 
@@ -2463,10 +2574,11 @@ public:
 
 	SyncInfo getInSyncInfo (void) const
 	{
+		VkAccessFlags2KHR	accessFlags = (m_specializedAccess ? VK_ACCESS_2_SHADER_STORAGE_READ_BIT_KHR : VK_ACCESS_2_SHADER_READ_BIT_KHR);
 		const SyncInfo		syncInfo	=
 		{
 			m_pipelineStage,					// VkPipelineStageFlags		stageMask;
-			VK_ACCESS_2_SHADER_READ_BIT_KHR,	// VkAccessFlags			accessMask;
+			accessFlags,						// VkAccessFlags			accessMask;
 			VK_IMAGE_LAYOUT_UNDEFINED,			// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
@@ -2474,10 +2586,11 @@ public:
 
 	SyncInfo getOutSyncInfo (void) const
 	{
+		VkAccessFlags2KHR	accessFlags = (m_specializedAccess ? VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT_KHR : VK_ACCESS_2_SHADER_WRITE_BIT_KHR);
 		const SyncInfo		syncInfo	=
 		{
 			m_pipelineStage,					// VkPipelineStageFlags		stageMask;
-			VK_ACCESS_2_SHADER_WRITE_BIT_KHR,	// VkAccessFlags			accessMask;
+			accessFlags,						// VkAccessFlags			accessMask;
 			VK_IMAGE_LAYOUT_UNDEFINED,			// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
@@ -2513,13 +2626,15 @@ class CopyBufferSupport : public OperationSupport
 public:
 	CopyBufferSupport (const ResourceDescription&	resourceDesc,
 					   const BufferType				bufferType,
+					   const bool					specializedAccess,
 					   const VkShaderStageFlagBits	stage,
 					   const DispatchCall			dispatchCall = DISPATCH_CALL_DISPATCH)
-		: m_resourceDesc	(resourceDesc)
-		, m_bufferType		(bufferType)
-		, m_stage			(stage)
-		, m_shaderPrefix	(std::string("copy_") + getShaderStageName(stage) + (m_bufferType == BUFFER_TYPE_UNIFORM ? "_ubo_" : "_ssbo_"))
-		, m_dispatchCall	(dispatchCall)
+		: OperationSupport		(specializedAccess)
+		, m_resourceDesc		(resourceDesc)
+		, m_bufferType			(bufferType)
+		, m_stage				(stage)
+		, m_shaderPrefix		(std::string("copy_") + getShaderStageName(stage) + (m_bufferType == BUFFER_TYPE_UNIFORM ? "_ubo_" : "_ssbo_"))
+		, m_dispatchCall		(dispatchCall)
 	{
 		DE_ASSERT(m_resourceDesc.type == RESOURCE_TYPE_BUFFER);
 		DE_ASSERT(m_bufferType == BUFFER_TYPE_UNIFORM || m_bufferType == BUFFER_TYPE_STORAGE);
@@ -2578,9 +2693,9 @@ public:
 	de::MovePtr<Operation> build (OperationContext& context, Resource& inResource, Resource& outResource) const
 	{
 		if (m_stage & VK_SHADER_STAGE_COMPUTE_BIT)
-			return de::MovePtr<Operation>(new BufferCopyImplementation(context, inResource, outResource, m_stage, m_bufferType, m_shaderPrefix, PIPELINE_TYPE_COMPUTE, m_dispatchCall));
+			return de::MovePtr<Operation>(new BufferCopyImplementation(context, inResource, outResource, m_stage, m_bufferType, m_shaderPrefix, m_specializedAccess, PIPELINE_TYPE_COMPUTE, m_dispatchCall));
 		else
-			return de::MovePtr<Operation>(new BufferCopyImplementation(context, inResource, outResource, m_stage, m_bufferType, m_shaderPrefix, PIPELINE_TYPE_GRAPHICS, m_dispatchCall));
+			return de::MovePtr<Operation>(new BufferCopyImplementation(context, inResource, outResource, m_stage, m_bufferType, m_shaderPrefix, m_specializedAccess, PIPELINE_TYPE_GRAPHICS, m_dispatchCall));
 	}
 
 private:
@@ -2599,9 +2714,11 @@ public:
 							 Resource&						outResource,
 							 const VkShaderStageFlagBits	stage,
 							 const std::string&				shaderPrefix,
+							 const bool						specializedAccess,
 							 const PipelineType				pipelineType,
 							 const DispatchCall				dispatchCall)
-		: m_context				(context)
+		: Operation				(specializedAccess)
+		, m_context				(context)
 		, m_inResource			(inResource)
 		, m_outResource			(outResource)
 		, m_stage				(stage)
@@ -2693,10 +2810,11 @@ public:
 
 	SyncInfo getInSyncInfo (void) const
 	{
+		VkAccessFlags2KHR	accessFlags = (m_specializedAccess ? VK_ACCESS_2_SHADER_STORAGE_READ_BIT_KHR : VK_ACCESS_2_SHADER_READ_BIT_KHR);
 		const SyncInfo		syncInfo	=
 		{
 			m_pipelineStage,					// VkPipelineStageFlags		stageMask;
-			VK_ACCESS_2_SHADER_READ_BIT_KHR,	// VkAccessFlags			accessMask;
+			accessFlags,						// VkAccessFlags			accessMask;
 			VK_IMAGE_LAYOUT_GENERAL,			// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
@@ -2704,10 +2822,11 @@ public:
 
 	SyncInfo getOutSyncInfo (void) const
 	{
+		VkAccessFlags2KHR	accessFlags = (m_specializedAccess ? VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT_KHR : VK_ACCESS_2_SHADER_WRITE_BIT_KHR);
 		const SyncInfo		syncInfo	=
 		{
 			m_pipelineStage,					// VkPipelineStageFlags		stageMask;
-			VK_ACCESS_2_SHADER_WRITE_BIT_KHR,	// VkAccessFlags			accessMask;
+			accessFlags,						// VkAccessFlags			accessMask;
 			VK_IMAGE_LAYOUT_GENERAL,			// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
@@ -2744,11 +2863,13 @@ class CopyImageSupport : public OperationSupport
 public:
 	CopyImageSupport (const ResourceDescription&	resourceDesc,
 					  const VkShaderStageFlagBits	stage,
+					  const bool					specializedAccess,
 					  const DispatchCall			dispatchCall = DISPATCH_CALL_DISPATCH)
-		: m_resourceDesc	(resourceDesc)
-		, m_stage			(stage)
-		, m_shaderPrefix	(std::string("copy_image_") + getShaderStageName(stage) + "_")
-		, m_dispatchCall	(dispatchCall)
+		: OperationSupport		(specializedAccess)
+		, m_resourceDesc		(resourceDesc)
+		, m_stage				(stage)
+		, m_shaderPrefix		(std::string("copy_image_") + getShaderStageName(stage) + "_")
+		, m_dispatchCall		(dispatchCall)
 	{
 		DE_ASSERT(m_resourceDesc.type == RESOURCE_TYPE_IMAGE);
 		DE_ASSERT(m_dispatchCall == DISPATCH_CALL_DISPATCH || m_dispatchCall == DISPATCH_CALL_DISPATCH_INDIRECT);
@@ -2809,9 +2930,9 @@ public:
 	de::MovePtr<Operation> build (OperationContext& context, Resource& inResource, Resource& outResource) const
 	{
 		if (m_stage & VK_SHADER_STAGE_COMPUTE_BIT)
-			return de::MovePtr<Operation>(new CopyImageImplementation(context, inResource, outResource, m_stage, m_shaderPrefix, PIPELINE_TYPE_COMPUTE, m_dispatchCall));
+			return de::MovePtr<Operation>(new CopyImageImplementation(context, inResource, outResource, m_stage, m_shaderPrefix, m_specializedAccess, PIPELINE_TYPE_COMPUTE, m_dispatchCall));
 		else
-			return de::MovePtr<Operation>(new CopyImageImplementation(context, inResource, outResource, m_stage, m_shaderPrefix, PIPELINE_TYPE_GRAPHICS, m_dispatchCall));
+			return de::MovePtr<Operation>(new CopyImageImplementation(context, inResource, outResource, m_stage, m_shaderPrefix, m_specializedAccess, PIPELINE_TYPE_GRAPHICS, m_dispatchCall));
 	}
 
 private:
@@ -5416,6 +5537,13 @@ bool isResourceSupported (const OperationName opName, const ResourceDescription&
 		case OPERATION_NAME_READ_UBO_FRAGMENT:
 		case OPERATION_NAME_READ_UBO_COMPUTE:
 		case OPERATION_NAME_READ_UBO_COMPUTE_INDIRECT:
+		case OPERATION_NAME_READ_UBO_TEXEL_VERTEX:
+		case OPERATION_NAME_READ_UBO_TEXEL_TESSELLATION_CONTROL:
+		case OPERATION_NAME_READ_UBO_TEXEL_TESSELLATION_EVALUATION:
+		case OPERATION_NAME_READ_UBO_TEXEL_GEOMETRY:
+		case OPERATION_NAME_READ_UBO_TEXEL_FRAGMENT:
+		case OPERATION_NAME_READ_UBO_TEXEL_COMPUTE:
+		case OPERATION_NAME_READ_UBO_TEXEL_COMPUTE_INDIRECT:
 			return resourceDesc.type == RESOURCE_TYPE_BUFFER && resourceDesc.size.x() <= MAX_UBO_RANGE;
 
 		case OPERATION_NAME_WRITE_CLEAR_COLOR_IMAGE:
@@ -5513,6 +5641,13 @@ std::string getOperationName (const OperationName opName)
 		case OPERATION_NAME_READ_UBO_FRAGMENT:						return "read_ubo_fragment";
 		case OPERATION_NAME_READ_UBO_COMPUTE:						return "read_ubo_compute";
 		case OPERATION_NAME_READ_UBO_COMPUTE_INDIRECT:				return "read_ubo_compute_indirect";
+		case OPERATION_NAME_READ_UBO_TEXEL_VERTEX:					return "read_ubo_texel_vertex";
+		case OPERATION_NAME_READ_UBO_TEXEL_TESSELLATION_CONTROL:	return "read_ubo_texel_tess_control";
+		case OPERATION_NAME_READ_UBO_TEXEL_TESSELLATION_EVALUATION:	return "read_ubo_texel_tess_eval";
+		case OPERATION_NAME_READ_UBO_TEXEL_GEOMETRY:				return "read_ubo_texel_geometry";
+		case OPERATION_NAME_READ_UBO_TEXEL_FRAGMENT:				return "read_ubo_texel_fragment";
+		case OPERATION_NAME_READ_UBO_TEXEL_COMPUTE:					return "read_ubo_texel_compute";
+		case OPERATION_NAME_READ_UBO_TEXEL_COMPUTE_INDIRECT:		return "read_ubo_texel_compute_indirect";
 		case OPERATION_NAME_READ_SSBO_VERTEX:						return "read_ssbo_vertex";
 		case OPERATION_NAME_READ_SSBO_TESSELLATION_CONTROL:			return "read_ssbo_tess_control";
 		case OPERATION_NAME_READ_SSBO_TESSELLATION_EVALUATION:		return "read_ssbo_tess_eval";
@@ -5556,7 +5691,72 @@ std::string getOperationName (const OperationName opName)
 	}
 }
 
-de::MovePtr<OperationSupport> makeOperationSupport (const OperationName opName, const ResourceDescription& resourceDesc)
+bool isSpecializedAccessFlagSupported (const OperationName opName)
+{
+	switch (opName)
+	{
+		case OPERATION_NAME_WRITE_SSBO_VERTEX:
+		case OPERATION_NAME_WRITE_SSBO_TESSELLATION_CONTROL:
+		case OPERATION_NAME_WRITE_SSBO_TESSELLATION_EVALUATION:
+		case OPERATION_NAME_WRITE_SSBO_GEOMETRY:
+		case OPERATION_NAME_WRITE_SSBO_FRAGMENT:
+		case OPERATION_NAME_WRITE_SSBO_COMPUTE:
+		case OPERATION_NAME_WRITE_SSBO_COMPUTE_INDIRECT:
+		case OPERATION_NAME_WRITE_IMAGE_VERTEX:
+		case OPERATION_NAME_WRITE_IMAGE_TESSELLATION_CONTROL:
+		case OPERATION_NAME_WRITE_IMAGE_TESSELLATION_EVALUATION:
+		case OPERATION_NAME_WRITE_IMAGE_GEOMETRY:
+		case OPERATION_NAME_WRITE_IMAGE_FRAGMENT:
+		case OPERATION_NAME_WRITE_IMAGE_COMPUTE:
+		case OPERATION_NAME_WRITE_IMAGE_COMPUTE_INDIRECT:
+		case OPERATION_NAME_READ_UBO_VERTEX:
+		case OPERATION_NAME_READ_UBO_TESSELLATION_CONTROL:
+		case OPERATION_NAME_READ_UBO_TESSELLATION_EVALUATION:
+		case OPERATION_NAME_READ_UBO_GEOMETRY:
+		case OPERATION_NAME_READ_UBO_FRAGMENT:
+		case OPERATION_NAME_READ_UBO_COMPUTE:
+		case OPERATION_NAME_READ_UBO_COMPUTE_INDIRECT:
+		case OPERATION_NAME_READ_UBO_TEXEL_VERTEX:
+		case OPERATION_NAME_READ_UBO_TEXEL_TESSELLATION_CONTROL:
+		case OPERATION_NAME_READ_UBO_TEXEL_TESSELLATION_EVALUATION:
+		case OPERATION_NAME_READ_UBO_TEXEL_GEOMETRY:
+		case OPERATION_NAME_READ_UBO_TEXEL_FRAGMENT:
+		case OPERATION_NAME_READ_UBO_TEXEL_COMPUTE:
+		case OPERATION_NAME_READ_UBO_TEXEL_COMPUTE_INDIRECT:
+		case OPERATION_NAME_READ_SSBO_VERTEX:
+		case OPERATION_NAME_READ_SSBO_TESSELLATION_CONTROL:
+		case OPERATION_NAME_READ_SSBO_TESSELLATION_EVALUATION:
+		case OPERATION_NAME_READ_SSBO_GEOMETRY:
+		case OPERATION_NAME_READ_SSBO_FRAGMENT:
+		case OPERATION_NAME_READ_SSBO_COMPUTE:
+		case OPERATION_NAME_READ_SSBO_COMPUTE_INDIRECT:
+		case OPERATION_NAME_READ_IMAGE_VERTEX:
+		case OPERATION_NAME_READ_IMAGE_TESSELLATION_CONTROL:
+		case OPERATION_NAME_READ_IMAGE_TESSELLATION_EVALUATION:
+		case OPERATION_NAME_READ_IMAGE_GEOMETRY:
+		case OPERATION_NAME_READ_IMAGE_FRAGMENT:
+		case OPERATION_NAME_READ_IMAGE_COMPUTE:
+		case OPERATION_NAME_READ_IMAGE_COMPUTE_INDIRECT:
+		case OPERATION_NAME_COPY_SSBO_VERTEX:
+		case OPERATION_NAME_COPY_SSBO_TESSELLATION_CONTROL:
+		case OPERATION_NAME_COPY_SSBO_GEOMETRY:
+		case OPERATION_NAME_COPY_SSBO_FRAGMENT:
+		case OPERATION_NAME_COPY_SSBO_COMPUTE:
+		case OPERATION_NAME_COPY_SSBO_COMPUTE_INDIRECT:
+		case OPERATION_NAME_COPY_IMAGE_VERTEX:
+		case OPERATION_NAME_COPY_IMAGE_TESSELLATION_CONTROL:
+		case OPERATION_NAME_COPY_IMAGE_TESSELLATION_EVALUATION:
+		case OPERATION_NAME_COPY_IMAGE_GEOMETRY:
+		case OPERATION_NAME_COPY_IMAGE_FRAGMENT:
+		case OPERATION_NAME_COPY_IMAGE_COMPUTE:
+		case OPERATION_NAME_COPY_IMAGE_COMPUTE_INDIRECT:
+			return true;
+		default:
+			return false;
+
+	}
+}
+de::MovePtr<OperationSupport> makeOperationSupport (const OperationName opName, const ResourceDescription& resourceDesc, const bool specializedAccess)
 {
 	switch (opName)
 	{
@@ -5567,20 +5767,20 @@ de::MovePtr<OperationSupport> makeOperationSupport (const OperationName opName, 
 		case OPERATION_NAME_WRITE_COPY_IMAGE_TO_BUFFER:				return de::MovePtr<OperationSupport>(new CopyImageToBuffer	::Support		(resourceDesc, ACCESS_MODE_WRITE));
 		case OPERATION_NAME_WRITE_COPY_IMAGE:						return de::MovePtr<OperationSupport>(new CopyBlitResolveImage	::Support	(resourceDesc, CopyBlitResolveImage::TYPE_COPY, ACCESS_MODE_WRITE));
 		case OPERATION_NAME_WRITE_BLIT_IMAGE:						return de::MovePtr<OperationSupport>(new CopyBlitResolveImage	::Support	(resourceDesc, CopyBlitResolveImage::TYPE_BLIT, ACCESS_MODE_WRITE));
-		case OPERATION_NAME_WRITE_SSBO_VERTEX:						return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_WRITE, VK_SHADER_STAGE_VERTEX_BIT));
-		case OPERATION_NAME_WRITE_SSBO_TESSELLATION_CONTROL:		return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_WRITE, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT));
-		case OPERATION_NAME_WRITE_SSBO_TESSELLATION_EVALUATION:		return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_WRITE, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT));
-		case OPERATION_NAME_WRITE_SSBO_GEOMETRY:					return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_WRITE, VK_SHADER_STAGE_GEOMETRY_BIT));
-		case OPERATION_NAME_WRITE_SSBO_FRAGMENT:					return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_WRITE, VK_SHADER_STAGE_FRAGMENT_BIT));
-		case OPERATION_NAME_WRITE_SSBO_COMPUTE:						return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_WRITE, VK_SHADER_STAGE_COMPUTE_BIT));
-		case OPERATION_NAME_WRITE_SSBO_COMPUTE_INDIRECT:			return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_WRITE, VK_SHADER_STAGE_COMPUTE_BIT, ShaderAccess::DISPATCH_CALL_DISPATCH_INDIRECT));
-		case OPERATION_NAME_WRITE_IMAGE_VERTEX:						return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_WRITE, VK_SHADER_STAGE_VERTEX_BIT));
-		case OPERATION_NAME_WRITE_IMAGE_TESSELLATION_CONTROL:		return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_WRITE, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT));
-		case OPERATION_NAME_WRITE_IMAGE_TESSELLATION_EVALUATION:	return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_WRITE, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT));
-		case OPERATION_NAME_WRITE_IMAGE_GEOMETRY:					return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_WRITE, VK_SHADER_STAGE_GEOMETRY_BIT));
-		case OPERATION_NAME_WRITE_IMAGE_FRAGMENT:					return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_WRITE, VK_SHADER_STAGE_FRAGMENT_BIT));
-		case OPERATION_NAME_WRITE_IMAGE_COMPUTE:					return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_WRITE, VK_SHADER_STAGE_COMPUTE_BIT));
-		case OPERATION_NAME_WRITE_IMAGE_COMPUTE_INDIRECT:			return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_WRITE, VK_SHADER_STAGE_COMPUTE_BIT, ShaderAccess::DISPATCH_CALL_DISPATCH_INDIRECT));
+		case OPERATION_NAME_WRITE_SSBO_VERTEX:						return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_WRITE, specializedAccess, VK_SHADER_STAGE_VERTEX_BIT));
+		case OPERATION_NAME_WRITE_SSBO_TESSELLATION_CONTROL:		return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_WRITE, specializedAccess, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT));
+		case OPERATION_NAME_WRITE_SSBO_TESSELLATION_EVALUATION:		return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_WRITE, specializedAccess, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT));
+		case OPERATION_NAME_WRITE_SSBO_GEOMETRY:					return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_WRITE, specializedAccess, VK_SHADER_STAGE_GEOMETRY_BIT));
+		case OPERATION_NAME_WRITE_SSBO_FRAGMENT:					return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_WRITE, specializedAccess, VK_SHADER_STAGE_FRAGMENT_BIT));
+		case OPERATION_NAME_WRITE_SSBO_COMPUTE:						return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_WRITE, specializedAccess, VK_SHADER_STAGE_COMPUTE_BIT));
+		case OPERATION_NAME_WRITE_SSBO_COMPUTE_INDIRECT:			return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_WRITE, specializedAccess, VK_SHADER_STAGE_COMPUTE_BIT, ShaderAccess::DISPATCH_CALL_DISPATCH_INDIRECT));
+		case OPERATION_NAME_WRITE_IMAGE_VERTEX:						return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_WRITE, specializedAccess, VK_SHADER_STAGE_VERTEX_BIT));
+		case OPERATION_NAME_WRITE_IMAGE_TESSELLATION_CONTROL:		return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_WRITE, specializedAccess, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT));
+		case OPERATION_NAME_WRITE_IMAGE_TESSELLATION_EVALUATION:	return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_WRITE, specializedAccess, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT));
+		case OPERATION_NAME_WRITE_IMAGE_GEOMETRY:					return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_WRITE, specializedAccess, VK_SHADER_STAGE_GEOMETRY_BIT));
+		case OPERATION_NAME_WRITE_IMAGE_FRAGMENT:					return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_WRITE, specializedAccess, VK_SHADER_STAGE_FRAGMENT_BIT));
+		case OPERATION_NAME_WRITE_IMAGE_COMPUTE:					return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_WRITE, specializedAccess, VK_SHADER_STAGE_COMPUTE_BIT));
+		case OPERATION_NAME_WRITE_IMAGE_COMPUTE_INDIRECT:			return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_WRITE, specializedAccess, VK_SHADER_STAGE_COMPUTE_BIT, ShaderAccess::DISPATCH_CALL_DISPATCH_INDIRECT));
 		case OPERATION_NAME_WRITE_IMAGE_COMPUTE_MULTISAMPLE:		return de::MovePtr<OperationSupport>(new ShaderAccess		::MSImageSupport(resourceDesc));
 		case OPERATION_NAME_WRITE_CLEAR_COLOR_IMAGE:				return de::MovePtr<OperationSupport>(new ClearImage			::Support		(resourceDesc, ClearImage::CLEAR_MODE_COLOR));
 		case OPERATION_NAME_WRITE_CLEAR_DEPTH_STENCIL_IMAGE:		return de::MovePtr<OperationSupport>(new ClearImage			::Support		(resourceDesc, ClearImage::CLEAR_MODE_DEPTH_STENCIL));
@@ -5600,27 +5800,34 @@ de::MovePtr<OperationSupport> makeOperationSupport (const OperationName opName, 
 		case OPERATION_NAME_READ_COPY_IMAGE:						return de::MovePtr<OperationSupport>(new CopyBlitResolveImage::Support		(resourceDesc, CopyBlitResolveImage::TYPE_COPY,		ACCESS_MODE_READ));
 		case OPERATION_NAME_READ_BLIT_IMAGE:						return de::MovePtr<OperationSupport>(new CopyBlitResolveImage::Support		(resourceDesc, CopyBlitResolveImage::TYPE_BLIT,		ACCESS_MODE_READ));
 		case OPERATION_NAME_READ_RESOLVE_IMAGE:						return de::MovePtr<OperationSupport>(new CopyBlitResolveImage::Support		(resourceDesc, CopyBlitResolveImage::TYPE_RESOLVE,	ACCESS_MODE_READ));
-		case OPERATION_NAME_READ_UBO_VERTEX:						return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_UNIFORM, ACCESS_MODE_READ, VK_SHADER_STAGE_VERTEX_BIT));
-		case OPERATION_NAME_READ_UBO_TESSELLATION_CONTROL:			return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_UNIFORM, ACCESS_MODE_READ, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT));
-		case OPERATION_NAME_READ_UBO_TESSELLATION_EVALUATION:		return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_UNIFORM, ACCESS_MODE_READ, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT));
-		case OPERATION_NAME_READ_UBO_GEOMETRY:						return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_UNIFORM, ACCESS_MODE_READ, VK_SHADER_STAGE_GEOMETRY_BIT));
-		case OPERATION_NAME_READ_UBO_FRAGMENT:						return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_UNIFORM, ACCESS_MODE_READ, VK_SHADER_STAGE_FRAGMENT_BIT));
-		case OPERATION_NAME_READ_UBO_COMPUTE:						return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_UNIFORM, ACCESS_MODE_READ, VK_SHADER_STAGE_COMPUTE_BIT));
-		case OPERATION_NAME_READ_UBO_COMPUTE_INDIRECT:				return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_UNIFORM, ACCESS_MODE_READ, VK_SHADER_STAGE_COMPUTE_BIT, ShaderAccess::DISPATCH_CALL_DISPATCH_INDIRECT));
-		case OPERATION_NAME_READ_SSBO_VERTEX:						return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_READ, VK_SHADER_STAGE_VERTEX_BIT));
-		case OPERATION_NAME_READ_SSBO_TESSELLATION_CONTROL:			return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_READ, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT));
-		case OPERATION_NAME_READ_SSBO_TESSELLATION_EVALUATION:		return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_READ, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT));
-		case OPERATION_NAME_READ_SSBO_GEOMETRY:						return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_READ, VK_SHADER_STAGE_GEOMETRY_BIT));
-		case OPERATION_NAME_READ_SSBO_FRAGMENT:						return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_READ, VK_SHADER_STAGE_FRAGMENT_BIT));
-		case OPERATION_NAME_READ_SSBO_COMPUTE:						return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_READ, VK_SHADER_STAGE_COMPUTE_BIT));
-		case OPERATION_NAME_READ_SSBO_COMPUTE_INDIRECT:				return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_READ, VK_SHADER_STAGE_COMPUTE_BIT, ShaderAccess::DISPATCH_CALL_DISPATCH_INDIRECT));
-		case OPERATION_NAME_READ_IMAGE_VERTEX:						return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_READ, VK_SHADER_STAGE_VERTEX_BIT));
-		case OPERATION_NAME_READ_IMAGE_TESSELLATION_CONTROL:		return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_READ, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT));
-		case OPERATION_NAME_READ_IMAGE_TESSELLATION_EVALUATION:		return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_READ, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT));
-		case OPERATION_NAME_READ_IMAGE_GEOMETRY:					return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_READ, VK_SHADER_STAGE_GEOMETRY_BIT));
-		case OPERATION_NAME_READ_IMAGE_FRAGMENT:					return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_READ, VK_SHADER_STAGE_FRAGMENT_BIT));
-		case OPERATION_NAME_READ_IMAGE_COMPUTE:						return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_READ, VK_SHADER_STAGE_COMPUTE_BIT));
-		case OPERATION_NAME_READ_IMAGE_COMPUTE_INDIRECT:			return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_READ, VK_SHADER_STAGE_COMPUTE_BIT, ShaderAccess::DISPATCH_CALL_DISPATCH_INDIRECT));
+		case OPERATION_NAME_READ_UBO_VERTEX:						return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_UNIFORM, ACCESS_MODE_READ, specializedAccess, VK_SHADER_STAGE_VERTEX_BIT));
+		case OPERATION_NAME_READ_UBO_TESSELLATION_CONTROL:			return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_UNIFORM, ACCESS_MODE_READ, specializedAccess, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT));
+		case OPERATION_NAME_READ_UBO_TESSELLATION_EVALUATION:		return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_UNIFORM, ACCESS_MODE_READ, specializedAccess, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT));
+		case OPERATION_NAME_READ_UBO_GEOMETRY:						return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_UNIFORM, ACCESS_MODE_READ, specializedAccess, VK_SHADER_STAGE_GEOMETRY_BIT));
+		case OPERATION_NAME_READ_UBO_FRAGMENT:						return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_UNIFORM, ACCESS_MODE_READ, specializedAccess, VK_SHADER_STAGE_FRAGMENT_BIT));
+		case OPERATION_NAME_READ_UBO_COMPUTE:						return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_UNIFORM, ACCESS_MODE_READ, specializedAccess, VK_SHADER_STAGE_COMPUTE_BIT));
+		case OPERATION_NAME_READ_UBO_COMPUTE_INDIRECT:				return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_UNIFORM, ACCESS_MODE_READ, specializedAccess, VK_SHADER_STAGE_COMPUTE_BIT, ShaderAccess::DISPATCH_CALL_DISPATCH_INDIRECT));
+		case OPERATION_NAME_READ_UBO_TEXEL_VERTEX:					return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_UNIFORM_TEXEL, ACCESS_MODE_READ, specializedAccess, VK_SHADER_STAGE_VERTEX_BIT));
+		case OPERATION_NAME_READ_UBO_TEXEL_TESSELLATION_CONTROL:	return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_UNIFORM_TEXEL, ACCESS_MODE_READ, specializedAccess, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT));
+		case OPERATION_NAME_READ_UBO_TEXEL_TESSELLATION_EVALUATION:	return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_UNIFORM_TEXEL, ACCESS_MODE_READ, specializedAccess, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT));
+		case OPERATION_NAME_READ_UBO_TEXEL_GEOMETRY:				return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_UNIFORM_TEXEL, ACCESS_MODE_READ, specializedAccess, VK_SHADER_STAGE_GEOMETRY_BIT));
+		case OPERATION_NAME_READ_UBO_TEXEL_FRAGMENT:				return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_UNIFORM_TEXEL, ACCESS_MODE_READ, specializedAccess, VK_SHADER_STAGE_FRAGMENT_BIT));
+		case OPERATION_NAME_READ_UBO_TEXEL_COMPUTE:					return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_UNIFORM_TEXEL, ACCESS_MODE_READ, specializedAccess, VK_SHADER_STAGE_COMPUTE_BIT));
+		case OPERATION_NAME_READ_UBO_TEXEL_COMPUTE_INDIRECT:		return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_UNIFORM_TEXEL, ACCESS_MODE_READ, specializedAccess, VK_SHADER_STAGE_COMPUTE_BIT, ShaderAccess::DISPATCH_CALL_DISPATCH_INDIRECT));
+		case OPERATION_NAME_READ_SSBO_VERTEX:						return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_READ, specializedAccess, VK_SHADER_STAGE_VERTEX_BIT));
+		case OPERATION_NAME_READ_SSBO_TESSELLATION_CONTROL:			return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_READ, specializedAccess, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT));
+		case OPERATION_NAME_READ_SSBO_TESSELLATION_EVALUATION:		return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_READ, specializedAccess, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT));
+		case OPERATION_NAME_READ_SSBO_GEOMETRY:						return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_READ, specializedAccess, VK_SHADER_STAGE_GEOMETRY_BIT));
+		case OPERATION_NAME_READ_SSBO_FRAGMENT:						return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_READ, specializedAccess, VK_SHADER_STAGE_FRAGMENT_BIT));
+		case OPERATION_NAME_READ_SSBO_COMPUTE:						return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_READ, specializedAccess, VK_SHADER_STAGE_COMPUTE_BIT));
+		case OPERATION_NAME_READ_SSBO_COMPUTE_INDIRECT:				return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_READ, specializedAccess, VK_SHADER_STAGE_COMPUTE_BIT, ShaderAccess::DISPATCH_CALL_DISPATCH_INDIRECT));
+		case OPERATION_NAME_READ_IMAGE_VERTEX:						return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_READ, specializedAccess, VK_SHADER_STAGE_VERTEX_BIT));
+		case OPERATION_NAME_READ_IMAGE_TESSELLATION_CONTROL:		return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_READ, specializedAccess, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT));
+		case OPERATION_NAME_READ_IMAGE_TESSELLATION_EVALUATION:		return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_READ, specializedAccess, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT));
+		case OPERATION_NAME_READ_IMAGE_GEOMETRY:					return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_READ, specializedAccess, VK_SHADER_STAGE_GEOMETRY_BIT));
+		case OPERATION_NAME_READ_IMAGE_FRAGMENT:					return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_READ, specializedAccess, VK_SHADER_STAGE_FRAGMENT_BIT));
+		case OPERATION_NAME_READ_IMAGE_COMPUTE:						return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_READ, specializedAccess, VK_SHADER_STAGE_COMPUTE_BIT));
+		case OPERATION_NAME_READ_IMAGE_COMPUTE_INDIRECT:			return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_READ, specializedAccess, VK_SHADER_STAGE_COMPUTE_BIT, ShaderAccess::DISPATCH_CALL_DISPATCH_INDIRECT));
 		case OPERATION_NAME_READ_INDIRECT_BUFFER_DRAW:				return de::MovePtr<OperationSupport>(new IndirectBuffer		::ReadSupport	(resourceDesc));
 		case OPERATION_NAME_READ_INDIRECT_BUFFER_DRAW_INDEXED:		return de::MovePtr<OperationSupport>(new IndirectBuffer		::ReadSupport	(resourceDesc));
 		case OPERATION_NAME_READ_INDIRECT_BUFFER_DISPATCH:			return de::MovePtr<OperationSupport>(new IndirectBuffer		::ReadSupport	(resourceDesc));
@@ -5630,20 +5837,20 @@ de::MovePtr<OperationSupport> makeOperationSupport (const OperationName opName, 
 		case OPERATION_NAME_COPY_BUFFER:							return de::MovePtr<OperationSupport>(new CopyBuffer			::CopySupport		(resourceDesc));
 		case OPERATION_NAME_COPY_IMAGE:								return de::MovePtr<OperationSupport>(new CopyBlitResolveImage::CopySupport		(resourceDesc, CopyBlitResolveImage::TYPE_COPY));
 		case OPERATION_NAME_BLIT_IMAGE:								return de::MovePtr<OperationSupport>(new CopyBlitResolveImage::CopySupport		(resourceDesc, CopyBlitResolveImage::TYPE_BLIT));
-		case OPERATION_NAME_COPY_SSBO_VERTEX:						return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyBufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, VK_SHADER_STAGE_VERTEX_BIT));
-		case OPERATION_NAME_COPY_SSBO_TESSELLATION_CONTROL:			return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyBufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT));
-		case OPERATION_NAME_COPY_SSBO_TESSELLATION_EVALUATION:		return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyBufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT));
-		case OPERATION_NAME_COPY_SSBO_GEOMETRY:						return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyBufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, VK_SHADER_STAGE_GEOMETRY_BIT));
-		case OPERATION_NAME_COPY_SSBO_FRAGMENT:						return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyBufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, VK_SHADER_STAGE_FRAGMENT_BIT));
-		case OPERATION_NAME_COPY_SSBO_COMPUTE:						return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyBufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, VK_SHADER_STAGE_COMPUTE_BIT));
-		case OPERATION_NAME_COPY_SSBO_COMPUTE_INDIRECT:				return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyBufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, VK_SHADER_STAGE_COMPUTE_BIT, ShaderAccess::DISPATCH_CALL_DISPATCH_INDIRECT));
-		case OPERATION_NAME_COPY_IMAGE_VERTEX:						return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyImageSupport	(resourceDesc, VK_SHADER_STAGE_VERTEX_BIT));
-		case OPERATION_NAME_COPY_IMAGE_TESSELLATION_CONTROL:		return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyImageSupport	(resourceDesc, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT));
-		case OPERATION_NAME_COPY_IMAGE_TESSELLATION_EVALUATION:		return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyImageSupport	(resourceDesc, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT));
-		case OPERATION_NAME_COPY_IMAGE_GEOMETRY:					return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyImageSupport	(resourceDesc, VK_SHADER_STAGE_GEOMETRY_BIT));
-		case OPERATION_NAME_COPY_IMAGE_FRAGMENT:					return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyImageSupport	(resourceDesc, VK_SHADER_STAGE_FRAGMENT_BIT));
-		case OPERATION_NAME_COPY_IMAGE_COMPUTE:						return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyImageSupport	(resourceDesc, VK_SHADER_STAGE_COMPUTE_BIT));
-		case OPERATION_NAME_COPY_IMAGE_COMPUTE_INDIRECT:			return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyImageSupport	(resourceDesc, VK_SHADER_STAGE_COMPUTE_BIT, ShaderAccess::DISPATCH_CALL_DISPATCH_INDIRECT));
+		case OPERATION_NAME_COPY_SSBO_VERTEX:						return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyBufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, specializedAccess, VK_SHADER_STAGE_VERTEX_BIT));
+		case OPERATION_NAME_COPY_SSBO_TESSELLATION_CONTROL:			return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyBufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, specializedAccess, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT));
+		case OPERATION_NAME_COPY_SSBO_TESSELLATION_EVALUATION:		return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyBufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, specializedAccess, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT));
+		case OPERATION_NAME_COPY_SSBO_GEOMETRY:						return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyBufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, specializedAccess, VK_SHADER_STAGE_GEOMETRY_BIT));
+		case OPERATION_NAME_COPY_SSBO_FRAGMENT:						return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyBufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, specializedAccess, VK_SHADER_STAGE_FRAGMENT_BIT));
+		case OPERATION_NAME_COPY_SSBO_COMPUTE:						return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyBufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, specializedAccess, VK_SHADER_STAGE_COMPUTE_BIT));
+		case OPERATION_NAME_COPY_SSBO_COMPUTE_INDIRECT:				return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyBufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, specializedAccess, VK_SHADER_STAGE_COMPUTE_BIT, ShaderAccess::DISPATCH_CALL_DISPATCH_INDIRECT));
+		case OPERATION_NAME_COPY_IMAGE_VERTEX:						return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyImageSupport	(resourceDesc,  VK_SHADER_STAGE_VERTEX_BIT, specializedAccess));
+		case OPERATION_NAME_COPY_IMAGE_TESSELLATION_CONTROL:		return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyImageSupport	(resourceDesc,  VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, specializedAccess));
+		case OPERATION_NAME_COPY_IMAGE_TESSELLATION_EVALUATION:		return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyImageSupport	(resourceDesc, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, specializedAccess));
+		case OPERATION_NAME_COPY_IMAGE_GEOMETRY:					return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyImageSupport	(resourceDesc, VK_SHADER_STAGE_GEOMETRY_BIT, specializedAccess));
+		case OPERATION_NAME_COPY_IMAGE_FRAGMENT:					return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyImageSupport	(resourceDesc, VK_SHADER_STAGE_FRAGMENT_BIT, specializedAccess));
+		case OPERATION_NAME_COPY_IMAGE_COMPUTE:						return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyImageSupport	(resourceDesc, VK_SHADER_STAGE_COMPUTE_BIT, specializedAccess));
+		case OPERATION_NAME_COPY_IMAGE_COMPUTE_INDIRECT:			return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyImageSupport	(resourceDesc, VK_SHADER_STAGE_COMPUTE_BIT, specializedAccess, ShaderAccess::DISPATCH_CALL_DISPATCH_INDIRECT));
 
 		default:
 			DE_ASSERT(0);

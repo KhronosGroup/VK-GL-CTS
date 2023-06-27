@@ -648,21 +648,6 @@ void UnusedShaderStagesCase::checkSupport (Context &context) const
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 }
 
-VkPipelineShaderStageCreateInfo makePipelineShaderStageCreateInfo (VkShaderStageFlagBits stage, VkShaderModule module)
-{
-	const VkPipelineShaderStageCreateInfo stageInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	//	VkStructureType						sType;
-		nullptr,												//	const void*							pNext;
-		0u,														//	VkPipelineShaderStageCreateFlags	flags;
-		stage,													//	VkShaderStageFlagBits				stage;
-		module,													//	VkShaderModule						module;
-		"main",													//	const char*							pName;
-		nullptr,												//	const VkSpecializationInfo*			pSpecializationInfo;
-	};
-	return stageInfo;
-}
-
 tcu::TestStatus UnusedShaderStagesInstance::iterate ()
 {
 	const auto&			vkd				= m_context.getDeviceInterface();

@@ -337,7 +337,7 @@ MAIN_VULKAN_PKG				= Package(module = VULKAN_MODULE, configurations = [
 		Configuration(name					= "master-2022-03-01",
 					  filters				= MAIN_VULKAN_FILTERS + [exclude("vk-master-2019-03-01.txt"), exclude("vk-master-2020-03-01.txt"), exclude("vk-master-2021-03-01.txt")],
 					  runtime				= "10m",
-					  listOfGroupsToSplit	= ["dEQP-VK"]),
+					  listOfGroupsToSplit	= ["dEQP-VK", "dEQP-VK.pipeline"]),
 		Configuration(name					= "incremental-deqp",
 					  filters				= [include("vk-incremental-deqp.txt")],
 					  runtime				= "5m",
@@ -353,7 +353,7 @@ MAIN_VULKANSC_PKG				= Package(module = VULKANSC_MODULE, configurations = [
 					  filters				= MAIN_VULKANSC_FILTERS,
 					  runtime				= "2h39m",
 					  runByDefault			= False,
-					  listOfGroupsToSplit	= ["dEQP-VKSC"]),
+					  listOfGroupsToSplit	= ["dEQP-VKSC", "dEQP-VKSC.pipeline"]),
 	])
 
 MUSTPASS_LISTS				= [

@@ -231,13 +231,13 @@ void ShaderBallotBaseTestCase::ShaderPipeline::executeComputeShader(deqp::Contex
 
 	// output image
 	gl.bindTexture(GL_TEXTURE_2D, *outputTexture);
-	gl.texStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32UI, 16, 16);
+	gl.texStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, 16, 16);
 	gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Uploading image data failed");
 
 	// bind image
-	gl.bindImageTexture(1, *outputTexture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32UI);
+	gl.bindImageTexture(1, *outputTexture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Image setup failed");
 
 	// dispatch compute

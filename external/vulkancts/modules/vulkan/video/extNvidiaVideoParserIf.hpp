@@ -705,6 +705,11 @@ struct PpsVideoH264PictureParametersSet
 	vk::StdVideoH264ScalingLists            ppsStdScalingLists;
 };
 
+struct VpsVideoH265PictureParametersSet
+{
+	vk::StdVideoH265VideoParameterSet	    stdVps;
+};
+
 struct SpsVideoH265PictureParametersSet
 {
 	vk::StdVideoH265SequenceParameterSet    stdSps;
@@ -759,11 +764,6 @@ public:
 				break;
 			}
 			case VK_PICTURE_PARAMETERS_UPDATE_H265_VPS:
-			{
-				// Vulkan Video Decode APIs do not support VPS parameters
-				break;
-			}
-
 			case VK_PICTURE_PARAMETERS_UPDATE_H265_SPS:
 			case VK_PICTURE_PARAMETERS_UPDATE_H265_PPS:
 			{
@@ -792,6 +792,10 @@ public:
 						m_data.h265Pps.stdPps.pScalingLists = &m_data.h265Pps.ppsStdScalingLists;
 					}
 				}
+				else if (pPictureParameters->updateType == VK_PICTURE_PARAMETERS_UPDATE_H265_VPS)
+				{
+					m_data.h265Vps.stdVps = *pPictureParameters->pH265Vps;
+				}
 
 				break;
 			}
@@ -800,6 +804,30 @@ public:
 		}
 
 		m_updateSequenceCount = updateSequenceCount;
+	}
+
+	int32_t GetVpsId(bool& isVps) const
+	{
+		switch (m_updateType)
+		{
+			case VK_PICTURE_PARAMETERS_UPDATE_H264_SPS:
+				return m_data.h264Sps.stdSps.seq_parameter_set_id;
+			case VK_PICTURE_PARAMETERS_UPDATE_H264_PPS:
+				return m_data.h264Pps.stdPps.seq_parameter_set_id;
+
+			case VK_PICTURE_PARAMETERS_UPDATE_H265_VPS:
+				isVps = true;
+				return m_data.h265Vps.stdVps.vps_video_parameter_set_id;
+			case VK_PICTURE_PARAMETERS_UPDATE_H265_SPS:
+				return m_data.h265Sps.stdSps.sps_seq_parameter_set_id;
+			case VK_PICTURE_PARAMETERS_UPDATE_H265_PPS:
+				return m_data.h265Pps.stdPps.pps_seq_parameter_set_id;
+
+			default:
+				DE_ASSERT(0 && "Invalid STD type");
+		}
+
+		return -1;
 	}
 
 	int32_t GetSpsId(bool& isSps) const
@@ -815,14 +843,12 @@ public:
 			case VK_PICTURE_PARAMETERS_UPDATE_H264_PPS:
 				return m_data.h264Pps.stdPps.seq_parameter_set_id;
 
+			case VK_PICTURE_PARAMETERS_UPDATE_H265_VPS:
+				return m_data.h265Vps.stdVps.vps_video_parameter_set_id;
 			case VK_PICTURE_PARAMETERS_UPDATE_H265_SPS:
 				isSps = true;
 				return m_data.h265Sps.stdSps.sps_seq_parameter_set_id;
-
 			case VK_PICTURE_PARAMETERS_UPDATE_H265_PPS:
-				return m_data.h265Pps.stdPps.pps_seq_parameter_set_id;
-
-			case VK_PICTURE_PARAMETERS_UPDATE_H265_VPS:
 				return m_data.h265Pps.stdPps.pps_seq_parameter_set_id;
 
 			default:
@@ -847,6 +873,8 @@ public:
 			case VK_PICTURE_PARAMETERS_UPDATE_H265_PPS:
 				isPps = true;
 				return m_data.h265Pps.stdPps.pps_pic_parameter_set_id;
+			case VK_PICTURE_PARAMETERS_UPDATE_H265_VPS:
+				break;
 			default:
 				DE_ASSERT(0 && "Invalid STD type");
 		}
@@ -902,6 +930,7 @@ public:
 	{
 		SpsVideoH264PictureParametersSet h264Sps;
 		PpsVideoH264PictureParametersSet h264Pps;
+		VpsVideoH265PictureParametersSet h265Vps;
 		SpsVideoH265PictureParametersSet h265Sps;
 		PpsVideoH265PictureParametersSet h265Pps;
 	} m_data;

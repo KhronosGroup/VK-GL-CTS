@@ -183,6 +183,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/fragment_shading_barycentric/vktFragmentShadingBarycentricTests.cpp \
 	external/vulkancts/modules/vulkan/fragment_shading_rate/vktAttachmentRateTests.cpp \
 	external/vulkancts/modules/vulkan/fragment_shading_rate/vktFragmentShadingRateBasic.cpp \
+	external/vulkancts/modules/vulkan/fragment_shading_rate/vktFragmentShadingRateMiscTests.cpp \
 	external/vulkancts/modules/vulkan/fragment_shading_rate/vktFragmentShadingRatePixelConsistency.cpp \
 	external/vulkancts/modules/vulkan/fragment_shading_rate/vktFragmentShadingRateTests.cpp \
 	external/vulkancts/modules/vulkan/geometry/vktGeometryBasicClass.cpp \
@@ -346,6 +347,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemWsiSwapchainTests.cpp \
 	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemYCbCrConversionTests.cpp \
 	external/vulkancts/modules/vulkan/query_pool/vktQueryPoolConcurrentTests.cpp \
+	external/vulkancts/modules/vulkan/query_pool/vktQueryPoolFragInvocationTests.cpp \
 	external/vulkancts/modules/vulkan/query_pool/vktQueryPoolOcclusionTests.cpp \
 	external/vulkancts/modules/vulkan/query_pool/vktQueryPoolPerformanceTests.cpp \
 	external/vulkancts/modules/vulkan/query_pool/vktQueryPoolStatisticsTests.cpp \
@@ -354,6 +356,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/rasterization/vktRasterizationOrderAttachmentAccessTests.cpp \
 	external/vulkancts/modules/vulkan/rasterization/vktRasterizationProvokingVertexTests.cpp \
 	external/vulkancts/modules/vulkan/rasterization/vktRasterizationTests.cpp \
+	external/vulkancts/modules/vulkan/rasterization/vktShaderTileImageTests.cpp \
 	external/vulkancts/modules/vulkan/ray_query/vktRayQueryAccelerationStructuresTests.cpp \
 	external/vulkancts/modules/vulkan/ray_query/vktRayQueryBarycentricCoordinatesTests.cpp \
 	external/vulkancts/modules/vulkan/ray_query/vktRayQueryBuiltinTests.cpp \

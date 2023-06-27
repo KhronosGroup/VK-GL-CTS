@@ -126,6 +126,7 @@ struct TestParameters
 	VertexStream		pgqStream;
 	VertexStream		xfbStream;
 	CommandBufferCase	cmdBufCase;
+	const uint32_t		queryCount;
 
 	bool		pgqDefault					(void)	const	{ return pgqStream == VERTEX_STREAM_DEFAULT;						}
 	bool		xfbDefault					(void)	const	{ return xfbStream == VERTEX_STREAM_DEFAULT;						}
@@ -193,9 +194,12 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 	const VkQueue					queue				= m_context.getUniversalQueue();
 	Allocator&						allocator			= m_context.getDefaultAllocator();
 
+	using ImageVec = std::vector<Move<VkImage>>;
+	using AllocVec = std::vector<de::MovePtr<Allocation>>;
+
 	const VkFormat					colorFormat			= m_parameters.colorAttachment() ? VK_FORMAT_R8G8B8A8_UNORM : VK_FORMAT_UNDEFINED;
-	Move<VkImage>					colorImage;
-	de::MovePtr<Allocation>			colorImageAllocation;
+	ImageVec						colorImages;
+	AllocVec						colorImageAllocations;
 
 	if (m_parameters.colorAttachment())
 	{
@@ -218,8 +222,14 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 			VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout			initialLayout
 		};
 
-		colorImage				= makeImage(vk, device, colorImageCreateInfo);
-		colorImageAllocation	= bindImage(vk, device, allocator, *colorImage, MemoryRequirement::Any);
+		for (uint32_t queryIdx = 0u; queryIdx < m_parameters.queryCount; ++queryIdx)
+		{
+			auto colorImage				= makeImage(vk, device, colorImageCreateInfo);
+			auto colorImageAllocation	= bindImage(vk, device, allocator, *colorImage, MemoryRequirement::Any);
+
+			colorImages.emplace_back(colorImage);
+			colorImageAllocations.emplace_back(colorImageAllocation);
+		}
 	}
 
 	const VkFormat					dsFormat			= m_parameters.depthStencilAttachment ? PrimitivesGeneratedQueryTestInstance::selectDepthStencilFormat() : VK_FORMAT_UNDEFINED;
@@ -227,8 +237,8 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 	if (m_parameters.depthStencilAttachment && dsFormat == VK_FORMAT_UNDEFINED)
 		return tcu::TestStatus::fail("VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT feature must be supported for at least one of VK_FORMAT_D24_UNORM_S8_UINT and VK_FORMAT_D32_SFLOAT_S8_UINT.");
 
-	Move<VkImage>					dsImage;
-	de::MovePtr<Allocation>			dsImageAllocation;
+	ImageVec						dsImages;
+	AllocVec						dsImageAllocations;
 
 	if (m_parameters.depthStencilAttachment)
 	{
@@ -251,8 +261,14 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 			VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout			initialLayout
 		};
 
-		dsImage				= makeImage(vk, device, dsImageCreateInfo);
-		dsImageAllocation	= bindImage(vk, device, allocator, *dsImage, MemoryRequirement::Any);
+		for (uint32_t queryIdx = 0u; queryIdx < m_parameters.queryCount; ++queryIdx)
+		{
+			auto dsImage			= makeImage(vk, device, dsImageCreateInfo);
+			auto dsImageAllocation	= bindImage(vk, device, allocator, *dsImage, MemoryRequirement::Any);
+
+			dsImages.emplace_back(dsImage);
+			dsImageAllocations.emplace_back(dsImageAllocation);
+		}
 	}
 
 	const VkDeviceSize				primitivesGenerated = 32;
@@ -261,27 +277,48 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 	const deUint32					baseArrayLayer		= 0;
 	const deUint32					layerCount			= 1;
 
-	Move<VkImageView>				colorImageView;
-	Move<VkImageView>				dsImageView;
-	std::vector<VkImageView>		imageViews;
+	using ImageViewVec = std::vector<Move<VkImageView>>;
 
-	if (m_parameters.colorAttachment())
+	ImageViewVec					colorImageViews;
+	ImageViewVec					dsImageViews;
+
+	for (uint32_t queryIdx = 0u; queryIdx < m_parameters.queryCount; ++queryIdx)
 	{
-		const VkImageSubresourceRange colorSubresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel, levelCount, baseArrayLayer, layerCount);
-		colorImageView = makeImageView(vk, device, *colorImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresourceRange);
-		imageViews.push_back(*colorImageView);
+		if (m_parameters.colorAttachment())
+		{
+			const VkImageSubresourceRange colorSubresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel, levelCount, baseArrayLayer, layerCount);
+			auto colorImageView = makeImageView(vk, device, *colorImages.at(queryIdx), VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresourceRange);
+			colorImageViews.emplace_back(colorImageView);
+		}
+
+		if (m_parameters.depthStencilAttachment)
+		{
+			const VkImageSubresourceRange dsSubresourceRange = makeImageSubresourceRange((VK_IMAGE_ASPECT_DEPTH_BIT | vk::VK_IMAGE_ASPECT_STENCIL_BIT), baseMipLevel, levelCount, baseArrayLayer, layerCount);
+			auto dsImageView = makeImageView(vk, device, *dsImages.at(queryIdx), VK_IMAGE_VIEW_TYPE_2D, dsFormat, dsSubresourceRange);
+			dsImageViews.emplace_back(dsImageView);
+		}
 	}
 
-	if (m_parameters.depthStencilAttachment)
-	{
-		const VkImageSubresourceRange dsSubresourceRange = makeImageSubresourceRange((VK_IMAGE_ASPECT_DEPTH_BIT | vk::VK_IMAGE_ASPECT_STENCIL_BIT), baseMipLevel, levelCount, baseArrayLayer, layerCount);
-		dsImageView = makeImageView(vk, device, *dsImage, VK_IMAGE_VIEW_TYPE_2D, dsFormat, dsSubresourceRange);
-		imageViews.push_back(*dsImageView);
-	}
+	using FramebufferVec = std::vector<Move<VkFramebuffer>>;
 
 	const Unique<VkRenderPass>		renderPass			(makeRenderPass(vk, device, colorFormat, dsFormat, VK_ATTACHMENT_LOAD_OP_DONT_CARE));
-	const Unique<VkFramebuffer>		framebuffer			(makeFramebuffer(vk, device, *renderPass, (deUint32)imageViews.size(), imageViews.data(), IMAGE_WIDTH, IMAGE_HEIGHT));
 	const Unique<VkPipeline>		pipeline			(PrimitivesGeneratedQueryTestInstance::makeGraphicsPipeline(vk, device, *renderPass));
+	FramebufferVec					framebuffers;
+
+	for (uint32_t queryIdx = 0u; queryIdx < m_parameters.queryCount; ++queryIdx)
+	{
+		std::vector<VkImageView> imageViews;
+
+		if (m_parameters.colorAttachment())
+			imageViews.push_back(*colorImageViews.at(queryIdx));
+
+		if (m_parameters.depthStencilAttachment)
+			imageViews.push_back(*dsImageViews.at(queryIdx));
+
+		auto framebuffer = makeFramebuffer(vk, device, *renderPass, (deUint32)imageViews.size(), imageViews.data(), IMAGE_WIDTH, IMAGE_HEIGHT);
+		framebuffers.emplace_back(framebuffer);
+	}
+
 	Move<VkBuffer>					vtxBuffer;
 	de::MovePtr<Allocation>			vtxBufferAlloc;
 
@@ -299,6 +336,7 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 	const VkCommandBufferLevel		cmdBufferLevel		= VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, cmdPoolCreateFlags, queueFamilyIndex));
 	const Unique<VkCommandBuffer>	cmdBuffer			(allocateCommandBuffer(vk, device, *cmdPool, cmdBufferLevel));
+	const auto						resetCmdBuffer		= allocateCommandBuffer(vk, device, *cmdPool, cmdBufferLevel);
 
 	const bool						pgq64				= (m_parameters.queryResultType == QUERY_RESULT_TYPE_64_BIT ||
 														   m_parameters.queryResultType == QUERY_RESULT_TYPE_PGQ_64_XFB_32);
@@ -306,16 +344,15 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 														   m_parameters.queryResultType == QUERY_RESULT_TYPE_PGQ_32_XFB_64);
 	const size_t					pgqResultSize		= pgq64 ? sizeof(deUint64) : sizeof(deUint32);
 	const size_t					xfbResultSize		= xfb64 ? sizeof(deUint64) * 2 : sizeof(deUint32) * 2;
+	const size_t					pgqResultBufferSize	= pgqResultSize * m_parameters.queryCount;
+	const size_t					xfbResultBufferSize	= xfbResultSize * m_parameters.queryCount;
 	const VkQueryResultFlags		pgqResultWidthBit	= pgq64 ? VK_QUERY_RESULT_64_BIT : 0;
 	const VkQueryResultFlags		xfbResultWidthBit	= xfb64 ? VK_QUERY_RESULT_64_BIT : 0;
 	const VkQueryResultFlags		pgqResultFlags		= VK_QUERY_RESULT_WAIT_BIT | pgqResultWidthBit;
 	const VkQueryResultFlags		xfbResultFlags		= VK_QUERY_RESULT_WAIT_BIT | xfbResultWidthBit;
 
-	const deUint32					queryIndex			= 0;
-	const deUint32					queryCount			= 1;
-
-	std::vector<deUint8>			pgqResults			(pgqResultSize, 255u);
-	std::vector<deUint8>			xfbResults			(xfbResultSize, 255u);
+	std::vector<deUint8>			pgqResults			(pgqResultBufferSize, 255u);
+	std::vector<deUint8>			xfbResults			(xfbResultBufferSize, 255u);
 
 	const VkQueryPoolCreateInfo		pgqCreateInfo		=
 	{
@@ -323,7 +360,7 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 		DE_NULL,									// const void*						pNext
 		0u,											// VkQueryPoolCreateFlags			flags
 		VK_QUERY_TYPE_PRIMITIVES_GENERATED_EXT,		// VkQueryType						queryType
-		queryCount,									// deUint32							queryCount
+		m_parameters.queryCount,					// deUint32							queryCount
 		0u,											// VkQueryPipelineStatisticFlags	pipelineStatistics
 	};
 
@@ -338,7 +375,7 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 			DE_NULL,										// const void*						pNext
 			0u,												// VkQueryPoolCreateFlags			flags
 			VK_QUERY_TYPE_TRANSFORM_FEEDBACK_STREAM_EXT,	// VkQueryType						queryType
-			queryCount,										// deUint32							queryCount
+			m_parameters.queryCount,						// deUint32							queryCount
 			0u,												// VkQueryPipelineStatisticFlags	pipelineStatistics
 		};
 
@@ -354,7 +391,7 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 	{
 		const VkBufferUsageFlags	usage				= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 		const std::vector<deUint32>	queueFamilyIndices	(1, queueFamilyIndex);
-		const VkBufferCreateInfo	pgqBufferCreateInfo	= makeBufferCreateInfo(pgqResultSize, usage, queueFamilyIndices);
+		const VkBufferCreateInfo	pgqBufferCreateInfo	= makeBufferCreateInfo(pgqResultBufferSize, usage, queueFamilyIndices);
 
 		pgqResultsBuffer		= createBuffer(vk, device, &pgqBufferCreateInfo);
 		pgqResultsBufferAlloc	= allocator.allocate(getBufferMemoryRequirements(vk, device, *pgqResultsBuffer), MemoryRequirement::HostVisible);
@@ -363,7 +400,7 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 
 		if (m_parameters.transformFeedback)
 		{
-			const VkBufferCreateInfo xfbBufferCreateInfo = makeBufferCreateInfo(xfbResultSize, usage, queueFamilyIndices);
+			const VkBufferCreateInfo xfbBufferCreateInfo = makeBufferCreateInfo(xfbResultBufferSize, usage, queueFamilyIndices);
 
 			xfbResultsBuffer		= createBuffer(vk, device, &xfbBufferCreateInfo);
 			xfbResultsBufferAlloc	= allocator.allocate(getBufferMemoryRequirements(vk, device, *xfbResultsBuffer), MemoryRequirement::HostVisible);
@@ -377,8 +414,11 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 	const VkDeviceSize				primitiveSize		= m_parameters.nonZeroStreams() ? 1 : topologyData.at(m_parameters.primitiveTopology).primitiveSize;
 	const VkDeviceSize				bytesPerVertex		= 4 * sizeof(float);
 	const VkDeviceSize				xfbBufferSize		= primitivesWritten * primitiveSize * bytesPerVertex;
-	Move<VkBuffer>					xfbBuffer;
-	de::MovePtr<Allocation>			xfbBufferAlloc;
+
+	using BufferVec = std::vector<Move<VkBuffer>>;
+
+	BufferVec						xfbBuffers;
+	AllocVec						xfbBufferAllocs;
 
 	if (m_parameters.transformFeedback)
 	{
@@ -386,94 +426,110 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 		const std::vector<deUint32>	queueFamilyIndices	(1, queueFamilyIndex);
 		const VkBufferCreateInfo	createInfo			= makeBufferCreateInfo(xfbBufferSize, usage, queueFamilyIndices);
 
-		xfbBuffer		= createBuffer(vk, device, &createInfo);
-		xfbBufferAlloc	= allocator.allocate(getBufferMemoryRequirements(vk, device, *xfbBuffer), MemoryRequirement::HostVisible);
+		for (uint32_t queryIdx = 0u; queryIdx < m_parameters.queryCount; ++queryIdx)
+		{
+			auto xfbBuffer		= createBuffer(vk, device, &createInfo);
+			auto xfbBufferAlloc	= allocator.allocate(getBufferMemoryRequirements(vk, device, *xfbBuffer), MemoryRequirement::HostVisible);
 
-		VK_CHECK(vk.bindBufferMemory(device, *xfbBuffer, xfbBufferAlloc->getMemory(), xfbBufferAlloc->getOffset()));
+			VK_CHECK(vk.bindBufferMemory(device, *xfbBuffer, xfbBufferAlloc->getMemory(), xfbBufferAlloc->getOffset()));
+
+			xfbBuffers.emplace_back(xfbBuffer);
+			xfbBufferAllocs.emplace_back(xfbBufferAlloc);
+		}
 	}
 
 	fillVertexBuffer(static_cast<tcu::Vec2*>(vtxBufferAlloc.get()->getHostPtr()), primitivesGenerated);
 
 	VK_CHECK(vk.bindBufferMemory(device, *vtxBuffer, vtxBufferAlloc->getMemory(), vtxBufferAlloc->getOffset()));
 
+	// After query pool creation, each query must be reset before it is used.
+	//
+	// When resetting them using a queue, we will submit a separate command buffer with the reset operation and wait for it to
+	// complete. This will make sure queries are properly reset before we attempt to get results from them. This is needed because
+	// we're not going to wait for any fence when using vkGetQueryPoolResults, so there's a potential race condition with
+	// vkGetQueryPoolResults attempting to get results before queries are properly reset, which is against the spec.
+	if (m_parameters.queryResetType == QUERY_RESET_TYPE_QUEUE)
+	{
+		beginCommandBuffer(vk, *resetCmdBuffer);
+		vk.cmdResetQueryPool(*resetCmdBuffer, *pgqPool, 0u, m_parameters.queryCount);
+		if (m_parameters.transformFeedback)
+			vk.cmdResetQueryPool(*resetCmdBuffer, *xfbPool, 0u, m_parameters.queryCount);
+		endCommandBuffer(vk, *resetCmdBuffer);
+		submitCommandsAndWait(vk, device, queue, *resetCmdBuffer);
+	}
+
 	beginCommandBuffer(vk, *cmdBuffer);
 	{
 		const VkDeviceSize	vertexBufferOffset	= static_cast<VkDeviceSize>(0);
-
-		// After query pool creation, each query must be reset before it is used.
-		if (m_parameters.queryResetType == QUERY_RESET_TYPE_QUEUE)
-		{
-			vk.cmdResetQueryPool(*cmdBuffer, *pgqPool, queryIndex, queryCount);
-
-			if (m_parameters.transformFeedback)
-				vk.cmdResetQueryPool(*cmdBuffer, *xfbPool, queryIndex, queryCount);
-		}
 
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 
 		vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vtxBuffer.get(), &vertexBufferOffset);
 
-		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(makeExtent2D(IMAGE_WIDTH, IMAGE_HEIGHT)));
+		for (uint32_t queryIdx = 0u; queryIdx < m_parameters.queryCount; ++queryIdx)
 		{
-			const VkQueryControlFlags	queryControlFlags		= 0;
-
-			if (m_parameters.pgqDefault())
-				vk.cmdBeginQuery(*cmdBuffer, *pgqPool, queryIndex, queryControlFlags);
-			else
-				vk.cmdBeginQueryIndexedEXT(*cmdBuffer, *pgqPool, queryIndex, queryControlFlags, m_parameters.pgqStreamIndex());
-
-			const deUint32				firstCounterBuffer		= 0;
-			const deUint32				counterBufferCount		= 0;
-			const VkBuffer*				counterBuffers			= DE_NULL;
-			const VkDeviceSize*			counterBufferOffsets	= DE_NULL;
-
-			if (m_parameters.transformFeedback)
+			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffers.at(queryIdx), makeRect2D(makeExtent2D(IMAGE_WIDTH, IMAGE_HEIGHT)));
 			{
-				const deUint32		firstBinding	= 0;
-				const deUint32		bindingCount	= 1;
-				const VkDeviceSize	offset			= 0;
+				const VkQueryControlFlags	queryControlFlags		= 0;
 
-				vk.cmdBindTransformFeedbackBuffersEXT(*cmdBuffer, firstBinding, bindingCount, &*xfbBuffer, &offset, &xfbBufferSize);
-
-				if (m_parameters.xfbDefault())
-					vk.cmdBeginQuery(*cmdBuffer, *xfbPool, queryIndex, queryControlFlags);
+				if (m_parameters.pgqDefault())
+					vk.cmdBeginQuery(*cmdBuffer, *pgqPool, queryIdx, queryControlFlags);
 				else
-					vk.cmdBeginQueryIndexedEXT(*cmdBuffer, *xfbPool, queryIndex, queryControlFlags, m_parameters.xfbStreamIndex());
+					vk.cmdBeginQueryIndexedEXT(*cmdBuffer, *pgqPool, queryIdx, queryControlFlags, m_parameters.pgqStreamIndex());
 
-				vk.cmdBeginTransformFeedbackEXT(*cmdBuffer, firstCounterBuffer, counterBufferCount, counterBuffers, counterBufferOffsets);
-			}
+				const deUint32				firstCounterBuffer		= 0;
+				const deUint32				counterBufferCount		= 0;
+				const VkBuffer*				counterBuffers			= DE_NULL;
+				const VkDeviceSize*			counterBufferOffsets	= DE_NULL;
 
-			if (m_parameters.dynamicColorWriteDisable())
-			{
-				const deUint32	attachmentCount		= 1;
-				const VkBool32	colorWriteEnables	= VK_FALSE;
+				if (m_parameters.transformFeedback)
+				{
+					const deUint32		firstBinding	= 0;
+					const deUint32		bindingCount	= 1;
+					const VkDeviceSize	offset			= 0;
 
-				vk.cmdSetColorWriteEnableEXT(*cmdBuffer, attachmentCount, &colorWriteEnables);
-			}
+					vk.cmdBindTransformFeedbackBuffersEXT(*cmdBuffer, firstBinding, bindingCount, &*xfbBuffers.at(queryIdx), &offset, &xfbBufferSize);
 
-			const deUint32				vertexCount				= static_cast<deUint32>(topologyData.at(m_parameters.primitiveTopology).getNumVertices(primitivesGenerated));
-			const deUint32				instanceCount			= 1u;
-			const deUint32				firstVertex				= 0u;
-			const deUint32				firstInstance			= 0u;
+					if (m_parameters.xfbDefault())
+						vk.cmdBeginQuery(*cmdBuffer, *xfbPool, queryIdx, queryControlFlags);
+					else
+						vk.cmdBeginQueryIndexedEXT(*cmdBuffer, *xfbPool, queryIdx, queryControlFlags, m_parameters.xfbStreamIndex());
 
-			vk.cmdDraw(*cmdBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
+					vk.cmdBeginTransformFeedbackEXT(*cmdBuffer, firstCounterBuffer, counterBufferCount, counterBuffers, counterBufferOffsets);
+				}
 
-			if (m_parameters.pgqDefault())
-				vk.cmdEndQuery(*cmdBuffer, *pgqPool, queryIndex);
-			else
-				vk.cmdEndQueryIndexedEXT(*cmdBuffer, *pgqPool, queryIndex, m_parameters.pgqStreamIndex());
+				if (m_parameters.dynamicColorWriteDisable())
+				{
+					const deUint32	attachmentCount		= 1;
+					const VkBool32	colorWriteEnables	= VK_FALSE;
 
-			if (m_parameters.transformFeedback)
-			{
-				if (m_parameters.xfbDefault())
-					vk.cmdEndQuery(*cmdBuffer, *xfbPool, queryIndex);
+					vk.cmdSetColorWriteEnableEXT(*cmdBuffer, attachmentCount, &colorWriteEnables);
+				}
+
+				const deUint32				vertexCount				= static_cast<deUint32>(topologyData.at(m_parameters.primitiveTopology).getNumVertices(primitivesGenerated));
+				const deUint32				instanceCount			= 1u;
+				const deUint32				firstVertex				= 0u;
+				const deUint32				firstInstance			= 0u;
+
+				vk.cmdDraw(*cmdBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
+
+				if (m_parameters.pgqDefault())
+					vk.cmdEndQuery(*cmdBuffer, *pgqPool, queryIdx);
 				else
-					vk.cmdEndQueryIndexedEXT(*cmdBuffer, *xfbPool, queryIndex, m_parameters.xfbStreamIndex());
+					vk.cmdEndQueryIndexedEXT(*cmdBuffer, *pgqPool, queryIdx, m_parameters.pgqStreamIndex());
 
-				vk.cmdEndTransformFeedbackEXT(*cmdBuffer, firstCounterBuffer, counterBufferCount, counterBuffers, counterBufferOffsets);
+				if (m_parameters.transformFeedback)
+				{
+					if (m_parameters.xfbDefault())
+						vk.cmdEndQuery(*cmdBuffer, *xfbPool, queryIdx);
+					else
+						vk.cmdEndQueryIndexedEXT(*cmdBuffer, *xfbPool, queryIdx, m_parameters.xfbStreamIndex());
+
+					vk.cmdEndTransformFeedbackEXT(*cmdBuffer, firstCounterBuffer, counterBufferCount, counterBuffers, counterBufferOffsets);
+				}
 			}
+			endRenderPass(vk, *cmdBuffer);
 		}
-		endRenderPass(vk, *cmdBuffer);
 
 		if (m_parameters.queryReadType == QUERY_READ_TYPE_COPY)
 		{
@@ -490,13 +546,13 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 				VK_WHOLE_SIZE								// VkDeviceSize		size
 			};
 
-			vk.cmdCopyQueryPoolResults(*cmdBuffer, *pgqPool, queryIndex, queryCount, *pgqResultsBuffer, 0u, pgqResultSize, pgqResultFlags);
+			vk.cmdCopyQueryPoolResults(*cmdBuffer, *pgqPool, 0u, m_parameters.queryCount, *pgqResultsBuffer, 0u, pgqResultSize, pgqResultFlags);
 			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
 
 			if (m_parameters.transformFeedback)
 			{
 				bufferBarrier.buffer = *xfbResultsBuffer;
-				vk.cmdCopyQueryPoolResults(*cmdBuffer, *xfbPool, queryIndex, queryCount, *xfbResultsBuffer, 0u, xfbResultSize, xfbResultFlags);
+				vk.cmdCopyQueryPoolResults(*cmdBuffer, *xfbPool, 0u, m_parameters.queryCount, *xfbResultsBuffer, 0u, xfbResultSize, xfbResultFlags);
 				vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
 			}
 		}
@@ -506,13 +562,24 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 	// After query pool creation, each query must be reset before it is used.
 	if (m_parameters.queryResetType == QUERY_RESET_TYPE_HOST)
 	{
-		vk.resetQueryPool(device, *pgqPool, queryIndex, queryCount);
+		vk.resetQueryPool(device, *pgqPool, 0u, m_parameters.queryCount);
 
 		if (m_parameters.transformFeedback)
-			vk.resetQueryPool(device, *xfbPool, queryIndex, queryCount);
+			vk.resetQueryPool(device, *xfbPool, 0u, m_parameters.queryCount);
 	}
 
-	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+	const auto fence = submitCommands(vk, device, queue, *cmdBuffer);
+
+	// To make it more interesting, attempt to get results with WAIT before waiting for the fence.
+	if (m_parameters.queryReadType == QUERY_READ_TYPE_GET)
+	{
+		vk.getQueryPoolResults(device, *pgqPool, 0u, m_parameters.queryCount, pgqResults.size(), pgqResults.data(), pgqResultSize, pgqResultFlags);
+
+		if (m_parameters.transformFeedback)
+			vk.getQueryPoolResults(device, *xfbPool, 0u, m_parameters.queryCount, xfbResults.size(), xfbResults.data(), xfbResultSize, xfbResultFlags);
+	}
+
+	waitForFence(vk, device, *fence);
 
 	if (m_parameters.queryReadType == QUERY_READ_TYPE_COPY)
 	{
@@ -525,15 +592,9 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 			deMemcpy(xfbResults.data(), xfbResultsBufferAlloc->getHostPtr(), xfbResults.size());
 		}
 	}
-	else
-	{
-		vk.getQueryPoolResults(device, *pgqPool, queryIndex, queryCount, pgqResults.size(), pgqResults.data(), pgqResults.size(), pgqResultFlags);
-
-		if (m_parameters.transformFeedback)
-			vk.getQueryPoolResults(device, *xfbPool, queryIndex, queryCount, xfbResults.size(), xfbResults.data(), xfbResults.size(), xfbResultFlags);
-	}
 
 	// Validate counters.
+	for (uint32_t queryIdx = 0u; queryIdx < m_parameters.queryCount; ++queryIdx)
 	{
 		union QueryResults
 		{
@@ -541,28 +602,33 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 			deUint64	elements64[2];
 		};
 
-		const QueryResults*	pgqCounters		= reinterpret_cast<QueryResults*>(pgqResults.data());
-		const QueryResults*	xfbCounters		= reinterpret_cast<QueryResults*>(xfbResults.data());
+		const QueryResults*	pgqCounters		= reinterpret_cast<QueryResults*>(pgqResults.data() + queryIdx * pgqResultSize);
+		const QueryResults*	xfbCounters		= reinterpret_cast<QueryResults*>(xfbResults.data() + queryIdx * xfbResultSize);
 		const deUint64		pgqGenerated	= pgq64 ? pgqCounters->elements64[0] : static_cast<deUint64>(pgqCounters->elements32[0]);
 		const deUint64		xfbWritten		= xfb64 ? xfbCounters->elements64[0] : static_cast<deUint64>(xfbCounters->elements32[0]);
 		const deUint64		xfbGenerated	= xfb64 ? xfbCounters->elements64[1] : static_cast<deUint64>(xfbCounters->elements32[1]);
 		tcu::TestLog&		log				= m_context.getTestContext().getLog();
 
-		log	<<	tcu::TestLog::Message
-			<<	"primitivesGenerated: " << primitivesGenerated << "\n"
-			<<	"primitivesWritten: " << primitivesWritten << "\n"
-			<<	"verticesWritten: " << verticesWritten << "\n"
-			<<	"xfbBufferSize: " << xfbBufferSize << "\n"
-			<<	tcu::TestLog::EndMessage;
+		if (queryIdx == 0u)
+		{
+			log	<<	tcu::TestLog::Message
+				<<	"primitivesGenerated: " << primitivesGenerated << "\n"
+				<<	"primitivesWritten: " << primitivesWritten << "\n"
+				<<	"verticesWritten: " << verticesWritten << "\n"
+				<<	"xfbBufferSize: " << xfbBufferSize << "\n"
+				<<	tcu::TestLog::EndMessage;
+		}
 
-		log << tcu::TestLog::Message << "PGQ: Generated " << pgqGenerated << tcu::TestLog::EndMessage;
+		const std::string logPrefix = std::string("[Query ") + std::to_string(queryIdx) + "] ";
+
+		log << tcu::TestLog::Message << logPrefix << "PGQ: Generated " << pgqGenerated << tcu::TestLog::EndMessage;
 
 		if (m_parameters.transformFeedback)
-			log << tcu::TestLog::Message << "XFB: Written " << xfbWritten << ", generated " << xfbGenerated << tcu::TestLog::EndMessage;
+			log << tcu::TestLog::Message << logPrefix << "XFB: Written " << xfbWritten << ", generated " << xfbGenerated << tcu::TestLog::EndMessage;
 
 		if (pgqGenerated != primitivesGenerated)
 		{
-			const std::string message = std::string("pgqGenerated == ") + de::toString(pgqGenerated) + ", expected " + de::toString(primitivesGenerated);
+			const std::string message = logPrefix + "pgqGenerated == " + de::toString(pgqGenerated) + ", expected " + de::toString(primitivesGenerated);
 			return tcu::TestStatus::fail(message);
 		}
 
@@ -570,19 +636,19 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 		{
 			if (xfbGenerated != primitivesGenerated)
 			{
-				const std::string message = std::string("xfbGenerated == ") + de::toString(xfbGenerated) + ", expected " + de::toString(primitivesGenerated);
+				const std::string message = logPrefix + "xfbGenerated == " + de::toString(xfbGenerated) + ", expected " + de::toString(primitivesGenerated);
 				return tcu::TestStatus::fail(message);
 			}
 
 			if (xfbWritten != primitivesWritten)
 			{
-				const std::string message = std::string("xfbWritten == ") + de::toString(xfbWritten) + ", expected " + de::toString(primitivesWritten);
+				const std::string message = logPrefix + "xfbWritten == " + de::toString(xfbWritten) + ", expected " + de::toString(primitivesWritten);
 				return tcu::TestStatus::fail(message);
 			}
 
 			if (xfbWritten != (primitivesGenerated - 3))
 			{
-				const std::string message = std::string("xfbWritten == ") + de::toString(xfbWritten) + ", expected " + de::toString(primitivesGenerated - 3);
+				const std::string message = logPrefix + "xfbWritten == " + de::toString(xfbWritten) + ", expected " + de::toString(primitivesGenerated - 3);
 				return tcu::TestStatus::fail(message);
 			}
 		}
@@ -1304,6 +1370,17 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 	};
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(cmdBufCases) == CMD_BUF_CASE_LAST);
 
+	constexpr struct
+	{
+		uint32_t			queryCount;
+		const char*			nameSuffix;
+		const char*			descSuffix;
+	} queryCountCases[] =
+	{
+		{ 1u,	"",				""					},
+		{ 2u,	"_2_queries",	" using 2 queries"	},
+	};
+
 	tcu::TestContext& testCtx = pgqGroup->getTestContext();
 
 	for (const ReadType& read : readTypes)
@@ -1380,22 +1457,29 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 
 										for (const CmdBufCase& cmdBufCase : cmdBufCases)
 										{
-											const TestParameters	parameters	=
+											for (const auto& countCase : queryCountCases)
 											{
-												read.type,				// QueryReadType		queryReadType
-												reset.type,				// QueryResetType		queryResetType
-												result.type,			// QueryResultType		queryResultType
-												shader.stage,			// ShaderStage			shaderStage
-												xfbState.enable,		// deBool				transformFeedback
-												rastCase.type,			// RasterizationCase	rastCase
-												rastCase.dsAttachment,	// deBool				depthStencilAttachment
-												topology.type,			// VkPrimitiveTopology	primitiveTopology
-												pgqStream.index,		// VertexStreamIndex	pgqStreamIndex
-												xfbStream.index,		// VertexStreamIndex	xfbStreamIndex
-												cmdBufCase.type,		// CommandBufferCase	cmdBufCase
-											};
+												const TestParameters	parameters	=
+												{
+													read.type,				// QueryReadType		queryReadType
+													reset.type,				// QueryResetType		queryResetType
+													result.type,			// QueryResultType		queryResultType
+													shader.stage,			// ShaderStage			shaderStage
+													xfbState.enable,		// deBool				transformFeedback
+													rastCase.type,			// RasterizationCase	rastCase
+													rastCase.dsAttachment,	// deBool				depthStencilAttachment
+													topology.type,			// VkPrimitiveTopology	primitiveTopology
+													pgqStream.index,		// VertexStreamIndex	pgqStreamIndex
+													xfbStream.index,		// VertexStreamIndex	xfbStreamIndex
+													cmdBufCase.type,		// CommandBufferCase	cmdBufCase
+													countCase.queryCount,	// const uint32_t		queryCount
+												};
 
-											streamGroup->addChild(new PrimitivesGeneratedQueryTestCase(testCtx, cmdBufCase.name, cmdBufCase.desc, parameters));
+												const auto name = std::string(cmdBufCase.name) + countCase.nameSuffix;
+												const auto desc = std::string(cmdBufCase.desc) + countCase.descSuffix;
+
+												streamGroup->addChild(new PrimitivesGeneratedQueryTestCase(testCtx, name.c_str(), desc.c_str(), parameters));
+											}
 										}
 
 										topologyGroup->addChild(streamGroup.release());

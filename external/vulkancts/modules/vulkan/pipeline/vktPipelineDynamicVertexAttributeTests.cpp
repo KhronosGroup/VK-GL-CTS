@@ -114,12 +114,28 @@ static std::vector <std::string> removeExtensions (const std::vector<std::string
 	return res;
 }
 
-vk::Move<vk::VkDevice> createDynamicVertexStateDevice (Context& context, const deUint32 testQueueFamilyIndex)
+vk::Move<vk::VkDevice> createDynamicVertexStateDevice (Context& context, const deUint32 testQueueFamilyIndex, bool pipelineLibrary)
 {
+	DE_UNREF(pipelineLibrary);
+
+	void* pNext = DE_NULL;
+
+#ifndef CTS_USES_VULKANSC
+	vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT	graphicsPipelineFeatures
+	{
+		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_FEATURES_EXT,	// VkStructureType	sType;
+		DE_NULL,																		// void*			pNext;
+		VK_TRUE,																		// VkBool32			graphicsPipelineLibrary;
+	};
+
+	if (pipelineLibrary)
+		pNext = &graphicsPipelineFeatures;
+#endif
+
 	vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT	dynamicVertexState
 	{
 		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT,	// VkStructureType	sType;
-		DE_NULL,																		// void*			pNext;
+		pNext,																			// void*			pNext;
 		true																			// VkBool32			vertexInputDynamicState;
 	};
 
@@ -207,7 +223,7 @@ tcu::TestStatus NonSequentialInstance::iterate (void)
 	const vk::PlatformInterface&									vkp						= m_context.getPlatformInterface();
 	const vk::VkInstance											vki						= m_context.getInstance();
 	const deUint32													queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
-	const vk::Move<vk::VkDevice>									device					= createDynamicVertexStateDevice(m_context, queueFamilyIndex);
+	const vk::Move<vk::VkDevice>									device					= createDynamicVertexStateDevice(m_context, queueFamilyIndex, m_pipelineConstructionType != vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC);
 	vk::SimpleAllocator												allocator				(vk, *device, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
 	const vk::DeviceDriver											deviceDriver			(vkp, vki, *device);
 	const vk::VkQueue												queue					= getDeviceQueue(deviceDriver, *device, queueFamilyIndex, 0u);

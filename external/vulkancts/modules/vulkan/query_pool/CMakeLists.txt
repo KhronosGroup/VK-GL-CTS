@@ -13,6 +13,8 @@ set(DEQP_VK_VKSC_QUERY_POOL_SRCS
 	vktQueryPoolStatisticsTests.cpp
 	vktQueryPoolConcurrentTests.hpp
 	vktQueryPoolConcurrentTests.cpp
+	vktQueryPoolFragInvocationTests.hpp
+	vktQueryPoolFragInvocationTests.cpp
 )
 
 set(DEQP_VK_QUERY_POOL_SRCS

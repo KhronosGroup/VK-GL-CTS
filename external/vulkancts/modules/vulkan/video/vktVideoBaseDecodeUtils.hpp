@@ -343,6 +343,7 @@ private:
 class NvidiaParserVideoPictureParameters : public NvidiaParserVideoRefCountBase
 {
 public:
+	static const uint32_t MAX_VPS_IDS = 16;
 	static const uint32_t MAX_SPS_IDS = 32;
 	static const uint32_t MAX_PPS_IDS = 256;
 
@@ -352,6 +353,7 @@ public:
 	static NvidiaParserVideoPictureParameters*	Create								(const DeviceInterface&							vkd,
 																					 VkDevice										device,
 																					 VkVideoSessionKHR								videoSession,
+																					 const StdVideoPictureParametersSet*			pVpsStdPictureParametersSet,
 																					 const StdVideoPictureParametersSet*			pSpsStdPictureParametersSet,
 																					 const StdVideoPictureParametersSet*			pPpsStdPictureParametersSet,
 																					 NvidiaParserVideoPictureParameters*			pTemplate);
@@ -360,10 +362,12 @@ public:
 	static int32_t								PopulateH265UpdateFields			(const StdVideoPictureParametersSet*			pStdPictureParametersSet,
 																					 VkVideoDecodeH265SessionParametersAddInfoKHR&	h265SessionParametersAddInfo);
 	VkResult									Update								(const DeviceInterface&							vkd,
+																					 const StdVideoPictureParametersSet*			pVpsStdPictureParametersSet,
 																					 const StdVideoPictureParametersSet*			pSpsStdPictureParametersSet,
 																					 const StdVideoPictureParametersSet*			pPpsStdPictureParametersSet);
 	VkVideoSessionParametersKHR					GetVideoSessionParametersKHR		() const;
 	int32_t										GetId								() const;
+	bool										HasVpsId							(uint32_t										vpsId) const;
 	bool										HasSpsId							(uint32_t										spsId) const;
 	bool										HasPpsId							(uint32_t										ppsId) const;
 
@@ -377,6 +381,7 @@ private:
 	atomic<int32_t>								m_refCount;
 	VkDevice									m_device;
 	Move<VkVideoSessionParametersKHR>			m_sessionParameters;
+	bitset<MAX_VPS_IDS>							m_vpsIdsUsed;
 	bitset<MAX_SPS_IDS>							m_spsIdsUsed;
 	bitset<MAX_PPS_IDS>							m_ppsIdsUsed;
 };
@@ -418,7 +423,9 @@ public:
 	Move<VkCommandBuffer>		commandBuffer;
 };
 
+using PictureParameters = std::array<NvidiaSharedBaseObj<StdVideoPictureParametersSet>, 3>;
 typedef queue<NvidiaSharedBaseObj<StdVideoPictureParametersSet>>	PictureParametersQueue;
+typedef NvidiaSharedBaseObj<StdVideoPictureParametersSet>			LastVpsPictureParametersQueue;
 typedef NvidiaSharedBaseObj<StdVideoPictureParametersSet>			LastSpsPictureParametersQueue;
 typedef NvidiaSharedBaseObj<StdVideoPictureParametersSet>			LastPpsPictureParametersQueue;
 typedef NvidiaSharedBaseObj<NvidiaParserVideoPictureParameters>		CurrentPictureParameters;
@@ -542,11 +549,12 @@ protected:
 																							 uint32_t												width,
 																							 uint32_t												height);
 	bool													AddPictureParametersToQueue		(NvidiaSharedBaseObj<StdVideoPictureParametersSet>&		pictureParametersSet);
-	uint32_t												FlushPictureParametersQueue		();
+	void													FlushPictureParametersQueue		();
 	bool													CheckStdObjectBeforeUpdate		(NvidiaSharedBaseObj<StdVideoPictureParametersSet>&		stdPictureParametersSet);
 	NvidiaParserVideoPictureParameters*						CheckStdObjectAfterUpdate		(NvidiaSharedBaseObj<StdVideoPictureParametersSet>&		stdPictureParametersSet,
 																							 NvidiaParserVideoPictureParameters*					pNewPictureParametersObject);
-	NvidiaParserVideoPictureParameters*						AddPictureParameters			(NvidiaSharedBaseObj<StdVideoPictureParametersSet>&		spsStdPictureParametersSet,
+	NvidiaParserVideoPictureParameters*						AddPictureParameters			(NvidiaSharedBaseObj<StdVideoPictureParametersSet>&		vpsStdPictureParametersSet,
+																							 NvidiaSharedBaseObj<StdVideoPictureParametersSet>&		spsStdPictureParametersSet,
 																							 NvidiaSharedBaseObj<StdVideoPictureParametersSet>&		ppsStdPictureParametersSet);
 	NvVkDecodeFrameData*									GetCurrentFrameData				(uint32_t												currentSlotId);
 
@@ -601,7 +609,9 @@ protected:
 	int32_t													m_decodePicCount;
 	VulkanParserDetectedVideoFormat							m_videoFormat;
 	int32_t													m_lastSpsIdInQueue;
+
 	PictureParametersQueue									m_pictureParametersQueue;
+	LastVpsPictureParametersQueue							m_lastVpsPictureParametersQueue;
 	LastSpsPictureParametersQueue							m_lastSpsPictureParametersQueue;
 	LastPpsPictureParametersQueue							m_lastPpsPictureParametersQueue;
 	CurrentPictureParameters								m_currentPictureParameters;

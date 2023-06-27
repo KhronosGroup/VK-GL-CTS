@@ -22,13 +22,13 @@
 class ESEDemuxer {
     ESExtractor *extractor{};
     ESEPacket* pkt{};
-    ESExtractorVideoCodec eVideoCodec{ES_EXTRACTOR_VIDEO_CODEC_UNKNOWN};
+    ESEVideoCodec eVideoCodec{ESE_VIDEO_CODEC_UNKNOWN};
 
     tcu::TestLog& log;
 
 public:
     ESEDemuxer(const std::string& filePath, tcu::TestLog& log_)
-		: extractor(es_extractor_new(filePath.c_str(), ES_EXTRACTOR_PACKET_ALIGNMENT_NAL))
+		: extractor(es_extractor_new(filePath.c_str(), "Alignment:NAL"))
 		, log(log_)
 	{
         eVideoCodec = es_extractor_video_codec(extractor);
@@ -43,7 +43,10 @@ public:
         es_extractor_teardown(extractor);
     }
 
-    ESExtractorVideoCodec GetVideoCodec() {
+    ESEVideoCodec GetVideoCodec() {
+        if (!extractor) {
+            return ESE_VIDEO_CODEC_UNKNOWN;
+        }
         return eVideoCodec;
     }
 
@@ -56,13 +59,13 @@ public:
 
         if (pkt) {
             es_extractor_clear_packet(pkt);
-            pkt = NULL;
+            pkt = nullptr;
         }
 
         int e = 0;
-        e = es_extractor_read_frame(extractor, &pkt);
+        e = es_extractor_read_packet(extractor, &pkt);
 
-        if (e > ES_EXTRACTOR_RESULT_LAST_PACKET) {
+        if (e > ESE_RESULT_LAST_PACKET) {
             return false;
         }
 
@@ -73,10 +76,10 @@ public:
     }
 };
 
-inline vk::VkVideoCodecOperationFlagBitsKHR EXExtractor2NvCodecId(ESExtractorVideoCodec id) {
+inline vk::VkVideoCodecOperationFlagBitsKHR EXExtractor2NvCodecId(ESEVideoCodec id) {
     switch (id) {
-        case ES_EXTRACTOR_VIDEO_CODEC_H264       : return vk::VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR;
-        case ES_EXTRACTOR_VIDEO_CODEC_H265       : return vk::VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR;
+        case ESE_VIDEO_CODEC_H264       : return vk::VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR;
+        case ESE_VIDEO_CODEC_H265       : return vk::VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR;
         default                     : /* assert(false); */ return vk::VkVideoCodecOperationFlagBitsKHR(0);
     }
 }

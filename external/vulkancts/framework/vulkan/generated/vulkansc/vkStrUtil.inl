@@ -265,6 +265,7 @@ tcu::Format::Bitfield<32>	getCommandBufferResetFlagsStr								(VkCommandBufferR
 tcu::Format::Bitfield<32>	getCommandBufferUsageFlagsStr								(VkCommandBufferUsageFlags value);
 tcu::Format::Bitfield<32>	getQueryPipelineStatisticFlagsStr							(VkQueryPipelineStatisticFlags value);
 tcu::Format::Bitfield<32>	getMemoryMapFlagsStr										(VkMemoryMapFlags value);
+tcu::Format::Bitfield<32>	getMemoryUnmapFlagsKHRStr									(VkMemoryUnmapFlagsKHR value);
 tcu::Format::Bitfield<32>	getImageAspectFlagsStr										(VkImageAspectFlags value);
 tcu::Format::Bitfield<32>	getSparseMemoryBindFlagsStr									(VkSparseMemoryBindFlags value);
 tcu::Format::Bitfield<32>	getSparseImageFormatFlagsStr								(VkSparseImageFormatFlags value);
@@ -395,10 +396,13 @@ tcu::Format::Bitfield<32>	getVideoEncodeRateControlModeFlagsKHRStr					(VkVideoE
 tcu::Format::Bitfield<32>	getVideoChromaSubsamplingFlagsKHRStr						(VkVideoChromaSubsamplingFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoComponentBitDepthFlagsKHRStr						(VkVideoComponentBitDepthFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoEncodeH264CapabilityFlagsEXTStr						(VkVideoEncodeH264CapabilityFlagsEXT value);
+tcu::Format::Bitfield<32>	getVideoEncodeH264StdFlagsEXTStr							(VkVideoEncodeH264StdFlagsEXT value);
+tcu::Format::Bitfield<32>	getVideoEncodeH264RateControlFlagsEXTStr					(VkVideoEncodeH264RateControlFlagsEXT value);
 tcu::Format::Bitfield<32>	getVideoEncodeH265CapabilityFlagsEXTStr						(VkVideoEncodeH265CapabilityFlagsEXT value);
+tcu::Format::Bitfield<32>	getVideoEncodeH265StdFlagsEXTStr							(VkVideoEncodeH265StdFlagsEXT value);
+tcu::Format::Bitfield<32>	getVideoEncodeH265RateControlFlagsEXTStr					(VkVideoEncodeH265RateControlFlagsEXT value);
 tcu::Format::Bitfield<32>	getVideoEncodeH265CtbSizeFlagsEXTStr						(VkVideoEncodeH265CtbSizeFlagsEXT value);
 tcu::Format::Bitfield<32>	getVideoEncodeH265TransformBlockSizeFlagsEXTStr				(VkVideoEncodeH265TransformBlockSizeFlagsEXT value);
-tcu::Format::Bitfield<32>	getMemoryUnmapFlagsKHRStr									(VkMemoryUnmapFlagsKHR value);
 
 std::ostream&	operator<<	(std::ostream& s, const VkBaseOutStructure& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBaseInStructure& value);

@@ -534,7 +534,9 @@ class CreateLongRunningSyncTest : public SyncTest {
 		return p;
 	}
 
-	void RunComputePersistent() {
+	// Run the test. Return whether validation can continue. If false then the test result must
+	// already be set. Used so that validation can be skipped if some members are left invalid.
+	bool RunComputePersistent() {
 		const Library&		egl = m_eglTestCtx.getLibrary();
 		TestLog&		log = m_testCtx.getLog();
 		GLbitfield		flags = GL_MAP_READ_BIT | GL_MAP_WRITE_BIT |
@@ -546,7 +548,7 @@ class CreateLongRunningSyncTest : public SyncTest {
 		if (!CheckProgram(program))
 		{
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-			return;
+			return false;
 		}
 
 		m_gl.useProgram(program);
@@ -562,8 +564,8 @@ class CreateLongRunningSyncTest : public SyncTest {
 			log << TestLog::Message
 				<< "Error getting the correct function"
 				<< TestLog::EndMessage;
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-			return;
+			m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "glBufferStorageEXT not supported");
+			return false;
 		}
 
 		func(GL_SHADER_STORAGE_BUFFER, sizeof(int) * 2, NULL, flags);
@@ -579,6 +581,7 @@ class CreateLongRunningSyncTest : public SyncTest {
 
 		m_gl.memoryBarrier(GL_ALL_BARRIER_BITS);
 		m_gl.flush();
+		return true;
 	};
 
 	template <typename clientWaitSyncFuncType>
@@ -660,7 +663,11 @@ class CreateLongRunningSyncTest : public SyncTest {
 			return;
 		}
 
-		RunComputePersistent();
+		// The test may already encountered an error before everything was set up properly.
+		// If that has happened then the exit code will already be set and we must exit before
+		// trying to use any of the members because they may not be valid.
+		if (!RunComputePersistent())
+			return;
 
 		m_sync = (egl.*createSyncFunc)(m_eglDisplay, syncType, NULL);
 		log << TestLog::Message << m_sync << " = "

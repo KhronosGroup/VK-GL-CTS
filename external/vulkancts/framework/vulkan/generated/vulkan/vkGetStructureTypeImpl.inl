@@ -2598,6 +2598,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceImageSlicedViewOf3DF
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_SLICED_VIEW_OF_3D_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_EXT;
@@ -2873,6 +2878,16 @@ template<> VkStructureType getStructureType<VkVideoSessionParametersUpdateInfoKH
 	return VK_STRUCTURE_TYPE_VIDEO_SESSION_PARAMETERS_UPDATE_INFO_KHR;
 }
 
+template<> VkStructureType getStructureType<VkVideoEncodeSessionParametersGetInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_PARAMETERS_GET_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoEncodeSessionParametersFeedbackInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_PARAMETERS_FEEDBACK_INFO_KHR;
+}
+
 template<> VkStructureType getStructureType<VkVideoBeginCodingInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_VIDEO_BEGIN_CODING_INFO_KHR;
@@ -2903,6 +2918,21 @@ template<> VkStructureType getStructureType<VkQueryPoolVideoEncodeFeedbackCreate
 	return VK_STRUCTURE_TYPE_QUERY_POOL_VIDEO_ENCODE_FEEDBACK_CREATE_INFO_KHR;
 }
 
+template<> VkStructureType getStructureType<VkVideoEncodeQualityLevelInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUALITY_LEVEL_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceVideoEncodeQualityLevelInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_QUALITY_LEVEL_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoEncodeQualityLevelPropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUALITY_LEVEL_PROPERTIES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkVideoEncodeRateControlInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_INFO_KHR;
@@ -2923,6 +2953,16 @@ template<> VkStructureType getStructureType<VkVideoEncodeH264CapabilitiesEXT> (v
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_CAPABILITIES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkVideoEncodeH264QualityLevelPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_QUALITY_LEVEL_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoEncodeH264SessionCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_CREATE_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkVideoEncodeH264SessionParametersAddInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_PARAMETERS_ADD_INFO_EXT;
@@ -2933,14 +2973,24 @@ template<> VkStructureType getStructureType<VkVideoEncodeH264SessionParametersCr
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_PARAMETERS_CREATE_INFO_EXT;
 }
 
+template<> VkStructureType getStructureType<VkVideoEncodeH264SessionParametersGetInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_PARAMETERS_GET_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoEncodeH264SessionParametersFeedbackInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_PARAMETERS_FEEDBACK_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkVideoEncodeH264DpbSlotInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_DPB_SLOT_INFO_EXT;
 }
 
-template<> VkStructureType getStructureType<VkVideoEncodeH264VclFrameInfoEXT> (void)
+template<> VkStructureType getStructureType<VkVideoEncodeH264PictureInfoEXT> (void)
 {
-	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_VCL_FRAME_INFO_EXT;
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PICTURE_INFO_EXT;
 }
 
 template<> VkStructureType getStructureType<VkVideoEncodeH264ProfileInfoEXT> (void)
@@ -2958,6 +3008,11 @@ template<> VkStructureType getStructureType<VkVideoEncodeH264RateControlInfoEXT>
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_INFO_EXT;
 }
 
+template<> VkStructureType getStructureType<VkVideoEncodeH264GopRemainingFrameInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_GOP_REMAINING_FRAME_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkVideoEncodeH264RateControlLayerInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_LAYER_INFO_EXT;
@@ -2966,6 +3021,16 @@ template<> VkStructureType getStructureType<VkVideoEncodeH264RateControlLayerInf
 template<> VkStructureType getStructureType<VkVideoEncodeH265CapabilitiesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_CAPABILITIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoEncodeH265QualityLevelPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_QUALITY_LEVEL_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoEncodeH265SessionCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_SESSION_CREATE_INFO_EXT;
 }
 
 template<> VkStructureType getStructureType<VkVideoEncodeH265SessionParametersAddInfoEXT> (void)
@@ -2978,9 +3043,19 @@ template<> VkStructureType getStructureType<VkVideoEncodeH265SessionParametersCr
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_SESSION_PARAMETERS_CREATE_INFO_EXT;
 }
 
-template<> VkStructureType getStructureType<VkVideoEncodeH265VclFrameInfoEXT> (void)
+template<> VkStructureType getStructureType<VkVideoEncodeH265SessionParametersGetInfoEXT> (void)
 {
-	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_VCL_FRAME_INFO_EXT;
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_SESSION_PARAMETERS_GET_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoEncodeH265SessionParametersFeedbackInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_SESSION_PARAMETERS_FEEDBACK_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoEncodeH265PictureInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_PICTURE_INFO_EXT;
 }
 
 template<> VkStructureType getStructureType<VkVideoEncodeH265NaluSliceSegmentInfoEXT> (void)
@@ -2991,6 +3066,11 @@ template<> VkStructureType getStructureType<VkVideoEncodeH265NaluSliceSegmentInf
 template<> VkStructureType getStructureType<VkVideoEncodeH265RateControlInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_RATE_CONTROL_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoEncodeH265GopRemainingFrameInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_GOP_REMAINING_FRAME_INFO_EXT;
 }
 
 template<> VkStructureType getStructureType<VkVideoEncodeH265RateControlLayerInfoEXT> (void)
@@ -3478,6 +3558,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceShaderEarlyAndLateFr
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_EARLY_AND_LATE_FRAGMENT_TESTS_FEATURES_AMD;
 }
 
+template<> VkStructureType getStructureType<VkExternalMemoryAcquireUnmodifiedEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_ACQUIRE_UNMODIFIED_EXT;
+}
+
 template<> VkStructureType getStructureType<VkExportMetalObjectCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECT_CREATE_INFO_EXT;
@@ -3678,6 +3763,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceShaderCoreBuiltinsFe
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkSurfacePresentModeEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_EXT;
@@ -3746,6 +3836,11 @@ template<> VkStructureType getStructureType<VkDirectDriverLoadingListLUNARG> (vo
 template<> VkStructureType getStructureType<VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_VIEWPORTS_FEATURES_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_POSITION_FETCH_FEATURES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceShaderCorePropertiesARM> (void)
