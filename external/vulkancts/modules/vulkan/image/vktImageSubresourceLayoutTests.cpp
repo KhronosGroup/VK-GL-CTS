@@ -724,7 +724,7 @@ tcu::TestStatus ImageSubresourceLayoutInvarianceInstance::iterate(void)
 		// get level subresource without using image handle
 		VkImageSubresource2KHR				imageSubresource2		= initVulkanStructure();
 		imageSubresource2.imageSubresource	= imageSubresource1;
-		VkSubresourceLayout2KHR				subresourceLayout2;
+		VkSubresourceLayout2KHR				subresourceLayout2      = initVulkanStructure();
 		VkDeviceImageSubresourceInfoKHR		imageSubresourceInfo	= initVulkanStructure();
 		imageSubresourceInfo.pCreateInfo	= &imageCreateInfo;
 		imageSubresourceInfo.pSubresource	= &imageSubresource2;
