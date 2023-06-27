@@ -37,6 +37,7 @@ public:
 
 					SessionInfo		(deUint32				vendorId,
 									 deUint32				deviceId,
+									 const std::string&		deviceName,
 									 const std::string&		cmdLine);
 					SessionInfo		(std::string			vendor,
 									 std::string			renderer,
