@@ -4448,6 +4448,46 @@ tcu::TestStatus testPhysicalDeviceFeatureSwapchainMaintenance1FeaturesEXT (Conte
 	return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureDepthBiasControlFeaturesEXT (Context& context)
+{
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+	const InstanceDriver&		vki				(instance.getDriver());
+	const int					count			= 2u;
+	TestLog&					log				= context.getTestContext().getLog();
+	VkPhysicalDeviceFeatures2	extFeatures;
+	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+
+	VkPhysicalDeviceDepthBiasControlFeaturesEXT	deviceDepthBiasControlFeaturesEXT[count];
+	const bool									isDepthBiasControlFeaturesEXT = checkExtension(properties, "VK_EXT_depth_bias_control");
+
+	for (int ndx = 0; ndx < count; ++ndx)
+	{
+		deMemset(&deviceDepthBiasControlFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceDepthBiasControlFeaturesEXT));
+		deviceDepthBiasControlFeaturesEXT[ndx].sType = isDepthBiasControlFeaturesEXT ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_BIAS_CONTROL_FEATURES_EXT : VK_STRUCTURE_TYPE_MAX_ENUM;
+		deviceDepthBiasControlFeaturesEXT[ndx].pNext = DE_NULL;
+
+		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		extFeatures.pNext = &deviceDepthBiasControlFeaturesEXT[ndx];
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+	}
+
+	if (isDepthBiasControlFeaturesEXT)
+		log << TestLog::Message << deviceDepthBiasControlFeaturesEXT[0] << TestLog::EndMessage;
+
+	if (isDepthBiasControlFeaturesEXT &&
+		(deviceDepthBiasControlFeaturesEXT[0].depthBiasControl != deviceDepthBiasControlFeaturesEXT[1].depthBiasControl ||
+		 deviceDepthBiasControlFeaturesEXT[0].leastRepresentableValueForceUnormRepresentation != deviceDepthBiasControlFeaturesEXT[1].leastRepresentableValueForceUnormRepresentation ||
+		 deviceDepthBiasControlFeaturesEXT[0].floatRepresentation != deviceDepthBiasControlFeaturesEXT[1].floatRepresentation ||
+		 deviceDepthBiasControlFeaturesEXT[0].depthBiasExact != deviceDepthBiasControlFeaturesEXT[1].depthBiasExact))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceDepthBiasControlFeaturesEXT");
+	}
+	return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureRayTracingPositionFetchFeaturesKHR (Context& context)
 {
 	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
@@ -4561,6 +4601,44 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderTileImageFeaturesEXT (Context& co
 	return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureCooperativeMatrixFeaturesKHR (Context& context)
+{
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+	const InstanceDriver&		vki				(instance.getDriver());
+	const int					count			= 2u;
+	TestLog&					log				= context.getTestContext().getLog();
+	VkPhysicalDeviceFeatures2	extFeatures;
+	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+
+	VkPhysicalDeviceCooperativeMatrixFeaturesKHR	deviceCooperativeMatrixFeaturesKHR[count];
+	const bool										isCooperativeMatrixFeaturesKHR = checkExtension(properties, "VK_KHR_cooperative_matrix");
+
+	for (int ndx = 0; ndx < count; ++ndx)
+	{
+		deMemset(&deviceCooperativeMatrixFeaturesKHR[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceCooperativeMatrixFeaturesKHR));
+		deviceCooperativeMatrixFeaturesKHR[ndx].sType = isCooperativeMatrixFeaturesKHR ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR : VK_STRUCTURE_TYPE_MAX_ENUM;
+		deviceCooperativeMatrixFeaturesKHR[ndx].pNext = DE_NULL;
+
+		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		extFeatures.pNext = &deviceCooperativeMatrixFeaturesKHR[ndx];
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+	}
+
+	if (isCooperativeMatrixFeaturesKHR)
+		log << TestLog::Message << deviceCooperativeMatrixFeaturesKHR[0] << TestLog::EndMessage;
+
+	if (isCooperativeMatrixFeaturesKHR &&
+		(deviceCooperativeMatrixFeaturesKHR[0].cooperativeMatrix != deviceCooperativeMatrixFeaturesKHR[1].cooperativeMatrix ||
+		 deviceCooperativeMatrixFeaturesKHR[0].cooperativeMatrixRobustBufferAccess != deviceCooperativeMatrixFeaturesKHR[1].cooperativeMatrixRobustBufferAccess))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceCooperativeMatrixFeaturesKHR");
+	}
+	return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureDynamicRenderingLocalReadFeaturesKHR (Context& context)
 {
 	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
@@ -4591,8 +4669,7 @@ tcu::TestStatus testPhysicalDeviceFeatureDynamicRenderingLocalReadFeaturesKHR (C
 		log << TestLog::Message << deviceDynamicRenderingLocalReadFeaturesKHR[0] << TestLog::EndMessage;
 
 	if (isDynamicRenderingLocalReadFeaturesKHR &&
-		(deviceDynamicRenderingLocalReadFeaturesKHR[0].dynamicRenderingLocalRead != deviceDynamicRenderingLocalReadFeaturesKHR[1].dynamicRenderingLocalRead ||
-		 deviceDynamicRenderingLocalReadFeaturesKHR[0].dynamicStateRenderingAttachmentLocations != deviceDynamicRenderingLocalReadFeaturesKHR[1].dynamicStateRenderingAttachmentLocations))
+		(deviceDynamicRenderingLocalReadFeaturesKHR[0].dynamicRenderingLocalRead != deviceDynamicRenderingLocalReadFeaturesKHR[1].dynamicRenderingLocalRead))
 	{
 		TCU_FAIL("Mismatch between VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR");
 	}
@@ -4906,9 +4983,11 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "pipeline_library_group_handles_features_ext", "VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT", testPhysicalDeviceFeaturePipelineLibraryGroupHandlesFeaturesEXT);
 	addFunctionCase(testGroup, "dynamic_rendering_unused_attachments_features_ext", "VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT", testPhysicalDeviceFeatureDynamicRenderingUnusedAttachmentsFeaturesEXT);
 	addFunctionCase(testGroup, "swapchain_maintenance1_features_ext", "VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT", testPhysicalDeviceFeatureSwapchainMaintenance1FeaturesEXT);
+	addFunctionCase(testGroup, "depth_bias_control_features_ext", "VkPhysicalDeviceDepthBiasControlFeaturesEXT", testPhysicalDeviceFeatureDepthBiasControlFeaturesEXT);
 	addFunctionCase(testGroup, "ray_tracing_position_fetch_features_khr", "VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR", testPhysicalDeviceFeatureRayTracingPositionFetchFeaturesKHR);
 	addFunctionCase(testGroup, "shader_object_features_ext", "VkPhysicalDeviceShaderObjectFeaturesEXT", testPhysicalDeviceFeatureShaderObjectFeaturesEXT);
 	addFunctionCase(testGroup, "shader_tile_image_features_ext", "VkPhysicalDeviceShaderTileImageFeaturesEXT", testPhysicalDeviceFeatureShaderTileImageFeaturesEXT);
+	addFunctionCase(testGroup, "cooperative_matrix_features_khr", "VkPhysicalDeviceCooperativeMatrixFeaturesKHR", testPhysicalDeviceFeatureCooperativeMatrixFeaturesKHR);
 	addFunctionCase(testGroup, "dynamic_rendering_local_read_features_khr", "VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR", testPhysicalDeviceFeatureDynamicRenderingLocalReadFeaturesKHR);
 	addFunctionCase(testGroup, "create_device_with_promoted11_structures", "", createDeviceWithPromoted11Structures);
 	addFunctionCase(testGroup, "create_device_with_promoted12_structures", "", createDeviceWithPromoted12Structures);

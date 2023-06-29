@@ -74,6 +74,7 @@ const vk::VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV&				getDeviceGenerat
 const vk::VkPhysicalDeviceInheritedViewportScissorFeaturesNV&				getInheritedViewportScissorFeatures					(void) const;
 const vk::VkPhysicalDeviceShaderIntegerDotProductFeatures&					getShaderIntegerDotProductFeatures					(void) const;
 const vk::VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT&					getTexelBufferAlignmentFeaturesEXT					(void) const;
+const vk::VkPhysicalDeviceDepthBiasControlFeaturesEXT&						getDepthBiasControlFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceDeviceMemoryReportFeaturesEXT&					getDeviceMemoryReportFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceRobustness2FeaturesEXT&							getRobustness2FeaturesEXT							(void) const;
 const vk::VkPhysicalDeviceCustomBorderColorFeaturesEXT&						getCustomBorderColorFeaturesEXT						(void) const;
@@ -153,5 +154,6 @@ const vk::VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT&			getPipelineL
 const vk::VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT&		getDynamicRenderingUnusedAttachmentsFeaturesEXT		(void) const;
 const vk::VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM&			getMultiviewPerViewRenderAreasFeaturesQCOM			(void) const;
 const vk::VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT&	getAttachmentFeedbackLoopDynamicStateFeaturesEXT	(void) const;
+const vk::VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX&			getExternalMemoryScreenBufferFeaturesQNX			(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&							getProtectedMemoryFeatures							(void) const;
 const vk::VkPhysicalDeviceShaderDrawParametersFeatures&						getShaderDrawParametersFeatures						(void) const;

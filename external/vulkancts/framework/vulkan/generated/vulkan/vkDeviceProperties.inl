@@ -237,6 +237,7 @@ template<> void initPropertyFromBlob<VkPhysicalDeviceRayTracingInvocationReorder
 template<> void initPropertyFromBlob<VkPhysicalDeviceShaderCorePropertiesARM>(VkPhysicalDeviceShaderCorePropertiesARM&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceShaderObjectPropertiesEXT>(VkPhysicalDeviceShaderObjectPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceShaderTileImagePropertiesEXT>(VkPhysicalDeviceShaderTileImagePropertiesEXT&, const AllPropertiesBlobs&) {}
+template<> void initPropertyFromBlob<VkPhysicalDeviceCooperativeMatrixPropertiesKHR>(VkPhysicalDeviceCooperativeMatrixPropertiesKHR&, const AllPropertiesBlobs&) {}
 
 
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceTransformFeedbackPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_PROPERTIES_EXT, VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME, VK_EXT_TRANSFORM_FEEDBACK_SPEC_VERSION, 70}; }

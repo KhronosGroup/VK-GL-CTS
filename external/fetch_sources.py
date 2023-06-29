@@ -322,7 +322,7 @@ PACKAGES = [
 	GitRepo(
 		"https://gitlab.khronos.org/vulkan/vulkan.git",
 		"git@gitlab.khronos.org:vulkan/vulkan.git",
-		"cbf92bdfa10ad9fc4075fca361f22b75bff1c52e",
+		"1a4f0b76e7651a588c421dd44a983f0c28ce1465",
 		"vulkan-docs"),
 	GitRepo(
 		"https://github.com/google/amber.git",

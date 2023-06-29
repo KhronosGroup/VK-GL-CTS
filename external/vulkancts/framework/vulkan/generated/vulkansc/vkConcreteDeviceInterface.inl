@@ -222,3 +222,4 @@ virtual VkResult			queueSubmit2KHR							(VkQueue queue, uint32_t submitCount, c
 virtual void				cmdWriteTimestamp2KHR					(VkCommandBuffer commandBuffer, VkPipelineStageFlags2 stage, VkQueryPool queryPool, uint32_t query) const;
 virtual void				getQueueCheckpointData2NV				(VkQueue queue, uint32_t* pCheckpointDataCount, VkCheckpointData2NV* pCheckpointData) const;
 virtual void				getCommandPoolMemoryConsumption			(VkDevice device, VkCommandPool commandPool, VkCommandBuffer commandBuffer, VkCommandPoolMemoryConsumption* pConsumption) const;
+virtual VkResult			getScreenBufferPropertiesQNX			(VkDevice device, const struct _screen_buffer* buffer, VkScreenBufferPropertiesQNX* pProperties) const;

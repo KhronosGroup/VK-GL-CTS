@@ -2551,6 +2551,9 @@ def generateDeviceFeaturesOrPropertiesDefs(api, FeaturesOrProperties):
 	# iterate over all extensions to find extension that adds enum value matching pattern;
 	# this will always be in first requirement section
 	for ext in api.extensions:
+		# TEMP: skip extensions that generate errors - this will be resolved after merge from main
+		if ext.name == "VK_KHR_cooperative_matrix":
+			continue
 		# skip extensions that were promoted to other extensions (not vk version)
 		if ext.promotedto is not None and "VK_VERSION" not in ext.promotedto:
 			continue

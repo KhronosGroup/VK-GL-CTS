@@ -1683,3 +1683,28 @@ template<> VkStructureType getStructureType<VkDrmFormatModifierPropertiesList2EX
 	return VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT;
 }
 
+template<> VkStructureType getStructureType<VkImportScreenBufferInfoQNX> (void)
+{
+	return VK_STRUCTURE_TYPE_IMPORT_SCREEN_BUFFER_INFO_QNX;
+}
+
+template<> VkStructureType getStructureType<VkScreenBufferPropertiesQNX> (void)
+{
+	return VK_STRUCTURE_TYPE_SCREEN_BUFFER_PROPERTIES_QNX;
+}
+
+template<> VkStructureType getStructureType<VkScreenBufferFormatPropertiesQNX> (void)
+{
+	return VK_STRUCTURE_TYPE_SCREEN_BUFFER_FORMAT_PROPERTIES_QNX;
+}
+
+template<> VkStructureType getStructureType<VkExternalFormatQNX> (void)
+{
+	return VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_QNX;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCREEN_BUFFER_FEATURES_QNX;
+}
+
