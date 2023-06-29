@@ -26,6 +26,7 @@
 #include "vktRenderPassUnusedAttachmentTests.hpp"
 #include "pipeline/vktPipelineImageUtil.hpp"
 #include "vktRenderPassTestsUtil.hpp"
+#include "vkBarrierUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
@@ -42,6 +43,7 @@
 #include "tcuPlatform.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuVectorUtil.hpp"
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
 #include "deRandom.hpp"
@@ -66,7 +68,7 @@ struct TestParams
 	VkAttachmentStoreOp	storeOp;
 	VkAttachmentLoadOp	stencilLoadOp;
 	VkAttachmentStoreOp	stencilStoreOp;
-	RenderingType		renderingType;
+	SharedGroupParams	groupParams;
 };
 
 struct Vertex4RGBA
@@ -101,7 +103,7 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
 									 VkDevice				vkDevice,
 									 const TestParams		testParams)
 {
-	const VkImageAspectFlags	aspectMask						= testParams.renderingType == RENDERING_TYPE_RENDERPASS_LEGACY ? 0 : VK_IMAGE_ASPECT_COLOR_BIT;
+	const VkImageAspectFlags	aspectMask						= testParams.groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY ? 0 : VK_IMAGE_ASPECT_COLOR_BIT;
 	const AttachmentDesc		attachmentDescriptions[]		=
 	{
 		// Result attachment
@@ -234,9 +236,11 @@ public:
 																 const std::string&	name,
 																 const std::string&	description,
 																 const TestParams&	testParams);
-	virtual								~UnusedAttachmentTest	(void);
+	virtual								~UnusedAttachmentTest	(void) = default;
 	virtual void						initPrograms			(SourceCollections&	sourceCollections) const;
 	virtual TestInstance*				createInstance			(Context&			context) const;
+	void								checkSupport			(Context& context) const;
+
 private:
 	const TestParams					m_testParams;
 };
@@ -244,16 +248,19 @@ private:
 class UnusedAttachmentTestInstance : public vkt::TestInstance
 {
 public:
-										UnusedAttachmentTestInstance	(Context&				context,
-																		 const TestParams&		testParams);
-	virtual								~UnusedAttachmentTestInstance	(void);
-	virtual tcu::TestStatus				iterate							(void);
+										UnusedAttachmentTestInstance		(Context&				context,
+																			 const TestParams&		testParams);
+	virtual								~UnusedAttachmentTestInstance		(void) = default;
+	virtual tcu::TestStatus				iterate								(void);
 	template<typename RenderpassSubpass>
-	void								createCommandBuffer				(const DeviceInterface&	vk,
-																		 VkDevice				vkDevice);
+	void								createCommandBuffer					(const DeviceInterface&	vk,
+																			 VkDevice				vkDevice);
+	void								createCommandBufferDynamicRendering	(const DeviceInterface&	vk,
+																			 VkDevice				vkDevice);
 private:
-	tcu::TestStatus						verifyImage						(void);
+	tcu::TestStatus						verifyImage							(void);
 
+	const TestParams					m_testParams;
 	const tcu::UVec2					m_renderSize;
 
 	Move<VkImage>						m_colorImage;
@@ -304,13 +311,17 @@ UnusedAttachmentTest::UnusedAttachmentTest (tcu::TestContext&	testContext,
 {
 }
 
-UnusedAttachmentTest::~UnusedAttachmentTest (void)
-{
-}
-
 TestInstance* UnusedAttachmentTest::createInstance (Context& context) const
 {
 	return new UnusedAttachmentTestInstance(context, m_testParams);
+}
+
+void UnusedAttachmentTest::checkSupport(Context& context) const
+{
+	if (m_testParams.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
+		context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
+	else if (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering_local_read");
 }
 
 void UnusedAttachmentTest::initPrograms (SourceCollections& sourceCollections) const
@@ -351,6 +362,7 @@ void UnusedAttachmentTest::initPrograms (SourceCollections& sourceCollections) c
 UnusedAttachmentTestInstance::UnusedAttachmentTestInstance (Context&			context,
 															const TestParams&	testParams)
 	: vkt::TestInstance	(context)
+	, m_testParams		(testParams)
 	, m_renderSize		(32u, 32u)
 	, m_vertices		(createQuad())
 {
@@ -359,10 +371,6 @@ UnusedAttachmentTestInstance::UnusedAttachmentTestInstance (Context&			context,
 	const deUint32				queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
 	SimpleAllocator				memAlloc				(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
 	const VkComponentMapping	componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-
-	// Check for renderpass2 extension if used
-	if (testParams.renderingType == RENDERING_TYPE_RENDERPASS2)
-		context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
 
 	// Create color image
 	{
@@ -578,12 +586,15 @@ UnusedAttachmentTestInstance::UnusedAttachmentTestInstance (Context&			context,
 	}
 
 	// Create render pass
-	if (testParams.renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
+	if (testParams.groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
 		m_renderPass = createRenderPass<AttachmentDescription1, AttachmentReference1, SubpassDescription1, SubpassDependency1, RenderPassCreateInfo1>(vk, vkDevice, testParams);
-	else
+	else if (testParams.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
 		m_renderPass = createRenderPass<AttachmentDescription2, AttachmentReference2, SubpassDescription2, SubpassDependency2, RenderPassCreateInfo2>(vk, vkDevice, testParams);
+	else
+		m_renderPass = Move<VkRenderPass>();
 
-	// Create framebuffer
+	// Create framebuffer if renderpass handle is valid
+	if (*m_renderPass != DE_NULL)
 	{
 		const VkImageView				imageViews[]		=
 		{
@@ -672,7 +683,7 @@ UnusedAttachmentTestInstance::UnusedAttachmentTestInstance (Context&			context,
 	// Update descriptor set
 	{
 		const VkDescriptorPoolSize			descriptorPoolSize			=
-        {
+		{
 			VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,	// VkDescriptorType		type;
 			1u										// deUint32				descriptorCount;
 		};
@@ -682,7 +693,7 @@ UnusedAttachmentTestInstance::UnusedAttachmentTestInstance (Context&			context,
 			VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,		// VkStructureType				sType
 			DE_NULL,											// const void*					pNext
 			VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,	// VkDescriptorPoolCreateFlags	flags
-			1u,                                                 // deUint32						maxSets
+			1u,													// deUint32						maxSets
 			1u,													// deUint32						poolSizeCount
 			&descriptorPoolSize									// const VkDescriptorPoolSize*	pPoolSizes
 		};
@@ -700,11 +711,16 @@ UnusedAttachmentTestInstance::UnusedAttachmentTestInstance (Context&			context,
 
 		m_descriptorSetSubpass1 = allocateDescriptorSet(vk, vkDevice, &descriptorSetAllocateInfo);
 
+		VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+#ifndef CTS_USES_VULKANSC
+		if (testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+			imageLayout = VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
+#endif
 		const VkDescriptorImageInfo			inputImageInfo				=
 		{
 			DE_NULL,									// VkSampleri		sampler;
 			*m_inputAttachmentView,						// VkImageView		imageView;
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL	// VkImageLayout	imageLayout;
+			imageLayout									// VkImageLayout	imageLayout;
 		};
 
 		const VkWriteDescriptorSet			descriptorWrite				=
@@ -764,42 +780,103 @@ UnusedAttachmentTestInstance::UnusedAttachmentTestInstance (Context&			context,
 			vertexInputAttributeDescriptions							// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 		};
 
-		const std::vector<VkViewport>				viewports							(1, makeViewport(m_renderSize));
-		const std::vector<VkRect2D>					scissors							(1, makeRect2D(m_renderSize));
+		VkPipelineColorBlendAttachmentState colorBlendAttachmentState;
+		deMemset(&colorBlendAttachmentState, 0x00, sizeof(VkPipelineColorBlendAttachmentState));
+		colorBlendAttachmentState.colorWriteMask = 0xF;
 
+		deUint32 colorAttachmentsCount = (*m_renderPass == DE_NULL) ? 3u : 1u;
+		const std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates(colorAttachmentsCount, colorBlendAttachmentState);
+		VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = initVulkanStructure();
+		colorBlendStateCreateInfo.attachmentCount	= deUint32(colorBlendAttachmentStates.size());
+		colorBlendStateCreateInfo.pAttachments		= colorBlendAttachmentStates.data();
+
+		const std::vector<VkViewport>	viewports	(1, makeViewport(m_renderSize));
+		const std::vector<VkRect2D>		scissors	(1, makeRect2D(m_renderSize));
+
+		void* pNext = DE_NULL;
+
+#ifndef CTS_USES_VULKANSC
+		deUint32 colorAttachmentLocationsSubpass0[]{ VK_ATTACHMENT_UNUSED, VK_ATTACHMENT_UNUSED, 0 };
+		deUint32 colorAttachmentLocationsSubpass1[]{ 0, VK_ATTACHMENT_UNUSED, VK_ATTACHMENT_UNUSED };
+		VkRenderingAttachmentLocationInfoKHR renderingAttachmentLocationInfo = initVulkanStructure();
+		renderingAttachmentLocationInfo.colorAttachmentCount = colorAttachmentsCount;
+		renderingAttachmentLocationInfo.pColorAttachmentLocations = colorAttachmentLocationsSubpass0;
+
+		deUint32 colorAttachmentInputIndices[]{ VK_ATTACHMENT_UNUSED, VK_ATTACHMENT_UNUSED, 0 };
+		VkRenderingInputAttachmentIndexInfoKHR renderingInputAttachmentIndexInfo
 		{
-			m_graphicsPipelineSubpass0 = makeGraphicsPipeline(vk,									// const DeviceInterface&						vk
-															  vkDevice,								// const VkDevice								device
-															  *m_pipelineLayoutSubpass0,			// const VkPipelineLayout						pipelineLayout
-															  *m_vertexShaderModule,				// const VkShaderModule							vertexShaderModule
-															  DE_NULL,								// const VkShaderModule							tessellationControlModule
-															  DE_NULL,								// const VkShaderModule							tessellationEvalModule
-															  DE_NULL,								// const VkShaderModule							geometryShaderModule
-															  *m_fragmentShaderModuleSubpass0,		// const VkShaderModule							fragmentShaderModule
-															  *m_renderPass,						// const VkRenderPass							renderPass
-															  viewports,							// const std::vector<VkViewport>&				viewports
-															  scissors,								// const std::vector<VkRect2D>&					scissors
-															  VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	// const VkPrimitiveTopology					topology
-															  0u,									// const deUint32								subpass
-															  0u,									// const deUint32								patchControlPoints
-															  &vertexInputStateParams);				// const VkPipelineVertexInputStateCreateInfo*	vertexInputStateCreateInfo
+			VK_STRUCTURE_TYPE_RENDERING_INPUT_ATTACHMENT_INDEX_INFO_KHR,
+			DE_NULL,
+			colorAttachmentsCount,									// uint32_t					colorAttachmentCount
+			colorAttachmentInputIndices,							// const uint32_t*			pColorAttachmentInputIndices
+			DE_NULL,												// uint32_t					depthInputAttachmentIndex
+			DE_NULL,												// uint32_t					stencilInputAttachmentIndex
+		};
 
-			m_graphicsPipelineSubpass1 = makeGraphicsPipeline(vk,									// const DeviceInterface&						vk
-															  vkDevice,								// const VkDevice								device
-															  *m_pipelineLayoutSubpass1,			// const VkPipelineLayout						pipelineLayout
-															  *m_vertexShaderModule,				// const VkShaderModule							vertexShaderModule
-															  DE_NULL,								// const VkShaderModule							tessellationControlModule
-															  DE_NULL,								// const VkShaderModule							tessellationEvalModule
-															  DE_NULL,								// const VkShaderModule							geometryShaderModule
-															  *m_fragmentShaderModuleSubpass1,		// const VkShaderModule							fragmentShaderModule
-															  *m_renderPass,						// const VkRenderPass							renderPass
-															  viewports,							// const std::vector<VkViewport>&				viewports
-															  scissors,								// const std::vector<VkRect2D>&					scissors
-															  VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	// const VkPrimitiveTopology					topology
-															  1u,									// const deUint32								subpass
-															  0u,									// const deUint32								patchControlPoints
-															  &vertexInputStateParams);				// const VkPipelineVertexInputStateCreateInfo*	vertexInputStateCreateInfo
-		}
+		const std::vector<VkFormat> colorAttachmentFormats(colorAttachmentsCount, VK_FORMAT_R8G8B8A8_UNORM);
+		VkPipelineRenderingCreateInfo renderingCreateInfo
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+			&renderingAttachmentLocationInfo,
+			0u,
+			3u,
+			colorAttachmentFormats.data(),
+			VK_FORMAT_UNDEFINED,
+			VK_FORMAT_UNDEFINED
+		};
+
+		if (*m_renderPass == DE_NULL)
+			pNext = &renderingCreateInfo;
+#endif // CTS_USES_VULKANSC
+
+		m_graphicsPipelineSubpass0 = makeGraphicsPipeline(vk,									// const DeviceInterface&							vk
+															vkDevice,							// const VkDevice									device
+															*m_pipelineLayoutSubpass0,			// const VkPipelineLayout							pipelineLayout
+															*m_vertexShaderModule,				// const VkShaderModule								vertexShaderModule
+															DE_NULL,							// const VkShaderModule								tessellationControlModule
+															DE_NULL,							// const VkShaderModule								tessellationEvalModule
+															DE_NULL,							// const VkShaderModule								geometryShaderModule
+															*m_fragmentShaderModuleSubpass0,	// const VkShaderModule								fragmentShaderModule
+															*m_renderPass,						// const VkRenderPass								renderPass
+															viewports,							// const std::vector<VkViewport>&					viewports
+															scissors,							// const std::vector<VkRect2D>&						scissors
+															VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,// const VkPrimitiveTopology						topology
+															0u,									// const deUint32									subpass
+															0u,									// const deUint32									patchControlPoints
+															&vertexInputStateParams,			// const VkPipelineVertexInputStateCreateInfo*		vertexInputStateCreateInfo
+															DE_NULL,							// const VkPipelineRasterizationStateCreateInfo*	rasterizationStateCreateInfo
+															DE_NULL,							// const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo
+															DE_NULL,							// const VkPipelineDepthStencilStateCreateInfo*		depthStencilStateCreateInfo
+															&colorBlendStateCreateInfo,			// const VkPipelineColorBlendStateCreateInfo*		colorBlendStateCreateInfo
+															DE_NULL,							// const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfo
+															pNext);								// const void*										pNext
+
+#ifndef CTS_USES_VULKANSC
+		renderingAttachmentLocationInfo.pColorAttachmentLocations	= colorAttachmentLocationsSubpass1;
+		renderingAttachmentLocationInfo.pNext						= &renderingInputAttachmentIndexInfo;
+#endif // CTS_USES_VULKANSC
+
+		m_graphicsPipelineSubpass1 = makeGraphicsPipeline(vk,									// const DeviceInterface&							vk
+															vkDevice,							// const VkDevice									device
+															*m_pipelineLayoutSubpass1,			// const VkPipelineLayout							pipelineLayout
+															*m_vertexShaderModule,				// const VkShaderModule								vertexShaderModule
+															DE_NULL,							// const VkShaderModule								tessellationControlModule
+															DE_NULL,							// const VkShaderModule								tessellationEvalModule
+															DE_NULL,							// const VkShaderModule								geometryShaderModule
+															*m_fragmentShaderModuleSubpass1,	// const VkShaderModule								fragmentShaderModule
+															*m_renderPass,						// const VkRenderPass								renderPass
+															viewports,							// const std::vector<VkViewport>&					viewports
+															scissors,							// const std::vector<VkRect2D>&						scissors
+															VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,// const VkPrimitiveTopology						topology
+															1u,									// const deUint32									subpass
+															0u,									// const deUint32									patchControlPoints
+															&vertexInputStateParams,			// const VkPipelineVertexInputStateCreateInfo*		vertexInputStateCreateInfo
+															DE_NULL,							// const VkPipelineRasterizationStateCreateInfo*	rasterizationStateCreateInfo
+															DE_NULL,							// const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo
+															DE_NULL,							// const VkPipelineDepthStencilStateCreateInfo*		depthStencilStateCreateInfo
+															&colorBlendStateCreateInfo,			// const VkPipelineColorBlendStateCreateInfo*		colorBlendStateCreateInfo
+															DE_NULL,							// const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfo
+															pNext);								// const void*										pNext
 	}
 
 	// Create vertex buffer
@@ -830,14 +907,12 @@ UnusedAttachmentTestInstance::UnusedAttachmentTestInstance (Context&			context,
 	m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 
 	// Create command buffer
-	if (testParams.renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
+	if (testParams.groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
 		createCommandBuffer<RenderpassSubpass1>(vk, vkDevice);
-	else
+	else if (testParams.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
 		createCommandBuffer<RenderpassSubpass2>(vk, vkDevice);
-}
-
-UnusedAttachmentTestInstance::~UnusedAttachmentTestInstance (void)
-{
+	else
+		createCommandBufferDynamicRendering(vk, vkDevice);
 }
 
 template<typename RenderpassSubpass>
@@ -884,6 +959,114 @@ void UnusedAttachmentTestInstance::createCommandBuffer (const DeviceInterface&	v
 	endCommandBuffer(vk, *m_cmdBuffer);
 }
 
+void UnusedAttachmentTestInstance::createCommandBufferDynamicRendering(const DeviceInterface&	vk,
+																	   VkDevice					vkDevice)
+{
+#ifndef CTS_USES_VULKANSC
+	const VkImageSubresourceRange	subresourceRange	(makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1));
+
+	VkImageMemoryBarrier imageBarriers[]
+	{
+		makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *m_colorImage, subresourceRange),
+		makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *m_unusedImage, subresourceRange),
+		makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR, *m_inputImage, subresourceRange),
+	};
+
+	deUint32 colorAttachmentLocationsSubpass0[]{ VK_ATTACHMENT_UNUSED, VK_ATTACHMENT_UNUSED, 0 };
+	deUint32 colorAttachmentLocationsSubpass1[]{ 0, VK_ATTACHMENT_UNUSED, VK_ATTACHMENT_UNUSED };
+	VkRenderingAttachmentLocationInfoKHR renderingAttachmentLocationInfo = initVulkanStructure();
+	renderingAttachmentLocationInfo.colorAttachmentCount = 3u;
+	renderingAttachmentLocationInfo.pColorAttachmentLocations = colorAttachmentLocationsSubpass0;
+
+	deUint32 colorAttachmentInputIndices[]{ VK_ATTACHMENT_UNUSED, VK_ATTACHMENT_UNUSED, 0 };
+	VkRenderingInputAttachmentIndexInfoKHR renderingInputAttachmentIndexInfo
+	{
+		VK_STRUCTURE_TYPE_RENDERING_INPUT_ATTACHMENT_INDEX_INFO_KHR,
+		DE_NULL,
+		3u,														// uint32_t					colorAttachmentCount
+		colorAttachmentInputIndices,							// const uint32_t*			pColorAttachmentInputIndices
+		DE_NULL,												// uint32_t					depthInputAttachmentIndex
+		DE_NULL,												// uint32_t					stencilInputAttachmentIndex
+	};
+
+	std::vector<VkRenderingAttachmentInfo> colorAttachments(3u,
+		{
+			VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,		// VkStructureType			sType;
+			DE_NULL,											// const void*				pNext;
+			*m_colorAttachmentView,								// VkImageView				imageView;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout			imageLayout;
+			VK_RESOLVE_MODE_NONE,								// VkResolveModeFlagBits	resolveMode;
+			DE_NULL,											// VkImageView				resolveImageView;
+			VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout			resolveImageLayout;
+			VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp		loadOp;
+			VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp		storeOp;
+			makeClearValueColorF32(0.5f, 0.5f, 0.5f, 1.0f)		// VkClearValue				clearValue;
+		});
+
+	colorAttachments[1].imageView		= *m_unusedAttachmentView;
+	colorAttachments[1].loadOp			= m_testParams.loadOp;
+	colorAttachments[1].storeOp			= m_testParams.storeOp;
+	colorAttachments[2].imageView		= *m_inputAttachmentView;
+	colorAttachments[2].imageLayout		= VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
+	colorAttachments[2].clearValue		= makeClearValueColorF32(0.5f, 0.2f, 0.1f, 1.0f);
+
+	VkRenderingInfo renderingInfo
+	{
+		VK_STRUCTURE_TYPE_RENDERING_INFO,
+		DE_NULL,
+		0,														// VkRenderingFlagsKHR					flags;
+		makeRect2D(m_renderSize),								// VkRect2D								renderArea;
+		1u,														// deUint32								layerCount;
+		0u,														// deUint32								viewMask;
+		3u,														// deUint32								colorAttachmentCount;
+		colorAttachments.data(),								// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
+		DE_NULL,												// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
+		DE_NULL,												// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
+	};
+
+	const VkDeviceSize vertexBufferOffset = 0;
+	m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
+
+	// layout transition barriers
+	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 3u, imageBarriers);
+
+	vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
+
+	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineSubpass0);
+	vk.cmdSetRenderingAttachmentLocationsKHR(*m_cmdBuffer, &renderingAttachmentLocationInfo);
+	vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
+	vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
+
+	// barier before next subpass
+	VkImageMemoryBarrier imageBarrier(
+		makeImageMemoryBarrier(
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+			VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
+			VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR,
+			VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR,
+			*m_inputImage,
+			subresourceRange));
+	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_DEPENDENCY_BY_REGION_BIT, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
+
+	renderingAttachmentLocationInfo.pColorAttachmentLocations = colorAttachmentLocationsSubpass1;
+	vk.cmdSetRenderingAttachmentLocationsKHR(*m_cmdBuffer, &renderingAttachmentLocationInfo);
+	vk.cmdSetRenderingInputAttachmentIndicesKHR(*m_cmdBuffer, &renderingInputAttachmentIndexInfo);
+
+	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineSubpass1);
+	vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayoutSubpass1, 0, 1, &m_descriptorSetSubpass1.get(), 0, DE_NULL);
+	vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
+
+	vk.cmdEndRendering(*m_cmdBuffer);
+	endCommandBuffer(vk, *m_cmdBuffer);
+
+#else
+	DE_UNREF(vk);
+	DE_UNREF(vkDevice);
+#endif // CTS_USES_VULKANSC
+}
+
 tcu::TestStatus UnusedAttachmentTestInstance::iterate (void)
 {
 	const DeviceInterface&		vk			= m_context.getDeviceInterface();
@@ -907,6 +1090,13 @@ tcu::TestStatus UnusedAttachmentTestInstance::verifyImage (void)
 	de::UniquePtr<tcu::TextureLevel>	textureLevelUnused		(pipeline::readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *m_unusedImage, VK_FORMAT_R8G8B8A8_UNORM, m_renderSize).release());
 	const tcu::ConstPixelBufferAccess&	unusedAccess			= textureLevelUnused->getAccess();
 	tcu::TestLog&						log						= m_context.getTestContext().getLog();
+	tcu::Vec4							refColor				(0.1f, 0.2f, 0.3f, 0.4f);
+
+	// Define helper lambda for checks if color is same as reference
+	auto isColorValid = [](const tcu::Vec4& color, const tcu::Vec4& reference)
+	{
+		return tcu::boolAll(tcu::lessThan(tcu::absDiff(color, reference), tcu::Vec4(0.01f)));
+	};
 
 	// Log images
 	log << tcu::TestLog::ImageSet("Result", "Result images")
@@ -914,23 +1104,36 @@ tcu::TestStatus UnusedAttachmentTestInstance::verifyImage (void)
 		<< tcu::TestLog::Image("Unused", "Unused image", unusedAccess)
 		<< tcu::TestLog::EndImageSet;
 
-	// Check the unused image data hasn't changed.
-	for (int y = 0; y < unusedAccess.getHeight(); y++)
-		for (int x = 0; x < unusedAccess.getWidth(); x++)
+	if ((m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) &&
+		(m_testParams.loadOp == VK_ATTACHMENT_LOAD_OP_CLEAR))
+	{
+		// With renderpass object there could be attachment that is not listed as color attachment
+		// for any subpass and in that case it would not be cleared even when op load clear is specified
+		// in dynamic renderpass load operation will be done for all specified color attachments because we dont
+		// know at vkCmdBeginRendering which color attachments are going to be used and which will be left unused
+		if (m_testParams.storeOp == VK_ATTACHMENT_STORE_OP_STORE)
+			refColor = tcu::Vec4(0.5f, 0.5f, 0.5f, 1.0f);
+		else if (m_testParams.storeOp == VK_ATTACHMENT_STORE_OP_DONT_CARE)
 		{
-			const tcu::Vec4 color = unusedAccess.getPixel(x, y);
-			const tcu::Vec4 refColor = tcu::Vec4(0.1f, 0.2f, 0.3f, 0.4f);
-			for (deUint32 cpnt = 0; cpnt < 4; cpnt++)
-				if (de::abs(color[cpnt] - refColor[cpnt]) > 0.01f)
-					return tcu::TestStatus::fail("Unused image contents has changed.");
+			// Unused attachment was cleared but we dont care if we store it or not and now two colors are valid.
+			// If color at pixel (0, 0) is not refColor then we also should use clear color for verification.
+			if (!isColorValid(unusedAccess.getPixel(0, 0), refColor))
+				refColor = tcu::Vec4(0.5f, 0.5f, 0.5f, 1.0f);
 		}
+	}
+
+	// Check the unused image data.
+	for (int y = 0; y < unusedAccess.getHeight(); y++)
+	for (int x = 0; x < unusedAccess.getWidth(); x++)
+	{
+		if (!isColorValid(unusedAccess.getPixel(x, y), refColor))
+			return tcu::TestStatus::fail("Unused image contents has changed.");
+	}
 
 	// Check for rendered result. Just a quick check to see if correct color is found at the center of the quad.
 	const tcu::Vec4 resultColor = resultAccess.getPixel(resultAccess.getWidth() / 2, resultAccess.getHeight() / 2);
-	const tcu::Vec4 refColor = tcu::Vec4(0.4f, 0.6f, 0.2f, 1.0f);
-	for (deUint32 cpnt = 0; cpnt < 4; cpnt++)
-		if (de::abs(resultColor[cpnt] - refColor[cpnt]) > 0.01f)
-			return tcu::TestStatus::fail("Result image mismatch");
+	if (!isColorValid(resultColor, tcu::Vec4(0.4f, 0.6f, 0.2f, 1.0f)))
+		return tcu::TestStatus::fail("Result image mismatch");
 
 	return tcu::TestStatus::pass("Pass");
 }
@@ -967,7 +1170,7 @@ std::string storeOpToString (VkAttachmentStoreOp storeOp)
 
 } // anonymous
 
-tcu::TestCaseGroup* createRenderPassUnusedAttachmentTests (tcu::TestContext& testCtx, const RenderingType renderingType)
+tcu::TestCaseGroup* createRenderPassUnusedAttachmentTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
 	de::MovePtr<tcu::TestCaseGroup>		unusedAttTests		(new tcu::TestCaseGroup(testCtx, "unused_attachment", "Unused attachment tests"));
 
@@ -984,6 +1187,15 @@ tcu::TestCaseGroup* createRenderPassUnusedAttachmentTests (tcu::TestContext& tes
 		VK_ATTACHMENT_STORE_OP_DONT_CARE
 	};
 
+	deUint32 stencilLoadOpStartIdx = 0;
+	deUint32 stencilStoreOpStartIdx = 0;
+	if (groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+	{
+		// in dynamic rendering cases we dont_care about stencil load/store
+		stencilLoadOpStartIdx	= DE_LENGTH_OF_ARRAY(loadOps) - 1;
+		stencilStoreOpStartIdx	= DE_LENGTH_OF_ARRAY(storeOps) - 1;
+	}
+
 	for (deUint32 loadOpIdx = 0; loadOpIdx < DE_LENGTH_OF_ARRAY(loadOps); loadOpIdx++)
 	{
 		de::MovePtr<tcu::TestCaseGroup>	loadOpGroup(new tcu::TestCaseGroup(testCtx, (std::string("loadop") + loadOpToString(loadOps[loadOpIdx])).c_str(), ""));
@@ -992,11 +1204,11 @@ tcu::TestCaseGroup* createRenderPassUnusedAttachmentTests (tcu::TestContext& tes
 		{
 			de::MovePtr<tcu::TestCaseGroup>	storeOpGroup(new tcu::TestCaseGroup(testCtx, (std::string("storeop") + storeOpToString(storeOps[storeOpIdx])).c_str(), ""));
 
-			for (deUint32 stencilLoadOpIdx = 0; stencilLoadOpIdx < DE_LENGTH_OF_ARRAY(loadOps); stencilLoadOpIdx++)
+			for (deUint32 stencilLoadOpIdx = stencilLoadOpStartIdx; stencilLoadOpIdx < DE_LENGTH_OF_ARRAY(loadOps); stencilLoadOpIdx++)
 			{
 				de::MovePtr<tcu::TestCaseGroup>	stencilLoadOpGroup(new tcu::TestCaseGroup(testCtx, (std::string("stencilloadop") + loadOpToString(loadOps[stencilLoadOpIdx])).c_str(), ""));
 
-				for (deUint32 stencilStoreOpIdx = 0; stencilStoreOpIdx < DE_LENGTH_OF_ARRAY(storeOps); stencilStoreOpIdx++)
+				for (deUint32 stencilStoreOpIdx = stencilStoreOpStartIdx; stencilStoreOpIdx < DE_LENGTH_OF_ARRAY(storeOps); stencilStoreOpIdx++)
 				{
 					TestParams			params;
 					const std::string	testName = std::string("stencilstoreop") + storeOpToString(storeOps[stencilStoreOpIdx]);
@@ -1005,7 +1217,7 @@ tcu::TestCaseGroup* createRenderPassUnusedAttachmentTests (tcu::TestContext& tes
 					params.storeOp			= storeOps[storeOpIdx];
 					params.stencilLoadOp	= loadOps[stencilLoadOpIdx];
 					params.stencilStoreOp	= storeOps[stencilStoreOpIdx];
-					params.renderingType	= renderingType;
+					params.groupParams		= groupParams;
 
 					stencilLoadOpGroup->addChild(new UnusedAttachmentTest(testCtx, testName, "", params));
 				}

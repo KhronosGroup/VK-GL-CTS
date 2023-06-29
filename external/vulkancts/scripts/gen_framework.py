@@ -3451,6 +3451,10 @@ def writeApiExtensionDependencyInfo(api, filename):
 									extNotFound = False
 									depList[idx] = "true"
 						if extNotFound:
+							# <temp_workaround for VK_KHR_shader_quad_scope, remove this before merge to main>
+							if depPart == "VK_KHR_shader_maximal_reconvergence":
+								continue
+							# </temp_workaround>
 							assert False, f"{depPart} from dependencies not found"
 			yield f'\t// depends attribute in xml: {ext.depends}'
 			finalConditon = ''.join(depList)

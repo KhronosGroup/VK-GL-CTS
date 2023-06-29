@@ -26,6 +26,7 @@
 #include "pipeline/vktPipelineImageUtil.hpp"
 #include "vktRenderPassTestsUtil.hpp"
 #include "vktTestCase.hpp"
+#include "vkBarrierUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkPrograms.hpp"
@@ -360,7 +361,7 @@ public:
 													 const std::string&	name,
 													 const std::string&	description,
 													 const TestParams&	testParams);
-	virtual					~LoadStoreOpNoneTest	(void);
+	virtual					~LoadStoreOpNoneTest	(void) = default;
 	virtual void			initPrograms			(SourceCollections&	sourceCollections) const;
 	virtual void			checkSupport			(Context& context) const;
 	virtual TestInstance*	createInstance			(Context& context) const;
@@ -373,7 +374,7 @@ class LoadStoreOpNoneTestInstance : public vkt::TestInstance
 public:
 								LoadStoreOpNoneTestInstance		(Context&			context,
 																 const TestParams&	testParams);
-	virtual						~LoadStoreOpNoneTestInstance	(void);
+	virtual						~LoadStoreOpNoneTestInstance	(void) = default;
 	virtual tcu::TestStatus		iterate							(void);
 
 	template<typename RenderpassSubpass>
@@ -421,10 +422,6 @@ LoadStoreOpNoneTest::LoadStoreOpNoneTest (tcu::TestContext&		testContext,
 {
 }
 
-LoadStoreOpNoneTest::~LoadStoreOpNoneTest (void)
-{
-}
-
 TestInstance* LoadStoreOpNoneTest::createInstance (Context& context) const
 {
 	return new LoadStoreOpNoneTestInstance(context, m_testParams);
@@ -438,7 +435,11 @@ void LoadStoreOpNoneTest::checkSupport (Context& ctx) const
 
 	// Check for dynamic_rendering extension if used
 	if (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+	{
 		ctx.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+		if (m_testParams.subpasses.size() > 1)
+			ctx.requireDeviceFunctionality("VK_KHR_dynamic_rendering_local_read");
+	}
 
 	ctx.requireDeviceFunctionality("VK_EXT_load_store_op_none");
 
@@ -545,10 +546,6 @@ LoadStoreOpNoneTestInstance::LoadStoreOpNoneTestInstance	(Context&			context,
 {
 }
 
-LoadStoreOpNoneTestInstance::~LoadStoreOpNoneTestInstance (void)
-{
-}
-
 template<typename RenderpassSubpass>
 void LoadStoreOpNoneTestInstance::createCommandBuffer	(const DeviceInterface&					vk,
 														 VkDevice								vkDevice,
@@ -587,11 +584,11 @@ void LoadStoreOpNoneTestInstance::createCommandBuffer(const DeviceInterface&				
 													  std::vector<Move<VkPipelineLayout>>&	pipelineLayouts,
 													  std::vector<Move<VkPipeline>>&		pipelines)
 {
-	std::vector<VkRenderingAttachmentInfoKHR>	colorAttachments;
+	std::vector<VkRenderingAttachmentInfo>		colorAttachments;
 
-	VkRenderingAttachmentInfoKHR				depthAttachment
+	VkRenderingAttachmentInfo					depthAttachment
 	{
-		VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,				// VkStructureType						sType;
+		VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,					// VkStructureType						sType;
 		DE_NULL,														// const void*							pNext;
 		DE_NULL,														// VkImageView							imageView;
 		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,				// VkImageLayout						imageLayout;
@@ -603,9 +600,9 @@ void LoadStoreOpNoneTestInstance::createCommandBuffer(const DeviceInterface&				
 		makeClearValueDepthStencil(0.0f, 0u)							// VkClearValue							clearValue;
 	};
 
-	VkRenderingAttachmentInfoKHR				stencilAttachment
+	VkRenderingAttachmentInfo					stencilAttachment
 	{
-		VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,				// VkStructureType						sType;
+		VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,					// VkStructureType						sType;
 		DE_NULL,														// const void*							pNext;
 		DE_NULL,														// VkImageView							imageView;
 		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,				// VkImageLayout						imageLayout;
@@ -630,7 +627,7 @@ void LoadStoreOpNoneTestInstance::createCommandBuffer(const DeviceInterface&				
 			DE_ASSERT(m_testParams.attachments[i + 1].usage & ATTACHMENT_USAGE_RESOLVE_TARGET);
 			const auto resolveMode = ((m_testParams.attachments[i].usage & ATTACHMENT_USAGE_INTEGER) ? VK_RESOLVE_MODE_SAMPLE_ZERO_BIT : VK_RESOLVE_MODE_AVERAGE_BIT);
 			colorAttachments.push_back({
-				VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,		// VkStructureType						sType;
+				VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,		// VkStructureType						sType;
 				DE_NULL,												// const void*							pNext;
 				*imageViews[i],											// VkImageView							imageView;
 				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// VkImageLayout						imageLayout;
@@ -648,10 +645,26 @@ void LoadStoreOpNoneTestInstance::createCommandBuffer(const DeviceInterface&				
 		else if (m_testParams.attachments[i].usage & ATTACHMENT_USAGE_COLOR)
 		{
 			colorAttachments.push_back({
-				VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,		// VkStructureType						sType;
+				VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,			// VkStructureType						sType;
 				DE_NULL,												// const void*							pNext;
 				*imageViews[i],											// VkImageView							imageView;
 				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// VkImageLayout						imageLayout;
+				VK_RESOLVE_MODE_NONE,									// VkResolveModeFlagBits				resolveMode;
+				DE_NULL,												// VkImageView							resolveImageView;
+				VK_IMAGE_LAYOUT_UNDEFINED,								// VkImageLayout						resolveImageLayout;
+				m_testParams.attachments[i].loadOp,						// VkAttachmentLoadOp					loadOp;
+				m_testParams.attachments[i].storeOp,					// VkAttachmentStoreOp					storeOp;
+				makeClearValueColor(tcu::Vec4(0.0f))					// VkClearValue							clearValue;
+				});
+			colorAttachmentFormats.push_back(getFormat(m_testParams.attachments[i].usage, m_testParams.depthStencilFormat));
+		}
+		else if (m_testParams.attachments[i].usage & ATTACHMENT_USAGE_INPUT)
+		{
+			colorAttachments.push_back({
+				VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,			// VkStructureType						sType;
+				DE_NULL,												// const void*							pNext;
+				*imageViews[i],											// VkImageView							imageView;
+				VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR,				// VkImageLayout						imageLayout;
 				VK_RESOLVE_MODE_NONE,									// VkResolveModeFlagBits				resolveMode;
 				DE_NULL,												// VkImageView							resolveImageView;
 				VK_IMAGE_LAYOUT_UNDEFINED,								// VkImageLayout						resolveImageLayout;
@@ -676,9 +689,9 @@ void LoadStoreOpNoneTestInstance::createCommandBuffer(const DeviceInterface&				
 		}
 	}
 
-	VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
+	VkCommandBufferInheritanceRenderingInfo inheritanceRenderingInfo
 	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,		// VkStructureType					sType;
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO,			// VkStructureType					sType;
 		DE_NULL,																// const void*						pNext;
 		0u,																		// VkRenderingFlagsKHR				flags;
 		0u,																		// uint32_t							viewMask;
@@ -698,9 +711,9 @@ void LoadStoreOpNoneTestInstance::createCommandBuffer(const DeviceInterface&				
 		&bufferInheritanceInfo
 	};
 
-	VkRenderingInfoKHR renderingInfo
+	VkRenderingInfo renderingInfo
 	{
-		VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+		VK_STRUCTURE_TYPE_RENDERING_INFO,
 		DE_NULL,
 		0u,																// VkRenderingFlagsKHR					flags;
 		makeRect2D(m_renderSize),										// VkRect2D								renderArea;
@@ -802,9 +815,42 @@ void LoadStoreOpNoneTestInstance::drawCommands(VkCommandBuffer						cmdBuffer,
 	{
 		if (i != 0)
 		{
-			// multi subpass tests should not be executed for dynamic rendering
-			DE_ASSERT(m_testParams.groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING);
-			vk.cmdNextSubpass(cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+			if (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+			{
+				// if more subpasses are ever needed code should be adjusted
+				DE_ASSERT(m_testParams.subpasses.size() < 3);
+
+				// barier before next subpass
+				VkMemoryBarrier memoryBarrier = makeMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_INPUT_ATTACHMENT_READ_BIT);
+				vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_DEPENDENCY_BY_REGION_BIT, 1u, &memoryBarrier, 0u, DE_NULL, 0u, DE_NULL);
+
+				VkRenderingAttachmentLocationInfoKHR	renderingAttachmentLocationInfo		= initVulkanStructure();
+				VkRenderingInputAttachmentIndexInfoKHR	renderingInputAttachmentIndexInfo	= initVulkanStructure(&renderingAttachmentLocationInfo);
+				std::vector<deUint32>					colorAttachmentLocations			(m_testParams.attachments.size(), VK_ATTACHMENT_UNUSED);
+				std::vector<deUint32>					colorAttachmentInputs				(m_testParams.attachments.size(), VK_ATTACHMENT_UNUSED);
+				const auto&								subpass								= m_testParams.subpasses[1];
+				deUint32								locationIndex						= 0u;
+				deUint32								inputIndex							= 0u;
+
+				// remap color attachment locations and input attachment indices
+				for (deUint32 attIdx = 0; attIdx < (deUint32)subpass.attachmentRefs.size(); ++attIdx)
+				{
+					if (subpass.attachmentRefs[attIdx].usage == ATTACHMENT_USAGE_COLOR)
+						colorAttachmentLocations[attIdx] = locationIndex++;
+					else if (subpass.attachmentRefs[attIdx].usage == ATTACHMENT_USAGE_INPUT)
+						colorAttachmentInputs[attIdx] = inputIndex++;
+				}
+
+				renderingAttachmentLocationInfo.colorAttachmentCount			= (deUint32)colorAttachmentLocations.size();
+				renderingAttachmentLocationInfo.pColorAttachmentLocations		= colorAttachmentLocations.data();
+				renderingInputAttachmentIndexInfo.colorAttachmentCount			= (deUint32)colorAttachmentInputs.size();
+				renderingInputAttachmentIndexInfo.pColorAttachmentInputIndices	= colorAttachmentInputs.data();
+
+				vk.cmdSetRenderingAttachmentLocationsKHR(cmdBuffer, &renderingAttachmentLocationInfo);
+				vk.cmdSetRenderingInputAttachmentIndicesKHR(cmdBuffer, &renderingInputAttachmentIndexInfo);
+			}
+			else
+				vk.cmdNextSubpass(cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 		}
 
 		vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelines[i]);
@@ -1181,9 +1227,40 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 																											   | VK_COLOR_COMPONENT_B_BIT
 																											   | VK_COLOR_COMPONENT_A_BIT;
 
-			const VkPipelineColorBlendAttachmentState	colorBlendAttachmentState			=
+			VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 			{
-				m_testParams.alphaBlend,				// VkBool32					blendEnable
+				VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+				DE_NULL,
+				0u,
+				0u,
+				DE_NULL,
+				VK_FORMAT_UNDEFINED,
+				VK_FORMAT_UNDEFINED
+			};
+
+			std::vector<VkFormat> colorVector;
+			for (const auto& att : m_testParams.attachments)
+			{
+				VkFormat format = getFormat(att.usage, m_testParams.depthStencilFormat);
+
+				if (att.usage & ATTACHMENT_USAGE_DEPTH_STENCIL)
+				{
+					const auto tcuFormat = mapVkFormat(format);
+					const auto hasDepth = tcu::hasDepthComponent(tcuFormat.order);
+					const auto hasStencil = tcu::hasStencilComponent(tcuFormat.order);
+					renderingCreateInfo.depthAttachmentFormat = (hasDepth ? format : VK_FORMAT_UNDEFINED);
+					renderingCreateInfo.stencilAttachmentFormat = (hasStencil ? format : VK_FORMAT_UNDEFINED);
+				}
+				else if (!(att.usage & ATTACHMENT_USAGE_RESOLVE_TARGET))
+				{
+					colorVector.push_back(format);
+				}
+			}
+
+			deUint32 attachmentCount = (*m_renderPass == DE_NULL) ? static_cast<deUint32>(colorVector.size()) : 1u;
+			std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentState(attachmentCount,
+			{
+				DE_FALSE,								// VkBool32					blendEnable
 				VK_BLEND_FACTOR_SRC_ALPHA,				// VkBlendFactor			srcColorBlendFactor
 				VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,	// VkBlendFactor			dstColorBlendFactor
 				VK_BLEND_OP_ADD,						// VkBlendOp				colorBlendOp
@@ -1191,17 +1268,23 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 				VK_BLEND_FACTOR_ZERO,					// VkBlendFactor			dstAlphaBlendFactor
 				VK_BLEND_OP_ADD,						// VkBlendOp				alphaBlendOp
 				writeMask								// VkColorComponentFlags	colorWriteMask
-			};
+			});
 
-			const VkPipelineColorBlendStateCreateInfo	colorBlendStateParams				=
+			if (m_testParams.alphaBlend)
+			{
+				deUint32 attachmentIndex = (*m_renderPass == DE_NULL) ? (deUint32)pipelines.size() : 0u;
+				colorBlendAttachmentState[attachmentIndex].blendEnable = DE_TRUE;
+			}
+
+			const VkPipelineColorBlendStateCreateInfo	colorBlendStateParams
 			{
 				VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType
 				DE_NULL,													// const void*									pNext
 				0u,															// VkPipelineColorBlendStateCreateFlags			flags
 				VK_FALSE,													// VkBool32										logicOpEnable
 				VK_LOGIC_OP_CLEAR,											// VkLogicOp									logicOp
-				1u,															// deUint32										attachmentCount
-				&colorBlendAttachmentState,									// const VkPipelineColorBlendAttachmentState*	pAttachments
+				attachmentCount,											// deUint32										attachmentCount
+				colorBlendAttachmentState.data(),							// const VkPipelineColorBlendAttachmentState*	pAttachments
 				{ 0.0f, 0.0f, 0.0f, 0.0f }									// float										blendConstants[4]
 			};
 
@@ -1256,43 +1339,36 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 			else if (m_testParams.alphaBlend)
 				fragShader = *fragmentShaderModuleBlend;
 
-			VkPipelineRenderingCreateInfoKHR renderingCreateInfo
-			{
-				VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
-				DE_NULL,
-				0u,
-				0u,
-				DE_NULL,
-				VK_FORMAT_UNDEFINED,
-				VK_FORMAT_UNDEFINED
-			};
+			VkPipelineRenderingCreateInfoKHR*		nextPtr								= DE_NULL;
+			VkRenderingAttachmentLocationInfoKHR	renderingAttachmentLocationInfo		= initVulkanStructure();
+			VkRenderingInputAttachmentIndexInfoKHR	renderingInputAttachmentIndexInfo	= initVulkanStructure(&renderingAttachmentLocationInfo);
+			std::vector<deUint32>					colorAttachmentLocations			(colorVector.size(), VK_ATTACHMENT_UNUSED);
+			std::vector<deUint32>					colorAttachmentInputs				(colorVector.size(), VK_ATTACHMENT_UNUSED);
 
-			std::vector<VkFormat> colorVector;
-			for (const auto& att : m_testParams.attachments)
-			{
-				VkFormat format = getFormat(att.usage, m_testParams.depthStencilFormat);
-
-				if (att.usage & ATTACHMENT_USAGE_DEPTH_STENCIL)
-				{
-					const auto tcuFormat	= mapVkFormat(format);
-					const auto hasDepth		= tcu::hasDepthComponent(tcuFormat.order);
-					const auto hasStencil	= tcu::hasStencilComponent(tcuFormat.order);
-					renderingCreateInfo.depthAttachmentFormat	= (hasDepth   ? format : VK_FORMAT_UNDEFINED);
-					renderingCreateInfo.stencilAttachmentFormat	= (hasStencil ? format : VK_FORMAT_UNDEFINED);
-				}
-				else if (!(att.usage & ATTACHMENT_USAGE_RESOLVE_TARGET))
-				{
-					colorVector.push_back(format);
-				}
-			}
-
-			vk::VkPipelineRenderingCreateInfoKHR* nextPtr = DE_NULL;
 			if (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
 			{
 				renderingCreateInfo.colorAttachmentCount	= static_cast<deUint32>(colorVector.size());
 				renderingCreateInfo.pColorAttachmentFormats = colorVector.data();
-
 				nextPtr = &renderingCreateInfo;
+
+				if (numInputAttachments > 0u)
+				{
+					deUint32 locationIndex = 0u;
+					deUint32 inputIndex = 0u;
+					for (deUint32 i = 0; i < (deUint32)subpass.attachmentRefs.size(); ++i)
+					{
+						if (subpass.attachmentRefs[i].usage == ATTACHMENT_USAGE_COLOR)
+							colorAttachmentLocations[i] = locationIndex++;
+						else if (subpass.attachmentRefs[i].usage == ATTACHMENT_USAGE_INPUT)
+							colorAttachmentInputs[i] = inputIndex++;
+					}
+
+					renderingAttachmentLocationInfo.colorAttachmentCount			= renderingCreateInfo.colorAttachmentCount;
+					renderingAttachmentLocationInfo.pColorAttachmentLocations		= colorAttachmentLocations.data();
+					renderingInputAttachmentIndexInfo.colorAttachmentCount			= renderingCreateInfo.colorAttachmentCount;
+					renderingInputAttachmentIndexInfo.pColorAttachmentInputIndices	= colorAttachmentInputs.data();
+					renderingCreateInfo.pNext										= &renderingInputAttachmentIndexInfo;
+				}
 			}
 
 			pipelines.push_back(makeGraphicsPipeline(
@@ -1450,7 +1526,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 	// After the render pass attachment 0 has undefined values inside the render area because of the shader writes with
 	// store op 'none', but outside should still have the preinitialized value of green. Attachment 1 should have the
 	// preinitialized green outside the render area and magenta inside.
-	if (groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
+	if (!groupParams->useSecondaryCmdBuffer)
 	{
 		TestParams params
 		{
@@ -1604,7 +1680,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 	// After the render pass attachment 0 contents inside the render area are undefined because of store op 'don't care',
 	// but the outside area should still have the preinitialized content.
 	// Attachment 1 should have the preinitialized green outside render area and magenta inside.
-	if (groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
+	if (!groupParams->useSecondaryCmdBuffer)
 	{
 		TestParams params
 		{

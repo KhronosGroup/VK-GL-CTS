@@ -896,14 +896,4 @@ tcu::TestCaseGroup* createRenderPassSparseRenderTargetTests (tcu::TestContext& t
 	return createTestGroup(testCtx, "sparserendertarget", "Sparse render target tests", initTests, groupParams);
 }
 
-tcu::TestCaseGroup* createRenderPass2SparseRenderTargetTests (tcu::TestContext& testCtx, const renderpass::SharedGroupParams groupParams)
-{
-	return createTestGroup(testCtx, "sparserendertarget", "Sparse render target tests", initTests, groupParams);
-}
-
-tcu::TestCaseGroup* createDynamicRenderingSparseRenderTargetTests(tcu::TestContext& testCtx, const renderpass::SharedGroupParams groupParams)
-{
-	return createTestGroup(testCtx, "sparserendertarget", "Sparse render target tests", initTests, groupParams);
-}
-
 } // vkt

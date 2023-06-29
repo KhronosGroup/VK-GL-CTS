@@ -55,7 +55,7 @@ struct TestParams
 	tcu::Vec4				overrideColor;
 	tcu::UVec2				imageSize;
 	VkFormat				depthStencilFormat;
-	RenderingType			renderingType;
+	SharedGroupParams		groupParams;
 	VkBlendFactor			srcFactor;
 	VkBlendFactor			dstFactor;
 	deUint32				stencilClearValue;
@@ -226,11 +226,11 @@ void DitheringTest::initPrograms (SourceCollections& sourceCollections) const
 void DitheringTest::checkSupport (Context& ctx) const
 {
 	// Check for renderpass2 extension if used.
-	if (m_testParams.renderingType == RENDERING_TYPE_RENDERPASS2)
+	if (m_testParams.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
 		ctx.requireDeviceFunctionality("VK_KHR_create_renderpass2");
 
 	// Check for dynamic_rendering extension if used
-	if (m_testParams.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+	if (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
 		ctx.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
 	ctx.requireDeviceFunctionality("VK_EXT_legacy_dithering");
@@ -298,7 +298,7 @@ tcu::TestStatus DitheringTestInstance::iterate (void)
 
 	for (const VkViewport& vp : m_testParams.renderAreas)
 	{
-		if (m_testParams.renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
+		if (m_testParams.groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
 		{
 			render<RenderpassSubpass1>(vp, false);
 			render<RenderpassSubpass1>(vp, true);
@@ -397,7 +397,7 @@ void DitheringTestInstance::render (const VkViewport& vp, bool useDithering)
 	{
 		const auto dstAccess	= (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
 		const auto dstStage		= (VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-		const auto layout		= (m_testParams.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		const auto layout		= (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 		auto clearColor			= makeClearValueColorF32(0.0f, 0.0f, 0.0f, 1.0f).color;
 
 		if (m_testParams.blending)
@@ -412,7 +412,7 @@ void DitheringTestInstance::render (const VkViewport& vp, bool useDithering)
 	{
 		const auto dstAccess	= (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
 		const auto dstStage		= (VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
-		const auto layout		= m_testParams.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		const auto layout		= m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 		clearDepthStencilImage(vk, vkDevice, queue, queueFamilyIndex, *m_drawResources[resourceNdx].depthStencilImage, m_testParams.depthStencilFormat, m_testParams.depthClearValue,
 							   m_testParams.stencilClearValue, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, layout, dstAccess, dstStage);
@@ -431,7 +431,7 @@ void DitheringTestInstance::render (const VkViewport& vp, bool useDithering)
 
 		beginCommandBuffer(vk, *cmdBuffer, 0u);
 
-		if (m_testParams.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+		if (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
 		{
 			std::vector<VkRenderingAttachmentInfoKHR>	colorAttachments;
 
@@ -507,7 +507,7 @@ void DitheringTestInstance::render (const VkViewport& vp, bool useDithering)
 		for (deUint32 i = 0u; i < drawCount; ++i)
 			vk.cmdDraw(*cmdBuffer, 6u, 1, 0, 0);
 
-		if (m_testParams.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+		if (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
 			vk.cmdEndRendering(*cmdBuffer);
 		else
 			RenderpassSubpass::cmdEndRenderPass(vk, *cmdBuffer, &subpassEndInfo);
@@ -701,9 +701,9 @@ void DitheringTestInstance::createDrawResources (bool useDithering)
 		}
 	}
 
-	if (m_testParams.renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
+	if (m_testParams.groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
 		createRenderPassFramebuffer<AttachmentDescription1, AttachmentReference1, SubpassDescription1, RenderPassCreateInfo1>(useDithering);
-	else if (m_testParams.renderingType == RENDERING_TYPE_RENDERPASS2)
+	else if (m_testParams.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
 		createRenderPassFramebuffer<AttachmentDescription2, AttachmentReference2, SubpassDescription2, RenderPassCreateInfo2>(useDithering);
 
 	// Pipeline.
@@ -839,7 +839,7 @@ void DitheringTestInstance::createDrawResources (bool useDithering)
 		};
 
 		VkPipelineRenderingCreateInfoKHR*						nextPtr							= DE_NULL;
-		if (m_testParams.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+		if (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
 		{
 			renderingCreateInfo.colorAttachmentCount	= (deUint32)(colorFormats.size());
 			renderingCreateInfo.pColorAttachmentFormats	= colorFormats.data();
@@ -1008,7 +1008,7 @@ void DitheringTestInstance::createRenderPassFramebuffer (bool useDithering)
 
 } // anonymous
 
-tcu::TestCaseGroup* createRenderPassDitheringTests (tcu::TestContext& testCtx, const RenderingType renderingType)
+tcu::TestCaseGroup* createRenderPassDitheringTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
 	deUint32							imageDimensions				= 256u;
 	deUint32							smallRenderAreaDimensions	= 31u;
@@ -1021,7 +1021,7 @@ tcu::TestCaseGroup* createRenderPassDitheringTests (tcu::TestContext& testCtx, c
 
 	testParams.overrideColor		= tcu::Vec4(0.5f, 0.0f, 0.0f, 1.0f);
 	testParams.imageSize			= tcu::UVec2{ imageDimensions, imageDimensions };
-	testParams.renderingType		= renderingType;
+	testParams.groupParams			= groupParams;
 	testParams.depthStencilFormat	= VK_FORMAT_UNDEFINED;
 	testParams.srcFactor			= VK_BLEND_FACTOR_SRC_ALPHA;
 	testParams.dstFactor			= VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
