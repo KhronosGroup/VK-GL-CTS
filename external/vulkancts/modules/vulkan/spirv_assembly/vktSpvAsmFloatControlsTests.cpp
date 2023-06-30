@@ -139,8 +139,23 @@ enum ValueId
 	V_DOT_ARG_B,
 
 	// arguments of conversion operations - used only when arguments are passed from input
-	V_CONV_FROM_FP32_ARG,
-	V_CONV_FROM_FP64_ARG,
+	// Subcases are:
+	//    ...UP: rounds away from zero, e.g. trailing bits are 101..
+	//    ...DOWN: rounds toward zero, e.g. trailing bits are 011..
+	//    ...TIE_UP: rounds up to even, e.g. preserved bit is 1, trailing are 10*
+	//    ...TIE_DOWN: rounds up to even, e.g. preserved bit is 0, trailing are 10*
+	V_CONV_FROM_FP32_TO_FP16_UP_ARG,
+	V_CONV_FROM_FP32_TO_FP16_DOWN_ARG,
+	V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG,
+	V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG,
+	V_CONV_FROM_FP64_TO_FP16_UP_ARG,
+	V_CONV_FROM_FP64_TO_FP16_DOWN_ARG,
+	V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG,
+	V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG,
+	V_CONV_FROM_FP64_TO_FP32_UP_ARG,
+	V_CONV_FROM_FP64_TO_FP32_DOWN_ARG,
+	V_CONV_FROM_FP64_TO_FP32_TIE_UP_ARG,
+	V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_ARG,
 
 	// arguments of rounding operations
 	V_ADD_RTZ_RESULT,
@@ -169,16 +184,38 @@ enum ValueId
 	V_ZERO_OR_SQRT_DENORM,
 	V_INF_OR_INV_SQRT_DENORM,
 
-	//results of conversion operations
-	V_CONV_TO_FP16_RTZ_RESULT,
-	V_CONV_TO_FP16_RTE_RESULT,
-	V_CONV_TO_FP32_RTZ_RESULT,
-	V_CONV_TO_FP32_RTE_RESULT,
+	// Results of conversion operations: RTZ
+	V_CONV_FROM_FP32_TO_FP16_UP_RTZ_RESULT,
+	V_CONV_FROM_FP32_TO_FP16_DOWN_RTZ_RESULT,
+	V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTZ_RESULT,
+	V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTZ_RESULT,
+	V_CONV_FROM_FP64_TO_FP16_UP_RTZ_RESULT,
+	V_CONV_FROM_FP64_TO_FP16_DOWN_RTZ_RESULT,
+	V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTZ_RESULT,
+	V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTZ_RESULT,
+	V_CONV_FROM_FP64_TO_FP32_UP_RTZ_RESULT,
+	V_CONV_FROM_FP64_TO_FP32_DOWN_RTZ_RESULT,
+	V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTZ_RESULT,
+	V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTZ_RESULT,
+	// Results of conversion operations: RTE
+	V_CONV_FROM_FP32_TO_FP16_UP_RTE_RESULT,
+	V_CONV_FROM_FP32_TO_FP16_DOWN_RTE_RESULT,
+	V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTE_RESULT,
+	V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTE_RESULT,
+	V_CONV_FROM_FP64_TO_FP16_UP_RTE_RESULT,
+	V_CONV_FROM_FP64_TO_FP16_DOWN_RTE_RESULT,
+	V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTE_RESULT,
+	V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTE_RESULT,
+	V_CONV_FROM_FP64_TO_FP32_UP_RTE_RESULT,
+	V_CONV_FROM_FP64_TO_FP32_DOWN_RTE_RESULT,
+	V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTE_RESULT,
+	V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTE_RESULT,
+
 	V_CONV_DENORM_SMALLER,			// used e.g. when converting fp16 denorm to fp32
 	V_CONV_DENORM_BIGGER,
 };
 
-// Enum containing all tested operatios. Operations are defined in generic way so that
+// Enum containing all tested operations. Operations are defined in generic way so that
 // they can be used to generate tests operating on arguments with different values of
 // specified float type.
 enum OperationId
@@ -195,9 +232,18 @@ enum OperationId
 	OID_CONV_FROM_FP16,
 	OID_CONV_FROM_FP32,
 	OID_CONV_FROM_FP64,
-	OID_SCONST_CONV_FROM_FP32_TO_FP16,
-	OID_SCONST_CONV_FROM_FP64_TO_FP32,
-	OID_SCONST_CONV_FROM_FP64_TO_FP16,
+	OID_SCONST_CONV_FROM_FP32_TO_FP16_UP,		// Round::UP case
+	OID_SCONST_CONV_FROM_FP32_TO_FP16_DOWN,		// Round::DOWN case
+	OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_UP,	// Round::TIE_DOWN case
+	OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_DOWN,	// Round::TIE_DOWN case
+	OID_SCONST_CONV_FROM_FP64_TO_FP32_UP,
+	OID_SCONST_CONV_FROM_FP64_TO_FP32_DOWN,
+	OID_SCONST_CONV_FROM_FP64_TO_FP32_TIE_UP,
+	OID_SCONST_CONV_FROM_FP64_TO_FP32_TIE_DOWN,
+	OID_SCONST_CONV_FROM_FP64_TO_FP16_UP,
+	OID_SCONST_CONV_FROM_FP64_TO_FP16_DOWN,
+	OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_UP,
+	OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_DOWN,
 	OID_RETURN_VAL,
 
 	// spir-v binary operations
@@ -455,6 +501,156 @@ FLOAT_TYPE TypeValues<FLOAT_TYPE>::exactByteEquivalent(UINT_TYPE byteValue) cons
 	return value.fp;
 }
 
+// For floating point conversions, rounding modes only matter when
+// doing a narrowing conversion, i.e. from more mantissa bits
+// to fewer.
+//
+// There are four rounding cases, depending on the value of the
+// least significant mantissa bit that is preserved, and the
+// mantissa bits that are eliminated:
+//
+// Least significant  | Eliminated bit     |  Produces which
+// retained bit       | string             |  Rounding Case
+// -------------------|--------------------|-----------------
+//   don't care       | 0y, y is anything  |  DOWN: Round toward zero
+//   don't care       | 1y, y is non-zero  |  UP: Round away from zero
+//   0                | 1y, y is zero      |  TIE_DOWN: Round toward zero
+//   1                | 1y, y is zero      |  TIE_UP: Round away from zero
+enum class Round
+{
+	DOWN,
+	UP,
+	TIE_DOWN,
+	TIE_UP
+};
+
+template <typename FROM_FLOAT_TYPE, typename TO_FLOAT_TYPE>
+struct conversionDetail
+{
+	typedef typename FROM_FLOAT_TYPE::StorageType FromInt;
+	typedef typename TO_FLOAT_TYPE::StorageType ToInt;
+
+	// How many bits will be removed from the mantissa by the conversion?
+	static const int excessWidth = FROM_FLOAT_TYPE::MANTISSA_BITS - TO_FLOAT_TYPE::MANTISSA_BITS;
+
+	// 'tie' contains the bits for the "1y, y is 0" case in RoundCase table.
+	// All the positions in tie32 will be thrown away, but help determine
+	// the rounding direction.
+	static const FromInt tie = ((FromInt)1) << (excessWidth - 1);
+	static const FromInt down = tie - 1; // bits to trigger down case
+	static const FromInt up = tie + 1; // bits to trigger up case
+	static const FromInt tieDown = tie; // bits to trigger tie-down case
+	static const FromInt tieUp = (tie << 1) | tie; // bits to trigger tie-up case
+	static const int exampleSign = 1; // Could be -1
+	static const int exampleExponent = TO_FLOAT_TYPE::EXPONENT_BIAS;
+
+	// Not all platforms will support 16 or 64 bit values. We need to detect those cases
+	// and make the tests pass through since we cannot validate them.
+	static bool hasExcessBits (void)
+	{
+		return 0 < excessWidth;
+	}
+
+	// Returns arbitrary but nontrivial bits for the mantissa of the conversion
+	// result. This has TO_FLOAT_TYPE::MANTISSA_BITS. The bottom bit must be
+	// zero so it can be filled in later.
+	static ToInt exampleMSBBits (void)
+	{
+		switch (int(TO_FLOAT_TYPE::MANTISSA_BITS)) {
+			case 10: // Float16
+				// The Mantissa has 10 explicitly represented bits, and 1 bit
+				// that is normally hidden, but required here.
+				// The upper 9 are arbitrary, and the bottom bit is 0, to be filled
+				// in later.
+				return static_cast<ToInt>((1<<10) | 0x39a);
+			case 23: // Float32
+				// The Mantissa has 23 explicitly represented bits, and 1 bit
+				// that is normally hidden, but required here.
+				// The upper 22 are arbitrary, and the bottom bit is 0, to be filled
+				// in later.
+				return static_cast<ToInt>((1<<23) | 0x3a5a5a);
+		}
+		DE_ASSERT(false && "Expected Float16 or Float32");
+		return 0;
+	}
+
+	static FromInt inputMantissa (Round r)
+	{
+		const FromInt base = static_cast<FromInt>(exampleMSBBits()) << excessWidth;
+		switch (r)
+		{
+			case Round::DOWN: return base | down;
+			case Round::UP: return base | up;
+			case Round::TIE_DOWN: return base | tieDown;
+			case Round::TIE_UP: return base | tieUp;
+		}
+		DE_ASSERT(false);
+		return 0; // Unreachable
+	}
+
+	static ToInt outputMantissa (FromInt mantissa, Round r)
+	{
+		const ToInt base = static_cast<ToInt>(mantissa >> excessWidth);
+		switch (r)
+		{
+			case Round::DOWN:
+			case Round::TIE_DOWN:
+				return base;
+			case Round::UP:
+			case Round::TIE_UP:
+				return static_cast<ToInt>(base + 1);
+		}
+		DE_ASSERT(false);
+		return 0; // Unreachable
+	}
+
+	// Returns the value for the sample input, for an intended rounding outcome.
+	static FROM_FLOAT_TYPE from (Round r)
+	{
+		return FROM_FLOAT_TYPE::construct(exampleSign, exampleExponent, inputMantissa(r));
+	}
+
+	// Returns the value of from(r) in string form as a sequence of 32 bit words.
+	static std::string fromStr (Round r)
+	{
+		const FromInt value = from(r).bits();
+		switch (sizeof(FromInt)) {
+			case 8:
+				// Return low word first, high word second
+				return to_string(value & 0xFFFFFFFFu) + " " + to_string(value >> 16 >> 16);
+			case 4:
+				return to_string(value);
+		}
+		DE_ASSERT(false);
+		return "";
+	}
+
+	// Return the float value expected for a RTZ conversion.
+	static TO_FLOAT_TYPE resultRTZ (Round r)
+	{
+		// Reconstruct the original input, then round toward zero.
+		const ToInt mantissa = outputMantissa(inputMantissa(r), Round::DOWN);
+		return TO_FLOAT_TYPE::construct(exampleSign, exampleExponent, mantissa);
+	}
+	// Return the bits for the float value expected for a RTZ conversion.
+	static ToInt resultRTZBits (Round r)
+	{
+		return resultRTZ(r).bits();
+	}
+	// Return the float value expected for a RTE conversion.
+	static TO_FLOAT_TYPE resultRTE (Round r)
+	{
+		// Reconstruct the original input, then round as specified.
+		const ToInt mantissa = outputMantissa(inputMantissa(r), r);
+		return TO_FLOAT_TYPE::construct(exampleSign,exampleExponent, mantissa);
+	}
+	// Return the bits for the float value expected for a RTE conversion.
+	static ToInt resultRTEBits (Round r)
+	{
+		return resultRTE(r).bits();
+	}
+};
+
 template <>
 TypeValues<deFloat16>::TypeValues()
 	: TypeValuesBase()
@@ -485,22 +681,59 @@ TypeValues<deFloat16>::TypeValues()
 	vm[V_MUL_ARG_B]					= 0x1900;
 	vm[V_DOT_ARG_A]					= vm[V_ADD_ARG_A];
 	vm[V_DOT_ARG_B]					= vm[V_MUL_ARG_B];
-	vm[V_CONV_FROM_FP32_ARG]		= vm[V_UNUSED];
-	vm[V_CONV_FROM_FP64_ARG]		= vm[V_UNUSED];
+
+	// Float16 is not the source type for a narrowing conversion, so these
+	// entries are unused.
+	vm[V_CONV_FROM_FP32_TO_FP16_UP_ARG]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_DOWN_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG]	= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_UP_ARG]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_DOWN_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG]	= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_UP_ARG]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_DOWN_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_UP_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_ARG]	= vm[V_UNUSED];
 
 	vm[V_ADD_RTZ_RESULT]			= 0x4001;	// deFloat16Add(vm[V_ADD_ARG_A], vm[V_ADD_ARG_B], rtz)
 	vm[V_SUB_RTZ_RESULT]			= 0xc001;	// deFloat16Sub(vm[V_SUB_ARG_A], vm[V_SUB_ARG_B], rtz)
 	vm[V_MUL_RTZ_RESULT]			= 0x1903;	// deFloat16Mul(vm[V_MUL_ARG_A], vm[V_MUL_ARG_B], rtz)
 	vm[V_DOT_RTZ_RESULT]			= 0x1d03;
-	vm[V_CONV_TO_FP16_RTZ_RESULT]	= deFloat32To16Round(1.22334445f, DE_ROUNDINGMODE_TO_ZERO);
-	vm[V_CONV_TO_FP32_RTZ_RESULT]	= vm[V_UNUSED];
 
 	vm[V_ADD_RTE_RESULT]			= 0x4002;	// deFloat16Add(vm[V_ADD_ARG_A], vm[V_ADD_ARG_B], rte)
 	vm[V_SUB_RTE_RESULT]			= 0xc002;	// deFloat16Sub(vm[V_SUB_ARG_A], vm[V_SUB_ARG_B], rte)
 	vm[V_MUL_RTE_RESULT]			= 0x1904;	// deFloat16Mul(vm[V_MUL_ARG_A], vm[V_MUL_ARG_B], rte)
 	vm[V_DOT_RTE_RESULT]			= 0x1d04;
-	vm[V_CONV_TO_FP16_RTE_RESULT]	= deFloat32To16Round(1.22334445f, DE_ROUNDINGMODE_TO_NEAREST_EVEN);
-	vm[V_CONV_TO_FP32_RTE_RESULT]	= vm[V_UNUSED];
+
+	typedef conversionDetail<Float32,Float16> from32;
+	typedef conversionDetail<Float64,Float16> from64;
+	vm[V_CONV_FROM_FP32_TO_FP16_UP_RTZ_RESULT]			= from32::hasExcessBits() ? from32::resultRTZBits(Round::UP) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_DOWN_RTZ_RESULT]		= from32::hasExcessBits() ? from32::resultRTZBits(Round::DOWN) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTZ_RESULT]		= from32::hasExcessBits() ? from32::resultRTZBits(Round::TIE_UP) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTZ_RESULT]	= from32::hasExcessBits() ? from32::resultRTZBits(Round::TIE_DOWN) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_UP_RTZ_RESULT]			= from64::hasExcessBits() ? from64::resultRTZBits(Round::UP) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_DOWN_RTZ_RESULT]		= from64::hasExcessBits() ? from64::resultRTZBits(Round::DOWN) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTZ_RESULT]		= from64::hasExcessBits() ? from64::resultRTZBits(Round::TIE_UP) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTZ_RESULT]	= from64::hasExcessBits() ? from64::resultRTZBits(Round::TIE_DOWN) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_UP_RTZ_RESULT]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_DOWN_RTZ_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTZ_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTZ_RESULT]	= vm[V_UNUSED];
+
+	vm[V_CONV_FROM_FP32_TO_FP16_UP_RTE_RESULT]			= from32::hasExcessBits() ? from32::resultRTEBits(Round::UP) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_DOWN_RTE_RESULT]		= from32::hasExcessBits() ? from32::resultRTEBits(Round::DOWN) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTE_RESULT]		= from32::hasExcessBits() ? from32::resultRTEBits(Round::TIE_UP) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTE_RESULT]	= from32::hasExcessBits() ? from32::resultRTEBits(Round::TIE_DOWN) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_UP_RTE_RESULT]			= from64::hasExcessBits() ? from64::resultRTEBits(Round::UP) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_DOWN_RTE_RESULT]		= from64::hasExcessBits() ? from64::resultRTEBits(Round::DOWN) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTE_RESULT]		= from64::hasExcessBits() ? from64::resultRTEBits(Round::TIE_UP) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTE_RESULT]	= from64::hasExcessBits() ? from64::resultRTEBits(Round::TIE_DOWN) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_UP_RTE_RESULT]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_DOWN_RTE_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTE_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTE_RESULT]	= vm[V_UNUSED];
 
 	// there is no precision to store fp32 denorm nor fp64 denorm
 	vm[V_CONV_DENORM_SMALLER]		= vm[V_ZERO];
@@ -538,8 +771,21 @@ TypeValues<float>::TypeValues()
 	vm[V_MUL_ARG_B]					= 5 * e;
 	vm[V_DOT_ARG_A]					= vm[V_ADD_ARG_A];
 	vm[V_DOT_ARG_B]					= 5 * e;
-	vm[V_CONV_FROM_FP32_ARG]		= 1.22334445f;
-	vm[V_CONV_FROM_FP64_ARG]		= vm[V_UNUSED];
+
+	// Float32 is the source of a narrowing conversionsto Float16.
+	typedef conversionDetail<Float32,Float16> from32;
+	vm[V_CONV_FROM_FP32_TO_FP16_UP_ARG]			= from32::hasExcessBits() ? from32::from(Round::UP).asFloat() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_DOWN_ARG]		= from32::hasExcessBits() ? from32::from(Round::DOWN).asFloat() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG]		= from32::hasExcessBits() ? from32::from(Round::TIE_UP).asFloat() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG]	= from32::hasExcessBits() ? from32::from(Round::TIE_DOWN).asFloat() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_UP_ARG]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_DOWN_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG]	= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_UP_ARG]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_DOWN_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_UP_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_ARG]	= vm[V_UNUSED];
 
 	int prevRound = fegetround();
 	fesetround(FE_TOWARDZERO);
@@ -547,17 +793,40 @@ TypeValues<float>::TypeValues()
 	vm[V_SUB_RTZ_RESULT]			= vm[V_SUB_ARG_A] - vm[V_SUB_ARG_B];
 	vm[V_MUL_RTZ_RESULT]			= vm[V_MUL_ARG_A] * vm[V_MUL_ARG_B];
 	vm[V_DOT_RTZ_RESULT]			= vm[V_MUL_RTZ_RESULT] + vm[V_MUL_RTZ_RESULT];
-	vm[V_CONV_TO_FP16_RTZ_RESULT]	= vm[V_UNUSED];
-	vm[V_CONV_TO_FP32_RTZ_RESULT]	= exactByteEquivalent<deUint32>(0x3f9c968d); // result of conversion from double(1.22334455)
 
 	fesetround(FE_TONEAREST);
 	vm[V_ADD_RTE_RESULT]			= vm[V_ADD_ARG_A] + vm[V_ADD_ARG_B];
 	vm[V_SUB_RTE_RESULT]			= vm[V_SUB_ARG_A] - vm[V_SUB_ARG_B];
 	vm[V_MUL_RTE_RESULT]			= vm[V_MUL_ARG_A] * vm[V_MUL_ARG_B];
 	vm[V_DOT_RTE_RESULT]			= vm[V_MUL_RTE_RESULT] + vm[V_MUL_RTE_RESULT];
-	vm[V_CONV_TO_FP16_RTE_RESULT]	= vm[V_UNUSED];
-	vm[V_CONV_TO_FP32_RTE_RESULT]	= exactByteEquivalent<deUint32>(0x3f9c968e); // result of conversion from double(1.22334455)
 	fesetround(prevRound);
+
+	typedef conversionDetail<Float64,Float32> from64;
+	vm[V_CONV_FROM_FP32_TO_FP16_UP_RTZ_RESULT]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_DOWN_RTZ_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTZ_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTZ_RESULT]	= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_UP_RTZ_RESULT]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_DOWN_RTZ_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTZ_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTZ_RESULT]	= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_UP_RTZ_RESULT]			= from64::hasExcessBits() ? from64::resultRTZ(Round::UP).asFloat() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_DOWN_RTZ_RESULT]		= from64::hasExcessBits() ? from64::resultRTZ(Round::DOWN).asFloat() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTZ_RESULT]		= from64::hasExcessBits() ? from64::resultRTZ(Round::TIE_UP).asFloat() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTZ_RESULT]	= from64::hasExcessBits() ? from64::resultRTZ(Round::TIE_DOWN).asFloat() : vm[V_UNUSED];
+
+	vm[V_CONV_FROM_FP32_TO_FP16_UP_RTE_RESULT]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_DOWN_RTE_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTE_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTE_RESULT]	= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_UP_RTE_RESULT]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_DOWN_RTE_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTE_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTE_RESULT]	= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_UP_RTE_RESULT]			= from64::hasExcessBits() ? from64::resultRTE(Round::UP).asFloat() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_DOWN_RTE_RESULT]		= from64::hasExcessBits() ? from64::resultRTE(Round::DOWN).asFloat() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTE_RESULT]		= from64::hasExcessBits() ? from64::resultRTE(Round::TIE_UP).asFloat() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTE_RESULT]	= from64::hasExcessBits() ? from64::resultRTE(Round::TIE_DOWN).asFloat() : vm[V_UNUSED];
 
 	// there is no precision to store fp64 denorm
 	vm[V_CONV_DENORM_SMALLER]		= exactByteEquivalent<deUint32>(0x387c0000); // fp16 denorm
@@ -595,8 +864,22 @@ TypeValues<double>::TypeValues()
 	vm[V_MUL_ARG_B]				= 5 * e;
 	vm[V_DOT_ARG_A]				= vm[V_ADD_ARG_A];
 	vm[V_DOT_ARG_B]				= 5 * e;
-	vm[V_CONV_FROM_FP32_ARG]	= vm[V_UNUSED];
-	vm[V_CONV_FROM_FP64_ARG]	= 1.22334455;
+
+	// Float64 is the source of narrowing conversions to Float32 and Float16.
+	typedef conversionDetail<Float64,Float16> to16;
+	typedef conversionDetail<Float64,Float32> to32;
+	vm[V_CONV_FROM_FP32_TO_FP16_UP_ARG]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_DOWN_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG]	= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_UP_ARG]			= to16::hasExcessBits() ? to16::from(Round::UP).asDouble() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_DOWN_ARG]		= to16::hasExcessBits() ? to16::from(Round::DOWN).asDouble() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG]		= to16::hasExcessBits() ? to16::from(Round::TIE_UP).asDouble() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG]	= to16::hasExcessBits() ? to16::from(Round::TIE_DOWN).asDouble() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_UP_ARG]			= to32::hasExcessBits() ? to32::from(Round::UP).asDouble() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_DOWN_ARG]		= to32::hasExcessBits() ? to32::from(Round::DOWN).asDouble() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_UP_ARG]		= to32::hasExcessBits() ? to32::from(Round::TIE_UP).asDouble() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_ARG]	= to32::hasExcessBits() ? to32::from(Round::TIE_DOWN).asDouble() : vm[V_UNUSED];
 
 	int prevRound = fegetround();
 	fesetround(FE_TOWARDZERO);
@@ -604,17 +887,41 @@ TypeValues<double>::TypeValues()
 	vm[V_SUB_RTZ_RESULT]			= vm[V_SUB_ARG_A] - vm[V_SUB_ARG_B];
 	vm[V_MUL_RTZ_RESULT]			= vm[V_MUL_ARG_A] * vm[V_MUL_ARG_B];
 	vm[V_DOT_RTZ_RESULT]			= vm[V_MUL_RTZ_RESULT] + vm[V_MUL_RTZ_RESULT];
-	vm[V_CONV_TO_FP16_RTZ_RESULT]	= vm[V_UNUSED];
-	vm[V_CONV_TO_FP32_RTZ_RESULT]	= vm[V_UNUSED];
 
 	fesetround(FE_TONEAREST);
 	vm[V_ADD_RTE_RESULT]			= vm[V_ADD_ARG_A] + vm[V_ADD_ARG_B];
 	vm[V_SUB_RTE_RESULT]			= vm[V_SUB_ARG_A] - vm[V_SUB_ARG_B];
 	vm[V_MUL_RTE_RESULT]			= vm[V_MUL_ARG_A] * vm[V_MUL_ARG_B];
 	vm[V_DOT_RTE_RESULT]			= vm[V_MUL_RTE_RESULT] + vm[V_MUL_RTE_RESULT];
-	vm[V_CONV_TO_FP16_RTE_RESULT]	= vm[V_UNUSED];
-	vm[V_CONV_TO_FP32_RTE_RESULT]	= vm[V_UNUSED];
 	fesetround(prevRound);
+
+
+	// Float64 is not the destination of any narrowing conversions.
+	vm[V_CONV_FROM_FP32_TO_FP16_UP_RTZ_RESULT]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_DOWN_RTZ_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTZ_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTZ_RESULT]	= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_UP_RTZ_RESULT]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_DOWN_RTZ_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTZ_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTZ_RESULT]	= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_UP_RTZ_RESULT]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_DOWN_RTZ_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTZ_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTZ_RESULT]	= vm[V_UNUSED];
+
+	vm[V_CONV_FROM_FP32_TO_FP16_UP_RTE_RESULT]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_DOWN_RTE_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTE_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTE_RESULT]	= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_UP_RTE_RESULT]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_DOWN_RTE_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTE_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTE_RESULT]	= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_UP_RTE_RESULT]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_DOWN_RTE_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTE_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTE_RESULT]	= vm[V_UNUSED];
 
 	vm[V_CONV_DENORM_SMALLER]		= exactByteEquivalent<deUint64>(0x3f0f800000000000); // 0x03f0 is fp16 denorm
 	vm[V_CONV_DENORM_BIGGER]		= exactByteEquivalent<deUint64>(0x373f800000000000); // 0x000003f0 is fp32 denorm
@@ -1630,11 +1937,23 @@ private:
 	typedef OperationTestCase OTC;
 	typedef Operation Op;
 	map<int, Op> m_operations;
+	// SPIR-V assembly snippets that are used in m_operations
+	vector<std::string> m_saved_strings;
+
+	// We expect 12 strings: 3 kinds of narrowing conversions, with
+	// 4 cases each.
+	const size_t m_num_expected_strings = 12;
+	// Saves the given string in m_strings, and returns a pointer to its data.
+	const char* save(std::string str) {
+		m_saved_strings.emplace_back(std::move(str));
+		return m_saved_strings.back().data();
+	}
 };
 
 void TestCasesBuilder::init()
 {
 	map<int, Op>& mo = m_operations;
+	m_saved_strings.reserve(m_num_expected_strings);
 
 	// predefine operations repeatedly used in tests; note that "_float"
 	// in every operation command will be replaced with either "_f16",
@@ -1699,25 +2018,90 @@ void TestCasesBuilder::init()
 	mo[OID_CONV_FROM_FP32]	= Op("conv_from_fp32", FLOAT_STORAGE_ONLY, false, FP32, "", convertSource, B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_CONV_FROM_FP64]	= Op("conv_from_fp64", FLOAT_STORAGE_ONLY, false, FP64, "", convertSource, B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 
-	// from all operands supported by OpSpecConstantOp we can only test FConvert opcode with literals as everything
-	// else requires Karnel capability (OpenCL); values of literals used in SPIR-V code must be equiwalent to
-	// V_CONV_FROM_FP32_ARG and V_CONV_FROM_FP64_ARG so we can use same expected rounded values as for regular OpFConvert
-	mo[OID_SCONST_CONV_FROM_FP32_TO_FP16]
-						= Op("sconst_conv_from_fp32", FLOAT_ARITHMETIC, true, FP32,
-											"%c_arg              = OpConstant %type_f32 1.22334445\n"
-											"%result             = OpSpecConstantOp %type_f16 FConvert %c_arg\n",
+	// From all operands supported by OpSpecConstantOp we can only test FConvert opcode with literals as everything
+	// else requires Karnel capability (OpenCL); values of literals used in SPIR-V code must be equivalent to
+	// the values V_CONV_FROM_....  Use the feature of the SPIR-V assembler where use ! to inject raw integer
+	// words into the SPIR-V binary.
+
+	// fp32 -> fp16 with cases UP, DOWN, TIE_UP, TIE_DOWN
+	typedef conversionDetail<Float32,Float16> conv32to16;
+	mo[OID_SCONST_CONV_FROM_FP32_TO_FP16_UP]
+						= Op("sconst_conv_from_fp32_up", FLOAT_ARITHMETIC, true, FP32,
+											save("%c_arg              = OpConstant %type_f32 !" + conv32to16::fromStr(Round::UP) + "\n"
+											     "%result             = OpSpecConstantOp %type_f16 FConvert %c_arg\n"),
 											"",
 											B_STATEMENT_USAGE_CONSTS_TYPE_FP16 | B_STATEMENT_USAGE_CONSTS_TYPE_FP32);
-	mo[OID_SCONST_CONV_FROM_FP64_TO_FP32]
-						= Op("sconst_conv_from_fp64", FLOAT_ARITHMETIC, true, FP64,
-											"%c_arg              = OpConstant %type_f64 1.22334455\n"
-											"%result             = OpSpecConstantOp %type_f32 FConvert %c_arg\n",
+	mo[OID_SCONST_CONV_FROM_FP32_TO_FP16_DOWN]
+						= Op("sconst_conv_from_fp32_down", FLOAT_ARITHMETIC, true, FP32,
+											save("%c_arg              = OpConstant %type_f32 !" + conv32to16::fromStr(Round::DOWN) + "\n"
+											     "%result             = OpSpecConstantOp %type_f16 FConvert %c_arg\n"),
+											"",
+											B_STATEMENT_USAGE_CONSTS_TYPE_FP16 | B_STATEMENT_USAGE_CONSTS_TYPE_FP32);
+	mo[OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_UP]
+						= Op("sconst_conv_from_fp32_tie_up", FLOAT_ARITHMETIC, true, FP32,
+											save("%c_arg              = OpConstant %type_f32 !" + conv32to16::fromStr(Round::TIE_UP) + "\n"
+											     "%result             = OpSpecConstantOp %type_f16 FConvert %c_arg\n"),
+											"",
+											B_STATEMENT_USAGE_CONSTS_TYPE_FP16 | B_STATEMENT_USAGE_CONSTS_TYPE_FP32);
+	mo[OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_DOWN]
+						= Op("sconst_conv_from_fp32_tie_down", FLOAT_ARITHMETIC, true, FP32,
+											save("%c_arg              = OpConstant %type_f32 !" + conv32to16::fromStr(Round::TIE_DOWN) + "\n"
+											     "%result             = OpSpecConstantOp %type_f16 FConvert %c_arg\n"),
+											"",
+											B_STATEMENT_USAGE_CONSTS_TYPE_FP16 | B_STATEMENT_USAGE_CONSTS_TYPE_FP32);
+
+    // fp64 -> fp32 with cases UP, DOWN, TIE_UP, TIE_DOWN
+    // To inject a 64 bit value, inject 2 32-bit words.
+    typedef conversionDetail<Float64,Float32> conv64to32;
+	mo[OID_SCONST_CONV_FROM_FP64_TO_FP32_UP]
+						= Op("sconst_conv_from_fp64_up", FLOAT_ARITHMETIC, true, FP64,
+											save("%c_arg              = OpConstant %type_f64 !" + conv64to32::fromStr(Round::UP) + "\n"
+											     "%result             = OpSpecConstantOp %type_f32 FConvert %c_arg\n"),
 											"",
 											B_STATEMENT_USAGE_CONSTS_TYPE_FP32 | B_STATEMENT_USAGE_CONSTS_TYPE_FP64);
-	mo[OID_SCONST_CONV_FROM_FP64_TO_FP16]
-						= Op("sconst_conv_from_fp64", FLOAT_ARITHMETIC, true, FP64,
-											"%c_arg              = OpConstant %type_f64 1.22334445\n"
-											"%result             = OpSpecConstantOp %type_f16 FConvert %c_arg\n",
+	mo[OID_SCONST_CONV_FROM_FP64_TO_FP32_DOWN]
+						= Op("sconst_conv_from_fp64_down", FLOAT_ARITHMETIC, true, FP64,
+											save("%c_arg              = OpConstant %type_f64 !" + conv64to32::fromStr(Round::DOWN) + "\n"
+											     "%result             = OpSpecConstantOp %type_f32 FConvert %c_arg\n"),
+											"",
+											B_STATEMENT_USAGE_CONSTS_TYPE_FP32 | B_STATEMENT_USAGE_CONSTS_TYPE_FP64);
+	mo[OID_SCONST_CONV_FROM_FP64_TO_FP32_TIE_UP]
+						= Op("sconst_conv_from_fp64_tie_up", FLOAT_ARITHMETIC, true, FP64,
+											save("%c_arg              = OpConstant %type_f64 !" + conv64to32::fromStr(Round::TIE_UP) + "\n"
+											     "%result             = OpSpecConstantOp %type_f32 FConvert %c_arg\n"),
+											"",
+											B_STATEMENT_USAGE_CONSTS_TYPE_FP32 | B_STATEMENT_USAGE_CONSTS_TYPE_FP64);
+	mo[OID_SCONST_CONV_FROM_FP64_TO_FP32_TIE_DOWN]
+						= Op("sconst_conv_from_fp64_tie_down", FLOAT_ARITHMETIC, true, FP64,
+											save("%c_arg              = OpConstant %type_f64 !" + conv64to32::fromStr(Round::TIE_DOWN) + "\n"
+											     "%result             = OpSpecConstantOp %type_f32 FConvert %c_arg\n"),
+											"",
+											B_STATEMENT_USAGE_CONSTS_TYPE_FP32 | B_STATEMENT_USAGE_CONSTS_TYPE_FP64);
+
+    // fp64 -> fp16 with cases UP, DOWN, TIE_UP, TIE_DOWN
+    typedef conversionDetail<Float64,Float16> conv64to16;
+	mo[OID_SCONST_CONV_FROM_FP64_TO_FP16_UP]
+						= Op("sconst_conv_from_fp64_up", FLOAT_ARITHMETIC, true, FP64,
+											save("%c_arg              = OpConstant %type_f64 !" + conv64to16::fromStr(Round::UP) + "\n"
+											     "%result             = OpSpecConstantOp %type_f16 FConvert %c_arg\n"),
+											"",
+											B_STATEMENT_USAGE_CONSTS_TYPE_FP16 | B_STATEMENT_USAGE_CONSTS_TYPE_FP64);
+	mo[OID_SCONST_CONV_FROM_FP64_TO_FP16_DOWN]
+						= Op("sconst_conv_from_fp64_down", FLOAT_ARITHMETIC, true, FP64,
+											save("%c_arg              = OpConstant %type_f64 !" + conv64to16::fromStr(Round::DOWN) + "\n"
+											     "%result             = OpSpecConstantOp %type_f16 FConvert %c_arg\n"),
+											"",
+											B_STATEMENT_USAGE_CONSTS_TYPE_FP16 | B_STATEMENT_USAGE_CONSTS_TYPE_FP64);
+	mo[OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_UP]
+						= Op("sconst_conv_from_fp64_tie_up", FLOAT_ARITHMETIC, true, FP64,
+											save("%c_arg              = OpConstant %type_f64 !" + conv64to16::fromStr(Round::TIE_UP) + "\n"
+											     "%result             = OpSpecConstantOp %type_f16 FConvert %c_arg\n"),
+											"",
+											B_STATEMENT_USAGE_CONSTS_TYPE_FP16 | B_STATEMENT_USAGE_CONSTS_TYPE_FP64);
+	mo[OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_DOWN]
+						= Op("sconst_conv_from_fp64_tie_down", FLOAT_ARITHMETIC, true, FP64,
+											save("%c_arg              = OpConstant %type_f64 !" + conv64to16::fromStr(Round::TIE_DOWN) + "\n"
+											     "%result             = OpSpecConstantOp %type_f16 FConvert %c_arg\n"),
 											"",
 											B_STATEMENT_USAGE_CONSTS_TYPE_FP16 | B_STATEMENT_USAGE_CONSTS_TYPE_FP64);
 
@@ -2126,6 +2510,8 @@ void TestCasesBuilder::init()
 											"",
 											"%result             = OpFConvert %type_f16 %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FP16);
+
+	DE_ASSERT(m_saved_strings.size() == m_num_expected_strings);
 }
 
 void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResultsSP typeTestResults, bool argumentsFromInput)
@@ -2359,30 +2745,121 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 	{
 		if (argumentsFromInput)
 		{
-			testCases.push_back(OTC("rounding_rte_conv_from_fp32", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp32", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT));
-			testCases.push_back(OTC("rounding_rte_conv_from_fp64", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp64", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT));
+			//// Conversions from arguments
+			// fp32 rte
+			testCases.push_back(OTC("rounding_rte_conv_from_fp32_up", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_conv_from_fp32_down", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_conv_from_fp32_tie_up", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_conv_from_fp32_tie_down", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTE_RESULT));
 
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT));
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT));
+			// fp32 rtz
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp32_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp32_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp32_tie_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp32_tie_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTZ_RESULT));
 
-			testCases.push_back(OTC("rounding_rte_conv_from_fp32_nostorage", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT, true));
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp32_nostorage", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT, true));
-			testCases.push_back(OTC("rounding_rte_conv_from_fp64_nostorage", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT, true));
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_nostorage", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT, true));
+			// fp64 rte
+			testCases.push_back(OTC("rounding_rte_conv_from_fp64_up", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_UP_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_conv_from_fp64_down", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_DOWN_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_conv_from_fp64_tie_up", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_conv_from_fp64_tie_down", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTE_RESULT));
 
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_nostorage", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT, true));
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_nostorage", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT, true));
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_nostorage", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT, true));
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_nostorage", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT, true));
+			// fp64 rtz
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_UP_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_DOWN_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_tie_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_tie_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTZ_RESULT));
+
+			//// Conversions from specialization constants
+			// fp32 rte
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_up", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_UP, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_down", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_DOWN, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_tie_up", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_UP, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_tie_down", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_DOWN, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTE_RESULT));
+
+			// fp32 rtz
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_up", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_UP, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_down", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_DOWN, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_tie_up", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_UP, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_tie_down", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_DOWN, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTZ_RESULT));
+
+			// fp64 rte
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_up", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_UP, V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_UP_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_down", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_DOWN, V_CONV_FROM_FP64_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_DOWN_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_tie_up", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_UP, V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_tie_down", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_DOWN, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTE_RESULT));
+
+			// fp64 rtz
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_up", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_UP, V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_UP_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_down", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_DOWN, V_CONV_FROM_FP64_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_DOWN_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_tie_up", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_UP, V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_tie_down", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_DOWN, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTZ_RESULT));
+
+			/// Conversions from arguments, no storage
+			// fp32 rte
+			testCases.push_back(OTC("rounding_rte_conv_from_fp32_up_nostorage", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTE_RESULT, true));
+			testCases.push_back(OTC("rounding_rte_conv_from_fp32_down_nostorage", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTE_RESULT, true));
+			testCases.push_back(OTC("rounding_rte_conv_from_fp32_tie_up_nostorage", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTE_RESULT, true));
+			testCases.push_back(OTC("rounding_rte_conv_from_fp32_tie_down_nostorage", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTE_RESULT, true));
+
+			// fp32 rtz
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp32_up_nostorage", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTZ_RESULT, true));
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp32_down_nostorage", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTZ_RESULT, true));
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp32_tie_up_nostorage", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTZ_RESULT, true));
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp32_tie_down_nostorage", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTZ_RESULT, true));
+
+			// fp64 rte
+			testCases.push_back(OTC("rounding_rte_conv_from_fp64_up_nostorage", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_UP_RTE_RESULT, true));
+			testCases.push_back(OTC("rounding_rte_conv_from_fp64_down_nostorage", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_DOWN_RTE_RESULT, true));
+			testCases.push_back(OTC("rounding_rte_conv_from_fp64_tie_up_nostorage", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTE_RESULT, true));
+			testCases.push_back(OTC("rounding_rte_conv_from_fp64_tie_down_nostorage", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTE_RESULT, true));
+
+			// fp64 rtz
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_up_nostorage", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_UP_RTZ_RESULT, true));
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_down_nostorage", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_DOWN_RTZ_RESULT, true));
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_tie_up_nostorage", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTZ_RESULT, true));
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_tie_down_nostorage", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTZ_RESULT, true));
+
+			/// Conversions from specialization constants, no storage
+			// fp32 rte
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_up_nostorage", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_UP, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTE_RESULT, true));
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_down_nostorage", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_DOWN, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTE_RESULT, true));
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_tie_up_nostorage", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_UP, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTE_RESULT, true));
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_tie_down_nostorage", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_DOWN, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTE_RESULT, true));
+
+			// fp32 rtz
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_up_nostorage", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_UP, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTZ_RESULT, true));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_down_nostorage", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_DOWN, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTZ_RESULT, true));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_tie_up_nostorage", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_UP, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTZ_RESULT, true));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_tie_down_nostorage", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_DOWN, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTZ_RESULT, true));
+
+			// fp64 rte
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_up_nostorage", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_UP, V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_UP_RTE_RESULT, true));
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_down_nostorage", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_DOWN, V_CONV_FROM_FP64_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_DOWN_RTE_RESULT, true));
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_tie_up_nostorage", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_UP, V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTE_RESULT, true));
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_tie_down_nostorage", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_DOWN, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTE_RESULT, true));
+
+			// fp64 rtz
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_up_nostorage", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_UP, V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_UP_RTZ_RESULT, true));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_down_nostorage", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_DOWN, V_CONV_FROM_FP64_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_DOWN_RTZ_RESULT, true));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_tie_up_nostorage", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_UP, V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTZ_RESULT, true));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_tie_down_nostorage", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_DOWN, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTZ_RESULT, true));
 
 			// verify that VkShaderFloatingPointRoundingModeKHR can be overridden for a given instruction by the FPRoundingMode decoration.
 			// FPRoundingMode decoration requires VK_KHR_16bit_storage.
-			testCases.push_back(OTC("rounding_rte_override", B_RTE_ROUNDING, OID_ORTZ_ROUND, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT));
-			testCases.push_back(OTC("rounding_rtz_override", B_RTZ_ROUNDING, OID_ORTE_ROUND, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_override_from_fp32_up", B_RTE_ROUNDING, OID_ORTZ_ROUND, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rte_override_from_fp32_down", B_RTE_ROUNDING, OID_ORTZ_ROUND, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rte_override_from_fp32_tie_up", B_RTE_ROUNDING, OID_ORTZ_ROUND, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rte_override_from_fp32_tie_down", B_RTE_ROUNDING, OID_ORTZ_ROUND, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTZ_RESULT));
+			// Missing for FP64 -> FP16
+			// TODO(https://gitlab.khronos.org/Tracker/vk-gl-cts/-/issues/4539)
+
+			testCases.push_back(OTC("rounding_rtz_override_from_fp32_up", B_RTE_ROUNDING, OID_ORTE_ROUND, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rtz_override_from_fp32_down", B_RTE_ROUNDING, OID_ORTE_ROUND, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rtz_override_from_fp32_tie_up", B_RTE_ROUNDING, OID_ORTE_ROUND, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rtz_override_from_fp32_tie_down", B_RTE_ROUNDING, OID_ORTE_ROUND, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTE_RESULT));
+			// Missing for FP64 -> FP16
+			// TODO(https://gitlab.khronos.org/Tracker/vk-gl-cts/-/issues/4539)
 		}
 
 		createUnaryTestCases(testCases, OID_CONV_FROM_FP32, V_CONV_DENORM_SMALLER, V_ZERO);
@@ -2395,12 +2872,35 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 	{
 		if (argumentsFromInput)
 		{
-			// convert from fp64 to fp32
-			testCases.push_back(OTC("rounding_rte_conv_from_fp64", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP32_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp64", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP32_RTZ_RESULT));
+			//// Conversions from arguments
+			// fp64 rte
+			testCases.push_back(OTC("rounding_rte_conv_from_fp64_up", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_UP_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_conv_from_fp64_down", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_DOWN_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_conv_from_fp64_tie_up", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP32_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_conv_from_fp64_tie_down", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTE_RESULT));
 
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP32, V_UNUSED, V_UNUSED, V_CONV_TO_FP32_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP32, V_UNUSED, V_UNUSED, V_CONV_TO_FP32_RTZ_RESULT));
+			// fp64 rtz
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_UP_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_DOWN_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_tie_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP32_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_tie_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTZ_RESULT));
+
+			//// Conversions from specialization constants
+			// fp64 rte
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_up", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP32_UP, V_CONV_FROM_FP64_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_UP_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_down", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP32_DOWN, V_CONV_FROM_FP64_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_DOWN_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_tie_up", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP32_TIE_UP, V_CONV_FROM_FP64_TO_FP32_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_tie_down", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP32_TIE_DOWN, V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTE_RESULT));
+
+			// fp64 rtz
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_up", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP32_UP, V_CONV_FROM_FP64_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_UP_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_down", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP32_DOWN, V_CONV_FROM_FP64_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_DOWN_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_tie_up", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP32_TIE_UP, V_CONV_FROM_FP64_TO_FP32_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_tie_down", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP32_TIE_DOWN, V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTZ_RESULT));
+
+			// Verify that VkShaderFloatingPointRoundingModeKHR can be overridden for a given instruction by the FPRoundingMode decoration.
+			// Missing for FP64 -> FP32
+			// TODO(https://gitlab.khronos.org/Tracker/vk-gl-cts/-/issues/4539)
 		}
 		else
 		{
