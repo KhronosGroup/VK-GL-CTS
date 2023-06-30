@@ -674,7 +674,7 @@ void TessStateSwitchCase::initPrograms (vk::SourceCollections& programCollection
 		;
 	programCollection.glslSources.add("tesc") << glu::TessellationControlSource(tesc.str());
 
-	for (uint i = 0u; i < 2u; ++i)
+	for (uint32_t i = 0u; i < 2u; ++i)
 	{
 		const auto& primType	= ((i == 0u) ? m_params.patchTypes.first : m_params.patchTypes.second);
 		const auto& spacing		= ((i == 0u) ? m_params.spacing.first : m_params.spacing.second);
