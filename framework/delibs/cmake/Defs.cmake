@@ -178,6 +178,41 @@ add_definitions("-DDE_CPU=${DE_CPU}")
 add_definitions("-DDE_PTR_SIZE=${DE_PTR_SIZE}")
 add_definitions("-DDE_MINGW=${DE_MINGW}")
 
+
+include(CheckCSourceCompiles)
+set(FENV_ACCESS_PRAGMA "")
+
+macro(check_fenv_access_support PRAGMA)
+	if (DE_COMPILER_IS_CLANG OR DE_COMPILER_IS_GCC)
+		set(CMAKE_REQUIRED_FLAGS "-Wall")
+	endif ()
+	check_c_source_compiles("
+#include <fenv.h>
+${PRAGMA}
+int main() {
+#ifdef FE_INEXACT
+	return 0;
+#else
+	#error \"FENV_ACCESS not available\"
+#endif
+}" HAVE_FENV_ACCESS FAIL_REGEX "unknown-pragmas")
+	if (HAVE_FENV_ACCESS)
+		set(FENV_ACCESS_PRAGMA ${PRAGMA})
+	endif()
+endmacro()
+
+if (DE_COMPILER_IS_MSC)
+	check_fenv_access_support("__pragma(fenv_access (on))")
+elseif (DE_COMPILER_IS_CLANG OR DE_COMPILER_IS_GCC)
+	# Note that GCC does not provide a way to inform the implementation of FP environment access. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=34678.
+	# Until that is implemented this check will never enable the FENV_ACCESS pragma.
+	check_fenv_access_support("_Pragma(\"STDC FENV_ACCESS ON\")")
+else ()
+	message(FATAL_ERROR "Unsupported compiler!")
+endif ()
+
+add_definitions("-DDE_FENV_ACCESS_ON=${FENV_ACCESS_PRAGMA}")
+
 if (DE_OS_IS_ANDROID)
 	add_definitions("-DDE_ANDROID_API=${DE_ANDROID_API}")
 endif ()

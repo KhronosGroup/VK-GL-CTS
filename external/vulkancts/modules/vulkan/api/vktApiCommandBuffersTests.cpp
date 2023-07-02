@@ -4691,7 +4691,7 @@ tcu::TestCaseGroup* createCommandBuffersTests (tcu::TestContext& testCtx)
 	{
 		deUint32	seed		= 1614182419u;
 		const auto	smallExtent	= makeExtent3D(128u, 128u, 1u);
-		const auto	largeExtent	= makeExtent3D(512u, 512u, 1u);
+		const auto	largeExtent	= makeExtent3D(512u, 256u, 1u);
 
 		commandBuffersTests->addChild(new ManyDrawsCase(testCtx, "record_many_draws_primary_1",		"", ManyDrawsParams(VK_COMMAND_BUFFER_LEVEL_PRIMARY,	smallExtent,	seed++)));
 		commandBuffersTests->addChild(new ManyDrawsCase(testCtx, "record_many_draws_primary_2",		"", ManyDrawsParams(VK_COMMAND_BUFFER_LEVEL_PRIMARY,	largeExtent,	seed++)));
