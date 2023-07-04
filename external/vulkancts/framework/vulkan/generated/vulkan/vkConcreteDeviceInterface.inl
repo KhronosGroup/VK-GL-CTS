@@ -458,6 +458,7 @@ virtual void				destroyOpticalFlowSessionNV								(VkDevice device, VkOpticalFl
 virtual VkResult			bindOpticalFlowSessionImageNV							(VkDevice device, VkOpticalFlowSessionNV session, VkOpticalFlowSessionBindingPointNV bindingPoint, VkImageView view, VkImageLayout layout) const;
 virtual void				cmdOpticalFlowExecuteNV									(VkCommandBuffer commandBuffer, VkOpticalFlowSessionNV session, const VkOpticalFlowExecuteInfoNV* pExecuteInfo) const;
 virtual VkResult			getDeviceFaultInfoEXT									(VkDevice device, VkDeviceFaultCountsEXT* pFaultCounts, VkDeviceFaultInfoEXT* pFaultInfo) const;
+virtual void				cmdSetDepthBias2EXT										(VkCommandBuffer commandBuffer, const VkDepthBiasInfoEXT* pDepthBiasInfo) const;
 virtual VkResult			releaseSwapchainImagesEXT								(VkDevice device, const VkReleaseSwapchainImagesInfoEXT* pReleaseInfo) const;
 virtual VkResult			mapMemory2KHR											(VkDevice device, const VkMemoryMapInfoKHR* pMemoryMapInfo, void** ppData) const;
 virtual VkResult			unmapMemory2KHR											(VkDevice device, const VkMemoryUnmapInfoKHR* pMemoryUnmapInfo) const;
@@ -465,3 +466,4 @@ virtual VkResult			createShadersEXT										(VkDevice device, uint32_t createIn
 virtual void				destroyShaderEXT										(VkDevice device, VkShaderEXT shader, const VkAllocationCallbacks* pAllocator) const;
 virtual VkResult			getShaderBinaryDataEXT									(VkDevice device, VkShaderEXT shader, size_t* pDataSize, void* pData) const;
 virtual void				cmdBindShadersEXT										(VkCommandBuffer commandBuffer, uint32_t stageCount, const VkShaderStageFlagBits* pStages, const VkShaderEXT* pShaders) const;
+virtual VkResult			getScreenBufferPropertiesQNX							(VkDevice device, const struct _screen_buffer* buffer, VkScreenBufferPropertiesQNX* pProperties) const;

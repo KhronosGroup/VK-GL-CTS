@@ -1990,6 +1990,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES";
 		case VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDER_PASS_TRANSFORM_INFO_QCOM:			return "VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDER_PASS_TRANSFORM_INFO_QCOM";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_TRANSFORM_BEGIN_INFO_QCOM:								return "VK_STRUCTURE_TYPE_RENDER_PASS_TRANSFORM_BEGIN_INFO_QCOM";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_BIAS_CONTROL_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_BIAS_CONTROL_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_DEPTH_BIAS_INFO_EXT:													return "VK_STRUCTURE_TYPE_DEPTH_BIAS_INFO_EXT";
+		case VK_STRUCTURE_TYPE_DEPTH_BIAS_REPRESENTATION_INFO_EXT:									return "VK_STRUCTURE_TYPE_DEPTH_BIAS_REPRESENTATION_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_MEMORY_REPORT_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_MEMORY_REPORT_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_DEVICE_DEVICE_MEMORY_REPORT_CREATE_INFO_EXT:							return "VK_STRUCTURE_TYPE_DEVICE_DEVICE_MEMORY_REPORT_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_DEVICE_MEMORY_REPORT_CALLBACK_DATA_EXT:								return "VK_STRUCTURE_TYPE_DEVICE_MEMORY_REPORT_CALLBACK_DATA_EXT";
@@ -2237,9 +2240,17 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_FEATURES_EXT:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_KHR:									return "VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_RENDER_AREAS_FEATURES_QCOM:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_RENDER_AREAS_FEATURES_QCOM";
 		case VK_STRUCTURE_TYPE_MULTIVIEW_PER_VIEW_RENDER_AREAS_RENDER_PASS_BEGIN_INFO_QCOM:			return "VK_STRUCTURE_TYPE_MULTIVIEW_PER_VIEW_RENDER_AREAS_RENDER_PASS_BEGIN_INFO_QCOM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_FEATURES_EXT:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_SCREEN_BUFFER_PROPERTIES_QNX:										return "VK_STRUCTURE_TYPE_SCREEN_BUFFER_PROPERTIES_QNX";
+		case VK_STRUCTURE_TYPE_SCREEN_BUFFER_FORMAT_PROPERTIES_QNX:									return "VK_STRUCTURE_TYPE_SCREEN_BUFFER_FORMAT_PROPERTIES_QNX";
+		case VK_STRUCTURE_TYPE_IMPORT_SCREEN_BUFFER_INFO_QNX:										return "VK_STRUCTURE_TYPE_IMPORT_SCREEN_BUFFER_INFO_QNX";
+		case VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_QNX:													return "VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_QNX";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCREEN_BUFFER_FEATURES_QNX:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCREEN_BUFFER_FEATURES_QNX";
 		default:																					return DE_NULL;
 	}
 }
@@ -3213,7 +3224,7 @@ tcu::Format::Bitfield<64> getPipelineStageFlags2Str (VkPipelineStageFlags2 value
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT,							"VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT,				"VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_PRE_RASTERIZATION_SHADERS_BIT,				"VK_PIPELINE_STAGE_2_PRE_RASTERIZATION_SHADERS_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_SUBPASS_SHADING_BIT_HUAWEI,				"VK_PIPELINE_STAGE_2_SUBPASS_SHADING_BIT_HUAWEI"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_SUBPASS_SHADER_BIT_HUAWEI,					"VK_PIPELINE_STAGE_2_SUBPASS_SHADER_BIT_HUAWEI"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_INVOCATION_MASK_BIT_HUAWEI,				"VK_PIPELINE_STAGE_2_INVOCATION_MASK_BIT_HUAWEI"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI,			"VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER_BIT_HUAWEI"),
 	};
@@ -3517,6 +3528,17 @@ tcu::Format::Bitfield<64> getMemoryDecompressionMethodFlagsNVStr (VkMemoryDecomp
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+const char* getDepthBiasRepresentationEXTName (VkDepthBiasRepresentationEXT value)
+{
+	switch (value)
+	{
+		case VK_DEPTH_BIAS_REPRESENTATION_LEAST_REPRESENTABLE_VALUE_FORMAT_EXT:			return "VK_DEPTH_BIAS_REPRESENTATION_LEAST_REPRESENTABLE_VALUE_FORMAT_EXT";
+		case VK_DEPTH_BIAS_REPRESENTATION_LEAST_REPRESENTABLE_VALUE_FORCE_UNORM_EXT:	return "VK_DEPTH_BIAS_REPRESENTATION_LEAST_REPRESENTABLE_VALUE_FORCE_UNORM_EXT";
+		case VK_DEPTH_BIAS_REPRESENTATION_FLOAT_EXT:									return "VK_DEPTH_BIAS_REPRESENTATION_FLOAT_EXT";
+		default:																		return DE_NULL;
+	}
+}
+
 const char* getDirectDriverLoadingModeLUNARGName (VkDirectDriverLoadingModeLUNARG value)
 {
 	switch (value)
@@ -3560,6 +3582,37 @@ const char* getShaderCodeTypeEXTName (VkShaderCodeTypeEXT value)
 		case VK_SHADER_CODE_TYPE_BINARY_EXT:	return "VK_SHADER_CODE_TYPE_BINARY_EXT";
 		case VK_SHADER_CODE_TYPE_SPIRV_EXT:		return "VK_SHADER_CODE_TYPE_SPIRV_EXT";
 		default:								return DE_NULL;
+	}
+}
+
+const char* getScopeKHRName (VkScopeKHR value)
+{
+	switch (value)
+	{
+		case VK_SCOPE_DEVICE_KHR:		return "VK_SCOPE_DEVICE_KHR";
+		case VK_SCOPE_WORKGROUP_KHR:	return "VK_SCOPE_WORKGROUP_KHR";
+		case VK_SCOPE_SUBGROUP_KHR:		return "VK_SCOPE_SUBGROUP_KHR";
+		case VK_SCOPE_QUEUE_FAMILY_KHR:	return "VK_SCOPE_QUEUE_FAMILY_KHR";
+		default:						return DE_NULL;
+	}
+}
+
+const char* getComponentTypeKHRName (VkComponentTypeKHR value)
+{
+	switch (value)
+	{
+		case VK_COMPONENT_TYPE_FLOAT16_KHR:	return "VK_COMPONENT_TYPE_FLOAT16_KHR";
+		case VK_COMPONENT_TYPE_FLOAT32_KHR:	return "VK_COMPONENT_TYPE_FLOAT32_KHR";
+		case VK_COMPONENT_TYPE_FLOAT64_KHR:	return "VK_COMPONENT_TYPE_FLOAT64_KHR";
+		case VK_COMPONENT_TYPE_SINT8_KHR:	return "VK_COMPONENT_TYPE_SINT8_KHR";
+		case VK_COMPONENT_TYPE_SINT16_KHR:	return "VK_COMPONENT_TYPE_SINT16_KHR";
+		case VK_COMPONENT_TYPE_SINT32_KHR:	return "VK_COMPONENT_TYPE_SINT32_KHR";
+		case VK_COMPONENT_TYPE_SINT64_KHR:	return "VK_COMPONENT_TYPE_SINT64_KHR";
+		case VK_COMPONENT_TYPE_UINT8_KHR:	return "VK_COMPONENT_TYPE_UINT8_KHR";
+		case VK_COMPONENT_TYPE_UINT16_KHR:	return "VK_COMPONENT_TYPE_UINT16_KHR";
+		case VK_COMPONENT_TYPE_UINT32_KHR:	return "VK_COMPONENT_TYPE_UINT32_KHR";
+		case VK_COMPONENT_TYPE_UINT64_KHR:	return "VK_COMPONENT_TYPE_UINT64_KHR";
+		default:							return DE_NULL;
 	}
 }
 
@@ -3804,6 +3857,7 @@ tcu::Format::Bitfield<32> getExternalMemoryHandleTypeFlagsStr (VkExternalMemoryH
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,	"VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA,					"VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_RDMA_ADDRESS_BIT_NV,					"VK_EXTERNAL_MEMORY_HANDLE_TYPE_RDMA_ADDRESS_BIT_NV"),
+		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_SCREEN_BUFFER_BIT_QNX,					"VK_EXTERNAL_MEMORY_HANDLE_TYPE_SCREEN_BUFFER_BIT_QNX"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -16314,6 +16368,29 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePipelineLibrary
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkDepthBiasInfoEXT& value)
+{
+	s << "VkDepthBiasInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdepthBiasConstantFactor = " << value.depthBiasConstantFactor << '\n';
+	s << "\tdepthBiasClamp = " << value.depthBiasClamp << '\n';
+	s << "\tdepthBiasSlopeFactor = " << value.depthBiasSlopeFactor << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDepthBiasRepresentationInfoEXT& value)
+{
+	s << "VkDepthBiasRepresentationInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdepthBiasRepresentation = " << value.depthBiasRepresentation << '\n';
+	s << "\tdepthBiasExact = " << value.depthBiasExact << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkDecompressMemoryRegionNV& value)
 {
 	s << "VkDecompressMemoryRegionNV = {\n";
@@ -16456,6 +16533,19 @@ std::ostream& operator<< (std::ostream& s, const VkReleaseSwapchainImagesInfoEXT
 	s << "\tswapchain = " << value.swapchain << '\n';
 	s << "\timageIndexCount = " << value.imageIndexCount << '\n';
 	s << "\tpImageIndices = " << value.pImageIndices << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDepthBiasControlFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceDepthBiasControlFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdepthBiasControl = " << value.depthBiasControl << '\n';
+	s << "\tleastRepresentableValueForceUnormRepresentation = " << value.leastRepresentableValueForceUnormRepresentation << '\n';
+	s << "\tfloatRepresentation = " << value.floatRepresentation << '\n';
+	s << "\tdepthBiasExact = " << value.depthBiasExact << '\n';
 	s << '}';
 	return s;
 }
@@ -16652,6 +16742,104 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderTileImage
 	s << "\tshaderTileImageCoherentReadAccelerated = " << value.shaderTileImageCoherentReadAccelerated << '\n';
 	s << "\tshaderTileImageReadSampleFromPixelRateInvocation = " << value.shaderTileImageReadSampleFromPixelRateInvocation << '\n';
 	s << "\tshaderTileImageReadFromHelperInvocation = " << value.shaderTileImageReadFromHelperInvocation << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImportScreenBufferInfoQNX& value)
+{
+	s << "VkImportScreenBufferInfoQNX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tbuffer = " << value.buffer << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkScreenBufferPropertiesQNX& value)
+{
+	s << "VkScreenBufferPropertiesQNX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tallocationSize = " << value.allocationSize << '\n';
+	s << "\tmemoryTypeBits = " << value.memoryTypeBits << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkScreenBufferFormatPropertiesQNX& value)
+{
+	s << "VkScreenBufferFormatPropertiesQNX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tformat = " << value.format << '\n';
+	s << "\texternalFormat = " << value.externalFormat << '\n';
+	s << "\tscreenUsage = " << value.screenUsage << '\n';
+	s << "\tformatFeatures = " << getFormatFeatureFlagsStr(value.formatFeatures) << '\n';
+	s << "\tsamplerYcbcrConversionComponents = " << value.samplerYcbcrConversionComponents << '\n';
+	s << "\tsuggestedYcbcrModel = " << value.suggestedYcbcrModel << '\n';
+	s << "\tsuggestedYcbcrRange = " << value.suggestedYcbcrRange << '\n';
+	s << "\tsuggestedXChromaOffset = " << value.suggestedXChromaOffset << '\n';
+	s << "\tsuggestedYChromaOffset = " << value.suggestedYChromaOffset << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExternalFormatQNX& value)
+{
+	s << "VkExternalFormatQNX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\texternalFormat = " << value.externalFormat << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX& value)
+{
+	s << "VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tscreenBufferImport = " << value.screenBufferImport << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCooperativeMatrixFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceCooperativeMatrixFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcooperativeMatrix = " << value.cooperativeMatrix << '\n';
+	s << "\tcooperativeMatrixRobustBufferAccess = " << value.cooperativeMatrixRobustBufferAccess << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCooperativeMatrixPropertiesKHR& value)
+{
+	s << "VkCooperativeMatrixPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tMSize = " << value.MSize << '\n';
+	s << "\tNSize = " << value.NSize << '\n';
+	s << "\tKSize = " << value.KSize << '\n';
+	s << "\tAType = " << value.AType << '\n';
+	s << "\tBType = " << value.BType << '\n';
+	s << "\tCType = " << value.CType << '\n';
+	s << "\tResultType = " << value.ResultType << '\n';
+	s << "\tsaturatingAccumulation = " << value.saturatingAccumulation << '\n';
+	s << "\tscope = " << value.scope << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCooperativeMatrixPropertiesKHR& value)
+{
+	s << "VkPhysicalDeviceCooperativeMatrixPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcooperativeMatrixSupportedStages = " << getShaderStageFlagsStr(value.cooperativeMatrixSupportedStages) << '\n';
 	s << '}';
 	return s;
 }

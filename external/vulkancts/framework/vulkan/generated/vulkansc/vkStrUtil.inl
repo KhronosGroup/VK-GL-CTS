@@ -828,3 +828,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceYcbcr2Plane444F
 std::ostream&	operator<<	(std::ostream& s, const VkFormatProperties3KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDrmFormatModifierPropertiesList2EXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDrmFormatModifierProperties2EXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImportScreenBufferInfoQNX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkScreenBufferPropertiesQNX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkScreenBufferFormatPropertiesQNX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExternalFormatQNX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX& value);

@@ -34,6 +34,7 @@ const vk::VkPhysicalDeviceExternalMemorySciBufFeaturesNV&				Context::getExterna
 const vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT&				Context::getExtendedDynamicState2FeaturesEXT			(void) const { return m_device->getExtendedDynamicState2FeaturesEXT();			}
 const vk::VkPhysicalDeviceColorWriteEnableFeaturesEXT&					Context::getColorWriteEnableFeaturesEXT					(void) const { return m_device->getColorWriteEnableFeaturesEXT();				}
 const vk::VkPhysicalDeviceExternalSciSync2FeaturesNV&					Context::getExternalSciSync2Features					(void) const { return m_device->getExternalSciSync2Features();					}
+const vk::VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX&		Context::getExternalMemoryScreenBufferFeaturesQNX		(void) const { return m_device->getExternalMemoryScreenBufferFeaturesQNX();		}
 const vk::VkPhysicalDeviceVariablePointersFeatures&						Context::getVariablePointersFeatures					(void) const { return m_device->getVariablePointersFeatures();					}
 const vk::VkPhysicalDeviceMultiviewFeatures&							Context::getMultiviewFeatures							(void) const { return m_device->getMultiviewFeatures();							}
 const vk::VkPhysicalDevice16BitStorageFeatures&							Context::get16BitStorageFeatures						(void) const { return m_device->get16BitStorageFeatures();						}

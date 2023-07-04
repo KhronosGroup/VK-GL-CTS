@@ -126,3 +126,4 @@ m_vk.getPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR				= (GetPhysicalDevi
 m_vk.acquireDrmDisplayEXT												= (AcquireDrmDisplayEXTFunc)											GET_PROC_ADDR("vkAcquireDrmDisplayEXT");
 m_vk.getDrmDisplayEXT													= (GetDrmDisplayEXTFunc)												GET_PROC_ADDR("vkGetDrmDisplayEXT");
 m_vk.getPhysicalDeviceOpticalFlowImageFormatsNV							= (GetPhysicalDeviceOpticalFlowImageFormatsNVFunc)						GET_PROC_ADDR("vkGetPhysicalDeviceOpticalFlowImageFormatsNV");
+m_vk.getPhysicalDeviceCooperativeMatrixPropertiesKHR					= (GetPhysicalDeviceCooperativeMatrixPropertiesKHRFunc)					GET_PROC_ADDR("vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR");

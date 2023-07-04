@@ -765,6 +765,18 @@ bool check_VK_NV_external_sci_sync2(const tcu::UVec2& v, const ExtPropVect& vIEP
 	return isCompatibile(1, 1, v);
 }
 
+bool check_VK_QNX_external_memory_screen_buffer(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_QNX_external_memory_screen_buffer"))
+		return true;
+
+	// depends attribute in xml: ((VK_KHR_sampler_ycbcr_conversion+VK_KHR_external_memory+VK_KHR_dedicated_allocation),VK_VERSION_1_1)+VK_EXT_queue_family_foreign
+	return ((true && true && true) || isCompatibile(1, 1, v)) && isSupported(vDEP, "VK_EXT_queue_family_foreign");
+}
+
 bool check_VK_NV_device_diagnostic_checkpoints(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -845,6 +857,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_extended_dynamic_state2",				&check_VK_EXT_extended_dynamic_state2),
 	std::make_pair("VK_EXT_color_write_enable",					&check_VK_EXT_color_write_enable),
 	std::make_pair("VK_NV_external_sci_sync2",						&check_VK_NV_external_sci_sync2),
+	std::make_pair("VK_QNX_external_memory_screen_buffer",			&check_VK_QNX_external_memory_screen_buffer),
 	std::make_pair("VK_NV_device_diagnostic_checkpoints",			&check_VK_NV_device_diagnostic_checkpoints),
 	std::make_pair("VK_KHR_format_feature_flags2",					&check_VK_KHR_format_feature_flags2),
 };
@@ -929,6 +942,7 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 1, "VK_EXT_color_write_enable"),
 	std::make_tuple(1, 0, "VK_EXT_application_parameters"),
 	std::make_tuple(1, 1, "VK_NV_external_sci_sync2"),
+	std::make_tuple(1, 1, "VK_QNX_external_memory_screen_buffer"),
 	std::make_tuple(1, 0, "VK_NV_device_diagnostic_checkpoints"),
 	std::make_tuple(1, 0, "VK_KHR_format_feature_flags2"),
 };

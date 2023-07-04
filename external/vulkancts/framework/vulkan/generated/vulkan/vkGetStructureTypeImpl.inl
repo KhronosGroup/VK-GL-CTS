@@ -3753,6 +3753,16 @@ template<> VkStructureType getStructureType<VkPhysicalDevicePipelineLibraryGroup
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkDepthBiasInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_DEPTH_BIAS_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkDepthBiasRepresentationInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_DEPTH_BIAS_REPRESENTATION_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM;
@@ -3811,6 +3821,11 @@ template<> VkStructureType getStructureType<VkSwapchainPresentScalingCreateInfoE
 template<> VkStructureType getStructureType<VkReleaseSwapchainImagesInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_RELEASE_SWAPCHAIN_IMAGES_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDepthBiasControlFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_BIAS_CONTROL_FEATURES_EXT;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV> (void)
@@ -3896,5 +3911,45 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceShaderTileImageFeatu
 template<> VkStructureType getStructureType<VkPhysicalDeviceShaderTileImagePropertiesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_TILE_IMAGE_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkImportScreenBufferInfoQNX> (void)
+{
+	return VK_STRUCTURE_TYPE_IMPORT_SCREEN_BUFFER_INFO_QNX;
+}
+
+template<> VkStructureType getStructureType<VkScreenBufferPropertiesQNX> (void)
+{
+	return VK_STRUCTURE_TYPE_SCREEN_BUFFER_PROPERTIES_QNX;
+}
+
+template<> VkStructureType getStructureType<VkScreenBufferFormatPropertiesQNX> (void)
+{
+	return VK_STRUCTURE_TYPE_SCREEN_BUFFER_FORMAT_PROPERTIES_QNX;
+}
+
+template<> VkStructureType getStructureType<VkExternalFormatQNX> (void)
+{
+	return VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_QNX;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCREEN_BUFFER_FEATURES_QNX;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceCooperativeMatrixFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkCooperativeMatrixPropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceCooperativeMatrixPropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_KHR;
 }
 

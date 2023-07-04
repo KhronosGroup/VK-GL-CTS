@@ -2946,6 +2946,8 @@ def genericDeviceFeaturesWriter(dfDefs, pattern, filename):
 	stream = []
 	for _, _, _, extStruct, _, _, _ in dfDefs:
 		nameSubStr = extStruct.replace("VkPhysicalDevice", "").replace("KHR", "").replace("NV", "")
+		if extStruct == "VkPhysicalDeviceCooperativeMatrixFeaturesNV":
+			nameSubStr += "NV"
 		stream.append(pattern.format(extStruct, nameSubStr))
 	writeInlFile(filename, INL_HEADER, indentLines(stream))
 
@@ -2966,6 +2968,8 @@ def genericDevicePropertiesWriter(dfDefs, pattern, filename):
 	for _, _, _, extStruct, _, _, _ in dfDefs:
 		nameSubStr = extStruct.replace("VkPhysicalDevice", "").replace("KHR", "").replace("NV", "")
 		if extStruct == "VkPhysicalDeviceRayTracingPropertiesNV":
+			nameSubStr += "NV"
+		if extStruct == "VkPhysicalDeviceCooperativeMatrixPropertiesNV":
 			nameSubStr += "NV"
 		stream.append(pattern.format(extStruct, nameSubStr))
 	writeInlFile(filename, INL_HEADER, indentLines(stream))

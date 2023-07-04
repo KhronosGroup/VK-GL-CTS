@@ -190,6 +190,7 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkImportFenceSciSyncFenceNV",
 		"vkImportFenceSciSyncObjNV",
 		"vkGetPhysicalDeviceSciSyncAttributesNV",
+		"vkGetScreenBufferPropertiesQNX",
 		"vkCmdSetCheckpointNV",
 		"vkGetQueueCheckpointDataNV",
 	};

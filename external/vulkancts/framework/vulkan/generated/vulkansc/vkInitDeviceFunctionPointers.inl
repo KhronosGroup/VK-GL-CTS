@@ -274,3 +274,4 @@ m_vk.queueSubmit2KHR							= (QueueSubmit2KHRFunc)							GET_PROC_ADDR("vkQueueS
 m_vk.cmdWriteTimestamp2KHR						= (CmdWriteTimestamp2KHRFunc)					GET_PROC_ADDR("vkCmdWriteTimestamp2KHR");
 m_vk.getQueueCheckpointData2NV					= (GetQueueCheckpointData2NVFunc)				GET_PROC_ADDR("vkGetQueueCheckpointData2NV");
 m_vk.getCommandPoolMemoryConsumption			= (GetCommandPoolMemoryConsumptionFunc)			GET_PROC_ADDR("vkGetCommandPoolMemoryConsumption");
+m_vk.getScreenBufferPropertiesQNX				= (GetScreenBufferPropertiesQNXFunc)			GET_PROC_ADDR("vkGetScreenBufferPropertiesQNX");
