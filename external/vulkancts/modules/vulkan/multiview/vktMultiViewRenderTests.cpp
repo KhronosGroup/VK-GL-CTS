@@ -884,9 +884,9 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 
 		m_logicalDevice					= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceInfo);
 #ifndef CTS_USES_VULKANSC
-		m_device						= de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), instance, *m_logicalDevice));
+		m_device						= de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), instance, *m_logicalDevice, m_context.getUsedApiVersion()));
 #else
-		m_device						= de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), instance, *m_logicalDevice, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_logicalDevice));
+		m_device						= de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), instance, *m_logicalDevice, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(), m_context.getUsedApiVersion()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_logicalDevice));
 #endif // CTS_USES_VULKANSC
 		m_allocator						= MovePtr<Allocator>(new SimpleAllocator(*m_device, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instanceDriver, physicalDevice)));
 		m_device->getDeviceQueue		(*m_logicalDevice, m_queueFamilyIndex, 0u, &m_queue);
@@ -1317,7 +1317,7 @@ bool MultiViewRenderTestInstance::checkImage (tcu::ConstPixelBufferAccess& rende
 {
 	const MovePtr<tcu::Texture2DArray>	referenceFrame	= imageData();
 	const bool							result			= tcu::floatThresholdCompare(m_context.getTestContext().getLog(),
-															"Result", "Image comparison result", referenceFrame->getLevel(0), renderedFrame, tcu::Vec4(0.01f), tcu::COMPARE_LOG_ON_ERROR);
+															"Result", "Image comparison result", referenceFrame->getLevel(0), renderedFrame, tcu::Vec4(0.01f), tcu::COMPARE_LOG_EVERYTHING);
 
 	if (!result)
 		for (deUint32 layerNdx = 0u; layerNdx < m_parameters.extent.depth; layerNdx++)

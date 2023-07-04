@@ -225,7 +225,7 @@ tcu::TestStatus NonSequentialInstance::iterate (void)
 	const deUint32													queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
 	const vk::Move<vk::VkDevice>									device					= createDynamicVertexStateDevice(m_context, queueFamilyIndex, m_pipelineConstructionType != vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC);
 	vk::SimpleAllocator												allocator				(vk, *device, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
-	const vk::DeviceDriver											deviceDriver			(vkp, vki, *device);
+	const vk::DeviceDriver											deviceDriver			(vkp, vki, *device, m_context.getUsedApiVersion());
 	const vk::VkQueue												queue					= getDeviceQueue(deviceDriver, *device, queueFamilyIndex, 0u);
 
 	// Create shaders

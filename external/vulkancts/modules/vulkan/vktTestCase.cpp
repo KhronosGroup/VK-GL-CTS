@@ -594,9 +594,9 @@ DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::Co
 	, m_creationExtensions				(removeCoreExtensions(m_usedApiVersion, m_deviceExtensions))
 	, m_device							(createDefaultDevice(vkPlatform, *m_instance, m_instanceInterface, m_physicalDevice, m_universalQueueFamilyIndex, m_sparseQueueFamilyIndex, m_deviceFeatures.getCoreFeatures2(), m_creationExtensions, cmdLine, resourceInterface))
 #ifndef CTS_USES_VULKANSC
-	, m_deviceInterface					(de::MovePtr<DeviceDriver>(new DeviceDriver(vkPlatform, *m_instance, *m_device)))
+	, m_deviceInterface					(de::MovePtr<DeviceDriver>(new DeviceDriver(vkPlatform, *m_instance, *m_device, m_usedApiVersion)))
 #else
-	, m_deviceInterface					(de::MovePtr<DeviceDriverSC>(new DeviceDriverSC(vkPlatform, *m_instance, *m_device, cmdLine, resourceInterface, getDeviceVulkanSC10Properties(), getDeviceProperties())))
+	, m_deviceInterface					(de::MovePtr<DeviceDriverSC>(new DeviceDriverSC(vkPlatform, *m_instance, *m_device, cmdLine, resourceInterface, getDeviceVulkanSC10Properties(), getDeviceProperties(), m_usedApiVersion)))
 #endif // CTS_USES_VULKANSC
 {
 #ifndef CTS_USES_VULKANSC

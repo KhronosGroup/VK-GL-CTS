@@ -2737,7 +2737,7 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(
 		0,
 		&m_queue);
 
-	m_deviceInterface = newMovePtr<DeviceDriver>(context.getPlatformInterface(), context.getInstance(), *m_device);
+	m_deviceInterface = newMovePtr<DeviceDriver>(context.getPlatformInterface(), context.getInstance(), *m_device, context.getUsedApiVersion());
 
 	m_memoryProperties = vk::getPhysicalDeviceMemoryProperties(inst, physDevice);
 

@@ -149,9 +149,9 @@ class SingletonDevice
 		m_logicalDevice = createRobustBufferAccessDevice(context, &features2);
 
 #ifndef CTS_USES_VULKANSC
-		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), instance, *m_logicalDevice));
+		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), instance, *m_logicalDevice, context.getUsedApiVersion()));
 #else
-		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), instance, *m_logicalDevice, context.getTestContext().getCommandLine(), context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_logicalDevice));
+		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), instance, *m_logicalDevice, context.getTestContext().getCommandLine(), context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(), context.getUsedApiVersion()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_logicalDevice));
 #endif // CTS_USES_VULKANSC
 	}
 

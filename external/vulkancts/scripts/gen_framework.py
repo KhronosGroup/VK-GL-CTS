@@ -27,6 +27,7 @@ import glob
 import json
 import argparse
 import datetime
+import collections
 from lxml import etree
 
 scriptPath = os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts")
@@ -867,7 +868,7 @@ class API:
 						for fun in self.functions:
 							if removeFun == fun.name:
 								functionsToRemove.append(fun)
-								break;
+								break
 			for fun in functionsToRemove:
 				self.functions.remove(fun)
 			# sc is based on vk1.2 so we need to check features of vk1.3+
@@ -1438,22 +1439,46 @@ def writeFunctionPointers (api, filename, functionTypes):
 
 	writeInlFile(filename, INL_HEADER, indentLines(FunctionsYielder()))
 
+def getPromotedFunctions (api):
+	apiNum = 0 if api.apiName == "vulkan" else 1
+	promotedFunctions = collections.defaultdict(lambda: list())
+	for feature in api.features:
+		versionSplit = feature.name.split('_')
+		apiMajor = versionSplit[-2]
+		apiMinor = versionSplit[-1]
+		apituple = (apiNum, apiMajor, apiMinor)
+		for featureRequirement in feature.requirementsList:
+			for promotedFun in featureRequirement.commandList:
+				promotedFunctions[promotedFun].append(apituple)
+	return promotedFunctions
+
 def writeInitFunctionPointers (api, filename, functionTypes, cond = None):
+	promotedFunctions = getPromotedFunctions(api) if Function.TYPE_DEVICE in functionTypes else None
 	def makeInitFunctionPointers ():
 		for function in api.functions:
 			if function.getType() in functionTypes and (cond == None or cond(function)):
+				condition = ''
+				if function.getType() == Function.TYPE_DEVICE:
+					versionCheck = ''
+					if function.name in promotedFunctions:
+						for versionTuple in promotedFunctions[function.name]:
+							if len(versionCheck) > 0:
+								versionCheck += ' || '
+							versionCheck = 'usedApiVersion >= VK_MAKE_API_VERSION(%s, %s, %s, 0)' % versionTuple
+					if len(versionCheck) > 0:
+						condition = f"if ({versionCheck})\n    "
 				interfaceName		= getInterfaceName(function.name)
 				functionTypeName	= getFunctionTypeName(function.name)
-				yield f"m_vk.{interfaceName}\t= ({functionTypeName})\tGET_PROC_ADDR(\"{function.name}\");"
+				yield f"{condition}m_vk.{interfaceName} = ({functionTypeName}) GET_PROC_ADDR(\"{function.name}\");"
 				for alias in function.aliasList:
 					yield f"if (!m_vk.{interfaceName})"
-					yield f"    m_vk.{interfaceName}\t= ({functionTypeName})\tGET_PROC_ADDR(\"{alias}\");"
+					yield f"    m_vk.{interfaceName} = ({functionTypeName}) GET_PROC_ADDR(\"{alias}\");"
 					if function.getType() == Function.TYPE_INSTANCE and function.arguments[0].type == "VkPhysicalDevice":
 						interfaceName		= getInterfaceName(alias)
 						functionTypeName	= getFunctionTypeName(alias)
-						yield f"m_vk.{interfaceName}\t= ({functionTypeName})\tGET_PROC_ADDR(\"{alias}\");"
+						yield f"m_vk.{interfaceName} = ({functionTypeName}) GET_PROC_ADDR(\"{alias}\");"
 
-	lines = [line.replace('    ', '\t') for line in indentLines(makeInitFunctionPointers())]
+	lines = makeInitFunctionPointers()
 	writeInlFile(filename, INL_HEADER, lines)
 
 def writeFuncPtrInterfaceImpl (api, filename, functionTypes, className):
@@ -2518,7 +2543,7 @@ def writeDeviceFeatures2(api, filename):
 	};
 
 	const Unique<VkDevice>			device			(createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-	const DeviceDriver				deviceDriver	(platformInterface, instance, device.get());
+	const DeviceDriver				deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion());
 	const VkQueue					queue			= getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
 
 	VK_CHECK(deviceDriver.queueWaitIdle(queue));
@@ -2784,7 +2809,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest{4} (Context& context)
 {1}
 		}};
 		auto* supportedFeatures = reinterpret_cast<const {0}*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, {2}, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, {3}, emptyDeviceFeatures, {5});
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, {2}, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, {3}, emptyDeviceFeatures, {5}, context.getUsedApiVersion());
 	}}
 
 	if (numErrors > 0)
@@ -3543,7 +3568,7 @@ def writeGetDeviceProcAddr(api, filename):
 		DE_NULL,									//  const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 	const Unique<VkDevice>					device			(createCustomDevice(validationEnabled, platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-	const DeviceDriver						deviceDriver	(platformInterface, instance, device.get());
+	const DeviceDriver						deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion());
 
 	const std::vector<std::string> loaderExceptions{
 		"vkSetDebugUtilsObjectNameEXT",

@@ -2453,9 +2453,9 @@ void ComputeTestInstance::createDeviceGroup (void)
 
 	m_logicalDevice		= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), m_deviceGroupInstance, instance, deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceInfo);
 #ifndef CTS_USES_VULKANSC
-	m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_deviceGroupInstance, *m_logicalDevice));
+	m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_deviceGroupInstance, *m_logicalDevice, m_context.getUsedApiVersion()));
 #else
-	m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_context.getInstance(), *m_logicalDevice, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_logicalDevice));
+	m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_context.getInstance(), *m_logicalDevice, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(), m_context.getUsedApiVersion()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_logicalDevice));
 #endif // CTS_USES_VULKANSC
 }
 
@@ -3186,9 +3186,9 @@ tcu::TestStatus ConcurrentComputeInstance::iterate (void)
 	logicalDevice = createCustomDevice	(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceInfo);
 
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), instance, *logicalDevice));
+	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), instance, *logicalDevice, m_context.getUsedApiVersion()));
 #else
-	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), instance, *logicalDevice, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *logicalDevice));
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), instance, *logicalDevice, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(), m_context.getUsedApiVersion()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *logicalDevice));
 #endif // CTS_USES_VULKANSC
 	vk::DeviceInterface& vk = *deviceDriver;
 
@@ -4006,11 +4006,11 @@ tcu::TestStatus SecondaryCommandBufferComputeOnlyTestInstance::iterate()
 	auto customDevice = createComputeOnlyDevice(m_context, queueFamilyIndex);
 	device = customDevice.get();
 #ifndef CTS_USES_VULKANSC
-	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), device));
+	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), device, m_context.getUsedApiVersion()));
 #else
 	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_context.getInstance(), device,
 		m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(),
-		m_context.getDeviceProperties()), DeinitDeviceDeleter(m_context.getResourceInterface().get(), device));
+		m_context.getDeviceProperties(), m_context.getUsedApiVersion()), DeinitDeviceDeleter(m_context.getResourceInterface().get(), device));
 #endif // CTS_USES_VULKANSC
 
 	const DeviceInterface& vkdi = *deviceDriver;
