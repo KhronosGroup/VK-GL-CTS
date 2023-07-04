@@ -53,6 +53,8 @@
 #include "vkSafetyCriticalUtil.hpp"
 #endif
 
+#include <algorithm>
+
 namespace vkt
 {
 namespace MultiView
@@ -88,6 +90,7 @@ enum TestType
 	TEST_TYPE_MULTISAMPLE,
 	TEST_TYPE_QUERIES,
 	TEST_TYPE_NON_PRECISE_QUERIES,
+	TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY,
 	TEST_TYPE_READBACK_WITH_IMPLICIT_CLEAR,
 	TEST_TYPE_READBACK_WITH_EXPLICIT_CLEAR,
 	TEST_TYPE_DEPTH,
@@ -953,6 +956,7 @@ void MultiViewRenderTestInstance::madeShaderModule (map<VkShaderStageFlagBits, S
 		case TEST_TYPE_MULTISAMPLE:
 		case TEST_TYPE_QUERIES:
 		case TEST_TYPE_NON_PRECISE_QUERIES:
+		case TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY:
 		case TEST_TYPE_READBACK_WITH_IMPLICIT_CLEAR:
 		case TEST_TYPE_READBACK_WITH_EXPLICIT_CLEAR:
 		case TEST_TYPE_DEPTH:
@@ -2910,10 +2914,13 @@ private:
 	deUint64					m_timestampMask;
 	vector<deUint64>			m_timestampStartValues;
 	vector<deUint64>			m_timestampEndValues;
+	vector<uint64_t>			m_timestampStartAvailabilityValues;
+	vector<uint64_t>			m_timestampEndAvailabilityValues;
 	vector<deBool>				m_counterSeriesStart;
 	vector<deBool>				m_counterSeriesEnd;
 	vector<deUint64>			m_occlusionValues;
 	vector<deUint64>			m_occlusionExpectedValues;
+	vector<uint64_t>			m_occlusionAvailabilityValues;
 	deUint32					m_occlusionObjectsOffset;
 	vector<deUint64>			m_occlusionObjectPixelsCount;
 };
@@ -2934,6 +2941,16 @@ MultiViewQueriesTestInstance::MultiViewQueriesTestInstance (Context& context, co
 		TCU_THROW(NotSupportedError, "Device does not support timestamp.");
 
 	m_timestampMask = 0xFFFFFFFFFFFFFFFFull >> (64 - queueProperties[0].timestampValidBits);
+}
+
+void verifyAvailabilityBits (const std::vector<uint64_t>& bits, const char* setName)
+{
+	constexpr auto expectedValue = uint64_t{1};
+	for (size_t i = 0u; i < bits.size(); ++i)
+	{
+		if (bits[i] != expectedValue)
+			TCU_FAIL(setName + std::string(" availability bit ") + de::toString(i) + " not " + de::toString(expectedValue));
+	}
 }
 
 tcu::TestStatus MultiViewQueriesTestInstance::iterate (void)
@@ -2989,6 +3006,7 @@ tcu::TestStatus MultiViewQueriesTestInstance::iterate (void)
 			}
 		}
 	}
+	verifyAvailabilityBits(m_occlusionAvailabilityValues, "occlusion");
 
 	DE_ASSERT(!m_timestampStartValues.empty());
 	DE_ASSERT(m_timestampStartValues.size() == m_timestampEndValues.size());
@@ -3011,6 +3029,8 @@ tcu::TestStatus MultiViewQueriesTestInstance::iterate (void)
 
 		return tcu::TestStatus::fail("timestamp");
 	}
+	verifyAvailabilityBits(m_timestampStartAvailabilityValues, "timestamp start");
+	verifyAvailabilityBits(m_timestampEndAvailabilityValues, "timestamp end");
 
 	return tcu::TestStatus::pass("Pass");
 }
@@ -3076,6 +3096,32 @@ void MultiViewQueriesTestInstance::createVertexData (void)
 	}
 
 	m_occlusionObjectsOffset = mainObjectsVerticesCount;
+}
+
+// Extract single values or pairs of consecutive values from src and store them in dst1 and dst2.
+// If ds2 is not null, src is processed as containing pairs of values.
+// The first value will be stored in ds1 and the second one in dst2.
+void unpackValues (const std::vector<uint64_t>& src, std::vector<uint64_t>* dst1, std::vector<uint64_t>* dst2)
+{
+	if (!dst2)
+	{
+		std::copy(begin(src), end(src), begin(*dst1));
+		return;
+	}
+
+	constexpr size_t sz0 = 0;
+	constexpr size_t sz1 = 1;
+	constexpr size_t sz2 = 2;
+
+	DE_UNREF(sz0); // For release builds.
+	DE_ASSERT(src.size() % sz2 == sz0);
+
+	for (size_t i = 0; i < src.size(); i += sz2)
+	{
+		const auto j = i / sz2;
+		dst1->at(j) = src.at(i);
+		dst2->at(j) = src.at(i + sz1);
+	}
 }
 
 void MultiViewQueriesTestInstance::draw (const deUint32 subpassCount, VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
@@ -3209,16 +3255,41 @@ void MultiViewQueriesTestInstance::draw (const deUint32 subpassCount, VkRenderPa
 	VK_CHECK(m_device->endCommandBuffer(*m_cmdBuffer));
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
 
-	m_occlusionValues.resize(queryCountersNumber, 0ull);
-	m_device->getQueryPoolResults(*m_logicalDevice, *occlusionQueryPool, 0u, queryCountersNumber, sizeof(deUint64) * queryCountersNumber, (void*)&m_occlusionValues[0], sizeof(deUint64), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+	const bool		withAvailability		= (m_parameters.viewIndex == TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY);
+	const uint32_t	valuesPerQuery			= (withAvailability ? 2u : 1u);
+	const uint32_t	valuesNumber			= queryCountersNumber * valuesPerQuery;
+	const auto		queryStride				= static_cast<VkDeviceSize>(sizeof(uint64_t) * valuesPerQuery);
+	const auto		extraFlag				= (withAvailability ? VK_QUERY_RESULT_WITH_AVAILABILITY_BIT : static_cast<VkQueryResultFlagBits>(0));
+	const auto		queryFlags				= (VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT | extraFlag);
 
-	m_timestampStartValues.resize(queryCountersNumber, 0ull);
-	m_device->getQueryPoolResults(*m_logicalDevice, *timestampStartQueryPool, 0u, queryCountersNumber, sizeof(deUint64) * queryCountersNumber, (void*)&m_timestampStartValues[0], sizeof(deUint64), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+	// These vectors will temporarily hold results.
+	std::vector<uint64_t>	occlusionQueryResultsBuffer			(valuesNumber, 0u);
+	std::vector<uint64_t>	timestampStartQueryResultsBuffer	(valuesNumber, 0u);
+	std::vector<uint64_t>	timestampEndQueryResultsBuffer		(valuesNumber, 0u);
+
+	m_occlusionValues.resize(queryCountersNumber);
+	m_timestampStartValues.resize(queryCountersNumber);
+	m_timestampEndValues.resize(queryCountersNumber);
+
+	if (withAvailability)
+	{
+		m_occlusionAvailabilityValues.resize(queryCountersNumber);
+		m_timestampStartAvailabilityValues.resize(queryCountersNumber);
+		m_timestampEndAvailabilityValues.resize(queryCountersNumber);
+	}
+
+	m_device->getQueryPoolResults(*m_logicalDevice, *occlusionQueryPool, 0u, queryCountersNumber, de::dataSize(occlusionQueryResultsBuffer), de::dataOrNull(occlusionQueryResultsBuffer), queryStride, queryFlags);
+	unpackValues(occlusionQueryResultsBuffer, &m_occlusionValues, (withAvailability ? &m_occlusionAvailabilityValues : nullptr));
+
+	m_device->getQueryPoolResults(*m_logicalDevice, *timestampStartQueryPool, 0u, queryCountersNumber, de::dataSize(timestampStartQueryResultsBuffer), de::dataOrNull(timestampStartQueryResultsBuffer), queryStride, queryFlags);
+	unpackValues(timestampStartQueryResultsBuffer, &m_timestampStartValues, (withAvailability ? &m_timestampStartAvailabilityValues : nullptr));
+
+	m_device->getQueryPoolResults(*m_logicalDevice, *timestampEndQueryPool, 0u, queryCountersNumber, de::dataSize(timestampEndQueryResultsBuffer), de::dataOrNull(timestampEndQueryResultsBuffer), queryStride, queryFlags);
+	unpackValues(timestampEndQueryResultsBuffer, &m_timestampEndValues, (withAvailability ? &m_timestampEndAvailabilityValues : nullptr));
+
 	for (deUint32 ndx = 0; ndx < m_timestampStartValues.size(); ++ndx)
 		m_timestampStartValues[ndx] &= m_timestampMask;
 
-	m_timestampEndValues.resize(queryCountersNumber, 0ull);
-	m_device->getQueryPoolResults(*m_logicalDevice, *timestampEndQueryPool, 0u, queryCountersNumber, sizeof(deUint64) * queryCountersNumber, (void*)&m_timestampEndValues[0], sizeof(deUint64), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
 	for (deUint32 ndx = 0; ndx < m_timestampEndValues.size(); ++ndx)
 		m_timestampEndValues[ndx] &= m_timestampMask;
 }
@@ -4068,7 +4139,8 @@ private:
 			return new MultiViewMultsampleTestInstance(context, m_parameters);
 
 		if (TEST_TYPE_QUERIES == m_parameters.viewIndex ||
-			TEST_TYPE_NON_PRECISE_QUERIES == m_parameters.viewIndex)
+			TEST_TYPE_NON_PRECISE_QUERIES == m_parameters.viewIndex ||
+			TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY == m_parameters.viewIndex)
 			return new MultiViewQueriesTestInstance(context, m_parameters);
 
 		if (TEST_TYPE_VIEW_MASK == m_parameters.viewIndex ||
@@ -4384,6 +4456,7 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 		"multisample",
 		"queries",
 		"non_precise_queries",
+		"non_precise_queries_with_availability",
 		"readback_implicit_clear",
 		"readback_explicit_clear",
 		"depth",
@@ -4479,8 +4552,8 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 				continue;
 
 			if (testTypeNdx == TEST_TYPE_DEPTH ||
-                                  testTypeNdx == TEST_TYPE_DEPTH_DIFFERENT_RANGES ||
-                                  testTypeNdx == TEST_TYPE_STENCIL)
+				testTypeNdx == TEST_TYPE_DEPTH_DIFFERENT_RANGES ||
+				testTypeNdx == TEST_TYPE_STENCIL)
 			{
 				const VkExtent3D		dsTestExtent3D	= { 64u, 64u, 4u };
 				const TestParameters	parameters		= { dsTestExtent3D, tripleDepthStencilMasks(depthStencilMasks), testType, sampleCountFlags, colorFormat, renderPassType };
@@ -4525,6 +4598,7 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 				case TEST_TYPE_MULTISAMPLE:
 				case TEST_TYPE_QUERIES:
 				case TEST_TYPE_NON_PRECISE_QUERIES:
+				case TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY:
 				case TEST_TYPE_READBACK_WITH_IMPLICIT_CLEAR:
 				case TEST_TYPE_READBACK_WITH_EXPLICIT_CLEAR:
 				case TEST_TYPE_DEPTH:
