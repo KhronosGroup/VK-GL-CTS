@@ -1885,6 +1885,8 @@ struct TestConfig
 	// Bind and draw with a pipeline that uses dynamic patch control points but doesn't actually use a tessellation
 	// shader, before using the real pipelines being tested.
 	bool							useExtraDynPCPPipeline;
+	// Bind and draw with a pipeline that uses same dynamic states, before using the real pipelines being tested.
+	bool							useExtraDynPipeline;
 
 	// Optional, to be used specifically for color attachments when testing coverage modulation and reduction.
 	bool							coverageModulation;
@@ -2032,6 +2034,7 @@ struct TestConfig
 		, vertexDataOffset				(0ull)
 		, vertexDataExtraBytes			(0ull)
 		, useExtraDynPCPPipeline		(false)
+		, useExtraDynPipeline			(false)
 		, coverageModulation			(false)
 		, coverageReduction				(false)
 		, colorSampleCount				(tcu::Nothing)
@@ -2140,6 +2143,7 @@ struct TestConfig
 		, vertexDataOffset				(other.vertexDataOffset)
 		, vertexDataExtraBytes			(other.vertexDataExtraBytes)
 		, useExtraDynPCPPipeline		(other.useExtraDynPCPPipeline)
+		, useExtraDynPipeline			(other.useExtraDynPipeline)
 		, coverageModulation			(other.coverageModulation)
 		, coverageReduction				(other.coverageReduction)
 		, colorSampleCount				(other.colorSampleCount)
@@ -3760,7 +3764,7 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 	}
 
 	// Extra vert and frag shaders for the extra patch control points pipeline. These draw offscreen.
-	if (m_testConfig.useExtraDynPCPPipeline)
+	if (m_testConfig.useExtraDynPCPPipeline || m_testConfig.useExtraDynPipeline)
 	{
 		std::ostringstream vertDPCP;
 		vertDPCP
@@ -5477,6 +5481,10 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 			renderPass.get(), viewports, scissors, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u,
 			&extraDPCPInputState, nullptr, nullptr, nullptr, nullptr, &extraDynamicStateInfo);
 	}
+	else if (m_testConfig.useExtraDynPipeline)
+	{
+		vertDPCPModule = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vertDPCP"));
+	}
 
 	// Create static pipeline when needed.
 	if (kUseStaticPipeline)
@@ -5540,6 +5548,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 
 	// Create dynamic pipeline.
 	vk::GraphicsPipelineWrapper graphicsPipeline(vkd, device, m_testConfig.pipelineConstructionType);
+	vk::GraphicsPipelineWrapper extraDynPipeline(vkd, device, m_testConfig.pipelineConstructionType);
 	{
 		auto viewports	= m_testConfig.viewportConfig.staticValue;
 		auto scissors	= m_testConfig.scissorConfig.staticValue;
@@ -5558,6 +5567,8 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		if (m_testConfig.viewportConfig.dynamicValue)
 		{
 			graphicsPipeline.setDefaultViewportsCount();
+			if (m_testConfig.useExtraDynPipeline)
+				extraDynPipeline.setDefaultViewportsCount();
 			viewports = std::vector<vk::VkViewport>();
 		}
 		else
@@ -5566,6 +5577,8 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		if (m_testConfig.scissorConfig.dynamicValue)
 		{
 			graphicsPipeline.setDefaultScissorsCount();
+			if (m_testConfig.useExtraDynPipeline)
+				extraDynPipeline.setDefaultScissorsCount();
 			scissors = std::vector<vk::VkRect2D>();
 		}
 		else
@@ -5583,6 +5596,12 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 						.setViewportStatePnext(viewportPnext)
 						.setDefaultTessellationDomainOrigin(m_testConfig.tessDomainOriginConfig.staticValue)
 						.disableViewportState(disableViewportState);
+		if (m_testConfig.useExtraDynPipeline)
+			extraDynPipeline.setDynamicState(&dynamicStateCreateInfo)
+							.setDefaultPatchControlPoints(patchControlPoints)
+							.setViewportStatePnext(viewportPnext)
+							.setDefaultTessellationDomainOrigin(m_testConfig.tessDomainOriginConfig.staticValue)
+							.disableViewportState(disableViewportState);
 
 		const auto staticRasterizationStateCreateInfo	= ((m_testConfig.favorStaticNullPointers
 															&& m_testConfig.depthClampEnableConfig.dynamicValue
@@ -5595,6 +5614,8 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 															&& m_testConfig.lineWidthConfig.dynamicValue)
 														? nullptr
 														: &rasterizationStateCreateInfo);
+
+		DE_ASSERT(!m_testConfig.useExtraDynPipeline || !m_testConfig.useMeshShaders);
 
 #ifndef CTS_USES_VULKANSC
 		if (m_testConfig.useMeshShaders)
@@ -5620,6 +5641,17 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 															? nullptr
 															: &inputAssemblyStateCreateInfo);
 
+			const vk::VkPipelineVertexInputStateCreateInfo emptyVertexInputStateCreateInfo =
+			{
+				vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	//	VkStructureType								sType;
+				DE_NULL,														//	const void*									pNext;
+				0u,																//	VkPipelineVertexInputStateCreateFlags		flags;
+				0u,																//	deUint32									vertexBindingDescriptionCount;
+				DE_NULL,														//	const VkVertexInputBindingDescription*		pVertexBindingDescriptions;
+				0u,																//	deUint32									vertexAttributeDescriptionCount;
+				DE_NULL,														//	const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
+			};
+
 			graphicsPipeline.setupVertexInputState(
 												staticVertexInputStateCreateInfo,
 												staticInputAssemblyStateCreateInfo,
@@ -5637,6 +5669,22 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 												*tescModule,
 												*teseModule,
 												*geomModule);
+
+			if (m_testConfig.useExtraDynPipeline)
+				extraDynPipeline.setupVertexInputState(
+													&emptyVertexInputStateCreateInfo,
+													staticInputAssemblyStateCreateInfo,
+													VK_NULL_HANDLE,
+													vk::PipelineCreationFeedbackCreateInfoWrapper(),
+													m_testConfig.favorStaticNullPointers)
+								.setupPreRasterizationShaderState(
+													viewports,
+													scissors,
+													*pipelineLayout,
+													*renderPass,
+													0u,
+													*vertDPCPModule,
+													staticRasterizationStateCreateInfo);
 		}
 
 		const auto staticMultisampleStateCreateInfo	= ((m_testConfig.favorStaticNullPointers
@@ -5677,6 +5725,15 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 						.setupFragmentOutputState(*renderPass, 0u, staticColorBlendStateCreateInfo, staticMultisampleStateCreateInfo)
 						.setMonolithicPipelineLayout(*pipelineLayout)
 						.buildPipeline();
+		if (m_testConfig.useExtraDynPipeline)
+			extraDynPipeline
+	#ifndef CTS_USES_VULKANSC
+							.setRepresentativeFragmentTestState(pReprFragment.get())
+	#endif // CTS_USES_VULKANSC
+							.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *dynamicFragModule, staticDepthStencilStateCreateInfo, staticMultisampleStateCreateInfo)
+							.setupFragmentOutputState(*renderPass, 0u, staticColorBlendStateCreateInfo, staticMultisampleStateCreateInfo)
+							.setMonolithicPipelineLayout(*pipelineLayout)
+							.buildPipeline();
 	}
 
 	vk::GraphicsPipelineWrapper meshNoOutPipeline(vkd, device, m_testConfig.pipelineConstructionType);
@@ -5781,6 +5838,16 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 					// setting it to a wrong value here, resulting in test failures. We keep the right value instead.
 					if (kSequenceOrdering != SequenceOrdering::CMD_BUFFER_START && kSequenceOrdering != SequenceOrdering::BETWEEN_PIPELINES)
 						vkd.cmdSetPatchControlPointsEXT(cmdBuffer, m_testConfig.patchControlPointsConfig.staticValue);
+
+					vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
+				}
+
+				if (m_testConfig.useExtraDynPipeline)
+				{
+					vkd.cmdBindPipeline(cmdBuffer, pipelineBindPoint, extraDynPipeline.getPipeline());
+
+					if (kSequenceOrdering == SequenceOrdering::BEFORE_DRAW || kSequenceOrdering == SequenceOrdering::AFTER_PIPELINES || kSequenceOrdering == SequenceOrdering::BEFORE_GOOD_STATIC)
+						setDynamicStates(m_testConfig, vkd, cmdBuffer);
 
 					vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
 				}
@@ -8283,135 +8350,149 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 
 						for (int subCaseIdx = 0; subCaseIdx < subCases; ++subCaseIdx)
 						{
-							const bool depthFail	= (subCaseIdx > 0);				// depthFail would be the second variant.
-							const bool globalPass	= (wouldPass && !depthFail);	// Global result of the stencil+depth test.
-
-							// Start tuning test parameters.
-							TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
-
-							// No face culling is applied by default, so both the front and back operations could apply depending on the mesh.
-							if (face.face == vk::VK_STENCIL_FACE_FRONT_BIT)
+							for (int extraPipelineIter = 0; extraPipelineIter < 2; ++extraPipelineIter)
 							{
-								// Default parameters are OK.
-							}
-							else if (face.face == vk::VK_STENCIL_FACE_BACK_BIT)
-							{
-								// Reverse the mesh so it applies the back operation.
-								config.meshParams[0].reversed = true;
-							}
-							else	// Front and back.
-							{
-								// Draw both a front and a back-facing mesh so both are applied.
-								// The first mesh will be drawn in the top half and the second mesh in the bottom half.
+								const bool useExtraPipeline = (extraPipelineIter > 0);		// Bind and draw with another pipeline using the same dynamic states.
 
-								// Make the second mesh a reversed copy of the first mesh.
-								config.meshParams.push_back(config.meshParams.front());
-								config.meshParams.back().reversed = true;
+								if (useExtraPipeline && (kOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC || kOrdering == SequenceOrdering::TWO_DRAWS_STATIC))
+									continue;
 
-								// Apply scale and offset to the top mesh.
-								config.meshParams.front().scaleY = 0.5f;
-								config.meshParams.front().offsetY = -0.5f;
+								if (useExtraPipeline && kUseMeshShaders)
+									continue;
 
-								// Apply scale and offset to the bottom mesh.
-								config.meshParams.back().scaleY = 0.5f;
-								config.meshParams.back().offsetY = 0.5f;
-							}
+								const bool depthFail		= (subCaseIdx > 0);				// depthFail would be the second variant.
+								const bool globalPass		= (wouldPass && !depthFail);	// Global result of the stencil+depth test.
 
-							// Enable the stencil test.
-							config.stencilTestEnableConfig.staticValue = true;
+								// Start tuning test parameters.
+								TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
 
-							// Set dynamic configuration.
-							StencilOpParams dynamicStencilConfig;
-							dynamicStencilConfig.faceMask		= face.face;
-							dynamicStencilConfig.compareOp		= compare.compareOp;
-							dynamicStencilConfig.failOp			= vk::VK_STENCIL_OP_MAX_ENUM;
-							dynamicStencilConfig.passOp			= vk::VK_STENCIL_OP_MAX_ENUM;
-							dynamicStencilConfig.depthFailOp	= vk::VK_STENCIL_OP_MAX_ENUM;
-
-							// Set operations so only the appropriate operation for this case gives the right result.
-							vk::VkStencilOp* activeOp		= nullptr;
-							vk::VkStencilOp* inactiveOps[2]	= { nullptr, nullptr };
-							if (wouldPass)
-							{
-								if (depthFail)
+								// No face culling is applied by default, so both the front and back operations could apply depending on the mesh.
+								if (face.face == vk::VK_STENCIL_FACE_FRONT_BIT)
 								{
-									activeOp		= &dynamicStencilConfig.depthFailOp;
-									inactiveOps[0]	= &dynamicStencilConfig.passOp;
-									inactiveOps[1]	= &dynamicStencilConfig.failOp;
+									// Default parameters are OK.
+								}
+								else if (face.face == vk::VK_STENCIL_FACE_BACK_BIT)
+								{
+									// Reverse the mesh so it applies the back operation.
+									config.meshParams[0].reversed = true;
+								}
+								else	// Front and back.
+								{
+									// Draw both a front and a back-facing mesh so both are applied.
+									// The first mesh will be drawn in the top half and the second mesh in the bottom half.
+
+									// Make the second mesh a reversed copy of the first mesh.
+									config.meshParams.push_back(config.meshParams.front());
+									config.meshParams.back().reversed = true;
+
+									// Apply scale and offset to the top mesh.
+									config.meshParams.front().scaleY = 0.5f;
+									config.meshParams.front().offsetY = -0.5f;
+
+									// Apply scale and offset to the bottom mesh.
+									config.meshParams.back().scaleY = 0.5f;
+									config.meshParams.back().offsetY = 0.5f;
+								}
+
+								// Enable the stencil test.
+								config.stencilTestEnableConfig.staticValue = true;
+
+								// Set dynamic configuration.
+								StencilOpParams dynamicStencilConfig;
+								dynamicStencilConfig.faceMask		= face.face;
+								dynamicStencilConfig.compareOp		= compare.compareOp;
+								dynamicStencilConfig.failOp			= vk::VK_STENCIL_OP_MAX_ENUM;
+								dynamicStencilConfig.passOp			= vk::VK_STENCIL_OP_MAX_ENUM;
+								dynamicStencilConfig.depthFailOp	= vk::VK_STENCIL_OP_MAX_ENUM;
+
+								// Set operations so only the appropriate operation for this case gives the right result.
+								vk::VkStencilOp* activeOp		= nullptr;
+								vk::VkStencilOp* inactiveOps[2]	= { nullptr, nullptr };
+								if (wouldPass)
+								{
+									if (depthFail)
+									{
+										activeOp		= &dynamicStencilConfig.depthFailOp;
+										inactiveOps[0]	= &dynamicStencilConfig.passOp;
+										inactiveOps[1]	= &dynamicStencilConfig.failOp;
+									}
+									else
+									{
+										activeOp		= &dynamicStencilConfig.passOp;
+										inactiveOps[0]	= &dynamicStencilConfig.depthFailOp;
+										inactiveOps[1]	= &dynamicStencilConfig.failOp;
+									}
 								}
 								else
 								{
-									activeOp		= &dynamicStencilConfig.passOp;
-									inactiveOps[0]	= &dynamicStencilConfig.depthFailOp;
-									inactiveOps[1]	= &dynamicStencilConfig.failOp;
+									activeOp		= &dynamicStencilConfig.failOp;
+									inactiveOps[0]	= &dynamicStencilConfig.passOp;
+									inactiveOps[1]	= &dynamicStencilConfig.depthFailOp;
 								}
+
+								*activeOp = op.stencilOp;
+								*inactiveOps[0] = op.incompatibleOp;
+								*inactiveOps[1] = op.incompatibleOp;
+
+								// Make sure all ops have been configured properly.
+								DE_ASSERT(dynamicStencilConfig.failOp != vk::VK_STENCIL_OP_MAX_ENUM);
+								DE_ASSERT(dynamicStencilConfig.passOp != vk::VK_STENCIL_OP_MAX_ENUM);
+								DE_ASSERT(dynamicStencilConfig.depthFailOp != vk::VK_STENCIL_OP_MAX_ENUM);
+
+								// Set an incompatible static operation too.
+								auto& staticStencilConfig		= config.stencilOpConfig.staticValue.front();
+								staticStencilConfig.faceMask	= face.face;
+								staticStencilConfig.compareOp	= (globalPass ? vk::VK_COMPARE_OP_NEVER : vk::VK_COMPARE_OP_ALWAYS);
+								staticStencilConfig.passOp		= op.incompatibleOp;
+								staticStencilConfig.failOp		= op.incompatibleOp;
+								staticStencilConfig.depthFailOp	= op.incompatibleOp;
+
+								// Set dynamic configuration.
+								StencilOpVec stencilOps;
+								stencilOps.push_back(dynamicStencilConfig);
+
+								if (stencilOps.front().faceMask == vk::VK_STENCIL_FACE_FLAG_BITS_MAX_ENUM)
+								{
+									// This is the dual case. We will set the front and back face values with two separate calls.
+									stencilOps.push_back(stencilOps.front());
+									stencilOps.front().faceMask		= vk::VK_STENCIL_FACE_FRONT_BIT;
+									stencilOps.back().faceMask		= vk::VK_STENCIL_FACE_BACK_BIT;
+									staticStencilConfig.faceMask	= vk::VK_STENCIL_FACE_FRONT_AND_BACK;
+								}
+
+								config.stencilOpConfig.dynamicValue	= tcu::just(stencilOps);
+								config.clearStencilValue			= clearVal;
+								config.referenceStencil				= refValU32;
+
+								if (depthFail)
+								{
+									// Enable depth test and make it fail.
+									config.depthTestEnableConfig.staticValue	= true;
+									config.clearDepthValue						= 0.5f;
+									config.depthCompareOpConfig.staticValue		= vk::VK_COMPARE_OP_LESS;
+
+									for (auto& meshPar : config.meshParams)
+										meshPar.depth = 0.75f;
+								}
+
+								// Set expected outcome.
+								config.referenceColor.reset	(new SingleColorGenerator(globalPass ? kDefaultTriangleColor : kDefaultClearColor));
+								config.expectedDepth		= config.clearDepthValue; // No depth writing by default.
+								config.expectedStencil		= stencilResult(op.stencilOp, clearVal, refValU8, kMinVal, kMaxVal);
+
+								config.useExtraDynPipeline	= useExtraPipeline;
+
+								const std::string testName = std::string("stencil_state")
+									+ ((useExtraPipeline) ? "_extra_pipeline" : "")
+									+ "_" + face.name
+									+ "_" + compare.name
+									+ "_" + op.name
+									+ "_clear_" + de::toString(static_cast<int>(clearVal))
+									+ "_ref_" + de::toString(refVal)
+									+ "_" + (wouldPass ? (depthFail ? "depthfail" : "pass") : "fail");
+
+								orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, "Dynamically configure stencil test, variant " + testName, config));
 							}
-							else
-							{
-								activeOp		= &dynamicStencilConfig.failOp;
-								inactiveOps[0]	= &dynamicStencilConfig.passOp;
-								inactiveOps[1]	= &dynamicStencilConfig.depthFailOp;
-							}
-
-							*activeOp = op.stencilOp;
-							*inactiveOps[0] = op.incompatibleOp;
-							*inactiveOps[1] = op.incompatibleOp;
-
-							// Make sure all ops have been configured properly.
-							DE_ASSERT(dynamicStencilConfig.failOp != vk::VK_STENCIL_OP_MAX_ENUM);
-							DE_ASSERT(dynamicStencilConfig.passOp != vk::VK_STENCIL_OP_MAX_ENUM);
-							DE_ASSERT(dynamicStencilConfig.depthFailOp != vk::VK_STENCIL_OP_MAX_ENUM);
-
-							// Set an incompatible static operation too.
-							auto& staticStencilConfig		= config.stencilOpConfig.staticValue.front();
-							staticStencilConfig.faceMask	= face.face;
-							staticStencilConfig.compareOp	= (globalPass ? vk::VK_COMPARE_OP_NEVER : vk::VK_COMPARE_OP_ALWAYS);
-							staticStencilConfig.passOp		= op.incompatibleOp;
-							staticStencilConfig.failOp		= op.incompatibleOp;
-							staticStencilConfig.depthFailOp	= op.incompatibleOp;
-
-							// Set dynamic configuration.
-							StencilOpVec stencilOps;
-							stencilOps.push_back(dynamicStencilConfig);
-
-							if (stencilOps.front().faceMask == vk::VK_STENCIL_FACE_FLAG_BITS_MAX_ENUM)
-							{
-								// This is the dual case. We will set the front and back face values with two separate calls.
-								stencilOps.push_back(stencilOps.front());
-								stencilOps.front().faceMask		= vk::VK_STENCIL_FACE_FRONT_BIT;
-								stencilOps.back().faceMask		= vk::VK_STENCIL_FACE_BACK_BIT;
-								staticStencilConfig.faceMask	= vk::VK_STENCIL_FACE_FRONT_AND_BACK;
-							}
-
-							config.stencilOpConfig.dynamicValue	= tcu::just(stencilOps);
-							config.clearStencilValue			= clearVal;
-							config.referenceStencil				= refValU32;
-
-							if (depthFail)
-							{
-								// Enable depth test and make it fail.
-								config.depthTestEnableConfig.staticValue	= true;
-								config.clearDepthValue						= 0.5f;
-								config.depthCompareOpConfig.staticValue		= vk::VK_COMPARE_OP_LESS;
-
-								for (auto& meshPar : config.meshParams)
-									meshPar.depth = 0.75f;
-							}
-
-							// Set expected outcome.
-							config.referenceColor.reset	(new SingleColorGenerator(globalPass ? kDefaultTriangleColor : kDefaultClearColor));
-							config.expectedDepth		= config.clearDepthValue; // No depth writing by default.
-							config.expectedStencil		= stencilResult(op.stencilOp, clearVal, refValU8, kMinVal, kMaxVal);
-
-							const std::string testName = std::string("stencil_state")
-								+ "_" + face.name
-								+ "_" + compare.name
-								+ "_" + op.name
-								+ "_clear_" + de::toString(static_cast<int>(clearVal))
-								+ "_ref_" + de::toString(refVal)
-								+ "_" + (wouldPass ? (depthFail ? "depthfail" : "pass") : "fail");
-
-							orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, "Dynamically configure stencil test, variant " + testName, config));
 						}
 					}
 				}
