@@ -23,6 +23,7 @@
 *//*--------------------------------------------------------------------*/
 
 #include "vktPipelineExtendedDynamicStateTests.hpp"
+#include "vktPipelineExtendedDynamicStateMiscTests.hpp"
 #include "vktPipelineImageUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktCustomInstancesDevices.hpp"
@@ -8541,6 +8542,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 	}
 
 	extendedDynamicStateGroup->addChild(meshShaderGroup.release());
+	extendedDynamicStateGroup->addChild(createExtendedDynamicStateMiscTests(testCtx, pipelineConstructionType));
 	return extendedDynamicStateGroup.release();
 }
 
