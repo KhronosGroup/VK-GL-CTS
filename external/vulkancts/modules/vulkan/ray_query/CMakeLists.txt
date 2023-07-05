@@ -32,6 +32,8 @@ set(DEQP_VK_RAY_QUERY_SRCS
 	vktRayQueryPositionFetchTests.hpp
 	vktRayQueryMultipleRayQueries.cpp
 	vktRayQueryMultipleRayQueries.hpp
+	vktRayQueryStressTests.cpp
+	vktRayQueryStressTests.hpp
 	)
 
 set(DEQP_VK_RAY_QUERY_LIBS

@@ -386,6 +386,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/ray_query/vktRayQueryOpacityMicromapTests.cpp",
         "external/vulkancts/modules/vulkan/ray_query/vktRayQueryPositionFetchTests.cpp",
         "external/vulkancts/modules/vulkan/ray_query/vktRayQueryProceduralGeometryTests.cpp",
+        "external/vulkancts/modules/vulkan/ray_query/vktRayQueryStressTests.cpp",
         "external/vulkancts/modules/vulkan/ray_query/vktRayQueryTests.cpp",
         "external/vulkancts/modules/vulkan/ray_query/vktRayQueryTraversalControlTests.cpp",
         "external/vulkancts/modules/vulkan/ray_query/vktRayQueryWatertightnessTests.cpp",
