@@ -1898,7 +1898,10 @@ bool isMultiplaneImageSupported (const InstanceInterface&	vki,
 	}
 
 	const VkFormatProperties	formatProperties	= getPhysicalDeviceFormatProperties(vki, physicalDevice, info.format);
-	const VkFormatFeatureFlags	formatFeatures		= (info.tiling == VK_IMAGE_TILING_LINEAR ? formatProperties.linearTilingFeatures																						 : formatProperties.optimalTilingFeatures);
+	const VkFormatFeatureFlags	formatFeatures		= (info.tiling == VK_IMAGE_TILING_LINEAR ? formatProperties.linearTilingFeatures
+																							 : formatProperties.optimalTilingFeatures);
+	if ((info.flags & VK_IMAGE_CREATE_DISJOINT_BIT) != 0 && (formatFeatures & VK_FORMAT_FEATURE_DISJOINT_BIT) == 0)
+		return false;
 
 	if (!doesUsageSatisfyFeatures(info.usage, formatFeatures))
 		return false;
@@ -2106,7 +2109,12 @@ tcu::TestStatus testMultiplaneImages (Context& context, ImageTestParams params)
 	#ifndef CTS_USES_VULKANSC
 						if (actualCreateFlags & VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT)
 						{
-							const auto sparseRequirements = getImageSparseMemoryRequirements(vk, device, *image);
+							std::vector<VkSparseImageMemoryRequirements> sparseRequirements;
+							if ((*image == DE_NULL) || params.useMaint4)
+								sparseRequirements = getDeviceImageSparseMemoryRequirements(vk, device, imageInfo, aspect);
+							else
+								sparseRequirements = getImageSparseMemoryRequirements(vk, device, *image);
+
 							for (const VkSparseImageMemoryRequirements& sr : sparseRequirements)
 							{
 								if (sr.formatProperties.aspectMask == aspect)

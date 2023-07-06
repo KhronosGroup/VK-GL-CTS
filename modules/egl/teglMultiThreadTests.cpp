@@ -505,6 +505,7 @@ const char* configAttributeToString (EGLint e)
 		case EGL_TRANSPARENT_RED_VALUE:		return "EGL_TRANSPARENT_RED_VALUE";
 		case EGL_TRANSPARENT_GREEN_VALUE:	return "EGL_TRANSPARENT_GREEN_VALUE";
 		case EGL_TRANSPARENT_BLUE_VALUE:	return "EGL_TRANSPARENT_BLUE_VALUE";
+		case EGL_RECORDABLE_ANDROID:		return "EGL_RECORDABLE_ANDROID";
 		default:							return "<Unknown>";
 	}
 }
@@ -633,7 +634,7 @@ bool MultiThreadedConfigTest::runThread (TestThread& thread)
 
 	{
 		// Perform queries on configs
-		static const EGLint attributes[] =
+		std::vector<EGLint> attributes =
 		{
 			EGL_BUFFER_SIZE,
 			EGL_RED_SIZE,
@@ -666,12 +667,15 @@ bool MultiThreadedConfigTest::runThread (TestThread& thread)
 			EGL_TRANSPARENT_TYPE,
 			EGL_TRANSPARENT_RED_VALUE,
 			EGL_TRANSPARENT_GREEN_VALUE,
-			EGL_TRANSPARENT_BLUE_VALUE
+			EGL_TRANSPARENT_BLUE_VALUE,
 		};
+
+		if (eglu::hasExtension(egl, m_display, "EGL_ANDROID_recordable"))
+			attributes.emplace_back(EGL_RECORDABLE_ANDROID);
 
 		for (int queryNdx = 0; queryNdx < m_query; queryNdx++)
 		{
-			const EGLint	attribute	= attributes[rnd.getInt(0, DE_LENGTH_OF_ARRAY(attributes)-1)];
+			const EGLint	attribute	= attributes[rnd.getInt(0, static_cast<int>(attributes.size())-1)];
 			EGLConfig		config		= configs[rnd.getInt(0, (int)(configs.size()-1))];
 			EGLint			value;
 			EGLBoolean		result;

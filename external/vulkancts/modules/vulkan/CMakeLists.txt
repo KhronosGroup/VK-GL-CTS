@@ -232,10 +232,6 @@ PCH(DEQP_VK_SRCS pch.cpp)
 add_deqp_module(deqp-vk "${DEQP_VK_SRCS}" "${DEQP_VK_LIBS}" "tcutil-platform" vktTestPackageEntry.cpp )
 
 add_deqp_module_skip_android(deqp-vksc "${DEQP_VK_SRCS}" "${DEQP_VKSC_LIBS}" "tcutil-sc-platform" vktTestPackageEntrySC.cpp)
-target_include_directories(deqp-vksc-package BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
-if (NOT DE_OS_IS_ANDROID AND NOT DE_OS_IS_IOS)
-	target_include_directories(deqp-vksc BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
-endif ()
 
 add_data_dir(deqp-vk ../../data/vulkan vulkan)
 add_data_dir(deqp-vk ../../mustpass/main/vk-default vk-default)
@@ -251,17 +247,6 @@ FOREACH(FOUND_PATH ${PATHS_MATCHING_PATTERN})
 ENDFOREACH()
 
 set(BINARY_COPY_DIR "./")
-
-# Video parser used in vulkan video won't be part of android target
-if (DE_OS_IS_WIN32)
-	add_data_dir(deqp-vk ../../../video-parser/src/vk_video_decoder/bin/libs/nv_vkvideo_parser/wddm2_amd64_release	${BINARY_COPY_DIR})
-elseif(DE_OS_IS_UNIX)
-	add_data_dir(deqp-vk ../../../video-parser/src/vk_video_decoder/bin/libs/nv_vkvideo_parser/linux_amd64_release	${BINARY_COPY_DIR})
-endif()
-
-if (DE_OS_IS_WIN32)
-	add_data_dir(deqp-vk ../../../ffmpeg/src/bin	${BINARY_COPY_DIR})
-endif()
 
 if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX)
 	add_executable(vk-build-programs vktBuildPrograms.cpp)

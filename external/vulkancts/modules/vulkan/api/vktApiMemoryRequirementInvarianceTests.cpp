@@ -105,9 +105,12 @@ BufferAllocator::~BufferAllocator ()
 
 void BufferAllocator::allocate (Context& context)
 {
-	Allocator&						memAlloc	= context.getDefaultAllocator();
+	const DeviceInterface&			vk					= context.getDeviceInterface();
+	VkDevice						vkDevice			= context.getDevice();
+	deUint32						queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	Allocator&						memAlloc			= context.getDefaultAllocator();
 	de::MovePtr<IBufferAllocator>	allocator;
-	MemoryRequirement				requirement	= legalMemoryTypes[m_memoryType];
+	MemoryRequirement				requirement			= legalMemoryTypes[m_memoryType];
 
 	if (m_dedicated)
 		allocator = de::MovePtr<IBufferAllocator>(new BufferDedicatedAllocation);
@@ -115,6 +118,9 @@ void BufferAllocator::allocate (Context& context)
 		allocator = de::MovePtr<IBufferAllocator>(new BufferSuballocation);
 
 	allocator->createTestBuffer(
+		vk,
+		vkDevice,
+		queueFamilyIndex,
 		m_size,
 		m_usage,
 		context,
@@ -262,6 +268,8 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 	bool									success							= true;
 	const deBool							isDedicatedAllocationSupported	= m_context.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation");
 	const deBool							isYcbcrSupported				= m_context.isDeviceFunctionalitySupported("VK_KHR_sampler_ycbcr_conversion");
+	const deBool							isYcbcrExtensionSupported		= m_context.isDeviceFunctionalitySupported("VK_EXT_ycbcr_2plane_444_formats");
+	const deBool							isPvrtcSupported				= m_context.isDeviceFunctionalitySupported("VK_IMG_format_pvrtc");
 	std::vector<int>						optimalFormats;
 	std::vector<int>						linearFormats;
 	std::vector<int>						memoryTypes;
@@ -512,6 +520,12 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 	for (int i = 0; i < formatCount; i++)
 	{
 		if (isYCbCrFormat((VkFormat)formatlist[i]) && !isYcbcrSupported)
+			continue;
+
+		if (isYCbCrExtensionFormat((VkFormat)formatlist[i]) && !isYcbcrExtensionSupported)
+			continue;
+
+		if (isPvrtcFormat((VkFormat)formatlist[i]) && !isPvrtcSupported)
 			continue;
 
 		vk::VkImageFormatProperties imageformatprops;

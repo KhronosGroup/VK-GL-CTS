@@ -256,6 +256,10 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
 	const VkBufferImageCopy copyRegion = makeBufferImageCopy(imageExtent, colorSL);
 	vk.cmdCopyImageToBuffer(*cmdBuffer, colorImage.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, outputBuffer.get(), 1u, &copyRegion);
 
+	auto bufferBarrier = makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, outputBuffer.get(), 0u, VK_WHOLE_SIZE);
+
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, 0u, 1u, &bufferBarrier, 0u, 0u);
+
 	endCommandBuffer(vk, *cmdBuffer);
 
 	VkQueue queue;
@@ -452,13 +456,11 @@ tcu::TestCaseGroup* createIndexAccessTests(tcu::TestContext& testCtx)
 		{ "draw_multi_indexed",				TestMode::TM_DRAW_MULTI_INDEXED },
 	};
 
-	for (deUint32 robustnessVersion = 1; robustnessVersion < 3; ++robustnessVersion)
+	const deUint32 robustnessVersion = 2;
+	for (const auto& c : testConfigs)
 	{
-		for (const auto& c : testConfigs)
-		{
-			std::string name = c.name + "_" + std::to_string(robustnessVersion);
-			indexAccessTests->addChild(new DrawIndexedTestCase(testCtx, name, c.mode, robustnessVersion));
-		}
+		std::string name = c.name + "_" + std::to_string(robustnessVersion);
+		indexAccessTests->addChild(new DrawIndexedTestCase(testCtx, name, c.mode, robustnessVersion));
 	}
 
 	return indexAccessTests.release();

@@ -29,6 +29,7 @@
 #include "tcuFormatUtil.hpp"
 #include "tcuCommandLine.hpp"
 #include "tcuPlatform.hpp"
+#include "deDefs.h"
 #include "deStringUtil.hpp"
 #include "vktApiFeatureInfo.hpp"
 
@@ -182,14 +183,16 @@ const SizeUnit* getBestSizeUnit (deUint64 value)
 	{
 		// \note Must be ordered from largest to smallest
 		{ "TiB",	1ull<<40ull		},
-		{ "MiB",	1ull<<20ull		},
 		{ "GiB",	1ull<<30ull		},
+		{ "MiB",	1ull<<20ull		},
 		{ "KiB",	1ull<<10ull		},
 	};
 	static const SizeUnit s_defaultUnit	= { "B", 1u };
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_units); ++ndx)
 	{
+		DE_ASSERT(ndx == (DE_LENGTH_OF_ARRAY(s_units) - 1) ||
+		          s_units[ndx].value > s_units[ndx + 1].value);
 		if (value >= s_units[ndx].value)
 			return &s_units[ndx];
 	}

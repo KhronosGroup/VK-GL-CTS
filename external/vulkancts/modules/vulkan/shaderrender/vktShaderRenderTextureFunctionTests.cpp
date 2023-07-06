@@ -1481,7 +1481,7 @@ using TestMode = deUint32;
 enum QueryLodTestModes
 {
 	QLODTM_DEFAULT			= 0,		// uv coords have different values
-	QLODTM_ZERO_UV_WIDTH				// all uv coords are 0; there were implementations that incorrectly returned 0 in that case instead of -22 or less
+	QLODTM_ZERO_UV_WIDTH				// all uv coords are 0; there were implementations that incorrectly returned 0 in that case instead of -maxSamplerLodBias or less
 };
 
 class TextureQueryInstance : public ShaderRenderCaseInstance
@@ -2780,14 +2780,14 @@ TextureQueryLodInstance::TextureQueryLodInstance (Context&					context,
 		// setup same texture coordinates that will result in pmax
 		// beeing 0 and as a result lambda being -inf; on most
 		// implementations lambda is computed as fixed-point, so
-		// infinities can't be returned, instead -22 or less
+		// infinities can't be returned, instead -maxSamplerLodBias or less
 		// should be returned
 
 		m_minCoord = Vec4(0.0f, 0.0f, 1.0f, 0.0f);
 		m_maxCoord = Vec4(0.0f, 0.0f, 1.0f, 0.0f);
 
 		m_lodBounds[0]		= -std::numeric_limits<float>::infinity();
-		m_lodBounds[1]		= -22.0f;
+		m_lodBounds[1]		= -context.getDeviceProperties().limits.maxSamplerLodBias;
 		m_levelBounds[0]	= 0.0f;
 		m_levelBounds[1]	= 0.0f;
 

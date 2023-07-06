@@ -553,6 +553,12 @@ VKAPI_ATTR void VKAPI_CALL destroyOpticalFlowSessionNV (VkDevice device, VkOptic
 	freeNonDispHandle<OpticalFlowSessionNV, VkOpticalFlowSessionNV>(session, pAllocator);
 }
 
+VKAPI_ATTR void VKAPI_CALL destroyShaderEXT (VkDevice device, VkShaderEXT shader, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<ShaderEXT, VkShaderEXT>(shader, pAllocator);
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL enumerateInstanceVersion (uint32_t* pApiVersion)
 {
 	DE_UNREF(pApiVersion);
@@ -815,6 +821,12 @@ VKAPI_ATTR void VKAPI_CALL cmdBindPipeline (VkCommandBuffer commandBuffer, VkPip
 	DE_UNREF(commandBuffer);
 	DE_UNREF(pipelineBindPoint);
 	DE_UNREF(pipeline);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetAttachmentFeedbackLoopEnableEXT (VkCommandBuffer commandBuffer, VkImageAspectFlags aspectMask)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(aspectMask);
 }
 
 VKAPI_ATTR void VKAPI_CALL cmdSetViewport (VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports)
@@ -3447,11 +3459,29 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceVideoFormatPropertiesKHR (VkPhys
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceVideoEncodeQualityLevelInfoKHR* pQualityLevelInfo, VkVideoEncodeQualityLevelPropertiesKHR* pQualityLevelProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pQualityLevelInfo);
+	DE_UNREF(pQualityLevelProperties);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL updateVideoSessionParametersKHR (VkDevice device, VkVideoSessionParametersKHR videoSessionParameters, const VkVideoSessionParametersUpdateInfoKHR* pUpdateInfo)
 {
 	DE_UNREF(device);
 	DE_UNREF(videoSessionParameters);
 	DE_UNREF(pUpdateInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getEncodedVideoSessionParametersKHR (VkDevice device, const VkVideoEncodeSessionParametersGetInfoKHR* pVideoSessionParametersInfo, VkVideoEncodeSessionParametersFeedbackInfoKHR* pFeedbackInfo, size_t* pDataSize, void* pData)
+{
+	DE_UNREF(device);
+	DE_UNREF(pVideoSessionParametersInfo);
+	DE_UNREF(pFeedbackInfo);
+	DE_UNREF(pDataSize);
+	DE_UNREF(pData);
 	return VK_SUCCESS;
 }
 
@@ -3877,6 +3907,12 @@ VKAPI_ATTR VkResult VKAPI_CALL getDeviceFaultInfoEXT (VkDevice device, VkDeviceF
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdSetDepthBias2EXT (VkCommandBuffer commandBuffer, const VkDepthBiasInfoEXT* pDepthBiasInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pDepthBiasInfo);
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL releaseSwapchainImagesEXT (VkDevice device, const VkReleaseSwapchainImagesInfoEXT* pReleaseInfo)
 {
 	DE_UNREF(device);
@@ -3896,6 +3932,39 @@ VKAPI_ATTR VkResult VKAPI_CALL unmapMemory2KHR (VkDevice device, const VkMemoryU
 {
 	DE_UNREF(device);
 	DE_UNREF(pMemoryUnmapInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getShaderBinaryDataEXT (VkDevice device, VkShaderEXT shader, size_t* pDataSize, void* pData)
+{
+	DE_UNREF(device);
+	DE_UNREF(shader);
+	DE_UNREF(pDataSize);
+	DE_UNREF(pData);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdBindShadersEXT (VkCommandBuffer commandBuffer, uint32_t stageCount, const VkShaderStageFlagBits* pStages, const VkShaderEXT* pShaders)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(stageCount);
+	DE_UNREF(pStages);
+	DE_UNREF(pShaders);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getScreenBufferPropertiesQNX (VkDevice device, const struct _screen_buffer* buffer, VkScreenBufferPropertiesQNX* pProperties)
+{
+	DE_UNREF(device);
+	DE_UNREF(buffer);
+	DE_UNREF(pProperties);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceCooperativeMatrixPropertiesKHR (VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixPropertiesKHR* pProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pPropertyCount);
+	DE_UNREF(pProperties);
 	return VK_SUCCESS;
 }
 
@@ -3994,9 +4063,11 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFragmentShadingRatesKHR,							getPhysicalDeviceFragmentShadingRatesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceVideoCapabilitiesKHR,								getPhysicalDeviceVideoCapabilitiesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceVideoFormatPropertiesKHR,							getPhysicalDeviceVideoFormatPropertiesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR,				getPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR),
 	VK_NULL_FUNC_ENTRY(vkAcquireDrmDisplayEXT,												acquireDrmDisplayEXT),
 	VK_NULL_FUNC_ENTRY(vkGetDrmDisplayEXT,													getDrmDisplayEXT),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceOpticalFlowImageFormatsNV,						getPhysicalDeviceOpticalFlowImageFormatsNV),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR,					getPhysicalDeviceCooperativeMatrixPropertiesKHR),
 };
 
 static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
@@ -4081,6 +4152,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkEndCommandBuffer,											endCommandBuffer),
 	VK_NULL_FUNC_ENTRY(vkResetCommandBuffer,										resetCommandBuffer),
 	VK_NULL_FUNC_ENTRY(vkCmdBindPipeline,											cmdBindPipeline),
+	VK_NULL_FUNC_ENTRY(vkCmdSetAttachmentFeedbackLoopEnableEXT,						cmdSetAttachmentFeedbackLoopEnableEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdSetViewport,											cmdSetViewport),
 	VK_NULL_FUNC_ENTRY(vkCmdSetScissor,												cmdSetScissor),
 	VK_NULL_FUNC_ENTRY(vkCmdSetLineWidth,											cmdSetLineWidth),
@@ -4391,6 +4463,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkDestroyVideoSessionKHR,									destroyVideoSessionKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateVideoSessionParametersKHR,							createVideoSessionParametersKHR),
 	VK_NULL_FUNC_ENTRY(vkUpdateVideoSessionParametersKHR,							updateVideoSessionParametersKHR),
+	VK_NULL_FUNC_ENTRY(vkGetEncodedVideoSessionParametersKHR,						getEncodedVideoSessionParametersKHR),
 	VK_NULL_FUNC_ENTRY(vkDestroyVideoSessionParametersKHR,							destroyVideoSessionParametersKHR),
 	VK_NULL_FUNC_ENTRY(vkGetVideoSessionMemoryRequirementsKHR,						getVideoSessionMemoryRequirementsKHR),
 	VK_NULL_FUNC_ENTRY(vkBindVideoSessionMemoryKHR,									bindVideoSessionMemoryKHR),
@@ -4454,8 +4527,14 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkBindOpticalFlowSessionImageNV,								bindOpticalFlowSessionImageNV),
 	VK_NULL_FUNC_ENTRY(vkCmdOpticalFlowExecuteNV,									cmdOpticalFlowExecuteNV),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceFaultInfoEXT,										getDeviceFaultInfoEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetDepthBias2EXT,										cmdSetDepthBias2EXT),
 	VK_NULL_FUNC_ENTRY(vkReleaseSwapchainImagesEXT,									releaseSwapchainImagesEXT),
 	VK_NULL_FUNC_ENTRY(vkMapMemory2KHR,												mapMemory2KHR),
 	VK_NULL_FUNC_ENTRY(vkUnmapMemory2KHR,											unmapMemory2KHR),
+	VK_NULL_FUNC_ENTRY(vkCreateShadersEXT,											createShadersEXT),
+	VK_NULL_FUNC_ENTRY(vkDestroyShaderEXT,											destroyShaderEXT),
+	VK_NULL_FUNC_ENTRY(vkGetShaderBinaryDataEXT,									getShaderBinaryDataEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdBindShadersEXT,											cmdBindShadersEXT),
+	VK_NULL_FUNC_ENTRY(vkGetScreenBufferPropertiesQNX,								getScreenBufferPropertiesQNX),
 };
 

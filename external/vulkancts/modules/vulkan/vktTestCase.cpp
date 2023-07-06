@@ -66,6 +66,7 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 {
 	vector<string>	enabledExtensions;
 	bool			khrBufferDeviceAddress	= false;
+	bool			excludeExtension		= false;
 
 	const char*		extensionGroups[]		=
 	{
@@ -99,6 +100,12 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 		"VK_NV_representative_fragment_test",
 	};
 
+	const char* exclusions[] =
+	{
+		"VK_EXT_device_address_binding_report",
+		"VK_EXT_device_memory_report"
+	};
+
 	for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
 	{
 		if (deStringEqual(extensions[extNdx].extensionName, "VK_KHR_buffer_device_address"))
@@ -112,8 +119,22 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 	{
 		const auto& extName = extensions[extNdx].extensionName;
 
+		excludeExtension = false;
+
 		// VK_EXT_buffer_device_address is deprecated and must not be enabled if VK_KHR_buffer_device_address is enabled
 		if (khrBufferDeviceAddress && deStringEqual(extName, "VK_EXT_buffer_device_address"))
+			continue;
+
+		for (int exclusionsNdx = 0; exclusionsNdx < DE_LENGTH_OF_ARRAY(exclusions); exclusionsNdx++)
+		{
+			if (deStringEqual(extName, exclusions[exclusionsNdx]))
+			{
+				excludeExtension = true;
+				break;
+			}
+		}
+
+		if (excludeExtension)
 			continue;
 
 		for (int extGroupNdx = 0; extGroupNdx < DE_LENGTH_OF_ARRAY(extensionGroups); extGroupNdx++)
@@ -238,19 +259,6 @@ Move<VkInstance> createInstance (const PlatformInterface& vkp, deUint32 apiVersi
 #endif // CTS_USES_VULKANSC
 }
 
-static deUint32 findQueueFamilyIndexWithCaps (const InstanceInterface& vkInstance, VkPhysicalDevice physicalDevice, VkQueueFlags requiredCaps)
-{
-	const vector<VkQueueFamilyProperties>	queueProps	= getPhysicalDeviceQueueFamilyProperties(vkInstance, physicalDevice);
-
-	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
-	{
-		if ((queueProps[queueNdx].queueFlags & requiredCaps) == requiredCaps)
-			return (deUint32)queueNdx;
-	}
-
-	TCU_THROW(NotSupportedError, "No matching queue found");
-}
-
 Move<VkDevice> createDefaultDevice (const PlatformInterface&				vkp,
 									VkInstance								instance,
 									const InstanceInterface&				vki,
@@ -359,6 +367,22 @@ Move<VkDevice> createDefaultDevice (const PlatformInterface&				vkp,
 		deviceInfo.pNext = &appParams[0];
 	}
 
+	VkFaultCallbackInfo					faultCallbackInfo		=
+	{
+		VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO,					//	VkStructureType				sType;
+		DE_NULL,												//	void*						pNext;
+		0U,														//	uint32_t					faultCount;
+		nullptr,												//	VkFaultData*				pFaults;
+		Context::faultCallbackFunction							//	PFN_vkFaultCallbackFunction	pfnFaultCallback;
+	};
+
+	if (cmdLine.isSubProcess())
+	{
+		// XXX workaround incorrect constness on faultCallbackInfo.pNext.
+		faultCallbackInfo.pNext = const_cast<void *>(deviceInfo.pNext);
+		deviceInfo.pNext = &faultCallbackInfo;
+	}
+
 #else
 	DE_UNREF(resourceInterface);
 #endif // CTS_USES_VULKANSC
@@ -367,6 +391,20 @@ Move<VkDevice> createDefaultDevice (const PlatformInterface&				vkp,
 }
 
 } // anonymous
+
+deUint32 findQueueFamilyIndexWithCaps(const InstanceInterface& vkInstance, VkPhysicalDevice physicalDevice, VkQueueFlags requiredCaps, VkQueueFlags excludedCaps)
+{
+	const vector<VkQueueFamilyProperties>	queueProps = getPhysicalDeviceQueueFamilyProperties(vkInstance, physicalDevice);
+
+	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
+	{
+		deUint32 queueFlags = queueProps[queueNdx].queueFlags;
+		if ((queueFlags & requiredCaps) == requiredCaps && !(queueFlags & excludedCaps))
+			return (deUint32)queueNdx;
+	}
+
+	TCU_THROW(NotSupportedError, "No matching queue found");
+}
 
 class DefaultDevice
 {
@@ -590,7 +628,9 @@ namespace
 
 vk::Allocator* createAllocator (DefaultDevice* device)
 {
-	const VkPhysicalDeviceMemoryProperties memoryProperties = vk::getPhysicalDeviceMemoryProperties(device->getInstanceInterface(), device->getPhysicalDevice());
+	const auto&	vki					= device->getInstanceInterface();
+	const auto	physicalDevice		= device->getPhysicalDevice();
+	const auto	memoryProperties	= vk::getPhysicalDeviceMemoryProperties(vki, physicalDevice);
 
 	// \todo [2015-07-24 jarkko] support allocator selection/configuration from command line (or compile time)
 	return new SimpleAllocator(device->getDeviceInterface(), device->getDevice(), memoryProperties);
@@ -1048,6 +1088,27 @@ ContextCommonData Context::getContextCommonData() {
 		getUniversalQueue()
 	};
 }
+
+#ifdef CTS_USES_VULKANSC
+std::vector<VkFaultData>						Context::m_faultData;
+std::mutex										Context::m_faultDataMutex;
+
+void Context::faultCallbackFunction(VkBool32 unrecordedFaults,
+									uint32_t faultCount,
+									const VkFaultData* pFaults)
+{
+	DE_UNREF(unrecordedFaults);
+	std::lock_guard<std::mutex> lock(m_faultDataMutex);
+
+	// Append new faults to the vector
+	for (deUint32 i = 0; i < faultCount; ++i) {
+		VkFaultData faultData = pFaults[i];
+		faultData.pNext = DE_NULL;
+
+		m_faultData.push_back(faultData);
+	}
+}
+#endif // CTS_USES_VULKANSC
 
 // TestCase
 

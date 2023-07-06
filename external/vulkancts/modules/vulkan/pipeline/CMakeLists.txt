@@ -13,6 +13,8 @@ set(DEQP_VK_VKSC_PIPELINE_SRCS
 	vktPipelineDescriptorLimitsTests.hpp
 	vktPipelineDynamicOffsetTests.cpp
 	vktPipelineDynamicOffsetTests.hpp
+	vktPipelineDynamicVertexAttributeTests.cpp
+	vktPipelineDynamicVertexAttributeTests.hpp
 	vktPipelineEarlyDestroyTests.cpp
 	vktPipelineEarlyDestroyTests.hpp
 	vktPipelineImageSamplingInstance.cpp
@@ -106,6 +108,8 @@ set(DEQP_VK_VKSC_PIPELINE_SRCS
 	vktPipelineNoPositionTests.hpp
 	vktPipelineDynamicControlPoints.cpp
 	vktPipelineDynamicControlPoints.hpp
+	vktPipelineBindVertexBuffers2Tests.cpp
+	vktPipelineBindVertexBuffers2Tests.hpp
 	)
 
 set(DEQP_VK_PIPELINE_SRCS
@@ -135,8 +139,12 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineAttachmentFeedbackLoopLayoutTests.hpp
 	vktPipelineMultisampledRenderToSingleSampledTests.cpp
 	vktPipelineMultisampledRenderToSingleSampledTests.hpp
+	vktPipelineImageSlicedViewOf3DTests.cpp
+	vktPipelineImageSlicedViewOf3DTests.hpp
 	vktPipelineMultisampleShaderFragmentMaskTests.cpp
 	vktPipelineMultisampleShaderFragmentMaskTests.hpp
+	vktPipelineRobustnessCacheTests.cpp
+	vktPipelineRobustnessCacheTests.hpp
 	)
 
 #vktPipelinePushDescriptorTests.cpp				- missing VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR
@@ -150,7 +158,6 @@ add_library(deqp-vk-pipeline STATIC ${DEQP_VK_VKSC_PIPELINE_SRCS} ${DEQP_VK_PIPE
 target_link_libraries(deqp-vk-pipeline libamber referencerenderer tcutil vkutil)
 
 add_library(deqp-vksc-pipeline STATIC ${DEQP_VK_VKSC_PIPELINE_SRCS})
-target_include_directories(deqp-vksc-pipeline BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 target_link_libraries(deqp-vksc-pipeline PUBLIC referencerenderer deqp-vksc-util tcutil vkscutil)
 
 target_include_directories(deqp-vk-pipeline

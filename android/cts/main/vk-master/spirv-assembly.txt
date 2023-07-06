@@ -13004,6 +13004,7 @@ dEQP-VK.spirv_assembly.instruction.compute.convertstof.int16_to_float64
 dEQP-VK.spirv_assembly.instruction.compute.convertstof.int32_to_float32
 dEQP-VK.spirv_assembly.instruction.compute.convertstof.int32_to_float64
 dEQP-VK.spirv_assembly.instruction.compute.convertstof.int64_to_float32
+dEQP-VK.spirv_assembly.instruction.compute.convertstof.int64_to_float32_large
 dEQP-VK.spirv_assembly.instruction.compute.convertstof.int64_to_float64
 dEQP-VK.spirv_assembly.instruction.compute.convertftos.float16_to_int8_m11
 dEQP-VK.spirv_assembly.instruction.compute.convertftos.float32_to_int8_m37
@@ -13038,6 +13039,7 @@ dEQP-VK.spirv_assembly.instruction.compute.convertftos.float16_to_int64_m0
 dEQP-VK.spirv_assembly.instruction.compute.convertftos.float32_to_int16
 dEQP-VK.spirv_assembly.instruction.compute.convertftos.float32_to_int32
 dEQP-VK.spirv_assembly.instruction.compute.convertftos.float32_to_int64
+dEQP-VK.spirv_assembly.instruction.compute.convertftos.float32_to_int64_large
 dEQP-VK.spirv_assembly.instruction.compute.convertftos.float64_to_int16
 dEQP-VK.spirv_assembly.instruction.compute.convertftos.float64_to_int32
 dEQP-VK.spirv_assembly.instruction.compute.convertftos.float64_to_int64
@@ -13063,6 +13065,7 @@ dEQP-VK.spirv_assembly.instruction.compute.convertutof.uint16_to_float64
 dEQP-VK.spirv_assembly.instruction.compute.convertutof.uint32_to_float32
 dEQP-VK.spirv_assembly.instruction.compute.convertutof.uint32_to_float64
 dEQP-VK.spirv_assembly.instruction.compute.convertutof.uint64_to_float32
+dEQP-VK.spirv_assembly.instruction.compute.convertutof.uint64_to_float32_large
 dEQP-VK.spirv_assembly.instruction.compute.convertutof.uint64_to_float64
 dEQP-VK.spirv_assembly.instruction.compute.convertftou.float16_to_uint8_33
 dEQP-VK.spirv_assembly.instruction.compute.convertftou.float32_to_uint8_42
@@ -13091,6 +13094,7 @@ dEQP-VK.spirv_assembly.instruction.compute.convertftou.float16_to_uint64_m0
 dEQP-VK.spirv_assembly.instruction.compute.convertftou.float32_to_uint16
 dEQP-VK.spirv_assembly.instruction.compute.convertftou.float32_to_uint32
 dEQP-VK.spirv_assembly.instruction.compute.convertftou.float32_to_uint64
+dEQP-VK.spirv_assembly.instruction.compute.convertftou.float32_to_uint64_large
 dEQP-VK.spirv_assembly.instruction.compute.convertftou.float64_to_uint16
 dEQP-VK.spirv_assembly.instruction.compute.convertftou.float64_to_uint32
 dEQP-VK.spirv_assembly.instruction.compute.convertftou.float64_to_uint64
@@ -30988,6 +30992,11 @@ dEQP-VK.spirv_assembly.instruction.graphics.convertstof.int64_to_float32_tessc
 dEQP-VK.spirv_assembly.instruction.graphics.convertstof.int64_to_float32_tesse
 dEQP-VK.spirv_assembly.instruction.graphics.convertstof.int64_to_float32_geom
 dEQP-VK.spirv_assembly.instruction.graphics.convertstof.int64_to_float32_frag
+dEQP-VK.spirv_assembly.instruction.graphics.convertstof.int64_to_float32_large_vert
+dEQP-VK.spirv_assembly.instruction.graphics.convertstof.int64_to_float32_large_tessc
+dEQP-VK.spirv_assembly.instruction.graphics.convertstof.int64_to_float32_large_tesse
+dEQP-VK.spirv_assembly.instruction.graphics.convertstof.int64_to_float32_large_geom
+dEQP-VK.spirv_assembly.instruction.graphics.convertstof.int64_to_float32_large_frag
 dEQP-VK.spirv_assembly.instruction.graphics.convertstof.int64_to_float64_vert
 dEQP-VK.spirv_assembly.instruction.graphics.convertstof.int64_to_float64_tessc
 dEQP-VK.spirv_assembly.instruction.graphics.convertstof.int64_to_float64_tesse
@@ -31158,6 +31167,11 @@ dEQP-VK.spirv_assembly.instruction.graphics.convertftos.float32_to_int64_tessc
 dEQP-VK.spirv_assembly.instruction.graphics.convertftos.float32_to_int64_tesse
 dEQP-VK.spirv_assembly.instruction.graphics.convertftos.float32_to_int64_geom
 dEQP-VK.spirv_assembly.instruction.graphics.convertftos.float32_to_int64_frag
+dEQP-VK.spirv_assembly.instruction.graphics.convertftos.float32_to_int64_large_vert
+dEQP-VK.spirv_assembly.instruction.graphics.convertftos.float32_to_int64_large_tessc
+dEQP-VK.spirv_assembly.instruction.graphics.convertftos.float32_to_int64_large_tesse
+dEQP-VK.spirv_assembly.instruction.graphics.convertftos.float32_to_int64_large_geom
+dEQP-VK.spirv_assembly.instruction.graphics.convertftos.float32_to_int64_large_frag
 dEQP-VK.spirv_assembly.instruction.graphics.convertftos.float64_to_int16_vert
 dEQP-VK.spirv_assembly.instruction.graphics.convertftos.float64_to_int16_tessc
 dEQP-VK.spirv_assembly.instruction.graphics.convertftos.float64_to_int16_tesse
@@ -31283,6 +31297,11 @@ dEQP-VK.spirv_assembly.instruction.graphics.convertutof.uint64_to_float32_tessc
 dEQP-VK.spirv_assembly.instruction.graphics.convertutof.uint64_to_float32_tesse
 dEQP-VK.spirv_assembly.instruction.graphics.convertutof.uint64_to_float32_geom
 dEQP-VK.spirv_assembly.instruction.graphics.convertutof.uint64_to_float32_frag
+dEQP-VK.spirv_assembly.instruction.graphics.convertutof.uint64_to_float32_large_vert
+dEQP-VK.spirv_assembly.instruction.graphics.convertutof.uint64_to_float32_large_tessc
+dEQP-VK.spirv_assembly.instruction.graphics.convertutof.uint64_to_float32_large_tesse
+dEQP-VK.spirv_assembly.instruction.graphics.convertutof.uint64_to_float32_large_geom
+dEQP-VK.spirv_assembly.instruction.graphics.convertutof.uint64_to_float32_large_frag
 dEQP-VK.spirv_assembly.instruction.graphics.convertutof.uint64_to_float64_vert
 dEQP-VK.spirv_assembly.instruction.graphics.convertutof.uint64_to_float64_tessc
 dEQP-VK.spirv_assembly.instruction.graphics.convertutof.uint64_to_float64_tesse
@@ -31423,6 +31442,11 @@ dEQP-VK.spirv_assembly.instruction.graphics.convertftou.float32_to_uint64_tessc
 dEQP-VK.spirv_assembly.instruction.graphics.convertftou.float32_to_uint64_tesse
 dEQP-VK.spirv_assembly.instruction.graphics.convertftou.float32_to_uint64_geom
 dEQP-VK.spirv_assembly.instruction.graphics.convertftou.float32_to_uint64_frag
+dEQP-VK.spirv_assembly.instruction.graphics.convertftou.float32_to_uint64_large_vert
+dEQP-VK.spirv_assembly.instruction.graphics.convertftou.float32_to_uint64_large_tessc
+dEQP-VK.spirv_assembly.instruction.graphics.convertftou.float32_to_uint64_large_tesse
+dEQP-VK.spirv_assembly.instruction.graphics.convertftou.float32_to_uint64_large_geom
+dEQP-VK.spirv_assembly.instruction.graphics.convertftou.float32_to_uint64_large_frag
 dEQP-VK.spirv_assembly.instruction.graphics.convertftou.float64_to_uint16_vert
 dEQP-VK.spirv_assembly.instruction.graphics.convertftou.float64_to_uint16_tessc
 dEQP-VK.spirv_assembly.instruction.graphics.convertftou.float64_to_uint16_tesse

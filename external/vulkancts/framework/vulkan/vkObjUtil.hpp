@@ -143,7 +143,8 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&				vk,
 								   const VkImageLayout					finalLayoutDepthStencil		= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 								   const VkImageLayout					subpassLayoutColor			= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 								   const VkImageLayout					subpassLayoutDepthStencil	= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-								   const VkAllocationCallbacks* const	allocationCallbacks			= DE_NULL);
+								   const VkAllocationCallbacks* const	allocationCallbacks			= nullptr,
+								   const void*							pNext						= nullptr);
 
 Move<VkImageView> makeImageView (const DeviceInterface&					vk,
 								 const VkDevice							vkDevice,

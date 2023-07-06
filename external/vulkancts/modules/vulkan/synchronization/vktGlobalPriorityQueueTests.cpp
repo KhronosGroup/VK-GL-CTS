@@ -720,7 +720,7 @@ tcu::TestStatus	GPQInstance<VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT>::iterat
 	{
 		if (VK_ERROR_NOT_PERMITTED_KHR == deviceStatus)
 			return tcu::TestStatus::pass(getResultName(deviceStatus));
-		TCU_CHECK(deviceStatus);
+		TCU_THROW(NotSupportedError, "Unable to create device.");
 	}
 
 	const InstanceInterface&		vki					= m_context.getInstanceInterface();
@@ -830,7 +830,7 @@ tcu::TestStatus	GPQInstance<VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_COMPUTE_BIT>::iterat
 	{
 		if (VK_ERROR_NOT_PERMITTED_KHR == deviceStatus)
 			return tcu::TestStatus::pass(getResultName(deviceStatus));
-		TCU_CHECK(deviceStatus);
+		TCU_THROW(NotSupportedError, "Unable to create device.");
 	}
 
 	const InstanceInterface&		vki					= m_context.getInstanceInterface();

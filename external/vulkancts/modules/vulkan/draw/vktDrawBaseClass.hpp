@@ -106,7 +106,12 @@ struct ReferenceImageInstancedCoordinates
 class DrawTestsBaseClass : public TestInstance
 {
 public:
-								DrawTestsBaseClass	(Context& context, const char* vertexShaderName, const char* fragmentShaderName, const SharedGroupParams groupParams, vk::VkPrimitiveTopology topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+								DrawTestsBaseClass	(Context& context,
+													 const char* vertexShaderName,
+													 const char* fragmentShaderName,
+													 const SharedGroupParams groupParams,
+													 vk::VkPrimitiveTopology topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
+													 const uint32_t layers = 1u);
 
 protected:
 	void						initialize				(void);
@@ -121,6 +126,7 @@ protected:
 	void						beginDynamicRender		(vk::VkCommandBuffer cmdBuffer, const vk::VkRenderingFlagsKHR renderingFlags = 0u);
 	void						endDynamicRender		(vk::VkCommandBuffer cmdBuffer);
 #endif // CTS_USES_VULKANSC
+	virtual uint32_t			getDefaultViewMask		(void) const;
 
 	enum
 	{
@@ -132,6 +138,7 @@ protected:
 
 	const SharedGroupParams							m_groupParams;
 	const vk::VkPrimitiveTopology					m_topology;
+	const uint32_t									m_layers; // For multiview.
 
 	const vk::DeviceInterface&						m_vk;
 

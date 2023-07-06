@@ -107,7 +107,7 @@ void TransferQueueCase::checkSupport (Context& context) const
 	if (result != VK_SUCCESS)
 	{
 		if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
-			TCU_THROW(NotSupportedError, "Error: format " + de::toString(m_params.imageFormat) + " does not support the required features");
+			TCU_THROW(NotSupportedError, "format " + de::toString(m_params.imageFormat) + " does not support the required features");
 		else
 			TCU_FAIL("vkGetPhysicalDeviceImageFormatProperties returned unexpected error");
 	}
@@ -192,6 +192,7 @@ tcu::TestStatus TransferQueueInstance::iterate (void)
 		fillRandomNoNaN(&randomGen, generatedData.data(), (deUint32)generatedData.size(), m_params.imageFormat);
 		const Allocation& alloc = srcBuffer.getAllocation();
 		deMemcpy(alloc.getHostPtr(), generatedData.data(), generatedData.size());
+		flushAlloc(vk, device, alloc);
 	}
 
 	beginCommandBuffer(vk, *m_cmdBuffer);
@@ -224,7 +225,7 @@ tcu::TestStatus TransferQueueInstance::iterate (void)
 			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
 			DE_NULL,										// const void*				pNext;
 			VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			srcAccessMask;
-			VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			dstAccessMask;
+			VK_ACCESS_TRANSFER_READ_BIT,					// VkAccessFlags			dstAccessMask;
 			VK_IMAGE_LAYOUT_GENERAL,						// VkImageLayout			oldLayout;
 			VK_IMAGE_LAYOUT_GENERAL,						// VkImageLayout			newLayout;
 			VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;
@@ -252,6 +253,7 @@ tcu::TestStatus TransferQueueInstance::iterate (void)
 	{
 		std::vector<deUint8> resultData(pixelDataSize);
 		const Allocation& alloc = dstBuffer.getAllocation();
+		invalidateAlloc(vk, device, alloc);
 		deMemcpy(resultData.data(), alloc.getHostPtr(), resultData.size());
 
 		for (uint32_t i = 0; i < pixelDataSize; ++i) {

@@ -32,5 +32,4 @@ add_library(deqp-vk-compute STATIC ${DEQP_VK_VKSC_COMPUTE_SRCS} ${DEQP_VK_COMPUT
 target_link_libraries(deqp-vk-compute tcutil vkutil)
 
 add_library(deqp-vksc-compute STATIC ${DEQP_VK_VKSC_COMPUTE_SRCS})
-target_include_directories(deqp-vksc-compute BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 target_link_libraries(deqp-vksc-compute PUBLIC deqp-vksc-util tcutil vkscutil)

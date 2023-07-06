@@ -157,17 +157,17 @@ inline bool byPatchPrimitiveID (const PerPrimitive& a, const PerPrimitive& b)
 	return a.patchPrimitiveID < b.patchPrimitiveID;
 }
 
-inline std::string getProgramName (const std::string& baseName, const Winding winding, const bool usePointMode)
+inline std::string getProgramName (const std::string& baseName, const bool usePointMode, const bool writePointSize)
 {
 	std::ostringstream str;
-	str << baseName << "_" << getWindingShaderName(winding) << (usePointMode ? "_point_mode" : "");
+	str << baseName << (usePointMode ? "_point_mode" : "") << (writePointSize ? "_write_point_size" : "");
 	return str.str();
 }
 
-inline std::string getProgramName (const std::string& baseName, const bool usePointMode)
+inline std::string getProgramName (const std::string& baseName, const bool writePointSize)
 {
 	std::ostringstream str;
-	str << baseName << (usePointMode ? "_point_mode" : "");
+	str << baseName << (writePointSize ? "_write_point_size" : "");
 	return str.str();
 }
 
@@ -360,44 +360,54 @@ void addDefaultPrograms (vk::SourceCollections&		programCollection,
 
 	// Geometry shader: data is captured here.
 	{
-		for (std::vector<bool>::const_iterator usePointModeIter = usePointModeCases.begin(); usePointModeIter != usePointModeCases.end(); ++usePointModeIter)
+		for (deUint32 j = 0; j < 2; ++j)
 		{
-			const int numVertices = numVerticesPerPrimitive(primitiveType, *usePointModeIter);  // Primitives that the tessellated patch comprises of.
+			const bool writePointSize = j == 1;
+			for (std::vector<bool>::const_iterator usePointModeIter = usePointModeCases.begin(); usePointModeIter != usePointModeCases.end(); ++usePointModeIter)
+			{
+				const int numVertices = numVerticesPerPrimitive(primitiveType, *usePointModeIter);  // Primitives that the tessellated patch comprises of.
 
-			std::ostringstream src;
-			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
-				<< "#extension GL_EXT_geometry_shader : require\n"
-				<< "\n"
-				<< "layout(" << getGeometryShaderInputPrimitiveTypeShaderName(primitiveType, *usePointModeIter) << ") in;\n"
-				<< "layout(" << getGeometryShaderOutputPrimitiveTypeShaderName(primitiveType, *usePointModeIter) << ", max_vertices = " << numVertices << ") out;\n"
-				<< "\n"
-				<< "layout(location = 0) in " << perVertexInterfaceBlock << " ib_in[];\n"
-				<< "\n"
-				<< "struct PerPrimitive {\n"
-				<< "    int  patchPrimitiveID;\n"
-				<< "    int  primitiveID;\n"
-				<< "    vec4 tessCoord[3];\n"
-				<< "};\n"
-				<< "\n"
-				<< "layout(set = 0, binding = 0, std430) coherent restrict buffer Output {\n"
-				<< "    int          numPrimitives;\n"
-				<< "    PerPrimitive primitive[];\n"
-				<< "} sb_out;\n"
-				<< "\n"
-				<< "void main (void)\n"
-				<< "{\n"
-				<< "    int index = atomicAdd(sb_out.numPrimitives, 1);\n"
-				<< "    sb_out.primitive[index].patchPrimitiveID = ib_in[0].in_gs_primitiveID;\n"
-				<< "    sb_out.primitive[index].primitiveID      = index;\n";
-			for (int i = 0; i < numVertices; ++i)
-				src << "    sb_out.primitive[index].tessCoord[" << i << "]     = ib_in[" << i << "].in_gs_tessCoord;\n";
-			for (int i = 0; i < numVertices; ++i)
+				std::ostringstream src;
+				src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+					<< "#extension GL_EXT_geometry_shader : require\n";
+				if (writePointSize)
+					src << "#extension GL_EXT_geometry_point_size : require\n";
 				src << "\n"
-					<< "    gl_Position = vec4(0.0);\n"
-					<< "    EmitVertex();\n";
-			src << "}\n";
+					<< "layout(" << getGeometryShaderInputPrimitiveTypeShaderName(primitiveType, *usePointModeIter) << ") in;\n"
+					<< "layout(" << getGeometryShaderOutputPrimitiveTypeShaderName(primitiveType, *usePointModeIter) << ", max_vertices = " << numVertices << ") out;\n"
+					<< "\n"
+					<< "layout(location = 0) in " << perVertexInterfaceBlock << " ib_in[];\n"
+					<< "\n"
+					<< "struct PerPrimitive {\n"
+					<< "    int  patchPrimitiveID;\n"
+					<< "    int  primitiveID;\n"
+					<< "    vec4 tessCoord[3];\n"
+					<< "};\n"
+					<< "\n"
+					<< "layout(set = 0, binding = 0, std430) coherent restrict buffer Output {\n"
+					<< "    int          numPrimitives;\n"
+					<< "    PerPrimitive primitive[];\n"
+					<< "} sb_out;\n"
+					<< "\n"
+					<< "void main (void)\n"
+					<< "{\n"
+					<< "    int index = atomicAdd(sb_out.numPrimitives, 1);\n"
+					<< "    sb_out.primitive[index].patchPrimitiveID = ib_in[0].in_gs_primitiveID;\n"
+					<< "    sb_out.primitive[index].primitiveID      = index;\n";
+				for (int i = 0; i < numVertices; ++i)
+					src << "    sb_out.primitive[index].tessCoord[" << i << "]     = ib_in[" << i << "].in_gs_tessCoord;\n";
+				for (int i = 0; i < numVertices; ++i)
+				{
+					src << "\n"
+						<< "    gl_Position = vec4(0.0);\n";
+					if (writePointSize)
+						src << "    gl_PointSize = 1.0f;\n";
+					src << "    EmitVertex();\n";
+				}
+				src << "}\n";
 
-			programCollection.glslSources.add(getProgramName("geom", *usePointModeIter)) << glu::GeometrySource(src.str());
+				programCollection.glslSources.add(getProgramName("geom", *usePointModeIter, writePointSize)) << glu::GeometrySource(src.str());
+			}
 		}
 	}
 }
@@ -632,13 +642,15 @@ BaseTestInstance::DrawResult BaseTestInstance::draw (const deUint32 vertexCount,
 	const VkDevice				device		= m_context.getDevice();
 	const VkQueue				queue		= m_context.getUniversalQueue();
 
+	const bool					geomPointSize = m_context.getDeviceFeatures().shaderTessellationAndGeometryPointSize;
+
 	const Unique<VkPipeline>	pipeline	(GraphicsPipelineBuilder()
 		.setPatchControlPoints				(NUM_TESS_LEVELS)
 		.setVertexInputSingleAttribute		(m_vertexFormat, m_vertexStride)
 		.setShader							(vk, device, VK_SHADER_STAGE_VERTEX_BIT,					m_context.getBinaryCollection().get("vert"), DE_NULL)
 		.setShader							(vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,		m_context.getBinaryCollection().get("tesc"), DE_NULL)
 		.setShader							(vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,	m_context.getBinaryCollection().get(getProgramName("tese", winding, usePointMode)), DE_NULL)
-		.setShader							(vk, device, VK_SHADER_STAGE_GEOMETRY_BIT,					m_context.getBinaryCollection().get(getProgramName("geom", usePointMode)), DE_NULL)
+		.setShader							(vk, device, VK_SHADER_STAGE_GEOMETRY_BIT,					m_context.getBinaryCollection().get(getProgramName("geom", usePointMode, geomPointSize)), DE_NULL)
 		.build								(vk, device, *m_pipelineLayout, *m_renderPass));
 
 	{
@@ -1366,6 +1378,8 @@ tcu::TestStatus InvarianceTestInstance::iterate (void)
 	const deUint32			queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 	Allocator&				allocator			= m_context.getDefaultAllocator();
 
+	const bool				geomPointSize		= m_context.getDeviceFeatures().shaderTessellationAndGeometryPointSize;
+
 	const std::vector<LevelCase>	tessLevelCases				= genTessLevelCases();
 	const int						numPatchesPerDrawCall		= 2;
 	int								maxNumPrimitivesPerPatch	= 0;  // computed below
@@ -1462,7 +1476,7 @@ tcu::TestStatus InvarianceTestInstance::iterate (void)
 					.setShader						(vk, device, VK_SHADER_STAGE_VERTEX_BIT,					m_context.getBinaryCollection().get("vert"), DE_NULL)
 					.setShader						(vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,		m_context.getBinaryCollection().get("tesc"), DE_NULL)
 					.setShader						(vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,	m_context.getBinaryCollection().get(getProgramName("tese", *windingIter, m_caseDef.usePointMode)), DE_NULL)
-					.setShader						(vk, device, VK_SHADER_STAGE_GEOMETRY_BIT,					m_context.getBinaryCollection().get(getProgramName("geom", m_caseDef.usePointMode)), DE_NULL)
+					.setShader						(vk, device, VK_SHADER_STAGE_GEOMETRY_BIT,					m_context.getBinaryCollection().get(getProgramName("geom", m_caseDef.usePointMode, geomPointSize)), DE_NULL)
 					.build							(vk, device, *pipelineLayout, *renderPass));
 
 				{
@@ -1993,27 +2007,35 @@ void initPrograms (vk::SourceCollections& programCollection, const CaseDefinitio
 			return;
 		}
 
-		std::ostringstream src;
-		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
-			<< "#extension GL_EXT_tessellation_shader : require\n"
-			<< "\n"
-			<< "layout(" << getTessPrimitiveTypeShaderName(caseDef.primitiveType) << ", "
-						 << getSpacingModeShaderName(caseDef.spacingMode) << ", "
-						 << getWindingShaderName(caseDef.winding)
-						 << (caseDef.usePointMode ? ", point_mode" : "") << ") in;\n"
-			<< "\n"
-			<< "layout(set = 0, binding = 0, std430) coherent restrict buffer Output {\n"
-			<< "    int  numInvocations;\n"
-			<< "    vec3 tessCoord[];\n"
-			<< "} sb_out;\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "    int index = atomicAdd(sb_out.numInvocations, 1);\n"
-			<< tessCoordSrc.str()
-			<< "}\n";
+		for (deUint32 i = 0; i < 2; ++i)
+		{
+			bool writePointSize = i == 1;
+			std::ostringstream src;
+			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+				<< "#extension GL_EXT_tessellation_shader : require\n";
+			if (writePointSize)
+				src << "#extension GL_EXT_tessellation_point_size : require\n";
+			src << "\n"
+				<< "layout(" << getTessPrimitiveTypeShaderName(caseDef.primitiveType) << ", "
+				<< getSpacingModeShaderName(caseDef.spacingMode) << ", "
+				<< getWindingShaderName(caseDef.winding)
+				<< (caseDef.usePointMode ? ", point_mode" : "") << ") in;\n"
+				<< "\n"
+				<< "layout(set = 0, binding = 0, std430) coherent restrict buffer Output {\n"
+				<< "    int  numInvocations;\n"
+				<< "    vec3 tessCoord[];\n";
+			src << "} sb_out;\n"
+				<< "\n"
+				<< "void main (void)\n"
+				<< "{\n"
+				<< "    int index = atomicAdd(sb_out.numInvocations, 1);\n"
+				<< tessCoordSrc.str();
+			if (writePointSize)
+				src << "    gl_PointSize = 1.0f;\n";
+			src << "}\n";
 
-		programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(src.str());
+			programCollection.glslSources.add(getProgramName("tese", writePointSize)) << glu::TessellationEvaluationSource(src.str());
+		}
 	}
 }
 
@@ -2026,6 +2048,8 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 	const VkQueue			queue				= context.getUniversalQueue();
 	const deUint32			queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	Allocator&				allocator			= context.getDefaultAllocator();
+
+	const bool				tessPointSize		= context.getDeviceFeatures().shaderTessellationAndGeometryPointSize;
 
 	const int						numTessLevelCases	= 32;
 	const std::vector<TessLevels>	tessLevelCases		= genTessLevelCases(numTessLevelCases);
@@ -2081,7 +2105,7 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 		.setVertexInputSingleAttribute(vertexFormat, vertexStride)
 		.setShader                    (vk, device, VK_SHADER_STAGE_VERTEX_BIT,					context.getBinaryCollection().get("vert"), DE_NULL)
 		.setShader                    (vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,	context.getBinaryCollection().get("tesc"), DE_NULL)
-		.setShader                    (vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, context.getBinaryCollection().get("tese"), DE_NULL)
+		.setShader                    (vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, context.getBinaryCollection().get(getProgramName("tese", tessPointSize)), DE_NULL)
 		.build                        (vk, device, *pipelineLayout, *renderPass));
 
 	for (int tessLevelCaseNdx = 0; tessLevelCaseNdx < numTessLevelCases; ++tessLevelCaseNdx)
