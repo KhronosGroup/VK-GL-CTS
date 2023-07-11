@@ -49,16 +49,19 @@
 
 #include <sstream>
 #include <vector>
+#include <map>
 
 namespace vkt
 {
 namespace pipeline
 {
 
-using namespace vk;
-
 namespace
 {
+
+using namespace vk;
+
+constexpr int kMaxComponents = 4;
 
 bool isSupportedVertexFormat (Context& context, VkFormat format)
 {
@@ -207,7 +210,8 @@ public:
 																		 BindingMapping						bindingMapping,
 																		 AttributeLayout					attributeLayout,
 																		 LayoutSkip							layoutSkip = LAYOUT_SKIP_DISABLED,
-																		 LayoutOrder						layoutOrder = LAYOUT_ORDER_IN_ORDER);
+																		 LayoutOrder						layoutOrder = LAYOUT_ORDER_IN_ORDER,
+																		 const bool							testMissingComponents = false);
 
 	virtual									~VertexInputTest			(void) {}
 	virtual void							initPrograms				(SourceCollections& programCollection) const;
@@ -234,6 +238,7 @@ private:
 	bool									m_usesDoubleType;
 	bool									m_usesFloat16Type;
 	mutable size_t							m_maxAttributes;
+	const bool								m_testMissingComponents;
 };
 
 class VertexInputInstance : public vkt::TestInstance
@@ -323,6 +328,48 @@ const VertexInputTest::GlslTypeDescription VertexInputTest::s_glslTypeDescriptio
 	{ "dmat4",		4, 4, GLSL_BASIC_TYPE_DOUBLE }
 };
 
+const char* expandGlslNameToFullComponents (const char* name)
+{
+	static const std::map<std::string, std::string> nameMap
+	{
+		std::make_pair("int",			"ivec4"),
+		std::make_pair("ivec2",			"ivec4"),
+		std::make_pair("ivec3",			"ivec4"),
+		std::make_pair("ivec4",			"ivec4"),
+		std::make_pair("uint",			"uvec4"),
+		std::make_pair("uvec2",			"uvec4"),
+		std::make_pair("uvec3",			"uvec4"),
+		std::make_pair("uvec4",			"uvec4"),
+		std::make_pair("float",			"vec4"),
+		std::make_pair("vec2",			"vec4"),
+		std::make_pair("vec3",			"vec4"),
+		std::make_pair("vec4",			"vec4"),
+		std::make_pair("float16_t",		"f16vec4"),
+		std::make_pair("f16vec2",		"f16vec4"),
+		std::make_pair("f16vec3",		"f16vec4"),
+		std::make_pair("f16vec4",		"f16vec4"),
+		std::make_pair("mat2",			"mat2x4"),
+		std::make_pair("mat3",			"mat3x4"),
+		std::make_pair("mat4",			"mat4"),
+#if 0
+		// 64-bit types don't have default values, so they cannot be used in missing component tests.
+		// In addition, they may be expanded from one location to using more than one, which creates vertex input mismatches.
+		std::make_pair("double",		"dvec4"),
+		std::make_pair("dvec2",			"dvec4"),
+		std::make_pair("dvec3",			"dvec4"),
+		std::make_pair("dvec4",			"dvec4"),
+		std::make_pair("dmat2",			"dmat2x4"),
+		std::make_pair("dmat3",			"dmat3x4"),
+		std::make_pair("dmat4",			"dmat4"),
+#endif
+	};
+
+	const auto pos = nameMap.find(name);
+	if (pos == nameMap.end())
+		return nullptr;
+	return pos->second.c_str();
+}
+
 deUint32 getAttributeBinding (const VertexInputTest::BindingMapping bindingMapping, const VkVertexInputRate firstInputRate, const VkVertexInputRate inputRate, const deUint32 attributeNdx)
 {
 	if (bindingMapping == VertexInputTest::BINDING_MAPPING_ONE_TO_ONE)
@@ -359,7 +406,8 @@ VertexInputTest::VertexInputTest (tcu::TestContext&						testContext,
 								  BindingMapping						bindingMapping,
 								  AttributeLayout						attributeLayout,
 								  LayoutSkip							layoutSkip,
-								  LayoutOrder							layoutOrder)
+								  LayoutOrder							layoutOrder,
+								  const bool							testMissingComponents)
 	: vkt::TestCase					(testContext, name, description)
 	, m_pipelineConstructionType	(pipelineConstructionType)
 	, m_attributeInfos				(attributeInfos)
@@ -370,6 +418,7 @@ VertexInputTest::VertexInputTest (tcu::TestContext&						testContext,
 	, m_usesDoubleType				(false)
 	, m_usesFloat16Type				(false)
 	, m_maxAttributes				(16)
+	, m_testMissingComponents		(testMissingComponents)
 {
 	DE_ASSERT(m_attributeLayout == ATTRIBUTE_LAYOUT_INTERLEAVED || m_bindingMapping == BINDING_MAPPING_ONE_TO_MANY);
 
@@ -718,9 +767,22 @@ std::string VertexInputTest::getGlslInputDeclarations (void) const
 	{
 		for (size_t attributeNdx = 0; attributeNdx < m_attributeInfos.size(); attributeNdx++)
 		{
-			const GlslTypeDescription& glslTypeDesc = s_glslTypeDescriptions[m_attributeInfos[attributeNdx].glslType];
+			const char* declType = nullptr;
+			if (m_testMissingComponents)
+			{
+				const auto& glslType = m_attributeInfos[attributeNdx].glslType;
+				const auto& typeInfo = s_glslTypeDescriptions[glslType];
 
-			glslInputs << "layout(location = " << m_locations[attributeNdx] << ") in " << glslTypeDesc.name << " attr" << attributeNdx << ";\n";
+				DE_ASSERT(typeInfo.vertexInputComponentCount < kMaxComponents);
+				DE_ASSERT(typeInfo.basicType != GLSL_BASIC_TYPE_DOUBLE);
+
+				// Find the equivalent type with 4 components.
+				declType = expandGlslNameToFullComponents(typeInfo.name);
+			}
+			else
+				declType = s_glslTypeDescriptions[m_attributeInfos[attributeNdx].glslType].name;
+
+			glslInputs << "layout(location = " << m_locations[attributeNdx] << ") in " << declType << " attr" << attributeNdx << ";\n";
 		}
 	}
 
@@ -736,6 +798,8 @@ std::string VertexInputTest::getGlslVertexCheck (void) const
 
 	if (m_queryMaxAttributes)
 	{
+		DE_ASSERT(!m_testMissingComponents);
+
 		// numAttributes will be replaced later by a specialisation constant, so this loop and
 		// the multiplication by numAttributes, below, must happen in the shader itself.
 		const AttributeInfo attributeInfo = getAttributeInfo(0);
@@ -763,7 +827,8 @@ std::string VertexInputTest::getGlslVertexCheck (void) const
 			glslCode << getGlslAttributeConditions(m_attributeInfos[attributeNdx], de::toString(attributeNdx));
 
 			const int vertexInputCount	= VertexInputTest::s_glslTypeDescriptions[m_attributeInfos[attributeNdx].glslType].vertexInputCount;
-			totalInputComponentCount	+= vertexInputCount * VertexInputTest::s_glslTypeDescriptions[m_attributeInfos[attributeNdx].glslType].vertexInputComponentCount;
+			const int vertexCompCount	= VertexInputTest::s_glslTypeDescriptions[m_attributeInfos[attributeNdx].glslType].vertexInputComponentCount;
+			totalInputComponentCount	+= vertexInputCount * ((!m_testMissingComponents) ? vertexCompCount : kMaxComponents - vertexCompCount);
 		}
 
 		inputCountStr = std::to_string(totalInputComponentCount);
@@ -830,7 +895,7 @@ std::string VertexInputTest::getGlslAttributeConditions (const AttributeInfo& at
 
 	for (int columnNdx = 0; columnNdx< vertexInputCount; columnNdx++)
 	{
-		for (int rowNdx = 0; rowNdx < componentCount; rowNdx++)
+		for (int rowNdx = 0; rowNdx < kMaxComponents; rowNdx++)
 		{
 			if (isVertexFormatComponentOrderABGR(attributeInfo.vkType))
 				orderNdx = ABGROrder[rowNdx];
@@ -847,7 +912,7 @@ std::string VertexInputTest::getGlslAttributeConditions (const AttributeInfo& at
 
 				if (vertexInputCount == 1)
 				{
-					if (componentCount > 1)
+					if (componentCount > 1 || m_testMissingComponents)
 						accessStream << "[" << rowNdx << "]";
 				}
 				else
@@ -858,113 +923,137 @@ std::string VertexInputTest::getGlslAttributeConditions (const AttributeInfo& at
 				accessStr = accessStream.str();
 			}
 
-			if (isVertexFormatSint(attributeInfo.vkType))
+			if (rowNdx < componentCount && !m_testMissingComponents)
 			{
-				if (isVertexFormatPacked(attributeInfo.vkType))
+				if (isVertexFormatSint(attributeInfo.vkType))
 				{
-					const deInt32 maxIntValue = (1 << (getPackedVertexFormatComponentWidth(attributeInfo.vkType, orderNdx) - 1)) - 1;
-					const deInt32 minIntValue = -maxIntValue;
+					if (isVertexFormatPacked(attributeInfo.vkType))
+					{
+						const deInt32 maxIntValue = (1 << (getPackedVertexFormatComponentWidth(attributeInfo.vkType, orderNdx) - 1)) - 1;
+						const deInt32 minIntValue = -maxIntValue;
 
-					glslCode << indentStr << "if (" << accessStr << " == clamp(-(" << totalComponentCount << " * " << indexId << " + " << componentIndex << "), " << minIntValue << ", " << maxIntValue << "))\n";
+						glslCode << indentStr << "if (" << accessStr << " == clamp(-(" << totalComponentCount << " * " << indexId << " + " << componentIndex << "), " << minIntValue << ", " << maxIntValue << "))\n";
+					}
+					else
+						glslCode << indentStr << "if (" << accessStr << " == -(" << totalComponentCount << " * " << indexId << " + " << componentIndex << "))\n";
+				}
+				else if (isVertexFormatUint(attributeInfo.vkType))
+				{
+					if (isVertexFormatPacked(attributeInfo.vkType))
+					{
+						const deUint32 maxUintValue = (1 << getPackedVertexFormatComponentWidth(attributeInfo.vkType, orderNdx)) - 1;
+
+						glslCode << indentStr << "if (" << accessStr << " == clamp(uint(" << totalComponentCount << " * " << indexId << " + " << componentIndex << "), 0, " << maxUintValue << "))\n";
+					}
+					else
+						glslCode << indentStr << "if (" << accessStr << " == uint(" << totalComponentCount << " * " << indexId << " + " << componentIndex << "))\n";
+				}
+				else if (isVertexFormatSfloat(attributeInfo.vkType))
+				{
+					const auto& basicType = VertexInputTest::s_glslTypeDescriptions[attributeInfo.glslType].basicType;
+
+					if (basicType == VertexInputTest::GLSL_BASIC_TYPE_DOUBLE)
+					{
+						glslCode << indentStr << "if (abs(" << accessStr << " + double(0.01 * (" << totalComponentCount << ".0 * float(" << indexId << ") + " << componentIndex << ".0))) < double(" << threshold[rowNdx] << "))\n";
+					}
+					else if (basicType == VertexInputTest::GLSL_BASIC_TYPE_FLOAT16)
+					{
+						glslCode << indentStr << "if (abs(" << accessStr << " + float16_t(0.01HF * (" << totalComponentCount << ".0HF * float16_t(" << indexId << ") + " << componentIndex << ".0HF))) < float16_t(" << threshold[rowNdx] << "HF))\n";
+					}
+					else
+					{
+						glslCode << indentStr << "if (abs(" << accessStr << " + (0.01 * (" << totalComponentCount << ".0 * float(" << indexId << ") + " << componentIndex << ".0))) < " << threshold[rowNdx] << ")\n";
+					}
+				}
+				else if (isVertexFormatSscaled(attributeInfo.vkType))
+				{
+					if (isVertexFormatPacked(attributeInfo.vkType))
+					{
+						const float maxScaledValue = float((1 << (getPackedVertexFormatComponentWidth(attributeInfo.vkType, orderNdx) - 1)) - 1);
+						const float minScaledValue = -maxScaledValue - 1.0f;
+
+						glslCode << indentStr << "if (abs(" << accessStr << " + clamp(" << totalComponentCount << ".0 * float(" << indexId << ") + " << componentIndex << ".0, " << minScaledValue << ", " << maxScaledValue << ")) < " << threshold[orderNdx] << ")\n";
+					}
+					else
+						glslCode << indentStr << "if (abs(" << accessStr << " + (" << totalComponentCount << ".0 * float(" << indexId << ") + " << componentIndex << ".0)) < " << threshold[rowNdx] << ")\n";
+				}
+				else if (isVertexFormatUscaled(attributeInfo.vkType))
+				{
+					if (isVertexFormatPacked(attributeInfo.vkType))
+					{
+						const float maxScaledValue = float((1 << getPackedVertexFormatComponentWidth(attributeInfo.vkType, orderNdx)) - 1);
+
+						glslCode << indentStr << "if (abs(" << accessStr << " - clamp(" << totalComponentCount << ".0 * float(" << indexId << ") + " << componentIndex << ".0, 0, " << maxScaledValue << ")) < " << threshold[orderNdx] << ")\n";
+					}
+					else
+						glslCode << indentStr << "if (abs(" << accessStr << " - (" << totalComponentCount << ".0 * float(" << indexId << ") + " << componentIndex << ".0)) < " << threshold[rowNdx] << ")\n";
+				}
+				else if (isVertexFormatSnorm(attributeInfo.vkType))
+				{
+					const float representableDiff = isVertexFormatPacked(attributeInfo.vkType) ? getRepresentableDifferenceSnormPacked(attributeInfo.vkType, orderNdx) : getRepresentableDifferenceSnorm(attributeInfo.vkType);
+
+					if(isVertexFormatPacked(attributeInfo.vkType))
+						glslCode << indentStr << "if (abs(" << accessStr << " - clamp((-1.0 + " << representableDiff << " * (" << totalComponentCount << ".0 * float(" << indexId << ") + " << componentIndex << ".0)), -1.0, 1.0)) < " << threshold[orderNdx] << ")\n";
+					else
+						glslCode << indentStr << "if (abs(" << accessStr << " - (-1.0 + " << representableDiff << " * (" << totalComponentCount << ".0 * float(" << indexId << ") + " << componentIndex << ".0))) < " << threshold[rowNdx] << ")\n";
+				}
+				else if (isVertexFormatUnorm(attributeInfo.vkType) || isVertexFormatSRGB(attributeInfo.vkType))
+				{
+					const float representableDiff = isVertexFormatPacked(attributeInfo.vkType) ? getRepresentableDifferenceUnormPacked(attributeInfo.vkType, orderNdx) : getRepresentableDifferenceUnorm(attributeInfo.vkType);
+
+					if (isVertexFormatPacked(attributeInfo.vkType))
+						glslCode << indentStr << "if (abs(" << accessStr << " - " << "clamp((" << representableDiff << " * (" << totalComponentCount << ".0 * float(" << indexId << ") + " << componentIndex << ".0)), 0.0, 1.0)) < " << threshold[orderNdx] << ")\n";
+					else
+						glslCode << indentStr << "if (abs(" << accessStr << " - " << "(" << representableDiff << " * (" << totalComponentCount << ".0 * float(" << indexId << ") + " << componentIndex << ".0))) < " << threshold[rowNdx] << ")\n";
+				}
+				else if (isVertexFormatUfloat(attributeInfo.vkType))
+				{
+					const auto& basicType = VertexInputTest::s_glslTypeDescriptions[attributeInfo.glslType].basicType;
+
+					if (basicType == VertexInputTest::GLSL_BASIC_TYPE_DOUBLE)
+					{
+						glslCode << indentStr << "if (abs(" << accessStr << " - double(0.01 * (" << totalComponentCount << ".0 * float(" << indexId << ") + " << componentIndex << ".0))) < double(" << threshold[rowNdx] << "))\n";
+					}
+					else if (basicType == VertexInputTest::GLSL_BASIC_TYPE_FLOAT16)
+					{
+						glslCode << indentStr << "if (abs(" << accessStr << " - float16_t(0.01HF * (" << totalComponentCount << ".0HF * float16_t(" << indexId << ") + " << componentIndex << ".0HF))) < float16_t(" << threshold[rowNdx] << "HF))\n";
+					}
+					else
+					{
+						glslCode << indentStr << "if (abs(" << accessStr << " - (0.01 * (" << totalComponentCount << ".0 * float(" << indexId << ") + " << componentIndex << ".0))) < (" << threshold[rowNdx] << "))\n";
+					}
 				}
 				else
-					glslCode << indentStr << "if (" << accessStr << " == -(" << totalComponentCount << " * " << indexId << " + " << componentIndex << "))\n";
+				{
+					DE_ASSERT(false);
+				}
+
+				glslCode << indentStr << "\tokCount++;\n\n";
+
+				componentIndex++;
 			}
-			else if (isVertexFormatUint(attributeInfo.vkType))
+			else if (rowNdx >= componentCount && m_testMissingComponents)
 			{
-				if (isVertexFormatPacked(attributeInfo.vkType))
-				{
-					const deUint32 maxUintValue = (1 << getPackedVertexFormatComponentWidth(attributeInfo.vkType, orderNdx)) - 1;
+				const auto	expectedValue	= ((rowNdx == (kMaxComponents - 1)) ? 1u : 0u); // Color components are expanded with zeros and alpha with one.
+				const auto&	basicType		= VertexInputTest::s_glslTypeDescriptions[attributeInfo.glslType].basicType;
+				std::string	glslType;
 
-					glslCode << indentStr << "if (" << accessStr << " == clamp(uint(" << totalComponentCount << " * " << indexId << " + " << componentIndex << "), 0, " << maxUintValue << "))\n";
+				switch (basicType)
+				{
+				case GLSL_BASIC_TYPE_INT:		glslType = "int";		break;
+				case GLSL_BASIC_TYPE_UINT:		glslType = "uint";		break;
+				case GLSL_BASIC_TYPE_FLOAT:		glslType = "float";		break;
+				case GLSL_BASIC_TYPE_DOUBLE:	glslType = "double";	break;
+				case GLSL_BASIC_TYPE_FLOAT16:	glslType = "float16_t";	break;
+				default:
+					DE_ASSERT(false); break;
 				}
-				else
-					glslCode << indentStr << "if (" << accessStr << " == uint(" << totalComponentCount << " * " << indexId << " + " << componentIndex << "))\n";
+
+				glslCode << indentStr << "if (" << accessStr << " == " << glslType << "(" << expectedValue << "))\n";
+				glslCode << indentStr << "\tokCount++;\n\n";
 			}
-			else if (isVertexFormatSfloat(attributeInfo.vkType))
-			{
-				const auto& basicType = VertexInputTest::s_glslTypeDescriptions[attributeInfo.glslType].basicType;
-
-				if (basicType == VertexInputTest::GLSL_BASIC_TYPE_DOUBLE)
-				{
-					glslCode << indentStr << "if (abs(" << accessStr << " + double(0.01 * (" << totalComponentCount << ".0 * float(" << indexId << ") + " << componentIndex << ".0))) < double(" << threshold[rowNdx] << "))\n";
-				}
-				else if (basicType == VertexInputTest::GLSL_BASIC_TYPE_FLOAT16)
-				{
-					glslCode << indentStr << "if (abs(" << accessStr << " + float16_t(0.01HF * (" << totalComponentCount << ".0HF * float16_t(" << indexId << ") + " << componentIndex << ".0HF))) < float16_t(" << threshold[rowNdx] << "HF))\n";
-				}
-				else
-				{
-					glslCode << indentStr << "if (abs(" << accessStr << " + (0.01 * (" << totalComponentCount << ".0 * float(" << indexId << ") + " << componentIndex << ".0))) < " << threshold[rowNdx] << ")\n";
-				}
-			}
-			else if (isVertexFormatSscaled(attributeInfo.vkType))
-			{
-				if (isVertexFormatPacked(attributeInfo.vkType))
-				{
-					const float maxScaledValue = float((1 << (getPackedVertexFormatComponentWidth(attributeInfo.vkType, orderNdx) - 1)) - 1);
-					const float minScaledValue = -maxScaledValue - 1.0f;
-
-					glslCode << indentStr << "if (abs(" << accessStr << " + clamp(" << totalComponentCount << ".0 * float(" << indexId << ") + " << componentIndex << ".0, " << minScaledValue << ", " << maxScaledValue << ")) < " << threshold[orderNdx] << ")\n";
-				}
-				else
-					glslCode << indentStr << "if (abs(" << accessStr << " + (" << totalComponentCount << ".0 * float(" << indexId << ") + " << componentIndex << ".0)) < " << threshold[rowNdx] << ")\n";
-			}
-			else if (isVertexFormatUscaled(attributeInfo.vkType))
-			{
-				if (isVertexFormatPacked(attributeInfo.vkType))
-				{
-					const float maxScaledValue = float((1 << getPackedVertexFormatComponentWidth(attributeInfo.vkType, orderNdx)) - 1);
-
-					glslCode << indentStr << "if (abs(" << accessStr << " - clamp(" << totalComponentCount << ".0 * float(" << indexId << ") + " << componentIndex << ".0, 0, " << maxScaledValue << ")) < " << threshold[orderNdx] << ")\n";
-				}
-				else
-					glslCode << indentStr << "if (abs(" << accessStr << " - (" << totalComponentCount << ".0 * float(" << indexId << ") + " << componentIndex << ".0)) < " << threshold[rowNdx] << ")\n";
-			}
-			else if (isVertexFormatSnorm(attributeInfo.vkType))
-			{
-				const float representableDiff = isVertexFormatPacked(attributeInfo.vkType) ? getRepresentableDifferenceSnormPacked(attributeInfo.vkType, orderNdx) : getRepresentableDifferenceSnorm(attributeInfo.vkType);
-
-				if(isVertexFormatPacked(attributeInfo.vkType))
-					glslCode << indentStr << "if (abs(" << accessStr << " - clamp((-1.0 + " << representableDiff << " * (" << totalComponentCount << ".0 * float(" << indexId << ") + " << componentIndex << ".0)), -1.0, 1.0)) < " << threshold[orderNdx] << ")\n";
-				else
-					glslCode << indentStr << "if (abs(" << accessStr << " - (-1.0 + " << representableDiff << " * (" << totalComponentCount << ".0 * float(" << indexId << ") + " << componentIndex << ".0))) < " << threshold[rowNdx] << ")\n";
-			}
-			else if (isVertexFormatUnorm(attributeInfo.vkType) || isVertexFormatSRGB(attributeInfo.vkType))
-			{
-				const float representableDiff = isVertexFormatPacked(attributeInfo.vkType) ? getRepresentableDifferenceUnormPacked(attributeInfo.vkType, orderNdx) : getRepresentableDifferenceUnorm(attributeInfo.vkType);
-
-				if (isVertexFormatPacked(attributeInfo.vkType))
-					glslCode << indentStr << "if (abs(" << accessStr << " - " << "clamp((" << representableDiff << " * (" << totalComponentCount << ".0 * float(" << indexId << ") + " << componentIndex << ".0)), 0.0, 1.0)) < " << threshold[orderNdx] << ")\n";
-				else
-					glslCode << indentStr << "if (abs(" << accessStr << " - " << "(" << representableDiff << " * (" << totalComponentCount << ".0 * float(" << indexId << ") + " << componentIndex << ".0))) < " << threshold[rowNdx] << ")\n";
-			}
-			else if (isVertexFormatUfloat(attributeInfo.vkType))
-			{
-				const auto& basicType = VertexInputTest::s_glslTypeDescriptions[attributeInfo.glslType].basicType;
-
-				if (basicType == VertexInputTest::GLSL_BASIC_TYPE_DOUBLE)
-				{
-					glslCode << indentStr << "if (abs(" << accessStr << " - double(0.01 * (" << totalComponentCount << ".0 * float(" << indexId << ") + " << componentIndex << ".0))) < double(" << threshold[rowNdx] << "))\n";
-				}
-				else if (basicType == VertexInputTest::GLSL_BASIC_TYPE_FLOAT16)
-				{
-					glslCode << indentStr << "if (abs(" << accessStr << " - float16_t(0.01HF * (" << totalComponentCount << ".0HF * float16_t(" << indexId << ") + " << componentIndex << ".0HF))) < float16_t(" << threshold[rowNdx] << "HF))\n";
-				}
-				else
-				{
-					glslCode << indentStr << "if (abs(" << accessStr << " - (0.01 * (" << totalComponentCount << ".0 * float(" << indexId << ") + " << componentIndex << ".0))) < (" << threshold[rowNdx] << "))\n";
-				}
-			}
-			else
-			{
-				DE_ASSERT(false);
-			}
-
-			glslCode << indentStr << "\tokCount++;\n\n";
-
-			componentIndex++;
 		}
+
 	}
 	return glslCode.str();
 }
@@ -1816,30 +1905,70 @@ void createSingleAttributeCases (tcu::TestCaseGroup* singleAttributeTests, Pipel
 	{
 		if (VertexInputTest::isCompatibleType(vertexFormats[formatNdx], glslType))
 		{
-			// Create test case for RATE_VERTEX
-			VertexInputTest::AttributeInfo attributeInfo;
-			attributeInfo.vkType = vertexFormats[formatNdx];
-			attributeInfo.glslType = glslType;
-			attributeInfo.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+			{
+				// Create test case for RATE_VERTEX
+				VertexInputTest::AttributeInfo attributeInfo;
+				attributeInfo.vkType = vertexFormats[formatNdx];
+				attributeInfo.glslType = glslType;
+				attributeInfo.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-			singleAttributeTests->addChild(new VertexInputTest(singleAttributeTests->getTestContext(),
-															   getAttributeInfoCaseName(attributeInfo),
-															   getAttributeInfoDescription(attributeInfo),
-															   pipelineConstructionType,
-															   std::vector<VertexInputTest::AttributeInfo>(1, attributeInfo),
-															   VertexInputTest::BINDING_MAPPING_ONE_TO_ONE,
-															   VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED));
+				singleAttributeTests->addChild(new VertexInputTest(singleAttributeTests->getTestContext(),
+																getAttributeInfoCaseName(attributeInfo),
+																getAttributeInfoDescription(attributeInfo),
+																pipelineConstructionType,
+																std::vector<VertexInputTest::AttributeInfo>(1, attributeInfo),
+																VertexInputTest::BINDING_MAPPING_ONE_TO_ONE,
+																VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED));
 
-			// Create test case for RATE_INSTANCE
-			attributeInfo.inputRate	= VK_VERTEX_INPUT_RATE_INSTANCE;
+				// Create test case for RATE_INSTANCE
+				attributeInfo.inputRate	= VK_VERTEX_INPUT_RATE_INSTANCE;
 
-			singleAttributeTests->addChild(new VertexInputTest(singleAttributeTests->getTestContext(),
-															   getAttributeInfoCaseName(attributeInfo),
-															   getAttributeInfoDescription(attributeInfo),
-															   pipelineConstructionType,
-															   std::vector<VertexInputTest::AttributeInfo>(1, attributeInfo),
-															   VertexInputTest::BINDING_MAPPING_ONE_TO_ONE,
-															   VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED));
+				singleAttributeTests->addChild(new VertexInputTest(singleAttributeTests->getTestContext(),
+																getAttributeInfoCaseName(attributeInfo),
+																getAttributeInfoDescription(attributeInfo),
+																pipelineConstructionType,
+																std::vector<VertexInputTest::AttributeInfo>(1, attributeInfo),
+																VertexInputTest::BINDING_MAPPING_ONE_TO_ONE,
+																VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED));
+			}
+
+			// Test accessing missing components to verify "Converstion to RGBA" is correctly applied.
+			const auto& typeInfo = VertexInputTest::s_glslTypeDescriptions[glslType];
+			if (typeInfo.vertexInputComponentCount < kMaxComponents && typeInfo.basicType != VertexInputTest::GLSL_BASIC_TYPE_DOUBLE)
+			{
+				// Create test case for RATE_VERTEX
+				VertexInputTest::AttributeInfo attributeInfo;
+				attributeInfo.vkType = vertexFormats[formatNdx];
+				attributeInfo.glslType = glslType;
+				attributeInfo.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+				const auto nameSuffix = "_missing_components";
+				const auto descSuffix = " using missing components";
+
+				singleAttributeTests->addChild(new VertexInputTest(singleAttributeTests->getTestContext(),
+																getAttributeInfoCaseName(attributeInfo) + nameSuffix,
+																getAttributeInfoDescription(attributeInfo) + descSuffix,
+																pipelineConstructionType,
+																std::vector<VertexInputTest::AttributeInfo>(1, attributeInfo),
+																VertexInputTest::BINDING_MAPPING_ONE_TO_ONE,
+																VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED,
+																VertexInputTest::LAYOUT_SKIP_DISABLED,
+																VertexInputTest::LAYOUT_ORDER_IN_ORDER,
+																true));
+
+				// Create test case for RATE_INSTANCE
+				attributeInfo.inputRate	= VK_VERTEX_INPUT_RATE_INSTANCE;
+
+				singleAttributeTests->addChild(new VertexInputTest(singleAttributeTests->getTestContext(),
+																getAttributeInfoCaseName(attributeInfo) + nameSuffix,
+																getAttributeInfoDescription(attributeInfo) + descSuffix,
+																pipelineConstructionType,
+																std::vector<VertexInputTest::AttributeInfo>(1, attributeInfo),
+																VertexInputTest::BINDING_MAPPING_ONE_TO_ONE,
+																VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED,
+																VertexInputTest::LAYOUT_SKIP_DISABLED,
+																VertexInputTest::LAYOUT_ORDER_IN_ORDER,
+																true));
+			}
 		}
 	}
 }
