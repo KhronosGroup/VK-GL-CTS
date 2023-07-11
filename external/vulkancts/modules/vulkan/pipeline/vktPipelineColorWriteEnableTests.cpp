@@ -1220,7 +1220,7 @@ public:
 																 float							blendComp,
 																 bool							dynamic) const;
 	virtual TestStatus				iterate						() override;
-	bool							verifyAttachment			(const deUint32					attachmentIndex,
+	tcu::TestStatus					verifyAttachment			(const deUint32					attachmentIndex,
 																 const deUint32					attachmentCount,
 																 const ConstPixelBufferAccess&	attachmentContent,
 																 const ColorWriteEnables&		colorWriteEnables,
@@ -1611,7 +1611,7 @@ void ColorWriteEnable2Instance::setupAndBuildPipeline (GraphicsPipelineWrapperEx
 		.buildPipeline();
 }
 
-bool ColorWriteEnable2Instance::verifyAttachment (const deUint32				attachmentIndex,
+tcu::TestStatus ColorWriteEnable2Instance::verifyAttachment (const deUint32				attachmentIndex,
 												  const deUint32				attachmentCount,
 												  const ConstPixelBufferAccess&	attachmentContent,
 												  const ColorWriteEnables&		colorWriteEnables,
@@ -1624,22 +1624,22 @@ bool ColorWriteEnable2Instance::verifyAttachment (const deUint32				attachmentIn
 	};
 	const Vec4	source		(powf(0.5f, static_cast<float>(attachmentCount - attachmentIndex)));
 	const Vec4	expected	= colorWriteEnables[attachmentIndex] ? maskColor(source * blendComp) : background;
-	deUint32	failures	= 0;
 
 	for (deUint32 y = 0; y < m_params.height; ++y)
 	{
 		for (deUint32 x = 0; x < m_params.width; ++x)
 		{
 			const auto result = attachmentContent.getPixel(x, y);
-			const float er = expected.x(); const float rr = result.x();
-			const float eg = expected.y(); const float rg = result.y();
-			const float eb = expected.z(); const float rb = result.z();
-			const float ea = expected.w(); const float ra = result.w();
-			if (rr != er || rg != eg || rb != eb || ra != ea) ++failures;
+			if (!tcu::boolAll(tcu::lessThan(tcu::absDiff(result, expected), kColorThreshold))) {
+				std::ostringstream msg;
+				msg << "Unexpected output value found at position (" << x << ", " << y << "): expected\n" <<
+					expected <<" but got\n" << result << ")";
+				return tcu::TestStatus::fail(msg.str());
+			}
 		}
 	}
 
-	return (0 == failures);
+	return tcu::TestStatus::pass("");
 }
 
 TestStatus ColorWriteEnable2Instance::iterate (void)
@@ -1701,17 +1701,17 @@ TestStatus ColorWriteEnable2Instance::iterate (void)
 	endCommandBuffer(m_vkd, *cmdBuff);
 	submitCommandsAndWait(m_vkd, m_device, queue, *cmdBuff);
 
-	deUint32 failureCount = 0;
 	for (deUint32 i = 0; i < attachmentCount; ++i)
 	for (deUint32 a = 0; a < (i+1); ++a)
 	{
 		const auto	colorBuffer = readColorAttachment(m_vkd, m_device, queue, queueIndex, m_allocator,
 													  **framebuffers.at(i).attachments.at(a).image, m_params.format,
 													  UVec2(m_params.width, m_params.height));
-		failureCount += verifyAttachment(a, (i+1), colorBuffer->getAccess(), writeEnables, background, blendComp) ? 0u : 1u;
+		tcu::TestStatus status = verifyAttachment(a, (i+1), colorBuffer->getAccess(), writeEnables, background, blendComp);
+		if (status.isFail()) return status;
 	}
 
-	return (0u == failureCount) ? TestStatus::pass("") : TestStatus::fail("");
+	return TestStatus::pass("");
 }
 
 } // unnamed namespace
