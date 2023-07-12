@@ -7,8 +7,8 @@
 
 namespace vk
 {
-#define DECL_PROTECTED_MEMORY_EXTENSION_NAME "not_existent_feature"
-#define DECL_SHADER_DRAW_PARAMETERS_EXTENSION_NAME "not_existent_feature"
+#define DECL_PROTECTED_MEMORY_EXTENSION_NAME "core_feature"
+#define DECL_SHADER_DRAW_PARAMETERS_EXTENSION_NAME "core_feature"
 
 
 template<> void initFeatureFromBlob<VkPhysicalDevicePrivateDataFeatures>(VkPhysicalDevicePrivateDataFeatures& featureType, const AllFeaturesBlobs& allFeaturesBlobs)
