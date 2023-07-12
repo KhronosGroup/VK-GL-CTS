@@ -611,6 +611,8 @@ TestStatus BasicComputeTestInstance::iterate (void)
 			break;
 	}
 
+	bool pass = true;
+	std::string failString;
 	{
 		Move<VkDescriptorSetLayout>	descriptorSetLayout;
 		Move<VkDescriptorPool>		descriptorPool;
@@ -650,13 +652,22 @@ TestStatus BasicComputeTestInstance::iterate (void)
 													imageData[resultImageNdx].getImageInfo(imageNdx).extent.height,
 													imageData[resultImageNdx].getImageInfo(imageNdx).extent.depth);
 				if (!copyResultAndCompare(*cmdPool, *cmdBuffer, imageData[resultImageNdx].getImage(imageNdx), offset, size))
-					return TestStatus::fail("Uncompressed output mismatch at offset " + de::toString(offset) + " even before executing decompression");
+				{
+					pass = false;
+					failString = std::string("Uncompressed output mismatch at offset ") + de::toString(offset) + " even before executing decompression";
+				}
 				offset += getCompressedImageSizeInBytes(m_parameters.formatCompressed, mipMapSizes[mipNdx]);
 			}
 		}
 	}
 	if (!decompressImage(*cmdPool, *cmdBuffer, imageData, mipMapSizes))
-			return TestStatus::fail("Decompression failed");
+	{
+		pass = false;
+		failString = "Decompression failed";
+	}
+
+	if (!pass)
+		return TestStatus::fail(failString);
 
 	if (m_bASTCErrorColourMismatch)
 	{
@@ -1588,18 +1599,22 @@ TestStatus GraphicsAttachmentsTestInstance::iterate (void)
 	else
 		transcodeRead(*cmdPool);
 
+	bool pass = true;
 	for (deUint32 levelNdx = 0; levelNdx < getLevelCount(); ++levelNdx)
 		for (deUint32 layerNdx = 0; layerNdx < getLayerCount(); ++layerNdx)
 			if (isWriteToCompressedOperation())
 			{
 				if (!verifyDecompression(*cmdPool, *m_srcData[levelNdx][layerNdx], m_compressedImage, levelNdx, layerNdx, m_compressedImageResVec[levelNdx]))
-					return TestStatus::fail("Images difference detected");
+					pass = false;
 			}
 			else
 			{
 				if (!verifyDecompression(*cmdPool, *m_dstData[levelNdx][layerNdx], m_compressedImage, levelNdx, layerNdx, m_compressedImageResVec[levelNdx]))
-					return TestStatus::fail("Images difference detected");
+					pass = false;
 			}
+
+	if (!pass)
+		return TestStatus::fail("Images difference detected");;
 
 	if (m_bASTCErrorColourMismatch)
 	{
