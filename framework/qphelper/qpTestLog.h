@@ -196,6 +196,7 @@ typedef struct qpEglConfigInfo_s
 	int							transparentRedValue;
 	int							transparentGreenValue;
 	int							transparentBlueValue;
+	deBool						recordableAndroid;
 } qpEglConfigInfo;
 
 

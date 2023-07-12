@@ -964,6 +964,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_depth_bias_control")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_device_memory_report")
 	{
 		return;
@@ -1012,6 +1016,7 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	}
 	if (extName == "VK_KHR_video_encode_queue")
 	{
+		functions.push_back("vkGetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR");
 		return;
 	}
 	if (extName == "VK_NV_device_diagnostics_config")
@@ -1306,6 +1311,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_external_memory_acquire_unmodified")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_extended_dynamic_state3")
 	{
 		return;
@@ -1336,6 +1345,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_EXT_pipeline_protected_access")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_ray_tracing_position_fetch")
 	{
 		return;
 	}
@@ -1371,7 +1384,24 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_dynamic_rendering_unused_attachments")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_cooperative_matrix")
+	{
+		functions.push_back("vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR");
+		return;
+	}
 	if (extName == "VK_QCOM_multiview_per_view_render_areas")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_attachment_feedback_loop_dynamic_state")
+	{
+		return;
+	}
+	if (extName == "VK_QNX_external_memory_screen_buffer")
 	{
 		return;
 	}
@@ -2517,6 +2547,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_depth_bias_control")
+	{
+		functions.push_back("vkCmdSetDepthBias2EXT");
+		return;
+	}
 	if (extName == "VK_EXT_device_memory_report")
 	{
 		return;
@@ -2567,6 +2602,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_KHR_video_encode_queue")
 	{
+		functions.push_back("vkGetEncodedVideoSessionParametersKHR");
 		functions.push_back("vkCmdEncodeVideoKHR");
 		return;
 	}
@@ -2938,6 +2974,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_external_memory_acquire_unmodified")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_extended_dynamic_state3")
 	{
 		functions.push_back("vkCmdSetTessellationDomainOriginEXT");
@@ -2994,6 +3034,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_EXT_pipeline_protected_access")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_ray_tracing_position_fetch")
 	{
 		return;
 	}
@@ -3074,8 +3118,26 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_dynamic_rendering_unused_attachments")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_cooperative_matrix")
+	{
+		return;
+	}
 	if (extName == "VK_QCOM_multiview_per_view_render_areas")
 	{
+		return;
+	}
+	if (extName == "VK_EXT_attachment_feedback_loop_dynamic_state")
+	{
+		functions.push_back("vkCmdSetAttachmentFeedbackLoopEnableEXT");
+		return;
+	}
+	if (extName == "VK_QNX_external_memory_screen_buffer")
+	{
+		functions.push_back("vkGetScreenBufferPropertiesQNX");
 		return;
 	}
 	if (extName == "vulkan_video_codecs_common")
@@ -3342,6 +3404,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_KHR_shader_integer_dot_product",
 	"VK_EXT_texel_buffer_alignment",
 	"VK_QCOM_render_pass_transform",
+	"VK_EXT_depth_bias_control",
 	"VK_EXT_device_memory_report",
 	"VK_EXT_robustness2",
 	"VK_EXT_custom_border_color",
@@ -3422,6 +3485,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_NV_linear_color_attachment",
 	"VK_EXT_image_compression_control_swapchain",
 	"VK_QCOM_image_processing",
+	"VK_EXT_external_memory_acquire_unmodified",
 	"VK_EXT_extended_dynamic_state3",
 	"VK_EXT_subpass_merge_feedback",
 	"VK_EXT_shader_module_identifier",
@@ -3429,6 +3493,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_NV_optical_flow",
 	"VK_EXT_legacy_dithering",
 	"VK_EXT_pipeline_protected_access",
+	"VK_KHR_ray_tracing_position_fetch",
 	"VK_EXT_shader_object",
 	"VK_QCOM_tile_properties",
 	"VK_SEC_amigo_profiling",
@@ -3437,5 +3502,9 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_mutable_descriptor_type",
 	"VK_ARM_shader_core_builtins",
 	"VK_EXT_pipeline_library_group_handles",
+	"VK_EXT_dynamic_rendering_unused_attachments",
+	"VK_KHR_cooperative_matrix",
 	"VK_QCOM_multiview_per_view_render_areas",
+	"VK_EXT_attachment_feedback_loop_dynamic_state",
+	"VK_QNX_external_memory_screen_buffer",
 };

@@ -19640,6 +19640,8 @@ dEQP-VKSC.robustness.robustness2.bind.notemplate.r64ui.unroll.volatile.storage_i
 dEQP-VKSC.robustness.robustness2.bind.notemplate.r64ui.unroll.volatile.storage_image.fmt_qual.img.samples_4.2d_array.comp
 dEQP-VKSC.robustness.robustness2.bind.notemplate.r64ui.unroll.volatile.storage_image.fmt_qual.img.samples_4.2d_array.frag
 dEQP-VKSC.robustness.robustness2.bind.notemplate.r64ui.unroll.volatile.storage_image.fmt_qual.img.samples_4.2d_array.vert
+dEQP-VKSC.robustness.robustness2.misc.out_of_bounds_stride
+dEQP-VKSC.robustness.robustness2.misc.out_of_bounds_stride_dynamic_stride
 dEQP-VKSC.robustness.robustness1_vertex_access.out_of_bounds_stride_0
 dEQP-VKSC.robustness.robustness1_vertex_access.out_of_bounds_stride_16_single_buffer
 dEQP-VKSC.robustness.robustness1_vertex_access.out_of_bounds_stride_30_middle_of_buffer

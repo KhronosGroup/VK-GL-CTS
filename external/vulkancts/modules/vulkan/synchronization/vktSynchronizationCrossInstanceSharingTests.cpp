@@ -114,9 +114,6 @@ public:
 		if (config.semaphoreType == vk::VK_SEMAPHORE_TYPE_TIMELINE)
 			m_context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
 
-		if (config.memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT
-			|| config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT
-			|| config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT)
 		if (config.type == SynchronizationType::SYNCHRONIZATION2)
 			m_context.requireDeviceFunctionality("VK_KHR_synchronization2");
 

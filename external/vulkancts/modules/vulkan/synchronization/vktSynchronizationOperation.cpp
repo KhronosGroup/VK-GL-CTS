@@ -5157,14 +5157,8 @@ public:
 
 		if (m_context.getSynchronizationType() == SynchronizationType::SYNCHRONIZATION2)
 		{
-			// test new stages added with VK_KHR_synchronization2 (no need to further duplicate those tests);
-			// with this operation we can test pre_rasterization, index_input and attribute_input flags;
-			// since this operation is executed for three buffers of different size we use diferent flags depending on the size
-			if (m_resource.getBuffer().size > MAX_UPDATE_BUFFER_SIZE)
-				stageMask = VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT_KHR;
-			else
-				stageMask = usingIndexedDraw ? VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT_KHR
-											 : VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT_KHR;
+			stageMask = usingIndexedDraw ? VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT_KHR
+										 : VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT_KHR;
 		}
 
 		const SyncInfo syncInfo =

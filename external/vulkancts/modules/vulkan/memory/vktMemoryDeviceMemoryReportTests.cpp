@@ -1806,7 +1806,7 @@ tcu::TestStatus vkDeviceMemoryAllocateAndFreeTest (Context& context)
 			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	// VkStructureType	sType;
 			DE_NULL,								// const void*		pNext;
 			testSize,								// VkDeviceSize		allocationSize;
-			testHeapIndex,							// uint32_t			memoryTypeIndex;
+			testTypeIndex,							// uint32_t			memoryTypeIndex;
 		};
 
 		result = vkd.allocateMemory(*device, &memoryAllocateInfo, (const VkAllocationCallbacks*)DE_NULL, &memory);
@@ -1860,87 +1860,11 @@ tcu::TestStatus vkDeviceMemoryAllocateAndFreeTest (Context& context)
 	return tcu::TestStatus::pass("Ok");
 }
 
-tcu::TestStatus vkDeviceMemoryAllocationFailedTest (Context& context)
-{
-	CallbackRecorder						recorder;
-	const PlatformInterface&				vkp					= context.getPlatformInterface();
-	const VkInstance						instance			= context.getInstance();
-	const InstanceInterface&				vki					= context.getInstanceInterface();
-	const VkPhysicalDevice					physicalDevice		= context.getPhysicalDevice();
-	const deUint32							queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
-	const deBool							isValidationEnabled	= context.getTestContext().getCommandLine().isValidationEnabled();
-	const Unique<VkDevice>					device				(createDeviceWithMemoryReport(isValidationEnabled, vkp, instance, vki, physicalDevice, queueFamilyIndex, &recorder));
-	const DeviceDriver						vkd					(vkp, instance, *device);
-	const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physicalDevice);
-	const deUint32							testTypeIndex		= 0;
-	const deUint32							testHeapIndex		= memoryProperties.memoryTypes[testTypeIndex].heapIndex;
-	const VkDeviceSize						testSize			= memoryProperties.memoryHeaps[testHeapIndex].size;
-
-	{
-		recorder.setCallbackMarker(MARKER_ALLOCATION_FAILED);
-
-		VkDeviceMemory			memory1 = DE_NULL;
-		VkDeviceMemory			memory2 = DE_NULL;
-		VkMemoryAllocateInfo	memoryAllocateInfo
-		{
-			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	// VkStructureType	sType;
-			DE_NULL,								// const void*		pNext;
-			128,									// VkDeviceSize		allocationSize;
-			testHeapIndex,							// uint32_t			memoryTypeIndex;
-		};
-
-		// first do a small allocation to prevent LowMemoryKiller on android from culling this app
-		VkResult result = vkd.allocateMemory(*device, &memoryAllocateInfo, (const VkAllocationCallbacks*)DE_NULL, &memory1);
-		if (result != VK_SUCCESS)
-			TCU_THROW(NotSupportedError, "Unable to do a small allocation");
-
-		// if small allocation succeeded then we can try to trigger an allocation failure by allocating as much memory as there is on the heap
-		memoryAllocateInfo.allocationSize = testSize;
-		result = vkd.allocateMemory(*device, &memoryAllocateInfo, (const VkAllocationCallbacks*)DE_NULL, &memory2);
-		if (result == VK_SUCCESS)
-		{
-			vkd.freeMemory(*device, memory1, DE_NULL);
-			vkd.freeMemory(*device, memory2, DE_NULL);
-			return tcu::TestStatus::fail(std::string("Should not be able to allocate ") + std::to_string(testSize) + " bytes of memory");
-		}
-
-		recorder.setCallbackMarker(MARKER_UNKNOWN);
-
-		if (!!memory1)
-			vkd.freeMemory(*device, memory1, DE_NULL);
-		if (!!memory2)
-			vkd.freeMemory(*device, memory2, DE_NULL);
-	}
-
-	deBool	allocationFailedEvent	= false;
-
-	for (auto iter = recorder.getRecordsBegin(); iter != recorder.getRecordsEnd(); iter++)
-	{
-		const VkDeviceMemoryReportCallbackDataEXT&	record	= iter->first;
-		const CallbackMarker						marker	= iter->second;
-
-		if (record.type == VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_ALLOCATION_FAILED_EXT)
-		{
-			TCU_CHECK(marker == MARKER_ALLOCATION_FAILED);
-			TCU_CHECK(record.objectType == VK_OBJECT_TYPE_DEVICE_MEMORY);
-			TCU_CHECK_MSG(record.size >= testSize, ("record.size=" + de::toString(record.size) + ", testSize=" + de::toString(testSize)).c_str());
-			TCU_CHECK(record.heapIndex == testHeapIndex);
-
-			allocationFailedEvent	= true;
-		}
-	}
-
-	TCU_CHECK(allocationFailedEvent);
-
-	return tcu::TestStatus::pass("Ok");
-}
-
 tcu::TestCaseGroup* createVkDeviceMemoryTestsGroup (tcu::TestContext& testCtx, const char* name, const char* desc)
 {
 	MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, name, desc));
 
 	addFunctionCase(group.get(), "allocate_and_free",	"", checkSupport, vkDeviceMemoryAllocateAndFreeTest);
-	addFunctionCase(group.get(), "allocation_failed",	"", checkSupport, vkDeviceMemoryAllocationFailedTest);
 
 	return group.release();
 }

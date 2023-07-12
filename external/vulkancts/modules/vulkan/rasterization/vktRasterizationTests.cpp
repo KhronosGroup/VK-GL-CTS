@@ -58,6 +58,7 @@
 #include "vkBufferWithMemory.hpp"
 #ifndef CTS_USES_VULKANSC
 #include "vktRasterizationOrderAttachmentAccessTests.hpp"
+#include "vktShaderTileImageTests.hpp"
 #endif // CTS_USES_VULKANSC
 
 #include <vector>
@@ -7721,9 +7722,19 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 			std::string description;
 		} cases [] =
 		{
-			{"d16_unorm",	vk::VK_FORMAT_D16_UNORM,			"Test depth bias with format D16_UNORM"},
-			{"d32_sfloat",	vk::VK_FORMAT_D32_SFLOAT,			"Test depth bias with format D32_SFLOAT"},
-			{"d24_unorm",	vk::VK_FORMAT_D24_UNORM_S8_UINT,	"Test depth bias with format D24_UNORM_S8_UINT"}
+			{"d16_unorm",						vk::VK_FORMAT_D16_UNORM,			"Test depth bias with format D16_UNORM"},
+			{"d32_sfloat",						vk::VK_FORMAT_D32_SFLOAT,			"Test depth bias with format D32_SFLOAT"},
+			{"d24_unorm",						vk::VK_FORMAT_D24_UNORM_S8_UINT,	"Test depth bias with format D24_UNORM_S8_UINT"},
+			{"d16_unorm_constant_one",			vk::VK_FORMAT_D16_UNORM,			"Test depth bias constant 1 and -1 with format D16_UNORM"},
+			{"d32_sfloat_constant_one",			vk::VK_FORMAT_D32_SFLOAT,			"Test depth bias constant 1 and -1 with format D32_SFLOAT"},
+			{"d24_unorm_constant_one",			vk::VK_FORMAT_D24_UNORM_S8_UINT,	"Test depth bias constant 1 and -1 with format D24_UNORM_S8_UINT"},
+			{"d16_unorm_slope",					vk::VK_FORMAT_D16_UNORM,			"Test depth bias slope with format D16_UNORM"},
+			{"d16_unorm_constant_one_less",		vk::VK_FORMAT_D16_UNORM,			"Test depth bias constant 1 and -1 with format D16_UNORM"},
+			{"d16_unorm_constant_one_greater",	vk::VK_FORMAT_D16_UNORM,			"Test depth bias constant 1 and -1 with format D16_UNORM"},
+			{"d24_unorm_constant_one_less",		vk::VK_FORMAT_D24_UNORM_S8_UINT,	"Test depth bias constant 1 and -1 with format D24_UNORM_S8_UINT"},
+			{"d24_unorm_constant_one_greater",	vk::VK_FORMAT_D24_UNORM_S8_UINT,	"Test depth bias constant 1 and -1 with format D24_UNORM_S8_UINT"},
+			{"d32_sfloat_constant_one_less",	vk::VK_FORMAT_D32_SFLOAT,			"Test depth bias constant 1 and -1 with format D32_SFLOAT"},
+			{"d32_sfloat_constant_one_greater",	vk::VK_FORMAT_D32_SFLOAT,			"Test depth bias constant 1 and -1 with format D32_SFLOAT"},
 		};
 
 		for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
@@ -7768,6 +7779,11 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 	// Rasterization order attachment access tests
 	{
 		rasterizationTests->addChild(createRasterizationOrderAttachmentAccessTests(testCtx));
+	}
+
+	// Tile Storage tests
+	{
+		rasterizationTests->addChild(createShaderTileImageTests(testCtx));
 	}
 #endif // CTS_USES_VULKANSC
 }

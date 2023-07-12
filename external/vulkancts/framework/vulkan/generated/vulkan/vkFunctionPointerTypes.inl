@@ -101,6 +101,7 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* BeginCommandBufferFunc)												(
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* EndCommandBufferFunc)													(VkCommandBuffer commandBuffer);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ResetCommandBufferFunc)												(VkCommandBuffer commandBuffer, VkCommandBufferResetFlags flags);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindPipelineFunc)													(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetAttachmentFeedbackLoopEnableEXTFunc)								(VkCommandBuffer commandBuffer, VkImageAspectFlags aspectMask);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetViewportFunc)													(VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetScissorFunc)														(VkCommandBuffer commandBuffer, uint32_t firstScissor, uint32_t scissorCount, const VkRect2D* pScissors);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetLineWidthFunc)													(VkCommandBuffer commandBuffer, float lineWidth);
@@ -556,10 +557,12 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdWriteBufferMarker2AMDFunc)										
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetQueueCheckpointData2NVFunc)											(VkQueue queue, uint32_t* pCheckpointDataCount, VkCheckpointData2NV* pCheckpointData);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceVideoCapabilitiesKHRFunc)								(VkPhysicalDevice physicalDevice, const VkVideoProfileInfoKHR* pVideoProfile, VkVideoCapabilitiesKHR* pCapabilities);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceVideoFormatPropertiesKHRFunc)							(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceVideoFormatInfoKHR* pVideoFormatInfo, uint32_t* pVideoFormatPropertyCount, VkVideoFormatPropertiesKHR* pVideoFormatProperties);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHRFunc)				(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceVideoEncodeQualityLevelInfoKHR* pQualityLevelInfo, VkVideoEncodeQualityLevelPropertiesKHR* pQualityLevelProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateVideoSessionKHRFunc)												(VkDevice device, const VkVideoSessionCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkVideoSessionKHR* pVideoSession);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyVideoSessionKHRFunc)											(VkDevice device, VkVideoSessionKHR videoSession, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateVideoSessionParametersKHRFunc)									(VkDevice device, const VkVideoSessionParametersCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkVideoSessionParametersKHR* pVideoSessionParameters);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* UpdateVideoSessionParametersKHRFunc)									(VkDevice device, VkVideoSessionParametersKHR videoSessionParameters, const VkVideoSessionParametersUpdateInfoKHR* pUpdateInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetEncodedVideoSessionParametersKHRFunc)								(VkDevice device, const VkVideoEncodeSessionParametersGetInfoKHR* pVideoSessionParametersInfo, VkVideoEncodeSessionParametersFeedbackInfoKHR* pFeedbackInfo, size_t* pDataSize, void* pData);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyVideoSessionParametersKHRFunc)									(VkDevice device, VkVideoSessionParametersKHR videoSessionParameters, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetVideoSessionMemoryRequirementsKHRFunc)								(VkDevice device, VkVideoSessionKHR videoSession, uint32_t* pMemoryRequirementsCount, VkVideoSessionMemoryRequirementsKHR* pMemoryRequirements);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* BindVideoSessionMemoryKHRFunc)											(VkDevice device, VkVideoSessionKHR videoSession, uint32_t bindSessionMemoryInfoCount, const VkBindVideoSessionMemoryInfoKHR* pBindSessionMemoryInfos);
@@ -628,6 +631,7 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyOpticalFlowSessionNVFunc)							
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* BindOpticalFlowSessionImageNVFunc)										(VkDevice device, VkOpticalFlowSessionNV session, VkOpticalFlowSessionBindingPointNV bindingPoint, VkImageView view, VkImageLayout layout);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdOpticalFlowExecuteNVFunc)											(VkCommandBuffer commandBuffer, VkOpticalFlowSessionNV session, const VkOpticalFlowExecuteInfoNV* pExecuteInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDeviceFaultInfoEXTFunc)												(VkDevice device, VkDeviceFaultCountsEXT* pFaultCounts, VkDeviceFaultInfoEXT* pFaultInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetDepthBias2EXTFunc)												(VkCommandBuffer commandBuffer, const VkDepthBiasInfoEXT* pDepthBiasInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ReleaseSwapchainImagesEXTFunc)											(VkDevice device, const VkReleaseSwapchainImagesInfoEXT* pReleaseInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* MapMemory2KHRFunc)														(VkDevice device, const VkMemoryMapInfoKHR* pMemoryMapInfo, void** ppData);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* UnmapMemory2KHRFunc)													(VkDevice device, const VkMemoryUnmapInfoKHR* pMemoryUnmapInfo);
@@ -635,3 +639,5 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateShadersEXTFunc)													(V
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyShaderEXTFunc)													(VkDevice device, VkShaderEXT shader, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetShaderBinaryDataEXTFunc)											(VkDevice device, VkShaderEXT shader, size_t* pDataSize, void* pData);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindShadersEXTFunc)													(VkCommandBuffer commandBuffer, uint32_t stageCount, const VkShaderStageFlagBits* pStages, const VkShaderEXT* pShaders);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetScreenBufferPropertiesQNXFunc)										(VkDevice device, const struct _screen_buffer* buffer, VkScreenBufferPropertiesQNX* pProperties);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceCooperativeMatrixPropertiesKHRFunc)					(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixPropertiesKHR* pProperties);

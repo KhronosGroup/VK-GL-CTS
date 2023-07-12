@@ -19830,7 +19830,7 @@ dEQP-VK.api.copy_and_blit.dedicated_allocation.blit_image.all_formats.depth_sten
 dEQP-VK.api.copy_and_blit.dedicated_allocation.blit_image.all_formats.depth_stencil.3d.d32_sfloat_s8_uint_d32_sfloat_s8_uint.general_optimal_nearest
 dEQP-VK.api.copy_and_blit.dedicated_allocation.blit_image.all_formats.depth_stencil.3d.d32_sfloat_s8_uint_d32_sfloat_s8_uint.general_general_nearest
 dEQP-VK.api.copy_and_blit.copy_commands2.image_to_image.simple_tests.whole_image
-dEQP-VK.api.copy_and_blit.copy_commands2.image_to_image.simple_tests.whole_image_diff_fromat
+dEQP-VK.api.copy_and_blit.copy_commands2.image_to_image.simple_tests.whole_image_diff_format
 dEQP-VK.api.copy_and_blit.copy_commands2.image_to_image.simple_tests.partial_image
 dEQP-VK.api.copy_and_blit.copy_commands2.image_to_image.simple_tests.depth
 dEQP-VK.api.copy_and_blit.copy_commands2.image_to_image.simple_tests.stencil

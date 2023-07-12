@@ -321,6 +321,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		functions.push_back("vkGetPhysicalDeviceSciSyncAttributesNV");
 		return;
 	}
+	if (extName == "VK_QNX_external_memory_screen_buffer")
+	{
+		return;
+	}
 	if (extName == "VK_NV_device_diagnostic_checkpoints")
 	{
 		return;
@@ -697,6 +701,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkImportFenceSciSyncObjNV");
 		return;
 	}
+	if (extName == "VK_QNX_external_memory_screen_buffer")
+	{
+		functions.push_back("vkGetScreenBufferPropertiesQNX");
+		return;
+	}
 	if (extName == "VK_NV_device_diagnostic_checkpoints")
 	{
 		functions.push_back("vkCmdSetCheckpointNV");
@@ -786,6 +795,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_extended_dynamic_state2",
 	"VK_EXT_color_write_enable",
 	"VK_NV_external_sci_sync2",
+	"VK_QNX_external_memory_screen_buffer",
 	"VK_NV_device_diagnostic_checkpoints",
 	"VK_KHR_format_feature_flags2",
 };

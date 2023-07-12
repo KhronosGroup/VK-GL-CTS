@@ -208,7 +208,7 @@ UncheckedInstance::UncheckedInstance(Context& context, vk::VkInstance instance, 
 	, m_instance	(instance)
 #ifndef CTS_USES_VULKANSC
 	, m_driver((m_instance != DE_NULL) ? new InstanceDriver(context.getPlatformInterface(), m_instance) : nullptr)
-	, m_callback	(m_recorder ? m_recorder->createCallback(*m_driver, m_instance) : Move<VkDebugReportCallbackEXT>())
+	, m_callback	((m_driver && m_recorder) ? m_recorder->createCallback(*m_driver, m_instance) : Move<VkDebugReportCallbackEXT>())
 #else
 	, m_driver((m_instance != DE_NULL) ? new InstanceDriverSC(context.getPlatformInterface(), m_instance, context.getTestContext().getCommandLine(), context.getResourceInterface()) : nullptr)
 #endif // CTS_USES_VULKANSC
@@ -225,6 +225,7 @@ UncheckedInstance::~UncheckedInstance ()
 	if (m_instance != DE_NULL)
 	{
 #ifndef CTS_USES_VULKANSC
+		m_callback.~Move<vk::VkDebugReportCallbackEXT>();
 		m_recorder.reset(nullptr);
 #endif // CTS_USES_VULKANSC
 		m_driver->destroyInstance(m_instance, m_allocator);
@@ -425,7 +426,6 @@ vk::VkResult createUncheckedInstance (Context& context, const vk::VkInstanceCrea
 	const bool								addLayers				= (validationEnabled && allowLayers);
 #ifndef CTS_USES_VULKANSC
 	std::unique_ptr<DebugReportRecorder>	recorder;
-	VkDebugReportCallbackCreateInfoEXT		callbackInfo;
 #endif // CTS_USES_VULKANSC
 
 	if (addLayers)
@@ -444,11 +444,10 @@ vk::VkResult createUncheckedInstance (Context& context, const vk::VkInstanceCrea
 		createInfo.ppEnabledExtensionNames = enabledExtensions.data();
 
 #ifndef CTS_USES_VULKANSC
-		// Prepare debug report recorder also for instance creation.
 		recorder.reset(new DebugReportRecorder(printValidationErrors));
-		callbackInfo		= recorder->makeCreateInfo();
-		callbackInfo.pNext	= createInfo.pNext;
-		createInfo.pNext	= &callbackInfo;
+		// No need to add VkDebugReportCallbackCreateInfoEXT to VkInstanceCreateInfo since we
+		// don't want to check for errors at instance creation. This is intended since we use
+		// UncheckedInstance to try to create invalid instances for driver stability
 #endif // CTS_USES_VULKANSC
 	}
 
@@ -939,7 +938,7 @@ const vk::DeviceDriver& VideoDevice::getDeviceDriver (void)
 #endif
 }
 
-const deUint32& VideoDevice::getQueueFamilyIndexTransfer (void)
+deUint32 VideoDevice::getQueueFamilyIndexTransfer (void) const
 {
 #ifndef CTS_USES_VULKANSC
 	DE_ASSERT(m_queueFamilyTransfer != VK_QUEUE_FAMILY_IGNORED);
@@ -950,7 +949,7 @@ const deUint32& VideoDevice::getQueueFamilyIndexTransfer (void)
 #endif
 }
 
-const deUint32& VideoDevice::getQueueFamilyIndexDecode (void)
+deUint32 VideoDevice::getQueueFamilyIndexDecode (void) const
 {
 #ifndef CTS_USES_VULKANSC
 	DE_ASSERT(m_queueFamilyDecode != VK_QUEUE_FAMILY_IGNORED);
@@ -961,7 +960,7 @@ const deUint32& VideoDevice::getQueueFamilyIndexDecode (void)
 #endif
 }
 
-const deUint32& VideoDevice::getQueueFamilyIndexEncode (void)
+deUint32 VideoDevice::getQueueFamilyIndexEncode (void) const
 {
 #ifndef CTS_USES_VULKANSC
 	DE_ASSERT(m_queueFamilyEncode != VK_QUEUE_FAMILY_IGNORED);
@@ -972,7 +971,7 @@ const deUint32& VideoDevice::getQueueFamilyIndexEncode (void)
 #endif
 }
 
-const deUint32& VideoDevice::getQueueFamilyVideo (void)
+deUint32 VideoDevice::getQueueFamilyVideo (void) const
 {
 #ifndef CTS_USES_VULKANSC
 	const bool encode = isVideoEncodeOperation(m_videoCodecOperation);

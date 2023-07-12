@@ -276,7 +276,8 @@ protected:
 			{ EGL_TRANSPARENT_BLUE_VALUE,	0					},
 			{ EGL_CONFORMANT,				EGL_OPENGL_ES_BIT	},
 			{ EGL_RENDERABLE_TYPE,			EGL_OPENGL_ES_BIT	},
-			{ EGL_SURFACE_TYPE,				EGL_WINDOW_BIT		}
+			{ EGL_SURFACE_TYPE,				EGL_WINDOW_BIT		},
+			{ EGL_RECORDABLE_ANDROID,		EGL_DONT_CARE		},
 			//{ EGL_CONFORMANT,				EGL_OPENGL_BIT | EGL_OPENGL_ES_BIT | EGL_OPENGL_ES2_BIT | EGL_OPENVG_BIT	},
 			//{ EGL_RENDERABLE_TYPE,			EGL_OPENGL_BIT | EGL_OPENGL_ES_BIT | EGL_OPENGL_ES2_BIT | EGL_OPENVG_BIT	},
 			//{ EGL_SURFACE_TYPE,				EGL_WINDOW_BIT
@@ -318,6 +319,12 @@ public:
 	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
+		{
+			const Library&	egl	= m_eglTestCtx.getLibrary();
+			if (m_attribute == EGL_RECORDABLE_ANDROID && !eglu::hasExtension(egl, m_display, "EGL_ANDROID_recordable"))
+				TCU_THROW(NotSupportedError, "EGL_ANDROID_recordable is not supported");
+		}
+
 		std::vector<std::pair<EGLenum, EGLint> > attributes;
 		attributes.push_back(std::pair<EGLenum, EGLint>(m_attribute, getValue(m_attribute)));
 
@@ -346,6 +353,10 @@ public:
 		ChooseConfigCase::init();
 		m_iterNdx = 0;
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		// Remove unsupported attributes from the set
+		if (!eglu::hasExtension(m_eglTestCtx.getLibrary(), m_display, "EGL_ANDROID_recordable"))
+			m_attribSet.erase(EGL_RECORDABLE_ANDROID);
 	}
 
 	TestCase::IterateResult iterate (void)
@@ -444,7 +455,8 @@ public:
 //			{ EGL_TRANSPARENT_TYPE,			EGL_TRANSPARENT_RGB,},
 //			{ EGL_TRANSPARENT_RED_VALUE,	ChooseConfigRandomCase::getInt<0, 255>,		},
 //			{ EGL_TRANSPARENT_GREEN_VALUE,	ChooseConfigRandomCase::getInt<0, 255>,		},
-//			{ EGL_TRANSPARENT_BLUE_VALUE,	ChooseConfigRandomCase::getInt<0, 255>,		}
+//			{ EGL_TRANSPARENT_BLUE_VALUE,	ChooseConfigRandomCase::getInt<0, 255>,		},
+			{ EGL_RECORDABLE_ANDROID,		ChooseConfigRandomCase::getBool,			},
 		};
 
 		std::vector<std::pair<EGLenum, EGLint> > out;
@@ -567,7 +579,8 @@ void ChooseConfigTests::init (void)
 			{ EGL_TRANSPARENT_TYPE,			"transparent_type"			},
 			{ EGL_TRANSPARENT_RED_VALUE,	"transparent_red_value"		},
 			{ EGL_TRANSPARENT_GREEN_VALUE,	"transparent_green_value"	},
-			{ EGL_TRANSPARENT_BLUE_VALUE,	"transparent_blue_value"	}
+			{ EGL_TRANSPARENT_BLUE_VALUE,	"transparent_blue_value"	},
+			{ EGL_RECORDABLE_ANDROID,		"recordable_android"		},
 		};
 
 		tcu::TestCaseGroup* simpleGroup = new tcu::TestCaseGroup(m_testCtx, "simple", "Simple tests");
@@ -665,7 +678,8 @@ void ChooseConfigTests::init (void)
 			EGL_TRANSPARENT_TYPE,
 //			EGL_TRANSPARENT_RED_VALUE,
 //			EGL_TRANSPARENT_GREEN_VALUE,
-//			EGL_TRANSPARENT_BLUE_VALUE
+//			EGL_TRANSPARENT_BLUE_VALUE,
+			EGL_RECORDABLE_ANDROID,
 		};
 		randomGroup->addChild(new ChooseConfigRandomCase(m_eglTestCtx, "all", "All attributes", toSet(allAttribs)));
 	}

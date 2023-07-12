@@ -65,10 +65,24 @@ struct ComponentData
 
 struct ImageMSParams
 {
+	ImageMSParams (
+		const vk::PipelineConstructionType	pipelineConstructionType_,
+		const vk::VkSampleCountFlagBits		numSamples_,
+		const tcu::UVec3					imageSize_,
+		const ComponentData					componentData_,
+		const float							shadingRate_)
+		: pipelineConstructionType	(pipelineConstructionType_)
+		, numSamples				(numSamples_)
+		, imageSize					(imageSize_)
+		, componentData				(componentData_)
+		, shadingRate				(shadingRate_)
+		{}
+
 	vk::PipelineConstructionType	pipelineConstructionType;
 	vk::VkSampleCountFlagBits		numSamples;
 	tcu::UVec3						imageSize;
 	ComponentData					componentData;
+	const float						shadingRate;
 };
 
 class MultisampleCaseBase : public TestCase
@@ -156,7 +170,8 @@ tcu::TestCaseGroup* makeMSGroup	(tcu::TestContext&							testCtx,
 								 const deUint32								imageSizesElemCount,
 								 const vk::VkSampleCountFlagBits			imageSamples[],
 								 const deUint32								imageSamplesElemCount,
-								 const multisample::ComponentData&			componentData = multisample::ComponentData{})
+								 const multisample::ComponentData&			componentData = multisample::ComponentData{},
+								 const float								shadingRate = 1.0f)
 {
 	de::MovePtr<tcu::TestCaseGroup> caseGroup(new tcu::TestCaseGroup(testCtx, groupName.c_str(), ""));
 
@@ -177,7 +192,8 @@ tcu::TestCaseGroup* makeMSGroup	(tcu::TestContext&							testCtx,
 				pipelineConstructionType,
 				samples,
 				imageSize,
-				componentData
+				componentData,
+				shadingRate,
 			};
 
 			sizeGroup->addChild(CaseClass::createCase(testCtx, "samples_" + de::toString(samples), imageMSParams));

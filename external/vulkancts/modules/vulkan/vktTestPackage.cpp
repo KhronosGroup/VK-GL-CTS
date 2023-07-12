@@ -321,6 +321,7 @@ TestCaseExecutor::TestCaseExecutor (tcu::TestContext& testCtx)
 
 	tcu::SessionInfo sessionInfo(m_deviceProperties.vendorID,
 								 m_deviceProperties.deviceID,
+								 m_deviceProperties.deviceName,
 								 testCtx.getCommandLine().getInitialCmdLine());
 	m_waiverMechanism.setup(testCtx.getCommandLine().getWaiverFileName(),
 							"dEQP-VK",

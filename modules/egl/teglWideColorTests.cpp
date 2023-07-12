@@ -831,6 +831,11 @@ void WideColorSurfaceTest::writeEglConfig (EGLConfig config)
 
 	info.transparentBlueValue = eglu::getConfigAttribInt(egl, m_eglDisplay, config, EGL_TRANSPARENT_BLUE_VALUE);
 
+	val = EGL_FALSE;
+	if (eglu::hasExtension(m_eglTestCtx.getLibrary(), m_eglDisplay, "EGL_ANDROID_recordable"))
+		val = eglu::getConfigAttribInt(egl, m_eglDisplay, config, EGL_RECORDABLE_ANDROID);
+	info.recordableAndroid = val == EGL_TRUE ? true : false;
+
 	log.writeEglConfig(&info);
 }
 

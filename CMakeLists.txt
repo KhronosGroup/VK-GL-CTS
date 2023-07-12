@@ -1,9 +1,10 @@
 # dEQP cmake file
 
 # Module FindGit requires cmake >= 2.8.2
-cmake_minimum_required(VERSION 3.17.2)
+# Using AFTER in target_include_directories requires >= 3.20.0
+cmake_minimum_required(VERSION 3.20.0)
 
-option(GLES_ALLOW_DIRECT_LINK "Allow direct linking to GLES libraries" ON)
+option(GLES_ALLOW_DIRECT_LINK "Allow direct linking to GLES libraries" OFF)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/framework/delibs/cmake")
 find_package(Git)
@@ -118,8 +119,12 @@ include_directories(external/jsoncpp/src/include)
 # RenderDoc API
 include_directories(external/renderdoc/src)
 
+# Vulkan video support libraries
 if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)
+	# Used for elementary stream demuxing
 	add_subdirectory(external/ESExtractor)
+	# Used for the heavy lifting in video decoding, depends on ESExtrator at runtime.
+	add_subdirectory(external/nvidia-video-samples)
 endif()
 
 include_directories(${PNG_INCLUDE_PATH})

@@ -259,19 +259,6 @@ Move<VkInstance> createInstance (const PlatformInterface& vkp, deUint32 apiVersi
 #endif // CTS_USES_VULKANSC
 }
 
-static deUint32 findQueueFamilyIndexWithCaps (const InstanceInterface& vkInstance, VkPhysicalDevice physicalDevice, VkQueueFlags requiredCaps)
-{
-	const vector<VkQueueFamilyProperties>	queueProps	= getPhysicalDeviceQueueFamilyProperties(vkInstance, physicalDevice);
-
-	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
-	{
-		if ((queueProps[queueNdx].queueFlags & requiredCaps) == requiredCaps)
-			return (deUint32)queueNdx;
-	}
-
-	TCU_THROW(NotSupportedError, "No matching queue found");
-}
-
 Move<VkDevice> createDefaultDevice (const PlatformInterface&				vkp,
 									VkInstance								instance,
 									const InstanceInterface&				vki,
@@ -404,6 +391,20 @@ Move<VkDevice> createDefaultDevice (const PlatformInterface&				vkp,
 }
 
 } // anonymous
+
+deUint32 findQueueFamilyIndexWithCaps(const InstanceInterface& vkInstance, VkPhysicalDevice physicalDevice, VkQueueFlags requiredCaps, VkQueueFlags excludedCaps)
+{
+	const vector<VkQueueFamilyProperties>	queueProps = getPhysicalDeviceQueueFamilyProperties(vkInstance, physicalDevice);
+
+	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
+	{
+		deUint32 queueFlags = queueProps[queueNdx].queueFlags;
+		if ((queueFlags & requiredCaps) == requiredCaps && !(queueFlags & excludedCaps))
+			return (deUint32)queueNdx;
+	}
+
+	TCU_THROW(NotSupportedError, "No matching queue found");
+}
 
 class DefaultDevice
 {
@@ -627,7 +628,9 @@ namespace
 
 vk::Allocator* createAllocator (DefaultDevice* device)
 {
-	const VkPhysicalDeviceMemoryProperties memoryProperties = vk::getPhysicalDeviceMemoryProperties(device->getInstanceInterface(), device->getPhysicalDevice());
+	const auto&	vki					= device->getInstanceInterface();
+	const auto	physicalDevice		= device->getPhysicalDevice();
+	const auto	memoryProperties	= vk::getPhysicalDeviceMemoryProperties(vki, physicalDevice);
 
 	// \todo [2015-07-24 jarkko] support allocator selection/configuration from command line (or compile time)
 	return new SimpleAllocator(device->getDeviceInterface(), device->getDevice(), memoryProperties);

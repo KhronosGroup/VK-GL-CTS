@@ -840,7 +840,7 @@ void AttachmentAccessOrderTestCase::checkSupport (Context& context) const
 		if (result != VK_SUCCESS)
 		{
 			if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
-				TCU_THROW(NotSupportedError, "Error: format " + de::toString(format) + " does not support the required features");
+				TCU_THROW(NotSupportedError, "format " + de::toString(format) + " does not support the required features");
 			else
 				TCU_FAIL("vkGetPhysicalDeviceImageFormatProperties returned unexpected error");
 		}

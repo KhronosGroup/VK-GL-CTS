@@ -1226,6 +1226,8 @@ PipelineLibraryTestCase::~PipelineLibraryTestCase (void)
 
 void PipelineLibraryTestCase::checkSupport (Context& context) const
 {
+	context.requireDeviceFunctionality("VK_KHR_pipeline_library");
+
 	if (m_data.delayedShaderCreate || (m_data.pipelineTreeConfiguration.size() > 1))
 	{
 		context.requireDeviceFunctionality("VK_EXT_graphics_pipeline_library");

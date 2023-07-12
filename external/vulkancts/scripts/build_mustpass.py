@@ -70,7 +70,7 @@ VULKAN_SC_MAIN_PKG	= Package(module = VULKAN_SC_MODULE, configurations = [
 		  Configuration(name					= "default",
 						filters					= [include("master_sc.txt"),
 												   exclude("android-tests-sc.txt")],
-						listOfGroupsToSplit		= ["dEQP-VKSC"]),
+						listOfGroupsToSplit		= ["dEQP-VKSC", "dEQP-VKSC.pipeline"]),
 	])
 
 MUSTPASS_LISTS		= [

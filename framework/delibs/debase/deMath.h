@@ -257,15 +257,6 @@ DE_INLINE float		deFloatSmoothStep	(float e0, float e1, float v)
 DE_INLINE double	deMix				(double a, double b, double t)	{ return a*(1.0-t) + b*t; }
 DE_INLINE double	deStep				(double limit, double val)		{ return (val < limit) ? 0.0 : 1.0; }
 
-/* Comparison functions. */
-
-DE_INLINE deBool	deFloatCmpEQ		(float a, float b)			{ return (a == b); }
-DE_INLINE deBool	deFloatCmpNE		(float a, float b)			{ return (a != b); }
-DE_INLINE deBool	deFloatCmpLT		(float a, float b)			{ return (a < b);  }
-DE_INLINE deBool	deFloatCmpLE		(float a, float b)			{ return (a <= b); }
-DE_INLINE deBool	deFloatCmpGT		(float a, float b)			{ return (a > b);  }
-DE_INLINE deBool	deFloatCmpGE		(float a, float b)			{ return (a >= b); }
-
 /* Convert int to float. If the value cannot be represented exactly in native single precision format, return
  * either the nearest lower or the nearest higher representable value, chosen in an implementation-defined manner.
  *

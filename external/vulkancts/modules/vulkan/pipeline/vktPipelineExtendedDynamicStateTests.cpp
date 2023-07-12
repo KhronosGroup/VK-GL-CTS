@@ -23,6 +23,7 @@
 *//*--------------------------------------------------------------------*/
 
 #include "vktPipelineExtendedDynamicStateTests.hpp"
+#include "vktPipelineExtendedDynamicStateMiscTests.hpp"
 #include "vktPipelineImageUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktCustomInstancesDevices.hpp"
@@ -1938,8 +1939,15 @@ struct TestConfig
 	// Use null pointers when possible for static state.
 	bool							favorStaticNullPointers;
 
+	// Force using atomic counters in the frag shader to count frag shader invocations.
+	bool							forceAtomicCounters;
+
 	// When setting the sample mask dynamically, we can use an alternative sample count specified here.
 	OptSampleCount					dynamicSampleMaskCount;
+
+	// Static values for sampleShadingEnable and minSampleShading.
+	bool							sampleShadingEnable;
+	float							minSampleShading;
 
 	// Static and dynamic pipeline configuration.
 	VertexGeneratorConfig			vertexGenerator;
@@ -2042,7 +2050,10 @@ struct TestConfig
 		, nullStaticColorBlendAttPtr	(false)
 		, dualSrcBlend					(false)
 		, favorStaticNullPointers		(false)
+		, forceAtomicCounters			(false)
 		, dynamicSampleMaskCount		(tcu::Nothing)
+		, sampleShadingEnable			(false)
+		, minSampleShading				(0.0f)
 		, vertexGenerator				(makeVertexGeneratorConfig(staticVertexGenerator, dynamicVertexGenerator))
 		, cullModeConfig				(static_cast<vk::VkCullModeFlags>(vk::VK_CULL_MODE_NONE))
 		, frontFaceConfig				(vk::VK_FRONT_FACE_COUNTER_CLOCKWISE)
@@ -2147,7 +2158,10 @@ struct TestConfig
 		, nullStaticColorBlendAttPtr	(other.nullStaticColorBlendAttPtr)
 		, dualSrcBlend					(other.dualSrcBlend)
 		, favorStaticNullPointers		(other.favorStaticNullPointers)
+		, forceAtomicCounters			(other.forceAtomicCounters)
 		, dynamicSampleMaskCount		(other.dynamicSampleMaskCount)
+		, sampleShadingEnable			(other.sampleShadingEnable)
+		, minSampleShading				(other.minSampleShading)
 		, vertexGenerator				(other.vertexGenerator)
 		, cullModeConfig				(other.cullModeConfig)
 		, frontFaceConfig				(other.frontFaceConfig)
@@ -2863,6 +2877,11 @@ struct TestConfig
 		return (useMeshShaders ? 1u : 0u);
 	}
 
+	bool useFragShaderAtomics () const
+	{
+		return (representativeFragmentTest || forceAtomicCounters);
+	}
+
 private:
 	// Extended dynamic state cases as created by createExtendedDynamicStateTests() are based on the assumption that, when a state
 	// has a static and a dynamic value configured at the same time, the static value is wrong and the dynamic value will give
@@ -3330,7 +3349,7 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 		}
 	}
 
-	if (m_testConfig.representativeFragmentTest)
+	if (m_testConfig.useFragShaderAtomics())
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);
 
 	if (m_testConfig.getActiveLineWidth() != 1.0f)
@@ -3349,6 +3368,9 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 #endif // CTS_USES_VULKANSC
 		}
 	}
+
+	if (m_testConfig.sampleShadingEnable && !baseFeatures.sampleRateShading)
+		TCU_THROW(NotSupportedError, "sampleRateShading not supported");
 
 	checkPipelineLibraryRequirements(vki, physicalDevice, m_testConfig.pipelineConstructionType);
 }
@@ -3497,11 +3519,12 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 	const auto colorFormat	= m_testConfig.colorFormat();
 	const auto vecType		= (vk::isUnormFormat(colorFormat) ? "vec4" : "uvec4");
 	const auto fragSetIndex	= std::to_string(m_testConfig.getFragDescriptorSetIndex());
+	const auto fragAtomics	= m_testConfig.useFragShaderAtomics();
 
 	fragSourceTemplateStream
 		<< "#version 450\n"
 		<< (m_testConfig.representativeFragmentTest ? "layout(early_fragment_tests) in;\n" : "")
-		<< (m_testConfig.representativeFragmentTest ? "layout(set=" + fragSetIndex + ", binding=0, std430) buffer AtomicBlock { uint fragCounter; } counterBuffer;\n" : "")
+		<< (fragAtomics ? "layout(set=" + fragSetIndex + ", binding=0, std430) buffer AtomicBlock { uint fragCounter; } counterBuffer;\n" : "")
 		<< pushConstants
 		<< fragOutputLocations
 		<< "${FRAG_INPUTS}"
@@ -3518,7 +3541,7 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 
 	fragSourceTemplateStream
 		<< "${FRAG_CALCULATIONS}"
-		<< (m_testConfig.representativeFragmentTest ? "    atomicAdd(counterBuffer.fragCounter, 1u);\n" : "")
+		<< (fragAtomics ? "    atomicAdd(counterBuffer.fragCounter, 1u);\n" : "")
 		<< "}\n"
 		;
 
@@ -4442,6 +4465,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	const auto	pipelineBindPoint	= vk::VK_PIPELINE_BIND_POINT_GRAPHICS;
 	const bool	kUseResolveAtt		= (colorSampleCount != kSingleSampleCount);
 	const bool	kMultisampleDS		= (activeSampleCount != kSingleSampleCount);
+	const bool	kFragAtomics		= m_testConfig.useFragShaderAtomics();
 
 	// Choose depth/stencil format.
 	const DepthStencilFormat* dsFormatInfo = nullptr;
@@ -4718,7 +4742,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	BufferWithMemoryPtr	counterBuffer;
 	const auto			counterBufferSize	= static_cast<vk::VkDeviceSize>(sizeof(uint32_t));
 
-	if (m_testConfig.representativeFragmentTest)
+	if (kFragAtomics)
 	{
 		const auto		counterBufferInfo	= vk::makeBufferCreateInfo(counterBufferSize, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 		const uint32_t	initialValue		= 0u;
@@ -4731,7 +4755,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	vk::Move<vk::VkDescriptorSetLayout> fragSetLayout;
 	{
 		vk::DescriptorSetLayoutBuilder layoutBuilder;
-		if (m_testConfig.representativeFragmentTest)
+		if (kFragAtomics)
 			layoutBuilder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_FRAGMENT_BIT);
 		fragSetLayout = layoutBuilder.build(vkd, device);
 	}
@@ -4740,7 +4764,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	vk::Move<vk::VkDescriptorPool>	fragDescriptorPool;
 	vk::Move<vk::VkDescriptorSet>	fragDescriptorSet;
 
-	if (m_testConfig.representativeFragmentTest)
+	if (kFragAtomics)
 	{
 		vk::DescriptorPoolBuilder poolBuilder;
 		poolBuilder.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
@@ -5287,8 +5311,8 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		multisamplePnext,												//	const void*								pNext;
 		0u,																//	VkPipelineMultisampleStateCreateFlags	flags;
 		m_testConfig.rasterizationSamplesConfig.staticValue,			//	VkSampleCountFlagBits					rasterizationSamples;
-		VK_FALSE,														//	VkBool32								sampleShadingEnable;
-		0.0f,															//	float									minSampleShading;
+		makeVkBool32(m_testConfig.sampleShadingEnable),					//	VkBool32								sampleShadingEnable;
+		m_testConfig.minSampleShading,									//	float									minSampleShading;
 		de::dataOrNull(m_testConfig.sampleMaskConfig.staticValue),		//	const VkSampleMask*						pSampleMask;
 		makeVkBool32(m_testConfig.alphaToCoverageConfig.staticValue),	//	VkBool32								alphaToCoverageEnable;
 		makeVkBool32(m_testConfig.alphaToOneConfig.staticValue),		//	VkBool32								alphaToOneEnable;
@@ -5834,7 +5858,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 						vkd.cmdBindShadingRateImageNV(cmdBuffer, VK_NULL_HANDLE, vk::VK_IMAGE_LAYOUT_GENERAL);
 #endif // CTS_USES_VULKANSC
 
-					if (m_testConfig.representativeFragmentTest)
+					if (kFragAtomics)
 						vkd.cmdBindDescriptorSets(cmdBuffer, pipelineBindPoint, pipelineLayout.get(), m_testConfig.getFragDescriptorSetIndex(), 1u, &fragDescriptorSet.get(), 0u, nullptr);
 
 					// Draw mesh.
@@ -5902,7 +5926,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		vk::endRenderPass(vkd, cmdBuffer);
 	}
 
-	if (m_testConfig.representativeFragmentTest)
+	if (kFragAtomics)
 	{
 		const auto bufferBarrier = vk::makeMemoryBarrier(vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT);
 		vk::cmdPipelineMemoryBarrier(vkd, cmdBuffer, vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, &bufferBarrier);
@@ -6022,19 +6046,36 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	}
 
 	// Check storage buffer if used.
-	if (m_testConfig.representativeFragmentTest)
+	uint32_t fragCounter = 0u;
+
+	if (kFragAtomics)
 	{
 		DE_ASSERT(m_testConfig.oversizedTriangle);
 		DE_ASSERT(m_testConfig.meshParams.size() == 1u);
 		DE_ASSERT(!m_testConfig.depthWriteEnableConfig.dynamicValue);	// No dynamic value for depth writes.
 		DE_ASSERT(!m_testConfig.depthWriteEnableConfig.staticValue);	// No depth writes.
 
+		auto& counterBufferAlloc	= counterBuffer->getAllocation();
+		void* counterBufferData		= counterBufferAlloc.getHostPtr();
+		vk::invalidateAlloc(vkd, device, counterBufferAlloc);
+
+		deMemcpy(&fragCounter, counterBufferData, sizeof(fragCounter));
+	}
+
+	if (m_testConfig.representativeFragmentTest)
+	{
+		DE_ASSERT(!m_testConfig.rasterizationSamplesConfig.dynamicValue);
+
 		// The expected number of invocations depends on how many draws are performed with the test enabled.
 		// Draws with the test disabled should always result in kFramebufferHeight * kFramebufferWidth invocations.
 		// Draws with the test enabled should result in at least 1 invocation, maybe more.
 		uint32_t minValue = 0u;
 
-		const uint32_t minInvocations[] = { (kFramebufferHeight * kFramebufferWidth), 1u };
+		const uint32_t minInvocations[] =
+		{
+			(kFramebufferHeight * kFramebufferWidth * static_cast<uint32_t>(m_testConfig.rasterizationSamplesConfig.staticValue)),
+			1u,
+		};
 
 		if (kNumIterations == 1u)
 		{
@@ -6043,7 +6084,6 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		}
 		else if (kNumIterations == 2u)
 		{
-
 			for (uint32_t i = 0u; i < kNumIterations; ++i)
 			{
 				bool testEnabled = false;
@@ -6070,13 +6110,6 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 			DE_ASSERT(false);
 		}
 
-		auto& counterBufferAlloc	= counterBuffer->getAllocation();
-		void* counterBufferData		= counterBufferAlloc.getHostPtr();
-		vk::invalidateAlloc(vkd, device, counterBufferAlloc);
-
-		uint32_t fragCounter;
-		deMemcpy(&fragCounter, counterBufferData, sizeof(fragCounter));
-
 		log << tcu::TestLog::Message << "Fragment counter minimum value: " << minValue << tcu::TestLog::EndMessage;
 		log << tcu::TestLog::Message << "Fragment counter: " << fragCounter << tcu::TestLog::EndMessage;
 
@@ -6084,6 +6117,48 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		{
 			std::ostringstream msg;
 			msg << "Fragment shader invocation counter lower than expected: found " << fragCounter << " and expected at least " << minValue;
+			return tcu::TestStatus::fail(msg.str());
+		}
+	}
+	else if (kFragAtomics)
+	{
+		// The expected number of invocations depends on how many draws are performed and the sample count of each one.
+		// Draws with the test disabled should always result in kFramebufferHeight * kFramebufferWidth invocations.
+		// Draws with the test enabled should result in at least 1 invocation, maybe more.
+		uint32_t sampleCount = 0u;
+
+		if (kNumIterations == 1u)
+		{
+			sampleCount += static_cast<uint32_t>(m_testConfig.getActiveSampleCount());
+		}
+		else if (kNumIterations == 2u)
+		{
+			for (uint32_t i = 0u; i < kNumIterations; ++i)
+			{
+				// Actually varies depending on TWO_DRAWS_STATIC/_DYNAMIC, but does not affect results.
+				const bool staticDraw = (i == 0u);
+
+				if (staticDraw)
+					sampleCount += static_cast<uint32_t>(m_testConfig.rasterizationSamplesConfig.staticValue);
+				else
+				{
+					sampleCount += static_cast<uint32_t>(m_testConfig.rasterizationSamplesConfig.dynamicValue
+									? m_testConfig.rasterizationSamplesConfig.dynamicValue.get()
+									: m_testConfig.rasterizationSamplesConfig.staticValue);
+				}
+			}
+		}
+		else
+		{
+			DE_ASSERT(false);
+		}
+
+		const uint32_t expectedValue = sampleCount * kFramebufferWidth * kFramebufferHeight;
+
+		if (fragCounter != expectedValue)
+		{
+			std::ostringstream msg;
+			msg << "Fragment shader invocation count does not match expected value: found " << fragCounter << " and expected " << expectedValue;
 			return tcu::TestStatus::fail(msg.str());
 		}
 	}
@@ -8536,11 +8611,23 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			}
 		}
 
+		{
+			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+			config.sampleShadingEnable						= true;
+			config.minSampleShading							= 1.0f;
+			config.forceAtomicCounters						= true;
+			config.oversizedTriangle						= true;
+			config.rasterizationSamplesConfig.staticValue	= kSingleSampleCount;
+			config.rasterizationSamplesConfig.dynamicValue	= kMultiSampleCount;
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "sample_shading_sample_count", "Test number of frag shader invocations with sample shading enabled and dynamic sample counts", config));
+		}
+
 		tcu::TestCaseGroup* group = (kUseMeshShaders ? meshShaderGroup.get() : extendedDynamicStateGroup.get());
 		group->addChild(orderingGroup.release());
 	}
 
 	extendedDynamicStateGroup->addChild(meshShaderGroup.release());
+	extendedDynamicStateGroup->addChild(createExtendedDynamicStateMiscTests(testCtx, pipelineConstructionType));
 	return extendedDynamicStateGroup.release();
 }
 

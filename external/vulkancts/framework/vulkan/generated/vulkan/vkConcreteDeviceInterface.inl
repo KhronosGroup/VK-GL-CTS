@@ -83,6 +83,7 @@ virtual VkResult			beginCommandBuffer										(VkCommandBuffer commandBuffer, c
 virtual VkResult			endCommandBuffer										(VkCommandBuffer commandBuffer) const;
 virtual VkResult			resetCommandBuffer										(VkCommandBuffer commandBuffer, VkCommandBufferResetFlags flags) const;
 virtual void				cmdBindPipeline											(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline) const;
+virtual void				cmdSetAttachmentFeedbackLoopEnableEXT					(VkCommandBuffer commandBuffer, VkImageAspectFlags aspectMask) const;
 virtual void				cmdSetViewport											(VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports) const;
 virtual void				cmdSetScissor											(VkCommandBuffer commandBuffer, uint32_t firstScissor, uint32_t scissorCount, const VkRect2D* pScissors) const;
 virtual void				cmdSetLineWidth											(VkCommandBuffer commandBuffer, float lineWidth) const;
@@ -393,6 +394,7 @@ virtual VkResult			createVideoSessionKHR									(VkDevice device, const VkVideo
 virtual void				destroyVideoSessionKHR									(VkDevice device, VkVideoSessionKHR videoSession, const VkAllocationCallbacks* pAllocator) const;
 virtual VkResult			createVideoSessionParametersKHR							(VkDevice device, const VkVideoSessionParametersCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkVideoSessionParametersKHR* pVideoSessionParameters) const;
 virtual VkResult			updateVideoSessionParametersKHR							(VkDevice device, VkVideoSessionParametersKHR videoSessionParameters, const VkVideoSessionParametersUpdateInfoKHR* pUpdateInfo) const;
+virtual VkResult			getEncodedVideoSessionParametersKHR						(VkDevice device, const VkVideoEncodeSessionParametersGetInfoKHR* pVideoSessionParametersInfo, VkVideoEncodeSessionParametersFeedbackInfoKHR* pFeedbackInfo, size_t* pDataSize, void* pData) const;
 virtual void				destroyVideoSessionParametersKHR						(VkDevice device, VkVideoSessionParametersKHR videoSessionParameters, const VkAllocationCallbacks* pAllocator) const;
 virtual VkResult			getVideoSessionMemoryRequirementsKHR					(VkDevice device, VkVideoSessionKHR videoSession, uint32_t* pMemoryRequirementsCount, VkVideoSessionMemoryRequirementsKHR* pMemoryRequirements) const;
 virtual VkResult			bindVideoSessionMemoryKHR								(VkDevice device, VkVideoSessionKHR videoSession, uint32_t bindSessionMemoryInfoCount, const VkBindVideoSessionMemoryInfoKHR* pBindSessionMemoryInfos) const;
@@ -456,6 +458,7 @@ virtual void				destroyOpticalFlowSessionNV								(VkDevice device, VkOpticalFl
 virtual VkResult			bindOpticalFlowSessionImageNV							(VkDevice device, VkOpticalFlowSessionNV session, VkOpticalFlowSessionBindingPointNV bindingPoint, VkImageView view, VkImageLayout layout) const;
 virtual void				cmdOpticalFlowExecuteNV									(VkCommandBuffer commandBuffer, VkOpticalFlowSessionNV session, const VkOpticalFlowExecuteInfoNV* pExecuteInfo) const;
 virtual VkResult			getDeviceFaultInfoEXT									(VkDevice device, VkDeviceFaultCountsEXT* pFaultCounts, VkDeviceFaultInfoEXT* pFaultInfo) const;
+virtual void				cmdSetDepthBias2EXT										(VkCommandBuffer commandBuffer, const VkDepthBiasInfoEXT* pDepthBiasInfo) const;
 virtual VkResult			releaseSwapchainImagesEXT								(VkDevice device, const VkReleaseSwapchainImagesInfoEXT* pReleaseInfo) const;
 virtual VkResult			mapMemory2KHR											(VkDevice device, const VkMemoryMapInfoKHR* pMemoryMapInfo, void** ppData) const;
 virtual VkResult			unmapMemory2KHR											(VkDevice device, const VkMemoryUnmapInfoKHR* pMemoryUnmapInfo) const;
@@ -463,3 +466,4 @@ virtual VkResult			createShadersEXT										(VkDevice device, uint32_t createIn
 virtual void				destroyShaderEXT										(VkDevice device, VkShaderEXT shader, const VkAllocationCallbacks* pAllocator) const;
 virtual VkResult			getShaderBinaryDataEXT									(VkDevice device, VkShaderEXT shader, size_t* pDataSize, void* pData) const;
 virtual void				cmdBindShadersEXT										(VkCommandBuffer commandBuffer, uint32_t stageCount, const VkShaderStageFlagBits* pStages, const VkShaderEXT* pShaders) const;
+virtual VkResult			getScreenBufferPropertiesQNX							(VkDevice device, const struct _screen_buffer* buffer, VkScreenBufferPropertiesQNX* pProperties) const;

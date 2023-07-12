@@ -80,7 +80,8 @@ EXTENSIONS			= [
 	"EGL_EXT_surface_SMPTE2086_metadata",
 	"EGL_EXT_surface_CTA861_3_metadata",
 	"EGL_EXT_gl_colorspace_bt2020_linear",
-	"EGL_EXT_gl_colorspace_bt2020_pq"
+	"EGL_EXT_gl_colorspace_bt2020_pq",
+	"EGL_ANDROID_recordable"
 ]
 PROTECTS			= [
 	"KHRONOS_SUPPORT_INT64"
