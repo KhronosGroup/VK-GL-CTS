@@ -1810,7 +1810,6 @@ LineRasterizationMode selectLineRasterizationMode (const vk::VkPhysicalDeviceLin
 	return selectedMode;
 }
 
-#ifndef CTS_USES_VULKANSC
 vk::VkLineRasterizationModeEXT makeLineRasterizationMode (LineRasterizationMode mode)
 {
 	vk::VkLineRasterizationModeEXT modeEXT = vk::VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT;
@@ -1827,7 +1826,6 @@ vk::VkLineRasterizationModeEXT makeLineRasterizationMode (LineRasterizationMode 
 
 	return modeEXT;
 }
-#endif // CTS_USES_VULKANSC
 
 struct TestConfig
 {
@@ -2683,6 +2681,9 @@ struct TestConfig
 		if (depthBiasEnableConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_BIAS_ENABLE_EXT);
 		if (logicOpConfig.dynamicValue)					dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LOGIC_OP_EXT);
 		if (primRestartEnableConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_PRIMITIVE_RESTART_ENABLE_EXT);
+		if (colorWriteEnableConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_WRITE_ENABLE_EXT);
+		if (blendConstantsConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_BLEND_CONSTANTS);
+		if (lineStippleParamsConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LINE_STIPPLE_EXT);
 #ifndef CTS_USES_VULKANSC
 		if (tessDomainOriginConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_TESSELLATION_DOMAIN_ORIGIN_EXT);
 		if (depthClampEnableConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_CLAMP_ENABLE_EXT);
@@ -2690,7 +2691,6 @@ struct TestConfig
 		if (sampleMaskConfig.dynamicValue)				dynamicStates.push_back(vk::VK_DYNAMIC_STATE_SAMPLE_MASK_EXT);
 		if (alphaToCoverageConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_ALPHA_TO_COVERAGE_ENABLE_EXT);
 		if (alphaToOneConfig.dynamicValue)				dynamicStates.push_back(vk::VK_DYNAMIC_STATE_ALPHA_TO_ONE_ENABLE_EXT);
-		if (colorWriteEnableConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_WRITE_ENABLE_EXT);
 		if (colorWriteMaskConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_WRITE_MASK_EXT);
 		if (rasterizationStreamConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_RASTERIZATION_STREAM_EXT);
 		if (logicOpEnableConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LOGIC_OP_ENABLE_EXT);
@@ -2709,12 +2709,10 @@ struct TestConfig
 															: vk::VK_DYNAMIC_STATE_COLOR_BLEND_EQUATION_EXT);
 			}
 		}
-		if (blendConstantsConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_BLEND_CONSTANTS);
 		if (provokingVertexConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_PROVOKING_VERTEX_MODE_EXT);
 		if (negativeOneToOneConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_CLIP_NEGATIVE_ONE_TO_ONE_EXT);
 		if (depthClipEnableConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_CLIP_ENABLE_EXT);
 		if (lineStippleEnableConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LINE_STIPPLE_ENABLE_EXT);
-		if (lineStippleParamsConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LINE_STIPPLE_EXT);
 		if (sampleLocationsEnableConfig.dynamicValue)	dynamicStates.push_back(vk::VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_ENABLE_EXT);
 		if (conservativeRasterModeConfig.dynamicValue)	dynamicStates.push_back(vk::VK_DYNAMIC_STATE_CONSERVATIVE_RASTERIZATION_MODE_EXT);
 		if (extraPrimitiveOverEstConfig.dynamicValue)	dynamicStates.push_back(vk::VK_DYNAMIC_STATE_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE_EXT);
@@ -2730,8 +2728,6 @@ struct TestConfig
 		if (shadingRateImageEnableConfig.dynamicValue)	dynamicStates.push_back(vk::VK_DYNAMIC_STATE_SHADING_RATE_IMAGE_ENABLE_NV);
 		if (viewportWScalingEnableConfig.dynamicValue)	dynamicStates.push_back(vk::VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_ENABLE_NV);
 		if (reprFragTestEnableConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_REPRESENTATIVE_FRAGMENT_TEST_ENABLE_NV);
-#else
-		DE_ASSERT(false);
 #endif // CTS_USES_VULKANSC
 
 		return dynamicStates;
@@ -3985,6 +3981,21 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 			static_cast<deUint32>(attributes.size()), de::dataOrNull(attributes));
 	}
 
+	if (testConfig.colorWriteEnableConfig.dynamicValue)
+	{
+		const std::vector<vk::VkBool32> colorWriteEnableValues (testConfig.colorAttachmentCount, makeVkBool32(testConfig.colorWriteEnableConfig.dynamicValue.get()));
+		vkd.cmdSetColorWriteEnableEXT(cmdBuffer, de::sizeU32(colorWriteEnableValues), de::dataOrNull(colorWriteEnableValues));
+	}
+
+	if (testConfig.blendConstantsConfig.dynamicValue)
+		vkd.cmdSetBlendConstants(cmdBuffer, testConfig.blendConstantsConfig.dynamicValue.get().data());
+
+	if (testConfig.lineStippleParamsConfig.dynamicValue && static_cast<bool>(testConfig.lineStippleParamsConfig.dynamicValue.get()))
+	{
+		const auto& stippleParams = testConfig.lineStippleParamsConfig.dynamicValue->get();
+		vkd.cmdSetLineStippleEXT(cmdBuffer, stippleParams.factor, stippleParams.pattern);
+	}
+
 #ifndef CTS_USES_VULKANSC
 	if (testConfig.tessDomainOriginConfig.dynamicValue)
 		vkd.cmdSetTessellationDomainOriginEXT(cmdBuffer, testConfig.tessDomainOriginConfig.dynamicValue.get());
@@ -4011,12 +4022,6 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 
 	if (testConfig.alphaToOneConfig.dynamicValue)
 		vkd.cmdSetAlphaToOneEnableEXT(cmdBuffer, makeVkBool32(testConfig.alphaToOneConfig.dynamicValue.get()));
-
-	if (testConfig.colorWriteEnableConfig.dynamicValue)
-	{
-		const std::vector<vk::VkBool32> colorWriteEnableValues (testConfig.colorAttachmentCount, makeVkBool32(testConfig.colorWriteEnableConfig.dynamicValue.get()));
-		vkd.cmdSetColorWriteEnableEXT(cmdBuffer, de::sizeU32(colorWriteEnableValues), de::dataOrNull(colorWriteEnableValues));
-	}
 
 	if (testConfig.colorWriteMaskConfig.dynamicValue)
 	{
@@ -4083,9 +4088,6 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 		}
 	}
 
-	if (testConfig.blendConstantsConfig.dynamicValue)
-		vkd.cmdSetBlendConstants(cmdBuffer, testConfig.blendConstantsConfig.dynamicValue.get().data());
-
 	if (testConfig.provokingVertexConfig.dynamicValue && static_cast<bool>(testConfig.provokingVertexConfig.dynamicValue.get()))
 	{
 		const auto provokingVertexMode = makeProvokingVertexMode(testConfig.provokingVertexConfig.dynamicValue->get());
@@ -4100,12 +4102,6 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 
 	if (testConfig.lineStippleEnableConfig.dynamicValue)
 		vkd.cmdSetLineStippleEnableEXT(cmdBuffer, makeVkBool32(testConfig.lineStippleEnableConfig.dynamicValue.get()));
-
-	if (testConfig.lineStippleParamsConfig.dynamicValue && static_cast<bool>(testConfig.lineStippleParamsConfig.dynamicValue.get()))
-	{
-		const auto& stippleParams = testConfig.lineStippleParamsConfig.dynamicValue->get();
-		vkd.cmdSetLineStippleEXT(cmdBuffer, stippleParams.factor, stippleParams.pattern);
-	}
 
 	if (testConfig.sampleLocationsEnableConfig.dynamicValue)
 		vkd.cmdSetSampleLocationsEnableEXT(cmdBuffer, makeVkBool32(testConfig.sampleLocationsEnableConfig.dynamicValue.get()));
@@ -4155,8 +4151,6 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 	if (testConfig.reprFragTestEnableConfig.dynamicValue)
 		vkd.cmdSetRepresentativeFragmentTestEnableNV(cmdBuffer, makeVkBool32(testConfig.reprFragTestEnableConfig.dynamicValue.get()));
 
-#else
-	DE_ASSERT(false);
 #endif // CTS_USES_VULKANSC
 }
 
@@ -5086,16 +5080,18 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	void* rasterizationPnext	= nullptr;
 	void* viewportPnext			= nullptr;
 
+	const bool			staticStreamInfo			= static_cast<bool>(m_testConfig.rasterizationStreamConfig.staticValue);
+	const bool			staticProvokingVtxInfo		= static_cast<bool>(m_testConfig.provokingVertexConfig.staticValue);
+	const bool			staticDepthClipEnableInfo	= static_cast<bool>(m_testConfig.depthClipEnableConfig.staticValue);
+	const bool			staticDepthClipControlInfo	= static_cast<bool>(m_testConfig.negativeOneToOneConfig.staticValue);
 #ifndef CTS_USES_VULKANSC
 	using RastStreamInfoPtr		= de::MovePtr<vk::VkPipelineRasterizationStateStreamCreateInfoEXT>;
 	using ProvokingVtxModePtr	= de::MovePtr<vk::VkPipelineRasterizationProvokingVertexStateCreateInfoEXT>;
 	using DepthClipControlPtr	= de::MovePtr<vk::VkPipelineViewportDepthClipControlCreateInfoEXT>;
 	using DepthClipEnablePtr	= de::MovePtr<vk::VkPipelineRasterizationDepthClipStateCreateInfoEXT>;
-	using LineRasterModePtr		= de::MovePtr<vk::VkPipelineRasterizationLineStateCreateInfoEXT>;
 	using ConservativeRastPtr	= de::MovePtr<vk::VkPipelineRasterizationConservativeStateCreateInfoEXT>;
 
 	RastStreamInfoPtr	pRasterizationStreamInfo;
-	const bool			staticStreamInfo			= static_cast<bool>(m_testConfig.rasterizationStreamConfig.staticValue);
 
 	if (staticStreamInfo)
 	{
@@ -5105,7 +5101,6 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	}
 
 	ProvokingVtxModePtr	pProvokingVertexModeInfo;
-	const bool			staticProvokingVtxInfo		= static_cast<bool>(m_testConfig.provokingVertexConfig.staticValue);
 
 	if (staticProvokingVtxInfo)
 	{
@@ -5115,7 +5110,6 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	}
 
 	DepthClipEnablePtr	pDepthClipEnableInfo;
-	const bool			staticDepthClipEnableInfo	= static_cast<bool>(m_testConfig.depthClipEnableConfig.staticValue);
 
 	if (staticDepthClipEnableInfo)
 	{
@@ -5125,7 +5119,6 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	}
 
 	DepthClipControlPtr	pDepthClipControlInfo;
-	const bool			staticDepthClipControlInfo	= static_cast<bool>(m_testConfig.negativeOneToOneConfig.staticValue);
 
 	if (staticDepthClipControlInfo)
 	{
@@ -5134,6 +5127,29 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		viewportPnext = pDepthClipControlInfo.get();
 	}
 
+	ConservativeRastPtr	pConservativeRasterModeInfo;
+
+	if (m_testConfig.conservativeRasterStruct())
+	{
+		pConservativeRasterModeInfo = ConservativeRastPtr(new vk::VkPipelineRasterizationConservativeStateCreateInfoEXT(vk::initVulkanStructure(rasterizationPnext)));
+		rasterizationPnext = pConservativeRasterModeInfo.get();
+
+		pConservativeRasterModeInfo->conservativeRasterizationMode		= m_testConfig.conservativeRasterModeConfig.staticValue;
+		pConservativeRasterModeInfo->extraPrimitiveOverestimationSize	= m_testConfig.extraPrimitiveOverEstConfig.staticValue;
+	}
+#else
+	DE_ASSERT(!staticStreamInfo);
+	DE_ASSERT(!staticProvokingVtxInfo);
+	DE_ASSERT(!staticDepthClipEnableInfo);
+	DE_ASSERT(!staticDepthClipControlInfo);
+	DE_ASSERT(!m_testConfig.conservativeRasterStruct());
+	DE_UNREF(staticStreamInfo);
+	DE_UNREF(staticProvokingVtxInfo);
+	DE_UNREF(staticDepthClipEnableInfo);
+	DE_UNREF(staticDepthClipControlInfo);
+#endif // CTS_USES_VULKANSC
+
+	using LineRasterModePtr		= de::MovePtr<vk::VkPipelineRasterizationLineStateCreateInfoEXT>;
 	LineRasterModePtr	pLineRasterModeInfo;
 
 	if (m_testConfig.lineRasterStruct())
@@ -5152,20 +5168,6 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		pLineRasterModeInfo->lineStippleFactor		= staticParams.factor;
 		pLineRasterModeInfo->lineStipplePattern		= staticParams.pattern;
 	}
-
-	ConservativeRastPtr	pConservativeRasterModeInfo;
-
-	if (m_testConfig.conservativeRasterStruct())
-	{
-		pConservativeRasterModeInfo = ConservativeRastPtr(new vk::VkPipelineRasterizationConservativeStateCreateInfoEXT(vk::initVulkanStructure(rasterizationPnext)));
-		rasterizationPnext = pConservativeRasterModeInfo.get();
-
-		pConservativeRasterModeInfo->conservativeRasterizationMode		= m_testConfig.conservativeRasterModeConfig.staticValue;
-		pConservativeRasterModeInfo->extraPrimitiveOverestimationSize	= m_testConfig.extraPrimitiveOverEstConfig.staticValue;
-	}
-#else
-	DE_ASSERT(false);
-#endif // CTS_USES_VULKANSC
 
 	const vk::VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo =
 	{
