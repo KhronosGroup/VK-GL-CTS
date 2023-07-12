@@ -1046,7 +1046,7 @@ tcu::TestStatus presentFenceTest(Context& context, const PresentFenceTestConfig 
 				// Check previous presents; if any is signaled, immediatey destroy its wait semaphore
 				while (nextUnfinishedPresent[j] < i)
 				{
-					if (vkd.getFenceStatus(device, **presentFences[nextUnfinishedPresent[j] * surfaceCount + j]) != VK_NOT_READY)
+					if (vkd.getFenceStatus(device, **presentFences[nextUnfinishedPresent[j] * surfaceCount + j]) == VK_NOT_READY)
 						break;
 
 					presentSems[nextUnfinishedPresent[j]].clear();
