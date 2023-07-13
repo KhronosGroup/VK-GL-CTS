@@ -263,6 +263,7 @@ struct GraphicsPipelineWrapper::InternalData
 	deBool												useDefaultDepthStencilState;
 	deBool												useDefaultColorBlendState;
 	deBool												useDefaultMultisampleState;
+	deBool												useDefaultVertexInputState;
 	bool												failOnCompileWhenLinking;
 
 	VkGraphicsPipelineCreateInfo						monolithicPipelineCreateInfo;
@@ -324,6 +325,7 @@ struct GraphicsPipelineWrapper::InternalData
 		, useDefaultDepthStencilState	(DE_FALSE)
 		, useDefaultColorBlendState		(DE_FALSE)
 		, useDefaultMultisampleState	(DE_FALSE)
+		, useDefaultVertexInputState	(DE_TRUE)
 		, failOnCompileWhenLinking		(false)
 	{
 		monolithicPipelineCreateInfo = initVulkanStructure();
@@ -595,6 +597,16 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setDefaultMultisampleState()
 	return *this;
 }
 
+GraphicsPipelineWrapper& GraphicsPipelineWrapper::setDefaultVertexInputState(const deBool useDefaultVertexInputState)
+{
+	// Make sure vertex input state was not setup yet.
+	DE_ASSERT(m_internalData && (m_internalData->setupState == PSS_NONE));
+
+	m_internalData->useDefaultVertexInputState = useDefaultVertexInputState;
+
+	return *this;
+}
+
 GraphicsPipelineWrapper& GraphicsPipelineWrapper::setDefaultViewportsCount(deUint32 viewportCount)
 {
 	// ViewportState is used in pre-rasterization shader state, make sure pre-rasterization state was not setup yet
@@ -673,8 +685,10 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupVertexInputState(const Vk
 
 	m_internalData->setupState = PSS_VERTEX_INPUT_INTERFACE;
 
-	const auto pVertexInputState = ((vertexInputState || useNullPtrs) ? vertexInputState : &defaultVertexInputState);
-	const auto pInputAssemblyState = ((inputAssemblyState || useNullPtrs) ? inputAssemblyState : &m_internalData->inputAssemblyState);
+	const auto pVertexInputState	= ((vertexInputState || useNullPtrs || !m_internalData->useDefaultVertexInputState)
+									? vertexInputState
+									: &defaultVertexInputState);
+	const auto pInputAssemblyState	= ((inputAssemblyState || useNullPtrs) ? inputAssemblyState : &m_internalData->inputAssemblyState);
 
 	if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{

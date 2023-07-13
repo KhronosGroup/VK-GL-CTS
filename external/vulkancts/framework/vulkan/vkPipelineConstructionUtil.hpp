@@ -140,6 +140,7 @@ public:
 	GraphicsPipelineWrapper&	setDefaultDepthStencilState			(void);
 	GraphicsPipelineWrapper&	setDefaultColorBlendState			(void);
 	GraphicsPipelineWrapper&	setDefaultMultisampleState			(void);
+	GraphicsPipelineWrapper&	setDefaultVertexInputState			(const deBool useDefaultVertexInputState);
 
 	// Pre-rasterization shader state uses provieded viewports and scissors to create ViewportState. By default
 	// number of viewports and scissors is same as number of items in vector but when vectors are empty then by
