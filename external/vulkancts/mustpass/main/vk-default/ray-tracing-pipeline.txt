@@ -2367,6 +2367,8 @@ dEQP-VK.ray_tracing_pipeline.misc.OpTerminateRayKHR_AnyHitDynamically
 dEQP-VK.ray_tracing_pipeline.misc.OpTerminateRayKHR_IntersectionStatically
 dEQP-VK.ray_tracing_pipeline.misc.OpTerminateRayKHR_IntersectionDynamically
 dEQP-VK.ray_tracing_pipeline.misc.null_miss
+dEQP-VK.ray_tracing_pipeline.misc.reuse_creation_buffer_top
+dEQP-VK.ray_tracing_pipeline.misc.reuse_creation_buffer_bottom
 dEQP-VK.ray_tracing_pipeline.memguarantee.inside.rgen
 dEQP-VK.ray_tracing_pipeline.memguarantee.inside.chit
 dEQP-VK.ray_tracing_pipeline.memguarantee.inside.sect
