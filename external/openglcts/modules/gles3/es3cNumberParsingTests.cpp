@@ -67,6 +67,7 @@ static const string					defaultVertexShader					=
 static const string					fragmentShaderTemplate				=
 	"#version 300 es\n"
 	"precision highp float;\n"
+	"precision highp int;\n"
 	"out vec4 my_FragColor;\n"
 	"${TEST_GLOBALS}"
 	"void main()\n"
