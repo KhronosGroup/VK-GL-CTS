@@ -88,7 +88,10 @@ namespace
 //          ------
 //          Attribute offset
 //
-enum class StrideCase { PACKED = 0, PADDED = 1 };
+// With overlapping vertices, the case is similar to packed. However, the data type in the _shader_ will be a Vec4, stored in the
+// buffer as Vec2's. In the shader, only the XY coordinates are properly used (ZW coordinates would belong to the next vertex).
+//
+enum class StrideCase { PACKED = 0, PADDED = 1, OVERLAPPING = 2, };
 
 uint32_t getTypeSize (glu::DataType dataType)
 {
@@ -117,11 +120,16 @@ struct TestParams
 		return getTypeSize(dataType);
 	}
 
+	bool isOverlapping (void) const
+	{
+		return (strideCase == StrideCase::OVERLAPPING);
+	}
+
 	VkFormat attributeFormat (void) const
 	{
 		switch (dataType)
 		{
-		case glu::TYPE_FLOAT_VEC2:	return VK_FORMAT_R32G32_SFLOAT;
+		case glu::TYPE_FLOAT_VEC2:	return (isOverlapping() ? VK_FORMAT_R32G32B32A32_SFLOAT : VK_FORMAT_R32G32_SFLOAT);
 		case glu::TYPE_FLOAT_VEC4:	return VK_FORMAT_R32G32B32A32_SFLOAT;
 		default:					break;
 		}
@@ -141,9 +149,9 @@ struct TestParams
 	// Calculates proper padding size between elements according to strideCase.
 	uint32_t vertexDataPadding (void) const
 	{
-		if (strideCase == StrideCase::PACKED)
-			return 0;
-		return attributeSize();
+		if (strideCase == StrideCase::PADDED)
+			return attributeSize();
+		return 0u;
 	}
 
 	// Calculates proper binding stride according to strideCase.
@@ -156,9 +164,18 @@ struct TestParams
 using VertexVec	= std::vector<tcu::Vec2>;
 using BytesVec	= std::vector<uint8_t>;
 
-BytesVec buildVertexBufferData (const VertexVec& vertices, const TestParams& params)
+BytesVec buildVertexBufferData (const VertexVec& origVertices, const TestParams& params)
 {
-	DE_ASSERT(!vertices.empty());
+	DE_ASSERT(!origVertices.empty());
+
+	VertexVec vertices (origVertices);
+
+	if (params.isOverlapping())
+	{
+		// Each vertex will be read as a vec4, so we need one extra element at the end to make the last vec4 read valid and avoid going beyond the end of the buffer.
+		DE_ASSERT(params.dataType == glu::TYPE_FLOAT_VEC2);
+		vertices.push_back(tcu::Vec2(0.0f, 0.0f));
+	}
 
 	const auto			vertexCount		= de::sizeU32(vertices);
 	const auto			dataSize		= params.bindingOffset + params.attributeOffset() + vertexCount * params.bindingStride();
@@ -304,12 +321,19 @@ void InputAttributeOffsetCase::initPrograms (vk::SourceCollections& programColle
 	}
 
 	{
-		const auto extraComponents = ((m_params.dataType == glu::TYPE_FLOAT_VEC4) ? "" : ", 0.0, 1.0");
+		const auto extraComponents	= ((m_params.dataType == glu::TYPE_FLOAT_VEC4)
+									? ""
+									: ((m_params.isOverlapping())
+									// Simulate that we use the .zw components in order to force the implementation to read them.
+									? ", floor(abs(inPos.z) / 1000.0), (floor(abs(inPos.w) / 2500.0) + 1.0)" // Should result in 0.0, 1.0.
+									:", 0.0, 1.0"));
+		const auto componentSelect	= (m_params.isOverlapping() ? ".xy" : "");
+
 		std::ostringstream vert;
 		vert
 			<< "#version 460\n"
-			<< "layout (location=0) in " << glu::getDataTypeName(m_params.dataType) << " inPos;\n"
-			<< "void main (void) { gl_Position = vec4(inPos" << extraComponents << "); }\n"
+			<< "layout (location=0) in " << glu::getDataTypeName(m_params.isOverlapping() ? glu::TYPE_FLOAT_VEC4 : m_params.dataType) << " inPos;\n"
+			<< "void main (void) { gl_Position = vec4(inPos" << componentSelect << extraComponents << "); }\n"
 			;
 		programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
 	}
@@ -481,9 +505,12 @@ tcu::TestCaseGroup* createInputAttributeOffsetTests (tcu::TestContext& testCtx, 
 			const auto offsetGrpName = "offset_" + std::to_string(offset);
 			GroupPtr offsetGrp (new tcu::TestCaseGroup(testCtx, offsetGrpName.c_str(), ""));
 
-			for (const auto strideCase : { StrideCase::PACKED, StrideCase::PADDED })
+			for (const auto strideCase : { StrideCase::PACKED, StrideCase::PADDED, StrideCase::OVERLAPPING })
 			{
-				const std::array<const char*, 2> strideNames { "packed", "padded" };
+				if (strideCase == StrideCase::OVERLAPPING && dataType != glu::TYPE_FLOAT_VEC2)
+					continue;
+
+				const std::array<const char*, 3> strideNames { "packed", "padded", "overlapping" };
 				GroupPtr strideGrp (new tcu::TestCaseGroup(testCtx, strideNames.at(static_cast<int>(strideCase)), ""));
 
 				for (const auto useMemoryOffset : { false, true })
