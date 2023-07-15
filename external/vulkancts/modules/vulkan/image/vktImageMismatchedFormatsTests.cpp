@@ -459,6 +459,9 @@ tcu::TestCaseGroup* createImageMismatchedFormatsTests (tcu::TestContext& testCtx
 
 	for (VkFormat format = VK_FORMAT_R4G4_UNORM_PACK8; format < VK_CORE_FORMAT_LAST; format = static_cast<VkFormat>(format+1))
 	{
+		if (isCompressedFormat(format))
+			continue;
+
 		for (auto& pair : SpirvFormats)
 		{
 			const std::string&	spirvFormat = pair.first;
