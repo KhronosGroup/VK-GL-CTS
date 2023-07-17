@@ -43,9 +43,9 @@ namespace
 using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 }
 
-tcu::TestCaseGroup*	createTests	(tcu::TestContext& testCtx)
+tcu::TestCaseGroup*	createTests	(tcu::TestContext& testCtx, const std::string& name)
 {
-	GroupPtr mainGroup	(new tcu::TestCaseGroup(testCtx, "shader_object", "Shader Object Tests"));
+	GroupPtr mainGroup	(new tcu::TestCaseGroup(testCtx, name.c_str(), "Shader Object Tests"));
 
 	mainGroup->addChild(createShaderObjectApiTests(testCtx));
 	mainGroup->addChild(createShaderObjectCreateTests(testCtx));

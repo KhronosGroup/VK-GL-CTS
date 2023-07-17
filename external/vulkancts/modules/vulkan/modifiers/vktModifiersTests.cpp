@@ -957,9 +957,9 @@ tcu::TestStatus exportImportMemoryExplicitModifiersCase (Context& context, const
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	de::MovePtr<tcu::TestCaseGroup>	drmFormatModifiersGroup	(new tcu::TestCaseGroup(testCtx, "drm_format_modifiers", "DRM format modifiers tests"));
+	de::MovePtr<tcu::TestCaseGroup>	drmFormatModifiersGroup	(new tcu::TestCaseGroup(testCtx, name.c_str(), "DRM format modifiers tests"));
 	const VkFormat					formats[]				=
 	{
 		VK_FORMAT_R4G4_UNORM_PACK8,

@@ -7997,7 +7997,7 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, co
 
 } // anonymous
 
-tcu::TestCaseGroup* createRenderPassTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createRenderPassTests (tcu::TestContext& testCtx, const std::string& name)
 {
 	SharedGroupParams groupParams(
 		new GroupParams
@@ -8006,10 +8006,10 @@ tcu::TestCaseGroup* createRenderPassTests (tcu::TestContext& testCtx)
 			false,								// bool useSecondaryCmdBuffer;
 			false,								// bool secondaryCmdBufferCompletelyContainsDynamicRenderpass;
 		});
-	return createRenderPassTestsInternal(testCtx, "renderpass", groupParams);
+	return createRenderPassTestsInternal(testCtx, name.c_str(), groupParams);
 }
 
-tcu::TestCaseGroup* createRenderPass2Tests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createRenderPass2Tests (tcu::TestContext& testCtx, const std::string& name)
 {
 	SharedGroupParams groupParams(
 		new GroupParams
@@ -8018,12 +8018,12 @@ tcu::TestCaseGroup* createRenderPass2Tests (tcu::TestContext& testCtx)
 			false,								// bool useSecondaryCmdBuffer;
 			false,								// bool secondaryCmdBufferCompletelyContainsDynamicRenderpass;
 		});
-	return createRenderPassTestsInternal(testCtx, "renderpass2", groupParams);
+	return createRenderPassTestsInternal(testCtx, name.c_str(), groupParams);
 }
 
-tcu::TestCaseGroup* createDynamicRenderingTests(tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createDynamicRenderingTests(tcu::TestContext& testCtx, const std::string& name)
 {
-	de::MovePtr<tcu::TestCaseGroup> dynamicRenderingGroup(new tcu::TestCaseGroup(testCtx, "dynamic_rendering", "Draw using VK_KHR_dynamic_rendering"));
+	de::MovePtr<tcu::TestCaseGroup> dynamicRenderingGroup(new tcu::TestCaseGroup(testCtx, name.c_str(), "Draw using VK_KHR_dynamic_rendering"));
 
 	dynamicRenderingGroup->addChild(createRenderPassTestsInternal(testCtx, "primary_cmd_buff", SharedGroupParams(
 		new GroupParams

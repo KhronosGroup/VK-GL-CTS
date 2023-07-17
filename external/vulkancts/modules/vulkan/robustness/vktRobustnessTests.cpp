@@ -56,9 +56,9 @@ private:
 
 }
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	de::MovePtr<tcu::TestCaseGroup> robustnessTests(new tcu::TestCaseGroup(testCtx, "robustness", ""));
+	de::MovePtr<tcu::TestCaseGroup> robustnessTests(new tcu::TestCaseGroup(testCtx, name.c_str(), ""));
 
 	robustnessTests->addChild(createBufferAccessTests(testCtx));
 	robustnessTests->addChild(createVertexAccessTests(testCtx));

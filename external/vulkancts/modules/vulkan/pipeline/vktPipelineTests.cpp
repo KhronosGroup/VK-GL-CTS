@@ -192,7 +192,7 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
 	de::MovePtr<tcu::TestCaseGroup> monolithicGroup					(createTestGroup(testCtx, "monolithic",						"Monolithic pipeline tests",					createChildren, PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC));
 	de::MovePtr<tcu::TestCaseGroup> pipelineLibraryGroup			(createTestGroup(testCtx, "pipeline_library",				"Graphics pipeline library tests",				createChildren, PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY));
@@ -202,7 +202,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup> shaderObjectLinkedSpirvGroup	(createTestGroup(testCtx, "shader_object_linked_spirv",		"Linked spirv shader object tests",				createChildren, PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_LINKED_SPIRV));
 	de::MovePtr<tcu::TestCaseGroup> shaderObjectLinkedBinaryGroup	(createTestGroup(testCtx, "shader_object_linked_binary",	"Linked binary shader object tests",			createChildren, PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_LINKED_BINARY));
 
-	de::MovePtr<tcu::TestCaseGroup> mainGroup(new tcu::TestCaseGroup(testCtx, "pipeline", "Pipeline Tests"));
+	de::MovePtr<tcu::TestCaseGroup> mainGroup(new tcu::TestCaseGroup(testCtx, name.c_str(), "Pipeline Tests"));
 	mainGroup->addChild(monolithicGroup.release());
 	mainGroup->addChild(pipelineLibraryGroup.release());
 	mainGroup->addChild(fastLinkedLibraryGroup.release());

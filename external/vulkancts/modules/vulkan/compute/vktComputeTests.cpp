@@ -64,7 +64,7 @@ void createChildren (tcu::TestCaseGroup* computeTests, ComputePipelineConstructi
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
 	de::MovePtr<tcu::TestCaseGroup> pipelineGroup			(createTestGroup(testCtx, "pipeline", "Compute pipeline tests", createChildren, COMPUTE_PIPELINE_CONSTRUCTION_TYPE_PIPELINE));
 #ifndef CTS_USES_VULKANSC
@@ -72,7 +72,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup> shaderObjectBinaryGroup	(createTestGroup(testCtx, "shader_object_binary", "Compute binary shader object tests", createChildren, COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_BINARY));
 #endif
 
-	de::MovePtr<tcu::TestCaseGroup> mainGroup(new tcu::TestCaseGroup(testCtx, "compute", "Compute shader tests"));
+	de::MovePtr<tcu::TestCaseGroup> mainGroup(new tcu::TestCaseGroup(testCtx, name.c_str(), "Compute shader tests"));
 	mainGroup->addChild(pipelineGroup.release());
 #ifndef CTS_USES_VULKANSC
 	mainGroup->addChild(shaderObjectSpirvGroup.release());

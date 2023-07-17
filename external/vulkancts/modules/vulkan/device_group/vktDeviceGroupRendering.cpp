@@ -1857,7 +1857,7 @@ private:
 class DeviceGroupTestRendering : public tcu::TestCaseGroup
 {
 public:
-								DeviceGroupTestRendering	(tcu::TestContext& testCtx);
+								DeviceGroupTestRendering	(tcu::TestContext& testCtx, const std::string& name);
 								~DeviceGroupTestRendering	(void) {}
 	void						init(void);
 
@@ -1866,8 +1866,8 @@ private:
 	DeviceGroupTestRendering&	operator=					(const DeviceGroupTestRendering& other);
 };
 
-DeviceGroupTestRendering::DeviceGroupTestRendering (tcu::TestContext& testCtx)
-	: TestCaseGroup (testCtx, "device_group", "Testing device group test cases")
+DeviceGroupTestRendering::DeviceGroupTestRendering (tcu::TestContext& testCtx, const std::string& name)
+	: TestCaseGroup (testCtx, name.c_str(), "Testing device group test cases")
 {
 	// Left blank on purpose
 }
@@ -1894,9 +1894,9 @@ void DeviceGroupTestRendering::init (void)
 	addChild(new DeviceGroupTestCase<DeviceGroupTestInstance>(m_testCtx, "afr_tessellated_linefill",	"Test alternate frame rendering with tesselated sphere with line segments",			TEST_MODE_AFR | TEST_MODE_TESSELLATION | TEST_MODE_LINEFILL  | TEST_MODE_DEDICATED | TEST_MODE_PEER_FETCH));
 }
 
-tcu::TestCaseGroup* createTests(tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return new DeviceGroupTestRendering(testCtx);
+	return new DeviceGroupTestRendering(testCtx, name);
 }
 }	// DeviceGroup
 }	// vkt

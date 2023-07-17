@@ -1696,10 +1696,10 @@ void FragmentShadingBarycentricTestCase::initWeightPrograms (SourceCollections& 
 }
 }	// anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
 	const bool					notused			= false;
-	MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "fragment_shading_barycentric", "Tests fragment shading barycentric extension"));
+	MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, name.c_str(), "Tests fragment shading barycentric extension"));
 	MovePtr<tcu::TestCaseGroup>	libGroup		(new tcu::TestCaseGroup(testCtx, "pipeline_library", "Tests using graphics pipeline libraries"));
 	MovePtr<tcu::TestCaseGroup>	fastLinkGroup	(new tcu::TestCaseGroup(testCtx, "fast_linked_library", "Tests using graphics pipeline libraries with fast linking"));
 

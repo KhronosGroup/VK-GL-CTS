@@ -179,9 +179,9 @@ static void cleanupGroup(tcu::TestCaseGroup*)
 	g_singletonDeviceDepthGroup.clear();
 }
 
-tcu::TestCaseGroup*	createAmberDepthGroup (tcu::TestContext& testCtx)
+tcu::TestCaseGroup*	createAmberDepthGroup (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, "depth", "Depth pipeline test group", createTests, cleanupGroup);
+	return createTestGroup(testCtx, name.c_str(), "Depth pipeline test group", createTests, cleanupGroup);
 }
 
 } // cts_amber
